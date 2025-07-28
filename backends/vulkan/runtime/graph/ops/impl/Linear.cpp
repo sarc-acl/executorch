@@ -106,12 +106,19 @@ void add_addmm_naive_texture_node(
   add_storage_type_suffix(kernel_name, graph.storage_type_of(out));
   add_dtype_suffix(kernel_name, graph.dtype_of(out));
 
+  // Define workgroup size for shared memory implementation
+  // Use 8x8 workgroups to match the TILE_SIZE_M and TILE_SIZE_N in the shader
+  utils::uvec3 local_wg_size = {8, 8, 1};
+
   utils::uvec3 global_wg_size = graph.logical_limits_of(out);
+
+  // Modify global workgroup size to match M x N, not M x N/4
+  global_wg_size[0] *= 4;
   graph.execute_nodes().emplace_back(new DispatchNode(
       graph,
       VK_KERNEL_FROM_STR(kernel_name),
       global_wg_size,
-      graph.create_local_wg_size(global_wg_size),
+      local_wg_size,
       // Inputs and Outputs
       {{out, vkapi::kWrite}, {{mat1, mat2, self}, vkapi::kRead}},
       // Shader params buffers
