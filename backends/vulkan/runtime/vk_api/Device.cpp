@@ -43,6 +43,10 @@ PhysicalDevice::PhysicalDevice(VkPhysicalDevice physical_device_handle)
       shader_int_dot_product_properties{
           VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR},
 #endif
+#ifdef VK_KHR_cooperative_matrix
+      cooperative_matrix_features{
+          VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR},
+#endif /* VK_KHR_cooperative_matrix */
       queue_families{},
       num_compute_queues(0),
       supports_int16_shader_types(false),
@@ -92,6 +96,11 @@ PhysicalDevice::PhysicalDevice(VkPhysicalDevice physical_device_handle)
   shader_int_dot_product_properties.pNext = extension_list_top;
   extension_list_top = &shader_int_dot_product_properties;
 #endif /* VK_KHR_shader_integer_dot_product */
+
+#ifdef VK_KHR_cooperative_matrix
+  cooperative_matrix_features.pNext = extension_list_top;
+  extension_list_top = &cooperative_matrix_features;
+#endif /* VK_KHR_cooperative_matrix */
 
   features2.pNext = extension_list_top;
 

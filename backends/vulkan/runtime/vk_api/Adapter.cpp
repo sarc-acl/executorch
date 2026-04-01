@@ -119,6 +119,9 @@ VkDevice create_logical_device(
 #ifdef VK_KHR_shader_integer_dot_product
       VK_KHR_SHADER_INTEGER_DOT_PRODUCT_EXTENSION_NAME,
 #endif /* VK_KHR_shader_integer_dot_product */
+#ifdef VK_KHR_cooperative_matrix
+      VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME,
+#endif /* VK_KHR_cooperative_matrix */
 #if defined(VK_KHR_pipeline_executable_properties) && \
     defined(ETVK_INSPECT_PIPELINES)
       VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME,
@@ -178,6 +181,13 @@ VkDevice create_logical_device(
   shader_int_dot_product_features.pNext = extension_list_top;
   extension_list_top = &shader_int_dot_product_features;
 #endif /* VK_KHR_shader_integer_dot_product */
+
+#ifdef VK_KHR_cooperative_matrix
+  VkPhysicalDeviceCooperativeMatrixFeaturesKHR cooperative_matrix_features{
+      physical_device.cooperative_matrix_features};
+  cooperative_matrix_features.pNext = extension_list_top;
+  extension_list_top = &cooperative_matrix_features;
+#endif /* VK_KHR_cooperative_matrix */
 
   device_create_info.pNext = extension_list_top;
 

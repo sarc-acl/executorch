@@ -50,6 +50,9 @@ struct PhysicalDevice final {
   VkPhysicalDeviceShaderIntegerDotProductProperties
       shader_int_dot_product_properties;
 #endif /* VK_KHR_shader_integer_dot_product */
+#ifdef VK_KHR_cooperative_matrix
+  VkPhysicalDeviceCooperativeMatrixFeaturesKHR cooperative_matrix_features;
+#endif /* VK_KHR_cooperative_matrix */
 
   // Available GPU queues
   std::vector<VkQueueFamilyProperties> queue_families;

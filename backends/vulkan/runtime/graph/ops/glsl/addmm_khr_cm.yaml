@@ -1,0 +1,22 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+addmm_khr_cm:
+  parameter_names_with_default_values:
+    DTYPE: float
+    A_DTYPE: float
+    PRECISION: highp
+    HAS_BIAS: false
+  generate_variant_forall:
+    A_DTYPE:
+      - VALUE: half
+        SUFFIX: half
+      - VALUE: float
+        SUFFIX: float
+  shader_variants:
+    - NAME: matmul_khr_cm
+    - NAME: addmm_khr_cm
+      HAS_BIAS: true

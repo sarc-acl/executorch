@@ -221,6 +221,15 @@ class Adapter final {
 #endif /* VK_KHR_shader_integer_dot_product */
   }
 
+  inline bool supports_cooperative_matrix() {
+#ifdef VK_KHR_cooperative_matrix
+    return physical_device_.cooperative_matrix_features.cooperativeMatrix ==
+        VK_TRUE;
+#else
+    return false;
+#endif /* VK_KHR_cooperative_matrix */
+  }
+
   inline bool supports_int16_shader_types() {
     return physical_device_.supports_int16_shader_types;
   }
