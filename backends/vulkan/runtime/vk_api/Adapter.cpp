@@ -199,6 +199,13 @@ VkDevice create_logical_device(
   extension_list_top = &cooperative_matrix2_features;
 #endif /* VK_NV_cooperative_matrix2 */
 
+#ifdef VK_VERSION_1_3
+  VkPhysicalDeviceSubgroupSizeControlFeatures subgroup_size_control_features{
+      physical_device.subgroup_size_control_features};
+  subgroup_size_control_features.pNext = extension_list_top;
+  extension_list_top = &subgroup_size_control_features;
+#endif /* VK_VERSION_1_3 */
+
   device_create_info.pNext = extension_list_top;
 
   VkDevice handle = nullptr;
@@ -387,6 +394,52 @@ void Adapter::submit_cmd(
 
 void Adapter::override_device_name(const std::string& new_name) {
   physical_device_.override_device_name(new_name);
+}
+
+bool Adapter::supports_fp16_coopmat_16x16x16(bool require_fp32_accum) {
+#ifdef VK_KHR_cooperative_matrix
+  if (!supports_cooperative_matrix()) {
+    return false;
+  }
+  uint32_t count = 0;
+  if (vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR(
+          physical_device_.handle, &count, nullptr) != VK_SUCCESS ||
+      count == 0) {
+    return false;
+  }
+  std::vector<VkCooperativeMatrixPropertiesKHR> props(count);
+  for (auto& p : props) {
+    p.sType = VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR;
+    p.pNext = nullptr;
+  }
+  if (vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR(
+          physical_device_.handle, &count, props.data()) != VK_SUCCESS) {
+    return false;
+  }
+  for (const auto& p : props) {
+    if (p.MSize != 16 || p.NSize != 16 || p.KSize != 16) {
+      continue;
+    }
+    if (p.scope != VK_SCOPE_SUBGROUP_KHR) {
+      continue;
+    }
+    if (p.AType != VK_COMPONENT_TYPE_FLOAT16_KHR ||
+        p.BType != VK_COMPONENT_TYPE_FLOAT16_KHR) {
+      continue;
+    }
+    if (require_fp32_accum) {
+      if (p.CType != VK_COMPONENT_TYPE_FLOAT32_KHR ||
+          p.ResultType != VK_COMPONENT_TYPE_FLOAT32_KHR) {
+        continue;
+      }
+    }
+    return true;
+  }
+  return false;
+#else
+  (void)require_fp32_accum;
+  return false;
+#endif /* VK_KHR_cooperative_matrix */
 }
 
 std::string Adapter::stringize() const {

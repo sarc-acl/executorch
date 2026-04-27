@@ -60,6 +60,10 @@ struct PhysicalDevice final {
   VkPhysicalDeviceCooperativeMatrix2FeaturesNV cooperative_matrix2_features;
 #endif /* VK_NV_cooperative_matrix2 */
 
+#ifdef VK_VERSION_1_3
+  VkPhysicalDeviceSubgroupSizeControlFeatures subgroup_size_control_features;
+#endif /* VK_VERSION_1_3 */
+
   // Available GPU queues
   std::vector<VkQueueFamilyProperties> queue_families;
 

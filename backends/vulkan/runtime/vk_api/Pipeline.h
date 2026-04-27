@@ -157,6 +157,7 @@ class ComputePipeline final {
     VkPipelineLayout pipeline_layout;
     VkShaderModule shader_module;
     SpecVarList specialization_constants;
+    uint32_t required_subgroup_size = 0;
   };
 
   explicit ComputePipeline(VkDevice device, VkPipeline handle);
@@ -260,6 +261,8 @@ class ComputePipelineCache final {
 
       const SpecVarList& spec_vars = descriptor.specialization_constants;
       seed = utils::hash_combine(seed, std::hash<uint32_t>()(spec_vars.size()));
+      seed = utils::hash_combine(
+          seed, std::hash<uint32_t>()(descriptor.required_subgroup_size));
 
       for (int i = 0; i < spec_vars.size(); ++i) {
         const SpecVar& spec_var = spec_vars.at(i);

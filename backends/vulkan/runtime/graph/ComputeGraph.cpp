@@ -17,6 +17,8 @@
 
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/StagingUtils.h>
 
+#include <cstdlib>
+
 #ifdef ET_EVENT_TRACER_ENABLED
 std::string& set_and_get_current_operator_json(const std::string& json) {
   static std::string current_operator_json;
@@ -825,10 +827,19 @@ void ComputeGraph::register_pipeline_to_create(
 
   spec_constants.append(spec_vars);
 
+  uint32_t required_subgroup_size = 0;
+  const char* subgroup_size_env = getenv("VK_COOPMAT_REQUIRED_SUBGROUP_SIZE");
+  if (subgroup_size_env &&
+      shader_info.kernel_name.find("coopmat") != std::string::npos) {
+    required_subgroup_size =
+        static_cast<uint32_t>(std::atoi(subgroup_size_env));
+  }
+
   const vkapi::ComputePipelineCache::Key desc = {
       context()->pipeline_layout_cache().retrieve(shader_layout, pc_offset),
       context()->shader_cache().retrieve(shader_info),
-      spec_constants};
+      spec_constants,
+      required_subgroup_size};
 
   if (context_->pipeline_cache().contains(desc)) {
     return;

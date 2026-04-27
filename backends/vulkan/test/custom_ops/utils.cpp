@@ -7,6 +7,8 @@
 #include "utils.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
+#include <limits>
 #include <numeric>
 #include <random>
 #include <unordered_map>
@@ -194,8 +196,7 @@ void ValueSpec::generate_tensor_data(int seed) {
         std::vector<float> temp_data(num_elements);
         generate_random_float_data(temp_data, -1.0f, 1.0f, seed);
         for (size_t i = 0; i < temp_data.size(); ++i) {
-          // Simple conversion to uint16_t representation of half
-          half_data[i] = static_cast<uint16_t>(temp_data[i] * 32767.0f);
+          half_data[i] = float_to_half(temp_data[i]);
         }
       } else if (data_gen_type == DataGenType::RANDOM_SCALES) {
         // Generate random scales in float, then convert to proper fp16
@@ -211,10 +212,7 @@ void ValueSpec::generate_tensor_data(int seed) {
       } else if (data_gen_type == DataGenType::RANDINT4) {
         generate_randint_half_data(half_data, -8, 7, seed);
       } else if (data_gen_type == DataGenType::ONES) {
-        std::fill(
-            half_data.begin(),
-            half_data.end(),
-            static_cast<uint16_t>(32767)); // 1.0 in half
+        std::fill(half_data.begin(), half_data.end(), float_to_half(1.0f));
       } else if (data_gen_type == DataGenType::ZEROS) {
         std::fill(
             half_data.begin(),
@@ -690,12 +688,57 @@ void generate_zeros_data(std::vector<float>& data) {
 bool ValueSpec::validate_against_reference(
     float abs_tolerance,
     float rel_tolerance) const {
-  // Only validate float tensors as specified in requirements
-  if (dtype != vkapi::kFloat || !is_tensor()) {
-    return true; // Skip validation for non-float or non-tensor types
+  if (!is_tensor()) {
+    return true;
   }
 
-  const auto& computed_data = get_float_data();
+  if (dtype == vkapi::kInt) {
+    // Integer correctness path: sentinel-skip on INT32_MIN (mirrors the
+    // float NaN-skip used for bounded sampled validation of large outputs).
+    const auto& ref_int = get_ref_int32_data();
+    if (ref_int.empty()) {
+      return true;
+    }
+    const auto& computed_int = get_int32_data();
+    if (computed_int.size() != ref_int.size()) {
+      if (debugging()) {
+        std::cout << "Size mismatch (int): computed=" << computed_int.size()
+                  << ", reference=" << ref_int.size() << std::endl;
+      }
+      return false;
+    }
+    size_t checked = 0, skipped = 0;
+    constexpr int32_t kSentinel = std::numeric_limits<int32_t>::min();
+    for (size_t i = 0; i < computed_int.size(); ++i) {
+      if (ref_int[i] == kSentinel) {
+        ++skipped;
+        continue;
+      }
+      if (computed_int[i] != ref_int[i]) {
+        std::cout << "Mismatch at element " << i
+                  << ": computed=" << computed_int[i]
+                  << ", reference=" << ref_int[i]
+                  << ", diff=" << (computed_int[i] - ref_int[i]) << std::endl;
+        return false;
+      }
+      ++checked;
+    }
+    if (checked == 0) {
+      std::cout << "Reference int data contained no checked elements"
+                << std::endl;
+      return false;
+    }
+    if (debugging()) {
+      std::cout << "Int correctness validation PASSED (" << checked
+                << " checked, " << skipped << " skipped)" << std::endl;
+    }
+    return true;
+  }
+
+  if (dtype != vkapi::kFloat && dtype != vkapi::kHalf) {
+    return true;
+  }
+
   const auto& reference_data = get_ref_float_data();
 
   // Skip validation if no reference data is available
@@ -703,19 +746,41 @@ bool ValueSpec::validate_against_reference(
     return true;
   }
 
+  std::vector<float> computed_half_data;
+  const std::vector<float>* computed_data = &get_float_data();
+  if (dtype == vkapi::kHalf) {
+    computed_half_data.reserve(get_half_data().size());
+    for (uint16_t value : get_half_data()) {
+      computed_half_data.push_back(half_to_float(value));
+    }
+    computed_data = &computed_half_data;
+  }
+
   // Check if sizes match
-  if (computed_data.size() != reference_data.size()) {
+  if (computed_data->size() != reference_data.size()) {
     if (debugging()) {
-      std::cout << "Size mismatch: computed=" << computed_data.size()
+      std::cout << "Size mismatch: computed=" << computed_data->size()
                 << ", reference=" << reference_data.size() << std::endl;
     }
     return false;
   }
 
-  // Element-wise comparison with both absolute and relative tolerance
-  for (size_t i = 0; i < computed_data.size(); ++i) {
-    float diff = std::abs(computed_data[i] - reference_data[i]);
-    float abs_ref = std::abs(reference_data[i]);
+  size_t checked_elements = 0;
+  size_t skipped_elements = 0;
+
+  // Element-wise comparison with both absolute and relative tolerance.
+  // NaN reference entries are intentionally unchecked; benchmarks use this for
+  // bounded sampled validation of very large outputs.
+  for (size_t i = 0; i < computed_data->size(); ++i) {
+    const float reference_value = reference_data[i];
+    if (std::isnan(reference_value)) {
+      ++skipped_elements;
+      continue;
+    }
+
+    ++checked_elements;
+    float diff = std::abs(computed_data->at(i) - reference_value);
+    float abs_ref = std::abs(reference_value);
 
     // Check if either absolute or relative tolerance condition is satisfied
     bool abs_tolerance_ok = diff <= abs_tolerance;
@@ -723,8 +788,8 @@ bool ValueSpec::validate_against_reference(
 
     if (!abs_tolerance_ok && !rel_tolerance_ok) {
       std::cout << "Mismatch at element " << i
-                << ": computed=" << computed_data[i]
-                << ", reference=" << reference_data[i] << ", diff=" << diff
+                << ": computed=" << computed_data->at(i)
+                << ", reference=" << reference_value << ", diff=" << diff
                 << ", abs_tolerance=" << abs_tolerance
                 << ", rel_tolerance=" << rel_tolerance
                 << ", rel_threshold=" << (rel_tolerance * abs_ref) << std::endl;
@@ -732,8 +797,18 @@ bool ValueSpec::validate_against_reference(
     }
   }
 
+  if (checked_elements == 0) {
+    std::cout << "Reference data contained no checked elements" << std::endl;
+    return false;
+  }
+
   if (debugging()) {
-    std::cout << "Correctness validation PASSED" << std::endl;
+    std::cout << "Correctness validation PASSED (" << checked_elements
+              << " checked";
+    if (skipped_elements > 0) {
+      std::cout << ", " << skipped_elements << " skipped";
+    }
+    std::cout << ")" << std::endl;
   }
   return true;
 }
@@ -1736,7 +1811,10 @@ TestResult execute_test_cases(
             print_valuespec_data(output_spec, "vulkan output");
             print_valuespec_data(output_spec, "ref output", true);
 
-            throw std::runtime_error("Correctness validation failed");
+            if (std::getenv("VK_BENCH_CONTINUE_ON_CORRECTNESS_FAIL") ==
+                nullptr) {
+              throw std::runtime_error("Correctness validation failed");
+            }
           }
         }
 

@@ -29,11 +29,16 @@ build-profiling/
 *.bin
 *.model
 *.etdump
+*.etdp
 tokenizer.json
 *.pte
 *.ptd
 !test_bpe_tokenizer.bin
 !test_tiktoken_tokenizer.model
+
+# Phase 2 real-LLaMA E2E artifacts (regeneratable; see real_llama_e2e_storage_study scripts)
+yanwen_docs/agent_results/real_llama_e2e_storage_study/llama_tmp/
+yanwen_docs/agent_results/real_llama_e2e_storage_study/exports/
 
 # Editor temporaries
 *.idea

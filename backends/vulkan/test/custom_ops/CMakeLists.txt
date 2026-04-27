@@ -103,4 +103,16 @@ if(TARGET vulkan_backend)
   add_operator_prototype(test_q8ta_conv2d)
   add_operator_prototype(test_q8ta_conv2d_pw)
   add_operator_prototype(test_q8ta_conv2d_dw)
+  add_operator_prototype(matmul_coopmat_bench)
+  target_sources(
+    matmul_coopmat_bench PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cm_utils.cpp
+  )
+  add_operator_prototype(linear_coopmat_bench)
+  target_sources(
+    linear_coopmat_bench PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cm_utils.cpp
+  )
+  add_operator_prototype(linear_coopmat_int8_bench)
+  target_sources(
+    linear_coopmat_int8_bench PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cm_utils.cpp
+  )
 endif()

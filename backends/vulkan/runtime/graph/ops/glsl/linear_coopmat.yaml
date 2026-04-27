@@ -1,0 +1,95 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+linear_coopmat:
+  parameter_names_with_default_values:
+    DTYPE: float
+    PRECISION: highp
+    HAS_BIAS: false
+    ACCUMULATOR_TYPE: float
+    TILE_M: 64
+    TILE_N: 64
+    TILE_K: 32
+    WG_WIDTH: 2
+    WG_HEIGHT: 2
+    NUM_SUBGROUPS: 4
+  generate_variant_forall:
+    DTYPE:
+      - VALUE: float
+      - VALUE: half
+  shader_variants:
+    - NAME: linear_coopmat
+    - NAME: linear_coopmat_bias
+      HAS_BIAS: true
+    - NAME: linear_coopmat_accum_fp16
+      DTYPE: half
+      ACCUMULATOR_TYPE: half
+    - NAME: linear_coopmat_bias_accum_fp16
+      DTYPE: half
+      HAS_BIAS: true
+      ACCUMULATOR_TYPE: half
+    - NAME: linear_coopmat_k16
+      DTYPE: half
+      TILE_K: 16
+    - NAME: linear_coopmat_k64
+      DTYPE: half
+      TILE_K: 64
+    - NAME: linear_coopmat_tile_16x16
+      DTYPE: half
+      TILE_M: 16
+      TILE_N: 16
+      WG_WIDTH: 1
+      WG_HEIGHT: 1
+      NUM_SUBGROUPS: 1
+    - NAME: linear_coopmat_tile_16x32
+      DTYPE: half
+      TILE_M: 16
+      TILE_N: 32
+      WG_WIDTH: 2
+      WG_HEIGHT: 1
+      NUM_SUBGROUPS: 2
+    - NAME: linear_coopmat_tile_32x16
+      DTYPE: half
+      TILE_M: 32
+      TILE_N: 16
+      WG_WIDTH: 1
+      WG_HEIGHT: 2
+      NUM_SUBGROUPS: 2
+    - NAME: linear_coopmat_tile_32x32
+      DTYPE: half
+      TILE_M: 32
+      TILE_N: 32
+      WG_WIDTH: 1
+      WG_HEIGHT: 1
+      NUM_SUBGROUPS: 1
+    - NAME: linear_coopmat_tile_16x64
+      DTYPE: half
+      TILE_M: 16
+      TILE_N: 64
+      WG_WIDTH: 2
+      WG_HEIGHT: 1
+      NUM_SUBGROUPS: 2
+    - NAME: linear_coopmat_tile_64x16
+      DTYPE: half
+      TILE_M: 64
+      TILE_N: 16
+      WG_WIDTH: 1
+      WG_HEIGHT: 2
+      NUM_SUBGROUPS: 2
+    - NAME: linear_coopmat_tile_32x64
+      DTYPE: half
+      TILE_M: 32
+      TILE_N: 64
+      WG_WIDTH: 2
+      WG_HEIGHT: 1
+      NUM_SUBGROUPS: 2
+    - NAME: linear_coopmat_tile_64x32
+      DTYPE: half
+      TILE_M: 64
+      TILE_N: 32
+      WG_WIDTH: 1
+      WG_HEIGHT: 2
+      NUM_SUBGROUPS: 2

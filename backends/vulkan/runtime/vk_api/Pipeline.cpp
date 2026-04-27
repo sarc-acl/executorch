@@ -287,9 +287,18 @@ ComputePipeline::ComputePipeline(
       descriptor.specialization_constants.data(), // pData
   };
 
+  const VkPipelineShaderStageRequiredSubgroupSizeCreateInfo
+      required_subgroup_size_create_info{
+          VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO, // sType
+          nullptr, // pNext
+          descriptor.required_subgroup_size, // requiredSubgroupSize
+      };
+
   const VkPipelineShaderStageCreateInfo shader_stage_create_info{
       VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // sType
-      nullptr, // pNext
+      descriptor.required_subgroup_size != 0
+          ? &required_subgroup_size_create_info
+          : nullptr, // pNext
       0u, // flags
       VK_SHADER_STAGE_COMPUTE_BIT, // stage
       descriptor.shader_module, // module
@@ -355,7 +364,8 @@ bool operator==(
   return (
       _1.pipeline_layout == _2.pipeline_layout &&
       _1.shader_module == _2.shader_module &&
-      _1.specialization_constants == _2.specialization_constants);
+      _1.specialization_constants == _2.specialization_constants &&
+      _1.required_subgroup_size == _2.required_subgroup_size);
 }
 
 //
@@ -486,6 +496,10 @@ void ComputePipelineCache::create_pipelines(
   std::vector<VkPipelineShaderStageCreateInfo> shader_stage_create_infos;
   shader_stage_create_infos.reserve(num_pipelines);
 
+  std::vector<VkPipelineShaderStageRequiredSubgroupSizeCreateInfo>
+      required_subgroup_size_create_infos;
+  required_subgroup_size_create_infos.reserve(num_pipelines);
+
   std::vector<VkComputePipelineCreateInfo> create_infos;
   create_infos.reserve(num_pipelines);
 
@@ -499,9 +513,18 @@ void ComputePipelineCache::create_pipelines(
         key.specialization_constants.data(), // pData
     });
 
+    required_subgroup_size_create_infos.push_back(
+        VkPipelineShaderStageRequiredSubgroupSizeCreateInfo{
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO, // sType
+            nullptr, // pNext
+            key.required_subgroup_size, // requiredSubgroupSize
+        });
+
     shader_stage_create_infos.push_back(VkPipelineShaderStageCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // sType
-        nullptr, // pNext
+        key.required_subgroup_size != 0
+            ? &required_subgroup_size_create_infos.back()
+            : nullptr, // pNext
         0u, // flags
         VK_SHADER_STAGE_COMPUTE_BIT, // stage
         key.shader_module, // module

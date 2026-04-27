@@ -139,6 +139,163 @@ void add_matmul_tiled_node(
       resize_matmul_tiled_node));
 }
 
+struct CoopMatTileConfig final {
+  uint32_t tile_m;
+  uint32_t tile_n;
+  uint32_t tile_k;
+  uint32_t invocations;
+  const char* shader_name;
+};
+
+CoopMatTileConfig get_matmul_coopmat_tile_config() {
+  const char* env = getenv("VK_COOPMAT_MACRO_TILE");
+  if (!env) {
+    const char* k_step = getenv("VK_COOPMAT_K_STEP");
+    if (!k_step) {
+      return {64, 64, 32, 256, nullptr};
+    }
+    const std::string k_step_value(k_step);
+    if (k_step_value == "16") {
+      return {64, 64, 16, 256, "matmul_coopmat_k16"};
+    }
+    if (k_step_value == "64") {
+      return {64, 64, 64, 256, "matmul_coopmat_k64"};
+    }
+    return {64, 64, 32, 256, nullptr};
+  }
+  const std::string tile(env);
+  if (tile == "16x16") {
+    return {16, 16, 32, 64, "matmul_coopmat_tile_16x16"};
+  }
+  if (tile == "16x32") {
+    return {16, 32, 32, 128, "matmul_coopmat_tile_16x32"};
+  }
+  if (tile == "32x16") {
+    return {32, 16, 32, 128, "matmul_coopmat_tile_32x16"};
+  }
+  if (tile == "32x32") {
+    return {32, 32, 32, 64, "matmul_coopmat_tile_32x32"};
+  }
+  if (tile == "16x64") {
+    return {16, 64, 32, 128, "matmul_coopmat_tile_16x64"};
+  }
+  if (tile == "64x16") {
+    return {64, 16, 32, 128, "matmul_coopmat_tile_64x16"};
+  }
+  if (tile == "32x64") {
+    return {32, 64, 32, 128, "matmul_coopmat_tile_32x64"};
+  }
+  if (tile == "64x32") {
+    return {64, 32, 32, 128, "matmul_coopmat_tile_64x32"};
+  }
+  return {64, 64, 32, 256, nullptr};
+}
+
+bool can_use_matmul_coopmat(
+    ComputeGraph& graph,
+    const ValueRef mat1,
+    const ValueRef mat2,
+    const ValueRef out) {
+  if (getenv("VK_DISABLE_COOPMAT") ||
+      !graph.context()->adapter_ptr()->supports_fp16_coopmat_16x16x16() ||
+      graph.storage_type_of(out) != utils::kBuffer ||
+      graph.dtype_of(out) != vkapi::kHalf || graph.dim_of(out) != 2) {
+    return false;
+  }
+
+  uint32_t M = graph.size_at<uint32_t>(-2, out);
+  uint32_t N = graph.size_at<uint32_t>(-1, out);
+  uint32_t K = graph.size_at<uint32_t>(-1, mat1);
+  uint32_t mat2_k = graph.size_at<uint32_t>(-2, mat2);
+  const CoopMatTileConfig tile = get_matmul_coopmat_tile_config();
+  return K == mat2_k && M % tile.tile_m == 0 && N % tile.tile_n == 0 &&
+      K % tile.tile_k == 0;
+}
+
+vkapi::ShaderInfo pick_matmul_coopmat_shader(
+    ComputeGraph* graph,
+    const std::vector<ArgGroup>& args,
+    const std::vector<ValueRef>& resize_args) {
+  (void)resize_args;
+  const ValueRef out = args.at(0).refs.at(0);
+  const CoopMatTileConfig tile = get_matmul_coopmat_tile_config();
+  if (tile.shader_name && graph->dtype_of(out) == vkapi::kHalf) {
+    return VK_KERNEL_FROM_STR(tile.shader_name);
+  }
+  if (getenv("VK_COOPMAT_ACCUM_FP16") && graph->dtype_of(out) == vkapi::kHalf) {
+    return VK_KERNEL(matmul_coopmat_accum_fp16);
+  }
+  std::string kernel_name = "matmul_coopmat";
+  kernel_name.reserve(kShaderNameReserve);
+  add_dtype_suffix(kernel_name, graph->dtype_of(out));
+  return VK_KERNEL_FROM_STR(kernel_name);
+}
+
+utils::uvec3 pick_matmul_coopmat_global_wg_size(
+    ComputeGraph* graph,
+    const vkapi::ShaderInfo& shader,
+    const std::vector<ArgGroup>& args,
+    const std::vector<ValueRef>& resize_args) {
+  (void)shader;
+  (void)resize_args;
+  const ValueRef out = args.at(0).refs.at(0);
+  const CoopMatTileConfig tile = get_matmul_coopmat_tile_config();
+  uint32_t M = graph->size_at<uint32_t>(-2, out);
+  uint32_t N = graph->size_at<uint32_t>(-1, out);
+  return {
+      utils::div_up(N, tile.tile_n) * tile.invocations,
+      utils::div_up(M, tile.tile_m),
+      1};
+}
+
+utils::uvec3 pick_matmul_coopmat_local_wg_size(
+    ComputeGraph* graph,
+    const vkapi::ShaderInfo& shader,
+    const utils::uvec3& global_workgroup_size,
+    const std::vector<ArgGroup>& args,
+    const std::vector<ValueRef>& resize_args) {
+  (void)graph;
+  (void)shader;
+  (void)global_workgroup_size;
+  (void)args;
+  (void)resize_args;
+  const CoopMatTileConfig tile = get_matmul_coopmat_tile_config();
+  return {tile.invocations, 1, 1};
+}
+
+void add_matmul_coopmat_node(
+    ComputeGraph& graph,
+    const ValueRef mat1,
+    const ValueRef mat2,
+    const ValueRef out) {
+  VK_CHECK_COND(graph.packed_dim_of(mat1) == WHCN::kWidthDim);
+  VK_CHECK_COND(graph.packed_dim_of(mat2) == WHCN::kWidthDim);
+  VK_CHECK_COND(graph.packed_dim_of(out) == WHCN::kWidthDim);
+  VK_CHECK_COND(
+      graph.storage_type_of(out) == utils::kBuffer,
+      "matmul_coopmat requires buffer storage");
+
+  ValueRef has_bias_ref = graph.add_scalar(false);
+
+  graph.execute_nodes().emplace_back(new DynamicDispatchNode(
+      graph,
+      pick_matmul_coopmat_shader,
+      pick_matmul_coopmat_global_wg_size,
+      pick_matmul_coopmat_local_wg_size,
+      // Inputs and Outputs
+      {{out, vkapi::kWrite}, {{mat1, mat2}, vkapi::kRead}},
+      // Shader params buffers
+      {graph.sizes_ubo(mat1), graph.sizes_ubo(mat2)},
+      // Push Constants
+      {},
+      // Specialization Constants
+      {},
+      // Resize Args
+      {has_bias_ref},
+      // Resizing Logic
+      resize_matmul_tiled_node));
+}
+
 struct MatmulBiasParams final {
   float alpha;
   float beta;
@@ -200,7 +357,18 @@ void matmul_tiled(ComputeGraph& graph, const std::vector<ValueRef>& args) {
         out,
         utils::safe_downcast<int32_t>(B));
   } else {
-    add_matmul_tiled_node(graph, mat1, mat2, out);
+    if (can_use_matmul_coopmat(graph, mat1, mat2, out)) {
+      fprintf(
+          stderr, "[VK_MATMUL] Using matmul_coopmat (cooperative matrix)\n");
+      add_matmul_coopmat_node(graph, mat1, mat2, out);
+    } else {
+      fprintf(
+          stderr,
+          "[VK_MATMUL] Using matmul_vec (coop_mat=%d, is_buffer=%d)\n",
+          (int)graph.context()->adapter_ptr()->supports_cooperative_matrix(),
+          (int)(graph.storage_type_of(out) == utils::kBuffer));
+      add_matmul_tiled_node(graph, mat1, mat2, out);
+    }
   }
 }
 

@@ -275,6 +275,11 @@ void PhysicalDevice::query_extensions_vk_1_1() {
   extension_list_top = &cooperative_matrix2_features;
 #endif /* VK_NV_cooperative_matrix2 */
 
+#ifdef VK_VERSION_1_3
+  subgroup_size_control_features.pNext = extension_list_top;
+  extension_list_top = &subgroup_size_control_features;
+#endif /* VK_VERSION_1_3 */
+
   features2.pNext = extension_list_top;
 
   vkGetPhysicalDeviceFeatures2(handle, &features2);

@@ -252,6 +252,23 @@ class Adapter final {
 #endif /* VK_NV_cooperative_matrix2 */
   }
 
+  inline bool supports_cooperative_matrix() {
+#ifdef VK_KHR_cooperative_matrix
+    return physical_device_.cooperative_matrix_features.cooperativeMatrix ==
+        VK_TRUE;
+#else
+    return false;
+#endif /* VK_KHR_cooperative_matrix */
+  }
+
+  // Returns true iff the device exposes the 16x16x16 fp16 cooperative-matrix
+  // configuration that the production WMMA linear/matmul shaders require.
+  // When require_fp32_accum is true (default), also requires fp32 accumulator
+  // and result types — matches the configuration used by linear_coopmat /
+  // linear_coopmat_texture3d_buffer / matmul_coopmat. Result is cached after
+  // first call.
+  bool supports_fp16_coopmat_16x16x16(bool require_fp32_accum = true);
+
   inline bool supports_int16_shader_types() {
 #ifdef ETVK_FORCE_NO_EXTENSIONS
     return false;
