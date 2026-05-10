@@ -1,0 +1,115 @@
+[env] RAM total: 28.9 GiB    Swap total: 24.0 GiB
+[env] RADV_GTT_PCT=80 set
+[run] RLIMIT_AS cap on child: 50.9 GiB (oom_score_adj=1000)
+[run] $ /home/doremy/sarc-acl/executorch/main/executorch/cmake-out-vk/executor_runner --model_path=/home/doremy/llama31_pure_run/llama31_8b_4L_seq1_fp16.pte --inputs=/home/doremy/llama31_pure_run/llama31_8b_4L_seq1_fp16_input0.bin --num_executions=8 --etdump_path=/home/doremy/llama31_pure_run/llama31_8b_4L_seq1_fp16.etdp
+OutputX 0: tensor(sizes=[1, 128256], [
+  -2.14844, -3.17969, -1.76562, -1.69531, -2.49805, -3.09375, -3.03125, -3.08594, -1.44824, -5.33203, 
+  -3.68359, -2.78711, -3.00195, -3.29883, -2.71289, -3.19531, -3.65625, -4.39062, -3.74023, -3.66797, 
+  -3.47852, -3.20508, -3.27148, -3.05469, -3.13281, -4.36328, -3.05078, -2.73828, -3.29297, -2.95312, 
+  -2.37305, -2.84375, -3.05859, -3.33008, -3.47656, -3.08398, -3.44727, -3.4043, -3.19336, -3.49219, 
+  -2.41797, -3.13281, -3.27734, -3.32422, -3.125, -3.26562, -2.86133, -3.2832, -3.33398, -3.48242, 
+  -3.81055, -3.62891, -2.67773, -3.30664, -3.07812, -3.45117, -2.72461, -3.34766, -3.74609, -2.63086, 
+  -3.02344, -0.645996, -3.10156, -1.13379, -4.66797, -3.98242, -3.22656, -3.4375, -4.03125, -3.55664, 
+  -3.36523, -3.83398, -4.79297, -3.93555, -3.69727, -3.90625, -3.75586, -4.79688, -4.05469, -4.33594, 
+  -2.20703, -3.64453, -4.22266, -4.09766, -3.63672, -2.67578, -2.86523, -3.1582, -3.76562, -3.22852, 
+  -5.30078, -2.44922, -1.90039, -3.20117, -2.29883, -3.76367, -4.09766, -2.0293, -0.897949, -1.47559, 
+  ...,
+  1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 
+  1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 
+  1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 
+  1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 
+  1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 
+  1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 
+  1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 
+  1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 
+  1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 
+  1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 1.11816, 
+])
+[run] executor_runner wall-clock: 3.86s for 8 executions
+[run]   ~ 483.1 ms / execution (subprocess wall)
+
+=== ETDump analysis ===
+/home/doremy/sarc-acl/executorch/main/executorch/.venv/lib64/python3.12/site-packages/executorch/devtools/inspector/_inspector.py:1086: UserWarning: Output Buffer not found. Tensor Debug Data will not be available.
+  warnings.warn(
+[analyze] (no etrecord — module hierarchy unavailable; op names from runtime)
+[analyze] events: 731    measured total: 6.42 ms
+
+--- Top-30 ops by mean latency ---
+rank     mean_us       %  name
+   1      3097.4   48.3%  Program::load_method
+   2      3097.4   48.3%  Method::init
+   3        45.2    0.7%  Method::execute
+   4        19.5    0.3%  DELEGATE_CALL
+   5        19.5    0.3%  ETVK_EXECUTE
+   6        19.4    0.3%  ETVK_COMPUTE_GRAPH_EXECUTE
+   7        13.2    0.2%  {"operator": {"name": "aten.linear.default", "args": [{"type": "TENSOR", "value_ref": 144, "dtype": "Half", "sizes": [1, 4096], "storage": "BUFFER", "packed_dim": 0}, {"type": "TENSORREF", "value_ref": 9, "sizes": [128256, 4096], "dtype": "Half"}, {"type": "NONE", "value_ref": 145}, {"type": "TENSOR", "value_ref": 146, "dtype": "Half", "sizes": [1, 128256], "storage": "BUFFER", "packed_dim": 0}]}, "kernel_name": "linear_vec_buffer_buffer_half", "operator_id": 557, "dispatch_id": 58}
+   8         7.4    0.1%  DELEGATE_CALL
+   9         7.4    0.1%  ETVK_EXECUTE
+  10         7.3    0.1%  DELEGATE_CALL
+  11         7.3    0.1%  ETVK_EXECUTE
+  12         7.3    0.1%  DELEGATE_CALL
+  13         7.3    0.1%  ETVK_EXECUTE
+  14         7.3    0.1%  ETVK_COMPUTE_GRAPH_EXECUTE
+  15         7.2    0.1%  ETVK_COMPUTE_GRAPH_EXECUTE
+  16         7.2    0.1%  ETVK_COMPUTE_GRAPH_EXECUTE
+  17         1.8    0.0%  {"operator": {"name": "aten.linear.default", "args": [{"type": "TENSOR", "value_ref": 174, "dtype": "Half", "sizes": [1, 14336], "storage": "BUFFER", "packed_dim": 0}, {"type": "TENSORREF", "value_ref": 3, "sizes": [4096, 14336], "dtype": "Half"}, {"type": "NONE", "value_ref": 175}, {"type": "TENSOR", "value_ref": 176, "dtype": "Half", "sizes": [1, 4096], "storage": "BUFFER", "packed_dim": 0}]}, "kernel_name": "linear_vec_tile_row_1_buffer_texture2d_half", "operator_id": 285, "dispatch_id": 58}
+  18         1.8    0.0%  {"operator": {"name": "aten.linear.default", "args": [{"type": "TENSOR", "value_ref": 174, "dtype": "Half", "sizes": [1, 14336], "storage": "BUFFER", "packed_dim": 0}, {"type": "TENSORREF", "value_ref": 3, "sizes": [4096, 14336], "dtype": "Half"}, {"type": "NONE", "value_ref": 175}, {"type": "TENSOR", "value_ref": 176, "dtype": "Half", "sizes": [1, 4096], "storage": "BUFFER", "packed_dim": 0}]}, "kernel_name": "linear_vec_tile_row_1_buffer_texture2d_half", "operator_id": 150, "dispatch_id": 58}
+  19         1.8    0.0%  {"operator": {"name": "aten.linear.default", "args": [{"type": "TENSOR", "value_ref": 174, "dtype": "Half", "sizes": [1, 14336], "storage": "BUFFER", "packed_dim": 0}, {"type": "TENSORREF", "value_ref": 3, "sizes": [4096, 14336], "dtype": "Half"}, {"type": "NONE", "value_ref": 175}, {"type": "TENSOR", "value_ref": 176, "dtype": "Half", "sizes": [1, 4096], "storage": "BUFFER", "packed_dim": 0}]}, "kernel_name": "linear_vec_tile_row_1_buffer_texture2d_half", "operator_id": 420, "dispatch_id": 58}
+  20         1.8    0.0%  {"operator": {"name": "aten.linear.default", "args": [{"type": "TENSOR", "value_ref": 119, "dtype": "Half", "sizes": [1, 14336], "storage": "BUFFER", "packed_dim": 0}, {"type": "TENSORREF", "value_ref": 3, "sizes": [4096, 14336], "dtype": "Half"}, {"type": "NONE", "value_ref": 120}, {"type": "TENSOR", "value_ref": 121, "dtype": "Half", "sizes": [1, 4096], "storage": "BUFFER", "packed_dim": 0}]}, "kernel_name": "linear_vec_tile_row_1_buffer_texture2d_half", "operator_id": 545, "dispatch_id": 46}
+  21         1.5    0.0%  {"operator": {"name": "aten.linear.default", "args": [{"type": "TENSOR", "value_ref": 96, "dtype": "Half", "sizes": [1, 4096], "storage": "BUFFER", "packed_dim": 0}, {"type": "TENSORREF", "value_ref": 4, "sizes": [14336, 4096], "dtype": "Half"}, {"type": "NONE", "value_ref": 99}, {"type": "TENSOR", "value_ref": 100, "dtype": "Half", "sizes": [1, 14336], "storage": "BUFFER", "packed_dim": 0}]}, "kernel_name": "linear_vec_tile_row_1_buffer_texture2d_half", "operator_id": 536, "dispatch_id": 37}
+  22         1.5    0.0%  {"operator": {"name": "aten.linear.default", "args": [{"type": "TENSOR", "value_ref": 94, "dtype": "Half", "sizes": [1, 4096], "storage": "BUFFER", "packed_dim": 0}, {"type": "TENSORREF", "value_ref": 2, "sizes": [14336, 4096], "dtype": "Half"}, {"type": "NONE", "value_ref": 97}, {"type": "TENSOR", "value_ref": 98, "dtype": "Half", "sizes": [1, 14336], "storage": "BUFFER", "packed_dim": 0}]}, "kernel_name": "linear_vec_tile_row_1_buffer_texture2d_half", "operator_id": 535, "dispatch_id": 36}
+  23         1.5    0.0%  DELEGATE_CALL
+  24         1.5    0.0%  {"operator": {"name": "aten.linear.default", "args": [{"type": "TENSOR", "value_ref": 149, "dtype": "Half", "sizes": [1, 4096], "storage": "BUFFER", "packed_dim": 0}, {"type": "TENSORREF", "value_ref": 2, "sizes": [14336, 4096], "dtype": "Half"}, {"type": "NONE", "value_ref": 152}, {"type": "TENSOR", "value_ref": 153, "dtype": "Half", "sizes": [1, 14336], "storage": "BUFFER", "packed_dim": 0}]}, "kernel_name": "linear_vec_tile_row_1_buffer_texture2d_half", "operator_id": 140, "dispatch_id": 48}
+  25         1.5    0.0%  ETVK_EXECUTE
+  26         1.5    0.0%  {"operator": {"name": "aten.linear.default", "args": [{"type": "TENSOR", "value_ref": 149, "dtype": "Half", "sizes": [1, 4096], "storage": "BUFFER", "packed_dim": 0}, {"type": "TENSORREF", "value_ref": 2, "sizes": [14336, 4096], "dtype": "Half"}, {"type": "NONE", "value_ref": 152}, {"type": "TENSOR", "value_ref": 153, "dtype": "Half", "sizes": [1, 14336], "storage": "BUFFER", "packed_dim": 0}]}, "kernel_name": "linear_vec_tile_row_1_buffer_texture2d_half", "operator_id": 410, "dispatch_id": 48}
+  27         1.5    0.0%  {"operator": {"name": "aten.linear.default", "args": [{"type": "TENSOR", "value_ref": 151, "dtype": "Half", "sizes": [1, 4096], "storage": "BUFFER", "packed_dim": 0}, {"type": "TENSORREF", "value_ref": 4, "sizes": [14336, 4096], "dtype": "Half"}, {"type": "NONE", "value_ref": 154}, {"type": "TENSOR", "value_ref": 155, "dtype": "Half", "sizes": [1, 14336], "storage": "BUFFER", "packed_dim": 0}]}, "kernel_name": "linear_vec_tile_row_1_buffer_texture2d_half", "operator_id": 276, "dispatch_id": 49}
+  28         1.5    0.0%  {"operator": {"name": "aten.linear.default", "args": [{"type": "TENSOR", "value_ref": 151, "dtype": "Half", "sizes": [1, 4096], "storage": "BUFFER", "packed_dim": 0}, {"type": "TENSORREF", "value_ref": 4, "sizes": [14336, 4096], "dtype": "Half"}, {"type": "NONE", "value_ref": 154}, {"type": "TENSOR", "value_ref": 155, "dtype": "Half", "sizes": [1, 14336], "storage": "BUFFER", "packed_dim": 0}]}, "kernel_name": "linear_vec_tile_row_1_buffer_texture2d_half", "operator_id": 141, "dispatch_id": 49}
+  29         1.5    0.0%  {"operator": {"name": "aten.linear.default", "args": [{"type": "TENSOR", "value_ref": 149, "dtype": "Half", "sizes": [1, 4096], "storage": "BUFFER", "packed_dim": 0}, {"type": "TENSORREF", "value_ref": 2, "sizes": [14336, 4096], "dtype": "Half"}, {"type": "NONE", "value_ref": 152}, {"type": "TENSOR", "value_ref": 153, "dtype": "Half", "sizes": [1, 14336], "storage": "BUFFER", "packed_dim": 0}]}, "kernel_name": "linear_vec_tile_row_1_buffer_texture2d_half", "operator_id": 275, "dispatch_id": 48}
+  30         1.5    0.0%  {"operator": {"name": "aten.linear.default", "args": [{"type": "TENSOR", "value_ref": 151, "dtype": "Half", "sizes": [1, 4096], "storage": "BUFFER", "packed_dim": 0}, {"type": "TENSORREF", "value_ref": 4, "sizes": [14336, 4096], "dtype": "Half"}, {"type": "NONE", "value_ref": 154}, {"type": "TENSOR", "value_ref": 155, "dtype": "Half", "sizes": [1, 14336], "storage": "BUFFER", "packed_dim": 0}]}, "kernel_name": "linear_vec_tile_row_1_buffer_texture2d_half", "operator_id": 411, "dispatch_id": 49}
+
+--- Aggregate by op type ---
+op                                         count    total_ms       %
+load_method                                    1        3.10   48.3%
+init                                           1        3.10   48.3%
+execute                                        1        0.05    0.7%
+DELEGATE_CALL                                 13        0.04    0.7%
+ETVK_EXECUTE                                  13        0.04    0.7%
+ETVK_COMPUTE_GRAPH_EXECUTE                    13        0.04    0.7%
+{"operator": {"name": "aten.linear.default", "args":      30        0.04    0.6%
+OPERATOR_CALL                                 41        0.00    0.0%
+{"operator": {"name": "aten.bmm.default", "args":       8        0.00    0.0%
+{"operator": {"name": "aten.unsqueeze_copy.default", "args":      73        0.00    0.0%
+{"operator": {"name": "aten.mean.dim", "args":       9        0.00    0.0%
+{"operator": {"name": "aten.mul.Tensor", "args":      67        0.00    0.0%
+{"operator": {"name": "aten.permute_copy.default", "args":      52        0.00    0.0%
+{"operator": {"name": "dim_order_ops._to_dim_order_copy.default", "args":      94        0.00    0.0%
+ETVK_COPY_OUTPUTS                             13        0.00    0.0%
+native_call_cat.out                            8        0.00    0.0%
+{"operator": {"name": "aten.add.Tensor", "args":      55        0.00    0.0%
+{"operator": {"name": "aten.squeeze_copy.dims", "args":      52        0.00    0.0%
+{"operator": {"name": "aten.slice_copy.Tensor", "args":      26        0.00    0.0%
+{"operator": {"name": "aten.view_copy.default", "args":      64        0.00    0.0%
+native_call_eq.Scalar_out                      4        0.00    0.0%
+ETVK_COPY_INPUTS                              13        0.00    0.0%
+{"operator": {"name": "aten.expand_copy.default", "args":       8        0.00    0.0%
+{"operator": {"name": "aten.where.self", "args":       8        0.00    0.0%
+{"operator": {"name": "aten.sub.Tensor", "args":       8        0.00    0.0%
+{"operator": {"name": "aten.sigmoid.default", "args":       4        0.00    0.0%
+{"operator": {"name": "aten.rsqrt.default", "args":       9        0.00    0.0%
+{"operator": {"name": "aten._softmax.default", "args":       4        0.00    0.0%
+native_call_mul.Scalar_out                     8        0.00    0.0%
+native_call_any.out                            4        0.00    0.0%
+
+--- Per-submodule breakdown ---
+  (unmapped)                count=  731  total=     6.42 ms  100.0%
+
+[analyze] wrote full event TSV -> /home/doremy/llama31_pure_run/llama31_8b_4L_seq1_fp16.events.tsv
+
+--- Memory profile ---
+  peak Shmem (RADV GTT-backed):         4 MB
+  GTT cap (RADV_GTT_PCT=80):        24800 MB
+  peak Cached (.pte mmap):          13772 MB
+  min MemFree:                      11104 MB
+  peak Swap used:                    5297 MB
+
+[bench] artifacts in /home/doremy/llama31_pure_run/llama31_8b_4L_seq1_fp16.*

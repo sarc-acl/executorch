@@ -23,7 +23,8 @@ Prose-y findings docs with breakdowns, tables, comparisons. Read order:
 2. [`reports/L32_S128_coopmat_REPORT.md`](reports/L32_S128_coopmat_REPORT.md) — coopmat findings, speedup decomposition, Amdahl analysis
 3. [`reports/L32_S128_shader_breakdown.md`](reports/L32_S128_shader_breakdown.md) — per-GLSL-shader inventory for baseline
 4. [`reports/L32_S128_coopmat_shader_breakdown.md`](reports/L32_S128_coopmat_shader_breakdown.md) — per-shader inventory for coopmat
-5. Three HTML reports in `reports/` for visual comparison
+5. [`reports/decode_GEMV_ceiling_check.md`](reports/decode_GEMV_ceiling_check.md) — M=1 (decode-shape) check: coopmat does NOT fire; both paths identical at ~40 ms/forward at L=4; extrapolates to ~4.2 tok/s decode at L=32
+6. Three HTML reports in `reports/` for visual comparison
 
 ### For AI agents → [`ai/`](ai/)
 

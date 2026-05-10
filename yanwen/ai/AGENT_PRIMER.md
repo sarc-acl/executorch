@@ -53,9 +53,13 @@ The two ExecuTorch trees are **independent**: each has its own venv (with its ow
 
 | Config | Steady-state forward (cv) | Throughput | W1 (load + iter 0) |
 |---|---:|---:|---:|
-| **L=32 S=128 baseline** | 1.766 ± 0.006 s (0.3%) | 72.5 tok/s | 21.4 s |
-| **L=32 S=128 coopmat** | 0.583 ± 0.002 s (0.4%) | 219.7 tok/s | 19.3 s |
-| Speedup | 3.03× | 3.03× | — |
+| **L=32 S=128 baseline** (prefill) | 1.766 ± 0.006 s (0.3%) | 72.5 tok/s | 21.4 s |
+| **L=32 S=128 coopmat** (prefill) | 0.583 ± 0.002 s (0.4%) | 219.7 tok/s | 19.3 s |
+| Speedup (prefill) | 3.03× | 3.03× | — |
+| **L=4 S=1 baseline** (decode-shape) | 41.1 ms ETDump GPU | — | — |
+| **L=4 S=1 coopmat** (decode-shape) | 40.7 ms ETDump GPU | — | — |
+| Speedup (decode-shape) | **1.01× (no-op)** — gate fails at M=1 | — | — |
+| **L=32 decode** (extrapolated) | ~240 ms / token | ~4.2 tok/s | — |
 
 Verification dispatches per forward (from grepping the runner stderr):
 

@@ -119,7 +119,27 @@ cmake --build cmake-out-vk -j$(nproc) --target install 2>&1 | tee /tmp/pavan_bui
 ```
 Then `grep -E 'error:' /tmp/pavan_build.log` to find the real failure.
 
-## 13. `print()` from runner subprocess prints a giant output tensor
+## 13. Coopmat does NOT fire on decode-shape workloads (M=1)
+
+**Symptom**: Running the coopmat-configured path (storage_type_override=BUFFER on pavan-report tree) at seq_len=1 produces forward times within 1% of baseline. The 3.03× prefill speedup vanishes entirely.
+
+**Cause**: The dispatch gate in `Linear.cpp` is `M >= 64`. Decode has M=1 per linear (one token at a time). All linears fall back to `linear_vec_tile_row_1_buffer_texture2d_half` on BOTH paths — identical shader, identical weight storage (texture2d wins by `prepack_fp_linear_weight()`'s default since `force_buffer=use_coopmat=false`).
+
+**Implication**: Don't expect coopmat to help decode workloads. Decode is bandwidth-bound on this hardware (~4.2 tok/s ceiling at L=32 fp16). Real decode levers are quantization, KV-cache strategies, speculative decoding, or batching (the last re-engages coopmat at N≥64). See `reports/decode_GEMV_ceiling_check.md`.
+
+**Side note**: `matmul_coopmat` *does* fire for the attention BMMs at M=1, but those contribute < 0.1% of forward time at S=1.
+
+## 14. L=32 seq=1 export OOMs on 28 GiB box
+
+**Symptom**: `setup_llama31_pure.py --n_layers 32 --seq_len 1` reports success (exit 0) but produces a 0-byte .pte and no input.bin. Kernel log shows `Out of memory: Killed process (python)` at ~28 GB anon-rss right after `[export] writing .pte ->` is logged. Same fate for the coopmat variant — though coopmat occasionally squeaks through depending on system state.
+
+**Cause**: After `to_executorch()`, the `et.buffer` (~16 GB of serialized .pte content) lives alongside the still-alive Python-side graph/tensors (~12+ GB). Total Python anon-rss peaks at ~28 GB, which is exactly system RAM. Even with 24 GB swap, the OOM-killer fires before the buffer can be flushed to disk.
+
+**Workaround**: Use smaller L (e.g., L=4) for any seq_len=1 dispatch / decode test. The dispatch decision is per-layer so L=4 answers the same questions. For real L=32 decode performance, extrapolate per-layer time × 32 + lm_head (which is L-independent). See `reports/decode_GEMV_ceiling_check.md` for the extrapolation pattern.
+
+**Proper fix (if needed later)**: modify `export_pte()` to `del prog, edge` before `et.buffer` is written, and stream-write the buffer in chunks instead of `f.write(et.buffer)` all at once. ~15 line change, not done in this session.
+
+## 15. `print()` from runner subprocess prints a giant output tensor
 
 **Symptom**: Running `executor_runner` floods stdout with `OutputX 0: tensor(sizes=[1, 128256], [...])` followed by ~128K floats. Hard to read other output.
 
