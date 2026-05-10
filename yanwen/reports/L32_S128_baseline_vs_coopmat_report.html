@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLaMA 3.1 8B L=32 S=128 Baseline vs Coopmat</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fa;
+      --panel: #ffffff;
+      --ink: #17202a;
+      --muted: #5b6673;
+      --line: #d9dee6;
+      --soft: #edf1f5;
+      --blue: #2c6fbb;
+      --green: #2f8f6b;
+      --amber: #bc7b1f;
+      --red: #b84a4a;
+      --violet: #7457a8;
+      --cyan: #3d8796;
+      --gray: #8a93a0;
+      --code-bg: #101820;
+      --code-ink: #eef4f8;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 18px;
+      margin-bottom: 22px;
+    }
+
+    h1, h2, h3 { line-height: 1.2; margin: 0; }
+    h1 { font-size: clamp(26px, 4vw, 42px); max-width: 980px; }
+    h2 { font-size: 21px; margin-bottom: 12px; }
+    h3 { font-size: 16px; margin-bottom: 8px; }
+    p { margin: 0 0 12px; }
+
+    a {
+      color: var(--blue);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 2px;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+    }
+
+    .lede {
+      color: var(--muted);
+      max-width: 930px;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .links a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 6px;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+    }
+
+    .span-4 { grid-column: span 4; }
+    .span-6 { grid-column: span 6; }
+    .span-12 { grid-column: span 12; }
+
+    .metric {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .value {
+      font-size: 28px;
+      font-weight: 720;
+      line-height: 1.1;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 9px 8px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 650;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    td.num, th.num { text-align: right; white-space: nowrap; }
+
+    .duo {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .chart-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: #fbfcfd;
+    }
+
+    .donut {
+      width: min(100%, 250px);
+      display: block;
+      margin: 0 auto 10px;
+    }
+
+    .donut .slice {
+      cursor: help;
+      transition: opacity 120ms ease, stroke-width 120ms ease;
+    }
+
+    .donut .slice:hover,
+    .donut .slice:focus {
+      opacity: 0.86;
+      stroke-width: 44;
+      outline: none;
+    }
+
+    .chart-tooltip {
+      position: fixed;
+      z-index: 20;
+      max-width: min(320px, calc(100vw - 24px));
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #ffffff;
+      color: var(--ink);
+      box-shadow: 0 10px 28px rgba(23, 32, 42, 0.16);
+      font-size: 13px;
+      line-height: 1.35;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(12px, 12px);
+      transition: opacity 80ms ease;
+    }
+
+    .chart-tooltip.visible {
+      opacity: 1;
+    }
+
+    .legend {
+      display: grid;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .legend-row {
+      display: grid;
+      grid-template-columns: 12px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    .bar {
+      height: 10px;
+      border-radius: 999px;
+      background: var(--soft);
+      overflow: hidden;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+    }
+
+    .baseline { background: var(--blue); }
+    .coopmat { background: var(--green); }
+
+    pre {
+      margin: 0;
+      padding: 14px;
+      overflow-x: auto;
+      border-radius: 7px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .callout {
+      border-left: 4px solid var(--green);
+      padding: 10px 12px;
+      background: #edf7f2;
+      color: #243c32;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .span-4, .span-6 { grid-column: span 12; }
+      .duo { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      main { width: min(100vw - 20px, 1180px); padding-top: 18px; }
+      .panel { padding: 14px; }
+      th, td { padding: 8px 6px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Baseline vs coopmat: LLaMA 3.1 8B fp16 L=32 S=128</h1>
+      <p class="lede">The same end-to-end prefill study, side by side. Coopmat cuts the forward from 1765.6 ms to 582.6 ms by replacing almost all transformer linears with <code>linear_coopmat_half</code>.</p>
+      <nav class="links" aria-label="Report links">
+        <a href="L32_S128_vulkan_shader_report.html">Baseline HTML report</a>
+        <a href="L32_S128_coopmat_vulkan_shader_report.html">Coopmat HTML report</a>
+        <a href="REPORT.md">Baseline markdown</a>
+        <a href="L32_S128_coopmat_REPORT.md">Coopmat markdown</a>
+        <a href="L32_S128_shader_breakdown.md">Baseline shader details</a>
+        <a href="L32_S128_coopmat_shader_breakdown.md">Coopmat shader details</a>
+      </nav>
+    </header>
+
+    <section class="grid" aria-label="Headline comparison">
+      <div class="panel span-4">
+        <div class="metric">Forward speedup</div>
+        <div class="value">3.03x</div>
+        <div class="note">1765.6 ms baseline to 582.6 ms coopmat.</div>
+      </div>
+      <div class="panel span-4">
+        <div class="metric">Throughput</div>
+        <div class="value">219.7 tok/s</div>
+        <div class="note">Baseline was 72.5 tok/s.</div>
+      </div>
+      <div class="panel span-4">
+        <div class="metric">Linear-family speedup</div>
+        <div class="value">3.67x</div>
+        <div class="note">1515.94 ms to 412.65 ms in per-kernel steady GPU time.</div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Main comparison table">
+      <div class="panel span-12">
+        <h2>Same Model, Different Shader Path</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th class="num">Baseline linear_vec</th>
+              <th class="num">Coopmat</th>
+              <th class="num">Change</th>
+              <th>What it means</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Steady forward</td>
+              <td class="num">1765.6 +/- 6.0 ms</td>
+              <td class="num"><strong>582.6 +/- 2.4 ms</strong></td>
+              <td class="num"><strong>3.03x faster</strong></td>
+              <td>The end-to-end prefill result tracks the shader-level linear win.</td>
+            </tr>
+            <tr>
+              <td>Throughput</td>
+              <td class="num">72.5 tok/s</td>
+              <td class="num"><strong>219.7 tok/s</strong></td>
+              <td class="num"><strong>3.03x</strong></td>
+              <td>Same seq=128 single-forward prefill workload.</td>
+            </tr>
+            <tr>
+              <td>Linear category</td>
+              <td class="num">1527.6 ms</td>
+              <td class="num"><strong>493.7 ms</strong></td>
+              <td class="num"><strong>3.09x</strong></td>
+              <td>Report category total, including lm_head fallback.</td>
+            </tr>
+            <tr>
+              <td>Matmul / linear family</td>
+              <td class="num">1515.94 ms</td>
+              <td class="num"><strong>412.65 ms</strong></td>
+              <td class="num"><strong>3.67x</strong></td>
+              <td>Per-kernel steady GPU family total.</td>
+            </tr>
+            <tr>
+              <td>Attention BMMs</td>
+              <td class="num">14.5 ms</td>
+              <td class="num"><strong>0.93 ms</strong></td>
+              <td class="num"><strong>15.6x</strong></td>
+              <td>Small at seq=128, but now uses <code>matmul_coopmat_float</code>.</td>
+            </tr>
+            <tr>
+              <td>Peak Shmem</td>
+              <td class="num">0.9 GB</td>
+              <td class="num">0.79 GB</td>
+              <td class="num">slightly lower</td>
+              <td>Buffer storage did not create a memory problem at S=128.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Category charts">
+      <div class="panel span-12">
+        <h2>Where Time Went</h2>
+        <div class="duo">
+          <div class="chart-card">
+            <h3>Baseline: linear_vec</h3>
+            <svg class="donut" viewBox="0 0 240 240" role="img" aria-label="Baseline ETDump category donut">
+              <circle class="slice" tabindex="0" aria-label="baseline linear: 1527.6 ms, 80.1%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#2c6fbb" stroke-width="38" stroke-dasharray="80.1 19.9" transform="rotate(-90 120 120)"><title>Baseline linear: 1527.6 ms, 80.1%. Main shader: linear_vec_buffer_texture2d_half.</title></circle>
+              <circle class="slice" tabindex="0" aria-label="baseline reshape and view: 106.7 ms, 5.6%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#2f8f6b" stroke-width="38" stroke-dasharray="5.6 94.4" stroke-dashoffset="-80.1" transform="rotate(-90 120 120)"><title>Baseline reshape / view: 106.7 ms, 5.6%.</title></circle>
+              <circle class="slice" tabindex="0" aria-label="baseline CPU/GPU copy: 91.4 ms, 4.8%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#bc7b1f" stroke-width="38" stroke-dasharray="4.8 95.2" stroke-dashoffset="-85.7" transform="rotate(-90 120 120)"><title>Baseline CPU/GPU copy: 91.4 ms, 4.8%. ETVK_COPY_OUTPUTS is the largest copy cost.</title></circle>
+              <circle class="slice" tabindex="0" aria-label="baseline CPU fallback cat: 76.7 ms, 4.0%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#b84a4a" stroke-width="38" stroke-dasharray="4.0 96.0" stroke-dashoffset="-90.5" transform="rotate(-90 120 120)"><title>Baseline CPU fallback cat: 76.7 ms, 4.0%. KV-cache concat on CPU.</title></circle>
+              <circle class="slice" tabindex="0" aria-label="baseline elementwise: 59.0 ms, 3.1%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#7457a8" stroke-width="38" stroke-dasharray="3.1 96.9" stroke-dashoffset="-94.5" transform="rotate(-90 120 120)"><title>Baseline elementwise: 59.0 ms, 3.1%.</title></circle>
+              <circle class="slice" tabindex="0" aria-label="baseline remaining categories: about 41.4 ms, 2.4%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#8a93a0" stroke-width="38" stroke-dasharray="2.4 97.6" stroke-dashoffset="-97.6" transform="rotate(-90 120 120)"><title>Baseline remaining categories: about 41.4 ms, 2.4%. Includes bmm/matmul, softmax, and smaller CPU fallbacks.</title></circle>
+              <circle cx="120" cy="120" r="58" fill="#fff"></circle>
+              <text x="120" y="114" text-anchor="middle" font-size="26" font-weight="700" fill="#17202a">80.1%</text>
+              <text x="120" y="136" text-anchor="middle" font-size="13" fill="#5b6673">linear</text>
+            </svg>
+            <div class="legend">
+              <div class="legend-row"><span class="swatch" style="background:#2c6fbb"></span><span>linear</span><strong>1527.6 ms</strong></div>
+              <div class="legend-row"><span class="swatch" style="background:#2f8f6b"></span><span>reshape / view</span><strong>106.7 ms</strong></div>
+              <div class="legend-row"><span class="swatch" style="background:#bc7b1f"></span><span>CPU/GPU copy</span><strong>91.4 ms</strong></div>
+              <div class="legend-row"><span class="swatch" style="background:#b84a4a"></span><span>CPU fallback cat</span><strong>76.7 ms</strong></div>
+              <div class="legend-row"><span class="swatch" style="background:#7457a8"></span><span>elementwise</span><strong>59.0 ms</strong></div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <h3>Coopmat: linear_coopmat</h3>
+            <svg class="donut" viewBox="0 0 240 240" role="img" aria-label="Coopmat ETDump category donut">
+              <circle class="slice" tabindex="0" aria-label="coopmat linear: 493.7 ms, 56.6%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#2c6fbb" stroke-width="38" stroke-dasharray="56.6 43.4" transform="rotate(-90 120 120)"><title>Coopmat linear: 493.7 ms, 56.6%. Main shader: linear_coopmat_half; lm_head still falls back.</title></circle>
+              <circle class="slice" tabindex="0" aria-label="coopmat reshape and view: 113.3 ms, 13.0%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#2f8f6b" stroke-width="38" stroke-dasharray="13.0 87.0" stroke-dashoffset="-56.6" transform="rotate(-90 120 120)"><title>Coopmat reshape / view: 113.3 ms, 13.0%. This share rose because linear got faster.</title></circle>
+              <circle class="slice" tabindex="0" aria-label="coopmat CPU/GPU copy: 91.9 ms, 10.5%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#bc7b1f" stroke-width="38" stroke-dasharray="10.5 89.5" stroke-dashoffset="-69.6" transform="rotate(-90 120 120)"><title>Coopmat CPU/GPU copy: 91.9 ms, 10.5%. Almost unchanged from baseline in absolute time.</title></circle>
+              <circle class="slice" tabindex="0" aria-label="coopmat CPU fallback cat: 78.0 ms, 8.9%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#b84a4a" stroke-width="38" stroke-dasharray="8.9 91.1" stroke-dashoffset="-80.1" transform="rotate(-90 120 120)"><title>Coopmat CPU fallback cat: 78.0 ms, 8.9%. KV-cache concat remains on CPU.</title></circle>
+              <circle class="slice" tabindex="0" aria-label="coopmat elementwise: 64.0 ms, 7.3%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#7457a8" stroke-width="38" stroke-dasharray="7.3 92.7" stroke-dashoffset="-89.0" transform="rotate(-90 120 120)"><title>Coopmat elementwise: 64.0 ms, 7.3%.</title></circle>
+              <circle class="slice" tabindex="0" aria-label="coopmat remaining categories: about 32.5 ms, 3.7%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#8a93a0" stroke-width="38" stroke-dasharray="3.7 96.3" stroke-dashoffset="-96.3" transform="rotate(-90 120 120)"><title>Coopmat remaining categories: about 32.5 ms, 3.7%. Includes eq.Scalar fallback, softmax, bmm/matmul, and smaller CPU fallbacks.</title></circle>
+              <circle cx="120" cy="120" r="58" fill="#fff"></circle>
+              <text x="120" y="114" text-anchor="middle" font-size="26" font-weight="700" fill="#17202a">56.6%</text>
+              <text x="120" y="136" text-anchor="middle" font-size="13" fill="#5b6673">linear</text>
+            </svg>
+            <div class="legend">
+              <div class="legend-row"><span class="swatch" style="background:#2c6fbb"></span><span>linear</span><strong>493.7 ms</strong></div>
+              <div class="legend-row"><span class="swatch" style="background:#2f8f6b"></span><span>reshape / view</span><strong>113.3 ms</strong></div>
+              <div class="legend-row"><span class="swatch" style="background:#bc7b1f"></span><span>CPU/GPU copy</span><strong>91.9 ms</strong></div>
+              <div class="legend-row"><span class="swatch" style="background:#b84a4a"></span><span>CPU fallback cat</span><strong>78.0 ms</strong></div>
+              <div class="legend-row"><span class="swatch" style="background:#7457a8"></span><span>elementwise</span><strong>64.0 ms</strong></div>
+            </div>
+          </div>
+        </div>
+        <div class="callout">
+          Coopmat makes linear much faster, so the same copy, view, and CPU fallback costs become the next visible ceiling.
+        </div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Shader transitions">
+      <div class="panel span-12">
+        <h2>Shader-Level Changes</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Work</th>
+              <th>Baseline shader</th>
+              <th>Coopmat shader</th>
+              <th class="num">Baseline ms</th>
+              <th class="num">Coopmat ms</th>
+              <th class="num">Speedup</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Most layer linears</td>
+              <td><code>linear_vec_buffer_texture2d_half</code></td>
+              <td><code>linear_coopmat_half</code></td>
+              <td class="num">~1514 ms</td>
+              <td class="num"><strong>398.58 ms</strong></td>
+              <td class="num"><strong>~3.8x</strong></td>
+            </tr>
+            <tr>
+              <td>Attention BMMs</td>
+              <td><code>matmul_vec_texture3d_float</code> / <code>matmul_vec_buffer_float</code></td>
+              <td><code>matmul_coopmat_float</code></td>
+              <td class="num">14.5 ms</td>
+              <td class="num"><strong>0.89 ms</strong></td>
+              <td class="num"><strong>15.6x</strong></td>
+            </tr>
+            <tr>
+              <td>lm_head</td>
+              <td><code>linear_vec_buffer_buffer_half</code></td>
+              <td><code>linear_vec_buffer_buffer_half</code></td>
+              <td class="num">13.2 ms</td>
+              <td class="num">13.4 ms</td>
+              <td class="num">same</td>
+            </tr>
+            <tr>
+              <td>Layout / view / copy glue</td>
+              <td><code>view_*</code>, <code>view_convert_*</code>, copy kernels</td>
+              <td>mostly same buffer glue</td>
+              <td class="num">~114.5 ms</td>
+              <td class="num">~125.0 ms</td>
+              <td class="num">same/slower</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Shape comparison">
+      <div class="panel span-12">
+        <h2>Linear Shapes</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Output shape</th>
+              <th>Component</th>
+              <th class="num">Baseline avg</th>
+              <th class="num">Coopmat avg</th>
+              <th class="num">Speedup</th>
+              <th>Relative bar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>[128, 14336]</code></td>
+              <td>FFN gate + up</td>
+              <td class="num">12.3 ms</td>
+              <td class="num"><strong>4.00 ms</strong></td>
+              <td class="num"><strong>3.08x</strong></td>
+              <td><div class="bar"><span class="baseline" style="width:100%"></span></div><div class="bar" style="margin-top:4px"><span class="coopmat" style="width:32.5%"></span></div></td>
+            </tr>
+            <tr>
+              <td><code>[128, 4096]</code></td>
+              <td>Q + O + FFN down</td>
+              <td class="num">6.7 ms</td>
+              <td class="num"><strong>2.12 ms</strong></td>
+              <td class="num"><strong>3.16x</strong></td>
+              <td><div class="bar"><span class="baseline" style="width:100%"></span></div><div class="bar" style="margin-top:4px"><span class="coopmat" style="width:31.6%"></span></div></td>
+            </tr>
+            <tr>
+              <td><code>[128, 1024]</code></td>
+              <td>K + V</td>
+              <td class="num">1.2 ms</td>
+              <td class="num"><strong>0.32 ms</strong></td>
+              <td class="num"><strong>3.75x</strong></td>
+              <td><div class="bar"><span class="baseline" style="width:100%"></span></div><div class="bar" style="margin-top:4px"><span class="coopmat" style="width:26.7%"></span></div></td>
+            </tr>
+            <tr>
+              <td><code>[1, 128256]</code></td>
+              <td>lm_head fallback</td>
+              <td class="num">6.6 ms</td>
+              <td class="num">6.69 ms</td>
+              <td class="num">1.0x</td>
+              <td><div class="bar"><span class="baseline" style="width:100%"></span></div><div class="bar" style="margin-top:4px"><span class="coopmat" style="width:100%"></span></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Interpretation">
+      <div class="panel span-6">
+        <h2>What Changed</h2>
+        <pre><code>baseline:
+  dominant shader: linear_vec_buffer_texture2d_half
+  activation storage: buffer
+  weight storage: texture2d
+  path: vector/GEMV style
+
+coopmat:
+  dominant shader: linear_coopmat_half
+  activation storage: buffer
+  weight storage: buffer
+  path: KHR cooperative matrix
+  tile: 64x64x32</code></pre>
+      </div>
+      <div class="panel span-6">
+        <h2>What Did Not Change</h2>
+        <p>CPU fallback <code>aten.cat</code>, output copy cost, elementwise work, and many layout/view conversions stayed roughly the same in absolute time. They now take a larger share because linears got smaller.</p>
+        <p>The next optimization targets are no longer just "make linear faster": Vulkan KV concat, output-copy path, and layout/view consolidation are now high-value.</p>
+      </div>
+    </section>
+  </main>
+  <script>
+    const tooltip = document.createElement("div");
+    tooltip.className = "chart-tooltip";
+    document.body.appendChild(tooltip);
+
+    function tooltipText(slice) {
+      const title = slice.querySelector("title");
+      return title ? title.textContent : slice.getAttribute("aria-label") || "";
+    }
+
+    function placeTooltip(x, y) {
+      const margin = 12;
+      tooltip.style.left = "0px";
+      tooltip.style.top = "0px";
+      const rect = tooltip.getBoundingClientRect();
+      const left = Math.min(x + 14, window.innerWidth - rect.width - margin);
+      const top = Math.min(y + 14, window.innerHeight - rect.height - margin);
+      tooltip.style.left = Math.max(margin, left) + "px";
+      tooltip.style.top = Math.max(margin, top) + "px";
+    }
+
+    document.querySelectorAll(".donut .slice").forEach(function (slice) {
+      slice.addEventListener("mouseenter", function (event) {
+        tooltip.textContent = tooltipText(slice);
+        tooltip.classList.add("visible");
+        placeTooltip(event.clientX, event.clientY);
+      });
+      slice.addEventListener("mousemove", function (event) {
+        placeTooltip(event.clientX, event.clientY);
+      });
+      slice.addEventListener("mouseleave", function () {
+        tooltip.classList.remove("visible");
+      });
+      slice.addEventListener("focus", function () {
+        tooltip.textContent = tooltipText(slice);
+        tooltip.classList.add("visible");
+        const rect = slice.getBoundingClientRect();
+        placeTooltip(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      });
+      slice.addEventListener("blur", function () {
+        tooltip.classList.remove("visible");
+      });
+    });
+  </script>
+</body>
+</html>

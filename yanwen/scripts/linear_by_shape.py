@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Aggregate linear dispatches by output shape, using the canonical analyzer's
 event-skipping rules."""
-import sys, json
+import json
+import sys
 from collections import defaultdict
+
 from executorch.devtools import Inspector
 
 etdp = sys.argv[1]
@@ -42,9 +44,13 @@ for evlist in insp.event_blocks:
         shape_kernel[out_shape].add(kernel)
         total_linear_ms += avg_ms
 
-print(f"Total aten.linear.default time: {total_linear_ms:.2f} ms across "
-      f"{sum(shape_count.values())} dispatches\n")
-print(f"{'Output shape':<24} {'#disp':>6} {'sum ms':>10} {'avg ms':>8} {'kernel(s)':<40}")
+print(
+    f"Total aten.linear.default time: {total_linear_ms:.2f} ms across "
+    f"{sum(shape_count.values())} dispatches\n"
+)
+print(
+    f"{'Output shape':<24} {'#disp':>6} {'sum ms':>10} {'avg ms':>8} {'kernel(s)':<40}"
+)
 print("-" * 92)
 for shp, t in sorted(shape_time.items(), key=lambda kv: -kv[1]):
     c = shape_count[shp]

@@ -35,11 +35,11 @@ import time
 from pathlib import Path
 
 WEIGHTS_DIR = Path("/home/doremy/llama3_1_8b/original")
-CKPT       = WEIGHTS_DIR / "consolidated.00.pth"
-PARAMS     = WEIGHTS_DIR / "params.json"
+CKPT = WEIGHTS_DIR / "consolidated.00.pth"
+PARAMS = WEIGHTS_DIR / "params.json"
 
-REPO_ROOT  = Path(__file__).resolve().parents[2]
-RUNNER     = REPO_ROOT / "cmake-out-vk" / "executor_runner"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+RUNNER = REPO_ROOT / "cmake-out-vk" / "executor_runner"
 
 DEFAULT_OUT = Path("/home/doremy/llama31_pure_run")
 
@@ -47,6 +47,7 @@ DEFAULT_OUT = Path("/home/doremy/llama31_pure_run")
 # ---------------------------------------------------------------------------
 # OOM-safety helpers
 # ---------------------------------------------------------------------------
+
 
 def _read_meminfo():
     info = {}
@@ -84,6 +85,7 @@ def _child_oom_hardening_factory(cap_bytes: int):
                 f.write("1000\n")
         except Exception:
             pass
+
     return _preexec
 
 
@@ -98,6 +100,7 @@ def _budget_bytes(reserve_gb: float = 2.0) -> int:
 # Phase 0: env + swap guardrails
 # ---------------------------------------------------------------------------
 
+
 def env_check(skip_swap_check: bool):
     info = _read_meminfo()
     ram_gb = info.get("MemTotal", 0) / 1024**3
@@ -111,8 +114,12 @@ def env_check(skip_swap_check: bool):
     print("[env] RADV_GTT_PCT=80 set")
 
     if swap_gb < 1.0 and not skip_swap_check:
-        print("[env] WARNING: no active swap. The 8B fp16 export needs paging headroom.")
-        print("[env] To activate the existing /swapfile (24 GiB on /home, requires sudo):")
+        print(
+            "[env] WARNING: no active swap. The 8B fp16 export needs paging headroom."
+        )
+        print(
+            "[env] To activate the existing /swapfile (24 GiB on /home, requires sudo):"
+        )
         print("        sudo swapon /swapfile && swapon --show")
         print("[env] Or the LV alternative (14.6 GiB):")
         print("        sudo swapon /dev/rl_proxmox-ryzen/swap")
@@ -123,6 +130,7 @@ def env_check(skip_swap_check: bool):
 # ---------------------------------------------------------------------------
 # Phase 1: export
 # ---------------------------------------------------------------------------
+
 
 def load_model(n_layers: int, seq_len: int):
     import torch
@@ -147,7 +155,7 @@ def load_model(n_layers: int, seq_len: int):
 
     print(f"[export] mmap-loading checkpoint {CKPT}")
     t0 = time.perf_counter()
-    checkpoint = torch.load(CKPT, map_location="cpu", mmap=True)
+    checkpoint = torch.load(CKPT, map_location="cpu", mmap=True)  # noqa: TOR102
     if "model" in checkpoint:
         checkpoint = checkpoint["model"]
     print(f"[export] checkpoint open in {time.perf_counter()-t0:.1f}s")
@@ -178,19 +186,27 @@ def load_model(n_layers: int, seq_len: int):
 
 def export_pte(n_layers: int, seq_len: int, out_dir: Path, want_etrecord: bool):
     import torch
-    from torch.export import export
-    from executorch.backends.vulkan.partitioner.vulkan_partitioner import VulkanPartitioner
+    from executorch.backends.vulkan.partitioner.vulkan_partitioner import (
+        VulkanPartitioner,
+    )
     from executorch.exir import EdgeCompileConfig, to_edge_transform_and_lower
+    from torch.export import export
 
     tag = f"llama31_8b_{n_layers}L_seq{seq_len}_fp16"
-    pte_path     = out_dir / f"{tag}.pte"
+    pte_path = out_dir / f"{tag}.pte"
     etrecord_path = out_dir / f"{tag}.etrecord.bin"
-    input_path   = out_dir / f"{tag}_input0.bin"
+    input_path = out_dir / f"{tag}_input0.bin"
 
     have_etrecord = etrecord_path.exists()
-    if pte_path.exists() and input_path.exists() and (have_etrecord or not want_etrecord):
-        print(f"[export] cached: {pte_path} ({pte_path.stat().st_size/1e9:.2f} GiB)"
-              + (" + etrecord" if have_etrecord else " (no etrecord)"))
+    if (
+        pte_path.exists()
+        and input_path.exists()
+        and (have_etrecord or not want_etrecord)
+    ):
+        print(
+            f"[export] cached: {pte_path} ({pte_path.stat().st_size/1e9:.2f} GiB)"
+            + (" + etrecord" if have_etrecord else " (no etrecord)")
+        )
         return tag, pte_path, etrecord_path if have_etrecord else None, input_path
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -232,21 +248,30 @@ def export_pte(n_layers: int, seq_len: int, out_dir: Path, want_etrecord: bool):
     if want_etrecord:
         # generate_etrecord deepcopies the edge program — needs ~1.5–2x the
         # weight size in extra RAM. Skipped by default to avoid OOM.
-        print(f"[export] writing etrecord -> {etrecord_path} (this can OOM without swap)")
+        print(
+            f"[export] writing etrecord -> {etrecord_path} (this can OOM without swap)"
+        )
         try:
             from executorch.devtools import generate_etrecord
+
             generate_etrecord(str(etrecord_path), edge, et, prog)
         except Exception as e:
             print(f"[export] WARNING generate_etrecord failed: {e}")
 
     del prog, edge, et, example_tokens, example_inputs
     gc.collect()
-    return tag, pte_path, etrecord_path if (want_etrecord and etrecord_path.exists()) else None, input_path
+    return (
+        tag,
+        pte_path,
+        etrecord_path if (want_etrecord and etrecord_path.exists()) else None,
+        input_path,
+    )
 
 
 # ---------------------------------------------------------------------------
 # Phase 2: run executor_runner with ETDump + memory probe
 # ---------------------------------------------------------------------------
+
 
 class MemProbe(threading.Thread):
     def __init__(self, log_path: Path, interval_s: float = 0.5):
@@ -266,20 +291,28 @@ class MemProbe(threading.Thread):
             while not self.stop_evt.is_set():
                 info = _read_meminfo()
                 shm = info.get("Shmem", 0)
-                mf  = info.get("MemFree", 0)
-                ca  = info.get("Cached", 0)
-                su  = info.get("SwapTotal", 0) - info.get("SwapFree", 0)
-                self.peak_shmem    = max(self.peak_shmem, shm)
-                self.min_free      = min(self.min_free, mf)
-                self.peak_cached   = max(self.peak_cached, ca)
+                mf = info.get("MemFree", 0)
+                ca = info.get("Cached", 0)
+                su = info.get("SwapTotal", 0) - info.get("SwapFree", 0)
+                self.peak_shmem = max(self.peak_shmem, shm)
+                self.min_free = min(self.min_free, mf)
+                self.peak_cached = max(self.peak_cached, ca)
                 self.peak_swap_used = max(self.peak_swap_used, su)
-                out.write(f"{time.time()-t0:.2f}\t{shm/1e6:.1f}\t{mf/1e6:.1f}\t{ca/1e6:.1f}\t{su/1e6:.1f}\n")
+                out.write(
+                    f"{time.time()-t0:.2f}\t{shm/1e6:.1f}\t{mf/1e6:.1f}\t{ca/1e6:.1f}\t{su/1e6:.1f}\n"
+                )
                 out.flush()
                 self.stop_evt.wait(self.interval)
 
 
-def run_etdump(pte_path: Path, input_path: Path, etdump_path: Path,
-               num_executions: int, mem_log: Path, want_etdump: bool):
+def run_etdump(
+    pte_path: Path,
+    input_path: Path,
+    etdump_path: Path,
+    num_executions: int,
+    mem_log: Path,
+    want_etdump: bool,
+):
     cap = _budget_bytes(reserve_gb=2.0)
     cap_gb = cap / 1024**3
     print(f"[run] RLIMIT_AS cap on child: {cap_gb:.1f} GiB (oom_score_adj=1000)")
@@ -301,7 +334,8 @@ def run_etdump(pte_path: Path, input_path: Path, etdump_path: Path,
     try:
         env = {**os.environ, "RADV_GTT_PCT": "80", "MALLOC_ARENA_MAX": "2"}
         proc = subprocess.run(
-            cmd, env=env,
+            cmd,
+            env=env,
             preexec_fn=_child_oom_hardening_factory(cap),
             check=False,
         )
@@ -312,12 +346,18 @@ def run_etdump(pte_path: Path, input_path: Path, etdump_path: Path,
     dt = time.perf_counter() - t0
 
     if rc != 0:
-        print(f"[run] executor_runner exited rc={rc} after {dt:.1f}s — likely OOM-killed.")
-        print(f"[run] memprobe peaks: Shmem={probe.peak_shmem/1e6:.0f} MB  "
-              f"MinFree={probe.min_free/1e6:.0f} MB  "
-              f"SwapUsed={probe.peak_swap_used/1e6:.0f} MB")
+        print(
+            f"[run] executor_runner exited rc={rc} after {dt:.1f}s — likely OOM-killed."
+        )
+        print(
+            f"[run] memprobe peaks: Shmem={probe.peak_shmem/1e6:.0f} MB  "
+            f"MinFree={probe.min_free/1e6:.0f} MB  "
+            f"SwapUsed={probe.peak_swap_used/1e6:.0f} MB"
+        )
         return None, probe
-    print(f"[run] executor_runner wall-clock: {dt:.2f}s for {num_executions} executions")
+    print(
+        f"[run] executor_runner wall-clock: {dt:.2f}s for {num_executions} executions"
+    )
     print(f"[run]   ~ {dt*1000/num_executions:.1f} ms / execution (subprocess wall)")
     return dt / num_executions, probe
 
@@ -326,8 +366,15 @@ def run_etdump(pte_path: Path, input_path: Path, etdump_path: Path,
 # Phase 2.5: benchmark with explicit warmup
 # ---------------------------------------------------------------------------
 
-def bench_steady_state(pte_path: Path, input_path: Path, etdump_path: Path,
-                        mem_log: Path, n_reps: int = 3, n_iters_per_rep: int = 8):
+
+def bench_steady_state(
+    pte_path: Path,
+    input_path: Path,
+    etdump_path: Path,
+    mem_log: Path,
+    n_reps: int = 3,
+    n_iters_per_rep: int = 8,
+):
     """Scientific bench via algebraic subtraction — sidesteps the unreliable
     ETDump per-iter timing on the Vulkan delegate.
 
@@ -339,8 +386,9 @@ def bench_steady_state(pte_path: Path, input_path: Path, etdump_path: Path,
     Returns dict (with mean ± stdev across reps) or None on failure.
     """
     print("\n=== Calibration: N=1 (load + iter 0 + teardown) ===")
-    cal_per_exec, _ = run_etdump(pte_path, input_path, etdump_path,
-                                  1, mem_log, want_etdump=False)
+    cal_per_exec, _ = run_etdump(
+        pte_path, input_path, etdump_path, 1, mem_log, want_etdump=False
+    )
     if cal_per_exec is None:
         return None
     W1_ms = cal_per_exec * 1000.0
@@ -350,34 +398,52 @@ def bench_steady_state(pte_path: Path, input_path: Path, etdump_path: Path,
     forwards_ms = []
     walls_ms = []
     for i in range(n_reps):
-        wall_per_exec, _ = run_etdump(pte_path, input_path, etdump_path,
-                                       n_iters_per_rep, mem_log,
-                                       want_etdump=False)
+        wall_per_exec, _ = run_etdump(
+            pte_path,
+            input_path,
+            etdump_path,
+            n_iters_per_rep,
+            mem_log,
+            want_etdump=False,
+        )
         if wall_per_exec is None:
             return None
         WK_ms = wall_per_exec * 1000.0 * n_iters_per_rep
         steady_ms = (WK_ms - W1_ms) / (n_iters_per_rep - 1)
         forwards_ms.append(steady_ms)
         walls_ms.append(wall_per_exec * 1000.0)
-        print(f"  rep {i+1}: WK={WK_ms:.1f} ms  wall/N={wall_per_exec*1000:.1f} ms"
-              f"  steady=(WK-W1)/{n_iters_per_rep-1}={steady_ms:.1f} ms")
+        print(
+            f"  rep {i+1}: WK={WK_ms:.1f} ms  wall/N={wall_per_exec*1000:.1f} ms"
+            f"  steady=(WK-W1)/{n_iters_per_rep-1}={steady_ms:.1f} ms"
+        )
 
     mean_ms = statistics.mean(forwards_ms)
     stdev_ms = statistics.stdev(forwards_ms) if n_reps >= 2 else 0.0
     cv = 100 * stdev_ms / mean_ms if mean_ms else 0.0
     wall_mean = statistics.mean(walls_ms)
 
-    print("\n=== Steady-state forward (iter 0 + load+teardown algebraically excluded) ===")
-    print(f"  per-rep steady: " + "  ".join(f"{x:.1f}" for x in forwards_ms) + " ms")
-    print(f"  mean ± stdev:   {mean_ms:.1f} ± {stdev_ms:.1f} ms  "
-          f"(cv={cv:.1f}%, min={min(forwards_ms):.1f}, max={max(forwards_ms):.1f})")
-    print(f"  wallclock/N mean: {wall_mean:.1f} ms  "
-          f"(legacy metric; +{wall_mean - mean_ms:.1f} ms inflation from load+iter0/N)")
+    print(
+        "\n=== Steady-state forward (iter 0 + load+teardown algebraically excluded) ==="
+    )
+    print("  per-rep steady: " + "  ".join(f"{x:.1f}" for x in forwards_ms) + " ms")
+    print(
+        f"  mean ± stdev:   {mean_ms:.1f} ± {stdev_ms:.1f} ms  "
+        f"(cv={cv:.1f}%, min={min(forwards_ms):.1f}, max={max(forwards_ms):.1f})"
+    )
+    print(
+        f"  wallclock/N mean: {wall_mean:.1f} ms  "
+        f"(legacy metric; +{wall_mean - mean_ms:.1f} ms inflation from load+iter0/N)"
+    )
 
     return {
-        "W1_ms": W1_ms, "forwards_ms": forwards_ms, "walls_ms": walls_ms,
-        "mean_ms": mean_ms, "stdev_ms": stdev_ms, "cv_pct": cv,
-        "n_reps": n_reps, "n_iters_per_rep": n_iters_per_rep,
+        "W1_ms": W1_ms,
+        "forwards_ms": forwards_ms,
+        "walls_ms": walls_ms,
+        "mean_ms": mean_ms,
+        "stdev_ms": stdev_ms,
+        "cv_pct": cv,
+        "n_reps": n_reps,
+        "n_iters_per_rep": n_iters_per_rep,
     }
 
 
@@ -385,7 +451,8 @@ def bench_steady_state(pte_path: Path, input_path: Path, etdump_path: Path,
 # Phase 3: analyze
 # ---------------------------------------------------------------------------
 
-def analyze(etdump_path: Path, etrecord_path, tsv_path: Path, probe):
+
+def analyze(etdump_path: Path, etrecord_path, tsv_path: Path, probe):  # noqa: C901
     from executorch.devtools import Inspector
 
     print("\n=== ETDump analysis ===")
@@ -394,7 +461,9 @@ def analyze(etdump_path: Path, etrecord_path, tsv_path: Path, probe):
         etrecord=str(etrecord_path) if etrecord_path is not None else None,
     )
     if etrecord_path is None:
-        print("[analyze] (no etrecord — module hierarchy unavailable; op names from runtime)")
+        print(
+            "[analyze] (no etrecord — module hierarchy unavailable; op names from runtime)"
+        )
 
     rows = []
     for block in insp.event_blocks:
@@ -439,9 +508,21 @@ def analyze(etdump_path: Path, etrecord_path, tsv_path: Path, probe):
         bucket = "(unmapped)"
         if mh:
             for stack in mh.values():
-                names = list(stack) if isinstance(stack, (list, tuple)) else list(stack.keys()) if isinstance(stack, dict) else [str(stack)]
+                names = (
+                    list(stack)
+                    if isinstance(stack, (list, tuple))
+                    else list(stack.keys()) if isinstance(stack, dict) else [str(stack)]
+                )
                 joined = ".".join(str(s) for s in names)
-                for kw in ("attention", "feed_forward", "ffn", "norm", "output", "tok_embeddings", "rope"):
+                for kw in (
+                    "attention",
+                    "feed_forward",
+                    "ffn",
+                    "norm",
+                    "output",
+                    "tok_embeddings",
+                    "rope",
+                ):
                     if kw in joined.lower():
                         bucket = kw
                         break
@@ -472,28 +553,39 @@ def analyze(etdump_path: Path, etrecord_path, tsv_path: Path, probe):
         print(f"  min MemFree:                  {probe.min_free/1e6:>9.0f} MB")
         print(f"  peak Swap used:               {probe.peak_swap_used/1e6:>9.0f} MB")
         if probe.peak_shmem > 0.9 * gtt_cap:
-            print("  [warn] peak Shmem within 10% of GTT cap — close to Vulkan OOM ceiling.")
+            print(
+                "  [warn] peak Shmem within 10% of GTT cap — close to Vulkan OOM ceiling."
+            )
 
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--n_layers", type=int, default=32, choices=range(1, 33))
-    ap.add_argument("--seq_len",  type=int, default=128)
+    ap.add_argument("--seq_len", type=int, default=128)
     ap.add_argument("--num_executions", type=int, default=4)
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT)
     ap.add_argument("--skip-swap-check", action="store_true")
-    ap.add_argument("--etrecord", action="store_true",
-                    help="Also write an ETRecord (per-module names in report). "
-                         "Heavy on RAM during export; needs swap on for 32L.")
-    ap.add_argument("--etdump", action="store_true",
-                    help="Capture per-op ETDump during run + analyze. Requires "
-                         "executor_runner built with EXECUTORCH_ENABLE_EVENT_TRACER. "
-                         "Off by default — wallclock timing works without it.")
-    ap.add_argument("--phase", choices=["all", "export", "run", "analyze"], default="all")
+    ap.add_argument(
+        "--etrecord",
+        action="store_true",
+        help="Also write an ETRecord (per-module names in report). "
+        "Heavy on RAM during export; needs swap on for 32L.",
+    )
+    ap.add_argument(
+        "--etdump",
+        action="store_true",
+        help="Capture per-op ETDump during run + analyze. Requires "
+        "executor_runner built with EXECUTORCH_ENABLE_EVENT_TRACER. "
+        "Off by default — wallclock timing works without it.",
+    )
+    ap.add_argument(
+        "--phase", choices=["all", "export", "run", "analyze"], default="all"
+    )
     args = ap.parse_args()
 
     _parent_oom_hardening()
@@ -503,12 +595,12 @@ def main():
     out_dir = args.out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
     tag = f"llama31_8b_{args.n_layers}L_seq{args.seq_len}_fp16"
-    pte_path     = out_dir / f"{tag}.pte"
+    pte_path = out_dir / f"{tag}.pte"
     etrecord_path = out_dir / f"{tag}.etrecord.bin"
-    input_path   = out_dir / f"{tag}_input0.bin"
-    etdump_path  = out_dir / f"{tag}.etdp"
-    mem_log      = out_dir / f"{tag}.memprobe.tsv"
-    tsv_path     = out_dir / f"{tag}.events.tsv"
+    input_path = out_dir / f"{tag}_input0.bin"
+    etdump_path = out_dir / f"{tag}.etdp"
+    mem_log = out_dir / f"{tag}.memprobe.tsv"
+    tsv_path = out_dir / f"{tag}.events.tsv"
 
     if args.phase in ("all", "export"):
         export_pte(args.n_layers, args.seq_len, out_dir, want_etrecord=args.etrecord)
@@ -520,9 +612,14 @@ def main():
         if not pte_path.exists():
             sys.exit(f"[main] missing {pte_path} — run --phase export first.")
         gc.collect()
-        _, probe = run_etdump(pte_path, input_path, etdump_path,
-                              args.num_executions, mem_log,
-                              want_etdump=args.etdump)
+        _, probe = run_etdump(
+            pte_path,
+            input_path,
+            etdump_path,
+            args.num_executions,
+            mem_log,
+            want_etdump=args.etdump,
+        )
         if probe is None:
             sys.exit(3)
     if args.phase == "run":
@@ -530,8 +627,10 @@ def main():
 
     if args.phase in ("all", "analyze"):
         if not args.etdump:
-            print("[main] --etdump not set; skipping Inspector analysis. "
-                  "Wallclock timing was reported above.")
+            print(
+                "[main] --etdump not set; skipping Inspector analysis. "
+                "Wallclock timing was reported above."
+            )
         elif not etdump_path.exists():
             sys.exit(f"[main] missing {etdump_path} — run --phase run --etdump first.")
         else:

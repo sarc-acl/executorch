@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLaMA 3.1 8B fp16 L=32 S=128 Vulkan Shader Report</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fa;
+      --panel: #ffffff;
+      --ink: #17202a;
+      --muted: #5b6673;
+      --line: #d9dee6;
+      --soft: #edf1f5;
+      --blue: #2c6fbb;
+      --green: #2f8f6b;
+      --amber: #bc7b1f;
+      --red: #b84a4a;
+      --violet: #7457a8;
+      --cyan: #3d8796;
+      --gray: #8a93a0;
+      --code-bg: #101820;
+      --code-ink: #eef4f8;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 18px;
+      margin-bottom: 22px;
+    }
+
+    h1, h2, h3 { line-height: 1.2; margin: 0; }
+
+    h1 {
+      font-size: clamp(26px, 4vw, 42px);
+      letter-spacing: 0;
+      max-width: 920px;
+    }
+
+    h2 {
+      font-size: 21px;
+      margin-bottom: 12px;
+    }
+
+    h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    p { margin: 0 0 12px; }
+
+    a {
+      color: var(--blue);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 2px;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+    }
+
+    .lede {
+      color: var(--muted);
+      max-width: 900px;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .links a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 6px;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+    }
+
+    .span-4 { grid-column: span 4; }
+    .span-5 { grid-column: span 5; }
+    .span-7 { grid-column: span 7; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: span 12; }
+
+    .metric {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .value {
+      font-size: 28px;
+      font-weight: 720;
+      line-height: 1.1;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 6px;
+    }
+
+    .chart-wrap {
+      display: grid;
+      grid-template-columns: minmax(220px, 320px) 1fr;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .donut {
+      width: 100%;
+      max-width: 320px;
+      margin: 0 auto;
+      display: block;
+    }
+
+    .donut .slice {
+      cursor: help;
+      transition: opacity 120ms ease, stroke-width 120ms ease;
+    }
+
+    .donut .slice:hover,
+    .donut .slice:focus {
+      opacity: 0.86;
+      stroke-width: 44;
+      outline: none;
+    }
+
+    .chart-tooltip {
+      position: fixed;
+      z-index: 20;
+      max-width: min(320px, calc(100vw - 24px));
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #ffffff;
+      color: var(--ink);
+      box-shadow: 0 10px 28px rgba(23, 32, 42, 0.16);
+      font-size: 13px;
+      line-height: 1.35;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(12px, 12px);
+      transition: opacity 80ms ease;
+    }
+
+    .chart-tooltip.visible {
+      opacity: 1;
+    }
+
+    .legend {
+      display: grid;
+      gap: 8px;
+    }
+
+    .legend-row {
+      display: grid;
+      grid-template-columns: 12px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 9px 8px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 650;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    td.num, th.num { text-align: right; white-space: nowrap; }
+
+    .barcell {
+      min-width: 170px;
+    }
+
+    .bar {
+      height: 10px;
+      border-radius: 999px;
+      background: var(--soft);
+      overflow: hidden;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      background: var(--blue);
+      border-radius: inherit;
+    }
+
+    .variant {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .variant div {
+      border: 1px solid var(--line);
+      background: #fbfcfd;
+      border-radius: 6px;
+      padding: 10px;
+    }
+
+    .variant strong {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    pre {
+      margin: 0;
+      padding: 14px;
+      overflow-x: auto;
+      border-radius: 7px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .snippet-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .callout {
+      border-left: 4px solid var(--blue);
+      padding: 10px 12px;
+      background: #f0f5fb;
+      color: #26384c;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .span-4, .span-5, .span-7, .span-8 { grid-column: span 12; }
+      .chart-wrap, .snippet-grid { grid-template-columns: 1fr; }
+      .variant { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      main { width: min(100vw - 20px, 1180px); padding-top: 18px; }
+      .panel { padding: 14px; }
+      .variant { grid-template-columns: 1fr; }
+      th, td { padding: 8px 6px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>LLaMA 3.1 8B fp16 Vulkan shader report</h1>
+      <p class="lede">Standalone ETDump summary for L=32, seq=128 on the ExecuTorch Vulkan delegate. The dominant cost is the non-coopmat <code>linear_vec_buffer_texture2d_half</code> path.</p>
+      <nav class="links" aria-label="Source links">
+        <a href="L32_S128_coopmat_vulkan_shader_report.html">Coopmat HTML report</a>
+        <a href="L32_S128_baseline_vs_coopmat_report.html">Baseline vs coopmat</a>
+        <a href="REPORT.md">REPORT.md</a>
+        <a href="L32_S128_shader_breakdown.md">L32_S128_shader_breakdown.md</a>
+        <a href="artifacts/L32/S128_bench.log">artifacts/L32/S128_bench.log</a>
+        <a href="../backends/vulkan/runtime/graph/ops/glsl/linear_vec.glsl">linear_vec.glsl</a>
+        <a href="../backends/vulkan/runtime/graph/ops/glsl/linear_vec.yaml">linear_vec.yaml</a>
+      </nav>
+    </header>
+
+    <section class="grid" aria-label="Headline metrics">
+      <div class="panel span-4">
+        <div class="metric">Steady-state forward</div>
+        <div class="value">1765.6 ms</div>
+        <div class="note">Mean +/- stdev: 1765.6 +/- 6.0 ms from <a href="artifacts/L32/S128_bench.log">S128_bench.log</a>.</div>
+      </div>
+      <div class="panel span-4">
+        <div class="metric">ETDump GPU total</div>
+        <div class="value">1689.5 ms</div>
+        <div class="note">Steady per-shader GPU time from ETDump; about 96% of wallclock forward time.</div>
+      </div>
+      <div class="panel span-4">
+        <div class="metric">Linear share</div>
+        <div class="value">80.1%</div>
+        <div class="note">1527.6 ms across 226 <code>aten.linear.default</code> dispatches.</div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="ETDump category breakdown">
+      <div class="panel span-7">
+        <h2>ETDump Categories</h2>
+        <div class="chart-wrap">
+          <svg class="donut" viewBox="0 0 240 240" role="img" aria-label="Donut chart showing ETDump category shares">
+            <circle class="slice" tabindex="0" aria-label="linear: 1527.6 ms, 80.1%, 226 dispatches" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#2c6fbb" stroke-width="38" stroke-dasharray="80.1 19.9" transform="rotate(-90 120 120)"><title>linear: 1527.6 ms, 80.1%, 226 dispatches. Q/K/V/O plus FFN linears and lm_head.</title></circle>
+            <circle class="slice" tabindex="0" aria-label="reshape and view: 106.7 ms, 5.6%, 2950 dispatches" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#2f8f6b" stroke-width="38" stroke-dasharray="5.6 94.4" stroke-dashoffset="-80.1" transform="rotate(-90 120 120)"><title>reshape / view: 106.7 ms, 5.6%, 2950 dispatches. view, permute, slice, and view_convert glue.</title></circle>
+            <circle class="slice" tabindex="0" aria-label="CPU/GPU copy: 91.4 ms, 4.8%, 194 dispatches" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#bc7b1f" stroke-width="38" stroke-dasharray="4.8 95.2" stroke-dashoffset="-85.7" transform="rotate(-90 120 120)"><title>CPU/GPU copy: 91.4 ms, 4.8%, 194 dispatches. ETVK_COPY_OUTPUTS is 75.4 ms.</title></circle>
+            <circle class="slice" tabindex="0" aria-label="CPU fallback aten.cat: 76.7 ms, 4.0%, 64 dispatches" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#b84a4a" stroke-width="38" stroke-dasharray="4.0 96.0" stroke-dashoffset="-90.5" transform="rotate(-90 120 120)"><title>CPU fallback aten.cat: 76.7 ms, 4.0%, 64 dispatches. KV-cache concat is not delegated to Vulkan.</title></circle>
+            <circle class="slice" tabindex="0" aria-label="elementwise: 59.0 ms, 3.1%, 1219 dispatches" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#7457a8" stroke-width="38" stroke-dasharray="3.1 96.9" stroke-dashoffset="-94.5" transform="rotate(-90 120 120)"><title>elementwise: 59.0 ms, 3.1%, 1219 dispatches. Residual add, mul, sigmoid, where.</title></circle>
+            <circle class="slice" tabindex="0" aria-label="bmm and matmul: 14.5 ms, 0.8%, 64 dispatches" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#3d8796" stroke-width="38" stroke-dasharray="0.8 99.2" stroke-dashoffset="-97.6" transform="rotate(-90 120 120)"><title>bmm / matmul: 14.5 ms, 0.8%, 64 dispatches. Attention Q@K^T and attn@V.</title></circle>
+            <circle class="slice" tabindex="0" aria-label="softmax plus other CPU fallbacks: about 26.9 ms, 1.6%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#8a93a0" stroke-width="38" stroke-dasharray="1.6 98.4" stroke-dashoffset="-98.4" transform="rotate(-90 120 120)"><title>softmax + other CPU fallbacks: about 26.9 ms, 1.6%. Softmax is 6.9 ms; mask and embedding fallbacks make up the rest.</title></circle>
+            <circle cx="120" cy="120" r="58" fill="#fff"></circle>
+            <text x="120" y="114" text-anchor="middle" font-size="26" font-weight="700" fill="#17202a">80.1%</text>
+            <text x="120" y="136" text-anchor="middle" font-size="13" fill="#5b6673">linear</text>
+          </svg>
+          <div class="legend">
+            <div class="legend-row"><span class="swatch" style="background:#2c6fbb"></span><span>linear</span><strong>1527.6 ms</strong></div>
+            <div class="legend-row"><span class="swatch" style="background:#2f8f6b"></span><span>reshape / view</span><strong>106.7 ms</strong></div>
+            <div class="legend-row"><span class="swatch" style="background:#bc7b1f"></span><span>CPU/GPU copy</span><strong>91.4 ms</strong></div>
+            <div class="legend-row"><span class="swatch" style="background:#b84a4a"></span><span>CPU fallback: aten.cat</span><strong>76.7 ms</strong></div>
+            <div class="legend-row"><span class="swatch" style="background:#7457a8"></span><span>elementwise</span><strong>59.0 ms</strong></div>
+            <div class="legend-row"><span class="swatch" style="background:#3d8796"></span><span>bmm / matmul</span><strong>14.5 ms</strong></div>
+            <div class="legend-row"><span class="swatch" style="background:#8a93a0"></span><span>softmax + other CPU fallbacks</span><strong>~26.9 ms</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel span-5">
+        <h2>Active Linear Variant</h2>
+        <p>The main runtime shader is <code>linear_vec_buffer_texture2d_half</code>, covering almost all layer linears. The shape-specific lm_head path accounts for the small <code>linear_vec_buffer_buffer_half</code> tail.</p>
+        <div class="variant" aria-label="Exact variant block">
+          <div><strong>STORAGE</strong><code>buffer</code></div>
+          <div><strong>WEIGHT_STORAGE</strong><code>texture2d</code></div>
+          <div><strong>DTYPE</strong><code>half</code></div>
+          <div><strong>HAS_BIAS</strong><code>false</code></div>
+          <div><strong>TILE_M</strong><code>4</code></div>
+        </div>
+        <div class="callout">
+          Exact variant block:
+          <pre><code>STORAGE=buffer
+WEIGHT_STORAGE=texture2d
+DTYPE=half
+HAS_BIAS=false
+TILE_M=4</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Linear shape breakdown">
+      <div class="panel span-12">
+        <h2>Linear Shape Breakdown</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Output shape</th>
+              <th class="num">Dispatches</th>
+              <th class="num">Sum ms</th>
+              <th class="num">Avg ms</th>
+              <th>Component</th>
+              <th class="barcell">Share of linear</th>
+              <th>Kernel</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>[128, 14336]</code></td>
+              <td class="num">64</td>
+              <td class="num"><strong>789.4</strong></td>
+              <td class="num">12.3</td>
+              <td>FFN gate + up (<code>32 x 2</code>)</td>
+              <td class="barcell"><div class="bar"><span style="width:51.7%"></span></div><div class="note">51.7%</div></td>
+              <td><code>linear_vec_buffer_texture2d_half</code></td>
+            </tr>
+            <tr>
+              <td><code>[128, 4096]</code></td>
+              <td class="num">96</td>
+              <td class="num">646.7</td>
+              <td class="num">6.7</td>
+              <td>Q + O + FFN down (<code>32 x 3</code>)</td>
+              <td class="barcell"><div class="bar"><span style="width:42.3%"></span></div><div class="note">42.3%</div></td>
+              <td><code>linear_vec_buffer_texture2d_half</code></td>
+            </tr>
+            <tr>
+              <td><code>[128, 1024]</code></td>
+              <td class="num">64</td>
+              <td class="num">78.3</td>
+              <td class="num">1.2</td>
+              <td>K + V (<code>n_kv_heads=8</code>, <code>head_dim=128</code>)</td>
+              <td class="barcell"><div class="bar"><span style="width:5.1%"></span></div><div class="note">5.1%</div></td>
+              <td><code>linear_vec_buffer_texture2d_half</code></td>
+            </tr>
+            <tr>
+              <td><code>[1, 128256]</code></td>
+              <td class="num">2</td>
+              <td class="num">13.2</td>
+              <td class="num">6.6</td>
+              <td>lm_head</td>
+              <td class="barcell"><div class="bar"><span style="width:0.9%"></span></div><div class="note">0.9%</div></td>
+              <td><code>linear_vec_buffer_buffer_half</code> + <code>buffer_to_nchw_half_half</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Source snippets">
+      <div class="panel span-12">
+        <h2>Source Snippets</h2>
+        <div class="snippet-grid">
+          <section>
+            <h3><a href="../backends/vulkan/runtime/graph/ops/glsl/linear_vec.yaml">linear_vec.yaml</a></h3>
+            <pre><code>linear_vec:
+  parameter_names_with_default_values:
+    DTYPE: float
+    STORAGE: texture3d
+    WEIGHT_STORAGE: texture2d
+    HAS_BIAS: false
+    TILE_M4: 1
+    TILE_K4: 1
+    TILE_N4: 1
+    TILE_M: 4
+  generate_variant_forall:
+    combination:
+      parameter_names: [STORAGE, WEIGHT_STORAGE]
+      combos:
+        - parameter_values: [texture3d, texture2d]
+        - parameter_values: [texture3d, buffer]
+        - parameter_values: [buffer, texture2d]
+        - parameter_values: [buffer, buffer]
+    DTYPE:
+      - VALUE: float
+      - VALUE: half</code></pre>
+          </section>
+          <section>
+            <h3><a href="../backends/vulkan/runtime/graph/ops/glsl/linear_vec.glsl">linear_vec.glsl</a></h3>
+            <pre><code>#define TILE_M ${TILE_M}
+#define TILE_K ${TILE_K4 * 4}
+#define TILE_N ${TILE_N4 * 4}
+
+void main() {
+  const int tile_idx_n = int(gl_GlobalInvocationID.x);
+  const int tile_idx_m = int(gl_GlobalInvocationID.y);
+
+  const int n4_start = tile_idx_n * TILE_N4;
+  const int m_start = tile_idx_m * TILE_M;
+
+  const int K = mat1_sizes.x;
+  const int M = mat1_sizes.y;
+  const int K4 = div_up_4(K);
+  const int N = out_sizes.x;
+  const int N4 = div_up_4(N);
+
+  for (int k4 = 0; k4 &lt; K4; k4++) {
+    load_mat1_tile_with_checks(in_tile, k4, m_start, b, K4, M);
+    load_packed_weight_tile_with_checks(w_tile, n4_start, k4, b % weight_B, N4, K4);
+    fp_accumulate_with_fp_weight(out_tile, in_tile, w_tile);
+  }
+}</code></pre>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+    document.querySelectorAll("pre code").forEach(function (block) {
+      block.setAttribute("tabindex", "0");
+    });
+
+    const tooltip = document.createElement("div");
+    tooltip.className = "chart-tooltip";
+    document.body.appendChild(tooltip);
+
+    function tooltipText(slice) {
+      const title = slice.querySelector("title");
+      return title ? title.textContent : slice.getAttribute("aria-label") || "";
+    }
+
+    function placeTooltip(x, y) {
+      const margin = 12;
+      tooltip.style.left = "0px";
+      tooltip.style.top = "0px";
+      const rect = tooltip.getBoundingClientRect();
+      const left = Math.min(x + 14, window.innerWidth - rect.width - margin);
+      const top = Math.min(y + 14, window.innerHeight - rect.height - margin);
+      tooltip.style.left = Math.max(margin, left) + "px";
+      tooltip.style.top = Math.max(margin, top) + "px";
+    }
+
+    document.querySelectorAll(".donut .slice").forEach(function (slice) {
+      slice.addEventListener("mouseenter", function (event) {
+        tooltip.textContent = tooltipText(slice);
+        tooltip.classList.add("visible");
+        placeTooltip(event.clientX, event.clientY);
+      });
+      slice.addEventListener("mousemove", function (event) {
+        placeTooltip(event.clientX, event.clientY);
+      });
+      slice.addEventListener("mouseleave", function () {
+        tooltip.classList.remove("visible");
+      });
+      slice.addEventListener("focus", function () {
+        tooltip.textContent = tooltipText(slice);
+        tooltip.classList.add("visible");
+        const rect = slice.getBoundingClientRect();
+        placeTooltip(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      });
+      slice.addEventListener("blur", function () {
+        tooltip.classList.remove("visible");
+      });
+    });
+  </script>
+</body>
+</html>

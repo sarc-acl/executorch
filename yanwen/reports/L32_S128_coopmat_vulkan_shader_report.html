@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLaMA 3.1 8B fp16 L=32 S=128 Coopmat Shader Report</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fa;
+      --panel: #ffffff;
+      --ink: #17202a;
+      --muted: #5b6673;
+      --line: #d9dee6;
+      --soft: #edf1f5;
+      --blue: #2c6fbb;
+      --green: #2f8f6b;
+      --amber: #bc7b1f;
+      --red: #b84a4a;
+      --violet: #7457a8;
+      --cyan: #3d8796;
+      --gray: #8a93a0;
+      --code-bg: #101820;
+      --code-ink: #eef4f8;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 18px;
+      margin-bottom: 22px;
+    }
+
+    h1, h2, h3 { line-height: 1.2; margin: 0; }
+    h1 { font-size: clamp(26px, 4vw, 42px); max-width: 960px; }
+    h2 { font-size: 21px; margin-bottom: 12px; }
+    h3 { font-size: 16px; margin-bottom: 8px; }
+    p { margin: 0 0 12px; }
+
+    a {
+      color: var(--blue);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 2px;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+    }
+
+    .lede {
+      color: var(--muted);
+      max-width: 930px;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .links a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 6px;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+    }
+
+    .span-4 { grid-column: span 4; }
+    .span-5 { grid-column: span 5; }
+    .span-6 { grid-column: span 6; }
+    .span-7 { grid-column: span 7; }
+    .span-12 { grid-column: span 12; }
+
+    .metric {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .value {
+      font-size: 28px;
+      font-weight: 720;
+      line-height: 1.1;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 6px;
+    }
+
+    .chart-wrap {
+      display: grid;
+      grid-template-columns: minmax(220px, 320px) 1fr;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .donut {
+      width: 100%;
+      max-width: 320px;
+      margin: 0 auto;
+      display: block;
+    }
+
+    .donut .slice {
+      cursor: help;
+      transition: opacity 120ms ease, stroke-width 120ms ease;
+    }
+
+    .donut .slice:hover,
+    .donut .slice:focus {
+      opacity: 0.86;
+      stroke-width: 44;
+      outline: none;
+    }
+
+    .chart-tooltip {
+      position: fixed;
+      z-index: 20;
+      max-width: min(320px, calc(100vw - 24px));
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #ffffff;
+      color: var(--ink);
+      box-shadow: 0 10px 28px rgba(23, 32, 42, 0.16);
+      font-size: 13px;
+      line-height: 1.35;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(12px, 12px);
+      transition: opacity 80ms ease;
+    }
+
+    .chart-tooltip.visible {
+      opacity: 1;
+    }
+
+    .legend {
+      display: grid;
+      gap: 8px;
+    }
+
+    .legend-row {
+      display: grid;
+      grid-template-columns: 12px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 9px 8px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 650;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    td.num, th.num { text-align: right; white-space: nowrap; }
+
+    .barcell { min-width: 170px; }
+    .bar {
+      height: 10px;
+      border-radius: 999px;
+      background: var(--soft);
+      overflow: hidden;
+    }
+    .bar > span {
+      display: block;
+      height: 100%;
+      background: var(--green);
+      border-radius: inherit;
+    }
+
+    .variant {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .variant div {
+      border: 1px solid var(--line);
+      background: #fbfcfd;
+      border-radius: 6px;
+      padding: 10px;
+    }
+
+    .variant strong {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    pre {
+      margin: 0;
+      padding: 14px;
+      overflow-x: auto;
+      border-radius: 7px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .snippet-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .callout {
+      border-left: 4px solid var(--green);
+      padding: 10px 12px;
+      background: #edf7f2;
+      color: #243c32;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .span-4, .span-5, .span-6, .span-7 { grid-column: span 12; }
+      .chart-wrap, .snippet-grid { grid-template-columns: 1fr; }
+      .variant { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      main { width: min(100vw - 20px, 1180px); padding-top: 18px; }
+      .panel { padding: 14px; }
+      .variant { grid-template-columns: 1fr; }
+      th, td { padding: 8px 6px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>LLaMA 3.1 8B fp16 coopmat shader report</h1>
+      <p class="lede">Standalone ETDump summary for L=32, seq=128 with the pavan-report cooperative-matrix path. The dominant shader changed from <code>linear_vec_buffer_texture2d_half</code> to <code>linear_coopmat_half</code>.</p>
+      <nav class="links" aria-label="Source links">
+        <a href="L32_S128_vulkan_shader_report.html">Baseline HTML report</a>
+        <a href="L32_S128_baseline_vs_coopmat_report.html">Baseline vs coopmat</a>
+        <a href="L32_S128_coopmat_REPORT.md">Coopmat report</a>
+        <a href="L32_S128_coopmat_shader_breakdown.md">Coopmat shader breakdown</a>
+        <a href="artifacts/L32_coopmat/S128_bench.log">S128 coopmat bench log</a>
+        <a href="../../../pavan-report/executorch/backends/vulkan/runtime/graph/ops/glsl/linear_coopmat.glsl">linear_coopmat.glsl</a>
+        <a href="../../../pavan-report/executorch/backends/vulkan/runtime/graph/ops/glsl/linear_coopmat.yaml">linear_coopmat.yaml</a>
+      </nav>
+    </header>
+
+    <section class="grid" aria-label="Headline metrics">
+      <div class="panel span-4">
+        <div class="metric">Steady-state forward</div>
+        <div class="value">582.6 ms</div>
+        <div class="note">Mean +/- stdev: 582.6 +/- 2.4 ms. Baseline was 1765.6 ms.</div>
+      </div>
+      <div class="panel span-4">
+        <div class="metric">Throughput</div>
+        <div class="value">219.7 tok/s</div>
+        <div class="note">3.03x faster than the baseline 72.5 tok/s prefill result.</div>
+      </div>
+      <div class="panel span-4">
+        <div class="metric">Top shader</div>
+        <div class="value">68.0%</div>
+        <div class="note"><code>linear_coopmat_half</code>: 398.58 ms across 224 dispatches.</div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="ETDump category breakdown">
+      <div class="panel span-7">
+        <h2>ETDump Categories</h2>
+        <div class="chart-wrap">
+          <svg class="donut" viewBox="0 0 240 240" role="img" aria-label="Donut chart showing coopmat ETDump category shares">
+            <circle class="slice" tabindex="0" aria-label="linear: 493.7 ms, 56.6%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#2c6fbb" stroke-width="38" stroke-dasharray="56.6 43.4" transform="rotate(-90 120 120)"><title>linear: 493.7 ms, 56.6%. Dominated by linear_coopmat_half, with lm_head falling back to linear_vec_buffer_buffer_half.</title></circle>
+            <circle class="slice" tabindex="0" aria-label="reshape and view: 113.3 ms, 13.0%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#2f8f6b" stroke-width="38" stroke-dasharray="13.0 87.0" stroke-dashoffset="-56.6" transform="rotate(-90 120 120)"><title>reshape / view: 113.3 ms, 13.0%. Similar absolute cost to baseline, larger share after linear shrank.</title></circle>
+            <circle class="slice" tabindex="0" aria-label="CPU/GPU copy: 91.9 ms, 10.5%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#bc7b1f" stroke-width="38" stroke-dasharray="10.5 89.5" stroke-dashoffset="-69.6" transform="rotate(-90 120 120)"><title>CPU/GPU copy: 91.9 ms, 10.5%. Essentially unchanged from baseline; now more visible as a share.</title></circle>
+            <circle class="slice" tabindex="0" aria-label="CPU fallback aten.cat: 78.0 ms, 8.9%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#b84a4a" stroke-width="38" stroke-dasharray="8.9 91.1" stroke-dashoffset="-80.1" transform="rotate(-90 120 120)"><title>CPU fallback aten.cat: 78.0 ms, 8.9%. KV-cache concat still runs on CPU.</title></circle>
+            <circle class="slice" tabindex="0" aria-label="elementwise: 64.0 ms, 7.3%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#7457a8" stroke-width="38" stroke-dasharray="7.3 92.7" stroke-dashoffset="-89.0" transform="rotate(-90 120 120)"><title>elementwise: 64.0 ms, 7.3%. Residual add, mul, sigmoid, where.</title></circle>
+            <circle class="slice" tabindex="0" aria-label="bmm and matmul: 0.9 ms, 0.1%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#3d8796" stroke-width="38" stroke-dasharray="0.1 99.9" stroke-dashoffset="-96.3" transform="rotate(-90 120 120)"><title>bmm / matmul: 0.9 ms, 0.1%. matmul_coopmat_float replaced baseline attention matmul path.</title></circle>
+            <circle class="slice" tabindex="0" aria-label="softmax and CPU fallbacks: about 25.6 ms, 3.7%" cx="120" cy="120" r="86" pathLength="100" fill="none" stroke="#8a93a0" stroke-width="38" stroke-dasharray="3.7 96.3" stroke-dashoffset="-96.4" transform="rotate(-90 120 120)"><title>softmax + CPU fallbacks: about 25.6 ms, 3.7%. Includes eq.Scalar fallback, softmax, and smaller CPU fallbacks.</title></circle>
+            <circle cx="120" cy="120" r="58" fill="#fff"></circle>
+            <text x="120" y="114" text-anchor="middle" font-size="26" font-weight="700" fill="#17202a">56.6%</text>
+            <text x="120" y="136" text-anchor="middle" font-size="13" fill="#5b6673">linear</text>
+          </svg>
+          <div class="legend">
+            <div class="legend-row"><span class="swatch" style="background:#2c6fbb"></span><span>linear</span><strong>493.7 ms</strong></div>
+            <div class="legend-row"><span class="swatch" style="background:#2f8f6b"></span><span>reshape / view</span><strong>113.3 ms</strong></div>
+            <div class="legend-row"><span class="swatch" style="background:#bc7b1f"></span><span>CPU/GPU copy</span><strong>91.9 ms</strong></div>
+            <div class="legend-row"><span class="swatch" style="background:#b84a4a"></span><span>CPU fallback: aten.cat</span><strong>78.0 ms</strong></div>
+            <div class="legend-row"><span class="swatch" style="background:#7457a8"></span><span>elementwise</span><strong>64.0 ms</strong></div>
+            <div class="legend-row"><span class="swatch" style="background:#3d8796"></span><span>bmm / matmul</span><strong>0.9 ms</strong></div>
+            <div class="legend-row"><span class="swatch" style="background:#8a93a0"></span><span>softmax + CPU fallbacks</span><strong>~25.6 ms</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel span-5">
+        <h2>Active Coopmat Variant</h2>
+        <p><code>linear_coopmat_half</code> runs when tensors are buffers, cooperative matrix support is available, and the output row count is large enough. The lm_head has <code>M=1</code>, so it still falls back to <code>linear_vec_buffer_buffer_half</code>.</p>
+        <div class="variant" aria-label="Coopmat variant block">
+          <div><strong>Runtime shader</strong><code>linear_coopmat_half</code></div>
+          <div><strong>DTYPE</strong><code>half</code></div>
+          <div><strong>STORAGE</strong><code>buffer</code></div>
+          <div><strong>WEIGHT_STORAGE</strong><code>buffer</code></div>
+          <div><strong>HAS_BIAS</strong><code>false</code></div>
+          <div><strong>TILE_M</strong><code>64</code></div>
+          <div><strong>TILE_N</strong><code>64</code></div>
+          <div><strong>TILE_K</strong><code>32</code></div>
+        </div>
+        <div class="callout">
+          <pre><code>Runtime shader=linear_coopmat_half
+DTYPE=half
+STORAGE=buffer
+WEIGHT_STORAGE=buffer
+HAS_BIAS=false
+TILE_M=64
+TILE_N=64
+TILE_K=32</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Linear shape breakdown">
+      <div class="panel span-12">
+        <h2>Linear Shape Breakdown</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Output shape</th>
+              <th class="num">Dispatches</th>
+              <th class="num">Sum ms</th>
+              <th class="num">Avg ms</th>
+              <th>Component</th>
+              <th class="barcell">Share of coopmat linear</th>
+              <th>Speedup vs baseline</th>
+              <th>Kernel</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>[128, 14336]</code></td>
+              <td class="num">64</td>
+              <td class="num"><strong>255.9</strong></td>
+              <td class="num">4.00</td>
+              <td>FFN gate + up (<code>32 x 2</code>)</td>
+              <td class="barcell"><div class="bar"><span style="width:51.8%"></span></div><div class="note">51.8%</div></td>
+              <td><strong>3.08x</strong></td>
+              <td><code>linear_coopmat_half</code></td>
+            </tr>
+            <tr>
+              <td><code>[128, 4096]</code></td>
+              <td class="num">96</td>
+              <td class="num">203.7</td>
+              <td class="num">2.12</td>
+              <td>Q + O + FFN down (<code>32 x 3</code>)</td>
+              <td class="barcell"><div class="bar"><span style="width:41.3%"></span></div><div class="note">41.3%</div></td>
+              <td><strong>3.16x</strong></td>
+              <td><code>linear_coopmat_half</code></td>
+            </tr>
+            <tr>
+              <td><code>[128, 1024]</code></td>
+              <td class="num">64</td>
+              <td class="num">20.7</td>
+              <td class="num">0.32</td>
+              <td>K + V</td>
+              <td class="barcell"><div class="bar"><span style="width:4.2%"></span></div><div class="note">4.2%</div></td>
+              <td><strong>3.75x</strong></td>
+              <td><code>linear_coopmat_half</code></td>
+            </tr>
+            <tr>
+              <td><code>[1, 128256]</code></td>
+              <td class="num">2</td>
+              <td class="num">13.4</td>
+              <td class="num">6.69</td>
+              <td>lm_head fallback, <code>M=1</code></td>
+              <td class="barcell"><div class="bar"><span style="width:2.7%"></span></div><div class="note">2.7%</div></td>
+              <td>1.0x</td>
+              <td><code>linear_vec_buffer_buffer_half</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Shader details">
+      <div class="panel span-6">
+        <h2>What Fired</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Kernel</th>
+              <th class="num">Dispatches</th>
+              <th class="num">Steady ms</th>
+              <th class="num">% steady</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>linear_coopmat_half</code></td><td class="num">224</td><td class="num"><strong>398.58</strong></td><td class="num">68.0%</td></tr>
+            <tr><td><code>linear_vec_buffer_buffer_half</code> fallback</td><td class="num">1</td><td class="num">13.17</td><td class="num">2.2%</td></tr>
+            <tr><td><code>matmul_coopmat_float</code></td><td class="num">64</td><td class="num">0.89</td><td class="num">0.2%</td></tr>
+          </tbody>
+        </table>
+        <div class="callout">
+          The headline win is not just a faster shader. It also changes the next bottleneck: layout, copies, and CPU fallbacks now matter because linear time shrank.
+        </div>
+      </div>
+      <div class="panel span-6">
+        <h2>Dispatch Conditions</h2>
+        <pre><code>bool use_coopmat =
+    !getenv("VK_DISABLE_COOPMAT") &&
+    supports_cooperative_matrix() &&
+    storage_type_of(out) == kBuffer &&
+    M >= 64;</code></pre>
+        <p class="note">The coopmat export uses <code>VulkanPartitioner({"storage_type_override": VkStorageType.BUFFER})</code>, so activations and weights are buffers. Baseline used texture-backed weights for most linears.</p>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Source snippets">
+      <div class="panel span-12">
+        <h2>Source Snippets</h2>
+        <div class="snippet-grid">
+          <section>
+            <h3><a href="../../../pavan-report/executorch/backends/vulkan/runtime/graph/ops/glsl/linear_coopmat.yaml">linear_coopmat.yaml</a></h3>
+            <pre><code>linear_coopmat:
+  parameter_names_with_default_values:
+    DTYPE: float
+    PRECISION: highp
+    HAS_BIAS: false
+  generate_variant_forall:
+    DTYPE:
+      - VALUE: float
+      - VALUE: half
+  shader_variants:
+    - NAME: linear_coopmat
+    - NAME: linear_coopmat_bias
+      HAS_BIAS: true</code></pre>
+          </section>
+          <section>
+            <h3><a href="../../../pavan-report/executorch/backends/vulkan/runtime/graph/ops/glsl/linear_coopmat.glsl">linear_coopmat.glsl</a></h3>
+            <pre><code>#extension GL_KHR_cooperative_matrix : require
+
+const uint lM = 16;
+const uint lN = 16;
+const uint lK = 16;
+const uint TILE_M = 64;
+const uint TILE_N = 64;
+const uint TILE_K = 32;
+
+coopmat&lt;float, gl_ScopeSubgroup, lM, lN,
+  gl_MatrixUseAccumulator&gt; result[C_ROWS][C_COLS];
+
+result[i][j] = coopMatMulAdd(matA[i], matB, result[i][j]);</code></pre>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Attention matmul source">
+      <div class="panel span-12">
+        <h2>Attention BMM Also Moved To Coopmat</h2>
+        <p>The attention BMM kernels are small at seq=128, but they changed from <code>matmul_vec_*</code> to <code>matmul_coopmat_float</code>. That reduced attention matmul time from 14.5 ms to 0.93 ms.</p>
+        <div class="snippet-grid">
+          <section>
+            <h3><a href="../../../pavan-report/executorch/backends/vulkan/runtime/graph/ops/glsl/matmul_coopmat.yaml">matmul_coopmat.yaml</a></h3>
+            <pre><code>matmul_coopmat:
+  parameter_names_with_default_values:
+    DTYPE: float
+    PRECISION: highp
+  generate_variant_forall:
+    DTYPE:
+      - VALUE: float
+      - VALUE: half
+  shader_variants:
+    - NAME: matmul_coopmat</code></pre>
+          </section>
+          <section>
+            <h3><a href="../../../pavan-report/executorch/backends/vulkan/runtime/graph/ops/glsl/matmul_coopmat.glsl">matmul_coopmat.glsl</a></h3>
+            <pre><code>// Computes: D = A * B
+// fp16 x fp16 -> fp32 MMA when input dtype is half.
+// Same 64x64x32 tile shape as linear_coopmat.
+
+coopMatLoad(matA[i], Ash, ...);
+coopMatLoad(matB, Bsh, ...);
+result[i][j] = coopMatMulAdd(matA[i], matB, result[i][j]);</code></pre>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+    const tooltip = document.createElement("div");
+    tooltip.className = "chart-tooltip";
+    document.body.appendChild(tooltip);
+
+    function tooltipText(slice) {
+      const title = slice.querySelector("title");
+      return title ? title.textContent : slice.getAttribute("aria-label") || "";
+    }
+
+    function placeTooltip(x, y) {
+      const margin = 12;
+      tooltip.style.left = "0px";
+      tooltip.style.top = "0px";
+      const rect = tooltip.getBoundingClientRect();
+      const left = Math.min(x + 14, window.innerWidth - rect.width - margin);
+      const top = Math.min(y + 14, window.innerHeight - rect.height - margin);
+      tooltip.style.left = Math.max(margin, left) + "px";
+      tooltip.style.top = Math.max(margin, top) + "px";
+    }
+
+    document.querySelectorAll(".donut .slice").forEach(function (slice) {
+      slice.addEventListener("mouseenter", function (event) {
+        tooltip.textContent = tooltipText(slice);
+        tooltip.classList.add("visible");
+        placeTooltip(event.clientX, event.clientY);
+      });
+      slice.addEventListener("mousemove", function (event) {
+        placeTooltip(event.clientX, event.clientY);
+      });
+      slice.addEventListener("mouseleave", function () {
+        tooltip.classList.remove("visible");
+      });
+      slice.addEventListener("focus", function () {
+        tooltip.textContent = tooltipText(slice);
+        tooltip.classList.add("visible");
+        const rect = slice.getBoundingClientRect();
+        placeTooltip(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      });
+      slice.addEventListener("blur", function () {
+        tooltip.classList.remove("visible");
+      });
+    });
+  </script>
+</body>
+</html>

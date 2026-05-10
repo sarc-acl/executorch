@@ -17,7 +17,7 @@
 | **Where time goes** | **80% in linears** (all on tiled `linear_vec`, not coopmat); **57% FFN, 29% attention proj** |
 | **Largest seq that runs** | S=512 completes but is unusable (~95 s/forward, swap thrashing) |
 | **Hard OOM boundary** | S ≥ 1024 — pure memory-architecture limit, not shader-related |
-| **Biggest optimization lever** | switch linears to `linear_coopmat` (~2× win per prior 2026-05-06 synthetic data) → projects to ~115 tok/s |
+| **Biggest optimization lever** | switch linears to `linear_coopmat` — **measured 3.03× whole-forward speedup → 219.7 tok/s prefill**. See [`L32_S128_coopmat_REPORT.md`](L32_S128_coopmat_REPORT.md). |
 
 ## Methodology
 

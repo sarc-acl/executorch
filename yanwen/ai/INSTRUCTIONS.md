@@ -152,11 +152,125 @@ Output: `/home/doremy/llama31_pure_run/llama31_8b_32L_seq128_fp16.pte` (~16 GB).
 
 ## Configs tested in this update
 
-All artifacts under `yanwen/artifacts/L32/`. ETDump captured for S=128. S=512 ETDump is being captured at the time of writing (cliff regime, ~5 min). S=1024 and S=2048 OOM'd before any ETDump was produced — only `memprobe.tsv` is available.
+All baseline artifacts under `yanwen/artifacts/L32/`. Coopmat artifacts under `yanwen/artifacts/L32_coopmat/`. S=1024 and S=2048 OOM'd before any ETDump was produced — only `memprobe.tsv` is available.
 
-| seq | .etdp | .events.tsv | .memprobe.tsv | bench log |
-|---:|:---:|:---:|:---:|:---:|
-| 128 | ✓ | ✓ | ✓ | `S128_bench.log` |
-| 512 | ✓ | ✓ | ✓ | `S512_legacy.log` + `S512_etdump.log` |
-| 1024 | — (OOM before capture) | — | ✓ (truncated, OOM-killed) | `S1024_oom.log` |
-| 2048 | — | — | — | (no run this update) |
+| seq | run | .etdp | .events.tsv | .memprobe.tsv | bench log |
+|---:|---|:---:|:---:|:---:|:---:|
+| 128 | linear_vec (baseline) | ✓ | ✓ | ✓ | `L32/S128_bench.log` |
+| 128 | **linear_coopmat** | ✓ | ✓ | ✓ | `L32_coopmat/S128_bench.log` |
+| 512 | linear_vec | ✓ | ✓ | ✓ | `L32/S512_legacy.log` + `S512_etdump.log` |
+| 1024 | linear_vec | — (OOM before capture) | — | ✓ (truncated, OOM-killed) | `L32/S1024_oom.log` |
+| 2048 | linear_vec | — | — | — | (no run this update) |
+
+## Coopmat workflow (linear_coopmat shader from pavan-report branch)
+
+When the user wants to enable the cooperative-matrix path for fp16 linears
+(measured 3.03× whole-forward speedup at L=32 S=128):
+
+### Hard requirements
+
+- **Pavan-report tree**: `/home/doremy/sarc-acl/executorch/pavan-report/executorch/`
+  must be on the `pavan-report` branch (verify with `git -C ... branch --show-current`).
+- **Pavan-report's runner** must be built (separate from main's `cmake-out-vk/`).
+  See "One-time setup" below. The runner has `linear_coopmat`, `matmul_coopmat`,
+  and `addmm_khr_cm` GLSL compiled into its `spv.cpp`.
+- **Pavan-report's venv** must be activated before any Python invocation:
+  `source /home/doremy/sarc-acl/executorch/pavan-report/executorch/.venv/bin/activate`.
+  (The modified `tag_memory_meta_pass.py` and `vulkan_preprocess.py` live there.)
+- **Re-exported .pte** with `storage_type_override=BUFFER`. The .pte from the
+  baseline (`/home/doremy/llama31_pure_run/`) will NOT use coopmat at runtime
+  even if you run it through pavan-report's runner — the storage layout
+  baked at export time has to be `BUFFER`.
+
+### One-time setup (build pavan-report's runner)
+
+```bash
+cd /home/doremy/sarc-acl/executorch/pavan-report/executorch
+.venv/lib/python3.12/site-packages/cmake/data/bin/cmake . -Bcmake-out-vk \
+    --preset linux \
+    -DCMAKE_INSTALL_PREFIX=cmake-out-vk \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DEXECUTORCH_BUILD_VULKAN=ON \
+    -DEXECUTORCH_BUILD_DEVTOOLS=ON \
+    -DEXECUTORCH_ENABLE_EVENT_TRACER=ON \
+    -DEXECUTORCH_ENABLE_LOGGING=OFF
+.venv/lib/python3.12/site-packages/cmake/data/bin/cmake --build cmake-out-vk -j$(nproc) --target install
+```
+
+If the build fails with `std::find` / `std::rotate` "no matching function" errors
+on `runtime/graph/containers/SharedObject.cpp` or `runtime/graph/ops/impl/Squeeze.cpp`
+or similar files, **add `#include <algorithm>` to the offending files**.
+A one-shot Python fix:
+
+```bash
+python3 -c "
+import os, re
+root = '/home/doremy/sarc-acl/executorch/pavan-report/executorch/backends/vulkan/runtime'
+patterns = re.compile(r'std::(find|sort|rotate|reverse|transform|fill|copy|count|min_element|max_element|unique|partition|all_of|any_of|none_of|for_each|swap|max|min)\b')
+includes = re.compile(r'#include\s*<algorithm>')
+for d, _, files in os.walk(root):
+    for fn in files:
+        if not fn.endswith(('.cpp', '.h', '.hpp')): continue
+        p = os.path.join(d, fn)
+        try: txt = open(p).read()
+        except: continue
+        if patterns.search(txt) and not includes.search(txt):
+            lines = txt.splitlines(keepends=True)
+            last_inc = max((i for i, l in enumerate(lines) if l.startswith('#include')), default=-1)
+            if last_inc >= 0:
+                lines.insert(last_inc + 1, '\n#include <algorithm>\n')
+                open(p, 'w').writelines(lines)
+                print('FIXED:', p)
+"
+```
+
+(One-off bug on the `pavan-report` branch from a now-stricter GCC; fixed in this session.)
+
+### Re-export the .pte for coopmat
+
+```bash
+source /home/doremy/sarc-acl/executorch/pavan-report/executorch/.venv/bin/activate
+sudo swapon /swapfile     # 32L export needs ~16 GiB Python RAM peak
+cd /home/doremy/sarc-acl/executorch/main/executorch
+python yanwen/scripts/coopmat/setup_llama31_coopmat.py --n_layers 32 --seq_len 128
+```
+
+Output: `/home/doremy/llama31_pure_run_coopmat/llama31_8b_32L_seq128_fp16.pte` (16.06 GB; same size as baseline). Heavy: ~5 min.
+
+### Bench (scientific mode)
+
+```bash
+source /home/doremy/sarc-acl/executorch/pavan-report/executorch/.venv/bin/activate
+cd /home/doremy/sarc-acl/executorch/main/executorch
+python yanwen/scripts/coopmat/bench_llama31_coopmat.py --n_layers 32 --seq_len 128
+```
+
+Expected: steady-state ~580 ms, throughput ~220 tok/s. ~2 min wallclock total.
+
+### Capture ETDump for shader breakdown
+
+```bash
+python yanwen/scripts/coopmat/bench_llama31_coopmat.py --n_layers 32 --seq_len 128 \
+    --num_executions 8 --etdump-analyze
+```
+
+### Verify coopmat actually fired
+
+```bash
+grep -c 'linear_coopmat' /home/doremy/llama31_pure_run_coopmat/logs/bench_L32_S128_*.log
+# expect ~896 (224 dispatches per iter × multiple subprocesses)
+
+grep -c 'matmul_coopmat' /home/doremy/llama31_pure_run_coopmat/logs/bench_L32_S128_*.log
+# expect ~256 (32 BMM dispatches per iter × multiple subprocesses)
+
+grep -c 'linear_vec' /home/doremy/llama31_pure_run_coopmat/logs/bench_L32_S128_*.log
+# expect ~4 (only lm_head fallback, M=1 < 64)
+```
+
+If `linear_coopmat` count is 0, debug:
+
+- Verify pavan-report's venv is active (`which python` should point inside `pavan-report/.venv`)
+- Verify `RUNNER` in `run_llama31_coopmat.py` points at pavan-report's runner
+- Verify `compile_options = {"storage_type_override": VkStorageType.BUFFER}` made it through
+- `VK_DISABLE_COOPMAT` env var should NOT be set
+- The 780M does support `VK_KHR_cooperative_matrix` — confirm with `vulkaninfo | grep -i cooperative`
