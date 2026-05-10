@@ -93,6 +93,12 @@ def export_pte(n_layers: int, seq_len: int, out_dir: Path, want_etrecord: bool):
     et = edge.to_executorch()
     print(f"[export] lowered in {time.perf_counter()-t0:.1f}s")
 
+    # Release prog + edge before writing et.buffer — see baseline script
+    # for the OOM rationale.
+    if not want_etrecord:
+        del prog, edge
+        gc.collect()
+
     print(f"[export] writing .pte -> {pte_path}")
     with open(pte_path, "wb") as f:
         f.write(et.buffer)
@@ -113,7 +119,11 @@ def export_pte(n_layers: int, seq_len: int, out_dir: Path, want_etrecord: bool):
         except Exception as e:
             print(f"[export] WARNING generate_etrecord failed: {e}")
 
-    del prog, edge, et, example_tokens, example_inputs
+    if "prog" in locals():
+        del prog
+    if "edge" in locals():
+        del edge
+    del et, example_tokens, example_inputs
     gc.collect()
     return (
         tag,

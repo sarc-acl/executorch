@@ -59,7 +59,8 @@ The two ExecuTorch trees are **independent**: each has its own venv (with its ow
 | **L=4 S=1 baseline** (decode-shape) | 41.1 ms ETDump GPU | — | — |
 | **L=4 S=1 coopmat** (decode-shape) | 40.7 ms ETDump GPU | — | — |
 | Speedup (decode-shape) | **1.01× (no-op)** — gate fails at M=1 | — | — |
-| **L=32 decode** (extrapolated) | ~240 ms / token | ~4.2 tok/s | — |
+| **L=32 S=1 baseline** (decode-step, real, after OOM fix) | 310.6 ms steady GPU | **3.22 tok/s** | 313 ms wallclock |
+| L=32 1024-step decode (projected total) | ~315 ms / step × 1024 ≈ **5.4 min** | — | proxy includes ~1.6 ms KV traffic for real 1k context |
 
 Verification dispatches per forward (from grepping the runner stderr):
 
