@@ -1,0 +1,8 @@
+[env] RAM total: 28.9 GiB    Swap total: 24.0 GiB
+[env] RADV_GTT_PCT=80 set
+
+=== Calibration: N=1 (load + iter 0 + teardown) ===
+[run] RLIMIT_AS cap on child: 50.9 GiB (oom_score_adj=1000)
+[run] $ /home/doremy/sarc-acl/executorch/main/executorch/cmake-out-vk/executor_runner --model_path=/home/doremy/llama31_pure_run/llama31_8b_32L_seq1024_fp16.pte --inputs=/home/doremy/llama31_pure_run/llama31_8b_32L_seq1024_fp16_input0.bin --num_executions=1
+[run] executor_runner exited rc=-9 after 48.6s — likely OOM-killed.
+[run] memprobe peaks: Shmem=13166 MB  MinFree=202 MB  SwapUsed=25770 MB

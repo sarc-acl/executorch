@@ -37,9 +37,10 @@ def get_vulkan_partitioner(
     enable_dynamic_shape: bool = False,
     force_fp16: bool = False,
 ):
-    assert (
-        dtype_override == "fp32" or dtype_override is None
-    ), "Vulkan backend does not support non fp32 dtypes at the moment"
+    assert dtype_override in (None, "fp32", "fp16"), (
+        f"Vulkan partitioner: dtype_override={dtype_override} not supported "
+        "(allowed: fp32, fp16)"
+    )
     from executorch.backends.vulkan.partitioner.vulkan_partitioner import (
         VulkanPartitioner,
     )

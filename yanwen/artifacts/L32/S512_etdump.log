@@ -1,0 +1,115 @@
+[env] RAM total: 28.9 GiB    Swap total: 24.0 GiB
+[env] RADV_GTT_PCT=80 set
+[run] RLIMIT_AS cap on child: 50.9 GiB (oom_score_adj=1000)
+[run] $ /home/doremy/sarc-acl/executorch/main/executorch/cmake-out-vk/executor_runner --model_path=/home/doremy/llama31_pure_run/llama31_8b_32L_seq512_fp16.pte --inputs=/home/doremy/llama31_pure_run/llama31_8b_32L_seq512_fp16_input0.bin --num_executions=3 --etdump_path=/home/doremy/llama31_pure_run/llama31_8b_32L_seq512_fp16.etdp
+OutputX 0: tensor(sizes=[1, 128256], [
+  6.35938, 8.15625, 4.58203, 5.24609, 3.97266, 6.33203, 6.84766, 10.5859, 8.125, 5.50781, 
+  5.25781, 6.55859, 6.64062, 8.57812, 7.69141, 6.71484, 7.10547, 7.48828, 6.75391, 6.49219, 
+  5.98438, 5.75, 5.84375, 5.76953, 5.5, 7.94141, 7.66016, 6.98047, 6.58203, 5.66406, 
+  7.06641, 5.86719, 8.20312, 8.59375, 8.79688, 8.59375, 8.5625, 8.65625, 8.35938, 8.47656, 
+  7.57812, 8.28906, 8.16406, 8.72656, 8.47656, 8.10156, 7.86328, 8.64844, 6.87891, 8.25781, 
+  9.1875, 8.625, 7.375, 8.08594, 8.55469, 7.86719, 7.60938, 7.35938, 6.32031, 4.82812, 
+  6.37891, 4.18359, 8.08594, 4.97656, 6.23828, 5.20703, 5.1875, 3.52539, 5.81641, 5.46094, 
+  4.77734, 5.45312, 5.38281, 6.14844, 4.36719, 4.21094, 4.30078, 4.17969, 4.78516, 4.34375, 
+  5.96094, 4.16797, 5.13672, 4.01562, 4.70703, 5.05469, 5.32422, 5.58203, 5.10547, 5.92188, 
+  5.83594, 6.63672, 5.87891, 4.69922, 3.35156, 3.8125, 1.7002, 3.40625, 1.04883, 3.8125, 
+  ...,
+  -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, 
+  -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, 
+  -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, 
+  -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, 
+  -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, 
+  -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, 
+  -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, 
+  -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, 
+  -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, 
+  -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, -4.05469, 
+])
+[run] executor_runner wall-clock: 334.04s for 3 executions
+[run]   ~ 111345.6 ms / execution (subprocess wall)
+
+=== ETDump analysis ===
+/home/doremy/sarc-acl/executorch/main/executorch/.venv/lib64/python3.12/site-packages/executorch/devtools/inspector/_inspector.py:1086: UserWarning: Output Buffer not found. Tensor Debug Data will not be available.
+  warnings.warn(
+[analyze] (no etrecord — module hierarchy unavailable; op names from runtime)
+[analyze] events: 5687    measured total: 465.83 ms
+
+--- Top-30 ops by mean latency ---
+rank     mean_us       %  name
+   1    102744.5   22.1%  Method::execute
+   2     23852.1    5.1%  Program::load_method
+   3     23851.9    5.1%  Method::init
+   4      9664.4    2.1%  DELEGATE_CALL
+   5      9664.4    2.1%  ETVK_EXECUTE
+   6      9536.8    2.0%  ETVK_COMPUTE_GRAPH_EXECUTE
+   7      4171.7    0.9%  DELEGATE_CALL
+   8      4171.7    0.9%  ETVK_EXECUTE
+   9      3939.8    0.8%  ETVK_COMPUTE_GRAPH_EXECUTE
+  10      3893.6    0.8%  DELEGATE_CALL
+  11      3893.6    0.8%  ETVK_EXECUTE
+  12      3757.6    0.8%  ETVK_COMPUTE_GRAPH_EXECUTE
+  13      3602.1    0.8%  DELEGATE_CALL
+  14      3602.1    0.8%  ETVK_EXECUTE
+  15      3468.8    0.7%  DELEGATE_CALL
+  16      3468.8    0.7%  ETVK_EXECUTE
+  17      3407.1    0.7%  ETVK_COMPUTE_GRAPH_EXECUTE
+  18      3266.9    0.7%  ETVK_COMPUTE_GRAPH_EXECUTE
+  19      3230.9    0.7%  DELEGATE_CALL
+  20      3230.9    0.7%  ETVK_EXECUTE
+  21      3181.3    0.7%  DELEGATE_CALL
+  22      3181.3    0.7%  ETVK_EXECUTE
+  23      3156.6    0.7%  DELEGATE_CALL
+  24      3156.6    0.7%  ETVK_EXECUTE
+  25      3143.0    0.7%  ETVK_COMPUTE_GRAPH_EXECUTE
+  26      3115.0    0.7%  ETVK_COMPUTE_GRAPH_EXECUTE
+  27      3097.7    0.7%  ETVK_COMPUTE_GRAPH_EXECUTE
+  28      3045.6    0.7%  DELEGATE_CALL
+  29      3045.6    0.7%  ETVK_EXECUTE
+  30      3032.5    0.7%  DELEGATE_CALL
+
+--- Aggregate by op type ---
+op                                         count    total_ms       %
+execute                                        1      102.74   22.1%
+DELEGATE_CALL                                 97      102.21   21.9%
+ETVK_EXECUTE                                  97      102.21   21.9%
+ETVK_COMPUTE_GRAPH_EXECUTE                    97       96.75   20.8%
+load_method                                    1       23.85    5.1%
+init                                           1       23.85    5.1%
+{"operator": {"name": "aten.linear.default", "args":     226        5.90    1.3%
+ETVK_COPY_INPUTS                              97        3.42    0.7%
+ETVK_COPY_OUTPUTS                             97        1.95    0.4%
+OPERATOR_CALL                                321        0.53    0.1%
+{"operator": {"name": "aten.bmm.default", "args":      64        0.34    0.1%
+native_call_cat.out                           64        0.30    0.1%
+{"operator": {"name": "aten._softmax.default", "args":      32        0.27    0.1%
+{"operator": {"name": "aten.add.Tensor", "args":     447        0.21    0.0%
+{"operator": {"name": "aten.permute_copy.default", "args":     416        0.19    0.0%
+{"operator": {"name": "aten.mul.Tensor", "args":     515        0.15    0.0%
+{"operator": {"name": "aten.view_copy.default", "args":     640        0.15    0.0%
+{"operator": {"name": "dim_order_ops._to_dim_order_copy.default", "args":     738        0.12    0.0%
+{"operator": {"name": "aten.where.self", "args":      64        0.12    0.0%
+{"operator": {"name": "aten.squeeze_copy.dims", "args":     416        0.10    0.0%
+native_call_embedding.out                      1        0.09    0.0%
+native_call_eq.Scalar_out                     32        0.09    0.0%
+{"operator": {"name": "aten.expand_copy.default", "args":      64        0.08    0.0%
+{"operator": {"name": "aten.unsqueeze_copy.default", "args":     449        0.06    0.0%
+native_call_mul.Scalar_out                    64        0.03    0.0%
+{"operator": {"name": "aten.sigmoid.default", "args":      32        0.03    0.0%
+{"operator": {"name": "aten.full_like.default", "args":      32        0.02    0.0%
+{"operator": {"name": "aten.slice_copy.Tensor", "args":     194        0.02    0.0%
+native_call_logical_not.out                   64        0.01    0.0%
+native_call_any.out                           32        0.01    0.0%
+
+--- Per-submodule breakdown ---
+  (unmapped)                count= 5687  total=   465.83 ms  100.0%
+
+[analyze] wrote full event TSV -> /home/doremy/llama31_pure_run/llama31_8b_32L_seq512_fp16.events.tsv
+
+--- Memory profile ---
+  peak Shmem (RADV GTT-backed):      9852 MB
+  GTT cap (RADV_GTT_PCT=80):        24800 MB
+  peak Cached (.pte mmap):          10404 MB
+  min MemFree:                        226 MB
+  peak Swap used:                   12183 MB
+
+[bench] artifacts in /home/doremy/llama31_pure_run/llama31_8b_32L_seq512_fp16.*
