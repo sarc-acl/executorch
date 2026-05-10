@@ -24,8 +24,9 @@ Prose-y findings docs with breakdowns, tables, comparisons. Read order:
 3. [`reports/L32_S128_shader_breakdown.md`](reports/L32_S128_shader_breakdown.md) — per-GLSL-shader inventory for baseline
 4. [`reports/L32_S128_coopmat_shader_breakdown.md`](reports/L32_S128_coopmat_shader_breakdown.md) — per-shader inventory for coopmat
 5. [`reports/decode_GEMV_ceiling_check.md`](reports/decode_GEMV_ceiling_check.md) — M=1 (decode-shape) coopmat check at L=4: coopmat does NOT fire at M=1; both paths identical at ~40 ms/forward
-6. [`reports/L32_decode_step_breakdown.md`](reports/L32_decode_step_breakdown.md) — **L=32 decode-step ETDump breakdown** (after the export OOM fix). 310.6 ms / step → **3.22 tok/s**, bandwidth-bound. Proxy for the manager's "1k decode" spec — real 1024-step decode wallclock projects to ~5.4 min
-7. Three HTML reports in `reports/` for visual comparison
+6. [`reports/L32_decode_step_breakdown.md`](reports/L32_decode_step_breakdown.md) — L=32 *no-cache* decode-shape breakdown. 310.6 ms / step. ⚠️ **Superseded by #7 for throughput numbers** — the no-cache proxy underestimated by 16×.
+7. [`reports/L32_real_decode_benchmark.md`](reports/L32_real_decode_benchmark.md) — **AUTHORITATIVE: real autoregressive decode** with `use_kv_cache=True`. **5.0 s / step → 0.20 tok/s; 1024-step total ≈ 85 min.** 78% of wallclock is memory-wait outside GPU dispatch (page-cache eviction + CPU-fallback `index_put`). Manager-spec'd answer.
+8. Three HTML reports in `reports/` for visual comparison
 
 ### For AI agents → [`ai/`](ai/)
 

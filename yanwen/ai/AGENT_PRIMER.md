@@ -59,8 +59,11 @@ The two ExecuTorch trees are **independent**: each has its own venv (with its ow
 | **L=4 S=1 baseline** (decode-shape) | 41.1 ms ETDump GPU | — | — |
 | **L=4 S=1 coopmat** (decode-shape) | 40.7 ms ETDump GPU | — | — |
 | Speedup (decode-shape) | **1.01× (no-op)** — gate fails at M=1 | — | — |
-| **L=32 S=1 baseline** (decode-step, real, after OOM fix) | 310.6 ms steady GPU | **3.22 tok/s** | 313 ms wallclock |
-| L=32 1024-step decode (projected total) | ~315 ms / step × 1024 ≈ **5.4 min** | — | proxy includes ~1.6 ms KV traffic for real 1k context |
+| **L=32 S=1 baseline** (decode-shape, NO KV cache) | 310.6 ms steady GPU | (3.22 tok/s) | 313 ms wallclock |
+| **L=32 real decode** (`use_kv_cache=True`, max_seq_len=1024) | 1098 ms ETDump GPU | **0.20 tok/s** | **~5.0 s wallclock / step** |
+| L=32 1024-step real decode total | — | — | **~85 minutes** |
+
+⚠️ **The no-cache "decode-step" projection was wrong by 16×.** Adding KV cache buffers + `index_put` writes + storage transitions exposes massive CPU↔GPU copy traffic and page-cache eviction — only ~22% of decode wallclock is GPU-active; 78% is host memory-wait. See `reports/L32_real_decode_benchmark.md`.
 
 Verification dispatches per forward (from grepping the runner stderr):
 
