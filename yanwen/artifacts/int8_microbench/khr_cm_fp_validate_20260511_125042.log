@@ -1,0 +1,84 @@
+
+=== Compute Shader Performance Benchmark ===
+KHR Cooperative Matrix FP16/FP32 GEMM VALIDATION (tight tolerance)
+----------------------------------------------------------------------
+
+=== Cooperative Matrix Properties (KHR) ===
+Found 14 cooperative matrix configurations:
+
+#    M         N         K         AType       BType       CType       ResultType  Scope       
+-----------------------------------------------------------------------------------------------
+0    16        16        16        float16     float16     float16     float16     Subgroup    
+1    16        16        16        float16     float16     float32     float32     Subgroup    
+2    16        16        16        uint8       uint8       uint32      uint32      Subgroup    
+3    16        16        16        uint8       uint8       int32       int32       Subgroup    
+4    16        16        16        uint8       uint8       int32       int32       Subgroup    
+5    16        16        16        uint8       int8        uint32      uint32      Subgroup    
+6    16        16        16        uint8       int8        int32       int32       Subgroup    
+7    16        16        16        uint8       int8        int32       int32       Subgroup    
+8    16        16        16        int8        uint8       uint32      uint32      Subgroup    
+9    16        16        16        int8        uint8       int32       int32       Subgroup    
+10   16        16        16        int8        uint8       int32       int32       Subgroup    
+11   16        16        16        int8        int8        uint32      uint32      Subgroup    
+12   16        16        16        int8        int8        int32       int32       Subgroup    
+13   16        16        16        int8        int8        int32       int32       Subgroup    
+
+Executing 5 test cases for KHR_CM_FP_VALIDATE
+----------------------------------------------------------------------
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    5600
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {512, 2, 1}              {256, 1, 1}                                  12480
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    6520
+
+  CPU timing: 83.000 μs
+  GPU timing: 12.493 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (512,2,1)       (256,1,1)   validate_linear_cm_fp32_128x128x128                                                         [128x128]          12.493 μs        335.723 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    5560
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {1024, 2, 1}             {256, 1, 1}                                  14800
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {32768, 1, 1}            {64, 1, 1}                                    9920
+
+  CPU timing: 94.333 μs
+  GPU timing: 14.720 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (1024,2,1)      (256,1,1)   validate_linear_cm_fp32_128x256x128                                                         [128x128]          14.720 μs        569.878 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {32768, 1, 1}            {64, 1, 1}                                    8360
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {512, 4, 1}              {256, 1, 1}                                  16000
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {32768, 1, 1}            {64, 1, 1}                                   10440
+
+  CPU timing: 93.000 μs
+  GPU timing: 15.560 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (512,4,1)       (256,1,1)   validate_linear_cm_fp32_256x128x128                                                         [256x128]          15.560 μs        539.114 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {32768, 1, 1}            {64, 1, 1}                                    8320
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {512, 2, 1}              {256, 1, 1}                                  23960
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    6720
+
+  CPU timing: 110.667 μs
+  GPU timing: 24.373 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (512,2,1)       (256,1,1)   validate_linear_cm_fp32_128x128x256                                                         [128x256]          24.373 μs        344.172 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {65536, 1, 1}            {64, 1, 1}                                   13760
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {512, 2, 1}              {256, 1, 1}                                  45040
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    6640
+
+  CPU timing: 129.000 μs
+  GPU timing: 44.013 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (512,2,1)       (256,1,1)   validate_linear_cm_fp32_128x128x512                                                         [128x512]          44.013 μs        381.185 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 5 test cases
