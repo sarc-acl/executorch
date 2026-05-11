@@ -1,0 +1,137 @@
+
+=== Compute Shader Performance Benchmark ===
+KHR Cooperative Matrix Int8 GEMM VALIDATION (tight tolerance)
+----------------------------------------------------------------------
+
+=== Cooperative Matrix Properties (KHR) ===
+Found 14 cooperative matrix configurations:
+
+#    M         N         K         AType       BType       CType       ResultType  Scope       
+-----------------------------------------------------------------------------------------------
+0    16        16        16        float16     float16     float16     float16     Subgroup    
+1    16        16        16        float16     float16     float32     float32     Subgroup    
+2    16        16        16        uint8       uint8       uint32      uint32      Subgroup    
+3    16        16        16        uint8       uint8       int32       int32       Subgroup    
+4    16        16        16        uint8       uint8       int32       int32       Subgroup    
+5    16        16        16        uint8       int8        uint32      uint32      Subgroup    
+6    16        16        16        uint8       int8        int32       int32       Subgroup    
+7    16        16        16        uint8       int8        int32       int32       Subgroup    
+8    16        16        16        int8        uint8       uint32      uint32      Subgroup    
+9    16        16        16        int8        uint8       int32       int32       Subgroup    
+10   16        16        16        int8        uint8       int32       int32       Subgroup    
+11   16        16        16        int8        int8        uint32      uint32      Subgroup    
+12   16        16        16        int8        int8        int32       int32       Subgroup    
+13   16        16        16        int8        int8        int32       int32       Subgroup    
+
+Executing 9 test cases for KHR_CM_INT8_VALIDATE
+----------------------------------------------------------------------
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    5600
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    5560
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    6200
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {256, 1, 1}              {256, 1, 1}                                  19600
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    6680
+
+  CPU timing: 111.667 μs
+  GPU timing: 19.613 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (256,1,1)       (256,1,1)   validate_wave64_128x128x128                                                                 [128x128]          19.613 μs        213.850 GFLOP/s   PASSED
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    5680
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {32768, 1, 1}            {64, 1, 1}                                    8640
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {32768, 1, 1}            {64, 1, 1}                                    9800
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {512, 1, 1}              {256, 1, 1}                                  23240
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {32768, 1, 1}            {64, 1, 1}                                   12800
+
+  CPU timing: 133.333 μs
+  GPU timing: 23.427 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (512,1,1)       (256,1,1)   validate_wave64_128x256x128                                                                 [128x128]          23.427 μs        358.079 GFLOP/s   PASSED
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {32768, 1, 1}            {64, 1, 1}                                    8200
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    5880
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {32768, 1, 1}            {64, 1, 1}                                    8960
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {256, 2, 1}              {256, 1, 1}                                  20520
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {32768, 1, 1}            {64, 1, 1}                                   10000
+
+  CPU timing: 130.667 μs
+  GPU timing: 20.480 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (256,2,1)       (256,1,1)   validate_wave64_256x128x128                                                                 [256x128]          20.480 μs        409.600 GFLOP/s   PASSED
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {32768, 1, 1}            {64, 1, 1}                                    8320
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {32768, 1, 1}            {64, 1, 1}                                    8480
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    6360
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {256, 1, 1}              {256, 1, 1}                                  34080
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    6720
+
+  CPU timing: 128.000 μs
+  GPU timing: 34.120 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (256,1,1)       (256,1,1)   validate_wave64_128x128x256                                                                 [128x256]          34.120 μs        245.856 GFLOP/s   PASSED
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {65536, 1, 1}            {64, 1, 1}                                   13520
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {65536, 1, 1}            {64, 1, 1}                                   14040
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    6480
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {256, 1, 1}              {256, 1, 1}                                  63360
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    6560
+
+  CPU timing: 168.333 μs
+  GPU timing: 63.320 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (256,1,1)       (256,1,1)   validate_wave64_128x128x512                                                                 [128x512]          63.320 μs        264.959 GFLOP/s   PASSED
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    5440
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    5600
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    6240
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {256, 1, 1}              {256, 1, 1}                                  19600
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    6600
+
+  CPU timing: 107.667 μs
+  GPU timing: 19.640 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (256,1,1)       (256,1,1)   validate_sweep_v0_baseline_128x128x128                                                      [128x128]          19.640 μs        213.559 GFLOP/s   PASSED
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    5520
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    5600
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    6320
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {256, 1, 1}              {256, 1, 1}                                  19200
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    6520
+
+  CPU timing: 108.000 μs
+  GPU timing: 19.213 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (256,1,1)       (256,1,1)   validate_sweep_v1_deepK_128x128x128                                                         [128x128]          19.213 μs        218.302 GFLOP/s   PASSED
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    5440
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    5600
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    6240
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {256, 1, 1}              {256, 1, 1}                                  19600
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    6600
+
+  CPU timing: 109.000 μs
+  GPU timing: 19.667 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (256,1,1)       (256,1,1)   validate_sweep_v3_sg1x4_128x128x128                                                         [128x128]          19.667 μs        213.270 GFLOP/s   PASSED
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    5480
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    5680
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    6240
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {256, 1, 1}              {256, 1, 1}                                  19680
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    6520
+
+  CPU timing: 108.667 μs
+  GPU timing: 19.707 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (256,1,1)       (256,1,1)   validate_sweep_v4_sg4x1_128x128x128                                                         [128x128]          19.707 μs        212.837 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 9 test cases

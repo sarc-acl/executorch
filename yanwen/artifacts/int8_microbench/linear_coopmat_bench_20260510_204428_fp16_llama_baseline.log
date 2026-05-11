@@ -1,0 +1,467 @@
+
+=== Compute Shader Performance Benchmark ===
+Linear Coopmat vs Vec Microbenchmark
+----------------------------------------------------------------------
+Cooperative matrix: SUPPORTED
+
+=== Cooperative Matrix Properties (KHR) ===
+Found 14 cooperative matrix configurations:
+
+#    M         N         K         AType       BType       CType       ResultType  Scope       
+-----------------------------------------------------------------------------------------------
+0    16        16        16        float16     float16     float16     float16     Subgroup    
+1    16        16        16        float16     float16     float32     float32     Subgroup    
+2    16        16        16        uint8       uint8       uint32      uint32      Subgroup    
+3    16        16        16        uint8       uint8       int32       int32       Subgroup    
+4    16        16        16        uint8       uint8       int32       int32       Subgroup    
+5    16        16        16        uint8       int8        uint32      uint32      Subgroup    
+6    16        16        16        uint8       int8        int32       int32       Subgroup    
+7    16        16        16        uint8       int8        int32       int32       Subgroup    
+8    16        16        16        int8        uint8       uint32      uint32      Subgroup    
+9    16        16        16        int8        uint8       int32       int32       Subgroup    
+10   16        16        16        int8        uint8       int32       int32       Subgroup    
+11   16        16        16        int8        int8        uint32      uint32      Subgroup    
+12   16        16        16        int8        int8        int32       int32       Subgroup    
+13   16        16        16        int8        int8        int32       int32       Subgroup    
+
+Executing 56 test cases for LINEAR_COOPMAT_BENCH
+----------------------------------------------------------------------
+Skipping reference for large matrix (128x4096x14336)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_float_float", "operator_id": 0                                                  {1024, 128, 1}           {16, 4, 1}                                   45240
+"kernel_name": "linear_vec_texture3d_texture2d_float", "operator_id": 0                                                 {3584, 32, 1}            {8, 8, 1}                                 14896720
+"kernel_name": "image_to_nchw_texture3d_float_float", "operator_id": 0                                                  {3584, 128, 1}           {16, 4, 1}                                  201720
+
+  CPU timing: 15896.400 μs
+  GPU timing: 15327.564 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_texture3d_texture..     (3584,32,1)     (8,8,1)     vec_tex_llama_ffn_gateup_128_4096_14336                                                    [128x4096]       15327.564 μs        980.742 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   47800
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {57344, 2, 1}            {256, 1, 1}                                6736720
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {1835008, 1, 1}          {64, 1, 1}                                  188520
+
+  CPU timing: 7091.600 μs
+  GPU timing: 6712.856 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (57344,2,1)     (256,1,1)   cm_fp32_llama_ffn_gateup_128_4096_14336                                                    [128x4096]        6712.856 μs       2239.343 GFLOP/s   PASSED
+Skipping reference for large matrix (128x14336x4096)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_float_float", "operator_id": 0                                                  {3584, 128, 1}           {16, 4, 1}                                  197560
+"kernel_name": "linear_vec_texture3d_texture2d_float", "operator_id": 0                                                 {1024, 32, 1}            {8, 8, 1}                                 16194240
+"kernel_name": "image_to_nchw_texture3d_float_float", "operator_id": 0                                                  {1024, 128, 1}           {16, 4, 1}                                   58880
+
+  CPU timing: 16800.199 μs
+  GPU timing: 16205.151 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_texture3d_texture..     (1024,32,1)     (8,8,1)     vec_tex_llama_ffn_down_128_14336_4096                                                     [128x14336]       16205.151 μs        927.630 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {1835008, 1, 1}          {64, 1, 1}                                  186280
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {16384, 2, 1}            {256, 1, 1}                                6333800
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   50160
+
+  CPU timing: 6457.600 μs
+  GPU timing: 6060.108 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (16384,2,1)     (256,1,1)   cm_fp32_llama_ffn_down_128_14336_4096                                                     [128x14336]        6060.108 μs       2480.547 GFLOP/s   PASSED
+Skipping reference for large matrix (128x4096x4096)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_float_float", "operator_id": 0                                                  {1024, 128, 1}           {16, 4, 1}                                   46720
+"kernel_name": "linear_vec_texture3d_texture2d_float", "operator_id": 0                                                 {1024, 32, 1}            {8, 8, 1}                                  4543040
+"kernel_name": "image_to_nchw_texture3d_float_float", "operator_id": 0                                                  {1024, 128, 1}           {16, 4, 1}                                   60960
+
+  CPU timing: 5011.600 μs
+  GPU timing: 4600.872 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_texture3d_texture..     (1024,32,1)     (8,8,1)     vec_tex_llama_qo_128_4096_4096                                                             [128x4096]        4600.872 μs        933.511 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   47800
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {16384, 2, 1}            {256, 1, 1}                                1721800
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   50600
+
+  CPU timing: 1967.200 μs
+  GPU timing: 1721.388 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (16384,2,1)     (256,1,1)   cm_fp32_llama_qo_128_4096_4096                                                             [128x4096]        1721.388 μs       2495.060 GFLOP/s   PASSED
+Skipping reference for large matrix (128x4096x1024)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_float_float", "operator_id": 0                                                  {1024, 128, 1}           {16, 4, 1}                                   44680
+"kernel_name": "linear_vec_texture3d_texture2d_float", "operator_id": 0                                                 {256, 32, 1}             {8, 8, 1}                                  1227760
+"kernel_name": "image_to_nchw_texture3d_float_float", "operator_id": 0                                                  {256, 128, 1}            {16, 4, 1}                                    7280
+
+  CPU timing: 1361.600 μs
+  GPU timing: 1242.108 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_texture3d_texture..     (256,32,1)      (8,8,1)     vec_tex_llama_kv_128_4096_1024                                                             [128x4096]        1242.108 μs        864.451 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   50400
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {4096, 2, 1}             {256, 1, 1}                                 306800
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {131072, 1, 1}           {64, 1, 1}                                   11440
+
+  CPU timing: 432.400 μs
+  GPU timing: 306.940 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (4096,2,1)      (256,1,1)   cm_fp32_llama_kv_128_4096_1024                                                             [128x4096]         306.940 μs       3498.214 GFLOP/s   PASSED
+Skipping reference for large matrix (256x768x3072)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_float_float", "operator_id": 0                                                  {192, 256, 1}            {4, 16, 1}                                   13000
+"kernel_name": "linear_vec_texture3d_texture2d_float", "operator_id": 0                                                 {768, 64, 1}             {8, 8, 1}                                  1205800
+"kernel_name": "image_to_nchw_texture3d_float_float", "operator_id": 0                                                  {768, 256, 1}            {16, 4, 1}                                   80720
+
+  CPU timing: 1340.100 μs
+  GPU timing: 1174.288 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_texture3d_texture..     (768,64,1)      (8,8,1)     vec_tex_BERT_FFN_up                                                                         [256x768]        1174.288 μs       1028.674 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {196608, 1, 1}           {64, 1, 1}                                   13440
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {12288, 4, 1}            {256, 1, 1}                                 516360
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {786432, 1, 1}           {64, 1, 1}                                   83840
+
+  CPU timing: 684.400 μs
+  GPU timing: 525.160 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (12288,4,1)     (256,1,1)   cm_fp32_BERT_FFN_up                                                                         [256x768]         525.160 μs       2300.174 GFLOP/s   PASSED
+Skipping reference for large matrix (256x3072x768)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_float_float", "operator_id": 0                                                  {768, 256, 1}            {16, 4, 1}                                   72920
+"kernel_name": "linear_vec_texture3d_texture2d_float", "operator_id": 0                                                 {192, 64, 1}             {8, 8, 1}                                   986280
+"kernel_name": "image_to_nchw_texture3d_float_float", "operator_id": 0                                                  {192, 256, 1}            {4, 16, 1}                                   12320
+
+  CPU timing: 1147.600 μs
+  GPU timing: 995.388 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_texture3d_texture..     (192,64,1)      (8,8,1)     vec_tex_BERT_FFN_down                                                                      [256x3072]         995.388 μs       1213.556 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {786432, 1, 1}           {64, 1, 1}                                   75800
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {3072, 4, 1}             {256, 1, 1}                                 338400
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {196608, 1, 1}           {64, 1, 1}                                   16920
+
+  CPU timing: 489.700 μs
+  GPU timing: 339.636 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (3072,4,1)      (256,1,1)   cm_fp32_BERT_FFN_down                                                                      [256x3072]         339.636 μs       3556.630 GFLOP/s   PASSED
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_float_float", "operator_id": 0                                                  {192, 128, 1}            {16, 4, 1}                                    9640
+"kernel_name": "linear_vec_texture3d_texture2d_float", "operator_id": 0                                                 {192, 32, 1}             {8, 8, 1}                                   440200
+"kernel_name": "image_to_nchw_texture3d_float_float", "operator_id": 0                                                  {192, 128, 1}            {16, 4, 1}                                   12960
+
+  CPU timing: 519.600 μs
+  GPU timing: 420.920 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_texture3d_texture..     (192,32,1)      (8,8,1)     vec_tex_BERT_QKV                                                                            [128x768]         420.920 μs        358.726 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {98304, 1, 1}            {64, 1, 1}                                   16080
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {3072, 2, 1}             {256, 1, 1}                                  96400
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {98304, 1, 1}            {64, 1, 1}                                   20440
+
+  CPU timing: 201.100 μs
+  GPU timing: 97.392 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (3072,2,1)      (256,1,1)   cm_fp32_BERT_QKV                                                                            [128x768]          97.392 μs       1550.383 GFLOP/s   PASSED
+Skipping reference for large matrix (1x4096x4096)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_float_float", "operator_id": 0                                                  {1024, 1, 1}             {64, 1, 1}                                    2800
+"kernel_name": "linear_vec_tile_row_1_texture3d_texture2d_float", "operator_id": 0                                      {1024, 1, 1}             {16, 4, 1}                                 1200400
+"kernel_name": "image_to_nchw_texture3d_float_float", "operator_id": 0                                                  {1024, 1, 1}             {64, 1, 1}                                    3200
+
+  CPU timing: 1310.700 μs
+  GPU timing: 1234.332 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_tile_row_1_textur..     (1024,1,1)      (16,4,1)    vec_tex_LLM_QKV_1tok                                                                         [1x4096]        1234.332 μs         27.184 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {4096, 1, 1}             {64, 1, 1}                                    3600
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {16384, 1, 1}            {256, 1, 1}                                1450400
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {4096, 1, 1}             {64, 1, 1}                                    4000
+
+  CPU timing: 1604.000 μs
+  GPU timing: 1454.452 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (16384,1,1)     (256,1,1)   cm_fp32_LLM_QKV_1tok                                                                         [1x4096]        1454.452 μs         23.070 GFLOP/s   PASSED
+Skipping reference for large matrix (1x4096x11008)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_float_float", "operator_id": 0                                                  {1024, 1, 1}             {64, 1, 1}                                    2600
+"kernel_name": "linear_vec_tile_row_1_texture3d_texture2d_float", "operator_id": 0                                      {2752, 1, 1}             {16, 4, 1}                                 2164720
+"kernel_name": "image_to_nchw_texture3d_float_float", "operator_id": 0                                                  {2752, 1, 1}             {64, 1, 1}                                    3440
+
+  CPU timing: 2299.000 μs
+  GPU timing: 2155.956 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_tile_row_1_textur..     (2752,1,1)      (16,4,1)    vec_tex_LLM_FFN_up_1tok                                                                      [1x4096]        2155.956 μs         41.827 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {4096, 1, 1}             {64, 1, 1}                                    2800
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {44032, 1, 1}            {256, 1, 1}                                2728040
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {11008, 1, 1}            {64, 1, 1}                                    3800
+
+  CPU timing: 3486.200 μs
+  GPU timing: 3368.752 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (44032,1,1)     (256,1,1)   cm_fp32_LLM_FFN_up_1tok                                                                      [1x4096]        3368.752 μs         26.769 GFLOP/s   PASSED
+Skipping reference for large matrix (1x11008x4096)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_float_float", "operator_id": 0                                                  {2752, 1, 1}             {64, 1, 1}                                    2560
+"kernel_name": "linear_vec_tile_row_1_texture3d_texture2d_float", "operator_id": 0                                      {1024, 1, 1}             {16, 4, 1}                                 2539840
+"kernel_name": "image_to_nchw_texture3d_float_float", "operator_id": 0                                                  {1024, 1, 1}             {64, 1, 1}                                    2280
+
+  CPU timing: 3081.100 μs
+  GPU timing: 2968.960 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_tile_row_1_textur..     (1024,1,1)      (16,4,1)    vec_tex_LLM_FFN_down_1tok                                                                   [1x11008]        2968.960 μs         30.373 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {11008, 1, 1}            {64, 1, 1}                                    3200
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {16384, 1, 1}            {256, 1, 1}                                2429280
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {4096, 1, 1}             {64, 1, 1}                                    2640
+
+  CPU timing: 3024.800 μs
+  GPU timing: 2936.724 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (16384,1,1)     (256,1,1)   cm_fp32_LLM_FFN_down_1tok                                                                   [1x11008]        2936.724 μs         30.707 GFLOP/s   PASSED
+Skipping reference for large matrix (32x4096x4096)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_float_float", "operator_id": 0                                                  {1024, 32, 1}            {16, 4, 1}                                    8840
+"kernel_name": "linear_vec_texture3d_texture2d_float", "operator_id": 0                                                 {1024, 8, 1}             {8, 8, 1}                                  2168240
+"kernel_name": "image_to_nchw_texture3d_float_float", "operator_id": 0                                                  {1024, 32, 1}            {16, 4, 1}                                   10400
+
+  CPU timing: 2523.500 μs
+  GPU timing: 2414.152 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_texture3d_texture..     (1024,8,1)      (8,8,1)     vec_tex_LLM_QKV_32tok                                                                       [32x4096]        2414.152 μs        444.770 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {131072, 1, 1}           {64, 1, 1}                                   12920
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {16384, 1, 1}            {256, 1, 1}                                 964720
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {131072, 1, 1}           {64, 1, 1}                                   13280
+
+  CPU timing: 1026.300 μs
+  GPU timing: 926.052 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (16384,1,1)     (256,1,1)   cm_fp32_LLM_QKV_32tok                                                                       [32x4096]         926.052 μs       1159.483 GFLOP/s   PASSED
+Skipping reference for large matrix (32x4096x11008)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_float_float", "operator_id": 0                                                  {1024, 32, 1}            {16, 4, 1}                                   10080
+"kernel_name": "linear_vec_texture3d_texture2d_float", "operator_id": 0                                                 {2752, 8, 1}             {8, 8, 1}                                  4235440
+"kernel_name": "image_to_nchw_texture3d_float_float", "operator_id": 0                                                  {2752, 32, 1}            {16, 4, 1}                                   43680
+
+  CPU timing: 5921.100 μs
+  GPU timing: 5253.440 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_texture3d_texture..     (2752,8,1)      (8,8,1)     vec_tex_LLM_FFN_up_32tok                                                                    [32x4096]        5253.440 μs        549.294 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {131072, 1, 1}           {64, 1, 1}                                   12960
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {44032, 1, 1}            {256, 1, 1}                                2485960
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {352256, 1, 1}           {64, 1, 1}                                   35880
+
+  CPU timing: 2655.000 μs
+  GPU timing: 2485.972 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (44032,1,1)     (256,1,1)   cm_fp32_LLM_FFN_up_32tok                                                                    [32x4096]        2485.972 μs       1160.786 GFLOP/s   PASSED
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_float_float", "operator_id": 0                                                  {256, 256, 1}            {16, 4, 1}                                   21560
+"kernel_name": "linear_vec_texture3d_texture2d_float", "operator_id": 0                                                 {256, 64, 1}             {8, 8, 1}                                  1712920
+"kernel_name": "image_to_nchw_texture3d_float_float", "operator_id": 0                                                  {256, 256, 1}            {16, 4, 1}                                   33400
+
+  CPU timing: 1809.500 μs
+  GPU timing: 1653.108 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_texture3d_texture..     (256,64,1)      (8,8,1)     vec_tex_sq_1024                                                                            [256x1024]        1653.108 μs        324.765 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {262144, 1, 1}           {64, 1, 1}                                   46320
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {4096, 4, 1}             {256, 1, 1}                                 373440
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {262144, 1, 1}           {64, 1, 1}                                   49240
+
+  CPU timing: 551.800 μs
+  GPU timing: 374.628 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (4096,4,1)      (256,1,1)   cm_fp32_sq_1024                                                                            [256x1024]         374.628 μs       1433.077 GFLOP/s   PASSED
+Skipping reference for large matrix (256x4096x4096)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_float_float", "operator_id": 0                                                  {1024, 256, 1}           {16, 4, 1}                                  100800
+"kernel_name": "linear_vec_texture3d_texture2d_float", "operator_id": 0                                                 {1024, 64, 1}            {8, 8, 1}                                  8419000
+"kernel_name": "image_to_nchw_texture3d_float_float", "operator_id": 0                                                  {1024, 256, 1}           {16, 4, 1}                                  116040
+
+  CPU timing: 10040.800 μs
+  GPU timing: 9510.938 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_texture3d_texture..     (1024,64,1)     (8,8,1)     vec_tex_sq_4096                                                                            [256x4096]        9510.938 μs        903.164 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {1048576, 1, 1}          {64, 1, 1}                                  103680
+"kernel_name": "linear_coopmat_float", "operator_id": 0                                                                 {16384, 4, 1}            {256, 1, 1}                                3494200
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {1048576, 1, 1}          {64, 1, 1}                                  104240
+
+  CPU timing: 4044.000 μs
+  GPU timing: 3611.092 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_float", "oper..     (16384,4,1)     (256,1,1)   cm_fp32_sq_4096                                                                            [256x4096]        3611.092 μs       2378.763 GFLOP/s   PASSED
+Skipping reference for large matrix (128x4096x14336)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_half_half", "operator_id": 0                                                    {1024, 128, 1}           {16, 4, 1}                                   20400
+"kernel_name": "linear_vec_texture3d_texture2d_half", "operator_id": 0                                                  {3584, 32, 1}            {8, 8, 1}                                 11225760
+"kernel_name": "image_to_nchw_texture3d_half_half", "operator_id": 0                                                    {3584, 128, 1}           {16, 4, 1}                                  108320
+
+  CPU timing: 11856.300 μs
+  GPU timing: 11292.220 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_texture3d_texture..     (3584,32,1)     (8,8,1)     vec_fp16_llama_ffn_gateup_128_4096_14336                                                   [128x4096]       11292.220 μs       1331.216 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_half_half", "operator_id": 0                                                             {524288, 1, 1}           {64, 1, 1}                                   29680
+"kernel_name": "linear_coopmat_half", "operator_id": 0                                                                  {57344, 2, 1}            {256, 1, 1}                                3280000
+"kernel_name": "buffer_to_nchw_half_half", "operator_id": 0                                                             {1835008, 1, 1}          {64, 1, 1}                                  119880
+
+  CPU timing: 3985.900 μs
+  GPU timing: 3420.992 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_half", "opera..     (57344,2,1)     (256,1,1)   cm_fp16_llama_ffn_gateup_128_4096_14336                                                    [128x4096]        3420.992 μs       4394.160 GFLOP/s   PASSED
+Skipping reference for large matrix (128x14336x4096)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_half_half", "operator_id": 0                                                    {3584, 128, 1}           {16, 4, 1}                                   91280
+"kernel_name": "linear_vec_texture3d_texture2d_half", "operator_id": 0                                                  {1024, 32, 1}            {8, 8, 1}                                 12582880
+"kernel_name": "image_to_nchw_texture3d_half_half", "operator_id": 0                                                    {1024, 128, 1}           {16, 4, 1}                                   19760
+
+  CPU timing: 13093.900 μs
+  GPU timing: 12712.900 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_texture3d_texture..     (1024,32,1)     (8,8,1)     vec_fp16_llama_ffn_down_128_14336_4096                                                    [128x14336]       12712.900 μs       1182.451 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_half_half", "operator_id": 0                                                             {1835008, 1, 1}          {64, 1, 1}                                   96520
+"kernel_name": "linear_coopmat_half", "operator_id": 0                                                                  {16384, 2, 1}            {256, 1, 1}                                3397320
+"kernel_name": "buffer_to_nchw_half_half", "operator_id": 0                                                             {524288, 1, 1}           {64, 1, 1}                                   27800
+
+  CPU timing: 3806.100 μs
+  GPU timing: 3516.548 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_half", "opera..     (16384,2,1)     (256,1,1)   cm_fp16_llama_ffn_down_128_14336_4096                                                     [128x14336]        3516.548 μs       4274.756 GFLOP/s   PASSED
+Skipping reference for large matrix (128x4096x4096)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_half_half", "operator_id": 0                                                    {1024, 128, 1}           {16, 4, 1}                                   20360
+"kernel_name": "linear_vec_texture3d_texture2d_half", "operator_id": 0                                                  {1024, 32, 1}            {8, 8, 1}                                  3554120
+"kernel_name": "image_to_nchw_texture3d_half_half", "operator_id": 0                                                    {1024, 128, 1}           {16, 4, 1}                                   33040
+
+  CPU timing: 3749.300 μs
+  GPU timing: 3538.644 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_texture3d_texture..     (1024,32,1)     (8,8,1)     vec_fp16_llama_qo_128_4096_4096                                                            [128x4096]        3538.644 μs       1213.733 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_half_half", "operator_id": 0                                                             {524288, 1, 1}           {64, 1, 1}                                   26920
+"kernel_name": "linear_coopmat_half", "operator_id": 0                                                                  {16384, 2, 1}            {256, 1, 1}                                 914800
+"kernel_name": "buffer_to_nchw_half_half", "operator_id": 0                                                             {524288, 1, 1}           {64, 1, 1}                                   28480
+
+  CPU timing: 1043.400 μs
+  GPU timing: 923.476 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_half", "opera..     (16384,2,1)     (256,1,1)   cm_fp16_llama_qo_128_4096_4096                                                             [128x4096]         923.476 μs       4650.871 GFLOP/s   PASSED
+Skipping reference for large matrix (128x4096x1024)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_half_half", "operator_id": 0                                                    {1024, 128, 1}           {16, 4, 1}                                   19160
+"kernel_name": "linear_vec_texture3d_texture2d_half", "operator_id": 0                                                  {256, 32, 1}             {8, 8, 1}                                  1058600
+"kernel_name": "image_to_nchw_texture3d_half_half", "operator_id": 0                                                    {256, 128, 1}            {16, 4, 1}                                    3720
+
+  CPU timing: 1140.700 μs
+  GPU timing: 1051.696 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_texture3d_texture..     (256,32,1)      (8,8,1)     vec_fp16_llama_kv_128_4096_1024                                                            [128x4096]        1051.696 μs       1020.962 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_half_half", "operator_id": 0                                                             {524288, 1, 1}           {64, 1, 1}                                   27200
+"kernel_name": "linear_coopmat_half", "operator_id": 0                                                                  {4096, 2, 1}             {256, 1, 1}                                 257560
+"kernel_name": "buffer_to_nchw_half_half", "operator_id": 0                                                             {131072, 1, 1}           {64, 1, 1}                                    8720
+
+  CPU timing: 346.400 μs
+  GPU timing: 256.480 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_half", "opera..     (4096,2,1)      (256,1,1)   cm_fp16_llama_kv_128_4096_1024                                                             [128x4096]         256.480 μs       4186.454 GFLOP/s   PASSED
+Skipping reference for large matrix (256x768x3072)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_half_half", "operator_id": 0                                                    {192, 256, 1}            {4, 16, 1}                                    8000
+"kernel_name": "linear_vec_texture3d_texture2d_half", "operator_id": 0                                                  {768, 64, 1}             {8, 8, 1}                                   924640
+"kernel_name": "image_to_nchw_texture3d_half_half", "operator_id": 0                                                    {768, 256, 1}            {16, 4, 1}                                   39880
+
+  CPU timing: 1014.800 μs
+  GPU timing: 908.172 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_texture3d_texture..     (768,64,1)      (8,8,1)     vec_fp16_BERT_FFN_up                                                                        [256x768]         908.172 μs       1330.100 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_half_half", "operator_id": 0                                                             {196608, 1, 1}           {64, 1, 1}                                   10520
+"kernel_name": "linear_coopmat_half", "operator_id": 0                                                                  {12288, 4, 1}            {256, 1, 1}                                 266920
+"kernel_name": "buffer_to_nchw_half_half", "operator_id": 0                                                             {786432, 1, 1}           {64, 1, 1}                                   44040
+
+  CPU timing: 382.200 μs
+  GPU timing: 269.312 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_half", "opera..     (12288,4,1)     (256,1,1)   cm_fp16_BERT_FFN_up                                                                         [256x768]         269.312 μs       4485.354 GFLOP/s   PASSED
+Skipping reference for large matrix (256x3072x768)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_image_texture3d_half_half", "operator_id": 0                                                    {768, 256, 1}            {16, 4, 1}                                   33120
+"kernel_name": "linear_vec_texture3d_texture2d_half", "operator_id": 0                                                  {192, 64, 1}             {8, 8, 1}                                   787240
+"kernel_name": "image_to_nchw_texture3d_half_half", "operator_id": 0                                                    {192, 256, 1}            {4, 16, 1}                                    8280
+
+  CPU timing: 891.400 μs
+  GPU timing: 789.040 μs
+  Using GPU timing for result
+"kernel_name": "linear_vec_texture3d_texture..     (192,64,1)      (8,8,1)     vec_fp16_BERT_FFN_down                                                                     [256x3072]         789.040 μs       1530.923 GFLOP/s   PASSED
+[VK_MATMUL] Using linear_coopmat for constant mat2
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_half_half", "operator_id": 0                                                             {786432, 1, 1}           {64, 1, 1}                                   40600
+"kernel_name": "linear_coopmat_half", "operator_id": 0                                                                  {3072, 4, 1}             {256, 1, 1}                                 253200
+"kernel_name": "buffer_to_nchw_half_half", "operator_id": 0                                                             {196608, 1, 1}           {64, 1, 1}                                   11560
+
+  CPU timing: 361.900 μs
+  GPU timing: 253.872 μs
+  Using GPU timing for result
+"kernel_name": "linear_coopmat_half", "opera..     (3072,4,1)      (256,1,1)   cm_fp16_BERT_FFN_down                                                                      [256x3072]         253.872 μs       4758.144 GFLOP/s   PASSED
+timeout: the monitored command dumped core
