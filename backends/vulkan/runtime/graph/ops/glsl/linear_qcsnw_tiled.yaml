@@ -34,6 +34,19 @@ linear_qcsnw_tiled:
       OUT_STORAGE: buffer
       WEIGHT_STORAGE: buffer
       SCALES_STORAGE: buffer
+    # _half (fp16) variants — added for fp16 LLaMA → vulkan_8w int8 path
+    - NAME: linear_qcs8w_tiled_texture3d_texture3d_texture2d_texture2d_half
+      DTYPE: half
+    - NAME: linear_qcs8w_tiled_buffer_buffer_texture2d_texture2d_half
+      DTYPE: half
+      IN_STORAGE: buffer
+      OUT_STORAGE: buffer
+    - NAME: linear_qcs8w_tiled_buffer_buffer_buffer_buffer_half
+      DTYPE: half
+      IN_STORAGE: buffer
+      OUT_STORAGE: buffer
+      WEIGHT_STORAGE: buffer
+      SCALES_STORAGE: buffer
     - NAME: linear_qcs4w_tiled_texture3d_texture3d_texture2d_texture2d_float
       TILE_TXCOLS: 2
       QUANT_NBITS: 4

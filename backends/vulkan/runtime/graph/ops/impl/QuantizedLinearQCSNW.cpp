@@ -412,6 +412,13 @@ bool can_use_coop_impl(ComputeGraph& graph, const ValueRef mat1) {
   if (graph.device_is_adreno() && graph.device_name_contains("702")) {
     return false;
   }
+  // linear_qcs8w_coop uses fp16 shared memory which needs codegen support that
+  // isn't currently emitted by define_required_extensions(texture3d, half).
+  // Fall back to the tiled algorithm for half-precision graphs (only matters
+  // for M=1 dispatches; perf hit is negligible since lm_head is tiny).
+  if (graph.dtype_of(mat1) == vkapi::kHalf) {
+    return false;
+  }
   // Check that the computation is vector * matrix
   return (graph.size_at<int>(-2, mat1) == 1);
 }

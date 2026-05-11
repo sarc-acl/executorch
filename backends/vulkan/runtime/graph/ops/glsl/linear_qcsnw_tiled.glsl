@@ -10,6 +10,9 @@
 
 ${define_required_extensions(OUT_STORAGE, DTYPE)}
 
+$if DTYPE == "half":
+  #extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
+
 #define PRECISION ${PRECISION}
 
 #define T ${buffer_scalar_type(DTYPE)}

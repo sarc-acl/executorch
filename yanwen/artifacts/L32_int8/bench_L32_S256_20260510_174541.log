@@ -1,0 +1,125 @@
+[env] RAM total: 28.9 GiB    Swap total: 24.0 GiB
+[env] RADV_GTT_PCT=80 set
+
+=== Calibration: N=1 (load + iter 0 + teardown) ===
+[run] RLIMIT_AS cap on child: 50.9 GiB (oom_score_adj=1000)
+[run] $ /home/doremy/sarc-acl/executorch/main/executorch/cmake-out-vk/executor_runner --model_path=/home/doremy/llama31_pure_run_int8/llama31_8b_32L_seq256_int8.pte --inputs=/home/doremy/llama31_pure_run_int8/llama31_8b_32L_seq256_int8_input0.bin --num_executions=1
+OutputX 0: tensor(sizes=[1, 128256], [
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  ...,
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+])
+[run] executor_runner wall-clock: 20.10s for 1 executions
+[run]   ~ 20104.9 ms / execution (subprocess wall)
+  W1 = 20104.9 ms
+
+=== Measurement: 3 reps × N=4 ===
+[run] RLIMIT_AS cap on child: 50.9 GiB (oom_score_adj=1000)
+[run] $ /home/doremy/sarc-acl/executorch/main/executorch/cmake-out-vk/executor_runner --model_path=/home/doremy/llama31_pure_run_int8/llama31_8b_32L_seq256_int8.pte --inputs=/home/doremy/llama31_pure_run_int8/llama31_8b_32L_seq256_int8_input0.bin --num_executions=4
+OutputX 0: tensor(sizes=[1, 128256], [
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  ...,
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+])
+[run] executor_runner wall-clock: 34.20s for 4 executions
+[run]   ~ 8549.8 ms / execution (subprocess wall)
+  rep 1: WK=34199.3 ms  wall/N=8549.8 ms  steady=(WK-W1)/3=4698.2 ms
+[run] RLIMIT_AS cap on child: 50.9 GiB (oom_score_adj=1000)
+[run] $ /home/doremy/sarc-acl/executorch/main/executorch/cmake-out-vk/executor_runner --model_path=/home/doremy/llama31_pure_run_int8/llama31_8b_32L_seq256_int8.pte --inputs=/home/doremy/llama31_pure_run_int8/llama31_8b_32L_seq256_int8_input0.bin --num_executions=4
+OutputX 0: tensor(sizes=[1, 128256], [
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  ...,
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+])
+[run] executor_runner wall-clock: 33.78s for 4 executions
+[run]   ~ 8446.0 ms / execution (subprocess wall)
+  rep 2: WK=33784.0 ms  wall/N=8446.0 ms  steady=(WK-W1)/3=4559.7 ms
+[run] RLIMIT_AS cap on child: 50.9 GiB (oom_score_adj=1000)
+[run] $ /home/doremy/sarc-acl/executorch/main/executorch/cmake-out-vk/executor_runner --model_path=/home/doremy/llama31_pure_run_int8/llama31_8b_32L_seq256_int8.pte --inputs=/home/doremy/llama31_pure_run_int8/llama31_8b_32L_seq256_int8_input0.bin --num_executions=4
+OutputX 0: tensor(sizes=[1, 128256], [
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  ...,
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+  -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, -nan, 
+])
+[run] executor_runner wall-clock: 33.71s for 4 executions
+[run]   ~ 8426.6 ms / execution (subprocess wall)
+  rep 3: WK=33706.5 ms  wall/N=8426.6 ms  steady=(WK-W1)/3=4533.9 ms
+
+=== Steady-state forward (iter 0 + load+teardown algebraically excluded) ===
+  per-rep steady: 4698.2  4559.7  4533.9 ms
+  mean ± stdev:   4597.2 ± 88.3 ms  (cv=1.9%, min=4533.9, max=4698.2)
+  wallclock/N mean: 8474.2 ms  (legacy metric; +3876.9 ms inflation from load+iter0/N)
+
+[bench] artifacts in /home/doremy/llama31_pure_run_int8/llama31_8b_32L_seq256_int8.*

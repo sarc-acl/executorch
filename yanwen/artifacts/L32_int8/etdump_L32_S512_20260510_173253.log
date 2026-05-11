@@ -1,0 +1,74 @@
+[env] RAM total: 28.9 GiB    Swap total: 24.0 GiB
+[env] RADV_GTT_PCT=80 set
+[run] RLIMIT_AS cap on child: 50.9 GiB (oom_score_adj=1000)
+[run] $ /home/doremy/sarc-acl/executorch/main/executorch/cmake-out-vk/executor_runner --model_path=/home/doremy/llama31_pure_run_int8/llama31_8b_32L_seq512_int8.pte --inputs=/home/doremy/llama31_pure_run_int8/llama31_8b_32L_seq512_int8_input0.bin --num_executions=4 --etdump_path=/home/doremy/llama31_pure_run_int8/llama31_8b_32L_seq512_int8.etdp
+OutputX 0: tensor(sizes=[1, 128256], [
+  ...,
+])
+[run] executor_runner wall-clock: 120.93s for 4 executions
+[run]   ~ 30231.6 ms / execution (subprocess wall)
+
+=== ETDump analysis ===
+/home/doremy/sarc-acl/executorch/main/executorch/.venv/lib64/python3.12/site-packages/executorch/devtools/inspector/_inspector.py:1086: UserWarning: Output Buffer not found. Tensor Debug Data will not be available.
+  warnings.warn(
+[analyze] (no etrecord — module hierarchy unavailable; op names from runtime)
+[analyze] events: 5687    measured total: 144.44 ms
+
+--- Top-30 ops by mean latency ---
+rank     mean_us       %  name
+   1     26547.9   18.4%  Method::execute
+   2     13462.1    9.3%  Program::load_method
+   3     13462.1    9.3%  Method::init
+   4      1756.0    1.2%  DELEGATE_CALL
+   5      1756.0    1.2%  ETVK_EXECUTE
+   6      1649.6    1.1%  ETVK_COMPUTE_GRAPH_EXECUTE
+   7      1048.3    0.7%  DELEGATE_CALL
+   8      1048.3    0.7%  ETVK_EXECUTE
+   9       970.1    0.7%  ETVK_COMPUTE_GRAPH_EXECUTE
+
+--- Aggregate by op type ---
+op                                         count    total_ms       %
+execute                                        1       26.55   18.4%
+DELEGATE_CALL                                 97       26.11   18.1%
+ETVK_EXECUTE                                  97       26.11   18.1%
+ETVK_COMPUTE_GRAPH_EXECUTE                    97       22.56   15.6%
+load_method                                    1       13.46    9.3%
+init                                           1       13.46    9.3%
+{"operator": {"name": "aten._weight_int8pack_mm.default", "args":     226       10.13    7.0%
+ETVK_COPY_INPUTS                              97        2.02    1.4%
+ETVK_COPY_OUTPUTS                             97        1.49    1.0%
+OPERATOR_CALL                                321        0.43    0.3%
+{"operator": {"name": "aten.bmm.default", "args":      64        0.31    0.2%
+native_call_cat.out                           64        0.29    0.2%
+{"operator": {"name": "aten._softmax.default", "args":      32        0.25    0.2%
+{"operator": {"name": "aten.add.Tensor", "args":     447        0.19    0.1%
+{"operator": {"name": "aten.permute_copy.default", "args":     416        0.15    0.1%
+{"operator": {"name": "aten.view_copy.default", "args":     640        0.14    0.1%
+{"operator": {"name": "aten.mul.Tensor", "args":     515        0.13    0.1%
+{"operator": {"name": "dim_order_ops._to_dim_order_copy.default", "args":     738        0.11    0.1%
+{"operator": {"name": "aten.where.self", "args":      64        0.11    0.1%
+{"operator": {"name": "aten.squeeze_copy.dims", "args":     416        0.09    0.1%
+native_call_eq.Scalar_out                     32        0.08    0.1%
+{"operator": {"name": "aten.expand_copy.default", "args":      64        0.06    0.0%
+{"operator": {"name": "aten.unsqueeze_copy.default", "args":     449        0.05    0.0%
+native_call_mul.Scalar_out                    64        0.03    0.0%
+{"operator": {"name": "aten.sigmoid.default", "args":      32        0.03    0.0%
+{"operator": {"name": "aten.full_like.default", "args":      32        0.02    0.0%
+{"operator": {"name": "aten.slice_copy.Tensor", "args":     194        0.02    0.0%
+native_call_logical_not.out                   64        0.01    0.0%
+native_call_any.out                           32        0.01    0.0%
+{"operator": {"name": "aten.mean.dim", "args":      65        0.01    0.0%
+
+--- Per-submodule breakdown ---
+  (unmapped)                count= 5687  total=   144.44 ms  100.0%
+
+[analyze] wrote full event TSV -> /home/doremy/llama31_pure_run_int8/llama31_8b_32L_seq512_int8.events.tsv
+
+--- Memory profile ---
+  peak Shmem (RADV GTT-backed):      3171 MB
+  GTT cap (RADV_GTT_PCT=80):        24800 MB
+  peak Cached (.pte mmap):           6514 MB
+  min MemFree:                       6254 MB
+  peak Swap used:                    7018 MB
+
+[bench] artifacts in /home/doremy/llama31_pure_run_int8/llama31_8b_32L_seq512_int8.*

@@ -15,10 +15,18 @@ shape_count = defaultdict(int)
 shape_kernel = defaultdict(set)
 total_linear_ms = 0.0
 
+LINEAR_OPS = {
+    "aten.linear.default",
+    "aten._weight_int8pack_mm.default",
+    "aten._weight_int4pack_mm.default",
+}
+
 for evlist in insp.event_blocks:
     for ev in evlist.events:
         name = ev.name or ""
-        if not name.startswith("{") or "linear" not in name:
+        if not name.startswith("{"):
+            continue
+        if "linear" not in name and "_weight_int" not in name:
             continue
         try:
             obj = json.loads(name)
@@ -26,7 +34,7 @@ for evlist in insp.event_blocks:
             continue
         kernel = obj.get("kernel_name", "?")
         op = obj.get("operator", {}).get("name", "")
-        if op != "aten.linear.default":
+        if op not in LINEAR_OPS:
             continue
         args = obj.get("operator", {}).get("args", [])
         out_shape = None

@@ -1,0 +1,10 @@
+[env] RAM total: 28.9 GiB    Swap total: 24.0 GiB
+[env] RADV_GTT_PCT=80 set
+
+=== Calibration: N=1 (load + iter 0 + teardown) ===
+[run] RLIMIT_AS cap on child: 50.9 GiB (oom_score_adj=1000)
+[run] $ /home/doremy/sarc-acl/executorch/main/executorch/cmake-out-vk/executor_runner --model_path=/home/doremy/llama31_pure_run_int8/llama31_8b_32L_seq128_int8.pte --inputs=/home/doremy/llama31_pure_run_int8/llama31_8b_32L_seq128_int8_input0.bin --num_executions=1
+terminate called after throwing an instance of 'vkcompute::vkapi::Error'
+  what():  Exception raised from get_shader_info at /home/doremy/sarc-acl/executorch/main/executorch/backends/vulkan/runtime/api/ShaderRegistry.cpp:51: (it != listings_.end()) is false! Could not find ShaderInfo with name linear_qcs8w_tiled_buffer_buffer_texture2d_texture2d_half_o4x4
+[run] executor_runner exited rc=-6 after 2.9s — likely OOM-killed.
+[run] memprobe peaks: Shmem=2 MB  MinFree=19978 MB  SwapUsed=4064 MB
