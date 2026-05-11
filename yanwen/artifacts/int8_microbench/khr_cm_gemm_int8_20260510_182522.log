@@ -1,0 +1,310 @@
+
+=== Compute Shader Performance Benchmark ===
+KHR Cooperative Matrix Int8 GEMM Benchmark
+----------------------------------------------------------------------
+
+=== Cooperative Matrix Properties (KHR) ===
+Found 14 cooperative matrix configurations:
+
+#    M         N         K         AType       BType       CType       ResultType  Scope       
+-----------------------------------------------------------------------------------------------
+0    16        16        16        float16     float16     float16     float16     Subgroup    
+1    16        16        16        float16     float16     float32     float32     Subgroup    
+2    16        16        16        uint8       uint8       uint32      uint32      Subgroup    
+3    16        16        16        uint8       uint8       int32       int32       Subgroup    
+4    16        16        16        uint8       uint8       int32       int32       Subgroup    
+5    16        16        16        uint8       int8        uint32      uint32      Subgroup    
+6    16        16        16        uint8       int8        int32       int32       Subgroup    
+7    16        16        16        uint8       int8        int32       int32       Subgroup    
+8    16        16        16        int8        uint8       uint32      uint32      Subgroup    
+9    16        16        16        int8        uint8       int32       int32       Subgroup    
+10   16        16        16        int8        uint8       int32       int32       Subgroup    
+11   16        16        16        int8        int8        uint32      uint32      Subgroup    
+12   16        16        16        int8        int8        int32       int32       Subgroup    
+13   16        16        16        int8        int8        int32       int32       Subgroup    
+
+Executing 22 test cases for KHR_CM_INT8_GEMM
+----------------------------------------------------------------------
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    5720
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    5960
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    6600
+"kernel_name": "matmul_khr_cm_int8", "operator_id": 0                                                                   {256, 1, 1}              {256, 1, 1}                                  15080
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    7000
+
+  CPU timing: 110.000 μs
+  GPU timing: 14.996 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8", "operat..     (256,1,1)       (256,1,1)   khr_cm_int8_orig_128x128x128                                                                [128x128]          14.996 μs        279.695 GFLOP/s   PASSED
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {65536, 1, 1}            {64, 1, 1}                                   14040
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {65536, 1, 1}            {64, 1, 1}                                   14960
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {65536, 1, 1}            {64, 1, 1}                                   15920
+"kernel_name": "matmul_khr_cm_int8", "operator_id": 0                                                                   {512, 2, 1}              {256, 1, 1}                                  31280
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {65536, 1, 1}            {64, 1, 1}                                   18360
+
+  CPU timing: 172.900 μs
+  GPU timing: 31.176 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8", "operat..     (512,2,1)       (256,1,1)   khr_cm_int8_orig_256x256x256                                                                [256x256]          31.176 μs       1076.290 GFLOP/s   PASSED
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {262144, 1, 1}           {64, 1, 1}                                   45800
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {262144, 1, 1}           {64, 1, 1}                                   48200
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {262144, 1, 1}           {64, 1, 1}                                   49560
+"kernel_name": "matmul_khr_cm_int8", "operator_id": 0                                                                   {1024, 4, 1}             {256, 1, 1}                                  74600
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {262144, 1, 1}           {64, 1, 1}                                   52520
+
+  CPU timing: 355.800 μs
+  GPU timing: 75.156 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8", "operat..     (1024,4,1)      (256,1,1)   khr_cm_int8_orig_512x512x512                                                                [512x512]          75.156 μs       3571.710 GFLOP/s   PASSED
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {1048576, 1, 1}          {64, 1, 1}                                  174480
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {1048576, 1, 1}          {64, 1, 1}                                  182280
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {1048576, 1, 1}          {64, 1, 1}                                  184680
+"kernel_name": "matmul_khr_cm_int8", "operator_id": 0                                                                   {2048, 8, 1}             {256, 1, 1}                                 436120
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {1048576, 1, 1}          {64, 1, 1}                                  182800
+
+  CPU timing: 1253.400 μs
+  GPU timing: 435.924 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8", "operat..     (2048,8,1)      (256,1,1)   khr_cm_int8_orig_1024x1024x1024                                                           [1024x1024]         435.924 μs       4926.280 GFLOP/s   PASSED
+Skipping reference compute for large matrix (256x2048x2048)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   88760
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {4194304, 1, 1}          {64, 1, 1}                                  694920
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   95720
+"kernel_name": "matmul_khr_cm_int8", "operator_id": 0                                                                   {4096, 2, 1}             {256, 1, 1}                                 493520
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   93160
+
+  CPU timing: 1628.800 μs
+  GPU timing: 492.268 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8", "operat..     (4096,2,1)      (256,1,1)   khr_cm_int8_orig_256x2048x2048                                                             [256x2048]         492.268 μs       4362.428 GFLOP/s   PASSED
+Skipping reference compute for large matrix (512x2048x2048)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {1048576, 1, 1}          {64, 1, 1}                                  174200
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {4194304, 1, 1}          {64, 1, 1}                                  694200
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {1048576, 1, 1}          {64, 1, 1}                                  182280
+"kernel_name": "matmul_khr_cm_int8", "operator_id": 0                                                                   {4096, 4, 1}             {256, 1, 1}                                 850920
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {1048576, 1, 1}          {64, 1, 1}                                  179240
+
+  CPU timing: 2226.400 μs
+  GPU timing: 854.580 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8", "operat..     (4096,4,1)      (256,1,1)   khr_cm_int8_orig_512x2048x2048                                                             [512x2048]         854.580 μs       5025.822 GFLOP/s   PASSED
+Skipping reference compute for large matrix (1024x2048x2048)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {2097152, 1, 1}          {64, 1, 1}                                  255400
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {4194304, 1, 1}          {64, 1, 1}                                  509560
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {2097152, 1, 1}          {64, 1, 1}                                  261000
+"kernel_name": "matmul_khr_cm_int8", "operator_id": 0                                                                   {4096, 8, 1}             {256, 1, 1}                                1197960
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {2097152, 1, 1}          {64, 1, 1}                                  255440
+
+  CPU timing: 3201.500 μs
+  GPU timing: 1493.620 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8", "operat..     (4096,8,1)      (256,1,1)   khr_cm_int8_orig_1024x2048x2048                                                           [1024x2048]        1493.620 μs       5751.084 GFLOP/s   PASSED
+Skipping reference compute for large matrix (128x4096x14336)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   32160
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {58720256, 1, 1}         {64, 1, 1}                                 3429840
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {1835008, 1, 1}          {64, 1, 1}                                  206880
+"kernel_name": "matmul_khr_cm_int8", "operator_id": 0                                                                   {28672, 1, 1}            {256, 1, 1}                                1045480
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {1835008, 1, 1}          {64, 1, 1}                                  204400
+
+  CPU timing: 6656.100 μs
+  GPU timing: 1354.820 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8", "operat..     (28672,1,1)     (256,1,1)   khr_cm_int8_orig_llama_ffn_gateup_128_4096_14336                                           [128x4096]        1354.820 μs      11095.485 GFLOP/s   PASSED
+Skipping reference compute for large matrix (128x14336x4096)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {1835008, 1, 1}          {64, 1, 1}                                  110920
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {58720256, 1, 1}         {64, 1, 1}                                 3482600
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   55360
+"kernel_name": "matmul_khr_cm_int8", "operator_id": 0                                                                   {8192, 1, 1}             {256, 1, 1}                                1199160
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   51440
+
+  CPU timing: 6728.800 μs
+  GPU timing: 1542.628 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8", "operat..     (8192,1,1)      (256,1,1)   khr_cm_int8_orig_llama_ffn_down_128_14336_4096                                            [128x14336]        1542.628 μs       9744.659 GFLOP/s   PASSED
+Skipping reference compute for large matrix (128x4096x4096)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   57560
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {16777216, 1, 1}         {64, 1, 1}                                 1767080
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   76640
+"kernel_name": "matmul_khr_cm_int8", "operator_id": 0                                                                   {8192, 1, 1}             {256, 1, 1}                                 602240
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   60120
+
+  CPU timing: 3666.600 μs
+  GPU timing: 799.372 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8", "operat..     (8192,1,1)      (256,1,1)   khr_cm_int8_orig_llama_qo_128_4096_4096                                                    [128x4096]         799.372 μs       5372.926 GFLOP/s   PASSED
+Skipping reference compute for large matrix (128x4096x1024)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   70480
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {4194304, 1, 1}          {64, 1, 1}                                  552680
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {131072, 1, 1}           {64, 1, 1}                                   25600
+"kernel_name": "matmul_khr_cm_int8", "operator_id": 0                                                                   {2048, 1, 1}             {256, 1, 1}                                 312680
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {131072, 1, 1}           {64, 1, 1}                                   22680
+
+  CPU timing: 1066.400 μs
+  GPU timing: 310.860 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8", "operat..     (2048,1,1)      (256,1,1)   khr_cm_int8_orig_llama_kv_128_4096_1024                                                    [128x4096]         310.860 μs       3454.101 GFLOP/s   PASSED
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    4360
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    4360
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    4760
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {256, 1, 1}              {256, 1, 1}                                  15360
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {16384, 1, 1}            {64, 1, 1}                                    5360
+
+  CPU timing: 87.400 μs
+  GPU timing: 15.388 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (256,1,1)       (256,1,1)   khr_cm_int8_wave64_128x128x128                                                              [128x128]          15.388 μs        272.570 GFLOP/s   PASSED
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {65536, 1, 1}            {64, 1, 1}                                   12200
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {65536, 1, 1}            {64, 1, 1}                                   12600
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {65536, 1, 1}            {64, 1, 1}                                   13520
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {512, 2, 1}              {256, 1, 1}                                  34240
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {65536, 1, 1}            {64, 1, 1}                                   15640
+
+  CPU timing: 152.600 μs
+  GPU timing: 32.876 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (512,2,1)       (256,1,1)   khr_cm_int8_wave64_256x256x256                                                              [256x256]          32.876 μs       1020.636 GFLOP/s   PASSED
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {262144, 1, 1}           {64, 1, 1}                                   45720
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {262144, 1, 1}           {64, 1, 1}                                   48040
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {262144, 1, 1}           {64, 1, 1}                                   49280
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {1024, 4, 1}             {256, 1, 1}                                 116960
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {262144, 1, 1}           {64, 1, 1}                                   58120
+
+  CPU timing: 402.000 μs
+  GPU timing: 117.140 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (1024,4,1)      (256,1,1)   khr_cm_int8_wave64_512x512x512                                                              [512x512]         117.140 μs       2291.578 GFLOP/s   PASSED
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {1048576, 1, 1}          {64, 1, 1}                                  174560
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {1048576, 1, 1}          {64, 1, 1}                                  180120
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {1048576, 1, 1}          {64, 1, 1}                                  182440
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {2048, 8, 1}             {256, 1, 1}                                 716560
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {1048576, 1, 1}          {64, 1, 1}                                  187880
+
+  CPU timing: 1559.300 μs
+  GPU timing: 719.200 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (2048,8,1)      (256,1,1)   khr_cm_int8_wave64_1024x1024x1024                                                         [1024x1024]         719.200 μs       2985.934 GFLOP/s   PASSED
+Skipping reference compute for large matrix (256x2048x2048)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   89400
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {4194304, 1, 1}          {64, 1, 1}                                  697240
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   97880
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {4096, 2, 1}             {256, 1, 1}                                 812520
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                  115320
+
+  CPU timing: 1934.900 μs
+  GPU timing: 806.484 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (4096,2,1)      (256,1,1)   khr_cm_int8_wave64_256x2048x2048                                                           [256x2048]         806.484 μs       2662.773 GFLOP/s   PASSED
+Skipping reference compute for large matrix (512x2048x2048)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {1048576, 1, 1}          {64, 1, 1}                                  157600
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {4194304, 1, 1}          {64, 1, 1}                                  613120
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {1048576, 1, 1}          {64, 1, 1}                                  161200
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {4096, 4, 1}             {256, 1, 1}                                1221640
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {1048576, 1, 1}          {64, 1, 1}                                  172400
+
+  CPU timing: 2805.000 μs
+  GPU timing: 1384.144 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (4096,4,1)      (256,1,1)   khr_cm_int8_wave64_512x2048x2048                                                           [512x2048]        1384.144 μs       3102.977 GFLOP/s   PASSED
+Skipping reference compute for large matrix (1024x2048x2048)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {2097152, 1, 1}          {64, 1, 1}                                  216640
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {4194304, 1, 1}          {64, 1, 1}                                  436200
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {2097152, 1, 1}          {64, 1, 1}                                  233640
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {4096, 8, 1}             {256, 1, 1}                                1687080
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {2097152, 1, 1}          {64, 1, 1}                                  232800
+
+  CPU timing: 3862.900 μs
+  GPU timing: 2264.708 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (4096,8,1)      (256,1,1)   khr_cm_int8_wave64_1024x2048x2048                                                         [1024x2048]        2264.708 μs       3792.954 GFLOP/s   PASSED
+Skipping reference compute for large matrix (128x4096x14336)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   30280
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {58720256, 1, 1}         {64, 1, 1}                                 3205080
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {1835008, 1, 1}          {64, 1, 1}                                  210520
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {28672, 1, 1}            {256, 1, 1}                                1525120
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {1835008, 1, 1}          {64, 1, 1}                                  210400
+
+  CPU timing: 6931.700 μs
+  GPU timing: 1995.048 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (28672,1,1)     (256,1,1)   khr_cm_int8_wave64_llama_ffn_gateup_128_4096_14336                                         [128x4096]        1995.048 μs       7534.850 GFLOP/s   PASSED
+Skipping reference compute for large matrix (128x14336x4096)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {1835008, 1, 1}          {64, 1, 1}                                  105320
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {58720256, 1, 1}         {64, 1, 1}                                 3346200
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   62040
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {8192, 1, 1}             {256, 1, 1}                                1846600
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   68160
+
+  CPU timing: 7365.000 μs
+  GPU timing: 2399.424 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (8192,1,1)      (256,1,1)   khr_cm_int8_wave64_llama_ffn_down_128_14336_4096                                          [128x14336]        2399.424 μs       6264.998 GFLOP/s   PASSED
+Skipping reference compute for large matrix (128x4096x4096)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   55080
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {16777216, 1, 1}         {64, 1, 1}                                 1725760
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   62080
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {8192, 1, 1}             {256, 1, 1}                                 949200
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   60560
+
+  CPU timing: 4022.000 μs
+  GPU timing: 1269.948 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (8192,1,1)      (256,1,1)   khr_cm_int8_wave64_llama_qo_128_4096_4096                                                  [128x4096]        1269.948 μs       3382.002 GFLOP/s   PASSED
+Skipping reference compute for large matrix (128x4096x1024)
+Kernel Name                                                                                                             Global Workgroup Size    Local Workgroup Size                 Duration (ns)
+===========                                                                                                             =====================    ====================                 =============
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {524288, 1, 1}           {64, 1, 1}                                   73840
+"kernel_name": "nchw_to_buffer_uint8_uint8", "operator_id": 0                                                           {4194304, 1, 1}          {64, 1, 1}                                  577640
+"kernel_name": "nchw_to_buffer_float_float", "operator_id": 0                                                           {131072, 1, 1}           {64, 1, 1}                                   26440
+"kernel_name": "matmul_khr_cm_int8_wave64", "operator_id": 0                                                            {2048, 1, 1}             {256, 1, 1}                                 517960
+"kernel_name": "buffer_to_nchw_float_float", "operator_id": 0                                                           {131072, 1, 1}           {64, 1, 1}                                   26280
+
+  CPU timing: 1319.100 μs
+  GPU timing: 526.648 μs
+  Using GPU timing for result
+"kernel_name": "matmul_khr_cm_int8_wave64", ..     (2048,1,1)      (256,1,1)   khr_cm_int8_wave64_llama_kv_128_4096_1024                                                  [128x4096]         526.648 μs       2038.822 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 22 test cases
+# khr_cm_gemm_int8 run @ 20260510_182522
+# cwd=/home/doremy/sarc-acl/executorch/pavan-report/executorch/cmake-out-vk/backends/vulkan/test/custom_ops
+# env RADV_GTT_PCT=80

@@ -146,7 +146,18 @@ def classify_row(row):
     binary = row["binary"]
 
     if binary == "khr_cm_gemm_int8":
-        return ("coopmat", "int8")
+        # khr_cm_gemm_int8.cpp emits both orig (impl=3, broken on wave64) and
+        # wave64 (impl=4, correct) variants. Test names look like
+        # "khr_cm_int8_orig_llama_*" vs "khr_cm_int8_wave64_llama_*". Keep
+        # them in distinct buckets so the min() aggregation can't silently
+        # pick the artificially-fast orig timings.
+        if "_orig_" in name or kernel == "matmul_khr_cm_int8":
+            return ("coopmat", "int8_orig")
+        if "_wave64_" in name or kernel == "matmul_khr_cm_int8_wave64":
+            return ("coopmat", "int8_wave64")
+        # Older logs (pre-c331b9cf5) had no orig/wave64 prefix; those tested
+        # the broken shader only.
+        return ("coopmat", "int8_orig")
 
     if binary == "linear_coopmat_bench":
         if name.startswith("vec_tex_"):
@@ -207,7 +218,8 @@ def main():
         f"{'component':<20}  {'shape':<22}  "
         f"{'fp32_vec':>10}  {'fp32_cm':>10}  "
         f"{'fp16_vec':>10}  {'fp16_cm':>10}  "
-        f"{'int8_q8csw':>11}  {'int8_q8ta':>10}  {'int8_cm':>10}"
+        f"{'int8_q8csw':>11}  {'int8_q8ta':>10}  "
+        f"{'int8_cm_orig':>13}  {'int8_cm_w64':>12}"
     )
     print(header)
     print("-" * len(header))
@@ -222,14 +234,16 @@ def main():
             get(tag, "coopmat", "fp16"),
             get(tag, "noncoopmat", "int8"),
             get(tag, "q8ta", "int8"),
-            get(tag, "coopmat", "int8"),
+            get(tag, "coopmat", "int8_orig"),
+            get(tag, "coopmat", "int8_wave64"),
         ]
         cells = [fmt_us(v) for v in vals]
         print(
             f"{tag:<20}  {shape_str:<22}  "
             f"{cells[0]:>10}  {cells[1]:>10}  "
             f"{cells[2]:>10}  {cells[3]:>10}  "
-            f"{cells[4]:>11}  {cells[5]:>10}  {cells[6]:>10}"
+            f"{cells[4]:>11}  {cells[5]:>10}  "
+            f"{cells[6]:>13}  {cells[7]:>12}"
         )
 
     # Target ratios
@@ -265,22 +279,26 @@ def main():
             f"{label:<35}  {hypothesis_note:<10}  {per_s_str:<35}  {mean:>8.2f}  {verdict:<10}"
         )
 
+    # All headline int8-coopmat ratios use the wave64-correct shader.
+    # The orig (impl=3) shader is broken on AMD RDNA3+ (wave64) — see
+    # khr_cm_gemm_int8_validate. We expose its timing only for R4c (bug
+    # quantification).
+
     # R1: int8 coopmat / fp16 coopmat — user's "int8 ~2× faster than fp16" hypothesis
     ratio_block(
-        "R1 int8_cm/fp16_cm  (hyp: 0.5x)",
+        "R1 int8_cm_w64/fp16_cm (hyp:0.5x)",
         0.40,
         0.65,
-        ("coopmat", "int8"),
+        ("coopmat", "int8_wave64"),
         ("coopmat", "fp16"),
         "~0.50",
     )
-    # R1b: estimated against fp32 coopmat (proxy if fp16_cm missing) — use 0.5*fp32_cm as fp16 proxy
-    # Actually let's compute against fp32 cm directly:
+    # R1b: vs fp32 coopmat — proxy since fp16 LLaMA microbench crashed.
     ratio_block(
-        "R1b int8_cm/fp32_cm",
+        "R1b int8_cm_w64/fp32_cm",
         0.20,
         0.50,
-        ("coopmat", "int8"),
+        ("coopmat", "int8_wave64"),
         ("coopmat", "fp32"),
         "~0.25",
     )
@@ -311,14 +329,37 @@ def main():
         ("noncoopmat", "fp32"),
         "?",
     )
-    # R4: int8 coopmat / int8 q8csw — coopmat lift on int8
+    # R4a: int8 KHR coopmat (wave64-correct) / W8A16 linear_q8csw_tiled
+    # The primary "coopmat lift on int8" answer.
     ratio_block(
-        "R4 int8_cm/int8_q8csw  (hyp: 0.25x)",
+        "R4a int8_cm_w64/int8_q8csw (h:0.25)",
         0.10,
         0.40,
-        ("coopmat", "int8"),
+        ("coopmat", "int8_wave64"),
         ("noncoopmat", "int8"),
         "~0.25",
+    )
+    # R4b: int8 KHR coopmat (wave64) / W8A8 linear_q8ta_q8csw
+    # q8ta already uses int8-dot-product hardware so this is the harder
+    # comparison; we expect the coopmat win to be smaller here.
+    ratio_block(
+        "R4b int8_cm_w64/int8_q8ta",
+        0.0,
+        2.0,
+        ("coopmat", "int8_wave64"),
+        ("q8ta", "int8"),
+        "?",
+    )
+    # R4c: orig (broken) / wave64 (correct) — quantifies the wave32/wave64
+    # inflation factor. Should be ~0.65–0.75 at FFN shapes (orig is faster
+    # because it only writes half the output tile).
+    ratio_block(
+        "R4c int8_cm_orig/int8_cm_w64",
+        0.50,
+        1.0,
+        ("coopmat", "int8_orig"),
+        ("coopmat", "int8_wave64"),
+        "bug-quant",
     )
 
 
