@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Int8 microkernel-level report for LLaMA 3.1 8B prefill</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fa;
+      --panel: #ffffff;
+      --ink: #17202a;
+      --muted: #5b6673;
+      --line: #d9dee6;
+      --soft: #edf1f5;
+      --blue: #2c6fbb;
+      --green: #2f8f6b;
+      --amber: #bc7b1f;
+      --red: #b84a4a;
+      --violet: #7457a8;
+      --cyan: #3d8796;
+      --gray: #8a93a0;
+      --code-bg: #101820;
+      --code-ink: #eef4f8;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 18px;
+      margin-bottom: 22px;
+    }
+
+    h1, h2, h3 { line-height: 1.2; margin: 0; letter-spacing: 0; }
+    h1 { font-size: clamp(26px, 4vw, 42px); max-width: 980px; }
+    h2 { font-size: 21px; margin-bottom: 12px; }
+    h3 { font-size: 16px; margin-bottom: 8px; }
+    p { margin: 0 0 12px; }
+    strong { font-weight: 720; }
+
+    a {
+      color: var(--blue);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 2px;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+    }
+
+    pre {
+      margin: 0;
+      padding: 14px;
+      overflow-x: auto;
+      border-radius: 7px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .lede {
+      color: var(--muted);
+      max-width: 950px;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+
+    .meta, .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .pill, .links a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 5px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 13px;
+      text-decoration: none;
+    }
+
+    .links a {
+      min-height: 34px;
+      border-radius: 6px;
+      color: var(--ink);
+      font-size: 15px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+    }
+
+    .span-3 { grid-column: span 3; }
+    .span-4 { grid-column: span 4; }
+    .span-5 { grid-column: span 5; }
+    .span-6 { grid-column: span 6; }
+    .span-7 { grid-column: span 7; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: span 12; }
+
+    .metric {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .value {
+      font-size: 28px;
+      font-weight: 720;
+      line-height: 1.1;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 9px 8px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 650;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    td.num, th.num { text-align: right; white-space: nowrap; }
+    tr:last-child td { border-bottom: 0; }
+
+    .callout {
+      border-left: 4px solid var(--green);
+      padding: 10px 12px;
+      background: #edf7f2;
+      color: #243c32;
+      margin-top: 12px;
+    }
+
+    .warning {
+      border-left-color: var(--amber);
+      background: #fff6e8;
+      color: #4c3512;
+    }
+
+    .danger {
+      border-left-color: var(--red);
+      background: #fff0f0;
+      color: #502626;
+    }
+
+    .concept {
+      display: grid;
+      gap: 12px;
+    }
+
+    .concept-row {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .concept-row:last-child { border-bottom: 0; }
+    .concept-row strong { color: var(--ink); }
+
+    .bar {
+      height: 10px;
+      border-radius: 999px;
+      background: var(--soft);
+      overflow: hidden;
+      min-width: 120px;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+    }
+
+    .green { background: var(--green); }
+    .blue { background: var(--blue); }
+    .amber { background: var(--amber); }
+    .red { background: var(--red); }
+    .violet { background: var(--violet); }
+    .cyan { background: var(--cyan); }
+
+    @media (max-width: 980px) {
+      .span-3, .span-4, .span-5, .span-6, .span-7, .span-8 { grid-column: span 12; }
+      .concept-row { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 620px) {
+      main { width: min(100vw - 20px, 1180px); padding-top: 18px; }
+      .panel { padding: 14px; }
+      th, td { padding: 8px 6px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Int8 microkernel-level report for LLaMA 3.1 8B prefill</h1>
+      <p class="lede">A detailed shader-level report for the int8 results. It explains the vocabulary first, then compares fp16, W8A16, W8A8 scalar, and KHR cooperative-matrix paths at the actual LLaMA prefill shapes.</p>
+      <div class="meta">
+        <span class="pill">Updated: 2026-05-11</span>
+        <span class="pill">Author: Yanwen Xu</span>
+        <span class="pill">Device: AMD Radeon 780M, RDNA3+ wave64</span>
+        <span class="pill">Mesa 25.0.7</span>
+        <span class="pill">Scope: microkernel only</span>
+      </div>
+      <nav class="links" aria-label="Report links">
+        <a href="int8_microkernel_level_report.md">Source markdown</a>
+        <a href="int8_coopmat_microbench.md">Microbench v1</a>
+        <a href="int8_coopmat_microbench_v2.md">Tile sweep v2</a>
+        <a href="L32_S128_int8_baseline_REPORT.md">Int8 E2E baseline</a>
+      </nav>
+    </header>
+
+    <section class="grid" aria-label="Headline">
+      <div class="panel span-3">
+        <div class="metric">Best FFN gate/up</div>
+        <div class="value">2.00 ms</div>
+        <div class="note">int8 KHR coopmat wave64.</div>
+      </div>
+      <div class="panel span-3">
+        <div class="metric">Best Q/O</div>
+        <div class="value">0.78 ms</div>
+        <div class="note">q8ta W8A8 scalar beats coopmat.</div>
+      </div>
+      <div class="panel span-3">
+        <div class="metric">FFN int8 vs fp16 cm</div>
+        <div class="value">1.63x</div>
+        <div class="note">Weighted gate/up + down, after tile sweep.</div>
+      </div>
+      <div class="panel span-3">
+        <div class="metric">Best projection</div>
+        <div class="value">~288 tok/s</div>
+        <div class="note">Hybrid: coopmat FFN + q8ta Q/O/K/V.</div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Vocabulary">
+      <div class="panel span-7">
+        <h2>Vocabulary</h2>
+        <div class="concept">
+          <div class="concept-row">
+            <strong>Microkernel</strong>
+            <div>One low-level GPU shader running one matrix multiplication. This report does not measure the full LLaMA model directly.</div>
+          </div>
+          <div class="concept-row">
+            <strong>GEMM shape</strong>
+            <div><code>A[M,K] @ B[K,N] = C[M,N]</code>. For prefill S=128, <code>M=128</code>; <code>K</code> is input width; <code>N</code> is output width.</div>
+          </div>
+          <div class="concept-row">
+            <strong>Q8CSW</strong>
+            <div>Non-coopmat int8 weight path: 8-bit weights, fp16 activations. Also called W8A16 here. It saves weight bandwidth, but still pays scalar dequantization cost.</div>
+          </div>
+          <div class="concept-row">
+            <strong>W8A8</strong>
+            <div>8-bit weights and 8-bit activations. Both matmul inputs are int8, enabling true int8 dot-product or cooperative-matrix math.</div>
+          </div>
+          <div class="concept-row">
+            <strong>Q8TA</strong>
+            <div>W8A8 non-coopmat shader using packed int8 dot-product instructions. It is much faster than Q8CSW and beats int8 coopmat on smaller Q/O and K/V shapes.</div>
+          </div>
+          <div class="concept-row">
+            <strong>CM wave64</strong>
+            <div>Corrected int8 cooperative-matrix shader for AMD wave64 hardware. It is the fast tensor-core-like path for large FFN shapes; the older wave32-assumed shader was invalid on the 780M.</div>
+          </div>
+          <div class="concept-row">
+            <strong>FFN gate/up</strong>
+            <div>Two FFN projections with shape <code>(128,4096,14336)</code>, appearing 64 times per forward. This is the largest repeated output width, so int8 CM wins here.</div>
+          </div>
+          <div class="concept-row">
+            <strong>FFN down</strong>
+            <div>FFN projection back to hidden size, shape <code>(128,14336,4096)</code>, 32 dispatches. Int8 CM wins, but less strongly than gate/up.</div>
+          </div>
+          <div class="concept-row">
+            <strong>Q/O</strong>
+            <div>Attention query and output projections, shape <code>(128,4096,4096)</code>, 64 dispatches. Q8TA is faster than int8 CM because CM tile overhead is too high here.</div>
+          </div>
+          <div class="concept-row">
+            <strong>K/V</strong>
+            <div>Attention key and value projections, shape <code>(128,4096,1024)</code>, 64 dispatches. Small output width launches too few CM workgroups, so Q8TA is better.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel span-5">
+        <h2>Main Answer</h2>
+        <p>Int8 coopmat is the right path for large FFN matmuls, but it is not the right path for every linear.</p>
+        <div class="callout">Recommended int8 strategy: use KHR coopmat for FFN-sized projections and q8ta for smaller attention projections.</div>
+        <div class="callout warning">The old wave32 numbers are invalid on the 780M because the shader did incomplete work under wave64.</div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Shapes">
+      <div class="panel span-12">
+        <h2>LLaMA Shapes Benchmarked</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Shape `(M,K,N)`</th>
+              <th class="num">Dispatches</th>
+              <th>Why it matters</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>FFN gate + up</td>
+              <td><code>(128,4096,14336)</code></td>
+              <td class="num">64</td>
+              <td>largest output width; best fit for coopmat</td>
+            </tr>
+            <tr>
+              <td>FFN down</td>
+              <td><code>(128,14336,4096)</code></td>
+              <td class="num">32</td>
+              <td>heavy K dimension; still enough work</td>
+            </tr>
+            <tr>
+              <td>Q + O</td>
+              <td><code>(128,4096,4096)</code></td>
+              <td class="num">64</td>
+              <td>medium N; q8ta is better here</td>
+            </tr>
+            <tr>
+              <td>K + V</td>
+              <td><code>(128,4096,1024)</code></td>
+              <td class="num">64</td>
+              <td>small N; coopmat under-utilizes the GPU</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Latency matrix">
+      <div class="panel span-12">
+        <h2>Full Latency Matrix</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Shape</th>
+              <th class="num">fp32 vec</th>
+              <th class="num">fp32 cm</th>
+              <th class="num">fp16 vec</th>
+              <th class="num">fp16 cm</th>
+              <th class="num">int8 q8csw</th>
+              <th class="num">int8 q8ta</th>
+              <th class="num">int8 cm wave64</th>
+              <th class="num">orig broken</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>FFN gate/up</td>
+              <td class="num">15.18</td>
+              <td class="num">6.78</td>
+              <td class="num">15.33</td>
+              <td class="num">3.42</td>
+              <td class="num">9.23</td>
+              <td class="num">3.27</td>
+              <td class="num"><strong>2.00</strong></td>
+              <td class="num">1.35</td>
+            </tr>
+            <tr>
+              <td>FFN down</td>
+              <td class="num">16.76</td>
+              <td class="num">6.16</td>
+              <td class="num">16.21</td>
+              <td class="num">3.52</td>
+              <td class="num">9.62</td>
+              <td class="num">3.19</td>
+              <td class="num"><strong>2.40</strong></td>
+              <td class="num">1.54</td>
+            </tr>
+            <tr>
+              <td>Q/O</td>
+              <td class="num">4.59</td>
+              <td class="num">1.78</td>
+              <td class="num">4.60</td>
+              <td class="num">0.92</td>
+              <td class="num">2.74</td>
+              <td class="num"><strong>0.78</strong></td>
+              <td class="num">1.27</td>
+              <td class="num">0.80</td>
+            </tr>
+            <tr>
+              <td>K/V</td>
+              <td class="num">1.24</td>
+              <td class="num">0.31</td>
+              <td class="num">1.24</td>
+              <td class="num"><strong>0.26</strong></td>
+              <td class="num">0.82</td>
+              <td class="num">0.32</td>
+              <td class="num">0.53</td>
+              <td class="num">0.31</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="note">All values are milliseconds per dispatch. Bold marks fastest correct result for that row.</div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Comparisons">
+      <div class="panel span-12">
+        <h2>int8 Coopmat vs int8 No Coopmat</h2>
+        <p>There are two useful no-coopmat int8 baselines. <code>q8csw</code> is W8A16: int8 weights with fp16 activations and scalar dequantization. <code>q8ta</code> is W8A8: int8 weights and int8 activations using packed int8 dot-product instructions, but not cooperative matrix.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Shape</th>
+              <th class="num">q8csw W8A16</th>
+              <th class="num">q8ta W8A8</th>
+              <th class="num">int8 cm wave64</th>
+              <th class="num">cm vs q8csw</th>
+              <th class="num">cm vs q8ta</th>
+              <th>Interpretation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>FFN gate/up</td>
+              <td class="num">9.23</td>
+              <td class="num">3.27</td>
+              <td class="num"><strong>2.00</strong></td>
+              <td class="num"><strong>4.6x faster</strong></td>
+              <td class="num"><strong>1.6x faster</strong></td>
+              <td>large enough for coopmat to amortize setup cost</td>
+            </tr>
+            <tr>
+              <td>FFN down</td>
+              <td class="num">9.62</td>
+              <td class="num">3.19</td>
+              <td class="num"><strong>2.40</strong></td>
+              <td class="num"><strong>4.0x faster</strong></td>
+              <td class="num"><strong>1.3x faster</strong></td>
+              <td>coopmat still wins, but less than gate/up</td>
+            </tr>
+            <tr>
+              <td>Q/O</td>
+              <td class="num">2.74</td>
+              <td class="num"><strong>0.78</strong></td>
+              <td class="num">1.27</td>
+              <td class="num"><strong>2.2x faster</strong></td>
+              <td class="num"><strong>1.6x slower</strong></td>
+              <td>coopmat beats W8A16, but loses to W8A8 scalar</td>
+            </tr>
+            <tr>
+              <td>K/V</td>
+              <td class="num">0.82</td>
+              <td class="num"><strong>0.32</strong></td>
+              <td class="num">0.53</td>
+              <td class="num"><strong>1.5x faster</strong></td>
+              <td class="num"><strong>1.7x slower</strong></td>
+              <td>too few output tiles for coopmat to fill the GPU</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="callout">Against q8csw, int8 coopmat wins everywhere because it avoids much of the W8A16 scalar dequant bottleneck. Against q8ta, int8 coopmat wins only for FFN because q8ta is already a strong W8A8 int8-dot-product path.</div>
+      </div>
+
+      <div class="panel span-6">
+        <h2>int8 Coopmat vs fp16 Coopmat</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Shape</th>
+              <th class="num">Ratio</th>
+              <th class="num">Speedup</th>
+              <th>Verdict</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>FFN gate/up</td>
+              <td class="num">0.58</td>
+              <td class="num"><strong>1.72x</strong></td>
+              <td>useful win</td>
+            </tr>
+            <tr>
+              <td>FFN down</td>
+              <td class="num">0.68</td>
+              <td class="num"><strong>1.47x</strong></td>
+              <td>useful win</td>
+            </tr>
+            <tr>
+              <td>Q/O</td>
+              <td class="num">1.38</td>
+              <td class="num">0.73x</td>
+              <td>int8 cm slower</td>
+            </tr>
+            <tr>
+              <td>K/V</td>
+              <td class="num">2.06</td>
+              <td class="num">0.49x</td>
+              <td>int8 cm much slower</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="callout warning">The 2x int8-over-fp16-coopmat target does not hold globally. It only comes close at FFN gate/up.</div>
+      </div>
+
+      <div class="panel span-6">
+        <h2>Why Small N Loses</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Shape</th>
+              <th class="num">N</th>
+              <th class="num">Workgroups</th>
+              <th>Readout</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>FFN gate/up</td>
+              <td class="num">14336</td>
+              <td class="num">112</td>
+              <td>coopmat has enough work</td>
+            </tr>
+            <tr>
+              <td>FFN down</td>
+              <td class="num">4096</td>
+              <td class="num">32</td>
+              <td>still OK</td>
+            </tr>
+            <tr>
+              <td>Q/O</td>
+              <td class="num">4096</td>
+              <td class="num">32</td>
+              <td>q8ta lower overhead wins</td>
+            </tr>
+            <tr>
+              <td>K/V</td>
+              <td class="num">1024</td>
+              <td class="num">8</td>
+              <td>GPU under-utilized</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="callout">Coopmat is a faster engine, but it needs enough tiles. K/V launches too little work for this fixed tile shape.</div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Performance analysis">
+      <div class="panel span-12">
+        <h2>Performance Analysis: Why Some int8 Coopmat Cases Are Slower</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Cause</th>
+              <th>What happens</th>
+              <th>Where it shows up</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Low workgroup count</strong></td>
+              <td>K/V has <code>M=128</code>, <code>N=1024</code>, and a 128x128 tile, so it launches only <code>1 x 8 = 8</code> workgroups.</td>
+              <td>K/V leaves part of the 12-WGP GPU idle.</td>
+            </tr>
+            <tr>
+              <td><strong>Fixed tile overhead</strong></td>
+              <td>Coopmat pays shared-memory prefetch, barriers, cooperative matrix load/store, and output tile setup per workgroup.</td>
+              <td>At Q/O and K/V, setup cost is a large fraction of latency.</td>
+            </tr>
+            <tr>
+              <td><strong>Tile shape mismatch</strong></td>
+              <td>The wave64 shader is built around a 128x128 output tile. FFN gate/up has 112 tiles across N; K/V has only 8.</td>
+              <td>FFN amortizes overhead; K/V does not.</td>
+            </tr>
+            <tr>
+              <td><strong>q8ta is a strong baseline</strong></td>
+              <td>q8ta is W8A8 and uses packed int8 dot-product instructions with lower setup overhead than coopmat.</td>
+              <td>q8ta beats coopmat at Q/O and K/V.</td>
+            </tr>
+            <tr>
+              <td><strong>q8csw is a weaker baseline</strong></td>
+              <td>q8csw is W8A16 and pays scalar dequantization cost while multiplying int8 weights with fp16 activations.</td>
+              <td>coopmat beats q8csw even at smaller shapes.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="callout warning">The slow cases are overhead and occupancy problems, not proof that int8 math is slower. The fast int8 matrix instruction only helps when enough tile work exists to amortize the surrounding shader machinery.</div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Tile sweep">
+      <div class="panel span-12">
+        <h2>Tile-Schedule Sweep</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Variant</th>
+              <th class="num">TILE_M</th>
+              <th class="num">TILE_N</th>
+              <th class="num">TILE_K</th>
+              <th class="num">sg_w</th>
+              <th class="num">sg_h</th>
+              <th class="num">FFN gate/up</th>
+              <th class="num">FFN down</th>
+              <th class="num">Q/O</th>
+              <th class="num">K/V</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>v0_baseline</strong></td>
+              <td class="num">128</td>
+              <td class="num">128</td>
+              <td class="num">32</td>
+              <td class="num">2</td>
+              <td class="num">2</td>
+              <td class="num"><strong>2.006</strong></td>
+              <td class="num"><strong>2.340</strong></td>
+              <td class="num"><strong>1.241</strong></td>
+              <td class="num">0.462</td>
+            </tr>
+            <tr>
+              <td>v1_deepK</td>
+              <td class="num">128</td>
+              <td class="num">128</td>
+              <td class="num">64</td>
+              <td class="num">2</td>
+              <td class="num">2</td>
+              <td class="num">2.391</td>
+              <td class="num">2.521</td>
+              <td class="num">1.343</td>
+              <td class="num">0.451</td>
+            </tr>
+            <tr>
+              <td>v3_sg1x4</td>
+              <td class="num">128</td>
+              <td class="num">128</td>
+              <td class="num">32</td>
+              <td class="num">1</td>
+              <td class="num">4</td>
+              <td class="num">2.139</td>
+              <td class="num">2.447</td>
+              <td class="num">1.274</td>
+              <td class="num"><strong>0.445</strong></td>
+            </tr>
+            <tr>
+              <td>v4_sg4x1</td>
+              <td class="num">128</td>
+              <td class="num">128</td>
+              <td class="num">32</td>
+              <td class="num">4</td>
+              <td class="num">1</td>
+              <td class="num">2.136</td>
+              <td class="num">2.401</td>
+              <td class="num">1.361</td>
+              <td class="num">0.548</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="callout warning">The baseline schedule remained best for FFN. Weighted FFN speedup over fp16 coopmat was 1.63x, below the 2x target.</div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Projection">
+      <div class="panel span-6">
+        <h2>Pure int8 Coopmat Projection</h2>
+        <pre>linears                       ~= 320 ms
+unchanged non-linear/glue work ~= 170 ms
+projected forward             ~= 490 ms
+projected throughput          ~= 261 tok/s
+speedup over fp16 coopmat      ~= 1.19x</pre>
+      </div>
+      <div class="panel span-6">
+        <h2>Hybrid Projection</h2>
+        <pre>FFN gate/up: int8 coopmat  ~= 128.0 ms
+FFN down:    int8 coopmat  ~=  76.8 ms
+Q/O:         q8ta          ~=  49.9 ms
+K/V:         q8ta          ~=  20.5 ms
+linears total              ~= 275 ms
+projected forward          ~= 445 ms
+projected throughput       ~= 288 tok/s</pre>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Conclusion">
+      <div class="panel span-12">
+        <h2>Practical Conclusion</h2>
+        <p>The corrected wave64 int8 coopmat path is worth using for FFN, but routing every LLaMA linear through it would leave performance on the table. The best short-term path is a hybrid dispatcher: coopmat for large-N FFN shapes and q8ta for smaller attention projections. The remaining work is integration and W8A8 export, not more tuning of the same tile-schedule knobs.</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
