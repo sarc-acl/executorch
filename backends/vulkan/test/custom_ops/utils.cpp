@@ -1983,8 +1983,8 @@ void print_valuespec_data(
     case vkapi::kHalf: {
       const auto& data = spec.get_half_data();
       for (size_t i = 0; i < print_count; ++i) {
-        // Convert uint16_t back to float for display
-        float value = data[i] / 32767.0f;
+        // Convert IEEE 754 half-precision bit pattern back to float.
+        float value = half_to_float(data[i]);
         std::cout << value;
         if (i < print_count - 1)
           std::cout << ", ";
