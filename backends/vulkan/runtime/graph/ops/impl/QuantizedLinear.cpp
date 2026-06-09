@@ -658,10 +658,18 @@ void quantized_linear_impl(
     num_groups = graph.size_at<int64_t>(-2, weight_scales_data);
   }
 
+  // Per-(group, M-row) int32 sums of the quantized input, written by the
+  // quantize_and_pack shader as one ivec4 per (group, m4) at index
+  // group * M4 + m4 — so the buffer must hold num_groups * align4(M) int32
+  // elements. The previous {num_groups, K} shape with the output's (fp16)
+  // dtype allocates 2*G*K bytes where 4*G*M are needed, silently
+  // under-allocating whenever K < 2*M and corrupting the sums (and with
+  // them every output of the tiled dq8ca path).
+  const int64_t M = utils::val_at(-2, input_sizes);
   TmpTensor int_input_sums(
       &graph,
-      {num_groups, K},
-      graph.dtype_of(output),
+      {num_groups, utils::align_up_4(M)},
+      vkapi::kInt,
       utils::kBuffer,
       utils::kWidthPacked);
 
