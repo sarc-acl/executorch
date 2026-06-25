@@ -22,6 +22,7 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/ShaderNameUtils.h>
 
 #include <cmath>
+#include <cstdlib>
 
 namespace vkcompute {
 
@@ -178,15 +179,87 @@ static inline SDPAMode mode_of(const std::vector<ValueRef>& resize_args) {
   return static_cast<SDPAMode>(resize_args.at(3));
 }
 
+//
+// Cooperative-matrix (WMMA) SDPA prefill path.
+//
+// The QK^T and attn*V coopmat shaders use a 64x64x32 WG tile with 4 subgroups
+// of 64 lanes (256 invocations), matching coopmat_mm.glsl. Selected only for
+// LLM prefill (S > 1) on a coopmat-capable discrete RDNA GPU with buffer/fp16
+// tensors and tile-aligned shapes; decode (S == 1) stays on the _coop GEMV
+// path and ineligible shapes fall back to _tiled. Opt-in via ET_VK_SDPA_COOPMAT
+// (and the shared ET_VK_DISABLE_COOPMAT kill switch).
+//
+constexpr uint32_t kSdpaCmTileM = 64;
+constexpr uint32_t kSdpaCmTileN = 64;
+constexpr uint32_t kSdpaCmTileK = 32;
+constexpr uint32_t kSdpaCmInvocations = 256;
+// QK^T uses a 128-tall M-tile (the 128x64 tile-sweep optimum that still fits the
+// masked shader's shared memory); attn*V keeps the 64x64 geometry. Same WG_SIZE
+// (256 = 2x2 subgroups x 64), so only the M-tile count differs for QK^T.
+constexpr uint32_t kSdpaCmQkTileM = 128;
+
+static bool sdpa_coopmat_opted_in() {
+  return std::getenv("ET_VK_SDPA_COOPMAT") != nullptr &&
+      std::getenv("ET_VK_DISABLE_COOPMAT") == nullptr;
+}
+
+static bool sdpa_coopmat_device_ok(ComputeGraph* graph) {
+  if (!sdpa_coopmat_opted_in()) {
+    return false;
+  }
+  const auto* adapter = graph->context()->adapter_ptr();
+  // NOTE: intentionally NO !is_integrated_gpu() check. The target M5 EVT1
+  // (Xclipse 970) is a unified-memory "integrated" GPU but has fast fp16 WMMA;
+  // the q4gsw linear coopmat gate likewise omits this check and runs there. The
+  // generic matmul gate keeps it (to avoid coopmat on iGPUs without WMMA); SDPA
+  // coopmat is opt-in (ET_VK_SDPA_COOPMAT), so the env gate covers that case.
+  return adapter->supports_cooperative_matrix() &&
+      adapter->subgroup_size() == 64;
+}
+
+static bool sdpa_buf_half(ComputeGraph* graph, const ValueRef t) {
+  return graph->storage_type_of(t) == utils::kBuffer &&
+      graph->dtype_of(t) == vkapi::kHalf;
+}
+
+static inline bool sdpa_cm_aligned(int64_t m, int64_t n, int64_t k) {
+  return m % static_cast<int64_t>(kSdpaCmTileM) == 0 &&
+      n % static_cast<int64_t>(kSdpaCmTileN) == 0 &&
+      k % static_cast<int64_t>(kSdpaCmTileK) == 0;
+}
+
+static inline bool is_sdpa_coopmat(const vkapi::ShaderInfo& shader) {
+  return shader.kernel_name.find("_coopmat") != std::string::npos;
+}
+
 vkapi::ShaderInfo pick_sdpa_qk_shader(
     ComputeGraph* graph,
     const std::vector<ArgGroup>& args,
     const std::vector<ValueRef>& resize_args) {
   const SDPAMode mode = mode_of(resize_args);
   if (mode == SDPAMode::LLM) {
+    const ValueRef attn_weights = args.at(0).refs.at(0);
     const ValueRef q_projected = args.at(1).refs.at(0);
     const ValueRef k_cache = args.at(1).refs.at(1);
     const bool is_gemv = is_single_token(graph, q_projected);
+
+    // Prefill WMMA path: Q @ K^T with K = head_dim, N = context_len, M = S.
+    if (!is_gemv && sdpa_coopmat_device_ok(graph) &&
+        sdpa_buf_half(graph, q_projected) && sdpa_buf_half(graph, k_cache) &&
+        sdpa_buf_half(graph, attn_weights)) {
+      const SDPADims d = compute_sdpa_dims(
+          *graph, q_projected, k_cache, resize_args.at(2), SDPAMode::LLM);
+      if (d.S % static_cast<int64_t>(kSdpaCmQkTileM) == 0 &&
+          d.context_len % static_cast<int64_t>(kSdpaCmTileN) == 0 &&
+          d.D % static_cast<int64_t>(kSdpaCmTileK) == 0) {
+        std::string shader_name = "sdpa_compute_attn_weights_coopmat";
+        add_storage_type_suffix(
+            shader_name, graph->storage_type_of(q_projected));
+        add_storage_type_suffix(shader_name, graph->storage_type_of(k_cache));
+        add_dtype_suffix(shader_name, graph->dtype_of(q_projected));
+        return VK_KERNEL_FROM_STR(shader_name);
+      }
+    }
 
     std::string shader_name = "sdpa_compute_attn_weights";
     shader_name += is_gemv ? "_coop" : "_tiled";
@@ -214,13 +287,26 @@ utils::uvec3 pick_sdpa_qk_global_wg_size(
     const vkapi::ShaderInfo& shader,
     const std::vector<ArgGroup>& args,
     const std::vector<ValueRef>& resize_args) {
-  (void)shader;
   (void)args;
   const SDPAMode mode = mode_of(resize_args);
   const ValueRef q = resize_args.at(0);
   const ValueRef k = resize_args.at(1);
   const ValueRef input_pos_symint = resize_args.at(2);
   const SDPADims d = compute_sdpa_dims(*graph, q, k, input_pos_symint, mode);
+
+  if (is_sdpa_coopmat(shader)) {
+    // One workgroup per 64x64 output tile (N = context_len, M = S);
+    // *kSdpaCmInvocations cancels the framework div_up against local x. z
+    // carries the head index.
+    const uint32_t num_tiles_n =
+        utils::div_up(static_cast<uint32_t>(d.context_len), kSdpaCmTileN);
+    const uint32_t num_tiles_m =
+        utils::div_up(static_cast<uint32_t>(d.S), kSdpaCmQkTileM);
+    return {
+        num_tiles_n * kSdpaCmInvocations,
+        num_tiles_m,
+        static_cast<uint32_t>(d.H * d.B)};
+  }
 
   // Dispatch grid: (context_len tiles, S tiles, H * B).
   const uint32_t N4 = utils::div_up_4(static_cast<uint32_t>(d.context_len));
@@ -236,6 +322,11 @@ utils::uvec3 pick_sdpa_qk_local_wg_size(
     const std::vector<ValueRef>& resize_args) {
   const SDPAMode mode = mode_of(resize_args);
   if (mode == SDPAMode::LLM) {
+    // _coopmat must be checked before _coop (the former contains the latter as
+    // a substring); the coopmat shaders use a flat 256-lane workgroup.
+    if (is_sdpa_coopmat(shader)) {
+      return {kSdpaCmInvocations, 1, 1};
+    }
     const bool use_coop_algorithm =
         shader.kernel_name.find("_coop") != std::string::npos;
     if (use_coop_algorithm) {
@@ -293,9 +384,27 @@ vkapi::ShaderInfo pick_sdpa_av_shader(
   const SDPAMode mode = mode_of(resize_args);
   if (mode == SDPAMode::LLM) {
     const ValueRef out = args.at(0).refs.at(0);
+    const ValueRef attn_weights_softmax = args.at(1).refs.at(0);
     const ValueRef v_cache = args.at(1).refs.at(1);
     const ValueRef q_projected = resize_args.at(0);
     const bool is_gemv = is_single_token(graph, q_projected);
+
+    // Prefill WMMA path: P @ V with K = context_len, N = head_dim, M = S.
+    if (!is_gemv && sdpa_coopmat_device_ok(graph) &&
+        sdpa_buf_half(graph, out) &&
+        sdpa_buf_half(graph, attn_weights_softmax) &&
+        sdpa_buf_half(graph, v_cache)) {
+      const SDPADims d = compute_sdpa_dims(
+          *graph, q_projected, resize_args.at(1), resize_args.at(2),
+          SDPAMode::LLM);
+      if (sdpa_cm_aligned(/*m=*/d.S, /*n=*/d.D, /*k=*/d.context_len)) {
+        std::string shader_name = "sdpa_compute_out_coopmat";
+        add_storage_type_suffix(shader_name, graph->storage_type_of(out));
+        add_storage_type_suffix(shader_name, graph->storage_type_of(v_cache));
+        add_dtype_suffix(shader_name, graph->dtype_of(out));
+        return VK_KERNEL_FROM_STR(shader_name);
+      }
+    }
 
     std::string shader_name = "sdpa_compute_out";
     shader_name += is_gemv ? "_coop" : "_tiled";
@@ -319,12 +428,23 @@ utils::uvec3 pick_sdpa_av_global_wg_size(
     const vkapi::ShaderInfo& shader,
     const std::vector<ArgGroup>& args,
     const std::vector<ValueRef>& resize_args) {
-  (void)shader;
   const SDPAMode mode = mode_of(resize_args);
   const ValueRef q = resize_args.at(0);
   const ValueRef k = resize_args.at(1);
   const ValueRef input_pos_symint = resize_args.at(2);
   const SDPADims d = compute_sdpa_dims(*graph, q, k, input_pos_symint, mode);
+
+  if (is_sdpa_coopmat(shader)) {
+    // One workgroup per 64x64 output tile (N = head_dim, M = S). z = head.
+    const uint32_t num_tiles_n =
+        utils::div_up(static_cast<uint32_t>(d.D), kSdpaCmTileN);
+    const uint32_t num_tiles_m =
+        utils::div_up(static_cast<uint32_t>(d.S), kSdpaCmTileM);
+    return {
+        num_tiles_n * kSdpaCmInvocations,
+        num_tiles_m,
+        static_cast<uint32_t>(d.H * d.B)};
+  }
 
   const uint32_t N4 = utils::div_up_4(static_cast<uint32_t>(d.D));
   const uint32_t M4 = utils::div_up_4(static_cast<uint32_t>(d.S));
@@ -339,6 +459,11 @@ utils::uvec3 pick_sdpa_av_local_wg_size(
     const std::vector<ValueRef>& resize_args) {
   const SDPAMode mode = mode_of(resize_args);
   if (mode == SDPAMode::LLM) {
+    // _coopmat must be checked before _coop (the former contains the latter as
+    // a substring); the coopmat shaders use a flat 256-lane workgroup.
+    if (is_sdpa_coopmat(shader)) {
+      return {kSdpaCmInvocations, 1, 1};
+    }
     const bool use_coop_algorithm =
         shader.kernel_name.find("_coop") != std::string::npos;
     if (use_coop_algorithm) {
@@ -430,8 +555,12 @@ void add_sdpa_compute_attn_weights_node(
       param_ubos,
       // Push Constants
       {},
-      // Specialization Constants
-      {scale_val},
+      // Specialization Constants: {inv_scale (id 3), num_k_chunks (id 4)}.
+      // num_k_chunks = head_dim / WG_TILE_K is static and consumed only by the
+      // coopmat QK^T variant; the tiled/coop variants declare only id 3 and
+      // ignore the trailing entry.
+      {scale_val,
+       graph.size_at<int32_t>(-1, q) / static_cast<int32_t>(kSdpaCmTileK)},
       // Resize Args: [q, k, input_pos_symint_or_dummy, mode]
       {q, k, input_pos_symint, mode_ref},
       // Resizing Logic
@@ -511,6 +640,20 @@ void add_sdpa_compute_out_node(
 
   const ValueRef mode_ref = static_cast<ValueRef>(mode);
 
+  // Coopmat attn*V spec constants (static; consumed only by the coopmat
+  // variant — the tiled/coop variants ignore the trailing entries, and id 3 is
+  // the inv_scale slot the decode _coop shader reads, kept at 1.0 = no-op).
+  // num_k_chunks uses max_context_len (the loop bound is a spec const per the
+  // Xclipse bug); beyond-context chunks are zero-staged in the shader.
+  // Values are meaningful only in LLM mode; in FUSED they are ignored.
+  const int32_t cm_head_dim = graph.size_at<int32_t>(-1, q);
+  const int32_t cm_num_q_heads = graph.size_at<int32_t>(-2, q);
+  const int32_t cm_max_context = graph.size_at<int32_t>(-3, v);
+  const int32_t cm_num_k_chunks =
+      (cm_max_context + static_cast<int32_t>(kSdpaCmTileK) - 1) /
+      static_cast<int32_t>(kSdpaCmTileK);
+  const int32_t cm_out_row_stride = cm_num_q_heads * cm_head_dim;
+
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
       graph,
       pick_sdpa_av_shader,
@@ -522,8 +665,10 @@ void add_sdpa_compute_out_node(
       param_ubos,
       // Push Constants
       {},
-      // Specialization Constants
-      {},
+      // Specialization Constants:
+      // {inv_scale slot (id 3), num_k_chunks (id 4), out_row_stride (id 5),
+      //  head_dim (id 6)}.
+      {1.0f, cm_num_k_chunks, cm_out_row_stride, cm_head_dim},
       // Resize Args: [q, k, input_pos_symint_or_dummy, mode]
       {q, k, input_pos_symint, mode_ref},
       // Resizing Logic
