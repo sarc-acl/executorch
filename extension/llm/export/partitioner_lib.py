@@ -5,7 +5,7 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 
 def get_xnnpack_partitioner(dynamic_quant_only_partitioner: bool = True):
@@ -36,6 +36,7 @@ def get_vulkan_partitioner(
     dtype_override: Optional[str] = None,
     enable_dynamic_shape: bool = False,
     force_fp16: bool = False,
+    storage_override: Optional[str] = None,
 ):
     assert (
         dtype_override == "fp32" or dtype_override is None
@@ -44,9 +45,32 @@ def get_vulkan_partitioner(
         VulkanPartitioner,
     )
 
-    return VulkanPartitioner(
-        {"require_dynamic_shapes": enable_dynamic_shape, "force_fp16": force_fp16}
-    )
+    compile_options: Dict[str, Any] = {
+        "require_dynamic_shapes": enable_dynamic_shape,
+        "force_fp16": force_fp16,
+    }
+    if storage_override is not None:
+        from executorch.backends.vulkan.serialization.vulkan_graph_schema import (
+            VkStorageType,
+        )
+
+        # specs/006-e2e-storage-comparison: forces ambiguous-repset tensors
+        # (e.g. linear activations) to a specific storage type instead of the
+        # default TEXTURE_3D preference -- see that feature's research.md
+        # Decision 1/2 and backends/vulkan/utils.py's make_tensor_repr().
+        _STORAGE_NAME_TO_ENUM = {
+            "texture3d": VkStorageType.TEXTURE_3D,
+            "buffer": VkStorageType.BUFFER,
+        }
+        assert storage_override in _STORAGE_NAME_TO_ENUM, (
+            f"storage_override must be one of {list(_STORAGE_NAME_TO_ENUM)}, "
+            f"got {storage_override!r}"
+        )
+        compile_options["storage_type_override"] = _STORAGE_NAME_TO_ENUM[
+            storage_override
+        ]
+
+    return VulkanPartitioner(compile_options)
 
 
 def get_mps_partitioner(use_kv_cache: bool = False):

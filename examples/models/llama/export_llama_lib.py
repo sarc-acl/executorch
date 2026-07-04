@@ -461,6 +461,17 @@ def build_args_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("-V", "--vulkan", action="store_true")
     parser.add_argument("--vulkan-force-fp16", action="store_true")
+    parser.add_argument(
+        "--vulkan-storage-override",
+        choices=["texture3d", "buffer"],
+        default=None,
+        help=(
+            "Force ambiguous-repset tensors (e.g. linear activations) to a "
+            "specific Vulkan storage type instead of the default TEXTURE_3D "
+            "preference. Omitting this flag leaves export behavior exactly as "
+            "before (specs/006-e2e-storage-comparison)."
+        ),
+    )
     parser.add_argument("--vgf", "--arm-vgf", dest="vgf", action="store_true")
     parser.add_argument(
         "--vgf-compile-spec",
@@ -1138,6 +1149,7 @@ def _to_edge_and_lower_llama(  # noqa: C901
     embedding_quantize: Optional[str] = None,
     pt2e_quantize: Optional[str] = None,
     vulkan_force_fp16: bool = False,
+    vulkan_storage_override: Optional[str] = None,
     coreml_ios: int = 15,
     coreml_quantize: Optional[str] = None,
     coreml_compute_units: str = "cpu_only",
@@ -1159,6 +1171,7 @@ def _to_edge_and_lower_llama(  # noqa: C901
                 dtype_override,
                 enable_dynamic_shape,
                 vulkan_force_fp16,
+                vulkan_storage_override,
             )
         )
         modelname = f"vulkan_{modelname}"
@@ -1540,6 +1553,7 @@ def _export_llama(llm_config: LlmConfig) -> LLMEdgeManager:  # noqa: C901
                 else None
             ),
             vulkan_force_fp16=llm_config.backend.vulkan.force_fp16,
+            vulkan_storage_override=llm_config.backend.vulkan.storage_override,
             coreml_ios=llm_config.backend.coreml.ios,
             coreml_quantize=(
                 llm_config.backend.coreml.quantize.value

@@ -529,6 +529,7 @@ class VulkanConfig:
 
     enabled: bool = False
     force_fp16: bool = False
+    storage_override: Optional[str] = None
 
 
 @dataclass
@@ -795,6 +796,8 @@ class LlmConfig:
             llm_config.backend.vulkan.enabled = args.vulkan
         if hasattr(args, "vulkan_force_fp16"):
             llm_config.backend.vulkan.force_fp16 = args.vulkan_force_fp16
+        if hasattr(args, "vulkan_storage_override"):
+            llm_config.backend.vulkan.storage_override = args.vulkan_storage_override
 
         # QNN
         if hasattr(args, "qnn"):
