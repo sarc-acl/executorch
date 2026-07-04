@@ -1,6 +1,36 @@
 <!--
 Sync Impact Report
 ==================
+Version change: 1.3.0 → 1.4.0
+
+Modified principles: none
+
+Added sections:
+  - Core Principles: VI. "Verify With Tools, Never Assume" -- mandates
+    ETDump-based dispatch confirmation for model-level (tier 2) WMMA
+    studies, compiled-SPIR-V inspection for any WMMA shader change (to
+    confirm real cooperative-matrix instructions and correct behavior),
+    and profiler-driven optimization using available tooling (ETDump, GPU
+    timestamps, RGA/ISA tooling, Vulkan validation layers) instead of
+    source-level guessing. Added on explicit user request while planning
+    007-wmma-improvement-microbench, generalized beyond that one feature
+    to apply to all future WMMA work in this workstream.
+
+Removed sections: none
+
+Templates requiring updates:
+  - .specify/templates/plan-template.md ......... ✅ no change needed
+  - .specify/templates/spec-template.md ......... ✅ no change needed
+  - .specify/templates/tasks-template.md ........ ✅ no change needed
+  - .specify/templates/commands/*.md ............. n/a (not present)
+
+Follow-up TODOs: none new (see the pre-existing TODO(HW_INVENTORY) below,
+carried over unchanged)
+-->
+
+<!--
+Sync Impact Report (previous amendment, retained for history)
+==================
 Version change: 1.2.0 → 1.3.0
 
 Modified principles: none
@@ -211,6 +241,37 @@ category of comment this workstream requires beyond the repository's
 default minimal-comment style, because the failure mode — a driver crash on
 an unrelated-looking device — is invisible from the code alone.
 
+### VI. Verify With Tools, Never Assume
+Every WMMA/coopmat performance or correctness claim under this workstream is
+backed by tool-driven verification, never by inference from eligibility-gate
+logic or source reading alone:
+- **Model-level (tier 2) WMMA studies** MUST capture an ETDump trace and
+  confirm, from the actual per-op kernel names it records, that the WMMA/
+  coopmat kernel dispatched for the operation(s) under study. An eligibility
+  check (`can_use_q4gsw_coopmat` or similar) passing in code is not
+  sufficient evidence that the intended kernel actually ran end to end.
+- **Any change to a WMMA/coopmat shader** MUST have its compiled SPIR-V
+  inspected (e.g. via `spirv-dis`/`spirv-cross` or equivalent disassembly)
+  to confirm the expected cooperative-matrix instructions are actually
+  present in the generated binary, and MUST re-confirm the shader's overall
+  behavior is correct (Principle I). A shader that "looks right" in GLSL
+  source is not evidence of what the driver actually compiled or executed.
+- **Optimization work is profiler-driven, never guessed.** Use the tooling
+  available — ETDump, GPU timestamp queries (already in `BenchmarkResult`),
+  the Radeon GPU Analyzer (RGA) or equivalent ISA/occupancy tooling, Vulkan
+  validation layers — to identify where time actually goes and to confirm a
+  change had its intended effect, rather than reasoning from source code
+  alone about what should be faster.
+
+Rationale: kernel-selection logic, shader templates, and driver behavior
+have already diverged from expectations more than once in this workstream
+(the dead `default_storage` check silently no-opping a compile option,
+Xclipse-specific driver crashes invisible from the GLSL source) — trusting
+code-level reasoning without tool-level confirmation is exactly the failure
+mode Principles I and V already guard against elsewhere. This principle
+makes verification-by-tooling the explicit default, not an occasional
+afterthought.
+
 ## Performance & Portability Standards
 
 - **Scope boundary**: this constitution governs the coopmat/WMMA GEMM and
@@ -385,7 +446,7 @@ Amendments are made directly to this file, versioned per semantic-versioning
 rules (MAJOR: principle removed/redefined incompatibly; MINOR: principle or
 section added/materially expanded; PATCH: wording/clarification only), and
 recorded in a Sync Impact Report prepended to this file. Check each PR under
-this workstream's scope against the five principles above before merge; any
+this workstream's scope against the six principles above before merge; any
 deviation must be justified in the PR description, not merged silently.
 
-**Version**: 1.3.0 | **Ratified**: 2026-07-03 | **Last Amended**: 2026-07-04
+**Version**: 1.4.0 | **Ratified**: 2026-07-03 | **Last Amended**: 2026-07-04
