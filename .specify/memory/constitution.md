@@ -1,6 +1,35 @@
 <!--
 Sync Impact Report
 ==================
+Version change: 1.2.0 → 1.3.0
+
+Modified principles: none
+
+Added sections:
+  - Repository & Distribution Scope: documents that `sarc-acl/executorch`
+    (this workstream's fork/remote) is a safe, standing home for
+    everything this workstream produces -- specs/, .specify/, speckit
+    tooling, raw benchmark artifacts -- with no curation needed to land
+    there. Upstream `pytorch/executorch` PRs are a narrower, separate
+    surface requiring explicit per-PR instruction on what to include.
+    Added on explicit user request after the first full commit pass
+    landing specs/001-006 to this fork.
+
+Removed sections: none
+
+Templates requiring updates:
+  - .specify/templates/plan-template.md ......... ✅ no change needed
+  - .specify/templates/spec-template.md ......... ✅ no change needed
+  - .specify/templates/tasks-template.md ........ ✅ no change needed
+  - .specify/templates/commands/*.md ............. n/a (not present)
+
+Follow-up TODOs: none new (see the pre-existing TODO(HW_INVENTORY) below,
+carried over unchanged)
+-->
+
+<!--
+Sync Impact Report (previous amendment, retained for history)
+==================
 Version change: 1.1.0 → 1.2.0
 
 Modified principles: none
@@ -326,6 +355,23 @@ Model-level (tier 2) benchmarks additionally require a `.pte` exported for
 the model/scheme under test (see `/export`) and a run through the standard
 LLaMA runner against that same build.
 
+## Repository & Distribution Scope
+
+- This workstream's standing home is the `sarc-acl/executorch` fork/remote.
+  Everything it produces -- `specs/` (plans, research, tasks, reports, raw
+  benchmark logs/JSON), `.specify/`'s speckit scaffolding, and the
+  `speckit-*` skills under `.claude/skills/` -- is safe to commit and push
+  there without curation. None of it needs to be scrubbed, squashed, or
+  hidden to land on that remote.
+- Contributions bound for the upstream `pytorch/executorch` repository are
+  a different, narrower surface: typically only the production code
+  change (e.g. a coopmat correctness fix or perf win under
+  `backends/vulkan/`), not this workstream's `specs/`/`.specify`/speckit
+  scaffolding or raw benchmark artifacts.
+- Do not assume which commits go upstream, and do not prepare or open an
+  upstream PR unprompted. Wait for explicit instruction identifying
+  exactly which commits/files to include before curating one.
+
 ## Governance
 
 This constitution governs the coopmat/WMMA workstream only; it supplements,
@@ -342,4 +388,4 @@ recorded in a Sync Impact Report prepended to this file. Check each PR under
 this workstream's scope against the five principles above before merge; any
 deviation must be justified in the PR description, not merged silently.
 
-**Version**: 1.2.0 | **Ratified**: 2026-07-03 | **Last Amended**: 2026-07-04
+**Version**: 1.3.0 | **Ratified**: 2026-07-03 | **Last Amended**: 2026-07-04
