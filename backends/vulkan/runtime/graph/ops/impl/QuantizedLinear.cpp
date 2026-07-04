@@ -15,6 +15,8 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Staging.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/ShaderNameUtils.h>
 
+#include <cstdlib>
+
 namespace vkcompute {
 
 //
@@ -165,6 +167,15 @@ static bool can_use_q4gsw_coopmat(
     int64_t tile_m = kCoopmatTileM,
     int64_t tile_n = kCoopmatTileN,
     int64_t tile_k = kCoopmatTileK) {
+  // Baseline-measurement escape hatch: forces every dispatch through this
+  // function to the tiled fallback, regardless of eligibility. Off by
+  // default (unset), so production behavior is unchanged; used only to
+  // produce a controlled "no coopmat" baseline on the same build/binary
+  // that would otherwise dispatch coopmat. See
+  // specs/001-minipc-baseline-benchmarks/research.md, Decision 1.
+  if (std::getenv("ET_VK_FORCE_TILED_LINEAR") != nullptr) {
+    return false;
+  }
   // The coopmat shaders only build HAS_BIAS=false variants, so they would
   // silently drop a bias. Fall back to the tiled path (which applies bias at
   // runtime via the apply_bias spec constant) whenever a bias is present.
@@ -671,7 +682,8 @@ void add_linear_dqa_qw_node(
       // Push Constants
       {},
       // Specialization Constants
-      // 4th spec const: output width N for coopMatStore (see add_linear_qw_node).
+      // 4th spec const: output width N for coopMatStore (see
+      // add_linear_qw_node).
       {apply_bias,
        K4_per_group,
        coopmat_k_iters,
