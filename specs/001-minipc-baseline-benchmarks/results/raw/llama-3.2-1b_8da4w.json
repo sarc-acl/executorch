@@ -1,0 +1,263 @@
+{
+  "config": {
+    "model": "llama-3.2-1b",
+    "scheme": "8da4w",
+    "group_size": 32,
+    "device": "rocky-ryzen",
+    "dispatch_path": "tiled_baseline",
+    "pte_path": "specs/001-minipc-baseline-benchmarks/results/pte/llama-3.2-1b_8da4w.pte"
+  },
+  "e2e": {
+    "status": "ok",
+    "failure_reason": null,
+    "prefill_tokens": 2048,
+    "decode_tokens": 1024,
+    "prefill_tokens_per_sec": 1357.46,
+    "decode_tokens_per_sec": 58.9553,
+    "num_runs": 5,
+    "variance": {
+      "prefill_tokens_per_sec_stdev": 12.145,
+      "decode_tokens_per_sec_stdev": 0.1277,
+      "note": "Clean redo (no concurrent CPU load). All 5 runs used -- no cold-start drift (GPU already warm from preceding llama-3.2-1b_4w run)."
+    },
+    "run_metadata": {
+      "git_commit": "5426101bf440c26a5b1e7edf34867e8d5f97e317",
+      "max_seq_len": 3072,
+      "prompt_file": "specs/001-minipc-baseline-benchmarks/results/prompts/shared_2048.txt",
+      "timestamp": "2026-07-04T01:22-01:25 PDT, clean redo with no concurrent load",
+      "all_runs": [
+        {
+          "prefill": 1370.82,
+          "decode": 58.729
+        },
+        {
+          "prefill": 1365.33,
+          "decode": 58.9931
+        },
+        {
+          "prefill": 1352.71,
+          "decode": 58.9965
+        },
+        {
+          "prefill": 1358.99,
+          "decode": 59.0238
+        },
+        {
+          "prefill": 1339.44,
+          "decode": 59.034
+        }
+      ],
+      "discarded_cold_start_runs": 0
+    }
+  },
+  "microbench": [
+    {
+      "regime": "decode",
+      "op": "lm_head",
+      "shape": {
+        "m": 1,
+        "n": 128256,
+        "k": 2048
+      },
+      "mean_time_us": 1745.29,
+      "stddev_us": 2.438,
+      "iterations": 5,
+      "kernel": "linear_dq8ca_q4gsw_coop_texture3d_texture2d_half"
+    },
+    {
+      "regime": "decode",
+      "op": "w1_gate",
+      "shape": {
+        "m": 1,
+        "n": 8192,
+        "k": 2048
+      },
+      "mean_time_us": 112.443,
+      "stddev_us": 0.594,
+      "iterations": 5,
+      "kernel": "linear_dq8ca_q4gsw_coop_texture3d_texture2d_half"
+    },
+    {
+      "regime": "decode",
+      "op": "w2_down",
+      "shape": {
+        "m": 1,
+        "n": 2048,
+        "k": 8192
+      },
+      "mean_time_us": 112.767,
+      "stddev_us": 1.087,
+      "iterations": 5,
+      "kernel": "linear_dq8ca_q4gsw_coop_texture3d_texture2d_half"
+    },
+    {
+      "regime": "decode",
+      "op": "w3_up",
+      "shape": {
+        "m": 1,
+        "n": 8192,
+        "k": 2048
+      },
+      "mean_time_us": 112.149,
+      "stddev_us": 0.598,
+      "iterations": 5,
+      "kernel": "linear_dq8ca_q4gsw_coop_texture3d_texture2d_half"
+    },
+    {
+      "regime": "decode",
+      "op": "wk",
+      "shape": {
+        "m": 1,
+        "n": 512,
+        "k": 2048
+      },
+      "mean_time_us": 7.377,
+      "stddev_us": 0.034,
+      "iterations": 5,
+      "kernel": "linear_dq8ca_q4gsw_coop_texture3d_texture2d_half"
+    },
+    {
+      "regime": "decode",
+      "op": "wo",
+      "shape": {
+        "m": 1,
+        "n": 2048,
+        "k": 2048
+      },
+      "mean_time_us": 28.906,
+      "stddev_us": 0.369,
+      "iterations": 5,
+      "kernel": "linear_dq8ca_q4gsw_coop_texture3d_texture2d_half"
+    },
+    {
+      "regime": "decode",
+      "op": "wq",
+      "shape": {
+        "m": 1,
+        "n": 2048,
+        "k": 2048
+      },
+      "mean_time_us": 28.727,
+      "stddev_us": 0.17,
+      "iterations": 5,
+      "kernel": "linear_dq8ca_q4gsw_coop_texture3d_texture2d_half"
+    },
+    {
+      "regime": "decode",
+      "op": "wv",
+      "shape": {
+        "m": 1,
+        "n": 512,
+        "k": 2048
+      },
+      "mean_time_us": 7.389,
+      "stddev_us": 0.034,
+      "iterations": 5,
+      "kernel": "linear_dq8ca_q4gsw_coop_texture3d_texture2d_half"
+    },
+    {
+      "regime": "prefill",
+      "op": "lm_head",
+      "shape": {
+        "m": 2048,
+        "n": 128256,
+        "k": 2048
+      },
+      "mean_time_us": 214388.703,
+      "stddev_us": 4618.109,
+      "iterations": 5,
+      "kernel": "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half"
+    },
+    {
+      "regime": "prefill",
+      "op": "w1_gate",
+      "shape": {
+        "m": 2048,
+        "n": 8192,
+        "k": 2048
+      },
+      "mean_time_us": 13977.872,
+      "stddev_us": 330.011,
+      "iterations": 5,
+      "kernel": "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half"
+    },
+    {
+      "regime": "prefill",
+      "op": "w2_down",
+      "shape": {
+        "m": 2048,
+        "n": 2048,
+        "k": 8192
+      },
+      "mean_time_us": 14434.951,
+      "stddev_us": 203.61,
+      "iterations": 5,
+      "kernel": "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half"
+    },
+    {
+      "regime": "prefill",
+      "op": "w3_up",
+      "shape": {
+        "m": 2048,
+        "n": 8192,
+        "k": 2048
+      },
+      "mean_time_us": 13969.156,
+      "stddev_us": 189.176,
+      "iterations": 5,
+      "kernel": "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half"
+    },
+    {
+      "regime": "prefill",
+      "op": "wk",
+      "shape": {
+        "m": 2048,
+        "n": 512,
+        "k": 2048
+      },
+      "mean_time_us": 984.403,
+      "stddev_us": 6.892,
+      "iterations": 5,
+      "kernel": "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half"
+    },
+    {
+      "regime": "prefill",
+      "op": "wo",
+      "shape": {
+        "m": 2048,
+        "n": 2048,
+        "k": 2048
+      },
+      "mean_time_us": 3601.736,
+      "stddev_us": 63.829,
+      "iterations": 5,
+      "kernel": "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half"
+    },
+    {
+      "regime": "prefill",
+      "op": "wq",
+      "shape": {
+        "m": 2048,
+        "n": 2048,
+        "k": 2048
+      },
+      "mean_time_us": 3575.667,
+      "stddev_us": 42.854,
+      "iterations": 5,
+      "kernel": "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half"
+    },
+    {
+      "regime": "prefill",
+      "op": "wv",
+      "shape": {
+        "m": 2048,
+        "n": 512,
+        "k": 2048
+      },
+      "mean_time_us": 997.515,
+      "stddev_us": 10.428,
+      "iterations": 5,
+      "kernel": "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half"
+    }
+  ]
+}

@@ -1,0 +1,264 @@
+{
+  "config": {
+    "model": "llama-3.2-1b",
+    "scheme": "4w",
+    "group_size": 32,
+    "device": "rocky-ryzen",
+    "dispatch_path": "tiled_baseline",
+    "pte_path": "specs/001-minipc-baseline-benchmarks/results/pte/llama-3.2-1b_4w.pte"
+  },
+  "e2e": {
+    "status": "ok",
+    "failure_reason": null,
+    "prefill_tokens": 2048,
+    "decode_tokens": 1024,
+    "prefill_tokens_per_sec": 1132.91,
+    "decode_tokens_per_sec": 57.688,
+    "num_runs": 3,
+    "variance": {
+      "prefill_tokens_per_sec_stdev": 17.133,
+      "decode_tokens_per_sec_stdev": 0.0526,
+      "note": "Clean redo (no concurrent CPU load; prior run was confounded by concurrent exports, see run_metadata.discarded_confounded_run). 5 runs measured; first 2 discarded as mild GPU warm-up (prefill tok/s: 1205, 1174 vs steady-state ~1133). Decode was essentially flat across all 5 runs (57.6-57.8)."
+    },
+    "run_metadata": {
+      "git_commit": "5426101bf440c26a5b1e7edf34867e8d5f97e317",
+      "max_seq_len": 3072,
+      "prompt_file": "specs/001-minipc-baseline-benchmarks/results/prompts/shared_2048.txt",
+      "timestamp": "2026-07-04T01:18-01:21 PDT, clean redo with no concurrent load",
+      "all_runs": [
+        {
+          "prefill": 1205.41,
+          "decode": 57.7738
+        },
+        {
+          "prefill": 1174.31,
+          "decode": 57.7281
+        },
+        {
+          "prefill": 1151.86,
+          "decode": 57.7444
+        },
+        {
+          "prefill": 1128.37,
+          "decode": 57.6793
+        },
+        {
+          "prefill": 1118.51,
+          "decode": 57.6403
+        }
+      ],
+      "discarded_cold_start_runs": 2,
+      "discarded_confounded_run": "An earlier attempt at this config ran concurrently with 3B/8B .pte exports and measured decode ~39 tok/s (32% slower than this clean 57.7 tok/s) -- discarded entirely, not just averaged out."
+    }
+  },
+  "microbench": [
+    {
+      "regime": "decode",
+      "op": "lm_head",
+      "shape": {
+        "m": 1,
+        "n": 128256,
+        "k": 2048
+      },
+      "mean_time_us": 1948.31,
+      "stddev_us": 17.533,
+      "iterations": 5,
+      "kernel": "q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_texture3d_half"
+    },
+    {
+      "regime": "decode",
+      "op": "w1_gate",
+      "shape": {
+        "m": 1,
+        "n": 8192,
+        "k": 2048
+      },
+      "mean_time_us": 122.031,
+      "stddev_us": 0.524,
+      "iterations": 5,
+      "kernel": "q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_texture3d_half"
+    },
+    {
+      "regime": "decode",
+      "op": "w2_down",
+      "shape": {
+        "m": 1,
+        "n": 2048,
+        "k": 8192
+      },
+      "mean_time_us": 129.284,
+      "stddev_us": 0.821,
+      "iterations": 5,
+      "kernel": "q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g4w16_texture3d_half"
+    },
+    {
+      "regime": "decode",
+      "op": "w3_up",
+      "shape": {
+        "m": 1,
+        "n": 8192,
+        "k": 2048
+      },
+      "mean_time_us": 123.266,
+      "stddev_us": 1.987,
+      "iterations": 5,
+      "kernel": "q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_texture3d_half"
+    },
+    {
+      "regime": "decode",
+      "op": "wk",
+      "shape": {
+        "m": 1,
+        "n": 512,
+        "k": 2048
+      },
+      "mean_time_us": 15.425,
+      "stddev_us": 0.09,
+      "iterations": 5,
+      "kernel": "q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g1w64_texture3d_half"
+    },
+    {
+      "regime": "decode",
+      "op": "wo",
+      "shape": {
+        "m": 1,
+        "n": 2048,
+        "k": 2048
+      },
+      "mean_time_us": 34.058,
+      "stddev_us": 0.409,
+      "iterations": 5,
+      "kernel": "q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g4w16_texture3d_half"
+    },
+    {
+      "regime": "decode",
+      "op": "wq",
+      "shape": {
+        "m": 1,
+        "n": 2048,
+        "k": 2048
+      },
+      "mean_time_us": 33.729,
+      "stddev_us": 0.255,
+      "iterations": 5,
+      "kernel": "q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g4w16_texture3d_half"
+    },
+    {
+      "regime": "decode",
+      "op": "wv",
+      "shape": {
+        "m": 1,
+        "n": 512,
+        "k": 2048
+      },
+      "mean_time_us": 13.331,
+      "stddev_us": 1.26,
+      "iterations": 5,
+      "kernel": "q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g1w64_texture3d_half"
+    },
+    {
+      "regime": "prefill",
+      "op": "lm_head",
+      "shape": {
+        "m": 2048,
+        "n": 128256,
+        "k": 2048
+      },
+      "mean_time_us": 298497.531,
+      "stddev_us": 5955.0,
+      "iterations": 5,
+      "kernel": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half"
+    },
+    {
+      "regime": "prefill",
+      "op": "w1_gate",
+      "shape": {
+        "m": 2048,
+        "n": 8192,
+        "k": 2048
+      },
+      "mean_time_us": 18976.453,
+      "stddev_us": 264.373,
+      "iterations": 5,
+      "kernel": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half"
+    },
+    {
+      "regime": "prefill",
+      "op": "w2_down",
+      "shape": {
+        "m": 2048,
+        "n": 2048,
+        "k": 8192
+      },
+      "mean_time_us": 20003.738,
+      "stddev_us": 214.674,
+      "iterations": 5,
+      "kernel": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half"
+    },
+    {
+      "regime": "prefill",
+      "op": "w3_up",
+      "shape": {
+        "m": 2048,
+        "n": 8192,
+        "k": 2048
+      },
+      "mean_time_us": 19471.41,
+      "stddev_us": 800.573,
+      "iterations": 5,
+      "kernel": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half"
+    },
+    {
+      "regime": "prefill",
+      "op": "wk",
+      "shape": {
+        "m": 2048,
+        "n": 512,
+        "k": 2048
+      },
+      "mean_time_us": 1402.854,
+      "stddev_us": 21.297,
+      "iterations": 5,
+      "kernel": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half"
+    },
+    {
+      "regime": "prefill",
+      "op": "wo",
+      "shape": {
+        "m": 2048,
+        "n": 2048,
+        "k": 2048
+      },
+      "mean_time_us": 4930.517,
+      "stddev_us": 239.709,
+      "iterations": 5,
+      "kernel": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half"
+    },
+    {
+      "regime": "prefill",
+      "op": "wq",
+      "shape": {
+        "m": 2048,
+        "n": 2048,
+        "k": 2048
+      },
+      "mean_time_us": 4917.062,
+      "stddev_us": 232.397,
+      "iterations": 5,
+      "kernel": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half"
+    },
+    {
+      "regime": "prefill",
+      "op": "wv",
+      "shape": {
+        "m": 2048,
+        "n": 512,
+        "k": 2048
+      },
+      "mean_time_us": 1440.02,
+      "stddev_us": 42.733,
+      "iterations": 5,
+      "kernel": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half"
+    }
+  ]
+}
