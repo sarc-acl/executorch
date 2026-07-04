@@ -187,6 +187,15 @@ if(TARGET vulkan_backend)
   executorch_target_link_options_shared_lib(vulkan_backend)
 endif()
 
+# ETDump/event tracer support (main.cpp's ETDumpGen usage is gated on
+# ET_EVENT_TRACER_ENABLED at the preprocessor level; this project doesn't
+# otherwise see the root EXECUTORCH_ENABLE_EVENT_TRACER option or link against
+# the etdump/flatccrt targets it needs, unlike executor_runner).
+if(EXECUTORCH_ENABLE_EVENT_TRACER)
+  add_definitions(-DET_EVENT_TRACER_ENABLED)
+  list(APPEND link_libraries etdump flatccrt)
+endif()
+
 # Qnn backend
 if(TARGET qnn_executorch_backend)
   list(APPEND link_libraries qnn_executorch_backend)
