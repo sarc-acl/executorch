@@ -43,9 +43,7 @@ static bool is_4bit(const std::string& op) {
 }
 
 // Build one test case for the given op at (storage, half dtype), no bias.
-static TestCase make_case(
-    const LinearConfig& cfg,
-    utils::StorageType storage) {
+static TestCase make_case(const LinearConfig& cfg, utils::StorageType storage) {
   const vkapi::ScalarType dt = vkapi::kHalf;
   TestCase tc;
   const std::string storage_str =
@@ -55,15 +53,19 @@ static TestCase make_case(
       std::to_string(cfg.K) + "_N" + std::to_string(cfg.N) + "_" + storage_str);
   tc.set_operator_name("et_vk." + cfg.op_name + ".default");
 
-  ValueSpec input({cfg.M, cfg.K}, dt, storage, utils::kWidthPacked,
-                  DataGenType::RANDINT);
+  ValueSpec input(
+      {cfg.M, cfg.K}, dt, storage, utils::kWidthPacked, DataGenType::RANDINT);
 
   // dynamic per-row activation scale/zp (dq8ca only)
-  ValueSpec input_scale({1, cfg.M}, dt, storage, utils::kWidthPacked,
-                        DataGenType::RANDOM_SCALES);
+  ValueSpec input_scale(
+      {1, cfg.M}, dt, storage, utils::kWidthPacked, DataGenType::RANDOM_SCALES);
   input_scale.set_constant(true);
-  ValueSpec input_zp({1, cfg.M}, vkapi::kChar, storage, utils::kWidthPacked,
-                     DataGenType::RANDINT);
+  ValueSpec input_zp(
+      {1, cfg.M},
+      vkapi::kChar,
+      storage,
+      utils::kWidthPacked,
+      DataGenType::RANDINT);
   input_zp.set_constant(true);
 
   // weight + scales + sums depend on 4-bit vs 8-bit
@@ -80,15 +82,23 @@ static TestCase make_case(
     qweight.set_int4(true);
   }
 
-  std::vector<int64_t> scales_size =
-      four ? std::vector<int64_t>{cfg.K / cfg.group_size, cfg.N}
-           : std::vector<int64_t>{cfg.N};
-  ValueSpec weight_scales(scales_size, dt, storage, utils::kWidthPacked,
-                          DataGenType::RANDOM_SCALES);
+  std::vector<int64_t> scales_size = four
+      ? std::vector<int64_t>{cfg.K / cfg.group_size, cfg.N}
+      : std::vector<int64_t>{cfg.N};
+  ValueSpec weight_scales(
+      scales_size,
+      dt,
+      storage,
+      utils::kWidthPacked,
+      DataGenType::RANDOM_SCALES);
   weight_scales.set_constant(true);
 
-  ValueSpec weight_sums(scales_size, vkapi::kInt, storage, utils::kWidthPacked,
-                        DataGenType::ZEROS);
+  ValueSpec weight_sums(
+      scales_size,
+      vkapi::kInt,
+      storage,
+      utils::kWidthPacked,
+      DataGenType::ZEROS);
   weight_sums.set_constant(true);
   if (four) {
     compute_weight_sums_4bit_grouped(
@@ -103,8 +113,8 @@ static TestCase make_case(
   bias.set_constant(true);
   bias.set_none(true);
 
-  ValueSpec output({cfg.M, cfg.N}, dt, storage, utils::kWidthPacked,
-                   DataGenType::ZEROS);
+  ValueSpec output(
+      {cfg.M, cfg.N}, dt, storage, utils::kWidthPacked, DataGenType::ZEROS);
 
   // assemble per op signature
   if (cfg.op_name == "linear_q4gsw") {
@@ -160,8 +170,7 @@ static void bench_reference(TestCase& tc) {
   // dq8ca = {in, in_scale, in_zp, w, w_sums, w_scales, [group], bias}
   const ValueSpec& w = tc.inputs()[dq8ca ? 3 : 1];
   const ValueSpec& sc = tc.inputs()[dq8ca ? 5 : 2];
-  const int64_t group =
-      four ? tc.inputs()[dq8ca ? 6 : 3].get_int_value() : K;
+  const int64_t group = four ? tc.inputs()[dq8ca ? 6 : 3].get_int_value() : K;
   const ValueSpec& bias = tc.inputs()[dq8ca ? (four ? 7 : 6) : (four ? 4 : 3)];
   const bool has_bias = !bias.is_none();
 
@@ -220,7 +229,8 @@ static const std::vector<std::pair<int64_t, int64_t>> kShapes = {
     {14336, 4096}, // down_proj
 };
 static const std::vector<std::string> kOps = {
-    "linear_q4gsw", "linear_dq8ca_q4gsw"};
+    "linear_q4gsw",
+    "linear_dq8ca_q4gsw"};
 static constexpr int64_t kM = 1024;
 static constexpr int64_t kGroup = 128;
 
@@ -268,49 +278,49 @@ std::vector<TestCase> generate_cases() {
       {256, 128, 64, 64, ""}}; // K < M, K > N
   for (const auto& op : kOps) {
     for (const auto& shape : kCorrectnessShapes) {
-    LinearConfig cfg{shape.M, shape.K, shape.N, shape.group_size, op};
-    const bool dq = is_dq8ca(op);
-    const bool four = is_4bit(op);
-    for (auto st : {utils::kTexture3D, utils::kBuffer}) {
-      TestCase t = make_case(cfg, st);
-      auto& hin = t.inputs()[0].get_half_data();
-      for (size_t i = 0; i < hin.size(); ++i) {
-        hin[i] = float_to_half(0.5f + 0.125f * float(i % 8));
-      }
-      const size_t w_idx = dq ? 3 : 1;
-      if (four) {
-        auto& wq = t.inputs()[w_idx].get_uint8_data();
-        const uint8_t kPos[6] = {0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE};
-        for (size_t i = 0; i < wq.size(); ++i) {
-          wq[i] = kPos[i % 6];
+      LinearConfig cfg{shape.M, shape.K, shape.N, shape.group_size, op};
+      const bool dq = is_dq8ca(op);
+      const bool four = is_4bit(op);
+      for (auto st : {utils::kTexture3D, utils::kBuffer}) {
+        TestCase t = make_case(cfg, st);
+        auto& hin = t.inputs()[0].get_half_data();
+        for (size_t i = 0; i < hin.size(); ++i) {
+          hin[i] = float_to_half(0.5f + 0.125f * float(i % 8));
         }
-      } else {
-        auto& wq = t.inputs()[w_idx].get_int8_data();
-        for (size_t i = 0; i < wq.size(); ++i) {
-          wq[i] = int8_t(1 + (i % 6));
-        }
-      }
-      if (dq) {
-        auto& hs = t.inputs()[1].get_half_data();
-        std::fill(hs.begin(), hs.end(), float_to_half(0.0625f));
-        auto& zp = t.inputs()[2].get_int8_data();
-        std::fill(zp.begin(), zp.end(), int8_t(0));
-        // weights were overwritten above -> recompute the sums
+        const size_t w_idx = dq ? 3 : 1;
         if (four) {
-          compute_weight_sums_4bit_grouped(
-              t.inputs()[4],
-              t.inputs()[w_idx],
-              cfg.K / cfg.group_size,
-              cfg.N,
-              cfg.group_size);
+          auto& wq = t.inputs()[w_idx].get_uint8_data();
+          const uint8_t kPos[6] = {0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE};
+          for (size_t i = 0; i < wq.size(); ++i) {
+            wq[i] = kPos[i % 6];
+          }
         } else {
-          compute_weight_sums(t.inputs()[4], t.inputs()[w_idx], cfg.N, cfg.K);
+          auto& wq = t.inputs()[w_idx].get_int8_data();
+          for (size_t i = 0; i < wq.size(); ++i) {
+            wq[i] = int8_t(1 + (i % 6));
+          }
         }
+        if (dq) {
+          auto& hs = t.inputs()[1].get_half_data();
+          std::fill(hs.begin(), hs.end(), float_to_half(0.0625f));
+          auto& zp = t.inputs()[2].get_int8_data();
+          std::fill(zp.begin(), zp.end(), int8_t(0));
+          // weights were overwritten above -> recompute the sums
+          if (four) {
+            compute_weight_sums_4bit_grouped(
+                t.inputs()[4],
+                t.inputs()[w_idx],
+                cfg.K / cfg.group_size,
+                cfg.N,
+                cfg.group_size);
+          } else {
+            compute_weight_sums(t.inputs()[4], t.inputs()[w_idx], cfg.N, cfg.K);
+          }
+        }
+        t.set_abs_tolerance(0.5f);
+        t.set_rel_tolerance(0.05f);
+        cases.push_back(t);
       }
-      t.set_abs_tolerance(0.5f);
-      t.set_rel_tolerance(0.05f);
-      cases.push_back(t);
-    }
     }
   }
   return cases;
@@ -330,13 +340,18 @@ int main() {
   set_use_gpu_timestamps(true);
 
   print_performance_header();
-  std::cout << "Coopmat vs Tiled quantized-linear microbench (Llama 3.1 8B shapes, M="
-            << kM << ")" << std::endl;
+  std::cout
+      << "Coopmat vs Tiled quantized-linear microbench (Llama 3.1 8B shapes, M="
+      << kM << ")" << std::endl;
   print_separator();
 
   auto results = execute_test_cases(
-      generate_cases, flop_calc, "CoopmatLinearBench",
-      /*warmup=*/3, /*runs=*/5, /*reference=*/bench_reference);
+      generate_cases,
+      flop_calc,
+      "CoopmatLinearBench",
+      /*warmup=*/3,
+      /*runs=*/5,
+      /*reference=*/bench_reference);
 
   // Summary table: pair tiled (even idx) vs coopmat (odd idx) per (op, shape).
   // GFLOP/s computed from avg GPU time and 2*M*N*K flops.
@@ -358,10 +373,12 @@ int main() {
     }
     return name;
   };
-  std::cout << "\n================ SUMMARY: tiled vs coopmat (GFLOP/s) ================\n";
-  std::cout << std::left << std::setw(22) << "op" << std::setw(13) << "shape(K,N)"
-            << std::right << std::setw(10) << "tiled" << std::setw(10)
-            << "coopmat" << std::setw(9) << "speedup" << "  coopmat kernel\n";
+  std::cout
+      << "\n================ SUMMARY: tiled vs coopmat (GFLOP/s) ================\n";
+  std::cout << std::left << std::setw(22) << "op" << std::setw(13)
+            << "shape(K,N)" << std::right << std::setw(10) << "tiled"
+            << std::setw(10) << "coopmat" << std::setw(9) << "speedup"
+            << "  coopmat kernel\n";
   size_t idx = 0;
   for (const auto& op : kOps) {
     for (const auto& kn : kShapes) {
