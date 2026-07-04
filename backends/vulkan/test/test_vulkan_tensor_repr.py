@@ -696,6 +696,29 @@ class TestOpRepSets(unittest.TestCase):
         self.assertEqual(args_repr[0].storage_type, VkStorageType.BUFFER)
         self.assertEqual(outs_repr[0].storage_type, VkStorageType.BUFFER)
 
+    def test_pick_representations_no_preference_matches_default(self):
+        # preferred_storage=None (the default) must behave identically to
+        # calling pick_representations() with no argument at all.
+        op_repsets = self._make_unary_op(repset=ANY_STORAGE)
+        _, outs_repr = op_repsets.pick_representations(preferred_storage=None)
+        self.assertEqual(outs_repr[0].storage_type, VkStorageType.TEXTURE_3D)
+
+    def test_pick_representations_prefers_buffer_when_requested(self):
+        op_repsets = self._make_unary_op(repset=ANY_STORAGE)
+        _, outs_repr = op_repsets.pick_representations(
+            preferred_storage=VkStorageType.BUFFER
+        )
+        self.assertEqual(outs_repr[0].storage_type, VkStorageType.BUFFER)
+
+    def test_pick_representations_buffer_preference_ignored_when_texture_only(self):
+        # A texture-only repset can't honor a BUFFER preference -- it must
+        # fall back to TEXTURE_3D rather than error or silently drop the tensor.
+        op_repsets = self._make_unary_op(repset=CHANNELS_PACKED_TEXTURE)
+        _, outs_repr = op_repsets.pick_representations(
+            preferred_storage=VkStorageType.BUFFER
+        )
+        self.assertEqual(outs_repr[0].storage_type, VkStorageType.TEXTURE_3D)
+
     # -- try_constrain_with_arg_repset --
 
     def test_try_constrain_with_arg_repset_narrows(self):

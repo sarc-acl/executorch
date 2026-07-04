@@ -499,7 +499,13 @@ class TagMemoryMetaPass(ExportPass):
 
         self.constrain_op_repsets(op_repsets)
 
-        args_repr_list, outs_repr_list = op_repsets.pick_representations()
+        # self.default_storage defaults to TEXTURE_3D (matching the pre-existing
+        # hardcoded preference in make_tensor_repr()), so this is a no-op unless
+        # a caller explicitly requests BUFFER via storage_type_override -- see
+        # specs/006-e2e-storage-comparison/research.md Decision 1.
+        args_repr_list, outs_repr_list = op_repsets.pick_representations(
+            self.default_storage
+        )
 
         if len(outs_repr_list) == 1:
             utils.set_node_repr(op_node, outs_repr_list[0])
