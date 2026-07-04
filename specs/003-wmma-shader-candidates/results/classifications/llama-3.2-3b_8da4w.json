@@ -1,0 +1,576 @@
+{
+  "config": {
+    "model": "llama-3.2-3b",
+    "scheme": "8da4w",
+    "device": "rocky-ryzen",
+    "dispatch_path": "tiled_baseline"
+  },
+  "phases": {
+    "prefill": {
+      "classifications": [
+        {
+          "kernel_name": "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half",
+          "shape": {
+            "k": 3072,
+            "m": 2048,
+            "n": 8192
+          },
+          "category": "feed-forward",
+          "classification": "b",
+          "blocking_reasons": [
+            "output tensor is rank-3 ([1,M,K]); can_use_q4gsw_coopmat() rejects dim_of(output) > 2 (backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.cpp:192-194)",
+            "output tensor storage is TEXTURE_3D; can_use_q4gsw_coopmat() requires Buffer storage (backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.cpp:196-197)"
+          ],
+          "existing_or_prospective_shader": "linear_dq8ca_q4gsw_coopmat (linear_dq8ca_qw_coopmat.glsl)",
+          "total_time_us": 1155215.56,
+          "pct_of_phase": 0.2683
+        },
+        {
+          "kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half",
+          "shape": {
+            "k": 128,
+            "m": 2048,
+            "n": 128
+          },
+          "category": "attention (sdpa)",
+          "classification": "c",
+          "blocking_reasons": [
+            "no WMMA implementation exists for SDPA; add_sdpa_compute_attn_weights_node/add_sdpa_compute_out_node only ever select _tiled or _coop kernel names (backends/vulkan/runtime/graph/ops/impl/SDPA.cpp); the generic add_matmul_coopmat_node/coopmat_mm.glsl path exists but is not called anywhere in SDPA.cpp"
+          ],
+          "existing_or_prospective_shader": "none exists (see reason)",
+          "total_time_us": 822510.399,
+          "pct_of_phase": 0.191
+        },
+        {
+          "kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half",
+          "shape": {
+            "k": 128,
+            "m": 2048,
+            "n": 128
+          },
+          "category": "attention (sdpa)",
+          "classification": "c",
+          "blocking_reasons": [
+            "no WMMA implementation exists for SDPA; add_sdpa_compute_attn_weights_node/add_sdpa_compute_out_node only ever select _tiled or _coop kernel names (backends/vulkan/runtime/graph/ops/impl/SDPA.cpp); the generic add_matmul_coopmat_node/coopmat_mm.glsl path exists but is not called anywhere in SDPA.cpp"
+          ],
+          "existing_or_prospective_shader": "none exists (see reason)",
+          "total_time_us": 606153.6,
+          "pct_of_phase": 0.1408
+        },
+        {
+          "kernel_name": "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half",
+          "shape": {
+            "k": 8192,
+            "m": 2048,
+            "n": 3072
+          },
+          "category": "feed-forward",
+          "classification": "b",
+          "blocking_reasons": [
+            "output tensor is rank-3 ([1,M,K]); can_use_q4gsw_coopmat() rejects dim_of(output) > 2 (backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.cpp:192-194)",
+            "output tensor storage is TEXTURE_3D; can_use_q4gsw_coopmat() requires Buffer storage (backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.cpp:196-197)"
+          ],
+          "existing_or_prospective_shader": "linear_dq8ca_q4gsw_coopmat (linear_dq8ca_qw_coopmat.glsl)",
+          "total_time_us": 567197.28,
+          "pct_of_phase": 0.1317
+        },
+        {
+          "kernel_name": "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half",
+          "shape": {
+            "k": 3072,
+            "m": 2048,
+            "n": 3072
+          },
+          "category": "attention projection",
+          "classification": "b",
+          "blocking_reasons": [
+            "output tensor is rank-3 ([1,M,K]); can_use_q4gsw_coopmat() rejects dim_of(output) > 2 (backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.cpp:192-194)",
+            "output tensor storage is TEXTURE_3D; can_use_q4gsw_coopmat() requires Buffer storage (backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.cpp:196-197)"
+          ],
+          "existing_or_prospective_shader": "linear_dq8ca_q4gsw_coopmat (linear_dq8ca_qw_coopmat.glsl)",
+          "total_time_us": 427698.92,
+          "pct_of_phase": 0.0993
+        },
+        {
+          "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 209523.36,
+          "pct_of_phase": 0.0487
+        },
+        {
+          "kernel_name": "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half",
+          "shape": {
+            "k": 3072,
+            "m": 2048,
+            "n": 1024
+          },
+          "category": "attention projection",
+          "classification": "b",
+          "blocking_reasons": [
+            "output tensor is rank-3 ([1,M,K]); can_use_q4gsw_coopmat() rejects dim_of(output) > 2 (backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.cpp:192-194)",
+            "output tensor storage is TEXTURE_3D; can_use_q4gsw_coopmat() requires Buffer storage (backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.cpp:196-197)"
+          ],
+          "existing_or_prospective_shader": "linear_dq8ca_q4gsw_coopmat (linear_dq8ca_qw_coopmat.glsl)",
+          "total_time_us": 143294.839,
+          "pct_of_phase": 0.0333
+        },
+        {
+          "kernel_name": "binary_mul_texture3d_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 74967.12,
+          "pct_of_phase": 0.0174
+        },
+        {
+          "kernel_name": "quantize_and_pack_4h4w_with_group_sums_o4w16_buffer_texture3d_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 63442.36,
+          "pct_of_phase": 0.0147
+        },
+        {
+          "kernel_name": "choose_qparams_per_row_texture3d_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 40423.8,
+          "pct_of_phase": 0.0094
+        },
+        {
+          "kernel_name": "view_texture_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 32047.52,
+          "pct_of_phase": 0.0074
+        },
+        {
+          "kernel_name": "rms_norm_texture3d_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 28602.56,
+          "pct_of_phase": 0.0066
+        },
+        {
+          "kernel_name": "binary_add_texture3d_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 27430.08,
+          "pct_of_phase": 0.0064
+        },
+        {
+          "kernel_name": "sigmoid_half_texture3d",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 25125.04,
+          "pct_of_phase": 0.0058
+        },
+        {
+          "kernel_name": "clone_image_to_buffer_half_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 21733.48,
+          "pct_of_phase": 0.005
+        },
+        {
+          "kernel_name": "rotary_embedding_texture3d_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 13297.68,
+          "pct_of_phase": 0.0031
+        },
+        {
+          "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 11863.32,
+          "pct_of_phase": 0.0028
+        },
+        {
+          "kernel_name": "clone_buffer_to_image_half_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 11599.48,
+          "pct_of_phase": 0.0027
+        },
+        {
+          "kernel_name": "linear_dq8ca_q4gsw_coop_buffer_texture2d_half",
+          "shape": {
+            "k": 3072,
+            "m": 1,
+            "n": 128256
+          },
+          "category": "output/vocab projection",
+          "classification": "c",
+          "blocking_reasons": [
+            "no WMMA-capable GEMV (M=1) kernel exists; is_gemv_case routes to the tiled/coop kernel choice before can_use_q4gsw_coopmat() is ever called, and the existing coopmat shaders are tiled multi-row designs not applicable at M=1 (backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.cpp)"
+          ],
+          "existing_or_prospective_shader": "linear_dq8ca_q4gsw_coopmat (linear_dq8ca_qw_coopmat.glsl)",
+          "total_time_us": 2732.08,
+          "pct_of_phase": 0.0006
+        },
+        {
+          "kernel_name": "nchw_to_image_texture3d_half_float",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 712.12,
+          "pct_of_phase": 0.0002
+        },
+        {
+          "kernel_name": "slice_ubo_texture3d_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 25.96,
+          "pct_of_phase": 0.0
+        },
+        {
+          "kernel_name": "nchw_to_image_texture3d_int32_int32",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 9.28,
+          "pct_of_phase": 0.0
+        },
+        {
+          "kernel_name": "buffer_to_nchw_half_float",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 8.92,
+          "pct_of_phase": 0.0
+        },
+        {
+          "kernel_name": "select_texture3d_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 1.68,
+          "pct_of_phase": 0.0
+        }
+      ]
+    },
+    "decode": {
+      "classifications": [
+        {
+          "kernel_name": "linear_dq8ca_q4gsw_coop_texture3d_texture2d_half",
+          "shape": {
+            "k": 3072,
+            "m": 1,
+            "n": 8192
+          },
+          "category": "feed-forward",
+          "classification": "c",
+          "blocking_reasons": [
+            "no WMMA-capable GEMV (M=1) kernel exists; is_gemv_case routes to the tiled/coop kernel choice before can_use_q4gsw_coopmat() is ever called, and the existing coopmat shaders are tiled multi-row designs not applicable at M=1 (backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.cpp)"
+          ],
+          "existing_or_prospective_shader": "linear_dq8ca_q4gsw_coopmat (linear_dq8ca_qw_coopmat.glsl)",
+          "total_time_us": 67768.76,
+          "pct_of_phase": 0.2329
+        },
+        {
+          "kernel_name": "sdpa_compute_out_coop_buffer_buffer_half",
+          "shape": {
+            "k": 128,
+            "m": 1,
+            "n": 128
+          },
+          "category": "attention (sdpa)",
+          "classification": "c",
+          "blocking_reasons": [
+            "no WMMA implementation exists for SDPA; add_sdpa_compute_attn_weights_node/add_sdpa_compute_out_node only ever select _tiled or _coop kernel names (backends/vulkan/runtime/graph/ops/impl/SDPA.cpp); the generic add_matmul_coopmat_node/coopmat_mm.glsl path exists but is not called anywhere in SDPA.cpp"
+          ],
+          "existing_or_prospective_shader": "none exists (see reason)",
+          "total_time_us": 54372.12,
+          "pct_of_phase": 0.1868
+        },
+        {
+          "kernel_name": "sdpa_compute_attn_weights_coop_buffer_buffer_half",
+          "shape": {
+            "k": 128,
+            "m": 1,
+            "n": 128
+          },
+          "category": "attention (sdpa)",
+          "classification": "c",
+          "blocking_reasons": [
+            "no WMMA implementation exists for SDPA; add_sdpa_compute_attn_weights_node/add_sdpa_compute_out_node only ever select _tiled or _coop kernel names (backends/vulkan/runtime/graph/ops/impl/SDPA.cpp); the generic add_matmul_coopmat_node/coopmat_mm.glsl path exists but is not called anywhere in SDPA.cpp"
+          ],
+          "existing_or_prospective_shader": "none exists (see reason)",
+          "total_time_us": 44243.401,
+          "pct_of_phase": 0.152
+        },
+        {
+          "kernel_name": "linear_dq8ca_q4gsw_coop_texture3d_texture2d_half",
+          "shape": {
+            "k": 8192,
+            "m": 1,
+            "n": 3072
+          },
+          "category": "feed-forward",
+          "classification": "c",
+          "blocking_reasons": [
+            "no WMMA-capable GEMV (M=1) kernel exists; is_gemv_case routes to the tiled/coop kernel choice before can_use_q4gsw_coopmat() is ever called, and the existing coopmat shaders are tiled multi-row designs not applicable at M=1 (backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.cpp)"
+          ],
+          "existing_or_prospective_shader": "linear_dq8ca_q4gsw_coopmat (linear_dq8ca_qw_coopmat.glsl)",
+          "total_time_us": 34783.24,
+          "pct_of_phase": 0.1195
+        },
+        {
+          "kernel_name": "linear_dq8ca_q4gsw_coop_texture3d_texture2d_half",
+          "shape": {
+            "k": 3072,
+            "m": 1,
+            "n": 3072
+          },
+          "category": "attention projection",
+          "classification": "c",
+          "blocking_reasons": [
+            "no WMMA-capable GEMV (M=1) kernel exists; is_gemv_case routes to the tiled/coop kernel choice before can_use_q4gsw_coopmat() is ever called, and the existing coopmat shaders are tiled multi-row designs not applicable at M=1 (backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.cpp)"
+          ],
+          "existing_or_prospective_shader": "linear_dq8ca_q4gsw_coopmat (linear_dq8ca_qw_coopmat.glsl)",
+          "total_time_us": 26895.519,
+          "pct_of_phase": 0.0924
+        },
+        {
+          "kernel_name": "linear_dq8ca_q4gsw_coop_buffer_texture2d_half",
+          "shape": {
+            "k": 3072,
+            "m": 1,
+            "n": 128256
+          },
+          "category": "output/vocab projection",
+          "classification": "c",
+          "blocking_reasons": [
+            "no WMMA-capable GEMV (M=1) kernel exists; is_gemv_case routes to the tiled/coop kernel choice before can_use_q4gsw_coopmat() is ever called, and the existing coopmat shaders are tiled multi-row designs not applicable at M=1 (backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.cpp)"
+          ],
+          "existing_or_prospective_shader": "linear_dq8ca_q4gsw_coopmat (linear_dq8ca_qw_coopmat.glsl)",
+          "total_time_us": 19454.12,
+          "pct_of_phase": 0.0669
+        },
+        {
+          "kernel_name": "linear_dq8ca_q4gsw_coop_texture3d_texture2d_half",
+          "shape": {
+            "k": 3072,
+            "m": 1,
+            "n": 1024
+          },
+          "category": "attention projection",
+          "classification": "c",
+          "blocking_reasons": [
+            "no WMMA-capable GEMV (M=1) kernel exists; is_gemv_case routes to the tiled/coop kernel choice before can_use_q4gsw_coopmat() is ever called, and the existing coopmat shaders are tiled multi-row designs not applicable at M=1 (backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.cpp)"
+          ],
+          "existing_or_prospective_shader": "linear_dq8ca_q4gsw_coopmat (linear_dq8ca_qw_coopmat.glsl)",
+          "total_time_us": 9318.919,
+          "pct_of_phase": 0.032
+        },
+        {
+          "kernel_name": "choose_qparams_per_row_texture3d_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 4185.36,
+          "pct_of_phase": 0.0144
+        },
+        {
+          "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 2565.201,
+          "pct_of_phase": 0.0088
+        },
+        {
+          "kernel_name": "rms_norm_texture3d_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 2163.72,
+          "pct_of_phase": 0.0074
+        },
+        {
+          "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 1426.281,
+          "pct_of_phase": 0.0049
+        },
+        {
+          "kernel_name": "binary_add_texture3d_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 1365.041,
+          "pct_of_phase": 0.0047
+        },
+        {
+          "kernel_name": "view_texture_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 1345.8,
+          "pct_of_phase": 0.0046
+        },
+        {
+          "kernel_name": "binary_mul_texture3d_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 1026.84,
+          "pct_of_phase": 0.0035
+        },
+        {
+          "kernel_name": "clone_image_to_buffer_half_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 565.483,
+          "pct_of_phase": 0.0019
+        },
+        {
+          "kernel_name": "clone_buffer_to_image_half_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 525.64,
+          "pct_of_phase": 0.0018
+        },
+        {
+          "kernel_name": "sigmoid_half_texture3d",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 412.76,
+          "pct_of_phase": 0.0014
+        },
+        {
+          "kernel_name": "rotary_embedding_texture3d_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 272.04,
+          "pct_of_phase": 0.0009
+        },
+        {
+          "kernel_name": "buffer_to_nchw_half_float",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 63.32,
+          "pct_of_phase": 0.0002
+        },
+        {
+          "kernel_name": "nchw_to_image_texture3d_int32_int32",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 27.76,
+          "pct_of_phase": 0.0001
+        },
+        {
+          "kernel_name": "slice_ubo_texture3d_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 22.68,
+          "pct_of_phase": 0.0001
+        },
+        {
+          "kernel_name": "nchw_to_image_texture3d_half_float",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 12.64,
+          "pct_of_phase": 0.0
+        },
+        {
+          "kernel_name": "select_texture3d_half",
+          "shape": null,
+          "category": "non-shader overhead",
+          "classification": "d",
+          "blocking_reasons": [],
+          "existing_or_prospective_shader": null,
+          "total_time_us": 10.6,
+          "pct_of_phase": 0.0
+        }
+      ]
+    }
+  }
+}
