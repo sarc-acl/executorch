@@ -1,6 +1,192 @@
 <!--
 Sync Impact Report
 ==================
+Version change: 2.0.0 → 2.1.0
+
+Context: user supplied a historical JIRA comment thread (2026-02-27 through
+2026-06-18, the actual source material `.shared-context/report-for-human/`
+was compiled from on 2026-06-17) and asked for a gap analysis against this
+constitution. Most of the JIRA data traced cleanly to already-documented
+facts (4w headline numbers, driver history, M4-vs-M5 parity); this
+amendment fixes two factual errors introduced in the v2.0.0 amendment and
+folds in three findings from that thread not yet reflected here.
+
+Modified sections (corrections to v2.0.0's own content):
+  - Principle IV (Two-Tier, Statistically Sound Benchmarking) -- corrected:
+    v2.0.0 said every tier-2 run "MUST capture an ETDump trace alongside
+    the tok/s number," which would have you profile the exact run you're
+    reporting. `.shared-context/report-for-human/e2e-spec.md` is explicit
+    that profiler-on numbers are NOT valid for reporting on this hardware;
+    the actual methodology is a separate, small etdump-enabled run purely
+    for dispatch confirmation. Fixed to require two runs, never one.
+  - Quantization Scheme Matrix -- corrected: v2.0.0's PARKED reason for
+    both `8w` and `8da8w` said "exceeds M5 EVT1 RAM budget," conflating
+    two different, independently-confirmed blockers. `8w` has never
+    reached the RAM question -- it has no export pattern producing
+    `et_vk.linear_q8csw` at all. Only `8da8w` is actually RAM-blocked
+    (9.6GB weights > ~8.8GB available). Split the two reasons.
+
+Added content:
+  - Principle VII (Clock Discipline) -- added the observed
+    throttle-differential under floating clocks: tiled-shader configs
+    throttle -19% to -27% run-over-run under sustained load, coopmat/dbuf
+    configs stay flat (<4% variation). A blended floating mean without
+    accounting for this misstates a tiled-vs-coopmat comparison in
+    coopmat's favor.
+  - Metrics Philosophy -- added the mandatory pre-benchmark coherence
+    check (short low-token prompt; garbage output means diagnose via
+    Principle VIII before benchmarking, never report through it).
+  - Development Workflow -- added a caution to check `quant-dev`'s
+    existing dbuf1-4 variant harness and matmul tile-sweep harness before
+    building new tuning infrastructure for `specs/007-012`-style work, to
+    avoid duplicating tooling that already exists in a sibling worktree.
+
+Removed sections: none.
+
+Templates requiring updates:
+  - .specify/templates/plan-template.md ......... ✅ no change needed
+  - .specify/templates/spec-template.md ......... ✅ no change needed
+  - .specify/templates/tasks-template.md ........ ✅ no change needed
+  - .specify/templates/commands/*.md ............. n/a (not present)
+
+Follow-up TODOs: none new.
+-->
+
+<!--
+Sync Impact Report (previous amendment, retained for history)
+==================
+Version change: 1.5.0 → 2.0.0
+
+Modified principles:
+  - II. Renamed "Samsung RDNA3 iGPU Is the Target, Not a Fallback" ->
+    "Samsung M5 EVT1 Is the Only Active Target" -- BACKWARD INCOMPATIBLE:
+    removed the `rocky-ryzen` MiniPC dual-validation requirement entirely.
+    Samsung M5 EVT1 is now this workstream's sole active validation
+    platform; MiniPC and any non-Samsung/Adreno-based device are retired
+    to archived/historical reference only. Explicit user instruction:
+    "From now on, we only work on Samsung's devices, no more MiniPC or
+    other phones... keep as archive when we need to refer to them for
+    data." Consequently `8w`/`8da8w` (whose only implementation/validation
+    path was MiniPC) move from "MiniPC/RDNA3 iGPU only" to PARKED in the
+    Quantization Scheme Matrix -- no active platform, not a scope this
+    workstream revisits ad hoc.
+  - IV. Two-Tier, Statistically Sound Benchmarking -- tier-2 wording
+    tightened: e2e **prefill tok/s** is now named explicitly as this
+    workstream's sole headline metric (previously a non-committal "e.g.,
+    tokens/sec, ms/token"), paired with a required ETDump capture per e2e
+    claim (cross-referencing Principle VI). Dropped the now-stale
+    "8-bit schemes are minipc/iGPU-only" scoping parenthetical. Explicit
+    user instruction: "Use ETDump to verify e2e results. we care about
+    tok/s for e2e."
+  - VII. Clock Discipline -- dropped the `rocky-ryzen`-specific DVFS
+    cross-check exception now that MiniPC is not an active target.
+
+Modified sections:
+  - Quantization Scheme Matrix: `8w`/`8da8w` On-device scope -> PARKED.
+  - Reference Hardware Inventory: `rocky-ryzen` MiniPC block relabeled
+    ARCHIVED / historical-only (kept for citing specs 001-013's data, not
+    as a live platform).
+  - Reference Build Recipe (Development Workflow): relabeled Archived --
+    no longer the required pre-Android-build step.
+  - Default Scope for Every Benchmark: added the explicit `_ctx3072.pte`
+    export requirement for the 2048-prefill/1024-decode workload (was
+    previously implied, not stated). Explicit user instruction: "2k
+    prefill and 1k decode (2048 and 1024, thus pte use the 3072 version)."
+  - Samsung/Xclipse Build, Export, Deploy (Development Workflow): added
+    the driver-flashing doc and the named clock-pin script; generalized
+    the floating-clock allowance to "whenever explicitly requested," not
+    only DVFS/thermal analysis. Explicit user instruction: "we often run
+    with frequency pinned. but also sometimes i ask for floating results."
+
+Added sections:
+  - Core Principles: IX. "Never Disclose Samsung-Internal Specifics
+    Upstream" (NON-NEGOTIABLE) -- per explicit user instruction ("Must
+    never put samsung specific internal knowledge to Upstream!!! most
+    critical"), the single most important scope boundary this
+    constitution enforces: upstream-bound (`pytorch/executorch`)
+    contributions must never carry internal board/codenames (e.g.
+    "ERD9975", "M5 EVT1"), device serials, internal hostnames/NFS paths,
+    driver build hashes/filenames, or JIRA ticket references -- describe
+    hardware behavior only via runtime-queryable Vulkan capabilities.
+  - Performance & Portability Standards: "Metrics Philosophy" -- imports
+    `.shared-context/report-for-human/RESEARCH-GOALS.md`'s "e2e is the
+    deliverable, microbench is for analysis" framing directly into the
+    constitution, per user instruction to integrate
+    `.shared-context/instruction-for-ai` knowledge not yet reflected here.
+
+Removed sections: none (superseded MiniPC-era content retained verbatim in
+older Sync Impact Reports below, for history).
+
+Templates requiring updates:
+  - .specify/templates/plan-template.md ......... ✅ no change needed
+  - .specify/templates/spec-template.md ......... ✅ no change needed
+  - .specify/templates/tasks-template.md ........ ✅ no change needed
+  - .specify/templates/commands/*.md ............. n/a (not present)
+
+Follow-up TODOs: none new.
+-->
+
+<!--
+Sync Impact Report (previous amendment, retained for history)
+==================
+Version change: 1.4.0 → 1.5.0
+
+Modified sections:
+  - Reference Hardware Inventory -- corrected. This workstream's MiniPC
+    phase (specs 001-013) prototyped without access to this workspace's
+    pre-existing Samsung/Xclipse validation history, so v1.0.0-1.4.0 carried
+    an unconfirmed device table (Samsung `SM-S926B` "believed not to expose
+    cooperative-matrix support", a second WMMA-capable device "not yet
+    connected"). That workspace history exists and predates this workstream
+    (real target validated on-device since 2026-06-08, with working
+    build/export/deploy/profile tooling and e2e coopmat results already in
+    hand). Replaced the unconfirmed table with the real target (M5 EVT1 /
+    ERD9975 / Xclipse 970, WMMA confirmed) and pointers to the live docs
+    that hold its volatile specifics, instead of copying values that will
+    drift.
+
+Added sections:
+  - Core Principles: VII. "Clock Discipline: Pinned by Default, Verified
+    Bound" -- codifies this workstream's now-required Samsung/Android
+    measurement practice (pin clocks; verify the pin actually bound via a
+    GFLOP/s cross-check) after the MiniPC phase's own handoff report named
+    on-device validation as the explicit next step with no equivalent
+    practice yet defined.
+  - Core Principles: VIII. "Verify the Driver Before Every Coopmat
+    Measurement" -- codifies re-checking the on-device Vulkan driver
+    identity before trusting a coopmat measurement, and points at this
+    workspace's existing catalog of known Xclipse driver defects, for the
+    same reason as VII.
+  - Performance & Portability Standards: "Shader/Storage Configuration
+    Taxonomy" -- imports the T-tiled/B-tiled/B-coopmat/dbuf1-4 naming
+    already established and used consistently in this workspace's prior
+    Samsung work, so the next phase doesn't reinvent ad hoc names for the
+    same storage x shader comparisons.
+  - Development Workflow: "Samsung/Xclipse Build, Export, Deploy (M5 EVT1)"
+    -- points at this workspace's existing, working Android build/export/
+    run/profile pipeline, which predates and already answers most of what
+    `specs/013-minipc-handoff-report`'s Runbook flagged as "needs
+    adaptation" or "newly established."
+  - Development Workflow: "Issue & Open-Question Tracking" -- adopts this
+    workspace's existing open-questions.md -> root-causes.md -> JIRA
+    pipeline for this workstream's own anomalies going forward.
+
+Removed sections: none (the superseded MiniPC-phase device table is kept
+verbatim in the v1.0.0->1.1.0 Sync Impact Report below, for history)
+
+Templates requiring updates:
+  - .specify/templates/plan-template.md ......... ✅ no change needed
+  - .specify/templates/spec-template.md ......... ✅ no change needed
+  - .specify/templates/tasks-template.md ........ ✅ no change needed
+  - .specify/templates/commands/*.md ............. n/a (not present)
+
+Follow-up TODOs: the prior TODO(HW_INVENTORY) is resolved by this amendment
+(the real Samsung target is now documented); none new.
+-->
+
+<!--
+Sync Impact Report (previous amendment, retained for history)
+==================
 Version change: 1.3.0 → 1.4.0
 
 Modified principles: none
@@ -132,13 +318,26 @@ Follow-up TODOs:
 This constitution governs one contributor's workstream inside ExecuTorch:
 bringing cooperative-matrix (WMMA/coopmat) acceleration to the Vulkan
 backend's matrix-multiplication shaders — linear/GEMM today, SDPA/attention
-next — with Samsung's RDNA3-based mobile integrated GPU (Exynos Xclipse) as
-the primary performance target, validated end-to-end on real LLaMA models.
+next — with the Samsung M5 EVT1 board (Exynos Xclipse) as the sole active
+performance target (Principle II), validated end-to-end on real LLaMA
+models.
 It supplements, and never overrides, the repository-wide guidance in
 `CLAUDE.md`; it applies to
 `backends/vulkan/runtime/graph/ops/{impl,glsl}/*coopmat*` and
 `*linear*coopmat*`, `backends/vulkan/runtime/vk_api/Adapter.*` /
 `Device.h` capability plumbing, and `backends/vulkan/test/custom_ops/test_coopmat_*`.
+
+Several principles below cite `.shared-context/...` paths. That directory
+is a **sibling of this git worktree**, not part of this repository — it
+lives at the workspace root (alongside the `quant-perf-optimization/`
+checkout this constitution ships in, not inside it) and is local-only,
+never committed or cloned with this repo. It is the canonical home for
+this workspace's pre-existing Samsung/Xclipse device knowledge, build/run
+tooling, and results; see the workspace-root `CLAUDE.md` for the full
+layout. A future clone of this repo onto a different machine (as
+`specs/013-minipc-handoff-report` itself anticipated) will not carry
+`.shared-context/` along — re-establish equivalent device/driver
+references on that machine before relying on the citations below.
 
 ## Core Principles
 
@@ -159,15 +358,23 @@ are easy to get silently wrong, and mobile drivers have already shown
 correctness regressions invisible on desktop (see commit `10ef1eaa9`,
 "Fix coopmat quantized-linear correctness on Xclipse").
 
-### II. Samsung RDNA3 iGPU Is the Target, Not a Fallback
-Every coopmat kernel or dispatch path added under this workstream must be
-validated — correctness and performance — on real RDNA3 hardware (the
-`rocky-ryzen` MiniPC iGPU as a fast local proxy, and Samsung Xclipse mobile
-hardware as the actual target) before it counts as complete. Discrete-GPU
-results alone do not satisfy this mission.
+### II. Samsung M5 EVT1 Is the Only Active Target
+Every coopmat kernel or dispatch path added under this workstream is
+developed and validated — correctness and performance — exclusively on
+the Samsung M5 EVT1 board (see Reference Hardware Inventory) before it
+counts as complete. No other device is an active validation platform:
+- The `rocky-ryzen` MiniPC RDNA3 iGPU that this workstream's `specs
+  001`-`013` were built and validated on is **retired from active use**.
+  Its results remain valid, citable historical/baseline data — consult
+  them for comparison — but this workstream does not re-run, extend, or
+  add new dependencies on MiniPC-only tooling going forward.
+- Any Adreno-based or other non-Samsung-Xclipse phone (e.g. the device
+  gated off in the separate `adreno-fix` branch) is likewise out of active
+  scope. Discrete-GPU or non-target-mobile results alone never satisfy
+  this mission.
 
-The two coopmat dispatch paths in this codebase currently differ on this
-point, and that difference is itself the workstream's roadmap:
+The two coopmat dispatch paths in this codebase currently differ on
+mobile-readiness, and that difference is itself the workstream's roadmap:
 - The **quantized-linear coopmat path** (`can_use_q4gsw_coopmat` in
   `QuantizedLinear.cpp`) already gates correctly for mobile: it checks
   `supports_cooperative_matrix()` and `subgroup_size() == 64` (wave64,
@@ -181,13 +388,19 @@ point, and that difference is itself the workstream's roadmap:
   exists to close once mobile correctness/perf on that path is validated —
   not as a design constraint to preserve by default.
 
-On the actual Samsung/Android target, only the **int4-weight** schemes (4w,
-8da4w) are in scope: 8-bit-weight schemes (8w, 8da8w) do not fit the memory
-budget of the target phones for the 8B/3B models and are validated on the
-`rocky-ryzen` RDNA3 iGPU only, not on-device.
-Rationale: the mission is mobile iGPU performance under a mobile memory
-budget; a coopmat path that only helps desktop dGPUs, or a quant scheme
-that can't fit on the phone, does not advance it.
+On the Samsung M5 EVT1 target, only the **int4-weight** schemes (4w,
+8da4w) are in active scope: 8-bit-weight schemes (8w, 8da8w) do not fit
+the memory budget of the target phones for the 8B/3B models and, with
+MiniPC retired, currently have **no validation platform at all** — they
+are PARKED, not a scope this workstream revisits until a Samsung device
+with sufficient RAM exists (see `.shared-context/report-for-human/RESEARCH-GOALS.md`
+for the RAM-budget reasoning).
+Rationale: the mission is Samsung mobile-iGPU performance specifically,
+under a mobile memory budget; splitting active validation effort across a
+proxy device and the real target dilutes confidence in the one that
+actually matters once the real target is available and accessible, and a
+quant scheme that can't fit on the phone does not advance the mission
+regardless of what a proxy device shows.
 
 ### III. Explicit Eligibility Gating, Safe Fallback Always
 Coopmat shaders may impose hard shape, alignment, or subgroup requirements
@@ -217,18 +430,28 @@ claim at one level never substitutes for the other:
    coopmat linear bench already in tree). Use shapes drawn from real LLaMA
    prefill/decode, not synthetic square shapes chosen for convenience.
 2. **Model-level benchmark** — exports a real model to a `.pte` (see
-   `/export`) and measures end-to-end (e.g., tokens/sec, ms/token) via the
-   standard ExecuTorch LLaMA runner on the Vulkan backend. The baseline for
-   this tier is **the default behavior of ExecuTorch running that model** —
-   i.e., the same `.pte` executed without this workstream's coopmat
-   dispatch path enabled — not another research prototype.
+   `/export`) and measures end-to-end **prefill throughput in tokens/sec**
+   via the standard ExecuTorch LLaMA runner on the Vulkan backend — this
+   workstream's sole e2e headline metric (see Metrics Philosophy below;
+   decode tok/s is secondary and reported alongside it, not in its place).
+   The baseline for this tier is **the default behavior of ExecuTorch
+   running that model** — i.e., the same `.pte` executed without this
+   workstream's coopmat dispatch path enabled — not another research
+   prototype. Every model-level (tier-2) tok/s claim MUST be paired with a
+   **separate** ETDump-confirmation run (same model/config, an
+   etdump-enabled runner variant, a small `--max_new_tokens` to keep the
+   capture light) confirming the intended kernel dispatched (Principle
+   VI) — **never the same run used for the reported number**: profiler
+   overhead measurably distorts timing on this hardware, and a
+   profiler-on or thermally-degraded number is not valid for reporting
+   (`.shared-context/report-for-human/e2e-spec.md`).
 
 Both tiers are run across the target model set and quantization schemes
-(see tables below), scoped per Principle II (int4 schemes are the ones that
-must run on-device; 8-bit schemes are minipc/iGPU-only). A change counts as
-a win only when it beats the relevant baseline at both tiers it applies to;
-regressions on any previously-passing shape or model are called out
-explicitly, never dropped silently.
+(see tables below), scoped per Principle II — only the int4 schemes (4w,
+8da4w) currently have an active validation platform; 8-bit schemes are
+PARKED. A change counts as a win only when it beats the relevant baseline
+at both tiers it applies to; regressions on any previously-passing shape
+or model are called out explicitly, never dropped silently.
 
 ### V. Document Every Driver Workaround at the Point of Use
 Mobile Vulkan drivers (Xclipse in particular) have shown crashes and
@@ -272,6 +495,97 @@ mode Principles I and V already guard against elsewhere. This principle
 makes verification-by-tooling the explicit default, not an occasional
 afterthought.
 
+### VII. Clock Discipline: Pinned by Default, Verified Bound
+Every Samsung/Android performance measurement under this workstream pins
+GPU/MIF/INT clocks to the workspace's documented default before measuring
+(current values and pin script are in
+`.shared-context/instruction-for-ai/README.md` §Conventions — this
+constitution does not copy them, since they drift with the board). A
+number is reported as "pinned" only after verifying the pin actually
+bound: cross-check the in-graph GFLOP/s (or e2e tok/s) against an
+equivalently-configured pinned microbenchmark. If they disagree, the
+process did not inherit the pin and the number reflects DVFS boost, not
+the reported clock config — it MUST NOT be reported as pinned. Floating
+(unpinned) runs are permitted whenever explicitly requested — not only
+for DVFS/thermal analysis — always clearly labeled as floating, never
+presented as the pinned headline number.
+
+Floating runs additionally have a known, shader-dependent thermal
+behavior on this target: under sustained back-to-back load with no
+cooldown, tiled-shader configs throttle hard run-to-run (observed -19% to
+-27% from cold-start peak to steady state on 8B), while coopmat/dbuf
+configs stay essentially flat (observed variation <4%). A floating "mean"
+across repeated runs is only meaningful if this is accounted for — report
+per-rep numbers (or note explicitly that a mean mixes cold-start peak with
+throttled steady state) rather than a single blended average, especially
+when comparing a tiled baseline to a coopmat config.
+
+Rationale: this exact pin-verification failure already happened once on
+this workspace's Samsung target — a previously accepted "pinned" baseline
+turned out to be a ~980MHz DVFS-boost artifact rather than the intended
+509MHz pin, caught only by this GFLOP/s cross-check, not by the pin
+command appearing to succeed (`.shared-context/report-for-human/root-causes.md` Q10).
+The throttle-differential above is a separate, already-observed effect on
+the same target (JIRA, 2026-06-18) — silently averaging it away would
+misstate a tiled-vs-coopmat floating comparison in coopmat's favor.
+
+### VIII. Verify the Driver Before Every Coopmat Measurement
+Samsung/Android boards used by this workstream are shared, reference-class
+hardware, not exclusively controlled by this workstream — the flashed
+Vulkan driver can change between sessions (reflash, reboot, another
+experiment). Before any coopmat correctness or performance measurement,
+confirm the on-device driver identity (e.g. `adb shell logcat -d | grep
+SUMD`, or the workspace's equivalent probe) and record which build was
+present; never assume a prior session's driver is still there. Current
+driver state lives in `.shared-context/ACTIVE-STATUS.md` (volatile,
+maintained separately from this file); known Xclipse Vulkan compiler
+defects that shape which shader workarounds are currently load-bearing are
+catalogued in the workspace-root `TODO.md` P0 section — consult it before
+attributing an anomaly to this workstream's own shader code.
+Rationale: this is not a hypothetical risk. A specific driver build
+previously miscompiled the coopmat path silently — no crash, no error,
+plausible-looking decode output — and was caught only by a small-shape
+correctness bench, not by code inspection or a passing eligibility check
+(`.shared-context/report-for-human/root-causes.md` Q9). This is the same
+failure mode Principle VI already guards against for shader/kernel
+selection; this principle extends it to the driver binary itself.
+
+### IX. Never Disclose Samsung-Internal Specifics Upstream (NON-NEGOTIABLE)
+This is the single most important scope boundary this constitution
+enforces. Any change destined for the public `pytorch/executorch`
+repository (the narrower surface defined in Repository & Distribution
+Scope below) MUST NOT contain Samsung-internal identifiers or
+infrastructure details, in code, comments, commit messages, or PR
+descriptions — including but not limited to:
+- Internal board/codenames (e.g. "ERD9975", "M5 EVT1", "M41") or
+  pre-release chip-stage designations (e.g. "EVT1").
+- Device serials, internal hostnames (`*.samsung.com`, `sj1-*`, etc.), or
+  internal network/NFS paths.
+- Driver build hashes, filenames, or version strings tied to unreleased
+  driver builds.
+- JIRA ticket numbers or content, or references to this workspace's
+  internal `.shared-context/` docs.
+
+Describe hardware behavior upstream only in terms that are already public
+or runtime-queryable: Vulkan capability bits (`subgroup_size()`,
+`supports_cooperative_matrix()`, component-type support), GPU architecture
+family in general terms (e.g. "RDNA-derived mobile iGPU"), and observed
+symptoms — never the specific internal board that exposed them. When a
+driver workaround (Principle V) documents a device/driver by name for
+this workstream's own internal use, that same comment MUST be reworded or
+dropped before the containing change is proposed upstream.
+Rationale: this workstream operates on Samsung's internal, often
+pre-release validation hardware and infrastructure; the public
+`pytorch/executorch` repository is not the place for any detail that
+identifies that internal environment. This is a confidentiality boundary,
+not a code-quality preference — a violation here is treated as a serious
+error, not a style nit, and blocks the change until corrected. This
+supplements, and is stricter than, the file-scope guidance already in
+Repository & Distribution Scope and the workspace-root `CLAUDE.md`'s
+branch discipline: those govern *which files* go upstream, this principle
+governs *what strings may appear* even inside a file that otherwise
+belongs there.
+
 ## Performance & Portability Standards
 
 - **Scope boundary**: this constitution governs the coopmat/WMMA GEMM and
@@ -301,8 +615,62 @@ afterthought.
 | fp16    | fp16                   | fp16 (unquantized)   | fp16 WMMA               | Implemented (PR #19009); `coopmat_mm.glsl` / `GemmCoopmat.*` | Reference/SDPA groundwork only    |
 | 4w      | fp16                   | int4, grouped-sym.   | fp16 WMMA (weight dequant to fp16) | Implemented: `linear_qw_coopmat.glsl` (`linear_q4gsw_coopmat_*`) | **In scope** |
 | 8da4w   | int8, dynamic per-row  | int4, grouped-sym.   | int8 WMMA (coopmat\<int8\> × coopmat\<int8\> → coopmat\<int32\>) | Implemented: `linear_dq8ca_qw_coopmat.glsl` (`linear_dq8ca_q4gsw_coopmat_*`) | **In scope** |
-| 8w      | fp16                   | int8, channel-scaled | int8 arithmetic (tiled only today) | Not yet ported to coopmat; tiled only (`linear_q8csw_tiled.glsl`) | MiniPC/RDNA3 iGPU only — does not fit target phones |
-| 8da8w   | int8, dynamic per-row  | int8, channel-scaled | int8 arithmetic (tiled only today) | Not yet ported to coopmat; tiled only (`linear_q8ta_q8csw_tiled.glsl`) | MiniPC/RDNA3 iGPU only — does not fit target phones |
+| 8w      | fp16                   | int8, channel-scaled | int8 arithmetic (tiled only today) | Not yet ported to coopmat; tiled only (`linear_q8csw_tiled.glsl`) | **PARKED** — no export pattern emits `et_vk.linear_q8csw` (never even reaches the RAM question); MiniPC (its only other validation platform) also retired |
+| 8da8w   | int8, dynamic per-row  | int8, channel-scaled | int8 arithmetic (tiled only today) | Not yet ported to coopmat; tiled only (`linear_q8ta_q8csw_tiled.glsl`) | **PARKED** — exports fine but RAM-blocked at the default 2048-context workload (9.6GB weights > ~8.8GB available); MiniPC (its only other validation platform) also retired |
+
+### Shader/Storage Configuration Taxonomy
+
+Comparing coopmat on real hardware means comparing storage type × shader
+path combinations, not just "coopmat on/off." Use these exact names —
+defined once in `.shared-context/report-for-human/RESEARCH-GOALS.md` and
+already used consistently across this workspace's prior Samsung work — in
+every report and table; do not invent new ad hoc names for the same
+comparisons in a new spec.
+
+| Name | Meaning | How it's produced |
+|---|---|---|
+| **T-tiled** | Stock ExecuTorch default: texture storage, tiled shader — the honest baseline (what a user gets today) | texture `.pte` |
+| **B-tiled** | Diagnostic baseline: buffer storage, tiled shader — isolates the kernel effect from the storage effect | buffer `.pte`, coopmat disabled |
+| **B-coopmat** | Buffer storage, coopmat (WMMA) shader — this workstream's contribution | buffer `.pte`, coopmat gate fires |
+| **dbuf1–4** | Experimental double-buffered loop-structure variants of B-coopmat | buffer `.pte` + variant switch |
+
+Headline speedup = **B-coopmat vs T-tiled** (does coopmat beat what a user
+gets today, end to end). Pure-kernel speedup = **B-coopmat vs B-tiled**
+(storage held constant). Reusing this vocabulary keeps results comparable
+across specs and over time, per Principle IV's benchmarking discipline.
+
+### Metrics Philosophy
+
+Imported from `.shared-context/report-for-human/RESEARCH-GOALS.md`, which
+already establishes this for the workspace — this workstream adopts it
+as-is rather than deriving its own:
+
+- **E2E prefill tok/s is the deliverable.** The only number this
+  workstream reports as "the result" for a tier-2 claim (Principle IV) is
+  end-to-end prefill tokens/sec on the M5 EVT1 target, at the Default
+  Scope workload below. Decode tok/s is reported alongside it as
+  secondary context, never as the headline (decode is a single-token
+  `M=1` gemv where the coopmat gate does not engage, so it stays roughly
+  constant across configs and is not this workstream's signal).
+- **Microbenchmark is analysis, not the deliverable.** Tier-1 shader
+  microbenchmarks (Principle IV) exist to (1) gate correctness at small
+  aligned shapes before any tier-2 run, and (2) explain a tier-2 tok/s
+  result after the fact — microbench GFLOP/s should be consistent with
+  the ETDump-measured per-op linear time, and an Amdahl's-law rollup over
+  the ETDump breakdown should predict the observed e2e speedup. If those
+  three don't agree, something is wrong (unbound clock pin, driver
+  miscompile) — treat the disagreement itself as a signal to investigate
+  via Principles VII/VIII, not as noise to average away.
+- **Every e2e claim is ETDump-verified**, per Principle IV/VI, via a
+  separate confirmation run — never the reported run itself (Principle
+  IV): a tok/s number with no ETDump trace confirming the intended kernel
+  dispatched is not a reportable result under this workstream.
+- **A short coherence check precedes every benchmarking session**: run a
+  brief, low-token prompt (e.g. "The capital of France is") through the
+  config under test before trusting any timing from it. Garbage or
+  incoherent output means diagnose first (check the driver identity,
+  Principle VIII, before anything else) — never benchmark a config whose
+  correctness hasn't been sanity-checked that session.
 
 ### Target Models
 
@@ -326,14 +694,30 @@ benchmark under this workstream runs:
   directly comparable across features and over time without re-deriving or
   re-justifying a workload size each time. Tier-1 shader microbenchmarks
   use shapes drawn from this same prefill/decode split (Principle IV).
+- **This workload is served by a single context-length export**: `.pte`
+  files are exported at `MAX_SEQ=MAX_CTX=3072` (canonical naming
+  `*_ctx3072.pte`, per `.shared-context/instruction-for-ai/export-pte.md`),
+  which comfortably covers the 2048-prefill/1024-decode split above. Don't
+  export a different context length for this default workload without
+  updating this section and justifying the change.
 
 ### Reference Hardware Inventory
 
-*As of 2026-07-03 — capabilities change with driver/OS updates; always
-re-verify with `test_coopmat_probe.cpp` rather than trusting this table.*
+*Corrected 2026-07-05. Through v1.4.0 this table treated the Samsung
+target as unconfirmed — that reflected only this workstream's own
+MiniPC-phase device inventory (`specs/001-013`, done without adb access to
+the real target). This workspace has an independent, pre-existing
+Samsung/Xclipse validation history predating this workstream (on-device
+since 2026-06-08, with working build/export/deploy/profile tooling and
+real e2e coopmat results already in hand) — see
+`.shared-context/report-for-human/RESEARCH-GOALS.md`. Device/driver/clock specifics still
+drift session to session (shared board); this table intentionally does not
+copy those volatile values — pull them from the docs cited below, always.*
 
-**`rocky-ryzen` MiniPC (AMD Ryzen APU, RDNA3 iGPU)** — primary local
-dev/test platform, used before every Android build. Exposes 14 cooperative-matrix
+**`rocky-ryzen` MiniPC (AMD Ryzen APU, RDNA3 iGPU) — ARCHIVED, not an
+active target (Principle II).** Retired 2026-07-05; kept here only to
+interpret specs `001`-`013`'s existing MiniPC results, not as a platform
+to build or benchmark on going forward. Exposed 14 cooperative-matrix
 configurations, all 16×16×16 at Subgroup scope:
 
 | # | M | N | K | AType | BType | CType | ResultType | Scope |
@@ -343,18 +727,26 @@ configurations, all 16×16×16 at Subgroup scope:
 | 2 | 16 | 16 | 16 | uint8 | uint8 | uint32 | uint32 | Subgroup |
 | 3–13 | 16 | 16 | 16 | int8 variants | int8 variants | int32 | int32 | Subgroup |
 
-**Android devices (via `adb devices -l`)**:
+**M5 EVT1 — PRIMARY SAMSUNG TARGET.** Samsung ERD9975 reference board
+(Exynos S5E9975 / "Exynos 2500"), Xclipse 970 GPU (AMD RDNA-derived),
+wave64 default, subgroup size 32–64. **Cooperative matrix CONFIRMED**: fp16
+and int8 WMMA, 16×16×16, Subgroup scope. This is the on-device validation
+target Principle II requires, not the `rocky-ryzen` proxy. Live
+serial/host/NFS-path defaults → `.shared-context/instruction-for-ai/README.md`
+§Conventions (the paste-block every runnable doc uses); which driver is on
+the device *right now* (good vs. known-bad hash) →
+`.shared-context/ACTIVE-STATUS.md`. Do not copy those values into this
+file — see Principle VIII.
 
-| Device | Model / codename | GPU | Role |
-|--------|-------------------|-----|------|
-| `3A021JEHN02756` | Pixel 7a (`lynx`) | Adreno | Non-target Vulkan regression check only |
-| `R5CY21Y3VEV` | Samsung `SM-S926B` (`e2s`) | Exynos/Xclipse (RDNA3-based) | Believed primary target; **currently believed not to expose cooperative-matrix support** — verify via probe before relying on it |
-| `ce0717178d7758b00b7e` | Samsung `SM-N950U` (`greatqlte`) | Older Mali/Adreno-era | Not a coopmat target |
+**M41 — secondary quick-experiment Samsung device.** Reachable via a
+different host/ADB path (`.shared-context/instruction-for-ai/devices-and-access.md`
+§1b). WMMA support not assumed present; use for fast non-target-critical
+iteration, not as this workstream's validation target.
 
-A second Samsung device with confirmed WMMA support exists but was not
-connected as of this writing — see the `TODO(HW_INVENTORY)` in the Sync
-Impact Report above; use it as the on-device validation target once
-attached, and update this table.
+The Pixel 7a / `SM-S926B` / `SM-N950U` table previously here was this
+workstream's own MiniPC-phase device inventory; it is retained verbatim in
+the v1.0.0→1.1.0 Sync Impact Report above for history, and superseded by
+the M5 EVT1 / M41 pair above.
 
 ## Development Workflow
 
@@ -370,6 +762,12 @@ attached, and update this table.
   `is_coopmat_eligible`, or their successors) requires re-running both the
   correctness test suite and the relevant benchmark, since widening the
   gate changes which shapes now depend on coopmat correctness.
+- Before building new loop-structure variants or a tile-geometry sweep
+  harness for this workstream's shaders, check the workspace's `quant-dev`
+  worktree first: it already has a dbuf1-4 double-buffer variant harness
+  and a matmul tile-sweep harness (see the workspace-root `CLAUDE.md`) —
+  both directly relevant to `specs/007-012`'s tuning work. Port/reuse that
+  tooling rather than re-deriving it independently on Samsung.
 
 ### Environment & Build Bootstrap
 
@@ -390,9 +788,13 @@ source .venv/bin/activate.fish   # or activate for bash
 ./install_executorch.sh --minimal
 ```
 
-### Reference Build Recipe (MiniPC / `rocky-ryzen`, Linux preset)
+### Archived Reference Build Recipe (MiniPC / `rocky-ryzen`, Linux preset)
 
-The go-to local validation loop before touching an Android build:
+**Historical only (Principle II) — retired 2026-07-05.** This was the
+go-to local validation loop before touching an Android build during the
+MiniPC phase; retained verbatim to reproduce specs `001`-`013`'s results,
+not as a required or recommended step for current work. Use the
+Samsung/Xclipse pipeline below instead.
 
 ```bash
 rm -rf cmake-out-vk
@@ -415,6 +817,53 @@ cmake --build cmake-out-vk/backends/vulkan/test/custom_ops -j$(nproc)
 Model-level (tier 2) benchmarks additionally require a `.pte` exported for
 the model/scheme under test (see `/export`) and a run through the standard
 LLaMA runner against that same build.
+
+### Samsung/Xclipse Build, Export, Deploy (M5 EVT1)
+
+`specs/013-minipc-handoff-report`'s own Runbook flagged Android build,
+export, and deploy as "needs adaptation" or "newly established," written
+without visibility into this workspace's pre-existing pipeline for exactly
+that target. That pipeline already exists and is validated — check it
+before writing new Android tooling for this workstream:
+
+- **Build** (runtime + `llama_main`/ETDump runner, cross-compiled for
+  Android): `.shared-context/instruction-for-ai/build.md`, canonical
+  script `build_etdump_android.sh`.
+- **Export** a `.pte` (texture vs. buffer storage, per quant scheme):
+  `.shared-context/instruction-for-ai/export-pte.md`, canonical script
+  `.shared-context/scripts/export_quant.sh`.
+- **Run** an e2e/microbench measurement, including clock pinning
+  (Principle VII, script `pin_freqs.sh`): `.shared-context/instruction-for-ai/commands.md`.
+  Pinned is the default for every reported number; run floating (unpinned)
+  whenever explicitly requested (not only for DVFS/thermal analysis) —
+  always label a floating result as such, never as the pinned headline.
+- **Profile** via ETDump: `.shared-context/instruction-for-ai/profiling.md`,
+  `.shared-context/scripts/analyze_etdump_shaders.py`.
+- **Device access / current driver state** (Principle VIII):
+  `.shared-context/instruction-for-ai/devices-and-access.md`,
+  `.shared-context/ACTIVE-STATUS.md`.
+- **Flash / A-B the Vulkan driver**: `.shared-context/instruction-for-ai/flash-sumd-driver.md` —
+  use this when Principle VIII's driver-identity check finds an
+  unexpected or known-bad hash.
+
+Only the pieces this workstream's MiniPC phase never had cause to build —
+e.g. anything specific to the SDPA-coopmat or `8da4w`-tuning work coming
+from `specs/007-012` — are genuinely new; the underlying Android
+build/export/run/profile mechanics are not.
+
+### Issue & Open-Question Tracking
+
+Anomalies encountered during this workstream's work on real hardware (an
+unexplained perf ranking, a correctness mismatch, a driver crash) are
+logged, not silently resolved ad hoc and forgotten: open questions go in
+`.shared-context/report-for-human/open-questions.md` (numbered `Q`
+entries: phenomenon → hypothesis, explicitly marked unverified → next
+step → status); once root-caused, they move to
+`.shared-context/report-for-human/root-causes.md`; anything that's a
+driver or tooling defect (not this workstream's own code) additionally
+gets a ticket under `.shared-context/report-for-human/jira-tickets/`.
+Reuse this existing pipeline rather than starting a parallel one scoped
+just to this workstream.
 
 ## Repository & Distribution Scope
 
@@ -446,7 +895,9 @@ Amendments are made directly to this file, versioned per semantic-versioning
 rules (MAJOR: principle removed/redefined incompatibly; MINOR: principle or
 section added/materially expanded; PATCH: wording/clarification only), and
 recorded in a Sync Impact Report prepended to this file. Check each PR under
-this workstream's scope against the six principles above before merge; any
-deviation must be justified in the PR description, not merged silently.
+this workstream's scope against the nine principles above before merge —
+Principle IX above all, since it is NON-NEGOTIABLE for anything upstream-
+bound; any other deviation must be justified in the PR description, not
+merged silently.
 
-**Version**: 1.4.0 | **Ratified**: 2026-07-03 | **Last Amended**: 2026-07-04
+**Version**: 2.1.0 | **Ratified**: 2026-07-03 | **Last Amended**: 2026-07-05
