@@ -102,12 +102,12 @@ the end.
 
 ### 1B (remaining: `8da4w`)
 
-- [ ] T014 [P] [US2] Export 1B's `8da4w` buffer PTE: `MODEL=llama3_2_1b MAX_SEQ=3072 MAX_CTX=3072 .shared-context/scripts/export_quant.sh 8da4w 128 buffer` (depends on T005)
-- [ ] T015 [US2] Stage + push 1B's `8da4w` PTE to M5 EVT1 (runner/tokenizer/prompt already staged from T009)
-- [ ] T016 [US2] Coherence check 1B/`8da4w` (same procedure as T010)
-- [ ] T017 [US2] Dispatch-confirm 1B/`8da4w` (same procedure as T011)
-- [ ] T018 [US2] E2E capture 1B/`8da4w`: 3 repeated runs, mean + CoV (same procedure as T012)
-- [ ] T019 [US2] Publish `results/1b-results.md` (both `4w` from US1 and `8da4w` from T018, each compared against its `data-model.md` Prior-Finding Reference) — report to the user now
+- [X] T014 [P] [US2] Export 1B's `8da4w` buffer PTE via `backend.vulkan.storage_override: buffer` in `config.yaml` (`research.md` Decision 6 -- NOT `export_quant.sh`) (depends on T005) — **DONE**
+- [X] T015 [US2] Stage + push 1B's `8da4w` PTE to M5 EVT1 (runner/tokenizer/prompt already staged from T009) — **DONE**
+- [X] T016 [US2] Coherence check 1B/`8da4w` (same procedure as T010) — **DONE**, coherent
+- [X] T017 [US2] Dispatch-confirm 1B/`8da4w` (same procedure as T011) — **DONE**: `linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half` 112/112, `dispatch_status=confirmed`
+- [X] T018 [US2] E2E capture 1B/`8da4w`: 3 repeated runs, mean + CoV (same procedure as T012) — **DONE**: prefill 530.158/535.425/534.726 (mean 533.44, CoV 0.536%), decode 13.8217/13.7713/13.6407 (mean 13.745, CoV 0.680%)
+- [X] T019 [US2] Publish `results/1b-results.md` (both `4w` from US1 and `8da4w` from T018, each compared against its `data-model.md` Prior-Finding Reference) — report to the user now — **DONE**
 
 ### 3B (both schemes)
 
