@@ -697,7 +697,12 @@ void add_linear_dqa_qw_node(
       {},
       // Specialization Constants
       // 4th spec const: output width N for coopMatStore (see
-      // add_linear_qw_node).
+      // add_linear_qw_node). Kept on the spec-const workaround here (unlike
+      // add_linear_qw_node): on 2026-06-30 the UBO-direct method was A/B'd on
+      // this shader and produced wrong results for the coopmat (buffer) path
+      // at M>=128 (multi-workgroup-tile shapes), while the spec-const version
+      // validated clean. Do not drop this without re-validating on this exact
+      // shader.
       {apply_bias,
        K4_per_group,
        coopmat_k_iters,

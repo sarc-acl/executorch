@@ -114,6 +114,12 @@ ${layout_declare_spec_const(C, "int", "K4_per_group", "0")}
 // crashes (null deref in vkCreateComputePipelines) when a loop containing
 // coopMatMulAdd has a UBO-derived trip count. INT4: number of quant groups;
 // INT8: number of K-chunks.
+//
+// Unlike linear_qw_coopmat, this spec-const workaround is INTENTIONALLY kept
+// here: on 2026-06-30 the UBO-direct method (sizes UBO feeding num_chunks/N
+// directly) was A/B'd on this shader and produced wrong results for the
+// coopmat (buffer) path at M>=128, while this spec-const version validated
+// clean — see add_linear_dqa_qw_node in QuantizedLinear.cpp.
 ${layout_declare_spec_const(C, "int", "num_groups_arg", "0")}
 // Output width N for coopMatStore: the Xclipse compiler MISCOMPILES
 // coopMatStore whose offset/stride derive from a UBO value (only the first
