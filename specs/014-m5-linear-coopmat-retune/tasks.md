@@ -18,11 +18,14 @@ phase.
 
 **Organization**: Tasks are grouped by user story. Phase 3 (US1) requires
 no device access and was this workstream's first-session deliverable
-(already committed). Phase 4 is a new, hardware-independent prerequisite
-surfaced by `/speckit-clarify` (FR-008) that both remaining user stories
-need. Phases 5-6 (US2/US3) require Samsung M5 EVT1 hardware access,
-unavailable as of the last session (`adb devices` returned empty) — they
-are recorded as blocked per spec FR-006, not silently skipped.
+(already committed). Phase 4's authoring tasks (T006/T007) are likewise
+hardware-independent and done this session; Phase 4's run task (T009) and
+Phases 5-6 (US2/US3) are blocked on TWO independent prerequisites found
+across these sessions: no Samsung M5 EVT1 device reachable (`adb devices`
+returned empty), and a stale prebuilt `vulkan_backend` library that needs a
+full rebuild before `test_coopmat_linear_bench` can even link (found this
+session, pre-existing and unrelated to this feature's own edits). Both are
+recorded as blocked per spec FR-006, not silently skipped.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -77,12 +80,13 @@ are recorded as blocked per spec FR-006, not silently skipped.
 
 **Independent Test**: Build `test_coopmat_linear_bench.cpp` with the new cases added; the harness compiles and its correctness-only cases (`COOPMAT_BENCH_CORRECTNESS_ONLY=1`) run and report pass/fail for the new K=2048/4096 shapes, independent of whether any of US2/US3's shader changes have been evaluated yet.
 
-**Status**: Not yet started — the source edit itself does not require M5 EVT1 device access (per `quickstart.md` step 2), only a build toolchain; only *running* the new cases needs the device.
+**Status**: T006/T007 (authoring) done this session. T009 additionally blocked
+on a newly-discovered prerequisite beyond device access — see below.
 
-- [ ] T006 [P] Author new `kCorrectnessShapes` entries in `backends/vulkan/test/custom_ops/test_coopmat_linear_bench.cpp` at production K (2048 and 4096 at minimum), coopmat-eligible (`M%64==0`, `N%64==0`, `K%32==0`), reusing the existing `make_deterministic_correctness_case` well-conditioned positive-data generation and `abs=0.5`/`rel=0.05` tolerance unchanged (data-model.md's Correctness Harness Extension entity; no device access required to author this)
-- [ ] T007 [P] Author a matching new `kRank3CorrectnessShapes` entry at one of T006's production-K shapes (batch=1), same data/tolerance strategy, consistent with the existing rank-3 coverage added for specs `009` (no device access required to author this)
+- [X] T006 [P] Author new `kCorrectnessShapes` entries in `backends/vulkan/test/custom_ops/test_coopmat_linear_bench.cpp` at production K (2048 and 4096 at minimum), coopmat-eligible (`M%64==0`, `N%64==0`, `K%32==0`), reusing the existing `make_deterministic_correctness_case` well-conditioned positive-data generation and `abs=0.5`/`rel=0.05` tolerance unchanged (data-model.md's Correctness Harness Extension entity; no device access required to author this) — done: added `{128, 2048, 128, 128, ""}` and `{128, 4096, 128, 128, ""}` (group_size=128, matching the real per-model group size used elsewhere in this file's `kGroup`)
+- [X] T007 [P] Author a matching new `kRank3CorrectnessShapes` entry at one of T006's production-K shapes (batch=1), same data/tolerance strategy, consistent with the existing rank-3 coverage added for specs `009` (no device access required to author this) — done: added `{128, 4096, 128, 128, "", batch=1}` (the larger/higher-risk of the two new K values)
 - [ ] T008 Obtain M5 EVT1 device access per `.shared-context/instruction-for-ai/devices-and-access.md`; re-verify driver identity per constitution Principle VIII (depends on: none — can run before or in parallel with T006/T007)
-- [ ] T009 Build `test_coopmat_linear_bench` with T006/T007's new cases and run it with `COOPMAT_BENCH_CORRECTNESS_ONLY=1` on M5 EVT1 against the **pre-change** (`HEAD`-only, per `research.md` Decision 1) shader; confirm the new production-K cases compile, dispatch the coopmat kernel, and pass — this validates the harness extension itself, independent of any of this feature's three shader changes (depends on T006, T007, T008)
+- [ ] T009 Build `test_coopmat_linear_bench` with T006/T007's new cases and run it with `COOPMAT_BENCH_CORRECTNESS_ONLY=1` on M5 EVT1 against the **pre-change** (`HEAD`-only, per `research.md` Decision 1) shader; confirm the new production-K cases compile, dispatch the coopmat kernel, and pass — this validates the harness extension itself, independent of any of this feature's three shader changes (depends on T006, T007, T008). **New blocker found this session, verified on the local Android cross-build (`cmake-out-android-vk`)**: `test_coopmat_linear_bench.cpp` itself compiles cleanly (confirmed — the `.cpp.o` builds with zero errors, with and without T006/T007's new cases), but linking fails with `undefined symbol: add_matmul_coopmat_node(...)` from `TestMatmulLinear.cpp` — pre-existing (reproduces identically at `HEAD`, unrelated to this session's edits) and caused by `find_package(executorch CONFIG REQUIRED COMPONENTS vulkan_backend)` pulling in a **prebuilt, stale `vulkan_backend` library** that predates `GemmCoopmat.cpp`'s `add_matmul_coopmat_node` being restored to the source tree (commit `b19116260`). Fixing this needs a full Android Vulkan backend rebuild (out of scope for this feature — a `/building`-skill-level prerequisite, not a spec-014 shader/test-code issue) *before* T009 can even attempt to run, independent of and in addition to T008's device-access blocker.
 
 **Checkpoint**: Phase 4 complete when the harness reports pass/fail for production-K shapes against a known-good (pre-change) shader — only then can US2/US3 below produce a correctness verdict that actually means what FR-003/FR-004 require
 
@@ -94,7 +98,7 @@ are recorded as blocked per spec FR-006, not silently skipped.
 
 **Independent Test**: Build the post-change shader, pass the extended (Phase 4) INT4 coopmat correctness check at production shapes, and produce a kernel-dispatch-confirmed tier-1 timing compared against a fresh pre-change M5 EVT1 baseline.
 
-**Status: BLOCKED — no M5 EVT1 device reachable as of the last session** (`adb devices` returned an empty list). Recorded per spec FR-006 rather than skipped silently. Additionally depends on Phase 4 completing (FR-008).
+**Status: BLOCKED** — (1) no M5 EVT1 device reachable as of the last session (`adb devices` returned an empty list), and (2) Phase 4 (T009) is itself blocked on a stale prebuilt `vulkan_backend` library needing a full rebuild (found this session). Recorded per spec FR-006 rather than skipped silently.
 
 - [ ] T010 [US2] Build and run the pre-change (`HEAD`-only) `linear_qw_coopmat.glsl` tier-1 coopmat microbench on M5 EVT1 per `quickstart.md` step 1; record as the baseline in `results/us2-loop-vectorized-dequant-validation.md` (depends on T008)
 - [ ] T011 [US2] Run the Phase-4-extended INT4 coopmat correctness check against the post-change shader at production K=2048/4096 (depends on Phase 4 (T009))
@@ -111,7 +115,7 @@ are recorded as blocked per spec FR-006, not silently skipped.
 
 **Independent Test**: Run the fp16-accumulate variant against the Phase-4-extended correctness check at K=2048/4096; pass within the stated `abs=0.5`/`rel=0.05` tolerance, or fail explicitly and revert.
 
-**Status: BLOCKED — no M5 EVT1 device reachable as of the last session**, same as Phase 5. Additionally depends on Phase 4 completing (FR-008).
+**Status: BLOCKED**, same two reasons as Phase 5.
 
 - [ ] T014 [US3] Run the Phase-4-extended INT4 coopmat correctness check against the fp16-accumulate variant at production K=2048 and K=4096; record numerical divergence against the fp32-accumulate reference within the `abs=0.5`/`rel=0.05` tolerance stated in `data-model.md`'s `numerical_tolerance` field (depends on Phase 4 (T009))
 - [ ] T015 [US3] If T014 passes: run the tier-1 coopmat microbench for the fp16-accumulate variant, confirm kernel dispatch + SPIR-V accumulator-type verification (`research.md` Decision 4), compare against T010's baseline (depends on T014, T010)
@@ -146,10 +150,10 @@ are recorded as blocked per spec FR-006, not silently skipped.
 
 **MVP = User Story 1 only** (T001-T005): commits the existing work with
 accurate attribution and status. This was achievable with zero device
-access and is already done. **Next up = Phase 4** (T006-T009): also
-partially achievable without device access (T006/T007) and unblocks both
-remaining user stories at once — the highest-leverage next step, since
-neither US2 nor US3 can produce a spec-compliant correctness verdict
-without it. User Stories 2 and 3 remain independently completable
-whenever M5 EVT1 access is next available; neither blocks the other's
-disposition.
+access and is already done. **Phase 4's authoring half (T006-T007)** is
+also done — also achievable with zero device access. **Next up: two
+independent unblocks**, neither of which needs the other done first —
+(a) a full Android Vulkan backend rebuild to fix the stale-library link
+failure found this session (T009's other prerequisite), and (b) M5 EVT1
+device access (T008). Once both land, T009 closes Phase 4, and Phases 5/6
+(US2, US3) remain independently completable and independently disposed of.

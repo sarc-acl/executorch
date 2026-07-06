@@ -335,6 +335,15 @@ std::vector<TestCase> generate_cases() {
   // double-buffered); the second shape dispatches a multi-workgroup grid for
   // both, covering the gl_WorkGroupID-derived tile offsets in the store
   // address math.
+  // Production-K cases (specs/014-m5-linear-coopmat-retune, FR-008): every
+  // shape above tops out at K=256, well short of the real Llama K-dimensions
+  // (see kShapes above, K up to 14336). fp16-accumulation drift grows with
+  // the K-length of the reduction, so a shader change to the accumulator
+  // path (e.g. fp32->fp16 accumulate) can pass at small K and still diverge
+  // at production K -- these two entries close that gap using the exact
+  // same well-conditioned-data + tolerance strategy as the rest of this
+  // table, at the same group_size (128) the real production shapes above
+  // use, not a new methodology.
   static const std::vector<LinearConfig> kCorrectnessShapes = {
       {64, 128, 64, 64, ""},
       {128, 256, 128, 64, ""},
@@ -344,7 +353,10 @@ std::vector<TestCase> generate_cases() {
       {128, 128, 256, 64, ""}, // M == K only
       {256, 128, 128, 64, ""}, // K == N only
       {64, 128, 256, 64, ""}, // K > M, K < N
-      {256, 128, 64, 64, ""}}; // K < M, K > N
+      {256, 128, 64, 64, ""}, // K < M, K > N
+      // Production-K (FR-008):
+      {128, 2048, 128, 128, ""},
+      {128, 4096, 128, 128, ""}};
   for (const auto& op : kOps) {
     for (const auto& shape : kCorrectnessShapes) {
       LinearConfig cfg{shape.M, shape.K, shape.N, shape.group_size, op};
@@ -365,8 +377,13 @@ std::vector<TestCase> generate_cases() {
   // (the storage the coopmat path actually requires); Texture3D+rank-3
   // continues to exercise the pre-existing tiled path, unaffected by this
   // change, so is not repeated here.
+  // Production-K rank-3 case (FR-008): reuses one of kCorrectnessShapes'
+  // own new production-K entries (K=4096, the larger/higher-risk of the
+  // two) rather than inventing a separate shape, same rationale as the
+  // pre-existing rank-2 reuse above.
   static const std::vector<LinearConfig> kRank3CorrectnessShapes = {
-      {128, 128, 128, 64, "", /*batch=*/1}};
+      {128, 128, 128, 64, "", /*batch=*/1},
+      {128, 4096, 128, 128, "", /*batch=*/1}};
   for (const auto& op : kOps) {
     for (const auto& shape : kRank3CorrectnessShapes) {
       LinearConfig cfg{
