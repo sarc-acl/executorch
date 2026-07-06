@@ -180,7 +180,7 @@ the specific prior-finding documents cited.
 - What happens if an `8da4w` `.pte` does not yet exist for a model (only
   `4w` buffer/texture exports exist in `.pte_out/` as of this spec's
   writing)? Export it as part of this feature's own work -- not a
-  blocker, just a prerequisite step, per Assumptions below.
+  blocker, just a prerequisite step, per FR-001.
 
 ## Requirements *(mandatory)*
 
@@ -188,18 +188,26 @@ the specific prior-finding documents cited.
 
 - **FR-001**: The system MUST produce `Buffer`-storage `.pte` exports for
   all three target models at both `4w` and `8da4w`, at the fixed
-  2048-prefill/1024-decode (`_ctx3072`) workload -- reusing the four
-  `4w` buffer/texture exports already present in `.pte_out/` where still
-  valid, and newly exporting `8da4w` (not yet present).
+  2048-prefill/1024-decode (`_ctx3072`) workload -- reusing the three
+  `4w` **Buffer**-storage exports already present in `.pte_out/` (one per
+  model; `Texture3D` exports also exist for the same three models but are
+  not used by this feature, since coopmat/WMMA dispatch requires `Buffer`
+  storage), and newly exporting `8da4w` (not yet present, three models).
 - **FR-002**: Before any e2e tok/s number is reported for a configuration,
   a separate ETDump-enabled run MUST confirm the intended kernel family
   (linear coopmat, and SDPA-coopmat where in scope) actually dispatched --
   never assumed from the export or eligibility gate alone (Principle VI).
 - **FR-003**: The system MUST measure e2e prefill/decode tok/s for every
   dispatch-confirmed configuration using the fixed 2048-token prefill /
-  1024-token decode workload, pinned clocks by default (Principle VII),
-  and the two-tier discipline of Principle IV (a separate dispatch-
-  confirmation run, never the same run used for the reported number).
+  1024-token decode workload; clocks pinned by default (Principle VII),
+  with the pin's effect verified (not merely commanded) before any number
+  is trusted, per Principle VII's own GFLOP/s-cross-check requirement; **3
+  repeated runs per configuration, reporting the mean and coefficient of
+  variation (CoV)** -- matching this workstream's own established e2e
+  methodology (`.shared-context/report-for-human/e2e-spec.md`'s "3-run
+  means," not a single-shot capture); and the two-tier discipline of
+  Principle IV (a separate dispatch-confirmation run, never one of the
+  three reported-number runs).
 - **FR-004**: Before any measurement, the M5 EVT1 driver identity MUST be
   re-verified against the known-good hash table (Principle VIII) -- not
   assumed current from a prior session.
@@ -250,7 +258,10 @@ the specific prior-finding documents cited.
   anything), and whether that comparison is a reproduction attempt or only
   directional -- without needing to consult any other document.
 - **SC-003**: No e2e tok/s number in the report is presented without a
-  kernel-dispatch-confirmed, separately-captured ETDump trace backing it.
+  kernel-dispatch-confirmed, separately-captured ETDump trace backing it,
+  a verified (not just commanded) clock pin, and a 3-run mean with its
+  CoV -- a single unreplicated run is never presented as a validated
+  number.
 - **SC-004**: `8da4w` 3B/1B and any watchdog-blocked SDPA configuration are
   never presented as if reproducing a known prior number -- the report
   makes clear, for each, that no such prior number exists.

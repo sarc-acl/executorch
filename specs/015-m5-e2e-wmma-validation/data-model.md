@@ -10,11 +10,17 @@ One (model, op-family) unit -- 9 total: 3 models × {`4w`, `8da4w`} linear
 | `model` | enum | `llama3_2_1b` / `llama3_2_3b` / `llama3_1_8b` |
 | `op_family` | enum | `linear_4w` / `linear_8da4w` / `sdpa_coopmat` |
 | `pte_path` | string | `.pte_out/<model>_<scheme>_buffer_ctx3072.pte`; for `sdpa_coopmat`, the same buffer PTE as `linear_4w` for that model, run with `ET_VK_SDPA_COOPMAT=1` |
-| `pte_status` | enum | `reused_existing` (the 6 `4w`/pre-existing) / `newly_exported` (the 3 `8da4w`) |
+| `pte_status` | enum | `reused_existing` (the 3 `4w` **Buffer** PTEs, one per model -- pre-existing; matching Texture3D exports also exist but are unused by this feature) / `newly_exported` (the 3 `8da4w` Buffer PTEs) |
 | `dispatch_status` | enum | `not_yet_run` / `confirmed` (coopmat/WMMA kernel family seen in ETDump) / `fallback` (tiled kernel seen instead) / `failed` (export/run error) |
-| `e2e_result` | record | `{prefill_tok_s, decode_tok_s, iteration_count}` or `not_yet_run` |
+| `e2e_result` | record | `{prefill_tok_s_mean, prefill_cov_pct, decode_tok_s_mean, decode_cov_pct, run_count}` (per `research.md` Decision 5, `run_count` is always 3 unless a watchdog/other failure cut the run short -- record however many completed) or `not_yet_run` |
 | `blocked_reason` | string\|null | e.g. "GPU watchdog at 2048-token prefill" -- populated only if `dispatch_status` or `e2e_result` couldn't complete |
 | `measured_order` | int | 1-9, per Decision 3's 1B→3B→8B sequencing (within a model, linear before SDPA) |
+
+**Session-level prerequisite (not per-Configuration)**: a `clock_pin_verified`
+boolean, set once per adb session by cross-checking GFLOP/s (or e2e tok/s)
+against an equivalently-pinned microbenchmark (`research.md` Decision 5).
+No Configuration's `e2e_result` may be populated while this is false, and
+it resets to false on any device reboot (clocks aren't persistent).
 
 Seeded rows (as of this feature's start):
 
@@ -67,12 +73,15 @@ per Decision 3's incremental-reporting requirement.
 ## Lifecycle
 
 ```
+(session start) --(pin_freqs.sh + GFLOP/s cross-check)--> clock_pin_verified = true
+  [gate: no e2e capture proceeds while clock_pin_verified is false]
 not_yet_run --(export if needed)--> pte ready
   --(dispatch-confirmation run)--> dispatch_status = confirmed | fallback | failed
-  confirmed --(e2e capture run)--> e2e_result populated
+  confirmed --(3x e2e capture run, clock_pin_verified required)--> e2e_result populated (mean + CoV)
   fallback | failed --> blocked_reason populated, e2e_result stays not_yet_run
 watchdog recurrence at 2048-prefill --> blocked_reason populated (Edge Cases),
   no e2e_result reported for that configuration
+device reboot --> clock_pin_verified resets to false, re-verify before resuming any capture
 ```
 
 No other state transitions -- one-shot measure-and-report per

@@ -30,10 +30,12 @@ new code in either language.
   AOT export is graph/quantization-level, not shader-dependent, so it can
   run from this repo's own venv (confirmed importable:
   `executorch.extension.llm.export.export_llm`) rather than requiring the
-  `quant-dev` worktree `export-pte.md`'s examples `cd` into -- the four
-  `4w` texture/buffer `.pte`s already in the shared `.pte_out/` were very
-  likely produced this same way and are reused (spec FR-001); only the
-  three `8da4w` buffer `.pte`s are new exports.
+  `quant-dev` worktree `export-pte.md`'s examples `cd` into -- the three
+  `4w` **Buffer**-storage `.pte`s already in the shared `.pte_out/` (one
+  per model; matching `Texture3D` exports also exist for the same three
+  models but are not used by this feature) were very likely produced this
+  same way and are reused (spec FR-001); only the three `8da4w` buffer
+  `.pte`s are new exports.
 - `cmake-out-android-vk/examples/models/llama/llama_main` -- this repo's
   own already-built Android runner (built during `specs/014`'s session,
   reflecting the current `vulkan_backend` library with the 128x64 tile +
@@ -48,7 +50,14 @@ new code in either language.
   this session) -- builds the ETDump-enabled runner variant needed for
   Principle VI's separate dispatch-confirmation run.
 - `pin_freqs.sh` (adb host, per `commands.md` §5) -- clock pinning,
-  default for every reported number.
+  default for every reported number. **Pinning alone is not sufficient**:
+  constitution Principle VII requires verifying the pin actually bound
+  (cross-check in-graph GFLOP/s or e2e tok/s against an
+  equivalently-configured pinned microbenchmark) before any number is
+  reported as "pinned" -- this workstream's own Q10 root-cause (a
+  ~980MHz DVFS-boost number mistaken for a 509MHz pin) is the direct
+  precedent for why this check is not optional. Not persistent across
+  reboots -- re-pin and re-verify if the device reboots mid-feature.
 - `.shared-context/scripts/analyze_etdump_shaders.py` -- ETDump per-shader
   breakdown, used to confirm coopmat/WMMA dispatch (FR-002).
 - `ET_VK_SDPA_COOPMAT=1` (runtime env, confirmed present in
@@ -68,8 +77,11 @@ workstream.
 
 **Testing**: No new test framework. Dispatch confirmation (US1) uses
 ETDump + `analyze_etdump_shaders.py`, reused unmodified. E2E timing (US2/
-US3) uses the standard `llama_main` runner + steady-state tok/s reporting
-already established (`.shared-context/report-for-human/e2e-spec.md`).
+US3) uses the standard `llama_main` runner, **3 repeated runs per
+configuration reporting mean + CoV** (not a single-shot capture) --
+matching `e2e-spec.md`'s own established "3-run means" methodology,
+already found and grounded during `/speckit-analyze` (this feature's own
+first draft under-specified this as a single run).
 
 **Target Platform**: Samsung M5 EVT1 (Exynos 2500 / Xclipse 970), reached
 via `ssh yanwen.xu@sj1-dmckee-d01` then `adb -s 0000088f8e579c33` (per
@@ -103,7 +115,16 @@ already-published figures per spec Clarifications, not a pass/fail bar.
   *separate* ETDump-enabled dispatch-confirmation run -- never the same
   run used for the reported number.
 - Per constitution Principle VII: pinned clocks (509/2730/663 MHz) by
-  default; floating only if explicitly requested, always labeled.
+  default; floating only if explicitly requested, always labeled. **The
+  pin's effect MUST be verified** (GFLOP/s or e2e tok/s cross-check
+  against an equivalently-pinned microbenchmark) before it is reported as
+  "pinned" -- commanding the pin is not the same as confirming it bound
+  (found missing from this feature's first draft during `/speckit-analyze`,
+  corrected here per the Q10 precedent).
+- Per constitution Principle IV / `e2e-spec.md`: every reported e2e number
+  is a **3-run mean with CoV**, not a single-shot capture -- matching this
+  workstream's established methodology (also found missing from this
+  feature's first draft during `/speckit-analyze`).
 - Per `commands.md` §10: the on-device PAL GPU-profiler settings file
   (`amdPalSettings.cfg`) may need to be moved aside before benchmarking if
   present and active -- **requires explicit user approval to touch**,
@@ -114,10 +135,12 @@ already-published figures per spec Clarifications, not a pass/fail bar.
   configuration and reported as if it were the intended one.
 
 **Scale/Scope**: 9 configurations (3 models × `4w`/`8da4w` linear = 6,
-plus 3 models × SDPA-coopmat = 3), each needing an export (6 already
-exist, 3 new), a dispatch-confirmation run, and an e2e prefill/decode
-capture -- sequenced 1B → 3B → 8B per the user's ordering instruction, not
-grouped by scheme/op family.
+plus 3 models × SDPA-coopmat = 3), backed by 6 distinct PTE files (3
+`4w` Buffer, already exist, shared by both `linear_4w` and `sdpa_coopmat`
+configs; 3 `8da4w` Buffer, new). Each of the 9 configurations needs a
+dispatch-confirmation run and a 3-run e2e prefill/decode capture --
+sequenced 1B → 3B → 8B per the user's ordering instruction, not grouped by
+scheme/op family.
 
 ## Constitution Check
 
@@ -150,9 +173,15 @@ committed `HEAD`):
   requires ETDump-confirmed dispatch before any number is trusted, for
   every one of the nine configurations independently (not inferred from
   one configuration's success), matching `009`'s and `011`'s precedent.
-- **VII. Clock Discipline**: PASS -- pinned by default (Constraints
-  above); any floating run would be explicitly requested and labeled, not
-  needed for this feature's scope.
+- **VII. Clock Discipline**: PASS *by design, corrected during
+  `/speckit-analyze`* -- this feature's first plan draft claimed PASS on
+  "pinned by default" alone, without a task that verifies the pin bound
+  (Principle VII's own GFLOP/s-cross-check requirement) or captures the
+  3-run mean/CoV `e2e-spec.md` establishes as this workstream's actual
+  methodology. Both gaps are now explicit in Constraints above and carried
+  into `tasks.md`'s Foundational and e2e-capture tasks. Any floating run
+  would be explicitly requested and labeled, not needed for this feature's
+  scope.
 - **VIII. Verify the Driver Before Every Coopmat Measurement**: PASS,
   directly implements this principle (Technical Context above) --
   re-verifies rather than trusting `specs/014`'s end-of-session state.
@@ -196,7 +225,8 @@ No new production source files. New data artifacts only:
 ├── llama3_2_1b_8da4w_buffer_ctx3072.pte   # new export
 ├── llama3_2_3b_8da4w_buffer_ctx3072.pte   # new export
 └── llama3_1_8b_8da4w_buffer_ctx3072.pte   # new export
-                                            # (4w texture+buffer x3 models: already exist, reused)
+                                            # (4w buffer x3 models: already exist, reused; matching
+                                            #  texture exports also exist but are unused by this feature)
 
 cmake-out-android-vk-etdump/                # new build dir (ETDump-enabled runner), via build_etdump_android.sh
 

@@ -2,14 +2,23 @@
 
 ## Decision 1: Export from this repo's own venv; reuse existing `4w` PTEs, export only `8da4w`
 
-**Decision**: The four `4w` `.pte`s already in `.pte_out/`
-(`llama3_1_8b_4w_{texture,buffer}_ctx3072.pte`,
-`llama3_2_1b_4w_buffer_ctx3072.pte`, `llama3_2_3b_4w_buffer_ctx3072.pte`)
-are reused as-is. The three missing `8da4w` buffer PTEs (1B, 3B, 8B) are
-exported fresh, using `.shared-context/scripts/export_quant.sh 8da4w 128
-buffer` run from **this repo's own venv** (`quant-perf-optimization/
-executorch/.venv`), not the `quant-dev` worktree `export-pte.md`'s
-examples `cd` into.
+**Decision**: The three `4w` **Buffer**-storage `.pte`s already in
+`.pte_out/` (`llama3_1_8b_4w_buffer_ctx3072.pte`,
+`llama3_2_1b_4w_buffer_ctx3072.pte`, `llama3_2_3b_4w_buffer_ctx3072.pte`
+-- one per model) are reused as-is. Matching `Texture3D` exports also
+exist for the same three models (`.pte_out/` has six `4w` files total,
+confirmed by direct `ls`), but this feature never uses them -- coopmat/
+WMMA dispatch requires `Buffer` storage, and no task stages, pushes, or
+runs a texture PTE. **Correction (found during `/speckit-analyze`)**: an
+earlier draft of this decision undercounted the existing files as "four"
+and omitted `llama3_2_1b`/`llama3_2_3b`'s texture variants from its own
+list -- the count is fixed here; it never affected which files this
+feature actually uses (always the three Buffer ones), only this
+document's own bookkeeping accuracy. The three missing `8da4w` buffer
+PTEs (1B, 3B, 8B) are exported fresh, using
+`.shared-context/scripts/export_quant.sh 8da4w 128 buffer` run from
+**this repo's own venv** (`quant-perf-optimization/executorch/.venv`),
+not the `quant-dev` worktree `export-pte.md`'s examples `cd` into.
 
 **Grounding**: `export-pte.md` documents export as pure-Python AOT
 (quantization scheme + graph construction) with no dependency on the
@@ -21,17 +30,19 @@ executorch.extension.llm.export.export_llm"` succeeds in this repo's own
 (`ET_VK_FORCE_BUFFER`) is the only export-time knob that matters for
 coopmat eligibility; it is independent of which worktree runs the export.
 
-**Rationale**: Avoids re-exporting four multi-GB `.pte` files that already
+**Rationale**: Avoids re-exporting three multi-GB `.pte` files that already
 exist and are already known-good (the 4w buffer ones were almost certainly
 what produced the correctness-validated coopmat dispatch in `specs/014`'s
 own T009 run, which read production shapes from a live model context).
 
-**Alternatives considered**: Re-exporting all six from scratch (rejected --
-no reason to believe the existing 4w PTEs are stale, since export doesn't
-embed shader code; re-exporting would only cost device-independent
-CPU/RAM time for no new information). Exporting from the `quant-dev`
-worktree per `export-pte.md`'s literal examples (rejected -- unnecessary
-cross-worktree dependency when this repo's own venv already works).
+**Alternatives considered**: Re-exporting all six `4w` files (three Buffer
++ three Texture3D) from scratch (rejected -- no reason to believe the
+existing PTEs are stale, since export doesn't embed shader code, and the
+Texture3D half is never used by this feature regardless; re-exporting
+would only cost device-independent CPU/RAM time for no new information).
+Exporting from the `quant-dev` worktree per `export-pte.md`'s literal
+examples (rejected -- unnecessary cross-worktree dependency when this
+repo's own venv already works).
 
 ## Decision 2: Build and push this repo's own `llama_main`, never the `_origcm` runners
 
@@ -103,3 +114,42 @@ and being wrong (a silent miscompile, per the Q9 precedent) is severe.
 **Alternatives considered**: Trusting the last-known state (rejected --
 directly contradicts Principle VIII and this exact workstream's own recent
 history).
+
+## Decision 5 (added during `/speckit-analyze`): 3-run mean + CoV per configuration; verify the clock pin bound, don't just command it
+
+**Decision**: Every e2e prefill/decode capture is **3 repeated runs**,
+reporting the mean and coefficient of variation (CoV), not a single-shot
+run. Before any of those runs, `pin_freqs.sh` is run once per session and
+its effect is verified via a GFLOP/s-or-tok/s cross-check against an
+equivalently-pinned microbenchmark (constitution Principle VII) -- not
+just trusted because the pin command exited successfully.
+
+**Grounding**: This feature's own first plan/tasks draft specified a
+single run per configuration and never invoked `pin_freqs.sh` at all --
+found by `/speckit-analyze` as a CRITICAL gap against Principle VII (which
+explicitly requires pin verification, not just pinning) and a HIGH gap
+against this workstream's own established e2e methodology:
+`.shared-context/report-for-human/e2e-spec.md` states its headline 4w/
+8da4w numbers are "3-run means" with CoV reported (e.g. "4w: 79.3 (CoV
+0.05%)"), and the `results_ctx3072/logs/*_rep{1,2,3}.log` naming
+convention throughout `report-for-human/`'s archives confirms this has
+been the actual practice, not a one-off.
+
+**Rationale**: Constitution Principle VII's own rationale names the exact
+failure mode this closes: a prior session on this same board reported a
+~980MHz DVFS-boost number as if it were the intended 509MHz pin (Q10),
+caught only by a GFLOP/s cross-check, not by the pin command appearing to
+succeed. A single-run capture is likewise exactly the failure mode
+Principle IV's tier-1 discipline (iteration count + stddev) already
+guards against at the microbenchmark tier; there is no reason tier-2 e2e
+numbers should be held to a lower bar than this workstream already holds
+tier-1 numbers to, especially given `e2e-spec.md` shows 3-run reporting
+was already the norm before this feature existed.
+
+**Alternatives considered**: Single-run capture, citing time cost
+(rejected -- a full 2048-prefill/1024-decode run is the expensive part
+regardless; 3 reps roughly triples wall-clock time per configuration but
+is what this workstream's own prior numbers were actually built on, and
+reporting a number this workstream wouldn't otherwise trust defeats the
+feature's purpose). Skipping pin verification and trusting the command
+(rejected -- directly contradicts Principle VII and the Q10 precedent).

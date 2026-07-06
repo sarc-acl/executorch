@@ -10,7 +10,10 @@ do not batch all three models before reporting the first one.
 - Driver identity re-verified against `flash-sumd-driver.md`'s table
   (Decision 4) -- do not assume `specs/014`'s end-of-session state holds.
 - GPU/MIF/INT clocks pinned via `pin_freqs.sh` (509/2730/663 MHz) unless a
-  floating run is explicitly requested.
+  floating run is explicitly requested -- **and the pin verified** (cross-check
+  GFLOP/s or e2e tok/s against an equivalently-pinned reference measurement,
+  per constitution Principle VII / `research.md` Decision 5). Do this once
+  per adb session, and again after any device reboot (clocks don't persist).
 - If `/data/vendor/gpu/amdPalSettings.cfg` is present and active, confirm
   with the user before moving it aside (`commands.md` §10) -- do not do
   this unilaterally.
@@ -73,13 +76,18 @@ kernel name recorded, per data-model.md).
 
 ### 5. E2E capture (2048-token prefill, 1024-token decode; separate from step 4)
 
+**Run 3 times** (per `research.md` Decision 5 -- matches this workstream's
+established "3-run mean + CoV" methodology, not a single-shot capture):
+
 ```bash
-adb -s $S shell "cd $D && ET_VK_EXECUTE_NODE_THRESHOLD=16 ./llama_main_015 \
-  --model_path=$D/<model>_4w_buffer_ctx3072.pte --tokenizer_path=$D/tokenizer.model \
-  --prompt_file=$D/p2048_exact.txt --num_bos=1 --max_new_tokens=1024 --ignore_eos \
-  --temperature=0 --warmup=true"
-# record prefill/decode tok/s; repeat for 8da4w
-# for SDPA: same 4w PTE + ET_VK_SDPA_COOPMAT=1 ./llama_main_015 ...
+for rep in 1 2 3; do
+  adb -s $S shell "cd $D && ET_VK_EXECUTE_NODE_THRESHOLD=16 ./llama_main_015 \
+    --model_path=$D/<model>_4w_buffer_ctx3072.pte --tokenizer_path=$D/tokenizer.model \
+    --prompt_file=$D/p2048_exact.txt --num_bos=1 --max_new_tokens=1024 --ignore_eos \
+    --temperature=0 --warmup=true"
+done
+# record prefill/decode tok/s per rep; compute mean + CoV; repeat all 3 reps for 8da4w
+# for SDPA: same 4w PTE + ET_VK_SDPA_COOPMAT=1 ./llama_main_015 ..., also 3 reps
 ```
 
 If the GPU-watchdog issue recurs at 2048-token prefill (most likely on 8B/
