@@ -1,6 +1,43 @@
 <!--
 Sync Impact Report
 ==================
+Version change: 2.1.0 → 2.2.0
+
+Context: a 2026-07-05 session on the real M5 EVT1 target made two avoidable
+mistakes that a pre-existing workspace doc would have prevented: (1) it ran
+`adb devices` on the wrong host and wrongly concluded the M5 EVT1 was
+unreachable (the correct access path was already documented in
+`.shared-context/instruction-for-ai/devices-and-access.md`); (2) it spent
+effort diagnosing a stale-library Android link failure that
+`instruction-for-ai/build.md`'s own documented two-step build sequence
+would have prevented. The user explicitly asked that this constitution be
+amended to make consulting that directory first, not after getting stuck,
+an explicit rule -- not just a set of scattered citations.
+
+Added content:
+  - New Principle X, "Consult `.shared-context/instruction-for-ai` Before
+    Acting, Not After" -- requires starting at that directory's README.md
+    task-to-doc router before any Android build/device/export/profiling/
+    driver action, rather than inferring the procedure or concluding
+    something is broken/unreachable without checking there first.
+
+Modified sections:
+  - Governance -- "nine principles" -> "ten principles" (Principle X added).
+
+Removed sections: none.
+
+Templates requiring updates:
+  - .specify/templates/plan-template.md ......... ✅ no change needed
+  - .specify/templates/spec-template.md ......... ✅ no change needed
+  - .specify/templates/tasks-template.md ........ ✅ no change needed
+  - .specify/templates/commands/*.md ............. n/a (not present)
+
+Follow-up TODOs: none new.
+-->
+
+<!--
+Sync Impact Report (previous amendment, retained for history)
+==================
 Version change: 2.0.0 → 2.1.0
 
 Context: user supplied a historical JIRA comment thread (2026-02-27 through
@@ -586,6 +623,35 @@ branch discipline: those govern *which files* go upstream, this principle
 governs *what strings may appear* even inside a file that otherwise
 belongs there.
 
+### X. Consult `.shared-context/instruction-for-ai` Before Acting, Not After
+A large share of this workstream's actual, load-bearing operational
+knowledge — which host a given phone is physically attached to, the exact
+multi-step Android cross-build sequence, driver hash-to-meaning tables,
+canonical scripts — lives in `.shared-context/instruction-for-ai/`, not in
+this constitution. This constitution only summarizes and points to that
+directory (see the Development Workflow section below); it is not a
+substitute for reading it. Before attempting any Android build, device
+access, export, profiling, or driver operation under this workstream:
+1. Start at `.shared-context/instruction-for-ai/README.md` — a task → doc
+   router — and read the one doc that owns that task.
+2. Do not infer the procedure from source-reading, from habits carried
+   over from a different workstream/worktree, or from a partially-built
+   local tree.
+3. Do not conclude a device or resource is unreachable, or that a build
+   step is broken/missing, without first checking whether that folder
+   already documents the answer.
+
+Rationale: on 2026-07-05, a session ran `adb devices` on the wrong host
+and concluded "no M5 EVT1 device reachable" — the phone was reachable the
+whole time via `ssh` to a different host, documented in
+`devices-and-access.md`. The same session separately spent effort
+diagnosing a stale prebuilt-library link failure that `build.md`'s own
+documented two-step Android recipe (rebuild core runtime + `--target
+install` before any dependent sub-build, e.g. `test_coopmat_linear_bench`)
+would have prevented outright. Both were avoidable by reading the doc
+first, not after getting stuck; this principle makes that the required
+order of operations, not a best-effort courtesy.
+
 ## Performance & Portability Standards
 
 - **Scope boundary**: this constitution governs the coopmat/WMMA GEMM and
@@ -820,11 +886,12 @@ LLaMA runner against that same build.
 
 ### Samsung/Xclipse Build, Export, Deploy (M5 EVT1)
 
-`specs/013-minipc-handoff-report`'s own Runbook flagged Android build,
-export, and deploy as "needs adaptation" or "newly established," written
-without visibility into this workspace's pre-existing pipeline for exactly
-that target. That pipeline already exists and is validated — check it
-before writing new Android tooling for this workstream:
+Per Principle X: read the relevant doc below FIRST, before attempting the
+task. `specs/013-minipc-handoff-report`'s own Runbook flagged Android
+build, export, and deploy as "needs adaptation" or "newly established,"
+written without visibility into this workspace's pre-existing pipeline for
+exactly that target. That pipeline already exists and is validated — check
+it before writing new Android tooling for this workstream:
 
 - **Build** (runtime + `llama_main`/ETDump runner, cross-compiled for
   Android): `.shared-context/instruction-for-ai/build.md`, canonical
@@ -895,9 +962,9 @@ Amendments are made directly to this file, versioned per semantic-versioning
 rules (MAJOR: principle removed/redefined incompatibly; MINOR: principle or
 section added/materially expanded; PATCH: wording/clarification only), and
 recorded in a Sync Impact Report prepended to this file. Check each PR under
-this workstream's scope against the nine principles above before merge —
+this workstream's scope against the ten principles above before merge —
 Principle IX above all, since it is NON-NEGOTIABLE for anything upstream-
 bound; any other deviation must be justified in the PR description, not
 merged silently.
 
-**Version**: 2.1.0 | **Ratified**: 2026-07-03 | **Last Amended**: 2026-07-05
+**Version**: 2.2.0 | **Ratified**: 2026-07-03 | **Last Amended**: 2026-07-05
