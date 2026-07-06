@@ -181,7 +181,14 @@ static void bench_reference(TestCase& tc) {
   const auto is = in.get_tensor_sizes();
   const int64_t M = is[is.size() - 2], K = is[is.size() - 1];
   const int64_t N = out.get_tensor_sizes().back();
-  if (M > 256 || K > 256 || N > 256) {
+  // M/N stay capped at 256 (the perf-sweep shapes reuse this same function
+  // and go up to M=1024/N=14336 -- an O(M*N*K) CPU reference at that size
+  // would take far too long and isn't the point of a perf case anyway).
+  // K's cap is raised for specs/014-m5-linear-coopmat-retune's FR-008
+  // production-K correctness cases (K=2048/4096, M/N still <=256): without
+  // this, those cases silently throw here and get marked SKIPPED, giving a
+  // false impression of "validated" when no reference was ever computed.
+  if (M > 256 || N > 256 || K > 4096) {
     throw std::invalid_argument("ref: too big");
   }
   // input layouts: weight-only = {in, w, w_scales, [group], bias};
