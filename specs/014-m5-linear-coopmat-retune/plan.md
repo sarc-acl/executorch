@@ -13,12 +13,17 @@ to the `4w` weight-only int4 coopmat linear shader
 experiment, a dbuf1 loop-shape flattening, and a vectorized INT4 dequant --
 plus one documentation-only comment addition to the sibling `8da4w` shader
 (`linear_dq8ca_qw_coopmat.glsl`) and its dispatch code
-(`QuantizedLinear.cpp`) recording a prior A/B finding. This feature's job is
-not to build anything new: it is to (1) commit the existing work with
+(`QuantizedLinear.cpp`) recording a prior A/B finding. This feature's core
+job is not to build anything new: it is to (1) commit the existing work with
 accurate per-change attribution and status (US1), then (2) run this
 workstream's required correctness/performance validation on the actual M5
 EVT1 target for the two same-math changes (US2) and the one precision-risky
 change (US3), recording each change's final disposition independently.
+**Revised during clarification (2026-07-05 session, FR-008)**: closing US2/
+US3's correctness gate requires one small piece of genuinely new work first
+-- extending `test_coopmat_linear_bench.cpp`'s correctness shape coverage to
+production K, since direct inspection found its existing coverage stops at
+K=256.
 
 ## Technical Context
 
@@ -35,11 +40,17 @@ documentation-only dispatch-code change; no new language/runtime introduced.
   `backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.cpp`
   (`add_linear_dqa_qw_node`) -- carry the documentation-only change (already
   edited, uncommitted).
-- The existing INT4 coopmat correctness check under
-  `backends/vulkan/test/op_tests` / `test_*_linear`-style tests (per
-  constitution Principle I) -- reused as-is, not authored new.
-  `test_coopmat_linear_bench.cpp` / `test_llama_baseline_bench.cpp` (already
-  in tree from specs `007`/`008`) -- reused for tier-1 microbenchmark timing.
+- `backends/vulkan/test/custom_ops/test_coopmat_linear_bench.cpp` -- the
+  existing INT4 coopmat correctness check (per constitution Principle I),
+  via its `kCorrectnessShapes`/`kRank3CorrectnessShapes` deterministic
+  well-conditioned-data cases. **Revised per spec Clarifications (2026-07-05
+  session) / FR-008**: this file is NOT purely reused as-is -- direct
+  inspection found its existing shapes top out at K=256, short of FR-003/
+  FR-004's production-K (2048/4096+) requirement, so this feature extends
+  it with new cases at production K, reusing its already-validated
+  `abs=0.5`/`rel=0.05` tolerance strategy. Also reused unmodified for tier-1
+  microbenchmark timing, alongside `test_llama_baseline_bench.cpp` (both
+  already in tree from specs `007`/`008`).
 - `spirv-dis` (or equivalent) for SPIR-V inspection per Principle VI.
 - ETDump / the standard ExecuTorch LLaMA runner for the tier-2 e2e leg
   (only if User Story 2/3's tier-1 results motivate a tier-2 check; not
@@ -49,10 +60,12 @@ documentation-only dispatch-code change; no new language/runtime introduced.
 validation logs and the final disposition report; no database/service
 component.
 
-**Testing**: No new test framework. Correctness gating reuses the existing
-INT4 coopmat correctness check (constitution Principle I); performance
-gating reuses the existing `BenchmarkResult`-based tier-1 harness
-(constitution Principle IV). This feature's own "test" of User Story 1 is a
+**Testing**: No new test framework, but the existing
+`test_coopmat_linear_bench.cpp` correctness harness gains new cases (FR-008)
+-- extending its `kCorrectnessShapes`/`kRank3CorrectnessShapes` tables to
+production K, not authoring a new harness. Performance gating reuses the
+existing `BenchmarkResult`-based tier-1 harness unmodified (constitution
+Principle IV). This feature's own "test" of User Story 1 is a
 diff/attribution check (every uncommitted hunk maps to exactly one described
 change) rather than an automated suite.
 
@@ -62,9 +75,11 @@ workstream's sole active validation target per constitution Principle II.
 where the dbuf1 loop variant was originally chosen (specs `007`-`012`).
 
 **Project Type**: Retroactive documentation + hardware validation of
-already-written shader/dispatch code. No new production subsystem; this
-feature modifies zero additional production files beyond the three already
-sitting in the working tree.
+already-written shader/dispatch code, plus one small, in-scope test-harness
+extension (FR-008). No new production subsystem; beyond the three files
+already sitting in the working tree, this feature additionally edits one
+existing test file (`test_coopmat_linear_bench.cpp`) to add production-K
+correctness cases -- test code, not shipped production/runtime code.
 
 **Performance Goals**: No committed target -- this feature's User Stories 2
 and 3 *measure* whether each change helps, regresses, or is neutral; it does
@@ -94,11 +109,17 @@ win, but that is a recorded decision, not an assumed default).
 - If M5 EVT1 access is unavailable, User Story 1 still completes in full;
   User Stories 2/3 are explicitly reported as blocked, not skipped or
   assumed (spec FR-006).
+- Per spec FR-008: FR-003/FR-004's correctness gate cannot be satisfied
+  against the existing `test_coopmat_linear_bench.cpp` shape list as-is (it
+  tops out at K=256); the harness extension to production K is a
+  prerequisite for US2 and US3's correctness steps, not optional prep work.
 
 **Scale/Scope**: 3 shader-level changes to 1 shader file + 1
-documentation-only change spanning 2 files = 4 total changes, each
-independently committed/attributed and independently disposed of
-(keep / keep-with-caveat / revert).
+documentation-only change spanning 2 files + 1 correctness-harness
+extension (new production-K cases in `test_coopmat_linear_bench.cpp`, per
+FR-008) = 4 committed changes plus one in-scope test-harness extension,
+each independently disposed of (keep / keep-with-caveat / revert) for the
+three shader changes.
 
 ## Constitution Check
 
@@ -107,12 +128,18 @@ independently committed/attributed and independently disposed of
 Checked against `.specify/memory/constitution.md` (v2.1.0, current committed
 `HEAD`):
 
-- **I. Correctness Before Performance (NON-NEGOTIABLE)**: PASS, by design.
-  US2 and US3 both gate their respective changes on the existing INT4
-  coopmat correctness check before any performance number is trusted (spec
-  FR-003/FR-004). The fp16-accumulate change (US3) is explicitly the
-  higher-risk case this principle exists for -- coopmat's mixed-precision
-  accumulation is called out by name in this principle's own rationale.
+- **I. Correctness Before Performance (NON-NEGOTIABLE)**: PASS, by design --
+  and this principle is exactly what surfaced FR-008's finding. US2 and US3
+  both gate their respective changes on the existing INT4 coopmat
+  correctness check before any performance number is trusted (spec
+  FR-003/FR-004), and per the 2026-07-05 clarification session that check's
+  own shape coverage (K<=256) was confirmed insufficient for the
+  production-K claim this feature needs to make -- rather than silently
+  measuring performance against an unvalidated shape, FR-008 requires
+  extending the check first. The fp16-accumulate change (US3) is explicitly
+  the higher-risk case this principle exists for -- coopmat's
+  mixed-precision accumulation is called out by name in this principle's
+  own rationale.
 - **II. Samsung M5 EVT1 Is the Only Active Target**: PASS. All validation in
   this feature runs on M5 EVT1, not `rocky-ryzen` (spec Assumptions). The
   loop-flattening change's *origin* (the dbuf1 sweep) was MiniPC-based, but
@@ -187,12 +214,15 @@ measurement/analysis features in this same workstream).
 No new production source files. This feature commits three files already
 modified in the working tree, unchanged from their current diff (User Story
 1), then may apply corrective edits only if User Story 3's correctness check
-fails (the FR-004 revert path):
+fails (the FR-004 revert path). It additionally edits one existing **test**
+file (FR-008, new in this revision) before US2/US3's correctness steps can
+run:
 
 ```text
 backends/vulkan/runtime/graph/ops/glsl/linear_qw_coopmat.glsl        # fp16 accumulate + loop flattening + vectorized dequant (already written, uncommitted)
 backends/vulkan/runtime/graph/ops/glsl/linear_dq8ca_qw_coopmat.glsl  # documentation-only (already written, uncommitted)
 backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.cpp           # documentation-only, in add_linear_dqa_qw_node (already written, uncommitted)
+backends/vulkan/test/custom_ops/test_coopmat_linear_bench.cpp        # FR-008: extend kCorrectnessShapes/kRank3CorrectnessShapes with production-K (2048/4096+) cases, same data/tolerance strategy -- new work, not yet written
 
 specs/014-m5-linear-coopmat-retune/
 └── results/
@@ -204,8 +234,11 @@ specs/014-m5-linear-coopmat-retune/
 **Structure Decision**: Same lightweight, no-new-production-code structure
 as specs `001`/`004`/`006`/`012`: the "implementation" is committing
 already-written code, and this feature's own deliverable is the validation
-report under its own `results/`, reusing every existing correctness/
-benchmark harness in tree rather than building new tooling.
+report under its own `results/`. The one exception is FR-008's small,
+targeted extension of the existing `test_coopmat_linear_bench.cpp`
+correctness harness (new cases, same file, same methodology) -- this is not
+new tooling, just closing a shape-coverage gap in tooling that already
+exists.
 
 ## Complexity Tracking
 

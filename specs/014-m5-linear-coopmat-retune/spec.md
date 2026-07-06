@@ -15,6 +15,7 @@
 - Q: Items 1-3 are three independent, separable code changes to the same shader, each with a different validation bar (item 1 is precision-risky and needs a correctness pass before any perf claim; items 2-3 are same-math code-shape changes that only need perf/regression confirmation). Should this feature gate all three together, or validate and decide each independently? → A: Validate and decide independently. Bundling them would let a correctness failure in the fp16-accumulate experiment (item 1) block committing/keeping the two low-risk, same-math changes (items 2-3), and would also make a single combined perf number impossible to attribute to a specific change.
 - Q: Item 4 is a comment-only change with no runtime effect. Does it need the same hardware-validation gate as items 1-3? → A: No. It records an already-established fact (the 2026-06-30 A/B finding, cited from `add_linear_dqa_qw_node` / spec 013's line of work) next to the code it protects. It ships as soon as this spec's changes are committed, independent of items 1-3's validation outcomes.
 - Q: Given Principle II of this workstream's constitution (Samsung M5 EVT1 is the only active target) and Principle IV (two-tier benchmarking required before any performance claim), can this spec report "improved" or "regressed" for items 1-3 without an actual M5 EVT1 run? → A: No. This spec's own scope is bounded to getting the existing implementation correctly documented and committed; the User Story that actually runs the tier-1/tier-2 validation on M5 EVT1 is this feature's own P1 deliverable, not a prerequisite assumed already done.
+- Q: FR-003/FR-004 require correctness validation at real production K-dimensions (K=2048 up to 14336). Directly inspecting `test_coopmat_linear_bench.cpp` (not assumed) shows its existing `kCorrectnessShapes`/`kRank3CorrectnessShapes` only cover up to K=256 today -- nothing at production scale exists yet for the coopmat dispatch path. How should this feature close that gap? → A: Extend the existing harness with new production-K cases (2048/4096 at minimum), reusing its already-validated well-conditioned-data + `abs=0.5`/`rel=0.05` tolerance strategy. Confirmed cheap to add: correctness cases in this harness are single-shot small-shape dispatches (already 64+ in the suite at K<=256), not the repeated-iteration `M=1024` perf sweep that actually dominates the harness's runtime -- a few added K=2048/4096 cases is a small, bounded addition, not a meaningful slowdown.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -172,12 +173,14 @@ tolerance.
   validation outcomes, since it has no runtime effect and records an
   already-established fact.
 - **FR-003**: The loop-shape-flattening and vectorized-dequant changes MUST
-  each pass the existing INT4 coopmat correctness check on M5 EVT1 at real
-  production shapes before being reported as validated.
+  each pass the existing (per FR-008, extended) INT4 coopmat correctness
+  check on M5 EVT1 at real production shapes before being reported as
+  validated.
 - **FR-004**: The fp16-accumulate change MUST pass a correctness check
-  against real production K-dimensions (K=2048..4096) on M5 EVT1, within an
-  explicitly stated numerical tolerance, before any throughput number for it
-  is reported; a correctness failure MUST result in reverting this specific
+  against real production K-dimensions (K=2048..4096) on M5 EVT1, using the
+  `test_coopmat_linear_bench.cpp` well-conditioned-data tolerance strategy
+  (`abs=0.5`/`rel=0.05`, per FR-008) before any throughput number for it is
+  reported; a correctness failure MUST result in reverting this specific
   change to fp32 accumulate, not a silent workaround.
 - **FR-005**: Every performance claim this feature makes MUST follow this
   workstream's constitution Principle IV (two-tier benchmarking: a
@@ -193,6 +196,13 @@ tolerance.
   as-is, keep with caveats, or revert) MUST be recorded independently, so a
   reader can determine each change's fate without needing the other two's
   outcome.
+- **FR-008**: Before FR-003/FR-004 can be satisfied, this feature MUST
+  extend `test_coopmat_linear_bench.cpp`'s `kCorrectnessShapes`/
+  `kRank3CorrectnessShapes` with new cases at real production K-dimensions
+  (K=2048/4096 at minimum), reusing the same deterministic, well-conditioned
+  (positive-only) input data and `abs=0.5`/`rel=0.05` tolerance strategy
+  already validated there for K<=256 -- the existing coverage does not reach
+  production scale today (confirmed by inspection, not assumed).
 
 ### Key Entities
 
@@ -238,11 +248,15 @@ tolerance.
   `backends/cadence/utils/FACTO` submodule dirty state, which predates and is
   unrelated to this workstream and is explicitly out of scope for this
   feature).
-- The existing INT4 coopmat correctness check (used by prior specs
-  `007`/`008`/`010` for their own kernel-family correctness gating) is the
-  correctness bar for User Stories 2 and 3; authoring a new, dedicated
-  correctness test at the exact production K/N shapes is not required unless
-  the existing check is found insufficient during this feature's work.
+- The existing INT4 coopmat correctness check is
+  `backends/vulkan/test/custom_ops/test_coopmat_linear_bench.cpp`'s
+  `kCorrectnessShapes`/`kRank3CorrectnessShapes` deterministic,
+  well-conditioned-data cases -- the correctness bar for User Stories 2 and
+  3. Per this spec's Clarifications, its existing shape coverage (K<=256) is
+  confirmed insufficient for FR-003/FR-004's production-K requirement;
+  FR-008 extending it with new production-K cases (same data/tolerance
+  strategy) is in scope for this feature, not deferred to a hypothetical
+  future gap.
 - Validation runs on Samsung M5 EVT1 (Exynos 2500 / Xclipse 970), this
   workstream's sole active target per the constitution's Principle II -- not
   `rocky-ryzen` MiniPC, which is retired to archived/historical reference

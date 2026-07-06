@@ -33,29 +33,54 @@ numbers directly (rejected as the primary baseline -- cross-branch, unverified
 for this exact shader; may still be cited informally in the results as
 directional context, clearly labeled as such, never as the pass/fail bar).
 
-## Decision 2: Correctness gate reuses the existing INT4 coopmat correctness check; no new test is authored
+## Decision 2 (REVISED 2026-07-05 clarification session): Correctness gate is the existing coopmat correctness harness, EXTENDED to production K -- the gap is confirmed, not hypothetical
 
-**Decision**: User Stories 2 and 3 both gate on
-`backends/vulkan/test/op_tests`'s existing per-op `test_*_linear`
-correctness check for the `4w` (`q4gsw`) kernel family, run at real
-production K-dimensions (K=2048/4096) in addition to whatever synthetic
-shapes it already covers.
+**Original decision (superseded)**: This decision originally proposed
+gating User Stories 2 and 3 on the generic `backends/vulkan/test/op_tests`
+`test_*_linear` correctness check, reused unmodified, with a new test only
+"if that gap is found during implementation." That framing was wrong on two
+counts, both caught during `/speckit-clarify`: (1) the actually-relevant
+coopmat-specific correctness harness is
+`backends/vulkan/test/custom_ops/test_coopmat_linear_bench.cpp`'s
+`kCorrectnessShapes`/`kRank3CorrectnessShapes` (deterministic,
+well-conditioned/positive-only data, `abs=0.5`/`rel=0.05` tolerance) -- not
+the generic `op_tests` directory, which has no coopmat-specific tolerance
+handling; (2) direct inspection of that harness (not deferred to
+"implementation time") shows its existing shapes stop at K=256, well short
+of FR-003/FR-004's production-K (2048/4096+) requirement. The gap is
+confirmed today, not a hypothetical to check later.
 
-**Grounding**: Constitution Principle I explicitly names this test
-directory as the correctness bar for "no coopmat shader change is done
-until it passes." Specs `007`/`008`/`010` all reused it the same way rather
-than authoring new correctness tests for their own shader changes.
+**Revised decision**: User Stories 2 and 3 gate on
+`test_coopmat_linear_bench.cpp`'s correctness harness, EXTENDED (spec
+FR-008) with new `kCorrectnessShapes`/`kRank3CorrectnessShapes` entries at
+production K (2048/4096 at minimum), reusing its existing deterministic,
+well-conditioned-data generation and `abs=0.5`/`rel=0.05` tolerance
+unchanged -- only the shape list grows, not the methodology.
 
-**Rationale**: Consistent with this workstream's own precedent; authoring a
-new correctness test is unnecessary duplication unless the existing check
-is found to not cover the production K-dimensions this feature specifically
-cares about (K=2048/4096) -- if that gap is found during implementation, it
-becomes a real task (extend the existing test's shape list), not a new
-standalone test suite.
+**Grounding**: `test_coopmat_linear_bench.cpp`'s own in-code comment
+explains why a *different* correctness strategy (well-conditioned positive
+data, not the generic random-data suite) was needed for coopmat shapes at
+all: `test_q4gsw_linear.cpp`'s random-data + sqrt(K)-scaled-tolerance
+approach was tried and explicitly rejected for coopmat-eligible shapes
+because fp16 accumulation drift exceeded any reasonable tolerance there.
+Reusing that already-solved strategy at larger K (rather than reinventing a
+third approach) avoids repeating that already-documented failure.
 
-**Alternatives considered**: Writing a brand-new correctness test targeting
-exactly K=2048/4096 (deferred unless the existing check's shape coverage
-turns out to be insufficient -- checked, not assumed, at task time).
+**Rationale**: Confirmed cheap during the clarification session: the
+correctness cases in this harness are single-shot small-shape dispatches
+(64+ already exist at K<=256); the `M=1024` perf sweep elsewhere in the same
+file is what actually dominates the harness's runtime, and is untouched by
+this extension. Extending shape coverage is a small, bounded addition, not
+a new test suite and not a meaningful slowdown.
+
+**Alternatives considered**: (a) Accepting K<=256 as sufficient and dropping
+the production-K requirement from FR-003/FR-004 -- rejected, since it would
+mean shipping a claim ("validated on M5 EVT1") not actually backed by a
+production-shape correctness check, contrary to constitution Principle I.
+(b) Reusing `test_q4gsw_linear.cpp`'s random-data/scaled-tolerance approach
+at production K instead of extending the well-conditioned harness --
+rejected, since that file's own comment already documents this exact
+approach failing for coopmat-eligible shapes at any size, not just large K.
 
 ## Decision 3: Independent disposition per change, enforced by keeping the three shader changes separately revertible in the working tree until each is validated
 
