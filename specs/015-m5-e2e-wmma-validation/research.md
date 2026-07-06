@@ -153,3 +153,69 @@ is what this workstream's own prior numbers were actually built on, and
 reporting a number this workstream wouldn't otherwise trust defeats the
 feature's purpose). Skipping pin verification and trusting the command
 (rejected -- directly contradicts Principle VII and the Q10 precedent).
+
+## Decision 6 (found during implementation, US1): the venv was non-editable AND `ET_VK_FORCE_BUFFER` doesn't exist in this repo -- every existing `4w` "buffer" PTE was actually Texture3D internally
+
+**Decision**: Fixed this repo's venv (`pip install -e . --no-build-isolation`
+-- it had been installed non-editable, physically copying a stale
+2026-06-30 snapshot into `site-packages` instead of linking to live repo
+source, per `build.md`'s own documented gotcha). Re-exported all `4w`
+buffer PTEs using `backend.vulkan.storage_override: buffer` in `config.yaml`
+(equivalently `--vulkan-storage-override=buffer` on the CLI) -- **not**
+`export-pte.md`'s documented `ET_VK_FORCE_BUFFER` env var, which does not
+exist anywhere in this repo's Python source (confirmed by
+`grep -rl ET_VK_FORCE_BUFFER` across the whole tree -- zero hits outside
+this feature's own docs). `storage_override` is this repo's own,
+already-implemented mechanism (`extension/llm/export/partitioner_lib.py`
+`get_vulkan_partitioner(storage_override=...)`, added for
+`specs/006-e2e-storage-comparison`).
+
+**Grounding**: User Story 1's dispatch-confirmation step (the entire reason
+this feature does US1 before trusting any number) caught this directly.
+The pre-existing `llama3_2_1b_4w_buffer_ctx3072.pte` (dated 2026-06-30)
+produced an ETDump trace where `linear_q4gsw_tiled_texture3d_texture2d_half`
+dispatched 112/112 times and every other op in the main graph (rms_norm,
+binary_mul, sigmoid, rotary_embedding, view) showed `_texture3d_half` --
+only SDPA (which has its own separate buffer-forcing logic) showed
+`_buffer`. Re-exporting with the current (editable) venv but still via
+`export_quant.sh`'s `ET_VK_FORCE_BUFFER=1` produced byte-for-byte the same
+result -- proving the env var itself does nothing here, not that the venv
+staleness was the (sole) cause. Only exporting via `storage_override:
+buffer` in `config.yaml` produced a PTE where the export log's "Operators
+included in this Vulkan partition" no longer shows the flood of
+`TensorRepr(TEXTURE_3D) -> TensorRepr(BUFFER)` transitions the broken
+exports logged, and the resulting ETDump trace shows
+`linear_q4gsw_coopmat_buffer_texture2d_half` dispatching all 112/112 times,
+every other main-graph op as `_buffer_half`, and total leaf GPU time
+dropping from ~6.5-6.7ms to 3.67ms (prefill tok/s 303-312 -> 553.8).
+
+**Rationale**: `.shared-context/instruction-for-ai/export-pte.md` is
+written from and for the `quant-dev` worktree, which has its own
+env-var-based storage-override wrapper around the partitioner that this
+repo never had (this repo instead kept the original, more direct
+`--vulkan-storage-override` CLI flag / `backend.vulkan.storage_override`
+config field it was presumably forked from, before `quant-dev` added its
+own env-var convenience layer on top). Per constitution Principle X,
+`export-pte.md` was read first, but its literal recipe still produced
+silently-wrong PTEs here -- the lesson isn't "don't read the docs first,"
+it's that a *cross-worktree* doc's example commands can be actively
+misleading in a way `research.md` Decision 2 already flagged for runner
+binaries, and this finding extends that same caution to the *export*
+step, not just the *build/run* step.
+
+**Consequence**: every `4w` PTE this feature was going to reuse "as-is"
+(spec FR-001, this document's own superseded Decision 1) must instead be
+re-exported with the corrected mechanism before any dispatch-confirm or
+e2e capture is trusted -- there is no shortcut where some of the six
+pre-existing `4w` files happen to be fine and others don't; all were
+produced the same (broken) way and must be treated as suspect until
+re-exported and re-verified via ETDump, per model, before use.
+
+**Alternatives considered**: Assuming the stale-venv fix alone would
+resolve it, without also fixing the storage mechanism (rejected --
+directly disproven by the byte-identical re-export result using the fixed
+venv but the old `ET_VK_FORCE_BUFFER` mechanism). Continuing to use
+`export_quant.sh` with a patched env var name (rejected -- simpler and more
+maintainable to use this repo's own already-existing, already-tested
+`--vulkan-storage-override` mechanism directly than to patch a
+cross-worktree script to match this repo's actual code).

@@ -26,16 +26,22 @@ already editable-installed) for `.pte` generation; C++17 (existing
 new code in either language.
 
 **Primary Dependencies**:
-- `.shared-context/scripts/export_quant.sh` -- canonical export script.
-  AOT export is graph/quantization-level, not shader-dependent, so it can
-  run from this repo's own venv (confirmed importable:
-  `executorch.extension.llm.export.export_llm`) rather than requiring the
-  `quant-dev` worktree `export-pte.md`'s examples `cd` into -- the three
-  `4w` **Buffer**-storage `.pte`s already in the shared `.pte_out/` (one
-  per model; matching `Texture3D` exports also exist for the same three
-  models but are not used by this feature) were very likely produced this
-  same way and are reused (spec FR-001); only the three `8da4w` buffer
-  `.pte`s are new exports.
+- **NOT** `.shared-context/scripts/export_quant.sh` as documented in
+  `export-pte.md` -- corrected during US1 implementation (`research.md`
+  Decision 6). That script's `ET_VK_FORCE_BUFFER` env var is a `quant-dev`-
+  only mechanism; it does not exist anywhere in this repo and silently
+  does nothing here. This repo's real mechanism is
+  `backend.vulkan.storage_override: buffer` in `config.yaml` (equivalently
+  `--vulkan-storage-override=buffer`), already implemented in
+  `extension/llm/export/partitioner_lib.py` for `specs/006`. AOT export is
+  graph/quantization-level, not shader-dependent, so it still runs from
+  this repo's own venv -- but that venv also needed a real fix first: it
+  was installed non-editable (a stale 2026-06-30 `site-packages` copy),
+  fixed via `pip install -e . --no-build-isolation`. All three `4w`
+  Buffer-storage `.pte`s and all three `8da4w` Buffer-storage `.pte`s must
+  be (re-)exported fresh with the corrected mechanism -- the pre-existing
+  `_buffer_ctx3072.pte` files (produced with the broken mechanism) are
+  internally `Texture3D` despite their name and are not reused.
 - `cmake-out-android-vk/examples/models/llama/llama_main` -- this repo's
   own already-built Android runner (built during `specs/014`'s session,
   reflecting the current `vulkan_backend` library with the 128x64 tile +
@@ -136,9 +142,12 @@ already-published figures per spec Clarifications, not a pass/fail bar.
 
 **Scale/Scope**: 9 configurations (3 models × `4w`/`8da4w` linear = 6,
 plus 3 models × SDPA-coopmat = 3), backed by 6 distinct PTE files (3
-`4w` Buffer, already exist, shared by both `linear_4w` and `sdpa_coopmat`
-configs; 3 `8da4w` Buffer, new). Each of the 9 configurations needs a
-dispatch-confirmation run and a 3-run e2e prefill/decode capture --
+`4w` Buffer, shared by both `linear_4w` and `sdpa_coopmat` configs; 3
+`8da4w` Buffer) -- **all 6 must be (re-)exported fresh** with the
+corrected `storage_override` mechanism (`research.md` Decision 6); none
+of the pre-existing `_buffer_ctx3072.pte` files are reused as-is. Each of
+the 9 configurations needs a dispatch-confirmation run and a 3-run e2e
+prefill/decode capture --
 sequenced 1B → 3B → 8B per the user's ordering instruction, not grouped by
 scheme/op family.
 
@@ -224,9 +233,11 @@ No new production source files. New data artifacts only:
 .pte_out/
 ├── llama3_2_1b_8da4w_buffer_ctx3072.pte   # new export
 ├── llama3_2_3b_8da4w_buffer_ctx3072.pte   # new export
-└── llama3_1_8b_8da4w_buffer_ctx3072.pte   # new export
-                                            # (4w buffer x3 models: already exist, reused; matching
-                                            #  texture exports also exist but are unused by this feature)
+├── llama3_1_8b_8da4w_buffer_ctx3072.pte   # new export
+├── llama3_2_1b_4w_buffer_ctx3072.pte      # RE-exported (research.md Decision 6 -- pre-existing file was broken)
+├── llama3_2_3b_4w_buffer_ctx3072.pte      # RE-exported (same)
+└── llama3_1_8b_4w_buffer_ctx3072.pte      # RE-exported (same)
+                                            # (matching texture exports also exist but are unused by this feature)
 
 cmake-out-android-vk-etdump/                # new build dir (ETDump-enabled runner), via build_etdump_android.sh
 

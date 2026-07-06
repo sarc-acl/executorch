@@ -10,7 +10,7 @@ One (model, op-family) unit -- 9 total: 3 models × {`4w`, `8da4w`} linear
 | `model` | enum | `llama3_2_1b` / `llama3_2_3b` / `llama3_1_8b` |
 | `op_family` | enum | `linear_4w` / `linear_8da4w` / `sdpa_coopmat` |
 | `pte_path` | string | `.pte_out/<model>_<scheme>_buffer_ctx3072.pte`; for `sdpa_coopmat`, the same buffer PTE as `linear_4w` for that model, run with `ET_VK_SDPA_COOPMAT=1` |
-| `pte_status` | enum | `reused_existing` (the 3 `4w` **Buffer** PTEs, one per model -- pre-existing; matching Texture3D exports also exist but are unused by this feature) / `newly_exported` (the 3 `8da4w` Buffer PTEs) |
+| `pte_status` | enum | `re_exported` (all 3 `4w` **Buffer** PTEs -- the pre-existing files of this name were found internally `Texture3D` per `research.md` Decision 6 and were replaced, not reused) / `newly_exported` (the 3 `8da4w` Buffer PTEs) |
 | `dispatch_status` | enum | `not_yet_run` / `confirmed` (coopmat/WMMA kernel family seen in ETDump) / `fallback` (tiled kernel seen instead) / `failed` (export/run error) |
 | `e2e_result` | record | `{prefill_tok_s_mean, prefill_cov_pct, decode_tok_s_mean, decode_cov_pct, run_count}` (per `research.md` Decision 5, `run_count` is always 3 unless a watchdog/other failure cut the run short -- record however many completed) or `not_yet_run` |
 | `blocked_reason` | string\|null | e.g. "GPU watchdog at 2048-token prefill" -- populated only if `dispatch_status` or `e2e_result` couldn't complete |
@@ -26,15 +26,15 @@ Seeded rows (as of this feature's start):
 
 | model | op_family | pte_status | dispatch_status | e2e_result |
 |---|---|---|---|---|
-| llama3_2_1b | linear_4w | reused_existing | not_yet_run | not_yet_run |
+| llama3_2_1b | linear_4w | re_exported (DONE) | confirmed (DONE) | not_yet_run |
 | llama3_2_1b | linear_8da4w | (needs export) | not_yet_run | not_yet_run |
-| llama3_2_1b | sdpa_coopmat | reused_existing (4w PTE) | not_yet_run | not_yet_run |
-| llama3_2_3b | linear_4w | reused_existing | not_yet_run | not_yet_run |
+| llama3_2_1b | sdpa_coopmat | re_exported (4w PTE, DONE) | not_yet_run | not_yet_run |
+| llama3_2_3b | linear_4w | (needs re-export) | not_yet_run | not_yet_run |
 | llama3_2_3b | linear_8da4w | (needs export) | not_yet_run | not_yet_run |
-| llama3_2_3b | sdpa_coopmat | reused_existing (4w PTE) | not_yet_run | not_yet_run |
-| llama3_1_8b | linear_4w | reused_existing | not_yet_run | not_yet_run |
+| llama3_2_3b | sdpa_coopmat | (needs re-export, 4w PTE) | not_yet_run | not_yet_run |
+| llama3_1_8b | linear_4w | (needs re-export) | not_yet_run | not_yet_run |
 | llama3_1_8b | linear_8da4w | (needs export) | not_yet_run | not_yet_run |
-| llama3_1_8b | sdpa_coopmat | reused_existing (4w PTE) | not_yet_run | not_yet_run |
+| llama3_1_8b | sdpa_coopmat | (needs re-export, 4w PTE) | not_yet_run | not_yet_run |
 
 ## Prior-Finding Reference
 

@@ -186,13 +186,19 @@ the specific prior-finding documents cited.
 
 ### Functional Requirements
 
-- **FR-001**: The system MUST produce `Buffer`-storage `.pte` exports for
-  all three target models at both `4w` and `8da4w`, at the fixed
-  2048-prefill/1024-decode (`_ctx3072`) workload -- reusing the three
-  `4w` **Buffer**-storage exports already present in `.pte_out/` (one per
-  model; `Texture3D` exports also exist for the same three models but are
-  not used by this feature, since coopmat/WMMA dispatch requires `Buffer`
-  storage), and newly exporting `8da4w` (not yet present, three models).
+- **FR-001**: The system MUST produce genuinely `Buffer`-storage `.pte`
+  exports for all three target models at both `4w` and `8da4w`, at the
+  fixed 2048-prefill/1024-decode (`_ctx3072`) workload, using this repo's
+  actual storage-override mechanism (`backend.vulkan.storage_override:
+  buffer`, per `research.md` Decision 6) -- **not** the three pre-existing
+  `4w` files named `_buffer_ctx3072.pte`, which User Story 1's dispatch
+  check found were produced with a non-functional mechanism
+  (`export-pte.md`'s `ET_VK_FORCE_BUFFER`, which does not exist in this
+  repo) and are internally `Texture3D` despite their name. All six
+  Buffer-storage PTEs (three `4w` **re**-exports, three `8da4w` new
+  exports) must be produced fresh with the corrected mechanism, and each
+  verified via its own dispatch-confirm check (FR-002) before use --
+  presence of a correctly-named file is not evidence of correct content.
 - **FR-002**: Before any e2e tok/s number is reported for a configuration,
   a separate ETDump-enabled run MUST confirm the intended kernel family
   (linear coopmat, and SDPA-coopmat where in scope) actually dispatched --
