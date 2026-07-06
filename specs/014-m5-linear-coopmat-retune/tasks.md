@@ -19,13 +19,19 @@ phase.
 **Organization**: Tasks are grouped by user story. Phase 3 (US1) requires
 no device access and was this workstream's first-session deliverable
 (already committed). Phase 4's authoring tasks (T006/T007) are likewise
-hardware-independent and done this session; Phase 4's run task (T009) and
-Phases 5-6 (US2/US3) are blocked on TWO independent prerequisites found
-across these sessions: no Samsung M5 EVT1 device reachable (`adb devices`
-returned empty), and a stale prebuilt `vulkan_backend` library that needs a
-full rebuild before `test_coopmat_linear_bench` can even link (found this
-session, pre-existing and unrelated to this feature's own edits). Both are
-recorded as blocked per spec FR-006, not silently skipped.
+hardware-independent and done this session. **Device access (T008) is now
+confirmed** — a prior session wrongly concluded "no device reachable" from
+running `adb devices` on this workstation directly; the M5 EVT1 is on a
+different host, reachable via `ssh yanwen.xu@sj1-dmckee-d01` (see
+`.shared-context/instruction-for-ai/devices-and-access.md`). Phase 4's run
+task (T009) and Phases 5-6 (US2/US3) remain blocked on TWO other
+prerequisites found across these sessions: (1) the driver currently on the
+M5 EVT1 doesn't match any known-good/known-bad hash on record — unverified,
+per constitution Principle VIII, no measurement should run until this is
+resolved; (2) a stale prebuilt `vulkan_backend` library that needs a full
+rebuild before `test_coopmat_linear_bench` can even link (pre-existing,
+unrelated to this feature's own edits). All are recorded as blocked per
+spec FR-006, not silently skipped.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -80,13 +86,14 @@ recorded as blocked per spec FR-006, not silently skipped.
 
 **Independent Test**: Build `test_coopmat_linear_bench.cpp` with the new cases added; the harness compiles and its correctness-only cases (`COOPMAT_BENCH_CORRECTNESS_ONLY=1`) run and report pass/fail for the new K=2048/4096 shapes, independent of whether any of US2/US3's shader changes have been evaluated yet.
 
-**Status**: T006/T007 (authoring) done this session. T009 additionally blocked
-on a newly-discovered prerequisite beyond device access — see below.
+**Status**: T006/T007 (authoring) done this session. T008 is half-done
+(device access confirmed, driver identity NOT confirmed). T009 blocked on
+two remaining prerequisites — see below.
 
 - [X] T006 [P] Author new `kCorrectnessShapes` entries in `backends/vulkan/test/custom_ops/test_coopmat_linear_bench.cpp` at production K (2048 and 4096 at minimum), coopmat-eligible (`M%64==0`, `N%64==0`, `K%32==0`), reusing the existing `make_deterministic_correctness_case` well-conditioned positive-data generation and `abs=0.5`/`rel=0.05` tolerance unchanged (data-model.md's Correctness Harness Extension entity; no device access required to author this) — done: added `{128, 2048, 128, 128, ""}` and `{128, 4096, 128, 128, ""}` (group_size=128, matching the real per-model group size used elsewhere in this file's `kGroup`)
 - [X] T007 [P] Author a matching new `kRank3CorrectnessShapes` entry at one of T006's production-K shapes (batch=1), same data/tolerance strategy, consistent with the existing rank-3 coverage added for specs `009` (no device access required to author this) — done: added `{128, 4096, 128, 128, "", batch=1}` (the larger/higher-risk of the two new K values)
-- [ ] T008 Obtain M5 EVT1 device access per `.shared-context/instruction-for-ai/devices-and-access.md`; re-verify driver identity per constitution Principle VIII (depends on: none — can run before or in parallel with T006/T007)
-- [ ] T009 Build `test_coopmat_linear_bench` with T006/T007's new cases and run it with `COOPMAT_BENCH_CORRECTNESS_ONLY=1` on M5 EVT1 against the **pre-change** (`HEAD`-only, per `research.md` Decision 1) shader; confirm the new production-K cases compile, dispatch the coopmat kernel, and pass — this validates the harness extension itself, independent of any of this feature's three shader changes (depends on T006, T007, T008). **New blocker found this session, verified on the local Android cross-build (`cmake-out-android-vk`)**: `test_coopmat_linear_bench.cpp` itself compiles cleanly (confirmed — the `.cpp.o` builds with zero errors, with and without T006/T007's new cases), but linking fails with `undefined symbol: add_matmul_coopmat_node(...)` from `TestMatmulLinear.cpp` — pre-existing (reproduces identically at `HEAD`, unrelated to this session's edits) and caused by `find_package(executorch CONFIG REQUIRED COMPONENTS vulkan_backend)` pulling in a **prebuilt, stale `vulkan_backend` library** that predates `GemmCoopmat.cpp`'s `add_matmul_coopmat_node` being restored to the source tree (commit `b19116260`). Fixing this needs a full Android Vulkan backend rebuild (out of scope for this feature — a `/building`-skill-level prerequisite, not a spec-014 shader/test-code issue) *before* T009 can even attempt to run, independent of and in addition to T008's device-access blocker.
+- [ ] T008 Obtain M5 EVT1 device access per `.shared-context/instruction-for-ai/devices-and-access.md`; re-verify driver identity per constitution Principle VIII (depends on: none — can run before or in parallel with T006/T007) — **device-access half corrected and DONE**: an earlier session wrongly concluded "no device reachable" from running `adb devices` on this workstation (`sj1-yanwen-d01`) directly; the M5 EVT1 is attached to a *different* host and is reachable via `ssh yanwen.xu@sj1-dmckee-d01` then `adb -s 0000088f8e579c33` (confirmed: `getprop ro.soc.model` -> `s5e9975`, matches ERD9975). **Driver-identity half NOT done — task remains open**: `/vendor/lib64/hw/vulkan.samsung.so` is 47,671,472 B, md5 `993d49a9135e7c2dba74b2820da87ed1`, dated 2026-06-22 -- this matches NONE of the four documented builds in `.shared-context/instruction-for-ai/flash-sumd-driver.md` (`be1273bcbb` 45,925,296 B BAD; `c0d117aaf2` 46,081,392 B known-good; `f14c51b6f8` 47,660,248 B known-good/current-default; factory 47,050,904 B) -- a fifth, undocumented build. The `logcat | grep SUMD` banner (the actual driver-identity string) isn't in the current log buffer -- it's only emitted when a Vulkan app initializes the driver, and none has run recently on this device. **Do not trust this device's driver identity, and do not run any coopmat measurement on it, until this is resolved** (identify the build, or flash a known-good one per `flash-sumd-driver.md`) — per constitution Principle VIII and the Q9 precedent (a bad driver silently miscompiled coopmat with no crash).
+- [ ] T009 Build `test_coopmat_linear_bench` with T006/T007's new cases and run it with `COOPMAT_BENCH_CORRECTNESS_ONLY=1` on M5 EVT1 against the **pre-change** (`HEAD`-only, per `research.md` Decision 1) shader; confirm the new production-K cases compile, dispatch the coopmat kernel, and pass — this validates the harness extension itself, independent of any of this feature's three shader changes (depends on T006, T007, T008). Blocked on TWO things found this session: (1) T008's open driver-identity item above -- no coopmat run should happen until resolved; (2) verified on the local Android cross-build (`cmake-out-android-vk`): `test_coopmat_linear_bench.cpp` itself compiles cleanly (confirmed — the `.cpp.o` builds with zero errors, with and without T006/T007's new cases), but linking fails with `undefined symbol: add_matmul_coopmat_node(...)` from `TestMatmulLinear.cpp` — pre-existing (reproduces identically at `HEAD`, unrelated to this session's edits) and caused by `find_package(executorch CONFIG REQUIRED COMPONENTS vulkan_backend)` pulling in a **prebuilt, stale `vulkan_backend` library** that predates `GemmCoopmat.cpp`'s `add_matmul_coopmat_node` being restored to the source tree (commit `b19116260`). Fixing this needs a full Android Vulkan backend rebuild (out of scope for this feature — a `/building`-skill-level prerequisite, not a spec-014 shader/test-code issue).
 
 **Checkpoint**: Phase 4 complete when the harness reports pass/fail for production-K shapes against a known-good (pre-change) shader — only then can US2/US3 below produce a correctness verdict that actually means what FR-003/FR-004 require
 
@@ -98,7 +105,7 @@ on a newly-discovered prerequisite beyond device access — see below.
 
 **Independent Test**: Build the post-change shader, pass the extended (Phase 4) INT4 coopmat correctness check at production shapes, and produce a kernel-dispatch-confirmed tier-1 timing compared against a fresh pre-change M5 EVT1 baseline.
 
-**Status: BLOCKED** — (1) no M5 EVT1 device reachable as of the last session (`adb devices` returned an empty list), and (2) Phase 4 (T009) is itself blocked on a stale prebuilt `vulkan_backend` library needing a full rebuild (found this session). Recorded per spec FR-006 rather than skipped silently.
+**Status: BLOCKED** — device access itself is resolved (see T008), but Phase 4 (T009) is blocked on (1) the M5 EVT1's driver identity being unconfirmed against any known-good build, and (2) a stale prebuilt `vulkan_backend` library needing a full rebuild. Recorded per spec FR-006 rather than skipped silently.
 
 - [ ] T010 [US2] Build and run the pre-change (`HEAD`-only) `linear_qw_coopmat.glsl` tier-1 coopmat microbench on M5 EVT1 per `quickstart.md` step 1; record as the baseline in `results/us2-loop-vectorized-dequant-validation.md` (depends on T008)
 - [ ] T011 [US2] Run the Phase-4-extended INT4 coopmat correctness check against the post-change shader at production K=2048/4096 (depends on Phase 4 (T009))
@@ -151,9 +158,12 @@ on a newly-discovered prerequisite beyond device access — see below.
 **MVP = User Story 1 only** (T001-T005): commits the existing work with
 accurate attribution and status. This was achievable with zero device
 access and is already done. **Phase 4's authoring half (T006-T007)** is
-also done — also achievable with zero device access. **Next up: two
-independent unblocks**, neither of which needs the other done first —
-(a) a full Android Vulkan backend rebuild to fix the stale-library link
-failure found this session (T009's other prerequisite), and (b) M5 EVT1
-device access (T008). Once both land, T009 closes Phase 4, and Phases 5/6
-(US2, US3) remain independently completable and independently disposed of.
+also done. **M5 EVT1 device access (T008's first half) is now confirmed**
+(via `ssh sj1-dmckee-d01`, not local `adb`). **Next up: two independent
+unblocks**, neither needs the other done first — (a) identify or replace
+the M5 EVT1's currently-unrecognized driver build (T008's still-open half —
+no coopmat measurement is safe until this resolves, per constitution
+Principle VIII), and (b) a full Android Vulkan backend rebuild to fix the
+stale-library link failure found this session (T009's other prerequisite).
+Once both land, T009 closes Phase 4, and Phases 5/6 (US2, US3) remain
+independently completable and independently disposed of.
