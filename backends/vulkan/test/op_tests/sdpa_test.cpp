@@ -21,6 +21,7 @@
 #include "test_utils.h"
 
 #include <cassert>
+#include <cstdlib>
 #include <iostream>
 
 //
@@ -292,7 +293,13 @@ void test_vulkan_sdpa(
     const int batch_size,
     vkcompute::utils::StorageType storage_type,
     at::ScalarType dtype = at::kFloat,
-    SDPAMode mode = SDPAMode::DECOMPOSED) {
+    SDPAMode mode = SDPAMode::DECOMPOSED,
+    // specs/010-sdpa-coopmat-microbench: when non-null, enables the graph's
+    // GPU query-pool and appends every dispatched kernel's name (one per
+    // sequence_lens step) here, so a caller can confirm which shader
+    // actually ran (e.g. `_coopmat` vs. tiled) instead of assuming it from
+    // the ET_VK_SDPA_COOPMAT toggle alone (constitution Principle VI).
+    std::vector<std::string>* out_dispatched_kernels = nullptr) {
   // compute the max sequence length
   int max_seq_len = start_input_pos;
   for (int i = 0; i < sequence_lens.size(); ++i) {
@@ -328,6 +335,10 @@ void test_vulkan_sdpa(
   using namespace vkcompute;
 
   GraphConfig config;
+  if (out_dispatched_kernels) {
+    config.enable_querypool = true;
+    api::context()->initialize_querypool();
+  }
   ComputeGraph graph(config);
 
   // "Data" variant for vulkan initialization
@@ -492,6 +503,14 @@ void test_vulkan_sdpa(
 
     graph.execute();
 
+    if (out_dispatched_kernels) {
+      graph.context()->querypool().extract_results();
+      for (const auto& shader_result :
+           graph.context()->querypool().get_shader_timestamp_data()) {
+        out_dispatched_kernels->push_back(shader_result.kernel_name);
+      }
+    }
+
     if (mode == SDPAMode::ATTN_WEIGHT_ONLY) {
       const int context_len = input_pos + seq_len;
       const int context_len_align_up4 = (context_len + 3) & ~3;
@@ -516,7 +535,15 @@ void test_vulkan_sdpa(
            at::indexing::Slice(0, context_len)});
     }
 
-    const bool output_correct = at::allclose(reference_out, vk_out);
+    // fp16 needs a looser tolerance than at::allclose's fp64-oriented
+    // defaults (rtol=1e-5, atol=1e-8) -- this helper was previously only
+    // ever exercised at at::kFloat (see test_vulkan_general_sdpa's identical
+    // dtype-keyed tolerance a few hundred lines below, already precedented
+    // for the FUSED-mode SDPA path; this is the first fp16 use of this
+    // particular helper, for specs/010-sdpa-coopmat-microbench).
+    const double atol = dtype == at::kHalf ? 1e-2 : 1e-4;
+    const double rtol = dtype == at::kHalf ? 1e-2 : 1e-5;
+    const bool output_correct = at::allclose(reference_out, vk_out, rtol, atol);
     if (!output_correct) {
       // Print only differing tensor elements side by side for easier comparison
       auto ref_flat = reference_out.flatten();
@@ -878,4 +905,86 @@ TEST(VulkanSDPATest, test_sdpa_op_llama3_params_dynamic) {
 
   test_vulkan_sdpa(
       0, {111, 1, 1, 1, 57, 1, 1}, head_dim, num_heads, num_kv_heads, 1);
+}
+
+// specs/010-sdpa-coopmat-microbench: none of the cases above are tile-aligned
+// to the SDPA coopmat gate (kSdpaCmQkTileM=128, kSdpaCmTileM/N=64,
+// kSdpaCmTileK=32 in SDPA.cpp) -- S=128, context_len=128, head_dim=64 (all
+// multiples of every required tile dim) is genuinely new coverage, run at
+// Buffer+half storage (the coopmat gate's hard precondition), DECOMPOSED
+// mode (SDPAMode::LLM, the mode the coopmat gate actually applies to).
+
+TEST(VulkanSDPATest, test_sdpa_op_coopmat_aligned_tiled_baseline) {
+  const int head_dim = 64;
+  const int num_heads = 8;
+  const int num_kv_heads = 8;
+
+  unsetenv("ET_VK_SDPA_COOPMAT");
+  std::vector<std::string> dispatched_kernels;
+  test_vulkan_sdpa(
+      /*start_input_pos=*/0,
+      /*sequence_lens=*/{128},
+      head_dim,
+      num_heads,
+      num_kv_heads,
+      /*batch_size=*/1,
+      vkcompute::utils::kBuffer,
+      at::kHalf,
+      SDPAMode::DECOMPOSED,
+      &dispatched_kernels);
+
+  // Safety property: with the toggle unset, no coopmat kernel should have
+  // dispatched -- this isolates the new tile-aligned shape itself (is it
+  // otherwise handled correctly by the existing tiled path?) from anything
+  // coopmat-specific, matching research.md Decision 2's two-run structure.
+  bool any_coopmat = false;
+  for (const auto& kernel_name : dispatched_kernels) {
+    if (kernel_name.find("_coopmat") != std::string::npos) {
+      any_coopmat = true;
+    }
+  }
+  ASSERT_FALSE(any_coopmat)
+      << "expected no coopmat dispatch with ET_VK_SDPA_COOPMAT unset";
+}
+
+TEST(VulkanSDPATest, test_sdpa_op_coopmat_aligned_coopmat) {
+  const int head_dim = 64;
+  const int num_heads = 8;
+  const int num_kv_heads = 8;
+
+  setenv("ET_VK_SDPA_COOPMAT", "1", /*overwrite=*/1);
+  std::vector<std::string> dispatched_kernels;
+  test_vulkan_sdpa(
+      /*start_input_pos=*/0,
+      /*sequence_lens=*/{128},
+      head_dim,
+      num_heads,
+      num_kv_heads,
+      /*batch_size=*/1,
+      vkcompute::utils::kBuffer,
+      at::kHalf,
+      SDPAMode::DECOMPOSED,
+      &dispatched_kernels);
+  unsetenv("ET_VK_SDPA_COOPMAT"); // restore default state for later tests
+
+  // test_vulkan_sdpa's own internal ASSERT_TRUE(output_correct) (against the
+  // ATen ground truth) already ran above -- this is genuinely new
+  // correctness coverage for this shape (FR-001). The dispatch check below
+  // is what proves that assertion actually exercised the coopmat kernels,
+  // not a silent tiled fallback (FR-003, constitution Principle VI).
+  bool qk_coopmat_dispatched = false;
+  bool av_coopmat_dispatched = false;
+  for (const auto& kernel_name : dispatched_kernels) {
+    if (kernel_name.find("sdpa_compute_attn_weights_coopmat") !=
+        std::string::npos) {
+      qk_coopmat_dispatched = true;
+    }
+    if (kernel_name.find("sdpa_compute_out_coopmat") != std::string::npos) {
+      av_coopmat_dispatched = true;
+    }
+  }
+  ASSERT_TRUE(qk_coopmat_dispatched)
+      << "expected sdpa_compute_attn_weights_coopmat to dispatch";
+  ASSERT_TRUE(av_coopmat_dispatched)
+      << "expected sdpa_compute_out_coopmat to dispatch";
 }

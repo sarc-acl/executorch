@@ -1,0 +1,33 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# KHR Cooperative Matrix SDPA attn*V kernel (prefill / LLM). Buffer-only, fp16.
+# Variant name matches the dispatch: sdpa_compute_out_coopmat_buffer_buffer_half.
+
+sdpa_compute_out_coopmat:
+  parameter_names_with_default_values:
+    DTYPE: half
+    PRECISION: highp
+    IO_STORAGE: buffer
+    V_CACHE_STORAGE: buffer
+    MMA_M: 16
+    MMA_N: 16
+    MMA_K: 16
+    WG_TILE_M: 64
+    WG_TILE_N: 64
+    WG_TILE_K: 32
+    SG_GRID_X: 2
+    SG_GRID_Y: 2
+    SUBGROUP_SIZE: 64
+  generate_variant_forall:
+    combination:
+      parameter_names: [IO_STORAGE, V_CACHE_STORAGE]
+      combos:
+        - parameter_values: [buffer, buffer]
+    DTYPE:
+      - VALUE: half
+  shader_variants:
+    - NAME: sdpa_compute_out_coopmat

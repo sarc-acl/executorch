@@ -22,6 +22,9 @@ namespace vkcompute {
 //   "default"  use the registered aten.{mm,bmm,addmm,linear}.default op
 //              (the same routing production code goes through)
 //   "coopmat"  force the cooperative-matrix path
+//   "coopmat:tMxNxK"  force the coopmat path with a specific tile-geometry
+//              variant (matmul only; the tile-sweep microbenchmark uses this,
+//              e.g. "coopmat:t128x64x32")
 //   "tiled"    force the tiled path (linear_vec / matmul_vec)
 
 void test_mm(ComputeGraph& graph, const std::vector<ValueRef>& args) {
@@ -32,8 +35,15 @@ void test_mm(ComputeGraph& graph, const std::vector<ValueRef>& args) {
 
   std::string impl_selector = graph.extract_string(impl_selector_str);
 
-  if (impl_selector == "coopmat") {
+  // "coopmat" or "coopmat:<tile>" (tile geometry applies to the matmul path).
+  if (impl_selector == "coopmat" || impl_selector.rfind("coopmat:", 0) == 0) {
+    std::string tile_variant;
+    const auto colon = impl_selector.find(':');
+    if (colon != std::string::npos) {
+      tile_variant = impl_selector.substr(colon + 1);
+    }
     if (graph.val_is_tref(mat2)) {
+      // The linear/prepacked path has no tile-sweep variants; ignore any tile.
       auto mat2_sizes = graph.sizes_of(mat2);
       int64_t B = mat2_sizes.size() >= 3 ? mat2_sizes.at(0) : 1;
       ValueRef packed = prepack_fp_linear_weight(
@@ -47,7 +57,7 @@ void test_mm(ComputeGraph& graph, const std::vector<ValueRef>& args) {
           out,
           utils::safe_downcast<int32_t>(B));
     } else {
-      add_matmul_coopmat_node(graph, mat1, mat2, out);
+      add_matmul_coopmat_node(graph, mat1, mat2, out, tile_variant);
     }
     return;
   }

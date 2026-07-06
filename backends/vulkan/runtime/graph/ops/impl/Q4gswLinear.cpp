@@ -676,7 +676,11 @@ void q4gsw_linear(ComputeGraph& graph, const std::vector<ValueRef>& args) {
 
 REGISTER_OPERATORS {
   VK_REGISTER_OP(et_vk.q4gsw_linear.default, q4gsw_linear);
-  VK_REGISTER_OP(et_vk.linear_q4gsw.default, q4gsw_linear);
+  // et_vk.linear_q4gsw.default (the name the real 4w export path and every
+  // benchmark harness actually use) is now registered in QuantizedLinear.cpp
+  // instead -- this file's q4gsw_linear() has no coopmat awareness, which
+  // made the q4gsw coopmat shader unreachable dead code. See
+  // QuantizedLinear.cpp's linear_q4gsw() for the replacement.
 }
 
 } // namespace vkcompute

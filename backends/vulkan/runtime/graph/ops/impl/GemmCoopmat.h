@@ -61,10 +61,16 @@ void add_linear_coopmat_node(
     const ValueRef out,
     int32_t weight_B = 1);
 
+// tile_variant selects a coopmat_mm.yaml tile geometry. The empty default uses
+// the baseline "matmul_coopmat" (64x64x32); the tile-sweep microbenchmark
+// passes e.g. "t128x64x32" to dispatch "matmul_coopmat_t128x64x32" with the
+// matching per-variant workgroup size (see coopmat_tile_dims() in
+// GemmCoopmat.cpp).
 void add_matmul_coopmat_node(
     ComputeGraph& graph,
     const ValueRef mat1,
     const ValueRef mat2,
-    const ValueRef out);
+    const ValueRef out,
+    const std::string& tile_variant = "");
 
 } // namespace vkcompute

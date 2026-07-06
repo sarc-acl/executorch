@@ -33,6 +33,13 @@ struct LinearConfig {
   int64_t N;
   int64_t group_size; // only meaningful for 4-bit
   std::string op_name;
+  // 0 = rank-2 input/output ({M,K}/{M,N}, every pre-existing config below).
+  // >=1 = rank-3 ({batch,M,K}/{batch,M,N}) -- used to cover the real
+  // exported model's rank-3, batch=1 activations (specs/003, never
+  // squeezed), which can_use_q4gsw_coopmat() only started admitting to the
+  // coopmat path after specs/009's guard relaxation (research.md Decision
+  // 1/2). See kRank3CorrectnessShapes below.
+  int64_t batch = 0;
 };
 
 static bool is_dq8ca(const std::string& op) {
@@ -50,11 +57,16 @@ static TestCase make_case(const LinearConfig& cfg, utils::StorageType storage) {
       (storage == utils::kTexture3D) ? "Texture3D" : "Buffer";
   tc.set_name(
       cfg.op_name + "_M" + std::to_string(cfg.M) + "_K" +
-      std::to_string(cfg.K) + "_N" + std::to_string(cfg.N) + "_" + storage_str);
+      std::to_string(cfg.K) + "_N" + std::to_string(cfg.N) +
+      (cfg.batch > 0 ? "_rank3batch" + std::to_string(cfg.batch) : "") + "_" +
+      storage_str);
   tc.set_operator_name("et_vk." + cfg.op_name + ".default");
 
+  const std::vector<int64_t> input_sizes = cfg.batch > 0
+      ? std::vector<int64_t>{cfg.batch, cfg.M, cfg.K}
+      : std::vector<int64_t>{cfg.M, cfg.K};
   ValueSpec input(
-      {cfg.M, cfg.K}, dt, storage, utils::kWidthPacked, DataGenType::RANDINT);
+      input_sizes, dt, storage, utils::kWidthPacked, DataGenType::RANDINT);
 
   // dynamic per-row activation scale/zp (dq8ca only)
   ValueSpec input_scale(
@@ -113,8 +125,11 @@ static TestCase make_case(const LinearConfig& cfg, utils::StorageType storage) {
   bias.set_constant(true);
   bias.set_none(true);
 
+  const std::vector<int64_t> output_sizes = cfg.batch > 0
+      ? std::vector<int64_t>{cfg.batch, cfg.M, cfg.N}
+      : std::vector<int64_t>{cfg.M, cfg.N};
   ValueSpec output(
-      {cfg.M, cfg.N}, dt, storage, utils::kWidthPacked, DataGenType::ZEROS);
+      output_sizes, dt, storage, utils::kWidthPacked, DataGenType::ZEROS);
 
   // assemble per op signature
   if (cfg.op_name == "linear_q4gsw") {
@@ -160,9 +175,12 @@ static void bench_reference(TestCase& tc) {
   const bool four = op.find("q4gsw") != std::string::npos;
   const ValueSpec& in = tc.inputs()[0];
   ValueSpec& out = tc.outputs()[0];
+  // Rank-agnostic: reads the trailing two dims, so a rank-3 [batch, M, K]
+  // input (batch=1, specs/009) is handled identically to plain [M, K] --
+  // the reference matmul below only ever needs (M, K, N), never the batch.
   const auto is = in.get_tensor_sizes();
-  const int64_t M = is[0], K = is[1];
-  const int64_t N = out.get_tensor_sizes()[1];
+  const int64_t M = is[is.size() - 2], K = is[is.size() - 1];
+  const int64_t N = out.get_tensor_sizes().back();
   if (M > 256 || K > 256 || N > 256) {
     throw std::invalid_argument("ref: too big");
   }
@@ -234,6 +252,57 @@ static const std::vector<std::string> kOps = {
 static constexpr int64_t kM = 1024;
 static constexpr int64_t kGroup = 128;
 
+// Builds one deterministic, well-conditioned correctness case (POSITIVE
+// data, no fp16 cancellation -- see the comment block above
+// kCorrectnessShapes) for the given op/shape/storage. Factored out of the
+// kCorrectnessShapes loop so kRank3CorrectnessShapes (below) can reuse the
+// exact same data-generation recipe instead of duplicating it.
+static TestCase make_deterministic_correctness_case(
+    const LinearConfig& cfg,
+    const std::string& op,
+    utils::StorageType st) {
+  const bool dq = is_dq8ca(op);
+  const bool four = is_4bit(op);
+  TestCase t = make_case(cfg, st);
+  auto& hin = t.inputs()[0].get_half_data();
+  for (size_t i = 0; i < hin.size(); ++i) {
+    hin[i] = float_to_half(0.5f + 0.125f * float(i % 8));
+  }
+  const size_t w_idx = dq ? 3 : 1;
+  if (four) {
+    auto& wq = t.inputs()[w_idx].get_uint8_data();
+    const uint8_t kPos[6] = {0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE};
+    for (size_t i = 0; i < wq.size(); ++i) {
+      wq[i] = kPos[i % 6];
+    }
+  } else {
+    auto& wq = t.inputs()[w_idx].get_int8_data();
+    for (size_t i = 0; i < wq.size(); ++i) {
+      wq[i] = int8_t(1 + (i % 6));
+    }
+  }
+  if (dq) {
+    auto& hs = t.inputs()[1].get_half_data();
+    std::fill(hs.begin(), hs.end(), float_to_half(0.0625f));
+    auto& zp = t.inputs()[2].get_int8_data();
+    std::fill(zp.begin(), zp.end(), int8_t(0));
+    // weights were overwritten above -> recompute the sums
+    if (four) {
+      compute_weight_sums_4bit_grouped(
+          t.inputs()[4],
+          t.inputs()[w_idx],
+          cfg.K / cfg.group_size,
+          cfg.N,
+          cfg.group_size);
+    } else {
+      compute_weight_sums(t.inputs()[4], t.inputs()[w_idx], cfg.N, cfg.K);
+    }
+  }
+  t.set_abs_tolerance(0.5f);
+  t.set_rel_tolerance(0.05f);
+  return t;
+}
+
 // Generation order: for each op, for each shape -> {Texture3D, Buffer}.
 // Summary pairs results [2i]=tiled, [2i+1]=coopmat.
 std::vector<TestCase> generate_cases() {
@@ -279,48 +348,31 @@ std::vector<TestCase> generate_cases() {
   for (const auto& op : kOps) {
     for (const auto& shape : kCorrectnessShapes) {
       LinearConfig cfg{shape.M, shape.K, shape.N, shape.group_size, op};
-      const bool dq = is_dq8ca(op);
-      const bool four = is_4bit(op);
       for (auto st : {utils::kTexture3D, utils::kBuffer}) {
-        TestCase t = make_case(cfg, st);
-        auto& hin = t.inputs()[0].get_half_data();
-        for (size_t i = 0; i < hin.size(); ++i) {
-          hin[i] = float_to_half(0.5f + 0.125f * float(i % 8));
-        }
-        const size_t w_idx = dq ? 3 : 1;
-        if (four) {
-          auto& wq = t.inputs()[w_idx].get_uint8_data();
-          const uint8_t kPos[6] = {0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE};
-          for (size_t i = 0; i < wq.size(); ++i) {
-            wq[i] = kPos[i % 6];
-          }
-        } else {
-          auto& wq = t.inputs()[w_idx].get_int8_data();
-          for (size_t i = 0; i < wq.size(); ++i) {
-            wq[i] = int8_t(1 + (i % 6));
-          }
-        }
-        if (dq) {
-          auto& hs = t.inputs()[1].get_half_data();
-          std::fill(hs.begin(), hs.end(), float_to_half(0.0625f));
-          auto& zp = t.inputs()[2].get_int8_data();
-          std::fill(zp.begin(), zp.end(), int8_t(0));
-          // weights were overwritten above -> recompute the sums
-          if (four) {
-            compute_weight_sums_4bit_grouped(
-                t.inputs()[4],
-                t.inputs()[w_idx],
-                cfg.K / cfg.group_size,
-                cfg.N,
-                cfg.group_size);
-          } else {
-            compute_weight_sums(t.inputs()[4], t.inputs()[w_idx], cfg.N, cfg.K);
-          }
-        }
-        t.set_abs_tolerance(0.5f);
-        t.set_rel_tolerance(0.05f);
-        cases.push_back(t);
+        cases.push_back(make_deterministic_correctness_case(cfg, op, st));
       }
+    }
+  }
+  // Rank-3, batch=1 correctness cases (specs/009-e2e-tokrate-report,
+  // research.md Decision 2): the real exported model's linear activations
+  // are rank-3 [1, M, K] (batch dim always 1, never squeezed --
+  // specs/003-wmma-shader-candidates/research.md). No pre-existing test
+  // here (or anywhere in this test directory) exercised that shape through
+  // either coopmat kernel before specs/009's guard relaxation made it
+  // reachable -- this is genuinely new coverage, not a citation of the
+  // rank-2 cases above. Reuses one of kCorrectnessShapes' own
+  // already-validated (shape, group_size) pairs, at Buffer storage only
+  // (the storage the coopmat path actually requires); Texture3D+rank-3
+  // continues to exercise the pre-existing tiled path, unaffected by this
+  // change, so is not repeated here.
+  static const std::vector<LinearConfig> kRank3CorrectnessShapes = {
+      {128, 128, 128, 64, "", /*batch=*/1}};
+  for (const auto& op : kOps) {
+    for (const auto& shape : kRank3CorrectnessShapes) {
+      LinearConfig cfg{
+          shape.M, shape.K, shape.N, shape.group_size, op, shape.batch};
+      cases.push_back(
+          make_deterministic_correctness_case(cfg, op, utils::kBuffer));
     }
   }
   return cases;
@@ -329,7 +381,7 @@ std::vector<TestCase> generate_cases() {
 int64_t flop_calc(const TestCase& tc) {
   const auto& in = tc.inputs()[0].get_tensor_sizes();
   const auto& out = tc.outputs()[0].get_tensor_sizes();
-  const int64_t M = in[0], K = in[1], N = out[1];
+  const int64_t M = in[in.size() - 2], K = in[in.size() - 1], N = out.back();
   return 2 * M * N * K; // MAC = 2 flops
 }
 
@@ -352,6 +404,43 @@ int main() {
       /*warmup=*/3,
       /*runs=*/5,
       /*reference=*/bench_reference);
+
+  // Rank-3, batch=1 dispatch + correctness verdict (specs/009, FR-003 /
+  // research.md Decision 1/2): numeric PASS alone doesn't prove the coopmat
+  // path actually ran -- the tiled fallback would numerically pass too.
+  // Explicitly confirm the dispatched kernel name contains "coopmat".
+  bool rank3_all_ok = true;
+  for (const auto& r : results) {
+    if (r.get_kernel_name().find("_rank3batch") == std::string::npos) {
+      continue;
+    }
+    std::string shader_name = r.get_kernel_name();
+    for (const auto& st : r.get_shader_timings()) {
+      if (st.shader_name.find("linear_") != std::string::npos) {
+        shader_name = st.shader_name;
+      }
+    }
+    const bool fired = shader_name.find("coopmat") != std::string::npos;
+    const bool ok =
+        fired && r.get_correctness_status() == CorrectnessStatus::PASSED;
+    rank3_all_ok = rank3_all_ok && ok;
+    std::cout << "[rank3 batch=1] " << r.get_kernel_name() << " -> "
+              << shader_name
+              << (fired ? " (coopmat dispatched)"
+                        : " (NOT coopmat -- fallback)")
+              << ", correctness="
+              << (r.get_correctness_status() == CorrectnessStatus::PASSED
+                      ? "PASSED"
+                      : (r.get_correctness_status() == CorrectnessStatus::FAILED
+                             ? "FAILED"
+                             : "SKIPPED"))
+              << "\n";
+  }
+  if (!rank3_all_ok) {
+    std::cout << "[rank3 batch=1] FAILED -- at least one rank-3 case did not "
+                 "dispatch coopmat and/or failed correctness\n";
+    return 1;
+  }
 
   // Summary table: pair tiled (even idx) vs coopmat (odd idx) per (op, shape).
   // GFLOP/s computed from avg GPU time and 2*M*N*K flops.

@@ -189,9 +189,24 @@ static bool can_use_q4gsw_coopmat(
   if (adapter->subgroup_size() != 64) {
     return false;
   }
-  // Coopmat shaders dispatch over gl_WorkGroupID.xy only; batched (rank > 2)
-  // outputs would silently miscompute all slices beyond the first.
-  if (graph->dim_of(output) > 2) {
+  // Coopmat shaders dispatch over gl_WorkGroupID.xy only, sized purely from
+  // the output's trailing two dims (see quantized_linear_global_wg_size);
+  // neither that sizing nor the shaders themselves (linear_qw_coopmat.glsl /
+  // linear_dq8ca_qw_coopmat.glsl) ever read a leading dim. A genuine batch
+  // (any leading-dim product != 1) would silently miscompute all slices
+  // beyond the first, since there is no per-batch dispatch loop -- but a
+  // size-1 leading dim (the real exported model's rank-3 [1, M, K]
+  // activations, per specs/003-wmma-shader-candidates/research.md, never
+  // squeezed) is safe: a contiguous Buffer's [1, M, N] layout is
+  // bit-identical to [M, N] when the leading dim is 1, so the existing 2D
+  // dispatch grid already covers 100% of the data. Reject only a real batch
+  // (specs/009-e2e-tokrate-report/research.md, Decision 1).
+  const std::vector<int64_t> out_sizes = graph->sizes_of(output);
+  int64_t leading_dims_numel = 1;
+  for (int64_t d = 0; d < graph->dim_of(output) - 2; d++) {
+    leading_dims_numel *= utils::val_at(d, out_sizes);
+  }
+  if (leading_dims_numel != 1) {
     return false;
   }
   if (graph->storage_type_of(output) != utils::kBuffer) {
@@ -201,7 +216,6 @@ static bool can_use_q4gsw_coopmat(
     return false;
   }
 
-  const std::vector<int64_t> out_sizes = graph->sizes_of(output);
   const int64_t N = utils::val_at(-1, out_sizes);
   const int64_t M = utils::val_at(-2, out_sizes);
   const std::vector<int64_t> in_sizes = graph->sizes_of(fp_input);
@@ -969,10 +983,51 @@ void linear_dq8ca_q4gsw(
       output);
 }
 
+// Weight-only (no dynamic activation quant) int4 group-symmetric linear.
+// Routes through quantized_linear_impl -> add_linear_qw_node, which is what
+// actually gates and dispatches the q4gsw coopmat shader
+// (can_use_q4gsw_coopmat); previously et_vk.linear_q4gsw.default was
+// registered to Q4gswLinear.cpp's q4gsw_linear(), an older, separate
+// implementation with no coopmat awareness at all, making the q4gsw coopmat
+// shader dead code from every real entry point despite compiling correctly
+// and passing its own isolated correctness test (found via kernel-name
+// dispatch verification while running specs/007-wmma-improvement-microbench,
+// not assumed from reading can_use_q4gsw_coopmat's eligibility logic alone).
+void linear_q4gsw(ComputeGraph& graph, const std::vector<ValueRef>& args) {
+  int32_t idx = 0;
+  const ValueRef fp_input = args.at(idx++);
+  const ValueRef weight_data = args.at(idx++);
+  const ValueRef weight_scales_data = args.at(idx++);
+  const ValueRef group_size = args.at(idx++);
+  const ValueRef bias_data = args.at(idx++);
+  const ValueRef output = args.at(idx++);
+
+  const int64_t group_size_val = graph.extract_scalar<int64_t>(group_size);
+
+  QuantizationConfig input_quant_config(32, kNoQuantization, {});
+  QuantizationConfig weight_quant_config(4, kPerGroup, {group_size_val});
+
+  quantized_linear_impl(
+      graph,
+      input_quant_config,
+      weight_quant_config,
+      fp_input,
+      kDummyValueRef, // input scale
+      kDummyValueRef, // input zp
+      weight_data,
+      kDummyValueRef, // weight sums
+      weight_scales_data,
+      kDummyValueRef, // weight zeros
+      group_size,
+      bias_data,
+      output);
+}
+
 REGISTER_OPERATORS {
   VK_REGISTER_OP(et_vk.linear_q8ta_q8csw.default, linear_q8ta_q8csw);
   VK_REGISTER_OP(et_vk.linear_q8csw.default, linear_q8csw);
   VK_REGISTER_OP(et_vk.linear_dq8ca_q4gsw.default, linear_dq8ca_q4gsw);
+  VK_REGISTER_OP(et_vk.linear_q4gsw.default, linear_q4gsw);
 }
 
 } // namespace vkcompute

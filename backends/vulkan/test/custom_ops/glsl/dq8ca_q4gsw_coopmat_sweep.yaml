@@ -1,0 +1,116 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# Test-owned tile-shape/subgroup-size sweep variants of
+# dq8ca_q4gsw_coopmat_sweep.glsl (a byte-identical copy, at authoring time,
+# of the production linear_dq8ca_qw_coopmat.glsl), built for
+# specs/008-8da4w-parameter-sweep per research.md Decision 4. Every variant
+# below uses WEIGHT_STORAGE: texture2d only (matching the variant this
+# workstream's captures have always actually dispatched -- see
+# specs/007-wmma-improvement-microbench's raw data) -- WEIGHT_STORAGE is
+# not an additional swept axis here, consistent with the curated,
+# hypothesis-driven scope this feature's Clarification Session set.
+#
+# Configs 1-11 are performance candidates (research.md Decision 4's
+# table). Config 12 is a deliberate negative test (WG_TILE_K=64, which
+# does not divide group_size=32) added to prove the correctness check
+# actually catches a broken kernel (/speckit-analyze finding G1) -- it is
+# expected to compile and dispatch, but produce wrong output.
+#
+# Config 0 (the shipped WG_TILE_M=128/WG_TILE_N=64/WG_TILE_K=32/
+# SUBGROUP_SIZE=64 configuration) is intentionally absent: it is reused
+# from 007's already-captured data, never rebuilt here.
+
+dq8ca_q4gsw_coopmat_sweep:
+  parameter_names_with_default_values:
+    PRECISION: highp
+    HAS_BIAS: false
+    WEIGHT_NBITS: 4
+    WEIGHT_STORAGE: texture2d
+    MMA_M: 16
+    MMA_N: 16
+    MMA_K: 16
+    WG_TILE_M: 128
+    WG_TILE_N: 64
+    WG_TILE_K: 32
+    SG_GRID_X: 2
+    SG_GRID_Y: 2
+    SUBGROUP_SIZE: 64
+  shader_variants:
+    # Config 1: subgroup axis only
+    - NAME: dq8ca_q4gsw_coopmat_sweep_cfg1_buffer_texture2d_half
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SUBGROUP_SIZE: 32
+    # Config 2: pre-restructure tile, shipped subgroup
+    - NAME: dq8ca_q4gsw_coopmat_sweep_cfg2_buffer_texture2d_half
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SUBGROUP_SIZE: 64
+    # Config 3: pre-restructure tile, native subgroup
+    - NAME: dq8ca_q4gsw_coopmat_sweep_cfg3_buffer_texture2d_half
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SUBGROUP_SIZE: 32
+    # Config 4: K-step halved
+    - NAME: dq8ca_q4gsw_coopmat_sweep_cfg4_buffer_texture2d_half
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SUBGROUP_SIZE: 64
+    # Config 5: K-step halved, native subgroup
+    - NAME: dq8ca_q4gsw_coopmat_sweep_cfg5_buffer_texture2d_half
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SUBGROUP_SIZE: 32
+    # Config 6: pre-restructure tile + K halved
+    - NAME: dq8ca_q4gsw_coopmat_sweep_cfg6_buffer_texture2d_half
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SUBGROUP_SIZE: 64
+    # Config 7: pre-restructure tile + K halved, native subgroup
+    - NAME: dq8ca_q4gsw_coopmat_sweep_cfg7_buffer_texture2d_half
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SUBGROUP_SIZE: 32
+    # Config 8: larger M tile
+    - NAME: dq8ca_q4gsw_coopmat_sweep_cfg8_buffer_texture2d_half
+      WG_TILE_M: 256
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SUBGROUP_SIZE: 64
+    # Config 9: larger M tile, native subgroup
+    - NAME: dq8ca_q4gsw_coopmat_sweep_cfg9_buffer_texture2d_half
+      WG_TILE_M: 256
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SUBGROUP_SIZE: 32
+    # Config 10: wider N tile
+    - NAME: dq8ca_q4gsw_coopmat_sweep_cfg10_buffer_texture2d_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SUBGROUP_SIZE: 64
+    # Config 11: wider N tile, native subgroup
+    - NAME: dq8ca_q4gsw_coopmat_sweep_cfg11_buffer_texture2d_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SUBGROUP_SIZE: 32
+    # Config 12: deliberate negative test -- WG_TILE_K=64 does not divide
+    # group_size=32 (research.md Decision 4 / finding G1); expected to
+    # compile and dispatch but fail correctness.
+    - NAME: dq8ca_q4gsw_coopmat_sweep_cfg12_buffer_texture2d_half
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 64
+      SUBGROUP_SIZE: 64
