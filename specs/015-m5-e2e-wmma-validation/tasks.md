@@ -111,16 +111,16 @@ the end.
 
 ### 3B (both schemes)
 
-- [ ] T020 [P] [US2] Export 3B's `8da4w` buffer PTE (`MODEL=llama3_2_3b ...`, depends on T005) -- use `backend.vulkan.storage_override: buffer` in `config.yaml` (`research.md` Decision 6), NOT `export_quant.sh`'s `ET_VK_FORCE_BUFFER` (a no-op in this repo)
-- [ ] T020a [P] [US2] **Re-export** 3B's `4w` buffer PTE the same way (the existing `.pte_out/llama3_2_3b_4w_buffer_ctx3072.pte`, dated 2026-06-17, was produced with the broken `ET_VK_FORCE_BUFFER` mechanism per `research.md` Decision 6 and is internally Texture3D despite its name -- do not reuse it as-is)
-- [ ] T021 [US2] Stage + push 3B's `4w` (re-exported, T020a) and `8da4w` (new, T020) PTEs, plus runner/tokenizer/prompt if not already on-device, to M5 EVT1
-- [ ] T022 [US2] Coherence check 3B/`4w`
-- [ ] T023 [US2] Dispatch-confirm 3B/`4w`
-- [ ] T024 [US2] Coherence check 3B/`8da4w`
-- [ ] T025 [US2] Dispatch-confirm 3B/`8da4w`
-- [ ] T026 [US2] E2E capture 3B/`4w`: 3 repeated runs, mean + CoV
-- [ ] T027 [US2] E2E capture 3B/`8da4w`: 3 repeated runs, mean + CoV
-- [ ] T028 [US2] Publish `results/3b-results.md` — report to the user now
+- [X] T020 [P] [US2] Export 3B's `8da4w` buffer PTE (`MODEL=llama3_2_3b ...`, depends on T005) -- use `backend.vulkan.storage_override: buffer` in `config.yaml` (`research.md` Decision 6), NOT `export_quant.sh`'s `ET_VK_FORCE_BUFFER` (a no-op in this repo) — **DONE**
+- [X] T020a [P] [US2] **Re-export** 3B's `4w` buffer PTE the same way (the existing `.pte_out/llama3_2_3b_4w_buffer_ctx3072.pte`, dated 2026-06-17, was produced with the broken `ET_VK_FORCE_BUFFER` mechanism per `research.md` Decision 6 and is internally Texture3D despite its name -- do not reuse it as-is) — **DONE**
+- [X] T021 [US2] Stage + push 3B's `4w` (re-exported, T020a) and `8da4w` (new, T020) PTEs, plus runner/tokenizer/prompt if not already on-device, to M5 EVT1 — **DONE**
+- [X] T022 [US2] Coherence check 3B/`4w` — **DONE**, coherent
+- [X] T023 [US2] Dispatch-confirm 3B/`4w` — **DONE**: `linear_q4gsw_coopmat_buffer_texture2d_half` 196/196 (28 layers x 7 ops), `dispatch_status=confirmed`
+- [X] T024 [US2] Coherence check 3B/`8da4w` — **DONE**, coherent
+- [X] T025 [US2] Dispatch-confirm 3B/`8da4w` — **DONE**: `linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half` 196/196, `dispatch_status=confirmed`
+- [X] T026 [US2] E2E capture 3B/`4w`: 3 repeated runs, mean + CoV — **DONE**: prefill 220.334/217.225/217.225 (mean 218.26, CoV 0.822%), decode 6.789/6.957/6.988 (mean 6.911, CoV 1.548%)
+- [X] T027 [US2] E2E capture 3B/`8da4w`: 3 repeated runs, mean + CoV — **DONE**: prefill 201.001/201.021/200.706 (mean 200.91, CoV 0.088%), decode 6.648/6.770/6.826 (mean 6.748, CoV 1.348%)
+- [X] T028 [US2] Publish `results/3b-results.md` — report to the user now — **DONE**
 
 ### 8B (both schemes — highest linear-config watchdog risk)
 
