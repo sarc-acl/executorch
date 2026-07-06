@@ -16,20 +16,20 @@ signal reuses (and, per FR-008, extends) the existing
 workstream validated shader changes inline rather than via a new test
 phase.
 
-**Organization**: Tasks are grouped by user story. Phase 3 (US1, committed
-work) and Phase 4 (FR-008 harness extension, T006-T009) are now fully
-**DONE**, including T008's device-access/driver-verification correction
-(the M5 EVT1 is on `sj1-dmckee-d01`, reached via `ssh`, not local `adb`;
-the flashed driver was an unrecognized 5th build, backed up and reflashed
-to the documented known-good `f14c51b6f8`) and a stale-`vulkan_backend`
-link fix (per `.shared-context/instruction-for-ai/build.md`'s two-step
-recipe). Running T009 on the real device also produced real correctness
-results: **all three shader changes PASS at production K=2048/4096 on
-verified-good hardware+driver** (T011, T014 — see Phase 5/6). What remains
-is the *performance* half of US2/US3 (T010, T012, T015): a formal tier-1
-A/B against a fresh pre-change baseline, per `research.md` Decision 1 —
-not yet captured. Nothing here is blocked anymore; it's the next
-actionable work whenever picked back up.
+**Organization**: Tasks are grouped by user story. **All phases are now
+DONE.** Phase 3 (US1) committed the four changes; Phase 4 (T006-T009)
+closed the FR-008 correctness-harness gap, along the way fixing a
+device-access misconception (M5 EVT1 is on `sj1-dmckee-d01` via `ssh`, not
+local `adb`), an unrecognized 5th driver build (backed up, reflashed to
+known-good `f14c51b6f8`), and a stale-`vulkan_backend` link failure (per
+`.shared-context/instruction-for-ai/build.md`'s two-step recipe). Running
+T009 on the real device produced this feature's actual result: **all three
+shader changes PASS correctness at production K=2048/4096 on verified-good
+hardware+driver** (T011, T014). The performance A/B (T010, T012, T015) was
+explicitly decided against (user, 2026-07-05) — no throughput claim is
+made for any of the three changes, so FR-004's gate (correctness before
+*reporting* a number) is satisfied without producing one. All three
+changes' final disposition is `keep`.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -103,14 +103,14 @@ fix were all found and resolved along the way (see each task's notes).
 
 **Independent Test**: Build the post-change shader, pass the extended (Phase 4) INT4 coopmat correctness check at production shapes, and produce a kernel-dispatch-confirmed tier-1 timing compared against a fresh pre-change M5 EVT1 baseline.
 
-**Status**: Correctness (T011) is DONE. Performance A/B (T010, T012) still open — see below.
+**Status**: DONE. Correctness (T011) passed; performance A/B (T010, T012) was deliberately not pursued — see below.
 
-- [ ] T010 [US2] Build and run the pre-change (`HEAD`-only) `linear_qw_coopmat.glsl` tier-1 coopmat microbench on M5 EVT1 per `quickstart.md` step 1; record as the baseline in `results/us2-loop-vectorized-dequant-validation.md` (depends on T008). **Not yet done** — requires temporarily reverting to before commit `133044739` and rebuilding, a bigger undertaking than T009's reuse of the already-committed source; the GFLOP/s figures captured under T009 (424.6/434.1 coopmat vs 220.5/221.0 tiled at K=2048/4096) are real but are NOT yet diffed against this baseline per `research.md` Decision 1.
+- [X] ~~T010~~ [US2] Build and run the pre-change (`HEAD`-only) `linear_qw_coopmat.glsl` tier-1 coopmat microbench on M5 EVT1 per `quickstart.md` step 1; record as the baseline in `results/us2-loop-vectorized-dequant-validation.md` (depends on T008). **DECIDED SKIP (user, 2026-07-05)**: this only requires a local `git stash`/rebuild/run/`git stash pop` cycle (never touches git history), but per spec Clarifications, a same-math code-shape change may be kept without a measured win — no perf claim is being made, so the formal A/B isn't required to close this out.
 - [X] T011 [US2] Run the Phase-4-extended INT4 coopmat correctness check against the post-change shader at production K=2048/4096 (depends on Phase 4 (T009)) — **DONE as part of T009's run**: since the three shader changes are already committed at `HEAD` (interleaved, `research.md` Decision 3), T009's correctness run against `HEAD` *is* this check. All `linear_q4gsw` K=2048/4096 cases (Buffer+Texture3D, rank2+rank3) PASSED.
-- [ ] T012 [US2] Run the tier-1 coopmat microbench against the post-change shader; confirm kernel dispatch and `spirv-dis`-verified `OpCooperativeMatrix*KHR` presence (`research.md` Decision 4); compare against T010's baseline (depends on T010, T011). Kernel dispatch already confirmed (T009: `linear_q4gsw_coopmat_buffer_texture2d_half` observed). SPIR-V inspection and the formal baseline diff (blocked on T010) still open.
-- [X] T013 [US2] Update `results/disposition-summary.md`'s `loop_flattening` and `vectorized_dequant` rows with correctness/perf outcomes and final disposition (depends on T012) — **done for correctness** (PASS, disposition=`keep`); perf comparison section left open pending T010/T012, noted explicitly in the results file rather than silently completed.
+- [X] ~~T012~~ [US2] Run the tier-1 coopmat microbench against the post-change shader; confirm kernel dispatch and `spirv-dis`-verified `OpCooperativeMatrix*KHR` presence (`research.md` Decision 4); compare against T010's baseline (depends on T010, T011). **DECIDED SKIP** (depends on T010, also skipped). Kernel dispatch already confirmed (T009: `linear_q4gsw_coopmat_buffer_texture2d_half` observed) — that part of Principle VI's requirement is satisfied; the SPIR-V/comparison part is skipped along with T010 since no perf number is being reported.
+- [X] T013 [US2] Update `results/disposition-summary.md`'s `loop_flattening` and `vectorized_dequant` rows with correctness/perf outcomes and final disposition (depends on T012) — **DONE**: disposition = `keep` (correctness PASS; no performance claim made, none required per Clarifications).
 
-**Checkpoint**: Correctness half DONE, disposition recorded (`keep`). Perf half (T010/T012) still open — not required to declare US2 "complete" per this feature's own Clarifications (same-math changes may be kept absent a measured win), but left open honestly rather than closed out early.
+**Checkpoint**: DONE. Correctness passed and disposition recorded (`keep`) for both same-math changes. Performance A/B intentionally not pursued (user decision, not a gap).
 
 ---
 
@@ -120,20 +120,20 @@ fix were all found and resolved along the way (see each task's notes).
 
 **Independent Test**: Run the fp16-accumulate variant against the Phase-4-extended correctness check at K=2048/4096; pass within the stated `abs=0.5`/`rel=0.05` tolerance, or fail explicitly and revert.
 
-**Status**: Correctness (T014) is DONE and PASSED — the precision risk this whole feature was gated on is resolved. T016 (revert) is now moot. Performance A/B (T015) still open, same as Phase 5's T012.
+**Status**: DONE. Correctness (T014) PASSED — the precision risk this whole feature was gated on is resolved. T016 (revert) is moot. Performance A/B (T015) was deliberately not pursued, same reasoning as Phase 5's T010/T012.
 
 - [X] T014 [US3] Run the Phase-4-extended INT4 coopmat correctness check against the fp16-accumulate variant at production K=2048 and K=4096; record numerical divergence against the fp32-accumulate reference within the `abs=0.5`/`rel=0.05` tolerance stated in `data-model.md`'s `numerical_tolerance` field (depends on Phase 4 (T009)) — **DONE, PASSED**: same T009 run (the fp16-accumulate change is part of the same committed, interleaved diff). All `linear_q4gsw` K=2048/4096 cases (Buffer+Texture3D, rank2+rank3) PASSED within `abs=0.5`/`rel=0.05` against the fp32 CPU reference. This is the first real hardware evidence the precision risk flagged in-code does not manifest at production K.
-- [ ] T015 [US3] If T014 passes: run the tier-1 coopmat microbench for the fp16-accumulate variant, confirm kernel dispatch + SPIR-V accumulator-type verification (`research.md` Decision 4), compare against T010's baseline (depends on T014, T010). Kernel dispatch confirmed (T009). SPIR-V accumulator-type verification and the formal baseline diff (blocked on T010) still open.
+- [X] ~~T015~~ [US3] If T014 passes: run the tier-1 coopmat microbench for the fp16-accumulate variant, confirm kernel dispatch + SPIR-V accumulator-type verification (`research.md` Decision 4), compare against T010's baseline (depends on T014, T010). **DECIDED SKIP (user, 2026-07-05)**: FR-004 only requires correctness before *reporting* a throughput number — it does not require producing one. No perf claim is made for `fp16_accumulate`, so this is skipped along with T010/T012.
 - [X] ~~T016~~ [US3] MOOT — T014 passed, so no revert is needed.
-- [X] T017 [US3] Update `results/disposition-summary.md`'s `fp16_accumulate` row with the final outcome and disposition (`keep` if T015 completes, `revert` if T016 executes) (depends on T015 or T016) — **done for correctness**: disposition recorded as `keep_with_caveat` (correctness PASS, formal perf comparison still pending T010/T015) rather than a bare `keep`, so the perf claim is never overstated.
+- [X] T017 [US3] Update `results/disposition-summary.md`'s `fp16_accumulate` row with the final outcome and disposition (`keep` if T015 completes, `revert` if T016 executes) (depends on T015 or T016) — **DONE**: disposition = `keep` (correctness PASS on real M5 EVT1 hardware; no performance claim made, none required).
 
-**Checkpoint**: Correctness half DONE and PASSED — the highest-risk item this feature exists to resolve is resolved. Disposition recorded (`keep_with_caveat`, pending T015's perf comparison). Perf half (T015) still open.
+**Checkpoint**: DONE. Correctness PASSED — the highest-risk item this feature exists to resolve is resolved. Disposition recorded (`keep`). Performance A/B intentionally not pursued (user decision, not a gap).
 
 ---
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T018 Once all of US2/US3 are unblocked and complete, re-read `results/disposition-summary.md` as a whole and confirm every one of the three shader changes has a non-`pending` disposition with a stated reason (spec SC-002, SC-004) (depends on T013, T017)
+- [X] T018 Once all of US2/US3 are unblocked and complete, re-read `results/disposition-summary.md` as a whole and confirm every one of the three shader changes has a non-`pending` disposition with a stated reason (spec SC-002, SC-004) (depends on T013, T017) — **DONE**: all three shader changes have a final, non-`pending` disposition (`keep` x3), each with a stated reason (correctness PASS on real hardware; performance comparison explicitly and deliberately not pursued, per spec Clarifications allowing same-math/precision-safe changes to ship without a measured win — not a silently-missing gap).
 
 ---
 
@@ -153,18 +153,18 @@ fix were all found and resolved along the way (see each task's notes).
 
 ## Implementation Strategy
 
-**MVP = User Story 1 only** (T001-T005): commits the existing work with
-accurate attribution and status — done. **Phase 4 (T001-T009)**: also done
-— device access, driver verification/reflash, a stale-`vulkan_backend`
-build fix, and a `bench_reference` size-cap fix were all resolved along
-the way. Running the fixed harness produced this feature's real headline
-result: **all three shader changes pass correctness at production
-K=2048/4096 on verified-good M5 EVT1 hardware** (T011, T014) — the
-precision risk fp16-accumulate was gated on is resolved.
+**All phases DONE.** User Story 1 committed the four changes. Phase 4
+closed the FR-008 correctness-harness gap, along the way resolving device
+access, driver verification/reflash, a stale-`vulkan_backend` build fix,
+and a `bench_reference` size-cap fix. Running the fixed harness produced
+this feature's real headline result: **all three shader changes pass
+correctness at production K=2048/4096 on verified-good M5 EVT1 hardware**
+(T011, T014) — the precision risk `fp16_accumulate` was gated on is
+resolved. Final disposition for all three: `keep`.
 
-**Remaining work — the performance half only** (T010, T012, T015): capture
-a fresh pre-change (pre-`133044739`) M5 EVT1 tier-1 baseline and diff this
-session's already-captured GFLOP/s numbers against it, per `research.md`
-Decision 1, to turn `keep`/`keep_with_caveat`'s informational perf numbers
-into a formal comparison. Nothing is blocked; this is ordinary next-session
-work, independently completable for US2 and US3.
+**Performance A/B (T010, T012, T015) explicitly decided against** (user,
+2026-07-05): no throughput claim is made for any of the three changes, so
+there is nothing requiring the formal pre-change baseline comparison
+(`research.md` Decision 1). If a future session wants an actual measured
+speedup/regression figure, `quickstart.md` steps 1-4 document the method
+(a local `git stash`/rebuild/run cycle — never touches git history).

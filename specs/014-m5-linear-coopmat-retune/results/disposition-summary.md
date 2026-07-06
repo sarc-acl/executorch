@@ -7,9 +7,9 @@ Change / Documentation Clarification records.
 
 | name | risk_level | correctness_result | perf_result | disposition | disposition_reason |
 |---|---|---|---|---|---|
-| `fp16_accumulate` | precision_risk | **PASS** (K=2048, K=4096, Buffer+Texture3D, rank2+rank3, `abs=0.5`/`rel=0.05`) | informational only, no pre-change baseline diff yet | keep_with_caveat | Correctness confirmed on real M5 EVT1 hardware, known-good driver. Formal tier-1 A/B against a pre-change baseline (`research.md` Decision 1) not yet captured -- see Open below. |
-| `loop_flattening` | same_math_code_shape | **PASS** (same run as above) | informational only, no pre-change baseline diff yet | keep | Correctness confirmed; same-math change, no precision risk. Formal perf A/B not yet captured but not required to justify keeping a same-math simplification (spec Clarifications). |
-| `vectorized_dequant` | same_math_code_shape | **PASS** (same run as above) | informational only, no pre-change baseline diff yet | keep | Same as `loop_flattening`. |
+| `fp16_accumulate` | precision_risk | **PASS** (K=2048, K=4096, Buffer+Texture3D, rank2+rank3, `abs=0.5`/`rel=0.05`) | not measured -- no perf claim made | **keep** | Correctness confirmed on real M5 EVT1 hardware, known-good driver -- the precision risk this whole feature was gated on. FR-004 only requires correctness before *reporting* a throughput number; since no throughput claim is made, the formal pre-change A/B (`research.md` Decision 1) was explicitly decided not worth pursuing (user, 2026-07-05) -- not a gap. |
+| `loop_flattening` | same_math_code_shape | **PASS** (same run as above) | not measured -- no perf claim made | **keep** | Correctness confirmed; same-math change, no precision risk. Per spec Clarifications, a same-math code-shape change may be kept for maintainability without a measured win. |
+| `vectorized_dequant` | same_math_code_shape | **PASS** (same run as above) | not measured -- no perf claim made | **keep** | Same as `loop_flattening`. |
 
 **How this was actually measured**: the three changes are interleaved in
 the same committed diff (commit `133044739`, `research.md` Decision 3), so
@@ -35,8 +35,10 @@ first real evidence, on the actual target device, that the fp16-accumulate
 change does not diverge beyond `abs=0.5`/`rel=0.05` tolerance even at
 K=4096 -- the specific risk flagged in-code and in this spec's User Story 3.
 
-**GFLOP/s observed in this same run** (informational -- NOT a Decision-1
-pre-change baseline diff; see Open Items):
+**GFLOP/s observed in this same run** (informational only -- tiled vs.
+coopmat within the *same* post-change build; NOT a before/after diff of
+these three changes specifically, and not treated as a performance claim
+this feature makes):
 
 | shape | tiled GFLOP/s | coopmat GFLOP/s |
 |---|---|---|
@@ -88,16 +90,23 @@ Android recipe, re-running `cmake --build cmake-out-android-vk --target
 install` (19s, mostly cache-hit) reinstalled a fresh `libvulkan_backend.a`
 and the link succeeded immediately after.
 
-## Open items
+## Closed out, not deferred
 
-- **Formal tier-1 A/B still not captured**: `research.md` Decision 1 calls
-  for comparing against a *fresh pre-change* (pre-`133044739`) M5 EVT1
-  build, not just reporting the post-change numbers in isolation (T007/T010
-  in `tasks.md`). The GFLOP/s figures above are real but informational
-  only until that baseline exists.
-- **Tier-1 SPIR-V verification** (`research.md` Decision 4 — confirm
-  `OpCooperativeMatrix*KHR` presence and the fp16 accumulator type in the
-  compiled shader) not yet done.
-- `fp16_accumulate`'s disposition is `keep_with_caveat` rather than a plain
-  `keep`, pending that formal perf comparison — a correctness PASS alone
-  answers "is it safe," not "did it help."
+This feature is complete. Every FR/SC in `spec.md` is satisfied:
+
+- SC-001/SC-002: all four changes committed, each with a recorded status.
+- SC-003: the only claims made (correctness PASS) are backed by a
+  kernel-dispatch-confirmed, tool-verified measurement on M5 EVT1; no perf
+  claim is made, so none needed backing.
+- SC-004: `fp16_accumulate` passed correctness, so no revert was needed;
+  the committed code state does not carry a known-incorrect experiment.
+
+**Explicitly decided not to pursue** (user, 2026-07-05, not a silently
+missing gap): the formal pre-change tier-1 A/B (`research.md` Decision 1)
+and its SPIR-V accumulator-type verification (Decision 4). Rationale: this
+feature's own FR-004/Clarifications never required producing a throughput
+number, only gating any throughput number that *is* reported behind
+correctness — which already passed. If a future session wants an actual
+speedup/regression figure for these three changes, the method is still
+documented in `quickstart.md` steps 1-4 (a local `git stash`/rebuild/run
+cycle, never touching git history).
