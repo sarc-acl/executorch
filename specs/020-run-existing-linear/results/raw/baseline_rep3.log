@@ -1,0 +1,21 @@
+
+=== Compute Shader Performance Benchmark ===
+MiniPC no-WMMA baseline: Llama 3.1 8B / 3.2 3B / 3.2 1B, 4w/8da4w, prefill(M=2048)/decode(M=1), tiled/coop dispatch only
+----------------------------------------------------------------------
+Executing 192 test cases for LlamaBaselineBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (512,512,1)     (8,8,1)     llama-3.1-8b_4w_prefill_texture3d_wq_M2048                                                [2048x4096]       77089.711 μs        891.422 GFLOP/s  SKIPPED
+linear_q4gsw_tiled_texture3d_texture2d_half        (512,512,1)     (8,8,1)     llama-3.1-8b_4w_prefill_texture3d_wo_M2048                                                [2048x4096]       77411.688 μs        887.714 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (8192,16,1)     (128,1,1)   llama-3.1-8b_4w_prefill_buffer_wq_M2048                                                   [2048x4096]       27177.006 μs       2528.589 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (8192,16,1)     (128,1,1)   llama-3.1-8b_4w_prefill_buffer_wo_M2048                                                   [2048x4096]       27155.328 μs       2530.607 GFLOP/s  SKIPPED
+linear_q4gsw_tiled_texture3d_texture2d_half        (128,512,1)     (8,8,1)     llama-3.1-8b_4w_prefill_texture3d_wk_M2048                                                [2048x4096]       19499.457 μs        881.043 GFLOP/s  SKIPPED
+linear_q4gsw_tiled_texture3d_texture2d_half        (128,512,1)     (8,8,1)     llama-3.1-8b_4w_prefill_texture3d_wv_M2048                                                [2048x4096]       19519.076 μs        880.158 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (2048,16,1)     (128,1,1)   llama-3.1-8b_4w_prefill_buffer_wk_M2048                                                   [2048x4096]        6820.712 μs       2518.779 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (2048,16,1)     (128,1,1)   llama-3.1-8b_4w_prefill_buffer_wv_M2048                                                   [2048x4096]        6823.345 μs       2517.808 GFLOP/s  SKIPPED
+linear_q4gsw_tiled_texture3d_texture2d_half        (1792,512,1)    (8,8,1)     llama-3.1-8b_4w_prefill_texture3d_w1_gate_M2048                                           [2048x4096]      266148.969 μs        903.698 GFLOP/s  SKIPPED
+linear_q4gsw_tiled_texture3d_texture2d_half        (1792,512,1)    (8,8,1)     llama-3.1-8b_4w_prefill_texture3d_w3_up_M2048                                             [2048x4096]      266913.719 μs        901.108 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (28672,16,1)    (128,1,1)   llama-3.1-8b_4w_prefill_buffer_w1_gate_M2048                                              [2048x4096]       91895.188 μs       2617.310 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (28672,16,1)    (128,1,1)   llama-3.1-8b_4w_prefill_buffer_w3_up_M2048                                                [2048x4096]       92233.328 μs       2607.714 GFLOP/s  SKIPPED
+linear_q4gsw_tiled_texture3d_texture2d_half        (512,512,1)     (8,8,1)     llama-3.1-8b_4w_prefill_texture3d_w2_down_M2048                                          [2048x14336]      267161.000 μs        900.274 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (8192,16,1)     (128,1,1)   llama-3.1-8b_4w_prefill_buffer_w2_down_M2048                                             [2048x14336]       92590.773 μs       2597.647 GFLOP/s  SKIPPED
+Killed 

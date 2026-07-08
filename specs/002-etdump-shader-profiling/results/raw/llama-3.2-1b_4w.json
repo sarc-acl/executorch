@@ -1,0 +1,514 @@
+{
+  "config": {
+    "model": "llama-3.2-1b",
+    "scheme": "4w",
+    "device": "rocky-ryzen",
+    "dispatch_path": "tiled_baseline"
+  },
+  "phases": {
+    "prefill": {
+      "status": "ok",
+      "failure_reason": null,
+      "etdump_path": "specs/002-etdump-shader-profiling/results/etdumps/llama-3.2-1b_4w_prefill.etdump",
+      "phase_wall_clock_us_profiled": 1712000.0,
+      "phase_wall_clock_us_baseline": 1807734.065,
+      "attributed_pct": 0.9929,
+      "decode_window_steps": null,
+      "aggregated": [
+        {
+          "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+          "shape": {
+            "k": 2048,
+            "m": 2048,
+            "n": 8192
+          },
+          "total_time_us": 522772.04,
+          "invocation_count": 32,
+          "pct_of_phase": 0.3054,
+          "category": "feed-forward"
+        },
+        {
+          "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+          "shape": {
+            "k": 8192,
+            "m": 2048,
+            "n": 2048
+          },
+          "total_time_us": 265167.48,
+          "invocation_count": 16,
+          "pct_of_phase": 0.1549,
+          "category": "feed-forward"
+        },
+        {
+          "kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half",
+          "shape": {
+            "k": 64,
+            "m": 2048,
+            "n": 64
+          },
+          "total_time_us": 227304.4,
+          "invocation_count": 16,
+          "pct_of_phase": 0.1328,
+          "category": "attention (sdpa)"
+        },
+        {
+          "kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half",
+          "shape": {
+            "k": 64,
+            "m": 2048,
+            "n": 64
+          },
+          "total_time_us": 172084.24,
+          "invocation_count": 16,
+          "pct_of_phase": 0.1005,
+          "category": "attention (sdpa)"
+        },
+        {
+          "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+          "shape": null,
+          "total_time_us": 162117.88,
+          "invocation_count": 16,
+          "pct_of_phase": 0.0947,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+          "shape": {
+            "k": 2048,
+            "m": 2048,
+            "n": 2048
+          },
+          "total_time_us": 139507.881,
+          "invocation_count": 32,
+          "pct_of_phase": 0.0815,
+          "category": "attention projection"
+        },
+        {
+          "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+          "shape": null,
+          "total_time_us": 58964.561,
+          "invocation_count": 112,
+          "pct_of_phase": 0.0344,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "binary_mul_texture3d_half",
+          "shape": null,
+          "total_time_us": 43115.04,
+          "invocation_count": 32,
+          "pct_of_phase": 0.0252,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+          "shape": {
+            "k": 2048,
+            "m": 2048,
+            "n": 512
+          },
+          "total_time_us": 40258.44,
+          "invocation_count": 32,
+          "pct_of_phase": 0.0235,
+          "category": "attention projection"
+        },
+        {
+          "kernel_name": "sigmoid_half_texture3d",
+          "shape": null,
+          "total_time_us": 14476.96,
+          "invocation_count": 16,
+          "pct_of_phase": 0.0085,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "view_texture_half",
+          "shape": null,
+          "total_time_us": 11283.96,
+          "invocation_count": 64,
+          "pct_of_phase": 0.0066,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "binary_add_texture3d_half",
+          "shape": null,
+          "total_time_us": 10245.44,
+          "invocation_count": 32,
+          "pct_of_phase": 0.006,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "rms_norm_texture3d_half",
+          "shape": null,
+          "total_time_us": 9025.48,
+          "invocation_count": 33,
+          "pct_of_phase": 0.0053,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "clone_image_to_buffer_half_half",
+          "shape": null,
+          "total_time_us": 7255.201,
+          "invocation_count": 49,
+          "pct_of_phase": 0.0042,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+          "shape": null,
+          "total_time_us": 5382.24,
+          "invocation_count": 32,
+          "pct_of_phase": 0.0031,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "rotary_embedding_texture3d_half",
+          "shape": null,
+          "total_time_us": 4587.24,
+          "invocation_count": 16,
+          "pct_of_phase": 0.0027,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "clone_buffer_to_image_half_half",
+          "shape": null,
+          "total_time_us": 3926.4,
+          "invocation_count": 16,
+          "pct_of_phase": 0.0023,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half",
+          "shape": {
+            "k": 2048,
+            "m": 1,
+            "n": 128256
+          },
+          "total_time_us": 1910.36,
+          "invocation_count": 1,
+          "pct_of_phase": 0.0011,
+          "category": "output/vocab projection"
+        },
+        {
+          "kernel_name": "nchw_to_image_texture3d_half_float",
+          "shape": null,
+          "total_time_us": 433.84,
+          "invocation_count": 1,
+          "pct_of_phase": 0.0003,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "buffer_to_nchw_half_float",
+          "shape": null,
+          "total_time_us": 22.92,
+          "invocation_count": 1,
+          "pct_of_phase": 0.0,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "slice_ubo_texture3d_half",
+          "shape": null,
+          "total_time_us": 20.56,
+          "invocation_count": 2,
+          "pct_of_phase": 0.0,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "nchw_to_image_texture3d_int32_int32",
+          "shape": null,
+          "total_time_us": 9.2,
+          "invocation_count": 2,
+          "pct_of_phase": 0.0,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "select_texture3d_half",
+          "shape": null,
+          "total_time_us": 1.56,
+          "invocation_count": 1,
+          "pct_of_phase": 0.0,
+          "category": "non-shader overhead"
+        }
+      ],
+      "category_rollup": [
+        {
+          "category": "feed-forward",
+          "total_time_us": 787939.52,
+          "pct_of_phase": 0.4602
+        },
+        {
+          "category": "attention (sdpa)",
+          "total_time_us": 399388.64,
+          "pct_of_phase": 0.2333
+        },
+        {
+          "category": "non-shader overhead",
+          "total_time_us": 330868.482,
+          "pct_of_phase": 0.1933
+        },
+        {
+          "category": "attention projection",
+          "total_time_us": 179766.321,
+          "pct_of_phase": 0.105
+        },
+        {
+          "category": "output/vocab projection",
+          "total_time_us": 1910.36,
+          "pct_of_phase": 0.0011
+        },
+        {
+          "category": "unattributed",
+          "total_time_us": 12155.2,
+          "pct_of_phase": 0.0071
+        }
+      ],
+      "raw_invocations_path": "specs/002-etdump-shader-profiling/results/raw/llama-3.2-1b_4w_prefill_raw.json"
+    },
+    "decode": {
+      "status": "ok",
+      "failure_reason": null,
+      "etdump_path": "specs/002-etdump-shader-profiling/results/etdumps/llama-3.2-1b_4w_decode.etdump",
+      "phase_wall_clock_us_profiled": 115000.0,
+      "phase_wall_clock_us_baseline": 121342.394,
+      "attributed_pct": 0.9119,
+      "decode_window_steps": 7,
+      "aggregated": [
+        {
+          "kernel_name": "q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_texture3d_half",
+          "shape": {
+            "k": 2048,
+            "m": 1,
+            "n": 8192
+          },
+          "total_time_us": 27602.919,
+          "invocation_count": 224,
+          "pct_of_phase": 0.24,
+          "category": "feed-forward"
+        },
+        {
+          "kernel_name": "sdpa_compute_out_coop_buffer_buffer_half",
+          "shape": {
+            "k": 64,
+            "m": 1,
+            "n": 64
+          },
+          "total_time_us": 19481.88,
+          "invocation_count": 112,
+          "pct_of_phase": 0.1694,
+          "category": "attention (sdpa)"
+        },
+        {
+          "kernel_name": "sdpa_compute_attn_weights_coop_buffer_buffer_half",
+          "shape": {
+            "k": 64,
+            "m": 1,
+            "n": 64
+          },
+          "total_time_us": 15410.601,
+          "invocation_count": 112,
+          "pct_of_phase": 0.134,
+          "category": "attention (sdpa)"
+        },
+        {
+          "kernel_name": "q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g4w16_texture3d_half",
+          "shape": {
+            "k": 8192,
+            "m": 1,
+            "n": 2048
+          },
+          "total_time_us": 14286.48,
+          "invocation_count": 112,
+          "pct_of_phase": 0.1242,
+          "category": "feed-forward"
+        },
+        {
+          "kernel_name": "q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half",
+          "shape": {
+            "k": 2048,
+            "m": 1,
+            "n": 128256
+          },
+          "total_time_us": 13139.56,
+          "invocation_count": 7,
+          "pct_of_phase": 0.1143,
+          "category": "output/vocab projection"
+        },
+        {
+          "kernel_name": "q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g4w16_texture3d_half",
+          "shape": {
+            "k": 2048,
+            "m": 1,
+            "n": 2048
+          },
+          "total_time_us": 7630.92,
+          "invocation_count": 224,
+          "pct_of_phase": 0.0664,
+          "category": "attention projection"
+        },
+        {
+          "kernel_name": "q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g1w64_texture3d_half",
+          "shape": {
+            "k": 2048,
+            "m": 1,
+            "n": 512
+          },
+          "total_time_us": 2897.76,
+          "invocation_count": 224,
+          "pct_of_phase": 0.0252,
+          "category": "attention projection"
+        },
+        {
+          "kernel_name": "rms_norm_texture3d_half",
+          "shape": null,
+          "total_time_us": 938.0,
+          "invocation_count": 231,
+          "pct_of_phase": 0.0082,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "view_texture_half",
+          "shape": null,
+          "total_time_us": 830.32,
+          "invocation_count": 448,
+          "pct_of_phase": 0.0072,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+          "shape": null,
+          "total_time_us": 741.08,
+          "invocation_count": 112,
+          "pct_of_phase": 0.0064,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "clone_image_to_buffer_half_half",
+          "shape": null,
+          "total_time_us": 356.601,
+          "invocation_count": 343,
+          "pct_of_phase": 0.0031,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+          "shape": null,
+          "total_time_us": 321.56,
+          "invocation_count": 224,
+          "pct_of_phase": 0.0028,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "binary_add_texture3d_half",
+          "shape": null,
+          "total_time_us": 297.76,
+          "invocation_count": 224,
+          "pct_of_phase": 0.0026,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "binary_mul_texture3d_half",
+          "shape": null,
+          "total_time_us": 291.999,
+          "invocation_count": 224,
+          "pct_of_phase": 0.0025,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "clone_buffer_to_image_half_half",
+          "shape": null,
+          "total_time_us": 177.599,
+          "invocation_count": 112,
+          "pct_of_phase": 0.0015,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "buffer_to_nchw_half_float",
+          "shape": null,
+          "total_time_us": 158.96,
+          "invocation_count": 7,
+          "pct_of_phase": 0.0014,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "rotary_embedding_texture3d_half",
+          "shape": null,
+          "total_time_us": 149.48,
+          "invocation_count": 112,
+          "pct_of_phase": 0.0013,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "sigmoid_half_texture3d",
+          "shape": null,
+          "total_time_us": 80.92,
+          "invocation_count": 112,
+          "pct_of_phase": 0.0007,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "nchw_to_image_texture3d_int32_int32",
+          "shape": null,
+          "total_time_us": 25.4,
+          "invocation_count": 14,
+          "pct_of_phase": 0.0002,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "slice_ubo_texture3d_half",
+          "shape": null,
+          "total_time_us": 24.4,
+          "invocation_count": 14,
+          "pct_of_phase": 0.0002,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "nchw_to_image_texture3d_half_float",
+          "shape": null,
+          "total_time_us": 11.2,
+          "invocation_count": 7,
+          "pct_of_phase": 0.0001,
+          "category": "non-shader overhead"
+        },
+        {
+          "kernel_name": "select_texture3d_half",
+          "shape": null,
+          "total_time_us": 9.88,
+          "invocation_count": 7,
+          "pct_of_phase": 0.0001,
+          "category": "non-shader overhead"
+        }
+      ],
+      "category_rollup": [
+        {
+          "category": "feed-forward",
+          "total_time_us": 41889.399,
+          "pct_of_phase": 0.3643
+        },
+        {
+          "category": "attention (sdpa)",
+          "total_time_us": 34892.481,
+          "pct_of_phase": 0.3034
+        },
+        {
+          "category": "output/vocab projection",
+          "total_time_us": 13139.56,
+          "pct_of_phase": 0.1143
+        },
+        {
+          "category": "attention projection",
+          "total_time_us": 10528.68,
+          "pct_of_phase": 0.0916
+        },
+        {
+          "category": "non-shader overhead",
+          "total_time_us": 4415.159,
+          "pct_of_phase": 0.0384
+        },
+        {
+          "category": "unattributed",
+          "total_time_us": 10131.5,
+          "pct_of_phase": 0.0881
+        }
+      ],
+      "raw_invocations_path": "specs/002-etdump-shader-profiling/results/raw/llama-3.2-1b_4w_decode_raw.json"
+    }
+  }
+}

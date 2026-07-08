@@ -1,0 +1,868 @@
+
+=== Compute Shader Performance Benchmark ===
+Coopmat vs Tiled quantized-linear microbench (Llama 1B/3B/8B shapes, real prefill(M=2048)/decode(M=1) regimes)
+----------------------------------------------------------------------
+Executing 44 test cases for CoopmatLinearBenchCorrectness
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (8,16,1)        (8,8,1)     linear_q4gsw_M64_K128_N64_Texture3D                                                          [64x128]          41.769 μs         25.104 GFLOP/s   PASSED
+linear_q4gsw_tiled_buffer_texture2d_half           (8,16,1)        (8,8,1)     linear_q4gsw_M64_K128_N64_Buffer                                                             [64x128]          43.061 μs         24.351 GFLOP/s   PASSED
+linear_q4gsw_tiled_texture3d_texture2d_half        (16,32,1)       (8,8,1)     linear_q4gsw_M128_K256_N128_Texture3D                                                       [128x256]          77.218 μs        108.636 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (256,1,1)       (128,1,1)   linear_q4gsw_M128_K256_N128_Buffer                                                          [128x256]          39.914 μs        210.165 GFLOP/s   PASSED
+linear_q4gsw_tiled_texture3d_texture2d_half        (16,32,1)       (8,8,1)     linear_q4gsw_M128_K128_N128_Texture3D                                                       [128x128]          41.550 μs        100.945 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (256,1,1)       (128,1,1)   linear_q4gsw_M128_K128_N128_Buffer                                                          [128x128]          22.209 μs        188.854 GFLOP/s   PASSED
+linear_q4gsw_tiled_texture3d_texture2d_half        (32,64,1)       (8,8,1)     linear_q4gsw_M256_K256_N256_Texture3D                                                       [256x256]          80.312 μs        417.802 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (512,2,1)       (128,1,1)   linear_q4gsw_M256_K256_N256_Buffer                                                          [256x256]          42.256 μs        794.067 GFLOP/s   PASSED
+linear_q4gsw_tiled_texture3d_texture2d_half        (32,32,1)       (8,8,1)     linear_q4gsw_M128_K128_N256_Texture3D                                                       [128x128]          41.523 μs        202.024 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (512,1,1)       (128,1,1)   linear_q4gsw_M128_K128_N256_Buffer                                                          [128x128]          22.243 μs        377.129 GFLOP/s   PASSED
+linear_q4gsw_tiled_texture3d_texture2d_half        (16,64,1)       (8,8,1)     linear_q4gsw_M256_K128_N128_Texture3D                                                       [256x128]          43.675 μs        192.067 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (256,2,1)       (128,1,1)   linear_q4gsw_M256_K128_N128_Buffer                                                          [256x128]          22.511 μs        372.647 GFLOP/s   PASSED
+linear_q4gsw_tiled_texture3d_texture2d_half        (32,16,1)       (8,8,1)     linear_q4gsw_M64_K128_N256_Texture3D                                                         [64x128]          40.295 μs        104.091 GFLOP/s   PASSED
+linear_q4gsw_tiled_buffer_texture2d_half           (32,16,1)       (8,8,1)     linear_q4gsw_M64_K128_N256_Buffer                                                            [64x128]          42.232 μs         99.316 GFLOP/s   PASSED
+linear_q4gsw_tiled_texture3d_texture2d_half        (8,64,1)        (8,8,1)     linear_q4gsw_M256_K128_N64_Texture3D                                                        [256x128]          41.744 μs        100.477 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (128,2,1)       (128,1,1)   linear_q4gsw_M256_K128_N64_Buffer                                                           [256x128]          22.369 μs        187.505 GFLOP/s   PASSED
+linear_q4gsw_tiled_texture3d_texture2d_half        (16,32,1)       (8,8,1)     linear_q4gsw_M128_K2048_N128_Texture3D                                                     [128x2048]         576.747 μs        116.358 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (256,1,1)       (128,1,1)   linear_q4gsw_M128_K2048_N128_Buffer                                                        [128x2048]         294.208 μs        228.100 GFLOP/s   PASSED
+linear_q4gsw_tiled_texture3d_texture2d_half        (16,32,1)       (8,8,1)     linear_q4gsw_M128_K4096_N128_Texture3D                                                     [128x4096]        1155.948 μs        116.111 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (256,1,1)       (128,1,1)   linear_q4gsw_M128_K4096_N128_Buffer                                                        [128x4096]         584.921 μs        229.463 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,16,1)        (4,1,16)                                                                                                                    7.310 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (8,16,1)        (8,8,1)                                                                                                                    68.765 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M64_K128_N64_Texture3D                                                    [64x128]          76.074 μs         13.784 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,16,1)        (4,1,16)                                                                                                                    7.895 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_half     (8,16,1)        (8,8,1)                                                                                                                    65.840 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M64_K128_N64_Buffer                                                       [64x128]          73.735 μs         14.221 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,32,1)        (4,1,16)                                                                                                                    8.707 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,32,1)       (8,8,1)                                                                                                                   121.700 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K256_N128_Texture3D                                                 [128x256]         130.407 μs         64.326 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,32,1)        (4,1,16)                                                                                                                    8.436 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (512,1,1)       (256,1,1)                                                                                                                  34.760 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K256_N128_Buffer                                                    [128x256]          43.196 μs        194.197 GFLOP/s   PASSED
+Mismatch at element 128: computed=7.613, reference=4.979, diff=2.634, abs_tolerance=0.500, rel_tolerance=0.050, rel_threshold=0.249
+  total mismatched: 14067 / 16384 (first at 128)
+  16x16-tile mismatch counts (rows=M/16, cols=N/16):
+     235 233 235 234 237 233 232 239
+     205 186 192 187 200 190 180 206
+     211 208 208 209 208 208 209 211
+     233 230 234 231 235 232 229 237
+     219 211 215 212 218 213 210 222
+     240 233 238 236 245 234 228 249
+     196 193 197 194 200 192 191 204
+     240 240 240 240 240 240 240 240
+  Correctness validation FAILED for test linear_dq8ca_q4gsw_M128_K128_N128_Texture3D
+
+vulkan output Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 16384
+  Data (first 20 elements): [-2.437500, 1.162109, -2.521484, -0.534180, 1.354492, -2.044922, -1.385742, 0.463135, -2.394531, -1.245117, 0.476074, -2.603516, -0.152344, 0.310547, -2.695312, -1.973633, 0.063843, -2.894531, -0.823242, 0.425781, ... (16364 more)]
+  Statistics: min=-24.000000, max=18.281250, mean=-0.491407, sum=-8051.216309
+
+ref output Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 16384
+  Data (first 20 elements): [-2.670340, 0.745156, -2.947752, -0.949899, 0.962749, -2.273179, -1.607782, 0.083309, -2.623755, -1.620109, 0.242341, -2.868917, -0.525702, 0.057351, -3.076053, -2.311097, -0.234680, -3.263179, -1.052910, 0.115507, ... (16364 more)]
+  Statistics: min=-24.000000, max=18.281250, mean=-0.491407, sum=-8051.216309
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,32,1)        (4,1,16)                                                                                                                    8.224 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,32,1)       (8,8,1)                                                                                                                    67.386 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K128_N128_Texture3D                                                 [128x128]          75.611 μs         55.472 GFLOP/s   FAILED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,32,1)        (4,1,16)                                                                                                                    8.025 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (512,1,1)       (256,1,1)                                                                                                                  20.658 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K128_N128_Buffer                                                    [128x128]          28.682 μs        146.233 GFLOP/s   PASSED
+Mismatch at element 0: computed=3.629, reference=1.804, diff=1.825, abs_tolerance=0.500, rel_tolerance=0.050, rel_threshold=0.090
+  total mismatched: 58655 / 65536 (first at 0)
+  16x16-tile mismatch counts (rows=M/16, cols=N/16):
+     240 245 243 240 242 240 244 239 242 249 239 246 242 239 245 243
+     220 221 222 226 223 221 219 222 221 225 227 223 230 220 226 219
+     237 236 231 235 236 227 241 231 234 244 232 241 240 239 229 242
+     216 226 221 222 224 221 218 224 226 230 216 228 227 227 228 231
+     213 223 216 220 212 217 210 217 221 223 211 224 224 212 220 223
+     218 218 220 221 218 214 218 221 220 222 219 218 223 221 219 221
+     217 225 221 230 225 222 208 218 224 225 218 232 232 212 219 227
+     222 226 220 225 224 219 218 223 224 227 220 229 229 224 223 224
+     222 227 223 232 229 221 222 226 224 233 223 232 229 227 224 235
+     220 223 218 219 229 224 221 228 222 221 219 225 217 220 226 227
+     234 236 235 237 238 236 236 240 237 238 239 240 236 236 237 241
+     235 239 236 237 242 245 236 243 244 236 237 238 236 242 237 238
+     208 212 208 216 219 213 218 213 212 214 218 214 217 212 207 219
+     247 244 241 241 241 241 247 240 245 246 240 244 246 249 241 245
+     233 232 233 233 235 234 242 233 231 234 231 233 231 238 226 235
+     240 245 238 245 244 237 236 238 242 249 234 247 243 244 238 246
+  Correctness validation FAILED for test linear_dq8ca_q4gsw_M256_K256_N256_Texture3D
+
+vulkan output Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 256], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 65536
+  Data (first 20 elements): [3.628906, 3.314453, -0.207642, 2.314453, 3.500000, -0.514648, 3.621094, 1.856445, -1.725586, 3.542969, 1.786133, 0.582520, 2.484375, 2.542969, -0.073059, 2.736328, 3.156250, 0.726562, 4.460938, 3.697266, ... (65516 more)]
+  Statistics: min=-37.937500, max=33.750000, mean=-0.384291, sum=-25184.871094
+
+ref output Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 256], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 65536
+  Data (first 20 elements): [1.803782, 1.574095, -1.853060, 0.994235, 1.360551, -2.259737, 1.958993, 0.724515, -2.677718, 2.310676, 0.783161, -0.564309, 0.905255, 0.975263, -1.714010, 1.752179, 1.350950, -1.379608, 3.186261, 1.595404, ... (65516 more)]
+  Statistics: min=-37.937500, max=33.750000, mean=-0.384291, sum=-25184.871094
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,64,1)        (4,1,16)                                                                                                                    9.369 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (32,64,1)       (8,8,1)                                                                                                                   125.298 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K256_N256_Texture3D                                                 [256x256]         134.666 μs        249.167 GFLOP/s   FAILED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,64,1)        (4,1,16)                                                                                                                    8.824 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (1024,2,1)      (256,1,1)                                                                                                                  35.588 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K256_N256_Buffer                                                    [256x256]          44.411 μs        755.535 GFLOP/s   PASSED
+Mismatch at element 0: computed=-3.295, reference=-1.335, diff=1.960, abs_tolerance=0.500, rel_tolerance=0.050, rel_threshold=0.067
+  total mismatched: 27990 / 32768 (first at 0)
+  16x16-tile mismatch counts (rows=M/16, cols=N/16):
+     224 225 225 225 226 226 226 226 229 227 227 224 228 225 224 229
+     233 228 230 230 232 229 229 230 230 231 230 229 233 226 227 233
+     218 205 212 209 215 210 211 212 214 214 216 208 216 207 211 216
+     214 207 208 209 215 208 207 212 214 210 212 209 216 208 206 213
+     211 198 202 200 211 204 206 209 211 210 210 199 215 202 204 213
+     214 202 210 210 215 207 211 211 210 209 214 206 217 208 207 213
+     224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224
+     235 224 229 227 234 228 229 230 233 231 234 224 232 227 230 232
+  Correctness validation FAILED for test linear_dq8ca_q4gsw_M128_K128_N256_Texture3D
+
+vulkan output Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 256], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 32768
+  Data (first 20 elements): [-3.294922, -6.937500, -6.390625, -7.589844, -6.031250, -3.896484, -7.304688, -4.500000, -5.843750, -6.832031, -7.285156, -5.140625, -7.683594, -6.875000, -6.507812, -7.417969, -4.429688, -5.414062, -3.833984, -8.156250, ... (32748 more)]
+  Statistics: min=-27.250000, max=21.328125, mean=-0.156332, sum=-5122.698242
+
+ref output Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 256], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 32768
+  Data (first 20 elements): [-1.335144, -2.844047, -2.142348, -3.129409, -2.431780, -1.248065, -3.019059, -2.593723, -2.106765, -2.826820, -3.147529, -1.481514, -3.178071, -2.982465, -2.082042, -3.060393, -2.151863, -1.789330, -1.577685, -3.485388, ... (32748 more)]
+  Statistics: min=-27.250000, max=21.328125, mean=-0.156332, sum=-5122.698242
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,32,1)        (4,1,16)                                                                                                                    8.194 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (32,32,1)       (8,8,1)                                                                                                                    66.947 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K128_N256_Texture3D                                                 [128x128]          75.141 μs        111.638 GFLOP/s   FAILED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,32,1)        (4,1,16)                                                                                                                    8.070 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (1024,1,1)      (256,1,1)                                                                                                                  20.563 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K128_N256_Buffer                                                    [128x128]          28.633 μs        292.968 GFLOP/s   PASSED
+Mismatch at element 0: computed=1.931, reference=0.572, diff=1.359, abs_tolerance=0.500, rel_tolerance=0.050, rel_threshold=0.029
+  total mismatched: 29837 / 32768 (first at 0)
+  16x16-tile mismatch counts (rows=M/16, cols=N/16):
+     231 231 231 228 232 235 232 232
+     220 218 219 215 219 221 219 218
+     233 234 231 232 233 237 235 233
+     254 253 253 250 253 254 252 253
+     201 201 197 200 199 203 202 199
+     232 232 230 231 232 237 236 232
+     208 209 208 206 209 212 210 210
+     213 215 211 212 218 215 219 217
+     250 247 249 248 247 250 250 244
+     248 242 245 232 243 243 246 240
+     230 233 223 220 230 224 231 231
+     244 244 243 235 245 241 242 240
+     242 242 245 245 242 246 241 241
+     246 250 248 245 249 246 247 246
+     247 235 235 229 233 236 244 234
+     252 252 248 246 251 248 251 248
+  Correctness validation FAILED for test linear_dq8ca_q4gsw_M256_K128_N128_Texture3D
+
+vulkan output Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 32768
+  Data (first 20 elements): [1.930664, -1.416016, 0.048187, 2.291016, -1.885742, 1.513672, 1.837891, -0.303955, -1.692383, 1.684570, -1.807617, 0.680664, 2.173828, -1.799805, 1.199219, 2.349609, -1.982422, -0.800293, 2.091797, -0.713867, ... (32748 more)]
+  Statistics: min=-23.640625, max=28.890625, mean=-0.231163, sum=-7574.738281
+
+ref output Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 32768
+  Data (first 20 elements): [0.571915, -3.231632, -1.381331, 0.653127, -2.937772, -0.456094, 0.549417, -1.393211, -2.417428, 0.497887, -2.719947, -0.814150, 0.624104, -2.526038, -0.291760, 0.674329, -2.902232, -1.838466, 0.603133, -2.249818, ... (32748 more)]
+  Statistics: min=-23.640625, max=28.890625, mean=-0.231163, sum=-7574.738281
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,64,1)        (4,1,16)                                                                                                                    9.135 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,64,1)       (8,8,1)                                                                                                                    69.859 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K128_N128_Texture3D                                                 [256x128]          78.994 μs        106.193 GFLOP/s   FAILED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,64,1)        (4,1,16)                                                                                                                    8.823 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (512,2,1)       (256,1,1)                                                                                                                  20.372 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K128_N128_Buffer                                                    [256x128]          29.196 μs        287.324 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,16,1)        (4,1,16)                                                                                                                    7.578 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (32,16,1)       (8,8,1)                                                                                                                    66.221 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M64_K128_N256_Texture3D                                                   [64x128]          73.799 μs         56.834 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,16,1)        (4,1,16)                                                                                                                    7.137 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_half     (32,16,1)       (8,8,1)                                                                                                                    61.666 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M64_K128_N256_Buffer                                                      [64x128]          68.803 μs         60.961 GFLOP/s   PASSED
+Mismatch at element 0: computed=-10.812, reference=-5.793, diff=5.020, abs_tolerance=0.500, rel_tolerance=0.050, rel_threshold=0.290
+  total mismatched: 14468 / 16384 (first at 0)
+  16x16-tile mismatch counts (rows=M/16, cols=N/16):
+     208 208 208 208
+     207 207 205 208
+     228 223 227 225
+     230 231 228 231
+     209 208 208 209
+     240 239 239 240
+     214 215 212 215
+     228 226 227 228
+     198 213 199 213
+     239 243 230 245
+     236 237 236 238
+     219 224 223 228
+     253 256 250 255
+     237 243 247 242
+     210 216 215 218
+     242 243 235 246
+  Correctness validation FAILED for test linear_dq8ca_q4gsw_M256_K128_N64_Texture3D
+
+vulkan output Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 64], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 16384
+  Data (first 20 elements): [-10.812500, -2.257812, -6.339844, -9.570312, -4.472656, -9.257812, -11.109375, -2.128906, -5.410156, -10.156250, -3.230469, -8.914062, -9.343750, -3.066406, -9.406250, -6.367188, -2.564453, -12.101562, -11.257812, -1.872070, ... (16364 more)]
+  Statistics: min=-29.250000, max=24.484375, mean=-0.439946, sum=-7208.073242
+
+ref output Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 64], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 16384
+  Data (first 20 elements): [-5.792516, 0.386358, -3.546968, -5.819823, 0.765371, -5.367548, -5.751793, 0.364142, -3.298455, -4.817315, 0.552366, -5.495688, -4.916245, 0.524382, -5.128250, -4.293396, 0.438939, -7.247936, -6.217981, 0.320307, ... (16364 more)]
+  Statistics: min=-29.250000, max=24.484375, mean=-0.439946, sum=-7208.073242
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,64,1)        (4,1,16)                                                                                                                    9.589 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (8,64,1)        (8,8,1)                                                                                                                    68.290 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K128_N64_Texture3D                                                  [256x128]          77.880 μs         53.856 GFLOP/s   FAILED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,64,1)        (4,1,16)                                                                                                                    9.513 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (256,2,1)       (256,1,1)                                                                                                                  20.515 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K128_N64_Buffer                                                     [256x128]          30.028 μs        139.680 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,32,1)       (2,1,32)                                                                                                                   19.418 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,32,1)       (8,8,1)                                                                                                                   898.806 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K2048_N128_Texture3D                                               [128x2048]         918.225 μs         73.085 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,32,1)       (2,1,32)                                                                                                                   20.003 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (512,1,1)       (256,1,1)                                                                                                                 201.132 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K2048_N128_Buffer                                                  [128x2048]         221.135 μs        303.475 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,32,1)       (2,1,32)                                                                                                                   34.196 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,32,1)       (8,8,1)                                                                                                                  1797.257 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K4096_N128_Texture3D                                               [128x4096]        1831.452 μs         73.285 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,32,1)       (2,1,32)                                                                                                                   33.807 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (512,1,1)       (256,1,1)                                                                                                                 398.219 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K4096_N128_Buffer                                                  [128x4096]         432.025 μs        310.671 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (256,1,1)       (128,1,1)   linear_q4gsw_M128_K128_N128_rank3batch1_Buffer                                            [1x128x128]          22.480 μs        186.579 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (256,1,1)       (128,1,1)   linear_q4gsw_M128_K4096_N128_rank3batch1_Buffer                                          [1x128x4096]         584.753 μs        229.529 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,32,1)        (4,1,16)                                                                                                                    7.488 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (512,1,1)       (256,1,1)                                                                                                                  20.044 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K128_N128_rank3batch1_Buffer                                      [1x128x128]          27.532 μs        152.344 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,32,1)       (2,1,32)                                                                                                                   33.627 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (512,1,1)       (256,1,1)                                                                                                                 396.391 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K4096_N128_rank3batch1_Buffer                                    [1x128x4096]         430.018 μs        312.121 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 44 test cases
+[rank3 batch=1] linear_q4gsw_M128_K128_N128_rank3batch1_Buffer -> linear_q4gsw_coopmat_buffer_texture2d_half (coopmat dispatched), correctness=PASSED
+[rank3 batch=1] linear_q4gsw_M128_K4096_N128_rank3batch1_Buffer -> linear_q4gsw_coopmat_buffer_texture2d_half (coopmat dispatched), correctness=PASSED
+[rank3 batch=1] linear_dq8ca_q4gsw_M128_K128_N128_rank3batch1_Buffer -> linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half (coopmat dispatched), correctness=PASSED
+[rank3 batch=1] linear_dq8ca_q4gsw_M128_K4096_N128_rank3batch1_Buffer -> linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half (coopmat dispatched), correctness=PASSED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (256,512,1)     (8,8,1)     linear_q4gsw_M2048_K2048_N2048_Texture3D                                                  [2048x2048]       19179.223 μs        895.754 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,prefill,tiled,2048,2048,19179.223,12.286,895.754,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coopmat_buffer_texture2d_half         (4096,16,1)     (128,1,1)   linear_q4gsw_M2048_K2048_N2048_Buffer                                                     [2048x2048]        6437.828 μs       2668.581 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,prefill,coopmat,2048,2048,6437.828,13.855,2668.582,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (64,512,1)      (8,8,1)     linear_q4gsw_M2048_K2048_N512_Texture3D                                                   [2048x2048]        5438.817 μs        789.688 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,prefill,tiled,2048,512,5438.817,35.123,789.688,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coopmat_buffer_texture2d_half         (1024,16,1)     (128,1,1)   linear_q4gsw_M2048_K2048_N512_Buffer                                                      [2048x2048]        1901.459 μs       2258.774 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,prefill,coopmat,2048,512,1901.459,11.634,2258.774,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (1024,512,1)    (8,8,1)     linear_q4gsw_M2048_K2048_N8192_Texture3D                                                  [2048x2048]       76128.734 μs        902.675 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,prefill,tiled,2048,8192,76128.734,65.661,902.675,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coopmat_buffer_texture2d_half         (16384,16,1)    (128,1,1)   linear_q4gsw_M2048_K2048_N8192_Buffer                                                     [2048x2048]       24983.551 μs       2750.589 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,prefill,coopmat,2048,8192,24983.551,3.606,2750.589,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (256,512,1)     (8,8,1)     linear_q4gsw_M2048_K8192_N2048_Texture3D                                                  [2048x8192]       76713.922 μs        895.789 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,prefill,tiled,8192,2048,76713.922,39.427,895.789,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coopmat_buffer_texture2d_half         (4096,16,1)     (128,1,1)   linear_q4gsw_M2048_K8192_N2048_Buffer                                                     [2048x8192]       25076.402 μs       2740.404 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,prefill,coopmat,8192,2048,25076.402,47.310,2740.404,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (384,512,1)     (8,8,1)     linear_q4gsw_M2048_K3072_N3072_Texture3D                                                  [2048x3072]       43011.883 μs        898.698 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,prefill,tiled,3072,3072,43011.883,12.227,898.698,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coopmat_buffer_texture2d_half         (6144,16,1)     (128,1,1)   linear_q4gsw_M2048_K3072_N3072_Buffer                                                     [2048x3072]       14163.328 μs       2729.210 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,prefill,coopmat,3072,3072,14163.328,40.048,2729.211,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (128,512,1)     (8,8,1)     linear_q4gsw_M2048_K3072_N1024_Texture3D                                                  [2048x3072]       14720.859 μs        875.282 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,prefill,tiled,3072,1024,14720.859,5.070,875.282,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coopmat_buffer_texture2d_half         (2048,16,1)     (128,1,1)   linear_q4gsw_M2048_K3072_N1024_Buffer                                                     [2048x3072]        4923.917 μs       2616.799 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,prefill,coopmat,3072,1024,4923.917,11.810,2616.799,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (1024,512,1)    (8,8,1)     linear_q4gsw_M2048_K3072_N8192_Texture3D                                                  [2048x3072]      114415.203 μs        900.922 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,prefill,tiled,3072,8192,114415.203,54.744,900.922,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coopmat_buffer_texture2d_half         (16384,16,1)    (128,1,1)   linear_q4gsw_M2048_K3072_N8192_Buffer                                                     [2048x3072]       37438.812 μs       2753.271 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,prefill,coopmat,3072,8192,37438.812,32.454,2753.271,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (384,512,1)     (8,8,1)     linear_q4gsw_M2048_K8192_N3072_Texture3D                                                  [2048x8192]      114797.211 μs        897.924 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,prefill,tiled,8192,3072,114797.211,44.000,897.924,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coopmat_buffer_texture2d_half         (6144,16,1)     (128,1,1)   linear_q4gsw_M2048_K8192_N3072_Buffer                                                     [2048x8192]       37327.863 μs       2761.455 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,prefill,coopmat,8192,3072,37327.863,41.969,2761.455,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (512,512,1)     (8,8,1)     linear_q4gsw_M2048_K4096_N4096_Texture3D                                                  [2048x4096]       76520.844 μs        898.049 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,prefill,tiled,4096,4096,76520.844,44.290,898.049,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coopmat_buffer_texture2d_half         (8192,16,1)     (128,1,1)   linear_q4gsw_M2048_K4096_N4096_Buffer                                                     [2048x4096]       24988.170 μs       2750.080 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,prefill,coopmat,4096,4096,24988.170,34.565,2750.080,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (128,512,1)     (8,8,1)     linear_q4gsw_M2048_K4096_N1024_Texture3D                                                  [2048x4096]       19568.145 μs        877.951 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,prefill,tiled,4096,1024,19568.145,13.043,877.951,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coopmat_buffer_texture2d_half         (2048,16,1)     (128,1,1)   linear_q4gsw_M2048_K4096_N1024_Buffer                                                     [2048x4096]        6472.091 μs       2654.454 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,prefill,coopmat,4096,1024,6472.091,3.923,2654.454,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (1792,512,1)    (8,8,1)     linear_q4gsw_M2048_K4096_N14336_Texture3D                                                 [2048x4096]      267209.062 μs        900.112 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,prefill,tiled,4096,14336,267209.062,181.387,900.112,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coopmat_buffer_texture2d_half         (28672,16,1)    (128,1,1)   linear_q4gsw_M2048_K4096_N14336_Buffer                                                    [2048x4096]       86934.875 μs       2766.648 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,prefill,coopmat,4096,14336,86934.875,75.318,2766.648,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (512,512,1)     (8,8,1)     linear_q4gsw_M2048_K14336_N4096_Texture3D                                                [2048x14336]      267018.688 μs        900.754 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,prefill,tiled,14336,4096,267018.688,75.225,900.754,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coopmat_buffer_texture2d_half         (8192,16,1)     (128,1,1)   linear_q4gsw_M2048_K14336_N4096_Buffer                                                   [2048x14336]       87028.320 μs       2763.677 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,prefill,coopmat,14336,4096,87028.320,108.713,2763.677,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,512,1)      (2,1,32)                                                                                                                  271.016 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (256,512,1)     (8,8,1)                                                                                                                 30520.010 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K2048_N2048_Texture3D                                            [2048x2048]       30791.025 μs        557.951 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,prefill,tiled,2048,2048,30791.025,19.787,557.951,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,512,1)      (2,1,32)                                                                                                                  316.837 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (8192,16,1)     (256,1,1)                                                                                                                7116.499 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K2048_N2048_Buffer                                               [2048x2048]        7433.335 μs       2311.193 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,prefill,coopmat,2048,2048,7433.335,8.510,2311.193,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,512,1)      (2,1,32)                                                                                                                  245.760 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (64,512,1)      (8,8,1)                                                                                                                  7838.170 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K2048_N512_Texture3D                                             [2048x2048]        8083.930 μs        531.297 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,prefill,tiled,2048,512,8083.930,10.330,531.297,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,512,1)      (2,1,32)                                                                                                                  314.480 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (2048,16,1)     (256,1,1)                                                                                                                1743.995 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K2048_N512_Buffer                                                [2048x2048]        2058.474 μs       2086.481 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,prefill,coopmat,2048,512,2058.474,1.583,2086.481,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,512,1)      (2,1,32)                                                                                                                  277.625 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (1024,512,1)    (8,8,1)                                                                                                                119629.102 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K2048_N8192_Texture3D                                            [2048x2048]      119906.727 μs        573.108 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,prefill,tiled,2048,8192,119906.727,23.654,573.108,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,512,1)      (2,1,32)                                                                                                                  333.970 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (32768,16,1)    (256,1,1)                                                                                                               27814.730 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K2048_N8192_Buffer                                               [2048x2048]       28148.697 μs       2441.302 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,prefill,coopmat,2048,8192,28148.697,146.258,2441.302,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (64,512,1)      (2,1,32)                                                                                                                 1420.325 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (256,512,1)     (8,8,1)                                                                                                                120563.953 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K8192_N2048_Texture3D                                            [2048x8192]      121984.273 μs        563.347 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,prefill,tiled,8192,2048,121984.273,86.547,563.347,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (64,512,1)      (2,1,32)                                                                                                                 1366.669 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (8192,16,1)     (256,1,1)                                                                                                               30796.305 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K8192_N2048_Buffer                                               [2048x8192]       32162.975 μs       2136.602 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,prefill,coopmat,8192,2048,32162.975,35.963,2136.602,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (24,512,1)      (2,1,32)                                                                                                                  320.455 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (384,512,1)     (8,8,1)                                                                                                                 67447.641 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K3072_N3072_Texture3D                                            [2048x3072]       67768.086 μs        570.397 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,prefill,tiled,3072,3072,67768.086,15.072,570.397,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (24,512,1)      (2,1,32)                                                                                                                  490.935 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (12288,16,1)    (256,1,1)                                                                                                               16039.347 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K3072_N3072_Buffer                                               [2048x3072]       16530.279 μs       2338.418 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,prefill,coopmat,3072,3072,16530.279,49.467,2338.418,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (24,512,1)      (2,1,32)                                                                                                                  363.527 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (128,512,1)     (8,8,1)                                                                                                                 23049.957 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K3072_N1024_Texture3D                                            [2048x3072]       23413.488 μs        550.320 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,prefill,tiled,3072,1024,23413.488,22.558,550.320,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (24,512,1)      (2,1,32)                                                                                                                  460.942 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (4096,16,1)     (256,1,1)                                                                                                                5460.546 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K3072_N1024_Buffer                                               [2048x3072]        5921.487 μs       2175.957 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,prefill,coopmat,3072,1024,5921.487,7.462,2175.957,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (24,512,1)      (2,1,32)                                                                                                                  378.386 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (1024,512,1)    (8,8,1)                                                                                                                179362.578 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K3072_N8192_Texture3D                                            [2048x3072]      179740.969 μs        573.488 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,prefill,tiled,3072,8192,179740.969,103.617,573.488,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (24,512,1)      (2,1,32)                                                                                                                  511.883 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (32768,16,1)    (256,1,1)                                                                                                               42005.223 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K3072_N8192_Buffer                                               [2048x3072]       42517.102 μs       2424.418 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,prefill,coopmat,3072,8192,42517.102,457.451,2424.418,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (64,512,1)      (2,1,32)                                                                                                                 1404.967 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (384,512,1)     (8,8,1)                                                                                                                180141.250 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K8192_N3072_Texture3D                                            [2048x8192]      181546.219 μs        567.785 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,prefill,tiled,8192,3072,181546.219,71.865,567.785,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (64,512,1)      (2,1,32)                                                                                                                 1365.172 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (12288,16,1)    (256,1,1)                                                                                                               47264.398 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K8192_N3072_Buffer                                               [2048x8192]       48629.570 μs       2119.682 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,prefill,coopmat,8192,3072,48629.570,41.768,2119.682,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,512,1)      (2,1,32)                                                                                                                  464.233 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (512,512,1)     (8,8,1)                                                                                                                120130.266 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K4096_N4096_Texture3D                                            [2048x4096]      120594.500 μs        569.839 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,prefill,tiled,4096,4096,120594.500,66.524,569.839,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,512,1)      (2,1,32)                                                                                                                  610.631 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (16384,16,1)    (256,1,1)                                                                                                               29869.098 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K4096_N4096_Buffer                                               [2048x4096]       30479.725 μs       2254.596 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,prefill,coopmat,4096,4096,30479.725,69.170,2254.596,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,512,1)      (2,1,32)                                                                                                                  457.132 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (128,512,1)     (8,8,1)                                                                                                                 30779.936 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K4096_N1024_Texture3D                                            [2048x4096]       31237.068 μs        549.983 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,prefill,tiled,4096,1024,31237.068,48.841,549.983,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,512,1)      (2,1,32)                                                                                                                  620.662 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (4096,16,1)     (256,1,1)                                                                                                                8052.410 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K4096_N1024_Buffer                                               [2048x4096]        8673.072 μs       1980.829 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,prefill,coopmat,4096,1024,8673.072,3.810,1980.829,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,512,1)      (2,1,32)                                                                                                                  541.819 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (1792,512,1)    (8,8,1)                                                                                                                418082.344 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K4096_N14336_Texture3D                                           [2048x4096]      418624.188 μs        574.544 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,prefill,tiled,4096,14336,418624.188,205.111,574.544,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,512,1)      (2,1,32)                                                                                                                  704.223 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (57344,16,1)    (256,1,1)                                                                                                              102228.297 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K4096_N14336_Buffer                                              [2048x4096]      102932.523 μs       2336.659 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,prefill,coopmat,4096,14336,102932.523,328.321,2336.659,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (112,512,1)     (2,1,32)                                                                                                                 2545.148 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (512,512,1)     (8,8,1)                                                                                                                419395.188 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K14336_N4096_Texture3D                                          [2048x14336]      421940.344 μs        570.029 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,prefill,tiled,14336,4096,421940.344,61.249,570.029,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (112,512,1)     (2,1,32)                                                                                                                 2402.634 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (16384,16,1)    (256,1,1)                                                                                                              109895.500 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K14336_N4096_Buffer                                             [2048x14336]      112298.125 μs       2141.783 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,prefill,coopmat,14336,4096,112298.125,112.701,2141.782,confirmed,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_texture3d_texture2d_half         (256,1,1)       (1,1,64)    linear_q4gsw_M1_K2048_N2048_Texture3D                                                        [1x2048]          47.460 μs        176.751 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,decode,tiled,2048,2048,47.460,0.017,176.751,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_buffer_texture2d_half            (256,1,1)       (1,1,64)    linear_q4gsw_M1_K2048_N2048_Buffer                                                           [1x2048]          47.295 μs        177.369 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,decode,coopmat,2048,2048,47.295,0.094,177.369,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_texture3d_texture2d_half         (64,1,1)        (1,1,64)    linear_q4gsw_M1_K2048_N512_Texture3D                                                         [1x2048]          24.994 μs         83.905 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,decode,tiled,2048,512,24.994,0.082,83.905,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_buffer_texture2d_half            (64,1,1)        (1,1,64)    linear_q4gsw_M1_K2048_N512_Buffer                                                            [1x2048]          24.108 μs         86.991 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,decode,coopmat,2048,512,24.108,0.109,86.991,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_texture3d_texture2d_half         (1024,1,1)      (1,1,64)    linear_q4gsw_M1_K2048_N8192_Texture3D                                                        [1x2048]         194.964 μs        172.106 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,decode,tiled,2048,8192,194.964,1.453,172.106,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_buffer_texture2d_half            (1024,1,1)      (1,1,64)    linear_q4gsw_M1_K2048_N8192_Buffer                                                           [1x2048]         213.924 μs        156.852 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,decode,coopmat,2048,8192,213.924,0.775,156.852,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_texture3d_texture2d_half         (256,1,1)       (1,1,64)    linear_q4gsw_M1_K8192_N2048_Texture3D                                                        [1x8192]         262.817 μs        127.672 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,decode,tiled,8192,2048,262.817,1.839,127.672,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_buffer_texture2d_half            (256,1,1)       (1,1,64)    linear_q4gsw_M1_K8192_N2048_Buffer                                                           [1x8192]         261.569 μs        128.281 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,decode,coopmat,8192,2048,261.569,0.136,128.281,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_texture3d_texture2d_half         (384,1,1)       (1,1,64)    linear_q4gsw_M1_K3072_N3072_Texture3D                                                        [1x3072]         101.505 μs        185.945 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,decode,tiled,3072,3072,101.505,0.634,185.946,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_buffer_texture2d_half            (384,1,1)       (1,1,64)    linear_q4gsw_M1_K3072_N3072_Buffer                                                           [1x3072]         101.352 μs        186.225 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,decode,coopmat,3072,3072,101.352,1.016,186.225,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_texture3d_texture2d_half         (128,1,1)       (1,1,64)    linear_q4gsw_M1_K3072_N1024_Texture3D                                                        [1x3072]          41.100 μs        153.077 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,decode,tiled,3072,1024,41.100,0.327,153.077,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_buffer_texture2d_half            (128,1,1)       (1,1,64)    linear_q4gsw_M1_K3072_N1024_Buffer                                                           [1x3072]          40.088 μs        156.943 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,decode,coopmat,3072,1024,40.088,0.032,156.943,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_texture3d_texture2d_half         (1024,1,1)      (1,1,64)    linear_q4gsw_M1_K3072_N8192_Texture3D                                                        [1x3072]         332.767 μs        151.252 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,decode,tiled,3072,8192,332.767,0.520,151.252,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_buffer_texture2d_half            (1024,1,1)      (1,1,64)    linear_q4gsw_M1_K3072_N8192_Buffer                                                           [1x3072]         379.602 μs        132.591 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,decode,coopmat,3072,8192,379.602,0.604,132.591,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_texture3d_texture2d_half         (384,1,1)       (1,1,64)    linear_q4gsw_M1_K8192_N3072_Texture3D                                                        [1x8192]         384.228 μs        130.994 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,decode,tiled,8192,3072,384.228,0.397,130.994,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_buffer_texture2d_half            (384,1,1)       (1,1,64)    linear_q4gsw_M1_K8192_N3072_Buffer                                                           [1x8192]         381.413 μs        131.961 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,decode,coopmat,8192,3072,381.413,0.436,131.961,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_texture3d_texture2d_half         (512,1,1)       (1,1,64)    linear_q4gsw_M1_K4096_N4096_Texture3D                                                        [1x4096]         219.429 μs        152.917 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,decode,tiled,4096,4096,219.429,0.813,152.917,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_buffer_texture2d_half            (512,1,1)       (1,1,64)    linear_q4gsw_M1_K4096_N4096_Buffer                                                           [1x4096]         265.685 μs        126.294 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,decode,coopmat,4096,4096,265.685,1.478,126.294,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_texture3d_texture2d_half         (128,1,1)       (1,1,64)    linear_q4gsw_M1_K4096_N1024_Texture3D                                                        [1x4096]          51.610 μs        162.540 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,decode,tiled,4096,1024,51.610,0.579,162.540,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_buffer_texture2d_half            (128,1,1)       (1,1,64)    linear_q4gsw_M1_K4096_N1024_Buffer                                                           [1x4096]          50.414 μs        166.395 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,decode,coopmat,4096,1024,50.414,0.077,166.395,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_texture3d_texture2d_half         (1792,1,1)      (1,1,64)    linear_q4gsw_M1_K4096_N14336_Texture3D                                                       [1x4096]         797.288 μs        147.300 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,decode,tiled,4096,14336,797.288,2.021,147.300,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_buffer_texture2d_half            (1792,1,1)      (1,1,64)    linear_q4gsw_M1_K4096_N14336_Buffer                                                          [1x4096]         797.622 μs        147.238 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,decode,coopmat,4096,14336,797.622,1.738,147.238,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_texture3d_texture2d_half         (512,1,1)       (1,1,64)    linear_q4gsw_M1_K14336_N4096_Texture3D                                                      [1x14336]         876.544 μs        133.981 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,decode,tiled,14336,4096,876.544,4.191,133.981,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_coop_buffer_texture2d_half            (512,1,1)       (1,1,64)    linear_q4gsw_M1_K14336_N4096_Buffer                                                         [1x14336]         871.487 μs        134.759 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,decode,coopmat,14336,4096,871.487,0.827,134.759,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_texture3d_texture2d_..     (256,1,1)       (1,1,64)    linear_dq8ca_q4gsw_M1_K2048_N2048_Texture3D                                                  [1x2048]          49.622 μs        169.052 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,decode,tiled,2048,2048,49.622,0.794,169.052,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_buffer_texture2d_half      (256,1,1)       (1,1,64)    linear_dq8ca_q4gsw_M1_K2048_N2048_Buffer                                                     [1x2048]          48.506 μs        172.940 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,decode,coopmat,2048,2048,48.506,0.055,172.940,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_texture3d_texture2d_..     (64,1,1)        (1,1,64)    linear_dq8ca_q4gsw_M1_K2048_N512_Texture3D                                                   [1x2048]          25.588 μs         81.959 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,decode,tiled,2048,512,25.588,0.196,81.959,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_buffer_texture2d_half      (64,1,1)        (1,1,64)    linear_dq8ca_q4gsw_M1_K2048_N512_Buffer                                                      [1x2048]          25.114 μs         83.504 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,decode,coopmat,2048,512,25.114,0.100,83.504,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_texture3d_texture2d_..     (1024,1,1)      (1,1,64)    linear_dq8ca_q4gsw_M1_K2048_N8192_Texture3D                                                  [1x2048]         205.197 μs        163.523 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,decode,tiled,2048,8192,205.197,3.212,163.523,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_buffer_texture2d_half      (1024,1,1)      (1,1,64)    linear_dq8ca_q4gsw_M1_K2048_N8192_Buffer                                                     [1x2048]         231.835 μs        144.734 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,decode,coopmat,2048,8192,231.835,1.393,144.734,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_texture3d_texture2d_..     (256,1,1)       (1,1,64)    linear_dq8ca_q4gsw_M1_K8192_N2048_Texture3D                                                  [1x8192]         260.592 μs        128.762 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,decode,tiled,8192,2048,260.592,3.586,128.762,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_buffer_texture2d_half      (256,1,1)       (1,1,64)    linear_dq8ca_q4gsw_M1_K8192_N2048_Buffer                                                     [1x8192]         235.423 μs        142.528 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,decode,coopmat,8192,2048,235.423,2.787,142.528,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_texture3d_texture2d_..     (384,1,1)       (1,1,64)    linear_dq8ca_q4gsw_M1_K3072_N3072_Texture3D                                                  [1x3072]         106.656 μs        176.965 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,decode,tiled,3072,3072,106.656,2.144,176.965,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_buffer_texture2d_half      (384,1,1)       (1,1,64)    linear_dq8ca_q4gsw_M1_K3072_N3072_Buffer                                                     [1x3072]         111.909 μs        168.658 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,decode,coopmat,3072,3072,111.909,1.230,168.658,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_texture3d_texture2d_..     (128,1,1)       (1,1,64)    linear_dq8ca_q4gsw_M1_K3072_N1024_Texture3D                                                  [1x3072]          42.392 μs        148.410 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,decode,tiled,3072,1024,42.392,0.626,148.410,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_buffer_texture2d_half      (128,1,1)       (1,1,64)    linear_dq8ca_q4gsw_M1_K3072_N1024_Buffer                                                     [1x3072]          41.187 μs        152.753 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,decode,coopmat,3072,1024,41.187,0.111,152.753,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_texture3d_texture2d_..     (1024,1,1)      (1,1,64)    linear_dq8ca_q4gsw_M1_K3072_N8192_Texture3D                                                  [1x3072]         324.248 μs        155.226 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,decode,tiled,3072,8192,324.248,5.819,155.226,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_buffer_texture2d_half      (1024,1,1)      (1,1,64)    linear_dq8ca_q4gsw_M1_K3072_N8192_Buffer                                                     [1x3072]         385.503 μs        130.561 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,decode,coopmat,3072,8192,385.503,1.986,130.561,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_texture3d_texture2d_..     (384,1,1)       (1,1,64)    linear_dq8ca_q4gsw_M1_K8192_N3072_Texture3D                                                  [1x8192]         383.374 μs        131.286 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,decode,tiled,8192,3072,383.374,3.515,131.286,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_buffer_texture2d_half      (384,1,1)       (1,1,64)    linear_dq8ca_q4gsw_M1_K8192_N3072_Buffer                                                     [1x8192]         385.700 μs        130.494 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,decode,coopmat,8192,3072,385.700,3.567,130.494,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_texture3d_texture2d_..     (512,1,1)       (1,1,64)    linear_dq8ca_q4gsw_M1_K4096_N4096_Texture3D                                                  [1x4096]         235.503 μs        142.480 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,decode,tiled,4096,4096,235.503,5.206,142.480,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_buffer_texture2d_half      (512,1,1)       (1,1,64)    linear_dq8ca_q4gsw_M1_K4096_N4096_Buffer                                                     [1x4096]         269.362 μs        124.570 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,decode,coopmat,4096,4096,269.362,1.650,124.570,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_texture3d_texture2d_..     (128,1,1)       (1,1,64)    linear_dq8ca_q4gsw_M1_K4096_N1024_Texture3D                                                  [1x4096]          53.814 μs        155.880 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,decode,tiled,4096,1024,53.814,1.686,155.880,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_buffer_texture2d_half      (128,1,1)       (1,1,64)    linear_dq8ca_q4gsw_M1_K4096_N1024_Buffer                                                     [1x4096]          54.256 μs        154.612 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,decode,coopmat,4096,1024,54.256,1.068,154.612,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_texture3d_texture2d_..     (1792,1,1)      (1,1,64)    linear_dq8ca_q4gsw_M1_K4096_N14336_Texture3D                                                 [1x4096]         800.526 μs        146.704 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,decode,tiled,4096,14336,800.526,1.072,146.704,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_buffer_texture2d_half      (1792,1,1)      (1,1,64)    linear_dq8ca_q4gsw_M1_K4096_N14336_Buffer                                                    [1x4096]         855.411 μs        137.291 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,decode,coopmat,4096,14336,855.411,0.523,137.291,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_texture3d_texture2d_..     (512,1,1)       (1,1,64)    linear_dq8ca_q4gsw_M1_K14336_N4096_Texture3D                                                [1x14336]         887.394 μs        132.343 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,decode,tiled,14336,4096,887.394,1.024,132.343,not_applicable,SKIPPED
+Executing 1 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_dq8ca_q4gsw_coop_buffer_texture2d_half      (512,1,1)       (1,1,64)    linear_dq8ca_q4gsw_M1_K14336_N4096_Buffer                                                   [1x14336]         863.896 μs        135.943 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,decode,coopmat,14336,4096,863.896,5.360,135.943,not_applicable,SKIPPED

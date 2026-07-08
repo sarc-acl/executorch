@@ -1,0 +1,8 @@
+SDPA coopmat prefill microbenchmark (S=2048, 3 warmup + 5 timed runs per case)
+model                tiled(us)        ±   coopmat(us)        ±   speedup  dispatch
+llama-3.1-8b          194897.8     355.3       36049.9      14.5     81.5%  confirmed
+RESULT,llama-3.1-8b,128,32,8,2048,194897.8,355.3,36049.9,14.5,confirmed
+llama-3.2-3b          148940.2     170.6       27087.3      14.8     81.8%  confirmed
+RESULT,llama-3.2-3b,128,24,8,2048,148940.2,170.6,27087.3,14.8,confirmed
+llama-3.2-1b           88028.7     264.3       21886.2      39.2     75.1%  confirmed
+RESULT,llama-3.2-1b,64,32,8,2048,88028.7,264.3,21886.2,39.2,confirmed

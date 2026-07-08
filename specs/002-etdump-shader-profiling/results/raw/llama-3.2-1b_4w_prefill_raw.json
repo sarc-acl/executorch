@@ -1,0 +1,4572 @@
+[
+  {
+    "kernel_name": "nchw_to_image_texture3d_int32_int32",
+    "operator_name": null,
+    "shape": null,
+    "time_us": 5.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "nchw_to_image_texture3d_int32_int32",
+    "operator_name": null,
+    "shape": null,
+    "time_us": 3.3199462890625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "nchw_to_image_texture3d_half_float",
+    "operator_name": null,
+    "shape": null,
+    "time_us": 433.8399658203125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "slice_ubo_texture3d_half",
+    "operator_name": "aten.slice_copy.Tensor",
+    "shape": null,
+    "time_us": 11.3599853515625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "slice_ubo_texture3d_half",
+    "operator_name": "aten.slice_copy.Tensor",
+    "shape": null,
+    "time_us": 9.199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 308.320068359375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 338.56005859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 13661.119995117188,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 808.1199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 315.800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 3601.9200439453125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 205.56005859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 293.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 3591.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 205.199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rotary_embedding_texture3d_half",
+    "operator_name": "et_vk.apply_rotary_emb.default",
+    "shape": null,
+    "time_us": 291.9599609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 873.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 201.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 201.4400634765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 179.8399658203125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 192.7200927734375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 24854.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 10110.0400390625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 16268.239990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_buffer_to_image_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 284.5999755859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 331.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 269.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 5929.080078125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 321.2000732421875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 278.0799560546875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 245.719970703125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 20388.039916992188,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sigmoid_half_texture3d",
+    "operator_name": "aten.sigmoid.default",
+    "shape": null,
+    "time_us": 906.7999267578125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1346.8399658203125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 242.239990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 17166.0400390625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1344.56005859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 2140.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 8192,
+      "n": 2048
+    },
+    "time_us": 16249.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 312.9599609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 278.320068359375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 242.4400634765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3969.60009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 248.4000244140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 245.2401123046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1072.6400146484375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 61.0799560546875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 243.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1062.4400634765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 60.800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rotary_embedding_texture3d_half",
+    "operator_name": "et_vk.apply_rotary_emb.default",
+    "shape": null,
+    "time_us": 278.7200927734375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 261.080078125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 66.6800537109375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 65.3599853515625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 161.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 167.6400146484375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 9852.119995117188,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 10170.200073242188,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 13949.640014648438,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_buffer_to_image_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 246.5999755859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 265.5999755859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 242.0400390625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3960.4000244140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 319.1600341796875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 290.199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 281.080078125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16255.960083007812,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sigmoid_half_texture3d",
+    "operator_name": "aten.sigmoid.default",
+    "shape": null,
+    "time_us": 955.840087890625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1355.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 261.1199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16101.880004882812,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1349.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 2126.3199462890625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 8192,
+      "n": 2048
+    },
+    "time_us": 16331.199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 312.6400146484375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 279.6800537109375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 241.280029296875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 4071.4000244140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 243.9200439453125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 240.5999755859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1087.43994140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 62.9200439453125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 242.320068359375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1067.1600341796875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 61.6400146484375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rotary_embedding_texture3d_half",
+    "operator_name": "et_vk.apply_rotary_emb.default",
+    "shape": null,
+    "time_us": 285.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 256.9599609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 67.39990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 65.2000732421875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 159.4400634765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 164.1600341796875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 9848.799926757812,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 10163.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 13390.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_buffer_to_image_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 235.8399658203125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 269.679931640625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 245.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3953.199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 320.239990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 277.2401123046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 264.56005859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 15991.359985351562,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sigmoid_half_texture3d",
+    "operator_name": "aten.sigmoid.default",
+    "shape": null,
+    "time_us": 896.7999267578125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1354.5999755859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 236.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 15961.60009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1340.5999755859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 2170.800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 8192,
+      "n": 2048
+    },
+    "time_us": 16338.720092773438,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 314.9599609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 275.4000244140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 237.0799560546875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3975.9599609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 244.5999755859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 264.56005859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1116.320068359375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 64.4801025390625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 247.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1081.1600341796875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 63.320068359375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rotary_embedding_texture3d_half",
+    "operator_name": "et_vk.apply_rotary_emb.default",
+    "shape": null,
+    "time_us": 283.239990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 261.5999755859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 71.0400390625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 71.280029296875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 180.800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 186.1199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 9831.119995117188,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 10201.920043945312,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 13460.719970703125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_buffer_to_image_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 239.56005859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 267.9200439453125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 245.080078125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3977.800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 332.0799560546875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 276.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 243.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 15983.440063476562,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sigmoid_half_texture3d",
+    "operator_name": "aten.sigmoid.default",
+    "shape": null,
+    "time_us": 880.9200439453125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1351.719970703125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 256.0399169921875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16011.800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1348.2000732421875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 2216.800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 8192,
+      "n": 2048
+    },
+    "time_us": 17622.039916992188,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 321.0799560546875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 279.43994140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 251.679931640625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 4307.320068359375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 264.800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 269.0799560546875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1199.0400390625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 67.3199462890625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 251.60009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1159.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 64.719970703125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rotary_embedding_texture3d_half",
+    "operator_name": "et_vk.apply_rotary_emb.default",
+    "shape": null,
+    "time_us": 304.8399658203125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 274.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 63.0400390625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 69.0400390625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 176.7200927734375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 164.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 9848.559936523438,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 10207.640014648438,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 15010.359985351562,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_buffer_to_image_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 244.4000244140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 271.4000244140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 243.4400634765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3973.43994140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 330.2799072265625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 277.6400146484375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 246.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16027.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sigmoid_half_texture3d",
+    "operator_name": "aten.sigmoid.default",
+    "shape": null,
+    "time_us": 924.0799560546875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1350.199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 247.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16147.239990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1345.1600341796875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 2145.6800537109375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 8192,
+      "n": 2048
+    },
+    "time_us": 16403.759887695312,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 313.0400390625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 282.239990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 256.280029296875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3997.6800537109375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 240.239990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 241.56005859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1091.080078125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 66.800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 265.679931640625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1066.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 60.43994140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rotary_embedding_texture3d_half",
+    "operator_name": "et_vk.apply_rotary_emb.default",
+    "shape": null,
+    "time_us": 284.0799560546875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 258.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 66.320068359375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 66.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 174.3199462890625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 175.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 9800.160034179688,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 10163.280029296875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 15356.39990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_buffer_to_image_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 238.199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 267.2000732421875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 243.320068359375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3950.6400146484375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 316.919921875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 282.0799560546875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 254.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16036.39990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sigmoid_half_texture3d",
+    "operator_name": "aten.sigmoid.default",
+    "shape": null,
+    "time_us": 938.719970703125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1348.1600341796875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 253.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16031.680053710938,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1346.4801025390625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 2131.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 8192,
+      "n": 2048
+    },
+    "time_us": 16355.719970703125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 314.5599365234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 280.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 240.840087890625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3985.8399658203125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 245.0799560546875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 260.9599609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1091.60009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 69.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 242.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1082.6800537109375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 62.9600830078125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rotary_embedding_texture3d_half",
+    "operator_name": "et_vk.apply_rotary_emb.default",
+    "shape": null,
+    "time_us": 284.9200439453125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 258.4000244140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 65.280029296875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 67.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 158.9599609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 167.679931640625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 9859.160034179688,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 10130.880004882812,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 14957.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_buffer_to_image_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 237.5999755859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 268.43994140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 241.919921875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3966.8399658203125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 318.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 280.679931640625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 285.5999755859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16053.880004882812,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sigmoid_half_texture3d",
+    "operator_name": "aten.sigmoid.default",
+    "shape": null,
+    "time_us": 882.320068359375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1349.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 236.4801025390625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16017.280029296875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1351.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 2150.6800537109375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 8192,
+      "n": 2048
+    },
+    "time_us": 16384.400024414062,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 322.6400146484375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 283.4000244140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 242.3599853515625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3998.9200439453125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 244.56005859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 243.2799072265625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1084.800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 61.6400146484375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 243.199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1073.5999755859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 62.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rotary_embedding_texture3d_half",
+    "operator_name": "et_vk.apply_rotary_emb.default",
+    "shape": null,
+    "time_us": 288.1199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 261.800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 66.080078125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 67.6400146484375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 154.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 181.0799560546875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 9788.400024414062,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 10072.199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 14026.43994140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_buffer_to_image_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 239.3199462890625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 268.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 245.719970703125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3953.0400390625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 329.5599365234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 292.719970703125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 241.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16144.359985351562,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sigmoid_half_texture3d",
+    "operator_name": "aten.sigmoid.default",
+    "shape": null,
+    "time_us": 914.159912109375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1351.280029296875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 237.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16144.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1353.280029296875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 2139.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 8192,
+      "n": 2048
+    },
+    "time_us": 16477.800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 315.2000732421875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 281.320068359375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 246.43994140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 4003.3599853515625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 246.4801025390625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 241.280029296875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1089.679931640625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 65.8399658203125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 256.199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1072.6800537109375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 61.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rotary_embedding_texture3d_half",
+    "operator_name": "et_vk.apply_rotary_emb.default",
+    "shape": null,
+    "time_us": 284.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 256.60009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 68.3199462890625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 67.4000244140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 162.5599365234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 164.6400146484375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 9816.960083007812,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 10120.840087890625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 12992.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_buffer_to_image_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 248.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 267.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 254.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3974.280029296875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 330.159912109375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 277.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 248.280029296875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16303.719970703125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sigmoid_half_texture3d",
+    "operator_name": "aten.sigmoid.default",
+    "shape": null,
+    "time_us": 887.080078125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1341.4000244140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 240.6400146484375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16413.9599609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1348.0799560546875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 2136.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 8192,
+      "n": 2048
+    },
+    "time_us": 16670.119995117188,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 313.3199462890625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 279.6800537109375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 238.5198974609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3997.4000244140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 260.43994140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 260.1199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1095.919921875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 62.919921875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 245.3599853515625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1089.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 63.7598876953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rotary_embedding_texture3d_half",
+    "operator_name": "et_vk.apply_rotary_emb.default",
+    "shape": null,
+    "time_us": 282.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 265.0799560546875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 67.1199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 67.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 162.199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 173.0399169921875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 9778.0400390625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 10114.680053710938,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 13782.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_buffer_to_image_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 247.320068359375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 270.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 240.800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3957.8798828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 328.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 277.1201171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 240.4400634765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16395.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sigmoid_half_texture3d",
+    "operator_name": "aten.sigmoid.default",
+    "shape": null,
+    "time_us": 898.1600341796875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1346.0400390625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 279.9599609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16171.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1339.43994140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 2170.56005859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 8192,
+      "n": 2048
+    },
+    "time_us": 16454.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 326.1199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 291.239990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 275.5599365234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 4065.56005859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 257.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 244.3599853515625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1196.9200439453125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 73.239990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 244.5599365234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1175.43994140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 71.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rotary_embedding_texture3d_half",
+    "operator_name": "et_vk.apply_rotary_emb.default",
+    "shape": null,
+    "time_us": 284.6400146484375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 278.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 70.6400146484375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 70.9600830078125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 164.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 167.7999267578125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 9820.559936523438,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 10069.880004882812,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 14010.440063476562,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_buffer_to_image_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 245.5999755859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 269.199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 242.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3958.9200439453125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 320.4000244140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 281.3599853515625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 239.7200927734375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16078.119995117188,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sigmoid_half_texture3d",
+    "operator_name": "aten.sigmoid.default",
+    "shape": null,
+    "time_us": 899.3199462890625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1338.3199462890625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 241.43994140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16164.679931640625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1367.1600341796875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 2465.280029296875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 8192,
+      "n": 2048
+    },
+    "time_us": 16577.43994140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 314.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 293.9599609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 243.6800537109375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 4032.9200439453125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 250.5599365234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 244.080078125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1172.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 65.719970703125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 245.159912109375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1143.8399658203125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 71.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rotary_embedding_texture3d_half",
+    "operator_name": "et_vk.apply_rotary_emb.default",
+    "shape": null,
+    "time_us": 285.840087890625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 270.56005859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 69.4000244140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 69.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 164.8399658203125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 162.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 9867.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 10171.079956054688,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 14954.400024414062,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_buffer_to_image_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 250.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 267.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 239.2000732421875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3955.320068359375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 319.7999267578125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 276.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 242.2000732421875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16039.279907226562,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sigmoid_half_texture3d",
+    "operator_name": "aten.sigmoid.default",
+    "shape": null,
+    "time_us": 890.919921875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1335.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 236.679931640625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16297.160034179688,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1338.1199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 2187.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 8192,
+      "n": 2048
+    },
+    "time_us": 16549.920043945312,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 315.1199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 276.919921875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 249.7598876953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 4004.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 246.1199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 241.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1099.719970703125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 63.3599853515625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 252.239990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1073.9200439453125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 63.1600341796875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rotary_embedding_texture3d_half",
+    "operator_name": "et_vk.apply_rotary_emb.default",
+    "shape": null,
+    "time_us": 283.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 260.280029296875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 66.239990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 65.719970703125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 168.159912109375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 166.199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 9780.239990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 10110.920043945312,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 13974.43994140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_buffer_to_image_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 237.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 271.280029296875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 250.9599609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3961.4000244140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 320.239990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 275.60009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 239.8399658203125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16060.839965820312,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sigmoid_half_texture3d",
+    "operator_name": "aten.sigmoid.default",
+    "shape": null,
+    "time_us": 893.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1348.719970703125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 238.639892578125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16106.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1335.7200927734375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 2133.9200439453125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 8192,
+      "n": 2048
+    },
+    "time_us": 16453.519897460938,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 326.8399658203125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 280.56005859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 244.6400146484375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3999.1600341796875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 255.3199462890625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 253.7999267578125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1097.639892578125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 62.8399658203125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 244.6400146484375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1068.9600830078125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 62.9200439453125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rotary_embedding_texture3d_half",
+    "operator_name": "et_vk.apply_rotary_emb.default",
+    "shape": null,
+    "time_us": 287.39990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 262.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 67.0799560546875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 65.919921875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 162.9599609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 162.1600341796875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 9787.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 10115.680053710938,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 13844.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_buffer_to_image_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 244.679931640625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 276.280029296875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 261.4400634765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 4002.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 326.0799560546875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 292.0399169921875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 252.9599609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 17546.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sigmoid_half_texture3d",
+    "operator_name": "aten.sigmoid.default",
+    "shape": null,
+    "time_us": 908.9599609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1359.0399169921875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 245.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16305.799926757812,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1357.3199462890625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 2302.159912109375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 8192,
+      "n": 2048
+    },
+    "time_us": 17064.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 313.56005859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 282.2401123046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 256.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3992.080078125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 255.5999755859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 244.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1098.679931640625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 63.43994140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 242.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1086.1199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 63.6800537109375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rotary_embedding_texture3d_half",
+    "operator_name": "et_vk.apply_rotary_emb.default",
+    "shape": null,
+    "time_us": 285.0799560546875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 261.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 67.320068359375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 68.800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 160.639892578125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 164.320068359375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 9755.960083007812,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 10078.52001953125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 13259.839965820312,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_buffer_to_image_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 238.080078125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 269.1600341796875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 243.840087890625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3968.47998046875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 321.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 277.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 255.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16110.200073242188,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sigmoid_half_texture3d",
+    "operator_name": "aten.sigmoid.default",
+    "shape": null,
+    "time_us": 904.9600830078125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1338.1600341796875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 242.3599853515625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16116.559936523438,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1347.239990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 2172.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 8192,
+      "n": 2048
+    },
+    "time_us": 16570.0,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 314.5999755859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 277.199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 241.800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 4044.6400146484375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 254.9599609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 241.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1093.719970703125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 65.5198974609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 244.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 512
+    },
+    "time_us": 1073.5599365234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 64.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rotary_embedding_texture3d_half",
+    "operator_name": "et_vk.apply_rotary_emb.default",
+    "shape": null,
+    "time_us": 292.1199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 261.280029296875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 66.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 66.760009765625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 161.719970703125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_kv_cache_update_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 167.9599609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 9794.359985351562,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_attn_weights_softmax_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": null,
+    "time_us": 10117.119995117188,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half",
+    "operator_name": "sdpa_with_kv_cache.default",
+    "shape": {
+      "m": 2048,
+      "k": 64,
+      "n": 64
+    },
+    "time_us": 14065.800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_buffer_to_image_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 247.719970703125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "view_texture_half",
+    "operator_name": "aten.view_copy.default",
+    "shape": null,
+    "time_us": 269.7999267578125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 243.199951171875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 2048
+    },
+    "time_us": 3956.9200439453125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 320.4000244140625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 278.4801025390625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 242.2000732421875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16091.280029296875,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "sigmoid_half_texture3d",
+    "operator_name": "aten.sigmoid.default",
+    "shape": null,
+    "time_us": 894.0400390625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1335.9599609375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 259.8800048828125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 2048,
+      "n": 8192
+    },
+    "time_us": 16106.920043945312,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_mul_texture3d_half",
+    "operator_name": "aten.mul.Tensor",
+    "shape": null,
+    "time_us": 1351.5999755859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "transpose_cast_contig_to_vectorized_4x4_half_texture3d_half_buffer",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 2135.2799072265625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 2048,
+      "k": 8192,
+      "n": 2048
+    },
+    "time_us": 16664.839965820312,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "binary_add_texture3d_half",
+    "operator_name": "aten.add.Tensor",
+    "shape": null,
+    "time_us": 318.56005859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "select_texture3d_half",
+    "operator_name": "aten.select_copy.int",
+    "shape": null,
+    "time_us": 1.56005859375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "rms_norm_texture3d_half",
+    "operator_name": "et_vk.rms_norm.default",
+    "shape": null,
+    "time_us": 4.080078125,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "clone_image_to_buffer_half_half",
+    "operator_name": "aten.clone.default",
+    "shape": null,
+    "time_us": 6.39990234375,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": {
+      "m": 1,
+      "k": 2048,
+      "n": 128256
+    },
+    "time_us": 1910.3599853515625,
+    "event_block": "Execute"
+  },
+  {
+    "kernel_name": "buffer_to_nchw_half_float",
+    "operator_name": "et_vk.linear_q4gsw.default",
+    "shape": null,
+    "time_us": 22.9200439453125,
+    "event_block": "Execute"
+  }
+]

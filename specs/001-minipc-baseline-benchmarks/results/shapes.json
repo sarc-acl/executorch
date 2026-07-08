@@ -1,0 +1,43 @@
+{
+  "_comment": "Derived from each model's actual params.json (Research Decision 5). M=2048 is the prefill regime (this feature's fixed prefill length); M=1 is the decode regime. Shapes shared across llama-3.1-8b/llama-3.2-3b/llama-3.2-1b differ only by dim/hidden_dim/n_heads/n_kv_heads.",
+  "llama-3.1-8b": {
+    "params": {"dim": 4096, "n_layers": 32, "n_heads": 32, "n_kv_heads": 8, "head_dim": 128, "hidden_dim": 14336, "vocab_size": 128256},
+    "ops": {
+      "wq":      {"k": 4096, "n": 4096},
+      "wk":      {"k": 4096, "n": 1024},
+      "wv":      {"k": 4096, "n": 1024},
+      "wo":      {"k": 4096, "n": 4096},
+      "w1_gate": {"k": 4096, "n": 14336},
+      "w3_up":   {"k": 4096, "n": 14336},
+      "w2_down": {"k": 14336, "n": 4096},
+      "lm_head": {"k": 4096, "n": 128256}
+    }
+  },
+  "llama-3.2-3b": {
+    "params": {"dim": 3072, "n_layers": 28, "n_heads": 24, "n_kv_heads": 8, "head_dim": 128, "hidden_dim": 8192, "vocab_size": 128256},
+    "ops": {
+      "wq":      {"k": 3072, "n": 3072},
+      "wk":      {"k": 3072, "n": 1024},
+      "wv":      {"k": 3072, "n": 1024},
+      "wo":      {"k": 3072, "n": 3072},
+      "w1_gate": {"k": 3072, "n": 8192},
+      "w3_up":   {"k": 3072, "n": 8192},
+      "w2_down": {"k": 8192, "n": 3072},
+      "lm_head": {"k": 3072, "n": 128256}
+    }
+  },
+  "llama-3.2-1b": {
+    "params": {"dim": 2048, "n_layers": 16, "n_heads": 32, "n_kv_heads": 8, "head_dim": 64, "hidden_dim": 8192, "vocab_size": 128256},
+    "ops": {
+      "wq":      {"k": 2048, "n": 2048},
+      "wk":      {"k": 2048, "n": 512},
+      "wv":      {"k": 2048, "n": 512},
+      "wo":      {"k": 2048, "n": 2048},
+      "w1_gate": {"k": 2048, "n": 8192},
+      "w3_up":   {"k": 2048, "n": 8192},
+      "w2_down": {"k": 8192, "n": 2048},
+      "lm_head": {"k": 2048, "n": 128256}
+    }
+  },
+  "regimes": {"prefill": {"m": 2048}, "decode": {"m": 1}}
+}

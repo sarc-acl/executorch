@@ -1,0 +1,368 @@
+
+=== Compute Shader Performance Benchmark ===
+Coopmat vs Tiled quantized-linear microbench (Llama 1B/3B/8B shapes, M=1024)
+----------------------------------------------------------------------
+Executing 92 test cases for CoopmatLinearBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (256,256,1)     (8,8,1)     linear_q4gsw_M1024_K2048_N2048_Texture3D                                                  [1024x2048]        9666.611 μs        888.619 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (4096,8,1)      (128,1,1)   linear_q4gsw_M1024_K2048_N2048_Buffer                                                     [1024x2048]        3348.460 μs       2565.339 GFLOP/s  SKIPPED
+linear_q4gsw_tiled_texture3d_texture2d_half        (64,256,1)      (8,8,1)     linear_q4gsw_M1024_K2048_N512_Texture3D                                                   [1024x2048]        3230.872 μs        664.676 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (1024,8,1)      (128,1,1)   linear_q4gsw_M1024_K2048_N512_Buffer                                                      [1024x2048]        1234.605 μs       1739.409 GFLOP/s  SKIPPED
+linear_q4gsw_tiled_texture3d_texture2d_half        (1024,256,1)    (8,8,1)     linear_q4gsw_M1024_K2048_N8192_Texture3D                                                  [1024x2048]       38122.008 μs        901.310 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (16384,8,1)     (128,1,1)   linear_q4gsw_M1024_K2048_N8192_Buffer                                                     [1024x2048]       12631.197 μs       2720.228 GFLOP/s  SKIPPED
+linear_q4gsw_tiled_texture3d_texture2d_half        (256,256,1)     (8,8,1)     linear_q4gsw_M1024_K8192_N2048_Texture3D                                                  [1024x8192]       38688.945 μs        888.102 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (4096,8,1)      (128,1,1)   linear_q4gsw_M1024_K8192_N2048_Buffer                                                     [1024x8192]       12790.567 μs       2686.334 GFLOP/s  SKIPPED
+linear_q4gsw_tiled_texture3d_texture2d_half        (384,256,1)     (8,8,1)     linear_q4gsw_M1024_K3072_N3072_Texture3D                                                  [1024x3072]       21629.520 μs        893.564 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (6144,8,1)      (128,1,1)   linear_q4gsw_M1024_K3072_N3072_Buffer                                                     [1024x3072]        7236.323 μs       2670.880 GFLOP/s  SKIPPED
+linear_q4gsw_tiled_texture3d_texture2d_half        (128,256,1)     (8,8,1)     linear_q4gsw_M1024_K3072_N1024_Texture3D                                                  [1024x3072]        7606.023 μs        847.020 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (2048,8,1)      (128,1,1)   linear_q4gsw_M1024_K3072_N1024_Buffer                                                     [1024x3072]        2610.445 μs       2467.951 GFLOP/s  SKIPPED
+linear_q4gsw_tiled_texture3d_texture2d_half        (1024,256,1)    (8,8,1)     linear_q4gsw_M1024_K3072_N8192_Texture3D                                                  [1024x3072]       57373.719 μs        898.314 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (16384,8,1)     (128,1,1)   linear_q4gsw_M1024_K3072_N8192_Buffer                                                     [1024x3072]       18781.176 μs       2744.216 GFLOP/s  SKIPPED
+linear_q4gsw_tiled_texture3d_texture2d_half        (384,256,1)     (8,8,1)     linear_q4gsw_M1024_K8192_N3072_Texture3D                                                  [1024x8192]       57731.945 μs        892.740 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (6144,8,1)      (128,1,1)   linear_q4gsw_M1024_K8192_N3072_Buffer                                                     [1024x8192]       18902.018 μs       2726.672 GFLOP/s  SKIPPED
+linear_q4gsw_tiled_texture3d_texture2d_half        (512,256,1)     (8,8,1)     linear_q4gsw_M1024_K4096_N4096_Texture3D                                                  [1024x4096]       38444.645 μs        893.746 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (8192,8,1)      (128,1,1)   linear_q4gsw_M1024_K4096_N4096_Buffer                                                     [1024x4096]       12624.164 μs       2721.744 GFLOP/s  SKIPPED
+linear_q4gsw_tiled_texture3d_texture2d_half        (128,256,1)     (8,8,1)     linear_q4gsw_M1024_K4096_N1024_Texture3D                                                  [1024x4096]       10049.519 μs        854.761 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (2048,8,1)      (128,1,1)   linear_q4gsw_M1024_K4096_N1024_Buffer                                                     [1024x4096]        3388.627 μs       2534.931 GFLOP/s  SKIPPED
+linear_q4gsw_tiled_texture3d_texture2d_half        (1792,256,1)    (8,8,1)     linear_q4gsw_M1024_K4096_N14336_Texture3D                                                 [1024x4096]      134949.172 μs        891.144 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (28672,8,1)     (128,1,1)   linear_q4gsw_M1024_K4096_N14336_Buffer                                                    [1024x4096]       43494.801 μs       2764.907 GFLOP/s  SKIPPED
+linear_q4gsw_tiled_texture3d_texture2d_half        (512,256,1)     (8,8,1)     linear_q4gsw_M1024_K14336_N4096_Texture3D                                                [1024x14336]      134584.531 μs        893.558 GFLOP/s  SKIPPED
+linear_q4gsw_coopmat_buffer_texture2d_half         (8192,8,1)      (128,1,1)   linear_q4gsw_M1024_K14336_N4096_Buffer                                                   [1024x14336]       44436.320 μs       2706.324 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,256,1)      (2,1,32)                                                                                                                  147.268 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (256,256,1)     (8,8,1)                                                                                                                 15458.056 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K2048_N2048_Texture3D                                            [1024x2048]       15605.322 μs        550.449 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,256,1)      (2,1,32)                                                                                                                  162.152 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (8192,8,1)      (256,1,1)                                                                                                                3514.620 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K2048_N2048_Buffer                                               [1024x2048]        3676.773 μs       2336.270 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,256,1)      (2,1,32)                                                                                                                  135.572 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (64,256,1)      (8,8,1)                                                                                                                  4086.687 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K2048_N512_Texture3D                                             [1024x2048]        4222.258 μs        508.610 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,256,1)      (2,1,32)                                                                                                                  162.280 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (2048,8,1)      (256,1,1)                                                                                                                 829.321 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K2048_N512_Buffer                                                [1024x2048]         991.602 μs       2165.672 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,256,1)      (2,1,32)                                                                                                                  138.224 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (1024,256,1)    (8,8,1)                                                                                                                 59996.824 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K2048_N8192_Texture3D                                            [1024x2048]       60135.051 μs        571.376 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,256,1)      (2,1,32)                                                                                                                  166.884 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (32768,8,1)     (256,1,1)                                                                                                               13370.530 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K2048_N8192_Buffer                                               [1024x2048]       13537.414 μs       2538.131 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (64,256,1)      (2,1,32)                                                                                                                  458.960 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (256,256,1)     (8,8,1)                                                                                                                 60897.375 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K8192_N2048_Texture3D                                            [1024x8192]       61356.336 μs        560.003 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (64,256,1)      (2,1,32)                                                                                                                  906.351 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (8192,8,1)      (256,1,1)                                                                                                               15870.835 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K8192_N2048_Buffer                                               [1024x8192]       16777.188 μs       2048.003 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (24,256,1)      (2,1,32)                                                                                                                  210.249 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (384,256,1)     (8,8,1)                                                                                                                 33971.977 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K3072_N3072_Texture3D                                            [1024x3072]       34182.227 μs        565.421 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (24,256,1)      (2,1,32)                                                                                                                  249.327 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (12288,8,1)     (256,1,1)                                                                                                                8060.143 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K3072_N3072_Buffer                                               [1024x3072]        8309.469 μs       2325.943 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (24,256,1)      (2,1,32)                                                                                                                  206.620 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (128,256,1)     (8,8,1)                                                                                                                 11758.411 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K3072_N1024_Texture3D                                            [1024x3072]       11965.032 μs        538.440 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (24,256,1)      (2,1,32)                                                                                                                  242.800 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (4096,8,1)      (256,1,1)                                                                                                                2650.003 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K3072_N1024_Buffer                                               [1024x3072]        2892.802 μs       2227.062 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (24,256,1)      (2,1,32)                                                                                                                  169.322 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (1024,256,1)    (8,8,1)                                                                                                                 89916.797 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K3072_N8192_Texture3D                                            [1024x3072]       90086.109 μs        572.115 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (24,256,1)      (2,1,32)                                                                                                                  281.231 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (32768,8,1)     (256,1,1)                                                                                                               21080.404 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K3072_N8192_Buffer                                               [1024x3072]       21361.637 μs       2412.718 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (64,256,1)      (2,1,32)                                                                                                                  459.334 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (384,256,1)     (8,8,1)                                                                                                                 90698.828 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K8192_N3072_Texture3D                                            [1024x8192]       91158.164 μs        565.387 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (64,256,1)      (2,1,32)                                                                                                                  654.165 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (12288,8,1)     (256,1,1)                                                                                                               23630.697 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K8192_N3072_Buffer                                               [1024x8192]       24284.863 μs       2122.293 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,256,1)      (2,1,32)                                                                                                                  294.551 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (512,256,1)     (8,8,1)                                                                                                                 60308.867 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K4096_N4096_Texture3D                                            [1024x4096]       60603.418 μs        566.960 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,256,1)      (2,1,32)                                                                                                                  327.523 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (16384,8,1)     (256,1,1)                                                                                                               14959.167 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K4096_N4096_Buffer                                               [1024x4096]       15286.689 μs       2247.690 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,256,1)      (2,1,32)                                                                                                                  243.705 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (128,256,1)     (8,8,1)                                                                                                                 15747.238 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K4096_N1024_Texture3D                                            [1024x4096]       15990.940 μs        537.175 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,256,1)      (2,1,32)                                                                                                                  303.945 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (4096,8,1)      (256,1,1)                                                                                                                3871.170 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K4096_N1024_Buffer                                               [1024x4096]        4175.115 μs       2057.412 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,256,1)      (2,1,32)                                                                                                                  271.050 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (1792,256,1)    (8,8,1)                                                                                                                210258.469 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K4096_N14336_Texture3D                                           [1024x4096]      210529.531 μs        571.222 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,256,1)      (2,1,32)                                                                                                                  365.570 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (57344,8,1)     (256,1,1)                                                                                                               46346.766 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K4096_N14336_Buffer                                              [1024x4096]       46712.336 μs       2574.461 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (112,256,1)     (2,1,32)                                                                                                                 1144.393 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (512,256,1)     (8,8,1)                                                                                                                211604.047 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K14336_N4096_Texture3D                                          [1024x14336]      212748.453 μs        565.264 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (112,256,1)     (2,1,32)                                                                                                                 1114.909 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (16384,8,1)     (256,1,1)                                                                                                               54088.430 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M1024_K14336_N4096_Buffer                                             [1024x14336]       55203.336 μs       2178.475 GFLOP/s  SKIPPED
+linear_q4gsw_tiled_texture3d_texture2d_half        (8,16,1)        (8,8,1)     linear_q4gsw_M64_K128_N64_Texture3D                                                          [64x128]          41.617 μs         25.196 GFLOP/s   PASSED
+linear_q4gsw_tiled_buffer_texture2d_half           (8,16,1)        (8,8,1)     linear_q4gsw_M64_K128_N64_Buffer                                                             [64x128]          42.805 μs         24.496 GFLOP/s   PASSED
+linear_q4gsw_tiled_texture3d_texture2d_half        (16,32,1)       (8,8,1)     linear_q4gsw_M128_K256_N128_Texture3D                                                       [128x256]          76.924 μs        109.050 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (256,1,1)       (128,1,1)   linear_q4gsw_M128_K256_N128_Buffer                                                          [128x256]          40.167 μs        208.841 GFLOP/s   PASSED
+linear_q4gsw_tiled_texture3d_texture2d_half        (16,32,1)       (8,8,1)     linear_q4gsw_M128_K128_N128_Texture3D                                                       [128x128]          41.731 μs        100.509 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (256,1,1)       (128,1,1)   linear_q4gsw_M128_K128_N128_Buffer                                                          [128x128]          22.272 μs        188.326 GFLOP/s   PASSED
+linear_q4gsw_tiled_texture3d_texture2d_half        (32,64,1)       (8,8,1)     linear_q4gsw_M256_K256_N256_Texture3D                                                       [256x256]          80.993 μs        414.287 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (512,2,1)       (128,1,1)   linear_q4gsw_M256_K256_N256_Buffer                                                          [256x256]          42.573 μs        788.153 GFLOP/s   PASSED
+linear_q4gsw_tiled_texture3d_texture2d_half        (32,32,1)       (8,8,1)     linear_q4gsw_M128_K128_N256_Texture3D                                                       [128x128]          41.773 μs        200.813 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (512,1,1)       (128,1,1)   linear_q4gsw_M128_K128_N256_Buffer                                                          [128x128]          22.223 μs        377.474 GFLOP/s   PASSED
+linear_q4gsw_tiled_texture3d_texture2d_half        (16,64,1)       (8,8,1)     linear_q4gsw_M256_K128_N128_Texture3D                                                       [256x128]          43.577 μs        192.500 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (256,2,1)       (128,1,1)   linear_q4gsw_M256_K128_N128_Buffer                                                          [256x128]          22.493 μs        372.940 GFLOP/s   PASSED
+linear_q4gsw_tiled_texture3d_texture2d_half        (32,16,1)       (8,8,1)     linear_q4gsw_M64_K128_N256_Texture3D                                                         [64x128]          40.418 μs        103.772 GFLOP/s   PASSED
+linear_q4gsw_tiled_buffer_texture2d_half           (32,16,1)       (8,8,1)     linear_q4gsw_M64_K128_N256_Buffer                                                            [64x128]          42.370 μs         98.992 GFLOP/s   PASSED
+linear_q4gsw_tiled_texture3d_texture2d_half        (8,64,1)        (8,8,1)     linear_q4gsw_M256_K128_N64_Texture3D                                                        [256x128]          41.783 μs        100.382 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (128,2,1)       (128,1,1)   linear_q4gsw_M256_K128_N64_Buffer                                                           [256x128]          22.385 μs        187.374 GFLOP/s   PASSED
+linear_q4gsw_tiled_texture3d_texture2d_half        (16,32,1)       (8,8,1)     linear_q4gsw_M128_K2048_N128_Texture3D                                                     [128x2048]         575.380 μs        116.634 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (256,1,1)       (128,1,1)   linear_q4gsw_M128_K2048_N128_Buffer                                                        [128x2048]         293.959 μs        228.293 GFLOP/s   PASSED
+linear_q4gsw_tiled_texture3d_texture2d_half        (16,32,1)       (8,8,1)     linear_q4gsw_M128_K4096_N128_Texture3D                                                     [128x4096]        1158.192 μs        115.886 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (256,1,1)       (128,1,1)   linear_q4gsw_M128_K4096_N128_Buffer                                                        [128x4096]         585.772 μs        229.130 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,16,1)        (4,1,16)                                                                                                                    7.138 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (8,16,1)        (8,8,1)                                                                                                                    68.341 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M64_K128_N64_Texture3D                                                    [64x128]          75.478 μs         13.892 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,16,1)        (4,1,16)                                                                                                                    7.807 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_half     (8,16,1)        (8,8,1)                                                                                                                    65.303 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M64_K128_N64_Buffer                                                       [64x128]          73.110 μs         14.343 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,32,1)        (4,1,16)                                                                                                                    8.685 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,32,1)       (8,8,1)                                                                                                                   120.998 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K256_N128_Texture3D                                                 [128x256]         129.683 μs         64.686 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,32,1)        (4,1,16)                                                                                                                    8.431 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (512,1,1)       (256,1,1)                                                                                                                  34.368 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K256_N128_Buffer                                                    [128x256]          42.799 μs        195.998 GFLOP/s   PASSED
+Mismatch at element 128: computed=7.449, reference=4.359, diff=3.090, abs_tolerance=0.500, rel_tolerance=0.050, rel_threshold=0.218
+  total mismatched: 14087 / 16384 (first at 128)
+  16x16-tile mismatch counts (rows=M/16, cols=N/16):
+     234 236 235 236 236 234 235 235
+     193 192 189 193 197 190 194 195
+     210 209 208 208 208 209 209 210
+     233 234 234 233 234 234 233 233
+     214 216 214 217 216 213 214 218
+     237 241 239 240 242 238 239 236
+     194 198 196 197 198 195 197 195
+     240 240 240 240 240 240 240 240
+  Correctness validation FAILED for test linear_dq8ca_q4gsw_M128_K128_N128_Texture3D
+
+vulkan output Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 16384
+  Data (first 20 elements): [-1.509766, 0.140747, -2.380859, -1.092773, 1.143555, -1.731445, -1.314453, 0.909668, -1.863281, -1.691406, 1.211914, -1.988281, -0.866211, 0.833496, -1.857422, -2.130859, 0.070312, -2.193359, -1.983398, 0.283691, ... (16364 more)]
+  Statistics: min=-23.203125, max=18.203125, mean=-0.488305, sum=-8000.392578
+
+ref output Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 16384
+  Data (first 20 elements): [-1.782534, -0.063084, -2.594066, -1.498228, 0.801109, -1.930185, -1.491430, 0.494654, -2.097558, -1.943320, 0.848719, -2.349156, -1.027431, 0.482545, -2.284338, -2.513380, -0.098744, -2.617048, -2.344365, -0.000266, ... (16364 more)]
+  Statistics: min=-23.203125, max=18.203125, mean=-0.488305, sum=-8000.392578
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,32,1)        (4,1,16)                                                                                                                    8.202 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,32,1)       (8,8,1)                                                                                                                    66.695 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K128_N128_Texture3D                                                 [128x128]          74.897 μs         56.001 GFLOP/s   FAILED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,32,1)        (4,1,16)                                                                                                                    7.995 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (512,1,1)       (256,1,1)                                                                                                                  20.641 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K128_N128_Buffer                                                    [128x128]          28.636 μs        146.471 GFLOP/s   PASSED
+Mismatch at element 0: computed=4.301, reference=2.846, diff=1.455, abs_tolerance=0.500, rel_tolerance=0.050, rel_threshold=0.142
+  total mismatched: 58651 / 65536 (first at 0)
+  16x16-tile mismatch counts (rows=M/16, cols=N/16):
+     246 245 238 244 246 238 240 245 239 243 241 239 246 244 239 245
+     223 221 223 221 222 223 219 220 225 220 221 226 224 219 221 226
+     238 245 231 243 234 234 238 236 225 239 234 238 239 233 238 234
+     226 228 221 223 232 222 215 225 222 223 223 222 227 228 223 231
+     217 219 216 216 217 211 209 219 216 220 216 214 214 219 218 228
+     227 221 218 224 222 220 224 216 220 220 222 223 226 219 219 222
+     218 224 228 223 220 221 223 219 223 220 217 218 221 222 230 232
+     225 227 225 224 223 223 220 223 218 221 223 225 222 221 225 230
+     227 231 226 232 225 226 230 228 228 226 225 227 229 228 229 237
+     221 222 229 225 224 227 221 226 231 225 223 213 223 230 220 228
+     242 239 238 238 234 235 237 241 245 241 237 230 238 240 234 245
+     240 238 242 237 236 237 235 239 239 238 238 234 233 237 242 232
+     211 216 212 218 212 212 219 205 215 223 212 203 211 213 212 210
+     248 247 240 244 244 241 243 240 235 245 240 247 248 240 244 243
+     232 233 228 236 228 231 234 228 220 231 233 233 235 227 231 220
+     243 245 240 247 239 243 242 241 241 245 240 238 239 243 244 247
+  Correctness validation FAILED for test linear_dq8ca_q4gsw_M256_K256_N256_Texture3D
+
+vulkan output Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 256], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 65536
+  Data (first 20 elements): [4.300781, 3.253906, -0.604980, 3.365234, 3.544922, 0.568848, 3.335938, 3.888672, -1.132812, 4.500000, 3.740234, -0.553223, 4.214844, 4.175781, 0.156738, 4.792969, 3.048828, 0.541992, 1.111328, 4.000000, ... (65516 more)]
+  Statistics: min=-37.312500, max=35.937500, mean=-0.397205, sum=-26031.203125
+
+ref output Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 256], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 65536
+  Data (first 20 elements): [2.845875, 1.709628, -1.655564, 1.357936, 1.714004, -1.545399, 1.333562, 1.666661, -2.417249, 2.272451, 1.689662, -1.632444, 3.197917, 1.910396, -1.132573, 3.105555, 1.652980, -0.840904, 0.111672, 1.801029, ... (65516 more)]
+  Statistics: min=-37.312500, max=35.937500, mean=-0.397205, sum=-26031.203125
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,64,1)        (4,1,16)                                                                                                                    9.528 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (32,64,1)       (8,8,1)                                                                                                                   124.498 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K256_N256_Texture3D                                                 [256x256]         134.026 μs        250.357 GFLOP/s   FAILED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,64,1)        (4,1,16)                                                                                                                    8.753 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (1024,2,1)      (256,1,1)                                                                                                                  35.625 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K256_N256_Buffer                                                    [256x256]          44.378 μs        756.102 GFLOP/s   PASSED
+Mismatch at element 0: computed=-3.932, reference=-1.617, diff=2.315, abs_tolerance=0.500, rel_tolerance=0.050, rel_threshold=0.081
+  total mismatched: 27911 / 32768 (first at 0)
+  16x16-tile mismatch counts (rows=M/16, cols=N/16):
+     226 226 225 229 225 225 226 224 226 225 227 226 227 226 227 225
+     230 228 227 234 232 229 230 227 232 227 231 233 229 230 234 229
+     211 210 209 213 213 206 208 204 217 215 209 215 214 209 213 206
+     210 209 210 215 211 211 206 201 216 211 213 213 212 206 215 211
+     205 203 200 212 205 198 201 195 214 208 206 212 207 204 211 201
+     210 207 208 212 213 206 205 200 216 211 209 215 210 206 212 209
+     224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224
+     229 227 227 231 229 224 226 222 235 234 227 232 230 226 230 228
+  Correctness validation FAILED for test linear_dq8ca_q4gsw_M128_K128_N256_Texture3D
+
+vulkan output Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 256], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 32768
+  Data (first 20 elements): [-3.931641, -5.488281, -6.253906, -2.947266, -8.359375, -6.554688, -3.210938, -7.898438, -5.191406, -7.460938, -6.644531, -5.652344, -8.039062, -5.242188, -3.857422, -8.453125, -6.972656, -5.429688, -4.140625, -7.949219, ... (32748 more)]
+  Statistics: min=-27.031250, max=21.406250, mean=-0.156720, sum=-5135.408203
+
+ref output Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 256], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 32768
+  Data (first 20 elements): [-1.617058, -2.597470, -2.365617, -1.197023, -3.296516, -2.008875, -1.315909, -3.438216, -2.092241, -3.067672, -2.647334, -1.825816, -3.309968, -2.553988, -1.842869, -3.486246, -3.224940, -2.063519, -1.684196, -3.301633, ... (32748 more)]
+  Statistics: min=-27.031250, max=21.406250, mean=-0.156720, sum=-5135.408203
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,32,1)        (4,1,16)                                                                                                                    7.647 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (32,32,1)       (8,8,1)                                                                                                                    66.957 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K128_N256_Texture3D                                                 [128x128]          74.604 μs        112.442 GFLOP/s   FAILED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,32,1)        (4,1,16)                                                                                                                    7.247 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (1024,1,1)      (256,1,1)                                                                                                                  20.509 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K128_N256_Buffer                                                    [128x128]          27.756 μs        302.222 GFLOP/s   PASSED
+Mismatch at element 0: computed=2.180, reference=0.639, diff=1.541, abs_tolerance=0.500, rel_tolerance=0.050, rel_threshold=0.032
+  total mismatched: 29783 / 32768 (first at 0)
+  16x16-tile mismatch counts (rows=M/16, cols=N/16):
+     237 234 233 231 230 231 235 227
+     224 221 220 217 219 218 221 218
+     235 233 233 231 232 234 235 230
+     256 254 253 253 253 253 254 253
+     201 199 200 198 199 201 202 198
+     237 232 234 229 233 232 236 227
+     217 206 209 204 212 208 213 204
+     219 209 212 209 219 212 217 209
+     250 251 246 248 246 248 251 245
+     233 239 239 248 242 246 245 244
+     224 221 227 229 228 221 224 222
+     237 237 236 243 242 243 238 239
+     249 247 245 241 248 246 247 246
+     244 246 243 248 249 246 246 244
+     231 230 237 237 236 242 238 240
+     246 245 247 249 248 248 249 248
+  Correctness validation FAILED for test linear_dq8ca_q4gsw_M256_K128_N128_Texture3D
+
+vulkan output Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 32768
+  Data (first 20 elements): [2.179688, -1.323242, 0.609375, 1.586914, -1.529297, -0.077209, 2.761719, -0.744141, -0.545898, 2.750000, -1.009766, -0.076782, 2.828125, -1.406250, -0.158569, 1.376953, -1.394531, 0.779297, 2.431641, -0.823730, ... (32748 more)]
+  Statistics: min=-23.609375, max=28.828125, mean=-0.225726, sum=-7396.579102
+
+ref output Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 32768
+  Data (first 20 elements): [0.638990, -2.747014, -0.755350, 0.456068, -2.810627, -1.753839, 0.800390, -1.883217, -1.604638, 0.795007, -2.064883, -1.464973, 0.817195, -3.226665, -1.493769, 0.421048, -2.744373, -0.660727, 0.714241, -1.982953, ... (32748 more)]
+  Statistics: min=-23.609375, max=28.828125, mean=-0.225726, sum=-7396.579102
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,64,1)        (4,1,16)                                                                                                                    9.038 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,64,1)       (8,8,1)                                                                                                                    69.005 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K128_N128_Texture3D                                                 [256x128]          78.043 μs        107.487 GFLOP/s   FAILED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,64,1)        (4,1,16)                                                                                                                    8.741 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (512,2,1)       (256,1,1)                                                                                                                  20.233 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K128_N128_Buffer                                                    [256x128]          28.973 μs        289.527 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,16,1)        (4,1,16)                                                                                                                    7.629 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (32,16,1)       (8,8,1)                                                                                                                    66.160 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M64_K128_N256_Texture3D                                                   [64x128]          73.789 μs         56.842 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,16,1)        (4,1,16)                                                                                                                    7.866 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_half     (32,16,1)       (8,8,1)                                                                                                                    61.582 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M64_K128_N256_Buffer                                                      [64x128]          69.448 μs         60.395 GFLOP/s   PASSED
+Mismatch at element 0: computed=-11.695, reference=-6.386, diff=5.309, abs_tolerance=0.500, rel_tolerance=0.050, rel_threshold=0.319
+  total mismatched: 14611 / 16384 (first at 0)
+  16x16-tile mismatch counts (rows=M/16, cols=N/16):
+     208 208 208 208
+     212 210 208 211
+     240 235 224 238
+     234 230 230 233
+     216 211 206 214
+     240 240 237 239
+     218 214 214 217
+     233 232 225 230
+     210 212 204 210
+     244 248 234 243
+     238 238 236 238
+     228 221 221 228
+     251 255 253 250
+     243 244 248 241
+     222 215 213 224
+     247 245 238 246
+  Correctness validation FAILED for test linear_dq8ca_q4gsw_M256_K128_N64_Texture3D
+
+vulkan output Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 64], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 16384
+  Data (first 20 elements): [-11.695312, -4.691406, -8.578125, -9.796875, -4.710938, -7.996094, -9.929688, -4.121094, -9.992188, -8.695312, -4.601562, -10.796875, -12.312500, -4.414062, -10.539062, -6.742188, -2.125000, -7.335938, -9.765625, -2.796875, ... (16364 more)]
+  Statistics: min=-29.796875, max=24.609375, mean=-0.464581, sum=-7611.689453
+
+ref output Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 64], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 16384
+  Data (first 20 elements): [-6.386015, 0.802131, -5.233008, -5.607558, 0.806091, -5.455549, -4.910942, 0.704567, -6.015544, -5.572891, 0.787418, -5.549700, -6.727601, 0.754877, -5.716505, -4.032512, 0.363950, -3.874538, -4.925376, 0.478526, ... (16364 more)]
+  Statistics: min=-29.796875, max=24.609375, mean=-0.464581, sum=-7611.689453
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,64,1)        (4,1,16)                                                                                                                    9.689 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (8,64,1)        (8,8,1)                                                                                                                    67.994 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K128_N64_Texture3D                                                  [256x128]          77.683 μs         53.993 GFLOP/s   FAILED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,64,1)        (4,1,16)                                                                                                                    9.505 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (256,2,1)       (256,1,1)                                                                                                                  20.587 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K128_N64_Buffer                                                     [256x128]          30.091 μs        139.386 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,32,1)       (2,1,32)                                                                                                                   19.933 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,32,1)       (8,8,1)                                                                                                                   897.600 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K2048_N128_Texture3D                                               [128x2048]         917.534 μs         73.140 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,32,1)       (2,1,32)                                                                                                                   19.811 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (512,1,1)       (256,1,1)                                                                                                                 202.207 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K2048_N128_Buffer                                                  [128x2048]         222.018 μs        302.268 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,32,1)       (2,1,32)                                                                                                                   34.693 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,32,1)       (8,8,1)                                                                                                                  1799.528 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K4096_N128_Texture3D                                               [128x4096]        1834.220 μs         73.174 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,32,1)       (2,1,32)                                                                                                                   33.983 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (512,1,1)       (256,1,1)                                                                                                                 397.538 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K4096_N128_Buffer                                                  [128x4096]         431.520 μs        311.034 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (256,1,1)       (128,1,1)   linear_q4gsw_M128_K128_N128_rank3batch1_Buffer                                            [1x128x128]          22.351 μs        187.655 GFLOP/s   PASSED
+linear_q4gsw_coopmat_buffer_texture2d_half         (256,1,1)       (128,1,1)   linear_q4gsw_M128_K4096_N128_rank3batch1_Buffer                                          [1x128x4096]         582.791 μs        230.302 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,32,1)        (4,1,16)                                                                                                                    7.211 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (512,1,1)       (256,1,1)                                                                                                                  20.541 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K128_N128_rank3batch1_Buffer                                      [1x128x128]          27.752 μs        151.133 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,32,1)       (2,1,32)                                                                                                                   33.911 μs                                 
+linear_dq8ca_q4gsw_coopmat_buffer_texture2d_..     (512,1,1)       (256,1,1)                                                                                                                 397.463 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K4096_N128_rank3batch1_Buffer                                    [1x128x4096]         431.373 μs        311.140 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 92 test cases
+[rank3 batch=1] linear_q4gsw_M128_K128_N128_rank3batch1_Buffer -> linear_q4gsw_coopmat_buffer_texture2d_half (coopmat dispatched), correctness=PASSED
+[rank3 batch=1] linear_q4gsw_M128_K4096_N128_rank3batch1_Buffer -> linear_q4gsw_coopmat_buffer_texture2d_half (coopmat dispatched), correctness=PASSED
+[rank3 batch=1] linear_dq8ca_q4gsw_M128_K128_N128_rank3batch1_Buffer -> linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half (coopmat dispatched), correctness=PASSED
+[rank3 batch=1] linear_dq8ca_q4gsw_M128_K4096_N128_rank3batch1_Buffer -> linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half (coopmat dispatched), correctness=PASSED
+
+================ SUMMARY: tiled vs coopmat (GFLOP/s, mean +/- stdev us) ================
+model         op                    shape(K,N)        tiled   coopmat  speedup  tiled_us+/-sd  coopmat_us+/-sd  coopmat kernel
+llama-3.2-1b  linear_q4gsw          (2048,2048)       888.6    2565.3    2.89x  9666.6+/-1.9  3348.5+/-5.7  linear_q4gsw_coopmat_buffer_texture2d_half
+llama-3.2-1b  linear_q4gsw          (2048,512)        664.7    1739.4    2.62x  3230.9+/-46.3  1234.6+/-13.5  linear_q4gsw_coopmat_buffer_texture2d_half
+llama-3.2-1b  linear_q4gsw          (2048,8192)       901.3    2720.2    3.02x  38122.0+/-2.5  12631.2+/-20.8  linear_q4gsw_coopmat_buffer_texture2d_half
+llama-3.2-1b  linear_q4gsw          (8192,2048)       888.1    2686.3    3.02x  38688.9+/-32.6  12790.6+/-28.1  linear_q4gsw_coopmat_buffer_texture2d_half
+llama-3.2-3b  linear_q4gsw          (3072,3072)       893.6    2670.9    2.99x  21629.5+/-2.6  7236.3+/-17.7  linear_q4gsw_coopmat_buffer_texture2d_half
+llama-3.2-3b  linear_q4gsw          (3072,1024)       847.0    2468.0    2.91x  7606.0+/-3.3  2610.4+/-1.9  linear_q4gsw_coopmat_buffer_texture2d_half
+llama-3.2-3b  linear_q4gsw          (3072,8192)       898.3    2744.2    3.05x  57373.7+/-31.7  18781.2+/-9.7  linear_q4gsw_coopmat_buffer_texture2d_half
+llama-3.2-3b  linear_q4gsw          (8192,3072)       892.7    2726.7    3.05x  57731.9+/-110.6  18902.0+/-14.3  linear_q4gsw_coopmat_buffer_texture2d_half
+llama-3.1-8b  linear_q4gsw          (4096,4096)       893.7    2721.7    3.05x  38444.6+/-28.8  12624.2+/-14.0  linear_q4gsw_coopmat_buffer_texture2d_half
+llama-3.1-8b  linear_q4gsw          (4096,1024)       854.8    2534.9    2.97x  10049.5+/-10.7  3388.6+/-4.5  linear_q4gsw_coopmat_buffer_texture2d_half
+llama-3.1-8b  linear_q4gsw          (4096,14336)      891.1    2764.9    3.10x  134949.2+/-139.1  43494.8+/-51.9  linear_q4gsw_coopmat_buffer_texture2d_half
+llama-3.1-8b  linear_q4gsw          (14336,4096)      893.6    2706.3    3.03x  134584.5+/-238.9  44436.3+/-138.3  linear_q4gsw_coopmat_buffer_texture2d_half
+llama-3.2-1b  linear_dq8ca_q4gsw    (2048,2048)       550.4    2336.3    4.24x  15605.3+/-5.6  3676.8+/-2.4  linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half
+llama-3.2-1b  linear_dq8ca_q4gsw    (2048,512)        508.6    2165.7    4.26x  4222.3+/-2.0  991.6+/-1.3  linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half
+llama-3.2-1b  linear_dq8ca_q4gsw    (2048,8192)       571.4    2538.1    4.44x  60135.1+/-81.9  13537.4+/-121.2  linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half
+llama-3.2-1b  linear_dq8ca_q4gsw    (8192,2048)       560.0    2048.0    3.66x  61356.3+/-103.4  16777.2+/-33.1  linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half
+llama-3.2-3b  linear_dq8ca_q4gsw    (3072,3072)       565.4    2325.9    4.11x  34182.2+/-44.3  8309.5+/-3.7  linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half
+llama-3.2-3b  linear_dq8ca_q4gsw    (3072,1024)       538.4    2227.1    4.14x  11965.0+/-17.5  2892.8+/-4.5  linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half
+llama-3.2-3b  linear_dq8ca_q4gsw    (3072,8192)       572.1    2412.7    4.22x  90086.1+/-19.4  21361.6+/-138.7  linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half
+llama-3.2-3b  linear_dq8ca_q4gsw    (8192,3072)       565.4    2122.3    3.75x  91158.2+/-193.4  24284.9+/-15.7  linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half
+llama-3.1-8b  linear_dq8ca_q4gsw    (4096,4096)       567.0    2247.7    3.96x  60603.4+/-28.4  15286.7+/-33.5  linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half
+llama-3.1-8b  linear_dq8ca_q4gsw    (4096,1024)       537.2    2057.4    3.83x  15990.9+/-17.5  4175.1+/-3.5  linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half
+llama-3.1-8b  linear_dq8ca_q4gsw    (4096,14336)      571.2    2574.5    4.51x  210529.5+/-943.1  46712.3+/-666.3  linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half
+llama-3.1-8b  linear_dq8ca_q4gsw    (14336,4096)      565.3    2178.5    3.85x  212748.5+/-365.5  55203.3+/-54.1  linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half
+(! = buffer case did NOT dispatch a coopmat shader)

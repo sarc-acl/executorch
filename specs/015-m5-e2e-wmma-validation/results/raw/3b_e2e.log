@@ -1,0 +1,17 @@
+# 3B (llama3_2_3b) 4w + 8da4w Buffer coopmat e2e -- M5 EVT1, 2048 prefill / 1024 decode
+# Driver: f14c51b6f8. Clocks: pinned 509/2730/663. PTEs: (re-)exported with storage_override=buffer.
+# Dispatch confirmed: linear_q4gsw_coopmat 196/196; linear_dq8ca_q4gsw_coopmat 196/196
+[4w]
+rep1: prefill=220.334 decode=6.78927
+rep2: prefill=217.225 decode=6.95705
+rep3: prefill=217.225 decode=6.98813
+mean: prefill=218.26 (CoV=0.822%) decode=6.911 (CoV=1.548%)
+[8da4w]
+rep1: prefill=201.001 decode=6.64795
+rep2: prefill=201.021 decode=6.77026
+rep3: prefill=200.706 decode=6.82569
+mean: prefill=200.91 (CoV=0.088%) decode=6.748 (CoV=1.348%)
+
+=== 3B SDPA (ET_VK_SDPA_COOPMAT=1) attempt ===
+libc++abi: terminating due to uncaught exception of type vkcompute::vkapi::Error: Exception raised from wait_for_queue at Context.cpp:234: vkQueueWaitIdle(queue().handle) returned -4
+Aborted -- blocked_reason recorded, not retried at shorter length; device recovered on next run (coherence check passed).
