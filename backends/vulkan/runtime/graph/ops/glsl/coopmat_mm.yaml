@@ -37,3 +37,48 @@ coopmat_mm:
     - NAME: linear_coopmat_bias
       WEIGHT_LAYOUT: prepacked
       HAS_BIAS: true
+    # ── Tile-geometry sweep variants for the SDPA attention matmul shapes.
+    # Only the row_major matmul path is swept; the staging is grid-stride
+    # multi-pass so each geometry is internally consistent (the per-variant
+    # WG_SIZE = SG_GRID_X*SG_GRID_Y*SUBGROUP_SIZE must be launched by the C++
+    # dispatch — see coopmat_tile_dims() in GemmCoopmat.cpp).
+    - NAME: matmul_coopmat_t64x64x32
+      WEIGHT_LAYOUT: row_major
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64
+    - NAME: matmul_coopmat_t128x64x32
+      WEIGHT_LAYOUT: row_major
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64
+    - NAME: matmul_coopmat_t64x128x32
+      WEIGHT_LAYOUT: row_major
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64
+    - NAME: matmul_coopmat_t128x128x32
+      WEIGHT_LAYOUT: row_major
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64
+    - NAME: matmul_coopmat_t128x64x16
+      WEIGHT_LAYOUT: row_major
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32

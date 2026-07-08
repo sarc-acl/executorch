@@ -417,7 +417,27 @@ class TagMemoryMetaPass(ExportPass):
         downstream tracing does not fully constrain the repset.
         """
         if self.force_fp16:
-            op_repsets.try_constrain_with_arg_repset(arg_i, utils.ANY_TEXTURE)
+            # Historically hardcoded to ANY_TEXTURE (e4aba1e658, "buffer
+            # implementation of rotary positional embeddings", predates this
+            # pass's storage_type_override mechanism entirely) -- this
+            # unconditionally eliminated BUFFER as a valid storage option for
+            # every op argument before default_storage's preference was ever
+            # consulted below, silently defeating storage_type_override=BUFFER
+            # for the whole graph whenever force_fp16 was also set (which every
+            # export in this workstream does, since raw fp16 is rejected by the
+            # Vulkan partitioner -- see specs/001-minipc-baseline-benchmarks).
+            # Found via ETDump kernel-name inspection while verifying
+            # specs/009-e2e-tokrate-report's WMMA-eligible export never
+            # actually reached BUFFER storage. When no override is requested
+            # (default_storage's own default is TEXTURE_3D), this is
+            # byte-identical to the old hardcoded behavior; only an explicit
+            # BUFFER override newly gets a real chance to be honored below.
+            fp16_repset = (
+                utils.ANY_STORAGE
+                if self.default_storage == VkStorageType.BUFFER
+                else utils.ANY_TEXTURE
+            )
+            op_repsets.try_constrain_with_arg_repset(arg_i, fp16_repset)
 
         # First, trace downstream users to discover what layout they prefer.
         arg_node = op_repsets.op_node.args[arg_i]
@@ -499,7 +519,13 @@ class TagMemoryMetaPass(ExportPass):
 
         self.constrain_op_repsets(op_repsets)
 
-        args_repr_list, outs_repr_list = op_repsets.pick_representations()
+        # self.default_storage defaults to TEXTURE_3D (matching the pre-existing
+        # hardcoded preference in make_tensor_repr()), so this is a no-op unless
+        # a caller explicitly requests BUFFER via storage_type_override -- see
+        # specs/006-e2e-storage-comparison/research.md Decision 1.
+        args_repr_list, outs_repr_list = op_repsets.pick_representations(
+            self.default_storage
+        )
 
         if len(outs_repr_list) == 1:
             utils.set_node_repr(op_node, outs_repr_list[0])
