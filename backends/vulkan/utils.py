@@ -961,12 +961,19 @@ class TensorRepSet:
     def first_valid_texture_layout(self):
         return list(self.valid_texture_layouts)[0]
 
-    def make_tensor_repr(self) -> TensorRepr:
+    def make_tensor_repr(
+        self, preferred_storage: Optional[VkStorageType] = None
+    ) -> TensorRepr:
         """
         Pick a representation (i.e. TensorRepr) from the set of possible representations.
         If there are multiple valid representations, then:
-        1. Prefer texture storage over buffer storage
-        2. Pick the first available memory layout.
+        1. Honor `preferred_storage` if given and valid for this repset (restores
+           behavior dropped by bedce91e7f4795869158b96ef479d92317b13871's pass
+           rewrite; safe because callers that don't pass a preference, or pass
+           TEXTURE_3D, get byte-identical behavior to before -- see
+           TagMemoryMetaPass.default_storage, whose own default is TEXTURE_3D)
+        2. Otherwise, prefer texture storage over buffer storage
+        3. Pick the first available memory layout.
         """
         if self.is_empty():
             # An empty repset typically means that it is associated with a weight tensor
@@ -975,6 +982,9 @@ class TensorRepSet:
             return TensorRepr(
                 VkStorageType.DEFAULT_STORAGE, VkMemoryLayout.DEFAULT_LAYOUT
             )
+
+        if preferred_storage == VkStorageType.BUFFER and self.buffer_is_valid():
+            return TensorRepr(VkStorageType.BUFFER, self.first_valid_buffer_layout())
 
         if self.texture_is_valid():
             return TensorRepr(
@@ -1603,7 +1613,9 @@ class OpRepSets:
         self.assert_sync_contraints()
         return True
 
-    def pick_representations(self) -> Tuple[TensorReprList, TensorReprList]:
+    def pick_representations(
+        self, preferred_storage: Optional[VkStorageType] = None
+    ) -> Tuple[TensorReprList, TensorReprList]:
         """
         For each tensor participating in the op, pick a representation for it among the
         possible represetntation sets.
@@ -1613,11 +1625,11 @@ class OpRepSets:
 
         for i in range(len(self.op_node.args)):
             arg_repset = self.args_repset_list[i]
-            args_repr_list.append(arg_repset.make_tensor_repr())
+            args_repr_list.append(arg_repset.make_tensor_repr(preferred_storage))
 
         for i in range(num_tensors_in_node(self.op_node)):
             out_repset = self.outs_repset_list[i]
-            outs_repr_list.append(out_repset.make_tensor_repr())
+            outs_repr_list.append(out_repset.make_tensor_repr(preferred_storage))
 
         return args_repr_list, outs_repr_list
 
