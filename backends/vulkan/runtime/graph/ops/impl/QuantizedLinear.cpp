@@ -73,6 +73,30 @@ constexpr CoopmatTileDims kQ4gswCoopmatDims = {128, 64, 16, 128};
 // linear_dq8ca_qw_coopmat.yaml: 128x64, 2x2 grid, sg64 -> WG_SIZE 256.
 constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {128, 64, 32, 256};
 
+// specs/023-8da4w-int8-dbuf-sweep: ET_VK_DQ8CA_COOPMAT_VARIANT=dbuf{1,2,3,4}
+// swaps the int8 dq8ca_q4gsw coopmat dispatch to the matching double-buffered
+// loop-structure variant (linear_dq8ca_q4gsw_coopmat_dbuf{1,2,3,4}.glsl, all
+// sharing this shader's existing 128x64x32/sg64 tile geometry -- only the
+// loop structure differs, so no tile-alignment gating beyond the existing
+// can_use_q4gsw_coopmat() check is needed). Unset/empty/unrecognized value =
+// default shipped dispatch (today's dbuf4 loop structure), unchanged. Kept
+// as a separate env var from ET_VK_Q4GSW_COOPMAT_VARIANT (the fp16 4w
+// sweep's own toggle) since the two select variants of different shaders.
+static const std::string& dq8ca_coopmat_variant() {
+  static const std::string variant = [] {
+    const char* env = std::getenv("ET_VK_DQ8CA_COOPMAT_VARIANT");
+    if (!env) {
+      return std::string();
+    }
+    const std::string v(env);
+    if (v == "dbuf1" || v == "dbuf2" || v == "dbuf3" || v == "dbuf4") {
+      return v;
+    }
+    return std::string();
+  }();
+  return variant;
+}
+
 static CoopmatTileDims coopmat_tile_dims(const std::string& kernel_name) {
   // Exact prefix matches (the "linear_dq8ca_*" names must not match the
   // weight-only entries).
@@ -326,6 +350,10 @@ vkapi::ShaderInfo pick_linear_dqa_qw_shader(
             kDq8caQ4gswCoopmatDims.n,
             kDq8caQ4gswCoopmatDims.k)) {
       std::string kernel_name = "linear_dq8ca_q4gsw_coopmat";
+      const std::string& variant = dq8ca_coopmat_variant();
+      if (!variant.empty()) {
+        kernel_name += "_" + variant;
+      }
       add_storage_type_suffix(kernel_name, graph->storage_type_of(out));
       add_storage_type_suffix(kernel_name, graph->storage_type_of(int_weight));
       add_dtype_suffix(kernel_name, graph->dtype_of(out));

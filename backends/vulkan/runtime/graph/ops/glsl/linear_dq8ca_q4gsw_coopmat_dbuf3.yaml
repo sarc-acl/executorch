@@ -1,0 +1,34 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# specs/023-8da4w-int8-dbuf-sweep: dbuf3 (dbuf2 with the true final chunk
+# peeled into an unconditional epilogue) variant of the int8 dq8ca_q4gsw
+# coopmat linear shader, selected via ET_VK_DQ8CA_COOPMAT_VARIANT=dbuf3.
+# Same tile geometry as the shipped linear_dq8ca_qw_coopmat.yaml -- only the
+# loop structure differs, see linear_dq8ca_q4gsw_coopmat_dbuf3.glsl.
+
+linear_dq8ca_q4gsw_coopmat_dbuf3:
+  parameter_names_with_default_values:
+    PRECISION: highp
+    HAS_BIAS: false
+    WEIGHT_NBITS: 4
+    WEIGHT_STORAGE: texture2d
+    MMA_M: 16
+    MMA_N: 16
+    MMA_K: 16
+    WG_TILE_M: 128
+    WG_TILE_N: 64
+    WG_TILE_K: 32
+    SG_GRID_X: 2
+    SG_GRID_Y: 2
+    SUBGROUP_SIZE: 64
+  shader_variants:
+    - NAME: linear_dq8ca_q4gsw_coopmat_dbuf3_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+    - NAME: linear_dq8ca_q4gsw_coopmat_dbuf3_buffer_buffer_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: buffer
