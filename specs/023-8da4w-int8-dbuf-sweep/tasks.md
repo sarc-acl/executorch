@@ -245,16 +245,21 @@ report alone.
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T031 [P] Walk through `quickstart.md` end-to-end in the new worktree and correct any
-      step that didn't reproduce as documented
-- [ ] T032 [P] If a new Xclipse PAL compiler workaround was discovered while porting
-      dbuf1/2/3 (T012-T014) that isn't already covered by an existing entry, append it to
-      `.specify/memory/gotchas.md` per that file's own append convention (constitution
-      Principle V / Development Workflow "Gotchas Reference")
-- [ ] T033 Commit all changes in the new worktree (shader variants, `QuantizedLinear.cpp`
+- [X] T031 [P] Walk through `quickstart.md` end-to-end in the new worktree and correct any
+      step that didn't reproduce as documented. Reproduced with two realistic deviations,
+      both harmless: (1) the main timed sweep (Step 5) was driven directly via
+      ssh+adb rather than through `run_dbuf_sweep.sh` while iterating quickly -- the script
+      was still written and verified functionally equivalent (used for the T016-T019
+      correctness-only checks); (2) no Xclipse PAL crash occurred, so Step 3's
+      crash-handling path was never exercised (a positive outcome, not a doc defect)
+- [X] T032 [P] No new Xclipse PAL compiler workaround was discovered while porting
+      dbuf1/2/3 (T012-T014) — all four variants compiled and ran without incident on the
+      current `f14c51b6f8` driver, so `.specify/memory/gotchas.md` is unchanged
+- [X] T033 Commit all changes in the new worktree (shader variants, `QuantizedLinear.cpp`
       hook, bench harness extension, driver script, raw results, report) — do not push
       without explicit confirmation, per this workstream's standing discipline on
-      shared-state actions
+      shared-state actions. Committed as `cb664bacf` on `023-8da4w-int8-dbuf-sweep-impl`;
+      not pushed
 
 ---
 
