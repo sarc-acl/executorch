@@ -327,11 +327,20 @@ Result<uint64_t> TextLLMRunner::prefill(
   return prefill(prompt, config.num_bos, config.num_eos);
 }
 
-Error TextLLMRunner::warmup(const std::string& prompt, int32_t max_new_tokens) {
-  // Create a GenerationConfig for warmup
+Error TextLLMRunner::warmup(
+    const std::string& prompt,
+    int32_t max_new_tokens,
+    int32_t num_bos,
+    int32_t num_eos) {
+  // Create a GenerationConfig for warmup. num_bos/num_eos default to 0 for
+  // backward compatibility, but callers should pass the same values they'll
+  // use for the real generate() call -- see the header doc for why a
+  // mismatch is a problem, not just a cosmetic warmup difference.
   GenerationConfig config;
   config.echo = false;
   config.max_new_tokens = max_new_tokens;
+  config.num_bos = num_bos;
+  config.num_eos = num_eos;
   config.warming = true;
 
   // Call generate with the warmup config

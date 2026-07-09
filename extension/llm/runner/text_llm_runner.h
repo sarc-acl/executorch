@@ -138,11 +138,19 @@ class ET_EXPERIMENTAL TextLLMRunner : public IRunner {
    *
    * @param prompt The sample prompt to use for warmup
    * @param max_new_tokens Maximum number of tokens to generate during warmup
+   * @param num_bos Number of BOS tokens to prepend during encoding. Should
+   *     match the num_bos the caller will use for the real generate() call --
+   *     a mismatch changes the warmup prefill's token count, which can bind a
+   *     different-shape compute pipeline than the real run needs (e.g.
+   *     defeating shape-sensitive kernel selection such as Vulkan coopmat).
+   * @param num_eos Number of EOS tokens to append during encoding
    * @return ::executorch::runtime::Error Success or error status
    */
   ::executorch::runtime::Error warmup(
       const std::string& prompt,
-      int32_t max_new_tokens);
+      int32_t max_new_tokens,
+      int32_t num_bos = 0,
+      int32_t num_eos = 0);
 
   /**
    * @brief Remove prefilled tokens and reset start position, and stats.

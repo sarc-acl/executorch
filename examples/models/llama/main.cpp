@@ -191,8 +191,11 @@ int32_t main(int32_t argc, char** argv) {
   if (warmup) {
     int32_t warmup_max_new_tokens =
         FLAGS_max_new_tokens != -1 ? FLAGS_max_new_tokens : seq_len;
-    auto error =
-        runner->warmup(prompt, /*max_new_tokens=*/warmup_max_new_tokens);
+    auto error = runner->warmup(
+        prompt,
+        /*max_new_tokens=*/warmup_max_new_tokens,
+        /*num_bos=*/FLAGS_num_bos,
+        /*num_eos=*/FLAGS_num_eos);
     if (error != executorch::runtime::Error::Ok) {
       ET_LOG(Error, "Failed to warmup llama runner");
       return 1;
