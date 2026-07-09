@@ -1,0 +1,39 @@
+
+=== Compute Shader Performance Benchmark ===
+specs/023 dq8ca_q4gsw dbuf-variant sweep bench (M=2048, variant=tsweep_t32x64k32g12s64)
+----------------------------------------------------------------------
+Executing 7 test cases for Dq8caDbufSweepBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,32,1)        (4,1,16)                                                                                                                  711.832 μs                                 
+linear_dq8ca_q4gsw_coopmat_tsweep_t32x64k32g..     (256,4,1)       (128,1,1)                                                                                                                 724.463 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_correctness_M128_K128_N128_Buffer                                        [128x128]        1436.295 μs          2.920 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (64,512,1)      (4,1,16)                                                                                                                 1096.983 μs                                 
+linear_dq8ca_q4gsw_coopmat_tsweep_t32x64k32g..     (4096,64,1)     (128,1,1)                                                                                                               13880.454 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_1b_wq_M2048_K2048_N2048_Buffer                                         [2048x2048]       14977.438 μs       1147.050 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (64,512,1)      (4,1,16)                                                                                                                 1082.588 μs                                 
+linear_dq8ca_q4gsw_coopmat_tsweep_t32x64k32g..     (16384,64,1)    (128,1,1)                                                                                                               53760.605 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_1b_w1_gate_M2048_K2048_N8192_Buffer                                    [2048x2048]       54843.191 μs       1253.017 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (96,512,1)      (4,1,16)                                                                                                                 1296.286 μs                                 
+linear_dq8ca_q4gsw_coopmat_tsweep_t32x64k32g..     (6144,64,1)     (128,1,1)                                                                                                               30548.688 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_3b_wq_M2048_K3072_N3072_Buffer                                         [2048x3072]       31844.977 μs       1213.840 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (96,512,1)      (4,1,16)                                                                                                                 1344.304 μs                                 
+linear_dq8ca_q4gsw_coopmat_tsweep_t32x64k32g..     (16384,64,1)    (128,1,1)                                                                                                               81634.867 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_3b_w1_gate_M2048_K3072_N8192_Buffer                                    [2048x3072]       82979.172 μs       1242.230 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (128,512,1)     (4,1,16)                                                                                                                 1665.404 μs                                 
+linear_dq8ca_q4gsw_coopmat_tsweep_t32x64k32g..     (8192,64,1)     (128,1,1)                                                                                                               54463.590 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_8b_wq_M2048_K4096_N4096_Buffer                                         [2048x4096]       56128.988 μs       1224.313 GFLOP/s  SKIPPED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (128,512,1)     (4,1,16)                                                                                                                 1520.103 μs                                 
+linear_dq8ca_q4gsw_coopmat_tsweep_t32x64k32g..     (28672,64,1)    (128,1,1)                                                                                                              193454.391 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_8b_w1_gate_M2048_K4096_N14336_Buffer                                   [2048x4096]      194974.484 μs       1233.588 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 7 test cases
+[correctness] linear_dq8ca_q4gsw_correctness_M128_K128_N128_Buffer -> linear_dq8ca_q4gsw_coopmat_tsweep_t32x64k32g12s64_buffer_texture2d_half (coopmat dispatched), correctness=PASSED
+
+================ SUMMARY: dq8ca_q4gsw dbuf sweep (GFLOP/s) ================
+shape           (K,N)                avg_us   cov_pct     GFLOP/s  dispatched kernel
+1b_wq           (2048,2048)         14977.4     0.03%      1147.0  linear_dq8ca_q4gsw_coopmat_tsweep_t32x64k32g12s64_buffer_texture2d_half
+1b_w1_gate      (2048,8192)         54843.2     0.13%      1253.0  linear_dq8ca_q4gsw_coopmat_tsweep_t32x64k32g12s64_buffer_texture2d_half
+3b_wq           (3072,3072)         31845.0     0.16%      1213.8  linear_dq8ca_q4gsw_coopmat_tsweep_t32x64k32g12s64_buffer_texture2d_half
+3b_w1_gate      (3072,8192)         82979.2     0.95%      1242.2  linear_dq8ca_q4gsw_coopmat_tsweep_t32x64k32g12s64_buffer_texture2d_half
+8b_wq           (4096,4096)         56129.0     0.16%      1224.3  linear_dq8ca_q4gsw_coopmat_tsweep_t32x64k32g12s64_buffer_texture2d_half
+8b_w1_gate      (4096,14336)       194974.5     0.38%      1233.6  linear_dq8ca_q4gsw_coopmat_tsweep_t32x64k32g12s64_buffer_texture2d_half

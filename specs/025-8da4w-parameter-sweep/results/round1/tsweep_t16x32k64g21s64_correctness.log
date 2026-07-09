@@ -1,0 +1,38 @@
+
+=== Compute Shader Performance Benchmark ===
+specs/023 dq8ca_q4gsw dbuf-variant sweep bench (M=2048, variant=tsweep_t16x32k64g21s64)
+----------------------------------------------------------------------
+Executing 1 test cases for Dq8caDbufSweepBench
+----------------------------------------------------------------------
+Mismatch at element 0: computed=-2.31055, reference=-0.452322, diff=1.85823, abs_tolerance=0.5, rel_tolerance=0.05, rel_threshold=0.0226161
+  total mismatched: 14656 / 16384 (first at 0)
+  16x16-tile mismatch counts (rows=M/16, cols=N/16):
+     247 244 248 249 247 247 246 243
+     240 239 232 235 238 241 235 240
+     214 209 212 215 211 215 212 212
+     222 225 211 220 220 226 216 227
+     237 235 230 233 237 232 235 236
+     205 199 200 205 199 206 201 202
+     244 248 247 249 246 249 244 244
+     236 234 231 233 232 229 228 232
+  Correctness validation FAILED for test linear_dq8ca_q4gsw_correctness_M128_K128_N128_Buffer
+
+vulkan output Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=ZEROS)
+  Total elements: 16384
+  Data (first 20 elements): [-2.310547, -2.535156, -4.550781, -3.654297, -5.593750, -4.625000, -2.683594, -4.125000, -4.710938, -3.802734, -5.570312, -3.419922, -3.486328, -5.230469, -5.558594, -3.164062, -3.957031, -3.806641, -3.111328, -2.164062, ... (16364 more)]
+  Statistics: min=-22.390625, max=24.734375, mean=0.175057, sum=2868.134766
+
+ref output Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=ZEROS)
+  Total elements: 16384
+  Data (first 20 elements): [-0.452322, -0.691751, -2.056510, -1.233681, -2.147716, -1.835231, -0.684494, -1.262319, -2.097399, -1.478816, -2.156481, -1.561089, -1.095454, -1.754315, -2.657806, -1.009488, -1.403077, -1.925539, -0.819969, -0.468513, ... (16364 more)]
+  Statistics: min=-22.390625, max=24.734375, mean=0.175057, sum=2868.134766
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,32,1)        (4,1,16)                                                                                                                  711.988 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_half     (16,32,1)       (8,8,1)                                                                                                                   771.116 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_correctness_M128_K128_N128_Buffer                                        [128x128]        1483.104 μs          2.828 GFLOP/s   FAILED
+----------------------------------------------------------------------
+Completed 1 test cases
+[correctness] linear_dq8ca_q4gsw_correctness_M128_K128_N128_Buffer -> linear_dq8ca_q4gsw_tiled_buffer_texture2d_half (NOT coopmat -- fallback), correctness=FAILED
+[correctness] FAILED -- did not dispatch coopmat and/or failed correctness
+EXIT=1

@@ -1,0 +1,13 @@
+
+=== Compute Shader Performance Benchmark ===
+specs/023 dq8ca_q4gsw dbuf-variant sweep bench (M=2048, variant=tsweep_t16x32k32g21s64)
+----------------------------------------------------------------------
+Executing 1 test cases for Dq8caDbufSweepBench
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,32,1)        (4,1,16)                                                                                                                  711.807 μs                                 
+linear_dq8ca_q4gsw_coopmat_tsweep_t16x32k32g..     (512,8,1)       (128,1,1)                                                                                                                 719.720 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_correctness_M128_K128_N128_Buffer                                        [128x128]        1431.528 μs          2.930 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[correctness] linear_dq8ca_q4gsw_correctness_M128_K128_N128_Buffer -> linear_dq8ca_q4gsw_coopmat_tsweep_t16x32k32g21s64_buffer_texture2d_half (coopmat dispatched), correctness=PASSED
+EXIT=0

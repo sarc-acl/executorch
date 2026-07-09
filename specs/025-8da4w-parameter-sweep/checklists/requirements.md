@@ -37,3 +37,5 @@
   Assumptions section — the "non-technical stakeholder" checklist item is read in that context.
 - All three clarification questions raised during drafting were resolved inline in the
   Clarifications section rather than left as open [NEEDS CLARIFICATION] markers.
+- Implementation complete (2026-07-09): winner `128×32/K16/1×2/s64` (dbuf2 loop), +2.55%
+  over shipped `8da4w`. Full results: `results/sweep-report.md`.

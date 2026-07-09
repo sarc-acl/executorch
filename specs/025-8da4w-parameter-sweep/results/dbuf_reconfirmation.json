@@ -1,0 +1,68 @@
+{
+  "geometry": "128x64/K32/2x2/s64 (currently-shipped 8da4w tile/subgroup config)",
+  "device": "M5 EVT1 (Exynos 2500 / Xclipse 970)",
+  "driver_hash": "c9861e9906d03fa2c7d48b804e1a1c80",
+  "clocks_pinned": true,
+  "date": "2026-07-09",
+  "results": [
+    {
+      "variant": "dbuf1",
+      "dispatch_confirmed": true,
+      "correctness_status": "pass",
+      "avg_gflops_across_6_shapes": 1280.2,
+      "per_shape_gflops": {
+        "1b_wq": 1313.0, "1b_w1_gate": 1304.8,
+        "3b_wq": 1255.0, "3b_w1_gate": 1283.4,
+        "8b_wq": 1224.6, "8b_w1_gate": 1300.6
+      },
+      "driver_hash": "c9861e9906d03fa2c7d48b804e1a1c80",
+      "clocks_pinned": true,
+      "failure_reason": null
+    },
+    {
+      "variant": "dbuf2",
+      "dispatch_confirmed": true,
+      "correctness_status": "pass",
+      "avg_gflops_across_6_shapes": 1688.1,
+      "per_shape_gflops": {
+        "1b_wq": 1542.3, "1b_w1_gate": 1721.4,
+        "3b_wq": 1651.5, "3b_w1_gate": 1742.4,
+        "8b_wq": 1714.9, "8b_w1_gate": 1756.1
+      },
+      "driver_hash": "c9861e9906d03fa2c7d48b804e1a1c80",
+      "clocks_pinned": true,
+      "failure_reason": null
+    },
+    {
+      "variant": "dbuf3",
+      "dispatch_confirmed": true,
+      "correctness_status": "pass",
+      "avg_gflops_across_6_shapes": 1539.6,
+      "per_shape_gflops": {
+        "1b_wq": 1432.7, "1b_w1_gate": 1535.4,
+        "3b_wq": 1546.1, "3b_w1_gate": 1557.4,
+        "8b_wq": 1583.5, "8b_w1_gate": 1582.7
+      },
+      "driver_hash": "c9861e9906d03fa2c7d48b804e1a1c80",
+      "clocks_pinned": true,
+      "failure_reason": null
+    },
+    {
+      "variant": "dbuf4",
+      "dispatch_confirmed": true,
+      "correctness_status": "pass",
+      "avg_gflops_across_6_shapes": 1448.7,
+      "per_shape_gflops": {
+        "1b_wq": 1327.6, "1b_w1_gate": 1542.0,
+        "3b_wq": 1405.0, "3b_w1_gate": 1592.3,
+        "8b_wq": 1372.9, "8b_w1_gate": 1452.5
+      },
+      "driver_hash": "c9861e9906d03fa2c7d48b804e1a1c80",
+      "clocks_pinned": true,
+      "failure_reason": null
+    }
+  ],
+  "fastest_variant": "dbuf2",
+  "matches_user_claim": true,
+  "summary": "dbuf2 is fastest on all 6/6 representative shapes (avg 1688.1 GFLOP/s), beating the shipped dbuf4 baseline (1448.7 GFLOP/s) by +16.5% and the runner-up dbuf3 (1539.6 GFLOP/s) by +9.6%. This is a FRESH re-measurement (2026-07-09, driver c9861e990..., pinned clocks verified bound), not a reuse of specs/023's 2026-07-08 result -- it independently confirms specs/023's own finding within noise (023 measured dbuf2 avg 1782.3 GFLOP/s at M=2048 via a slightly different harness invocation path; this run's 1688.1 is the same ranking and same ~+16-18% margin over dbuf4, run-to-run device variance explains the small magnitude difference). CONFIRMS the user-reported dbuf2 claim (spec SC-001). Loop structure held fixed at dbuf2 for User Stories 2/3."
+}
