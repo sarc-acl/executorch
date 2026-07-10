@@ -1,0 +1,16 @@
+=== 8B 4w rep 1 ===
+PyTorchObserver {"prefill_token_per_sec":112.775,"decode_token_per_sec":3.86073,"prompt_tokens":2048,"generated_tokens":1023}
+=== 8B 4w rep 2 ===
+PyTorchObserver {"prefill_token_per_sec":112.565,"decode_token_per_sec":3.85433,"prompt_tokens":2048,"generated_tokens":1023}
+=== 8B 4w rep 3 ===
+PyTorchObserver {"prefill_token_per_sec":112.775,"decode_token_per_sec":3.84491,"prompt_tokens":2048,"generated_tokens":1023}
+=== 8B 8da4w rep 1 ===
+PyTorchObserver {"prefill_token_per_sec":100.259,"decode_token_per_sec":3.77338,"prompt_tokens":2048,"generated_tokens":1023}
+=== 8B 8da4w rep 2 ===
+PyTorchObserver {"prefill_token_per_sec":99.2681,"decode_token_per_sec":3.79123,"prompt_tokens":2048,"generated_tokens":1023}
+=== 8B 8da4w rep 3 ===
+PyTorchObserver {"prefill_token_per_sec":100.402,"decode_token_per_sec":3.79637,"prompt_tokens":2048,"generated_tokens":1023}
+
+=== 8B SDPA (ET_VK_SDPA_COOPMAT=1) attempt ===
+libc++abi: terminating due to uncaught exception of type vkcompute::vkapi::Error: Exception raised from wait_for_queue at Context.cpp:234: vkQueueWaitIdle(queue().handle) returned -4
+Aborted -- blocked_reason recorded, not retried at shorter length; device recovered on next run (coherence check passed).

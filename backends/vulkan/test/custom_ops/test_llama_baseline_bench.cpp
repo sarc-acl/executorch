@@ -178,6 +178,14 @@ struct ModelShapes {
 };
 
 // Mirrors specs/001-minipc-baseline-benchmarks/results/shapes.json.
+// specs/021 (research.md Decision 9 follow-up): `lm_head` (K,128256) is
+// EXCLUDED per explicit user decision -- it's this suite's single largest
+// dispatch (~270us-2.4ms observed, wildly variable) and the direct trigger
+// for the QueryPool race (Decision 9) and a suspected GPU/driver reset that
+// disconnected the device entirely during a later run. Removing it both
+// speeds up the full sweep (no more ~2.4s-per-case outlier dominating wall
+// time) and sidesteps the race at its source, rather than continuing to
+// paper over it with try/catch on every run.
 const std::vector<ModelShapes> kModels = {
     {"llama-3.1-8b",
      32,
@@ -187,8 +195,7 @@ const std::vector<ModelShapes> kModels = {
       {"wo", 4096, 4096},
       {"w1_gate", 4096, 14336},
       {"w3_up", 4096, 14336},
-      {"w2_down", 14336, 4096},
-      {"lm_head", 4096, 128256}}},
+      {"w2_down", 14336, 4096}}},
     {"llama-3.2-3b",
      32,
      {{"wq", 3072, 3072},
@@ -197,8 +204,7 @@ const std::vector<ModelShapes> kModels = {
       {"wo", 3072, 3072},
       {"w1_gate", 3072, 8192},
       {"w3_up", 3072, 8192},
-      {"w2_down", 8192, 3072},
-      {"lm_head", 3072, 128256}}},
+      {"w2_down", 8192, 3072}}},
     {"llama-3.2-1b",
      32,
      {{"wq", 2048, 2048},
@@ -207,8 +213,7 @@ const std::vector<ModelShapes> kModels = {
       {"wo", 2048, 2048},
       {"w1_gate", 2048, 8192},
       {"w3_up", 2048, 8192},
-      {"w2_down", 8192, 2048},
-      {"lm_head", 2048, 128256}}},
+      {"w2_down", 8192, 2048}}},
 };
 
 const std::vector<std::pair<std::string, std::string>> kSchemes = {
@@ -230,32 +235,88 @@ const std::vector<std::pair<std::string, utils::StorageType>> kStorageTypes = {
     {"buffer", utils::kBuffer},
 };
 
-std::vector<TestCase> generate_cases() {
+// specs/021 (research.md Decision 3/8): generates one model's 64 cases only
+// (2 schemes x 2 regimes x 2 storage x 8 ops), not all 192 -- main() calls
+// this once per model as the outer grouping loop, then calls
+// execute_test_cases() once per individual case within that model (Decision
+// 8), which is what actually bounds peak memory to a single case's own
+// tensors (~525MB worst case, a lm_head prefill case) instead of the
+// previous ~6.3GB from all 12 lm_head cases materialized at once.
+std::vector<TestCase> generate_cases_for_model(const ModelShapes& model) {
   std::vector<TestCase> cases;
-  for (const auto& model : kModels) {
-    for (const auto& scheme : kSchemes) {
-      for (const auto& regime : kRegimes) {
-        for (const auto& storage : kStorageTypes) {
-          for (const auto& op : model.ops) {
-            LinearConfig cfg{
-                regime.second,
-                op.k,
-                op.n,
-                model.group_size,
-                scheme.second,
-                model.model,
-                scheme.first,
-                op.op,
-                regime.first,
-                storage.first,
-                storage.second};
-            cases.push_back(make_case(cfg));
-          }
+  for (const auto& scheme : kSchemes) {
+    for (const auto& regime : kRegimes) {
+      for (const auto& storage : kStorageTypes) {
+        for (const auto& op : model.ops) {
+          LinearConfig cfg{
+              regime.second,
+              op.k,
+              op.n,
+              model.group_size,
+              scheme.second,
+              model.model,
+              scheme.first,
+              op.op,
+              regime.first,
+              storage.first,
+              storage.second};
+          cases.push_back(make_case(cfg));
         }
       }
     }
   }
   return cases;
+}
+
+// specs/021 (research.md Decision 1/2): shared unified RESULT,... line,
+// printed immediately after each case's single execute_test_cases() call
+// returns. dispatch_status is always not_applicable -- this harness forces
+// ET_VK_FORCE_TILED_LINEAR=1 and has no coopmat toggle at all, so its
+// storage-type (texture3d vs buffer) comparison is a structurally different
+// question from linear bench's tiled-vs-coopmat one; storage_name is
+// appended after the shared 12 fields, since it's this harness's own
+// comparison axis, not a fallback/dispatch signal. `variant` instead reports
+// which real kernel suffix actually dispatched ("tiled" for prefill,
+// "coop" for decode's is_gemv_case short-circuit -- structurally identical
+// to linear bench's decode handling; "coopmat" would indicate
+// ET_VK_FORCE_TILED_LINEAR somehow didn't take effect, a real anomaly this
+// harness has never observed but checks for rather than assumes away).
+void print_result_line(const BenchmarkResult& r) {
+  const std::string& case_name = r.get_kernel_name();
+  auto it = g_case_configs.find(case_name);
+  if (it == g_case_configs.end()) {
+    std::cerr << "WARNING: no LinearConfig found for result named '"
+              << case_name << "', skipping" << std::endl;
+    return;
+  }
+  const LinearConfig& cfg = it->second;
+  std::string dispatched_kernel = case_name;
+  for (const auto& st : r.get_shader_timings()) {
+    if (st.shader_name.find("linear_") != std::string::npos) {
+      dispatched_kernel = st.shader_name;
+    }
+  }
+  std::string variant;
+  if (dispatched_kernel.find("_coopmat") != std::string::npos) {
+    variant = "coopmat"; // should never happen under ET_VK_FORCE_TILED_LINEAR=1
+  } else if (dispatched_kernel.find("_coop") != std::string::npos) {
+    variant = "coop";
+  } else {
+    variant = "tiled";
+  }
+  const std::string correctness_status =
+      r.get_correctness_status() == CorrectnessStatus::PASSED   ? "PASSED"
+      : r.get_correctness_status() == CorrectnessStatus::FAILED ? "FAILED"
+                                                                : "SKIPPED";
+  const float avg_us = r.get_avg_time_us();
+  const float gflops =
+      avg_us > 0 ? (2.0f * cfg.M * cfg.N * cfg.K) / (avg_us * 1e3f) : 0.0f;
+
+  std::cout << "RESULT,baseline," << cfg.model << "," << cfg.scheme << ","
+            << cfg.regime << "," << variant << "," << cfg.K << "," << cfg.N
+            << "," << avg_us << "," << r.get_std_dev_us() << "," << gflops
+            << ",not_applicable," << correctness_status << ","
+            << cfg.storage_name << "\n";
 }
 
 } // namespace
@@ -272,40 +333,57 @@ int main() {
       << "prefill(M=2048)/decode(M=1), tiled/coop dispatch only" << std::endl;
   print_separator();
 
-  auto results = execute_test_cases(
-      generate_cases,
-      flop_calc,
-      "LlamaBaselineBench",
-      /*warmup=*/3,
-      /*runs=*/5,
-      /*reference=*/nullptr);
-
-  // Do not assume results[] is in generate_cases()'s nested-loop order --
-  // execute_test_cases() groups cases by a ReferenceKey that excludes
-  // storage_type, reordering results relative to that order (see
-  // g_case_configs's comment above make_case()). Look up each result's true
-  // (model, scheme, regime, storage, op) by the name BenchmarkResult was
-  // seeded with, which survives unchanged through to here.
-  for (const auto& r : results) {
-    const std::string& case_name = r.get_kernel_name();
-    auto it = g_case_configs.find(case_name);
-    if (it == g_case_configs.end()) {
-      std::cerr << "WARNING: no LinearConfig found for result named '"
-                << case_name << "', skipping" << std::endl;
-      continue;
-    }
-    const LinearConfig& cfg = it->second;
-    std::string kernel = case_name;
-    for (const auto& st : r.get_shader_timings()) {
-      if (st.shader_name.find("linear_") != std::string::npos) {
-        kernel = st.shader_name;
+  // specs/021: outer loop over models (output grouping only, per
+  // research.md Decision 3), inner loop calls execute_test_cases() once per
+  // individual case (Decision 8) -- this per-case granularity is what
+  // actually fixes the OOM, not the per-model grouping itself.
+  for (const auto& model : kModels) {
+    std::vector<TestCase> model_cases = generate_cases_for_model(model);
+    for (auto& tc : model_cases) {
+      try {
+        auto single_case_result = execute_test_cases(
+            [&tc]() { return std::vector<TestCase>{tc}; },
+            flop_calc,
+            "LlamaBaselineBench",
+            /*warmup=*/3,
+            /*runs=*/5,
+            /*reference=*/nullptr);
+        if (single_case_result.empty()) {
+          continue; // defensive; execute_test_cases always returns 1 result
+                    // here
+        }
+        print_result_line(single_case_result[0]);
+      } catch (const std::exception& e) {
+        // specs/021: a case-local exception (observed: QueryPool.cpp's
+        // non-blocking vkGetQueryPoolResults occasionally returning
+        // VK_NOT_READY on lm_head's ~270us/dispatch, the largest single
+        // dispatch in this suite -- a pre-existing shared-runtime race this
+        // feature's per-case execution was the first thing to ever actually
+        // reach, since every prior run OOM'd before getting this far; not a
+        // regression introduced by this feature, and fixing the race itself
+        // is out of scope per FR-011) must not take down the other 191
+        // cases -- this extends Decision 8's "partial data survives a
+        // failure" principle to a case-local exception, not just a
+        // process-level OOM. Recovered from via g_case_configs (populated by
+        // make_case() before the exception, so the case's identity is known
+        // even though its measurement isn't) and surfaced as its own
+        // RESULT,... row (correctness_status=CRASHED) rather than silently
+        // skipped, per FR-010.
+        std::cerr << "WARNING: case '" << tc.name() << "' threw: " << e.what()
+                  << " -- recorded as CRASHED, continuing to next case\n";
+        auto cfg_it = g_case_configs.find(tc.name());
+        if (cfg_it != g_case_configs.end()) {
+          const LinearConfig& cfg = cfg_it->second;
+          std::cout << "RESULT,baseline," << cfg.model << "," << cfg.scheme
+                    << "," << cfg.regime << ",crashed," << cfg.K << "," << cfg.N
+                    << ",-1,-1,-1,not_applicable,CRASHED," << cfg.storage_name
+                    << "\n";
+        } else {
+          std::cout << "RESULT,baseline,unknown,unknown,unknown,crashed,-1,-1,"
+                       "-1,-1,-1,not_applicable,CRASHED,unknown\n";
+        }
       }
     }
-    std::cout << "RESULT," << cfg.model << "," << cfg.scheme << ","
-              << cfg.regime << "," << cfg.storage_name << "," << cfg.op << ","
-              << cfg.M << "," << cfg.K << "," << cfg.N << ","
-              << r.get_avg_time_us() << "," << r.get_std_dev_us() << ","
-              << r.get_num_iterations() << "," << kernel << "\n";
   }
   return 0;
 }

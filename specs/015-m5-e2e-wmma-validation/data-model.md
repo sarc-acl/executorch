@@ -11,7 +11,7 @@ One (model, op-family) unit -- 9 total: 3 models × {`4w`, `8da4w`} linear
 | `op_family` | enum | `linear_4w` / `linear_8da4w` / `sdpa_coopmat` |
 | `pte_path` | string | `.pte_out/<model>_<scheme>_buffer_ctx3072.pte`; for `sdpa_coopmat`, the same buffer PTE as `linear_4w` for that model, run with `ET_VK_SDPA_COOPMAT=1` |
 | `pte_status` | enum | `re_exported` (all 3 `4w` **Buffer** PTEs -- the pre-existing files of this name were found internally `Texture3D` per `research.md` Decision 6 and were replaced, not reused) / `newly_exported` (the 3 `8da4w` Buffer PTEs) |
-| `dispatch_status` | enum | `not_yet_run` / `confirmed` (coopmat/WMMA kernel family seen in ETDump) / `fallback` (tiled kernel seen instead) / `failed` (export/run error) |
+| `dispatch_status` | enum | `not_yet_run` / `confirmed` (coopmat/WMMA kernel family seen in ETDump) / `fallback` (tiled kernel seen instead) / `failed` (export/run error). **UPDATE (2026-07-06): restored to `confirmed` for every linear Configuration -- see `research.md` Decision 7's reversal.** ETDump's own per-event kernel-name field is unreliable in this full-graph context (it showed `fallback`/tiled for all linear Configurations, which was itself the earlier -- now superseded -- correction), but a direct wall-clock A/B against the genuine `ET_VK_FORCE_TILED_LINEAR` kill switch, plus `specs/016-m5-linear-sdpa-microbench`'s independent microbenchmark (own kernel-name capture + SPIR-V + correctness), both confirm coopmat genuinely dispatches. `confirmed` here now rests on that firmer evidence, not on ETDump alone. |
 | `e2e_result` | record | `{prefill_tok_s_mean, prefill_cov_pct, decode_tok_s_mean, decode_cov_pct, run_count}` (per `research.md` Decision 5, `run_count` is always 3 unless a watchdog/other failure cut the run short -- record however many completed) or `not_yet_run` |
 | `blocked_reason` | string\|null | e.g. "GPU watchdog at 2048-token prefill" -- populated only if `dispatch_status` or `e2e_result` couldn't complete |
 | `measured_order` | int | 1-9, per Decision 3's 1B→3B→8B sequencing (within a model, linear before SDPA) |
@@ -26,15 +26,18 @@ Seeded rows (as of this feature's start):
 
 | model | op_family | pte_status | dispatch_status | e2e_result |
 |---|---|---|---|---|
-| llama3_2_1b | linear_4w | re_exported (DONE) | confirmed (DONE) | not_yet_run |
-| llama3_2_1b | linear_8da4w | (needs export) | not_yet_run | not_yet_run |
-| llama3_2_1b | sdpa_coopmat | re_exported (4w PTE, DONE) | not_yet_run | not_yet_run |
-| llama3_2_3b | linear_4w | (needs re-export) | not_yet_run | not_yet_run |
-| llama3_2_3b | linear_8da4w | (needs export) | not_yet_run | not_yet_run |
-| llama3_2_3b | sdpa_coopmat | (needs re-export, 4w PTE) | not_yet_run | not_yet_run |
-| llama3_1_8b | linear_4w | (needs re-export) | not_yet_run | not_yet_run |
-| llama3_1_8b | linear_8da4w | (needs export) | not_yet_run | not_yet_run |
-| llama3_1_8b | sdpa_coopmat | (needs re-export, 4w PTE) | not_yet_run | not_yet_run |
+| llama3_2_1b | linear_4w | re_exported (DONE) | **confirmed (restored 2026-07-06, see Decision 7 reversal)** | 583.70 tok/s |
+| llama3_2_1b | linear_8da4w | newly_exported (DONE) | **confirmed (restored)** | 533.44 tok/s |
+| llama3_2_1b | 4w+sdpa_coopmat | re_exported (4w PTE, DONE) | **confirmed directly (2026-07-06, Decision 8 -- bind-time capture matches ETDump)** | 812.59 (prior session) / 769.35 (fresh, high CoV flagged) tok/s |
+| llama3_2_1b | 8da4w+sdpa_coopmat | newly_exported (DONE) | **confirmed (same mechanism)** | 723.00 tok/s |
+| llama3_2_3b | linear_4w | re_exported (DONE) | **confirmed (restored)** | 218.26 tok/s |
+| llama3_2_3b | linear_8da4w | newly_exported (DONE) | **confirmed (restored)** | 200.91 tok/s |
+| llama3_2_3b | 4w+sdpa_coopmat | re_exported (4w PTE, DONE) | **confirmed (2026-07-06, Decision 8)** | 333.97 tok/s -- previously `BLOCKED (VK_ERROR_DEVICE_LOST)`, now resolved (was host-side OOM, see G11) |
+| llama3_2_3b | 8da4w+sdpa_coopmat | newly_exported (DONE) | **confirmed** | 286.31 tok/s |
+| llama3_1_8b | linear_4w | re_exported (DONE) | **confirmed (restored)** | 112.71 tok/s |
+| llama3_1_8b | linear_8da4w | newly_exported (DONE) | **confirmed (restored)** | 99.98 tok/s |
+| llama3_1_8b | 4w+sdpa_coopmat | re_exported (4w PTE, DONE) | **confirmed (2026-07-06, Decision 8)** | 153.30 tok/s -- previously `BLOCKED (VK_ERROR_DEVICE_LOST)`, now resolved (was host-side OOM, see G11) |
+| llama3_1_8b | 8da4w+sdpa_coopmat | newly_exported (DONE) | **confirmed** | 130.05 tok/s |
 
 ## Prior-Finding Reference
 

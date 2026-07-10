@@ -5,7 +5,8 @@
 // LICENSE file in the root directory of this source tree.
 
 // Consolidated coopmat-vs-tiled microbenchmark for the two int4-quantized
-// linear types at Llama 3.1 8B prefill shapes:
+// linear types at Llama 3.2-1B / 3.2-3B / 3.1-8B prefill shapes
+// (specs/016-m5-linear-sdpa-microbench):
 //   4w    = linear_q4gsw          (weight-only int4)
 //   8da4w = linear_dq8ca_q4gsw    (dyn-act int8 x int4 weight)
 //
@@ -21,6 +22,7 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include "utils.h"
 
@@ -40,6 +42,12 @@ struct LinearConfig {
   // coopmat path after specs/009's guard relaxation (research.md Decision
   // 1/2). See kRank3CorrectnessShapes below.
   int64_t batch = 0;
+  // specs/021: real per-model shape identity and regime, used by
+  // print_result_line() via g_case_configs. Empty/"prefill" defaults keep
+  // every pre-existing correctness-case constructor below (which only
+  // supplies the first 5-6 fields) valid as-is.
+  std::string model;
+  std::string regime = "prefill";
 };
 
 static bool is_dq8ca(const std::string& op) {
@@ -49,17 +57,25 @@ static bool is_4bit(const std::string& op) {
   return op.find("q4gsw") != std::string::npos;
 }
 
+// specs/021: case name -> config, populated by make_case() below, so
+// print_result_line() can recover (model, scheme, regime, K, N) from a
+// BenchmarkResult's kernel_name (which is seeded from TestCase::name() and
+// survives unchanged through execute_test_cases(), per the same convention
+// test_llama_baseline_bench.cpp already uses for its own g_case_configs).
+static std::unordered_map<std::string, LinearConfig> g_case_configs;
+
 // Build one test case for the given op at (storage, half dtype), no bias.
 static TestCase make_case(const LinearConfig& cfg, utils::StorageType storage) {
   const vkapi::ScalarType dt = vkapi::kHalf;
   TestCase tc;
   const std::string storage_str =
       (storage == utils::kTexture3D) ? "Texture3D" : "Buffer";
-  tc.set_name(
-      cfg.op_name + "_M" + std::to_string(cfg.M) + "_K" +
-      std::to_string(cfg.K) + "_N" + std::to_string(cfg.N) +
+  const std::string case_name = cfg.op_name + "_M" + std::to_string(cfg.M) +
+      "_K" + std::to_string(cfg.K) + "_N" + std::to_string(cfg.N) +
       (cfg.batch > 0 ? "_rank3batch" + std::to_string(cfg.batch) : "") + "_" +
-      storage_str);
+      storage_str;
+  tc.set_name(case_name);
+  g_case_configs.emplace(case_name, cfg);
   tc.set_operator_name("et_vk." + cfg.op_name + ".default");
 
   const std::vector<int64_t> input_sizes = cfg.batch > 0
@@ -245,18 +261,47 @@ static void bench_reference(TestCase& tc) {
   }
 }
 
-// Llama 3.1 8B linear weight shapes (K,N) at prefill M (multiple of 64 so
-// coopmat fires).
-static const std::vector<std::pair<int64_t, int64_t>> kShapes = {
-    {4096, 4096}, // q_proj / o_proj
-    {4096, 1024}, // k_proj / v_proj (GQA)
-    {4096, 14336}, // gate_proj / up_proj
-    {14336, 4096}, // down_proj
+// Per-model linear weight shapes (K,N) at prefill M (multiple of 64 so
+// coopmat fires). One entry per distinct shape per model (specs/016 --
+// wq/wo share a shape, as do wk/wv and w1_gate/w3_up, so each is measured
+// once and its GFLOP/s reused for both named ops in the report, not
+// re-measured redundantly).
+struct ShapeEntry {
+  std::string model;
+  int64_t K;
+  int64_t N;
+};
+static const std::vector<ShapeEntry> kShapes = {
+    // llama-3.2-1b: dim=2048, ffn=8192, n_heads=32, n_kv_heads=8, head_dim=64
+    {"llama-3.2-1b", 2048, 2048}, // wq / wo
+    {"llama-3.2-1b", 2048, 512}, // wk / wv (GQA)
+    {"llama-3.2-1b", 2048, 8192}, // w1_gate / w3_up
+    {"llama-3.2-1b", 8192, 2048}, // w2_down
+    // llama-3.2-3b: dim=3072, ffn=8192, n_heads=24, n_kv_heads=8, head_dim=128
+    {"llama-3.2-3b", 3072, 3072}, // wq / wo
+    {"llama-3.2-3b", 3072, 1024}, // wk / wv (GQA)
+    {"llama-3.2-3b", 3072, 8192}, // w1_gate / w3_up
+    {"llama-3.2-3b", 8192, 3072}, // w2_down
+    // llama-3.1-8b: dim=4096, ffn=14336, n_heads=32, n_kv_heads=8, head_dim=128
+    {"llama-3.1-8b", 4096, 4096}, // wq / wo
+    {"llama-3.1-8b", 4096, 1024}, // wk / wv (GQA)
+    {"llama-3.1-8b", 4096, 14336}, // w1_gate / w3_up
+    {"llama-3.1-8b", 14336, 4096}, // w2_down
 };
 static const std::vector<std::string> kOps = {
     "linear_q4gsw",
     "linear_dq8ca_q4gsw"};
-static constexpr int64_t kM = 1024;
+// specs/021: real e2e regimes, replacing the earlier M=1024 compromise.
+// decode(M=1) always dispatches QuantizedLinear.cpp's dedicated
+// is_gemv_case "_coop" kernel (pick_linear_qw_shader/pick_linear_dqa_qw_shader,
+// `if (weight_is_4bit && is_gemv_case) { kernel_name += "_coop"; }`) -- this
+// short-circuits BEFORE the coopmat eligibility check (can_use_q4gsw_coopmat)
+// ever runs, so decode cases never reach either "_coopmat" or "_tiled" and
+// must report dispatch_status=not_applicable, never fallback_tiled (research.md
+// Decision 2).
+static const std::vector<std::pair<std::string, int64_t>> kRegimes = {
+    {"prefill", 2048},
+    {"decode", 1}};
 static constexpr int64_t kGroup = 128;
 
 // Builds one deterministic, well-conditioned correctness case (POSITIVE
@@ -310,24 +355,40 @@ static TestCase make_deterministic_correctness_case(
   return t;
 }
 
-// Generation order: for each op, for each shape -> {Texture3D, Buffer}.
-// Summary pairs results [2i]=tiled, [2i+1]=coopmat.
-std::vector<TestCase> generate_cases() {
+// specs/021: perf-sweep cases only, one execute_test_cases() call per case
+// (main() calls this and iterates it, per research.md Decision 8) -- separate
+// from generate_correctness_cases() below (which is still run as one batch,
+// since it's small/cheap and doesn't need per-case OOM protection).
+// Generation order: for each regime, for each op, for each shape ->
+// {Texture3D, Buffer}.
+std::vector<TestCase> generate_perf_cases() {
   std::vector<TestCase> cases;
-  // COOPMAT_BENCH_CORRECTNESS_ONLY=1 skips the (slow) M=1024 perf cases and
-  // runs just the small correctness matrix below.
-  const bool correctness_only =
-      std::getenv("COOPMAT_BENCH_CORRECTNESS_ONLY") != nullptr;
-  if (!correctness_only) {
+  for (const auto& regime : kRegimes) {
     for (const auto& op : kOps) {
       for (const auto& kn : kShapes) {
-        LinearConfig cfg{kM, kn.first, kn.second, kGroup, op};
+        LinearConfig cfg{
+            regime.second,
+            kn.K,
+            kn.N,
+            kGroup,
+            op,
+            /*batch=*/0,
+            kn.model,
+            regime.first};
         cases.push_back(make_case(cfg, utils::kTexture3D)); // tiled baseline
         cases.push_back(
             make_case(cfg, utils::kBuffer)); // coopmat (gate-permitting)
       }
     }
   }
+  return cases;
+}
+
+// specs/021: correctness-only cases, still generated/run as a single
+// execute_test_cases() batch (small/cheap, no per-case OOM risk) -- separate
+// from generate_perf_cases() above.
+std::vector<TestCase> generate_correctness_cases() {
+  std::vector<TestCase> cases;
   // Correctness: small aligned {64,128,64} cases for ALL FOUR ops; the buffer
   // case fires the coopmat shader, validated by bench_reference (the perf
   // cases above are skipped by it). POSITIVE well-conditioned data (no fp16
@@ -409,6 +470,66 @@ int64_t flop_calc(const TestCase& tc) {
   return 2 * M * N * K; // MAC = 2 flops
 }
 
+// specs/021 (research.md Decision 1/2): shared unified RESULT,... line,
+// printed immediately after each perf case's single execute_test_cases()
+// call returns. Looks up (model, scheme, regime, K, N) via g_case_configs,
+// keyed by the case's own name (== r.get_kernel_name(), per the existing
+// baseline-bench convention this file now also follows).
+void print_result_line(const BenchmarkResult& r) {
+  const auto it = g_case_configs.find(r.get_kernel_name());
+  if (it == g_case_configs.end()) {
+    return; // not a perf case this function knows how to report (shouldn't
+            // happen)
+  }
+  const LinearConfig& cfg = it->second;
+  const std::string scheme = is_dq8ca(cfg.op_name) ? "8da4w" : "4w";
+  const bool is_buffer_case = r.get_kernel_name().size() >= 6 &&
+      r.get_kernel_name().compare(
+          r.get_kernel_name().size() - 6, 6, "Buffer") == 0;
+  const std::string variant = is_buffer_case ? "coopmat" : "tiled";
+
+  std::string dispatched_kernel = r.get_kernel_name();
+  for (const auto& st : r.get_shader_timings()) {
+    if (st.shader_name.find("linear_") != std::string::npos) {
+      dispatched_kernel = st.shader_name;
+    }
+  }
+  // Corrected during on-device verification: the Texture3D ("tiled") variant
+  // is not a coopmat candidate that failed to fire -- can_use_q4gsw_coopmat()
+  // requires storage_type_of(output) == kBuffer and returns false
+  // immediately otherwise, so a Texture3D case is structurally excluded from
+  // the coopmat comparison exactly like a decode case is, not a
+  // fallback_tiled anomaly. fallback_tiled is reserved for the one case that
+  // can actually anomalously fail: a Buffer/prefill case whose dispatched
+  // kernel unexpectedly isn't "_coopmat".
+  std::string dispatch_status;
+  if (cfg.regime == "decode" || !is_buffer_case) {
+    // decode: is_gemv_case short-circuits before the coopmat eligibility
+    // check ever runs (QuantizedLinear.cpp). Texture3D: excluded by the
+    // storage-type check in can_use_q4gsw_coopmat() itself. Neither is ever
+    // confirmed or fallback_tiled.
+    dispatch_status = "not_applicable";
+  } else if (dispatched_kernel.find("_coopmat") != std::string::npos) {
+    dispatch_status = "confirmed";
+  } else {
+    dispatch_status = "fallback_tiled";
+  }
+
+  const std::string correctness_status =
+      r.get_correctness_status() == CorrectnessStatus::PASSED   ? "PASSED"
+      : r.get_correctness_status() == CorrectnessStatus::FAILED ? "FAILED"
+                                                                : "SKIPPED";
+
+  const float avg_us = r.get_avg_time_us();
+  const float gflops =
+      avg_us > 0 ? (2.0f * cfg.M * cfg.N * cfg.K) / (avg_us * 1e3f) : 0.0f;
+
+  std::cout << "RESULT,linear," << cfg.model << "," << scheme << ","
+            << cfg.regime << "," << variant << "," << cfg.K << "," << cfg.N
+            << "," << avg_us << "," << r.get_std_dev_us() << "," << gflops
+            << "," << dispatch_status << "," << correctness_status << "\n";
+}
+
 int main() {
   set_debugging(false);
   set_print_output(false);
@@ -416,15 +537,17 @@ int main() {
   set_use_gpu_timestamps(true);
 
   print_performance_header();
-  std::cout
-      << "Coopmat vs Tiled quantized-linear microbench (Llama 3.1 8B shapes, M="
-      << kM << ")" << std::endl;
+  std::cout << "Coopmat vs Tiled quantized-linear microbench (Llama "
+               "1B/3B/8B shapes, real prefill(M=2048)/decode(M=1) regimes)"
+            << std::endl;
   print_separator();
 
-  auto results = execute_test_cases(
-      generate_cases,
+  // Correctness cases: still run as a single batch (small/cheap, no per-case
+  // OOM risk) -- unchanged from the original single-call pattern.
+  auto correctness_results = execute_test_cases(
+      generate_correctness_cases,
       flop_calc,
-      "CoopmatLinearBench",
+      "CoopmatLinearBenchCorrectness",
       /*warmup=*/3,
       /*runs=*/5,
       /*reference=*/bench_reference);
@@ -434,7 +557,7 @@ int main() {
   // path actually ran -- the tiled fallback would numerically pass too.
   // Explicitly confirm the dispatched kernel name contains "coopmat".
   bool rank3_all_ok = true;
-  for (const auto& r : results) {
+  for (const auto& r : correctness_results) {
     if (r.get_kernel_name().find("_rank3batch") == std::string::npos) {
       continue;
     }
@@ -466,54 +589,27 @@ int main() {
     return 1;
   }
 
-  // Summary table: pair tiled (even idx) vs coopmat (odd idx) per (op, shape).
-  // GFLOP/s computed from avg GPU time and 2*M*N*K flops.
-  if (results.size() < kOps.size() * kShapes.size() * 2) {
-    return 0; // correctness-only run: no perf cases to summarize
+  // COOPMAT_BENCH_CORRECTNESS_ONLY=1 skips the (slow) perf sweep entirely.
+  if (std::getenv("COOPMAT_BENCH_CORRECTNESS_ONLY") != nullptr) {
+    return 0;
   }
-  auto gflops = [](float time_us, int64_t M, int64_t K, int64_t N) -> float {
-    return time_us > 0 ? (2.0f * M * N * K) / (time_us * 1e3f) : 0.0f;
-  };
-  // The result's kernel_name is the test-case name; the dispatched shader
-  // names are in the per-shader timings (dq8ca cases also run a
-  // quantize_and_pack shader, so pick the linear_* one).
-  auto linear_kernel = [](const BenchmarkResult& r) -> std::string {
-    std::string name = r.get_kernel_name();
-    for (const auto& st : r.get_shader_timings()) {
-      if (st.shader_name.find("linear_") != std::string::npos) {
-        name = st.shader_name;
-      }
+
+  // Perf cases: one execute_test_cases() call per individual case (research.md
+  // Decision 8), printing a RESULT,... line immediately after each returns --
+  // this is what makes partial results survive a mid-run crash (FR-001).
+  std::vector<TestCase> perf_cases = generate_perf_cases();
+  for (auto& tc : perf_cases) {
+    auto single_case_result = execute_test_cases(
+        [&tc]() { return std::vector<TestCase>{tc}; },
+        flop_calc,
+        "CoopmatLinearBench",
+        /*warmup=*/3,
+        /*runs=*/5,
+        /*reference=*/bench_reference);
+    if (single_case_result.empty()) {
+      continue; // defensive; execute_test_cases always returns 1 result here
     }
-    return name;
-  };
-  std::cout
-      << "\n================ SUMMARY: tiled vs coopmat (GFLOP/s) ================\n";
-  std::cout << std::left << std::setw(22) << "op" << std::setw(13)
-            << "shape(K,N)" << std::right << std::setw(10) << "tiled"
-            << std::setw(10) << "coopmat" << std::setw(9) << "speedup"
-            << "  coopmat kernel\n";
-  size_t idx = 0;
-  for (const auto& op : kOps) {
-    for (const auto& kn : kShapes) {
-      const float t_us = results[idx].get_avg_time_us();
-      const float c_us = results[idx + 1].get_avg_time_us();
-      const std::string coop_kernel = linear_kernel(results[idx + 1]);
-      const float tiled = gflops(t_us, kM, kn.first, kn.second);
-      const float coop = gflops(c_us, kM, kn.first, kn.second);
-      idx += 2;
-      // If the "coopmat" (buffer) case did not actually pick a _coopmat shader,
-      // flag it (e.g. shape not gate-eligible).
-      const bool fired = coop_kernel.find("coopmat") != std::string::npos;
-      std::cout << std::left << std::setw(22) << op << std::setw(13)
-                << ("(" + std::to_string(kn.first) + "," +
-                    std::to_string(kn.second) + ")")
-                << std::right << std::setw(10) << std::fixed
-                << std::setprecision(1) << tiled << std::setw(10) << coop
-                << std::setw(8) << std::setprecision(2)
-                << (tiled > 0 ? coop / tiled : 0.0f) << "x"
-                << (fired ? "  " : " !") << coop_kernel << "\n";
-    }
+    print_result_line(single_case_result[0]);
   }
-  std::cout << "(! = buffer case did NOT dispatch a coopmat shader)\n";
   return 0;
 }

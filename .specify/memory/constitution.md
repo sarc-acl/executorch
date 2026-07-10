@@ -1,6 +1,96 @@
 <!--
 Sync Impact Report
 ==================
+Version change: 2.3.0 → 2.4.0
+
+Context: `specs/017-workstream-agent-housekeeping` closed a gap the user
+identified directly: a fresh agent session in this folder had no path to
+this workstream's real operating knowledge until *after* a `/speckit-*`
+command loaded this constitution — and even then, ten expensive,
+already-root-caused operational gotchas from prior sessions stayed
+scattered across `specs/014-016`'s individual `research.md` files with
+nothing pointing a new session toward them. This amendment is
+documentation-only: no principle is redefined, no target/scope changes.
+
+Added content:
+  - New `.specify/memory/gotchas.md` -- a living, append-as-you-go
+    consolidation of ten operational gotchas (each with symptom, root
+    cause, fix/workaround, and a citation), with a header instructing
+    future sessions how to append new entries. Not itself part of this
+    constitution, but cross-referenced from it (see Modified sections).
+  - This folder's root `CLAUDE.md` gained a pointer block naming this
+    constitution, the M5 EVT1 target, and `.shared-context/` -- closing
+    the gap where a fresh agent's very first file read pointed at none of
+    this workstream's real operating knowledge.
+
+Modified sections:
+  - Principle VI (Verify With Tools, Never Assume) -- added a bullet
+    citing the ETDump per-event `kernel_name`-attribution finding as a
+    concrete, already-observed instance of this principle's failure mode,
+    pointing to `.specify/memory/gotchas.md` G6 and to the doc as a whole
+    for the full list of similar findings.
+  - Principle X (Consult `instruction-for-ai` Before Acting) -- added a
+    fourth numbered step warning that a `.shared-context/instruction-for-ai/`
+    doc's literal mechanism/command can itself be actively wrong for this
+    repo (citing the `ET_VK_FORCE_BUFFER` example, `.specify/memory/gotchas.md`
+    G2), not just that the doc should be read first.
+  - Development Workflow, "Issue & Open-Question Tracking" -- added a
+    "Gotchas Reference" paragraph introducing `gotchas.md`, its append
+    convention, and its parallel (not replacement) relationship to
+    `open-questions.md`.
+
+Removed sections: none.
+
+Templates requiring updates:
+  - .specify/templates/plan-template.md ......... ✅ no change needed
+  - .specify/templates/spec-template.md ......... ✅ no change needed
+  - .specify/templates/tasks-template.md ........ ✅ no change needed
+  - .specify/templates/commands/*.md ............. n/a (not present)
+
+Follow-up TODOs: none new. `.specify/memory/gotchas.md` G6's underlying
+ETDump-attribution root cause remains open (see `open-questions.md` Q11);
+this amendment only ensures the finding itself is easy to find, not that
+the underlying mechanism is fixed.
+-->
+
+<!--
+Sync Impact Report (previous amendment, retained for history)
+==================
+Version change: 2.2.0 → 2.3.0
+
+Context: during `specs/015-m5-e2e-wmma-validation` implementation, an 8B
+`8da4w` export was redirected to ad hoc scratch locations (first `/tmp`,
+which filled up; then a job-specific NFS tmp dir) purely to work around
+disk space, without moving the result into this workspace's one canonical
+`.pte` location. The user caught this and required exports to always land
+in `/local/yanwen.xu/workspace/.pte_out` — never a scratch/job-tmp dir —
+made an explicit, standing rule rather than something re-derived per
+session.
+
+Added content:
+  - Default Scope for Every Benchmark -- new bullet: all exported `.pte`
+    files MUST land in `/local/yanwen.xu/workspace/.pte_out` (workspace
+    root, sibling of every branch worktree, shared across them). Since
+    `export.output_dir` isn't honored by `export_llm` (output lands in
+    CWD), this means `cd`-ing into `.pte_out` before running the export
+    command, not exporting elsewhere and copying/moving the result after.
+
+Modified sections: none.
+
+Removed sections: none.
+
+Templates requiring updates:
+  - .specify/templates/plan-template.md ......... ✅ no change needed
+  - .specify/templates/spec-template.md ......... ✅ no change needed
+  - .specify/templates/tasks-template.md ........ ✅ no change needed
+  - .specify/templates/commands/*.md ............. n/a (not present)
+
+Follow-up TODOs: none new.
+-->
+
+<!--
+Sync Impact Report (previous amendment, retained for history)
+==================
 Version change: 2.1.0 → 2.2.0
 
 Context: a 2026-07-05 session on the real M5 EVT1 target made two avoidable
@@ -522,6 +612,14 @@ logic or source reading alone:
   validation layers — to identify where time actually goes and to confirm a
   change had its intended effect, rather than reasoning from source code
   alone about what should be faster.
+- **ETDump's own per-event `kernel_name` field is not itself immune to this
+  principle.** This workstream directly observed a case where the
+  `kernel_name` ETDump recorded for a dispatch diverged from the shader
+  that actually ran, in the full ~100+-node LLaMA-graph context (see
+  `.specify/memory/gotchas.md` G6) — cross-check an ETDump-based dispatch
+  claim with at least one independent method (a wall-clock A/B against a
+  forced-fallback path, or an isolated shader microbenchmark with its own
+  kernel-name capture) before trusting `kernel_name` alone.
 
 Rationale: kernel-selection logic, shader templates, and driver behavior
 have already diverged from expectations more than once in this workstream
@@ -530,7 +628,9 @@ Xclipse-specific driver crashes invisible from the GLSL source) — trusting
 code-level reasoning without tool-level confirmation is exactly the failure
 mode Principles I and V already guard against elsewhere. This principle
 makes verification-by-tooling the explicit default, not an occasional
-afterthought.
+afterthought. `.specify/memory/gotchas.md` collects the concrete instances
+of this principle being violated in practice, this workstream's own
+ETDump-attribution finding among them — consult it for the full list.
 
 ### VII. Clock Discipline: Pinned by Default, Verified Bound
 Every Samsung/Android performance measurement under this workstream pins
@@ -640,6 +740,15 @@ access, export, profiling, or driver operation under this workstream:
 3. Do not conclude a device or resource is unreachable, or that a build
    step is broken/missing, without first checking whether that folder
    already documents the answer.
+4. A mechanism or command a `.shared-context/instruction-for-ai/` doc
+   describes can itself be actively wrong for this repo's own source —
+   e.g. `ET_VK_FORCE_BUFFER`, which that directory's `export-pte.md`
+   documents but which does not exist anywhere in this codebase (see
+   `.specify/memory/gotchas.md` G2 for the real mechanism). Reading the
+   doc first (steps 1-3 above) does not itself guarantee the doc is
+   correct for this repo — check `.specify/memory/gotchas.md` for known
+   instances of this before trusting a documented mechanism at face
+   value.
 
 Rationale: on 2026-07-05, a session ran `adb devices` on the wrong host
 and concluded "no M5 EVT1 device reachable" — the phone was reachable the
@@ -766,6 +875,16 @@ benchmark under this workstream runs:
   which comfortably covers the 2048-prefill/1024-decode split above. Don't
   export a different context length for this default workload without
   updating this section and justifying the change.
+- **Every exported `.pte` lands in `/local/yanwen.xu/workspace/.pte_out`**
+  (workspace root, a sibling of this and every other branch worktree, not
+  inside any of them) — never `/tmp`, a job-specific scratch dir, or any
+  other ad hoc location, even temporarily to work around disk space.
+  `export_llm`'s `export.output_dir` config key is not honored (the file
+  lands in the process's CWD); the correct way to satisfy this rule is to
+  `cd` into `.pte_out` before invoking the export, not to export elsewhere
+  and copy the result in afterward. If `.pte_out`'s filesystem itself lacks
+  space, that is a problem to solve directly (free space on that
+  filesystem), not a reason to relocate the output.
 
 ### Reference Hardware Inventory
 
@@ -932,6 +1051,18 @@ gets a ticket under `.shared-context/report-for-human/jira-tickets/`.
 Reuse this existing pipeline rather than starting a parallel one scoped
 just to this workstream.
 
+**Gotchas Reference**: `.specify/memory/gotchas.md` is a separate,
+parallel doc to `open-questions.md` above — not a replacement for it.
+`open-questions.md` tracks *unresolved* phenomena on real hardware
+(perf anomalies, correctness mismatches, driver crashes) working toward a
+root cause; `gotchas.md` is the living, append-as-you-go consolidation of
+this workstream's already-root-caused *operational* lessons (a build
+trap, a documented-but-nonexistent env var, a naming collision between
+similarly-named files) that cost real time to rediscover once already.
+Consult it before repeating a mistake this workstream has already made;
+append a new entry to it, per its own header's convention, whenever a
+future session root-causes a new multi-hour or repeat-mistake issue.
+
 ## Repository & Distribution Scope
 
 - This workstream's standing home is the `sarc-acl/executorch` fork/remote.
@@ -967,4 +1098,4 @@ Principle IX above all, since it is NON-NEGOTIABLE for anything upstream-
 bound; any other deviation must be justified in the PR description, not
 merged silently.
 
-**Version**: 2.2.0 | **Ratified**: 2026-07-03 | **Last Amended**: 2026-07-05
+**Version**: 2.4.0 | **Ratified**: 2026-07-03 | **Last Amended**: 2026-07-06

@@ -1,0 +1,97 @@
+[
+  {
+    "candidate_token": "tsweep_t128x64k16g22s32",
+    "wg_tile_m": 128, "wg_tile_n": 64, "wg_tile_k": 16,
+    "sg_grid_x": 2, "sg_grid_y": 2, "subgroup_size": 32,
+    "source": "jira-tile-sweep.md (original 7-config sweep)",
+    "compile_status": "compiles",
+    "correctness_status": "pass",
+    "speedup_vs_dbuf1": 1.25,
+    "note": "prior sweep winner"
+  },
+  {
+    "candidate_token": "tsweep_t64x128k16g22s32",
+    "wg_tile_m": 64, "wg_tile_n": 128, "wg_tile_k": 16,
+    "sg_grid_x": 2, "sg_grid_y": 2, "subgroup_size": 32,
+    "source": "jira-tile-sweep.md (original 7-config sweep)",
+    "compile_status": "compiles",
+    "correctness_status": "pass",
+    "speedup_vs_dbuf1": 1.18
+  },
+  {
+    "candidate_token": "tsweep_t64x64k16g22s32",
+    "wg_tile_m": 64, "wg_tile_n": 64, "wg_tile_k": 16,
+    "sg_grid_x": 2, "sg_grid_y": 2, "subgroup_size": 32,
+    "source": "jira-tile-sweep.md (original 7-config sweep)",
+    "compile_status": "compiles",
+    "correctness_status": "pass",
+    "speedup_vs_dbuf1": 1.15
+  },
+  {
+    "candidate_token": "tsweep_t128x256k16g42s32",
+    "wg_tile_m": 128, "wg_tile_n": 256, "wg_tile_k": 16,
+    "sg_grid_x": 4, "sg_grid_y": 2, "subgroup_size": 32,
+    "source": "jira-tile-sweep.md (original 7-config sweep)",
+    "compile_status": "compiles",
+    "correctness_status": "pass",
+    "speedup_vs_dbuf1": 1.14
+  },
+  {
+    "candidate_token": "tsweep_t128x128k16g42s32",
+    "wg_tile_m": 128, "wg_tile_n": 128, "wg_tile_k": 16,
+    "sg_grid_x": 4, "sg_grid_y": 2, "subgroup_size": 32,
+    "source": "jira-tile-sweep.md (original 7-config sweep)",
+    "compile_status": "compiles",
+    "correctness_status": "pass",
+    "speedup_vs_dbuf1": 1.00,
+    "note": "dbuf1-equivalent geometry, the production baseline"
+  },
+  {
+    "candidate_token": "tsweep_t128x128k16g22s64",
+    "wg_tile_m": 128, "wg_tile_n": 128, "wg_tile_k": 16,
+    "sg_grid_x": 2, "sg_grid_y": 2, "subgroup_size": 64,
+    "source": "jira-tile-sweep.md (original 7-config sweep)",
+    "compile_status": "compiles",
+    "correctness_status": "pass",
+    "speedup_vs_dbuf1": 0.95
+  },
+  {
+    "candidate_token": "tsweep_t64x64k32g22s64",
+    "wg_tile_m": 64, "wg_tile_n": 64, "wg_tile_k": 32,
+    "sg_grid_x": 2, "sg_grid_y": 2, "subgroup_size": 64,
+    "source": "jira-tile-sweep.md (original 7-config sweep)",
+    "compile_status": "compiles",
+    "correctness_status": "pass",
+    "speedup_vs_dbuf1": 0.91
+  },
+  {
+    "candidate_token": "tsweep_t256x256k16g44s32",
+    "wg_tile_m": 256, "wg_tile_n": 256, "wg_tile_k": 16,
+    "sg_grid_x": 4, "sg_grid_y": 4, "subgroup_size": 32,
+    "source": "session-2026-07-07 (Pavan JIRA follow-up)",
+    "compile_status": "compiles",
+    "correctness_status": "pass",
+    "speedup_vs_dbuf1": 0.47,
+    "note": "smoke test; 40.5KB LDS, exceeds original 32KB self-imposed cap but within confirmed 64KB HW limit"
+  },
+  {
+    "candidate_token": "tsweep_t128x64k16g44s32",
+    "wg_tile_m": 128, "wg_tile_n": 64, "wg_tile_k": 16,
+    "sg_grid_x": 4, "sg_grid_y": 4, "subgroup_size": 32,
+    "source": "session-2026-07-07 (Pavan JIRA follow-up)",
+    "compile_status": "compile_failed",
+    "correctness_status": "not_applicable",
+    "speedup_vs_dbuf1": null,
+    "note": "B_PASSES = WG_TILE_K/B_ROWS_PER_PASS = 16/64 = 0, invalid GLSL array size; WG_SIZE=512 exceeds the min(M*K,N*K)/8=128 staging ceiling for this tile"
+  },
+  {
+    "candidate_token": "tsweep_t128x64k64g44s32",
+    "wg_tile_m": 128, "wg_tile_n": 64, "wg_tile_k": 64,
+    "sg_grid_x": 4, "sg_grid_y": 4, "subgroup_size": 32,
+    "source": "session-2026-07-07 (Pavan JIRA follow-up)",
+    "compile_status": "compiles",
+    "correctness_status": "pass",
+    "speedup_vs_dbuf1": 0.88,
+    "note": "K-step raised 16->64 to make 4x4/s32 staging-valid (WG_SIZE=512=min(M*K,N*K)/8); confounds K-step and grid-shape changes together"
+  }
+]

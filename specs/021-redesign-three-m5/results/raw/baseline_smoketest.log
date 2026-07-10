@@ -1,0 +1,50 @@
+
+=== Compute Shader Performance Benchmark ===
+MiniPC no-WMMA baseline: Llama 3.1 8B / 3.2 3B / 3.2 1B, 4w/8da4w, prefill(M=2048)/decode(M=1), tiled/coop dispatch only
+----------------------------------------------------------------------
+Executing 1 test cases for LlamaBaselineBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (512,512,1)     (8,8,1)     llama-3.1-8b_4w_prefill_texture3d_wq_M2048                                                [2048x4096]       76537.773 μs        897.850 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,baseline,llama-3.1-8b,4w,prefill,tiled,4096,4096,76537.773,74.453,897.850,not_applicable,SKIPPED,texture3d
+Executing 1 test cases for LlamaBaselineBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (128,512,1)     (8,8,1)     llama-3.1-8b_4w_prefill_texture3d_wk_M2048                                                [2048x4096]       19490.855 μs        881.432 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,baseline,llama-3.1-8b,4w,prefill,tiled,4096,1024,19490.855,13.904,881.432,not_applicable,SKIPPED,texture3d
+Executing 1 test cases for LlamaBaselineBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (128,512,1)     (8,8,1)     llama-3.1-8b_4w_prefill_texture3d_wv_M2048                                                [2048x4096]       19476.434 μs        882.085 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,baseline,llama-3.1-8b,4w,prefill,tiled,4096,1024,19476.434,13.298,882.085,not_applicable,SKIPPED,texture3d
+Executing 1 test cases for LlamaBaselineBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (512,512,1)     (8,8,1)     llama-3.1-8b_4w_prefill_texture3d_wo_M2048                                                [2048x4096]       76453.945 μs        898.835 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,baseline,llama-3.1-8b,4w,prefill,tiled,4096,4096,76453.945,41.505,898.835,not_applicable,SKIPPED,texture3d
+Executing 1 test cases for LlamaBaselineBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (1792,512,1)    (8,8,1)     llama-3.1-8b_4w_prefill_texture3d_w1_gate_M2048                                           [2048x4096]      269058.312 μs        893.926 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,baseline,llama-3.1-8b,4w,prefill,tiled,4096,14336,269058.312,556.527,893.926,not_applicable,SKIPPED,texture3d
+Executing 1 test cases for LlamaBaselineBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (1792,512,1)    (8,8,1)     llama-3.1-8b_4w_prefill_texture3d_w3_up_M2048                                             [2048x4096]      267948.188 μs        897.629 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,baseline,llama-3.1-8b,4w,prefill,tiled,4096,14336,267948.188,360.141,897.629,not_applicable,SKIPPED,texture3d
+Executing 1 test cases for LlamaBaselineBench
+----------------------------------------------------------------------
+linear_q4gsw_tiled_texture3d_texture2d_half        (512,512,1)     (8,8,1)     llama-3.1-8b_4w_prefill_texture3d_w2_down_M2048                                          [2048x14336]      268126.531 μs        897.032 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,baseline,llama-3.1-8b,4w,prefill,tiled,14336,4096,268126.531,581.564,897.032,not_applicable,SKIPPED,texture3d
+Executing 1 test cases for LlamaBaselineBench
+----------------------------------------------------------------------
+libc++abi: terminating due to uncaught exception of type vkcompute::vkapi::Error: Exception raised from extract_results at /local/yanwen.xu/workspace/quant-perf-optimization/executorch/backends/vulkan/runtime/vk_api/QueryPool.cpp:158: vkGetQueryPoolResults( device_, querypool_, 0u, num_queries_, sizeof(uint64_t) * num_queries_, query_data.data(), sizeof(uint64_t), flags) returned 1
+Aborted 

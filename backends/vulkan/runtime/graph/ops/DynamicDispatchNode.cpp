@@ -10,7 +10,16 @@
 
 #include <executorch/backends/vulkan/runtime/graph/ComputeGraph.h>
 
+#include <cstdio>
+#include <cstdlib>
+
 namespace vkcompute {
+
+// Diagnostic-only, see the matching comment in DispatchNode.cpp.
+static bool et_vk_debug_pick_shader() {
+  static const bool v = std::getenv("ET_VK_DEBUG_ENCODE_DISPATCH") != nullptr;
+  return v;
+}
 
 DynamicDispatchNode::DynamicDispatchNode(
     ComputeGraph& graph,
@@ -47,6 +56,14 @@ DynamicDispatchNode::DynamicDispatchNode(
       utils::div_up(global_workgroup_size_[0], local_workgroup_size_[0]),
       utils::div_up(global_workgroup_size_[1], local_workgroup_size_[1]),
       utils::div_up(global_workgroup_size_[2], local_workgroup_size_[2])};
+
+  if (et_vk_debug_pick_shader()) {
+    fprintf(
+        stderr,
+        "[PICK_SHADER] CONSTRUCT node_id=%d kernel_name=%s\n",
+        node_id_,
+        shader_.kernel_name.c_str());
+  }
 }
 
 DynamicDispatchNode::DynamicDispatchNode(
@@ -93,6 +110,13 @@ bool DynamicDispatchNode::trigger_resize(ComputeGraph* graph) {
   // if any of the values participating in this operation were updated.
   // Otherwise, assume that these will not have changed.
   if (!any_arg_updated) {
+    if (et_vk_debug_pick_shader()) {
+      fprintf(
+          stderr,
+          "[PICK_SHADER] SKIP (no arg update) node_id=%d kernel_name(unchanged)=%s\n",
+          node_id_,
+          shader_.kernel_name.c_str());
+    }
     return false;
   }
 
@@ -102,6 +126,15 @@ bool DynamicDispatchNode::trigger_resize(ComputeGraph* graph) {
 
   if (pick_shader_fn_) {
     vkapi::ShaderInfo new_shader = pick_shader_fn_(graph, args_, resize_args_);
+    if (et_vk_debug_pick_shader()) {
+      fprintf(
+          stderr,
+          "[PICK_SHADER] REPICK node_id=%d old=%s new=%s changed=%d\n",
+          node_id_,
+          shader_.kernel_name.c_str(),
+          new_shader.kernel_name.c_str(),
+          shader_.kernel_name != new_shader.kernel_name);
+    }
     // Compare shader kernel names as a proxy for shader equality
     if (shader_.kernel_name != new_shader.kernel_name) {
       shader_ = new_shader;

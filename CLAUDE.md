@@ -1,5 +1,16 @@
 # ExecuTorch
 
+## This folder's workstream (read before any coopmat/WMMA, build, export, or device work)
+
+This checkout is governed by `.specify/memory/constitution.md`, not just the
+generic guidance below — read it first. This workstream's sole active
+performance target is the Samsung M5 EVT1 board (Exynos 2500 / Xclipse
+970); the workspace-root `.shared-context/` directory (a sibling of this
+worktree, not part of this repository) holds the actual build/device/driver
+tooling and docs for that target. A mechanism a `.shared-context/instruction-for-ai/`
+doc describes can be actively wrong for this repo's own source — check
+`.specify/memory/gotchas.md` before trusting one at face value.
+
 ## Skills
 - `/setup` - Set up environment
 - `/export` - Export model to .pte

@@ -12,7 +12,23 @@
 
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/BindingUtils.h>
 
+#include <cstdio>
+#include <cstdlib>
+
 namespace vkcompute {
+
+// Diagnostic-only (specs/015/016 ETDump kernel-name investigation): prints
+// the shader_.kernel_name actually used to build the descriptor set / bind
+// the pipeline at the exact point encode() also logs it to ETDump, so we
+// can directly compare "what dispatched" against "what ETDump recorded"
+// for the identical call, without relying on any other inference. Off by
+// default (unset); never intended to ship. See
+// specs/015-m5-e2e-wmma-validation/research.md Decision 7 /
+// .shared-context/report-for-human/open-questions.md Q11.
+static bool et_vk_debug_encode_dispatch() {
+  static const bool v = std::getenv("ET_VK_DEBUG_ENCODE_DISPATCH") != nullptr;
+  return v;
+}
 
 DispatchNode::DispatchNode(
     ComputeGraph& graph,
@@ -68,6 +84,16 @@ void DispatchNode::encode(ComputeGraph* graph) {
   event_name += "\"kernel_name\": \"" + shader_.kernel_name + "\", ";
   event_name += "\"operator_id\": " + std::to_string(operator_count);
 #endif
+
+  if (et_vk_debug_encode_dispatch()) {
+    static long long dispatch_counter = 0;
+    fprintf(
+        stderr,
+        "[ENCODE_DISPATCH] #%lld node_id=%d kernel_name=%s\n",
+        ++dispatch_counter,
+        node_id_,
+        shader_.kernel_name.c_str());
+  }
 
   context->report_shader_dispatch_start(
 #ifdef ET_EVENT_TRACER_ENABLED

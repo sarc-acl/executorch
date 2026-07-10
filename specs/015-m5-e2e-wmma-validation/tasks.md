@@ -124,16 +124,16 @@ the end.
 
 ### 8B (both schemes — highest linear-config watchdog risk)
 
-- [ ] T029 [P] [US2] Export 8B's `8da4w` buffer PTE (default `MODEL=llama3_1_8b`, depends on T005) -- use `backend.vulkan.storage_override: buffer` in `config.yaml` (`research.md` Decision 6), NOT `export_quant.sh`'s `ET_VK_FORCE_BUFFER` (a no-op in this repo)
-- [ ] T029a [P] [US2] **Re-export** 8B's `4w` buffer PTE the same way (the existing `.pte_out/llama3_1_8b_4w_buffer_ctx3072.pte`, dated 2026-06-22, was produced with the broken `ET_VK_FORCE_BUFFER` mechanism per `research.md` Decision 6 and is internally Texture3D despite its name -- do not reuse it as-is)
-- [ ] T030 [US2] Stage + push 8B's `4w` (re-exported, T029a) and `8da4w` (new, T029) PTEs, plus runner/tokenizer/prompt if not already on-device, to M5 EVT1
-- [ ] T031 [US2] Coherence check 8B/`4w`
-- [ ] T032 [US2] Dispatch-confirm 8B/`4w`
-- [ ] T033 [US2] Coherence check 8B/`8da4w`
-- [ ] T034 [US2] Dispatch-confirm 8B/`8da4w`
-- [ ] T035 [US2] E2E capture 8B/`4w`: 3 repeated runs at 2048-token prefill, mean + CoV; if the GPU-watchdog issue recurs on any of the 3 runs, record `blocked_reason` exactly per `data-model.md`/Edge Cases and report however many of the 3 runs completed — do NOT silently retry at a shorter prefill and report that number as the 2048 result
-- [ ] T036 [US2] E2E capture 8B/`8da4w`: same 3-run procedure and watchdog caveat as T035
-- [ ] T037 [US2] Publish `results/8b-results.md`'s linear portion (even if one or both entries are `blocked_reason` rather than a number) — report to the user now
+- [X] T029 [P] [US2] Export 8B's `8da4w` buffer PTE (default `MODEL=llama3_1_8b`, depends on T005) -- use `backend.vulkan.storage_override: buffer` in `config.yaml` (`research.md` Decision 6), NOT `export_quant.sh`'s `ET_VK_FORCE_BUFFER` (a no-op in this repo) — **DONE**: exported to `.pte_out` directly (constitution v2.3.0's canonical location, not a scratch dir)
+- [X] T029a [P] [US2] **Re-export** 8B's `4w` buffer PTE the same way (the existing `.pte_out/llama3_1_8b_4w_buffer_ctx3072.pte`, dated 2026-06-22, was produced with the broken `ET_VK_FORCE_BUFFER` mechanism per `research.md` Decision 6 and is internally Texture3D despite its name -- do not reuse it as-is) — **DONE**
+- [X] T030 [US2] Stage + push 8B's `4w` (re-exported, T029a) and `8da4w` (new, T029) PTEs, plus runner/tokenizer/prompt if not already on-device, to M5 EVT1 — **DONE**
+- [X] T031 [US2] Coherence check 8B/`4w` — **DONE**, coherent
+- [X] T032 [US2] Dispatch-confirm 8B/`4w` — **DONE, but found the session's major issue here**: gate evaluates true and resolves a real `linear_q4gsw_coopmat_buffer_texture2d_half` ShaderInfo, yet ETDump shows 224/224 `linear_q4gsw_tiled_buffer_texture2d_half` actually dispatched. Re-verified with the original `llama_main_etdump_spec015` binary AND an independently-rebuilt diagnostic binary -- both agree. Re-checked 1B/3B too: **same tiled-fallback pattern on all three models**, meaning `1b-results.md`/`3b-results.md`'s earlier "confirmed coopmat" claims were wrong and have been corrected. Root cause not located; logged as workspace `open-questions.md` Q11, `research.md` Decision 7
+- [X] T033 [US2] Coherence check 8B/`8da4w` — **DONE**, coherent
+- [X] T034 [US2] Dispatch-confirm 8B/`8da4w` — **DONE**: same tiled-fallback finding as T032, for `linear_dq8ca_q4gsw` (224/224 tiled)
+- [X] T035 [US2] E2E capture 8B/`4w`: 3 repeated runs at 2048-token prefill, mean + CoV; if the GPU-watchdog issue recurs on any of the 3 runs, record `blocked_reason` exactly per `data-model.md`/Edge Cases and report however many of the 3 runs completed — do NOT silently retry at a shorter prefill and report that number as the 2048 result — **DONE**: prefill 112.775/112.565/112.775 (mean 112.71, CoV 0.088%), decode 3.86073/3.85433/3.84491 (mean 3.853, CoV 0.169%); no watchdog issue on any of the 3 runs
+- [X] T036 [US2] E2E capture 8B/`8da4w`: same 3-run procedure and watchdog caveat as T035 — **DONE**: prefill 100.259/99.2681/100.402 (mean 99.98, CoV 0.504%), decode 3.77338/3.79123/3.79637 (mean 3.787, CoV 0.260%); no watchdog issue
+- [X] T037 [US2] Publish `results/8b-results.md`'s linear portion (even if one or both entries are `blocked_reason` rather than a number) — report to the user now — **DONE**
 
 **Checkpoint**: US2 complete — all six linear configurations have a recorded 3-run mean+CoV result or an explicit blocked reason, published incrementally per model
 
@@ -145,15 +145,15 @@ the end.
 
 **Independent Test**: For each model, produce a dispatch-confirmed, 3-run SDPA-coopmat e2e prefill/decode mean+CoV (or an explicit blocked status), independent of the linear results already captured for that model.
 
-- [ ] T038 [US3] Dispatch-confirm 1B SDPA-coopmat: ETDump run with `ET_VK_SDPA_COOPMAT=1` + 1B's `4w` buffer PTE, confirm `sdpa_compute_attn_weights_coopmat`/`sdpa_compute_out_coopmat` dispatched (depends on T009)
-- [ ] T039 [US3] E2E capture 1B SDPA-coopmat: 3 repeated runs (2048-token prefill / 1024-token decode), mean + CoV
-- [ ] T040 [US3] Append 1B's SDPA result to `results/1b-results.md` (already published in T019) — report to the user now
-- [ ] T041 [US3] Dispatch-confirm 3B SDPA-coopmat (depends on T021)
-- [ ] T042 [US3] E2E capture 3B SDPA-coopmat: 3 repeated runs at 2048-token prefill, mean + CoV; if the previously-observed watchdog issue recurs (per the 2026-06-23 session finding), record `blocked_reason` — do not silently substitute the 512-prefill data point from that prior session as if it were this run's 2048 result
-- [ ] T043 [US3] Append 3B's SDPA result (or blocked reason) to `results/3b-results.md` — report to the user now
-- [ ] T044 [US3] Dispatch-confirm 8B SDPA-coopmat (depends on T030) — highest watchdog-risk configuration in this entire feature
-- [ ] T045 [US3] E2E capture 8B SDPA-coopmat: 3 repeated runs at 2048-token prefill, mean + CoV; same watchdog caveat as T042
-- [ ] T046 [US3] Append 8B's SDPA result (or blocked reason) to `results/8b-results.md` — report to the user now
+- [X] T038 [US3] Dispatch-confirm 1B SDPA-coopmat: ETDump run with `ET_VK_SDPA_COOPMAT=1` + 1B's `4w` buffer PTE, confirm `sdpa_compute_attn_weights_coopmat`/`sdpa_compute_out_coopmat` dispatched (depends on T009) — **DONE**: `sdpa_compute_attn_weights_tiled_*`/`sdpa_compute_out_tiled_*` dispatch even with `ET_VK_SDPA_COOPMAT=1` set (not the coopmat family) -- logged as workspace `open-questions.md` Q12, a separate finding from Q11 since the env var still yields a real, reproducible +41% wall-clock speedup on 1B via an unclear mechanism (confirmed via an A-B-A-B alternating test)
+- [X] T039 [US3] E2E capture 1B SDPA-coopmat: 3 repeated runs (2048-token prefill / 1024-token decode), mean + CoV — **DONE**: prefill 812.698/812.698/812.376 (mean 812.59, CoV 0.02%), decode 14.1743/14.1343/14.1562 (mean 14.155, CoV 0.14%); no watchdog issue on 1B
+- [X] T040 [US3] Append 1B's SDPA result to `results/1b-results.md` (already published in T019) — report to the user now — **DONE**
+- [X] T041 [US3] Dispatch-confirm 3B SDPA-coopmat (depends on T021) — **DONE**: same tiled dispatch as 1B (Q12); did not proceed to a full 3-run e2e before hitting the watchdog crash in T042
+- [X] T042 [US3] E2E capture 3B SDPA-coopmat: 3 repeated runs at 2048-token prefill, mean + CoV; if the previously-observed watchdog issue recurs (per the 2026-06-23 session finding), record `blocked_reason` — do not silently substitute the 512-prefill data point from that prior session as if it were this run's 2048 result — **BLOCKED**: `VK_ERROR_DEVICE_LOST` (`vkQueueWaitIdle` returned -4) partway through decode on the first rep. Not retried at a shorter length. Device recovered cleanly (coherence check passed immediately after)
+- [X] T043 [US3] Append 3B's SDPA result (or blocked reason) to `results/3b-results.md` — report to the user now — **DONE**: published with `blocked_reason`, not a number
+- [X] T044 [US3] Dispatch-confirm 8B SDPA-coopmat (depends on T030) — highest watchdog-risk configuration in this entire feature — **DONE**: same tiled dispatch as 1B/3B (Q12)
+- [X] T045 [US3] E2E capture 8B SDPA-coopmat: 3 repeated runs at 2048-token prefill, mean + CoV; same watchdog caveat as T042 — **BLOCKED**: identical `VK_ERROR_DEVICE_LOST` crash as 3B (T042), same env var, same workload. Device recovered cleanly afterward
+- [X] T046 [US3] Append 8B's SDPA result (or blocked reason) to `results/8b-results.md` — report to the user now — **DONE**: published with `blocked_reason`, not a number
 
 **Checkpoint**: US3 complete — all three SDPA-coopmat configurations have a recorded 3-run mean+CoV result or an explicit blocked reason, published incrementally per model
 
@@ -165,7 +165,7 @@ the end.
 
 **Independent Test**: Produce the consolidated report from the three already-published per-model files and confirm every comparison is traceable to a specific source document.
 
-- [ ] T047 [US4] Assemble `results/m5-e2e-validation-report.md` from `1b-results.md`/`3b-results.md`/`8b-results.md`, cross-referencing `data-model.md`'s Prior-Finding Reference table; explicitly flag `8da4w` 3B/1B and any watchdog-blocked SDPA configuration as no-prior-baseline, never presented as reproducing a known number (depends on T019, T028, T037, T040, T043, T046)
+- [X] T047 [US4] Assemble `results/m5-e2e-validation-report.md` from `1b-results.md`/`3b-results.md`/`8b-results.md`, cross-referencing `data-model.md`'s Prior-Finding Reference table; explicitly flag `8da4w` 3B/1B and any watchdog-blocked SDPA configuration as no-prior-baseline, never presented as reproducing a known number (depends on T019, T028, T037, T040, T043, T046) — **DONE**
 
 **Checkpoint**: US4 complete — one document answers "what does this repo's current M5 EVT1 build actually deliver," per configuration, honestly scoped
 
@@ -173,7 +173,7 @@ the end.
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T048 Re-read `results/m5-e2e-validation-report.md` and confirm SC-001 through SC-004 are all satisfied: every one of the nine configurations has either a 3-run mean+CoV number or a stated blocked reason; every comparison is labeled directional or no-prior-baseline correctly; no number lacks a dispatch-confirmation citation, a verified clock pin, or a CoV
+- [X] T048 Re-read `results/m5-e2e-validation-report.md` and confirm SC-001 through SC-004 are all satisfied: every one of the nine configurations has either a 3-run mean+CoV number or a stated blocked reason; every comparison is labeled directional or no-prior-baseline correctly; no number lacks a dispatch-confirmation citation, a verified clock pin, or a CoV — **DONE**: SC-001 (all 9 configs have a number or blocked_reason) / SC-002 (comparison type stated per row) / SC-003 (dispatch-confirm + verified pin + 3-run mean+CoV for every non-blocked row) / SC-004 (no-prior-baseline and blocked rows never presented as reproductions) all verified directly against `m5-e2e-validation-report.md`'s own tables and prose
 
 ---
 

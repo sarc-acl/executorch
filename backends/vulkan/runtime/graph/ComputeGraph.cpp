@@ -185,7 +185,10 @@ ComputeGraph::ComputeGraph(GraphConfig config)
   // sgpu job watchdog (hard reset, lost run). Submits here are non-blocking
   // (execute() defers and fences once at the end), so a smaller N only adds a
   // little submit overhead, not a per-batch stall. TEMPORARY measurement aid —
-  // the real fix is driver-side (see jira-tickets/001).
+  // the real fix is driver-side (see jira-tickets/001). It is only actually
+  // required for some (model, WMMA-on/off) configs and measurably slows
+  // others down when applied unnecessarily -- see .specify/memory/gotchas.md
+  // G12 before blanket-enabling this for every run.
   if (const char* thr = std::getenv("ET_VK_EXECUTE_NODE_THRESHOLD")) {
     const int n = std::atoi(thr);
     if (n > 0) {
