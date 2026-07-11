@@ -95,14 +95,20 @@ shape-broad evidence instead of the stale blanket-crash claim.
 
 ## Recommendation
 
-`recommendation: productionize_candidate` — `t64x64k16g21s32` (subgroup=32) is a real,
-statistically confident (+27.1%, CoV 0.13%), correctness-verified (all 10 representative
-shapes), genuinely-dispatching (SPIR-V confirmed) improvement over `025`'s standing winner.
-Per this workstream's existing Tier-1/Tier-2 convention (`025`'s own precedent), this is
-Tier-1 (shader microbenchmark) evidence only — a Tier-2 (`.pte` end-to-end tok/s) validation
-is recommended before shipping this as the new default `8da4w` configuration, and actually
-applying the shader-comment diff / promoting this token to production dispatch is a separate
-follow-on decision, not made by this feature itself (spec Assumptions).
+**UPDATED after Tier-2 validation (see `results/tier2-e2e-validation.md`):
+`recommendation: keep_shipped_baseline` — DO NOT SHIP.**
+
+`t64x64k16g21s32` (subgroup=32) is a real, statistically confident (+27.1%, CoV 0.13%),
+correctness-verified (all 10 representative shapes), genuinely-dispatching (SPIR-V
+confirmed) improvement over `025`'s standing winner **on the isolated microbenchmark**.
+However, Tier-2 e2e validation (Llama 3.2 1B, `8da4w` buffer PTE, 2048-token prefill, M5
+EVT1) found it is **~7.6% SLOWER end-to-end** than the currently-shipped default dispatch
+(406.8 vs 440.1 tok/s median, non-overlapping distributions across 3 runs each). The
+Tier-1 win does not transfer to the real model — a textbook case of this workstream's own
+"e2e is the deliverable, microbench is for analysis" principle. The shader-comment-update
+diff's correctness/legality finding (subgroup=32 doesn't crash the compiler, is
+shape-dependently correct) still stands on its own merits; only the performance
+recommendation is reversed.
 
 ## Search cost (SC-005/SC-006)
 
