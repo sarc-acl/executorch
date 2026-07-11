@@ -1,0 +1,313 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# specs/025-8da4w-parameter-sweep: TILE/SUBGROUP SWEEP variants of the dbuf2
+# ("store-first", the User-Story-1-confirmed loop structure) int8 dq8ca_q4gsw
+# coopmat shader. Same loop structure as linear_dq8ca_q4gsw_coopmat_dbuf2.glsl
+# (this .glsl is a copy); only tile geometry (WG_TILE_*, SG_GRID_*) varies per
+# variant -- SUBGROUP_SIZE stays 64 for every variant (research.md Decision 1).
+# Selected via ET_VK_DQ8CA_COOPMAT_VARIANT=<token>. WEIGHT_STORAGE=texture2d
+# only, per 022 precedent (research.md Decision 2 note).
+
+linear_dq8ca_q4gsw_coopmat_tsweep:
+  parameter_names_with_default_values:
+    PRECISION: highp
+    HAS_BIAS: false
+    WEIGHT_NBITS: 4
+    WEIGHT_STORAGE: texture2d
+    MMA_M: 16
+    MMA_N: 16
+    MMA_K: 16
+    WG_TILE_M: 128
+    WG_TILE_N: 64
+    WG_TILE_K: 32
+    SG_GRID_X: 2
+    SG_GRID_Y: 2
+    SUBGROUP_SIZE: 64
+  shader_variants:
+    # specs/026-8da4w-subgroup32-sweep User Story 1/2: SUBGROUP_SIZE=32 legality +
+    # correctness probe across a spread of tile shapes (not the single shipped
+    # shape specs/025's T014 and this session's earlier ad-hoc "sg32test" entry
+    # each tested). The "sg32test" entry/allow-list literal has been retired
+    # (specs/026 T020) -- t128x64k32g22s32 below covers the identical shape/tile
+    # combination and reproduced the identical correctness verdict.
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t16x16k16g11s32_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 16
+      WG_TILE_N: 16
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t64x64k16g21s32_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t128x32k16g12s32_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t128x64k32g22s32_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t64x128k16g41s32_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t16x32k16g21s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t16x32k32g21s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t16x32k64g21s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t16x64k16g21s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 16
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t16x64k32g21s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 16
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t16x128k16g21s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 16
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t32x16k32g12s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 32
+      WG_TILE_N: 16
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t32x16k64g12s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 32
+      WG_TILE_N: 16
+      WG_TILE_K: 64
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t32x32k16g12s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t32x32k16g21s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t32x32k32g12s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t32x32k32g21s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t32x64k16g12s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t32x64k16g21s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t64x16k32g12s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 16
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t64x32k16g12s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t64x32k16g21s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t64x32k32g12s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t64x32k32g21s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t64x64k16g12s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t64x64k16g21s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t128x32k16g12s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t128x32k16g21s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t32x64k32g12s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t32x64k32g21s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t32x128k16g12s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 32
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t32x128k16g21s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 32
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t32x32k64g12s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 64
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_t32x32k64g21s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 1

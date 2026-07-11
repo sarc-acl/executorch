@@ -92,9 +92,44 @@ static const std::string& dq8ca_coopmat_variant() {
     if (v == "dbuf1" || v == "dbuf2" || v == "dbuf3" || v == "dbuf4") {
       return v;
     }
+    // specs/025-8da4w-parameter-sweep / specs/026-8da4w-subgroup32-sweep:
+    // ET_VK_DQ8CA_COOPMAT_VARIANT=tsweep_t<M>x<N>k<K>g<SGX><SGY>s<32|64>
+    // selects a tile/subgroup/subgroup-size-sweep variant of
+    // linear_dq8ca_q4gsw_coopmat_tsweep.glsl, built on the
+    // User-Story-1-confirmed dbuf2 loop structure. Additive to the dbuf1-4
+    // selection above, not a replacement. specs/026 superseded the earlier
+    // ad-hoc "sg32test" literal (one shape only) with canonical s32 tokens
+    // covering a proper multi-shape spread -- see
+    // specs/026-8da4w-subgroup32-sweep/results/.
+    if (v.rfind("tsweep_t", 0) == 0) {
+      return v;
+    }
     return std::string();
   }();
   return variant;
+}
+
+// Parses "tsweep_t<M>x<N>k<K>g<SGX><SGY>s<sub>" -> {M, N, K, SGX*SGY*sub}.
+// Returns kDq8caQ4gswCoopmatDims unchanged if the token isn't a tsweep_ token
+// (i.e. unset, or a dbuf1-4 loop-structure-only variant, which shares the
+// shipped 128x64x32/sg64 tile geometry).
+static CoopmatTileDims parse_dq8ca_tsweep_tile(const std::string& variant) {
+  if (variant.rfind("tsweep_t", 0) != 0) {
+    return kDq8caQ4gswCoopmatDims;
+  }
+  const size_t t_pos = 8; // length of "tsweep_t"
+  const size_t x_pos = variant.find('x', t_pos);
+  const size_t k_pos = variant.find('k', x_pos);
+  const size_t g_pos = variant.find('g', k_pos);
+  const size_t s_pos = variant.find('s', g_pos);
+  const uint32_t m = std::stoul(variant.substr(t_pos, x_pos - t_pos));
+  const uint32_t n = std::stoul(variant.substr(x_pos + 1, k_pos - x_pos - 1));
+  const uint32_t k = std::stoul(variant.substr(k_pos + 1, g_pos - k_pos - 1));
+  const std::string grid = variant.substr(g_pos + 1, s_pos - g_pos - 1);
+  const uint32_t sgx = grid[0] - '0';
+  const uint32_t sgy = grid[1] - '0';
+  const uint32_t sub = std::stoul(variant.substr(s_pos + 1));
+  return {m, n, k, sgx * sgy * sub};
 }
 
 static CoopmatTileDims coopmat_tile_dims(const std::string& kernel_name) {
@@ -104,7 +139,7 @@ static CoopmatTileDims coopmat_tile_dims(const std::string& kernel_name) {
     return kQ4gswCoopmatDims;
   }
   if (kernel_name.rfind("linear_dq8ca_q4gsw_coopmat", 0) == 0) {
-    return kDq8caQ4gswCoopmatDims;
+    return parse_dq8ca_tsweep_tile(dq8ca_coopmat_variant());
   }
   return {kCoopmatTileM, kCoopmatTileN, kCoopmatTileK, kCoopmatInvocations};
 }
@@ -340,15 +375,22 @@ vkapi::ShaderInfo pick_linear_dqa_qw_shader(
       graph->context()->adapter_ptr()->supports_int8_cooperative_matrix()) {
     const int64_t group_size =
         graph->extract_scalar<int64_t>(resize_args.at(0));
+    // specs/025-8da4w-parameter-sweep: a tsweep_* variant has different tile
+    // dims than the shipped kDq8caQ4gswCoopmatDims, so the eligibility check's
+    // alignment gate must use the ACTIVE variant's own dims, not the shipped
+    // constant, or a variant with a smaller/different tile could be wrongly
+    // accepted/rejected against the wrong alignment.
+    const CoopmatTileDims active_dims =
+        parse_dq8ca_tsweep_tile(dq8ca_coopmat_variant());
     if (can_use_q4gsw_coopmat(
             graph,
             out,
             fp_input,
             group_size,
             resize_args.at(2),
-            kDq8caQ4gswCoopmatDims.m,
-            kDq8caQ4gswCoopmatDims.n,
-            kDq8caQ4gswCoopmatDims.k)) {
+            active_dims.m,
+            active_dims.n,
+            active_dims.k)) {
       std::string kernel_name = "linear_dq8ca_q4gsw_coopmat";
       const std::string& variant = dq8ca_coopmat_variant();
       if (!variant.empty()) {
