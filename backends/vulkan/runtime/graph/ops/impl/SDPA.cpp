@@ -186,8 +186,9 @@ static inline SDPAMode mode_of(const std::vector<ValueRef>& resize_args) {
 // of 64 lanes (256 invocations), matching coopmat_mm.glsl. Selected only for
 // LLM prefill (S > 1) on a coopmat-capable discrete RDNA GPU with buffer/fp16
 // tensors and tile-aligned shapes; decode (S == 1) stays on the _coop GEMV
-// path and ineligible shapes fall back to _tiled. Opt-in via ET_VK_SDPA_COOPMAT
-// (and the shared ET_VK_DISABLE_COOPMAT kill switch).
+// path and ineligible shapes fall back to _tiled. Enabled by default on
+// capability-eligible devices; ET_VK_DISABLE_COOPMAT remains the kill switch
+// (shared with the q4gsw linear coopmat path).
 //
 constexpr uint32_t kSdpaCmTileM = 64;
 constexpr uint32_t kSdpaCmTileN = 64;
@@ -199,13 +200,12 @@ constexpr uint32_t kSdpaCmInvocations = 256;
 // QK^T.
 constexpr uint32_t kSdpaCmQkTileM = 128;
 
-static bool sdpa_coopmat_opted_in() {
-  return std::getenv("ET_VK_SDPA_COOPMAT") != nullptr &&
-      std::getenv("ET_VK_DISABLE_COOPMAT") == nullptr;
+static bool sdpa_coopmat_not_disabled() {
+  return std::getenv("ET_VK_DISABLE_COOPMAT") == nullptr;
 }
 
 static bool sdpa_coopmat_device_ok(ComputeGraph* graph) {
-  if (!sdpa_coopmat_opted_in()) {
+  if (!sdpa_coopmat_not_disabled()) {
     return false;
   }
   const auto* adapter = graph->context()->adapter_ptr();
@@ -213,7 +213,8 @@ static bool sdpa_coopmat_device_ok(ComputeGraph* graph) {
   // (Xclipse 970) is a unified-memory "integrated" GPU but has fast fp16 WMMA;
   // the q4gsw linear coopmat gate likewise omits this check and runs there. The
   // generic matmul gate keeps it (to avoid coopmat on iGPUs without WMMA); SDPA
-  // coopmat is opt-in (ET_VK_SDPA_COOPMAT), so the env gate covers that case.
+  // coopmat is enabled by default on capability-eligible devices, so the
+  // subgroup/cooperative-matrix checks below are the only gate.
   return adapter->supports_cooperative_matrix() &&
       adapter->subgroup_size() == 64;
 }
