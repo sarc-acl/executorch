@@ -101,14 +101,15 @@ shape-broad evidence instead of the stale blanket-crash claim.
 `t64x64k16g21s32` (subgroup=32) is a real, statistically confident (+27.1%, CoV 0.13%),
 correctness-verified (all 10 representative shapes), genuinely-dispatching (SPIR-V
 confirmed) improvement over `025`'s standing winner **on the isolated microbenchmark**.
-However, Tier-2 e2e validation (Llama 3.2 1B, `8da4w` buffer PTE, 2048-token prefill, M5
-EVT1) found it is **~7.6% SLOWER end-to-end** than the currently-shipped default dispatch
-(406.8 vs 440.1 tok/s median, non-overlapping distributions across 3 runs each). The
-Tier-1 win does not transfer to the real model — a textbook case of this workstream's own
-"e2e is the deliverable, microbench is for analysis" principle. The shader-comment-update
-diff's correctness/legality finding (subgroup=32 doesn't crash the compiler, is
-shape-dependently correct) still stands on its own merits; only the performance
-recommendation is reversed.
+However, Tier-2 e2e validation, corrected to the shape-matched Llama 3.1 8B model (the initial
+1B-model check was itself a methodology error — see `results/tier2-e2e-validation.md`
+Round 1 vs Round 2), found it is **~2.7% SLOWER end-to-end** than the currently-shipped
+default dispatch (98.01 vs 100.73 tok/s median, non-overlapping distributions across 3
+runs each). The Tier-1 win does not transfer to the real model even on shape-matched
+validation — a textbook case of this workstream's own "e2e is the deliverable, microbench
+is for analysis" principle. The shader-comment-update diff's correctness/legality finding
+(subgroup=32 doesn't crash the compiler, is shape-dependently correct) still stands on its
+own merits; only the performance recommendation is reversed.
 
 ## Search cost (SC-005/SC-006)
 

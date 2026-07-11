@@ -1,42 +1,62 @@
 # Tier-2 e2e validation: t64x64k16g21s32 vs shipped baseline
 
 **Result: DO NOT SHIP.** The Tier-1 microbenchmark winner (`tsweep_t64x64k16g21s32`,
-+27.1% over `specs/025`'s winner in isolated GEMM throughput) is **~7.6% SLOWER**
-end-to-end than the currently-shipped default 8da4w dispatch when measured in a real
-model (Llama 3.2 1B, `8da4w` buffer PTE, 2048-token prefill).
++27.1% over `specs/025`'s winner in isolated GEMM throughput) is end-to-end SLOWER than
+the currently-shipped default 8da4w dispatch on both models tested. **The correct,
+shape-matched comparison (8B, see Round 2 below) shows -2.7%** — real, but much smaller
+than an initial, methodologically-flawed -7.6% figure from Round 1 (kept below for the
+record, with the flaw explained).
 
-## Setup
+## Round 1 (FLAWED — model/shape mismatch, kept for the record)
 
-- Device: M5 EVT1 (`xgpusw-debug08`, serial `00000bf70c579c33`)
-- Driver: `f14c51b6f8` (`c9861e9906d03fa2c7d48b804e1a1c80`), clocks pinned 509/2730/663 MHz
-- Model: `llama3_2_1b_8da4w_buffer_ctx3072.pte`
-- Runner: `llama_main` built from the `dbuf-int8-sweep` execution worktree (this feature's
-  own shader/dispatch changes), 2048-token prefill (`p2048_exact.txt`, `num_bos=1`,
-  `ET_VK_EXECUTE_NODE_THRESHOLD=16`)
-- Coherence check passed first (`--prompt="The capital of France is"` → coherent output,
-  confirming the buffer PTE + new dispatch code produces a working model, not garbage)
+Initial validation used the Llama 3.2 **1B** model (hidden_size=2048,
+intermediate=8192). This was a methodological error caught by user review: the
+microbenchmark that found `t64x64k16g21s32` as the Tier-1 winner used **8B**-shaped GEMMs
+(K=4096/14336, from Llama 3.1 8B's hidden_size=4096/intermediate=14336, matching this
+workstream's standard `wq`+`w1_gate` representative-shape convention) — not 1B's shapes.
+Validating a config tuned/measured on 8B-shaped GEMMs against a 1B model is an
+apples-to-oranges comparison, not a fair Tier-2 check.
 
-## Results (prefill tok/s, 3 runs each)
-
-| Config | Run 1 | Run 2 | Run 3 | Median |
+| Config (1B model) | Run 1 | Run 2 | Run 3 | Median |
 |---|---|---|---|---|
-| Baseline (default dispatch, no env var) | 440.1 | 451.3 | 424.1 | **440.1** |
-| `ET_VK_DQ8CA_COOPMAT_VARIANT=tsweep_t64x64k16g21s32` | 406.8 | 396.4 | 421.5 | **406.8** |
+| Baseline (default dispatch) | 440.1 | 451.3 | 424.1 | 440.1 |
+| `tsweep_t64x64k16g21s32` | 406.8 | 396.4 | 421.5 | 406.8 |
 
-**Delta: -7.6%** (406.8 / 440.1 - 1). The two distributions do not overlap (baseline
-424.1-451.3 vs new config 396.4-421.5) — this is a real effect, not noise.
+Delta: -7.6%. **Not trusted as the primary result** — see Round 2.
 
-## Why the Tier-1 win didn't transfer
+## Round 2 (CORRECTED — shape-matched, 8B model)
 
-The isolated-GEMM microbenchmark only measures the `linear_dq8ca_q4gsw` op's own kernel
-time at a few large synthetic shapes (K=4096/14336, N=1024-14336). The real model's
-prefill path includes many more ops (attention, other linears, dequant/quant glue,
-scheduling overhead between dispatches) and different, smaller per-layer shapes than the
-microbenchmark's synthetic ones — a config that wins on the isolated large-GEMM shape can
-easily lose overall if it has worse behavior at the shapes the real model actually uses,
-or interacts worse with surrounding ops/scheduling. This is precisely why this workstream's
-constitution states "e2e is the deliverable, microbench is for analysis" — Tier-1 results
-are a necessary first filter, not sufficient evidence to ship.
+Setup: Llama 3.1 **8B** `8da4w` buffer PTE (matches the microbenchmark's own shape
+convention), M5 EVT1 (`xgpusw-debug08`, `00000bf70c579c33`), driver `f14c51b6f8`
+(`c9861e9906d03fa2c7d48b804e1a1c80`), clocks pinned 509/2730/663 MHz, 2048-token prefill
+(`p2048_exact.txt`, `num_bos=1`, `ET_VK_EXECUTE_NODE_THRESHOLD=16`). Coherence-checked
+first (short prompt → grammatical, if repetitive, greedy-decode output — expected at
+temperature=0 on a short prompt, not a correctness failure).
+
+| Config (8B model) | Run 1 | Run 2 | Run 3 | Median |
+|---|---|---|---|---|
+| Baseline (default dispatch) | 100.728 | 100.922 | 100.284 | **100.73** |
+| `tsweep_t64x64k16g21s32` | 98.287 | 98.014 | 97.986 | **98.01** |
+
+**Delta: -2.7%** (98.01 / 100.73 - 1). Distributions still don't overlap (baseline
+100.28-100.92 vs new config 97.99-98.29) — smaller than Round 1's flawed figure, but still
+a real, consistent regression, not noise.
+
+## Why the Tier-1 win didn't transfer (even shape-matched)
+
+The isolated-GEMM microbenchmark measures only the `linear_dq8ca_q4gsw` op's own kernel
+time at a handful of large per-layer shapes. The real model's prefill path includes many
+more ops (attention/SDPA — which has no coopmat path at all, other linears, dequant/quant
+glue, inter-dispatch scheduling overhead) that the isolated benchmark doesn't capture —
+per `specs/003`'s classification data, SDPA alone is ~27% of 1B's prefill phase time and
+uses no coopmat. A tile/subgroup choice that's faster in isolation can still lose overall
+if it interacts worse with the surrounding dispatch/scheduling pattern, occupies more
+register/shared-memory pressure that starves neighboring dispatches, or the graph-level
+`ET_VK_EXECUTE_NODE_THRESHOLD` command-buffer-submission behavior responds differently to
+its different workgroup-size/dispatch-count profile. This is precisely why this
+workstream's constitution states "e2e is the deliverable, microbench is for analysis" —
+Tier-1 results are a necessary first filter, not sufficient evidence to ship, and this
+finding holds even after fixing the shape-mismatch methodology error.
 
 ## Disposition
 
