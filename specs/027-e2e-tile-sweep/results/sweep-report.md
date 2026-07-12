@@ -4,6 +4,14 @@
 (`xgpusw-debug08`, driver `f14c51b6f8`/`c9861e9906d03fa2c7d48b804e1a1c80`, clocks pinned
 509/2730/663 MHz), Llama 3.1 8B `8da4w` buffer PTE, 2048-token prefill.
 
+> **SHIPPED 2026-07-12** (commit `42aabb4e0` on `yanwen/dev-1.3`): this feature's winner
+> is now the production default `8da4w` tile/loop configuration on `dev`. Full-stack
+> (SDPA coopmat default-on) validation confirmed **+12.5%** (131.24 → 147.65 tok/s),
+> larger than the +9.32% measured on the SDPA-less validation branch below — see
+> `results/dev-branch-production-validation.md`. The rest of this report describes the
+> original sweep that found the winner; the Recommendation section's Tier-2 ask is now
+> satisfied.
+
 ## FinalAnswer
 
 **The current e2e winner is `tsweep_t64x32k32g12s64`** —
@@ -99,8 +107,11 @@ winner) holds across all three model sizes, not just 8B.
 
 `tsweep_t64x32k32g12s64` is a real, statistically confirmed (+9.32%, non-overlapping 3-run
 ranges) end-to-end improvement over the shipped baseline — the first configuration in this
-workstream's `025`→`026`→`027` sequence to actually win on the metric that matters. Per
-this workstream's existing convention, promoting it to the production default is a
-separate follow-on decision, not made by this feature itself. Given the scope note above,
-a follow-up validating this winner (and its close second) on the 1B/3B models before
-shipping is recommended.
+workstream's `025`→`026`→`027` sequence to actually win on the metric that matters.
+
+**Update 2026-07-12: shipped.** Applied to `dev`'s production shader (commit `42aabb4e0`)
+and re-validated on the full stack (SDPA coopmat included) — see `results/
+dev-branch-production-validation.md`. Outstanding from the scope note above: validating
+this winner (and its close second) on the 1B/3B models is still a good follow-up, but is
+no longer a blocker for shipping the 8B result, since the 8B model is this workstream's
+primary target shape family.
