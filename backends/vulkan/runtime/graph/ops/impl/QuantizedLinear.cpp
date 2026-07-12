@@ -56,9 +56,11 @@ void resize_linear_qw_node(
 // Per-shader coopmat tile geometry (must match each shader's yaml).
 // Workgroup size (wg_size) = SG_GRID_X * SG_GRID_Y * SUBGROUP_SIZE.
 //   linear_q4gsw_coopmat       128x64x16, 2x2 subgroups x 32 (forced) -> 128
-//   linear_dq8ca_q4gsw_coopmat 128x64x32, 2x2 subgroups x 64          -> 256
-// (The int8-MMA shaders stay on wave64: int8 WMMA at forced subgroup 32
-// crashes the Xclipse PAL compiler.)
+//   linear_dq8ca_q4gsw_coopmat 64x32x32,  1x2 subgroups x 64          -> 128
+// (specs/027-e2e-tile-sweep: dq8ca_q4gsw tile updated from 128x64x32/2x2 to
+// this e2e-ranked winner. int8-MMA stays on wave64 at this tile -- specs/026
+// found subgroup=32 legal-but-shape-dependently-incorrect, not verified
+// correct at this specific tile.)
 struct CoopmatTileDims {
   uint32_t m;
   uint32_t n;
@@ -70,8 +72,9 @@ struct CoopmatTileDims {
 };
 // linear_qw_coopmat.yaml: 128x64, 2x2 subgroup grid, sg32 -> WG_SIZE 128.
 constexpr CoopmatTileDims kQ4gswCoopmatDims = {128, 64, 16, 128};
-// linear_dq8ca_qw_coopmat.yaml: 128x64, 2x2 grid, sg64 -> WG_SIZE 256.
-constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {128, 64, 32, 256};
+// linear_dq8ca_qw_coopmat.yaml: 64x32, 1x2 grid, sg64 -> WG_SIZE 128
+// (specs/027-e2e-tile-sweep winner, was 128x64x32/256).
+constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {64, 32, 32, 128};
 
 static CoopmatTileDims coopmat_tile_dims(const std::string& kernel_name) {
   // Exact prefix matches (the "linear_dq8ca_*" names must not match the
