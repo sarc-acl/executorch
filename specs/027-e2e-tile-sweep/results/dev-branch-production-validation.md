@@ -50,6 +50,9 @@ not 8da4w-vs-4w.
 ## Status
 
 **Committed and shipped** — commit `42aabb4e0` on `yanwen/dev-1.3` (2026-07-12). This is
-now the production default `8da4w` tile/loop configuration on `dev`. Follow-up recommended
-(not blocking): validate the same winner on 1B/3B models, since this validation and the
-original sweep were both scoped to the 8B-shaped representative shapes only.
+now the production default `8da4w` tile/loop configuration on `dev`.
+
+**1B/3B follow-up validation: DONE 2026-07-13** — see
+`results/1b-3b-production-validation-2026-07-13.md`. Confirmed real e2e wins on both
+(+8.6% / +11.9%), same direction as this file's 8B result. No model regresses; nothing
+further pending.

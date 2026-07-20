@@ -1,0 +1,2225 @@
+[Version]
+version = 76
+
+[CsSpvFile]
+fileName = Shader_0x258FD7A0C3842B8E.spv
+
+[CsInfo]
+entryPoint = main
+specConst.mapEntry[0].constantID = 0
+specConst.mapEntry[0].offset = 0
+specConst.mapEntry[0].size = 4
+specConst.mapEntry[1].constantID = 1
+specConst.mapEntry[1].offset = 8
+specConst.mapEntry[1].size = 4
+specConst.mapEntry[2].constantID = 2
+specConst.mapEntry[2].offset = 16
+specConst.mapEntry[2].size = 4
+specConst.uintData = 8, 3019898882, 8, 3019898882, 1, 2, 
+options.trapPresent = 0
+options.debugMode = 0
+options.enablePerformanceData = 0
+options.allowReZ = 0
+options.forceLateZ = 0
+options.vgprLimit = 0
+options.sgprLimit = 0
+options.maxThreadGroupsPerComputeUnit = 0
+options.waveSize = 0
+options.subgroupSize = 0
+options.wgpMode = 0
+options.waveBreakSize = None
+options.forceLoopUnrollCount = 0
+options.useSiScheduler = 0
+options.disableCodeSinking = 0
+options.favorLatencyHiding = 0
+options.updateDescInElf = 0
+options.allowVaryWaveSize = 0
+options.enableLoadScalarizer = 0
+options.disableLicm = 0
+options.unrollThreshold = 0
+options.scalarThreshold = 0
+options.disableLoopUnroll = 0
+options.fp32DenormalMode = Auto
+options.adjustDepthImportVrs = 0
+options.disableLicmThreshold = 0
+options.unrollHintThreshold = 0
+options.dontUnrollHintThreshold = 0
+options.fastMathFlags = 0
+options.disableFastMathFlags = 0
+options.ldsSpillLimitDwords = 0
+options.scalarizeWaterfallLoads = 0
+options.overrideShaderThreadGroupSizeX = 0
+options.overrideShaderThreadGroupSizeY = 0
+options.overrideShaderThreadGroupSizeZ = 0
+options.nsaThreshold = 0
+options.aggressiveInvariantLoads = Auto
+options.viewIndexFromDeviceIndex = 0
+
+[ResourceMapping]
+userDataNode[0].visibility = 128
+userDataNode[0].type = DescriptorTableVaPtr
+userDataNode[0].offsetInDwords = 1
+userDataNode[0].sizeInDwords = 1
+userDataNode[0].next[0].type = DescriptorBuffer
+userDataNode[0].next[0].offsetInDwords = 0
+userDataNode[0].next[0].sizeInDwords = 4
+userDataNode[0].next[0].isMutableDescriptorType = 0
+userDataNode[0].next[0].set = 0x00000000
+userDataNode[0].next[0].binding = 0
+userDataNode[0].next[1].type = DescriptorBuffer
+userDataNode[0].next[1].offsetInDwords = 4
+userDataNode[0].next[1].sizeInDwords = 4
+userDataNode[0].next[1].isMutableDescriptorType = 0
+userDataNode[0].next[1].set = 0x00000000
+userDataNode[0].next[1].binding = 1
+userDataNode[0].next[2].type = DescriptorBuffer
+userDataNode[0].next[2].offsetInDwords = 8
+userDataNode[0].next[2].sizeInDwords = 4
+userDataNode[0].next[2].isMutableDescriptorType = 0
+userDataNode[0].next[2].set = 0x00000000
+userDataNode[0].next[2].binding = 2
+userDataNode[0].next[3].type = DescriptorConstBuffer
+userDataNode[0].next[3].offsetInDwords = 12
+userDataNode[0].next[3].sizeInDwords = 4
+userDataNode[0].next[3].isMutableDescriptorType = 0
+userDataNode[0].next[3].set = 0x00000000
+userDataNode[0].next[3].binding = 3
+userDataNode[0].next[4].type = DescriptorConstBuffer
+userDataNode[0].next[4].offsetInDwords = 16
+userDataNode[0].next[4].sizeInDwords = 4
+userDataNode[0].next[4].isMutableDescriptorType = 0
+userDataNode[0].next[4].set = 0x00000000
+userDataNode[0].next[4].binding = 4
+userDataNode[0].next[5].type = DescriptorConstBuffer
+userDataNode[0].next[5].offsetInDwords = 20
+userDataNode[0].next[5].sizeInDwords = 4
+userDataNode[0].next[5].isMutableDescriptorType = 0
+userDataNode[0].next[5].set = 0x00000000
+userDataNode[0].next[5].binding = 5
+
+[ComputePipelineState]
+deviceIndex = 0
+options.includeDisassembly = 0
+options.scalarBlockLayout = 0
+options.resourceLayoutScheme = Compact
+options.includeIr = 0
+options.robustBufferAccess = 0
+options.reconfigWorkgroupLayout = 0
+options.forceCsThreadIdSwizzling = 1
+options.overrideThreadGroupSizeX = 0
+options.overrideThreadGroupSizeY = 0
+options.overrideThreadGroupSizeZ = 0
+options.shadowDescriptorTableUsage = Enable
+options.shadowDescriptorTablePtrHigh = 2
+options.extendedRobustness.robustBufferAccess = 0
+options.extendedRobustness.robustImageAccess = 0
+options.extendedRobustness.nullDescriptor = 0
+options.optimizationLevel = 2
+options.threadGroupSwizzleMode = _16x16
+options.reverseThreadGroup = 0
+options.internalRtShaders = 0
+options.forceNonUniformResourceIndexStageMask = 0
+options.enablePrimGeneratedQuery = 0
+
+;PipelineOptimizer
+;Task     Shader Profile Key: 0x334A1946EFD5BCF694919E1AC48F5BA1,
+
+[CompileLog]
+(null) (size = 0 bytes)
+
+.AMDGPU.comment.amdil (size = 34226 bytes)
+
+    _amdgpu_cs_amdil (offset = 0  size = 34226 hash = 0xDB5094048BB3D78A)
+//! constants:
+//! user_data_logical_id = PTR_INTERNAL_GLOBAL_TABLE, 0, 0, 0, 0, 1, 0
+//! user_data_logical_id = PTR_PSO_INTERNAL_RESOURCE_TABLE, 0, 0, 0, 1, 1, 0
+//! user_data_logical_id = PTR_EXTENDED_USER_DATA, 1, 0, 0, 2, 1, 0
+//! extended_user_data_logical_id 1 = IMM_UAV, 0, 4, 0, 0, 4, 22
+//! extended_user_data_logical_id 1 = IMM_UAV, 0, 4, 0, 4, 4, 24
+//! extended_user_data_logical_id 1 = IMM_UAV, 0, 4, 0, 8, 4, 26
+//! extended_user_data_logical_id 1 = IMM_RESOURCE, 0, 4, 0, 12, 4, 28
+//! extended_user_data_logical_id 1 = IMM_RESOURCE, 0, 4, 0, 16, 4, 30
+//! extended_user_data_logical_id 1 = IMM_RESOURCE, 0, 4, 0, 20, 4, 32
+il_cs_2_145
+dcl_global_flags  refactoringAllowed
+dcl_global_flags  assertRawStructuredBuffersSizeDwordPadded
+dcl_global_flags  forceIEEEMul
+dcl_num_thread_per_group 8, 8, 1 
+dcl_feature_profile 0
+dcl_literal l0, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+dcl_literal l5, 0x00000001, 0x00000002, 0x0000000F, 0x00000020
+dcl_literal l6, 0x3F800000, 0x3F000000, 0x40000000, 0x40400000
+dcl_literal l7, 0x00000000, 0x3FF00000, 0x00000000, 0x3FE00000
+dcl_literal l8, 0x477FFF00, 0x46FFFE00, 0x437F0000, 0x42FE0000
+dcl_literal l9, 0x3C8EFA35, 0x42652EE0, 0x3FC90FDB, 0x40490FDB
+dcl_literal l10, 0x00000000, 0x40000000, 0x00000000, 0x40080000
+dcl_literal l11, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000
+dcl_literal l12, 0x00000000, 0xBFF00000, 0x00000000, 0xC0000000
+dcl_literal l13, 0x00000001, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF
+dcl_literal l14, 0xFFFFFFFF, 0x7FFFFFFF, 0x00000000, 0x80000000
+dcl_literal l15, 0xFFFFFFFF, 0x7FFFFFFF, 0x80000000, 0x00000010
+dcl_literal l16, 0x7F7FFFFF, 0xFF7FFFFF, 0x00000000, 0x00000000
+dcl_literal l17, 0xFFFFFFFF, 0x7FEFFFFF, 0xFFFFFFFF, 0xFFEFFFFF
+dcl_literal l18, 0x00003C00, 0x00003800, 0x00004000, 0x00004200
+dcl_literal l19, 0x00002477, 0x00005329, 0x00003E48, 0x00004248
+dcl_literal l20, 0x00000004, 0x0000FFFF, 0x00000030, 0x00000018
+dcl_literal l21, 0x00000008, 0x000000FF, 0x00000038, 0x00000000
+dcl_literal l22, 0x7FFFFFFF, 0x00000000, 0x80000000, 0xFFFFFFFF
+dcl_literal l311, 0x00000001, 0x00000000, 0x00000000, 0x00000000
+dcl_literal l312, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+dcl_literal l313, 0x00000004, 0x00000000, 0x00000000, 0x00000000
+dcl_literal l314, 0x00000001, 0x00000000, 0x00000000, 0x00000000
+dcl_literal l315, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+dcl_literal l316, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+dcl_literal l317, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+dcl_literal l318, 0x00000002, 0x00000000, 0x00000000, 0x00000000
+dcl_literal l319, 0x00000002, 0x00000000, 0x00000000, 0x00000000
+dcl_literal l320, 0x00000003, 0x00000000, 0x00000000, 0x00000000
+dcl_literal l321, 0x00000003, 0x00000000, 0x00000000, 0x00000000
+dcl_literal l322, 0xFFFFFFFC, 0x00000000, 0x00000000, 0x00000000
+dcl_literal l323, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+dcl_literal l324, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+dcl_literal l325, 0x00000001, 0x00000000, 0x00000000, 0x00000000
+dcl_literal l326, 0x00000008, 0x00000008, 0x00000001, 0x00000000
+dcl_indexed_temp_array x139[16]
+mov r129, vThreadGrpId0
+mov r133, vTidInGrp0
+mov r134, vTidInGrpFlat0
+dcl_literal l327, 0x00000008, 0x00000008, 0x00000001, 0x00000000
+mov r130, vAbsTid0
+call 4
+endmain
+func 4
+    branch 682
+label 682
+    mov r32768.x___, r130.x
+    mov r32769.x___, r32768.x
+    mov r32770.x___, r130.y
+    mov r32771.x___, r32770.x
+    mov r32772.x___, r130.z
+    mov r32773.x___, r32772.x
+    imul r32774.x___, r32769.x, l313.x
+    ishr r32775.x___, r32774.x, l318.x
+    imul r32776.x___, r32771.x, l313.x
+    srv_raw_load_ext_id(28) r32777.x___, l0.x, l0.x
+    dcl_literal l328, 0x00000004, 0x00000000, 0x00000000, 0x00000000
+    srv_raw_load_ext_id(28) r32778.x___, l328.x, l0.x
+    dcl_literal l329, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    srv_raw_load_ext_id(28) r32779.x___, l329.x, l0.x
+    dcl_literal l330, 0x00000004, 0x00000000, 0x00000000, 0x00000000
+    srv_raw_load_ext_id(30) r32780.x___, l330.x, l0.x
+    iadd r32781.x___, r32777.x, l321.x
+    ishr r32782.x___, r32781.x, l318.x
+    iadd r32783.x___, r32779.x, l321.x
+    iand r32784.x___, r32783.x, l322.x
+    srv_raw_load_ext_id(32) r32785.x___, l0.x, l0.x
+    iadd r32786.x___, r32785.x, r32779.x
+    iadd r32787.x___, r32786.x, l321.x
+    ishr r32788.x___, r32787.x, l318.x
+    ilt r32789.x___, r32780.x, r32778.x
+    branch_logicalnz r32789.x, 2877
+label 2878
+    mov r33069.x___, r32773.x
+    mov r32792.x___, r33069.x
+    branch 544
+label 2877
+    branch 543
+label 543
+    idiv r32790.x___, r32778.x, r32780.x
+    idiv r32791.x___, r32773.x, r32790.x
+    mov r33070.x___, r32791.x
+    mov r32792.x___, r33070.x
+    branch 544
+label 544
+    ige r32793.x___, r32775.x, r32782.x
+    ige r32794.x___, r32776.x, r32779.x
+    ior r32795.x___, r32793.x, r32794.x
+    ieq r32796.x___, r32795.x, l0.0000
+    branch_logicalnz r32796.x, 2879
+label 2880
+    mov r33071.x___, r32795.x
+    mov r32800.x___, r33071.x
+    branch 559
+label 2879
+    branch 558
+label 558
+    dcl_literal l331, 0x0000000C, 0x00000000, 0x00000000, 0x00000000
+    srv_raw_load_ext_id(28) r32797.x___, l331.x, l0.x
+    imul r32798.x___, r32778.x, r32797.x
+    ige r32799.x___, r32773.x, r32798.x
+    mov r33072.x___, r32799.x
+    mov r32800.x___, r33072.x
+    branch 559
+label 559
+    branch_logicalnz r32800.x, 2881
+label 2882
+    branch 568
+label 2881
+    branch 567
+label 567
+    branch 681
+label 568
+    iand r32801.x___, r32786.x, l321.x
+    isub r32802.x___, r32786.x, r32801.x
+    ishr r32803.x___, r32802.x, l318.x
+    mov r33073, l316
+    mov r33074, l316
+    mov r33075, l316
+    mov r33076, l316
+    mov r33077.x___, l312.x
+    mov r32804, r33073
+    mov r32805, r33074
+    mov r32806, r33075
+    mov r32807, r33076
+    mov r32808.x___, r33077.x
+    branch 585
+label 585
+    ilt r32809.x___, r32808.x, r32803.x
+    branch_logicalnz r32809.x, 2883
+label 2884
+    branch 587
+label 2883
+    branch 586
+label 586
+    ishl r32810.x___, r32808.x, l318.x
+    imul r32811.x___, r32773.x, r32784.x
+    imul r32812.x___, r32811.x, r32788.x
+    imul r32813.x___, r32776.x, r32788.x
+    iadd r32814.x___, r32812.x, r32813.x
+    iadd r32815.x___, r32814.x, r32808.x
+    mov r564, l0.0000
+    dcl_literal l332, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r564, r32815.x, l332, r564
+    iadd r448.x___, r564, l0
+    mov r450.x___, r448.x
+    uav_raw_load_ext_access(read_only)_id(24)_cached r449.xy__, r450.x, l0.x
+    iand r32816.x___, r449.x, l20.y
+    ushr r32816._y__, r449.x, l15.w
+    iand r32816.__z_, r449.y, l20.y
+    ushr r32816.___w, r449.y, l15.w
+    iadd r32817.x___, r32776.x, l314.x
+    imul r32818.x___, r32817.x, r32788.x
+    iadd r32819.x___, r32812.x, r32818.x
+    iadd r32820.x___, r32819.x, r32808.x
+    mov r565, l0.0000
+    dcl_literal l333, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r565, r32820.x, l333, r565
+    iadd r448.x___, r565, l0
+    mov r450.x___, r448.x
+    uav_raw_load_ext_access(read_only)_id(24)_cached r449.xy__, r450.x, l0.x
+    iand r32821.x___, r449.x, l20.y
+    ushr r32821._y__, r449.x, l15.w
+    iand r32821.__z_, r449.y, l20.y
+    ushr r32821.___w, r449.y, l15.w
+    iadd r32822.x___, r32776.x, l318.x
+    imul r32823.x___, r32822.x, r32788.x
+    iadd r32824.x___, r32812.x, r32823.x
+    iadd r32825.x___, r32824.x, r32808.x
+    mov r566, l0.0000
+    dcl_literal l334, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r566, r32825.x, l334, r566
+    iadd r448.x___, r566, l0
+    mov r450.x___, r448.x
+    uav_raw_load_ext_access(read_only)_id(24)_cached r449.xy__, r450.x, l0.x
+    iand r32826.x___, r449.x, l20.y
+    ushr r32826._y__, r449.x, l15.w
+    iand r32826.__z_, r449.y, l20.y
+    ushr r32826.___w, r449.y, l15.w
+    iadd r32827.x___, r32776.x, l321.x
+    imul r32828.x___, r32827.x, r32788.x
+    iadd r32829.x___, r32812.x, r32828.x
+    iadd r32830.x___, r32829.x, r32808.x
+    mov r567, l0.0000
+    dcl_literal l335, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r567, r32830.x, l335, r567
+    iadd r448.x___, r567, l0
+    mov r450.x___, r448.x
+    uav_raw_load_ext_access(read_only)_id(24)_cached r449.xy__, r450.x, l0.x
+    iand r32831.x___, r449.x, l20.y
+    ushr r32831._y__, r449.x, l15.w
+    iand r32831.__z_, r449.y, l20.y
+    ushr r32831.___w, r449.y, l15.w
+    imul r32832.x___, r32810.x, r32780.x
+    imul r32833.x___, r32832.x, r32782.x
+    imul r32834.x___, r32792.x, r32782.x
+    iadd r32835.x___, r32833.x, r32834.x
+    iadd r32836.x___, r32835.x, r32775.x
+    mov r568, l0.0000
+    dcl_literal l336, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r568, r32836.x, l336, r568
+    iadd r448.x___, r568, l0
+    mov r450.x___, r448.x
+    uav_raw_load_ext_access(read_only)_id(26)_cached r449.xy__, r450.x, l0.x
+    iand r32837.x___, r449.x, l20.y
+    ushr r32837._y__, r449.x, l15.w
+    iand r32837.__z_, r449.y, l20.y
+    ushr r32837.___w, r449.y, l15.w
+    iadd r32838.x___, r32810.x, l314.x
+    imul r32839.x___, r32838.x, r32780.x
+    imul r32840.x___, r32839.x, r32782.x
+    iadd r32841.x___, r32840.x, r32834.x
+    iadd r32842.x___, r32841.x, r32775.x
+    mov r569, l0.0000
+    dcl_literal l337, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r569, r32842.x, l337, r569
+    iadd r448.x___, r569, l0
+    mov r450.x___, r448.x
+    uav_raw_load_ext_access(read_only)_id(26)_cached r449.xy__, r450.x, l0.x
+    iand r32843.x___, r449.x, l20.y
+    ushr r32843._y__, r449.x, l15.w
+    iand r32843.__z_, r449.y, l20.y
+    ushr r32843.___w, r449.y, l15.w
+    iadd r32844.x___, r32810.x, l318.x
+    imul r32845.x___, r32844.x, r32780.x
+    imul r32846.x___, r32845.x, r32782.x
+    iadd r32847.x___, r32846.x, r32834.x
+    iadd r32848.x___, r32847.x, r32775.x
+    mov r570, l0.0000
+    dcl_literal l338, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r570, r32848.x, l338, r570
+    iadd r448.x___, r570, l0
+    mov r450.x___, r448.x
+    uav_raw_load_ext_access(read_only)_id(26)_cached r449.xy__, r450.x, l0.x
+    iand r32849.x___, r449.x, l20.y
+    ushr r32849._y__, r449.x, l15.w
+    iand r32849.__z_, r449.y, l20.y
+    ushr r32849.___w, r449.y, l15.w
+    iadd r32850.x___, r32810.x, l321.x
+    imul r32851.x___, r32850.x, r32780.x
+    imul r32852.x___, r32851.x, r32782.x
+    iadd r32853.x___, r32852.x, r32834.x
+    iadd r32854.x___, r32853.x, r32775.x
+    mov r571, l0.0000
+    dcl_literal l339, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r571, r32854.x, l339, r571
+    iadd r448.x___, r571, l0
+    mov r450.x___, r448.x
+    uav_raw_load_ext_access(read_only)_id(26)_cached r449.xy__, r450.x, l0.x
+    iand r32855.x___, r449.x, l20.y
+    ushr r32855._y__, r449.x, l15.w
+    iand r32855.__z_, r449.y, l20.y
+    ushr r32855.___w, r449.y, l15.w
+    mov r32856.x___, r32816.x
+    mov r32857.x___, r32856.x
+    mov r32857._y__, r32856.x
+    mov r32857.__z_, r32856.x
+    mov r32857.___w, r32856.x
+    f16fma r32858, r32857, r32837, r32804
+    mov r32859.x___, r32816.y
+    mov r32860.x___, r32859.x
+    mov r32860._y__, r32859.x
+    mov r32860.__z_, r32859.x
+    mov r32860.___w, r32859.x
+    f16fma r32861, r32860, r32843, r32858
+    mov r32862.x___, r32816.z
+    mov r32863.x___, r32862.x
+    mov r32863._y__, r32862.x
+    mov r32863.__z_, r32862.x
+    mov r32863.___w, r32862.x
+    f16fma r32864, r32863, r32849, r32861
+    mov r32865.x___, r32816.w
+    mov r32866.x___, r32865.x
+    mov r32866._y__, r32865.x
+    mov r32866.__z_, r32865.x
+    mov r32866.___w, r32865.x
+    f16fma r32867, r32866, r32855, r32864
+    mov r32868.x___, r32821.x
+    mov r32869.x___, r32868.x
+    mov r32869._y__, r32868.x
+    mov r32869.__z_, r32868.x
+    mov r32869.___w, r32868.x
+    f16fma r32870, r32869, r32837, r32805
+    mov r32871.x___, r32821.y
+    mov r32872.x___, r32871.x
+    mov r32872._y__, r32871.x
+    mov r32872.__z_, r32871.x
+    mov r32872.___w, r32871.x
+    f16fma r32873, r32872, r32843, r32870
+    mov r32874.x___, r32821.z
+    mov r32875.x___, r32874.x
+    mov r32875._y__, r32874.x
+    mov r32875.__z_, r32874.x
+    mov r32875.___w, r32874.x
+    f16fma r32876, r32875, r32849, r32873
+    mov r32877.x___, r32821.w
+    mov r32878.x___, r32877.x
+    mov r32878._y__, r32877.x
+    mov r32878.__z_, r32877.x
+    mov r32878.___w, r32877.x
+    f16fma r32879, r32878, r32855, r32876
+    mov r32880.x___, r32826.x
+    mov r32881.x___, r32880.x
+    mov r32881._y__, r32880.x
+    mov r32881.__z_, r32880.x
+    mov r32881.___w, r32880.x
+    f16fma r32882, r32881, r32837, r32806
+    mov r32883.x___, r32826.y
+    mov r32884.x___, r32883.x
+    mov r32884._y__, r32883.x
+    mov r32884.__z_, r32883.x
+    mov r32884.___w, r32883.x
+    f16fma r32885, r32884, r32843, r32882
+    mov r32886.x___, r32826.z
+    mov r32887.x___, r32886.x
+    mov r32887._y__, r32886.x
+    mov r32887.__z_, r32886.x
+    mov r32887.___w, r32886.x
+    f16fma r32888, r32887, r32849, r32885
+    mov r32889.x___, r32826.w
+    mov r32890.x___, r32889.x
+    mov r32890._y__, r32889.x
+    mov r32890.__z_, r32889.x
+    mov r32890.___w, r32889.x
+    f16fma r32891, r32890, r32855, r32888
+    mov r32892.x___, r32831.x
+    mov r32893.x___, r32892.x
+    mov r32893._y__, r32892.x
+    mov r32893.__z_, r32892.x
+    mov r32893.___w, r32892.x
+    f16fma r32894, r32893, r32837, r32807
+    mov r32895.x___, r32831.y
+    mov r32896.x___, r32895.x
+    mov r32896._y__, r32895.x
+    mov r32896.__z_, r32895.x
+    mov r32896.___w, r32895.x
+    f16fma r32897, r32896, r32843, r32894
+    mov r32898.x___, r32831.z
+    mov r32899.x___, r32898.x
+    mov r32899._y__, r32898.x
+    mov r32899.__z_, r32898.x
+    mov r32899.___w, r32898.x
+    f16fma r32900, r32899, r32849, r32897
+    mov r32901.x___, r32831.w
+    mov r32902.x___, r32901.x
+    mov r32902._y__, r32901.x
+    mov r32902.__z_, r32901.x
+    mov r32902.___w, r32901.x
+    f16fma r32903, r32902, r32855, r32900
+    iadd r32904.x___, r32808.x, l314.x
+    mov r33078, r32867
+    mov r33079, r32879
+    mov r33080, r32891
+    mov r33081, r32903
+    mov r33082.x___, r32904.x
+    mov r32804, r33078
+    mov r32805, r33079
+    mov r32806, r33080
+    mov r32807, r33081
+    mov r32808.x___, r33082.x
+    branch 585
+label 587
+    mov r33083, r32804
+    mov r33084, r32805
+    mov r33085, r32806
+    mov r33086, r32807
+    mov r33087.x___, r32803.x
+    mov r32905, r33083
+    mov r32906, r33084
+    mov r32907, r33085
+    mov r32908, r33086
+    mov r32909.x___, r33087.x
+    branch 629
+label 629
+    ilt r32910.x___, r32909.x, r32788.x
+    branch_logicalnz r32910.x, 2885
+label 2886
+    branch 631
+label 2885
+    branch 630
+label 630
+    ishl r32911.x___, r32909.x, l318.x
+    branch_logicalnz r32910.x, 2887
+label 2888
+    mov r33088.x___, r32910.x
+    mov r32913.x___, r33088.x
+    branch 913
+label 2887
+    branch 909
+label 909
+    ilt r32912.x___, r32776.x, r32784.x
+    mov r33089.x___, r32912.x
+    mov r32913.x___, r33089.x
+    branch 913
+label 913
+    branch_logicalnz r32913.x, 2889
+label 2890
+    branch 924
+label 2889
+    branch 915
+label 915
+    imul r32914.x___, r32773.x, r32784.x
+    iadd r32915.x___, r32914.x, r32776.x
+    imul r32916.x___, r32788.x, r32915.x
+    iadd r32917.x___, r32916.x, r32909.x
+    mov r572, l0.0000
+    dcl_literal l340, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r572, r32917.x, l340, r572
+    iadd r448.x___, r572, l0
+    mov r450.x___, r448.x
+    uav_raw_load_ext_access(read_only)_id(24)_cached r449.xy__, r450.x, l0.x
+    iand r32918.x___, r449.x, l20.y
+    ushr r32918._y__, r449.x, l15.w
+    iand r32918.__z_, r449.y, l20.y
+    ushr r32918.___w, r449.y, l15.w
+    mov r33090, r32918
+    mov r32919, r33090
+    branch 928
+label 924
+    mov r33091, l316
+    mov r32919, r33091
+    branch 928
+label 928
+    branch_logicalnz r32910.x, 2891
+label 2892
+    mov r33092.x___, r32910.x
+    mov r32922.x___, r33092.x
+    branch 1650
+label 2891
+    branch 1647
+label 1647
+    iadd r32920.x___, r32776.x, l314.x
+    ilt r32921.x___, r32920.x, r32784.x
+    mov r33093.x___, r32921.x
+    mov r32922.x___, r33093.x
+    branch 1650
+label 1650
+    branch_logicalnz r32922.x, 2893
+label 2894
+    branch 1652
+label 2893
+    branch 1654
+label 1652
+    mov r33094, l316
+    mov r32929, r33094
+    branch 1665
+label 1654
+    iadd r32923.x___, r32776.x, l314.x
+    imul r32924.x___, r32773.x, r32784.x
+    iadd r32925.x___, r32924.x, r32923.x
+    imul r32926.x___, r32788.x, r32925.x
+    iadd r32927.x___, r32926.x, r32909.x
+    mov r573, l0.0000
+    dcl_literal l341, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r573, r32927.x, l341, r573
+    iadd r448.x___, r573, l0
+    mov r450.x___, r448.x
+    uav_raw_load_ext_access(read_only)_id(24)_cached r449.xy__, r450.x, l0.x
+    iand r32928.x___, r449.x, l20.y
+    ushr r32928._y__, r449.x, l15.w
+    iand r32928.__z_, r449.y, l20.y
+    ushr r32928.___w, r449.y, l15.w
+    mov r33095, r32928
+    mov r32929, r33095
+    branch 1665
+label 1665
+    branch_logicalnz r32910.x, 2895
+label 2896
+    mov r33096.x___, r32910.x
+    mov r32932.x___, r33096.x
+    branch 1685
+label 2895
+    branch 1682
+label 1682
+    iadd r32930.x___, r32776.x, l318.x
+    ilt r32931.x___, r32930.x, r32784.x
+    mov r33097.x___, r32931.x
+    mov r32932.x___, r33097.x
+    branch 1685
+label 1685
+    branch_logicalnz r32932.x, 2897
+label 2898
+    branch 1687
+label 2897
+    branch 1689
+label 1687
+    mov r33098, l316
+    mov r32939, r33098
+    branch 1700
+label 1689
+    iadd r32933.x___, r32776.x, l318.x
+    imul r32934.x___, r32773.x, r32784.x
+    iadd r32935.x___, r32934.x, r32933.x
+    imul r32936.x___, r32788.x, r32935.x
+    iadd r32937.x___, r32936.x, r32909.x
+    mov r574, l0.0000
+    dcl_literal l342, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r574, r32937.x, l342, r574
+    iadd r448.x___, r574, l0
+    mov r450.x___, r448.x
+    uav_raw_load_ext_access(read_only)_id(24)_cached r449.xy__, r450.x, l0.x
+    iand r32938.x___, r449.x, l20.y
+    ushr r32938._y__, r449.x, l15.w
+    iand r32938.__z_, r449.y, l20.y
+    ushr r32938.___w, r449.y, l15.w
+    mov r33099, r32938
+    mov r32939, r33099
+    branch 1700
+label 1700
+    branch_logicalnz r32910.x, 2899
+label 2900
+    mov r33100.x___, r32910.x
+    mov r32942.x___, r33100.x
+    branch 1720
+label 2899
+    branch 1717
+label 1717
+    iadd r32940.x___, r32776.x, l321.x
+    ilt r32941.x___, r32940.x, r32784.x
+    mov r33101.x___, r32941.x
+    mov r32942.x___, r33101.x
+    branch 1720
+label 1720
+    branch_logicalnz r32942.x, 2901
+label 2902
+    branch 1722
+label 2901
+    branch 1724
+label 1722
+    mov r33102, l316
+    mov r32949, r33102
+    branch 1735
+label 1724
+    iadd r32943.x___, r32776.x, l321.x
+    imul r32944.x___, r32773.x, r32784.x
+    iadd r32945.x___, r32944.x, r32943.x
+    imul r32946.x___, r32788.x, r32945.x
+    iadd r32947.x___, r32946.x, r32909.x
+    mov r575, l0.0000
+    dcl_literal l343, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r575, r32947.x, l343, r575
+    iadd r448.x___, r575, l0
+    mov r450.x___, r448.x
+    uav_raw_load_ext_access(read_only)_id(24)_cached r449.xy__, r450.x, l0.x
+    iand r32948.x___, r449.x, l20.y
+    ushr r32948._y__, r449.x, l15.w
+    iand r32948.__z_, r449.y, l20.y
+    ushr r32948.___w, r449.y, l15.w
+    mov r33103, r32948
+    mov r32949, r33103
+    branch 1735
+label 1735
+    ilt r32950.x___, r32775.x, r32782.x
+    branch_logicalnz r32950.x, 2903
+label 2904
+    mov r33104.x___, r32950.x
+    mov r32952.x___, r33104.x
+    branch 966
+label 2903
+    branch 962
+label 962
+    ilt r32951.x___, r32911.x, r32786.x
+    mov r33105.x___, r32951.x
+    mov r32952.x___, r33105.x
+    branch 966
+label 966
+    branch_logicalnz r32952.x, 2905
+label 2906
+    branch 977
+label 2905
+    branch 968
+label 968
+    imul r32953.x___, r32911.x, r32780.x
+    iadd r32954.x___, r32953.x, r32792.x
+    imul r32955.x___, r32782.x, r32954.x
+    iadd r32956.x___, r32955.x, r32775.x
+    mov r576, l0.0000
+    dcl_literal l344, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r576, r32956.x, l344, r576
+    iadd r448.x___, r576, l0
+    mov r450.x___, r448.x
+    uav_raw_load_ext_access(read_only)_id(26)_cached r449.xy__, r450.x, l0.x
+    iand r32957.x___, r449.x, l20.y
+    ushr r32957._y__, r449.x, l15.w
+    iand r32957.__z_, r449.y, l20.y
+    ushr r32957.___w, r449.y, l15.w
+    mov r33106, r32957
+    mov r32958, r33106
+    branch 981
+label 977
+    mov r33107, l316
+    mov r32958, r33107
+    branch 981
+label 981
+    branch_logicalnz r32950.x, 2907
+label 2908
+    mov r33108.x___, r32950.x
+    mov r32961.x___, r33108.x
+    branch 1755
+label 2907
+    branch 1752
+label 1752
+    iadd r32959.x___, r32911.x, l314.x
+    ilt r32960.x___, r32959.x, r32786.x
+    mov r33109.x___, r32960.x
+    mov r32961.x___, r33109.x
+    branch 1755
+label 1755
+    branch_logicalnz r32961.x, 2909
+label 2910
+    branch 1757
+label 2909
+    branch 1759
+label 1757
+    mov r33110, l316
+    mov r32968, r33110
+    branch 1770
+label 1759
+    iadd r32962.x___, r32911.x, l314.x
+    imul r32963.x___, r32962.x, r32780.x
+    iadd r32964.x___, r32963.x, r32792.x
+    imul r32965.x___, r32782.x, r32964.x
+    iadd r32966.x___, r32965.x, r32775.x
+    mov r577, l0.0000
+    dcl_literal l345, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r577, r32966.x, l345, r577
+    iadd r448.x___, r577, l0
+    mov r450.x___, r448.x
+    uav_raw_load_ext_access(read_only)_id(26)_cached r449.xy__, r450.x, l0.x
+    iand r32967.x___, r449.x, l20.y
+    ushr r32967._y__, r449.x, l15.w
+    iand r32967.__z_, r449.y, l20.y
+    ushr r32967.___w, r449.y, l15.w
+    mov r33111, r32967
+    mov r32968, r33111
+    branch 1770
+label 1770
+    branch_logicalnz r32950.x, 2911
+label 2912
+    mov r33112.x___, r32950.x
+    mov r32971.x___, r33112.x
+    branch 1790
+label 2911
+    branch 1787
+label 1787
+    iadd r32969.x___, r32911.x, l318.x
+    ilt r32970.x___, r32969.x, r32786.x
+    mov r33113.x___, r32970.x
+    mov r32971.x___, r33113.x
+    branch 1790
+label 1790
+    branch_logicalnz r32971.x, 2913
+label 2914
+    branch 1792
+label 2913
+    branch 1794
+label 1792
+    mov r33114, l316
+    mov r32978, r33114
+    branch 1805
+label 1794
+    iadd r32972.x___, r32911.x, l318.x
+    imul r32973.x___, r32972.x, r32780.x
+    iadd r32974.x___, r32973.x, r32792.x
+    imul r32975.x___, r32782.x, r32974.x
+    iadd r32976.x___, r32975.x, r32775.x
+    mov r578, l0.0000
+    dcl_literal l346, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r578, r32976.x, l346, r578
+    iadd r448.x___, r578, l0
+    mov r450.x___, r448.x
+    uav_raw_load_ext_access(read_only)_id(26)_cached r449.xy__, r450.x, l0.x
+    iand r32977.x___, r449.x, l20.y
+    ushr r32977._y__, r449.x, l15.w
+    iand r32977.__z_, r449.y, l20.y
+    ushr r32977.___w, r449.y, l15.w
+    mov r33115, r32977
+    mov r32978, r33115
+    branch 1805
+label 1805
+    branch_logicalnz r32950.x, 2915
+label 2916
+    mov r33116.x___, r32950.x
+    mov r32981.x___, r33116.x
+    branch 1825
+label 2915
+    branch 1822
+label 1822
+    iadd r32979.x___, r32911.x, l321.x
+    ilt r32980.x___, r32979.x, r32786.x
+    mov r33117.x___, r32980.x
+    mov r32981.x___, r33117.x
+    branch 1825
+label 1825
+    branch_logicalnz r32981.x, 2917
+label 2918
+    branch 1827
+label 2917
+    branch 1829
+label 1827
+    mov r33118, l316
+    mov r32988, r33118
+    branch 1840
+label 1829
+    iadd r32982.x___, r32911.x, l321.x
+    imul r32983.x___, r32982.x, r32780.x
+    iadd r32984.x___, r32983.x, r32792.x
+    imul r32985.x___, r32782.x, r32984.x
+    iadd r32986.x___, r32985.x, r32775.x
+    mov r579, l0.0000
+    dcl_literal l347, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r579, r32986.x, l347, r579
+    iadd r448.x___, r579, l0
+    mov r450.x___, r448.x
+    uav_raw_load_ext_access(read_only)_id(26)_cached r449.xy__, r450.x, l0.x
+    iand r32987.x___, r449.x, l20.y
+    ushr r32987._y__, r449.x, l15.w
+    iand r32987.__z_, r449.y, l20.y
+    ushr r32987.___w, r449.y, l15.w
+    mov r33119, r32987
+    mov r32988, r33119
+    branch 1840
+label 1840
+    mov r32989.x___, r32919.x
+    mov r32990.x___, r32989.x
+    mov r32990._y__, r32989.x
+    mov r32990.__z_, r32989.x
+    mov r32990.___w, r32989.x
+    f16fma r32991, r32990, r32958, r32905
+    mov r32992.x___, r32919.y
+    mov r32993.x___, r32992.x
+    mov r32993._y__, r32992.x
+    mov r32993.__z_, r32992.x
+    mov r32993.___w, r32992.x
+    f16fma r32994, r32993, r32968, r32991
+    mov r32995.x___, r32919.z
+    mov r32996.x___, r32995.x
+    mov r32996._y__, r32995.x
+    mov r32996.__z_, r32995.x
+    mov r32996.___w, r32995.x
+    f16fma r32997, r32996, r32978, r32994
+    mov r32998.x___, r32919.w
+    mov r32999.x___, r32998.x
+    mov r32999._y__, r32998.x
+    mov r32999.__z_, r32998.x
+    mov r32999.___w, r32998.x
+    f16fma r33000, r32999, r32988, r32997
+    mov r33001.x___, r32929.x
+    mov r33002.x___, r33001.x
+    mov r33002._y__, r33001.x
+    mov r33002.__z_, r33001.x
+    mov r33002.___w, r33001.x
+    f16fma r33003, r33002, r32958, r32906
+    mov r33004.x___, r32929.y
+    mov r33005.x___, r33004.x
+    mov r33005._y__, r33004.x
+    mov r33005.__z_, r33004.x
+    mov r33005.___w, r33004.x
+    f16fma r33006, r33005, r32968, r33003
+    mov r33007.x___, r32929.z
+    mov r33008.x___, r33007.x
+    mov r33008._y__, r33007.x
+    mov r33008.__z_, r33007.x
+    mov r33008.___w, r33007.x
+    f16fma r33009, r33008, r32978, r33006
+    mov r33010.x___, r32929.w
+    mov r33011.x___, r33010.x
+    mov r33011._y__, r33010.x
+    mov r33011.__z_, r33010.x
+    mov r33011.___w, r33010.x
+    f16fma r33012, r33011, r32988, r33009
+    mov r33013.x___, r32939.x
+    mov r33014.x___, r33013.x
+    mov r33014._y__, r33013.x
+    mov r33014.__z_, r33013.x
+    mov r33014.___w, r33013.x
+    f16fma r33015, r33014, r32958, r32907
+    mov r33016.x___, r32939.y
+    mov r33017.x___, r33016.x
+    mov r33017._y__, r33016.x
+    mov r33017.__z_, r33016.x
+    mov r33017.___w, r33016.x
+    f16fma r33018, r33017, r32968, r33015
+    mov r33019.x___, r32939.z
+    mov r33020.x___, r33019.x
+    mov r33020._y__, r33019.x
+    mov r33020.__z_, r33019.x
+    mov r33020.___w, r33019.x
+    f16fma r33021, r33020, r32978, r33018
+    mov r33022.x___, r32939.w
+    mov r33023.x___, r33022.x
+    mov r33023._y__, r33022.x
+    mov r33023.__z_, r33022.x
+    mov r33023.___w, r33022.x
+    f16fma r33024, r33023, r32988, r33021
+    mov r33025.x___, r32949.x
+    mov r33026.x___, r33025.x
+    mov r33026._y__, r33025.x
+    mov r33026.__z_, r33025.x
+    mov r33026.___w, r33025.x
+    f16fma r33027, r33026, r32958, r32908
+    mov r33028.x___, r32949.y
+    mov r33029.x___, r33028.x
+    mov r33029._y__, r33028.x
+    mov r33029.__z_, r33028.x
+    mov r33029.___w, r33028.x
+    f16fma r33030, r33029, r32968, r33027
+    mov r33031.x___, r32949.z
+    mov r33032.x___, r33031.x
+    mov r33032._y__, r33031.x
+    mov r33032.__z_, r33031.x
+    mov r33032.___w, r33031.x
+    f16fma r33033, r33032, r32978, r33030
+    mov r33034.x___, r32949.w
+    mov r33035.x___, r33034.x
+    mov r33035._y__, r33034.x
+    mov r33035.__z_, r33034.x
+    mov r33035.___w, r33034.x
+    f16fma r33036, r33035, r32988, r33033
+    branch 632
+label 632
+    iadd r33037.x___, r32909.x, l314.x
+    mov r33120, r33000
+    mov r33121, r33012
+    mov r33122, r33024
+    mov r33123, r33036
+    mov r33124.x___, r33037.x
+    mov r32905, r33120
+    mov r32906, r33121
+    mov r32907, r33122
+    mov r32908, r33123
+    mov r32909.x___, r33124.x
+    branch 629
+label 631
+    ilt r33038.x___, r32775.x, r32782.x
+    branch_logicalnz r33038.x, 2919
+label 2920
+    mov r33125.x___, r33038.x
+    mov r33040.x___, r33125.x
+    branch 1126
+label 2919
+    branch 1122
+label 1122
+    ilt r33039.x___, r32776.x, r32779.x
+    mov r33126.x___, r33039.x
+    mov r33040.x___, r33126.x
+    branch 1126
+label 1126
+    branch_logicalnz r33040.x, 2921
+label 2922
+    branch 1138
+label 2921
+    branch 1128
+label 1128
+    imul r33041.x___, r32776.x, r32778.x
+    iadd r33042.x___, r33041.x, r32773.x
+    imul r33043.x___, r32782.x, r33042.x
+    iadd r33044.x___, r33043.x, r32775.x
+    mov r580, l0.0000
+    dcl_literal l348, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r580, r33044.x, l348, r580
+    iadd r448.x___, r580, l0
+    mov r450.x___, r448.x
+    iand r449, r32905, l20.y
+    pk_u16tou32 r449.x___, r449.x, r449.y
+    pk_u16tou32 r449._y__, r449.z, r449.w
+    uav_raw_store_ext_access(write_only)_id(22)_cached mem0.xy__, r450.x, r449.xyyy, l0.x
+    branch 1138
+label 1138
+    branch_logicalnz r33038.x, 2923
+label 2924
+    mov r33127.x___, r33038.x
+    mov r33047.x___, r33127.x
+    branch 1548
+label 2923
+    branch 1545
+label 1545
+    iadd r33045.x___, r32776.x, l314.x
+    ilt r33046.x___, r33045.x, r32779.x
+    mov r33128.x___, r33046.x
+    mov r33047.x___, r33128.x
+    branch 1548
+label 1548
+    branch_logicalnz r33047.x, 2925
+label 2926
+    branch 1562
+label 2925
+    branch 1550
+label 1550
+    iadd r33048.x___, r32776.x, l314.x
+    imul r33049.x___, r33048.x, r32778.x
+    iadd r33050.x___, r33049.x, r32773.x
+    imul r33051.x___, r32782.x, r33050.x
+    iadd r33052.x___, r33051.x, r32775.x
+    mov r581, l0.0000
+    dcl_literal l349, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r581, r33052.x, l349, r581
+    iadd r448.x___, r581, l0
+    mov r450.x___, r448.x
+    iand r449, r32906, l20.y
+    pk_u16tou32 r449.x___, r449.x, r449.y
+    pk_u16tou32 r449._y__, r449.z, r449.w
+    uav_raw_store_ext_access(write_only)_id(22)_cached mem0.xy__, r450.x, r449.xyyy, l0.x
+    branch 1562
+label 1562
+    branch_logicalnz r33038.x, 2927
+label 2928
+    mov r33129.x___, r33038.x
+    mov r33055.x___, r33129.x
+    branch 1582
+label 2927
+    branch 1579
+label 1579
+    iadd r33053.x___, r32776.x, l318.x
+    ilt r33054.x___, r33053.x, r32779.x
+    mov r33130.x___, r33054.x
+    mov r33055.x___, r33130.x
+    branch 1582
+label 1582
+    branch_logicalnz r33055.x, 2929
+label 2930
+    branch 1596
+label 2929
+    branch 1584
+label 1584
+    iadd r33056.x___, r32776.x, l318.x
+    imul r33057.x___, r33056.x, r32778.x
+    iadd r33058.x___, r33057.x, r32773.x
+    imul r33059.x___, r32782.x, r33058.x
+    iadd r33060.x___, r33059.x, r32775.x
+    mov r582, l0.0000
+    dcl_literal l350, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r582, r33060.x, l350, r582
+    iadd r448.x___, r582, l0
+    mov r450.x___, r448.x
+    iand r449, r32907, l20.y
+    pk_u16tou32 r449.x___, r449.x, r449.y
+    pk_u16tou32 r449._y__, r449.z, r449.w
+    uav_raw_store_ext_access(write_only)_id(22)_cached mem0.xy__, r450.x, r449.xyyy, l0.x
+    branch 1596
+label 1596
+    branch_logicalnz r33038.x, 2931
+label 2932
+    mov r33131.x___, r33038.x
+    mov r33063.x___, r33131.x
+    branch 1616
+label 2931
+    branch 1613
+label 1613
+    iadd r33061.x___, r32776.x, l321.x
+    ilt r33062.x___, r33061.x, r32779.x
+    mov r33132.x___, r33062.x
+    mov r33063.x___, r33132.x
+    branch 1616
+label 1616
+    branch_logicalnz r33063.x, 2933
+label 2934
+    branch 1630
+label 2933
+    branch 1618
+label 1618
+    iadd r33064.x___, r32776.x, l321.x
+    imul r33065.x___, r33064.x, r32778.x
+    iadd r33066.x___, r33065.x, r32773.x
+    imul r33067.x___, r32782.x, r33066.x
+    iadd r33068.x___, r33067.x, r32775.x
+    mov r583, l0.0000
+    dcl_literal l351, 0x00000008, 0x00000000, 0x00000000, 0x00000000
+    imad r583, r33068.x, l351, r583
+    iadd r448.x___, r583, l0
+    mov r450.x___, r448.x
+    iand r449, r32908, l20.y
+    pk_u16tou32 r449.x___, r449.x, r449.y
+    pk_u16tou32 r449._y__, r449.z, r449.w
+    uav_raw_store_ext_access(write_only)_id(22)_cached mem0.xy__, r450.x, r449.xyyy, l0.x
+    branch 1630
+label 1630
+    branch 681
+label 681
+    ret_dyn
+endfunc
+end
+
+; ------------- SC_SRCSHADER Dump ------------------
+scver: f14c51b6f8 mains/2623
+
+SC_SHADERSTATE: u32NumIntVSConst = 0
+SC_SHADERSTATE: u32NumIntPSConst = 0
+SC_SHADERSTATE: u32NumIntGSConst = 0
+SC_SHADERSTATE: u32NumBoolVSConst = 0
+SC_SHADERSTATE: u32NumBoolPSConst = 0
+SC_SHADERSTATE: u32NumBoolGSConst = 0
+SC_SHADERSTATE: u32NumFloatVSConst = 0
+SC_SHADERSTATE: u32NumFloatPSConst = 0
+SC_SHADERSTATE: u32NumFloatGSConst = 0
+u32SCOptions[0] = 0x00800020,0x00420000,0x600005A4,0x48840000,0x24024180,0x00000000,0x00010000,0x00000010,0x00000200
+SCOption_R1000_DISABLE_INDEXED_RESOURCE_TYPE_CHECK,SCOption_R600_SAMPLEG_CUBEMAP_GRAD,SCOption_R1000_DS_OFFSET_FOLDING,SCOption_DISABLE_PEEPHOLE_ON_SMALL_SHADERS,SCOption_R1000_USE_MUBUF_FOR_RAW_BUFFERS,SCOption_CAN_REMOVE_F32_F16_F32,SCOption_AVOID_LDS_BANK_CONFLICT_ONCHIP_GS,SCOption_AVOID_LDS_BANK_CONFLICT_ONCHIP_TESS,SCOption_ALMOST_WQM,SCOption_HS_NO_PASS_THROUGH_OGL,SCOption_SCHEDULE_EXPORTS,SCOption_SUPPRESS_DUMMY_PARAMETER_EXPORT,SCOption_USE_F16FMA_FOR_F16MAD,SCOption_SKIP_BOUNDS_CHECK_FOR_IDIV_AND_F16LN,SCOption_REASSOCIATE_AGGRESSIVELY,SCOption_GFX92_ENABLE_DL_OPS,SCOption_GFX9_ADD_SCRATCH_BOUNDS_CHECK,SCOption_EMBED_IMMEDIATE_CONST_ARRAYS,SCOption_USE_GETPC_FOR_HIGH_32_BITS_OF_32_BIT_POINTER,SCOption_GFX9_USE_SCRATCH_INST,SCOption_LATENCY_CODE_MOTION,SCOption_GFX10_DEGGIGXX2_4051_INCONSISTENT_GL2_CACHE_POLICY,SCOption_DISABLE_IMAGE_SAMPLE_WQM,SCOption_DVGPR_ALLOC_SLEEP_WORKAROUND
+; compileFlag         = 0x00000480
+identityFMaskGen      = TRUE
+halfLds               = TRUE
+input wavefrontSize   = 0
+
+NpiDisableVopd                 = 0
+NpiDisableSfpu                 = 0
+NpiDisableScoreboard           = 0
+NpiDisableSfpu16               = 0
+NpiDisableAtm                  = 0
+NpiDisableVgprDealloc          = 0
+NpiDisableSfmac                = 0
+NpiDisableCvtFusedExp          = 0
+NpiDisableCvtFusedValu         = 0
+NpiDisableHpFmaMix             = 0
+NpiDisablePseudoScalarTrans    = 0
+NpiDisableSingleUseWriteKill   = 0
+NpiDisableSmemOff24            = 0
+NpiDisableIeee2019             = 0
+NpiDisableSmemLoad96           = 0
+NpiDisableSaluU64              = 0
+NpiDisableValuU64              = 0
+NpiDisableSpiTtmp              = 0
+NpiDisableOp64Vop2             = 0
+NpiDisableParamSload           = 0
+NpiDisableImageSoff            = 0
+NpiDisableReduceLsEsVgprs      = 0
+NpiDisablePrefetch             = 0
+NpiDisablePassthruRemoval      = 0
+NpiDisableBlockLoadStore       = 0
+NpiDisableClampNonNegative     = 0
+NpiDisableThreadWalkOrder      = 0
+NpiDisableVmemDiscard          = 0
+NpiDisableImageSoff4x          = 0
+NpiDisableShFusedInterp        = 1
+NpiDisableAWQM                 = 0
+NpiDisableHwAssistedFszpp      = 0
+NpiDisableShWmmaMatrixMultiply = 1
+NpiDisableDotF16               = 1
+
+AMDIL CRC:    0x3ff09729fc76e46b
+
+
+.AMDGPU.disasm (size = 68649 bytes)
+
+    _amdgpu_cs_disasm (offset = 0  size = 68649 hash = 0x32917A7C54C252DF)
+; -------- Disassembly --------------------
+shader main
+  asic(MGFX5)
+  type(CS)
+  sgpr_count(38)
+  vgpr_count(56)
+  wave_size(64)
+
+  s_version     { version: UC_VERSION_MGFX5, w64: 1 }   // 000000000000: B080200D
+  s_getpc_b64   s[8:9]                                  // 000000000004: BE884780
+  s_set_inst_prefetch_distance  0x0003                  // 000000000008: BF840003
+  s_and_b32     s0, s5, lit(0x00ffffff)                 // 00000000000C: 8B00FF05 00FFFFFF
+  s_mov_b32     s6, s2                                  // 000000000014: BE860002
+  s_mov_b32     s7, s9                                  // 000000000018: BE870009
+  s_load_b256   s[8:15], s[6:7], 0x000030               // 00000000001C: F40C0203 F8000030
+  s_waitcnt     { lgkm: 0 }                             // 000000000024: BF89FC07
+  s_buffer_load_b128  s[8:11], s[8:11], null            // 000000000028: F4280204 F8000000
+  s_buffer_load_b32  s1, s[12:15], 0x000004             // 000000000030: F4200046 F8000004
+  s_waitcnt     { lgkm: 0 }                             // 000000000038: BF89FC07
+  s_cmp_gt_i32  s9, s1                                  // 00000000003C: BF020109
+  s_cbranch_scc0  label_0268                            // 000000000040: BFA10089
+  s_sub_u32     s5, 0, s1                               // 000000000044: 80850180
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 000000000048: BF870499
+  s_max_i32     s2, s1, s5                              // 00000000004C: 8A020501
+  s_cvt_f32_u32  s5, s2                                 // 000000000050: BE856502
+  s_sub_u32     s12, 0, s9                              // 000000000054: 808C0980
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_SALU_CYCLE_1 } // 000000000058: BF8704A9
+  s_max_i32     s12, s9, s12                            // 00000000005C: 8A0C0C09
+  s_cmp_lg_i32  s1, 0                                   // 000000000060: BF018001
+  s_cselect_b64  s[14:15], exec, 0                      // 000000000064: 988E807E
+  s_cmp_lt_i32  s9, 0                                   // 000000000068: BF048009
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_SALU_CYCLE_1 } // 00000000006C: BF8704A9
+  s_cselect_b64  s[16:17], exec, 0                      // 000000000070: 9890807E
+  s_cmp_lt_i32  s1, 0                                   // 000000000074: BF048001
+  s_cselect_b64  s[18:19], exec, 0                      // 000000000078: 9892807E
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_SALU_CYCLE_1 } // 00000000007C: BF8704A9
+  s_xor_b64     s[16:17], s[16:17], s[18:19]            // 000000000080: 8D901210
+  s_sub_u32     s13, 0, s0                              // 000000000084: 808D0080
+  s_max_i32     s13, s0, s13                            // 000000000088: 8A0D0D00
+  s_cmp_lt_i32  s0, 0                                   // 00000000008C: BF048000
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_TRANS32_DEP_1 } // 000000000090: BF8702A9
+  s_cselect_b64  s[18:19], exec, 0                      // 000000000094: 9892807E
+  v_s_rcp_f32   s5, s5                                  // 000000000098: D6840005 00000005
+  s_mul_f32     s5, lit(0x4f800000), s5                 // 0000000000A0: A20505FF 4F800000
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_3, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_3 } // 0000000000A8: BF87059B
+  s_cvt_u32_f32  s5, s5                                 // 0000000000AC: BE856705
+  s_mul_i32     s20, s2, s5                             // 0000000000B0: 96140502
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_2, instskip: INSTSKIP_SKIP_2, instid1: INSTID_SALU_CYCLE_1 } // 0000000000B4: BF8704BA
+  s_mul_hi_u32  s21, s2, s5                             // 0000000000B8: 96950502
+  s_sub_u32     s24, 0, s20                             // 0000000000BC: 80981480
+  s_cmp_lg_u32  s21, 0                                  // 0000000000C0: BF078015
+  s_cselect_b32  s24, s20, s24                          // 0000000000C4: 98181814
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 0000000000C8: BF870499
+  s_mul_hi_u32  s24, s24, s5                            // 0000000000CC: 96980518
+  s_sub_u32     s20, s5, s24                            // 0000000000D0: 80941805
+  s_add_u32     s24, s5, s24                            // 0000000000D4: 80181805
+  s_cmp_lg_u32  s21, 0                                  // 0000000000D8: BF078015
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 0000000000DC: BF870499
+  s_cselect_b32  s5, s20, s24                           // 0000000000E0: 98051814
+  s_mul_hi_u32  s5, s5, s12                             // 0000000000E4: 96850C05
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 0000000000E8: BF870499
+  s_mul_i32     s20, s5, s2                             // 0000000000EC: 96140205
+  s_sub_u32     s21, s12, s20                           // 0000000000F0: 8095140C
+  s_cmp_ge_u32  s12, s20                                // 0000000000F4: BF09140C
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_SALU_CYCLE_1 } // 0000000000F8: BF8704A9
+  s_cselect_b64  s[22:23], exec, 0                      // 0000000000FC: 9896807E
+  s_cmp_ge_u32  s21, s2                                 // 000000000100: BF090215
+  s_cselect_b64  s[20:21], exec, 0                      // 000000000104: 9894807E
+  s_and_b64     s[20:21], s[22:23], s[20:21]            // 000000000108: 8B941416
+  s_singleuse_vdst  { supr0: 1, skip0: 2, supr1: 4, skip1: 1, supr2: 1 } // 00000000010C: BF8B2621
+  v_add_co_ci_u32  v1, vcc, s5, 0, s[20:21]             // 000000000110: D5206A01 00510005
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_1 } // 000000000118: BF870091
+  v_add_co_ci_u32  v1, vcc, v1, (-1), s[22:23]          // 00000000011C: D5206A01 00598301
+  v_cmp_ne_i32  vcc, lit(0x80000000), v1                // 000000000124: 7C8A02FF 80000000
+  v_cndmask_b32  v2, lit(0x7fffffff), v1, vcc           // 00000000012C: 020402FF 7FFFFFFF
+  v_sub_nc_u32  v1, 0, v1                               // 000000000134: 4C020280
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_3 } // 000000000138: BF870191
+  v_cndmask_b32  v1, lit(0x80000000), v1, s[14:15]      // 00000000013C: D5010001 003A02FF 80000000
+  v_cndmask_b32  v2, lit(0x7fffffff), v2, s[14:15]      // 000000000148: D5010002 003A04FF 7FFFFFFF
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_1 } // 000000000154: BF870091
+  v_cndmask_b32  v3, v2, v1, s[16:17]                   // 000000000158: D5010003 00420302
+  v_sub_nc_u32  v1, 0, v3                               // 000000000160: 4C020680
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_VALU_DEP_1 } // 000000000164: BF8700A1
+  v_max_i32     v4, v3, v1                              // 000000000168: 24080303
+  s_singleuse_vdst  { supr0: 3, skip0: 2, supr1: 1, skip1: 3, supr2: 2 } // 00000000016C: BF8B4CA3
+  v_cvt_f32_u32  v1, v4                                 // 000000000170: 7E020D04
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1, instskip: INSTSKIP_NEXT, instid1: INSTID_TRANS32_DEP_1 } // 000000000174: BF870291
+  v_rcp_f32     v1, v1                                  // 000000000178: 7E025501
+  v_mul_f32     v1, lit(0x4f800000), v1                 // 00000000017C: 100202FF 4F800000
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_1 } // 000000000184: BF870091
+  v_cvt_u32_f32  v6, v1                                 // 000000000188: 7E0C0F01
+  v_mad_u64_u32  v[1:2], vcc, v4, v6, 0                 // 00000000018C: D6FE6A01 02020D04
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_VALU_DEP_2 } // 000000000194: BF870121
+  v_sub_co_u32  v7, vcc, 0, v1                          // 000000000198: D7016A07 00020280
+  v_cmp_ne_i32  s[14:15], 0, v2                         // 0000000001A0: D445000E 00020480
+  v_cndmask_b32  v1, v7, v1, s[14:15]                   // 0000000001A8: D5010001 003A0307
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_1 } // 0000000001B0: BF870091
+  v_mul_hi_u32  v1, v1, v6                              // 0000000001B4: D72D0001 00020D01
+  v_sub_co_u32  v2, vcc, v6, v1                         // 0000000001BC: D7016A02 00020306
+  v_add_nc_u32  v1, v6, v1                              // 0000000001C4: 4A020306
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_1 } // 0000000001C8: BF870091
+  v_cndmask_b32  v1, v1, v2, s[14:15]                   // 0000000001CC: D5010001 003A0501
+  v_mul_hi_u32  v2, v1, s13                             // 0000000001D4: D72D0002 00001B01
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_VALU_DEP_1 } // 0000000001DC: BF8700A1
+  v_mul_lo_u32  v1, v2, v4                              // 0000000001E0: D72C0001 00020902
+  s_singleuse_vdst  { supr0: 1, skip0: 2, supr1: 1, skip1: 2, supr2: 2 } // 0000000001E8: BF8B48A1
+  v_sub_nc_u32  v6, s13, v1                             // 0000000001EC: 4C0C020D
+  v_cmp_ge_u32  s[12:13], s13, v1                       // 0000000001F0: D44E000C 0002020D
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_2, instskip: INSTSKIP_SKIP_1, instid1: INSTID_SALU_CYCLE_1 } // 0000000001F8: BF8704A2
+  v_cmp_ge_u32  s[14:15], v6, v4                        // 0000000001FC: D44E000E 00020906
+  s_and_b64     s[14:15], s[12:13], s[14:15]            // 000000000204: 8B8E0E0C
+  v_add_co_ci_u32  v1, vcc, v2, 0, s[14:15]             // 000000000208: D5206A01 00390102
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_1 } // 000000000210: BF870091
+  v_add_co_ci_u32  v1, vcc, v1, (-1), s[12:13]          // 000000000214: D5206A01 00318301
+  v_cmp_ne_i32  vcc, lit(0x80000000), v1                // 00000000021C: 7C8A02FF 80000000
+  v_cndmask_b32  v2, lit(0x7fffffff), v1, vcc           // 000000000224: 020402FF 7FFFFFFF
+  v_sub_nc_u32  v1, 0, v1                               // 00000000022C: 4C020280
+  v_cmp_ne_i32  vcc, 0, v3                              // 000000000230: 7C8A0680
+  s_singleuse_vdst  { supr0: 2, skip0: 3 }              // 000000000234: BF8B0032
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_3, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_3 } // 000000000238: BF870193
+  v_cndmask_b32  v2, lit(0x7fffffff), v2, vcc           // 00000000023C: 020404FF 7FFFFFFF
+  v_cndmask_b32  v1, lit(0x80000000), v1, vcc           // 000000000244: 020202FF 80000000
+  v_cmp_gt_i32  vcc, 0, v3                              // 00000000024C: 7C880680
+  s_xor_b64     vcc, s[18:19], vcc                      // 000000000250: 8DEA6A12
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_2, instid1: INSTID_SALU_CYCLE_1 } // 000000000254: BF870482
+  v_cndmask_b32  v1, v2, v1, vcc                        // 000000000258: 02020302
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1 } // 00000000025C: BF870001
+  v_readfirstlane_b32  s2, v1                           // 000000000260: 7E040501
+  s_branch      label_026C                              // 000000000264: BFA00001
+label_0268:
+  s_mov_b32     s2, s0                                  // 000000000268: BE820000
+label_026C:
+  s_singleuse_vdst  { supr0: 4, skip0: 3, supr1: 1, skip1: 1, supr2: 2 } // 00000000026C: BF8B44B4
+  v_bfe_u32     v1, v0, 10, 10                          // 000000000270: D6100001 02291500
+  v_and_b32     v0, lit(0x000003ff), v0                 // 000000000278: 360000FF 000003FF
+  s_add_u32     s5, s8, 3                               // 000000000280: 80058308
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_SALU_CYCLE_1 } // 000000000284: BF8704A9
+  s_ashr_i32    s5, s5, 2                               // 000000000288: 86058205
+  s_mul_i32     s8, s9, s11                             // 00000000028C: 96080B09
+  s_cmp_ge_i32  s0, s8                                  // 000000000290: BF030800
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_2 } // 000000000294: BF870119
+  s_cselect_b32  s8, (-1), 0                            // 000000000298: 980880C1
+  v_lshl_add_u32  v1, s4, 3, v1                         // 00000000029C: D6460001 04050604
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_2, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_2 } // 0000000002A4: BF870112
+  v_lshl_add_u32  v0, s3, 3, v0                         // 0000000002A8: D6460000 04010603
+  v_lshlrev_b32  v16, 2, v1                             // 0000000002B0: 30200282
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_2, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_2 } // 0000000002B4: BF870112
+  v_bfe_i32     v17, v0, 0, 30                          // 0000000002B8: D6110011 02790100
+  v_cmp_le_i32  vcc, s10, v16                           // 0000000002C0: 7C86200A
+  v_cndmask_b32  v0, 0, (-1), vcc                       // 0000000002C4: D5010000 01A98280
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_3, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_2 } // 0000000002CC: BF870113
+  v_cmp_ge_i32  s[12:13], v17, s5                       // 0000000002D0: D446000C 00000B11
+  v_cndmask_b32  v0, v0, (-1), s[12:13]                 // 0000000002D8: D5010000 00318300
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_1 } // 0000000002E0: BF870091
+  v_cndmask_b32  v0, s8, v0, vcc                        // 0000000002E4: D5010000 01AA0008
+  v_cndmask_b32  v0, v0, (-1), s[12:13]                 // 0000000002EC: D5010000 00318300
+  s_mov_b64     s[12:13], exec                          // 0000000002F4: BE8C017E
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1 } // 0000000002F8: BF870001
+  v_cmpx_eq_u32  exec, 0, v0                            // 0000000002FC: 7D940080
+  s_cbranch_execz  label_0E90                           // 000000000300: BFA502E3
+  s_load_b128   s[16:19], s[6:7], 0x000050              // 000000000304: F4080403 F8000050
+  s_load_b128   s[20:23], s[6:7], 0x000020              // 00000000030C: F4080503 F8000020
+  v_add_nc_u32  v18, 1, v16                             // 000000000314: 4A242081
+  v_add_nc_u32  v19, 2, v16                             // 000000000318: 4A262082
+  v_add_nc_u32  v20, 3, v16                             // 00000000031C: 4A282083
+  s_add_u32     s4, s10, 3                              // 000000000320: 8004830A
+  v_mov_b32     v54, 0                                  // 000000000324: 7E6C0280
+  v_mov_b32     v40, 0                                  // 000000000328: 7E500280
+  v_mov_b32     v27, 0                                  // 00000000032C: 7E360280
+  v_mov_b32     v28, 0                                  // 000000000330: 7E380280
+  v_mov_b32     v29, 0                                  // 000000000334: 7E3A0280
+  v_mov_b32     v30, 0                                  // 000000000338: 7E3C0280
+  v_mov_b32     v31, 0                                  // 00000000033C: 7E3E0280
+  v_mov_b32     v32, 0                                  // 000000000340: 7E400280
+  s_and_b32     s4, (-4), s4                            // 000000000344: 8B0404C4
+  s_movk_i32    s32, 0x0000                             // 000000000348: B0200000
+  v_cmp_gt_i32  s[14:15], s4, v16                       // 00000000034C: D444000E 00022004
+  v_cmp_gt_i32  s[24:25], s4, v18                       // 000000000354: D4440018 00022404
+  v_cmp_gt_i32  s[26:27], s4, v19                       // 00000000035C: D444001A 00022604
+  v_cmp_gt_i32  s[28:29], s4, v20                       // 000000000364: D444001C 00022804
+  v_cmp_gt_i32  s[30:31], s5, v17                       // 00000000036C: D444001E 00022205
+  s_waitcnt     { lgkm: 0 }                             // 000000000374: BF89FC07
+  s_buffer_load_b32  s3, s[16:19], null                 // 000000000378: F42000C8 F8000000
+  s_load_b128   s[16:19], s[6:7], 0x000010              // 000000000380: F4080403 F8000010
+  s_waitcnt     { lgkm: 0 }                             // 000000000388: BF89FC07
+  s_add_u32     s3, s10, s3                             // 00000000038C: 8003030A
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_3, instid1: INSTID_SALU_CYCLE_1 } // 000000000390: BF8704C9
+  s_add_u32     s8, s3, 3                               // 000000000394: 80088303
+  s_and_b32     s11, s3, 3                              // 000000000398: 8B0B8303
+  s_ashr_i32    s8, s8, 2                               // 00000000039C: 86088208
+  s_sub_u32     s11, s3, s11                            // 0000000003A0: 808B0B03
+  s_ashr_i32    s39, s11, 2                             // 0000000003A4: 8627820B
+  v_mul_lo_u32  v21, v16, s8                            // 0000000003A8: D72C0015 00001110
+  v_mul_lo_u32  v22, v18, s8                            // 0000000003B0: D72C0016 00001112
+  v_mul_lo_u32  v23, v19, s8                            // 0000000003B8: D72C0017 00001113
+  v_mul_lo_u32  v24, v20, s8                            // 0000000003C0: D72C0018 00001114
+  s_nop         0x0000                                  // 0000000003C8: BF800000
+  s_nop         0x0000                                  // 0000000003CC: BF800000
+  s_nop         0x0000                                  // 0000000003D0: BF800000
+  s_nop         0x0000                                  // 0000000003D4: BF800000
+  s_nop         0x0000                                  // 0000000003D8: BF800000
+  s_nop         0x0000                                  // 0000000003DC: BF800000
+label_03E0:
+  s_cmp_gt_i32  s39, s32                                // 0000000003E0: BF022027
+  s_cbranch_scc1  label_040C                            // 0000000003E4: BFA20009
+  v_cvt_u32_u16  v53, v54.h                             // 0000000003E8: 7E6AD7B6
+  v_cvt_u32_u16  v55, v40.h                             // 0000000003EC: 7E6ED7A8
+  v_cvt_u32_u16  v6, v27.h                              // 0000000003F0: 7E0CD79B
+  v_cvt_u32_u16  v7, v28.h                              // 0000000003F4: 7E0ED79C
+  v_cvt_u32_u16  v10, v29.h                             // 0000000003F8: 7E14D79D
+  v_cvt_u32_u16  v11, v30.h                             // 0000000003FC: 7E16D79E
+  v_cvt_u32_u16  v14, v31.h                             // 000000000400: 7E1CD79F
+  v_cvt_u32_u16  v15, v32.h                             // 000000000404: 7E1ED7A0
+  s_branch      label_0748                              // 000000000408: BFA000CF
+label_040C:
+  s_mul_i32     s33, s0, s4                             // 00000000040C: 96210400
+  s_lshl_b32    s36, s32, 2                             // 000000000410: 84248220
+  s_mul_i32     s33, s33, s8                            // 000000000414: 96210821
+  s_mul_i32     s34, s36, s1                            // 000000000418: 96220124
+  s_mul_i32     s36, s2, s5                             // 00000000041C: 96240502
+  s_mul_i32     s34, s34, s5                            // 000000000420: 96220522
+  s_lshl2_add_u32  s37, s32, 1                          // 000000000424: 87A58120
+  s_add_u32     s34, s34, s36                           // 000000000428: 80222422
+  s_mul_i32     s35, s37, s1                            // 00000000042C: 96230125
+  s_lshl2_add_u32  s37, s32, 2                          // 000000000430: 87A58220
+  s_mul_i32     s35, s35, s5                            // 000000000434: 96230523
+  s_mul_i32     s37, s37, s1                            // 000000000438: 96250125
+  s_add_u32     s35, s36, s35                           // 00000000043C: 80232324
+  s_mul_i32     s37, s37, s5                            // 000000000440: 96250525
+  s_lshl2_add_u32  s38, s32, 3                          // 000000000444: 87A68320
+  s_add_u32     s37, s36, s37                           // 000000000448: 80252524
+  s_mul_i32     s38, s38, s1                            // 00000000044C: 96260126
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 000000000450: BF870499
+  s_mul_i32     s38, s38, s5                            // 000000000454: 96260526
+  s_add_u32     s36, s36, s38                           // 000000000458: 80242624
+  s_singleuse_vdst  { supr0: 2, skip0: 2, supr1: 2, skip1: 6, supr2: 7 } // 00000000045C: BF8BF922
+  v_add_nc_u32  v0, s33, v21                            // 000000000460: 4A002A21
+  v_add_nc_u32  v1, s33, v22                            // 000000000464: 4A022C21
+  v_add_lshl_u32  v8, v17, s34, 3                       // 000000000468: D6470008 020C4511
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_3 } // 000000000470: BF870003
+  v_add_lshl_u32  v0, s32, v0, 3                        // 000000000474: D6470000 020E0020
+  v_add_nc_u32  v2, s33, v23                            // 00000000047C: 4A042E21
+  v_add_nc_u32  v3, s33, v24                            // 000000000480: 4A063021
+  v_add_lshl_u32  v4, s32, v1, 3                        // 000000000484: D6470004 020E0220
+  v_add_lshl_u32  v10, v17, s35, 3                      // 00000000048C: D647000A 020C4711
+  v_add_lshl_u32  v12, v17, s37, 3                      // 000000000494: D647000C 020C4B11
+  v_add_lshl_u32  v5, s32, v2, 3                        // 00000000049C: D6470005 020E0420
+  v_add_lshl_u32  v6, s32, v3, 3                        // 0000000004A4: D6470006 020E0620
+  v_add_lshl_u32  v14, v17, s36, 3                      // 0000000004AC: D647000E 020C4911
+  s_clause      { length: 3 }                           // 0000000004B4: BF850003
+  buffer_load_b64  v[8:9], v8, s[20:23], 0 offen        // 0000000004B8: E0540000 80450808
+  buffer_load_b64  v[10:11], v10, s[20:23], 0 offen     // 0000000004C0: E0540000 80450A0A
+  buffer_load_b64  v[12:13], v12, s[20:23], 0 offen     // 0000000004C8: E0540000 80450C0C
+  buffer_load_b64  v[14:15], v14, s[20:23], 0 offen     // 0000000004D0: E0540000 80450E0E
+  s_clause      { length: 3 }                           // 0000000004D8: BF850003
+  buffer_load_b64  v[0:1], v0, s[16:19], 0 offen        // 0000000004DC: E0540000 80440000
+  buffer_load_b64  v[2:3], v4, s[16:19], 0 offen        // 0000000004E4: E0540000 80440204
+  buffer_load_b64  v[4:5], v5, s[16:19], 0 offen        // 0000000004EC: E0540000 80440405
+  buffer_load_b64  v[6:7], v6, s[16:19], 0 offen        // 0000000004F4: E0540000 80440606
+  s_add_u32     s38, s32, 1                             // 0000000004FC: 80268120
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1 } // 000000000500: BF870009
+  s_mov_b32     s32, s38                                // 000000000504: BEA00026
+  s_waitcnt     { vm: 3 }                               // 000000000508: BF890FF7
+  v_fma_f16     v33.l, v0.l, v8.l, v31.h                // 00000000050C: D6482021 047E1100
+  s_waitcnt     { vm: 2 }                               // 000000000514: BF890BF7
+  v_fma_f16     v34.l, v2.l, v9.l, v30.h                // 000000000518: D6482022 047A1302
+  v_fma_f16     v33.h, v0.l, v9.l, v32.h                // 000000000520: D6486021 04821300
+  v_fma_f16     v34.h, v2.l, v8.l, v29.h                // 000000000528: D6486022 04761102
+  v_fma_f16     v29.l, v2.l, v8.h, v29.l                // 000000000530: D648101D 04761102
+  v_fma_f16     v35.l, v0.h, v10.l, v33.l               // 000000000538: D6480823 04861500
+  v_fma_f16     v29.h, v2.l, v9.h, v30.l                // 000000000540: D648501D 047A1302
+  s_singleuse_vdst  { supr0: 15, supr1: 7, supr2: 7 }   // 000000000548: BF8BE38F
+  v_fma_f16     v30.l, v0.l, v9.h, v32.l                // 00000000054C: D648101E 04821300
+  v_fma_f16     v35.h, v0.h, v11.l, v33.h               // 000000000554: D6486823 04861700
+  v_fma_f16     v33.l, v2.h, v11.l, v34.l               // 00000000055C: D6480821 048A1702
+  v_fma_f16     v30.h, v0.l, v8.h, v31.l                // 000000000564: D648501E 047E1100
+  v_fma_f16     v33.h, v2.h, v10.l, v34.h               // 00000000056C: D6486821 048A1502
+  v_fma_f16     v31.l, v2.h, v10.h, v29.l               // 000000000574: D648181F 04761502
+  v_fma_f16     v34.l, v1.l, v12.l, v35.l               // 00000000057C: D6480022 048E1901
+  v_fma_f16     v31.h, v2.h, v11.h, v29.h               // 000000000584: D648781F 04761702
+  v_fma_f16     v2.l, v0.h, v11.h, v30.l                // 00000000058C: D6481802 047A1700
+  v_fma_f16     v34.h, v1.l, v13.l, v35.h               // 000000000594: D6486022 048E1B01
+  v_fma_f16     v35.l, v3.l, v13.l, v33.l               // 00000000059C: D6480023 04861B03
+  v_fma_f16     v2.h, v0.h, v10.h, v30.h                // 0000000005A4: D6487802 047A1500
+  v_fma_f16     v0.l, v3.l, v12.h, v31.l                // 0000000005AC: D6481000 047E1903
+  v_fma_f16     v35.h, v3.l, v12.l, v33.h               // 0000000005B4: D6486023 04861903
+  v_fma_f16     v0.h, v3.l, v13.h, v31.h                // 0000000005BC: D6487000 047E1B03
+  v_fma_f16     v29.l, v1.l, v13.h, v2.l                // 0000000005C4: D648101D 040A1B01
+  v_fma_f16     v36.h, v3.h, v15.l, v35.l               // 0000000005CC: D6484824 048E1F03
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_4 } // 0000000005D4: BF870004
+  v_fma_f16     v35.h, v3.h, v14.l, v35.h               // 0000000005D8: D6486823 048E1D03
+  v_fma_f16     v29.h, v1.l, v12.h, v2.h                // 0000000005E0: D648701D 040A1901
+  v_fma_f16     v33.h, v1.h, v14.l, v34.l               // 0000000005E8: D6484821 048A1D01
+  v_fma_f16     v34.h, v1.h, v15.l, v34.h               // 0000000005F0: D6486822 048A1F01
+  v_fma_f16     v35.l, v3.h, v14.h, v0.l                // 0000000005F8: D6481823 04021D03
+  v_fma_f16     v36.l, v3.h, v15.h, v0.h                // 000000000600: D6483824 04021F03
+  s_waitcnt     { vm: 1 }                               // 000000000608: BF8907F7
+  v_fma_f16     v0.l, v4.l, v8.l, v27.h                 // 00000000060C: D6482000 046E1104
+  v_fma_f16     v34.l, v1.h, v15.h, v29.l               // 000000000614: D6481822 04761F01
+  v_fma_f16     v33.l, v1.h, v14.h, v29.h               // 00000000061C: D6483821 04761D01
+  v_fma_f16     v0.h, v4.l, v9.l, v28.h                 // 000000000624: D6486000 04721304
+  s_waitcnt     { vm: 0 }                               // 00000000062C: BF8903F7
+  v_fma_f16     v1.l, v6.l, v9.l, v40.h                 // 000000000630: D6482001 04A21306
+  v_fma_f16     v25.l, v6.l, v8.h, v54.l                // 000000000638: D6481019 04DA1106
+  s_singleuse_vdst  { supr0: 15, supr1: 7, supr2: 6 }   // 000000000640: BF8BC38F
+  v_fma_f16     v1.h, v6.l, v8.l, v54.h                 // 000000000644: D6486001 04DA1106
+  v_fma_f16     v25.h, v6.l, v9.h, v40.l                // 00000000064C: D6485019 04A21306
+  v_fma_f16     v9.l, v4.l, v9.h, v28.l                 // 000000000654: D6481009 04721304
+  v_fma_f16     v2.l, v4.h, v10.l, v0.l                 // 00000000065C: D6480802 04021504
+  v_fma_f16     v9.h, v4.l, v8.h, v27.l                 // 000000000664: D6485009 046E1104
+  v_fma_f16     v2.h, v4.h, v11.l, v0.h                 // 00000000066C: D6486802 04021704
+  v_fma_f16     v0.l, v6.h, v11.l, v1.l                 // 000000000674: D6480800 04061706
+  v_fma_f16     v8.l, v6.h, v10.h, v25.l                // 00000000067C: D6481808 04661506
+  v_fma_f16     v0.h, v6.h, v10.l, v1.h                 // 000000000684: D6486800 04061506
+  v_fma_f16     v8.h, v6.h, v11.h, v25.h                // 00000000068C: D6487808 04661706
+  v_fma_f16     v6.l, v4.h, v11.h, v9.l                 // 000000000694: D6481806 04261704
+  v_fma_f16     v1.l, v5.l, v12.l, v2.l                 // 00000000069C: D6480001 040A1905
+  v_fma_f16     v6.h, v4.h, v10.h, v9.h                 // 0000000006A4: D6487806 04261504
+  v_fma_f16     v1.h, v5.l, v13.l, v2.h                 // 0000000006AC: D6486001 040A1B05
+  v_fma_f16     v2.l, v7.l, v13.l, v0.l                 // 0000000006B4: D6480002 04021B07
+  v_fma_f16     v4.l, v7.l, v12.h, v8.l                 // 0000000006BC: D6481004 04221907
+  v_fma_f16     v2.h, v7.l, v12.l, v0.h                 // 0000000006C4: D6486002 04021907
+  v_fma_f16     v4.h, v7.l, v13.h, v8.h                 // 0000000006CC: D6487004 04221B07
+  v_fma_f16     v8.l, v5.l, v13.h, v6.l                 // 0000000006D4: D6481008 041A1B05
+  v_fma_f16     v0.h, v5.h, v14.l, v1.l                 // 0000000006DC: D6484800 04061D05
+  v_fma_f16     v1.h, v5.h, v15.l, v1.h                 // 0000000006E4: D6486801 04061F05
+  v_fma_f16     v8.h, v5.l, v12.h, v6.h                 // 0000000006EC: D6487008 041A1905
+  v_fma_f16     v3.h, v7.h, v15.l, v2.l                 // 0000000006F4: D6484803 040A1F07
+  v_fma_f16     v2.h, v7.h, v14.l, v2.h                 // 0000000006FC: D6486802 040A1D07
+  v_fma_f16     v3.l, v7.h, v15.h, v4.h                 // 000000000704: D6483803 04121F07
+  v_fma_f16     v2.l, v7.h, v14.h, v4.l                 // 00000000070C: D6481802 04121D07
+  v_fma_f16     v1.l, v5.h, v15.h, v8.l                 // 000000000714: D6481801 04221F05
+  v_fma_f16     v0.l, v5.h, v14.h, v8.h                 // 00000000071C: D6483800 04221D05
+  v_mov_b32     v54, v2                                 // 000000000724: 7E6C0302
+  v_mov_b32     v40, v3                                 // 000000000728: 7E500303
+  v_mov_b32     v27, v0                                 // 00000000072C: 7E360300
+  v_mov_b32     v28, v1                                 // 000000000730: 7E380301
+  v_mov_b32     v29, v35                                // 000000000734: 7E3A0323
+  v_mov_b32     v30, v36                                // 000000000738: 7E3C0324
+  v_mov_b32     v31, v33                                // 00000000073C: 7E3E0321
+  v_mov_b32     v32, v34                                // 000000000740: 7E400322
+  s_branch      label_03E0                              // 000000000744: BFA0FF26
+label_0748:
+  v_mov_b32     v5, v27                                 // 000000000748: 7E0A031B
+  v_mov_b32     v9, v28                                 // 00000000074C: 7E12031C
+  v_mov_b32     v36, v29                                // 000000000750: 7E48031D
+  v_mov_b32     v13, v30                                // 000000000754: 7E1A031E
+  v_mov_b32     v21, v31                                // 000000000758: 7E2A031F
+  v_mov_b32     v24, v32                                // 00000000075C: 7E300320
+label_0760:
+  s_cmp_gt_i32  s8, s39                                 // 000000000760: BF022708
+  s_cbranch_scc0  label_0CDC                            // 000000000764: BFA1015D
+  s_and_saveexec_b64  s[34:35], s[14:15]                // 000000000768: BEA2210E
+  s_cbranch_execz  label_07B0                           // 00000000076C: BFA50010
+  s_mul_i32     s11, s0, s4                             // 000000000770: 960B0400
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_VALU_DEP_1 } // 000000000774: BF8700A9
+  v_add_nc_u32  v0, s11, v16                            // 000000000778: 4A00200B
+  s_singleuse_vdst  { supr0: 1, skip0: 5 }              // 00000000077C: BF8B0051
+  v_mul_lo_u32  v0, s8, v0                              // 000000000780: D72C0000 00020008
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1 } // 000000000788: BF870001
+  v_add_lshl_u32  v0, s39, v0, 3                        // 00000000078C: D6470000 020E0027
+  buffer_load_b64  v[0:1], v0, s[16:19], 0 offen        // 000000000794: E0540000 80440000
+  s_waitcnt     { vm: 0 }                               // 00000000079C: BF8903F7
+  v_mov_b16     v22.l, v0.l                             // 0000000007A0: 7E2C3900
+  v_lshrrev_b32  v2, 16, v0                             // 0000000007A4: 32040090
+  v_mov_b16     v25.l, v1.l                             // 0000000007A8: 7E323901
+  v_lshrrev_b32  v26, 16, v1                            // 0000000007AC: 32340290
+label_07B0:
+  s_and_not1_b64  exec, s[34:35], exec                  // 0000000007B0: 91FE7E22
+  v_mov_b32     v22, 0                                  // 0000000007B4: 7E2C0280
+  v_mov_b32     v2, 0                                   // 0000000007B8: 7E040280
+  v_mov_b32     v25, 0                                  // 0000000007BC: 7E320280
+  v_mov_b32     v26, 0                                  // 0000000007C0: 7E340280
+  s_and_b64     exec, s[34:35], s[24:25]                // 0000000007C4: 8BFE1822
+  s_cbranch_execz  label_080C                           // 0000000007C8: BFA50010
+  s_mul_i32     s11, s0, s4                             // 0000000007CC: 960B0400
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_VALU_DEP_1 } // 0000000007D0: BF8700A9
+  v_add_nc_u32  v0, s11, v18                            // 0000000007D4: 4A00240B
+  s_singleuse_vdst  { supr0: 1, skip0: 5 }              // 0000000007D8: BF8B0051
+  v_mul_lo_u32  v0, s8, v0                              // 0000000007DC: D72C0000 00020008
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1 } // 0000000007E4: BF870001
+  v_add_lshl_u32  v0, s39, v0, 3                        // 0000000007E8: D6470000 020E0027
+  buffer_load_b64  v[0:1], v0, s[16:19], 0 offen        // 0000000007F0: E0540000 80440000
+  s_waitcnt     { vm: 0 }                               // 0000000007F8: BF8903F7
+  v_mov_b16     v27.l, v0.l                             // 0000000007FC: 7E363900
+  v_lshrrev_b32  v3, 16, v0                             // 000000000800: 32060090
+  v_mov_b16     v29.l, v1.l                             // 000000000804: 7E3A3901
+  v_lshrrev_b32  v30, 16, v1                            // 000000000808: 323C0290
+label_080C:
+  s_and_not1_b64  exec, s[34:35], exec                  // 00000000080C: 91FE7E22
+  v_mov_b32     v27, 0                                  // 000000000810: 7E360280
+  v_mov_b32     v3, 0                                   // 000000000814: 7E060280
+  v_mov_b32     v29, 0                                  // 000000000818: 7E3A0280
+  v_mov_b32     v30, 0                                  // 00000000081C: 7E3C0280
+  s_and_b64     exec, s[34:35], s[26:27]                // 000000000820: 8BFE1A22
+  s_cbranch_execz  label_0868                           // 000000000824: BFA50010
+  s_mul_i32     s11, s0, s4                             // 000000000828: 960B0400
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_VALU_DEP_1 } // 00000000082C: BF8700A9
+  v_add_nc_u32  v0, s11, v19                            // 000000000830: 4A00260B
+  s_singleuse_vdst  { supr0: 1, skip0: 5 }              // 000000000834: BF8B0051
+  v_mul_lo_u32  v0, s8, v0                              // 000000000838: D72C0000 00020008
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1 } // 000000000840: BF870001
+  v_add_lshl_u32  v0, s39, v0, 3                        // 000000000844: D6470000 020E0027
+  buffer_load_b64  v[0:1], v0, s[16:19], 0 offen        // 00000000084C: E0540000 80440000
+  s_waitcnt     { vm: 0 }                               // 000000000854: BF8903F7
+  v_mov_b16     v31.l, v0.l                             // 000000000858: 7E3E3900
+  v_lshrrev_b32  v4, 16, v0                             // 00000000085C: 32080090
+  v_mov_b16     v33.l, v1.l                             // 000000000860: 7E423901
+  v_lshrrev_b32  v34, 16, v1                            // 000000000864: 32440290
+label_0868:
+  s_and_not1_b64  exec, s[34:35], exec                  // 000000000868: 91FE7E22
+  v_mov_b32     v31, 0                                  // 00000000086C: 7E3E0280
+  v_mov_b32     v4, 0                                   // 000000000870: 7E080280
+  v_mov_b32     v33, 0                                  // 000000000874: 7E420280
+  v_mov_b32     v34, 0                                  // 000000000878: 7E440280
+  s_and_b64     exec, s[34:35], s[28:29]                // 00000000087C: 8BFE1C22
+  s_cbranch_execz  label_08C4                           // 000000000880: BFA50010
+  s_mul_i32     s11, s0, s4                             // 000000000884: 960B0400
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_VALU_DEP_1 } // 000000000888: BF8700A9
+  v_add_nc_u32  v0, s11, v20                            // 00000000088C: 4A00280B
+  s_singleuse_vdst  { supr0: 1, skip0: 5 }              // 000000000890: BF8B0051
+  v_mul_lo_u32  v0, s8, v0                              // 000000000894: D72C0000 00020008
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1 } // 00000000089C: BF870001
+  v_add_lshl_u32  v0, s39, v0, 3                        // 0000000008A0: D6470000 020E0027
+  buffer_load_b64  v[0:1], v0, s[16:19], 0 offen        // 0000000008A8: E0540000 80440000
+  s_waitcnt     { vm: 0 }                               // 0000000008B0: BF8903F7
+  v_mov_b16     v35.l, v0.l                             // 0000000008B4: 7E463900
+  v_lshrrev_b32  v23, 16, v0                            // 0000000008B8: 322E0090
+  v_mov_b16     v37.l, v1.l                             // 0000000008BC: 7E4A3901
+  v_lshrrev_b32  v38, 16, v1                            // 0000000008C0: 324C0290
+label_08C4:
+  s_and_not1_b64  exec, s[34:35], exec                  // 0000000008C4: 91FE7E22
+  v_mov_b32     v35, 0                                  // 0000000008C8: 7E460280
+  v_mov_b32     v23, 0                                  // 0000000008CC: 7E2E0280
+  v_mov_b32     v37, 0                                  // 0000000008D0: 7E4A0280
+  v_mov_b32     v38, 0                                  // 0000000008D4: 7E4C0280
+  s_mov_b64     exec, s[34:35]                          // 0000000008D8: BEFE0122
+  s_lshl_b32    s11, s39, 2                             // 0000000008DC: 840B8227
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 0000000008E0: BF870499
+  s_cmp_gt_i32  s3, s11                                 // 0000000008E4: BF020B03
+  s_cselect_b64  s[34:35], exec, 0                      // 0000000008E8: 98A2807E
+  s_and_b64     s[34:35], s[34:35], s[30:31]            // 0000000008EC: 8BA21E22
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1 } // 0000000008F0: BF870009
+  s_and_saveexec_b64  s[34:35], s[34:35]                // 0000000008F4: BEA22122
+  s_cbranch_execz  label_0934                           // 0000000008F8: BFA5000E
+  s_mul_i32     s11, s11, s1                            // 0000000008FC: 960B010B
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 000000000900: BF870499
+  s_add_u32     s11, s2, s11                            // 000000000904: 800B0B02
+  s_mul_i32     s11, s5, s11                            // 000000000908: 960B0B05
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1 } // 00000000090C: BF870009
+  v_add_lshl_u32  v0, v17, s11, 3                       // 000000000910: D6470000 020C1711
+  buffer_load_b64  v[0:1], v0, s[20:23], 0 offen        // 000000000918: E0540000 80450000
+  s_waitcnt     { vm: 0 }                               // 000000000920: BF8903F7
+  v_mov_b16     v28.l, v0.l                             // 000000000924: 7E383900
+  v_lshrrev_b32  v39, 16, v0                            // 000000000928: 324E0090
+  v_mov_b16     v41.l, v1.l                             // 00000000092C: 7E523901
+  v_lshrrev_b32  v42, 16, v1                            // 000000000930: 32540290
+label_0934:
+  s_and_not1_b64  exec, s[34:35], exec                  // 000000000934: 91FE7E22
+  v_mov_b32     v28, 0                                  // 000000000938: 7E380280
+  v_mov_b32     v39, 0                                  // 00000000093C: 7E4E0280
+  v_mov_b32     v41, 0                                  // 000000000940: 7E520280
+  v_mov_b32     v42, 0                                  // 000000000944: 7E540280
+  s_mov_b64     exec, s[34:35]                          // 000000000948: BEFE0122
+  s_lshl2_add_u32  s11, s39, 1                          // 00000000094C: 878B8127
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 000000000950: BF870499
+  s_cmp_gt_i32  s3, s11                                 // 000000000954: BF020B03
+  s_cselect_b64  s[34:35], exec, 0                      // 000000000958: 98A2807E
+  s_and_b64     s[34:35], s[34:35], s[30:31]            // 00000000095C: 8BA21E22
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1 } // 000000000960: BF870009
+  s_and_saveexec_b64  s[34:35], s[34:35]                // 000000000964: BEA22122
+  s_cbranch_execz  label_09A4                           // 000000000968: BFA5000E
+  s_mul_i32     s11, s11, s1                            // 00000000096C: 960B010B
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 000000000970: BF870499
+  s_add_u32     s11, s2, s11                            // 000000000974: 800B0B02
+  s_mul_i32     s11, s5, s11                            // 000000000978: 960B0B05
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1 } // 00000000097C: BF870009
+  v_add_lshl_u32  v0, v17, s11, 3                       // 000000000980: D6470000 020C1711
+  buffer_load_b64  v[0:1], v0, s[20:23], 0 offen        // 000000000988: E0540000 80450000
+  s_waitcnt     { vm: 0 }                               // 000000000990: BF8903F7
+  v_mov_b16     v43.l, v0.l                             // 000000000994: 7E563900
+  v_lshrrev_b32  v46, 16, v0                            // 000000000998: 325C0090
+  v_mov_b16     v47.l, v1.l                             // 00000000099C: 7E5E3901
+  v_lshrrev_b32  v50, 16, v1                            // 0000000009A0: 32640290
+label_09A4:
+  s_and_not1_b64  exec, s[34:35], exec                  // 0000000009A4: 91FE7E22
+  v_mov_b32     v43, 0                                  // 0000000009A8: 7E560280
+  v_mov_b32     v46, 0                                  // 0000000009AC: 7E5C0280
+  v_mov_b32     v47, 0                                  // 0000000009B0: 7E5E0280
+  v_mov_b32     v50, 0                                  // 0000000009B4: 7E640280
+  s_mov_b64     exec, s[34:35]                          // 0000000009B8: BEFE0122
+  s_lshl2_add_u32  s11, s39, 2                          // 0000000009BC: 878B8227
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 0000000009C0: BF870499
+  s_cmp_gt_i32  s3, s11                                 // 0000000009C4: BF020B03
+  s_cselect_b64  s[34:35], exec, 0                      // 0000000009C8: 98A2807E
+  s_and_b64     s[34:35], s[34:35], s[30:31]            // 0000000009CC: 8BA21E22
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1 } // 0000000009D0: BF870009
+  s_and_saveexec_b64  s[34:35], s[34:35]                // 0000000009D4: BEA22122
+  s_cbranch_execz  label_0A14                           // 0000000009D8: BFA5000E
+  s_mul_i32     s11, s11, s1                            // 0000000009DC: 960B010B
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 0000000009E0: BF870499
+  s_add_u32     s11, s2, s11                            // 0000000009E4: 800B0B02
+  s_mul_i32     s11, s5, s11                            // 0000000009E8: 960B0B05
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1 } // 0000000009EC: BF870009
+  v_add_lshl_u32  v0, v17, s11, 3                       // 0000000009F0: D6470000 020C1711
+  buffer_load_b64  v[0:1], v0, s[20:23], 0 offen        // 0000000009F8: E0540000 80450000
+  s_waitcnt     { vm: 0 }                               // 000000000A00: BF8903F7
+  v_mov_b16     v51.l, v0.l                             // 000000000A04: 7E663900
+  v_lshrrev_b32  v44, 16, v0                            // 000000000A08: 32580090
+  v_mov_b16     v45.l, v1.l                             // 000000000A0C: 7E5A3901
+  v_lshrrev_b32  v48, 16, v1                            // 000000000A10: 32600290
+label_0A14:
+  s_and_not1_b64  exec, s[34:35], exec                  // 000000000A14: 91FE7E22
+  v_mov_b32     v51, 0                                  // 000000000A18: 7E660280
+  v_mov_b32     v44, 0                                  // 000000000A1C: 7E580280
+  v_mov_b32     v45, 0                                  // 000000000A20: 7E5A0280
+  v_mov_b32     v48, 0                                  // 000000000A24: 7E600280
+  s_mov_b64     exec, s[34:35]                          // 000000000A28: BEFE0122
+  s_lshl2_add_u32  s11, s39, 3                          // 000000000A2C: 878B8327
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 000000000A30: BF870499
+  s_cmp_gt_i32  s3, s11                                 // 000000000A34: BF020B03
+  s_cselect_b64  s[34:35], exec, 0                      // 000000000A38: 98A2807E
+  s_and_b64     s[34:35], s[34:35], s[30:31]            // 000000000A3C: 8BA21E22
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1 } // 000000000A40: BF870009
+  s_and_saveexec_b64  s[34:35], s[34:35]                // 000000000A44: BEA22122
+  s_cbranch_execz  label_0A84                           // 000000000A48: BFA5000E
+  s_mul_i32     s11, s11, s1                            // 000000000A4C: 960B010B
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 000000000A50: BF870499
+  s_add_u32     s11, s2, s11                            // 000000000A54: 800B0B02
+  s_mul_i32     s11, s5, s11                            // 000000000A58: 960B0B05
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1 } // 000000000A5C: BF870009
+  v_add_lshl_u32  v0, v17, s11, 3                       // 000000000A60: D6470000 020C1711
+  buffer_load_b64  v[0:1], v0, s[20:23], 0 offen        // 000000000A68: E0540000 80450000
+  s_waitcnt     { vm: 0 }                               // 000000000A70: BF8903F7
+  v_mov_b16     v32.l, v0.l                             // 000000000A74: 7E403900
+  v_lshrrev_b32  v0, 16, v0                             // 000000000A78: 32000090
+  v_mov_b16     v49.l, v1.l                             // 000000000A7C: 7E623901
+  v_lshrrev_b32  v52, 16, v1                            // 000000000A80: 32680290
+label_0A84:
+  s_and_not1_b64  exec, s[34:35], exec                  // 000000000A84: 91FE7E22
+  v_mov_b32     v32, 0                                  // 000000000A88: 7E400280
+  v_mov_b32     v0, 0                                   // 000000000A8C: 7E000280
+  v_mov_b32     v49, 0                                  // 000000000A90: 7E620280
+  v_mov_b32     v52, 0                                  // 000000000A94: 7E680280
+  s_mov_b64     exec, s[34:35]                          // 000000000A98: BEFE0122
+  s_singleuse_vdst  { supr0: 15, supr1: 7, supr2: 7 }   // 000000000A9C: BF8BE38F
+  v_fmac_f16    v14.l, v22.l, v28.l                     // 000000000AA0: 6C1C3916
+  v_fmac_f16    v15.l, v22.l, v41.l                     // 000000000AA4: 6C1E5316
+  v_fmac_f16    v10.l, v27.l, v28.l                     // 000000000AA8: 6C14391B
+  v_fmac_f16    v11.l, v27.l, v41.l                     // 000000000AAC: 6C16531B
+  v_fma_f16     v14.h, v22.l, v39.l, v21.l              // 000000000AB0: D648400E 04564F16
+  v_fma_f16     v15.h, v22.l, v42.l, v24.l              // 000000000AB8: D648400F 04625516
+  v_fma_f16     v10.h, v27.l, v39.l, v36.l              // 000000000AC0: D648400A 04924F1B
+  v_fmac_f16    v6.l, v31.l, v28.l                      // 000000000AC8: 6C0C391F
+  v_fma_f16     v21.l, v2.l, v43.l, v14.l               // 000000000ACC: D6480015 043A5702
+  v_fmac_f16    v7.l, v31.l, v41.l                      // 000000000AD4: 6C0E531F
+  v_fma_f16     v11.h, v27.l, v42.l, v13.l              // 000000000AD8: D648400B 0436551B
+  v_fma_f16     v21.h, v2.l, v46.l, v14.h               // 000000000AE0: D6486015 043A5D02
+  v_fma_f16     v14.l, v2.l, v47.l, v15.l               // 000000000AE8: D648000E 043E5F02
+  v_fma_f16     v12.l, v3.l, v43.l, v10.l               // 000000000AF0: D648000C 042A5703
+  v_fma_f16     v6.h, v31.l, v39.l, v5.l                // 000000000AF8: D6484006 04164F1F
+  v_fma_f16     v14.h, v2.l, v50.l, v15.h               // 000000000B00: D648600E 043E6502
+  v_fma_f16     v12.h, v3.l, v46.l, v10.h               // 000000000B08: D648600C 042A5D03
+  v_fma_f16     v10.l, v3.l, v47.l, v11.l               // 000000000B10: D648000A 042E5F03
+  v_fma_f16     v7.h, v31.l, v42.l, v9.l                // 000000000B18: D6484007 0426551F
+  v_fma_f16     v2.l, v35.l, v28.l, v53.l               // 000000000B20: D6480002 04D63923
+  v_fma_f16     v8.l, v4.l, v43.l, v6.l                 // 000000000B28: D6480008 041A5704
+  v_fma_f16     v10.h, v3.l, v50.l, v11.h               // 000000000B30: D648600A 042E6503
+  v_fma_f16     v2.h, v35.l, v39.l, v54.l               // 000000000B38: D6484002 04DA4F23
+  v_fma_f16     v3.l, v35.l, v41.l, v55.l               // 000000000B40: D6480003 04DE5323
+  v_fma_f16     v8.h, v4.l, v46.l, v6.h                 // 000000000B48: D6486008 041A5D04
+  v_fma_f16     v6.l, v4.l, v47.l, v7.l                 // 000000000B50: D6480006 041E5F04
+  v_fma_f16     v3.h, v35.l, v42.l, v40.l               // 000000000B58: D6484003 04A25523
+  v_fma_f16     v6.h, v4.l, v50.l, v7.h                 // 000000000B60: D6486006 041E6504
+  v_fma_f16     v4.l, v23.l, v43.l, v2.l                // 000000000B68: D6480004 040A5717
+  s_singleuse_vdst  { supr0: 15, supr1: 1, skip1: 2, supr2: 1 } // 000000000B70: BF8B288F
+  v_fma_f16     v4.h, v23.l, v46.l, v2.h                // 000000000B74: D6486004 040A5D17
+  v_fma_f16     v2.l, v23.l, v47.l, v3.l                // 000000000B7C: D6480002 040E5F17
+  v_fma_f16     v15.l, v25.l, v51.l, v21.l              // 000000000B84: D648000F 04566719
+  v_fma_f16     v11.l, v29.l, v51.l, v12.l              // 000000000B8C: D648000B 0432671D
+  v_fma_f16     v7.l, v33.l, v51.l, v8.l                // 000000000B94: D6480007 04226721
+  v_fma_f16     v2.h, v23.l, v50.l, v3.h                // 000000000B9C: D6486002 040E6517
+  v_fma_f16     v3.l, v37.l, v51.l, v4.l                // 000000000BA4: D6480003 04126725
+  v_fma_f16     v15.h, v25.l, v44.l, v21.h              // 000000000BAC: D648600F 04565919
+  v_fma_f16     v21.l, v25.l, v45.l, v14.l              // 000000000BB4: D6480015 043A5B19
+  v_fma_f16     v11.h, v29.l, v44.l, v12.h              // 000000000BBC: D648600B 0432591D
+  v_fma_f16     v12.l, v29.l, v45.l, v10.l              // 000000000BC4: D648000C 042A5B1D
+  v_fma_f16     v7.h, v33.l, v44.l, v8.h                // 000000000BCC: D6486007 04225921
+  v_fma_f16     v8.l, v33.l, v45.l, v6.l                // 000000000BD4: D6480008 041A5B21
+  v_fma_f16     v3.h, v37.l, v44.l, v4.h                // 000000000BDC: D6486003 04125925
+  v_fma_f16     v4.l, v37.l, v45.l, v2.l                // 000000000BE4: D6480004 040A5B25
+  v_fma_f16     v21.h, v25.l, v48.l, v14.h              // 000000000BEC: D6486015 043A6119
+  v_mov_b32     v14, 0                                  // 000000000BF4: 7E1C0280
+  v_mov_b32     v22, 0                                  // 000000000BF8: 7E2C0280
+  v_fma_f16     v12.h, v29.l, v48.l, v10.h              // 000000000BFC: D648600C 042A611D
+  v_mov_b32     v10, 0                                  // 000000000C04: 7E140280
+  v_mov_b32     v36, 0                                  // 000000000C08: 7E480280
+  s_singleuse_vdst  { supr0: 1, skip0: 2, supr1: 1, skip1: 1, supr2: 1 } // 000000000C0C: BF8B24A1
+  v_fma_f16     v8.h, v33.l, v48.l, v6.h                // 000000000C10: D6486008 041A6121
+  v_mov_b32     v6, 0                                   // 000000000C18: 7E0C0280
+  v_mov_b32     v5, 0                                   // 000000000C1C: 7E0A0280
+  v_fma_f16     v4.h, v37.l, v48.l, v2.h                // 000000000C20: D6486004 040A6125
+  v_fma_f16     v14.l, v26.l, v32.l, v15.l              // 000000000C28: D648000E 043E411A
+  v_fma_f16     v22.l, v26.l, v0.l, v15.h               // 000000000C30: D6482016 043E011A
+  v_mov_b32     v15, 0                                  // 000000000C38: 7E1E0280
+  v_mov_b32     v24, 0                                  // 000000000C3C: 7E300280
+  v_fma_f16     v10.l, v30.l, v32.l, v11.l              // 000000000C40: D648000A 042E411E
+  v_fma_f16     v36.l, v30.l, v0.l, v11.h               // 000000000C48: D6482024 042E011E
+  v_mov_b32     v11, 0                                  // 000000000C50: 7E160280
+  v_mov_b32     v13, 0                                  // 000000000C54: 7E1A0280
+  v_fma_f16     v6.l, v34.l, v32.l, v7.l                // 000000000C58: D6480006 041E4122
+  v_fma_f16     v5.l, v34.l, v0.l, v7.h                 // 000000000C60: D6482005 041E0122
+  v_mov_b32     v7, 0                                   // 000000000C68: 7E0E0280
+  v_mov_b32     v9, 0                                   // 000000000C6C: 7E120280
+  v_mov_b32     v53, 0                                  // 000000000C70: 7E6A0280
+  v_mov_b32     v54, 0                                  // 000000000C74: 7E6C0280
+  v_mov_b32     v55, 0                                  // 000000000C78: 7E6E0280
+  v_mov_b32     v40, 0                                  // 000000000C7C: 7E500280
+  v_fma_f16     v15.l, v26.l, v49.l, v21.l              // 000000000C80: D648000F 0456631A
+  v_fma_f16     v24.l, v26.l, v52.l, v21.h              // 000000000C88: D6482018 0456691A
+  v_fma_f16     v11.l, v30.l, v49.l, v12.l              // 000000000C90: D648000B 0432631E
+  v_fma_f16     v13.l, v30.l, v52.l, v12.h              // 000000000C98: D648200D 0432691E
+  v_fma_f16     v7.l, v34.l, v49.l, v8.l                // 000000000CA0: D6480007 04226322
+  v_fma_f16     v9.l, v34.l, v52.l, v8.h                // 000000000CA8: D6482009 04226922
+  v_fma_f16     v53.l, v38.l, v32.l, v3.l               // 000000000CB0: D6480035 040E4126
+  v_fma_f16     v54.l, v38.l, v0.l, v3.h                // 000000000CB8: D6482036 040E0126
+  v_fma_f16     v55.l, v38.l, v49.l, v4.l               // 000000000CC0: D6480037 04126326
+  v_fma_f16     v40.l, v38.l, v52.l, v4.h               // 000000000CC8: D6482028 04126926
+  v_mov_b32     v21, v22                                // 000000000CD0: 7E2A0316
+  s_add_u32     s39, s39, 1                             // 000000000CD4: 80278127
+  s_branch      label_0760                              // 000000000CD8: BFA0FEA1
+label_0CDC:
+  v_cmp_gt_i32  s[2:3], s5, v17                         // 000000000CDC: D4440002 00022205
+  v_cmp_gt_i32  vcc, s10, v16                           // 000000000CE4: 7C88200A
+  s_and_b64     vcc, vcc, s[2:3]                        // 000000000CE8: 8BEA026A
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1 } // 000000000CEC: BF870009
+  s_and_saveexec_b64  s[14:15], vcc                     // 000000000CF0: BE8E216A
+  s_cbranch_execz  label_0D4C                           // 000000000CF4: BFA50015
+  s_load_b128   s[16:19], s[6:7], null                  // 000000000CF8: F4080403 F8000000
+  s_singleuse_vdst  { supr0: 1, skip0: 2, supr1: 1, skip1: 2 } // 000000000D00: BF8B08A1
+  v_mul_lo_u32  v0, v16, s9                             // 000000000D04: D72C0000 00001310
+  v_perm_b32    v1, v24, v15, lit(0x05040100)           // 000000000D0C: D6440001 03FE1F18 05040100
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_2, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_1 } // 000000000D18: BF870092
+  v_add_nc_u32  v0, s0, v0                              // 000000000D1C: 4A000000
+  v_mul_lo_u32  v22, s5, v0                             // 000000000D20: D72C0016 00020005
+  v_perm_b32    v0, v21, v14, lit(0x05040100)           // 000000000D28: D6440000 03FE1D15 05040100
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_2 } // 000000000D34: BF870002
+  v_add_lshl_u32  v16, v17, v22, 3                      // 000000000D38: D6470010 020E2D11
+  s_waitcnt     { lgkm: 0 }                             // 000000000D40: BF89FC07
+  buffer_store_b64  v[0:1], v16, s[16:19], 0 offen glc  // 000000000D44: E06C4000 80440010
+label_0D4C:
+  s_mov_b64     exec, s[14:15]                          // 000000000D4C: BEFE010E
+  v_cmp_gt_i32  vcc, s10, v18                           // 000000000D50: 7C88240A
+  s_and_b64     vcc, vcc, s[2:3]                        // 000000000D54: 8BEA026A
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1 } // 000000000D58: BF870009
+  s_and_saveexec_b64  s[14:15], vcc                     // 000000000D5C: BE8E216A
+  s_cbranch_execz  label_0DB8                           // 000000000D60: BFA50015
+  s_load_b128   s[16:19], s[6:7], null                  // 000000000D64: F4080403 F8000000
+  s_singleuse_vdst  { supr0: 1, skip0: 2, supr1: 1, skip1: 2 } // 000000000D6C: BF8B08A1
+  v_mul_lo_u32  v0, v18, s9                             // 000000000D70: D72C0000 00001312
+  v_perm_b32    v1, v13, v11, lit(0x05040100)           // 000000000D78: D6440001 03FE170D 05040100
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_2, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_1 } // 000000000D84: BF870092
+  v_add_nc_u32  v0, s0, v0                              // 000000000D88: 4A000000
+  v_mul_lo_u32  v14, s5, v0                             // 000000000D8C: D72C000E 00020005
+  v_perm_b32    v0, v36, v10, lit(0x05040100)           // 000000000D94: D6440000 03FE1524 05040100
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_2 } // 000000000DA0: BF870002
+  v_add_lshl_u32  v14, v17, v14, 3                      // 000000000DA4: D647000E 020E1D11
+  s_waitcnt     { lgkm: 0 }                             // 000000000DAC: BF89FC07
+  buffer_store_b64  v[0:1], v14, s[16:19], 0 offen glc  // 000000000DB0: E06C4000 8044000E
+label_0DB8:
+  s_mov_b64     exec, s[14:15]                          // 000000000DB8: BEFE010E
+  v_cmp_gt_i32  vcc, s10, v19                           // 000000000DBC: 7C88260A
+  s_and_b64     vcc, vcc, s[2:3]                        // 000000000DC0: 8BEA026A
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1 } // 000000000DC4: BF870009
+  s_and_saveexec_b64  s[14:15], vcc                     // 000000000DC8: BE8E216A
+  s_cbranch_execz  label_0E24                           // 000000000DCC: BFA50015
+  s_load_b128   s[16:19], s[6:7], null                  // 000000000DD0: F4080403 F8000000
+  s_singleuse_vdst  { supr0: 1, skip0: 2, supr1: 1, skip1: 2 } // 000000000DD8: BF8B08A1
+  v_mul_lo_u32  v0, v19, s9                             // 000000000DDC: D72C0000 00001313
+  v_perm_b32    v1, v9, v7, lit(0x05040100)             // 000000000DE4: D6440001 03FE0F09 05040100
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_2, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_1 } // 000000000DF0: BF870092
+  v_add_nc_u32  v0, s0, v0                              // 000000000DF4: 4A000000
+  v_mul_lo_u32  v10, s5, v0                             // 000000000DF8: D72C000A 00020005
+  v_perm_b32    v0, v5, v6, lit(0x05040100)             // 000000000E00: D6440000 03FE0D05 05040100
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_2 } // 000000000E0C: BF870002
+  v_add_lshl_u32  v10, v17, v10, 3                      // 000000000E10: D647000A 020E1511
+  s_waitcnt     { lgkm: 0 }                             // 000000000E18: BF89FC07
+  buffer_store_b64  v[0:1], v10, s[16:19], 0 offen glc  // 000000000E1C: E06C4000 8044000A
+label_0E24:
+  s_mov_b64     exec, s[14:15]                          // 000000000E24: BEFE010E
+  v_cmp_gt_i32  vcc, s10, v20                           // 000000000E28: 7C88280A
+  s_and_b64     vcc, vcc, s[2:3]                        // 000000000E2C: 8BEA026A
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1 } // 000000000E30: BF870009
+  s_and_saveexec_b64  s[2:3], vcc                       // 000000000E34: BE82216A
+  s_cbranch_execz  label_0E90                           // 000000000E38: BFA50015
+  s_load_b128   s[16:19], s[6:7], null                  // 000000000E3C: F4080403 F8000000
+  s_singleuse_vdst  { supr0: 1, skip0: 2, supr1: 1, skip1: 2 } // 000000000E44: BF8B08A1
+  v_mul_lo_u32  v0, v20, s9                             // 000000000E48: D72C0000 00001314
+  v_perm_b32    v1, v40, v55, lit(0x05040100)           // 000000000E50: D6440001 03FE6F28 05040100
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_2, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_1 } // 000000000E5C: BF870092
+  v_add_nc_u32  v0, s0, v0                              // 000000000E60: 4A000000
+  v_mul_lo_u32  v6, s5, v0                              // 000000000E64: D72C0006 00020005
+  v_perm_b32    v0, v54, v53, lit(0x05040100)           // 000000000E6C: D6440000 03FE6B36 05040100
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_2 } // 000000000E78: BF870002
+  v_add_lshl_u32  v6, v17, v6, 3                        // 000000000E7C: D6470006 020E0D11
+  s_waitcnt     { lgkm: 0 }                             // 000000000E84: BF89FC07
+  buffer_store_b64  v[0:1], v6, s[16:19], 0 offen glc   // 000000000E88: E06C4000 80440006
+label_0E90:
+  s_endpgm                                              // 000000000E90: BFB00000
+end
+
+; ----------------- CS Data ------------------------
+
+codeLenInByte        = 3988 bytes;
+pm4CrcCodeLength     = 3732 bytes;
+pm4Crc               = 044f38ab885747a9
+
+; launchModeFlags    = 0x00000400
+externalLogicalBinding = TRUE;
+
+userDataRegistersUsedBitmask = 0x00000004;
+userElementCount     = 0;
+extUserElementCount  = 0;
+NumVgprs             = 56;
+maxVgprs             = 256;
+NumSgprs             = 40;
+maxSgprs             = 104;
+FloatMode            = 192;
+IeeeMode             = 0;
+FlatPtr32            = 0;
+IsDynamicCallStack   = 0;
+MemOrdered           = 0;
+ScratchSize          = 0 dwords/thread;
+LDSByteSize          = 0 bytes/workgroup (compile time only);
+ScratchWaveOffsetReg = s65535;
+; unusedImmConst[0]     = 0xFFFFFFFF
+; unusedImmConst[1]     = 0xFFFFFFFF
+; unusedImmConst[2]     = 0xFFFFFFFF
+; unusedImmConst[3]     = 0xFFFFFFFF
+
+; Optimization Report
+Intent           = SI_OPT_INTENT_UNSET
+
+; SC ML stats
+   Phase 3 VGPR = 0
+   Phase 3 SGPR = 0
+   Phase 2 Wave Size = 0
+
+; Shader Stats
+NumInst         = 682
+Phase3_VGPR     = 0
+Phase3_SGPR     = 0
+uNumVALUInst    = 360
+uNumVMemInst    = 20
+uNumDSInst      = 0
+uNumExportInst  = 0
+uNumCFlowInst   = 152
+uNumBranchInst   = 29
+uNumSALUInst    = 139
+uNumSMemInst    = 11
+uNumInterpInst  = 0
+uNumTransInst   = 2
+uNumAtomicOper    = 0
+uNumLocalAtomicOper    = 0
+uNumGlobalAtomicOper    = 0
+uNumLocalLoads    = 0
+uNumGlobalLoads    = 27
+uNumLocalStores    = 0
+uNumGlobalStores    = 4
+uNumWait    = 20
+uNumTexReads    = 0
+uNumTexWrites    = 0
+uNumTexAtomics   = 0
+uNumF16Inst    = 128
+uNumF32Inst    = 4
+uNumFpInst    = 132
+uNumInt16Inst    = 8
+uNumInt32Inst    = 132
+uNumIntInst    = 140
+uNumCompilerSpills   = 0
+uNumCompilerVectorSpills    = 0
+uNumCompilerScalarSpills    = 0
+numActiveWaveCount      = 9
+numDuplicatedVALUCount  = 0
+numDuplicatedVMemCount  = 0
+numAsVALUCount          = 0
+numAsVMemCount          = 0
+uNumPositionExports     = 0
+uNumParameterExports    = 0
+numTotalInstIR          = 0
+costTotalInstIR         = 0
+numVectorInstIR         = 0
+costVectorInstIR        = 0
+numScalarInstIR         = 0
+costScalarInstIR        = 0
+numUniformInstIR        = 0
+costUniformInstIR       = 0
+numVMemInstIR           = 0
+costVMemInstIR          = 0
+numVALUInstIR           = 0
+costVALUInstIR          = 0
+numBasicBlocksIR        = 0
+costBasicBlocksIR       = 0
+numExportInstIR         = 0
+costExportInstIR        = 0
+numCFlowInstIR          = 0
+costCFlowInstIR         = 0
+numSALUInstIR           = 0
+costSALUInstIR          = 0
+numSMemInstIR           = 0
+costSMemInstIR          = 0
+uNumCreatedVGPRs        = 0
+LDSBarrierCount         = 0
+WorkgroupSize           = 0
+uNumSlowMemOps          = 0
+uNumVMemBytes           = 0
+uNumEstCycles           = 0
+uNumEstWeight           = 0
+pConfidence             = 0
+pThreshold              = 0
+modelCullingDecision    = 0
+modelWaveSizeDecision   = 0
+uNumSMovInst            = 1
+uNumVMovInst            = 71
+uNumMovInst             = 72
+uNumDualInst            = 0
+bHasUndefUsed           = true
+uNumSampleInst          = 0
+uNumInstPrefetches      = 0
+uNumDataPrefetches      = 0
+VRegAllocGranularity    = 8
+uNumEXECMaskWrite       = 30
+uNumSClauses                  = 0
+uNumVMEMClauses               = 0
+uNumSMEMClauses               = 0
+uNumImageClauses              = 0
+uNumTotalInstInsideSClause    = 0
+uNumInstInsideVMEMClause      = 0
+uNumInstInsideSMEMClause      = 0
+uNumInstInsideImageClause     = 0
+MemSizePerThread (dwords/thread)    =0
+; Scheduler stats
+    Total Cycles   = 35217
+    Total Stalls   = 1506
+
+stackFrameSize              = 0;
+bilFeatureProfile           = 0;
+
+;COMPUTE_PGM_RSRC2       = 0x00000B86
+COMPUTE_PGM_RSRC2:USER_SGPR      = 3
+COMPUTE_PGM_RSRC2:TGID_X_EN      = 1
+COMPUTE_PGM_RSRC2:TGID_Y_EN      = 1
+COMPUTE_PGM_RSRC2:TGID_Z_EN      = 1
+COMPUTE_PGM_RSRC2:TIDIG_COMP_CNT = 1
+;COMPUTE_PGM_RSRC3       = 0x00000000
+NumThreadX                       = 8
+NumThreadY                       = 8
+NumThreadZ                       = 1
+
+
+.comment (size = 80 bytes)
+Generated by the Advanced Micro Devices, Inc., Proprietary GPU Shader Compiler.
+
+.data (size = 16 bytes)
+    _amdgpu_cs_shdr_intrl_tbl (offset = 0  size = 16 hash = 0x4843A0D414A2560C)
+          0:00000000 00100000 00000000 0003DFAC 
+
+.note (size = 492 bytes)
+    PalMetadata                  (name = AMDGPU  size = 470)
+{
+    amdpal.version: [ 0x0000000000000003 0x0000000000000000 ]
+    amdpal.pipelines: [ {
+        .type: Cs
+        .resource_hash: 0xE0E3CF1790363801 
+        .spill_threshold: 0x000000000000FFFF 
+        .user_data_limit: 0x0000000000000002 
+        .shaders: {
+            .compute: {
+                .api_shader_hash: [ 0x258FD7A0C3842B8E 0x0000000000000000 ]
+                .hardware_mapping: [ .cs]
+                .shader_subtype: Unknown}}
+        .hardware_stages: {
+            .cs: {
+                .entry_point: _amdgpu_cs_main
+                .sgpr_count: 0x0000000000000028 
+                .vgpr_count: 0x0000000000000038 
+                .uses_uavs: 1 
+                .writes_uavs: 1 
+                .bil_feature_vector_profile: 0x0000000000000000 
+                .threadgroup_dimensions: [ 0x0000000000000008 0x0000000000000008 0x0000000000000001 ]}}
+        .registers: {
+            COMPUTE_NUM_THREAD_X                          0x0000000000000008 
+            COMPUTE_NUM_THREAD_Y                          0x0000000000000008 
+            COMPUTE_NUM_THREAD_Z                          0x0000000000000001 
+            COMPUTE_PGM_RSRC1                             0x00000000002C010D 
+            COMPUTE_PGM_RSRC2                             0x0000000000000B86 
+            COMPUTE_RESOURCE_LIMITS                       0x0000000000000000 
+            COMPUTE_PGM_RSRC3                             0x0000000000000000 
+            COMPUTE_USER_DATA_2                           0x0000000000000001 }
+        .internal_pipeline_hash: [ 0xFE033B7F22B0FFFC 0xFC23EB3FA5C93AD5 ]
+        .api: Vulkan}]}
+.shstrtab (size = 91 bytes)
+
+.strtab (size = 78 bytes)
+
+.symtab (size = 120 bytes)
+
+.text (size = 3988 bytes)
+    _amdgpu_cs_main (offset = 0  size = 3988 hash = 0x06A2B35788433EB5)
+          0:B080200D BE884780 BF840003 8B00FF05 00FFFFFF BE860002 BE870009 F40C0203
+         32:F8000030 BF89FC07 F4280204 F8000000 F4200046 F8000004 BF89FC07 BF020109
+         64:BFA10089 80850180 BF870499 8A020501 BE856502 808C0980 BF8704A9 8A0C0C09
+         96:BF018001 988E807E BF048009 BF8704A9 9890807E BF048001 9892807E BF8704A9
+        128:8D901210 808D0080 8A0D0D00 BF048000 BF8702A9 9892807E D6840005 00000005
+        160:A20505FF 4F800000 BF87059B BE856705 96140502 BF8704BA 96950502 80981480
+        192:BF078015 98181814 BF870499 96980518 80941805 80181805 BF078015 BF870499
+        224:98051814 96850C05 BF870499 96140205 8095140C BF09140C BF8704A9 9896807E
+        256:BF090215 9894807E 8B941416 BF8B2621 D5206A01 00510005 BF870091 D5206A01
+        288:00598301 7C8A02FF 80000000 020402FF 7FFFFFFF 4C020280 BF870191 D5010001
+        320:003A02FF 80000000 D5010002 003A04FF 7FFFFFFF BF870091 D5010003 00420302
+        352:4C020680 BF8700A1 24080303 BF8B4CA3 7E020D04 BF870291 7E025501 100202FF
+        384:4F800000 BF870091 7E0C0F01 D6FE6A01 02020D04 BF870121 D7016A07 00020280
+        416:D445000E 00020480 D5010001 003A0307 BF870091 D72D0001 00020D01 D7016A02
+        448:00020306 4A020306 BF870091 D5010001 003A0501 D72D0002 00001B01 BF8700A1
+        480:D72C0001 00020902 BF8B48A1 4C0C020D D44E000C 0002020D BF8704A2 D44E000E
+        512:00020906 8B8E0E0C D5206A01 00390102 BF870091 D5206A01 00318301 7C8A02FF
+        544:80000000 020402FF 7FFFFFFF 4C020280 7C8A0680 BF8B0032 BF870193 020404FF
+        576:7FFFFFFF 020202FF 80000000 7C880680 8DEA6A12 BF870482 02020302 BF870001
+        608:7E040501 BFA00001 BE820000 BF8B44B4 D6100001 02291500 360000FF 000003FF
+        640:80058308 BF8704A9 86058205 96080B09 BF030800 BF870119 980880C1 D6460001
+        672:04050604 BF870112 D6460000 04010603 30200282 BF870112 D6110011 02790100
+        704:7C86200A D5010000 01A98280 BF870113 D446000C 00000B11 D5010000 00318300
+        736:BF870091 D5010000 01AA0008 D5010000 00318300 BE8C017E BF870001 7D940080
+        768:BFA502E3 F4080403 F8000050 F4080503 F8000020 4A242081 4A262082 4A282083
+        800:8004830A 7E6C0280 7E500280 7E360280 7E380280 7E3A0280 7E3C0280 7E3E0280
+        832:7E400280 8B0404C4 B0200000 D444000E 00022004 D4440018 00022404 D444001A
+        864:00022604 D444001C 00022804 D444001E 00022205 BF89FC07 F42000C8 F8000000
+        896:F4080403 F8000010 BF89FC07 8003030A BF8704C9 80088303 8B0B8303 86088208
+        928:808B0B03 8627820B D72C0015 00001110 D72C0016 00001112 D72C0017 00001113
+        960:D72C0018 00001114 BF800000 BF800000 BF800000 BF800000 BF800000 BF800000
+        992:BF022027 BFA20009 7E6AD7B6 7E6ED7A8 7E0CD79B 7E0ED79C 7E14D79D 7E16D79E
+       1024:7E1CD79F 7E1ED7A0 BFA000CF 96210400 84248220 96210821 96220124 96240502
+       1056:96220522 87A58120 80222422 96230125 87A58220 96230523 96250125 80232324
+       1088:96250525 87A68320 80252524 96260126 BF870499 96260526 80242624 BF8BF922
+       1120:4A002A21 4A022C21 D6470008 020C4511 BF870003 D6470000 020E0020 4A042E21
+       1152:4A063021 D6470004 020E0220 D647000A 020C4711 D647000C 020C4B11 D6470005
+       1184:020E0420 D6470006 020E0620 D647000E 020C4911 BF850003 E0540000 80450808
+       1216:E0540000 80450A0A E0540000 80450C0C E0540000 80450E0E BF850003 E0540000
+       1248:80440000 E0540000 80440204 E0540000 80440405 E0540000 80440606 80268120
+       1280:BF870009 BEA00026 BF890FF7 D6482021 047E1100 BF890BF7 D6482022 047A1302
+       1312:D6486021 04821300 D6486022 04761102 D648101D 04761102 D6480823 04861500
+       1344:D648501D 047A1302 BF8BE38F D648101E 04821300 D6486823 04861700 D6480821
+       1376:048A1702 D648501E 047E1100 D6486821 048A1502 D648181F 04761502 D6480022
+       1408:048E1901 D648781F 04761702 D6481802 047A1700 D6486022 048E1B01 D6480023
+       1440:04861B03 D6487802 047A1500 D6481000 047E1903 D6486023 04861903 D6487000
+       1472:047E1B03 D648101D 040A1B01 D6484824 048E1F03 BF870004 D6486823 048E1D03
+       1504:D648701D 040A1901 D6484821 048A1D01 D6486822 048A1F01 D6481823 04021D03
+       1536:D6483824 04021F03 BF8907F7 D6482000 046E1104 D6481822 04761F01 D6483821
+       1568:04761D01 D6486000 04721304 BF8903F7 D6482001 04A21306 D6481019 04DA1106
+       1600:BF8BC38F D6486001 04DA1106 D6485019 04A21306 D6481009 04721304 D6480802
+       1632:04021504 D6485009 046E1104 D6486802 04021704 D6480800 04061706 D6481808
+       1664:04661506 D6486800 04061506 D6487808 04661706 D6481806 04261704 D6480001
+       1696:040A1905 D6487806 04261504 D6486001 040A1B05 D6480002 04021B07 D6481004
+       1728:04221907 D6486002 04021907 D6487004 04221B07 D6481008 041A1B05 D6484800
+       1760:04061D05 D6486801 04061F05 D6487008 041A1905 D6484803 040A1F07 D6486802
+       1792:040A1D07 D6483803 04121F07 D6481802 04121D07 D6481801 04221F05 D6483800
+       1824:04221D05 7E6C0302 7E500303 7E360300 7E380301 7E3A0323 7E3C0324 7E3E0321
+       1856:7E400322 BFA0FF26 7E0A031B 7E12031C 7E48031D 7E1A031E 7E2A031F 7E300320
+       1888:BF022708 BFA1015D BEA2210E BFA50010 960B0400 BF8700A9 4A00200B BF8B0051
+       1920:D72C0000 00020008 BF870001 D6470000 020E0027 E0540000 80440000 BF8903F7
+       1952:7E2C3900 32040090 7E323901 32340290 91FE7E22 7E2C0280 7E040280 7E320280
+       1984:7E340280 8BFE1822 BFA50010 960B0400 BF8700A9 4A00240B BF8B0051 D72C0000
+       2016:00020008 BF870001 D6470000 020E0027 E0540000 80440000 BF8903F7 7E363900
+       2048:32060090 7E3A3901 323C0290 91FE7E22 7E360280 7E060280 7E3A0280 7E3C0280
+       2080:8BFE1A22 BFA50010 960B0400 BF8700A9 4A00260B BF8B0051 D72C0000 00020008
+       2112:BF870001 D6470000 020E0027 E0540000 80440000 BF8903F7 7E3E3900 32080090
+       2144:7E423901 32440290 91FE7E22 7E3E0280 7E080280 7E420280 7E440280 8BFE1C22
+       2176:BFA50010 960B0400 BF8700A9 4A00280B BF8B0051 D72C0000 00020008 BF870001
+       2208:D6470000 020E0027 E0540000 80440000 BF8903F7 7E463900 322E0090 7E4A3901
+       2240:324C0290 91FE7E22 7E460280 7E2E0280 7E4A0280 7E4C0280 BEFE0122 840B8227
+       2272:BF870499 BF020B03 98A2807E 8BA21E22 BF870009 BEA22122 BFA5000E 960B010B
+       2304:BF870499 800B0B02 960B0B05 BF870009 D6470000 020C1711 E0540000 80450000
+       2336:BF8903F7 7E383900 324E0090 7E523901 32540290 91FE7E22 7E380280 7E4E0280
+       2368:7E520280 7E540280 BEFE0122 878B8127 BF870499 BF020B03 98A2807E 8BA21E22
+       2400:BF870009 BEA22122 BFA5000E 960B010B BF870499 800B0B02 960B0B05 BF870009
+       2432:D6470000 020C1711 E0540000 80450000 BF8903F7 7E563900 325C0090 7E5E3901
+       2464:32640290 91FE7E22 7E560280 7E5C0280 7E5E0280 7E640280 BEFE0122 878B8227
+       2496:BF870499 BF020B03 98A2807E 8BA21E22 BF870009 BEA22122 BFA5000E 960B010B
+       2528:BF870499 800B0B02 960B0B05 BF870009 D6470000 020C1711 E0540000 80450000
+       2560:BF8903F7 7E663900 32580090 7E5A3901 32600290 91FE7E22 7E660280 7E580280
+       2592:7E5A0280 7E600280 BEFE0122 878B8327 BF870499 BF020B03 98A2807E 8BA21E22
+       2624:BF870009 BEA22122 BFA5000E 960B010B BF870499 800B0B02 960B0B05 BF870009
+       2656:D6470000 020C1711 E0540000 80450000 BF8903F7 7E403900 32000090 7E623901
+       2688:32680290 91FE7E22 7E400280 7E000280 7E620280 7E680280 BEFE0122 BF8BE38F
+       2720:6C1C3916 6C1E5316 6C14391B 6C16531B D648400E 04564F16 D648400F 04625516
+       2752:D648400A 04924F1B 6C0C391F D6480015 043A5702 6C0E531F D648400B 0436551B
+       2784:D6486015 043A5D02 D648000E 043E5F02 D648000C 042A5703 D6484006 04164F1F
+       2816:D648600E 043E6502 D648600C 042A5D03 D648000A 042E5F03 D6484007 0426551F
+       2848:D6480002 04D63923 D6480008 041A5704 D648600A 042E6503 D6484002 04DA4F23
+       2880:D6480003 04DE5323 D6486008 041A5D04 D6480006 041E5F04 D6484003 04A25523
+       2912:D6486006 041E6504 D6480004 040A5717 BF8B288F D6486004 040A5D17 D6480002
+       2944:040E5F17 D648000F 04566719 D648000B 0432671D D6480007 04226721 D6486002
+       2976:040E6517 D6480003 04126725 D648600F 04565919 D6480015 043A5B19 D648600B
+       3008:0432591D D648000C 042A5B1D D6486007 04225921 D6480008 041A5B21 D6486003
+       3040:04125925 D6480004 040A5B25 D6486015 043A6119 7E1C0280 7E2C0280 D648600C
+       3072:042A611D 7E140280 7E480280 BF8B24A1 D6486008 041A6121 7E0C0280 7E0A0280
+       3104:D6486004 040A6125 D648000E 043E411A D6482016 043E011A 7E1E0280 7E300280
+       3136:D648000A 042E411E D6482024 042E011E 7E160280 7E1A0280 D6480006 041E4122
+       3168:D6482005 041E0122 7E0E0280 7E120280 7E6A0280 7E6C0280 7E6E0280 7E500280
+       3200:D648000F 0456631A D6482018 0456691A D648000B 0432631E D648200D 0432691E
+       3232:D6480007 04226322 D6482009 04226922 D6480035 040E4126 D6482036 040E0126
+       3264:D6480037 04126326 D6482028 04126926 7E2A0316 80278127 BFA0FEA1 D4440002
+       3296:00022205 7C88200A 8BEA026A BF870009 BE8E216A BFA50015 F4080403 F8000000
+       3328:BF8B08A1 D72C0000 00001310 D6440001 03FE1F18 05040100 BF870092 4A000000
+       3360:D72C0016 00020005 D6440000 03FE1D15 05040100 BF870002 D6470010 020E2D11
+       3392:BF89FC07 E06C4000 80440010 BEFE010E 7C88240A 8BEA026A BF870009 BE8E216A
+       3424:BFA50015 F4080403 F8000000 BF8B08A1 D72C0000 00001312 D6440001 03FE170D
+       3456:05040100 BF870092 4A000000 D72C000E 00020005 D6440000 03FE1524 05040100
+       3488:BF870002 D647000E 020E1D11 BF89FC07 E06C4000 8044000E BEFE010E 7C88260A
+       3520:8BEA026A BF870009 BE8E216A BFA50015 F4080403 F8000000 BF8B08A1 D72C0000
+       3552:00001313 D6440001 03FE0F09 05040100 BF870092 4A000000 D72C000A 00020005
+       3584:D6440000 03FE0D05 05040100 BF870002 D647000A 020E1511 BF89FC07 E06C4000
+       3616:8044000A BEFE010E 7C88280A 8BEA026A BF870009 BE82216A BFA50015 F4080403
+       3648:F8000000 BF8B08A1 D72C0000 00001314 D6440001 03FE6F28 05040100 BF870092
+       3680:4A000000 D72C0006 00020005 D6440000 03FE6B36 05040100 BF870002 D6470006
+       3712:020E0D11 BF89FC07 E06C4000 80440006 BFB00000 BF9F0000 BF9F0000 BF9F0000
+       3744:BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000
+       3776:BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000
+       3808:BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000
+       3840:BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000
+       3872:BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000
+       3904:BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000
+       3936:BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000
+       3968:BF9F0000 BF9F0000 BF9F0000 BF9F0000 BF9F0000 

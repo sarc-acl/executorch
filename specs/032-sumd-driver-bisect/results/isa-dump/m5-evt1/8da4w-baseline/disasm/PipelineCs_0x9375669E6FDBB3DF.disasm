@@ -1,0 +1,344 @@
+; -------- Disassembly --------------------
+shader main
+  asic(MGFX5)
+  type(CS)
+  sgpr_count(30)
+  vgpr_count(12)
+  wave_size(64)
+
+  s_version     { version: UC_VERSION_MGFX5, w64: 1 }   // 000000000000: B080200D
+  s_getpc_b64   s[8:9]                                  // 000000000004: BE884780
+  s_set_inst_prefetch_distance  0x0003                  // 000000000008: BF840003
+  s_and_b32     s0, s5, lit(0x00ffffff)                 // 00000000000C: 8B00FF05 00FFFFFF
+  s_mov_b32     s6, s2                                  // 000000000014: BE860002
+  s_mov_b32     s7, s9                                  // 000000000018: BE870009
+  s_load_b128   s[8:11], s[6:7], 0x000040               // 00000000001C: F4080203 F8000040
+  s_waitcnt     { lgkm: 0 }                             // 000000000024: BF89FC07
+  s_buffer_load_b256  s[8:15], s[8:11], null            // 000000000028: F42C0204 F8000000
+  s_singleuse_vdst  { supr0: 1, skip0: 2 }              // 000000000030: BF8B0021
+  v_and_b32     v0, lit(0x000003ff), v0                 // 000000000034: 360000FF 000003FF
+  s_and_b32     s1, s4, lit(0x00ffffff)                 // 00000000003C: 8B01FF04 00FFFFFF
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_VALU_DEP_1 } // 000000000044: BF8700A1
+  v_lshl_add_u32  v0, s3, 6, v0                         // 000000000048: D6460000 04010C03
+  s_waitcnt     { lgkm: 0 }                             // 000000000050: BF89FC07
+  v_cmp_ge_i32  s[2:3], v0, s12                         // 000000000054: D4460002 00001900
+  s_cmp_ge_i32  s1, s13                                 // 00000000005C: BF030D01
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 000000000060: BF870499
+  s_cselect_b64  s[4:5], exec, 0                        // 000000000064: 9884807E
+  s_or_b64      s[2:3], s[2:3], s[4:5]                  // 000000000068: 8C820402
+  s_cmp_ge_i32  s0, s14                                 // 00000000006C: BF030E00
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1 } // 000000000070: BF870009
+  s_cselect_b64  s[4:5], exec, 0                        // 000000000074: 9884807E
+  s_or_b64      s[2:3], s[4:5], s[2:3]                  // 000000000078: 8C820204
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1 } // 00000000007C: BF870009
+  s_and_not0_saveexec_b64  s[2:3], s[2:3]               // 000000000080: BE822D02
+  s_cbranch_execz  label_0364                           // 000000000084: BFA500B7
+  v_lshlrev_b32  v11, 2, v0                             // 000000000088: 30160082
+  s_cmp_gt_i32  s11, 1                                  // 00000000008C: BF02810B
+  s_cbranch_scc0  label_023C                            // 000000000090: BFA1006A
+  s_sub_u32     s4, 0, s10                              // 000000000094: 80840A80
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 000000000098: BF870499
+  s_max_i32     s4, s10, s4                             // 00000000009C: 8A04040A
+  s_cvt_f32_u32  s5, s4                                 // 0000000000A0: BE856504
+  s_sub_u32     s9, 0, s0                               // 0000000000A4: 80890080
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_SALU_CYCLE_1 } // 0000000000A8: BF8704A9
+  s_max_i32     s9, s0, s9                              // 0000000000AC: 8A090900
+  s_cmp_lg_i32  s10, 0                                  // 0000000000B0: BF01800A
+  s_cselect_b64  s[12:13], exec, 0                      // 0000000000B4: 988C807E
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_SALU_CYCLE_1 } // 0000000000B8: BF8704A9
+  s_and_b64     s[14:15], s[12:13], exec                // 0000000000BC: 8B8E7E0C
+  s_cmp_lt_i32  s0, 0                                   // 0000000000C0: BF048000
+  s_cselect_b64  s[16:17], exec, 0                      // 0000000000C4: 9890807E
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_SALU_CYCLE_1 } // 0000000000C8: BF8704A9
+  s_and_b64     s[18:19], s[16:17], exec                // 0000000000CC: 8B927E10
+  s_xor_b32     s11, s0, s10                            // 0000000000D0: 8D0B0A00
+  s_cmp_lt_i32  s11, 0                                  // 0000000000D4: BF04800B
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_SALU_CYCLE_1 } // 0000000000D8: BF8704A9
+  s_cselect_b64  s[20:21], exec, 0                      // 0000000000DC: 9894807E
+  s_cmp_lt_i32  s10, 0                                  // 0000000000E0: BF04800A
+  s_cselect_b64  s[22:23], exec, 0                      // 0000000000E4: 9896807E
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_TRANS32_DEP_1 } // 0000000000E8: BF8702A9
+  s_xor_b64     s[16:17], s[16:17], s[22:23]            // 0000000000EC: 8D901610
+  v_s_rcp_f32   s5, s5                                  // 0000000000F0: D6840005 00000005
+  s_mul_f32     s5, lit(0x4f800000), s5                 // 0000000000F8: A20505FF 4F800000
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_3, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_3 } // 000000000100: BF87059B
+  s_cvt_u32_f32  s11, s5                                // 000000000104: BE8B6705
+  s_mul_i32     s5, s4, s11                             // 000000000108: 96050B04
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_2, instskip: INSTSKIP_SKIP_2, instid1: INSTID_SALU_CYCLE_1 } // 00000000010C: BF8704BA
+  s_mul_hi_u32  s22, s4, s11                            // 000000000110: 96960B04
+  s_sub_u32     s24, 0, s5                              // 000000000114: 80980580
+  s_cmp_lg_u32  s22, 0                                  // 000000000118: BF078016
+  s_cselect_b32  s5, s5, s24                            // 00000000011C: 98051805
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 000000000120: BF870499
+  s_mul_hi_u32  s5, s5, s11                             // 000000000124: 96850B05
+  s_sub_u32     s23, s11, s5                            // 000000000128: 8097050B
+  s_add_u32     s11, s11, s5                            // 00000000012C: 800B050B
+  s_cmp_lg_u32  s22, 0                                  // 000000000130: BF078016
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 000000000134: BF870499
+  s_cselect_b32  s5, s23, s11                           // 000000000138: 98050B17
+  s_mul_hi_u32  s11, s5, s9                             // 00000000013C: 968B0905
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 000000000140: BF870499
+  s_mul_i32     s5, s11, s4                             // 000000000144: 9605040B
+  s_sub_u32     s24, s9, s5                             // 000000000148: 80980509
+  s_cmp_ge_u32  s9, s5                                  // 00000000014C: BF090509
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_SALU_CYCLE_1 } // 000000000150: BF8704A9
+  s_cselect_b64  s[22:23], exec, 0                      // 000000000154: 9896807E
+  s_cmp_ge_u32  s24, s4                                 // 000000000158: BF090418
+  s_cselect_b64  s[26:27], exec, 0                      // 00000000015C: 989A807E
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_2, instid1: INSTID_SALU_CYCLE_1 } // 000000000160: BF8704B9
+  s_and_b64     s[26:27], s[22:23], s[26:27]            // 000000000164: 8B9A1A16
+  s_sub_u32     s5, s24, s4                             // 000000000168: 80850418
+  s_and_b64     s[28:29], s[26:27], exec                // 00000000016C: 8B9C7E1A
+  s_cselect_b32  s9, s5, s24                            // 000000000170: 98091805
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_SALU_CYCLE_1 } // 000000000174: BF8704A9
+  s_add_u32     s4, s4, s9                              // 000000000178: 80040904
+  s_and_b64     s[24:25], s[22:23], exec                // 00000000017C: 8B987E16
+  s_cselect_b32  s4, s9, s4                             // 000000000180: 98040409
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 000000000184: BF870499
+  s_cmp_lg_i32  s4, lit(0x80000000)                     // 000000000188: BF01FF04 80000000
+  s_cselect_b64  s[24:25], exec, 0                      // 000000000190: 9898807E
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 000000000194: BF870499
+  s_and_b64     s[24:25], s[12:13], s[24:25]            // 000000000198: 8B98180C
+  s_and_b64     s[24:25], s[24:25], exec                // 00000000019C: 8B987E18
+  s_sub_u32     s5, 0, s4                               // 0000000001A0: 80850480
+  s_cmp_eq_u64  s[24:25], 0                             // 0000000001A4: BF108018
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_SALU_CYCLE_1 } // 0000000001A8: BF8704A9
+  s_cselect_b32  s4, lit(0x7fffffff), s4                // 0000000001AC: 980404FF 7FFFFFFF
+  s_cmp_eq_u64  s[14:15], 0                             // 0000000001B4: BF10800E
+  s_cselect_b32  s9, lit(0x80000000), s5                // 0000000001B8: 980905FF 80000000
+  s_cmp_eq_u64  s[18:19], 0                             // 0000000001C0: BF108012
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 0000000001C4: BF870499
+  s_cselect_b32  s4, s4, s9                             // 0000000001C8: 98040904
+  s_cmp_lg_i32  s4, 0                                   // 0000000001CC: BF018004
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_NEXT, instid1: INSTID_SALU_CYCLE_1 } // 0000000001D0: BF870499
+  s_cselect_b64  s[14:15], exec, 0                      // 0000000001D4: 988E807E
+  s_and_b64     s[14:15], s[14:15], s[20:21]            // 0000000001D8: 8B8E140E
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1 } // 0000000001DC: BF870009
+  s_and_b64     s[14:15], s[14:15], exec                // 0000000001E0: 8B8E7E0E
+  s_cselect_b32  s9, s10, 0                             // 0000000001E4: 9809800A
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_2, instid1: INSTID_VALU_DEP_1 } // 0000000001E8: BF8700B9
+  s_add_u32     s4, s4, s9                              // 0000000001EC: 80040904
+  s_singleuse_vdst  { supr0: 1, skip0: 1, supr1: 1, skip1: 1, supr2: 2 } // 0000000001F0: BF8B4491
+  v_add_co_ci_u32  v2, vcc, s11, 0, s[26:27]            // 0000000001F4: D5206A02 0069000B
+  v_add_co_ci_u32  v2, vcc, v2, (-1), s[22:23]          // 0000000001FC: D5206A02 00598302
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1, instskip: INSTSKIP_SKIP_2, instid1: INSTID_VALU_DEP_2 } // 000000000204: BF870131
+  v_sub_nc_u32  v3, 0, v2                               // 000000000208: 4C060480
+  v_cmp_ne_i32  vcc, lit(0x80000000), v2                // 00000000020C: 7C8A04FF 80000000
+  s_and_b64     vcc, s[12:13], vcc                      // 000000000214: 8BEA6A0C
+  v_cndmask_b32  v3, lit(0x80000000), v3, s[12:13]      // 000000000218: D5010003 003206FF 80000000
+  v_cndmask_b32  v4, lit(0x7fffffff), v2, vcc           // 000000000224: 020804FF 7FFFFFFF
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1 } // 00000000022C: BF870001
+  v_cndmask_b32  v2, v4, v3, s[16:17]                   // 000000000230: D5010002 00420704
+  s_branch      label_0244                              // 000000000238: BFA00002
+label_023C:
+  v_mov_b32     v2, 0                                   // 00000000023C: 7E040280
+  s_mov_b32     s4, s0                                  // 000000000240: BE840000
+label_0244:
+  s_load_b256   s[12:19], s[6:7], 0x000010              // 000000000244: F40C0303 F8000010
+  s_load_b128   s[20:23], s[6:7], 0x000050              // 00000000024C: F4080503 F8000050
+  v_mov_b32     v3, s1                                  // 000000000254: 7E060201
+  v_mov_b32     v4, s0                                  // 000000000258: 7E080200
+  s_singleuse_vdst  { supr0: 1, skip0: 1 }              // 00000000025C: BF8B0011
+  v_sub_nc_u32  v5, s8, v11                             // 000000000260: 4C0A1608
+  s_waitcnt     { lgkm: 0 }                             // 000000000264: BF89FC07
+  image_load    v[6:9], [v0,v3,v4], s[12:19] dmask:0xf dim:SQ_RSRC_IMG_3D unorm // 000000000268: F0000F89 00030600 00000403
+  s_buffer_load_b128  s[8:11], s[20:23], 0x000040       // 000000000274: F428020A F8000040
+  s_load_b128   s[12:15], s[6:7], null                  // 00000000027C: F4080303 F8000000
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1 } // 000000000284: BF870001
+  v_min_i32     v0, 4, v5                               // 000000000288: 22000A84
+  s_mov_b64     s[6:7], exec                            // 00000000028C: BE86017E
+  s_movk_i32    s0, 0x0000                              // 000000000290: B0000000
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1, instid1: INSTID_SALU_CYCLE_1 } // 000000000294: BF870481
+  v_cmpx_lt_i32  exec, s0, v0                           // 000000000298: 7D820000
+  s_waitcnt     { vm: 0 }                               // 00000000029C: BF8903F7
+  s_nop         0x0000                                  // 0000000002A0: BF800000
+  s_nop         0x0000                                  // 0000000002A4: BF800000
+  s_nop         0x0000                                  // 0000000002A8: BF800000
+  s_nop         0x0000                                  // 0000000002AC: BF800000
+  s_nop         0x0000                                  // 0000000002B0: BF800000
+  s_nop         0x0000                                  // 0000000002B4: BF800000
+  s_nop         0x0000                                  // 0000000002B8: BF800000
+  s_cbranch_execz  label_0364                           // 0000000002BC: BFA50029
+label_02C0:
+  s_cmp_eq_i32  s0, 3                                   // 0000000002C0: BF008300
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_SALU_CYCLE_1 } // 0000000002C4: BF8704A9
+  s_cselect_b64  s[16:17], exec, 0                      // 0000000002C8: 9890807E
+  s_cmp_eq_i32  s0, 2                                   // 0000000002CC: BF008200
+  s_cselect_b64  s[18:19], exec, 0                      // 0000000002D0: 9892807E
+  s_cmp_eq_i32  s0, 1                                   // 0000000002D4: BF008100
+                                                        s_delay_alu  { instid0: INSTID_SALU_CYCLE_1, instskip: INSTSKIP_SKIP_1, instid1: INSTID_SALU_CYCLE_1 } // 0000000002D8: BF8704A9
+  s_cselect_b64  s[20:21], exec, 0                      // 0000000002DC: 9894807E
+  s_cmp_eq_i32  s0, 0                                   // 0000000002E0: BF008000
+  s_cselect_b64  s[22:23], exec, 0                      // 0000000002E4: 9896807E
+  s_add_u32     s0, s0, 1                               // 0000000002E8: 80008100
+  s_waitcnt     { lgkm: 0 }                             // 0000000002EC: BF89FC07
+  v_mad_u64_u32  v[4:5], vcc, s8, v11, 0                // 0000000002F0: D6FE6A04 02021608
+  s_singleuse_vdst  { supr0: 1, skip0: 1, supr1: 1, skip1: 1, supr2: 2 } // 0000000002F8: BF8B4491
+  v_cndmask_b32  v1, v10, v9, s[16:17]                  // 0000000002FC: D5010001 0042130A
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_2, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_2 } // 000000000304: BF870112
+  v_mad_u64_u32  v[4:5], vcc, s9, s1, v[4:5]            // 000000000308: D6FE6A04 04100209
+  v_cndmask_b32  v1, v1, v8, s[18:19]                   // 000000000310: D5010001 004A1101
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_2, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_2 } // 000000000318: BF870112
+  v_mad_u64_u32  v[4:5], vcc, s10, s4, v[4:5]           // 00000000031C: D6FE6A04 0410080A
+  v_cndmask_b32  v1, v1, v7, s[20:21]                   // 000000000324: D5010001 00520F01
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_2, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_2 } // 00000000032C: BF870112
+  v_mad_u64_u32  v[4:5], vcc, s11, v2, v[4:5]           // 000000000330: D6FE6A04 0412040B
+  v_cndmask_b32  v10, v1, v6, s[22:23]                  // 000000000338: D501000A 005A0D01
+                                                        s_delay_alu  { instid0: INSTID_VALU_DEP_1, instskip: INSTSKIP_NEXT, instid1: INSTID_VALU_DEP_3 } // 000000000340: BF870191
+  v_cvt_pk_rtz_f16_f32  v5, v10, 0                      // 000000000344: D52F0005 0001010A
+  v_lshlrev_b32  v4, 1, v4                              // 00000000034C: 30080881
+  buffer_store_b16  v5, v4, s[12:15], 0 offen glc       // 000000000350: E0644000 80430504
+  v_add_nc_u32  v11, 1, v11                             // 000000000358: 4A161681
+  v_cmpx_lt_i32  exec, s0, v0                           // 00000000035C: 7D820000
+  s_cbranch_execnz  label_02C0                          // 000000000360: BFA6FFD7
+label_0364:
+  s_endpgm                                              // 000000000364: BFB00000
+end
+
+; ----------------- CS Data ------------------------
+
+codeLenInByte        = 1128 bytes;
+pm4CrcCodeLength     = 872 bytes;
+pm4Crc               = 66b4a34b1e1c8248
+
+; launchModeFlags    = 0x00000400
+externalLogicalBinding = TRUE;
+
+userDataRegistersUsedBitmask = 0x00000004;
+userElementCount     = 0;
+extUserElementCount  = 0;
+NumVgprs             = 12;
+maxVgprs             = 256;
+NumSgprs             = 30;
+maxSgprs             = 104;
+FloatMode            = 192;
+IeeeMode             = 0;
+FlatPtr32            = 0;
+IsDynamicCallStack   = 0;
+MemOrdered           = 0;
+ScratchSize          = 0 dwords/thread;
+LDSByteSize          = 0 bytes/workgroup (compile time only);
+ScratchWaveOffsetReg = s65535;
+; unusedImmConst[0]     = 0xFFFFFFFF
+; unusedImmConst[1]     = 0xFFFFFFFF
+; unusedImmConst[2]     = 0xFFFFFFFF
+; unusedImmConst[3]     = 0xFFFFFFFF
+
+; Optimization Report
+Intent           = SI_OPT_INTENT_UNSET
+
+; SC ML stats
+   Phase 3 VGPR = 0
+   Phase 3 SGPR = 0
+   Phase 2 Wave Size = 0
+
+; Shader Stats
+NumInst         = 183
+Phase3_VGPR     = 0
+Phase3_SGPR     = 0
+uNumVALUInst    = 30
+uNumVMemInst    = 2
+uNumDSInst      = 0
+uNumExportInst  = 0
+uNumCFlowInst   = 58
+uNumBranchInst   = 5
+uNumSALUInst    = 87
+uNumSMemInst    = 6
+uNumInterpInst  = 0
+uNumTransInst   = 1
+uNumAtomicOper    = 0
+uNumLocalAtomicOper    = 0
+uNumGlobalAtomicOper    = 0
+uNumLocalLoads    = 0
+uNumGlobalLoads    = 6
+uNumLocalStores    = 0
+uNumGlobalStores    = 1
+uNumWait    = 5
+uNumTexReads    = 1
+uNumTexWrites    = 0
+uNumTexAtomics   = 0
+uNumF16Inst    = 0
+uNumF32Inst    = 2
+uNumFpInst    = 2
+uNumInt16Inst    = 0
+uNumInt32Inst    = 19
+uNumIntInst    = 19
+uNumCompilerSpills   = 0
+uNumCompilerVectorSpills    = 0
+uNumCompilerScalarSpills    = 0
+numActiveWaveCount      = 16
+numDuplicatedVALUCount  = 0
+numDuplicatedVMemCount  = 0
+numAsVALUCount          = 0
+numAsVMemCount          = 0
+uNumPositionExports     = 0
+uNumParameterExports    = 0
+numTotalInstIR          = 0
+costTotalInstIR         = 0
+numVectorInstIR         = 0
+costVectorInstIR        = 0
+numScalarInstIR         = 0
+costScalarInstIR        = 0
+numUniformInstIR        = 0
+costUniformInstIR       = 0
+numVMemInstIR           = 0
+costVMemInstIR          = 0
+numVALUInstIR           = 0
+costVALUInstIR          = 0
+numBasicBlocksIR        = 0
+costBasicBlocksIR       = 0
+numExportInstIR         = 0
+costExportInstIR        = 0
+numCFlowInstIR          = 0
+costCFlowInstIR         = 0
+numSALUInstIR           = 0
+costSALUInstIR          = 0
+numSMemInstIR           = 0
+costSMemInstIR          = 0
+uNumCreatedVGPRs        = 0
+LDSBarrierCount         = 0
+WorkgroupSize           = 0
+uNumSlowMemOps          = 0
+uNumVMemBytes           = 0
+uNumEstCycles           = 0
+uNumEstWeight           = 0
+pConfidence             = 0
+pThreshold              = 0
+modelCullingDecision    = 0
+modelWaveSizeDecision   = 0
+uNumSMovInst            = 1
+uNumVMovInst            = 3
+uNumMovInst             = 4
+uNumDualInst            = 0
+bHasUndefUsed           = true
+uNumSampleInst          = 0
+uNumInstPrefetches      = 0
+uNumDataPrefetches      = 0
+VRegAllocGranularity    = 8
+uNumEXECMaskWrite       = 4
+uNumSClauses                  = 0
+uNumVMEMClauses               = 0
+uNumSMEMClauses               = 0
+uNumImageClauses              = 0
+uNumTotalInstInsideSClause    = 0
+uNumInstInsideVMEMClause      = 0
+uNumInstInsideSMEMClause      = 0
+uNumInstInsideImageClause     = 0
+MemSizePerThread (dwords/thread)    =0
+; Scheduler stats
+    Total Cycles   = 1355
+    Total Stalls   = 273
+
+stackFrameSize              = 0;
+bilFeatureProfile           = 0;
+
+;COMPUTE_PGM_RSRC2       = 0x00000386
+COMPUTE_PGM_RSRC2:USER_SGPR      = 3
+COMPUTE_PGM_RSRC2:TGID_X_EN      = 1
+COMPUTE_PGM_RSRC2:TGID_Y_EN      = 1
+COMPUTE_PGM_RSRC2:TGID_Z_EN      = 1
+;COMPUTE_PGM_RSRC3       = 0x00000000
+NumThreadX                       = 64
+NumThreadY                       = 1
+NumThreadZ                       = 1
+ 
