@@ -1,0 +1,22 @@
+# bad: [7bb715f7cc3feda5460a35f74d9618e3855acfe6] xgl: use DeferCompileOptimizedPipeline
+# good: [f14c51b6f850dbe6d1becfccef8e264e435c373b] SC: Fix src size for variable_input_width in SSA
+git bisect start '7bb715f7cc' 'f14c51b6f850dbe6d1becfccef8e264e435c373b'
+# bad: [e85497828f191ab1a41ffcc1d02da45719d7f8b3] sc: fix dEQP failure for m5.099 FusedInterp
+git bisect bad e85497828f191ab1a41ffcc1d02da45719d7f8b3
+# bad: [f8d24657a44069b95ee81ce1879820364fb16261] vkgc,xgl,features: untyped pointer implementation
+git bisect bad f8d24657a44069b95ee81ce1879820364fb16261
+# bad: [674d11d8ec3ddc7d822539e0c2e61f0fbe8825e6] scripts: Switch march to armv9.2-a
+git bisect bad 674d11d8ec3ddc7d822539e0c2e61f0fbe8825e6
+# good: [c4153769bb8b6968b37e85a1e9fd720723dc7d6d] sc: remove POOLEDMEM define from ScopeHash class
+git bisect good c4153769bb8b6968b37e85a1e9fd720723dc7d6d
+# bad: [02c6a42337dc63081dc738746620edafed8cc5ae] sc: remove POOLEDMEM define from ILProgram
+git bisect bad 02c6a42337dc63081dc738746620edafed8cc5ae
+# good: [63bcd7824ad3132c47ff350baadcada5cf4473a4] test: Track container-benchmark memory footprint
+git bisect good 63bcd7824ad3132c47ff350baadcada5cf4473a4
+# good: [c259018f961af2eb9c9f262d3f4f4e8aa6ecd838] gpurt[d5c4fc38]: gpurt: Fix OBB metadata copy
+git bisect good c259018f961af2eb9c9f262d3f4f4e8aa6ecd838
+# bad: [308a98df10e03e1450740d2a2adaa5e0de205ad6] sc: choose among two DVGPR register allocation heuristics
+git bisect bad 308a98df10e03e1450740d2a2adaa5e0de205ad6
+# bad: [805609f0dabbbbe4f1b1687adf1d35a0b1e8a6f9] spal: Skip GL2 WB+Inv WA on clean global barriers
+git bisect bad 805609f0dabbbbe4f1b1687adf1d35a0b1e8a6f9
+# first bad commit: [805609f0dabbbbe4f1b1687adf1d35a0b1e8a6f9] spal: Skip GL2 WB+Inv WA on clean global barriers
