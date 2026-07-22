@@ -176,6 +176,22 @@ ComputeGraph::ComputeGraph(GraphConfig config)
     config_.execute_initial_threshold_node_count = 64;
   }
 
+  // Opt-in GPU-watchdog workaround (default behaviour unchanged). Set
+  // ET_VK_EXECUTE_NODE_THRESHOLD=N to submit a new command buffer every N graph
+  // nodes instead of the default 128. A large prefill (e.g. 8B @ 2048 tokens)
+  // packs > 2.56 s of GPU work into a single 128-node submission, tripping the
+  // sgpu job watchdog (hard reset, lost run). Submits here are non-blocking
+  // (execute() defers and fences once at the end), so a smaller N only adds a
+  // little submit overhead, not a per-batch stall. TEMPORARY measurement aid —
+  // the real fix is driver-side.
+  if (const char* thr = std::getenv("ET_VK_EXECUTE_NODE_THRESHOLD")) {
+    const int n = std::atoi(thr);
+    if (n > 0) {
+      config_.execute_threshold_node_count = static_cast<size_t>(n);
+      config_.execute_initial_threshold_node_count = static_cast<size_t>(n);
+    }
+  }
+
   // Check if the underlying GPU can access accelerated integer dot product
   // instructions
   can_use_int8_dot_product_ =
