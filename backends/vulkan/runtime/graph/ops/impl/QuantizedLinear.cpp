@@ -76,11 +76,59 @@ constexpr CoopmatTileDims kQ4gswCoopmatDims = {128, 64, 16, 128};
 // (specs/027-e2e-tile-sweep winner, was 128x64x32/256).
 constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {64, 32, 32, 128};
 
+// specs/028-4w-e2e-tile-sweep: ET_VK_Q4GSW_COOPMAT_VARIANT=tsweep_t<M>x<N>k<K>
+// g<SGX><SGY>s<32|64> swaps the fp16 q4gsw coopmat dispatch to the matching
+// tile/subgroup-grid/subgroup-size variant of
+// linear_q4gsw_coopmat_tsweep.glsl (specs/022's own microbenchmark shortlist,
+// re-verified for correctness on this ported shader — see
+// specs/028-4w-e2e-tile-sweep/results/port_verification.json). Unset/empty/
+// unrecognized value = default shipped dispatch (today's fixed
+// 128x64x16/1x4/s32 tile via linear_q4gsw_coopmat), unchanged. Kept as a
+// separate env var from ET_VK_DQ8CA_COOPMAT_VARIANT (the int8 dq8ca_q4gsw
+// sweep's own toggle, specs/023/025/026) since the two select variants of
+// different shaders.
+static const std::string& q4gsw_coopmat_variant() {
+  static const std::string variant = [] {
+    const char* env = std::getenv("ET_VK_Q4GSW_COOPMAT_VARIANT");
+    if (!env) {
+      return std::string();
+    }
+    const std::string v(env);
+    if (v.rfind("tsweep_t", 0) == 0) {
+      return v;
+    }
+    return std::string();
+  }();
+  return variant;
+}
+
+// Parses "tsweep_t<M>x<N>k<K>g<SGX><SGY>s<sub>" -> {M, N, K, SGX*SGY*sub}.
+// Returns kQ4gswCoopmatDims unchanged if the token isn't a tsweep_ token
+// (i.e. unset or unrecognized).
+static CoopmatTileDims parse_q4gsw_tsweep_tile(const std::string& variant) {
+  if (variant.rfind("tsweep_t", 0) != 0) {
+    return kQ4gswCoopmatDims;
+  }
+  const size_t t_pos = 8; // length of "tsweep_t"
+  const size_t x_pos = variant.find('x', t_pos);
+  const size_t k_pos = variant.find('k', x_pos);
+  const size_t g_pos = variant.find('g', k_pos);
+  const size_t s_pos = variant.find('s', g_pos);
+  const uint32_t m = std::stoul(variant.substr(t_pos, x_pos - t_pos));
+  const uint32_t n = std::stoul(variant.substr(x_pos + 1, k_pos - x_pos - 1));
+  const uint32_t k = std::stoul(variant.substr(k_pos + 1, g_pos - k_pos - 1));
+  const std::string grid = variant.substr(g_pos + 1, s_pos - g_pos - 1);
+  const uint32_t sgx = grid[0] - '0';
+  const uint32_t sgy = grid[1] - '0';
+  const uint32_t sub = std::stoul(variant.substr(s_pos + 1));
+  return {m, n, k, sgx * sgy * sub};
+}
+
 static CoopmatTileDims coopmat_tile_dims(const std::string& kernel_name) {
   // Exact prefix matches (the "linear_dq8ca_*" names must not match the
   // weight-only entries).
   if (kernel_name.rfind("linear_q4gsw_coopmat", 0) == 0) {
-    return kQ4gswCoopmatDims;
+    return parse_q4gsw_tsweep_tile(q4gsw_coopmat_variant());
   }
   if (kernel_name.rfind("linear_dq8ca_q4gsw_coopmat", 0) == 0) {
     return kDq8caQ4gswCoopmatDims;
@@ -257,16 +305,27 @@ vkapi::ShaderInfo pick_linear_qw_shader(
   if (weight_is_4bit && !is_gemv_case) {
     const int64_t group_size =
         graph->extract_scalar<int64_t>(resize_args.at(0));
+    // specs/028-4w-e2e-tile-sweep: a tsweep_* variant has different tile dims
+    // than the shipped kQ4gswCoopmatDims, so the eligibility check's
+    // alignment gate must use the ACTIVE variant's own dims, not the shipped
+    // constant, or a variant with a smaller/different tile could be wrongly
+    // accepted/rejected against the wrong alignment.
+    const CoopmatTileDims active_dims =
+        parse_q4gsw_tsweep_tile(q4gsw_coopmat_variant());
     if (can_use_q4gsw_coopmat(
             graph,
             output,
             fp_input,
             group_size,
             resize_args.at(2),
-            kQ4gswCoopmatDims.m,
-            kQ4gswCoopmatDims.n,
-            kQ4gswCoopmatDims.k)) {
+            active_dims.m,
+            active_dims.n,
+            active_dims.k)) {
       std::string kernel_name = "linear_q4gsw_coopmat";
+      const std::string& variant = q4gsw_coopmat_variant();
+      if (!variant.empty()) {
+        kernel_name += "_" + variant;
+      }
       // Output storage is buffer (gated above); weight storage matches the
       // existing variants.
       add_storage_type_suffix(kernel_name, graph->storage_type_of(output));
