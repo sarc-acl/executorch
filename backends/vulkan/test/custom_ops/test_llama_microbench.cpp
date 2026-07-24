@@ -61,8 +61,9 @@
 // the run (shared 12 fields, then suite-specific extras -- linear/baseline:
 // storage, M; sdpa: num_kv_heads, toggle), then a report: raw-results
 // table, per-site WMMA speedups (coopmat vs tiled -- and vs the forced-tiled
-// buffer baseline when --baseline ran), and geomeans per scheme/model/suite
-// plus an overall geomean.
+// buffer baseline when the baseline suite ran), a buffer-vs-texture storage
+// comparison over the baseline suite's no-WMMA rows, and geomeans per
+// scheme/model/suite plus an overall geomean.
 //
 // Perf cases run one execute_test_cases() call each (specs/021 Decision 8's
 // pattern) so peak host memory stays bounded by a single case's tensors
@@ -1345,6 +1346,92 @@ void print_report(bool baseline_ran) {
     if (human) {
       std::cout << "(! = buffer case did NOT dispatch a coopmat shader; shown "
                    "for reference, excluded from speedups/geomeans)\n";
+    }
+  }
+
+  // ---- storage comparison: same no-WMMA algorithm, buffer vs texture ----
+  // Built from the baseline suite (forced-tiled), the only place tiled ever
+  // runs on buffer storage: prefill rows compare the tiled shader across
+  // storages, decode rows the _coop gemv shader (force-tiled does not affect
+  // the gemv pick). buf_x > 1 means buffer is faster than texture.
+  bool have_baseline = false;
+  for (const auto& r : g_records) {
+    have_baseline = have_baseline || r.suite == "baseline";
+  }
+  if (have_baseline) {
+    if (human) {
+      std::cout << "\n========== STORAGE (no WMMA): buffer vs texture "
+                   "==========\n";
+      std::cout << std::left << std::setw(7) << "scheme" << std::setw(14)
+                << "model" << std::setw(9) << "regime" << std::setw(7) << "op"
+                << std::setw(15) << "(K,N)" << std::right << std::setw(12)
+                << "tex_us" << std::setw(12) << "buf_us" << std::setw(9)
+                << "buf_x" << std::setw(9) << "kern_x"
+                << "  (prefill = tiled shader, decode = gemv shader)\n";
+    }
+    for (const auto& scheme : kSchemes) {
+      for (const auto& regime : kLinearRegimes) {
+        std::vector<float> ratios;
+        for (const auto& model : kLinearModels) {
+          for (const auto& shape : model.ops) {
+            const Record* tex = find_record(
+                "baseline",
+                model.model,
+                scheme.first,
+                regime.first,
+                shape.op_label,
+                "texture3d");
+            const Record* buf = find_record(
+                "baseline",
+                model.model,
+                scheme.first,
+                regime.first,
+                shape.op_label,
+                "buffer");
+            if (tex == nullptr || buf == nullptr) {
+              continue;
+            }
+            const float ratio =
+                buf->mean_us > 0 ? tex->mean_us / buf->mean_us : 0.0f;
+            const float kern_ratio = (tex->kernel_us > 0 && buf->kernel_us > 0)
+                ? tex->kernel_us / buf->kernel_us
+                : 0.0f;
+            if (ratio > 0) {
+              ratios.push_back(ratio);
+            }
+            if (machine && ratio > 0) {
+              std::cout << "SPEEDUP,storage," << model.model << ","
+                        << scheme.first << "," << shape.op_label << ","
+                        << shape.K << "," << shape.N << "," << tex->mean_us
+                        << "," << buf->mean_us << "," << ratio << ","
+                        << kern_ratio << "," << regime.first << ",-1\n";
+            }
+            if (human) {
+              std::cout << std::left << std::setw(7) << scheme.first
+                        << std::setw(14) << model.model << std::setw(9)
+                        << regime.first << std::setw(7) << shape.op_label
+                        << std::setw(15)
+                        << ("(" + std::to_string(shape.K) + "," +
+                            std::to_string(shape.N) + ")")
+                        << std::right << std::setw(12) << fmt_us(tex->mean_us)
+                        << std::setw(12) << fmt_us(buf->mean_us) << std::setw(9)
+                        << fmt_x(ratio) << std::setw(9) << fmt_x(kern_ratio)
+                        << "\n";
+            }
+          }
+        }
+        if (!ratios.empty()) {
+          if (machine) {
+            std::cout << "GEOMEAN,storage," << scheme.first << ","
+                      << regime.first << "," << geomean(ratios) << "\n";
+          }
+          if (human) {
+            std::cout << "storage " << scheme.first << " " << regime.first
+                      << " geomean (buffer vs texture): "
+                      << fmt_x(geomean(ratios)) << "\n";
+          }
+        }
+      }
     }
   }
 
