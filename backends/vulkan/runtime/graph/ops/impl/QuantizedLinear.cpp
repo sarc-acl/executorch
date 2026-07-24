@@ -306,7 +306,10 @@ static bool can_use_q4gsw_coopmat(
   if (K % tile_k != 0) {
     return false;
   }
-  if (group_size % tile_k != 0) {
+  // Either the K-tile covers whole group(s) (multi-group chunks -- the
+  // dq8ca shader's barrier-amortizing case) or a group covers whole
+  // K-tiles; only a misaligned overlap is ineligible.
+  if (group_size % tile_k != 0 && tile_k % group_size != 0) {
     return false;
   }
   return true;

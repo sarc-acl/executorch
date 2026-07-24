@@ -26,9 +26,21 @@
  * Math (per group; per-channel INT8 is the num_groups == 1 special case
  * where the single "group" spans all of K):
  *   accum_int32 = sum_k(int8_in_k * int_w_signed_k)       // coopMatMulAdd
- *   adjusted    = accum_int32 - input_zp[m] * wsum_signed[group, n]
- *   delta_fp    = float(adjusted) * (input_scale[m] * weight_scale[group, n])
- *   result_fp  += delta_fp                                // across groups
+ *   result_fp  += float(accum_int32) * weight_scale[g, n] // group epilog
+ * with everything row- or K-invariant hoisted OUT of the group loop
+ * (specs/036 epilog restructure; algebraically identical to the previous
+ * per-group form):
+ *   out[m,n] = input_scale[m] * result_fp[m,n]
+ *            - input_zp[m] * input_scale[m] * C[n]        (+ bias)
+ *   C[n]     = sum_g(weight_sums[g,n] * weight_scale[g,n])
+ * The zp*wsum correction is bilinear rank-1 over the whole K reduction, so
+ * it needs no per-group matrix work: C[n] is accumulated as one scalar FMA
+ * per group on the same thread that already prefetches that group's
+ * wsum/wsc, and applied once in the output epilog together with the s_in
+ * row scale. The group epilog is thereby reduced from {izp/wsum broadcasts,
+ * int32 subtract, s_in*s_w outer product, convert, FMA} to {convert, one
+ * column-broadcast FMA}, and no broadcast coopmats stay live across the
+ * main loop (register-pressure relief for the double-accumulator layout).
  *
  * Because INT4 weights are sign-extended to int8 in the B-stage, the
  * "8 * input_sum" term of the tiled correction (which compensates for
@@ -49,12 +61,14 @@
  * with a conditional coopmat epilog crashes the Xclipse PAL compiler at
  * large spec-resolved trip counts (specs/023 finding).
  *
- * Per-(group, N) weight sums/scales live in a SECOND ping-pong pair indexed
- * by group parity: the next group's values are prefetched into registers
- * and stored to the other wsum/wsc slice during the iteration that crosses
- * the group boundary, and the regular per-iteration barrier makes them
- * visible before that group's epilog runs. Per-row activation zp/scale
- * broadcasts are group-invariant and loaded once in the prologue.
+ * Per-(group, N) weight scales live in a SECOND ping-pong pair indexed by
+ * group parity: the next group's values are prefetched into registers and
+ * stored to the other wsc slice during the iteration that crosses the group
+ * boundary, and the regular per-iteration barrier makes them visible before
+ * that group's epilog runs. weight_sums ride the same prefetch but never
+ * touch LDS: they only feed the per-thread scalar C[n] accumulation (see
+ * the hoisted math above). Per-row activation zp/scale land in LDS once in
+ * the prologue and are only broadcast in the output epilog.
  *
  * LDS layout for the MMA operands: K-slab split + ColumnMajor B + per-col
  * skew padding: the int8 WMMA matB lane layout wants 4 K-contiguous bytes
@@ -179,22 +193,35 @@ const uint BSH_SLICE_U32 = NUM_K_SLABS * B_SLAB_U32;
 shared uint Ash_int8[2u * ASH_SLICE_U32];
 shared uint Bsh_int8[2u * BSH_SLICE_U32];
 
-// Per-WG-tile-row activation params (loaded ONCE at WG start; constant
-// across groups).
-shared int   izp_sh[WG_TILE_M];   // int32 (cast from int8 source) for broadcast
-shared float ifs_sh[WG_TILE_M];   // float32 (cast from fp16 source) for broadcast
+// Per-WG-tile-row activation params (loaded ONCE at WG start; only
+// broadcast in the output epilog).
+shared float ifs_sh[WG_TILE_M];   // input_scale[m]
+shared float zpfs_sh[WG_TILE_M];  // input_zp[m] * input_scale[m]
 
-// Per-(group, output-channel) weight params, ping-ponged by group parity.
-// (For per-channel INT8 only slice 0 is ever used.)
-shared int   wsum_sh[2u * WG_TILE_N];
-shared float wsc_sh[2u * WG_TILE_N];
+// Per-(group, output-channel) weight scales, ping-ponged by
+// group % (2 * GROUPS_PER_CHUNK) -- the same double-buffer discipline as
+// Ash/Bsh, so a chunk's step-1 stores never race the previous chunk's
+// epilog reads. Sized for the worst case (one group per K-slab); at
+// CHUNKS_PER_GROUP > 1 or INT8 only the first two slices are used.
+shared float wsc_sh[2u * NUM_K_SLABS * WG_TILE_N];
+
+// Rank-1 zp-correction constant C[n] (see header math), written by each
+// column's owning thread after the group loop.
+shared float C_sh[WG_TILE_N];
 
 #ifdef HAS_BIAS
 shared float bias_sh[WG_TILE_N];
 #endif
 
-// Running fp32 accumulator (across all groups).
-coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>
+// Running accumulator across groups, held in fp16: RADV shader stats showed
+// the fp32 version at 256 VGPRs with 51-65 spilled (the real cost of the
+// double-accumulator layout -- scratch traffic in the MMA loop); halving
+// this array's footprint targets that directly. Precision: each element
+// accumulates one already-scaled (small-magnitude) partial per group, not
+// per-K-element -- the same regime the 4w shader's fp16 accumulator already
+// validates at production K. The per-group product itself is computed in
+// fp32 (int32 -> float -> *wsc) before narrowing.
+coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>
     result[MMAS_PER_SG_M][MMAS_PER_SG_N];
 
 // Per-group int32 MMA accumulator.
@@ -214,33 +241,43 @@ void main() {
 
 #ifdef WEIGHT_INT4
   const uint num_groups = uint(num_groups_arg);
-  const uint CHUNKS_PER_GROUP = uint(K4_per_group) * 4u / WG_TILE_K;
+  // A chunk may cover SEVERAL whole quant groups (WG_TILE_K >= group K-span,
+  // the fixed-cost-amortizing case: one barrier serves GROUPS_PER_CHUNK
+  // groups' worth of MMA), or a group may span several chunks (the previous
+  // structure). The dispatch gate guarantees one of the two divides.
+  const uint GROUP_K = uint(K4_per_group) * 4u;
+  const uint GROUPS_PER_CHUNK =
+      WG_TILE_K >= GROUP_K ? WG_TILE_K / GROUP_K : 1u;
+  const uint CHUNKS_PER_GROUP =
+      WG_TILE_K >= GROUP_K ? 1u : GROUP_K / WG_TILE_K;
 #else
-  // Per-channel: a single quant "group" spanning all of K. The nested
-  // groups x chunks loop below collapses to a flat chunk loop, the wsum/wsc
-  // ping-pong never crosses a boundary, and the epilog runs exactly once.
+  // Per-channel: a single quant "group" spanning all of K; the epilog runs
+  // exactly once, on the last chunk.
   const uint num_groups = 1u;
+  const uint GROUPS_PER_CHUNK = 1u;
   const uint CHUNKS_PER_GROUP = uint(num_groups_arg);
 #endif
-  const uint num_chunks = num_groups * CHUNKS_PER_GROUP;
+  const uint num_chunks = num_groups * CHUNKS_PER_GROUP / GROUPS_PER_CHUNK;
+  const uint SLABS_PER_SEG = NUM_K_SLABS / GROUPS_PER_CHUNK;
+  const uint WSC_SLOTS = 2u * GROUPS_PER_CHUNK;
 
   const uint tile_m_start = WG_TILE_M * tileID.y;
   const uint tile_n_start = WG_TILE_N * tileID.x;
 
   [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
     [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
-      result[i][j] = coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0.0);
+      result[i][j] = coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0.0);
       accum_int32[i][j] = coopmat<int32_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0);
     }
   }
 
-  // --- A staging thread map: one (m4, k4) ivec4 block per active thread ---
-  // (4 M-rows x 4 K-positions; each block expands to 4 slab-major LDS uints.)
+  // --- A staging thread map: (m4, k4) ivec4 blocks, striped over threads
+  // (multiple blocks per thread once WG_TILE_K grows past the one-block-
+  // per-thread point). Each block covers 4 M-rows x 4 K-positions and
+  // expands to 4 slab-major LDS uints. ---
   const uint K_BLOCKS_PER_CHUNK = WG_TILE_K >> 2u;
-  const uint A_ACTIVE_THREADS = (WG_TILE_M >> 2u) * K_BLOCKS_PER_CHUNK;
-  const uint a_m_block = gl_LocalInvocationID.x / K_BLOCKS_PER_CHUNK;
-  const uint a_k_block = gl_LocalInvocationID.x % K_BLOCKS_PER_CHUNK;
-  const bool a_active = gl_LocalInvocationID.x < A_ACTIVE_THREADS;
+  const uint A_TOTAL_BLOCKS = (WG_TILE_M >> 2u) * K_BLOCKS_PER_CHUNK;
+  const uint A_BLOCKS_PER_THREAD = (A_TOTAL_BLOCKS + WG_SIZE - 1u) / WG_SIZE;
 
 #ifdef WEIGHT_INT4
   // --- B staging thread map: (block, col) slots; each slot extracts one
@@ -266,11 +303,11 @@ void main() {
 #endif
 
   // Prefetch temp registers.
-  ivec4 temp_A;
+  ivec4 temp_A[A_BLOCKS_PER_THREAD];
 #ifdef WEIGHT_INT4
   ivec4 temp_B[B_SLOTS_PER_THREAD];
-  int   temp_wsum;
-  float temp_wsc;
+  int   temp_wsum[NUM_K_SLABS]; // [GROUPS_PER_CHUNK] used
+  float temp_wsc[NUM_K_SLABS];
 #else
   ivec4 temp_B;
 #endif
@@ -279,7 +316,7 @@ void main() {
   // PROLOGUE
   // =========================================================
   // One-time: per-row input zp + scale (texture3d, one m4-block of 4 rows per
-  // texel) — constant across K groups.
+  // texel) — constant across K groups, only used in the output epilog.
   if (gl_LocalInvocationID.x < (WG_TILE_M >> 2u)) {
     const uint m4 = (tile_m_start >> 2u) + gl_LocalInvocationID.x;
     const vec4  sc = vec4(texelFetch(t_int8_input_scales, ivec3(m4, 0, 0), 0));
@@ -287,45 +324,37 @@ void main() {
     const uint base = gl_LocalInvocationID.x * 4u;
     ifs_sh[base + 0u] = sc.x;  ifs_sh[base + 1u] = sc.y;
     ifs_sh[base + 2u] = sc.z;  ifs_sh[base + 3u] = sc.w;
-    izp_sh[base + 0u] = zp.x;  izp_sh[base + 1u] = zp.y;
-    izp_sh[base + 2u] = zp.z;  izp_sh[base + 3u] = zp.w;
+    zpfs_sh[base + 0u] = float(zp.x) * sc.x;
+    zpfs_sh[base + 1u] = float(zp.y) * sc.y;
+    zpfs_sh[base + 2u] = float(zp.z) * sc.z;
+    zpfs_sh[base + 3u] = float(zp.w) * sc.w;
   }
-  // Group 0 weight sums/scales -> slice 0.
+  // Chunk 0's group(s): weight scale(s) -> their wsc slots; their C[n]
+  // contributions -> C_reg.
+  float C_reg = 0.0;
   if (gl_LocalInvocationID.x < WG_TILE_N) {
     const uint n_idx = tile_n_start + gl_LocalInvocationID.x;
-    f16vec4 sv = t_weight_scales[n_idx >> 2u];
-    wsc_sh[gl_LocalInvocationID.x] = float(sv[n_idx & 3u]);
-    wsum_sh[gl_LocalInvocationID.x] = t_weight_sums[n_idx];
+    for (uint g = 0; g < GROUPS_PER_CHUNK; ++g) {
+      f16vec4 sv = t_weight_scales[g * N4 + (n_idx >> 2u)];
+      const float w = float(sv[n_idx & 3u]);
+      wsc_sh[g * WG_TILE_N + gl_LocalInvocationID.x] = w;
+      C_reg += float(t_weight_sums[g * N + n_idx]) * w;
+    }
   }
   memoryBarrierShared();
   barrier();
-
-  // izp/ifs are per-row activation params, constant across K groups —
-  // broadcast them into coopmats ONCE; the group epilog reuses them every
-  // group (they depend only on the row block i, not on the group or j).
-  coopmat<int32_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>
-      izp_bcast[MMAS_PER_SG_M];
-  coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>
-      ifs_bcast[MMAS_PER_SG_M];
-  [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
-    const uint local_m_base = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
-    coopMatLoad(
-        izp_bcast[i], izp_sh,
-        local_m_base, /*stride=*/0u,
-        gl_CooperativeMatrixLayoutColumnMajor);
-    coopMatLoad(
-        ifs_bcast[i], ifs_sh,
-        local_m_base, /*stride=*/0u,
-        gl_CooperativeMatrixLayoutColumnMajor);
-  }
 
   // dbuf2: prefetch chunk 0 into temp registers only -- no shared-memory
   // write, no barrier here. The main loop's first iteration stores temp
   // into slice 0 and barriers as normal (uniform code path for every chunk,
   // including chunk 0).
-  if (a_active) {
-    const uint m4_global = (tile_m_start >> 2u) + a_m_block;
-    temp_A = t_packed_int8_input[m4_global * nblocks_x_A + a_k_block];
+  [[unroll]] for (uint ai = 0; ai < A_BLOCKS_PER_THREAD; ++ai) {
+    const uint blk = gl_LocalInvocationID.x + ai * WG_SIZE;
+    if (blk < A_TOTAL_BLOCKS) {
+      const uint m4_global = (tile_m_start >> 2u) + blk / K_BLOCKS_PER_CHUNK;
+      temp_A[ai] =
+          t_packed_int8_input[m4_global * nblocks_x_A + blk % K_BLOCKS_PER_CHUNK];
+    }
   }
 #ifdef WEIGHT_INT4
   [[unroll]] for (uint si = 0; si < B_SLOTS_PER_THREAD; ++si) {
@@ -351,40 +380,42 @@ void main() {
 #endif
 
   // =========================================================
-  // MAIN LOOP — nested groups x chunks (the flattened single loop with a
-  // conditional coopmat epilog crashes the Xclipse PAL compiler at large
-  // spec-resolved trip counts). One barrier per chunk, UNCONDITIONAL every
-  // iteration (dbuf2 "store-first" ordering). Chunk iteration (global index
-  // `chunk`):
-  //   1. store     — temp (already holding this chunk's data, from the
-  //                  prologue for chunk 0 or from the previous iteration's
-  //                  step 4) -> A/B slice (chunk%2), unpacking the weight;
-  //                  on a group boundary (first chunk of a group > 0),
-  //                  also store this group's wsum/wsc -> slice (group_i%2).
-  //   2. barrier   — A/B slice (chunk%2) (and, on a group boundary, wsum/wsc
-  //                  slice (group_i%2)) fully written; UNCONDITIONAL, not
-  //                  skipped on the last chunk.
-  //   3. int8 MMA  — on slice (chunk%2) into accum_int32.
-  //   4. prefetch  — chunk+1 (A blocks, B blocks) into temp; when chunk+1
-  //                  starts a new group, also that group's wsum/wsc
-  //                  element. Skipped entirely on the final chunk.
-  // The group epilog runs unconditionally at the tail of each group.
+  // MAIN LOOP — FLAT over chunks (dbuf2 "store-first" ordering, one
+  // UNCONDITIONAL barrier per chunk). When WG_TILE_K spans several quant
+  // groups (GROUPS_PER_CHUNK > 1), one barrier amortizes over all of them:
+  // step 3 runs the MMA one group-segment at a time with the group epilog
+  // at each segment tail. specs/023's nested groups x chunks structure
+  // (and its ban on a conditional coopmat epilog) worked around an Xclipse
+  // PAL compiler crash; this 780M-only branch compiles with RADV/ACO,
+  // where the flat form is fine and the nesting only cost registers.
+  //   1. store     — temp (prologue for chunk 0, else the previous
+  //                  iteration's step 4) -> A/B slice (chunk%2), unpacking
+  //                  the weight; on each group-opening chunk also that
+  //                  chunk's group wsc slot(s) + C[n] scalar FMA.
+  //   2. barrier   — cur slices fully written; never skipped.
+  //   3. int8 MMA  — per group-segment, epilog at owning segment's tail.
+  //   4. prefetch  — chunk+1 A/B blocks (+ its groups' wsum/wsc when it
+  //                  opens them). Skipped entirely on the final chunk.
   // =========================================================
-  uint chunk = 0;
-  for (uint group_i = 0; group_i < num_groups; ++group_i) {
-    for (uint inner = 0; inner < CHUNKS_PER_GROUP; ++inner, ++chunk) {
+  for (uint chunk = 0; chunk < num_chunks; ++chunk) {
+    const uint first_group = (chunk * GROUPS_PER_CHUNK) / CHUNKS_PER_GROUP;
+    {
       const bool has_next = chunk + 1u < num_chunks;
       const uint cur_a = (chunk % 2u) * ASH_SLICE_U32;
       const uint cur_b = (chunk % 2u) * BSH_SLICE_U32;
 
       // --- 1. store temp (this chunk) -> cur slice ---
-      if (a_active) {
-        const uint slab_idx       = a_k_block / (MMA_K >> 2u);
-        const uint k_uint_in_slab = a_k_block % (MMA_K >> 2u);
-        const uint base_row = a_m_block * 4u;
-        [[unroll]] for (uint m4i = 0; m4i < 4u; ++m4i) {
-          Ash_int8[cur_a + slab_idx * A_SLAB_U32 + (base_row + m4i) * A_STRIDE_U32 + k_uint_in_slab] =
-              uint(temp_A[m4i]);
+      [[unroll]] for (uint ai = 0; ai < A_BLOCKS_PER_THREAD; ++ai) {
+        const uint blk = gl_LocalInvocationID.x + ai * WG_SIZE;
+        if (blk < A_TOTAL_BLOCKS) {
+          const uint a_k_block = blk % K_BLOCKS_PER_CHUNK;
+          const uint slab_idx       = a_k_block / (MMA_K >> 2u);
+          const uint k_uint_in_slab = a_k_block % (MMA_K >> 2u);
+          const uint base_row = (blk / K_BLOCKS_PER_CHUNK) * 4u;
+          [[unroll]] for (uint m4i = 0; m4i < 4u; ++m4i) {
+            Ash_int8[cur_a + slab_idx * A_SLAB_U32 + (base_row + m4i) * A_STRIDE_U32 + k_uint_in_slab] =
+                uint(temp_A[ai][m4i]);
+          }
         }
       }
 #ifdef WEIGHT_INT4
@@ -408,13 +439,18 @@ void main() {
         Bsh_int8[cur_b + slab_idx * B_SLAB_U32 + n_col * B_STRIDE_U32 + k4_in_slab] =
             uint(v0 | (v1 << 8) | (v2 << 16) | (v3 << 24));
       }
-      // Group boundary (this is the first chunk of a group other than
-      // group 0): store this group's wsum/wsc, prefetched by the previous
-      // group's last chunk (step 4 below).
-      if (inner == 0u && group_i > 0u && gl_LocalInvocationID.x < WG_TILE_N) {
-        const uint wbase_cur = (group_i % 2u) * WG_TILE_N;
-        wsum_sh[wbase_cur + gl_LocalInvocationID.x] = temp_wsum;
-        wsc_sh[wbase_cur + gl_LocalInvocationID.x] = temp_wsc;
+      // Group-opening chunk (beyond prologue-covered chunk 0): store the
+      // prefetched wsc slot(s) and fold wsum into the per-thread C[n]
+      // scalar (never touches LDS). Slots cycle group % WSC_SLOTS, so this
+      // never overwrites a slot the previous chunk's epilog still reads.
+      if (chunk > 0u && (chunk % CHUNKS_PER_GROUP) == 0u &&
+          gl_LocalInvocationID.x < WG_TILE_N) {
+        [[unroll]] for (uint g = 0; g < GROUPS_PER_CHUNK; ++g) {
+          wsc_sh
+              [((first_group + g) % WSC_SLOTS) * WG_TILE_N +
+               gl_LocalInvocationID.x] = temp_wsc[g];
+          C_reg += float(temp_wsum[g]) * temp_wsc[g];
+        }
       }
 #else
       if (b_active) {
@@ -432,43 +468,76 @@ void main() {
       memoryBarrierShared();
       barrier();
 
-      // --- 3. int8 MMA on the cur slice ---
-      [[unroll]] for (uint k = 0; k < NUM_K_SLABS; ++k) {
-        const uint slab_a_base_u32 = cur_a + k * A_SLAB_U32;
-        const uint slab_b_base_u32 = cur_b + k * B_SLAB_U32;
+      // --- 3. int8 MMA, one group-segment at a time; the group epilog
+      // (result += float(accum) * s_w, reset accum -- zp/wsum and s_in are
+      // hoisted to the output epilog, see header math) runs at a segment
+      // tail whenever that segment closes its group. ---
+      [[unroll]] for (uint seg = 0; seg < GROUPS_PER_CHUNK; ++seg) {
+        [[unroll]] for (uint k = seg * SLABS_PER_SEG;
+                        k < (seg + 1u) * SLABS_PER_SEG;
+                        ++k) {
+          const uint slab_a_base_u32 = cur_a + k * A_SLAB_U32;
+          const uint slab_b_base_u32 = cur_b + k * B_SLAB_U32;
 
-        coopmat<int8_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA> matA[MMAS_PER_SG_M];
-        [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
-          const uint row_a = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
-          coopMatLoad(
-              matA[i], Ash_int8,
-              slab_a_base_u32 + row_a * A_STRIDE_U32,
-              A_STRIDE_U32,
-              gl_CooperativeMatrixLayoutRowMajor);
+          coopmat<int8_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA> matA[MMAS_PER_SG_M];
+          [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+            const uint row_a = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
+            coopMatLoad(
+                matA[i], Ash_int8,
+                slab_a_base_u32 + row_a * A_STRIDE_U32,
+                A_STRIDE_U32,
+                gl_CooperativeMatrixLayoutRowMajor);
+          }
+
+          coopmat<int8_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> matB;
+          [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+            const uint col_b = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
+            coopMatLoad(
+                matB, Bsh_int8,
+                slab_b_base_u32 + col_b * B_STRIDE_U32,
+                B_STRIDE_U32,
+                gl_CooperativeMatrixLayoutColumnMajor);
+            [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+              accum_int32[i][j] = coopMatMulAdd(matA[i], matB, accum_int32[i][j]);
+            }
+          }
         }
 
-        coopmat<int8_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> matB;
-        [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
-          const uint col_b = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
-          coopMatLoad(
-              matB, Bsh_int8,
-              slab_b_base_u32 + col_b * B_STRIDE_U32,
-              B_STRIDE_U32,
-              gl_CooperativeMatrixLayoutColumnMajor);
-          [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
-            accum_int32[i][j] = coopMatMulAdd(matA[i], matB, accum_int32[i][j]);
+        if ((chunk + 1u) % CHUNKS_PER_GROUP == 0u) {
+          const uint wbase = ((first_group + seg) % WSC_SLOTS) * WG_TILE_N;
+          [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+            const uint local_n_base = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
+
+            coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> wsc_bcast;
+            coopMatLoad(
+                wsc_bcast, wsc_sh,
+                wbase + local_n_base, /*stride=*/0u,
+                gl_CooperativeMatrixLayoutRowMajor);
+
+            [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+              result[i][j] +=
+                  coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(
+                      coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(
+                          accum_int32[i][j]) *
+                      wsc_bcast);
+              accum_int32[i][j] = coopmat<int32_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0);
+            }
           }
         }
       }
 
       // --- 4. prefetch chunk+1 -> temp ---
       if (has_next) {
-        const bool group_crossing = (inner + 1u == CHUNKS_PER_GROUP);
         const uint chunkK_nxt = (chunk + 1u) * WG_TILE_K;
-        if (a_active) {
-          const uint m4_global = (tile_m_start >> 2u) + a_m_block;
-          const uint k4_global = (chunkK_nxt >> 2u) + a_k_block;
-          temp_A = t_packed_int8_input[m4_global * nblocks_x_A + k4_global];
+        [[unroll]] for (uint ai = 0; ai < A_BLOCKS_PER_THREAD; ++ai) {
+          const uint blk = gl_LocalInvocationID.x + ai * WG_SIZE;
+          if (blk < A_TOTAL_BLOCKS) {
+            const uint m4_global =
+                (tile_m_start >> 2u) + blk / K_BLOCKS_PER_CHUNK;
+            const uint k4_global =
+                (chunkK_nxt >> 2u) + blk % K_BLOCKS_PER_CHUNK;
+            temp_A[ai] = t_packed_int8_input[m4_global * nblocks_x_A + k4_global];
+          }
         }
 #ifdef WEIGHT_INT4
         [[unroll]] for (uint si = 0; si < B_SLOTS_PER_THREAD; ++si) {
@@ -482,11 +551,17 @@ void main() {
           temp_B[si] = texelFetch(t_packed_weight, ivec2(k4_blk, n8_blk), 0);
 #endif
         }
-        if (group_crossing && gl_LocalInvocationID.x < WG_TILE_N) {
+        // chunk+1 opens new group(s): prefetch their wsc/wsum.
+        if ((chunk + 1u) % CHUNKS_PER_GROUP == 0u &&
+            gl_LocalInvocationID.x < WG_TILE_N) {
+          const uint next_fg =
+              ((chunk + 1u) * GROUPS_PER_CHUNK) / CHUNKS_PER_GROUP;
           const uint n_idx = tile_n_start + gl_LocalInvocationID.x;
-          f16vec4 sv = t_weight_scales[(group_i + 1u) * N4 + (n_idx >> 2u)];
-          temp_wsc = float(sv[n_idx & 3u]);
-          temp_wsum = t_weight_sums[(group_i + 1u) * N + n_idx];
+          [[unroll]] for (uint g = 0; g < GROUPS_PER_CHUNK; ++g) {
+            f16vec4 sv = t_weight_scales[(next_fg + g) * N4 + (n_idx >> 2u)];
+            temp_wsc[g] = float(sv[n_idx & 3u]);
+            temp_wsum[g] = t_weight_sums[(next_fg + g) * N + n_idx];
+          }
         }
 #else
         if (b_active) {
@@ -500,71 +575,63 @@ void main() {
         }
 #endif
       }
-    }  // chunks
-
-    // --- Group epilog: dequant accum_int32 -> result, reset accum ---
-    {
-      const uint wbase = (group_i % 2u) * WG_TILE_N;
-      [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
-        const uint local_n_base = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
-
-        coopmat<int32_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> wsum_bcast;
-        coopMatLoad(
-            wsum_bcast, wsum_sh,
-            wbase + local_n_base, /*stride=*/0u,
-            gl_CooperativeMatrixLayoutRowMajor);
-
-        coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> wsc_bcast;
-        coopMatLoad(
-            wsc_bcast, wsc_sh,
-            wbase + local_n_base, /*stride=*/0u,
-            gl_CooperativeMatrixLayoutRowMajor);
-
-        [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
-          coopmat<int32_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> adjusted =
-              accum_int32[i][j] - izp_bcast[i] * wsum_bcast;
-          coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> adjusted_fp =
-              coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(adjusted);
-          coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> scales_outer =
-              ifs_bcast[i] * wsc_bcast;
-          result[i][j] += adjusted_fp * scales_outer;
-          accum_int32[i][j] = coopmat<int32_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0);
-        }
-      }
     }
-  }  // groups
+  }  // chunks
 
-  // --- Bias (optional) ---
+  // --- C[n] + optional bias -> LDS for the output-epilog broadcasts ---
+  if (gl_LocalInvocationID.x < WG_TILE_N) {
+    C_sh[gl_LocalInvocationID.x] = C_reg;
+  }
 #ifdef HAS_BIAS
   if (apply_bias > 0) {
     for (uint t = gl_LocalInvocationID.x; t < WG_TILE_N; t += WG_SIZE) {
       bias_sh[t] = float(t_bias[tile_n_start + t]);
     }
-    memoryBarrierShared();
-    barrier();
   }
 #endif
+  memoryBarrierShared();
+  barrier();
 
-  // --- Store result tile ---
-  // N for the store address math MUST come from the spec constant, not the
-  // sizes UBO (see out_N_arg above).
+  // --- Output epilog + store: out = s_in[m]*result - zp[m]*s_in[m]*C[n]
+  // (+ bias). N for the store address math MUST come from the spec
+  // constant, not the sizes UBO (see out_N_arg above). ---
   const uint N_out = uint(out_N_arg);
   [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+    const uint local_m_base = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
+    coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> ifs_bcast;
+    coopMatLoad(
+        ifs_bcast, ifs_sh,
+        local_m_base, /*stride=*/0u,
+        gl_CooperativeMatrixLayoutColumnMajor);
+    coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> zpfs_bcast;
+    coopMatLoad(
+        zpfs_bcast, zpfs_sh,
+        local_m_base, /*stride=*/0u,
+        gl_CooperativeMatrixLayoutColumnMajor);
+
     [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
-      const uint gi = tile_m_start + MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
-      const uint gj = tile_n_start + MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
+      const uint local_n = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
+      const uint gi = tile_m_start + local_m_base;
+      const uint gj = tile_n_start + local_n;
+
+      coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> C_bcast;
+      coopMatLoad(C_bcast, C_sh, local_n, 0u, gl_CooperativeMatrixLayoutRowMajor);
+      coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> acc =
+          ifs_bcast *
+              coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(
+                  result[i][j]) -
+          zpfs_bcast * C_bcast;
 
 #ifdef HAS_BIAS
       if (apply_bias > 0) {
-        const uint local_n = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
         coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> bias_tile;
         coopMatLoad(bias_tile, bias_sh, local_n, 0u, gl_CooperativeMatrixLayoutRowMajor);
-        result[i][j] += bias_tile;
+        acc += bias_tile;
       }
 #endif
 
       coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> out_tile =
-          coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]);
+          coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(acc);
       coopMatStore(
           out_tile, t_output,
           gi * N_out + gj, N_out,
