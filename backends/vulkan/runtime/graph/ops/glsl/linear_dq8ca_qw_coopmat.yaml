@@ -10,13 +10,14 @@
 #   WEIGHT_NBITS=4 -> linear_dq8ca_q4gsw_coopmat (INT4 group-symmetric)
 # Requires the VK_COMPONENT_TYPE_SINT8_KHR cooperative matrix property to be
 # enumerated on the device.
-# specs/027-e2e-tile-sweep: tile geometry updated from 128x64/K32/2x2 to
-# 64x32/K32/1x2 (specs/027's e2e-ranked sweep winner, +9.32% confirmed real
-# end-to-end prefill throughput vs the prior geometry, not just isolated
-# microbenchmark GFLOP/s). SUBGROUP_SIZE stays 64: specs/026 found
-# subgroup=32 is legal (no compiler crash) but sharply tile-shape-dependently
-# incorrect, and this tile shape was not verified correct at subgroup=32 --
-# see specs/026-8da4w-subgroup32-sweep/results/ before considering it.
+# specs/038-dq8ca-g128-tile-sweep: 128x64/K32 with a 4x2 subgroup grid at
+# sg32 (WG_SIZE 256). First trustworthy sweep on the specs/036 post-restructure
+# kernel at the real group_size 128. Splitting N four ways (SG_GRID_X=4) drops
+# MMAS_PER_SG_N to 1, halving the double-accumulator VGPR footprint (256 -> 128)
+# and doubling occupancy (4 -> 8 waves/SIMD): 8da4w kernel geomean 0.94 -> 1.00x
+# vs the tiled dot4 baseline, e2e 1B prefill ~1843 -> ~1939 tok/s (parity with
+# tiled). sg32 gates 44/44 correct on RADV at this shape (specs/026's sg32 ban
+# was Xclipse-specific). See specs/038 for the full sweep and guardrails.
 
 linear_dq8ca_qw_coopmat:
   parameter_names_with_default_values:
@@ -30,7 +31,7 @@ linear_dq8ca_qw_coopmat:
     WG_TILE_M: 128
     WG_TILE_N: 64
     WG_TILE_K: 32
-    SG_GRID_X: 2
+    SG_GRID_X: 4
     SG_GRID_Y: 2
     SUBGROUP_SIZE: 32
   shader_variants:

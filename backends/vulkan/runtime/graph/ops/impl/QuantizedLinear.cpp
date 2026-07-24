@@ -72,9 +72,10 @@ struct CoopmatTileDims {
 // linear_qw_coopmat.yaml: 128x64 k32, 2x2 subgroup grid, sg32 -> WG_SIZE 128
 // (specs/035 780M winner, was k16).
 constexpr CoopmatTileDims kQ4gswCoopmatDims = {128, 64, 32, 128};
-// linear_dq8ca_qw_coopmat.yaml: 64x128 k32, 4x1 grid, sg32 -> WG_SIZE 128
-// (specs/035 780M e2e winner; specs/027's M5 winner was 64x32x32/1x2/sg64).
-constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {128, 64, 32, 128};
+// linear_dq8ca_qw_coopmat.yaml: 128x64 k32, 4x2 grid, sg32 -> WG_SIZE 256
+// (specs/038 780M g128 winner: N-split-4 -> MMAS_PER_SG_N=1 halves VGPR,
+// doubling occupancy 4->8 waves/SIMD; 8da4w kernel geomean 0.94->1.00x).
+constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {128, 64, 32, 256};
 
 // specs/028-4w-e2e-tile-sweep: ET_VK_Q4GSW_COOPMAT_VARIANT=tsweep_t<M>x<N>k<K>
 // g<SGX><SGY>s<32|64> swaps the fp16 q4gsw coopmat dispatch to the matching

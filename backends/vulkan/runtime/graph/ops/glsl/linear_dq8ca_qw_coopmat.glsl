@@ -77,13 +77,15 @@
  * per lane with a bank-conflict-free col stride. Each uint holds 4 packed
  * int8.
  *
- * Tile hierarchy (yaml): MMA 16x16x16 int8, WG_TILE 64x32, WG_TILE_K = 32,
- * 2 subgroups x 64 threads (1x2 grid) -- specs/027's e2e-ranked winner.
- * SUBGROUP_SIZE stays 64: specs/026 found subgroup=32 is legal (no compiler
- * crash) but sharply tile-shape-dependently INCORRECT, and this tile shape
- * was not one of the two shapes specs/026 found fully-correct at subgroup=32
- * -- see specs/026-8da4w-subgroup32-sweep/results/ for the full picture
- * before considering subgroup=32 at this or any other tile shape.
+ * Tile hierarchy (yaml): MMA 16x16x16 int8, WG_TILE 128x64, WG_TILE_K = 32,
+ * 8 subgroups x 32 threads (4x2 grid, WG_SIZE 256) -- specs/038's g128 sweep
+ * winner on 780M/RADV. The 4x2 grid puts SG_TILE at 64x16 (MMAS_PER_SG 4x1):
+ * one matB load reused across four matA, and only one N-tile of the double
+ * accumulator per subgroup, which halves VGPR vs a 2x2 grid (256 -> 128) and
+ * doubles occupancy (4 -> 8 waves/SIMD). SUBGROUP_SIZE 32 gates 44/44 correct
+ * at this shape on RADV/ACO: specs/026's subgroup=32 ban was Xclipse-specific
+ * (that compiler miscompiled sg32 tile-shape-dependently); it does not apply
+ * to this device. See specs/038-dq8ca-g128-tile-sweep for the sweep guardrails.
  *
  * Hard preconditions:
  *   M % WG_TILE_M == 0, N % WG_TILE_N == 0, K % WG_TILE_K == 0,
