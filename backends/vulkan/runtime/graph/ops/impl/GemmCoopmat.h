@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <cstdlib>
+
 #include <executorch/backends/vulkan/runtime/graph/ComputeGraph.h>
 
 namespace vkcompute {
@@ -45,10 +47,22 @@ inline bool is_coopmat_eligible(
   if (graph.dim_of(out) > 2) {
     return false;
   }
+  // Experiment hook (specs/034/035): ET_VK_FORCE_FP16_COOPMAT=1 lifts the
+  // integrated-GPU block AND the M-alignment check so the fp16 coopmat path
+  // can be exercised on iGPUs. The eligibility decision (and the matching
+  // buffer weight prepack) is made once at graph build, where the serialized
+  // token dim is M=1 and would never pass M % 64 — prefill resizes M to the
+  // real (tile-aligned) prompt length afterwards. UNSAFE for decode: M=1
+  // dispatches still store a full 64-row tile. Prefill-only measurement hook,
+  // never enable for generation runs.
+  const bool force_fp16_coopmat =
+      std::getenv("ET_VK_FORCE_FP16_COOPMAT") != nullptr;
   const auto* adapter = graph.context()->adapter_ptr();
   return adapter->supports_cooperative_matrix() &&
-      adapter->subgroup_size() == 64 && !adapter->is_integrated_gpu() &&
-      graph.storage_type_of(out) == utils::kBuffer && M % kCoopmatTileM == 0 &&
+      adapter->subgroup_size() == 64 &&
+      (force_fp16_coopmat || !adapter->is_integrated_gpu()) &&
+      graph.storage_type_of(out) == utils::kBuffer &&
+      (force_fp16_coopmat || M % kCoopmatTileM == 0) &&
       N % kCoopmatTileN == 0 && K % kCoopmatTileK == 0;
 }
 
