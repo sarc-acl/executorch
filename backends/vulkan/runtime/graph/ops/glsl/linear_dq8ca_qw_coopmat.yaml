@@ -27,11 +27,11 @@ linear_dq8ca_qw_coopmat:
     MMA_M: 16
     MMA_N: 16
     MMA_K: 16
-    WG_TILE_M: 64
-    WG_TILE_N: 128
+    WG_TILE_M: 128
+    WG_TILE_N: 64
     WG_TILE_K: 32
-    SG_GRID_X: 4
-    SG_GRID_Y: 1
+    SG_GRID_X: 2
+    SG_GRID_Y: 2
     SUBGROUP_SIZE: 32
   shader_variants:
     - NAME: linear_dq8ca_q4gsw_coopmat_buffer_texture2d_half
