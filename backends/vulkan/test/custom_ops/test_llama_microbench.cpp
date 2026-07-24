@@ -10,20 +10,24 @@
 // of Llama 3.1 8B / 3.2 3B / 3.2 1B (2048-token prefill, single-token
 // decode; BENCHMARKING.md's ctx3072 PTEs).
 //
-// Suites (all run when no suite flag is given):
-//   --linear    coopmat-vs-tiled for the two int4 linear types:
+// The run is composed from orthogonal ingredient axes (every axis defaults
+// to "all"; see print_usage for the full flag list):
+//
+//   --suite=linear,sdpa,baseline   which groups run
+//     linear    coopmat-vs-tiled for the two int4 linear types:
 //                 4w    = linear_q4gsw          (weight-only int4)
 //                 8da4w = linear_dq8ca_q4gsw    (dyn-act int8 x int4 weight)
 //               Texture3D+Half output selects the tiled baseline; Buffer+Half
 //               lets QuantizedLinear.cpp's gate pick the _coopmat (WMMA)
 //               shader at prefill. At decode (M=1) is_gemv_case
 //               short-circuits to the "_coop" gemv shader for BOTH storages.
-//   --baseline  the same linear cases run with ET_VK_FORCE_TILED_LINEAR=1
+//     baseline  the same linear cases run with ET_VK_FORCE_TILED_LINEAR=1
 //               (specs/001's no-WMMA baseline): the buffer rows give the
 //               forced-tiled reference on the SAME storage the coopmat
 //               shader uses, isolating the algorithm from the storage type
-//               (specs/004).
-//   --sdpa      llama.custom_sdpa.default tiled-vs-coopmat at each model's
+//               (specs/004). All-tiled by construction, so it only runs
+//               when the tiled variant is selected.
+//     sdpa      llama.custom_sdpa.default tiled-vs-coopmat at each model's
 //               real attention shape (specs/010/021): prefill S=2048/ctx=3072
 //               and decode S=1/ctx=3072/input_pos=3071 (the single most
 //               expensive real decode step). SDPA coopmat is default-on in
@@ -31,12 +35,18 @@
 //               per-case here to measure both variants. Decode never
 //               considers coopmat (is_gemv), so only tiled is measured there.
 //
-// Other flags:
-//   --model=<substr>     only run models whose name contains <substr>
-//   --correctness-only   run just the linear correctness matrix, skip perf
-//   --skip-correctness   skip the linear correctness gate before perf
-//   --list               print every case that would run (with sizes), no GPU
-//   --help
+//   --variant=tiled,coopmat   which shader families run: tiled (no WMMA;
+//               alias "baseline") = linear texture rows + sdpa disabled
+//               toggle; coopmat (alias "wmma") = linear buffer rows + sdpa
+//               enabled toggle. Speedup tables need both.
+//   --regime=prefill,decode   which dispatch regimes run.
+//   --model=<substr>          only models whose name contains <substr>.
+//   --warmup=N / --runs=N     iteration counts (default 3 / 5).
+//   --quick                   preset: --warmup=1 --runs=1 --skip-correctness.
+//   --output=human|machine|both   machine = streamed RESULT, lines plus
+//               SPEEDUP,/GEOMEAN, lines from the report, no tables; human =
+//               tables only, no CSV; both (default) = everything.
+//   --correctness-only / --skip-correctness / --list / --help
 //
 // Matching the real exported model:
 //   - per-model linear (K,N) from each checkpoint's params.json. lm_head
@@ -116,10 +126,38 @@ struct Record {
 
 std::vector<Record> g_records;
 
+// CLI-selected ingredients (see the file header / print_usage). Every axis
+// defaults to "all".
+struct Options {
+  bool suite_linear = true;
+  bool suite_baseline = true;
+  bool suite_sdpa = true;
+  bool variant_tiled = true;
+  bool variant_coopmat = true;
+  bool regime_prefill = true;
+  bool regime_decode = true;
+  bool out_human = true;
+  bool out_machine = true;
+  int warmup = 3;
+  int runs = 5;
+  bool correctness_only = false;
+  bool skip_correctness = false;
+  bool list_only = false;
+  std::string model_filter;
+};
+Options g_opts;
+
+bool regime_selected(const std::string& regime) {
+  return regime == "prefill" ? g_opts.regime_prefill : g_opts.regime_decode;
+}
+
 // specs/021 (research.md Decision 1): shared unified RESULT,... line --
 // 12 shared fields, then suite-specific extras.
 void emit(const Record& r) {
   g_records.push_back(r);
+  if (!g_opts.out_machine) {
+    return;
+  }
   std::cout << "RESULT," << r.suite << "," << r.model << "," << r.scheme << ","
             << r.regime << ",";
   if (r.suite == "sdpa") {
@@ -411,8 +449,6 @@ const std::vector<std::pair<const char*, int64_t>> kLinearRegimes = {
     {"prefill", 2048},
     {"decode", 1}};
 constexpr int64_t kGroup = 32;
-constexpr int kWarmupRuns = 3;
-constexpr int kTimedRuns = 5;
 
 // Builds one deterministic, well-conditioned correctness case (POSITIVE
 // data, no fp16 cancellation -- see generate_correctness_cases) for the
@@ -600,8 +636,8 @@ bool run_linear_correctness() {
           [&tc]() { return std::vector<TestCase>{tc}; },
           flop_calc,
           "LlamaMicrobenchCorrectness",
-          kWarmupRuns,
-          kTimedRuns,
+          g_opts.warmup,
+          g_opts.runs,
           bench_reference);
       if (!res.empty()) {
         if (res[0].get_correctness_status() == CorrectnessStatus::FAILED) {
@@ -658,15 +694,21 @@ struct PerfCase {
   LinearConfig cfg;
   utils::StorageType storage;
 };
-std::vector<PerfCase> generate_linear_perf_cases(
-    const std::string& model_filter) {
+// apply_variant_filter is false for the baseline suite: forced-tiled makes
+// both its storages the tiled variant, so the storage split below would be
+// meaningless there and the suite keeps its full storage pair.
+std::vector<PerfCase> generate_linear_perf_cases(bool apply_variant_filter) {
   std::vector<PerfCase> cases;
   for (const auto& scheme : kSchemes) {
     for (const auto& model : kLinearModels) {
-      if (std::string(model.model).find(model_filter) == std::string::npos) {
+      if (std::string(model.model).find(g_opts.model_filter) ==
+          std::string::npos) {
         continue;
       }
       for (const auto& regime : kLinearRegimes) {
+        if (!regime_selected(regime.first)) {
+          continue;
+        }
         for (const auto& shape : model.ops) {
           LinearConfig cfg{
               regime.second,
@@ -678,8 +720,12 @@ std::vector<PerfCase> generate_linear_perf_cases(
               model.model,
               regime.first,
               shape.op_label};
-          cases.push_back({cfg, utils::kTexture3D}); // tiled/gemv baseline
-          cases.push_back({cfg, utils::kBuffer}); // coopmat (gate-permitting)
+          if (!apply_variant_filter || g_opts.variant_tiled) {
+            cases.push_back({cfg, utils::kTexture3D}); // tiled/gemv baseline
+          }
+          if (!apply_variant_filter || g_opts.variant_coopmat) {
+            cases.push_back({cfg, utils::kBuffer}); // coopmat (gate-permitting)
+          }
         }
       }
     }
@@ -693,16 +739,14 @@ std::vector<PerfCase> generate_linear_perf_cases(
 // reference on the same storage the coopmat shader uses). One
 // execute_test_cases() call per case (see file header); a case-local
 // failure is recorded as a crashed row and must not take down the sweep.
-void run_linear_suite(
-    const std::string& suite,
-    const std::string& model_filter) {
+void run_linear_suite(const std::string& suite) {
   const bool force_tiled = suite == "baseline";
   if (force_tiled) {
     setenv("ET_VK_FORCE_TILED_LINEAR", "1", /*overwrite=*/1);
   } else {
     unsetenv("ET_VK_FORCE_TILED_LINEAR");
   }
-  for (const auto& pc : generate_linear_perf_cases(model_filter)) {
+  for (const auto& pc : generate_linear_perf_cases(!force_tiled)) {
     const LinearConfig& cfg = pc.cfg;
     Record rec;
     rec.suite = suite;
@@ -723,8 +767,8 @@ void run_linear_suite(
           [&tc]() { return std::vector<TestCase>{tc}; },
           flop_calc,
           "LlamaMicrobench",
-          kWarmupRuns,
-          kTimedRuns,
+          g_opts.warmup,
+          g_opts.runs,
           bench_reference);
       if (!res.empty()) {
         rec.mean_us = res[0].get_avg_time_us();
@@ -804,12 +848,12 @@ const std::vector<SdpaRegime> kSdpaRegimes = {
 };
 
 struct SdpaRunResult {
-  float mean_us; // total (qk + av)
-  float stdev_us;
-  float qk_mean_us;
-  float qk_stdev_us;
-  float av_mean_us;
-  float av_stdev_us;
+  float mean_us = -1.0f; // total (qk + av)
+  float stdev_us = -1.0f;
+  float qk_mean_us = -1.0f;
+  float qk_stdev_us = -1.0f;
+  float av_mean_us = -1.0f;
+  float av_stdev_us = -1.0f;
   std::vector<std::string> dispatched_kernels; // from the last timed run
 };
 
@@ -938,7 +982,7 @@ SdpaRunResult sdpa_run_case(
   // the attention shaders' dispatch size/access pattern depends solely on
   // the cache's shape (context_len), not its contents.
 
-  for (int i = 0; i < kWarmupRuns; ++i) {
+  for (int i = 0; i < g_opts.warmup; ++i) {
     graph.execute();
   }
 
@@ -946,7 +990,7 @@ SdpaRunResult sdpa_run_case(
   std::vector<float> qk_timings_us;
   std::vector<float> av_timings_us;
   std::vector<std::string> last_dispatched;
-  for (int i = 0; i < kTimedRuns; ++i) {
+  for (int i = 0; i < g_opts.runs; ++i) {
     graph.execute();
     graph.context()->querypool().extract_results();
     const auto shader_results =
@@ -1026,26 +1070,38 @@ void emit_sdpa_records(
   }
 }
 
-// Returns false if any prefill case failed to confirm coopmat dispatch.
-bool run_sdpa_suite(const std::string& model_filter) {
+// Returns false if any prefill coopmat case failed to confirm dispatch.
+bool run_sdpa_suite() {
   bool all_confirmed = true;
   for (const auto& m : kSdpaModels) {
-    if (std::string(m.name).find(model_filter) == std::string::npos) {
+    if (std::string(m.name).find(g_opts.model_filter) == std::string::npos) {
       continue;
     }
     for (const auto& regime : kSdpaRegimes) {
+      if (!regime_selected(regime.regime)) {
+        continue;
+      }
       const bool is_decode = std::string(regime.regime) == "decode";
-      SdpaRunResult tiled = sdpa_run_case(m, /*enable_coopmat=*/false, regime);
-      // Decode: SDPA.cpp's is_gemv gate never considers coopmat -- a second
-      // invocation would just remeasure the identical dispatch. Skip it.
-      SdpaRunResult coopmat =
-          is_decode ? tiled : sdpa_run_case(m, /*enable_coopmat=*/true, regime);
+      // Decode: SDPA.cpp's is_gemv gate never considers coopmat -- there is
+      // only the tiled measurement, and it belongs to the tiled variant.
+      const bool want_tiled = g_opts.variant_tiled;
+      const bool want_coopmat = g_opts.variant_coopmat && !is_decode;
+      if (!want_tiled && !want_coopmat) {
+        continue;
+      }
+      SdpaRunResult tiled, coopmat;
+      if (want_tiled) {
+        tiled = sdpa_run_case(m, /*enable_coopmat=*/false, regime);
+      }
+      if (want_coopmat) {
+        coopmat = sdpa_run_case(m, /*enable_coopmat=*/true, regime);
+      }
 
       std::string dispatch;
       if (is_decode) {
         dispatch = "not_applicable";
-      } else {
-        const bool tiled_is_tiled =
+      } else if (want_coopmat) {
+        const bool tiled_is_tiled = !want_tiled ||
             !has_kernel_containing(tiled.dispatched_kernels, "_coopmat");
         const bool qk_coopmat = has_kernel_containing(
             coopmat.dispatched_kernels, "sdpa_compute_attn_weights_coopmat");
@@ -1055,10 +1111,16 @@ bool run_sdpa_suite(const std::string& model_filter) {
             ? "confirmed"
             : "fallback_tiled";
         all_confirmed = all_confirmed && dispatch == "confirmed";
+      } else {
+        dispatch = has_kernel_containing(tiled.dispatched_kernels, "_coopmat")
+            ? "unexpected_coopmat"
+            : "not_applicable";
       }
 
-      emit_sdpa_records(m, regime, "tiled", tiled, dispatch);
-      if (!is_decode) {
+      if (want_tiled) {
+        emit_sdpa_records(m, regime, "tiled", tiled, dispatch);
+      }
+      if (want_coopmat) {
         emit_sdpa_records(m, regime, "coopmat", coopmat, dispatch);
       }
     }
@@ -1108,28 +1170,32 @@ std::string fmt_x(float x) {
 // geomeans. Returns false if any expected coopmat site failed to speed up
 // AND failed to dispatch -- dispatch anomalies, not slowness, fail the run.
 void print_report(bool baseline_ran) {
-  print_separator();
-  std::cout << "==================== RAW RESULTS ====================\n";
-  std::cout << std::left << std::setw(10) << "suite" << std::setw(14) << "model"
-            << std::setw(7) << "scheme" << std::setw(9) << "regime"
-            << std::setw(7) << "op" << std::setw(11) << "storage"
-            << std::setw(9) << "variant" << std::setw(21) << "(M,K,N)"
-            << std::right << std::setw(12) << "mean_us" << std::setw(10)
-            << "stdev" << std::setw(10) << "kern_us" << std::setw(10)
-            << "GFLOP/s" << "  dispatch\n";
-  for (const auto& r : g_records) {
-    std::ostringstream shape;
-    shape << "(" << r.M << "," << r.K << "," << r.N << ")";
-    std::cout << std::left << std::setw(10) << r.suite << std::setw(14)
-              << r.model << std::setw(7) << (r.scheme.empty() ? "-" : r.scheme)
-              << std::setw(9) << r.regime << std::setw(7) << r.op
-              << std::setw(11) << (r.storage.empty() ? "-" : r.storage)
-              << std::setw(9) << r.variant << std::setw(21) << shape.str()
-              << std::right << std::setw(12) << fmt_us(r.mean_us)
-              << std::setw(10) << fmt_us(r.stdev_us) << std::setw(10)
-              << fmt_us(r.kernel_us) << std::setw(10)
-              << (r.gflops >= 0 ? fmt_us(r.gflops) : "-") << "  " << r.dispatch
-              << "\n";
+  const bool human = g_opts.out_human;
+  const bool machine = g_opts.out_machine;
+  if (human) {
+    print_separator();
+    std::cout << "==================== RAW RESULTS ====================\n";
+    std::cout << std::left << std::setw(10) << "suite" << std::setw(14)
+              << "model" << std::setw(7) << "scheme" << std::setw(9) << "regime"
+              << std::setw(7) << "op" << std::setw(11) << "storage"
+              << std::setw(9) << "variant" << std::setw(21) << "(M,K,N)"
+              << std::right << std::setw(12) << "mean_us" << std::setw(10)
+              << "stdev" << std::setw(10) << "kern_us" << std::setw(10)
+              << "GFLOP/s" << "  dispatch\n";
+    for (const auto& r : g_records) {
+      std::ostringstream shape;
+      shape << "(" << r.M << "," << r.K << "," << r.N << ")";
+      std::cout << std::left << std::setw(10) << r.suite << std::setw(14)
+                << r.model << std::setw(7)
+                << (r.scheme.empty() ? "-" : r.scheme) << std::setw(9)
+                << r.regime << std::setw(7) << r.op << std::setw(11)
+                << (r.storage.empty() ? "-" : r.storage) << std::setw(9)
+                << r.variant << std::setw(21) << shape.str() << std::right
+                << std::setw(12) << fmt_us(r.mean_us) << std::setw(10)
+                << fmt_us(r.stdev_us) << std::setw(10) << fmt_us(r.kernel_us)
+                << std::setw(10) << (r.gflops >= 0 ? fmt_us(r.gflops) : "-")
+                << "  " << r.dispatch << "\n";
+    }
   }
 
   // ---- linear WMMA speedups (prefill only; decode has no coopmat) ----
@@ -1146,18 +1212,20 @@ void print_report(bool baseline_ran) {
     // itself. For 4w the two coincide (no quantize dispatch). Geomeans use
     // op_x -- the e2e-relevant quantity -- with kern_x geomeans printed
     // alongside per scheme.
-    std::cout << "\n========== LINEAR: coopmat (WMMA) vs tiled, prefill "
-                 "M=2048 ==========\n";
-    std::cout << std::left << std::setw(7) << "scheme" << std::setw(14)
-              << "model" << std::setw(7) << "op" << std::setw(15) << "(K,N)"
-              << std::right << std::setw(12) << "tiled_tex" << std::setw(12)
-              << "coopmat" << std::setw(9) << "op_x" << std::setw(9)
-              << "kern_x";
-    if (baseline_ran) {
-      std::cout << std::setw(14) << "tiled_buf" << std::setw(9) << "vs_buf";
+    if (human) {
+      std::cout << "\n========== LINEAR: coopmat (WMMA) vs tiled, prefill "
+                   "M=2048 ==========\n";
+      std::cout << std::left << std::setw(7) << "scheme" << std::setw(14)
+                << "model" << std::setw(7) << "op" << std::setw(15) << "(K,N)"
+                << std::right << std::setw(12) << "tiled_tex" << std::setw(12)
+                << "coopmat" << std::setw(9) << "op_x" << std::setw(9)
+                << "kern_x";
+      if (baseline_ran) {
+        std::cout << std::setw(14) << "tiled_buf" << std::setw(9) << "vs_buf";
+      }
+      std::cout << "  (us; op_x = whole op incl. 8da4w act-quant, kern_x = "
+                   "linear shader only)\n";
     }
-    std::cout << "  (us; op_x = whole op incl. 8da4w act-quant, kern_x = "
-                 "linear shader only)\n";
     std::vector<std::pair<std::string, std::vector<float>>> scheme_geo;
     std::vector<std::pair<std::string, std::vector<float>>> scheme_kern_geo;
     for (const auto& scheme : kSchemes) {
@@ -1212,31 +1280,43 @@ void print_report(bool baseline_ran) {
           if (kern_speedup > 0) {
             scheme_kern_speedups.push_back(kern_speedup);
           }
-          std::cout << std::left << std::setw(7) << scheme.first
-                    << std::setw(14) << model.model << std::setw(7)
-                    << shape.op_label << std::setw(15)
-                    << ("(" + std::to_string(shape.K) + "," +
-                        std::to_string(shape.N) + ")")
-                    << std::right << std::setw(12)
-                    << fmt_us(tex ? tex->mean_us : -1.0f) << std::setw(12)
-                    << fmt_us(buf ? buf->mean_us : -1.0f) << std::setw(9)
-                    << fmt_x(speedup) << std::setw(9) << fmt_x(kern_speedup);
-          if (baseline_ran) {
-            std::cout << std::setw(14)
-                      << fmt_us(base_buf ? base_buf->mean_us : -1.0f)
-                      << std::setw(9) << fmt_x(vs_buf);
+          if (machine && speedup > 0) {
+            std::cout << "SPEEDUP,linear," << model.model << "," << scheme.first
+                      << "," << shape.op_label << "," << shape.K << ","
+                      << shape.N << "," << tex->mean_us << "," << cm->mean_us
+                      << "," << speedup << "," << kern_speedup << ","
+                      << (base_buf ? base_buf->mean_us : -1.0f) << "," << vs_buf
+                      << "\n";
           }
-          if (buf && buf->variant != "coopmat") {
-            std::cout << "  ! " << buf->kernel;
+          if (human) {
+            std::cout << std::left << std::setw(7) << scheme.first
+                      << std::setw(14) << model.model << std::setw(7)
+                      << shape.op_label << std::setw(15)
+                      << ("(" + std::to_string(shape.K) + "," +
+                          std::to_string(shape.N) + ")")
+                      << std::right << std::setw(12)
+                      << fmt_us(tex ? tex->mean_us : -1.0f) << std::setw(12)
+                      << fmt_us(buf ? buf->mean_us : -1.0f) << std::setw(9)
+                      << fmt_x(speedup) << std::setw(9) << fmt_x(kern_speedup);
+            if (baseline_ran) {
+              std::cout << std::setw(14)
+                        << fmt_us(base_buf ? base_buf->mean_us : -1.0f)
+                        << std::setw(9) << fmt_x(vs_buf);
+            }
+            if (buf && buf->variant != "coopmat") {
+              std::cout << "  ! " << buf->kernel;
+            }
+            std::cout << "\n";
           }
-          std::cout << "\n";
         }
         if (!model_speedups.empty()) {
-          std::cout << std::left << std::setw(7) << scheme.first
-                    << std::setw(14) << model.model << std::setw(7) << "geo"
-                    << std::setw(15) << "" << std::right << std::setw(12) << ""
-                    << std::setw(12) << "" << std::setw(9)
-                    << fmt_x(geomean(model_speedups)) << "\n";
+          if (human) {
+            std::cout << std::left << std::setw(7) << scheme.first
+                      << std::setw(14) << model.model << std::setw(7) << "geo"
+                      << std::setw(15) << "" << std::right << std::setw(12)
+                      << "" << std::setw(12) << "" << std::setw(9)
+                      << fmt_x(geomean(model_speedups)) << "\n";
+          }
           scheme_speedups.insert(
               scheme_speedups.end(),
               model_speedups.begin(),
@@ -1248,14 +1328,24 @@ void print_report(bool baseline_ran) {
     }
     for (size_t i = 0; i < scheme_geo.size(); ++i) {
       if (!scheme_geo[i].second.empty()) {
-        std::cout << "linear " << scheme_geo[i].first
-                  << " geomean (all models): op "
-                  << fmt_x(geomean(scheme_geo[i].second)) << ", kernel "
-                  << fmt_x(geomean(scheme_kern_geo[i].second)) << "\n";
+        if (machine) {
+          std::cout << "GEOMEAN,linear," << scheme_geo[i].first << ",op,"
+                    << geomean(scheme_geo[i].second) << "\n";
+          std::cout << "GEOMEAN,linear," << scheme_geo[i].first << ",kernel,"
+                    << geomean(scheme_kern_geo[i].second) << "\n";
+        }
+        if (human) {
+          std::cout << "linear " << scheme_geo[i].first
+                    << " geomean (all models): op "
+                    << fmt_x(geomean(scheme_geo[i].second)) << ", kernel "
+                    << fmt_x(geomean(scheme_kern_geo[i].second)) << "\n";
+        }
       }
     }
-    std::cout << "(! = buffer case did NOT dispatch a coopmat shader; shown "
-                 "for reference, excluded from speedups/geomeans)\n";
+    if (human) {
+      std::cout << "(! = buffer case did NOT dispatch a coopmat shader; shown "
+                   "for reference, excluded from speedups/geomeans)\n";
+    }
   }
 
   // ---- sdpa WMMA speedups (prefill only) ----
@@ -1264,11 +1354,14 @@ void print_report(bool baseline_ran) {
     have_sdpa = have_sdpa || r.suite == "sdpa";
   }
   if (have_sdpa) {
-    std::cout << "\n========== SDPA: coopmat (WMMA) vs tiled, prefill S=2048 "
-                 "==========\n";
-    std::cout << std::left << std::setw(14) << "model" << std::setw(7) << "sub"
-              << std::right << std::setw(12) << "tiled_us" << std::setw(12)
-              << "coopmat_us" << std::setw(9) << "speedup" << "  dispatch\n";
+    if (human) {
+      std::cout << "\n========== SDPA: coopmat (WMMA) vs tiled, prefill S=2048 "
+                   "==========\n";
+      std::cout << std::left << std::setw(14) << "model" << std::setw(7)
+                << "sub" << std::right << std::setw(12) << "tiled_us"
+                << std::setw(12) << "coopmat_us" << std::setw(9) << "speedup"
+                << "  dispatch\n";
+    }
     std::vector<float> sdpa_totals;
     for (const auto& m : kSdpaModels) {
       for (const char* sub : {"qk", "av", "total"}) {
@@ -1277,7 +1370,7 @@ void print_report(bool baseline_ran) {
         const Record* c =
             find_record("sdpa", m.name, "", "prefill", sub, "", "coopmat");
         if (t == nullptr || c == nullptr) {
-          continue; // model filtered out
+          continue; // model or variant filtered out
         }
         const float speedup = c->mean_us > 0 ? t->mean_us / c->mean_us : 0.0f;
         // Only "total" (qk+av combined) feeds the geomeans -- counting qk
@@ -1288,51 +1381,83 @@ void print_report(bool baseline_ran) {
           sdpa_totals.push_back(speedup);
           all_wmma_speedups.push_back(speedup);
         }
-        std::cout << std::left << std::setw(14) << m.name << std::setw(7) << sub
-                  << std::right << std::setw(12) << fmt_us(t->mean_us)
-                  << std::setw(12) << fmt_us(c->mean_us) << std::setw(9)
-                  << fmt_x(speedup) << "  " << c->dispatch << "\n";
+        if (machine && speedup > 0) {
+          std::cout << "SPEEDUP,sdpa," << m.name << ",-," << sub << ","
+                    << m.head_dim << "," << m.num_heads << "," << t->mean_us
+                    << "," << c->mean_us << "," << speedup << ",-1,-1,-1\n";
+        }
+        if (human) {
+          std::cout << std::left << std::setw(14) << m.name << std::setw(7)
+                    << sub << std::right << std::setw(12) << fmt_us(t->mean_us)
+                    << std::setw(12) << fmt_us(c->mean_us) << std::setw(9)
+                    << fmt_x(speedup) << "  " << c->dispatch << "\n";
+        }
       }
     }
     if (!sdpa_totals.empty()) {
-      std::cout << "sdpa geomean (total, all models): "
-                << fmt_x(geomean(sdpa_totals)) << "\n";
+      if (machine) {
+        std::cout << "GEOMEAN,sdpa,-,total," << geomean(sdpa_totals) << "\n";
+      }
+      if (human) {
+        std::cout << "sdpa geomean (total, all models): "
+                  << fmt_x(geomean(sdpa_totals)) << "\n";
+      }
     }
   }
 
   if (!all_wmma_speedups.empty()) {
-    std::cout << "\nOVERALL WMMA geomean (" << all_wmma_speedups.size()
-              << " sites: linear prefill shapes + sdpa prefill totals): "
-              << fmt_x(geomean(all_wmma_speedups)) << "\n";
+    if (machine) {
+      std::cout << "GEOMEAN,overall,-,all," << geomean(all_wmma_speedups)
+                << "\n";
+    }
+    if (human) {
+      std::cout << "\nOVERALL WMMA geomean (" << all_wmma_speedups.size()
+                << " sites: linear prefill shapes + sdpa prefill totals): "
+                << fmt_x(geomean(all_wmma_speedups)) << "\n";
+    }
   }
 }
 
 void print_usage() {
   std::cout
       << "test_llama_microbench: unified Llama linear/SDPA microbenchmark\n"
-         "  --linear             run the coopmat-vs-tiled linear suite\n"
-         "  --baseline           run the forced-tiled (no-WMMA) linear suite\n"
-         "  --sdpa               run the SDPA coopmat-vs-tiled suite\n"
-         "                       (no suite flag = all three)\n"
+         "Every axis defaults to \"all\"; combine filters freely.\n"
+         "  --suite=<list>       comma list of linear,sdpa,baseline\n"
+         "                       (baseline = forced-tiled linear reference;\n"
+         "                       --linear/--sdpa/--baseline shorthands work)\n"
+         "  --variant=<list>     comma list of tiled,coopmat (aliases:\n"
+         "                       baseline=tiled, wmma=coopmat). tiled = no\n"
+         "                       WMMA anywhere; coopmat = WMMA rows only.\n"
+         "                       Speedup tables need both.\n"
+         "  --regime=<list>      comma list of prefill,decode\n"
          "  --model=<substr>     only models whose name contains <substr>\n"
+         "  --warmup=N/--runs=N  iteration counts (default 3/5)\n"
+         "  --quick              preset: --warmup=1 --runs=1"
+         " --skip-correctness\n"
+         "  --output=<mode>      human (tables only), machine (RESULT,/\n"
+         "                       SPEEDUP,/GEOMEAN, CSV lines only; alias\n"
+         "                       csv), or both (default)\n"
          "  --correctness-only   run just the linear correctness matrix\n"
          "  --skip-correctness   skip the correctness gate before perf\n"
          "  --list               print every case with its sizes, no GPU\n"
-         "  --help               this message\n";
+         "  --help               this message\n"
+         "Examples:\n"
+         "  all baselines (no WMMA):  --variant=tiled\n"
+         "  all WMMA only:            --variant=coopmat\n"
+         "  fast linear sanity:       --quick --suite=linear"
+         " --regime=prefill --model=1b\n"
+         "  AI-parseable full run:    --output=machine\n";
 }
 
-void list_cases(
-    bool linear,
-    bool baseline,
-    bool sdpa,
-    const std::string& model_filter) {
+void list_cases() {
   int n = 0;
   for (const char* suite : {"linear", "baseline"}) {
-    if ((std::string(suite) == "linear" && !linear) ||
-        (std::string(suite) == "baseline" && !baseline)) {
+    const bool is_baseline = std::string(suite) == "baseline";
+    if (is_baseline ? !(g_opts.suite_baseline && g_opts.variant_tiled)
+                    : !g_opts.suite_linear) {
       continue;
     }
-    for (const auto& pc : generate_linear_perf_cases(model_filter)) {
+    for (const auto& pc : generate_linear_perf_cases(!is_baseline)) {
       std::cout << suite << "," << pc.cfg.model << ","
                 << (is_dq8ca(pc.cfg.op_name) ? "8da4w" : "4w") << ","
                 << pc.cfg.regime << "," << pc.cfg.op_label << ","
@@ -1342,15 +1467,20 @@ void list_cases(
       ++n;
     }
   }
-  if (sdpa) {
+  if (g_opts.suite_sdpa) {
     for (const auto& m : kSdpaModels) {
-      if (std::string(m.name).find(model_filter) == std::string::npos) {
+      if (std::string(m.name).find(g_opts.model_filter) == std::string::npos) {
         continue;
       }
       for (const auto& regime : kSdpaRegimes) {
+        if (!regime_selected(regime.regime)) {
+          continue;
+        }
         const bool is_decode = std::string(regime.regime) == "decode";
         for (const char* toggle : {"tiled", "coopmat"}) {
-          if (is_decode && std::string(toggle) == "coopmat") {
+          if (std::string(toggle) == "coopmat"
+                  ? (is_decode || !g_opts.variant_coopmat)
+                  : !g_opts.variant_tiled) {
             continue;
           }
           std::cout << "sdpa," << m.name << ",," << regime.regime << ",qk+av,"
@@ -1369,40 +1499,117 @@ void list_cases(
 } // namespace
 
 int main(int argc, char** argv) {
-  bool linear = false, baseline = false, sdpa = false;
-  bool correctness_only = false, skip_correctness = false, list_only = false;
-  std::string model_filter;
+  bool suite_named = false, variant_named = false, regime_named = false;
+  auto split_csv = [](const std::string& s) {
+    std::vector<std::string> out;
+    std::stringstream ss(s);
+    std::string item;
+    while (std::getline(ss, item, ',')) {
+      out.push_back(item);
+    }
+    return out;
+  };
+  auto name_suite = [&](const std::string& v) -> bool {
+    if (!suite_named) {
+      suite_named = true;
+      g_opts.suite_linear = g_opts.suite_baseline = g_opts.suite_sdpa = false;
+    }
+    if (v == "linear") {
+      g_opts.suite_linear = true;
+    } else if (v == "baseline" || v == "forced-tiled") {
+      g_opts.suite_baseline = true;
+    } else if (v == "sdpa") {
+      g_opts.suite_sdpa = true;
+    } else {
+      return false;
+    }
+    return true;
+  };
+  auto name_variant = [&](const std::string& v) -> bool {
+    if (!variant_named) {
+      variant_named = true;
+      g_opts.variant_tiled = g_opts.variant_coopmat = false;
+    }
+    if (v == "tiled" || v == "baseline") {
+      g_opts.variant_tiled = true;
+    } else if (v == "coopmat" || v == "wmma") {
+      g_opts.variant_coopmat = true;
+    } else {
+      return false;
+    }
+    return true;
+  };
+  auto name_regime = [&](const std::string& v) -> bool {
+    if (!regime_named) {
+      regime_named = true;
+      g_opts.regime_prefill = g_opts.regime_decode = false;
+    }
+    if (v == "prefill") {
+      g_opts.regime_prefill = true;
+    } else if (v == "decode") {
+      g_opts.regime_decode = true;
+    } else {
+      return false;
+    }
+    return true;
+  };
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
-    if (arg == "--linear") {
-      linear = true;
-    } else if (arg == "--baseline") {
-      baseline = true;
-    } else if (arg == "--sdpa") {
-      sdpa = true;
+    bool ok = true;
+    if (arg == "--linear" || arg == "--baseline" || arg == "--sdpa") {
+      ok = name_suite(arg.substr(2));
+    } else if (arg.rfind("--suite=", 0) == 0) {
+      for (const auto& v : split_csv(arg.substr(8))) {
+        ok = ok && name_suite(v);
+      }
+    } else if (arg.rfind("--variant=", 0) == 0) {
+      for (const auto& v : split_csv(arg.substr(10))) {
+        ok = ok && name_variant(v);
+      }
+    } else if (arg.rfind("--regime=", 0) == 0) {
+      for (const auto& v : split_csv(arg.substr(9))) {
+        ok = ok && name_regime(v);
+      }
+    } else if (arg.rfind("--warmup=", 0) == 0) {
+      g_opts.warmup = std::atoi(arg.c_str() + 9);
+    } else if (arg.rfind("--runs=", 0) == 0) {
+      g_opts.runs = std::max(1, std::atoi(arg.c_str() + 7));
+    } else if (arg == "--quick") {
+      // Preset; later --warmup=/--runs= flags override it.
+      g_opts.warmup = 1;
+      g_opts.runs = 1;
+      g_opts.skip_correctness = true;
+    } else if (arg.rfind("--output=", 0) == 0) {
+      const std::string v = arg.substr(9);
+      g_opts.out_human = v == "human" || v == "both";
+      g_opts.out_machine = v == "machine" || v == "csv" || v == "both";
+      ok = g_opts.out_human || g_opts.out_machine;
     } else if (arg == "--correctness-only") {
-      correctness_only = true;
+      g_opts.correctness_only = true;
     } else if (arg == "--skip-correctness") {
-      skip_correctness = true;
-    } else if (arg == "--list") {
-      list_only = true;
+      g_opts.skip_correctness = true;
     } else if (arg.rfind("--model=", 0) == 0) {
-      model_filter = arg.substr(8);
+      g_opts.model_filter = arg.substr(8);
+    } else if (arg == "--list") {
+      g_opts.list_only = true;
     } else if (arg == "--help" || arg == "-h") {
       print_usage();
       return 0;
     } else {
-      std::cerr << "unknown flag: " << arg << "\n";
+      ok = false;
+    }
+    if (!ok) {
+      std::cerr << "bad flag or value: " << arg << "\n";
       print_usage();
       return 2;
     }
   }
-  if (!linear && !baseline && !sdpa) {
-    linear = baseline = sdpa = true; // default: everything
-  }
+  // The baseline suite is all-tiled by construction; without the tiled
+  // variant it has nothing to run.
+  g_opts.suite_baseline = g_opts.suite_baseline && g_opts.variant_tiled;
 
-  if (list_only) {
-    list_cases(linear, baseline, sdpa, model_filter);
+  if (g_opts.list_only) {
+    list_cases();
     return 0;
   }
 
@@ -1411,11 +1618,13 @@ int main(int argc, char** argv) {
   set_print_latencies(false);
   set_use_gpu_timestamps(true);
 
-  print_performance_header();
-  std::cout << "Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; "
-               "prefill 2048 / decode 1 @ ctx3072; linear group_size="
-            << kGroup << "; " << kWarmupRuns << " warmup + " << kTimedRuns
-            << " timed runs per case)\n";
+  if (g_opts.out_human) {
+    print_performance_header();
+    std::cout << "Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; "
+                 "prefill 2048 / decode 1 @ ctx3072; linear group_size="
+              << kGroup << "; " << g_opts.warmup << " warmup + " << g_opts.runs
+              << " timed runs per case)\n";
+  }
   // Device provenance: without this, thermal/DVFS drift between runs (or
   // between the linear and baseline suites within one run) cannot even be
   // diagnosed post hoc from a saved log.
@@ -1427,35 +1636,38 @@ int main(int argc, char** argv) {
               << (adapter->supports_cooperative_matrix() ? "yes" : "no")
               << "\n";
   }
-  print_separator();
+  if (g_opts.out_human) {
+    print_separator();
+  }
 
   std::srand(0);
   bool ok = true;
 
   // Correctness gate: validates the tiled and coopmat linear kernels
   // (including the rank-3 dispatch check) before any perf time is spent.
-  if (correctness_only) {
+  if (g_opts.correctness_only) {
     return run_linear_correctness() ? 0 : 1;
   }
-  if ((linear || baseline) && !skip_correctness) {
+  if ((g_opts.suite_linear || g_opts.suite_baseline) &&
+      !g_opts.skip_correctness) {
     if (!run_linear_correctness()) {
       std::cout << "correctness gate FAILED -- not running the perf sweep\n";
       return 1;
     }
   }
 
-  if (linear) {
-    run_linear_suite("linear", model_filter);
+  if (g_opts.suite_linear) {
+    run_linear_suite("linear");
   }
-  if (baseline) {
-    run_linear_suite("baseline", model_filter);
+  if (g_opts.suite_baseline) {
+    run_linear_suite("baseline");
   }
   bool sdpa_confirmed = true;
-  if (sdpa) {
-    sdpa_confirmed = run_sdpa_suite(model_filter);
+  if (g_opts.suite_sdpa) {
+    sdpa_confirmed = run_sdpa_suite();
   }
 
-  print_report(baseline);
+  print_report(g_opts.suite_baseline);
 
   // Exit code reflects dispatch sanity, not speed: every linear-suite
   // prefill buffer row must have dispatched coopmat, no coopmat may appear
