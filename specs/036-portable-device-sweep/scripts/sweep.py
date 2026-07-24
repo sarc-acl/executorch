@@ -191,15 +191,22 @@ def run_sweep(args):  # noqa: C901
         limits = tc.DeviceLimits(65536, 1024, (32, 64))
         slug = "replay-780m"
         fingerprint = {"device_name": "replay", "source": str(args.replay_dir)}
+        rebuild_fn = (
+            None  # never called: all rebuild call sites are `if not args.dry_run`
+        )
     else:
-        import measure
+        if args.remote == "android":
+            import measure_android as measure_mod
+        else:
+            import measure as measure_mod
 
-        session = measure.Session(
+        session = measure_mod.Session(
             shader, pte=args.pte, strict=args.strict, quirks=args.quirk
         )
         limits = session.limits
         slug = session.device_slug
         fingerprint = session.fingerprint
+        rebuild_fn = measure_mod.rebuild if args.remote == "android" else yv.rebuild
 
     blocklist = Blocklist(SPEC / "results" / f"blocklist_{slug}_{shader}.jsonl")
     storage = JournalStorage(
@@ -253,12 +260,12 @@ def run_sweep(args):  # noqa: C901
         if not args.dry_run:
             added = yv.ensure_variants(shader, [tok for _, tok in batch])
             if added:
-                r = yv.rebuild(log_path=SPEC / "results" / "last_build.log")
+                r = rebuild_fn(log_path=SPEC / "results" / "last_build.log")
                 if not r.ok:
                     for bad in r.failed_tokens:
                         blocklist.add(bad, "glslc_failure", r.log_excerpt[-300:])
                     yv.remove_variants(shader, r.failed_tokens)
-                    r2 = yv.rebuild(log_path=SPEC / "results" / "last_build.log")
+                    r2 = rebuild_fn(log_path=SPEC / "results" / "last_build.log")
                     if not r2.ok:
                         raise RuntimeError(
                             "rebuild failed twice; see "
@@ -308,7 +315,7 @@ def run_sweep(args):  # noqa: C901
             t.user_attrs.get("token") or params_to_token(t.params) for t in finalists
         ]
         if yv.ensure_variants(shader, toks):
-            r = yv.rebuild(log_path=SPEC / "results" / "last_build.log")
+            r = rebuild_fn(log_path=SPEC / "results" / "last_build.log")
             if not r.ok:
                 raise RuntimeError("rebuild for finalist confirmation failed")
     confirmed = []
@@ -393,6 +400,13 @@ def main():
         help="device quirk name, e.g. no_int8_wmma_sg32",
     )
     ap.add_argument("--pte", help="override pte path")
+    ap.add_argument(
+        "--remote",
+        default="local",
+        choices=("local", "android"),
+        help="local = same-machine subprocess (measure.py); "
+        "android = adb-tethered device via measure_android.py",
+    )
     ap.add_argument(
         "--strict", action="store_true", help="abort on unrecovered control drift"
     )

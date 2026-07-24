@@ -293,3 +293,139 @@ linear_q4gsw_coopmat_tsweep:
       SG_GRID_X: 2
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 32
+    - NAME: linear_q4gsw_coopmat_tsweep_t64x256k32g24s32_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 256
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+    - NAME: linear_q4gsw_coopmat_tsweep_t64x64k64g11s64_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 64
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+    - NAME: linear_q4gsw_coopmat_tsweep_t32x32k64g12s64_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 64
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64
+    - NAME: linear_q4gsw_coopmat_tsweep_t128x128k32g82s32_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 8
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    - NAME: linear_q4gsw_coopmat_tsweep_t32x64k64g41s64_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 64
+      SG_GRID_X: 4
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+    - NAME: linear_q4gsw_coopmat_tsweep_t16x32k64g21s32_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+    - NAME: linear_q4gsw_coopmat_tsweep_t64x64k16g12s32_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    - NAME: linear_q4gsw_coopmat_tsweep_t128x64k16g21s32_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+    - NAME: linear_q4gsw_coopmat_tsweep_t64x128k32g41s32_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+    - NAME: linear_q4gsw_coopmat_tsweep_t128x128k32g28s32_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 8
+      SUBGROUP_SIZE: 32
+    - NAME: linear_q4gsw_coopmat_tsweep_t128x64k64g41s64_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 64
+      SG_GRID_X: 4
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+    - NAME: linear_q4gsw_coopmat_tsweep_t32x64k64g41s32_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 64
+      SG_GRID_X: 4
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+    - NAME: linear_q4gsw_coopmat_tsweep_t64x128k16g21s32_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+    - NAME: linear_q4gsw_coopmat_tsweep_t128x32k32g12s32_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    - NAME: linear_q4gsw_coopmat_tsweep_t128x64k16g12s64_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64
+    - NAME: linear_q4gsw_coopmat_tsweep_t32x32k64g21s32_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+    - NAME: linear_q4gsw_coopmat_tsweep_t64x128k64g81s32_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 64
+      SG_GRID_X: 8
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
