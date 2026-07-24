@@ -9,6 +9,17 @@ Prerequisites: a working `cmake-out-vk` build (backend + `llama_main` +
 `test_coopmat_linear_bench` — see BENCHMARKING.md), the target-model buffer
 ptes + tokenizer + 2048-token prompt file on disk, and `vulkaninfo` on PATH.
 
+If the build dirs were configured before the tsweep yamls existed on the
+branch (e.g. right after this machinery lands, or on a stale checkout),
+reconfigure once — the shader-lib file-GLOB is evaluated at configure time,
+so a pre-existing configure silently compiles without the tsweep variants
+and every token gates as `missing_shader`:
+
+```bash
+cmake -S . -B cmake-out-vk
+cmake -S backends/vulkan/test/custom_ops -B cmake-out-vk/backends/vulkan/test/custom_ops
+```
+
 ## 0. Fingerprint the device
 
 ```bash
