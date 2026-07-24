@@ -98,6 +98,11 @@ if(TARGET vulkan_backend)
   add_operator_prototype(test_q8csw_linear)
   add_operator_prototype(test_q8csw_conv2d)
   add_operator_prototype(test_q4gsw_linear)
+  # specs/028-4w-e2e-tile-sweep: ported from dbuf-int8-sweep/quant-dev lineage
+  # (missing from dev per instruction-for-ai/setup/README.md) -- required for
+  # this feature's mandatory port-correctness gate
+  # (COOPMAT_BENCH_CORRECTNESS_ONLY=1).
+  add_operator_prototype(test_coopmat_linear_bench)
   add_operator_prototype(test_llama_microbench)
   add_operator_prototype(test_choose_qparams_per_row)
   add_operator_prototype(test_q8ta_qdq)
