@@ -1,0 +1,53 @@
+{
+  "schema_version": "036.1",
+  "shader": "q4gsw",
+  "device_slug": "amd-radeon-780m-radv-phoenix",
+  "fingerprint": {
+    "api_version": "1.4.318 (4211006)",
+    "driver_version": "25.2.7 (104865799)",
+    "device_type": "PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU",
+    "device_name": "AMD Radeon 780M Graphics (RADV PHOENIX)",
+    "max_compute_shared_memory_size": 65536,
+    "max_compute_work_group_invocations": 1024,
+    "subgroup_size_default": 64,
+    "driver_id": "DRIVER_ID_MESA_RADV",
+    "driver_info": "Mesa 25.2.7",
+    "min_subgroup_size": 32,
+    "max_subgroup_size": 64,
+    "os": "Linux 6.12.0-211.34.1.el10_2.x86_64 x86_64",
+    "perf_level": "auto",
+    "git_sha": "660ce54edb",
+    "captured_at": "2026-07-24T02:54:38+00:00"
+  },
+  "group_size": 128,
+  "budget": 4,
+  "measured_trials": 4,
+  "pruned": {
+    "gate_correctness_fail": 1
+  },
+  "blocklist_size": 1,
+  "baseline_median_tok_s": 1984.5,
+  "noise_floor_cov": 0.004163092927482865,
+  "finalists": [
+    {
+      "token": "tsweep_t128x64k32g22s32",
+      "screen_tok_s": 1995.13,
+      "confirm_median_tok_s": 1984.5,
+      "improvement_pct": 0.0
+    },
+    {
+      "token": "tsweep_t128x64k16g22s32",
+      "screen_tok_s": 1758.6950000000002,
+      "confirm_median_tok_s": 1753.42,
+      "improvement_pct": -11.644242882338117
+    }
+  ],
+  "winner": {
+    "token": "tsweep_t128x64k32g22s32",
+    "screen_tok_s": 1995.13,
+    "confirm_median_tok_s": 1984.5,
+    "improvement_pct": 0.0
+  },
+  "remeasure_pending": [],
+  "ts": "2026-07-23T19:56:46"
+}
