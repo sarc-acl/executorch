@@ -235,6 +235,16 @@ if(ANDROID)
   list(APPEND link_libraries log)
 endif()
 
+# main.cpp gates all --etdump_path handling on ET_EVENT_TRACER_ENABLED. Unlike
+# the top-level build, this standalone project does not inherit the define from
+# EXECUTORCH_ENABLE_EVENT_TRACER, so wire it (and the etdump/flatcc runtime the
+# ETDumpGen needs) here when the flag is set. Default OFF: no impact on the
+# shipping binary.
+if(EXECUTORCH_ENABLE_EVENT_TRACER)
+  add_definitions(-DET_EVENT_TRACER_ENABLED)
+  list(APPEND link_libraries etdump flatccrt)
+endif()
+
 add_executable(llama_main ${_srcs})
 
 # Copy MLX metallib for runtime if MLX delegate is enabled
