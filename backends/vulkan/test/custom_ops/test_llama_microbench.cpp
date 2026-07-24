@@ -42,8 +42,10 @@
 //   - per-model linear (K,N) from each checkpoint's params.json. lm_head
 //     (K,128256) is excluded per specs/021's explicit decision (largest and
 //     wildly-variable dispatch; QueryPool-race / GPU-reset trigger).
-//   - linear prefill M=2048, decode M=1; group_size 32 (`--group_size 32` /
-//     8da4w default), coopmat-eligible for both ops' tile geometries.
+//   - linear prefill M=2048, decode M=1; group_size 128, matching the real
+//     exported ctx3072 PTEs' sidecars (~/checkpoints/*/pte/*.pte.txt: both
+//     4w and 8da4w were exported at group_size 128 -- NOT the 32 an earlier
+//     revision of this bench assumed from a stale runbook note).
 //   - rank-3 [1, M, K] activations, never squeezed (specs/003) -- admitted
 //     to the coopmat path by specs/009's leading-dims==1 relaxation.
 //
@@ -410,7 +412,7 @@ const std::vector<std::pair<const char*, const char*>> kSchemes = {
 const std::vector<std::pair<const char*, int64_t>> kLinearRegimes = {
     {"prefill", 2048},
     {"decode", 1}};
-constexpr int64_t kGroup = 32;
+constexpr int64_t kGroup = 128;
 constexpr int kWarmupRuns = 3;
 constexpr int kTimedRuns = 5;
 
