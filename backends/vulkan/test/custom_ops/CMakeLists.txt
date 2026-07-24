@@ -103,6 +103,7 @@ if(TARGET vulkan_backend)
   # this feature's mandatory port-correctness gate
   # (COOPMAT_BENCH_CORRECTNESS_ONLY=1).
   add_operator_prototype(test_coopmat_linear_bench)
+  add_operator_prototype(test_llama_microbench)
   add_operator_prototype(test_choose_qparams_per_row)
   add_operator_prototype(test_q8ta_qdq)
   add_operator_prototype(test_q8ta_clone)
