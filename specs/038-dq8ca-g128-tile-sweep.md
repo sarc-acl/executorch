@@ -44,6 +44,16 @@ Guardrails the sweep proved:
 
 - Microbench 8da4w kernel geomean (12 shapes, 1B/3B/8B): **1.00x** vs tiled ✓
 - 4w geomean 4.01x, OVERALL WMMA 2.01x — 4w/SDPA unregressed (untouched shaders).
-- E2e 1B 8da4w buffer prefill (same binary, same session, 3 runs):
-  WMMA **~1939 tok/s** vs tiled **~1944 tok/s** — parity (was ~1843 vs ~1957 at
-  session start; the ~6% e2e gap is closed). Run-to-run ±0.7%.
+- E2e 1B 8da4w buffer prefill. Interleaved paired A/B (WMMA then tiled
+  back-to-back each round, so thermal drift cancels), 5 rounds, medians:
+  WMMA **~1936 tok/s** vs tiled **~1949 tok/s** — parity, tiled marginally
+  (~0.7%) ahead; WMMA won one round and tied another. At session start the gap
+  was ~1843 (WMMA) vs ~1957 (tiled), i.e. ~6%; the occupancy retile closes it
+  to under 1%. The int8 WMMA path thus reaches parity with the tiled dot4 path
+  at e2e but does not clearly beat it — the ~1957 absolute figure reflects a
+  cooler prior thermal state (tiled itself measures ~1949 here). The kernel is
+  at its practical limit vs tiled (microbench 1.00x); the remaining sub-1% is
+  in the noise band, not a structural win still on the table (specs/037 ruled
+  out RowMajor B, a SWAR unpack was perf-neutral, and A/B LDS stores are
+  layout-bound to scalar b32). Per specs/039 the largest remaining e2e lever is
+  not the linear at all but quantize_and_pack (11% of prefill, the 8da4w tax).
