@@ -24,7 +24,7 @@
 //               shader uses, isolating the algorithm from the storage type
 //               (specs/004).
 //   --sdpa      llama.custom_sdpa.default tiled-vs-coopmat at each model's
-//               real attention shape (specs/010/021): prefill S=2048/ctx=2048
+//               real attention shape (specs/010/021): prefill S=2048/ctx=3072
 //               and decode S=1/ctx=3072/input_pos=3071 (the single most
 //               expensive real decode step). SDPA coopmat is default-on in
 //               this tree; ET_VK_DISABLE_COOPMAT is the kill switch, toggled
@@ -102,6 +102,12 @@ struct Record {
   int64_t kv = 0; // sdpa only: num_kv_heads
   float mean_us = -1.0f;
   float stdev_us = -1.0f;
+  // linear/baseline only: the linear_* shader's own per-invocation time.
+  // mean_us is OP-level (all unfiltered dispatches -- for 8da4w that
+  // includes the activation quantize_and_pack shader, real per-op e2e
+  // overhead); kernel_us isolates the linear kernel itself so the two
+  // schemes' shader-level numbers stay comparable. -1 for sdpa rows.
+  float kernel_us = -1.0f;
   float gflops = -1.0f; // no SDPA meaning (-1 sentinel, per specs/021)
   std::string dispatch = "not_applicable";
   std::string correctness = "SKIPPED";
@@ -123,7 +129,8 @@ void emit(const Record& r) {
   } else {
     std::cout << r.variant << "," << r.K << "," << r.N << "," << r.mean_us
               << "," << r.stdev_us << "," << r.gflops << "," << r.dispatch
-              << "," << r.correctness << "," << r.storage << "," << r.M << "\n";
+              << "," << r.correctness << "," << r.storage << "," << r.M << ","
+              << r.kernel_us << "\n";
   }
 }
 
@@ -545,6 +552,21 @@ std::string linear_kernel(const BenchmarkResult& r) {
   return name;
 }
 
+// Per-invocation time of the linear_* shader alone. ShaderTiming holds one
+// iter_timings_us entry per dispatch (chained dispatches included), so its
+// get_avg_time_us() is already per-invocation -- unlike the case-level
+// mean_us, which sums every unfiltered dispatch (for dq8ca that adds the
+// activation quantize_and_pack shader).
+float linear_kernel_us(const BenchmarkResult& r) {
+  float us = -1.0f;
+  for (const auto& st : r.get_shader_timings()) {
+    if (st.shader_name.find("linear_") != std::string::npos) {
+      us = st.get_avg_time_us();
+    }
+  }
+  return us;
+}
+
 std::string kernel_class(const std::string& kernel) {
   // _coopmat must be checked before _coop (substring).
   if (kernel.find("_coopmat") != std::string::npos) {
@@ -556,27 +578,44 @@ std::string kernel_class(const std::string& kernel) {
   return "tiled";
 }
 
-// Runs the linear correctness matrix (one batched call; every shape is
-// small) and the specs/009 rank-3 dispatch+correctness verdict. Returns
-// false on any failure. Must run WITHOUT ET_VK_FORCE_TILED_LINEAR set --
-// the buffer cases exist to fire and validate the coopmat shader.
+// Runs the linear correctness matrix and the specs/009 rank-3
+// dispatch+correctness verdict. Returns false on any failure. Must run
+// WITHOUT ET_VK_FORCE_TILED_LINEAR set -- the buffer cases exist to fire
+// and validate the coopmat shader.
+//
+// One execute_test_cases() call per case, each wrapped in try/catch: the
+// framework throws on a numeric validation failure (utils.cpp's
+// execute_test_cases, outside its own try/catch), so a batched call would
+// die at the FIRST failing case and never enumerate the rest. Per-case
+// execution turns that throw into one recorded failure and keeps going --
+// the whole point of the gate is to list everything that broke. (Costs the
+// cross-case reference cache, but every shape here is small.)
 bool run_linear_correctness() {
   unsetenv("ET_VK_FORCE_TILED_LINEAR");
-  auto results = execute_test_cases(
-      generate_correctness_cases,
-      flop_calc,
-      "LlamaMicrobenchCorrectness",
-      kWarmupRuns,
-      kTimedRuns,
-      bench_reference);
-  bool all_ok = true;
-  int failed = 0;
-  for (const auto& r : results) {
-    if (r.get_correctness_status() == CorrectnessStatus::FAILED) {
-      all_ok = false;
-      ++failed;
+  std::vector<BenchmarkResult> results;
+  std::vector<std::string> failed_names;
+  for (auto& tc : generate_correctness_cases()) {
+    try {
+      auto res = execute_test_cases(
+          [&tc]() { return std::vector<TestCase>{tc}; },
+          flop_calc,
+          "LlamaMicrobenchCorrectness",
+          kWarmupRuns,
+          kTimedRuns,
+          bench_reference);
+      if (!res.empty()) {
+        if (res[0].get_correctness_status() == CorrectnessStatus::FAILED) {
+          failed_names.push_back(tc.name());
+        }
+        results.push_back(res[0]);
+      }
+    } catch (const std::exception& e) {
+      failed_names.push_back(tc.name());
+      std::cout << "[correctness] " << tc.name() << " FAILED: " << e.what()
+                << "\n";
     }
   }
+  bool all_ok = failed_names.empty();
   // Rank-3, batch=1 dispatch + correctness verdict: numeric PASS alone
   // doesn't prove the coopmat path actually ran -- the tiled fallback would
   // numerically pass too. Explicitly confirm the dispatched kernel name.
@@ -601,10 +640,16 @@ bool run_linear_correctness() {
                              : "SKIPPED"))
               << "\n";
   }
+  if (!failed_names.empty()) {
+    std::cout << "[correctness] " << failed_names.size()
+              << " case(s) FAILED:\n";
+    for (const auto& n : failed_names) {
+      std::cout << "  " << n << "\n";
+    }
+  }
   if (!all_ok) {
-    std::cout << "[correctness] FAILED (" << failed
-              << " numeric failure(s) and/or a rank-3 case did not dispatch "
-                 "coopmat)\n";
+    std::cout << "[correctness] FAILED -- numeric failure(s) and/or a rank-3 "
+                 "case did not dispatch coopmat\n";
   }
   return all_ok;
 }
@@ -685,10 +730,11 @@ void run_linear_suite(
         rec.mean_us = res[0].get_avg_time_us();
         rec.stdev_us = res[0].get_std_dev_us();
         rec.kernel = linear_kernel(res[0]);
+        rec.kernel_us = linear_kernel_us(res[0]);
         rec.variant = kernel_class(rec.kernel);
         rec.gflops = rec.mean_us > 0
             ? (2.0f * cfg.M * cfg.N * cfg.K) / (rec.mean_us * 1e3f)
-            : 0.0f;
+            : -1.0f;
         rec.ok = true;
       }
     } catch (const std::exception& e) {
@@ -739,11 +785,13 @@ const std::vector<SdpaModel> kSdpaModels = {
     {"llama-3.2-1b", 64, 32, 8},
 };
 
-// specs/021: real e2e regimes. decode's context_len=3072 matches this
-// workstream's standard ctx3072 PTEs (2048 prefill + 1024 decode);
-// input_pos=3071 is the single most expensive real decode step (attends
-// over the fullest cache). SDPA.cpp's is_gemv gate means the coopmat toggle
-// has no effect at decode.
+// specs/021: real e2e regimes. context_len=3072 for BOTH regimes: the real
+// ctx3072 PTEs (2048 prefill + 1024 decode) allocate the KV cache at
+// max_context_length up front, so even the prefill step's cache tensor --
+// and therefore the attention shaders' strides/access pattern -- is sized
+// 3072, not 2048. input_pos=3071 is the single most expensive real decode
+// step (attends over the fullest cache). SDPA.cpp's is_gemv gate means the
+// coopmat toggle has no effect at decode.
 struct SdpaRegime {
   const char* regime;
   int64_t seq_len; // this step's query / newly-written KV length
@@ -751,7 +799,7 @@ struct SdpaRegime {
   int64_t input_pos; // symint value
 };
 const std::vector<SdpaRegime> kSdpaRegimes = {
-    {"prefill", 2048, 2048, 0},
+    {"prefill", 2048, 3072, 0},
     {"decode", 1, 3072, 3071},
 };
 
@@ -1067,7 +1115,8 @@ void print_report(bool baseline_ran) {
             << std::setw(7) << "op" << std::setw(11) << "storage"
             << std::setw(9) << "variant" << std::setw(21) << "(M,K,N)"
             << std::right << std::setw(12) << "mean_us" << std::setw(10)
-            << "stdev" << std::setw(10) << "GFLOP/s" << "  dispatch\n";
+            << "stdev" << std::setw(10) << "kern_us" << std::setw(10)
+            << "GFLOP/s" << "  dispatch\n";
   for (const auto& r : g_records) {
     std::ostringstream shape;
     shape << "(" << r.M << "," << r.K << "," << r.N << ")";
@@ -1078,6 +1127,7 @@ void print_report(bool baseline_ran) {
               << std::setw(9) << r.variant << std::setw(21) << shape.str()
               << std::right << std::setw(12) << fmt_us(r.mean_us)
               << std::setw(10) << fmt_us(r.stdev_us) << std::setw(10)
+              << fmt_us(r.kernel_us) << std::setw(10)
               << (r.gflops >= 0 ? fmt_us(r.gflops) : "-") << "  " << r.dispatch
               << "\n";
   }
@@ -1089,19 +1139,30 @@ void print_report(bool baseline_ran) {
     have_linear = have_linear || r.suite == "linear";
   }
   if (have_linear) {
+    // op_x = op-level speedup (all of the op's dispatches -- for 8da4w that
+    // includes the activation quantize_and_pack shader, which the real
+    // model pays on every linear, so this is the per-op e2e gain). kern_x =
+    // the linear shader alone, the number that judges the WMMA kernel
+    // itself. For 4w the two coincide (no quantize dispatch). Geomeans use
+    // op_x -- the e2e-relevant quantity -- with kern_x geomeans printed
+    // alongside per scheme.
     std::cout << "\n========== LINEAR: coopmat (WMMA) vs tiled, prefill "
                  "M=2048 ==========\n";
     std::cout << std::left << std::setw(7) << "scheme" << std::setw(14)
               << "model" << std::setw(7) << "op" << std::setw(15) << "(K,N)"
               << std::right << std::setw(12) << "tiled_tex" << std::setw(12)
-              << "coopmat" << std::setw(9) << "speedup";
+              << "coopmat" << std::setw(9) << "op_x" << std::setw(9)
+              << "kern_x";
     if (baseline_ran) {
       std::cout << std::setw(14) << "tiled_buf" << std::setw(9) << "vs_buf";
     }
-    std::cout << "  (us; speedup = tiled/coopmat)\n";
+    std::cout << "  (us; op_x = whole op incl. 8da4w act-quant, kern_x = "
+                 "linear shader only)\n";
     std::vector<std::pair<std::string, std::vector<float>>> scheme_geo;
+    std::vector<std::pair<std::string, std::vector<float>>> scheme_kern_geo;
     for (const auto& scheme : kSchemes) {
       std::vector<float> scheme_speedups;
+      std::vector<float> scheme_kern_speedups;
       for (const auto& model : kLinearModels) {
         std::vector<float> model_speedups;
         for (const auto& shape : model.ops) {
@@ -1112,14 +1173,17 @@ void print_report(bool baseline_ran) {
               "prefill",
               shape.op_label,
               "texture3d");
-          const Record* cm = find_record(
+          // Unfiltered buffer row for display (shows the actually-dispatched
+          // kernel even on a fallback); coopmat-filtered row for speedups
+          // and geomeans, so a fallback can never contribute a bogus ratio.
+          const Record* buf = find_record(
               "linear",
               model.model,
               scheme.first,
               "prefill",
               shape.op_label,
-              "buffer",
-              "coopmat");
+              "buffer");
+          const Record* cm = (buf && buf->variant == "coopmat") ? buf : nullptr;
           const Record* base_buf = baseline_ran ? find_record(
                                                       "baseline",
                                                       model.model,
@@ -1128,11 +1192,15 @@ void print_report(bool baseline_ran) {
                                                       shape.op_label,
                                                       "buffer")
                                                 : nullptr;
-          if (tex == nullptr && cm == nullptr) {
+          if (tex == nullptr && buf == nullptr) {
             continue; // model filtered out
           }
           const float speedup = (tex && cm && cm->mean_us > 0)
               ? tex->mean_us / cm->mean_us
+              : 0.0f;
+          const float kern_speedup =
+              (tex && cm && tex->kernel_us > 0 && cm->kernel_us > 0)
+              ? tex->kernel_us / cm->kernel_us
               : 0.0f;
           const float vs_buf = (base_buf && cm && cm->mean_us > 0)
               ? base_buf->mean_us / cm->mean_us
@@ -1141,6 +1209,9 @@ void print_report(bool baseline_ran) {
             model_speedups.push_back(speedup);
             all_wmma_speedups.push_back(speedup);
           }
+          if (kern_speedup > 0) {
+            scheme_kern_speedups.push_back(kern_speedup);
+          }
           std::cout << std::left << std::setw(7) << scheme.first
                     << std::setw(14) << model.model << std::setw(7)
                     << shape.op_label << std::setw(15)
@@ -1148,23 +1219,24 @@ void print_report(bool baseline_ran) {
                         std::to_string(shape.N) + ")")
                     << std::right << std::setw(12)
                     << fmt_us(tex ? tex->mean_us : -1.0f) << std::setw(12)
-                    << fmt_us(cm ? cm->mean_us : -1.0f) << std::setw(9)
-                    << fmt_x(speedup);
+                    << fmt_us(buf ? buf->mean_us : -1.0f) << std::setw(9)
+                    << fmt_x(speedup) << std::setw(9) << fmt_x(kern_speedup);
           if (baseline_ran) {
             std::cout << std::setw(14)
                       << fmt_us(base_buf ? base_buf->mean_us : -1.0f)
                       << std::setw(9) << fmt_x(vs_buf);
           }
-          if (cm && cm->variant != "coopmat") {
-            std::cout << "  ! " << cm->kernel;
+          if (buf && buf->variant != "coopmat") {
+            std::cout << "  ! " << buf->kernel;
           }
           std::cout << "\n";
         }
         if (!model_speedups.empty()) {
           std::cout << std::left << std::setw(7) << scheme.first
-                    << std::setw(14) << model.model << "geomean" << std::right
-                    << std::setw(46 - 7) << fmt_x(geomean(model_speedups))
-                    << "\n";
+                    << std::setw(14) << model.model << std::setw(7) << "geo"
+                    << std::setw(15) << "" << std::right << std::setw(12) << ""
+                    << std::setw(12) << "" << std::setw(9)
+                    << fmt_x(geomean(model_speedups)) << "\n";
           scheme_speedups.insert(
               scheme_speedups.end(),
               model_speedups.begin(),
@@ -1172,16 +1244,18 @@ void print_report(bool baseline_ran) {
         }
       }
       scheme_geo.emplace_back(scheme.first, scheme_speedups);
+      scheme_kern_geo.emplace_back(scheme.first, scheme_kern_speedups);
     }
-    for (const auto& sg : scheme_geo) {
-      if (!sg.second.empty()) {
-        std::cout << "linear " << sg.first
-                  << " geomean (all models): " << fmt_x(geomean(sg.second))
-                  << "\n";
+    for (size_t i = 0; i < scheme_geo.size(); ++i) {
+      if (!scheme_geo[i].second.empty()) {
+        std::cout << "linear " << scheme_geo[i].first
+                  << " geomean (all models): op "
+                  << fmt_x(geomean(scheme_geo[i].second)) << ", kernel "
+                  << fmt_x(geomean(scheme_kern_geo[i].second)) << "\n";
       }
     }
-    std::cout << "(! = buffer case did NOT dispatch a coopmat shader; its "
-                 "speedup is excluded from geomeans)\n";
+    std::cout << "(! = buffer case did NOT dispatch a coopmat shader; shown "
+                 "for reference, excluded from speedups/geomeans)\n";
   }
 
   // ---- sdpa WMMA speedups (prefill only) ----
@@ -1342,6 +1416,17 @@ int main(int argc, char** argv) {
                "prefill 2048 / decode 1 @ ctx3072; linear group_size="
             << kGroup << "; " << kWarmupRuns << " warmup + " << kTimedRuns
             << " timed runs per case)\n";
+  // Device provenance: without this, thermal/DVFS drift between runs (or
+  // between the linear and baseline suites within one run) cannot even be
+  // diagnosed post hoc from a saved log.
+  {
+    const auto* adapter = api::context()->adapter_ptr();
+    std::cout << "DEVICE," << adapter->device_name()
+              << ",timestamp_period_ns=" << adapter->timestamp_period()
+              << ",subgroup_size=" << adapter->subgroup_size() << ",coopmat="
+              << (adapter->supports_cooperative_matrix() ? "yes" : "no")
+              << "\n";
+  }
   print_separator();
 
   std::srand(0);
