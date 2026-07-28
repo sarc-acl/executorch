@@ -114,6 +114,9 @@ $if HAS_BIAS:
 $if WEIGHT_STORAGE == "buffer":
   #define WEIGHT_BUFFER
 
+$if IO_STORAGE == "texture3d":
+  #define IO_TEXTURE
+
 layout(std430) buffer;
 
 #include "common.glslh"
@@ -122,8 +125,8 @@ layout(std430) buffer;
 //   output(0), fp_input(1), packed_int8_input(2), int_input_sums(3 - unused),
 //   input_scales(4), input_zps(5), packed_weight(6), weight_sums(7),
 //   weight_scales(8), bias(9).
-${layout_declare_tensor(B, "w", "t_output",              "half", "buffer", is_scalar_array=True)}
-${layout_declare_tensor(B, "r", "t_input",               "half", "buffer", is_scalar_array=False)}
+${layout_declare_tensor(B, "w", "t_output",              "half", IO_STORAGE, is_scalar_array=True)}
+${layout_declare_tensor(B, "r", "t_input",               "half", IO_STORAGE, is_scalar_array=False)}
 ${layout_declare_tensor(B, "r", "t_packed_int8_input",   "int",  "buffer", is_scalar_array=False)}
 ${layout_declare_tensor(B, "r", "t_int8_input_sums",     "int",  "buffer", is_scalar_array=True)}
 ${layout_declare_tensor(B, "r", "t_int8_input_scales",   "half", "texture3d")}
@@ -213,6 +216,16 @@ shared float C_sh[WG_TILE_N];
 
 #ifdef HAS_BIAS
 shared float bias_sh[WG_TILE_N];
+#endif
+
+#ifdef IO_TEXTURE
+// Result staging for the imageStore epilogue, mirroring linear_qw_coopmat:
+// SG_GRID_Y bands of MMA_M rows, WG_TILE_N wide, row-major. Drained one
+// accumulator row-block at a time so this costs MMA_M*SG_GRID_Y rows of LDS
+// rather than the full WG_TILE_M x WG_TILE_N tile. Distinct from C_sh, which
+// holds the per-output-channel weight sums.
+const uint CSH_ROWS = SG_GRID_Y * MMA_M;
+shared float16_t Csh_out[CSH_ROWS * WG_TILE_N];
 #endif
 
 // Running accumulator across groups, held in fp16: RADV shader stats showed
@@ -597,8 +610,28 @@ void main() {
   // --- Output epilog + store: out = s_in[m]*result - zp[m]*s_in[m]*C[n]
   // (+ bias). N for the store address math MUST come from the spec
   // constant, not the sizes UBO (see out_N_arg above). ---
+#ifdef IO_TEXTURE
+  // Epilogue iteration i drains accumulator row-block i from EVERY subgroup
+  // into Csh_out at once, so the SG_GRID_Y bands it holds are disjoint global
+  // row ranges; the whole workgroup then imageStores them.
+  //
+  // PORTABILITY NOTE (carried from linear_qw_coopmat): [[unroll]] is only a
+  // hint and glslc does NOT honor it once the loop body contains a barrier(),
+  // so result[i][j] IS dynamically indexed here. RADV/ACO accepts it; coopmat
+  // arrays are opaque per-lane storage and dynamic indexing is the kind of
+  // construct the Xclipse/AMD-PAL compiler has broken before -- check this
+  // first if the texture variants ever miscompile on another driver.
+  const uint CSH_TEXELS_PER_ROW = WG_TILE_N / 4u;
+  const uint CSH_TEXELS = CSH_ROWS * CSH_TEXELS_PER_ROW;
+#else
   const uint N_out = uint(out_N_arg);
+#endif
   [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+#ifdef IO_TEXTURE
+    // Guards Csh_out against the previous iteration's readers. Inert on
+    // i == 0, but must stay unconditional to remain workgroup-uniform.
+    barrier();
+#endif
     const uint local_m_base = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
     coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> ifs_bcast;
     coopMatLoad(
@@ -613,8 +646,6 @@ void main() {
 
     [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
       const uint local_n = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
-      const uint gi = tile_m_start + local_m_base;
-      const uint gj = tile_n_start + local_n;
 
       coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> C_bcast;
       coopMatLoad(C_bcast, C_sh, local_n, 0u, gl_CooperativeMatrixLayoutRowMajor);
@@ -634,10 +665,41 @@ void main() {
 
       coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> out_tile =
           coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(acc);
+#ifdef IO_TEXTURE
+      coopMatStore(
+          out_tile, Csh_out,
+          warpInTile.y * MMA_M * WG_TILE_N + local_n,
+          WG_TILE_N,
+          gl_CooperativeMatrixLayoutRowMajor);
+#else
       coopMatStore(
           out_tile, t_output,
-          gi * N_out + gj, N_out,
+          (tile_m_start + local_m_base) * N_out + (tile_n_start + local_n),
+          N_out,
           gl_CooperativeMatrixLayoutRowMajor);
+#endif
     }
+#ifdef IO_TEXTURE
+    memoryBarrierShared();
+    barrier();
+
+    for (uint t = gl_LocalInvocationID.x; t < CSH_TEXELS; t += WG_SIZE) {
+      const uint lr = t / CSH_TEXELS_PER_ROW;
+      const uint lc4 = t % CSH_TEXELS_PER_ROW;
+      // lr / MMA_M is the band = the writing subgroup's warpInTile.y, so the
+      // global row matches the buffer path's tile_m_start + local_m_base.
+      const uint m =
+          tile_m_start + (lr / MMA_M) * SG_TILE_M + i * MMA_M + (lr % MMA_M);
+      const uint base = lr * WG_TILE_N + lc4 * 4u;
+      imageStore(
+          t_output,
+          ivec3(tile_n_start / 4u + lc4, m, 0),
+          vec4(
+              float(Csh_out[base]),
+              float(Csh_out[base + 1u]),
+              float(Csh_out[base + 2u]),
+              float(Csh_out[base + 3u])));
+    }
+#endif
   }
 }

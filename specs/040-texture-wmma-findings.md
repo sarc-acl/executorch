@@ -314,10 +314,9 @@ if the texture variants ever miscompile on another driver. Hand-expanding the dr
 
 ## 10. Scope and limits
 
-- **4w (`q4gsw`) only.** The dq8ca (8da4w) coopmat shader's A operand is
-  `t_packed_int8_input`, structurally buffer — the backend has no quantized texture support —
-  so only its output could ever go texture. It is also numerically broken at M=2048
-  tree-wide. Not attempted.
+- ~~**4w (`q4gsw`) only.**~~ **Superseded 2026-07-28 — see §13.** The dq8ca A operand is
+  indeed structurally buffer, but that turned out not to block anything: only the output
+  needed converting.
 - **One device.** `image3D` writes inside a coopmat shader are novel in this tree.
   Re-validate numerically on Xclipse before trusting it there.
 - **Prefill only, 1B only.**
@@ -363,3 +362,55 @@ Then `ET_VK_TEXTURE_COOPMAT=1` on any 4w texture / default-storage pte. Correctn
 (skip wrapper events — `Method::execute`, `DELEGATE_CALL`, `ETVK_*` — they nest and would
 double-count). **ETDump `perf_data` raw values are milliseconds here.** ISA:
 `RADV_DEBUG=shaders`.
+
+---
+
+## 13. Addendum 2026-07-28 — dq8ca (8da4w) texture WMMA
+
+§10 scoped dq8ca out. That was wrong about the consequence, not the premise: its A operand
+*is* structurally buffer, but the shader **never reads `t_input` at all** — activations come
+from `t_packed_int8_input`, and the binding comment has said `int_input_sums(3 - unused)` all
+along. Only the output needed converting, so the same `IO_STORAGE` split applies, with the
+`Csh_out` / `imageStore` epilogue ported from `linear_qw_coopmat`. `t_input` is still declared
+from `IO_STORAGE` so the binding layout agrees with the graph's actual tensor storage.
+
+`linear_dq8ca_q4gsw_coopmat_texture3d_texture2d_half` dispatches on all three models
+(112 / 196 / 224 dispatches for 1B / 3B / 8B, ETDump-confirmed).
+
+**Performance is parity, not a win.** Unlike q4gsw — whose tiled path costs 2240 µs and had
+room to give — the dq8ca tiled dot4 kernel was already efficient:
+
+| 1B, 112 dispatches | tiled | coopmat |
+|---|---:|---:|
+| `linear_q4gsw_*` | 2240 µs | 653 µs |
+| `linear_dq8ca_q4gsw_*` | 565 µs | 560 µs |
+
+e2e 1B 8da4w embq: 1919.9 → 1932.6 tok/s (+0.7%). This reproduces specs/038's buffer-path
+verdict (dq8ca coopmat ≈ tiled) on texture storage.
+
+**The useful result is numerical.** Because the coopmat shader derives its sums in-shader and
+never touches the scratch buffer that specs/040-dq8ca-input-sums-oob undersizes, it is exempt
+from that bug. Measured at M=2048 on 1B embq, 10 reps per cell, release build:
+
+| | 4w | 8da4w |
+|---|---|---|
+| WMMA | 1844.4 ✅ | 1932.6 ✅ |
+| tiled | 761.4 ✅ | 1919.9 ❌ wrong token |
+
+Same pte, same binary — only the dispatched kernel differs. 3B behaves identically; 8B's tiled
+arm happens to be correct because its allocation exactly meets the requirement at M=2048 (it
+breaks at 2049). **So the input-sums OOB is a tiled-path defect, not a blanket dq8ca one**, and
+coopmat is currently the only way to get a fast *and* numerically correct 8da4w long-prompt
+prefill.
+
+Caveat: that is an e2e greedy-argmax check, not op-level validation — the same distinction
+that let Mali-G710 pass e2e while failing the op test with `nan`.
+`generate_correctness_cases()` has no texture-coopmat dq8ca case yet; adding one belongs with
+the rank-3 texture rows in §11.3.
+
+Full 3-model 2×2 matrix (12 cells × n=10, interleaved with per-round arm rotation, release
+build with devtools OFF; the event-tracer build was re-run in full as a control and agrees
+within ±0.65% with mixed sign): 4w's WMMA gain is 2.42× / 2.65× / 2.85× on 1B / 3B / 8B and
+grows with model size, while dq8ca's is 1.01–1.04×. 8da4w's lead over 4w therefore collapses
+from 2.5–3.1× on the tiled path to 1.05–1.15× once 4w has WMMA, and that residue *widens* with
+model size rather than converging.

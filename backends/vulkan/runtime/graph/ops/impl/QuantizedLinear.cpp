@@ -299,11 +299,10 @@ static bool can_use_q4gsw_coopmat(
     return false;
   }
   if (graph->storage_type_of(output) != utils::kBuffer) {
-    // Only linear_q4gsw_coopmat has texture3d IO variants (the dq8ca coopmat
-    // shader has none, and would resolve to a missing shader), and they share
-    // one IO_STORAGE param across t_input/t_output, so both must be texture3d.
-    // The imageStore epilogue and the texelFetch A-stage both assume
-    // width-packed texels.
+    // Both linear_q4gsw_coopmat and linear_dq8ca_qw_coopmat carry texture3d IO
+    // variants, and each shares one IO_STORAGE param across t_input/t_output,
+    // so both tensors must be texture3d. The imageStore epilogue and (q4gsw
+    // only) the texelFetch A-stage both assume width-packed texels.
     if (!allow_texture_io || !texture_coopmat_enabled()) {
       return false;
     }
@@ -447,7 +446,8 @@ vkapi::ShaderInfo pick_linear_dqa_qw_shader(
             resize_args.at(2),
             active_dq8ca_dims.m,
             active_dq8ca_dims.n,
-            active_dq8ca_dims.k)) {
+            active_dq8ca_dims.k,
+            /*allow_texture_io=*/true)) {
       std::string kernel_name = "linear_dq8ca_q4gsw_coopmat";
       const std::string& dq8ca_variant = dq8ca_coopmat_variant();
       if (!dq8ca_variant.empty()) {

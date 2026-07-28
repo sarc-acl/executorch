@@ -10,6 +10,11 @@
 #   WEIGHT_NBITS=4 -> linear_dq8ca_q4gsw_coopmat (INT4 group-symmetric)
 # Requires the VK_COMPONENT_TYPE_SINT8_KHR cooperative matrix property to be
 # enumerated on the device.
+# IO_STORAGE selects buffer or texture3d for the activation/output pair, same
+# split as linear_qw_coopmat: the texture3d variants stage the epilogue result
+# through Csh_out and imageStore it instead of coopMatStore-ing to an SSBO.
+# t_input is declared from IO_STORAGE for binding-layout agreement only -- this
+# shader reads activations from t_packed_int8_input and never touches t_input.
 # specs/038-dq8ca-g128-tile-sweep: 128x64/K32 with a 4x2 subgroup grid at
 # sg32 (WG_SIZE 256). First trustworthy sweep on the specs/036 post-restructure
 # kernel at the real group_size 128. Splitting N four ways (SG_GRID_X=4) drops
@@ -24,6 +29,7 @@ linear_dq8ca_qw_coopmat:
     PRECISION: highp
     HAS_BIAS: false
     WEIGHT_NBITS: 4
+    IO_STORAGE: buffer
     WEIGHT_STORAGE: texture2d
     MMA_M: 16
     MMA_N: 16
@@ -40,4 +46,12 @@ linear_dq8ca_qw_coopmat:
       WEIGHT_STORAGE: texture2d
     - NAME: linear_dq8ca_q4gsw_coopmat_buffer_buffer_half
       WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: buffer
+    - NAME: linear_dq8ca_q4gsw_coopmat_texture3d_texture2d_half
+      WEIGHT_NBITS: 4
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+    - NAME: linear_dq8ca_q4gsw_coopmat_texture3d_buffer_half
+      WEIGHT_NBITS: 4
+      IO_STORAGE: texture3d
       WEIGHT_STORAGE: buffer
