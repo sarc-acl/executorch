@@ -231,6 +231,17 @@ utils::uvec3 quantized_linear_local_wg_size(
   }
 }
 
+// Experiment hook (specs/040): lets the q4gsw coopmat shader be selected for
+// texture3d IO via the linear_q4gsw_coopmat_texture3d_* variants, which stage
+// the result tile through shared memory and imageStore it instead of
+// coopMatStore-ing straight to an SSBO. Off by default, so the shipped
+// buffer-only behavior — and every existing benchmark — is unchanged; set to
+// get WMMA on a texture / default-storage pte with no re-export.
+static bool texture_coopmat_enabled() {
+  static const bool enabled = std::getenv("ET_VK_TEXTURE_COOPMAT") != nullptr;
+  return enabled;
+}
+
 // Returns true when the q4gsw coopmat shader can be dispatched for this
 // (M, N, K, dtype, output_storage, group_size) tuple. Preconditions match what
 // linear_q4gsw_coopmat.glsl assumes; the subgroup_size == 64 check scopes this
@@ -243,7 +254,8 @@ static bool can_use_q4gsw_coopmat(
     const ValueRef bias,
     int64_t tile_m = kCoopmatTileM,
     int64_t tile_n = kCoopmatTileN,
-    int64_t tile_k = kCoopmatTileK) {
+    int64_t tile_k = kCoopmatTileK,
+    bool allow_texture_io = false) {
   // Baseline-measurement escape hatch: forces every dispatch through this
   // function to the tiled fallback, regardless of eligibility. Off by
   // default (unset), so production behavior is unchanged; used only to
@@ -287,7 +299,22 @@ static bool can_use_q4gsw_coopmat(
     return false;
   }
   if (graph->storage_type_of(output) != utils::kBuffer) {
-    return false;
+    // Only linear_q4gsw_coopmat has texture3d IO variants (the dq8ca coopmat
+    // shader has none, and would resolve to a missing shader), and they share
+    // one IO_STORAGE param across t_input/t_output, so both must be texture3d.
+    // The imageStore epilogue and the texelFetch A-stage both assume
+    // width-packed texels.
+    if (!allow_texture_io || !texture_coopmat_enabled()) {
+      return false;
+    }
+    if (graph->storage_type_of(output) != utils::kTexture3D ||
+        graph->storage_type_of(fp_input) != utils::kTexture3D) {
+      return false;
+    }
+    if (graph->packed_dim_of(output) != WHCN::kWidthDim ||
+        graph->packed_dim_of(fp_input) != WHCN::kWidthDim) {
+      return false;
+    }
   }
   if (graph->dtype_of(output) != vkapi::kHalf) {
     return false;
@@ -349,7 +376,8 @@ vkapi::ShaderInfo pick_linear_qw_shader(
             resize_args.at(2),
             active_dims.m,
             active_dims.n,
-            active_dims.k)) {
+            active_dims.k,
+            /*allow_texture_io=*/true)) {
       std::string kernel_name = "linear_q4gsw_coopmat";
       const std::string& variant = q4gsw_coopmat_variant();
       if (!variant.empty()) {
