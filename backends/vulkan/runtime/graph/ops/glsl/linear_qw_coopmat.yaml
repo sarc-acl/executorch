@@ -13,11 +13,16 @@
 # imageStore (specs/040). INT weight storage can be texture2d or buffer
 # (matches the tiled path).
 # DTYPE = half only; fp32 activations are not supported.
-# Geometry follows the double-buffered reference (coopmat_mm_ref): 128x64
-# tile, K-step 16, 4 subgroups x 32 threads (subgroup size 32 forced). The
-# 128x64 / 2x2-subgroup-grid geometry is the tile-sweep optimum for M5 EVT1
-# (dbuf1_opt, ~+25% over the prior 128x128 / 4x2 layout). NOTE: the C++
-# dispatch in QuantizedLinear.cpp must keep kQ4gswCoopmatDims.n and .wg_size
+# Geometry follows the double-buffered reference (coopmat_mm_ref): 128x128
+# tile, K-step 16, a 2x2 subgroup grid x 32 threads (subgroup size 32 forced).
+# RETILED 2026-07-28 for M51 (Xclipse 970) from the 780M/specs/035 winner
+# (128x64 / K32): this 128x128 / K16 / 2x2 / sg32 geometry is M51's own
+# shipped default on `dev`, and specs/036's M51 sweep + specs/037's deep sweep
+# both failed to beat it (every finalist -12% to -16%; winner_q4gsw.json says
+# "shipped_default_wins_at_8b"). NOTE: that optimum was measured on the
+# BUFFER IO path -- the texture3d IO variants below have never been swept on
+# M51, so this is a transfer, not a measured texture-path optimum. NOTE: the
+# C++ dispatch in QuantizedLinear.cpp must keep kQ4gswCoopmatDims.n and .wg_size
 # in sync with WG_TILE_N (64) and WG_SIZE (= SG_GRID_X*SG_GRID_Y*SUBGROUP = 128).
 
 linear_qw_coopmat:
@@ -31,8 +36,8 @@ linear_qw_coopmat:
     MMA_N: 16
     MMA_K: 16
     WG_TILE_M: 128
-    WG_TILE_N: 64
-    WG_TILE_K: 32
+    WG_TILE_N: 128
+    WG_TILE_K: 16
     SG_GRID_X: 2
     SG_GRID_Y: 2
     SUBGROUP_SIZE: 32

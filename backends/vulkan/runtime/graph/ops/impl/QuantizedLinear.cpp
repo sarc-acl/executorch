@@ -55,11 +55,11 @@ void resize_linear_qw_node(
 
 // Per-shader coopmat tile geometry (must match each shader's yaml).
 // Workgroup size (wg_size) = SG_GRID_X * SG_GRID_Y * SUBGROUP_SIZE.
-//   linear_q4gsw_coopmat       128x64x32, 2x2 subgroups x 32 (forced) -> 128
-//   linear_dq8ca_q4gsw_coopmat 64x128x32, 4x1 subgroups x 32 (forced) -> 128
-// (specs/035-dev-igpu-tile-sweep: both retuned for 780M/RADV from the M5
-// values; dq8ca moved to wave32, which gates correct on RADV at this tile
-// unlike on Xclipse -- specs/026's sg32 ban was device-specific.)
+//   linear_q4gsw_coopmat       128x128x16, 2x2 subgroups x 32 (forced) -> 128
+//   linear_dq8ca_q4gsw_coopmat 64x32x32,   1x2 subgroups x 64 (forced) -> 128
+// (RETILED 2026-07-28 for M51/Xclipse 970, reverting the specs/035+038
+// 780M/RADV tuning back to M51's own shipped-on-`dev` geometry. dq8ca returns
+// to wave64: specs/026's sg32 ban IS in force on Xclipse.)
 struct CoopmatTileDims {
   uint32_t m;
   uint32_t n;
@@ -69,13 +69,13 @@ struct CoopmatTileDims {
   // match the shader's staging passes (out-of-bounds).
   uint32_t wg_size;
 };
-// linear_qw_coopmat.yaml: 128x64 k32, 2x2 subgroup grid, sg32 -> WG_SIZE 128
-// (specs/035 780M winner, was k16).
-constexpr CoopmatTileDims kQ4gswCoopmatDims = {128, 64, 32, 128};
-// linear_dq8ca_qw_coopmat.yaml: 128x64 k32, 4x2 grid, sg32 -> WG_SIZE 256
-// (specs/038 780M g128 winner: N-split-4 -> MMAS_PER_SG_N=1 halves VGPR,
-// doubling occupancy 4->8 waves/SIMD; 8da4w kernel geomean 0.94->1.00x).
-constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {128, 64, 32, 256};
+// linear_qw_coopmat.yaml: 128x128 k16, 2x2 subgroup grid, sg32 -> WG_SIZE 128
+// (M51 default on `dev`; specs/036+037 M51 sweeps failed to beat it).
+constexpr CoopmatTileDims kQ4gswCoopmatDims = {128, 128, 16, 128};
+// linear_dq8ca_qw_coopmat.yaml: 64x32 k32, 1x2 grid, sg64 -> WG_SIZE 128
+// (specs/027 M51 winner; a 128x64/256 retile was measured 12% slower on the
+// texture WMMA path 2026-07-28 -- see the yaml header).
+constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {128, 64, 32, 128};
 
 // specs/028-4w-e2e-tile-sweep: ET_VK_Q4GSW_COOPMAT_VARIANT=tsweep_t<M>x<N>k<K>
 // g<SGX><SGY>s<32|64> swaps the fp16 q4gsw coopmat dispatch to the matching
@@ -214,8 +214,9 @@ utils::uvec3 quantized_linear_local_wg_size(
     const utils::uvec3& global_workgroup_size,
     const std::vector<ArgGroup>& args,
     const std::vector<ValueRef>& resize_args) {
-  // Coopmat variants use a per-shader workgroup size (q4gsw/q8csw = 128,
-  // dq8ca = 256) — must match the WG_SIZE the shader yaml resolves to.
+  // Coopmat variants use a per-shader workgroup size (all 128 after the
+  // 2026-07-28 M51 retile) — must match the WG_SIZE the shader yaml resolves
+  // to.
   if (shader.kernel_name.find("_coopmat") != std::string::npos) {
     return {coopmat_tile_dims(shader.kernel_name).wg_size, 1, 1};
   }

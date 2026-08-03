@@ -15,14 +15,40 @@
 # through Csh_out and imageStore it instead of coopMatStore-ing to an SSBO.
 # t_input is declared from IO_STORAGE for binding-layout agreement only -- this
 # shader reads activations from t_packed_int8_input and never touches t_input.
+# RETILED 2026-07-28 for M51 (Xclipse 970): 64x32/K32, 1x2 subgroup grid, sg64
+# (WG_SIZE 128) -- specs/027-e2e-tile-sweep's winner, M51's shipped default on
+# `dev` @ 42aabb4e0, re-confirmed by specs/036/037's M51 sweeps.
+#
+# A 128x64/K32/2x2/sg64 retile was TRIED AND REJECTED on this texture WMMA path
+# (2026-07-28, measured on M51): the prediction was that 64x32's poor operand
+# reuse (21.3 MACs per element loaded, vs 4w's 64 at 128x128/K16) was wasting
+# int8's byte-width advantage, and that 128x64 would restore reuse to 42.7 --
+# the geometry both arms share on the 780M, where 8da4w wins its linear by 14.2%.
+# It measured 12.1% SLOWER instead: linear 6.940 -> 7.778 ms/call, e2e 1416 ->
+# 1315 tok/s. LDS doubled 9.6 -> 19.25 KiB and MMAs/subgroup 4 -> 8, so the
+# accumulator VGPR footprint and occupancy loss outweighed the reuse gain.
+# That is the same tradeoff specs/038 found on the 780M (N-split-4 -> fewer
+# MMAS_PER_SG -> half the VGPRs -> 4->8 waves/SIMD), and it points the SAME way
+# on Xclipse -- the assumption that it would invert here was wrong.
+# Conclusion: reuse is not the binding constraint on this kernel; occupancy is.
+# Do not enlarge this tile again without an occupancy measurement.
+#
+# sg64 is kept for PERFORMANCE, and the correctness rationale has been retired:
+# tested 2026-07-28 on M51 at this exact tile, dq8ca coopmat at sg32 is
+# NUMERICALLY CORRECT (test_llama_microbench --correctness-only: 48 PASSED /
+# 0 FAILED, coopmat confirmed dispatched, identical to the sg64 baseline). So
+# specs/026's Xclipse sg32 ban does NOT extend to the coopmat path -- it was
+# established on the tiled/dbuf path. sg32 is simply SLOWER here: at the same
+# 64x32/1x2 tile it drops WG_SIZE to 64 threads and costs ~31% (M128/K2048:
+# 793.9 -> 547.1 GFLOP/s; M128/K4096: 830.8 -> 564.8). Keep sg64.
+#
+# PREVIOUS (780M/RADV) GEOMETRY, kept for reference --
 # specs/038-dq8ca-g128-tile-sweep: 128x64/K32 with a 4x2 subgroup grid at
-# sg32 (WG_SIZE 256). First trustworthy sweep on the specs/036 post-restructure
-# kernel at the real group_size 128. Splitting N four ways (SG_GRID_X=4) drops
+# sg32 (WG_SIZE 256). Splitting N four ways (SG_GRID_X=4) drops
 # MMAS_PER_SG_N to 1, halving the double-accumulator VGPR footprint (256 -> 128)
 # and doubling occupancy (4 -> 8 waves/SIMD): 8da4w kernel geomean 0.94 -> 1.00x
 # vs the tiled dot4 baseline, e2e 1B prefill ~1843 -> ~1939 tok/s (parity with
-# tiled). sg32 gates 44/44 correct on RADV at this shape (specs/026's sg32 ban
-# was Xclipse-specific). See specs/038 for the full sweep and guardrails.
+# tiled). sg32 gates 44/44 correct on RADV at this shape. See specs/038.
 
 linear_dq8ca_qw_coopmat:
   parameter_names_with_default_values:
@@ -37,7 +63,7 @@ linear_dq8ca_qw_coopmat:
     WG_TILE_M: 128
     WG_TILE_N: 64
     WG_TILE_K: 32
-    SG_GRID_X: 4
+    SG_GRID_X: 2
     SG_GRID_Y: 2
     SUBGROUP_SIZE: 32
   shader_variants:
