@@ -1,6 +1,42 @@
 <!--
 Sync Impact Report
 ==================
+Version change: 2.4.0 → 2.5.0
+
+Context: this workspace stopped using the speckit plan/tasks/implement loop
+(the speckit *format* is still used for standing docs like this one, just
+not the interactive ceremony). Separately, the user found during a doc
+audit that this constitution's "Default Scope for Every Benchmark" .pte_out
+rule (added v2.3.0 below) had gone stale: 2026-08-04 established
+`/sarc-c/gpusw/users/yanwen.xu/android-run/models` (NFS, manifest-tracked)
+as the permanent .pte store, demoting `.pte_out` to transient export
+scratch — the opposite of what v2.3.0 mandated. This amendment reverses
+that one bullet to match current practice; no other principle changes.
+
+Modified sections:
+  - Default Scope for Every Benchmark, ".pte_out" bullet -- reversed:
+    .pte_out is scratch only now; the NFS models/ dir + MANIFEST.json is
+    the permanent store. Full history of the flip (buffer/fp16 generations
+    also archived along the way) lives in
+    `.shared-context/instruction-for-ai/setup/README.md`, not restated here.
+  - Historical Sync Impact Reports below (pre-dating this one) are left
+    as-is per this file's own convention.
+
+Added content: none.
+Removed sections: none.
+
+Templates requiring updates:
+  - .specify/templates/plan-template.md ......... n/a (loop retired)
+  - .specify/templates/spec-template.md ......... n/a (loop retired)
+  - .specify/templates/tasks-template.md ........ n/a (loop retired)
+  - .specify/templates/commands/*.md ............. n/a (not present)
+
+Follow-up TODOs: none new.
+-->
+
+<!--
+Sync Impact Report (previous amendment, retained for history)
+==================
 Version change: 2.3.0 → 2.4.0
 
 Context: `specs/017-workstream-agent-housekeeping` closed a gap the user
@@ -871,20 +907,22 @@ benchmark under this workstream runs:
   use shapes drawn from this same prefill/decode split (Principle IV).
 - **This workload is served by a single context-length export**: `.pte`
   files are exported at `MAX_SEQ=MAX_CTX=3072` (canonical naming
-  `*_ctx3072.pte`, per `.shared-context/instruction-for-ai/export-pte.md`),
+  `*_ctx3072.pte`, per `.shared-context/instruction-for-ai/setup/README.md`),
   which comfortably covers the 2048-prefill/1024-decode split above. Don't
   export a different context length for this default workload without
   updating this section and justifying the change.
-- **Every exported `.pte` lands in `/local/yanwen.xu/workspace/.pte_out`**
-  (workspace root, a sibling of this and every other branch worktree, not
-  inside any of them) — never `/tmp`, a job-specific scratch dir, or any
-  other ad hoc location, even temporarily to work around disk space.
-  `export_llm`'s `export.output_dir` config key is not honored (the file
-  lands in the process's CWD); the correct way to satisfy this rule is to
-  `cd` into `.pte_out` before invoking the export, not to export elsewhere
-  and copy the result in afterward. If `.pte_out`'s filesystem itself lacks
-  space, that is a problem to solve directly (free space on that
-  filesystem), not a reason to relocate the output.
+- **Every exported `.pte` is moved to the NFS canonical store** at
+  `/sarc-c/gpusw/users/yanwen.xu/android-run/models` immediately after
+  export, tracked by that directory's `MANIFEST.json` (sha256/size/mtime;
+  regenerate via `.shared-context/scripts/pte_manifest.py`). This reverses
+  the v2.3.0 rule that `.pte_out` was the permanent destination — as of
+  2026-08-04 `.pte_out` is transient scratch only. `export_llm`'s
+  `export.output_dir` config key is still not honored (the file lands in
+  the process's CWD, so `cd` into `.pte_out` before invoking the export),
+  but the result must then be hashed and `mv`'d (not `cp`'d, and not left
+  permanently) to the NFS path above — never kept as a duplicate in both
+  places. See `.shared-context/instruction-for-ai/setup/README.md`
+  §"Where PTEs live now" for the full procedure.
 
 ### Reference Hardware Inventory
 
@@ -1016,8 +1054,11 @@ it before writing new Android tooling for this workstream:
   Android): `.shared-context/instruction-for-ai/build.md`, canonical
   script `build_etdump_android.sh`.
 - **Export** a `.pte` (texture vs. buffer storage, per quant scheme):
-  `.shared-context/instruction-for-ai/export-pte.md`, canonical script
-  `.shared-context/scripts/export_quant.sh`.
+  `.shared-context/instruction-for-ai/setup/README.md`. Canonical recipe (enforced
+  2026-08-04) is a raw `python -m executorch.extension.llm.export.export_llm`
+  invocation with inline Hydra overrides, run from vanilla `release-1.3/` — NOT a
+  script. The old `export_quant.sh` wrapper is retired (archived to
+  `.shared-context/scripts/archive/`); do not use or revive it.
 - **Run** an e2e/microbench measurement, including clock pinning
   (Principle VII, script `pin_freqs.sh`): `.shared-context/instruction-for-ai/commands.md`.
   Pinned is the default for every reported number; run floating (unpinned)
@@ -1098,4 +1139,4 @@ Principle IX above all, since it is NON-NEGOTIABLE for anything upstream-
 bound; any other deviation must be justified in the PR description, not
 merged silently.
 
-**Version**: 2.4.0 | **Ratified**: 2026-07-03 | **Last Amended**: 2026-07-06
+**Version**: 2.5.0 | **Ratified**: 2026-07-03 | **Last Amended**: 2026-08-06
