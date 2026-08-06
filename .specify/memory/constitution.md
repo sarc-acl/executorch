@@ -1,6 +1,85 @@
 <!--
 Sync Impact Report
 ==================
+Version change: 2.5.0 → 2.6.0
+
+Context: this workspace stopped using the speckit plan/tasks/implement loop
+(the speckit *format* is still used for standing docs like this one, just
+not the interactive ceremony). Separately, the user found during a doc
+audit that this constitution's "Default Scope for Every Benchmark" .pte_out
+rule (added v2.3.0 below) had gone stale: 2026-08-04 established
+`/sarc-c/gpusw/users/yanwen.xu/android-run/models` (NFS, manifest-tracked)
+as the permanent .pte store, demoting `.pte_out` to transient export
+scratch — the opposite of what v2.3.0 mandated. This amendment reverses
+that one bullet to match current practice; no other principle changes.
+
+Modified sections:
+  - Default Scope for Every Benchmark, ".pte_out" bullet -- reversed:
+    .pte_out is scratch only now; the NFS models/ dir + MANIFEST.json is
+    the permanent store. Full history of the flip (buffer/fp16 generations
+    also archived along the way) lives in
+    `.shared-context/instruction-for-ai/setup/README.md`, not restated here.
+  - Historical Sync Impact Reports below (pre-dating this one) are left
+    as-is per this file's own convention.
+
+Added content: none.
+Removed sections: none.
+
+Templates requiring updates:
+  - .specify/templates/plan-template.md ......... n/a (loop retired)
+  - .specify/templates/spec-template.md ......... n/a (loop retired)
+  - .specify/templates/tasks-template.md ........ n/a (loop retired)
+  - .specify/templates/commands/*.md ............. n/a (not present)
+
+Follow-up TODOs: none new.
+-->
+
+<!--
+Sync Impact Report (previous amendment, retained for history)
+==================
+Version change: 2.4.0 → 2.5.0
+
+Context: the user issued a standing renaming/consolidation directive
+2026-07-22 covering this workstream's device naming and default device
+scope, to be applied "anywhere" it appears (this constitution,
+`.shared-context/instruction-for-ai/`, workspace `CLAUDE.md`). This
+amendment applies the constitution's share of it. No principle is
+redefined and no target changes identity — M51 is the same board
+Principle II already named "M5 EVT1"; this is a rename plus two new
+default-scope clarifications.
+
+Added content:
+  - Reference Hardware Inventory, M51 paragraph -- clarifies that two M51
+    boards exist under this codename, and that this workstream uses only
+    the primary one by default; the secondary is engaged only when
+    explicitly asked to run on both.
+  - Reference Hardware Inventory, M41 paragraph -- clarifies that M41 now
+    names exactly one canonical board; any other board used in earlier
+    sessions under the same codename is retired from use.
+
+Modified sections:
+  - Principle II title and body, Principle IX's codename list, Principle
+    X's rationale, Metrics Philosophy, and the "Samsung/Xclipse Build,
+    Export, Deploy" section header -- renamed "M5 EVT1" to "M51"
+    throughout (cosmetic; same board, same Principle II target).
+  - Historical Sync Impact Reports below (pre-dating this one) are left
+    as-is per this file's own convention -- they describe what this
+    constitution said at the time, not current terminology.
+
+Removed sections: none.
+
+Templates requiring updates:
+  - .specify/templates/plan-template.md ......... ✅ no change needed
+  - .specify/templates/spec-template.md ......... ✅ no change needed
+  - .specify/templates/tasks-template.md ........ ✅ no change needed
+  - .specify/templates/commands/*.md ............. n/a (not present)
+
+Follow-up TODOs: none new.
+-->
+
+<!--
+Sync Impact Report (previous amendment, retained for history)
+==================
 Version change: 2.3.0 → 2.4.0
 
 Context: `specs/017-workstream-agent-housekeeping` closed a gap the user
@@ -445,7 +524,7 @@ Follow-up TODOs:
 This constitution governs one contributor's workstream inside ExecuTorch:
 bringing cooperative-matrix (WMMA/coopmat) acceleration to the Vulkan
 backend's matrix-multiplication shaders — linear/GEMM today, SDPA/attention
-next — with the Samsung M5 EVT1 board (Exynos Xclipse) as the sole active
+next — with the Samsung M51 board (Exynos Xclipse) as the sole active
 performance target (Principle II), validated end-to-end on real LLaMA
 models.
 It supplements, and never overrides, the repository-wide guidance in
@@ -485,10 +564,10 @@ are easy to get silently wrong, and mobile drivers have already shown
 correctness regressions invisible on desktop (see commit `10ef1eaa9`,
 "Fix coopmat quantized-linear correctness on Xclipse").
 
-### II. Samsung M5 EVT1 Is the Only Active Target
+### II. Samsung M51 Is the Only Active Target
 Every coopmat kernel or dispatch path added under this workstream is
 developed and validated — correctness and performance — exclusively on
-the Samsung M5 EVT1 board (see Reference Hardware Inventory) before it
+the Samsung M51 board (see Reference Hardware Inventory) before it
 counts as complete. No other device is an active validation platform:
 - The `rocky-ryzen` MiniPC RDNA3 iGPU that this workstream's `specs
   001`-`013` were built and validated on is **retired from active use**.
@@ -515,7 +594,7 @@ mobile-readiness, and that difference is itself the workstream's roadmap:
   exists to close once mobile correctness/perf on that path is validated —
   not as a design constraint to preserve by default.
 
-On the Samsung M5 EVT1 target, only the **int4-weight** schemes (4w,
+On the Samsung M51 target, only the **int4-weight** schemes (4w,
 8da4w) are in active scope: 8-bit-weight schemes (8w, 8da8w) do not fit
 the memory budget of the target phones for the 8B/3B models and, with
 MiniPC retired, currently have **no validation platform at all** — they
@@ -694,7 +773,7 @@ repository (the narrower surface defined in Repository & Distribution
 Scope below) MUST NOT contain Samsung-internal identifiers or
 infrastructure details, in code, comments, commit messages, or PR
 descriptions — including but not limited to:
-- Internal board/codenames (e.g. "ERD9975", "M5 EVT1", "M41") or
+- Internal board/codenames (e.g. "ERD9975", "M51", "M41") or
   pre-release chip-stage designations (e.g. "EVT1").
 - Device serials, internal hostnames (`*.samsung.com`, `sj1-*`, etc.), or
   internal network/NFS paths.
@@ -751,7 +830,7 @@ access, export, profiling, or driver operation under this workstream:
    value.
 
 Rationale: on 2026-07-05, a session ran `adb devices` on the wrong host
-and concluded "no M5 EVT1 device reachable" — the phone was reachable the
+and concluded "no M51 device reachable" — the phone was reachable the
 whole time via `ssh` to a different host, documented in
 `devices-and-access.md`. The same session separately spent effort
 diagnosing a stale prebuilt-library link failure that `build.md`'s own
@@ -822,7 +901,7 @@ as-is rather than deriving its own:
 
 - **E2E prefill tok/s is the deliverable.** The only number this
   workstream reports as "the result" for a tier-2 claim (Principle IV) is
-  end-to-end prefill tokens/sec on the M5 EVT1 target, at the Default
+  end-to-end prefill tokens/sec on the M51 target, at the Default
   Scope workload below. Decode tok/s is reported alongside it as
   secondary context, never as the headline (decode is a single-token
   `M=1` gemv where the coopmat gate does not engage, so it stays roughly
@@ -871,20 +950,22 @@ benchmark under this workstream runs:
   use shapes drawn from this same prefill/decode split (Principle IV).
 - **This workload is served by a single context-length export**: `.pte`
   files are exported at `MAX_SEQ=MAX_CTX=3072` (canonical naming
-  `*_ctx3072.pte`, per `.shared-context/instruction-for-ai/export-pte.md`),
+  `*_ctx3072.pte`, per `.shared-context/instruction-for-ai/setup/README.md`),
   which comfortably covers the 2048-prefill/1024-decode split above. Don't
   export a different context length for this default workload without
   updating this section and justifying the change.
-- **Every exported `.pte` lands in `/local/yanwen.xu/workspace/.pte_out`**
-  (workspace root, a sibling of this and every other branch worktree, not
-  inside any of them) — never `/tmp`, a job-specific scratch dir, or any
-  other ad hoc location, even temporarily to work around disk space.
-  `export_llm`'s `export.output_dir` config key is not honored (the file
-  lands in the process's CWD); the correct way to satisfy this rule is to
-  `cd` into `.pte_out` before invoking the export, not to export elsewhere
-  and copy the result in afterward. If `.pte_out`'s filesystem itself lacks
-  space, that is a problem to solve directly (free space on that
-  filesystem), not a reason to relocate the output.
+- **Every exported `.pte` is moved to the NFS canonical store** at
+  `/sarc-c/gpusw/users/yanwen.xu/android-run/models` immediately after
+  export, tracked by that directory's `MANIFEST.json` (sha256/size/mtime;
+  regenerate via `.shared-context/scripts/pte_manifest.py`). This reverses
+  the v2.3.0 rule that `.pte_out` was the permanent destination — as of
+  2026-08-04 `.pte_out` is transient scratch only. `export_llm`'s
+  `export.output_dir` config key is still not honored (the file lands in
+  the process's CWD, so `cd` into `.pte_out` before invoking the export),
+  but the result must then be hashed and `mv`'d (not `cp`'d, and not left
+  permanently) to the NFS path above — never kept as a duplicate in both
+  places. See `.shared-context/instruction-for-ai/setup/README.md`
+  §"Where PTEs live now" for the full procedure.
 
 ### Reference Hardware Inventory
 
@@ -912,7 +993,7 @@ configurations, all 16×16×16 at Subgroup scope:
 | 2 | 16 | 16 | 16 | uint8 | uint8 | uint32 | uint32 | Subgroup |
 | 3–13 | 16 | 16 | 16 | int8 variants | int8 variants | int32 | int32 | Subgroup |
 
-**M5 EVT1 — PRIMARY SAMSUNG TARGET.** Samsung ERD9975 reference board
+**M51 — PRIMARY SAMSUNG TARGET.** Samsung ERD9975 reference board
 (Exynos S5E9975 / "Exynos 2500"), Xclipse 970 GPU (AMD RDNA-derived),
 wave64 default, subgroup size 32–64. **Cooperative matrix CONFIRMED**: fp16
 and int8 WMMA, 16×16×16, Subgroup scope. This is the on-device validation
@@ -921,17 +1002,24 @@ serial/host/NFS-path defaults → `.shared-context/instruction-for-ai/README.md`
 §Conventions (the paste-block every runnable doc uses); which driver is on
 the device *right now* (good vs. known-bad hash) →
 `.shared-context/ACTIVE-STATUS.md`. Do not copy those values into this
-file — see Principle VIII.
+file — see Principle VIII. Two boards exist under the M51 name (see
+`.shared-context/instruction-for-ai/hardware/other-devices.md` for which
+host is primary vs. secondary); by default this workstream uses only the
+primary M51 — the secondary is engaged only when explicitly asked to run
+on both (e.g. "run on both M51").
 
-**M41 — secondary quick-experiment Samsung device.** Reachable via a
-different host/ADB path (`.shared-context/instruction-for-ai/devices-and-access.md`
-§1b). WMMA support not assumed present; use for fast non-target-critical
-iteration, not as this workstream's validation target.
+**M41 — secondary quick-experiment Samsung device.** Exactly one canonical
+board as of 2026-07-22 (current serial/host →
+`.shared-context/instruction-for-ai/hardware/other-devices.md`); any other
+board previously used under the M41 name is retired from use. Reachable
+via a different host/ADB path than M51. WMMA support not assumed present;
+use for fast non-target-critical iteration, not as this workstream's
+validation target.
 
 The Pixel 7a / `SM-S926B` / `SM-N950U` table previously here was this
 workstream's own MiniPC-phase device inventory; it is retained verbatim in
 the v1.0.0→1.1.0 Sync Impact Report above for history, and superseded by
-the M5 EVT1 / M41 pair above.
+the M51 / M41 pair above.
 
 ## Development Workflow
 
@@ -1003,7 +1091,7 @@ Model-level (tier 2) benchmarks additionally require a `.pte` exported for
 the model/scheme under test (see `/export`) and a run through the standard
 LLaMA runner against that same build.
 
-### Samsung/Xclipse Build, Export, Deploy (M5 EVT1)
+### Samsung/Xclipse Build, Export, Deploy (M51)
 
 Per Principle X: read the relevant doc below FIRST, before attempting the
 task. `specs/013-minipc-handoff-report`'s own Runbook flagged Android
@@ -1016,8 +1104,11 @@ it before writing new Android tooling for this workstream:
   Android): `.shared-context/instruction-for-ai/build.md`, canonical
   script `build_etdump_android.sh`.
 - **Export** a `.pte` (texture vs. buffer storage, per quant scheme):
-  `.shared-context/instruction-for-ai/export-pte.md`, canonical script
-  `.shared-context/scripts/export_quant.sh`.
+  `.shared-context/instruction-for-ai/setup/README.md`. Canonical recipe (enforced
+  2026-08-04) is a raw `python -m executorch.extension.llm.export.export_llm`
+  invocation with inline Hydra overrides, run from vanilla `release-1.3/` — NOT a
+  script. The old `export_quant.sh` wrapper is retired (archived to
+  `.shared-context/scripts/archive/`); do not use or revive it.
 - **Run** an e2e/microbench measurement, including clock pinning
   (Principle VII, script `pin_freqs.sh`): `.shared-context/instruction-for-ai/commands.md`.
   Pinned is the default for every reported number; run floating (unpinned)
@@ -1098,4 +1189,4 @@ Principle IX above all, since it is NON-NEGOTIABLE for anything upstream-
 bound; any other deviation must be justified in the PR description, not
 merged silently.
 
-**Version**: 2.4.0 | **Ratified**: 2026-07-03 | **Last Amended**: 2026-07-06
+**Version**: 2.6.0 | **Ratified**: 2026-07-03 | **Last Amended**: 2026-08-06
