@@ -13,6 +13,15 @@ makes it easy to build once and copy the resulting binary (plus the two
 `shaders/*.spv` blobs, or the header form baked into the binary -- see below)
 to any Linux or Android device with a Vulkan driver.
 
+## Results
+
+Per-device results (raw output + a findings writeup) live under `results/`.
+See [`results/780M-RADV.md`](results/780M-RADV.md) for the reference run this
+tool's coopmat variants and README analysis below were validated against --
+useful as a sanity baseline before trusting numbers from a new device. If you
+run this on different hardware, consider adding a `results/<device>.md` in
+the same format.
+
 ## Provenance
 
 The shaders in `shaders/*.glsl` are the byte-resolved production GLSL --
@@ -94,6 +103,17 @@ Env vars:
 
 Output is a CSV (one row per shape) followed by a human-readable summary
 table with a geomean speedup line, per storage mode.
+
+**If `./microbench` exits with `Vulkan error -4` (`VK_ERROR_DEVICE_LOST`)**:
+`run_timed_batch` submits `MBENCH_ITERS` dispatches back-to-back in one
+command buffer before waiting on the result. A pathologically slow shader
+config (e.g. a badly-mismatched coopmat tile -- see "coopmat (WMMA)" below)
+at the default 20 iterations/batch can push a single submission's GPU
+execution time past the OS/driver's hang-detection watchdog (commonly ~10s
+on Linux amdgpu), which resets the GPU context out from under the
+benchmark. The GPU itself recovers fine for other processes; only this
+process's `VkDevice` is lost. Lower `MBENCH_ITERS` (5 is a safe starting
+point) rather than treating it as a driver bug.
 
 ## Shape sweep
 
