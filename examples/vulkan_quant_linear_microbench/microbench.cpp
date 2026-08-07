@@ -1,9 +1,14 @@
 // Standalone Vulkan compute microbenchmark: linear_q4gsw_tiled (4w) vs
 // linear_dq8ca_q4gsw_tiled (8da4w), the two BASELINE (non-coopmat/non-WMMA)
 // Vulkan linear kernels from ExecuTorch's `yanwen/dev-igpu` branch
-// (sarc-acl/executorch, commit c02c80254a).
+// (sarc-acl/executorch, commit c02c80254a) -- plus, under --storage=texture,
+// each baseline's real KHR_cooperative_matrix/WMMA counterpart:
+// linear_q4gsw_coopmat (fp16 WMMA) vs q4gsw tiled, and
+// linear_dq8ca_q4gsw_coopmat (int8 WMMA) vs dq8ca tiled. See README.md's
+// "coopmat (WMMA)" section for storage caveats and shape alignment
+// requirements.
 //
-// The four embedded SPIR-V blobs (shaders/shader_*_spv.h) are glslc output
+// The embedded SPIR-V blobs (shaders/shader_*_spv.h) are glslc output
 // from the byte-resolved production GLSL (see shaders/*.glsl in this
 // directory) -- resolved via the repo's own
 // backends/vulkan/runtime/gen_vulkan_spv.py, NOT hand-transcribed, so the
@@ -44,8 +49,13 @@
 #include <string>
 #include <vector>
 
+#include "shaders/shader_dq8ca_coopmat_sametile_spv.h"
+#include "shaders/shader_dq8ca_coopmat_texture_spv.h"
+#include "shaders/shader_dq8ca_coopmat_tuned_spv.h"
 #include "shaders/shader_dq8ca_spv.h"
 #include "shaders/shader_dq8ca_texture_spv.h"
+#include "shaders/shader_q4gsw_coopmat_texture_spv.h"
+#include "shaders/shader_q4gsw_coopmat_tuned_spv.h"
 #include "shaders/shader_q4gsw_spv.h"
 #include "shaders/shader_q4gsw_texture_spv.h"
 
@@ -90,6 +100,7 @@ struct Ctx {
   VkSampler sampler = VK_NULL_HANDLE;
   float timestampPeriodNs = 1.0f;
   bool haveIntegerDotProduct = false;
+  bool haveCoopMat = false;
 };
 
 VkDebugUtilsMessengerEXT g_messenger = VK_NULL_HANDLE;
@@ -229,18 +240,21 @@ Ctx create_context(bool validation) {
       "VK_KHR_shader_float16_int8",
       "VK_KHR_8bit_storage",
       "VK_KHR_16bit_storage",
-      "VK_KHR_shader_integer_dot_product"};
+      "VK_KHR_shader_integer_dot_product",
+      "VK_KHR_cooperative_matrix",
+      "VK_EXT_subgroup_size_control"};
   std::vector<const char*> enabledDevExts;
   for (auto e : devExts) {
     if (has_device_ext(ctx.phys, e))
       enabledDevExts.push_back(e);
   }
-  ctx.haveIntegerDotProduct =
-      std::find(
-          enabledDevExts.begin(),
-          enabledDevExts.end(),
-          std::string("VK_KHR_shader_integer_dot_product")) !=
-      enabledDevExts.end();
+  auto has_enabled = [&](const char* name) {
+    return std::find(
+               enabledDevExts.begin(),
+               enabledDevExts.end(),
+               std::string(name)) != enabledDevExts.end();
+  };
+  ctx.haveIntegerDotProduct = has_enabled("VK_KHR_shader_integer_dot_product");
   if (!ctx.haveIntegerDotProduct) {
     fprintf(
         stderr,
@@ -248,6 +262,8 @@ Ctx create_context(bool validation) {
         "8da4w shader (which requires GL_EXT_integer_dot_product) may "
         "fail to run.\n");
   }
+  const bool haveCoopMatExts = has_enabled("VK_KHR_cooperative_matrix") &&
+      has_enabled("VK_EXT_subgroup_size_control");
 
   VkPhysicalDeviceShaderFloat16Int8Features f16i8{
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES};
@@ -257,14 +273,32 @@ Ctx create_context(bool validation) {
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES};
   VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR dotProd{
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR};
+  VkPhysicalDeviceVulkanMemoryModelFeatures memModel{
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES};
+  VkPhysicalDeviceCooperativeMatrixFeaturesKHR coopMat{
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR};
+  VkPhysicalDeviceSubgroupSizeControlFeaturesEXT subgroupSizeCtrl{
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT};
   f16i8.pNext = &store16;
   store16.pNext = &store8;
   store8.pNext = &dotProd;
+  dotProd.pNext = &memModel;
+  memModel.pNext = &coopMat;
+  coopMat.pNext = &subgroupSizeCtrl;
 
   VkPhysicalDeviceFeatures2 feats2{
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
   feats2.pNext = &f16i8;
   vkGetPhysicalDeviceFeatures2(ctx.phys, &feats2);
+
+  ctx.haveCoopMat = haveCoopMatExts && coopMat.cooperativeMatrix &&
+      subgroupSizeCtrl.subgroupSizeControl;
+  if (!ctx.haveCoopMat) {
+    fprintf(
+        stderr,
+        "NOTE: cooperative matrix / subgroup-size-control not available on "
+        "this device; the q4gsw_coopmat (WMMA) kernel will be skipped.\n");
+  }
 
   float qPrio = 1.0f;
   VkDeviceQueueCreateInfo qInfo{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
@@ -575,11 +609,8 @@ Pipeline build_pipeline(
     const uint32_t* spv,
     size_t spvBytes,
     const std::vector<VkDescriptorType>& bindingTypes,
-    uint32_t localX,
-    uint32_t localY,
-    uint32_t localZ,
-    int32_t applyBias,
-    int32_t k4PerGroup) {
+    const std::vector<int32_t>& specConsts,
+    const void* stagePNext = nullptr) {
   Pipeline p;
 
   VkShaderModuleCreateInfo modInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
@@ -606,20 +637,19 @@ Pipeline build_pipeline(
   VK_CHECK(
       vkCreatePipelineLayout(ctx.dev, &pipeLayoutInfo, nullptr, &p.pipeLayout));
 
-  int32_t specData[5] = {
-      (int32_t)localX, (int32_t)localY, (int32_t)localZ, applyBias, k4PerGroup};
-  VkSpecializationMapEntry mapEntries[5];
-  for (uint32_t i = 0; i < 5; ++i) {
+  std::vector<VkSpecializationMapEntry> mapEntries(specConsts.size());
+  for (uint32_t i = 0; i < specConsts.size(); ++i) {
     mapEntries[i] = {i, i * 4, 4};
   }
   VkSpecializationInfo specInfo{};
-  specInfo.mapEntryCount = 5;
-  specInfo.pMapEntries = mapEntries;
-  specInfo.dataSize = sizeof(specData);
-  specInfo.pData = specData;
+  specInfo.mapEntryCount = (uint32_t)mapEntries.size();
+  specInfo.pMapEntries = mapEntries.data();
+  specInfo.dataSize = specConsts.size() * sizeof(int32_t);
+  specInfo.pData = specConsts.data();
 
   VkPipelineShaderStageCreateInfo stageInfo{
       VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+  stageInfo.pNext = stagePNext;
   stageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
   stageInfo.module = p.module;
   stageInfo.pName = "main";
@@ -889,11 +919,11 @@ KernelHandle setup_q4gsw(Ctx& ctx, const Shape& s, StorageMode mode) {
       tex ? shader_q4gsw_texture_spv : shader_q4gsw_spv,
       tex ? shader_q4gsw_texture_spv_size : shader_q4gsw_spv_size,
       bindingTypes,
-      h.wg.localX,
-      h.wg.localY,
-      h.wg.localZ,
-      /*applyBias=*/0,
-      K4PerGroup);
+      {(int32_t)h.wg.localX,
+       (int32_t)h.wg.localY,
+       (int32_t)h.wg.localZ,
+       /*applyBias=*/0,
+       (int32_t)K4PerGroup});
 
   VkDeviceSize scalesBytes = (VkDeviceSize)numGroups * N4 * 8;
   VkDeviceSize biasBytes = (VkDeviceSize)N4 * 8;
@@ -1046,11 +1076,11 @@ KernelHandle setup_dq8ca(Ctx& ctx, const Shape& s, StorageMode mode) {
       tex ? shader_dq8ca_texture_spv : shader_dq8ca_spv,
       tex ? shader_dq8ca_texture_spv_size : shader_dq8ca_spv_size,
       bindingTypes,
-      h.wg.localX,
-      h.wg.localY,
-      h.wg.localZ,
-      /*applyBias=*/0,
-      K4PerGroup);
+      {(int32_t)h.wg.localX,
+       (int32_t)h.wg.localY,
+       (int32_t)h.wg.localZ,
+       /*applyBias=*/0,
+       (int32_t)K4PerGroup});
 
   VkDeviceSize packedInt8InputBytes = (VkDeviceSize)M4 * K4 * 16;
   VkDeviceSize int8InputSumsBytes = (VkDeviceSize)numGroups * M4 * 16;
@@ -1211,6 +1241,385 @@ KernelHandle setup_dq8ca(Ctx& ctx, const Shape& s, StorageMode mode) {
   return h;
 }
 
+// ---------------------------------------------------------------------------
+// coopmat (WMMA) tile variants.
+//
+// Cooperative-matrix shaders dispatch/bind very differently from the tiled
+// kernels above: activation and output are forced to buffer storage
+// (coopMatLoad/Store require linear memory, not images), only the weight
+// tensor has a texture2d option -- "storage=texture" here means the weight,
+// same as the tiled kernels' always-texture2d weight. Tile geometry is NOT
+// gated inside the shader (misaligned shapes silently miscompute), so the
+// harness checks M/N/K alignment before dispatching. WG_SIZE (= SG_GRID_X *
+// SG_GRID_Y * SUBGROUP_SIZE) is a fixed 128 threads/workgroup across every
+// variant below -- a QuantizedLinear.cpp dispatch-thread-count constraint,
+// not a coincidence.
+//
+// Two variants per kernel: "shipped" is production's current default
+// (tuned on a Samsung Xclipse 970, per each shader's own header comment);
+// "780M-tuned" is dev-igpu's specs/035 e2e sweep result, done specifically
+// on this GPU family (findings in specs/035-dev-igpu-tile-sweep/findings.md
+// on the yanwen/dev-igpu branch) -- a fair, locally-tuned comparison point
+// instead of measuring against a config tuned for different hardware.
+// ---------------------------------------------------------------------------
+
+struct CoopmatVariant {
+  const char* label;
+  uint32_t tileM, tileN, tileK, subgroupSize;
+  const uint32_t* spv;
+  size_t spvSize;
+};
+
+constexpr uint32_t kCoopmatWgSize = 128;
+
+bool coopmat_tile_aligned(const Shape& s, const CoopmatVariant& v) {
+  return s.M % v.tileM == 0 && s.N % v.tileN == 0 && s.K % v.tileK == 0;
+}
+
+KernelHandle
+setup_q4gsw_coopmat(Ctx& ctx, const Shape& s, const CoopmatVariant& variant) {
+  const uint32_t N4 = div_up(s.N, 4), N8 = div_up(s.N, 8);
+  const uint32_t K4 = div_up(s.K, 4);
+  const uint32_t K4PerGroup = div_up(s.groupSize, 4);
+  const uint32_t numGroups = K4 / K4PerGroup;
+
+  KernelHandle h;
+  h.wg.localX = kCoopmatWgSize;
+  h.wg.localY = 1;
+  h.wg.localZ = 1;
+  h.wg.groupCountX = div_up(s.N, variant.tileN);
+  h.wg.groupCountY = div_up(s.M, variant.tileM);
+  h.wg.groupCountZ = 1;
+
+  std::vector<VkDescriptorType> bindingTypes = {
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // 0 t_output
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // 1 t_input
+      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, // 2 t_packed_weight
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // 3 t_weight_scales
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // 4 t_bias -- bound but unread
+                                         // (apply_bias=0 -> HAS_BIAS unset)
+      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // 5 output_sizes
+      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // 6 input_sizes
+  };
+
+  VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroupSizeInfo{
+      VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT};
+  subgroupSizeInfo.requiredSubgroupSize = variant.subgroupSize;
+
+  h.pipe = build_pipeline(
+      ctx,
+      variant.spv,
+      variant.spvSize,
+      bindingTypes,
+      {(int32_t)kCoopmatWgSize,
+       1,
+       1,
+       /*apply_bias=*/0,
+       (int32_t)K4PerGroup,
+       (int32_t)numGroups,
+       (int32_t)s.N},
+      &subgroupSizeInfo);
+
+  VkDeviceSize outputBytes = (VkDeviceSize)s.M * s.N * 2; // float16_t scalar
+  VkDeviceSize inputBytes = (VkDeviceSize)s.M * K4 * 8; // f16vec4
+  VkDeviceSize scalesBytes = (VkDeviceSize)numGroups * N4 * 8; // f16vec4
+  VkDeviceSize biasBytes = (VkDeviceSize)s.N * 2; // float16_t scalar, unread
+
+  Buffer outputBuf = alloc_buffer(
+      ctx,
+      outputBytes,
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  Buffer inputBuf = create_filled_device_buffer(
+      ctx, inputBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 1);
+  Buffer scalesBuf = create_filled_device_buffer(
+      ctx, scalesBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 3);
+  Buffer biasBuf = create_filled_device_buffer(
+      ctx, biasBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 4);
+
+  bind_buffer(
+      ctx,
+      h.pipe,
+      0,
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+      outputBuf.buf,
+      outputBytes);
+  bind_buffer(
+      ctx,
+      h.pipe,
+      1,
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+      inputBuf.buf,
+      inputBytes);
+  bind_buffer(
+      ctx,
+      h.pipe,
+      3,
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+      scalesBuf.buf,
+      scalesBytes);
+  bind_buffer(
+      ctx,
+      h.pipe,
+      4,
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+      biasBuf.buf,
+      biasBytes);
+  h.ownedBuffers = {outputBuf, inputBuf, scalesBuf, biasBuf};
+
+  // Weight block layout (K4 x N8 blocks) is identical to the tiled kernels'
+  // t_packed_int4_weight -- same image dims/format.
+  Image weightImg =
+      create_sampled_image2d(ctx, K4, N8, VK_FORMAT_R32G32B32A32_SINT);
+  bind_sampled_image(ctx, h.pipe, 2, weightImg.view);
+  h.ownedImages = {weightImg};
+
+  int32_t sizesData[2][4] = {
+      {(int32_t)s.N, (int32_t)s.M, 1, 1}, {(int32_t)s.K, (int32_t)s.M, 1, 1}};
+  Buffer outputSizesUbo = alloc_buffer(
+      ctx,
+      sizeof(sizesData[0]),
+      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  Buffer inputSizesUbo = alloc_buffer(
+      ctx,
+      sizeof(sizesData[1]),
+      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  {
+    void* p;
+    vkMapMemory(ctx.dev, outputSizesUbo.mem, 0, sizeof(sizesData[0]), 0, &p);
+    memcpy(p, sizesData[0], sizeof(sizesData[0]));
+    vkUnmapMemory(ctx.dev, outputSizesUbo.mem);
+    vkMapMemory(ctx.dev, inputSizesUbo.mem, 0, sizeof(sizesData[1]), 0, &p);
+    memcpy(p, sizesData[1], sizeof(sizesData[1]));
+    vkUnmapMemory(ctx.dev, inputSizesUbo.mem);
+  }
+  bind_buffer(
+      ctx,
+      h.pipe,
+      5,
+      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+      outputSizesUbo.buf,
+      sizeof(sizesData[0]));
+  bind_buffer(
+      ctx,
+      h.pipe,
+      6,
+      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+      inputSizesUbo.buf,
+      sizeof(sizesData[1]));
+  h.ownedBuffers.push_back(outputSizesUbo);
+  h.ownedBuffers.push_back(inputSizesUbo);
+
+  return h;
+}
+
+// ---------------------------------------------------------------------------
+// dq8ca_q4gsw coopmat (WMMA, int8).
+//
+// Same binding order/types as setup_dq8ca's tiled kernel (see
+// add_linear_dqa_qw_node in QuantizedLinear.cpp), so buffer-size formulas are
+// reused as-is even though a few tensors (t_weight_sums, t_int8_input_sums)
+// are scalar int[] here vs ivec4[] in the tiled shader -- the tiled vec4
+// formulas are a safe superset since N % 4 == 0 / M % 4 == 0 for every shape
+// that reaches this kernel. Runs matrix multiply in INT8 (coopmat<int8> x
+// coopmat<int8> -> coopmat<int32>, dequantized once per group).
+// ---------------------------------------------------------------------------
+
+KernelHandle
+setup_dq8ca_coopmat(Ctx& ctx, const Shape& s, const CoopmatVariant& variant) {
+  const uint32_t N4 = div_up(s.N, 4), N8 = div_up(s.N, 8);
+  const uint32_t K4 = div_up(s.K, 4);
+  const uint32_t M4 = div_up(s.M, 4);
+  const uint32_t K4PerGroup = div_up(s.groupSize, 4);
+  const uint32_t numGroups = K4 / K4PerGroup;
+
+  KernelHandle h;
+  h.wg.localX = kCoopmatWgSize;
+  h.wg.localY = 1;
+  h.wg.localZ = 1;
+  h.wg.groupCountX = div_up(s.N, variant.tileN);
+  h.wg.groupCountY = div_up(s.M, variant.tileM);
+  h.wg.groupCountZ = 1;
+
+  std::vector<VkDescriptorType> bindingTypes = {
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // 0 t_output
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // 1 t_input -- unused
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // 2 t_packed_int8_input
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // 3 t_int8_input_sums
+      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, // 4 t_int8_input_scales
+      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, // 5 t_int8_input_zps
+      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, // 6 t_packed_weight
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // 7 t_weight_sums
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // 8 t_weight_scales
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // 9 t_bias -- bound but unread
+      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // 10 output_sizes
+      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // 11 input_sizes
+  };
+
+  VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroupSizeInfo{
+      VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT};
+  subgroupSizeInfo.requiredSubgroupSize = variant.subgroupSize;
+
+  h.pipe = build_pipeline(
+      ctx,
+      variant.spv,
+      variant.spvSize,
+      bindingTypes,
+      {(int32_t)kCoopmatWgSize,
+       1,
+       1,
+       /*apply_bias=*/0,
+       (int32_t)K4PerGroup,
+       (int32_t)numGroups,
+       (int32_t)s.N},
+      &subgroupSizeInfo);
+
+  VkDeviceSize outputBytes = (VkDeviceSize)s.M * s.N * 2; // float16_t scalar
+  VkDeviceSize inputBytes = 16; // t_input: bound but unread
+  VkDeviceSize packedInt8InputBytes = (VkDeviceSize)M4 * K4 * 16;
+  VkDeviceSize int8InputSumsBytes = (VkDeviceSize)numGroups * M4 * 16;
+  VkDeviceSize weightSumsBytes = (VkDeviceSize)numGroups * N4 * 16;
+  VkDeviceSize scalesBytes = (VkDeviceSize)numGroups * N4 * 8;
+  VkDeviceSize biasBytes = (VkDeviceSize)s.N * 2; // float16_t scalar, unread
+
+  Buffer outputBuf = alloc_buffer(
+      ctx,
+      outputBytes,
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  Buffer inputBuf = create_filled_device_buffer(
+      ctx, inputBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 1);
+  Buffer packedInt8InputBuf = create_filled_device_buffer(
+      ctx, packedInt8InputBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 2);
+  Buffer int8InputSumsBuf = create_filled_device_buffer(
+      ctx, int8InputSumsBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 3);
+  Buffer weightSumsBuf = create_filled_device_buffer(
+      ctx, weightSumsBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 5);
+  Buffer scalesBuf = create_filled_device_buffer(
+      ctx, scalesBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 6);
+  Buffer biasBuf = create_filled_device_buffer(
+      ctx, biasBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 7);
+
+  bind_buffer(
+      ctx,
+      h.pipe,
+      0,
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+      outputBuf.buf,
+      outputBytes);
+  bind_buffer(
+      ctx,
+      h.pipe,
+      1,
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+      inputBuf.buf,
+      inputBytes);
+  bind_buffer(
+      ctx,
+      h.pipe,
+      2,
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+      packedInt8InputBuf.buf,
+      packedInt8InputBytes);
+  bind_buffer(
+      ctx,
+      h.pipe,
+      3,
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+      int8InputSumsBuf.buf,
+      int8InputSumsBytes);
+  bind_buffer(
+      ctx,
+      h.pipe,
+      7,
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+      weightSumsBuf.buf,
+      weightSumsBytes);
+  bind_buffer(
+      ctx,
+      h.pipe,
+      8,
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+      scalesBuf.buf,
+      scalesBytes);
+  bind_buffer(
+      ctx,
+      h.pipe,
+      9,
+      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+      biasBuf.buf,
+      biasBytes);
+  h.ownedBuffers = {
+      outputBuf,
+      inputBuf,
+      packedInt8InputBuf,
+      int8InputSumsBuf,
+      weightSumsBuf,
+      scalesBuf,
+      biasBuf};
+
+  // t_int8_input_scales / t_int8_input_zps -- always texture3d, same as the
+  // tiled kernel.
+  Image scalesImg =
+      create_sampled_image3d(ctx, M4, 1, VK_FORMAT_R16G16B16A16_SFLOAT);
+  Image zpsImg = create_sampled_image3d(ctx, M4, 1, VK_FORMAT_R8G8B8A8_SINT);
+  bind_sampled_image(ctx, h.pipe, 4, scalesImg.view);
+  bind_sampled_image(ctx, h.pipe, 5, zpsImg.view);
+
+  // Weight block layout (K4 x N8 blocks) is identical to the tiled kernels'
+  // t_packed_int4_weight -- same image dims/format.
+  Image weightImg =
+      create_sampled_image2d(ctx, K4, N8, VK_FORMAT_R32G32B32A32_SINT);
+  bind_sampled_image(ctx, h.pipe, 6, weightImg.view);
+  h.ownedImages = {scalesImg, zpsImg, weightImg};
+
+  int32_t sizesData[2][4] = {
+      {(int32_t)s.N, (int32_t)s.M, 1, 1}, {(int32_t)s.K, (int32_t)s.M, 1, 1}};
+  Buffer outputSizesUbo = alloc_buffer(
+      ctx,
+      sizeof(sizesData[0]),
+      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  Buffer inputSizesUbo = alloc_buffer(
+      ctx,
+      sizeof(sizesData[1]),
+      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  {
+    void* p;
+    vkMapMemory(ctx.dev, outputSizesUbo.mem, 0, sizeof(sizesData[0]), 0, &p);
+    memcpy(p, sizesData[0], sizeof(sizesData[0]));
+    vkUnmapMemory(ctx.dev, outputSizesUbo.mem);
+    vkMapMemory(ctx.dev, inputSizesUbo.mem, 0, sizeof(sizesData[1]), 0, &p);
+    memcpy(p, sizesData[1], sizeof(sizesData[1]));
+    vkUnmapMemory(ctx.dev, inputSizesUbo.mem);
+  }
+  bind_buffer(
+      ctx,
+      h.pipe,
+      10,
+      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+      outputSizesUbo.buf,
+      sizeof(sizesData[0]));
+  bind_buffer(
+      ctx,
+      h.pipe,
+      11,
+      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+      inputSizesUbo.buf,
+      sizeof(sizesData[1]));
+  h.ownedBuffers.push_back(outputSizesUbo);
+  h.ownedBuffers.push_back(inputSizesUbo);
+
+  return h;
+}
+
 void destroy_handle(Ctx& ctx, KernelHandle& h) {
   for (auto& b : h.ownedBuffers)
     free_buffer(ctx, b);
@@ -1308,6 +1717,213 @@ void run_suite(
   }
 }
 
+// ---------------------------------------------------------------------------
+// q4gsw coopmat (WMMA) vs q4gsw tiled, weight=texture2d on both sides.
+// ---------------------------------------------------------------------------
+
+struct CoopmatRow {
+  std::string label;
+  uint32_t M, K, N;
+  double tiledMedianUs;
+  std::vector<bool> aligned; // per variant
+  std::vector<double> medianUs, covPct, speedup; // per variant
+};
+
+using TiledSetupFn = KernelHandle (*)(Ctx&, const Shape&, StorageMode);
+using CoopmatSetupFn =
+    KernelHandle (*)(Ctx&, const Shape&, const CoopmatVariant&);
+
+// Compares the tiled baseline against N coopmat tile variants at once
+// (e.g. "shipped" vs "780M-tuned"), round-robin interleaved per round across
+// all N+1 participants so no single config is biased by thermal/clock drift
+// relative to the others.
+void run_coopmat_suite(
+    Ctx& ctx,
+    VkQueryPool queryPool,
+    uint32_t rounds,
+    uint32_t itersPerRound,
+    const char* kernelLabel,
+    TiledSetupFn setupTiled,
+    CoopmatSetupFn setupCoopmat,
+    const std::vector<CoopmatVariant>& variants,
+    std::vector<CoopmatRow>& outRows) {
+  printf("\nlabel,M,K,N,%s_tiled_texture_us_median", kernelLabel);
+  for (const CoopmatVariant& v : variants)
+    printf(
+        ",%s_us_median,%s_cov_pct,%s_speedup_over_tiled",
+        v.label,
+        v.label,
+        v.label);
+  printf("\n");
+
+  for (const Shape& s : kShapes) {
+    CoopmatRow row{};
+    row.label = s.label;
+    row.M = s.M;
+    row.K = s.K;
+    row.N = s.N;
+
+    KernelHandle tiled = setupTiled(ctx, s, StorageMode::kTexture);
+    std::vector<KernelHandle> coop(variants.size());
+    std::vector<bool> aligned(variants.size());
+    for (size_t i = 0; i < variants.size(); ++i) {
+      aligned[i] = coopmat_tile_aligned(s, variants[i]);
+      if (aligned[i])
+        coop[i] = setupCoopmat(ctx, s, variants[i]);
+    }
+
+    run_timed_batch(
+        ctx,
+        queryPool,
+        tiled.pipe.pipeline,
+        tiled.pipe.pipeLayout,
+        tiled.pipe.descSet,
+        tiled.wg,
+        itersPerRound);
+    for (size_t i = 0; i < variants.size(); ++i) {
+      if (aligned[i])
+        run_timed_batch(
+            ctx,
+            queryPool,
+            coop[i].pipe.pipeline,
+            coop[i].pipe.pipeLayout,
+            coop[i].pipe.descSet,
+            coop[i].wg,
+            itersPerRound);
+    }
+
+    std::vector<double> tiledNs;
+    std::vector<std::vector<double>> coopNs(variants.size());
+    for (uint32_t r = 0; r < rounds; ++r) {
+      tiledNs.push_back(run_timed_batch(
+          ctx,
+          queryPool,
+          tiled.pipe.pipeline,
+          tiled.pipe.pipeLayout,
+          tiled.pipe.descSet,
+          tiled.wg,
+          itersPerRound));
+      for (size_t i = 0; i < variants.size(); ++i) {
+        if (aligned[i])
+          coopNs[i].push_back(run_timed_batch(
+              ctx,
+              queryPool,
+              coop[i].pipe.pipeline,
+              coop[i].pipe.pipeLayout,
+              coop[i].pipe.descSet,
+              coop[i].wg,
+              itersPerRound));
+      }
+    }
+
+    row.tiledMedianUs = median(tiledNs) / 1000.0;
+    row.aligned = aligned;
+    printf(
+        "%s,%u,%u,%u,%.3f",
+        row.label.c_str(),
+        row.M,
+        row.K,
+        row.N,
+        row.tiledMedianUs);
+    for (size_t i = 0; i < variants.size(); ++i) {
+      if (!aligned[i]) {
+        row.medianUs.push_back(0.0);
+        row.covPct.push_back(0.0);
+        row.speedup.push_back(0.0);
+        printf(
+            ",-,-,skipped(%ux%ux%u)",
+            variants[i].tileM,
+            variants[i].tileN,
+            variants[i].tileK);
+        continue;
+      }
+      double m = median(coopNs[i]) / 1000.0;
+      double c = cov(coopNs[i]) * 100.0;
+      double sp = m > 0 ? row.tiledMedianUs / m : 0.0;
+      row.medianUs.push_back(m);
+      row.covPct.push_back(c);
+      row.speedup.push_back(sp);
+      printf(",%.3f,%.2f,%.4f", m, c, sp);
+    }
+    printf("\n");
+    fflush(stdout);
+    outRows.push_back(row);
+
+    destroy_handle(ctx, tiled);
+    for (size_t i = 0; i < variants.size(); ++i)
+      if (aligned[i])
+        destroy_handle(ctx, coop[i]);
+  }
+}
+
+void print_coopmat_summary(
+    const std::vector<CoopmatRow>& rows,
+    const char* deviceName,
+    const char* title,
+    const char* kernelLabel,
+    const std::vector<CoopmatVariant>& variants) {
+  printf("\n============ Summary (%s) ============\n", title);
+  if (deviceName)
+    printf("Device: %s\n", deviceName);
+  printf("%-18s %6s %7s %7s | %10s |", "shape", "M", "K", "N", "tiled(us)");
+  for (const CoopmatVariant& v : variants)
+    printf(" %-13s %6s %8s |", v.label, "CoV%", "speedup");
+  printf("\n");
+  const std::string divider(52 + variants.size() * 32, '-');
+  printf("%s\n", divider.c_str());
+
+  std::vector<std::vector<double>> speedups(variants.size());
+  for (const CoopmatRow& r : rows) {
+    printf(
+        "%-18s %6u %7u %7u | %10.2f |",
+        r.label.c_str(),
+        r.M,
+        r.K,
+        r.N,
+        r.tiledMedianUs);
+    for (size_t i = 0; i < variants.size(); ++i) {
+      if (!r.aligned[i]) {
+        printf(" %-13s %6s %8s |", "-", "-", "skipped");
+        continue;
+      }
+      printf(
+          " %13.2f %5.2f%% %7.2fx |", r.medianUs[i], r.covPct[i], r.speedup[i]);
+      speedups[i].push_back(r.speedup[i]);
+    }
+    printf("\n");
+  }
+  printf("%s\n", divider.c_str());
+
+  for (size_t i = 0; i < variants.size(); ++i) {
+    double logSum = 0.0;
+    for (double x : speedups[i])
+      logSum += std::log(x);
+    double geomean =
+        speedups[i].empty() ? 0.0 : std::exp(logSum / speedups[i].size());
+    printf(
+        "%s_coopmat[%s]-over-%s_tiled speedup, geomean across %zu aligned "
+        "shapes: %.2fx (tile %ux%ux%u, subgroup %u)\n",
+        kernelLabel,
+        variants[i].label,
+        kernelLabel,
+        speedups[i].size(),
+        geomean,
+        variants[i].tileM,
+        variants[i].tileN,
+        variants[i].tileK,
+        variants[i].subgroupSize);
+  }
+}
+
+double compute_geomean(const std::vector<Row>& rows) {
+  if (rows.empty())
+    return 0.0;
+  double logSum = 0.0;
+  for (const Row& r : rows)
+    logSum += std::log(r.speedup);
+  return std::exp(logSum / rows.size());
+}
+
 void print_human_summary(
     const std::vector<Row>& rows,
     StorageMode mode,
@@ -1330,7 +1946,6 @@ void print_human_summary(
       "CoV%",
       "speedup");
   printf("%s\n", std::string(100, '-').c_str());
-  double logSum = 0.0;
   for (const Row& r : rows) {
     printf(
         "%-20s %6u %7u %7u %6u | %11.2f %7.2f%% | %11.2f %7.2f%% | %7.2fx\n",
@@ -1344,10 +1959,9 @@ void print_human_summary(
         r.dqMedianUs,
         r.dqCovPct,
         r.speedup);
-    logSum += std::log(r.speedup);
   }
   printf("%s\n", std::string(100, '-').c_str());
-  double geomean = rows.empty() ? 0.0 : std::exp(logSum / rows.size());
+  double geomean = compute_geomean(rows);
   printf(
       "8da4w-over-4w speedup, geomean across %zu shapes: %.2fx\n",
       rows.size(),
@@ -1418,6 +2032,10 @@ int main(int argc, char** argv) {
   VkQueryPool queryPool;
   VK_CHECK(vkCreateQueryPool(ctx.dev, &qpInfo, nullptr, &queryPool));
 
+  std::vector<Row> allRows;
+  std::vector<StorageMode> ranModes;
+  std::vector<double> modeGeomeans;
+
   for (StorageMode mode : modes) {
     fprintf(stderr, "\n=== Running storage=%s ===\n", storage_mode_name(mode));
     printf("storage=%s\n", storage_mode_name(mode));
@@ -1427,6 +2045,129 @@ int main(int argc, char** argv) {
     std::vector<Row> rows;
     run_suite(ctx, queryPool, mode, rounds, itersPerRound, rows);
     print_human_summary(rows, mode, devProps.deviceName);
+
+    ranModes.push_back(mode);
+    modeGeomeans.push_back(compute_geomean(rows));
+    allRows.insert(allRows.end(), rows.begin(), rows.end());
+  }
+
+  printf("\n%s\n", std::string(60, '=').c_str());
+  printf("GEOMEAN SPEEDUP (8da4w vs 4w, dispatch throughput only)\n");
+  printf("%s\n", std::string(60, '=').c_str());
+  for (size_t i = 0; i < ranModes.size(); ++i) {
+    printf(
+        "  storage=%-8s %.2fx\n",
+        storage_mode_name(ranModes[i]),
+        modeGeomeans[i]);
+  }
+  if (ranModes.size() > 1) {
+    printf(
+        "  overall (%zu modes)  %.2fx\n",
+        ranModes.size(),
+        compute_geomean(allRows));
+  }
+  printf("%s\n", std::string(60, '=').c_str());
+
+  const bool wantCoopmat =
+      std::find(modes.begin(), modes.end(), StorageMode::kTexture) !=
+      modes.end();
+  if (wantCoopmat && ctx.haveCoopMat) {
+    const std::vector<CoopmatVariant> q4Variants = {
+        {"shipped(Xclipse)",
+         128,
+         128,
+         16,
+         32,
+         shader_q4gsw_coopmat_texture_spv,
+         shader_q4gsw_coopmat_texture_spv_size},
+        {"780M-tuned",
+         128,
+         64,
+         32,
+         32,
+         shader_q4gsw_coopmat_tuned_spv,
+         shader_q4gsw_coopmat_tuned_spv_size},
+    };
+    fprintf(stderr, "\n=== Running q4gsw_coopmat (WMMA, fp16) ===\n");
+    std::vector<CoopmatRow> q4CoopRows;
+    run_coopmat_suite(
+        ctx,
+        queryPool,
+        rounds,
+        itersPerRound,
+        "q4gsw",
+        setup_q4gsw,
+        setup_q4gsw_coopmat,
+        q4Variants,
+        q4CoopRows);
+    print_coopmat_summary(
+        q4CoopRows,
+        devProps.deviceName,
+        "q4gsw_coopmat(WMMA,fp16) vs q4gsw_tiled, weight=texture2d",
+        "q4gsw",
+        q4Variants);
+
+    const std::vector<CoopmatVariant> dqVariants = {
+        {"shipped(Xclipse)",
+         64,
+         32,
+         32,
+         64,
+         shader_dq8ca_coopmat_texture_spv,
+         shader_dq8ca_coopmat_texture_spv_size},
+        {"780M-tuned",
+         64,
+         128,
+         32,
+         32,
+         shader_dq8ca_coopmat_tuned_spv,
+         shader_dq8ca_coopmat_tuned_spv_size},
+        // Same tile/subgroup config as q4gsw's "780M-tuned" entry above
+        // (128x64x32, g2x2, s32) -- both kernels' tsweep grids happen to
+        // include this exact token, so this isolates the kernel/math delta
+        // (fp16 MMA + no correction pass vs int8 MMA + per-group dequant
+        // correction) from tile-shape choice.
+        // Best dq8ca coopmat config found by this microbench's own isolated-
+        // dispatch methodology (~1.0x vs tiled) -- beats both production
+        // defaults despite carrying a 32-VGPR spill. A follow-up attempt at
+        // a smaller tile (64x64x32) cleared that spill entirely but measured
+        // ~26% SLOWER (0.74x): halving the tile area doubles the workgroup
+        // count, and each workgroup pays a largely fixed tax (barrier sync
+        // for the double-buffered shared-memory staging, the per-group
+        // correction epilogue) independent of how much useful compute it
+        // does -- that lost tile-reuse outweighed the spill fix. Register
+        // pressure is not the dominant remaining cost here.
+        {"same-tile(128x64x32)",
+         128,
+         64,
+         32,
+         32,
+         shader_dq8ca_coopmat_sametile_spv,
+         shader_dq8ca_coopmat_sametile_spv_size},
+    };
+    fprintf(stderr, "\n=== Running dq8ca_q4gsw_coopmat (WMMA, int8) ===\n");
+    std::vector<CoopmatRow> dqCoopRows;
+    run_coopmat_suite(
+        ctx,
+        queryPool,
+        rounds,
+        itersPerRound,
+        "dq8ca",
+        setup_dq8ca,
+        setup_dq8ca_coopmat,
+        dqVariants,
+        dqCoopRows);
+    print_coopmat_summary(
+        dqCoopRows,
+        devProps.deviceName,
+        "dq8ca_q4gsw_coopmat(WMMA,int8) vs dq8ca_q4gsw_tiled, weight=texture2d",
+        "dq8ca",
+        dqVariants);
+  } else if (wantCoopmat && !ctx.haveCoopMat) {
+    fprintf(
+        stderr,
+        "\n=== Skipping q4gsw_coopmat (WMMA): device lacks cooperative "
+        "matrix / subgroup-size-control support ===\n");
   }
 
   vkDestroyQueryPool(ctx.dev, queryPool, nullptr);
