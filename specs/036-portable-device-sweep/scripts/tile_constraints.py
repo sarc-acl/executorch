@@ -24,7 +24,40 @@ from dataclasses import dataclass
 MMA = 16
 FP16_PER_VEC4 = 8
 
-SHADERS = ("q4gsw", "dq8ca")
+SHADERS = (
+    "q4gsw",
+    "dq8ca",
+    "q4gsw_dbuf2",
+    "q4gsw_dbuf3",
+    "q4gsw_dbuf4",
+    "dq8ca_dbuf1",
+    "dq8ca_dbuf3",
+    "dq8ca_dbuf4",
+)
+
+# specs/041-dbuf4-tile-sweep: every _dbufN shader shares its base family's LDS
+# layout and staging thread maps exactly (only the loop structure differs),
+# so they all reuse the same validity formulas -- map to the base family name
+# for those checks. Token namespace differs per variant instead
+# (tsweep_dbufN_t... vs tsweep_t...), tracked separately via TOKEN_PREFIXES.
+BASE_SHADER = {
+    "q4gsw_dbuf2": "q4gsw",
+    "q4gsw_dbuf3": "q4gsw",
+    "q4gsw_dbuf4": "q4gsw",
+    "dq8ca_dbuf1": "dq8ca",
+    "dq8ca_dbuf3": "dq8ca",
+    "dq8ca_dbuf4": "dq8ca",
+}
+TOKEN_PREFIXES = {
+    "q4gsw": "tsweep_t",
+    "dq8ca": "tsweep_t",
+    "q4gsw_dbuf2": "tsweep_dbuf2_t",
+    "q4gsw_dbuf3": "tsweep_dbuf3_t",
+    "q4gsw_dbuf4": "tsweep_dbuf4_t",
+    "dq8ca_dbuf1": "tsweep_dbuf1_t",
+    "dq8ca_dbuf3": "tsweep_dbuf3_t",
+    "dq8ca_dbuf4": "tsweep_dbuf4_t",
+}
 
 WG_TILE_MN_CHOICES = (16, 32, 64, 128, 256)
 WG_TILE_K_CHOICES = (16, 32, 64, 128)
@@ -41,17 +74,33 @@ class DeviceLimits:
     quirks: frozenset = frozenset()
 
 
-def token(m, n, k, gx, gy, sub):
-    return f"tsweep_t{m}x{n}k{k}g{gx}{gy}s{sub}"
+# Longest-prefix-first isn't actually needed here (all prefixes differ at
+# position 7: 'd' vs 't'), but keeping dbufN before the bare form mirrors
+# QuantizedLinear.cpp's kTsweepPrefixes ordering for readability.
+KNOWN_TOKEN_PREFIXES = (
+    "tsweep_dbuf1_t",
+    "tsweep_dbuf2_t",
+    "tsweep_dbuf3_t",
+    "tsweep_dbuf4_t",
+    "tsweep_t",
+)
+
+
+def token(m, n, k, gx, gy, sub, prefix="tsweep_t"):
+    return f"{prefix}{m}x{n}k{k}g{gx}{gy}s{sub}"
 
 
 def parse_token(tok):
-    """Inverse of token(). Raises ValueError on anything malformed, mirroring
-    (and pre-empting) the std::stoul throw in QuantizedLinear.cpp's
-    parse_tsweep_tile."""
-    if not tok.startswith("tsweep_t"):
+    """Inverse of token(). Accepts any of KNOWN_TOKEN_PREFIXES (the
+    production-winner tsweep_t... namespace or any tsweep_dbufN_t...
+    variant-sweep namespace, specs/041), matching whichever prefix the
+    string actually starts with -- mirrors parse_tsweep_tile in
+    QuantizedLinear.cpp. Raises ValueError on anything malformed, mirroring
+    (and pre-empting) the std::stoul throw there."""
+    prefix = next((p for p in KNOWN_TOKEN_PREFIXES if tok.startswith(p)), None)
+    if prefix is None:
         raise ValueError(f"not a tsweep token: {tok!r}")
-    body = tok[len("tsweep_t") :]
+    body = tok[len(prefix) :]
     try:
         mn, rest = body.split("k", 1)
         m_s, n_s = mn.split("x", 1)
@@ -69,7 +118,7 @@ def parse_token(tok):
         }
     except ValueError:
         raise ValueError(f"malformed tsweep token: {tok!r}")
-    if token(*out.values()) != tok:
+    if token(*out.values(), prefix=prefix) != tok:
         raise ValueError(f"non-canonical tsweep token: {tok!r}")
     return out
 
@@ -101,12 +150,13 @@ def derive(shader, m, n, k, gx, gy, sub, group_size, limits):  # noqa: C901
     with token, wg_size, lds_bytes, accumulators_per_sg, valid,
     invalid_reasons."""
     assert shader in SHADERS, shader
+    base = BASE_SHADER.get(shader, shader)
     reasons = []
     wg_size = gx * gy * sub
 
     if sub not in limits.subgroup_sizes:
         reasons.append(f"subgroup_size={sub} not supported by device")
-    if shader == "dq8ca" and sub == 32 and "no_int8_wmma_sg32" in limits.quirks:
+    if base == "dq8ca" and sub == 32 and "no_int8_wmma_sg32" in limits.quirks:
         reasons.append("quirk no_int8_wmma_sg32: int8 WMMA at sg32 crashes this driver")
     if wg_size > limits.max_wg_invocations:
         reasons.append(f"wg_size={wg_size} exceeds maxComputeWorkGroupInvocations")
@@ -124,7 +174,7 @@ def derive(shader, m, n, k, gx, gy, sub, group_size, limits):  # noqa: C901
     if group_size % k != 0 and k % group_size != 0:
         reasons.append(f"wg_tile_k={k} incompatible with group_size={group_size}")
 
-    if shader == "q4gsw":
+    if base == "q4gsw":
         # Staging-pass divisibility (A_PASSES/B_PASSES must be positive ints).
         invs_per_row_a = k // FP16_PER_VEC4
         invs_per_row_b = n // FP16_PER_VEC4
@@ -163,7 +213,7 @@ def derive(shader, m, n, k, gx, gy, sub, group_size, limits):  # noqa: C901
         "sg_grid_x": gx,
         "sg_grid_y": gy,
         "subgroup_size": sub,
-        "token": token(m, n, k, gx, gy, sub),
+        "token": token(m, n, k, gx, gy, sub, prefix=TOKEN_PREFIXES[shader]),
         "wg_size": wg_size,
         "lds_bytes": lds,
         "accumulators_per_sg": acc,

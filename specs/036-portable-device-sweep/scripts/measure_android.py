@@ -30,8 +30,12 @@ ANDROID_BUILD = REPO / "cmake-out-android-vk"
 BENCH = ANDROID_BUILD / "backends/vulkan/test/custom_ops/test_coopmat_linear_bench"
 RUNNER = ANDROID_BUILD / "examples/models/llama/llama_main"
 
-HOST = "yanwen.xu@sj1-dmckee-d01"
-SERIAL = "0000088f8e579c33"
+# specs/041-dbuf4-tile-sweep: overridable via env so this module can target a
+# different board (e.g. a shared-host secondary/tertiary M51) without
+# touching the primary-M51 default or forking this file. Unset = unchanged
+# primary-M51 behavior.
+HOST = os.environ.get("SWEEP_ADB_HOST", "yanwen.xu@sj1-dmckee-d01")
+SERIAL = os.environ.get("SWEEP_ADB_SERIAL", "0000088f8e579c33")
 DEVICE_DIR = "/data/local/tmp/llama_vk"
 NFS_RUNNERS = Path("/sarc-c/gpusw/users/yanwen.xu/android-run/runners")
 
@@ -45,6 +49,40 @@ DEFAULTS = {
         "kernel_base": "linear_q4gsw_coopmat",
     },
     "dq8ca": {
+        "pte": f"{DEVICE_DIR}/llama3_2_1b_8da4w_buffer_ctx3072.pte",
+        "env_var": "ET_VK_DQ8CA_COOPMAT_VARIANT",
+        "kernel_base": "linear_dq8ca_q4gsw_coopmat",
+    },
+    # specs/041-dbuf4-tile-sweep: same env var and kernel base as their
+    # siblings -- the token namespace (tsweep_dbufN_t... vs tsweep_t...),
+    # not the env var, selects the loop structure. pte content doesn't
+    # depend on loop structure, so it's reused unmodified.
+    "q4gsw_dbuf2": {
+        "pte": f"{DEVICE_DIR}/llama3_2_1b_4w_buffer_ctx3072.pte",
+        "env_var": "ET_VK_Q4GSW_COOPMAT_VARIANT",
+        "kernel_base": "linear_q4gsw_coopmat",
+    },
+    "q4gsw_dbuf3": {
+        "pte": f"{DEVICE_DIR}/llama3_2_1b_4w_buffer_ctx3072.pte",
+        "env_var": "ET_VK_Q4GSW_COOPMAT_VARIANT",
+        "kernel_base": "linear_q4gsw_coopmat",
+    },
+    "q4gsw_dbuf4": {
+        "pte": f"{DEVICE_DIR}/llama3_2_1b_4w_buffer_ctx3072.pte",
+        "env_var": "ET_VK_Q4GSW_COOPMAT_VARIANT",
+        "kernel_base": "linear_q4gsw_coopmat",
+    },
+    "dq8ca_dbuf1": {
+        "pte": f"{DEVICE_DIR}/llama3_2_1b_8da4w_buffer_ctx3072.pte",
+        "env_var": "ET_VK_DQ8CA_COOPMAT_VARIANT",
+        "kernel_base": "linear_dq8ca_q4gsw_coopmat",
+    },
+    "dq8ca_dbuf3": {
+        "pte": f"{DEVICE_DIR}/llama3_2_1b_8da4w_buffer_ctx3072.pte",
+        "env_var": "ET_VK_DQ8CA_COOPMAT_VARIANT",
+        "kernel_base": "linear_dq8ca_q4gsw_coopmat",
+    },
+    "dq8ca_dbuf4": {
         "pte": f"{DEVICE_DIR}/llama3_2_1b_8da4w_buffer_ctx3072.pte",
         "env_var": "ET_VK_DQ8CA_COOPMAT_VARIANT",
         "kernel_base": "linear_dq8ca_q4gsw_coopmat",
@@ -117,6 +155,7 @@ class Session:
         strict=False,
         inter_run_sleep_s=1.0,
         quirks=(),
+        slug_suffix="",
     ):
         cfg = DEFAULTS[shader]
         self.shader = shader
@@ -132,6 +171,16 @@ class Session:
         self.sleep_s = inter_run_sleep_s
         self.fingerprint = fingerprint()
         self.device_slug = dfp.device_slug(self.fingerprint)
+        # device_slug is derived purely from the fingerprint's device_name,
+        # which is chip-family-invariant -- M51_FINGERPRINT_BASE's
+        # device_name is the same regardless of which physical board/serial
+        # is targeted via HOST/SERIAL, so two different boards of the same
+        # chip collide on the same slug. slug_suffix (sweep.py's
+        # --slug-suffix) disambiguates results/journal/blocklist filenames
+        # when that matters (specs/041-dbuf4-tile-sweep: a second board on
+        # the same host as the documented secondary M51).
+        if slug_suffix:
+            self.device_slug = f"{self.device_slug}-{slug_suffix}"
         self.limits = dfp.limits_from_fingerprint(self.fingerprint, quirks)
         self.out_jsonl = Path(
             out_jsonl

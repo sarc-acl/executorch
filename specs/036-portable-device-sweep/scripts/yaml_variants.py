@@ -1,8 +1,11 @@
 """Idempotent tsweep-yaml variant management + rebuild driver.
 
-Only ever mutates the two existing tsweep yamls (adding a new yaml file would
-need a cmake reconfigure because ShaderLibrary.cmake file-GLOBs the shader dir
-at configure time). Entries are text-appended in the exact committed format so
+Only ever mutates the existing tsweep yamls listed in SHADER_INFO (adding a
+new yaml file would need a cmake reconfigure because ShaderLibrary.cmake
+file-GLOBs the shader dir at configure time -- specs/041-dbuf4-tile-sweep's
+two new dbuf4 yaml files were created once, out-of-band, with a seed variant
+already present; this module only appends further candidates to files that
+already exist on disk). Entries are text-appended in the exact committed format so
 the diff stays reviewable; NAME strings must match what QuantizedLinear.cpp
 constructs (base + "_" + token + "_buffer_<weight_storage>_half") or the
 runtime hard-aborts with "Could not find ShaderInfo".
@@ -34,9 +37,45 @@ SHADER_INFO = {
         "base": "linear_dq8ca_q4gsw_coopmat",
         "extra_fields": {"WEIGHT_NBITS": 4},
     },
+    # specs/041-dbuf4-tile-sweep: dbufN loop-structure variants (N covers
+    # whichever of 1-4 isn't already the production winner for that scheme).
+    # "base" stays the same production kernel name as their siblings --
+    # QuantizedLinear.cpp always prepends the same base regardless of token
+    # namespace; only the yaml file and the token prefix
+    # (tsweep_dbufN_t... vs tsweep_t...) differ.
+    "q4gsw_dbuf2": {
+        "yaml": GLSL / "linear_q4gsw_coopmat_tsweep_dbuf2.yaml",
+        "base": "linear_q4gsw_coopmat",
+        "extra_fields": {},
+    },
+    "q4gsw_dbuf3": {
+        "yaml": GLSL / "linear_q4gsw_coopmat_tsweep_dbuf3.yaml",
+        "base": "linear_q4gsw_coopmat",
+        "extra_fields": {},
+    },
+    "q4gsw_dbuf4": {
+        "yaml": GLSL / "linear_q4gsw_coopmat_tsweep_dbuf4.yaml",
+        "base": "linear_q4gsw_coopmat",
+        "extra_fields": {},
+    },
+    "dq8ca_dbuf1": {
+        "yaml": GLSL / "linear_dq8ca_q4gsw_coopmat_tsweep_dbuf1.yaml",
+        "base": "linear_dq8ca_q4gsw_coopmat",
+        "extra_fields": {"WEIGHT_NBITS": 4},
+    },
+    "dq8ca_dbuf3": {
+        "yaml": GLSL / "linear_dq8ca_q4gsw_coopmat_tsweep_dbuf3.yaml",
+        "base": "linear_dq8ca_q4gsw_coopmat",
+        "extra_fields": {"WEIGHT_NBITS": 4},
+    },
+    "dq8ca_dbuf4": {
+        "yaml": GLSL / "linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4.yaml",
+        "base": "linear_dq8ca_q4gsw_coopmat",
+        "extra_fields": {"WEIGHT_NBITS": 4},
+    },
 }
 
-TOKEN_RE = re.compile(r"tsweep_t\d+x\d+k\d+g\d\ds\d+")
+TOKEN_RE = re.compile(r"tsweep_(?:dbuf[1-4]_)?t\d+x\d+k\d+g\d\ds\d+")
 
 
 def existing_tokens(shader):

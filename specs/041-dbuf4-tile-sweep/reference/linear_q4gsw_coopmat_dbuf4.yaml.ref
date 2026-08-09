@@ -1,0 +1,31 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# Double-buffered loop-structure variant 4 of linear_q4gsw_coopmat (NVIDIA
+# shmem_double_buf4.comp port; see the .glsl header). Selected at dispatch
+# time via ET_VK_Q4GSW_COOPMAT_VARIANT=dbuf4. All dbuf variants share this
+# geometry: 128x128 tile, K-step 16, 4x2 subgroups, subgroup size 32 forced
+# (fp16 WMMA tolerates forced sg32 on Xclipse; int8 does not — Bug 3).
+
+linear_q4gsw_coopmat_dbuf4:
+  parameter_names_with_default_values:
+    PRECISION: highp
+    HAS_BIAS: false
+    WEIGHT_STORAGE: texture2d
+    MMA_M: 16
+    MMA_N: 16
+    MMA_K: 16
+    WG_TILE_M: 128
+    WG_TILE_N: 128
+    WG_TILE_K: 16
+    SG_GRID_X: 4
+    SG_GRID_Y: 2
+    SUBGROUP_SIZE: 32
+  shader_variants:
+    - NAME: linear_q4gsw_coopmat_dbuf4_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+    - NAME: linear_q4gsw_coopmat_dbuf4_buffer_buffer_half
+      WEIGHT_STORAGE: buffer

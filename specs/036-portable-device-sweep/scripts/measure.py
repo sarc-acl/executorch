@@ -98,6 +98,7 @@ class Session:
         strict=False,
         inter_run_sleep_s=1.0,
         quirks=(),
+        slug_suffix="",
     ):
         cfg = DEFAULTS[shader]
         self.shader = shader
@@ -113,6 +114,14 @@ class Session:
         self.sleep_s = inter_run_sleep_s
         self.fingerprint = dfp.fingerprint()
         self.device_slug = dfp.device_slug(self.fingerprint)
+        # device_slug is derived purely from the fingerprint's device_name,
+        # which is chip-family-invariant -- two different physical boards of
+        # the same chip collide on the same slug. slug_suffix (sweep.py's
+        # --slug-suffix) disambiguates results/journal/blocklist filenames
+        # when that matters (specs/041-dbuf4-tile-sweep: a second board on
+        # the same host as the documented one).
+        if slug_suffix:
+            self.device_slug = f"{self.device_slug}-{slug_suffix}"
         self.limits = dfp.limits_from_fingerprint(self.fingerprint, quirks)
         self.out_jsonl = Path(
             out_jsonl

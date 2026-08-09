@@ -16,6 +16,7 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/ShaderNameUtils.h>
 
 #include <cstdlib>
+#include <cstring>
 
 namespace vkcompute {
 
@@ -90,6 +91,30 @@ constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {64, 32, 32, 128};
 // separate env var from ET_VK_DQ8CA_COOPMAT_VARIANT (the int8 dq8ca_q4gsw
 // sweep's own toggle, specs/023/025/026) since the two select variants of
 // different shaders.
+// specs/041-dbuf4-tile-sweep: a variant token may additionally be
+// "tsweep_dbuf<N>_t..." for any loop-structure variant (1-4) that has its
+// own tile/subgroup sweep, additive to the original "tsweep_t..." (the
+// production winner's own namespace, dbuf1 for q4gsw / dbuf2 for dq8ca).
+// The five prefixes are mutually exclusive by construction (position 7 is
+// 'd' vs 't'), so acceptance/parsing doesn't need to try them in any
+// particular order.
+static const char* const kTsweepPrefixes[] = {
+    "tsweep_dbuf1_t",
+    "tsweep_dbuf2_t",
+    "tsweep_dbuf3_t",
+    "tsweep_dbuf4_t",
+    "tsweep_t",
+};
+
+static bool is_recognized_coopmat_variant_token(const std::string& v) {
+  for (const char* prefix : kTsweepPrefixes) {
+    if (v.rfind(prefix, 0) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
 static const std::string& q4gsw_coopmat_variant() {
   static const std::string variant = [] {
     const char* env = std::getenv("ET_VK_Q4GSW_COOPMAT_VARIANT");
@@ -97,7 +122,7 @@ static const std::string& q4gsw_coopmat_variant() {
       return std::string();
     }
     const std::string v(env);
-    if (v.rfind("tsweep_t", 0) == 0) {
+    if (is_recognized_coopmat_variant_token(v)) {
       return v;
     }
     return std::string();
@@ -116,7 +141,7 @@ static const std::string& dq8ca_coopmat_variant() {
       return std::string();
     }
     const std::string v(env);
-    if (v.rfind("tsweep_t", 0) == 0) {
+    if (is_recognized_coopmat_variant_token(v)) {
       return v;
     }
     return std::string();
@@ -124,16 +149,23 @@ static const std::string& dq8ca_coopmat_variant() {
   return variant;
 }
 
-// Parses "tsweep_t<M>x<N>k<K>g<SGX><SGY>s<sub>" -> {M, N, K, SGX*SGY*sub}.
-// Returns fallback unchanged if the token isn't a tsweep_ token (i.e. unset
-// or unrecognized).
+// Parses "tsweep_t<M>x<N>k<K>g<SGX><SGY>s<sub>" or
+// "tsweep_dbuf<N>_t<M>x<N>k<K>g<SGX><SGY>s<sub>" -> {M, N, K, SGX*SGY*sub}.
+// Returns fallback unchanged if the token matches none of kTsweepPrefixes
+// (i.e. unset or unrecognized).
 static CoopmatTileDims parse_tsweep_tile(
     const std::string& variant,
     const CoopmatTileDims& fallback) {
-  if (variant.rfind("tsweep_t", 0) != 0) {
+  size_t t_pos = std::string::npos;
+  for (const char* prefix : kTsweepPrefixes) {
+    if (variant.rfind(prefix, 0) == 0) {
+      t_pos = std::strlen(prefix);
+      break;
+    }
+  }
+  if (t_pos == std::string::npos) {
     return fallback;
   }
-  const size_t t_pos = 8; // length of "tsweep_t"
   const size_t x_pos = variant.find('x', t_pos);
   const size_t k_pos = variant.find('k', x_pos);
   const size_t g_pos = variant.find('g', k_pos);

@@ -127,10 +127,17 @@ void emit(const Record& r) {
               << r.stdev_us << ",-1," << r.dispatch << ",SKIPPED," << r.kv
               << "," << r.variant << "\n";
   } else {
+    // r.kernel (the full dispatched shader name) is appended last, after the
+    // specs/021 fields, so existing parsers keep working. It is the ONLY
+    // field that identifies WHICH tile variant ran: r.variant is
+    // kernel_class(), which collapses every shader to coopmat/coop/tiled,
+    // and r.dispatch is derived from r.variant. Without this a tile-sweep
+    // driver cannot tell that an unrecognized ET_VK_*_COOPMAT_VARIANT token
+    // silently fell back to the default kernel.
     std::cout << r.variant << "," << r.K << "," << r.N << "," << r.mean_us
               << "," << r.stdev_us << "," << r.gflops << "," << r.dispatch
               << "," << r.correctness << "," << r.storage << "," << r.M << ","
-              << r.kernel_us << "\n";
+              << r.kernel_us << "," << r.kernel << "\n";
   }
 }
 
@@ -410,9 +417,56 @@ const std::vector<std::pair<const char*, const char*>> kSchemes = {
 const std::vector<std::pair<const char*, int64_t>> kLinearRegimes = {
     {"prefill", 2048},
     {"decode", 1}};
-constexpr int64_t kGroup = 32;
+// Linear-weight quantization group size. MUST match the pte being modelled:
+// the export recipe uses quantization.group_size=128 (setup/README.md:247,429;
+// specs/036 protocol.md "this box's buffer ptes: 128"). The previous
+// hardcoded 32 was the EMBEDDING group (embedding_quantize=4,32) and is a
+// different tensor; at 32 the runtime's group_size %% tile_k == 0 check
+// (QuantizedLinear.cpp) rejects every tile_k>32 variant, silently falling
+// back to the tiled kernel -- 71 of 160 dbuf4 tokens, i.e. the whole
+// tile_k in {64,128} subspace. Overridable so a sweep can state it.
+int64_t g_group = 128;
 constexpr int kWarmupRuns = 3;
 constexpr int kTimedRuns = 5;
+
+// Case selection filters (specs/041 tile sweep). A tile-variant token only
+// affects ONE (scheme, storage) cell: an ET_VK_Q4GSW_COOPMAT_VARIANT token
+// changes 4w+buffer, an ET_VK_DQ8CA_COOPMAT_VARIANT token changes
+// 8da4w+buffer. The texture3d rows are the tiled baseline and the other
+// scheme is untouched, so running them per token is pure waste -- across a
+// 160-token sweep restricting to the affected cell cuts wall clock ~4x.
+// Empty string = no filter (the pre-existing all-cases behaviour).
+// --regime is the other half of the saving: at M=1 the linear op takes the
+// is_gemv short-circuit and dispatches linear_*_coop, NOT the tsweep coopmat
+// variant (verified on device: decode rows report dispatch=not_applicable and
+// kernel=linear_q4gsw_coop_...). A tile token therefore cannot change a decode
+// row at all, so sweeping it over decode measures the same kernel 160 times.
+struct CaseFilter {
+  std::string model; // substring match on model name
+  std::string scheme; // "4w" | "8da4w"
+  std::string storage; // "buffer" | "texture3d"
+  std::string regime; // "prefill" | "decode"
+};
+
+bool regime_selected(const CaseFilter& f, const char* regime) {
+  return f.regime.empty() || f.regime == regime;
+}
+
+bool model_selected(const CaseFilter& f, const char* model) {
+  return f.model.empty() ||
+      std::string(model).find(f.model) != std::string::npos;
+}
+
+bool scheme_selected(const CaseFilter& f, const char* scheme_label) {
+  return f.scheme.empty() || f.scheme == scheme_label;
+}
+
+bool storage_selected(const CaseFilter& f, utils::StorageType st) {
+  if (f.storage.empty()) {
+    return true;
+  }
+  return f.storage == (st == utils::kTexture3D ? "texture3d" : "buffer");
+}
 
 // Builds one deterministic, well-conditioned correctness case (POSITIVE
 // data, no fp16 cancellation -- see generate_correctness_cases) for the
@@ -480,8 +534,8 @@ TestCase make_deterministic_correctness_case(
 // with the K-length of the reduction, so a shader change to the accumulator
 // path can pass at small K and still diverge at production K -- the
 // K=2048/4096 entries close that gap. (These correctness rows keep their
-// original group sizes; the perf sweep's real-export group_size is kGroup.)
-std::vector<TestCase> generate_correctness_cases() {
+// original group sizes; the perf sweep's group_size is g_group.)
+std::vector<TestCase> generate_correctness_cases(const CaseFilter& filter) {
   std::vector<TestCase> cases;
   static const std::vector<LinearConfig> kCorrectnessShapes = {
       {64, 128, 64, 64, ""},
@@ -497,10 +551,16 @@ std::vector<TestCase> generate_correctness_cases() {
       {128, 2048, 128, 128, ""},
       {128, 4096, 128, 128, ""}};
   for (const auto& scheme : kSchemes) {
+    if (!scheme_selected(filter, scheme.first)) {
+      continue;
+    }
     for (const auto& shape : kCorrectnessShapes) {
       LinearConfig cfg{
           shape.M, shape.K, shape.N, shape.group_size, scheme.second};
       for (auto st : {utils::kTexture3D, utils::kBuffer}) {
+        if (!storage_selected(filter, st)) {
+          continue;
+        }
         cases.push_back(
             make_deterministic_correctness_case(cfg, scheme.second, st));
       }
@@ -517,6 +577,10 @@ std::vector<TestCase> generate_correctness_cases() {
       {128, 128, 128, 64, "", /*batch=*/1},
       {128, 4096, 128, 128, "", /*batch=*/1}};
   for (const auto& scheme : kSchemes) {
+    if (!scheme_selected(filter, scheme.first) ||
+        !storage_selected(filter, utils::kBuffer)) {
+      continue;
+    }
     for (const auto& shape : kRank3CorrectnessShapes) {
       LinearConfig cfg{
           shape.M,
@@ -590,11 +654,11 @@ std::string kernel_class(const std::string& kernel) {
 // execution turns that throw into one recorded failure and keeps going --
 // the whole point of the gate is to list everything that broke. (Costs the
 // cross-case reference cache, but every shape here is small.)
-bool run_linear_correctness() {
+bool run_linear_correctness(const CaseFilter& filter) {
   unsetenv("ET_VK_FORCE_TILED_LINEAR");
   std::vector<BenchmarkResult> results;
   std::vector<std::string> failed_names;
-  for (auto& tc : generate_correctness_cases()) {
+  for (auto& tc : generate_correctness_cases(filter)) {
     try {
       auto res = execute_test_cases(
           [&tc]() { return std::vector<TestCase>{tc}; },
@@ -658,28 +722,37 @@ struct PerfCase {
   LinearConfig cfg;
   utils::StorageType storage;
 };
-std::vector<PerfCase> generate_linear_perf_cases(
-    const std::string& model_filter) {
+std::vector<PerfCase> generate_linear_perf_cases(const CaseFilter& filter) {
   std::vector<PerfCase> cases;
   for (const auto& scheme : kSchemes) {
+    if (!scheme_selected(filter, scheme.first)) {
+      continue;
+    }
     for (const auto& model : kLinearModels) {
-      if (std::string(model.model).find(model_filter) == std::string::npos) {
+      if (!model_selected(filter, model.model)) {
         continue;
       }
       for (const auto& regime : kLinearRegimes) {
+        if (!regime_selected(filter, regime.first)) {
+          continue;
+        }
         for (const auto& shape : model.ops) {
           LinearConfig cfg{
               regime.second,
               shape.K,
               shape.N,
-              kGroup,
+              g_group,
               scheme.second,
               /*batch=*/1,
               model.model,
               regime.first,
               shape.op_label};
-          cases.push_back({cfg, utils::kTexture3D}); // tiled/gemv baseline
-          cases.push_back({cfg, utils::kBuffer}); // coopmat (gate-permitting)
+          if (storage_selected(filter, utils::kTexture3D)) {
+            cases.push_back({cfg, utils::kTexture3D}); // tiled/gemv baseline
+          }
+          if (storage_selected(filter, utils::kBuffer)) {
+            cases.push_back({cfg, utils::kBuffer}); // coopmat (gate-permitting)
+          }
         }
       }
     }
@@ -693,16 +766,14 @@ std::vector<PerfCase> generate_linear_perf_cases(
 // reference on the same storage the coopmat shader uses). One
 // execute_test_cases() call per case (see file header); a case-local
 // failure is recorded as a crashed row and must not take down the sweep.
-void run_linear_suite(
-    const std::string& suite,
-    const std::string& model_filter) {
+void run_linear_suite(const std::string& suite, const CaseFilter& filter) {
   const bool force_tiled = suite == "baseline";
   if (force_tiled) {
     setenv("ET_VK_FORCE_TILED_LINEAR", "1", /*overwrite=*/1);
   } else {
     unsetenv("ET_VK_FORCE_TILED_LINEAR");
   }
-  for (const auto& pc : generate_linear_perf_cases(model_filter)) {
+  for (const auto& pc : generate_linear_perf_cases(filter)) {
     const LinearConfig& cfg = pc.cfg;
     Record rec;
     rec.suite = suite;
@@ -1315,6 +1386,14 @@ void print_usage() {
          "  --sdpa               run the SDPA coopmat-vs-tiled suite\n"
          "                       (no suite flag = all three)\n"
          "  --model=<substr>     only models whose name contains <substr>\n"
+         "  --scheme=<4w|8da4w>  only this quantization scheme\n"
+         "  --storage=<buffer|texture3d>  only this storage type\n"
+         "  --regime=<prefill|decode>     only this regime\n"
+         "  --group-size=<N>     linear quant group size (default 128,\n"
+         "                       must match the pte; tile_k must divide it)\n"
+         "                       (--scheme/--storage also narrow the\n"
+         "                        correctness gate; a tile-variant token\n"
+         "                        only affects one scheme+buffer cell)\n"
          "  --correctness-only   run just the linear correctness matrix\n"
          "  --skip-correctness   skip the correctness gate before perf\n"
          "  --list               print every case with its sizes, no GPU\n"
@@ -1325,14 +1404,15 @@ void list_cases(
     bool linear,
     bool baseline,
     bool sdpa,
-    const std::string& model_filter) {
+    const CaseFilter& filter) {
+  const std::string& model_filter = filter.model;
   int n = 0;
   for (const char* suite : {"linear", "baseline"}) {
     if ((std::string(suite) == "linear" && !linear) ||
         (std::string(suite) == "baseline" && !baseline)) {
       continue;
     }
-    for (const auto& pc : generate_linear_perf_cases(model_filter)) {
+    for (const auto& pc : generate_linear_perf_cases(filter)) {
       std::cout << suite << "," << pc.cfg.model << ","
                 << (is_dq8ca(pc.cfg.op_name) ? "8da4w" : "4w") << ","
                 << pc.cfg.regime << "," << pc.cfg.op_label << ","
@@ -1371,7 +1451,7 @@ void list_cases(
 int main(int argc, char** argv) {
   bool linear = false, baseline = false, sdpa = false;
   bool correctness_only = false, skip_correctness = false, list_only = false;
-  std::string model_filter;
+  CaseFilter filter;
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
     if (arg == "--linear") {
@@ -1387,7 +1467,30 @@ int main(int argc, char** argv) {
     } else if (arg == "--list") {
       list_only = true;
     } else if (arg.rfind("--model=", 0) == 0) {
-      model_filter = arg.substr(8);
+      filter.model = arg.substr(8);
+    } else if (arg.rfind("--scheme=", 0) == 0) {
+      filter.scheme = arg.substr(9);
+      if (filter.scheme != "4w" && filter.scheme != "8da4w") {
+        std::cerr << "--scheme must be 4w or 8da4w, got: " << filter.scheme
+                  << "\n";
+        return 2;
+      }
+    } else if (arg.rfind("--storage=", 0) == 0) {
+      filter.storage = arg.substr(10);
+      if (filter.storage != "buffer" && filter.storage != "texture3d") {
+        std::cerr << "--storage must be buffer or texture3d, got: "
+                  << filter.storage << "\n";
+        return 2;
+      }
+    } else if (arg.rfind("--group-size=", 0) == 0) {
+      g_group = std::stoll(arg.substr(13));
+    } else if (arg.rfind("--regime=", 0) == 0) {
+      filter.regime = arg.substr(9);
+      if (filter.regime != "prefill" && filter.regime != "decode") {
+        std::cerr << "--regime must be prefill or decode, got: "
+                  << filter.regime << "\n";
+        return 2;
+      }
     } else if (arg == "--help" || arg == "-h") {
       print_usage();
       return 0;
@@ -1402,7 +1505,7 @@ int main(int argc, char** argv) {
   }
 
   if (list_only) {
-    list_cases(linear, baseline, sdpa, model_filter);
+    list_cases(linear, baseline, sdpa, filter);
     return 0;
   }
 
@@ -1414,7 +1517,7 @@ int main(int argc, char** argv) {
   print_performance_header();
   std::cout << "Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; "
                "prefill 2048 / decode 1 @ ctx3072; linear group_size="
-            << kGroup << "; " << kWarmupRuns << " warmup + " << kTimedRuns
+            << g_group << "; " << kWarmupRuns << " warmup + " << kTimedRuns
             << " timed runs per case)\n";
   // Device provenance: without this, thermal/DVFS drift between runs (or
   // between the linear and baseline suites within one run) cannot even be
@@ -1435,24 +1538,24 @@ int main(int argc, char** argv) {
   // Correctness gate: validates the tiled and coopmat linear kernels
   // (including the rank-3 dispatch check) before any perf time is spent.
   if (correctness_only) {
-    return run_linear_correctness() ? 0 : 1;
+    return run_linear_correctness(filter) ? 0 : 1;
   }
   if ((linear || baseline) && !skip_correctness) {
-    if (!run_linear_correctness()) {
+    if (!run_linear_correctness(filter)) {
       std::cout << "correctness gate FAILED -- not running the perf sweep\n";
       return 1;
     }
   }
 
   if (linear) {
-    run_linear_suite("linear", model_filter);
+    run_linear_suite("linear", filter);
   }
   if (baseline) {
-    run_linear_suite("baseline", model_filter);
+    run_linear_suite("baseline", filter);
   }
   bool sdpa_confirmed = true;
   if (sdpa) {
-    sdpa_confirmed = run_sdpa_suite(model_filter);
+    sdpa_confirmed = run_sdpa_suite(filter.model);
   }
 
   print_report(baseline);

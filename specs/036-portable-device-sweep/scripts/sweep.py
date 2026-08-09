@@ -42,13 +42,41 @@ SEEDS = {
         "tsweep_t64x128k32g41s32",  # 780M winner (specs/035)
         "tsweep_t64x32k32g12s64",  # M5 winner (specs/025/027)
     ],
+    # specs/041-dbuf4-tile-sweep: seed with the dbufN-token equivalent of the
+    # current production tiles (same anchoring rationale as the above).
+    "q4gsw_dbuf2": [
+        "tsweep_dbuf2_t128x128k16g22s32",  # current 4w production tile (specs/036)
+    ],
+    "q4gsw_dbuf3": [
+        "tsweep_dbuf3_t128x128k16g22s32",  # current 4w production tile (specs/036)
+    ],
+    "q4gsw_dbuf4": [
+        "tsweep_dbuf4_t128x128k16g22s32",  # current 4w production tile (specs/036)
+    ],
+    "dq8ca_dbuf1": [
+        "tsweep_dbuf1_t64x32k32g12s64",  # current 8da4w production tile (specs/025/027)
+    ],
+    "dq8ca_dbuf3": [
+        "tsweep_dbuf3_t64x32k32g12s64",  # current 8da4w production tile (specs/025/027)
+    ],
+    "dq8ca_dbuf4": [
+        "tsweep_dbuf4_t64x32k32g12s64",  # current 8da4w production tile (specs/025/027)
+    ],
 }
 
 DIMS = ("m", "n", "k", "gx", "gy", "sub")
 
 
-def params_to_token(p):
-    return tc.token(p["m"], p["n"], p["k"], p["gx"], p["gy"], p["sub"])
+def params_to_token(p, shader):
+    return tc.token(
+        p["m"],
+        p["n"],
+        p["k"],
+        p["gx"],
+        p["gy"],
+        p["sub"],
+        prefix=tc.TOKEN_PREFIXES[shader],
+    )
 
 
 def token_to_params(tok):
@@ -140,11 +168,11 @@ class ReplaySession:
         return self.measure(token, reps, "confirm")
 
 
-def known_tokens_in_study(study):
+def known_tokens_in_study(study, shader):
     seen = set()
     for t in study.get_trials(deepcopy=False):
         if all(d in t.params for d in DIMS):
-            seen.add(params_to_token(t.params))
+            seen.add(params_to_token(t.params, shader))
     return seen
 
 
@@ -162,7 +190,7 @@ def ask_legal(
             "gy": trial.suggest_categorical("gy", tc.SG_GRID_CHOICES),
             "sub": trial.suggest_categorical("sub", limits.subgroup_sizes),
         }
-        tok = params_to_token(p)
+        tok = params_to_token(p, shader)
         c = tc.derive(
             shader,
             p["m"],
@@ -200,8 +228,19 @@ def run_sweep(args):  # noqa: C901
         else:
             import measure as measure_mod
 
+        # NOTE (specs/041-dbuf4-tile-sweep): --slug-suffix was previously
+        # declared here but never threaded through to Session -- device_slug
+        # is derived purely from the fingerprint's device_name, which is
+        # chip-family-invariant, so two boards of the same chip silently
+        # shared one slug (and thus one journal/blocklist/results file)
+        # until this was wired up. Always pass a suffix when sweeping a
+        # board that isn't the family's documented default.
         session = measure_mod.Session(
-            shader, pte=args.pte, strict=args.strict, quirks=args.quirk
+            shader,
+            pte=args.pte,
+            strict=args.strict,
+            quirks=args.quirk,
+            slug_suffix=args.slug_suffix,
         )
         limits = session.limits
         slug = session.device_slug
@@ -224,7 +263,7 @@ def run_sweep(args):  # noqa: C901
         ),
     )
 
-    settled = known_tokens_in_study(study) | blocklist.tokens
+    settled = known_tokens_in_study(study, shader) | blocklist.tokens
     done = [
         t for t in study.get_trials(deepcopy=False) if t.state == TrialState.COMPLETE
     ]
@@ -312,7 +351,8 @@ def run_sweep(args):  # noqa: C901
     finalists = done[: args.finalists]
     if not args.dry_run and finalists:
         toks = [
-            t.user_attrs.get("token") or params_to_token(t.params) for t in finalists
+            t.user_attrs.get("token") or params_to_token(t.params, shader)
+            for t in finalists
         ]
         if yv.ensure_variants(shader, toks):
             r = rebuild_fn(log_path=SPEC / "results" / "last_build.log")
@@ -320,7 +360,7 @@ def run_sweep(args):  # noqa: C901
                 raise RuntimeError("rebuild for finalist confirmation failed")
     confirmed = []
     for t in finalists:
-        tok = t.user_attrs.get("token") or params_to_token(t.params)
+        tok = t.user_attrs.get("token") or params_to_token(t.params, shader)
         m = session.confirm(tok)
         confirmed.append(
             {
@@ -398,6 +438,13 @@ def main():
         action="append",
         default=[],
         help="device quirk name, e.g. no_int8_wmma_sg32",
+    )
+    ap.add_argument(
+        "--slug-suffix",
+        default="",
+        help="appended to the device slug (journal/blocklist/summary filenames) "
+        "to isolate a study under different measurement conditions (e.g. a "
+        "different clock regime) from the device's default study",
     )
     ap.add_argument("--pte", help="override pte path")
     ap.add_argument(

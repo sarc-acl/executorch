@@ -1,0 +1,49 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# specs/041-dbuf4-tile-sweep: TILE-SIZE SWEEP variants of the fp16 q4gsw
+# coopmat kernel's dbuf3 (dbuf2 with the last iteration peeled, no
+# conditionals in the loop body) loop structure --
+# linear_q4gsw_coopmat_tsweep_dbuf3.glsl is a fork of
+# linear_q4gsw_coopmat_tsweep.glsl (dbuf1) with only the loop structure
+# swapped. Only the tile geometry (WG_TILE_*, SG_GRID_*, SUBGROUP_SIZE)
+# varies per variant. Selected at dispatch via
+# ET_VK_Q4GSW_COOPMAT_VARIANT=tsweep_dbuf3_t<M>x<N>k<K>g<SGX><SGY>s<sub>
+# (QuantizedLinear.cpp). Seed variant below matches the current production
+# 4w tile as a legal, known-fast starting point for sweep.py's Optuna
+# search; specs/041's sweep appends further candidates here as it runs.
+
+linear_q4gsw_coopmat_tsweep_dbuf3:
+  parameter_names_with_default_values:
+    PRECISION: highp
+    HAS_BIAS: false
+    WEIGHT_STORAGE: texture2d
+    MMA_M: 16
+    MMA_N: 16
+    MMA_K: 16
+    WG_TILE_M: 128
+    WG_TILE_N: 128
+    WG_TILE_K: 16
+    SG_GRID_X: 2
+    SG_GRID_Y: 2
+    SUBGROUP_SIZE: 32
+  shader_variants:
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf3_t128x128k16g22s32_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf3_t128x128k16g22s32_buffer_buffer_half
+      WEIGHT_STORAGE: buffer
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32

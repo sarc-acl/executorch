@@ -1,0 +1,43 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# specs/041-dbuf4-tile-sweep: TILE/SUBGROUP SWEEP variants of the int8
+# dq8ca_q4gsw coopmat shader's dbuf3 (dbuf2 with the true final chunk
+# peeled out) loop structure --
+# linear_dq8ca_q4gsw_coopmat_tsweep_dbuf3.glsl is a fork of
+# linear_dq8ca_q4gsw_coopmat_tsweep.glsl (dbuf2) with only the loop structure
+# swapped. Only tile geometry (WG_TILE_*, SG_GRID_*, SUBGROUP_SIZE) varies
+# per variant. Selected via
+# ET_VK_DQ8CA_COOPMAT_VARIANT=tsweep_dbuf3_t<M>x<N>k<K>g<SGX><SGY>s<sub>.
+# Seed variant below matches the current production 8da4w tile as a legal,
+# known-fast starting point for sweep.py's Optuna search; specs/041's sweep
+# appends further candidates here as it runs.
+
+linear_dq8ca_q4gsw_coopmat_tsweep_dbuf3:
+  parameter_names_with_default_values:
+    PRECISION: highp
+    HAS_BIAS: false
+    WEIGHT_NBITS: 4
+    WEIGHT_STORAGE: texture2d
+    MMA_M: 16
+    MMA_N: 16
+    MMA_K: 16
+    WG_TILE_M: 64
+    WG_TILE_N: 32
+    WG_TILE_K: 32
+    SG_GRID_X: 1
+    SG_GRID_Y: 2
+    SUBGROUP_SIZE: 64
+  shader_variants:
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf3_t64x32k32g12s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64

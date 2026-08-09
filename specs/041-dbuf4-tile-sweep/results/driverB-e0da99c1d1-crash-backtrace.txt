@@ -1,0 +1,43 @@
+--------- beginning of crash
+08-09 14:58:26.442  8967  8967 F libc    : Fatal signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0 in tid 8967 (test_llama_micr), pid 8967 (test_llama_micr)
+08-09 14:58:26.490  8972  8972 F DEBUG   : *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+08-09 14:58:26.490  8972  8972 F DEBUG   : Build fingerprint: 'Exynos/full_erd9975_c/erd9975:17/CP2A.260605.016/eng.abis:userdebug/20260720.134218,QB6587264_CICD_T159889,test-keys'
+08-09 14:58:26.490  8972  8972 F DEBUG   : Kernel Release: '6.18.21-android17-5-gb6016cbc4ded-4k'
+08-09 14:58:26.490  8972  8972 F DEBUG   : Revision: '0'
+08-09 14:58:26.490  8972  8972 F DEBUG   : ABI: 'arm64'
+08-09 14:58:26.490  8972  8972 F DEBUG   : Timestamp: 2026-08-09 14:58:26.478888671-0700
+08-09 14:58:26.490  8972  8972 F DEBUG   : Process uptime: 1s
+08-09 14:58:26.490  8972  8972 F DEBUG   : Executable: /data/local/tmp/llama_vk/test_llama_microbench_dbuf4
+08-09 14:58:26.490  8972  8972 F DEBUG   : Cmdline: ./test_llama_microbench_dbuf4 --linear --scheme=4w --storage=buffer --regime=prefill --skip-correctness
+08-09 14:58:26.490  8972  8972 F DEBUG   : pid: 8967, ppid: 8965, tid: 8967, name: test_llama_micr  >>> ./test_llama_microbench_dbuf4 <<<
+08-09 14:58:26.490  8972  8972 F DEBUG   : uid: 0
+08-09 14:58:26.490  8972  8972 F DEBUG   : tagged_addr_ctrl: 0000000000000001 (PR_TAGGED_ADDR_ENABLE)
+08-09 14:58:26.490  8972  8972 F DEBUG   : pac_enabled_keys: 000000000000000f (PR_PAC_APIAKEY, PR_PAC_APIBKEY, PR_PAC_APDAKEY, PR_PAC_APDBKEY)
+08-09 14:58:26.490  8972  8972 F DEBUG   : esr: 0000000092000005 (Data Abort Exception 0x24)
+08-09 14:58:26.490  8972  8972 F DEBUG   : signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0000000000000000 (read)
+08-09 14:58:26.490  8972  8972 F DEBUG   : Cause: null pointer dereference
+08-09 14:58:26.490  8972  8972 F DEBUG   :     x0  0000000000000000  x1  0000000100000000  x2  0000000100000000  x3  0000000000000001
+08-09 14:58:26.490  8972  8972 F DEBUG   :     x4  0000000000000000  x5  b400007b8d808230  x6  0000000000000dfe  x7  0000000000000000
+08-09 14:58:26.490  8972  8972 F DEBUG   :     x8  0000000000000008  x9  00000000000000fe  x10 0000000000000008  x11 0000000000000000
+08-09 14:58:26.490  8972  8972 F DEBUG   :     x12 b400007b4d8136f0  x13 00000000c0065800  x14 0000000000003fc0  x15 0000000000000000
+08-09 14:58:26.490  8972  8972 F DEBUG   :     x16 0000000000287fc3  x17 0000000000000014  x18 0000007c82394000  x19 b400007c2da6d270
+08-09 14:58:26.490  8972  8972 F DEBUG   :     x20 b400007c2da7ab98  x21 b400007b4d8136f0  x22 0000000000000003  x23 0000000000000000
+08-09 14:58:26.490  8972  8972 F DEBUG   :     x24 0000000000000001  x25 0000000000000000  x26 b400007c2da7ab90  x27 b400007c2da788e8
+08-09 14:58:26.490  8972  8972 F DEBUG   :     x28 0000000000000000  x29 0000007fcf97f680
+08-09 14:58:26.490  8972  8972 F DEBUG   :     lr  0000007968cfa27c  sp  0000007fcf97f5a0  pc  0000007968cfa1bc  pst 00000000a0001000
+08-09 14:58:26.490  8972  8972 F DEBUG   :     esr 0000000092000005  vg  0000000000000002
+08-09 14:58:26.490  8972  8972 F DEBUG   : 11 total frames
+08-09 14:58:26.490  8972  8972 F DEBUG   : backtrace:
+08-09 14:58:26.490  8972  8972 F DEBUG   :       #00 pc 0000000001e8d1bc  /vendor/lib64/hw/vulkan.samsung.so (BuildId: c240e35526f8311d7fe7a49689053343e32510fc)
+08-09 14:58:26.490  8972  8972 F DEBUG   :       #01 pc 0000000001dd32f4  /vendor/lib64/hw/vulkan.samsung.so (BuildId: c240e35526f8311d7fe7a49689053343e32510fc)
+08-09 14:58:26.490  8972  8972 F DEBUG   :       #02 pc 0000000000d9f740  /data/local/tmp/llama_vk/test_llama_microbench_dbuf4 (vkcompute::vkapi::CommandBuffer::dispatch(vkcompute::utils::detail::vec<unsigned int, 3u> const&)+216) (BuildId: ddbf0e33c34b59a113860b7b257b1cc2ebf1592e)
+08-09 14:58:26.490  8972  8972 F DEBUG   :       #03 pc 0000000000d93b88  /data/local/tmp/llama_vk/test_llama_microbench_dbuf4 (vkcompute::api::Context::register_shader_dispatch(vkcompute::vkapi::DescriptorSet const&, vkcompute::vkapi::PipelineBarrier&, vkcompute::vkapi::ShaderInfo const&, vkcompute::utils::detail::vec<unsigned int, 3u> const&, void const*, unsigned int)+356) (BuildId: ddbf0e33c34b59a113860b7b257b1cc2ebf1592e)
+08-09 14:58:26.490  8972  8972 F DEBUG   :       #04 pc 0000000000d05ed0  /data/local/tmp/llama_vk/test_llama_microbench_dbuf4 (vkcompute::DispatchNode::encode(vkcompute::ComputeGraph*)+364) (BuildId: ddbf0e33c34b59a113860b7b257b1cc2ebf1592e)
+08-09 14:58:26.490  8972  8972 F DEBUG   :       #05 pc 0000000000cfe824  /data/local/tmp/llama_vk/test_llama_microbench_dbuf4 (vkcompute::ComputeGraph::execute()+212) (BuildId: ddbf0e33c34b59a113860b7b257b1cc2ebf1592e)
+08-09 14:58:26.490  8972  8972 F DEBUG   :       #06 pc 0000000000e72b50  /data/local/tmp/llama_vk/test_llama_microbench_dbuf4 (executorch::vulkan::prototyping::execute_test_case(executorch::vulkan::prototyping::TestCase&, int, int, int, bool)+776) (BuildId: ddbf0e33c34b59a113860b7b257b1cc2ebf1592e)
+08-09 14:58:26.490  8972  8972 F DEBUG   :       #07 pc 0000000000e74b88  /data/local/tmp/llama_vk/test_llama_microbench_dbuf4 (executorch::vulkan::prototyping::execute_test_cases(std::__ndk1::function<std::__ndk1::vector<executorch::vulkan::prototyping::TestCase, std::__ndk1::allocator<executorch::vulkan::prototyping::TestCase>> ()>, std::__ndk1::function<long (executorch::vulkan::prototyping::TestCase const&)>, std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char>> const&, int, int, std::__ndk1::function<void (executorch::vulkan::prototyping::TestCase&)>)+3008) (BuildId: ddbf0e33c34b59a113860b7b257b1cc2ebf1592e)
+08-09 14:58:26.490  8972  8972 F DEBUG   :       #08 pc 0000000000e5ca84  /data/local/tmp/llama_vk/test_llama_microbench_dbuf4 ((anonymous namespace)::run_linear_suite(std::__ndk1::basic_string<char, std::__ndk1::char_traits<char>, std::__ndk1::allocator<char>> const&, (anonymous namespace)::CaseFilter const&)+1368) (BuildId: ddbf0e33c34b59a113860b7b257b1cc2ebf1592e)
+08-09 14:58:26.490  8972  8972 F DEBUG   :       #09 pc 0000000000e598d8  /data/local/tmp/llama_vk/test_llama_microbench_dbuf4 (main+6852) (BuildId: ddbf0e33c34b59a113860b7b257b1cc2ebf1592e)
+08-09 14:58:26.490  8972  8972 F DEBUG   :       #10 pc 000000000007021c  /apex/com.android.runtime/lib64/bionic/libc.so (__libc_init+124) (BuildId: 93dbee7f1b4fd936e7d452920d8f9437)
+08-09 14:58:26.490  8972  8972 F DEBUG   : Note: To display stack pointer information, use the pbtombstone tool:
+08-09 14:58:26.490  8972  8972 F DEBUG   :         pbtombstone --display-sp tombstone_XX.pb
