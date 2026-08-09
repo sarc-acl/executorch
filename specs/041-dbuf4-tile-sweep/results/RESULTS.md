@@ -53,7 +53,10 @@ requires buffer storage, so this driver cannot run it at all.
 
 - spread best→worst **4.20x** (5367.0 → 1276.6), median 3391.7
 - tokens within 1% of best: **2**
-- production tile `tsweep_dbuf4_t128x128k16g22s32` ranks **1 of 38** at 100.0% of best → already optimal within dbuf4, **no headroom**
+- the production *geometry* `t128x128k16g22s32` ranks **1 of 38 within dbuf4**.
+  Note this is that geometry rebuilt as dbuf4; what ships for 4w is dbuf1. This
+  says the geometry is the best dbuf4 geometry — **not** that dbuf4 matches or
+  beats the shipped dbuf1 kernel, which was not measured.
 
 ## Driver A (`f14c51b6f8`) — 8da4w
 
@@ -76,7 +79,14 @@ requires buffer storage, so this driver cannot run it at all.
 
 - spread best→worst **2.65x** (6203.1 → 2343.9), median 4213.8
 - tokens within 1% of best: **1**
-- production tile `tsweep_dbuf4_t64x32k32g12s64` ranks **11 of 50** at 77.2% of best → **+29.6% headroom**
+- the production *geometry* `t64x32k32g12s64` ranks **11 of 50 within dbuf4**, at
+  77.2% of the best dbuf4 geometry (i.e. 29.6% below it).
+  ⚠️ **This is not 29.6% of available headroom over what ships.** What ships for
+  8da4w is that geometry under **dbuf2** (`linear_dq8ca_qw_coopmat`, specs/027,
+  shipped 07-12); here it was measured under **dbuf4**. No dbuf2 point was run,
+  and memory `dbuf-variant-differs-by-quant-scheme` records dbuf2 as the 8da4w
+  winner — so dbuf4's whole curve may sit below dbuf2. Establishing real headroom
+  requires measuring the shipped dbuf2 kernel alongside these.
 
 ## Canary — driver A re-measured after flash→B→reflash→A
 
@@ -98,7 +108,14 @@ above are not thermal or drift artifacts.
 
 - **Microbench-only, not a production pick.** specs/026 vs specs/027 saw the
   8da4w microbench ranking nearly invert against e2e.
-- Ranks dbuf4 tiles **against each other**; no dbuf1/dbuf2 baseline was run, so
-  this does not say whether dbuf4 beats the shipped loop structure.
+- Ranks dbuf4 tiles **against each other only**. No dbuf1/dbuf2 baseline was run,
+  so nothing here says whether dbuf4 beats the shipped loop structure (dbuf1 for
+  4w, dbuf2 for 8da4w). Every "% of best" is relative to the best *dbuf4* config.
+- **The correctness gate is small-shape only.** `kCorrectnessShapes` tops out at
+  K=4096 / M=128 and perf rows report `correctness = SKIPPED`, so a tile that is
+  wrong specifically at prefill M=2048 would still be counted `ok` and ranked.
+  Memory `rel13-dq8ca-prefill-wrong-m2048` is exactly that failure mode for dq8ca
+  (wrong at 2048 while a short coherence check passes). Some of the 50 ranked
+  8da4w tokens could be affected; a real-shape correctness case would close this.
 - Primary M51; the existing specs/036 dbuf4 e2e summaries are the *secondary*
   board and a different metric. Not directly comparable.
