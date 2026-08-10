@@ -54,12 +54,15 @@ $if HAS_BIAS:
 $if WEIGHT_STORAGE == "buffer":
   #define WEIGHT_BUFFER
 
+$if IO_STORAGE == "texture3d":
+  #define IO_TEXTURE
+
 layout(std430) buffer;
 
 #include "common.glslh"
 
-${layout_declare_tensor(B, "w", "t_output",         "half", "buffer", is_scalar_array=True)}
-${layout_declare_tensor(B, "r", "t_input",          "half", "buffer", is_scalar_array=False)}
+${layout_declare_tensor(B, "w", "t_output",         "half", IO_STORAGE, is_scalar_array=True)}
+${layout_declare_tensor(B, "r", "t_input",          "half", IO_STORAGE, is_scalar_array=False)}
 ${layout_declare_tensor(B, "r", "t_packed_weight",  "int",  WEIGHT_STORAGE, is_scalar_array=False)}
 ${layout_declare_tensor(B, "r", "t_weight_scales",  "half", "buffer", is_scalar_array=False)}
 ${layout_declare_tensor(B, "r", "t_bias",           "half", "buffer", is_scalar_array=True)}
@@ -110,6 +113,16 @@ shared uvec4 Bsh[2 * BSH_SLICE];
 shared float16_t bias_sh[WG_TILE_N];
 #endif
 
+#ifdef IO_TEXTURE
+// Result staging for the imageStore epilogue: SG_GRID_Y bands of MMA_M rows,
+// each WG_TILE_N wide, row-major. A full WG_TILE_M x WG_TILE_N buffer would
+// cost SG_GRID_Y/MMAS_PER_SG_M x more LDS and wreck occupancy. Not aliased
+// with Ash/Bsh: GLSL has no shared unions and coopMatStore needs a
+// float16_t-typed array.
+const uint CSH_ROWS = SG_GRID_Y * MMA_M;
+shared float16_t Csh[CSH_ROWS * WG_TILE_N];
+#endif
+
 // Staging thread maps: each thread covers one uvec4 (8 fp16) per pass.
 const uint INVS_PER_ROW_A = WG_TILE_K / FP16_PER_VEC4;
 const uint A_ROWS_PER_PASS = WG_SIZE / INVS_PER_ROW_A;
@@ -135,6 +148,32 @@ uvec4 dequant_block(
   return uvec4(
       packFloat2x16(v0.xy), packFloat2x16(v0.zw),
       packFloat2x16(v1.xy), packFloat2x16(v1.zw));
+}
+
+// Fetch 8 consecutive fp16 activations of `row` starting at half-vec4 index
+// `k_hv4`, packed into one uvec4. Both spellings address the same bytes: a
+// width-packed texture3d holds elements [4x, 4x+3] of row m at texel (x, m, 0),
+// so buffer index (row * K4 + x) and texel coord (x, row, 0) are one address in
+// two notations.
+uvec4 load_a_vec4(const uint row, const uint k_hv4, const uint K4) {
+#ifdef IO_TEXTURE
+  // Narrow to f16vec4 AT the fetch: a half sampler is typed to return vec4
+  // (fp32), and consuming the fp32 costs an image_load into 4 VGPRs plus a
+  // v_cvt_pk_rtz per pair. Taking it as f16vec4 immediately lets the compiler
+  // fold the narrowing into `image_load ... d16` (2 VGPRs, no conversion).
+  // Lossless -- the source is rgba16f.
+  const f16vec4 v0 = f16vec4(texelFetch(t_input, ivec3(k_hv4, row, 0), 0));
+  const f16vec4 v1 = f16vec4(texelFetch(t_input, ivec3(k_hv4 + 1u, row, 0), 0));
+  return uvec4(
+      packFloat2x16(v0.xy), packFloat2x16(v0.zw),
+      packFloat2x16(v1.xy), packFloat2x16(v1.zw));
+#else
+  const f16vec4 v0 = t_input[row * K4 + k_hv4];
+  const f16vec4 v1 = t_input[row * K4 + k_hv4 + 1u];
+  return uvec4(
+      packFloat2x16(v0.xy), packFloat2x16(v0.zw),
+      packFloat2x16(v1.xy), packFloat2x16(v1.zw));
+#endif
 }
 
 void main() {
@@ -185,11 +224,7 @@ void main() {
     [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
       const uint row = tile_m_start + p * A_ROWS_PER_PASS + a_row_offset;
       const uint k_hv4 = (a_col * FP16_PER_VEC4) / 4u;
-      f16vec4 v0 = t_input[row * K4 + k_hv4];
-      f16vec4 v1 = t_input[row * K4 + k_hv4 + 1u];
-      temp_A[p] = uvec4(
-          packFloat2x16(v0.xy), packFloat2x16(v0.zw),
-          packFloat2x16(v1.xy), packFloat2x16(v1.zw));
+      temp_A[p] = load_a_vec4(row, k_hv4, K4);
     }
     cached_group = 0u;
     sc0 = t_weight_scales[sc_n4];
@@ -239,11 +274,7 @@ void main() {
       [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
         const uint row = tile_m_start + p * A_ROWS_PER_PASS + a_row_offset;
         const uint k_hv4 = (chunkK_nxt + a_col * FP16_PER_VEC4) / 4u;
-        f16vec4 v0 = t_input[row * K4 + k_hv4];
-        f16vec4 v1 = t_input[row * K4 + k_hv4 + 1u];
-        temp_A[p] = uvec4(
-            packFloat2x16(v0.xy), packFloat2x16(v0.zw),
-            packFloat2x16(v1.xy), packFloat2x16(v1.zw));
+        temp_A[p] = load_a_vec4(row, k_hv4, K4);
       }
       [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
         const uint k_row = chunkK_nxt + p * B_ROWS_PER_PASS + b_row_offset;
@@ -351,6 +382,67 @@ void main() {
 #endif
 
   // --- Store result tile ---
+#ifdef IO_TEXTURE
+  // Epilogue iteration i drains accumulator row-block i from EVERY subgroup
+  // into Csh at once, so the SG_GRID_Y bands it holds are disjoint global row
+  // ranges; the whole workgroup then imageStores them. The band-to-global-row
+  // map below reproduces the buffer path's gi exactly:
+  //   buffer: gi = tile_m_start + MMA_M * (MMAS_PER_SG_M * warpInTile.y + i)
+  //              = tile_m_start + warpInTile.y * SG_TILE_M + i * MMA_M
+  // and lr / MMA_M is the writing subgroup's warpInTile.y.
+  //
+  // PORTABILITY NOTE: [[unroll]] is only a hint and glslc does not honor it
+  // here -- the barrier() in the loop body keeps the loop rolled, so
+  // result[i][j] IS dynamically indexed. Coopmat arrays are opaque per-lane
+  // storage and dynamic indexing is exactly the construct the Xclipse/AMD-PAL
+  // compiler has broken before, so check this first if the texture variants
+  // miscompile on M51. Fully unrolling would need the drain hand-expanded so
+  // each i gets its own barrier.
+  const uint CSH_TEXELS_PER_ROW = WG_TILE_N / 4u;
+  const uint CSH_TEXELS = CSH_ROWS * CSH_TEXELS_PER_ROW;
+  [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+    // Guards Csh against the previous iteration's readers. Inert on i == 0 but
+    // must stay unconditional to remain workgroup-uniform.
+    barrier();
+    [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+#ifdef HAS_BIAS
+      if (apply_bias > 0) {
+        const uint local_n = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
+        coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> bias_tile;
+        coopMatLoad(
+            bias_tile, bias_sh,
+            local_n, /*stride=*/0u,
+            gl_CooperativeMatrixLayoutRowMajor);
+        result[i][j] += bias_tile;
+      }
+#endif
+      coopMatStore(
+          result[i][j], Csh,
+          warpInTile.y * MMA_M * WG_TILE_N +
+              MMA_N * (MMAS_PER_SG_N * warpInTile.x + j),
+          WG_TILE_N,
+          gl_CooperativeMatrixLayoutRowMajor);
+    }
+    memoryBarrierShared();
+    barrier();
+
+    for (uint t = gl_LocalInvocationID.x; t < CSH_TEXELS; t += WG_SIZE) {
+      const uint lr = t / CSH_TEXELS_PER_ROW;
+      const uint lc4 = t % CSH_TEXELS_PER_ROW;
+      const uint m =
+          tile_m_start + (lr / MMA_M) * SG_TILE_M + i * MMA_M + (lr % MMA_M);
+      const uint base = lr * WG_TILE_N + lc4 * 4u;
+      imageStore(
+          t_output,
+          ivec3(tile_n_start / 4u + lc4, m, 0),
+          vec4(
+              float(Csh[base]),
+              float(Csh[base + 1u]),
+              float(Csh[base + 2u]),
+              float(Csh[base + 3u])));
+    }
+  }
+#else
   const uint N_out = uint(out_N_arg);
   [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
     [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
@@ -377,4 +469,5 @@ void main() {
           gl_CooperativeMatrixLayoutRowMajor);
     }
   }
+#endif // IO_TEXTURE
 }

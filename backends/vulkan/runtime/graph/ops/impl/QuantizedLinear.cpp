@@ -73,12 +73,15 @@ struct CoopmatTileDims {
   // the WG_SIZE the shader yaml resolves to, or the launched thread count won't
   // match the shader's staging passes (out-of-bounds).
   uint32_t wg_size;
+  // Only needed for the texture-IO shared-memory budget below; the buffer path
+  // never reads it. 0 = "unknown / shipped default".
+  uint32_t sg_grid_y;
 };
 // linear_qw_coopmat.yaml: 128x128, 2x2 subgroup grid, sg32 -> WG_SIZE 128.
-constexpr CoopmatTileDims kQ4gswCoopmatDims = {128, 128, 16, 128};
+constexpr CoopmatTileDims kQ4gswCoopmatDims = {128, 128, 16, 128, 2};
 // linear_dq8ca_qw_coopmat.yaml: 64x32, 1x2 grid, sg64 -> WG_SIZE 128
 // (specs/027-e2e-tile-sweep winner, was 128x64x32/256).
-constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {64, 32, 32, 128};
+constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {64, 32, 32, 128, 2};
 
 // specs/028-4w-e2e-tile-sweep: ET_VK_Q4GSW_COOPMAT_VARIANT=tsweep_t<M>x<N>k<K>
 // g<SGX><SGY>s<32|64> swaps the fp16 q4gsw coopmat dispatch to the matching
@@ -177,7 +180,7 @@ static CoopmatTileDims parse_tsweep_tile(
   const uint32_t sgx = grid[0] - '0';
   const uint32_t sgy = grid[1] - '0';
   const uint32_t sub = std::stoul(variant.substr(s_pos + 1));
-  return {m, n, k, sgx * sgy * sub};
+  return {m, n, k, sgx * sgy * sub, sgy};
 }
 
 static CoopmatTileDims parse_q4gsw_tsweep_tile(const std::string& variant) {
@@ -265,6 +268,15 @@ utils::uvec3 quantized_linear_local_wg_size(
   }
 }
 
+// Experiment hook (specs/040, ported here onto specs/041's dbuf4 tsweep
+// shaders): allows the *_texture3d_* variants, which stage the result tile
+// through shared memory and imageStore it instead of coopMatStore-ing straight
+// to an SSBO. Off by default, so the buffer sweep is byte-identical.
+static bool texture_coopmat_enabled() {
+  static const bool enabled = std::getenv("ET_VK_TEXTURE_COOPMAT") != nullptr;
+  return enabled;
+}
+
 // Returns true when the q4gsw coopmat shader can be dispatched for this
 // (M, N, K, dtype, output_storage, group_size) tuple. Preconditions match what
 // linear_q4gsw_coopmat.glsl assumes; the subgroup_size == 64 check scopes this
@@ -277,7 +289,9 @@ static bool can_use_q4gsw_coopmat(
     const ValueRef bias,
     int64_t tile_m = kCoopmatTileM,
     int64_t tile_n = kCoopmatTileN,
-    int64_t tile_k = kCoopmatTileK) {
+    int64_t tile_k = kCoopmatTileK,
+    bool allow_texture_io = false,
+    uint32_t sg_grid_y = 0) {
   // Baseline-measurement escape hatch: forces every dispatch through this
   // function to the tiled fallback, regardless of eligibility. Off by
   // default (unset), so production behavior is unchanged; used only to
@@ -321,7 +335,37 @@ static bool can_use_q4gsw_coopmat(
     return false;
   }
   if (graph->storage_type_of(output) != utils::kBuffer) {
-    return false;
+    // One IO_STORAGE param is shared across t_input/t_output, so BOTH must be
+    // texture3d; the imageStore epilogue and texelFetch A-stage assume
+    // width-packed texels.
+    if (!allow_texture_io || !texture_coopmat_enabled()) {
+      return false;
+    }
+    if (graph->storage_type_of(output) != utils::kTexture3D ||
+        graph->storage_type_of(fp_input) != utils::kTexture3D) {
+      return false;
+    }
+    if (graph->packed_dim_of(output) != WHCN::kWidthDim ||
+        graph->packed_dim_of(fp_input) != WHCN::kWidthDim) {
+      return false;
+    }
+    // The texture epilogue needs a Csh staging array ON TOP OF the Ash/Bsh the
+    // buffer path already allocates: SG_GRID_Y * MMA_M rows x WG_TILE_N fp16.
+    // That term is absent from the offline tile_constraints model, so a tile
+    // that is legal for buffer can exceed the shared-memory limit at texture
+    // IO. tsweep_dbuf4_t128x256k32g18s32 needs 119808 B of Csh alone against a
+    // 65536 B limit and, instead of failing pipeline creation, hung the GPU and
+    // rebooted the board (2026-08-09). Reject here so it falls back to tiled.
+    if (sg_grid_y > 0) {
+      constexpr int64_t kMmaM = 16; // MMA_M, fixed across every coopmat yaml
+      const int64_t csh_bytes =
+          int64_t(sg_grid_y) * kMmaM * tile_n * int64_t(sizeof(uint16_t));
+      const int64_t limit =
+          graph->context()->adapter_ptr()->max_compute_shared_memory_size();
+      if (csh_bytes >= limit) {
+        return false;
+      }
+    }
   }
   if (graph->dtype_of(output) != vkapi::kHalf) {
     return false;
@@ -380,7 +424,9 @@ vkapi::ShaderInfo pick_linear_qw_shader(
             resize_args.at(2),
             active_dims.m,
             active_dims.n,
-            active_dims.k)) {
+            active_dims.k,
+            /*allow_texture_io=*/true,
+            active_dims.sg_grid_y)) {
       std::string kernel_name = "linear_q4gsw_coopmat";
       const std::string& variant = q4gsw_coopmat_variant();
       if (!variant.empty()) {

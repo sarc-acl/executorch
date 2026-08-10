@@ -106,15 +106,19 @@ def binary_md5():
     return r.stdout.split()[0] if r.stdout.split() else "unknown"
 
 
-def run_token(scheme, token, group_size):
+def run_token(scheme, token, group_size, storage="buffer"):
     """One invocation: correctness gate (small shapes, buffer, this scheme
     only) followed by the 12-shape prefill perf pass. The gate is NOT skipped --
     the prior e2e sweep saw 62/112 dq8ca tiles fail correctness, and publishing
     GFLOP/s for a kernel computing garbage is this sweep's main exposure."""
     cfg = SCHEMES[scheme]
+    # texture IO needs ET_VK_TEXTURE_COOPMAT: without it QuantizedLinear.cpp
+    # keeps the hard kBuffer gate and every token silently falls back to the
+    # tiled kernel (the guard below would then flag all 160 variant_mismatch).
+    tex_env = "ET_VK_TEXTURE_COOPMAT=1 " if storage == "texture3d" else ""
     inner = (
-        f"cd {DEVDIR} && {cfg['env_var']}={token} ./{BINARY} "
-        f"--linear --scheme={cfg['label']} --storage=buffer --regime=prefill "
+        f"cd {DEVDIR} && {tex_env}{cfg['env_var']}={token} ./{BINARY} "
+        f"--linear --scheme={cfg['label']} --storage={storage} --regime=prefill "
         f"--group-size={group_size} "
         f"2>&1; echo EXIT:$?"
     )
@@ -133,6 +137,7 @@ def run_token(scheme, token, group_size):
         # size cannot be distinguished from one measured at another, and the
         # group-32 run silently made 71/160 tokens fall back to tiled.
         "group_size": group_size,
+        "io_storage": storage,
         "elapsed_s": elapsed,
         "exit_code": exit_code,
         "cases": {},
@@ -168,8 +173,9 @@ def run_token(scheme, token, group_size):
         #        gflops,dispatch,correctness,storage,M,kernel_us,kernel
         model, regime, variant = f[2], f[4], f[5]
         K, N, gflops, dispatch = f[6], f[7], f[10], f[11]
-        storage, M, kernel_us, kernel = f[13], f[14], f[15], f[16]
-        if regime != "prefill" or storage != "buffer":
+        # storage_f = the ROW's storage; do not shadow the `storage` arg
+        storage_f, M, kernel_us, kernel = f[13], f[14], f[15], f[16]
+        if regime != "prefill" or storage_f != storage:
             continue
         # The guard: did the runtime actually take the requested variant?
         if token not in kernel:
@@ -218,12 +224,19 @@ def main():
         default=128,
         help="linear quant group size; must match the pte (128)",
     )
+    ap.add_argument(
+        "--storage",
+        default="buffer",
+        choices=["buffer", "texture3d"],
+        help="IO storage; texture3d also sets ET_VK_TEXTURE_COOPMAT",
+    )
     args = ap.parse_args()
 
     RESULTS.mkdir(parents=True, exist_ok=True)
     tag = f"_{args.tag}" if args.tag else ""
     out_path = RESULTS / (
-        f"microbench_{args.driver}_{args.scheme}_dbuf4_g{args.group_size}{tag}.jsonl"
+        f"microbench_{args.driver}_{args.scheme}_dbuf4_g{args.group_size}"
+        f"_{args.storage}{tag}.jsonl"
     )
 
     tokens = args.tokens or tokens_from_yaml(args.scheme)
@@ -243,6 +256,7 @@ def main():
     print(f"driver on device : {md5}")
     print(f"binary md5       : {binmd5}")
     print(f"group_size       : {args.group_size}")
+    print(f"io_storage       : {args.storage}")
     print(f"clocks           : {clocks}")
     print(f"scheme           : {args.scheme} ({SCHEMES[args.scheme]['label']})")
     print(f"tokens           : {len(todo)} to run, {len(done)} already done")
@@ -251,7 +265,7 @@ def main():
 
     with out_path.open("a") as fh:
         for i, tok in enumerate(todo, 1):
-            rec = run_token(args.scheme, tok, args.group_size)
+            rec = run_token(args.scheme, tok, args.group_size, args.storage)
             rec["driver_md5"] = md5
             rec["driver_label"] = args.driver
             rec["clocks"] = clocks

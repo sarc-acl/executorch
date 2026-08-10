@@ -576,9 +576,17 @@ std::vector<TestCase> generate_correctness_cases(const CaseFilter& filter) {
   static const std::vector<LinearConfig> kRank3CorrectnessShapes = {
       {128, 128, 128, 64, "", /*batch=*/1},
       {128, 4096, 128, 128, "", /*batch=*/1}};
+  // Rank-3 was buffer-only because coopmat was buffer-only. With texture IO
+  // (ET_VK_TEXTURE_COOPMAT) it must also run at texture3d: the rank-2 cases
+  // above fall back to tiled at large tiles, so rank-3 is the ONLY correctness
+  // case that exercises the texture coopmat epilogue at MMAS_PER_SG_M > 1 --
+  // i.e. the dynamically-indexed result[i][j] drain that specs/040 flags as
+  // the Xclipse/PAL risk. Validating only small tiles would miss it entirely.
+  const utils::StorageType rank3_storage =
+      filter.storage == "texture3d" ? utils::kTexture3D : utils::kBuffer;
   for (const auto& scheme : kSchemes) {
     if (!scheme_selected(filter, scheme.first) ||
-        !storage_selected(filter, utils::kBuffer)) {
+        !storage_selected(filter, rank3_storage)) {
       continue;
     }
     for (const auto& shape : kRank3CorrectnessShapes) {
@@ -590,7 +598,7 @@ std::vector<TestCase> generate_correctness_cases(const CaseFilter& filter) {
           scheme.second,
           shape.batch};
       cases.push_back(make_deterministic_correctness_case(
-          cfg, scheme.second, utils::kBuffer));
+          cfg, scheme.second, rank3_storage));
     }
   }
   return cases;
@@ -821,8 +829,15 @@ void run_linear_suite(const std::string& suite, const CaseFilter& filter) {
     // is not_applicable -- except a coopmat kernel showing up there, which
     // is a real anomaly.
     if (rec.ok) {
+      // texture3d+coopmat is expected too once ET_VK_TEXTURE_COOPMAT is set;
+      // without this the texture runs report unexpected_coopmat and the binary
+      // exits nonzero despite dispatching exactly what was asked for.
+      static const bool tex_coopmat =
+          std::getenv("ET_VK_TEXTURE_COOPMAT") != nullptr;
       const bool expects_coopmat = suite == "linear" &&
-          rec.regime == "prefill" && rec.storage == "buffer";
+          rec.regime == "prefill" &&
+          (rec.storage == "buffer" ||
+           (tex_coopmat && rec.storage == "texture3d"));
       if (expects_coopmat) {
         rec.dispatch =
             rec.variant == "coopmat" ? "confirmed" : "fallback_tiled";
