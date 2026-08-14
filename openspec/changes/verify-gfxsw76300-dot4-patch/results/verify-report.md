@@ -1,3 +1,0 @@
-| dot4patch-maintip-baseline | baseline-maintip-unpatched | b015e79a56b184d12459ed587824c38befaf3bd8 | 2026-07-20 15:07:07 -0500 | 46ebe0d91913a54efed9d3cf3e6ff649 |  |  | skip | could not parse 4w prefill_token_per_sec |
-| dot4patch-maintip-baseline | baseline-maintip-uaf-fixed | 46e41723d80f605d6519b6c859575f16e92542b5 | 2026-08-12 09:39:22 -0700 | f636a83b5dc90fcabfd59c0943867f6a | 607.355 | 428.631 | bad |  |
-| dot4patch-maintip-patched | patched-maintip-uaf-fixed | cb993c15f13656783e3f098d8bed42cf16dfe937 | 2026-08-12 09:39:38 -0700 | cfe0caf0f41322088fce75c22a2288ec | 606.455 | 810.768 | good |  |
