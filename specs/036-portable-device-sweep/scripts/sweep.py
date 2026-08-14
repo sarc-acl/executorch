@@ -205,6 +205,8 @@ def run_sweep(args):  # noqa: C901
         )
         limits = session.limits
         slug = session.device_slug
+        if args.slug_suffix:
+            slug = f"{slug}-{args.slug_suffix}"
         fingerprint = session.fingerprint
         rebuild_fn = measure_mod.rebuild if args.remote == "android" else yv.rebuild
 
@@ -398,6 +400,13 @@ def main():
         action="append",
         default=[],
         help="device quirk name, e.g. no_int8_wmma_sg32",
+    )
+    ap.add_argument(
+        "--slug-suffix",
+        default="",
+        help="appended to the device slug (journal/blocklist/summary filenames) "
+        "to isolate a study under different measurement conditions (e.g. a "
+        "different clock regime) from the device's default study",
     )
     ap.add_argument("--pte", help="override pte path")
     ap.add_argument(

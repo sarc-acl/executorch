@@ -117,6 +117,7 @@ class Session:
         strict=False,
         inter_run_sleep_s=1.0,
         quirks=(),
+        extra_env=None,
     ):
         cfg = DEFAULTS[shader]
         self.shader = shader
@@ -130,6 +131,10 @@ class Session:
         self.drift_frac = drift_pct / 100.0
         self.strict = strict
         self.sleep_s = inter_run_sleep_s
+        # e.g. {"ET_VK_EXECUTE_NODE_THRESHOLD": "32"} -- required for 8B's
+        # 2048-token prefill to avoid tripping the sgpu watchdog; not needed
+        # for the 1B pte sweep.py screens by default.
+        self.extra_env = dict(extra_env or {})
         self.fingerprint = fingerprint()
         self.device_slug = dfp.device_slug(self.fingerprint)
         self.limits = dfp.limits_from_fingerprint(self.fingerprint, quirks)
@@ -152,7 +157,10 @@ class Session:
     # ---------- low-level runs ----------
 
     def _run_llama(self, token=None):
-        env_prefix = f"{self.env_var}={token} " if token else ""
+        env = dict(self.extra_env)
+        if token:
+            env[self.env_var] = token
+        env_prefix = "".join(f"{k}={v} " for k, v in env.items())
         cmd = (
             f"cd {DEVICE_DIR} && {env_prefix}./llama_main "
             f"--model_path={self.pte} --tokenizer_path={self.tokenizer} "

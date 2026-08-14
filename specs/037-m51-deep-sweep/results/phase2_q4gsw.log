@@ -1,0 +1,15 @@
+cooling down 120s before Phase 2 baseline...
+[q4gsw] candidates (top-3 + shipped default): ['tsweep_t128x128k16g12s32', 'tsweep_t128x64k16g21s64', 'tsweep_t128x128k32g14s32', 'tsweep_t128x128k16g22s32']
+  NOTE: ['tsweep_t128x128k16g12s32', 'tsweep_t128x64k16g21s64'] were measured during a Phase-1 drifted window (remeasure_pending) -- their Phase-1 rank may be unreliable; Phase 2's fresh confirm below is the actual arbiter.
+[q4gsw/8b] baseline 321.1 tok/s (noise cov 0.32%)
+  tsweep_t128x128k16g12s32	291.1
+  tsweep_t128x64k16g21s64	277.1
+  tsweep_t128x128k32g14s32	286.3
+  tsweep_t128x128k16g22s32	321.3
+[q4gsw/3b] baseline 668.8 tok/s (noise cov 1.72%)
+  tsweep_t128x128k16g12s32	616.1
+  tsweep_t128x64k16g21s64	599.7
+  tsweep_t128x128k32g14s32	620.0
+  tsweep_t128x128k16g22s32	673.5
+winner[q4gsw]: tsweep_t128x128k16g22s32 (shipped_default_wins_at_8b)
+-> /local/yanwen.xu/workspace/dev/executorch/specs/037-m51-deep-sweep/results/winner_q4gsw.json

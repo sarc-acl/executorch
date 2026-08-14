@@ -1,0 +1,96 @@
+{
+  "schema_version": "036.1",
+  "shader": "dq8ca",
+  "device_slug": "samsung-xclipse-970-maxclk",
+  "fingerprint": {
+    "device_name": "samsung xclipse 970",
+    "device_type": "PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU",
+    "driver_id": "DRIVER_ID_UNKNOWN",
+    "subgroup_size_default": 64,
+    "min_subgroup_size": 32,
+    "max_subgroup_size": 64,
+    "max_compute_shared_memory_size": 65536,
+    "max_compute_work_group_invocations": 1024,
+    "driver_info": "md5=c9861e9906d03fa2c7d48b804e1a1c80",
+    "os": "android arm64 (s5e9975/erd9975)",
+    "perf_level": "pinned_980000",
+    "git_sha": "f20ef0c965",
+    "captured_at": "2026-07-24T08:50:39+00:00"
+  },
+  "group_size": 128,
+  "budget": 180,
+  "measured_trials": 44,
+  "pruned": {
+    "gate_correctness_fail": 36
+  },
+  "blocklist_size": 36,
+  "baseline_median_tok_s": 1441.24,
+  "noise_floor_cov": 0.08805632958156137,
+  "finalists": [
+    {
+      "token": "tsweep_t64x32k32g12s64",
+      "screen_tok_s": 1350.92,
+      "confirm_median_tok_s": 1257.21,
+      "improvement_pct": -12.76886569898143
+    },
+    {
+      "token": "tsweep_t128x64k16g21s64",
+      "screen_tok_s": 1276.01,
+      "confirm_median_tok_s": 1230.77,
+      "improvement_pct": -14.603397074741197
+    },
+    {
+      "token": "tsweep_t64x128k64g42s64",
+      "screen_tok_s": 1293.75,
+      "confirm_median_tok_s": 1224.88,
+      "improvement_pct": -15.012072937192965
+    },
+    {
+      "token": "tsweep_t128x64k32g42s64",
+      "screen_tok_s": 1349.14,
+      "confirm_median_tok_s": 1213.99,
+      "improvement_pct": -15.767672282201438
+    },
+    {
+      "token": "tsweep_t64x64k32g14s64",
+      "screen_tok_s": 1288.86,
+      "confirm_median_tok_s": 1201.88,
+      "improvement_pct": -16.607920956953727
+    },
+    {
+      "token": "tsweep_t64x64k32g12s64",
+      "screen_tok_s": 1250.31,
+      "confirm_median_tok_s": 1196.26,
+      "improvement_pct": -16.99786295134745
+    },
+    {
+      "token": "tsweep_t64x64k32g21s64",
+      "screen_tok_s": 1309.46,
+      "confirm_median_tok_s": 1144.13,
+      "improvement_pct": -20.614887180483464
+    },
+    {
+      "token": "tsweep_t128x128k32g42s64",
+      "screen_tok_s": 1352.71,
+      "confirm_median_tok_s": 1124.04,
+      "improvement_pct": -22.008825733396243
+    }
+  ],
+  "winner": {
+    "token": "tsweep_t64x32k32g12s64",
+    "screen_tok_s": 1350.92,
+    "confirm_median_tok_s": 1257.21,
+    "improvement_pct": -12.76886569898143
+  },
+  "remeasure_pending": [
+    "tsweep_t64x32k32g12s64",
+    "tsweep_t128x128k32g42s64",
+    "tsweep_t32x128k32g41s64",
+    "tsweep_t64x128k64g41s64",
+    "tsweep_t32x128k32g42s64",
+    "tsweep_t16x128k32g41s64",
+    "tsweep_t32x32k32g21s64",
+    "tsweep_t32x64k64g41s64"
+  ],
+  "ts": "2026-07-24T02:36:09"
+}

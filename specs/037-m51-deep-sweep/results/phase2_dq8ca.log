@@ -1,0 +1,13 @@
+cooling down 120s before Phase 2 baseline...
+[dq8ca] candidates (top-3 + shipped default): ['tsweep_t64x32k32g12s64', 'tsweep_t128x64k16g21s64', 'tsweep_t64x128k64g42s64']
+  NOTE: ['tsweep_t64x32k32g12s64'] were measured during a Phase-1 drifted window (remeasure_pending) -- their Phase-1 rank may be unreliable; Phase 2's fresh confirm below is the actual arbiter.
+[dq8ca/8b] baseline 279.7 tok/s (noise cov 0.31%)
+  tsweep_t64x32k32g12s64	278.3
+  tsweep_t128x64k16g21s64	243.2
+  tsweep_t64x128k64g42s64	255.2
+[dq8ca/3b] baseline 603.4 tok/s (noise cov 0.61%)
+  tsweep_t64x32k32g12s64	594.8
+  tsweep_t128x64k16g21s64	527.7
+  tsweep_t64x128k64g42s64	549.2
+winner[dq8ca]: tsweep_t64x32k32g12s64 (shipped_default_wins_at_8b)
+-> /local/yanwen.xu/workspace/dev/executorch/specs/037-m51-deep-sweep/results/winner_dq8ca.json
