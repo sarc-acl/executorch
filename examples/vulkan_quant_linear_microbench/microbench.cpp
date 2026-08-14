@@ -874,14 +874,17 @@ const std::vector<Shape> kShapes = {
     {"3B_mlp_up", 2048, 3072, 8192, 128},
     {"3B_mlp_down", 2048, 8192, 3072, 128},
     {"8B_qkvo", 2048, 4096, 4096, 128},
-    {"8B_mlp_up", 2048, 4096, 14336, 128},
-    {"8B_mlp_down", 2048, 14336, 4096, 128},
-    // M-sweep on a fixed shape (8B down_proj) to see how the ratio moves
-    // with sequence length / prefill batch size.
+    // 8B_mlp_up (2048,4096,14336) and 8B_mlp_down (2048,14336,4096) skipped:
+    // same total weight/FLOPs (just transposed K/N), both crash the M51
+    // secondary board (xgpusw-debug08) into the LK bootloader every time,
+    // reproducibly, in both storage=buffer and storage=texture, at both
+    // floating and max-pinned clocks -- local-only workaround, not pushed.
+    // M-sweep on the same down_proj shape to see how the ratio moves with
+    // sequence length / prefill batch size; M2048 (== full 8B_mlp_down)
+    // skipped for the same reason, M32/M128/M512 kept (4-64x less work).
     {"8B_mlp_down_M32", 32, 14336, 4096, 128},
     {"8B_mlp_down_M128", 128, 14336, 4096, 128},
     {"8B_mlp_down_M512", 512, 14336, 4096, 128},
-    {"8B_mlp_down_M2048", 2048, 14336, 4096, 128},
 };
 
 struct KernelHandle {
