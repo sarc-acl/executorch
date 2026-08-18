@@ -136,24 +136,41 @@ static const std::string& dq8ca_coopmat_variant() {
   // -- same geometry as the shipped buffer-storage default, resolved through
   // the tsweep_dbuf4 texture3d-capable shader.
   //
-  // REVERTED 2026-08-18: the M51 tile sweep's apparent winner,
-  // tsweep_dbuf4_t128x16k64g12s64 (11.8-17.3% faster in e2e prefill tok/s),
-  // was shipped as this default for a short window and then found to be
-  // NUMERICALLY WRONG via test_llama_microbench --correctness-only --
-  // every single texture3d correctness case failed, including the rank-3
-  // (real model shape) ones (~70% of elements mismatched in a structured
-  // per-row pattern: the first M-rows correct, everything past a boundary
-  // wrong). Root cause not yet isolated -- checked and ruled out
-  // int_input_sums undersizing (github.com/pytorch/executorch/issues/21423):
-  // that buffer is marked unused in both this shader and the tsweep_dbuf4
-  // one, identically, so it can't be the discriminator. Most likely a
-  // genuine indexing bug specific to that tile's spec-resolved shape
-  // (M=128, N=16, K=64, 1x2 subgroup grid, sub=64) in the dbuf4 template.
-  // This tile (t64x32k32g12s64) IS correctness-bench-confirmed clean: 0
-  // failures across all texture3d cases including rank-3, real coopmat
-  // dispatch confirmed via the harness's own dispatch log. Do not re-ship
-  // t128x16k64g12s64 (or any other untested sweep candidate) without first
-  // passing test_llama_microbench --scheme=8da4w --storage=texture3d
+  // REJECTED 2026-08-18: tsweep_dbuf4_t64x64k32g24s32 looked like a clean
+  // win (correctness-first sweep pick, rep-confirmed faster on 1B/3B/8B
+  // across two boards) and was staged as the new default, but a single-shot
+  // test_llama_microbench --correctness-only pass is NOT sufficient evidence
+  // -- repeating the identical command back-to-back on the same board/driver
+  // with no code change showed intermittent (flaky) correctness corruption:
+  // 1 catastrophic failure (most shapes wrong, silent fallback to the tiled
+  // path which then hit release-branch's known tiled-path bug) in 10 runs,
+  // vs. 0/6 for this default over the same window. No crash, no error --
+  // just wrong numbers some fraction of the time. This is the same failure
+  // class as the q4gsw-coopmat-e2e-garbage incident (see memory): a coopmat
+  // dispatch can silently miscompile without any signal. A single
+  // correctness-bench pass during a sweep is not proof of correctness for
+  // that reason -- any future candidate must be run repeatedly (ideally
+  // 10+ back-to-back correctness-only passes with zero failures) before
+  // being trusted, not just once. This also means the other 11 "passing"
+  // candidates from the 2026-08-18 correctness-first sweep are NOT
+  // trustworthy either -- they were only checked once each.
+  //
+  // REVERTED 2026-08-18 (earlier incident, same day): the M51 tile sweep's
+  // apparent winner at the time, tsweep_dbuf4_t128x16k64g12s64 (11.8-17.3%
+  // faster in e2e prefill tok/s), was shipped as the default for a short
+  // window and then found to be NUMERICALLY WRONG via test_llama_microbench
+  // --correctness-only -- every single texture3d correctness case failed,
+  // including the rank-3 (real model shape) ones (~70% of elements
+  // mismatched in a structured per-row pattern: the first M-rows correct,
+  // everything past a boundary wrong). Root cause not isolated -- checked
+  // and ruled out int_input_sums undersizing
+  // (github.com/pytorch/executorch/issues/21423): that buffer is marked
+  // unused in both this shader and the tsweep_dbuf4 one, identically, so it
+  // can't be the discriminator. Most likely a genuine indexing bug specific
+  // to that tile's spec-resolved shape (M=128, N=16, K=64, 1x2 subgroup grid,
+  // sub=64) in the dbuf4 template. Do not re-ship t128x16k64g12s64 (or any
+  // other untested sweep candidate) without first passing
+  // test_llama_microbench --scheme=8da4w --storage=texture3d
   // --correctness-only clean.
   static const std::string variant = [] {
     const char* env = std::getenv("ET_VK_DQ8CA_COOPMAT_VARIANT");
