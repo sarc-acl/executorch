@@ -8,6 +8,8 @@
 
 #include <executorch/backends/vulkan/runtime/graph/ops/OperatorRegistry.h>
 
+#include <cstring>
+
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Common.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/GemmCoopmat.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/QuantizeDequantize.h>
@@ -53,10 +55,15 @@ void resize_linear_qw_node(
 
 // Per-shader coopmat tile geometry (must match each shader's yaml).
 // Workgroup size (wg_size) = SG_GRID_X * SG_GRID_Y * SUBGROUP_SIZE.
-//   linear_q4gsw_coopmat       128x64x16, 2x2 subgroups x 32 (forced) -> 128
-//   linear_dq8ca_q4gsw_coopmat 128x64x32, 2x2 subgroups x 64          -> 256
-// (The int8-MMA shaders stay on wave64: int8 WMMA at forced subgroup 32
-// crashes the Xclipse PAL compiler.)
+//   linear_q4gsw_coopmat       128x128x16, 2x2 subgroups x 32 (forced) -> 128
+//   linear_dq8ca_q4gsw_coopmat 64x32x32,   1x2 subgroups x 64          -> 128
+// (specs/027-e2e-tile-sweep: dq8ca_q4gsw tile updated from 128x64x32/2x2 to
+// this e2e-ranked winner. int8-MMA stays on wave64 at this tile -- specs/026
+// found subgroup=32 legal-but-shape-dependently-incorrect, not verified
+// correct at this specific tile. specs/036-portable-device-sweep: q4gsw tile
+// updated 2026-07-24 from 128x64x16/2x2 to this e2e-ranked winner, +6.8/+7.7/
+// +10.1% on 1B/3B/8B prefill tok/s -- N doubled, grid/subgroup unchanged so
+// wg_size is unaffected.)
 struct CoopmatTileDims {
   uint32_t m;
   uint32_t n;
@@ -65,20 +72,113 @@ struct CoopmatTileDims {
   // the WG_SIZE the shader yaml resolves to, or the launched thread count won't
   // match the shader's staging passes (out-of-bounds).
   uint32_t wg_size;
+  // Only needed for the texture-IO shared-memory budget below; the buffer path
+  // never reads it. 0 = "unknown / shipped default".
+  uint32_t sg_grid_y;
 };
-// linear_qw_coopmat.yaml: 128x64, 2x2 subgroup grid, sg32 -> WG_SIZE 128.
-constexpr CoopmatTileDims kQ4gswCoopmatDims = {128, 64, 16, 128};
-// linear_dq8ca_qw_coopmat.yaml: 128x64, 2x2 grid, sg64 -> WG_SIZE 256.
-constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {128, 64, 32, 256};
+// linear_qw_coopmat.yaml: 128x128, 2x2 subgroup grid, sg32 -> WG_SIZE 128.
+constexpr CoopmatTileDims kQ4gswCoopmatDims = {128, 128, 16, 128, 2};
+// linear_dq8ca_qw_coopmat.yaml: 64x32, 1x2 grid, sg64 -> WG_SIZE 128
+// (specs/027-e2e-tile-sweep winner, was 128x64x32/256).
+constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {64, 32, 32, 128, 2};
+
+// specs/028-4w-e2e-tile-sweep / specs/041-dbuf4-tile-sweep:
+// ET_VK_Q4GSW_COOPMAT_VARIANT / ET_VK_DQ8CA_COOPMAT_VARIANT can swap the
+// coopmat dispatch to a specific tile/subgroup-grid/loop-structure variant for
+// sweeping. A "tsweep_dbuf<N>_t..." token additionally selects a loop-structure
+// variant (1-4); "tsweep_t..." is the original (production winner's own)
+// namespace. Unset/unrecognized = shipped dispatch, unchanged. The five
+// prefixes are mutually exclusive by construction (position 7 is 'd' vs 't').
+static const char* const kTsweepPrefixes[] = {
+    "tsweep_dbuf1_t",
+    "tsweep_dbuf2_t",
+    "tsweep_dbuf3_t",
+    "tsweep_dbuf4_t",
+    "tsweep_t",
+};
+
+static bool is_recognized_coopmat_variant_token(const std::string& v) {
+  for (const char* prefix : kTsweepPrefixes) {
+    if (v.rfind(prefix, 0) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static const std::string& q4gsw_coopmat_variant() {
+  static const std::string variant = [] {
+    const char* env = std::getenv("ET_VK_Q4GSW_COOPMAT_VARIANT");
+    if (!env) {
+      return std::string();
+    }
+    const std::string v(env);
+    if (is_recognized_coopmat_variant_token(v)) {
+      return v;
+    }
+    return std::string();
+  }();
+  return variant;
+}
+
+static const std::string& dq8ca_coopmat_variant() {
+  static const std::string variant = [] {
+    const char* env = std::getenv("ET_VK_DQ8CA_COOPMAT_VARIANT");
+    if (!env) {
+      return std::string();
+    }
+    const std::string v(env);
+    if (is_recognized_coopmat_variant_token(v)) {
+      return v;
+    }
+    return std::string();
+  }();
+  return variant;
+}
+
+// Parses "tsweep_t<M>x<N>k<K>g<SGX><SGY>s<sub>" or
+// "tsweep_dbuf<N>_t<M>x<N>k<K>g<SGX><SGY>s<sub>" -> {M, N, K, SGX*SGY*sub,
+// SGY}. Returns fallback unchanged if the token matches none of
+// kTsweepPrefixes.
+static CoopmatTileDims parse_tsweep_tile(
+    const std::string& variant,
+    const CoopmatTileDims& fallback) {
+  size_t t_pos = std::string::npos;
+  for (const char* prefix : kTsweepPrefixes) {
+    if (variant.rfind(prefix, 0) == 0) {
+      t_pos = std::strlen(prefix);
+      break;
+    }
+  }
+  if (t_pos == std::string::npos) {
+    return fallback;
+  }
+  const size_t x_pos = variant.find('x', t_pos);
+  const size_t k_pos = variant.find('k', x_pos);
+  const size_t g_pos = variant.find('g', k_pos);
+  const size_t s_pos = variant.find('s', g_pos);
+  const uint32_t m = std::stoul(variant.substr(t_pos, x_pos - t_pos));
+  const uint32_t n = std::stoul(variant.substr(x_pos + 1, k_pos - x_pos - 1));
+  const uint32_t k = std::stoul(variant.substr(k_pos + 1, g_pos - k_pos - 1));
+  const std::string grid = variant.substr(g_pos + 1, s_pos - g_pos - 1);
+  const uint32_t sgx = grid[0] - '0';
+  const uint32_t sgy = grid[1] - '0';
+  const uint32_t sub = std::stoul(variant.substr(s_pos + 1));
+  return {m, n, k, sgx * sgy * sub, sgy};
+}
+
+static CoopmatTileDims parse_q4gsw_tsweep_tile(const std::string& variant) {
+  return parse_tsweep_tile(variant, kQ4gswCoopmatDims);
+}
 
 static CoopmatTileDims coopmat_tile_dims(const std::string& kernel_name) {
   // Exact prefix matches (the "linear_dq8ca_*" names must not match the
-  // weight-only entries).
-  if (kernel_name.rfind("linear_q4gsw_coopmat", 0) == 0) {
-    return kQ4gswCoopmatDims;
-  }
+  // weight-only entries). Order matters: check dq8ca first.
   if (kernel_name.rfind("linear_dq8ca_q4gsw_coopmat", 0) == 0) {
-    return kDq8caQ4gswCoopmatDims;
+    return parse_tsweep_tile(dq8ca_coopmat_variant(), kDq8caQ4gswCoopmatDims);
+  }
+  if (kernel_name.rfind("linear_q4gsw_coopmat", 0) == 0) {
+    return parse_q4gsw_tsweep_tile(q4gsw_coopmat_variant());
   }
   return {kCoopmatTileM, kCoopmatTileN, kCoopmatTileK, kCoopmatInvocations};
 }
@@ -152,6 +252,15 @@ utils::uvec3 quantized_linear_local_wg_size(
   }
 }
 
+// Experiment hook (specs/040/041): allows the *_texture3d_* variants, which
+// stage the result tile through shared memory and imageStore it instead of
+// coopMatStore-ing straight to an SSBO. Off by default, so buffer dispatch is
+// byte-identical.
+static bool texture_coopmat_enabled() {
+  static const bool enabled = std::getenv("ET_VK_TEXTURE_COOPMAT") != nullptr;
+  return enabled;
+}
+
 // Returns true when the q4gsw coopmat shader can be dispatched for this
 // (M, N, K, dtype, output_storage, group_size) tuple. Preconditions match what
 // linear_q4gsw_coopmat.glsl assumes; the subgroup_size == 64 check scopes this
@@ -164,7 +273,15 @@ static bool can_use_q4gsw_coopmat(
     const ValueRef bias,
     int64_t tile_m = kCoopmatTileM,
     int64_t tile_n = kCoopmatTileN,
-    int64_t tile_k = kCoopmatTileK) {
+    int64_t tile_k = kCoopmatTileK,
+    bool allow_texture_io = false,
+    uint32_t sg_grid_y = 0) {
+  // Baseline-measurement escape hatch: forces every dispatch through this
+  // function to the tiled fallback, regardless of eligibility. Off by
+  // default (unset), so production behavior is unchanged.
+  if (std::getenv("ET_VK_FORCE_TILED_LINEAR") != nullptr) {
+    return false;
+  }
   // The coopmat shaders only build HAS_BIAS=false variants, so they would
   // silently drop a bias. Fall back to the tiled path (which applies bias at
   // runtime via the apply_bias spec constant) whenever a bias is present.
@@ -185,19 +302,60 @@ static bool can_use_q4gsw_coopmat(
   if (!graph->device_is_amd()) {
     return false;
   }
-  // Coopmat shaders dispatch over gl_WorkGroupID.xy only; batched (rank > 2)
-  // outputs would silently miscompute all slices beyond the first.
-  if (graph->dim_of(output) > 2) {
+  // Coopmat shaders dispatch over gl_WorkGroupID.xy only, sized purely from
+  // the output's trailing two dims; neither that sizing nor the shaders
+  // themselves ever read a leading dim. A genuine batch (any leading-dim
+  // product != 1) would silently miscompute all slices beyond the first --
+  // but a size-1 leading dim (the real exported model's rank-3 [1, M, K]
+  // activations, never squeezed) is safe: a contiguous Buffer's [1, M, N]
+  // layout is bit-identical to [M, N] when the leading dim is 1, so the
+  // existing 2D dispatch grid already covers 100% of the data. Reject only a
+  // real batch.
+  const std::vector<int64_t> out_sizes = graph->sizes_of(output);
+  int64_t leading_dims_numel = 1;
+  for (int64_t d = 0; d < graph->dim_of(output) - 2; d++) {
+    leading_dims_numel *= utils::val_at(d, out_sizes);
+  }
+  if (leading_dims_numel != 1) {
     return false;
   }
   if (graph->storage_type_of(output) != utils::kBuffer) {
-    return false;
+    // One IO_STORAGE param is shared across t_input/t_output, so BOTH must be
+    // texture3d; the imageStore epilogue and texelFetch A-stage assume
+    // width-packed texels.
+    if (!allow_texture_io || !texture_coopmat_enabled()) {
+      return false;
+    }
+    if (graph->storage_type_of(output) != utils::kTexture3D ||
+        graph->storage_type_of(fp_input) != utils::kTexture3D) {
+      return false;
+    }
+    if (graph->packed_dim_of(output) != WHCN::kWidthDim ||
+        graph->packed_dim_of(fp_input) != WHCN::kWidthDim) {
+      return false;
+    }
+    // The texture epilogue needs a Csh staging array ON TOP OF the Ash/Bsh the
+    // buffer path already allocates: SG_GRID_Y * MMA_M rows x WG_TILE_N fp16.
+    // That term is absent from the offline tile_constraints model, so a tile
+    // that is legal for buffer can exceed the shared-memory limit at texture
+    // IO -- one specific large tile hung the GPU and rebooted the board
+    // instead of failing pipeline creation (2026-08-09). Reject here so it
+    // falls back to tiled.
+    if (sg_grid_y > 0) {
+      constexpr int64_t kMmaM = 16; // MMA_M, fixed across every coopmat yaml
+      const int64_t csh_bytes =
+          int64_t(sg_grid_y) * kMmaM * tile_n * int64_t(sizeof(uint16_t));
+      const int64_t limit =
+          graph->context()->adapter_ptr()->max_compute_shared_memory_size();
+      if (csh_bytes >= limit) {
+        return false;
+      }
+    }
   }
   if (graph->dtype_of(output) != vkapi::kHalf) {
     return false;
   }
 
-  const std::vector<int64_t> out_sizes = graph->sizes_of(output);
   const int64_t N = utils::val_at(-1, out_sizes);
   const int64_t M = utils::val_at(-2, out_sizes);
   const std::vector<int64_t> in_sizes = graph->sizes_of(fp_input);
@@ -236,18 +394,29 @@ vkapi::ShaderInfo pick_linear_qw_shader(
   if (weight_is_4bit && !is_gemv_case) {
     const int64_t group_size =
         graph->extract_scalar<int64_t>(resize_args.at(0));
+    // A tsweep_* variant has different tile dims than the shipped
+    // kQ4gswCoopmatDims, so the eligibility check's alignment gate must use
+    // the ACTIVE variant's own dims, not the shipped constant.
+    const CoopmatTileDims active_dims =
+        parse_q4gsw_tsweep_tile(q4gsw_coopmat_variant());
     if (can_use_q4gsw_coopmat(
             graph,
             output,
             fp_input,
             group_size,
             resize_args.at(2),
-            kQ4gswCoopmatDims.m,
-            kQ4gswCoopmatDims.n,
-            kQ4gswCoopmatDims.k)) {
+            active_dims.m,
+            active_dims.n,
+            active_dims.k,
+            /*allow_texture_io=*/true,
+            active_dims.sg_grid_y)) {
       std::string kernel_name = "linear_q4gsw_coopmat";
-      // Output storage is buffer (gated above); weight storage matches the
-      // existing variants.
+      const std::string& variant = q4gsw_coopmat_variant();
+      if (!variant.empty()) {
+        kernel_name += "_" + variant;
+      }
+      // Output storage is buffer or texture3d (gated above); weight storage
+      // matches the existing variants.
       add_storage_type_suffix(kernel_name, graph->storage_type_of(output));
       add_storage_type_suffix(
           kernel_name, graph->storage_type_of(packed_int_weight));
@@ -299,16 +468,33 @@ vkapi::ShaderInfo pick_linear_dqa_qw_shader(
       graph->context()->adapter_ptr()->supports_int8_cooperative_matrix()) {
     const int64_t group_size =
         graph->extract_scalar<int64_t>(resize_args.at(0));
+    // Alignment gate must use the ACTIVE sweep variant's own tile dims (same
+    // rationale as the q4gsw tsweep hook above).
+    const CoopmatTileDims active_dq8ca_dims =
+        parse_tsweep_tile(dq8ca_coopmat_variant(), kDq8caQ4gswCoopmatDims);
+    // The dq8ca texture-IO shader declares t_input (fp_input) with an
+    // IO_STORAGE-typed binding even though it's never read in the shader body
+    // (activations arrive pre-quantized in t_packed_int8_input instead) --
+    // Vulkan still requires the bound resource's storage type to match the
+    // declared binding type, so fp_input must genuinely be texture3d too when
+    // texture IO is active. Same requirement as q4gsw; no separate check
+    // needed.
     if (can_use_q4gsw_coopmat(
             graph,
             out,
             fp_input,
             group_size,
             resize_args.at(2),
-            kDq8caQ4gswCoopmatDims.m,
-            kDq8caQ4gswCoopmatDims.n,
-            kDq8caQ4gswCoopmatDims.k)) {
+            active_dq8ca_dims.m,
+            active_dq8ca_dims.n,
+            active_dq8ca_dims.k,
+            /*allow_texture_io=*/true,
+            active_dq8ca_dims.sg_grid_y)) {
       std::string kernel_name = "linear_dq8ca_q4gsw_coopmat";
+      const std::string& dq8ca_variant = dq8ca_coopmat_variant();
+      if (!dq8ca_variant.empty()) {
+        kernel_name += "_" + dq8ca_variant;
+      }
       add_storage_type_suffix(kernel_name, graph->storage_type_of(out));
       add_storage_type_suffix(kernel_name, graph->storage_type_of(int_weight));
       add_dtype_suffix(kernel_name, graph->dtype_of(out));
@@ -940,6 +1126,44 @@ void linear_q8csw(ComputeGraph& graph, const std::vector<ValueRef>& args) {
       output);
 }
 
+// Registered below as et_vk.linear_q4gsw.default -- takes over from
+// Q4gswLinear.cpp's own registration of the same op name (commented out
+// there) so that add_linear_qw_node / linear_q4gsw_coopmat are actually
+// reachable. See memory quant-perf-rebase-orphaned-4w-coopmat: upstream's
+// Q4gswLinear.cpp silently hijacks this exact op name with its own
+// q4gsw_linear_gemm__* tiled-only shaders, and QuantizedLinear.cpp's coopmat
+// path (present and correctly built) is unreachable for any 4w PTE until
+// this registration is restored.
+void linear_q4gsw(ComputeGraph& graph, const std::vector<ValueRef>& args) {
+  int32_t idx = 0;
+  const ValueRef fp_input = args.at(idx++);
+  const ValueRef weight_data = args.at(idx++);
+  const ValueRef weight_scales_data = args.at(idx++);
+  const ValueRef group_size = args.at(idx++);
+  const ValueRef bias_data = args.at(idx++);
+  const ValueRef output = args.at(idx++);
+
+  const int64_t group_size_val = graph.extract_scalar<int64_t>(group_size);
+
+  QuantizationConfig input_quant_config(32, kNoQuantization, {});
+  QuantizationConfig weight_quant_config(4, kPerGroup, {group_size_val});
+
+  quantized_linear_impl(
+      graph,
+      input_quant_config,
+      weight_quant_config,
+      fp_input,
+      kDummyValueRef, // input scale
+      kDummyValueRef, // input zp
+      weight_data,
+      kDummyValueRef, // weight sums
+      weight_scales_data,
+      kDummyValueRef, // weight zeros
+      group_size, // group size
+      bias_data,
+      output);
+}
+
 void linear_dq8ca_q4gsw(
     ComputeGraph& graph,
     const std::vector<ValueRef>& args) {
@@ -978,6 +1202,7 @@ void linear_dq8ca_q4gsw(
 REGISTER_OPERATORS {
   VK_REGISTER_OP(et_vk.linear_q8ta_q8csw.default, linear_q8ta_q8csw);
   VK_REGISTER_OP(et_vk.linear_q8csw.default, linear_q8csw);
+  VK_REGISTER_OP(et_vk.linear_q4gsw.default, linear_q4gsw);
   VK_REGISTER_OP(et_vk.linear_dq8ca_q4gsw.default, linear_dq8ca_q4gsw);
 }
 

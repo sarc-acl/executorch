@@ -427,6 +427,10 @@ class Adapter final {
     return physical_device_.properties.limits.maxStorageBufferRange;
   }
 
+  inline uint32_t max_compute_shared_memory_size() const {
+    return physical_device_.properties.limits.maxComputeSharedMemorySize;
+  }
+
   // Command Buffer Submission
 
   void submit_cmd(

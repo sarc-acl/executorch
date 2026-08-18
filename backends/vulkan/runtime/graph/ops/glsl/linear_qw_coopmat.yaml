@@ -10,11 +10,18 @@
 # Forces buffer storage for activation/output (coopMatLoad/Store on buffers);
 # INT weight storage can be texture2d or buffer (matches the tiled path).
 # DTYPE = half only; fp32 activations are not supported.
-# Geometry follows the double-buffered reference (coopmat_mm_ref): 128x64
-# tile, K-step 16, 2x2 subgroup grid x 32 threads (subgroup size 32 forced).
-# This geometry was tuned for AMD-RDNA GPUs. NOTE: the C++ dispatch in
+# Geometry follows the double-buffered reference (coopmat_mm_ref): 128x128
+# tile, K-step 16, 4 subgroups x 32 threads (subgroup size 32 forced). The
+# 128x128 / 2x2-subgroup-grid geometry is specs/036-portable-device-sweep's
+# e2e-ranked winner on M51 (samsung xclipse 970), re-verified through this
+# shipped shader path (not just the tsweep_ toggle) 2026-07-24 — confirmed
+# +6.8%/+7.7%/+10.1% (1B/3B/8B prefill tok/s) over the prior 128x64/2x2 tile
+# (kept as tsweep seed tsweep_t128x64k16g22s32 for future sweeps). NOTE: an
+# EARLIER 128x128 shape (4x2 subgroup grid, not 2x2) was -25% vs 128x64/2x2
+# on the same device — don't conflate the two; the subgroup grid, not just
+# the tile size, is what makes this one different. NOTE: the C++ dispatch in
 # QuantizedLinear.cpp must keep kQ4gswCoopmatDims.n and .wg_size in sync with
-# WG_TILE_N (64) and WG_SIZE (= SG_GRID_X*SG_GRID_Y*SUBGROUP = 128).
+# WG_TILE_N (128) and WG_SIZE (= SG_GRID_X*SG_GRID_Y*SUBGROUP = 128).
 
 linear_qw_coopmat:
   parameter_names_with_default_values:
@@ -26,7 +33,7 @@ linear_qw_coopmat:
     MMA_N: 16
     MMA_K: 16
     WG_TILE_M: 128
-    WG_TILE_N: 64
+    WG_TILE_N: 128
     WG_TILE_K: 16
     SG_GRID_X: 2
     SG_GRID_Y: 2

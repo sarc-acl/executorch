@@ -676,7 +676,13 @@ void q4gsw_linear(ComputeGraph& graph, const std::vector<ValueRef>& args) {
 
 REGISTER_OPERATORS {
   VK_REGISTER_OP(et_vk.q4gsw_linear.default, q4gsw_linear);
-  VK_REGISTER_OP(et_vk.linear_q4gsw.default, q4gsw_linear);
+  // et_vk.linear_q4gsw.default is registered by QuantizedLinear.cpp instead
+  // (Option B, memory quant-perf-rebase-orphaned-4w-coopmat) -- this file's
+  // q4gsw_linear_gemm__* shaders are tiled-only with no coopmat path, and
+  // registering here would silently make QuantizedLinear.cpp's
+  // linear_q4gsw_coopmat (present, correctly built) unreachable for every 4w
+  // PTE.
+  // VK_REGISTER_OP(et_vk.linear_q4gsw.default, q4gsw_linear);
 }
 
 } // namespace vkcompute
