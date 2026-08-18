@@ -34,6 +34,15 @@
 // Other flags:
 //   --model=<substr>     only run models whose name contains <substr>
 //   --correctness-only   run just the linear correctness matrix, skip perf
+//   --sdpa-correctness-only  run just the SDPA coopmat correctness cases
+//                       (sdpa_compute_attn_weights_coopmat /
+//                       sdpa_compute_out_coopmat vs. a CPU causal-attention
+//                       reference, at small tile-aligned shapes -- see
+//                       run_sdpa_correctness). A single pass is NOT
+//                       sufficient evidence for a coopmat shader (the linear
+//                       tile sweep found a tile that passed once and then
+//                       failed 1-in-10 identical repeats, silently) -- rerun
+//                       this flag repeatedly before trusting a pass.
 //   --skip-correctness   skip the linear correctness gate before perf
 //   --list               print every case that would run (with sizes), no GPU
 //   --help
@@ -70,6 +79,7 @@
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <numeric>
 #include <sstream>
 #include <string>
@@ -1153,6 +1163,250 @@ bool run_sdpa_suite(const std::string& model_filter) {
   return all_confirmed;
 }
 
+// ===================== sdpa correctness =====================
+// Coopmat SDPA correctness gate for sdpa_compute_attn_weights_coopmat
+// (QK^T) and sdpa_compute_out_coopmat (attn*V). run_sdpa_suite above is
+// perf-only -- it never reads output data back or checks it against a
+// reference. Like the SDPA perf path (specs/010 Decision 8), this builds
+// the graph directly via ComputeGraph rather than the TestCase framework,
+// because llama.custom_sdpa.default needs SymInt support the framework
+// doesn't have.
+//
+// Shapes are small and coopmat-tile-aligned (S%128==0, D%64==0 -- SDPA.cpp's
+// kSdpaCmQkTileM/kSdpaCmTileN/kSdpaCmTileK/kSdpaCmTileM eligibility check)
+// with input_pos=0, so context_len == seq_len and the freshly-written KV
+// cache covers exactly the self-attention window under test -- no
+// uninitialized cache history to account for. A naive O(S^2*D) fp32
+// reference at production S=2048 would be far too slow to run the repeated
+// (10+) back-to-back passes a coopmat correctness check needs (today's
+// linear-tile-sweep incident: a tile that passed --correctness-only ONCE
+// was later found to fail 1-in-10 identical repeat runs, silent wrong
+// output, no crash) -- these shapes keep one pass under a second.
+struct SdpaCorrectnessCase {
+  const char* name;
+  int64_t seq_len; // S; also context_len (input_pos=0, fresh prefill)
+  int64_t head_dim; // D
+  int64_t num_heads; // Q_H
+  int64_t num_kv_heads; // KV_H
+};
+const std::vector<SdpaCorrectnessCase> kSdpaCorrectnessCases = {
+    // Minimal GQA case: 128 is the smallest legal QK^T M-tile multiple, 64
+    // the smallest legal head_dim (both QK^T K-tile and attn*V N-tile).
+    {"tiny_gqa", 128, 64, 2, 1},
+    // 1B's real head configuration (head_dim=64, 32 Q heads, 8 KV heads --
+    // kSdpaModels), S truncated from the real 2048 to the same aligned 128
+    // so the CPU reference stays fast; this is the shape most likely to
+    // exercise a head-indexing (GQA) bug the tiny case's group size of 2
+    // could hide.
+    {"1b_head_config", 128, 64, 32, 8},
+};
+
+// Causal, GQA-aware fp32 CPU reference. q is [S, Q_H, D], k/v are
+// [S, KV_H, D] (row-major, batch=1 squeezed). kv_h = q_h / (Q_H / KV_H),
+// matching sdpa_compute_attn_weights_coopmat.glsl's GQA head mapping exactly
+// (see that file's header comment). Causal: query s attends to context
+// c <= s (input_pos=0).
+std::vector<float> sdpa_reference(
+    const std::vector<float>& q,
+    const std::vector<float>& k,
+    const std::vector<float>& v,
+    int64_t S,
+    int64_t D,
+    int64_t Q_H,
+    int64_t KV_H) {
+  const float scale = 1.0f / std::sqrt(static_cast<float>(D));
+  const int64_t group = Q_H / KV_H;
+  std::vector<float> out(static_cast<size_t>(S * Q_H * D), 0.0f);
+  std::vector<float> scores(static_cast<size_t>(S));
+  for (int64_t h = 0; h < Q_H; ++h) {
+    const int64_t kv_h = h / group;
+    for (int64_t s = 0; s < S; ++s) {
+      float max_score = -std::numeric_limits<float>::infinity();
+      for (int64_t c = 0; c <= s; ++c) {
+        float acc = 0.0f;
+        for (int64_t d = 0; d < D; ++d) {
+          acc += q[(s * Q_H + h) * D + d] * k[(c * KV_H + kv_h) * D + d];
+        }
+        acc *= scale;
+        scores[c] = acc;
+        max_score = std::max(max_score, acc);
+      }
+      float denom = 0.0f;
+      for (int64_t c = 0; c <= s; ++c) {
+        scores[c] = std::exp(scores[c] - max_score);
+        denom += scores[c];
+      }
+      for (int64_t d = 0; d < D; ++d) {
+        float acc = 0.0f;
+        for (int64_t c = 0; c <= s; ++c) {
+          acc += (scores[c] / denom) * v[(c * KV_H + kv_h) * D + d];
+        }
+        out[(s * Q_H + h) * D + d] = acc;
+      }
+    }
+  }
+  return out;
+}
+
+// Builds+runs one coopmat SDPA case via direct ComputeGraph construction
+// (mirrors sdpa_run_case's graph shape), reads Q/K/V/out host-side in
+// float/half, computes the CPU reference, and compares. Returns true iff
+// BOTH the QK^T and attn*V coopmat shaders actually dispatched (not a
+// silent tiled fallback -- tiled is also numerically correct, so a pure
+// value comparison alone cannot tell the two apart) AND every output
+// element is within tolerance.
+bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
+  unsetenv("ET_VK_DISABLE_COOPMAT");
+
+  GraphConfig config;
+  config.enable_querypool = true;
+  api::context()->initialize_querypool();
+  ComputeGraph graph(config);
+
+  const int64_t B = 1;
+  const std::vector<int64_t> q_sizes = {B, c.seq_len, c.num_heads, c.head_dim};
+  const std::vector<int64_t> kv_sizes = {
+      B, c.seq_len, c.num_kv_heads, c.head_dim};
+  // context_len == seq_len: input_pos=0, so the cache is exactly this step's
+  // freshly-written K/V (see file comment above).
+  const std::vector<int64_t> cache_sizes = kv_sizes;
+
+  IOValueRef r_q =
+      graph.add_input_tensor(q_sizes, vkapi::kHalf, utils::kBuffer);
+  IOValueRef r_k =
+      graph.add_input_tensor(kv_sizes, vkapi::kHalf, utils::kBuffer);
+  IOValueRef r_v =
+      graph.add_input_tensor(kv_sizes, vkapi::kHalf, utils::kBuffer);
+
+  const ValueRef r_input_pos_symint = graph.add_symint(0);
+  const ValueRef r_out =
+      graph.add_tensor(q_sizes, vkapi::kHalf, utils::kBuffer);
+
+  const ValueRef r_k_cache =
+      graph.add_tensor(cache_sizes, vkapi::kHalf, utils::kBuffer);
+  const ValueRef r_v_cache =
+      graph.add_tensor(cache_sizes, vkapi::kHalf, utils::kBuffer);
+  const ValueRef r_dummy_out =
+      graph.add_tensor({1}, vkapi::kHalf, utils::kBuffer);
+
+  VK_GET_OP_FN("update_cache.default")
+  (graph, {r_k.value, r_k_cache, r_input_pos_symint, r_dummy_out});
+  VK_GET_OP_FN("update_cache.default")
+  (graph, {r_v.value, r_v_cache, r_input_pos_symint, r_dummy_out});
+  VK_GET_OP_FN("llama.custom_sdpa.default")
+  (graph,
+   {
+       r_q.value,
+       r_k_cache,
+       r_v_cache,
+       r_input_pos_symint,
+       kDummyValueRef, // attn_mask
+       kDummyValueRef, // dropout_p
+       kDummyValueRef, // is_causal
+       kDummyValueRef, // scale
+       r_out,
+   });
+
+  graph.set_output_tensor(r_out);
+  graph.prepare();
+  graph.prepack();
+
+  const int64_t q_numel = c.seq_len * c.num_heads * c.head_dim;
+  const int64_t kv_numel = c.seq_len * c.num_kv_heads * c.head_dim;
+
+  std::vector<float> qf(q_numel), kf(kv_numel), vf(kv_numel);
+  std::vector<uint16_t> qh(q_numel), kh(kv_numel), vh(kv_numel);
+  for (int64_t i = 0; i < q_numel; ++i) {
+    qf[i] = (static_cast<float>(std::rand()) / RAND_MAX) * 2.0f - 1.0f;
+    qh[i] = float_to_half(qf[i]);
+  }
+  for (int64_t i = 0; i < kv_numel; ++i) {
+    kf[i] = (static_cast<float>(std::rand()) / RAND_MAX) * 2.0f - 1.0f;
+    kh[i] = float_to_half(kf[i]);
+    vf[i] = (static_cast<float>(std::rand()) / RAND_MAX) * 2.0f - 1.0f;
+    vh[i] = float_to_half(vf[i]);
+  }
+  graph.maybe_cast_and_copy_into_staging(
+      r_q.staging, qh.data(), static_cast<size_t>(q_numel), vkapi::kHalf);
+  graph.maybe_cast_and_copy_into_staging(
+      r_k.staging, kh.data(), static_cast<size_t>(kv_numel), vkapi::kHalf);
+  graph.maybe_cast_and_copy_into_staging(
+      r_v.staging, vh.data(), static_cast<size_t>(kv_numel), vkapi::kHalf);
+
+  graph.execute();
+
+  graph.context()->querypool().extract_results();
+  const auto shader_results =
+      graph.context()->querypool().get_shader_timestamp_data();
+  std::vector<std::string> dispatched;
+  for (const auto& r : shader_results) {
+    dispatched.push_back(r.kernel_name);
+  }
+  const bool qk_fired =
+      has_kernel_containing(dispatched, "sdpa_compute_attn_weights_coopmat");
+  const bool av_fired =
+      has_kernel_containing(dispatched, "sdpa_compute_out_coopmat");
+
+  std::vector<uint16_t> outh(q_numel);
+  graph.maybe_cast_and_copy_from_staging(
+      graph.outputs()[0].staging,
+      outh.data(),
+      static_cast<size_t>(q_numel),
+      vkapi::kHalf);
+  std::vector<float> outf(q_numel);
+  for (int64_t i = 0; i < q_numel; ++i) {
+    outf[i] = half_to_float(outh[i]);
+  }
+
+  const std::vector<float> ref = sdpa_reference(
+      qf, kf, vf, c.seq_len, c.head_dim, c.num_heads, c.num_kv_heads);
+
+  int64_t mismatches = 0;
+  int64_t first_mismatch = -1;
+  const float abs_tol = 0.03f;
+  const float rel_tol = 0.05f;
+  for (int64_t i = 0; i < q_numel; ++i) {
+    const float diff = std::fabs(outf[i] - ref[i]);
+    const float thresh = abs_tol + rel_tol * std::fabs(ref[i]);
+    if (diff > thresh) {
+      ++mismatches;
+      if (first_mismatch < 0) {
+        first_mismatch = i;
+      }
+    }
+  }
+
+  const bool numeric_ok = mismatches == 0;
+  const bool fired_ok = qk_fired && av_fired;
+  std::cout << "[sdpa-correctness] " << c.name << " S=" << c.seq_len
+            << " D=" << c.head_dim << " Q_H=" << c.num_heads
+            << " KV_H=" << c.num_kv_heads
+            << " qk_coopmat=" << (qk_fired ? "yes" : "NO")
+            << " av_coopmat=" << (av_fired ? "yes" : "NO")
+            << " mismatches=" << mismatches << "/" << q_numel;
+  if (!numeric_ok) {
+    std::cout << " (first at " << first_mismatch << ": got=" << std::fixed
+              << std::setprecision(4) << outf[first_mismatch]
+              << " ref=" << ref[first_mismatch] << ")";
+  }
+  std::cout << (numeric_ok && fired_ok ? " PASSED" : " FAILED") << "\n";
+  return numeric_ok && fired_ok;
+}
+
+// Runs every case in kSdpaCorrectnessCases once and reports pass/fail.
+// Callers that want the repeated-pass discipline this coopmat bug class
+// requires (see file comment above) should invoke this function itself
+// multiple times in a loop -- kept a single pass per call, like
+// run_linear_correctness, so a driver script controls the rep count and can
+// distinguish "which specific repeat failed."
+bool run_sdpa_correctness() {
+  bool all_ok = true;
+  for (const auto& c : kSdpaCorrectnessCases) {
+    all_ok = sdpa_correctness_case(c) && all_ok;
+  }
+  return all_ok;
+}
+
 // ============================== report ==============================
 
 const Record* find_record(
@@ -1410,6 +1664,8 @@ void print_usage() {
          "                        correctness gate; a tile-variant token\n"
          "                        only affects one scheme+buffer cell)\n"
          "  --correctness-only   run just the linear correctness matrix\n"
+         "  --sdpa-correctness-only  run just the SDPA coopmat correctness "
+         "cases\n"
          "  --skip-correctness   skip the correctness gate before perf\n"
          "  --list               print every case with its sizes, no GPU\n"
          "  --help               this message\n";
@@ -1465,7 +1721,8 @@ void list_cases(
 
 int main(int argc, char** argv) {
   bool linear = false, baseline = false, sdpa = false;
-  bool correctness_only = false, skip_correctness = false, list_only = false;
+  bool correctness_only = false, sdpa_correctness_only = false;
+  bool skip_correctness = false, list_only = false;
   CaseFilter filter;
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
@@ -1477,6 +1734,8 @@ int main(int argc, char** argv) {
       sdpa = true;
     } else if (arg == "--correctness-only") {
       correctness_only = true;
+    } else if (arg == "--sdpa-correctness-only") {
+      sdpa_correctness_only = true;
     } else if (arg == "--skip-correctness") {
       skip_correctness = true;
     } else if (arg == "--list") {
@@ -1554,6 +1813,9 @@ int main(int argc, char** argv) {
   // (including the rank-3 dispatch check) before any perf time is spent.
   if (correctness_only) {
     return run_linear_correctness(filter) ? 0 : 1;
+  }
+  if (sdpa_correctness_only) {
+    return run_sdpa_correctness() ? 0 : 1;
   }
   if ((linear || baseline) && !skip_correctness) {
     if (!run_linear_correctness(filter)) {
