@@ -122,16 +122,23 @@ static const std::string& q4gsw_coopmat_variant() {
 }
 
 static const std::string& dq8ca_coopmat_variant() {
+  // Default (no ET_VK_DQ8CA_COOPMAT_VARIANT set):
+  // tsweep_dbuf4_t128x16k64g12s64, this workspace's texture-IO tile sweep
+  // winner on M51 (2026-08-18) -- 11.8-17.3% faster than the prior
+  // t64x32k32g12s64 default across 1B/3B/8B, e2e-confirmed (not microbench) and
+  // ETDump-confirmed to actually dispatch coopmat on the real prefill path.
+  // Only takes effect when ET_VK_TEXTURE_COOPMAT=1 is also set -- that master
+  // switch stays opt-in.
   static const std::string variant = [] {
     const char* env = std::getenv("ET_VK_DQ8CA_COOPMAT_VARIANT");
     if (!env) {
-      return std::string();
+      return std::string("tsweep_dbuf4_t128x16k64g12s64");
     }
     const std::string v(env);
     if (is_recognized_coopmat_variant_token(v)) {
       return v;
     }
-    return std::string();
+    return std::string("tsweep_dbuf4_t128x16k64g12s64");
   }();
   return variant;
 }
