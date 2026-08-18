@@ -107,16 +107,26 @@ static bool is_recognized_coopmat_variant_token(const std::string& v) {
 }
 
 static const std::string& q4gsw_coopmat_variant() {
+  // Default (no ET_VK_Q4GSW_COOPMAT_VARIANT set):
+  // tsweep_dbuf4_t128x128k16g22s32
+  // -- same geometry as the shipped buffer-storage default (re-confirmed #1 in
+  // the same M51 tile sweep that picked dq8ca's new default), but the BARE
+  // "linear_q4gsw_coopmat" kernel name was never compiled with a texture3d
+  // IO_STORAGE variant (only the tsweep_dbuf4-suffixed shader was). Without
+  // this, ET_VK_TEXTURE_COOPMAT=1 alone (no explicit variant) resolves to a
+  // kernel name with no texture3d build and crashes at dispatch -- the gate
+  // accepts texture-IO but the bare name can't serve it. Same fix as
+  // dq8ca_coopmat_variant() below.
   static const std::string variant = [] {
     const char* env = std::getenv("ET_VK_Q4GSW_COOPMAT_VARIANT");
     if (!env) {
-      return std::string();
+      return std::string("tsweep_dbuf4_t128x128k16g22s32");
     }
     const std::string v(env);
     if (is_recognized_coopmat_variant_token(v)) {
       return v;
     }
-    return std::string();
+    return std::string("tsweep_dbuf4_t128x128k16g22s32");
   }();
   return variant;
 }
