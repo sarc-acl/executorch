@@ -132,23 +132,39 @@ static const std::string& q4gsw_coopmat_variant() {
 }
 
 static const std::string& dq8ca_coopmat_variant() {
-  // Default (no ET_VK_DQ8CA_COOPMAT_VARIANT set):
-  // tsweep_dbuf4_t128x16k64g12s64, this workspace's texture-IO tile sweep
-  // winner on M51 (2026-08-18) -- 11.8-17.3% faster than the prior
-  // t64x32k32g12s64 default across 1B/3B/8B, e2e-confirmed (not microbench) and
-  // ETDump-confirmed to actually dispatch coopmat on the real prefill path.
-  // Only takes effect when ET_VK_TEXTURE_COOPMAT=1 is also set -- that master
-  // switch stays opt-in.
+  // Default (no ET_VK_DQ8CA_COOPMAT_VARIANT set): tsweep_dbuf4_t64x32k32g12s64
+  // -- same geometry as the shipped buffer-storage default, resolved through
+  // the tsweep_dbuf4 texture3d-capable shader.
+  //
+  // REVERTED 2026-08-18: the M51 tile sweep's apparent winner,
+  // tsweep_dbuf4_t128x16k64g12s64 (11.8-17.3% faster in e2e prefill tok/s),
+  // was shipped as this default for a short window and then found to be
+  // NUMERICALLY WRONG via test_llama_microbench --correctness-only --
+  // every single texture3d correctness case failed, including the rank-3
+  // (real model shape) ones (~70% of elements mismatched in a structured
+  // per-row pattern: the first M-rows correct, everything past a boundary
+  // wrong). Root cause not yet isolated -- checked and ruled out
+  // int_input_sums undersizing (github.com/pytorch/executorch/issues/21423):
+  // that buffer is marked unused in both this shader and the tsweep_dbuf4
+  // one, identically, so it can't be the discriminator. Most likely a
+  // genuine indexing bug specific to that tile's spec-resolved shape
+  // (M=128, N=16, K=64, 1x2 subgroup grid, sub=64) in the dbuf4 template.
+  // This tile (t64x32k32g12s64) IS correctness-bench-confirmed clean: 0
+  // failures across all texture3d cases including rank-3, real coopmat
+  // dispatch confirmed via the harness's own dispatch log. Do not re-ship
+  // t128x16k64g12s64 (or any other untested sweep candidate) without first
+  // passing test_llama_microbench --scheme=8da4w --storage=texture3d
+  // --correctness-only clean.
   static const std::string variant = [] {
     const char* env = std::getenv("ET_VK_DQ8CA_COOPMAT_VARIANT");
     if (!env) {
-      return std::string("tsweep_dbuf4_t128x16k64g12s64");
+      return std::string("tsweep_dbuf4_t64x32k32g12s64");
     }
     const std::string v(env);
     if (is_recognized_coopmat_variant_token(v)) {
       return v;
     }
-    return std::string("tsweep_dbuf4_t128x16k64g12s64");
+    return std::string("tsweep_dbuf4_t64x32k32g12s64");
   }();
   return variant;
 }
