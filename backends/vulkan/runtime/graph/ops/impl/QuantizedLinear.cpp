@@ -94,6 +94,12 @@ static const char* const kTsweepPrefixes[] = {
     "tsweep_dbuf2_t",
     "tsweep_dbuf3_t",
     "tsweep_dbuf4_t",
+    // "-tr": dbuf4's loop with the A-side global -> LDS staging swapped to
+    // coopMatLoad/coopMatStore (ported from shmem_double_buf4-tr.comp). Stays
+    // mutually exclusive with "tsweep_dbuf4_t" because position 12 is 't' vs
+    // '_', so prefix order here does not matter. dq8ca only -- there is no
+    // q4gsw "-tr" shader.
+    "tsweep_dbuf4tr_t",
     "tsweep_t",
 };
 
@@ -426,6 +432,59 @@ static bool can_use_q4gsw_coopmat(
   return true;
 }
 
+// True when the active dq8ca variant is a "-tr" token, i.e. the coopmat-staged
+// A kernel. That kernel binds t_packed_int8_input as a scalar int array in the
+// row-major kPackedInt8_4W layout instead of the 4h4w ivec4 block layout,
+// because no coopMatLoad can address 4h4w (its component index selects a row,
+// making the flat index non-affine in the row).
+static bool dq8ca_variant_wants_rowmajor_a() {
+  return dq8ca_coopmat_variant().rfind("tsweep_dbuf4tr_t", 0) == 0;
+}
+
+// Mirrors the coopmat branch of pick_linear_dqa_qw_shader() so graph-build time
+// (which picks the activation layout and the packer node) and dispatch time
+// (which picks the kernel) can never disagree. Both call this: if it returns
+// true the dq8ca coopmat kernel WILL be selected, so it is safe to hand it the
+// row-major layout; if it returns false the tiled fallback runs and must get
+// the stock 4h4w layout. Both call sites read the same immutable graph state
+// and the same process-level variant token, so they cannot drift.
+static bool dq8ca_coopmat_dispatch_eligible(
+    ComputeGraph* graph,
+    const ValueRef output,
+    const ValueRef fp_input,
+    const ValueRef bias_data,
+    const int64_t group_size) {
+  if (is_gemv(graph, fp_input)) {
+    return false;
+  }
+  if (!graph->context()->adapter_ptr()->supports_int8_cooperative_matrix()) {
+    return false;
+  }
+  // The alignment gate must use the ACTIVE sweep variant's own tile dims, not
+  // the shipped default's (same rationale as the q4gsw tsweep hook).
+  //
+  // allow_texture_io: the dq8ca texture-IO shader declares t_input (fp_input)
+  // with an IO_STORAGE-typed binding even though it is never read in the
+  // shader body (activations arrive pre-quantized in t_packed_int8_input
+  // instead) -- Vulkan still requires the bound resource's storage type to
+  // match the declared binding type, so fp_input must genuinely be texture3d
+  // too when texture IO is active. Same requirement as q4gsw; no separate
+  // check needed.
+  const CoopmatTileDims dims =
+      parse_tsweep_tile(dq8ca_coopmat_variant(), kDq8caQ4gswCoopmatDims);
+  return can_use_q4gsw_coopmat(
+      graph,
+      output,
+      fp_input,
+      group_size,
+      bias_data,
+      dims.m,
+      dims.n,
+      dims.k,
+      /*allow_texture_io=*/true,
+      dims.sg_grid_y);
+}
+
 vkapi::ShaderInfo pick_linear_qw_shader(
     ComputeGraph* graph,
     const std::vector<ArgGroup>& args,
@@ -513,43 +572,25 @@ vkapi::ShaderInfo pick_linear_dqa_qw_shader(
 
   // Use the coopmat<int8> shader for 4-bit dq8ca dispatches when the device
   // enumerates VK_COMPONENT_TYPE_SINT8_KHR in its cooperative matrix property
-  // list and the shape aligns; tiled otherwise.
-  if (weight_is_4bit && !is_gemv_case &&
-      graph->context()->adapter_ptr()->supports_int8_cooperative_matrix()) {
-    const int64_t group_size =
-        graph->extract_scalar<int64_t>(resize_args.at(0));
-    // Alignment gate must use the ACTIVE sweep variant's own tile dims (same
-    // rationale as the q4gsw tsweep hook above).
-    const CoopmatTileDims active_dq8ca_dims =
-        parse_tsweep_tile(dq8ca_coopmat_variant(), kDq8caQ4gswCoopmatDims);
-    // The dq8ca texture-IO shader declares t_input (fp_input) with an
-    // IO_STORAGE-typed binding even though it's never read in the shader body
-    // (activations arrive pre-quantized in t_packed_int8_input instead) --
-    // Vulkan still requires the bound resource's storage type to match the
-    // declared binding type, so fp_input must genuinely be texture3d too when
-    // texture IO is active. Same requirement as q4gsw; no separate check
-    // needed.
-    if (can_use_q4gsw_coopmat(
-            graph,
-            out,
-            fp_input,
-            group_size,
-            resize_args.at(2),
-            active_dq8ca_dims.m,
-            active_dq8ca_dims.n,
-            active_dq8ca_dims.k,
-            /*allow_texture_io=*/true,
-            active_dq8ca_dims.sg_grid_y)) {
-      std::string kernel_name = "linear_dq8ca_q4gsw_coopmat";
-      const std::string& dq8ca_variant = dq8ca_coopmat_variant();
-      if (!dq8ca_variant.empty()) {
-        kernel_name += "_" + dq8ca_variant;
-      }
-      add_storage_type_suffix(kernel_name, graph->storage_type_of(out));
-      add_storage_type_suffix(kernel_name, graph->storage_type_of(int_weight));
-      add_dtype_suffix(kernel_name, graph->dtype_of(out));
-      return VK_KERNEL_FROM_STR(kernel_name);
+  // list and the shape aligns; tiled otherwise. The eligibility test lives in
+  // dq8ca_coopmat_dispatch_eligible() because quantized_linear_impl() has to
+  // ask the same question at graph-build time to pick the activation layout.
+  if (weight_is_4bit &&
+      dq8ca_coopmat_dispatch_eligible(
+          graph,
+          out,
+          fp_input,
+          resize_args.at(2),
+          graph->extract_scalar<int64_t>(resize_args.at(0)))) {
+    std::string kernel_name = "linear_dq8ca_q4gsw_coopmat";
+    const std::string& dq8ca_variant = dq8ca_coopmat_variant();
+    if (!dq8ca_variant.empty()) {
+      kernel_name += "_" + dq8ca_variant;
     }
+    add_storage_type_suffix(kernel_name, graph->storage_type_of(out));
+    add_storage_type_suffix(kernel_name, graph->storage_type_of(int_weight));
+    add_dtype_suffix(kernel_name, graph->dtype_of(out));
+    return VK_KERNEL_FROM_STR(kernel_name);
   }
 
   std::string kernel_name = "linear_dq8ca_q4gsw";
@@ -1017,13 +1058,37 @@ void quantized_linear_impl(
   const ValueRef packed_weight_sums = prepack_standard(
       graph, weight_sums_data, utils::kBuffer, utils::kWidthPacked);
 
+  // The coopmat-staged-A ("-tr") dq8ca kernel reads activations through
+  // coopMatLoad, which can only address a row-major buffer -- so when that
+  // variant is active AND we know it will actually be dispatched, allocate the
+  // activations as kPackedInt8_4W (row-major, 4 K-values per int32) and run the
+  // matching packer below. dq8ca_variant_wants_rowmajor_a() is checked first so
+  // that on every other variant, including the shipped default, this predicate
+  // short-circuits to false and nothing about the stock path changes.
+  //
+  // Both halves of the decision (layout here, kernel in
+  // pick_linear_dqa_qw_shader) go through dq8ca_coopmat_dispatch_eligible(), so
+  // a shape that falls back to tiled still gets the 4h4w layout the tiled
+  // shader expects.
+  bool dq8ca_rowmajor_a = false;
+  if (input_quant_config.is_dynamic && weight_quant_config.nbits == 4 &&
+      weight_quant_config.granularity == kPerGroup &&
+      dq8ca_variant_wants_rowmajor_a()) {
+    dq8ca_rowmajor_a = dq8ca_coopmat_dispatch_eligible(
+        &graph,
+        output,
+        fp_input,
+        bias_data,
+        graph.extract_scalar<int64_t>(group_size));
+  }
+
   // Allocate temporary tensor to store quantized and packed input
   TmpTensor packed_int_input(
       &graph,
       graph.sizes_of(fp_input),
       vkapi::kInt8x4,
       utils::kBuffer,
-      utils::kPackedInt8_4H4W);
+      dq8ca_rowmajor_a ? utils::kPackedInt8_4W : utils::kPackedInt8_4H4W);
 
   // Non dynamically quantized input case
   if (!input_quant_config.is_dynamic) {
@@ -1084,15 +1149,27 @@ void quantized_linear_impl(
       utils::kBuffer,
       utils::kWidthPacked);
 
-  add_quantize_and_pack_4h4w_with_group_sums_node(
-      graph,
-      input_quant_config,
-      fp_input,
-      int_input_sums,
-      packed_input_scale,
-      packed_input_zp,
-      packed_int_input,
-      group_size);
+  if (dq8ca_rowmajor_a) {
+    add_quantize_and_pack_4w_with_group_sums_node(
+        graph,
+        input_quant_config,
+        fp_input,
+        int_input_sums,
+        packed_input_scale,
+        packed_input_zp,
+        packed_int_input,
+        group_size);
+  } else {
+    add_quantize_and_pack_4h4w_with_group_sums_node(
+        graph,
+        input_quant_config,
+        fp_input,
+        int_input_sums,
+        packed_input_scale,
+        packed_input_zp,
+        packed_int_input,
+        group_size);
+  }
 
   add_linear_dqa_qw_node(
       graph,
