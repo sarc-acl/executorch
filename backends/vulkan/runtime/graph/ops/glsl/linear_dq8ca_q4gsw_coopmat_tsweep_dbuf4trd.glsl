@@ -7,6 +7,19 @@
  */
 
 /*
+ * DIAGNOSTIC BISECT variant #2 of linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr.
+ *
+ * A does not go through LDS at all: each subgroup coopMatLoads the A tiles it
+ * needs straight from the row-major global buffer inside the MMA loop. This
+ * isolates coopMatLoad-from-StorageBuffer-int[] from
+ * coopMatStore-into-Workgroup-uint[]: dbuf4trm (manual staging) already proved
+ * the packer and layout correct, so if this variant passes the load is fine
+ * and the store is the culprit, and if it fails the load is.
+ *
+ * Ash_int8 is left allocated but unused (keeps the diff minimal; costs LDS).
+ *
+ * Original dbuf4tr header follows.
+ *
  * "-tr" (coopmat-staged A) variant of linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4.
  *
  * Ported from shmem_double_buf4-tr.comp on vk_cooperative_matrix_perf's
@@ -35,8 +48,9 @@
  *     coopMatLoad. (ColumnMajor is out on contiguity too: a uint packs 4
  *     K-values, not 4 M-values.)
  *
- * So this shader binds t_packed_int8_input as a SCALAR int8_t array in the
- * kPackedInt8_4W layout -- plain row-major int8, row stride K -- produced by quantize_and_pack_4w_with_group_sums.glsl.
+ * So this shader binds t_packed_int8_input as a SCALAR int array in the
+ * kPackedInt8_4W layout -- plain row-major int8, 4 K-values per int32,
+ * row stride K4 -- produced by quantize_and_pack_4w_with_group_sums.glsl.
  * QuantizedLinear.cpp allocates that layout (and dispatches that packer)
  * only when the active dq8ca variant is a "tsweep_dbuf4tr_t..." token AND
  * the coopmat gate passes, so the tiled fallback never sees the wrong
@@ -229,10 +243,6 @@ void main() {
   const uint N = uint(output_sizes.x);
   const uint N4 = (N + 3u) / 4u;
   const uint nblocks_x_A = (K + 3u) >> 2u;
-  // A row stride in INT8 elements (the binding's element type). Derived from
-  // nblocks_x_A rather than K directly so it matches the packer's
-  // `m_row * K4 + k4` addressing exactly; K %% 4 == 0 makes them equal.
-  const uint a_row_stride_i8 = nblocks_x_A * 4u;
 
 #ifdef WEIGHT_INT4
   const uint num_groups = uint(num_groups_arg);
@@ -290,8 +300,7 @@ void main() {
   // indices into it are [[unroll]]-resolved compile-time constants, never
   // dynamic -- dynamic indexing of a coopmat array is exactly the construct
   // the Xclipse/AMD-PAL compiler has miscompiled before.
-  coopmat<int8_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA>
-      temp_A[A_TILES_PER_SG];
+  // (temp_A removed)
 #ifdef WEIGHT_INT4
   ivec4 temp_B[B_SLOTS_PER_THREAD];
   int   temp_wsum;
@@ -345,20 +354,7 @@ void main() {
   // dbuf4: prefetch chunk 0 into temp registers, THEN store to slice 0 (no
   // barrier here -- the main loop's first iteration barriers before
   // reading slice 0).
-  [[unroll]] for (uint s = 0; s < A_TILES_PER_SG; ++s) {
-    const uint t = gl_SubgroupID + s * NUM_SUBGROUPS;
-    if (t < NUM_A_TILES) {
-      const uint tm = t / A_TILES_K;
-      const uint tk = t % A_TILES_K;
-      // Offset and stride are in ARRAY ELEMENTS, which for this binding are
-      // int8 -- i.e. the natural row-major coordinates.
-      coopMatLoad(
-          temp_A[s], t_packed_int8_input,
-          (tile_m_start + tm * MMA_M) * a_row_stride_i8 + tk * MMA_K,
-          a_row_stride_i8,
-          gl_CooperativeMatrixLayoutRowMajor);
-    }
-  }
+  // (A prefetch removed: loaded directly in the MMA loop)
 #ifdef WEIGHT_INT4
   [[unroll]] for (uint si = 0; si < B_SLOTS_PER_THREAD; ++si) {
     const uint slot = gl_LocalInvocationID.x + si * WG_SIZE;
@@ -383,18 +379,7 @@ void main() {
 #endif
   {
     // store chunk 0 -> slice 0
-    [[unroll]] for (uint s = 0; s < A_TILES_PER_SG; ++s) {
-      const uint t = gl_SubgroupID + s * NUM_SUBGROUPS;
-      if (t < NUM_A_TILES) {
-        const uint tm = t / A_TILES_K;
-        const uint tk = t % A_TILES_K;
-        coopMatStore(
-            temp_A[s], Ash_int8,
-            tk * A_SLAB_U32 + (tm * MMA_M) * A_STRIDE_U32,
-            A_STRIDE_U32,
-            gl_CooperativeMatrixLayoutRowMajor);
-      }
-    }
+    // (A LDS store removed)
 #ifdef WEIGHT_INT4
     [[unroll]] for (uint si = 0; si < B_SLOTS_PER_THREAD; ++si) {
       const uint slot = gl_LocalInvocationID.x + si * WG_SIZE;
@@ -459,19 +444,7 @@ void main() {
       // --- 2. prefetch chunk+1 -> temp ---
       if (has_next) {
         const uint chunkK_nxt = (chunk + 1u) * WG_TILE_K;
-        [[unroll]] for (uint s = 0; s < A_TILES_PER_SG; ++s) {
-          const uint t = gl_SubgroupID + s * NUM_SUBGROUPS;
-          if (t < NUM_A_TILES) {
-            const uint tm = t / A_TILES_K;
-            const uint tk = t % A_TILES_K;
-            coopMatLoad(
-                temp_A[s], t_packed_int8_input,
-                (tile_m_start + tm * MMA_M) * a_row_stride_i8 + chunkK_nxt +
-                    tk * MMA_K,
-                a_row_stride_i8,
-                gl_CooperativeMatrixLayoutRowMajor);
-          }
-        }
+        // (A prefetch removed)
 #ifdef WEIGHT_INT4
         [[unroll]] for (uint si = 0; si < B_SLOTS_PER_THREAD; ++si) {
           const uint slot = gl_LocalInvocationID.x + si * WG_SIZE;
@@ -511,10 +484,15 @@ void main() {
         coopmat<int8_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA> matA[MMAS_PER_SG_M];
         [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
           const uint row_a = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
+          // Offsets/strides are in int8 elements, matching the int8_t
+          // binding. With A bound as int[] instead, this load silently
+          // produced wrong results regardless of which unit was used.
+          const uint a_row_stride_i8 = nblocks_x_A * 4u;  // int8 elements
           coopMatLoad(
-              matA[i], Ash_int8,
-              slab_a_base_u32 + row_a * A_STRIDE_U32,
-              A_STRIDE_U32,
+              matA[i], t_packed_int8_input,
+              (tile_m_start + row_a) * a_row_stride_i8 +
+                  (chunk * WG_TILE_K + k * MMA_K),
+              a_row_stride_i8,
               gl_CooperativeMatrixLayoutRowMajor);
         }
 
@@ -534,18 +512,7 @@ void main() {
 
       // --- 4. store temp (chunk+1) -> nxt slice ---
       if (has_next) {
-        [[unroll]] for (uint s = 0; s < A_TILES_PER_SG; ++s) {
-          const uint t = gl_SubgroupID + s * NUM_SUBGROUPS;
-          if (t < NUM_A_TILES) {
-            const uint tm = t / A_TILES_K;
-            const uint tk = t % A_TILES_K;
-            coopMatStore(
-                temp_A[s], Ash_int8,
-                nxt_a + tk * A_SLAB_U32 + (tm * MMA_M) * A_STRIDE_U32,
-                A_STRIDE_U32,
-                gl_CooperativeMatrixLayoutRowMajor);
-          }
-        }
+        // (A LDS store removed)
 #ifdef WEIGHT_INT4
         [[unroll]] for (uint si = 0; si < B_SLOTS_PER_THREAD; ++si) {
           const uint slot = gl_LocalInvocationID.x + si * WG_SIZE;

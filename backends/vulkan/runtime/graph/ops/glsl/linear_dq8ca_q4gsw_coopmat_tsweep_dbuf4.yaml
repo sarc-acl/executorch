@@ -2162,3 +2162,27 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4:
       SG_GRID_X: 1
       SG_GRID_Y: 8
       SUBGROUP_SIZE: 32
+    # Reference-matching tile: shmem_double_buf4-tr.comp's own geometry
+    # (TILE 128x128x16, WORKGROUP_WIDTH_IN_SUBGROUPS=4 x DBUF4_GRID_HEIGHT=2,
+    # wave32) => 8 subgroups / 256 threads, MMAS_PER_SG 4x2. Added so our
+    # kernel can be A/B'd against the teammate's PAL capture at the same
+    # tile and the same 2048x1024x4096 shape (8b wk_wv prefill).
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4_t128x128k16g42s32_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4_t128x128k16g42s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32

@@ -7,6 +7,19 @@
  */
 
 /*
+ * DIAGNOSTIC BISECT variant of linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr.
+ *
+ * Identical to dbuf4tr -- same ROW-MAJOR kPackedInt8_4W activation layout, same
+ * quantize_and_pack_4w_with_group_sums producer, same LDS layout, same loop --
+ * EXCEPT that A staging is done with plain scalar loads/stores instead of
+ * coopMatLoad/coopMatStore. It exists to split a dbuf4tr correctness failure
+ * into "the row-major packer/layout is wrong" (this variant also fails) vs
+ * "the coopmat staging is wrong" (this variant passes).
+ *
+ * Not a perf candidate; delete once dbuf4tr is understood.
+ *
+ * Original dbuf4tr header follows.
+ *
  * "-tr" (coopmat-staged A) variant of linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4.
  *
  * Ported from shmem_double_buf4-tr.comp on vk_cooperative_matrix_perf's
@@ -35,8 +48,9 @@
  *     coopMatLoad. (ColumnMajor is out on contiguity too: a uint packs 4
  *     K-values, not 4 M-values.)
  *
- * So this shader binds t_packed_int8_input as a SCALAR int8_t array in the
- * kPackedInt8_4W layout -- plain row-major int8, row stride K -- produced by quantize_and_pack_4w_with_group_sums.glsl.
+ * So this shader binds t_packed_int8_input as a SCALAR int array in the
+ * kPackedInt8_4W layout -- plain row-major int8, 4 K-values per int32,
+ * row stride K4 -- produced by quantize_and_pack_4w_with_group_sums.glsl.
  * QuantizedLinear.cpp allocates that layout (and dispatches that packer)
  * only when the active dq8ca variant is a "tsweep_dbuf4tr_t..." token AND
  * the coopmat gate passes, so the tiled fallback never sees the wrong
@@ -84,11 +98,6 @@
 #extension GL_KHR_shader_subgroup_basic : enable
 #extension GL_EXT_shader_explicit_arithmetic_types : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
-// 8-bit SSBO access: A is bound as a scalar int8_t array so that the
-// coopMatLoad below has a MATCHING component type. Loading a
-// coopmat<int8_t> from a 32-bit int[] SSBO is what broke the first
-// attempt (see header).
-#extension GL_EXT_shader_8bit_storage : require
 #extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
 #extension GL_EXT_control_flow_attributes : enable
 
@@ -119,19 +128,11 @@ ${layout_declare_tensor(B, "w", "t_output",              "half", IO_STORAGE, is_
 // t_packed_int8_input -- but stays declared so the binding layout matches the
 // dispatch site. It tracks IO_STORAGE so the two IO tensors stay consistent.
 ${layout_declare_tensor(B, "r", "t_input",               "half", IO_STORAGE, is_scalar_array=False)}
-// ROW-MAJOR (kPackedInt8_4W) packed activations, bound as a scalar int8_t
-// array (row stride = K int8). Two things differ from dbuf4, which takes the
-// 4h4w ivec4 block layout:
-//   1. row-major, so a coopMatLoad can address it at all;
-//   2. element type int8_t, MATCHING the coopmat component type.
-// (2) is not cosmetic. Binding the same memory as int[] and loading a
-// coopmat<int8_t> from it -- a type mismatch that demonstrably works for the
-// Workgroup storage class, which is how the MMA loop reads Ash_int8 below --
-// silently produces wrong results from a StorageBuffer on this driver.
-// The reference shmem_double_buf4-tr.comp sidesteps it the same way: its
-// buffer_reference is declared `A_TYPE x[]`, i.e. int8_t for the int8 config.
-// All A offsets/strides here are therefore in INT8 elements, not int.
-${layout_declare_tensor(B, "r", "t_packed_int8_input",   "int8", "buffer", is_scalar_array=True)}
+// ROW-MAJOR (kPackedInt8_4W) packed activations: scalar int array, each
+// element holding 4 K-contiguous int8, row stride K4 = K/4. This is the one
+// binding that differs from dbuf4 (which takes the 4h4w ivec4 block layout);
+// it is what makes the coopMatLoad-based A staging below addressable.
+${layout_declare_tensor(B, "r", "t_packed_int8_input",   "int",  "buffer", is_scalar_array=True)}
 ${layout_declare_tensor(B, "r", "t_int8_input_sums",     "int",  "buffer", is_scalar_array=True)}
 ${layout_declare_tensor(B, "r", "t_int8_input_scales",   "half", "texture3d")}
 ${layout_declare_tensor(B, "r", "t_int8_input_zps",      "int8", "texture3d")}
@@ -229,10 +230,6 @@ void main() {
   const uint N = uint(output_sizes.x);
   const uint N4 = (N + 3u) / 4u;
   const uint nblocks_x_A = (K + 3u) >> 2u;
-  // A row stride in INT8 elements (the binding's element type). Derived from
-  // nblocks_x_A rather than K directly so it matches the packer's
-  // `m_row * K4 + k4` addressing exactly; K %% 4 == 0 makes them equal.
-  const uint a_row_stride_i8 = nblocks_x_A * 4u;
 
 #ifdef WEIGHT_INT4
   const uint num_groups = uint(num_groups_arg);
@@ -258,7 +255,12 @@ void main() {
 
   const uint K_BLOCKS_PER_CHUNK = WG_TILE_K >> 2u;
 
-  // --- A staging tile map: one MMA_M x MMA_K coopmat tile per subgroup per
+  // --- A staging slot map (DIAGNOSTIC): one row-major int (4 K-contiguous
+  //     int8 of ONE row) per thread per slot. Deliberately NOT coopmat.
+  const uint A_TOTAL_SLOTS      = WG_TILE_M * K_BLOCKS_PER_CHUNK;
+  const uint A_SLOTS_PER_THREAD = (A_TOTAL_SLOTS + WG_SIZE - 1u) / WG_SIZE;
+
+  // --- (unused in this variant) A staging tile map: one MMA_M x MMA_K coopmat tile per subgroup per
   //     slot. A chunk holds A_TILES_M x A_TILES_K such tiles; they are dealt
   //     round-robin across the NUM_SUBGROUPS subgroups, so every subgroup
   //     participates (dbuf4's per-thread map leaves WG_SIZE -
@@ -290,8 +292,7 @@ void main() {
   // indices into it are [[unroll]]-resolved compile-time constants, never
   // dynamic -- dynamic indexing of a coopmat array is exactly the construct
   // the Xclipse/AMD-PAL compiler has miscompiled before.
-  coopmat<int8_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA>
-      temp_A[A_TILES_PER_SG];
+  int temp_A[A_SLOTS_PER_THREAD];
 #ifdef WEIGHT_INT4
   ivec4 temp_B[B_SLOTS_PER_THREAD];
   int   temp_wsum;
@@ -345,18 +346,13 @@ void main() {
   // dbuf4: prefetch chunk 0 into temp registers, THEN store to slice 0 (no
   // barrier here -- the main loop's first iteration barriers before
   // reading slice 0).
-  [[unroll]] for (uint s = 0; s < A_TILES_PER_SG; ++s) {
-    const uint t = gl_SubgroupID + s * NUM_SUBGROUPS;
-    if (t < NUM_A_TILES) {
-      const uint tm = t / A_TILES_K;
-      const uint tk = t % A_TILES_K;
-      // Offset and stride are in ARRAY ELEMENTS, which for this binding are
-      // int8 -- i.e. the natural row-major coordinates.
-      coopMatLoad(
-          temp_A[s], t_packed_int8_input,
-          (tile_m_start + tm * MMA_M) * a_row_stride_i8 + tk * MMA_K,
-          a_row_stride_i8,
-          gl_CooperativeMatrixLayoutRowMajor);
+  [[unroll]] for (uint si = 0; si < A_SLOTS_PER_THREAD; ++si) {
+    const uint slot = gl_LocalInvocationID.x + si * WG_SIZE;
+    if (slot < A_TOTAL_SLOTS) {
+      const uint row = slot / K_BLOCKS_PER_CHUNK;
+      const uint k4 = slot % K_BLOCKS_PER_CHUNK;
+      temp_A[si] =
+          t_packed_int8_input[(tile_m_start + row) * nblocks_x_A + k4];
     }
   }
 #ifdef WEIGHT_INT4
@@ -383,16 +379,16 @@ void main() {
 #endif
   {
     // store chunk 0 -> slice 0
-    [[unroll]] for (uint s = 0; s < A_TILES_PER_SG; ++s) {
-      const uint t = gl_SubgroupID + s * NUM_SUBGROUPS;
-      if (t < NUM_A_TILES) {
-        const uint tm = t / A_TILES_K;
-        const uint tk = t % A_TILES_K;
-        coopMatStore(
-            temp_A[s], Ash_int8,
-            tk * A_SLAB_U32 + (tm * MMA_M) * A_STRIDE_U32,
-            A_STRIDE_U32,
-            gl_CooperativeMatrixLayoutRowMajor);
+    [[unroll]] for (uint si = 0; si < A_SLOTS_PER_THREAD; ++si) {
+      const uint slot = gl_LocalInvocationID.x + si * WG_SIZE;
+      if (slot < A_TOTAL_SLOTS) {
+        const uint row = slot / K_BLOCKS_PER_CHUNK;
+        const uint k4 = slot % K_BLOCKS_PER_CHUNK;
+        const uint slab_idx = k4 / (MMA_K >> 2u);
+        const uint k_uint_in_slab = k4 % (MMA_K >> 2u);
+        Ash_int8
+            [slab_idx * A_SLAB_U32 + row * A_STRIDE_U32 + k_uint_in_slab] =
+                uint(temp_A[si]);
       }
     }
 #ifdef WEIGHT_INT4
@@ -459,17 +455,13 @@ void main() {
       // --- 2. prefetch chunk+1 -> temp ---
       if (has_next) {
         const uint chunkK_nxt = (chunk + 1u) * WG_TILE_K;
-        [[unroll]] for (uint s = 0; s < A_TILES_PER_SG; ++s) {
-          const uint t = gl_SubgroupID + s * NUM_SUBGROUPS;
-          if (t < NUM_A_TILES) {
-            const uint tm = t / A_TILES_K;
-            const uint tk = t % A_TILES_K;
-            coopMatLoad(
-                temp_A[s], t_packed_int8_input,
-                (tile_m_start + tm * MMA_M) * a_row_stride_i8 + chunkK_nxt +
-                    tk * MMA_K,
-                a_row_stride_i8,
-                gl_CooperativeMatrixLayoutRowMajor);
+        [[unroll]] for (uint si = 0; si < A_SLOTS_PER_THREAD; ++si) {
+          const uint slot = gl_LocalInvocationID.x + si * WG_SIZE;
+          if (slot < A_TOTAL_SLOTS) {
+            const uint row = slot / K_BLOCKS_PER_CHUNK;
+            const uint k4 = slot % K_BLOCKS_PER_CHUNK;
+            temp_A[si] = t_packed_int8_input
+                [(tile_m_start + row) * nblocks_x_A + (chunkK_nxt >> 2u) + k4];
           }
         }
 #ifdef WEIGHT_INT4
@@ -534,16 +526,16 @@ void main() {
 
       // --- 4. store temp (chunk+1) -> nxt slice ---
       if (has_next) {
-        [[unroll]] for (uint s = 0; s < A_TILES_PER_SG; ++s) {
-          const uint t = gl_SubgroupID + s * NUM_SUBGROUPS;
-          if (t < NUM_A_TILES) {
-            const uint tm = t / A_TILES_K;
-            const uint tk = t % A_TILES_K;
-            coopMatStore(
-                temp_A[s], Ash_int8,
-                nxt_a + tk * A_SLAB_U32 + (tm * MMA_M) * A_STRIDE_U32,
-                A_STRIDE_U32,
-                gl_CooperativeMatrixLayoutRowMajor);
+        [[unroll]] for (uint si = 0; si < A_SLOTS_PER_THREAD; ++si) {
+          const uint slot = gl_LocalInvocationID.x + si * WG_SIZE;
+          if (slot < A_TOTAL_SLOTS) {
+            const uint row = slot / K_BLOCKS_PER_CHUNK;
+            const uint k4 = slot % K_BLOCKS_PER_CHUNK;
+            const uint slab_idx = k4 / (MMA_K >> 2u);
+            const uint k_uint_in_slab = k4 % (MMA_K >> 2u);
+            Ash_int8
+                [nxt_a + slab_idx * A_SLAB_U32 + row * A_STRIDE_U32 +
+                 k_uint_in_slab] = uint(temp_A[si]);
           }
         }
 #ifdef WEIGHT_INT4

@@ -6,7 +6,7 @@
 
 # "-tr" (coopmat-staged A) variants of the int8 dq8ca_q4gsw coopmat kernel,
 # ported from shmem_double_buf4-tr.comp (vk_cooperative_matrix_perf,
-# gemm-ubm). linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr.glsl is a fork of
+# gemm-ubm). linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4trm.glsl is a fork of
 # linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4.glsl with ONLY the A-side global ->
 # LDS staging swapped from a per-thread ivec4 copy to
 # coopMatLoad(global) -> coopmat<> -> coopMatStore(LDS). B staging is
@@ -20,7 +20,7 @@
 # the coopmat gate passes -- see dq8ca_wants_rowmajor_int8_input().
 #
 # Selected via
-# ET_VK_DQ8CA_COOPMAT_VARIANT=tsweep_dbuf4tr_t<M>x<N>k<K>g<SGX><SGY>s<sub>.
+# ET_VK_DQ8CA_COOPMAT_VARIANT=tsweep_dbuf4trm_t<M>x<N>k<K>g<SGX><SGY>s<sub>.
 # NOT the shipped default: unvalidated until it passes repeated
 # test_llama_microbench --correctness-only runs (a single pass is not proof --
 # see dq8ca_coopmat_variant()'s comment).
@@ -29,7 +29,7 @@
 # WG_TILE_K % MMA_K == 0 (both hold for every entry below). The seed set is
 # deliberately small -- widen it from a sweep once correctness is established.
 
-linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr:
+linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4trm:
   parameter_names_with_default_values:
     PRECISION: highp
     HAS_BIAS: false
@@ -48,7 +48,7 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr:
   shader_variants:
     # production 8da4w tile (dbuf2/dbuf4 default) -- the A/B anchor
     #   A tiles/chunk = 8, subgroups = 2 -> A_TILES_PER_SG = 4
-    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr_t64x32k32g12s64_buffer_texture2d_half
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4trm_t64x32k32g12s64_buffer_texture2d_half
       WEIGHT_NBITS: 4
       WEIGHT_STORAGE: texture2d
       WG_TILE_M: 64
@@ -57,7 +57,7 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr:
       SG_GRID_X: 1
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 64
-    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr_t64x32k32g12s64_texture3d_texture2d_half
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4trm_t64x32k32g12s64_texture3d_texture2d_half
       IO_STORAGE: texture3d
       WEIGHT_NBITS: 4
       WEIGHT_STORAGE: texture2d
@@ -67,7 +67,7 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr:
       SG_GRID_X: 1
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 64
-    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr_t64x32k32g12s64_buffer_buffer_half
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4trm_t64x32k32g12s64_buffer_buffer_half
       WEIGHT_NBITS: 4
       WEIGHT_STORAGE: buffer
       WG_TILE_M: 64
@@ -78,7 +78,7 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr:
       SUBGROUP_SIZE: 64
     # q4gsw production geometry; 8 A-tiles over 4 subgroups
     #   A tiles/chunk = 8, subgroups = 4 -> A_TILES_PER_SG = 2
-    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr_t128x128k16g22s32_buffer_texture2d_half
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4trm_t128x128k16g22s32_buffer_texture2d_half
       WEIGHT_NBITS: 4
       WEIGHT_STORAGE: texture2d
       WG_TILE_M: 128
@@ -87,7 +87,7 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr:
       SG_GRID_X: 2
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 32
-    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr_t128x128k16g22s32_texture3d_texture2d_half
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4trm_t128x128k16g22s32_texture3d_texture2d_half
       IO_STORAGE: texture3d
       WEIGHT_NBITS: 4
       WEIGHT_STORAGE: texture2d
@@ -99,7 +99,7 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr:
       SUBGROUP_SIZE: 32
     # 1 A-tile per subgroup (A_TILES_PER_SG == 1, no leftover slot)
     #   A tiles/chunk = 8, subgroups = 8 -> A_TILES_PER_SG = 1
-    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr_t64x64k32g24s32_buffer_texture2d_half
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4trm_t64x64k32g24s32_buffer_texture2d_half
       WEIGHT_NBITS: 4
       WEIGHT_STORAGE: texture2d
       WG_TILE_M: 64
@@ -108,7 +108,7 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr:
       SG_GRID_X: 2
       SG_GRID_Y: 4
       SUBGROUP_SIZE: 32
-    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr_t64x64k32g24s32_texture3d_texture2d_half
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4trm_t64x64k32g24s32_texture3d_texture2d_half
       IO_STORAGE: texture3d
       WEIGHT_NBITS: 4
       WEIGHT_STORAGE: texture2d
@@ -120,7 +120,7 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr:
       SUBGROUP_SIZE: 32
     # 16 A-tiles over 8 subgroups
     #   A tiles/chunk = 16, subgroups = 8 -> A_TILES_PER_SG = 2
-    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr_t128x64k32g24s32_buffer_texture2d_half
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4trm_t128x64k32g24s32_buffer_texture2d_half
       WEIGHT_NBITS: 4
       WEIGHT_STORAGE: texture2d
       WG_TILE_M: 128
@@ -129,7 +129,7 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr:
       SG_GRID_X: 2
       SG_GRID_Y: 4
       SUBGROUP_SIZE: 32
-    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr_t128x64k32g24s32_texture3d_texture2d_half
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4trm_t128x64k32g24s32_texture3d_texture2d_half
       IO_STORAGE: texture3d
       WEIGHT_NBITS: 4
       WEIGHT_STORAGE: texture2d
@@ -144,7 +144,7 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr:
     # wave32) => 8 subgroups / 256 threads, MMAS_PER_SG 4x2. Added so our
     # kernel can be A/B'd against the teammate's PAL capture at the same
     # tile and the same 2048x1024x4096 shape (8b wk_wv prefill).
-    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr_t128x128k16g42s32_buffer_texture2d_half
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4trm_t128x128k16g42s32_buffer_texture2d_half
       WEIGHT_NBITS: 4
       WEIGHT_STORAGE: texture2d
       WG_TILE_M: 128
@@ -153,7 +153,7 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr:
       SG_GRID_X: 4
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 32
-    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr_t128x128k16g42s32_texture3d_texture2d_half
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4trm_t128x128k16g42s32_texture3d_texture2d_half
       IO_STORAGE: texture3d
       WEIGHT_NBITS: 4
       WEIGHT_STORAGE: texture2d
@@ -167,7 +167,7 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr:
     # subgroup grid at wave32 (workgroupSize=256). Added to compare our kernel
     # against their reference dbuf4 number (~1973us) at the same geometry and
     # the same shape (M2048 K4096 N1024 == 8b wk_wv prefill).
-    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr_t128x128k64g42s32_buffer_texture2d_half
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4trm_t128x128k64g42s32_buffer_texture2d_half
       WEIGHT_NBITS: 4
       WEIGHT_STORAGE: texture2d
       WG_TILE_M: 128
@@ -176,7 +176,7 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr:
       SG_GRID_X: 4
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 32
-    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr_t128x128k64g42s32_texture3d_texture2d_half
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4trm_t128x128k64g42s32_texture3d_texture2d_half
       IO_STORAGE: texture3d
       WEIGHT_NBITS: 4
       WEIGHT_STORAGE: texture2d

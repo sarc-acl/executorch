@@ -1,0 +1,187 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# "zp-hoisted" variants of the int8 dq8ca_q4gsw coopmat kernel: identical to
+# tsweep_dbuf4 except the activation zero-point correction and the per-row
+# activation scale are applied once after the group loop instead of once per
+# quantization group. No new binding, no export-format change -- the weight-side
+# correction sum is derived in the prologue from tensors already bound.
+#
+# Selected via
+# ET_VK_DQ8CA_COOPMAT_VARIANT=tsweep_dbuf4zpn_t<M>x<N>k<K>g<SGX><SGY>s<sub>.
+# NOT the shipped default until it passes repeated correctness runs.
+
+linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpn:
+  parameter_names_with_default_values:
+    PRECISION: highp
+    HAS_BIAS: false
+    IO_STORAGE: buffer
+    WEIGHT_NBITS: 4
+    WEIGHT_STORAGE: texture2d
+    MMA_M: 16
+    MMA_N: 16
+    MMA_K: 16
+    WG_TILE_M: 64
+    WG_TILE_N: 32
+    WG_TILE_K: 32
+    SG_GRID_X: 1
+    SG_GRID_Y: 2
+    SUBGROUP_SIZE: 64
+  shader_variants:
+    # production tile -- the A/B anchor against the 1.3 baseline
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpn_t64x32k32g12s64_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpn_t64x32k32g12s64_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpn_t64x32k32g12s64_buffer_buffer_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: buffer
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64
+    # NOTE: t128x128k64g42s32 was seeded here and then REMOVED. Its A-staging
+    # thread map cannot cover its blocks: A_ACTIVE_THREADS = (128/4)*(64/4) =
+    # 512 but WG_SIZE = 4*2*32 = 256, so half of A is never staged and the
+    # kernel is numerically wrong (measured 12/12 correctness failures on the
+    # dbuf4 equivalent). Use g44s32 for that tile instead -- 4*4*32 = 512 = A.
+    # deep K + big tile; the reference's winning geometry, A map valid at 512=512
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpn_t128x128k64g44s32_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 64
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpn_t128x128k64g44s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 64
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+    # task 5.1's explicit ask
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpn_t128x128k32g42s32_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpn_t128x128k32g42s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    # same tile, more subgroups -> MMAS 2x2 instead of 4x2 (less accumulator pressure)
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpn_t128x128k32g44s32_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpn_t128x128k32g44s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+    # moderate step up from the shipped 64x32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpn_t128x64k32g42s32_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpn_t128x64k32g42s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    # small step up
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpn_t64x64k32g22s32_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpn_t64x64k32g22s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    # big tile, shallow K -- isolates tile area from K depth
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpn_t128x128k16g42s32_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpn_t128x128k16g42s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32

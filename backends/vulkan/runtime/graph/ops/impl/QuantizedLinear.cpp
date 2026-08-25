@@ -100,6 +100,17 @@ static const char* const kTsweepPrefixes[] = {
     // '_', so prefix order here does not matter. dq8ca only -- there is no
     // q4gsw "-tr" shader.
     "tsweep_dbuf4tr_t",
+    // DIAGNOSTIC: same row-major layout as "-tr" but with scalar A staging,
+    // used to bisect a dbuf4tr correctness failure. Delete with the shader.
+    "tsweep_dbuf4trm_t",
+    "tsweep_dbuf4trd_t",
+    // zp-hoisted: zero-point + activation-scale correction applied once
+    // after the group loop instead of once per quantization group.
+    "tsweep_dbuf4zp_t",
+    // zp-hoisted + byte-parallel int4->int8 widening.
+    "tsweep_dbuf4zpn_t",
+    // + templated B LDS skew (intervention A).
+    "tsweep_dbuf4zpb_t",
     "tsweep_t",
 };
 
@@ -438,7 +449,10 @@ static bool can_use_q4gsw_coopmat(
 // because no coopMatLoad can address 4h4w (its component index selects a row,
 // making the flat index non-affine in the row).
 static bool dq8ca_variant_wants_rowmajor_a() {
-  return dq8ca_coopmat_variant().rfind("tsweep_dbuf4tr_t", 0) == 0;
+  const std::string& v = dq8ca_coopmat_variant();
+  return v.rfind("tsweep_dbuf4tr_t", 0) == 0 ||
+      v.rfind("tsweep_dbuf4trm_t", 0) == 0 ||
+      v.rfind("tsweep_dbuf4trd_t", 0) == 0;
 }
 
 // Mirrors the coopmat branch of pick_linear_dqa_qw_shader() so graph-build time
