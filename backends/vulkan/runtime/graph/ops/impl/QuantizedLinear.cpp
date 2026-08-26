@@ -89,7 +89,25 @@ constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {64, 32, 32, 128, 2};
 // variant (1-4); "tsweep_t..." is the original (production winner's own)
 // namespace. Unset/unrecognized = shipped dispatch, unchanged. The five
 // prefixes are mutually exclusive by construction (position 7 is 'd' vs 't').
-static const char* const kTsweepPrefixes[] = {
+// Prefix lists are FAMILY-SCOPED. They used to be one shared kTsweepPrefixes
+// array consulted by both selectors, which meant an 8da4w-only token supplied
+// on ET_VK_Q4GSW_COOPMAT_VARIANT was "recognized", passed through, and then
+// died at the later shader-lookup throw with a message that named the missing
+// kernel rather than the actual mistake. Splitting them lets a wrong-family
+// token be rejected here, by name.
+//
+// dbuf1-4 and the bare "tsweep_t" namespace exist for both families; the
+// -tr/-zp/-zpn/-zpb variants are dq8ca-only (there is no q4gsw shader for
+// any of them).
+static const char* const kQ4gswTsweepPrefixes[] = {
+    "tsweep_dbuf1_t",
+    "tsweep_dbuf2_t",
+    "tsweep_dbuf3_t",
+    "tsweep_dbuf4_t",
+    "tsweep_t",
+};
+
+static const char* const kDq8caTsweepPrefixes[] = {
     "tsweep_dbuf1_t",
     "tsweep_dbuf2_t",
     "tsweep_dbuf3_t",
@@ -97,8 +115,7 @@ static const char* const kTsweepPrefixes[] = {
     // "-tr": dbuf4's loop with the A-side global -> LDS staging swapped to
     // coopMatLoad/coopMatStore (ported from shmem_double_buf4-tr.comp). Stays
     // mutually exclusive with "tsweep_dbuf4_t" because position 12 is 't' vs
-    // '_', so prefix order here does not matter. dq8ca only -- there is no
-    // q4gsw "-tr" shader.
+    // '_', so prefix order here does not matter.
     "tsweep_dbuf4tr_t",
     // DIAGNOSTIC: same row-major layout as "-tr" but with scalar A staging,
     // used to bisect a dbuf4tr correctness failure. Delete with the shader.
@@ -109,18 +126,59 @@ static const char* const kTsweepPrefixes[] = {
     "tsweep_dbuf4zp_t",
     // zp-hoisted + byte-parallel int4->int8 widening.
     "tsweep_dbuf4zpn_t",
-    // + templated B LDS skew (intervention A).
+    // + templated B LDS skew (intervention A). MEASURED-NEGATIVE: the
+    // bank-conflict skew is worth far more than the multiplies it costs.
     "tsweep_dbuf4zpb_t",
+    // zpn + ARITHMETIC nibble-parity select instead of a compared select
+    // (intervention E of dq8ca-prefill-stall-reduction). MEASURED-NEGATIVE:
+    // +2.87%; the variable shift is serially dependent on parity where the
+    // ternary's two constant shifts were not.
+    "tsweep_dbuf4zpx_t",
+    // zpn + loop-invariant staging index arithmetic hoisted out of the group
+    // loop (intervention F of dq8ca-prefill-stall-reduction).
+    "tsweep_dbuf4zpi_t",
+    // zpi + compile-time elision of the statically-true a_active guard
+    // (intervention G of dq8ca-prefill-stall-reduction).
+    "tsweep_dbuf4zpg_t",
+    // zpn + the a_active elision alone, no index hoist -- isolates G from F.
+    "tsweep_dbuf4zpk_t",
+    // (dq8ca-dequant-unpack-ablation and its 2026-08-26 follow-ups on
+    // xgpusw-debug08 -- abl_nodq/abl_nonib/abl_both/abl_nolds/abl_bconst/
+    // abl_bcont/abl_breadc/str4/str6/str8/bcoal -- were measurement-only
+    // variants deleted once each attribution was recorded; see
+    // openspec/changes/dq8ca-dequant-unpack-ablation/results/. Two real
+    // findings from that investigation WERE promoted to the shipped default:
+    // see the B_STRIDE_U32 comment (the LDS skew removal) and the
+    // BCoalIndex/bcoal_index comment (the coalesced B-store rewrite) in
+    // linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4.glsl.)
     "tsweep_t",
 };
 
-static bool is_recognized_coopmat_variant_token(const std::string& v) {
-  for (const char* prefix : kTsweepPrefixes) {
+// (The measurement-only ablation variants and their prefix list lived here
+// during dq8ca-prefill-stall-reduction and were deleted together with their
+// shaders once the attribution was recorded -- leaving numerically-wrong
+// variants compiled into spv.cpp is a standing hazard. What they measured is in
+// openspec/changes/dq8ca-prefill-stall-reduction/results/attribution.md.)
+
+// Returns the matched prefix's length, or npos.
+template <size_t N>
+static size_t match_prefix_len(
+    const std::string& v,
+    const char* const (&list)[N]) {
+  for (const char* prefix : list) {
     if (v.rfind(prefix, 0) == 0) {
-      return true;
+      return std::strlen(prefix);
     }
   }
-  return false;
+  return std::string::npos;
+}
+
+static bool is_q4gsw_shippable_token(const std::string& v) {
+  return match_prefix_len(v, kQ4gswTsweepPrefixes) != std::string::npos;
+}
+
+static bool is_dq8ca_shippable_token(const std::string& v) {
+  return match_prefix_len(v, kDq8caTsweepPrefixes) != std::string::npos;
 }
 
 static const std::string& q4gsw_coopmat_variant() {
@@ -140,18 +198,41 @@ static const std::string& q4gsw_coopmat_variant() {
       return std::string("tsweep_dbuf4_t128x128k16g22s32");
     }
     const std::string v(env);
-    if (is_recognized_coopmat_variant_token(v)) {
+    if (is_q4gsw_shippable_token(v)) {
       return v;
     }
+    // Reject a token that belongs to the OTHER shader family by name, rather
+    // than silently falling back (which hides the typo) or passing it through
+    // to die at the shader lookup (which reports the wrong problem).
+    VK_CHECK_COND(
+        !is_dq8ca_shippable_token(v),
+        "ET_VK_Q4GSW_COOPMAT_VARIANT was given '",
+        v,
+        "', which is a dq8ca (8da4w) shader-family token. There is no q4gsw "
+        "(4w) shader with that name. Use ET_VK_DQ8CA_COOPMAT_VARIANT instead.");
     return std::string("tsweep_dbuf4_t128x128k16g22s32");
   }();
   return variant;
 }
 
 static const std::string& dq8ca_coopmat_variant() {
-  // Default (no ET_VK_DQ8CA_COOPMAT_VARIANT set): tsweep_dbuf4_t64x32k32g12s64
-  // -- same geometry as the shipped buffer-storage default, resolved through
-  // the tsweep_dbuf4 texture3d-capable shader.
+  // Default (no ET_VK_DQ8CA_COOPMAT_VARIANT set):
+  // tsweep_dbuf4_t128x128k64g81s64 (WG_TILE 128x128x64, SG_GRID 8x1, wave64) --
+  // PROMOTED 2026-08-26 from the prior default tsweep_dbuf4_t64x32k32g12s64,
+  // together with the B_STRIDE_U32 skew removal in
+  // linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4.glsl (see that file's comment).
+  // Real, on-device measurement
+  // (openspec/changes/dq8ca-dequant-unpack-ablation/results/README.md,
+  // Addendum 8): this tile, WITH the stride fix, measures 36.27%/36.65%/36.97%
+  // efficiency of int8 peak on 1B/3B/8B prefill respectively (vs. 32.00-32.09%
+  // for the stride-fixed small tile alone) -- a further +11.8% to +13.2%
+  // relative speedup, consistent across all three model sizes, on top of the
+  // already-applied stride fix. Validated with the rigor the two incidents
+  // below establish as the actual bar for this kernel family: 10 consecutive
+  // `--correctness-only` passes, zero failures, for EVERY (model x storage)
+  // combination -- 1B/3B/8B x buffer/texture3d, 60 runs total, not just one
+  // storage mode or one pass. Decode and full e2e were explicitly out of
+  // scope (prefill-only, by request, to save time) -- not yet validated.
   //
   // REJECTED 2026-08-18: tsweep_dbuf4_t64x64k32g24s32 looked like a clean
   // win (correctness-first sweep pick, rep-confirmed faster on 1B/3B/8B
@@ -192,13 +273,13 @@ static const std::string& dq8ca_coopmat_variant() {
   static const std::string variant = [] {
     const char* env = std::getenv("ET_VK_DQ8CA_COOPMAT_VARIANT");
     if (!env) {
-      return std::string("tsweep_dbuf4_t64x32k32g12s64");
+      return std::string("tsweep_dbuf4_t128x128k64g81s64");
     }
     const std::string v(env);
-    if (is_recognized_coopmat_variant_token(v)) {
+    if (is_dq8ca_shippable_token(v)) {
       return v;
     }
-    return std::string("tsweep_dbuf4_t64x32k32g12s64");
+    return std::string("tsweep_dbuf4_t128x128k64g81s64");
   }();
   return variant;
 }
@@ -206,16 +287,13 @@ static const std::string& dq8ca_coopmat_variant() {
 // Parses "tsweep_t<M>x<N>k<K>g<SGX><SGY>s<sub>" or
 // "tsweep_dbuf<N>_t<M>x<N>k<K>g<SGX><SGY>s<sub>" -> {M, N, K, SGX*SGY*sub,
 // SGY}. Returns fallback unchanged if the token matches none of
-// kTsweepPrefixes.
+// any family's prefix list.
 static CoopmatTileDims parse_tsweep_tile(
     const std::string& variant,
     const CoopmatTileDims& fallback) {
-  size_t t_pos = std::string::npos;
-  for (const char* prefix : kTsweepPrefixes) {
-    if (variant.rfind(prefix, 0) == 0) {
-      t_pos = std::strlen(prefix);
-      break;
-    }
+  size_t t_pos = match_prefix_len(variant, kDq8caTsweepPrefixes);
+  if (t_pos == std::string::npos) {
+    t_pos = match_prefix_len(variant, kQ4gswTsweepPrefixes);
   }
   if (t_pos == std::string::npos) {
     return fallback;

@@ -132,7 +132,13 @@ const uint MMAS_PER_SG_N = SG_TILE_N / MMA_N;
 
 const uint A_SLAB_INT8     = WG_TILE_M * MMA_K;
 const uint B_USEFUL_U32    = MMA_K / 4u;
-const uint B_STRIDE_U32    = B_USEFUL_U32 + 1u; // +1 skew
+// No skew. The classic anti-bank-conflict "+1" padding was measured SLOWER on M51 at the shipped
+// tile (t64x32k32g12s64): stride=4 (this) is +2.98pp efficiency over stride=5 (the old +1 skew),
+// stride=6/+2 is a wash, stride=8/+4 is worse -- real, on-device, dq8ca-dequant-unpack-ablation
+// (openspec/changes/dq8ca-dequant-unpack-ablation/results/README.md, Addendum 6). B_USEFUL_U32 is
+// tile-invariant (MMA_K is fixed at 16 for every variant in this family), so this applies uniformly;
+// only re-validated at the shipped tile specifically, not every swept variant.
+const uint B_STRIDE_U32    = B_USEFUL_U32;
 const uint B_SLAB_U32      = WG_TILE_N * B_STRIDE_U32;
 const uint NUM_K_SLABS     = WG_TILE_K / MMA_K;
 
@@ -168,6 +174,44 @@ shared float bias_sh[WG_TILE_N];
 // and wreck occupancy. float16_t-typed because coopMatStore needs it.
 const uint CSH_ROWS = SG_GRID_Y * MMA_M;
 shared float16_t Csh_out[CSH_ROWS * WG_TILE_N];
+#endif
+
+#ifdef WEIGHT_INT4
+// Coalesced-B-write address inversion: given the contiguous per-thread LDS
+// index `a` (in [0, BSH_SLICE_U32)) this thread will write to, recover which
+// global-fetch element it needs. Consecutive threads (consecutive `a`) now
+// write consecutive LDS words -- unlike the pre-2026-08-26 mapping, where 8
+// consecutive threads wrote addresses B_STRIDE_U32 words apart. Real,
+// on-device measurement (dq8ca-dequant-unpack-ablation follow-up,
+// openspec/changes/dq8ca-dequant-unpack-ablation/results/README.md, "the
+// coalesced B-store rewrite"): a consistent +0.7-0.8% real speedup across
+// 1B/3B/8B at the shipped tile, correctness-clean (10/10 buffer + 10/10
+// texture3d, all three models). `chunkK_base` is the K-offset of the chunk
+// being staged (0 for the prologue, chunkK_nxt for the main loop's chunk+1
+// prefetch; the store sites don't need it -- r/parity depend only on n_col,
+// not chunkK_base -- so they pass 0u).
+struct BCoalIndex {
+  uint n8_blk;
+  uint k4_blk;
+  uint r;
+  uint parity;
+};
+
+BCoalIndex bcoal_index(const uint a, const uint chunkK_base, const uint tile_n_start) {
+  const uint slab_idx   = a / B_SLAB_U32;
+  const uint local_a    = a % B_SLAB_U32;
+  const uint n_col       = local_a / B_STRIDE_U32;
+  const uint k4_in_slab  = local_a % B_STRIDE_U32;
+  const uint k4_in_chunk = slab_idx * (MMA_K >> 2u) + k4_in_slab;
+  const uint n8_in_tile  = n_col >> 3u;
+  const uint rem         = n_col & 7u;
+  BCoalIndex idx;
+  idx.n8_blk = (tile_n_start >> 3u) + n8_in_tile;
+  idx.k4_blk = (chunkK_base >> 2u) + k4_in_chunk;
+  idx.r      = rem & 3u;
+  idx.parity = rem >> 2u;
+  return idx;
+}
 #endif
 
 // Running fp32 accumulator (across all groups).
@@ -294,14 +338,12 @@ void main() {
   }
 #ifdef WEIGHT_INT4
   [[unroll]] for (uint si = 0; si < B_SLOTS_PER_THREAD; ++si) {
-    const uint slot = gl_LocalInvocationID.x + si * WG_SIZE;
-    const uint block_in_chunk = slot >> 3u;
-    const uint k4_blk = block_in_chunk / N8_PER_TILE;
-    const uint n8_blk = (tile_n_start >> 3u) + (block_in_chunk % N8_PER_TILE);
+    const uint a = gl_LocalInvocationID.x + si * WG_SIZE;
+    const BCoalIndex bidx0 = bcoal_index(a, 0u, tile_n_start);
 #ifdef WEIGHT_BUFFER
-    temp_B[si] = t_packed_weight[(n8_blk * nblocks_x_A) + k4_blk];
+    temp_B[si] = t_packed_weight[(bidx0.n8_blk * nblocks_x_A) + bidx0.k4_blk];
 #else
-    temp_B[si] = texelFetch(t_packed_weight, ivec2(k4_blk, n8_blk), 0);
+    temp_B[si] = texelFetch(t_packed_weight, ivec2(bidx0.k4_blk, bidx0.n8_blk), 0);
 #endif
   }
 #else
@@ -327,23 +369,15 @@ void main() {
     }
 #ifdef WEIGHT_INT4
     [[unroll]] for (uint si = 0; si < B_SLOTS_PER_THREAD; ++si) {
-      const uint slot = gl_LocalInvocationID.x + si * WG_SIZE;
-      const uint block_in_chunk = slot >> 3u;
-      const uint col_in_block   = slot & 7u;
-      const uint k4_in_chunk    = block_in_chunk / N8_PER_TILE;
-      const uint n8_in_tile     = block_in_chunk % N8_PER_TILE;
-      const uint r      = col_in_block & 3u;
-      const uint parity = col_in_block >> 2u;
-      const int  w      = temp_B[si][r];
-      const int  base   = int(4u * parity);
+      const uint a = gl_LocalInvocationID.x + si * WG_SIZE;
+      const BCoalIndex bidx0 = bcoal_index(a, 0u, tile_n_start);
+      const int  w      = temp_B[si][bidx0.r];
+      const int  base   = int(4u * bidx0.parity);
       const int v0 = (((w >> (base + 0))  & 0xF) - 8) & 0xFF;
       const int v1 = (((w >> (base + 8))  & 0xF) - 8) & 0xFF;
       const int v2 = (((w >> (base + 16)) & 0xF) - 8) & 0xFF;
       const int v3 = (((w >> (base + 24)) & 0xF) - 8) & 0xFF;
-      const uint n_col      = n8_in_tile * 8u + r + parity * 4u;
-      const uint slab_idx   = k4_in_chunk / (MMA_K >> 2u);
-      const uint k4_in_slab = k4_in_chunk % (MMA_K >> 2u);
-      Bsh_int8[slab_idx * B_SLAB_U32 + n_col * B_STRIDE_U32 + k4_in_slab] =
+      Bsh_int8[a] =
           uint(v0 | (v1 << 8) | (v2 << 16) | (v3 << 24));
     }
 #else
@@ -396,14 +430,12 @@ void main() {
         }
 #ifdef WEIGHT_INT4
         [[unroll]] for (uint si = 0; si < B_SLOTS_PER_THREAD; ++si) {
-          const uint slot = gl_LocalInvocationID.x + si * WG_SIZE;
-          const uint block_in_chunk = slot >> 3u;
-          const uint k4_blk = (chunkK_nxt >> 2u) + block_in_chunk / N8_PER_TILE;
-          const uint n8_blk = (tile_n_start >> 3u) + (block_in_chunk % N8_PER_TILE);
+          const uint a = gl_LocalInvocationID.x + si * WG_SIZE;
+          const BCoalIndex bidx1 = bcoal_index(a, chunkK_nxt, tile_n_start);
 #ifdef WEIGHT_BUFFER
-          temp_B[si] = t_packed_weight[(n8_blk * nblocks_x_A) + k4_blk];
+          temp_B[si] = t_packed_weight[(bidx1.n8_blk * nblocks_x_A) + bidx1.k4_blk];
 #else
-          temp_B[si] = texelFetch(t_packed_weight, ivec2(k4_blk, n8_blk), 0);
+          temp_B[si] = texelFetch(t_packed_weight, ivec2(bidx1.k4_blk, bidx1.n8_blk), 0);
 #endif
         }
         if (group_crossing && gl_LocalInvocationID.x < WG_TILE_N) {
@@ -467,23 +499,19 @@ void main() {
         }
 #ifdef WEIGHT_INT4
         [[unroll]] for (uint si = 0; si < B_SLOTS_PER_THREAD; ++si) {
-          const uint slot = gl_LocalInvocationID.x + si * WG_SIZE;
-          const uint block_in_chunk = slot >> 3u;
-          const uint col_in_block   = slot & 7u;
-          const uint k4_in_chunk    = block_in_chunk / N8_PER_TILE;
-          const uint n8_in_tile     = block_in_chunk % N8_PER_TILE;
-          const uint r      = col_in_block & 3u;
-          const uint parity = col_in_block >> 2u;
-          const int  w      = temp_B[si][r];
-          const int  base   = int(4u * parity);
+          const uint a = gl_LocalInvocationID.x + si * WG_SIZE;
+          // r/parity depend only on n_col (a % B_SLAB_U32, mod 8) -- not on
+          // chunkK_base -- so this store site can pass a dummy 0u (unlike
+          // the fetch site above, a separate `if (has_next)` scope, which
+          // needs the real chunkK_nxt to compute n8_blk/k4_blk).
+          const BCoalIndex bidx1 = bcoal_index(a, 0u, tile_n_start);
+          const int  w      = temp_B[si][bidx1.r];
+          const int  base   = int(4u * bidx1.parity);
           const int v0 = (((w >> (base + 0))  & 0xF) - 8) & 0xFF;
           const int v1 = (((w >> (base + 8))  & 0xF) - 8) & 0xFF;
           const int v2 = (((w >> (base + 16)) & 0xF) - 8) & 0xFF;
           const int v3 = (((w >> (base + 24)) & 0xF) - 8) & 0xFF;
-          const uint n_col      = n8_in_tile * 8u + r + parity * 4u;
-          const uint slab_idx   = k4_in_chunk / (MMA_K >> 2u);
-          const uint k4_in_slab = k4_in_chunk % (MMA_K >> 2u);
-          Bsh_int8[nxt_b + slab_idx * B_SLAB_U32 + n_col * B_STRIDE_U32 + k4_in_slab] =
+          Bsh_int8[nxt_b + a] =
               uint(v0 | (v1 << 8) | (v2 << 16) | (v3 << 24));
         }
         if (group_crossing && gl_LocalInvocationID.x < WG_TILE_N) {
