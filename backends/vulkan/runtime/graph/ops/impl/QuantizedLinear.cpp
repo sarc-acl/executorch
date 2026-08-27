@@ -216,9 +216,35 @@ static const std::string& q4gsw_coopmat_variant() {
 }
 
 static const std::string& dq8ca_coopmat_variant() {
-  // Default (no ET_VK_DQ8CA_COOPMAT_VARIANT set):
-  // tsweep_dbuf4_t128x128k64g81s64 (WG_TILE 128x128x64, SG_GRID 8x1, wave64) --
-  // PROMOTED 2026-08-26 from the prior default tsweep_dbuf4_t64x32k32g12s64,
+  // Default (no ET_VK_DQ8CA_COOPMAT_VARIANT set), on this experimental branch
+  // (yanwen/dq8ca-uvec4-redesign): tsweep_dbuf4zpg_t128x64k32g42s32 --
+  // PROMOTED 2026-08-26, combining two previously-separate, never-before-
+  // combined optimization lineages on the same shader family:
+  //   (1) zp-hoist + byte-parallel nibble widening + static a_active branch
+  //       elision + loop-invariant staging-index hoisting (interventions
+  //       B/D/F/G from dq8ca-alu-overhead-reduction and
+  //       dq8ca-prefill-stall-reduction; previously validated only on 8B,
+  //       at a tile that predates the fixes below, reaching 45.23%).
+  //   (2) B's no-skew stride + coalesced-write fix (dq8ca-dequant-unpack-
+  //       ablation Addenda 6/9), ported into linear_dq8ca_q4gsw_coopmat_
+  //       tsweep_dbuf4zpg.glsl (it did not have this fix before -- it
+  //       predates the fix's landing on the plain dbuf4.glsl file).
+  // Real, on-device measurement (openspec/changes/dq8ca-uvec4-coopmat-
+  // redesign/results.md): 46.49-46.50% efficiency of int8 peak on 8B
+  // prefill (2 reps), vs. the current shipped tsweep_dbuf4_t128x128k64g81s64
+  // default's 36.97% -- a +20.5% relative speedup, consistent with +21.2%
+  // (1B) and +20.9% (3B) measured the same session on the same board. 60+
+  // consecutive `--correctness-only` passes, zero failures, across every
+  // (model x storage) combination: 1B/3B/8B x buffer/texture3d (3B/texture3d
+  // only 5 reps for time, still zero failures) -- matches the bar the two
+  // 2026-08-18 incidents below establish. Decode and full e2e explicitly
+  // NOT validated (prefill-only, by request) -- do not treat this as
+  // production-ready without that additional check.
+  //
+  // Prior default (still available, not shippable-broken, just superseded
+  // on this branch): tsweep_dbuf4_t128x128k64g81s64 (WG_TILE 128x128x64,
+  // SG_GRID 8x1, wave64) -- PROMOTED 2026-08-26 from the prior default
+  // tsweep_dbuf4_t64x32k32g12s64,
   // together with the B_STRIDE_U32 skew removal in
   // linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4.glsl (see that file's comment).
   // Real, on-device measurement
@@ -273,13 +299,13 @@ static const std::string& dq8ca_coopmat_variant() {
   static const std::string variant = [] {
     const char* env = std::getenv("ET_VK_DQ8CA_COOPMAT_VARIANT");
     if (!env) {
-      return std::string("tsweep_dbuf4_t128x128k64g81s64");
+      return std::string("tsweep_dbuf4zpg_t128x64k32g42s32");
     }
     const std::string v(env);
     if (is_dq8ca_shippable_token(v)) {
       return v;
     }
-    return std::string("tsweep_dbuf4_t128x128k64g81s64");
+    return std::string("tsweep_dbuf4zpg_t128x64k32g42s32");
   }();
   return variant;
 }
