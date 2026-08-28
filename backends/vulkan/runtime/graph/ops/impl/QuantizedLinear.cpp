@@ -112,36 +112,16 @@ static const char* const kDq8caTsweepPrefixes[] = {
     "tsweep_dbuf2_t",
     "tsweep_dbuf3_t",
     "tsweep_dbuf4_t",
-    // "-tr": dbuf4's loop with the A-side global -> LDS staging swapped to
-    // coopMatLoad/coopMatStore (ported from shmem_double_buf4-tr.comp). Stays
-    // mutually exclusive with "tsweep_dbuf4_t" because position 12 is 't' vs
-    // '_', so prefix order here does not matter.
-    "tsweep_dbuf4tr_t",
-    // DIAGNOSTIC: same row-major layout as "-tr" but with scalar A staging,
-    // used to bisect a dbuf4tr correctness failure. Delete with the shader.
-    "tsweep_dbuf4trm_t",
-    "tsweep_dbuf4trd_t",
-    // zp-hoisted: zero-point + activation-scale correction applied once
-    // after the group loop instead of once per quantization group.
-    "tsweep_dbuf4zp_t",
-    // zp-hoisted + byte-parallel int4->int8 widening.
-    "tsweep_dbuf4zpn_t",
-    // + templated B LDS skew (intervention A). MEASURED-NEGATIVE: the
-    // bank-conflict skew is worth far more than the multiplies it costs.
-    "tsweep_dbuf4zpb_t",
-    // zpn + ARITHMETIC nibble-parity select instead of a compared select
-    // (intervention E of dq8ca-prefill-stall-reduction). MEASURED-NEGATIVE:
-    // +2.87%; the variable shift is serially dependent on parity where the
-    // ternary's two constant shifts were not.
-    "tsweep_dbuf4zpx_t",
-    // zpn + loop-invariant staging index arithmetic hoisted out of the group
-    // loop (intervention F of dq8ca-prefill-stall-reduction).
-    "tsweep_dbuf4zpi_t",
     // zpi + compile-time elision of the statically-true a_active guard
-    // (intervention G of dq8ca-prefill-stall-reduction).
+    // (intervention G of dq8ca-prefill-stall-reduction), combined with the
+    // dbuf4 default's own B_STRIDE_U32 skew removal + coalesced B-store
+    // rewrite. PROMOTED 2026-08-28 as the shipped default -- see
+    // dq8ca_coopmat_variant() below.
     "tsweep_dbuf4zpg_t",
-    // zpn + the a_active elision alone, no index hoist -- isolates G from F.
-    "tsweep_dbuf4zpk_t",
+    // (dq8ca-dequant-unpack-ablation Addendum 11 -- abl_aconst/abl_areadc/
+    // abl_abconst -- were measurement-only variants deleted once each
+    // attribution was recorded; see openspec/changes/dq8ca-dequant-unpack-
+    // ablation/results/README.md.)
     // (dq8ca-dequant-unpack-ablation and its 2026-08-26 follow-ups on
     // xgpusw-debug08 -- abl_nodq/abl_nonib/abl_both/abl_nolds/abl_bconst/
     // abl_bcont/abl_breadc/str4/str6/str8/bcoal -- were measurement-only
@@ -151,6 +131,19 @@ static const char* const kDq8caTsweepPrefixes[] = {
     // see the B_STRIDE_U32 comment (the LDS skew removal) and the
     // BCoalIndex/bcoal_index comment (the coalesced B-store rewrite) in
     // linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4.glsl.)
+    // 2026-08-28: removed the now-dead prefixes for "-tr"/"-trm"/"-trd"
+    // (row-major-A coopMatLoad staging, deprioritized -- see
+    // dq8ca-uvec4-coopmat-redesign/results.md: the reference kernel's read is
+    // narrow too, so this direction didn't hold), "-zp"/"-zpn"/"-zpb"/"-zpx"
+    // (superseded single-intervention isolations from dq8ca-prefill-stall-
+    // reduction, folded into "-zpg" above), and "-zpi"/"-zpk" (isolation
+    // variants used only to attribute G vs F in that investigation). Their
+    // shader files were deleted with them -- this branch (release14-quant-
+    // shaders) ships only the validated default; the experimental siblings
+    // and isolation variants live on dq8ca-uvec4-redesign/dq8ca-arch-redesign
+    // instead. Leaving a dead prefix here means an env var could reference a
+    // shader that no longer exists and crash confusingly at shader lookup
+    // instead of failing the validation check cleanly.
     "tsweep_t",
 };
 
@@ -217,8 +210,30 @@ static const std::string& q4gsw_coopmat_variant() {
 
 static const std::string& dq8ca_coopmat_variant() {
   // Default (no ET_VK_DQ8CA_COOPMAT_VARIANT set):
-  // tsweep_dbuf4_t128x128k64g81s64 (WG_TILE 128x128x64, SG_GRID 8x1, wave64) --
-  // PROMOTED 2026-08-26 from the prior default tsweep_dbuf4_t64x32k32g12s64,
+  // tsweep_dbuf4zpg_t128x64k32g42s32 (WG_TILE 128x64x32, SG_GRID 4x2, wave32)
+  // -- PROMOTED 2026-08-28 from the prior default
+  // tsweep_dbuf4_t128x128k64g81s64 (below). Combines every validated 8da4w win
+  // to date: zp-hoist (zero-point
+  // + activation-scale correction moved out of the per-group loop), the
+  // byte-parallel int4 unpack, static a_active branch elision, loop-invariant
+  // B-staging-index hoisting (interventions from dq8ca-prefill-stall-
+  // reduction), plus the B_STRIDE_U32 skew removal and coalesced B-store
+  // rewrite this file's prior default already shipped. Real, on-device,
+  // correctness-validated on the sibling `dq8ca-uvec4-redesign` branch (cut
+  // from this branch @ 8cde63eae4, same base commit) at **46.49-46.50%
+  // efficiency of int8 peak on 8B** -- vs. 36.97% for the prior default, a
+  // further +20.5/20.9/21.2% relative speedup on 8B/3B/1B respectively
+  // (openspec/changes/archive/2026-08-26-dq8ca-uvec4-coopmat-redesign/results.md).
+  // Real e2e prefill on the canonical `main-fafb46ae9c0d` SUMD driver
+  // (`xgpusw-debug08`/`00000b750f413c33`, maxpin 980/5333/934, ETDump-
+  // confirmed dispatching this exact shader on the scored 2048-token block,
+  // not the warmup pass): 1B 1652.95, 3B 715.58, 8B 343.80 tok/s (median of 5
+  // reps each). Correctness validated 10/10 clean across 1B/3B/8B x
+  // buffer/texture3d on the sibling branch before promotion; re-verified on
+  // this branch's own build before shipping (see this function's own
+  // re-verification note, if present, or the promoting commit message).
+  //
+  // Prior default, PROMOTED 2026-08-26 from tsweep_dbuf4_t64x32k32g12s64,
   // together with the B_STRIDE_U32 skew removal in
   // linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4.glsl (see that file's comment).
   // Real, on-device measurement
@@ -273,13 +288,13 @@ static const std::string& dq8ca_coopmat_variant() {
   static const std::string variant = [] {
     const char* env = std::getenv("ET_VK_DQ8CA_COOPMAT_VARIANT");
     if (!env) {
-      return std::string("tsweep_dbuf4_t128x128k64g81s64");
+      return std::string("tsweep_dbuf4zpg_t128x64k32g42s32");
     }
     const std::string v(env);
     if (is_dq8ca_shippable_token(v)) {
       return v;
     }
-    return std::string("tsweep_dbuf4_t128x128k64g81s64");
+    return std::string("tsweep_dbuf4zpg_t128x64k32g42s32");
   }();
   return variant;
 }
