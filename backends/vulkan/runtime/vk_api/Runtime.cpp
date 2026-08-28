@@ -104,6 +104,47 @@ VkInstance create_instance(const RuntimeConfig& config) {
 #endif /* VK_EXT_debug_report */
   }
 
+  // ET_VK_EXTRA_INSTANCE_LAYERS: comma-separated instance layer names to
+  // enable, in addition to whatever the config already asks for.
+  //
+  // Android's Vulkan loader does not honour VK_INSTANCE_LAYERS,
+  // /data/local/debug/vulkan or the debug.vulkan.layers property for a native
+  // executable, so a layer such as VK_LAYER_LUNARG_api_dump can only be turned
+  // on by the application naming it here. Without this hook there is no way to
+  // capture an api_dump trace of a Vulkan-backend binary on device at all.
+  //
+  // Unset -- the default -- leaves the enabled layer list byte-identical to
+  // before, and find_requested_layers_and_extensions() below already filters
+  // out any name the loader does not report, so an unavailable or misspelled
+  // layer is skipped rather than fatal.
+  //
+  // The strings are held in a function-local static because the pointers
+  // handed to VkInstanceCreateInfo must outlive this scope; they are only
+  // read after the vector has stopped growing.
+  static std::vector<std::string> extra_instance_layers;
+  if (const char* extra_layers_env =
+          std::getenv("ET_VK_EXTRA_INSTANCE_LAYERS")) {
+    const std::string spec(extra_layers_env);
+    size_t start = 0;
+    while (start <= spec.size()) {
+      const size_t comma = spec.find(',', start);
+      const size_t end = (comma == std::string::npos) ? spec.size() : comma;
+      std::string name = spec.substr(start, end - start);
+      const size_t first = name.find_first_not_of(" \t");
+      const size_t last = name.find_last_not_of(" \t");
+      if (first != std::string::npos) {
+        extra_instance_layers.push_back(name.substr(first, last - first + 1));
+      }
+      if (comma == std::string::npos) {
+        break;
+      }
+      start = comma + 1;
+    }
+    for (const std::string& name : extra_instance_layers) {
+      requested_layers.push_back(name.c_str());
+    }
+  }
+
   VkInstanceCreateFlags instance_flags = 0;
 #ifdef __APPLE__
   instance_flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;

@@ -77,6 +77,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -118,9 +119,18 @@ struct Record {
   // overhead); kernel_us isolates the linear kernel itself so the two
   // schemes' shader-level numbers stay comparable. -1 for sdpa rows.
   float kernel_us = -1.0f;
+  // Median and coefficient of variation of the linear kernel's own
+  // per-iteration timings. The text report has always shown mean +/- stdev;
+  // these are for --json, where a consumer ranking candidates needs a robust
+  // centre and an explicit noise figure rather than a mean that one outlier
+  // can move. -1 where the suite does not produce per-iteration samples.
+  float kernel_median_us = -1.0f;
+  float kernel_cov = -1.0f;
   float gflops = -1.0f; // no SDPA meaning (-1 sentinel, per specs/021)
   std::string dispatch = "not_applicable";
   std::string correctness = "SKIPPED";
+  // Failure text, for the cases where the framework threw. Empty otherwise.
+  std::string detail_note;
   bool ok = false;
 };
 
@@ -128,6 +138,14 @@ std::vector<Record> g_records;
 
 // specs/021 (research.md Decision 1): shared unified RESULT,... line --
 // 12 shared fields, then suite-specific extras.
+// Append to the record set WITHOUT printing. emit() below both records and
+// prints a RESULT line; the correctness matrix must not gain one, because the
+// text output has to stay byte-identical -- but --json still needs its
+// verdicts, which are the whole point of a correctness gate.
+void record_only(const Record& r) {
+  g_records.push_back(r);
+}
+
 void emit(const Record& r) {
   g_records.push_back(r);
   std::cout << "RESULT," << r.suite << "," << r.model << "," << r.scheme << ","
@@ -312,6 +330,14 @@ std::vector<float> as_f(const ValueSpec& s) {
   }
   return o;
 }
+// Opt-in escape hatch for run_production_diff() below: false everywhere else,
+// so the perf sweep's SKIPPED-via-throw behavior at production M/N/K is
+// unchanged (et-microbench-correctness-gate-blind-above-256 still applies to
+// every existing call site). --production-diff sets this for the duration of
+// its own run only, accepting the O(M*N*K) CPU cost as a one-shot diagnostic,
+// not something to pay on every correctness/perf invocation.
+bool g_allow_large_reference = false;
+
 void bench_reference(TestCase& tc) {
   const std::string op = tc.operator_name();
   const bool dq8ca = op.find("dq8ca") != std::string::npos;
@@ -331,7 +357,7 @@ void bench_reference(TestCase& tc) {
   // production-K correctness cases (K=2048/4096, M/N still <=256): without
   // this, those cases silently throw here and get marked SKIPPED, giving a
   // false impression of "validated" when no reference was ever computed.
-  if (M > 256 || N > 256 || K > 4096) {
+  if (!g_allow_large_reference && (M > 256 || N > 256 || K > 4096)) {
     throw std::invalid_argument("ref: too big");
   }
   // input layouts: weight-only = {in, w, w_scales, [group], bias};
@@ -649,6 +675,70 @@ float linear_kernel_us(const BenchmarkResult& r) {
   return us;
 }
 
+// Median and CoV of the linear kernel's per-iteration timings, from the same
+// ShaderTiming entries linear_kernel_us() averages.
+void linear_kernel_dist(
+    const BenchmarkResult& r,
+    float* median_us,
+    float* cov) {
+  *median_us = -1.0f;
+  *cov = -1.0f;
+  std::vector<float> samples;
+  for (const auto& st : r.get_shader_timings()) {
+    if (st.shader_name.find("linear_") != std::string::npos) {
+      samples = st.iter_timings_us;
+    }
+  }
+  if (samples.empty()) {
+    return;
+  }
+  std::vector<float> sorted = samples;
+  std::sort(sorted.begin(), sorted.end());
+  const size_t n = sorted.size();
+  *median_us =
+      (n % 2) ? sorted[n / 2] : 0.5f * (sorted[n / 2 - 1] + sorted[n / 2]);
+  double sum = 0.0;
+  for (float v : samples) {
+    sum += v;
+  }
+  const double mean = sum / n;
+  double var = 0.0;
+  for (float v : samples) {
+    var += (v - mean) * (v - mean);
+  }
+  var /= n;
+  *cov = mean > 0.0 ? static_cast<float>(std::sqrt(var) / mean) : -1.0f;
+}
+
+// Recover (M, K, N) from a case name of the form "..._M<m>_K<k>_N<n>_...".
+void parse_mkn_from_case_name(
+    const std::string& name,
+    int64_t* M,
+    int64_t* K,
+    int64_t* N) {
+  auto grab = [&name](char tag) -> int64_t {
+    const std::string needle = std::string("_") + tag;
+    for (size_t i = 0; i + needle.size() < name.size(); ++i) {
+      if (name.compare(i, needle.size(), needle) != 0) {
+        continue;
+      }
+      size_t j = i + needle.size();
+      if (j >= name.size() || !std::isdigit((unsigned char)name[j])) {
+        continue;
+      }
+      int64_t v = 0;
+      while (j < name.size() && std::isdigit((unsigned char)name[j])) {
+        v = v * 10 + (name[j++] - '0');
+      }
+      return v;
+    }
+    return 0;
+  };
+  *M = grab('M');
+  *K = grab('K');
+  *N = grab('N');
+}
+
 std::string kernel_class(const std::string& kernel) {
   // _coopmat must be checked before _coop (substring).
   if (kernel.find("_coopmat") != std::string::npos) {
@@ -690,9 +780,34 @@ bool run_linear_correctness(const CaseFilter& filter) {
           failed_names.push_back(tc.name());
         }
         results.push_back(res[0]);
+        Record rec;
+        rec.suite = "correctness";
+        rec.op = tc.name();
+        // make_linear_case() builds the name from M/K/N, so recovering them
+        // from it keeps the JSON's shape fields populated for correctness
+        // rows too -- a consumer cannot tell whether a fallback was legal
+        // without knowing the shape the case ran at.
+        parse_mkn_from_case_name(tc.name(), &rec.M, &rec.K, &rec.N);
+        rec.kernel = linear_kernel(res[0]);
+        rec.variant = kernel_class(rec.kernel);
+        rec.kernel_us = linear_kernel_us(res[0]);
+        linear_kernel_dist(res[0], &rec.kernel_median_us, &rec.kernel_cov);
+        const auto st = res[0].get_correctness_status();
+        rec.correctness = st == CorrectnessStatus::PASSED ? "PASSED"
+            : st == CorrectnessStatus::FAILED             ? "FAILED"
+                                                          : "SKIPPED";
+        rec.ok = st != CorrectnessStatus::FAILED;
+        record_only(rec);
       }
     } catch (const std::exception& e) {
       failed_names.push_back(tc.name());
+      Record rec;
+      rec.suite = "correctness";
+      rec.op = tc.name();
+      rec.correctness = "FAILED";
+      rec.detail_note = e.what();
+      rec.ok = false;
+      record_only(rec);
       std::cout << "[correctness] " << tc.name() << " FAILED: " << e.what()
                 << "\n";
     }
@@ -733,6 +848,98 @@ bool run_linear_correctness(const CaseFilter& filter) {
     std::cout << "[correctness] FAILED -- numeric failure(s) and/or a rank-3 "
                  "case did not dispatch coopmat\n";
   }
+  return all_ok;
+}
+
+// --production-diff: a real element-wise numeric check at the actual 8B
+// prefill M=2048 GEMM shapes, which run_linear_correctness's gate never
+// covers (et-microbench-correctness-gate-blind-above-256 -- bench_reference
+// throws above M/N=256 and those cases are marked SKIPPED, not validated).
+// Every shader change promoted to the shipped dq8ca default so far
+// (dq8ca-dequant-unpack-ablation Addenda 7-9) has only ever cleared 10+
+// consecutive PASSED runs at M/N<=256; this is the check that was missing
+// before trusting any of it at production size.
+//
+// Deliberately dq8ca (8da4w) only, buffer storage only (the shipped coopmat
+// dispatch's storage mode) -- matches this investigation's current scope.
+// Uses the same well-conditioned deterministic data generator as the
+// existing correctness matrix (positive values, no fp16-cancellation noise)
+// so a mismatch here means the shader's addressing/arithmetic is wrong at
+// this shape, not that the reference itself is numerically unstable.
+//
+// Cost: O(M*N*K) CPU reference per shape, unthrottled via
+// g_allow_large_reference -- on the order of minutes total for all four 8B
+// shapes. That is acceptable for a one-shot diagnostic; it must never run as
+// part of the default correctness gate or perf sweep.
+bool run_production_diff() {
+  const LinearModel* model = nullptr;
+  for (const auto& m : kLinearModels) {
+    if (std::string(m.model) == "llama-3.1-8b") {
+      model = &m;
+    }
+  }
+  if (model == nullptr) {
+    std::cout << "[production-diff] llama-3.1-8b not found in kLinearModels\n";
+    return false;
+  }
+  g_allow_large_reference = true;
+  bool all_ok = true;
+  for (const auto& op_shape : model->ops) {
+    LinearConfig cfg{
+        /*M=*/2048,
+        op_shape.K,
+        op_shape.N,
+        /*group_size=*/g_group,
+        /*op_name=*/"linear_dq8ca_q4gsw",
+        /*batch=*/0,
+        /*model=*/model->model,
+        /*regime=*/"prefill",
+        /*op_label=*/op_shape.op_label};
+    TestCase tc = make_deterministic_correctness_case(
+        cfg, "linear_dq8ca_q4gsw", utils::kBuffer);
+    std::cout << "[production-diff] " << tc.name()
+              << " (M=2048, K=" << op_shape.K << ", N=" << op_shape.N
+              << ", group_size=" << g_group << ")\n";
+    try {
+      auto res = execute_test_cases(
+          [&tc]() { return std::vector<TestCase>{tc}; },
+          flop_calc,
+          "LlamaMicrobenchProductionDiff",
+          kWarmupRuns,
+          kTimedRuns,
+          bench_reference);
+      if (res.empty()) {
+        std::cout << "[production-diff] " << tc.name()
+                  << ": no result produced\n";
+        all_ok = false;
+        continue;
+      }
+      const std::string shader_name = linear_kernel(res[0]);
+      const bool coopmat_fired =
+          shader_name.find("coopmat") != std::string::npos;
+      const bool passed =
+          res[0].get_correctness_status() == CorrectnessStatus::PASSED;
+      all_ok = all_ok && coopmat_fired && passed;
+      std::cout << "[production-diff] " << tc.name() << " -> " << shader_name
+                << (coopmat_fired ? " (coopmat dispatched)"
+                                  : " (NOT coopmat -- fallback, cannot "
+                                    "validate the shader under test)")
+                << ", correctness="
+                << (passed ? "PASSED"
+                           : (res[0].get_correctness_status() ==
+                                      CorrectnessStatus::FAILED
+                                  ? "FAILED (see mismatch detail above)"
+                                  : "SKIPPED"))
+                << "\n";
+    } catch (const std::exception& e) {
+      std::cout << "[production-diff] " << tc.name() << " threw: " << e.what()
+                << "\n";
+      all_ok = false;
+    }
+  }
+  g_allow_large_reference = false;
+  std::cout << "[production-diff] " << (all_ok ? "ALL PASSED" : "FAILED")
+            << " (4 shapes, M=2048, 8da4w, buffer)\n";
   return all_ok;
 }
 
@@ -820,6 +1027,7 @@ void run_linear_suite(const std::string& suite, const CaseFilter& filter) {
         rec.stdev_us = res[0].get_std_dev_us();
         rec.kernel = linear_kernel(res[0]);
         rec.kernel_us = linear_kernel_us(res[0]);
+        linear_kernel_dist(res[0], &rec.kernel_median_us, &rec.kernel_cov);
         rec.variant = kernel_class(rec.kernel);
         rec.gflops = rec.mean_us > 0
             ? (2.0f * cfg.M * cfg.N * cfg.K) / (rec.mean_us * 1e3f)
@@ -1447,6 +1655,100 @@ std::string fmt_x(float x) {
 // Prints the raw-results table, the per-site WMMA speedups, and the
 // geomeans. Returns false if any expected coopmat site failed to speed up
 // AND failed to dispatch -- dispatch anomalies, not slowness, fail the run.
+// --- additive machine-readable output (--json) ----------------------------
+//
+// The text report is for a human reading a terminal; this is for the L2 stage
+// of an automated ladder, which needs per-case median, CoV, GFLOP/s, the
+// kernel that actually dispatched, and the correctness verdict, all keyed so a
+// candidate can be matched to the variant it was selected as.
+//
+// Deliberately additive: it prints nothing unless --json is given, changes no
+// existing line, and computes nothing the text path did not already compute.
+
+std::string json_escape(const std::string& in) {
+  std::string out;
+  for (char c : in) {
+    switch (c) {
+      case '"':
+        out += "\\\"";
+        break;
+      case '\\':
+        out += "\\\\";
+        break;
+      case '\n':
+        out += "\\n";
+        break;
+      case '\r':
+        out += "\\r";
+        break;
+      case '\t':
+        out += "\\t";
+        break;
+      default:
+        if (static_cast<unsigned char>(c) < 0x20) {
+          char buf[8];
+          snprintf(buf, sizeof(buf), "\\u%04x", c);
+          out += buf;
+        } else {
+          out += c;
+        }
+    }
+  }
+  return out;
+}
+
+// JSON has no NaN or Infinity, and the -1 sentinels mean "not applicable"
+// rather than "minus one"; both become null so a consumer cannot mistake
+// either for a measurement.
+std::string json_num(float v) {
+  if (std::isnan(v) || std::isinf(v) || v < 0.0f) {
+    return "null";
+  }
+  std::ostringstream o;
+  o << v;
+  return o.str();
+}
+
+void print_json_report(std::ostream& out) {
+  out << "{\n  \"schema\": \"test_llama_microbench.v1\"";
+  {
+    const auto* adapter = api::context()->adapter_ptr();
+    out << ",\n  \"device\": \"" << json_escape(adapter->device_name()) << "\""
+        << ",\n  \"subgroup_size\": " << adapter->subgroup_size()
+        << ",\n  \"timestamp_period_ns\": " << adapter->timestamp_period()
+        << ",\n  \"cooperative_matrix\": "
+        << (adapter->supports_cooperative_matrix() ? "true" : "false");
+  }
+  out << ",\n  \"warmup_runs\": " << kWarmupRuns
+      << ",\n  \"timed_runs\": " << kTimedRuns
+      << ",\n  \"group_size\": " << g_group << ",\n  \"cases\": [\n";
+  for (size_t i = 0; i < g_records.size(); ++i) {
+    const Record& r = g_records[i];
+    out << "    {" << "\"suite\": \"" << json_escape(r.suite) << "\""
+        << ", \"model\": \"" << json_escape(r.model) << "\""
+        << ", \"scheme\": \"" << json_escape(r.scheme) << "\""
+        << ", \"regime\": \"" << json_escape(r.regime) << "\"" << ", \"op\": \""
+        << json_escape(r.op) << "\"" << ", \"storage\": \""
+        << json_escape(r.storage) << "\"" << ", \"variant\": \""
+        << json_escape(r.variant) << "\"" << ", \"kernel\": \""
+        << json_escape(r.kernel) << "\"" << ", \"M\": " << r.M
+        << ", \"K\": " << r.K << ", \"N\": " << r.N
+        << ", \"kv_heads\": " << r.kv
+        << ", \"op_mean_us\": " << json_num(r.mean_us)
+        << ", \"op_stdev_us\": " << json_num(r.stdev_us)
+        << ", \"kernel_mean_us\": " << json_num(r.kernel_us)
+        << ", \"kernel_median_us\": " << json_num(r.kernel_median_us)
+        << ", \"kernel_cov\": " << json_num(r.kernel_cov)
+        << ", \"gflops\": " << json_num(r.gflops) << ", \"dispatch\": \""
+        << json_escape(r.dispatch) << "\"" << ", \"correctness\": \""
+        << json_escape(r.correctness) << "\"" << ", \"detail\": \""
+        << json_escape(r.detail_note) << "\""
+        << ", \"ok\": " << (r.ok ? "true" : "false") << "}"
+        << (i + 1 < g_records.size() ? "," : "") << "\n";
+  }
+  out << "  ]\n}\n";
+}
+
 void print_report(bool baseline_ran) {
   print_separator();
   std::cout << "==================== RAW RESULTS ====================\n";
@@ -1723,6 +2025,11 @@ int main(int argc, char** argv) {
   bool linear = false, baseline = false, sdpa = false;
   bool correctness_only = false, sdpa_correctness_only = false;
   bool skip_correctness = false, list_only = false;
+  bool production_diff = false;
+  // Additive machine-readable output. Absent, every existing line is byte
+  // for byte what it was.
+  bool json_out = false;
+  std::string json_path;
   CaseFilter filter;
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
@@ -1736,10 +2043,17 @@ int main(int argc, char** argv) {
       correctness_only = true;
     } else if (arg == "--sdpa-correctness-only") {
       sdpa_correctness_only = true;
+    } else if (arg == "--production-diff") {
+      production_diff = true;
     } else if (arg == "--skip-correctness") {
       skip_correctness = true;
     } else if (arg == "--list") {
       list_only = true;
+    } else if (arg == "--json") {
+      json_out = true;
+    } else if (arg.rfind("--json-out=", 0) == 0) {
+      json_out = true;
+      json_path = arg.substr(11);
     } else if (arg.rfind("--model=", 0) == 0) {
       filter.model = arg.substr(8);
     } else if (arg.rfind("--scheme=", 0) == 0) {
@@ -1802,7 +2116,8 @@ int main(int argc, char** argv) {
               << ",timestamp_period_ns=" << adapter->timestamp_period()
               << ",subgroup_size=" << adapter->subgroup_size() << ",coopmat="
               << (adapter->supports_cooperative_matrix() ? "yes" : "no")
-              << "\n";
+              << ",max_shared_mem_bytes="
+              << adapter->max_compute_shared_memory_size() << "\n";
   }
   print_separator();
 
@@ -1811,15 +2126,46 @@ int main(int argc, char** argv) {
 
   // Correctness gate: validates the tiled and coopmat linear kernels
   // (including the rank-3 dispatch check) before any perf time is spent.
+  auto finish_correctness = [&](bool ok) {
+    if (json_out) {
+      if (json_path.empty()) {
+        print_json_report(std::cout);
+      } else {
+        std::ofstream jf(json_path);
+        if (jf) {
+          print_json_report(jf);
+        }
+      }
+    }
+    return ok ? 0 : 1;
+  };
   if (correctness_only) {
-    return run_linear_correctness(filter) ? 0 : 1;
+    return finish_correctness(run_linear_correctness(filter));
   }
   if (sdpa_correctness_only) {
-    return run_sdpa_correctness() ? 0 : 1;
+    return finish_correctness(run_sdpa_correctness());
+  }
+  if (production_diff) {
+    return finish_correctness(run_production_diff());
   }
   if ((linear || baseline) && !skip_correctness) {
     if (!run_linear_correctness(filter)) {
       std::cout << "correctness gate FAILED -- not running the perf sweep\n";
+      // Emit the JSON before returning. Without this the consumer sees no
+      // document at all and cannot distinguish a correctness failure from a
+      // crash -- which are different verdicts with different handling: one
+      // rejects the candidate, the other quarantines it and attempts device
+      // recovery.
+      if (json_out) {
+        if (json_path.empty()) {
+          print_json_report(std::cout);
+        } else {
+          std::ofstream jf(json_path);
+          if (jf) {
+            print_json_report(jf);
+          }
+        }
+      }
       return 1;
     }
   }
@@ -1836,6 +2182,19 @@ int main(int argc, char** argv) {
   }
 
   print_report(baseline);
+
+  if (json_out) {
+    if (json_path.empty()) {
+      print_json_report(std::cout);
+    } else {
+      std::ofstream jf(json_path);
+      if (!jf) {
+        std::cerr << "could not open " << json_path << " for --json-out\n";
+        return 2;
+      }
+      print_json_report(jf);
+    }
+  }
 
   // Exit code reflects dispatch sanity, not speed: every linear-suite
   // prefill buffer row must have dispatched coopmat, no coopmat may appear
