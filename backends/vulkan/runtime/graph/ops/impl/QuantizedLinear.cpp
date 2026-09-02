@@ -115,9 +115,14 @@ static const char* const kDq8caTsweepPrefixes[] = {
     // zpi + compile-time elision of the statically-true a_active guard
     // (intervention G of dq8ca-prefill-stall-reduction), combined with the
     // dbuf4 default's own B_STRIDE_U32 skew removal + coalesced B-store
-    // rewrite. PROMOTED 2026-08-28 as the shipped default -- see
-    // dq8ca_coopmat_variant() below.
+    // rewrite. Superseded 2026-09-01 by tsweep_dbuf4zpgtr_t below -- kept
+    // listed (env-var-selectable) for comparison/rollback.
     "tsweep_dbuf4zpg_t",
+    // dbuf4zpg with its per-thread scalar A-staging replaced by a
+    // coopMat-mediated coopMatLoad(global)->coopMatStore(LDS) sequence (B
+    // staging/zp-hoist/nibble-widening unchanged). PROMOTED 2026-09-01 as
+    // the shipped default -- see dq8ca_coopmat_variant() below.
+    "tsweep_dbuf4zpgtr_t",
     // (dq8ca-dequant-unpack-ablation Addendum 11 -- abl_aconst/abl_areadc/
     // abl_abconst -- were measurement-only variants deleted once each
     // attribution was recorded; see openspec/changes/dq8ca-dequant-unpack-
@@ -210,8 +215,43 @@ static const std::string& q4gsw_coopmat_variant() {
 
 static const std::string& dq8ca_coopmat_variant() {
   // Default (no ET_VK_DQ8CA_COOPMAT_VARIANT set):
-  // tsweep_dbuf4zpg_t128x64k32g42s32 (WG_TILE 128x64x32, SG_GRID 4x2, wave32)
-  // -- PROMOTED 2026-08-28 from the prior default
+  // tsweep_dbuf4zpgtr_t128x64k32g42s32 (WG_TILE 128x64x32, SG_GRID 4x2,
+  // wave32) -- PROMOTED 2026-09-01 from tsweep_dbuf4zpg_t128x64k32g42s32
+  // (below). Same tile/B-staging/zp-hoist as dbuf4zpg; the only change is
+  // A-staging: per-thread scalar scatter into Ash_int8 replaced by a
+  // coopMatLoad(global)->coopmat<>->coopMatStore(LDS) sequence (requires
+  // t_packed_int8_input in the ROW-MAJOR kPackedInt8_4W layout -- see
+  // dq8ca_variant_wants_rowmajor_a() above).
+  //
+  // Real, on-device, correctness-validated on the sibling
+  // `dq8ca-tr-staged-a-on-zpg` branch (cut from this branch @ 1f3322ca22):
+  // microbench kern_us -6.90%/-6.82%/-6.76% on 8B/3B/1B respectively (46.50%
+  // -> 49.94% efficiency of int8 peak on 8B), agreeing to within 0.14pp
+  // across all three model sizes with spreads 2-3 orders of magnitude
+  // smaller than the delta. Real e2e prefill (`ET_VK_TEXTURE_COOPMAT=1
+  // ET_VK_EXECUTE_NODE_THRESHOLD=32`, xgpusw-debug08/00000b750f413c33,
+  // maxpin 980/5333/934): 349.7 -> 364.5 tok/s on 8B, +4.2%. vgpr_count fell
+  // 133 -> 128. Correctness: 10/10 consecutive clean (buffer) + 6/6
+  // consecutive clean (texture3d) across all three model sizes, dispatch
+  // confirmed by kernel name each time; also backed by an exhaustive
+  // host-side address-equivalence proof that the old per-thread and new
+  // per-subgroup A-staging schemes write the identical Ash_int8 address set
+  // (test_llama_microbench's bench_reference can't cover M/N>256, so this
+  // substitutes for an M=2048 output differential -- same substitution
+  // dq8ca-prefill-stall-reduction used for the same harness limitation).
+  // A follow-up tile re-sweep against this shader's own (lower)
+  // register-pressure profile (coopmat-tr-tilesweep-4w-port, 2026-09-01)
+  // tried 7 further candidates (including the two 256-row shapes structurally
+  // undispatchable under this harness's fixed-M=128 rank-3 case) and found no
+  // better tile; deep PAL-counter/ISA/ablation follow-up work in that same
+  // change found no further lever either (both A's and B's remaining costs
+  // are small and near their practical floor) -- t128x64k32g42s32 is the
+  // best known geometry for this shader.
+  // Full record: openspec/changes/archive/2026-08-31-dq8ca-tr-staged-a-on-zpg
+  // and openspec/changes/coopmat-tr-tilesweep-4w-port.
+  //
+  // Prior default (dbuf4zpg, still selectable via
+  // tsweep_dbuf4zpg_t128x64k32g42s32), PROMOTED 2026-08-28 from
   // tsweep_dbuf4_t128x128k64g81s64 (below). Combines every validated 8da4w win
   // to date: zp-hoist (zero-point
   // + activation-scale correction moved out of the per-group loop), the
@@ -288,7 +328,7 @@ static const std::string& dq8ca_coopmat_variant() {
   static const std::string variant = [] {
     const char* env = std::getenv("ET_VK_DQ8CA_COOPMAT_VARIANT");
     if (!env) {
-      return std::string("tsweep_dbuf4zpg_t128x64k32g42s32");
+      return std::string("tsweep_dbuf4zpgtr_t128x64k32g42s32");
     }
     const std::string v(env);
     if (is_dq8ca_shippable_token(v)) {
@@ -545,7 +585,8 @@ static bool dq8ca_variant_wants_rowmajor_a() {
   const std::string& v = dq8ca_coopmat_variant();
   return v.rfind("tsweep_dbuf4tr_t", 0) == 0 ||
       v.rfind("tsweep_dbuf4trm_t", 0) == 0 ||
-      v.rfind("tsweep_dbuf4trd_t", 0) == 0;
+      v.rfind("tsweep_dbuf4trd_t", 0) == 0 ||
+      v.rfind("tsweep_dbuf4zpgtr_t", 0) == 0;
 }
 
 // Mirrors the coopmat branch of pick_linear_dqa_qw_shader() so graph-build time
