@@ -104,6 +104,11 @@ static const char* const kQ4gswTsweepPrefixes[] = {
     "tsweep_dbuf2_t",
     "tsweep_dbuf3_t",
     "tsweep_dbuf4_t",
+    // (coopmat-lds-fence 2026-09-03: tsweep_dbuf4nf_t / tsweep_dbuf4zpgtrnf_t
+    // -- unfenced clones of the two shipped defaults, used to measure the cost
+    // of the memoryBarrierShared() fix via an interleaved same-binary A/B.
+    // Result: 8da4w +0.001%, 4w -0.002%, both inside a 0.017-0.037% noise band.
+    // Deleted after measurement.)
     "tsweep_t",
 };
 

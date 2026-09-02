@@ -265,6 +265,13 @@ void main() {
     const uint nxt_base_A = ((chunk + 1u) % 2u) * ASH_SLICE;
     const uint nxt_base_B = ((chunk + 1u) % 2u) * BSH_SLICE;
 
+    // coopmat-lds-fence: barrier() alone does NOT order shared stores against a
+    // subsequent coopMatLoad on the M51 Xclipse/AMD-PAL driver -- symptom is one
+    // stale MMA_M-row band of A, all columns, ~2.5% of runs, no crash (observed
+    // 2026-09-02 in sdpa_compute_out_coopmat.glsl). Measured cost of the fence:
+    // none (see this change's results). See memory
+    // `coopmat-lds-needs-explicit-memorybarriershared`.
+    memoryBarrierShared();
     barrier();
 
     // --- prefetch chunk+1 -> temp ---
@@ -339,6 +346,13 @@ void main() {
     const uint cur_base_A = (chunk % 2u) * ASH_SLICE;
     const uint cur_base_B = (chunk % 2u) * BSH_SLICE;
 
+    // coopmat-lds-fence: barrier() alone does NOT order shared stores against a
+    // subsequent coopMatLoad on the M51 Xclipse/AMD-PAL driver -- symptom is one
+    // stale MMA_M-row band of A, all columns, ~2.5% of runs, no crash (observed
+    // 2026-09-02 in sdpa_compute_out_coopmat.glsl). Measured cost of the fence:
+    // none (see this change's results). See memory
+    // `coopmat-lds-needs-explicit-memorybarriershared`.
+    memoryBarrierShared();
     barrier();
 
     [[unroll]] for (uint k = 0; k < WG_TILE_K / MMA_K; ++k) {
@@ -403,6 +417,13 @@ void main() {
   [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
     // Guards Csh against the previous iteration's readers. Inert on i == 0 but
     // must stay unconditional to remain workgroup-uniform.
+    // coopmat-lds-fence: barrier() alone does NOT order shared stores against a
+    // subsequent coopMatLoad on the M51 Xclipse/AMD-PAL driver -- symptom is one
+    // stale MMA_M-row band of A, all columns, ~2.5% of runs, no crash (observed
+    // 2026-09-02 in sdpa_compute_out_coopmat.glsl). Measured cost of the fence:
+    // none (see this change's results). See memory
+    // `coopmat-lds-needs-explicit-memorybarriershared`.
+    memoryBarrierShared();
     barrier();
     [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
 #ifdef HAS_BIAS
