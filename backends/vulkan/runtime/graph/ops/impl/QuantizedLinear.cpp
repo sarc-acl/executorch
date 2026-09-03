@@ -104,6 +104,11 @@ static const char* const kQ4gswTsweepPrefixes[] = {
     "tsweep_dbuf2_t",
     "tsweep_dbuf3_t",
     "tsweep_dbuf4_t",
+    // coopmat-tr-tilesweep-4w-port: coopMat-mediated A staging ported onto
+    // dbuf4 (buffer storage only -- see linear_q4gsw_coopmat_tsweep_dbuf4tr's
+    // own header for why texture3d keeps dbuf4's original A-staging).
+    // NOT the shipped default.
+    "tsweep_dbuf4tr_t",
     "tsweep_t",
 };
 
@@ -118,6 +123,31 @@ static const char* const kDq8caTsweepPrefixes[] = {
     // rewrite. PROMOTED 2026-08-28 as the shipped default -- see
     // dq8ca_coopmat_variant() below.
     "tsweep_dbuf4zpg_t",
+    // dq8ca-tr-staged-a-on-zpg: re-introduced tsweep_dbuf4tr_t (copied back
+    // from dq8ca-uvec4-redesign, unmodified) to re-verify it standalone
+    // before building on it, plus tsweep_dbuf4zpgtr_t -- tsweep_dbuf4zpg_t's
+    // A-staging (per-thread scalar scatter) replaced by tsweep_dbuf4tr_t's
+    // coopMat-mediated technique; B staging/zp-hoist/nibble-widening are
+    // dbuf4zpg's, unchanged. Neither is the shipped default -- see
+    // openspec/changes/dq8ca-tr-staged-a-on-zpg.
+    "tsweep_dbuf4tr_t",
+    "tsweep_dbuf4zpgtr_t",
+    // (coopmat-tr-tilesweep-4w-port 2026-09-01: "-trb" -- dbuf4zpgtr with B
+    // ALSO coopMat-staged via a one-time prepack that unpacks int4->int8.
+    // Measured 13.55% SLOWER at t128x64k32g42s32 and 12.09% SLOWER at
+    // t256x64k32g44s32 (a larger WG_TILE_M closed only ~1.1% of the gap) --
+    // int4->int8 doubles B's global-memory read traffic, outweighing the
+    // ~5% ALU saving from removing widen_nibbles at every tile tried.
+    // Deleted after measurement; see results.md Addendum 10-11.)
+    // (coopmat-tr-tilesweep-4w-port 2026-09-01: abl_wcorr diagnostic
+    // ablation -- bypassed the wcorr_sh zp-hoist reduction loop, found only
+    // 0.55% cost (negligible). Deleted once recorded; see results.md
+    // Addendum 6.)
+    // (coopmat-tr-tilesweep-4w-port 2026-09-01: abl_aconst/abl_bconst
+    // diagnostic ablations on top of dbuf4zpgtr -- isolated A's global-read
+    // cost (2.87%) and B's widen_nibbles dequant ALU cost (5.32%). Deleted
+    // once the attribution was recorded; see this change's results.md
+    // Addendum 4.)
     // (dq8ca-dequant-unpack-ablation Addendum 11 -- abl_aconst/abl_areadc/
     // abl_abconst -- were measurement-only variants deleted once each
     // attribution was recorded; see openspec/changes/dq8ca-dequant-unpack-
@@ -545,7 +575,8 @@ static bool dq8ca_variant_wants_rowmajor_a() {
   const std::string& v = dq8ca_coopmat_variant();
   return v.rfind("tsweep_dbuf4tr_t", 0) == 0 ||
       v.rfind("tsweep_dbuf4trm_t", 0) == 0 ||
-      v.rfind("tsweep_dbuf4trd_t", 0) == 0;
+      v.rfind("tsweep_dbuf4trd_t", 0) == 0 ||
+      v.rfind("tsweep_dbuf4zpgtr_t", 0) == 0;
 }
 
 // Mirrors the coopmat branch of pick_linear_dqa_qw_shader() so graph-build time
@@ -846,6 +877,15 @@ ValueRef prepack_quantized_linear_weight(
   graph.cache_prepack(qmat2_data, kernel_name, qmat2);
   return qmat2;
 }
+
+// (coopmat-tr-tilesweep-4w-port 2026-09-01:
+// prepack_dq8ca_weight_int8_rowmajor()
+// -- a second prepack unpacking int4 weight into row-major int8 for a
+// coopMat-staged-B ("-trb") dq8ca variant -- was built twice (two tiles),
+// correctness-validated both times, and measured 13.55% / 12.09% SLOWER than
+// -tr (int4->int8 doubles B's global-memory read traffic; a larger
+// WG_TILE_M closed only ~1.1% of the gap). Removed after measurement; see
+// results.md Addendum 10-11.)
 
 //
 // Dispatch nodes
