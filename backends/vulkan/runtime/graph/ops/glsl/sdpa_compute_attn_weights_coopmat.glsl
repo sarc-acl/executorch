@@ -28,7 +28,9 @@
  *  2. The causal mask cannot be applied to a coopmat accumulator (opaque
  *     lane->element mapping), so the scaled fp16 result is coopMatStore'd to a
  *     shared [s][c] scratch and then copied to global scalar-wise, applying the
- *     per-element mask. A whole-WG-tile that is entirely above the diagonal is
+ *     per-element mask. That scratch is BANDED (SG_GRID_Y * MMA_M rows, see
+ *     Csh below) and drained one accumulator row-block per round, rather than
+ *     buffering the whole workgroup tile. A whole-WG-tile that is entirely above the diagonal is
  *     written as -inf and skips the MMA loop (~halves prefill QK^T work).
  *
  * Each output tile is classified by where it sits relative to the causal
@@ -136,7 +138,28 @@ const uint B_ROW = WG_TILE_N + B_PAD;
 
 shared float16_t Ash[WG_TILE_M * A_ROW];
 shared float16_t Bsh[WG_TILE_K * B_ROW];
-shared float16_t Csh[WG_TILE_M * WG_TILE_N];
+
+// Result staging for the masked scalar epilogue: SG_GRID_Y bands of MMA_M rows,
+// each WG_TILE_N wide, row-major -- NOT the full WG_TILE_M x WG_TILE_N tile.
+// One epilogue round drains accumulator row-block i from every subgroup at
+// once, and that is exactly SG_GRID_Y * MMA_M rows, so a full-tile buffer would
+// cost MMAS_PER_SG_M x more LDS for no extra parallelism. Sizing verbatim from
+// the linear kernel that solved this
+// (linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr.glsl:206-212).
+//
+// SG_GRID_Y * MMA_M is the floor, not an arbitrary pick: it is precisely the
+// rows all subgroups can drain simultaneously. Anything smaller makes subgroups
+// take turns, trading LDS for serialization.
+//
+// At the shipped t128x64k32g22s64: 32 rows instead of 128, so Csh is
+// 32*64*2 = 4096 B instead of 16384 B, and the shader total is
+//   Ash 128*(32+8)*2 = 10240
+// + Bsh  32*(64+8)*2 =  4608
+// + Csh  32*64*2     =  4096
+// = 18944 B, 58% of the 32768 B co-residency budget (two workgroups per CU),
+// down from 31232 B / 95%.
+const uint CSH_ROWS = SG_GRID_Y * MMA_M;
+shared float16_t Csh[CSH_ROWS * WG_TILE_N];
 
 coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> result[MMAS_PER_SG_M][MMAS_PER_SG_N];
 
@@ -333,36 +356,70 @@ void main() {
 
     // --- Scale on the fp32 accumulator, store fp16 into Csh [s][c] scratch ---
     const float16_t inv_scale_h = float16_t(inv_scale);
+    // Round i drains accumulator row-block i from EVERY subgroup into the
+    // banded Csh at once, then the whole workgroup copies that band out with
+    // the per-element mask.
+    //
+    // The rows in flight in one round are disjoint global row ranges: subgroup
+    // warpInTile.y contributes rows
+    //   [s_tile_base + y*SG_TILE_M + i*MMA_M, +MMA_M)
+    // and consecutive y are SG_TILE_M apart, which is MMAS_PER_SG_M >= 1 times
+    // MMA_M, so the bands never overlap; across rounds the i*MMA_M term
+    // separates them. That disjointness is what makes the banded buffer sound.
+    //
+    // The global address per element is unchanged from the full-tile version:
+    // there local row was MMA_M*(MMAS_PER_SG_M*warpInTile.y + i) + r, and here
+    // lr = warpInTile.y*MMA_M + r so lr/MMA_M recovers warpInTile.y and
+    // lr%MMA_M recovers r, giving
+    //   (lr/MMA_M)*SG_TILE_M + i*MMA_M + (lr%MMA_M)
+    // = MMA_M*(MMAS_PER_SG_M*warpInTile.y + i) + r   (SG_TILE_M = MMAS_PER_SG_M*MMA_M)
+    //
+    // PORTABILITY NOTE: the barrier() in the loop body keeps this loop rolled
+    // despite [[unroll]], so result[i][j] IS dynamically indexed. Coopmat
+    // arrays are opaque per-lane storage and dynamic indexing is exactly the
+    // construct the Xclipse/AMD-PAL compiler has broken before -- check this
+    // first if the masked path miscompiles on M51. Carried over from
+    // linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr.glsl:679-683, which pays the
+    // same cost for the same reason. Do NOT "fix" it by removing the barrier.
+    const uint CSH_ELEMS = CSH_ROWS * WG_TILE_N;
     [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+        // Guards Csh against the PREVIOUS round's readers. Inert on i == 0 but
+        // must stay unconditional to remain workgroup-uniform.
+        barrier();
+
         [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
             result[i][j] = result[i][j] * inv_scale; // fp32 scalar multiply
             coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> out_tile =
                 coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]);
-            uint local_row = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
-            uint local_col = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
             coopMatStore(
                 out_tile, Csh,
-                local_row * WG_TILE_N + local_col, WG_TILE_N,
+                warpInTile.y * MMA_M * WG_TILE_N +
+                    MMA_N * (MMAS_PER_SG_N * warpInTile.x + j),
+                WG_TILE_N,
                 gl_CooperativeMatrixLayoutRowMajor);
         }
-    }
-    barrier();
 
-    // --- Copy Csh -> global attn_weights with the per-element causal mask ---
-    for (uint idx = gl_LocalInvocationID.x; idx < WG_TILE_M * WG_TILE_N;
-         idx += WG_SIZE) {
-        const uint ls = idx / WG_TILE_N;
-        const uint lc = idx % WG_TILE_N;
-        const uint gs = s_tile_base + ls;
-        const uint gc = c_tile_base + lc;
-        if (gs < uint(S) && gc < uint(context_len)) {
-            float16_t v = Csh[idx];
-            if (int(gc) > int(gs) + input_pos) {
-                v = NEG_INF;
+        // Separates this round's writes from this round's reads.
+        memoryBarrierShared();
+        barrier();
+
+        // --- Copy this band -> global attn_weights with the per-element mask ---
+        for (uint t = gl_LocalInvocationID.x; t < CSH_ELEMS; t += WG_SIZE) {
+            const uint lr = t / WG_TILE_N;
+            const uint lc = t % WG_TILE_N;
+            const uint ls =
+                (lr / MMA_M) * SG_TILE_M + i * MMA_M + (lr % MMA_M);
+            const uint gs = s_tile_base + ls;
+            const uint gc = c_tile_base + lc;
+            if (gs < uint(S) && gc < uint(context_len)) {
+                float16_t v = Csh[t];
+                if (int(gc) > int(gs) + input_pos) {
+                    v = NEG_INF;
+                }
+                t_attn_weights[(uint(q_h) * uint(S_aligned) + gs) *
+                                   uint(aw_row_width) +
+                               gc] = v;
             }
-            t_attn_weights[(uint(q_h) * uint(S_aligned) + gs) *
-                               uint(aw_row_width) +
-                           gc] = v;
         }
     }
 }
