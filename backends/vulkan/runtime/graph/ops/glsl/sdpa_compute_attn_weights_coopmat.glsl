@@ -263,6 +263,11 @@ void main() {
             Bsh[(d_base + 3u) * B_ROW + lc] = v.w;
         }
 
+        // coopmat-lds-fence (WRITE->READ): the Ash/Bsh staging stores above vs the coopMatLoad below -- the SAME direction that produced the observed stale-A-band bug in attn*V.
+        // barrier() alone does NOT order shared stores against a subsequent
+        // coopMatLoad on the M51 Xclipse/AMD-PAL driver (~2.5% of runs, one stale
+        // MMA_M-row band, silently wrong, no crash). Measured cost: none.
+        memoryBarrierShared();
         barrier();
 
         // --- Cooperative matrix MMA: result += A * B  (B is already K^T) ---
@@ -294,6 +299,11 @@ void main() {
             }
         }
 
+        // coopmat-lds-fence (WAR): this chunk's coopMatLoad reads vs the next chunk's staging stores.
+        // barrier() alone does NOT order shared stores against a subsequent
+        // coopMatLoad on the M51 Xclipse/AMD-PAL driver (~2.5% of runs, one stale
+        // MMA_M-row band, silently wrong, no crash). Measured cost: none.
+        memoryBarrierShared();
         barrier();
     }
 
@@ -346,6 +356,11 @@ void main() {
                 gl_CooperativeMatrixLayoutRowMajor);
         }
     }
+    // coopmat-lds-fence (WRITE->READ): the coopMatStore into Csh above vs the epilogue read below.
+    // barrier() alone does NOT order shared stores against a subsequent
+    // coopMatLoad on the M51 Xclipse/AMD-PAL driver (~2.5% of runs, one stale
+    // MMA_M-row band, silently wrong, no crash). Measured cost: none.
+    memoryBarrierShared();
     barrier();
 
     // --- Copy Csh -> global attn_weights with the per-element causal mask ---

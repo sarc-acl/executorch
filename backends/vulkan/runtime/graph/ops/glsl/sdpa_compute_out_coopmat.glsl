@@ -257,6 +257,11 @@ void main() {
             }
         }
 
+        // coopmat-lds-fence (WAR): this chunk's Ash/Bsh coopMatLoad reads vs the next chunk's stores.
+        // barrier() alone does NOT order shared stores against a subsequent
+        // coopMatLoad on the M51 Xclipse/AMD-PAL driver (~2.5% of runs, one stale
+        // MMA_M-row band, silently wrong, no crash). Measured cost: none.
+        memoryBarrierShared();
         barrier();
     }
 
