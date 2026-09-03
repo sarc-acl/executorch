@@ -96,6 +96,7 @@
 #include <iostream>
 #include <limits>
 #include <numeric>
+#include <set>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -1122,12 +1123,19 @@ const std::vector<SdpaRegime> kSdpaRegimes = {
 };
 
 struct SdpaRunResult {
-  float mean_us; // total (qk + av)
+  float mean_us; // total (qk + softmax + av)
   float stdev_us;
   float qk_mean_us;
   float qk_stdev_us;
   float av_mean_us;
   float av_stdev_us;
+  // The row-wise softmax between the two GEMMs. Timed separately because an
+  // ETDump showed it is the LARGEST single SDPA shader at the 8B prefill shape
+  // -- bigger than either GEMM -- and a single ETDump capture is far too noisy
+  // to optimize against (capture-to-capture spread was seen at +-20%, against
+  // a querypool CoV here of well under 1%).
+  float softmax_mean_us;
+  float softmax_stdev_us;
   std::vector<std::string> dispatched_kernels; // from the last timed run
 };
 
@@ -1263,6 +1271,7 @@ SdpaRunResult sdpa_run_case(
   std::vector<float> total_timings_us;
   std::vector<float> qk_timings_us;
   std::vector<float> av_timings_us;
+  std::vector<float> softmax_timings_us;
   std::vector<std::string> last_dispatched;
   for (int i = 0; i < kTimedRuns; ++i) {
     graph.execute();
@@ -1272,11 +1281,19 @@ SdpaRunResult sdpa_run_case(
 
     float qk_time_us = 0.0f;
     float av_time_us = 0.0f;
+    float softmax_time_us = 0.0f;
     last_dispatched.clear();
     for (const auto& r : shader_results) {
       last_dispatched.push_back(r.kernel_name);
       const uint64_t duration_ns = r.end_time_ns - r.start_time_ns;
-      if (r.kernel_name.find("sdpa_compute_attn_weights") !=
+      // Order matters: "sdpa_attn_weights_softmax" also contains
+      // "sdpa_attn_weights", but NOT "sdpa_compute_attn_weights", so the qk
+      // test below cannot capture it. Checked first regardless, so a future
+      // rename cannot silently fold softmax into the qk bucket.
+      if (r.kernel_name.find("softmax") != std::string::npos) {
+        softmax_time_us += static_cast<float>(duration_ns) / 1000.0f;
+      } else if (
+          r.kernel_name.find("sdpa_compute_attn_weights") !=
           std::string::npos) {
         qk_time_us += static_cast<float>(duration_ns) / 1000.0f;
       } else if (r.kernel_name.find("sdpa_compute_out") != std::string::npos) {
@@ -1285,7 +1302,8 @@ SdpaRunResult sdpa_run_case(
     }
     qk_timings_us.push_back(qk_time_us);
     av_timings_us.push_back(av_time_us);
-    total_timings_us.push_back(qk_time_us + av_time_us);
+    softmax_timings_us.push_back(softmax_time_us);
+    total_timings_us.push_back(qk_time_us + av_time_us + softmax_time_us);
   }
 
   SdpaRunResult result;
@@ -1295,6 +1313,9 @@ SdpaRunResult sdpa_run_case(
   result.qk_stdev_us = stdev_of(qk_timings_us, result.qk_mean_us);
   result.av_mean_us = mean_of(av_timings_us);
   result.av_stdev_us = stdev_of(av_timings_us, result.av_mean_us);
+  result.softmax_mean_us = mean_of(softmax_timings_us);
+  result.softmax_stdev_us =
+      stdev_of(softmax_timings_us, result.softmax_mean_us);
   result.dispatched_kernels = last_dispatched;
   return result;
 }
@@ -1322,6 +1343,7 @@ void emit_sdpa_records(
     float stdev;
   } subs[] = {
       {"qk", r.qk_mean_us, r.qk_stdev_us},
+      {"softmax", r.softmax_mean_us, r.softmax_stdev_us},
       {"av", r.av_mean_us, r.av_stdev_us},
       {"total", r.mean_us, r.stdev_us},
   };
@@ -1852,6 +1874,40 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
         first_mismatch = i;
       }
     }
+  }
+
+  // Localize the mismatches when there are any. A scattered handful spread
+  // over every head and row means something timing-dependent; a run confined
+  // to one head, one row block, or one column range points at an indexing or
+  // tile-boundary bug. Output is [S, Q_H, D], so decode each flat index.
+  // attn*V's M-tile is 64 rows (WG_TILE_M) and its N-tile is WG_TILE_N=64.
+  if (mismatches > 0) {
+    const int64_t D = c.head_dim, QH = c.num_heads;
+    int64_t s_min = c.seq_len, s_max = -1, d_min = D, d_max = -1;
+    std::set<int64_t> heads, s_vals, m_tiles;
+    for (int64_t i = 0; i < q_numel; ++i) {
+      const float diff = std::fabs(outf[i] - ref[i]);
+      if (diff <= abs_tol + rel_tol * std::fabs(ref[i])) {
+        continue;
+      }
+      const int64_t s = i / (QH * D), h = (i / D) % QH, d = i % D;
+      s_min = std::min(s_min, s);
+      s_max = std::max(s_max, s);
+      d_min = std::min(d_min, d);
+      d_max = std::max(d_max, d);
+      heads.insert(h);
+      s_vals.insert(s);
+      m_tiles.insert(s / 64);
+    }
+    std::cout << "\n[sdpa-mismatch-loc] " << c.name << " n=" << mismatches
+              << " rows=[" << s_min << "," << s_max
+              << "] distinct_rows=" << s_vals.size() << " cols=[" << d_min
+              << "," << d_max << "]" << " heads=" << heads.size() << "/" << QH
+              << " attnV_m_tiles={";
+    for (auto t : m_tiles) {
+      std::cout << t << ",";
+    }
+    std::cout << "}\n";
   }
 
   const bool numeric_ok = mismatches == 0;
