@@ -34,6 +34,20 @@
 // Other flags:
 //   --model=<substr>     only run models whose name contains <substr>
 //   --correctness-only   run just the linear correctness matrix, skip perf
+//   --sdpa-regions-only  enumerate the QK^T causal-mask tile grid for every
+//                       SDPA correctness case and print each tile's region
+//                       classification (all_masked / all_visible / diagonal),
+//                       then report which of the three shader paths the gate
+//                       actually reaches. Host-side only, no GPU. A path no
+//                       case produces a tile for is UNCOVERED, however many
+//                       times --sdpa-correctness-only passes.
+//   --sdpa-tier=<fast|regions|all>
+//                       which SDPA correctness tier to run; default all.
+//                       "fast" = the original S=128 cases, the cheap
+//                       post-edit pre-check. "regions" = the S=256 cases
+//                       that put a tile in every QK^T mask region (4x the
+//                       reference cost). "all" = the extended gate, which is
+//                       what an accept decision requires.
 //   --sdpa-correctness-only  run just the SDPA coopmat correctness cases
 //                       (sdpa_compute_attn_weights_coopmat /
 //                       sdpa_compute_out_coopmat vs. a CPU causal-attention
@@ -1396,18 +1410,261 @@ struct SdpaCorrectnessCase {
   int64_t head_dim; // D
   int64_t num_heads; // Q_H
   int64_t num_kv_heads; // KV_H
+  // "fast"    -- the cheap pre-check tier, run after any shader edit.
+  // "regions" -- the region-coverage tier: the smallest shapes that put a
+  //              tile in EVERY QK^T mask region (see sdpa_report_qk_regions).
+  //              4x the reference cost of "fast", so it is kept separate to
+  //              protect the 10+ repeat discipline (--sdpa-tier).
+  const char* tier;
 };
 const std::vector<SdpaCorrectnessCase> kSdpaCorrectnessCases = {
     // Minimal GQA case: 128 is the smallest legal QK^T M-tile multiple, 64
     // the smallest legal head_dim (both QK^T K-tile and attn*V N-tile).
-    {"tiny_gqa", 128, 64, 2, 1},
+    {"tiny_gqa", 128, 64, 2, 1, "fast"},
     // 1B's real head configuration (head_dim=64, 32 Q heads, 8 KV heads --
     // kSdpaModels), S truncated from the real 2048 to the same aligned 128
     // so the CPU reference stays fast; this is the shape most likely to
     // exercise a head-indexing (GQA) bug the tiny case's group size of 2
     // could hide.
-    {"1b_head_config", 128, 64, 32, 8},
+    {"1b_head_config", 128, 64, 32, 8, "fast"},
+    // Region-coverage tier. S=256 is the SMALLEST size that reaches all three
+    // QK^T mask regions at the shipped 128x64 tile: it gives num_tiles_m=2,
+    // num_tiles_n=4, so
+    //   m=0: n=0,1 diagonal      n=2,3 fully masked
+    //   m=1: n=0,1 fully visible n=2,3 diagonal
+    // which populates every class AND both boundary transitions
+    // (visible->diagonal and diagonal->masked). S=192 is not usable: it is
+    // not a multiple of WG_TILE_M=128, so SDPA.cpp's alignment gate would
+    // refuse to dispatch the coopmat shader at all.
+    //
+    // Also gives sdpa_out 8 K-chunks (context_len/WG_TILE_K = 256/32) instead
+    // of 4, so a double-buffer ping-pong parity error cannot hide in a
+    // 2-iteration loop.
+    //
+    // Cost: the reference is O(S^2*D*Q_H), so these are 4x the "fast" cases
+    // (~537 M MACs for the 32-head one against ~134 M) -- seconds per pass,
+    // not sub-second. That is why they are a separate tier.
+    {"tiny_gqa_s256", 256, 64, 2, 1, "regions"},
+    {"1b_head_config_s256", 256, 64, 32, 8, "regions"},
 };
+
+// ---------------- QK^T mask-region enumeration (host-side) ----------------
+// sdpa_compute_attn_weights_coopmat.glsl classifies each WG tile by where it
+// sits relative to the causal diagonal, and runs different code per class.
+// A correctness gate only covers a class if some case actually produces a
+// tile in it, so enumerate the grid rather than assume (specs
+// sdpa-coopmat-causal-mask-paths: "A correctness gate is not treated as
+// covering a path its shapes cannot reach").
+//
+//   fully masked : c_tile_base > s_tile_base + WG_TILE_M - 1 + input_pos
+//                  (lowest context index in the tile already exceeds the
+//                  highest s + input_pos) -- the shader's tile_all_masked
+//   fully visible: c_tile_base + WG_TILE_N - 1 <= s_tile_base + input_pos
+//                  (highest context index is within the lowest row's window)
+//   diagonal     : neither, so the per-element mask is required
+//
+// Both fast-path conditions holding at once would require
+// WG_TILE_M + WG_TILE_N < 2, so the classification is exhaustive and
+// non-overlapping by construction -- `both` below asserts that per tile
+// instead of trusting the algebra.
+//
+// Tile dims mirror SDPA.cpp's kSdpaAttnDefaultDims / the shipped default in
+// sdpa_compute_attn_weights_coopmat.yaml. An ET_VK_SDPA_ATTN_COOPMAT_VARIANT
+// override would need these updated to match.
+constexpr int64_t kSdpaAttnWgTileM = 128;
+constexpr int64_t kSdpaAttnWgTileN = 64;
+
+struct SdpaRegionCounts {
+  int64_t tiles = 0;
+  int64_t all_masked = 0;
+  int64_t all_visible = 0;
+  int64_t diagonal = 0;
+  int64_t both = 0; // overlap; must stay 0
+};
+
+// Enumerates the QK^T tile grid for one shape. `verbose` prints the class of
+// every tile (task 2.1 wants the per-tile classification, not just totals).
+SdpaRegionCounts sdpa_enumerate_qk_regions(
+    int64_t S,
+    int64_t context_len,
+    int64_t input_pos,
+    bool verbose,
+    int64_t wg_tile_m = kSdpaAttnWgTileM,
+    int64_t wg_tile_n = kSdpaAttnWgTileN) {
+  SdpaRegionCounts c;
+  const int64_t num_tiles_m = (S + wg_tile_m - 1) / wg_tile_m;
+  const int64_t num_tiles_n = (context_len + wg_tile_n - 1) / wg_tile_n;
+  for (int64_t i = 0; i < num_tiles_m; ++i) {
+    for (int64_t j = 0; j < num_tiles_n; ++j) {
+      const int64_t s_base = wg_tile_m * i;
+      const int64_t c_base = wg_tile_n * j;
+      const bool masked = c_base > s_base + wg_tile_m - 1 + input_pos;
+      const bool visible = c_base + wg_tile_n - 1 <= s_base + input_pos;
+      ++c.tiles;
+      const char* label;
+      if (masked && visible) {
+        ++c.both;
+        label = "BOTH(BUG)";
+      } else if (masked) {
+        ++c.all_masked;
+        label = "all_masked";
+      } else if (visible) {
+        ++c.all_visible;
+        label = "all_visible";
+      } else {
+        ++c.diagonal;
+        label = "diagonal";
+      }
+      if (verbose) {
+        std::cout << "[sdpa-regions]   tile m=" << i << " n=" << j
+                  << " s_base=" << s_base << " c_base=" << c_base << " -> "
+                  << label << "\n";
+      }
+    }
+  }
+  return c;
+}
+
+// Checks the classification is exhaustive and non-overlapping AT ITS
+// BOUNDARIES, which is where an off-by-one actually hides. For a fixed M-tile
+// row, increasing the N-tile column must walk the classes in exactly the order
+//   [all_visible...] [diagonal...] [all_masked...]
+// with no class recurring once left. That single property catches both failure
+// modes the spec names: a boundary tile claimed by two classes (`overlap`,
+// which the shader's two conditions would have to both accept) and a boundary
+// tile claimed by none (which would show up as a class reappearing after the
+// run it belongs to). The transition columns themselves are printed, so the
+// "last fully-visible / first diagonal" and "last diagonal / first
+// fully-masked" pairs are on the record rather than inferred.
+bool sdpa_check_region_boundaries(
+    int64_t S,
+    int64_t context_len,
+    int64_t input_pos,
+    const char* label) {
+  const int64_t num_tiles_m = (S + kSdpaAttnWgTileM - 1) / kSdpaAttnWgTileM;
+  const int64_t num_tiles_n =
+      (context_len + kSdpaAttnWgTileN - 1) / kSdpaAttnWgTileN;
+  bool ok = true;
+  for (int64_t i = 0; i < num_tiles_m; ++i) {
+    // phase 0 = expecting all_visible, 1 = diagonal, 2 = all_masked
+    int phase = 0;
+    int64_t last_visible = -1, first_diagonal = -1;
+    int64_t last_diagonal = -1, first_masked = -1;
+    for (int64_t j = 0; j < num_tiles_n; ++j) {
+      const int64_t s_base = kSdpaAttnWgTileM * i;
+      const int64_t c_base = kSdpaAttnWgTileN * j;
+      const bool masked = c_base > s_base + kSdpaAttnWgTileM - 1 + input_pos;
+      const bool visible = c_base + kSdpaAttnWgTileN - 1 <= s_base + input_pos;
+      if (masked && visible) {
+        std::cout << "[sdpa-boundary] " << label << " m=" << i << " n=" << j
+                  << " OVERLAP: satisfies BOTH all_masked and all_visible\n";
+        ok = false;
+        continue;
+      }
+      const int cls = masked ? 2 : (visible ? 0 : 1);
+      if (cls < phase) {
+        std::cout << "[sdpa-boundary] " << label << " m=" << i << " n=" << j
+                  << " OUT OF ORDER: class " << cls
+                  << " reappeared after phase " << phase
+                  << " -- classification is not a clean visible/diagonal/"
+                     "masked partition\n";
+        ok = false;
+      }
+      phase = cls > phase ? cls : phase;
+      if (cls == 0) {
+        last_visible = j;
+      } else if (cls == 1) {
+        if (first_diagonal < 0) {
+          first_diagonal = j;
+        }
+        last_diagonal = j;
+      } else if (first_masked < 0) {
+        first_masked = j;
+      }
+    }
+    std::cout << "[sdpa-boundary] " << label << " m=" << i
+              << " last_visible=" << last_visible
+              << " first_diagonal=" << first_diagonal
+              << " last_diagonal=" << last_diagonal
+              << " first_masked=" << first_masked;
+    // Adjacency: a present transition must be between consecutive columns,
+    // i.e. no column is skipped between one class's end and the next's start.
+    bool adjacent = true;
+    if (last_visible >= 0 && first_diagonal >= 0 &&
+        first_diagonal != last_visible + 1) {
+      adjacent = false;
+    }
+    if (last_diagonal >= 0 && first_masked >= 0 &&
+        first_masked != last_diagonal + 1) {
+      adjacent = false;
+    }
+    if (!adjacent) {
+      std::cout << " NON-ADJACENT TRANSITION (a column is unclassified)";
+      ok = false;
+    }
+    std::cout << "\n";
+  }
+  return ok;
+}
+
+// Prints the region distribution for every correctness case and reports
+// whether the gate as a whole reaches all three classes. Returns true iff
+// no tile is doubly-classified AND all three classes are covered.
+bool sdpa_report_qk_regions(bool verbose, const char* tier = "all") {
+  SdpaRegionCounts total;
+  bool boundaries_ok = true;
+  for (const auto& c : kSdpaCorrectnessCases) {
+    if (std::string(tier) != "all" && std::string(c.tier) != tier) {
+      continue;
+    }
+    // input_pos == 0 for every case, so context_len == seq_len.
+    const SdpaRegionCounts r =
+        sdpa_enumerate_qk_regions(c.seq_len, c.seq_len, 0, verbose);
+    std::cout << "[sdpa-regions] " << c.name << " S=" << c.seq_len
+              << " context_len=" << c.seq_len << " tile=" << kSdpaAttnWgTileM
+              << "x" << kSdpaAttnWgTileN << " num_tiles_m="
+              << (c.seq_len + kSdpaAttnWgTileM - 1) / kSdpaAttnWgTileM
+              << " num_tiles_n="
+              << (c.seq_len + kSdpaAttnWgTileN - 1) / kSdpaAttnWgTileN
+              << " tiles=" << r.tiles << " all_masked=" << r.all_masked
+              << " all_visible=" << r.all_visible << " diagonal=" << r.diagonal
+              << " overlap=" << r.both << "\n";
+    total.tiles += r.tiles;
+    total.all_masked += r.all_masked;
+    total.all_visible += r.all_visible;
+    total.diagonal += r.diagonal;
+    total.both += r.both;
+    boundaries_ok =
+        sdpa_check_region_boundaries(c.seq_len, c.seq_len, 0, c.name) &&
+        boundaries_ok;
+  }
+  const bool exhaustive =
+      total.all_masked + total.all_visible + total.diagonal == total.tiles;
+  const bool covered =
+      total.all_masked > 0 && total.all_visible > 0 && total.diagonal > 0;
+  std::cout << "[sdpa-regions] TOTAL tiles=" << total.tiles
+            << " all_masked=" << total.all_masked
+            << " all_visible=" << total.all_visible
+            << " diagonal=" << total.diagonal << " overlap=" << total.both
+            << " exhaustive=" << (exhaustive ? "yes" : "NO")
+            << " all_three_covered=" << (covered ? "yes" : "NO") << "\n";
+  if (!covered) {
+    std::cout << "[sdpa-regions] UNCOVERED:";
+    if (total.all_masked == 0) {
+      std::cout << " all_masked";
+    }
+    if (total.all_visible == 0) {
+      std::cout << " all_visible";
+    }
+    if (total.diagonal == 0) {
+      std::cout << " diagonal";
+    }
+    std::cout << " -- these shader paths are NOT covered by this gate\n";
+  }
+  std::cout << "[sdpa-regions] boundaries_ok=" << (boundaries_ok ? "yes" : "NO")
+            << "\n";
+  return total.both == 0 && exhaustive && covered && boundaries_ok;
+}
 
 // Causal, GQA-aware fp32 CPU reference. q is [S, Q_H, D], k/v are
 // [S, KV_H, D] (row-major, batch=1 squeezed). kv_h = q_h / (Q_H / KV_H),
@@ -1463,8 +1720,21 @@ std::vector<float> sdpa_reference(
 // silent tiled fallback -- tiled is also numerically correct, so a pure
 // value comparison alone cannot tell the two apart) AND every output
 // element is within tolerance.
+// --sdpa-force-fallback: run the SDPA correctness cases with coopmat DISABLED,
+// so the tiled shaders serve the same shapes. Two uses:
+//  1. it proves the gate's dispatch assertion is load-bearing -- the tiled path
+//     is also numerically correct, so a pass here with qk_coopmat=NO must still
+//     be reported FAILED, otherwise a silent fallback would look like a pass;
+//  2. it is the control that separates "the coopmat shader is wrong" from "the
+//     harness/reference/softmax is wrong" when a case fails intermittently.
+bool g_sdpa_force_fallback = false;
+
 bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
-  unsetenv("ET_VK_DISABLE_COOPMAT");
+  if (g_sdpa_force_fallback) {
+    setenv("ET_VK_DISABLE_COOPMAT", "1", 1);
+  } else {
+    unsetenv("ET_VK_DISABLE_COOPMAT");
+  }
 
   GraphConfig config;
   config.enable_querypool = true;
@@ -1598,6 +1868,7 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
               << " ref=" << ref[first_mismatch] << ")";
   }
   std::cout << (numeric_ok && fired_ok ? " PASSED" : " FAILED") << "\n";
+  unsetenv("ET_VK_DISABLE_COOPMAT"); // restore the tree's default-on state
   return numeric_ok && fired_ok;
 }
 
@@ -1607,10 +1878,31 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
 // multiple times in a loop -- kept a single pass per call, like
 // run_linear_correctness, so a driver script controls the rep count and can
 // distinguish "which specific repeat failed."
-bool run_sdpa_correctness() {
+bool run_sdpa_correctness(const char* tier = "all") {
   bool all_ok = true;
+  // Report which QK^T mask regions these shapes actually reach before running
+  // them, so a pass is never mistaken for coverage of a path no case produces
+  // a tile for. Non-verbose: --sdpa-regions-only prints the per-tile detail.
+  const bool regions_covered = sdpa_report_qk_regions(/*verbose=*/false, tier);
+  if (!regions_covered) {
+    std::cout << "[sdpa-correctness] WARNING: tier=" << tier
+              << " does not cover every QK^T mask-region path (see "
+                 "[sdpa-regions] above)\n";
+  }
+  int64_t ran = 0;
   for (const auto& c : kSdpaCorrectnessCases) {
+    if (std::string(tier) != "all" && std::string(c.tier) != tier) {
+      continue;
+    }
+    ++ran;
     all_ok = sdpa_correctness_case(c) && all_ok;
+  }
+  std::cout << "[sdpa-correctness] tier=" << tier << " cases_run=" << ran
+            << "\n";
+  if (ran == 0) {
+    std::cout << "[sdpa-correctness] no case matched tier '" << tier
+              << "' -- treating as failure rather than a silent pass\n";
+    return false;
   }
   return all_ok;
 }
@@ -1968,6 +2260,12 @@ void print_usage() {
          "  --correctness-only   run just the linear correctness matrix\n"
          "  --sdpa-correctness-only  run just the SDPA coopmat correctness "
          "cases\n"
+         "  --sdpa-regions-only  enumerate the QK^T mask-region tile grid "
+         "(no GPU)\n"
+         "  --sdpa-tier=<fast|regions|all>  which SDPA correctness tier to "
+         "run (default all)\n"
+         "  --sdpa-force-fallback  run SDPA correctness with coopmat "
+         "DISABLED (control)\n"
          "  --skip-correctness   skip the correctness gate before perf\n"
          "  --list               print every case with its sizes, no GPU\n"
          "  --help               this message\n";
@@ -2024,6 +2322,8 @@ void list_cases(
 int main(int argc, char** argv) {
   bool linear = false, baseline = false, sdpa = false;
   bool correctness_only = false, sdpa_correctness_only = false;
+  bool sdpa_regions_only = false;
+  std::string sdpa_tier = "all";
   bool skip_correctness = false, list_only = false;
   bool production_diff = false;
   // Additive machine-readable output. Absent, every existing line is byte
@@ -2043,6 +2343,12 @@ int main(int argc, char** argv) {
       correctness_only = true;
     } else if (arg == "--sdpa-correctness-only") {
       sdpa_correctness_only = true;
+    } else if (arg == "--sdpa-regions-only") {
+      sdpa_regions_only = true;
+    } else if (arg.rfind("--sdpa-tier=", 0) == 0) {
+      sdpa_tier = arg.substr(std::string("--sdpa-tier=").size());
+    } else if (arg == "--sdpa-force-fallback") {
+      g_sdpa_force_fallback = true;
     } else if (arg == "--production-diff") {
       production_diff = true;
     } else if (arg == "--skip-correctness") {
@@ -2142,8 +2448,12 @@ int main(int argc, char** argv) {
   if (correctness_only) {
     return finish_correctness(run_linear_correctness(filter));
   }
+  if (sdpa_regions_only) {
+    return finish_correctness(
+        sdpa_report_qk_regions(/*verbose=*/true, sdpa_tier.c_str()));
+  }
   if (sdpa_correctness_only) {
-    return finish_correctness(run_sdpa_correctness());
+    return finish_correctness(run_sdpa_correctness(sdpa_tier.c_str()));
   }
   if (production_diff) {
     return finish_correctness(run_production_diff());
