@@ -60,10 +60,11 @@ utils::uvec3 quantize_and_pack_4h4w_global_wg_size(
       1u};
 }
 
-vkapi::ShaderInfo pick_quantize_and_pack_4h4w_with_group_sums_shader(
+static vkapi::ShaderInfo pick_quantize_and_pack_with_group_sums_shader(
     ComputeGraph* graph,
     const std::vector<ArgGroup>& args,
-    const std::vector<ValueRef>& resize_args) {
+    const std::vector<ValueRef>& resize_args,
+    const char* base_name) {
   const ValueRef packed_int_input = args.at(0).refs.at(0);
   const ValueRef fp_input = args.at(1).refs.at(0);
   const ValueRef packed_input_zps = args.at(1).refs.at(2);
@@ -71,7 +72,7 @@ vkapi::ShaderInfo pick_quantize_and_pack_4h4w_with_group_sums_shader(
 
   const int64_t group_size_val = graph->extract_scalar<int64_t>(group_size);
 
-  std::string shader_name = "quantize_and_pack_4h4w_with_group_sums";
+  std::string shader_name = base_name;
   if (group_size_val >= 128) {
     shader_name += "_o2w32";
   } else {
@@ -85,6 +86,25 @@ vkapi::ShaderInfo pick_quantize_and_pack_4h4w_with_group_sums_shader(
   add_zp_dtype_mode_suffix(shader_name, graph->dtype_of(packed_input_zps));
 
   return VK_KERNEL_FROM_STR(shader_name);
+}
+
+vkapi::ShaderInfo pick_quantize_and_pack_4h4w_with_group_sums_shader(
+    ComputeGraph* graph,
+    const std::vector<ArgGroup>& args,
+    const std::vector<ValueRef>& resize_args) {
+  return pick_quantize_and_pack_with_group_sums_shader(
+      graph, args, resize_args, "quantize_and_pack_4h4w_with_group_sums");
+}
+
+// Row-major (kPackedInt8_4W) output layout; same quantization and group-sum
+// reduction, same workgroup shapes, so the two share every dispatch helper
+// below. Only linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr consumes it.
+vkapi::ShaderInfo pick_quantize_and_pack_4w_with_group_sums_shader(
+    ComputeGraph* graph,
+    const std::vector<ArgGroup>& args,
+    const std::vector<ValueRef>& resize_args) {
+  return pick_quantize_and_pack_with_group_sums_shader(
+      graph, args, resize_args, "quantize_and_pack_4w_with_group_sums");
 }
 
 utils::uvec3 pick_quantize_and_pack_4h4w_with_group_sums_global_wg_size(
@@ -198,7 +218,7 @@ void add_quantize_and_pack_4h4w_node(
       {}));
 }
 
-void add_quantize_and_pack_4h4w_with_group_sums_node(
+static void add_quantize_and_pack_with_group_sums_node(
     ComputeGraph& graph,
     const QuantizationConfig& input_quant_config,
     const ValueRef fp_input,
@@ -206,7 +226,8 @@ void add_quantize_and_pack_4h4w_with_group_sums_node(
     const ValueRef packed_input_scales,
     const ValueRef packed_input_zps,
     const ValueRef packed_int_input,
-    const ValueRef group_size) {
+    const ValueRef group_size,
+    const DynamicDispatchNode::PickShaderFn& pick_shader) {
   // Only certain quantization types supported at the moment
   VK_CHECK_COND(input_quant_config.granularity == kPerChannel);
 
@@ -221,7 +242,7 @@ void add_quantize_and_pack_4h4w_with_group_sums_node(
 
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
       graph,
-      pick_quantize_and_pack_4h4w_with_group_sums_shader,
+      pick_shader,
       pick_quantize_and_pack_4h4w_with_group_sums_global_wg_size,
       pick_quantize_and_pack_4h4w_with_group_sums_local_wg_size,
       // Inputs and Outputs
@@ -235,6 +256,48 @@ void add_quantize_and_pack_4h4w_with_group_sums_node(
       {blocks_per_group},
       // Resize args
       {group_size}));
+}
+
+void add_quantize_and_pack_4h4w_with_group_sums_node(
+    ComputeGraph& graph,
+    const QuantizationConfig& input_quant_config,
+    const ValueRef fp_input,
+    const ValueRef int_input_sums,
+    const ValueRef packed_input_scales,
+    const ValueRef packed_input_zps,
+    const ValueRef packed_int_input,
+    const ValueRef group_size) {
+  add_quantize_and_pack_with_group_sums_node(
+      graph,
+      input_quant_config,
+      fp_input,
+      int_input_sums,
+      packed_input_scales,
+      packed_input_zps,
+      packed_int_input,
+      group_size,
+      pick_quantize_and_pack_4h4w_with_group_sums_shader);
+}
+
+void add_quantize_and_pack_4w_with_group_sums_node(
+    ComputeGraph& graph,
+    const QuantizationConfig& input_quant_config,
+    const ValueRef fp_input,
+    const ValueRef int_input_sums,
+    const ValueRef packed_input_scales,
+    const ValueRef packed_input_zps,
+    const ValueRef packed_int_input,
+    const ValueRef group_size) {
+  add_quantize_and_pack_with_group_sums_node(
+      graph,
+      input_quant_config,
+      fp_input,
+      int_input_sums,
+      packed_input_scales,
+      packed_input_zps,
+      packed_int_input,
+      group_size,
+      pick_quantize_and_pack_4w_with_group_sums_shader);
 }
 
 //

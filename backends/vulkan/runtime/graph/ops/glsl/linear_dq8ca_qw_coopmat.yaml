@@ -10,11 +10,13 @@
 #   WEIGHT_NBITS=4 -> linear_dq8ca_q4gsw_coopmat (INT4 group-symmetric)
 # Requires the VK_COMPONENT_TYPE_SINT8_KHR cooperative matrix property to be
 # enumerated on the device.
-# Loop structure follows the double-buffered reference (coopmat_mm_ref) at
-# a 128x64 tile with K-step 32, 4 subgroups x 64 threads. The reference's
-# subgroup-32 layout is NOT used — the Xclipse PAL compiler crashes in
-# vkCreateComputePipelines when int8 WMMA is compiled at forced subgroup
-# size 32 (fp16 WMMA at 32 is fine; see linear_qw_coopmat).
+# specs/027-e2e-tile-sweep: tile geometry updated from 128x64/K32/2x2 to
+# 64x32/K32/1x2 (specs/027's e2e-ranked sweep winner, +9.32% confirmed real
+# end-to-end prefill throughput vs the prior geometry, not just isolated
+# microbenchmark GFLOP/s). SUBGROUP_SIZE stays 64: specs/026 found
+# subgroup=32 is legal (no compiler crash) but sharply tile-shape-dependently
+# incorrect, and this tile shape was not verified correct at subgroup=32 --
+# see specs/026-8da4w-subgroup32-sweep/results/ before considering it.
 
 linear_dq8ca_qw_coopmat:
   parameter_names_with_default_values:
@@ -25,10 +27,10 @@ linear_dq8ca_qw_coopmat:
     MMA_M: 16
     MMA_N: 16
     MMA_K: 16
-    WG_TILE_M: 128
-    WG_TILE_N: 64
+    WG_TILE_M: 64
+    WG_TILE_N: 32
     WG_TILE_K: 32
-    SG_GRID_X: 2
+    SG_GRID_X: 1
     SG_GRID_Y: 2
     SUBGROUP_SIZE: 64
   shader_variants:

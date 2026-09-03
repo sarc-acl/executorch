@@ -69,6 +69,14 @@ void quantize_and_pack(
   }
 }
 
+// The 4h4w block writer. Guarded so that a shader which reuses the quantize
+// helpers above but emits a DIFFERENT output layout can opt out: it assumes
+// t_packed_int8_input is an ivec4-typed (block-packed) resource, which would
+// fail to compile against a scalar int array even if never called. Define
+// SKIP_BLOCK_WRITE_HELPERS before including this file to suppress it -- see
+// quantize_and_pack_4w_with_group_sums.glsl, which writes the row-major
+// kPackedInt8_4W layout instead.
+#ifndef SKIP_BLOCK_WRITE_HELPERS
 void write_block(
     const Int8InputBlock block,
     const int block_x,
@@ -80,5 +88,6 @@ void write_block(
   imageStore(t_packed_int8_input, ivec3(block_x, block_y, 0), block.data);
 #endif // OUTPUT_BUFFER
 }
+#endif // SKIP_BLOCK_WRITE_HELPERS
 
 #endif // LINEAR_INT8_INPUT_BLOCK_GLSLH

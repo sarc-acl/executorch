@@ -1,0 +1,49 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# KHR Cooperative Matrix SDPA QK^T kernel (prefill / LLM). Buffer-only, fp16.
+#
+# Variant naming is tile-sweep-ready (ET_VK_SDPA_ATTN_COOPMAT_VARIANT,
+# SDPA.cpp): sdpa_compute_attn_weights_coopmat_t<M>x<N>k<K>g<SGX><SGY>s<sub>,
+# dispatched as ..._t..._buffer_buffer_half. Only the shipped default is
+# built here -- a wider sweep was tried and found unvalidated (dozens of
+# untested tiles), which doesn't belong in this branch (final shipped
+# shaders only); run a real sweep on an experimental branch before adding
+# more variants here.
+
+sdpa_compute_attn_weights_coopmat:
+  parameter_names_with_default_values:
+    DTYPE: half
+    PRECISION: highp
+    IO_STORAGE: buffer
+    K_CACHE_STORAGE: buffer
+    MMA_M: 16
+    MMA_N: 16
+    MMA_K: 16
+    # 128x64 is the tile-sweep optimum that FITS this shader's shared memory
+    # (the generic-matmul sweep's 128x128 needs ~50KB LDS once the causal-mask
+    # Csh scratch is added — overflows M5 EVT1). M-tile 128, N-tile 64.
+    WG_TILE_M: 128
+    WG_TILE_N: 64
+    WG_TILE_K: 32
+    SG_GRID_X: 2
+    SG_GRID_Y: 2
+    SUBGROUP_SIZE: 64
+  generate_variant_forall:
+    combination:
+      parameter_names: [IO_STORAGE, K_CACHE_STORAGE]
+      combos:
+        - parameter_values: [buffer, buffer]
+    DTYPE:
+      - VALUE: half
+  shader_variants:
+    - NAME: sdpa_compute_attn_weights_coopmat_t128x64k32g22s64
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64
