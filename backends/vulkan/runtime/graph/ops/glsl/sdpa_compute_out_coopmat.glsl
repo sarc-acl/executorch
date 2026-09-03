@@ -193,6 +193,17 @@ void main() {
                 packFloat2x16(v1.xy), packFloat2x16(v1.zw));
         }
 
+        // The Ash/Bsh stores above are read back by coopMatLoad below, and by
+        // OTHER subgroups than the one that wrote them (Ash row r is written by
+        // invocation r*INVS_PER_ROW_A.. and read by every subgroup whose
+        // warpInTile.y covers r). barrier() alone was not ordering those uvec4
+        // stores against the cooperative-matrix load path on the Xclipse/AMD-PAL
+        // driver: ~2.5% of runs at S=256 produced exactly one stale MMA_M-row
+        // band of A -- 16 consecutive rows, all WG_TILE_N columns, one head --
+        // which is a lost/late Ash write, not a wrong index (the write was
+        // invisible even to its own writer). Make the shared-memory ordering
+        // explicit, as the linear coopmat kernel does.
+        memoryBarrierShared();
         barrier();
 
         // --- Cooperative matrix MMA (identical to coopmat_mm) ---
