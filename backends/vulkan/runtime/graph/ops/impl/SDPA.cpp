@@ -349,7 +349,11 @@ vkapi::ShaderInfo pick_sdpa_qk_shader(
     const bool is_gemv = is_single_token(graph, q_projected);
 
     // Prefill WMMA path: Q @ K^T with K = head_dim, N = context_len, M = S.
+    // DEBUG BISECT (temporary): disable coopmat for ONE of the two SDPA GEMMs
+    // so an intermittent numerical failure can be attributed to a specific
+    // shader. Reverted once the attribution is recorded.
     if (!is_gemv && sdpa_coopmat_device_ok(graph) &&
+        std::getenv("ET_VK_SDPA_DISABLE_QK_COOPMAT") == nullptr &&
         sdpa_buf_half(graph, q_projected) && sdpa_buf_half(graph, k_cache) &&
         sdpa_buf_half(graph, attn_weights)) {
       const SDPADims d = compute_sdpa_dims(
@@ -503,6 +507,7 @@ vkapi::ShaderInfo pick_sdpa_av_shader(
 
     // Prefill WMMA path: P @ V with K = context_len, N = head_dim, M = S.
     if (!is_gemv && sdpa_coopmat_device_ok(graph) &&
+        std::getenv("ET_VK_SDPA_DISABLE_OUT_COOPMAT") == nullptr &&
         sdpa_buf_half(graph, out) &&
         sdpa_buf_half(graph, attn_weights_softmax) &&
         sdpa_buf_half(graph, v_cache)) {
