@@ -7,80 +7,71 @@
  */
 
 /*
- * "zpg" + "-tr" combination: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg.glsl
- * with its per-thread scalar A-staging replaced by
- * linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr.glsl's coopMat-mediated A
- * staging (coopMatLoad(global) -> coopmat<> -> coopMatStore(LDS)). This is
- * an ADDITIVE combination, not a redesign: every non-A-staging block below
- * (B staging: coalesced write, no skew; zp-hoist: izp/ifs applied once after
- * the group loop via wcorr_sh; byte-parallel nibble widening; static
- * A_ALWAYS_ACTIVE branch elision -- N/A here, see below; group epilog;
- * bias/store epilogue) is byte-identical to dbuf4zpg's. Only the A-staging
- * block (prologue load+store, main-loop prefetch+store) is dbuf4tr's,
- * verbatim.
+ * "zpgtr2": dbuf4zpgtr with its coopMat-mediated A staging replaced by the
+ * uvec4 (128-bit) A path from `shmem_double_buf4-tr2.comp` on the
+ * vk_cooperative_matrix_perf `gemm-ubm` reference branch (commit e02817d,
+ * 2026-09-02). Everything else -- B staging (coalesced, no skew), zp-hoist,
+ * byte-parallel nibble widening, the dbuf4 loop/barrier structure, the group
+ * epilog and the bias/store epilogue -- is byte-identical to dbuf4zpgtr.
  *
- * dbuf4zpg's per-thread A staging used an `a_active` guard (statically always
- * true when A_ACTIVE_THREADS == WG_SIZE, via the A_MAP_FULL-gated
- * A_ALWAYS_ACTIVE macro). dbuf4tr's per-SUBGROUP tile map has no equivalent
- * concept -- every subgroup participates via a `t < NUM_A_TILES` guard that
- * depends only on gl_SubgroupID, not gl_LocalInvocationID.x -- so
- * A_MAP_FULL/A_ALWAYS_ACTIVE is dropped entirely in this file; it would be
- * dead code for the new A-staging block.
+ * WHY THIS IS NOT A VERBATIM PORT OF -tr2, and what was deliberately dropped:
  *
- * Rationale for combining this way (not the reverse) and why this is worth
- * building at all: see this change's design.md D0-D3. In short -- the only
- * existing measurement of dbuf4tr's A-staging technique (28.72-30.51%,
- * dq8ca-arch-redesign) was taken against dbuf4tr's own pre-zpg baseline
- * (old B skew, no byte-parallel widening, no branch elision) -- a materially
- * weaker shader than the 46.49-46.50% dbuf4zpg this file now combines it
- * with. This file exists to answer whether that combination performs
- * differently now that register pressure is already reduced.
+ *   -tr2 changes TWO things relative to -tr. (1) A moves from coopMatLoad/
+ *   coopMatStore to a raw uvec4 load + a single uvec4 LDS store. (2) The A LDS
+ *   row gains one uvec4 of padding (A_ROW_PAD_SH = ELEMENTS_PER_VEC4).
+ *   Only (1) is ported here. (2) is deliberately NOT ported: it is
+ *   derived-negative for our layout. Their Ash is a uvec4[] whose row is a full
+ *   TILE_K span, so unpadded it collapses onto 16/8/4 of the 32 LDS banks at
+ *   TILE_K 32/64/128 (4/8/16 accesses per bank); one uvec4 of pad restores the
+ *   2-per-bank floor. OUR Ash row is one MMA_K slab = 16 B = 4 dwords, which
+ *   already tiles all 32 banks at exactly 2 accesses per bank -- the floor for
+ *   the 64 dwords one coopMatLoad touches. Adding their pad would take our row
+ *   stride to 8 dwords, i.e. 16 banks and 4 accesses per bank: 2x WORSE, plus
+ *   8 KiB more LDS. Bank count is not assumed -- GPU__GC__NUM_LDS_BANKS = 32,
+ *   from the SUMD/PAL chip register headers, identical on every mgfx variant.
+ *   Full derivation: openspec/changes/dq8ca-tr2-a-staging-port/results.md 2.5.
  *
- * A staging (the actual delta from dbuf4zpg):
- *   dbuf4zpg: per-thread (m4, k4) ivec4 fetch, hoisted a_lds_off0/a_glb_row;
- *             only A_ACTIVE_THREADS invocations participate, each scattering
- *             4 rows into Ash_int8 with 4 scalar stores.
- *   this file: per-SUBGROUP MMA_M x MMA_K tile fetch via coopMatLoad straight
- *             from a ROW-MAJOR (kPackedInt8_4W) int8 activation buffer, then
- *             coopMatStore into the same Ash_int8 slot -- dbuf4tr's mapping,
- *             unmodified (not re-derived; see design.md D3).
+ *   -tr2 also keeps B coopMat-staged. We cannot: B is int4-nibble-packed and
+ *   coopMatLoad cannot unpack nibbles. That is a standing spec constraint
+ *   (dq8ca-coopmat-a-staging) and was independently re-confirmed by
+ *   coopmat-tr-tilesweep-4w-port's "-trb", which unpacked int4->int8 to make it
+ *   possible and measured 13.55% SLOWER.
  *
- * t_packed_int8_input is therefore bound the same way dbuf4tr binds it: a
- * SCALAR int8_t array in the kPackedInt8_4W layout (plain row-major int8,
- * row stride K), produced by quantize_and_pack_4w_with_group_sums.glsl.
- * QuantizedLinear.cpp's dq8ca_variant_wants_rowmajor_a() must recognize this
- * file's variant token (tsweep_dbuf4zpgtr_t...) the same way it already
- * recognizes tsweep_dbuf4tr_t/trm_t/trd_t, so graph-build time (packer
- * selection) and dispatch time (kernel selection) cannot disagree.
+ * A staging -- the ONLY delta from dbuf4zpgtr:
+ *   dbuf4zpgtr: per-SUBGROUP MMA_M x MMA_K tile, coopMatLoad(global) ->
+ *               coopMatStore(LDS).
+ *   this file:  per-THREAD 16-int8 slot. 16 contiguous int8 of one row is
+ *               exactly one MMA_K span, which is exactly one A_STRIDE_U32 LDS
+ *               slot -- so it is ONE naturally-aligned 128-bit global load and
+ *               ONE 128-bit LDS store, with no shuffle on either side.
+ *               Ash_int8 is therefore uvec4[] rather than uint[].
  *
- * B CANNOT be coopmat-staged (int4 nibble unpack; a coopmat's per-lane layout
- * is opaque to hand-assembly from unpacked registers) -- unchanged from both
- * parent files. B staging below is dbuf4zpg's byte-parallel, coalesced,
- * no-skew version, untouched.
+ * The LDS BYTE LAYOUT IS UNCHANGED. Proved, not assumed: the set of dwords this
+ * file writes is identical to the set dbuf4zpgtr's coopMatStore writes (1024
+ * dwords, exact cover of [0, ASH_SLICE_U32), verified exhaustively over all 256
+ * threads / all subgroup+slot pairs). That is what makes the math-loop
+ * coopMatLoad -- reindexed into uvec4 units, stride 1 -- provably equivalent.
  *
- * The loop structure is dbuf4's (both parents share it), unchanged:
- *   prologue: prefetch chunk 0 -> temp, store to slice 0 (no barrier)
- *   per iter: barrier -> prefetch(next) -> MMA(cur) -> store(next)
- * kept nested (groups x chunks) with an unconditional group epilog --
- * flattening it crashes the Xclipse PAL compiler at large spec-resolved trip
- * counts (see dbuf2's own header).
+ * Expected effect, stated up front so the measurement is not read as
+ * confirmation of a hope: A's LDS write is ~13% of LDS dword traffic and
+ * WAIT_CNT_LGKM is 13.00% of WAVE_CYCLES, so A's LDS write is ~1.7% of kernel
+ * time; A's global read is 2.87% (ablation-measured). The bytes moved are
+ * IDENTICAL to dbuf4zpgtr -- 16 B per thread either way -- so this cannot help
+ * LDS bandwidth, only instruction issue (1 x b128 vs 2 x b64 per thread) and
+ * address math. Predicted kernel effect -0.5% to -1%; hard ceiling ~1.7%.
+ *
+ * Registers: temp_A is 4 dwords/lane as an ivec4, the same as dbuf4zpgtr's two
+ * coopmat fragments. No occupancy change is expected from this swap.
+ *
+ * Hard preconditions, beyond dbuf4zpgtr's:
+ *   K % 16 == 0 (the 128-bit global load), satisfied by every production shape;
+ *   chunkK % 16 == 0, automatic since chunkK is a multiple of WG_TILE_K;
+ *   WG_SIZE % A_IV4_PER_ROW == 0, automatic (both powers of two).
  *
  * Selected via
- * ET_VK_DQ8CA_COOPMAT_VARIANT=tsweep_dbuf4zpgtr_t<M>x<N>k<K>g<SGX><SGY>s<32|64>
- * (QuantizedLinear.cpp), additive to the tsweep_dbuf4zpg_t..., tsweep_dbuf4tr_t...
- * and tsweep_t... namespaces. NOT the default -- unvalidated until it passes
- * repeated test_llama_microbench --correctness-only runs (see
- * dq8ca_coopmat_variant()'s comment on why a single pass is not proof).
- *
- * Performs: out[M,N] = dequant(int8_act) * dequant(int_w) (+ bias)
- * via coopmat<int8> x coopmat<int8> -> coopmat<int32> on the matrix unit.
- *
- * Hard preconditions (dbuf4zpg's, plus dbuf4tr's row-major/alignment ones):
- *   M % WG_TILE_M == 0, N % WG_TILE_N == 0, K % WG_TILE_K == 0,
- *   group_size % WG_TILE_K == 0, K % 4 == 0,
- *   WG_TILE_M % MMA_M == 0, WG_TILE_K % MMA_K == 0,
- *   t_packed_int8_input in kPackedInt8_4W (row-major) layout,
- *   device exposes coopmat<int8>x<int8>-><int32> at 16x16x16.
+ * ET_VK_DQ8CA_COOPMAT_VARIANT=tsweep_dbuf4zpgtr2_t<M>x<N>k<K>g<SGX><SGY>s<32|64>.
+ * NOT the default. Requires the row-major (kPackedInt8_4W) activation packer,
+ * so dq8ca_variant_wants_rowmajor_a() must recognise this token too.
  */
 
 #version 450 core
@@ -128,7 +119,7 @@ ${layout_declare_tensor(B, "r", "t_input",               "half", IO_STORAGE, is_
 // array (row stride = K int8) -- dbuf4tr's binding, unchanged. The stock
 // 4h4w layout dbuf4zpg uses is NOT row-major (component index selects a row,
 // non-affine), so it cannot be addressed by any coopMatLoad.
-${layout_declare_tensor(B, "r", "t_packed_int8_input",   "int8", "buffer", is_scalar_array=True)}
+${layout_declare_tensor(B, "r", "t_packed_int8_input",   "int",  "buffer", is_scalar_array=False)}
 ${layout_declare_tensor(B, "r", "t_int8_input_sums",     "int",  "buffer", is_scalar_array=True)}
 ${layout_declare_tensor(B, "r", "t_int8_input_scales",   "half", "texture3d")}
 ${layout_declare_tensor(B, "r", "t_int8_input_zps",      "int8", "texture3d")}
@@ -184,7 +175,13 @@ const uint ASH_SLICE_U32 = NUM_K_SLABS * A_SLAB_U32;
 const uint BSH_SLICE_U32 = NUM_K_SLABS * B_SLAB_U32;
 
 // Double-buffered MMA operand staging.
-shared uint Ash_int8[2u * ASH_SLICE_U32];
+// (U): uvec4-typed so the A staging store is ONE 128-bit ds_write instead of
+// four 32-bit ones. Element count is ASH_SLICE_U32/4; the byte layout, and
+// therefore every address the math loop reads, is unchanged -- proved by
+// address-equivalence against dbuf4zpgtr's coopMatStore offset set.
+const uint ASH_SLICE_V4 = ASH_SLICE_U32 / 4u;
+const uint A_SLAB_V4    = A_SLAB_U32 / 4u;
+shared uvec4 Ash_int8[2u * ASH_SLICE_V4];
 shared uint Bsh_int8[2u * BSH_SLICE_U32];
 
 // Per-WG-tile-row activation params (loaded ONCE at WG start; constant
@@ -294,10 +291,27 @@ void main() {
   //     NUM_SUBGROUPS subgroups so every subgroup participates. Replaces
   //     dbuf4zpg's per-thread (m4, k4) map / a_active guard entirely -- see
   //     design.md D3 for why this is reused as-is, not re-derived.
-  const uint A_TILES_M      = WG_TILE_M / MMA_M;
-  const uint A_TILES_K      = WG_TILE_K / MMA_K;  // == NUM_K_SLABS
-  const uint NUM_A_TILES    = A_TILES_M * A_TILES_K;
-  const uint A_TILES_PER_SG = (NUM_A_TILES + NUM_SUBGROUPS - 1u) / NUM_SUBGROUPS;
+  // (U) A staging map: one 128-bit (16 int8) slot per thread, NOT a per-subgroup
+  // coopmat tile. 16 contiguous int8 of one row is exactly one MMA_K span, which
+  // is exactly one A_STRIDE_U32 slot in LDS -- so the global load and the LDS
+  // store are both a single naturally-aligned 128-bit access with no shuffling.
+  const uint A_IV4_PER_ROW    = WG_TILE_K / 16u;          // slots per A row
+  const uint A_IV4_TOTAL      = WG_TILE_M * A_IV4_PER_ROW; // slots per chunk
+  const uint A_IV4_PER_THREAD = (A_IV4_TOTAL + WG_SIZE - 1u) / WG_SIZE;
+  // WG_SIZE is a multiple of A_IV4_PER_ROW (both powers of two, A_IV4_PER_ROW =
+  // WG_TILE_K/16 <= WG_SIZE), so slot = tid + s*WG_SIZE decomposes exactly as
+  //   slot / A_IV4_PER_ROW = a_si + s * A_ROWS_PER_PASS
+  //   slot % A_IV4_PER_ROW = a_k16              (unchanged by s)
+  // which is what lets both index expressions below stay fully hoisted -- the
+  // same loop-invariant-index-math hoist that is an attributed win for B here.
+  const uint A_ROWS_PER_PASS = WG_SIZE / A_IV4_PER_ROW;
+  // Hoisted, loop-invariant: this thread's (row, 16-int8-block) coordinates.
+  const uint a_si  = gl_LocalInvocationID.x / A_IV4_PER_ROW;
+  const uint a_k16 = gl_LocalInvocationID.x % A_IV4_PER_ROW;
+  // LDS destination in uvec4 units: slab a_k16, row a_si. Constant across chunks.
+  const uint a_lds_v4 = a_k16 * A_SLAB_V4 + a_si;
+  // Global row base in int8 elements. Constant across chunks.
+  const uint a_glb_base_i8 = (tile_m_start + a_si) * a_row_stride_i8 + a_k16 * 16u;
 
 #ifdef WEIGHT_INT4
   // --- B staging thread map: (block, col) slots; each slot extracts one
@@ -341,13 +355,10 @@ void main() {
   }
 #endif
 
-  // Prefetch temp registers. temp_A is a coopmat array (dbuf4tr's A-staging
-  // technique); indices into it are [[unroll]]-resolved compile-time
-  // constants, never dynamic -- dynamic indexing of a coopmat array is
-  // exactly the construct the Xclipse/AMD-PAL compiler has miscompiled
-  // before.
-  coopmat<int8_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA>
-      temp_A[A_TILES_PER_SG];
+  // (U): temp_A is a plain ivec4 register set, not a coopmat array. Same VGPR
+  // cost as dbuf4zpgtr's 2 coopmat fragments (4 dwords/lane either way), so no
+  // occupancy change is expected from this swap.
+  ivec4 temp_A[A_IV4_PER_THREAD];
 #ifdef WEIGHT_INT4
   ivec4 temp_B[B_SLOTS_PER_THREAD];
   float temp_wsc;
@@ -395,16 +406,11 @@ void main() {
   //
   // A staging (dbuf4tr's technique): per-subgroup coopMatLoad straight from
   // the row-major global buffer.
-  [[unroll]] for (uint s = 0; s < A_TILES_PER_SG; ++s) {
-    const uint t = gl_SubgroupID + s * NUM_SUBGROUPS;
-    if (t < NUM_A_TILES) {
-      const uint tm = t / A_TILES_K;
-      const uint tk = t % A_TILES_K;
-      coopMatLoad(
-          temp_A[s], t_packed_int8_input,
-          (tile_m_start + tm * MMA_M) * a_row_stride_i8 + tk * MMA_K,
-          a_row_stride_i8,
-          gl_CooperativeMatrixLayoutRowMajor);
+  [[unroll]] for (uint s = 0; s < A_IV4_PER_THREAD; ++s) {
+    const uint slot = gl_LocalInvocationID.x + s * WG_SIZE;
+    if (slot < A_IV4_TOTAL) {
+      temp_A[s] = t_packed_int8_input
+          [(a_glb_base_i8 + s * A_ROWS_PER_PASS * a_row_stride_i8) >> 4u];
     }
   }
 #ifdef WEIGHT_INT4
@@ -429,16 +435,10 @@ void main() {
     // store chunk 0 -> slice 0
     // A staging (dbuf4tr's technique): coopMatStore into the same Ash_int8
     // slot layout dbuf4zpg's scalar scatter used to write.
-    [[unroll]] for (uint s = 0; s < A_TILES_PER_SG; ++s) {
-      const uint t = gl_SubgroupID + s * NUM_SUBGROUPS;
-      if (t < NUM_A_TILES) {
-        const uint tm = t / A_TILES_K;
-        const uint tk = t % A_TILES_K;
-        coopMatStore(
-            temp_A[s], Ash_int8,
-            tk * A_SLAB_U32 + (tm * MMA_M) * A_STRIDE_U32,
-            A_STRIDE_U32,
-            gl_CooperativeMatrixLayoutRowMajor);
+    [[unroll]] for (uint s = 0; s < A_IV4_PER_THREAD; ++s) {
+      const uint slot = gl_LocalInvocationID.x + s * WG_SIZE;
+      if (slot < A_IV4_TOTAL) {
+        Ash_int8[a_lds_v4 + s * A_ROWS_PER_PASS] = uvec4(temp_A[s]);
       }
     }
 #ifdef WEIGHT_INT4
@@ -479,9 +479,9 @@ void main() {
     for (uint inner = 0; inner < CHUNKS_PER_GROUP; ++inner, ++chunk) {
       const bool has_next = chunk + 1u < num_chunks;
       const bool group_crossing = has_next && (inner + 1u == CHUNKS_PER_GROUP);
-      const uint cur_a = (chunk % 2u) * ASH_SLICE_U32;
+      const uint cur_a_v4 = (chunk % 2u) * ASH_SLICE_V4;
       const uint cur_b = (chunk % 2u) * BSH_SLICE_U32;
-      const uint nxt_a = ((chunk + 1u) % 2u) * ASH_SLICE_U32;
+      const uint nxt_a_v4 = ((chunk + 1u) % 2u) * ASH_SLICE_V4;
       const uint nxt_b = ((chunk + 1u) % 2u) * BSH_SLICE_U32;
 
       // dq8ca-tr2-a-staging-port task 2.2: this is the ONLY ordering point
@@ -502,17 +502,12 @@ void main() {
       if (has_next) {
         const uint chunkK_nxt = (chunk + 1u) * WG_TILE_K;
         // A staging (dbuf4tr's technique): coopMatLoad straight from global.
-        [[unroll]] for (uint s = 0; s < A_TILES_PER_SG; ++s) {
-          const uint t = gl_SubgroupID + s * NUM_SUBGROUPS;
-          if (t < NUM_A_TILES) {
-            const uint tm = t / A_TILES_K;
-            const uint tk = t % A_TILES_K;
-            coopMatLoad(
-                temp_A[s], t_packed_int8_input,
-                (tile_m_start + tm * MMA_M) * a_row_stride_i8 + chunkK_nxt +
-                    tk * MMA_K,
-                a_row_stride_i8,
-                gl_CooperativeMatrixLayoutRowMajor);
+        [[unroll]] for (uint s = 0; s < A_IV4_PER_THREAD; ++s) {
+          const uint slot = gl_LocalInvocationID.x + s * WG_SIZE;
+          if (slot < A_IV4_TOTAL) {
+            temp_A[s] = t_packed_int8_input
+                [(a_glb_base_i8 + chunkK_nxt +
+                  s * A_ROWS_PER_PASS * a_row_stride_i8) >> 4u];
           }
         }
 #ifdef WEIGHT_INT4
@@ -544,7 +539,7 @@ void main() {
 
       // --- 3. int8 MMA on the cur slice ---
       [[unroll]] for (uint k = 0; k < NUM_K_SLABS; ++k) {
-        const uint slab_a_base_u32 = cur_a + k * A_SLAB_U32;
+        const uint slab_a_base_v4 = cur_a_v4 + k * A_SLAB_V4;
         const uint slab_b_base_u32 = cur_b + k * B_SLAB_U32;
 
         coopmat<int8_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA> matA[MMAS_PER_SG_M];
@@ -552,8 +547,10 @@ void main() {
           const uint row_a = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
           coopMatLoad(
               matA[i], Ash_int8,
-              slab_a_base_u32 + row_a * A_STRIDE_U32,
-              A_STRIDE_U32,
+              // uvec4 units: one MMA_K row == 16 B == exactly 1 uvec4, so the
+              // row stride is 1 and the offset is just the row index.
+              slab_a_base_v4 + row_a,
+              1u,
               gl_CooperativeMatrixLayoutRowMajor);
         }
 
@@ -574,18 +571,13 @@ void main() {
       // --- 4. store temp (chunk+1) -> nxt slice ---
       if (has_next) {
         // A staging (dbuf4tr's technique): coopMatStore into the nxt slice.
-        [[unroll]] for (uint s = 0; s < A_TILES_PER_SG; ++s) {
-          const uint t = gl_SubgroupID + s * NUM_SUBGROUPS;
-          if (t < NUM_A_TILES) {
-            const uint tm = t / A_TILES_K;
-            const uint tk = t % A_TILES_K;
-            coopMatStore(
-                temp_A[s], Ash_int8,
-                nxt_a + tk * A_SLAB_U32 + (tm * MMA_M) * A_STRIDE_U32,
-                A_STRIDE_U32,
-                gl_CooperativeMatrixLayoutRowMajor);
-          }
-        }
+    [[unroll]] for (uint s = 0; s < A_IV4_PER_THREAD; ++s) {
+      const uint slot = gl_LocalInvocationID.x + s * WG_SIZE;
+      if (slot < A_IV4_TOTAL) {
+        Ash_int8[nxt_a_v4 + a_lds_v4 + s * A_ROWS_PER_PASS] =
+            uvec4(temp_A[s]);
+      }
+    }
 #ifdef WEIGHT_INT4
         [[unroll]] for (uint si = 0; si < B_SLOTS_PER_THREAD; ++si) {
           Bsh_int8[nxt_b + b_lds_off[si]] =

@@ -132,6 +132,18 @@ static const char* const kDq8caTsweepPrefixes[] = {
     // openspec/changes/dq8ca-tr-staged-a-on-zpg.
     "tsweep_dbuf4tr_t",
     "tsweep_dbuf4zpgtr_t",
+    // dq8ca-tr2-a-staging-port: tsweep_dbuf4zpgtr with its coopMat-mediated A
+    // staging replaced by shmem_double_buf4-tr2.comp's uvec4 (128-bit) A path
+    // (one 128-bit global load + one 128-bit LDS store per thread, Ash_int8
+    // typed uvec4[]). -tr2's A row padding is deliberately NOT ported -- it is
+    // derived-negative for our slab-major LDS layout, which already sits at the
+    // 2-accesses-per-bank floor. Not the shipped default.
+    "tsweep_dbuf4zpgtr2_t",
+    // dq8ca-tr2-a-staging-port: DIAGNOSTIC, measurement-only. zpgtr2 with
+    // Ash_int8 kept as uint[] (baseline math-loop coopMatLoad) and the A store
+    // written as 4 consecutive uints. Splits the zpgtr2 regression between the
+    // uvec4 LDS element type on the READ path and the (U) global-read pattern.
+    "tsweep_dbuf4zpgtr2u_t",
     // (coopmat-tr-tilesweep-4w-port 2026-09-01: "-trb" -- dbuf4zpgtr with B
     // ALSO coopMat-staged via a one-time prepack that unpacks int4->int8.
     // Measured 13.55% SLOWER at t128x64k32g42s32 and 12.09% SLOWER at
@@ -576,7 +588,13 @@ static bool dq8ca_variant_wants_rowmajor_a() {
   return v.rfind("tsweep_dbuf4tr_t", 0) == 0 ||
       v.rfind("tsweep_dbuf4trm_t", 0) == 0 ||
       v.rfind("tsweep_dbuf4trd_t", 0) == 0 ||
-      v.rfind("tsweep_dbuf4zpgtr_t", 0) == 0;
+      v.rfind("tsweep_dbuf4zpgtr_t", 0) == 0 ||
+      // MUST be listed: zpgtr2 reads the row-major kPackedInt8_4W packer's
+      // output. If graph-build packer selection and dispatch-time kernel
+      // selection disagree here the failure is silent (wrong numbers, no
+      // crash), so this gate is load-bearing, not cosmetic.
+      v.rfind("tsweep_dbuf4zpgtr2_t", 0) == 0 ||
+      v.rfind("tsweep_dbuf4zpgtr2u_t", 0) == 0;
 }
 
 // Mirrors the coopmat branch of pick_linear_dqa_qw_shader() so graph-build time
