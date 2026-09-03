@@ -152,7 +152,29 @@ void main() {
     const uint v_head_base = uint(kv_h) * uint(D4);
     const uint v_row_stride = uint(KV_H) * uint(D4);
 
-    for (uint chunk = 0; chunk < uint(num_k_chunks_arg); ++chunk) {
+    // Causal K-loop truncation. P is the softmax output, and the causal mask
+    // has already forced P[s, c] == 0 for every c > s + input_pos (QK^T writes
+    // -inf there and softmax normalizes it to exactly 0). A K-chunk whose
+    // lowest context index already exceeds the highest row's window is
+    // therefore all zeros, and a zero A tile contributes 0*V == 0 to the
+    // accumulator -- so it can be skipped outright rather than staged and
+    // MMA'd. This is exactly value-preserving, not an approximation.
+    //
+    // The highest context index any row in this M-tile can attend to:
+    const uint max_c = a_row_base + WG_TILE_M - 1u + uint(input_pos);
+    // Chunk `c` spans [c*WG_TILE_K, c*WG_TILE_K + WG_TILE_K), so it carries a
+    // nonzero only when c*WG_TILE_K <= max_c.
+    const uint useful_chunks =
+        min(uint(num_k_chunks_arg), max_c / WG_TILE_K + 1u);
+    // At the 2048 prefill this cuts the staged chunks roughly in half (the
+    // work is a triangle over M-tiles, not a rectangle): 1056 chunk-loads
+    // across the 32 M-tiles instead of 32*64 = 2048.
+    //
+    // Why this is safe to hardcode: LLM-mode SDPA here is unconditionally
+    // causal -- sdpa_compute_attn_weights_coopmat.glsl applies the
+    // c > s + input_pos mask with no is_causal switch -- so the same
+    // assumption already governs the shader that produces this shader's input.
+    for (uint chunk = 0; chunk < useful_chunks; ++chunk) {
         const uint chunkK = chunk * WG_TILE_K;   // along context_len
         // num_k_chunks is max_context_len/WG_TILE_K (static spec const). The
         // gate guarantees context_len % WG_TILE_N == 0, hence % WG_TILE_K == 0,
