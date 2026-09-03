@@ -672,6 +672,18 @@ void add_sdpa_compute_attn_weights_node(
 
   const ValueRef mode_ref = static_cast<ValueRef>(mode);
 
+  // See the aw_row_width spec-constant note below. Mirrors
+  // resize_sdpa_attn_weights_node's own derivation so the two cannot disagree
+  // about what the row width is when they do agree on context_len.
+  int32_t aw_row_width_at_construction = 0;
+  if (mode == SDPAMode::LLM) {
+    const int32_t seq_len = graph.size_at<int32_t>(-3, q);
+    const int32_t input_pos_val =
+        is_valid(input_pos_symint) ? graph.read_symint(input_pos_symint) : 0;
+    aw_row_width_at_construction =
+        static_cast<int32_t>(utils::align_up_4(seq_len + input_pos_val));
+  }
+
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
       graph,
       pick_sdpa_qk_shader,
@@ -683,15 +695,28 @@ void add_sdpa_compute_attn_weights_node(
       param_ubos,
       // Push Constants
       {},
-      // Specialization Constants: {inv_scale (id 3), num_k_chunks (id 4)}.
+      // Specialization Constants: {inv_scale (id 3), num_k_chunks (id 4),
+      // aw_row_width (id 5)}.
       // num_k_chunks = head_dim / WG_TILE_K is static and consumed only by the
       // coopmat QK^T variant (WG_TILE_K from the active
       // ET_VK_SDPA_ATTN_COOPMAT_VARIANT); the tiled/coop variants declare
-      // only id 3 and ignore the trailing entry -- safe to compute
+      // only id 3 and ignore the trailing entries -- safe to compute
       // unconditionally even when coopmat doesn't end up firing.
+      //
+      // aw_row_width is attn_weights' row width, align_up_4(context_len),
+      // needed by the coopmat variant's all-visible fast path because
+      // coopMatStore's stride must not derive from a UBO value on the
+      // Xclipse/AMD-PAL compiler. Unlike the two above it is NOT static --
+      // resize_sdpa_attn_weights_node recomputes it from the input_pos symint
+      // on every resize -- so this is the value at construction only, and the
+      // shader takes the fast path solely when it still matches the live
+      // width, falling back to its compile-time-stride Csh path otherwise.
+      // Correct for a single-shot prefill (input_pos == 0); a chunked prefill
+      // simply does not get the fast path.
       {scale_val,
        graph.size_at<int32_t>(-1, q) /
-           static_cast<int32_t>(sdpa_attn_tile_dims().k)},
+           static_cast<int32_t>(sdpa_attn_tile_dims().k),
+       aw_row_width_at_construction},
       // Resize Args: [q, k, input_pos_symint_or_dummy, mode]
       {q, k, input_pos_symint, mode_ref},
       // Resizing Logic

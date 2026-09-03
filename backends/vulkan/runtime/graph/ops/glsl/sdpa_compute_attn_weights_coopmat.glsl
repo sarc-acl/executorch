@@ -31,6 +31,37 @@
  *     per-element mask. A whole-WG-tile that is entirely above the diagonal is
  *     written as -inf and skips the MMA loop (~halves prefill QK^T work).
  *
+ * Each output tile is classified by where it sits relative to the causal
+ * diagonal, and only the diagonal class needs the Csh round trip:
+ *   all masked  : c_tile_base                  >  s_tile_base + WG_TILE_M - 1 + input_pos
+ *   all visible : c_tile_base + WG_TILE_N - 1  <= s_tile_base + input_pos
+ *   diagonal    : neither
+ * Both whole-tile conditions holding at once would need
+ * WG_TILE_M + WG_TILE_N < 2, and a tile matching neither falls through to the
+ * per-element path, so the classes are exhaustive and disjoint.
+ *
+ * Region counts at the reported 2048-prefill workload (input_pos = 0, 128x64
+ * tile, so 16 M-tiles x 32 N-tiles = 512 workgroups):
+ *   240 all masked  (early-out, no MMA)
+ *   240 all visible (direct coopMatStore to global: no Csh, no barrier, no
+ *                    per-element mask)
+ *    32 diagonal    (per-element mask via Csh)
+ * 240 + 240 + 32 = 512, so the all-visible path covers 240 of the 272
+ * workgroups that actually execute (88%).
+ *
+ * WHY THE ALL-VISIBLE STORE TAKES ITS STRIDE FROM A SPEC CONSTANT:
+ * coopMatStore's stride operand must not derive from a UBO value on the
+ * Xclipse/AMD-PAL compiler -- the same miscompile sdpa_compute_out_coopmat.glsl
+ * works around for its output stride. attn_weights' row width is
+ * align_up_4(context_len), and context_len = input_pos + S comes from UBOs, so
+ * using it directly produces silently wrong output (measured: deterministic,
+ * ~3500-5800 wrong elements per case; with a compile-time stride, zero).
+ * Unlike the linear kernel's out_N_arg, this width is NOT static -- it is
+ * recomputed on every resize (SDPA.cpp resize_sdpa_attn_weights_node) -- so the
+ * spec constant is a BAKED GUESS and the fast path is taken only when it
+ * matches the live width. Otherwise control falls through to the Csh path,
+ * whose stride is the compile-time WG_TILE_N and is therefore always safe.
+ *
  * Dispatch: global {num_tiles_n*WG_SIZE, num_tiles_m, H_q}, local {WG_SIZE,1,1}.
  *   tileID = gl_WorkGroupID.xy (x->context, y->seq), q_h = gl_WorkGroupID.z.
  */
@@ -70,6 +101,10 @@ ${layout_declare_spec_const(C, "float", "inv_scale", "1.0")}
 // Xclipse/AMD-PAL compiler crashes on a coopMatMulAdd loop with a UBO-derived
 // trip count — see coopmat_mm.glsl).
 ${layout_declare_spec_const(C, "int", "num_k_chunks_arg", "0")}
+// attn_weights row width (= align_up_4(context_len)) as resolved at node
+// construction. Only the all-visible fast path reads it, and only after
+// confirming it equals the live UBO-derived width -- see the file header.
+${layout_declare_spec_const(C, "int", "aw_row_width_arg", "0")}
 
 const uint MMA_M = ${MMA_M};
 const uint MMA_N = ${MMA_N};
@@ -145,6 +180,28 @@ void main() {
     // the highest (s + input_pos), every element is masked.
     const bool tile_all_masked =
         int(c_tile_base) > (int(s_tile_base) + int(WG_TILE_M) - 1 + input_pos);
+
+    // Whole-tile fully-visible fast path (complement of tile_all_masked; see
+    // the file header for exhaustiveness and the region counts). Three
+    // conditions, all workgroup-uniform:
+    //  1. nothing in the tile is masked;
+    //  2. the tile lies wholly inside both extents -- the store writes whole
+    //     MMA tiles with no per-element bound check. SDPA.cpp's dispatch gate
+    //     already guarantees this (S % WG_TILE_M == 0 and
+    //     context_len % WG_TILE_N == 0, which this shader's unguarded staging
+    //     reads below also depend on), but stating it makes an out-of-extent
+    //     write impossible by construction rather than by appeal to the gate,
+    //     and costs no workgroup the fast path under that gate;
+    //  3. the baked stride matches the live row width, without which
+    //     coopMatStore would need a UBO-derived stride -- see the file header.
+    const bool tile_in_extent =
+        (s_tile_base + WG_TILE_M <= uint(S)) &&
+        (c_tile_base + WG_TILE_N <= uint(context_len));
+    const bool aw_stride_is_static = aw_row_width_arg == aw_row_width;
+    const bool tile_all_visible =
+        tile_in_extent && aw_stride_is_static &&
+        (int(c_tile_base) + int(WG_TILE_N) - 1 <= int(s_tile_base) + input_pos);
+
     if (tile_all_masked) {
         for (uint idx = gl_LocalInvocationID.x; idx < WG_TILE_M * WG_TILE_N;
              idx += WG_SIZE) {
@@ -238,6 +295,40 @@ void main() {
         }
 
         barrier();
+    }
+
+    if (tile_all_visible) {
+        // Straight to global, mirroring the linear kernel's buffer epilogue
+        // (linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr.glsl:727-748).
+        //
+        // The address is identical to the Csh path's for the same element.
+        // Csh path: element (r, c) of MMA tile (i, j) lands in
+        // Csh[(local_row + r) * WG_TILE_N + local_col + c], then is copied to
+        //   (q_h*S_aligned + s_tile_base + local_row + r) * aw_row_width
+        //       + c_tile_base + local_col + c.
+        // Here: aw_tile_base + local_row*STRIDE + local_col + r*STRIDE + c,
+        // with aw_tile_base = (q_h*S_aligned + s_tile_base)*aw_row_width
+        //                     + c_tile_base, which expands to the same thing
+        // because STRIDE == aw_row_width is exactly what aw_stride_is_static
+        // checked.
+        const uint STRIDE = uint(aw_row_width_arg);
+        const uint aw_tile_base =
+            (uint(q_h) * uint(S_aligned) + s_tile_base) * STRIDE + c_tile_base;
+        [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+            [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+                result[i][j] = result[i][j] * inv_scale; // fp32 scalar multiply
+                coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> out_tile =
+                    coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]);
+                const uint local_row = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
+                const uint local_col = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
+                coopMatStore(
+                    out_tile, t_attn_weights,
+                    aw_tile_base + local_row * STRIDE + local_col,
+                    STRIDE,
+                    gl_CooperativeMatrixLayoutRowMajor);
+            }
+        }
+        return;
     }
 
     // --- Scale on the fp32 accumulator, store fp16 into Csh [s][c] scratch ---
