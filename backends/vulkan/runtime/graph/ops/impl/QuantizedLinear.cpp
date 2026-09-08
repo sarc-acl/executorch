@@ -457,12 +457,33 @@ utils::uvec3 quantized_linear_local_wg_size(
   }
 }
 
-// Experiment hook (specs/040/041): allows the *_texture3d_* variants, which
-// stage the result tile through shared memory and imageStore it instead of
-// coopMatStore-ing straight to an SSBO. Off by default, so buffer dispatch is
-// byte-identical.
+// Allows the *_texture3d_* coopmat variants, which stage the result tile
+// through shared memory and imageStore it instead of coopMatStore-ing straight
+// to an SSBO.
+//
+// ON BY DEFAULT since 2026-09-08. It began as an experiment hook
+// (specs/040/041) and was opt-in via ET_VK_TEXTURE_COOPMAT=1, but the embq PTEs
+// this branch targets place the linear weights in texture storage, so with the
+// hook off the whole quantized linear path silently fell back to the TILED
+// shader and no WMMA ran at all. Measured on 8B/8da4w 2048-prefill
+// (xgpusw-debug08 / 00000b750f413c33, driver main@fafb46ae9c0d, maxpin
+// 980/5333/934): 174.7 tok/s with the hook off vs 367.4 tok/s with it on --
+// a 2.10x difference that had nothing to do with the kernel and everything to
+// do with the default.
+//
+// Set ET_VK_TEXTURE_COOPMAT=0 (or "false"/"off") to restore the old
+// buffer-dispatch-only behavior; any other value, or leaving it unset, enables
+// texture coopmat.
 static bool texture_coopmat_enabled() {
-  static const bool enabled = std::getenv("ET_VK_TEXTURE_COOPMAT") != nullptr;
+  static const bool enabled = [] {
+    const char* env = std::getenv("ET_VK_TEXTURE_COOPMAT");
+    if (env == nullptr) {
+      return true;
+    }
+    return !(
+        strcmp(env, "0") == 0 || strcmp(env, "false") == 0 ||
+        strcmp(env, "off") == 0);
+  }();
   return enabled;
 }
 
