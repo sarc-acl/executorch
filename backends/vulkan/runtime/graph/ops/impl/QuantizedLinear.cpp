@@ -128,6 +128,21 @@ static const char* const kDq8caTsweepPrefixes[] = {
     // staging/zp-hoist/nibble-widening unchanged). PROMOTED 2026-09-01 as
     // the shipped default -- see dq8ca_coopmat_variant() below.
     "tsweep_dbuf4zpgtr_t",
+    // dbuf4zpgtr with tr3's shared-A layout (scalar int8_t, row-major over
+    // the full chunk, A_ROW_PAD_I8 per-row pad). Correctness-clean 12/12 but
+    // MEASURED SLOWER (+4.71% best case) -- kept opt-in as a recorded
+    // negative result. Never a default.
+    "tsweep_dbuf4zpgtr3_t",
+    // B-staging ownership moved to one thread per 2-uint pair, all 256 threads
+    // active. bw2 keeps the uint array, bw3 retypes it to uvec2 for a real wide
+    // store. Both CORRECT (14/14 x3); neither faster (bw2 ~0%, bw3 +0.34%) --
+    // the ISA shows scalar ds_store_b32 11->3 for nothing, because our LDS gap
+    // vs gemm-ubm TR3 is LOADS (80 vs 24), not stores (24 vs 8). OPT-IN only.
+    // (dbuf4zpgbv4/bw/bwr are KNOWN-INCORRECT -- deliberately NOT listed here
+    // so they cannot be selected; see their yaml headers for the isolated
+    // cause.)
+    "tsweep_dbuf4zpgbw2_t",
+    "tsweep_dbuf4zpgbw3_t",
     // (dq8ca-dequant-unpack-ablation Addendum 11 -- abl_aconst/abl_areadc/
     // abl_abconst -- were measurement-only variants deleted once each
     // attribution was recorded; see openspec/changes/dq8ca-dequant-unpack-
@@ -612,7 +627,12 @@ static bool dq8ca_variant_wants_rowmajor_a() {
   return v.rfind("tsweep_dbuf4tr_t", 0) == 0 ||
       v.rfind("tsweep_dbuf4trm_t", 0) == 0 ||
       v.rfind("tsweep_dbuf4trd_t", 0) == 0 ||
-      v.rfind("tsweep_dbuf4zpgtr_t", 0) == 0;
+      v.rfind("tsweep_dbuf4zpgtr_t", 0) == 0 ||
+      // zpgtr3 keeps zpgtr's GLOBAL A access verbatim; only the SHARED
+      // layout differs, so it has the same kPackedInt8_4W requirement.
+      v.rfind("tsweep_dbuf4zpgtr3_t", 0) == 0 ||
+      v.rfind("tsweep_dbuf4zpgbw2_t", 0) == 0 ||
+      v.rfind("tsweep_dbuf4zpgbw3_t", 0) == 0;
 }
 
 // Mirrors the coopmat branch of pick_linear_dqa_qw_shader() so graph-build time
