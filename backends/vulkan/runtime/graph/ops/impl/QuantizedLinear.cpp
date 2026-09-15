@@ -53,10 +53,10 @@ void resize_linear_qw_node(
 
 // Per-shader coopmat tile geometry (must match each shader's yaml).
 // Workgroup size (wg_size) = SG_GRID_X * SG_GRID_Y * SUBGROUP_SIZE.
-//   linear_q4gsw_coopmat       128x64x16, 2x2 subgroups x 32 (forced) -> 128
-//   linear_dq8ca_q4gsw_coopmat 128x64x32, 2x2 subgroups x 64          -> 256
-// (The int8-MMA shaders stay on wave64: int8 WMMA at forced subgroup 32
-// crashes the Xclipse PAL compiler.)
+//   linear_q4gsw_coopmat       128x128x16, 2x2 subgroups x 32 -> 128
+//   linear_dq8ca_q4gsw_coopmat 128x64x32,  4x2 subgroups x 32 -> 256
+// (sg_grid_y is the SG_GRID_Y each shader resolves to -- needed by the
+// texture-IO shared-memory budget check in can_use_q4gsw_coopmat below.)
 struct CoopmatTileDims {
   uint32_t m;
   uint32_t n;
@@ -65,11 +65,12 @@ struct CoopmatTileDims {
   // the WG_SIZE the shader yaml resolves to, or the launched thread count won't
   // match the shader's staging passes (out-of-bounds).
   uint32_t wg_size;
+  uint32_t sg_grid_y;
 };
-// linear_qw_coopmat.yaml: 128x64, 2x2 subgroup grid, sg32 -> WG_SIZE 128.
-constexpr CoopmatTileDims kQ4gswCoopmatDims = {128, 64, 16, 128};
-// linear_dq8ca_qw_coopmat.yaml: 128x64, 2x2 grid, sg64 -> WG_SIZE 256.
-constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {128, 64, 32, 256};
+// linear_qw_coopmat.yaml: 128x128, 2x2 subgroup grid, sg32 -> WG_SIZE 128.
+constexpr CoopmatTileDims kQ4gswCoopmatDims = {128, 128, 16, 128, 2};
+// linear_dq8ca_qw_coopmat.yaml: 128x64, 4x2 grid, sg32 -> WG_SIZE 256.
+constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {128, 64, 32, 256, 2};
 
 static CoopmatTileDims coopmat_tile_dims(const std::string& kernel_name) {
   // Exact prefix matches (the "linear_dq8ca_*" names must not match the
@@ -162,7 +163,8 @@ static bool can_use_q4gsw_coopmat(
     const ValueRef bias,
     int64_t tile_m = kCoopmatTileM,
     int64_t tile_n = kCoopmatTileN,
-    int64_t tile_k = kCoopmatTileK) {
+    int64_t tile_k = kCoopmatTileK,
+    uint32_t sg_grid_y = 0) {
   // The coopmat shaders only build HAS_BIAS=false variants, so they would
   // silently drop a bias. Fall back to the tiled path (which applies bias at
   // runtime via the apply_bias spec constant) whenever a bias is present.
@@ -183,19 +185,50 @@ static bool can_use_q4gsw_coopmat(
   if (!graph->device_is_amd()) {
     return false;
   }
-  // Coopmat shaders dispatch over gl_WorkGroupID.xy only; batched (rank > 2)
-  // outputs would silently miscompute all slices beyond the first.
-  if (graph->dim_of(output) > 2) {
+  // Coopmat shaders dispatch over gl_WorkGroupID.xy only; a batched (rank > 2)
+  // output is fine as long as every leading dim beyond the last two is 1 --
+  // a contiguous [1, M, N] is bit-identical to [M, N], which the 2D grid
+  // already covers in full. Anything with a real batch > 1 would silently
+  // miscompute all slices beyond the first.
+  const std::vector<int64_t> out_sizes = graph->sizes_of(output);
+  int64_t leading_dims_numel = 1;
+  for (int64_t d = 0; d < graph->dim_of(output) - 2; d++) {
+    leading_dims_numel *= utils::val_at(d, out_sizes);
+  }
+  if (leading_dims_numel != 1) {
     return false;
   }
-  if (graph->storage_type_of(output) != utils::kBuffer) {
-    return false;
+  // Buffer storage is always supported (coopMatLoad/Store on an SSBO). The
+  // texture3d IO variants stage the result tile through shared memory and
+  // imageStore it instead -- accept texture3d for both the output and the
+  // activation input, since real (embq) exports place linear tensors in
+  // texture storage by default.
+  const bool output_is_buffer =
+      graph->storage_type_of(output) == utils::kBuffer;
+  if (!output_is_buffer) {
+    if (graph->storage_type_of(output) != utils::kTexture3D ||
+        graph->storage_type_of(fp_input) != utils::kTexture3D) {
+      return false;
+    }
+    if (graph->packed_dim_of(output) != WHCN::kWidthDim ||
+        graph->packed_dim_of(fp_input) != WHCN::kWidthDim) {
+      return false;
+    }
+    // Shared-memory budget for the texture-IO result-tile staging buffer. An
+    // over-sized tile has hung a device before -- reject rather than risk it.
+    if (sg_grid_y > 0) {
+      constexpr int64_t kMmaM = 16;
+      const int64_t csh_bytes =
+          int64_t(sg_grid_y) * kMmaM * tile_n * int64_t(sizeof(uint16_t));
+      if (csh_bytes >= adapter->max_compute_shared_memory_size()) {
+        return false;
+      }
+    }
   }
   if (graph->dtype_of(output) != vkapi::kHalf) {
     return false;
   }
 
-  const std::vector<int64_t> out_sizes = graph->sizes_of(output);
   const int64_t N = utils::val_at(-1, out_sizes);
   const int64_t M = utils::val_at(-2, out_sizes);
   const std::vector<int64_t> in_sizes = graph->sizes_of(fp_input);
@@ -216,6 +249,29 @@ static bool can_use_q4gsw_coopmat(
   return true;
 }
 
+// Single source of truth for whether a dq8ca dispatch will use the coopmat
+// kernel, consulted both at graph-build time (to pick the activation packing
+// layout below) and at dispatch time (pick_linear_dqa_qw_shader) -- the two
+// must never disagree, or the packer and the shader will read/write
+// incompatible layouts.
+static bool dq8ca_will_dispatch_coopmat(
+    ComputeGraph* graph,
+    const ValueRef output,
+    const ValueRef fp_input,
+    const ValueRef bias,
+    int64_t group_size) {
+  return can_use_q4gsw_coopmat(
+      graph,
+      output,
+      fp_input,
+      group_size,
+      bias,
+      kDq8caQ4gswCoopmatDims.m,
+      kDq8caQ4gswCoopmatDims.n,
+      kDq8caQ4gswCoopmatDims.k,
+      kDq8caQ4gswCoopmatDims.sg_grid_y);
+}
+
 vkapi::ShaderInfo pick_linear_qw_shader(
     ComputeGraph* graph,
     const std::vector<ArgGroup>& args,
@@ -229,8 +285,9 @@ vkapi::ShaderInfo pick_linear_qw_shader(
   const bool weight_is_4bit = resize_args.at(0) != kDummyValueRef;
   const bool is_gemv_case = is_gemv(graph, fp_input);
 
-  // Use the coopmat shader for 4-bit, non-gemv, buffer-output, half-dtype
-  // dispatches when shape alignment allows; tiled remains the fallback.
+  // Use the coopmat shader for 4-bit, non-gemv, half-dtype dispatches when
+  // shape alignment allows (buffer or texture3d output); tiled remains the
+  // fallback.
   if (weight_is_4bit && !is_gemv_case) {
     const int64_t group_size =
         graph->extract_scalar<int64_t>(resize_args.at(0));
@@ -242,10 +299,11 @@ vkapi::ShaderInfo pick_linear_qw_shader(
             resize_args.at(2),
             kQ4gswCoopmatDims.m,
             kQ4gswCoopmatDims.n,
-            kQ4gswCoopmatDims.k)) {
+            kQ4gswCoopmatDims.k,
+            kQ4gswCoopmatDims.sg_grid_y)) {
       std::string kernel_name = "linear_q4gsw_coopmat";
-      // Output storage is buffer (gated above); weight storage matches the
-      // existing variants.
+      // Output storage matches whatever can_use_q4gsw_coopmat accepted
+      // (buffer or texture3d); weight storage matches the existing variants.
       add_storage_type_suffix(kernel_name, graph->storage_type_of(output));
       add_storage_type_suffix(
           kernel_name, graph->storage_type_of(packed_int_weight));
@@ -297,15 +355,8 @@ vkapi::ShaderInfo pick_linear_dqa_qw_shader(
       graph->context()->adapter_ptr()->supports_int8_cooperative_matrix()) {
     const int64_t group_size =
         graph->extract_scalar<int64_t>(resize_args.at(0));
-    if (can_use_q4gsw_coopmat(
-            graph,
-            out,
-            fp_input,
-            group_size,
-            resize_args.at(2),
-            kDq8caQ4gswCoopmatDims.m,
-            kDq8caQ4gswCoopmatDims.n,
-            kDq8caQ4gswCoopmatDims.k)) {
+    if (dq8ca_will_dispatch_coopmat(
+            graph, out, fp_input, resize_args.at(2), group_size)) {
       std::string kernel_name = "linear_dq8ca_q4gsw_coopmat";
       add_storage_type_suffix(kernel_name, graph->storage_type_of(out));
       add_storage_type_suffix(kernel_name, graph->storage_type_of(int_weight));
@@ -785,13 +836,31 @@ void quantized_linear_impl(
   const ValueRef packed_weight_sums = prepack_standard(
       graph, weight_sums_data, utils::kBuffer, utils::kWidthPacked);
 
+  // The coopmat dq8ca kernel reads activations through coopMatLoad, which can
+  // only address a row-major buffer -- so when this dispatch will actually
+  // use that kernel, allocate the activations as kPackedInt8_4W (row-major, 4
+  // K-values per int32) and run the matching packer below instead of the
+  // stock 4h4w block layout. dq8ca_will_dispatch_coopmat() is the same
+  // predicate pick_linear_dqa_qw_shader() uses, so the layout chosen here and
+  // the kernel picked at dispatch time can never disagree.
+  bool dq8ca_rowmajor_a = false;
+  if (input_quant_config.is_dynamic && weight_quant_config.nbits == 4 &&
+      weight_quant_config.granularity == kPerGroup) {
+    dq8ca_rowmajor_a = dq8ca_will_dispatch_coopmat(
+        &graph,
+        output,
+        fp_input,
+        bias_data,
+        graph.extract_scalar<int64_t>(group_size));
+  }
+
   // Allocate temporary tensor to store quantized and packed input
   TmpTensor packed_int_input(
       &graph,
       graph.sizes_of(fp_input),
       vkapi::kInt8x4,
       utils::kBuffer,
-      utils::kPackedInt8_4H4W);
+      dq8ca_rowmajor_a ? utils::kPackedInt8_4W : utils::kPackedInt8_4H4W);
 
   // Non dynamically quantized input case
   if (!input_quant_config.is_dynamic) {
@@ -852,15 +921,27 @@ void quantized_linear_impl(
       utils::kBuffer,
       utils::kWidthPacked);
 
-  add_quantize_and_pack_4h4w_with_group_sums_node(
-      graph,
-      input_quant_config,
-      fp_input,
-      int_input_sums,
-      packed_input_scale,
-      packed_input_zp,
-      packed_int_input,
-      group_size);
+  if (dq8ca_rowmajor_a) {
+    add_quantize_and_pack_4w_with_group_sums_node(
+        graph,
+        input_quant_config,
+        fp_input,
+        int_input_sums,
+        packed_input_scale,
+        packed_input_zp,
+        packed_int_input,
+        group_size);
+  } else {
+    add_quantize_and_pack_4h4w_with_group_sums_node(
+        graph,
+        input_quant_config,
+        fp_input,
+        int_input_sums,
+        packed_input_scale,
+        packed_input_zp,
+        packed_int_input,
+        group_size);
+  }
 
   add_linear_dqa_qw_node(
       graph,
@@ -978,6 +1059,39 @@ void weight_int8pack_mm(
       output);
 }
 
+// Weight-only per-group 4-bit quantized linear. Registered here (rather than
+// where it's implemented for the tiled/gemv path, Q4gswLinear.cpp) so that
+// it can reach quantized_linear_impl's coopmat dispatch below.
+void linear_q4gsw(ComputeGraph& graph, const std::vector<ValueRef>& args) {
+  int32_t idx = 0;
+  const ValueRef fp_input = args.at(idx++);
+  const ValueRef weight_data = args.at(idx++);
+  const ValueRef weight_scales_data = args.at(idx++);
+  const ValueRef group_size = args.at(idx++);
+  const ValueRef bias_data = args.at(idx++);
+  const ValueRef output = args.at(idx++);
+
+  const int64_t group_size_val = graph.extract_scalar<int64_t>(group_size);
+
+  QuantizationConfig input_quant_config(32, kNoQuantization, {});
+  QuantizationConfig weight_quant_config(4, kPerGroup, {group_size_val});
+
+  quantized_linear_impl(
+      graph,
+      input_quant_config,
+      weight_quant_config,
+      fp_input,
+      kDummyValueRef, // input scale
+      kDummyValueRef, // input zp
+      weight_data,
+      kDummyValueRef, // weight sums
+      weight_scales_data,
+      kDummyValueRef, // weight zeros
+      group_size,
+      bias_data,
+      output);
+}
+
 void linear_dq8ca_q4gsw(
     ComputeGraph& graph,
     const std::vector<ValueRef>& args) {
@@ -1017,6 +1131,7 @@ REGISTER_OPERATORS {
   VK_REGISTER_OP(et_vk.linear_q8ta_q8csw.default, linear_q8ta_q8csw);
   VK_REGISTER_OP(et_vk.linear_q8csw.default, linear_q8csw);
   VK_REGISTER_OP(aten._weight_int8pack_mm.default, weight_int8pack_mm);
+  VK_REGISTER_OP(et_vk.linear_q4gsw.default, linear_q4gsw);
   VK_REGISTER_OP(et_vk.linear_dq8ca_q4gsw.default, linear_dq8ca_q4gsw);
 }
 

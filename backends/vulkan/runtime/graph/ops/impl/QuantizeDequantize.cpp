@@ -201,6 +201,60 @@ void add_quantize_and_pack_4h4w_with_group_sums_node(
       {group_size}));
 }
 
+// Row-major (kPackedInt8_4W) output layout; same quantization and group-sum
+// reduction, same workgroup shapes as the 4h4w version above, so it reuses
+// the same GWG picker (which only branches on the "o4w16" substring, present
+// in this shader's name too).
+void add_quantize_and_pack_4w_with_group_sums_node(
+    ComputeGraph& graph,
+    const QuantizationConfig& input_quant_config,
+    const ValueRef fp_input,
+    const ValueRef int_input_sums,
+    const ValueRef packed_input_scales,
+    const ValueRef packed_input_zps,
+    const ValueRef packed_int_input,
+    const ValueRef group_size) {
+  // Only certain quantization types supported at the moment
+  VK_CHECK_COND(input_quant_config.granularity == kPerChannel);
+
+  int64_t num_blocks_M, num_blocks_K;
+  std::tie(num_blocks_M, num_blocks_K) =
+      get_quantized_input_num_blocks(graph, fp_input);
+
+  vkapi::ParamsBindList param_buffers = {graph.sizes_ubo(fp_input)};
+
+  const int32_t group_size_val = graph.extract_scalar<int32_t>(group_size);
+  const int32_t blocks_per_group = utils::div_up(group_size_val, int32_t(4));
+
+  std::string shader_name = "quantize_and_pack_4w_with_group_sums";
+  if (group_size_val >= 128) {
+    shader_name += "_o2w32";
+  } else {
+    shader_name += "_o4w16";
+  }
+  add_storage_type_suffix(shader_name, graph.storage_type_of(packed_int_input));
+  add_storage_type_suffix(shader_name, graph.storage_type_of(fp_input));
+  add_dtype_suffix(shader_name, graph.dtype_of(fp_input));
+  add_zp_dtype_mode_suffix(shader_name, graph.dtype_of(packed_input_zps));
+
+  graph.execute_nodes().emplace_back(new DynamicDispatchNode(
+      graph,
+      VK_KERNEL_FROM_STR(shader_name),
+      pick_quantize_and_pack_4h4w_with_group_sums_gwg,
+      pick_required_lwg,
+      // Inputs and Outputs
+      {{{packed_int_input, int_input_sums}, vkapi::kWrite},
+       {{fp_input, packed_input_scales, packed_input_zps}, vkapi::kRead}},
+      // Shader params buffers
+      param_buffers,
+      // Push Constants
+      {},
+      // Specialization Constants
+      {blocks_per_group},
+      // Resize args
+      {group_size}));
+}
+
 //
 // Dispatch utilities (Conv2d)
 //

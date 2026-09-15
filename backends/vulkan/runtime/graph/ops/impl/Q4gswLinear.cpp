@@ -669,7 +669,8 @@ void q4gsw_linear(ComputeGraph& graph, const std::vector<ValueRef>& args) {
 
 REGISTER_OPERATORS {
   VK_REGISTER_OP(et_vk.q4gsw_linear.default, q4gsw_linear);
-  VK_REGISTER_OP(et_vk.linear_q4gsw.default, q4gsw_linear);
+  // et_vk.linear_q4gsw.default is registered by QuantizedLinear.cpp instead, so
+  // that a weight-only 4-bit linear can reach the coopmat dispatch path there.
 }
 
 } // namespace vkcompute

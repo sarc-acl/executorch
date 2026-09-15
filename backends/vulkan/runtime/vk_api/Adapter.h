@@ -471,6 +471,10 @@ class Adapter final {
     return physical_device_.properties.limits.maxStorageBufferRange;
   }
 
+  inline uint32_t max_compute_shared_memory_size() const {
+    return physical_device_.properties.limits.maxComputeSharedMemorySize;
+  }
+
   inline utils::uvec3 max_compute_workgroup_count() const {
     const auto& limits = physical_device_.properties.limits;
     return {
