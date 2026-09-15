@@ -1,0 +1,60 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# "zpg" + "-tr" combination: tsweep_dbuf4zpg with its per-thread scalar
+# A-staging replaced by tsweep_dbuf4tr's coopMat-mediated A staging. B
+# staging, zp-hoist, byte-parallel nibble widening are all dbuf4zpg's,
+# unchanged -- only A-staging differs. Requires t_packed_int8_input in the
+# ROW-MAJOR kPackedInt8_4W layout (same requirement as tsweep_dbuf4tr).
+#
+# PROMOTED 2026-09-01 as the shipped default -- see QuantizedLinear.cpp's
+# dq8ca_coopmat_variant() for the full validation record (10/10 buffer, 6/6
+# texture3d correctness across 1B/3B/8B; +4.2% real e2e prefill; 46.50% ->
+# 49.94% efficiency on 8B). Also selectable explicitly via
+# ET_VK_DQ8CA_COOPMAT_VARIANT=tsweep_dbuf4zpgtr_t<M>x<N>k<K>g<SGX><SGY>s<sub>.
+# See openspec/changes/archive/2026-08-31-dq8ca-tr-staged-a-on-zpg.
+#
+# Single seed tile: the prior dbuf4zpg default's own tile (t128x64k32g42s32).
+# A re-sweep against this shader's own (lower) register-pressure profile was
+# run as a follow-up (coopmat-tr-tilesweep-4w-port) and found no better tile
+# -- this remains the best known geometry.
+
+linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr:
+  parameter_names_with_default_values:
+    PRECISION: highp
+    HAS_BIAS: false
+    IO_STORAGE: buffer
+    WEIGHT_NBITS: 4
+    WEIGHT_STORAGE: texture2d
+    MMA_M: 16
+    MMA_N: 16
+    MMA_K: 16
+    WG_TILE_M: 64
+    WG_TILE_N: 32
+    WG_TILE_K: 32
+    SG_GRID_X: 1
+    SG_GRID_Y: 2
+    SUBGROUP_SIZE: 64
+  shader_variants:
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr_t128x64k32g42s32_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr_t128x64k32g42s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32

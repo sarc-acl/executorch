@@ -44,6 +44,20 @@ void add_quantize_and_pack_4h4w_with_group_sums_node(
     const ValueRef packed_int_input,
     const ValueRef group_size);
 
+// Same as above but emits the row-major kPackedInt8_4W layout instead of the
+// 4h4w block layout. Only the coopmat-staged-A dq8ca kernel
+// (linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4tr) can consume it; packed_int_input
+// must have been allocated with utils::kPackedInt8_4W.
+void add_quantize_and_pack_4w_with_group_sums_node(
+    ComputeGraph& graph,
+    const QuantizationConfig& input_quant_config,
+    const ValueRef fp_input,
+    const ValueRef int_input_sums,
+    const ValueRef packed_input_scales,
+    const ValueRef packed_input_zps,
+    const ValueRef packed_int_input,
+    const ValueRef group_size);
+
 //
 // Quantize, Dequantize for Convolution
 //

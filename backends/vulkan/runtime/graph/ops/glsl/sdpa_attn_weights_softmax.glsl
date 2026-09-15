@@ -137,6 +137,30 @@ void main() {
   const int context_len_aligned_down = context_len - mod_4(context_len);
   const int C4_limit = div_4(context_len_aligned_down);
 
+  // Causal-mask truncation. In LLM mode the QK^T shader has already written
+  // -inf to every element with c > s + input_pos, so for row s only the first
+  // (s + input_pos + 1) columns carry information: a masked element
+  // contributes exp(-inf - max) == 0 to the sum, cannot be the row max unless
+  // the whole row is masked, and normalizes to exactly 0. All three passes can
+  // therefore stop at reduce_len instead of context_len, which on a full
+  // prefill halves the bytes read (the rows are a triangle, not a rectangle).
+  //
+  // The STORE still has to cover the whole context_len row: attn*V stages
+  // every chunk with chunkK < context_len and multiplies it by V, so the
+  // masked tail must be written as zero rather than left stale. Writing zero
+  // is cheaper than reading + exp + writing, and needs no load.
+  //
+  // Fused mode has no input_pos and gets its mask from an attn_mask bias
+  // instead, so no truncation is valid there.
+#ifdef HAS_INPUT_POS
+  const int reduce_len = min(context_len, s + input_pos + 1);
+#else
+  const int reduce_len = context_len;
+#endif
+  const int reduce_texel_len = div_up_4(reduce_len);
+  const int reduce_len_aligned_down = reduce_len - mod_4(reduce_len);
+  const int R4_limit = div_4(reduce_len_aligned_down);
+
   // =========================================================================
   // Pass 1: Find the maximum value across the row for numerical stability.
   // Without this, exp(x) can overflow float32 when x > ~88.7.
@@ -144,7 +168,7 @@ void main() {
 
   SOFTMAX_ACC_T local_max = SOFTMAX_ACC_T(-1.0 / 0.0); // -infinity
 
-  for (int c4 = worker_id; c4 < C4_limit; c4 += NUM_WORKERS_PER_WG) {
+  for (int c4 = worker_id; c4 < R4_limit; c4 += NUM_WORKERS_PER_WG) {
     SOFTMAX_IN_VEC4_T in_texel = load_attn_weights_c4(
         c4, s, q_h, context_texel_len, attn_S, Q_H);
 
@@ -153,13 +177,13 @@ void main() {
     }
   }
   if (worker_id == 0) {
-    for (int c4 = C4_limit; c4 < context_texel_len; ++c4) {
+    for (int c4 = R4_limit; c4 < reduce_texel_len; ++c4) {
       const int c_base = mul_4(c4);
       SOFTMAX_IN_VEC4_T in_texel = load_attn_weights_c4(
           c4, s, q_h, context_texel_len, attn_S, Q_H);
 
       [[unroll]] for (int comp = 0; comp < 4; comp++) {
-        if (c_base + comp < context_len) {
+        if (c_base + comp < reduce_len) {
           local_max = max(local_max, SOFTMAX_ACC_T(in_texel[comp]));
         }
       }
@@ -189,7 +213,7 @@ void main() {
 
   SOFTMAX_ACC_T local_exp_sum = SOFTMAX_ACC_T(0);
 
-  for (int c4 = worker_id; c4 < C4_limit; c4 += NUM_WORKERS_PER_WG) {
+  for (int c4 = worker_id; c4 < R4_limit; c4 += NUM_WORKERS_PER_WG) {
     SOFTMAX_IN_VEC4_T in_texel = load_attn_weights_c4(
         c4, s, q_h, context_texel_len, attn_S, Q_H);
 
@@ -198,13 +222,13 @@ void main() {
     }
   }
   if (worker_id == 0) {
-    for (int c4 = C4_limit; c4 < context_texel_len; ++c4) {
+    for (int c4 = R4_limit; c4 < reduce_texel_len; ++c4) {
       const int c_base = mul_4(c4);
       SOFTMAX_IN_VEC4_T in_texel = load_attn_weights_c4(
           c4, s, q_h, context_texel_len, attn_S, Q_H);
 
       [[unroll]] for (int comp = 0; comp < 4; comp++) {
-        if (c_base + comp < context_len) {
+        if (c_base + comp < reduce_len) {
           local_exp_sum += exp(SOFTMAX_ACC_T(in_texel[comp]) - global_max);
         }
       }
@@ -232,7 +256,8 @@ void main() {
   // Pass 3: Normalize each element: out = exp(x - max) / sum(exp(x - max))
   // =========================================================================
 
-  for (int c4 = worker_id; c4 < C4_limit; c4 += NUM_WORKERS_PER_WG) {
+  // Fully-inside-the-prefix texels: load, normalize, store.
+  for (int c4 = worker_id; c4 < R4_limit; c4 += NUM_WORKERS_PER_WG) {
     SOFTMAX_IN_VEC4_T in_texel = load_attn_weights_c4(
         c4, s, q_h, context_texel_len, attn_S, Q_H);
 
@@ -244,15 +269,18 @@ void main() {
     store_attn_weights_softmax_c4(
         out_texel, c4, s, q_h, context_texel_len, attn_S, Q_H);
   }
+
+  // The single texel that straddles reduce_len, if reduce_len is not a
+  // multiple of 4. Its masked lanes normalize to 0, same as the tail below.
   if (worker_id == 0) {
-    for (int c4 = C4_limit; c4 < context_texel_len; ++c4) {
+    for (int c4 = R4_limit; c4 < reduce_texel_len; ++c4) {
       const int c_base = mul_4(c4);
       SOFTMAX_IN_VEC4_T in_texel = load_attn_weights_c4(
           c4, s, q_h, context_texel_len, attn_S, Q_H);
 
       VEC4_T out_texel = VEC4_T(0);
       [[unroll]] for (int comp = 0; comp < 4; comp++) {
-        if (c_base + comp < context_len) {
+        if (c_base + comp < reduce_len) {
           out_texel[comp] = T(
               exp(SOFTMAX_ACC_T(in_texel[comp]) - global_max) / local_exp_sum);
         }
@@ -260,5 +288,15 @@ void main() {
       store_attn_weights_softmax_c4(
           out_texel, c4, s, q_h, context_texel_len, attn_S, Q_H);
     }
+  }
+
+  // Causally-masked tail: every element normalizes to exactly 0, so write zero
+  // WITHOUT loading the input. This is the read the truncation saves in pass 3,
+  // and the store attn*V depends on (it stages the whole context_len row).
+  // Spread across all workers, unlike the straddling texel above.
+  for (int c4 = reduce_texel_len + worker_id; c4 < context_texel_len;
+       c4 += NUM_WORKERS_PER_WG) {
+    store_attn_weights_softmax_c4(
+        VEC4_T(0), c4, s, q_h, context_texel_len, attn_S, Q_H);
   }
 }
