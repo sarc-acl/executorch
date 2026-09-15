@@ -76,11 +76,17 @@ struct CoopmatTileDims {
   // never reads it. 0 = "unknown / shipped default".
   uint32_t sg_grid_y;
 };
-// linear_qw_coopmat.yaml: 128x128, 2x2 subgroup grid, sg32 -> WG_SIZE 128.
+// Defensive-only fallback for parse_tsweep_tile(): both
+// {q4gsw,dq8ca}_coopmat_variant() are guaranteed by construction to always
+// return a prefix-whitelisted string (the hardcoded default, or an
+// env-var value already validated by is_*_shippable_token), so
+// parse_tsweep_tile always parses the real dims out of that string and
+// this fallback is never actually returned in current code. Kept at the
+// current shipped tile's own dims (not some other tile) purely so that if
+// the invariant above is ever violated, the failure mode is "silently use
+// today's real default" rather than a stale, unrelated geometry.
 constexpr CoopmatTileDims kQ4gswCoopmatDims = {128, 128, 16, 128, 2};
-// linear_dq8ca_qw_coopmat.yaml: 64x32, 1x2 grid, sg64 -> WG_SIZE 128
-// (specs/027-e2e-tile-sweep winner, was 128x64x32/256).
-constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {64, 32, 32, 128, 2};
+constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {128, 64, 32, 256, 2};
 
 // specs/028-4w-e2e-tile-sweep / specs/041-dbuf4-tile-sweep:
 // ET_VK_Q4GSW_COOPMAT_VARIANT / ET_VK_DQ8CA_COOPMAT_VARIANT can swap the
