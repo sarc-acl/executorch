@@ -96,80 +96,35 @@ constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {64, 32, 32, 128, 2};
 // kernel rather than the actual mistake. Splitting them lets a wrong-family
 // token be rejected here, by name.
 //
-// dbuf1-4 and the bare "tsweep_t" namespace exist for both families; the
-// -tr/-zp/-zpn/-zpb variants are dq8ca-only (there is no q4gsw shader for
-// any of them).
+// 2026-09-15 housekeeping: removed the dead "dbuf1"/"dbuf2"/"dbuf3" and bare
+// "tsweep_t" prefixes -- no GLSL for any of them ever existed in this branch
+// (q4gsw or dq8ca), so they could only ever have produced a confusing
+// shader-lookup crash instead of a clean validation error. "tsweep_dbuf4_t"
+// is the only real q4gsw entry (matches the one shipped shader file).
 static const char* const kQ4gswTsweepPrefixes[] = {
-    "tsweep_dbuf1_t",
-    "tsweep_dbuf2_t",
-    "tsweep_dbuf3_t",
     "tsweep_dbuf4_t",
-    // (coopmat-lds-fence 2026-09-03: tsweep_dbuf4nf_t / tsweep_dbuf4zpgtrnf_t
-    // -- unfenced clones of the two shipped defaults, used to measure the cost
-    // of the memoryBarrierShared() fix via an interleaved same-binary A/B.
-    // Result: 8da4w +0.001%, 4w -0.002%, both inside a 0.017-0.037% noise band.
-    // Deleted after measurement.)
-    "tsweep_t",
 };
 
+// 2026-09-15 housekeeping: this branch now ships only the validated default
+// (tsweep_dbuf4zpgtr_t). Removed alongside their now-deleted GLSL/YAML:
+// "dbuf1"/"dbuf2"/"dbuf3" and bare "tsweep_t" (dead -- no GLSL ever existed
+// for any of them, same as the q4gsw list above); "dbuf4" (the original
+// 2026-08-26 default, twice superseded); "dbuf4zpg" (the 2026-08-28 default,
+// superseded 2026-09-01 -- was also this function's invalid-token fallback,
+// now repointed at the current default below); "dbuf4zpgtr3" (correctness-
+// clean but +4.71% slower); "dbuf4zpgbw2"/"dbuf4zpgbw3" (correctness-clean,
+// ~0% delta, no reason to keep as a build target). Full history (promotion
+// dates, measured deltas, why each was rejected) preserved in the comments
+// below and in the archived files themselves, on branch
+// yanwen/release14-quant-shaders-archived-2026-09-15. (dbuf4zpgbv4/bw/bwr
+// were already dead -- KNOWN-INCORRECT and deliberately never listed here --
+// their GLSL/YAML is removed too, same archive branch.)
 static const char* const kDq8caTsweepPrefixes[] = {
-    "tsweep_dbuf1_t",
-    "tsweep_dbuf2_t",
-    "tsweep_dbuf3_t",
-    "tsweep_dbuf4_t",
-    // zpi + compile-time elision of the statically-true a_active guard
-    // (intervention G of dq8ca-prefill-stall-reduction), combined with the
-    // dbuf4 default's own B_STRIDE_U32 skew removal + coalesced B-store
-    // rewrite. Superseded 2026-09-01 by tsweep_dbuf4zpgtr_t below -- kept
-    // listed (env-var-selectable) for comparison/rollback.
-    "tsweep_dbuf4zpg_t",
     // dbuf4zpg with its per-thread scalar A-staging replaced by a
     // coopMat-mediated coopMatLoad(global)->coopMatStore(LDS) sequence (B
     // staging/zp-hoist/nibble-widening unchanged). PROMOTED 2026-09-01 as
     // the shipped default -- see dq8ca_coopmat_variant() below.
     "tsweep_dbuf4zpgtr_t",
-    // dbuf4zpgtr with tr3's shared-A layout (scalar int8_t, row-major over
-    // the full chunk, A_ROW_PAD_I8 per-row pad). Correctness-clean 12/12 but
-    // MEASURED SLOWER (+4.71% best case) -- kept opt-in as a recorded
-    // negative result. Never a default.
-    "tsweep_dbuf4zpgtr3_t",
-    // B-staging ownership moved to one thread per 2-uint pair, all 256 threads
-    // active. bw2 keeps the uint array, bw3 retypes it to uvec2 for a real wide
-    // store. Both CORRECT (14/14 x3); neither faster (bw2 ~0%, bw3 +0.34%) --
-    // the ISA shows scalar ds_store_b32 11->3 for nothing, because our LDS gap
-    // vs gemm-ubm TR3 is LOADS (80 vs 24), not stores (24 vs 8). OPT-IN only.
-    // (dbuf4zpgbv4/bw/bwr are KNOWN-INCORRECT -- deliberately NOT listed here
-    // so they cannot be selected; see their yaml headers for the isolated
-    // cause.)
-    "tsweep_dbuf4zpgbw2_t",
-    "tsweep_dbuf4zpgbw3_t",
-    // (dq8ca-dequant-unpack-ablation Addendum 11 -- abl_aconst/abl_areadc/
-    // abl_abconst -- were measurement-only variants deleted once each
-    // attribution was recorded; see openspec/changes/dq8ca-dequant-unpack-
-    // ablation/results/README.md.)
-    // (dq8ca-dequant-unpack-ablation and its 2026-08-26 follow-ups on
-    // xgpusw-debug08 -- abl_nodq/abl_nonib/abl_both/abl_nolds/abl_bconst/
-    // abl_bcont/abl_breadc/str4/str6/str8/bcoal -- were measurement-only
-    // variants deleted once each attribution was recorded; see
-    // openspec/changes/dq8ca-dequant-unpack-ablation/results/. Two real
-    // findings from that investigation WERE promoted to the shipped default:
-    // see the B_STRIDE_U32 comment (the LDS skew removal) and the
-    // BCoalIndex/bcoal_index comment (the coalesced B-store rewrite) in
-    // linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4.glsl.)
-    // 2026-08-28: removed the now-dead prefixes for "-tr"/"-trm"/"-trd"
-    // (row-major-A coopMatLoad staging, deprioritized -- see
-    // dq8ca-uvec4-coopmat-redesign/results.md: the reference kernel's read is
-    // narrow too, so this direction didn't hold), "-zp"/"-zpn"/"-zpb"/"-zpx"
-    // (superseded single-intervention isolations from dq8ca-prefill-stall-
-    // reduction, folded into "-zpg" above), and "-zpi"/"-zpk" (isolation
-    // variants used only to attribute G vs F in that investigation). Their
-    // shader files were deleted with them -- this branch (release14-quant-
-    // shaders) ships only the validated default; the experimental siblings
-    // and isolation variants live on dq8ca-uvec4-redesign/dq8ca-arch-redesign
-    // instead. Leaving a dead prefix here means an env var could reference a
-    // shader that no longer exists and crash confusingly at shader lookup
-    // instead of failing the validation check cleanly.
-    "tsweep_t",
 };
 
 // (The measurement-only ablation variants and their prefix list lived here
@@ -354,7 +309,11 @@ static const std::string& dq8ca_coopmat_variant() {
     if (is_dq8ca_shippable_token(v)) {
       return v;
     }
-    return std::string("tsweep_dbuf4zpg_t128x64k32g42s32");
+    // 2026-09-15: was "tsweep_dbuf4zpg_t128x64k32g42s32" (the prior default);
+    // that shader was removed in the same housekeeping pass that pruned this
+    // fallback's dead alternatives above, so an invalid token now falls back
+    // to the current default instead.
+    return std::string("tsweep_dbuf4zpgtr_t128x64k32g42s32");
   }();
   return variant;
 }
