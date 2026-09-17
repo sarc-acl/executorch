@@ -75,6 +75,10 @@ struct CoopmatTileDims {
   // Only needed for the texture-IO shared-memory budget below; the buffer path
   // never reads it. 0 = "unknown / shipped default".
   uint32_t sg_grid_y;
+  // The tile's own SUBGROUP_SIZE, i.e. the requiredSubgroupSize its pipeline is
+  // created with. Only read by the non-AMD device-gate override, which must
+  // confirm the device can actually be forced to that width.
+  uint32_t subgroup_size;
 };
 // Defensive-only fallback for parse_tsweep_tile(): both
 // {q4gsw,dq8ca}_coopmat_variant() are guaranteed by construction to always
@@ -85,8 +89,8 @@ struct CoopmatTileDims {
 // current shipped tile's own dims (not some other tile) purely so that if
 // the invariant above is ever violated, the failure mode is "silently use
 // today's real default" rather than a stale, unrelated geometry.
-constexpr CoopmatTileDims kQ4gswCoopmatDims = {128, 128, 16, 128, 2};
-constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {128, 64, 32, 256, 2};
+constexpr CoopmatTileDims kQ4gswCoopmatDims = {128, 128, 16, 128, 2, 32};
+constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {128, 64, 32, 256, 2, 32};
 
 // specs/028-4w-e2e-tile-sweep / specs/041-dbuf4-tile-sweep:
 // ET_VK_Q4GSW_COOPMAT_VARIANT / ET_VK_DQ8CA_COOPMAT_VARIANT can swap the
@@ -126,6 +130,11 @@ static const char* const kQ4gswTsweepPrefixes[] = {
 // were already dead -- KNOWN-INCORRECT and deliberately never listed here --
 // their GLSL/YAML is removed too, same archive branch.)
 static const char* const kDq8caTsweepPrefixes[] = {
+    // The shipped tile at MMA_K=32, for devices whose int8 coopmat is only
+    // enumerated at 16x16x32 (NVIDIA). Not a default anywhere: it is reachable
+    // via ET_VK_DQ8CA_COOPMAT_VARIANT, and is the only int8 variant the
+    // ET_VK_COOPMAT_ANY_DEVICE device-gate override will let through.
+    "tsweep_dbuf4zpgtr_mk32_t",
     // dbuf4zpg with its per-thread scalar A-staging replaced by a
     // coopMat-mediated coopMatLoad(global)->coopMatStore(LDS) sequence (B
     // staging/zp-hoist/nibble-widening unchanged). PROMOTED 2026-09-01 as
@@ -349,7 +358,7 @@ static CoopmatTileDims parse_tsweep_tile(
   const uint32_t sgx = grid[0] - '0';
   const uint32_t sgy = grid[1] - '0';
   const uint32_t sub = std::stoul(variant.substr(s_pos + 1));
-  return {m, n, k, sgx * sgy * sub, sgy};
+  return {m, n, k, sgx * sgy * sub, sgy, sub};
 }
 
 static CoopmatTileDims parse_q4gsw_tsweep_tile(const std::string& variant) {
@@ -467,6 +476,27 @@ static bool texture_coopmat_enabled() {
   return enabled;
 }
 
+// Opt-in override for the wave64 + AMD device gate below. The shipped tiles are
+// all SUBGROUP_SIZE=32 shaders whose pipelines carry an explicit
+// requiredSubgroupSize, so a wave32 device that supports subgroup size control
+// can run them; the gate predates those tiles and still scopes the path to the
+// wave64 AMD parts they were validated on. Default off, so AMD behavior and
+// every unvalidated device are untouched.
+//
+// The 8da4w path is covered only through its "mk32" variant: the shipped int8
+// tile's coopmat<int8> is 16x16x16, an AMD-RDNA shape NVIDIA does not
+// enumerate (it exposes int8 only at MMA_K=32), so letting that one through
+// would fail pipeline creation rather than fall back to tiled.
+static bool coopmat_any_device_enabled() {
+  static const bool enabled = []() {
+    const char* env = std::getenv("ET_VK_COOPMAT_ANY_DEVICE");
+    return env != nullptr &&
+        !(strcmp(env, "0") == 0 || strcmp(env, "false") == 0 ||
+          strcmp(env, "off") == 0);
+  }();
+  return enabled;
+}
+
 // Returns true when the q4gsw coopmat shader can be dispatched for this
 // (M, N, K, dtype, output_storage, group_size) tuple. Preconditions match what
 // linear_q4gsw_coopmat.glsl assumes; the subgroup_size == 64 check scopes this
@@ -481,7 +511,9 @@ static bool can_use_q4gsw_coopmat(
     int64_t tile_n = kCoopmatTileN,
     int64_t tile_k = kCoopmatTileK,
     bool allow_texture_io = false,
-    uint32_t sg_grid_y = 0) {
+    uint32_t sg_grid_y = 0,
+    uint32_t tile_subgroup_size = 0,
+    bool int8_mma_shape_is_amd_only = false) {
   // Baseline-measurement escape hatch: forces every dispatch through this
   // function to the tiled fallback, regardless of eligibility. Off by
   // default (unset), so production behavior is unchanged.
@@ -498,15 +530,24 @@ static bool can_use_q4gsw_coopmat(
   if (!adapter->supports_cooperative_matrix()) {
     return false;
   }
-  if (adapter->subgroup_size() != 64) {
-    return false;
-  }
-  // These coopmat shaders have only been validated on AMD-RDNA GPUs (Samsung
-  // Xclipse and AMD Radeon). Gate to those families so the path stays off on
-  // other devices that advertise cooperative matrix support but have not been
-  // validated.
-  if (!graph->device_is_amd()) {
-    return false;
+  // The device gate: wave64 AMD-RDNA GPUs (Samsung Xclipse and AMD Radeon) are
+  // the families these coopmat shaders were validated on, so the path stays off
+  // elsewhere even when the device advertises cooperative matrix support.
+  // ET_VK_COOPMAT_ANY_DEVICE lifts it for fp16 MMA only, and only when the
+  // device can be forced to the tile's own subgroup width -- without that the
+  // shader's SG_GRID/staging math would not match the launched threads.
+  const bool device_gate_lifted = coopmat_any_device_enabled() &&
+      !int8_mma_shape_is_amd_only &&
+      tile_subgroup_size > 0 && adapter->supports_subgroup_size_control() &&
+      tile_subgroup_size >= adapter->min_subgroup_size() &&
+      tile_subgroup_size <= adapter->max_subgroup_size();
+  if (!device_gate_lifted) {
+    if (adapter->subgroup_size() != 64) {
+      return false;
+    }
+    if (!graph->device_is_amd()) {
+      return false;
+    }
   }
   // Coopmat shaders dispatch over gl_WorkGroupID.xy only, sized purely from
   // the output's trailing two dims; neither that sizing nor the shaders
@@ -593,6 +634,9 @@ static bool dq8ca_variant_wants_rowmajor_a() {
       v.rfind("tsweep_dbuf4trm_t", 0) == 0 ||
       v.rfind("tsweep_dbuf4trd_t", 0) == 0 ||
       v.rfind("tsweep_dbuf4zpgtr_t", 0) == 0 ||
+      // mk32 is zpgtr's shader at MMA_K=32; A access is untouched, so the
+      // kPackedInt8_4W requirement carries over.
+      v.rfind("tsweep_dbuf4zpgtr_mk32_t", 0) == 0 ||
       // zpgtr3 keeps zpgtr's GLOBAL A access verbatim; only the SHARED
       // layout differs, so it has the same kPackedInt8_4W requirement.
       v.rfind("tsweep_dbuf4zpgtr3_t", 0) == 0 ||
@@ -641,7 +685,10 @@ static bool dq8ca_coopmat_dispatch_eligible(
       dims.n,
       dims.k,
       /*allow_texture_io=*/true,
-      dims.sg_grid_y);
+      dims.sg_grid_y,
+      dims.subgroup_size,
+      /*int8_mma_shape_is_amd_only=*/
+      dq8ca_coopmat_variant().find("_mk32_") == std::string::npos);
 }
 
 vkapi::ShaderInfo pick_linear_qw_shader(
@@ -677,7 +724,9 @@ vkapi::ShaderInfo pick_linear_qw_shader(
             active_dims.n,
             active_dims.k,
             /*allow_texture_io=*/true,
-            active_dims.sg_grid_y)) {
+            active_dims.sg_grid_y,
+            active_dims.subgroup_size,
+            /*int8_mma_shape_is_amd_only=*/false)) {
       std::string kernel_name = "linear_q4gsw_coopmat";
       const std::string& variant = q4gsw_coopmat_variant();
       if (!variant.empty()) {

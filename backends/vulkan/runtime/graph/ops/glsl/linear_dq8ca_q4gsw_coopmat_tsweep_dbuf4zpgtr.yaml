@@ -58,3 +58,29 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr:
       SG_GRID_X: 4
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 32
+    # "mk32": the tile above at MMA_K=32 instead of 16. Same geometry
+    # otherwise, and LDS is unchanged (the A/B slabs double while NUM_K_SLABS
+    # halves). Exists because coopmat<int8> at 16x16x16 is an AMD-RDNA shape
+    # that NVIDIA does not enumerate -- it exposes int8 only at 16x16x32, so
+    # this is the only int8 MMA shape that can create a pipeline there.
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr_mk32_t128x64k32g42s32_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr_mk32_t128x64k32g42s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
