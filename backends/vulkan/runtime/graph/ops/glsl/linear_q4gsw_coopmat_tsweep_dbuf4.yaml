@@ -8,8 +8,11 @@
 # dbuf4 ("store-first", prefetch-peeled) loop structure. Tile geometry
 # (WG_TILE_*, SG_GRID_*, SUBGROUP_SIZE) is selectable at dispatch via
 # ET_VK_Q4GSW_COOPMAT_VARIANT=tsweep_dbuf4_t<M>x<N>k<K>g<SGX><SGY>s<sub>
-# (QuantizedLinear.cpp), but t128x128k16g22s32 below is the only tile this
-# branch ships or builds -- it is the current production 4w default.
+# (QuantizedLinear.cpp), but t128x128k32g42s32 below is the only tile this
+# branch ships or builds -- the 780M (RDNA3 / RADV) 4w default.
+#
+# 2026-09-16 780M tile sweep (48 texture3d tiles, 1B embq 2048-prefill): this
+# tile 2314 tok/s vs 192 tok/s for the Xclipse-chosen t128x128k16g22s32.
 #
 # 2026-09-15 housekeeping: this file carried the full specs/041-dbuf4-
 # tile-sweep search space (97 variants across ~48 tile geometries) even
@@ -34,28 +37,28 @@ linear_q4gsw_coopmat_tsweep_dbuf4:
     SG_GRID_Y: 2
     SUBGROUP_SIZE: 32
   shader_variants:
-    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t128x128k16g22s32_buffer_texture2d_half
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t128x128k32g42s32_buffer_texture2d_half
       WEIGHT_STORAGE: texture2d
       WG_TILE_M: 128
       WG_TILE_N: 128
-      WG_TILE_K: 16
-      SG_GRID_X: 2
+      WG_TILE_K: 32
+      SG_GRID_X: 4
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 32
-    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t128x128k16g22s32_texture3d_texture2d_half
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t128x128k32g42s32_texture3d_texture2d_half
       IO_STORAGE: texture3d
       WEIGHT_STORAGE: texture2d
       WG_TILE_M: 128
       WG_TILE_N: 128
-      WG_TILE_K: 16
-      SG_GRID_X: 2
+      WG_TILE_K: 32
+      SG_GRID_X: 4
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 32
-    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t128x128k16g22s32_buffer_buffer_half
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t128x128k32g42s32_buffer_buffer_half
       WEIGHT_STORAGE: buffer
       WG_TILE_M: 128
       WG_TILE_N: 128
-      WG_TILE_K: 16
-      SG_GRID_X: 2
+      WG_TILE_K: 32
+      SG_GRID_X: 4
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 32
