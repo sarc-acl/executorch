@@ -1,0 +1,71 @@
+{
+  "schema_version": "036.1",
+  "shader": "dq8ca",
+  "device_slug": "nvidia-geforce-rtx-4070-ti-super",
+  "fingerprint": {
+    "api_version": "1.4.351 (4211039)",
+    "driver_version": "615.71.9.0 (2580660800)",
+    "device_type": "PHYSICAL_DEVICE_TYPE_DISCRETE_GPU",
+    "device_name": "NVIDIA GeForce RTX 4070 Ti SUPER",
+    "max_compute_shared_memory_size": 49152,
+    "max_compute_work_group_invocations": 1024,
+    "subgroup_size_default": 32,
+    "driver_id": "DRIVER_ID_NVIDIA_PROPRIETARY",
+    "driver_info": "615.71.09",
+    "min_subgroup_size": 32,
+    "max_subgroup_size": 32,
+    "os": "Linux 7.0.0-31-generic x86_64",
+    "perf_level": "unknown",
+    "git_sha": "9ede1f778",
+    "captured_at": "2026-09-17T22:14:47+00:00"
+  },
+  "group_size": 128,
+  "budget": 60,
+  "measured_trials": 29,
+  "pruned": {
+    "output_miscompute": 3
+  },
+  "blocklist_size": 3,
+  "baseline_median_tok_s": 6781.46,
+  "noise_floor_cov": 0.003615110171686596,
+  "finalists": [
+    {
+      "token": "tsweep_t128x128k32g44s32",
+      "screen_tok_s": 19051.6,
+      "confirm_median_tok_s": 19140.2,
+      "improvement_pct": 182.24305680487686
+    },
+    {
+      "token": "tsweep_t128x128k32g84s32",
+      "screen_tok_s": 18703.6,
+      "confirm_median_tok_s": 18789.0,
+      "improvement_pct": 177.06423100630246
+    },
+    {
+      "token": "tsweep_t128x64k32g24s32",
+      "screen_tok_s": 18451.95,
+      "confirm_median_tok_s": 18789.0,
+      "improvement_pct": 177.06423100630246
+    },
+    {
+      "token": "tsweep_t128x64k32g42s32",
+      "screen_tok_s": 18450.5,
+      "confirm_median_tok_s": 18450.5,
+      "improvement_pct": 172.07268051422554
+    },
+    {
+      "token": "tsweep_t256x64k32g44s32",
+      "screen_tok_s": 18044.4,
+      "confirm_median_tok_s": 18123.9,
+      "improvement_pct": 167.25660845894546
+    }
+  ],
+  "winner": {
+    "token": "tsweep_t128x128k32g44s32",
+    "screen_tok_s": 19051.6,
+    "confirm_median_tok_s": 19140.2,
+    "improvement_pct": 182.24305680487686
+  },
+  "remeasure_pending": [],
+  "ts": "2026-09-17T22:19:54"
+}
