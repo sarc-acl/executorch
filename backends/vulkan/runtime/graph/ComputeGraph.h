@@ -694,6 +694,17 @@ class ComputeGraph final {
         device_name_contains("Radeon") || device_name_contains("radeon");
   }
 
+  // Intel Xe2 / Arc (Battlemage "BMG", Lunar Lake, Alchemist "DG2"). Like
+  // device_is_amd() there is no DeviceType for Intel, so this matches on the
+  // driver-reported device name. Xe2 exposes cooperative matrix at subgroup
+  // scope but with a DIFFERENT shape than RDNA: int8 only at 8x16x32 and fp16
+  // only at 8x16x16, never 16x16x16. A 16x16x16 pipeline is created without
+  // error and then silently miscomputes, so a coopmat path must check the
+  // shape, not just the feature bit.
+  inline bool device_is_intel() {
+    return device_name_contains("Intel") || device_name_contains("intel");
+  }
+
   const std::string& device_name() {
     return context()->adapter_ptr()->device_name();
   }

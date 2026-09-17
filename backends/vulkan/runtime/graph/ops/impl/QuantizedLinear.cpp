@@ -104,6 +104,8 @@ static const char* const kQ4gswTsweepPrefixes[] = {
     "tsweep_dbuf2_t",
     "tsweep_dbuf3_t",
     "tsweep_dbuf4_t",
+    // Intel Xe2 tiles, carrying MMA_M=8 (see variant_has_xe2_shape).
+    "tsweep_dbuf4_xe2_t",
     "tsweep_t",
 };
 
@@ -118,6 +120,8 @@ static const char* const kDq8caTsweepPrefixes[] = {
     // rewrite. PROMOTED 2026-08-28 as the shipped default -- see
     // dq8ca_coopmat_variant() below.
     "tsweep_dbuf4zpg_t",
+    // Intel Xe2 tiles, carrying MMA_M=8 + MMA_K=32 (see variant_has_xe2_shape).
+    "tsweep_dbuf4zpg_xe2_t",
     // (dq8ca-dequant-unpack-ablation Addendum 11 -- abl_aconst/abl_areadc/
     // abl_abconst -- were measurement-only variants deleted once each
     // attribution was recorded; see openspec/changes/dq8ca-dequant-unpack-
@@ -331,14 +335,40 @@ static CoopmatTileDims parse_q4gsw_tsweep_tile(const std::string& variant) {
   return parse_tsweep_tile(variant, kQ4gswCoopmatDims);
 }
 
-static CoopmatTileDims coopmat_tile_dims(const std::string& kernel_name) {
+// Intel Xe2 tile defaults, picked by an exhaustive sweep of every tile the
+// shaders' own staging/LDS/alignment rules allow (214 fp16 + 158 int8 tiles,
+// each token-checked against a 2048-token prefill on Battlemage BMG G31).
+// The AMD-tuned defaults are badly wrong here: 4w gains 2.18x and 8da4w 1.28x
+// over the tiled fallback with these, versus 0.42x and 0.58x with the shipped
+// tokens. An explicit ET_VK_*_COOPMAT_VARIANT still wins over both.
+static const std::string& q4gsw_variant_for(ComputeGraph* graph) {
+  static const std::string kXe2Best = "tsweep_dbuf4_xe2_t64x64k32g42s32";
+  if (graph != nullptr && graph->device_is_intel() &&
+      std::getenv("ET_VK_Q4GSW_COOPMAT_VARIANT") == nullptr) {
+    return kXe2Best;
+  }
+  return q4gsw_coopmat_variant();
+}
+
+static const std::string& dq8ca_variant_for(ComputeGraph* graph) {
+  static const std::string kXe2Best = "tsweep_dbuf4zpg_xe2_t128x64k64g48s32";
+  if (graph != nullptr && graph->device_is_intel() &&
+      std::getenv("ET_VK_DQ8CA_COOPMAT_VARIANT") == nullptr) {
+    return kXe2Best;
+  }
+  return dq8ca_coopmat_variant();
+}
+
+static CoopmatTileDims coopmat_tile_dims(
+    ComputeGraph* graph,
+    const std::string& kernel_name) {
   // Exact prefix matches (the "linear_dq8ca_*" names must not match the
   // weight-only entries). Order matters: check dq8ca first.
   if (kernel_name.rfind("linear_dq8ca_q4gsw_coopmat", 0) == 0) {
-    return parse_tsweep_tile(dq8ca_coopmat_variant(), kDq8caQ4gswCoopmatDims);
+    return parse_tsweep_tile(dq8ca_variant_for(graph), kDq8caQ4gswCoopmatDims);
   }
   if (kernel_name.rfind("linear_q4gsw_coopmat", 0) == 0) {
-    return parse_q4gsw_tsweep_tile(q4gsw_coopmat_variant());
+    return parse_q4gsw_tsweep_tile(q4gsw_variant_for(graph));
   }
   return {kCoopmatTileM, kCoopmatTileN, kCoopmatTileK, kCoopmatInvocations};
 }
@@ -361,7 +391,7 @@ utils::uvec3 quantized_linear_global_wg_size(
   // by kCoopmatInvocations cancels the framework's div_up, since
   // local_wg = {256, 1, 1}.
   if (shader.kernel_name.find("_coopmat") != std::string::npos) {
-    const CoopmatTileDims dims = coopmat_tile_dims(shader.kernel_name);
+    const CoopmatTileDims dims = coopmat_tile_dims(graph, shader.kernel_name);
     const uint32_t num_tiles_n = utils::div_up(N, dims.n);
     const uint32_t num_tiles_m = utils::div_up(M, dims.m);
     return {num_tiles_n * dims.wg_size, num_tiles_m, 1};
@@ -398,7 +428,7 @@ utils::uvec3 quantized_linear_local_wg_size(
   // Coopmat variants use a per-shader workgroup size (q4gsw/q8csw = 128,
   // dq8ca = 256) — must match the WG_SIZE the shader yaml resolves to.
   if (shader.kernel_name.find("_coopmat") != std::string::npos) {
-    return {coopmat_tile_dims(shader.kernel_name).wg_size, 1, 1};
+    return {coopmat_tile_dims(graph, shader.kernel_name).wg_size, 1, 1};
   }
 
   const bool use_coop_algorithm =
@@ -425,6 +455,23 @@ static bool texture_coopmat_enabled() {
 // (M, N, K, dtype, output_storage, group_size) tuple. Preconditions match what
 // linear_q4gsw_coopmat.glsl assumes; the subgroup_size == 64 check scopes this
 // to wave64 devices (e.g. AMD RDNA), which the coopmat tiling is tuned for.
+// Intel Xe2 exposes cooperative matrix only at 8x16x16 (fp16) and 8x16x32
+// (int8). A 16x16x16 pipeline is created there WITHOUT error and then returns
+// wrong numbers, so the Xe2 path must be restricted to the specific tile
+// variants whose yaml carries the matching MMA_M/MMA_K override. Every other
+// variant -- including any tile a sweep appends later -- stays on tiled.
+static bool variant_has_xe2_shape(const std::string& variant, bool is_int8) {
+  const char* const xe2_prefix =
+      is_int8 ? "tsweep_dbuf4zpg_xe2_t" : "tsweep_dbuf4_xe2_t";
+  if (variant.rfind(xe2_prefix, 0) == 0) {
+    return true;
+  }
+  // The two tiles that carried the override before the xe2_ namespace existed.
+  return variant ==
+      (is_int8 ? "tsweep_dbuf4zpg_t128x64k32g42s32"
+               : "tsweep_dbuf4_t128x128k16g22s32");
+}
+
 static bool can_use_q4gsw_coopmat(
     ComputeGraph* graph,
     const ValueRef output,
@@ -435,7 +482,8 @@ static bool can_use_q4gsw_coopmat(
     int64_t tile_n = kCoopmatTileN,
     int64_t tile_k = kCoopmatTileK,
     bool allow_texture_io = false,
-    uint32_t sg_grid_y = 0) {
+    uint32_t sg_grid_y = 0,
+    bool allow_intel_xe2 = false) {
   // Baseline-measurement escape hatch: forces every dispatch through this
   // function to the tiled fallback, regardless of eligibility. Off by
   // default (unset), so production behavior is unchanged.
@@ -452,14 +500,24 @@ static bool can_use_q4gsw_coopmat(
   if (!adapter->supports_cooperative_matrix()) {
     return false;
   }
-  if (adapter->subgroup_size() != 64) {
-    return false;
-  }
-  // These coopmat shaders have only been validated on AMD-RDNA GPUs (Samsung
-  // Xclipse and AMD Radeon). Gate to those families so the path stays off on
-  // other devices that advertise cooperative matrix support but have not been
-  // validated.
-  if (!graph->device_is_amd()) {
+  // These coopmat shaders were originally validated only on AMD-RDNA GPUs
+  // (Samsung Xclipse and AMD Radeon) at subgroup_size 64. Two device families
+  // are allowed now, each pinned to the subgroup width its shader variants are
+  // actually compiled for; every other device falls back to tiled.
+  //
+  // AMD-RDNA  : wave64, MMA 16x16x16.
+  // Intel Xe2 : subgroup 32, int8 MMA 8x16x32 ONLY (Battlemage/Arc). Opt-in
+  //   per call site via allow_intel_xe2, because the shape differs per dtype:
+  //   the int8 dq8ca variants carry MMA_M=8/MMA_K=32 overrides in their yaml,
+  //   but the fp16 q4gsw variants are still 16x16x16, which Xe2 does NOT
+  //   expose. A 16x16x16 pipeline is created WITHOUT error on Xe2 and then
+  //   silently returns wrong numbers, so the fp16 path must stay closed here
+  //   until its shaders are given the 8x16x16 shape.
+  const uint32_t sg_size = adapter->subgroup_size();
+  const bool amd_wave64_ok = (sg_size == 64) && graph->device_is_amd();
+  const bool intel_xe2_ok =
+      allow_intel_xe2 && (sg_size == 32) && graph->device_is_intel();
+  if (!amd_wave64_ok && !intel_xe2_ok) {
     return false;
   }
   // Coopmat shaders dispatch over gl_WorkGroupID.xy only, sized purely from
@@ -541,8 +599,8 @@ static bool can_use_q4gsw_coopmat(
 // row-major kPackedInt8_4W layout instead of the 4h4w ivec4 block layout,
 // because no coopMatLoad can address 4h4w (its component index selects a row,
 // making the flat index non-affine in the row).
-static bool dq8ca_variant_wants_rowmajor_a() {
-  const std::string& v = dq8ca_coopmat_variant();
+static bool dq8ca_variant_wants_rowmajor_a(ComputeGraph* graph) {
+  const std::string& v = dq8ca_variant_for(graph);
   return v.rfind("tsweep_dbuf4tr_t", 0) == 0 ||
       v.rfind("tsweep_dbuf4trm_t", 0) == 0 ||
       v.rfind("tsweep_dbuf4trd_t", 0) == 0;
@@ -578,7 +636,7 @@ static bool dq8ca_coopmat_dispatch_eligible(
   // too when texture IO is active. Same requirement as q4gsw; no separate
   // check needed.
   const CoopmatTileDims dims =
-      parse_tsweep_tile(dq8ca_coopmat_variant(), kDq8caQ4gswCoopmatDims);
+      parse_tsweep_tile(dq8ca_variant_for(graph), kDq8caQ4gswCoopmatDims);
   return can_use_q4gsw_coopmat(
       graph,
       output,
@@ -589,7 +647,8 @@ static bool dq8ca_coopmat_dispatch_eligible(
       dims.n,
       dims.k,
       /*allow_texture_io=*/true,
-      dims.sg_grid_y);
+      dims.sg_grid_y,
+      variant_has_xe2_shape(dq8ca_variant_for(graph), true));
 }
 
 vkapi::ShaderInfo pick_linear_qw_shader(
@@ -614,7 +673,7 @@ vkapi::ShaderInfo pick_linear_qw_shader(
     // kQ4gswCoopmatDims, so the eligibility check's alignment gate must use
     // the ACTIVE variant's own dims, not the shipped constant.
     const CoopmatTileDims active_dims =
-        parse_q4gsw_tsweep_tile(q4gsw_coopmat_variant());
+        parse_q4gsw_tsweep_tile(q4gsw_variant_for(graph));
     if (can_use_q4gsw_coopmat(
             graph,
             output,
@@ -625,9 +684,10 @@ vkapi::ShaderInfo pick_linear_qw_shader(
             active_dims.n,
             active_dims.k,
             /*allow_texture_io=*/true,
-            active_dims.sg_grid_y)) {
+            active_dims.sg_grid_y,
+            variant_has_xe2_shape(q4gsw_variant_for(graph), false))) {
       std::string kernel_name = "linear_q4gsw_coopmat";
-      const std::string& variant = q4gsw_coopmat_variant();
+      const std::string& variant = q4gsw_variant_for(graph);
       if (!variant.empty()) {
         kernel_name += "_" + variant;
       }
@@ -690,7 +750,7 @@ vkapi::ShaderInfo pick_linear_dqa_qw_shader(
           resize_args.at(2),
           graph->extract_scalar<int64_t>(resize_args.at(0)))) {
     std::string kernel_name = "linear_dq8ca_q4gsw_coopmat";
-    const std::string& dq8ca_variant = dq8ca_coopmat_variant();
+    const std::string& dq8ca_variant = dq8ca_variant_for(graph);
     if (!dq8ca_variant.empty()) {
       kernel_name += "_" + dq8ca_variant;
     }
@@ -1180,7 +1240,7 @@ void quantized_linear_impl(
   bool dq8ca_rowmajor_a = false;
   if (input_quant_config.is_dynamic && weight_quant_config.nbits == 4 &&
       weight_quant_config.granularity == kPerGroup &&
-      dq8ca_variant_wants_rowmajor_a()) {
+      dq8ca_variant_wants_rowmajor_a(&graph)) {
     dq8ca_rowmajor_a = dq8ca_coopmat_dispatch_eligible(
         &graph,
         output,

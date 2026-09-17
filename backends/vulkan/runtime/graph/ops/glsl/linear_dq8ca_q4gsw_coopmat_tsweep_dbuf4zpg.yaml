@@ -63,6 +63,8 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg:
       SG_GRID_X: 4
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 32
+      MMA_M: 8
+      MMA_K: 32
       # A_ACTIVE_THREADS = (128>>2)*(32>>2) = 256 == WG_SIZE = 4*2*32 = 256
       A_MAP_FULL: true
     - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_t128x64k32g42s32_texture3d_texture2d_half
@@ -78,3 +80,105 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg:
     # small step up
       # A_ACTIVE_THREADS = (128>>2)*(32>>2) = 256 == WG_SIZE = 4*2*32 = 256
       A_MAP_FULL: true
+    # ---- Intel Xe2 (Battlemage) exhaustive tile sweep ----
+    # Every tile the shader's own staging/LDS/alignment rules allow, at
+    # the only MMA shape Xe2 exposes (MMA_M=8; MMA_K=32 for int8).
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_xe2_t64x64k32g44s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+      MMA_M: 8
+      MMA_K: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_xe2_t64x128k64g84s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 64
+      SG_GRID_X: 8
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+      MMA_M: 8
+      MMA_K: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_xe2_t128x32k32g18s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 8
+      SUBGROUP_SIZE: 32
+      MMA_M: 8
+      MMA_K: 32
+      A_MAP_FULL: true
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_xe2_t128x32k32g24s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+      MMA_M: 8
+      MMA_K: 32
+      A_MAP_FULL: true
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_xe2_t128x32k64g28s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 32
+      WG_TILE_K: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 8
+      SUBGROUP_SIZE: 32
+      MMA_M: 8
+      MMA_K: 32
+      A_MAP_FULL: true
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_xe2_t128x64k32g28s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 8
+      SUBGROUP_SIZE: 32
+      MMA_M: 8
+      MMA_K: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_xe2_t128x64k64g48s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 64
+      SG_GRID_X: 4
+      SG_GRID_Y: 8
+      SUBGROUP_SIZE: 32
+      MMA_M: 8
+      MMA_K: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_xe2_t128x128k32g48s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 8
+      SUBGROUP_SIZE: 32
+      MMA_M: 8
+      MMA_K: 32
