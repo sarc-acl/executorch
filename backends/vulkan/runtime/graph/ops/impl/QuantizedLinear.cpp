@@ -85,7 +85,7 @@ struct CoopmatTileDims {
 // current shipped tile's own dims (not some other tile) purely so that if
 // the invariant above is ever violated, the failure mode is "silently use
 // today's real default" rather than a stale, unrelated geometry.
-constexpr CoopmatTileDims kQ4gswCoopmatDims = {128, 128, 16, 128, 2};
+constexpr CoopmatTileDims kQ4gswCoopmatDims = {128, 128, 32, 256, 2};
 constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {128, 64, 32, 256, 2};
 
 // specs/028-4w-e2e-tile-sweep / specs/041-dbuf4-tile-sweep:
@@ -131,6 +131,10 @@ static const char* const kDq8caTsweepPrefixes[] = {
     // staging/zp-hoist/nibble-widening unchanged). PROMOTED 2026-09-01 as
     // the shipped default -- see dq8ca_coopmat_variant() below.
     "tsweep_dbuf4zpgtr_t",
+    // 780M (RDNA3) default: the zp-hoisted kernel zpgtr replaced. Re-measured
+    // 2026-09-16 on the 780M, 1B embq 2048-prefill: zpg 2456 tok/s vs zpgtr
+    // 2190 tok/s (zpgtr's promotion was measured on Xclipse).
+    "tsweep_dbuf4zpg_t",
 };
 
 // (The measurement-only ablation variants and their prefix list lived here
@@ -162,7 +166,7 @@ static bool is_dq8ca_shippable_token(const std::string& v) {
 
 static const std::string& q4gsw_coopmat_variant() {
   // Default (no ET_VK_Q4GSW_COOPMAT_VARIANT set):
-  // tsweep_dbuf4_t128x128k16g22s32
+  // tsweep_dbuf4_t128x128k32g42s32
   // -- same geometry as the shipped buffer-storage default (re-confirmed #1 in
   // the same M51 tile sweep that picked dq8ca's new default), but the BARE
   // "linear_q4gsw_coopmat" kernel name was never compiled with a texture3d
@@ -174,7 +178,7 @@ static const std::string& q4gsw_coopmat_variant() {
   static const std::string variant = [] {
     const char* env = std::getenv("ET_VK_Q4GSW_COOPMAT_VARIANT");
     if (!env) {
-      return std::string("tsweep_dbuf4_t128x128k16g22s32");
+      return std::string("tsweep_dbuf4_t128x128k32g42s32");
     }
     const std::string v(env);
     if (is_q4gsw_shippable_token(v)) {
@@ -189,20 +193,22 @@ static const std::string& q4gsw_coopmat_variant() {
         v,
         "', which is a dq8ca (8da4w) shader-family token. There is no q4gsw "
         "(4w) shader with that name. Use ET_VK_DQ8CA_COOPMAT_VARIANT instead.");
-    return std::string("tsweep_dbuf4_t128x128k16g22s32");
+    return std::string("tsweep_dbuf4_t128x128k32g42s32");
   }();
   return variant;
 }
 
 static const std::string& dq8ca_coopmat_variant() {
-  // Default (no ET_VK_DQ8CA_COOPMAT_VARIANT set):
-  // tsweep_dbuf4zpgtr_t128x64k32g42s32 (WG_TILE 128x64x32, SG_GRID 4x2,
-  // wave32) -- PROMOTED 2026-09-01 from tsweep_dbuf4zpg_t128x64k32g42s32
-  // (below). Same tile/B-staging/zp-hoist as dbuf4zpg; the only change is
-  // A-staging: per-thread scalar scatter into Ash_int8 replaced by a
-  // coopMatLoad(global)->coopmat<>->coopMatStore(LDS) sequence (requires
-  // t_packed_int8_input in the ROW-MAJOR kPackedInt8_4W layout -- see
-  // dq8ca_variant_wants_rowmajor_a() above).
+  // Default (no ET_VK_DQ8CA_COOPMAT_VARIANT set) ON THIS 780M BRANCH:
+  // tsweep_dbuf4zpg_t128x64k32g42s32 (WG_TILE 128x64x32, SG_GRID 4x2, wave32).
+  // The base branch ships tsweep_dbuf4zpgtr_t128x64k32g42s32, PROMOTED
+  // 2026-09-01 on Xclipse from this zpg kernel; on the 780M (RDNA3 / RADV) zpg
+  // measures 2456 tok/s vs zpgtr 2190 tok/s (1B embq 2048-prefill,
+  // 2026-09-16), so this branch keeps zpg. Same tile/B-staging/zp-hoist as
+  // dbuf4zpg; the only change is A-staging: per-thread scalar scatter into
+  // Ash_int8 replaced by a coopMatLoad(global)->coopmat<>->coopMatStore(LDS)
+  // sequence (requires t_packed_int8_input in the ROW-MAJOR kPackedInt8_4W
+  // layout -- see dq8ca_variant_wants_rowmajor_a() above).
   //
   // Real, on-device, correctness-validated on the sibling
   // `dq8ca-tr-staged-a-on-zpg` branch (cut from this branch @ 1f3322ca22):
@@ -309,7 +315,7 @@ static const std::string& dq8ca_coopmat_variant() {
   static const std::string variant = [] {
     const char* env = std::getenv("ET_VK_DQ8CA_COOPMAT_VARIANT");
     if (!env) {
-      return std::string("tsweep_dbuf4zpgtr_t128x64k32g42s32");
+      return std::string("tsweep_dbuf4zpg_t128x64k32g42s32");
     }
     const std::string v(env);
     if (is_dq8ca_shippable_token(v)) {
@@ -319,7 +325,7 @@ static const std::string& dq8ca_coopmat_variant() {
     // that shader was removed in the same housekeeping pass that pruned this
     // fallback's dead alternatives above, so an invalid token now falls back
     // to the current default instead.
-    return std::string("tsweep_dbuf4zpgtr_t128x64k32g42s32");
+    return std::string("tsweep_dbuf4zpg_t128x64k32g42s32");
   }();
   return variant;
 }
