@@ -84,3 +84,24 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr:
       SG_GRID_X: 4
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr_mk32_t128x128k32g44s32_buffer_texture2d_half
+      WEIGHT_NBITS: 4
+      MMA_K: 32
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr_mk32_t128x128k32g44s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      MMA_K: 32
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32

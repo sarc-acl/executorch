@@ -203,6 +203,10 @@ static const std::string& q4gsw_coopmat_variant() {
   return variant;
 }
 
+// Defined below, next to the device gate it reads; declared here because the
+// dq8ca default tile depends on whether that gate is lifted.
+static bool coopmat_any_device_enabled();
+
 static const std::string& dq8ca_coopmat_variant() {
   // Default (no ET_VK_DQ8CA_COOPMAT_VARIANT set):
   // tsweep_dbuf4zpgtr_t128x64k32g42s32 (WG_TILE 128x64x32, SG_GRID 4x2,
@@ -318,6 +322,21 @@ static const std::string& dq8ca_coopmat_variant() {
   static const std::string variant = [] {
     const char* env = std::getenv("ET_VK_DQ8CA_COOPMAT_VARIANT");
     if (!env) {
+      // With the device gate lifted, the shipped tile is not merely
+      // unmeasured here -- it is undispatchable, because its coopmat<int8> is
+      // 16x16x16 and NVIDIA enumerates int8 only at 16x16x32. Defaulting to
+      // the mk32 tile is what makes 8da4w reach the coopmat path at all;
+      // without it the gate correctly refuses and the model runs tiled.
+      //
+      // The tile itself is this device's sweep winner (Optuna/TPE over 326
+      // legal candidates, e2e 2048-token prefill on a 4070 Ti SUPER):
+      // 19140 tok/s median vs 18450 for the shipped geometry at MMA_K=32,
+      // and 6781 for tiled. Keying off the gate rather than the driver name
+      // is deliberate -- the gate is only ever set on a non-AMD device, and a
+      // process-level cached lookup has no adapter to query.
+      if (coopmat_any_device_enabled()) {
+        return std::string("tsweep_dbuf4zpgtr_mk32_t128x128k32g44s32");
+      }
       return std::string("tsweep_dbuf4zpgtr_t128x64k32g42s32");
     }
     const std::string v(env);
