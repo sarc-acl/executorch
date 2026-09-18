@@ -200,8 +200,8 @@ static const std::string& q4gsw_coopmat_variant() {
 
 static const std::string& dq8ca_coopmat_variant() {
   // Default (no ET_VK_DQ8CA_COOPMAT_VARIANT set) ON THIS 780M BRANCH:
-  // tsweep_dbuf4zpg_t256x128k32g48s32 (WG_TILE 256x128x32, SG_GRID 4x8,
-  // wave32). The base branch ships tsweep_dbuf4zpgtr_t128x64k32g42s32, PROMOTED
+  // tsweep_dbuf4zpg_t128x64k32g42s32 (WG_TILE 128x64x32, SG_GRID 4x2, wave32).
+  // The base branch ships tsweep_dbuf4zpgtr_t128x64k32g42s32, PROMOTED
   // 2026-09-01 on Xclipse from this zpg kernel; on the 780M (RDNA3 / RADV) zpg
   // measures 2456 tok/s vs zpgtr 2190 tok/s (1B embq 2048-prefill,
   // 2026-09-16), so this branch keeps zpg. Same tile/B-staging/zp-hoist as
