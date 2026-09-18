@@ -342,6 +342,7 @@ void PhysicalDevice::query_extensions_vk_1_1() {
         }
         vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR_fn(
             handle, &count, props.data());
+        cooperative_matrix_properties = props;
         for (const auto& p : props) {
           if (p.AType == VK_COMPONENT_TYPE_SINT8_KHR) {
             supports_int8_coopmat = true;

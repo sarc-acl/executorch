@@ -272,6 +272,50 @@ class Adapter final {
 
   // True when VK_COMPONENT_TYPE_SINT8_KHR is enumerated in the device's
   // cooperative matrix property list — required for coopmat<int8> shaders.
+  // True when the device enumerates a subgroup-scope cooperative matrix
+  // property with exactly this MxNxK shape and component types (A and B share
+  // a_type). Coopmat shaders are generated for one fixed MMA shape, and a
+  // shape the driver does not list is undefined behaviour (Mali and Adreno
+  // fault inside pipeline creation rather than returning an error), so every
+  // coopmat dispatch gate must pass through here.
+  inline bool supports_cooperative_matrix_shape(
+      uint32_t m,
+      uint32_t n,
+      uint32_t k,
+      VkComponentTypeKHR a_type,
+      VkComponentTypeKHR c_type,
+      VkComponentTypeKHR result_type) const {
+#if defined(ETVK_FORCE_NO_EXTENSIONS)
+    (void)m;
+    (void)n;
+    (void)k;
+    (void)a_type;
+    (void)c_type;
+    (void)result_type;
+    return false;
+#elif defined(VK_KHR_cooperative_matrix)
+    if (!supports_cooperative_matrix()) {
+      return false;
+    }
+    for (const auto& p : physical_device_.cooperative_matrix_properties) {
+      if (p.MSize == m && p.NSize == n && p.KSize == k && p.AType == a_type &&
+          p.BType == a_type && p.CType == c_type &&
+          p.ResultType == result_type && p.scope == VK_SCOPE_SUBGROUP_KHR) {
+        return true;
+      }
+    }
+    return false;
+#else
+    (void)m;
+    (void)n;
+    (void)k;
+    (void)a_type;
+    (void)c_type;
+    (void)result_type;
+    return false;
+#endif
+  }
+
   inline bool supports_int8_cooperative_matrix() const {
 #if defined(ETVK_FORCE_NO_EXTENSIONS)
     return false;

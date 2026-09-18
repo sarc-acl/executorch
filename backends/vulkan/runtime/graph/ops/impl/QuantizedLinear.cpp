@@ -8,7 +8,9 @@
 
 #include <executorch/backends/vulkan/runtime/graph/ops/OperatorRegistry.h>
 
+#include <cstdio>
 #include <cstring>
+#include <set>
 
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Common.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/GemmCoopmat.h>
@@ -75,6 +77,14 @@ struct CoopmatTileDims {
   // Only needed for the texture-IO shared-memory budget below; the buffer path
   // never reads it. 0 = "unknown / shipped default".
   uint32_t sg_grid_y;
+  // Per-subgroup MMA shape the shader was generated with (yaml MMA_M/N/K) and
+  // its SUBGROUP_SIZE. Parsed from the optional "m<M>x<N>x<K>" token suffix;
+  // absent = 16x16x16, which every AMD-tuned variant uses. The dispatch gate
+  // checks this exact shape against the driver's enumerated property list.
+  uint32_t mma_m = 16;
+  uint32_t mma_n = 16;
+  uint32_t mma_k = 16;
+  uint32_t subgroup = 0;
 };
 // Defensive-only fallback for parse_tsweep_tile(): both
 // {q4gsw,dq8ca}_coopmat_variant() are guaranteed by construction to always
@@ -85,8 +95,10 @@ struct CoopmatTileDims {
 // current shipped tile's own dims (not some other tile) purely so that if
 // the invariant above is ever violated, the failure mode is "silently use
 // today's real default" rather than a stale, unrelated geometry.
-constexpr CoopmatTileDims kQ4gswCoopmatDims = {128, 128, 16, 128, 2};
-constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims = {128, 64, 32, 256, 2};
+constexpr CoopmatTileDims kQ4gswCoopmatDims =
+    {128, 128, 16, 128, 2, 16, 16, 16, 32};
+constexpr CoopmatTileDims kDq8caQ4gswCoopmatDims =
+    {128, 64, 32, 256, 2, 16, 16, 16, 32};
 
 // specs/028-4w-e2e-tile-sweep / specs/041-dbuf4-tile-sweep:
 // ET_VK_Q4GSW_COOPMAT_VARIANT / ET_VK_DQ8CA_COOPMAT_VARIANT can swap the
@@ -160,7 +172,38 @@ static bool is_dq8ca_shippable_token(const std::string& v) {
   return match_prefix_len(v, kDq8caTsweepPrefixes) != std::string::npos;
 }
 
-static const std::string& q4gsw_coopmat_variant() {
+// Capability-driven default q4gsw variant. Each entry names a shader that was
+// generated for one exact MMA shape, so it is only usable on a device whose
+// driver enumerates that shape (see
+// Adapter::supports_cooperative_matrix_shape).
+static std::string q4gsw_default_variant(ComputeGraph* graph) {
+  const auto* adapter = graph->context()->adapter_ptr();
+  // AMD RDNA (Samsung Xclipse, Radeon): 16x16x16 fp16 MMA, wave32-forced.
+  if (adapter->supports_cooperative_matrix_shape(
+          16,
+          16,
+          16,
+          VK_COMPONENT_TYPE_FLOAT16_KHR,
+          VK_COMPONENT_TYPE_FLOAT16_KHR,
+          VK_COMPONENT_TYPE_FLOAT16_KHR)) {
+    return "tsweep_dbuf4_t128x128k16g22s32";
+  }
+  // Arm Mali-G1 (5th-gen Valhall successor): fp16 MMA only at 16x32x32 (and
+  // 4x8x8), subgroup 16. 64x64x32 WG tile, 2x2 subgroups x 16 = 64 threads.
+  if (adapter->supports_cooperative_matrix_shape(
+          16,
+          32,
+          32,
+          VK_COMPONENT_TYPE_FLOAT16_KHR,
+          VK_COMPONENT_TYPE_FLOAT16_KHR,
+          VK_COMPONENT_TYPE_FLOAT16_KHR)) {
+    return "tsweep_dbuf4_t64x64k32g22s16m16x32x32";
+  }
+  // No known fit; the shape gate in can_use_q4gsw_coopmat rejects this.
+  return "tsweep_dbuf4_t128x128k16g22s32";
+}
+
+static const std::string& q4gsw_coopmat_variant(ComputeGraph* graph) {
   // Default (no ET_VK_Q4GSW_COOPMAT_VARIANT set):
   // tsweep_dbuf4_t128x128k16g22s32
   // -- same geometry as the shipped buffer-storage default (re-confirmed #1 in
@@ -171,10 +214,10 @@ static const std::string& q4gsw_coopmat_variant() {
   // kernel name with no texture3d build and crashes at dispatch -- the gate
   // accepts texture-IO but the bare name can't serve it. Same fix as
   // dq8ca_coopmat_variant() below.
-  static const std::string variant = [] {
+  static const std::string variant = [graph] {
     const char* env = std::getenv("ET_VK_Q4GSW_COOPMAT_VARIANT");
     if (!env) {
-      return std::string("tsweep_dbuf4_t128x128k16g22s32");
+      return q4gsw_default_variant(graph);
     }
     const std::string v(env);
     if (is_q4gsw_shippable_token(v)) {
@@ -189,12 +232,13 @@ static const std::string& q4gsw_coopmat_variant() {
         v,
         "', which is a dq8ca (8da4w) shader-family token. There is no q4gsw "
         "(4w) shader with that name. Use ET_VK_DQ8CA_COOPMAT_VARIANT instead.");
-    return std::string("tsweep_dbuf4_t128x128k16g22s32");
+    return q4gsw_default_variant(graph);
   }();
   return variant;
 }
 
-static const std::string& dq8ca_coopmat_variant() {
+static const std::string& dq8ca_coopmat_variant(ComputeGraph* graph) {
+  (void)graph; // no device-specific defaults yet: int8 MMA is 16x16x16 only
   // Default (no ET_VK_DQ8CA_COOPMAT_VARIANT set):
   // tsweep_dbuf4zpgtr_t128x64k32g42s32 (WG_TILE 128x64x32, SG_GRID 4x2,
   // wave32) -- PROMOTED 2026-09-01 from tsweep_dbuf4zpg_t128x64k32g42s32
@@ -349,21 +393,50 @@ static CoopmatTileDims parse_tsweep_tile(
   const uint32_t sgx = grid[0] - '0';
   const uint32_t sgy = grid[1] - '0';
   const uint32_t sub = std::stoul(variant.substr(s_pos + 1));
-  return {m, n, k, sgx * sgy * sub, sgy};
+  CoopmatTileDims dims{m, n, k, sgx * sgy * sub, sgy};
+  dims.subgroup = sub;
+  // Optional "m<MMA_M>x<MMA_N>x<MMA_K>" suffix after the subgroup size.
+  const size_t m_pos = variant.find('m', s_pos);
+  if (m_pos != std::string::npos) {
+    const size_t mx1 = variant.find('x', m_pos);
+    const size_t mx2 = variant.find('x', mx1 + 1);
+    dims.mma_m = std::stoul(variant.substr(m_pos + 1, mx1 - m_pos - 1));
+    dims.mma_n = std::stoul(variant.substr(mx1 + 1, mx2 - mx1 - 1));
+    dims.mma_k = std::stoul(variant.substr(mx2 + 1));
+  }
+  return dims;
 }
 
 static CoopmatTileDims parse_q4gsw_tsweep_tile(const std::string& variant) {
   return parse_tsweep_tile(variant, kQ4gswCoopmatDims);
 }
 
-static CoopmatTileDims coopmat_tile_dims(const std::string& kernel_name) {
+// Opt-in dispatch trace: ET_VK_LOG_COOPMAT=1 prints each distinct linear
+// kernel name the first time it is picked, so an on-device run can prove
+// which path (coopmat vs tiled) actually executed.
+static void log_linear_kernel_pick(const std::string& kernel_name) {
+  static const bool enabled = std::getenv("ET_VK_LOG_COOPMAT") != nullptr;
+  if (!enabled) {
+    return;
+  }
+  static std::set<std::string> seen;
+  if (seen.insert(kernel_name).second) {
+    fprintf(
+        stderr, "[ET_VK_LOG_COOPMAT] linear kernel: %s\n", kernel_name.c_str());
+  }
+}
+
+static CoopmatTileDims coopmat_tile_dims(
+    ComputeGraph* graph,
+    const std::string& kernel_name) {
   // Exact prefix matches (the "linear_dq8ca_*" names must not match the
   // weight-only entries). Order matters: check dq8ca first.
   if (kernel_name.rfind("linear_dq8ca_q4gsw_coopmat", 0) == 0) {
-    return parse_tsweep_tile(dq8ca_coopmat_variant(), kDq8caQ4gswCoopmatDims);
+    return parse_tsweep_tile(
+        dq8ca_coopmat_variant(graph), kDq8caQ4gswCoopmatDims);
   }
   if (kernel_name.rfind("linear_q4gsw_coopmat", 0) == 0) {
-    return parse_q4gsw_tsweep_tile(q4gsw_coopmat_variant());
+    return parse_q4gsw_tsweep_tile(q4gsw_coopmat_variant(graph));
   }
   return {kCoopmatTileM, kCoopmatTileN, kCoopmatTileK, kCoopmatInvocations};
 }
@@ -386,7 +459,7 @@ utils::uvec3 quantized_linear_global_wg_size(
   // by kCoopmatInvocations cancels the framework's div_up, since
   // local_wg = {256, 1, 1}.
   if (shader.kernel_name.find("_coopmat") != std::string::npos) {
-    const CoopmatTileDims dims = coopmat_tile_dims(shader.kernel_name);
+    const CoopmatTileDims dims = coopmat_tile_dims(graph, shader.kernel_name);
     const uint32_t num_tiles_n = utils::div_up(N, dims.n);
     const uint32_t num_tiles_m = utils::div_up(M, dims.m);
     return {num_tiles_n * dims.wg_size, num_tiles_m, 1};
@@ -423,7 +496,7 @@ utils::uvec3 quantized_linear_local_wg_size(
   // Coopmat variants use a per-shader workgroup size (q4gsw/q8csw = 128,
   // dq8ca = 256) — must match the WG_SIZE the shader yaml resolves to.
   if (shader.kernel_name.find("_coopmat") != std::string::npos) {
-    return {coopmat_tile_dims(shader.kernel_name).wg_size, 1, 1};
+    return {coopmat_tile_dims(graph, shader.kernel_name).wg_size, 1, 1};
   }
 
   const bool use_coop_algorithm =
@@ -477,11 +550,13 @@ static bool can_use_q4gsw_coopmat(
     const ValueRef fp_input,
     int64_t group_size,
     const ValueRef bias,
-    int64_t tile_m = kCoopmatTileM,
-    int64_t tile_n = kCoopmatTileN,
-    int64_t tile_k = kCoopmatTileK,
-    bool allow_texture_io = false,
-    uint32_t sg_grid_y = 0) {
+    const CoopmatTileDims& dims,
+    bool int8_mma,
+    bool allow_texture_io) {
+  const int64_t tile_m = dims.m;
+  const int64_t tile_n = dims.n;
+  const int64_t tile_k = dims.k;
+  const uint32_t sg_grid_y = dims.sg_grid_y;
   // Baseline-measurement escape hatch: forces every dispatch through this
   // function to the tiled fallback, regardless of eligibility. Off by
   // default (unset), so production behavior is unchanged.
@@ -498,15 +573,28 @@ static bool can_use_q4gsw_coopmat(
   if (!adapter->supports_cooperative_matrix()) {
     return false;
   }
-  if (adapter->subgroup_size() != 64) {
-    return false;
+  // The variant's MMA shape must be one the driver enumerates. This replaces
+  // the earlier device-name (AMD) allowlist: a shape the driver does not list
+  // is undefined behaviour, and a listed shape is what the shader was
+  // generated for, so this is the actual precondition.
+  {
+    const VkComponentTypeKHR a_t =
+        int8_mma ? VK_COMPONENT_TYPE_SINT8_KHR : VK_COMPONENT_TYPE_FLOAT16_KHR;
+    const VkComponentTypeKHR c_t =
+        int8_mma ? VK_COMPONENT_TYPE_SINT32_KHR : VK_COMPONENT_TYPE_FLOAT16_KHR;
+    if (!adapter->supports_cooperative_matrix_shape(
+            dims.mma_m, dims.mma_n, dims.mma_k, a_t, c_t, c_t)) {
+      return false;
+    }
   }
-  // These coopmat shaders have only been validated on AMD-RDNA GPUs (Samsung
-  // Xclipse and AMD Radeon). Gate to those families so the path stays off on
-  // other devices that advertise cooperative matrix support but have not been
-  // validated.
-  if (!graph->device_is_amd()) {
-    return false;
+  // The shader's SUBGROUP_SIZE must be realizable: either it is the device's
+  // native size, or subgroup-size control can force it and it is in range.
+  if (dims.subgroup != 0 && dims.subgroup != adapter->subgroup_size()) {
+    if (!adapter->supports_required_subgroup_size_for_compute() ||
+        dims.subgroup < adapter->min_subgroup_size() ||
+        dims.subgroup > adapter->max_subgroup_size()) {
+      return false;
+    }
   }
   // Coopmat shaders dispatch over gl_WorkGroupID.xy only, sized purely from
   // the output's trailing two dims; neither that sizing nor the shaders
@@ -548,9 +636,8 @@ static bool can_use_q4gsw_coopmat(
     // instead of failing pipeline creation (2026-08-09). Reject here so it
     // falls back to tiled.
     if (sg_grid_y > 0) {
-      constexpr int64_t kMmaM = 16; // MMA_M, fixed across every coopmat yaml
-      const int64_t csh_bytes =
-          int64_t(sg_grid_y) * kMmaM * tile_n * int64_t(sizeof(uint16_t));
+      const int64_t csh_bytes = int64_t(sg_grid_y) * int64_t(dims.mma_m) *
+          tile_n * int64_t(sizeof(uint16_t));
       const int64_t limit =
           graph->context()->adapter_ptr()->max_compute_shared_memory_size();
       if (csh_bytes >= limit) {
@@ -587,8 +674,8 @@ static bool can_use_q4gsw_coopmat(
 // row-major kPackedInt8_4W layout instead of the 4h4w ivec4 block layout,
 // because no coopMatLoad can address 4h4w (its component index selects a row,
 // making the flat index non-affine in the row).
-static bool dq8ca_variant_wants_rowmajor_a() {
-  const std::string& v = dq8ca_coopmat_variant();
+static bool dq8ca_variant_wants_rowmajor_a(ComputeGraph* graph) {
+  const std::string& v = dq8ca_coopmat_variant(graph);
   return v.rfind("tsweep_dbuf4tr_t", 0) == 0 ||
       v.rfind("tsweep_dbuf4trm_t", 0) == 0 ||
       v.rfind("tsweep_dbuf4trd_t", 0) == 0 ||
@@ -630,18 +717,16 @@ static bool dq8ca_coopmat_dispatch_eligible(
   // too when texture IO is active. Same requirement as q4gsw; no separate
   // check needed.
   const CoopmatTileDims dims =
-      parse_tsweep_tile(dq8ca_coopmat_variant(), kDq8caQ4gswCoopmatDims);
+      parse_tsweep_tile(dq8ca_coopmat_variant(graph), kDq8caQ4gswCoopmatDims);
   return can_use_q4gsw_coopmat(
       graph,
       output,
       fp_input,
       group_size,
       bias_data,
-      dims.m,
-      dims.n,
-      dims.k,
-      /*allow_texture_io=*/true,
-      dims.sg_grid_y);
+      dims,
+      /*int8_mma=*/true,
+      /*allow_texture_io=*/true);
 }
 
 vkapi::ShaderInfo pick_linear_qw_shader(
@@ -666,20 +751,18 @@ vkapi::ShaderInfo pick_linear_qw_shader(
     // kQ4gswCoopmatDims, so the eligibility check's alignment gate must use
     // the ACTIVE variant's own dims, not the shipped constant.
     const CoopmatTileDims active_dims =
-        parse_q4gsw_tsweep_tile(q4gsw_coopmat_variant());
+        parse_q4gsw_tsweep_tile(q4gsw_coopmat_variant(graph));
     if (can_use_q4gsw_coopmat(
             graph,
             output,
             fp_input,
             group_size,
             resize_args.at(2),
-            active_dims.m,
-            active_dims.n,
-            active_dims.k,
-            /*allow_texture_io=*/true,
-            active_dims.sg_grid_y)) {
+            active_dims,
+            /*int8_mma=*/false,
+            /*allow_texture_io=*/true)) {
       std::string kernel_name = "linear_q4gsw_coopmat";
-      const std::string& variant = q4gsw_coopmat_variant();
+      const std::string& variant = q4gsw_coopmat_variant(graph);
       if (!variant.empty()) {
         kernel_name += "_" + variant;
       }
@@ -689,6 +772,7 @@ vkapi::ShaderInfo pick_linear_qw_shader(
       add_storage_type_suffix(
           kernel_name, graph->storage_type_of(packed_int_weight));
       add_dtype_suffix(kernel_name, graph->dtype_of(output));
+      log_linear_kernel_pick(kernel_name);
       return VK_KERNEL_FROM_STR(kernel_name);
     }
   }
@@ -709,6 +793,7 @@ vkapi::ShaderInfo pick_linear_qw_shader(
   add_storage_type_suffix(
       kernel_name, graph->storage_type_of(packed_int_weight));
   add_dtype_suffix(kernel_name, graph->dtype_of(output));
+  log_linear_kernel_pick(kernel_name);
 
   return VK_KERNEL_FROM_STR(kernel_name);
 }
@@ -742,13 +827,14 @@ vkapi::ShaderInfo pick_linear_dqa_qw_shader(
           resize_args.at(2),
           graph->extract_scalar<int64_t>(resize_args.at(0)))) {
     std::string kernel_name = "linear_dq8ca_q4gsw_coopmat";
-    const std::string& dq8ca_variant = dq8ca_coopmat_variant();
+    const std::string& dq8ca_variant = dq8ca_coopmat_variant(graph);
     if (!dq8ca_variant.empty()) {
       kernel_name += "_" + dq8ca_variant;
     }
     add_storage_type_suffix(kernel_name, graph->storage_type_of(out));
     add_storage_type_suffix(kernel_name, graph->storage_type_of(int_weight));
     add_dtype_suffix(kernel_name, graph->dtype_of(out));
+    log_linear_kernel_pick(kernel_name);
     return VK_KERNEL_FROM_STR(kernel_name);
   }
 
@@ -758,6 +844,7 @@ vkapi::ShaderInfo pick_linear_dqa_qw_shader(
   add_storage_type_suffix(kernel_name, graph->storage_type_of(int_weight));
   add_dtype_suffix(kernel_name, graph->dtype_of(out));
   add_zp_dtype_mode_suffix(kernel_name, graph->dtype_of(input_zp));
+  log_linear_kernel_pick(kernel_name);
 
   return VK_KERNEL_FROM_STR(kernel_name);
 }
@@ -1232,7 +1319,7 @@ void quantized_linear_impl(
   bool dq8ca_rowmajor_a = false;
   if (input_quant_config.is_dynamic && weight_quant_config.nbits == 4 &&
       weight_quant_config.granularity == kPerGroup &&
-      dq8ca_variant_wants_rowmajor_a()) {
+      dq8ca_variant_wants_rowmajor_a(&graph)) {
     dq8ca_rowmajor_a = dq8ca_coopmat_dispatch_eligible(
         &graph,
         output,

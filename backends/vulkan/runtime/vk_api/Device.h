@@ -57,6 +57,10 @@ struct PhysicalDevice final {
   // True when VK_COMPONENT_TYPE_SINT8_KHR appears in the enumerated coopmat
   // property list — required for coopmat<int8> shaders (e.g. dq8ca_q4gsw).
   bool supports_int8_coopmat;
+  // Full enumerated property list (every MMA shape / component-type combo the
+  // driver supports). Consumers gate a coopmat shader on the exact shape it
+  // was generated for via Adapter::supports_cooperative_matrix_shape().
+  std::vector<VkCooperativeMatrixPropertiesKHR> cooperative_matrix_properties;
 #endif /* VK_KHR_cooperative_matrix */
 
 #ifdef VK_NV_cooperative_matrix2
