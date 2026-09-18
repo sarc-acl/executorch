@@ -314,8 +314,20 @@ static bool sdpa_coopmat_device_ok(ComputeGraph* graph) {
   // generic matmul gate keeps it (to avoid coopmat on iGPUs without WMMA); SDPA
   // coopmat is enabled by default on capability-eligible devices, so the
   // subgroup/cooperative-matrix checks below are the only gate.
+  // The SDPA coopmat shaders are generated for MMA 16x16x16 with fp16
+  // operands and fp32 accumulation. A device that advertises cooperative
+  // matrix but not this exact shape (Adreno 840: 64xNx16 only; Mali-G1:
+  // 16x32x32 only) must not build these pipelines -- Adreno's compiler
+  // segfaults inside vkCreateComputePipelines rather than failing cleanly.
   return adapter->supports_cooperative_matrix() &&
-      adapter->subgroup_size() == 64;
+      adapter->subgroup_size() == 64 &&
+      adapter->supports_cooperative_matrix_shape(
+          16,
+          16,
+          16,
+          VK_COMPONENT_TYPE_FLOAT16_KHR,
+          VK_COMPONENT_TYPE_FLOAT32_KHR,
+          VK_COMPONENT_TYPE_FLOAT32_KHR);
 }
 
 static bool sdpa_buf_half(ComputeGraph* graph, const ValueRef t) {

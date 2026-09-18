@@ -15,6 +15,7 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Common.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/GemmCoopmat.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/QuantizeDequantize.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/Q4gswLinear.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Staging.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/ShaderNameUtils.h>
@@ -197,7 +198,7 @@ static std::string q4gsw_default_variant(ComputeGraph* graph) {
           VK_COMPONENT_TYPE_FLOAT16_KHR,
           VK_COMPONENT_TYPE_FLOAT16_KHR,
           VK_COMPONENT_TYPE_FLOAT16_KHR)) {
-    return "tsweep_dbuf4_t64x64k32g22s16m16x32x32";
+    return "tsweep_dbuf4_t128x64k32g24s16m16x32x32";
   }
   // No known fit; the shape gate in can_use_q4gsw_coopmat rejects this.
   return "tsweep_dbuf4_t128x128k16g22s32";
@@ -705,6 +706,27 @@ static bool dq8ca_coopmat_dispatch_eligible(
   }
   if (!graph->context()->adapter_ptr()->supports_int8_cooperative_matrix()) {
     return false;
+  }
+  // Adreno 840: the int8 coopmat kernel (MMA 64xNx32, i8vec4 staging,
+  // per-element accumulator conversion) compiles but computes a wrong first
+  // token and then loses the device (vkQueueSubmit -> VK_ERROR_DEVICE_LOST)
+  // for every geometry tried (2026-09-17). Its tiled dq8ca path is correct and
+  // fast, so int8 coopmat is opt-in there until the kernel is fixed:
+  // ET_VK_FORCE_COOPMAT_LINEAR=1.
+  {
+    const auto* adapter = graph->context()->adapter_ptr();
+    static const bool force =
+        std::getenv("ET_VK_FORCE_COOPMAT_LINEAR") != nullptr;
+    if (!force &&
+        !adapter->supports_cooperative_matrix_shape(
+            16,
+            16,
+            16,
+            VK_COMPONENT_TYPE_SINT8_KHR,
+            VK_COMPONENT_TYPE_SINT32_KHR,
+            VK_COMPONENT_TYPE_SINT32_KHR)) {
+      return false;
+    }
   }
   // The alignment gate must use the ACTIVE sweep variant's own tile dims, not
   // the shipped default's (same rationale as the q4gsw tsweep hook).
@@ -1507,7 +1529,38 @@ void linear_q8csw(ComputeGraph& graph, const std::vector<ValueRef>& args) {
 // q4gsw_linear_gemm__* tiled-only shaders, and QuantizedLinear.cpp's coopmat
 // path (present and correctly built) is unreachable for any 4w PTE until
 // this registration is restored.
+// Device-keyed choice between this file's coopmat(+tiled fallback) 4w path
+// and the upstream q4gsw_linear gemm (Q4gswLinear.cpp). Measured 2026-09-17,
+// 1B 4w, 2048-token prefill, cooled:
+//   Mali-G1-Ultra: best coopmat tile (t128x64k32g24s16, MMA 16x32x32) 122 tok/s
+//                  vs upstream gemm 250 tok/s -> route to upstream.
+//   Adreno 840:    coopmat t64x64k32g21s64 (MMA 64x32x16) ~757 vs gemm ~712.
+//   AMD RDNA:      coopmat is the validated winner (this branch's origin).
+// ET_VK_FORCE_COOPMAT_LINEAR=1 forces this file's path (experiment arm).
+static bool coopmat_linear_preferred(ComputeGraph& graph) {
+  static const bool force = std::getenv("ET_VK_FORCE_COOPMAT_LINEAR") != nullptr;
+  if (force) {
+    return true;
+  }
+  const auto* adapter = graph.context()->adapter_ptr();
+  if (!adapter->supports_cooperative_matrix()) {
+    return true; // no coopmat anywhere: keep the historical (tiled) path
+  }
+  const auto f16 = VK_COMPONENT_TYPE_FLOAT16_KHR;
+  if (adapter->supports_cooperative_matrix_shape(16, 16, 16, f16, f16, f16)) {
+    return true; // AMD RDNA
+  }
+  if (adapter->supports_cooperative_matrix_shape(64, 32, 16, f16, f16, f16)) {
+    return true; // Adreno 840
+  }
+  return false; // Mali-G1 and unknown shapes: upstream gemm wins
+}
+
 void linear_q4gsw(ComputeGraph& graph, const std::vector<ValueRef>& args) {
+  if (!coopmat_linear_preferred(graph)) {
+    q4gsw_linear(graph, args);
+    return;
+  }
   int32_t idx = 0;
   const ValueRef fp_input = args.at(idx++);
   const ValueRef weight_data = args.at(idx++);
