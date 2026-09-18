@@ -359,16 +359,53 @@ static const std::string& dq8ca_variant_for(ComputeGraph* graph) {
   return dq8ca_coopmat_variant();
 }
 
-static CoopmatTileDims coopmat_tile_dims(
+// Limited to the batch-one, group-128 texture prefill shapes measured in
+// openspec/changes/independent-prefill-winners/results.md.
+static bool measured_prefill_shape(
     ComputeGraph* graph,
-    const std::string& kernel_name) {
-  // Exact prefix matches (the "linear_dq8ca_*" names must not match the
-  // weight-only entries). Order matters: check dq8ca first.
-  if (kernel_name.rfind("linear_dq8ca_q4gsw_coopmat", 0) == 0) {
-    return parse_tsweep_tile(dq8ca_variant_for(graph), kDq8caQ4gswCoopmatDims);
+    const ValueRef output,
+    const ValueRef input,
+    const int64_t group_size,
+    const int64_t hidden,
+    const int64_t intermediate) {
+  const auto input_sizes = graph->sizes_of(input);
+  const auto output_sizes = graph->sizes_of(output);
+  if (group_size != 128 || input_sizes.size() != 3 ||
+      output_sizes.size() != 3 || input_sizes[0] != 1 || output_sizes[0] != 1 ||
+      input_sizes[1] != 2048 || output_sizes[1] != 2048 ||
+      graph->storage_type_of(input) != utils::kTexture3D ||
+      graph->storage_type_of(output) != utils::kTexture3D) {
+    return false;
   }
-  if (kernel_name.rfind("linear_q4gsw_coopmat", 0) == 0) {
-    return parse_q4gsw_tsweep_tile(q4gsw_variant_for(graph));
+  const int64_t K = input_sizes[2];
+  const int64_t N = output_sizes[2];
+  return (K == hidden && (N == hidden || N == 1024 || N == intermediate)) ||
+      (K == intermediate && N == hidden);
+}
+
+static const std::string& dq8ca_prefill_variant_for(
+    ComputeGraph* graph,
+    const ValueRef output,
+    const ValueRef input,
+    const int64_t group_size) {
+  static const std::string k8B = "tsweep_dbuf4zpg_xe2_t128x128k32g48s32";
+  if (std::getenv("ET_VK_DQ8CA_COOPMAT_VARIANT") == nullptr &&
+      graph->device_is_intel() && graph->device_name_contains("bmg g31") &&
+      measured_prefill_shape(graph, output, input, group_size, 4096, 14336)) {
+    return k8B;
+  }
+  return dq8ca_variant_for(graph);
+}
+
+static CoopmatTileDims coopmat_tile_dims(const std::string& kernel_name) {
+  const std::string dq8ca_prefix = "linear_dq8ca_q4gsw_coopmat_";
+  const std::string q4gsw_prefix = "linear_q4gsw_coopmat_";
+  if (kernel_name.rfind(dq8ca_prefix, 0) == 0) {
+    return parse_tsweep_tile(
+        kernel_name.substr(dq8ca_prefix.size()), kDq8caQ4gswCoopmatDims);
+  }
+  if (kernel_name.rfind(q4gsw_prefix, 0) == 0) {
+    return parse_q4gsw_tsweep_tile(kernel_name.substr(q4gsw_prefix.size()));
   }
   return {kCoopmatTileM, kCoopmatTileN, kCoopmatTileK, kCoopmatInvocations};
 }
@@ -391,7 +428,7 @@ utils::uvec3 quantized_linear_global_wg_size(
   // by kCoopmatInvocations cancels the framework's div_up, since
   // local_wg = {256, 1, 1}.
   if (shader.kernel_name.find("_coopmat") != std::string::npos) {
-    const CoopmatTileDims dims = coopmat_tile_dims(graph, shader.kernel_name);
+    const CoopmatTileDims dims = coopmat_tile_dims(shader.kernel_name);
     const uint32_t num_tiles_n = utils::div_up(N, dims.n);
     const uint32_t num_tiles_m = utils::div_up(M, dims.m);
     return {num_tiles_n * dims.wg_size, num_tiles_m, 1};
@@ -428,7 +465,7 @@ utils::uvec3 quantized_linear_local_wg_size(
   // Coopmat variants use a per-shader workgroup size (q4gsw/q8csw = 128,
   // dq8ca = 256) — must match the WG_SIZE the shader yaml resolves to.
   if (shader.kernel_name.find("_coopmat") != std::string::npos) {
-    return {coopmat_tile_dims(graph, shader.kernel_name).wg_size, 1, 1};
+    return {coopmat_tile_dims(shader.kernel_name).wg_size, 1, 1};
   }
 
   const bool use_coop_algorithm =
@@ -635,8 +672,9 @@ static bool dq8ca_coopmat_dispatch_eligible(
   // match the declared binding type, so fp_input must genuinely be texture3d
   // too when texture IO is active. Same requirement as q4gsw; no separate
   // check needed.
-  const CoopmatTileDims dims =
-      parse_tsweep_tile(dq8ca_variant_for(graph), kDq8caQ4gswCoopmatDims);
+  const CoopmatTileDims dims = parse_tsweep_tile(
+      dq8ca_prefill_variant_for(graph, output, fp_input, group_size),
+      kDq8caQ4gswCoopmatDims);
   return can_use_q4gsw_coopmat(
       graph,
       output,
@@ -648,7 +686,9 @@ static bool dq8ca_coopmat_dispatch_eligible(
       dims.k,
       /*allow_texture_io=*/true,
       dims.sg_grid_y,
-      variant_has_xe2_shape(dq8ca_variant_for(graph), true));
+      variant_has_xe2_shape(
+          dq8ca_prefill_variant_for(graph, output, fp_input, group_size),
+          true));
 }
 
 vkapi::ShaderInfo pick_linear_qw_shader(
@@ -750,7 +790,11 @@ vkapi::ShaderInfo pick_linear_dqa_qw_shader(
           resize_args.at(2),
           graph->extract_scalar<int64_t>(resize_args.at(0)))) {
     std::string kernel_name = "linear_dq8ca_q4gsw_coopmat";
-    const std::string& dq8ca_variant = dq8ca_variant_for(graph);
+    const std::string& dq8ca_variant = dq8ca_prefill_variant_for(
+        graph,
+        out,
+        fp_input,
+        graph->extract_scalar<int64_t>(resize_args.at(0)));
     if (!dq8ca_variant.empty()) {
       kernel_name += "_" + dq8ca_variant;
     }

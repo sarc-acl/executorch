@@ -1,0 +1,47 @@
+== tsweep_dbuf4zpg_xe2_t128x128k32g48s32-1729.log ==
+Executing 3 test cases for IndependentNumericalAudit
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (2,128,1)       (2,1,32)                                                                                                                    2.944 μs                                 
+linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_x..     (2048,4,1)      (1024,1,1)                                                                                                                  2.645 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M512_K256_N256_Texture3D                                                 [512x256]           5.590 μs      12006.033 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (3,192,1)       (2,1,32)                                                                                                                    2.997 μs                                 
+linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_x..     (4096,6,1)      (1024,1,1)                                                                                                                  3.032 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M768_K384_N512_Texture3D                                                 [768x384]           6.029 μs      50088.453 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (2,512,1)       (2,1,32)                                                                                                                    2.897 μs                                 
+linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_x..     (2048,16,1)     (1024,1,1)                                                                                                                  2.965 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K256_N256_Texture3D                                               [2048x256]           5.862 μs      45793.910 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 3 test cases
+AUDIT_KERNEL linear_dq8ca_q4gsw_M512_K256_N256_Texture3D quantize_and_pack_4h4w_with_group_sums_o2w32_buffer_texture3d_half_zpint8
+AUDIT_KERNEL linear_dq8ca_q4gsw_M512_K256_N256_Texture3D linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_xe2_t128x128k32g48s32_texture3d_texture2d_half
+AUDIT_RESULT linear_dq8ca_q4gsw_M512_K256_N256_Texture3D pass=1 coopmat=1
+AUDIT_KERNEL linear_dq8ca_q4gsw_M768_K384_N512_Texture3D quantize_and_pack_4h4w_with_group_sums_o2w32_buffer_texture3d_half_zpint8
+AUDIT_KERNEL linear_dq8ca_q4gsw_M768_K384_N512_Texture3D linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_xe2_t128x128k32g48s32_texture3d_texture2d_half
+AUDIT_RESULT linear_dq8ca_q4gsw_M768_K384_N512_Texture3D pass=1 coopmat=1
+AUDIT_KERNEL linear_dq8ca_q4gsw_M2048_K256_N256_Texture3D quantize_and_pack_4h4w_with_group_sums_o2w32_buffer_texture3d_half_zpint8
+AUDIT_KERNEL linear_dq8ca_q4gsw_M2048_K256_N256_Texture3D linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_xe2_t128x128k32g48s32_texture3d_texture2d_half
+AUDIT_RESULT linear_dq8ca_q4gsw_M2048_K256_N256_Texture3D pass=1 coopmat=1
+
+== tsweep_dbuf4zpg_xe2_t128x128k32g48s32-8675309.log ==
+Executing 3 test cases for IndependentNumericalAudit
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (2,128,1)       (2,1,32)                                                                                                                    3.847 μs                                 
+linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_x..     (2048,4,1)      (1024,1,1)                                                                                                                  3.483 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M512_K256_N256_Texture3D                                                 [512x256]           7.330 μs       9155.122 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (3,192,1)       (2,1,32)                                                                                                                    3.282 μs                                 
+linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_x..     (4096,6,1)      (1024,1,1)                                                                                                                  3.239 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M768_K384_N512_Texture3D                                                 [768x384]           6.522 μs      46306.367 GFLOP/s   PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (2,512,1)       (2,1,32)                                                                                                                    3.024 μs                                 
+linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_x..     (2048,16,1)     (1024,1,1)                                                                                                                  3.096 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K256_N256_Texture3D                                               [2048x256]           6.119 μs      43867.555 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 3 test cases
+AUDIT_KERNEL linear_dq8ca_q4gsw_M512_K256_N256_Texture3D quantize_and_pack_4h4w_with_group_sums_o2w32_buffer_texture3d_half_zpint8
+AUDIT_KERNEL linear_dq8ca_q4gsw_M512_K256_N256_Texture3D linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_xe2_t128x128k32g48s32_texture3d_texture2d_half
+AUDIT_RESULT linear_dq8ca_q4gsw_M512_K256_N256_Texture3D pass=1 coopmat=1
+AUDIT_KERNEL linear_dq8ca_q4gsw_M768_K384_N512_Texture3D quantize_and_pack_4h4w_with_group_sums_o2w32_buffer_texture3d_half_zpint8
+AUDIT_KERNEL linear_dq8ca_q4gsw_M768_K384_N512_Texture3D linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_xe2_t128x128k32g48s32_texture3d_texture2d_half
+AUDIT_RESULT linear_dq8ca_q4gsw_M768_K384_N512_Texture3D pass=1 coopmat=1
+AUDIT_KERNEL linear_dq8ca_q4gsw_M2048_K256_N256_Texture3D quantize_and_pack_4h4w_with_group_sums_o2w32_buffer_texture3d_half_zpint8
+AUDIT_KERNEL linear_dq8ca_q4gsw_M2048_K256_N256_Texture3D linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpg_xe2_t128x128k32g48s32_texture3d_texture2d_half
+AUDIT_RESULT linear_dq8ca_q4gsw_M2048_K256_N256_Texture3D pass=1 coopmat=1
