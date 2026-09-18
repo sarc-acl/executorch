@@ -111,6 +111,9 @@ $if WEIGHT_STORAGE == "buffer":
 $if IO_STORAGE == "texture3d":
   #define IO_TEXTURE
 
+$if SH_I8V4:
+  #define SH_I8V4
+
 layout(std430) buffer;
 
 #include "common.glslh"
@@ -184,8 +187,19 @@ const uint ASH_SLICE_U32 = NUM_K_SLABS * A_SLAB_U32;
 const uint BSH_SLICE_U32 = NUM_K_SLABS * B_SLAB_U32;
 
 // Double-buffered MMA operand staging.
+#ifdef SH_I8V4
+// Adreno 840 / Mali-G1: coopMatLoad from a shared array whose element type
+// differs from the matrix component type returns garbage (verified standalone
+// on both: uint -> int8_t fails, i8vec4 passes). One i8vec4 per former uint,
+// so every element/stride expression below is unchanged.
+shared i8vec4 Ash_int8[2u * ASH_SLICE_U32];
+shared i8vec4 Bsh_int8[2u * BSH_SLICE_U32];
+#define BSH_PACK(u) unpack8(int(u))
+#else
 shared uint Ash_int8[2u * ASH_SLICE_U32];
 shared uint Bsh_int8[2u * BSH_SLICE_U32];
+#define BSH_PACK(u) (u)
+#endif
 
 // Per-WG-tile-row activation params (loaded ONCE at WG start; constant
 // across groups).
@@ -219,6 +233,25 @@ coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>
 // Per-group int32 MMA accumulator.
 coopmat<int32_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>
     accum_int32[MMAS_PER_SG_M][MMAS_PER_SG_N];
+
+// int32 -> float accumulator conversion. Adreno 840's shader compiler
+// (libllvm-qgl, driver 0x8034a013) segfaults in vkCreateComputePipelines on the
+// matrix-wide constructor coopmat<float>(accum_int32) when the source is the
+// loop-carried MMA accumulator (bisected 2026-09-17; the same constructor on a
+// non-loop-carried matrix compiles). A per-element loop lowers fine, so the
+// i8vec4-staging (Adreno) variants use that form.
+coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>
+acc_to_float(coopmat<int32_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> a) {
+#ifdef SH_I8V4
+  coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> f;
+  for (uint e = 0; e < f.length(); ++e) {
+    f[e] = float(a[e]);
+  }
+  return f;
+#else
+  return coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(a);
+#endif
+}
 
 
 // Byte-parallel int4 -> int8 widening. dbuf4zpg's, unchanged (B-side only).
@@ -444,7 +477,7 @@ void main() {
 #ifdef WEIGHT_INT4
     [[unroll]] for (uint si = 0; si < B_SLOTS_PER_THREAD; ++si) {
       Bsh_int8[b_lds_off[si]] =
-          widen_nibbles(uint(temp_B[si][b_comp[si]]), b_par[si]);
+          BSH_PACK(widen_nibbles(uint(temp_B[si][b_comp[si]]), b_par[si]));
     }
 #else
     if (b_active) {
@@ -453,7 +486,7 @@ void main() {
       const uint n_col_base = b_n_uint_col * 4u;
       [[unroll]] for (uint n_in_blk = 0u; n_in_blk < 4u; ++n_in_blk) {
         Bsh_int8[slab_idx * B_SLAB_U32 + (n_col_base + n_in_blk) * B_STRIDE_U32 + k4_in_slab] =
-            uint(temp_B[n_in_blk]);
+            BSH_PACK(uint(temp_B[n_in_blk]));
       }
     }
 #endif
@@ -584,7 +617,7 @@ void main() {
 #ifdef WEIGHT_INT4
         [[unroll]] for (uint si = 0; si < B_SLOTS_PER_THREAD; ++si) {
           Bsh_int8[nxt_b + b_lds_off[si]] =
-              widen_nibbles(uint(temp_B[si][b_comp[si]]), b_par[si]);
+              BSH_PACK(widen_nibbles(uint(temp_B[si][b_comp[si]]), b_par[si]));
         }
         if (group_crossing && gl_LocalInvocationID.x < WG_TILE_N) {
           const uint wbase_nxt = ((group_i + 1u) % 2u) * WG_TILE_N;
@@ -597,7 +630,7 @@ void main() {
           const uint n_col_base = b_n_uint_col * 4u;
           [[unroll]] for (uint n_in_blk = 0u; n_in_blk < 4u; ++n_in_blk) {
             Bsh_int8[nxt_b + slab_idx * B_SLAB_U32 + (n_col_base + n_in_blk) * B_STRIDE_U32 + k4_in_slab] =
-                uint(temp_B[n_in_blk]);
+                BSH_PACK(uint(temp_B[n_in_blk]));
           }
         }
 #endif
@@ -620,9 +653,7 @@ void main() {
             gl_CooperativeMatrixLayoutRowMajor);
 
         [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
-          result[i][j] +=
-              coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(
-                  accum_int32[i][j]) * wsc_bcast;
+          result[i][j] += acc_to_float(accum_int32[i][j]) * wsc_bcast;
           accum_int32[i][j] = coopmat<int32_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0);
         }
       }

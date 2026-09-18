@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 export ANDROID_NDK_HOME=/home/doremy/android-ndk-r29
 export ANDROID_NDK="$ANDROID_NDK_HOME"
 GLSLC=/home/doremy/vulkansdk/1.4.341.1/x86_64/bin/glslc
-BUILD_DIR=cmake-out-android-tr2
+BUILD_DIR=cmake-out-android-qcom-tr
 [[ "${1:-}" == "--clean" ]] && rm -rf "$BUILD_DIR"
 source .venv/bin/activate
 cmake . -B"$BUILD_DIR" --preset llm \

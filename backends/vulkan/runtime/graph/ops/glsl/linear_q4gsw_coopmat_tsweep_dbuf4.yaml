@@ -194,3 +194,109 @@ linear_q4gsw_coopmat_tsweep_dbuf4:
       SG_GRID_Y: 1
       SUBGROUP_SIZE: 16
       SH_F16V4: true
+    # Adreno 840 (subgroup 64 fixed; fp16 MMA 64xNx16, f16 acc only). Default t64x64k32g21s64m64x32x16;
+    # texture3d-IO sweep candidates below. Same f16vec4 staging requirement as Mali (verified).
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t64x64k32g21s64m64x32x16_buffer_texture2d_half
+      IO_STORAGE: buffer
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 64
+      MMA_N: 32
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+      SH_F16V4: true
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t64x64k32g21s64m64x32x16_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 64
+      MMA_N: 32
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+      SH_F16V4: true
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t64x64k32g21s64m64x32x16_buffer_buffer_half
+      IO_STORAGE: buffer
+      WEIGHT_STORAGE: buffer
+      MMA_M: 64
+      MMA_N: 32
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+      SH_F16V4: true
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t64x64k32g11s64m64x64x16_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 64
+      MMA_N: 64
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+      SH_F16V4: true
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t64x64k16g11s64m64x64x16_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 64
+      MMA_N: 64
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+      SH_F16V4: true
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t64x64k32g41s64m64x16x16_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 64
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+      SH_F16V4: true
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t64x128k16g21s64m64x64x16_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 64
+      MMA_N: 64
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+      SH_F16V4: true
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t64x32k32g11s64m64x32x16_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 64
+      MMA_N: 32
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+      SH_F16V4: true

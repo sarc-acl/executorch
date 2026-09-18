@@ -117,4 +117,9 @@ void add_q4gsw_linear_w_4x8_node(
     const ValueRef bias_data,
     const ValueRef output);
 
+// Upstream (release/1.4) 4w linear op: Adreno-tuned q4gsw_linear_gemm__* shaders,
+// no coopmat path. QuantizedLinear.cpp's linear_q4gsw delegates here on devices
+// where the coopmat kernels lose to it (see coopmat_linear_preferred()).
+void q4gsw_linear(ComputeGraph& graph, const std::vector<ValueRef>& args);
+
 } // namespace vkcompute

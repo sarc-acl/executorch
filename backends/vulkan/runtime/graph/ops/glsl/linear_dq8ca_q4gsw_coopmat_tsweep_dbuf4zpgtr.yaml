@@ -38,6 +38,7 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr:
     SG_GRID_X: 1
     SG_GRID_Y: 2
     SUBGROUP_SIZE: 64
+    SH_I8V4: false
   shader_variants:
     - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr_t128x64k32g42s32_buffer_texture2d_half
       WEIGHT_NBITS: 4
@@ -58,3 +59,74 @@ linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr:
       SG_GRID_X: 4
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 32
+    # Adreno 840 (subgroup 64; int8 MMA 64xNx32 -> s32). Default t128x64k32g12s64m64x64x32; i8vec4 staging.
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr_t128x64k32g12s64m64x64x32_buffer_texture2d_half
+      IO_STORAGE: buffer
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 64
+      MMA_N: 64
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64
+      SH_I8V4: true
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr_t128x64k32g12s64m64x64x32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 64
+      MMA_N: 64
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64
+      SH_I8V4: true
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr_t64x64k32g11s64m64x64x32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 64
+      MMA_N: 64
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+      SH_I8V4: true
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr_t64x64k32g21s64m64x32x32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 64
+      MMA_N: 32
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+      SH_I8V4: true
+    - NAME: linear_dq8ca_q4gsw_coopmat_tsweep_dbuf4zpgtr_t64x128k32g21s64m64x64x32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_NBITS: 4
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 64
+      MMA_N: 64
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+      SH_I8V4: true
