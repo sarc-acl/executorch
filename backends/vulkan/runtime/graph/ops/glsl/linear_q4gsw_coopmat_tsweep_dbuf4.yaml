@@ -33,6 +33,7 @@ linear_q4gsw_coopmat_tsweep_dbuf4:
     SG_GRID_X: 2
     SG_GRID_Y: 2
     SUBGROUP_SIZE: 32
+    SH_F16V4: false
   shader_variants:
     - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t128x128k16g22s32_buffer_texture2d_half
       WEIGHT_STORAGE: texture2d
@@ -59,3 +60,137 @@ linear_q4gsw_coopmat_tsweep_dbuf4:
       SG_GRID_X: 2
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 32
+    # Arm Mali-G1 (subgroup 16; fp16 MMA only at 16x32x32 / 4x8x8). 64x64x32
+    # WG tile, 2x2 subgroups x 16 = 64 threads; SG tile 32x32 = 2x1 MMAs.
+    # Shared: Ash 2*64*5 + Bsh 2*32*9 uvec4 = 19.5 KB (+4 KB Csh at texture
+    # IO), under Mali's 32 KB. The "m16x32x32" token suffix carries the MMA
+    # shape to the C++ dispatch gate.
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t64x64k32g22s16m16x32x32_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 16
+      MMA_N: 32
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      SH_F16V4: true
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t64x64k32g22s16m16x32x32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 16
+      MMA_N: 32
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      SH_F16V4: true
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t64x64k32g22s16m16x32x32_buffer_buffer_half
+      WEIGHT_STORAGE: buffer
+      MMA_M: 16
+      MMA_N: 32
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      SH_F16V4: true
+    # Mali-G1 sweep candidates (texture3d IO only; select via ET_VK_Q4GSW_COOPMAT_VARIANT)
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t32x64k32g22s16m16x32x32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 16
+      MMA_N: 32
+      MMA_K: 32
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      SH_F16V4: true
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t64x32k32g12s16m16x32x32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 16
+      MMA_N: 32
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      SH_F16V4: true
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t32x32k32g12s16m16x32x32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 16
+      MMA_N: 32
+      MMA_K: 32
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      SH_F16V4: true
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t128x64k32g24s16m16x32x32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 16
+      MMA_N: 32
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      SH_F16V4: true
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t64x128k32g42s16m16x32x32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 16
+      MMA_N: 32
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      SH_F16V4: true
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t64x64k32g21s16m16x32x32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 16
+      MMA_N: 32
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 16
+      SH_F16V4: true
+    - NAME: linear_q4gsw_coopmat_tsweep_dbuf4_t16x32k32g11s16m16x32x32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 16
+      MMA_N: 32
+      MMA_K: 32
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 16
+      SH_F16V4: true

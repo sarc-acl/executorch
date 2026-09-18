@@ -57,6 +57,9 @@ $if WEIGHT_STORAGE == "buffer":
 $if IO_STORAGE == "texture3d":
   #define IO_TEXTURE
 
+$if SH_F16V4:
+  #define SH_F16V4
+
 layout(std430) buffer;
 
 #include "common.glslh"
@@ -107,8 +110,31 @@ const uint ASH_SLICE = WG_TILE_M * A_STRIDE_VEC4;
 const uint BSH_SLICE = WG_TILE_K * B_STRIDE_VEC4;
 
 // Double-buffered shared memory.
+#ifdef SH_F16V4
+// Arm Mali (G1-Ultra, driver r54p1): coopMatLoad from a shared array whose
+// element type differs from the matrix component type returns garbage
+// (verified standalone: uvec4 -> float16_t coopmat fails, f16vec4 and
+// float16_t arrays pass; it is not an index-unit mismatch). Stage as f16vec4,
+// two per uvec4 slot. All coopMatLoad element/stride math below stays in
+// uvec4 units and is scaled by SH_SCALE.
+shared f16vec4 Ash[2 * ASH_SLICE * 2];
+shared f16vec4 Bsh[2 * BSH_SLICE * 2];
+const uint SH_SCALE = 2u;
+void sh_store_Ash(const uint idx, const uvec4 v) {
+  Ash[2u * idx] = f16vec4(unpackFloat2x16(v.x), unpackFloat2x16(v.y));
+  Ash[2u * idx + 1u] = f16vec4(unpackFloat2x16(v.z), unpackFloat2x16(v.w));
+}
+void sh_store_Bsh(const uint idx, const uvec4 v) {
+  Bsh[2u * idx] = f16vec4(unpackFloat2x16(v.x), unpackFloat2x16(v.y));
+  Bsh[2u * idx + 1u] = f16vec4(unpackFloat2x16(v.z), unpackFloat2x16(v.w));
+}
+#else
 shared uvec4 Ash[2 * ASH_SLICE];
 shared uvec4 Bsh[2 * BSH_SLICE];
+const uint SH_SCALE = 1u;
+void sh_store_Ash(const uint idx, const uvec4 v) { Ash[idx] = v; }
+void sh_store_Bsh(const uint idx, const uvec4 v) { Bsh[idx] = v; }
+#endif
 #ifdef HAS_BIAS
 shared float16_t bias_sh[WG_TILE_N];
 #endif
@@ -242,11 +268,10 @@ void main() {
   }
   {
     [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
-      Ash[(p * A_ROWS_PER_PASS + a_row_offset) * A_STRIDE_VEC4 + a_col] = temp_A[p];
+      sh_store_Ash((p * A_ROWS_PER_PASS + a_row_offset) * A_STRIDE_VEC4 + a_col, temp_A[p]);
     }
     [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
-      Bsh[(p * B_ROWS_PER_PASS + b_row_offset) * B_STRIDE_VEC4 + b_col] =
-          dequant_block(temp_B[p], col_lo, col_hi, sc0, sc1);
+      sh_store_Bsh((p * B_ROWS_PER_PASS + b_row_offset) * B_STRIDE_VEC4 + b_col, dequant_block(temp_B[p], col_lo, col_hi, sc0, sc1));
     }
   }
 
@@ -308,8 +333,9 @@ void main() {
         const uint row_a = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
         coopMatLoad(
             matA[i], Ash,
-            cur_base_A + row_a * A_STRIDE_VEC4 + k_start / FP16_PER_VEC4,
-            A_STRIDE_VEC4,
+            SH_SCALE * (cur_base_A + row_a * A_STRIDE_VEC4) +
+                (SH_SCALE * k_start) / FP16_PER_VEC4,
+            SH_SCALE * A_STRIDE_VEC4,
             gl_CooperativeMatrixLayoutRowMajor);
       }
 
@@ -318,8 +344,8 @@ void main() {
         const uint col_b = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j) / FP16_PER_VEC4;
         coopMatLoad(
             matB, Bsh,
-            cur_base_B + k_start * B_STRIDE_VEC4 + col_b,
-            B_STRIDE_VEC4,
+            SH_SCALE * (cur_base_B + k_start * B_STRIDE_VEC4 + col_b),
+            SH_SCALE * B_STRIDE_VEC4,
             gl_CooperativeMatrixLayoutRowMajor);
 
         [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
@@ -331,12 +357,10 @@ void main() {
     // --- store temp (chunk+1) -> nxt slice, dequantizing B ---
     {
       [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
-        Ash[nxt_base_A + (p * A_ROWS_PER_PASS + a_row_offset) * A_STRIDE_VEC4 + a_col] =
-            temp_A[p];
+        sh_store_Ash(nxt_base_A + (p * A_ROWS_PER_PASS + a_row_offset) * A_STRIDE_VEC4 + a_col, temp_A[p]);
       }
       [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
-        Bsh[nxt_base_B + (p * B_ROWS_PER_PASS + b_row_offset) * B_STRIDE_VEC4 + b_col] =
-            dequant_block(temp_B[p], col_lo, col_hi, sc0, sc1);
+        sh_store_Bsh(nxt_base_B + (p * B_ROWS_PER_PASS + b_row_offset) * B_STRIDE_VEC4 + b_col, dequant_block(temp_B[p], col_lo, col_hi, sc0, sc1));
       }
     }
   }
@@ -363,8 +387,9 @@ void main() {
         const uint row_a = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
         coopMatLoad(
             matA[i], Ash,
-            cur_base_A + row_a * A_STRIDE_VEC4 + k_start / FP16_PER_VEC4,
-            A_STRIDE_VEC4,
+            SH_SCALE * (cur_base_A + row_a * A_STRIDE_VEC4) +
+                (SH_SCALE * k_start) / FP16_PER_VEC4,
+            SH_SCALE * A_STRIDE_VEC4,
             gl_CooperativeMatrixLayoutRowMajor);
       }
 
@@ -373,8 +398,8 @@ void main() {
         const uint col_b = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j) / FP16_PER_VEC4;
         coopMatLoad(
             matB, Bsh,
-            cur_base_B + k_start * B_STRIDE_VEC4 + col_b,
-            B_STRIDE_VEC4,
+            SH_SCALE * (cur_base_B + k_start * B_STRIDE_VEC4 + col_b),
+            SH_SCALE * B_STRIDE_VEC4,
             gl_CooperativeMatrixLayoutRowMajor);
 
         [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
