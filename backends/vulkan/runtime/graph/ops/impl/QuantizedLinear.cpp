@@ -363,13 +363,14 @@ static CoopmatTileDims parse_q4gsw_tsweep_tile(const std::string& variant) {
 }
 
 static CoopmatTileDims coopmat_tile_dims(const std::string& kernel_name) {
-  // Exact prefix matches (the "linear_dq8ca_*" names must not match the
-  // weight-only entries). Order matters: check dq8ca first.
-  if (kernel_name.rfind("linear_dq8ca_q4gsw_coopmat", 0) == 0) {
-    return parse_tsweep_tile(dq8ca_coopmat_variant(), kDq8caQ4gswCoopmatDims);
+  const std::string dq8ca_prefix = "linear_dq8ca_q4gsw_coopmat_";
+  const std::string q4gsw_prefix = "linear_q4gsw_coopmat_";
+  if (kernel_name.rfind(dq8ca_prefix, 0) == 0) {
+    return parse_tsweep_tile(
+        kernel_name.substr(dq8ca_prefix.size()), kDq8caQ4gswCoopmatDims);
   }
-  if (kernel_name.rfind("linear_q4gsw_coopmat", 0) == 0) {
-    return parse_q4gsw_tsweep_tile(q4gsw_coopmat_variant());
+  if (kernel_name.rfind(q4gsw_prefix, 0) == 0) {
+    return parse_q4gsw_tsweep_tile(kernel_name.substr(q4gsw_prefix.size()));
   }
   return {kCoopmatTileM, kCoopmatTileN, kCoopmatTileK, kCoopmatInvocations};
 }
@@ -650,6 +651,47 @@ static bool dq8ca_coopmat_dispatch_eligible(
       dims.sg_grid_y);
 }
 
+// Limited to the batch-one, group-128 texture prefill shapes measured in
+// openspec/changes/independent-prefill-winners/results.md.
+static bool measured_prefill_shape(
+    ComputeGraph* graph,
+    const ValueRef output,
+    const ValueRef input,
+    const int64_t group_size,
+    const int64_t hidden,
+    const int64_t intermediate) {
+  const auto input_sizes = graph->sizes_of(input);
+  const auto output_sizes = graph->sizes_of(output);
+  if (group_size != 128 || input_sizes.size() != 3 ||
+      output_sizes.size() != 3 || input_sizes[0] != 1 || output_sizes[0] != 1 ||
+      input_sizes[1] != 2048 || output_sizes[1] != 2048 ||
+      graph->storage_type_of(input) != utils::kTexture3D ||
+      graph->storage_type_of(output) != utils::kTexture3D) {
+    return false;
+  }
+  const int64_t K = input_sizes[2];
+  const int64_t N = output_sizes[2];
+  return (K == hidden && (N == hidden || N == 1024 || N == intermediate)) ||
+      (K == intermediate && N == hidden);
+}
+
+static const std::string& q4gsw_prefill_variant_for(
+    ComputeGraph* graph,
+    const ValueRef output,
+    const ValueRef input,
+    const ValueRef weight,
+    const int64_t group_size) {
+  if (std::getenv("ET_VK_Q4GSW_COOPMAT_VARIANT") == nullptr &&
+      graph->storage_type_of(weight) == utils::kTexture2D &&
+      graph->device_name_contains("780m")) {
+    static const std::string k3B = "tsweep_dbuf4_t128x128k32g24s32";
+    if (measured_prefill_shape(graph, output, input, group_size, 3072, 8192)) {
+      return k3B;
+    }
+  }
+  return q4gsw_coopmat_variant();
+}
+
 vkapi::ShaderInfo pick_linear_qw_shader(
     ComputeGraph* graph,
     const std::vector<ArgGroup>& args,
@@ -671,8 +713,9 @@ vkapi::ShaderInfo pick_linear_qw_shader(
     // A tsweep_* variant has different tile dims than the shipped
     // kQ4gswCoopmatDims, so the eligibility check's alignment gate must use
     // the ACTIVE variant's own dims, not the shipped constant.
-    const CoopmatTileDims active_dims =
-        parse_q4gsw_tsweep_tile(q4gsw_coopmat_variant());
+    const std::string& variant = q4gsw_prefill_variant_for(
+        graph, output, fp_input, packed_int_weight, group_size);
+    const CoopmatTileDims active_dims = parse_q4gsw_tsweep_tile(variant);
     if (can_use_q4gsw_coopmat(
             graph,
             output,
@@ -685,7 +728,6 @@ vkapi::ShaderInfo pick_linear_qw_shader(
             /*allow_texture_io=*/true,
             active_dims.sg_grid_y)) {
       std::string kernel_name = "linear_q4gsw_coopmat";
-      const std::string& variant = q4gsw_coopmat_variant();
       if (!variant.empty()) {
         kernel_name += "_" + variant;
       }
