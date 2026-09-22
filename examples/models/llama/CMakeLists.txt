@@ -187,6 +187,12 @@ if(TARGET vulkan_backend)
   executorch_target_link_options_shared_lib(vulkan_backend)
 endif()
 
+# ETDump / event tracer
+if(TARGET etdump)
+  list(APPEND link_libraries etdump flatccrt)
+  add_compile_definitions(ET_EVENT_TRACER_ENABLED)
+endif()
+
 # Qnn backend
 if(TARGET qnn_executorch_backend)
   list(APPEND link_libraries qnn_executorch_backend)
