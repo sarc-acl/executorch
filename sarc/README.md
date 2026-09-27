@@ -81,5 +81,5 @@ Notes for the agents that own a device:
 - Run `verify.sh` with `ET_VK_SARC_UNVERIFIED=1`. For phones, build with `build.sh --android` and adapt
   `verify.sh` to `adb`.
 - Then flip the row and update the golden entry, in one PR.
-- The legacy 1.4 branches are in the remote as `yanwen/release14-quant-shaders*`, and locally as
-  `refs/legacy/*` in the dev clone.
+- The legacy 1.4 branches are archived as tags `archive/yanwen/release14-quant-shaders*` and
+  `archive/release/1.4-{mali,qualcomm}` (2026-09-27).
