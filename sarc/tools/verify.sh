@@ -69,7 +69,8 @@ run() { # run <log> <pte> <tokenizer> <prompt> <new tokens> <env> [extra]
     --max_new_tokens "$5" --temperature 0 ${7:-} < /dev/null > "$O/$1" 2>&1 9>&-
 }
 tok() { grep -o '"prefill_token_per_sec":[0-9.]*' "$O/$1" | head -1 | cut -d: -f2; }
-same() { cmp -s <(grep -v 'PyTorchObserver\|^[IWE] ' "$O/$1") <(grep -v 'PyTorchObserver\|^[IWE] ' "$O/$2"); }
+# Compare generated text only: drop runtime logs, stats and the [sarc_dev] banner.
+same() { cmp -s <(grep -v 'PyTorchObserver\|^[IWE] \|^\[sarc_dev\]' "$O/$1") <(grep -v 'PyTorchObserver\|^[IWE] \|^\[sarc_dev\]' "$O/$2"); }
 UNALIGNED=$(ls r*.txt 2>/dev/null | head -1)
 
 for m in "${MS[@]}"; do

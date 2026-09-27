@@ -45,7 +45,9 @@ for n in list(gold["variants"]):
         print(f"GONE  {n} (in golden, not shipped)"); bad += 1
 if a.update:
     if a.glslc: gold["glslc"] = a.glslc
-    json.dump(gold, open(a.golden, "w"), indent=2, sort_keys=True); open(a.golden, "a").write("\n")
+    os.makedirs(os.path.dirname(os.path.abspath(a.golden)), exist_ok=True)
+    with open(a.golden, "w") as f:
+        f.write(json.dumps(gold, indent=2, sort_keys=True) + "\n")
     print(f"updated {a.golden}"); sys.exit(0)
 print(f"spirv golden: {'PASS' if bad == 0 else 'FAIL'} ({len(names)} shipped variants)")
 sys.exit(1 if bad else 0)
