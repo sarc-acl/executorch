@@ -20,9 +20,10 @@ namespace {
 // fragment-contiguous LDS, imageLoad A.
 constexpr TileDims kXe2Dims = {128, 128, 16, 4, 4, 16, 8, false};
 
-// Battlemage (Xe2). 1.4 study (release/1.4, igpu-roofline
-// docs/XE2-WMMA-LESSONS.md): 1B 4w prefill vs tiled B580 2563 -> 8292,
-// B70 3690 -> 11636 tok/s. Not yet verified on release 1.5.
+// Battlemage (Xe2), verified on release 1.5 (openspec/changes/
+// sarc-1.5-4w-port): 2048-token prefill 1B/3B/8B vs stock 1.5
+// B580 8498/3352/1672 vs 3185/1149/524, B70 11636/4842/2421 vs
+// 4592/1708/780 tok/s; kernel times 1.004x / 0.999x of the 1.4 study.
 const Row kIntelRows[] = {
     {"bmg g21", // Arc B580
      nullptr,
@@ -31,7 +32,7 @@ const Row kIntelRows[] = {
      kXe2Dims,
      kTex3dTex2d | kBufTex2d,
      nullptr,
-     Status::kUnverified},
+     Status::kVerified},
     {"bmg g31", // Arc Pro B70
      nullptr,
      Op::kQ4gswLinear,
@@ -39,7 +40,7 @@ const Row kIntelRows[] = {
      kXe2Dims,
      kTex3dTex2d | kBufTex2d,
      nullptr,
-     Status::kUnverified},
+     Status::kVerified},
 };
 
 struct Registrar {

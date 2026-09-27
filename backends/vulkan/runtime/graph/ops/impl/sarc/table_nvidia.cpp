@@ -55,31 +55,33 @@ bool orin_default(const ShapeInfo& s) {
 
 const Row kNvidiaRows[] = {
     // RTX 4070 Ti SUPER (Ada). fp16 MMA per quantization group plus an fp32
-    // total ('ga'). 1.4 study: 1B 4w prefill vs tiled 5626 -> 20078 tok/s.
+    // total ('ga'). Verified on release 1.5 (sarc-1.5-4w-port): prefill
+    // 1B/3B/8B 19692/8790/4491 vs stock 1.5 6850/2557/1111 tok/s.
     {"4070 ti super", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga", kT256x128k16g42,
-     kTex3dTex2d, wide_n, Status::kUnverified},
+     kTex3dTex2d, wide_n, Status::kVerified},
     {"4070 ti super", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_t128x128k16g24s32ga", kT128x128k16g24,
-     kTex3dTex2d, nullptr, Status::kUnverified},
+     kTex3dTex2d, nullptr, Status::kVerified},
     {"4070 ti super", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_t128x256k16g42s32ga", kT128x256k16g42,
-     kBufTex2d, wide_n, Status::kUnverified},
+     kBufTex2d, wide_n, Status::kVerified},
     {"4070 ti super", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_t128x128k16g42s32ga", kT128x128k16g42,
-     kBufTex2d | kBufBuf, nullptr, Status::kUnverified},
+     kBufTex2d | kBufBuf, nullptr, Status::kVerified},
 
-    // Jetson Orin (Ampere iGPU), texture3d only. Study:
-    // igpu-roofline docs/JETSON-WMMA-LESSONS.md.
+    // Jetson Orin (Ampere iGPU), texture3d only. Verified on release 1.5
+    // (sarc-1.5-4w-port): prefill 1B/3B/8B 890/361/190 vs stock 1.5
+    // 229/83/35 tok/s. Buffer IO keeps the upstream path (no rows).
     {"tegra orin", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32", kT128x128k32g42,
-     kTex3dTex2d, orin_large_k, Status::kUnverified},
+     kTex3dTex2d, orin_large_k, Status::kVerified},
     {"tegra orin", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_t256x128k16g22s32", kT256x128k16g22,
-     kTex3dTex2d, orin_256, Status::kUnverified},
+     kTex3dTex2d, orin_256, Status::kVerified},
     {"tegra orin", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_t128x128k16g22s32", kT128x128k16g22,
-     kTex3dTex2d, orin_default, Status::kUnverified},
+     kTex3dTex2d, orin_default, Status::kVerified},
 };
 
 struct Registrar {

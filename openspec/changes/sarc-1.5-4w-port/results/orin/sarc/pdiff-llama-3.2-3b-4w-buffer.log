@@ -1,0 +1,58 @@
+[sarc_dev] overrides active: unverified=1 variant=
+
+=== Compute Shader Performance Benchmark ===
+Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; prefill 2048 / decode 1 @ ctx3072; linear group_size=128; 3 warmup + 5 timed runs per case)
+DEVICE,nvidia tegra orin (nvgpu),timestamp_period_ns=1,subgroup_size=32,coopmat=yes,max_shared_mem_bytes=49152
+----------------------------------------------------------------------
+[production-diff] llama-3.2-3b_prefill_wq_wo_linear_q4gsw_M2048_K3072_N3072_rank3batch1_Buffer (M=2048, K=3072, N=3072, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8185 of 6291456 elements
+[sampled reference] max abs diff 0.664959 (tol 0.5), max rel diff 0.331563 (tol 0.05, |ref| > abs tol)
+"kernel_name": "linear_q4gsw_tiled_buffer_te..     (384,512,1)     (8,8,1)     llama-3.2-3b_prefill_wq_wo_linear_q4gsw_M2048_K3072_N3072_rank3batch1_Buffer            [1x2048x3072]       77201.852 μs        500.697 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.2-3b_prefill_wq_wo_linear_q4gsw_M2048_K3072_N3072_rank3batch1_Buffer -> "kernel_name": "linear_q4gsw_tiled_buffer_texture2d_half", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.2-3b_prefill_wk_wv_linear_q4gsw_M2048_K3072_N1024_rank3batch1_Buffer (M=2048, K=3072, N=1024, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8026 of 2097152 elements
+[sampled reference] max abs diff 0.615 (tol 0.500), max rel diff 0.219 (tol 0.050, |ref| > abs tol)
+"kernel_name": "linear_q4gsw_tiled_buffer_te..     (128,512,1)     (8,8,1)     llama-3.2-3b_prefill_wk_wv_linear_q4gsw_M2048_K3072_N1024_rank3batch1_Buffer            [1x2048x3072]       25876.475 μs        497.939 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.2-3b_prefill_wk_wv_linear_q4gsw_M2048_K3072_N1024_rank3batch1_Buffer -> "kernel_name": "linear_q4gsw_tiled_buffer_texture2d_half", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.2-3b_prefill_w1_w3_linear_q4gsw_M2048_K3072_N8192_rank3batch1_Buffer (M=2048, K=3072, N=8192, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8248 of 16777216 elements
+[sampled reference] max abs diff 0.658 (tol 0.500), max rel diff 0.266 (tol 0.050, |ref| > abs tol)
+"kernel_name": "linear_q4gsw_tiled_buffer_te..     (1024,512,1)    (8,8,1)     llama-3.2-3b_prefill_w1_w3_linear_q4gsw_M2048_K3072_N8192_rank3batch1_Buffer            [1x2048x3072]      205192.891 μs        502.353 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.2-3b_prefill_w1_w3_linear_q4gsw_M2048_K3072_N8192_rank3batch1_Buffer -> "kernel_name": "linear_q4gsw_tiled_buffer_texture2d_half", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.2-3b_prefill_w2_linear_q4gsw_M2048_K8192_N3072_rank3batch1_Buffer (M=2048, K=8192, N=3072, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8187 of 6291456 elements
+Mismatch at element 107314: computed=-8.484, reference=-7.966, diff=0.518, abs_tolerance=0.500, rel_tolerance=0.050, rel_threshold=0.398
+[sampled reference] max abs diff 1.864 (tol 0.500), max rel diff 1.065 (tol 0.050, |ref| > abs tol)
+  total mismatched: 39 / 6291456 (first at 107314)
+  Correctness validation FAILED for test llama-3.2-3b_prefill_w2_linear_q4gsw_M2048_K8192_N3072_rank3batch1_Buffer
+
+vulkan output Data:
+  Type: ValueSpec(type=Tensor, sizes=[1, 2048, 3072], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=ZEROS)
+  Total elements: 6291456
+  Data (first 20 elements): [10.421875, 7.542969, 4.070312, 0.417969, 16.500000, 14.812500, 6.875000, 2.464844, 12.656250, 4.769531, 7.828125, -7.937500, 12.234375, 14.937500, 3.625000, 2.072266, 13.398438, -0.218994, 4.914062, 10.656250, ... (6291436 more)]
+  Statistics: min=-102.312500, max=111.000000, mean=0.123883, sum=779405.625000
+
+ref output Data:
+  Type: ValueSpec(type=Tensor, sizes=[1, 2048, 3072], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=ZEROS)
+  Total elements: 6291456
+  Data (first 20 elements): [10.264801, 7.566742, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, ... (6291436 more)]
+  Statistics: min=-102.312500, max=111.000000, mean=0.123883, sum=779405.625000
+"kernel_name": "linear_q4gsw_tiled_buffer_te..     (384,512,1)     (8,8,1)     llama-3.2-3b_prefill_w2_linear_q4gsw_M2048_K8192_N3072_rank3batch1_Buffer               [1x2048x8192]      205895.469 μs        500.639 GFLOP/s   FAILED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.2-3b_prefill_w2_linear_q4gsw_M2048_K8192_N3072_rank3batch1_Buffer threw: Correctness validation failed
+[production-diff] FAILED (llama-3.2-3b, 4 shapes, M=2048, linear_q4gsw, buffer)
