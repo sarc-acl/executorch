@@ -475,6 +475,11 @@ class Adapter final {
     return physical_device_.properties.limits.maxComputeWorkGroupInvocations;
   }
 
+  // SARC: shared-memory budget for the coopmat texture epilogue gate.
+  inline uint32_t max_compute_shared_memory_size() const {
+    return physical_device_.properties.limits.maxComputeSharedMemorySize;
+  }
+
   inline uint32_t recommended_lwg_nthreads() const {
     return 64u;
   }
