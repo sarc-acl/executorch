@@ -1361,9 +1361,12 @@ SdpaRunResult sdpa_run_case(
         softmax_time_us += static_cast<float>(duration_ns) / 1000.0f;
       } else if (
           r.kernel_name.find("sdpa_compute_attn_weights") !=
-          std::string::npos) {
+              std::string::npos ||
+          r.kernel_name.find("sarc_sdpa_qk") != std::string::npos) {
         qk_time_us += static_cast<float>(duration_ns) / 1000.0f;
-      } else if (r.kernel_name.find("sdpa_compute_out") != std::string::npos) {
+      } else if (
+          r.kernel_name.find("sdpa_compute_out") != std::string::npos ||
+          r.kernel_name.find("sarc_sdpa_av") != std::string::npos) {
         av_time_us += static_cast<float>(duration_ns) / 1000.0f;
       }
     }

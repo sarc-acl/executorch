@@ -51,7 +51,7 @@ const Row kIntelRows[] = {
      {256, 64, 32, 4, 8, 16, 8, false},
      kTex3dTex2d | kBufTex2d,
      nullptr,
-     Status::kUnverified},
+     Status::kVerified},
     {"bmg g31",
      nullptr,
      Op::kDq8caLinear,
@@ -59,7 +59,7 @@ const Row kIntelRows[] = {
      {256, 64, 32, 4, 8, 16, 8, false},
      kTex3dTex2d | kBufTex2d,
      nullptr,
-     Status::kUnverified},
+     Status::kVerified},
 };
 
 struct Registrar {

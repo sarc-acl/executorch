@@ -39,8 +39,10 @@ const Row kAmdRows[] = {
      kTex3dTex2d | kBufTex2d | kBufBuf,
      /*shape_ok=*/nullptr,
      Status::kVerified},
-    // Radeon 780M 8da4w: zpg (4h4w activations), full A map. 1.4 branch
-    // yanwen/release14-quant-shaders-780m: 1B prefill 2151 -> 2538 tok/s.
+    // Radeon 780M 8da4w: zpg (4h4w activations), full A map. Verified on
+    // release 1.5 (sarc-1.5-8da4w-port): kernels 0.992x of the 1.4 study;
+    // with the SDPA rows, prefill 1B/3B/8B 2544/1048/487 tok/s (1.4:
+    // 2538/1055/486).
     {"780m",
      amd_wave64,
      Op::kDq8caLinear,
@@ -48,7 +50,7 @@ const Row kAmdRows[] = {
      {128, 64, 32, 4, 2, 32, 16, false},
      kTex3dTex2d | kBufTex2d,
      nullptr,
-     Status::kUnverified},
+     Status::kVerified},
 
     // Samsung Xclipse (M51): the 1.4 dev branch defaults (tuned there; owned by
     // the M51 agent, not verified on release 1.5).
@@ -71,8 +73,8 @@ const Row kAmdRows[] = {
      /*rowmajor_a=*/true},
 
     // Radeon 780M: SDPA prefill coopmat (QK^T, attn*V; the softmax truncation comes
-    // with them). 1.4 SARC branches; on the 780M it recovers ~307 ms of the
-    // 1B 2048-token prefill (.artifacts/sarc-1.5/sdpa-gap/REPORT.md).
+    // with them). Verified on release 1.5 (sarc-1.5-sdpa-port): SDPA correctness
+    // 4/4 (0 mismatches); prefill back to the 1.4 level, 1B 4w 2695 vs 2702.
     {"780m",
      amd_wave64,
      Op::kSdpaQk,
@@ -80,7 +82,7 @@ const Row kAmdRows[] = {
      {128, 64, 32, 2, 2, 64, 16, false},
      kBufBuf,
      nullptr,
-     Status::kUnverified},
+     Status::kVerified},
     {"780m",
      amd_wave64,
      Op::kSdpaAv,
@@ -88,7 +90,7 @@ const Row kAmdRows[] = {
      {64, 64, 32, 2, 2, 64, 16, false},
      kBufBuf,
      nullptr,
-     Status::kUnverified},
+     Status::kVerified},
     // Samsung Xclipse (M51): SDPA prefill coopmat (QK^T, attn*V; the softmax truncation comes
     // with them). 1.4 SARC branches; on the 780M it recovers ~307 ms of the
     // 1B 2048-token prefill (.artifacts/sarc-1.5/sdpa-gap/REPORT.md).

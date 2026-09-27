@@ -90,11 +90,11 @@ const Row kNvidiaRows[] = {
     // 4070 Ti SUPER 6942 -> 21558 tok/s.
     {"4070 ti super", nullptr, Op::kDq8caLinear,
      "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra", kT128x128k64g44,
-     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kVerified,
      /*rowmajor_a=*/true},
     {"tegra orin", nullptr, Op::kDq8caLinear,
      "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra", kT128x128k64g44,
-     kTex3dTex2d, orin_measured, Status::kUnverified,
+     kTex3dTex2d, orin_measured, Status::kVerified,
      /*rowmajor_a=*/true},
 };
 

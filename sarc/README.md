@@ -61,10 +61,25 @@ Branches:
 A change that alters another device's shipped SPIR-V fails the golden check. It needs that device's owner to
 re-verify first.
 
-## Devices
+## Devices (release 1.5 status)
 
-| Device | Status |
-|---|---|
-| Radeon 780M | PoC device. The `table_amd.cpp` row stays unverified until `verify.sh` passes on release 1.5. |
-| M51 (Xclipse), 7900 XTX, S26 (Adreno 840), Mali-G1 | Other agents own these, using the same flow and `verify.sh`. Phone rows stay unverified until run on the phone. |
-| B580, B70, 4070 Ti, Orin | Ported later from the 1.4 branches (`yanwen/release14-quant-shaders-*`). Those branches are legacy; re-measure everything on 1.5. |
+| Device | 4w | 8da4w | SDPA prefill | Evidence |
+|---|---|---|---|---|
+| Radeon 780M | verified | verified | verified | `openspec/changes/sarc-1.5-{bootstrap,8da4w-port,sdpa-port}` |
+| Arc B580 / Arc Pro B70 | verified | verified | stock | `sarc-1.5-4w-port`, `sarc-1.5-8da4w-port` |
+| RTX 4070 Ti SUPER | verified | verified | stock | same |
+| Jetson Orin | verified (texture3d projections) | verified (texture3d projections) | stock | same |
+| Samsung Xclipse (M51) | unverified | unverified | unverified | 1.4 dev-branch defaults; owned by the M51 agent |
+| Adreno 840 (S26) | unverified | – (1.4 int8 kernel broken) | stock | owned by the phone agent |
+| Mali-G1 | – (1.4 routed to upstream) | – | stock | nothing to port |
+| 7900 XTX | – | – | – | no promoted 1.4 default; owned by its agent |
+
+Unverified rows are inert in a release. Their SPIR-V is still pinned in `sarc/golden/spirv.json`
+(owner `UNVERIFIED:<device>`), so accidental changes are caught.
+
+Notes for the agents that own a device:
+- Run `verify.sh` with `ET_VK_SARC_UNVERIFIED=1`. For phones, build with `build.sh --android` and adapt
+  `verify.sh` to `adb`.
+- Then flip the row and update the golden entry, in one PR.
+- The legacy 1.4 branches are in the remote as `yanwen/release14-quant-shaders*`, and locally as
+  `refs/legacy/*` in the dev clone.

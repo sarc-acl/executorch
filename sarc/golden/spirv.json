@@ -1,6 +1,46 @@
 {
   "glslc": "shaderc v2023.8 / glslang 73743588 (localhost/et-vk-build:rocky10)",
   "variants": {
+    "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_buffer_texture2d_half": {
+      "owner": "radeon-780m",
+      "sha256": "a80a945b94faf61c1e68a3a43ca8d3edc73dcf90c61d620ae500563feca85071"
+    },
+    "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_texture3d_texture2d_half": {
+      "owner": "radeon-780m",
+      "sha256": "deb69cb1f5ccfd87f526503f729b76ae4f33899e2980b9609c02ff57804c4409"
+    },
+    "sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_buffer_texture2d_half": {
+      "owner": "arc-b580+arc-pro-b70",
+      "sha256": "ad842276cb00a194bb1babd6fa7c9dbfc36dced44b6880d5c7aa8aea7a8da433"
+    },
+    "sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_texture3d_texture2d_half": {
+      "owner": "arc-b580+arc-pro-b70",
+      "sha256": "790285dd1a9be910a8755d17f76b9a5263013a5db6921470a27db27c258b1eb4"
+    },
+    "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half": {
+      "owner": "rtx-4070-ti-super+jetson-orin",
+      "sha256": "a3db42c8590798c9a8ee8a64ed7843fb2b2251de550906956d530fb804ff7e79"
+    },
+    "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half": {
+      "owner": "rtx-4070-ti-super+jetson-orin",
+      "sha256": "f830d6a40123a07f1738b1af0d68741bf11217f19fb7c652f5cd5e5498dad3ac"
+    },
+    "sarc_linear_dq8ca_coopmat_zpgtr_t128x64k32g42s32_buffer_texture2d_half": {
+      "owner": "UNVERIFIED:xclipse-m51",
+      "sha256": "59a864381355c743ffc94e775d5eceb8da1c4d863985b3494c690fd264a423b8"
+    },
+    "sarc_linear_dq8ca_coopmat_zpgtr_t128x64k32g42s32_texture3d_texture2d_half": {
+      "owner": "UNVERIFIED:xclipse-m51",
+      "sha256": "0e0938095b8ef8b5f6a8edf5dc6011f99634ba70354f0e71710474b32b78b3da"
+    },
+    "sarc_linear_q4gsw_coopmat_t128x128k16g22s32_buffer_buffer_half": {
+      "owner": "UNVERIFIED:xclipse-m51",
+      "sha256": "9bf3690697bb51c6ec7777a8fa301703f857ae19dc1e6ca4158fac4ba65a3b88"
+    },
+    "sarc_linear_q4gsw_coopmat_t128x128k16g22s32_buffer_texture2d_half": {
+      "owner": "UNVERIFIED:xclipse-m51",
+      "sha256": "24620817d8f93fcebfc799ca22fbf79441a39ffc650cc2cf90a43f5ac91a1fda"
+    },
     "sarc_linear_q4gsw_coopmat_t128x128k16g22s32_texture3d_texture2d_half": {
       "owner": "jetson-orin",
       "sha256": "39fc5fbe347fd2db9ec9b8a3200c3276253a31f553f236949bf07e0d2d3e1bcc"
@@ -52,6 +92,106 @@
     "sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga_texture3d_texture2d_half": {
       "owner": "rtx-4070-ti-super",
       "sha256": "20f96c13b236f1fa3d5740660e8c0916bac48f0f8c18aac808bf18467ce210a7"
+    },
+    "sarc_linear_q4gsw_coopmat_t64x64k32g21s64m64x32x16_buffer_buffer_half": {
+      "owner": "UNVERIFIED:adreno-840",
+      "sha256": "8da4a4bcbc6f0d8caadf6bb70fcba7f10e7772461ede47fa9a67b8535e603381"
+    },
+    "sarc_linear_q4gsw_coopmat_t64x64k32g21s64m64x32x16_buffer_texture2d_half": {
+      "owner": "UNVERIFIED:adreno-840",
+      "sha256": "f117989e22e977cb8980658c82f10a3c661c9024fcc9c0325e13001e7b4309f2"
+    },
+    "sarc_linear_q4gsw_coopmat_t64x64k32g21s64m64x32x16_texture3d_texture2d_half": {
+      "owner": "UNVERIFIED:adreno-840",
+      "sha256": "6c198656bdbd522e88e71c41d3588660fa16a64d9f07a6a94ddebe255e168fb9"
+    },
+    "sarc_quantize_and_pack_4w_with_group_sums_o2w32_buffer_buffer_float_zpinherit": {
+      "owner": "rtx-4070-ti-super+jetson-orin",
+      "sha256": "b13d7d4a85a2ceb2793728f679977a437c6a8b204e82040d4caaa9f6b6757131"
+    },
+    "sarc_quantize_and_pack_4w_with_group_sums_o2w32_buffer_buffer_float_zpint8": {
+      "owner": "rtx-4070-ti-super+jetson-orin",
+      "sha256": "9d182eecd3a16087976a14ee22d7f69285212b8621b1d520bed6bc7f2762626b"
+    },
+    "sarc_quantize_and_pack_4w_with_group_sums_o2w32_buffer_buffer_half_zpinherit": {
+      "owner": "rtx-4070-ti-super+jetson-orin",
+      "sha256": "77e916d24117e5ed1fd2ca70d96ff8d4fbe1a9e4f52e69d2474456b9154f499d"
+    },
+    "sarc_quantize_and_pack_4w_with_group_sums_o2w32_buffer_buffer_half_zpint8": {
+      "owner": "rtx-4070-ti-super+jetson-orin",
+      "sha256": "b2c3b42f2502752963f1800da8807b0f2567524738a940e11fc056ce1da0268d"
+    },
+    "sarc_quantize_and_pack_4w_with_group_sums_o2w32_buffer_texture3d_float_zpinherit": {
+      "owner": "rtx-4070-ti-super+jetson-orin",
+      "sha256": "10123183b6215f54828a421ca4dba89b1842df816a03ececd78b500cc22a23be"
+    },
+    "sarc_quantize_and_pack_4w_with_group_sums_o2w32_buffer_texture3d_float_zpint8": {
+      "owner": "rtx-4070-ti-super+jetson-orin",
+      "sha256": "098955677c5564eca1d53823e046d1327c9dea3ba0469d5c3caf581b3a34d3d3"
+    },
+    "sarc_quantize_and_pack_4w_with_group_sums_o2w32_buffer_texture3d_half_zpinherit": {
+      "owner": "rtx-4070-ti-super+jetson-orin",
+      "sha256": "10123183b6215f54828a421ca4dba89b1842df816a03ececd78b500cc22a23be"
+    },
+    "sarc_quantize_and_pack_4w_with_group_sums_o2w32_buffer_texture3d_half_zpint8": {
+      "owner": "rtx-4070-ti-super+jetson-orin",
+      "sha256": "098955677c5564eca1d53823e046d1327c9dea3ba0469d5c3caf581b3a34d3d3"
+    },
+    "sarc_quantize_and_pack_4w_with_group_sums_o4w16_buffer_buffer_float_zpinherit": {
+      "owner": "rtx-4070-ti-super+jetson-orin",
+      "sha256": "9e06e71d1d81b1f50911ef79a4695b84d71ff426799abd4957591e7c1607763e"
+    },
+    "sarc_quantize_and_pack_4w_with_group_sums_o4w16_buffer_buffer_float_zpint8": {
+      "owner": "rtx-4070-ti-super+jetson-orin",
+      "sha256": "cf1d5a192e5b2bee87be01af66a04448faad6d935402becdcd07314ef01e434c"
+    },
+    "sarc_quantize_and_pack_4w_with_group_sums_o4w16_buffer_buffer_half_zpinherit": {
+      "owner": "rtx-4070-ti-super+jetson-orin",
+      "sha256": "0065c5416680d7eb2de8692ec8dbce4cc66a17e39273bc1e53a9a7034981b31d"
+    },
+    "sarc_quantize_and_pack_4w_with_group_sums_o4w16_buffer_buffer_half_zpint8": {
+      "owner": "rtx-4070-ti-super+jetson-orin",
+      "sha256": "7a5b8a4a45b684179a79dc0be5eff9f3d9b23686af98aacb08f0e79c18233407"
+    },
+    "sarc_quantize_and_pack_4w_with_group_sums_o4w16_buffer_texture3d_float_zpinherit": {
+      "owner": "rtx-4070-ti-super+jetson-orin",
+      "sha256": "1c9cb4589f50ac9d87845577d58546e8914af19409f9e7101d9987e8bf6ae548"
+    },
+    "sarc_quantize_and_pack_4w_with_group_sums_o4w16_buffer_texture3d_float_zpint8": {
+      "owner": "rtx-4070-ti-super+jetson-orin",
+      "sha256": "5c3c6bb3e8db462250aae5da3cb4b130c3e5b19dd9522baa9309aa260df914ba"
+    },
+    "sarc_quantize_and_pack_4w_with_group_sums_o4w16_buffer_texture3d_half_zpinherit": {
+      "owner": "rtx-4070-ti-super+jetson-orin",
+      "sha256": "1c9cb4589f50ac9d87845577d58546e8914af19409f9e7101d9987e8bf6ae548"
+    },
+    "sarc_quantize_and_pack_4w_with_group_sums_o4w16_buffer_texture3d_half_zpint8": {
+      "owner": "rtx-4070-ti-super+jetson-orin",
+      "sha256": "5c3c6bb3e8db462250aae5da3cb4b130c3e5b19dd9522baa9309aa260df914ba"
+    },
+    "sarc_sdpa_attn_weights_softmax_buffer_float": {
+      "owner": "radeon-780m",
+      "sha256": "2a098260c3c6ee0b9bda20fe0911e68f005372422462d0c2e2611e1b6a90f05f"
+    },
+    "sarc_sdpa_attn_weights_softmax_buffer_half": {
+      "owner": "radeon-780m",
+      "sha256": "1a61e5ac64662f952da6133d9a9c6a5a0bb04265952334e1ab879c7f9649b6ae"
+    },
+    "sarc_sdpa_attn_weights_softmax_texture3d_float": {
+      "owner": "radeon-780m",
+      "sha256": "11b3ef407e04e03ea26ba18ae286265c2dbefcfd9d3ef19edc03160048ce88b4"
+    },
+    "sarc_sdpa_attn_weights_softmax_texture3d_half": {
+      "owner": "radeon-780m",
+      "sha256": "568a92e290f6c1b637ca69f719816df10be11c4859ed7d1f03b8593e6314de96"
+    },
+    "sarc_sdpa_av_coopmat_t64x64k32g22s64_buffer_buffer_half": {
+      "owner": "radeon-780m",
+      "sha256": "5350f53512afba9f858070690bbc36a04220a37ead175a032b94bf901b5bcc3b"
+    },
+    "sarc_sdpa_qk_coopmat_t128x64k32g22s64_buffer_buffer_half": {
+      "owner": "radeon-780m",
+      "sha256": "6a9a6e7cffc83ca5358a0c21234014b0226615bd1a757d04df8b2074d89d4525"
     }
   }
 }

@@ -1,0 +1,31 @@
+sdpa correctness rc=1 [sdpa-correctness] tiny_gqa_s256 S=256 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/32768 FAILED [sdpa-correctness] 1b_head_config_s256 S=256 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=
+sdpa prefill rc=1 kernels: 
+correctness rc=0 
+linear 4w rc=1 kernels:  12 "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_buffer_texture2d_half"; 12 "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_texture3d_texture2d_half";
+linear 8da4w rc=1 kernels:  12 "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_buffer_texture2d_half"; 12 "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_texture3d_texture2d_half";
+1b 4w tiled prefill_tok_s=797.197
+1b 4w default prefill_tok_s=2694.74
+1b 4w check: default vs tiled output SAME
+1b 4w unaligned: default vs tiled output SAME
+1b 4w decode rc=0 "generated_tokens":31 decode_tok_s=70.7763
+1b 8da4w tiled prefill_tok_s=2155.79
+1b 8da4w default prefill_tok_s=2544.1
+1b 8da4w check: default vs tiled output SAME
+1b 8da4w unaligned: default vs tiled output SAME
+1b 8da4w decode rc=0 "generated_tokens":31 decode_tok_s=71.1009
+3b 4w tiled prefill_tok_s=282.795
+3b 4w default prefill_tok_s=1138.41
+3b 8da4w tiled prefill_tok_s=850.145
+3b 8da4w default prefill_tok_s=1048.11
+8b 4w tiled prefill_tok_s=113.734
+8b 4w default prefill_tok_s=516.389
+8b 8da4w tiled prefill_tok_s=377.372
+8b 8da4w default prefill_tok_s=486.692
+ALLDONE
+pdiff llama-3.2-1b 8da4w buffer rc=0 [production-diff] ALL PASSED (llama-3.2-1b, 4 shapes, M=2048, linear_dq8ca_q4gsw, buffer)
+pdiff llama-3.2-1b 8da4w texture3d rc=0 [production-diff] ALL PASSED (llama-3.2-1b, 4 shapes, M=2048, linear_dq8ca_q4gsw, texture3d)
+pdiff llama-3.2-3b 8da4w buffer rc=0 [production-diff] ALL PASSED (llama-3.2-3b, 4 shapes, M=2048, linear_dq8ca_q4gsw, buffer)
+pdiff llama-3.2-3b 8da4w texture3d rc=0 [production-diff] ALL PASSED (llama-3.2-3b, 4 shapes, M=2048, linear_dq8ca_q4gsw, texture3d)
+pdiff llama-3.1-8b 8da4w buffer rc=0 [production-diff] ALL PASSED (llama-3.1-8b, 4 shapes, M=2048, linear_dq8ca_q4gsw, buffer)
+pdiff llama-3.1-8b 8da4w texture3d rc=0 [production-diff] ALL PASSED (llama-3.1-8b, 4 shapes, M=2048, linear_dq8ca_q4gsw, texture3d)
+ALLDONE
