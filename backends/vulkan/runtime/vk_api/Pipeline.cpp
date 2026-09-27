@@ -544,10 +544,16 @@ void ComputePipelineCache::create_pipelines(
         &specialization_infos.back(), // pSpecializationInfo
     });
 
+    VkPipelineCreateFlags batch_flags = 0u;
+#if defined(VK_KHR_pipeline_executable_properties) && \
+    defined(ETVK_INSPECT_PIPELINES)
+    batch_flags = VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR |
+        VK_PIPELINE_CREATE_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR;
+#endif // VK_KHR_pipeline_executable_properties && ETVK_INSPECT_PIPELINES
     create_infos.push_back(VkComputePipelineCreateInfo{
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // sType
         nullptr, // pNext
-        0u, // flags
+        batch_flags, // flags
         shader_stage_create_infos.back(), // stage
         key.pipeline_layout, // layout
         VK_NULL_HANDLE, // basePipelineHandle
