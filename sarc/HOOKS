@@ -1,0 +1,13 @@
+# Upstream (release/1.5) files that dev/1.5 is allowed to modify, one path per
+# line with its reason. Everything else outside the release zone
+# (backends/vulkan/runtime/graph/ops/{glsl,impl}/sarc/) and the dev zone must be
+# byte-identical to release/1.5; sarc/tools/check.sh enforces this.
+# Keep each hook a few lines; put logic in the release zone.
+#
+# kind: hook      = SARC entry point into an upstream code path
+#       backport  = cherry-picked upstream commit (name it) absent from release/1.5
+
+backends/vulkan/runtime/graph/ops/impl/Q4gswLinear.cpp      hook      sarc::try_add_q4gsw_coopmat at the top of q4gsw_linear
+backends/vulkan/runtime/vk_api/Adapter.h                    hook      max_compute_shared_memory_size() for the coopmat texture gate
+backends/vulkan/runtime/graph/containers/SharedObject.cpp   backport  03f41d2031 <algorithm> include (GCC 15+), upstream main
+backends/vulkan/runtime/graph/ops/impl/Squeeze.cpp          backport  03f41d2031 <algorithm> include (GCC 15+), upstream main

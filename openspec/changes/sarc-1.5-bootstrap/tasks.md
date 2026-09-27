@@ -1,0 +1,7 @@
+- [x] Branch model in sarc-acl/CLAUDE.md; dev/1.5 clone from release/1.5 985c1ceccc
+- [x] Upstream backport 03f41d2031 (GCC 15+ includes)
+- [x] Release zone: 4w shader body/wrapper/yaml, Select + table_amd (780M row unverified), Q4gswCoopmat, hooks
+- [x] Dev zone: sweep twin + yaml, Overrides, test_sarc_select, test_llama_microbench (+ utils copy), tools
+- [ ] Container builds: dev (tests + llama_main), release export host + Android
+- [ ] 780M verification (verify.sh), stock 1.5 comparison, B580 no-row check
+- [ ] Promote 780M row to verified, golden SPIR-V, make-release r0 (dry run until the owner approves a push)
