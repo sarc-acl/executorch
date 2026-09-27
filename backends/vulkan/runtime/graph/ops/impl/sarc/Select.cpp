@@ -65,18 +65,6 @@ const Override& get_override() {
   return override_store();
 }
 
-bool device_has_rows(const DeviceInfo& device, Op op) {
-  if (get_override().force_path) {
-    return true;
-  }
-  for (const Row& row : rows()) {
-    if (row.op == op && row_active(row) && row_matches_device(row, device)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 bool q4gsw_coopmat_fits(
     const DeviceInfo& device,
     const ShapeInfo& shape,
@@ -128,18 +116,27 @@ bool q4gsw_coopmat_fits(
   return row.shape_ok == nullptr || row.shape_ok(shape);
 }
 
-std::optional<Choice> select(const DeviceInfo& device, const ShapeInfo& shape) {
-  std::optional<Choice> choice;
+std::optional<Choice> select_table(
+    const DeviceInfo& device,
+    const ShapeInfo& shape) {
   for (const Row& row : rows()) {
     if (row.op != shape.op || !row_active(row) ||
         !row_matches_device(row, device)) {
       continue;
     }
     if (q4gsw_coopmat_fits(device, shape, row)) {
-      choice = Choice{row.kernel_base, row.dims};
-      break;
+      return Choice{row.kernel_base, row.dims};
     }
   }
+  return std::nullopt;
+}
+
+bool builds_on_sarc(const DeviceInfo& device, const ShapeInfo& shape) {
+  return get_override().force_path || select_table(device, shape).has_value();
+}
+
+std::optional<Choice> select(const DeviceInfo& device, const ShapeInfo& shape) {
+  const std::optional<Choice> choice = select_table(device, shape);
   const Override& o = get_override();
   if (o.select != nullptr) {
     return o.select(device, shape, choice);

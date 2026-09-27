@@ -165,6 +165,12 @@ int main(int argc, char** argv) {
             io == Storage::kBuffer ? "buffer" : "texture3d",
             got.c_str(),
             want.c_str());
+        EXPECT(
+            builds_on_sarc(f.dev, s) == (get_override().force_path || !want.empty()),
+            "%s K=%lld N=%lld: builds_on_sarc mismatch",
+            f.label,
+            (long long)kn[0],
+            (long long)kn[1]);
       }
     }
     // Shapes no SARC variant may take, on every device.

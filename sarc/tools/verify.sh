@@ -18,12 +18,15 @@
 #   --no-tiled       skip the ET_VK_FORCE_TILED_LINEAR baseline (release builds
 #                    have no env overrides; compare against a dev build instead)
 #   --device-index N ETVK_DEVICE_INDEX (default 0)
-#   --model-root P   default /mnt/linux-share/models
+#   --model-root P   default /mnt/linux-share/models (<P>/<model>/exported/*.pte,
+#                    <P>/<model>/original/tokenizer.model)
+#   --flat-models P  flat layout instead: <P>/<stem>_vulkan_<scheme>.pte and
+#                    <P>/tokenizer.model (e.g. the Orin's ~/.cache/et-jetson-study/models)
 # Extra environment (e.g. ET_VK_SARC_UNVERIFIED=1) is passed through.
 set -uo pipefail
 
 DIR=""; LOCK=""; OUTN=verify; MODELS=1b; SCHEMES=4w,8da4w; PDIFF=0; TILED=1; DEV=0
-MROOT=/mnt/linux-share/models
+MROOT=/mnt/linux-share/models; FLAT=""
 while [[ $# -gt 0 ]]; do
   case $1 in
     --dir) DIR=$2; shift ;;
@@ -35,6 +38,7 @@ while [[ $# -gt 0 ]]; do
     --no-tiled) TILED=0 ;;
     --device-index) DEV=$2; shift ;;
     --model-root) MROOT=$2; shift ;;
+    --flat-models) FLAT=$2; shift ;;
     *) echo "unknown option $1" >&2; exit 2 ;;
   esac
   shift
@@ -76,7 +80,8 @@ UNALIGNED=$(ls r*.txt 2>/dev/null | head -1)
 for m in "${MS[@]}"; do
   IFS=: read -r MD ST <<< "${STEM[$m]}"
   for q in "${QS[@]}"; do
-    PTE=$MROOT/$MD/exported/${ST}_vulkan_$q.pte; TK=$MROOT/$MD/original/tokenizer.model
+    if [[ -n $FLAT ]]; then PTE=$FLAT/${ST}_vulkan_$q.pte; TK=$FLAT/tokenizer.model
+    else PTE=$MROOT/$MD/exported/${ST}_vulkan_$q.pte; TK=$MROOT/$MD/original/tokenizer.model; fi
     [[ -f $PTE ]] || { echo "$m $q: missing $PTE"; continue; }
     MODES=(default); [[ $TILED == 1 ]] && MODES=(tiled default)
     for mode in "${MODES[@]}"; do
