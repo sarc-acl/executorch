@@ -27,8 +27,14 @@ for y in sorted(glob.glob(f"{root}/backends/vulkan/runtime/graph/ops/glsl/sarc/*
     for tmpl in yaml.safe_load(open(y)).values():
         # generate_variant_forall appends _<VALUE> per key, in key order.
         forall = tmpl.get("generate_variant_forall") or {}
-        suffixes = ["".join("_" + x["VALUE"] for x in combo)
-                    for combo in itertools.product(*forall.values())] or [""]
+        axes = []
+        for key, vals in forall.items():
+            if key == "combination":  # {parameter_names, combos: [{parameter_values, suffix?}]}
+                axes.append([c.get("suffix") or "_".join(map(str, c["parameter_values"]))
+                             for c in vals["combos"]])
+            else:
+                axes.append([x["VALUE"] for x in vals])
+        suffixes = ["".join("_" + x for x in combo) for combo in itertools.product(*axes)] or [""]
         names += [v["NAME"] + sfx for v in tmpl.get("shader_variants", []) for sfx in suffixes]
 gold = json.load(open(a.golden)) if os.path.exists(a.golden) else {"glslc": "", "variants": {}}
 bad = 0

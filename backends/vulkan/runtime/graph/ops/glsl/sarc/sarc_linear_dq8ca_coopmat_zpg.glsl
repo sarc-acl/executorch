@@ -11,8 +11,8 @@
  * activations, zero-point hoisted out of the group loop, dbuf4 pipeline.
  *
  * Template header only (bindings, spec constants, per-variant tile geometry);
- * the kernel is the untemplated sarc_linear_dq8ca_zpg_body.glslh, shared with the sweep twin
- * glsl/sarc_dev/sarc_linear_dq8ca_zpg_sweep.glsl, which must stay byte-identical to this
+ * the kernel is the untemplated sarc_linear_dq8ca_coopmat_zpg_body.glslh, shared with the sweep twin
+ * glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpg_sweep.glsl, which must stay byte-identical to this
  * file from the version directive on (sarc/tools/check.sh).
  *
  * Feature defines (yaml parameters, default off):
@@ -102,4 +102,4 @@ $if A_MULTI_BLOCK:
   #define A_MULTI_BLOCK
 const uint A_BLOCKS = ${A_BLOCKS};
 
-#include "sarc_linear_dq8ca_zpg_body.glslh"
+#include "sarc_linear_dq8ca_coopmat_zpg_body.glslh"

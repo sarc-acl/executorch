@@ -7,10 +7,18 @@
  */
 
 /*
- * SARC development zone: sweep twin of glsl/sarc/sarc_linear_dq8ca_zpgtr.glsl.
- * From the version directive on, this file must stay byte-identical to that
- * one (checked by sarc/tools/check.sh); only the template name (this file
- * name) and the variant list in the yaml differ.
+ * SARC dq8ca (8da4w) int8 cooperative-matrix linear, "zpgtr" family: row-major
+ * (kPackedInt8_4W) int8 activations staged by coopMatLoad/Store, zp hoisted.
+ *
+ * Template header only (bindings, spec constants, per-variant tile geometry);
+ * the kernel is the untemplated sarc_linear_dq8ca_coopmat_zpgtr_body.glslh, shared with the sweep twin
+ * glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpgtr_sweep.glsl, which must stay byte-identical to this
+ * file from the version directive on (sarc/tools/check.sh).
+ *
+ * Feature defines (yaml parameters, default off):
+ *   A_RAW       A staged as raw uvec4 global->LDS copies (GeForce)
+ *   B_PAIR      one weight texel feeds both nibble parities
+ *   CSH_IN_ASH  texture3d drain band staged in Ash_int8
  */
 
 #version 450 core
@@ -121,4 +129,4 @@ const uint SG_GRID_X = ${SG_GRID_X};
 const uint SG_GRID_Y = ${SG_GRID_Y};
 const uint SUBGROUP_SIZE = ${SUBGROUP_SIZE};
 
-#include "sarc_linear_dq8ca_zpgtr_body.glslh"
+#include "sarc_linear_dq8ca_coopmat_zpgtr_body.glslh"

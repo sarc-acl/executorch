@@ -4,10 +4,10 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-# SARC release zone: shipped zpg variants (rows in impl/sarc/table_<vendor>.cpp).
+# SARC development zone: zpg sweep candidates (the 1.4 B580 branch per-shape Xe2 tiles).
 
 
-sarc_linear_dq8ca_zpg:
+sarc_linear_dq8ca_coopmat_zpg_sweep:
   parameter_names_with_default_values:
     PRECISION: highp
     HAS_BIAS: false
@@ -27,29 +27,19 @@ sarc_linear_dq8ca_zpg:
     SG_GRID_Y: 2
     SUBGROUP_SIZE: 32
   shader_variants:
-    # Radeon 780M (RDNA3). 1.4 branch yanwen/release14-quant-shaders-780m.
-    - NAME: sarc_linear_dq8ca_zpg_t128x64k32g42s32_buffer_texture2d_half
-      A_MAP_FULL: true
-    - NAME: sarc_linear_dq8ca_zpg_t128x64k32g42s32_texture3d_texture2d_half
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k64g48s32m8_texture3d_texture2d_half
       IO_STORAGE: texture3d
-      A_MAP_FULL: true
-    # Intel Xe2 BMG G21/G31 (B580, B70): MMA 8x16x32, subgroup 16. 1.4 branches -b580/-b70.
-    - NAME: sarc_linear_dq8ca_zpg_t256x64k32g48s16m8_buffer_texture2d_half
-      WG_TILE_M: 256
+      WG_TILE_K: 64
       SG_GRID_X: 4
       SG_GRID_Y: 8
-      SUBGROUP_SIZE: 16
       MMA_M: 8
       MMA_K: 32
-      A_MAP_FULL: true
       A_MULTI_BLOCK: true
-    - NAME: sarc_linear_dq8ca_zpg_t256x64k32g48s16m8_texture3d_texture2d_half
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t128x128k32g48s32m8_texture3d_texture2d_half
       IO_STORAGE: texture3d
-      WG_TILE_M: 256
+      WG_TILE_N: 128
       SG_GRID_X: 4
       SG_GRID_Y: 8
-      SUBGROUP_SIZE: 16
       MMA_M: 8
       MMA_K: 32
-      A_MAP_FULL: true
       A_MULTI_BLOCK: true

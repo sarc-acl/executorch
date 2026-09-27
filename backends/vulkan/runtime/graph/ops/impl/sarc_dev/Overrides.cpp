@@ -11,8 +11,10 @@
 // every sarc_dev/ directory), so a release build has no env-var behaviour.
 //
 //   ET_VK_SARC_UNVERIFIED=1           also use rows marked kUnverified
-//   ET_VK_FORCE_TILED_LINEAR=1        SARC ops use their non-SARC fallback
-//                                     kernel (the tiled baseline)
+//   ET_VK_FORCE_TILED_LINEAR=1        SARC linear ops use their non-SARC
+//                                     fallback kernel (the tiled baseline;
+//                                     SDPA stays as selected, as on 1.4)
+//   ET_VK_DISABLE_COOPMAT=1           SARC SDPA ops use the upstream kernels
 //   ET_VK_SARC_Q4GSW_VARIANT=<tile>   use this sweep/release tile for 4w
 //                                     prefill wherever it fits, e.g.
 //                                     t128x128k32g24s32f32c; builds 4w on the
@@ -74,7 +76,12 @@ std::optional<Choice> dev_select(
     const DeviceInfo& device,
     const ShapeInfo& shape,
     const std::optional<Choice>& table_choice) {
-  if (env_true("ET_VK_FORCE_TILED_LINEAR")) {
+  const bool linear =
+      shape.op == Op::kQ4gswLinear || shape.op == Op::kDq8caLinear;
+  if (linear && env_true("ET_VK_FORCE_TILED_LINEAR")) {
+    return std::nullopt;
+  }
+  if (!linear && env_true("ET_VK_DISABLE_COOPMAT")) {
     return std::nullopt;
   }
   const std::string& want = requested_variant();

@@ -6,12 +6,12 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-// Body of sarc_linear_dq8ca_zpgtr; included by its template header (glsl/sarc/sarc_linear_dq8ca_zpgtr.glsl
+// Body of sarc_linear_dq8ca_coopmat_zpgtr; included by its template header (glsl/sarc/sarc_linear_dq8ca_coopmat_zpgtr.glsl
 // or the sweep twin), which defines bindings, spec constants and tile
 // constants. Must not contain template syntax.
 
-#ifndef SARC_LINEAR_DQ8CA_ZPGTR_BODY_GLSLH
-#define SARC_LINEAR_DQ8CA_ZPGTR_BODY_GLSLH
+#ifndef SARC_LINEAR_DQ8CA_COOPMAT_ZPGTR_BODY_GLSLH
+#define SARC_LINEAR_DQ8CA_COOPMAT_ZPGTR_BODY_GLSLH
 
 const uint NUM_SUBGROUPS = SG_GRID_X * SG_GRID_Y;
 const uint WG_SIZE = NUM_SUBGROUPS * SUBGROUP_SIZE;
@@ -729,4 +729,4 @@ void main() {
 #endif // IO_TEXTURE
 }
 
-#endif // SARC_LINEAR_DQ8CA_ZPGTR_BODY_GLSLH
+#endif // SARC_LINEAR_DQ8CA_COOPMAT_ZPGTR_BODY_GLSLH

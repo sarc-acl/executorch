@@ -94,7 +94,7 @@ struct Fixture {
   Rule rule8; // 8da4w
 };
 
-static const std::string kD = "sarc_linear_dq8ca_";
+static const std::string kD = "sarc_linear_dq8ca_coopmat_";
 static std::string none(const ShapeInfo&) {
   return "";
 }
@@ -254,6 +254,39 @@ int main(int argc, char** argv) {
     set_override(saved);
   }
 
+  // SDPA prefill rows: only the AMD wave64 devices (780M, M51); the QK^T
+  // (M=S, N=context, K=D) and attn*V (M=S, N=D, K=context) tiles.
+  for (const Fixture& f : fixtures) {
+    const bool amd = f.dev.is_amd;
+    for (Op op : {Op::kSdpaQk, Op::kSdpaAv}) {
+      const bool on = amd && active(f.dev, op);
+      ShapeInfo s;
+      s.op = op;
+      s.M = 2048;
+      s.N = op == Op::kSdpaQk ? 2048 : 64;
+      s.K = op == Op::kSdpaQk ? 64 : 2048;
+      s.group_size = s.K;
+      s.half = true;
+      s.input = s.output = s.weight = Storage::kBuffer;
+      const auto c = select(f.dev, s);
+      const std::string want = !on ? ""
+          : op == Op::kSdpaQk ? "sarc_sdpa_qk_coopmat_t128x64k32g22s64"
+                              : "sarc_sdpa_av_coopmat_t64x64k32g22s64";
+      EXPECT(
+          (c.has_value() ? c->kernel_base : "") == want,
+          "%s SDPA op %d: wrong choice",
+          f.label,
+          (int)op);
+      ShapeInfo g = s; // decode stays upstream
+      g.M = 1;
+      g.gemv = true;
+      EXPECT(!select(f.dev, g).has_value(), "%s SDPA decode", f.label);
+      ShapeInfo t = s; // texture storage stays upstream
+      t.input = t.output = Storage::kTexture3D;
+      EXPECT(!select(f.dev, t).has_value(), "%s SDPA texture", f.label);
+    }
+  }
+
   // Every kernel name the tables can produce must exist in a yaml.
   if (argc > 1) {
     std::string yamls;
@@ -272,8 +305,12 @@ int main(int argc, char** argv) {
         for (const auto& c : combos) {
           if (r.storages & c.first) {
             const std::string n = std::string(r.kernel_base) + c.second;
+            // Spelled out, or generated from the base name by the yaml's
+            // generate_variant_forall (storage/dtype suffixes).
             EXPECT(
-                yamls.find("NAME: " + n + "\n") != std::string::npos,
+                yamls.find("NAME: " + n + "\n") != std::string::npos ||
+                    yamls.find("NAME: " + std::string(r.kernel_base) + "\n") !=
+                        std::string::npos,
                 "no yaml variant %s",
                 n.c_str());
           }

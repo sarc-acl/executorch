@@ -29,6 +29,11 @@ namespace sarc {
 enum class Op {
   kQ4gswLinear, // 4w: fp16 activations, 4-bit group-symmetric weights
   kDq8caLinear, // 8da4w: dynamic int8 activations, 4-bit weights
+  // LLM-mode SDPA prefill (fp16 buffers). Shape mapping for the fit check:
+  // kSdpaQk: M = S, N = context_len, K = head_dim (attn = Q K^T);
+  // kSdpaAv: M = S, N = head_dim, K = context_len (out = attn V).
+  kSdpaQk,
+  kSdpaAv,
 };
 
 // Layout of the int8 activations of kDq8caLinear. The zpg kernels (and the
@@ -153,6 +158,10 @@ std::optional<Choice> select(const DeviceInfo& device, const ShapeInfo& shape);
 std::optional<Choice> select_table(
     const DeviceInfo& device,
     const ShapeInfo& shape);
+
+// Whether `device` has an active row for `op` (verified, or unverified when
+// the dev override allows it), regardless of shape.
+bool device_has_active_rows(const DeviceInfo& device, Op op);
 
 // Whether an op whose build-time shape is `shape` is built on the SARC path:
 // a row applies to it (or the dev override forces the path). Otherwise the op

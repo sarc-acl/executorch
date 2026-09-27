@@ -142,6 +142,15 @@ std::optional<Choice> select_table(
   return std::nullopt;
 }
 
+bool device_has_active_rows(const DeviceInfo& device, Op op) {
+  for (const Row& row : rows()) {
+    if (row.op == op && row_active(row) && row_matches_device(row, device)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool builds_on_sarc(const DeviceInfo& device, const ShapeInfo& shape) {
   return get_override().force_path || select_table(device, shape).has_value();
 }

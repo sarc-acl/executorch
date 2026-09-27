@@ -21,6 +21,7 @@
 
 #include <executorch/backends/vulkan/runtime/graph/ops/DynamicDispatchNode.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/ShaderNameUtils.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.h>
 
 #include <cmath>
 
@@ -240,6 +241,10 @@ vkapi::ShaderInfo pick_sdpa_qk_shader(
     const std::vector<ValueRef>& resize_args) {
   const SDPAMode mode = mode_of(resize_args);
   if (mode == SDPAMode::LLM) {
+    // SARC: coopmat QK^T on devices with an active SDPA row.
+    if (auto sarc_shader = sarc::pick_sdpa_qk(graph, args, resize_args)) {
+      return *sarc_shader;
+    }
     const ValueRef q_projected = args.at(1).refs.at(0);
     const ValueRef k_cache = args.at(1).refs.at(1);
     const bool is_gemv = is_single_token(graph, q_projected);
@@ -270,6 +275,9 @@ GlobalWorkGrid pick_sdpa_qk_gwg(
     const vkapi::ShaderInfo& shader,
     const std::vector<ArgGroup>& args,
     const std::vector<ValueRef>& resize_args) {
+  if (auto sarc_gwg = sarc::sdpa_gwg(graph, shader, resize_args)) { // SARC
+    return *sarc_gwg;
+  }
   (void)args;
   const SDPAMode mode = mode_of(resize_args);
   const ValueRef q = resize_args.at(0);
@@ -335,6 +343,10 @@ vkapi::ShaderInfo pick_sdpa_av_shader(
     const std::vector<ValueRef>& resize_args) {
   const SDPAMode mode = mode_of(resize_args);
   if (mode == SDPAMode::LLM) {
+    // SARC: coopmat attn*V on devices with an active SDPA row.
+    if (auto sarc_shader = sarc::pick_sdpa_av(graph, args, resize_args)) {
+      return *sarc_shader;
+    }
     const ValueRef out = args.at(0).refs.at(0);
     const ValueRef v_cache = args.at(1).refs.at(1);
     const ValueRef q_projected = resize_args.at(0);
@@ -390,6 +402,9 @@ GlobalWorkGrid pick_sdpa_av_gwg(
     const vkapi::ShaderInfo& shader,
     const std::vector<ArgGroup>& args,
     const std::vector<ValueRef>& resize_args) {
+  if (auto sarc_gwg = sarc::sdpa_gwg(graph, shader, resize_args)) { // SARC
+    return *sarc_gwg;
+  }
   const SDPAMode mode = mode_of(resize_args);
   const ValueRef q = resize_args.at(0);
   const ValueRef k = resize_args.at(1);
@@ -521,8 +536,11 @@ void add_sdpa_compute_attn_weights_node(
       param_ubos,
       // Push Constants
       {},
-      // Specialization Constants
-      {scale_val},
+      // Specialization Constants (SARC: appends the coopmat kernel's
+      // constants on devices with an SDPA row)
+      mode == SDPAMode::LLM
+          ? sarc::sdpa_qk_spec_vars(graph, q, input_pos_symint, {scale_val})
+          : vkapi::SpecVarList{scale_val},
       // Resize Args: [q, k, input_pos_symint_or_dummy, mode]
       {q, k, input_pos_symint, mode_ref},
       // Resizing Logic
@@ -543,6 +561,8 @@ void add_sdpa_attn_weights_softmax_node(
     add_storage_type_suffix(
         shader_name, graph.storage_type_of(attn_weights_softmax));
     add_dtype_suffix(shader_name, graph.dtype_of(attn_weights_softmax));
+    // SARC: causally truncated copy on devices with an SDPA row.
+    shader_name = sarc::sdpa_softmax_shader_name(graph, shader_name);
   } else {
     shader_name = "fused_sdpa_softmax";
     add_storage_type_suffix(
@@ -619,6 +639,8 @@ void add_sdpa_compute_out_node(
           utils::safe_downcast<int32_t>(num_q_heads / num_kv_heads);
       spec_vars = {1.0f, group_size};
     }
+    // SARC: appends the coopmat kernel's constants on devices with a row.
+    spec_vars = sarc::sdpa_av_spec_vars(graph, q, v, spec_vars);
   }
 
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(

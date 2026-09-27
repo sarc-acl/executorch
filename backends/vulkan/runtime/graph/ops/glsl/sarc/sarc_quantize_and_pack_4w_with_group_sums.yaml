@@ -7,7 +7,7 @@
 # Row-major (kPackedInt8_4W) counterpart of
 # quantize_and_pack_4h4w_with_group_sums. Same quantization, same per-group
 # sum reduction, same workgroup shapes -- only the output layout differs.
-# Consumed by the SARC zpgtr dq8ca kernels (glsl/sarc/sarc_linear_dq8ca_zpgtr), whose
+# Consumed by the SARC zpgtr dq8ca kernels (glsl/sarc/sarc_linear_dq8ca_coopmat_zpgtr), whose
 # coopmat-staged A path needs a row-major int8 activation buffer that a
 # coopMatLoad can address. Buffer output only.
 #

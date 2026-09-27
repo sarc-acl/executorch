@@ -7,18 +7,10 @@
  */
 
 /*
- * SARC dq8ca (8da4w) int8 cooperative-matrix linear, "zpgtr" family: row-major
- * (kPackedInt8_4W) int8 activations staged by coopMatLoad/Store, zp hoisted.
- *
- * Template header only (bindings, spec constants, per-variant tile geometry);
- * the kernel is the untemplated sarc_linear_dq8ca_zpgtr_body.glslh, shared with the sweep twin
- * glsl/sarc_dev/sarc_linear_dq8ca_zpgtr_sweep.glsl, which must stay byte-identical to this
- * file from the version directive on (sarc/tools/check.sh).
- *
- * Feature defines (yaml parameters, default off):
- *   A_RAW       A staged as raw uvec4 global->LDS copies (GeForce)
- *   B_PAIR      one weight texel feeds both nibble parities
- *   CSH_IN_ASH  texture3d drain band staged in Ash_int8
+ * SARC development zone: sweep twin of glsl/sarc/sarc_linear_dq8ca_coopmat_zpg.glsl.
+ * From the version directive on, this file must stay byte-identical to that
+ * one (checked by sarc/tools/check.sh); only the template name (this file
+ * name) and the variant list in the yaml differ.
  */
 
 #version 450 core
@@ -28,10 +20,6 @@
 #extension GL_KHR_shader_subgroup_basic : enable
 #extension GL_EXT_shader_explicit_arithmetic_types : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
-// 8-bit SSBO access: A is bound as a scalar int8_t array so that the
-// coopMatLoad below has a MATCHING component type (see dbuf4tr's header for
-// why the type must match on this driver).
-#extension GL_EXT_shader_8bit_storage : require
 #extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
 #extension GL_EXT_control_flow_attributes : enable
 
@@ -39,6 +27,15 @@
 
 $if WEIGHT_NBITS == 4:
   #define WEIGHT_INT4
+
+// INTERVENTION G: when the A staging thread map exactly covers the workgroup
+// (A_ACTIVE_THREADS == WG_SIZE) the `a_active` guard is statically always true,
+// but the driver compiler does not fold it -- gl_LocalInvocationID.x's bound
+// comes from a spec constant, so the comparison survives into the hot loop as a
+// real branch. Set A_MAP_FULL only for tiles where the equality has been
+// checked arithmetically; the yaml records the arithmetic per variant.
+$if A_MAP_FULL:
+  #define A_ALWAYS_ACTIVE
 
 $if HAS_BIAS:
   #define HAS_BIAS
@@ -48,27 +45,6 @@ $if WEIGHT_STORAGE == "buffer":
 
 $if IO_STORAGE == "texture3d":
   #define IO_TEXTURE
-
-// RTX 4070 Ti SUPER tuning (2026-09-26). Differential timing (each stage
-// removed in turn) and nsys GPU metrics on the 4070 Ti showed the int8 MMA
-// loop idle ~70% of the time, dominated by staging rather than by the MMAs.
-//
-// A_RAW: stage A as raw 16-byte vectors (uvec4 global load -> uvec4 LDS
-// store) instead of coopMatLoad(global) -> coopMatStore(LDS). Ash_int8
-// becomes a uvec4 array so each store is one 128-bit LDS store. Needs
-// WG_TILE_M * WG_TILE_K / 16 to be a multiple of the workgroup size.
-$if A_RAW:
-  #define A_RAW
-// B_PAIR: one weight texel fetch feeds both nibble parities of one component
-// (output columns c and c + 4): half the fetches and half the prefetch
-// registers of the one-uint-per-slot map.
-$if B_PAIR:
-  #define B_PAIR
-// CSH_IN_ASH: stage the texture-IO drain band in Ash_int8, which is dead after
-// the last MMA (every drain iteration starts with a barrier). Frees the
-// Csh_out array so a WG_TILE_K = 64 tile fits the 48 KiB shared-memory limit.
-$if CSH_IN_ASH:
-  #define CSH_IN_ASH
 
 layout(std430) buffer;
 
@@ -83,20 +59,7 @@ ${layout_declare_tensor(B, "w", "t_output",              "half", IO_STORAGE, is_
 // t_packed_int8_input -- but stays declared so the binding layout matches the
 // dispatch site. It tracks IO_STORAGE so the two IO tensors stay consistent.
 ${layout_declare_tensor(B, "r", "t_input",               "half", IO_STORAGE, is_scalar_array=False)}
-// ROW-MAJOR (kPackedInt8_4W) packed activations, bound as a scalar int8_t
-// array (row stride = K int8) -- dbuf4tr's binding, unchanged. The stock
-// 4h4w layout dbuf4zpg uses is NOT row-major (component index selects a row,
-// non-affine), so it cannot be addressed by any coopMatLoad.
-${layout_declare_tensor(B, "r", "t_packed_int8_input",   "int8", "buffer", is_scalar_array=True)}
-#ifdef A_RAW
-// uvec4 view of binding 2 (t_packed_int8_input) for 16-byte A staging.
-// Spelled layout(std430, set...) on purpose: gen_vulkan_spv.py collects the
-// descriptor list from every line matching ^layout\(set regardless of #ifdef,
-// so the usual spelling would add a 13th descriptor to every variant.
-layout(std430, set = 0, binding = 2) buffer restrict readonly t_packed_int8_input_v4Buffer {
-  uvec4 t_packed_int8_input_v4[];
-};
-#endif
+${layout_declare_tensor(B, "r", "t_packed_int8_input",   "int",  "buffer", is_scalar_array=False)}
 ${layout_declare_tensor(B, "r", "t_int8_input_sums",     "int",  "buffer", is_scalar_array=True)}
 ${layout_declare_tensor(B, "r", "t_int8_input_scales",   "half", "texture3d")}
 ${layout_declare_tensor(B, "r", "t_int8_input_zps",      "int8", "texture3d")}
@@ -128,5 +91,8 @@ const uint WG_TILE_K = ${WG_TILE_K};
 const uint SG_GRID_X = ${SG_GRID_X};
 const uint SG_GRID_Y = ${SG_GRID_Y};
 const uint SUBGROUP_SIZE = ${SUBGROUP_SIZE};
+$if A_MULTI_BLOCK:
+  #define A_MULTI_BLOCK
+const uint A_BLOCKS = ${A_BLOCKS};
 
-#include "sarc_linear_dq8ca_zpgtr_body.glslh"
+#include "sarc_linear_dq8ca_coopmat_zpg_body.glslh"

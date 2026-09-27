@@ -44,7 +44,7 @@ const Row kAmdRows[] = {
     {"780m",
      amd_wave64,
      Op::kDq8caLinear,
-     "sarc_linear_dq8ca_zpg_t128x64k32g42s32",
+     "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32",
      {128, 64, 32, 4, 2, 32, 16, false},
      kTex3dTex2d | kBufTex2d,
      nullptr,
@@ -63,12 +63,51 @@ const Row kAmdRows[] = {
     {"xclipse",
      amd_wave64,
      Op::kDq8caLinear,
-     "sarc_linear_dq8ca_zpgtr_t128x64k32g42s32",
+     "sarc_linear_dq8ca_coopmat_zpgtr_t128x64k32g42s32",
      {128, 64, 32, 4, 2, 32, 16, false},
      kTex3dTex2d | kBufTex2d,
      nullptr,
      Status::kUnverified,
      /*rowmajor_a=*/true},
+
+    // Radeon 780M: SDPA prefill coopmat (QK^T, attn*V; the softmax truncation comes
+    // with them). 1.4 SARC branches; on the 780M it recovers ~307 ms of the
+    // 1B 2048-token prefill (.artifacts/sarc-1.5/sdpa-gap/REPORT.md).
+    {"780m",
+     amd_wave64,
+     Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_t128x64k32g22s64",
+     {128, 64, 32, 2, 2, 64, 16, false},
+     kBufBuf,
+     nullptr,
+     Status::kUnverified},
+    {"780m",
+     amd_wave64,
+     Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_t64x64k32g22s64",
+     {64, 64, 32, 2, 2, 64, 16, false},
+     kBufBuf,
+     nullptr,
+     Status::kUnverified},
+    // Samsung Xclipse (M51): SDPA prefill coopmat (QK^T, attn*V; the softmax truncation comes
+    // with them). 1.4 SARC branches; on the 780M it recovers ~307 ms of the
+    // 1B 2048-token prefill (.artifacts/sarc-1.5/sdpa-gap/REPORT.md).
+    {"xclipse",
+     amd_wave64,
+     Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_t128x64k32g22s64",
+     {128, 64, 32, 2, 2, 64, 16, false},
+     kBufBuf,
+     nullptr,
+     Status::kUnverified},
+    {"xclipse",
+     amd_wave64,
+     Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_t64x64k32g22s64",
+     {64, 64, 32, 2, 2, 64, 16, false},
+     kBufBuf,
+     nullptr,
+     Status::kUnverified},
 };
 
 struct Registrar {

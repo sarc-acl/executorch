@@ -13,3 +13,4 @@ backends/vulkan/runtime/graph/containers/SharedObject.cpp   backport  03f41d2031
 backends/vulkan/runtime/graph/ops/impl/Squeeze.cpp          backport  03f41d2031 <algorithm> include (GCC 15+), upstream main
 backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.cpp  hook      sarc::try_add_dq8ca_coopmat at the top of linear_dq8ca_q4gsw
 backends/vulkan/runtime/graph/ops/glsl/linear_int8_input_block.glslh  hook  SKIP_BLOCK_WRITE_HELPERS guard (row-major packer); no-op when undefined
+backends/vulkan/runtime/graph/ops/impl/SDPA.cpp            hook      sarc:: SDPA pickers, workgroups, spec constants, softmax name (LLM mode)
