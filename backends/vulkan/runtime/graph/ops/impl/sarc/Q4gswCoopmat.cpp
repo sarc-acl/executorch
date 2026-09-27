@@ -58,6 +58,9 @@ DeviceInfo device_info(ComputeGraph* graph) {
   });
   d.is_amd = graph->device_is_amd();
   d.subgroup_size = adapter->subgroup_size();
+  d.min_subgroup_size = adapter->min_subgroup_size();
+  d.max_subgroup_size = adapter->max_subgroup_size();
+  d.subgroup_size_control = adapter->supports_subgroup_size_control();
   d.coopmat = adapter->supports_cooperative_matrix();
   d.max_shared_bytes = adapter->max_compute_shared_memory_size();
   return d;
@@ -144,6 +147,49 @@ GlobalWorkGrid sarc_q4gsw_gwg(
       LocalWorkGroup(wg_size, 1u, 1u));
 }
 
+// The storage prepack_quantized_linear_weight() (QuantizedLinear.cpp) picks
+// for a 4-bit weight: texture2d unless the packed extents exceed the limit.
+utils::StorageType predicted_weight_storage(
+    ComputeGraph& graph,
+    const ValueRef weight_data) {
+  const std::vector<int64_t> sizes = graph.sizes_of(weight_data);
+  const int64_t K = utils::val_at(-1, sizes) * 2;
+  const int64_t N = utils::val_at(-2, sizes);
+  const int64_t height = utils::div_up(N, int64_t(8));
+  const int64_t width = utils::div_up(K, int64_t(4)) * 4;
+  const uint32_t max_extent = graph.context()->adapter_ptr()->max_texture2d_dim();
+  return (width > int64_t(max_extent) * 4 || height > int64_t(max_extent))
+      ? utils::kBuffer
+      : utils::kTexture2D;
+}
+
+// args: {input, weight, weight_scales, group_size, bias, output}
+ShapeInfo build_time_shape(
+    ComputeGraph& graph,
+    const std::vector<ValueRef>& args) {
+  const ValueRef fp_input = args.at(0);
+  const ValueRef output = args.at(5);
+  const std::vector<int64_t> out_sizes = graph.sizes_of(output);
+  ShapeInfo s;
+  s.op = Op::kQ4gswLinear;
+  s.N = utils::val_at(-1, out_sizes);
+  s.M = utils::val_at(-2, out_sizes);
+  s.K = utils::val_at(-1, graph.sizes_of(fp_input));
+  s.group_size = graph.extract_scalar<int64_t>(args.at(3));
+  for (int64_t d = 0; d < graph.dim_of(output) - 2; d++) {
+    s.batch *= utils::val_at(d, out_sizes);
+  }
+  s.gemv = is_gemv(&graph, fp_input);
+  s.has_bias = !graph.val_is_none(args.at(4));
+  s.half = graph.dtype_of(output) == vkapi::kHalf;
+  s.input = to_storage(graph.storage_type_of(fp_input));
+  s.output = to_storage(graph.storage_type_of(output));
+  s.weight = to_storage(predicted_weight_storage(graph, args.at(1)));
+  s.io_width_packed = graph.packed_dim_of(output) == WHCN::kWidthDim &&
+      graph.packed_dim_of(fp_input) == WHCN::kWidthDim;
+  return s;
+}
+
 } // namespace
 
 bool try_add_q4gsw_coopmat(
@@ -160,7 +206,11 @@ bool try_add_q4gsw_coopmat(
   if (graph.dtype_of(fp_input) != vkapi::kHalf) {
     return false;
   }
-  if (!device_has_rows(device_info(&graph), Op::kQ4gswLinear)) {
+  // Take the op over only if a row applies to its build-time shape; else it
+  // stays entirely on the upstream path (whose kernels, e.g. the release-1.5
+  // TIN GEMM, can be more accurate than this path's tiled fallback).
+  if (!builds_on_sarc(
+          device_info(&graph), build_time_shape(graph, args))) {
     return false;
   }
 

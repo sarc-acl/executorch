@@ -27,6 +27,10 @@ sarc_linear_q4gsw_coopmat:
     SUBGROUP_SIZE: 32
     ACC_FP32: false
     CSH_IN_ASH: false
+    ACC_GROUP_FP32: false
+    FRAG_LAYOUT: false
+    IMG_A: false
+    IMG_W: false
   shader_variants:
     # Radeon 780M (RDNA3, RADV). fp32 accumulate ('f32') and the texture3d
     # drain staged in Ash ('c'). 1.4 study: igpu-roofline docs/780M-WMMA-LESSONS.md.
@@ -43,3 +47,81 @@ sarc_linear_q4gsw_coopmat:
       WEIGHT_STORAGE: buffer
       ACC_FP32: true
       CSH_IN_ASH: true
+    # Intel Arc B580 (BMG G21) / Arc Pro B70 (BMG G31), Xe2. Subgroup 16
+    # (SIMD16 DPAS, no spills), MMA_M 8 (the only fp16 shape Xe2 exposes),
+    # fragment-contiguous LDS and imageLoad A. 1.4 study: igpu-roofline
+    # docs/XE2-WMMA-LESSONS.md.
+    - NAME: sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 8
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      FRAG_LAYOUT: true
+      IMG_A: true
+    - NAME: sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 8
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      FRAG_LAYOUT: true
+      IMG_A: true
+    # NVIDIA RTX 4070 Ti SUPER. fp16 MMA per quantization group with an fp32
+    # total ('ga'); per-shape tiles. 1.4 study: docs/4070TI-WMMA-LESSONS.md.
+    - NAME: sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 256
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      ACC_GROUP_FP32: true
+    - NAME: sarc_linear_q4gsw_coopmat_t128x128k16g24s32ga_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      ACC_GROUP_FP32: true
+    - NAME: sarc_linear_q4gsw_coopmat_t128x256k16g42s32ga_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_N: 256
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      ACC_GROUP_FP32: true
+    - NAME: sarc_linear_q4gsw_coopmat_t128x128k16g42s32ga_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      ACC_GROUP_FP32: true
+    - NAME: sarc_linear_q4gsw_coopmat_t128x128k16g42s32ga_buffer_buffer_half
+      WEIGHT_STORAGE: buffer
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      ACC_GROUP_FP32: true
+    # NVIDIA Jetson Orin (Tegra Orin). texture3d only; fp32 accumulate for
+    # K > 8192. Study: docs/JETSON-WMMA-LESSONS.md.
+    - NAME: sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      ACC_FP32: true
+    - NAME: sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 256
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+    - NAME: sarc_linear_q4gsw_coopmat_t128x128k16g22s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 2

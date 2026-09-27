@@ -36,7 +36,8 @@ const Row kAmdRows[] = {
      Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c",
      k780mDims,
-     /*allow_texture_io=*/true,
+     kTex3dTex2d | kBufTex2d | kBufBuf,
+     /*shape_ok=*/nullptr,
      Status::kVerified},
 };
 
