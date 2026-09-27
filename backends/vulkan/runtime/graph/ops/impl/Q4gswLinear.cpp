@@ -13,6 +13,7 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Common.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Preprocess.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Staging.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/Q4gswCoopmat.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/ShaderNameUtils.h>
 
 namespace vkcompute {
@@ -634,6 +635,10 @@ void add_q4gsw_linear_tin_w_4x8_node(
 }
 
 void q4gsw_linear(ComputeGraph& graph, const std::vector<ValueRef>& args) {
+  // SARC: devices with an active SARC row take the SARC coopmat path.
+  if (sarc::try_add_q4gsw_coopmat(graph, args)) {
+    return;
+  }
   int32_t idx = 0;
   const ValueRef fp_input = args.at(idx++);
   const ValueRef weight_data = args.at(idx++);
