@@ -722,25 +722,39 @@ vkapi::ShaderInfo pick_linear_dqa_qw_shader(
   const ValueRef out = args.at(0).refs.at(0);
   const ValueRef fp_input = args.at(1).refs.at(0);
   const ValueRef int_input = args.at(1).refs.at(1);
-  (void)int_input;
   const ValueRef input_zp = args.at(1).refs.at(4);
   const ValueRef int_weight = args.at(1).refs.at(5);
 
   const bool weight_is_4bit = resize_args.at(0) != kDummyValueRef;
   const bool is_gemv_case = is_gemv(graph, fp_input);
 
+  // The activation layout is fixed at graph build (quantized_linear_impl()
+  // chose row-major kPackedInt8_4W because a "-tr" coopmat kernel was eligible
+  // at the build-time sizes), but this function runs again on every resize.
+  // With a dynamic sequence length, a prompt whose M is not a multiple of the
+  // tile (or M == 1) used to fail the alignment check here and fall back to
+  // the tiled / gemv kernel, which reads the 4h4w layout: garbage output
+  // (Radeon 780M with the shipped tsweep_dbuf4zpgtr default, Llama 1B 8da4w:
+  // the same wrong next token for any prompt length % 128 != 0). Only the
+  // coopmat kernel reads row-major activations, so keep it. Its buffers were
+  // allocated for the aligned build-time sizes and the grid rounds M up, so a
+  // partial last tile stays in bounds; the extra rows are never read back.
+  const bool rowmajor_a = weight_is_4bit &&
+      graph->estimate_memory_layout_of(int_input) == utils::kPackedInt8_4W;
+
   // Use the coopmat<int8> shader for 4-bit dq8ca dispatches when the device
   // enumerates VK_COMPONENT_TYPE_SINT8_KHR in its cooperative matrix property
   // list and the shape aligns; tiled otherwise. The eligibility test lives in
   // dq8ca_coopmat_dispatch_eligible() because quantized_linear_impl() has to
   // ask the same question at graph-build time to pick the activation layout.
-  if (weight_is_4bit &&
-      dq8ca_coopmat_dispatch_eligible(
-          graph,
-          out,
-          fp_input,
-          resize_args.at(2),
-          graph->extract_scalar<int64_t>(resize_args.at(0)))) {
+  if (rowmajor_a ||
+      (weight_is_4bit &&
+       dq8ca_coopmat_dispatch_eligible(
+           graph,
+           out,
+           fp_input,
+           resize_args.at(2),
+           graph->extract_scalar<int64_t>(resize_args.at(0))))) {
     std::string kernel_name = "linear_dq8ca_q4gsw_coopmat";
     const std::string& dq8ca_variant = dq8ca_coopmat_variant();
     if (!dq8ca_variant.empty()) {
