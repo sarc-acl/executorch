@@ -1,0 +1,45 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# SARC development zone: zpgtr sweep candidates (1.4 4070 Ti branch tiles).
+
+
+sarc_linear_dq8ca_zpgtr_sweep:
+  parameter_names_with_default_values:
+    PRECISION: highp
+    HAS_BIAS: false
+    IO_STORAGE: buffer
+    WEIGHT_NBITS: 4
+    WEIGHT_STORAGE: texture2d
+    MMA_M: 16
+    MMA_N: 16
+    MMA_K: 16
+    WG_TILE_M: 128
+    WG_TILE_N: 64
+    WG_TILE_K: 32
+    SG_GRID_X: 4
+    SG_GRID_Y: 2
+    SUBGROUP_SIZE: 32
+    A_RAW: false
+    B_PAIR: false
+    CSH_IN_ASH: false
+  shader_variants:
+    - NAME: sarc_linear_dq8ca_zpgtr_sweep_t128x128k32g44s32mk32_buffer_texture2d_half
+      WG_TILE_N: 128
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      MMA_K: 32
+    - NAME: sarc_linear_dq8ca_zpgtr_sweep_t128x128k32g44s32mk32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_N: 128
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      MMA_K: 32
+    - NAME: sarc_linear_dq8ca_zpgtr_sweep_t128x64k32g42s32mk32_buffer_texture2d_half
+      MMA_K: 32
+    - NAME: sarc_linear_dq8ca_zpgtr_sweep_t128x64k32g42s32mk32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      MMA_K: 32

@@ -77,6 +77,16 @@ bool q4gsw_coopmat_fits(
   if (!device.coopmat) {
     return false;
   }
+  if (shape.op == Op::kDq8caLinear) {
+    if (!device.int8_coopmat) {
+      return false;
+    }
+    const Int8Layout want =
+        row.rowmajor_a ? Int8Layout::kRowMajor : Int8Layout::k4H4W;
+    if (shape.int8_layout != Int8Layout::kAny && shape.int8_layout != want) {
+      return false;
+    }
+  }
   // The pipeline requires the variant's subgroup size.
   if (dims.subgroup_size != device.subgroup_size &&
       !(device.subgroup_size_control &&
@@ -109,8 +119,9 @@ bool q4gsw_coopmat_fits(
   if ((combo & row.storages) == 0) {
     return false;
   }
-  if (shape.M % dims.m != 0 || shape.N % dims.n != 0 ||
-      shape.K % dims.k != 0 || shape.group_size % dims.k != 0) {
+  if (!shape.ignore_alignment &&
+      (shape.M % dims.m != 0 || shape.N % dims.n != 0 ||
+       shape.K % dims.k != 0 || shape.group_size % dims.k != 0)) {
     return false;
   }
   return row.shape_ok == nullptr || row.shape_ok(shape);
@@ -125,7 +136,7 @@ std::optional<Choice> select_table(
       continue;
     }
     if (q4gsw_coopmat_fits(device, shape, row)) {
-      return Choice{row.kernel_base, row.dims};
+      return Choice{row.kernel_base, row.dims, row.rowmajor_a};
     }
   }
   return std::nullopt;

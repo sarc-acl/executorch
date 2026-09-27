@@ -21,10 +21,15 @@ ap.add_argument("--update", action="store_true"); ap.add_argument("--owner", def
 ap.add_argument("--prefix", default=""); ap.add_argument("--glslc", default="")
 a = ap.parse_args()
 
+import itertools
 names = []
 for y in sorted(glob.glob(f"{root}/backends/vulkan/runtime/graph/ops/glsl/sarc/*.yaml")):
     for tmpl in yaml.safe_load(open(y)).values():
-        names += [v["NAME"] for v in tmpl.get("shader_variants", [])]
+        # generate_variant_forall appends _<VALUE> per key, in key order.
+        forall = tmpl.get("generate_variant_forall") or {}
+        suffixes = ["".join("_" + x["VALUE"] for x in combo)
+                    for combo in itertools.product(*forall.values())] or [""]
+        names += [v["NAME"] + sfx for v in tmpl.get("shader_variants", []) for sfx in suffixes]
 gold = json.load(open(a.golden)) if os.path.exists(a.golden) else {"glslc": "", "variants": {}}
 bad = 0
 for n in names:

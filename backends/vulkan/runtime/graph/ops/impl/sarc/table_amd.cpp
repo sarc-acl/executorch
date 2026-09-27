@@ -39,6 +39,36 @@ const Row kAmdRows[] = {
      kTex3dTex2d | kBufTex2d | kBufBuf,
      /*shape_ok=*/nullptr,
      Status::kVerified},
+    // Radeon 780M 8da4w: zpg (4h4w activations), full A map. 1.4 branch
+    // yanwen/release14-quant-shaders-780m: 1B prefill 2151 -> 2538 tok/s.
+    {"780m",
+     amd_wave64,
+     Op::kDq8caLinear,
+     "sarc_linear_dq8ca_zpg_t128x64k32g42s32",
+     {128, 64, 32, 4, 2, 32, 16, false},
+     kTex3dTex2d | kBufTex2d,
+     nullptr,
+     Status::kUnverified},
+
+    // Samsung Xclipse (M51): the 1.4 dev branch defaults (tuned there; owned by
+    // the M51 agent, not verified on release 1.5).
+    {"xclipse",
+     amd_wave64,
+     Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_t128x128k16g22s32",
+     {128, 128, 16, 2, 2, 32, 16, false},
+     kTex3dTex2d | kBufTex2d | kBufBuf,
+     nullptr,
+     Status::kUnverified},
+    {"xclipse",
+     amd_wave64,
+     Op::kDq8caLinear,
+     "sarc_linear_dq8ca_zpgtr_t128x64k32g42s32",
+     {128, 64, 32, 4, 2, 32, 16, false},
+     kTex3dTex2d | kBufTex2d,
+     nullptr,
+     Status::kUnverified,
+     /*rowmajor_a=*/true},
 };
 
 struct Registrar {

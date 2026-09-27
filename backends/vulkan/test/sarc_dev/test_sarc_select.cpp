@@ -54,6 +54,7 @@ static DeviceInfo device(
   d.max_subgroup_size = sg_max;
   d.subgroup_size_control = true;
   d.coopmat = true;
+  d.int8_coopmat = true;
   d.max_shared_bytes = 65536;
   return d;
 }
@@ -89,12 +90,19 @@ using Rule = std::function<std::string(const ShapeInfo&)>;
 struct Fixture {
   const char* label;
   DeviceInfo dev;
-  Rule rule;
+  Rule rule; // 4w
+  Rule rule8; // 8da4w
 };
 
-static bool active(const DeviceInfo& d) {
+static const std::string kD = "sarc_linear_dq8ca_";
+static std::string none(const ShapeInfo&) {
+  return "";
+}
+
+static bool active(const DeviceInfo& d, Op op) {
   for (const Row& r : rows()) {
-    if ((r.status == Status::kVerified || get_override().allow_unverified) &&
+    if (r.op == op &&
+        (r.status == Status::kVerified || get_override().allow_unverified) &&
         d.name.find(r.device_substr) != std::string::npos &&
         (r.device_ok == nullptr || r.device_ok(d))) {
       return true;
@@ -107,13 +115,16 @@ int main(int argc, char** argv) {
   const Fixture fixtures[] = {
       {"780M",
        device("amd radeon 780m graphics (radv phoenix)", true, 64, 32, 64),
-       [](const ShapeInfo&) { return kQ + "t128x128k32g42s32f32c"; }},
+       [](const ShapeInfo&) { return kQ + "t128x128k32g42s32f32c"; },
+       [](const ShapeInfo&) { return kD + "zpg_t128x64k32g42s32"; }},
       {"B580",
        device("intel(r) arc(tm) b580 graphics (bmg g21)", false, 32, 8, 32),
-       [](const ShapeInfo&) { return kQ + "t128x128k16g44s16m8fli"; }},
+       [](const ShapeInfo&) { return kQ + "t128x128k16g44s16m8fli"; },
+       [](const ShapeInfo&) { return kD + "zpg_t256x64k32g48s16m8"; }},
       {"B70",
        device("intel(r) graphics (bmg g31)", false, 32, 8, 32),
-       [](const ShapeInfo&) { return kQ + "t128x128k16g44s16m8fli"; }},
+       [](const ShapeInfo&) { return kQ + "t128x128k16g44s16m8fli"; },
+       [](const ShapeInfo&) { return kD + "zpg_t256x64k32g48s16m8"; }},
       {"4070TiS",
        device("nvidia geforce rtx 4070 ti super", false, 32, 32, 32),
        [](const ShapeInfo& s) {
@@ -127,7 +138,8 @@ int main(int argc, char** argv) {
              (s.M % 128 == 0 && s.N % 256 == 0 && s.N > 512
                   ? "t128x256k16g42s32ga"
                   : "t128x128k16g42s32ga");
-       }},
+       },
+       [](const ShapeInfo&) { return kD + "zpgtr_t128x128k64g44s32mk32ra"; }},
       {"Orin",
        device("nvidia tegra orin (nvgpu)", false, 32, 32, 32),
        [](const ShapeInfo& s) -> std::string {
@@ -142,19 +154,32 @@ int main(int argc, char** argv) {
            return kQ + "t256x128k16g22s32";
          }
          return kQ + "t128x128k16g22s32";
+       },
+       [](const ShapeInfo& s) -> std::string {
+         return s.output == Storage::kTexture3D
+             ? kD + "zpgtr_t128x128k64g44s32mk32ra"
+             : "";
        }},
+      {"M51",
+       device("samsung xclipse 940", true, 64, 32, 64),
+       [](const ShapeInfo&) { return kQ + "t128x128k16g22s32"; },
+       [](const ShapeInfo&) { return kD + "zpgtr_t128x64k32g42s32"; }},
       {"GenericNoRows",
        device("some other gpu", false, 32, 32, 32),
-       [](const ShapeInfo&) { return std::string(); }},
+       none,
+       none},
   };
 
   for (const Fixture& f : fixtures) {
-    const bool on = active(f.dev);
+   for (Op op : {Op::kQ4gswLinear, Op::kDq8caLinear}) {
+    const bool on = active(f.dev, op);
+    const Rule& rule = op == Op::kQ4gswLinear ? f.rule : f.rule8;
     for (const auto& kn : kShapes) {
       for (Storage io : {Storage::kTexture3D, Storage::kBuffer}) {
-        const ShapeInfo s = prefill(2048, kn[0], kn[1], io);
+        ShapeInfo s = prefill(2048, kn[0], kn[1], io);
+        s.op = op;
         const auto c = select(f.dev, s);
-        const std::string want = on ? f.rule(s) : "";
+        const std::string want = on ? rule(s) : "";
         const std::string got = c.has_value() ? c->kernel_base : "";
         EXPECT(
             got == want,
@@ -173,6 +198,7 @@ int main(int argc, char** argv) {
             (long long)kn[1]);
       }
     }
+   }
     // Shapes no SARC variant may take, on every device.
     Override saved = get_override();
     Override all = saved;
@@ -180,6 +206,37 @@ int main(int argc, char** argv) {
     all.select = nullptr;
     set_override(all);
     ShapeInfo s = prefill(2048, 4096, 4096, Storage::kTexture3D);
+    // A row-major dq8ca row must still serve decode / unaligned M when the
+    // alignment check is waived (the forced path of pick_sarc_dq8ca_shader).
+    {
+      ShapeInfo r = s;
+      r.op = Op::kDq8caLinear;
+      r.int8_layout = Int8Layout::kRowMajor;
+      r.M = 1304;
+      r.ignore_alignment = true;
+      const auto c = select_table(f.dev, r);
+      const auto aligned = [&] {
+        ShapeInfo a = r;
+        a.M = 2048;
+        a.ignore_alignment = false;
+        return select_table(f.dev, a);
+      }();
+      if (aligned.has_value() && aligned->rowmajor_a) {
+        EXPECT(
+            c.has_value() && c->kernel_base == aligned->kernel_base,
+            "%s: forced row-major path lost its kernel",
+            f.label);
+      }
+      ShapeInfo w = r; // wrong layout for a row-major row
+      w.M = 2048;
+      w.ignore_alignment = false;
+      w.int8_layout = Int8Layout::k4H4W;
+      const auto c4 = select_table(f.dev, w);
+      EXPECT(
+          !c4.has_value() || !c4->rowmajor_a,
+          "%s: 4h4w activations must not get a row-major kernel",
+          f.label);
+    }
     ShapeInfo u = s;
     u.M = 1304; // unaligned prompt
     ShapeInfo g = s;

@@ -13,6 +13,7 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/QuantizeDequantize.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Staging.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/Dq8caCoopmat.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/ShaderNameUtils.h>
 
 namespace vkcompute {
@@ -947,6 +948,10 @@ void linear_q8csw(ComputeGraph& graph, const std::vector<ValueRef>& args) {
 void linear_dq8ca_q4gsw(
     ComputeGraph& graph,
     const std::vector<ValueRef>& args) {
+  // SARC: devices with an active SARC row take the SARC int8 coopmat path.
+  if (sarc::try_add_dq8ca_coopmat(graph, args)) {
+    return;
+  }
   int32_t idx = 0;
   const ValueRef fp_input = args.at(idx++);
   const ValueRef input_scale = args.at(idx++);

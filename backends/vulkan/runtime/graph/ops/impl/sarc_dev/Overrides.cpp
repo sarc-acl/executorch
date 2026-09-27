@@ -86,7 +86,7 @@ std::optional<Choice> dev_select(
     for (const Row& row : *store) {
       if (row.op == shape.op && ends_with(row.kernel_base, "_" + want) &&
           q4gsw_coopmat_fits(device, shape, row)) {
-        return Choice{row.kernel_base, row.dims};
+        return Choice{row.kernel_base, row.dims, row.rowmajor_a};
       }
     }
   }
