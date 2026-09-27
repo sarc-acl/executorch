@@ -41,6 +41,25 @@ const Row kIntelRows[] = {
      kTex3dTex2d | kBufTex2d,
      nullptr,
      Status::kVerified},
+    // 8da4w: zpg (4h4w activations), MMA 8x16x32, subgroup 16, multi-block
+    // A staging. 1.4 branches -b580/-b70: 1B prefill vs tiled B580
+    // 5988 -> 8533, B70 8292 -> 12264 tok/s.
+    {"bmg g21",
+     nullptr,
+     Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8",
+     {256, 64, 32, 4, 8, 16, 8, false},
+     kTex3dTex2d | kBufTex2d,
+     nullptr,
+     Status::kVerified},
+    {"bmg g31",
+     nullptr,
+     Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8",
+     {256, 64, 32, 4, 8, 16, 8, false},
+     kTex3dTex2d | kBufTex2d,
+     nullptr,
+     Status::kVerified},
 };
 
 struct Registrar {

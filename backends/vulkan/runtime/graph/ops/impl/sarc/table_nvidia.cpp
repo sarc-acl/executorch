@@ -24,6 +24,8 @@ constexpr TileDims kT128x128k16g42 = {128, 128, 16, 4, 2, 32, 16, false};
 constexpr TileDims kT128x128k32g42 = {128, 128, 32, 4, 2, 32, 16, false};
 constexpr TileDims kT256x128k16g22 = {256, 128, 16, 2, 2, 32, 16, false};
 constexpr TileDims kT128x128k16g22 = {128, 128, 16, 2, 2, 32, 16, false};
+// dq8ca texture3d variant drains through Ash_int8 (CSH_IN_ASH).
+constexpr TileDims kT128x128k64g44 = {128, 128, 64, 4, 4, 32, 16, true};
 
 // RTX 4070 Ti SUPER: the large tiles only pay off beyond N = 512.
 bool wide_n(const ShapeInfo& s) {
@@ -82,6 +84,18 @@ const Row kNvidiaRows[] = {
     {"tegra orin", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_t128x128k16g22s32", kT128x128k16g22,
      kTex3dTex2d, orin_default, Status::kVerified},
+
+    // 8da4w: zpgtr (row-major activations), MMA 16x16x32, K 64, raw A
+    // staging, paired B. 1.4 branches -4070ti/-jetson: 1B prefill vs tiled
+    // 4070 Ti SUPER 6942 -> 21558 tok/s.
+    {"4070 ti super", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra", kT128x128k64g44,
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kVerified,
+     /*rowmajor_a=*/true},
+    {"tegra orin", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra", kT128x128k64g44,
+     kTex3dTex2d, orin_measured, Status::kVerified,
+     /*rowmajor_a=*/true},
 };
 
 struct Registrar {

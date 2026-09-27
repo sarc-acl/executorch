@@ -12,11 +12,8 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/QuantizeDequantize.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Staging.h>
-#include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/GraphInfo.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/ShaderNameUtils.h>
-
-#include <algorithm>
-#include <cctype>
 
 namespace vkcompute {
 
@@ -35,36 +32,6 @@ GlobalWorkGrid quantized_linear_gwg(
 namespace sarc {
 
 namespace {
-
-Storage to_storage(const utils::StorageType s) {
-  switch (s) {
-    case utils::kBuffer:
-      return Storage::kBuffer;
-    case utils::kTexture2D:
-      return Storage::kTexture2D;
-    case utils::kTexture3D:
-      return Storage::kTexture3D;
-    default:
-      return Storage::kOther;
-  }
-}
-
-DeviceInfo device_info(ComputeGraph* graph) {
-  const auto* adapter = graph->context()->adapter_ptr();
-  DeviceInfo d;
-  d.name = graph->device_name();
-  std::transform(d.name.begin(), d.name.end(), d.name.begin(), [](char c) {
-    return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-  });
-  d.is_amd = graph->device_is_amd();
-  d.subgroup_size = adapter->subgroup_size();
-  d.min_subgroup_size = adapter->min_subgroup_size();
-  d.max_subgroup_size = adapter->max_subgroup_size();
-  d.subgroup_size_control = adapter->supports_subgroup_size_control();
-  d.coopmat = adapter->supports_cooperative_matrix();
-  d.max_shared_bytes = adapter->max_compute_shared_memory_size();
-  return d;
-}
 
 // args layout of the dispatch node below:
 // {{output}, {fp_input, packed_weight, packed_weight_scales, packed_bias}}
@@ -147,22 +114,6 @@ GlobalWorkGrid sarc_q4gsw_gwg(
       LocalWorkGroup(wg_size, 1u, 1u));
 }
 
-// The storage prepack_quantized_linear_weight() (QuantizedLinear.cpp) picks
-// for a 4-bit weight: texture2d unless the packed extents exceed the limit.
-utils::StorageType predicted_weight_storage(
-    ComputeGraph& graph,
-    const ValueRef weight_data) {
-  const std::vector<int64_t> sizes = graph.sizes_of(weight_data);
-  const int64_t K = utils::val_at(-1, sizes) * 2;
-  const int64_t N = utils::val_at(-2, sizes);
-  const int64_t height = utils::div_up(N, int64_t(8));
-  const int64_t width = utils::div_up(K, int64_t(4)) * 4;
-  const uint32_t max_extent = graph.context()->adapter_ptr()->max_texture2d_dim();
-  return (width > int64_t(max_extent) * 4 || height > int64_t(max_extent))
-      ? utils::kBuffer
-      : utils::kTexture2D;
-}
-
 // args: {input, weight, weight_scales, group_size, bias, output}
 ShapeInfo build_time_shape(
     ComputeGraph& graph,
@@ -184,7 +135,7 @@ ShapeInfo build_time_shape(
   s.half = graph.dtype_of(output) == vkapi::kHalf;
   s.input = to_storage(graph.storage_type_of(fp_input));
   s.output = to_storage(graph.storage_type_of(output));
-  s.weight = to_storage(predicted_weight_storage(graph, args.at(1)));
+  s.weight = to_storage(predicted_q4_weight_storage(graph, args.at(1)));
   s.io_width_packed = graph.packed_dim_of(output) == WHCN::kWidthDim &&
       graph.packed_dim_of(fp_input) == WHCN::kWidthDim;
   return s;

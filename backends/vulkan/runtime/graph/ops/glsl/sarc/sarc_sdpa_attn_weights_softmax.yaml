@@ -1,0 +1,29 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# SARC copy of release 1.5's sdpa_attn_weights_softmax (LLM mode only) with the
+# causal-tail truncation of the 1.4 SARC branches (582ec23f95): rows reduce only
+# up to s + input_pos + 1 and write zeros to the masked tail without loading it.
+# Selected for devices with an SDPA row (impl/sarc/SdpaCoopmat.cpp).
+sarc_sdpa_attn_weights_softmax:
+  parameter_names_with_default_values:
+    IN_DTYPE: float
+    OUT_DTYPE: float
+    STORAGE: texture3d
+    MODE: llm
+  generate_variant_forall:
+    STORAGE:
+      - VALUE: texture3d
+      - VALUE: buffer
+    combination:
+      parameter_names: [IN_DTYPE, OUT_DTYPE]
+      combos:
+        - parameter_values: [float, float]
+          suffix: float
+        - parameter_values: [half, half]
+          suffix: half
+  shader_variants:
+    - NAME: sarc_sdpa_attn_weights_softmax

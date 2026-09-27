@@ -26,7 +26,20 @@
 namespace vkcompute {
 namespace sarc {
 
-enum class Op { kQ4gswLinear };
+enum class Op {
+  kQ4gswLinear, // 4w: fp16 activations, 4-bit group-symmetric weights
+  kDq8caLinear, // 8da4w: dynamic int8 activations, 4-bit weights
+  // LLM-mode SDPA prefill (fp16 buffers). Shape mapping for the fit check:
+  // kSdpaQk: M = S, N = context_len, K = head_dim (attn = Q K^T);
+  // kSdpaAv: M = S, N = head_dim, K = context_len (out = attn V).
+  kSdpaQk,
+  kSdpaAv,
+};
+
+// Layout of the int8 activations of kDq8caLinear. The zpg kernels (and the
+// release-1.5 fallbacks) read 4h4w blocks; the zpgtr kernels read row-major
+// kPackedInt8_4W, which only they can read.
+enum class Int8Layout { kAny, k4H4W, kRowMajor };
 
 enum class Storage { kBuffer, kTexture2D, kTexture3D, kOther };
 
@@ -40,6 +53,7 @@ struct DeviceInfo {
   uint32_t max_subgroup_size = 0;
   bool subgroup_size_control = false; // VK_EXT_subgroup_size_control
   bool coopmat = false;
+  bool int8_coopmat = false; // an int8 cooperative-matrix shape is enumerated
   uint32_t max_shared_bytes = 0;
 };
 
@@ -57,6 +71,10 @@ struct ShapeInfo {
   Storage output = Storage::kOther;
   Storage weight = Storage::kOther;
   bool io_width_packed = false;
+  Int8Layout int8_layout = Int8Layout::kAny; // kDq8caLinear only
+  // A row-major 8da4w op must stay on its kernel for every M (nothing else
+  // reads that layout): skip the tile-alignment check; the grid rounds up.
+  bool ignore_alignment = false;
 };
 
 struct TileDims {
@@ -92,11 +110,13 @@ struct Row {
   // in order, so a later row can serve the shapes an earlier one rejects.
   bool (*shape_ok)(const ShapeInfo&);
   Status status;
+  bool rowmajor_a = false; // kDq8caLinear: reads row-major int8 activations
 };
 
 struct Choice {
   std::string kernel_base;
   TileDims dims;
+  bool rowmajor_a = false;
 };
 
 // Registers rows; call from a static initializer in a table_*.cpp file.
@@ -125,7 +145,7 @@ const Override& get_override();
 
 
 // The shape/device constraints of `row` (storage combination, alignment,
-// subgroup size, shared memory, the row's shape predicate).
+// subgroup size, shared memory, int8 layout, the row's shape predicate).
 bool q4gsw_coopmat_fits(
     const DeviceInfo& device,
     const ShapeInfo& shape,
@@ -138,6 +158,10 @@ std::optional<Choice> select(const DeviceInfo& device, const ShapeInfo& shape);
 std::optional<Choice> select_table(
     const DeviceInfo& device,
     const ShapeInfo& shape);
+
+// Whether `device` has an active row for `op` (verified, or unverified when
+// the dev override allows it), regardless of shape.
+bool device_has_active_rows(const DeviceInfo& device, Op op);
 
 // Whether an op whose build-time shape is `shape` is built on the SARC path:
 // a row applies to it (or the dev override forces the path). Otherwise the op
