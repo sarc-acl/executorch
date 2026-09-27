@@ -8,9 +8,9 @@
 
 /*
  * SARC development zone: sweep twin of glsl/sarc/sarc_linear_q4gsw_coopmat.glsl.
- * Everything from #version on must stay byte-identical to that file (checked
- * by sarc/tools/check.sh); only the template name (this file name) and the
- * variant list in the yaml differ.
+ * From the version directive on, this file must stay byte-identical to that
+ * one (checked by sarc/tools/check.sh); only the template name (this file
+ * name) and the variant list in the yaml differ.
  */
 
 #version 450 core
@@ -33,13 +33,28 @@ $if WEIGHT_STORAGE == "buffer":
 $if IO_STORAGE == "texture3d":
   #define IO_TEXTURE
 
+// ACC_GROUP_FP32 (RTX 4070 Ti SUPER, 2026-09-26): accumulate each quantization
+// group in fp16 at the full fp16 MMA rate, then add it into an fp32 total and
+// restart, so an fp16 run never exceeds one group. The GeForce fp16-accumulate
+// MMA loses accuracy over long K (8B w2, K = 14336: max |err| 1.49, over the
+// 0.5 tolerance; already 0.45 at K = 4096); with this, 0.08 / 0.04. Plain fp32
+// accumulation (0.04) runs at half the tensor rate: 0.63x vs 0.92x speed.
+$if ACC_GROUP_FP32:
+  #define ACC_GROUP_FP32
+
 layout(std430) buffer;
 
 #include "common.glslh"
 
 ${layout_declare_tensor(B, "w", "t_output",         "half", IO_STORAGE, is_scalar_array=True)}
-${layout_declare_tensor(B, "r", "t_input",          "half", IO_STORAGE, is_scalar_array=False)}
-${layout_declare_tensor(B, "r", "t_packed_weight",  "int",  WEIGHT_STORAGE, is_scalar_array=False)}
+$if IMG_A and IO_STORAGE == "texture3d":
+  ${layout_declare_image(B, "r", "t_input", "half")}
+$else:
+  ${layout_declare_tensor(B, "r", "t_input",          "half", IO_STORAGE, is_scalar_array=False)}
+$if IMG_W and WEIGHT_STORAGE == "texture2d":
+  ${layout_declare_image(B, "r", "t_packed_weight", "int", image_ndim=2)}
+$else:
+  ${layout_declare_tensor(B, "r", "t_packed_weight",  "int",  WEIGHT_STORAGE, is_scalar_array=False)}
 ${layout_declare_tensor(B, "r", "t_weight_scales",  "half", "buffer", is_scalar_array=False)}
 ${layout_declare_tensor(B, "r", "t_bias",           "half", "buffer", is_scalar_array=True)}
 
@@ -62,6 +77,9 @@ $if ACC_FP32:
 // (~350 moves per 32 WMMAs in the t128x128k32g42s32 loop); the fp32
 // accumulator maps 1:1 onto v_wmma_f32_16x16x16_f16. Roofline: matrix
 // fp16->fp32 14.77 vs fp16->fp16 10.96 TFLOP/s on the 780M.
+#if defined(ACC_FP32) && defined(ACC_GROUP_FP32)
+#error "ACC_FP32 (fp32 accumulate) and ACC_GROUP_FP32 (fp16 per group, fp32 total) are exclusive"
+#endif
 #ifdef ACC_FP32
 #define ACC_T float
 #else
@@ -70,6 +88,15 @@ $if ACC_FP32:
 
 $if CSH_IN_ASH:
   #define CSH_IN_ASH
+
+$if FRAG_LAYOUT:
+  #define FRAG_LAYOUT
+
+$if IMG_A and IO_STORAGE == "texture3d":
+  #define IMG_A
+
+$if IMG_W and WEIGHT_STORAGE == "texture2d":
+  #define IMG_W
 
 // --- Tile geometry (from yaml; per-variant tile-sweep candidate) ---
 const uint MMA_M = ${MMA_M};

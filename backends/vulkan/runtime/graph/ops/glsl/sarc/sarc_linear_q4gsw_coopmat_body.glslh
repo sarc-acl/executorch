@@ -9,7 +9,8 @@
 // Body of the SARC q4gsw coopmat linear. Included by a template header
 // (sarc_linear_q4gsw_coopmat.glsl, or its sweep twin in sarc_dev/) that defines
 // the bindings, the spec constants, ACC_T, the optional IO_TEXTURE /
-// WEIGHT_BUFFER / ACC_FP32 / CSH_IN_ASH / HAS_BIAS macros and the tile
+// WEIGHT_BUFFER / ACC_FP32 / ACC_GROUP_FP32 / CSH_IN_ASH / FRAG_LAYOUT / IMG_A /
+// IMG_W / HAS_BIAS macros and the tile
 // constants MMA_{M,N,K}, WG_TILE_{M,N,K}, SG_GRID_{X,Y}, SUBGROUP_SIZE.
 // Must not contain template syntax: .glslh files are not expanded per variant.
 
@@ -26,12 +27,34 @@ const uint MMAS_PER_SG_N = SG_TILE_N / MMA_N;
 
 // fp16: 8 elements per uvec4 (128-bit)
 const uint FP16_PER_VEC4 = 8;
+#ifdef FRAG_LAYOUT
+// Fragment-contiguous LDS (Intel Xe2): A as [k16 block][m][16 fp16] and B as
+// [n16 block][k][16 fp16], so every MMA_M x 16 A fragment and 16 x MMA_N B
+// fragment is one contiguous run with a 32-byte row stride. The row-padded
+// layout below scatters a fragment across strided 32-byte rows, which the Xe2
+// compiler lowers to many narrow SLM messages; SLM bank conflicts are zero on
+// BMG, so the padding buys nothing there. Requires MMA_K == MMA_N == 16.
+const uint FRAG_ROW_VEC4 = 16u / FP16_PER_VEC4;
+const uint A_STRIDE_VEC4 = FRAG_ROW_VEC4;
+const uint B_STRIDE_VEC4 = FRAG_ROW_VEC4;
+const uint ASH_SLICE = WG_TILE_M * (WG_TILE_K / FP16_PER_VEC4);
+const uint BSH_SLICE = WG_TILE_K * (WG_TILE_N / FP16_PER_VEC4);
+// (row, uvec4 column) -> slice-relative index.
+#define A_SH_IDX(m, c) ((((c) / FRAG_ROW_VEC4) * WG_TILE_M + (m)) * FRAG_ROW_VEC4 + ((c) % FRAG_ROW_VEC4))
+#define B_SH_IDX(k, c) ((((c) / FRAG_ROW_VEC4) * WG_TILE_K + (k)) * FRAG_ROW_VEC4 + ((c) % FRAG_ROW_VEC4))
+#else
 const uint A_STRIDE_VEC4 = (WG_TILE_K + FP16_PER_VEC4) / FP16_PER_VEC4;
 const uint B_STRIDE_VEC4 = (WG_TILE_N + FP16_PER_VEC4) / FP16_PER_VEC4;
 
 // One ping-pong slice of each shared-memory buffer (in uvec4 units).
 const uint ASH_SLICE = WG_TILE_M * A_STRIDE_VEC4;
 const uint BSH_SLICE = WG_TILE_K * B_STRIDE_VEC4;
+// No outer parentheses: every use is `base + X_SH_IDX(...)` or a subscript,
+// and this keeps `base + row * STRIDE + col` associated exactly as before
+// FRAG_LAYOUT existed, so the non-Xe2 SPIR-V is unchanged (sarc/golden).
+#define A_SH_IDX(m, c) (m) * A_STRIDE_VEC4 + (c)
+#define B_SH_IDX(k, c) (k) * B_STRIDE_VEC4 + (c)
+#endif
 
 // Double-buffered shared memory.
 shared uvec4 Ash[2 * ASH_SLICE];
@@ -67,9 +90,21 @@ const uint B_PASSES = WG_TILE_K / B_ROWS_PER_PASS;
 // FP16 accumulator coopmats (MMAS_PER_SG_M x MMAS_PER_SG_N per thread).
 coopmat<ACC_T, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>
     result[MMAS_PER_SG_M][MMAS_PER_SG_N];
+#ifdef ACC_GROUP_FP32
+// fp32 running total; converted into `result` before the epilogue.
+coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>
+    total[MMAS_PER_SG_M][MMAS_PER_SG_N];
+#endif
 
 // Dequant one packed INT4 block column-pair into 8 scaled fp16 weights
 // (one Bsh uvec4). col_lo/col_hi select the K row within the block.
+#ifdef IMG_W
+// Storage-image load (Xe2): typed LSC load instead of a sampler message.
+#define WFETCH(coord) imageLoad(t_packed_weight, coord)
+#else
+#define WFETCH(coord) texelFetch(t_packed_weight, coord, 0)
+#endif
+
 uvec4 dequant_block(
     const ivec4 wb,
     const uint col_lo,
@@ -95,8 +130,14 @@ uvec4 load_a_vec4(const uint row, const uint k_hv4, const uint K4) {
   // v_cvt_pk_rtz per pair. Taking it as f16vec4 immediately lets the compiler
   // fold the narrowing into `image_load ... d16` (2 VGPRs, no conversion).
   // Lossless -- the source is rgba16f.
+#ifdef IMG_A
+  // Storage-image load (Xe2): typed LSC load instead of a sampler message.
+  const f16vec4 v0 = f16vec4(imageLoad(t_input, ivec3(k_hv4, row, 0)));
+  const f16vec4 v1 = f16vec4(imageLoad(t_input, ivec3(k_hv4 + 1u, row, 0)));
+#else
   const f16vec4 v0 = f16vec4(texelFetch(t_input, ivec3(k_hv4, row, 0), 0));
   const f16vec4 v1 = f16vec4(texelFetch(t_input, ivec3(k_hv4 + 1u, row, 0), 0));
+#endif
   return uvec4(
       packFloat2x16(v0.xy), packFloat2x16(v0.zw),
       packFloat2x16(v1.xy), packFloat2x16(v1.zw));
@@ -128,6 +169,9 @@ void main() {
   [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
     [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
       result[i][j] = coopmat<ACC_T, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0.0);
+#ifdef ACC_GROUP_FP32
+      total[i][j] = coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0.0);
+#endif
     }
   }
 
@@ -168,17 +212,17 @@ void main() {
 #ifdef WEIGHT_BUFFER
       wblock = t_packed_weight[n8_blk * K4 + (k_row >> 2u)];
 #else
-      wblock = texelFetch(t_packed_weight, ivec2(k_row >> 2u, n8_blk), 0);
+      wblock = WFETCH(ivec2(k_row >> 2u, n8_blk));
 #endif
       temp_B[p] = wblock;
     }
   }
   {
     [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
-      Ash[(p * A_ROWS_PER_PASS + a_row_offset) * A_STRIDE_VEC4 + a_col] = temp_A[p];
+      Ash[A_SH_IDX(p * A_ROWS_PER_PASS + a_row_offset, a_col)] = temp_A[p];
     }
     [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
-      Bsh[(p * B_ROWS_PER_PASS + b_row_offset) * B_STRIDE_VEC4 + b_col] =
+      Bsh[B_SH_IDX(p * B_ROWS_PER_PASS + b_row_offset, b_col)] =
           dequant_block(temp_B[p], col_lo, col_hi, sc0, sc1);
     }
   }
@@ -221,7 +265,7 @@ void main() {
 #ifdef WEIGHT_BUFFER
         temp_B[p] = t_packed_weight[n8_blk * K4 + (k_row >> 2u)];
 #else
-        temp_B[p] = texelFetch(t_packed_weight, ivec2(k_row >> 2u, n8_blk), 0);
+        temp_B[p] = WFETCH(ivec2(k_row >> 2u, n8_blk));
 #endif
       }
       const uint group_nxt = (chunk + 1u) / CHUNKS_PER_GROUP;
@@ -241,7 +285,7 @@ void main() {
         const uint row_a = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
         coopMatLoad(
             matA[i], Ash,
-            cur_base_A + row_a * A_STRIDE_VEC4 + k_start / FP16_PER_VEC4,
+            cur_base_A + A_SH_IDX(row_a, k_start / FP16_PER_VEC4),
             A_STRIDE_VEC4,
             gl_CooperativeMatrixLayoutRowMajor);
       }
@@ -251,7 +295,7 @@ void main() {
         const uint col_b = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j) / FP16_PER_VEC4;
         coopMatLoad(
             matB, Bsh,
-            cur_base_B + k_start * B_STRIDE_VEC4 + col_b,
+            cur_base_B + B_SH_IDX(k_start, col_b),
             B_STRIDE_VEC4,
             gl_CooperativeMatrixLayoutRowMajor);
 
@@ -261,14 +305,26 @@ void main() {
       }
     }
 
+#ifdef ACC_GROUP_FP32
+    // Last chunk of a quantization group: fold the fp16 group sum into total.
+    if ((chunk + 1u) % CHUNKS_PER_GROUP == 0u) {
+      [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+        [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+          total[i][j] += coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]);
+          result[i][j] = coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0.0);
+        }
+      }
+    }
+#endif
+
     // --- store temp (chunk+1) -> nxt slice, dequantizing B ---
     {
       [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
-        Ash[nxt_base_A + (p * A_ROWS_PER_PASS + a_row_offset) * A_STRIDE_VEC4 + a_col] =
+        Ash[nxt_base_A + A_SH_IDX(p * A_ROWS_PER_PASS + a_row_offset, a_col)] =
             temp_A[p];
       }
       [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
-        Bsh[nxt_base_B + (p * B_ROWS_PER_PASS + b_row_offset) * B_STRIDE_VEC4 + b_col] =
+        Bsh[nxt_base_B + B_SH_IDX(p * B_ROWS_PER_PASS + b_row_offset, b_col)] =
             dequant_block(temp_B[p], col_lo, col_hi, sc0, sc1);
       }
     }
@@ -296,7 +352,7 @@ void main() {
         const uint row_a = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
         coopMatLoad(
             matA[i], Ash,
-            cur_base_A + row_a * A_STRIDE_VEC4 + k_start / FP16_PER_VEC4,
+            cur_base_A + A_SH_IDX(row_a, k_start / FP16_PER_VEC4),
             A_STRIDE_VEC4,
             gl_CooperativeMatrixLayoutRowMajor);
       }
@@ -306,7 +362,7 @@ void main() {
         const uint col_b = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j) / FP16_PER_VEC4;
         coopMatLoad(
             matB, Bsh,
-            cur_base_B + k_start * B_STRIDE_VEC4 + col_b,
+            cur_base_B + B_SH_IDX(k_start, col_b),
             B_STRIDE_VEC4,
             gl_CooperativeMatrixLayoutRowMajor);
 
@@ -316,6 +372,16 @@ void main() {
       }
     }
   }
+
+#ifdef ACC_GROUP_FP32
+  // The last chunk always ends a group (K % group_size == 0).
+  [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+    [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+      total[i][j] += coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]);
+      result[i][j] = coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(total[i][j]);
+    }
+  }
+#endif
 
   // --- Bias staging (if any) ---
 #ifdef HAS_BIAS

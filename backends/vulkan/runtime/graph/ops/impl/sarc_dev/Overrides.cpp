@@ -47,19 +47,19 @@ constexpr TileDims tile(uint32_t sgx, uint32_t sgy, bool csh_in_ash) {
 const Row kQ4gswCandidates[] = {
     {"", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32", tile(4, 2, false),
-     true, Status::kUnverified},
+     kTex3dTex2d | kBufTex2d | kBufBuf, nullptr, Status::kUnverified},
     {"", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g24s32", tile(2, 4, false),
-     true, Status::kUnverified},
+     kTex3dTex2d, nullptr, Status::kUnverified},
     {"", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32", tile(4, 2, false),
-     true, Status::kUnverified},
+     kBufTex2d, nullptr, Status::kUnverified},
     {"", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32c", tile(4, 2, true),
-     true, Status::kUnverified},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
     {"", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g24s32f32c", tile(2, 4, true),
-     true, Status::kUnverified},
+     kTex3dTex2d, nullptr, Status::kUnverified},
 };
 
 std::string& requested_variant() {
@@ -85,7 +85,7 @@ std::optional<Choice> dev_select(
   for (const auto* store : {&candidates(), &rows()}) {
     for (const Row& row : *store) {
       if (row.op == shape.op && ends_with(row.kernel_base, "_" + want) &&
-          q4gsw_coopmat_fits(device, shape, row.dims, row.allow_texture_io)) {
+          q4gsw_coopmat_fits(device, shape, row)) {
         return Choice{row.kernel_base, row.dims};
       }
     }

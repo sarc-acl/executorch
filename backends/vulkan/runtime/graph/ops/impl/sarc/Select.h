@@ -35,7 +35,10 @@ enum class Status { kVerified, kUnverified };
 struct DeviceInfo {
   std::string name; // lower-case
   bool is_amd = false;
-  uint32_t subgroup_size = 0;
+  uint32_t subgroup_size = 0; // default subgroup size
+  uint32_t min_subgroup_size = 0;
+  uint32_t max_subgroup_size = 0;
+  bool subgroup_size_control = false; // VK_EXT_subgroup_size_control
   bool coopmat = false;
   uint32_t max_shared_bytes = 0;
 };
@@ -70,13 +73,24 @@ struct TileDims {
   }
 };
 
+// Storage combinations (IO_STORAGE x WEIGHT_STORAGE) a variant is built for;
+// the yaml must contain <kernel_base>_<io>_<weight>_half for each set bit.
+enum StorageSet : uint8_t {
+  kTex3dTex2d = 1u << 0, // texture3d input/output, texture2d weight
+  kBufTex2d = 1u << 1, // buffer input/output, texture2d weight
+  kBufBuf = 1u << 2, // buffer input/output, buffer weight
+};
+
 struct Row {
   const char* device_substr; // matched against DeviceInfo::name
   bool (*device_ok)(const DeviceInfo&); // extra device requirements, or null
   Op op;
   const char* kernel_base; // shader name without _<io>_<weight>_<dtype>
   TileDims dims;
-  bool allow_texture_io;
+  uint8_t storages; // StorageSet bits
+  // Extra shape requirement (beyond tile alignment), or null. Rows are tried
+  // in order, so a later row can serve the shapes an earlier one rejects.
+  bool (*shape_ok)(const ShapeInfo&);
   Status status;
 };
 
@@ -114,12 +128,12 @@ const Override& get_override();
 // its own fallback for shapes that do not qualify.
 bool device_has_rows(const DeviceInfo& device, Op op);
 
-// The shape/device constraints every q4gsw coopmat variant needs.
+// The shape/device constraints of `row` (storage combination, alignment,
+// subgroup size, shared memory, the row's shape predicate).
 bool q4gsw_coopmat_fits(
     const DeviceInfo& device,
     const ShapeInfo& shape,
-    const TileDims& dims,
-    bool allow_texture_io);
+    const Row& row);
 
 // Table lookup + fit check, then the override (if any).
 std::optional<Choice> select(const DeviceInfo& device, const ShapeInfo& shape);

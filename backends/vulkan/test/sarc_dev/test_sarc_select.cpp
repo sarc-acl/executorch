@@ -7,10 +7,10 @@
  */
 
 // Host-only test of SARC kernel selection (impl/sarc/Select.cpp + the vendor
-// tables). No GPU and no Vulkan: it links only the selection sources. It pins
-// which kernel every device fixture gets for the Llama prefill shapes, so a
-// table change for one device cannot silently change another. Run by
-// sarc/tools/check.sh.
+// tables). No GPU and no Vulkan: it links only the selection sources. For
+// every device fixture and Llama prefill shape it compares the table's choice
+// with an independent statement of that device's rules, so a table change for
+// one device cannot silently change another. Run by sarc/tools/check.sh.
 //
 // Build (see sarc/tools/check.sh): c++ -std=c++17 -I<parent of repo root>
 //   test_sarc_select.cpp impl/sarc/Select.cpp impl/sarc/table_*.cpp
@@ -19,39 +19,40 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h>
 
 #include <cstdio>
-#include <cstdlib>
 #include <fstream>
+#include <functional>
 #include <sstream>
 #include <string>
 
 using namespace vkcompute::sarc;
 
 static int failures = 0;
+static int checked = 0;
 
-#define EXPECT(cond, ...)                          \
-  do {                                             \
-    if (!(cond)) {                                 \
+#define EXPECT(cond, ...)                              \
+  do {                                                 \
+    checked++;                                         \
+    if (!(cond)) {                                     \
       std::printf("FAIL %s:%d: ", __FILE__, __LINE__); \
-      std::printf(__VA_ARGS__);                    \
-      std::printf("\n");                           \
-      failures++;                                  \
-    }                                              \
+      std::printf(__VA_ARGS__);                        \
+      std::printf("\n");                               \
+      failures++;                                      \
+    }                                                  \
   } while (0)
 
-static DeviceInfo radeon_780m() {
+static DeviceInfo device(
+    const char* name,
+    bool amd,
+    uint32_t sg,
+    uint32_t sg_min,
+    uint32_t sg_max) {
   DeviceInfo d;
-  d.name = "amd radeon 780m graphics (radv phoenix)";
-  d.is_amd = true;
-  d.subgroup_size = 64;
-  d.coopmat = true;
-  d.max_shared_bytes = 65536;
-  return d;
-}
-
-static DeviceInfo arc_b580() {
-  DeviceInfo d;
-  d.name = "intel(r) arc(tm) b580 graphics (bmg g21)";
-  d.subgroup_size = 32;
+  d.name = name;
+  d.is_amd = amd;
+  d.subgroup_size = sg;
+  d.min_subgroup_size = sg_min;
+  d.max_subgroup_size = sg_max;
+  d.subgroup_size_control = true;
   d.coopmat = true;
   d.max_shared_bytes = 65536;
   return d;
@@ -79,9 +80,21 @@ static const int64_t kShapes[][2] = {
     {4096, 4096}, {4096, 1024}, {4096, 14336}, {14336, 4096}, // 8B
 };
 
-static bool verified_row_for(const DeviceInfo& d) {
+static const std::string kQ = "sarc_linear_q4gsw_coopmat_";
+
+// The intended kernel base per device ("" = stock path), restated from the
+// 1.4 per-GPU branches independently of the tables.
+using Rule = std::function<std::string(const ShapeInfo&)>;
+
+struct Fixture {
+  const char* label;
+  DeviceInfo dev;
+  Rule rule;
+};
+
+static bool active(const DeviceInfo& d) {
   for (const Row& r : rows()) {
-    if (r.status == Status::kVerified &&
+    if ((r.status == Status::kVerified || get_override().allow_unverified) &&
         d.name.find(r.device_substr) != std::string::npos &&
         (r.device_ok == nullptr || r.device_ok(d))) {
       return true;
@@ -91,92 +104,129 @@ static bool verified_row_for(const DeviceInfo& d) {
 }
 
 int main(int argc, char** argv) {
-  const bool dev_zone = get_override().select != nullptr;
-  // With the dev zone linked, unverified rows count only when
-  // ET_VK_SARC_UNVERIFIED is set; the release build ignores them.
-  const DeviceInfo r780m = radeon_780m();
-  const bool r780m_active = verified_row_for(r780m) ||
-      (dev_zone && get_override().allow_unverified);
+  const Fixture fixtures[] = {
+      {"780M",
+       device("amd radeon 780m graphics (radv phoenix)", true, 64, 32, 64),
+       [](const ShapeInfo&) { return kQ + "t128x128k32g42s32f32c"; }},
+      {"B580",
+       device("intel(r) arc(tm) b580 graphics (bmg g21)", false, 32, 8, 32),
+       [](const ShapeInfo&) { return kQ + "t128x128k16g44s16m8fli"; }},
+      {"B70",
+       device("intel(r) graphics (bmg g31)", false, 32, 8, 32),
+       [](const ShapeInfo&) { return kQ + "t128x128k16g44s16m8fli"; }},
+      {"4070TiS",
+       device("nvidia geforce rtx 4070 ti super", false, 32, 32, 32),
+       [](const ShapeInfo& s) {
+         if (s.output == Storage::kTexture3D) {
+           return kQ +
+               (s.M % 256 == 0 && s.N % 128 == 0 && s.N > 512
+                    ? "t256x128k16g42s32ga"
+                    : "t128x128k16g24s32ga");
+         }
+         return kQ +
+             (s.M % 128 == 0 && s.N % 256 == 0 && s.N > 512
+                  ? "t128x256k16g42s32ga"
+                  : "t128x128k16g42s32ga");
+       }},
+      {"Orin",
+       device("nvidia tegra orin (nvgpu)", false, 32, 32, 32),
+       [](const ShapeInfo& s) -> std::string {
+         if (s.output != Storage::kTexture3D) {
+           return "";
+         }
+         if (s.K > 8192) {
+           return kQ + "t128x128k32g42s32f32";
+         }
+         if (s.M % 256 == 0 && s.N % 128 == 0 &&
+             (s.M != 256 || s.N % 2048 == 0)) {
+           return kQ + "t256x128k16g22s32";
+         }
+         return kQ + "t128x128k16g22s32";
+       }},
+      {"GenericNoRows",
+       device("some other gpu", false, 32, 32, 32),
+       [](const ShapeInfo&) { return std::string(); }},
+  };
 
-  for (const auto& kn : kShapes) {
-    for (Storage io : {Storage::kTexture3D, Storage::kBuffer}) {
-      const ShapeInfo s = prefill(2048, kn[0], kn[1], io);
-      const auto c = select(r780m, s);
-      if (r780m_active) {
+  for (const Fixture& f : fixtures) {
+    const bool on = active(f.dev);
+    for (const auto& kn : kShapes) {
+      for (Storage io : {Storage::kTexture3D, Storage::kBuffer}) {
+        const ShapeInfo s = prefill(2048, kn[0], kn[1], io);
+        const auto c = select(f.dev, s);
+        const std::string want = on ? f.rule(s) : "";
+        const std::string got = c.has_value() ? c->kernel_base : "";
         EXPECT(
-            c.has_value() &&
-                c->kernel_base ==
-                    "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c",
-            "780M K=%lld N=%lld io=%d: wrong or no choice",
-            (long long)kn[0], (long long)kn[1], (int)io);
-        if (c.has_value()) {
-          EXPECT(c->dims.wg_size() == 256, "780M wg_size %u", c->dims.wg_size());
-        }
-      } else {
-        EXPECT(!c.has_value(), "780M row inactive but chosen");
+            got == want,
+            "%s K=%lld N=%lld io=%s: got '%s' want '%s'",
+            f.label,
+            (long long)kn[0],
+            (long long)kn[1],
+            io == Storage::kBuffer ? "buffer" : "texture3d",
+            got.c_str(),
+            want.c_str());
       }
-      // Devices without rows keep the upstream path.
-      EXPECT(!select(arc_b580(), s).has_value(), "B580 must have no choice");
     }
-  }
-  EXPECT(device_has_rows(r780m, Op::kQ4gswLinear) == r780m_active,
-         "780M device_has_rows");
-
-  // Shapes the variants must never take.
-  {
-    DeviceInfo d = r780m;
+    // Shapes no SARC variant may take, on every device.
     Override saved = get_override();
     Override all = saved;
     all.allow_unverified = true;
     all.select = nullptr;
     set_override(all);
-    ShapeInfo s = prefill(2048, 2048, 2048, Storage::kTexture3D);
-    EXPECT(select(d, s).has_value(), "aligned prefill must be chosen");
+    ShapeInfo s = prefill(2048, 4096, 4096, Storage::kTexture3D);
     ShapeInfo u = s;
     u.M = 1304; // unaligned prompt
-    EXPECT(!select(d, u).has_value(), "unaligned M must fall back");
     ShapeInfo g = s;
     g.M = 1;
     g.gemv = true;
-    EXPECT(!select(d, g).has_value(), "decode must fall back");
     ShapeInfo b = s;
     b.has_bias = true;
-    EXPECT(!select(d, b).has_value(), "bias must fall back");
-    ShapeInfo f = s;
-    f.half = false;
-    EXPECT(!select(d, f).has_value(), "fp32 must fall back");
+    ShapeInfo h = s;
+    h.half = false;
     ShapeInfo mixed = s;
     mixed.input = Storage::kBuffer;
-    EXPECT(!select(d, mixed).has_value(), "mixed IO storage must fall back");
+    for (const ShapeInfo* x : {&u, &g, &b, &h, &mixed}) {
+      EXPECT(!select(f.dev, *x).has_value(), "%s: must fall back", f.label);
+    }
     set_override(saved);
   }
 
-  // Every kernel name the tables can produce must exist in a yaml. argv[1..]
-  // are the yaml files (passed by check.sh).
-  std::string yamls;
-  for (int i = 1; i < argc; i++) {
-    std::ifstream f(argv[i]);
-    std::stringstream ss;
-    ss << f.rdbuf();
-    yamls += ss.str();
-  }
+  // Every kernel name the tables can produce must exist in a yaml.
   if (argc > 1) {
+    std::string yamls;
+    for (int i = 1; i < argc; i++) {
+      std::ifstream in(argv[i]);
+      std::stringstream ss;
+      ss << in.rdbuf();
+      yamls += ss.str();
+    }
+    const std::pair<uint8_t, const char*> combos[] = {
+        {kTex3dTex2d, "_texture3d_texture2d_half"},
+        {kBufTex2d, "_buffer_texture2d_half"},
+        {kBufBuf, "_buffer_buffer_half"}};
     for (const auto* store : {&rows(), &candidates()}) {
       for (const Row& r : *store) {
-        EXPECT(
-            yamls.find(std::string(r.kernel_base) + "_") != std::string::npos,
-            "no yaml variant for %s", r.kernel_base);
+        for (const auto& c : combos) {
+          if (r.storages & c.first) {
+            const std::string n = std::string(r.kernel_base) + c.second;
+            EXPECT(
+                yamls.find("NAME: " + n + "\n") != std::string::npos,
+                "no yaml variant %s",
+                n.c_str());
+          }
+        }
       }
     }
   }
 
   std::printf(
-      "test_sarc_select: %s (%zu rows, %zu candidates, dev zone %s, "
-      "780M row %s)\n",
+      "test_sarc_select: %s (%d checks, %zu rows, %zu candidates, dev zone "
+      "%s, unverified %s)\n",
       failures == 0 ? "PASS" : "FAIL",
+      checked,
       rows().size(),
       candidates().size(),
-      dev_zone ? "linked" : "absent",
-      r780m_active ? "active" : "inactive");
+      get_override().select != nullptr ? "linked" : "absent",
+      get_override().allow_unverified ? "on" : "off");
   return failures == 0 ? 0 : 1;
 }

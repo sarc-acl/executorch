@@ -80,8 +80,8 @@ bool device_has_rows(const DeviceInfo& device, Op op) {
 bool q4gsw_coopmat_fits(
     const DeviceInfo& device,
     const ShapeInfo& shape,
-    const TileDims& dims,
-    bool allow_texture_io) {
+    const Row& row) {
+  const TileDims& dims = row.dims;
   // The shaders build only HAS_BIAS=false variants and read no leading dim.
   if (shape.has_bias || shape.gemv || shape.batch != 1 || !shape.half) {
     return false;
@@ -89,19 +89,24 @@ bool q4gsw_coopmat_fits(
   if (!device.coopmat) {
     return false;
   }
-  if (shape.weight != Storage::kBuffer && shape.weight != Storage::kTexture2D) {
+  // The pipeline requires the variant's subgroup size.
+  if (dims.subgroup_size != device.subgroup_size &&
+      !(device.subgroup_size_control &&
+        dims.subgroup_size >= device.min_subgroup_size &&
+        dims.subgroup_size <= device.max_subgroup_size)) {
     return false;
   }
   // One IO_STORAGE parameter covers input and output.
-  if (shape.output == Storage::kBuffer) {
-    if (shape.input != Storage::kBuffer) {
-      return false;
-    }
-  } else if (shape.output == Storage::kTexture3D) {
-    if (!allow_texture_io || shape.input != Storage::kTexture3D ||
-        !shape.io_width_packed) {
-      return false;
-    }
+  uint8_t combo = 0;
+  if (shape.output == Storage::kBuffer && shape.input == Storage::kBuffer) {
+    combo = shape.weight == Storage::kBuffer
+        ? kBufBuf
+        : (shape.weight == Storage::kTexture2D ? kBufTex2d : 0);
+  } else if (
+      shape.output == Storage::kTexture3D &&
+      shape.input == Storage::kTexture3D && shape.io_width_packed &&
+      shape.weight == Storage::kTexture2D) {
+    combo = kTex3dTex2d;
     // The texture epilogue stages SG_GRID_Y * MMA_M rows x WG_TILE_N fp16,
     // on top of Ash/Bsh unless CSH_IN_ASH reuses Ash. A tile over the limit
     // hung a GPU instead of failing pipeline creation (1.4, 2026-08-09).
@@ -112,11 +117,15 @@ bool q4gsw_coopmat_fits(
         return false;
       }
     }
-  } else {
+  }
+  if ((combo & row.storages) == 0) {
     return false;
   }
-  return shape.M % dims.m == 0 && shape.N % dims.n == 0 &&
-      shape.K % dims.k == 0 && shape.group_size % dims.k == 0;
+  if (shape.M % dims.m != 0 || shape.N % dims.n != 0 ||
+      shape.K % dims.k != 0 || shape.group_size % dims.k != 0) {
+    return false;
+  }
+  return row.shape_ok == nullptr || row.shape_ok(shape);
 }
 
 std::optional<Choice> select(const DeviceInfo& device, const ShapeInfo& shape) {
@@ -126,7 +135,7 @@ std::optional<Choice> select(const DeviceInfo& device, const ShapeInfo& shape) {
         !row_matches_device(row, device)) {
       continue;
     }
-    if (q4gsw_coopmat_fits(device, shape, row.dims, row.allow_texture_io)) {
+    if (q4gsw_coopmat_fits(device, shape, row)) {
       choice = Choice{row.kernel_base, row.dims};
       break;
     }

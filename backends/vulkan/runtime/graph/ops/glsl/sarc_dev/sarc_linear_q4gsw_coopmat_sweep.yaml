@@ -27,6 +27,10 @@ sarc_linear_q4gsw_coopmat_sweep:
     SUBGROUP_SIZE: 32
     ACC_FP32: false
     CSH_IN_ASH: false
+    ACC_GROUP_FP32: false
+    FRAG_LAYOUT: false
+    IMG_A: false
+    IMG_W: false
   shader_variants:
     - NAME: sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32_buffer_texture2d_half
       WEIGHT_STORAGE: texture2d

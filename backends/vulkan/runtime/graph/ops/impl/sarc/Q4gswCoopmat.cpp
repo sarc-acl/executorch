@@ -58,6 +58,9 @@ DeviceInfo device_info(ComputeGraph* graph) {
   });
   d.is_amd = graph->device_is_amd();
   d.subgroup_size = adapter->subgroup_size();
+  d.min_subgroup_size = adapter->min_subgroup_size();
+  d.max_subgroup_size = adapter->max_subgroup_size();
+  d.subgroup_size_control = adapter->supports_subgroup_size_control();
   d.coopmat = adapter->supports_cooperative_matrix();
   d.max_shared_bytes = adapter->max_compute_shared_memory_size();
   return d;
