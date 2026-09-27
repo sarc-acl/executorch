@@ -43,6 +43,56 @@
   - decode works.
 - **Other devices unaffected:** a device without rows (B580) dispatches exactly the stock 1.5 kernels.
 
-## Results
+## Results (2026-09-27)
 
-(filled in by the verification run; raw logs in `results/`)
+**Setup.**
+- Device: Radeon 780M on rocky-ryzen, Mesa 25.2.7 RADV, under the gpu-lab lock, host idle, default DVFS
+  (clocks not pinned).
+- Builds: `sarc/tools/build.sh` (`localhost/et-vk-build:rocky10`, shaderc v2023.8).
+- PTEs: the existing `llama3_*_vulkan_4w.pte` in `/mnt/linux-share/models` (exported with the 1.4 flow).
+- Raw logs are in `results/780m/{sarc,stock,release}` and `results/b580-norow`.
+
+**Kernels.**
+- All 24 4w prefill shapes (1B/3B/8B × 4 ops × buffer/texture3d) dispatch
+  `sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_{texture3d,buffer}_texture2d_half`.
+- Median kernel time vs the 1.4 confirmation (`confirm/780m-final`) is 0.988×, range 0.984–0.998×
+  (single run).
+
+**Correctness.**
+- All 4w numeric checks pass, including the rank-3 cases.
+- The binary exits with rc = 1 only because the 8da4w rank-3 cases fall back to tiled; 8da4w is not
+  ported yet.
+- Production-diff passes for 1B/3B/8B × buffer/texture3d (6/6).
+
+**End to end, 2048-token prefill, tok/s:**
+
+| Build / mode | 1B | 3B | 8B |
+|---|---:|---:|---:|
+| tiled (dev build, `ET_VK_FORCE_TILED_LINEAR`) | 714 | 246 | 104 |
+| stock release 1.5 (upstream `q4gsw_linear_gemm__tin__w_4x8`) | 1205 | 421 | 194 |
+| SARC (dev build, `ET_VK_SARC_UNVERIFIED=1`) | 1916 | 683 | 352 |
+| SARC release export (row verified, no env) | 1930 | 690 | 352 |
+| SARC vs stock 1.5 | 1.60× | 1.64× | 1.81× |
+
+**Checks.**
+- Next token: the release export and SARC match tiled on the 1973-token real-text prompt and on the
+  1304-token unaligned prompt (fallback path).
+- Decode, 32 tokens: SARC 70.8–73.5 tok/s vs stock 69.5.
+- Other devices unaffected: on the Arc B580 (no rows), the dev build dispatches exactly the stock 1.5
+  kernels (48/48 cases).
+- `check.sh` passes: zone rule, twins, selection test, host and Android release-export builds, SPIR-V golden.
+- The SPIR-V verified on the device (dev build) is byte-identical to the release export.
+
+**Not verified.**
+- The `buffer_buffer` variant (buffer weights) builds and is in the golden, but no microbench or PTE
+  case uses buffer-stored 4-bit weights, so it has not run on the device.
+- Clocks were not pinned.
+
+**Finding: 1.5 vs 1.4 end to end.**
+- The 1.4 780M branch reached 2702 tok/s (1B), versus 1916 here, although the linear kernels are ~1 %
+  *faster*.
+- Both tiled and SARC gain the same ~311 ms per prefill: tiled 2557 → 2868 ms, SARC 758 → 1069 ms. So
+  the difference lies outside the 4w linears.
+- The most likely cause is the SDPA coopmat work (`sdpa_*_coopmat`) carried by the 1.4 dev branches and
+  not yet ported to 1.5. **Not yet confirmed**; the next step is `test_llama_microbench --sdpa` / ETDump
+  on both.

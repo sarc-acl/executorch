@@ -27,15 +27,17 @@ bool amd_wave64(const DeviceInfo& d) {
 constexpr TileDims k780mDims = {128, 128, 32, 4, 2, 32, 16, true};
 
 const Row kAmdRows[] = {
-    // Radeon 780M (gfx1103, RADV). 1.4 evidence: 1B 4w prefill 801 -> 2702
-    // tok/s vs tiled; the release-1.5 verification is sarc/evidence/780m-4w.
+    // Radeon 780M (gfx1103, RADV, Mesa 25.2.7). Verified on release 1.5
+    // (openspec/changes/sarc-1.5-bootstrap/results/780m): 2048-token prefill
+    // 1B/3B/8B 1916/683/352 tok/s vs stock 1.5 1205/421/194; kernel times
+    // within -1.6..-0.2 % of the 1.4 study; next token == tiled; pdiff pass.
     {"780m",
      amd_wave64,
      Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c",
      k780mDims,
      /*allow_texture_io=*/true,
-     Status::kUnverified},
+     Status::kVerified},
 };
 
 struct Registrar {
