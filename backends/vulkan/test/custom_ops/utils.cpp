@@ -736,12 +736,32 @@ bool ValueSpec::validate_against_reference(
     return false;
   }
 
-  // Element-wise comparison with both absolute and relative tolerance
+  // Element-wise comparison with both absolute and relative tolerance.
+  // A NaN reference element means "not computed" (sampled references, see
+  // test_llama_microbench's --ref-samples); it is skipped and counted.
   size_t num_mismatched = 0;
   size_t first_mismatch = 0;
+  size_t num_unchecked = 0;
+  for (size_t i = 0; i < reference_data.size(); ++i) {
+    num_unchecked += std::isnan(reference_data[i]) ? 1 : 0;
+  }
+  if (num_unchecked > 0) {
+    std::cout << "[sampled reference] checking "
+              << (reference_data.size() - num_unchecked) << " of "
+              << reference_data.size() << " elements" << std::endl;
+  }
+  float max_abs_diff = 0.0f;
+  float max_rel_diff = 0.0f;
   for (size_t i = 0; i < computed_data.size(); ++i) {
+    if (std::isnan(reference_data[i])) {
+      continue;
+    }
     float diff = std::abs(computed_data[i] - reference_data[i]);
     float abs_ref = std::abs(reference_data[i]);
+    max_abs_diff = std::max(max_abs_diff, diff);
+    if (abs_ref > abs_tolerance) {
+      max_rel_diff = std::max(max_rel_diff, diff / abs_ref);
+    }
 
     // Check if either absolute or relative tolerance condition is satisfied
     bool abs_tolerance_ok = diff <= abs_tolerance;
@@ -760,6 +780,12 @@ bool ValueSpec::validate_against_reference(
       }
       num_mismatched++;
     }
+  }
+  if (num_unchecked > 0) {
+    // Sampled references only (production-size diagnostics): report margins.
+    std::cout << "[sampled reference] max abs diff " << max_abs_diff
+              << " (tol " << abs_tolerance << "), max rel diff " << max_rel_diff
+              << " (tol " << rel_tolerance << ", |ref| > abs tol)" << std::endl;
   }
   if (num_mismatched > 0) {
     std::cout << "  total mismatched: " << num_mismatched << " / "

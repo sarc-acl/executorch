@@ -353,6 +353,16 @@ std::vector<float> as_f(const ValueSpec& s) {
 // not something to pay on every correctness/perf invocation.
 bool g_allow_large_reference = false;
 
+// Sampled reference: when > 0 and the output has more elements than this,
+// bench_reference computes only a deterministic sample of output elements --
+// the tile-boundary rows/cols (0, 1, 63, 64, 127, 128, 255, 256, last) crossed
+// with each other plus uniform random (m, n) -- and leaves the rest NaN, which
+// the comparator (utils.cpp) skips and reports. One element costs O(K), so a
+// production-size check drops from O(M*N*K) (minutes in this Debug build) to
+// well under a second. --production-diff defaults to 8192; --ref-full or
+// --ref-samples=0 restores the full reference.
+int64_t g_ref_samples = 0;
+
 void bench_reference(TestCase& tc) {
   const std::string op = tc.operator_name();
   const bool dq8ca = op.find("dq8ca") != std::string::npos;
@@ -395,36 +405,71 @@ void bench_reference(TestCase& tc) {
   const std::vector<int8_t>& w8 =
       four ? std::vector<int8_t>() : w.get_int8_data(); // [N, K]
 
-  auto& ref = out.get_ref_float_data();
-  ref.resize(M * N);
-  for (int64_t m = 0; m < M; ++m) {
+  auto element = [&](const int64_t m, const int64_t n) -> float {
     const float s_in = dq8ca ? in_scale[m] : 1.0f;
     const int zp = dq8ca ? int(in_zp[m]) : 0;
+    float acc = 0.0f;
+    for (int64_t k = 0; k < K; ++k) {
+      float a = inf[m * K + k];
+      if (dq8ca) {
+        float q = std::round(a / s_in) + float(zp);
+        q = std::min(std::max(q, -128.0f), 127.0f);
+        a = q - float(zp);
+      }
+      int wv;
+      if (four) {
+        const uint8_t byte = w4[n * (K / 2) + k / 2];
+        const int nib = (k & 1) ? ((byte >> 4) & 0xF) : (byte & 0xF);
+        wv = nib - 8;
+      } else {
+        wv = w8[n * K + k];
+      }
+      const float w_scale = four ? scf[(k / group) * N + n] : scf[n];
+      acc += a * float(wv) * w_scale;
+    }
+    float r = dq8ca ? acc * s_in : acc;
+    if (has_bias) {
+      r += bf[n];
+    }
+    return r;
+  };
+
+  auto& ref = out.get_ref_float_data();
+  if (g_ref_samples > 0 && M * N > g_ref_samples) {
+    ref.assign(M * N, std::numeric_limits<float>::quiet_NaN());
+    auto edges = [](const int64_t dim) {
+      std::vector<int64_t> v;
+      for (const int64_t e : {0, 1, 63, 64, 127, 128, 255, 256}) {
+        if (e < dim) {
+          v.push_back(e);
+        }
+      }
+      v.push_back(dim - 1);
+      return v;
+    };
+    for (const int64_t m : edges(M)) {
+      for (const int64_t n : edges(N)) {
+        ref[m * N + n] = element(m, n);
+      }
+    }
+    uint64_t state = 0x9E3779B97F4A7C15ull ^ uint64_t(M * 131 + N * 7 + K);
+    auto next = [&state]() {
+      state ^= state << 13;
+      state ^= state >> 7;
+      state ^= state << 17;
+      return state;
+    };
+    for (int64_t i = 0; i < g_ref_samples; ++i) {
+      const int64_t m = int64_t(next() % uint64_t(M));
+      const int64_t n = int64_t(next() % uint64_t(N));
+      ref[m * N + n] = element(m, n);
+    }
+    return;
+  }
+  ref.resize(M * N);
+  for (int64_t m = 0; m < M; ++m) {
     for (int64_t n = 0; n < N; ++n) {
-      float acc = 0.0f;
-      for (int64_t k = 0; k < K; ++k) {
-        float a = inf[m * K + k];
-        if (dq8ca) {
-          float q = std::round(a / s_in) + float(zp);
-          q = std::min(std::max(q, -128.0f), 127.0f);
-          a = q - float(zp);
-        }
-        int wv;
-        if (four) {
-          const uint8_t byte = w4[n * (K / 2) + k / 2];
-          const int nib = (k & 1) ? ((byte >> 4) & 0xF) : (byte & 0xF);
-          wv = nib - 8;
-        } else {
-          wv = w8[n * K + k];
-        }
-        const float w_scale = four ? scf[(k / group) * N + n] : scf[n];
-        acc += a * float(wv) * w_scale;
-      }
-      float r = dq8ca ? acc * s_in : acc;
-      if (has_bias) {
-        r += bf[n];
-      }
-      ref[m * N + n] = r;
+      ref[m * N + n] = element(m, n);
     }
   }
 }
@@ -886,15 +931,27 @@ bool run_linear_correctness(const CaseFilter& filter) {
 // g_allow_large_reference -- on the order of minutes total for all four 8B
 // shapes. That is acceptable for a one-shot diagnostic; it must never run as
 // part of the default correctness gate or perf sweep.
+// --production-diff-op / --production-diff-storage: which operator and IO
+// storage the production-shape diff checks (default 8da4w, buffer).
+std::string g_pdiff_op = "linear_dq8ca_q4gsw";
+utils::StorageType g_pdiff_storage = utils::kBuffer;
+// --production-diff-nonzero-zp: dq8ca activation zero points in [-27, 27] instead of 0.
+// The deterministic data zeroes them, which hides any error in the zero-point
+// correction; real per-token asymmetric quantization never does.
+bool g_pdiff_nonzero_zp = false;
+// --production-diff-model: which model's projection shapes (default 8B).
+std::string g_pdiff_model = "llama-3.1-8b";
+
 bool run_production_diff() {
   const LinearModel* model = nullptr;
   for (const auto& m : kLinearModels) {
-    if (std::string(m.model) == "llama-3.1-8b") {
+    if (std::string(m.model) == g_pdiff_model) {
       model = &m;
     }
   }
   if (model == nullptr) {
-    std::cout << "[production-diff] llama-3.1-8b not found in kLinearModels\n";
+    std::cout << "[production-diff] " << g_pdiff_model
+              << " not found in kLinearModels\n";
     return false;
   }
   g_allow_large_reference = true;
@@ -905,13 +962,21 @@ bool run_production_diff() {
         op_shape.K,
         op_shape.N,
         /*group_size=*/g_group,
-        /*op_name=*/"linear_dq8ca_q4gsw",
-        /*batch=*/0,
+        /*op_name=*/g_pdiff_op,
+        // Rank-3, batch 1: the exported model's layout, which the per-shape
+        // tile selection keys on (rank-2 would test only the default tile).
+        /*batch=*/1,
         /*model=*/model->model,
         /*regime=*/"prefill",
         /*op_label=*/op_shape.op_label};
-    TestCase tc = make_deterministic_correctness_case(
-        cfg, "linear_dq8ca_q4gsw", utils::kBuffer);
+    TestCase tc =
+        make_deterministic_correctness_case(cfg, g_pdiff_op, g_pdiff_storage);
+    if (g_pdiff_nonzero_zp && is_dq8ca(g_pdiff_op)) {
+      auto& zp = tc.inputs()[2].get_int8_data();
+      for (size_t i = 0; i < zp.size(); ++i) {
+        zp[i] = int8_t(int(i % 7) * 9 - 27);
+      }
+    }
     std::cout << "[production-diff] " << tc.name()
               << " (M=2048, K=" << op_shape.K << ", N=" << op_shape.N
               << ", group_size=" << g_group << ")\n";
@@ -954,7 +1019,9 @@ bool run_production_diff() {
   }
   g_allow_large_reference = false;
   std::cout << "[production-diff] " << (all_ok ? "ALL PASSED" : "FAILED")
-            << " (4 shapes, M=2048, 8da4w, buffer)\n";
+            << " (" << g_pdiff_model << ", 4 shapes, M=2048, " << g_pdiff_op << ", "
+            << (g_pdiff_storage == utils::kBuffer ? "buffer" : "texture3d")
+            << ")\n";
   return all_ok;
 }
 
@@ -2314,6 +2381,10 @@ void print_usage() {
          "                        correctness gate; a tile-variant token\n"
          "                        only affects one scheme+buffer cell)\n"
          "  --correctness-only   run just the linear correctness matrix\n"
+         "  --ref-samples=<N>    large-shape CPU reference: check N sampled output\n"
+         "                       elements (tile edges + seeded random); 0 = full;\n"
+         "                       --production-diff defaults to 8192\n"
+         "  --ref-full           full O(M*N*K) CPU reference (= --ref-samples=0)\n"
          "  --sdpa-correctness-only  run just the SDPA coopmat correctness "
          "cases\n"
          "  --sdpa-regions-only  enumerate the QK^T mask-region tile grid "
@@ -2382,6 +2453,8 @@ int main(int argc, char** argv) {
   std::string sdpa_tier = "all";
   bool skip_correctness = false, list_only = false;
   bool production_diff = false;
+  bool ref_full = false;
+  int64_t ref_samples_arg = -1;
   // Additive machine-readable output. Absent, every existing line is byte
   // for byte what it was.
   bool json_out = false;
@@ -2407,6 +2480,22 @@ int main(int argc, char** argv) {
       g_sdpa_force_fallback = true;
     } else if (arg == "--production-diff") {
       production_diff = true;
+    } else if (arg == "--ref-full") {
+      ref_full = true;
+    } else if (arg == "--production-diff-nonzero-zp") {
+      g_pdiff_nonzero_zp = true;
+    } else if (arg.rfind("--production-diff-model=", 0) == 0) {
+      g_pdiff_model = arg.substr(std::string("--production-diff-model=").size());
+    } else if (arg == "--production-diff-op=4w") {
+      g_pdiff_op = "linear_q4gsw";
+    } else if (arg == "--production-diff-op=8da4w") {
+      g_pdiff_op = "linear_dq8ca_q4gsw";
+    } else if (arg == "--production-diff-storage=texture3d") {
+      g_pdiff_storage = utils::kTexture3D;
+    } else if (arg == "--production-diff-storage=buffer") {
+      g_pdiff_storage = utils::kBuffer;
+    } else if (arg.rfind("--ref-samples=", 0) == 0) {
+      ref_samples_arg = std::stoll(arg.substr(std::string("--ref-samples=").size()));
     } else if (arg == "--skip-correctness") {
       skip_correctness = true;
     } else if (arg == "--list") {
@@ -2511,6 +2600,7 @@ int main(int argc, char** argv) {
   if (sdpa_correctness_only) {
     return finish_correctness(run_sdpa_correctness(sdpa_tier.c_str()));
   }
+  g_ref_samples = ref_full ? 0 : (ref_samples_arg >= 0 ? ref_samples_arg : (production_diff ? 8192 : 0));
   if (production_diff) {
     return finish_correctness(run_production_diff());
   }
