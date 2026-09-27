@@ -1,0 +1,243 @@
+[sarc_dev] overrides active: unverified=1 variant=
+
+=== Compute Shader Performance Benchmark ===
+Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; prefill 2048 / decode 1 @ ctx3072; linear group_size=128; 3 warmup + 5 timed runs per case)
+DEVICE,nvidia geforce rtx 4070 ti super,timestamp_period_ns=1,subgroup_size=32,coopmat=yes,max_shared_mem_bytes=49152
+----------------------------------------------------------------------
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (32,512,1)      (2,1,32)                                                                                                                   19.969 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (16384,16,1)    (512,1,1)                                                                                                                 446.789 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.1-8b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K4096_N4096_rank3batch1_Texture3D        [1x2048x4096]         466.755 μs     147228.250 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,prefill,tiled,4096,4096,466.755,0.361,147228.250,not_applicable,SKIPPED,texture3d,2048,446.789,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (32,512,1)      (2,1,32)                                                                                                                   20.948 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (16384,16,1)    (512,1,1)                                                                                                                 475.635 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.1-8b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K4096_N4096_rank3batch1_Buffer        [1x2048x4096]         496.582 μs     138385.031 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,prefill,tiled,4096,4096,496.582,0.937,138385.047,fallback_tiled,SKIPPED,buffer,2048,475.635,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (32,512,1)      (2,1,32)                                                                                                                   12.033 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (4096,16,1)     (512,1,1)                                                                                                                 112.290 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.1-8b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K4096_N1024_rank3batch1_Texture3D        [1x2048x4096]         124.323 μs     138187.828 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,prefill,tiled,4096,1024,124.323,0.281,138187.844,not_applicable,SKIPPED,texture3d,2048,112.290,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (32,512,1)      (2,1,32)                                                                                                                   11.037 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (4096,16,1)     (512,1,1)                                                                                                                 120.417 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.1-8b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K4096_N1024_rank3batch1_Buffer        [1x2048x4096]         131.455 μs     130690.180 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,prefill,tiled,4096,1024,131.455,0.467,130690.195,fallback_tiled,SKIPPED,buffer,2048,120.417,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (32,512,1)      (2,1,32)                                                                                                                   37.510 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (57344,16,1)    (512,1,1)                                                                                                                1583.734 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.1-8b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K4096_N14336_rank3batch1_Texture3D        [1x2048x4096]        1621.244 μs     148354.094 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,prefill,tiled,4096,14336,1621.244,0.685,148354.078,not_applicable,SKIPPED,texture3d,2048,1583.734,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (32,512,1)      (2,1,32)                                                                                                                   35.942 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (57344,16,1)    (512,1,1)                                                                                                                1690.300 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.1-8b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K4096_N14336_rank3batch1_Buffer        [1x2048x4096]        1726.242 μs     139330.500 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,prefill,tiled,4096,14336,1726.242,0.772,139330.484,fallback_tiled,SKIPPED,buffer,2048,1690.300,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (112,512,1)     (2,1,32)                                                                                                                  122.010 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (16384,16,1)    (512,1,1)                                                                                                                1565.286 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.1-8b_prefill_w2_linear_dq8ca_q4gsw_M2048_K14336_N4096_rank3batch1_Texture3D       [1x2048x14336]        1687.296 μs     142546.531 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,prefill,tiled,14336,4096,1687.296,0.202,142546.531,not_applicable,SKIPPED,texture3d,2048,1565.286,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (112,512,1)     (2,1,32)                                                                                                                  491.648 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (16384,16,1)    (512,1,1)                                                                                                                2492.364 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.1-8b_prefill_w2_linear_dq8ca_q4gsw_M2048_K14336_N4096_rank3batch1_Buffer       [1x2048x14336]        2984.013 μs      80602.258 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,8da4w,prefill,tiled,14336,4096,2984.013,2699.339,80602.258,fallback_tiled,SKIPPED,buffer,2048,2492.364,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (24,512,1)      (2,1,32)                                                                                                                    9.663 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (12288,16,1)    (512,1,1)                                                                                                                 249.483 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-3b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K3072_N3072_rank3batch1_Texture3D        [1x2048x3072]         259.146 μs     149161.688 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,prefill,tiled,3072,3072,259.146,0.735,149161.703,not_applicable,SKIPPED,texture3d,2048,249.483,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (24,512,1)      (2,1,32)                                                                                                                    8.796 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (12288,16,1)    (512,1,1)                                                                                                                 277.970 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-3b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K3072_N3072_rank3batch1_Buffer        [1x2048x3072]         286.766 μs     134795.484 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,prefill,tiled,3072,3072,286.766,0.522,134795.500,fallback_tiled,SKIPPED,buffer,2048,277.970,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (24,512,1)      (2,1,32)                                                                                                                    9.555 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (4096,16,1)     (512,1,1)                                                                                                                  84.082 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-3b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K3072_N1024_rank3batch1_Texture3D        [1x2048x3072]          93.637 μs     137605.359 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,prefill,tiled,3072,1024,93.637,0.179,137605.359,not_applicable,SKIPPED,texture3d,2048,84.082,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (24,512,1)      (2,1,32)                                                                                                                    8.718 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (4096,16,1)     (512,1,1)                                                                                                                  92.366 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-3b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K3072_N1024_rank3batch1_Buffer        [1x2048x3072]         101.085 μs     127465.672 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,prefill,tiled,3072,1024,101.085,0.198,127465.664,fallback_tiled,SKIPPED,buffer,2048,92.366,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (24,512,1)      (2,1,32)                                                                                                                   32.507 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (32768,16,1)    (512,1,1)                                                                                                                 677.574 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-3b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K3072_N8192_rank3batch1_Texture3D        [1x2048x3072]         710.082 μs     145165.141 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,prefill,tiled,3072,8192,710.082,3.153,145165.156,not_applicable,SKIPPED,texture3d,2048,677.574,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (24,512,1)      (2,1,32)                                                                                                                   30.019 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (32768,16,1)    (512,1,1)                                                                                                                 729.019 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-3b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K3072_N8192_rank3batch1_Buffer        [1x2048x3072]         759.036 μs     135802.797 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,prefill,tiled,3072,8192,759.036,1.164,135802.797,fallback_tiled,SKIPPED,buffer,2048,729.019,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (64,512,1)      (2,1,32)                                                                                                                   77.453 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (12288,16,1)    (512,1,1)                                                                                                                 676.172 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-3b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N3072_rank3batch1_Texture3D        [1x2048x8192]         753.625 μs     136777.906 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,prefill,tiled,8192,3072,753.625,2.174,136777.922,not_applicable,SKIPPED,texture3d,2048,676.172,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (64,512,1)      (2,1,32)                                                                                                                   76.973 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (12288,16,1)    (512,1,1)                                                                                                                 710.240 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-3b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N3072_rank3batch1_Buffer         [1x2048x8192]         787.210 μs     130942.383 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,8da4w,prefill,tiled,8192,3072,787.210,0.734,130942.391,fallback_tiled,SKIPPED,buffer,2048,710.240,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (16,512,1)      (2,1,32)                                                                                                                    7.056 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (8192,16,1)     (512,1,1)                                                                                                                 118.219 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-1b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K2048_N2048_rank3batch1_Texture3D        [1x2048x2048]         125.276 μs     137136.172 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,prefill,tiled,2048,2048,125.276,0.544,137136.172,not_applicable,SKIPPED,texture3d,2048,118.219,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (16,512,1)      (2,1,32)                                                                                                                    6.400 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (8192,16,1)     (512,1,1)                                                                                                                 126.711 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-1b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K2048_N2048_rank3batch1_Buffer        [1x2048x2048]         133.111 μs     129064.430 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,prefill,tiled,2048,2048,133.111,0.395,129064.430,fallback_tiled,SKIPPED,buffer,2048,126.711,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (16,512,1)      (2,1,32)                                                                                                                    7.716 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (2048,16,1)     (512,1,1)                                                                                                                  30.978 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-1b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K2048_N512_rank3batch1_Texture3D        [1x2048x2048]          38.694 μs     110998.594 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,prefill,tiled,2048,512,38.694,0.036,110998.594,not_applicable,SKIPPED,texture3d,2048,30.978,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (16,512,1)      (2,1,32)                                                                                                                    7.339 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (2048,16,1)     (512,1,1)                                                                                                                  33.809 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-1b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K2048_N512_rank3batch1_Buffer        [1x2048x2048]          41.148 μs     104377.672 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,prefill,tiled,2048,512,41.148,0.169,104377.664,fallback_tiled,SKIPPED,buffer,2048,33.809,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (16,512,1)      (2,1,32)                                                                                                                   15.706 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (32768,16,1)    (512,1,1)                                                                                                                 475.929 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-1b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K2048_N8192_rank3batch1_Texture3D        [1x2048x2048]         491.635 μs     139777.562 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,prefill,tiled,2048,8192,491.635,0.644,139777.562,not_applicable,SKIPPED,texture3d,2048,475.929,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (16,512,1)      (2,1,32)                                                                                                                   14.150 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (32768,16,1)    (512,1,1)                                                                                                                 499.334 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-1b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K2048_N8192_rank3batch1_Buffer        [1x2048x2048]         513.483 μs     133830.203 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,prefill,tiled,2048,8192,513.483,0.308,133830.219,fallback_tiled,SKIPPED,buffer,2048,499.334,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (64,512,1)      (2,1,32)                                                                                                                   72.968 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (8192,16,1)     (512,1,1)                                                                                                                 447.782 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-1b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N2048_rank3batch1_Texture3D        [1x2048x8192]         520.751 μs     131962.250 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,prefill,tiled,8192,2048,520.751,0.391,131962.266,not_applicable,SKIPPED,texture3d,2048,447.782,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_quantize_and_pack_4w_with_group_sums_o2..     (64,512,1)      (2,1,32)                                                                                                                   70.559 μs                                 
+sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk3..     (8192,16,1)     (512,1,1)                                                                                                                 471.269 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-1b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N2048_rank3batch1_Buffer         [1x2048x8192]         541.827 μs     126829.070 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,8da4w,prefill,tiled,8192,2048,541.827,0.436,126829.086,fallback_tiled,SKIPPED,buffer,2048,471.269,sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+----------------------------------------------------------------------
+==================== RAW RESULTS ====================
+suite     model         scheme regime   op     storage    variant  (M,K,N)                   mean_us     stdev   kern_us   GFLOP/s  dispatch
+linear    llama-3.1-8b  8da4w  prefill  wq_wo  texture3d  tiled    (2048,4096,4096)            466.8       0.4     446.8  147228.2  not_applicable
+linear    llama-3.1-8b  8da4w  prefill  wq_wo  buffer     tiled    (2048,4096,4096)            496.6       0.9     475.6  138385.0  fallback_tiled
+linear    llama-3.1-8b  8da4w  prefill  wk_wv  texture3d  tiled    (2048,4096,1024)            124.3       0.3     112.3  138187.8  not_applicable
+linear    llama-3.1-8b  8da4w  prefill  wk_wv  buffer     tiled    (2048,4096,1024)            131.5       0.5     120.4  130690.2  fallback_tiled
+linear    llama-3.1-8b  8da4w  prefill  w1_w3  texture3d  tiled    (2048,4096,14336)          1621.2       0.7    1583.7  148354.1  not_applicable
+linear    llama-3.1-8b  8da4w  prefill  w1_w3  buffer     tiled    (2048,4096,14336)          1726.2       0.8    1690.3  139330.5  fallback_tiled
+linear    llama-3.1-8b  8da4w  prefill  w2     texture3d  tiled    (2048,14336,4096)          1687.3       0.2    1565.3  142546.5  not_applicable
+linear    llama-3.1-8b  8da4w  prefill  w2     buffer     tiled    (2048,14336,4096)          2984.0    2699.3    2492.4   80602.3  fallback_tiled
+linear    llama-3.2-3b  8da4w  prefill  wq_wo  texture3d  tiled    (2048,3072,3072)            259.1       0.7     249.5  149161.7  not_applicable
+linear    llama-3.2-3b  8da4w  prefill  wq_wo  buffer     tiled    (2048,3072,3072)            286.8       0.5     278.0  134795.5  fallback_tiled
+linear    llama-3.2-3b  8da4w  prefill  wk_wv  texture3d  tiled    (2048,3072,1024)             93.6       0.2      84.1  137605.4  not_applicable
+linear    llama-3.2-3b  8da4w  prefill  wk_wv  buffer     tiled    (2048,3072,1024)            101.1       0.2      92.4  127465.7  fallback_tiled
+linear    llama-3.2-3b  8da4w  prefill  w1_w3  texture3d  tiled    (2048,3072,8192)            710.1       3.2     677.6  145165.2  not_applicable
+linear    llama-3.2-3b  8da4w  prefill  w1_w3  buffer     tiled    (2048,3072,8192)            759.0       1.2     729.0  135802.8  fallback_tiled
+linear    llama-3.2-3b  8da4w  prefill  w2     texture3d  tiled    (2048,8192,3072)            753.6       2.2     676.2  136777.9  not_applicable
+linear    llama-3.2-3b  8da4w  prefill  w2     buffer     tiled    (2048,8192,3072)            787.2       0.7     710.2  130942.4  fallback_tiled
+linear    llama-3.2-1b  8da4w  prefill  wq_wo  texture3d  tiled    (2048,2048,2048)            125.3       0.5     118.2  137136.2  not_applicable
+linear    llama-3.2-1b  8da4w  prefill  wq_wo  buffer     tiled    (2048,2048,2048)            133.1       0.4     126.7  129064.4  fallback_tiled
+linear    llama-3.2-1b  8da4w  prefill  wk_wv  texture3d  tiled    (2048,2048,512)              38.7       0.0      31.0  110998.6  not_applicable
+linear    llama-3.2-1b  8da4w  prefill  wk_wv  buffer     tiled    (2048,2048,512)              41.1       0.2      33.8  104377.7  fallback_tiled
+linear    llama-3.2-1b  8da4w  prefill  w1_w3  texture3d  tiled    (2048,2048,8192)            491.6       0.6     475.9  139777.6  not_applicable
+linear    llama-3.2-1b  8da4w  prefill  w1_w3  buffer     tiled    (2048,2048,8192)            513.5       0.3     499.3  133830.2  fallback_tiled
+linear    llama-3.2-1b  8da4w  prefill  w2     texture3d  tiled    (2048,8192,2048)            520.8       0.4     447.8  131962.3  not_applicable
+linear    llama-3.2-1b  8da4w  prefill  w2     buffer     tiled    (2048,8192,2048)            541.8       0.4     471.3  126829.1  fallback_tiled
+
+========== LINEAR: coopmat (WMMA) vs tiled, prefill M=2048 ==========
+scheme model         op     (K,N)             tiled_tex     coopmat     op_x   kern_x  (us; op_x = whole op incl. 8da4w act-quant, kern_x = linear shader only)
+8da4w  llama-3.1-8b  wq_wo  (4096,4096)           466.8       496.6        -        -  ! sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+8da4w  llama-3.1-8b  wk_wv  (4096,1024)           124.3       131.5        -        -  ! sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+8da4w  llama-3.1-8b  w1_w3  (4096,14336)         1621.2      1726.2        -        -  ! sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+8da4w  llama-3.1-8b  w2     (14336,4096)         1687.3      2984.0        -        -  ! sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+8da4w  llama-3.2-3b  wq_wo  (3072,3072)           259.1       286.8        -        -  ! sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+8da4w  llama-3.2-3b  wk_wv  (3072,1024)            93.6       101.1        -        -  ! sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+8da4w  llama-3.2-3b  w1_w3  (3072,8192)           710.1       759.0        -        -  ! sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+8da4w  llama-3.2-3b  w2     (8192,3072)           753.6       787.2        -        -  ! sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+8da4w  llama-3.2-1b  wq_wo  (2048,2048)           125.3       133.1        -        -  ! sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+8da4w  llama-3.2-1b  wk_wv  (2048,512)             38.7        41.1        -        -  ! sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+8da4w  llama-3.2-1b  w1_w3  (2048,8192)           491.6       513.5        -        -  ! sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+8da4w  llama-3.2-1b  w2     (8192,2048)           520.8       541.8        -        -  ! sarc_linear_dq8ca_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half
+(! = buffer case did NOT dispatch a coopmat shader; shown for reference, excluded from speedups/geomeans)
+
+One or more cases crashed or did not dispatch the expected kernel (see dispatch column) -- do not trust their speedup numbers.

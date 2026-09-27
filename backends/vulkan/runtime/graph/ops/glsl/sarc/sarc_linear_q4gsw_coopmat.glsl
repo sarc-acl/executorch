@@ -109,6 +109,9 @@ $if ACC_FP32:
 $if CSH_IN_ASH:
   #define CSH_IN_ASH
 
+$if SH_F16V4:
+  #define SH_F16V4
+
 $if FRAG_LAYOUT:
   #define FRAG_LAYOUT
 

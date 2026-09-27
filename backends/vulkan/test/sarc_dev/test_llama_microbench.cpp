@@ -1454,10 +1454,12 @@ bool run_sdpa_suite(const std::string& model_filter) {
       } else {
         const bool tiled_is_tiled =
             !has_kernel_containing(tiled.dispatched_kernels, "_coopmat");
-        const bool qk_coopmat = has_kernel_containing(
-            coopmat.dispatched_kernels, "sdpa_compute_attn_weights_coopmat");
-        const bool av_coopmat = has_kernel_containing(
-            coopmat.dispatched_kernels, "sdpa_compute_out_coopmat");
+        const bool qk_coopmat = (has_kernel_containing(
+             coopmat.dispatched_kernels, "sdpa_compute_attn_weights_coopmat") ||
+         has_kernel_containing(coopmat.dispatched_kernels, "sarc_sdpa_qk_coopmat"));
+        const bool av_coopmat = (has_kernel_containing(
+             coopmat.dispatched_kernels, "sdpa_compute_out_coopmat") ||
+         has_kernel_containing(coopmat.dispatched_kernels, "sarc_sdpa_av_coopmat"));
         dispatch = (tiled_is_tiled && qk_coopmat && av_coopmat)
             ? "confirmed"
             : "fallback_tiled";
@@ -1910,9 +1912,11 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
     dispatched.push_back(r.kernel_name);
   }
   const bool qk_fired =
-      has_kernel_containing(dispatched, "sdpa_compute_attn_weights_coopmat");
+      (has_kernel_containing(dispatched, "sdpa_compute_attn_weights_coopmat") ||
+       has_kernel_containing(dispatched, "sarc_sdpa_qk_coopmat"));
   const bool av_fired =
-      has_kernel_containing(dispatched, "sdpa_compute_out_coopmat");
+      (has_kernel_containing(dispatched, "sdpa_compute_out_coopmat") ||
+       has_kernel_containing(dispatched, "sarc_sdpa_av_coopmat"));
 
   std::vector<uint16_t> outh(q_numel);
   graph.maybe_cast_and_copy_from_staging(

@@ -1,0 +1,51 @@
+[sarc_dev] overrides active: unverified=1 variant=
+
+=== Compute Shader Performance Benchmark ===
+Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; prefill 2048 / decode 1 @ ctx3072; linear group_size=128; 3 warmup + 5 timed runs per case)
+DEVICE,nvidia tegra orin (nvgpu),timestamp_period_ns=1,subgroup_size=32,coopmat=yes,max_shared_mem_bytes=49152
+----------------------------------------------------------------------
+[production-diff] llama-3.1-8b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K4096_N4096_rank3batch1_Buffer (M=2048, K=4096, N=4096, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8200 of 8388608 elements
+[sampled reference] max abs diff 0.172913 (tol 0.5), max rel diff 0.0274471 (tol 0.05, |ref| > abs tol)
+"kernel_name": "quantize_and_pack_4h4w_with_..     (32,512,1)      (2,1,32)                                                                                                                  412.038 μs                                 
+"kernel_name": "linear_dq8ca_q4gsw_tiled_buf..     (512,512,1)     (8,8,1)                                                                                                                133939.438 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.1-8b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K4096_N4096_rank3batch1_Buffer        [1x2048x4096]      134351.469 μs        511.490 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.1-8b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K4096_N4096_rank3batch1_Buffer -> "kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.1-8b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K4096_N1024_rank3batch1_Buffer (M=2048, K=4096, N=1024, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8008 of 2097152 elements
+[sampled reference] max abs diff 0.211 (tol 0.500), max rel diff 0.043 (tol 0.050, |ref| > abs tol)
+"kernel_name": "quantize_and_pack_4h4w_with_..     (32,512,1)      (2,1,32)                                                                                                                  407.411 μs                                 
+"kernel_name": "linear_dq8ca_q4gsw_tiled_buf..     (128,512,1)     (8,8,1)                                                                                                                 33743.719 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.1-8b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K4096_N1024_rank3batch1_Buffer        [1x2048x4096]       34151.133 μs        503.054 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.1-8b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K4096_N1024_rank3batch1_Buffer -> "kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.1-8b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K4096_N14336_rank3batch1_Buffer (M=2048, K=4096, N=14336, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8254 of 29360128 elements
+[sampled reference] max abs diff 0.173 (tol 0.500), max rel diff 0.047 (tol 0.050, |ref| > abs tol)
+"kernel_name": "quantize_and_pack_4h4w_with_..     (32,512,1)      (2,1,32)                                                                                                                  411.264 μs                                 
+"kernel_name": "linear_dq8ca_q4gsw_tiled_buf..     (1792,512,1)    (8,8,1)                                                                                                                468129.656 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.1-8b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K4096_N14336_rank3batch1_Buffer        [1x2048x4096]      468540.906 μs        513.334 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.1-8b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K4096_N14336_rank3batch1_Buffer -> "kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.1-8b_prefill_w2_linear_dq8ca_q4gsw_M2048_K14336_N4096_rank3batch1_Buffer (M=2048, K=14336, N=4096, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8209 of 8388608 elements
+[sampled reference] max abs diff 1.033 (tol 0.500), max rel diff 0.073 (tol 0.050, |ref| > abs tol)
+"kernel_name": "quantize_and_pack_4h4w_with_..     (112,512,1)     (2,1,32)                                                                                                                 1394.048 μs                                 
+"kernel_name": "linear_dq8ca_q4gsw_tiled_buf..     (512,512,1)     (8,8,1)                                                                                                                469225.094 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.1-8b_prefill_w2_linear_dq8ca_q4gsw_M2048_K14336_N4096_rank3batch1_Buffer       [1x2048x14336]      470619.156 μs        511.068 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.1-8b_prefill_w2_linear_dq8ca_q4gsw_M2048_K14336_N4096_rank3batch1_Buffer -> "kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] FAILED (llama-3.1-8b, 4 shapes, M=2048, linear_dq8ca_q4gsw, buffer)

@@ -1,0 +1,51 @@
+[sarc_dev] overrides active: unverified=1 variant=
+
+=== Compute Shader Performance Benchmark ===
+Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; prefill 2048 / decode 1 @ ctx3072; linear group_size=128; 3 warmup + 5 timed runs per case)
+DEVICE,amd radeon 780m graphics (radv phoenix),timestamp_period_ns=10,subgroup_size=64,coopmat=yes,max_shared_mem_bytes=65536
+----------------------------------------------------------------------
+[production-diff] llama-3.2-3b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K3072_N3072_rank3batch1_Buffer (M=2048, K=3072, N=3072, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8185 of 6291456 elements
+[sampled reference] max abs diff 0.0309753 (tol 0.5), max rel diff 0.000487805 (tol 0.05, |ref| > abs tol)
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (24,512,1)      (2,1,32)                                                                                                                  253.264 μs                                 
+sarc_linear_dq8ca_zpg_t128x64k32g42s32_buffe..     (12288,16,1)    (256,1,1)                                                                                                                3855.741 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-3b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K3072_N3072_rank3batch1_Buffer        [1x2048x3072]        4109.004 μs       9407.316 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.2-3b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K3072_N3072_rank3batch1_Buffer -> sarc_linear_dq8ca_zpg_t128x64k32g42s32_buffer_texture2d_half (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.2-3b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K3072_N1024_rank3batch1_Buffer (M=2048, K=3072, N=1024, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8026 of 2097152 elements
+[sampled reference] max abs diff 0.031 (tol 0.500), max rel diff 0.000 (tol 0.050, |ref| > abs tol)
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (24,512,1)      (2,1,32)                                                                                                                  253.027 μs                                 
+sarc_linear_dq8ca_zpg_t128x64k32g42s32_buffe..     (4096,16,1)     (256,1,1)                                                                                                                1303.131 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-3b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K3072_N1024_rank3batch1_Buffer        [1x2048x3072]        1556.158 μs       8279.942 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.2-3b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K3072_N1024_rank3batch1_Buffer -> sarc_linear_dq8ca_zpg_t128x64k32g42s32_buffer_texture2d_half (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.2-3b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K3072_N8192_rank3batch1_Buffer (M=2048, K=3072, N=8192, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8248 of 16777216 elements
+[sampled reference] max abs diff 0.031 (tol 0.500), max rel diff 0.000 (tol 0.050, |ref| > abs tol)
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (24,512,1)      (2,1,32)                                                                                                                  253.528 μs                                 
+sarc_linear_dq8ca_zpg_t128x64k32g42s32_buffe..     (32768,16,1)    (256,1,1)                                                                                                               10347.168 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-3b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K3072_N8192_rank3batch1_Buffer        [1x2048x3072]       10600.695 μs       9723.816 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.2-3b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K3072_N8192_rank3batch1_Buffer -> sarc_linear_dq8ca_zpg_t128x64k32g42s32_buffer_texture2d_half (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.2-3b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N3072_rank3batch1_Buffer (M=2048, K=8192, N=3072, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8187 of 6291456 elements
+[sampled reference] max abs diff 0.062 (tol 0.500), max rel diff 0.000 (tol 0.050, |ref| > abs tol)
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (64,512,1)      (2,1,32)                                                                                                                  676.070 μs                                 
+sarc_linear_dq8ca_zpg_t128x64k32g42s32_buffe..     (12288,16,1)    (256,1,1)                                                                                                               10338.746 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-3b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N3072_rank3batch1_Buffer         [1x2048x8192]       11014.815 μs       9358.233 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.2-3b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N3072_rank3batch1_Buffer -> sarc_linear_dq8ca_zpg_t128x64k32g42s32_buffer_texture2d_half (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] FAILED (llama-3.2-3b, 4 shapes, M=2048, linear_dq8ca_q4gsw, buffer)

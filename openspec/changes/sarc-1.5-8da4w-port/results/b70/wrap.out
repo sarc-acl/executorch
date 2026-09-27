@@ -1,0 +1,27 @@
+stopped 8 llm-api
+correctness rc=1 [correctness] FAILED -- numeric failure(s) and/or a rank-3 case did not dispatch coopmat
+linear 8da4w rc=1 kernels:  12 "sarc_linear_dq8ca_zpg_t256x64k32g48s16m8_buffer_texture2d_half"; 12 "sarc_linear_dq8ca_zpg_t256x64k32g48s16m8_texture3d_texture2d_half";
+1b 8da4w tiled prefill_tok_s=8325.2
+1b 8da4w default prefill_tok_s=12412.1
+1b 8da4w check: default vs tiled output SAME
+1b 8da4w unaligned: default vs tiled output DIFFER
+1b 8da4w decode rc=0 "generated_tokens":31 decode_tok_s=72.77
+3b 8da4w tiled prefill_tok_s=3282.05
+3b 8da4w default prefill_tok_s=5251.28
+8b 8da4w tiled prefill_tok_s=1380.98
+8b 8da4w default prefill_tok_s=2737.97
+pdiff llama-3.2-1b 8da4w buffer rc=1 [production-diff] FAILED (llama-3.2-1b, 4 shapes, M=2048, linear_dq8ca_q4gsw, buffer)
+pdiff llama-3.2-1b 8da4w texture3d rc=1 [production-diff] FAILED (llama-3.2-1b, 4 shapes, M=2048, linear_dq8ca_q4gsw, texture3d)
+pdiff llama-3.2-3b 8da4w buffer rc=1 [production-diff] FAILED (llama-3.2-3b, 4 shapes, M=2048, linear_dq8ca_q4gsw, buffer)
+pdiff llama-3.2-3b 8da4w texture3d rc=1 [production-diff] FAILED (llama-3.2-3b, 4 shapes, M=2048, linear_dq8ca_q4gsw, texture3d)
+pdiff llama-3.1-8b 8da4w buffer rc=1 [production-diff] FAILED (llama-3.1-8b, 4 shapes, M=2048, linear_dq8ca_q4gsw, buffer)
+pdiff llama-3.1-8b 8da4w texture3d rc=1 [production-diff] FAILED (llama-3.1-8b, 4 shapes, M=2048, linear_dq8ca_q4gsw, texture3d)
+---- stock
+correctness rc=1 [correctness] FAILED -- numeric failure(s) and/or a rank-3 case did not dispatch coopmat
+linear 8da4w rc=1 kernels:  12 "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8"; 12 "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8";
+1b 8da4w default prefill_tok_s=8291.5
+1b 8da4w decode rc=0 "generated_tokens":31 decode_tok_s=69.5067
+3b 8da4w default prefill_tok_s=3271.57
+8b 8da4w default prefill_tok_s=1375.42
+ALLDONE
+restored llm-api: 8/8

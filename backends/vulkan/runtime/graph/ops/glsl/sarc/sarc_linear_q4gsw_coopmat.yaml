@@ -31,6 +31,7 @@ sarc_linear_q4gsw_coopmat:
     FRAG_LAYOUT: false
     IMG_A: false
     IMG_W: false
+    SH_F16V4: false
   shader_variants:
     # Radeon 780M (RDNA3, RADV). fp32 accumulate ('f32') and the texture3d
     # drain staged in Ash ('c'). 1.4 study: igpu-roofline docs/780M-WMMA-LESSONS.md.
@@ -137,3 +138,37 @@ sarc_linear_q4gsw_coopmat:
       WG_TILE_K: 16
       SG_GRID_X: 2
       SG_GRID_Y: 2
+    # Qualcomm Adreno 840 (S26): fp16 MMA only at M = 64; f16vec4 LDS staging.
+    # 1.4 branch yanwen/release14-quant-shaders-qualcomm (not verified on 1.5;
+    # owned by the phone agent).
+    - NAME: sarc_linear_q4gsw_coopmat_t64x64k32g21s64m64x32x16_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 64
+      MMA_N: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+      SH_F16V4: true
+    - NAME: sarc_linear_q4gsw_coopmat_t64x64k32g21s64m64x32x16_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 64
+      MMA_N: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+      SH_F16V4: true
+    - NAME: sarc_linear_q4gsw_coopmat_t64x64k32g21s64m64x32x16_buffer_buffer_half
+      WEIGHT_STORAGE: buffer
+      MMA_M: 64
+      MMA_N: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+      SH_F16V4: true
