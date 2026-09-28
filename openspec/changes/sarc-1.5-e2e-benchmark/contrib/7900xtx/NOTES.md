@@ -32,7 +32,7 @@ Labels: [M] measured in this campaign, [R] roofline, [S] source, [I] inference, 
   - traced: stock 3587e4c6e869… / sarc b64509ea322f… (llama_main; ETDump builds, full hashes in the campaign env)
   - probe-stock/logits_probe 14da0edba56d1c831fac73dd48d8f76ee0b5e1e12d2ea4be059077ea3f2b27c7,
     probe-sarc/logits_probe 6374c8d137aaf4ed7e560b688bf78478048ad0a7798906de862be98214e95ff0
-- Models (`*_embq_ctx3072.pte`, sha256 == /sarc-c/gpusw/OCL/issues/Executorch/pte/MANIFEST.json), flat-named:
+- Models (`*_embq_ctx3072.pte`, sha256 == the shared model manifest (MANIFEST.json)), flat-named:
   1b 4w 1ac83440b93b2cde…, 1b 8da4w fb99c89e141f420b…, 3b 4w 92117564851859bd…, 3b 8da4w e9eba0cf5a0f6ca7…,
   8b 4w 695dd232a500e9b7…, 8b 8da4w 6f172bc5590cdf68… [M]. Whether these are the same exports as the five-GPU
   campaign's `/mnt/linux-share/models/*_vulkan_*.pte` is [O] (no hashes of those in the repo).

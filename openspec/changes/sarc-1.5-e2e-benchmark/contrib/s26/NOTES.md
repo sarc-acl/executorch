@@ -27,7 +27,7 @@ Labels: [M] measured in this campaign, [R] roofline, [S] source, [I] inference, 
 - sha256: stock/llama_main 7637c605c2b10692b6c30931d0f13a285fdd4d4352dc49f62650763e20f1ec2e,
   sarc/llama_main 3a9d85dea22233b92a55dbfe440c320357d94eaf6fa76f23d8cbe075cb27df03; traced stock e079ddc13fdf…,
   sarc e0d3fd40d8cf…; probe stock c1bfbb65f0e6…, sarc 61d601676e15… (full hashes: campaign env/logs) [M].
-- Models: `*_embq_ctx3072.pte` (sha256 == /sarc-c/gpusw/OCL/issues/Executorch/pte/MANIFEST.json), flat-named:
+- Models: `*_embq_ctx3072.pte` (sha256 == the shared model manifest (MANIFEST.json)), flat-named:
   1b 4w 1ac83440b93b2cde…, 1b 8da4w fb99c89e141f420b…, 3b 4w 92117564851859bd…, 3b 8da4w e9eba0cf5a0f6ca7…,
   8b 4w 695dd232a500e9b7…, 8b 8da4w 6f172bc5590cdf68… [M]. Same exports as the five-GPU campaign: [O].
 
