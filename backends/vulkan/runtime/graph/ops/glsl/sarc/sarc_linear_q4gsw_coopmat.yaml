@@ -33,6 +33,7 @@ sarc_linear_q4gsw_coopmat:
     IMG_A: false
     IMG_W: false
     SH_F16V4: false
+    CSH_BAND: false
     B_COLMAJOR: false
   shader_variants:
     # Radeon 780M (RDNA3, RADV). fp32 accumulate ('f32') and the texture3d
@@ -186,3 +187,51 @@ sarc_linear_q4gsw_coopmat:
       ACC_FP32: true
       CSH_IN_ASH: true
       B_COLMAJOR: true
+    # Mali-G1-Ultra MC12 (vivo V2502A), unverified: MMA 16x32x32 (its only large fp16 shape),
+    # subgroup 16, 256 threads (4x4 subgroups, one MMA each: register pressure limits Mali),
+    # fp16 per-group accumulation + fp32 total (ACC_GROUP_FP32; plain fp16 has the tiled kernel's
+    # long-K error), f16vec4 LDS (SH_F16V4), band-wise texture3d drain (CSH_BAND) to fit 32 KiB.
+    # Sweep origin: sarc_dev t64x128k32g44s16m16x32x32gahb (2026-09-28).
+    - NAME: sarc_linear_q4gsw_coopmat_t64x128k32g44s16m16x32x32gahb_buffer_texture2d_half
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 16
+      MMA_N: 32
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_GROUP_FP32: true
+      SH_F16V4: true
+      CSH_BAND: true
+    - NAME: sarc_linear_q4gsw_coopmat_t64x128k32g44s16m16x32x32gahb_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 16
+      MMA_N: 32
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_GROUP_FP32: true
+      SH_F16V4: true
+      CSH_BAND: true
+    - NAME: sarc_linear_q4gsw_coopmat_t64x128k32g44s16m16x32x32gahb_buffer_buffer_half
+      WEIGHT_STORAGE: buffer
+      MMA_M: 16
+      MMA_N: 32
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_GROUP_FP32: true
+      SH_F16V4: true
+      CSH_BAND: true

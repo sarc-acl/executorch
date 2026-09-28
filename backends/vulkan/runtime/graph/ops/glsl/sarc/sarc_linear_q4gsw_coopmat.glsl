@@ -27,6 +27,8 @@
  *                   registers (Adreno 840: no fp32 accumulator coopmat)
  *   CSH_IN_ASH      texture3d drain staged in dead Ash (RDNA3 occupancy)
  *   B_COLMAJOR      B staged N-major in LDS, ColumnMajor B coopMatLoad (RDNA3 7900 XTX)
+ *   CSH_BAND        texture3d drain one SG_GRID_Y band at a time (Csh = MMA_M rows;
+ *                   Mali-G1 256-thread tiles fit the 32 KiB LDS)
  *   FRAG_LAYOUT     fragment-contiguous LDS, no padding (Intel Xe2)
  *   IMG_A / IMG_W   storage-image loads for A / weights (Intel Xe2)
  *   MMA_M = 8       Intel Xe2 exposes fp16 coopmat only at 8x16x16
@@ -126,6 +128,9 @@ $if B_COLMAJOR:
 
 $if SH_F16V4:
   #define SH_F16V4
+
+$if CSH_BAND:
+  #define CSH_BAND
 
 $if FRAG_LAYOUT:
   #define FRAG_LAYOUT
