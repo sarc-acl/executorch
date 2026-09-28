@@ -1,0 +1,218 @@
+# driver: AMDVLK 2025.Q2.1 (LLPC), RX 7900 XTX gfx1100, host-7900xtx
+# source: VK_KHR_pipeline_executable_properties ISA.cs via igpu-roofline inspect runner (sha256 d4c4590c...)
+# kernel: igpu-roofline matrix_fp16_16x16x16_c8
+# subgroup_size: 64 (executable subgroupSize; workgroup 64 = one wave64)
+# stats: numUsedVgprs=47; numUsedSgprs=16; ldsSizePerLocalWorkGroup=65536; ldsUsageSizeInBytes=0; scratchMemUsageInBytes=0
+_amdgpu_cs_main:
+BB0_0:
+	v_mbcnt_lo_u32_b32 v0, -1, 0                                               ; D71F0000 000100C1
+	s_getpc_b64 s[6:7]                                                         ; BE864700
+	s_mov_b32 s0, s3                                                           ; BE800003
+	s_cmp_eq_u32 s1, 0                                                         ; BF068001
+	s_mov_b32 s3, s7                                                           ; BE830007
+	v_mbcnt_hi_u32_b32 v32, -1, v0                                             ; D7200020 000200C1
+	s_delay_alu instid0(VALU_DEP_1)                                            ; BF870001
+	v_and_b32_e32 v33, 15, v32                                                 ; 3642408F
+	s_cbranch_scc1 .LBB0_3                                                     ; BFA20000
+	s_load_b256 s[8:15], s[2:3], 0x0                                           ; F40C0201 F8000000
+	s_delay_alu instid0(VALU_DEP_1)                                            ; BF870001
+	v_lshlrev_b32_e32 v0, 1, v33                                               ; 30004281
+	v_lshlrev_b32_e32 v11, 5, v33                                              ; 30164285
+	v_mov_b32_e32 v16, 0x37003600                                              ; 7E2002FF 37003600
+	v_mov_b32_e32 v20, 0x32003000                                              ; 7E2802FF 32003000
+	v_bfrev_b32_e32 v28, 52                                                    ; 7E3870B4
+	s_waitcnt lgkmcnt(0)                                                       ; BF89FC07
+	s_clause 0xb                                                               ; BF85000B
+	buffer_load_u16 v1, v0, s[12:15], 0 offen offset:448                       ; E04801C0 80430100
+	buffer_load_u16 v2, v0, s[12:15], 0 offen offset:480                       ; E04801E0 80430200
+	buffer_load_u16 v3, v0, s[12:15], 0 offen offset:384                       ; E0480180 80430300
+	buffer_load_u16 v4, v0, s[12:15], 0 offen offset:416                       ; E04801A0 80430400
+	buffer_load_u16 v5, v0, s[12:15], 0 offen offset:320                       ; E0480140 80430500
+	buffer_load_u16 v8, v0, s[12:15], 0 offen offset:352                       ; E0480160 80430800
+	buffer_load_u16 v9, v0, s[12:15], 0 offen offset:256                       ; E0480100 80430900
+	buffer_load_u16 v10, v0, s[12:15], 0 offen offset:288                      ; E0480120 80430A00
+	buffer_load_u16 v12, v0, s[12:15], 0 offen offset:192                      ; E04800C0 80430C00
+	buffer_load_u16 v13, v0, s[12:15], 0 offen offset:224                      ; E04800E0 80430D00
+	buffer_load_u16 v14, v0, s[12:15], 0 offen offset:128                      ; E0480080 80430E00
+	buffer_load_u16 v15, v0, s[12:15], 0 offen offset:160                      ; E04800A0 80430F00
+	buffer_load_u8 v17, v11, s[8:11], 0 offen offset:7                         ; E0400007 8042110B
+	s_clause 0x3                                                               ; BF850003
+	buffer_load_u16 v18, v0, s[12:15], 0 offen offset:64                       ; E0480040 80431200
+	buffer_load_u16 v19, v0, s[12:15], 0 offen offset:96                       ; E0480060 80431300
+	buffer_load_u16 v21, v0, s[12:15], 0 offen                                 ; E0480000 80431500
+	buffer_load_u16 v0, v0, s[12:15], 0 offen offset:32                        ; E0480020 80430000
+	s_clause 0x14                                                              ; BF850014
+	buffer_load_u8 v22, v11, s[8:11], 0 offen offset:6                         ; E0400006 8042160B
+	buffer_load_u8 v23, v11, s[8:11], 0 offen offset:11                        ; E040000B 8042170B
+	buffer_load_u8 v24, v11, s[8:11], 0 offen offset:15                        ; E040000F 8042180B
+	buffer_load_u8 v25, v11, s[8:11], 0 offen offset:31                        ; E040001F 8042190B
+	buffer_load_u8 v26, v11, s[8:11], 0 offen offset:27                        ; E040001B 80421A0B
+	buffer_load_u8 v27, v11, s[8:11], 0 offen offset:23                        ; E0400017 80421B0B
+	buffer_load_u8 v29, v11, s[8:11], 0 offen offset:19                        ; E0400013 80421D0B
+	buffer_load_u8 v30, v11, s[8:11], 0 offen offset:10                        ; E040000A 80421E0B
+	buffer_load_u8 v31, v11, s[8:11], 0 offen offset:30                        ; E040001E 80421F0B
+	buffer_load_u8 v34, v11, s[8:11], 0 offen offset:26                        ; E040001A 8042220B
+	buffer_load_u8 v35, v11, s[8:11], 0 offen offset:22                        ; E0400016 8042230B
+	buffer_load_u8 v36, v11, s[8:11], 0 offen offset:14                        ; E040000E 8042240B
+	buffer_load_u8 v37, v11, s[8:11], 0 offen offset:18                        ; E0400012 8042250B
+	buffer_load_u16 v38, v11, s[8:11], 0 offen offset:28                       ; E048001C 8042260B
+	buffer_load_u16 v39, v11, s[8:11], 0 offen offset:24                       ; E0480018 8042270B
+	buffer_load_u16 v40, v11, s[8:11], 0 offen offset:20                       ; E0480014 8042280B
+	buffer_load_u8 v41, v11, s[8:11], 0 offen offset:3                         ; E0400003 8042290B
+	buffer_load_u8 v42, v11, s[8:11], 0 offen offset:2                         ; E0400002 80422A0B
+	buffer_load_u16 v43, v11, s[8:11], 0 offen offset:8                        ; E0480008 80422B0B
+	buffer_load_u16 v44, v11, s[8:11], 0 offen offset:16                       ; E0480010 80422C0B
+	buffer_load_u16 v45, v11, s[8:11], 0 offen offset:12                       ; E048000C 80422D0B
+	s_waitcnt vmcnt(21)                                                        ; BF8957F7
+	v_perm_b32 v0, v0, v21, 0x5040100                                          ; D6440000 03FE2B00 05040100
+	v_mov_b32_e32 v21, v20                                                     ; 7E2A0314
+	v_perm_b32 v7, v2, v1, 0x5040100                                           ; D6440007 03FE0302 05040100
+	v_perm_b32 v2, v15, v14, 0x5040100                                         ; D6440002 03FE1D0F 05040100
+	v_perm_b32 v6, v4, v3, 0x5040100                                           ; D6440006 03FE0704 05040100
+	v_perm_b32 v3, v13, v12, 0x5040100                                         ; D6440003 03FE190D 05040100
+	v_perm_b32 v5, v8, v5, 0x5040100                                           ; D6440005 03FE0B08 05040100
+	s_clause 0x1                                                               ; BF850001
+	buffer_load_u16 v8, v11, s[8:11], 0 offen offset:4                         ; E0480004 8042080B
+	buffer_load_u16 v46, v11, s[8:11], 0 offen                                 ; E0480000 80422E0B
+	s_waitcnt vmcnt(19)                                                        ; BF894FF7
+	v_lshlrev_b16 v12, 8, v25                                                  ; D738000C 00023288
+	s_waitcnt vmcnt(16)                                                        ; BF8943F7
+	v_lshlrev_b16 v15, 8, v29                                                  ; D738000F 00023A88
+	v_perm_b32 v4, v10, v9, 0x5040100                                          ; D6440004 03FE130A 05040100
+	v_lshlrev_b16 v9, 8, v17                                                   ; D7380009 00022288
+	v_perm_b32 v1, v19, v18, 0x5040100                                         ; D6440001 03FE2513 05040100
+	s_waitcnt vmcnt(14)                                                        ; BF893BF7
+	v_or_b32_e32 v12, v31, v12                                                 ; 3818191F
+	v_lshlrev_b16 v10, 8, v23                                                  ; D738000A 00022E88
+	v_lshlrev_b16 v11, 8, v24                                                  ; D738000B 00023088
+	v_lshlrev_b16 v13, 8, v26                                                  ; D738000D 00023488
+	v_lshlrev_b16 v14, 8, v27                                                  ; D738000E 00023688
+	s_waitcnt vmcnt(10)                                                        ; BF892BF7
+	v_or_b32_e32 v19, v37, v15                                                 ; 38261F25
+	s_waitcnt vmcnt(9)                                                         ; BF8927F7
+	v_perm_b32 v15, v12, v38, 0x5040100                                        ; D644000F 03FE4D0C 05040100
+	s_waitcnt vmcnt(6)                                                         ; BF891BF7
+	v_lshlrev_b16 v12, 8, v41                                                  ; D738000C 00025288
+	v_or_b32_e32 v9, v22, v9                                                   ; 38121316
+	v_or_b32_e32 v10, v30, v10                                                 ; 3814151E
+	v_or_b32_e32 v13, v34, v13                                                 ; 381A1B22
+	v_or_b32_e32 v17, v35, v14                                                 ; 38221D23
+	v_or_b32_e32 v11, v36, v11                                                 ; 38161724
+	v_mov_b32_e32 v24, 0x35003400                                              ; 7E3002FF 35003400
+	s_waitcnt vmcnt(5)                                                         ; BF8917F7
+	v_or_b32_e32 v34, v42, v12                                                 ; 3844192A
+	v_perm_b32 v14, v13, v39, 0x5040100                                        ; D644000E 03FE4F0D 05040100
+	v_perm_b32 v13, v17, v40, 0x5040100                                        ; D644000D 03FE5111 05040100
+	v_mov_b32_e32 v29, v28                                                     ; 7E3A031C
+	v_mov_b32_e32 v30, v28                                                     ; 7E3C031C
+	v_mov_b32_e32 v31, v28                                                     ; 7E3E031C
+	v_mov_b32_e32 v22, v20                                                     ; 7E2C0314
+	v_mov_b32_e32 v23, v20                                                     ; 7E2E0314
+	v_mov_b32_e32 v25, v24                                                     ; 7E320318
+	v_mov_b32_e32 v26, v24                                                     ; 7E340318
+	v_mov_b32_e32 v27, v24                                                     ; 7E360318
+	v_mov_b32_e32 v17, v16                                                     ; 7E220310
+	v_mov_b32_e32 v18, v16                                                     ; 7E240310
+	s_waitcnt vmcnt(3)                                                         ; BF890FF7
+	v_perm_b32 v12, v19, v44, 0x5040100                                        ; D644000C 03FE5913 05040100
+	s_waitcnt vmcnt(2)                                                         ; BF890BF7
+	v_perm_b32 v11, v11, v45, 0x5040100                                        ; D644000B 03FE5B0B 05040100
+	v_perm_b32 v10, v10, v43, 0x5040100                                        ; D644000A 03FE570A 05040100
+	v_mov_b32_e32 v19, v16                                                     ; 7E260310
+	s_waitcnt vmcnt(1)                                                         ; BF8907F7
+	v_perm_b32 v9, v9, v8, 0x5040100                                           ; D6440009 03FE1109 05040100
+	s_waitcnt vmcnt(0)                                                         ; BF8903F7
+	v_perm_b32 v8, v34, v46, 0x5040100                                         ; D6440008 03FE5D22 05040100
+BB0_2:
+	s_delay_alu instid0(VALU_DEP_1)                                            ; BF870001
+	v_wmma_f16_16x16x16_f16 v[28:31], v[8:15], v[0:7], v[28:31]                ; CC42401C 1C720108
+	v_wmma_f16_16x16x16_f16 v[20:23], v[8:15], v[0:7], v[20:23]                ; CC424014 1C520108
+	v_wmma_f16_16x16x16_f16 v[24:27], v[8:15], v[0:7], v[24:27]                ; CC424018 1C620108
+	v_wmma_f16_16x16x16_f16 v[16:19], v[8:15], v[0:7], v[16:19]                ; CC424010 1C420108
+	s_add_i32 s1, s1, -1                                                       ; 8101C101
+	v_wmma_f16_16x16x16_f16 v[28:31], v[8:15], v[0:7], v[28:31] op_sel:[0,0,1] ; CC42601C 1C720108
+	v_wmma_f16_16x16x16_f16 v[20:23], v[8:15], v[0:7], v[20:23] op_sel:[0,0,1] ; CC426014 1C520108
+	v_wmma_f16_16x16x16_f16 v[24:27], v[8:15], v[0:7], v[24:27] op_sel:[0,0,1] ; CC426018 1C620108
+	v_wmma_f16_16x16x16_f16 v[16:19], v[8:15], v[0:7], v[16:19] op_sel:[0,0,1] ; CC426010 1C420108
+	s_cmp_lg_u32 s1, 0                                                         ; BF078001
+	s_cbranch_scc1 .LBB0_2                                                     ; BFA20000
+	s_branch .LBB0_4                                                           ; BFA00000
+BB0_3:
+	v_bfrev_b32_e32 v31, 52                                                    ; 7E3E70B4
+	v_mov_b32_e32 v19, 0x37003600                                              ; 7E2602FF 37003600
+	v_mov_b32_e32 v23, 0x32003000                                              ; 7E2E02FF 32003000
+	v_mov_b32_e32 v27, 0x35003400                                              ; 7E3602FF 35003400
+	s_delay_alu instid0(VALU_DEP_4)                                            ; BF870004
+	v_mov_b32_e32 v30, v31                                                     ; 7E3C031F
+	v_mov_b32_e32 v29, v31                                                     ; 7E3A031F
+	v_mov_b32_e32 v28, v31                                                     ; 7E38031F
+	v_mov_b32_e32 v22, v23                                                     ; 7E2C0317
+	v_mov_b32_e32 v21, v23                                                     ; 7E2A0317
+	v_mov_b32_e32 v20, v23                                                     ; 7E280317
+	v_mov_b32_e32 v26, v27                                                     ; 7E34031B
+	v_mov_b32_e32 v25, v27                                                     ; 7E32031B
+	v_mov_b32_e32 v24, v27                                                     ; 7E30031B
+	v_mov_b32_e32 v18, v19                                                     ; 7E240313
+	v_mov_b32_e32 v17, v19                                                     ; 7E220313
+	v_mov_b32_e32 v16, v19                                                     ; 7E200313
+BB0_4:
+	s_load_b128 s[8:11], s[2:3], 0x30                                          ; F4080201 F8000030
+	v_and_or_b32 v0, 0x70, v32, v33                                            ; D6570000 048640FF 00000070
+	s_bfe_u32 s1, s4, 0x50014                                                  ; 9301FF04 00050014
+	v_lshrrev_b32_e32 v1, 16, v28                                              ; 32023890
+	s_add_i32 s1, s1, s0                                                       ; 81010001
+	v_lshrrev_b32_e32 v2, 16, v29                                              ; 32043A90
+	v_lshlrev_b32_e32 v0, 1, v0                                                ; 30000081
+	v_lshrrev_b32_e32 v3, 16, v30                                              ; 32063C90
+	v_lshrrev_b32_e32 v4, 16, v31                                              ; 32083E90
+	v_lshrrev_b32_e32 v5, 16, v20                                              ; 320A2890
+	v_lshrrev_b32_e32 v6, 16, v21                                              ; 320C2A90
+	v_lshl_or_b32 v0, s1, 12, v0                                               ; D6560000 04011801
+	v_lshrrev_b32_e32 v7, 16, v22                                              ; 320E2C90
+	s_waitcnt lgkmcnt(0)                                                       ; BF89FC07
+	s_clause 0x7                                                               ; BF850007
+	buffer_store_b16 v28, v0, s[8:11], 0 offen                                 ; E0640000 80421C00
+	buffer_store_b16 v29, v0, s[8:11], 0 offen offset:128                      ; E0640080 80421D00
+	buffer_store_b16 v30, v0, s[8:11], 0 offen offset:256                      ; E0640100 80421E00
+	buffer_store_b16 v31, v0, s[8:11], 0 offen offset:384                      ; E0640180 80421F00
+	buffer_store_b16 v1, v0, s[8:11], 0 offen offset:512                       ; E0640200 80420100
+	buffer_store_b16 v2, v0, s[8:11], 0 offen offset:640                       ; E0640280 80420200
+	buffer_store_b16 v3, v0, s[8:11], 0 offen offset:768                       ; E0640300 80420300
+	buffer_store_b16 v4, v0, s[8:11], 0 offen offset:896                       ; E0640380 80420400
+	v_lshrrev_b32_e32 v1, 16, v23                                              ; 32022E90
+	s_clause 0x7                                                               ; BF850007
+	buffer_store_b16 v20, v0, s[8:11], 0 offen offset:1024                     ; E0640400 80421400
+	buffer_store_b16 v21, v0, s[8:11], 0 offen offset:1152                     ; E0640480 80421500
+	buffer_store_b16 v22, v0, s[8:11], 0 offen offset:1280                     ; E0640500 80421600
+	buffer_store_b16 v23, v0, s[8:11], 0 offen offset:1408                     ; E0640580 80421700
+	buffer_store_b16 v5, v0, s[8:11], 0 offen offset:1536                      ; E0640600 80420500
+	buffer_store_b16 v6, v0, s[8:11], 0 offen offset:1664                      ; E0640680 80420600
+	buffer_store_b16 v7, v0, s[8:11], 0 offen offset:1792                      ; E0640700 80420700
+	buffer_store_b16 v1, v0, s[8:11], 0 offen offset:1920                      ; E0640780 80420100
+	v_lshrrev_b32_e32 v1, 16, v24                                              ; 32023090
+	v_lshrrev_b32_e32 v2, 16, v25                                              ; 32043290
+	v_lshrrev_b32_e32 v3, 16, v26                                              ; 32063490
+	v_lshrrev_b32_e32 v4, 16, v27                                              ; 32083690
+	s_clause 0x7                                                               ; BF850007
+	buffer_store_b16 v24, v0, s[8:11], 0 offen offset:2048                     ; E0640800 80421800
+	buffer_store_b16 v25, v0, s[8:11], 0 offen offset:2176                     ; E0640880 80421900
+	buffer_store_b16 v26, v0, s[8:11], 0 offen offset:2304                     ; E0640900 80421A00
+	buffer_store_b16 v27, v0, s[8:11], 0 offen offset:2432                     ; E0640980 80421B00
+	buffer_store_b16 v1, v0, s[8:11], 0 offen offset:2560                      ; E0640A00 80420100
+	buffer_store_b16 v2, v0, s[8:11], 0 offen offset:2688                      ; E0640A80 80420200
+	buffer_store_b16 v3, v0, s[8:11], 0 offen offset:2816                      ; E0640B00 80420300
+	buffer_store_b16 v4, v0, s[8:11], 0 offen offset:2944                      ; E0640B80 80420400
+	v_lshrrev_b32_e32 v1, 16, v16                                              ; 32022090
+	v_lshrrev_b32_e32 v2, 16, v17                                              ; 32042290
+	v_lshrrev_b32_e32 v3, 16, v18                                              ; 32062490
+	v_lshrrev_b32_e32 v4, 16, v19                                              ; 32082690
+	s_clause 0x7                                                               ; BF850007
+	buffer_store_b16 v16, v0, s[8:11], 0 offen offset:3072                     ; E0640C00 80421000
+	buffer_store_b16 v17, v0, s[8:11], 0 offen offset:3200                     ; E0640C80 80421100
+	buffer_store_b16 v18, v0, s[8:11], 0 offen offset:3328                     ; E0640D00 80421200
+	buffer_store_b16 v19, v0, s[8:11], 0 offen offset:3456                     ; E0640D80 80421300
+	buffer_store_b16 v1, v0, s[8:11], 0 offen offset:3584                      ; E0640E00 80420100
+	buffer_store_b16 v2, v0, s[8:11], 0 offen offset:3712                      ; E0640E80 80420200
+	buffer_store_b16 v3, v0, s[8:11], 0 offen offset:3840                      ; E0640F00 80420300
+	buffer_store_b16 v4, v0, s[8:11], 0 offen offset:3968                      ; E0640F80 80420400
+	s_endpgm                                                                   ; BFB00000
