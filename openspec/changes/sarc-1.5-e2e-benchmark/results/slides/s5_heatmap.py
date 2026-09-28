@@ -21,20 +21,31 @@ def _lum(rgba):
 
 def main():
     S.apply_style()
-    df = S.load_cells()
+    df = S.load_speedups()
     fig = S.new_fig()
-    ax = fig.add_axes([0.235, 0.14 if S.PRERELEASE else 0.12, 0.735,
-                       0.64 if S.PRERELEASE else 0.66])
+    GP = S.SPEEDUP_GPUS
+    many = len(GP) > 6
+    if many:  # bottom margin grows with the stacked footnote lines
+        bottom = 0.125 + 0.034 * max(0, S.foot_lines(GP) - 2)
+        rect = [0.235, bottom, 0.735, 0.825 - bottom]
+    else:
+        rect = [0.235, 0.14 if S.PRERELEASE else 0.12, 0.735,
+                0.64 if S.PRERELEASE else 0.66]
+    ax = fig.add_axes(rect)
 
     cols = [(s, m) for s in S.SCHEMES for m in S.MODELS]
     # Visual gap between the two scheme blocks and between device classes.
     xs = [0, 1, 2, 3.25, 4.25, 5.25]
-    ypos, groups = S.grouped_rows(gap=0.3)
+    ypos, groups = S.grouped_rows(GP, gap=(0.6 if len(GP) > 7 else 0.45) if many else 0.3)
     norm = Normalize(VMIN, VMAX)
-    for g in S.GPUS:
+    n_a = False
+    for g in GP:
         for (s, m), x in zip(cols, xs):
             v = S.cell(df, g, m, s).speedup
             y = ypos[g]
+            if v != v:  # NaN: not reported yet (pending) -> grey n/a cell, no value
+                n_a = True  # drawn below as one merged grey block per row
+                continue
             if S.is_pre(g):  # outlined (hollow) cell = pre-release rows
                 ax.add_patch(plt.Rectangle((x - 0.44, y - 0.40), 0.88, 0.8,
                                            facecolor="white", edgecolor=CMAP(norm(v)),
@@ -48,15 +59,26 @@ def main():
                     fontsize=S.FS_BIG, fontweight="semibold",
                     color="white" if dark else S.INK)
 
+    # One label across each run of n/a cells in a row (explains why, in place).
+    for g in GP:
+        runs = [x for (s, m), x in zip(cols, xs) if S.cell(df, g, m, s).speedup
+                != S.cell(df, g, m, s).speedup]
+        if runs:  # the n/a cells are one contiguous scheme block
+            ax.add_patch(plt.Rectangle((min(runs) - 0.47, ypos[g] - 0.45),
+                                       max(runs) - min(runs) + 0.94, 0.9,
+                                       color="#EDEFF1", lw=0))
+            ax.text((min(runs) + max(runs)) / 2, ypos[g], "n/a: 4-bit being re-measured",
+                    ha="center", va="center", fontsize=S.FS_VALUE + 2, color=S.MUTED)
+
     ax.set_xlim(-0.55, 5.8)
-    last = ypos[S.GPUS[-1]]
+    last = ypos[GP[-1]]
     ax.set_ylim(last + 0.55, -0.6)
     ax.set_xticks(xs)
     ax.set_xticklabels([S.MODEL_SHORT[m] for _, m in cols])
     ax.xaxis.tick_top()
     ax.tick_params(axis="both", length=0, pad=10)
-    ax.set_yticks([ypos[g] for g in S.GPUS])
-    ax.set_yticklabels([S.GPU_LABEL[g] for g in S.GPUS])
+    ax.set_yticks([ypos[g] for g in GP])
+    ax.set_yticklabels([S.GPU_LABEL[g] for g in GP])
     for sp in ax.spines.values():
         sp.set_visible(False)
     for name, y in groups:
@@ -75,13 +97,14 @@ def main():
         ax.plot([x0 - 1.45, x0 + 1.45], [1.0, 1.0], color=S.FAINT, lw=2,
                 transform=line_tf, clip_on=False)
 
-    fig.text(0.97, 0.03, "Speedup over ExecuTorch 1.5 (prefill tok/s)", ha="right",
-             va="bottom", fontsize=S.FS_ANNOT, color=S.MUTED)
-    S.footnote(fig)
+    fig.text(0.988 if n_a else 0.97, 0.012 if n_a else 0.03,
+             "Speedup over ExecuTorch 1.5 (prefill tok/s)", ha="right", va="bottom",
+             fontsize=S.FS_ANNOT, color=S.MUTED)
+    S.footnote(fig, gpus=GP)
     S.save(fig, "s5_heatmap_backup")
     plt.close(fig)
-    arr = np.array([[S.cell(df, g, m, s).speedup for (s, m) in cols] for g in S.GPUS])
-    print("range", arr.min().round(2), arr.max().round(2))
+    arr = np.array([[S.cell(df, g, m, s).speedup for (s, m) in cols] for g in GP])
+    print("range", np.nanmin(arr).round(2), np.nanmax(arr).round(2))
 
 
 if __name__ == "__main__":

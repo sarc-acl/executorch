@@ -6,13 +6,20 @@ import pandas as pd
 
 HERE = Path(__file__).resolve().parent
 REPORT = HERE.parent
-# Six-GPU combined data (the five original GPUs are identical to ../cells.csv rows
-# apart from the paired-bootstrap speedup CI; the 7900 XTX is added).
-CELLS_CSV = REPORT / "raw6" / "cells.csv"
-RUNS_CSV = REPORT / "raw6" / "runs_all.csv"
+# Seven-GPU combined data ("the" x 2048 prompt), built by ../analyze7.py. The six-GPU
+# rows are identical to ../raw6/ (kept for provenance); the RX 7600 is added.
+CELLS_CSV = REPORT / "raw7" / "cells.csv"
+RUNS_CSV = REPORT / "raw7" / "runs_all.csv"
+# Xclipse (M51): internal device, relative speedups only (no absolute tok/s anywhere).
+M51_CSV = Path("/home/doremy/Desktop/sarc-acl/dev/1.5/executorch/openspec/changes/"
+               "sarc-1.5-e2e-benchmark/contrib/m51/speedups.csv")
+M51_PROMPT = "the_x2048"  # same prompt as the other GPUs
 
 # GPU order: integrated / low power first, then discrete by vendor.
-GPUS = ["780m", "b580", "b70", "4070ti", "orin", "7900xtx"]
+# GPUS: figures with absolute throughput (fig2). SPEEDUP_GPUS: speedup-only figures
+# (fig1, fig3), which may also show speedup-only devices.
+GPUS = ["780m", "b580", "b70", "4070ti", "orin", "7900xtx", "rx7600"]
+SPEEDUP_GPUS = GPUS + ["m51"]
 GPU_LABEL = {
     "780m": "Radeon 780M",
     "b580": "Arc B580",
@@ -20,6 +27,8 @@ GPU_LABEL = {
     "4070ti": "RTX 4070 Ti SUPER",
     "orin": "Jetson Orin Nano",
     "7900xtx": "RX 7900 XTX†",
+    "rx7600": "RX 7600†",
+    "m51": "Xclipse (M51)‡",
 }
 # Two-line tick labels for narrow facets.
 GPU_TICK = {
@@ -29,6 +38,29 @@ GPU_TICK = {
     "4070ti": "RTX 4070\nTi S",
     "orin": "Jetson\nOrin Nano",
     "7900xtx": "RX 7900\nXTX†",
+    "rx7600": "RX\n7600†",
+    "m51": "Xclipse\n(M51)‡",
+}
+# Single-line labels for rotated ticks (fig2, seven GPUs per facet).
+GPU_TICK1 = {
+    "780m": "Radeon 780M",
+    "b580": "Arc B580",
+    "b70": "Arc Pro B70",
+    "4070ti": "RTX 4070 Ti S",
+    "orin": "Jetson Orin Nano",
+    "7900xtx": "RX 7900 XTX†",
+    "rx7600": "RX 7600†",
+}
+# Three-line tick labels for the 7-group speedup bar chart.
+GPU_TICK3 = {
+    "780m": "Radeon\n780M",
+    "b580": "Arc\nB580",
+    "b70": "Arc Pro\nB70",
+    "4070ti": "RTX\n4070\nTi S",
+    "orin": "Jetson\nOrin\nNano",
+    "7900xtx": "RX\n7900\nXTX†",
+    "rx7600": "RX\n7600†",
+    "m51": "Xclipse\n(M51)‡",
 }
 
 # Compact single-line labels for the heatmap rows.
@@ -39,19 +71,31 @@ GPU_SHORT = {
     "4070ti": "RTX 4070 Ti SUPER",
     "orin": "Jetson Orin Nano",
     "7900xtx": "RX 7900 XTX†",
+    "rx7600": "RX 7600†",
+    "m51": "Xclipse (M51)‡",
 }
 
-# Pre-release GPUs: SARC rows unverified (ET_VK_SARC_UNVERIFIED=1), different .pte
-# export (absolute tok/s not strictly comparable), AMDVLK driver. Marked everywhere by
-# a tinted background band / outline in PRERELEASE_COLOR, white hatching and a dagger.
-PRERELEASE = {"7900xtx"}
-# Okabe-Ito reddish purple: distinct from the model and build colours (CVD dE >= 7.6
-# over all pairs); always paired with hatching and the dagger as secondary encoding.
-PRERELEASE_COLOR = "#CC79A7"
+# Pre-release GPUs: unverified kernel rows (ET_VK_SARC_UNVERIFIED=1). Their .pte files use
+# the same export recipe as the other GPUs, exported separately (files not byte-identical).
+# RX 7900 XTX: AMDVLK driver; RX 7600: RADV (Mesa 26.2.3). Marked everywhere by a tinted background band / outline in the
+# GPU's PRERELEASE_COLOR, white hatching and a dagger (M51: double dagger).
+PRERELEASE = {"7900xtx", "rx7600", "m51"}
+# Okabe-Ito reddish purple (7900 XTX, M51) and Tol wine (RX 7600): an AMD-like red-purple
+# family, distinct from each other and from the model and build colours (validator:
+# CVD dE >= 7.6 over all pairs); always paired with hatching and a dagger.
+PRERELEASE_COLOR_BY_GPU = {"7900xtx": "#CC79A7", "rx7600": "#882255", "m51": "#CC79A7"}
+PRERELEASE_COLOR = PRERELEASE_COLOR_BY_GPU["7900xtx"]  # legend swatch
 PRERELEASE_HATCH = "////"
-PRERELEASE_NOTE = ("† RX 7900 XTX: pre-release. SARC rows unverified (ET_VK_SARC_UNVERIFIED=1); "
-                   "different .pte export, so absolute tok/s are not strictly comparable; "
-                   "AMDVLK driver.")
+# Footnote, pre-wrapped for double-column figures (NOTE_WIDE) and the heatmap (NOTE_NARROW).
+PRERELEASE_NOTE_WIDE = (
+    "† pre-release: unverified kernel rows (RX 7900 XTX, RX 7600);\n"
+    "drivers: AMDVLK (RX 7900 XTX), RADV Mesa 26.2.3 (RX 7600).")
+PRERELEASE_NOTE_NARROW = (
+    "† pre-release: unverified kernel rows (RX 7900 XTX, RX 7600);\n"
+    "drivers: AMDVLK (RX 7900 XTX), RADV Mesa 26.2.3 (RX 7600).")
+M51_NOTE = "‡ Xclipse (M51): internal device, relative speedups only; pre-release rows."
+PENDING_NOTE = "4w on Xclipse (M51): kernel fix merged, end-to-end re-measurement pending; not shown."
+NA_COLOR = "#D9D9D9"
 
 MODELS = ["1b", "3b", "8b"]
 MODEL_LABEL = {"1b": "Llama 3.2 1B", "3b": "Llama 3.2 3B", "8b": "Llama 3.1 8B"}
@@ -110,9 +154,9 @@ def apply_style():
     })
 
 
-def mark_prerelease_band(ax, x_index, half_width=0.48):
+def mark_prerelease_band(ax, x_index, gpu, half_width=0.48):
     """Tinted background band behind a pre-release GPU group."""
-    ax.axvspan(x_index - half_width, x_index + half_width, color=PRERELEASE_COLOR,
+    ax.axvspan(x_index - half_width, x_index + half_width, color=PRERELEASE_COLOR_BY_GPU[gpu],
                alpha=0.13, lw=0, zorder=0)
 
 
@@ -132,6 +176,25 @@ def load_cells():
 def load_timed_runs():
     runs = pd.read_csv(RUNS_CSV)
     return runs[runs["log"].str.startswith("logs/prefill")].copy()
+
+
+def load_speedups():
+    """Speedup table for SPEEDUP_GPUS: raw7 cells plus M51 speedup rows only.
+
+    Cells not reported yet (pending) get speedup = NaN (never plotted); the column
+    `correct` is False for them.
+    """
+    cols = ["gpu", "model", "scheme", "speedup", "speedup_ci_lo", "speedup_ci_hi"]
+    base = load_cells()[cols].copy()
+    base["correct"] = True
+    m = pd.read_csv(M51_CSV)
+    m = m[m["prompt"] == M51_PROMPT].copy()
+    m["correct"] = m["sarc_output_correct"].str.strip().str.lower() == "yes"
+    for c in ["speedup", "speedup_ci_lo", "speedup_ci_hi"]:
+        m.loc[~m["correct"], c] = float("nan")
+    out = pd.concat([base, m[cols + ["correct"]]], ignore_index=True)
+    assert len(out) == len(SPEEDUP_GPUS) * len(MODELS) * len(SCHEMES), len(out)
+    return out
 
 
 def save(fig, stem):

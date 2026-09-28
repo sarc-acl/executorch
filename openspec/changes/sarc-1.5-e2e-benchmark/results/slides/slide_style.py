@@ -11,17 +11,23 @@ import matplotlib as mpl
 import pandas as pd
 
 HERE = Path(__file__).resolve().parent
-# Variant: "6gpu" (default; adds the pre-release RX 7900 XTX from raw6/) or "5gpu"
-# (the original five GPUs from ../cells.csv). The *_5gpu.* files in this folder are the
-# archived renders of the earlier 5-GPU revision; a 5gpu run writes *_5gpu_regen.*.
-VARIANT = os.environ.get("SLIDES_VARIANT", "6gpu")
-assert VARIANT in ("5gpu", "6gpu"), VARIANT
-if VARIANT == "6gpu":
-    CELLS_CSV = HERE.parent / "raw6" / "cells.csv"
-    SUFFIX = ""
-else:
-    CELLS_CSV = HERE.parent / "cells.csv"
-    SUFFIX = "_5gpu_regen"  # never overwrites the archived *_5gpu.* files
+# Variants (SLIDES_VARIANT):
+#   "7gpu" (default): absolute-value slides (s1/s1b/s2/s4) show 7 GPUs from raw7/
+#          (RX 7900 XTX and RX 7600 pre-release, †); speedup-only slides (s3/s5) also
+#          show the internal Xclipse (M51, ‡) from its relative-speedup contribution.
+#   "6gpu_m51": previous revision (raw6/ + M51); writes *_6gpu_m51_regen.*.
+#   "6gpu": raw6/, no M51; writes *_6gpu_regen.*.
+#   "5gpu": original five GPUs from ../cells.csv; writes *_5gpu_regen.*.
+# Archived renders (*_5gpu.*, *_6gpu.*, *_6gpu_m51.*) are never overwritten.
+VARIANT = os.environ.get("SLIDES_VARIANT", "7gpu")
+assert VARIANT in ("5gpu", "6gpu", "6gpu_m51", "7gpu"), VARIANT
+SUFFIX = {"7gpu": "", "6gpu_m51": "_6gpu_m51_regen", "6gpu": "_6gpu_regen",
+          "5gpu": "_5gpu_regen"}[VARIANT]
+CELLS_CSV = HERE.parent / {"5gpu": "cells.csv", "6gpu": "raw6/cells.csv",
+                           "6gpu_m51": "raw6/cells.csv", "7gpu": "raw7/cells.csv"}[VARIANT]
+M51_CSV = Path("/home/doremy/Desktop/sarc-acl/dev/1.5/executorch/openspec/changes/"
+               "sarc-1.5-e2e-benchmark/contrib/m51/speedups.csv")
+M51_PROMPT = "the_x2048"  # same "the" x 2048 prompt as the other GPUs
 
 W, H = 13.333, 7.5
 
@@ -46,15 +52,32 @@ FS_FOOT = 14
 
 FOOTNOTE = "2048-token prompt · ExecuTorch Vulkan · median of 5 runs"
 
-if VARIANT == "6gpu":
-    GPUS = ["780m", "b580", "b70", "4070ti", "7900xtx", "orin"]
-else:
+if VARIANT == "5gpu":
     GPUS = ["780m", "b580", "b70", "4070ti", "orin"]
-# Pre-release rows: unverified kernel rows and a different model export. Drawn with
-# hollow / outlined orange marks and a dagger on the GPU name.
-PRERELEASE = {"7900xtx"} & set(GPUS)
-DAGGER_NOTE = "† RX 7900 XTX: pre-release kernel rows, different model export"
+elif VARIANT == "7gpu":
+    GPUS = ["780m", "b580", "b70", "4070ti", "7900xtx", "rx7600", "orin"]
+else:
+    GPUS = ["780m", "b580", "b70", "4070ti", "7900xtx", "orin"]
+# GPUs on the speedup-only slides (s3, s5). M51 is internal: relative speedups only.
+SPEEDUP_GPUS = GPUS + (["m51"] if VARIANT in ("7gpu", "6gpu_m51") else [])
+# Pre-release rows: unverified kernel rows. Drawn with hollow / outlined orange
+# marks and a dagger (†) or double dagger (‡, M51) on the GPU name.
+PRERELEASE = {"7900xtx", "rx7600", "m51"} & set(SPEEDUP_GPUS)
+M51_NOTE = "‡ internal device, relative speedups only; pre-release rows"
+
+
+def dagger_note(gpus):
+    """Text of the † footnote for the dagger-marked GPUs present in `gpus`.
+    (Their .pte files use the same export recipe, exported separately; no export caveat.)"""
+    marked = [n for g, n in (("7900xtx", "RX 7900 XTX"), ("rx7600", "RX 7600")) if g in gpus]
+    if not marked:
+        return None
+    return f"† pre-release kernel rows ({', '.join(marked)})"
+
+
 GPU_LABEL = {
+    "rx7600": "RX 7600 †",
+    "m51": "Xclipse (M51) ‡",
     "7900xtx": "RX 7900 XTX †",
     "780m": "Radeon 780M",
     "b580": "Arc B580",
@@ -68,7 +91,9 @@ GPU_CLASS = {
     "b70": "Desktop GPU",
     "4070ti": "Desktop GPU",
     "7900xtx": "Desktop GPU",
+    "rx7600": "Desktop GPU",
     "orin": "Edge",
+    "m51": "Phone / mobile SoC",
 }
 # Okabe-Ito subset, only for s3 (the one figure that needs GPU identity by colour).
 # validate_palette.js (light): all checks pass; worst adjacent CVD dE 7.6, so every
@@ -79,11 +104,17 @@ GPU_COLOR = {
     "b70": "#56B4E9",
     "4070ti": "#009E73",
     "7900xtx": "#E69F00",
+    # RX 7600: Tol wine; with the six hues above, --pairs all passes (worst CVD dE 7.6,
+    # pink/green, relieved by markers + direct labels).
+    "rx7600": "#882255",
     "orin": "#CC79A7",
+    # 7th series: no 7th hue passes the validator against these six, so M51 uses a
+    # neutral dark ink line (outside the hue set) + its own marker + direct label.
+    "m51": "#454B52",
 }
 # With 7900xtx (#E69F00) added, --pairs all passes; worst CVD dE 7.6 (pink/green).
 GPU_MARKER = {"780m": "o", "b580": "s", "b70": "D", "4070ti": "^", "7900xtx": "P",
-              "orin": "v"}
+              "rx7600": "p", "orin": "v", "m51": "X"}
 
 MODELS = ["1b", "3b", "8b"]
 MODEL_SHORT = {"1b": "1B", "3b": "3B", "8b": "8B"}
@@ -129,6 +160,24 @@ def load_cells():
     return pd.read_csv(CELLS_CSV)
 
 
+def load_speedups():
+    """cells.csv rows plus, in the 7gpu variant, the M51 relative-speedup rows.
+
+    M51 rows carry only speedup + CI (no tok/s). Cells whose SARC output is not
+    reported yet (pending) get speedup = NaN so they are never plotted as a gain.
+    """
+    df = load_cells()
+    if "m51" not in SPEEDUP_GPUS:
+        return df
+    m = pd.read_csv(M51_CSV)
+    m = m[m.prompt == M51_PROMPT].copy()
+    bad = m.sarc_output_correct.str.strip().str.lower() != "yes"
+    for c in ("speedup", "speedup_ci_lo", "speedup_ci_hi"):
+        m.loc[bad, c] = float("nan")
+    m = m[["gpu", "model", "scheme", "speedup", "speedup_ci_lo", "speedup_ci_hi"]]
+    return pd.concat([df, m], ignore_index=True)
+
+
 def cell(df, gpu, model, scheme):
     r = df[(df.gpu == gpu) & (df.model == model) & (df.scheme == scheme)]
     assert len(r) == 1, (gpu, model, scheme)
@@ -140,13 +189,24 @@ def new_fig():
     return plt.figure(figsize=(W, H))
 
 
-def footnote(fig, extra=""):
-    """Bottom-left footnote; the pre-release dagger note sits on the line above."""
+def foot_notes(gpus=None):
+    gpus = GPUS if gpus is None else gpus
+    notes = [n for n in (dagger_note(gpus), M51_NOTE if "m51" in gpus else None) if n]
+    return notes
+
+
+def footnote(fig, extra="", gpus=None):
+    """Bottom-left footnote; notes for marked GPUs in `gpus` stack on the lines above."""
     fig.text(0.012, 0.018, FOOTNOTE + extra, fontsize=FS_FOOT, color=MUTED,
              ha="left", va="bottom")
-    if PRERELEASE:
-        fig.text(0.012, 0.052, DAGGER_NOTE, fontsize=FS_FOOT, color=MUTED,
+    for i, note in enumerate(foot_notes(gpus), start=1):
+        fig.text(0.012, 0.018 + 0.034 * i, note, fontsize=FS_FOOT, color=MUTED,
                  ha="left", va="bottom")
+
+
+def foot_lines(gpus=None):
+    """Number of footnote lines (layout helper: 1 + marked-GPU notes)."""
+    return 1 + len(foot_notes(gpus))
 
 
 def is_pre(g):

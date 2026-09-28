@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Regenerate all e2e prefill figures (PDF + 300-dpi PNG) for the six-GPU set from
-# ../raw6/cells.csv and ../raw6/runs_all.csv (paths in style.py).
-# fig*_5gpu.{pdf,png} are the earlier five-GPU renders, kept for provenance; not regenerated.
+# Regenerate the e2e prefill figures (PDF + 300-dpi PNG). Paths are in style.py.
+#   fig1_speedup, fig3_heatmap: speedup-only; 6 GPUs from ../raw6/cells.csv plus the
+#     Xclipse (M51) speedup rows (internal device: relative speedups only).
+#   fig2_throughput: absolute tok/s; the 6 GPUs from ../raw6/ only (never the M51).
+# fig*_5gpu.* and fig*_6gpu.* are earlier renders, kept for provenance; not regenerated.
 set -euo pipefail
 cd "$(dirname "$0")"
 for f in fig1_speedup fig2_throughput fig3_heatmap; do
