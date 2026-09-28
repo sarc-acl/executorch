@@ -1,0 +1,440 @@
+{
+ "gpus": {
+  "s26": {
+   "label": "Adreno 840 (Galaxy S26 Ultra)",
+   "host": "host-ws1 (USB <s26-serial>)",
+   "device": "Adreno (TM) 840",
+   "driver_version": 2150932499,
+   "subgroup_default": 64,
+   "plan": [
+    "fast",
+    "quick"
+   ],
+   "roofline_commit": "463b2ff8e19f",
+   "runner_sha256": "4ca2da93208b0bdc",
+   "report": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md",
+   "summary_json": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/summary.json",
+   "report_header_lines": [
+    "Device: samsung SM-S948U1 (SoC SM8850), Android 16, driver 2150932499, subgroup 64.",
+    "Plan(s): fast, quick. GPU clock **DVFS-governed** (not pinned); results depend on the governor and thermal state.",
+    "Code: 463b2ff8e19f75d83a0523834aff8e76e056c510+dirty, runner 4ca2da93208b0bdc. Rows from other runner or shader builds excluded: 0."
+   ],
+   "measured_utc": [
+    "2026-09-27T17:06:40.005958+00:00",
+    "2026-09-27T18:36:00.102773+00:00"
+   ],
+   "sentinel": {
+    "median": 2.5769804405145615,
+    "unit": "TFLOP/s",
+    "n": 120,
+    "degraded": 8
+   },
+   "clock_state": {
+    "domains": {
+     "/sys/kernel/gpu/gpu_clock": {
+      "governor": null,
+      "min": null,
+      "max": null,
+      "cur": "222"
+     },
+     "/sys/kernel/gpu/gpu_max_clock": {
+      "governor": null,
+      "min": null,
+      "max": null,
+      "cur": "1300"
+     },
+     "/sys/kernel/gpu/gpu_min_clock": {
+      "governor": null,
+      "min": null,
+      "max": null,
+      "cur": "160"
+     }
+    },
+    "pinned_domains": [],
+    "captured_utc": "2026-09-27T18:21:53.510708+00:00"
+   },
+   "missing_reasons": [
+    "alu_fp16: repeat_unstable",
+    "alu_fp32: repeat_unstable",
+    "cache_read_effective: repeat_unstable",
+    "matrix_fp16: repeat_unstable",
+    "matrix_fp16_feed_cache: repeat_unstable",
+    "matrix_int8: repeat_unstable",
+    "matrix_int8_feed_cache: repeat_unstable",
+    "matrix_int8_feed_shared: insufficient_quality_repeats",
+    "matrix_fp16_feed_cache: insufficient_quality_repeats",
+    "Sustained roofs require three distinct stable batches per current confirmed configuration and duration"
+   ],
+   "sarc_4w_accumulator": "fp16",
+   "sarc_4w_accumulator_source": "glsl/sarc/sarc_linear_q4gsw_coopmat.yaml:155 (defaults ACC_FP32: false :28, ACC_GROUP_FP32: false :30)",
+   "coopmat_shapes": [
+    "64x64x16 f16xf16+f16->f16",
+    "64x64x8 f32xf32+f32->f32",
+    "64x64x32 u8xu8+u32->u32",
+    "64x64x32 u8xs8+s32->s32 sat",
+    "64x64x32 s8xs8+s32->s32",
+    "64x64x32 s8xu8+u32->u32 sat",
+    "64x32x16 f16xf16+f16->f16",
+    "64x32x8 f32xf32+f32->f32",
+    "64x32x32 u8xu8+u32->u32",
+    "64x32x32 u8xs8+s32->s32 sat",
+    "64x32x32 s8xs8+s32->s32",
+    "64x32x32 s8xu8+u32->u32 sat",
+    "64x16x16 f16xf16+f16->f16",
+    "64x16x8 f32xf32+f32->f32",
+    "64x16x32 u8xu8+u32->u32",
+    "64x16x32 u8xs8+s32->s32 sat",
+    "64x16x32 s8xs8+s32->s32",
+    "64x16x32 s8xu8+u32->u32 sat"
+   ],
+   "roofs": {
+    "cache_read_effective": {
+     "value": 872.769,
+     "unit": "GB/s",
+     "config": "mem_read_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "872.160\u2013875.341 (0.4%)",
+     "sweep_max": "875.978",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:62",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/mem_read_v4_49e3f3bfaead.json",
+     "sustained": null
+    },
+    "global_copy": {
+     "value": 36.965,
+     "unit": "GB/s",
+     "config": "mem_copy_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "36.911\u201336.984 (0.2%)",
+     "sweep_max": "34.494",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:64",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/mem_copy_v4_96ab689db835.json",
+     "sustained": null
+    },
+    "global_scale": {
+     "value": 36.957,
+     "unit": "GB/s",
+     "config": "mem_scale_v4",
+     "confirmed": true,
+     "repeats": 2,
+     "repeat_range": "36.918\u201336.997 (0.2%)",
+     "sweep_max": "34.587",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:65",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/mem_scale_v4_5a8494ef922f.json",
+     "sustained": null
+    },
+    "alu_fp32": {
+     "value": 3.972,
+     "unit": "TFLOP/s",
+     "config": "alu_fp32_v1_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "3.972\u20133.972 (0.0%)",
+     "sweep_max": "3.972",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:61",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/alu_fp32_v1_c8_b2aeab6adc82.json",
+     "sustained": null
+    },
+    "alu_fp16": {
+     "value": 7.756,
+     "unit": "TFLOP/s",
+     "config": "alu_fp16_v1_c4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "7.756\u20137.757 (0.0%)",
+     "sweep_max": "7.754",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:60",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/alu_fp16_v1_c4_6435ea06836a.json",
+     "sustained": {
+      "value": 5.966,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "dot_int8": {
+     "value": 7.046,
+     "unit": "TOP/s",
+     "config": "dot8_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "7.046\u20137.046 (0.0%)",
+     "sweep_max": "7.046",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:63",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/dot8_c8_c6265b33e172.json",
+     "sustained": null
+    },
+    "matrix_fp16": {
+     "value": 6.952,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_64x32x16_c1",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "6.951\u20136.952 (0.0%)",
+     "sweep_max": "7.292",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:66",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/matrix_fp16_64x32x16_c1_5f95ccd2db85.json",
+     "sustained": {
+      "value": 6.952,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "matrix_int8": {
+     "value": 12.241,
+     "unit": "TOP/s",
+     "config": "matrix_int8_64x64x32_c1",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "12.231\u201312.245 (0.1%)",
+     "sweep_max": "12.584",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:69",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/matrix_int8_64x64x32_c1_7da3ee797d0e.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_dram": {
+     "value": 77.374,
+     "unit": "GB/s",
+     "config": "matrix_fp16_64x16x16_c1_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "77.330\u201377.376 (0.1%)",
+     "sweep_max": "77.354",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:68",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/matrix_fp16_64x16x16_c1_gmem_f64803a0fce0.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_shared": {
+     "value": 9.487,
+     "unit": "TOP/s",
+     "config": "matrix_int8_64x64x32_c1_lds",
+     "confirmed": true,
+     "repeats": 2,
+     "repeat_range": "9.457\u20139.516 (0.6%)",
+     "sweep_max": "9.478",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:72",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/matrix_int8_64x64x32_c1_lds_682eb3f6babd.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_cache": {
+     "value": 11.772,
+     "unit": "TOP/s",
+     "config": "matrix_int8_64x64x32_c1_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "11.770\u201311.806 (0.3%)",
+     "sweep_max": "11.809",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:70",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/matrix_int8_64x64x32_c1_gmem_ad346944c98f.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_dram": {
+     "value": 75.714,
+     "unit": "GB/s",
+     "config": "matrix_int8_64x16x32_c1_gmem",
+     "confirmed": true,
+     "repeats": 2,
+     "repeat_range": "75.697\u201375.730 (0.0%)",
+     "sweep_max": "75.733",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:71",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/matrix_int8_64x16x32_c1_gmem_b497322c15df.json",
+     "sustained": null
+    },
+    "texture_rgba16f_buffer_cache": {
+     "value": 71.735,
+     "unit": "GB/s",
+     "config": "texture_rgba16f_buffer",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "71.724\u201371.746 (0.0%)",
+     "sweep_max": "71.708",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:77",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/texture_rgba16f_buffer_d6fa354e390c.json",
+     "sustained": null
+    },
+    "texture_rgba16f_buffer_dram": {
+     "value": 70.856,
+     "unit": "GB/s",
+     "config": "texture_rgba16f_buffer",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "70.850\u201370.879 (0.0%)",
+     "sweep_max": "70.642",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:78",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/texture_rgba16f_buffer_0c4b00d7aefa.json",
+     "sustained": null
+    },
+    "texture_rgba16f_tex2d_cache": {
+     "value": 68.529,
+     "unit": "GB/s",
+     "config": "texture_rgba16f_tex2d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "68.520\u201368.557 (0.1%)",
+     "sweep_max": "68.554",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:79",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/texture_rgba16f_tex2d_33bc3fa1fadd.json",
+     "sustained": null
+    },
+    "texture_rgba16f_tex2d_dram": {
+     "value": 19.59,
+     "unit": "GB/s",
+     "config": "texture_rgba16f_tex2d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "19.586\u201319.594 (0.0%)",
+     "sweep_max": "19.600",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:80",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/texture_rgba16f_tex2d_0891946e7940.json",
+     "sustained": null
+    },
+    "texture_rgba16f_tex3d_cache": {
+     "value": 72.211,
+     "unit": "GB/s",
+     "config": "texture_rgba16f_tex3d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "72.207\u201372.221 (0.0%)",
+     "sweep_max": "72.208",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:81",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/texture_rgba16f_tex3d_33839fde3da9.json",
+     "sustained": null
+    },
+    "texture_rgba16f_tex3d_dram": {
+     "value": 72.389,
+     "unit": "GB/s",
+     "config": "texture_rgba16f_tex3d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "72.048\u201372.460 (0.6%)",
+     "sweep_max": "72.629",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:82",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/texture_rgba16f_tex3d_8a29da1dd486.json",
+     "sustained": null
+    },
+    "texture_rgba32f_buffer_cache": {
+     "value": 71.295,
+     "unit": "GB/s",
+     "config": "texture_rgba32f_buffer",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "71.288\u201371.310 (0.0%)",
+     "sweep_max": "71.274",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:83",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/texture_rgba32f_buffer_1d4792b32be6.json",
+     "sustained": null
+    },
+    "texture_rgba32f_buffer_dram": {
+     "value": 71.343,
+     "unit": "GB/s",
+     "config": "texture_rgba32f_buffer",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "71.340\u201371.354 (0.0%)",
+     "sweep_max": "71.468",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:84",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/texture_rgba32f_buffer_12ac781c36db.json",
+     "sustained": null
+    },
+    "texture_rgba32f_tex2d_cache": {
+     "value": 68.853,
+     "unit": "GB/s",
+     "config": "texture_rgba32f_tex2d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "68.825\u201368.860 (0.1%)",
+     "sweep_max": "68.864",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:85",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/texture_rgba32f_tex2d_4fb82ebde316.json",
+     "sustained": null
+    },
+    "texture_rgba32f_tex2d_dram": {
+     "value": 44.934,
+     "unit": "GB/s",
+     "config": "texture_rgba32f_tex2d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "44.888\u201344.968 (0.2%)",
+     "sweep_max": "45.120",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:86",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/texture_rgba32f_tex2d_76f3bb3b2a20.json",
+     "sustained": null
+    },
+    "texture_rgba32f_tex3d_cache": {
+     "value": 72.479,
+     "unit": "GB/s",
+     "config": "texture_rgba32f_tex3d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "72.467\u201372.480 (0.0%)",
+     "sweep_max": "72.458",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:87",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/texture_rgba32f_tex3d_69f8dd90c343.json",
+     "sustained": null
+    },
+    "texture_rgba32f_tex3d_dram": {
+     "value": 92.761,
+     "unit": "GB/s",
+     "config": "texture_rgba32f_tex3d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "92.689\u201392.975 (0.3%)",
+     "sweep_max": "93.245",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:88",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/texture_rgba32f_tex3d_f6e4cff20b9a.json",
+     "sustained": null
+    },
+    "shared_fp32_read": {
+     "value": 907.872,
+     "unit": "GB/s",
+     "config": "sharedbw_fp32_v4_op0",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "907.359\u2013908.243 (0.1%)",
+     "sweep_max": "907.823",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:75",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/sharedbw_fp32_v4_op0_5194d5bd123a.json",
+     "sustained": null
+    },
+    "shared_fp32_write": {
+     "value": 736.844,
+     "unit": "GB/s",
+     "config": "sharedbw_fp32_v4_op2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "736.844\u2013736.844 (0.0%)",
+     "sweep_max": "736.844",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:76",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/sharedbw_fp32_v4_op2_17d5fc18af03.json",
+     "sustained": null
+    },
+    "shared_fp16_read": {
+     "value": 689.622,
+     "unit": "GB/s",
+     "config": "sharedbw_fp16_v4_op0",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "689.617\u2013689.707 (0.0%)",
+     "sweep_max": "689.600",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:73",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/sharedbw_fp16_v4_op0_93cf4fa351db.json",
+     "sustained": null
+    },
+    "shared_fp16_write": {
+     "value": 366.195,
+     "unit": "GB/s",
+     "config": "sharedbw_fp16_v4_op2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "366.193\u2013366.195 (0.0%)",
+     "sweep_max": "366.193",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/report/REPORT.md:74",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/confirm/sharedbw_fp16_v4_op2_6905aefe5893.json",
+     "sustained": null
+    }
+   },
+   "capabilities_json": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/s26/<s26-serial>/capabilities.json",
+   "capabilities_lines": null
+  }
+ }
+}
