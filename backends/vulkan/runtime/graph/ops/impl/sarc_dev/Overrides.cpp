@@ -19,6 +19,10 @@
 //                                     prefill wherever it fits, e.g.
 //                                     t128x128k32g24s32f32c; builds 4w on the
 //                                     SARC path even on devices without rows
+//   ET_VK_SARC_DQ8CA_VARIANT=<tile>   use the dq8ca candidate or release row whose
+//                                     kernel ends in this token (e.g. zpgtr_t128x64k32g42s32)
+//                                     for 8da4w wherever it fits (prefill only);
+//                                     needs a device with active dq8ca rows
 
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h>
 
@@ -81,9 +85,37 @@ const Row kQ4gswCandidates[] = {
      kTex3dTex2d, nullptr, Status::kUnverified},
 };
 
+// RX 7600 2026-09-28: zpg sweep candidates
+// (glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpg_sweep.yaml), ET_VK_SARC_DQ8CA_VARIANT.
+constexpr TileDims dq_tile(uint32_t m, uint32_t n, uint32_t sgx, uint32_t sgy) {
+  return {m, n, 32, sgx, sgy, 32, 16, false};
+}
+const Row kDq8caCandidates[] = {
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x128k32g42s32", dq_tile(128, 128, 4, 2),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x128k32g24s32", dq_tile(128, 128, 2, 4),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t256x64k32g24s32", dq_tile(256, 64, 2, 4),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g22s32", dq_tile(128, 64, 2, 2),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+};
+
 std::string& requested_variant() {
   static std::string v = [] {
     const char* e = std::getenv("ET_VK_SARC_Q4GSW_VARIANT");
+    return std::string(e != nullptr ? e : "");
+  }();
+  return v;
+}
+
+const std::string& requested_dq8ca_variant() {
+  static const std::string v = [] {
+    const char* e = std::getenv("ET_VK_SARC_DQ8CA_VARIANT");
     return std::string(e != nullptr ? e : "");
   }();
   return v;
@@ -99,6 +131,19 @@ std::optional<Choice> dev_select(
     return std::nullopt;
   }
   if (!linear && env_true("ET_VK_DISABLE_COOPMAT")) {
+    return std::nullopt;
+  }
+  if (shape.op == Op::kDq8caLinear && !requested_dq8ca_variant().empty() &&
+      device_has_active_rows(device, shape.op)) {
+    for (const auto* store : {&candidates(), &rows()}) {
+      for (const Row& row : *store) {
+        if (row.op == shape.op &&
+            ends_with(row.kernel_base, "_" + requested_dq8ca_variant()) &&
+            q4gsw_coopmat_fits(device, shape, row)) {
+          return Choice{row.kernel_base, row.dims, row.rowmajor_a};
+        }
+      }
+    }
     return std::nullopt;
   }
   const std::string& want = requested_variant();
@@ -121,6 +166,8 @@ struct Registrar {
   Registrar() {
     register_candidates(
         kQ4gswCandidates, sizeof(kQ4gswCandidates) / sizeof(kQ4gswCandidates[0]));
+    register_candidates(
+        kDq8caCandidates, sizeof(kDq8caCandidates) / sizeof(kDq8caCandidates[0]));
     Override o;
     o.allow_unverified = env_true("ET_VK_SARC_UNVERIFIED");
     o.force_path = !requested_variant().empty();
@@ -129,6 +176,7 @@ struct Registrar {
     if (o.allow_unverified || o.force_path) {
       std::cerr << "[sarc_dev] overrides active: unverified="
                 << o.allow_unverified << " variant=" << requested_variant()
+                << " dq8ca_variant=" << requested_dq8ca_variant()
                 << std::endl;
     }
   }
