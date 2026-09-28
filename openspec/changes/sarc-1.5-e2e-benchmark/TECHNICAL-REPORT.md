@@ -463,7 +463,7 @@ waves likely differ from the aggregate.
 
 Data: `contrib/7900xtx/`, measured by the 7900 XTX agent with the kit. Caveats in `REPORT.md` ("Contributed GPU"):
 - the rows are `kUnverified` and ran with `ET_VK_SARC_UNVERIFIED=1`;
-- the `.pte` files are a different export;
+- the `.pte` files use the same export recipe as the five-GPU set, exported separately on another machine (files not byte-identical);
 - the driver is AMDVLK, and the build was native rather than the pinned container.
 
 **Results**
@@ -553,27 +553,29 @@ checked: [M] as reported, not independently recomputed.
 
 | Measurement | Result |
 |---|---|
-| End to end, real text | 8da4w **2.18 / 2.73 / 2.64×** (1B / 3B / 8B), geomean 2.50×; 4w in development, not reported |
-| Correctness | 8da4w: production-diff passes, top-1 matches stock (both prompts), SDPA 4/4. 4w: in validation, not yet through the promotion checklist |
-| Kernels | SARC runs every prefill GEMM on the xclipse rows (zpgtr 8da4w `t128x64k32g42s32`, 4w `t128x128k16g22s32`) and attention on `sarc_sdpa_*`; stock shows no SARC kernel |
+| End to end, real text | 8da4w **2.18 / 2.73 / 2.64×** (1B / 3B / 8B), geomean 2.50×; 4w fixed 2026-09-28, re-measurement pending |
+| Correctness | 8da4w: production-diff passes, top-1 matches stock (both prompts), SDPA 4/4. 4w (fixed `f32xp` row): production-diff passes 1B/3B/8B × buffer/texture3d; not yet through the promotion checklist |
+| Kernels | SARC runs every prefill GEMM on the xclipse rows (zpgtr 8da4w `t128x64k32g42s32`, 4w `t128x128k16g22s32`, since replaced by `…f32xp`) and attention on `sarc_sdpa_*`; stock shows no SARC kernel |
 | Roofs / efficiency | measured, **not published** |
-| Measurement setup | both arms used `ET_VK_EXECUTE_NODE_THRESHOLD=32`, a submission every 32 nodes, to stay under the per-submission GPU time limit on 8B; clocks fixed |
+| Measurement setup | both arms used `ET_VK_EXECUTE_NODE_THRESHOLD=32`, a submission every 32 nodes; without it some 8B runs did not complete; clocks fixed |
 
 **What it adds**
 - **The zpgtr 8-bit kernel family works well on this GPU.** It is the same row-major family as on the 4070 Ti
   and Orin, and it keeps the SARC kernel at every M, including the unaligned check prompt, where the next token
   also matches stock.
-- **The 4w kernel is the next step on this board.** It is still in validation and needs to pass the promotion
-  checklist before its speedups are reported. [O]
-- **Per-submission time limits exist on phones.** The node-threshold option should be ported to `dev/1.5` as a
-  dev-zone override. The S26's 8B `DEVICE_LOST` is very likely the same limit. [I]
+- **The 4w kernel is fixed; its end-to-end numbers are next [M, O].** Two causes: fp16 accumulation at the longest K
+  (buffer), and the banded texture3d drain, which did not give correct results on this device; the root cause is not
+  determined. The `f32xp` row (fp32 accumulate + one-pass drain)
+  passes production-diff everywhere; the e2e re-measurement is pending.
+- **Smaller submissions help long prefills on phones.** The node-threshold option should be ported to `dev/1.5` as a
+  dev-zone override; it may also help with the S26's 8B `DEVICE_LOST`. [I]
 
 ## 14. Contributed GPU: Radeon RX 7600 (pre-release)
 
 Data: `contrib/rx7600/`, measured by its own agent with the kit. Caveats in `REPORT.md` ("Contributed GPU: Radeon
 RX 7600"):
-- the rows are `kUnverified`, live on the unmerged `topic/rx7600-coopmat`, and ran with `ET_VK_SARC_UNVERIFIED=1`;
-- the `.pte` files are the same different export as the 7900 XTX's;
+- the rows are `kUnverified` (merged into `dev/1.5`, not yet re-verified) and ran with `ET_VK_SARC_UNVERIFIED=1`;
+- the `.pte` files are the same as the 7900 XTX's (same export recipe, exported separately);
 - the driver is a user-space RADV (Mesa 26.2.3), because the system Mesa 23.2.1 has no cooperative matrix;
 - the build was native rather than the pinned container, and the card drives the desktop.
 
@@ -606,8 +608,8 @@ RX 7600"):
 
 **Not done**
 - Before/after re-tuning (M5): the RX 7600 had no SARC rows before this campaign.
-- Row promotion: `topic/rx7600-coopmat` needs review and merge into `dev/1.5`, SPIR-V golden from the pinned
-  container, and re-verification before the rows can leave `kUnverified`.
+- Row promotion: the rows are merged into `dev/1.5`; they need re-verification with binaries built by the pinned
+  shader compiler before they can leave `kUnverified`.
 
 ## 15. Files
 

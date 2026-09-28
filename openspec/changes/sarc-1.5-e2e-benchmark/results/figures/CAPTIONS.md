@@ -21,9 +21,10 @@ strictly comparable with the other GPUs. Drivers: AMDVLK (RX 7900 XTX) and RADV,
 Mesa 26.2.3 (RX 7600).
 
 **‡ Xclipse (M51): internal device, relative speedups only; pre-release rows.** No
-absolute throughput is shown for this device. Its 4w kernel is in development, so no
-4w speedup is shown for it: Figure 1 has an empty slot labelled "4w: in
-development, not shown", and Figure 3 has grey "n/a" cells.
+absolute throughput is shown for this device. Its 4w kernel was fixed on 2026-09-28; the
+end-to-end re-measurement is pending, so no 4w speedup is shown for it: Figure 1
+has an empty slot labelled "4w: re-measuring, not shown", and Figure 3 has grey
+"n/a" cells.
 
 The pre-release devices are placed last (RX 7900 XTX†, RX 7600†, then Xclipse
 (M51)‡) and marked the same way: a dagger (†) or double dagger (‡) on the label,
@@ -60,7 +61,8 @@ The RX 7600† values (pre-release) are 2.88×, 3.38× and 3.23× for 4w and 1.9
 2.22× and 1.92× for 8da4w. The Xclipse
 (M51)‡ shows 8da4w only: 2.10× [1.89, 2.71], 2.75× [2.61, 2.76] and 2.65× [2.64,
 2.66]. Its 1B interval is wide because of repeat spread. Its 4w slot is empty and
-labelled "4w: in development, not shown".
+labelled "4w: re-measuring, not shown" (kernel fix merged, end-to-end
+re-measurement pending).
 
 ## Figure 2 (`fig2_throughput.pdf`)
 
@@ -85,6 +87,6 @@ are model sizes (1B, 3B, 8B), grouped by quantization scheme (4w, 8da4w). Each c
 shows the ratio of median prefill throughputs (SARC / stock, n = 5 runs of each
 build) to two decimals. The colour scale (cividis, colour-blind safe) starts at
 1.0× (no speedup). The RX 7900 XTX†, RX 7600† and Xclipse (M51)‡ rows
-(pre-release) are hatched and outlined. Grey "n/a" cells mark 4w on the Xclipse (M51)‡, which is in
-development and not shown.
+(pre-release) are hatched and outlined. Grey "n/a" cells mark 4w on the Xclipse (M51)‡, whose
+end-to-end re-measurement is pending; no 4w speedup is shown.
 The 95 % confidence intervals are shown in Figure 1.

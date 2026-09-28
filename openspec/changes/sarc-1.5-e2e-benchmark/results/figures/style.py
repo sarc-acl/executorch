@@ -97,7 +97,7 @@ PRERELEASE_NOTE_NARROW = (
     "tok/s are not strictly comparable; drivers: AMDVLK (RX 7900 XTX),\n"
     "RADV Mesa 26.2.3 (RX 7600).")
 M51_NOTE = "‡ Xclipse (M51): internal device, relative speedups only; pre-release rows."
-INCORRECT_NOTE = "4w on Xclipse (M51): not shown (kernel in development)."
+INCORRECT_NOTE = "4w on Xclipse (M51): kernel fix merged, end-to-end re-measurement pending; not shown."
 NA_COLOR = "#D9D9D9"
 
 MODELS = ["1b", "3b", "8b"]

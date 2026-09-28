@@ -39,7 +39,7 @@ for ax, scheme in zip(axes, S.SCHEMES):
         if g in S.PRERELEASE:
             S.mark_prerelease_band(ax, k, g)
         if not cells.loc[[(g, m, scheme) for m in S.MODELS], "correct"].any():
-            ax.text(k, (1.0 + ytop) / 2 + 0.3, f"{scheme}: in development,\nnot shown", rotation=90,
+            ax.text(k, (1.0 + ytop) / 2 + 0.3, f"{scheme}: re-measuring,\nnot shown", rotation=90,
                     ha="center", va="center", fontsize=8, color=S.INK)
     ax.axhline(1.0, color=S.INK, ls="--", lw=0.8, zorder=1)
     ax.set_xticks(x, [S.GPU_TICK[g] for g in GPUS])

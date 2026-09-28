@@ -55,7 +55,7 @@ cb.outline.set_visible(False)
 fig.text(0.01, 0.0,
          S.PRERELEASE_NOTE_NARROW + "\n"
          "‡ Xclipse (M51): internal device, relative speedups only;\n"
-         "pre-release rows. n/a: 4w on Xclipse (M51) in development, not shown.",
+         "pre-release rows. n/a: 4w on Xclipse (M51), re-measurement pending,\nnot shown.",
          ha="left", va="top", fontsize=8, color=S.MUTED)
 fig.tight_layout()
 S.save(fig, "fig3_heatmap")
