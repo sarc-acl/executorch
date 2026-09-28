@@ -110,6 +110,43 @@ const Row kAmdRows[] = {
      kBufBuf,
      nullptr,
      Status::kUnverified},
+    // RX 7900 XTX (gfx1100, AMDVLK 2025.Q2.1), not yet verified on release 1.5
+    // (openspec/changes/sarc-1.5-7900xtx-4w). 4w: fp32 accumulate (the fp16-accumulate tile
+    // fails the 8B production diff here), column-major B staging, texture3d IO only.
+    {"7900 xtx",
+     amd_wave64,
+     Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt",
+     {256, 128, 32, 2, 4, 32, 16, true},
+     kTex3dTex2d,
+     nullptr,
+     Status::kUnverified},
+    // The 780M SDPA prefill kernels and 8da4w zpg kernel. QK^T's shared memory (Ash + Bsh +
+    // Csh, 30.5 KB) fits this card's 32 KB limit.
+    {"7900 xtx",
+     amd_wave64,
+     Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_t128x64k32g22s64",
+     {128, 64, 32, 2, 2, 64, 16, false},
+     kBufBuf,
+     nullptr,
+     Status::kUnverified},
+    {"7900 xtx",
+     amd_wave64,
+     Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_t64x64k32g22s64",
+     {64, 64, 32, 2, 2, 64, 16, false},
+     kBufBuf,
+     nullptr,
+     Status::kUnverified},
+    {"7900 xtx",
+     amd_wave64,
+     Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32",
+     {128, 64, 32, 4, 2, 32, 16, false},
+     kTex3dTex2d | kBufTex2d,
+     nullptr,
+     Status::kUnverified},
 };
 
 struct Registrar {

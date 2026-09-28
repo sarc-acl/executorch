@@ -122,18 +122,6 @@ sarc_linear_q4gsw_coopmat_sweep:
       SUBGROUP_SIZE: 32
       ACC_FP32: true
       CSH_IN_ASH: true
-    - NAME: sarc_linear_q4gsw_coopmat_sweep_t256x128k32g24s32f32cbt_texture3d_texture2d_half
-      IO_STORAGE: texture3d
-      WEIGHT_STORAGE: texture2d
-      WG_TILE_M: 256
-      WG_TILE_N: 128
-      WG_TILE_K: 32
-      SG_GRID_X: 2
-      SG_GRID_Y: 4
-      SUBGROUP_SIZE: 32
-      ACC_FP32: true
-      CSH_IN_ASH: true
-      B_COLMAJOR: true
     - NAME: sarc_linear_q4gsw_coopmat_sweep_t256x128k32g44s32f32c_texture3d_texture2d_half
       IO_STORAGE: texture3d
       WEIGHT_STORAGE: texture2d
