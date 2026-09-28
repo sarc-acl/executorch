@@ -7,6 +7,7 @@
 #include "utils.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <numeric>
 #include <random>
 #include <unordered_map>
@@ -768,6 +769,18 @@ bool ValueSpec::validate_against_reference(
     bool rel_tolerance_ok = diff <= rel_tolerance * abs_ref;
 
     if (!abs_tolerance_ok && !rel_tolerance_ok) {
+      // ET_VK_MB_DUMP_MISMATCH=<n>: list the first n mismatches as (row, col)
+      // of the trailing two dims, to locate the failing tile/subgroup/lane.
+      static const long dump_max = [] {
+        const char* e = std::getenv("ET_VK_MB_DUMP_MISMATCH");
+        return e != nullptr ? std::atol(e) : 0L;
+      }();
+      if (long(num_mismatched) < dump_max && !sizes.empty()) {
+        const int64_t nc = sizes.back();
+        std::cout << "[mm] " << int64_t(i) / nc << " " << int64_t(i) % nc
+                  << " " << computed_data[i] << " " << reference_data[i]
+                  << std::endl;
+      }
       if (num_mismatched == 0) {
         first_mismatch = i;
         std::cout << "Mismatch at element " << i

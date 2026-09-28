@@ -8,6 +8,8 @@
 
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h>
 
+#include <algorithm>
+
 namespace vkcompute {
 namespace sarc {
 
@@ -108,7 +110,20 @@ bool q4gsw_coopmat_fits(
     // The texture epilogue stages SG_GRID_Y * MMA_M rows x WG_TILE_N fp16,
     // on top of Ash/Bsh unless CSH_IN_ASH reuses Ash. A tile over the limit
     // hung a GPU instead of failing pipeline creation (1.4, 2026-08-09).
-    if (!dims.csh_in_ash) {
+    if (dims.csh_full) {
+      // Full-tile drain (4w): double-buffered Ash/Bsh (row-padded by 8 fp16)
+      // plus the whole fp16 tile, or their max when they share one pool. A
+      // K=32 tile with a separate full-tile Csh exceeds 64 KiB and hung an
+      // Xclipse board (2026-09-28), so check the total, not just the Csh.
+      const uint64_t ab_bytes = 2u * 2u *
+          (uint64_t(dims.m) * (dims.k + 8u) + uint64_t(dims.k) * (dims.n + 8u));
+      const uint64_t c_bytes = uint64_t(dims.m) * dims.n * 2u;
+      const uint64_t lds_bytes =
+          dims.csh_pool ? std::max(ab_bytes, c_bytes) : ab_bytes + c_bytes;
+      if (lds_bytes > device.max_shared_bytes) {
+        return false;
+      }
+    } else if (!dims.csh_in_ash) {
       const uint64_t csh_bytes =
           uint64_t(dims.sg_grid_y) * dims.mma_m * dims.n * 2u;
       if (csh_bytes >= device.max_shared_bytes) {

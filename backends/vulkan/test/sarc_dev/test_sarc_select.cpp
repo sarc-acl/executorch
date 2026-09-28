@@ -162,7 +162,7 @@ int main(int argc, char** argv) {
        }},
       {"M51",
        device("samsung xclipse 940", true, 64, 32, 64),
-       [](const ShapeInfo&) { return kQ + "t128x128k16g22s32"; },
+       [](const ShapeInfo&) { return kQ + "t128x128k16g22s32f32xp"; },
        [](const ShapeInfo&) { return kD + "zpgtr_t128x64k32g42s32"; }},
       {"RX7900XTX",
        [] {

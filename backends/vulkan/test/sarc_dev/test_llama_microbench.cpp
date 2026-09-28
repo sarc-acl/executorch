@@ -956,11 +956,14 @@ bool run_production_diff() {
   }
   g_allow_large_reference = true;
   bool all_ok = true;
+  // ET_VK_MB_PDIFF_M / _N (diagnostics): override M and N of every shape.
+  const char* env_m = std::getenv("ET_VK_MB_PDIFF_M");
+  const char* env_n = std::getenv("ET_VK_MB_PDIFF_N");
   for (const auto& op_shape : model->ops) {
     LinearConfig cfg{
-        /*M=*/2048,
+        /*M=*/env_m != nullptr ? std::atoll(env_m) : 2048,
         op_shape.K,
-        op_shape.N,
+        env_n != nullptr ? std::atoll(env_n) : op_shape.N,
         /*group_size=*/g_group,
         /*op_name=*/g_pdiff_op,
         // Rank-3, batch 1: the exported model's layout, which the per-shape

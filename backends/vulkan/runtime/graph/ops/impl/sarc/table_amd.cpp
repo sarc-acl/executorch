@@ -52,13 +52,16 @@ const Row kAmdRows[] = {
      nullptr,
      Status::kVerified},
 
-    // Samsung Xclipse (M51): the 1.4 dev branch defaults (tuned there; owned by
-    // the M51 agent, not verified on release 1.5).
+    // Samsung Xclipse (M51): 4w on the 1.4 tile with fp32 accumulate and, for
+    // texture3d, the one-pass full-tile drain from a shared LDS pool (the 1.4
+    // fp16-accumulate, banded-drain variant returned wrong values here).
+    // 8da4w: the 1.4 default.
+    // Owned by the M51 agent, not verified on release 1.5.
     {"xclipse",
      amd_wave64,
      Op::kQ4gswLinear,
-     "sarc_linear_q4gsw_coopmat_t128x128k16g22s32",
-     {128, 128, 16, 2, 2, 32, 16, false},
+     "sarc_linear_q4gsw_coopmat_t128x128k16g22s32f32xp",
+     {128, 128, 16, 2, 2, 32, 16, false, /*csh_full=*/true, /*csh_pool=*/true},
      kTex3dTex2d | kBufTex2d | kBufBuf,
      nullptr,
      Status::kUnverified},
