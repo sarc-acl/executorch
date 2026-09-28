@@ -1,0 +1,67 @@
+{
+  "campaign": "e2e-1.5-2026-09-28",
+  "sources": {
+    "stock": {
+      "commit": "985c1ceccc8bb8b6a32294f71aeb5d2f299562f7",
+      "ref": "release/1.5 (upstream, unmodified)",
+      "build_patch": "src/stock-backport-03f41d2031.patch: #include <algorithm> in SharedObject.cpp and Squeeze.cpp (upstream 03f41d2031, compile-only; GCC 14 fails without it)"
+    },
+    "sarc": {
+      "commit": "fd9250c60dd7783972aa6181220494805e6f969f",
+      "ref": "sarc/1.5-r2 (tag)"
+    },
+    "dev_for_orin_microbench": {
+      "commit": "f4eea5ae309997fca6bbef29d03b3a04699ee1f6"
+    }
+  },
+  "toolchains": {
+    "x86": "podman localhost/et-vk-build:rocky10 (sarc/tools/build.sh --llama), glslc shaderc v2023.8",
+    "orin": "podman localhost/et-jetson-cross:jp7.2.1 (tools/jetson-cross, EVENT_TRACER on in both arms), glslc shaderc v2026.1"
+  },
+  "binaries": {
+    "x86-stock": {
+      "llama_main": "f735bd77465c31e867f07c6ff2210ef28bf81553d9503109b6b539f7216e7e76",
+      "libllama_runner.so": "e9dd0162dffd2d4c7d4ee2ebbefffee1a38a5c4d27ef60eee9bf8c3f855d8d70"
+    },
+    "x86-stock-traced": {
+      "llama_main": "f0fda3d89f72567e0db4ca9b44c46d6a0e4b421b0cb94b78840749af6e0b47c0",
+      "libllama_runner.so": "b6954ac3b44eda20c1aa320d8904a0262135ebf3c726a69fef31016e589bf07c"
+    },
+    "orin-stock": {
+      "llama_main": "cfb248f31751d563f3cac46999a2030cddcfcf1081fb40bfa3fd8f6b0226861e",
+      "libllama_runner.so": "ab18f0a89b025cd802c35c36639af84326de1b8b1829c21efdd8f82cce01a9ff"
+    },
+    "x86-sarc": {
+      "llama_main": "4ebdd8435642f66488cdf2cd7df4341e369d613e3395afbc94b026f789030dee",
+      "libllama_runner.so": "34371d158f8057e156d063c287a469e9cc8323155cde5df60569887682cb46cc"
+    },
+    "x86-sarc-traced": {
+      "llama_main": "db6f6c879a941882993efd5d54c19cb7bf16ef22823114a99c499b55473f869f",
+      "libllama_runner.so": "6165444d96351fe99dcfef549245c96e6784752c19fbe2aac8f9166e0b32db64"
+    },
+    "orin-sarc": {
+      "llama_main": "07d0960507ad0c995ebcaa303e466cdf440b214c26aa4c6786d4838527678b6b",
+      "libllama_runner.so": "ab18f0a89b025cd802c35c36639af84326de1b8b1829c21efdd8f82cce01a9ff"
+    }
+  },
+  "golden": {
+    "x86-sarc": "spirv golden: PASS (48 shipped variants)",
+    "orin-sarc": {
+      "summary": "11/48 variants differ (different glslc); none is dispatched on Orin: its 4w rows and zpgtr t128x128k64g44s32mk32ra match",
+      "diff": [
+        "DIFF  sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_buffer_texture2d_half (owner radeon-780m: re-verify on that device, then --update)",
+        "DIFF  sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_texture3d_texture2d_half (owner radeon-780m: re-verify on that device, then --update)",
+        "DIFF  sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_buffer_texture2d_half (owner arc-b580+arc-pro-b70: re-verify on that device, then --update)",
+        "DIFF  sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_texture3d_texture2d_half (owner arc-b580+arc-pro-b70: re-verify on that device, then --update)",
+        "DIFF  sarc_linear_dq8ca_coopmat_zpgtr_t128x64k32g42s32_buffer_texture2d_half (owner UNVERIFIED:xclipse-m51: re-verify on that device, then --update)",
+        "DIFF  sarc_linear_dq8ca_coopmat_zpgtr_t128x64k32g42s32_texture3d_texture2d_half (owner UNVERIFIED:xclipse-m51: re-verify on that device, then --update)",
+        "DIFF  sarc_linear_q4gsw_coopmat_t64x64k32g21s64m64x32x16_buffer_texture2d_half (owner UNVERIFIED:adreno-840: re-verify on that device, then --update)",
+        "DIFF  sarc_linear_q4gsw_coopmat_t64x64k32g21s64m64x32x16_texture3d_texture2d_half (owner UNVERIFIED:adreno-840: re-verify on that device, then --update)",
+        "DIFF  sarc_linear_q4gsw_coopmat_t64x64k32g21s64m64x32x16_buffer_buffer_half (owner UNVERIFIED:adreno-840: re-verify on that device, then --update)",
+        "DIFF  sarc_sdpa_av_coopmat_t64x64k32g22s64_buffer_buffer_half (owner radeon-780m: re-verify on that device, then --update)",
+        "DIFF  sarc_sdpa_qk_coopmat_t128x64k32g22s64_buffer_buffer_half (owner radeon-780m: re-verify on that device, then --update)",
+        "spirv golden: FAIL (48 shipped variants)"
+      ]
+    }
+  }
+}

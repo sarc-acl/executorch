@@ -1,0 +1,499 @@
+# Dispatched linear and SDPA kernels (ETDump, real model, 2048-token prefill)
+
+
+## 780m
+
+- **1b 4w sarc** (160/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_texture3d_texture2d_half` × 112
+  - `sarc_sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sarc_sdpa_av_coopmat_t64x64k32g22s64_buffer_buffer_half` × 16
+  - `sarc_sdpa_qk_coopmat_t128x64k32g22s64_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **1b 4w stock** (0/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half` × 112
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 16
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **1b 8da4w sarc** (160/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_texture3d_texture2d_half` × 112
+  - `sarc_sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sarc_sdpa_av_coopmat_t64x64k32g22s64_buffer_buffer_half` × 16
+  - `sarc_sdpa_qk_coopmat_t128x64k32g22s64_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **1b 8da4w stock** (0/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8` × 112
+  - `sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 16
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **3b 4w sarc** (280/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_texture3d_texture2d_half` × 196
+  - `sarc_sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sarc_sdpa_av_coopmat_t64x64k32g22s64_buffer_buffer_half` × 28
+  - `sarc_sdpa_qk_coopmat_t128x64k32g22s64_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **3b 4w stock** (0/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half` × 196
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 28
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **3b 8da4w sarc** (280/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_texture3d_texture2d_half` × 196
+  - `sarc_sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sarc_sdpa_av_coopmat_t64x64k32g22s64_buffer_buffer_half` × 28
+  - `sarc_sdpa_qk_coopmat_t128x64k32g22s64_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **3b 8da4w stock** (0/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8` × 196
+  - `sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 28
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **8b 4w sarc** (320/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_texture3d_texture2d_half` × 224
+  - `sarc_sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sarc_sdpa_av_coopmat_t64x64k32g22s64_buffer_buffer_half` × 32
+  - `sarc_sdpa_qk_coopmat_t128x64k32g22s64_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+- **8b 4w stock** (0/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half` × 224
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 32
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+- **8b 8da4w sarc** (320/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_texture3d_texture2d_half` × 224
+  - `sarc_sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sarc_sdpa_av_coopmat_t64x64k32g22s64_buffer_buffer_half` × 32
+  - `sarc_sdpa_qk_coopmat_t128x64k32g22s64_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+- **8b 8da4w stock** (0/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8` × 224
+  - `sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 32
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+
+## b580
+
+- **1b 4w sarc** (112/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half` × 112
+  - `sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 16
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **1b 4w stock** (0/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half` × 112
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 16
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **1b 8da4w sarc** (112/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_texture3d_texture2d_half` × 112
+  - `sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 16
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **1b 8da4w stock** (0/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8` × 112
+  - `sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 16
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **3b 4w sarc** (196/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half` × 196
+  - `sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 28
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **3b 4w stock** (0/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half` × 196
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 28
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **3b 8da4w sarc** (196/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_texture3d_texture2d_half` × 196
+  - `sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 28
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **3b 8da4w stock** (0/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8` × 196
+  - `sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 28
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **8b 4w sarc** (224/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half` × 224
+  - `sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 32
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+- **8b 4w stock** (0/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half` × 224
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 32
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+- **8b 8da4w sarc** (224/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_texture3d_texture2d_half` × 224
+  - `sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 32
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+- **8b 8da4w stock** (0/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8` × 224
+  - `sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 32
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+
+## b70
+
+- **1b 4w sarc** (112/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half` × 112
+  - `sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 16
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **1b 4w stock** (0/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half` × 112
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 16
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **1b 8da4w sarc** (112/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_texture3d_texture2d_half` × 112
+  - `sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 16
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **1b 8da4w stock** (0/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8` × 112
+  - `sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 16
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **3b 4w sarc** (196/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half` × 196
+  - `sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 28
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **3b 4w stock** (0/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half` × 196
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 28
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **3b 8da4w sarc** (196/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_texture3d_texture2d_half` × 196
+  - `sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 28
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **3b 8da4w stock** (0/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8` × 196
+  - `sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 28
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **8b 4w sarc** (224/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half` × 224
+  - `sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 32
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+- **8b 4w stock** (0/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half` × 224
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 32
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+- **8b 8da4w sarc** (224/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_texture3d_texture2d_half` × 224
+  - `sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 32
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+- **8b 8da4w stock** (0/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8` × 224
+  - `sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 32
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+
+## 4070ti
+
+- **1b 4w sarc** (112/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sarc_linear_q4gsw_coopmat_t128x128k16g24s32ga_texture3d_texture2d_half` × 32
+  - `sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga_texture3d_texture2d_half` × 80
+  - `sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 16
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **1b 4w stock** (0/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half` × 112
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 16
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **1b 8da4w sarc** (112/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half` × 112
+  - `sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 16
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **1b 8da4w stock** (0/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8` × 112
+  - `sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 16
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **3b 4w sarc** (196/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga_texture3d_texture2d_half` × 196
+  - `sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 28
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **3b 4w stock** (0/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half` × 196
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 28
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **3b 8da4w sarc** (196/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half` × 196
+  - `sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 28
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **3b 8da4w stock** (0/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8` × 196
+  - `sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 28
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **8b 4w sarc** (224/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga_texture3d_texture2d_half` × 224
+  - `sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 32
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+- **8b 4w stock** (0/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half` × 224
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 32
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+- **8b 8da4w sarc** (224/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half` × 224
+  - `sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 32
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+- **8b 8da4w stock** (0/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8` × 224
+  - `sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 32
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+
+## orin
+
+- **1b 4w sarc** (112/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half` × 112
+  - `sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 16
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **1b 4w stock** (0/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half` × 112
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 16
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **1b 8da4w sarc** (112/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half` × 112
+  - `sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 16
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **1b 8da4w stock** (0/194 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8` × 112
+  - `sdpa_attn_weights_softmax_buffer_half` × 16
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 16
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 16
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 32
+- **3b 4w sarc** (196/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half` × 196
+  - `sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 28
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **3b 4w stock** (0/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half` × 196
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 28
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **3b 8da4w sarc** (196/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half` × 196
+  - `sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 28
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **3b 8da4w stock** (0/338 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8` × 196
+  - `sdpa_attn_weights_softmax_buffer_half` × 28
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 28
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 28
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 56
+- **8b 4w sarc** (224/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32_texture3d_texture2d_half` × 32
+  - `sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half` × 192
+  - `sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 32
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+- **8b 4w stock** (0/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half` × 224
+  - `q4gsw_linear_gemv_coop__w_4x8_nc_buffer_g8w8_buffer_half` × 1
+  - `sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 32
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+- **8b 8da4w sarc** (224/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half` × 224
+  - `sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 32
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
+- **8b 8da4w stock** (0/386 dispatches SARC):
+  - `embedding_q4gsw_linear_weight_texture2d_buffer_half` × 1
+  - `linear_dq8ca_q4gsw_coop_buffer_texture2d_half_zpint8` × 1
+  - `linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8` × 224
+  - `sdpa_attn_weights_softmax_buffer_half` × 32
+  - `sdpa_compute_attn_weights_tiled_buffer_buffer_half` × 32
+  - `sdpa_compute_out_tiled_buffer_buffer_half` × 32
+  - `sdpa_kv_cache_update_buffer_buffer_half` × 64
