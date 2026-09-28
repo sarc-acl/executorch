@@ -80,6 +80,28 @@ The visible spread is on the Arc B580 (see Limitations).*
   - The two SARC schemes then reach similar absolute throughput (B580 1B: 8,790 vs 8,605).
   - On the 4070 Ti and Orin, stock 8da4w is about as fast as stock 4w, and the SARC 8da4w speedup is as large as
     the 4w one or larger.
+- **After tuning, the faster scheme depends on the GPU**, in absolute tok/s:
+
+  | SARC tok/s, 4w / 8da4w | 1B | 3B | 8B |
+  |---|---|---|---|
+  | Radeon 780M | **2,698** / 2,544 | **1,151** / 1,051 | **526** / 489 |
+  | Jetson Orin Nano | **891** / 823 | **360** / 320 | **190** / 170 |
+  | Arc B580 | 8,605 / **8,790** | 3,419 / **3,507** | **1,694** / 1,680 |
+  | Arc Pro B70 | 11,703 / **12,412** | 4,865 / **5,251** | 2,438 / **2,738** |
+  | RTX 4070 Ti SUPER | 19,692 / **20,898** | 8,752 / **9,660** | 4,491 / **5,032** |
+
+  - The two schemes differ by at most 12.5 %.
+  - **Radeon 780M, 4w faster (measured cause).** The 780M's int8 matrix peak (14.4 TOP/s, `matrix_int8`,
+    780M standard-v2 roofline campaign) is no higher than its fp16×fp16→fp32 peak (14.8 TFLOP/s,
+    `matrix_fp16_fp32`, the accumulator the 4w kernel uses). 8da4w's advantage is int8 matrix throughput, so on
+    RDNA3 it gains nothing and only adds the activation-quantization pass and the scale epilogue.
+  - **Jetson Orin, 4w faster (not a hardware limit).** On the Orin, int8 has 2× the fp16 peak (19.5 vs 9.7).
+    - Its 8da4w row uses the zpgtr kernel ported from the 4070 Ti.
+    - Jetson-study counters (`igpu-roofline/docs/JETSON-WMMA-LESSONS.md`) show that kernel family at about 21 %
+      Tensor Active, against 55 % for the 4w kernel. Staging and unpacking limit it, not the tensor cores.
+    - An Orin-specific 8da4w kernel is the clearest open target.
+    - These counters come from the Jetson study, not this campaign.
+  - **B70 and 4070 Ti, 8da4w faster by 6–12 %. B580, within ±3 %:** a tie within the B580's noise.
 - **The speedup grows with model size on four of the five GPUs.**
   - On the 780M, 8B is slightly below 3B in both schemes (4w 2.66× vs 2.71×, 8da4w 1.73× vs 1.86×).
   - On the B580, the 8B cells are the noisiest in the campaign, so the size of the 8B step there is uncertain.
