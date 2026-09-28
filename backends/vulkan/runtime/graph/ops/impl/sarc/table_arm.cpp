@@ -12,11 +12,18 @@ namespace vkcompute {
 namespace sarc {
 namespace {
 
+// The coopmat tile only wins on large linears (8B wq_wo / w1_w3 / w2, 3B and
+// 1B w1_w3 / w2; microbench 2026-09-28); smaller ones stay on the tiled kernel.
+bool large_linear(const ShapeInfo& s) {
+  return s.N * s.K >= (int64_t(1) << 24);
+}
+
 const Row kArmRows[] = {
     // Mali-G1-Ultra MC12 (vivo V2502A, MT6993, driver r54p1): subgroup 16 fixed,
     // fp16 MMA 16x32x32, 32 KiB LDS. 8B 4w prefill shapes (microbench,
     // 2026-09-28): faster than the tiled kernel and within the production-diff
-    // tolerance (the tiled kernel's fp16 accumulation is not). No 8da4w row:
+    // tolerance (the tiled kernel's fp16 accumulation is not), for N*K >= 2^24
+    // (large_linear). No 8da4w row:
     // the only int8 shape is 4x16x16 and there is no 4x16 fp32 accumulator.
     {"mali-g1",
      nullptr,
@@ -24,7 +31,7 @@ const Row kArmRows[] = {
      "sarc_linear_q4gsw_coopmat_t64x128k32g44s16m16x32x32gahb",
      {64, 128, 32, 4, 4, 16, 16, false},
      kTex3dTex2d | kBufTex2d | kBufBuf,
-     nullptr,
+     large_linear,
      Status::kUnverified},
 };
 
