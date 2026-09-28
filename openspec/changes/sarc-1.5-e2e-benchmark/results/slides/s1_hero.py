@@ -7,14 +7,15 @@ import slide_style as S
 
 XLIM = (18, 22000)  # shared by both schemes so the two slides can be flipped
 XTICKS = [30, 100, 300, 1000, 3000, 10000]
-DOT = 22           # marker diameter (pt)
+DOT = 20           # marker diameter (pt)
 ARROW = "#F3A67C"  # light orange shaft: direction toward "ours"
 
 
 def draw(df, scheme, stem):
     S.apply_style()
     fig = S.new_fig()
-    ax = fig.add_axes([0.235, 0.20, 0.735, 0.70])
+    ax = fig.add_axes([0.235, 0.22 if S.PRERELEASE else 0.20, 0.735,
+                       0.695 if S.PRERELEASE else 0.70])
 
     ypos, groups = S.grouped_rows(gap=0.75)
     for g in S.GPUS:
@@ -25,9 +26,12 @@ def draw(df, scheme, stem):
                                     mutation_scale=30, shrinkA=DOT / 2 + 2,
                                     shrinkB=DOT / 2 + 1), zorder=2)
         ax.plot([a], [y], "o", ms=DOT, color=S.STOCK, mec="white", mew=2.5, zorder=3)
-        ax.plot([b], [y], "o", ms=DOT, color=S.OURS, mec="white", mew=2.5, zorder=3)
+        if S.is_pre(g):  # hollow orange = pre-release rows
+            ax.plot([b], [y], "o", ms=DOT - 2, mfc="white", mec=S.OURS, mew=4, zorder=3)
+        else:
+            ax.plot([b], [y], "o", ms=DOT, color=S.OURS, mec="white", mew=2.5, zorder=3)
         for x, col in ((a, S.MUTED), (b, S.INK)):
-            ax.annotate(S.fmt_toks(x), (x, y), xytext=(0, 17), textcoords="offset points",
+            ax.annotate(S.fmt_toks(x), (x, y), xytext=(0, 13), textcoords="offset points",
                         ha="center", va="bottom", fontsize=S.FS_VALUE, color=col)
         ax.annotate(S.fmt_x(r.speedup), (b, y), xytext=(DOT / 2 + 12, 0),
                     textcoords="offset points", ha="left", va="center",
@@ -46,7 +50,7 @@ def draw(df, scheme, stem):
     ax.tick_params(axis="y", length=0, pad=14)
     ax.spines["left"].set_visible(False)
     last = ypos[S.GPUS[-1]]
-    ax.set_ylim(last + 0.55, -0.75)
+    ax.set_ylim(last + 0.45, -0.72)
     S.draw_group_labels(ax, groups, dy=-0.60)
 
     # Direct build labels under the top row's dots instead of a legend.

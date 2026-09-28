@@ -4,7 +4,7 @@ from matplotlib.lines import Line2D
 from matplotlib.ticker import FixedLocator, NullLocator
 
 from common import (ATTN, GEMM, GPUS, GPU_LABEL, INK, MODELS, MODEL_LABEL, MUTED, SCHEME_COLOR,
-                    SCHEMES, WIDTH, apply_style, cells, families, family_ms, save)
+                    SCHEMES, WIDTH, SARC_ATTN, apply_style, cells, families, family_ms, save)
 
 apply_style()
 F = families()
@@ -29,10 +29,12 @@ for gpu in GPUS:
                   f"{d['e2e_trace']:.2f},{d['attn']:.2f},{d['attn_share']:.1f}")
 
 x = [0, 1, 2]
-fig, axes = plt.subplots(2, len(GPUS), figsize=(WIDTH, 4.9), sharex=True,
-                         gridspec_kw=dict(height_ratios=[1.25, 1]))
-for j, gpu in enumerate(GPUS):
-    top, bot = axes[0, j], axes[1, j]
+NCOL = 3
+fig, axes = plt.subplots(4, NCOL, figsize=(WIDTH, 8.4), sharex=True,
+                         gridspec_kw=dict(height_ratios=[1.25, 1, 1.25, 1]))
+for k, gpu in enumerate(GPUS):
+    band, j = divmod(k, NCOL)
+    top, bot = axes[2 * band, j], axes[2 * band + 1, j]
     for scheme in SCHEMES:
         c = SCHEME_COLOR[scheme]
         g = [data[gpu, scheme, m]["gemm"] for m in MODELS]
@@ -41,7 +43,7 @@ for j, gpu in enumerate(GPUS):
         top.plot(x, g, color=c, lw=1.4, ls=(0, (3, 1.5)), marker="o", ms=5.5, mfc="white", mec=c, mew=1.3)
         top.plot(x, e, color=c, lw=2.0, marker="o", ms=5.5, mfc=c, mec="white", mew=0.8)
         bot.plot(x, s, color=c, lw=2.0, marker="s", ms=5, mfc=c, mec="white", mew=0.8)
-        if gpu == "780m":
+        if gpu in SARC_ATTN:
             a = [data[gpu, scheme, m]["attn"] for m in MODELS]
             sh = [data[gpu, scheme, m]["attn_share"] for m in MODELS]
             top.plot(x, a, color=c, lw=1.2, ls=":", marker="D", ms=4.5, mfc="white", mec=c, mew=1.1)
@@ -49,12 +51,13 @@ for j, gpu in enumerate(GPUS):
         # Direct labels at 8B for the end-to-end speedup.
         e_other = data[gpu, SCHEMES[1 - SCHEMES.index(scheme)], "8b"]["e2e"]
         dy = 0
-        if abs(e[-1] / e_other - 1) < 0.08:  # nudge apart labels that would collide
+        if abs(e[-1] / e_other - 1) < 0.15:  # nudge apart labels that would collide
             dy = 6 if e[-1] >= e_other else -6
         top.annotate(f"{e[-1]:.2f}", (2, e[-1]), xytext=(4, dy), textcoords="offset points",
                      ha="left", va="center", fontsize=8.5, color=c, fontweight="bold")
-    if gpu == "780m":
-        top.text(0.75, 5.0, "attention", fontsize=9, color=MUTED, ha="left", va="center")
+    if gpu in SARC_ATTN:
+        ya = max(data[gpu, sc, "3b"]["attn"] for sc in SCHEMES) * 1.22
+        top.text(0.75, ya, "attention", fontsize=9, color=MUTED, ha="left", va="center")
         bot.text(0.75, 14, "attention", fontsize=9, color=MUTED, ha="left", va="center")
     top.set_yscale("log")
     top.set_ylim(1.0, 13)
@@ -70,12 +73,14 @@ for j, gpu in enumerate(GPUS):
         ax.set_xlim(-0.3, 2.75)
     bot.set_xticks(x)
     bot.set_xticklabels([MODEL_LABEL[m] for m in MODELS])
-    top.set_title(GPU_LABEL[gpu].replace("RTX 4070 Ti SUPER", "RTX 4070 Ti S.")
-                  .replace("Jetson Orin Nano", "Orin Nano"), fontsize=9.5, fontweight="bold")
+    bot.tick_params(axis="x", labelbottom=True)
+    top.set_title(GPU_LABEL[gpu], fontsize=9.5, fontweight="bold")
 
-axes[0, 0].set_ylabel("speedup, stock / SARC\n(x, log scale)")
-axes[1, 0].set_ylabel("share of stock\nGPU time (%)")
-fig.supxlabel("model size (Llama 3.2 1B / 3B, Llama 3.1 8B), 2048-token prefill", fontsize=9, y=0.02)
+for band in range(2):
+    axes[2 * band, 0].set_ylabel("speedup, stock / SARC\n(x, log scale)")
+    axes[2 * band + 1, 0].set_ylabel("share of stock\nGPU time (%)")
+fig.supxlabel("model size (Llama 3.2 1B / 3B, Llama 3.1 8B), 2048-token prefill\n"
+              "\u2020 pre-release: unverified rows, different .pte export, AMDVLK", fontsize=9, y=0.01)
 
 handles = [
     Line2D([], [], color=SCHEME_COLOR["4w"], lw=2, label="4w"),
@@ -85,9 +90,9 @@ handles = [
     Line2D([], [], color=INK, lw=2.0, marker="o", mfc=INK, mec="white", label="end-to-end speedup"),
     Line2D([], [], color=INK, lw=2.0, marker="s", mfc=INK, mec="white", label="GEMM share of stock time"),
     Line2D([], [], color=INK, lw=1.2, ls=":", marker="D", mfc="white", mec=INK,
-           label="attention speedup / share (780M only)"),
+           label="attention speedup / share\n(GPUs with SARC attention)"),
 ]
 fig.legend(handles=handles, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.0),
            columnspacing=1.2, handletextpad=0.5, fontsize=9)
-fig.tight_layout(rect=(0, 0.035, 1, 0.87), w_pad=0.4, h_pad=0.6)
+fig.tight_layout(rect=(0, 0.025, 1, 0.915), w_pad=0.6, h_pad=0.9)
 save(fig, "e3_amdahl_model_size")

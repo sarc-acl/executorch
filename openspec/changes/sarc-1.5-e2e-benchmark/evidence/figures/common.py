@@ -11,14 +11,22 @@ import pandas as pd
 HERE = Path(__file__).resolve().parent
 EVID = HERE.parent
 REPORT = EVID.parent
-ROOFLINE_JSON = EVID / "roofline.json"
-EFFICIENCY_CSV = EVID / "efficiency.csv"
-FAMILIES_CSV = EVID / "trace" / "families.csv"
-CELLS_CSV = REPORT / "cells.csv"
+# Six-GPU combined data (the five-GPU inputs under evidence/ are kept untouched).
+COMBINED = EVID / "combined6"
+ROOFLINE_JSON = COMBINED / "roofline.json"
+EFFICIENCY_CSV = COMBINED / "efficiency.csv"
+FAMILIES_CSV = COMBINED / "trace" / "families.csv"
+CELLS_CSV = REPORT / "raw6" / "cells.csv"
 
-GPUS = ["780m", "b580", "b70", "4070ti", "orin"]
+# RDNA3 parts first (both use SARC attention kernels), then Intel, NVIDIA.
+GPUS = ["780m", "7900xtx", "b580", "b70", "4070ti", "orin"]
+# Pre-release rows (unverified, different .pte export, AMDVLK driver).
+PRERELEASE = {"7900xtx"}
+# GPUs whose SARC build also contains the SARC attention kernels.
+SARC_ATTN = {"780m", "7900xtx"}
 GPU_LABEL = {
     "780m": "Radeon 780M",
+    "7900xtx": "RX 7900 XTX\u2020",
     "b580": "Arc B580",
     "b70": "Arc Pro B70",
     "4070ti": "RTX 4070 Ti SUPER",
@@ -44,10 +52,13 @@ WIDTH = 7.0
 STOCK_ROOF = {"4w": "alu_fp16", "8da4w": "dot_int8"}
 
 
+FP32_ACC_4W = {"780m", "7900xtx"}  # SARC 4w accumulates in fp32 on RDNA3
+
+
 def sarc_roof(gpu, scheme):
     if scheme == "8da4w":
         return "matrix_int8"
-    return "matrix_fp16_fp32" if gpu == "780m" else "matrix_fp16"
+    return "matrix_fp16_fp32" if gpu in FP32_ACC_4W else "matrix_fp16"
 
 
 ROOF_LABEL = {

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
 from common import (ATTN, GEMM, GPUS, GPU_LABEL, INK, MUTED, QUANT, SCHEMES, WIDTH, apply_style,
-                    families, family_ms, save)
+                    SARC_ATTN, families, family_ms, save)
 
 apply_style()
 F = families()
@@ -48,7 +48,7 @@ for gpu in GPUS:
     group_y.append((top, y + 0.35, gpu))
     y -= 0.55
 
-fig, ax = plt.subplots(figsize=(WIDTH, 8.6))
+fig, ax = plt.subplots(figsize=(WIDTH, 10.2))
 print("gpu,scheme,build,total_ms,gemm_pct_of_stock,attn_pct_of_own,quant_pct_of_own")
 for yy, gpu, scheme, build, segs, total, st_total in rows:
     left = 0.0
@@ -74,6 +74,14 @@ ax.set_yticklabels(yticklabels)
 ax.tick_params(axis="y", length=0)
 for top, bottom, gpu in group_y:
     ax.text(0, top + 0.62, GPU_LABEL[gpu], ha="left", va="center", fontsize=9.5, fontweight="bold")
+    if gpu in SARC_ATTN:
+        sp = []
+        for scheme in SCHEMES:
+            st = family_ms(F, gpu, MODEL, scheme, "stock")
+            sa = family_ms(F, gpu, MODEL, scheme, "sarc")
+            sp.append(sum(st[f] for f in ATTN) / sum(sa[f] for f in ATTN))
+        ax.text(98, top - 1.0, f"SARC attention kernels:\nattention {sp[0]:.1f}x (4w), {sp[1]:.1f}x (8da4w)",
+                ha="right", va="center", fontsize=9, color=INK, linespacing=1.15)
 ax.set_xlim(0, 100)
 ax.set_ylim(y + 0.3, 0.2)
 ax.set_xticks([0, 20, 40, 60, 80, 100])
@@ -89,5 +97,7 @@ ax.text(147, 0.25, "attention\nshare", ha="right", va="bottom", fontsize=9, colo
 handles = [Patch(facecolor=c, edgecolor="white", label=l) for l, _, c, _ in SEGS]
 fig.legend(handles=handles, loc="upper center", ncol=3, bbox_to_anchor=(0.47, 1.0),
            columnspacing=1.2, handletextpad=0.4)
-fig.subplots_adjust(left=0.17, right=0.70, top=0.905, bottom=0.06)
+fig.text(0.0, 0.0, "\u2020 pre-release: unverified rows, different .pte export, AMDVLK driver", fontsize=9,
+         color=MUTED, ha="left", va="top")
+fig.subplots_adjust(left=0.17, right=0.70, top=0.915, bottom=0.05)
 save(fig, "e2_time_breakdown")

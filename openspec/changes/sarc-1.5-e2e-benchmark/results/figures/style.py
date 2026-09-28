@@ -6,25 +6,29 @@ import pandas as pd
 
 HERE = Path(__file__).resolve().parent
 REPORT = HERE.parent
-CELLS_CSV = REPORT / "cells.csv"
-RUNS_CSV = REPORT / "runs_all.csv"
+# Six-GPU combined data (the five original GPUs are identical to ../cells.csv rows
+# apart from the paired-bootstrap speedup CI; the 7900 XTX is added).
+CELLS_CSV = REPORT / "raw6" / "cells.csv"
+RUNS_CSV = REPORT / "raw6" / "runs_all.csv"
 
 # GPU order: integrated / low power first, then discrete by vendor.
-GPUS = ["780m", "b580", "b70", "4070ti", "orin"]
+GPUS = ["780m", "b580", "b70", "4070ti", "orin", "7900xtx"]
 GPU_LABEL = {
     "780m": "Radeon 780M",
     "b580": "Arc B580",
     "b70": "Arc Pro B70",
     "4070ti": "RTX 4070 Ti SUPER",
     "orin": "Jetson Orin Nano",
+    "7900xtx": "RX 7900 XTX†",
 }
 # Two-line tick labels for narrow facets.
 GPU_TICK = {
     "780m": "Radeon\n780M",
     "b580": "Arc\nB580",
     "b70": "Arc Pro\nB70",
-    "4070ti": "RTX 4070\nTi SUPER",
+    "4070ti": "RTX 4070\nTi S",
     "orin": "Jetson\nOrin Nano",
+    "7900xtx": "RX 7900\nXTX†",
 }
 
 # Compact single-line labels for the heatmap rows.
@@ -34,7 +38,20 @@ GPU_SHORT = {
     "b70": "Arc Pro B70",
     "4070ti": "RTX 4070 Ti SUPER",
     "orin": "Jetson Orin Nano",
+    "7900xtx": "RX 7900 XTX†",
 }
+
+# Pre-release GPUs: SARC rows unverified (ET_VK_SARC_UNVERIFIED=1), different .pte
+# export (absolute tok/s not strictly comparable), AMDVLK driver. Marked everywhere by
+# a tinted background band / outline in PRERELEASE_COLOR, white hatching and a dagger.
+PRERELEASE = {"7900xtx"}
+# Okabe-Ito reddish purple: distinct from the model and build colours (CVD dE >= 7.6
+# over all pairs); always paired with hatching and the dagger as secondary encoding.
+PRERELEASE_COLOR = "#CC79A7"
+PRERELEASE_HATCH = "////"
+PRERELEASE_NOTE = ("† RX 7900 XTX: pre-release. SARC rows unverified (ET_VK_SARC_UNVERIFIED=1); "
+                   "different .pte export, so absolute tok/s are not strictly comparable; "
+                   "AMDVLK driver.")
 
 MODELS = ["1b", "3b", "8b"]
 MODEL_LABEL = {"1b": "Llama 3.2 1B", "3b": "Llama 3.2 3B", "8b": "Llama 3.1 8B"}
@@ -66,6 +83,7 @@ def apply_style():
         "font.family": "sans-serif",
         "font.sans-serif": ["DejaVu Sans", "Arial", "Helvetica"],
         "font.size": 8,
+        "hatch.linewidth": 0.8,
         "axes.titlesize": 9,
         "axes.labelsize": 8,
         "xtick.labelsize": 8,
@@ -90,6 +108,21 @@ def apply_style():
         "savefig.bbox": "tight",
         "savefig.pad_inches": 0.02,
     })
+
+
+def mark_prerelease_band(ax, x_index, half_width=0.48):
+    """Tinted background band behind a pre-release GPU group."""
+    ax.axvspan(x_index - half_width, x_index + half_width, color=PRERELEASE_COLOR,
+               alpha=0.13, lw=0, zorder=0)
+
+
+def hatch_bars(bars, which):
+    """White hatching on the bars whose GPU is pre-release (which: list of GPU ids)."""
+    for bar, g in zip(bars, which):
+        if g in PRERELEASE:
+            bar.set_hatch(PRERELEASE_HATCH)
+            bar.set_edgecolor("white")
+            bar.set_linewidth(0)
 
 
 def load_cells():

@@ -1,6 +1,7 @@
 """s2_ttft_8b_4w: time to first token (2048-token prompt), Llama 3.1 8B, 4-bit
 weights. Each row is normalised to its own stock TTFT (grey = full width); the
 orange bar is the tuned build's fraction of it. Right column: time saved."""
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 import slide_style as S
@@ -12,9 +13,11 @@ X_SAVED = 1.44  # data x of the "time saved" column (bars span 0..1)
 
 def main():
     S.apply_style()
+    mpl.rcParams["hatch.color"] = "#F7C4A6"  # faint orange hatch in outlined bars
+    mpl.rcParams["hatch.linewidth"] = 2.0
     df = S.load_cells()
     fig = S.new_fig()
-    ax = fig.add_axes([0.235, 0.17, 0.735, 0.69])
+    ax = fig.add_axes([0.235, 0.19, 0.735, 0.67])
 
     ypos, groups = S.grouped_rows(gap=0.6)
     for g in S.GPUS:
@@ -25,7 +28,12 @@ def main():
         saved = 1 - frac
         y = ypos[g]
         ax.barh(y, 1.0, height=BAR_H, color=S.STOCK, lw=0, zorder=1)
-        ax.barh(y, frac, height=BAR_H, color=S.OURS, lw=0, zorder=2)
+        if S.is_pre(g):  # outlined orange = pre-release rows
+            inset = 0.035  # keep the outline inside the grey bar's height
+            ax.barh(y, frac, height=BAR_H - 2 * inset, facecolor="white",
+                    edgecolor=S.OURS, lw=4, hatch="//", zorder=2)
+        else:
+            ax.barh(y, frac, height=BAR_H, color=S.OURS, lw=0, zorder=2)
         ax.plot([frac, frac], [y - BAR_H / 2, y + BAR_H / 2], color="white", lw=3,
                 solid_capstyle="butt", zorder=2.5)
         ax.text(1.0 + 0.015, y, S.fmt_s(t_stock), ha="left", va="center",
@@ -56,7 +64,7 @@ def main():
 
     fig.text(0.012, 0.955, "Time to first token · Llama 3.1 8B · 4-bit weights",
              ha="left", va="center", fontsize=S.FS_TICK, color=S.MUTED)
-    fig.text(0.235, 0.105, "Each row scaled to its own ExecuTorch 1.5 time",
+    fig.text(0.235, 0.125, "Each row scaled to its own ExecuTorch 1.5 time",
              ha="left", va="center", fontsize=S.FS_ANNOT, color=S.MUTED)
     S.footnote(fig)
     S.save(fig, "s2_ttft_8b_4w")

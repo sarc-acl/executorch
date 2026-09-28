@@ -21,6 +21,8 @@ stock build.
 
 ![Speedup](results/figures/fig1_speedup.png)
 
+*Figures 1–3 include the RX 7900 XTX as a sixth, hatched GPU (†, pre-release: unverified rows, different model export, AMDVLK). The "all 5 GPUs" aggregates exclude it.*
+
 *Figure 1. Prefill speedup of SARC 1.5-r2 over stock ExecuTorch 1.5: the ratio of the medians of n = 5 runs
 each. Error bars: approximate 95 % paired bootstrap CI. Dashed line: parity with stock.*
 
@@ -106,6 +108,8 @@ The visible spread is on the Arc B580 (see Limitations).*
   - **B70 and 4070 Ti, 8da4w faster by 6–12 %. B580, within ±3 %:** a tie within the B580's noise.
 - **The speedup grows with model size on four of the five GPUs.**
   - On the 780M, 8B is slightly below 3B in both schemes (4w 2.66× vs 2.71×, 8da4w 1.73× vs 1.86×).
+  - The contributed RX 7900 XTX, also RDNA3 and also running SARC attention, shows the same pattern (4w 4.01× at 3B vs
+    3.83× at 8B). Both GPUs speed attention up more than their GEMMs, and attention's share of time falls at 8B.
   - On the B580, the 8B cells are the noisiest in the campaign, so the size of the 8B step there is uncertain.
 - **The 780M numbers include attention.** It is the only GPU with a verified SARC SDPA (attention) row, so its
   speedup includes the coopmat QKᵀ/AV kernels and the truncated softmax. On the other four GPUs, attention runs

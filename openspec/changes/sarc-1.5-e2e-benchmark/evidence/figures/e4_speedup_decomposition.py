@@ -32,7 +32,7 @@ for gpu in GPUS:
         print(f"{gpu},{scheme},{st.roof},{sa.roof},{h:.3f},{st.pct_of_roof},{sa.pct_of_roof},{g:.3f},"
               f"{prod:.3f},{meas:.3f},{tr:.3f},{err:+.2f}")
 
-fig, ax = plt.subplots(figsize=(WIDTH, 5.0))
+fig, ax = plt.subplots(figsize=(WIDTH, 5.9))
 yt, yl = [], []
 y = 0.0
 for i, (gpu, scheme, st, sa, h, g, prod, meas, tr) in enumerate(rows):
@@ -77,5 +77,7 @@ handles = [
     Line2D([], [], color=INK, lw=1.8, label="measured GEMM rate ratio, SARC / stock"),
 ]
 fig.legend(handles=handles, loc="upper left", ncol=1, bbox_to_anchor=(0.0, 1.0), handlelength=1.6)
-fig.subplots_adjust(left=0.235, right=0.60, top=0.78, bottom=0.1)
+fig.text(0.0, -0.005, "\u2020 pre-release: unverified rows, different .pte export, AMDVLK driver", fontsize=9,
+         color=MUTED, ha="left", va="top")
+fig.subplots_adjust(left=0.235, right=0.60, top=0.8, bottom=0.085)
 save(fig, "e4_speedup_decomposition")

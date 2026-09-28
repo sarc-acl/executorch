@@ -4,7 +4,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
 from common import (GPUS, GPU_LABEL, INK, MUTED, ROOF_LABEL, SARC, SARC_EDGE, STOCK, STOCK_EDGE,
-                    STOCK_ROOF, WIDTH, apply_style, eff_row, efficiency, roofs, sarc_roof, save)
+                    STOCK_ROOF, WIDTH, FP32_ACC_4W, apply_style, eff_row, efficiency, roofs, sarc_roof, save)
 
 apply_style()
 R = roofs()
@@ -15,7 +15,7 @@ BAR_FILL = "#DCE3EA"
 BAR_EDGE = "#7A8896"
 MATRIX_FILL = "#C3CFDB"
 
-fig, axes = plt.subplots(len(GPUS), 1, figsize=(WIDTH, 7.6), sharex=True)
+fig, axes = plt.subplots(len(GPUS), 1, figsize=(WIDTH, 9.0), sharex=True)
 print("gpu,row,roof,roof_value,marker,rate,pct_of_roof")
 for ax, gpu in zip(axes, GPUS):
     rows = [  # (roof key, marker scheme, build)
@@ -53,15 +53,13 @@ for ax, gpu in zip(axes, GPUS):
     ax.set_xlim(XMIN, XMAX)
     ax.grid(axis="x", which="major", color="#E6E6E6", lw=0.6)
     ax.set_title(GPU_LABEL[gpu], loc="left", fontweight="bold", pad=3)
+    if gpu in FP32_ACC_4W:  # RDNA3: int8 WMMA gives no throughput advantage over fp16 (fp32 acc)
+        ratio = R[gpu]["matrix_int8"] / R[gpu]["matrix_fp16_fp32"]
+        ax.set_title(f"int8 matrix roof = {ratio:.2f}x fp16 matrix roof (no int8 advantage)",
+                     loc="right", fontsize=9, color=MUTED, pad=3)
     # Divider between scalar and matrix roofs.
     ax.axhline(-1.5, color="#BBBBBB", lw=0.6, ls=(0, (2, 2)))
 
-    if gpu == "780m":
-        ratio = R[gpu]["matrix_int8"] / R[gpu]["matrix_fp16_fp32"]
-        ax.text(32, -2.45,
-                f"int8 matrix roof = {ratio:.2f}x\nfp16 matrix roof: no int8\nthroughput advantage",
-                ha="left", va="center", fontsize=9, color=MUTED,
-                bbox=dict(facecolor="white", edgecolor="none", pad=1.5))
 
 axes[-1].set_xlabel("tera-ops/s, fp16 FLOP or int8 OP (log scale)")
 axes[-1].set_xticks([0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000])
@@ -75,9 +73,10 @@ handles = [
     Line2D([], [], marker="o", ls="none", mfc=SARC, mec=SARC_EDGE, ms=8, label="SARC 4w"),
     Line2D([], [], marker="^", ls="none", mfc=SARC, mec=SARC_EDGE, ms=8, label="SARC 8da4w"),
 ]
-fig.legend(handles=handles, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 0.985),
+fig.legend(handles=handles, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 0.968),
            columnspacing=1.4, handletextpad=0.4)
-fig.suptitle("Achieved 8B prefill GEMM rate on its matched roof (label: rate and % of that roof)",
+fig.suptitle("Achieved 8B prefill GEMM rate on its matched roof (label: rate and % of that roof)"
+             "\n\u2020 pre-release: unverified rows, different .pte export, AMDVLK driver",
              y=1.0, fontsize=10)
 fig.tight_layout(rect=(0, 0, 1, 0.955), h_pad=0.6)
 save(fig, "e1_roofs_vs_kernels")

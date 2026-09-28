@@ -10,6 +10,7 @@ NAME = {  # direct end labels; shortened only where the full name does not fit
     "b580": "Arc B580",
     "b70": "Arc Pro B70",
     "4070ti": "4070 Ti SUPER",
+    "7900xtx": "RX 7900 XTX †",
     "orin": "Orin Nano",
 }
 YLIM = (0.8, 5.9)
@@ -29,8 +30,12 @@ def panel(ax, df, scheme, show_ylabel):
         c = S.GPU_COLOR[g]
         ax.errorbar(xs, ys, yerr=[lo, hi], fmt="none", ecolor=c, elinewidth=2,
                     capsize=6, capthick=2, alpha=0.55, zorder=2)
-        ax.plot(xs, ys, color=c, lw=4, marker=S.GPU_MARKER[g], ms=14,
-                mec="white", mew=2, zorder=3)
+        if S.is_pre(g):  # pre-release: dashed line, hollow markers
+            ax.plot(xs, ys, color=c, lw=4, ls=(0, (3, 1.5)), marker=S.GPU_MARKER[g],
+                    ms=15, mfc="white", mec=c, mew=3, zorder=3)
+        else:
+            ax.plot(xs, ys, color=c, lw=4, marker=S.GPU_MARKER[g], ms=14,
+                    mec="white", mew=2, zorder=3)
         ends[g] = ys[-1]
 
     gs = list(ends)
@@ -60,8 +65,9 @@ def main():
     S.apply_style()
     df = S.load_cells()
     fig = S.new_fig()
-    ax1 = fig.add_axes([0.095, 0.2, 0.40, 0.66])
-    ax2 = fig.add_axes([0.575, 0.2, 0.40, 0.66], sharey=ax1)
+    b, h = (0.22, 0.64) if S.PRERELEASE else (0.2, 0.66)
+    ax1 = fig.add_axes([0.095, b, 0.40, h])
+    ax2 = fig.add_axes([0.575, b, 0.40, h], sharey=ax1)
     panel(ax1, df, "4w", True)
     panel(ax2, df, "8da4w", False)
     ax2.tick_params(labelleft=True)

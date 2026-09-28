@@ -3,6 +3,7 @@
 Canvas is a fixed 13.333 x 7.5 in (16:9); figures are never saved with a tight
 bounding box, so every export keeps the exact slide aspect ratio.
 """
+import os
 from math import floor, log10
 from pathlib import Path
 
@@ -10,7 +11,17 @@ import matplotlib as mpl
 import pandas as pd
 
 HERE = Path(__file__).resolve().parent
-CELLS_CSV = HERE.parent / "cells.csv"
+# Variant: "6gpu" (default; adds the pre-release RX 7900 XTX from raw6/) or "5gpu"
+# (the original five GPUs from ../cells.csv). The *_5gpu.* files in this folder are the
+# archived renders of the earlier 5-GPU revision; a 5gpu run writes *_5gpu_regen.*.
+VARIANT = os.environ.get("SLIDES_VARIANT", "6gpu")
+assert VARIANT in ("5gpu", "6gpu"), VARIANT
+if VARIANT == "6gpu":
+    CELLS_CSV = HERE.parent / "raw6" / "cells.csv"
+    SUFFIX = ""
+else:
+    CELLS_CSV = HERE.parent / "cells.csv"
+    SUFFIX = "_5gpu_regen"  # never overwrites the archived *_5gpu.* files
 
 W, H = 13.333, 7.5
 
@@ -35,8 +46,16 @@ FS_FOOT = 14
 
 FOOTNOTE = "2048-token prompt · ExecuTorch Vulkan · median of 5 runs"
 
-GPUS = ["780m", "b580", "b70", "4070ti", "orin"]
+if VARIANT == "6gpu":
+    GPUS = ["780m", "b580", "b70", "4070ti", "7900xtx", "orin"]
+else:
+    GPUS = ["780m", "b580", "b70", "4070ti", "orin"]
+# Pre-release rows: unverified kernel rows and a different model export. Drawn with
+# hollow / outlined orange marks and a dagger on the GPU name.
+PRERELEASE = {"7900xtx"} & set(GPUS)
+DAGGER_NOTE = "† RX 7900 XTX: pre-release kernel rows, different model export"
 GPU_LABEL = {
+    "7900xtx": "RX 7900 XTX †",
     "780m": "Radeon 780M",
     "b580": "Arc B580",
     "b70": "Arc Pro B70",
@@ -48,6 +67,7 @@ GPU_CLASS = {
     "b580": "Desktop GPU",
     "b70": "Desktop GPU",
     "4070ti": "Desktop GPU",
+    "7900xtx": "Desktop GPU",
     "orin": "Edge",
 }
 # Okabe-Ito subset, only for s3 (the one figure that needs GPU identity by colour).
@@ -58,9 +78,12 @@ GPU_COLOR = {
     "b580": "#0072B2",
     "b70": "#56B4E9",
     "4070ti": "#009E73",
+    "7900xtx": "#E69F00",
     "orin": "#CC79A7",
 }
-GPU_MARKER = {"780m": "o", "b580": "s", "b70": "D", "4070ti": "^", "orin": "v"}
+# With 7900xtx (#E69F00) added, --pairs all passes; worst CVD dE 7.6 (pink/green).
+GPU_MARKER = {"780m": "o", "b580": "s", "b70": "D", "4070ti": "^", "7900xtx": "P",
+              "orin": "v"}
 
 MODELS = ["1b", "3b", "8b"]
 MODEL_SHORT = {"1b": "1B", "3b": "3B", "8b": "8B"}
@@ -118,11 +141,20 @@ def new_fig():
 
 
 def footnote(fig, extra=""):
+    """Bottom-left footnote; the pre-release dagger note sits on the line above."""
     fig.text(0.012, 0.018, FOOTNOTE + extra, fontsize=FS_FOOT, color=MUTED,
              ha="left", va="bottom")
+    if PRERELEASE:
+        fig.text(0.012, 0.052, DAGGER_NOTE, fontsize=FS_FOOT, color=MUTED,
+                 ha="left", va="bottom")
+
+
+def is_pre(g):
+    return g in PRERELEASE
 
 
 def save(fig, stem):
+    stem = stem + SUFFIX
     for ext in ("svg", "pdf"):
         fig.savefig(HERE / f"{stem}.{ext}")
     fig.savefig(HERE / f"{stem}.png", dpi=200)

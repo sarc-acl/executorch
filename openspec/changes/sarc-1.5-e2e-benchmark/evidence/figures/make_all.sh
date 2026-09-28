@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Regenerate evidence figures e1-e4 (PDF + 200-dpi PNG). Inputs are read-only; see CAPTIONS.md.
+# Regenerate evidence figures e1-e4 for six GPUs (PDF + 200-dpi PNG) from evidence/combined6/ and raw6/cells.csv.
+# The five-GPU versions are kept as *_5gpu.* (inputs: evidence/*.csv, cells.csv); see CAPTIONS_5gpu.md.
 # Each script prints the plotted numbers as CSV on stdout for cross-checking.
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1

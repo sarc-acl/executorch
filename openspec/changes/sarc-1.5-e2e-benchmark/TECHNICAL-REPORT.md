@@ -486,6 +486,13 @@ Data: `contrib/7900xtx/`, measured by the 7900 XTX agent with the kit. Caveats i
   - 4w: H = 141.9 / 63.4 = 2.24, E = 60 / 37 = 1.61, giving 3.59×, which matches the measured 85.0 / 23.7.
   - 8da4w: H = 142.6 / 69.2 = 2.06, E = 65 / 83 = 0.78, giving 1.61×, which matches 92.8 / 57.7.
 
+**Model-size pattern.** Like the 780M, the 7900 XTX's end-to-end speedup peaks at 3B and dips at 8B: 4w 4.01× →
+3.83×, 8da4w 2.59× → 2.25× (timed, "the" prompt) [M]. Its attention kernels are sped up 4.1–6.7×, more than its
+GEMMs (2.9–3.6×), and attention's share of stock time falls from 36 % to 24 % at 8B (4w). This is the same mechanism
+as §5.
+
+The evidence figures E1–E4 include it as a sixth GPU, marked †. Their five-GPU versions are kept as `*_5gpu.*`.
+
 **Not done**
 - Before/after re-tuning (M5): the 7900 XTX had no release-1.5 rows before this campaign.
 - Row promotion: the SPIR-V golden for the new variants is generated with the pinned container and added to
