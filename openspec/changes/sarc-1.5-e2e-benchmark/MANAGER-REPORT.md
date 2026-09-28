@@ -651,7 +651,7 @@ Projections [I], not measurements.
 **Roofs**
 - `fast`-plan short-run roofs: confirmed, but not sustained and **not ISA-verified**.
 - Measured on a different day from the benchmark.
-- Two suspect roofs are excluded (roofline.md §2, §B11).
+- Two suspect roofs are excluded (roofline.md §2, §11).
 
 **Clocks**
 - Not pinned in either campaign.
