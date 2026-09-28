@@ -1,0 +1,73 @@
+commit 158007c35e9c69cee61454fe8c033526803286ba
+Author: Ivan Xu <yanwen.xu@samsung.com>
+Date:   Thu Sep 10 14:51:48 2026 -0700
+
+    Vulkan backend: Add missing include of algorithm
+    
+    ## Problem
+    
+    `backends/vulkan/runtime/graph/containers/SharedObject.cpp` and
+    `backends/vulkan/runtime/graph/ops/impl/Squeeze.cpp` call `std::find`
+    (and `Squeeze.cpp` also `std::rotate`) without including `<algorithm>`.
+    This compiled previously because the declarations leaked in
+    transitively through other headers, but GCC 15's libstdc++ header
+    reorganization removed that transitive path, breaking the build with:
+    
+    ```
+    error: no matching function for call to 'find(...)'
+    note: candidate 1: ... std::find(istreambuf_iterator<...>, ...)
+    ```
+    
+    The remaining candidate is a narrow `istreambuf_iterator`-only overload
+    pulled in via an unrelated header (`<sstream>`/`<ostream>` chain), not
+    the generic `<algorithm>` overload these call sites actually need.
+    
+    This is the same class of issue as #15220 (missing `<cstdint>` include
+    in the Vulkan backend) and relates to the GCC 15 CI build failures
+    that led to disabling `executorch-ubuntu-26.04-gcc15` in favor of
+    gcc14 (#20304, tracked in #19917).
+    
+    ## Fix
+    
+    Add `#include <algorithm>` to both files, matching the precedent set
+    in `backends/vulkan/runtime/utils/StorageUtils.h` (#15220).
+    
+    ## Test Plan
+    
+    Built the `vulkan_backend` CMake target with GCC 15 (`gcc (Ubuntu
+    15.x)`), which fails to compile on `main` today with the errors above.
+    With this fix, `cmake --build cmake-out --target vulkan_backend`
+    completes cleanly. Swept the rest of `backends/vulkan/runtime` for the
+    same pattern (`std::find`/`sort`/`rotate`/etc. without `<algorithm>`)
+    and found no other occurrences outside these two files.
+    
+    cc @SS-JIA @manuelcandales @digantdesai @cbilgin
+    
+    (cherry picked from commit 03f41d2031b9a3a21e105c1c45049ba7c9ffa313)
+
+diff --git a/backends/vulkan/runtime/graph/containers/SharedObject.cpp b/backends/vulkan/runtime/graph/containers/SharedObject.cpp
+index 10ddd6f2c..7ea59d59e 100644
+--- a/backends/vulkan/runtime/graph/containers/SharedObject.cpp
++++ b/backends/vulkan/runtime/graph/containers/SharedObject.cpp
+@@ -10,6 +10,8 @@
+ 
+ #include <executorch/backends/vulkan/runtime/graph/ComputeGraph.h>
+ 
++#include <algorithm>
++
+ namespace vkcompute {
+ 
+ bool SharedObject::has_user(const ValueRef idx) const {
+diff --git a/backends/vulkan/runtime/graph/ops/impl/Squeeze.cpp b/backends/vulkan/runtime/graph/ops/impl/Squeeze.cpp
+index fce7600a0..056e1bf30 100644
+--- a/backends/vulkan/runtime/graph/ops/impl/Squeeze.cpp
++++ b/backends/vulkan/runtime/graph/ops/impl/Squeeze.cpp
+@@ -14,6 +14,8 @@
+ #include <executorch/backends/vulkan/runtime/graph/ops/impl/utils/KernelUtils.h>
+ #include <executorch/backends/vulkan/runtime/graph/ops/utils/ShaderNameUtils.h>
+ 
++#include <algorithm>
++
+ namespace vkcompute {
+ 
+ void add_squeeze_copy_dims_node(

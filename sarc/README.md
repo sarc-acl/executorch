@@ -33,6 +33,8 @@ Branches:
   - the sweep candidate rows.
 - **Benchmarks and tests**: `test/sarc_dev/`, a standalone CMake project with `test_llama_microbench` and `test_sarc_select`. The latter is GPU-free.
 
+End-to-end benchmark and evidence reports, plus how to add your GPU to them: `openspec/changes/sarc-1.5-e2e-benchmark/` (`CONTRIBUTING-A-GPU.md`).
+
 Every yaml parameter of the 4w/8da4w coopmat shaders, and how to sweep them: [SWEEP-PARAMETERS.md](SWEEP-PARAMETERS.md).
 
 ## Tools (`sarc/tools/`)

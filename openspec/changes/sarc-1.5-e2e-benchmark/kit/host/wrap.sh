@@ -15,6 +15,6 @@ restore() { for s in $(cat services-stopped.txt); do sudo -n systemctl start "$s
   echo "restored: $(tr '\n' ' ' < services-stopped.txt)"; }
 trap restore EXIT
 echo "stopped: $(tr '\n' ' ' < services-stopped.txt)"; sleep 10
-./e2e.sh "$@"
-./trace.sh "$@"
-echo WRAP_DONE
+./e2e.sh "$@" --prompt prompt_real_2048.txt --out raw_real --no-check
+./probe.sh "$@"
+echo WRAP3_DONE
