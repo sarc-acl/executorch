@@ -1,0 +1,19 @@
+device=Mali-G1-Ultra MC12 api=1.3.305 driverVersion=0xd801000 vendor=0x13b5 devid=0xe8800010
+driverName=Mali-G1-Ultra MC12 driverInfo=v1.r54p1-11eac0.72497f2fe7ba7c9d39a884d2b9caf446
+subgroupSize=16 ssc_min=16 ssc_max=16 ssc_maxWGSubgroups=64 requiredSubgroupSizeStages=0x3f30 sg_ops=0x6ff sg_stages=0x3f30
+maxComputeSharedMemorySize=32768 maxWGInvocations=1024 maxWGSize=1024,1024,1024 timestampPeriod=0.999001
+int8dot: 8bitUnsignedAccel=1 8bitSignedAccel=1 4x8bitPackedSignedAccel=1 4x8bitPackedMixed=0 acc32_4x8packedSigned=1
+coopmat supportedStages=0x20
+features: coopmat=1 coopmatRobust=0 shaderFloat16=1 shaderInt8=1 int64=1
+extensions(170): VK_KHR_16bit_storage VK_KHR_8bit_storage VK_KHR_shader_float16_int8 VK_KHR_shader_integer_dot_product VK_KHR_shader_subgroup_rotate VK_KHR_shader_subgroup_extended_types VK_ARM_rasterization_order_attachment_access VK_EXT_subgroup_size_control VK_EXT_shader_subgroup_ballot VK_EXT_shader_subgroup_vote VK_KHR_shader_subgroup_uniform_control_flow VK_ARM_shader_core_builtins VK_ARM_scheduling_controls VK_ARM_shader_core_properties VK_ARM_render_pass_striped VK_KHR_cooperative_matrix VK_ARM_pipeline_opacity_micromap
+coopmat shapes (8):
+  M4 N4 K4 A=f32 B=f32 C=f32 R=f32 sat=0 scope=3
+  M16 N16 K16 A=f32 B=f32 C=f32 R=f32 sat=0 scope=3
+  M4 N8 K8 A=f16 B=f16 C=f32 R=f32 sat=0 scope=3
+  M16 N32 K32 A=f16 B=f16 C=f32 R=f32 sat=0 scope=3
+  M4 N16 K16 A=s8 B=s8 C=s32 R=s32 sat=0 scope=3
+  M4 N16 K16 A=u8 B=u8 C=u32 R=u32 sat=0 scope=3
+  M4 N8 K8 A=f16 B=f16 C=f16 R=f16 sat=0 scope=3
+  M16 N32 K32 A=f16 B=f16 C=f16 R=f16 sat=0 scope=3
+heap0 size=15322 MB flags=0x1
+heap1 size=100 MB flags=0x1

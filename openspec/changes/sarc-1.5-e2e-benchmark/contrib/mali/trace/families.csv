@@ -1,0 +1,157 @@
+gpu,model,scheme,build,family,ms,share
+mali,1b,4w,sarc,prefill GEMM (linear layers),6816.544,0.7654
+mali,1b,4w,sarc,attention: AV,905.902,0.1017
+mali,1b,4w,sarc,attention: QK^T,587.522,0.066
+mali,1b,4w,sarc,elementwise,210.099,0.0236
+mali,1b,4w,sarc,attention: softmax,198.471,0.0223
+mali,1b,4w,sarc,copy/view/other,65.583,0.0074
+mali,1b,4w,sarc,linear-op input transpose,64.325,0.0072
+mali,1b,4w,sarc,RoPE,29.934,0.0034
+mali,1b,4w,sarc,RMSNorm,19.548,0.0022
+mali,1b,4w,sarc,LM head (1 token),5.171,0.0006
+mali,1b,4w,sarc,attention: KV update,1.814,0.0002
+mali,1b,4w,sarc,embedding,0.899,0.0001
+mali,1b,4w,sarc,staging,0.052,0.0
+mali,1b,4w,stock,prefill GEMM (linear layers),5726.787,0.7255
+mali,1b,4w,stock,attention: AV,907.217,0.1149
+mali,1b,4w,stock,attention: QK^T,590.259,0.0748
+mali,1b,4w,stock,elementwise,216.955,0.0275
+mali,1b,4w,stock,attention: softmax,205.48,0.026
+mali,1b,4w,stock,linear-op input transpose,123.276,0.0156
+mali,1b,4w,stock,copy/view/other,66.783,0.0085
+mali,1b,4w,stock,RoPE,30.502,0.0039
+mali,1b,4w,stock,RMSNorm,18.721,0.0024
+mali,1b,4w,stock,LM head (1 token),5.072,0.0006
+mali,1b,4w,stock,attention: KV update,1.904,0.0002
+mali,1b,4w,stock,embedding,0.895,0.0001
+mali,1b,4w,stock,staging,0.066,0.0
+mali,1b,8da4w,sarc,prefill GEMM (linear layers),1519.307,0.4305
+mali,1b,8da4w,sarc,attention: AV,902.879,0.2559
+mali,1b,8da4w,sarc,attention: QK^T,579.489,0.1642
+mali,1b,8da4w,sarc,attention: softmax,200.359,0.0568
+mali,1b,8da4w,sarc,elementwise,126.321,0.0358
+mali,1b,8da4w,sarc,8-bit activation quantize,95.241,0.027
+mali,1b,8da4w,sarc,copy/view/other,59.916,0.017
+mali,1b,8da4w,sarc,RoPE,21.229,0.006
+mali,1b,8da4w,sarc,RMSNorm,16.957,0.0048
+mali,1b,8da4w,sarc,LM head (1 token),4.15,0.0012
+mali,1b,8da4w,sarc,attention: KV update,1.998,0.0006
+mali,1b,8da4w,sarc,embedding,0.893,0.0003
+mali,1b,8da4w,sarc,staging,0.068,0.0
+mali,1b,8da4w,stock,prefill GEMM (linear layers),1530.332,0.4224
+mali,1b,8da4w,stock,attention: AV,904.156,0.2495
+mali,1b,8da4w,stock,attention: QK^T,581.568,0.1605
+mali,1b,8da4w,stock,attention: softmax,209.14,0.0577
+mali,1b,8da4w,stock,elementwise,169.969,0.0469
+mali,1b,8da4w,stock,8-bit activation quantize,110.35,0.0305
+mali,1b,8da4w,stock,copy/view/other,68.899,0.019
+mali,1b,8da4w,stock,RoPE,23.167,0.0064
+mali,1b,8da4w,stock,RMSNorm,18.648,0.0051
+mali,1b,8da4w,stock,LM head (1 token),4.203,0.0012
+mali,1b,8da4w,stock,attention: KV update,1.881,0.0005
+mali,1b,8da4w,stock,embedding,0.949,0.0003
+mali,1b,8da4w,stock,staging,0.074,0.0
+mali,3b,4w,sarc,prefill GEMM (linear layers),19553.842,0.8085
+mali,3b,4w,sarc,attention: QK^T,1896.106,0.0784
+mali,3b,4w,sarc,attention: AV,1541.019,0.0637
+mali,3b,4w,sarc,elementwise,393.06,0.0163
+mali,3b,4w,sarc,attention: softmax,316.095,0.0131
+mali,3b,4w,sarc,copy/view/other,179.026,0.0074
+mali,3b,4w,sarc,linear-op input transpose,175.743,0.0073
+mali,3b,4w,sarc,RoPE,64.03,0.0026
+mali,3b,4w,sarc,RMSNorm,48.135,0.002
+mali,3b,4w,sarc,attention: KV update,10.044,0.0004
+mali,3b,4w,sarc,LM head (1 token),6.099,0.0003
+mali,3b,4w,sarc,embedding,1.514,0.0001
+mali,3b,4w,sarc,staging,0.067,0.0
+mali,3b,4w,stock,prefill GEMM (linear layers),16901.451,0.7804
+mali,3b,4w,stock,attention: QK^T,1907.585,0.0881
+mali,3b,4w,stock,attention: AV,1445.426,0.0667
+mali,3b,4w,stock,elementwise,406.107,0.0188
+mali,3b,4w,stock,attention: softmax,340.723,0.0157
+mali,3b,4w,stock,linear-op input transpose,339.725,0.0157
+mali,3b,4w,stock,copy/view/other,180.562,0.0083
+mali,3b,4w,stock,RoPE,67.802,0.0031
+mali,3b,4w,stock,RMSNorm,52.166,0.0024
+mali,3b,4w,stock,attention: KV update,10.118,0.0005
+mali,3b,4w,stock,LM head (1 token),6.138,0.0003
+mali,3b,4w,stock,embedding,0.511,0.0
+mali,3b,4w,stock,staging,0.027,0.0
+mali,3b,8da4w,sarc,prefill GEMM (linear layers),4446.68,0.4929
+mali,3b,8da4w,sarc,attention: QK^T,1900.41,0.2107
+mali,3b,8da4w,sarc,attention: AV,1560.117,0.1729
+mali,3b,8da4w,sarc,attention: softmax,313.052,0.0347
+mali,3b,8da4w,sarc,elementwise,267.566,0.0297
+mali,3b,8da4w,sarc,8-bit activation quantize,240.562,0.0267
+mali,3b,8da4w,sarc,copy/view/other,178.812,0.0198
+mali,3b,8da4w,sarc,RoPE,52.584,0.0058
+mali,3b,8da4w,sarc,RMSNorm,44.236,0.0049
+mali,3b,8da4w,sarc,attention: KV update,9.729,0.0011
+mali,3b,8da4w,sarc,LM head (1 token),5.159,0.0006
+mali,3b,8da4w,sarc,embedding,1.835,0.0002
+mali,3b,8da4w,sarc,staging,0.073,0.0
+mali,3b,8da4w,stock,prefill GEMM (linear layers),4377.549,0.4923
+mali,3b,8da4w,stock,attention: QK^T,1911.42,0.215
+mali,3b,8da4w,stock,attention: AV,1521.689,0.1711
+mali,3b,8da4w,stock,attention: softmax,308.438,0.0347
+mali,3b,8da4w,stock,elementwise,255.922,0.0288
+mali,3b,8da4w,stock,8-bit activation quantize,238.348,0.0268
+mali,3b,8da4w,stock,copy/view/other,167.816,0.0189
+mali,3b,8da4w,stock,RoPE,49.431,0.0056
+mali,3b,8da4w,stock,RMSNorm,44.322,0.005
+mali,3b,8da4w,stock,attention: KV update,9.713,0.0011
+mali,3b,8da4w,stock,LM head (1 token),5.034,0.0006
+mali,3b,8da4w,stock,embedding,1.609,0.0002
+mali,3b,8da4w,stock,staging,0.071,0.0
+mali,8b,4w,sarc,prefill GEMM (linear layers),50273.063,0.8766
+mali,8b,4w,sarc,attention: QK^T,3029.911,0.0528
+mali,8b,4w,sarc,attention: AV,2354.567,0.0411
+mali,8b,4w,sarc,elementwise,639.576,0.0112
+mali,8b,4w,sarc,attention: softmax,458.266,0.008
+mali,8b,4w,sarc,copy/view/other,246.657,0.0043
+mali,8b,4w,sarc,linear-op input transpose,162.937,0.0028
+mali,8b,4w,sarc,RoPE,92.388,0.0016
+mali,8b,4w,sarc,RMSNorm,76.329,0.0013
+mali,8b,4w,sarc,attention: KV update,9.858,0.0002
+mali,8b,4w,sarc,LM head (1 token),7.757,0.0001
+mali,8b,4w,sarc,embedding,1.918,0.0
+mali,8b,4w,sarc,staging,0.029,0.0
+mali,8b,4w,stock,prefill GEMM (linear layers),44270.276,0.8613
+mali,8b,4w,stock,attention: QK^T,3017.952,0.0587
+mali,8b,4w,stock,attention: AV,2076.53,0.0404
+mali,8b,4w,stock,elementwise,642.256,0.0125
+mali,8b,4w,stock,attention: softmax,485.686,0.0094
+mali,8b,4w,stock,linear-op input transpose,466.31,0.0091
+mali,8b,4w,stock,copy/view/other,245.161,0.0048
+mali,8b,4w,stock,RoPE,93.917,0.0018
+mali,8b,4w,stock,RMSNorm,83.696,0.0016
+mali,8b,4w,stock,attention: KV update,8.933,0.0002
+mali,8b,4w,stock,LM head (1 token),7.912,0.0002
+mali,8b,4w,stock,embedding,2.722,0.0001
+mali,8b,4w,stock,staging,0.029,0.0
+mali,8b,8da4w,sarc,prefill GEMM (linear layers),10578.973,0.5948
+mali,8b,8da4w,sarc,attention: QK^T,3037.848,0.1708
+mali,8b,8da4w,sarc,attention: AV,2600.342,0.1462
+mali,8b,8da4w,sarc,attention: softmax,416.228,0.0234
+mali,8b,8da4w,sarc,8-bit activation quantize,381.585,0.0215
+mali,8b,8da4w,sarc,elementwise,377.248,0.0212
+mali,8b,8da4w,sarc,copy/view/other,222.384,0.0125
+mali,8b,8da4w,sarc,RoPE,77.636,0.0044
+mali,8b,8da4w,sarc,RMSNorm,74.195,0.0042
+mali,8b,8da4w,sarc,attention: KV update,12.004,0.0007
+mali,8b,8da4w,sarc,LM head (1 token),5.38,0.0003
+mali,8b,8da4w,sarc,embedding,2.063,0.0001
+mali,8b,8da4w,sarc,staging,0.067,0.0
+mali,8b,8da4w,stock,prefill GEMM (linear layers),10643.767,0.6011
+mali,8b,8da4w,stock,attention: QK^T,3056.343,0.1726
+mali,8b,8da4w,stock,attention: AV,2452.91,0.1385
+mali,8b,8da4w,stock,attention: softmax,423.137,0.0239
+mali,8b,8da4w,stock,elementwise,375.803,0.0212
+mali,8b,8da4w,stock,8-bit activation quantize,371.145,0.021
+mali,8b,8da4w,stock,copy/view/other,218.606,0.0123
+mali,8b,8da4w,stock,RMSNorm,73.802,0.0042
+mali,8b,8da4w,stock,RoPE,73.626,0.0042
+mali,8b,8da4w,stock,attention: KV update,11.222,0.0006
+mali,8b,8da4w,stock,LM head (1 token),5.183,0.0003
+mali,8b,8da4w,stock,embedding,2.247,0.0001
+mali,8b,8da4w,stock,staging,0.069,0.0

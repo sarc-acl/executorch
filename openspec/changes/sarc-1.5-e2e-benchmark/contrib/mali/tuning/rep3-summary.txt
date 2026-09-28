@@ -1,0 +1,7 @@
+8B 4w prefill M=2048, kernel time (ms), median of 3 interleaved repeats [spread %]
+texture3d baseline                         n=3 wq_wo    80.4 [ 8.6%] x1.00 | wk_wv    20.3 [14.1%] x1.00 | w1_w3   315.3 [ 0.8%] x1.00 | w2   310.9 [ 1.8%] x1.00 | sum 726.9 ms x1.00
+texture3d t64x128k32g44s16m16x32x32gahb    n=3 wq_wo    77.7 [ 5.4%] x1.04 | wk_wv    23.2 [ 3.5%] x0.87 | w1_w3   276.7 [ 1.0%] x1.14 | w2   274.1 [ 2.3%] x1.13 | sum 651.7 ms x1.12
+texture3d t128x64k32g28s16m16x32x32hb      n=3 wq_wo    60.2 [11.8%] x1.34 | wk_wv    16.4 [ 3.8%] x1.24 | w1_w3   200.8 [ 4.2%] x1.57 | w2   203.0 [ 1.6%] x1.53 | sum 480.4 ms x1.51
+buffer    baseline                         n=3 wq_wo    79.5 [10.9%] x1.00 | wk_wv    19.7 [17.9%] x1.00 | w1_w3   313.1 [ 1.0%] x1.00 | w2   311.6 [ 0.2%] x1.00 | sum 723.9 ms x1.00
+buffer    t64x128k32g44s16m16x32x32gahb    n=3 wq_wo    78.6 [ 1.1%] x1.01 | wk_wv    23.9 [ 1.9%] x0.82 | w1_w3   288.5 [ 0.7%] x1.09 | w2   296.6 [ 2.1%] x1.05 | sum 687.6 ms x1.05
+buffer    t128x64k32g28s16m16x32x32hb      n=3 wq_wo    62.9 [ 5.6%] x1.26 | wk_wv    17.7 [10.0%] x1.11 | w1_w3   211.0 [ 4.2%] x1.48 | w2   225.4 [ 5.5%] x1.38 | sum 517.0 ms x1.40
