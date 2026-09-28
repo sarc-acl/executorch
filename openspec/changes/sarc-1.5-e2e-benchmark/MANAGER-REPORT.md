@@ -143,6 +143,8 @@ Cells show prefill tok/s (median of 5), previous → re-tuned, then the speedup 
 **Checks**
 - Measured and projected agree within 3.1 % in every cell (the largest gap is B70 8B 4w, 1.59× vs 1.64×), so
   the kernel-level results in A2 translate to the model as predicted.
+- Timing resolution is 1 ms. At about 100 ms per prefill (4070 Ti 1B) one step is about 1 %, so the 4070 Ti 1B cells
+  and zero-width CIs are at that resolution. For example, both 4070 Ti 1B 4w medians are 102 ms, giving exactly 1.00×.
 - 28 of 30 cells have a repeat spread ≤ 3 %. The exceptions are B70 1B 4w (3.7 %) and 1B 8da4w (3.0 %).
 - One previous-build run crashed on exit (4070 Ti 8B 8da4w, rc = 134). It is kept in the CSV and was retried.
 
