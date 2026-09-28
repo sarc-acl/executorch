@@ -19,7 +19,7 @@ a different token depending on the GPU (see Correctness).
 **Dispatch (ETDump).** In the SARC build, every prefill GEMM linear ran a SARC coopmat kernel. None did in the
 stock build.
 
-![Speedup](figures/fig1_speedup.png)
+![Speedup](results/figures/fig1_speedup.png)
 
 *Figures 1–3 include two contributed, hatched GPUs, the RX 7900 XTX and the RX 7600 (†, pre-release: unverified rows, different model export). The "all 5 GPUs" aggregates exclude them.*
 
@@ -43,9 +43,9 @@ A sixth GPU, the **Radeon RX 7900 XTX**, was measured by its own agent with the 
 - Each cell gives prefill tokens/s over the whole 2048-token prompt, as the median of 5 runs, stock → SARC. The
   value is `llama_main`'s PyTorchObserver `prefill_token_per_sec`.
 - Below that is the speedup (ratio of the medians) with an approximate 95 % paired bootstrap CI in brackets.
-- Full per-cell statistics are in [tables.md](tables.md) and [cells.csv](cells.csv): the CI of each median,
+- Full per-cell statistics are in [tables.md](results/tables.md) and [cells.csv](results/cells.csv): the CI of each median,
   min/max, spread, the unpaired CI, and the median of per-repeat ratios.
-- Every individual run is in [runs_all.csv](runs_all.csv).
+- Every individual run is in [runs_all.csv](results/runs_all.csv).
 
 **4w** (4-bit group-quantized weights, fp16 activations)
 
@@ -67,13 +67,13 @@ A sixth GPU, the **Radeon RX 7900 XTX**, was measured by its own agent with the 
 | RTX 4070 Ti SUPER | 6,872 → 20,898<br>**3.04×** [3.03, 3.07] | 2,554 → 9,660<br>**3.78×** [3.76, 3.78] | 1,111 → 5,032<br>**4.53×** [4.51, 4.53] |
 | Jetson Orin Nano | 213 → 823<br>**3.87×** [3.87, 3.87] | 76 → 320<br>**4.23×** [4.22, 4.23] | 32 → 170<br>**5.27×** [5.27, 5.27] |
 
-![Throughput](figures/fig2_throughput.png)
+![Throughput](results/figures/fig2_throughput.png)
 
 *Figure 2. Absolute prefill throughput (tokens/s, log scale). Bars: median of n = 5 runs; whiskers: min–max;
 dots: individual runs. For 41 of the 60 bars the min–max spread is below 1 %, so the markers hide the whiskers.
 The visible spread is on the Arc B580 (see Limitations).*
 
-![Heatmap](figures/fig3_heatmap.png)
+![Heatmap](results/figures/fig3_heatmap.png)
 
 *Figure 3. Speedup per GPU and configuration (ratio of medians).*
 
@@ -265,7 +265,7 @@ Real-text 2048-token prompt, speedup = SARC / stock, median of 5 interleaved rep
 **Builds**
 
 Both builds were made fresh for this campaign from the exact commits. Hashes of every binary are in
-[build/MANIFEST.json](../build/MANIFEST.json).
+[build/MANIFEST.json](results/MANIFEST.json).
 - **x86 hosts**
   - Built in the `et-vk-build:rocky10` container with GCC 14.3.1 and glslc from shaderc v2023.8.
   - The SARC build's shipped SPIR-V matches the repository's golden hashes for all 48 variants.
@@ -327,13 +327,13 @@ Both builds were made fresh for this campaign from the exact commits. Hashes of 
 
 **Dispatch evidence**
 - One untimed run per cell and build, with an ETDump-enabled binary of the same commit.
-- The distinct linear and SDPA kernel names are extracted into [dispatch.md](dispatch.md) and
-  [dispatch.csv](dispatch.csv).
+- The distinct linear and SDPA kernel names are extracted into [dispatch.md](results/dispatch.md) and
+  [dispatch.csv](results/dispatch.csv).
 
 **Statistics**
 - Each arm is summarized by its median and its min–max.
 - The speedup is the ratio of the medians. Its interval is a percentile bootstrap (20 000 resamples, fixed seed;
-  [analyze.py](analyze.py)).
+  [analyze.py](results/scripts/analyze.py)).
 - The bootstrap resamples repeats as pairs, because the design pairs the builds within each repeat. The unpaired
   interval, which is more conservative, is in `cells.csv`.
 - With n = 5 these intervals are approximate: their ends lie close to the extreme observations.
