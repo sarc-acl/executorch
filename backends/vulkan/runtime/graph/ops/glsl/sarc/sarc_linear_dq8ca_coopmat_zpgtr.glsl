@@ -69,6 +69,14 @@ $if B_PAIR:
 // Csh_out array so a WG_TILE_K = 64 tile fits the 48 KiB shared-memory limit.
 $if CSH_IN_ASH:
   #define CSH_IN_ASH
+// DRAIN_UNROLL: hand-expand the texture-IO drain band loop so every result[][]
+// access has a constant index (the loop's barrier() keeps it rolled). Opt-in.
+$if DRAIN_UNROLL:
+  #define DRAIN_UNROLL
+// B_SEL_EARLY_N: B slots si < N select their one int of the fetched texel right
+// after the fetch instead of keeping the whole texel live. Opt-in.
+$if B_SEL_EARLY_N > 0:
+  #define B_SEL_EARLY_N ${B_SEL_EARLY_N}
 
 layout(std430) buffer;
 

@@ -26,6 +26,8 @@ sarc_linear_dq8ca_coopmat_zpgtr:
     A_RAW: false
     B_PAIR: false
     CSH_IN_ASH: false
+    DRAIN_UNROLL: false
+    B_SEL_EARLY_N: 0
   shader_variants:
     # RTX 4070 Ti SUPER and Jetson Orin: MMA 16x16x32, K 64, raw A staging,
     # paired B. 1.4 branches -4070ti/-jetson.

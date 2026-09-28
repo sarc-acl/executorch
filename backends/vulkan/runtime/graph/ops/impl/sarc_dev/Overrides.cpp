@@ -19,6 +19,8 @@
 //                                     prefill wherever it fits, e.g.
 //                                     t128x128k32g24s32f32c; builds 4w on the
 //                                     SARC path even on devices without rows
+//   ET_VK_SARC_DQ8CA_VARIANT=<tile>   same for 8da4w prefill (dq8ca sweep
+//                                     candidates below, then release rows)
 
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h>
 
@@ -64,6 +66,30 @@ const Row kQ4gswCandidates[] = {
      kTex3dTex2d, nullptr, Status::kUnverified},
 };
 
+// dq8ca (8da4w) sweep candidates: glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpgtr_sweep.yaml.
+const Row kDq8caCandidates[] = {
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_sweep_t128x64k32g42s32du",
+     {128, 64, 32, 4, 2, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified, true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_sweep_t128x64k32g42s32dus",
+     {128, 64, 32, 4, 2, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified, true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_sweep_t128x64k32g42s32dus1",
+     {128, 64, 32, 4, 2, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified, true},
+};
+
+std::string& requested_dq8ca_variant() {
+  static std::string v = [] {
+    const char* e = std::getenv("ET_VK_SARC_DQ8CA_VARIANT");
+    return std::string(e != nullptr ? e : "");
+  }();
+  return v;
+}
+
 std::string& requested_variant() {
   static std::string v = [] {
     const char* e = std::getenv("ET_VK_SARC_Q4GSW_VARIANT");
@@ -84,8 +110,10 @@ std::optional<Choice> dev_select(
   if (!linear && env_true("ET_VK_DISABLE_COOPMAT")) {
     return std::nullopt;
   }
-  const std::string& want = requested_variant();
-  if (want.empty() || shape.op != Op::kQ4gswLinear) {
+  const std::string& want = shape.op == Op::kDq8caLinear
+      ? requested_dq8ca_variant()
+      : requested_variant();
+  if (want.empty() || !linear) {
     return table_choice;
   }
   // Exact tile token: prefer a candidate, then a release row.
@@ -104,14 +132,18 @@ struct Registrar {
   Registrar() {
     register_candidates(
         kQ4gswCandidates, sizeof(kQ4gswCandidates) / sizeof(kQ4gswCandidates[0]));
+    register_candidates(
+        kDq8caCandidates, sizeof(kDq8caCandidates) / sizeof(kDq8caCandidates[0]));
     Override o;
     o.allow_unverified = env_true("ET_VK_SARC_UNVERIFIED");
-    o.force_path = !requested_variant().empty();
+    o.force_path =
+        !requested_variant().empty() || !requested_dq8ca_variant().empty();
     o.select = dev_select;
     set_override(o);
     if (o.allow_unverified || o.force_path) {
       std::cerr << "[sarc_dev] overrides active: unverified="
                 << o.allow_unverified << " variant=" << requested_variant()
+                << " dq8ca_variant=" << requested_dq8ca_variant()
                 << std::endl;
     }
   }
