@@ -244,8 +244,10 @@ on the 780M, 4070 Ti and Orin. The check prompt ends in a list: "... harassment,
 - Stock 1.5 itself returns "bullying" on the B580 and B70 and "otherwise" on the other three GPUs. At this
   position the choice depends on accumulation order even within the stock build.
 - The two SARC 8da4w kernel families (zpg on AMD and Intel, zpgtr on NVIDIA) give the same token on every GPU.
-- This is consistent with a near-tie between the two tokens, but it is not verified: logits and margins were not
-  recorded.
+- Logits measured afterwards (see `TECHNICAL-REPORT.md` §8):
+  - In the 8da4w model the two tokens are 0.148 logit apart (stock kernels, Arc B580).
+  - The fp32 model ranks "bullying" above "otherwise" by 1.76 logit, but its top choice is "stalking".
+  - This is consistent with a near-tie. SARC's own logits are still unmeasured.
 
 **Earlier evidence and its limits**
 - During promotion (`openspec/changes/sarc-1.5-8da4w-port`), the same 8da4w kernels passed the sampled
@@ -300,6 +302,13 @@ The porting-time single runs (`openspec/changes/sarc-1.5-*`) agree with these me
   - 4070 Ti: P0 at 2595–2790 MHz;
   - B580 rows: the `sclk=600Mhz` field belongs to the host's Ryzen 9600X iGPU. The B580's value is `xe_act`.
 - These snapshots document the state between runs, not the clock under load.
+
+**Prompt content**
+- `prompt_2048.txt` is the word "the" repeated 2048 times.
+- Prefill arithmetic does not depend on token values, but power draw can. On a power-limited GPU (4070 Ti), a
+  low-toggle input may run at higher clocks than real text.
+- Both builds used the same prompt, so speedups are less exposed than absolute tok/s.
+- A real-text timing check is a pending follow-up.
 
 **Timer resolution**
 - The runner times prefill in whole milliseconds.

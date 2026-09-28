@@ -1,0 +1,61 @@
+=== fp32 runner
+tokens=runner n=1972 first=[4178, 39200, 220] last=[11, 27903, 11, 477]
+missing: [] unexpected: []
+forward 191.3s shape=(128256,)
+  82895      ' stalking' logit=17.2149 p=0.2606
+  70159  ' intimidation' logit=16.8249 p=0.1765
+  45647      ' bullying' logit=16.3756 p=0.1126
+  90255       ' harming' logit=14.9144 p=0.0261
+   1023         ' other' logit=14.6360 p=0.0198
+otherwise {'id': 6062, 'logit': 14.611760139465332, 'prob': 0.01929790809388, 'rank': 6} 
+bullying {'id': 45647, 'logit': 16.3756046295166, 'prob': 0.11259994093724854, 'rank': 3}
+dlogit -1.7638444900512695 dprob -0.09330203284336853
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 3:33.58
+	Maximum resident set size (kbytes): 18741416
+	Major (requiring I/O) page faults: 3286869
+=== fp32 runner_bos
+tokens=runner_bos n=1973 first=[128000, 4178, 39200] last=[11, 27903, 11, 477]
+missing: [] unexpected: []
+forward 49.8s shape=(128256,)
+  82895      ' stalking' logit=17.2432 p=0.2594
+  70159  ' intimidation' logit=16.8698 p=0.1786
+  45647      ' bullying' logit=16.4096 p=0.1127
+  90255       ' harming' logit=14.9648 p=0.0266
+   1023         ' other' logit=14.6453 p=0.0193
+otherwise {'id': 6062, 'logit': 14.642980575561523, 'prob': 0.01926075073515508, 'rank': 6} 
+bullying {'id': 45647, 'logit': 16.40962028503418, 'prob': 0.11269770917232796, 'rank': 3}
+dlogit -1.7666397094726562 dprob -0.09343695843717288
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:51.68
+	Maximum resident set size (kbytes): 18733524
+	Major (requiring I/O) page faults: 646
+=== fp32 py_bos
+tokens=py_bos n=1981 first=[128000, 4178, 39200] last=[11, 27903, 11, 477]
+missing: [] unexpected: []
+forward 48.5s shape=(128256,)
+  82895      ' stalking' logit=17.2179 p=0.2457
+  70159  ' intimidation' logit=16.9530 p=0.1885
+  45647      ' bullying' logit=16.4671 p=0.1160
+  90255       ' harming' logit=14.9587 p=0.0257
+    711           ' def' logit=14.7352 p=0.0205
+otherwise {'id': 6062, 'logit': 14.617613792419434, 'prob': 0.018247217111903302, 'rank': 7} 
+bullying {'id': 45647, 'logit': 16.46708106994629, 'prob': 0.1159872021711286, 'rank': 3}
+dlogit -1.8494672775268555 dprob -0.09773998505922529
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:50.39
+	Maximum resident set size (kbytes): 18849728
+	Major (requiring I/O) page faults: 61
+=== bf16 runner
+tokens=runner n=1972 first=[4178, 39200, 220] last=[11, 27903, 11, 477]
+missing: [] unexpected: []
+forward 15.4s shape=(128256,)
+  82895      ' stalking' logit=17.2500 p=0.2641
+  70159  ' intimidation' logit=16.8750 p=0.1815
+  45647      ' bullying' logit=16.3750 p=0.1101
+  90255       ' harming' logit=14.8750 p=0.0246
+   1023         ' other' logit=14.6875 p=0.0204
+otherwise {'id': 6062, 'logit': 14.6875, 'prob': 0.020362428334443565, 'rank': 5} 
+bullying {'id': 45647, 'logit': 16.375, 'prob': 0.11007824756784923, 'rank': 3}
+dlogit -1.6875 dprob -0.08971581923340566
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:17.05
+	Maximum resident set size (kbytes): 15413104
+	Major (requiring I/O) page faults: 42
+ALL_DONE

@@ -1,0 +1,24 @@
+=== default
+I tokenizers:regex.cpp:40] Registering override fallback regex
+W0927 21:54:58.181000 1446036 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+{"ETVK_DEVICE_INDEX": "0"} prefill 2.12s
+  45647      ' bullying' logit=15.4688 p=0.1116
+   6062     ' otherwise' logit=15.3203 p=0.0962
+  70159  ' intimidation' logit=15.0000 p=0.0698
+    711           ' def' logit=14.7109 p=0.0523
+   9349      ' violence' logit=14.4297 p=0.0395
+otherwise {'id': 6062, 'logit': 15.3203125, 'prob': 0.09618707034280856, 'rank': 2} 
+bullying {'id': 45647, 'logit': 15.46875, 'prob': 0.11157895364117965, 'rank': 1}
+dlogit -0.1484375 dprob -0.015391883298371087
+=== tiled
+I tokenizers:regex.cpp:40] Registering override fallback regex
+W0927 21:55:46.529000 1446138 torch/utils/_pytree.py:630] <enum 'KernelPreference'> is an Enum subclass and is now natively supported by torch.compile as an opaque value type. Calling register_constant() on Enum subclasses is deprecated and will be an error in a future release.
+{"ETVK_DEVICE_INDEX": "0", "ET_VK_FORCE_TILED_LINEAR": "1"} prefill 2.11s
+  45647      ' bullying' logit=15.4688 p=0.1116
+   6062     ' otherwise' logit=15.3203 p=0.0962
+  70159  ' intimidation' logit=15.0000 p=0.0698
+    711           ' def' logit=14.7109 p=0.0523
+   9349      ' violence' logit=14.4297 p=0.0395
+otherwise {'id': 6062, 'logit': 15.3203125, 'prob': 0.09618707034280856, 'rank': 2} 
+bullying {'id': 45647, 'logit': 15.46875, 'prob': 0.11157895364117965, 'rank': 1}
+dlogit -0.1484375 dprob -0.015391883298371087

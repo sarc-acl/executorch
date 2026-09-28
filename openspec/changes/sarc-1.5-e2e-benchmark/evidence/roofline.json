@@ -1,0 +1,2709 @@
+{
+ "generated": "2026-09-27",
+ "notes": [
+  "All roofs: fast plan, confirmed (3 fresh-process repeats), short-run, clocks not pinned, not ISA-verified (ISA-CHECK.md ISA column empty).",
+  "Sustained entries are single 120 s batches, not confirmed sustained roofs.",
+  "4070ti sustained global_read 2664.9 GB/s is not a DRAM value (3.7x confirmed DRAM read); do not use.",
+  "4070ti shared_fp16_read 1350 GB/s is suspect (fp32 read 21186, fp16 write 11831).",
+  "780m shared_fp32_read is bistable (fast 2282 vs standard-v2 3436 GB/s).",
+  "Orin SARC 4w default tile (t256x128k16g22s32) accumulates in fp16; only t128x128k32g42s32f32 (8B K=14336, 32/532 dispatches) uses fp32.",
+  "Kernel rates: 2*M*N*K / ETDump dispatch time; 8da4w values are TOP/s; GEMM time excludes the 8da4w activation-quantize dispatch.",
+  "Orin kernel rates come from a single un-warmed ETDump execution (raw/orin/trace), parsed by roofline-orin-trace.py into roofline-orin-gemm.csv."
+ ],
+ "gpus": {
+  "780m": {
+   "label": "Radeon 780M",
+   "host": "rocky-ryzen",
+   "device": "AMD Radeon 780M Graphics (RADV PHOENIX)",
+   "driver_version": 104865799,
+   "subgroup_default": 64,
+   "plan": [
+    "fast"
+   ],
+   "roofline_commit": "c898a5aeba70",
+   "runner_sha256": "e91952e1b2363724796e71cdc37610293d461e5c3fc27049dfc7143df43382ac",
+   "report": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md",
+   "summary_json": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/summary.json",
+   "report_header_lines": [
+    "Device: host AMD Ryzen 9 7940HS w/ Radeon 780M Graphics (SoC AMD Ryzen 9 7940HS w/ Radeon 780M Graphics), Rocky Linux 10.2 (Red Quartz), driver 104865799, subgroup 64.",
+    "Plan(s): fast. GPU clock **DVFS-governed** (not pinned); results depend on the governor and thermal state.",
+    "Code: None, runner e91952e1b2363724. Rows from other runner or shader builds excluded: 0."
+   ],
+   "measured_utc": [
+    "2026-09-26T17:51:03.370570+00:00",
+    "2026-09-26T18:04:38.411240+00:00"
+   ],
+   "sentinel": {
+    "median": 3.268927086525272,
+    "unit": "TFLOP/s",
+    "n": 34,
+    "degraded": 0
+   },
+   "clock_state": {
+    "domains": {
+     "/sys/class/drm/card0/device/pp_dpm_sclk": {
+      "governor": "auto",
+      "min": "800000000",
+      "max": "2799000000",
+      "cur": "800000000"
+     },
+     "/sys/class/drm/card0/device/pp_dpm_mclk": {
+      "governor": "auto",
+      "min": "1000000000",
+      "max": "2800000000",
+      "cur": "1000000000"
+     }
+    },
+    "pinned_domains": [],
+    "captured_utc": "2026-09-26T17:50:57.112148+00:00"
+   },
+   "missing_reasons": [
+    "Sustained roofs require three distinct stable batches per current confirmed configuration and duration"
+   ],
+   "sarc_4w_accumulator": "fp16_fp32",
+   "sarc_4w_accumulator_source": "glsl/sarc/sarc_linear_q4gsw_coopmat.yaml:38-42 (ACC_FP32: true)",
+   "coopmat_shapes": [
+    "16x16x16 f16xf16+f16->f16",
+    "16x16x16 f16xf16+f32->f32",
+    "16x16x16 u8xu8+u32->u32",
+    "16x16x16 u8xu8+s32->s32",
+    "16x16x16 u8xu8+s32->s32 sat",
+    "16x16x16 u8xs8+u32->u32",
+    "16x16x16 u8xs8+s32->s32",
+    "16x16x16 u8xs8+s32->s32 sat",
+    "16x16x16 s8xu8+u32->u32",
+    "16x16x16 s8xu8+s32->s32",
+    "16x16x16 s8xu8+s32->s32 sat",
+    "16x16x16 s8xs8+u32->u32",
+    "16x16x16 s8xs8+s32->s32",
+    "16x16x16 s8xs8+s32->s32 sat"
+   ],
+   "roofs": {
+    "matrix_fp16": {
+     "value": 10.958,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_16x16x16_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "10.952\u201310.968 (0.1%)",
+     "sweep_max": "10.947",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:66",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/matrix_fp16_16x16x16_c8_3c44594a5b9c.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32": {
+     "value": 14.772,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_16x16x16_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "14.771\u201314.800 (0.2%)",
+     "sweep_max": "14.801",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:70",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/matrix_fp16_fp32_16x16x16_c8_d0ada77748ba.json",
+     "sustained": {
+      "value": 14.789,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "matrix_int8": {
+     "value": 14.393,
+     "unit": "TOP/s",
+     "config": "matrix_int8_16x16x16_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "14.368\u201314.393 (0.2%)",
+     "sweep_max": "14.402",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:74",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/matrix_int8_16x16x16_c8_f66b39d76ba2.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_shared": {
+     "value": 10.784,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_16x16x16_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "10.782\u201310.812 (0.3%)",
+     "sweep_max": "10.812",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:69",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/matrix_fp16_16x16x16_c8_lds_61fa9bcf6a70.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_shared": {
+     "value": 14.468,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_16x16x16_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "14.466\u201314.484 (0.1%)",
+     "sweep_max": "14.489",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:73",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/matrix_fp16_fp32_16x16x16_c8_lds_d3d2ec92e77b.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_shared": {
+     "value": 14.14,
+     "unit": "TOP/s",
+     "config": "matrix_int8_16x16x16_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "14.125\u201314.159 (0.2%)",
+     "sweep_max": "14.133",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:77",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/matrix_int8_16x16x16_c8_lds_5ab250f4619f.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_cache": {
+     "value": 10.295,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_16x16x16_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "10.290\u201310.301 (0.1%)",
+     "sweep_max": "10.288",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:67",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/matrix_fp16_16x16x16_c8_gmem_fc73a4221e79.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_cache": {
+     "value": 12.934,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_16x16x16_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "12.931\u201312.942 (0.1%)",
+     "sweep_max": "12.963",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:71",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/matrix_fp16_fp32_16x16x16_c8_gmem_734149613c02.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_cache": {
+     "value": 12.513,
+     "unit": "TOP/s",
+     "config": "matrix_int8_16x16x16_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "12.508\u201312.609 (0.8%)",
+     "sweep_max": "12.517",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:75",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/matrix_int8_16x16x16_c8_gmem_27531b296a35.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_dram": {
+     "value": 81.764,
+     "unit": "GB/s",
+     "config": "matrix_fp16_16x16x16_c1_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "81.761\u201381.857 (0.1%)",
+     "sweep_max": "81.728",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:68",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/matrix_fp16_16x16x16_c1_gmem_82c55fbe97a3.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_dram": {
+     "value": 81.335,
+     "unit": "GB/s",
+     "config": "matrix_fp16_fp32_16x16x16_c1_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "81.280\u201381.347 (0.1%)",
+     "sweep_max": "81.266",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:72",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/matrix_fp16_fp32_16x16x16_c1_gmem_7894a839d79d.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_dram": {
+     "value": 80.594,
+     "unit": "GB/s",
+     "config": "matrix_int8_16x16x16_c1_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "80.589\u201380.613 (0.0%)",
+     "sweep_max": "80.603",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:76",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/matrix_int8_16x16x16_c1_gmem_90428430ece7.json",
+     "sustained": null
+    },
+    "alu_fp16": {
+     "value": 8.136,
+     "unit": "TFLOP/s",
+     "config": "alu_fp16_v2_c1",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "8.104\u20138.366 (3.2%)",
+     "sweep_max": "8.244",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:58",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/alu_fp16_v2_c1_212c640209f1.json",
+     "sustained": {
+      "value": 8.216,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "alu_fp32": {
+     "value": 5.756,
+     "unit": "TFLOP/s",
+     "config": "alu_fp32_v1_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "5.742\u20135.812 (1.2%)",
+     "sweep_max": "5.916",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:59",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/alu_fp32_v1_c8_85db3779c6de.json",
+     "sustained": null
+    },
+    "dot_int8": {
+     "value": 11.717,
+     "unit": "TOP/s",
+     "config": "dot8_c2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "11.683\u201311.852 (1.4%)",
+     "sweep_max": "11.872",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:61",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/dot8_c2_286d62df00fb.json",
+     "sustained": null
+    },
+    "global_read": {
+     "value": 86.672,
+     "unit": "GB/s",
+     "config": "mem_read_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "86.614\u201386.687 (0.1%)",
+     "sweep_max": "86.745",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:63",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/mem_read_v4_387859d72582.json",
+     "sustained": {
+      "value": 86.634,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "global_write": {
+     "value": 77.418,
+     "unit": "GB/s",
+     "config": "mem_write_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "77.408\u201377.558 (0.2%)",
+     "sweep_max": "77.283",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:65",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/mem_write_v4_8ece0a5b335e.json",
+     "sustained": null
+    },
+    "global_copy": {
+     "value": 71.478,
+     "unit": "GB/s",
+     "config": "mem_copy_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "71.112\u201371.480 (0.5%)",
+     "sweep_max": "71.420",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:62",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/mem_copy_v4_167f2b687ef0.json",
+     "sustained": null
+    },
+    "cache_read_effective": {
+     "value": 3343.037,
+     "unit": "GB/s",
+     "config": "mem_read_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "3328.380\u20133358.755 (0.9%)",
+     "sweep_max": "3449.487",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:60",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/mem_read_v4_2ae2fb44b304.json",
+     "sustained": null
+    },
+    "shared_fp16_read": {
+     "value": 2157.63,
+     "unit": "GB/s",
+     "config": "sharedbw_fp16_v4_op0_acc32",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "2155.921\u20132158.189 (0.1%)",
+     "sweep_max": "2158.347",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:78",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/sharedbw_fp16_v4_op0_acc32_f2cf9125b091.json",
+     "sustained": null
+    },
+    "shared_fp32_read": {
+     "value": 2282.158,
+     "unit": "GB/s",
+     "config": "sharedbw_fp32_v2_op0_acc32",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "2271.502\u20132282.698 (0.5%)",
+     "sweep_max": "2272.116",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:80",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/sharedbw_fp32_v2_op0_acc32_cbc364c4929b.json",
+     "sustained": null
+    },
+    "shared_fp16_write": {
+     "value": 1723.923,
+     "unit": "GB/s",
+     "config": "sharedbw_fp16_v2_op2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "1723.506\u20131738.693 (0.9%)",
+     "sweep_max": "1729.904",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:79",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/sharedbw_fp16_v2_op2_1fb91c95b139.json",
+     "sustained": null
+    },
+    "shared_fp32_write": {
+     "value": 2363.451,
+     "unit": "GB/s",
+     "config": "sharedbw_fp32_v4_op2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "2362.154\u20132380.195 (0.8%)",
+     "sweep_max": "2377.494",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/report/REPORT.md:81",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/confirm/sharedbw_fp32_v4_op2_7e7d10b863c1.json",
+     "sustained": null
+    }
+   },
+   "capabilities_json": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/rocky-ryzen/780m/capabilities.json",
+   "capabilities_lines": {
+    "matrix_shapes": 224,
+    "subgroup": 440
+   }
+  },
+  "b580": {
+   "label": "Arc B580",
+   "host": "fedora",
+   "device": "Intel(R) Arc(tm) B580 Graphics (BMG G21)",
+   "driver_version": 109060099,
+   "subgroup_default": 32,
+   "plan": [
+    "fast"
+   ],
+   "roofline_commit": "c898a5aeba70",
+   "runner_sha256": "810e098c8abb2dfb3c94655414272cb7206d8cd3e32e9f106b6c3be57b191497",
+   "report": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md",
+   "summary_json": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/summary.json",
+   "report_header_lines": [
+    "Device: host AMD Ryzen 5 9600X 6-Core Processor (SoC AMD Ryzen 5 9600X 6-Core Processor), Fedora Linux 44 (Workstation Edition), driver 109060099, subgroup 32.",
+    "Plan(s): fast. GPU clock **DVFS-governed** (not pinned); results depend on the governor and thermal state.",
+    "Code: None, runner 810e098c8abb2dfb. Rows from other runner or shader builds excluded: 0."
+   ],
+   "measured_utc": [
+    "2026-09-26T17:50:59.881709+00:00",
+    "2026-09-26T18:04:14.512854+00:00"
+   ],
+   "sentinel": {
+    "median": 11.67937582437835,
+    "unit": "TFLOP/s",
+    "n": 34,
+    "degraded": 0
+   },
+   "clock_state": {
+    "domains": {
+     "/sys/class/drm/card0/device/tile0/gt0/freq0": {
+      "governor": "xe",
+      "min": "1200000000",
+      "max": "2850000000",
+      "cur": "1200000000",
+      "hw_max": "2850000000"
+     },
+     "/sys/class/drm/card0/device/tile0/gt1/freq0": {
+      "governor": "xe",
+      "min": "1200000000",
+      "max": "1500000000",
+      "cur": "1200000000",
+      "hw_max": "1500000000"
+     }
+    },
+    "pinned_domains": [],
+    "captured_utc": "2026-09-26T17:50:55.334035+00:00"
+   },
+   "missing_reasons": [
+    "Sustained roofs require three distinct stable batches per current confirmed configuration and duration"
+   ],
+   "sarc_4w_accumulator": "fp16",
+   "sarc_4w_accumulator_source": "glsl/sarc/sarc_linear_q4gsw_coopmat.yaml:55-64 (ACC_FP32 default false, line 28)",
+   "coopmat_shapes": [
+    "8x16x16 f16xf16+f16->f16",
+    "8x16x16 f16xf16+f32->f32",
+    "8x16x16 bf16xbf16+bf16->bf16",
+    "8x16x16 bf16xbf16+f32->f32",
+    "8x16x32 s8xs8+s32->s32",
+    "8x16x32 u8xu8+u32->u32"
+   ],
+   "roofs": {
+    "matrix_fp16": {
+     "value": 111.667,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_8x16x16_c4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "111.663\u2013111.677 (0.0%)",
+     "sweep_max": "111.672",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:66",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/matrix_fp16_8x16x16_c4_bdc30e8370b6.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32": {
+     "value": 115.676,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_8x16x16_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "115.671\u2013115.682 (0.0%)",
+     "sweep_max": "115.684",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:70",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/matrix_fp16_fp32_8x16x16_c8_f8ee5c8face5.json",
+     "sustained": {
+      "value": 115.677,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "matrix_int8": {
+     "value": 231.36,
+     "unit": "TOP/s",
+     "config": "matrix_int8_8x16x32_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "231.356\u2013231.367 (0.0%)",
+     "sweep_max": "231.365",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:74",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/matrix_int8_8x16x32_c8_36ab5114980e.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_shared": {
+     "value": 109.655,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_8x16x16_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "109.634\u2013109.661 (0.0%)",
+     "sweep_max": "109.646",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:69",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/matrix_fp16_8x16x16_c8_lds_480d99dc7156.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_shared": {
+     "value": 106.349,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_8x16x16_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "106.331\u2013106.409 (0.1%)",
+     "sweep_max": "106.308",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:73",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/matrix_fp16_fp32_8x16x16_c8_lds_384addadc260.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_shared": {
+     "value": 206.393,
+     "unit": "TOP/s",
+     "config": "matrix_int8_8x16x32_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "206.326\u2013206.426 (0.0%)",
+     "sweep_max": "206.019",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:77",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/matrix_int8_8x16x32_c8_lds_f5e101a4264e.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_cache": {
+     "value": 107.379,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_8x16x16_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "107.327\u2013107.764 (0.4%)",
+     "sweep_max": "107.391",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:67",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/matrix_fp16_8x16x16_c8_gmem_87184776c056.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_cache": {
+     "value": 105.439,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_8x16x16_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "105.414\u2013105.531 (0.1%)",
+     "sweep_max": "105.402",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:71",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/matrix_fp16_fp32_8x16x16_c8_gmem_0a12d5431aac.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_cache": {
+     "value": 197.747,
+     "unit": "TOP/s",
+     "config": "matrix_int8_8x16x32_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "197.563\u2013198.160 (0.3%)",
+     "sweep_max": "197.741",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:75",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/matrix_int8_8x16x32_c8_gmem_679d7a0c0692.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_dram": {
+     "value": 444.31,
+     "unit": "GB/s",
+     "config": "matrix_fp16_8x16x16_c1_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "444.163\u2013444.319 (0.0%)",
+     "sweep_max": "444.094",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:68",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/matrix_fp16_8x16x16_c1_gmem_b4da6ffe89cc.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_dram": {
+     "value": 440.921,
+     "unit": "GB/s",
+     "config": "matrix_fp16_fp32_8x16x16_c1_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "439.327\u2013441.030 (0.4%)",
+     "sweep_max": "440.356",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:72",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/matrix_fp16_fp32_8x16x16_c1_gmem_063469cce061.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_dram": {
+     "value": 436.816,
+     "unit": "GB/s",
+     "config": "matrix_int8_8x16x32_c1_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "436.527\u2013437.001 (0.1%)",
+     "sweep_max": "437.587",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:76",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/matrix_int8_8x16x32_c1_gmem_ac86e944f016.json",
+     "sustained": null
+    },
+    "alu_fp16": {
+     "value": 27.295,
+     "unit": "TFLOP/s",
+     "config": "alu_fp16_v4_c1",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "27.295\u201327.295 (0.0%)",
+     "sweep_max": "27.295",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:58",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/alu_fp16_v4_c1_c72a29c36654.json",
+     "sustained": {
+      "value": 27.295,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "alu_fp32": {
+     "value": 12.913,
+     "unit": "TFLOP/s",
+     "config": "alu_fp32_v2_c16",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "12.912\u201312.913 (0.0%)",
+     "sweep_max": "12.913",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:59",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/alu_fp32_v2_c16_053e59081693.json",
+     "sustained": null
+    },
+    "dot_int8": {
+     "value": 32.06,
+     "unit": "TOP/s",
+     "config": "dot8_c4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "32.060\u201332.062 (0.0%)",
+     "sweep_max": "32.060",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:61",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/dot8_c4_27466e155909.json",
+     "sustained": null
+    },
+    "global_read": {
+     "value": 465.231,
+     "unit": "GB/s",
+     "config": "mem_read_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "465.214\u2013465.340 (0.0%)",
+     "sweep_max": "465.143",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:63",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/mem_read_v4_07e136688912.json",
+     "sustained": {
+      "value": 465.273,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "global_write": {
+     "value": 394.218,
+     "unit": "GB/s",
+     "config": "mem_write_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "393.470\u2013395.684 (0.6%)",
+     "sweep_max": "395.964",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:65",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/mem_write_v4_11855cac7236.json",
+     "sustained": null
+    },
+    "global_copy": {
+     "value": 408.202,
+     "unit": "GB/s",
+     "config": "mem_copy_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "407.797\u2013409.380 (0.4%)",
+     "sweep_max": "408.497",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:62",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/mem_copy_v4_a649942e6b77.json",
+     "sustained": null
+    },
+    "cache_read_effective": {
+     "value": 6020.185,
+     "unit": "GB/s",
+     "config": "mem_read_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "6019.652\u20136020.485 (0.0%)",
+     "sweep_max": "6021.202",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:60",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/mem_read_v4_c3a2e0dc4b88.json",
+     "sustained": null
+    },
+    "shared_fp16_read": {
+     "value": 3450.211,
+     "unit": "GB/s",
+     "config": "sharedbw_fp16_v4_op0",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "3450.144\u20133450.271 (0.0%)",
+     "sweep_max": "3449.969",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:78",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/sharedbw_fp16_v4_op0_7bc6114b00c1.json",
+     "sustained": null
+    },
+    "shared_fp32_read": {
+     "value": 7258.851,
+     "unit": "GB/s",
+     "config": "sharedbw_fp32_v2_op0",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "7258.638\u20137259.330 (0.0%)",
+     "sweep_max": "7258.744",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:80",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/sharedbw_fp32_v2_op0_dc418375eb88.json",
+     "sustained": null
+    },
+    "shared_fp16_write": {
+     "value": 4102.181,
+     "unit": "GB/s",
+     "config": "sharedbw_fp16_v4_op2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "4102.154\u20134102.190 (0.0%)",
+     "sweep_max": "4102.154",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:79",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/sharedbw_fp16_v4_op2_46200e7f382f.json",
+     "sustained": null
+    },
+    "shared_fp32_write": {
+     "value": 6147.16,
+     "unit": "GB/s",
+     "config": "sharedbw_fp32_v4_op2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "6146.772\u20136147.296 (0.0%)",
+     "sweep_max": "6147.131",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/report/REPORT.md:81",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/confirm/sharedbw_fp32_v4_op2_ecaf21e2202d.json",
+     "sustained": null
+    }
+   },
+   "capabilities_json": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora/b580/capabilities.json",
+   "capabilities_lines": {
+    "matrix_shapes": 218,
+    "subgroup": 326
+   }
+  },
+  "b70": {
+   "label": "Arc Pro B70",
+   "host": "fedora-gpu-eval",
+   "device": "Intel(R) Graphics (BMG G31)",
+   "driver_version": 109060099,
+   "subgroup_default": 32,
+   "plan": [
+    "fast"
+   ],
+   "roofline_commit": "c898a5aeba70",
+   "runner_sha256": "810e098c8abb2dfb3c94655414272cb7206d8cd3e32e9f106b6c3be57b191497",
+   "report": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md",
+   "summary_json": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/summary.json",
+   "report_header_lines": [
+    "Device: host Intel(R) Core(TM) i9-14900K (SoC Intel(R) Core(TM) i9-14900K), Fedora Linux 44 (Cloud Edition), driver 109060099, subgroup 32.",
+    "Plan(s): fast. GPU clock state **unavailable** (frequency and pinning not verified).",
+    "Code: None, runner 810e098c8abb2dfb. Rows from other runner or shader builds excluded: 0."
+   ],
+   "measured_utc": [
+    "2026-09-26T17:51:09.715998+00:00",
+    "2026-09-26T18:05:10.857711+00:00"
+   ],
+   "sentinel": {
+    "median": 18.349959959790652,
+    "unit": "TFLOP/s",
+    "n": 34,
+    "degraded": 0
+   },
+   "clock_state": {
+    "domains": {},
+    "pinned_domains": [],
+    "captured_utc": "2026-09-26T17:50:56.706668+00:00"
+   },
+   "missing_reasons": [
+    "Sustained roofs require three distinct stable batches per current confirmed configuration and duration"
+   ],
+   "sarc_4w_accumulator": "fp16",
+   "sarc_4w_accumulator_source": "glsl/sarc/sarc_linear_q4gsw_coopmat.yaml:55-64 (same Xe2 variant as B580)",
+   "coopmat_shapes": [
+    "8x16x16 f16xf16+f16->f16",
+    "8x16x16 f16xf16+f32->f32",
+    "8x16x16 bf16xbf16+bf16->bf16",
+    "8x16x16 bf16xbf16+f32->f32",
+    "8x16x32 s8xs8+s32->s32",
+    "8x16x32 u8xu8+u32->u32"
+   ],
+   "roofs": {
+    "matrix_fp16": {
+     "value": 173.324,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_8x16x16_c4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "173.324\u2013173.326 (0.0%)",
+     "sweep_max": "173.324",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:66",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/matrix_fp16_8x16x16_c4_900b14944935.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32": {
+     "value": 179.942,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_8x16x16_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "179.940\u2013179.945 (0.0%)",
+     "sweep_max": "179.929",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:70",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/matrix_fp16_fp32_8x16x16_c8_3fbbe5d8293c.json",
+     "sustained": {
+      "value": 179.939,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "matrix_int8": {
+     "value": 359.888,
+     "unit": "TOP/s",
+     "config": "matrix_int8_8x16x32_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "359.888\u2013359.891 (0.0%)",
+     "sweep_max": "359.891",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:74",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/matrix_int8_8x16x32_c8_17b7921fd5b8.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_shared": {
+     "value": 168.442,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_8x16x16_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "168.401\u2013168.443 (0.0%)",
+     "sweep_max": "168.351",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:69",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/matrix_fp16_8x16x16_c8_lds_716e93e8465a.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_shared": {
+     "value": 166.629,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_8x16x16_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "166.585\u2013166.650 (0.0%)",
+     "sweep_max": "166.530",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:73",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/matrix_fp16_fp32_8x16x16_c8_lds_384addadc260.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_shared": {
+     "value": 323.167,
+     "unit": "TOP/s",
+     "config": "matrix_int8_8x16x32_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "322.602\u2013323.431 (0.3%)",
+     "sweep_max": "323.274",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:77",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/matrix_int8_8x16x32_c8_lds_f5e101a4264e.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_cache": {
+     "value": 160.857,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_8x16x16_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "160.746\u2013161.223 (0.3%)",
+     "sweep_max": "161.031",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:67",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/matrix_fp16_8x16x16_c8_gmem_5673212bcfa5.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_cache": {
+     "value": 154.031,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_8x16x16_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "153.449\u2013154.554 (0.7%)",
+     "sweep_max": "154.091",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:71",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/matrix_fp16_fp32_8x16x16_c8_gmem_0a12d5431aac.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_cache": {
+     "value": 282.576,
+     "unit": "TOP/s",
+     "config": "matrix_int8_8x16x32_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "280.757\u2013282.644 (0.7%)",
+     "sweep_max": "279.339",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:75",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/matrix_int8_8x16x32_c8_gmem_679d7a0c0692.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_dram": {
+     "value": 598.296,
+     "unit": "GB/s",
+     "config": "matrix_fp16_8x16x16_c1_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "598.087\u2013598.341 (0.0%)",
+     "sweep_max": "598.319",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:68",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/matrix_fp16_8x16x16_c1_gmem_b4da6ffe89cc.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_dram": {
+     "value": 590.534,
+     "unit": "GB/s",
+     "config": "matrix_fp16_fp32_8x16x16_c1_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "588.526\u2013590.635 (0.4%)",
+     "sweep_max": "615.795",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:72",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/matrix_fp16_fp32_8x16x16_c1_gmem_063469cce061.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_dram": {
+     "value": 610.465,
+     "unit": "GB/s",
+     "config": "matrix_int8_8x16x32_c2_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "609.856\u2013615.165 (0.9%)",
+     "sweep_max": "616.735",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:76",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/matrix_int8_8x16x32_c2_gmem_8e77a6dc701d.json",
+     "sustained": null
+    },
+    "alu_fp16": {
+     "value": 42.87,
+     "unit": "TFLOP/s",
+     "config": "alu_fp16_v4_c1",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "42.870\u201342.870 (0.0%)",
+     "sweep_max": "42.868",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:58",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/alu_fp16_v4_c1_86f0682e8842.json",
+     "sustained": {
+      "value": 42.869,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "alu_fp32": {
+     "value": 20.3,
+     "unit": "TFLOP/s",
+     "config": "alu_fp32_v2_c16",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "20.287\u201320.300 (0.1%)",
+     "sweep_max": "20.300",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:59",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/alu_fp32_v2_c16_f0016fa072fe.json",
+     "sustained": null
+    },
+    "dot_int8": {
+     "value": 50.365,
+     "unit": "TOP/s",
+     "config": "dot8_c4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "50.364\u201350.365 (0.0%)",
+     "sweep_max": "50.365",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:61",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/dot8_c4_f3c4c1be82a5.json",
+     "sustained": null
+    },
+    "global_read": {
+     "value": 604.379,
+     "unit": "GB/s",
+     "config": "mem_read_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "603.532\u2013604.517 (0.2%)",
+     "sweep_max": "603.332",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:63",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/mem_read_v4_e16c947e1b1e.json",
+     "sustained": {
+      "value": 604.02,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "global_write": {
+     "value": 510.723,
+     "unit": "GB/s",
+     "config": "mem_write_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "508.351\u2013514.988 (1.3%)",
+     "sweep_max": "509.564",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:65",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/mem_write_v4_7d95df0eab56.json",
+     "sustained": null
+    },
+    "global_copy": {
+     "value": 532.567,
+     "unit": "GB/s",
+     "config": "mem_copy_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "532.544\u2013533.472 (0.2%)",
+     "sweep_max": "539.009",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:62",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/mem_copy_v4_a649942e6b77.json",
+     "sustained": null
+    },
+    "cache_read_effective": {
+     "value": 9978.783,
+     "unit": "GB/s",
+     "config": "mem_read_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "9978.129\u20139979.161 (0.0%)",
+     "sweep_max": "9978.331",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:60",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/mem_read_v4_4ace7ea5bb0a.json",
+     "sustained": null
+    },
+    "shared_fp16_read": {
+     "value": 3331.016,
+     "unit": "GB/s",
+     "config": "sharedbw_fp16_v4_op0",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "3330.958\u20133331.046 (0.0%)",
+     "sweep_max": "3330.884",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:78",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/sharedbw_fp16_v4_op0_36fdb5e75232.json",
+     "sustained": null
+    },
+    "shared_fp32_read": {
+     "value": 10017.521,
+     "unit": "GB/s",
+     "config": "sharedbw_fp32_v2_op0",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "10017.521\u201310017.622 (0.0%)",
+     "sweep_max": "10018.408",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:80",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/sharedbw_fp32_v2_op0_6a90048683bb.json",
+     "sustained": null
+    },
+    "shared_fp16_write": {
+     "value": 6455.677,
+     "unit": "GB/s",
+     "config": "sharedbw_fp16_v4_op2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "6455.299\u20136455.817 (0.0%)",
+     "sweep_max": "6455.362",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:79",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/sharedbw_fp16_v4_op2_39fc64741667.json",
+     "sustained": null
+    },
+    "shared_fp32_write": {
+     "value": 10500.945,
+     "unit": "GB/s",
+     "config": "sharedbw_fp32_v4_op2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "10500.826\u201310501.435 (0.0%)",
+     "sweep_max": "10500.604",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/report/REPORT.md:81",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/confirm/sharedbw_fp32_v4_op2_2d0269c44b18.json",
+     "sustained": null
+    }
+   },
+   "capabilities_json": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/fedora-gpu-eval/b70-0/capabilities.json",
+   "capabilities_lines": {
+    "matrix_shapes": 218,
+    "subgroup": 326
+   }
+  },
+  "4070ti": {
+   "label": "RTX 4070 Ti SUPER",
+   "host": "gpu-dev-4004",
+   "device": "NVIDIA GeForce RTX 4070 Ti SUPER",
+   "driver_version": 2580660800,
+   "subgroup_default": 32,
+   "plan": [
+    "fast"
+   ],
+   "roofline_commit": "c898a5aeba70",
+   "runner_sha256": "5edad6896f44f511b7d18c03bf83cc0f8917ff6e46b85f3d374a60d16ccdcfb9",
+   "report": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md",
+   "summary_json": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/summary.json",
+   "report_header_lines": [
+    "Device: host AMD EPYC 4464P 12-Core Processor (SoC AMD EPYC 4464P 12-Core Processor), Ubuntu 26.04.1 LTS, driver 2580660800, subgroup 32.",
+    "Plan(s): fast. GPU clock **DVFS-governed** (not pinned); results depend on the governor and thermal state.",
+    "Code: None, runner 5edad6896f44f511. Rows from other runner or shader builds excluded: 0."
+   ],
+   "measured_utc": [
+    "2026-09-27T01:16:10.374315+00:00",
+    "2026-09-27T01:31:56.182327+00:00"
+   ],
+   "sentinel": {
+    "median": 25.481350957726104,
+    "unit": "TFLOP/s",
+    "n": 34,
+    "degraded": 0
+   },
+   "clock_state": {
+    "domains": {
+     "nvidia-smi:sm": {
+      "governor": "nvidia",
+      "min": null,
+      "max": "3120000000",
+      "cur": "2640000000"
+     },
+     "nvidia-smi:mem": {
+      "governor": "nvidia",
+      "min": null,
+      "max": "10501000000",
+      "cur": "10501000000"
+     }
+    },
+    "pinned_domains": [],
+    "captured_utc": "2026-09-27T01:15:41.111412+00:00",
+    "nvidia_smi": {
+     "temperature.gpu": "43",
+     "clocks.sm": "2640",
+     "clocks.mem": "10501",
+     "clocks.max.sm": "3120",
+     "clocks.max.mem": "10501",
+     "utilization.gpu": "1",
+     "clocks_throttle_reasons.active": "0x0000000000000001",
+     "power.draw": "15.00"
+    }
+   },
+   "missing_reasons": [
+    "matrix_fp16_fp32_feed_dram: repeat_unstable",
+    "Sustained roofs require three distinct stable batches per current confirmed configuration and duration"
+   ],
+   "sarc_4w_accumulator": "fp16",
+   "sarc_4w_accumulator_source": "glsl/sarc/sarc_linear_q4gsw_coopmat.yaml:76-90 (ACC_GROUP_FP32: fp16 MMA accumulate per 128-K group, fp32 running total)",
+   "coopmat_shapes": [
+    "16x16x16 f16xf16+f16->f16",
+    "16x8x16 f16xf16+f16->f16",
+    "16x8x8 f16xf16+f16->f16",
+    "16x16x16 f16xf16+f32->f32",
+    "16x8x16 f16xf16+f32->f32",
+    "16x8x8 f16xf16+f32->f32",
+    "16x16x32 u8xu8+u32->u32",
+    "16x16x32 s8xs8+s32->s32",
+    "16x8x32 u8xu8+u32->u32",
+    "16x8x32 s8xs8+s32->s32",
+    "16x16x16 bf16xbf16+f32->f32",
+    "16x16x32 fp8_e5m2xfp8_e5m2+f16->f16",
+    "16x16x32 fp8_e5m2xfp8_e5m2+f32->f32",
+    "16x16x32 fp8_e4m3xfp8_e4m3+f16->f16",
+    "16x16x32 fp8_e4m3xfp8_e4m3+f32->f32"
+   ],
+   "roofs": {
+    "matrix_fp16": {
+     "value": 183.729,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_16x16x16_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "182.954\u2013183.736 (0.4%)",
+     "sweep_max": "182.962",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:67",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/matrix_fp16_16x16x16_c8_80ff094404de.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32": {
+     "value": 92.318,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_16x16x16_c4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "92.315\u201392.807 (0.5%)",
+     "sweep_max": "92.808",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:71",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/matrix_fp16_fp32_16x16x16_c4_21ad9d17c4df.json",
+     "sustained": {
+      "value": 92.807,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "matrix_int8": {
+     "value": 369.236,
+     "unit": "TOP/s",
+     "config": "matrix_int8_16x16x32_c4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "369.222\u2013371.162 (0.5%)",
+     "sweep_max": "371.152",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:75",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/matrix_int8_16x16x32_c4_90814d617fdc.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_shared": {
+     "value": 177.972,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_16x16x16_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "177.948\u2013178.692 (0.4%)",
+     "sweep_max": "177.961",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:70",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/matrix_fp16_16x16x16_c8_lds_003d123acda8.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_shared": {
+     "value": 92.183,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_16x16x16_c1_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "92.182\u201392.662 (0.5%)",
+     "sweep_max": "92.183",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:74",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/matrix_fp16_fp32_16x16x16_c1_lds_86b3eb976ade.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_shared": {
+     "value": 369.362,
+     "unit": "TOP/s",
+     "config": "matrix_int8_16x16x32_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "367.607\u2013369.395 (0.5%)",
+     "sweep_max": "367.806",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:78",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/matrix_int8_16x16x32_c8_lds_573f5326bd05.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_cache": {
+     "value": 159.722,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_16x16x16_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "158.756\u2013159.733 (0.6%)",
+     "sweep_max": "158.823",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:68",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/matrix_fp16_16x16x16_c8_gmem_2c58ebf41558.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_cache": {
+     "value": 89.689,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_16x16x16_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "89.681\u201389.693 (0.0%)",
+     "sweep_max": "89.690",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:72",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/matrix_fp16_fp32_16x16x16_c8_gmem_43ce5f610624.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_cache": {
+     "value": 280.341,
+     "unit": "TOP/s",
+     "config": "matrix_int8_16x16x32_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "280.115\u2013281.621 (0.5%)",
+     "sweep_max": "280.049",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:76",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/matrix_int8_16x16x32_c8_gmem_d77dbf56eca6.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_dram": {
+     "value": 650.226,
+     "unit": "GB/s",
+     "config": "matrix_fp16_16x16x16_c1_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "650.192\u2013650.229 (0.0%)",
+     "sweep_max": "650.161",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:69",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/matrix_fp16_16x16x16_c1_gmem_23bec8167af4.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_dram": {
+     "value": 669.619,
+     "unit": "GB/s",
+     "config": "matrix_fp16_fp32_16x16x16_c2_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "669.596\u2013669.653 (0.0%)",
+     "sweep_max": "684.161",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:73",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/matrix_fp16_fp32_16x16x16_c2_gmem_221889b59fc0.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_dram": {
+     "value": 698.92,
+     "unit": "GB/s",
+     "config": "matrix_int8_16x16x32_c2_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "698.899\u2013699.100 (0.0%)",
+     "sweep_max": "698.973",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:77",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/matrix_int8_16x16x32_c2_gmem_2e1140778d5f.json",
+     "sustained": null
+    },
+    "alu_fp16": {
+     "value": 44.967,
+     "unit": "TFLOP/s",
+     "config": "alu_fp16_v1_c2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "44.965\u201345.068 (0.2%)",
+     "sweep_max": "44.972",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:59",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/alu_fp16_v1_c2_31edc8f0c7fd.json",
+     "sustained": {
+      "value": 45.066,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "alu_fp32": {
+     "value": 44.418,
+     "unit": "TFLOP/s",
+     "config": "alu_fp32_v1_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "44.174\u201344.662 (1.1%)",
+     "sweep_max": "44.412",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:60",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/alu_fp32_v1_c8_2b04696f1a16.json",
+     "sustained": null
+    },
+    "dot_int8": {
+     "value": 78.05,
+     "unit": "TOP/s",
+     "config": "dot8_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "78.034\u201378.114 (0.1%)",
+     "sweep_max": "77.900",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:62",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/dot8_c8_e3ac2ca05339.json",
+     "sustained": null
+    },
+    "global_read": {
+     "value": 713.255,
+     "unit": "GB/s",
+     "config": "mem_read_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "712.779\u2013714.287 (0.2%)",
+     "sweep_max": "712.529",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:64",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/mem_read_v4_15bfb576817f.json",
+     "sustained": {
+      "value": 2664.922,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "global_write": {
+     "value": 642.461,
+     "unit": "GB/s",
+     "config": "mem_write_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "642.441\u2013643.200 (0.1%)",
+     "sweep_max": "641.792",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:66",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/mem_write_v4_39ab9c051804.json",
+     "sustained": null
+    },
+    "global_copy": {
+     "value": 645.977,
+     "unit": "GB/s",
+     "config": "mem_copy_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "645.470\u2013646.023 (0.1%)",
+     "sweep_max": "646.023",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:63",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/mem_copy_v4_60066fd3c30c.json",
+     "sustained": null
+    },
+    "cache_read_effective": {
+     "value": 7151.736,
+     "unit": "GB/s",
+     "config": "mem_read_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "7128.661\u20137167.160 (0.5%)",
+     "sweep_max": "7152.102",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:61",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/mem_read_v4_8e72f39547bc.json",
+     "sustained": null
+    },
+    "shared_fp16_read": {
+     "value": 1350.039,
+     "unit": "GB/s",
+     "config": "sharedbw_fp16_v4_op0_acc32",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "1344.262\u20131350.054 (0.4%)",
+     "sweep_max": "1349.962",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:79",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/sharedbw_fp16_v4_op0_acc32_b91d94b46be9.json",
+     "sustained": null
+    },
+    "shared_fp32_read": {
+     "value": 21185.691,
+     "unit": "GB/s",
+     "config": "sharedbw_fp32_v2_op0",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "21160.329\u201321189.767 (0.1%)",
+     "sweep_max": "21080.156",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:81",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/sharedbw_fp32_v2_op0_97615018de2f.json",
+     "sustained": null
+    },
+    "shared_fp16_write": {
+     "value": 11830.801,
+     "unit": "GB/s",
+     "config": "sharedbw_fp16_v4_op2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "11813.343\u201311830.801 (0.1%)",
+     "sweep_max": "11840.083",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:80",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/sharedbw_fp16_v4_op2_e0d344727b6e.json",
+     "sustained": null
+    },
+    "shared_fp32_write": {
+     "value": 19191.254,
+     "unit": "GB/s",
+     "config": "sharedbw_fp32_v4_op2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "19167.077\u201319246.498 (0.4%)",
+     "sweep_max": "19246.967",
+     "source": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/report/REPORT.md:82",
+     "raw": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/confirm/sharedbw_fp32_v4_op2_59e338ae7445.json",
+     "sustained": null
+    }
+   },
+   "capabilities_json": "/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926/gpu-dev-4004/4070tis/capabilities.json",
+   "capabilities_lines": {
+    "matrix_shapes": 298,
+    "subgroup": 495
+   }
+  },
+  "orin": {
+   "label": "Jetson Orin Nano",
+   "host": "duck-naughty",
+   "device": "NVIDIA Tegra Orin (nvgpu)",
+   "driver_version": 2496888832,
+   "subgroup_default": 32,
+   "plan": [
+    "fast"
+   ],
+   "roofline_commit": "730a6ee5d6ef (roofline repo head recorded in out/jetson-study/provenance.json)",
+   "runner_sha256": "6635217988c731da1bf090cedda069b970c16d57036e7660b5adc7ce0661ff23",
+   "report": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md",
+   "summary_json": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/summary.json",
+   "report_header_lines": [
+    "Device: host  (SoC ), Ubuntu 24.04.5 LTS, driver 2496888832, subgroup 32.",
+    "Plan(s): fast. GPU clock state **unavailable** (frequency and pinning not verified).",
+    "Code: None, runner 6635217988c731da. Rows from other runner or shader builds excluded: 0."
+   ],
+   "measured_utc": [
+    "2026-09-27T05:19:26.276671+00:00",
+    "2026-09-27T05:48:53.667907+00:00"
+   ],
+   "sentinel": {
+    "median": 0.7315627068756667,
+    "unit": "TFLOP/s",
+    "n": 34,
+    "degraded": 0
+   },
+   "clock_state": {
+    "domains": {},
+    "pinned_domains": [],
+    "captured_utc": "2026-09-27T05:18:39.565514+00:00"
+   },
+   "missing_reasons": [
+    "matrix_int8_feed_dram: insufficient_quality_repeats, repeat_unstable",
+    "matrix_fp16_feed_shared: insufficient_quality_repeats",
+    "matrix_fp16_fp32_feed_cache: repeat_unstable",
+    "Sustained roofs require three distinct stable batches per current confirmed configuration and duration"
+   ],
+   "sarc_4w_accumulator": "fp16",
+   "sarc_4w_accumulator_source": "glsl/sarc/sarc_linear_q4gsw_coopmat.yaml:116-122 (t256x128k16g22s32, no ACC_FP32 -> fp16); 112-115 (t128x128k32g42s32f32, ACC_FP32, 8B K>8192 only)",
+   "coopmat_shapes": [
+    "16x16x16 f16xf16+f16->f16",
+    "16x8x16 f16xf16+f16->f16",
+    "16x8x8 f16xf16+f16->f16",
+    "16x16x16 f16xf16+f32->f32",
+    "16x8x16 f16xf16+f32->f32",
+    "16x8x8 f16xf16+f32->f32",
+    "16x16x32 u8xu8+u32->u32",
+    "16x16x32 s8xs8+s32->s32",
+    "16x8x32 u8xu8+u32->u32",
+    "16x8x32 s8xs8+s32->s32",
+    "16x16x16 bf16xbf16+f32->f32"
+   ],
+   "roofs": {
+    "matrix_fp16": {
+     "value": 9.696,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_16x16x16_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "9.690\u20139.699 (0.1%)",
+     "sweep_max": "9.731",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:69",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/matrix_fp16_16x16x16_c8_f4996842d494.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32": {
+     "value": 9.736,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_16x16x16_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "9.731\u20139.742 (0.1%)",
+     "sweep_max": "9.734",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:73",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/matrix_fp16_fp32_16x16x16_c8_45825c3c22d6.json",
+     "sustained": {
+      "value": 9.736,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "matrix_int8": {
+     "value": 19.519,
+     "unit": "TOP/s",
+     "config": "matrix_int8_16x16x32_c4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "19.519\u201319.526 (0.0%)",
+     "sweep_max": "19.519",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:77",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/matrix_int8_16x16x32_c4_698df4f41d7a.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_shared": {
+     "value": 9.508,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_16x16x16_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "9.396\u20139.516 (1.3%)",
+     "sweep_max": "9.511",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:72",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/matrix_fp16_16x16x16_c8_lds_198ad97b30d9.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_shared": {
+     "value": 8.839,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_16x16x16_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "8.824\u20138.898 (0.8%)",
+     "sweep_max": "8.913",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:76",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/matrix_fp16_fp32_16x16x16_c8_lds_68d80df85e80.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_shared": {
+     "value": 17.412,
+     "unit": "TOP/s",
+     "config": "matrix_int8_16x16x32_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "17.406\u201317.418 (0.1%)",
+     "sweep_max": "17.404",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:80",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/matrix_int8_16x16x32_c8_lds_1c67729822b1.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_cache": {
+     "value": 7.08,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_16x16x16_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "7.044\u20137.082 (0.5%)",
+     "sweep_max": "7.057",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:70",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/matrix_fp16_16x16x16_c8_gmem_a2970613092b.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_cache": {
+     "value": 3.967,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_16x16x16_c4_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "3.943\u20133.978 (0.9%)",
+     "sweep_max": "5.375",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:74",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/matrix_fp16_fp32_16x16x16_c4_gmem_be6e6adeeb6f.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_cache": {
+     "value": 8.152,
+     "unit": "TOP/s",
+     "config": "matrix_int8_16x16x32_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "7.875\u20138.259 (4.7%)",
+     "sweep_max": "8.210",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:78",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/matrix_int8_16x16x32_c8_gmem_546018584e24.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_dram": {
+     "value": 60.318,
+     "unit": "GB/s",
+     "config": "matrix_fp16_16x16x16_c4_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "60.318\u201360.320 (0.0%)",
+     "sweep_max": "60.389",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:71",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/matrix_fp16_16x16x16_c4_gmem_9d28639bae43.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_dram": {
+     "value": 61.21,
+     "unit": "GB/s",
+     "config": "matrix_fp16_fp32_16x16x16_c1_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "61.203\u201361.220 (0.0%)",
+     "sweep_max": "61.100",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:75",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/matrix_fp16_fp32_16x16x16_c1_gmem_3fdf89c9d431.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_dram": {
+     "value": 59.72,
+     "unit": "GB/s",
+     "config": "matrix_int8_16x16x32_c4_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "59.715\u201359.722 (0.0%)",
+     "sweep_max": "60.002",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:79",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/matrix_int8_16x16x32_c4_gmem_444ead2b455c.json",
+     "sustained": null
+    },
+    "alu_fp16": {
+     "value": 1.766,
+     "unit": "TFLOP/s",
+     "config": "alu_fp16_v2_c16",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "1.766\u20131.766 (0.1%)",
+     "sweep_max": "1.766",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:61",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/alu_fp16_v2_c16_a8973822c4f8.json",
+     "sustained": {
+      "value": 1.766,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "alu_fp32": {
+     "value": 1.202,
+     "unit": "TFLOP/s",
+     "config": "alu_fp32_v1_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "1.202\u20131.205 (0.3%)",
+     "sweep_max": "1.203",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:62",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/alu_fp32_v1_c8_db2197b2d799.json",
+     "sustained": null
+    },
+    "dot_int8": {
+     "value": 2.091,
+     "unit": "TOP/s",
+     "config": "dot8_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "2.090\u20132.091 (0.0%)",
+     "sweep_max": "2.089",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:64",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/dot8_c8_937e414d65d5.json",
+     "sustained": null
+    },
+    "global_read": {
+     "value": 62.268,
+     "unit": "GB/s",
+     "config": "mem_read_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "62.233\u201362.313 (0.1%)",
+     "sweep_max": "62.284",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:66",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/mem_read_v4_69ef656964c5.json",
+     "sustained": {
+      "value": 62.186,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "global_write": {
+     "value": 58.162,
+     "unit": "GB/s",
+     "config": "mem_write_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "58.111\u201358.162 (0.1%)",
+     "sweep_max": "58.170",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:68",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/mem_write_v4_b9ac16ed34e0.json",
+     "sustained": null
+    },
+    "global_copy": {
+     "value": 64.113,
+     "unit": "GB/s",
+     "config": "mem_copy_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "64.112\u201364.118 (0.0%)",
+     "sweep_max": "64.081",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:65",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/mem_copy_v4_17ef545b29e0.json",
+     "sustained": null
+    },
+    "cache_read_effective": {
+     "value": 204.059,
+     "unit": "GB/s",
+     "config": "mem_read_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "203.952\u2013204.073 (0.1%)",
+     "sweep_max": "204.059",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:63",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/mem_read_v4_958e71d23a47.json",
+     "sustained": null
+    },
+    "shared_fp16_read": {
+     "value": 566.211,
+     "unit": "GB/s",
+     "config": "sharedbw_fp16_v2_op0",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "566.077\u2013566.392 (0.1%)",
+     "sweep_max": "565.914",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:81",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/sharedbw_fp16_v2_op0_694fd8c639c6.json",
+     "sustained": null
+    },
+    "shared_fp32_read": {
+     "value": 616.211,
+     "unit": "GB/s",
+     "config": "sharedbw_fp32_v2_op0",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "615.967\u2013616.249 (0.0%)",
+     "sweep_max": "616.082",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:83",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/sharedbw_fp32_v2_op0_1fa90fd83b5d.json",
+     "sustained": null
+    },
+    "shared_fp16_write": {
+     "value": 334.938,
+     "unit": "GB/s",
+     "config": "sharedbw_fp16_v4_op2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "334.813\u2013335.014 (0.1%)",
+     "sweep_max": "334.859",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:82",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/sharedbw_fp16_v4_op2_df34d2594526.json",
+     "sustained": null
+    },
+    "shared_fp32_write": {
+     "value": 532.894,
+     "unit": "GB/s",
+     "config": "sharedbw_fp32_v4_op2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "532.763\u2013533.037 (0.1%)",
+     "sweep_max": "532.914",
+     "source": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/report/REPORT.md:84",
+     "raw": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/confirm/sharedbw_fp32_v4_op2_3c106b30d84e.json",
+     "sustained": null
+    }
+   },
+   "capabilities_json": "/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty/capabilities.json",
+   "capabilities_lines": {
+    "matrix_shapes": 255,
+    "subgroup": 398
+   }
+  }
+ },
+ "kernel_rates": {
+  "4070ti": {
+   "4w": {
+    "sarc": {
+     "time_weighted_rate": 118.338,
+     "unit": "TFLOP/s",
+     "dispatches": 532,
+     "median": 117.273,
+     "min": 91.188,
+     "max": 122.595,
+     "total_gemm_ms": 372.8,
+     "per_model": {
+      "1b": 116.624,
+      "3b": 117.439,
+      "8b": 118.95
+     },
+     "kernels": {
+      "sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga_texture3d_texture2d_half": {
+       "rate": 118.436,
+       "dispatches": 500
+      },
+      "sarc_linear_q4gsw_coopmat_t128x128k16g24s32ga_texture3d_texture2d_half": {
+       "rate": 93.598,
+       "dispatches": 32
+      }
+     }
+    },
+    "stock": {
+     "time_weighted_rate": 17.744,
+     "unit": "TFLOP/s",
+     "dispatches": 532,
+     "median": 17.288,
+     "min": 12.984,
+     "max": 19.091,
+     "total_gemm_ms": 2486.3,
+     "per_model": {
+      "1b": 17.753,
+      "3b": 17.714,
+      "8b": 17.755
+     },
+     "kernels": {
+      "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half": {
+       "rate": 17.744,
+       "dispatches": 532
+      }
+     }
+    }
+   },
+   "8da4w": {
+    "sarc": {
+     "time_weighted_rate": 154.193,
+     "unit": "TOP/s (2*M*N*K ops)",
+     "dispatches": 532,
+     "median": 152.982,
+     "min": 130.151,
+     "max": 159.569,
+     "total_gemm_ms": 286.1,
+     "per_model": {
+      "1b": 148.582,
+      "3b": 153.112,
+      "8b": 155.455
+     },
+     "kernels": {
+      "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half": {
+       "rate": 154.193,
+       "dispatches": 532
+      }
+     }
+    },
+    "stock": {
+     "time_weighted_rate": 17.563,
+     "unit": "TOP/s (2*M*N*K ops)",
+     "dispatches": 532,
+     "median": 17.332,
+     "min": 15.761,
+     "max": 18.231,
+     "total_gemm_ms": 2512.0,
+     "per_model": {
+      "1b": 17.646,
+      "3b": 17.5,
+      "8b": 17.577
+     },
+     "kernels": {
+      "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8": {
+       "rate": 17.563,
+       "dispatches": 532
+      }
+     }
+    }
+   }
+  },
+  "780m": {
+   "4w": {
+    "sarc": {
+     "time_weighted_rate": 10.437,
+     "unit": "TFLOP/s",
+     "dispatches": 532,
+     "median": 10.371,
+     "min": 9.034,
+     "max": 10.895,
+     "total_gemm_ms": 4227.0,
+     "per_model": {
+      "1b": 10.664,
+      "3b": 10.73,
+      "8b": 10.293
+     },
+     "kernels": {
+      "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_texture3d_texture2d_half": {
+       "rate": 10.437,
+       "dispatches": 532
+      }
+     }
+    },
+    "stock": {
+     "time_weighted_rate": 4.16,
+     "unit": "TFLOP/s",
+     "dispatches": 532,
+     "median": 4.185,
+     "min": 3.847,
+     "max": 4.365,
+     "total_gemm_ms": 10606.1,
+     "per_model": {
+      "1b": 4.296,
+      "3b": 4.252,
+      "8b": 4.105
+     },
+     "kernels": {
+      "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half": {
+       "rate": 4.16,
+       "dispatches": 532
+      }
+     }
+    }
+   },
+   "8da4w": {
+    "sarc": {
+     "time_weighted_rate": 9.703,
+     "unit": "TOP/s (2*M*N*K ops)",
+     "dispatches": 532,
+     "median": 9.69,
+     "min": 8.824,
+     "max": 10.116,
+     "total_gemm_ms": 4546.6,
+     "per_model": {
+      "1b": 9.954,
+      "3b": 9.775,
+      "8b": 9.641
+     },
+     "kernels": {
+      "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_texture3d_texture2d_half": {
+       "rate": 9.703,
+       "dispatches": 532
+      }
+     }
+    },
+    "stock": {
+     "time_weighted_rate": 6.997,
+     "unit": "TOP/s (2*M*N*K ops)",
+     "dispatches": 532,
+     "median": 7.201,
+     "min": 6.293,
+     "max": 8.273,
+     "total_gemm_ms": 6305.5,
+     "per_model": {
+      "1b": 7.354,
+      "3b": 7.121,
+      "8b": 6.901
+     },
+     "kernels": {
+      "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8": {
+       "rate": 6.997,
+       "dispatches": 532
+      }
+     }
+    }
+   }
+  },
+  "b580": {
+   "4w": {
+    "sarc": {
+     "time_weighted_rate": 42.85,
+     "unit": "TFLOP/s",
+     "dispatches": 532,
+     "median": 43.804,
+     "min": 8.569,
+     "max": 48.089,
+     "total_gemm_ms": 1029.6,
+     "per_model": {
+      "1b": 43.659,
+      "3b": 43.398,
+      "8b": 42.524
+     },
+     "kernels": {
+      "sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half": {
+       "rate": 42.85,
+       "dispatches": 532
+      }
+     }
+    },
+    "stock": {
+     "time_weighted_rate": 8.787,
+     "unit": "TFLOP/s",
+     "dispatches": 532,
+     "median": 9.093,
+     "min": 4.594,
+     "max": 10.314,
+     "total_gemm_ms": 5020.8,
+     "per_model": {
+      "1b": 8.462,
+      "3b": 8.876,
+      "8b": 8.799
+     },
+     "kernels": {
+      "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half": {
+       "rate": 8.787,
+       "dispatches": 532
+      }
+     }
+    }
+   },
+   "8da4w": {
+    "sarc": {
+     "time_weighted_rate": 50.595,
+     "unit": "TOP/s (2*M*N*K ops)",
+     "dispatches": 532,
+     "median": 51.443,
+     "min": 22.614,
+     "max": 56.882,
+     "total_gemm_ms": 872.0,
+     "per_model": {
+      "1b": 52.521,
+      "3b": 50.634,
+      "8b": 50.322
+     },
+     "kernels": {
+      "sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_texture3d_texture2d_half": {
+       "rate": 50.595,
+       "dispatches": 532
+      }
+     }
+    },
+    "stock": {
+     "time_weighted_rate": 18.426,
+     "unit": "TOP/s (2*M*N*K ops)",
+     "dispatches": 532,
+     "median": 21.509,
+     "min": 9.363,
+     "max": 24.345,
+     "total_gemm_ms": 2394.4,
+     "per_model": {
+      "1b": 22.812,
+      "3b": 20.211,
+      "8b": 17.342
+     },
+     "kernels": {
+      "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8": {
+       "rate": 18.426,
+       "dispatches": 532
+      }
+     }
+    }
+   }
+  },
+  "b70": {
+   "4w": {
+    "sarc": {
+     "time_weighted_rate": 65.73,
+     "unit": "TFLOP/s",
+     "dispatches": 532,
+     "median": 65.442,
+     "min": 35.941,
+     "max": 73.995,
+     "total_gemm_ms": 671.2,
+     "per_model": {
+      "1b": 67.979,
+      "3b": 68.019,
+      "8b": 64.555
+     },
+     "kernels": {
+      "sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half": {
+       "rate": 65.73,
+       "dispatches": 532
+      }
+     }
+    },
+    "stock": {
+     "time_weighted_rate": 13.688,
+     "unit": "TFLOP/s",
+     "dispatches": 532,
+     "median": 13.879,
+     "min": 9.576,
+     "max": 16.009,
+     "total_gemm_ms": 3223.0,
+     "per_model": {
+      "1b": 13.407,
+      "3b": 13.827,
+      "8b": 13.673
+     },
+     "kernels": {
+      "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half": {
+       "rate": 13.688,
+       "dispatches": 532
+      }
+     }
+    }
+   },
+   "8da4w": {
+    "sarc": {
+     "time_weighted_rate": 83.3,
+     "unit": "TOP/s (2*M*N*K ops)",
+     "dispatches": 532,
+     "median": 83.968,
+     "min": 70.065,
+     "max": 93.065,
+     "total_gemm_ms": 529.6,
+     "per_model": {
+      "1b": 88.47,
+      "3b": 84.441,
+      "8b": 82.182
+     },
+     "kernels": {
+      "sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_texture3d_texture2d_half": {
+       "rate": 83.3,
+       "dispatches": 532
+      }
+     }
+    },
+    "stock": {
+     "time_weighted_rate": 29.991,
+     "unit": "TOP/s (2*M*N*K ops)",
+     "dispatches": 532,
+     "median": 33.425,
+     "min": 25.611,
+     "max": 37.977,
+     "total_gemm_ms": 1471.0,
+     "per_model": {
+      "1b": 35.558,
+      "3b": 33.986,
+      "8b": 28.047
+     },
+     "kernels": {
+      "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8": {
+       "rate": 29.991,
+       "dispatches": 532
+      }
+     }
+    }
+   }
+  },
+  "orin": {
+   "4w": {
+    "sarc": {
+     "time_weighted_rate": 5.933,
+     "unit": "TFLOP/s",
+     "dispatches": 532,
+     "median": 6.023,
+     "min": 2.868,
+     "max": 6.217,
+     "total_gemm_ms": 7436.0,
+     "per_model": {
+      "1b": 5.939,
+      "3b": 6.076,
+      "8b": 5.877
+     },
+     "kernels": {
+      "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half": {
+       "rate": 6.106,
+       "dispatches": 500
+      },
+      "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32_texture3d_texture2d_half": {
+       "rate": 5.233,
+       "dispatches": 32
+      }
+     }
+    },
+    "stock": {
+     "time_weighted_rate": 0.553,
+     "unit": "TFLOP/s",
+     "dispatches": 532,
+     "median": 0.551,
+     "min": 0.446,
+     "max": 0.557,
+     "total_gemm_ms": 79774.3,
+     "per_model": {
+      "1b": 0.55,
+      "3b": 0.552,
+      "8b": 0.554
+     },
+     "kernels": {
+      "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half": {
+       "rate": 0.553,
+       "dispatches": 532
+      }
+     }
+    }
+   },
+   "8da4w": {
+    "sarc": {
+     "time_weighted_rate": 4.639,
+     "unit": "TOP/s (2*M*N*K ops)",
+     "dispatches": 532,
+     "median": 4.637,
+     "min": 2.264,
+     "max": 4.84,
+     "total_gemm_ms": 9510.2,
+     "per_model": {
+      "1b": 4.562,
+      "3b": 4.477,
+      "8b": 4.719
+     },
+     "kernels": {
+      "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half": {
+       "rate": 4.639,
+       "dispatches": 532
+      }
+     }
+    },
+    "stock": {
+     "time_weighted_rate": 0.498,
+     "unit": "TOP/s (2*M*N*K ops)",
+     "dispatches": 532,
+     "median": 0.497,
+     "min": 0.398,
+     "max": 0.499,
+     "total_gemm_ms": 88615.4,
+     "per_model": {
+      "1b": 0.497,
+      "3b": 0.498,
+      "8b": 0.498
+     },
+     "kernels": {
+      "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8": {
+       "rate": 0.498,
+       "dispatches": 532
+      }
+     }
+    }
+   }
+  }
+ },
+ "kernel_rates_source": {
+  "780m,b580,b70,4070ti": "/home/doremy/Desktop/sarc-acl/.artifacts/e2e-1.5-2026-09-28/report/evidence/trace/gemm.csv (from raw/<gpu>/trace2/*.etdp via report/trace_analysis.py; warm 2nd execution)",
+  "orin": "/home/doremy/Desktop/sarc-acl/.artifacts/e2e-1.5-2026-09-28/report/evidence/roofline-orin-gemm.csv (this collection: raw/orin/trace/*.etdp parsed with the same trace_analysis.load/family; single execution, no warmup)"
+ },
+ "percent_of_roof": {
+  "780m": {
+   "stock_4w_vs_alu_fp16": 0.511,
+   "stock_4w_vs_matrix_4w_roof": 0.282,
+   "stock_8da4w_vs_dot_int8": 0.597,
+   "stock_8da4w_vs_matrix_int8": 0.486,
+   "sarc_4w_roof_used": "matrix_fp16_fp32",
+   "sarc_4w_vs_matrix": 0.707,
+   "sarc_4w_vs_matrix_feed_shared": 0.721,
+   "sarc_8da4w_vs_matrix_int8": 0.674,
+   "sarc_8da4w_vs_matrix_int8_feed_shared": 0.686,
+   "sarc_over_stock_4w_kernel": 2.509,
+   "sarc_over_stock_8da4w_kernel": 1.387,
+   "stock_8da4w_over_stock_4w_kernel": 1.682
+  },
+  "b580": {
+   "stock_4w_vs_alu_fp16": 0.322,
+   "stock_4w_vs_matrix_4w_roof": 0.079,
+   "stock_8da4w_vs_dot_int8": 0.575,
+   "stock_8da4w_vs_matrix_int8": 0.08,
+   "sarc_4w_roof_used": "matrix_fp16",
+   "sarc_4w_vs_matrix": 0.384,
+   "sarc_4w_vs_matrix_feed_shared": 0.391,
+   "sarc_8da4w_vs_matrix_int8": 0.219,
+   "sarc_8da4w_vs_matrix_int8_feed_shared": 0.245,
+   "sarc_over_stock_4w_kernel": 4.877,
+   "sarc_over_stock_8da4w_kernel": 2.746,
+   "stock_8da4w_over_stock_4w_kernel": 2.097
+  },
+  "b70": {
+   "stock_4w_vs_alu_fp16": 0.319,
+   "stock_4w_vs_matrix_4w_roof": 0.079,
+   "stock_8da4w_vs_dot_int8": 0.595,
+   "stock_8da4w_vs_matrix_int8": 0.083,
+   "sarc_4w_roof_used": "matrix_fp16",
+   "sarc_4w_vs_matrix": 0.379,
+   "sarc_4w_vs_matrix_feed_shared": 0.39,
+   "sarc_8da4w_vs_matrix_int8": 0.231,
+   "sarc_8da4w_vs_matrix_int8_feed_shared": 0.258,
+   "sarc_over_stock_4w_kernel": 4.802,
+   "sarc_over_stock_8da4w_kernel": 2.777,
+   "stock_8da4w_over_stock_4w_kernel": 2.191
+  },
+  "4070ti": {
+   "stock_4w_vs_alu_fp16": 0.395,
+   "stock_4w_vs_matrix_4w_roof": 0.097,
+   "stock_8da4w_vs_dot_int8": 0.225,
+   "stock_8da4w_vs_matrix_int8": 0.048,
+   "sarc_4w_roof_used": "matrix_fp16",
+   "sarc_4w_vs_matrix": 0.644,
+   "sarc_4w_vs_matrix_feed_shared": 0.665,
+   "sarc_8da4w_vs_matrix_int8": 0.418,
+   "sarc_8da4w_vs_matrix_int8_feed_shared": 0.417,
+   "sarc_over_stock_4w_kernel": 6.669,
+   "sarc_over_stock_8da4w_kernel": 8.779,
+   "stock_8da4w_over_stock_4w_kernel": 0.99
+  },
+  "orin": {
+   "stock_4w_vs_alu_fp16": 0.313,
+   "stock_4w_vs_matrix_4w_roof": 0.057,
+   "stock_8da4w_vs_dot_int8": 0.238,
+   "stock_8da4w_vs_matrix_int8": 0.026,
+   "sarc_4w_roof_used": "matrix_fp16",
+   "sarc_4w_vs_matrix": 0.612,
+   "sarc_4w_vs_matrix_feed_shared": 0.624,
+   "sarc_8da4w_vs_matrix_int8": 0.238,
+   "sarc_8da4w_vs_matrix_int8_feed_shared": 0.266,
+   "sarc_over_stock_4w_kernel": 10.729,
+   "sarc_over_stock_8da4w_kernel": 9.315,
+   "stock_8da4w_over_stock_4w_kernel": 0.901
+  }
+ },
+ "derived_ratios": {
+  "780m": {
+   "int8_matrix_over_fp16_matrix": {
+    "num": [
+     "matrix_int8",
+     14.393
+    ],
+    "den": [
+     "matrix_fp16_fp32",
+     14.772
+    ],
+    "ratio": 0.974
+   },
+   "fp16_matrix_over_fp16_fma": {
+    "num": [
+     "matrix_fp16_fp32",
+     14.772
+    ],
+    "den": [
+     "alu_fp16",
+     8.136
+    ],
+    "ratio": 1.816
+   },
+   "int8_matrix_over_int8_dot": {
+    "num": [
+     "matrix_int8",
+     14.393
+    ],
+    "den": [
+     "dot_int8",
+     11.717
+    ],
+    "ratio": 1.228
+   },
+   "int8_dot_over_fp16_fma": {
+    "num": [
+     "dot_int8",
+     11.717
+    ],
+    "den": [
+     "alu_fp16",
+     8.136
+    ],
+    "ratio": 1.44
+   },
+   "alt_accumulator": {
+    "roof": "matrix_fp16",
+    "int8_over_it": 1.313,
+    "it_over_fp16_fma": 1.347
+   }
+  },
+  "b580": {
+   "int8_matrix_over_fp16_matrix": {
+    "num": [
+     "matrix_int8",
+     231.36
+    ],
+    "den": [
+     "matrix_fp16",
+     111.667
+    ],
+    "ratio": 2.072
+   },
+   "fp16_matrix_over_fp16_fma": {
+    "num": [
+     "matrix_fp16",
+     111.667
+    ],
+    "den": [
+     "alu_fp16",
+     27.295
+    ],
+    "ratio": 4.091
+   },
+   "int8_matrix_over_int8_dot": {
+    "num": [
+     "matrix_int8",
+     231.36
+    ],
+    "den": [
+     "dot_int8",
+     32.06
+    ],
+    "ratio": 7.216
+   },
+   "int8_dot_over_fp16_fma": {
+    "num": [
+     "dot_int8",
+     32.06
+    ],
+    "den": [
+     "alu_fp16",
+     27.295
+    ],
+    "ratio": 1.175
+   },
+   "alt_accumulator": {
+    "roof": "matrix_fp16_fp32",
+    "int8_over_it": 2.0,
+    "it_over_fp16_fma": 4.238
+   }
+  },
+  "b70": {
+   "int8_matrix_over_fp16_matrix": {
+    "num": [
+     "matrix_int8",
+     359.888
+    ],
+    "den": [
+     "matrix_fp16",
+     173.324
+    ],
+    "ratio": 2.076
+   },
+   "fp16_matrix_over_fp16_fma": {
+    "num": [
+     "matrix_fp16",
+     173.324
+    ],
+    "den": [
+     "alu_fp16",
+     42.87
+    ],
+    "ratio": 4.043
+   },
+   "int8_matrix_over_int8_dot": {
+    "num": [
+     "matrix_int8",
+     359.888
+    ],
+    "den": [
+     "dot_int8",
+     50.365
+    ],
+    "ratio": 7.146
+   },
+   "int8_dot_over_fp16_fma": {
+    "num": [
+     "dot_int8",
+     50.365
+    ],
+    "den": [
+     "alu_fp16",
+     42.87
+    ],
+    "ratio": 1.175
+   },
+   "alt_accumulator": {
+    "roof": "matrix_fp16_fp32",
+    "int8_over_it": 2.0,
+    "it_over_fp16_fma": 4.197
+   }
+  },
+  "4070ti": {
+   "int8_matrix_over_fp16_matrix": {
+    "num": [
+     "matrix_int8",
+     369.236
+    ],
+    "den": [
+     "matrix_fp16",
+     183.729
+    ],
+    "ratio": 2.01
+   },
+   "fp16_matrix_over_fp16_fma": {
+    "num": [
+     "matrix_fp16",
+     183.729
+    ],
+    "den": [
+     "alu_fp16",
+     44.967
+    ],
+    "ratio": 4.086
+   },
+   "int8_matrix_over_int8_dot": {
+    "num": [
+     "matrix_int8",
+     369.236
+    ],
+    "den": [
+     "dot_int8",
+     78.05
+    ],
+    "ratio": 4.731
+   },
+   "int8_dot_over_fp16_fma": {
+    "num": [
+     "dot_int8",
+     78.05
+    ],
+    "den": [
+     "alu_fp16",
+     44.967
+    ],
+    "ratio": 1.736
+   },
+   "alt_accumulator": {
+    "roof": "matrix_fp16_fp32",
+    "int8_over_it": 4.0,
+    "it_over_fp16_fma": 2.053
+   }
+  },
+  "orin": {
+   "int8_matrix_over_fp16_matrix": {
+    "num": [
+     "matrix_int8",
+     19.519
+    ],
+    "den": [
+     "matrix_fp16",
+     9.696
+    ],
+    "ratio": 2.013
+   },
+   "fp16_matrix_over_fp16_fma": {
+    "num": [
+     "matrix_fp16",
+     9.696
+    ],
+    "den": [
+     "alu_fp16",
+     1.766
+    ],
+    "ratio": 5.49
+   },
+   "int8_matrix_over_int8_dot": {
+    "num": [
+     "matrix_int8",
+     19.519
+    ],
+    "den": [
+     "dot_int8",
+     2.091
+    ],
+    "ratio": 9.335
+   },
+   "int8_dot_over_fp16_fma": {
+    "num": [
+     "dot_int8",
+     2.091
+    ],
+    "den": [
+     "alu_fp16",
+     1.766
+    ],
+    "ratio": 1.184
+   },
+   "alt_accumulator": {
+    "roof": "matrix_fp16_fp32",
+    "int8_over_it": 2.005,
+    "it_over_fp16_fma": 5.513
+   }
+  }
+ },
+ "cross_check_780m_standard_v2": {
+  "source": "rocky-ryzen:~/igpu-roofline/campaigns/780m/2026-09-22-standard-v2/rocky-ryzen-gpu/report/REPORT.md",
+  "plan": "standard (5 repeats, 300 s sustained), code ae31cc7+dirty, runner 48b9cbbd61c7, measured 2026-09-22; 155/155 sentinel ok",
+  "note": "older runner build; no feed roofs; campaigns/README.md marks it 'reference'. Used only as cross-check of the fast values.",
+  "roofs": {
+   "alu_fp16": [
+    7.965,
+    "TFLOP/s",
+    49
+   ],
+   "alu_fp32": [
+    5.618,
+    "TFLOP/s",
+    50
+   ],
+   "cache_read_effective": [
+    3234.113,
+    "GB/s",
+    51
+   ],
+   "dot_int8": [
+    11.44,
+    "TOP/s",
+    52
+   ],
+   "global_read": [
+    86.462,
+    "GB/s",
+    56
+   ],
+   "matrix_fp16": [
+    10.936,
+    "TFLOP/s",
+    60
+   ],
+   "matrix_fp16_fp32": [
+    14.768,
+    "TFLOP/s",
+    61
+   ],
+   "matrix_int8": [
+    14.366,
+    "TOP/s",
+    62
+   ],
+   "shared_fp16_read": [
+    2282.157,
+    "GB/s",
+    63
+   ],
+   "shared_fp32_read": [
+    3435.842,
+    "GB/s",
+    65
+   ]
+  },
+  "value_layout": "[confirmed median, unit, line in REPORT.md]"
+ },
+ "historical_1_4_microbench": {
+  "note": "release-1.4 branches, test_llama_microbench (not the model). The 1.4 'tiled' 4w baseline was linear_q4gsw_tiled, a different kernel from 1.5 stock q4gsw_linear_gemm__tin (confirm/780m-final/baseline-r1.json kernel field). Historical only.",
+  "780m": {
+   "4w_texture3d_wmma": "9.7-10.8 TFLOP/s, 66-73% of fp16->fp32 roof (/home/doremy/Desktop/igpu-roofline/docs/780M-WMMA-LESSONS.md:26,30)",
+   "8da4w_texture3d": "9.4-10.0 TOP/s (/home/doremy/Desktop/igpu-roofline/docs/780M-WMMA-LESSONS.md:28)",
+   "8da4w_headroom": "int8 matrix 1.23x int8 dot; kernel at 65-70% (/home/doremy/Desktop/igpu-roofline/docs/780M-WMMA-LESSONS.md:107-109)"
+  },
+  "b580": {
+   "4w_texture3d_wmma": "33.8-47.1 TFLOP/s, 30-42% of matrix roof; 1.4 tiled 4.9-7.0 (/home/doremy/Desktop/igpu-roofline/docs/XE2-WMMA-LESSONS.md:34)",
+   "8da4w_texture3d": "46.1-56.9 TOP/s, 20-25%; 1.4 tiled 16.8-24.2 (/home/doremy/Desktop/igpu-roofline/docs/XE2-WMMA-LESSONS.md:35)"
+  },
+  "b70": {
+   "4w_texture3d_wmma": "46.4-69.4 TFLOP/s, 27-40%; tiled 7.1-10.4 (/home/doremy/Desktop/igpu-roofline/docs/XE2-WMMA-LESSONS.md:115)",
+   "8da4w_texture3d": "79.3-93.2 TOP/s, 22-26%; tiled 26.7-36.0 (/home/doremy/Desktop/igpu-roofline/docs/XE2-WMMA-LESSONS.md:116)"
+  },
+  "4070ti": {
+   "8da4w_texture3d": "37-42% of int8 matrix roof 369 TOP/s (/home/doremy/Desktop/igpu-roofline/docs/4070TI-WMMA-LESSONS.md:38)",
+   "4w_texture3d": "54-67% of fp16 matrix roof 184 TFLOP/s (/home/doremy/Desktop/igpu-roofline/docs/4070TI-WMMA-LESSONS.md:40)"
+  },
+  "orin": {
+   "4w_original": "5.37-5.85 TFLOP/s, 55-60% (/home/doremy/Desktop/igpu-roofline/docs/JETSON-WMMA-LESSONS.md:89-90)",
+   "8da4w_original": "1.92-2.16 TOP/s, 9.8-11.1% (/home/doremy/Desktop/igpu-roofline/docs/JETSON-WMMA-LESSONS.md:90-91)",
+   "8da4w_tuned": "4.39-4.86 TOP/s, 22.5-24.9% (/home/doremy/Desktop/igpu-roofline/docs/JETSON-WMMA-LESSONS.md:203-204)",
+   "4w_tuned": "5.75-6.25 TFLOP/s; f32 large-K 5.24 vs 9.736 roof (/home/doremy/Desktop/igpu-roofline/docs/JETSON-WMMA-LESSONS.md:204-205)"
+  }
+ },
+ "counter_evidence": {
+  "4070ti_nsight": [
+   "Tensor Active matched roof fraction: ~30% old 8da4w, ~73% 4w (/home/doremy/Desktop/igpu-roofline/docs/4070TI-WMMA-LESSONS.md:56-58)",
+   "old 8da4w: Tensor Active 30%, SM Issue 30%, DRAM <8%, clock not throttled (/home/doremy/Desktop/igpu-roofline/docs/4070TI-WMMA-LESSONS.md:65-67)",
+   "k64 8da4w ablation: MMA-only runs at 272 TOP/s, 74% of roof; A int8 coopMatStore 27% of time (/home/doremy/Desktop/igpu-roofline/docs/4070TI-WMMA-LESSONS.md:71-80)",
+   "4w: 70-76% Tensor Active on large shapes; clock 2.3-2.6 GHz at 285 W limit during 4w, 2.7 GHz during 8da4w (/home/doremy/Desktop/igpu-roofline/docs/4070TI-WMMA-LESSONS.md:101-102)",
+   "4w w1_w3 MMA-only 92% of fp16 roof; wq_wo limited by partial waves (192 WG / 132 slots ~73%) (/home/doremy/Desktop/igpu-roofline/docs/4070TI-WMMA-LESSONS.md:104-107)",
+   "8da4w 3B wq_wo: 252 us full vs 142 us MMA-only (/home/doremy/Desktop/igpu-roofline/docs/WMMA-STUDY-TAKEAWAYS.md:157-158)",
+   "raw: /home/doremy/Desktop/sarc-acl/.artifacts/roofline-et-study/remote/gpu-dev-4004/et-roofline-study/nsys/*.nsys-rep",
+   "NVIDIA is not ISA-verified (no SASS route) (/home/doremy/Desktop/igpu-roofline/docs/4070TI-WMMA-LESSONS.md:52)"
+  ],
+  "orin_nsight": [
+   "original 4w: Tensor Active 55.4%, SM Issue 38.5%, SM Active 99.8%; original 8da4w: 9.86% / 21.4% / 99.9% (/home/doremy/Desktop/igpu-roofline/docs/JETSON-WMMA-LESSONS.md:95-98)",
+   "final 8da4w: Tensor Active 20.85%, SM Issue 28.82%; warps in flight 34.30% -> 35.65% (/home/doremy/Desktop/igpu-roofline/docs/JETSON-WMMA-LESSONS.md:100-102)",
+   "submission-window counters, no DRAM byte counter (/home/doremy/Desktop/igpu-roofline/docs/JETSON-WMMA-LESSONS.md:106-110)"
+  ],
+  "xe2_oa": [
+   "B580 tuned 4w/8da4w: XVE occupancy 95%/100%+, active 52%/40%, stall 39%/54%, SBID 47%/57%, barrier 31%/20%, ALU dep 5%/20%, SLM read 2.86/2.28 TB/s, XMX/issued 32%/29% (/home/doremy/Desktop/igpu-roofline/docs/XE2-WMMA-LESSONS.md:80-88)",
+   "~674 (4w) / ~1194 (8da4w) instructions per K iteration for 16 DPAS (/home/doremy/Desktop/igpu-roofline/docs/XE2-WMMA-LESSONS.md:90-93)",
+   "B70 4w: SLM read 4.17 TB/s (42% of 32-bit SLM roof), XVE active 63%; 8da4w SBID ~55%, ALU dep ~21%, barrier ~20%, 1.71 int32 instr per XMX (/home/doremy/Desktop/igpu-roofline/docs/XE2-WMMA-LESSONS.md:126-133)",
+   "raw: /home/doremy/Desktop/sarc-acl/.artifacts/roofline-et-study/oa/{b580,b70}/*.rec"
+  ],
+  "780m_shader_clock": [
+   "method (/home/doremy/Desktop/igpu-roofline/docs/780M-WMMA-LESSONS.md:49-63)",
+   "f32c reference per-wave cycles/iter: LDS->WMMA 2402, store phase 1112 (/home/doremy/Desktop/igpu-roofline/docs/780M-WMMA-LESSONS.md:78-80)",
+   "WMMA busy ~6 waves x 32 WMMA x ~16 cyc = 3072 of ~4500 cyc/iter ~70%, matching 66-73% of roof (/home/doremy/Desktop/igpu-roofline/docs/780M-WMMA-LESSONS.md:96-97)",
+   "ISA: fp16-acc loop had ~350 repack moves per 32 WMMAs; ACC_FP32 cut VALU 637->330 (/home/doremy/Desktop/igpu-roofline/docs/780M-WMMA-LESSONS.md:69)",
+   "raw: /home/doremy/Desktop/sarc-acl/.artifacts/roofline-et-study/prof/780m-clock/"
+  ],
+  "scope": "All counter evidence is 1.4-era microbench of the SARC (then tsweep) kernels; none was collected on the 1.5 stock kernels."
+ },
+ "stock_kernel_instructions": {
+  "4w": {
+   "dispatched": "q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_half (all 5 GPUs; report/dispatch.md)",
+   "source": "/home/doremy/Desktop/sarc-acl/dev/1.5/executorch/backends/vulkan/runtime/graph/ops/glsl/q4gsw_linear_gemm__tin__w_4x8.glsl",
+   "unchanged_vs_release_1_5": "git diff 985c1ceccc on this file and its yaml is empty",
+   "inner_loop": "per thread TILE_M=8 x TILE_N=4 (yaml:12-13). Per K step of 4: one ivec4 weight load (uses half, lines 218-243), one f16vec4 scale load (254); per k_inner: 2 f16vec4 activation loads (259-263), 4 nibble extracts + int16->fp16 convert + multiply by scale (277-283), then 8 f16vec4 FMAs acc_T[m] += B[m] * dw_vec (288-292). DTYPE half -> ACC_VEC4_T f16vec4 (85-91): scalar/vector fp16 FMA, fp16 accumulate, no cooperative matrix, no integer dot.",
+   "compute_mix_per_k_inner_per_thread": "32 fp16 FMAs (8 vec4) vs 4 dequant chains (shift, mask, sub, cvt, mul)",
+   "isa_verified": false
+  },
+  "8da4w": {
+   "dispatched": "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8 (all 5 GPUs)",
+   "source": "/home/doremy/Desktop/sarc-acl/dev/1.5/executorch/backends/vulkan/runtime/graph/ops/glsl/linear_dq8ca_q4gsw_tiled.glsl + linear_fp_output_tile_int8_int4_compute.glslh",
+   "unchanged_vs_release_1_5": "git diff empty for the .glsl, .yaml and the compute .glslh; the only SARC change among linear_*.glslh is an #ifndef guard in linear_int8_input_block.glslh (quantize helper, not the GEMM loop)",
+   "inner_loop": "tile TILE_M4=1, TILE_K4=1, TILE_N8=1 -> 4 M x 8 N per thread (yaml:13-15). Per k4: load 4 packed int8x4 activations + one ivec4 of 32 int4 weights (glsl:125-126); unpack nibbles with &0x0F0F0F0F and >>4 (glslh:33-34); 32 dotPacked4x8AccSatEXT (signed int8 dot4 with saturating int32 accumulate, GL_EXT_integer_dot_product) (glslh:39-49). After each 128-K group: zero-point/sum correction and fp fma into the output tile (glsl:132-144, glslh:56-83).",
+   "isa_verified": false,
+   "roof_match_caveat": "roofline dot_int8 uses dotPacked4x8EXT on uint operands + separate add (unsigned, non-saturating; igpu-roofline/shaders/dot8.comp:24), whereas stock uses the signed saturating accumulate form. Whether both lower to the same native instruction was not checked on any GPU."
+  },
+  "not_in_gemm_time": "8da4w activation quantize is a separate dispatch (~23-167 ms per 8B prefill, report/evidence/trace/families.csv); 4w 'tin' reads a transposed activation buffer produced by another dispatch."
+ }
+}
