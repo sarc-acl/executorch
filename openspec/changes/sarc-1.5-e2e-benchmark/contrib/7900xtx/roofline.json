@@ -1,0 +1,533 @@
+{
+ "gpus": {
+  "7900xtx": {
+   "label": "Radeon RX 7900 XTX",
+   "host": "host-7900xtx",
+   "device": "Radeon RX 7900 XTX",
+   "driver_version": 8388957,
+   "subgroup_default": 64,
+   "plan": [
+    "fast",
+    "quick"
+   ],
+   "roofline_commit": "463b2ff8e19f",
+   "runner_sha256": "1aead0d970b265f7",
+   "report": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md",
+   "summary_json": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/summary.json",
+   "report_header_lines": [
+    "Device: host 13th Gen Intel(R) Core(TM) i9-13900KS (SoC 13th Gen Intel(R) Core(TM) i9-13900KS), Ubuntu 25.04, driver 8388957, subgroup 64.",
+    "Plan(s): fast, quick. GPU clock **DVFS-governed** (not pinned); results depend on the governor and thermal state.",
+    "Code: None, runner 1aead0d970b265f7. Rows from other runner or shader builds excluded: 0."
+   ],
+   "measured_utc": [
+    "2026-09-27T17:09:31.484860+00:00",
+    "2026-09-27T17:33:50.584160+00:00"
+   ],
+   "sentinel": {
+    "median": 23.62054428271414,
+    "unit": "TFLOP/s",
+    "n": 64,
+    "degraded": 0
+   },
+   "clock_state": {
+    "domains": {
+     "/sys/class/drm/card1/device/pp_dpm_sclk": {
+      "governor": "auto",
+      "min": "3000000",
+      "max": "2482000000",
+      "cur": "3000000"
+     },
+     "/sys/class/drm/card1/device/pp_dpm_mclk": {
+      "governor": "auto",
+      "min": "96000000",
+      "max": "1249000000",
+      "cur": "96000000"
+     }
+    },
+    "pinned_domains": [],
+    "captured_utc": "2026-09-27T17:19:41.609966+00:00"
+   },
+   "missing_reasons": [
+    "matrix_int8_feed_dram: repeat_unstable",
+    "matrix_fp16_fp32_feed_dram: insufficient_quality_repeats",
+    "matrix_fp16_fp32_feed_dram: repeat_unstable",
+    "Sustained roofs require three distinct stable batches per current confirmed configuration and duration"
+   ],
+   "sarc_4w_accumulator": "fp16_fp32",
+   "sarc_4w_accumulator_source": "glsl/sarc/sarc_linear_q4gsw_coopmat.yaml:176-187 (ACC_FP32: true, line 185)",
+   "coopmat_shapes": [
+    "16x16x16 f16xf16+f32->f32",
+    "16x16x16 f16xf16+f16->f16",
+    "16x16x16 f16xf16+f16->f16 sat",
+    "16x16x16 u8xu8+s32->s32",
+    "16x16x16 u8xu8+s32->s32 sat",
+    "16x16x16 u8xs8+s32->s32",
+    "16x16x16 u8xs8+s32->s32 sat",
+    "16x16x16 s8xu8+s32->s32",
+    "16x16x16 s8xu8+s32->s32 sat",
+    "16x16x16 s8xs8+s32->s32",
+    "16x16x16 s8xs8+s32->s32 sat"
+   ],
+   "roofs": {
+    "cache_read_effective": {
+     "value": 24989.117,
+     "unit": "GB/s",
+     "config": "mem_read_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "24925.746\u201325721.785 (3.2%)",
+     "sweep_max": "24902.624",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:68",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/mem_read_v4_f0ae66c365ef.json",
+     "sustained": null
+    },
+    "alu_fp16": {
+     "value": 63.447,
+     "unit": "TFLOP/s",
+     "config": "alu_fp16_v2_c2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "63.152\u201364.730 (2.5%)",
+     "sweep_max": "63.303",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:66",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/alu_fp16_v2_c2_8651268d6c12.json",
+     "sustained": {
+      "value": 64.622,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "alu_fp32": {
+     "value": 45.562,
+     "unit": "TFLOP/s",
+     "config": "alu_fp32_v1_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "45.429\u201346.277 (1.9%)",
+     "sweep_max": "45.480",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:67",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/alu_fp32_v1_c8_45823fe6d975.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32": {
+     "value": 141.909,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_16x16x16_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "141.874\u2013142.223 (0.2%)",
+     "sweep_max": "141.931",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:81",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/matrix_fp16_fp32_16x16x16_c8_2ef1462af574.json",
+     "sustained": {
+      "value": 138.669,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "dot_int8": {
+     "value": 69.243,
+     "unit": "TOP/s",
+     "config": "dot8_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "68.811\u201369.850 (1.5%)",
+     "sweep_max": "68.766",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:69",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/dot8_c8_912812f23215.json",
+     "sustained": null
+    },
+    "matrix_int8": {
+     "value": 142.621,
+     "unit": "TOP/s",
+     "config": "matrix_int8_16x16x16_c4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "141.757\u2013142.628 (0.6%)",
+     "sweep_max": "141.871",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:85",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/matrix_int8_16x16x16_c4_6025c3b7bd66.json",
+     "sustained": null
+    },
+    "matrix_fp16": {
+     "value": 136.403,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_16x16x16_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "136.355\u2013137.762 (1.0%)",
+     "sweep_max": "136.560",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:77",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/matrix_fp16_16x16x16_c8_80ef14fe95de.json",
+     "sustained": null
+    },
+    "global_read": {
+     "value": 1108.158,
+     "unit": "GB/s",
+     "config": "mem_read_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "1107.915\u20131108.822 (0.1%)",
+     "sweep_max": "1109.241",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:73",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/mem_read_v4_8a1a32a0e270.json",
+     "sustained": {
+      "value": 1104.483,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "global_write": {
+     "value": 1615.85,
+     "unit": "GB/s",
+     "config": "mem_write_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "1595.366\u20131629.715 (2.1%)",
+     "sweep_max": "1657.164",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:76",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/mem_write_v4_f53f580ef208.json",
+     "sustained": null
+    },
+    "global_copy": {
+     "value": 909.494,
+     "unit": "GB/s",
+     "config": "mem_copy_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "909.156\u2013909.612 (0.1%)",
+     "sweep_max": "909.364",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:71",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/mem_copy_v4_4030194f6579.json",
+     "sustained": null
+    },
+    "global_triad": {
+     "value": 778.587,
+     "unit": "GB/s",
+     "config": "mem_triad_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "778.246\u2013778.688 (0.1%)",
+     "sweep_max": "778.196",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:75",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/mem_triad_v4_ddc329c4c067.json",
+     "sustained": null
+    },
+    "global_dot": {
+     "value": 1626.389,
+     "unit": "GB/s",
+     "config": "mem_dot_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "1622.567\u20131627.584 (0.3%)",
+     "sweep_max": "1630.211",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:72",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/mem_dot_v4_7e8db46b598d.json",
+     "sustained": null
+    },
+    "global_add": {
+     "value": 778.136,
+     "unit": "GB/s",
+     "config": "mem_add_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "777.735\u2013778.437 (0.1%)",
+     "sweep_max": "778.161",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:70",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/mem_add_v4_643dc69bf0f1.json",
+     "sustained": null
+    },
+    "global_scale": {
+     "value": 909.759,
+     "unit": "GB/s",
+     "config": "mem_scale_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "909.041\u2013910.474 (0.2%)",
+     "sweep_max": "910.051",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:74",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/mem_scale_v4_5e142be0aef4.json",
+     "sustained": null
+    },
+    "shared_fp32_read": {
+     "value": 21191.973,
+     "unit": "GB/s",
+     "config": "sharedbw_fp32_v4_op0",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "21104.450\u201321332.556 (1.1%)",
+     "sweep_max": "21468.555",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:90",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/sharedbw_fp32_v4_op0_95ad2b78319e.json",
+     "sustained": null
+    },
+    "shared_fp16_write": {
+     "value": 17385.473,
+     "unit": "GB/s",
+     "config": "sharedbw_fp16_v4_op2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "17294.942\u201317476.925 (1.0%)",
+     "sweep_max": "17382.105",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:89",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/sharedbw_fp16_v4_op2_1d33b7e982f1.json",
+     "sustained": null
+    },
+    "shared_fp32_write": {
+     "value": 26098.515,
+     "unit": "GB/s",
+     "config": "sharedbw_fp32_v4_op2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "25952.446\u201326153.343 (0.8%)",
+     "sweep_max": "26214.800",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:91",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/sharedbw_fp32_v4_op2_bc35bf4dae93.json",
+     "sustained": null
+    },
+    "texture_rgba32f_tex2d_dram": {
+     "value": 809.229,
+     "unit": "GB/s",
+     "config": "texture_rgba32f_tex2d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "807.974\u2013809.257 (0.2%)",
+     "sweep_max": "809.453",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:101",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/texture_rgba32f_tex2d_029d2ab73d9b.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_shared": {
+     "value": 127.499,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_16x16x16_c8_lds",
+     "confirmed": true,
+     "repeats": 2,
+     "repeat_range": "126.766\u2013128.233 (1.2%)",
+     "sweep_max": "126.548",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:80",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/matrix_fp16_16x16x16_c8_lds_af4f20fe23d4.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_shared": {
+     "value": 136.098,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_16x16x16_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "135.774\u2013136.248 (0.3%)",
+     "sweep_max": "135.215",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:84",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/matrix_fp16_fp32_16x16x16_c8_lds_cf4937c86946.json",
+     "sustained": null
+    },
+    "texture_rgba16f_buffer_cache": {
+     "value": 1423.28,
+     "unit": "GB/s",
+     "config": "texture_rgba16f_buffer",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "1422.920\u20131423.795 (0.1%)",
+     "sweep_max": "1471.433",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:92",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/texture_rgba16f_buffer_938d1ed66a5a.json",
+     "sustained": null
+    },
+    "texture_rgba16f_tex2d_dram": {
+     "value": 813.975,
+     "unit": "GB/s",
+     "config": "texture_rgba16f_tex2d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "813.818\u2013815.849 (0.2%)",
+     "sweep_max": "814.463",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:95",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/texture_rgba16f_tex2d_ed82184edb4d.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_shared": {
+     "value": 113.856,
+     "unit": "TOP/s",
+     "config": "matrix_int8_16x16x16_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "113.243\u2013114.187 (0.8%)",
+     "sweep_max": "112.547",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:88",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/matrix_int8_16x16x16_c8_lds_4a537186d4b6.json",
+     "sustained": null
+    },
+    "texture_rgba32f_tex3d_cache": {
+     "value": 1424.745,
+     "unit": "GB/s",
+     "config": "texture_rgba32f_tex3d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "1424.633\u20131425.357 (0.1%)",
+     "sweep_max": "1423.292",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:102",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/texture_rgba32f_tex3d_a094ed868185.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_cache": {
+     "value": 78.219,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_16x16x16_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "78.154\u201378.655 (0.6%)",
+     "sweep_max": "77.684",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:78",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/matrix_fp16_16x16x16_c8_gmem_44ffec650efb.json",
+     "sustained": null
+    },
+    "texture_rgba32f_buffer_cache": {
+     "value": 1430.345,
+     "unit": "GB/s",
+     "config": "texture_rgba32f_buffer",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "1429.396\u20131430.388 (0.1%)",
+     "sweep_max": "1430.809",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:98",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/texture_rgba32f_buffer_339d46d4c532.json",
+     "sustained": null
+    },
+    "texture_rgba16f_tex3d_dram": {
+     "value": 708.965,
+     "unit": "GB/s",
+     "config": "texture_rgba16f_tex3d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "707.834\u2013709.121 (0.2%)",
+     "sweep_max": "709.207",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:97",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/texture_rgba16f_tex3d_f24597ec4a68.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_dram": {
+     "value": 1098.904,
+     "unit": "GB/s",
+     "config": "matrix_int8_16x16x16_c1_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "1083.043\u20131116.093 (3.0%)",
+     "sweep_max": "1119.978",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:87",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/matrix_int8_16x16x16_c1_gmem_8870bf1d9791.json",
+     "sustained": null
+    },
+    "texture_rgba32f_tex2d_cache": {
+     "value": 1425.592,
+     "unit": "GB/s",
+     "config": "texture_rgba32f_tex2d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "1424.498\u20131425.830 (0.1%)",
+     "sweep_max": "1426.383",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:100",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/texture_rgba32f_tex2d_a72632de7f4e.json",
+     "sustained": null
+    },
+    "texture_rgba32f_buffer_dram": {
+     "value": 892.943,
+     "unit": "GB/s",
+     "config": "texture_rgba32f_buffer",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "892.845\u2013893.397 (0.1%)",
+     "sweep_max": "892.670",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:99",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/texture_rgba32f_buffer_f35950a4d975.json",
+     "sustained": null
+    },
+    "texture_rgba16f_tex2d_cache": {
+     "value": 1407.66,
+     "unit": "GB/s",
+     "config": "texture_rgba16f_tex2d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "1407.259\u20131408.064 (0.1%)",
+     "sweep_max": "1407.716",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:94",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/texture_rgba16f_tex2d_a63ac1a26a2b.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_dram": {
+     "value": 879.095,
+     "unit": "GB/s",
+     "config": "matrix_fp16_16x16x16_c1_gmem",
+     "confirmed": true,
+     "repeats": 2,
+     "repeat_range": "878.676\u2013879.515 (0.1%)",
+     "sweep_max": "878.873",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:79",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/matrix_fp16_16x16x16_c1_gmem_8ad0b4ba5487.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_cache": {
+     "value": 76.15,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_16x16x16_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "76.002\u201376.161 (0.2%)",
+     "sweep_max": "75.535",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:82",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/matrix_fp16_fp32_16x16x16_c8_gmem_45c4d4d28afd.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_cache": {
+     "value": 84.835,
+     "unit": "TOP/s",
+     "config": "matrix_int8_16x16x16_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "84.339\u201385.282 (1.1%)",
+     "sweep_max": "83.361",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:86",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/matrix_int8_16x16x16_c8_gmem_5e6af6956a84.json",
+     "sustained": null
+    },
+    "texture_rgba32f_tex3d_dram": {
+     "value": 816.936,
+     "unit": "GB/s",
+     "config": "texture_rgba32f_tex3d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "816.100\u2013817.152 (0.1%)",
+     "sweep_max": "817.650",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:103",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/texture_rgba32f_tex3d_7b3077a1be7d.json",
+     "sustained": null
+    },
+    "texture_rgba16f_tex3d_cache": {
+     "value": 1412.088,
+     "unit": "GB/s",
+     "config": "texture_rgba16f_tex3d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "1410.909\u20131412.328 (0.1%)",
+     "sweep_max": "1412.329",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:96",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/texture_rgba16f_tex3d_db63bfb678fa.json",
+     "sustained": null
+    },
+    "texture_rgba16f_buffer_dram": {
+     "value": 868.042,
+     "unit": "GB/s",
+     "config": "texture_rgba16f_buffer",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "867.613\u2013868.141 (0.1%)",
+     "sweep_max": "868.241",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/report/REPORT.md:93",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/confirm/texture_rgba16f_buffer_07029183fb3e.json",
+     "sustained": null
+    }
+   },
+   "capabilities_json": "<owner-workspace>/workspace/igpu-roofline-newdev/results/newdev-20260927/7900xtx/host-7900xtx-gpu-000000000300/capabilities.json",
+   "capabilities_lines": null
+  }
+ }
+}
