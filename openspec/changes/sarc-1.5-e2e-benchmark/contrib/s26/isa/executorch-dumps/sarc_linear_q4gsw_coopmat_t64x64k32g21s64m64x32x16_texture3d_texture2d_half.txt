@@ -1,0 +1,61 @@
+kernel: sarc_linear_q4gsw_coopmat_t64x64k32g21s64m64x32x16_texture3d_texture2d_half
+local_wg: 128x1x1
+name:     Compute Shader
+descr:    Adreno Shader
+subgroup: 64
+
+====== Statistics ======
+Instruction count all: 1823
+    Total count of all shader instructions.  Complex shaders with high instruction counts may have long execution times.
+ALU instruction count 32bit: 1262
+    Total count of all 32bit ALU shader instructions.
+ALU instruction count 16bit: 32
+    Total count of all 16bit ALU shader instructions.  Note: 16bit ALU instructions perform better and use less register space than 32bit instructions.
+Complex instruction count: 0
+    Total count of all complex instructions (sin, cos, etc).
+Preamble instruction count all: 82
+    Total count of all preamble instructions. Complex shaders with high instruction counts may have long execution times.
+Preamble ALU instruction count 32bit: 2
+    Total count of all preamble 32bit ALU instructions.
+Preamble ALU instruction count 16bit: 0
+    Total count of all preamble 16bit ALU instructions. Note: 16bit ALU instructions perform better and use less register space than 32bit instructions.
+Preamble complex instruction count: 0
+    Total count of all preamble complex instructions (sin, cos, etc).
+Texture read instruction count: 16
+    Total count of all texture read instructions.  Generally, VkImage reads, with or without a VkSampler.  Also includes input attachment reads.
+Preamble texture read instruction count: 0
+    Total count of all preamble texture read instructions. Generally, VkImage reads, with or without a VkSampler. Also includes input attachment reads.
+Ray intersection instruction count: 0
+    Total count of all ray intersection instructions.
+Flow control instruction count: 6
+    Total count of all flow control instructions.
+Barrier and fence instruction count: 39
+    Total count of all barrier and fence instructions.  Generally, op*Barrier instructions in the shader.
+Short latency sync instruction count: 36
+    Total count of all short latency sync instructions.
+Long latency sync instruction count: 8
+    Total count of all long latency sync instructions.
+Preamble flow control instruction count: 1
+    Total count of all preamble flow control instructions.
+Preamble short latency sync instruction count: 25
+    Total count of all preamble short latency sync instructions.
+Preamble long latency sync instruction count: 1
+    Total count of all preamble long latency sync instructions.
+Full precision register footprint per shader instance: 26
+    Number of 128bit registers used by each shader instance.  Each 128bit register may store 4 FP32 values.
+Half precision register footprint per shader instance: 48
+    Number of 64bit registers used by each shader instance.  Each 64bit register may store 4 FP16 values.
+Overall register footprint per shader instance: 26
+    Number of 128bit registers used by each shader instance.  Each 128bit register may store 4 FP32 values, or 8 FP16 values.
+Scratch memory usage per shader instance: 0
+    Number of 128bit slots of scratch memory used by each shader instance.  Warning: If the shader uses any scratch memory, it will perform poorly.
+Output component count: 0
+    Total count of all shader stage output components.
+Input component count: 0
+    Total count of all shader stage input components.
+ALU fiber occupancy percentage: 6
+    The maximum ALU fiber occupancy percentage for the shader.  Warning: If this number is low, the shader may perform poorly.
+Memory read instruction count: 52
+    Total count of all memory read instructions.  Generally, VkImage/VkBuffer reads through a storage descriptor.
+Memory write instruction count: 100
+    Total count of all memory write instructions.  Generally, VkImage/VkBuffer writes through a storage descriptor.

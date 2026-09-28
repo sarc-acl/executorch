@@ -1,0 +1,21 @@
+diff --git a/backends/vulkan/runtime/vk_api/Adapter.cpp b/backends/vulkan/runtime/vk_api/Adapter.cpp
+index 3d9acae89..b12c598ff 100644
+--- a/backends/vulkan/runtime/vk_api/Adapter.cpp
++++ b/backends/vulkan/runtime/vk_api/Adapter.cpp
+@@ -229,6 +229,16 @@ VkDevice create_logical_device(
+   }
+ #endif /* VK_EXT_subgroup_size_control */
+ 
++#if defined(VK_KHR_pipeline_executable_properties) && \
++    defined(ETVK_INSPECT_PIPELINES)
++  // LOCAL S26 ISA probe: enable the pipelineExecutableInfo feature.
++  VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR pipe_exec_features{
++      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR};
++  pipe_exec_features.pipelineExecutableInfo = VK_TRUE;
++  pipe_exec_features.pNext = extension_list_top;
++  extension_list_top = &pipe_exec_features;
++#endif
++
+   device_create_info.pNext = extension_list_top;
+ 
+   VkDevice handle = nullptr;
