@@ -21,7 +21,7 @@ stock build.
 
 ![Speedup](results/figures/fig1_speedup.png)
 
-*Figures 1–3 include the RX 7900 XTX as a sixth, hatched GPU (†, pre-release: unverified rows, different model export, AMDVLK). The "all 5 GPUs" aggregates exclude it.*
+*Figures 1–3 include two contributed, hatched GPUs, the RX 7900 XTX and the RX 7600 (†, pre-release: unverified kernel rows). The "all 5 GPUs" aggregates exclude them.*
 
 *Figure 1. Prefill speedup of SARC 1.5-r2 over stock ExecuTorch 1.5: the ratio of the medians of n = 5 runs
 each. Error bars: approximate 95 % paired bootstrap CI. Dashed line: parity with stock.*
@@ -35,7 +35,7 @@ each. Error bars: approximate 95 % paired bootstrap CI. Dashed line: parity with
 | Jetson Orin Nano | 4.49× | 4.42× | 4.46× |
 | **all 5 GPUs** | **3.17×** | **2.39×** | **2.75×** |
 
-A sixth GPU, the **Radeon RX 7900 XTX**, was measured by its own agent with the same protocol. It reaches 2.79× over stock (real text; 3.00–3.79× for 4w, 2.09–2.53× for 8da4w). It is reported separately because its SARC rows are still pre-release and its model files are a different export (see "Contributed GPU").
+A sixth GPU, the **Radeon RX 7900 XTX**, was measured by its own agent with the same protocol. It reaches 2.79× over stock (real text; 3.00–3.79× for 4w, 2.09–2.53× for 8da4w). It is reported separately because its SARC rows are still pre-release (see "Contributed GPU"). A seventh GPU, the **Radeon RX 7600** (RDNA3, Navi 33), was contributed the same way and reaches **2.48×** (real text; 2.85–3.32× for 4w, 1.88–2.18× for 8da4w), also pre-release. An internal **Samsung Xclipse (M51)** device, published as relative speedups only, reaches **2.18–2.73×** with 8-bit activations (correct output). Its 4-bit kernel was fixed on 2026-09-28 and is being re-measured (see "Contributed GPU: Samsung Xclipse").
 
 ## Results
 
@@ -108,8 +108,9 @@ The visible spread is on the Arc B580 (see Limitations).*
   - **B70 and 4070 Ti, 8da4w faster by 6–12 %. B580, within ±3 %:** a tie within the B580's noise.
 - **The speedup grows with model size on four of the five GPUs.**
   - On the 780M, 8B is slightly below 3B in both schemes (4w 2.66× vs 2.71×, 8da4w 1.73× vs 1.86×).
-  - The contributed RX 7900 XTX, also RDNA3 and also running SARC attention, shows the same pattern (4w 4.01× at 3B vs
-    3.83× at 8B). Both GPUs speed attention up more than their GEMMs, and attention's share of time falls at 8B.
+  - The contributed RX 7900 XTX and RX 7600, also RDNA3 and also running SARC attention, show the same pattern
+    (7900 XTX 4w 4.01× at 3B vs 3.83× at 8B; RX 7600 4w 3.38× vs 3.23×, 8da4w 2.22× vs 1.92×). All three speed
+    attention up more than their GEMMs, and attention's share of time falls at 8B.
   - On the B580, the 8B cells are the noisiest in the campaign, so the size of the 8B step there is uncertain.
 - **The 780M numbers include attention.** It is the only GPU with a verified SARC SDPA (attention) row, so its
   speedup includes the coopmat QKᵀ/AV kernels and the truncated softmax. On the other four GPUs, attention runs
@@ -126,16 +127,14 @@ hypotheses.
 
 The same protocol was run on a Radeon RX 7900 XTX (RDNA3, gfx1100) and merged from
 `openspec/changes/sarc-1.5-e2e-benchmark/contrib/7900xtx/`. Measurement setup:
-- host `host-7900xtx`, driver AMDVLK 2025.Q2.1;
+- driver AMDVLK 2025.Q2.1;
 - builds: stock `release/1.5` (plus the same include backport) vs SARC at `topic/7900xtx-4w-coopmat` @ `8b00c92f1`;
 - 5 interleaved repeats, both prompts.
 
 **It is kept separate from the five-GPU results above**:
 - **Pre-release rows.** The 7900 XTX rows are still `kUnverified`, so the SARC arm ran with
   `ET_VK_SARC_UNVERIFIED=1`. The shipped release `sarc/1.5-r2` does not yet contain them.
-- **Different models.** The model files are a different export (`*_embq_ctx3072.pte`): all 6 SHA-256 hashes
-  differ from the five-GPU campaign. Speedups compare stock and SARC on the same file and are valid. Absolute
-  tok/s are not directly comparable with the tables above.
+- **Model files.** `*_embq_ctx3072.pte`, the same export recipe as the five-GPU set, exported separately on another machine (files not byte-identical). Speedups compare stock and SARC on the same file.
 - **Different toolchain.** The build was native, with its own glslc, not the pinned container.
 - **Co-tenant not stopped.** An idle `ollama` service was running on the GPU host (0 % busy; no sudo there).
 
@@ -151,6 +150,39 @@ The same protocol was run on a Radeon RX 7900 XTX (RDNA3, gfx1100) and merged fr
 - **Kernels:** the ETDump traces show SARC coopmat linears plus the 780M's SARC attention kernels; stock shows no
   SARC kernel.
 - The independent re-analysis of the contributed CSVs with `kit/analysis/analyze.py` reproduces every number.
+
+## Contributed GPU: Radeon RX 7600 (pre-release, measured by its own agent)
+
+The same protocol was run on a Radeon RX 7600 (RDNA3, Navi 33, gfx1102, 8 GiB) and merged from
+`contrib/rx7600/`. Measurement setup:
+- a user-space RADV build of **Mesa 26.2.3** for both arms. The system Mesa 23.2.1
+  exposes no cooperative matrix on this card; with Mesa 26.2.3 the stock arm is also 11–14 % faster (4w);
+- builds: stock `release/1.5` (plus the same include backport; its binaries equal the 7900 XTX campaign's) vs
+  SARC at `topic/rx7600-coopmat` @ `5351955ca`;
+- 5 interleaved repeats, both prompts; the models are the same `*_embq_ctx3072.pte` export as the 7900 XTX.
+
+It is kept separate for the same reasons as the 7900 XTX:
+- **Pre-release rows.** The RX 7600 rows are `kUnverified` (merged into `dev/1.5`, not yet re-verified); the SARC arm ran
+  with `ET_VK_SARC_UNVERIFIED=1`. The rows reuse the 7900 XTX 4w tile
+  (`t256x128k32g24s32f32cbt`, fp32 accumulate), the 780M 8da4w tile and the 780M attention kernels.
+- **Toolchain.** Native build, SPIR-V not checked against the golden. Model files as for the 7900 XTX.
+- **Display GPU.** The card drives the desktop (no sudo to stop it); every cell's repeat spread is still ≤ 2.4 %.
+
+| prompt | 4w: 1B / 3B / 8B | 8da4w: 1B / 3B / 8B | geomean |
+|---|---|---|---|
+| real text 2048 | 2,695 → 7,670 **2.85×** · 973 → 3,235 **3.32×** · 469 → 1,486 **3.17×** | 3,758 → 7,161 **1.91×** · 1,375 → 2,999 **2.18×** · 721 → 1,355 **1.88×** | **2.48×** |
+| "the" × 2048 | 2.88× · 3.38× · 3.23× | 1.94× · 2.22× · 1.92× | 2.53× |
+
+- Every cell has n = 5, a paired CI within ±0.03×, no crashes and no rejected runs.
+- **Correctness:** on 2048-token aligned real text, the top-1 token matches in 6/6 configurations (max logit
+  difference 0.23–1.00). On the unaligned check prompt, 8B 8da4w shows the same "otherwise"/"bullying" near-tie
+  flip as the other GPUs.
+- **Kernels:** the traces show the SARC coopmat linears on every prefill GEMM plus SARC attention; stock shows no
+  SARC kernel. On 8da4w much of the gain is attention: stock 8da4w GEMMs are only 37–51 % of its GPU time.
+- **Roofline:** the SARC 4w kernel runs at 64 % of the fp16→fp32 matrix roof (43.4 TFLOP/s) and the 8da4w kernel
+  at 59 % of the int8 matrix roof (43.9 TOP/s). As on the other RDNA3 GPUs, the int8 matrix roof equals the
+  fp16→fp32 one, and fp16 accumulation is slower (32.3 TFLOP/s).
+- The independent re-analysis of the contributed CSVs (`analyze7.py`) reproduces every number.
 
 ## Contributed GPU: Adreno 840 (Galaxy S26), no releasable speedup yet
 
@@ -176,8 +208,38 @@ must not be promoted in its current form.
   to SKIN < 38.5 °C and GPU ≤ 45 °C before every run.
 - **Other conditions:**
   - clocks could not be read (no root);
-  - the model files are the same export as the 7900 XTX's, not the five-GPU campaign's;
+  - the model files are the same export recipe as the five-GPU set, exported separately on another machine (files not byte-identical);
   - the build was native (NDK r29), not the pinned container.
+
+## Contributed GPU: Samsung Xclipse (M51), relative speedups only
+
+The M51 agent ran the same protocol over adb on a Samsung Xclipse (M51) device. **At the device owner's
+request, only relative speedups are published.** There are no absolute tok/s, kernel times, roofs or
+device/driver identifiers. The raw data stays with the owner, so the speedups could be checked only for internal
+consistency: every value lies inside its CI and agrees with the median of the paired ratios. They could not be
+recomputed from raw runs. The data is in `contrib/m51/`.
+
+Real-text 2048-token prompt, speedup = SARC / stock, median of 5 interleaved repeats, approximate 95 % paired CI:
+
+| | Llama 3.2 1B | Llama 3.2 3B | Llama 3.1 8B | geomean |
+|---|---|---|---|---|
+| **8da4w** (correct) | **2.18×** [2.11, 2.48] | **2.73×** [2.72, 2.75] | **2.64×** [2.63, 2.65] | **2.50×** |
+| 4w | re-measurement pending | re-measurement pending | re-measurement pending | not reported |
+
+- **8da4w is correct.** Production-diff passes (1B/3B/8B, buffer/texture3d, nonzero zero points), the probe's
+  top-1 matches stock on both prompts, and SDPA passes 4/4.
+- **The xclipse 4w kernel was fixed on 2026-09-28** (`t128x128k16g22s32f32xp`: fp32 accumulate, and a one-pass
+  texture3d drain, which this device requires; the root cause is not determined).
+  Production-diff now passes for 1B/3B/8B × buffer/texture3d. The end-to-end re-measurement with the fixed kernel is
+  pending, so no 4w speedup is reported for this device yet.
+- **Timing setup:** both arms used a measurement-only option, `ET_VK_EXECUTE_NODE_THRESHOLD=32`, which submits a
+  command buffer every 32 graph nodes instead of 128.
+  - Without it, some 8B runs did not complete.
+  - The option comes from a 1.4 branch and is not in `dev/1.5`.
+  - It may also help with the Galaxy S26's 8B `VK_ERROR_DEVICE_LOST`.
+- **Clocks were fixed for this campaign**, unlike the other GPUs.
+- **Models:** the same `*_embq_ctx3072.pte` export as the 7900 XTX and S26.
+- **Build:** native, not the pinned container.
 
 ## What was compared
 
@@ -200,7 +262,7 @@ must not be promoted in its current form.
 **Builds**
 
 Both builds were made fresh for this campaign from the exact commits. Hashes of every binary are in
-[MANIFEST.json](results/MANIFEST.json).
+[build/MANIFEST.json](results/MANIFEST.json).
 - **x86 hosts**
   - Built in the `et-vk-build:rocky10` container with GCC 14.3.1 and glslc from shaderc v2023.8.
   - The SARC build's shipped SPIR-V matches the repository's golden hashes for all 48 variants.

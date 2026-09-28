@@ -35,8 +35,9 @@ and run end to end: 2048-token real-text prefill, 5 interleaved repeats each, 30
 - fixed a real accuracy bug: the previous 4070 Ti 4w kernel failed the 8B check.
 - ported everything to ExecuTorch release 1.5 with no loss: kernels match within ±3 %.
 
-**A sixth GPU.** The RX 7900 XTX agent measured the same protocol: 2.79× over stock 1.5 (pre-release rows; see §B11).
+**A sixth and a seventh GPU.** The RX 7900 XTX agent measured the same protocol: 2.79× over stock 1.5 (pre-release rows; see §B11). The RX 7600 agent followed: 2.48× (4w 2.85–3.32×, 8da4w 1.88–2.18×; pre-release rows; see §B14).
 The Galaxy S26 (Adreno 840) was also measured. It has no releasable gain yet: its 4w kernel fails correctness at large K, and 8B hits a device-lost error (§B12).
+The Samsung Xclipse (M51) device reports relative results only: 8-bit activations 2.18–2.73× over stock (correct); its 4-bit kernel was fixed on 2026-09-28 and is being re-measured (§B13).
 
 **Where that leaves the product (Part B).** Against stock ExecuTorch 1.5 the full SARC release is 1.48–5.35× faster end to end, with a geometric mean of 2.75×. That number reflects all the work to date; this part isolates what the last two days added.
 
@@ -288,7 +289,7 @@ Evidence labels:
 | Source | What it gives | Quality notes |
 |---|---|---|
 | Timed runs ([REPORT.md](REPORT.md), `raw/*/runs.csv`) | End-to-end tok/s, n = 5 per build, 300/300 accepted | Clocks not pinned; B580 noisier (display GPU); prompt is repeated "the" (§B10) |
-| Warm ETDump traces (`raw/*/trace2/*.etdp`, 60 files) | GPU time per dispatch, with operator name and tensor shapes | One `--warmup` run per cell. Each event has 2 `raw` entries; the last is the warm execution (checked against `start_time` order and the logged run time). Trace graph time vs timed median: −6.7 % to +3.8 %. [trace_analysis.py](results/scripts/trace_analysis.py) → `evidence/trace/{families,gemm,totals}.csv` |
+| Warm ETDump traces (`raw/*/trace2/*.etdp`, 60 files) | GPU time per dispatch, with operator name and tensor shapes | One `--warmup` run per cell. Each event has 2 `raw` entries; the last is the warm execution (checked against `start_time` order and the logged run time). Trace graph time vs timed median: −6.7 % to +3.8 %. [trace_analysis.py](trace_analysis.py) → `evidence/trace/{families,gemm,totals}.csv` |
 | Confirmed roofs ([evidence/roofline.md](evidence/roofline.md), `roofline.json`) | Measured matrix, scalar, fed-matrix and memory peaks per GPU, each with its REPORT.md line | `fast` plan, 3 fresh-process repeats, spread ≤ 3.2 %, sentinel healthy on all 34 checks. **Not ISA-verified.** Sustained roofs unconfirmed. 780M `standard` campaign agrees within 3.4 %. Measured 2026-09-26/27, not on the benchmark day |
 | Kernel efficiency ([evidence/efficiency.py](evidence/efficiency.py) → `efficiency.csv`) | Achieved prefill-GEMM rate = Σ 2·M·N·K / Σ GPU time, and % of the matched roof | Kernel level only. The 8da4w quantize dispatch and the stock 4w input transpose are reported separately (§B5). Logical FLOPs |
 | Logits ([evidence/logits/](evidence/logits/)) | fp32 CPU reference; 8da4w Vulkan logits at the disputed position | Vulkan logits come from the ExecuTorch Python runtime built from the SARC dev tree, whose B580 path runs stock kernels. Device index 0 is the B580 by vulkaninfo order; the device name is not logged (§B8) |
@@ -678,7 +679,7 @@ waves likely differ from the aggregate.
 
 Data: `contrib/7900xtx/`, measured by the 7900 XTX agent with the kit. Caveats in `REPORT.md` ("Contributed GPU"):
 - the rows are `kUnverified` and ran with `ET_VK_SARC_UNVERIFIED=1`;
-- the `.pte` files are a different export;
+- the `.pte` files use the same export recipe as the five-GPU set, exported separately on another machine (files not byte-identical);
 - the driver is AMDVLK, and the build was native rather than the pinned container.
 
 **Results**
@@ -705,6 +706,12 @@ Data: `contrib/7900xtx/`, measured by the 7900 XTX agent with the kit. Caveats i
 3.83×, 8da4w 2.59× → 2.25× (timed, "the" prompt) [M]. Its attention kernels are sped up 4.1–6.7×, more than its
 GEMMs (2.9–3.6×), and attention's share of stock time falls from 36 % to 24 % at 8B (4w). This is the same mechanism
 as §B5.
+
+**ISA-verified [M].** A compile check on the GPU host (`contrib/7900xtx/isa/`) finds RDNA3 WMMA in every kernel
+under both AMDVLK 2025.Q2.1, the benchmark driver, and RADV 25.0.7: 64 `v_wmma_f32_16x16x16_f16` per 4w pipeline
+(32 per K-chunk in the loop) and 8 `v_wmma_i32_16x16x16_iu8` per 8da4w pipeline, matching the per-subgroup tile
+arithmetic, with no spills. The roofline matrix shaders compile to the matching WMMA too, so the matrix roofs are
+real matrix-unit roofs. The native build's 8da4w SPIR-V does not match the golden; its 4w SPIR-V does.
 
 The evidence figures E1–E4 include it as a sixth GPU, marked †. Their five-GPU versions are kept as `*_5gpu.*`.
 
@@ -740,13 +747,87 @@ Every cell was re-analysed independently. The tables and conditions are in `REPO
   A likely cause is that the Android link drops the dev-zone static registration that reads
   `ET_VK_SARC_UNVERIFIED`. [I]/[O]
 
+- **Driver statistics show fp16 coopmat lowered to ALU code [M, I].** No route gave Adreno ISA
+  (`contrib/s26/isa/`): `VK_KHR_pipeline_executable_properties` returns statistics but no internal representations.
+  Every MMA is counted as ordinary ALU with no matrix instruction class: about 128 ALU-32 instructions per 64×16×16
+  fp16 block (2 FMAs each) and 128 ALU-16 per 64×16×32 int8 block (one 4-way dot each). That explains fp16 matrix
+  ≈ 0.9× FMA without a matrix unit. The int8 1.7× over the dot roof may come from the dot roof shader issuing about
+  2.3× more instructions per dot; it stays open.
+
 **Next steps for the S26 agent**
 1. Fix the 4w accumulation, e.g. per-group fp32 as on the 4070 Ti (`ACC_GROUP_FP32`), and re-run production-diff.
 2. Investigate the 8B `DEVICE_LOST`. Candidates are a GPU watchdog on long submits and memory pressure.
 3. Given the roofs, a scalar or dot-product tuned kernel may beat coopmat on this GPU. Evaluate it before investing
    in more coopmat tiles.
 
-## B13. Files
+## B13. Contributed GPU: Samsung Xclipse (M51), relative speedups only
+
+Data: `contrib/m51/`, relative results only (owner's confidentiality request). Only internal consistency could be
+checked: [M] as reported, not independently recomputed.
+
+**Results**
+
+| Measurement | Result |
+|---|---|
+| End to end, real text | 8da4w **2.18 / 2.73 / 2.64×** (1B / 3B / 8B), geomean 2.50×; 4w fixed 2026-09-28, re-measurement pending |
+| Correctness | 8da4w: production-diff passes, top-1 matches stock (both prompts), SDPA 4/4. 4w (fixed `f32xp` row): production-diff passes 1B/3B/8B × buffer/texture3d; not yet through the promotion checklist |
+| Kernels | SARC runs every prefill GEMM on the xclipse rows (zpgtr 8da4w `t128x64k32g42s32`, 4w `t128x128k16g22s32`, since replaced by `…f32xp`) and attention on `sarc_sdpa_*`; stock shows no SARC kernel |
+| Roofs / efficiency | measured, **not published** |
+| Measurement setup | both arms used `ET_VK_EXECUTE_NODE_THRESHOLD=32`, a submission every 32 nodes; without it some 8B runs did not complete; clocks fixed |
+
+**What it adds**
+- **The zpgtr 8-bit kernel family works well on this GPU.** It is the same row-major family as on the 4070 Ti
+  and Orin, and it keeps the SARC kernel at every M, including the unaligned check prompt, where the next token
+  also matches stock.
+- **The 4w kernel is fixed; its end-to-end numbers are next [M, O].** Two causes: fp16 accumulation at the longest K
+  (buffer), and the banded texture3d drain, which did not give correct results on this device; the root cause is not
+  determined. The `f32xp` row (fp32 accumulate + one-pass drain)
+  passes production-diff everywhere; the e2e re-measurement is pending.
+- **Smaller submissions help long prefills on phones.** The node-threshold option should be ported to `dev/1.5` as a
+  dev-zone override; it may also help with the S26's 8B `DEVICE_LOST`. [I]
+
+## B14. Contributed GPU: Radeon RX 7600 (pre-release)
+
+Data: `contrib/rx7600/`, measured by its own agent with the kit. Caveats in `REPORT.md` ("Contributed GPU: Radeon
+RX 7600"):
+- the rows are `kUnverified` (merged into `dev/1.5`, not yet re-verified) and ran with `ET_VK_SARC_UNVERIFIED=1`;
+- the `.pte` files are the same as the 7900 XTX's (same export recipe, exported separately);
+- the driver is a user-space RADV (Mesa 26.2.3), because the system Mesa 23.2.1 has no cooperative matrix;
+- the build was native rather than the pinned container, and the card drives the desktop.
+
+**Results**
+
+| Measurement | Result |
+|---|---|
+| End to end, real text [M] | 4w 2.85 / 3.32 / 3.17×; 8da4w 1.91 / 2.18 / 1.88× (1B / 3B / 8B); geomean 2.48× |
+| Roofs [R] (igpu-roofline `rx7600-fast-20260928`, fast plan, confirmed) | fp16 FMA 20.2, int8 dot 29.0, fp16 matrix 32.3 (fp16 acc) / **43.4 (fp32 acc)**, **int8 matrix 43.9**, DRAM 284 GB/s |
+| Kernel efficiency, 8B [M] | stock 4w 9.8 TFLOP/s (49 % of FMA); SARC 4w 27.7 (64 % of the fp32-acc matrix roof); stock 8da4w 20.1 TOP/s (69 % of dot); SARC 8da4w 25.7 (59 % of int8 matrix) |
+| Time shares, 8B [M] | stock 4w: GEMM 67 %, attention QKᵀ+AV 27 %; SARC 4w: GEMM 77 %. Stock 8da4w: GEMM 51 %, attention 42 %. Attention QKᵀ+AV falls from 1,191 to 128 ms (8B) with the 780M attention kernels |
+| Correctness [M] | top-1 matches stock in 6/6 configurations on aligned real text; same near-tie flip at 1972 tokens (8B 8da4w) |
+
+**What it adds to the analysis**
+- **A third RDNA3 confirmation of §B7.** The int8 matrix roof equals the fp16-with-fp32-accumulate roof (43.9 vs
+  43.4) [R]. As on the 780M (also RADV), fp16 accumulation is slower (32.3); on the 7900 XTX (AMDVLK) the two
+  accumulators were within 4 %, so this looks like a RADV code-generation property [I].
+- **Headroom × efficiency (§B4).**
+  - 4w: H = 43.4 / 20.2 = 2.15, E = 64 / 49 = 1.32, giving 2.82×, which matches the measured 27.7 / 9.8.
+  - 8da4w: H = 43.9 / 29.0 = 1.51, E = 59 / 69 = 0.84, giving 1.28×, which matches 25.7 / 20.1.
+- **8da4w gains end to end mostly through attention.** The GEMM kernel is only 1.28× faster, yet the model is
+  1.88–2.18× faster, because stock 8da4w spends only 37–51 % of its GPU time in GEMMs and the SARC attention
+  kernels cut QKᵀ+AV by about 9× [M]. This is §B5's operator-to-model mechanism in its strongest form.
+- **The 4w kernel is at its shared-memory-fed roof [R, I].** Its 64×64 subgroup tile loads 32 ops per LDS byte,
+  where the fed roof is 28.9 TFLOP/s; the kernel runs at 27.7, about 96 % of it. More reuse needs a larger subgroup
+  tile, which the 256-VGPR and 64 KB LDS limits rule out.
+
+**Model-size pattern.** Like the 780M and the 7900 XTX, the speedup peaks at 3B: 4w 3.38× → 3.23×, 8da4w 2.22× →
+1.92× ("the" prompt) [M]. All three RDNA3 GPUs run SARC attention, so this supports §B5's explanation.
+
+**Not done**
+- Before/after re-tuning (M5): the RX 7600 had no SARC rows before this campaign.
+- Row promotion: the rows are merged into `dev/1.5`; they need re-verification with binaries built by the pinned
+  shader compiler before they can leave `kUnverified`.
+
+## B15. Files
 
 Everything is under `sarc-acl/.artifacts/e2e-1.5-2026-09-28/`.
 
