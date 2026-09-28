@@ -127,6 +127,9 @@ shared float16_t bias_sh[WG_TILE_N];
 // cost SG_GRID_Y/MMAS_PER_SG_M x more LDS and wreck occupancy. Not aliased
 // with Ash/Bsh: GLSL has no shared unions and coopMatStore needs a
 // float16_t-typed array.
+#if defined(CSH_FULL) && defined(CSH_BAND)
+#error "CSH_FULL and CSH_BAND are exclusive texture3d drains"
+#endif
 #ifdef CSH_FULL
 // CSH_FULL (Xclipse/M51, 2026-09-28): stage the whole WG_TILE_M x WG_TILE_N
 // result tile and drain it in one pass. The banded drain below (SG_GRID_Y
@@ -137,6 +140,19 @@ shared float16_t bias_sh[WG_TILE_N];
 #error "CSH_FULL is not combined with CSH_IN_ASH or HAS_BIAS"
 #endif
 const uint CSH_ROWS = WG_TILE_M;
+#elif defined(CSH_BAND)
+// CSH_BAND (Mali-G1, 2026-09-28): drain one SG_GRID_Y band at a time, so Csh is
+// MMA_M rows x WG_TILE_N; the 256-thread 64x128 / 128x64 tiles then fit 32 KiB.
+#ifdef CSH_IN_ASH
+#error "CSH_BAND stages its band in Csh; not combined with CSH_IN_ASH"
+#endif
+#ifdef HAS_BIAS
+#error "CSH_BAND drains without the bias epilogue"
+#endif
+#ifdef ACC_GROUP_FP32_REG
+#error "CSH_BAND is not combined with ACC_GROUP_FP32_REG (its Fsh aliases a full Csh)"
+#endif
+const uint CSH_ROWS = MMA_M;
 #else
 const uint CSH_ROWS = SG_GRID_Y * MMA_M;
 #endif
@@ -768,6 +784,41 @@ void main() {
             float(Csh[base + 3u])));
 #endif
   }
+#elif defined(CSH_BAND)
+  // Band b = the subgroups with warpInTile.y == b; per (i, b): barrier, that
+  // band's subgroups store accumulator row-block i into Csh, barrier, the
+  // whole workgroup imageStores the MMA_M rows. Same global row map as below.
+  [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+    for (uint b = 0; b < SG_GRID_Y; ++b) {
+      memoryBarrierShared();
+      barrier();
+      if (warpInTile.y == b) {
+        [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+          coopMatStore(
+              coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]), Csh,
+              MMA_N * (MMAS_PER_SG_N * warpInTile.x + j),
+              WG_TILE_N,
+              gl_CooperativeMatrixLayoutRowMajor);
+        }
+      }
+      memoryBarrierShared();
+      barrier();
+      for (uint t = gl_LocalInvocationID.x; t < CSH_TEXELS; t += WG_SIZE) {
+        const uint lr = t / CSH_TEXELS_PER_ROW;
+        const uint lc4 = t % CSH_TEXELS_PER_ROW;
+        const uint m = tile_m_start + b * SG_TILE_M + i * MMA_M + lr;
+        const uint base = lr * WG_TILE_N + lc4 * 4u;
+        imageStore(
+            t_output,
+            ivec3(tile_n_start / 4u + lc4, m, 0),
+            vec4(
+                float(Csh[base]),
+                float(Csh[base + 1u]),
+                float(Csh[base + 2u]),
+                float(Csh[base + 3u])));
+      }
+    }
+  }
 #else
   [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
     // Guards Csh against the previous iteration's readers. Inert on i == 0 but
@@ -837,7 +888,7 @@ void main() {
 #endif
     }
   }
-#endif // CSH_FULL
+#endif // CSH_FULL / CSH_BAND
 #else
   const uint N_out = uint(out_N_arg);
   [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {

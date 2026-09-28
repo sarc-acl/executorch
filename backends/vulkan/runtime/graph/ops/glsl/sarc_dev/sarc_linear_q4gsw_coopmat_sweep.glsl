@@ -110,6 +110,9 @@ $if CSH_POOL and IO_STORAGE == "texture3d":
 $if SH_F16V4:
   #define SH_F16V4
 
+$if CSH_BAND:
+  #define CSH_BAND
+
 $if FRAG_LAYOUT:
   #define FRAG_LAYOUT
 

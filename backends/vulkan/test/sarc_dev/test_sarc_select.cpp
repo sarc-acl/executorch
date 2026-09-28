@@ -193,8 +193,12 @@ int main(int argc, char** argv) {
        [](const ShapeInfo&) { return kQ + "t64x64k32g21s64m64x32x16"; },
        none},
       {"MaliG1",
-       device("mali-g1-ultra", false, 16, 16, 16),
-       none,
+       device("mali-g1-ultra mc12", false, 16, 16, 16),
+       [](const ShapeInfo& s) -> std::string {
+         return s.N * s.K >= (int64_t(1) << 24)
+             ? kQ + "t64x128k32g44s16m16x32x32gahb"
+             : "";
+       },
        none},
       {"GenericNoRows",
        device("some other gpu", false, 32, 32, 32),
