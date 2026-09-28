@@ -76,7 +76,7 @@ re-verify first.
 | Samsung Xclipse (M51) | unverified | unverified | unverified | 1.4 dev-branch defaults; owned by the M51 agent |
 | Adreno 840 (S26) | unverified | – (1.4 int8 kernel broken) | stock | owned by the phone agent |
 | Mali-G1 | – (1.4 routed to upstream) | – | stock | nothing to port |
-| 7900 XTX | – | – | – | no promoted 1.4 default; owned by its agent |
+| Radeon RX 7900 XTX | unverified (t256x128k32g24s32f32cbt) | unverified (780M zpg) | unverified (780M SDPA) | `openspec/changes/sarc-1.5-7900xtx-4w`, e2e `contrib/7900xtx` (2.79× vs stock, pre-release); golden added; needs re-verify with container-built binaries |
 
 Unverified rows are inert in a release. Their SPIR-V is still pinned in `sarc/golden/spirv.json`
 (owner `UNVERIFIED:<device>`), so accidental changes are caught.

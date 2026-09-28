@@ -33,6 +33,8 @@ each. Error bars: approximate 95 % paired bootstrap CI. Dashed line: parity with
 | Jetson Orin Nano | 4.49× | 4.42× | 4.46× |
 | **all 5 GPUs** | **3.17×** | **2.39×** | **2.75×** |
 
+A sixth GPU, the **Radeon RX 7900 XTX**, was measured by its own agent with the same protocol. It reaches 2.79× over stock (real text; 3.00–3.79× for 4w, 2.09–2.53× for 8da4w). It is reported separately because its SARC rows are still pre-release and its model files are a different export (see "Contributed GPU").
+
 ## Results
 
 **Reading the tables**
@@ -115,6 +117,36 @@ The visible spread is on the Arc B580 (see Limitations).*
 
 ETDump was used here only to identify kernels, not to time them; per-kernel time shares would test both
 hypotheses.
+
+## Contributed GPU: Radeon RX 7900 XTX (pre-release, measured by the 7900 XTX agent)
+
+The same protocol was run on a Radeon RX 7900 XTX (RDNA3, gfx1100) and merged from
+`openspec/changes/sarc-1.5-e2e-benchmark/contrib/7900xtx/`. Measurement setup:
+- host `host-7900xtx`, driver AMDVLK 2025.Q2.1;
+- builds: stock `release/1.5` (plus the same include backport) vs SARC at `topic/7900xtx-4w-coopmat` @ `8b00c92f1`;
+- 5 interleaved repeats, both prompts.
+
+**It is kept separate from the five-GPU results above**:
+- **Pre-release rows.** The 7900 XTX rows are still `kUnverified`, so the SARC arm ran with
+  `ET_VK_SARC_UNVERIFIED=1`. The shipped release `sarc/1.5-r2` does not yet contain them.
+- **Different models.** The model files are a different export (`*_embq_ctx3072.pte`): all 6 SHA-256 hashes
+  differ from the five-GPU campaign. Speedups compare stock and SARC on the same file and are valid. Absolute
+  tok/s are not directly comparable with the tables above.
+- **Different toolchain.** The build was native, with its own glslc, not the pinned container.
+- **Co-tenant not stopped.** An idle `ollama` service was running on the GPU host (0 % busy; no sudo there).
+
+| prompt | 4w: 1B / 3B / 8B | 8da4w: 1B / 3B / 8B | geomean |
+|---|---|---|---|
+| real text 2048 | 6,502 → 19,505 **3.00×** · 2,513 → 9,526 **3.79×** · 1,239 → 4,501 **3.63×** | 10,089 → 21,113 **2.09×** · 3,835 → 9,706 **2.53×** · 2,140 → 4,582 **2.14×** | **2.79×** |
+| "the" × 2048 | 3.06× · 4.01× · 3.83× | 2.15× · 2.59× · 2.25× | 2.90× |
+
+- Every cell has n = 5, a paired CI within ±0.08×, no crashes and no rejected runs.
+- **Correctness:** on 2048-token aligned real text, the top-1 token matches in 6/6 configurations (max logit
+  difference 1.16). On the unaligned 1972-token check prompt, 8B 8da4w shows the same "otherwise"/"bullying"
+  near-tie flip as the other GPUs.
+- **Kernels:** the ETDump traces show SARC coopmat linears plus the 780M's SARC attention kernels; stock shows no
+  SARC kernel.
+- The independent re-analysis of the contributed CSVs with `kit/analysis/analyze.py` reproduces every number.
 
 ## What was compared
 

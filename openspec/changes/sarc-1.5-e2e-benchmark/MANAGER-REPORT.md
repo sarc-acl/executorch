@@ -35,6 +35,8 @@ and run end to end: 2048-token real-text prefill, 5 interleaved repeats each, 30
 - fixed a real accuracy bug: the previous 4070 Ti 4w kernel failed the 8B check.
 - ported everything to ExecuTorch release 1.5 with no loss: kernels match within ±3 %.
 
+**A sixth GPU.** The RX 7900 XTX agent measured the same protocol: 2.79× over stock 1.5 (pre-release rows; see §B12).
+
 **Where that leaves the product (Part B).** Against stock ExecuTorch 1.5 the full SARC release is 1.48–5.35× faster end to end, with a geometric mean of 2.75×. That number reflects all the work to date; this part isolates what the last two days added.
 
 ![Additional kernel speedup from the two-day re-tuning](evidence/refinement/figures/r1_kernel_gain.png)
@@ -670,6 +672,39 @@ waves likely differ from the aggregate.
 - Why stock 8da4w loses efficiency with size on Intel (§B5).
 - Why 780M 1B attention kernels gain less (§B5).
 - SARC's own logits (§B8).
+
+## B12. Contributed GPU: Radeon RX 7900 XTX (pre-release)
+
+Data: `contrib/7900xtx/`, measured by the 7900 XTX agent with the kit. Caveats in `REPORT.md` ("Contributed GPU"):
+- the rows are `kUnverified` and ran with `ET_VK_SARC_UNVERIFIED=1`;
+- the `.pte` files are a different export;
+- the driver is AMDVLK, and the build was native rather than the pinned container.
+
+**Results**
+
+| Measurement | Result |
+|---|---|
+| End to end, real text [M] | 4w 3.00 / 3.79 / 3.63×; 8da4w 2.09 / 2.53 / 2.14× (1B / 3B / 8B); geomean 2.79× |
+| Roofs [R] (igpu-roofline newdev-20260927, fast plan, confirmed) | fp16 FMA 63.4, int8 dot 69.2, fp16 matrix 136.4 (fp16 acc) / **141.9 (fp32 acc)**, **int8 matrix 142.6**, DRAM 1108 GB/s |
+| Kernel efficiency, 8B [M] | stock 4w 23.7 TFLOP/s (37 % of FMA); SARC 4w 85.0 (60 % of the fp32-acc matrix roof); stock 8da4w 57.7 TOP/s (83 % of dot); SARC 8da4w 92.8 (65 % of int8 matrix) |
+| Time shares, 8B [M] | stock 4w: GEMM 73 %, attention 24 %; SARC 4w: GEMM 79 %, attention 14 %. The SARC build includes the 780M attention kernels |
+| Correctness [M] | top-1 matches stock in 6/6 configurations on aligned real text; same near-tie flip at 1972 tokens (8B 8da4w) |
+
+**What it adds to the analysis**
+- **It independently confirms the RDNA3 finding of §B7.** On the 7900 XTX, as on the 780M, the int8 matrix roof
+  is no higher than the fp16-with-fp32-accumulate roof: 142.6 vs 141.9 [R].
+  - Tuned 8da4w and 4w end at nearly the same throughput (8B: 4,582 vs 4,501 tok/s) [M].
+  - The 8-bit path gains less over stock (2.1–2.5×) than 4w (3.0–3.8×) because stock 8da4w is already efficient
+    there (83–86 % of its dot roof) [M].
+- **Headroom × efficiency (§B4).**
+  - 4w: H = 141.9 / 63.4 = 2.24, E = 60 / 37 = 1.61, giving 3.59×, which matches the measured 85.0 / 23.7.
+  - 8da4w: H = 142.6 / 69.2 = 2.06, E = 65 / 83 = 0.78, giving 1.61×, which matches 92.8 / 57.7.
+
+**Not done**
+- Before/after re-tuning (M5): the 7900 XTX had no release-1.5 rows before this campaign.
+- Row promotion: the SPIR-V golden for the new variants is generated with the pinned container and added to
+  `sarc/golden/spirv.json`. The rows stay `kUnverified` until the 7900 XTX agent re-verifies with
+  container-built binaries.
 
 ## B11. Files
 
