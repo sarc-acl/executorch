@@ -27,6 +27,8 @@
  *                   registers (Adreno 840: no fp32 accumulator coopmat)
  *   CSH_IN_ASH      texture3d drain staged in dead Ash (RDNA3 occupancy)
  *   B_COLMAJOR      B staged N-major in LDS, ColumnMajor B coopMatLoad (RDNA3 7900 XTX)
+ *   CSH_FULL        texture3d drain of the whole tile in one pass (Xclipse)
+ *   CSH_POOL        with CSH_FULL: Ash/Bsh/drain share one LDS pool (Xclipse)
  *   FRAG_LAYOUT     fragment-contiguous LDS, no padding (Intel Xe2)
  *   IMG_A / IMG_W   storage-image loads for A / weights (Intel Xe2)
  *   MMA_M = 8       Intel Xe2 exposes fp16 coopmat only at 8x16x16
@@ -123,6 +125,12 @@ $if CSH_IN_ASH:
 
 $if B_COLMAJOR:
   #define B_COLMAJOR
+
+$if CSH_FULL and IO_STORAGE == "texture3d":
+  #define CSH_FULL
+
+$if CSH_POOL and IO_STORAGE == "texture3d":
+  #define CSH_POOL
 
 $if SH_F16V4:
   #define SH_F16V4

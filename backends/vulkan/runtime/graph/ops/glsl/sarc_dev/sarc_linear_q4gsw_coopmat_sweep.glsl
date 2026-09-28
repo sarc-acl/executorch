@@ -101,6 +101,12 @@ $if CSH_IN_ASH:
 $if B_COLMAJOR:
   #define B_COLMAJOR
 
+$if CSH_FULL and IO_STORAGE == "texture3d":
+  #define CSH_FULL
+
+$if CSH_POOL and IO_STORAGE == "texture3d":
+  #define CSH_POOL
+
 $if SH_F16V4:
   #define SH_F16V4
 

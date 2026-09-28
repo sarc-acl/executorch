@@ -10,7 +10,8 @@
 // (sarc_linear_q4gsw_coopmat.glsl, or its sweep twin in sarc_dev/) that defines
 // the bindings, the spec constants, ACC_T, the optional IO_TEXTURE /
 // WEIGHT_BUFFER / ACC_FP32 / ACC_GROUP_FP32 / ACC_GROUP_FP32_REG / CSH_IN_ASH /
-// FRAG_LAYOUT / IMG_A / IMG_W / B_COLMAJOR / HAS_BIAS macros and the tile
+// FRAG_LAYOUT / IMG_A / IMG_W / B_COLMAJOR / CSH_FULL / CSH_POOL / HAS_BIAS macros
+// and the tile
 // constants MMA_{M,N,K}, WG_TILE_{M,N,K}, SG_GRID_{X,Y}, SUBGROUP_SIZE.
 // Must not contain template syntax: .glslh files are not expanded per variant.
 
@@ -80,7 +81,22 @@ void sh_store_Bsh(const uint idx, const uvec4 v) {
 #define ASH_STORE(idx, v) sh_store_Ash(idx, v)
 #define BSH_STORE(idx, v) sh_store_Bsh(idx, v)
 #else
+#ifdef CSH_POOL
+// CSH_POOL (with CSH_FULL; Xclipse/M51, 2026-09-28): Ash, Bsh and the
+// full-tile drain share one shared-memory pool, which the drain reuses after
+// the last MMA. The pool is max(Ash + Bsh, the full tile) instead of their
+// sum, so two workgroups still fit per 64 KiB of LDS.
+#if !defined(CSH_FULL) || defined(CSH_IN_ASH) || defined(B_COLMAJOR) || defined(FRAG_LAYOUT)
+#error "CSH_POOL needs CSH_FULL and excludes CSH_IN_ASH, B_COLMAJOR and FRAG_LAYOUT"
+#endif
+const uint BSH_BASE = 2u * ASH_SLICE;
+const uint POOL_A_B = 2u * ASH_SLICE + 2u * BSH_SLICE;
+const uint POOL_C = WG_TILE_M * WG_TILE_N / FP16_PER_VEC4;
+shared uvec4 Ash[POOL_A_B > POOL_C ? POOL_A_B : POOL_C];
+#define Bsh Ash
+#else
 shared uvec4 Ash[2 * ASH_SLICE];
+#endif
 #ifdef B_COLMAJOR
 // B_COLMAJOR (RX 7900 XTX / RDNA3, 2026-09-27): the WMMA B operand is one N
 // column of MMA_K consecutive K values per lane, so coopMatLoad from the
@@ -94,7 +110,7 @@ const uint BT_STRIDE_H = WG_TILE_K + 8u;
 const uint BT_STRIDE_V2 = BT_STRIDE_H / 4u;
 const uint BT_SLICE = WG_TILE_N * BT_STRIDE_V2;
 shared uvec2 BshT[2 * BT_SLICE];
-#else
+#elif !defined(CSH_POOL)
 shared uvec4 Bsh[2 * BSH_SLICE];
 #endif
 // Expands to exactly the plain stores (keeps the non-SH_F16V4 SPIR-V).
@@ -111,8 +127,20 @@ shared float16_t bias_sh[WG_TILE_N];
 // cost SG_GRID_Y/MMAS_PER_SG_M x more LDS and wreck occupancy. Not aliased
 // with Ash/Bsh: GLSL has no shared unions and coopMatStore needs a
 // float16_t-typed array.
+#ifdef CSH_FULL
+// CSH_FULL (Xclipse/M51, 2026-09-28): stage the whole WG_TILE_M x WG_TILE_N
+// result tile and drain it in one pass. The banded drain below (SG_GRID_Y
+// bands per pass, one pass per accumulator row block) returns wrong values on
+// the Xclipse driver once several workgroups run concurrently (a single
+// workgroup is exact; the same SPIR-V is correct on other vendors).
+#if defined(CSH_IN_ASH) || defined(HAS_BIAS)
+#error "CSH_FULL is not combined with CSH_IN_ASH or HAS_BIAS"
+#endif
+const uint CSH_ROWS = WG_TILE_M;
+#else
 const uint CSH_ROWS = SG_GRID_Y * MMA_M;
-#ifndef CSH_IN_ASH
+#endif
+#if !defined(CSH_IN_ASH) && !defined(CSH_POOL)
 // (CSH_IN_ASH, 780M 2026-09-26: stage the drain band in Ash instead -- Ash is
 // dead after the last MMA and every drain iteration starts with a barrier. It
 // drops 8 KiB of LDS per workgroup, and on the 780M VGPRs 192 -> 160, so a
@@ -375,8 +403,13 @@ void main() {
     }
 #else
     [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
+#ifdef CSH_POOL
+      BSH_STORE(BSH_BASE + B_SH_IDX(p * B_ROWS_PER_PASS + b_row_offset, b_col),
+          dequant_block(temp_B[p], col_lo, col_hi, sc0, sc1));
+#else
       BSH_STORE(B_SH_IDX(p * B_ROWS_PER_PASS + b_row_offset, b_col),
           dequant_block(temp_B[p], col_lo, col_hi, sc0, sc1));
+#endif
     }
 #endif
   }
@@ -395,11 +428,15 @@ void main() {
 #ifdef B_COLMAJOR
     const uint cur_base_B = (chunk % 2u) * BT_SLICE;
     const uint nxt_base_B = ((chunk + 1u) % 2u) * BT_SLICE;
+#elif defined(CSH_POOL)
+    const uint cur_base_B = BSH_BASE + (chunk % 2u) * BSH_SLICE;
 #else
     const uint cur_base_B = (chunk % 2u) * BSH_SLICE;
 #endif
     const uint nxt_base_A = ((chunk + 1u) % 2u) * ASH_SLICE;
-#ifndef B_COLMAJOR
+#if defined(CSH_POOL)
+    const uint nxt_base_B = BSH_BASE + ((chunk + 1u) % 2u) * BSH_SLICE;
+#elif !defined(B_COLMAJOR)
     const uint nxt_base_B = ((chunk + 1u) % 2u) * BSH_SLICE;
 #endif
 
@@ -554,6 +591,8 @@ void main() {
     const uint cur_base_A = (chunk % 2u) * ASH_SLICE;
 #ifdef B_COLMAJOR
     const uint cur_base_B = (chunk % 2u) * BT_SLICE;
+#elif defined(CSH_POOL)
+    const uint cur_base_B = BSH_BASE + (chunk % 2u) * BSH_SLICE;
 #else
     const uint cur_base_B = (chunk % 2u) * BSH_SLICE;
 #endif
@@ -683,6 +722,53 @@ void main() {
   // each i gets its own barrier.
   const uint CSH_TEXELS_PER_ROW = WG_TILE_N / 4u;
   const uint CSH_TEXELS = CSH_ROWS * CSH_TEXELS_PER_ROW;
+#ifdef CSH_FULL
+  // One barrier, every accumulator into the full-tile staging, one drain.
+  memoryBarrierShared();
+  barrier();
+  [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+    [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+      const uint c_off = (warpInTile.y * SG_TILE_M + i * MMA_M) * WG_TILE_N +
+          MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
+#ifdef CSH_POOL
+      coopMatStore(
+          coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]), Ash,
+          c_off / FP16_PER_VEC4, WG_TILE_N / FP16_PER_VEC4,
+          gl_CooperativeMatrixLayoutRowMajor);
+#else
+      coopMatStore(
+          coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]), Csh,
+          c_off, WG_TILE_N,
+          gl_CooperativeMatrixLayoutRowMajor);
+#endif
+    }
+  }
+  memoryBarrierShared();
+  barrier();
+  for (uint t = gl_LocalInvocationID.x; t < CSH_TEXELS; t += WG_SIZE) {
+    const uint lr = t / CSH_TEXELS_PER_ROW;
+    const uint lc4 = t % CSH_TEXELS_PER_ROW;
+    const uint base = lr * WG_TILE_N + lc4 * 4u;
+#ifdef CSH_POOL
+    // base is a multiple of 4 halves: the texel is one half of a uvec4.
+    const uvec4 q = Ash[base / FP16_PER_VEC4];
+    const bool hi = (base % FP16_PER_VEC4) != 0u;
+    imageStore(
+        t_output,
+        ivec3(tile_n_start / 4u + lc4, tile_m_start + lr, 0),
+        vec4(unpackHalf2x16(hi ? q.z : q.x), unpackHalf2x16(hi ? q.w : q.y)));
+#else
+    imageStore(
+        t_output,
+        ivec3(tile_n_start / 4u + lc4, tile_m_start + lr, 0),
+        vec4(
+            float(Csh[base]),
+            float(Csh[base + 1u]),
+            float(Csh[base + 2u]),
+            float(Csh[base + 3u])));
+#endif
+  }
+#else
   [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
     // Guards Csh against the previous iteration's readers. Inert on i == 0 but
     // must stay unconditional to remain workgroup-uniform.
@@ -751,6 +837,7 @@ void main() {
 #endif
     }
   }
+#endif // CSH_FULL
 #else
   const uint N_out = uint(out_N_arg);
   [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {

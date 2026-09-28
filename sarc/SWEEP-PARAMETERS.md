@@ -11,6 +11,9 @@ combination of these values and compiles to one SPIR-V file.
 | 8da4w | `sarc_linear_dq8ca_coopmat_zpg` | int8, 4h4w blocks |
 | 8da4w | `sarc_linear_dq8ca_coopmat_zpgtr` | int8, row-major (`kPackedInt8_4W`) |
 
+This page does not cover the SDPA (`sarc_sdpa_qk/av_coopmat`, `sarc_sdpa_attn_weights_softmax`) or pack
+(`sarc_quantize_and_pack_4w_with_group_sums`) shaders; read their yamls in `glsl/sarc/`.
+
 The choice between zpg and zpgtr is itself a sweep dimension. The op path (`impl/sarc/Dq8caCoopmat.cpp`)
 packs the activations in the layout of the kernel that the build-time shape selects.
 
@@ -18,11 +21,11 @@ packs the activations in the layout of the kernel that the build-time shape sele
 
 | Parameter | Meaning | Values used so far |
 |---|---|---|
-| `WG_TILE_M`, `WG_TILE_N` | Output tile per workgroup | M 64/128/256; N 64/128/256 |
+| `WG_TILE_M`, `WG_TILE_N` | Output tile per workgroup | M 32/64/128/256; N 32/64/128/256 (32 only in sweep candidates) |
 | `WG_TILE_K` | K consumed per main-loop iteration | 16 / 32 / 64 |
 | `SG_GRID_X`, `SG_GRID_Y` | Subgroup grid in the workgroup (X along N, Y along M); workgroup size = X·Y·`SUBGROUP_SIZE` | 2×1, 2×2, 4×2, 2×4, 4×4, 4×8 |
-| `SUBGROUP_SIZE` | Required subgroup size (pipeline subgroup-size control) | 16 (Intel Xe2), 32, 64 (Adreno) |
-| `MMA_M`, `MMA_N`, `MMA_K` | Shape of one coopmat instruction; it must be a shape the device exposes (igpu-roofline `docs/COOPMAT-SHAPES.md`) | 16×16×16 (default); M 8 on Intel Xe2; K 32 for int8 on Xe2, 4070 Ti and Orin; 64×32×16 on Adreno |
+| `SUBGROUP_SIZE` | Required subgroup size (pipeline subgroup-size control) | 16 (Intel Xe2, Mali-G1), 32, 64 (Adreno) |
+| `MMA_M`, `MMA_N`, `MMA_K` | Shape of one coopmat instruction; it must be a shape the device exposes (igpu-roofline `docs/COOPMAT-SHAPES.md`) | 16×16×16 (default); M 8 on Intel Xe2; K 32 for int8 on Xe2, 4070 Ti and Orin; 64×32×16 on Adreno; 16×32×32 on Mali-G1 |
 | `IO_STORAGE` | Input and output tensor storage | `buffer`, `texture3d` |
 | `WEIGHT_STORAGE` | Packed weight storage | `texture2d`, `buffer` |
 | `HAS_BIAS` | Bias epilogue | only `false` is shipped; the selector never picks SARC for linears with bias |
@@ -38,9 +41,13 @@ All flags default to off.
 | `ACC_GROUP_FP32` | fp16 accumulation within a quantization group, fp32 running total. Cannot be combined with `ACC_FP32` (`#error`). | 4070 Ti SUPER: full-rate fp16 MMA without the long-K error |
 | `ACC_GROUP_FP32_REG` | As `ACC_GROUP_FP32`, but the fp32 running total is a per-invocation register array, filled from an LDS copy of each fp16 group sum (Adreno has no fp32 accumulator coopmat, and its compiler crashes on per-element coopmat access). Cannot be combined with `ACC_FP32`, `ACC_GROUP_FP32`, `CSH_IN_ASH`, `B_COLMAJOR` or `FRAG_LAYOUT` (`#error`). | Adreno 840 (sweep candidate) |
 | `CSH_IN_ASH` | texture3d output drain staged in the dead A shared-memory region | 780M (less LDS, higher occupancy) |
+| `CSH_FULL` | texture3d output drain stages the whole `WG_TILE_M`×`WG_TILE_N` tile and drains it in one pass, instead of `SG_GRID_Y` bands per pass with one pass per accumulator row block. Only affects texture3d variants. Cannot be combined with `CSH_IN_ASH` or `HAS_BIAS` (`#error`). The selector checks the total LDS of these tiles. | Xclipse (M51): required on that device (root cause not determined) |
+| `CSH_POOL` | With `CSH_FULL`: A, B and the full-tile drain share one shared-memory pool of max(A+B, tile) bytes, so the shared-memory footprint stays small. Only affects texture3d variants. Cannot be combined with `CSH_IN_ASH`, `B_COLMAJOR` or `FRAG_LAYOUT` (`#error`). | Xclipse (M51) |
+| `CSH_BAND` | texture3d output drain one `SG_GRID_Y` band at a time: `Csh` holds `MMA_M` rows × `WG_TILE_N`. Cannot be combined with `CSH_FULL`, `CSH_IN_ASH`, `HAS_BIAS` or `ACC_GROUP_FP32_REG` (`#error`). | Mali-G1: the 256-thread tiles then fit its 32 KiB LDS |
 | `FRAG_LAYOUT` | Fragment-contiguous shared-memory layout, no padding | Intel Xe2 |
 | `IMG_A` | Storage-image loads for A; only with `IO_STORAGE: texture3d` | Intel Xe2 |
 | `IMG_W` | Storage-image loads for the weights; only with `WEIGHT_STORAGE: texture2d` | available, not shipped |
+| `B_COLMAJOR` | B staged N-major in LDS and loaded with a ColumnMajor B `coopMatLoad`. Cannot be combined with `SH_F16V4`, `CSH_POOL`, `FRAG_LAYOUT` or `ACC_GROUP_FP32_REG` (`#error`). | RX 7900 XTX, RX 7600 (texture3d only) |
 | `SH_F16V4` | Shared memory stored as f16vec4. Cannot be combined with `CSH_IN_ASH` or `FRAG_LAYOUT` (`#error`). | Adreno 840 |
 
 ## 8da4w zpg only (`sarc_linear_dq8ca_coopmat_zpg`)
@@ -59,8 +66,8 @@ All flags default to off.
 | `A_RAW` | A staged as raw uvec4 global-to-LDS copies | 4070 Ti SUPER, Orin |
 | `B_PAIR` | One weight texel feeds both nibble parities | 4070 Ti SUPER, Orin |
 | `CSH_IN_ASH` | texture3d output drain staged in `Ash_int8` | 4070 Ti SUPER, Orin (texture3d variants) |
-| `DRAIN_UNROLL` | Hand-expands the texture-IO drain band loop so every `result[][]` index is a compile-time constant (at most 8 bands). Covers the `Csh`, `CSH_IN_ASH` and `CSH_IN_ASH` + `A_RAW` drains. | M51 study (sweep only): correct, not faster |
-| `B_SEL_EARLY_N` | Integer, default 0. B slots `si < N` keep only their selected word right after the fetch instead of the whole texel. | M51 study (sweep only): correct, not faster |
+| `DRAIN_UNROLL` | Hand-expands the texture-IO drain band loop so every `result[][]` index is a compile-time constant (at most 8 bands). Covers the `Csh`, `CSH_IN_ASH` and `CSH_IN_ASH` + `A_RAW` drains. | M51 study (sweep only): correct, not faster; no shipped variant sets it (the release yaml keeps the default `false`) |
+| `B_SEL_EARLY_N` | Integer, default 0. B slots `si < N` keep only their selected word right after the fetch instead of the whole texel. | M51 study (sweep only): correct, not faster; no shipped variant sets it (the release yaml keeps the default `0`) |
 
 ## Hard preconditions
 
@@ -95,6 +102,10 @@ Names follow the pattern `<family>[_sweep]_<tile>_<io>_<weight>_half`. For examp
 | `s<S>` | `SUBGROUP_SIZE` |
 | `f32` | `ACC_FP32` |
 | `c` | `CSH_IN_ASH` (4w) |
+| `xp` | `CSH_FULL` + `CSH_POOL` (4w) |
+| `h` | `SH_F16V4` (Mali sweep tiles) |
+| `b` | `CSH_BAND` (4w) |
+| `bt` | `B_COLMAJOR` (4w; RX 7900 XTX / RX 7600) |
 | `ga` | `ACC_GROUP_FP32` |
 | `gr` | `ACC_GROUP_FP32_REG` |
 | `m8` | `MMA_M` 8 |
@@ -104,6 +115,8 @@ Names follow the pattern `<family>[_sweep]_<tile>_<io>_<weight>_half`. For examp
 | `ra` | `A_RAW` + `B_PAIR` (zpgtr) |
 | `du` | `DRAIN_UNROLL` (zpgtr) |
 | `dus`, `dus1` | `DRAIN_UNROLL` + `B_SEL_EARLY_N` 2 / 1 (zpgtr) |
+
+Tokens are matched by suffix (`ends_with` on the kernel base name), so read the trailing flags as separate tokens: `cbt` is `c` (`CSH_IN_ASH`) + `bt` (`B_COLMAJOR`), not `CSH_BAND`. Shipped tokens are not renamed.
 
 Any other shipped flag, such as zpg's `A_MAP_FULL`, is not in the name. Read the yaml entry.
 
@@ -115,8 +128,10 @@ Any other shipped flag, such as zpg's `A_MAP_FULL`, is not in the name. Read the
 | Arc B580 / Pro B70 | `t128x128k16g44s16m8fli` | zpg `t256x64k32g48s16m8` (MMA 8×16×32) + `A_MAP_FULL` + `A_MULTI_BLOCK` |
 | RTX 4070 Ti SUPER | per shape: `t256x128k16g42s32ga`, `t128x128k16g24s32ga`, `t128x256k16g42s32ga`, `t128x128k16g42s32ga` | zpgtr `t128x128k64g44s32mk32ra` (+ `CSH_IN_ASH` for texture3d) |
 | Jetson Orin | per shape: `t128x128k32g42s32f32`, `t256x128k16g22s32`, `t128x128k16g22s32` | zpgtr `t128x128k64g44s32mk32ra` |
-| Xclipse (M51), unverified | `t128x128k16g22s32` | zpgtr `t128x64k32g42s32` (MMA 16×16×16) |
+| Xclipse (M51), unverified | `t128x128k16g22s32f32xp` | zpgtr `t128x64k32g42s32` (MMA 16×16×16) |
+| Radeon RX 7900 XTX / RX 7600, unverified | `t256x128k32g24s32f32cbt` (`ACC_FP32` + `CSH_IN_ASH` + `B_COLMAJOR`, texture3d only) | zpg `t128x64k32g42s32` (the 780M zpg variant) |
 | Adreno 840, unverified | `t64x64k32g21s64m64x32x16` + `SH_F16V4` | – |
+| Mali-G1, unverified | `t64x128k32g44s16m16x32x32gahb` (MMA 16×32×32, `ACC_GROUP_FP32` + `SH_F16V4` + `CSH_BAND`), large linears only (N·K ≥ 2²⁴) | – |
 
 The authoritative list is the release yaml plus `impl/sarc/table_<vendor>.cpp`.
 

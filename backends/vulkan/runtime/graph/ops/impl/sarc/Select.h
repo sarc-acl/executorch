@@ -86,6 +86,8 @@ struct TileDims {
   uint32_t subgroup_size;
   uint32_t mma_m;
   bool csh_in_ash; // texture3d drain staged in Ash (no extra Csh LDS)
+  bool csh_full = false; // texture3d drain stages the whole WG_TILE_M x WG_TILE_N tile
+  bool csh_pool = false; // with csh_full: Ash, Bsh and the drain share one LDS pool
   uint32_t wg_size() const {
     return sg_grid_x * sg_grid_y * subgroup_size;
   }
