@@ -1,0 +1,508 @@
+{
+ "gpus": {
+  "rx7600": {
+   "label": "Radeon RX 7600 (Navi 33, gfx1102)",
+   "host": "host-ws1",
+   "device": "AMD Radeon RX 7600 (RADV NAVI33)",
+   "driver_version": 109060099,
+   "subgroup_default": 64,
+   "plan": [
+    "fast"
+   ],
+   "roofline_commit": "463b2ff8e19f75d83a0523834aff8e76e056c510",
+   "runner_sha256": "c8e8698f86b4f885",
+   "report": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md",
+   "summary_json": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/summary.json",
+   "report_header_lines": [
+    "Device: host Intel(R) Xeon(R) Gold 5220R CPU @ 2.20GHz (SoC Intel(R) Xeon(R) Gold 5220R CPU @ 2.20GHz), Ubuntu 22.04.5 LTS, driver 109060099, subgroup 64.",
+    "Plan(s): fast. GPU clock **DVFS-governed** (not pinned); results depend on the governor and thermal state.",
+    "Code: 463b2ff8e19f75d83a0523834aff8e76e056c510+dirty, runner c8e8698f86b4f885. Rows from other runner or shader builds excluded: 0."
+   ],
+   "measured_utc": [
+    "2026-09-28T17:53:17.995097+00:00",
+    "2026-09-28T18:17:39.653722+00:00"
+   ],
+   "sentinel": {
+    "median": 7.782034212595801,
+    "unit": "TFLOP/s",
+    "n": 33,
+    "degraded": 0
+   },
+   "clock_state": {
+    "domains": {
+     "/sys/class/drm/card1/device/pp_dpm_sclk": {
+      "governor": "auto",
+      "min": "86000000",
+      "max": "2356000000",
+      "cur": "86000000"
+     },
+     "/sys/class/drm/card1/device/pp_dpm_mclk": {
+      "governor": "auto",
+      "min": "96000000",
+      "max": "1124000000",
+      "cur": "96000000"
+     }
+    },
+    "pinned_domains": [],
+    "captured_utc": "2026-09-28T17:52:46.191685+00:00"
+   },
+   "missing_reasons": [
+    "Sustained roofs require three distinct stable batches per current confirmed configuration and duration"
+   ],
+   "sarc_4w_accumulator": "matrix_fp16_fp32",
+   "sarc_4w_accumulator_source": "glsl/sarc/sarc_linear_q4gsw_coopmat.yaml:185 (ACC_FP32: true, t256x128k32g24s32f32cbt)",
+   "coopmat_shapes": [
+    "16x16x16 u8xu8+u32->u32",
+    "16x16x16 u8xu8+s32->s32",
+    "16x16x16 u8xu8+s32->s32 sat",
+    "16x16x16 u8xs8+u32->u32",
+    "16x16x16 u8xs8+s32->s32",
+    "16x16x16 u8xs8+s32->s32 sat",
+    "16x16x16 s8xu8+u32->u32",
+    "16x16x16 s8xu8+s32->s32",
+    "16x16x16 s8xu8+s32->s32 sat",
+    "16x16x16 s8xs8+u32->u32",
+    "16x16x16 s8xs8+s32->s32",
+    "16x16x16 s8xs8+s32->s32 sat",
+    "16x16x16 f16xf16+f16->f16",
+    "16x16x16 f16xf16+f32->f32"
+   ],
+   "roofs": {
+    "cache_read_effective": {
+     "value": 7986.914,
+     "unit": "GB/s",
+     "config": "mem_read_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "7935.857\u20137999.360 (0.8%)",
+     "sweep_max": "7930.826",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:59",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/mem_read_v4_1acb198807ca.json",
+     "sustained": null
+    },
+    "global_read": {
+     "value": 283.624,
+     "unit": "GB/s",
+     "config": "mem_read_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "283.616\u2013283.736 (0.0%)",
+     "sweep_max": "283.522",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:62",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/mem_read_v4_779de0cb8b21.json",
+     "sustained": {
+      "value": 283.566,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "global_write": {
+     "value": 302.672,
+     "unit": "GB/s",
+     "config": "mem_write_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "302.584\u2013305.286 (0.9%)",
+     "sweep_max": "301.871",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:64",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/mem_write_v4_c84705f492bb.json",
+     "sustained": null
+    },
+    "global_copy": {
+     "value": 246.202,
+     "unit": "GB/s",
+     "config": "mem_copy_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "246.018\u2013246.238 (0.1%)",
+     "sweep_max": "246.063",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:61",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/mem_copy_v4_7f230cc9e863.json",
+     "sustained": null
+    },
+    "global_triad": {
+     "value": 249.547,
+     "unit": "GB/s",
+     "config": "mem_triad_v4",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "249.525\u2013249.581 (0.0%)",
+     "sweep_max": "249.539",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:63",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/mem_triad_v4_f7d51dc1efb3.json",
+     "sustained": null
+    },
+    "alu_fp32": {
+     "value": 14.217,
+     "unit": "TFLOP/s",
+     "config": "alu_fp32_v1_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "14.152\u201314.257 (0.7%)",
+     "sweep_max": "14.212",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:58",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/alu_fp32_v1_c8_a7430fb1b747.json",
+     "sustained": null
+    },
+    "alu_fp16": {
+     "value": 20.226,
+     "unit": "TFLOP/s",
+     "config": "alu_fp16_v2_c1",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "20.111\u201320.246 (0.7%)",
+     "sweep_max": "20.187",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:57",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/alu_fp16_v2_c1_bea691d45be4.json",
+     "sustained": {
+      "value": 20.213,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "dot_int8": {
+     "value": 29.026,
+     "unit": "TOP/s",
+     "config": "dot8_c2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "28.823\u201329.071 (0.9%)",
+     "sweep_max": "28.959",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:60",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/dot8_c2_6144d0e5b139.json",
+     "sustained": null
+    },
+    "matrix_fp16": {
+     "value": 32.305,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_16x16x16_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "32.191\u201332.311 (0.4%)",
+     "sweep_max": "32.236",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:65",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/matrix_fp16_16x16x16_c8_0dce5c816273.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32": {
+     "value": 43.416,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_16x16x16_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "43.333\u201343.458 (0.3%)",
+     "sweep_max": "43.296",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:69",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/matrix_fp16_fp32_16x16x16_c8_4706f755b24f.json",
+     "sustained": {
+      "value": 43.315,
+      "batches": 1,
+      "duration_s": 120
+     }
+    },
+    "matrix_int8": {
+     "value": 43.899,
+     "unit": "TOP/s",
+     "config": "matrix_int8_16x16x16_c8",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "43.587\u201343.922 (0.8%)",
+     "sweep_max": "43.689",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:73",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/matrix_int8_16x16x16_c8_5eb55a0b1b1d.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_shared": {
+     "value": 30.431,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_16x16x16_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "30.387\u201330.502 (0.4%)",
+     "sweep_max": "30.426",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:68",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/matrix_fp16_16x16x16_c8_lds_99098fd1e2fa.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_cache": {
+     "value": 29.589,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_16x16x16_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "29.553\u201329.601 (0.2%)",
+     "sweep_max": "29.564",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:66",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/matrix_fp16_16x16x16_c8_gmem_d9e6f3e5e046.json",
+     "sustained": null
+    },
+    "matrix_fp16_feed_dram": {
+     "value": 271.773,
+     "unit": "GB/s",
+     "config": "matrix_fp16_16x16x16_c1_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "271.759\u2013271.783 (0.0%)",
+     "sweep_max": "271.792",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:67",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/matrix_fp16_16x16x16_c1_gmem_3adaf2afce45.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_shared": {
+     "value": 38.506,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_16x16x16_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "38.406\u201338.587 (0.5%)",
+     "sweep_max": "38.438",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:72",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/matrix_fp16_fp32_16x16x16_c8_lds_2a9399d57980.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_cache": {
+     "value": 36.206,
+     "unit": "TFLOP/s",
+     "config": "matrix_fp16_fp32_16x16x16_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "36.196\u201336.295 (0.3%)",
+     "sweep_max": "36.161",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:70",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/matrix_fp16_fp32_16x16x16_c8_gmem_d4b8f81aafe4.json",
+     "sustained": null
+    },
+    "matrix_fp16_fp32_feed_dram": {
+     "value": 267.668,
+     "unit": "GB/s",
+     "config": "matrix_fp16_fp32_16x16x16_c1_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "267.659\u2013267.790 (0.0%)",
+     "sweep_max": "267.545",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:71",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/matrix_fp16_fp32_16x16x16_c1_gmem_bcbbcc5ec41c.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_shared": {
+     "value": 35.728,
+     "unit": "TOP/s",
+     "config": "matrix_int8_16x16x16_c8_lds",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "35.632\u201335.785 (0.4%)",
+     "sweep_max": "35.712",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:76",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/matrix_int8_16x16x16_c8_lds_83a0ce65c642.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_cache": {
+     "value": 30.936,
+     "unit": "TOP/s",
+     "config": "matrix_int8_16x16x16_c8_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "30.855\u201331.060 (0.7%)",
+     "sweep_max": "30.916",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:74",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/matrix_int8_16x16x16_c8_gmem_63573b945822.json",
+     "sustained": null
+    },
+    "matrix_int8_feed_dram": {
+     "value": 265.729,
+     "unit": "GB/s",
+     "config": "matrix_int8_16x16x16_c1_gmem",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "265.064\u2013266.184 (0.4%)",
+     "sweep_max": "265.527",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:75",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/matrix_int8_16x16x16_c1_gmem_8dadfc433b8c.json",
+     "sustained": null
+    },
+    "texture_rgba16f_buffer_cache": {
+     "value": 699.313,
+     "unit": "GB/s",
+     "config": "texture_rgba16f_buffer",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "698.704\u2013703.115 (0.6%)",
+     "sweep_max": "696.705",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:80",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/texture_rgba16f_buffer_651066492540.json",
+     "sustained": null
+    },
+    "texture_rgba16f_buffer_dram": {
+     "value": 269.414,
+     "unit": "GB/s",
+     "config": "texture_rgba16f_buffer",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "268.832\u2013269.414 (0.2%)",
+     "sweep_max": "269.226",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:81",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/texture_rgba16f_buffer_7c00f97b7c2e.json",
+     "sustained": null
+    },
+    "texture_rgba16f_tex2d_cache": {
+     "value": 697.498,
+     "unit": "GB/s",
+     "config": "texture_rgba16f_tex2d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "694.743\u2013699.042 (0.6%)",
+     "sweep_max": "697.535",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:82",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/texture_rgba16f_tex2d_f808a0caba79.json",
+     "sustained": null
+    },
+    "texture_rgba16f_tex2d_dram": {
+     "value": 255.286,
+     "unit": "GB/s",
+     "config": "texture_rgba16f_tex2d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "254.280\u2013255.315 (0.4%)",
+     "sweep_max": "254.515",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:83",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/texture_rgba16f_tex2d_8bffe6ca5e6e.json",
+     "sustained": null
+    },
+    "texture_rgba16f_tex3d_cache": {
+     "value": 704.217,
+     "unit": "GB/s",
+     "config": "texture_rgba16f_tex3d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "703.546\u2013706.270 (0.4%)",
+     "sweep_max": "705.192",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:84",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/texture_rgba16f_tex3d_53c49e0dee80.json",
+     "sustained": null
+    },
+    "texture_rgba16f_tex3d_dram": {
+     "value": 238.926,
+     "unit": "GB/s",
+     "config": "texture_rgba16f_tex3d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "238.546\u2013240.793 (0.9%)",
+     "sweep_max": "239.480",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:85",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/texture_rgba16f_tex3d_0c76927ba87f.json",
+     "sustained": null
+    },
+    "texture_rgba32f_buffer_cache": {
+     "value": 698.917,
+     "unit": "GB/s",
+     "config": "texture_rgba32f_buffer",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "696.578\u2013699.854 (0.5%)",
+     "sweep_max": "696.608",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:86",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/texture_rgba32f_buffer_30e57e089673.json",
+     "sustained": null
+    },
+    "texture_rgba32f_buffer_dram": {
+     "value": 269.241,
+     "unit": "GB/s",
+     "config": "texture_rgba32f_buffer",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "268.925\u2013269.262 (0.1%)",
+     "sweep_max": "269.126",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:87",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/texture_rgba32f_buffer_b24272e36f50.json",
+     "sustained": null
+    },
+    "texture_rgba32f_tex2d_cache": {
+     "value": 693.133,
+     "unit": "GB/s",
+     "config": "texture_rgba32f_tex2d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "692.313\u2013697.073 (0.7%)",
+     "sweep_max": "694.390",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:88",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/texture_rgba32f_tex2d_acd8e190ed84.json",
+     "sustained": null
+    },
+    "texture_rgba32f_tex2d_dram": {
+     "value": 253.034,
+     "unit": "GB/s",
+     "config": "texture_rgba32f_tex2d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "252.726\u2013253.396 (0.3%)",
+     "sweep_max": "252.945",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:89",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/texture_rgba32f_tex2d_137150474f45.json",
+     "sustained": null
+    },
+    "texture_rgba32f_tex3d_cache": {
+     "value": 721.853,
+     "unit": "GB/s",
+     "config": "texture_rgba32f_tex3d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "719.890\u2013724.377 (0.6%)",
+     "sweep_max": "724.748",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:90",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/texture_rgba32f_tex3d_4ff4beee5420.json",
+     "sustained": null
+    },
+    "texture_rgba32f_tex3d_dram": {
+     "value": 225.63,
+     "unit": "GB/s",
+     "config": "texture_rgba32f_tex3d",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "224.251\u2013226.104 (0.8%)",
+     "sweep_max": "224.764",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:91",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/texture_rgba32f_tex3d_d9e4f6c5344d.json",
+     "sustained": null
+    },
+    "shared_fp32_read": {
+     "value": 7449.624,
+     "unit": "GB/s",
+     "config": "sharedbw_fp32_v2_op0",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "7426.696\u20137449.968 (0.3%)",
+     "sweep_max": "7414.858",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:78",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/sharedbw_fp32_v2_op0_aec0497ea147.json",
+     "sustained": null
+    },
+    "shared_fp32_write": {
+     "value": 8116.509,
+     "unit": "GB/s",
+     "config": "sharedbw_fp32_v4_op2",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "8111.395\u20138118.366 (0.1%)",
+     "sweep_max": "8111.741",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:79",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/sharedbw_fp32_v4_op2_20faa9301643.json",
+     "sustained": null
+    },
+    "shared_fp16_read": {
+     "value": 5520.551,
+     "unit": "GB/s",
+     "config": "sharedbw_fp16_v4_op0_acc32",
+     "confirmed": true,
+     "repeats": 3,
+     "repeat_range": "5518.042\u20135528.730 (0.2%)",
+     "sweep_max": "5506.988",
+     "source": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/report/REPORT.md:77",
+     "raw": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/confirm/sharedbw_fp16_v4_op0_acc32_ce3760fdd48e.json",
+     "sustained": null
+    }
+   },
+   "capabilities_json": "<owner-workspace>/workspace/igpu-roofline-newdev/results/rx7600-fast-20260928/host-ws1-gpu-000000000400/capabilities.json",
+   "capabilities_lines": null
+  }
+ }
+}

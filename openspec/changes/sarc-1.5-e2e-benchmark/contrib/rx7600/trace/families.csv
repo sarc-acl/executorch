@@ -1,0 +1,154 @@
+gpu,model,scheme,build,family,ms,share
+rx7600,1b,4w,sarc,prefill GEMM (linear layers),142.756,0.575
+rx7600,1b,4w,sarc,attention: softmax,32.351,0.1303
+rx7600,1b,4w,sarc,attention: QK^T,21.878,0.0881
+rx7600,1b,4w,sarc,attention: AV,21.845,0.088
+rx7600,1b,4w,sarc,elementwise,19.786,0.0797
+rx7600,1b,4w,sarc,copy/view/other,6.631,0.0267
+rx7600,1b,4w,sarc,RMSNorm,1.206,0.0049
+rx7600,1b,4w,sarc,attention: KV update,0.616,0.0025
+rx7600,1b,4w,sarc,LM head (1 token),0.582,0.0023
+rx7600,1b,4w,sarc,RoPE,0.468,0.0019
+rx7600,1b,4w,sarc,embedding,0.088,0.0004
+rx7600,1b,4w,sarc,staging,0.063,0.0003
+rx7600,1b,4w,stock,prefill GEMM (linear layers),395.137,0.5315
+rx7600,1b,4w,stock,attention: AV,185.73,0.2498
+rx7600,1b,4w,stock,attention: QK^T,79.825,0.1074
+rx7600,1b,4w,stock,attention: softmax,36.858,0.0496
+rx7600,1b,4w,stock,elementwise,18.736,0.0252
+rx7600,1b,4w,stock,linear-op input transpose,16.981,0.0228
+rx7600,1b,4w,stock,copy/view/other,6.889,0.0093
+rx7600,1b,4w,stock,RMSNorm,1.219,0.0016
+rx7600,1b,4w,stock,RoPE,0.735,0.001
+rx7600,1b,4w,stock,attention: KV update,0.585,0.0008
+rx7600,1b,4w,stock,LM head (1 token),0.546,0.0007
+rx7600,1b,4w,stock,embedding,0.089,0.0001
+rx7600,1b,4w,stock,staging,0.071,0.0001
+rx7600,1b,8da4w,sarc,prefill GEMM (linear layers),153.533,0.5788
+rx7600,1b,8da4w,sarc,attention: softmax,32.245,0.1216
+rx7600,1b,8da4w,sarc,attention: QK^T,21.857,0.0824
+rx7600,1b,8da4w,sarc,attention: AV,21.771,0.0821
+rx7600,1b,8da4w,sarc,elementwise,18.493,0.0697
+rx7600,1b,8da4w,sarc,8-bit activation quantize,7.771,0.0293
+rx7600,1b,8da4w,sarc,copy/view/other,6.473,0.0244
+rx7600,1b,8da4w,sarc,RMSNorm,1.194,0.0045
+rx7600,1b,8da4w,sarc,RoPE,0.663,0.0025
+rx7600,1b,8da4w,sarc,LM head (1 token),0.567,0.0021
+rx7600,1b,8da4w,sarc,attention: KV update,0.524,0.002
+rx7600,1b,8da4w,sarc,embedding,0.087,0.0003
+rx7600,1b,8da4w,sarc,staging,0.071,0.0003
+rx7600,1b,8da4w,stock,prefill GEMM (linear layers),192.291,0.3659
+rx7600,1b,8da4w,stock,attention: AV,183.135,0.3485
+rx7600,1b,8da4w,stock,attention: QK^T,77.219,0.1469
+rx7600,1b,8da4w,stock,attention: softmax,36.667,0.0698
+rx7600,1b,8da4w,stock,elementwise,18.746,0.0357
+rx7600,1b,8da4w,stock,8-bit activation quantize,7.711,0.0147
+rx7600,1b,8da4w,stock,copy/view/other,6.641,0.0126
+rx7600,1b,8da4w,stock,RMSNorm,1.201,0.0023
+rx7600,1b,8da4w,stock,RoPE,0.66,0.0013
+rx7600,1b,8da4w,stock,LM head (1 token),0.557,0.0011
+rx7600,1b,8da4w,stock,attention: KV update,0.537,0.001
+rx7600,1b,8da4w,stock,embedding,0.09,0.0002
+rx7600,1b,8da4w,stock,staging,0.072,0.0001
+rx7600,3b,4w,sarc,prefill GEMM (linear layers),416.231,0.6844
+rx7600,3b,4w,sarc,attention: QK^T,47.569,0.0782
+rx7600,3b,4w,sarc,attention: softmax,42.764,0.0703
+rx7600,3b,4w,sarc,elementwise,37.301,0.0613
+rx7600,3b,4w,sarc,attention: AV,37.269,0.0613
+rx7600,3b,4w,sarc,copy/view/other,18.816,0.0309
+rx7600,3b,4w,sarc,RMSNorm,2.908,0.0048
+rx7600,3b,4w,sarc,RoPE,2.613,0.0043
+rx7600,3b,4w,sarc,attention: KV update,1.651,0.0027
+rx7600,3b,4w,sarc,LM head (1 token),0.851,0.0014
+rx7600,3b,4w,sarc,embedding,0.131,0.0002
+rx7600,3b,4w,sarc,staging,0.071,0.0001
+rx7600,3b,4w,stock,prefill GEMM (linear layers),1151.355,0.5485
+rx7600,3b,4w,stock,attention: AV,448.335,0.2136
+rx7600,3b,4w,stock,attention: QK^T,352.273,0.1678
+rx7600,3b,4w,stock,attention: softmax,46.612,0.0222
+rx7600,3b,4w,stock,linear-op input transpose,36.376,0.0173
+rx7600,3b,4w,stock,elementwise,35.767,0.017
+rx7600,3b,4w,stock,copy/view/other,19.517,0.0093
+rx7600,3b,4w,stock,RoPE,3.057,0.0015
+rx7600,3b,4w,stock,RMSNorm,2.872,0.0014
+rx7600,3b,4w,stock,attention: KV update,1.738,0.0008
+rx7600,3b,4w,stock,LM head (1 token),0.832,0.0004
+rx7600,3b,4w,stock,embedding,0.137,0.0001
+rx7600,3b,4w,stock,staging,0.063,0.0
+rx7600,3b,8da4w,sarc,prefill GEMM (linear layers),445.167,0.6823
+rx7600,3b,8da4w,sarc,attention: QK^T,47.584,0.0729
+rx7600,3b,8da4w,sarc,attention: softmax,42.716,0.0655
+rx7600,3b,8da4w,sarc,attention: AV,37.125,0.0569
+rx7600,3b,8da4w,sarc,elementwise,36.142,0.0554
+rx7600,3b,8da4w,sarc,copy/view/other,18.489,0.0283
+rx7600,3b,8da4w,sarc,8-bit activation quantize,17.186,0.0263
+rx7600,3b,8da4w,sarc,RMSNorm,2.864,0.0044
+rx7600,3b,8da4w,sarc,RoPE,2.379,0.0036
+rx7600,3b,8da4w,sarc,attention: KV update,1.764,0.0027
+rx7600,3b,8da4w,sarc,LM head (1 token),0.783,0.0012
+rx7600,3b,8da4w,sarc,embedding,0.138,0.0002
+rx7600,3b,8da4w,sarc,staging,0.071,0.0001
+rx7600,3b,8da4w,stock,prefill GEMM (linear layers),558.811,0.3813
+rx7600,3b,8da4w,stock,attention: AV,441.017,0.3009
+rx7600,3b,8da4w,stock,attention: QK^T,338.824,0.2312
+rx7600,3b,8da4w,stock,attention: softmax,46.824,0.0319
+rx7600,3b,8da4w,stock,elementwise,36.002,0.0246
+rx7600,3b,8da4w,stock,copy/view/other,19.011,0.013
+rx7600,3b,8da4w,stock,8-bit activation quantize,17.051,0.0116
+rx7600,3b,8da4w,stock,RMSNorm,2.905,0.002
+rx7600,3b,8da4w,stock,RoPE,2.392,0.0016
+rx7600,3b,8da4w,stock,attention: KV update,1.795,0.0012
+rx7600,3b,8da4w,stock,LM head (1 token),0.791,0.0005
+rx7600,3b,8da4w,stock,embedding,0.137,0.0001
+rx7600,3b,8da4w,stock,staging,0.071,0.0
+rx7600,8b,4w,sarc,prefill GEMM (linear layers),1031.892,0.7725
+rx7600,8b,4w,sarc,attention: QK^T,73.133,0.0548
+rx7600,8b,4w,sarc,elementwise,70.884,0.0531
+rx7600,8b,4w,sarc,attention: softmax,64.202,0.0481
+rx7600,8b,4w,sarc,attention: AV,55.25,0.0414
+rx7600,8b,4w,sarc,copy/view/other,26.904,0.0201
+rx7600,8b,4w,sarc,RMSNorm,6.049,0.0045
+rx7600,8b,4w,sarc,RoPE,4.008,0.003
+rx7600,8b,4w,sarc,attention: KV update,2.014,0.0015
+rx7600,8b,4w,sarc,LM head (1 token),1.131,0.0008
+rx7600,8b,4w,sarc,embedding,0.176,0.0001
+rx7600,8b,4w,sarc,staging,0.071,0.0001
+rx7600,8b,4w,stock,prefill GEMM (linear layers),2912.408,0.6702
+rx7600,8b,4w,stock,attention: AV,688.862,0.1585
+rx7600,8b,4w,stock,attention: QK^T,502.205,0.1156
+rx7600,8b,4w,stock,attention: softmax,71.924,0.0166
+rx7600,8b,4w,stock,elementwise,70.385,0.0162
+rx7600,8b,4w,stock,linear-op input transpose,58.334,0.0134
+rx7600,8b,4w,stock,copy/view/other,27.519,0.0063
+rx7600,8b,4w,stock,RMSNorm,5.976,0.0014
+rx7600,8b,4w,stock,RoPE,4.255,0.001
+rx7600,8b,4w,stock,attention: KV update,2.07,0.0005
+rx7600,8b,4w,stock,LM head (1 token),1.126,0.0003
+rx7600,8b,4w,stock,embedding,0.18,0.0
+rx7600,8b,4w,stock,staging,0.072,0.0
+rx7600,8b,8da4w,sarc,prefill GEMM (linear layers),1110.525,0.7677
+rx7600,8b,8da4w,sarc,attention: QK^T,72.415,0.0501
+rx7600,8b,8da4w,sarc,elementwise,70.424,0.0487
+rx7600,8b,8da4w,sarc,attention: softmax,64.471,0.0446
+rx7600,8b,8da4w,sarc,attention: AV,55.175,0.0381
+rx7600,8b,8da4w,sarc,8-bit activation quantize,34.229,0.0237
+rx7600,8b,8da4w,sarc,copy/view/other,26.274,0.0182
+rx7600,8b,8da4w,sarc,RMSNorm,6.029,0.0042
+rx7600,8b,8da4w,sarc,RoPE,3.7,0.0026
+rx7600,8b,8da4w,sarc,attention: KV update,2.006,0.0014
+rx7600,8b,8da4w,sarc,LM head (1 token),1.018,0.0007
+rx7600,8b,8da4w,sarc,embedding,0.178,0.0001
+rx7600,8b,8da4w,sarc,staging,0.071,0.0
+rx7600,8b,8da4w,stock,prefill GEMM (linear layers),1419.615,0.5064
+rx7600,8b,8da4w,stock,attention: AV,673.958,0.2404
+rx7600,8b,8da4w,stock,attention: QK^T,493.865,0.1762
+rx7600,8b,8da4w,stock,attention: softmax,71.127,0.0254
+rx7600,8b,8da4w,stock,elementwise,70.208,0.025
+rx7600,8b,8da4w,stock,8-bit activation quantize,34.243,0.0122
+rx7600,8b,8da4w,stock,copy/view/other,27.251,0.0097
+rx7600,8b,8da4w,stock,RMSNorm,6.057,0.0022
+rx7600,8b,8da4w,stock,RoPE,3.714,0.0013
+rx7600,8b,8da4w,stock,attention: KV update,2.076,0.0007
+rx7600,8b,8da4w,stock,LM head (1 token),1.042,0.0004
+rx7600,8b,8da4w,stock,embedding,0.19,0.0001
+rx7600,8b,8da4w,stock,staging,0.072,0.0
