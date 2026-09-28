@@ -16,12 +16,17 @@ Branches:
 ## Layout
 
 - **Kernel selection**: `impl/sarc/Select.{h,cpp}` with per-vendor tables in `impl/sarc/table_<vendor>.cpp`.
-  - A row is `{device substring, device predicate, op, kernel base name, tile dims, texture IO allowed, status}`.
+  - A row is `{device substring, device predicate, op, kernel base name, tile dims, storage-combination mask, shape predicate, status, rowmajor_a}`; rows are tried in order.
   - `kUnverified` rows are inert in a release. In a dev build, `ET_VK_SARC_UNVERIFIED=1` enables them.
   - Launch dims come from the row. Nothing parses kernel names.
 - **Op hooks**: `impl/sarc/Q4gswCoopmat.cpp` builds 4w linear on the SARC path when the device has an active row.
   - For shapes no row covers, it falls back to release 1.5's own `linear_q4gsw_{tiled,coop}` kernels: decode, unaligned M, bias, fp32.
   - It is called from `Q4gswLinear.cpp:q4gsw_linear` (listed in `sarc/HOOKS`).
+- `impl/sarc/Dq8caCoopmat.{h,cpp}`: the 8da4w linear op path (zpg / zpgtr, see [SWEEP-PARAMETERS.md](SWEEP-PARAMETERS.md)).
+- `impl/sarc/SdpaCoopmat.{h,cpp}`: the SDPA prefill path. Its shaders are `glsl/sarc/sarc_sdpa_{qk,av}_coopmat` and `sarc_sdpa_attn_weights_softmax`.
+- `impl/sarc/GraphInfo.{h,cpp}`: glue between `ComputeGraph` and the Vulkan-free selection layer (device info, predicted weight storage).
+- `glsl/sarc/sarc_quantize_and_pack_4w_with_group_sums`: the activation quantize-and-pack shader.
+- The upstream files that call into these paths are listed in `sarc/HOOKS`, which is the authoritative hook list.
 - **Shaders**: one untemplated body `glsl/sarc/<family>_body.glslh`, with two thin template wrappers.
   - `glsl/sarc/<family>.glsl` plus a yaml of shipped variants.
   - `glsl/sarc_dev/<family>_sweep.glsl` plus a yaml of sweep candidates.
@@ -30,7 +35,10 @@ Branches:
   - `ET_VK_SARC_UNVERIFIED`;
   - `ET_VK_FORCE_TILED_LINEAR` (tiled baseline);
   - `ET_VK_SARC_Q4GSW_VARIANT=<tile>` (sweep; also builds 4w on the SARC path on devices without rows);
+  - `ET_VK_SARC_DQ8CA_VARIANT=<tile>` (8da4w sweep, only on devices with active dq8ca rows);
+  - `ET_VK_DISABLE_COOPMAT` (SARC SDPA ops use the upstream kernels);
   - the sweep candidate rows.
+  - Usage of the sweep variables: [SWEEP-PARAMETERS.md](SWEEP-PARAMETERS.md#running-a-sweep-candidate).
 - **Benchmarks and tests**: `test/sarc_dev/`, a standalone CMake project with `test_llama_microbench` and `test_sarc_select`. The latter is GPU-free.
 
 End-to-end benchmark and evidence reports, plus how to add your GPU to them: `openspec/changes/sarc-1.5-e2e-benchmark/` (`CONTRIBUTING-A-GPU.md`).
@@ -41,12 +49,14 @@ Every yaml parameter of the 4w/8da4w coopmat shaders, and how to sweep them: [SW
 
 | Tool | What it does |
 |---|---|
-| `build.sh [--android] [--llama] [--traced] <tree> <out>` | Container build (`localhost/et-vk-build:rocky10`, pinned glslc). It regenerates shaders every run. |
-| `verify.sh --dir <stage> --lock <uuid> [--models 1b,3b,8b] [--schemes 4w,8da4w] [--pdiff]` | Runs on the GPU host and produces the promotion evidence. |
-| `check.sh [--no-build] [--android]` | GPU-free: zone rule, twins, selection test, release-export build, SPIR-V golden. |
+| `build.sh [--android] [--llama] [--traced] [--no-tests] <tree> <out>` | Container build (`localhost/et-vk-build:rocky10`, pinned glslc). It regenerates shaders every run. See the script header for all options. |
+| `verify.sh --dir <stage> --lock <uuid> [--models 1b,3b,8b] [--schemes 4w,8da4w] [--pdiff]` | Runs on the GPU host and produces the promotion evidence. See the script header for all options (`--out`, `--no-tiled`, `--device-index`, `--model-root`, `--flat-models`). |
+| `check.sh [--no-build] [--android] [--work <dir>]` | GPU-free: zone rule, twins, selection test, release-export build, SPIR-V golden. |
 | `make-release.sh --export <dir>/executorch` | Writes the release tree, for building. |
 | `make-release.sh --commit rN` | Runs `check.sh`, appends to `sarc/1.5`, tags `sarc/1.5-rN`. |
-| `spirv_golden.py` | Compares or updates `sarc/golden/spirv.json`. |
+| `spirv_golden.py` | Compares or updates `sarc/golden/spirv.json` (also `--glslc`). |
+| `compare_kernels.py <new.json> <reference>` | Compares `test_llama_microbench --json-out` results: dispatched kernel and median time per case. |
+| `zones.sh` | Sourced by the other tools; defines the release/dev zones and the twin wrappers. |
 
 ## Promotion checklist (one PR into dev/1.5)
 
