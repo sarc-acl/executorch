@@ -19,9 +19,9 @@
 //                                     prefill wherever it fits, e.g.
 //                                     t128x128k32g24s32f32c; builds 4w on the
 //                                     SARC path even on devices without rows
-//   ET_VK_SARC_DQ8CA_VARIANT=<tile>   use the dq8ca candidate or release row whose
-//                                     kernel ends in this token (e.g. zpgtr_t128x64k32g42s32)
-//                                     for 8da4w wherever it fits (prefill only);
+//   ET_VK_SARC_DQ8CA_VARIANT=<tile>   same for 8da4w prefill: the dq8ca sweep
+//                                     candidate or release row whose kernel ends
+//                                     in this token (e.g. zpgtr_t128x64k32g42s32);
 //                                     needs a device with active dq8ca rows
 
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h>
@@ -91,12 +91,13 @@ const Row kQ4gswCandidates[] = {
      kTex3dTex2d | kBufTex2d | kBufBuf, nullptr, Status::kUnverified},
 };
 
-// RX 7600 2026-09-28: zpg sweep candidates
-// (glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpg_sweep.yaml), ET_VK_SARC_DQ8CA_VARIANT.
+// dq8ca (8da4w) sweep candidates, selected with ET_VK_SARC_DQ8CA_VARIANT.
+// Keep in sync with glsl/sarc_dev/sarc_linear_dq8ca_coopmat_{zpg,zpgtr}_sweep.yaml.
 constexpr TileDims dq_tile(uint32_t m, uint32_t n, uint32_t sgx, uint32_t sgy) {
   return {m, n, 32, sgx, sgy, 32, 16, false};
 }
 const Row kDq8caCandidates[] = {
+    // RX 7600 2026-09-28: RDNA zpg tiles with larger per-subgroup tiles.
     {"", nullptr, Op::kDq8caLinear,
      "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x128k32g42s32", dq_tile(128, 128, 4, 2),
      kTex3dTex2d, nullptr, Status::kUnverified},
@@ -109,6 +110,20 @@ const Row kDq8caCandidates[] = {
     {"", nullptr, Op::kDq8caLinear,
      "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g22s32", dq_tile(128, 64, 2, 2),
      kTex3dTex2d, nullptr, Status::kUnverified},
+    // M51 texture3d register-pressure study (zpgtr, row-major A):
+    // du = DRAIN_UNROLL, dus / dus1 = + B_SEL_EARLY_N 2 / 1.
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_sweep_t128x64k32g42s32du",
+     {128, 64, 32, 4, 2, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified, true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_sweep_t128x64k32g42s32dus",
+     {128, 64, 32, 4, 2, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified, true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_sweep_t128x64k32g42s32dus1",
+     {128, 64, 32, 4, 2, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified, true},
 };
 
 std::string& requested_variant() {
@@ -139,21 +154,14 @@ std::optional<Choice> dev_select(
   if (!linear && env_true("ET_VK_DISABLE_COOPMAT")) {
     return std::nullopt;
   }
-  if (shape.op == Op::kDq8caLinear && !requested_dq8ca_variant().empty() &&
-      device_has_active_rows(device, shape.op)) {
-    for (const auto* store : {&candidates(), &rows()}) {
-      for (const Row& row : *store) {
-        if (row.op == shape.op &&
-            ends_with(row.kernel_base, "_" + requested_dq8ca_variant()) &&
-            q4gsw_coopmat_fits(device, shape, row)) {
-          return Choice{row.kernel_base, row.dims, row.rowmajor_a};
-        }
-      }
-    }
-    return std::nullopt;
-  }
-  const std::string& want = requested_variant();
-  if (want.empty() || shape.op != Op::kQ4gswLinear) {
+  // Exact tile token per op: 4w from ET_VK_SARC_Q4GSW_VARIANT, 8da4w from
+  // ET_VK_SARC_DQ8CA_VARIANT (the latter only on devices with dq8ca rows).
+  const std::string& want = shape.op == Op::kDq8caLinear
+      ? requested_dq8ca_variant()
+      : requested_variant();
+  if (want.empty() || !linear ||
+      (shape.op == Op::kDq8caLinear &&
+       !device_has_active_rows(device, shape.op))) {
     return table_choice;
   }
   // Exact tile token: prefer a candidate, then a release row.
@@ -176,6 +184,8 @@ struct Registrar {
         kDq8caCandidates, sizeof(kDq8caCandidates) / sizeof(kDq8caCandidates[0]));
     Override o;
     o.allow_unverified = env_true("ET_VK_SARC_UNVERIFIED");
+    // Only the 4w variable forces the SARC build path on devices without rows;
+    // the 8da4w variable needs active dq8ca rows (see dev_select).
     o.force_path = !requested_variant().empty();
     o.select = dev_select;
     set_override(o);

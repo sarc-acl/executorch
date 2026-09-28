@@ -59,6 +59,8 @@ All flags default to off.
 | `A_RAW` | A staged as raw uvec4 global-to-LDS copies | 4070 Ti SUPER, Orin |
 | `B_PAIR` | One weight texel feeds both nibble parities | 4070 Ti SUPER, Orin |
 | `CSH_IN_ASH` | texture3d output drain staged in `Ash_int8` | 4070 Ti SUPER, Orin (texture3d variants) |
+| `DRAIN_UNROLL` | Hand-expands the texture-IO drain band loop so every `result[][]` index is a compile-time constant (at most 8 bands). Covers the `Csh`, `CSH_IN_ASH` and `CSH_IN_ASH` + `A_RAW` drains. | M51 study (sweep only): correct, not faster |
+| `B_SEL_EARLY_N` | Integer, default 0. B slots `si < N` keep only their selected word right after the fetch instead of the whole texel. | M51 study (sweep only): correct, not faster |
 
 ## Hard preconditions
 
@@ -100,6 +102,8 @@ Names follow the pattern `<family>[_sweep]_<tile>_<io>_<weight>_half`. For examp
 | `fli` | `FRAG_LAYOUT` + `IMG_A` |
 | `mk32` | `MMA_K` 32 |
 | `ra` | `A_RAW` + `B_PAIR` (zpgtr) |
+| `du` | `DRAIN_UNROLL` (zpgtr) |
+| `dus`, `dus1` | `DRAIN_UNROLL` + `B_SEL_EARLY_N` 2 / 1 (zpgtr) |
 
 Any other shipped flag, such as zpg's `A_MAP_FULL`, is not in the name. Read the yaml entry.
 
@@ -123,13 +127,12 @@ The authoritative list is the release yaml plus `impl/sarc/table_<vendor>.cpp`.
 - It must also have a candidate row in `impl/sarc_dev/Overrides.cpp` (`kQ4gswCandidates`), or a release row.
 - The override also builds 4w on the SARC path on devices without rows.
 
-**8da4w.** There is no runtime variant override yet. The sweep yaml has 2 zpg candidates (Xe2 tiles) and 4
-zpgtr candidates (4070 Ti tiles). To test one:
-- call it by name in `test_llama_microbench`; or
-- add an `ET_VK_SARC_DQ8CA_VARIANT` override and candidate rows in `impl/sarc_dev/Overrides.cpp`, mirroring the
-  4w one.
-
-Both options stay in the dev zone.
+**8da4w.** Set `ET_VK_SARC_DQ8CA_VARIANT=<tile token>`, for example `zpgtr_t128x64k32g42s32du`.
+- The token must name a variant in a dq8ca sweep yaml or release yaml, with a candidate row in
+  `impl/sarc_dev/Overrides.cpp` (`kDq8caCandidates`) or a release row.
+- Unlike the 4w override, it only applies on devices that already have active dq8ca rows (with
+  `ET_VK_SARC_UNVERIFIED=1` for `kUnverified` rows); it does not force the SARC path elsewhere.
+- Candidates today: 4 RDNA zpg tiles (RX 7600 study) and 3 zpgtr texture3d variants (M51 study).
 
 **Other dev switches:**
 - `ET_VK_SARC_UNVERIFIED=1` activates `kUnverified` rows.

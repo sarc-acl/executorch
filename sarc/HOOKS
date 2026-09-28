@@ -16,3 +16,4 @@ backends/vulkan/runtime/graph/ops/glsl/linear_int8_input_block.glslh  hook  SKIP
 backends/vulkan/runtime/graph/ops/impl/SDPA.cpp            hook      sarc:: SDPA pickers, workgroups, spec constants, softmax name (LLM mode)
 backends/vulkan/runtime/api/Context.cpp                     hook      ETVK_INSPECT_PIPELINES only: ET_VK_DUMP_PIPELINE_STATS dump + get_shader_executable_irs pData fix
 backends/vulkan/runtime/vk_api/Pipeline.cpp                 hook      ETVK_INSPECT_PIPELINES only: capture flags on the batched create_pipelines() path
+backends/vulkan/runtime/vk_api/Adapter.cpp                 hook      ETVK_INSPECT_PIPELINES only: enable the pipelineExecutableInfo feature (Adreno)

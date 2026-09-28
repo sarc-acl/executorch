@@ -26,6 +26,8 @@ sarc_linear_dq8ca_coopmat_zpgtr_sweep:
     A_RAW: false
     B_PAIR: false
     CSH_IN_ASH: false
+    DRAIN_UNROLL: false
+    B_SEL_EARLY_N: 0
   shader_variants:
     - NAME: sarc_linear_dq8ca_coopmat_zpgtr_sweep_t128x128k32g44s32mk32_buffer_texture2d_half
       WG_TILE_N: 128
@@ -43,3 +45,16 @@ sarc_linear_dq8ca_coopmat_zpgtr_sweep:
     - NAME: sarc_linear_dq8ca_coopmat_zpgtr_sweep_t128x64k32g42s32mk32_texture3d_texture2d_half
       IO_STORAGE: texture3d
       MMA_K: 32
+    # M51 texture3d register-pressure study: 'du' = DRAIN_UNROLL, 'dus'/'dus1' = + B_SEL_EARLY_N 2/1.
+    - NAME: sarc_linear_dq8ca_coopmat_zpgtr_sweep_t128x64k32g42s32du_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      DRAIN_UNROLL: true
+      B_SEL_EARLY_N: 0
+    - NAME: sarc_linear_dq8ca_coopmat_zpgtr_sweep_t128x64k32g42s32dus_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      DRAIN_UNROLL: true
+      B_SEL_EARLY_N: 2
+    - NAME: sarc_linear_dq8ca_coopmat_zpgtr_sweep_t128x64k32g42s32dus1_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      DRAIN_UNROLL: true
+      B_SEL_EARLY_N: 1
