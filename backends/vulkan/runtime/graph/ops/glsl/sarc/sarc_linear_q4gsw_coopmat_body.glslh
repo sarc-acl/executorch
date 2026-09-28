@@ -10,7 +10,7 @@
 // (sarc_linear_q4gsw_coopmat.glsl, or its sweep twin in sarc_dev/) that defines
 // the bindings, the spec constants, ACC_T, the optional IO_TEXTURE /
 // WEIGHT_BUFFER / ACC_FP32 / ACC_GROUP_FP32 / CSH_IN_ASH / FRAG_LAYOUT / IMG_A /
-// IMG_W / HAS_BIAS macros and the tile
+// IMG_W / B_COLMAJOR / HAS_BIAS macros and the tile
 // constants MMA_{M,N,K}, WG_TILE_{M,N,K}, SG_GRID_{X,Y}, SUBGROUP_SIZE.
 // Must not contain template syntax: .glslh files are not expanded per variant.
 
@@ -64,6 +64,9 @@ const uint BSH_SLICE = WG_TILE_K * B_STRIDE_VEC4;
 #if defined(CSH_IN_ASH) || defined(FRAG_LAYOUT)
 #error "SH_F16V4 is not combined with CSH_IN_ASH or FRAG_LAYOUT"
 #endif
+#ifdef B_COLMAJOR
+#error "SH_F16V4 is not combined with B_COLMAJOR"
+#endif
 shared f16vec4 Ash[2 * ASH_SLICE * 2];
 shared f16vec4 Bsh[2 * BSH_SLICE * 2];
 void sh_store_Ash(const uint idx, const uvec4 v) {
@@ -78,7 +81,22 @@ void sh_store_Bsh(const uint idx, const uvec4 v) {
 #define BSH_STORE(idx, v) sh_store_Bsh(idx, v)
 #else
 shared uvec4 Ash[2 * ASH_SLICE];
+#ifdef B_COLMAJOR
+// B_COLMAJOR (RX 7900 XTX / RDNA3, 2026-09-27): the WMMA B operand is one N
+// column of MMA_K consecutive K values per lane, so coopMatLoad from the
+// row-major Bsh compiles to per-element ds_load_u16 gathers. Stage B N-major
+// (BshT[n][k], K contiguous, padded like Ash) and load it ColumnMajor instead.
+// Units: uvec2 = 4 fp16.
+#if defined(FRAG_LAYOUT)
+#error "B_COLMAJOR is not combined with FRAG_LAYOUT"
+#endif
+const uint BT_STRIDE_H = WG_TILE_K + 8u;
+const uint BT_STRIDE_V2 = BT_STRIDE_H / 4u;
+const uint BT_SLICE = WG_TILE_N * BT_STRIDE_V2;
+shared uvec2 BshT[2 * BT_SLICE];
+#else
 shared uvec4 Bsh[2 * BSH_SLICE];
+#endif
 // Expands to exactly the plain stores (keeps the non-SH_F16V4 SPIR-V).
 #define ASH_STORE(idx, v) Ash[idx] = v
 #define BSH_STORE(idx, v) Bsh[idx] = v
@@ -110,6 +128,17 @@ const uint A_PASSES = WG_TILE_M / A_ROWS_PER_PASS;
 const uint INVS_PER_ROW_B = WG_TILE_N / FP16_PER_VEC4;
 const uint B_ROWS_PER_PASS = WG_SIZE / INVS_PER_ROW_B;
 const uint B_PASSES = WG_TILE_K / B_ROWS_PER_PASS;
+#ifdef B_COLMAJOR
+// One item = half of one packed-weight texel (4 K x 8 N nibbles): 4 K x 4 N,
+// half 0 = N 0..3 (even nibbles), half 1 = N 4..7 (odd nibbles). K varies
+// fastest across lanes: each (n8, half) group of BT_KQ lanes writes one
+// contiguous run per column, and the groups land on disjoint LDS banks. (N
+// fastest put a wave's uvec2 stores on 4 bank groups and measured 1.27x slower.)
+const uint BT_KQ = WG_TILE_K / 4u;
+const uint BT_N8 = WG_TILE_N / 8u;
+const uint BT_ITEMS = BT_KQ * BT_N8 * 2u;
+const uint BT_PASSES = (BT_ITEMS + WG_SIZE - 1u) / WG_SIZE;
+#endif
 
 // FP16 accumulator coopmats (MMAS_PER_SG_M x MMAS_PER_SG_N per thread).
 coopmat<ACC_T, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>
@@ -141,6 +170,30 @@ uvec4 dequant_block(
       packFloat2x16(v0.xy), packFloat2x16(v0.zw),
       packFloat2x16(v1.xy), packFloat2x16(v1.zw));
 }
+
+#ifdef B_COLMAJOR
+// Store one item: 4 N columns (x..w of wb, nibble parity hf) x 4 K rows
+// (nibbles 2*kk + hf), each column's 4 K values as one uvec2.
+void store_bt_item(
+    const uint base,
+    const ivec4 wb,
+    const uint n_local,
+    const uint k_local,
+    const uint hf,
+    const f16vec4 sc) {
+  [[unroll]] for (uint j = 0; j < 4u; ++j) {
+    const int w = wb[j];
+    const f16vec4 v = f16vec4(
+        ((w >> int(4u * (0u + hf))) & 0xF) - 8,
+        ((w >> int(4u * (2u + hf))) & 0xF) - 8,
+        ((w >> int(4u * (4u + hf))) & 0xF) - 8,
+        ((w >> int(4u * (6u + hf))) & 0xF) - 8) * sc[j];
+    BshT[base + (n_local + j) * BT_STRIDE_V2 + k_local / 4u] =
+        uvec2(packFloat2x16(v.xy), packFloat2x16(v.zw));
+  }
+}
+#define BT_ACTIVE(p) (BT_ITEMS % WG_SIZE == 0u || (p) * WG_SIZE + gl_LocalInvocationID.x < BT_ITEMS)
+#endif
 
 // Fetch 8 consecutive fp16 activations of `row` starting at half-vec4 index
 // `k_hv4`, packed into one uvec4. Both spellings address the same bytes: a
@@ -214,7 +267,19 @@ void main() {
   f16vec4 sc1;
 
   uvec4 temp_A[A_PASSES];
+#ifdef B_COLMAJOR
+  ivec4 temp_B[BT_PASSES];
+  f16vec4 sc_bt[BT_PASSES];
+  uint bt_kq[BT_PASSES], bt_n8[BT_PASSES], bt_hf[BT_PASSES];
+  [[unroll]] for (uint p = 0; p < BT_PASSES; ++p) {
+    const uint item = p * WG_SIZE + gl_LocalInvocationID.x;
+    bt_kq[p] = item % BT_KQ;
+    bt_hf[p] = (item / BT_KQ) & 1u;
+    bt_n8[p] = (item / BT_KQ) >> 1u;
+  }
+#else
   ivec4 temp_B[B_PASSES];
+#endif
 
   // =========================================================
   // PROLOGUE (dbuf4): prefetch chunk 0 into temp registers, then store to
@@ -228,6 +293,19 @@ void main() {
       temp_A[p] = load_a_vec4(row, k_hv4, K4);
     }
     cached_group = 0u;
+#ifdef B_COLMAJOR
+    [[unroll]] for (uint p = 0; p < BT_PASSES; ++p) {
+      if (BT_ACTIVE(p)) {
+        const uint n8g = (tile_n_start >> 3u) + bt_n8[p];
+        sc_bt[p] = t_weight_scales[n8g * 2u + bt_hf[p]];
+#ifdef WEIGHT_BUFFER
+        temp_B[p] = t_packed_weight[n8g * K4 + bt_kq[p]];
+#else
+        temp_B[p] = WFETCH(ivec2(bt_kq[p], n8g));
+#endif
+      }
+    }
+#else
     sc0 = t_weight_scales[sc_n4];
     sc1 = t_weight_scales[sc_n4 + 1u];
     [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
@@ -240,15 +318,24 @@ void main() {
 #endif
       temp_B[p] = wblock;
     }
+#endif
   }
   {
     [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
       ASH_STORE(A_SH_IDX(p * A_ROWS_PER_PASS + a_row_offset, a_col), temp_A[p]);
     }
+#ifdef B_COLMAJOR
+    [[unroll]] for (uint p = 0; p < BT_PASSES; ++p) {
+      if (BT_ACTIVE(p)) {
+        store_bt_item(0u, temp_B[p], bt_n8[p] * 8u + 4u * bt_hf[p], bt_kq[p] * 4u, bt_hf[p], sc_bt[p]);
+      }
+    }
+#else
     [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
       BSH_STORE(B_SH_IDX(p * B_ROWS_PER_PASS + b_row_offset, b_col),
           dequant_block(temp_B[p], col_lo, col_hi, sc0, sc1));
     }
+#endif
   }
 
   // =========================================================
@@ -262,9 +349,16 @@ void main() {
   uint chunk;
   for (chunk = 0; chunk + 1u < num_chunks; ++chunk) {
     const uint cur_base_A = (chunk % 2u) * ASH_SLICE;
+#ifdef B_COLMAJOR
+    const uint cur_base_B = (chunk % 2u) * BT_SLICE;
+    const uint nxt_base_B = ((chunk + 1u) % 2u) * BT_SLICE;
+#else
     const uint cur_base_B = (chunk % 2u) * BSH_SLICE;
+#endif
     const uint nxt_base_A = ((chunk + 1u) % 2u) * ASH_SLICE;
+#ifndef B_COLMAJOR
     const uint nxt_base_B = ((chunk + 1u) % 2u) * BSH_SLICE;
+#endif
 
     // coopmat-lds-fence: barrier() alone does NOT order shared stores against a
     // subsequent coopMatLoad on one tested driver -- symptom is one
@@ -284,6 +378,24 @@ void main() {
         const uint k_hv4 = (chunkK_nxt + a_col * FP16_PER_VEC4) / 4u;
         temp_A[p] = load_a_vec4(row, k_hv4, K4);
       }
+#ifdef B_COLMAJOR
+      const uint group_nxt = (chunk + 1u) / CHUNKS_PER_GROUP;
+      const bool new_group = group_nxt != cached_group;
+      cached_group = group_nxt;
+      [[unroll]] for (uint p = 0; p < BT_PASSES; ++p) {
+        if (BT_ACTIVE(p)) {
+          const uint n8g = (tile_n_start >> 3u) + bt_n8[p];
+#ifdef WEIGHT_BUFFER
+          temp_B[p] = t_packed_weight[n8g * K4 + chunkK_nxt / 4u + bt_kq[p]];
+#else
+          temp_B[p] = WFETCH(ivec2(chunkK_nxt / 4u + bt_kq[p], n8g));
+#endif
+          if (new_group) {
+            sc_bt[p] = t_weight_scales[group_nxt * N4 + n8g * 2u + bt_hf[p]];
+          }
+        }
+      }
+#else
       [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
         const uint k_row = chunkK_nxt + p * B_ROWS_PER_PASS + b_row_offset;
 #ifdef WEIGHT_BUFFER
@@ -298,6 +410,7 @@ void main() {
         sc0 = t_weight_scales[group_nxt * N4 + sc_n4];
         sc1 = t_weight_scales[group_nxt * N4 + sc_n4 + 1u];
       }
+#endif
     }
 
     // --- MMA math on the cur slice ---
@@ -325,6 +438,14 @@ void main() {
 
       coopmat<float16_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> matB;
       [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+#ifdef B_COLMAJOR
+        const uint n_b = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
+        coopMatLoad(
+            matB, BshT,
+            cur_base_B + n_b * BT_STRIDE_V2 + k_start / 4u,
+            BT_STRIDE_V2,
+            gl_CooperativeMatrixLayoutColumnMajor);
+#else
         const uint col_b = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j) / FP16_PER_VEC4;
 #ifdef SH_F16V4
         coopMatLoad(
@@ -339,6 +460,7 @@ void main() {
             B_STRIDE_VEC4,
             gl_CooperativeMatrixLayoutRowMajor);
 #endif
+#endif // B_COLMAJOR
 
         [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
           result[i][j] = coopMatMulAdd(matA[i], matB, result[i][j]);
@@ -364,17 +486,29 @@ void main() {
         ASH_STORE(nxt_base_A + A_SH_IDX(p * A_ROWS_PER_PASS + a_row_offset, a_col),
             temp_A[p]);
       }
+#ifdef B_COLMAJOR
+      [[unroll]] for (uint p = 0; p < BT_PASSES; ++p) {
+        if (BT_ACTIVE(p)) {
+          store_bt_item(nxt_base_B, temp_B[p], bt_n8[p] * 8u + 4u * bt_hf[p], bt_kq[p] * 4u, bt_hf[p], sc_bt[p]);
+        }
+      }
+#else
       [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
         BSH_STORE(nxt_base_B + B_SH_IDX(p * B_ROWS_PER_PASS + b_row_offset, b_col),
             dequant_block(temp_B[p], col_lo, col_hi, sc0, sc1));
       }
+#endif
     }
   }
 
   // --- epilogue: barrier, then MMA on the last chunk (loop peeled) ---
   {
     const uint cur_base_A = (chunk % 2u) * ASH_SLICE;
+#ifdef B_COLMAJOR
+    const uint cur_base_B = (chunk % 2u) * BT_SLICE;
+#else
     const uint cur_base_B = (chunk % 2u) * BSH_SLICE;
+#endif
 
     // coopmat-lds-fence: barrier() alone does NOT order shared stores against a
     // subsequent coopMatLoad on one tested driver -- symptom is one
@@ -409,6 +543,14 @@ void main() {
 
       coopmat<float16_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> matB;
       [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+#ifdef B_COLMAJOR
+        const uint n_b = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
+        coopMatLoad(
+            matB, BshT,
+            cur_base_B + n_b * BT_STRIDE_V2 + k_start / 4u,
+            BT_STRIDE_V2,
+            gl_CooperativeMatrixLayoutColumnMajor);
+#else
         const uint col_b = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j) / FP16_PER_VEC4;
 #ifdef SH_F16V4
         coopMatLoad(
@@ -423,6 +565,7 @@ void main() {
             B_STRIDE_VEC4,
             gl_CooperativeMatrixLayoutRowMajor);
 #endif
+#endif // B_COLMAJOR
 
         [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
           result[i][j] = coopMatMulAdd(matA[i], matB, result[i][j]);

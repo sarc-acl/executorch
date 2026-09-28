@@ -89,6 +89,9 @@ $if ACC_FP32:
 $if CSH_IN_ASH:
   #define CSH_IN_ASH
 
+$if B_COLMAJOR:
+  #define B_COLMAJOR
+
 $if SH_F16V4:
   #define SH_F16V4
 
