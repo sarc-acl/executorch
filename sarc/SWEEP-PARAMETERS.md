@@ -36,6 +36,7 @@ All flags default to off.
 |---|---|---|
 | `ACC_FP32` | fp32 accumulator | 780M (maps 1:1 onto `v_wmma_f32_16x16x16_f16`); Orin (large-K accuracy) |
 | `ACC_GROUP_FP32` | fp16 accumulation within a quantization group, fp32 running total. Cannot be combined with `ACC_FP32` (`#error`). | 4070 Ti SUPER: full-rate fp16 MMA without the long-K error |
+| `ACC_GROUP_FP32_REG` | As `ACC_GROUP_FP32`, but the fp32 running total is a per-invocation register array, filled from an LDS copy of each fp16 group sum (Adreno has no fp32 accumulator coopmat, and its compiler crashes on per-element coopmat access). Cannot be combined with `ACC_FP32`, `ACC_GROUP_FP32`, `CSH_IN_ASH`, `B_COLMAJOR` or `FRAG_LAYOUT` (`#error`). | Adreno 840 (sweep candidate) |
 | `CSH_IN_ASH` | texture3d output drain staged in the dead A shared-memory region | 780M (less LDS, higher occupancy) |
 | `FRAG_LAYOUT` | Fragment-contiguous shared-memory layout, no padding | Intel Xe2 |
 | `IMG_A` | Storage-image loads for A; only with `IO_STORAGE: texture3d` | Intel Xe2 |
@@ -93,6 +94,7 @@ Names follow the pattern `<family>[_sweep]_<tile>_<io>_<weight>_half`. For examp
 | `f32` | `ACC_FP32` |
 | `c` | `CSH_IN_ASH` (4w) |
 | `ga` | `ACC_GROUP_FP32` |
+| `gr` | `ACC_GROUP_FP32_REG` |
 | `m8` | `MMA_M` 8 |
 | `m<M>x<N>x<K>` | full MMA shape (Adreno) |
 | `fli` | `FRAG_LAYOUT` + `IMG_A` |

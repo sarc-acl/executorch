@@ -42,6 +42,12 @@ $if IO_STORAGE == "texture3d":
 $if ACC_GROUP_FP32:
   #define ACC_GROUP_FP32
 
+// ACC_GROUP_FP32_REG (Adreno 840, 2026-09-28): ACC_GROUP_FP32 with the fp32
+// total held per invocation in registers instead of an fp32 accumulator
+// coopmat, which Adreno does not expose (fp16 MMA is fp16 -> fp16 only).
+$if ACC_GROUP_FP32_REG:
+  #define ACC_GROUP_FP32_REG
+
 layout(std430) buffer;
 
 #include "common.glslh"
@@ -79,6 +85,9 @@ $if ACC_FP32:
 // fp16->fp32 14.77 vs fp16->fp16 10.96 TFLOP/s on the 780M.
 #if defined(ACC_FP32) && defined(ACC_GROUP_FP32)
 #error "ACC_FP32 (fp32 accumulate) and ACC_GROUP_FP32 (fp16 per group, fp32 total) are exclusive"
+#endif
+#if defined(ACC_GROUP_FP32_REG) && (defined(ACC_FP32) || defined(ACC_GROUP_FP32))
+#error "ACC_GROUP_FP32_REG (fp32 total in registers) excludes ACC_FP32 and ACC_GROUP_FP32"
 #endif
 #ifdef ACC_FP32
 #define ACC_T float

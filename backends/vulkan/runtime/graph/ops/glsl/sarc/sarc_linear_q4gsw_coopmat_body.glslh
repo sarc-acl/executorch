@@ -9,8 +9,8 @@
 // Body of the SARC q4gsw coopmat linear. Included by a template header
 // (sarc_linear_q4gsw_coopmat.glsl, or its sweep twin in sarc_dev/) that defines
 // the bindings, the spec constants, ACC_T, the optional IO_TEXTURE /
-// WEIGHT_BUFFER / ACC_FP32 / ACC_GROUP_FP32 / CSH_IN_ASH / FRAG_LAYOUT / IMG_A /
-// IMG_W / B_COLMAJOR / HAS_BIAS macros and the tile
+// WEIGHT_BUFFER / ACC_FP32 / ACC_GROUP_FP32 / ACC_GROUP_FP32_REG / CSH_IN_ASH /
+// FRAG_LAYOUT / IMG_A / IMG_W / B_COLMAJOR / HAS_BIAS macros and the tile
 // constants MMA_{M,N,K}, WG_TILE_{M,N,K}, SG_GRID_{X,Y}, SUBGROUP_SIZE.
 // Must not contain template syntax: .glslh files are not expanded per variant.
 
@@ -148,6 +148,44 @@ coopmat<ACC_T, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>
 coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>
     total[MMAS_PER_SG_M][MMAS_PER_SG_N];
 #endif
+#ifdef ACC_GROUP_FP32_REG
+// Same idea with the fp32 total in plain registers (Adreno 840 exposes no fp32
+// accumulator coopmat type, and its compiler crashes on per-element coopmat
+// access): at each group end the subgroup stores its fp16 group sum to a
+// private LDS region, and each invocation adds its ACC_ELEMS elements
+// (interleaved, element e of lane l at e * SUBGROUP_SIZE + l) into total_r.
+// The region is Csh on texture3d (dead until the epilogue).
+#if defined(CSH_IN_ASH) || defined(B_COLMAJOR) || defined(FRAG_LAYOUT)
+#error "ACC_GROUP_FP32_REG is not combined with CSH_IN_ASH, B_COLMAJOR or FRAG_LAYOUT"
+#endif
+const uint ACC_ELEMS = (MMA_M * MMA_N) / SUBGROUP_SIZE;
+const uint FSH_REGION = MMA_M * MMA_N;
+#ifdef IO_TEXTURE
+#define Fsh Csh
+#else
+shared float16_t Fsh[NUM_SUBGROUPS * FSH_REGION];
+#endif
+float total_r[MMAS_PER_SG_M][MMAS_PER_SG_N][ACC_ELEMS];
+
+// Fold the fp16 group sums into total_r and restart them at zero.
+void flush_group_reg() {
+  const uint base = gl_SubgroupID * FSH_REGION;
+  [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+    [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+      coopMatStore(
+          result[i][j], Fsh, base, MMA_N, gl_CooperativeMatrixLayoutRowMajor);
+      subgroupMemoryBarrierShared();
+      subgroupBarrier();
+      [[unroll]] for (uint e = 0; e < ACC_ELEMS; ++e) {
+        total_r[i][j][e] +=
+            float(Fsh[base + e * SUBGROUP_SIZE + gl_SubgroupInvocationID]);
+      }
+      subgroupBarrier();
+      result[i][j] = coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0.0);
+    }
+  }
+}
+#endif
 
 // Dequant one packed INT4 block column-pair into 8 scaled fp16 weights
 // (one Bsh uvec4). col_lo/col_hi select the K row within the block.
@@ -248,6 +286,11 @@ void main() {
       result[i][j] = coopmat<ACC_T, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0.0);
 #ifdef ACC_GROUP_FP32
       total[i][j] = coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0.0);
+#endif
+#ifdef ACC_GROUP_FP32_REG
+      [[unroll]] for (uint e = 0; e < ACC_ELEMS; ++e) {
+        total_r[i][j][e] = 0.0;
+      }
 #endif
     }
   }
@@ -479,6 +522,11 @@ void main() {
       }
     }
 #endif
+#ifdef ACC_GROUP_FP32_REG
+    if ((chunk + 1u) % CHUNKS_PER_GROUP == 0u) {
+      flush_group_reg();
+    }
+#endif
 
     // --- store temp (chunk+1) -> nxt slice, dequantizing B ---
     {
@@ -580,6 +628,27 @@ void main() {
     [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
       total[i][j] += coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]);
       result[i][j] = coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(total[i][j]);
+    }
+  }
+#endif
+#ifdef ACC_GROUP_FP32_REG
+  // The last chunk always ends a group (K % group_size == 0): fold it, then
+  // load the fp32 totals (rounded to fp16) back into the accumulators.
+  flush_group_reg();
+  {
+    const uint base = gl_SubgroupID * FSH_REGION;
+    [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+      [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+        [[unroll]] for (uint e = 0; e < ACC_ELEMS; ++e) {
+          Fsh[base + e * SUBGROUP_SIZE + gl_SubgroupInvocationID] =
+              float16_t(total_r[i][j][e]);
+        }
+        subgroupMemoryBarrierShared();
+        subgroupBarrier();
+        coopMatLoad(
+            result[i][j], Fsh, base, MMA_N, gl_CooperativeMatrixLayoutRowMajor);
+        subgroupBarrier();
+      }
     }
   }
 #endif
