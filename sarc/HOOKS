@@ -14,3 +14,5 @@ backends/vulkan/runtime/graph/ops/impl/Squeeze.cpp          backport  03f41d2031
 backends/vulkan/runtime/graph/ops/impl/QuantizedLinear.cpp  hook      sarc::try_add_dq8ca_coopmat at the top of linear_dq8ca_q4gsw
 backends/vulkan/runtime/graph/ops/glsl/linear_int8_input_block.glslh  hook  SKIP_BLOCK_WRITE_HELPERS guard (row-major packer); no-op when undefined
 backends/vulkan/runtime/graph/ops/impl/SDPA.cpp            hook      sarc:: SDPA pickers, workgroups, spec constants, softmax name (LLM mode)
+backends/vulkan/runtime/api/Context.cpp                     hook      ETVK_INSPECT_PIPELINES only: ET_VK_DUMP_PIPELINE_STATS dump + get_shader_executable_irs pData fix
+backends/vulkan/runtime/vk_api/Pipeline.cpp                 hook      ETVK_INSPECT_PIPELINES only: capture flags on the batched create_pipelines() path

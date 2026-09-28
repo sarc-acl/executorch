@@ -8,10 +8,17 @@
 
 #include <executorch/backends/vulkan/runtime/api/Context.h>
 
-#ifdef VULKAN_DEBUG
+#if defined(VULKAN_DEBUG) || defined(ETVK_INSPECT_PIPELINES)
 #include <iomanip>
 #include <iostream>
-#endif // VULKAN_DEBUG
+#endif // VULKAN_DEBUG || ETVK_INSPECT_PIPELINES
+
+#ifdef ETVK_INSPECT_PIPELINES
+#include <cstdlib>
+#include <fstream>
+#include <mutex>
+#include <unordered_set>
+#endif // ETVK_INSPECT_PIPELINES
 
 #ifndef VULKAN_DESCRIPTOR_POOL_SIZE
 #define VULKAN_DESCRIPTOR_POOL_SIZE 1024u
@@ -23,6 +30,19 @@
 
 namespace vkcompute {
 namespace api {
+
+#if defined(VK_KHR_pipeline_executable_properties) && \
+    defined(ETVK_INSPECT_PIPELINES)
+std::ostream& operator<<(
+    std::ostream&,
+    const VkPipelineExecutablePropertiesKHR&);
+std::ostream& operator<<(
+    std::ostream&,
+    const VkPipelineExecutableInternalRepresentationKHR&);
+std::ostream& operator<<(
+    std::ostream&,
+    std::vector<VkPipelineExecutableStatisticKHR>&);
+#endif // VK_KHR_pipeline_executable_properties && ETVK_INSPECT_PIPELINES
 
 Context::Context(vkapi::Adapter* adapter, const ContextConfig& config)
     : config_(config),
@@ -149,6 +169,35 @@ vkapi::DescriptorSet Context::get_descriptor_set(
        shader_cache().retrieve(shader_descriptor),
        spec_constants,
        resolved_required_subgroup_size});
+
+#if defined(VK_KHR_pipeline_executable_properties) && \
+    defined(ETVK_INSPECT_PIPELINES)
+  // Inspection builds only: ET_VK_DUMP_PIPELINE_STATS=<dir> writes the driver's
+  // statistics and internal representations (ISA) of every dispatched pipeline
+  // to <dir>/<kernel_name>.txt, once per pipeline.
+  if (const char* dump_dir = std::getenv("ET_VK_DUMP_PIPELINE_STATS")) {
+    static std::mutex dumped_mutex;
+    static std::unordered_set<VkPipeline> dumped;
+    std::lock_guard<std::mutex> lock(dumped_mutex);
+    if (dumped.insert(pipeline).second) {
+      std::ofstream out(
+          std::string(dump_dir) + "/" + shader_descriptor.kernel_name + ".txt");
+      out << "kernel: " << shader_descriptor.kernel_name << "\n"
+          << "local_wg: " << lwg[0u] << "x" << lwg[1u] << "x" << lwg[2u]
+          << "\n";
+      for (const auto& props : get_pipeline_executable_props(pipeline)) {
+        out << props << "\n";
+      }
+      std::vector<VkPipelineExecutableStatisticKHR> stats =
+          get_shader_executable_stats(pipeline, 0u);
+      out << "====== Statistics ======\n" << stats;
+      auto irs = get_shader_executable_irs(pipeline, 0u);
+      for (auto& ir : std::get<0>(irs)) {
+        out << "====== IR: " << ir.name << " ======\n" << ir << "\n";
+      }
+    }
+  }
+#endif // VK_KHR_pipeline_executable_properties && ETVK_INSPECT_PIPELINES
 
   cmd_.bind_pipeline(pipeline, pipeline_layout, lwg);
 
@@ -398,7 +447,8 @@ Context::get_shader_executable_irs(
   VK_CHECK(vkGetPipelineExecutableInternalRepresentationsKHR(
       device(), &exec_info, &ir_count, irs.data()));
 
-  return std::make_tuple(irs, irs_data);
+  // Move, not copy: each irs[i].pData points into irs_data[i]'s buffer.
+  return std::make_tuple(std::move(irs), std::move(irs_data));
 }
 
 std::vector<VkPipelineExecutableStatisticKHR>
