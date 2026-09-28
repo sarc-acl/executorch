@@ -147,6 +147,43 @@ const Row kAmdRows[] = {
      kTex3dTex2d | kBufTex2d,
      nullptr,
      Status::kUnverified},
+    // RX 7600 (gfx1102, Navi33, RADV Mesa 26.2.3 -- the first RADV with
+    // VK_KHR_cooperative_matrix here; Mesa 23.2 has none), not yet verified on
+    // release 1.5. 4w: the 7900 XTX tile won the 2026-09-28 sweep on this card
+    // (fp32 accumulate: RADV's fp16-accumulate WMMA is the slower roof here).
+    {"rx 7600",
+     amd_wave64,
+     Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt",
+     {256, 128, 32, 2, 4, 32, 16, true},
+     kTex3dTex2d,
+     nullptr,
+     Status::kUnverified},
+    // The 780M SDPA prefill kernels and 8da4w zpg kernel.
+    {"rx 7600",
+     amd_wave64,
+     Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_t128x64k32g22s64",
+     {128, 64, 32, 2, 2, 64, 16, false},
+     kBufBuf,
+     nullptr,
+     Status::kUnverified},
+    {"rx 7600",
+     amd_wave64,
+     Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_t64x64k32g22s64",
+     {64, 64, 32, 2, 2, 64, 16, false},
+     kBufBuf,
+     nullptr,
+     Status::kUnverified},
+    {"rx 7600",
+     amd_wave64,
+     Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32",
+     {128, 64, 32, 4, 2, 32, 16, false},
+     kTex3dTex2d | kBufTex2d,
+     nullptr,
+     Status::kUnverified},
 };
 
 struct Registrar {

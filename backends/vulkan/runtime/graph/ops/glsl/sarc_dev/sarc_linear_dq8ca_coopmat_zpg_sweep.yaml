@@ -43,3 +43,31 @@ sarc_linear_dq8ca_coopmat_zpg_sweep:
       MMA_M: 8
       MMA_K: 32
       A_MULTI_BLOCK: true
+    # RX 7600 2026-09-28: RDNA 16x16x16 int8 tiles with larger per-subgroup tiles than the
+    # 780M t128x64k32g42s32 (64x16), for more int8 WMMA work per loaded LDS byte. A tile with
+    # (WG_TILE_M / 4) * (WG_TILE_K / 4) = 2 * WG_SIZE A blocks needs A_MULTI_BLOCK, A_BLOCKS: 2.
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t128x128k32g42s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_N: 128
+      A_MAP_FULL: true
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t128x128k32g24s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_N: 128
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      A_MAP_FULL: true
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t256x64k32g24s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 256
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 2
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g22s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 2

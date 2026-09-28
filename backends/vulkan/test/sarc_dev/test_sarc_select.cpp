@@ -176,6 +176,18 @@ int main(int argc, char** argv) {
              : "";
        },
        [](const ShapeInfo&) { return kD + "zpg_t128x64k32g42s32"; }},
+      {"RX7600",
+       [] {
+         DeviceInfo d = device("amd radeon rx 7600 (radv navi33)", true, 64, 32, 64);
+         d.max_shared_bytes = 65536;
+         return d;
+       }(),
+       [](const ShapeInfo& s) -> std::string {
+         return s.output == Storage::kTexture3D
+             ? kQ + "t256x128k32g24s32f32cbt"
+             : "";
+       },
+       [](const ShapeInfo&) { return kD + "zpg_t128x64k32g42s32"; }},
       {"Adreno840",
        device("adreno (tm) 840", false, 64, 64, 128),
        [](const ShapeInfo&) { return kQ + "t64x64k32g21s64m64x32x16"; },
