@@ -1,0 +1,201 @@
+{
+  "rc": 0,
+  "shader": "matrix_fp16_64x16x16_c1",
+  "stderr": "Device: Adreno (TM) 840 (Vulkan 1.4)\nFeatures: cooperativeMatrix=1 shaderFloat16=1 shaderInt8=1 16bitStorage=1 8bitStorage=1 vulkanMemoryModel=1 subgroupSizeControl=1\nSubgroup size: 64 (size control: 1)\nBUFFER bytes=2048 type=6 flags=15\nBUFFER bytes=512 type=6 flags=15\nBUFFER bytes=16 type=6 flags=15\nBUFFER bytes=32768 type=6 flags=15\n",
+  "inspector_sha256": "8be3b7072edf38d6e7b9f5e2c326daf52e9456f2e0d5988b3556b56afe9ac6b1",
+  "records": [
+    {
+      "config": {
+        "chains": 1,
+        "compile_command": [
+          "glslc",
+          "--target-env=vulkan1.3",
+          "-O",
+          "-DM=64",
+          "-DN=16",
+          "-DK=16",
+          "-DAT=float16_t",
+          "-DCT=float16_t",
+          "-DCHAINS=1",
+          "build/shaders/matrix_fp16_64x16x16_c1.comp",
+          "-o",
+          "build/shaders/matrix_fp16_64x16x16_c1.spv"
+        ],
+        "dtype": "fp16",
+        "family": "matrix",
+        "groups": 16,
+        "k": 16,
+        "loops": 128,
+        "m": 64,
+        "matrix_n": 16,
+        "n": 1024,
+        "name": "matrix_fp16_64x16x16_c1",
+        "runner_sha256": "4ca2da93208b0bdc7d18800eb9ba88b776be3d60a6a5db7df22818720507fc1a",
+        "samples": 21,
+        "schema_version": 2,
+        "shader": "shaders/matrix_fp16_64x16x16_c1.spv",
+        "shared_count": 1024,
+        "spirv_ledger": {
+          "control_barrier": 0,
+          "coopmat_load": 2,
+          "coopmat_muladd": 1,
+          "dot": 0,
+          "fma": 0,
+          "load_Input": 3,
+          "load_PushConstant": 1,
+          "volatile": 0
+        },
+        "spirv_sha256": "33af28eb810c63431d68f65d35778919b9979e1b404e9cf20940107b9d359ae5",
+        "stride": 1,
+        "subgroup": 64,
+        "wg": 64,
+        "width": 1
+      },
+      "executables": [
+        {
+          "description": "Adreno Shader",
+          "name": "Compute Shader",
+          "representations": [],
+          "statistics": [
+            {
+              "description": "Total count of all shader instructions.  Complex shaders with high instruction counts may have long execution times.",
+              "name": "Instruction count all",
+              "value": 268
+            },
+            {
+              "description": "Total count of all 32bit ALU shader instructions.",
+              "name": "ALU instruction count 32bit",
+              "value": 144
+            },
+            {
+              "description": "Total count of all 16bit ALU shader instructions.  Note: 16bit ALU instructions perform better and use less register space than 32bit instructions.",
+              "name": "ALU instruction count 16bit",
+              "value": 0
+            },
+            {
+              "description": "Total count of all complex instructions (sin, cos, etc).",
+              "name": "Complex instruction count",
+              "value": 0
+            },
+            {
+              "description": "Total count of all preamble instructions. Complex shaders with high instruction counts may have long execution times.",
+              "name": "Preamble instruction count all",
+              "value": 69
+            },
+            {
+              "description": "Total count of all preamble 32bit ALU instructions.",
+              "name": "Preamble ALU instruction count 32bit",
+              "value": 0
+            },
+            {
+              "description": "Total count of all preamble 16bit ALU instructions. Note: 16bit ALU instructions perform better and use less register space than 32bit instructions.",
+              "name": "Preamble ALU instruction count 16bit",
+              "value": 0
+            },
+            {
+              "description": "Total count of all preamble complex instructions (sin, cos, etc).",
+              "name": "Preamble complex instruction count",
+              "value": 0
+            },
+            {
+              "description": "Total count of all texture read instructions.  Generally, VkImage reads, with or without a VkSampler.  Also includes input attachment reads.",
+              "name": "Texture read instruction count",
+              "value": 2
+            },
+            {
+              "description": "Total count of all preamble texture read instructions. Generally, VkImage reads, with or without a VkSampler. Also includes input attachment reads.",
+              "name": "Preamble texture read instruction count",
+              "value": 0
+            },
+            {
+              "description": "Total count of all ray intersection instructions.",
+              "name": "Ray intersection instruction count",
+              "value": 0
+            },
+            {
+              "description": "Total count of all flow control instructions.",
+              "name": "Flow control instruction count",
+              "value": 5
+            },
+            {
+              "description": "Total count of all barrier and fence instructions.  Generally, op*Barrier instructions in the shader.",
+              "name": "Barrier and fence instruction count",
+              "value": 3
+            },
+            {
+              "description": "Total count of all short latency sync instructions.",
+              "name": "Short latency sync instruction count",
+              "value": 6
+            },
+            {
+              "description": "Total count of all long latency sync instructions.",
+              "name": "Long latency sync instruction count",
+              "value": 2
+            },
+            {
+              "description": "Total count of all preamble flow control instructions.",
+              "name": "Preamble flow control instruction count",
+              "value": 1
+            },
+            {
+              "description": "Total count of all preamble short latency sync instructions.",
+              "name": "Preamble short latency sync instruction count",
+              "value": 20
+            },
+            {
+              "description": "Total count of all preamble long latency sync instructions.",
+              "name": "Preamble long latency sync instruction count",
+              "value": 0
+            },
+            {
+              "description": "Number of 128bit registers used by each shader instance.  Each 128bit register may store 4 FP32 values.",
+              "name": "Full precision register footprint per shader instance",
+              "value": 13
+            },
+            {
+              "description": "Number of 64bit registers used by each shader instance.  Each 64bit register may store 4 FP16 values.",
+              "name": "Half precision register footprint per shader instance",
+              "value": 26
+            },
+            {
+              "description": "Number of 128bit registers used by each shader instance.  Each 128bit register may store 4 FP32 values, or 8 FP16 values.",
+              "name": "Overall register footprint per shader instance",
+              "value": 13
+            },
+            {
+              "description": "Number of 128bit slots of scratch memory used by each shader instance.  Warning: If the shader uses any scratch memory, it will perform poorly.",
+              "name": "Scratch memory usage per shader instance",
+              "value": 0
+            },
+            {
+              "description": "Total count of all shader stage output components.",
+              "name": "Output component count",
+              "value": 0
+            },
+            {
+              "description": "Total count of all shader stage input components.",
+              "name": "Input component count",
+              "value": 0
+            },
+            {
+              "description": "The maximum ALU fiber occupancy percentage for the shader.  Warning: If this number is low, the shader may perform poorly.",
+              "name": "ALU fiber occupancy percentage",
+              "value": 28
+            },
+            {
+              "description": "Total count of all memory read instructions.  Generally, VkImage/VkBuffer reads through a storage descriptor.",
+              "name": "Memory read instruction count",
+              "value": 0
+            },
+            {
+              "description": "Total count of all memory write instructions.  Generally, VkImage/VkBuffer writes through a storage descriptor.",
+              "name": "Memory write instruction count",
+              "value": 10
+            }
+          ],
+          "subgroup_size": 64
+        }
+      ]
+    }
+  ]
+}
