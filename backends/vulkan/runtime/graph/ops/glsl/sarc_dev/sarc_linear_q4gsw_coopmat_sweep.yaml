@@ -28,6 +28,7 @@ sarc_linear_q4gsw_coopmat_sweep:
     ACC_FP32: false
     CSH_IN_ASH: false
     ACC_GROUP_FP32: false
+    ACC_GROUP_FP32_REG: false
     FRAG_LAYOUT: false
     IMG_A: false
     IMG_W: false
@@ -156,3 +157,44 @@ sarc_linear_q4gsw_coopmat_sweep:
       ACC_FP32: true
       CSH_IN_ASH: true
       B_COLMAJOR: true
+    # Adreno 840 (S26) 2026-09-28: the release adreno tile with the fp32 group
+    # total in registers ('gr', ACC_GROUP_FP32_REG) for the long-K production diff.
+    - NAME: sarc_linear_q4gsw_coopmat_sweep_t64x64k32g21s64m64x32x16gr_buffer_texture2d_half
+      IO_STORAGE: buffer
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 64
+      MMA_N: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+      SH_F16V4: true
+      ACC_GROUP_FP32_REG: true
+    - NAME: sarc_linear_q4gsw_coopmat_sweep_t64x64k32g21s64m64x32x16gr_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 64
+      MMA_N: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+      SH_F16V4: true
+      ACC_GROUP_FP32_REG: true
+    - NAME: sarc_linear_q4gsw_coopmat_sweep_t64x64k32g21s64m64x32x16gr_buffer_buffer_half
+      IO_STORAGE: buffer
+      WEIGHT_STORAGE: buffer
+      MMA_M: 64
+      MMA_N: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+      SH_F16V4: true
+      ACC_GROUP_FP32_REG: true

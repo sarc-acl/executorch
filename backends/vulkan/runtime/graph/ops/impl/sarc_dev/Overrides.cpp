@@ -79,6 +79,12 @@ const Row kQ4gswCandidates[] = {
     {"", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32cbt", tile_mnk(128, 128, 32, 4, 2, true),
      kTex3dTex2d, nullptr, Status::kUnverified},
+    // Adreno 840 (S26) 2026-09-28: the release adreno tile with the fp32
+    // group total in registers (ACC_GROUP_FP32_REG).
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t64x64k32g21s64m64x32x16gr",
+     {64, 64, 32, 2, 1, 64, 64, false},
+     kTex3dTex2d | kBufTex2d | kBufBuf, nullptr, Status::kUnverified},
 };
 
 std::string& requested_variant() {

@@ -23,6 +23,8 @@
  *                   v_wmma_f32_16x16x16_f16; Orin large-K accuracy)
  *   ACC_GROUP_FP32  fp16 accumulate per quantization group, fp32 total
  *                   (GeForce: full-rate fp16 MMA without the long-K error)
+ *   ACC_GROUP_FP32_REG  ACC_GROUP_FP32 with the fp32 total in per-invocation
+ *                   registers (Adreno 840: no fp32 accumulator coopmat)
  *   CSH_IN_ASH      texture3d drain staged in dead Ash (RDNA3 occupancy)
  *   B_COLMAJOR      B staged N-major in LDS, ColumnMajor B coopMatLoad (RDNA3 7900 XTX)
  *   FRAG_LAYOUT     fragment-contiguous LDS, no padding (Intel Xe2)
@@ -63,6 +65,12 @@ $if IO_STORAGE == "texture3d":
 $if ACC_GROUP_FP32:
   #define ACC_GROUP_FP32
 
+// ACC_GROUP_FP32_REG (Adreno 840, 2026-09-28): ACC_GROUP_FP32 with the fp32
+// total held per invocation in registers instead of an fp32 accumulator
+// coopmat, which Adreno does not expose (fp16 MMA is fp16 -> fp16 only).
+$if ACC_GROUP_FP32_REG:
+  #define ACC_GROUP_FP32_REG
+
 layout(std430) buffer;
 
 #include "common.glslh"
@@ -100,6 +108,9 @@ $if ACC_FP32:
 // fp16->fp32 14.77 vs fp16->fp16 10.96 TFLOP/s on the 780M.
 #if defined(ACC_FP32) && defined(ACC_GROUP_FP32)
 #error "ACC_FP32 (fp32 accumulate) and ACC_GROUP_FP32 (fp16 per group, fp32 total) are exclusive"
+#endif
+#if defined(ACC_GROUP_FP32_REG) && (defined(ACC_FP32) || defined(ACC_GROUP_FP32))
+#error "ACC_GROUP_FP32_REG (fp32 total in registers) excludes ACC_FP32 and ACC_GROUP_FP32"
 #endif
 #ifdef ACC_FP32
 #define ACC_T float
