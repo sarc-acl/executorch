@@ -6,10 +6,10 @@ import pandas as pd
 
 HERE = Path(__file__).resolve().parent
 REPORT = HERE.parent
-# Six-GPU combined data (the five original GPUs are identical to ../cells.csv rows
-# apart from the paired-bootstrap speedup CI; the 7900 XTX is added).
-CELLS_CSV = REPORT / "raw6" / "cells.csv"
-RUNS_CSV = REPORT / "raw6" / "runs_all.csv"
+# Seven-GPU combined data ("the" x 2048 prompt), built by ../analyze7.py. The six-GPU
+# rows are identical to ../raw6/ (kept for provenance); the RX 7600 is added.
+CELLS_CSV = REPORT / "raw7" / "cells.csv"
+RUNS_CSV = REPORT / "raw7" / "runs_all.csv"
 # Xclipse (M51): internal device, relative speedups only (no absolute tok/s anywhere).
 M51_CSV = Path("/home/doremy/Desktop/sarc-acl/dev/1.5/executorch/openspec/changes/"
                "sarc-1.5-e2e-benchmark/contrib/m51/speedups.csv")
@@ -18,7 +18,7 @@ M51_PROMPT = "the_x2048"  # same prompt as the other GPUs
 # GPU order: integrated / low power first, then discrete by vendor.
 # GPUS: figures with absolute throughput (fig2). SPEEDUP_GPUS: speedup-only figures
 # (fig1, fig3), which may also show speedup-only devices.
-GPUS = ["780m", "b580", "b70", "4070ti", "orin", "7900xtx"]
+GPUS = ["780m", "b580", "b70", "4070ti", "orin", "7900xtx", "rx7600"]
 SPEEDUP_GPUS = GPUS + ["m51"]
 GPU_LABEL = {
     "780m": "Radeon 780M",
@@ -27,6 +27,7 @@ GPU_LABEL = {
     "4070ti": "RTX 4070 Ti SUPER",
     "orin": "Jetson Orin Nano",
     "7900xtx": "RX 7900 XTX†",
+    "rx7600": "RX 7600†",
     "m51": "Xclipse (M51)‡",
 }
 # Two-line tick labels for narrow facets.
@@ -37,7 +38,18 @@ GPU_TICK = {
     "4070ti": "RTX 4070\nTi S",
     "orin": "Jetson\nOrin Nano",
     "7900xtx": "RX 7900\nXTX†",
+    "rx7600": "RX\n7600†",
     "m51": "Xclipse\n(M51)‡",
+}
+# Single-line labels for rotated ticks (fig2, seven GPUs per facet).
+GPU_TICK1 = {
+    "780m": "Radeon 780M",
+    "b580": "Arc B580",
+    "b70": "Arc Pro B70",
+    "4070ti": "RTX 4070 Ti S",
+    "orin": "Jetson Orin Nano",
+    "7900xtx": "RX 7900 XTX†",
+    "rx7600": "RX 7600†",
 }
 # Three-line tick labels for the 7-group speedup bar chart.
 GPU_TICK3 = {
@@ -47,6 +59,7 @@ GPU_TICK3 = {
     "4070ti": "RTX\n4070\nTi S",
     "orin": "Jetson\nOrin\nNano",
     "7900xtx": "RX\n7900\nXTX†",
+    "rx7600": "RX\n7600†",
     "m51": "Xclipse\n(M51)‡",
 }
 
@@ -58,20 +71,31 @@ GPU_SHORT = {
     "4070ti": "RTX 4070 Ti SUPER",
     "orin": "Jetson Orin Nano",
     "7900xtx": "RX 7900 XTX†",
+    "rx7600": "RX 7600†",
     "m51": "Xclipse (M51)‡",
 }
 
 # Pre-release GPUs: SARC rows unverified (ET_VK_SARC_UNVERIFIED=1), different .pte
-# export (absolute tok/s not strictly comparable), AMDVLK driver. Marked everywhere by
-# a tinted background band / outline in PRERELEASE_COLOR, white hatching and a dagger.
-PRERELEASE = {"7900xtx", "m51"}
-# Okabe-Ito reddish purple: distinct from the model and build colours (CVD dE >= 7.6
-# over all pairs); always paired with hatching and the dagger as secondary encoding.
-PRERELEASE_COLOR = "#CC79A7"
+# export (absolute tok/s not strictly comparable). RX 7900 XTX: AMDVLK driver; RX 7600:
+# RADV (Mesa 26.2.3). Marked everywhere by a tinted background band / outline in the
+# GPU's PRERELEASE_COLOR, white hatching and a dagger (M51: double dagger).
+PRERELEASE = {"7900xtx", "rx7600", "m51"}
+# Okabe-Ito reddish purple (7900 XTX, M51) and Tol wine (RX 7600): an AMD-like red-purple
+# family, distinct from each other and from the model and build colours (validator:
+# CVD dE >= 7.6 over all pairs); always paired with hatching and a dagger.
+PRERELEASE_COLOR_BY_GPU = {"7900xtx": "#CC79A7", "rx7600": "#882255", "m51": "#CC79A7"}
+PRERELEASE_COLOR = PRERELEASE_COLOR_BY_GPU["7900xtx"]  # legend swatch
 PRERELEASE_HATCH = "////"
-PRERELEASE_NOTE = ("† RX 7900 XTX: pre-release. SARC rows unverified (ET_VK_SARC_UNVERIFIED=1); "
-                   "different .pte export, so absolute tok/s are not strictly comparable; "
-                   "AMDVLK driver.")
+# Footnote, pre-wrapped for double-column figures (NOTE_WIDE) and the heatmap (NOTE_NARROW).
+PRERELEASE_NOTE_WIDE = (
+    "† pre-release (RX 7900 XTX, RX 7600): SARC rows unverified (ET_VK_SARC_UNVERIFIED=1);\n"
+    "different .pte export, so absolute tok/s are not strictly comparable;\n"
+    "drivers: AMDVLK (RX 7900 XTX), RADV Mesa 26.2.3 (RX 7600).")
+PRERELEASE_NOTE_NARROW = (
+    "† pre-release (RX 7900 XTX, RX 7600): SARC rows unverified\n"
+    "(ET_VK_SARC_UNVERIFIED=1); different .pte export, so absolute\n"
+    "tok/s are not strictly comparable; drivers: AMDVLK (RX 7900 XTX),\n"
+    "RADV Mesa 26.2.3 (RX 7600).")
 M51_NOTE = "‡ Xclipse (M51): internal device, relative speedups only; pre-release rows."
 INCORRECT_NOTE = "4w on Xclipse (M51): not shown (kernel in development)."
 NA_COLOR = "#D9D9D9"
@@ -133,9 +157,9 @@ def apply_style():
     })
 
 
-def mark_prerelease_band(ax, x_index, half_width=0.48):
+def mark_prerelease_band(ax, x_index, gpu, half_width=0.48):
     """Tinted background band behind a pre-release GPU group."""
-    ax.axvspan(x_index - half_width, x_index + half_width, color=PRERELEASE_COLOR,
+    ax.axvspan(x_index - half_width, x_index + half_width, color=PRERELEASE_COLOR_BY_GPU[gpu],
                alpha=0.13, lw=0, zorder=0)
 
 
@@ -158,7 +182,7 @@ def load_timed_runs():
 
 
 def load_speedups():
-    """Speedup table for SPEEDUP_GPUS: raw6 cells plus M51 speedup rows only.
+    """Speedup table for SPEEDUP_GPUS: raw7 cells plus M51 speedup rows only.
 
     Cells whose SARC output is incorrect get speedup = NaN (never plotted); the column
     `correct` is False for them.

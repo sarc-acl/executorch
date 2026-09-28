@@ -11,22 +11,32 @@ import pandas as pd
 HERE = Path(__file__).resolve().parent
 EVID = HERE.parent
 REPORT = EVID.parent
-# Six-GPU combined data (the five-GPU inputs under evidence/ are kept untouched).
+# Seven-GPU data: the six-GPU combined set (evidence/combined6/, unchanged) plus the RX 7600
+# contribution files, read in place (same schemas as the RX 7900 XTX contribution).
+# The five-GPU inputs under evidence/ are kept untouched.
 COMBINED = EVID / "combined6"
 ROOFLINE_JSON = COMBINED / "roofline.json"
 EFFICIENCY_CSV = COMBINED / "efficiency.csv"
 FAMILIES_CSV = COMBINED / "trace" / "families.csv"
-CELLS_CSV = REPORT / "raw6" / "cells.csv"
+RX7600 = Path("/home/doremy/Desktop/sarc-acl/dev/1.5/executorch/openspec/changes/"
+              "sarc-1.5-e2e-benchmark/contrib/rx7600")
+RX7600_ROOFLINE_JSON = RX7600 / "roofline.json"
+RX7600_EFFICIENCY_CSV = RX7600 / "efficiency.csv"
+RX7600_FAMILIES_CSV = RX7600 / "trace" / "families.csv"
+CELLS_CSV = REPORT / "raw7" / "cells.csv"
 
 # RDNA3 parts first (both use SARC attention kernels), then Intel, NVIDIA.
-GPUS = ["780m", "7900xtx", "b580", "b70", "4070ti", "orin"]
-# Pre-release rows (unverified, different .pte export, AMDVLK driver).
-PRERELEASE = {"7900xtx"}
+GPUS = ["780m", "7900xtx", "rx7600", "b580", "b70", "4070ti", "orin"]
+# Pre-release rows (unverified, different .pte export; RX 7900 XTX on AMDVLK, RX 7600 on RADV).
+PRERELEASE = {"7900xtx", "rx7600"}
+PRERELEASE_NOTE = ("\u2020 pre-release: unverified rows, different .pte export; "
+                   "drivers AMDVLK (RX 7900 XTX), RADV Mesa 26.2.3 (RX 7600)")
 # GPUs whose SARC build also contains the SARC attention kernels.
-SARC_ATTN = {"780m", "7900xtx"}
+SARC_ATTN = {"780m", "7900xtx", "rx7600"}
 GPU_LABEL = {
     "780m": "Radeon 780M",
     "7900xtx": "RX 7900 XTX\u2020",
+    "rx7600": "RX 7600\u2020",
     "b580": "Arc B580",
     "b70": "Arc Pro B70",
     "4070ti": "RTX 4070 Ti SUPER",
@@ -52,7 +62,7 @@ WIDTH = 7.0
 STOCK_ROOF = {"4w": "alu_fp16", "8da4w": "dot_int8"}
 
 
-FP32_ACC_4W = {"780m", "7900xtx"}  # SARC 4w accumulates in fp32 on RDNA3
+FP32_ACC_4W = {"780m", "7900xtx", "rx7600"}  # SARC 4w accumulates in fp32 on RDNA3
 
 
 def sarc_roof(gpu, scheme):
@@ -104,12 +114,15 @@ def apply_style():
 
 
 def roofs():
-    d = json.loads(ROOFLINE_JSON.read_text())
-    return {g: {k: v["value"] for k, v in d["gpus"][g]["roofs"].items()} for g in GPUS}
+    d = json.loads(ROOFLINE_JSON.read_text())["gpus"]
+    d.update(json.loads(RX7600_ROOFLINE_JSON.read_text())["gpus"])
+    return {g: {k: v["value"] for k, v in d[g]["roofs"].items()} for g in GPUS}
 
 
 def efficiency():
-    return pd.read_csv(EFFICIENCY_CSV)
+    a, b = pd.read_csv(EFFICIENCY_CSV), pd.read_csv(RX7600_EFFICIENCY_CSV)
+    assert list(a.columns) == list(b.columns) and "rx7600" not in set(a.gpu)
+    return pd.concat([a, b], ignore_index=True)
 
 
 def eff_row(eff, gpu, scheme, build, model="8b"):
@@ -119,7 +132,9 @@ def eff_row(eff, gpu, scheme, build, model="8b"):
 
 
 def families():
-    return pd.read_csv(FAMILIES_CSV)
+    a, b = pd.read_csv(FAMILIES_CSV), pd.read_csv(RX7600_FAMILIES_CSV)
+    assert list(a.columns) == list(b.columns) and "rx7600" not in set(a.gpu)
+    return pd.concat([a, b], ignore_index=True)
 
 
 def family_ms(fam, gpu, model, scheme, build):

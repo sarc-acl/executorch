@@ -77,6 +77,7 @@ re-verify first.
 | Adreno 840 (S26) | unverified, **fails production-diff at K ≥ 3072** (fp16 accumulate) | – (1.4 int8 kernel broken) | stock | e2e `contrib/s26` (1B/3B; 8B DEVICE_LOST): no releasable gain; fp16 matrix roof < fp16 FMA roof; owned by the phone agent |
 | Mali-G1 | – (1.4 routed to upstream) | – | stock | nothing to port |
 | Radeon RX 7900 XTX | unverified (t256x128k32g24s32f32cbt) | unverified (780M zpg) | unverified (780M SDPA) | `openspec/changes/sarc-1.5-7900xtx-4w`, e2e `contrib/7900xtx` (2.79× vs stock, pre-release); golden added; needs re-verify with container-built binaries |
+| Radeon RX 7600 | unverified, not merged (7900 XTX tile t256x128k32g24s32f32cbt) | unverified, not merged (780M zpg) | unverified, not merged (780M SDPA) | rows on `topic/rx7600-coopmat` (needs review/merge, golden, re-verify); e2e `contrib/rx7600` (2.48× vs stock, pre-release; coopmat needs a newer RADV: Mesa 26.2.3 used, the system 23.2.1 has none) |
 
 Unverified rows are inert in a release. Their SPIR-V is still pinned in `sarc/golden/spirv.json`
 (owner `UNVERIFIED:<device>`), so accidental changes are caught.

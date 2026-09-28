@@ -2,7 +2,7 @@
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
-from common import (ATTN, GEMM, GPUS, GPU_LABEL, INK, MUTED, QUANT, SCHEMES, WIDTH, apply_style,
+from common import (PRERELEASE_NOTE, ATTN, GEMM, GPUS, GPU_LABEL, INK, MUTED, QUANT, SCHEMES, WIDTH, apply_style,
                     SARC_ATTN, families, family_ms, save)
 
 apply_style()
@@ -48,7 +48,7 @@ for gpu in GPUS:
     group_y.append((top, y + 0.35, gpu))
     y -= 0.55
 
-fig, ax = plt.subplots(figsize=(WIDTH, 10.2))
+fig, ax = plt.subplots(figsize=(WIDTH, 11.8))
 print("gpu,scheme,build,total_ms,gemm_pct_of_stock,attn_pct_of_own,quant_pct_of_own")
 for yy, gpu, scheme, build, segs, total, st_total in rows:
     left = 0.0
@@ -97,7 +97,7 @@ ax.text(147, 0.25, "attention\nshare", ha="right", va="bottom", fontsize=9, colo
 handles = [Patch(facecolor=c, edgecolor="white", label=l) for l, _, c, _ in SEGS]
 fig.legend(handles=handles, loc="upper center", ncol=3, bbox_to_anchor=(0.47, 1.0),
            columnspacing=1.2, handletextpad=0.4)
-fig.text(0.0, 0.0, "\u2020 pre-release: unverified rows, different .pte export, AMDVLK driver", fontsize=9,
+fig.text(0.0, 0.0, PRERELEASE_NOTE, fontsize=9,
          color=MUTED, ha="left", va="top")
 fig.subplots_adjust(left=0.17, right=0.70, top=0.915, bottom=0.05)
 save(fig, "e2_time_breakdown")

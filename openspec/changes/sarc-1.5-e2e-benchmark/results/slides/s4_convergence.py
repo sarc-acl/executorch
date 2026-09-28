@@ -16,7 +16,18 @@ LW = 4.5
 MS = 15
 GAP_FRAC = 0.20       # min label spacing as a fraction of the panel's y range
 XL, XR = -0.13, 1.13  # label anchors (points at x = 0 and 1)
-if "7900xtx" in S.GPUS:
+if "rx7600" in S.GPUS:
+    # Row 1: GPUs whose stock int8 path is already ahead and both schemes converge.
+    ROWS = [["780m", "b580", "b70", "7900xtx", "rx7600"], ["4070ti", "orin", None]]
+    PANEL_W, PANEL_H = 0.155, 0.25
+    LEFTS = [0.045, 0.24, 0.435, 0.63, 0.825]
+    BOTTOMS = [0.56, 0.14]
+    LEFTS2 = [0.065, 0.315]  # row 2 spread wider so the long names don't touch
+    KEY_RECT = [0.535, 0.12, 0.45, 0.30]
+    KEY_NCOL = 2
+    XLIM = (-1.1, 2.1)
+elif "7900xtx" in S.GPUS:
+    KEY_NCOL = 2
     ROWS = [["780m", "b580", "b70", "7900xtx"], ["4070ti", "orin", None]]
     PANEL_W, PANEL_H = 0.19, 0.25
     LEFTS = [0.05, 0.29, 0.53, 0.77]
@@ -29,6 +40,7 @@ else:
     LEFTS = [0.055, 0.385, 0.715]
     BOTTOMS = [0.545, 0.105]
     KEY_RECT = [0.725, 0.105, 0.27, 0.33]
+    KEY_NCOL = 1
     XLIM = (-0.85, 1.85)
 
 
@@ -82,7 +94,7 @@ def key(fig, rect):
     leg = ax.legend([h for h, _, _ in items], [t for _, t, _ in items],
                     loc="upper left", bbox_to_anchor=(0.0, 1.0), frameon=False,
                     fontsize=S.FS_VALUE, handlelength=1.9 if S.PRERELEASE else 2.4, labelspacing=0.55,
-                    borderaxespad=0, ncol=2 if S.PRERELEASE else 1,
+                    borderaxespad=0, ncol=KEY_NCOL,
                     columnspacing=1.0 if S.PRERELEASE else 1.5,
                     handletextpad=0.6)
     for txt, (_, _, st) in zip(leg.get_texts(), items):
@@ -98,8 +110,9 @@ def main():
     S.apply_style()
     df = S.load_cells()
     fig = S.new_fig()
-    for row, bottom in zip(ROWS, BOTTOMS):
-        for g, left in zip(row, LEFTS):
+    lefts = [LEFTS, globals().get("LEFTS2", LEFTS)]
+    for row, bottom, lf in zip(ROWS, BOTTOMS, lefts):
+        for g, left in zip(row, lf):
             if g is None:
                 continue
             panel(fig.add_axes([left, bottom, PANEL_W, PANEL_H]), df, g)

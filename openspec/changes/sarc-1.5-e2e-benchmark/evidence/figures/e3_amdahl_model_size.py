@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.ticker import FixedLocator, NullLocator
 
-from common import (ATTN, GEMM, GPUS, GPU_LABEL, INK, MODELS, MODEL_LABEL, MUTED, SCHEME_COLOR,
+from common import (PRERELEASE_NOTE, ATTN, GEMM, GPUS, GPU_LABEL, INK, MODELS, MODEL_LABEL, MUTED, SCHEME_COLOR,
                     SCHEMES, WIDTH, SARC_ATTN, apply_style, cells, families, family_ms, save)
 
 apply_style()
@@ -29,7 +29,7 @@ for gpu in GPUS:
                   f"{d['e2e_trace']:.2f},{d['attn']:.2f},{d['attn_share']:.1f}")
 
 x = [0, 1, 2]
-NCOL = 3
+NCOL = 4  # seven GPUs: two bands of four panels, last slot empty
 fig, axes = plt.subplots(4, NCOL, figsize=(WIDTH, 8.4), sharex=True,
                          gridspec_kw=dict(height_ratios=[1.25, 1, 1.25, 1]))
 for k, gpu in enumerate(GPUS):
@@ -76,11 +76,16 @@ for k, gpu in enumerate(GPUS):
     bot.tick_params(axis="x", labelbottom=True)
     top.set_title(GPU_LABEL[gpu], fontsize=9.5, fontweight="bold")
 
+for k in range(len(GPUS), 2 * NCOL):  # hide unused slots
+    band, j = divmod(k, NCOL)
+    axes[2 * band, j].set_visible(False)
+    axes[2 * band + 1, j].set_visible(False)
+
 for band in range(2):
     axes[2 * band, 0].set_ylabel("speedup, stock / SARC\n(x, log scale)")
     axes[2 * band + 1, 0].set_ylabel("share of stock\nGPU time (%)")
 fig.supxlabel("model size (Llama 3.2 1B / 3B, Llama 3.1 8B), 2048-token prefill\n"
-              "\u2020 pre-release: unverified rows, different .pte export, AMDVLK", fontsize=9, y=0.01)
+              + PRERELEASE_NOTE, fontsize=9, y=0.01)
 
 handles = [
     Line2D([], [], color=SCHEME_COLOR["4w"], lw=2, label="4w"),

@@ -37,9 +37,9 @@ for r, scheme in enumerate(S.SCHEMES):
                            edgecolor=S.BUILD_EDGE[build], linewidth=0.5, zorder=3)
         for k, g in enumerate(S.GPUS):
             if g in S.PRERELEASE:
-                S.mark_prerelease_band(ax, k)
+                S.mark_prerelease_band(ax, k, g)
         ax.set_yscale("log")
-        ax.set_xticks(x, [S.GPU_TICK[g] for g in S.GPUS], rotation=90)
+        ax.set_xticks(x, [S.GPU_TICK1[g] for g in S.GPUS], rotation=90)
         ax.tick_params(axis="x", length=0)
         ax.grid(True, which="major", axis="y")
         if r == 0:
@@ -59,7 +59,7 @@ fig.legend(handles=handles, loc="upper center", ncol=5, bbox_to_anchor=(0.5, 1.0
 fig.text(0.5, -0.005,
          "2048-token prompt, ExecuTorch Vulkan (llama_main). Bars: median; "
          "whiskers: min–max of n=5 runs; dots: individual runs.\n"
-         + S.PRERELEASE_NOTE.replace("; different", ";\ndifferent"),
+         + S.PRERELEASE_NOTE_WIDE,
          ha="center", va="top", fontsize=8, color=S.MUTED)
 fig.tight_layout(rect=(0, 0, 1, 0.95))
 S.save(fig, "fig2_throughput")

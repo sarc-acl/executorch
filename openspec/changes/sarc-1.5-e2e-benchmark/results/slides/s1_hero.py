@@ -5,7 +5,7 @@ from matplotlib.ticker import FixedLocator, NullLocator
 
 import slide_style as S
 
-XLIM = (18, 22000)  # shared by both schemes so the two slides can be flipped
+XLIM = (14, 50000)  # shared by both schemes; right margin holds "value  speedup"
 XTICKS = [30, 100, 300, 1000, 3000, 10000]
 DOT = 20           # marker diameter (pt)
 ARROW = "#F3A67C"  # light orange shaft: direction toward "ours"
@@ -30,10 +30,15 @@ def draw(df, scheme, stem):
             ax.plot([b], [y], "o", ms=DOT - 2, mfc="white", mec=S.OURS, mew=4, zorder=3)
         else:
             ax.plot([b], [y], "o", ms=DOT, color=S.OURS, mec="white", mew=2.5, zorder=3)
-        for x, col in ((a, S.MUTED), (b, S.INK)):
-            ax.annotate(S.fmt_toks(x), (x, y), xytext=(0, 13), textcoords="offset points",
-                        ha="center", va="bottom", fontsize=S.FS_VALUE, color=col)
-        ax.annotate(S.fmt_x(r.speedup), (b, y), xytext=(DOT / 2 + 12, 0),
+        # Values sit on the row line (stock left of grey, ours right of orange),
+        # then the speedup: no labels above/below, so rows can be packed tightly.
+        ax.annotate(S.fmt_toks(a), (a, y), xytext=(-(DOT / 2 + 8), 0),
+                    textcoords="offset points", ha="right", va="center",
+                    fontsize=S.FS_VALUE, color=S.MUTED)
+        val = ax.annotate(S.fmt_toks(b), (b, y), xytext=(DOT / 2 + 8, 0),
+                          textcoords="offset points", ha="left", va="center",
+                          fontsize=S.FS_VALUE, color=S.INK)
+        ax.annotate(S.fmt_x(r.speedup), xy=(1, 0.5), xycoords=val, xytext=(14, 0),
                     textcoords="offset points", ha="left", va="center",
                     fontsize=S.FS_BIG + 2, fontweight="bold", color=S.OURS)
 
@@ -50,7 +55,7 @@ def draw(df, scheme, stem):
     ax.tick_params(axis="y", length=0, pad=14)
     ax.spines["left"].set_visible(False)
     last = ypos[S.GPUS[-1]]
-    ax.set_ylim(last + 0.45, -0.72)
+    ax.set_ylim(last + 0.5, -0.75)
     S.draw_group_labels(ax, groups, dy=-0.60)
 
     # Direct build labels under the top row's dots instead of a legend.

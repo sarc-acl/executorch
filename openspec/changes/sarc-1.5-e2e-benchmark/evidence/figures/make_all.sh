@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Regenerate evidence figures e1-e4 for six GPUs (PDF + 200-dpi PNG) from evidence/combined6/ and raw6/cells.csv.
-# The five-GPU versions are kept as *_5gpu.* (inputs: evidence/*.csv, cells.csv); see CAPTIONS_5gpu.md.
+# Regenerate evidence figures e1-e4 for seven GPUs (PDF + 200-dpi PNG) from evidence/combined6/, the RX 7600
+# contribution (contrib/rx7600/: roofline.json, efficiency.csv, trace/families.csv; paths in common.py) and raw7/cells.csv.
+# Earlier versions are kept: *_5gpu.* (CAPTIONS_5gpu.md) and *_6gpu.* (CAPTIONS_6gpu.md); not regenerated.
 # Each script prints the plotted numbers as CSV on stdout for cross-checking.
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1

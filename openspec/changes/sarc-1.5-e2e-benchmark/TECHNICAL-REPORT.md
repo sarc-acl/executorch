@@ -525,6 +525,13 @@ Every cell was re-analysed independently. The tables and conditions are in `REPO
   A likely cause is that the Android link drops the dev-zone static registration that reads
   `ET_VK_SARC_UNVERIFIED`. [I]/[O]
 
+- **Driver statistics show fp16 coopmat lowered to ALU code [M, I].** No route gave Adreno ISA
+  (`contrib/s26/isa/`): `VK_KHR_pipeline_executable_properties` returns statistics but no internal representations.
+  Every MMA is counted as ordinary ALU with no matrix instruction class: about 128 ALU-32 instructions per 64×16×16
+  fp16 block (2 FMAs each) and 128 ALU-16 per 64×16×32 int8 block (one 4-way dot each). That explains fp16 matrix
+  ≈ 0.9× FMA without a matrix unit. The int8 1.7× over the dot roof may come from the dot roof shader issuing about
+  2.3× more instructions per dot; it stays open.
+
 **Next steps for the S26 agent**
 1. Fix the 4w accumulation, e.g. per-group fp32 as on the 4070 Ti (`ACC_GROUP_FP32`), and re-run production-diff.
 2. Investigate the 8B `DEVICE_LOST`. Candidates are a GPU watchdog on long submits and memory pressure.
@@ -555,7 +562,48 @@ checked: [M] as reported, not independently recomputed.
 - **Per-submission time limits exist on phones.** The node-threshold option should be ported to `dev/1.5` as a
   dev-zone override. The S26's 8B `DEVICE_LOST` is very likely the same limit. [I]
 
-## 14. Files
+## 14. Contributed GPU: Radeon RX 7600 (pre-release)
+
+Data: `contrib/rx7600/`, measured by its own agent with the kit. Caveats in `REPORT.md` ("Contributed GPU: Radeon
+RX 7600"):
+- the rows are `kUnverified`, live on the unmerged `topic/rx7600-coopmat`, and ran with `ET_VK_SARC_UNVERIFIED=1`;
+- the `.pte` files are the same different export as the 7900 XTX's;
+- the driver is a user-space RADV (Mesa 26.2.3), because the system Mesa 23.2.1 has no cooperative matrix;
+- the build was native rather than the pinned container, and the card drives the desktop.
+
+**Results**
+
+| Measurement | Result |
+|---|---|
+| End to end, real text [M] | 4w 2.85 / 3.32 / 3.17×; 8da4w 1.91 / 2.18 / 1.88× (1B / 3B / 8B); geomean 2.48× |
+| Roofs [R] (igpu-roofline `rx7600-fast-20260928`, fast plan, confirmed) | fp16 FMA 20.2, int8 dot 29.0, fp16 matrix 32.3 (fp16 acc) / **43.4 (fp32 acc)**, **int8 matrix 43.9**, DRAM 284 GB/s |
+| Kernel efficiency, 8B [M] | stock 4w 9.8 TFLOP/s (49 % of FMA); SARC 4w 27.7 (64 % of the fp32-acc matrix roof); stock 8da4w 20.1 TOP/s (69 % of dot); SARC 8da4w 25.7 (59 % of int8 matrix) |
+| Time shares, 8B [M] | stock 4w: GEMM 67 %, attention QKᵀ+AV 27 %; SARC 4w: GEMM 77 %. Stock 8da4w: GEMM 51 %, attention 42 %. Attention QKᵀ+AV falls from 1,191 to 128 ms (8B) with the 780M attention kernels |
+| Correctness [M] | top-1 matches stock in 6/6 configurations on aligned real text; same near-tie flip at 1972 tokens (8B 8da4w) |
+
+**What it adds to the analysis**
+- **A third RDNA3 confirmation of §7.** The int8 matrix roof equals the fp16-with-fp32-accumulate roof (43.9 vs
+  43.4) [R]. As on the 780M (also RADV), fp16 accumulation is slower (32.3); on the 7900 XTX (AMDVLK) the two
+  accumulators were within 4 %, so this looks like a RADV code-generation property [I].
+- **Headroom × efficiency (§4).**
+  - 4w: H = 43.4 / 20.2 = 2.15, E = 64 / 49 = 1.32, giving 2.82×, which matches the measured 27.7 / 9.8.
+  - 8da4w: H = 43.9 / 29.0 = 1.51, E = 59 / 69 = 0.84, giving 1.28×, which matches 25.7 / 20.1.
+- **8da4w gains end to end mostly through attention.** The GEMM kernel is only 1.28× faster, yet the model is
+  1.88–2.18× faster, because stock 8da4w spends only 37–51 % of its GPU time in GEMMs and the SARC attention
+  kernels cut QKᵀ+AV by about 9× [M]. This is §5's operator-to-model mechanism in its strongest form.
+- **The 4w kernel is at its shared-memory-fed roof [R, I].** Its 64×64 subgroup tile loads 32 ops per LDS byte,
+  where the fed roof is 28.9 TFLOP/s; the kernel runs at 27.7, about 96 % of it. More reuse needs a larger subgroup
+  tile, which the 256-VGPR and 64 KB LDS limits rule out.
+
+**Model-size pattern.** Like the 780M and the 7900 XTX, the speedup peaks at 3B: 4w 3.38× → 3.23×, 8da4w 2.22× →
+1.92× ("the" prompt) [M]. All three RDNA3 GPUs run SARC attention, so this supports §5's explanation.
+
+**Not done**
+- Before/after re-tuning (M5): the RX 7600 had no SARC rows before this campaign.
+- Row promotion: `topic/rx7600-coopmat` needs review and merge into `dev/1.5`, SPIR-V golden from the pinned
+  container, and re-verification before the rows can leave `kUnverified`.
+
+## 15. Files
 
 Everything is under `sarc-acl/.artifacts/e2e-1.5-2026-09-28/`.
 
