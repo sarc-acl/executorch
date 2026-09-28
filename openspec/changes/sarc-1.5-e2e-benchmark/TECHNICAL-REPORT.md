@@ -491,6 +491,12 @@ Data: `contrib/7900xtx/`, measured by the 7900 XTX agent with the kit. Caveats i
 GEMMs (2.9–3.6×), and attention's share of stock time falls from 36 % to 24 % at 8B (4w). This is the same mechanism
 as §5.
 
+**ISA-verified [M].** A compile check on the GPU host (`contrib/7900xtx/isa/`) finds RDNA3 WMMA in every kernel
+under both AMDVLK 2025.Q2.1, the benchmark driver, and RADV 25.0.7: 64 `v_wmma_f32_16x16x16_f16` per 4w pipeline
+(32 per K-chunk in the loop) and 8 `v_wmma_i32_16x16x16_iu8` per 8da4w pipeline, matching the per-subgroup tile
+arithmetic, with no spills. The roofline matrix shaders compile to the matching WMMA too, so the matrix roofs are
+real matrix-unit roofs. The native build's 8da4w SPIR-V does not match the golden; its 4w SPIR-V does.
+
 The evidence figures E1–E4 include it as a sixth GPU, marked †. Their five-GPU versions are kept as `*_5gpu.*`.
 
 **Not done**
