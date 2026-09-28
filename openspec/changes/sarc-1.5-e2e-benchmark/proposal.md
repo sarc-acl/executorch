@@ -20,3 +20,8 @@ SARC is 1.48–5.35× faster than stock in all 30 cells. The geometric mean is 3
 
 The raw logs, ETDumps and builds stay outside the repository, under
 `sarc-acl/.artifacts/e2e-1.5-2026-09-28/`. `results/` holds the aggregated CSVs, figures and scripts.
+
+- Reports: [REPORT.md](REPORT.md), [TECHNICAL-REPORT.md](TECHNICAL-REPORT.md), [MANAGER-REPORT.md](MANAGER-REPORT.md)
+  and [CONTRIBUTING-A-GPU.md](CONTRIBUTING-A-GPU.md); [README.md](README.md) maps them.
+- Contributed-GPU results (`contrib/` and `results/seven-gpu/`) exist but are unverified and are not part of the
+  5-GPU headline above.
