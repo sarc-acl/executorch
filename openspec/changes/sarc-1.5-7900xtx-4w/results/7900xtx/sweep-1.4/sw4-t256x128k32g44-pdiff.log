@@ -1,0 +1,39 @@
+
+=== Compute Shader Performance Benchmark ===
+Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; prefill 2048 / decode 1 @ ctx3072; linear group_size=128; 3 warmup + 5 timed runs per case)
+DEVICE,radeon rx 7900 xtx,timestamp_period_ns=10,subgroup_size=64,coopmat=yes,max_shared_mem_bytes=32768
+----------------------------------------------------------------------
+[production-diff] llama-3.1-8b_prefill_wq_wo_linear_q4gsw_M2048_K4096_N4096_rank3batch1_Texture3D (M=2048, K=4096, N=4096, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8200 of 8388608 elements
+linear_q4gsw_coopmat_tsweep_dbuf4_t256x128k3..     (16384,8,1)     (512,1,1)   llama-3.1-8b_prefill_wq_wo_linear_q4gsw_M2048_K4096_N4096_rank3batch1_Texture3D         [1x2048x4096]         939.766 μs      73123.992 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.1-8b_prefill_wq_wo_linear_q4gsw_M2048_K4096_N4096_rank3batch1_Texture3D -> linear_q4gsw_coopmat_tsweep_dbuf4_t256x128k32g44s32f32c_texture3d_texture2d_half (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.1-8b_prefill_wk_wv_linear_q4gsw_M2048_K4096_N1024_rank3batch1_Texture3D (M=2048, K=4096, N=1024, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8008 of 2097152 elements
+linear_q4gsw_coopmat_tsweep_dbuf4_t256x128k3..     (4096,8,1)      (512,1,1)   llama-3.1-8b_prefill_wk_wv_linear_q4gsw_M2048_K4096_N1024_rank3batch1_Texture3D         [1x2048x4096]         294.435 μs      58348.523 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.1-8b_prefill_wk_wv_linear_q4gsw_M2048_K4096_N1024_rank3batch1_Texture3D -> linear_q4gsw_coopmat_tsweep_dbuf4_t256x128k32g44s32f32c_texture3d_texture2d_half (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.1-8b_prefill_w1_w3_linear_q4gsw_M2048_K4096_N14336_rank3batch1_Texture3D (M=2048, K=4096, N=14336, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8254 of 29360128 elements
+linear_q4gsw_coopmat_tsweep_dbuf4_t256x128k3..     (57344,8,1)     (512,1,1)   llama-3.1-8b_prefill_w1_w3_linear_q4gsw_M2048_K4096_N14336_rank3batch1_Texture3D        [1x2048x4096]        2962.231 μs      81194.945 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.1-8b_prefill_w1_w3_linear_q4gsw_M2048_K4096_N14336_rank3batch1_Texture3D -> linear_q4gsw_coopmat_tsweep_dbuf4_t256x128k32g44s32f32c_texture3d_texture2d_half (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.1-8b_prefill_w2_linear_q4gsw_M2048_K14336_N4096_rank3batch1_Texture3D (M=2048, K=14336, N=4096, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8209 of 8388608 elements
+linear_q4gsw_coopmat_tsweep_dbuf4_t256x128k3..     (16384,8,1)     (512,1,1)   llama-3.1-8b_prefill_w2_linear_q4gsw_M2048_K14336_N4096_rank3batch1_Texture3D          [1x2048x14336]        3057.291 μs      78670.359 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.1-8b_prefill_w2_linear_q4gsw_M2048_K14336_N4096_rank3batch1_Texture3D -> linear_q4gsw_coopmat_tsweep_dbuf4_t256x128k32g44s32f32c_texture3d_texture2d_half (coopmat dispatched), correctness=PASSED
+[production-diff] ALL PASSED (llama-3.1-8b, 4 shapes, M=2048, linear_q4gsw, texture3d)
+RC=0

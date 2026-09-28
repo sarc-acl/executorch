@@ -1,0 +1,43 @@
+[sarc_dev] overrides active: unverified=0 variant=t256x128k32g24s32f32cbt
+
+=== Compute Shader Performance Benchmark ===
+Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; prefill 2048 / decode 1 @ ctx3072; linear group_size=128; 3 warmup + 5 timed runs per case)
+DEVICE,radeon rx 7900 xtx,timestamp_period_ns=10,subgroup_size=64,coopmat=yes,max_shared_mem_bytes=32768
+----------------------------------------------------------------------
+[production-diff] llama-3.2-1b_prefill_wq_wo_linear_q4gsw_M2048_K2048_N2048_rank3batch1_Texture3D (M=2048, K=2048, N=2048, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8161 of 4194304 elements
+[sampled reference] max abs diff 0.0195694 (tol 0.5), max rel diff 0.0119457 (tol 0.05, |ref| > abs tol)
+sarc_linear_q4gsw_coopmat_sweep_t256x128k32g..     (4096,8,1)      (256,1,1)   llama-3.2-1b_prefill_wq_wo_linear_q4gsw_M2048_K2048_N2048_rank3batch1_Texture3D         [1x2048x2048]         297.093 μs      57826.602 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.2-1b_prefill_wq_wo_linear_q4gsw_M2048_K2048_N2048_rank3batch1_Texture3D -> sarc_linear_q4gsw_coopmat_sweep_t256x128k32g24s32f32cbt_texture3d_texture2d_half (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.2-1b_prefill_wk_wv_linear_q4gsw_M2048_K2048_N512_rank3batch1_Texture3D (M=2048, K=2048, N=512, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 7772 of 1048576 elements
+[sampled reference] max abs diff 0.020 (tol 0.500), max rel diff 0.013 (tol 0.050, |ref| > abs tol)
+sarc_linear_q4gsw_coopmat_sweep_t256x128k32g..     (1024,8,1)      (256,1,1)   llama-3.2-1b_prefill_wk_wv_linear_q4gsw_M2048_K2048_N512_rank3batch1_Texture3D          [1x2048x2048]         129.929 μs      33056.285 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.2-1b_prefill_wk_wv_linear_q4gsw_M2048_K2048_N512_rank3batch1_Texture3D -> sarc_linear_q4gsw_coopmat_sweep_t256x128k32g24s32f32cbt_texture3d_texture2d_half (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.2-1b_prefill_w1_w3_linear_q4gsw_M2048_K2048_N8192_rank3batch1_Texture3D (M=2048, K=2048, N=8192, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8242 of 16777216 elements
+[sampled reference] max abs diff 0.019 (tol 0.500), max rel diff 0.011 (tol 0.050, |ref| > abs tol)
+sarc_linear_q4gsw_coopmat_sweep_t256x128k32g..     (16384,8,1)     (256,1,1)   llama-3.2-1b_prefill_w1_w3_linear_q4gsw_M2048_K2048_N8192_rank3batch1_Texture3D         [1x2048x2048]         866.164 μs      79337.742 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.2-1b_prefill_w1_w3_linear_q4gsw_M2048_K2048_N8192_rank3batch1_Texture3D -> sarc_linear_q4gsw_coopmat_sweep_t256x128k32g24s32f32cbt_texture3d_texture2d_half (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.2-1b_prefill_w2_linear_q4gsw_M2048_K8192_N2048_rank3batch1_Texture3D (M=2048, K=8192, N=2048, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8133 of 4194304 elements
+[sampled reference] max abs diff 0.034 (tol 0.500), max rel diff 0.019 (tol 0.050, |ref| > abs tol)
+sarc_linear_q4gsw_coopmat_sweep_t256x128k32g..     (4096,8,1)      (256,1,1)   llama-3.2-1b_prefill_w2_linear_q4gsw_M2048_K8192_N2048_rank3batch1_Texture3D            [1x2048x8192]        1037.526 μs      66234.008 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.2-1b_prefill_w2_linear_q4gsw_M2048_K8192_N2048_rank3batch1_Texture3D -> sarc_linear_q4gsw_coopmat_sweep_t256x128k32g24s32f32cbt_texture3d_texture2d_half (coopmat dispatched), correctness=PASSED
+[production-diff] ALL PASSED (llama-3.2-1b, 4 shapes, M=2048, linear_q4gsw, texture3d)

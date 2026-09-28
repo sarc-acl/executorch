@@ -24,6 +24,7 @@
  *   ACC_GROUP_FP32  fp16 accumulate per quantization group, fp32 total
  *                   (GeForce: full-rate fp16 MMA without the long-K error)
  *   CSH_IN_ASH      texture3d drain staged in dead Ash (RDNA3 occupancy)
+ *   B_COLMAJOR      B staged N-major in LDS, ColumnMajor B coopMatLoad (RDNA3 7900 XTX)
  *   FRAG_LAYOUT     fragment-contiguous LDS, no padding (Intel Xe2)
  *   IMG_A / IMG_W   storage-image loads for A / weights (Intel Xe2)
  *   MMA_M = 8       Intel Xe2 exposes fp16 coopmat only at 8x16x16
@@ -108,6 +109,9 @@ $if ACC_FP32:
 
 $if CSH_IN_ASH:
   #define CSH_IN_ASH
+
+$if B_COLMAJOR:
+  #define B_COLMAJOR
 
 $if SH_F16V4:
   #define SH_F16V4

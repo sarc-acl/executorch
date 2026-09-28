@@ -46,6 +46,10 @@ bool ends_with(const std::string& s, const std::string& suffix) {
 constexpr TileDims tile(uint32_t sgx, uint32_t sgy, bool csh_in_ash) {
   return {128, 128, 32, sgx, sgy, 32, 16, csh_in_ash};
 }
+constexpr TileDims tile_mnk(
+    uint32_t m, uint32_t n, uint32_t k, uint32_t sgx, uint32_t sgy, bool csh_in_ash) {
+  return {m, n, k, sgx, sgy, 32, 16, csh_in_ash};
+}
 const Row kQ4gswCandidates[] = {
     {"", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32", tile(4, 2, false),
@@ -61,6 +65,19 @@ const Row kQ4gswCandidates[] = {
      kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
     {"", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g24s32f32c", tile(2, 4, true),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    // RX 7900 XTX 2026-09-27 (openspec/changes/sarc-1.5-7900xtx-4w).
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t256x128k32g24s32f32c", tile_mnk(256, 128, 32, 2, 4, true),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t256x128k32g44s32f32c", tile_mnk(256, 128, 32, 4, 4, true),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x256k32g42s32f32c", tile_mnk(128, 256, 32, 4, 2, true),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32cbt", tile_mnk(128, 128, 32, 4, 2, true),
      kTex3dTex2d, nullptr, Status::kUnverified},
 };
 

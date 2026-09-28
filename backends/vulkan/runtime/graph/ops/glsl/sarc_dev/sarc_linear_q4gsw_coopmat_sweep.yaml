@@ -32,6 +32,7 @@ sarc_linear_q4gsw_coopmat_sweep:
     IMG_A: false
     IMG_W: false
     SH_F16V4: false
+    B_COLMAJOR: false
   shader_variants:
     - NAME: sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32_buffer_texture2d_half
       WEIGHT_STORAGE: texture2d
@@ -108,3 +109,50 @@ sarc_linear_q4gsw_coopmat_sweep:
       SUBGROUP_SIZE: 32
       ACC_FP32: true
       CSH_IN_ASH: true
+    # RX 7900 XTX (RDNA3 Navi31, AMDVLK 2025.Q2.1) 2026-09-27: 256-row tiles amortize the int4->fp16
+    # B dequant over more rows; 'bt' = B_COLMAJOR. texture3d only.
+    - NAME: sarc_linear_q4gsw_coopmat_sweep_t256x128k32g24s32f32c_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 256
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+      ACC_FP32: true
+      CSH_IN_ASH: true
+    - NAME: sarc_linear_q4gsw_coopmat_sweep_t256x128k32g44s32f32c_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 256
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+      ACC_FP32: true
+      CSH_IN_ASH: true
+    - NAME: sarc_linear_q4gsw_coopmat_sweep_t128x256k32g42s32f32c_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 256
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_FP32: true
+      CSH_IN_ASH: true
+    - NAME: sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32cbt_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_FP32: true
+      CSH_IN_ASH: true
+      B_COLMAJOR: true
