@@ -1,5 +1,5 @@
 #!/bin/bash
-# End-to-end prefill campaign on one GPU host: stock release/1.5 vs sarc/1.5-r2.
+# End-to-end prefill campaign on one GPU host: build "stock" vs build "sarc" (see STAGE.md for what they are).
 # Runs ON THE GPU HOST from the staged directory:
 #   <stage>/{stock,sarc}/{llama_main,libllama_runner.so}, prompt_2048.txt, prompt_check.txt, e2e.sh
 #
@@ -15,7 +15,7 @@
 set -uo pipefail
 
 GPU=""; LOCK=""; REPS=5; MODELS=1b,3b,8b; SCHEMES=4w,8da4w; DEV=0; COOLMAX=120
-MROOT=/mnt/linux-share/models; FLAT=""
+MROOT=/mnt/linux-share/models; FLAT=""; PROMPT=prompt_2048.txt; OUTN=raw; CHECK=1
 while [[ $# -gt 0 ]]; do
   case $1 in
     --gpu) GPU=$2; shift ;;
@@ -27,13 +27,16 @@ while [[ $# -gt 0 ]]; do
     --model-root) MROOT=$2; shift ;;
     --flat-models) FLAT=$2; shift ;;
     --cool-max) COOLMAX=$2; shift ;;
+    --prompt) PROMPT=$2; shift ;;
+    --out) OUTN=$2; shift ;;
+    --no-check) CHECK=0 ;;
     *) echo "unknown option $1" >&2; exit 2 ;;
   esac
   shift
 done
 [[ -n $GPU && -n $LOCK ]] || { sed -n '2,14p' "$0"; exit 2; }
 D=$(cd "$(dirname "$0")" && pwd); cd "$D" || exit 2
-O=$D/raw; mkdir -p "$O/logs"
+O=$D/$OUTN; mkdir -p "$O/logs"
 exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK"; flock -w 900 9 || { echo "gpu-lab lock busy"; exit 75; }
 export ETVK_DEVICE_INDEX=$DEV
 
@@ -82,9 +85,9 @@ others() {  # other GPU compute users (nvidia) or known GPU services
 }
 
 {
-  date -u; hostname; uname -r; echo "gpu=$GPU lock=$LOCK dev=$DEV reps=$REPS"
+  date -u; hostname; uname -r; echo "gpu=$GPU lock=$LOCK dev=$DEV reps=$REPS prompt=$PROMPT"
   env | grep -E '^(ET_VK|ETVK)' | sort
-  sha256sum stock/* sarc/* prompt_*.txt
+  sha256sum stock/* sarc/* prompt_*.txt; for b in stock sarc; do echo "$b env: $(cat $b/env 2>/dev/null | tr '\n' ' ')"; done; cat STAGE.md 2>/dev/null
   command -v vulkaninfo >/dev/null && vulkaninfo --summary 2>/dev/null | grep -E 'GPU[0-9]|deviceName|driverName|driverInfo|apiVersion'
   command -v nvidia-smi >/dev/null && nvidia-smi 2>/dev/null | head -12
   [[ -r /etc/nv_tegra_release ]] && cat /etc/nv_tegra_release
@@ -113,7 +116,9 @@ run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag>
   log="logs/$tag-$m-$q-$b-r$r.log"
   t0=$SECONDS; cool; local cs=$((SECONDS - t0))
   tp=$(gtemp); oth=$(others | tr ',' ';')
-  LD_LIBRARY_PATH=$D/$b timeout 1800 "$D/$b/llama_main" --model_path "$(pte $m $q)" \
+  # per-build environment (e.g. the opt-in flags the previous kernels needed): <build>/env, KEY=VALUE per line
+  local benv=(); [[ -f $D/$b/env ]] && mapfile -t benv < "$D/$b/env"
+  env "${benv[@]}" LD_LIBRARY_PATH=$D/$b timeout 1800 "$D/$b/llama_main" --model_path "$(pte $m $q)" \
     --tokenizer_path "$(tokz $m)" --prompt_file "$p" --max_new_tokens 1 --temperature 0 \
     $([[ $tag == prefill ]] && echo --warmup) < /dev/null > "$O/$log" 2>&1 9>&-
   rc=$?; cl=$(clocks | tr ',' ';'); tq=$(gtemp)
@@ -127,17 +132,19 @@ for m in "${MS[@]}"; do for q in "${QS[@]}"; do
   [[ -f $(pte $m $q) ]] || { echo "missing $(pte $m $q)"; continue; }
   for ((r = 1; r <= REPS; r++)); do
     if (( r % 2 )); then order=(stock sarc); else order=(sarc stock); fi
-    run1 $m $q ${order[0]} $r 1 prompt_2048.txt prefill
-    run1 $m $q ${order[1]} $r 2 prompt_2048.txt prefill
+    run1 $m $q ${order[0]} $r 1 $PROMPT prefill
+    run1 $m $q ${order[1]} $r 2 $PROMPT prefill
   done
+  if [[ $CHECK == 1 ]]; then
   run1 $m $q stock 0 0 prompt_check.txt check
   run1 $m $q sarc 0 0 prompt_check.txt check
   if cmp -s <(gen "logs/check-$m-$q-stock-r0.log") <(gen "logs/check-$m-$q-sarc-r0.log"); then r=SAME; else r=DIFFER; fi
   echo "$m,$q,$r" >> "$O/nexttoken.csv"; echo "check $m $q next token sarc vs stock: $r"
+  fi
 done; done
 
 # Retry failed prefill runs once (the failed rows stay in the CSV).
 FAILED=$(awk -F, 'NR > 1 && $16 ~ /^logs\/prefill/ && ($9 != 0 || $8 == "") {print $3, $4, $5, $6}' "$CSV")
-[[ -n $FAILED ]] && while read -r m q b r; do echo "retry $m $q $b r$r"; run1 $m $q $b "${r}x" 9 prompt_2048.txt prefill; done <<< "$FAILED"
+[[ -n $FAILED ]] && while read -r m q b r; do echo "retry $m $q $b r$r"; run1 $m $q $b "${r}x" 9 $PROMPT prefill; done <<< "$FAILED"
 echo "clocks_end: $(clocks) others_end: $(others)" >> "$O/env.txt"
 date -u > "$O/done.txt"; echo E2E_DONE

@@ -1,4 +1,214 @@
-# SARC 1.5-r2 prefill results: what they are, why they look this way, and how strong the evidence is
+# SARC WMMA prefill kernels: two-day re-tuning results and evidence
+
+Engineering report, 2026-09-28.
+- **Part A**: what the last two days of profiler-guided re-tuning added on top of the previous best kernels, measured end to end.
+- **Part B**: the evidence base for the current state on ExecuTorch release 1.5 (roofline, kernel traces, correctness, open questions).
+
+# Part A — The two-day WMMA re-tuning (2026-09-26/27): what it added
+
+## A0. Summary for the manager
+
+**The work.** Over two days I re-tuned each GPU's existing WMMA (cooperative-matrix) prefill kernels, on five GPUs from three vendors:
+- AMD Radeon 780M;
+- Intel Arc B580 and Arc Pro B70;
+- NVIDIA RTX 4070 Ti SUPER and Jetson Orin Nano.
+
+Every change was driven by roofline measurements and per-vendor profiler evidence: ISA dumps and in-kernel clocks on AMD, ISA and OA counters on Intel, Nsight on NVIDIA.
+
+**Result: additional prefill-GEMM speedup on top of the previous best WMMA kernels** (kernel level, 12 shapes of Llama 3.2 1B, Llama 3.2 3B and Llama 3.1 8B, geomean):
+
+| GPU | 4-bit weights (4w) | 8-bit activations (8da4w) |
+|---|---|---|
+| Arc Pro B70 | **2.54×** | **1.69×** |
+| Arc B580 | **2.49×** | **1.58×** |
+| Jetson Orin Nano | 1.07× | **2.32×** |
+| RTX 4070 Ti SUPER | 0.96× (accuracy fix, see A4) | **1.34×** |
+| Radeon 780M | **1.30×** | 1.00× (no int8 headroom on this GPU) |
+
+**End-to-end effect, measured.** Each GPU's previous and re-tuned builds were rebuilt from their exact commits
+and run end to end: 2048-token real-text prefill, 5 interleaved repeats each, 30 configurations.
+- Up to **1.78×** (B580 3B 4w), **1.73×** (B70 3B 4w) and **1.71×** (Orin 8B 8da4w).
+- Geometric mean over all configurations: **1.23×**. Best per GPU: B580 1.43×, B70 1.38×, Orin 1.25×.
+
+**Beyond speed, the two days also:**
+- made the tuned kernels the **default model path** on four of the five GPUs. Before, the previous WMMA kernels on B580, B70, 4070 Ti and Orin had to be switched on by hand; an exported model ran the slow tiled kernel.
+- fixed a real accuracy bug: the previous 4070 Ti 4w kernel failed the 8B check.
+- ported everything to ExecuTorch release 1.5 with no loss: kernels match within ±3 %.
+
+**Where that leaves the product (Part B).** Against stock ExecuTorch 1.5 the full SARC release is 1.48–5.35× faster end to end, with a geometric mean of 2.75×. That number reflects all the work to date; this part isolates what the last two days added.
+
+![Additional kernel speedup from the two-day re-tuning](evidence/refinement/figures/r1_kernel_gain.png)
+
+*Figure A1. Additional prefill-GEMM speedup over the previous best WMMA kernel of the same GPU (= 1×).*
+- Bars: geomean over 12 shapes (Orin 4w: 11).
+- Markers: per-model, time-weighted by calls per layer. Thin lines: per-shape min–max.
+- Setup: M = 2048, texture3d model path, 3 repeats per cell, previous and tuned kernels in the same harness.
+- † The previous WMMA kernel was opt-in; the default ran tiled. ‡ B580's "before" was the B70 branch's Xe2 tiles.
+
+## A1. How the gains were found (evidence, not trial and error)
+
+Every change in Figure A3 is tied to a measurement. The profiling route differs by vendor, because the tools differ:
+
+| GPU | Evidence route | Example finding → change → effect |
+|---|---|---|
+| Radeon 780M | roofline + RADV ISA stats + in-kernel `shader_clock` phase timing (SQTT is banned; no perf counters on GFX11) | ISA: about 350 accumulator-repack moves per 32 WMMAs with an fp16 accumulator → fp32 accumulator, ×1.09; occupancy arithmetic → drain staged in dead LDS, ×1.19 |
+| Arc B580 / B70 | Xe ISA dumps (spill counts, SIMD width) + OA counters + roofline "fed-matrix" sweeps | ISA: the subgroup-32 kernel spilled (11:26) at SIMD32 → subgroup 16, 1B 19.2 → 36.9 TFLOP/s; sweep → M = 256 tiles for 8da4w, 32.4 → 52.7 TOP/s |
+| RTX 4070 Ti SUPER | Nsight GPU metrics (Tensor Active, SM Issue) + ablations + LDS-fed roofline | K 32 → 64 (MMA phase too short to hide staging), ×1.10; raw A staging, 303 → 252 µs on 3B wq_wo |
+| Jetson Orin Nano | Nsight (Tensor Active) + pipeline statistics + screens | 8da4w Tensor Active 9.9 % → staging redesign, 2.31× on a control tile; Tensor Active rises to 20.9 % |
+
+![The work, step by step](evidence/refinement/figures/r3_steps.png)
+
+*Figure A3. Each profiler- or roofline-guided change, its evidence and its effect.*
+- Chained steps multiply to the net. Screens and controls stand on their own base, because they are single 1B runs.
+- Hatched bars are accuracy fixes.
+- Numbers come from the per-GPU study documents; line references are in `evidence/refinement/figures/CAPTIONS.md`.
+
+## A2. Kernel-level results, per model
+
+Source: `evidence/refinement/refinement.csv`, built from the study's raw microbench runs (3 repeats each; WMMA repeat spread ≤ 4.1 % in every cell). Values are after/before time, texture3d model path, weighted by calls per layer.
+
+| GPU · scheme | 1B | 3B | 8B | geomean (12 shapes) | Before → after runs |
+|---|---|---|---|---|---|
+| 780M · 4w | 1.30 | 1.31 | 1.30 | **1.30** | `runs/780m-branch/780m` → `confirm/780m-final` |
+| 780M · 8da4w | 1.00 | 1.00 | 1.00 | 1.00 (identical kernel) | same |
+| B580 · 4w | 2.23 | 2.87 | 2.39 | **2.49** | `runs/b70-branch/b580` → `confirm/b580-default-v1` |
+| B580 · 8da4w | 1.60 | 1.58 | 1.69 | **1.58** | same |
+| B70 · 4w | 2.21 | 2.91 | 2.27 | **2.54** | `runs/b70-branch/b70-0` → `confirm/b70-default-v1` |
+| B70 · 8da4w | 1.75 | 1.64 | 1.60 | **1.69** | same |
+| 4070 Ti · 4w | 0.96 | 0.92 | 0.89 | 0.96 | `runs/4070ti-branch` → `runs/4070ti-final3` |
+| 4070 Ti · 8da4w | 1.31 | 1.37 | 1.38 | **1.34** | same |
+| Orin · 4w | 1.06 | 1.07 | 1.07 (w2 excluded) | 1.07 | Jetson study `confirm/comparison.json` (interleaved in one session) |
+| Orin · 8da4w | 2.23 | 2.27 | 2.42 | **2.32** | same |
+
+**Controls**
+- Within each before/after pair, the tiled kernel was unchanged. Its before/after ratio is 0.997–1.005 on the 780M, B580 and B70.
+- On the 4070 Ti, 44 of 48 cells are within ±3 %; the 4 exceptions are noisy tiled cells, not WMMA cells.
+- So the device state was the same in each pair.
+
+## A3. End-to-end impact of the re-tuning (measured)
+
+![Measured end-to-end impact](evidence/refinement/figures/r2_e2e_measured.png)
+
+*Figure A2. Measured end-to-end prefill speedup, re-tuned vs previous kernels, on a 2048-token real-text prompt.*
+- Bars: ratio of medians of 5 interleaved runs. Error bars: approximate 95 % paired bootstrap CI.
+- Hollow markers: the earlier Amdahl projection from kernel times.
+
+**How it was measured**
+- Each GPU's previous and re-tuned builds were rebuilt from their exact release-1.4 commits:
+
+  | GPU | previous | re-tuned |
+  |---|---|---|
+  | 780M | `eae4d4af4` | `9178cee44` |
+  | Xe2 | `ab9978f16` | B580 `7d47b6ee3`, B70 `545ccf85c` |
+  | 4070 Ti | `be54d12db` | `432709b92` |
+  | Orin | `0270403ba` | `0b260ffab` |
+
+  - Four of the trees needed the compile-only `<algorithm>` include backport.
+- The previous build ran with the opt-in environment it needed; the re-tuned build ran on defaults.
+- Protocol, as in Part B: fresh process per run, `--warmup`, cool-down, co-tenant services stopped, and
+  builds alternating first/second.
+- Data: `report/refine/cells.csv` and `runs_all.csv`; raw logs in `refine-e2e-2026-09-28/raw/`.
+
+Cells show prefill tok/s (median of 5), previous → re-tuned, then the speedup and its CI.
+
+**4w**
+
+| GPU | 1B | 3B | 8B | earlier projection |
+|---|---|---|---|---|
+| Arc B580 | 5,818 → 8,463<br>**1.45×** [1.45, 1.45] | 1,872 → 3,341<br>**1.78×** [1.78, 1.80] | 980 → 1,680<br>**1.71×** [1.71, 1.72] | 1.44 / 1.78 / 1.73 |
+| Arc Pro B70 | 8,258 → 11,378<br>**1.38×** [1.36, 1.42] | 2,716 → 4,697<br>**1.73×** [1.72, 1.74] | 1,488 → 2,373<br>**1.59×** [1.58, 1.60] | 1.41 / 1.76 / 1.64 |
+| Radeon 780M | 2,330 → 2,691<br>**1.16×** [1.15, 1.16] | 963 → 1,139<br>**1.18×** [1.18, 1.18] | 426 → 516<br>**1.21×** [1.20, 1.21] | 1.15 / 1.19 / 1.20 |
+| RTX 4070 Ti SUPER | 20,078 → 20,078<br>1.00× [0.98, 1.00] | 8,982 → 8,678<br>0.97× [0.96, 0.97] | 4,708 → 4,452<br>0.95× [0.94, 0.95] | 0.99 / 0.97 / 0.94 |
+| Jetson Orin Nano | 877 → 891<br>1.02× [1.02, 1.02] | 351 → 358<br>1.02× [1.02, 1.02] | 188 → 189<br>1.00× [1.00, 1.00] | 1.02 / 1.02 / — |
+
+**8da4w**
+
+| GPU | 1B | 3B | 8B | earlier projection |
+|---|---|---|---|---|
+| Arc B580 | 7,340 → 8,752<br>**1.19×** [1.19, 1.20] | 2,848 → 3,459<br>**1.21×** [1.21, 1.21] | 1,364 → 1,827<br>**1.34×** [1.34, 1.34] | 1.18 / 1.21 / 1.33 |
+| Arc Pro B70 | 10,343 → 12,190<br>**1.18×** [1.17, 1.21] | 4,294 → 5,120<br>**1.19×** [1.18, 1.20] | 2,107 → 2,688<br>**1.28×** [1.27, 1.28] | 1.20 / 1.22 / 1.28 |
+| Radeon 780M | 2,535 → 2,535<br>1.00× | 1,048 → 1,050<br>1.00× | 483 → 483<br>1.00× | 1.00 (kernel unchanged) |
+| RTX 4070 Ti SUPER | 19,692 → 21,558<br>**1.09×** [1.09, 1.12] | 8,428 → 9,615<br>**1.14×** [1.14, 1.14] | 4,267 → 4,971<br>**1.17×** [1.16, 1.17] | 1.09 / 1.13 / 1.17 |
+| Jetson Orin Nano | 578 → 824<br>**1.43×** [1.43, 1.43] | 211 → 318<br>**1.51×** [1.51, 1.51] | 99 → 170<br>**1.71×** [1.71, 1.71] | 1.42 / 1.51 / — |
+
+| Geomean, re-tuned / previous | 4w | 8da4w | both |
+|---|---|---|---|
+| Arc B580 | 1.64× | 1.25× | **1.43×** |
+| Arc Pro B70 | 1.56× | 1.21× | **1.38×** |
+| Jetson Orin Nano | 1.01× | 1.55× | **1.25×** |
+| Radeon 780M | 1.18× | 1.00× | 1.09× |
+| RTX 4070 Ti SUPER | 0.97× | 1.13× | 1.05× |
+| **all** | 1.24× | 1.22× | **1.23×** |
+
+**Checks**
+- Measured and projected agree within 3.1 % in every cell (the largest gap is B70 8B 4w, 1.59× vs 1.64×), so
+  the kernel-level results in A2 translate to the model as predicted.
+- 28 of 30 cells have a repeat spread ≤ 3 %. The exceptions are B70 1B 4w (3.7 %) and 1B 8da4w (3.0 %).
+- One previous-build run crashed on exit (4070 Ti 8B 8da4w, rc = 134). It is kept in the CSV and was retried.
+
+![Absolute prefill throughput before and after](evidence/refinement/figures/r4_tok_s_before_after.png)
+
+*Figure A4. Absolute prefill tok/s, previous → re-tuned kernels (real-text 2048-token prompt, median of 5).*
+
+## A4. What the model path actually runs: opt-in → default
+
+On B580, B70, 4070 Ti and Orin, the previous WMMA kernels were **opt-in**:
+- they needed `ET_VK_TEXTURE_COOPMAT=1`, `ET_VK_COOPMAT_ANY_DEVICE=1`, or explicit enabling on Orin;
+- an exported model therefore ran the tiled kernel by default.
+
+The two days made the tuned kernels the **per-device default**. For a user who changes nothing, the model path went from tiled to tuned WMMA.
+
+**Proof that the opt-in mattered.** In this campaign, 1B, the previous build was run once with and once without its opt-in environment:
+
+| GPU | previous build, no env (default path) | previous build + opt-in env | re-tuned default (median) | default-path gain |
+|---|---|---|---|---|
+| RTX 4070 Ti SUPER 4w | 5,596 | 20,078 | 20,078 | **3.6×** |
+| RTX 4070 Ti SUPER 8da4w | 6,804 | 14,027 | 21,558 | **3.2×** |
+| Jetson Orin Nano 4w | 172 | 876 | 891 | **5.2×** |
+| Jetson Orin Nano 8da4w | 213 | 577 | 824 | **3.9×** |
+| Arc B580 4w | 2,576 | 5,802 | 8,463 | **3.3×** |
+| Arc Pro B70 4w | 3,670 | 8,192 | 11,378 | **3.1×** |
+| Radeon 780M 4w | 2,330 | 2,330 | 2,691 | 1.16× (already default) |
+
+The no-env and env columns are single runs, and the first runs of each session. The 4070 Ti 8da4w env run (14,027)
+is below that build's 5-run median in A3 (19,692); the default-path gain uses the re-tuned 5-run median.
+
+The earlier full measurement of this default-path change on the release-1.4 branches: 3 repeats, same next token as tiled (`igpu-roofline/docs/WMMA-STUDY-TAKEAWAYS.md` L35–40).
+
+| GPU | 4w, 1B / 3B / 8B | 8da4w, 1B / 3B / 8B |
+|---|---|---|
+| RTX 4070 Ti SUPER | 3.57 / 4.30 / 5.11× | 3.11 / 3.78 / 4.54× |
+| Arc Pro B70 | 3.15 / 4.16 / 4.81× | 1.48 / 1.59 / 1.97× |
+| Arc B580 | 3.23 / 4.11 / 4.73× | 1.43 / 1.55 / 1.94× |
+
+On the 780M the previous WMMA kernel was already the default, so its default-path gain is the A3 figure (1.15–1.20× for 4w).
+
+## A5. Exceptions, stated plainly
+
+- **RTX 4070 Ti SUPER 4w: 0.96× (0.89× at 8B).**
+  - The new tiles were 1.036× faster.
+  - Then the previous kernel's fp16 accumulation was found to fail the 8B w2 projection check: max error 1.49 against a 0.5 tolerance.
+  - The fix, per-group fp32 accumulation, costs 0.924×. It is a correctness fix, kept deliberately.
+- **Radeon 780M 8da4w: unchanged.** Roofline: the 780M's int8 matrix roof is only 1.23× its int8 dot roof, and the kernel already ran at 65–70 % of it, so there was little to gain.
+- **B580's "before"** was the B70 branch's Xe2 tiles; no B580-specific WMMA kernel existed.
+- **B580/B70 buffer storage** has no "before": the previous branch crashed on buffer. The re-tuning added it.
+- **Orin 8B w2** is excluded from the 4w geomean: the original kernel was numerically wrong on that shape.
+- **One stability issue is open.** Two 8B runs on the 4070 Ti crashed at process exit, after producing correct
+  output: one previous build, one current SARC build (§B10). They were retried; the timings are unaffected.
+- **Clocks were not pinned.**
+  - In A2, the tiled controls bound the device-state drift.
+  - In A3, the two builds alternate within every repeat, so both see the same device state.
+
+## A6. Where to go next (from the Part B evidence)
+
+- **Attention.** After re-tuning, attention is 33–41 % of prefill time on the four GPUs without a SARC attention kernel. The 780M's attention kernels gave 4× there (§B5).
+- **8-bit kernels on Intel and Orin.** They reach 22–24 % of the int8 matrix roof, against 42 % on the 4070 Ti (§B3, §B7).
+
+Evidence files: `evidence/refinement/` (dataset, generator, provenance and figures).
+
+---
+
+# Part B — Current state on release 1.5: results and evidence
 
 Technical report for engineering review, 2026-09-28.
 
@@ -18,7 +228,7 @@ Evidence labels:
 | **[I]** | Inference from [M]/[R]/[S] data. Plausible, but alternatives are not excluded |
 | **[O]** | Open: not measured |
 
-## 1. Summary of findings
+## B1. Summary of findings
 
 1. **Stock 1.5 prefill runs on scalar units; SARC runs on the matrix units.** [M][R][S]
    - Stock's GEMM kernels use scalar fp16 FMA (4w) and int8 dot (8da4w), and reach 22–59 % of those scalar
@@ -26,7 +236,7 @@ Evidence labels:
    - SARC's coopmat kernels reach 22–70 % of the matrix roofs.
    - The matrix roofs are 1.2–9.3× the scalar roofs stock is bound by.
    - The GEMM kernel speedup ranges from 1.40× (780M 8da4w) to 10.6× (Orin 4w). It splits exactly into a
-     hardware-headroom term and an efficiency term (§4). That split is an accounting identity, not independent
+     hardware-headroom term and an efficiency term (§B4). That split is an accounting identity, not independent
      confirmation.
    - Headroom is the dominant term on the Orin and on Intel.
 2. **The end-to-end gain is smaller than the GEMM gain, and it grows with model size.** [M]
@@ -34,24 +244,24 @@ Evidence labels:
    - Where the GEMM speedup is roughly constant across sizes (780M, 4070 Ti, Orin), the growing GEMM share alone
      makes the end-to-end speedup grow.
    - On Intel the GEMM speedup is **not** constant. For 8da4w it rises with size (B580 2.30 → 2.90) because the
-     stock kernel loses efficiency; for 4w it falls slightly (5.16 → 4.83). See §5.
+     stock kernel loses efficiency; for 4w it falls slightly (5.16 → 4.83). See §B5.
 3. **On the 780M, 8B speeds up slightly less than 3B.** [M]
    - It is the only GPU where SARC also replaces attention, and attention gains more there than GEMMs do
      (4.0–4.2× vs 2.5×).
-   - Attention's share of stock time falls from 34 % at 3B to 24 % at 8B (§5).
+   - Attention's share of stock time falls from 34 % at 3B to 24 % at 8B (§B5).
 4. **Stock 8da4w beats stock 4w on AMD and Intel, but not on NVIDIA.** [M][R]
    - On the 780M and Intel, the int8 dot roof is 1.2–1.4× the fp16 FMA roof, and stock 8da4w also runs at a
      higher fraction of its roof.
    - On the 4070 Ti and Orin, stock 8da4w reaches only 22–24 % of its dot roof and runs at nearly the same
      absolute rate as stock 4w.
-   - **Why** is **[O]**; §6 gives two candidates.
-5. **After tuning, the faster scheme depends on the GPU.** (§7)
+   - **Why** is **[O]**; §B6 gives two candidates.
+5. **After tuning, the faster scheme depends on the GPU.** (§B7)
    - **780M: 4w wins by 7.5 %.** [M][R]
      - The int8 matrix roof is 0.97× the fp16 roof SARC 4w uses, and the int8 kernel is 6.8 % slower (+188 ms).
      - 8da4w adds activation quantization (+166 ms) and saves some view copies (−92 ms).
      - The quantize pass and the copies are software, so part of the gap is recoverable [I].
    - **Orin: 4w wins.** [M] SARC 8da4w reaches 24 % of the int8 register roof, against 61 % for 4w on its roof.
-     Why is **[I]/[O]** (§7).
+     Why is **[I]/[O]** (§B7).
    - **Intel: a tie, or 8da4w by 12 %.** [M]
    - **4070 Ti: 8da4w wins by 12 %.** [M]
 6. **Correctness: SARC and stock agree on every tile-aligned real-text prediction.** [M]
@@ -59,24 +269,24 @@ Evidence labels:
    - The largest logit difference is 2.0, well below the smallest top-1 margin of 2.4.
    - The earlier 1972-token check mostly did not exercise SARC's GEMMs: by design, SARC falls back to stock
      kernels at unaligned M.
-   - Its 3 differences sit at a position where the two tokens are 0.09–0.15 logit apart (§8).
+   - Its 3 differences sit at a position where the two tokens are 0.09–0.15 logit apart (§B8).
 7. **Where the next speedup is.** [M]→[I]
    - After SARC, attention is 33–41 % of 8B prefill time on the four GPUs without a SARC attention row.
-   - SARC 8da4w GEMMs reach only 22–24 % of the int8 register roof on Intel and Orin (§9).
+   - SARC 8da4w GEMMs reach only 22–24 % of the int8 register roof on Intel and Orin (§B9).
 8. **The repeated-"the" timing prompt does not bias the results.** [M]
    - Re-timing all 30 configurations on a 2048-token real-text prompt gives absolute tok/s within −3.4 % to +2.5
      % of the original. The one exception is the noisy B580 8B 8da4w SARC arm, at +9.5 %.
-   - Speedups agree within ±0.07×. The exception is that same cell: 1.87× → 2.00× (§10).
+   - Speedups agree within ±0.07×. The exception is that same cell: 1.87× → 2.00× (§B10).
 
-## 2. Evidence base
+## B2. Evidence base
 
 | Source | What it gives | Quality notes |
 |---|---|---|
-| Timed runs ([REPORT.md](REPORT.md), `raw/*/runs.csv`) | End-to-end tok/s, n = 5 per build, 300/300 accepted | Clocks not pinned; B580 noisier (display GPU); prompt is repeated "the" (§10) |
+| Timed runs ([REPORT.md](REPORT.md), `raw/*/runs.csv`) | End-to-end tok/s, n = 5 per build, 300/300 accepted | Clocks not pinned; B580 noisier (display GPU); prompt is repeated "the" (§B10) |
 | Warm ETDump traces (`raw/*/trace2/*.etdp`, 60 files) | GPU time per dispatch, with operator name and tensor shapes | One `--warmup` run per cell. Each event has 2 `raw` entries; the last is the warm execution (checked against `start_time` order and the logged run time). Trace graph time vs timed median: −6.7 % to +3.8 %. [trace_analysis.py](results/scripts/trace_analysis.py) → `evidence/trace/{families,gemm,totals}.csv` |
 | Confirmed roofs ([evidence/roofline.md](evidence/roofline.md), `roofline.json`) | Measured matrix, scalar, fed-matrix and memory peaks per GPU, each with its REPORT.md line | `fast` plan, 3 fresh-process repeats, spread ≤ 3.2 %, sentinel healthy on all 34 checks. **Not ISA-verified.** Sustained roofs unconfirmed. 780M `standard` campaign agrees within 3.4 %. Measured 2026-09-26/27, not on the benchmark day |
-| Kernel efficiency ([evidence/efficiency.py](evidence/efficiency.py) → `efficiency.csv`) | Achieved prefill-GEMM rate = Σ 2·M·N·K / Σ GPU time, and % of the matched roof | Kernel level only. The 8da4w quantize dispatch and the stock 4w input transpose are reported separately (§5). Logical FLOPs |
-| Logits ([evidence/logits/](evidence/logits/)) | fp32 CPU reference; 8da4w Vulkan logits at the disputed position | Vulkan logits come from the ExecuTorch Python runtime built from the SARC dev tree, whose B580 path runs stock kernels. Device index 0 is the B580 by vulkaninfo order; the device name is not logged (§8) |
+| Kernel efficiency ([evidence/efficiency.py](evidence/efficiency.py) → `efficiency.csv`) | Achieved prefill-GEMM rate = Σ 2·M·N·K / Σ GPU time, and % of the matched roof | Kernel level only. The 8da4w quantize dispatch and the stock 4w input transpose are reported separately (§B5). Logical FLOPs |
+| Logits ([evidence/logits/](evidence/logits/)) | fp32 CPU reference; 8da4w Vulkan logits at the disputed position | Vulkan logits come from the ExecuTorch Python runtime built from the SARC dev tree, whose B580 path runs stock kernels. Device index 0 is the B580 by vulkaninfo order; the device name is not logged (§B8) |
 | Source | What each kernel computes; which SARC tile runs where | Not ISA-verified |
 | Real-text re-timing (`raw_real/*/runs.csv`, `report/real/`) | All 30 configurations re-timed on a 2048-token real-text prompt (GPL-3.0 preamble text, exactly 2048 runner tokens), n = 5 interleaved | Same builds and protocol as the timed runs |
 | Logits probe (`tools/logits_probe`, `raw_real/*/probe/`, `report/real/probe.csv`) | Last-position logits for stock and SARC on the same GPU and model: 2048-token aligned real text and the 1972-token check prompt | A small C++ tool linked against each build. Top-10 logits plus the two disputed token ids are recorded |
@@ -98,9 +308,9 @@ Evidence labels:
 - The register-resident matrix roof is therefore an *upper bound*, not a proven operating point. Where it
   matters, the report also gives the fed roofs (matrix fed from shared memory or cache).
 
-## 3. Measured roofs and where the kernels run
+## B3. Measured roofs and where the kernels run
 
-Confirmed short-run roofs [R], with sources in [roofline.md](evidence/roofline.md) §2–§4. Units: TFLOP/s for
+Confirmed short-run roofs [R], with sources in [roofline.md](evidence/roofline.md) §B2–§B4. Units: TFLOP/s for
 fp16, TOP/s for int8.
 
 | GPU | fp16 FMA | int8 dot | fp16 matrix (accumulator used by SARC 4w) | int8 matrix | DRAM read |
@@ -136,7 +346,7 @@ is 9.736, 0.4 % higher, so the Orin figures below are about 0.1 % optimistic.
 *Figure E1. Measured roofs (bars) and achieved 8B prefill-GEMM rates (markers), each on its matched roof, log
 scale. Figure labels round to integers (e.g. 4070 Ti stock 40 % / 22 %); the tables carry one decimal.*
 
-## 4. Why the kernel speedup differs across GPUs
+## B4. Why the kernel speedup differs across GPUs
 
 For the prefill GEMMs:
 
@@ -174,14 +384,14 @@ The last-digit differences between H × E and the measured ratio are rounding in
 - The 780M's matrix units offer only 1.2–1.8×, which caps its GEMM gain whatever the kernel quality.
 - On Intel, SARC 8da4w converts less of its roof than stock does of its own (E ≈ 0.4), yet the 7.2× headroom
   still yields 2.9×.
-- End-to-end speedups are lower than GEMM speedups because GEMMs are not all of prefill (§5).
+- End-to-end speedups are lower than GEMM speedups because GEMMs are not all of prefill (§B5).
 
 ![Speedup decomposition](evidence/figures/e4_speedup_decomposition.png)
 
 *Figure E4. The GEMM kernel speedup as hardware headroom (grey) × efficiency gain (blue above 1, pink below 1).
-The black tick is the measured rate ratio. The factorisation is an identity (§4).*
+The black tick is the measured rate ratio. The factorisation is an identity (§B4).*
 
-## 5. From kernel to operator to model: the model-size trend
+## B5. From kernel to operator to model: the model-size trend
 
 Per-family speedups from the warm traces [M] (`evidence/trace/modelsize.txt`, with operator-level attribution):
 - **GEMM×**: kernel level.
@@ -255,7 +465,7 @@ speedup is roughly flat on the 780M, 4070 Ti and Orin. On Intel, 8da4w rises wit
 *Figure E2. 8B prefill GPU time by kernel family, SARC normalised to the stock bar of the same GPU and scheme.
 After SARC, attention is 33–41 % of the remaining time on the four GPUs without a SARC attention row.*
 
-## 6. Why stock 8da4w beats stock 4w on AMD and Intel, but not on NVIDIA
+## B6. Why stock 8da4w beats stock 4w on AMD and Intel, but not on NVIDIA
 
 Stock 8da4w ÷ stock 4w GEMM rate = (dot roof ÷ FMA roof) [R] × (efficiency ratio) [M]. 8B values:
 
@@ -281,7 +491,7 @@ Stock 8da4w ÷ stock 4w GEMM rate = (dot roof ÷ FMA roof) [R] × (efficiency ra
 
 Either way, this affects only the baseline's speed, not any SARC claim.
 
-## 7. After tuning, why 4w or 8da4w wins depends on the GPU
+## B7. After tuning, why 4w or 8da4w wins depends on the GPU
 
 SARC throughput [M], 8B, tok/s:
 
@@ -346,7 +556,7 @@ SARC throughput [M], 8B, tok/s:
   different optimisation stages, not a like-for-like comparison.
 - The study calls staging and unpacking "the first hypothesis to test". It remains a hypothesis.
 - Against the int8 *cache-fed* roof (8.15 TOP/s [R]), SARC 8da4w is at 58 %. If per-tile reuse, rather than the
-  tensor cores, is the limit, the practical ceiling is well below the register roof (§2).
+  tensor cores, is the limit, the practical ceiling is well below the register roof (§B2).
 
 ### Intel B580/B70: int8 headroom mostly unused
 
@@ -366,7 +576,7 @@ SARC throughput [M], 8B, tok/s:
 
 [M]: 42 % of the int8 roof against 65 % of the fp16 roof gives a 1.31× GEMM rate and +12 % end to end.
 
-## 8. Correctness
+## B8. Correctness
 
 **A design fact that changes how the earlier check reads** [S][M]
 - SARC's 4w rows and its 4h4w 8-bit rows (zpg: 780M, B580, B70) require the prompt length M to be tile-aligned.
@@ -411,18 +621,18 @@ SARC throughput [M], 8B, tok/s:
 - A full-vocabulary logit diff; the probe records the top-10 only.
 - A multi-token generation comparison.
 
-## 9. Where the remaining headroom is
+## B9. Where the remaining headroom is
 
 Projections [I], not measurements.
 
 | Target | Evidence | Rough size |
 |---|---|---|
 | Attention on the four GPUs without a SARC attention row | [M] share of SARC 8B 4w time: B580 33.0 %, B70 34.5 %, 4070 Ti 33.7 %, Orin 41.3 %. Stock QKᵀ runs at ≈ 5–9 % of the matrix roof there | If attention reached the 780M's 4×: ≈ +30–45 % end to end (1 / (1 − 0.75·share)). Assumes the 780M result transfers; the 780M's stock AV was unusually slow |
-| SARC 8da4w GEMM on Intel and Orin | [M] 22–24 % of the int8 register roof; Intel fed roofs are 85–89 % of it [R] | Reaching the 4070 Ti's 42 % would be ≈ 1.8× on those GEMMs; the practical ceiling is uncertain (§2, §7) |
+| SARC 8da4w GEMM on Intel and Orin | [M] 22–24 % of the int8 register roof; Intel fed roofs are 85–89 % of it [R] | Reaching the 4070 Ti's 42 % would be ≈ 1.8× on those GEMMs; the practical ceiling is uncertain (§B2, §B7) |
 | SARC 4w GEMM on Intel | [M] 37–38 % of the fp16 roof, vs 61–70 % on the 780M/Orin/4070 Ti | Up to ≈ 1.6× on those GEMMs, if 60 % is achievable on Xe2 [O] |
 | 780M 8da4w overheads | [M] quantize +166 ms, plus copies | Fusing the quantize could remove most of the 7.5 % gap to 4w [I] |
 
-## 10. Threats to validity and follow-ups
+## B10. Threats to validity and follow-ups
 
 **Prompt content** [M], resolved
 - The original timed prompt is "the" × 2048.
@@ -435,7 +645,7 @@ Projections [I], not measurements.
 **Roofs**
 - `fast`-plan short-run roofs: confirmed, but not sustained and **not ISA-verified**.
 - Measured on a different day from the benchmark.
-- Two suspect roofs are excluded (roofline.md §2, §11).
+- Two suspect roofs are excluded (roofline.md §B2, §B11).
 
 **Clocks**
 - Not pinned in either campaign.
@@ -454,12 +664,12 @@ stock 1.5 kernels.
 waves likely differ from the aggregate.
 
 **Open questions**
-- Why stock 8da4w is slow on NVIDIA (§6).
-- Why stock 8da4w loses efficiency with size on Intel (§5).
-- Why 780M 1B attention kernels gain less (§5).
-- SARC's own logits (§8).
+- Why stock 8da4w is slow on NVIDIA (§B6).
+- Why stock 8da4w loses efficiency with size on Intel (§B5).
+- Why 780M 1B attention kernels gain less (§B5).
+- SARC's own logits (§B8).
 
-## 11. Files
+## B11. Files
 
 Everything is under `sarc-acl/.artifacts/e2e-1.5-2026-09-28/`.
 
