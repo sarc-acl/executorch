@@ -10,6 +10,7 @@
 
 #include <executorch/backends/vulkan/runtime/vk_api/Adapter.h>
 
+#include <cstring>
 #include <iomanip>
 #include <sstream>
 
@@ -228,6 +229,24 @@ VkDevice create_logical_device(
     extension_list_top = &subgroup_size_control_features;
   }
 #endif /* VK_EXT_subgroup_size_control */
+
+#if defined(VK_KHR_pipeline_executable_properties) && \
+    defined(ETVK_INSPECT_PIPELINES)
+  // Enabling the extension is not enough: the pipelineExecutableInfo feature
+  // must be enabled too. AMDVLK and PAL tolerate its absence; the Adreno
+  // driver then returns empty statistics.
+  VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR pipe_exec_features{
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR};
+  pipe_exec_features.pipelineExecutableInfo = VK_TRUE;
+  for (const char* ext : enabled_device_extensions) {
+    if (std::strcmp(ext, VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME) ==
+        0) {
+      pipe_exec_features.pNext = extension_list_top;
+      extension_list_top = &pipe_exec_features;
+      break;
+    }
+  }
+#endif /* VK_KHR_pipeline_executable_properties && ETVK_INSPECT_PIPELINES */
 
   device_create_info.pNext = extension_list_top;
 
