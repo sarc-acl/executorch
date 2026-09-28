@@ -112,9 +112,9 @@ bool q4gsw_coopmat_fits(
     // hung a GPU instead of failing pipeline creation (1.4, 2026-08-09).
     if (dims.csh_full) {
       // Full-tile drain (4w): double-buffered Ash/Bsh (row-padded by 8 fp16)
-      // plus the whole fp16 tile, or their max when they share one pool. A
-      // K=32 tile with a separate full-tile Csh exceeds 64 KiB and hung an
-      // Xclipse board (2026-09-28), so check the total, not just the Csh.
+      // plus the whole fp16 tile, or their max when they share one pool.
+      // Check the total, not just the Csh: a separate full-tile Csh can exceed
+      // the device's shared memory.
       const uint64_t ab_bytes = 2u * 2u *
           (uint64_t(dims.m) * (dims.k + 8u) + uint64_t(dims.k) * (dims.n + 8u));
       const uint64_t c_bytes = uint64_t(dims.m) * dims.n * 2u;

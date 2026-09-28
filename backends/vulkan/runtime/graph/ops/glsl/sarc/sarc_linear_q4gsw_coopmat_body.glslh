@@ -85,7 +85,7 @@ void sh_store_Bsh(const uint idx, const uvec4 v) {
 // CSH_POOL (with CSH_FULL; Xclipse/M51, 2026-09-28): Ash, Bsh and the
 // full-tile drain share one shared-memory pool, which the drain reuses after
 // the last MMA. The pool is max(Ash + Bsh, the full tile) instead of their
-// sum, so two workgroups still fit per 64 KiB of LDS.
+// sum, so the workgroup's shared-memory footprint stays small.
 #if !defined(CSH_FULL) || defined(CSH_IN_ASH) || defined(B_COLMAJOR) || defined(FRAG_LAYOUT)
 #error "CSH_POOL needs CSH_FULL and excludes CSH_IN_ASH, B_COLMAJOR and FRAG_LAYOUT"
 #endif
@@ -133,9 +133,8 @@ shared float16_t bias_sh[WG_TILE_N];
 #ifdef CSH_FULL
 // CSH_FULL (Xclipse/M51, 2026-09-28): stage the whole WG_TILE_M x WG_TILE_N
 // result tile and drain it in one pass. The banded drain below (SG_GRID_Y
-// bands per pass, one pass per accumulator row block) returns wrong values on
-// the Xclipse driver once several workgroups run concurrently (a single
-// workgroup is exact; the same SPIR-V is correct on other vendors).
+// bands per pass, one pass per accumulator row block) did not give correct
+// results on that device; the root cause is not determined.
 #if defined(CSH_IN_ASH) || defined(HAS_BIAS)
 #error "CSH_FULL is not combined with CSH_IN_ASH or HAS_BIAS"
 #endif

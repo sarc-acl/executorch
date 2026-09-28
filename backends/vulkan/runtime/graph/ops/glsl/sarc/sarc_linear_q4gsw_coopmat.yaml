@@ -134,8 +134,8 @@ sarc_linear_q4gsw_coopmat:
     # Samsung Xclipse (M51), 2026-09-28: the 1.4 tile with fp32 accumulate
     # ('f32'; fp16 accumulate fails the long-K production diff) and, for
     # texture3d, the whole tile drained in one pass from a shared LDS pool
-    # ('xp' = CSH_FULL + CSH_POOL; the banded drain returns wrong values on
-    # this driver with concurrent workgroups). CSH_* only affect texture3d.
+    # ('xp' = CSH_FULL + CSH_POOL; required on this device, root cause not
+    # determined). CSH_* only affect texture3d.
     - NAME: sarc_linear_q4gsw_coopmat_t128x128k16g22s32f32xp_texture3d_texture2d_half
       IO_STORAGE: texture3d
       WEIGHT_STORAGE: texture2d
