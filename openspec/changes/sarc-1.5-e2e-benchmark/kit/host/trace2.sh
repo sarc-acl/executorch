@@ -17,7 +17,8 @@ for b in stock sarc; do
   for m in "${MS[@]}"; do IFS=: read -r MD ST <<< "${STEM[$m]}"; for q in "${QS[@]}"; do
     if [[ -n $FLAT ]]; then P=$FLAT/${ST}_vulkan_$q.pte; T=$FLAT/tokenizer.model
     else P=$MROOT/$MD/exported/${ST}_vulkan_$q.pte; T=$MROOT/$MD/original/tokenizer.model; fi
-    LD_LIBRARY_PATH=$BD timeout 1800 $BD/llama_main --model_path $P --tokenizer_path $T \
+    benv=(); [[ -f $D/$b/env ]] && mapfile -t benv < "$D/$b/env"   # per-build env, as in e2e.sh
+    env "${benv[@]}" LD_LIBRARY_PATH=$BD timeout 1800 $BD/llama_main --model_path $P --tokenizer_path $T \
       --prompt_file prompt_2048.txt --max_new_tokens 1 --temperature 0 --warmup \
       --etdump_path $O/$m-$q-$b.etdp < /dev/null > $O/$m-$q-$b.log 2>&1 9>&-
     echo "trace $m $q $b rc=$? $(ls -s $O/$m-$q-$b.etdp 2>/dev/null | cut -d' ' -f1)K"

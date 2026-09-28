@@ -17,7 +17,8 @@ declare -A STEM=([1b]=llama-3.2-1b:llama3_2-1b [3b]=llama-3.2-3b:llama3_2-3b [8b
 for m in 1b 3b 8b; do IFS=: read -r MD ST <<< "${STEM[$m]}"; for q in 4w 8da4w; do
   if [[ -n $FLAT ]]; then P=$FLAT/${ST}_vulkan_$q.pte; else P=$MROOT/$MD/exported/${ST}_vulkan_$q.pte; fi
   for b in stock sarc; do for pr in real check; do
-    LD_LIBRARY_PATH=$D/$b timeout 1800 ./probe-$b/logits_probe "$P" logits_probe/${pr}_ids.txt "$O/$m-$q-$b-$pr.json" 6062 45647 \
+    benv=(); [[ -f $D/$b/env ]] && mapfile -t benv < "$D/$b/env"   # per-build env, as in e2e.sh
+    env "${benv[@]}" LD_LIBRARY_PATH=$D/$b timeout 1800 ./probe-$b/logits_probe "$P" logits_probe/${pr}_ids.txt "$O/$m-$q-$b-$pr.json" 6062 45647 \
       > "$O/$m-$q-$b-$pr.log" 2>&1 9>&-
     echo "probe $m $q $b $pr rc=$? $(tail -n1 $O/$m-$q-$b-$pr.log)"
   done; done
