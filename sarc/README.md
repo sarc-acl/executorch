@@ -74,7 +74,7 @@ re-verify first.
 | RTX 4070 Ti SUPER | verified | verified | stock | same |
 | Jetson Orin | verified (texture3d projections) | verified (texture3d projections) | stock | same |
 | Samsung Xclipse (M51) | unverified | unverified | unverified | 1.4 dev-branch defaults; owned by the M51 agent |
-| Adreno 840 (S26) | unverified | – (1.4 int8 kernel broken) | stock | owned by the phone agent |
+| Adreno 840 (S26) | unverified, **fails production-diff at K ≥ 3072** (fp16 accumulate) | – (1.4 int8 kernel broken) | stock | e2e `contrib/s26` (1B/3B; 8B DEVICE_LOST): no releasable gain; fp16 matrix roof < fp16 FMA roof; owned by the phone agent |
 | Mali-G1 | – (1.4 routed to upstream) | – | stock | nothing to port |
 | Radeon RX 7900 XTX | unverified (t256x128k32g24s32f32cbt) | unverified (780M zpg) | unverified (780M SDPA) | `openspec/changes/sarc-1.5-7900xtx-4w`, e2e `contrib/7900xtx` (2.79× vs stock, pre-release); golden added; needs re-verify with container-built binaries |
 

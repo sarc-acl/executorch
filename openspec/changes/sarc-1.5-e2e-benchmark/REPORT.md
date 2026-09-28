@@ -152,6 +152,33 @@ The same protocol was run on a Radeon RX 7900 XTX (RDNA3, gfx1100) and merged fr
   SARC kernel.
 - The independent re-analysis of the contributed CSVs with `kit/analysis/analyze.py` reproduces every number.
 
+## Contributed GPU: Adreno 840 (Galaxy S26), no releasable speedup yet
+
+The S26 agent ran the same protocol over adb on a Galaxy S26 Ultra (Adreno 840, Android 16, no root). The
+data is in `contrib/s26/`, and an independent re-analysis reproduces every cell. **The result is negative:
+Adreno has no releasable SARC speedup yet.** It is therefore not shown in the figures.
+
+Real-text prompt, median of 5 runs, stock → SARC:
+
+| | Llama 3.2 1B | Llama 3.2 3B |
+|---|---|---|
+| 4w | 647 → 633 tok/s, 0.98× [0.88, 1.12] | 197 → 296 tok/s, 1.50× [1.36, 1.67] ‡ |
+| 8da4w | 869 → 902 tok/s, 1.04× [0.99, 1.05] | 355 → 343 tok/s, 0.97× [0.94, 1.00] |
+
+‡ The 3B 4w speedup comes from a kernel that is **not correct**. The Adreno 4w SARC kernel (fp16 MMA 64×32×16,
+fp16 accumulation) fails the sampled production-diff at K ≥ 3072: 3–9 of 16384 elements are out of tolerance. It
+must not be promoted in its current form.
+
+- **8da4w:** there is no Adreno 8-bit SARC row (the 1.4 int8 kernel was wrong), so both arms run the same stock
+  kernel. A result of ≈ 1.00× is expected.
+- **8B not measured:** Llama 3.1 8B aborts with `VK_ERROR_DEVICE_LOST` in both builds, even after a reboot.
+- **Noise:** the phone is noisy. The stock 4w arm has a 17–30 % repeat spread, although the device was cooled
+  to SKIN < 38.5 °C and GPU ≤ 45 °C before every run.
+- **Other conditions:**
+  - clocks could not be read (no root);
+  - the model files are the same export as the 7900 XTX's, not the five-GPU campaign's;
+  - the build was native (NDK r29), not the pinned container.
+
 ## What was compared
 
 **Stock (baseline)**

@@ -35,7 +35,8 @@ and run end to end: 2048-token real-text prefill, 5 interleaved repeats each, 30
 - fixed a real accuracy bug: the previous 4070 Ti 4w kernel failed the 8B check.
 - ported everything to ExecuTorch release 1.5 with no loss: kernels match within ±3 %.
 
-**A sixth GPU.** The RX 7900 XTX agent measured the same protocol: 2.79× over stock 1.5 (pre-release rows; see §B12).
+**A sixth GPU.** The RX 7900 XTX agent measured the same protocol: 2.79× over stock 1.5 (pre-release rows; see §B11).
+The Galaxy S26 (Adreno 840) was also measured. It has no releasable gain yet: its 4w kernel fails correctness at large K, and 8B hits a device-lost error (§B12).
 
 **Where that leaves the product (Part B).** Against stock ExecuTorch 1.5 the full SARC release is 1.48–5.35× faster end to end, with a geometric mean of 2.75×. That number reflects all the work to date; this part isolates what the last two days added.
 
@@ -649,7 +650,7 @@ Projections [I], not measurements.
 **Roofs**
 - `fast`-plan short-run roofs: confirmed, but not sustained and **not ISA-verified**.
 - Measured on a different day from the benchmark.
-- Two suspect roofs are excluded (roofline.md §B2, §B11).
+- Two suspect roofs are excluded (roofline.md §2, §11).
 
 **Clocks**
 - Not pinned in either campaign.
@@ -673,7 +674,7 @@ waves likely differ from the aggregate.
 - Why 780M 1B attention kernels gain less (§B5).
 - SARC's own logits (§B8).
 
-## B12. Contributed GPU: Radeon RX 7900 XTX (pre-release)
+## B11. Contributed GPU: Radeon RX 7900 XTX (pre-release)
 
 Data: `contrib/7900xtx/`, measured by the 7900 XTX agent with the kit. Caveats in `REPORT.md` ("Contributed GPU"):
 - the rows are `kUnverified` and ran with `ET_VK_SARC_UNVERIFIED=1`;
@@ -713,7 +714,39 @@ The evidence figures E1–E4 include it as a sixth GPU, marked †. Their five-G
   `sarc/golden/spirv.json`. The rows stay `kUnverified` until the 7900 XTX agent re-verifies with
   container-built binaries.
 
-## B11. Files
+## B12. Contributed GPU: Adreno 840 (Galaxy S26), no releasable speedup yet
+
+Data: `contrib/s26/`. It was measured over adb by the S26 agent with the same protocol, for 1B and 3B only.
+Every cell was re-analysed independently. The tables and conditions are in `REPORT.md`.
+
+**Results**
+
+| Measurement | Result |
+|---|---|
+| End to end [M] | 4w 0.98× (1B), 1.50× (3B, from an incorrect kernel); 8da4w 1.04× and 0.97×, same stock kernel in both arms |
+| Correctness [M] | **The SARC 4w row fails production-diff at K ≥ 3072** (fp16 accumulation). 8da4w and SDPA run stock kernels and pass |
+| Roofs [R] (newdev-20260927, fast plan, confirmed, DVFS not pinned) | fp16 FMA 7.76, int8 dot 7.05, fp16 matrix 6.95 TFLOP/s (no fp32-accumulate matrix shape exists) |
+| Kernel efficiency [M] | SARC 4w runs at 36–39 % of the fp16 matrix roof; stock 4w at 23–35 % of the FMA roof; stock 8da4w at 81–85 % of the dot roof |
+| Kernels [M] | the SARC 4w coopmat kernel runs every 4w prefill GEMM (112 / 196 dispatches) |
+| 8B [M] | `VK_ERROR_DEVICE_LOST` in both builds; kept under `superseded/8b-device-lost/` |
+
+**What this shows**
+- **Adreno 840 has almost no matrix headroom [R].** The fp16 matrix roof (6.95 TFLOP/s) is *below* the fp16 FMA
+  roof (7.76). This is the opposite of every other GPU in this report.
+  - The 1B result (SARC 2.71 vs stock 2.73 TFLOP/s) is consistent with that.
+  - The 3B gain comes mostly from the stock kernel doing worse and being noisy (22.6 % of roof, 17–30 % spread),
+    not from a faster SARC kernel. [I]
+- **The logits probe did not engage the unverified Adreno row by default [M].** Only a forced variant engaged it.
+  A likely cause is that the Android link drops the dev-zone static registration that reads
+  `ET_VK_SARC_UNVERIFIED`. [I]/[O]
+
+**Next steps for the S26 agent**
+1. Fix the 4w accumulation, e.g. per-group fp32 as on the 4070 Ti (`ACC_GROUP_FP32`), and re-run production-diff.
+2. Investigate the 8B `DEVICE_LOST`. Candidates are a GPU watchdog on long submits and memory pressure.
+3. Given the roofs, a scalar or dot-product tuned kernel may beat coopmat on this GPU. Evaluate it before investing
+   in more coopmat tiles.
+
+## B13. Files
 
 Everything is under `sarc-acl/.artifacts/e2e-1.5-2026-09-28/`.
 
