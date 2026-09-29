@@ -28,11 +28,11 @@ All roofs in the tables below have the following status:
 
 | GPU | Campaign REPORT | Plan | Measured (UTC) | Driver (Vulkan `driverVersion`) | Runner / code | Clock state (REPORT line 4) | Sentinel |
 |---|---|---|---|---|---|---|---|
-| Radeon 780M (rocky-ryzen) | `FF/rocky-ryzen/780m/report/REPORT.md` | fast | 2026-09-26 17:51–18:04 | RADV Mesa 25.2.7 (104865799) | runner e91952e1b236, igpu-roofline d4eb84e | DVFS, not pinned | 34/34 ok, median 3.269 TFLOP/s |
-| Arc B580 (fedora) | `FF/fedora/b580/report/REPORT.md` | fast | 2026-09-26 17:51–18:04 | Mesa 26.2.3 ANV (109060099) | runner 810e098c8abb, d4eb84e | DVFS, not pinned | 34/34 ok, 11.679 |
-| Arc Pro B70 (fedora-gpu-eval) | `FF/fedora-gpu-eval/b70-0/report/REPORT.md` | fast | 2026-09-26 17:51–18:05 | Mesa 26.2.3 ANV (109060099) | runner 810e098c8abb, d4eb84e | "unavailable" | 34/34 ok, 18.350 |
-| RTX 4070 Ti SUPER (gpu-dev-4004) | `FF/gpu-dev-4004/4070tis/report/REPORT.md` | fast | 2026-09-27 01:16–01:32 | NVIDIA 615.71.09 (2580660800) | runner 5edad6896f44, d4eb84e | DVFS, not pinned | 34/34 ok, 25.481 |
-| Jetson Orin Nano 8 GB (duck-naughty / orin-naughty) | `JR/report/REPORT.md` | fast | 2026-09-27 05:19–05:49 | NVIDIA 595.78 (2496888832) | runner 6635217988c7, repo head b65bda8 | "unavailable" (15 W mode, 306–612 MHz per `D/JETSON-WMMA-LESSONS.md:57-60`) | 34/34 ok, 0.732 |
+| Radeon 780M (rocky-ryzen) | `FF/rocky-ryzen/780m/report/REPORT.md` | fast | 2026-09-26 17:51–18:04 | RADV Mesa 25.2.7 (104865799) | runner e91952e1b236, igpu-roofline ee8feae | DVFS, not pinned | 34/34 ok, median 3.269 TFLOP/s |
+| Arc B580 (fedora) | `FF/fedora/b580/report/REPORT.md` | fast | 2026-09-26 17:51–18:04 | Mesa 26.2.3 ANV (109060099) | runner 810e098c8abb, ee8feae | DVFS, not pinned | 34/34 ok, 11.679 |
+| Arc Pro B70 (fedora-gpu-eval) | `FF/fedora-gpu-eval/b70-0/report/REPORT.md` | fast | 2026-09-26 17:51–18:05 | Mesa 26.2.3 ANV (109060099) | runner 810e098c8abb, ee8feae | "unavailable" | 34/34 ok, 18.350 |
+| RTX 4070 Ti SUPER (gpu-dev-4004) | `FF/gpu-dev-4004/4070tis/report/REPORT.md` | fast | 2026-09-27 01:16–01:32 | NVIDIA 615.71.09 (2580660800) | runner 5edad6896f44, ee8feae | DVFS, not pinned | 34/34 ok, 25.481 |
+| Jetson Orin Nano 8 GB (duck-naughty / orin-naughty) | `JR/report/REPORT.md` | fast | 2026-09-27 05:19–05:49 | NVIDIA 595.78 (2496888832) | runner 6635217988c7, repo head 141fede | "unavailable" (15 W mode, 306–612 MHz per `D/JETSON-WMMA-LESSONS.md:57-60`) | 34/34 ok, 0.732 |
 
 Other provenance notes:
 
