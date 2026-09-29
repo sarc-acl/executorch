@@ -16,7 +16,7 @@ inference from instruction counts, not a disassembly.
 - Driver "Qualcomm Technologies Inc. Adreno Vulkan Driver", build bacff47b1e / I498f01ff61, 11/20/25, compiler
   E031.50.19.13, driver version 0842.19.3 [M].
 - igpu-roofline `inspect` (repo commit 463b2ff, inspector sha256 8be3b707…), campaign newdev-20260927 [M].
-- ExecuTorch inspection build: `topic/vulkan-pipeline-inspect` (661856b4b) applied on dev/1.5 + `topic/s26-acc-reg`,
+- ExecuTorch inspection build: `topic/vulkan-pipeline-inspect` (7e92ecba5) applied on dev/1.5 + `topic/s26-acc-reg`,
   `tools/sarc-build-native.sh <tree> android --inspect`, NDK r29, Vulkan SDK 1.4.350.1 glslc [M].
 
 ## Route (a): VK_KHR_pipeline_executable_properties — statistics yes, ISA no
@@ -125,7 +125,7 @@ question stays open [I].
 ```
 # roofline statistics: igpu-roofline campaign newdev-20260927, results/…/s26/<s26-serial>/pipeline-inspection/
 # ExecuTorch dumps (device dir /data/local/tmp/et15-inspect):
-J=12 tools/sarc-build-native.sh <tree> android --inspect        # tree = dev/1.5 + 661856b4b + a5bd11cfd + patch
+J=12 tools/sarc-build-native.sh <tree> android --inspect        # tree = dev/1.5 + 7e92ecba5 + fa4952656 + patch
 adb -s <s26-serial> shell 'cd /data/local/tmp/et15-inspect && mkdir -p stats-sarc4w && ET_VK_SARC_UNVERIFIED=1 \
   ET_VK_DUMP_PIPELINE_STATS=stats-sarc4w ./test_llama_microbench --linear --model=3.2-1b --scheme=4w \
   --regime=prefill --storage=texture3d --skip-correctness'

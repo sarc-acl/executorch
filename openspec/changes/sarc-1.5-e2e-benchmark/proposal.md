@@ -9,7 +9,7 @@ change re-measures the shipped release against real upstream 1.5 with repeats, s
 
 A fresh end-to-end prefill campaign on 2026-09-28:
 - **Builds:** stock `release/1.5` (985c1ceccc + the compile-only `<algorithm>` backport) vs tag `sarc/1.5-r2`
-  (fd9250c60), both built fresh.
+  (e4c274cd6), both built fresh.
 - **Grid:** 5 GPUs × 3 Llama models × 2 schemes × 5 interleaved repeats.
 - **Also collected:** next-token checks and ETDump dispatch evidence.
 

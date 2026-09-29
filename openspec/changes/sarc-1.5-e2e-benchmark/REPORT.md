@@ -128,7 +128,7 @@ hypotheses.
 The same protocol was run on a Radeon RX 7900 XTX (RDNA3, gfx1100) and merged from
 `openspec/changes/sarc-1.5-e2e-benchmark/contrib/7900xtx/`. Measurement setup:
 - driver AMDVLK 2025.Q2.1;
-- builds: stock `release/1.5` (plus the same include backport) vs SARC at `topic/7900xtx-4w-coopmat` @ `8b00c92f1`;
+- builds: stock `release/1.5` (plus the same include backport) vs SARC at `topic/7900xtx-4w-coopmat` @ `ff3f34ef8`;
 - 5 interleaved repeats, both prompts.
 
 **It is kept separate from the five-GPU results above**:
@@ -158,7 +158,7 @@ The same protocol was run on a Radeon RX 7600 (RDNA3, Navi 33, gfx1102, 8 GiB) a
 - a user-space RADV build of **Mesa 26.2.3** for both arms. The system Mesa 23.2.1
   exposes no cooperative matrix on this card; with Mesa 26.2.3 the stock arm is also 11–14 % faster (4w);
 - builds: stock `release/1.5` (plus the same include backport; its binaries equal the 7900 XTX campaign's) vs
-  SARC at `topic/rx7600-coopmat` @ `5351955ca`;
+  SARC at `topic/rx7600-coopmat` @ `3a95994ac`;
 - 5 interleaved repeats, both prompts; the models are the same `*_embq_ctx3072.pte` export as the 7900 XTX.
 
 It is kept separate for the same reasons as the 7900 XTX:
@@ -253,7 +253,7 @@ Real-text 2048-token prompt, speedup = SARC / stock, median of 5 interleaved rep
 - The SARC tree carries the same backport, verified in both files.
 
 **SARC**
-- Source: tag `sarc/1.5-r2` @ `fd9250c60`, which is release 1.5 plus the SARC release zone.
+- Source: tag `sarc/1.5-r2` @ `e4c274cd6`, which is release 1.5 plus the SARC release zone.
 - The release zone holds the kernel-selection tables, the coopmat shaders and a few hook lines: 38 files differ
   from `985c1ceccc`.
 - Kernel choice is by device name, from verified rows only.

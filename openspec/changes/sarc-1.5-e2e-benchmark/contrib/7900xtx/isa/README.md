@@ -6,7 +6,7 @@ They do, under both drivers.
 
 - Date: 2026-09-28.
 - Host: `host-7900xtx`, Radeon RX 7900 XTX (Navi31, gfx1100), Ubuntu 25.04, kernel 6.14.0-37-generic.
-- Tree: `dev/1.5` at `d4aaed92d`. The 4w and 8da4w rows came in with `8b00c92f1`, and their shader and op sources
+- Tree: `dev/1.5` at `157c0d03a`. The 4w and 8da4w rows came in with `ff3f34ef8`, and their shader and op sources
   have not changed since.
 
 ## Drivers and tools
@@ -160,7 +160,7 @@ the 780M dumps, so how those figures were counted is **UNVERIFIED**.
 - **Source:** the SPIR-V is from the native build, compiled with glslc from Vulkan SDK 1.4.350.1 rather than the
   pinned container.
 - **4w:** the `texture3d` variant (sha256 `d73ec06a…`) is byte-identical to its `sarc/golden/spirv.json` entry.
-  The pinned container generated that entry in `18a3b14cb`.
+  The pinned container generated that entry in `6fb32c33e`.
 - **8da4w:** the `texture3d` (`f1c25dc7…`) and `buffer` (`a13974f6…`) variants differ from their golden entries
   (`deb69cb1…`, `a80a945b…`). The driver ISA here therefore comes from the native-build SPIR-V, not from the
   golden SPIR-V. The native build's SPIR-V is what the 7900 XTX e2e binaries used. This README does not dump the

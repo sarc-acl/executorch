@@ -54,7 +54,7 @@ The Linux host scripts are in `kit/host/`. Phones: see §4.
 **Builds**
 - **Stock:** `release/1.5` @ `985c1ceccc`, plus the compile-only backport `kit/patches/stock-backport-03f41d2031.patch` (the
   `SharedObject.cpp`/`Squeeze.cpp` `#include <algorithm>` patch from upstream 03f41d2031; it is also in
-  `dev/1.5` as commit `158007c35`).
+  `dev/1.5` as commit `aacf73d17`).
 - **SARC:** your commit.
 - Build both fresh:
   - x86: `sarc/tools/build.sh --llama --no-tests <tree> <out>`;

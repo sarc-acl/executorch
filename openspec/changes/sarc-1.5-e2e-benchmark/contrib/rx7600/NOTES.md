@@ -39,7 +39,7 @@ Labels: [M] measured in this campaign, [R] roofline, [S] source, [I] inference, 
   carries an uncommitted `ComputeGraph.cpp` edit (opt-in `ET_VK_EXECUTE_NODE_THRESHOLD`, another agent's) dated
   10:08, after the binaries (09:04); the variable is unset here, so the stock arm is the documented one [M, I].
 - sarc: `topic/rx7600-coopmat` @ **5351955ca920a097c8ba962108376012ad8082d2** (local commit, not pushed; on
-  `topic/7900xtx-4w-coopmat` 8b00c92f1). Rows for "rx 7600" (kUnverified): 4w
+  `topic/7900xtx-4w-coopmat` ff3f34ef8). Rows for "rx 7600" (kUnverified): 4w
   `sarc_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt` (texture3d, fp32 accumulate), 8da4w
   `sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32` (780M kernel), SDPA prefill
   `sarc_sdpa_{qk_coopmat_t128x64k32g22s64,av_coopmat_t64x64k32g22s64}` (780M kernels) [S]. `sarc/env`:

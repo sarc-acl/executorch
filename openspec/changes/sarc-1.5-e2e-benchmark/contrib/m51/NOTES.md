@@ -14,7 +14,7 @@ spread in %, output correctness), `raw/nexttoken.csv`, `trace/dispatch.csv` (ker
   process at a time; thermal pacing on the GPU sensor [M].
 - Protocol: CONTRIBUTING-A-GPU.md M1 (5 interleaved repeats, both prompts, fresh process per run), M2 (warm
   ETDump), M4 (logits probe), driven from the host over adb [M]. M3 (roofline) was measured but is not published.
-- stock: `release/1.5` @ 985c1ceccc8b + the kit backport patch; sarc: `dev/1.5` @ d98227f60 with its unverified
+- stock: `release/1.5` @ 985c1ceccc8b + the kit backport patch; sarc: `dev/1.5` @ d7741475f with its unverified
   "xclipse" rows (`ET_VK_SARC_UNVERIFIED=1`): 4w `sarc_linear_q4gsw_coopmat_t128x128k16g22s32` (fp16 accumulate),
   8da4w `sarc_linear_dq8ca_coopmat_zpgtr_t128x64k32g42s32`, SDPA prefill `sarc_sdpa_{qk,av}_coopmat` [S].
 - Both arms also carry a local, measurement-only runtime option `ET_VK_EXECUTE_NODE_THRESHOLD=32` (submit a command

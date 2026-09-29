@@ -15,7 +15,7 @@ Labels: [M] measured in this campaign, [R] roofline, [S] source, [I] inference, 
 
 ## Builds
 - stock: `release/1.5` @ 985c1ceccc8bb8b6a32294f71aeb5d2f299562f7 + `kit/patches/stock-backport-03f41d2031.patch`.
-- sarc: `topic/7900xtx-4w-coopmat` @ 8b00c92f1 (on dev/1.5 f4eea5ae3; the 6 newer dev/1.5 commits are docs only).
+- sarc: `topic/7900xtx-4w-coopmat` @ ff3f34ef8 (on dev/1.5 428c76768; the 6 newer dev/1.5 commits are docs only).
   Rows for "7900 xtx" (kUnverified): 4w `sarc_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt` (texture3d, fp32
   accumulate), 8da4w `sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32` (780M kernel), SDPA prefill
   `sarc_sdpa_{qk_coopmat_t128x64k32g22s64,av_coopmat_t64x64k32g22s64}` (780M kernels) [S].

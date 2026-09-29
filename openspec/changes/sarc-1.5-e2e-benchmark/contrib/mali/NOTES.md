@@ -41,7 +41,7 @@ Campaign directory (raw logs, microbench logs, ETDumps, superseded data):
 | arm | commit | binary sha256 |
 |---|---|---|
 | stock | release/1.5 @ `985c1ceccc` + `stock-backport-03f41d2031.patch` (built in `stock-1.5/`, reused read-only) | llama_main `7637c605…1ec2e`, llama_main (ETDump) `e079ddc1…b5bf0`, logits_probe `c1bfbb65…33f83e` |
-| SARC | `topic/mali-g1-tune` @ `7b858376b` (on dev/1.5 `d98227f60`; kept as local branch `topic/mali-g1-tune-measured`). Rebased afterwards onto dev/1.5 `49121ada0` → `14d8f5f68`; all 184 SARC SPIR-V files of the measured build are byte-identical in the rebased build | llama_main `b7cef8f9…56a4e5`, llama_main (ETDump) `7f611055…d7d08d`, logits_probe `76387af9…b3ce`, test_llama_microbench `c3013b89…f8771` |
+| SARC | `topic/mali-g1-tune` @ `7b858376b` (on dev/1.5 `d7741475f`; kept as local branch `topic/mali-g1-tune-measured`). Rebased afterwards onto dev/1.5 `87638cb32` → `b40cfc50a`; all 184 SARC SPIR-V files of the measured build are byte-identical in the rebased build | llama_main `b7cef8f9…56a4e5`, llama_main (ETDump) `7f611055…d7d08d`, logits_probe `76387af9…b3ce`, test_llama_microbench `c3013b89…f8771` |
 
 Full hashes: `capability/sarc-binaries.sha256`, `…/mali/superseded/degraded-latch/raw-complete/env.txt`.
 Per-build env: stock none; SARC `ET_VK_SARC_UNVERIFIED=1` (the Mali row is `kUnverified`).

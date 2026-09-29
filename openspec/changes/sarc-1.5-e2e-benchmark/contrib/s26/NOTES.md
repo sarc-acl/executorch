@@ -17,7 +17,7 @@ Labels: [M] measured in this campaign, [R] roofline, [S] source, [I] inference, 
 
 ## Builds
 - stock: `release/1.5` @ 985c1ceccc8bb8b6a32294f71aeb5d2f299562f7 + `kit/patches/stock-backport-03f41d2031.patch`.
-- sarc: `origin/dev/1.5` @ d98227f60 (the Adreno row is already there). Row: "adreno" 4w
+- sarc: `origin/dev/1.5` @ d7741475f (the Adreno row is already there). Row: "adreno" 4w
   `sarc_linear_q4gsw_coopmat_t64x64k32g21s64m64x32x16` (fp16 MMA 64x32x16, fp16 accumulate), kUnverified; no Adreno
   8da4w row (the 1.4 int8 kernel was wrong and then DEVICE_LOST; not ported) and no Adreno SDPA row [S].
   `sarc/env`: `ET_VK_SARC_UNVERIFIED=1`; stock/env empty [M].
