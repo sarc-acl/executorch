@@ -53,8 +53,8 @@ const Row kAmdRows[] = {
      Status::kVerified},
 
     // Samsung Xclipse (M51): 4w on the 1.4 tile with fp32 accumulate and, for
-    // texture3d, the one-pass full-tile drain from a shared LDS pool (the 1.4
-    // fp16-accumulate, banded-drain variant returned wrong values here).
+    // texture3d, the one-pass full-tile drain from a shared LDS pool (required
+    // on this device; root cause not determined).
     // 8da4w: the 1.4 default.
     // Owned by the M51 agent, not verified on release 1.5.
     {"xclipse",

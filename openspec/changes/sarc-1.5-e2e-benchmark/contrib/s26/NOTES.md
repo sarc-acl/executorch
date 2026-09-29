@@ -29,7 +29,7 @@ Labels: [M] measured in this campaign, [R] roofline, [S] source, [I] inference, 
   sarc e0d3fd40d8cf…; probe stock c1bfbb65f0e6…, sarc 61d601676e15… (full hashes: campaign env/logs) [M].
 - Models: `*_embq_ctx3072.pte` (sha256 == the shared model manifest (MANIFEST.json)), flat-named:
   1b 4w 1ac83440b93b2cde…, 1b 8da4w fb99c89e141f420b…, 3b 4w 92117564851859bd…, 3b 8da4w e9eba0cf5a0f6ca7…,
-  8b 4w 695dd232a500e9b7…, 8b 8da4w 6f172bc5590cdf68… [M]. Same exports as the five-GPU campaign: [O].
+  8b 4w 695dd232a500e9b7…, 8b 8da4w 6f172bc5590cdf68… [M]. Same export recipe as the five-GPU campaign, exported separately (owner-confirmed; files not byte-identical).
 
 ## Results — 1B and 3B only (medians of 5, paired 95 % CI)
 | prompt | model | 4w stock -> sarc tok/s | 4w speedup | 8da4w stock -> sarc tok/s | 8da4w speedup |

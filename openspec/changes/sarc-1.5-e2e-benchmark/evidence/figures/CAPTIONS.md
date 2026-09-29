@@ -10,8 +10,8 @@ contribution directory `contrib/rx7600/` in the `sarc-1.5-e2e-benchmark` change 
 `efficiency.csv`, `trace/families.csv`; full paths in `common.py`); all other GPUs from
 `evidence/combined6/`, unchanged.
 
-**† RX 7900 XTX and RX 7600 (pre-release):** their SARC rows are unverified and come from a different
-.pte export. The RX 7900 XTX runs on the AMDVLK driver; the RX 7600 on RADV (Mesa 26.2.3), like the
+**† RX 7900 XTX and RX 7600 (pre-release):** their SARC kernel rows are unverified. Their .pte files
+use the same export recipe as the other GPUs, exported separately (files not byte-identical). The RX 7900 XTX runs on the AMDVLK driver; the RX 7600 on RADV (Mesa 26.2.3), like the
 780M. Both SARC builds include the Radeon 780M's SARC attention kernels, so together with the 780M
 there are three GPUs where SARC also speeds up attention. Read their numbers as preliminary.
 

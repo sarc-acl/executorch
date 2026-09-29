@@ -50,8 +50,8 @@
  * workgroups that actually execute (88%).
  *
  * WHY THE ALL-VISIBLE STORE TAKES ITS STRIDE FROM A SPEC CONSTANT:
- * coopMatStore's stride operand must not derive from a UBO value on the
- * one tested compiler -- the same miscompile sdpa_compute_out_coopmat.glsl
+ * coopMatStore's stride operand must not derive from a UBO value on
+ * one tested shader compiler -- the same miscompile sdpa_compute_out_coopmat.glsl
  * works around for its output stride. attn_weights' row width is
  * align_up_4(context_len), and context_len = input_pos + S comes from UBOs, so
  * using it directly produces silently wrong output (measured: deterministic,
@@ -98,7 +98,7 @@ layout(local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2) in;
 
 ${layout_declare_spec_const(C, "float", "inv_scale", "1.0")}
 // K-chunk trip count = head_dim / WG_TILE_K, as a spec constant (the
-// one tested compiler crashes on a coopMatMulAdd loop with a UBO-derived
+// One tested shader compiler crashes on a coopMatMulAdd loop with a UBO-derived
 // trip count — see coopmat_mm.glsl).
 ${layout_declare_spec_const(C, "int", "num_k_chunks_arg", "0")}
 // attn_weights row width (= align_up_4(context_len)) as resolved at node

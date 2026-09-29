@@ -21,7 +21,7 @@ stock build.
 
 ![Speedup](results/figures/fig1_speedup.png)
 
-*Figures 1–3 include two contributed, hatched GPUs, the RX 7900 XTX and the RX 7600 (†, pre-release: unverified rows, different model export). The "all 5 GPUs" aggregates exclude them.*
+*Figures 1–3 include two contributed, hatched GPUs, the RX 7900 XTX and the RX 7600 (†, pre-release: unverified kernel rows). The "all 5 GPUs" aggregates exclude them.*
 
 *Figure 1. Prefill speedup of SARC 1.5-r2 over stock ExecuTorch 1.5: the ratio of the medians of n = 5 runs
 each. Error bars: approximate 95 % paired bootstrap CI. Dashed line: parity with stock.*
@@ -35,7 +35,7 @@ each. Error bars: approximate 95 % paired bootstrap CI. Dashed line: parity with
 | Jetson Orin Nano | 4.49× | 4.42× | 4.46× |
 | **all 5 GPUs** | **3.17×** | **2.39×** | **2.75×** |
 
-A sixth GPU, the **Radeon RX 7900 XTX**, was measured by its own agent with the same protocol. It reaches 2.79× over stock (real text; 3.00–3.79× for 4w, 2.09–2.53× for 8da4w). It is reported separately because its SARC rows are still pre-release and its model files are a different export (see "Contributed GPU"). A seventh GPU, the **Radeon RX 7600** (RDNA3, Navi 33), was contributed the same way and reaches **2.48×** (real text; 2.85–3.32× for 4w, 1.88–2.18× for 8da4w), also pre-release. An internal **Samsung Xclipse (M51)** device, published as relative speedups only, reaches **2.18–2.73×** with 8-bit activations (correct output). Its 4-bit kernel was fixed on 2026-09-28 and is being re-measured (see "Contributed GPU: Samsung Xclipse").
+A sixth GPU, the **Radeon RX 7900 XTX**, was measured by its own agent with the same protocol. It reaches 2.79× over stock (real text; 3.00–3.79× for 4w, 2.09–2.53× for 8da4w). It is reported separately because its SARC rows are still pre-release (see "Contributed GPU"). A seventh GPU, the **Radeon RX 7600** (RDNA3, Navi 33), was contributed the same way and reaches **2.48×** (real text; 2.85–3.32× for 4w, 1.88–2.18× for 8da4w), also pre-release. An internal **Samsung Xclipse (M51)** device, published as relative speedups only, reaches **2.18–2.73×** with 8-bit activations (correct output). Its 4-bit kernel was fixed on 2026-09-28 and is being re-measured (see "Contributed GPU: Samsung Xclipse").
 
 ## Results
 
@@ -127,16 +127,14 @@ hypotheses.
 
 The same protocol was run on a Radeon RX 7900 XTX (RDNA3, gfx1100) and merged from
 `openspec/changes/sarc-1.5-e2e-benchmark/contrib/7900xtx/`. Measurement setup:
-- host `host-7900xtx`, driver AMDVLK 2025.Q2.1;
+- driver AMDVLK 2025.Q2.1;
 - builds: stock `release/1.5` (plus the same include backport) vs SARC at `topic/7900xtx-4w-coopmat` @ `8b00c92f1`;
 - 5 interleaved repeats, both prompts.
 
 **It is kept separate from the five-GPU results above**:
 - **Pre-release rows.** The 7900 XTX rows are still `kUnverified`, so the SARC arm ran with
   `ET_VK_SARC_UNVERIFIED=1`. The shipped release `sarc/1.5-r2` does not yet contain them.
-- **Different models.** The model files are a different export (`*_embq_ctx3072.pte`): all 6 SHA-256 hashes
-  differ from the five-GPU campaign. Speedups compare stock and SARC on the same file and are valid. Absolute
-  tok/s are not directly comparable with the tables above.
+- **Model files.** `*_embq_ctx3072.pte`, the same export recipe as the five-GPU set, exported separately on another machine (files not byte-identical). Speedups compare stock and SARC on the same file.
 - **Different toolchain.** The build was native, with its own glslc, not the pinned container.
 - **Co-tenant not stopped.** An idle `ollama` service was running on the GPU host (0 % busy; no sudo there).
 
@@ -157,18 +155,17 @@ The same protocol was run on a Radeon RX 7900 XTX (RDNA3, gfx1100) and merged fr
 
 The same protocol was run on a Radeon RX 7600 (RDNA3, Navi 33, gfx1102, 8 GiB) and merged from
 `contrib/rx7600/`. Measurement setup:
-- host `host-ws1`, a user-space RADV build of **Mesa 26.2.3** for both arms. The system Mesa 23.2.1
+- a user-space RADV build of **Mesa 26.2.3** for both arms. The system Mesa 23.2.1
   exposes no cooperative matrix on this card; with Mesa 26.2.3 the stock arm is also 11–14 % faster (4w);
 - builds: stock `release/1.5` (plus the same include backport; its binaries equal the 7900 XTX campaign's) vs
   SARC at `topic/rx7600-coopmat` @ `5351955ca`;
 - 5 interleaved repeats, both prompts; the models are the same `*_embq_ctx3072.pte` export as the 7900 XTX.
 
 It is kept separate for the same reasons as the 7900 XTX:
-- **Pre-release rows.** The RX 7600 rows are `kUnverified` and live on `topic/rx7600-coopmat`, which is not
-  merged into `dev/1.5`; the SARC arm ran with `ET_VK_SARC_UNVERIFIED=1`. The rows reuse the 7900 XTX 4w tile
+- **Pre-release rows.** The RX 7600 rows are `kUnverified` (merged into `dev/1.5`, not yet re-verified); the SARC arm ran
+  with `ET_VK_SARC_UNVERIFIED=1`. The rows reuse the 7900 XTX 4w tile
   (`t256x128k32g24s32f32cbt`, fp32 accumulate), the 780M 8da4w tile and the 780M attention kernels.
-- **Different models and toolchain.** Different model export (see above); native build, SPIR-V not checked
-  against the golden.
+- **Toolchain.** Native build, SPIR-V not checked against the golden. Model files as for the 7900 XTX.
 - **Display GPU.** The card drives the desktop (no sudo to stop it); every cell's repeat spread is still ≤ 2.4 %.
 
 | prompt | 4w: 1B / 3B / 8B | 8da4w: 1B / 3B / 8B | geomean |
@@ -211,7 +208,7 @@ must not be promoted in its current form.
   to SKIN < 38.5 °C and GPU ≤ 45 °C before every run.
 - **Other conditions:**
   - clocks could not be read (no root);
-  - the model files are the same export as the 7900 XTX's, not the five-GPU campaign's;
+  - the model files are the same export recipe as the five-GPU set, exported separately on another machine (files not byte-identical);
   - the build was native (NDK r29), not the pinned container.
 
 ## Contributed GPU: Samsung Xclipse (M51), relative speedups only

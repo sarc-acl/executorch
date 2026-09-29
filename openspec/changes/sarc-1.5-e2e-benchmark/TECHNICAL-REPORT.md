@@ -463,7 +463,7 @@ waves likely differ from the aggregate.
 
 Data: `contrib/7900xtx/`, measured by the 7900 XTX agent with the kit. Caveats in `REPORT.md` ("Contributed GPU"):
 - the rows are `kUnverified` and ran with `ET_VK_SARC_UNVERIFIED=1`;
-- the `.pte` files are a different export;
+- the `.pte` files use the same export recipe as the five-GPU set, exported separately on another machine (files not byte-identical);
 - the driver is AMDVLK, and the build was native rather than the pinned container.
 
 **Results**
@@ -574,8 +574,8 @@ checked: [M] as reported, not independently recomputed.
 
 Data: `contrib/rx7600/`, measured by its own agent with the kit. Caveats in `REPORT.md` ("Contributed GPU: Radeon
 RX 7600"):
-- the rows are `kUnverified`, live on the unmerged `topic/rx7600-coopmat`, and ran with `ET_VK_SARC_UNVERIFIED=1`;
-- the `.pte` files are the same different export as the 7900 XTX's;
+- the rows are `kUnverified` (merged into `dev/1.5`, not yet re-verified) and ran with `ET_VK_SARC_UNVERIFIED=1`;
+- the `.pte` files are the same as the 7900 XTX's (same export recipe, exported separately);
 - the driver is a user-space RADV (Mesa 26.2.3), because the system Mesa 23.2.1 has no cooperative matrix;
 - the build was native rather than the pinned container, and the card drives the desktop.
 
@@ -608,8 +608,8 @@ RX 7600"):
 
 **Not done**
 - Before/after re-tuning (M5): the RX 7600 had no SARC rows before this campaign.
-- Row promotion: `topic/rx7600-coopmat` needs review and merge into `dev/1.5`, SPIR-V golden from the pinned
-  container, and re-verification before the rows can leave `kUnverified`.
+- Row promotion: the rows are merged into `dev/1.5`; they need re-verification with binaries built by the pinned
+  shader compiler before they can leave `kUnverified`.
 
 ## 15. Files
 

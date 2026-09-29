@@ -34,8 +34,7 @@ Labels: [M] measured in this campaign, [R] roofline, [S] source, [I] inference, 
     probe-sarc/logits_probe 6374c8d137aaf4ed7e560b688bf78478048ad0a7798906de862be98214e95ff0
 - Models (`*_embq_ctx3072.pte`, sha256 == the shared model manifest (MANIFEST.json)), flat-named:
   1b 4w 1ac83440b93b2cde…, 1b 8da4w fb99c89e141f420b…, 3b 4w 92117564851859bd…, 3b 8da4w e9eba0cf5a0f6ca7…,
-  8b 4w 695dd232a500e9b7…, 8b 8da4w 6f172bc5590cdf68… [M]. Whether these are the same exports as the five-GPU
-  campaign's `/mnt/linux-share/models/*_vulkan_*.pte` is [O] (no hashes of those in the repo).
+  8b 4w 695dd232a500e9b7…, 8b 8da4w 6f172bc5590cdf68… [M]. Same export recipe as the five-GPU campaign, exported separately (owner-confirmed, 2026-09-28; files not byte-identical).
 - Prompts: kit prompts, sha256 prompt_2048 bfce65eb…, prompt_real_2048 30ec73a2…, prompt_check b5499448…; every timed
   log shows `"prompt_tokens":2048` [M].
 

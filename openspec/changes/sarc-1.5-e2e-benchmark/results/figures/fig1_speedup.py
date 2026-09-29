@@ -1,7 +1,7 @@
 """Fig. 1: SARC speedup over stock ExecuTorch 1.5 (median ratio, approx. 95 % paired bootstrap CI).
 
 Speedup-only figure: includes the speedup-only devices in S.SPEEDUP_GPUS. Cells whose
-SARC output is incorrect are not plotted; their slot is labelled instead.
+result is not reported yet (pending) are not plotted; their slot is labelled instead.
 """
 import matplotlib.pyplot as plt
 import numpy as np
@@ -58,7 +58,7 @@ fig.text(0.5, -0.01,
          "2048-token prompt, ExecuTorch Vulkan (llama_main). Bars: ratio of medians of n=5 runs;\n"
          "error bars: approx. 95 % paired bootstrap CI; dashed line: 1.0× (stock).\n"
          + S.PRERELEASE_NOTE_WIDE + "\n"
-         + S.M51_NOTE + "\n" + S.INCORRECT_NOTE,
+         + S.M51_NOTE + "\n" + S.PENDING_NOTE,
          ha="center", va="top", fontsize=8, color=S.MUTED)
 fig.tight_layout(rect=(0, 0, 1, 0.96), h_pad=1.2)
 S.save(fig, "fig1_speedup")

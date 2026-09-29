@@ -234,7 +234,7 @@ void main() {
   // Prefetch temp registers. temp_A is a coopmat array (dbuf4tr's A-staging
   // technique); indices into it are [[unroll]]-resolved compile-time
   // constants, never dynamic -- dynamic indexing of a coopmat array is
-  // exactly the construct the one tested compiler has miscompiled
+  // exactly the construct one tested shader compiler has miscompiled
   // before.
 #ifdef A_RAW
   // Thread map: 16-byte part fastest, then row, then K slab, so 8 lanes of a
@@ -675,8 +675,8 @@ void main() {
   // PORTABILITY NOTE: the barrier() in the loop body keeps this loop rolled
   // despite [[unroll]], so result[i][j] IS dynamically indexed. Coopmat arrays
   // are opaque per-lane storage and dynamic indexing is exactly the construct
-  // the one tested compiler has broken before -- check this first if the
-  // texture variants miscompile on M51.
+  // one tested shader compiler has broken before -- check this first if the
+  // texture variants miscompile on a new device.
   const uint CSH_TEXELS_PER_ROW = WG_TILE_N / 4u;
   const uint CSH_TEXELS = CSH_ROWS * CSH_TEXELS_PER_ROW;
 #ifdef DRAIN_UNROLL

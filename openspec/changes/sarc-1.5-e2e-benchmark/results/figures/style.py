@@ -75,9 +75,9 @@ GPU_SHORT = {
     "m51": "Xclipse (M51)‡",
 }
 
-# Pre-release GPUs: SARC rows unverified (ET_VK_SARC_UNVERIFIED=1), different .pte
-# export (absolute tok/s not strictly comparable). RX 7900 XTX: AMDVLK driver; RX 7600:
-# RADV (Mesa 26.2.3). Marked everywhere by a tinted background band / outline in the
+# Pre-release GPUs: unverified kernel rows (ET_VK_SARC_UNVERIFIED=1). Their .pte files use
+# the same export recipe as the other GPUs, exported separately (files not byte-identical).
+# RX 7900 XTX: AMDVLK driver; RX 7600: RADV (Mesa 26.2.3). Marked everywhere by a tinted background band / outline in the
 # GPU's PRERELEASE_COLOR, white hatching and a dagger (M51: double dagger).
 PRERELEASE = {"7900xtx", "rx7600", "m51"}
 # Okabe-Ito reddish purple (7900 XTX, M51) and Tol wine (RX 7600): an AMD-like red-purple
@@ -88,16 +88,13 @@ PRERELEASE_COLOR = PRERELEASE_COLOR_BY_GPU["7900xtx"]  # legend swatch
 PRERELEASE_HATCH = "////"
 # Footnote, pre-wrapped for double-column figures (NOTE_WIDE) and the heatmap (NOTE_NARROW).
 PRERELEASE_NOTE_WIDE = (
-    "† pre-release (RX 7900 XTX, RX 7600): SARC rows unverified (ET_VK_SARC_UNVERIFIED=1);\n"
-    "different .pte export, so absolute tok/s are not strictly comparable;\n"
+    "† pre-release: unverified kernel rows (RX 7900 XTX, RX 7600);\n"
     "drivers: AMDVLK (RX 7900 XTX), RADV Mesa 26.2.3 (RX 7600).")
 PRERELEASE_NOTE_NARROW = (
-    "† pre-release (RX 7900 XTX, RX 7600): SARC rows unverified\n"
-    "(ET_VK_SARC_UNVERIFIED=1); different .pte export, so absolute\n"
-    "tok/s are not strictly comparable; drivers: AMDVLK (RX 7900 XTX),\n"
-    "RADV Mesa 26.2.3 (RX 7600).")
+    "† pre-release: unverified kernel rows (RX 7900 XTX, RX 7600);\n"
+    "drivers: AMDVLK (RX 7900 XTX), RADV Mesa 26.2.3 (RX 7600).")
 M51_NOTE = "‡ Xclipse (M51): internal device, relative speedups only; pre-release rows."
-INCORRECT_NOTE = "4w on Xclipse (M51): kernel fix merged, end-to-end re-measurement pending; not shown."
+PENDING_NOTE = "4w on Xclipse (M51): kernel fix merged, end-to-end re-measurement pending; not shown."
 NA_COLOR = "#D9D9D9"
 
 MODELS = ["1b", "3b", "8b"]
@@ -184,7 +181,7 @@ def load_timed_runs():
 def load_speedups():
     """Speedup table for SPEEDUP_GPUS: raw7 cells plus M51 speedup rows only.
 
-    Cells whose SARC output is incorrect get speedup = NaN (never plotted); the column
+    Cells not reported yet (pending) get speedup = NaN (never plotted); the column
     `correct` is False for them.
     """
     cols = ["gpu", "model", "scheme", "speedup", "speedup_ci_lo", "speedup_ci_hi"]

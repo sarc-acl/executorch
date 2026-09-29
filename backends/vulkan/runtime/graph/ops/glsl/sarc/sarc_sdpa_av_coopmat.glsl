@@ -21,7 +21,7 @@
  *   - A (P) staging uses the head-contiguous row stride C4 + per-head base.
  *   - B (V) staging uses the DHSB head-interleaved row stride KV_H*D4 + base.
  *   - output coopMatStore uses the DHSB row stride (Q_H*D) so heads interleave;
- *     stride + head_dim are spec constants (the one tested compiler
+ *     stride + head_dim are spec constants (one tested shader compiler
  *     miscompiles coopMatStore whose stride derives from a UBO value).
  * fp16 x fp16 -> fp32 MMA. No mask / no scale (softmax already applied).
  *
@@ -222,7 +222,7 @@ void main() {
         // OTHER subgroups than the one that wrote them (Ash row r is written by
         // invocation r*INVS_PER_ROW_A.. and read by every subgroup whose
         // warpInTile.y covers r). barrier() alone was not ordering those uvec4
-        // stores against the cooperative-matrix load path on the one tested
+        // stores against the cooperative-matrix load path on one tested
         // driver: ~2.5% of runs at S=256 produced exactly one stale MMA_M-row
         // band of A -- 16 consecutive rows, all WG_TILE_N columns, one head --
         // which is a lost/late Ash write, not a wrong index (the write was

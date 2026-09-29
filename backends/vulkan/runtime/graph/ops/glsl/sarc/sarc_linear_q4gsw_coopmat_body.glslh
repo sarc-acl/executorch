@@ -731,9 +731,9 @@ void main() {
   // PORTABILITY NOTE: [[unroll]] is only a hint and glslc does not honor it
   // here -- the barrier() in the loop body keeps the loop rolled, so
   // result[i][j] IS dynamically indexed. Coopmat arrays are opaque per-lane
-  // storage and dynamic indexing is exactly the construct the one tested
+  // storage and dynamic indexing is exactly the construct one tested
   // compiler has broken before, so check this first if the texture variants
-  // miscompile on M51. Fully unrolling would need the drain hand-expanded so
+  // miscompile on a new device. Fully unrolling would need the drain hand-expanded so
   // each i gets its own barrier.
   const uint CSH_TEXELS_PER_ROW = WG_TILE_N / 4u;
   const uint CSH_TEXELS = CSH_ROWS * CSH_TEXELS_PER_ROW;

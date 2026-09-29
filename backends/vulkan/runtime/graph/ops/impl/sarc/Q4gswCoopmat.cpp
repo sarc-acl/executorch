@@ -200,7 +200,7 @@ bool try_add_q4gsw_coopmat(
       {graph.sizes_ubo(output), graph.sizes_ubo(fp_input)},
       {},
       // Same spec constants as release 1.5's linear_q4gsw kernels. N is a
-      // spec constant because Xclipse miscompiles UBO-derived store offsets.
+      // spec constant because one tested compiler miscompiles UBO-derived store offsets.
       {apply_bias,
        K4_per_group,
        num_groups,

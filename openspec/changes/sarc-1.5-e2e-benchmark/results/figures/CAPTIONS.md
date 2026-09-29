@@ -16,8 +16,8 @@ throughput.
 
 **† Pre-release: RX 7900 XTX and RX 7600.** Their SARC rows ran with
 `ET_VK_SARC_UNVERIFIED=1`, so SARC correctness is unverified on these GPUs. Their
-`.pte` files come from a different export, so their absolute tokens/s are not
-strictly comparable with the other GPUs. Drivers: AMDVLK (RX 7900 XTX) and RADV,
+`.pte` files use the same export recipe as the other GPUs, exported separately
+(files not byte-identical). Drivers: AMDVLK (RX 7900 XTX) and RADV,
 Mesa 26.2.3 (RX 7600).
 
 **‡ Xclipse (M51): internal device, relative speedups only; pre-release rows.** No
@@ -77,8 +77,7 @@ horizontally.
 For 59 of the 84 bars, the min–max spread is below 1 % of the median, so those
 whiskers are shorter than the markers at this scale. The visibly wider whiskers are
 on the Arc B580, which also drives the host's display. The RX 7900 XTX† and
-RX 7600† bars are hatched. Their absolute throughputs come from a different `.pte`
-export and are not strictly comparable with the other GPUs.
+RX 7600† bars (pre-release: unverified kernel rows) are hatched.
 
 ## Figure 3 (`fig3_heatmap.pdf`)
 

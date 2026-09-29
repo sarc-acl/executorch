@@ -27,9 +27,10 @@ CELLS_CSV = REPORT / "raw7" / "cells.csv"
 
 # RDNA3 parts first (both use SARC attention kernels), then Intel, NVIDIA.
 GPUS = ["780m", "7900xtx", "rx7600", "b580", "b70", "4070ti", "orin"]
-# Pre-release rows (unverified, different .pte export; RX 7900 XTX on AMDVLK, RX 7600 on RADV).
+# Pre-release: unverified kernel rows (RX 7900 XTX on AMDVLK, RX 7600 on RADV). Their .pte files use
+# the same export recipe as the other GPUs, exported separately (files not byte-identical).
 PRERELEASE = {"7900xtx", "rx7600"}
-PRERELEASE_NOTE = ("\u2020 pre-release: unverified rows, different .pte export; "
+PRERELEASE_NOTE = ("\u2020 pre-release: unverified kernel rows (RX 7900 XTX, RX 7600); "
                    "drivers AMDVLK (RX 7900 XTX), RADV Mesa 26.2.3 (RX 7600)")
 # GPUs whose SARC build also contains the SARC attention kernels.
 SARC_ATTN = {"780m", "7900xtx", "rx7600"}

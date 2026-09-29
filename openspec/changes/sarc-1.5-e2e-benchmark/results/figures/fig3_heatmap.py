@@ -1,6 +1,6 @@
 """Fig. 3: speedup heatmap (GPU x scheme/model). Speedup-only: includes S.SPEEDUP_GPUS.
 
-Cells whose SARC output is incorrect are grey with "n/a" (no speedup shown).
+Cells not reported yet (pending) are grey with "n/a" (no speedup shown).
 """
 import matplotlib.pyplot as plt
 import numpy as np
