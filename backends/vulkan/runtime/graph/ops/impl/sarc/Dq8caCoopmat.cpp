@@ -91,11 +91,15 @@ vkapi::ShaderInfo pick_sarc_dq8ca_shader(
   const DeviceInfo device = device_info(graph);
   ShapeInfo shape = runtime_shape(graph, args, resize_args);
   std::optional<Choice> choice = select(device, shape);
-  if (!choice.has_value() && shape.int8_layout == Int8Layout::kRowMajor) {
-    // Row-major activations were chosen at build time and only the zpgtr
-    // kernels read them, so keep the kernel for every M (decode, unaligned
-    // prompts): its buffers were sized for the build-time shape and the grid
-    // rounds M up, so a partial last tile stays in bounds.
+  if (!choice.has_value() && shape.int8_layout == Int8Layout::kRowMajor &&
+      !shape.gemv) {
+    // Row-major activations were chosen at build time and, of the M > 1
+    // kernels, only zpgtr reads them, so keep it for unaligned prompts: its
+    // buffers were sized for the build-time shape and the grid rounds M up.
+    // Decode (M == 1) takes release 1.5's _coop kernel below, which reads the
+    // fp activations: the quantize/pack node is not dispatched at M == 1
+    // (pick_quantize_and_pack_4h4w_with_group_sums_gwg returns an empty grid),
+    // so the int8 buffer would be stale.
     shape.gemv = false;
     shape.ignore_alignment = true;
     choice = select_table(device, shape);
