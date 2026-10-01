@@ -49,7 +49,7 @@ Every yaml parameter of the 4w/8da4w coopmat shaders, and how to sweep them: [SW
 
 | Tool | What it does |
 |---|---|
-| `build.sh [--android] [--llama] [--traced] [--no-tests] <tree> <out>` | Container build (`localhost/et-vk-build:rocky10`, pinned glslc). It regenerates shaders every run. See the script header for all options. |
+| `build.sh [--android] [--llama] [--traced] [--no-tests] <tree> <out>` | Host build with the pinned glslc (shaderc v2026.2, `SARC_GLSLC`; it refuses any other version). It regenerates shaders every run. See the script header for all options. |
 | `verify.sh --dir <stage> --lock <uuid> [--models 1b,3b,8b] [--schemes 4w,8da4w] [--pdiff]` | Runs on the GPU host and produces the promotion evidence. See the script header for all options (`--out`, `--no-tiled`, `--device-index`, `--model-root`, `--flat-models`). |
 | `check.sh [--no-build] [--android] [--work <dir>]` | GPU-free: zone rule, twins, selection test, release-export build, SPIR-V golden. |
 | `make-release.sh --export <dir>/executorch` | Writes the release tree, for building. |
@@ -83,11 +83,17 @@ re-verify first.
 | Arc B580 / Arc Pro B70 | verified | verified | stock | `sarc-1.5-4w-port`, `sarc-1.5-8da4w-port` |
 | RTX 4070 Ti SUPER | verified | verified | stock | same |
 | Jetson Orin | verified (texture3d projections) | verified (texture3d projections) | stock | same |
-| Samsung Xclipse (M51) | unverified, `t128x128k16g22s32f32xp` (fp32 accumulate + one-pass texture3d drain; production diff 1B/3B/8B × buffer/texture3d passes, not yet through the promotion checklist; golden from the container build, needs re-verify with container-built binaries) | unverified, e2e 2.18–2.73× (correct; `contrib/m51`, relative only) | unverified | 1.4 dev-branch defaults; owned by the M51 agent |
+| Samsung Xclipse (M51) | unverified, `t128x128k16g22s32f32xp` (fp32 accumulate + one-pass texture3d drain; production diff 1B/3B/8B × buffer/texture3d passes, not yet through the promotion checklist; golden from the shaderc v2023.8 container, needs re-verify with pinned-glslc binaries) | unverified, e2e output correct (`contrib/m51`) | unverified | 1.4 dev-branch defaults; owned by the M51 agent |
 | Adreno 840 (S26) | unverified; the shipped fp16-accumulate row fails production-diff at K ≥ 3072. Sweep candidate `t64x64k32g21s64m64x32x16gr` (`ACC_GROUP_FP32_REG`) passes it for 1B/3B/8B; not yet timed | – (no Adreno 8-bit row) | stock | e2e `contrib/s26` (1B/3B; 8B `DEVICE_LOST`): no releasable gain yet. Driver statistics count fp16 coopmat as ALU work (`contrib/s26/isa`); int8 unresolved. Owned by the phone agent |
-| Mali-G1 | unverified, `t64x128k32g44s16m16x32x32gahb` (MMA 16×32×32, per-group fp32 total; large linears only, N·K ≥ 2²⁴) | – (no fp32 accumulator for its 4×16×16 int8 shape) | stock | e2e `contrib/mali` partial (1B/3B 4w, 1B 8da4w; GPU latched into its degraded state); golden from the container build, needs re-verify with container-built binaries |
-| Radeon RX 7900 XTX | unverified (t256x128k32g24s32f32cbt) | unverified (780M zpg) | unverified (780M SDPA) | `openspec/changes/sarc-1.5-7900xtx-4w`, e2e `contrib/7900xtx` (2.79× vs stock, pre-release); golden added; needs re-verify with container-built binaries |
+| Mali-G1 | unverified, `t64x128k32g44s16m16x32x32gahb` (MMA 16×32×32, per-group fp32 total; large linears only, N·K ≥ 2²⁴) | – (no fp32 accumulator for its 4×16×16 int8 shape) | stock | e2e `contrib/mali` partial (1B/3B 4w, 1B 8da4w; GPU latched into its degraded state); golden from the shaderc v2023.8 container, needs re-verify with pinned-glslc binaries |
+| Radeon RX 7900 XTX | unverified (t256x128k32g24s32f32cbt) | unverified (780M zpg) | unverified (780M SDPA) | `openspec/changes/sarc-1.5-7900xtx-4w`, e2e `contrib/7900xtx` (2.79× vs stock, pre-release); golden added; needs re-verify with pinned-glslc binaries |
 | Radeon RX 7600 | unverified (7900 XTX tile `t256x128k32g24s32f32cbt`) | unverified (780M zpg) | unverified (780M SDPA) | rows in `table_amd.cpp`; need re-verification with pinned-glslc binaries. e2e `contrib/rx7600` (2.48× vs stock, pre-release). Coopmat needs a newer RADV: Mesa 26.2.3 used; the system 23.2.1 has none |
+
+The pinned glslc is shaderc tag v2026.2 built with its own `utils/git-sync-deps` revisions
+(glslang 5ed4003a, spirv-tools c1cb30bb); the LunarG Vulkan SDK 1.4.350.1 glslc is the same build and
+produces byte-identical SPIR-V. No container is needed. Golden entries recorded with the earlier
+container glslc (shaderc v2023.8) that differ under v2026.2 stay as they are until their owner
+re-verifies on the device; `check.sh` lists them as `DIFF`.
 
 Unverified rows are inert in a release. Their SPIR-V is still pinned in `sarc/golden/spirv.json`
 (owner `UNVERIFIED:<device>`), so accidental changes are caught.

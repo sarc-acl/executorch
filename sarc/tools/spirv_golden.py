@@ -8,7 +8,7 @@ NAME -> {"sha256", "owner"}; a mismatch names the owning device, whose
 verification must precede updating the entry. --update rewrites the entries
 whose NAME starts with --prefix (all when omitted) and records --owner for new
 ones. The glslc version used is stored alongside (hashes differ across glslc
-versions; always build in the sarc/tools/build.sh container).
+versions; always build with sarc/tools/build.sh, which pins it).
 """
 import argparse, glob, hashlib, json, os, subprocess, sys
 
