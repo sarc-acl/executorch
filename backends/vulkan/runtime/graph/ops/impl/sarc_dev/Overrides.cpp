@@ -478,6 +478,24 @@ const Row kDq8caCandidates[] = {
      "sarc_sdpa_qk_coopmat_pk_t128x64k64g42s32nf",
      {128, 64, 64, 4, 2, 32, 16, false}, kBufBuf, nullptr,
      Status::kUnverified},
+    // 780M prefill refine 2026-10-03, candidate 6: attn*V with multi-pass staging
+    // (glsl/sarc_dev/sarc_sdpa_av_coopmat_ml.yaml).
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_ml_t64x128k32g42s32",
+     {64, 128, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_ml_t64x128k32g22s64",
+     {64, 128, 32, 2, 2, 64, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_ml_t128x128k32g42s32",
+     {128, 128, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_ml_t128x64k32g42s32",
+     {128, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
 };
 
 std::string& requested_variant() {
@@ -553,6 +571,17 @@ const Preference kQkPk_t128x64k32g22s64nf[] = {{Op::kSdpaQk, "pk_t128x64k32g22s6
 const Preference kQkPk_t128x64k64g22s64nf[] = {{Op::kSdpaQk, "pk_t128x64k64g22s64nf", nullptr}};
 const Preference kQkPk_t128x64k32g42s32nf[] = {{Op::kSdpaQk, "pk_t128x64k32g42s32nf", nullptr}};
 const Preference kQkPk_t128x64k64g42s32nf[] = {{Op::kSdpaQk, "pk_t128x64k64g42s32nf", nullptr}};
+const Preference kAvMl_t64x128k32g42s32[] = {{Op::kSdpaAv, "ml_t64x128k32g42s32", nullptr}};
+const Preference kAvMl_t64x128k32g22s64[] = {{Op::kSdpaAv, "ml_t64x128k32g22s64", nullptr}};
+const Preference kAvMl_t128x128k32g42s32[] = {{Op::kSdpaAv, "ml_t128x128k32g42s32", nullptr}};
+const Preference kAvMl_t128x64k32g42s32[] = {{Op::kSdpaAv, "ml_t128x64k32g42s32", nullptr}};
+// refine3 with the packed-staging QK^T kernel.
+const Preference k780mRefine5[] = {
+    {Op::kDq8caLinear, "bt_t128x64k32g22s32", nullptr},
+    {Op::kQ4gswLinear, "t128x256k32g42s32f32c", n_at_least_1024},
+    {Op::kSdpaQk, "pk_t128x64k32g42s32nf", nullptr},
+    {Op::kSdpaAv, "t64x64k32g42s32", nullptr},
+};
 struct Profile {
   const char* name;
   const Preference* prefs;
@@ -574,6 +603,11 @@ const Profile kProfiles[] = {
     {"qkpk-t128x64k64g22s64nf", kQkPk_t128x64k64g22s64nf, 1},
     {"qkpk-t128x64k32g42s32nf", kQkPk_t128x64k32g42s32nf, 1},
     {"qkpk-t128x64k64g42s32nf", kQkPk_t128x64k64g42s32nf, 1},
+    {"avml-t64x128k32g42s32", kAvMl_t64x128k32g42s32, 1},
+    {"avml-t64x128k32g22s64", kAvMl_t64x128k32g22s64, 1},
+    {"avml-t128x128k32g42s32", kAvMl_t128x128k32g42s32, 1},
+    {"avml-t128x64k32g42s32", kAvMl_t128x64k32g42s32, 1},
+    {"780m-refine5", k780mRefine5, sizeof(k780mRefine5) / sizeof(Preference)},
     {"780m-refine1-dq", k780mRefine1Dq, sizeof(k780mRefine1Dq) / sizeof(Preference)},
     {"780m-refine1-q4", k780mRefine1Q4, sizeof(k780mRefine1Q4) / sizeof(Preference)},
 };
