@@ -397,10 +397,61 @@ const Row kDq8caCandidates[] = {
     {"", nullptr, Op::kDq8caLinear,
      "sarc_dev_prof_dq8ca_zpg_t128x64k32g22s32p", dq_tile(128, 64, 2, 2),
      kTex3dTex2d, nullptr, Status::kUnverified},
+    // 780M prefill refine 2026-10-03, candidate 2: texel-wise weight staging
+    // (glsl/sarc_dev/sarc_dev_linear_dq8ca_zpg_bt.yaml).
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_zpg_bt_t128x64k32g22s32",
+     {128, 64, 32, 2, 2, 32, 16, false}, kTex3dTex2d | kBufTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_zpg_bt_t128x128k32g42s32",
+     {128, 128, 32, 4, 2, 32, 16, false}, kTex3dTex2d | kBufTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_zpg_bt_t128x64k64g42s32",
+     {128, 64, 64, 4, 2, 32, 16, false}, kTex3dTex2d | kBufTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_zpg_bt_t128x64k64g22s32",
+     {128, 64, 64, 2, 2, 32, 16, false}, kTex3dTex2d | kBufTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_prof_dq8ca_zpg_bt_t128x64k32g22s32p", dq_tile(128, 64, 2, 2),
+     kTex3dTex2d, nullptr, Status::kUnverified},
     // 780M phase timing, MEASUREMENT ONLY (glsl/sarc_dev/sarc_dev_prof_dq8ca_zpg.yaml).
     {"", nullptr, Op::kDq8caLinear,
      "sarc_dev_prof_dq8ca_zpg_t128x64k32g42s32p", dq_tile(128, 64, 4, 2),
      kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
+    // 780M prefill refine 2026-10-03, candidate 3 (SDPA): glsl/sarc_dev/sarc_sdpa_{qk,av}_coopmat_sweep.yaml.
+    // Selected only through ET_VK_SARC_DEV_PROFILE.
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf",
+     {128, 64, 32, 2, 2, 64, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_sweep_t128x64k32g42s32nf",
+     {128, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_sweep_t128x64k32g42s32",
+     {128, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_sweep_t128x64k32g24s32nf",
+     {128, 64, 32, 2, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s32nf",
+     {128, 64, 32, 2, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32",
+     {64, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_sweep_t64x64k32g24s32",
+     {64, 64, 32, 2, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
 };
 
 std::string& requested_variant() {
@@ -445,6 +496,18 @@ const Preference k780mRefine1Dq[] = {
 const Preference k780mRefine1Q4[] = {
     {Op::kQ4gswLinear, "t128x256k32g42s32f32c", n_at_least_1024},
 };
+const Preference k780mRefine2[] = {
+    {Op::kDq8caLinear, "bt_t128x64k32g22s32", nullptr},
+    {Op::kQ4gswLinear, "t128x256k32g42s32f32c", n_at_least_1024},
+};
+// Single-kernel SDPA screening profiles (qk-<tile>, av-<tile>).
+const Preference kQk_t128x64k32g22s64nf[] = {{Op::kSdpaQk, "t128x64k32g22s64nf", nullptr}};
+const Preference kQk_t128x64k32g42s32nf[] = {{Op::kSdpaQk, "t128x64k32g42s32nf", nullptr}};
+const Preference kQk_t128x64k32g42s32[] = {{Op::kSdpaQk, "t128x64k32g42s32", nullptr}};
+const Preference kQk_t128x64k32g24s32nf[] = {{Op::kSdpaQk, "t128x64k32g24s32nf", nullptr}};
+const Preference kQk_t128x64k32g22s32nf[] = {{Op::kSdpaQk, "t128x64k32g22s32nf", nullptr}};
+const Preference kAv_t64x64k32g42s32[] = {{Op::kSdpaAv, "t64x64k32g42s32", nullptr}};
+const Preference kAv_t64x64k32g24s32[] = {{Op::kSdpaAv, "t64x64k32g24s32", nullptr}};
 struct Profile {
   const char* name;
   const Preference* prefs;
@@ -452,6 +515,14 @@ struct Profile {
 };
 const Profile kProfiles[] = {
     {"780m-refine1", k780mRefine1, sizeof(k780mRefine1) / sizeof(Preference)},
+    {"780m-refine2", k780mRefine2, sizeof(k780mRefine2) / sizeof(Preference)},
+    {"qk-t128x64k32g22s64nf", kQk_t128x64k32g22s64nf, 1},
+    {"qk-t128x64k32g42s32nf", kQk_t128x64k32g42s32nf, 1},
+    {"qk-t128x64k32g42s32", kQk_t128x64k32g42s32, 1},
+    {"qk-t128x64k32g24s32nf", kQk_t128x64k32g24s32nf, 1},
+    {"qk-t128x64k32g22s32nf", kQk_t128x64k32g22s32nf, 1},
+    {"av-t64x64k32g42s32", kAv_t64x64k32g42s32, 1},
+    {"av-t64x64k32g24s32", kAv_t64x64k32g24s32, 1},
     {"780m-refine1-dq", k780mRefine1Dq, sizeof(k780mRefine1Dq) / sizeof(Preference)},
     {"780m-refine1-q4", k780mRefine1Q4, sizeof(k780mRefine1Q4) / sizeof(Preference)},
 };
