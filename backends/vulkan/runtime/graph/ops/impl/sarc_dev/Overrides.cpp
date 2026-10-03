@@ -598,12 +598,12 @@ const Preference k780mRefine5[] = {
     {Op::kSdpaQk, "pk_t128x64k32g42s32nf", nullptr},
     {Op::kSdpaAv, "t64x64k32g42s32", nullptr},
 };
-// refine5 with the 128-column attn*V tile where head_dim allows it (3B, 8B);
-// head_dim 64 falls through to the 64 x 64 tile.
+// refine5 with the 64 x 64 packed QK^T tile and the 128-column attn*V tile
+// where head_dim allows it (3B, 8B); head_dim 64 falls through to 64 x 64.
 const Preference k780mRefine6[] = {
     {Op::kDq8caLinear, "bt_t128x64k32g22s32", nullptr},
     {Op::kQ4gswLinear, "t128x256k32g42s32f32c", n_at_least_1024},
-    {Op::kSdpaQk, "pk_t128x64k32g42s32nf", nullptr},
+    {Op::kSdpaQk, "pk_t64x64k32g22s32nf", nullptr},
     {Op::kSdpaAv, "ml_t64x128k32g42s32", nullptr},
     {Op::kSdpaAv, "t64x64k32g42s32", nullptr},
 };
