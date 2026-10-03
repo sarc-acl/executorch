@@ -500,6 +500,14 @@ const Preference k780mRefine2[] = {
     {Op::kDq8caLinear, "bt_t128x64k32g22s32", nullptr},
     {Op::kQ4gswLinear, "t128x256k32g42s32f32c", n_at_least_1024},
 };
+// refine2 plus the SDPA prefill kernels: QK^T without the never-read mask
+// fill (valid with the truncated SARC softmax only) and the subgroup-32 attn*V tile.
+const Preference k780mRefine3[] = {
+    {Op::kDq8caLinear, "bt_t128x64k32g22s32", nullptr},
+    {Op::kQ4gswLinear, "t128x256k32g42s32f32c", n_at_least_1024},
+    {Op::kSdpaQk, "t128x64k32g22s64nf", nullptr},
+    {Op::kSdpaAv, "t64x64k32g42s32", nullptr},
+};
 // Single-kernel SDPA screening profiles (qk-<tile>, av-<tile>).
 const Preference kQk_t128x64k32g22s64nf[] = {{Op::kSdpaQk, "t128x64k32g22s64nf", nullptr}};
 const Preference kQk_t128x64k32g42s32nf[] = {{Op::kSdpaQk, "t128x64k32g42s32nf", nullptr}};
@@ -516,6 +524,7 @@ struct Profile {
 const Profile kProfiles[] = {
     {"780m-refine1", k780mRefine1, sizeof(k780mRefine1) / sizeof(Preference)},
     {"780m-refine2", k780mRefine2, sizeof(k780mRefine2) / sizeof(Preference)},
+    {"780m-refine3", k780mRefine3, sizeof(k780mRefine3) / sizeof(Preference)},
     {"qk-t128x64k32g22s64nf", kQk_t128x64k32g22s64nf, 1},
     {"qk-t128x64k32g42s32nf", kQk_t128x64k32g42s32nf, 1},
     {"qk-t128x64k32g42s32", kQk_t128x64k32g42s32, 1},
