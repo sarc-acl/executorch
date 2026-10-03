@@ -52,3 +52,32 @@ sarc_sdpa_qk_coopmat_pk:
       SG_GRID_X: 4
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 32
+    # more tile shapes for the packed-staging kernel (shared memory checked: Ash + Bsh + Csh <= 60000 B)
+    - NAME: sarc_sdpa_qk_coopmat_pk_t128x128k32g42s32nf
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    - NAME: sarc_sdpa_qk_coopmat_pk_t64x64k32g22s32nf
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    - NAME: sarc_sdpa_qk_coopmat_pk_t128x64k32g24s32nf
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+    - NAME: sarc_sdpa_qk_coopmat_pk_t256x64k32g42s32nf
+      WG_TILE_M: 256
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32

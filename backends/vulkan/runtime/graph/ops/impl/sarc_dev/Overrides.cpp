@@ -496,6 +496,22 @@ const Row kDq8caCandidates[] = {
      "sarc_sdpa_av_coopmat_ml_t128x64k32g42s32",
      {128, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
      Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_pk_t128x128k32g42s32nf",
+     {128, 128, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_pk_t64x64k32g22s32nf",
+     {64, 64, 32, 2, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_pk_t128x64k32g24s32nf",
+     {128, 64, 32, 2, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_pk_t256x64k32g42s32nf",
+     {256, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
 };
 
 std::string& requested_variant() {
@@ -591,6 +607,10 @@ const Preference k780mRefine6[] = {
     {Op::kSdpaAv, "ml_t64x128k32g42s32", nullptr},
     {Op::kSdpaAv, "t64x64k32g42s32", nullptr},
 };
+const Preference kQkPk_t128x128k32g42s32nf[] = {{Op::kSdpaQk, "pk_t128x128k32g42s32nf", nullptr}};
+const Preference kQkPk_t64x64k32g22s32nf[] = {{Op::kSdpaQk, "pk_t64x64k32g22s32nf", nullptr}};
+const Preference kQkPk_t128x64k32g24s32nf[] = {{Op::kSdpaQk, "pk_t128x64k32g24s32nf", nullptr}};
+const Preference kQkPk_t256x64k32g42s32nf[] = {{Op::kSdpaQk, "pk_t256x64k32g42s32nf", nullptr}};
 struct Profile {
   const char* name;
   const Preference* prefs;
@@ -618,6 +638,10 @@ const Profile kProfiles[] = {
     {"avml-t128x64k32g42s32", kAvMl_t128x64k32g42s32, 1},
     {"780m-refine5", k780mRefine5, sizeof(k780mRefine5) / sizeof(Preference)},
     {"780m-refine6", k780mRefine6, sizeof(k780mRefine6) / sizeof(Preference)},
+    {"qkpk-t128x128k32g42s32nf", kQkPk_t128x128k32g42s32nf, 1},
+    {"qkpk-t64x64k32g22s32nf", kQkPk_t64x64k32g22s32nf, 1},
+    {"qkpk-t128x64k32g24s32nf", kQkPk_t128x64k32g24s32nf, 1},
+    {"qkpk-t256x64k32g42s32nf", kQkPk_t256x64k32g42s32nf, 1},
     {"780m-refine1-dq", k780mRefine1Dq, sizeof(k780mRefine1Dq) / sizeof(Preference)},
     {"780m-refine1-q4", k780mRefine1Q4, sizeof(k780mRefine1Q4) / sizeof(Preference)},
 };
