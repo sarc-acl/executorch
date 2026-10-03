@@ -5,6 +5,8 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "utils.h"
+#include <cstdio>
+#include <cstdlib>
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -1715,6 +1717,21 @@ BenchmarkResult execute_test_case(
           // Copy data from staging buffer to output spec
           graph.maybe_cast_and_copy_from_staging(
               output_ref.staging, data_ptr, data_numel, output_spec.dtype);
+        }
+
+        // Measurement aid: dump the raw output of this dispatch, for the PROF
+        // kernels that write in-kernel phase counters into it.
+        if (const char* dump_dir = std::getenv("ET_VK_DUMP_OUTPUT_DIR")) {
+          static int dump_index = 0;
+          const std::string path = std::string(dump_dir) + "/out_" +
+              std::to_string(dump_index++) + "_" + test_case.name() + ".bin";
+          if (data_ptr != nullptr) {
+            const size_t elem_bytes = output_spec.dtype == vkapi::kHalf ? 2 : 4;
+            if (FILE* f = std::fopen(path.c_str(), "wb")) {
+              std::fwrite(data_ptr, elem_bytes, data_numel, f);
+              std::fclose(f);
+            }
+          }
         }
 
         // Print output tensor data if output printing is enabled

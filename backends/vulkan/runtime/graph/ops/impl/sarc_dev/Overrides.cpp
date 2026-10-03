@@ -19,6 +19,11 @@
 //                                     prefill wherever it fits, e.g.
 //                                     t128x128k32g24s32f32c; builds 4w on the
 //                                     SARC path even on devices without rows
+//   ET_VK_SARC_DEV_PROFILE=<name>     a named set of preferred sweep tiles (see
+//                                     kProfiles); shapes they do not cover keep
+//                                     the table's choice. Takes precedence over
+//                                     the *_VARIANT variables; FORCE_TILED_LINEAR
+//                                     and DISABLE_COOPMAT still win
 //   ET_VK_SARC_DQ8CA_VARIANT=<tile>   same for 8da4w prefill: the dq8ca sweep
 //                                     candidate or release row whose kernel ends
 //                                     in this token (e.g. zpgtr_t128x64k32g42s32);
@@ -234,6 +239,47 @@ const Row kQ4gswCandidates[] = {
      "sarc_linear_q4gsw_coopmat_sweep_t128x64k32g28s16m16x32x32gahb",
      {128, 64, 32, 2, 8, 16, 16, false},
      kTex3dTex2d | kBufTex2d | kBufBuf, nullptr, Status::kUnverified},
+    // 780M prefill refine 2026-10-03, batch 1 (texture3d screen).
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g22s32f32c", tile_mnk(128, 128, 32, 2, 2, true),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t256x128k32g42s32f32c", tile_mnk(256, 128, 32, 4, 2, true),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    // 780M prefill refine 2026-10-03, batch 2 (wave64, texture3d screen).
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g22s64f32c",
+     {128, 128, 32, 2, 2, 64, 16, true}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x256k32g22s64f32c",
+     {128, 256, 32, 2, 2, 64, 16, true}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g21s64f32c",
+     {128, 128, 32, 2, 1, 64, 16, true}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g12s64f32c",
+     {128, 128, 32, 1, 2, 64, 16, true}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t256x128k32g22s64f32c",
+     {256, 128, 32, 2, 2, 64, 16, true}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    // 780M prefill refine 2026-10-03, batch 3.
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t64x256k32g41s32f32c",
+     {64, 256, 32, 4, 1, 32, 16, true}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_prof_q4gsw_t128x256k32g42s32f32cp", tile_mnk(128, 256, 32, 4, 2, true),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    // 780M phase timing, MEASUREMENT ONLY (glsl/sarc_dev/sarc_dev_prof_q4gsw.yaml):
+    // the release 780M tile with shader-clock phase counters written over its output.
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_prof_q4gsw_t128x128k32g42s32f32cp", tile(4, 2, true),
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
 };
 
 // dq8ca (8da4w) sweep candidates, selected with ET_VK_SARC_DQ8CA_VARIANT.
@@ -269,6 +315,92 @@ const Row kDq8caCandidates[] = {
      "sarc_linear_dq8ca_coopmat_zpgtr_sweep_t128x64k32g42s32dus1",
      {128, 64, 32, 4, 2, 32, 16, false}, kTex3dTex2d, nullptr,
      Status::kUnverified, true},
+    // 780M prefill refine 2026-10-03, batch 1 (texture3d screen).
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k64g22s32",
+     {128, 64, 64, 2, 2, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k64g42s32",
+     {128, 64, 64, 4, 2, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t64x64k32g21s32",
+     {64, 64, 32, 2, 1, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x128k32g22s32",
+     {128, 128, 32, 2, 2, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t64x64k32g22s32",
+     {64, 64, 32, 2, 2, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t64x128k32g22s32",
+     {64, 128, 32, 2, 2, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g24s32",
+     {128, 64, 32, 2, 4, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x32k32g22s32",
+     {128, 32, 32, 2, 2, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t256x64k32g42s32",
+     {256, 64, 32, 4, 2, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g21s32",
+     {128, 64, 32, 2, 1, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g12s32",
+     {128, 64, 32, 1, 2, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    // 780M prefill refine 2026-10-03, batch 2 (wave64, texture3d screen).
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g22s64",
+     {128, 64, 32, 2, 2, 64, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g21s64",
+     {128, 64, 32, 2, 1, 64, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g12s64",
+     {128, 64, 32, 1, 2, 64, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x128k32g22s64",
+     {128, 128, 32, 2, 2, 64, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t256x64k32g22s64",
+     {256, 64, 32, 2, 2, 64, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k64g22s64",
+     {128, 64, 64, 2, 2, 64, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    // 780M prefill refine 2026-10-03, batch 3.
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t64x128k32g41s32",
+     {64, 128, 32, 4, 1, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t256x32k32g14s32",
+     {256, 32, 32, 1, 4, 32, 16, false}, kTex3dTex2d, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_prof_dq8ca_zpg_t128x64k32g22s32p", dq_tile(128, 64, 2, 2),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    // 780M phase timing, MEASUREMENT ONLY (glsl/sarc_dev/sarc_dev_prof_dq8ca_zpg.yaml).
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_prof_dq8ca_zpg_t128x64k32g42s32p", dq_tile(128, 64, 4, 2),
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
 };
 
 std::string& requested_variant() {
@@ -287,6 +419,59 @@ const std::string& requested_dq8ca_variant() {
   return v;
 }
 
+// ET_VK_SARC_DEV_PROFILE=<name>: a named set of preferred sweep tiles. A shape
+// that a preferred tile covers (the row fits and the entry's predicate holds)
+// runs it; every other shape keeps the table's choice. Unlike the *_VARIANT
+// variables it never sends a shape to the non-SARC fallback and never builds
+// the SARC path on a device without rows.
+struct Preference {
+  Op op;
+  const char* token; // tile token of a candidate or release row
+  bool (*shape_ok)(const ShapeInfo&); // or null
+};
+// The wide 4w tile stages A once per 256 output columns but leaves 2 workgroups
+// per WGP (54 KiB LDS); it only pays once the dispatch is at least 4 tiles wide.
+bool n_at_least_1024(const ShapeInfo& s) {
+  return s.N >= 1024;
+}
+// 780M, openspec/changes/sarc-1.5-780m-prefill-refine.
+const Preference k780mRefine1[] = {
+    {Op::kDq8caLinear, "t128x64k32g22s32", nullptr},
+    {Op::kQ4gswLinear, "t128x256k32g42s32f32c", n_at_least_1024},
+};
+const Preference k780mRefine1Dq[] = {
+    {Op::kDq8caLinear, "t128x64k32g22s32", nullptr},
+};
+const Preference k780mRefine1Q4[] = {
+    {Op::kQ4gswLinear, "t128x256k32g42s32f32c", n_at_least_1024},
+};
+struct Profile {
+  const char* name;
+  const Preference* prefs;
+  size_t count;
+};
+const Profile kProfiles[] = {
+    {"780m-refine1", k780mRefine1, sizeof(k780mRefine1) / sizeof(Preference)},
+    {"780m-refine1-dq", k780mRefine1Dq, sizeof(k780mRefine1Dq) / sizeof(Preference)},
+    {"780m-refine1-q4", k780mRefine1Q4, sizeof(k780mRefine1Q4) / sizeof(Preference)},
+};
+const Profile* requested_profile() {
+  static const Profile* p = []() -> const Profile* {
+    const char* e = std::getenv("ET_VK_SARC_DEV_PROFILE");
+    if (e == nullptr || *e == 0) {
+      return nullptr;
+    }
+    for (const Profile& pr : kProfiles) {
+      if (std::strcmp(pr.name, e) == 0) {
+        return &pr;
+      }
+    }
+    std::cerr << "[sarc_dev] unknown ET_VK_SARC_DEV_PROFILE=" << e << std::endl;
+    std::abort();
+  }();
+  return p;
+}
+
 std::optional<Choice> dev_select(
     const DeviceInfo& device,
     const ShapeInfo& shape,
@@ -298,6 +483,27 @@ std::optional<Choice> dev_select(
   }
   if (!linear && env_true("ET_VK_DISABLE_COOPMAT")) {
     return std::nullopt;
+  }
+  if (const Profile* profile = requested_profile()) {
+    if (table_choice.has_value()) {
+      for (size_t i = 0; i < profile->count; i++) {
+        const Preference& pref = profile->prefs[i];
+        if (pref.op != shape.op ||
+            (pref.shape_ok != nullptr && !pref.shape_ok(shape))) {
+          continue;
+        }
+        for (const auto* store : {&candidates(), &rows()}) {
+          for (const Row& row : *store) {
+            if (row.op == shape.op &&
+                ends_with(row.kernel_base, std::string("_") + pref.token) &&
+                q4gsw_coopmat_fits(device, shape, row)) {
+              return Choice{row.kernel_base, row.dims, row.rowmajor_a};
+            }
+          }
+        }
+      }
+    }
+    return table_choice;
   }
   // Exact tile token per op: 4w from ET_VK_SARC_Q4GSW_VARIANT, 8da4w from
   // ET_VK_SARC_DQ8CA_VARIANT (the latter only on devices with dq8ca rows).
@@ -334,6 +540,10 @@ struct Registrar {
     o.force_path = !requested_variant().empty();
     o.select = dev_select;
     set_override(o);
+    if (requested_profile() != nullptr) {
+      std::cerr << "[sarc_dev] profile active: " << requested_profile()->name
+                << std::endl;
+    }
     if (o.allow_unverified || o.force_path) {
       std::cerr << "[sarc_dev] overrides active: unverified="
                 << o.allow_unverified << " variant=" << requested_variant()
