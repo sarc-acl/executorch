@@ -275,6 +275,14 @@ const Row kQ4gswCandidates[] = {
     {"", nullptr, Op::kQ4gswLinear,
      "sarc_dev_prof_q4gsw_t128x256k32g42s32f32cp", tile_mnk(128, 256, 32, 4, 2, true),
      kTex3dTex2d, nullptr, Status::kUnverified},
+    // 780M prefill refine 2026-10-03, candidate 4: texel-wise weight staging
+    // (glsl/sarc_dev/sarc_dev_linear_q4gsw_coopmat_bx.yaml).
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_linear_q4gsw_coopmat_bx_t128x256k32g42s32f32c", tile_mnk(128, 256, 32, 4, 2, true),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32c", tile_mnk(128, 128, 32, 4, 2, true),
+     kTex3dTex2d, nullptr, Status::kUnverified},
     // 780M phase timing, MEASUREMENT ONLY (glsl/sarc_dev/sarc_dev_prof_q4gsw.yaml):
     // the release 780M tile with shader-clock phase counters written over its output.
     {"", nullptr, Op::kQ4gswLinear,
@@ -452,6 +460,24 @@ const Row kDq8caCandidates[] = {
      "sarc_sdpa_av_coopmat_sweep_t64x64k32g24s32",
      {64, 64, 32, 2, 4, 32, 16, false}, kBufBuf, nullptr,
      Status::kUnverified},
+    // 780M prefill refine 2026-10-03, candidate 5: QK^T with packed staging
+    // (glsl/sarc_dev/sarc_sdpa_qk_coopmat_pk.yaml).
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_pk_t128x64k32g22s64nf",
+     {128, 64, 32, 2, 2, 64, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_pk_t128x64k64g22s64nf",
+     {128, 64, 64, 2, 2, 64, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_pk_t128x64k32g42s32nf",
+     {128, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_pk_t128x64k64g42s32nf",
+     {128, 64, 64, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
 };
 
 std::string& requested_variant() {
@@ -508,6 +534,13 @@ const Preference k780mRefine3[] = {
     {Op::kSdpaQk, "t128x64k32g22s64nf", nullptr},
     {Op::kSdpaAv, "t64x64k32g42s32", nullptr},
 };
+// refine3 with the 4w texel-wise weight staging on the wide tile.
+const Preference k780mRefine4[] = {
+    {Op::kDq8caLinear, "bt_t128x64k32g22s32", nullptr},
+    {Op::kQ4gswLinear, "bx_t128x256k32g42s32f32c", n_at_least_1024},
+    {Op::kSdpaQk, "t128x64k32g22s64nf", nullptr},
+    {Op::kSdpaAv, "t64x64k32g42s32", nullptr},
+};
 // Single-kernel SDPA screening profiles (qk-<tile>, av-<tile>).
 const Preference kQk_t128x64k32g22s64nf[] = {{Op::kSdpaQk, "t128x64k32g22s64nf", nullptr}};
 const Preference kQk_t128x64k32g42s32nf[] = {{Op::kSdpaQk, "t128x64k32g42s32nf", nullptr}};
@@ -516,6 +549,10 @@ const Preference kQk_t128x64k32g24s32nf[] = {{Op::kSdpaQk, "t128x64k32g24s32nf",
 const Preference kQk_t128x64k32g22s32nf[] = {{Op::kSdpaQk, "t128x64k32g22s32nf", nullptr}};
 const Preference kAv_t64x64k32g42s32[] = {{Op::kSdpaAv, "t64x64k32g42s32", nullptr}};
 const Preference kAv_t64x64k32g24s32[] = {{Op::kSdpaAv, "t64x64k32g24s32", nullptr}};
+const Preference kQkPk_t128x64k32g22s64nf[] = {{Op::kSdpaQk, "pk_t128x64k32g22s64nf", nullptr}};
+const Preference kQkPk_t128x64k64g22s64nf[] = {{Op::kSdpaQk, "pk_t128x64k64g22s64nf", nullptr}};
+const Preference kQkPk_t128x64k32g42s32nf[] = {{Op::kSdpaQk, "pk_t128x64k32g42s32nf", nullptr}};
+const Preference kQkPk_t128x64k64g42s32nf[] = {{Op::kSdpaQk, "pk_t128x64k64g42s32nf", nullptr}};
 struct Profile {
   const char* name;
   const Preference* prefs;
@@ -525,6 +562,7 @@ const Profile kProfiles[] = {
     {"780m-refine1", k780mRefine1, sizeof(k780mRefine1) / sizeof(Preference)},
     {"780m-refine2", k780mRefine2, sizeof(k780mRefine2) / sizeof(Preference)},
     {"780m-refine3", k780mRefine3, sizeof(k780mRefine3) / sizeof(Preference)},
+    {"780m-refine4", k780mRefine4, sizeof(k780mRefine4) / sizeof(Preference)},
     {"qk-t128x64k32g22s64nf", kQk_t128x64k32g22s64nf, 1},
     {"qk-t128x64k32g42s32nf", kQk_t128x64k32g42s32nf, 1},
     {"qk-t128x64k32g42s32", kQk_t128x64k32g42s32, 1},
@@ -532,6 +570,10 @@ const Profile kProfiles[] = {
     {"qk-t128x64k32g22s32nf", kQk_t128x64k32g22s32nf, 1},
     {"av-t64x64k32g42s32", kAv_t64x64k32g42s32, 1},
     {"av-t64x64k32g24s32", kAv_t64x64k32g24s32, 1},
+    {"qkpk-t128x64k32g22s64nf", kQkPk_t128x64k32g22s64nf, 1},
+    {"qkpk-t128x64k64g22s64nf", kQkPk_t128x64k64g22s64nf, 1},
+    {"qkpk-t128x64k32g42s32nf", kQkPk_t128x64k32g42s32nf, 1},
+    {"qkpk-t128x64k64g42s32nf", kQkPk_t128x64k64g42s32nf, 1},
     {"780m-refine1-dq", k780mRefine1Dq, sizeof(k780mRefine1Dq) / sizeof(Preference)},
     {"780m-refine1-q4", k780mRefine1Q4, sizeof(k780mRefine1Q4) / sizeof(Preference)},
 };
