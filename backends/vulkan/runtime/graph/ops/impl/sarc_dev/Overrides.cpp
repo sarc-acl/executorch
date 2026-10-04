@@ -1074,6 +1074,19 @@ const Preference k4070ti_av_dfh_t32x128k32g21s32[] = {{Op::kSdpaAv, "4070ti_dfh_
 const Preference k4070ti_av_dfg_t64x64k32g11s32[] = {{Op::kSdpaAv, "4070ti_dfg_t64x64k32g11s32", nullptr}};
 const Preference k4070ti_av_dfh_t64x64k32g11s32[] = {{Op::kSdpaAv, "4070ti_dfh_t64x64k32g11s32", nullptr}};
 // <<< 4070ti df-preferences
+// >>> 4070ti lin-preferences
+// RTX 4070 Ti SUPER linear profiles (tools/gen_4070ti_profiles.py).
+bool n_above_512_4070ti(const ShapeInfo& s) {
+  return s.N > 512;
+}
+const Preference k4070tiRefine2[] = {
+    {Op::kDq8caLinear, "bh_t128x128k64g44s32mk32ra", nullptr},
+};
+const Preference k4070tiRefine3[] = {
+    {Op::kDq8caLinear, "bh_t128x128k64g44s32mk32ra", nullptr},
+    {Op::kQ4gswLinear, "4070ti_t256x128k16g42s32gac", n_above_512_4070ti},
+};
+// <<< 4070ti lin-preferences
 struct Profile {
   const char* name;
   const Preference* prefs;
@@ -1171,6 +1184,10 @@ const Profile kProfiles[] = {
     {"4070ti-av-dfg_t64x64k32g11s32", k4070ti_av_dfg_t64x64k32g11s32, 1},
     {"4070ti-av-dfh_t64x64k32g11s32", k4070ti_av_dfh_t64x64k32g11s32, 1},
     // <<< 4070ti df-profiles
+    // >>> 4070ti lin-profiles
+    {"4070ti-refine2", k4070tiRefine2, sizeof(k4070tiRefine2) / sizeof(Preference)},
+    {"4070ti-refine3", k4070tiRefine3, sizeof(k4070tiRefine3) / sizeof(Preference)},
+    // <<< 4070ti lin-profiles
 };
 const Profile* requested_profile() {
   static const Profile* p = []() -> const Profile* {
