@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "campaign": "fleet-fast-20260926",
+  "source_commit": "c898a5aeba70c1cf4f3138f176c109b5f7609ff8",
+  "plan": "fast",
+  "clock_mode": "automatic (not pinned)",
+  "registry_device": {
+    "id": "b70-0",
+    "name": "Intel Arc Pro B70 32 GB",
+    "kind": "dgpu",
+    "vendor": "intel",
+    "host": "fedora-gpu-eval",
+    "uuid": "868023e2-0000-0000-0100-000000000000",
+    "tags": [
+      "intel",
+      "battlemage",
+      "b70"
+    ],
+    "status": "active",
+    "notes": "Shared with on-demand LLM and ComfyUI work. The VM sheds GPU work when the UPS is on battery.",
+    "pci": "0000:01:00.0"
+  },
+  "started_utc": "2026-10-04T21:54:01.476178+00:00",
+  "status": "finished",
+  "preflight": {
+    "name": "Intel(R) Graphics (BMG G31)",
+    "uuid": "868023e2-0000-0000-0100-000000000000",
+    "type": "dgpu",
+    "vendor_id": 32902,
+    "api": "1.4.354",
+    "driver": "Intel open-source Mesa driver",
+    "driver_info": "Mesa 26.2.3",
+    "pci": "0000:01:00.0",
+    "subgroup_size": 32,
+    "max_wg_invocations": 1024,
+    "max_shared_bytes": 49152,
+    "max_push_bytes": 256,
+    "busy_pct": 0,
+    "busy_method": "drm-fdinfo(partial)"
+  },
+  "ended_utc": "2026-10-04T22:17:02.296199+00:00",
+  "elapsed_seconds": 1380.8200308630003
+}

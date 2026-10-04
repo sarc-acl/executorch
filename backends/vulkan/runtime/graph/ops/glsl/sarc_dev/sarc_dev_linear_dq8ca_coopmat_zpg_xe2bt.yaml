@@ -228,3 +228,107 @@ sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt:
       A_MAP_FULL: false
       A_MULTI_BLOCK: true
       A_BLOCKS: 1
+    - NAME: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 64
+      SG_GRID_X: 8
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      MMA_K: 32
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 1
+    - NAME: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8_buffer_texture2d_half
+      IO_STORAGE: buffer
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 64
+      SG_GRID_X: 8
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      MMA_K: 32
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 1
+    - NAME: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t64x128k64g82s16m8_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 64
+      SG_GRID_X: 8
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      MMA_K: 32
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 1
+    - NAME: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t64x128k64g82s16m8_buffer_texture2d_half
+      IO_STORAGE: buffer
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 64
+      SG_GRID_X: 8
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      MMA_K: 32
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 1
+    - NAME: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t64x64k128g42s16m8_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 128
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      MMA_K: 32
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 4
+    - NAME: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t64x64k128g42s16m8_buffer_texture2d_half
+      IO_STORAGE: buffer
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 128
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      MMA_K: 32
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 4
+    - NAME: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t64x64k64g42s16m8_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 64
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      MMA_K: 32
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 2
+    - NAME: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t64x64k64g42s16m8_buffer_texture2d_half
+      IO_STORAGE: buffer
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 64
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      MMA_K: 32
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 2

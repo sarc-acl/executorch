@@ -24,3 +24,5 @@ for d in $A/raw/screen*/; do n=$(basename $d); [[ -f $d/screen.csv ]] && { cp -f
 # stopped or bad sessions: the reason, the run table and the session log
 for d in $A/superseded/*/; do n=$(basename $d); mkdir -p $R/superseded/$n; cp -f $d/README $d/*.out $R/superseded/$n/ 2>/dev/null; find $d -name runs.csv -exec cp -f {} $R/superseded/$n/ \; ; done
 find $C -type f | wc -l; du -sh $C
+# roofs: the report of the igpu-roofline run used for percent-of-roof (tools/roof.sh)
+for d in $A/roofline/*/b70-0; do n=$(basename $(dirname $d)); mkdir -p $R/roofline/$n; cp -f $d/report/REPORT.md $d/report/summary.json $d/report/sustained-runs.csv $d/fleet-metadata.json $R/roofline/$n/ 2>/dev/null; done
