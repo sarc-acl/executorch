@@ -12,8 +12,8 @@ p = os.path.join(d, "nexttoken.csv")
 if os.path.exists(p):
     for l in open(p):
         f = l.strip().split(",")
-        if len(f) >= 4: nt[(f[0], f[1])] = f[2].split(":")[-1] + "/" + f[3].split(":")[-1]
-print("model,scheme,parent_med_tok_s,cand_med_tok_s,ratio,gain_pct,outside_2pct_band,parent_spread_pct,cand_spread_pct,valid_parent,valid_cand,invalid,clk_med_mhz_range,temp_pre_range,next_token_2048/check")
+        if len(f) >= 4: nt[(f[0], f[1])] = "/".join(x.split(":")[-1] for x in f[2:])
+print("model,scheme,parent_med_tok_s,cand_med_tok_s,ratio,gain_pct,outside_2pct_band,parent_spread_pct,cand_spread_pct,valid_parent,valid_cand,invalid,clk_med_mhz_range,temp_pre_range,next_token_2048/check/unaligned")
 ratios = []
 for (m, q), a in cells.items():
     v = {b: [float(r["tok_s"]) for r in a[b] if r["valid"] == "1"][:5] for b in a}

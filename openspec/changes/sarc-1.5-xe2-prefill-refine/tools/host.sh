@@ -41,11 +41,20 @@ export_commit() { local wt=$1 sha=$2 dest=$3 rel=${4:-.} idx p s
 #   - its command line names a known GPU workload. This second rule is the fallback for processes of other
 #     users, whose fdinfo an unprivileged user cannot read (the fleet's LLM services run as this user).
 # Ours = the top-level tool (XE2_TOP), its descendants, and its ancestors (the shells that launched it).
+# Not counted: an idle monitor (monitor_idle). The owner's nvtop was open on this host before the campaign
+# started; it holds a DRM file of both cards to read their counters and submits nothing. It is exempt only
+# while every DRM client it owns shows zero engine cycles and zero GPU memory; the moment either is non-zero it
+# is a foreign GPU process like any other. Exempt monitors are listed by gpu_monitors and recorded per session.
+monitor_idle() { [[ $(ps -o comm= -p $1 2>/dev/null) == nvtop ]] || return 1
+  ! awk '/^drm-(cycles|total|resident|shared|active)-[a-z0-9]+:/ && $2 + 0 > 0 {f = 1} END {exit !f}' /proc/$1/fdinfo/* 2>/dev/null; }
+gpu_monitors() { local p; for p in $(grep -l -s "^drm-pdev:[[:space:]]*$PDEV" /proc/[0-9]*/fdinfo/* | cut -d/ -f3 | sort -un); do
+  monitor_idle $p && printf '%s:%s;' $p "$(ps -o comm= -p $p 2>/dev/null)"; done; }
 gpu_others() { local p q mine anc=" " a=$XE2_TOP
   while [[ -n $a && $a -gt 1 ]]; do anc+="$a "; a=$(ps -o ppid= -p $a 2>/dev/null | tr -d ' '); done
   for p in $( { grep -l -s "^drm-pdev:[[:space:]]*$PDEV" /proc/[0-9]*/fdinfo/* | cut -d/ -f3
                 pgrep -f 'llama-server|ComfyUI|comfyui|ollama|vllm|llama_main|test_llama_microbench|Runner.Worker|custom_ops'; } | sort -un); do
     [[ $anc == *" $p "* ]] && continue
+    monitor_idle $p && continue
     q=$p; mine=0
     while [[ -n $q && $q -gt 1 ]]; do [[ $q == "$XE2_TOP" ]] && { mine=1; break; }; q=$(ps -o ppid= -p $q 2>/dev/null | tr -d ' '); done
     [[ $mine == 0 && -d /proc/$p ]] && printf '%s:%s;' $p "$(ps -o comm= -p $p 2>/dev/null)"

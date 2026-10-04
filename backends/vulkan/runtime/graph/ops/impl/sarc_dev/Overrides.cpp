@@ -611,6 +611,56 @@ const Preference kQkPk_t128x128k32g42s32nf[] = {{Op::kSdpaQk, "pk_t128x128k32g42
 const Preference kQkPk_t64x64k32g22s32nf[] = {{Op::kSdpaQk, "pk_t64x64k32g22s32nf", nullptr}};
 const Preference kQkPk_t128x64k32g24s32nf[] = {{Op::kSdpaQk, "pk_t128x64k32g24s32nf", nullptr}};
 const Preference kQkPk_t256x64k32g42s32nf[] = {{Op::kSdpaQk, "pk_t256x64k32g42s32nf", nullptr}};
+// xe2 begin: Intel Xe2 profiles (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)
+// Single-kernel screening profiles and the xe2-refineN candidates. They take effect on a device whose
+// SDPA base rows are active (impl/sarc_dev/Xe2Sdpa.cpp, ET_VK_SARC_UNVERIFIED=1).
+const Preference kXe2_qk_t128x64k32g44s16m8nf[] = {{Op::kSdpaQk, "sweep_t128x64k32g44s16m8nf", nullptr}};
+const Preference kXe2_qk_t128x64k32g44s16m8[] = {{Op::kSdpaQk, "sweep_t128x64k32g44s16m8", nullptr}};
+const Preference kXe2_qk_t128x64k32g48s16m8nf[] = {{Op::kSdpaQk, "sweep_t128x64k32g48s16m8nf", nullptr}};
+const Preference kXe2_qk_t128x64k32g24s16m8nf[] = {{Op::kSdpaQk, "sweep_t128x64k32g24s16m8nf", nullptr}};
+const Preference kXe2_qk_t64x64k32g44s16m8nf[] = {{Op::kSdpaQk, "sweep_t64x64k32g44s16m8nf", nullptr}};
+const Preference kXe2_qk_t64x64k32g24s16m8nf[] = {{Op::kSdpaQk, "sweep_t64x64k32g24s16m8nf", nullptr}};
+const Preference kXe2_qk_t64x128k32g44s16m8nf[] = {{Op::kSdpaQk, "sweep_t64x128k32g44s16m8nf", nullptr}};
+const Preference kXe2_qk_t64x128k32g84s16m8nf[] = {{Op::kSdpaQk, "sweep_t64x128k32g84s16m8nf", nullptr}};
+const Preference kXe2_qkpk_t128x64k32g44s16m8nf[] = {{Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr}};
+const Preference kXe2_qkpk_t128x64k64g44s16m8nf[] = {{Op::kSdpaQk, "pk_t128x64k64g44s16m8nf", nullptr}};
+const Preference kXe2_qkpk_t128x64k32g48s16m8nf[] = {{Op::kSdpaQk, "pk_t128x64k32g48s16m8nf", nullptr}};
+const Preference kXe2_qkpk_t128x64k32g24s16m8nf[] = {{Op::kSdpaQk, "pk_t128x64k32g24s16m8nf", nullptr}};
+const Preference kXe2_qkpk_t64x64k32g44s16m8nf[] = {{Op::kSdpaQk, "pk_t64x64k32g44s16m8nf", nullptr}};
+const Preference kXe2_qkpk_t64x64k64g44s16m8nf[] = {{Op::kSdpaQk, "pk_t64x64k64g44s16m8nf", nullptr}};
+const Preference kXe2_qkpk_t64x128k32g44s16m8nf[] = {{Op::kSdpaQk, "pk_t64x128k32g44s16m8nf", nullptr}};
+const Preference kXe2_qkpk_t64x128k32g84s16m8nf[] = {{Op::kSdpaQk, "pk_t64x128k32g84s16m8nf", nullptr}};
+const Preference kXe2_av_t64x64k32g44s16m8[] = {{Op::kSdpaAv, "sweep_t64x64k32g44s16m8", nullptr}};
+const Preference kXe2_avml_t64x64k32g44s16m8[] = {{Op::kSdpaAv, "ml_t64x64k32g44s16m8", nullptr}};
+const Preference kXe2_avml_t64x64k32g24s16m8[] = {{Op::kSdpaAv, "ml_t64x64k32g24s16m8", nullptr}};
+const Preference kXe2_avml_t64x64k32g48s16m8[] = {{Op::kSdpaAv, "ml_t64x64k32g48s16m8", nullptr}};
+const Preference kXe2_avml_t128x64k32g44s16m8[] = {{Op::kSdpaAv, "ml_t128x64k32g44s16m8", nullptr}};
+const Preference kXe2_avml_t128x64k32g48s16m8[] = {{Op::kSdpaAv, "ml_t128x64k32g48s16m8", nullptr}};
+const Preference kXe2_avml_t64x128k32g44s16m8[] = {{Op::kSdpaAv, "ml_t64x128k32g44s16m8", nullptr}};
+const Preference kXe2_avml_t64x128k32g84s16m8[] = {{Op::kSdpaAv, "ml_t64x128k32g84s16m8", nullptr}};
+const Preference kXe2_avml_t128x128k32g48s16m8[] = {{Op::kSdpaAv, "ml_t128x128k32g48s16m8", nullptr}};
+const Preference kXe2_avml_t128x128k32g88s16m8[] = {{Op::kSdpaAv, "ml_t128x128k32g88s16m8", nullptr}};
+const Preference kXe2_avml_t32x64k32g42s16m8[] = {{Op::kSdpaAv, "ml_t32x64k32g42s16m8", nullptr}};
+const Preference kXe2_qkfr_t128x64k32g44s16m8nf[] = {{Op::kSdpaQk, "xe2_t128x64k32g44s16m8nf", nullptr}};
+const Preference kXe2_qkfr_t128x64k32g48s16m8nf[] = {{Op::kSdpaQk, "xe2_t128x64k32g48s16m8nf", nullptr}};
+const Preference kXe2_qkfr_t128x64k32g24s16m8nf[] = {{Op::kSdpaQk, "xe2_t128x64k32g24s16m8nf", nullptr}};
+const Preference kXe2_qkfr_t128x64k64g44s16m8nf[] = {{Op::kSdpaQk, "xe2_t128x64k64g44s16m8nf", nullptr}};
+const Preference kXe2_qkfr_t64x64k32g44s16m8nf[] = {{Op::kSdpaQk, "xe2_t64x64k32g44s16m8nf", nullptr}};
+const Preference kXe2_qkfr_t64x64k32g24s16m8nf[] = {{Op::kSdpaQk, "xe2_t64x64k32g24s16m8nf", nullptr}};
+const Preference kXe2_qkfr_t64x64k64g44s16m8nf[] = {{Op::kSdpaQk, "xe2_t64x64k64g44s16m8nf", nullptr}};
+const Preference kXe2_qkfr_t64x128k32g44s16m8nf[] = {{Op::kSdpaQk, "xe2_t64x128k32g44s16m8nf", nullptr}};
+const Preference kXe2_qkfr_t64x128k32g84s16m8nf[] = {{Op::kSdpaQk, "xe2_t64x128k32g84s16m8nf", nullptr}};
+const Preference kXe2_avfr_t64x64k32g44s16m8[] = {{Op::kSdpaAv, "xe2_t64x64k32g44s16m8", nullptr}};
+const Preference kXe2_avfr_t64x64k32g24s16m8[] = {{Op::kSdpaAv, "xe2_t64x64k32g24s16m8", nullptr}};
+const Preference kXe2_avfr_t64x64k32g48s16m8[] = {{Op::kSdpaAv, "xe2_t64x64k32g48s16m8", nullptr}};
+const Preference kXe2_avfr_t128x64k32g44s16m8[] = {{Op::kSdpaAv, "xe2_t128x64k32g44s16m8", nullptr}};
+const Preference kXe2_avfr_t128x64k32g48s16m8[] = {{Op::kSdpaAv, "xe2_t128x64k32g48s16m8", nullptr}};
+const Preference kXe2_avfr_t64x128k32g44s16m8[] = {{Op::kSdpaAv, "xe2_t64x128k32g44s16m8", nullptr}};
+const Preference kXe2_avfr_t64x128k32g84s16m8[] = {{Op::kSdpaAv, "xe2_t64x128k32g84s16m8", nullptr}};
+const Preference kXe2_avfr_t128x128k32g48s16m8[] = {{Op::kSdpaAv, "xe2_t128x128k32g48s16m8", nullptr}};
+const Preference kXe2_avfr_t128x128k32g88s16m8[] = {{Op::kSdpaAv, "xe2_t128x128k32g88s16m8", nullptr}};
+const Preference kXe2_avfr_t32x64k32g42s16m8[] = {{Op::kSdpaAv, "xe2_t32x64k32g42s16m8", nullptr}};
+// xe2 end
 struct Profile {
   const char* name;
   const Preference* prefs;
@@ -644,6 +694,55 @@ const Profile kProfiles[] = {
     {"qkpk-t256x64k32g42s32nf", kQkPk_t256x64k32g42s32nf, 1},
     {"780m-refine1-dq", k780mRefine1Dq, sizeof(k780mRefine1Dq) / sizeof(Preference)},
     {"780m-refine1-q4", k780mRefine1Q4, sizeof(k780mRefine1Q4) / sizeof(Preference)},
+    // xe2 begin: Intel Xe2 profiles (tools/gen_xe2.py)
+    {"xe2-qk-t128x64k32g44s16m8nf", kXe2_qk_t128x64k32g44s16m8nf, 1},
+    {"xe2-qk-t128x64k32g44s16m8", kXe2_qk_t128x64k32g44s16m8, 1},
+    {"xe2-qk-t128x64k32g48s16m8nf", kXe2_qk_t128x64k32g48s16m8nf, 1},
+    {"xe2-qk-t128x64k32g24s16m8nf", kXe2_qk_t128x64k32g24s16m8nf, 1},
+    {"xe2-qk-t64x64k32g44s16m8nf", kXe2_qk_t64x64k32g44s16m8nf, 1},
+    {"xe2-qk-t64x64k32g24s16m8nf", kXe2_qk_t64x64k32g24s16m8nf, 1},
+    {"xe2-qk-t64x128k32g44s16m8nf", kXe2_qk_t64x128k32g44s16m8nf, 1},
+    {"xe2-qk-t64x128k32g84s16m8nf", kXe2_qk_t64x128k32g84s16m8nf, 1},
+    {"xe2-qkpk-t128x64k32g44s16m8nf", kXe2_qkpk_t128x64k32g44s16m8nf, 1},
+    {"xe2-qkpk-t128x64k64g44s16m8nf", kXe2_qkpk_t128x64k64g44s16m8nf, 1},
+    {"xe2-qkpk-t128x64k32g48s16m8nf", kXe2_qkpk_t128x64k32g48s16m8nf, 1},
+    {"xe2-qkpk-t128x64k32g24s16m8nf", kXe2_qkpk_t128x64k32g24s16m8nf, 1},
+    {"xe2-qkpk-t64x64k32g44s16m8nf", kXe2_qkpk_t64x64k32g44s16m8nf, 1},
+    {"xe2-qkpk-t64x64k64g44s16m8nf", kXe2_qkpk_t64x64k64g44s16m8nf, 1},
+    {"xe2-qkpk-t64x128k32g44s16m8nf", kXe2_qkpk_t64x128k32g44s16m8nf, 1},
+    {"xe2-qkpk-t64x128k32g84s16m8nf", kXe2_qkpk_t64x128k32g84s16m8nf, 1},
+    {"xe2-av-t64x64k32g44s16m8", kXe2_av_t64x64k32g44s16m8, 1},
+    {"xe2-avml-t64x64k32g44s16m8", kXe2_avml_t64x64k32g44s16m8, 1},
+    {"xe2-avml-t64x64k32g24s16m8", kXe2_avml_t64x64k32g24s16m8, 1},
+    {"xe2-avml-t64x64k32g48s16m8", kXe2_avml_t64x64k32g48s16m8, 1},
+    {"xe2-avml-t128x64k32g44s16m8", kXe2_avml_t128x64k32g44s16m8, 1},
+    {"xe2-avml-t128x64k32g48s16m8", kXe2_avml_t128x64k32g48s16m8, 1},
+    {"xe2-avml-t64x128k32g44s16m8", kXe2_avml_t64x128k32g44s16m8, 1},
+    {"xe2-avml-t64x128k32g84s16m8", kXe2_avml_t64x128k32g84s16m8, 1},
+    {"xe2-avml-t128x128k32g48s16m8", kXe2_avml_t128x128k32g48s16m8, 1},
+    {"xe2-avml-t128x128k32g88s16m8", kXe2_avml_t128x128k32g88s16m8, 1},
+    {"xe2-avml-t32x64k32g42s16m8", kXe2_avml_t32x64k32g42s16m8, 1},
+    {"xe2-qkfr-t128x64k32g44s16m8nf", kXe2_qkfr_t128x64k32g44s16m8nf, 1},
+    {"xe2-qkfr-t128x64k32g48s16m8nf", kXe2_qkfr_t128x64k32g48s16m8nf, 1},
+    {"xe2-qkfr-t128x64k32g24s16m8nf", kXe2_qkfr_t128x64k32g24s16m8nf, 1},
+    {"xe2-qkfr-t128x64k64g44s16m8nf", kXe2_qkfr_t128x64k64g44s16m8nf, 1},
+    {"xe2-qkfr-t64x64k32g44s16m8nf", kXe2_qkfr_t64x64k32g44s16m8nf, 1},
+    {"xe2-qkfr-t64x64k32g24s16m8nf", kXe2_qkfr_t64x64k32g24s16m8nf, 1},
+    {"xe2-qkfr-t64x64k64g44s16m8nf", kXe2_qkfr_t64x64k64g44s16m8nf, 1},
+    {"xe2-qkfr-t64x128k32g44s16m8nf", kXe2_qkfr_t64x128k32g44s16m8nf, 1},
+    {"xe2-qkfr-t64x128k32g84s16m8nf", kXe2_qkfr_t64x128k32g84s16m8nf, 1},
+    {"xe2-avfr-t64x64k32g44s16m8", kXe2_avfr_t64x64k32g44s16m8, 1},
+    {"xe2-avfr-t64x64k32g24s16m8", kXe2_avfr_t64x64k32g24s16m8, 1},
+    {"xe2-avfr-t64x64k32g48s16m8", kXe2_avfr_t64x64k32g48s16m8, 1},
+    {"xe2-avfr-t128x64k32g44s16m8", kXe2_avfr_t128x64k32g44s16m8, 1},
+    {"xe2-avfr-t128x64k32g48s16m8", kXe2_avfr_t128x64k32g48s16m8, 1},
+    {"xe2-avfr-t64x128k32g44s16m8", kXe2_avfr_t64x128k32g44s16m8, 1},
+    {"xe2-avfr-t64x128k32g84s16m8", kXe2_avfr_t64x128k32g84s16m8, 1},
+    {"xe2-avfr-t128x128k32g48s16m8", kXe2_avfr_t128x128k32g48s16m8, 1},
+    {"xe2-avfr-t128x128k32g88s16m8", kXe2_avfr_t128x128k32g88s16m8, 1},
+    {"xe2-avfr-t32x64k32g42s16m8", kXe2_avfr_t32x64k32g42s16m8, 1},
+    {"xe2-sdpa0", nullptr, 0},
+    // xe2 end
 };
 const Profile* requested_profile() {
   static const Profile* p = []() -> const Profile* {

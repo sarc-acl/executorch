@@ -51,3 +51,85 @@ sarc_sdpa_av_coopmat_ml:
       SG_GRID_X: 4
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 32
+# xe2 begin: Intel Xe2 variants (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)
+    - NAME: sarc_sdpa_av_coopmat_ml_t64x64k32g44s16m8
+      MMA_M: 8
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+    - NAME: sarc_sdpa_av_coopmat_ml_t64x64k32g24s16m8
+      MMA_M: 8
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+    - NAME: sarc_sdpa_av_coopmat_ml_t64x64k32g48s16m8
+      MMA_M: 8
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 8
+      SUBGROUP_SIZE: 16
+    - NAME: sarc_sdpa_av_coopmat_ml_t128x64k32g44s16m8
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+    - NAME: sarc_sdpa_av_coopmat_ml_t128x64k32g48s16m8
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 8
+      SUBGROUP_SIZE: 16
+    - NAME: sarc_sdpa_av_coopmat_ml_t64x128k32g44s16m8
+      MMA_M: 8
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+    - NAME: sarc_sdpa_av_coopmat_ml_t64x128k32g84s16m8
+      MMA_M: 8
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 8
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+    - NAME: sarc_sdpa_av_coopmat_ml_t128x128k32g48s16m8
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 8
+      SUBGROUP_SIZE: 16
+    - NAME: sarc_sdpa_av_coopmat_ml_t128x128k32g88s16m8
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 8
+      SG_GRID_Y: 8
+      SUBGROUP_SIZE: 16
+    - NAME: sarc_sdpa_av_coopmat_ml_t32x64k32g42s16m8
+      MMA_M: 8
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+# xe2 end

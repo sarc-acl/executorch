@@ -13,28 +13,31 @@
 #   - a GPU process this campaign did not start (any DRM client of the card, host.sh gpu_others) aborts the
 #     session with exit 76 (E2E5_ABORTED): before a launch nothing is started; during a run the runner is
 #     stopped within about a second, its partial log and an invalid row (other_gpu_process) are kept.
-#   - next tokens are compared only between runs that ran to completion on the expected prompt and printed text.
+#   - next token, parent vs candidate, in every cell on three prompts: the timed prompt, the real-text prompt
+#     prompt_check.txt (1972 tokens) and the separate unaligned prompt r*.txt staged for verify.sh (r1304.txt,
+#     1792 tokens). Only runs that ran to completion on the expected token count and printed text are compared;
+#     anything else, or a missing unaligned prompt, is INVALID and fails the session.
 #   - exit status 0 and "E2E5_OK" in done.txt only if every cell has REPS valid runs per build and every
 #     next-token comparison is SAME; otherwise 1 and the reasons. Invalid runs stay in runs.csv with the
 #     reason; cells with fewer than REPS valid runs per build get extra interleaved pairs (at most EXTRA).
 # One GPU job at a time: everything runs under the gpu-lab lock.
 #
 # usage: e2e5.sh --stage DIR --out NAME --lock UUID [--reps 5] [--extra 3] [--models 1b,3b,8b] [--schemes 4w,8da4w]
-#                [--prompt prompt_2048.txt] [--tokens 2048] [--clkmin MHz | --calibrate] [--no-check]
+#                [--prompt prompt_2048.txt] [--tokens 2048] [--clkmin MHz | --calibrate] [--no-check] [--unaligned-tokens 1792]
 #   DIR/{parent,cand}/{llama_main,libllama_runner.so,[env]}, DIR/prompt_*.txt; output in DIR/NAME/
 set -uo pipefail
 STAGE=""; OUTN=raw; LOCK=""; REPS=5; EXTRA=3; MODELS=1b,3b,8b; SCHEMES=4w,8da4w
-PROMPT=prompt_2048.txt; TOKENS=2048; CLKMIN=""; CALIB=0; CHECK=1; COOLMAX=120; MROOT=/mnt/linux-share/models
+PROMPT=prompt_2048.txt; TOKENS=2048; CLKMIN=""; CALIB=0; CHECK=1; UNALTOK=1792; COOLMAX=120; MROOT=/mnt/linux-share/models
 while [[ $# -gt 0 ]]; do
   case $1 in
     --stage) STAGE=$2; shift ;; --out) OUTN=$2; shift ;; --lock) LOCK=$2; shift ;;
     --reps) REPS=$2; shift ;; --extra) EXTRA=$2; shift ;; --models) MODELS=$2; shift ;;
     --schemes) SCHEMES=$2; shift ;; --prompt) PROMPT=$2; shift ;; --tokens) TOKENS=$2; shift ;;
-    --clkmin) CLKMIN=$2; shift ;; --calibrate) CALIB=1 ;; --no-check) CHECK=0 ;;
+    --clkmin) CLKMIN=$2; shift ;; --calibrate) CALIB=1 ;; --no-check) CHECK=0 ;; --unaligned-tokens) UNALTOK=$2; shift ;;
     *) echo "unknown option $1" >&2; exit 2 ;;
   esac; shift
 done
-[[ -n $STAGE && -n $LOCK ]] || { sed -n '2,25p' "$0"; exit 2; }
+[[ -n $STAGE && -n $LOCK ]] || { sed -n '2,29p' "$0"; exit 2; }
 D=$(cd "$STAGE" && pwd); cd "$D" || exit 2
 O=$D/$OUTN; mkdir -p "$O/logs"
 exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK"; flock -w 900 9 || { echo "gpu-lab lock busy"; exit 75; }
@@ -45,7 +48,7 @@ exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK"; flock -w 900 9 || { echo "gpu-lab loc
 [[ $CALIB == 0 && $CLKMIN -le 0 ]] && { echo "clock threshold must be > 0 outside --calibrate" >&2; exit 2; }
 FAILS=()
 finish() { # finish <status> [reason...]: record the session status and exit
-  local st=$1; shift; echo "others_end: $(others)" >> "$O/env.txt"
+  local st=$1; shift; echo "others_end: $(others) idle_monitors_end: $(gpu_monitors)" >> "$O/env.txt"
   { date -u; echo "$st $*"; } > "$O/done.txt"; echo "$st $*"
   case $st in E2E5_OK) exit 0 ;; E2E5_ABORTED) exit 76 ;; *) exit 1 ;; esac; }
 gtemp() { echo $(( $(<$HW/temp2_input) / 1000 )); }
@@ -63,6 +66,7 @@ sampler() {  # sampler <file>: epoch_us act_freq_MHz throttle_status card_energy
   vulkaninfo --summary 2>/dev/null | grep -E 'deviceName|driverName|driverInfo|apiVersion'
   echo "freq0 MHz: min=$(<$FREQ/min_freq) max=$(<$FREQ/max_freq) rp0=$(<$FREQ/rp0_freq) rpe=$(<$FREQ/rpe_freq) rpn=$(<$FREQ/rpn_freq) profile=$(<$FREQ/power_profile) ETVK_DEVICE_INDEX=$ETVK_DEVICE_INDEX"
   echo "others: $(others)"
+  echo "idle monitors (DRM clients with zero engine cycles and zero GPU memory, not counted): $(gpu_monitors)"
 } > "$O/env.txt" 2>&1
 declare -A STEM=([1b]=llama-3.2-1b:llama3_2-1b [3b]=llama-3.2-3b:llama3_2-3b [8b]=llama-3.1-8b:llama3_1-8b)
 IFS=, read -ra MS <<< "$MODELS"; IFS=, read -ra QS <<< "$SCHEMES"
@@ -72,6 +76,8 @@ for m in "${MS[@]}"; do for q in "${QS[@]}"; do
   echo "model $m $q $(sha256sum "$(pte $m $q)" | cut -c1-16) $(pte $m $q)" >> "$O/env.txt"; done; done
 sleep 60; IDLE=$(gtemp); echo "idle_temp=$IDLE" >> "$O/env.txt"
 cool() { local t0=$SECONDS t; while :; do t=$(gtemp); [[ $t -le $((IDLE + 5)) || $((SECONDS - t0)) -ge $COOLMAX ]] && break; sleep 5; done; }
+UNAL=$(ls r*.txt 2>/dev/null | head -1)   # the separate unaligned prompt, the same file verify.sh picks up
+echo "unaligned prompt: ${UNAL:-MISSING} expected tokens $UNALTOK" >> "$O/env.txt"
 CSV=$O/runs.csv
 [[ -f $CSV ]] || echo "gpu,host,model,scheme,build,rep,slot,tok_s,rc,temp_pre,temp_post,cool_s,clocks,others,utc,log,prompt_tokens,generated_tokens,prefill_ms,clk_n,clk_med_mhz,clk_min_mhz,throttled_n,power_avg_w,temp_max,valid,reason" > "$CSV"
 run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected tokens>
@@ -155,16 +161,23 @@ for m in "${MS[@]}"; do for q in "${QS[@]}"; do
   if [[ $CHECK == 1 ]]; then
     run1 $m $q parent 0 0 prompt_check.txt check 1972
     run1 $m $q cand 0 0 prompt_check.txt check 1972
+    z=INVALID
+    if [[ -n $UNAL ]]; then
+      run1 $m $q parent 0 0 $UNAL unaligned $UNALTOK
+      run1 $m $q cand 0 0 $UNAL unaligned $UNALTOK
+      z=$(cmptok unaligned $m $q)
+    fi
     x=$(cmptok check $m $q); y=$(cmptok prefill $m $q)
-    echo "$m,$q,$PROMPT:$y,prompt_check.txt:$x" >> "$O/nexttoken.csv"; echo "nexttoken $m $q $PROMPT=$y check=$x"
-    [[ $x == SAME && $y == SAME ]] || FAILS+=("$m-$q:nexttoken_${y}_$x")
+    echo "$m,$q,$PROMPT:$y,prompt_check.txt:$x,${UNAL:-unaligned_prompt_missing}:$z" >> "$O/nexttoken.csv"
+    echo "nexttoken $m $q $PROMPT=$y check=$x unaligned=$z"
+    [[ $x == SAME && $y == SAME && $z == SAME ]] || FAILS+=("$m-$q:nexttoken_${y}_${x}_$z")
   fi
 done; done
 if [[ $CALIB == 1 && ${#FAILS[@]} == 0 ]]; then
   echo $((IDLE * 1000)) > "$IDLE_FILE"
   awk -F, 'NR > 1 && $16 ~ /^logs\/prefill/ && $26 == 1 && $21 != "" {if (m == "" || $21 + 0 < m) m = $21 + 0} END {printf "%d\n", m * 0.97}' "$CSV" > "$CLKMIN_FILE"
   echo "calibration: idle_temp_mc=$(<$IDLE_FILE) clkmin_mhz=$(<$CLKMIN_FILE)" | tee -a "$O/env.txt"
-  [[ $(<$CLKMIN_FILE) -gt 0 ]] || FAILS+=("calibration:clock_not_readable")
+  [[ $(<$CLKMIN_FILE) -gt 0 ]] || { FAILS+=("calibration:clock_not_readable"); rm -f "$CLKMIN_FILE" "$IDLE_FILE"; }
 fi
 [[ ${#FAILS[@]} == 0 ]] && finish E2E5_OK
 finish E2E5_INCOMPLETE "${FAILS[*]}"

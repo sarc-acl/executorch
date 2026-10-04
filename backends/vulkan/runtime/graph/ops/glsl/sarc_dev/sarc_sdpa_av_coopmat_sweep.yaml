@@ -37,3 +37,13 @@ sarc_sdpa_av_coopmat_sweep:
       SG_GRID_X: 2
       SG_GRID_Y: 4
       SUBGROUP_SIZE: 32
+# xe2 begin: Intel Xe2 variants (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)
+    - NAME: sarc_sdpa_av_coopmat_sweep_t64x64k32g44s16m8
+      MMA_M: 8
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+# xe2 end

@@ -2039,7 +2039,11 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
     }
   }
   const bool qk_no_mask_fill = qk_name.find("s32nf") != std::string::npos ||
-      qk_name.find("s64nf") != std::string::npos;
+      qk_name.find("s64nf") != std::string::npos
+      // xe2 begin: Xe2 tile tokens end in s16m8nf (openspec/changes/sarc-1.5-xe2-prefill-refine)
+      || qk_name.find("m8nf") != std::string::npos
+      // xe2 end
+      ;
   const bool softmax_truncated =
       softmax_name.rfind("sarc_sdpa_attn_weights_softmax", 0) == 0;
   const bool pairing_ok = !qk_no_mask_fill || softmax_truncated;

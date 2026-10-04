@@ -38,6 +38,15 @@ F=$(foreign)
   ok "unfamiliar DRM client detected" '[[ $(gpu_others) == *"$F:python3"* ]]'
   guarded $W/g1 bash -c "echo started > $W/j1; sleep 5; echo JOB_COMPLETED >> $W/j1" 2>/dev/null; ok "job not started while a foreign process runs" "[[ $? == 76 && ! -e $W/j1 ]]"
   exit $fails ); fails=$((fails + $?)); kill $F
+# An idle monitor: a process named nvtop that only holds the render node (zero engine cycles, zero GPU memory).
+cp "$(readlink -f "$(command -v python3)")" $W/nvtop; rm -f $W/mon.pid
+$W/nvtop -c "import os,sys,time; os.open('$RN', os.O_RDWR); sys.stdout.write(str(os.getpid())+'\n'); sys.stdout.flush(); time.sleep(600)" > $W/mon.pid 2>/dev/null 9>&- & disown
+while [[ ! -s $W/mon.pid ]]; do sleep 0.1; done; MON=$(cat $W/mon.pid)
+( . $T/host.sh; XE2_TOP=$BASHPID
+  ok "idle nvtop monitor is not a foreign GPU process" '[[ $(gpu_others) != *"$MON:"* ]]'
+  ok "idle nvtop monitor is recorded" '[[ $(gpu_monitors) == *"$MON:nvtop"* ]]'
+  ok "the same idle DRM client under another name is foreign" '! monitor_idle $$'
+  exit $fails ); fails=$((fails + $?)); kill $MON
 ( . $T/host.sh; XE2_TOP=$BASHPID; t0=$SECONDS
   guarded $W/g2 bash -c "echo started > $W/j2; bash -c 'sleep 41; echo JOB_COMPLETED >> $W/j2'; echo JOB_COMPLETED >> $W/j2" 2>/dev/null; rc=$?
   ok "job stopped with 76 when a foreign process appears" "[[ $rc == 76 ]]"

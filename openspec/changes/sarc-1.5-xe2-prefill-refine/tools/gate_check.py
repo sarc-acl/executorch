@@ -13,7 +13,9 @@ missing or empty evidence is a FAIL.
   env      the staged cand/env is exactly the ET_VK*/ETVK* environment verify.sh recorded, the one the timing
            session recorded for the candidate arm, and cand-traced/env.
   timing   raw/runs.csv: 5 valid runs per build in each of the six cells, a clock threshold > 0 in force,
-           done.txt = E2E5_OK; raw/nexttoken.csv: SAME on both prompts in all six cells.
+           done.txt = E2E5_OK; raw/nexttoken.csv: SAME in all six cells on each of the timed prompt
+           prompt_2048.txt, the real-text prompt prompt_check.txt and the staged unaligned prompt r*.txt,
+           matched by prompt name.
   trace    trace/trace.ok and one totals row per cell and arm.
   sdpa     (--sdpa) 12 passes each of tiers all, extended and full with the candidate environment: rc 0, the
            expected number of cases PASSED (4 / 8 / 4), none FAILED, every case mismatches=0 and pairing=ok.
@@ -81,9 +83,12 @@ if not CONTROL:
     ck = re.search(r"clkmin=(\d+)", env)
     check(bool(ck) and int(ck[1]) > 0, "timing: clock threshold in force", ck[0] if ck else "missing")
     nt = {tuple(l.split(",")[:2]): l.strip().split(",")[2:] for l in read(D, "raw", "nexttoken.csv").splitlines() if l.count(",") >= 3}
+    unal = sorted(f for f in os.listdir(D) if re.fullmatch(r"r.*\.txt", f))[:1]   # the file verify.sh picks up
+    want = ["prompt_2048.txt", "prompt_check.txt"] + (unal or ["<no unaligned prompt r*.txt staged>"])
     for c in CELLS:
-        x = nt.get(c, [])
-        check(len(x) == 2 and all(y.endswith(":SAME") for y in x), f"next token parent vs cand: {c[0]} {c[1]}", ",".join(x) or "missing")
+        x = dict(y.rsplit(":", 1) for y in nt.get(c, []) if ":" in y)
+        check(all(x.get(p) == "SAME" for p in want), f"next token parent vs cand: {c[0]} {c[1]} on {', '.join(want)}",
+              ",".join(f"{p}:{x.get(p, 'missing')}" for p in want))
 
     tot = read(D, "trace", "report", "evidence", "trace", "totals.csv").splitlines()[1:]
     arms = {tuple(l.split(",")[1:4]) for l in tot}
