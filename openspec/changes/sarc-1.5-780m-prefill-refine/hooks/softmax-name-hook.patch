@@ -1,0 +1,28 @@
+diff -u -r a/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp b/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
+--- a/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp	2026-10-04 13:08:42.476195491 -0700
++++ b/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp	2026-10-04 13:08:42.489694776 -0700
+@@ -202,7 +202,9 @@
+   if (!device_has_active_rows(device_info(&graph), Op::kSdpaQk)) {
+     return upstream_name;
+   }
+-  return "sarc_" + upstream_name;
++  const std::string name = "sarc_" + upstream_name;
++  const Override& o = get_override();
++  return o.sdpa_softmax != nullptr ? o.sdpa_softmax(name) : name;
+ }
+ 
+ } // namespace sarc
+diff -u -r a/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h b/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h
+--- a/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h	2026-10-04 13:08:42.476056094 -0700
++++ b/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h	2026-10-04 13:08:42.489471658 -0700
+@@ -141,7 +141,10 @@
+       const DeviceInfo& device,
+       const ShapeInfo& shape,
+       const std::optional<Choice>& table_choice) = nullptr;
++  // Replaces the SARC SDPA softmax shader name (development variants).
++  std::string (*sdpa_softmax)(const std::string& sarc_name) = nullptr;
+ };
++#define SARC_HAS_SDPA_SOFTMAX_OVERRIDE 1
+ void set_override(const Override& o);
+ const Override& get_override();
+ 
