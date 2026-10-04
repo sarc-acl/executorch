@@ -1,0 +1,228 @@
+--- a/backends/vulkan/runtime/graph/ops/impl/SDPA.cpp	2026-10-04 21:45:46.074657252 +0000
++++ b/backends/vulkan/runtime/graph/ops/impl/SDPA.cpp	2026-10-04 21:45:46.082601826 +0000
+@@ -24,6 +24,7 @@
+ #include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.h>
+ 
+ #include <cmath>
++#include <cstdlib>
+ 
+ namespace vkcompute {
+ 
+@@ -458,6 +459,139 @@
+ }
+ 
+ //
++// LOCAL HOOK of openspec/changes/sarc-1.5-4070ti-prefill-refine, NOT
++// committed: fused LLM-mode prefill attention (one node instead of QK^T,
++// softmax and attn*V), behind ET_VK_SARC_FUSED_SDPA=<column tile>.
++//
++
++int64_t fused_sdpa_tile() {
++  static const int64_t tile = [] {
++    const char* v = std::getenv("ET_VK_SARC_FUSED_SDPA");
++    return v == nullptr ? int64_t(0) : int64_t(std::atoi(v));
++  }();
++  return tile;
++}
++
++// Whether the fused kernel computes the output for the current shape (the
++// kernel checks the same condition and does nothing otherwise).
++bool fused_sdpa_active(
++    ComputeGraph* graph,
++    const std::vector<ValueRef>& resize_args) {
++  const int64_t tile = fused_sdpa_tile();
++  if (tile <= 0 || mode_of(resize_args) != SDPAMode::LLM) {
++    return false;
++  }
++  const ValueRef q = resize_args.at(0);
++  if (graph->storage_type_of(q) != utils::kBuffer ||
++      graph->dtype_of(q) != vkapi::kHalf) {
++    return false;
++  }
++  const int64_t D = graph->size_at<int64_t>(-1, q);
++  const int64_t S = graph->size_at<int64_t>(-3, q);
++  const ValueRef pos = resize_args.at(2);
++  const int64_t input_pos = is_valid(pos) ? graph->read_symint(pos) : 0;
++  return (D == 64 || D == 128) && S > 1 && S % 16 == 0 &&
++      (S + input_pos) % tile == 0;
++}
++
++// The three-node path is reduced to one (junk) workgroup per node when the
++// fused node, which runs last, produces the output.
++GlobalWorkGrid fused_sdpa_skip(
++    ComputeGraph* graph,
++    const GlobalWorkGrid& gwg,
++    const std::vector<ValueRef>& resize_args) {
++  if (!fused_sdpa_active(graph, resize_args)) {
++    return gwg;
++  }
++  return GlobalWorkGrid(
++      {0u, 0u, 0u},
++      kTiledWorkGrid,
++      gwg.required_lwg_size().is_valid()
++          ? gwg.required_lwg_size()
++          : LocalWorkGroup(8u, 8u, 1u));
++}
++
++GlobalWorkGrid pick_sdpa_qk_gwg_fused(
++    ComputeGraph* graph,
++    const vkapi::ShaderInfo& shader,
++    const std::vector<ArgGroup>& args,
++    const std::vector<ValueRef>& resize_args) {
++  return fused_sdpa_skip(
++      graph, pick_sdpa_qk_gwg(graph, shader, args, resize_args), resize_args);
++}
++
++GlobalWorkGrid pick_sdpa_softmax_gwg_fused(
++    ComputeGraph* graph,
++    const vkapi::ShaderInfo& shader,
++    const std::vector<ArgGroup>& args,
++    const std::vector<ValueRef>& resize_args) {
++  return fused_sdpa_skip(
++      graph,
++      pick_sdpa_softmax_gwg(graph, shader, args, resize_args),
++      resize_args);
++}
++
++GlobalWorkGrid pick_sdpa_av_gwg_fused(
++    ComputeGraph* graph,
++    const vkapi::ShaderInfo& shader,
++    const std::vector<ArgGroup>& args,
++    const std::vector<ValueRef>& resize_args) {
++  return fused_sdpa_skip(
++      graph, pick_sdpa_av_gwg(graph, shader, args, resize_args), resize_args);
++}
++
++// One workgroup (32 threads) per 16 rows and head.
++GlobalWorkGrid pick_sdpa_fused_gwg(
++    ComputeGraph* graph,
++    const vkapi::ShaderInfo& shader,
++    const std::vector<ArgGroup>& args,
++    const std::vector<ValueRef>& resize_args) {
++  (void)shader;
++  (void)args;
++  const ValueRef q = resize_args.at(0);
++  const uint32_t S = graph->size_at<uint32_t>(-3, q);
++  const uint32_t H = graph->size_at<uint32_t>(-2, q);
++  return GlobalWorkGrid(
++      {32u, utils::div_up(S, 16u), H},
++      kTiledWorkGrid,
++      LocalWorkGroup(32u, 1u, 1u));
++}
++
++void add_sdpa_fused_node(
++    ComputeGraph& graph,
++    const ValueRef q,
++    const ValueRef k_cache,
++    const ValueRef v_cache,
++    const ValueRef input_pos_symint,
++    const float scale_val,
++    const ValueRef out) {
++  const int64_t D = graph.size_at<int64_t>(-1, q);
++  const int32_t num_q_heads = graph.size_at<int32_t>(-2, q);
++  if (fused_sdpa_tile() <= 0 || (D != 64 && D != 128) ||
++      graph.storage_type_of(q) != utils::kBuffer ||
++      graph.dtype_of(q) != vkapi::kHalf) {
++    return;
++  }
++  const std::string shader_name = "sarc_sdpa_fused_coopmat_4070ti_c" +
++      std::to_string(fused_sdpa_tile()) + "d" + std::to_string(D) +
++      "_buffer_half";
++  const ValueRef mode_ref = static_cast<ValueRef>(SDPAMode::LLM);
++  graph.execute_nodes().emplace_back(new DynamicDispatchNode(
++      graph,
++      VK_KERNEL_FROM_STR(shader_name),
++      pick_sdpa_fused_gwg,
++      pick_required_lwg,
++      {{out, vkapi::kWrite}, {{q, k_cache, v_cache}, vkapi::kRead}},
++      {graph.sizes_ubo(q),
++       graph.sizes_ubo(k_cache),
++       graph.get_or_create_int_param_buffer(input_pos_symint)},
++      {},
++      {scale_val, static_cast<int32_t>(num_q_heads * D)},
++      {q, k_cache, input_pos_symint, mode_ref},
++      nullptr));
++}
++
++//
+ // Dispatch nodes
+ //
+ 
+@@ -528,7 +662,7 @@
+   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
+       graph,
+       pick_sdpa_qk_shader,
+-      pick_sdpa_qk_gwg,
++      pick_sdpa_qk_gwg_fused, // LOCAL HOOK
+       pick_sdpa_qk_lwg,
+       // Inputs and Outputs
+       {{attn_weights, vkapi::kWrite}, {read_inputs, vkapi::kRead}},
+@@ -585,7 +719,7 @@
+   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
+       graph,
+       VK_KERNEL_FROM_STR(shader_name),
+-      pick_sdpa_softmax_gwg,
++      pick_sdpa_softmax_gwg_fused, // LOCAL HOOK
+       pick_required_lwg,
+       // Inputs and Outputs
+       {{attn_weights_softmax, vkapi::kWrite}, {attn_weights, vkapi::kRead}},
+@@ -646,7 +780,7 @@
+   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
+       graph,
+       pick_sdpa_av_shader,
+-      pick_sdpa_av_gwg,
++      pick_sdpa_av_gwg_fused, // LOCAL HOOK
+       pick_sdpa_av_lwg,
+       // Inputs and Outputs
+       {{out, vkapi::kWrite}, {{attn_weights_softmax, v}, vkapi::kRead}},
+@@ -815,6 +949,10 @@
+       input_pos_symint,
+       out,
+       SDPAMode::LLM);
++
++  // LOCAL HOOK: runs last and overwrites `out` when it applies.
++  add_sdpa_fused_node(
++      graph, q_projected, k_cache, v_cache, input_pos_symint, scale_val, out);
+ }
+ 
+ void sdpa_with_kv_cache_impl(
+diff --git a/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp b/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
+--- a/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
++++ b/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
+@@ -13,2 +13,4 @@
+ 
++#include <cstdlib>
++
+ namespace vkcompute {
+@@ -203,3 +205,10 @@ std::string sdpa_softmax_shader_name(
+   }
+-  return "sarc_" + upstream_name;
++  // LOCAL HOOK of openspec/changes/sarc-1.5-4070ti-prefill-refine, NOT
++  // committed: a dev-zone softmax variant, named by suffix.
++  std::string name = "sarc_" + upstream_name;
++  if (const char* v = std::getenv("ET_VK_SARC_SOFTMAX_VARIANT")) {
++    name += "_";
++    name += v;
++  }
++  return name;
+ }
+diff --git a/backends/vulkan/runtime/graph/ops/impl/sarc/table_nvidia.cpp b/backends/vulkan/runtime/graph/ops/impl/sarc/table_nvidia.cpp
+index a13cb77e8..8eb907870 100644
+--- a/backends/vulkan/runtime/graph/ops/impl/sarc/table_nvidia.cpp
++++ b/backends/vulkan/runtime/graph/ops/impl/sarc/table_nvidia.cpp
+@@ -98,2 +98,15 @@ const Row kNvidiaRows[] = {
+      /*rowmajor_a=*/true},
++
++    // LOCAL HOOK of openspec/changes/sarc-1.5-4070ti-prefill-refine, NOT
++    // committed: SDPA rows for the RTX 4070 Ti SUPER, so that the SARC SDPA
++    // path (spec constants, truncated softmax, dev profiles) can be measured.
++    // Inert without ET_VK_SARC_UNVERIFIED=1. The kernels are dev-zone variants.
++    {"4070 ti super", nullptr, Op::kSdpaQk,
++     "sarc_sdpa_qk_coopmat_4070ti_t128x64k32g42s32",
++     {128, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
++     Status::kUnverified},
++    {"4070 ti super", nullptr, Op::kSdpaAv,
++     "sarc_sdpa_av_coopmat_4070ti_t64x64k32g42s32",
++     {64, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
++     Status::kUnverified},
+ };
