@@ -225,13 +225,18 @@ for op, fam, vs, kind, pre in FAM:
         rows += f'    {{"", nullptr, Op::{op},\n     "{fam}_{v["tok"]}",\n     {{{v["m"]}, {v["n"]}, {v["k"]}, {v["sx"]}, {v["sy"]}, {SG}, 16, false}}, kBufBuf, nullptr,\n     Status::kUnverified}},\n'
         prefs += f'const Preference {cid}[] = {{{{Op::{op}, "{tok}", nullptr}}}};\n'
         profs += f'    {{"4070ti-{kind}-{pre}{v["tok"]}", {cid}, 1}},\n'
-prefs += """// Candidate 1: the 780M SDPA kernels at subgroup 32, tiles from screen 1 (results/4070ti/screens):
-// QK^T packed staging without mask fill; attn*V multi-pass staging, the 128-column tile
-// where head_dim is 128 (it does not fit head_dim 64, which takes the next row).
+prefs += """// Candidate 1 (SDPA prefill kernels for this device), the best tile per head_dim of screen 2
+// (results/4070ti/screens/sdpa-screen2.csv), accumulation unchanged (fp32):
+//   QK^T    head_dim 64: direct feed t64x64 (one subgroup per workgroup); 128: packed staging t64x128
+//   attn*V  head_dim 64: multi-pass staging t32x64; 128: t64x128 (does not fit head_dim 64)
+bool head_dim_64_4070ti(const ShapeInfo& s) {
+  return (s.op == Op::kSdpaQk ? s.K : s.N) == 64;
+}
 const Preference k4070tiRefine1[] = {
-    {Op::kSdpaQk, "4070ti_pk_t128x64k32g42s32nf", nullptr},
+    {Op::kSdpaQk, "4070ti_df_t64x64k32g11s32nf", head_dim_64_4070ti},
+    {Op::kSdpaQk, "4070ti_pk_t64x128k32g42s32nf", nullptr},
+    {Op::kSdpaAv, "4070ti_ml_t32x64k32g42s32", head_dim_64_4070ti},
     {Op::kSdpaAv, "4070ti_ml_t64x128k32g42s32", nullptr},
-    {Op::kSdpaAv, "4070ti_ml_t128x64k32g42s32", nullptr},
 };
 """
 profs += '    {"4070ti-refine1", k4070tiRefine1, sizeof(k4070tiRefine1) / sizeof(Preference)},\n'

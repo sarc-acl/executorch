@@ -11,7 +11,7 @@ need $B; mkdir -p $O; { sha256sum $B; date -u; } >> $O/env.txt
 for ((r = 1; r <= R; r++)); do for p in "$@"; do
   [[ -s $O/$p-r$r.json ]] && continue
   E=(ET_VK_SARC_UNVERIFIED=1); [[ $p == stock ]] && E=(); [[ $p != table && $p != stock ]] && E+=("ET_VK_SARC_DEV_PROFILE=$p")
-  cool_start 55 120
+  cool_start 60 120
   env "${E[@]}" $T/gl.sh $B --sdpa --json-out=$O/$p-r$r.json > $O/$p-r$r.log 2>&1
   rc=$?; [[ $rc == 70 || $rc == 75 || $rc == 76 ]] && { echo "screen stopped rc=$rc (70 device lost, 75 lock busy, 76 foreign GPU process)"; exit $rc; }
   python3 - $O/$p-r$r.json $p $r >> $O/rows.csv <<'PY'
@@ -20,7 +20,7 @@ try: d = json.load(open(sys.argv[1]))
 except Exception: sys.exit(0)
 for c in (d.get("cases") or d.get("records") or (d if isinstance(d, list) else [])):
     if c.get("suite") != "sdpa": continue
-    print(",".join(str(x) for x in (sys.argv[2], sys.argv[3], c.get("model"), c.get("regime"), c.get("op"), c.get("variant"), c.get("mean_us", c.get("kernel_median_us")), c.get("stdev_us"), c.get("dispatch"), "+".join(c.get("kernels", [])) if isinstance(c.get("kernels"), list) else c.get("kernel", ""))))
+    print(",".join(str(x) for x in (sys.argv[2], sys.argv[3], c.get("model"), c.get("regime"), c.get("op"), c.get("variant"), c.get("op_mean_us"), c.get("op_stdev_us"), c.get("dispatch"), c.get("kernel", ""))))
 PY
   echo "$p r$r rc=$rc temp=$(gtemp)"
 done; done
