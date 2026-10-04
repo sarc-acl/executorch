@@ -1,16 +1,19 @@
 #!/bin/bash
-# gate.sh <session> "<cand env>": the full gate for one candidate, one GPU job at a time:
-#   1. sarc/tools/verify.sh (unmodified) on the staged candidate binaries with the candidate env:
-#      correctness, dispatched kernels, production-diff 1B/3B/8B x buffer/texture3d (nonzero zp for 8da4w),
-#      e2e tiled vs default, next token on the real-text and the unaligned prompt, decode
-#   2. e2e5.sh parent vs candidate, 5 valid runs per cell
-#   3. warm ETDump traces of both arms (1b,3b,8b)
-T=$(dirname "$0"); source "$T/common.sh"; S=$1; ENVS=$2
+# gate.sh <session> "<cand env>": the full gate for one candidate that does not change an SDPA kernel, one GPU
+# job at a time. Each step must pass on the CONTENT of its results (gate_check.py) before the next GPU job starts:
+#   1. sarc/tools/verify.sh (unmodified) on the staged candidate binaries with the candidate env, compared item
+#      by item with the parent control (parent_verify.sh): correctness, dispatched kernels, production-diff
+#      1B/3B/8B x buffer/texture3d (nonzero zp for 8da4w), default vs tiled next token on prompt_check and the
+#      unaligned prompt, decode;
+#   2. e2e5.sh parent vs candidate: six cells with 5 valid runs per arm, next token SAME on both prompts;
+#   3. warm ETDump traces of both arms (1b,3b,8b).
+# stage/<session>/gate.done says GATE_ACCEPTED, GATE_REJECTED (with the step) or GATE_ABORTED (device lost).
+# A rejected or aborted session is kept as it is; a new attempt takes a new session name.
+source "$(dirname "$0")/common.sh"; source $TOOLS/gatelib.sh; S=$1; ENVS=$2; D=$A/stage/$S
+[[ -e $D/gate.done ]] && { echo "session $S already gated: $(cat $D/gate.done)" >&2; exit 2; }
+need $D/STAGE.md $PARENT_CTL/verify.out; grep -q GATE_ACCEPTED $PARENT_CTL/gate.done || { echo "no accepted parent control" >&2; exit 77; }
 cool_start 50 300
-env $ENVS $ET/sarc/tools/verify.sh --dir $A/stage/$S --lock $LOCK \
-  --models 1b,3b,8b --schemes 4w,8da4w --pdiff --out verify > $A/stage/$S/verify.out 2>&1
-echo "VERIFY_DONE rc=$?" >> $A/stage/$S/verify.out
-$T/session.sh $S > $A/stage/$S/e2e5.out 2>&1
-$T/trace.sh $S 1b,3b,8b 4w,8da4w "parent cand" > $A/stage/$S/trace.out 2>&1
-python3 $T/summarize.py $A/stage/$S/raw > $A/stage/$S/raw/summary.csv 2>&1
-echo GATE_DONE > $A/stage/$S/gate.done
+step verify run_verify "$ENVS"
+step verify-check python3 $TOOLS/gate_check.py verify $D/verify.out $PARENT_CTL/verify.out > $D/verify-check.txt 2>&1
+timed_and_traced
+finish GATE_ACCEPTED "all steps passed; the gain is in raw/summary.csv" 0

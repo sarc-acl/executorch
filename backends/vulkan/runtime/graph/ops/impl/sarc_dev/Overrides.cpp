@@ -288,6 +288,22 @@ const Row kQ4gswCandidates[] = {
     {"", nullptr, Op::kQ4gswLinear,
      "sarc_dev_prof_q4gsw_t128x128k32g42s32f32cp", tile(4, 2, true),
      kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
+    // >>> 4070ti prof-q4gsw-rows
+    // RTX 4070 Ti SUPER phase timing, MEASUREMENT ONLY (glsl/sarc_dev/sarc_dev_prof_4070ti_q4gsw.yaml):
+    // the shipped `ga` tiles with shader-clock phase counters written over their output.
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_prof_4070ti_q4gsw_t256x128k16g42s32gap", {256, 128, 16, 4, 2, 32, 16, false},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_prof_4070ti_q4gsw_t128x128k16g24s32gap", {128, 128, 16, 2, 4, 32, 16, false},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_prof_4070ti_q4gsw_t128x256k16g42s32gap", {128, 256, 16, 4, 2, 32, 16, false},
+     kBufTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_prof_4070ti_q4gsw_t128x128k16g42s32gap", {128, 128, 16, 4, 2, 32, 16, false},
+     kBufTex2d | kBufBuf, nullptr, Status::kUnverified},
+    // <<< 4070ti prof-q4gsw-rows
 };
 
 // dq8ca (8da4w) sweep candidates, selected with ET_VK_SARC_DQ8CA_VARIANT.
@@ -512,6 +528,69 @@ const Row kDq8caCandidates[] = {
      "sarc_sdpa_qk_coopmat_pk_t256x64k32g42s32nf",
      {256, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
      Status::kUnverified},
+    // >>> 4070ti prof-dq8ca-rows
+    // RTX 4070 Ti SUPER phase timing, MEASUREMENT ONLY (glsl/sarc_dev/sarc_dev_prof_4070ti_dq8ca_zpgtr.yaml).
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_prof_4070ti_dq8ca_zpgtr_t128x128k64g44s32mk32rap", {128, 128, 64, 4, 4, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    // <<< 4070ti prof-dq8ca-rows
+    // >>> 4070ti sdpa-rows
+    // RTX 4070 Ti SUPER prefill refine: glsl/sarc_dev/sarc_sdpa_{qk,av}_coopmat_4070ti*.yaml.
+    // Selected only through ET_VK_SARC_DEV_PROFILE=4070ti-*.
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_t128x64k32g42s32nf",
+     {128, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_t128x64k32g42s32",
+     {128, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_t128x64k32g24s32nf",
+     {128, 64, 32, 2, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_t128x64k32g22s32nf",
+     {128, 64, 32, 2, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k32g42s32nf",
+     {128, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k64g42s32nf",
+     {128, 64, 64, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k32g24s32nf",
+     {128, 64, 32, 2, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_pk_t64x64k32g22s32nf",
+     {64, 64, 32, 2, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_t64x64k32g42s32",
+     {64, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_t64x64k32g24s32",
+     {64, 64, 32, 2, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_ml_t64x128k32g42s32",
+     {64, 128, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_ml_t128x128k32g42s32",
+     {128, 128, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_ml_t128x64k32g42s32",
+     {128, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    // <<< 4070ti sdpa-rows
 };
 
 std::string& requested_variant() {
@@ -611,6 +690,28 @@ const Preference kQkPk_t128x128k32g42s32nf[] = {{Op::kSdpaQk, "pk_t128x128k32g42
 const Preference kQkPk_t64x64k32g22s32nf[] = {{Op::kSdpaQk, "pk_t64x64k32g22s32nf", nullptr}};
 const Preference kQkPk_t128x64k32g24s32nf[] = {{Op::kSdpaQk, "pk_t128x64k32g24s32nf", nullptr}};
 const Preference kQkPk_t256x64k32g42s32nf[] = {{Op::kSdpaQk, "pk_t256x64k32g42s32nf", nullptr}};
+// >>> 4070ti sdpa-preferences
+// RTX 4070 Ti SUPER: single-kernel SDPA screening profiles and 4070ti-refine1.
+const Preference k4070ti_qk_t128x64k32g42s32nf[] = {{Op::kSdpaQk, "4070ti_t128x64k32g42s32nf", nullptr}};
+const Preference k4070ti_qk_t128x64k32g42s32[] = {{Op::kSdpaQk, "4070ti_t128x64k32g42s32", nullptr}};
+const Preference k4070ti_qk_t128x64k32g24s32nf[] = {{Op::kSdpaQk, "4070ti_t128x64k32g24s32nf", nullptr}};
+const Preference k4070ti_qk_t128x64k32g22s32nf[] = {{Op::kSdpaQk, "4070ti_t128x64k32g22s32nf", nullptr}};
+const Preference k4070ti_qk_pk_t128x64k32g42s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t128x64k32g42s32nf", nullptr}};
+const Preference k4070ti_qk_pk_t128x64k64g42s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t128x64k64g42s32nf", nullptr}};
+const Preference k4070ti_qk_pk_t128x64k32g24s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t128x64k32g24s32nf", nullptr}};
+const Preference k4070ti_qk_pk_t64x64k32g22s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t64x64k32g22s32nf", nullptr}};
+const Preference k4070ti_av_t64x64k32g42s32[] = {{Op::kSdpaAv, "4070ti_t64x64k32g42s32", nullptr}};
+const Preference k4070ti_av_t64x64k32g24s32[] = {{Op::kSdpaAv, "4070ti_t64x64k32g24s32", nullptr}};
+const Preference k4070ti_av_ml_t64x128k32g42s32[] = {{Op::kSdpaAv, "4070ti_ml_t64x128k32g42s32", nullptr}};
+const Preference k4070ti_av_ml_t128x128k32g42s32[] = {{Op::kSdpaAv, "4070ti_ml_t128x128k32g42s32", nullptr}};
+const Preference k4070ti_av_ml_t128x64k32g42s32[] = {{Op::kSdpaAv, "4070ti_ml_t128x64k32g42s32", nullptr}};
+// Candidate 1: the direct port of the 780M SDPA kernels to subgroup 32 (QK^T without
+// mask fill, single-pass attn*V).
+const Preference k4070tiRefine1[] = {
+    {Op::kSdpaQk, "4070ti_t128x64k32g42s32nf", nullptr},
+    {Op::kSdpaAv, "4070ti_t64x64k32g42s32", nullptr},
+};
+// <<< 4070ti sdpa-preferences
 struct Profile {
   const char* name;
   const Preference* prefs;
@@ -644,6 +745,22 @@ const Profile kProfiles[] = {
     {"qkpk-t256x64k32g42s32nf", kQkPk_t256x64k32g42s32nf, 1},
     {"780m-refine1-dq", k780mRefine1Dq, sizeof(k780mRefine1Dq) / sizeof(Preference)},
     {"780m-refine1-q4", k780mRefine1Q4, sizeof(k780mRefine1Q4) / sizeof(Preference)},
+    // >>> 4070ti sdpa-profiles
+    {"4070ti-qk-t128x64k32g42s32nf", k4070ti_qk_t128x64k32g42s32nf, 1},
+    {"4070ti-qk-t128x64k32g42s32", k4070ti_qk_t128x64k32g42s32, 1},
+    {"4070ti-qk-t128x64k32g24s32nf", k4070ti_qk_t128x64k32g24s32nf, 1},
+    {"4070ti-qk-t128x64k32g22s32nf", k4070ti_qk_t128x64k32g22s32nf, 1},
+    {"4070ti-qk-pk_t128x64k32g42s32nf", k4070ti_qk_pk_t128x64k32g42s32nf, 1},
+    {"4070ti-qk-pk_t128x64k64g42s32nf", k4070ti_qk_pk_t128x64k64g42s32nf, 1},
+    {"4070ti-qk-pk_t128x64k32g24s32nf", k4070ti_qk_pk_t128x64k32g24s32nf, 1},
+    {"4070ti-qk-pk_t64x64k32g22s32nf", k4070ti_qk_pk_t64x64k32g22s32nf, 1},
+    {"4070ti-av-t64x64k32g42s32", k4070ti_av_t64x64k32g42s32, 1},
+    {"4070ti-av-t64x64k32g24s32", k4070ti_av_t64x64k32g24s32, 1},
+    {"4070ti-av-ml_t64x128k32g42s32", k4070ti_av_ml_t64x128k32g42s32, 1},
+    {"4070ti-av-ml_t128x128k32g42s32", k4070ti_av_ml_t128x128k32g42s32, 1},
+    {"4070ti-av-ml_t128x64k32g42s32", k4070ti_av_ml_t128x64k32g42s32, 1},
+    {"4070ti-refine1", k4070tiRefine1, sizeof(k4070tiRefine1) / sizeof(Preference)},
+    // <<< 4070ti sdpa-profiles
 };
 const Profile* requested_profile() {
   static const Profile* p = []() -> const Profile* {

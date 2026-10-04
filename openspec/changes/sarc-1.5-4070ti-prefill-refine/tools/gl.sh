@@ -1,8 +1,9 @@
 #!/bin/bash
-# gl.sh <command...>: run one GPU job under the 4070 Ti gpu-lab lock (one GPU job at a time), refusing to start
-# while a GPU process we did not start is running or when the card is gone.
+# gl.sh <command...>: run one GPU job under the 4070 Ti gpu-lab lock (one GPU job at a time). Refuses to start
+# when a GPU process this campaign did not start is present or the card is gone; checks the card again after the
+# job (exit 70 on loss, see common.sh) and otherwise returns the job's exit status.
 source "$(dirname "$0")/common.sh"
-exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK"; flock -w 1800 9 || { echo "gpu-lab lock busy"; exit 75; }
-gpu_alive || gpu_gone gl.sh
-o=$(others); [[ -n $o ]] && { echo "other GPU process: $o"; exit 76; }
-"$@" 9>&-
+take_lock; gone_check "gl.sh before $(basename "$1")"; no_others "gl.sh $(basename "$1")"
+"$@" 9>&-; rc=$?
+gone_check "gl.sh after $(basename "$1") rc=$rc"
+exit $rc
