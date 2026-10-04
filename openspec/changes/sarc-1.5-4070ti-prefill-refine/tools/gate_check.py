@@ -15,8 +15,12 @@ rate equal to the one in verify.out, 0 generated tokens. Default vs tiled on pro
 (1792): recomputed from the two logs with nexttoken.py, so two failed or empty outputs are INVALID, never SAME.
 Decode: generated tokens and a positive rate in the log, text after the prompt, the count verify.out shows.
 Microbench: every case of correctness.log PASSED, the 12 production-diff logs with every shape PASSED and
-ALL PASSED and rc 0, linear-<scheme>.json with dispatched kernels. `correctness rc` and `linear <scheme> rc`
-are not required to be 0 (on this device the shipped state has had rc=1 for a rank-3 case that does not
+ALL PASSED and rc 0. linear-<scheme>.json: every case parsed; the 24 expected identities (3 models x 4
+projections x buffer/texture3d) each exactly once; none crashed, each with a kernel, ok=true, positive times
+and a known dispatch state; and per case the shape and the (variant, dispatch) pair must equal the parent's, so
+a parent anomaly such as unexpected_coopmat is tolerated only as the same anomaly and a new fallback or crash
+is a difference. The same holds per case of correctness.log (coopmat kernel or not). `correctness rc` and
+`linear <scheme> rc` are not required to be 0 (on this device the shipped state has had rc=1 for a rank-3 case that does not
 dispatch coopmat): they must fit their logs and equal the parent control's, as must the case counts, the set
 of cases without coopmat and the decode token counts.
 sdpa: per tier 12 passes, each with the tier's case count (extended 8, full 4), every case PASSED with
@@ -56,6 +60,8 @@ def verify_items(path):
         elif m := re.match(r"VERIFY_DONE rc=(\d+)", l): it["verify_done"] = m[1]
     return it
 
+LINEAR_OPS = ("wq_wo", "wk_wv", "w1_w3", "w2")
+LINEAR_DISPATCH = ("confirmed", "unexpected_coopmat", "fallback_tiled", "not_applicable")
 PTE = {"llama3_2-1b": "1b", "llama3_2-3b": "3b", "llama3_1-8b": "8b"}
 def runner_records(stage, who):
     """verify-runs.jsonl (llama_main_rc.sh) -> {verify log name: [records]}: the exit status of every runner call."""
@@ -129,22 +135,28 @@ def verify_stage(stage, who):
             if not (text.startswith(prompt) and text[len(prompt):].strip()): fail(f"{who}: {name}: no generated text after the prompt")
             st[f"decode 1b {q} generated tokens"] = gen
     # microbench evidence: the logs behind the summary lines
-    c = os.path.join(V, "correctness.log"); cases = failed = 0; fallback = []; final = None
+    c = os.path.join(V, "correctness.log"); cases = failed = 0; fallback = []; final = None; kclass = {}
     for l in (open(c, errors="replace") if os.path.exists(c) else []):
         w = l.split()
         if l.startswith("[rank3"):
-            cases += 1; mm = re.match(r"\[rank3[^\]]*\] (\S+) -> \S+ \((.*)\), correctness=(\S+)", l)
-            if not mm or mm[3] != "PASSED": failed += 1
-            elif "NOT coopmat" in mm[2]: fallback.append(mm[1])
+            cases += 1; mm = re.match(r"\[rank3[^\]]*\] (\S+) -> (\S+) \((.*)\), correctness=(\S+)", l)
+            if not mm or mm[4] != "PASSED": failed += 1
+            else:
+                kclass["rank3 " + mm[1]] = "coopmat" if "coopmat" in mm[2] and "NOT coopmat" not in mm[3] else "other"
+                if "NOT coopmat" in mm[3]: fallback.append(mm[1])
         elif l.startswith("[correctness]"): final = l.strip()
-        elif w and w[-1] in ("PASSED", "FAILED") and "GFLOP/s" in l:
+        elif w and w[-1] in ("PASSED", "FAILED", "SKIPPED", "CRASHED") and "GFLOP/s" in l:
             cases += 1; failed += w[-1] != "PASSED"
+            name = next((w[i - 1] for i in range(1, len(w)) if w[i].startswith("[")), None)
+            if name is None or name in kclass: fail(f"{who}: correctness.log: case without a unique name: {l.strip()[:120]}")
+            else: kclass[name] = "coopmat" if "coopmat" in w[0] else "other"
     if cases == 0 or final is None: fail(f"{who}: correctness.log missing, empty or without its summary line")
     if failed: fail(f"{who}: correctness.log: {failed} case(s) not PASSED")
     rc = it.get("correctness rc")
     if rc is None: fail(f"{who}: no `correctness rc` line")
     elif (rc == "0") != (final is not None and "PASSED" in final and not fallback): fail(f"{who}: correctness rc={rc} does not fit its log ({final}; fallback cases {fallback})")
     st["correctness rc"] = rc; st["correctness cases"] = cases; st["correctness cases without coopmat"] = sorted(fallback)
+    for name, k in kclass.items(): st[f"correctness case {name} kernel class"] = k   # a new fallback shows as a difference
     for md in ("llama-3.2-1b", "llama-3.2-3b", "llama-3.1-8b"):
         for q in ("4w", "8da4w"):
             for sto in ("buffer", "texture3d"):
@@ -157,10 +169,32 @@ def verify_stage(stage, who):
     for q in ("4w", "8da4w"):
         k = f"linear {q} rc"; p = os.path.join(V, f"linear-{q}.json")
         if k not in it: fail(f"{who}: no `linear {q}` line")
-        try: n = sum(1 for x in json.load(open(p))["cases"] if x.get("kernel"))
-        except (OSError, ValueError, KeyError, TypeError): n = 0
-        if n == 0: fail(f"{who}: linear-{q}.json missing or without dispatched kernels")
-        st[k] = it.get(k); st[f"linear {q} cases"] = n
+        st[k] = it.get(k)
+        try: lc = json.load(open(p))["cases"]; assert isinstance(lc, list)
+        except (OSError, ValueError, KeyError, TypeError, AssertionError): fail(f"{who}: linear-{q}.json missing or unreadable"); continue
+        # Every case, by identity. Required coverage: 3 models x 4 projections x buffer/texture3d, each once.
+        want = {(md, op, sto) for md in ("llama-3.2-1b", "llama-3.2-3b", "llama-3.1-8b") for op in LINEAR_OPS for sto in ("buffer", "texture3d")}
+        got = set()
+        for x in lc:
+            if not isinstance(x, dict): fail(f"{who}: linear-{q}.json: a case is not an object"); continue
+            ident = (x.get("model"), x.get("op"), str(x.get("storage", "")).lower()); w = f"{who}: linear {q} {' '.join(map(str, ident))}"
+            if (x.get("suite", "linear"), x.get("scheme"), x.get("regime")) != ("linear", q, "prefill") or ident not in want: fail(f"{w}: not a case verify.sh asks for"); continue
+            if ident in got: fail(f"{w}: listed twice"); continue
+            got.add(ident); kern = str(x.get("kernel") or ""); why = []
+            if not kern or kern.upper() == "CRASHED" or x.get("variant") in (None, "", "crashed") or x.get("dispatch") in (None, "", "crashed"): why.append("crashed or without a kernel")
+            if x.get("ok") is not True: why.append(f"ok={x.get('ok')!r}")
+            for f in ("kernel_median_us", "kernel_mean_us", "op_mean_us"):
+                v = num(x.get(f))
+                if v is None or v <= 0: why.append(f"{f}={x.get(f)!r}")
+            if not all(isinstance(x.get(f), int) and x.get(f) > 0 for f in ("M", "K", "N")): why.append("M/K/N")
+            if str(x.get("correctness")) not in ("SKIPPED", "PASSED"): why.append(f"correctness={x.get('correctness')!r}")
+            if x.get("dispatch") not in LINEAR_DISPATCH: why.append(f"dispatch={x.get('dispatch')!r}")
+            if why: fail(f"{w}: kernel {kern!r}: " + "; ".join(why))
+            # What must not change against the parent: the shape and how the case dispatched. A parent anomaly
+            # (e.g. unexpected_coopmat on texture3d) is the same anomaly in the candidate; anything else is new.
+            key = f"linear {q} {ident[0]} {ident[1]} {ident[2]}"
+            st[key + " shape"] = (x.get("M"), x.get("K"), x.get("N")); st[key + " dispatch"] = (x.get("variant"), x.get("dispatch"))
+        for ident in sorted(want - got): fail(f"{who}: linear {q} {' '.join(ident)}: case missing")
     return st
 
 def do_verify(cand, parent):
@@ -168,7 +202,9 @@ def do_verify(cand, parent):
     p = c if os.path.realpath(cand) == os.path.realpath(parent) else verify_stage(parent, "parent control")
     for k in sorted(set(c) | set(p)):
         if c.get(k) != p.get(k): fail(f"differs from the parent control: {k}: candidate {c.get(k)!r}, parent {p.get(k)!r}")
-    print("verify status (candidate / parent): " + "; ".join(f"{k} {c.get(k)}/{p.get(k)}" for k in sorted(c) if "rc" in k))
+    print("verify status (candidate / parent): " + "; ".join(f"{k} {c.get(k)}/{p.get(k)}" for k in sorted(c) if k.endswith(" rc")))
+    for arm, s in (("candidate", c), ("parent", p)):
+        print(f"{arm} linear dispatch states: " + ", ".join(f"{k[1]}={n}" for k, n in sorted(collections.Counter(v for k, v in s.items() if k.endswith(" dispatch")).items())))
 
 def do_sdpa(d, envfile=None):
     names = set()

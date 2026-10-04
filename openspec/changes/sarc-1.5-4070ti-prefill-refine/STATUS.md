@@ -18,6 +18,19 @@ The restriction was not bypassed and no raw output was put into the repository. 
 access to `~/hmz-sarc-4070ti/.artifacts/` and to the lock file, and a writable results directory for
 igpu-roofline (for example under `.artifacts/`); then restart the campaign.
 
+## Tool defect from the fifth review (of `819e03685`), fixed
+
+**A crashed or newly fallen-back linear case can no longer hide behind the parent's `rc=1`.**
+`gate_check.py verify` parses every case of `linear-<scheme>.json`: the 24 expected identities (3 models x 4
+projections x buffer/texture3d) each exactly once; no case crashed or without a kernel; `ok` true, positive
+times, a known dispatch state. Per case, the shape and the (variant, dispatch) pair must equal the parent
+control's, so the parent's existing anomaly (`unexpected_coopmat` on texture3d, the reason for
+`linear <scheme> rc=1` in this device's recorded logs) passes only as the same anomaly. The cases of
+`correctness.log` are compared the same way (coopmat kernel or not, per case name). `test_gate_check.py`
+(28 tests) holds the review's reproduction (the genuine 24-case report in both arms, candidate case 0
+crashed), a new tiled fallback in the JSON and one in `correctness.log` behind an unchanged rc=1, and
+missing, duplicated and invalid cases. The same fallback present in the parent too is accepted.
+
 ## Tool defect from the fourth review (of `06f0e1243`), fixed
 
 **`gate_check.py verify` reads the evidence behind `verify.out`, for the candidate and the parent control.**
@@ -30,8 +43,9 @@ igpu-roofline (for example under `.artifacts/`); then restart the campaign.
   recorded status of 0, stats and the expected prompt tokens. Prefill: positive rate equal to the one in
   `verify.out`, 0 generated tokens. Default vs tiled: recomputed from the two logs with `nexttoken.py`
   (failed or empty outputs are INVALID). Decode: generated tokens, positive rate, text after the prompt.
-  Microbench: every case of `correctness.log`, every shape of the 12 production-diff logs, the linear JSONs.
-- `test_gate_check.py` (24 tests) holds the review's case (summary lines intact, every check/unaligned log
+  Microbench: every case of `correctness.log`, every shape of the 12 production-diff logs, the linear JSONs
+  (see the fifth review).
+- `test_gate_check.py` holds the review's case (summary lines intact, every check/unaligned log
   empty), failed default-vs-tiled runs, and a teardown failure after the stats were printed (complete log,
   recorded status 139). All rejected.
 - Run over the recorded verify logs of this device in `sarc-1.5-4w-port/results/4070ti/sarc`, the parsers for

@@ -158,6 +158,16 @@ class Session(unittest.TestCase):
         rc, out = check(self.d, "--calibration"); self.assertNotEqual(rc, 0, out)   # thresholds were applied: not a calibration session
 
 MODELS = {"1b": ("llama-3.2-1b", "llama3_2-1b"), "3b": ("llama-3.2-3b", "llama3_2-3b"), "8b": ("llama-3.1-8b", "llama3_1-8b")}
+def linear_cases(q):
+    """The 24 cases of test_llama_microbench --linear --regime=prefill as this device reports them: buffer
+    confirmed, texture3d unexpected_coopmat (which is what makes `linear <scheme> rc` 1 on the parent too)."""
+    return [{"suite": "linear", "model": md, "scheme": q, "regime": "prefill", "op": op, "storage": sto, "variant": "coopmat",
+             "kernel": f"sarc_linear_k_{sto}", "M": 2048, "K": 2048, "N": 2048, "op_mean_us": 600.0, "kernel_mean_us": 600.0,
+             "kernel_median_us": 600.0, "dispatch": "confirmed" if sto == "buffer" else "unexpected_coopmat", "correctness": "SKIPPED", "detail": "", "ok": True}
+            for md, _ in MODELS.values() for op in ("wq_wo", "wk_wv", "w1_w3", "w2") for sto in ("texture3d", "buffer")]
+def edit_linear(stage, q, fn):
+    p = os.path.join(stage, "verify", f"linear-{q}.json"); j = json.load(open(p)); j["cases"] = fn(j["cases"]) or j["cases"]; json.dump(j, open(p, "w"))
+
 def make_verify(stage, correctness_rc="0", fallback=False, token=b" tok"):
     """A complete verify.sh result (verify.out, verify/, verify-runs.jsonl) as the gates stage and record it."""
     V = os.path.join(stage, "verify"); os.makedirs(V); out = []; recs = []
@@ -166,14 +176,14 @@ def make_verify(stage, correctness_rc="0", fallback=False, token=b" tok"):
             f.write(open(PROMPTS[prompt][2], "rb").read() + text + b"\n" + ("PyTorchObserver " + json.dumps(dict(stats, prompt_tokens=int(want))) + "\n").encode())
         recs.append({"utc": "t", "rc": 0, "model": f"{MODELS[m][1]}_vulkan_{q}.pte", "prompt": prompt, "max_new_tokens": ntok,
                      "warmup": warm, "env": "ET_VK_FORCE_TILED_LINEAR=1" if mode == "tiled" else ""})
-    rows = "".join(f"kernel (1,1,1) (1,1,1) case{i} [1x1] 1.0 μs 100.0 GFLOP/s   PASSED\n" for i in range(6))
+    rows = "".join(f"sarc_linear_q4gsw_coopmat_x (1,1,1) (1,1,1) case{i} [1x1] 1.0 μs 100.0 GFLOP/s   PASSED\n" for i in range(6))
     rows += "[rank3 batch=1] r3a -> sarc_k (coopmat dispatched), correctness=PASSED\n"
     rows += "[rank3 batch=1] r3b -> tiled_k (%s), correctness=PASSED\n" % ("NOT coopmat -- fallback" if fallback else "coopmat dispatched")
     rows += "[correctness] FAILED -- numeric failure(s) and/or a rank-3 case did not dispatch coopmat\n" if fallback else "[correctness] PASSED\n"
     open(os.path.join(V, "correctness.log"), "w").write(rows)
     out.append(f"correctness rc={correctness_rc} x")
     for q in ("4w", "8da4w"):
-        json.dump({"cases": [{"kernel": "sarc_k", "kernel_median_us": 1.0}]}, open(os.path.join(V, f"linear-{q}.json"), "w"))
+        json.dump({"cases": linear_cases(q)}, open(os.path.join(V, f"linear-{q}.json"), "w"))
         out.append(f'linear {q} rc=1 kernels: 1 "sarc_k";')
     for m in MODELS:
         for q in ("4w", "8da4w"):
@@ -258,6 +268,40 @@ class Verify(unittest.TestCase):
         f = os.path.join(V, "correctness.log"); t = open(f).read().replace("case3 [1x1] 1.0 μs 100.0 GFLOP/s   PASSED", "case3 [1x1] 1.0 μs 100.0 GFLOP/s   FAILED"); open(f, "w").write(t)
         rc, out = self.check(); self.assertNotEqual(rc, 0)
         self.assertIn("pdiff llama-3.2-3b 8da4w buffer: the log does not show", out); self.assertIn("correctness.log: 1 case(s) not PASSED", out)
+
+    def test_review_case_crashed_linear_case_behind_the_parents_rc1(self):
+        # The genuine 24-case report of this device in both arms; only candidate case 0 crashed. `linear 4w rc` is
+        # 1 on both sides and the case count is unchanged.
+        real = os.path.normpath(os.path.join(HERE, "../../sarc-1.5-4w-port/results/4070ti/sarc/linear-4w.json"))
+        for d in (self.c, self.p): edit_linear(d, "4w", lambda cs: json.load(open(real))["cases"])
+        rc, out = self.check(); self.assertEqual(rc, 0, out)   # the genuine report, identical in both arms, is accepted
+        def crash(cs): cs[0].update(kernel="CRASHED", dispatch="crashed", variant="crashed", kernel_median_us=-1, correctness="SKIPPED")
+        edit_linear(self.c, "4w", crash)
+        rc, out = self.check(); self.assertNotEqual(rc, 0, out); self.assertIn("verify: REJECT", out)
+        self.assertIn("kernel 'CRASHED': crashed or without a kernel", out); self.assertIn("differs from the parent control: linear 4w llama-3.1-8b wq_wo texture3d dispatch", out)
+
+    def test_new_linear_fallback_behind_the_same_rc1(self):
+        # A case that dispatched coopmat on the parent runs the tiled kernel on the candidate; every rc is unchanged.
+        def fb(cs): cs[5].update(kernel="linear_q4gsw_tiled_buffer_texture2d_half", variant="tiled", dispatch="fallback_tiled")
+        edit_linear(self.c, "8da4w", fb); rc, out = self.check(); self.assertNotEqual(rc, 0, out)
+        self.assertIn("differs from the parent control: linear 8da4w", out); self.assertIn("('tiled', 'fallback_tiled')", out)
+        edit_linear(self.p, "8da4w", fb); rc, out = self.check(); self.assertEqual(rc, 0, out)   # the parent's own anomaly is not a new failure
+
+    def test_linear_coverage_identity_and_validity(self):
+        edit_linear(self.c, "4w", lambda cs: cs[:-1]); rc, out = self.check(); self.assertNotEqual(rc, 0); self.assertIn("case missing", out)
+        self.c = os.path.join(self.t.name, "c5"); make_verify(self.c); edit_linear(self.c, "4w", lambda cs: cs[:-1] + [dict(cs[0])])
+        rc, out = self.check(); self.assertNotEqual(rc, 0); self.assertIn("listed twice", out); self.assertIn("case missing", out)
+        self.c = os.path.join(self.t.name, "c6"); make_verify(self.c)
+        def bad(cs): cs[2].update(ok=False); cs[3].update(kernel_median_us=float("nan")); cs[4].update(K=4096)
+        edit_linear(self.c, "4w", bad); rc, out = self.check(); self.assertNotEqual(rc, 0)
+        for s in ("ok=False", "kernel_median_us=nan", "shape"): self.assertIn(s, out)
+
+    def test_new_correctness_fallback_behind_the_same_rc1(self):
+        # Parent: rc=1 for one rank-3 case without coopmat. Candidate: same rc, a numeric case now on a tiled kernel too.
+        for d in ("c7", "p7"): make_verify(os.path.join(self.t.name, d), correctness_rc="1", fallback=True)
+        self.c, self.p = os.path.join(self.t.name, "c7"), os.path.join(self.t.name, "p7")
+        f = os.path.join(self.c, "verify", "correctness.log"); t = open(f).read().replace("sarc_linear_q4gsw_coopmat_x (1,1,1) (1,1,1) case2", "linear_q4gsw_tiled_x (1,1,1) (1,1,1) case2"); open(f, "w").write(t)
+        rc, out = self.check(); self.assertNotEqual(rc, 0, out); self.assertIn("differs from the parent control: correctness case case2 kernel class: candidate 'other', parent 'coopmat'", out)
 
     def test_correctness_rc1_for_a_fallback_case_must_match_the_parent(self):
         # rc=1 because a rank-3 case does not dispatch coopmat (seen on this device): fine when the parent has the same.
