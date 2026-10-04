@@ -1,24 +1,72 @@
 # STATUS: sarc-1.5-4070ti-prefill-refine
 
-**2026-10-04 20:15 UTC, gpu-dev-4004. RUNNING. The write fence is lifted; builds, the baseline, the A/A session,
-the parent control and the per-op traces are done. No candidate has been gated yet; the stop rule is not met;
-the branch is not pushed.**
+**2026-10-04 21:25 UTC, gpu-dev-4004. RUNNING. Baseline, A/A, parent control, per-op traces, fresh roofs, phase
+timing and two SDPA screens are done. Candidate 1 is in its gate now. The stop rule is not met; the branch is
+not pushed.**
 
 ## Now
 
-- Running: igpu-roofline `fast` on the current driver (615.71.09), results in
-  `.artifacts/4070ti-prefill-refine/roofline/2026-10-04-fast/` (detached, under the gpu-lab lock).
-- Next: kernel-level SDPA screen of the 13 dev variants (`tools/sdpa_screen.sh`), then candidate 1
-  (`4070ti-refine1`, QK^T without mask fill + attn*V, both subgroup 32) through `tools/gate_sdpa.sh`; phase
-  timing of the 4w `ga` tiles and of zpgtr with the PROF twins before any linear sweep.
+- Running: `tools/gate_sdpa.sh s2-c1`, candidate 1 = `ET_VK_SARC_DEV_PROFILE=4070ti-refine1` (build `topic4`)
+  against the pristine parent: 24 SDPA correctness passes, `verify.sh`, the six-cell session, warm traces.
+  About one hour. Kernel-level expectation from screen 2: attention per layer 3.19 -> 1.27 ms (1B),
+  3.56 -> 1.10 ms (3B), 4.74 -> 1.43 ms (8B); end to end roughly +40 % on 1B and 3B, +30 % on 8B. Not measured
+  end to end yet.
+- Next: 8da4w linear, then 4w linear. Phase timing is done (below); tile sweeps of the `ga` and zpgtr kernels
+  for this device are being generated while the gate runs.
 - Blocking: nothing.
+
+## SDPA screens (kernel level, `test_llama_microbench --sdpa`, us per layer at S = 2048, median of 3)
+
+`results/4070ti/screens/sdpa-screen{1,2}.csv`. The softmax is the release kernel in every SARC row.
+
+| kernels | 1B QK^T / softmax / attn*V | 3B | 8B |
+|---|---|---|---|
+| stock (parent) | 1012 / 850 / 1347 | 1508 / 636 / 1434 | 2000 / 851 / 1912 |
+| 780M kernels at subgroup 32 (hook rows) | 484 / 660 / 426 | 503 / 494 / 299 | 671 / 658 / 373 |
+| `4070ti-refine1` (best tile per head_dim) | 266 / 660 / 348 | 311 / 494 / 294 | 410 / 658 / 359 |
+
+- `4070ti-refine1`: QK^T direct feed `df_t64x64k32g11s32nf` for head_dim 64 and packed staging
+  `pk_t64x128k32g42s32nf` for head_dim 128; attn*V `ml_t32x64k32g42s32` / `ml_t64x128k32g42s32`.
+- New code of this campaign: the direct-feed kernels (`tools/gen_4070ti_df.py`): no shared-memory staging,
+  operands loaded straight from the tensors, mask decided per 16 x 16 MMA tile. Correct on the first run
+  (extended tier, 0 mismatches). They win for QK^T at head_dim 64 only; direct-feed attn*V is slower than the
+  staged one (500 to 700 us against 350 to 430).
+- fp16 accumulation (`dfg`, `dfh` variants) was screened and is not pursued: at most 3 % on QK^T, slower on
+  attn*V, and it would change precision.
+- After candidate 1 the softmax (release zone, name fixed in `impl/sarc/SdpaCoopmat.cpp`) is half of the
+  attention time. It reads 134 MB and writes 268 MB per layer on 1B in 0.66 ms, i.e. it runs at the fresh
+  DRAM write roof (643 GB/s); half of what it writes is the zero tail above the diagonal.
+
+## Fresh roofs (igpu-roofline `fast`, driver 615.71.09, run `roofline/2026-10-04-fast`, clocks not pinned)
+
+matrix fp16 182.9 TFLOP/s, fp16 -> fp32 92.3 (half rate, confirmed), int8 369.1 TOP/s; LDS-fed 177.8 / 92.2 /
+367.4; DRAM read 713, write 643, copy 646 GB/s; `shared_fp16_read` 1344 GB/s again (as in the old evidence;
+still not understood, not relied on). All confirmed with 3 repeats within 0.6 %.
+`gl.sh` ended that run with exit 76 after it had finished (rc 0): the sightings were `roofline`, `inspect`
+and two processes that had already exited, i.e. the tool's own runners, which it starts with a cleaned
+environment. `common.sh` now accepts descendants of tagged processes (tested with dummies). The two unnamed
+pids cannot be attributed after the fact; their numbers lie inside the range the roofline run allocated.
+
+## Phase timing of the shipped linear kernels (shader clock, share of one wave; `results/4070ti/phases/`)
+
+| kernel | barrier | fetch | MMA | LDS store | prologue + epilog | drain + write |
+|---|---:|---:|---:|---:|---:|---:|
+| 4w `t256x128k16g42s32ga` (N > 512) | 22 % | 12.5 % | 50 % | 13 % | 0.3 % | 2 % |
+| 4w `t128x128k16g24s32ga` (N <= 512) | 32 % | 12 % | 34 % | 19 % | 0.4 % | 1.5 % |
+| 8da4w zpgtr `t128x128k64g44s32mk32ra` | 14 % | 34 to 43 % | 30 to 35 % | 7 % | 6 to 8 % | 1 to 5 % |
+
+Kernel rates at the model shapes (parent control): 4w about 120 TFLOP/s = 66 % of the fp16 matrix roof
+(50 % on 8B w1/w3); 8da4w about 140 TOP/s = 38 % of the int8 roof. On 8da4w a wave spends more time
+fetching than multiplying.
 
 ## Built
 
 | tag | commit | note |
 |---|---|---|
 | `parent` | `6a7cc8cc6` pristine | spirv_golden PASS (53 shipped variants) |
-| `topic1` | `3e2b9dc4d` + `tools/local-hook-nvidia-sdpa.patch` (not committed) | spirv_golden PASS (53 shipped variants) |
+| `topic1` | `3e2b9dc4d` + `tools/local-hook-nvidia-sdpa.patch` (not committed) | A/A arm, screen 1, phase timing |
+| `topic3` | `ee29a3a88` + the same patch | screen 2 (port tiles and direct-feed kernels) |
+| `topic4` | `d3df2bb69` + the same patch | candidate 1 (`4070ti-refine1`) |
 
 Both from `git archive` trees with `sarc/tools/build.sh` in `localhost/et-vk-build:rocky10` through the
 docker shim; provenance in `.artifacts/4070ti-prefill-refine/build/<tag>.src.txt`.
@@ -95,10 +143,10 @@ traffic, not by arithmetic, so the gain should come from not writing and not rea
 
 ## Open
 
-- igpu-roofline: the tool is on this host only as `~/.cache/igpu-roofline/fleet-fast-20260926/`; it is run from
-  there with its existing environment and a new results directory under `.artifacts`. Nothing in it is edited.
+- igpu-roofline was run from `~/.cache/igpu-roofline/fleet-fast-20260926/` with its existing environment and a
+  new results directory under `.artifacts`. Nothing in it was edited.
 - ETDump analysis runs with a venv under `.artifacts` (`executorch` 1.5.1 wheel + CPU torch), `TRACE_PY`.
-- `gate*.sh`, `screen.sh`, `sdpa_screen.sh` and the PROF decode have not run end to end yet.
+- `gate.sh` and `screen.sh` have not run end to end yet; `gate_sdpa.sh` is on its first run.
 - The softmax kernel name is fixed in the release zone (`impl/sarc/SdpaCoopmat.cpp`); no dev variant can
   replace it.
 
