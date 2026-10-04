@@ -21,10 +21,18 @@ cand_env() {
 # NEAR_TIE=<NEAR_TIE.json> (owner decision 2026-10-04): a DIFFER on a next-token item is then judged by
 # gate_check.py against that evidence instead of rejecting by itself; an acceptance that used it is recorded as
 # "ACCEPTED (near-tie, owner decision 2026-10-04)" with the evidence path, never as a plain pass.
-near_tie_arg() { NT=""; if [[ -n ${NEAR_TIE:-} ]]; then need "$NEAR_TIE"; NT="--near-tie $(realpath "$NEAR_TIE")"; fi; }
+# REF_ERROR=<REFERENCE_ERROR.json> (second owner decision 2026-10-04, for candidates that change kernel
+# arithmetic): the same, judged by ref_error_rule.py's criteria and recorded as
+# "ACCEPTED (reference-error rule, owner decision 2026-10-04)".
+near_tie_arg() { NT=""; if [[ -n ${NEAR_TIE:-} ]]; then need "$NEAR_TIE"; NT="--near-tie $(realpath "$NEAR_TIE")"; fi
+  if [[ -n ${REF_ERROR:-} ]]; then need "$REF_ERROR"; NT="$NT --reference-error $(realpath "$REF_ERROR")"; fi; }
 accepted() {
+  local items; items=$(grep -hs '^NEAR-TIE:' $D/verify-check.txt $D/session-check.txt | sed 's/^NEAR-TIE: //' | tr '\n' ';')
+  if grep -qs 'ACCEPT (reference-error rule, owner decision 2026-10-04)' $D/verify-check.txt $D/session-check.txt; then
+    finish GATE_ACCEPTED "ACCEPTED (reference-error rule, owner decision 2026-10-04) evidence $(realpath "$REF_ERROR"); differing items: $items the gain is in raw/summary.csv" 0
+  fi
   if grep -qs 'ACCEPT (near-tie, owner decision 2026-10-04)' $D/verify-check.txt $D/session-check.txt; then
-    finish GATE_ACCEPTED "ACCEPTED (near-tie, owner decision 2026-10-04) evidence $(realpath "$NEAR_TIE"); differing items: $(grep -hs '^NEAR-TIE:' $D/verify-check.txt $D/session-check.txt | sed 's/^NEAR-TIE: //' | tr '\n' ';') the gain is in raw/summary.csv" 0
+    finish GATE_ACCEPTED "ACCEPTED (near-tie, owner decision 2026-10-04) evidence $(realpath "$NEAR_TIE"); differing items: $items the gain is in raw/summary.csv" 0
   fi
   finish GATE_ACCEPTED "all steps passed; the gain is in raw/summary.csv" 0
 }

@@ -54,7 +54,26 @@ def fail(msg): bad.append(msg); print("FAIL:", msg)
 # (sha256 of cand/env) and its comparison file must be unchanged. Such an item is listed as NEAR-TIE and the
 # verdict reads "ACCEPT (near-tie, owner decision 2026-10-04)", never a plain ACCEPT. Only two valid runs with
 # different tokens qualify: INVALID rows, failed runs and every other finding reject as before.
-near = []; NEAR = None
+# Second owner decision of the same day: a candidate that changes kernel arithmetic is judged against the fp32
+# reference instead (`--reference-error <REFERENCE_ERROR.json>`, written by ref_error_rule.py only when its
+# criteria hold). Same mechanics, its own label: "ACCEPT (reference-error rule, owner decision 2026-10-04)".
+near = []; NEAR = None; LABEL = "near-tie"
+def load_reference_error(path, cand_env):
+    global NEAR, LABEL
+    try:
+        j = json.load(open(path)); base = os.path.dirname(os.path.abspath(path)); why = []
+        if "reference-error rule" not in j.get("decision", "") or "2026-10-04" not in j.get("decision", ""): why.append("decision field")
+        if j.get("verdict") != "MET": why.append(f'verdict {j.get("verdict")!r}')
+        if j.get("cand_env_sha256") != hashlib.sha256(open(cand_env, "rb").read()).hexdigest(): why.append("evidence is for another candidate environment")
+        files = j.get("files", {})
+        if len(files) < 3: why.append("evidence files not listed")
+        for f, h in files.items():
+            q = os.path.join(base, f)
+            if not os.path.exists(q) or hashlib.sha256(open(q, "rb").read()).hexdigest() != h: why.append(f"{f} missing or changed")
+        if j.get("differing_items") and len([f for f in j.get("position_logits", []) if os.path.exists(os.path.join(base, f))]) < 4: why.append("position logits of the four arms missing")
+        if why: fail("reference-error evidence invalid: " + "; ".join(why))
+        else: NEAR = os.path.abspath(path); LABEL = "reference-error rule"
+    except Exception as e: fail(f"reference-error evidence unreadable: {e!r}")
 def load_near_tie(path, cand_env):
     global NEAR
     try:
@@ -231,6 +250,7 @@ def verify_stage(stage, who):
 
 def do_verify(cand, parent, *opts):
     if "--near-tie" in opts: load_near_tie(opts[opts.index("--near-tie") + 1], os.path.join(cand, "cand/env"))
+    if "--reference-error" in opts: load_reference_error(opts[opts.index("--reference-error") + 1], os.path.join(cand, "cand/env"))
     c = verify_stage(cand, "candidate")
     p = c if os.path.realpath(cand) == os.path.realpath(parent) else verify_stage(parent, "parent control")
     for k in sorted(set(c) | set(p)):
@@ -269,6 +289,7 @@ def do_session(d, *opts):
     if "--clkmin" in opts: clk = json.load(open(opts[opts.index("--clkmin") + 1]))["cells"]
     if (clk is None) == (not calibration): return fail("session needs exactly one of --clkmin <json> and --calibration")
     if "--near-tie" in opts: load_near_tie(opts[opts.index("--near-tie") + 1], os.path.join(d, "../cand/env"))
+    if "--reference-error" in opts: load_reference_error(opts[opts.index("--reference-error") + 1], os.path.join(d, "../cand/env"))
     allrows = list(csv.DictReader(open(os.path.join(d, "runs.csv"))))
     rows = [r for r in allrows if r["log"].startswith("logs/prefill")]
     bylog = {r["log"]: r for r in allrows}
@@ -373,5 +394,5 @@ try:
 except Exception as e:
     fail(f"{mode}: cannot evaluate: {e!r}")
 if bad or not near: print(f"{mode}: {'REJECT' if bad else 'ACCEPT'} ({len(bad)} findings)")
-else: print(f"{mode}: ACCEPT (near-tie, owner decision 2026-10-04): {len(near)} differing item(s): {'; '.join(near)}; evidence {NEAR} (0 other findings)")
+else: print(f"{mode}: ACCEPT ({LABEL}, owner decision 2026-10-04): {len(near)} differing item(s): {'; '.join(near)}; evidence {NEAR} (0 other findings)")
 sys.exit(1 if bad else 0)

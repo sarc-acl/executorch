@@ -302,6 +302,38 @@ class Verify(unittest.TestCase):
     def test_near_tie_evidence_does_not_cover_failed_runs_or_other_findings(self):
         self.differ(); rc0, ev = self.evidence()
         self.empty(self.c, kinds=("check",)); rc, out = self.check_near(ev); self.assertNotEqual(rc, 0); self.assertIn("INVALID", out)
+    # ---- second owner decision 2026-10-04: reference-error rule ----
+    def ref_evidence(self, cand_max="0.0010", kl="0.01", top1="1", env=b"ET_VK_X=1\n"):
+        os.makedirs(os.path.join(self.c, "cand"), exist_ok=True); open(os.path.join(self.c, "cand", "env"), "wb").write(b"ET_VK_X=1\n")
+        e = os.path.join(self.t.name, "rev"); os.makedirs(os.path.join(e, "position"), exist_ok=True)
+        cases = ["1b_head_config_s2048", "3b_head_config_s2048", "8b_head_config_s2048"] + [f"c{i}" for i in range(9)]
+        for arm, mx in (("parent", "0.0014"), ("candidate", cand_max)):
+            open(os.path.join(e, f"sdpa-error-{arm}.txt"), "w").write("".join(f"[sdpa-error] {c} max_abs={mx} rms=3e-05 max_abs_ref=1\n[sdpa-correctness] {c} S=2048 input_pos=0 mismatches=0/100 PASSED\n" for c in cases))
+        with open(os.path.join(e, "compare.csv"), "w") as f:
+            f.write("cell,comparison,prompts,top1_diff,kl_mean\n")
+            for m, q in CELLS: f.write(f"{m}-{q},candidate default vs parent default,41,{top1},{kl}\n")
+        for a in ("pt", "pd", "ct", "cd"): open(os.path.join(e, "position", a + ".json"), "w").write("{}")
+        envf = os.path.join(self.t.name, "revenv"); open(envf, "wb").write(env)
+        p = subprocess.run([sys.executable, os.path.join(HERE, "ref_error_rule.py"), e, "c", envf, os.path.join(e, "sdpa-error-parent.txt"), os.path.join(e, "sdpa-error-candidate.txt"),
+                            os.path.join(e, "compare.csv"), "verify.sh unaligned 1b 8da4w: default vs tiled"], capture_output=True, text=True)
+        return p.returncode, os.path.join(e, "REFERENCE_ERROR.json"), p.stdout
+    def check_ref(self, ev):
+        p = subprocess.run([sys.executable, os.path.join(HERE, "gate_check.py"), "verify", self.c, self.p, "--reference-error", ev], capture_output=True, text=True)
+        return p.returncode, p.stdout
+    def test_reference_error_rule_met_is_a_marked_acceptance(self):
+        self.differ(); rc0, ev, out0 = self.ref_evidence(); self.assertEqual(rc0, 0, out0)
+        rc, out = self.check_ref(ev); self.assertEqual(rc, 0, out)
+        self.assertIn("verify: ACCEPT (reference-error rule, owner decision 2026-10-04): 1 differing item(s)", out)
+    def test_reference_error_rule_larger_maximum_on_a_production_case_is_not_met(self):
+        rc0, ev, out0 = self.ref_evidence(cand_max="0.0015"); self.assertNotEqual(rc0, 0); self.assertFalse(os.path.exists(ev)); self.assertIn("maximum error larger than the parent's", out0)
+    def test_reference_error_rule_gross_divergence_is_not_met(self):
+        rc0, ev, out0 = self.ref_evidence(kl="0.6"); self.assertNotEqual(rc0, 0); self.assertFalse(os.path.exists(ev))
+        rc0, ev, out0 = self.ref_evidence(top1="14"); self.assertNotEqual(rc0, 0); self.assertIn("top-1 differs on 14 of 41", out0)
+    def test_reference_error_evidence_of_another_candidate_or_changed_files_rejects(self):
+        self.differ(); rc0, ev, _ = self.ref_evidence(env=b"ET_VK_Y=1\n"); rc, out = self.check_ref(ev); self.assertNotEqual(rc, 0); self.assertIn("another candidate environment", out)
+        rc0, ev, _ = self.ref_evidence(); open(os.path.join(os.path.dirname(ev), "sdpa-error-candidate.txt"), "a").write("x\n")
+        rc, out = self.check_ref(ev); self.assertNotEqual(rc, 0); self.assertIn("missing or changed", out)
+
     def test_near_tie_evidence_does_not_cover_the_parent_control(self):
         f = os.path.join(self.p, "verify", "unaligned-1b-8da4w-tiled.log"); t = open(f, "rb").read().replace(b" tok\n", b" other\n"); open(f, "wb").write(t)
         rc0, ev = self.evidence(); rc, out = self.check_near(ev); self.assertNotEqual(rc, 0); self.assertIn("parent control: unaligned 1b 8da4w", out)

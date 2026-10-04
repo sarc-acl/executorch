@@ -1,10 +1,57 @@
 # STATUS: sarc-1.5-4070ti-prefill-refine
 
-**2026-10-04 23:50 UTC, gpu-dev-4004. RUNNING. Candidate 1 is REJECTED: it fails the owner's near-tie rule of
-2026-10-04 as I applied it (4 of 6 cells outside twice the noise floor). Nothing is accepted; the stop rule is
-not met; the branch is not pushed. One question for the owner below.**
+**2026-10-05 00:00 UTC, gpu-dev-4004. RUNNING. Candidate 1 re-evaluated under the owner's second decision
+(reference-error rule): NOT MET, on one number. Nothing is accepted yet; the stop rule is not met; the branch
+is not pushed.**
+
+## Candidate 1 under the reference-error rule (second owner decision, 2026-10-04): NOT MET
+
+Evaluated from the data that already existed, with `tools/ref_error_rule.py` (thresholds are the owner's, not
+parameters; criterion 1 applied per head configuration). Output: `results/4070ti/probe/refine1/reference-error-rule.txt`.
+
+Criterion 1, error against the fp32 CPU reference, production shapes (S = 2048), same seeded inputs, one
+extended and one full pass per arm, 0 mismatches in all 12 cases of both arms:
+
+| case | rms error, parent / candidate 1 | maximum error, parent / candidate 1 | not larger |
+|---|---|---|---|
+| 1B head configuration | 8.55e-5 / 3.49e-5 | 1.713e-3 / 1.288e-3 | yes / yes |
+| 3B head configuration | 8.69e-5 / 3.54e-5 | 1.408e-3 / **1.570e-3** | yes / **NO** |
+| 8B head configuration | 8.70e-5 / 3.48e-5 | 1.587e-3 / 1.498e-3 | yes / yes |
+
+Criterion 3, gross divergence on the 41-prompt comparison: none (largest mean KL 0.068 nat, 1B 8da4w; top-1
+differs on at most 6 of 41 prompts). Criterion 2: the position logits and the full comparison are recorded.
+
+**Verdict: not met, candidate 1 stays rejected.** Its rms error is 2.5 times lower than the parent's in every
+case and its maximum error is lower in 11 of the 12 cases, but on the 3B head configuration at S = 2048 its
+maximum error is 11 % larger than the parent's, and the criterion says rms and maximum, every head
+configuration. Read over the three production cases together, the candidate's largest error (1.570e-3) is
+below the parent's largest (1.713e-3); I applied the per-case reading because the text names every head
+configuration, and I am not switching to the reading that passes.
+
+Next, because of this: the maximum error of both arms is a few fp16 units and the part of the attention block
+that still computes in fp16 in the candidate is the softmax (row maximum, exp, sum and division are fp16 in
+the release shader). A softmax that reduces in fp32 and rounds once on the store is generated
+(`4070ti_f32`, `4070ti_nzf` variants, `tools/gen_4070ti_softmax.py`); it needs hook 2 (softmax name). It will
+be measured against the same fixed thresholds on the same inputs. If it does not clear them, that is reported
+and nothing further is tried on this point: this is a change that raises precision, not a search for a
+variant that happens to pass.
+
+## Now
+
+- Running (detached): `tools/gate.sh s3-c2`, candidate 2 = `4070ti-refine2` (8da4w zpgtr with half-texel
+  weight staging, dev zone only, build `topic9` without any local patch) against the pristine parent. Its
+  `verify-check` is ACCEPT with 0 findings (all four default-vs-tiled items SAME); the six-cell session is
+  running. No build runs during it.
+- After it: build with the fp32 softmax variants, SDPA error and 41-prompt comparison for
+  `4070ti-refine1` + softmax `4070ti_nzf`, then its gate if the rule is met.
+- The softmax variant without fp32 (`4070ti_nz`) gives logits bit-identical to candidate 1's on all 41 prompts
+  and six cells (`probe/refine1-nz/compare.csv` equals `probe/refine1/compare.csv` number for number).
+- Blocking: nothing.
 
 ## Candidate 1 (`4070ti-refine1`, SDPA prefill kernels): measured +42 %, REJECTED
+
+(This section is the evaluation under the FIRST decision, the near-tie rule, kept as measured. The second
+decision replaced its items 3 and 4 for arithmetic changes; see the section above.)
 
 Gate (`s2-c1b`): REJECTED at `verify-check` on `1b 8da4w unaligned: default vs tiled output DIFFER`. Every
 other item of `verify.sh` passed, and 24 of 24 SDPA correctness passes had 0 mismatches and `pairing=ok`.
@@ -53,12 +100,7 @@ What else was measured, for the owner's judgement (it does not change the verdic
   softmax variant. Any cooperative-matrix SDPA kernel on this device, including the release kernels the 780M
   runs, would be rejected by the same numbers.
 
-**Question for the owner:** the rule measures the candidate's distance from the parent against the distance
-between the parent's two linear arms. For an SDPA change on this device that floor is not attainable in the 4w
-cells by any kernel that does not reproduce the parent's fp16 summation. Should SDPA candidates here be judged
-(a) as the rule stands (then no SDPA kernel can be accepted on this device and the campaign has no accepted
-gain), (b) against a reference instead of against the parent (the candidate is closer to the fp32 reference
-than the parent is), or (c) with another floor? I am not choosing among these myself; (a) is what is recorded.
+The question raised here was answered by the second decision (option b).
 
 Measured gain of candidate 1, for the record (`s2-c1b`, evidence steps only, `gate.done` stays REJECTED):
 
@@ -77,11 +119,8 @@ Next token parent vs candidate: SAME in 23 of 24 rows; the 24th (8B 8da4w, timed
 parent's first timed run aborted at exit (`corrupted double-linked list`, rc 134) after printing the same
 token as the candidate. `gate_check.py session` therefore says REJECT for that session, as it is built to.
 
-## Now
+## Results since candidate 1
 
-- Running (detached): warm ETDump traces of `s2-c1b` (both arms), then the near-tie evidence for the softmax
-  variant on top of `refine1` (same prompts, build `topic8`).
-- Other results since the last update:
   - Linear: no tile and no staging change found. 4w `ga` tiles best 0.995x, zpgtr tiles best 0.84x, zpgtr
     half-texel weight staging (`bh`, production-diff 6 of 6 ALL PASSED) 1.011x at kernel level, inside its
     1.2 % repeat spread. Not gated.
@@ -96,7 +135,6 @@ token as the candidate. `gate_check.py session` therefore says REJECT for that s
   the 4070 Ti"), not something this change introduces; it does cost a session a finding when it hits a run the
   gate needs.
 - Builds and timed runs: no build has overlapped a timed session.
-- Blocking: the question above, for anything in SDPA to be called accepted.
 
 ## SDPA screens (kernel level, `test_llama_microbench --sdpa`, us per layer at S = 2048, median of 3)
 
