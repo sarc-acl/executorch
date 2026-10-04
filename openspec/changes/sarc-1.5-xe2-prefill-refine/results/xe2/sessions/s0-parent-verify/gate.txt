@@ -1,0 +1,19 @@
+PASS verify: completed : rc=0
+PASS verify: no foreign GPU process
+STATUS verify: correctness : rc=1; 28 of 28 cases and 4 of 4 rank-3 cases PASSED (status of pristine dev/1.5 on this device)
+PASS verify: correctness, every numeric case : 28 of 28 cases and 4 of 4 rank-3 cases PASSED
+PASS verify: production-diff 12 cases : 12 of 12 passed
+PASS verify: prefill ran, default, six cells : 6 of 6
+PASS verify: prefill ran, tiled, six cells : 6 of 6
+PASS verify: default vs tiled, check prompt, 4w : SAME
+PASS verify: default vs tiled, unaligned prompt, 4w : SAME
+PASS verify: decode 4w : rc=0 tokens=31
+PASS verify: linear 4w dispatch report present : rc=1
+PASS verify: default vs tiled, check prompt, 8da4w : SAME
+STATUS verify: default vs tiled, unaligned prompt, 8da4w : DIFFER (status of pristine dev/1.5 on this device)
+PASS verify: decode 8da4w : rc=0 tokens=31
+PASS verify: linear 8da4w dispatch report present : rc=1
+STATUS sdpa: tier all, 1 pass(es) x 4 cases, 0 mismatches, pairing=ok (table) : stock SDPA kernels (no SDPA row on this device), 4 of 4 cases with 0 mismatches
+STATUS sdpa: tier extended, 1 pass(es) x 8 cases, 0 mismatches, pairing=ok (table) : stock SDPA kernels (no SDPA row on this device), 8 of 8 cases with 0 mismatches
+STATUS sdpa: tier full, 1 pass(es) x 4 cases, 0 mismatches, pairing=ok (table) : stock SDPA kernels (no SDPA row on this device), 4 of 4 cases with 0 mismatches
+CONTROL_RECORDED (5 device-status item(s))

@@ -11,12 +11,14 @@ HW=$(echo $PCI/hwmon/hwmon*); FREQ=$PCI/tile0/gt0/freq0
 IDLE_FILE=$A/idle_temp_mc     # package temperature of the cool, idle card (millidegrees C)
 CLKMIN_FILE=$A/clkmin_mhz     # lowest accepted median GT clock of a timed run (MHz)
 export ETVK_DEVICE_INDEX=0 SARC_MOUNT_ROOT=$XE2_ROOT XE2_TOP=${XE2_TOP:-$$}
+export XE2_PYTHON=${XE2_PYTHON:-$A/venv/bin/python}   # executorch.devtools for trace_analysis.py (a venv in the artifact directory)
 gtemp_mc() { cat $HW/temp2_input; }   # package temperature, millidegrees C
-# cool_start: wait (at most 5 min) until the package is within 3 C of the calibrated idle temperature; before
-# the calibration exists, until the temperature has not moved by more than 1 C over 60 s.
+# cool_start: wait (at most 5 min) until the package is within 3 C of the calibrated idle temperature, or has
+# stopped falling (no drop over 30 s: the idle temperature of this card drifts between 56 and 64 C with its fan
+# hysteresis); before the calibration exists, until the temperature has not moved by more than 1 C over 60 s.
 cool_start() { local t0=$SECONDS a b
   if [[ -s $IDLE_FILE ]]; then
-    while (( $(gtemp_mc) > $(<$IDLE_FILE) + 3000 && SECONDS - t0 < 300 )); do sleep 5; done
+    while (( $(gtemp_mc) > $(<$IDLE_FILE) + 3000 && SECONDS - t0 < 300 )); do a=$(gtemp_mc); sleep 30; (( $(gtemp_mc) >= a )) && break; done
   else
     while (( SECONDS - t0 < 300 )); do a=$(gtemp_mc); sleep 60; b=$(gtemp_mc); (( a - b <= 1000 && b - a <= 1000 )) && break; done
   fi; }

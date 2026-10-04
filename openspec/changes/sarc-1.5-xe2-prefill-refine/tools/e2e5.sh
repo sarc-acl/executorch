@@ -3,10 +3,12 @@
 # Protocol = openspec/changes/sarc-1.5-e2e-benchmark/kit/host/e2e.sh (fresh llama_main per run, --warmup,
 # 1 new token, temperature 0, cool to idle+5 C max 120 s, builds interleaved parent->cand on odd repeats and
 # cand->parent on even ones, failed runs kept), plus what this task adds:
-#   - the GT clock (freq0/act_freq), throttle status, card energy and package temperature are sampled every 0.1 s during each run
-#     (logs/<run>.clk) and summarised over the measured execution window of that run;
-#   - a run is VALID only if rc = 0, tok/s present, prompt_tokens = <expected>, generated_tokens = 0, no other GPU
-#     process, the median clock in the measured window >= CLKMIN MHz and no throttled sample.
+#   - the GT clock (freq0/act_freq), throttle status and reasons, card energy and package temperature are sampled
+#     every 10 ms during each run (tools/sampler.py; a 1B prefill lasts about 0.17 s on this card)
+#   - a timed run is valid only with rc 0, the expected prompt tokens, 0 generated tokens, no foreign GPU
+#     process, at least 5 clock samples, the median clock in the measured window >= CLKMIN MHz and no sample
+#     with a thermal throttle reason (thermal, prochot, ratl). The PL2 power limit is asserted in every loaded
+#     run on this card and is counted (throttled_n), not rejected.
 #   - CLKMIN is required: --clkmin, or the value the calibration session stored (host.sh CLKMIN_FILE). Only
 #     --calibrate (the baseline / A-A session, started from a cool idle card) runs without one; when all its
 #     cells are complete it stores the idle temperature and CLKMIN = 97 % of the lowest per-run median clock.
@@ -53,12 +55,7 @@ finish() { # finish <status> [reason...]: record the session status and exit
   case $st in E2E5_OK) exit 0 ;; E2E5_ABORTED) exit 76 ;; *) exit 1 ;; esac; }
 gtemp() { echo $(( $(<$HW/temp2_input) / 1000 )); }
 others() { gpu_others; }
-sampler() {  # sampler <file>: epoch_us act_freq_MHz throttle_status card_energy_uJ pkg_temp_mC, every 0.1 s until killed
-  while :; do
-    printf '%s %s %s %s %s\n' "${EPOCHREALTIME/./}" "$(<$FREQ/act_freq)" "$(<$FREQ/throttle/status)" "$(<$HW/energy1_input)" "$(<$HW/temp2_input)"
-    sleep 0.1
-  done > "$1" 2>/dev/null
-}
+sampler() { exec python3 "$TOOLS/sampler.py" "$1" 0.01; }  # epoch_us act_freq_MHz throttle_status energy_uJ pkg_temp_mC reasons, every 10 ms
 {
   date -u; hostname; uname -r; echo "lock=$LOCK reps=$REPS extra=$EXTRA prompt=$PROMPT tokens=$TOKENS clkmin=$CLKMIN calibrate=$CALIB"
   for b in parent cand; do sha256sum $b/llama_main $b/libllama_runner.so; echo "$b env: $(cat $b/env 2>/dev/null | tr '\n' ' ')"; cat $b/COMMIT 2>/dev/null; done
@@ -75,7 +72,12 @@ tokz() { local MD ST; IFS=: read -r MD ST <<< "${STEM[$1]}"; echo "$MROOT/$MD/or
 for m in "${MS[@]}"; do for q in "${QS[@]}"; do
   echo "model $m $q $(sha256sum "$(pte $m $q)" | cut -c1-16) $(pte $m $q)" >> "$O/env.txt"; done; done
 sleep 60; IDLE=$(gtemp); echo "idle_temp=$IDLE" >> "$O/env.txt"
-cool() { local t0=$SECONDS t; while :; do t=$(gtemp); [[ $t -le $((IDLE + 5)) || $((SECONDS - t0)) -ge $COOLMAX ]] && break; sleep 5; done; }
+# cool: wait until the package is within 5 C of the session's idle temperature, at most COOLMAX seconds. The
+# card's idle temperature itself drifts with its fan hysteresis (56 to 64 C observed with nothing running), so
+# the wait also ends once the temperature has not fallen over two consecutive 5 s polls.
+cool() { local t0=$SECONDS t prev=999 flat=0
+  while :; do t=$(gtemp); [[ $t -le $((IDLE + 5)) || $((SECONDS - t0)) -ge $COOLMAX ]] && break
+    if [[ $t -ge $prev ]]; then flat=$((flat + 1)); [[ $flat -ge 2 ]] && break; else flat=0; fi; prev=$t; sleep 5; done; }
 UNAL=$(ls r*.txt 2>/dev/null | head -1)   # the separate unaligned prompt, the same file verify.sh picks up
 echo "unaligned prompt: ${UNAL:-MISSING} expected tokens $UNALTOK" >> "$O/env.txt"
 CSV=$O/runs.csv
@@ -112,28 +114,31 @@ if obs:
         ms = b2 - a
         for l in open(clk):
             f = l.split()
-            if len(f) == 5 and a * 1000 <= int(f[0]) <= b2 * 1000: rows.append([int(x) for x in f])
+            if len(f) == 6 and a * 1000 <= int(f[0]) <= b2 * 1000: rows.append([int(x) for x in f[:5]] + [f[5]])
 n = len(rows)
 med = lambda k, d: (round(st.median(r[k] for r in rows) / d, 1) if rows else "")
 cm = med(1, 1); cmin = min(r[1] for r in rows) if rows else ""
-# power: card energy counter (uJ) over the sampled window (time in us); thr = samples with throttle/status != 0
+# power: card energy counter (uJ) over the sampled window (time in us); thr = samples with throttle/status != 0.
+# Under load this card runs at its PL2 power limit (throttle reason pl2, clock 2630 to 2800 MHz): that is its
+# normal clock control and is only counted. A thermal reason in any sample invalidates the run.
 pw = round((rows[-1][3] - rows[0][3]) / (rows[-1][0] - rows[0][0]), 1) if n > 1 else ""
 thr = sum(1 for r in rows if r[2])
+thermal = sum(1 for r in rows if re.search(r"thermal|prochot|ratl", r[5]))
 reason = []
 if rc != "0": reason.append("rc")
 if tok == "": reason.append("no_tok_s")
 if str(pt) != want: reason.append("prompt_tokens")
 if tag == "prefill" and str(gt) != "0": reason.append("generated_tokens")
 if oth: reason.append("other_gpu_process")
-if n < 2: reason.append("clock_unsampled")
+if n < 5: reason.append("clock_unsampled")
 elif cm < float(clkmin): reason.append("clock_low")
-elif thr: reason.append("throttled")
+elif thermal: reason.append("thermal_throttled")
 valid = 0 if reason else 1
 print(",".join(str(x) for x in [tok, pt, gt, ms, n, cm, cmin, thr, pw, round(max(r[4] for r in rows) / 1000) if rows else "", valid, "+".join(reason)]))
 PY
   IFS=, read -r tok pt gt ms n cm cmin bm pw tmax valid reason < "$O/.row"
   echo "xe2-b70,$(hostname),$m,$q,$b,$r,$s,$tok,$rc,$tp,$tq,$cs,act_med=${cm}MHz,$oth,$(date -u +%FT%TZ),$log,$pt,$gt,$ms,$n,$cm,$cmin,$bm,$pw,$tmax,$valid,$reason" >> "$CSV"
-  echo "$tag $m $q $b r$r slot$s tok_s=$tok ms=$ms rc=$rc T=$tp->$tq cool=${cs}s clk=$cm/$cmin MHz n=$n throttled=$bm valid=$valid $reason"
+  echo "$tag $m $q $b r$r slot$s tok_s=$tok ms=$ms rc=$rc T=$tp->$tq cool=${cs}s clk=$cm/$cmin MHz n=$n power_limited=$bm valid=$valid $reason"
   [[ -n $oth ]] && finish E2E5_ABORTED "other GPU process during $tag $m $q $b r$r: $oth"
 }
 # toklog <tag> <model> <scheme> <build>: log of the first run that completed on the expected prompt (clock and

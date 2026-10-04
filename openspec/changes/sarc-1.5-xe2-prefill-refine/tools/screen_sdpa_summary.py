@@ -4,7 +4,8 @@ QK^T, softmax, attn*V and total kernel times (ms) per model for the coopmat arm,
 import collections, csv, statistics as st, sys
 d = collections.defaultdict(list)
 for r in csv.DictReader(open(sys.argv[1])):
-    if r["rc"] != "0": continue
+    # the stock kernels (base) end with status 1: the suite reports the missing coopmat dispatch
+    if r["rc"] != "0" and not (r["profile"] == "base" and r["rc"] == "1"): continue
     v = "coopmat" if r["profile"] != "base" else "tiled"
     if r["variant"] == v: d[(r["profile"], r["model"], r["op"])].append(float(r["mean_us"]) / 1000)
 models = sorted({k[1] for k in d}); profiles = list(dict.fromkeys(k[0] for k in d))

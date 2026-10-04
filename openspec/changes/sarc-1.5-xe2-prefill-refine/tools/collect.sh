@@ -19,5 +19,8 @@ for s in $A/stage/*/; do n=$(basename $s); [[ -f $s/raw/runs.csv || -f $s/verify
 done
 cp -f $A/build/*.src.txt $A/build/*.golden.txt $R/ 2>/dev/null
 for d in $A/raw/screen*/; do n=$(basename $d); [[ -f $d/summary.csv ]] && cp -f $d/summary.csv $R/screens/$n.csv; [[ -f $d/summary.txt ]] && cp -f $d/summary.txt $R/screens/$n.txt; done
-for d in $A/raw/prof-*/; do n=$(basename $d); for q in 4w 8da4w; do [[ -f $d/$q/phases.csv ]] && cp -f $d/$q/phases.csv $R/phases/$n-$q.csv; done; done
+for d in $A/raw/prof-*/; do n=$(basename $d); [[ -f $d/phases.csv ]] && cp -f $d/phases.csv $R/phases/$n.csv; done
+for d in $A/raw/screen*/; do n=$(basename $d); [[ -f $d/screen.csv ]] && { cp -f $d/screen.csv $R/screens/$n-runs.csv; python3 $TOOLS/screen_sdpa_summary.py $d/screen.csv > $R/screens/$n.csv; }; done
+# stopped or bad sessions: the reason, the run table and the session log
+for d in $A/superseded/*/; do n=$(basename $d); mkdir -p $R/superseded/$n; cp -f $d/README $d/*.out $R/superseded/$n/ 2>/dev/null; find $d -name runs.csv -exec cp -f {} $R/superseded/$n/ \; ; done
 find $C -type f | wc -l; du -sh $C

@@ -11,7 +11,7 @@ mkdir -p $O; CSV=$O/screen.csv
 [[ -f $CSV ]] || echo "profile,rep,model,op,variant,mean_us,stdev_us,dispatch,temp_c,rc" > $CSV
 { sha256sum $B; date -u; } >> $O/env.txt
 for ((r = 1; r <= R; r++)); do for p in "$@"; do
-  L=$O/$p-r$r.log; [[ -f $L.rc && $(<$L.rc) == 0 ]] && continue
+  L=$O/$p-r$r.log; [[ -f $L.rc && ( $(<$L.rc) == 0 || ( $p == base && $(<$L.rc) == 1 ) ) ]] && continue
   E=(); [[ $p != base ]] && E=(ET_VK_SARC_UNVERIFIED=1 "ET_VK_SARC_DEV_PROFILE=$p")
   cool_start
   env "${E[@]}" $TOOLS/gl.sh $B --sdpa > $L 2>&1; rc=$?; echo $rc > $L.rc; t=$(( $(gtemp_mc) / 1000 ))

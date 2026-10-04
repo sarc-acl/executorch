@@ -49,3 +49,22 @@ sarc_dev_prof_q4gsw:
       SG_GRID_Y: 2
       ACC_FP32: true
       CSH_IN_ASH: true
+# xe2 begin: Intel Xe2 variants (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)
+    - NAME: sarc_dev_prof_q4gsw_t128x128k16g44s16m8flip_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      MMA_M: 8
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      FRAG_LAYOUT: true
+      IMG_A: true
+    - NAME: sarc_dev_prof_q4gsw_t128x128k16g44s16m8flip_buffer_texture2d_half
+      MMA_M: 8
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      FRAG_LAYOUT: true
+      IMG_A: true
+# xe2 end
