@@ -5,9 +5,10 @@
 set -uo pipefail
 source "$(dirname "$0")/common.sh"; C=$ET/openspec/changes/sarc-1.5-4070ti-prefill-refine
 R=$C/results/4070ti; mkdir -p $R/screens $R/phases
-for s in $A/stage/*/; do n=$(basename $s); [[ -f $s/raw/runs.csv ]] || continue
+for s in $A/stage/*/; do n=$(basename $s); [[ -f $s/raw/runs.csv || -f $s/verify.out ]] || continue
   D=$R/sessions/$n; mkdir -p $D
   cp -f $s/STAGE.md $s/raw/runs.csv $s/raw/env.txt $D/ 2>/dev/null
+  cp -f $s/gate.done* $s/*-check.txt $s/verify-runs.jsonl $D/ 2>/dev/null
   [[ -f $s/raw/done.txt ]] && python3 "$(dirname "$0")/summarize.py" $s/raw > $D/summary.csv
   cp -f $s/raw/nexttoken.csv $D/ 2>/dev/null
   [[ -f $s/verify.out ]] && { cp -f $s/verify.out $D/; mkdir -p $D/verify; cp -f $s/verify/env.txt $s/verify/correctness.log $D/verify/ 2>/dev/null

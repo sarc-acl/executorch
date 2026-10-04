@@ -31,13 +31,17 @@ gpu_gone() {
 # gone_check: call after every child; a child that hit gpu_gone ends the caller too.
 gone_check() { [[ -f $GONE ]] && exit 70; gpu_alive || gpu_gone "${1:-health check}"; }
 
-# A process that has exited but is not yet reaped (state Z) has no readable environment: it is judged by its
-# parent, so that a runner of ours caught between exit and wait is not reported as foreign (seen in the first
-# parent control, superseded/zombie-sighting) while a zombie under a foreign parent still is.
-own_pid() { local st
-  st=$(sed 's/.*) //' /proc/$1/stat 2>/dev/null) || return 1
-  if [[ ${st%% *} == Z ]]; then set -- $st; [[ $2 -gt 1 ]] && own_pid $2; return; fi
-  { tr '\0' '\n' < /proc/$1/environ; } 2>/dev/null | grep -qx "SARC_CAMPAIGN_TAG=$SARC_CAMPAIGN_TAG"; }
+# own_pid <pid>: the process, or one of its ancestors, carries the campaign tag. Ancestors are needed twice:
+# a process that has exited but is not yet reaped (state Z) has no readable environment (a runner of ours caught
+# between exit and wait was reported as foreign in the first parent control, superseded/zombie-sighting), and a
+# tool we start may launch its children with a cleaned environment (igpu-roofline's `roofline` and `inspect`
+# runners, reported during the first roofline run). A process under a foreign parent is still foreign.
+own_pid() { local p=$1 st n=0
+  while [[ $p -gt 1 && $n -lt 16 ]]; do
+    { tr '\0' '\n' < /proc/$p/environ; } 2>/dev/null | grep -qx "SARC_CAMPAIGN_TAG=$SARC_CAMPAIGN_TAG" && return 0
+    st=$(sed 's/.*) //' /proc/$p/stat 2>/dev/null) || return 1
+    set -- $st; p=$2; n=$((n + 1))
+  done; return 1; }
 # others: GPU clients (compute apps and graphics/Vulkan clients from pmon) and known GPU programs by name that
 # were NOT started by this campaign (no campaign tag in their environment, or environment unreadable).
 others() {

@@ -56,3 +56,51 @@ sarc_sdpa_qk_coopmat_4070ti_pk:
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 32
       NO_MASK_FILL: true
+    - NAME: sarc_sdpa_qk_coopmat_4070ti_pk_t64x64k32g42s32nf
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      NO_MASK_FILL: true
+    - NAME: sarc_sdpa_qk_coopmat_4070ti_pk_t64x128k32g42s32nf
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      NO_MASK_FILL: true
+    - NAME: sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k32g44s32nf
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+      NO_MASK_FILL: true
+    - NAME: sarc_sdpa_qk_coopmat_4070ti_pk_t64x64k32g44s32nf
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+      NO_MASK_FILL: true
+    - NAME: sarc_sdpa_qk_coopmat_4070ti_pk_t64x64k32g21s32nf
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      NO_MASK_FILL: true
+    - NAME: sarc_sdpa_qk_coopmat_4070ti_pk_t32x64k32g42s32nf
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      NO_MASK_FILL: true

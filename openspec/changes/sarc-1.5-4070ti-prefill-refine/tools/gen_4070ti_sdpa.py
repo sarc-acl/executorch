@@ -159,7 +159,9 @@ p = sub(p, """                coopMatLoad(
                     AB_STRIDE_UV4,
                     gl_CooperativeMatrixLayoutColumnMajor);""")
 assert "A_ROW" not in p and "B_ROW" not in p and "FP16_PER_VEC4" not in p
-PK = [V(128, 64, 32, 4, 2, True), V(128, 64, 64, 4, 2, True), V(128, 64, 32, 2, 4, True), V(64, 64, 32, 2, 2, True)]
+PK = [V(128, 64, 32, 4, 2, True), V(128, 64, 64, 4, 2, True), V(128, 64, 32, 2, 4, True), V(64, 64, 32, 2, 2, True),
+      # second batch (screen 2)
+      V(64, 64, 32, 4, 2, True), V(64, 128, 32, 4, 2, True), V(128, 64, 32, 4, 4, True), V(64, 64, 32, 4, 4, True), V(64, 64, 32, 2, 1, True), V(32, 64, 32, 4, 2, True)]
 for v in PK: assert 16 * (v["m"] + v["n"]) * ((v["k"] + 8) // 8) + 2 * v["m"] * v["n"] <= LDS_MAX, v["tok"]
 F_PK = "sarc_sdpa_qk_coopmat_4070ti_pk"
 write_new(g / f"sarc_dev/{F_PK}.glsl", hdr("QK^T with packed staging: uvec4 staging of Q and K rows, ColumnMajor B load,\n * WG_TILE_K 32 or 64; otherwise sarc_sdpa_qk_coopmat_4070ti.glsl.") + p)
@@ -203,7 +205,9 @@ ml = sub(ml, """        // --- Load B (V) tile -> shared (single pass), row-majo
             const uint b_col = b_idx % INVS_PER_ROW_B;
             const uint b_row_offset = b_idx / INVS_PER_ROW_B;
             f16vec4 v0 = f16vec4(0);""")
-ML = [V(64, 128, 32, 4, 2), V(128, 128, 32, 4, 2), V(128, 64, 32, 4, 2)]   # 128-column tiles serve head_dim 128 only
+ML = [V(64, 128, 32, 4, 2), V(128, 128, 32, 4, 2), V(128, 64, 32, 4, 2),   # 128-column tiles serve head_dim 128 only
+      # second batch (screen 2)
+      V(128, 64, 32, 4, 4), V(256, 64, 32, 4, 2), V(128, 64, 32, 2, 4), V(64, 128, 32, 4, 4), V(128, 128, 32, 4, 4), V(32, 64, 32, 4, 2), V(256, 64, 32, 4, 4)]
 for v in ML: assert 16 * (v["m"] * 5 + 32 * ((v["n"] + 8) // 8)) <= LDS_MAX, v["tok"]
 F_ML = "sarc_sdpa_av_coopmat_4070ti_ml"
 write_new(g / f"sarc_dev/{F_ML}.glsl", hdr("attn*V with multi-pass staging, for tiles other than 64 x 64;\n * otherwise sarc_sdpa_av_coopmat_4070ti.glsl.") + ml)
@@ -221,11 +225,13 @@ for op, fam, vs, kind, pre in FAM:
         rows += f'    {{"", nullptr, Op::{op},\n     "{fam}_{v["tok"]}",\n     {{{v["m"]}, {v["n"]}, {v["k"]}, {v["sx"]}, {v["sy"]}, {SG}, 16, false}}, kBufBuf, nullptr,\n     Status::kUnverified}},\n'
         prefs += f'const Preference {cid}[] = {{{{Op::{op}, "{tok}", nullptr}}}};\n'
         profs += f'    {{"4070ti-{kind}-{pre}{v["tok"]}", {cid}, 1}},\n'
-prefs += """// Candidate 1: the direct port of the 780M SDPA kernels to subgroup 32 (QK^T without
-// mask fill, single-pass attn*V).
+prefs += """// Candidate 1: the 780M SDPA kernels at subgroup 32, tiles from screen 1 (results/4070ti/screens):
+// QK^T packed staging without mask fill; attn*V multi-pass staging, the 128-column tile
+// where head_dim is 128 (it does not fit head_dim 64, which takes the next row).
 const Preference k4070tiRefine1[] = {
-    {Op::kSdpaQk, "4070ti_t128x64k32g42s32nf", nullptr},
-    {Op::kSdpaAv, "4070ti_t64x64k32g42s32", nullptr},
+    {Op::kSdpaQk, "4070ti_pk_t128x64k32g42s32nf", nullptr},
+    {Op::kSdpaAv, "4070ti_ml_t64x128k32g42s32", nullptr},
+    {Op::kSdpaAv, "4070ti_ml_t128x64k32g42s32", nullptr},
 };
 """
 profs += '    {"4070ti-refine1", k4070tiRefine1, sizeof(k4070tiRefine1) / sizeof(Preference)},\n'
