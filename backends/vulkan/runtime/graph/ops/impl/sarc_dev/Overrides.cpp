@@ -628,6 +628,25 @@ const Row kDq8caCandidates[] = {
      kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
      /*rowmajor_a=*/true},
     // <<< 4070ti lin-dq8ca-rows
+    // >>> 4070ti bh-dq8ca-rows
+    // RTX 4070 Ti SUPER zpgtr with half-texel weight staging (glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpgtr_4070ti_bh.yaml).
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_bh_t128x128k64g44s32mk32ra", {128, 128, 64, 4, 4, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_bh_t128x128k64g42s32mk32ra", {128, 128, 64, 4, 2, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_bh_t128x128k64g24s32mk32ra", {128, 128, 64, 2, 4, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_bh_t256x128k32g42s32mk32ra", {256, 128, 32, 4, 2, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    // <<< 4070ti bh-dq8ca-rows
     // >>> 4070ti prof-dq8ca-rows
     // RTX 4070 Ti SUPER phase timing, MEASUREMENT ONLY (glsl/sarc_dev/sarc_dev_prof_4070ti_dq8ca_zpgtr.yaml).
     {"", nullptr, Op::kDq8caLinear,
