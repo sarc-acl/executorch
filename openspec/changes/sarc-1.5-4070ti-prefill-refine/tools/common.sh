@@ -31,7 +31,13 @@ gpu_gone() {
 # gone_check: call after every child; a child that hit gpu_gone ends the caller too.
 gone_check() { [[ -f $GONE ]] && exit 70; gpu_alive || gpu_gone "${1:-health check}"; }
 
-own_pid() { tr '\0' '\n' < /proc/$1/environ 2>/dev/null | grep -qx "SARC_CAMPAIGN_TAG=$SARC_CAMPAIGN_TAG"; }
+# A process that has exited but is not yet reaped (state Z) has no readable environment: it is judged by its
+# parent, so that a runner of ours caught between exit and wait is not reported as foreign (seen in the first
+# parent control, superseded/zombie-sighting) while a zombie under a foreign parent still is.
+own_pid() { local st
+  st=$(sed 's/.*) //' /proc/$1/stat 2>/dev/null) || return 1
+  if [[ ${st%% *} == Z ]]; then set -- $st; [[ $2 -gt 1 ]] && own_pid $2; return; fi
+  { tr '\0' '\n' < /proc/$1/environ; } 2>/dev/null | grep -qx "SARC_CAMPAIGN_TAG=$SARC_CAMPAIGN_TAG"; }
 # others: GPU clients (compute apps and graphics/Vulkan clients from pmon) and known GPU programs by name that
 # were NOT started by this campaign (no campaign tag in their environment, or environment unreadable).
 others() {

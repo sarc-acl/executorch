@@ -135,11 +135,13 @@ def verify_stage(stage, who):
             if not (text.startswith(prompt) and text[len(prompt):].strip()): fail(f"{who}: {name}: no generated text after the prompt")
             st[f"decode 1b {q} generated tokens"] = gen
     # microbench evidence: the logs behind the summary lines
-    c = os.path.join(V, "correctness.log"); cases = failed = 0; fallback = []; final = None; kclass = {}
+    # The microbench prints no summary line when everything passed (only `[correctness] ... FAILED` lines
+    # otherwise), so completeness is judged by the rank-3 verdict block that ends the run.
+    c = os.path.join(V, "correctness.log"); cases = failed = rank3 = 0; fallback = []; final = None; kclass = {}; last = ""
     for l in (open(c, errors="replace") if os.path.exists(c) else []):
-        w = l.split()
+        w = l.split(); last = l if l.strip() else last
         if l.startswith("[rank3"):
-            cases += 1; mm = re.match(r"\[rank3[^\]]*\] (\S+) -> (\S+) \((.*)\), correctness=(\S+)", l)
+            cases += 1; rank3 += 1; mm = re.match(r"\[rank3[^\]]*\] (\S+) -> (\S+) \((.*)\), correctness=(\S+)", l)
             if not mm or mm[4] != "PASSED": failed += 1
             else:
                 kclass["rank3 " + mm[1]] = "coopmat" if "coopmat" in mm[2] and "NOT coopmat" not in mm[3] else "other"
@@ -150,11 +152,11 @@ def verify_stage(stage, who):
             name = next((w[i - 1] for i in range(1, len(w)) if w[i].startswith("[")), None)
             if name is None or name in kclass: fail(f"{who}: correctness.log: case without a unique name: {l.strip()[:120]}")
             else: kclass[name] = "coopmat" if "coopmat" in w[0] else "other"
-    if cases == 0 or final is None: fail(f"{who}: correctness.log missing, empty or without its summary line")
+    if cases == 0 or rank3 == 0 or not last.startswith(("[rank3", "[correctness]")): fail(f"{who}: correctness.log missing, empty or cut short (no rank-3 verdict block at its end)")
     if failed: fail(f"{who}: correctness.log: {failed} case(s) not PASSED")
     rc = it.get("correctness rc")
     if rc is None: fail(f"{who}: no `correctness rc` line")
-    elif (rc == "0") != (final is not None and "PASSED" in final and not fallback): fail(f"{who}: correctness rc={rc} does not fit its log ({final}; fallback cases {fallback})")
+    elif (rc == "0") != (final is None and not failed and not fallback): fail(f"{who}: correctness rc={rc} does not fit its log ({final}; fallback cases {fallback})")
     st["correctness rc"] = rc; st["correctness cases"] = cases; st["correctness cases without coopmat"] = sorted(fallback)
     for name, k in kclass.items(): st[f"correctness case {name} kernel class"] = k   # a new fallback shows as a difference
     for md in ("llama-3.2-1b", "llama-3.2-3b", "llama-3.1-8b"):

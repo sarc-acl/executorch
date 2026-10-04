@@ -179,7 +179,7 @@ def make_verify(stage, correctness_rc="0", fallback=False, token=b" tok"):
     rows = "".join(f"sarc_linear_q4gsw_coopmat_x (1,1,1) (1,1,1) case{i} [1x1] 1.0 μs 100.0 GFLOP/s   PASSED\n" for i in range(6))
     rows += "[rank3 batch=1] r3a -> sarc_k (coopmat dispatched), correctness=PASSED\n"
     rows += "[rank3 batch=1] r3b -> tiled_k (%s), correctness=PASSED\n" % ("NOT coopmat -- fallback" if fallback else "coopmat dispatched")
-    rows += "[correctness] FAILED -- numeric failure(s) and/or a rank-3 case did not dispatch coopmat\n" if fallback else "[correctness] PASSED\n"
+    rows += "[correctness] FAILED -- numeric failure(s) and/or a rank-3 case did not dispatch coopmat\n" if fallback else ""
     open(os.path.join(V, "correctness.log"), "w").write(rows)
     out.append(f"correctness rc={correctness_rc} x")
     for q in ("4w", "8da4w"):
@@ -268,6 +268,11 @@ class Verify(unittest.TestCase):
         f = os.path.join(V, "correctness.log"); t = open(f).read().replace("case3 [1x1] 1.0 μs 100.0 GFLOP/s   PASSED", "case3 [1x1] 1.0 μs 100.0 GFLOP/s   FAILED"); open(f, "w").write(t)
         rc, out = self.check(); self.assertNotEqual(rc, 0)
         self.assertIn("pdiff llama-3.2-3b 8da4w buffer: the log does not show", out); self.assertIn("correctness.log: 1 case(s) not PASSED", out)
+
+    def test_correctness_log_cut_before_its_rank3_block(self):
+        f = os.path.join(self.c, "verify", "correctness.log"); keep = [l for l in open(f) if not l.startswith("[rank3")]
+        open(f, "w").writelines(keep)
+        rc, out = self.check(); self.assertNotEqual(rc, 0); self.assertIn("cut short", out)
 
     def test_review_case_crashed_linear_case_behind_the_parents_rc1(self):
         # The genuine 24-case report of this device in both arms; only candidate case 0 crashed. `linear 4w rc` is
