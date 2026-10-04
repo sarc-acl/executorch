@@ -18,7 +18,35 @@ The restriction was not bypassed and no raw output was put into the repository. 
 access to `~/hmz-sarc-4070ti/.artifacts/` and to the lock file, and a writable results directory for
 igpu-roofline (for example under `.artifacts/`); then restart the campaign.
 
-## Tool defects from the review of `13defbe7b`, fixed
+## Tool defects from the second review (of `fb875ea13`), fixed
+
+1. **Next token, every cell.** After the timed runs of a cell `e2e5.sh` runs parent and candidate once each on
+   `prompt_real_2048.txt` (2048 tokens, aligned real text), `prompt_check.txt` (1972) and `r1304.txt` (1792)
+   and compares each pair, plus the first timed pair, with `nexttoken.py`. A row is SAME or DIFFER only when
+   both runs have rc 0, the expected prompt tokens, an output that begins with the prompt and a non-empty
+   token after it; otherwise it is `INVALID:<reasons>`. Two empty outputs are never SAME. `nexttoken.csv`
+   keeps rc, prompt tokens, the token and the output hashes. Checked on recorded 4070 Ti logs of
+   `sarc-1.5-4w-port` (token ` intimidation` on `prompt_check`; 1792 prompt tokens on `r1304.txt`).
+2. **`gate_check.py session`** no longer trusts the SAME strings. Per cell and prompt it requires the row, the
+   tracked prompt's hash, both runs in `runs.csv` with rc 0 and the expected prompt tokens, equal non-empty
+   outputs and tokens, and in the gates (`--require-logs`) it recomputes every row from the logs.
+   `tools/test_gate_check.py` (11 tests, synthetic sessions, no GPU) includes the review's case, 60 valid timed
+   rows with all token runs rc=134, no output and SAME written: rejected, with and without the logs.
+3. **Normal clock.** `e2e5.sh` needs either `--calibrate` (record-only, for the baseline and A/A sessions) or
+   `--clkmin-file`; the gates always pass `results/4070ti/clkmin.json` and refuse to start without it. The
+   file is written by `calibrate_clock.py` from the calibration sessions: per cell, floor(0.97 x the median of
+   the per-run median clock), refused below 10 usable runs or above 3 % spread. Each row of `runs.csv` records
+   the threshold applied; `gate_check.py` rejects a session whose rows do not carry the calibrated value.
+   The 0.97 and the per-cell rule are my choice, to be revisited when real clock samples exist.
+4. **`gl.sh`** now also looks for a foreign GPU process after the job (exit 76). The previous STATUS said so
+   before it was true. The gates and `screen.sh` pass 75 and 76 up unchanged (`GATE_ABORTED`).
+5. **One candidate environment.** The gates take the environment from the staged `cand/env` (what `e2e5.sh`
+   and `trace.sh` read) for the SDPA passes and `verify.sh` too; they refuse to start if `cand/env` and
+   `cand-traced/env` differ or if an environment given on the command line is not the staged one.
+   `gate_check.py env` then checks what actually ran: the `ET_VK_*` variables recorded by `verify.sh`, and the
+   profile banner in every candidate log (session, SDPA, trace) and its absence in the parent's.
+
+## Tool defects from the first review (of `13defbe7b`), fixed
 
 1. `stage.sh` no longer overwrites the tools path; it stages the unaligned prompt `tools/r1304.txt` (the file
    the earlier 4070 Ti campaigns used, taken unchanged from `~/.cache/et-e2e/sarc15-r4/`, sha256 `881de104…`,
@@ -26,7 +54,7 @@ igpu-roofline (for example under `.artifacts/`); then restart the campaign.
    is missing, or when the session already has results.
 2. Foreign GPU processes end a measurement (exit 76) in every path: `e2e5.sh` (before and after each run; an
    overlapped run stays in `runs.csv` as invalid), `trace.sh` (which now also cools before each run), `gl.sh`,
-   and around `verify.sh` in the gates. "Ours" is decided by a tag in the process environment
+   and before and after `verify.sh` in the gates (not while it runs: the script is unmodified). "Ours" is decided by a tag in the process environment
    (`SARC_CAMPAIGN_TAG`, inherited by everything the tools start), not by the program name. Tested with two
    dummy processes named `llama_main`: the tagged one is ignored, the untagged one is reported and stops the tool.
 3. Device loss: every temperature read is checked; `gpu_gone` writes a marker in the artifact directory, appends a
@@ -39,7 +67,7 @@ igpu-roofline (for example under `.artifacts/`); then restart the campaign.
      parent control produced by `parent_verify.sh`;
    - `sdpa`: 12 passes per tier, 8 (`extended`) and 4 (`full`) cases each, `mismatches=0`, both coopmat kernels
      dispatched, `pairing=ok` on every case;
-   - `session`: six cells with 5 valid runs per arm and the next token SAME on both prompts.
+   - `session`: see the second review above.
    Checked against the 780M campaign's recorded evidence (`s8-r3final`, `s0-parent-verify`, `r1-sdpa-ext`):
    accepted as recorded, rejected after a production-diff rc, a `SAME` line, a `pairing=ok` or a pass log was
    altered or removed.
@@ -82,18 +110,20 @@ the candidate's archived source tree only, never committed, recorded in the buil
 
 ## Open before the baseline
 
-- CLKMIN is 0 (record only) until the baseline and A/A sessions show the normal clock.
+- `results/4070ti/clkmin.json` does not exist yet: it comes from the baseline and A/A sessions.
 - `trace.sh` needs a python with the ExecuTorch devtools (`TRACE_PY`); not looked for yet.
 - igpu-roofline exists on the host only as `~/.cache/igpu-roofline/fleet-fast-20260926/`; no roof measured.
 - 1B timer quantisation (1 ms timer, about 100 ms prefill): report ETDump dispatch time alongside.
 - None of `build-both.sh`, `stage.sh`, `parent_verify.sh`, `e2e5.sh`, `trace.sh`, `gate*.sh`, `screen.sh` has run
-  end to end; expect first-run fixes.
+  end to end; expect first-run fixes. In particular the prompt-echo rule of `nexttoken.py` was only checked on
+  older logs of this device, and the profile banner check on no real log at all.
 
 ## Next steps once unblocked
 
 1. `tools/build-both.sh parent 6a7cc8cc6`; `tools/build-both.sh topic <head> tools/local-hook-nvidia-sdpa.patch`.
 2. `parent_verify.sh parent`; baseline of the six cells against `cells.csv` (4w 19692 / 8752 / 4491, 8da4w
-   20898 / 9660 / 5032 tok/s); A/A session parent vs topic without environment; set CLKMIN.
+   20898 / 9660 / 5032 tok/s) and the A/A session parent vs topic without environment, both with
+   `session.sh <s> --calibrate`; then `calibrate_clock.py` -> `results/4070ti/clkmin.json`.
 3. Per-op ETDump breakdown, phase timing with the PROF twins, igpu-roofline `fast`.
 4. SDPA candidates (`4070ti-refine1` first) through `gate_sdpa.sh`, then 8da4w and 4w linear.
 

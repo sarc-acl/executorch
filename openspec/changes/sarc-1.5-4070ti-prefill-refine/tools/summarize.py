@@ -10,21 +10,20 @@ for r in timed: cells.setdefault((r["model"], r["scheme"]), {"parent": [], "cand
 nt = {}
 p = os.path.join(d, "nexttoken.csv")
 if os.path.exists(p):
-    for l in open(p):
-        f = l.strip().split(",")
-        if len(f) >= 4: nt[(f[0], f[1])] = f[2].split(":")[-1] + "/" + f[3].split(":")[-1]
-print("model,scheme,parent_med_tok_s,cand_med_tok_s,ratio,gain_pct,outside_2pct_band,parent_spread_pct,cand_spread_pct,valid_parent,valid_cand,invalid,clk_med_mhz_range,temp_pre_range,next_token_2048/check")
+    for r in csv.DictReader(open(p)):   # prompt:verdict for the timed, real-text, check and r1304 prompts
+        nt[(r["model"], r["scheme"])] = (nt.get((r["model"], r["scheme"]), "") + ";" + r["prompt"].replace(".txt", "") + ":" + r["verdict"].replace(",", ";")).lstrip(";")
+print("model,scheme,parent_med_tok_s,cand_med_tok_s,ratio,gain_pct,outside_2pct_band,parent_spread_pct,cand_spread_pct,valid_parent,valid_cand,invalid,clk_med_mhz_range,temp_pre_range,clkmin,next_token")
 ratios = []
 for (m, q), a in cells.items():
     v = {b: [float(r["tok_s"]) for r in a[b] if r["valid"] == "1"][:5] for b in a}
     inv = [f'{r["build"]}:r{r["rep"]}:{r["reason"]}' for b in a for r in a[b] if r["valid"] != "1"]
     clk = [float(r["clk_med_mhz"]) for b in a for r in a[b] if r["clk_med_mhz"]]
-    tp = [int(r["temp_pre"]) for b in a for r in a[b]]
+    tp = [int(r["temp_pre"]) for b in a for r in a[b] if r["temp_pre"]] or [0]
     if len(v["parent"]) < 5 or len(v["cand"]) < 5:
         print(f'{m},{q},INCOMPLETE,{len(v["parent"])},{len(v["cand"])},{";".join(inv)}'); continue
     mp, mc = st.median(v["parent"]), st.median(v["cand"]); x = mc / mp; ratios.append(x)
     sp = lambda l: (max(l) - min(l)) / st.median(l) * 100
-    print(f'{m},{q},{mp:.2f},{mc:.2f},{x:.4f},{(x - 1) * 100:+.2f},{"yes" if abs(x - 1) > 0.02 else "no"},{sp(v["parent"]):.2f},{sp(v["cand"]):.2f},{len(v["parent"])},{len(v["cand"])},{";".join(inv) or "-"},{min(clk):.0f}-{max(clk):.0f},{min(tp)}-{max(tp)},{nt.get((m, q), "-")}')
+    print(f'{m},{q},{mp:.2f},{mc:.2f},{x:.4f},{(x - 1) * 100:+.2f},{"yes" if abs(x - 1) > 0.02 else "no"},{sp(v["parent"]):.2f},{sp(v["cand"]):.2f},{len(v["parent"])},{len(v["cand"])},{";".join(inv) or "-"},{min(clk):.0f}-{max(clk):.0f},{min(tp)}-{max(tp)},{"/".join(sorted({r.get("clkmin") or "?" for b in a for r in a[b]}))},{nt.get((m, q), "-")}')
 if ratios:
     g = math.exp(sum(math.log(x) for x in ratios) / len(ratios))
     print(f"geomean over {len(ratios)} cells: {g:.4f} ({(g - 1) * 100:+.2f} %), min {min(ratios):.4f}, max {max(ratios):.4f}")

@@ -9,41 +9,55 @@
 #     it overlapped is kept in runs.csv as invalid. The card not answering nvidia-smi ends it with exit 70;
 #   - a run is VALID only if rc = 0, tok/s present, prompt_tokens = <expected>, generated_tokens = 0, no other GPU
 #     process, and the median clock in the measured window >= CLKMIN MHz (0 = record only; set it from the
-#     baseline session, the idle clock is 210 MHz and the maximum 3120 MHz). 1B prefill is about 100 ms, so its
+#     baseline session, the idle clock is 210 MHz and the maximum 3120 MHz). The threshold is per cell and
+#     comes from --clkmin-file (calibrate_clock.py); --calibrate runs record-only (clkmin 0 in runs.csv) and is
+#     only for the baseline and A/A sessions: gate_check.py rejects such a session as a candidate gate. 1B prefill is about 100 ms, so its
 #     window holds only a few samples; the card must also still answer nvidia-smi (Xid 79 rule: stop, no retry). Invalid runs stay in runs.csv with the
 #     reason; cells with fewer than REPS valid runs per build get extra interleaved pairs (at most EXTRA).
 # One GPU job at a time: everything runs under the gpu-lab lock.
 #
-# usage: e2e5.sh --stage DIR --out NAME --lock UUID [--reps 5] [--extra 3] [--models 1b,3b,8b] [--schemes 4w,8da4w]
-#                [--prompt prompt_2048.txt] [--tokens 2048] [--clkmin 0] [--no-check]
+# After the timed runs of a cell, parent and candidate each run prompt_real_2048.txt (2048 tokens, aligned real
+# text), prompt_check.txt (1972) and r1304.txt (1792) once, and nexttoken.py compares the next token per prompt
+# (and the timed prompt's r1 logs); nexttoken.csv keeps rc, prompt tokens, the token and the output hashes.
+#
+# usage: e2e5.sh --stage DIR --out NAME --lock UUID (--clkmin-file JSON | --calibrate) [--reps 5] [--extra 3]
+#                [--models 1b,3b,8b] [--schemes 4w,8da4w] [--prompt prompt_2048.txt] [--tokens 2048] [--no-check]
 #   DIR/{parent,cand}/{llama_main,libllama_runner.so,[env]}, DIR/prompt_*.txt; output in DIR/NAME/
 set -uo pipefail
 STAGE=""; OUTN=raw; LOCK=""; REPS=5; EXTRA=3; MODELS=1b,3b,8b; SCHEMES=4w,8da4w
-PROMPT=prompt_2048.txt; TOKENS=2048; CLKMIN=0; CHECK=1; COOLMAX=120; MROOT=/mnt/linux-share/models
+PROMPT=prompt_2048.txt; TOKENS=2048; CLKFILE=""; CALIBRATE=0; CHECK=1; COOLMAX=120; MROOT=/mnt/linux-share/models
 while [[ $# -gt 0 ]]; do
   case $1 in
     --stage) STAGE=$2; shift ;; --out) OUTN=$2; shift ;; --lock) LOCK=$2; shift ;;
     --reps) REPS=$2; shift ;; --extra) EXTRA=$2; shift ;; --models) MODELS=$2; shift ;;
     --schemes) SCHEMES=$2; shift ;; --prompt) PROMPT=$2; shift ;; --tokens) TOKENS=$2; shift ;;
-    --clkmin) CLKMIN=$2; shift ;; --no-check) CHECK=0 ;;
+    --clkmin-file) CLKFILE=$(realpath "$2"); shift ;; --calibrate) CALIBRATE=1 ;; --no-check) CHECK=0 ;;
     *) echo "unknown option $1" >&2; exit 2 ;;
   esac; shift
 done
-[[ -n $STAGE && -n $LOCK ]] || { sed -n '2,17p' "$0"; exit 2; }
+[[ -n $STAGE && -n $LOCK ]] || { sed -n '2,24p' "$0"; exit 2; }
+[[ ( -n $CLKFILE && $CALIBRATE == 0 ) || ( -z $CLKFILE && $CALIBRATE == 1 ) ]] || { echo "exactly one of --clkmin-file and --calibrate is required" >&2; exit 2; }
 TOOLS=$(cd "$(dirname "$0")" && pwd)
 D=$(cd "$STAGE" && pwd); cd "$D" || exit 2
 O=$D/$OUTN; mkdir -p "$O/logs"
 source "$TOOLS/common.sh"   # gtemp, others, no_others, gone_check, take_lock
 take_lock 900; gone_check e2e5-start; no_others e2e5-start
-need parent/llama_main parent/libllama_runner.so cand/llama_main cand/libllama_runner.so "$PROMPT" prompt_check.txt
+need parent/llama_main parent/libllama_runner.so cand/llama_main cand/libllama_runner.so "$PROMPT" prompt_check.txt prompt_real_2048.txt r1304.txt
+# Per-cell clock threshold (MHz): from the calibration file, or 0 = record only (--calibrate).
+declare -A CLK
+if [[ -n $CLKFILE ]]; then need "$CLKFILE"
+  while read -r cell v; do CLK[$cell]=$v; done < <(python3 -c 'import json, sys
+for k, v in json.load(open(sys.argv[1]))["cells"].items(): print(k, v["clkmin_mhz"])' "$CLKFILE")
+fi
+clkmin() { if [[ $CALIBRATE == 1 ]]; then echo 0; else local v=${CLK[$1-$2]:-}; [[ $v =~ ^[1-9][0-9]*$ ]] || { echo "no clock threshold for cell $1 $2 in $CLKFILE" >&2; exit 77; }; echo $v; fi; }
 sampler_start() {  # sampler_start <file>: epoch_us clock_MHz busy% power_W temp_C every 20 ms; stop with kill $SP
   stdbuf -oL nvidia-smi --query-gpu=clocks.gr,utilization.gpu,power.draw,temperature.gpu --format=csv,noheader,nounits -lms 20 \
     > >(while IFS= read -r l; do echo "${EPOCHREALTIME/./} ${l//,/}"; done > "$1") 2>/dev/null 9>&- & SP=$!
 }
 {
-  date -u; hostname; uname -r; echo "lock=$LOCK reps=$REPS extra=$EXTRA prompt=$PROMPT tokens=$TOKENS clkmin=$CLKMIN"
+  date -u; hostname; uname -r; echo "lock=$LOCK reps=$REPS extra=$EXTRA prompt=$PROMPT tokens=$TOKENS calibrate=$CALIBRATE clkmin_file=$CLKFILE $([[ -n $CLKFILE ]] && sha256sum < "$CLKFILE" | cut -c1-16)"
   for b in parent cand; do sha256sum $b/llama_main $b/libllama_runner.so; echo "$b env: $(cat $b/env 2>/dev/null | tr '\n' ' ')"; cat $b/COMMIT 2>/dev/null; done
-  sha256sum prompt_*.txt; cat STAGE.md 2>/dev/null
+  sha256sum prompt_*.txt r1304.txt; cat STAGE.md 2>/dev/null
   vulkaninfo --summary 2>/dev/null | grep -E 'deviceName|driverName|driverInfo|apiVersion'
   nvidia-smi --query-gpu=name,driver_version,pstate,clocks.gr,clocks.max.gr,clocks.mem,power.draw,power.limit,temperature.gpu,fan.speed --format=csv
   echo "others: $(others)"
@@ -57,9 +71,10 @@ for m in "${MS[@]}"; do for q in "${QS[@]}"; do
 sleep 60; IDLE=$(gtemp) || gpu_gone idle; echo "idle_temp=$IDLE" >> "$O/env.txt"
 cool() { local t0=$SECONDS t; while :; do t=$(gtemp) || gpu_gone cool; [[ $t -le $((IDLE + 5)) || $((SECONDS - t0)) -ge $COOLMAX ]] && break; sleep 5; done; }
 CSV=$O/runs.csv
-[[ -f $CSV ]] || echo "gpu,host,model,scheme,build,rep,slot,tok_s,rc,temp_pre,temp_post,cool_s,clocks,others,utc,log,prompt_tokens,generated_tokens,prefill_ms,clk_n,clk_med_mhz,clk_min_mhz,busy_med,power_med_w,temp_max,valid,reason" > "$CSV"
+[[ -f $CSV ]] || echo "gpu,host,model,scheme,build,rep,slot,tok_s,rc,temp_pre,temp_post,cool_s,clocks,others,utc,log,prompt_tokens,generated_tokens,prefill_ms,clk_n,clk_med_mhz,clk_min_mhz,busy_med,power_med_w,temp_max,valid,reason,clkmin" > "$CSV"
 run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected tokens>
-  local m=$1 q=$2 b=$3 r=$4 s=$5 p=$6 tag=$7 want=$8 log t0 tp tq rc oth cs sp
+  local m=$1 q=$2 b=$3 r=$4 s=$5 p=$6 tag=$7 want=$8 log t0 tp tq rc oth cs sp cmin_cell=0
+  [[ $tag == prefill ]] && { cmin_cell=$(clkmin $m $q) || exit 77; }
   log="logs/$tag-$m-$q-$b-r$r.log"
   t0=$SECONDS; cool; cs=$((SECONDS - t0)); tp=$(gtemp) || gpu_gone "before $log"; no_others "before $log"
   local benv=(); [[ -f $D/$b/env ]] && mapfile -t benv < "$D/$b/env"
@@ -68,7 +83,7 @@ run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected 
     --tokenizer_path "$(tokz $m)" --prompt_file "$p" --max_new_tokens 1 --temperature 0 \
     $([[ $tag == prefill ]] && echo --warmup) < /dev/null > "$O/$log" 2>&1 9>&-
   rc=$?; oth=$(others | tr ',' ';'); kill $SP 2>/dev/null; wait $SP 2>/dev/null; sleep 0.1; tq=$(gtemp) || gpu_gone "after $log rc=$rc"
-  python3 - "$O/$log" "$O/${log%.log}.clk" "$want" "$CLKMIN" "$rc" "$oth" "$tag" <<'PY' > "$O/.row"
+  python3 - "$O/$log" "$O/${log%.log}.clk" "$want" "$cmin_cell" "$rc" "$oth" "$tag" <<'PY' > "$O/.row"
 import json, re, statistics as st, sys
 log, clk, want, clkmin, rc, oth, tag = sys.argv[1:8]
 obs = None
@@ -98,19 +113,20 @@ if tok == "": reason.append("no_tok_s")
 if str(pt) != want: reason.append("prompt_tokens")
 if tag == "prefill" and str(gt) != "0": reason.append("generated_tokens")
 if oth: reason.append("other_gpu_process")
-if n < 2: reason.append("clock_unsampled")
-elif cm < float(clkmin): reason.append("clock_low")
+if tag == "prefill":   # the next-token runs are not timed: their clock is recorded, not judged
+    if n < 2: reason.append("clock_unsampled")
+    elif cm < float(clkmin): reason.append("clock_low")
 valid = 0 if reason else 1
 print(",".join(str(x) for x in [tok, pt, gt, ms, n, cm, cmin, med(2, 1), med(3, 1), round(max(r[4] for r in rows)) if rows else "", valid, "+".join(reason)]))
 PY
   IFS=, read -r tok pt gt ms n cm cmin bm pw tmax valid reason < "$O/.row"
-  echo "4070ti,$(hostname),$m,$q,$b,$r,$s,$tok,$rc,$tp,$tq,$cs,gr_med=${cm}MHz,$oth,$(date -u +%FT%TZ),$log,$pt,$gt,$ms,$n,$cm,$cmin,$bm,$pw,$tmax,$valid,$reason" >> "$CSV"
+  echo "4070ti,$(hostname),$m,$q,$b,$r,$s,$tok,$rc,$tp,$tq,$cs,gr_med=${cm}MHz,$oth,$(date -u +%FT%TZ),$log,$pt,$gt,$ms,$n,$cm,$cmin,$bm,$pw,$tmax,$valid,$reason,$cmin_cell" >> "$CSV"
   echo "$tag $m $q $b r$r slot$s tok_s=$tok ms=$ms rc=$rc T=$tp->$tq cool=${cs}s clk=$cm/$cmin MHz n=$n busy=$bm valid=$valid $reason"
   [[ -n $oth ]] && no_others "during $log"
-  return 0
+  LAST_RC=$rc; return 0
 }
 nvalid() { awk -F, -v m=$1 -v q=$2 -v b=$3 'NR > 1 && $3 == m && $4 == q && $5 == b && $16 ~ /^logs\/prefill/ && $26 == 1 {n++} END {print n + 0}' "$CSV"; }
-gen() { grep -v 'PyTorchObserver\|^[IWE] \|^\[sarc_dev\]' "$O/$1"; }
+NT_HEADER=$(python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import nexttoken; print(",".join(nexttoken.FIELDS))' $TOOLS)
 for m in "${MS[@]}"; do for q in "${QS[@]}"; do
   [[ -f $(pte $m $q) ]] || { echo "missing $(pte $m $q)"; INCOMPLETE=1; continue; }
   r=1
@@ -124,11 +140,18 @@ for m in "${MS[@]}"; do for q in "${QS[@]}"; do
     (( r > REPS + EXTRA )) && { echo "CELL $m $q: fewer than $REPS valid runs after $EXTRA extra pairs"; INCOMPLETE=1; break; }
   done
   if [[ $CHECK == 1 ]]; then
-    run1 $m $q parent 0 0 prompt_check.txt check 1972
-    run1 $m $q cand 0 0 prompt_check.txt check 1972
-    if cmp -s <(gen "logs/check-$m-$q-parent-r0.log") <(gen "logs/check-$m-$q-cand-r0.log"); then x=SAME; else x=DIFFER; fi
-    if cmp -s <(gen "logs/prefill-$m-$q-parent-r1.log") <(gen "logs/prefill-$m-$q-cand-r1.log"); then y=SAME; else y=DIFFER; fi
-    echo "$m,$q,$PROMPT:$y,prompt_check.txt:$x" >> "$O/nexttoken.csv"; echo "nexttoken $m $q $PROMPT=$y check=$x"
+    [[ -f $O/nexttoken.csv ]] || echo "$NT_HEADER" > "$O/nexttoken.csv"
+    for pc in real:prompt_real_2048.txt:2048 check:prompt_check.txt:1972 r1304:r1304.txt:1792; do
+      IFS=: read -r tag pf want <<< "$pc"
+      run1 $m $q parent 0 0 $pf $tag $want; prc=$LAST_RC
+      run1 $m $q cand 0 0 $pf $tag $want; crc=$LAST_RC
+      row=$(python3 $TOOLS/nexttoken.py $D/$pf $want "$O/logs/$tag-$m-$q-parent-r0.log" "$O/logs/$tag-$m-$q-cand-r0.log" $prc $crc)
+      echo "$m,$q,$row" >> "$O/nexttoken.csv"; echo "nexttoken $m $q $pf ${row##*,}"
+    done
+    # The timed prompt, from the first timed pair (rc is re-read from runs.csv by gate_check.py).
+    rcof() { awk -F, -v l="logs/prefill-$m-$q-$1-r1.log" '$16 == l {print $9}' "$CSV" | head -1; }
+    row=$(python3 $TOOLS/nexttoken.py $D/$PROMPT $TOKENS "$O/logs/prefill-$m-$q-parent-r1.log" "$O/logs/prefill-$m-$q-cand-r1.log" "$(rcof parent)" "$(rcof cand)" --timed)
+    echo "$m,$q,$row" >> "$O/nexttoken.csv"; echo "nexttoken $m $q $PROMPT ${row##*,}"
   fi
 done; done
 echo "others_end: $(others)" >> "$O/env.txt"; date -u > "$O/done.txt"; echo "E2E5_DONE incomplete=${INCOMPLETE:-0}"
