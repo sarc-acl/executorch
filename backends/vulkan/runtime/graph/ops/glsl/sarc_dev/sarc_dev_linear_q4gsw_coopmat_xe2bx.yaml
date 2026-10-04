@@ -126,3 +126,55 @@ sarc_dev_linear_q4gsw_coopmat_xe2bx:
       SUBGROUP_SIZE: 16
       FRAG_LAYOUT: true
       IMG_A: false
+    - NAME: sarc_dev_linear_q4gsw_coopmat_xe2bx_t128x128k16g44s16m8flib_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      FRAG_LAYOUT: true
+      IMG_A: true
+      CSH_BAND: true
+    - NAME: sarc_dev_linear_q4gsw_coopmat_xe2bx_t128x128k16g44s16m8flib_buffer_texture2d_half
+      IO_STORAGE: buffer
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      FRAG_LAYOUT: true
+      IMG_A: false
+      CSH_BAND: true
+    - NAME: sarc_dev_linear_q4gsw_coopmat_xe2bx_t256x128k16g48s16m8flib_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 8
+      WG_TILE_M: 256
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 8
+      SUBGROUP_SIZE: 16
+      FRAG_LAYOUT: true
+      IMG_A: true
+      CSH_BAND: true
+    - NAME: sarc_dev_linear_q4gsw_coopmat_xe2bx_t256x128k16g48s16m8flib_buffer_texture2d_half
+      IO_STORAGE: buffer
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 8
+      WG_TILE_M: 256
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 8
+      SUBGROUP_SIZE: 16
+      FRAG_LAYOUT: true
+      IMG_A: false
+      CSH_BAND: true

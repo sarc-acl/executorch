@@ -98,6 +98,12 @@ const Row kXe2LinearCandidates[] = {
      "sarc_dev_linear_q4gsw_coopmat_xe2bx_t256x128k16g48s16m8fli",
      {256, 128, 16, 4, 8, 16, 8, false}, kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
     {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_linear_q4gsw_coopmat_xe2bx_t128x128k16g44s16m8flib",
+     {128, 128, 16, 4, 4, 16, 8, false}, kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_linear_q4gsw_coopmat_xe2bx_t256x128k16g48s16m8flib",
+     {256, 128, 16, 4, 8, 16, 8, false}, kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g44s16m8fli",
      {128, 128, 32, 4, 4, 16, 8, false}, kTex3dTex2d, nullptr, Status::kUnverified},
     {"", nullptr, Op::kQ4gswLinear,
@@ -115,6 +121,9 @@ const Row kXe2LinearCandidates[] = {
     {"", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g24s16m8fli",
      {128, 128, 32, 2, 4, 16, 8, false}, kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g44s16m8flib",
+     {128, 128, 16, 4, 4, 16, 8, false}, kTex3dTex2d, nullptr, Status::kUnverified},
 };
 
 struct Registrar {
