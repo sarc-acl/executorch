@@ -13,6 +13,8 @@ time in us, `_x` = base / token, above 1 is faster; `base` = the shipped Xe2 til
 | `screen4-4w` | topic2 | 4w tile shapes, 2 rounds |
 | `screen5-8da4w` | topic3 | 8da4w texel-wise staging with fewer slots than threads (`xe2bt`), 2 rounds |
 | `screen6-4w` | topic3 | 4w texel-wise staging (`xe2bx`), 2 rounds |
+| `screen7-8da4w` | topic4 | balanced K = 64 / 128 8da4w tiles with texel-wise staging, 2 rounds |
+| `screen8-4w` | topic4 | the shipped 4w tile with a band-at-a-time drain (18.4 KiB of shared memory instead of 24.6), 2 rounds |
 
 Mislabelled row: in `screen6-4w.csv` the token `t128x128k16g44s16m8flib` matched the texel-wise kernel
 `sarc_dev_linear_q4gsw_coopmat_xe2bx_t128x128k16g44s16m8flib` (tokens are matched by suffix and it was

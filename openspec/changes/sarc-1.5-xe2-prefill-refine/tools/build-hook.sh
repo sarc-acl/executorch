@@ -15,7 +15,7 @@ P=$A/build/$TAG.src.txt; SRC=$A/src/$TAG/executorch
 podman image exists $IMAGE || { echo "missing image $IMAGE: podman build -t $IMAGE -f $TOOLS/Containerfile $TOOLS" >&2; exit 2; }
 export XE2_EXPORT_MANIFEST=$A/src/$TAG.export-manifest
 export_commit $ET $SHA $SRC || { echo "export failed" >&2; exit 2; }
-(cd $SRC && patch -p1 --no-backup-if-mismatch < $PATCH) > $A/build/$TAG.patch.log 2>&1 || { echo "patch failed, see $A/build/$TAG.patch.log" >&2; exit 2; }
+(cd $SRC && git apply -p1 --verbose $PATCH) > $A/build/$TAG.patch.log 2>&1   # the export is not a git tree; git apply works on plain files || { echo "patch failed, see $A/build/$TAG.patch.log" >&2; exit 2; }
 { echo "tag=$TAG"; echo "hook_patch=$PATCH sha256=$(sha256sum < $PATCH | cut -c1-64) (LOCAL, UNCOMMITTED: hook measurement, not a candidate build)"; echo "commit=$SHA"; echo "tree=$(git -C $ET rev-parse $SHA^{tree})"; echo "subject=$(git -C $ET log -1 --format=%s $SHA)"
   echo "requested=$REV parent_commit=$PARENT_COMMIT"; echo "export_manifest=$(wc -l < $XE2_EXPORT_MANIFEST) trees sha256=$(sha256sum < $XE2_EXPORT_MANIFEST | cut -c1-64)"
   echo "image=$IMAGE $(podman image inspect --format '{{.Id}}' $IMAGE)"; echo "glslc=$(podman run --rm $IMAGE glslc --version | tr '\n' ' ')"
