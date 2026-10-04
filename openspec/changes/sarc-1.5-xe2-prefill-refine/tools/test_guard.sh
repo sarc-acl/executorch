@@ -8,6 +8,10 @@
 #              is left running.
 #   2. gate A: a foreign process that appears before a timed launch -> e2e5.sh/session.sh exit 76,
 #              gate.done = GATE_ABORTED, exit 76, tracing never started.
+#   4. screen: with a foreign process present screen.sh launches nothing further, records SCREEN_ABORTED and
+#              exits 76.
+#   5. parent control: a foreign process during verify.sh -> parent_verify.sh stops it, GATE_ABORTED, exit 76,
+#              no gate_check.py verdict.
 #   3. gate B: a foreign process that appears during a timed run -> the runner is stopped (its completion
 #              marker is absent), runs.csv keeps the row with other_gpu_process, GATE_ABORTED, no tracing.
 # Takes about 4 minutes (the session's 60 s idle wait, twice). Exit status 0 only if every assertion holds.
@@ -79,5 +83,28 @@ ok "gate exit status 76" '[[ $RC == 76 ]]'
 ok "gate.done = GATE_ABORTED" 'grep -q "^GATE_ABORTED" $D/gate.done'
 ok "tracing never started" '[[ ! -e $D/trace && ! -e $D/trace.out && ! -e $D/gate.txt ]]'
 ok "foreign process left running" 'kill -0 $FP'; kill $FP
+echo "== 4 screen.sh: foreign process present"
+B=$XE2_ARTIFACTS/build/tb/tests; mkdir -p $B; printf '#!/bin/bash\nsleep 2; echo JOB_COMPLETED\n' > $B/test_llama_microbench; chmod +x $B/test_llama_microbench
+FP=$(foreign); bash $T/screen.sh scr tb 4w 2 base t1 t2 > $W/scr.out 2>&1; RC=$?; O=$XE2_ARTIFACTS/raw/scr
+ok "screen exit status 76" '[[ $RC == 76 ]]'
+ok "nothing launched after the first refusal" '[[ $(ls $O/*.log | wc -l) == 1 ]] && ! grep -q JOB_COMPLETED $O/*.log'
+ok "screen recorded as aborted, not done" 'grep -q "^SCREEN_ABORTED rc=76 at 4w base r1" $O/env.txt && ! grep -q SCREEN_DONE $O/env.txt'
+kill $FP; rm -f $W/foreign.pid
+
+echo "== 5 parent_verify.sh: foreign process during verify.sh"
+P=$XE2_ARTIFACTS/build/parent; mkdir -p $P/llama/examples/models/llama $P/llama/lib $P/tests; echo BUILD_BOTH_OK > $XE2_ARTIFACTS/build/parent.src.txt
+printf '#!/bin/bash\nexit 0\n' > $P/llama/examples/models/llama/llama_main; : > $P/llama/lib/libllama_runner.so
+printf '#!/bin/bash\ncase "$*" in *--correctness-only*) sleep 21; echo JOB_COMPLETED ;; esac\n' > $P/tests/test_llama_microbench
+chmod +x $P/llama/examples/models/llama/llama_main $P/tests/test_llama_microbench; : > $W/r1304.txt
+rm -rf $XE2_ARTIFACTS/stage/s0-parent-verify; D=$XE2_ARTIFACTS/stage/s0-parent-verify
+XE2_UNALIGNED=$W/r1304.txt bash $T/parent_verify.sh > $W/pv.out 2>&1 & g=$!
+while [[ ! -e $D/verify/correctness.log ]] && kill -0 $g 2>/dev/null; do sleep 0.5; done
+FP=$(foreign); wait $g; RC=$?
+ok "control reached verify.sh after the SDPA passes" '[[ $(wc -l < $D/sdpa-correctness/rc.csv) == 3 ]] && ! grep -qv ",0$" $D/sdpa-correctness/rc.csv'
+ok "verify.sh stopped" 'grep -q "VERIFY_DONE rc=76" $D/verify.out && ! grep -q JOB_COMPLETED $D/verify/correctness.log && ! ps -eo args | grep -qx "sleep 21"'
+ok "parent control exit status 76" '[[ $RC == 76 ]]'
+ok "gate.done = GATE_ABORTED, no verdict from gate_check.py" 'grep -q "^GATE_ABORTED foreign GPU process during verify.sh" $D/gate.done && [[ ! -e $D/gate.txt ]]'
+ok "foreign process left running" 'kill -0 $FP'; kill $FP
+
 [[ $fails == 0 ]] && { echo "TEST_GUARD_PASS"; rm -rf $W; exit 0; }
 echo "TEST_GUARD_FAIL ($fails), evidence kept in $W"; exit 1

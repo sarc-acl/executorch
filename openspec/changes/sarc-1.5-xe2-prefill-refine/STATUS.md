@@ -60,17 +60,17 @@ job**; what could be exercised inside the fence is listed at the end of this sec
 | tool | what it does on this host |
 |---|---|
 | `host.sh` | paths (derived from the tool location), lock UUID, `ETVK_DEVICE_INDEX=0`, parent commit, sensors, `cool_start`, and the foreign-GPU-process guard. `gpu_others` reports every process that holds a DRM file of b70-0 (`drm-pdev 0000:01:00.0` in `/proc/<pid>/fdinfo`), whatever its name, plus the known workload names as a fallback for other users' processes, whose fdinfo cannot be read without root; the campaign job's own descendants and launcher shells are excluded. `guarded` does not start a job while such a process exists, polls once a second during the job, and on detection stops the job and its descendants at once (TERM, then KILL; never the foreign process), keeps their logs and returns 76 |
-| `build-both.sh <tag> [commit]` | builds an export of one exact commit (`git archive` + the pinned submodule trees), never the live tree; `parent` = `6a7cc8cc6`; creates the output directories; records commit, tree, image id and glslc; fails on a failed build or on a shipped-SPIR-V mismatch against `sarc/golden/spirv.json`; a tag is built once |
+| `build-both.sh <tag> [commit]` | builds an export of one exact commit, never the live tree: `export_commit` (in `host.sh`) writes the superproject and, recursively, every submodule at the commit it pins from the git object stores, so modified, untracked or differently checked-out files cannot reach a build; the manifest of exported trees is kept. `parent` = `6a7cc8cc6`; creates the output directories; records commit, tree, image id and glslc; fails on a failed build or on a shipped-SPIR-V mismatch against `sarc/golden/spirv.json`; a tag is built once |
 | `stage.sh` | stages only `BUILD_BOTH_OK` builds; adds the unaligned prompt `r1304.txt` that `verify.sh` looks for (from `~/.cache/et-e2e/sarc15-r4/`, sha256 `881de104...`, identical in the four earlier B70 studies on this host) |
 | `e2e5.sh` | samples act_freq, throttle status, card energy, package temperature. A clock threshold is required: `--calibrate` (baseline / A-A session only) stores the idle temperature and 97 % of the lowest per-run median clock in the artifact directory; every other session refuses to start without it. A throttled run is invalid. A foreign GPU process aborts the session with exit status 76 (`E2E5_ABORTED`), which `session.sh` passes on and `gate.sh` turns into `GATE_ABORTED`; a run in progress is stopped and kept as an invalid row. Next tokens are compared only between completed runs that printed text (otherwise `INVALID`). Exit status and `done.txt` are `E2E5_OK` only with 5 valid runs per build in every cell and all comparisons `SAME` |
-| `parent_verify.sh` | parent control `s0-parent-verify`: unmodified `verify.sh` on the pristine parent build and one pass of each SDPA tier |
+| `parent_verify.sh` | parent control `s0-parent-verify`: unmodified `verify.sh` on the pristine parent build and one pass of each SDPA tier; a foreign GPU process ends it with `GATE_ABORTED` and exit 76, without a `gate_check.py` verdict |
 | `sdpa_passes.sh` | N passes each of `--sdpa-tier=all`, `extended`, `full`; every log and return status kept |
 | `gate.sh <session> [--sdpa]`, `gate_sdpa.sh <session>` | The candidate environment is read only from the staged `cand/env` (no command-line environment; refuses to start if `cand-traced/env` differs or the top-level binaries are not the staged candidate's), so verification, SDPA passes, timing and traces run one configuration. A foreign GPU process in any step, including both SDPA perf runs, ends the gate at once with `GATE_ABORTED`. SDPA passes (12 per tier with `--sdpa`), guarded `verify.sh`, timing session, traces; every step runs even after a failure and nothing is deleted; `gate.done` is `GATE_PASS` / `GATE_FAIL` / `GATE_ABORTED` from `gate_check.py`, never unconditional |
 | `gate_check.py` | the acceptance decision, one PASS/FAIL line per requirement: `verify.sh` results and line-by-line equality with the parent control, the staged `cand/env` equal to the environment `verify.sh` and the timing session recorded, six complete timing cells with a clock threshold in force, next token `SAME` in six cells on both prompts, traces for six cells x two arms, and for SDPA candidates 12 passes x 3 tiers with the expected case counts (4 / 8 / 4), 0 mismatches and `pairing=ok` |
 | `trace.sh`, `trace_analysis.py` | guarded warm ETDump runs under `raw/xe2`; the analyzer is a campaign-local copy of the kit's (the kit file is unchanged) that reads `xe2` and exits non-zero on a missing, empty or single-execution trace; `trace.ok` only when every run and the analysis succeeded |
-| `test_guard.sh` | CPU-only regression of the guard and of the abort path through `e2e5.sh`, `session.sh` and `gate.sh` (stub binaries, temporary artifact directory and lock, a python3 process that only holds the render node open as the unfamiliar foreign client); about 3.5 minutes |
+| `test_guard.sh`, `test_export.sh` | CPU-only regressions. `test_guard.sh` (about 4 minutes): the guard and the abort path through `e2e5.sh`, `session.sh`, `gate.sh`, `screen.sh` and `parent_verify.sh`, with stub binaries, a temporary artifact directory and lock, and a python3 process that only holds the render node open as the unfamiliar foreign client. `test_export.sh`: `export_commit` on a scratch repository with a nested submodule and dirty live trees |
 | `roof_util.py` | no built-in roofs: percent-of-roof only with `--roof` and `--source` naming a fresh igpu-roofline run, otherwise rates only |
-| `session.sh`, `screen.sh`, `gl.sh`, `collect.sh`, `summarize.py`, `screen_summary.py`, `prof_decode.py`, `Containerfile` | as on the 780M with this host's paths; `gl.sh` uses the guard |
+| `session.sh`, `screen.sh`, `gl.sh`, `collect.sh`, `summarize.py`, `screen_summary.py`, `prof_decode.py`, `Containerfile` | as on the 780M with this host's paths; `gl.sh` uses the guard; `screen.sh` stops at the first status 76 (or 75), records `SCREEN_ABORTED` and exits with it |
 
 Exercised inside the fence (no GPU job):
 
@@ -79,14 +79,20 @@ Exercised inside the fence (no GPU job):
   with an injected mismatch, a `pairing` failure, an `INVALID` next token, a failed production-diff case and a
   `cand/env` that differs from the verified environment (each reported as FAIL);
 - the start-up refusals of `gate.sh` on a dummy session; `roof_util.py` on a 780M `gemm.csv`;
-- `test_guard.sh`, 22 of 22 assertions (2026-10-04): an unfamiliar DRM client of b70-0 is detected; the
+- `test_guard.sh`, 30 of 30 assertions (2026-10-04): an unfamiliar DRM client of b70-0 is detected; the
   campaign's own job, even one named `llama_main` or holding the render node, is not; a job is refused while a
   foreign process runs; a running job and its descendants are stopped within seconds and never complete, with
   the foreign process left alive; a foreign process before a timed launch or during a timed run gives
   `E2E5_ABORTED`, exit 76 through `session.sh`, `GATE_ABORTED`, an invalid `other_gpu_process` row for the
-  interrupted run, and no tracing afterwards.
+  interrupted run, and no tracing afterwards; `screen.sh` launches nothing after the first refusal and exits 76
+  with `SCREEN_ABORTED`; `parent_verify.sh` stops `verify.sh` and exits 76 with `GATE_ABORTED`;
+- `test_export.sh`, 8 of 8: the export holds the pinned commits of the superproject, the submodule and the
+  nested submodule although all three live trees were modified, had untracked files, or were checked out at
+  another commit; an uninitialised pinned submodule fails the export;
+- a dry export of the parent `6a7cc8cc6` into the session's temporary directory (deleted afterwards): 31 trees
+  (the superproject and 30 submodules), 3 s, the live tree untouched.
 
-Not exercised: `build-both.sh`, `stage.sh`, `trace.sh`, a successful run of `e2e5.sh` or of the gate, and
+Not exercised: the container part of `build-both.sh` (image, builds, golden comparison), `stage.sh`, `trace.sh`, a successful run of `e2e5.sh` or of the gate, and
 whether `act_freq` is readable under load in this VM (the calibration session fails with `clock_not_readable`
 if it is not). Known limits of the guard: a GPU client owned by another user is only caught by the name list;
 the once-a-second poll costs CPU on the host during timed runs (about 0.15 core in the test), the same for

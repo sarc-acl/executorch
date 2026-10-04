@@ -3,8 +3,10 @@
 # build/<tag> (backend + tests + llama_main) and build/<tag>-traced (ETDump llama_main).
 #   build-both.sh parent            the pristine parent, PARENT_COMMIT of host.sh
 #   build-both.sh <tag> [commit]    a topic commit (default HEAD)
-# The source is an export of that commit (git archive + the submodule trees the commit pins) under
-# src/<tag>/executorch, never the live working tree, so uncommitted edits cannot leak into a build. A tag is
+# The source is an export of that commit and, recursively, of every submodule at the commit it pins (host.sh
+# export_commit: from the git object stores, never from the live working trees) under src/<tag>/executorch, so
+# uncommitted, untracked or differently checked-out files in the superproject or in a submodule cannot leak
+# into a build. src/<tag>.export-manifest lists every exported tree with its commit. A tag is
 # built once; rebuilds take a new tag. Exit status 0 only if both builds succeeded and the shipped SPIR-V of the
 # build matches sarc/golden/spirv.json. No GPU is used; do not run it during a measurement.
 set -uo pipefail
@@ -16,15 +18,10 @@ mkdir -p $A/build $A/src || { echo "cannot create $A/build" >&2; exit 2; }
 P=$A/build/$TAG.src.txt; SRC=$A/src/$TAG/executorch
 [[ -e $P || -e $SRC ]] && { echo "tag $TAG already exists ($P); use a new tag" >&2; exit 2; }
 podman image exists $IMAGE || { echo "missing image $IMAGE: podman build -t $IMAGE -f $TOOLS/Containerfile $TOOLS" >&2; exit 2; }
-subs() { git -C $ET ls-tree -r "$1" | awk '$2 == "commit"'; }
-[[ $(subs $SHA) == "$(subs HEAD)" ]] || { echo "submodule pins of $SHA differ from HEAD; check them out first" >&2; exit 2; }
-git -C $ET submodule status --recursive | grep -q '^[^ ]' && { echo "submodules are not at their pinned commits" >&2; exit 2; }
-mkdir -p $SRC && git -C $ET archive $SHA | tar -x -C $SRC || { echo "export failed" >&2; exit 2; }
-git -C $ET submodule status | awk '{print $2}' | while read -r p; do
-  mkdir -p $SRC/$p && rsync -a --exclude .git $ET/$p/ $SRC/$p/ || exit 1
-done || { echo "submodule copy failed" >&2; exit 2; }
+export XE2_EXPORT_MANIFEST=$A/src/$TAG.export-manifest
+export_commit $ET $SHA $SRC || { echo "export failed" >&2; exit 2; }
 { echo "tag=$TAG"; echo "commit=$SHA"; echo "tree=$(git -C $ET rev-parse $SHA^{tree})"; echo "subject=$(git -C $ET log -1 --format=%s $SHA)"
-  echo "requested=$REV parent_commit=$PARENT_COMMIT"; echo "submodules_sha256=$(subs $SHA | sha256sum | cut -c1-64)"
+  echo "requested=$REV parent_commit=$PARENT_COMMIT"; echo "export_manifest=$(wc -l < $XE2_EXPORT_MANIFEST) trees sha256=$(sha256sum < $XE2_EXPORT_MANIFEST | cut -c1-64)"
   echo "image=$IMAGE $(podman image inspect --format '{{.Id}}' $IMAGE)"; echo "glslc=$(podman run --rm $IMAGE glslc --version | tr '\n' ' ')"
   echo "start=$(date -u +%FT%TZ)"; } > $P 2>&1
 ok=1

@@ -20,6 +20,21 @@ cool_start() { local t0=$SECONDS a b
   else
     while (( SECONDS - t0 < 300 )); do a=$(gtemp_mc); sleep 60; b=$(gtemp_mc); (( a - b <= 1000 && b - a <= 1000 )) && break; done
   fi; }
+# export_commit <git work tree> <commit> <dest>: write the files of exactly that commit into <dest>, then every
+# submodule at the commit the tree pins, recursively. Everything comes from the git object stores (read-tree +
+# checkout-index into a scratch index), so modified, untracked or differently checked-out files in the live
+# trees cannot reach the export. Appends "<path> <commit>" per tree to <dest>.export-manifest. Fails if a
+# pinned submodule commit is not available locally.
+export_commit() { local wt=$1 sha=$2 dest=$3 rel=${4:-.} idx p s
+  git -C "$wt" cat-file -e "$sha^{commit}" 2>/dev/null || { echo "export: $rel: commit $sha not available in $wt" >&2; return 1; }
+  idx=$(mktemp) && rm -f $idx && mkdir -p "$dest" || return 1
+  GIT_INDEX_FILE=$idx git -C "$wt" read-tree "$sha" && GIT_INDEX_FILE=$idx git -C "$wt" checkout-index -a -f --prefix="$dest/" \
+    || { rm -f $idx; echo "export: $rel: checkout of $sha failed" >&2; return 1; }
+  rm -f $idx; echo "$rel $sha" >> "${XE2_EXPORT_MANIFEST:?}"
+  while read -r s p; do
+    [[ -e $wt/$p/.git ]] || { echo "export: submodule $rel/$p is not initialised" >&2; return 1; }
+    mkdir -p "$dest/$p" && export_commit "$wt/$p" "$s" "$dest/$p" "$rel/$p" || return 1
+  done < <(git -C "$wt" ls-tree -r "$sha" | awk '$2 == "commit" {print $3, $4}'); }
 # gpu_others: GPU workloads that this campaign job did not start, as "pid:command;" entries; empty = the card
 # is ours. A process counts when
 #   - it holds a DRM file of b70-0 (any /proc/<pid>/fdinfo entry with drm-pdev = PDEV), whatever its name; or
