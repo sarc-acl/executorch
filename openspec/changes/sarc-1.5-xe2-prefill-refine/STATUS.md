@@ -1,7 +1,8 @@
 # sarc-1.5-xe2-prefill-refine: status
 
-**2026-10-04 20:10 UTC — running. Baseline and A/A measured; first SDPA kernels correct and screened; no gated
-candidate yet.**
+**2026-10-04 21:50 UTC — running. Baseline and A/A measured; SDPA and linear kernels screened; phase timing
+done; candidate 1 (`xe2-refine1`, SDPA) chosen and built, its gate starts after the roofline run. No
+end-to-end number for a candidate exists yet.**
 
 Branch `topic/xe2-prefill-refine`, parent `6a7cc8cc6` (head of `topic/780m-prefill-refine`). Host
 `fedora-gpu-eval`, card `b70-0` only (guest PCI `0000:01:00.0`, Vulkan device 0, **`ETVK_DEVICE_INDEX=0`**,
@@ -10,8 +11,10 @@ B70 or on the B580.
 
 ## Running now
 
-`tools/screen_sdpa.sh screen1-sdpa topic1 2 <48 profiles>`: kernel-level screen of the Xe2 SDPA variants
-(artifacts `raw/screen1-sdpa/`), about one hour. Nothing else uses the card.
+`tools/roof.sh xe2-fast-20261004`: igpu-roofline `fast` plan on `b70-0` (artifacts
+`roofline/xe2-fast-20261004/`), about 15 minutes, started 21:46 UTC. Queued behind it: the gate of candidate 1
+(`gate_sdpa.sh s2-c1`: 12 passes x 3 SDPA tiers, `verify.sh`, timing session, traces; about 1.5 hours), which
+gives the first end-to-end numbers.
 
 ## Needs the owner's attention
 
@@ -84,13 +87,44 @@ for `bmg g21` / `bmg g31` that match only while `ET_VK_SARC_DEV_PROFILE` names a
 environment is therefore `ET_VK_SARC_UNVERIFIED=1` + `ET_VK_SARC_DEV_PROFILE=xe2-...`; every other
 configuration selects exactly what the release tables select (`test_sarc_select` unchanged: 31 release rows).
 Kernels: the 780M twins built for MMA 8x16x16 (fp16 x fp16 -> fp32, which Xe2 exposes, so accumulation
-precision is unchanged) and subgroup 16, plus two new families with a fragment-contiguous shared-memory layout
-(`sarc_sdpa_{qk,av}_coopmat_xe2`). All from `tools/gen_xe2.py`.
+precision is unchanged) and subgroup 16, plus Xe2 families with a fragment-contiguous shared-memory layout.
+All from `tools/gen_xe2.py`.
 
-Base rows (`xe2-sdpa0`: QK^T `sweep_t128x64k32g44s16m8nf`, attn*V `sweep_t64x64k32g44s16m8`):
-- SDPA correctness tier `all`, one pass: 4 of 4 PASSED, 0 mismatches, `pairing=ok` (`raw/smoke/`).
-- Kernel level, one run (`raw/screen1-sdpa`, ms per layer, S = 2048): QK^T + softmax + attn*V
-  8B 8.36 -> 2.20, 3B 6.23 -> 1.65, 1B 4.98 -> 1.61 (3.1 to 3.8x). Not yet an end-to-end number.
+Kernel-level screens (`test_llama_microbench --sdpa`, S = 2048, ms per layer, `results/xe2/screens/`):
+
+| kernels | 8B QK^T / softmax / attn*V | 3B | 1B |
+|---|---|---|---|
+| stock (the parent) | 3.38 / 1.03 / 3.95 | 2.57 / 0.77 / 2.89 | 1.82 / 1.03 / 2.13 |
+| base rows `xe2-sdpa0` (straight port) | 0.83 / 0.80 / 0.57 | 0.62 / 0.59 / 0.44 | 0.43 / 0.80 / 0.38 |
+| **`xe2-refine1`** (candidate 1) | 0.41 / 0.80 / 0.48 | 0.31 / 0.60 / 0.38 | 0.30 / 0.80 / 0.38 |
+
+- Screen 1 (48 profiles, 1 round) and screen 2 (15 profiles, 2 rounds, agree within 0.01 ms).
+- QK^T: packed staging with a ColumnMajor K load (`pk_t128x64k32g44s16m8nf`) is twice as fast as the scalar
+  fp16 staging of the release-style kernel; `NO_MASK_FILL` is worth 0.3 ms on 8B. The fragment-contiguous
+  ColumnMajor variant (`xe2c`) is another 0.02 to 0.03 ms on 3B / 8B: kept for a later candidate.
+- attn*V: the 128-row fragment-layout tile `xe2_t128x64k32g44s16m8` is best for head_dim 128 (0.48 / 0.38 ms
+  against 0.57 / 0.44); head_dim 64 keeps the 64 x 64 tile. Subgroup tiles larger than 32 x 16 lose.
+- With these kernels the truncated softmax (0.6 to 0.8 ms) is the largest of the three. Its shader name is
+  fixed in the release zone (`impl/sarc/SdpaCoopmat.cpp`), so a dev variant cannot replace it without a hook.
+- `xe2-sdpa0`, SDPA correctness tier `all`, one pass: 4 of 4 PASSED, 0 mismatches, `pairing=ok`.
+
+## Linear kernels (step 1 and step 3, so far measurement only)
+
+Phase timing of the shipped tiles (shader clock, 1B shapes, share of a wave; `results/xe2/phases/`):
+
+| kernel | barrier | fetch | MMA | LDS store | prologue + epilog | drain + write |
+|---|---:|---:|---:|---:|---:|---:|
+| 4w `t128x128k16g44s16m8fli` | 22 to 23 % | 22 to 26 % | 37 to 40 % | 13 to 15 % | 1 % | 1 % |
+| 8da4w zpg `t256x64k32g48s16m8` | 18 to 20 % | 32 to 36 % | 22 to 23 % | 15 to 16 % | 5 to 9 % | 2 % |
+
+Tile screens (`screens/screen3-8da4w.csv`, `screen4-4w.csv`, kernel time, 2 rounds, all three models):
+
+- 8da4w: every other tile shape is slower than the shipped one (0.26 to 0.88x). More than 4 x 1 MMA tiles per
+  subgroup collapses (0.26 to 0.52x); the same subgroup tile with twice the weight fetches per thread is 0.80x.
+  The one gain: texel-wise weight staging on a K = 64 tile, `bt_t128x64k64g44s16m8`, **1.12x** (its zpg twin
+  0.68x), so fetching each packed-weight texel once instead of 8 times is what matters. The 780M `bt` body
+  cannot run on the shipped 512-thread tile (128 slots); family `xe2bt` (generated, not built yet) can.
+- 4w: every other tile is slower (0.14 to 0.90x), including K = 32 chunks (0.50x).
 
 ## Per-cell numbers against the parent
 
@@ -98,12 +132,11 @@ No gated candidate yet.
 
 ## Next
 
-1. Finish the screen; choose QK^T and attn*V per head_dim; build with profile `xe2-refine1`; gate
-   (`tools/gate_sdpa.sh`: 12 passes x 3 SDPA tiers, `verify.sh`, timing session, traces).
-2. Per-op ETDump breakdown from that gate's traces; phase timing of the two linear kernels (`tools/prof.sh`,
-   variants `sarc_dev_prof_*_s16m8*p`).
-3. Roofs: igpu-roofline `fast` on `b70-0` (a copy of the fleet tool is staged in the artifact directory).
-4. 8da4w linear, then 4w linear.
+1. Roofs from the run in progress, then the gate of candidate 1 (`s2-c1`) and the per-op breakdown from its
+   traces.
+2. Build with the `xe2bt` 8da4w family and a texel-wise 4w weight staging; screen; candidate 2 (8da4w), then
+   candidate 3 (4w).
+3. Stop after two consecutive gated candidates under 2 % geomean.
 
 ## Awaiting B580 confirmation
 

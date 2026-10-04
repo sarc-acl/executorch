@@ -12,4 +12,4 @@ cool_start
 env $VAR=$TOK ET_VK_DUMP_OUTPUT_DIR=$O $TOOLS/gl.sh $B --linear --regime=prefill --scheme=$Q --storage=$ST --model=$MODEL --skip-correctness > $O/run.log 2>&1; rc=$?
 echo "prof $Q $TOK rc=$rc $(grep -o 'sarc_dev_prof[a-z0-9_]*' $O/run.log | sort -u | tr '\n' ' ')"
 [[ $rc == 75 || $rc == 76 ]] && exit $rc
-python3 $TOOLS/prof_decode.py $O $TM $TN 2048 $TK | tee $O/phases.csv
+$XE2_PYTHON $TOOLS/prof_decode.py $O $TM $TN 2048 $TK | tee $O/phases.csv
