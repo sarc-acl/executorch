@@ -38,8 +38,11 @@ gone_check() { [[ -f $GONE ]] && exit 70; gpu_alive || gpu_gone "${1:-health che
 # runners, reported during the first roofline run). A process under a foreign parent is still foreign.
 own_pid() { local p=$1 st n=0
   while [[ $p -gt 1 && $n -lt 16 ]]; do
+    # A process that is gone before it could be identified cannot be attributed to anyone: it is not reported
+    # (the third false abort, s2-c1: a pid with no name left, seen while verify.sh was starting and ending
+    # runners of ours). This is the documented limit: a process shorter than one look can be missed.
+    st=$(sed 's/.*) //' /proc/$p/stat 2>/dev/null) || return 0
     { tr '\0' '\n' < /proc/$p/environ; } 2>/dev/null | grep -qx "SARC_CAMPAIGN_TAG=$SARC_CAMPAIGN_TAG" && return 0
-    st=$(sed 's/.*) //' /proc/$p/stat 2>/dev/null) || return 1
     set -- $st; p=$2; n=$((n + 1))
   done; return 1; }
 # others: GPU clients (compute apps and graphics/Vulkan clients from pmon) and known GPU programs by name that
@@ -51,7 +54,7 @@ others() {
                 pgrep -x 'llama_main|test_llama_micr|llama-server|ollama|vllm'
                 pgrep -f 'ComfyUI|comfyui|Runner\.Worker'; } | sort -un ); do
     [[ -d /proc/$p ]] || continue
-    own_pid $p || echo "$p:$(cat /proc/$p/comm 2>/dev/null)"
+    own_pid $p || echo "$p:$(cat /proc/$p/comm 2>/dev/null):$(stat -c %U /proc/$p 2>/dev/null)"
   done | tr '\n' ';'
 }
 # no_others <where>: stop measuring when a foreign GPU process is present (reported, never forced).

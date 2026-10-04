@@ -90,6 +90,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <iomanip>
@@ -2076,6 +2077,29 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
       ++mismatches;
       if (first_mismatch < 0) {
         first_mismatch = i;
+      }
+    }
+  }
+
+  // Measured error against the fp32 reference: reported for candidates that
+  // change accumulation or precision, never judged. ET_VK_SDPA_DUMP_DIR also
+  // writes the raw fp16 output, so that two builds can be compared directly.
+  {
+    double max_abs = 0.0, sum_sq = 0.0, max_ref = 0.0;
+    for (int64_t i = 0; i < q_numel; ++i) {
+      const double diff = std::fabs(double(outf[i]) - double(ref[i]));
+      max_abs = std::max(max_abs, diff);
+      sum_sq += diff * diff;
+      max_ref = std::max(max_ref, double(std::fabs(ref[i])));
+    }
+    std::cout << "[sdpa-error] " << c.name << " max_abs=" << max_abs
+              << " rms=" << std::sqrt(sum_sq / double(q_numel))
+              << " max_abs_ref=" << max_ref << "\n";
+    if (const char* dump_dir = std::getenv("ET_VK_SDPA_DUMP_DIR")) {
+      const std::string path = std::string(dump_dir) + "/" + c.name + ".bin";
+      if (FILE* f = std::fopen(path.c_str(), "wb")) {
+        std::fwrite(outh.data(), sizeof(uint16_t), outh.size(), f);
+        std::fclose(f);
       }
     }
   }

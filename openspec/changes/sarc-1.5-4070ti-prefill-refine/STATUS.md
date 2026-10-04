@@ -1,18 +1,27 @@
 # STATUS: sarc-1.5-4070ti-prefill-refine
 
-**2026-10-04 21:25 UTC, gpu-dev-4004. RUNNING. Baseline, A/A, parent control, per-op traces, fresh roofs, phase
-timing and two SDPA screens are done. Candidate 1 is in its gate now. The stop rule is not met; the branch is
-not pushed.**
+**2026-10-04 22:15 UTC, gpu-dev-4004. RUNNING. No candidate is accepted yet: the first gate of candidate 1 was
+aborted by my own process watcher after its SDPA steps had passed (see Incidents); it is queued again. The
+stop rule is not met; the branch is not pushed.**
 
 ## Now
 
-- Running: `tools/gate_sdpa.sh s2-c1`, candidate 1 = `ET_VK_SARC_DEV_PROFILE=4070ti-refine1` (build `topic4`)
-  against the pristine parent: 24 SDPA correctness passes, `verify.sh`, the six-cell session, warm traces.
-  About one hour. Kernel-level expectation from screen 2: attention per layer 3.19 -> 1.27 ms (1B),
+- Running (detached, one GPU job at a time): kernel-level tile screens of the linear kernels on build `topic6`
+  (`raw/screen1-4w`, `raw/screen1-8da4w`, 3 repeats, tokens interleaved), then the softmax variant
+  (correctness, then `raw/sdpa-screen3`).
+- Queued behind them: `SDPA_FROM=s2-c1 tools/gate_sdpa.sh s2-c1b`, candidate 1 =
+  `ET_VK_SARC_DEV_PROFILE=4070ti-refine1` (build `topic4`) against the pristine parent: `verify.sh`, the
+  six-cell session, warm traces. The 24 SDPA correctness passes of `s2-c1` (accepted: 12 x 8 `extended` and
+  12 x 4 `full` cases, 0 mismatches, `pairing=ok`) are reused: same test binary, runner library and environment.
+- Kernel-level expectation for candidate 1 from screen 2: attention per layer 3.19 -> 1.27 ms (1B),
   3.56 -> 1.10 ms (3B), 4.74 -> 1.43 ms (8B); end to end roughly +40 % on 1B and 3B, +30 % on 8B. Not measured
   end to end yet.
-- Next: 8da4w linear, then 4w linear. Phase timing is done (below); tile sweeps of the `ga` and zpgtr kernels
-  for this device are being generated while the gate runs.
+- Prepared, not measured: (a) linear sweep tiles of this device (`tools/gen_4070ti_lin.py`: 14 4w `ga` tiles,
+  13 zpgtr tiles); (b) a softmax variant without the full zero tail and (c) a fused attention kernel that never
+  writes the score matrix. (b) and (c) cannot be reached from the dev zone: they are built only through local
+  patches that are recorded in `tools/` and not applied to the branch (builds `topic6`, `topic7`).
+- Builds and timed runs: every build so far ended before a timed session started (the last one, `topic7`,
+  at 21:53:05 UTC; the s2-c1 gate never reached its session). No build will run during a timed session.
 - Blocking: nothing.
 
 ## SDPA screens (kernel level, `test_llama_microbench --sdpa`, us per layer at S = 2048, median of 3)
@@ -67,6 +76,8 @@ fetching than multiplying.
 | `topic1` | `3e2b9dc4d` + `tools/local-hook-nvidia-sdpa.patch` (not committed) | A/A arm, screen 1, phase timing |
 | `topic3` | `ee29a3a88` + the same patch | screen 2 (port tiles and direct-feed kernels) |
 | `topic4` | `d3df2bb69` + the same patch | candidate 1 (`4070ti-refine1`) |
+| `topic6` | `06f3e22d6` + `tools/local-hook-nvidia-sdpa-softmax.patch` | linear tile screens, softmax variant |
+| `topic7` | `50675407a` + `tools/local-hook-fused-sdpa.patch` | fused attention kernel (not run yet) |
 
 Both from `git archive` trees with `sarc/tools/build.sh` in `localhost/et-vk-build:rocky10` through the
 docker shim; provenance in `.artifacts/4070ti-prefill-refine/build/<tag>.src.txt`.
@@ -139,7 +150,15 @@ traffic, not by arithmetic, so the gain should come from not writing and not rea
   stats line (GPU idle, `nvidia-smi` answering, no Xid in the kernel log). Killed by me with SIGTERM after
   10 min; the ETDump is complete (same size and dispatch count as the candidate arm's) and was analysed. One
   such hang in about 200 runner calls so far; the e2e notes report rare exit-time failures on this card.
-- No device loss, no foreign GPU process.
+- 22:05 UTC: the gate of candidate 1 (`s2-c1`) ended with `GATE_ABORTED verify rc=76` although `verify.sh`
+  itself finished with rc 0 and every item passed. The watcher had recorded one pid without a name: the process
+  had exited between the listing and the read of its `/proc` entry, and the watcher counted that as foreign.
+  This is the third false abort from the same tool (unreaped runner, cleaned environment, now a vanished pid);
+  `common.sh` no longer reports a process it could not identify at all and records the owner of the ones it
+  does report. I have no evidence of a real foreign GPU process at any time: `nvidia-smi` listed no compute
+  client that was not ours, nobody else is logged in. The session is kept as aborted; the attempt is repeated
+  as `s2-c1b`.
+- No device loss.
 
 ## Open
 
