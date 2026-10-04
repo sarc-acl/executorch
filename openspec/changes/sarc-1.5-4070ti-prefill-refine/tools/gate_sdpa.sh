@@ -21,6 +21,6 @@ for x in "cand:$ENVS" "table:"; do   # recorded only; device loss, a busy lock o
 done
 cool_start 50 300
 step verify run_verify "$ENVS"
-step verify-check python3 $TOOLS/gate_check.py verify $D/verify.out $PARENT_CTL/verify.out > $D/verify-check.txt 2>&1
+step verify-check python3 $TOOLS/gate_check.py verify $D $PARENT_CTL > $D/verify-check.txt 2>&1
 timed_and_traced
 finish GATE_ACCEPTED "all steps passed; the gain is in raw/summary.csv" 0

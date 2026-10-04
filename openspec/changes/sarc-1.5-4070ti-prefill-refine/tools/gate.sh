@@ -16,6 +16,6 @@ source "$(dirname "$0")/common.sh"; source $TOOLS/gatelib.sh; S=$1; D=$A/stage/$
 need $D/STAGE.md $PARENT_CTL/verify.out $CLKFILE; cand_env "${@:2}"; grep -q GATE_ACCEPTED $PARENT_CTL/gate.done || { echo "no accepted parent control" >&2; exit 77; }
 cool_start 50 300
 step verify run_verify "$ENVS"
-step verify-check python3 $TOOLS/gate_check.py verify $D/verify.out $PARENT_CTL/verify.out > $D/verify-check.txt 2>&1
+step verify-check python3 $TOOLS/gate_check.py verify $D $PARENT_CTL > $D/verify-check.txt 2>&1
 timed_and_traced
 finish GATE_ACCEPTED "all steps passed; the gain is in raw/summary.csv" 0

@@ -7,8 +7,8 @@ source "$(dirname "$0")/common.sh"; source $TOOLS/gatelib.sh; PB=$1; D=$PARENT_C
 [[ -e $D/verify.out ]] && { echo "parent control exists" >&2; exit 2; }
 L=$A/build/$PB/llama/examples/models/llama/llama_main; SO=$(find $A/build/$PB/llama -name libllama_runner.so 2>/dev/null | head -1)
 need $L "${SO:-$A/build/$PB/libllama_runner.so}" $A/build/$PB/tests/test_llama_microbench $TOOLS/r1304.txt
-mkdir -p $D/sdpa-correctness; cp -f $L $SO $A/build/$PB/tests/test_llama_microbench $KIT/prompts/prompt_*.txt $TOOLS/r1304.txt $D/
-{ echo "control: parent build/$PB, no environment"; grep '^commit \|^tree-sha256' $A/build/$PB.src.txt; sha256sum $D/llama_main $D/libllama_runner.so $D/test_llama_microbench $D/*.txt; } > $D/STAGE.md
+mkdir -p $D/sdpa-correctness; stage_verify_runner $D $L; cp -f $SO $A/build/$PB/tests/test_llama_microbench $KIT/prompts/prompt_*.txt $TOOLS/r1304.txt $D/
+{ echo "control: parent build/$PB, no environment"; grep '^commit \|^tree-sha256' $A/build/$PB.src.txt; sha256sum $D/verify-bin/llama_main $D/llama_main $D/libllama_runner.so $D/test_llama_microbench $D/*.txt; } > $D/STAGE.md
 cool_start 50 300
 for tier in extended full; do
   $TOOLS/gl.sh $D/test_llama_microbench --sdpa-correctness-only --sdpa-tier=$tier > $D/sdpa-correctness/table-$tier-r1.log 2>&1
@@ -16,5 +16,5 @@ for tier in extended full; do
   echo "table $tier r1 rc=$rc cases=$(grep -c '^\[sdpa-correctness\]' $D/sdpa-correctness/table-$tier-r1.log) nonzero-mismatch=$(grep '^\[sdpa-correctness\]' $D/sdpa-correctness/table-$tier-r1.log | grep -vc ' mismatches=0/')" >> $D/sdpa-correctness/summary.txt
 done
 step verify run_verify ""
-step verify-check python3 $TOOLS/gate_check.py verify $D/verify.out $D/verify.out > $D/verify-check.txt 2>&1
+step verify-check python3 $TOOLS/gate_check.py verify $D $D > $D/verify-check.txt 2>&1
 finish GATE_ACCEPTED "parent control complete" 0

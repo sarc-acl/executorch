@@ -157,5 +157,115 @@ class Session(unittest.TestCase):
         make(self.d); rc, out = check(self.d); self.assertNotEqual(rc, 0, out)
         rc, out = check(self.d, "--calibration"); self.assertNotEqual(rc, 0, out)   # thresholds were applied: not a calibration session
 
+MODELS = {"1b": ("llama-3.2-1b", "llama3_2-1b"), "3b": ("llama-3.2-3b", "llama3_2-3b"), "8b": ("llama-3.1-8b", "llama3_1-8b")}
+def make_verify(stage, correctness_rc="0", fallback=False, token=b" tok"):
+    """A complete verify.sh result (verify.out, verify/, verify-runs.jsonl) as the gates stage and record it."""
+    V = os.path.join(stage, "verify"); os.makedirs(V); out = []; recs = []
+    def call(name, m, q, prompt, want, ntok, warm, mode, text, stats):
+        with open(os.path.join(V, name), "wb") as f:
+            f.write(open(PROMPTS[prompt][2], "rb").read() + text + b"\n" + ("PyTorchObserver " + json.dumps(dict(stats, prompt_tokens=int(want))) + "\n").encode())
+        recs.append({"utc": "t", "rc": 0, "model": f"{MODELS[m][1]}_vulkan_{q}.pte", "prompt": prompt, "max_new_tokens": ntok,
+                     "warmup": warm, "env": "ET_VK_FORCE_TILED_LINEAR=1" if mode == "tiled" else ""})
+    rows = "".join(f"kernel (1,1,1) (1,1,1) case{i} [1x1] 1.0 μs 100.0 GFLOP/s   PASSED\n" for i in range(6))
+    rows += "[rank3 batch=1] r3a -> sarc_k (coopmat dispatched), correctness=PASSED\n"
+    rows += "[rank3 batch=1] r3b -> tiled_k (%s), correctness=PASSED\n" % ("NOT coopmat -- fallback" if fallback else "coopmat dispatched")
+    rows += "[correctness] FAILED -- numeric failure(s) and/or a rank-3 case did not dispatch coopmat\n" if fallback else "[correctness] PASSED\n"
+    open(os.path.join(V, "correctness.log"), "w").write(rows)
+    out.append(f"correctness rc={correctness_rc} x")
+    for q in ("4w", "8da4w"):
+        json.dump({"cases": [{"kernel": "sarc_k", "kernel_median_us": 1.0}]}, open(os.path.join(V, f"linear-{q}.json"), "w"))
+        out.append(f'linear {q} rc=1 kernels: 1 "sarc_k";')
+    for m in MODELS:
+        for q in ("4w", "8da4w"):
+            for mode in ("tiled", "default"):
+                call(f"prefill-{m}-{q}-{mode}.log", m, q, "prompt_2048.txt", "2048", "1", 1, mode, b" the", {"prefill_token_per_sec": 1234.5, "generated_tokens": 0})
+                out.append(f"{m} {q} {mode} prefill_tok_s=1234.5")
+                if m == "1b":
+                    call(f"check-{m}-{q}-{mode}.log", m, q, "prompt_check.txt", "1972", "1", 0, mode, token, {"generated_tokens": 0})
+                    call(f"unaligned-{m}-{q}-{mode}.log", m, q, "r1304.txt", "1792", "1", 0, mode, token, {"generated_tokens": 0})
+            if m == "1b":
+                out += [f"{m} {q} check: default vs tiled output SAME", f"{m} {q} unaligned: default vs tiled output SAME"]
+                call(f"decode-{m}-{q}.log", m, q, "prompt_2048.txt", "2048", "32", 0, "default", b" a b c", {"generated_tokens": 31, "decode_token_per_sec": 160.0})
+                out.append(f'{m} {q} decode rc=0 "generated_tokens":31 decode_tok_s=160.0')
+    for md, _ in MODELS.values():
+        for q in ("4w", "8da4w"):
+            for sto in ("buffer", "texture3d"):
+                open(os.path.join(V, f"pdiff-{md}-{q}-{sto}.log"), "w").write("[production-diff] s1 -> k (coopmat dispatched), correctness=PASSED\n[production-diff] ALL PASSED (x)\n")
+                out.append(f"pdiff {md} {q} {sto} rc=0 [production-diff] ALL PASSED (x)")
+    out.append("VERIFY_DONE rc=0")
+    open(os.path.join(stage, "verify.out"), "w").write("\n".join(out) + "\n"); open(os.path.join(V, "done.txt"), "w").write("d\n")
+    with open(os.path.join(stage, "verify-runs.jsonl"), "w") as f: f.writelines(json.dumps(r) + "\n" for r in recs)
+
+def set_rc(stage, pred, rc):
+    p = os.path.join(stage, "verify-runs.jsonl"); recs = [json.loads(l) for l in open(p)]
+    for r in recs:
+        if pred(r): r["rc"] = rc
+    with open(p, "w") as f: f.writelines(json.dumps(r) + "\n" for r in recs)
+
+class Verify(unittest.TestCase):
+    def setUp(self):
+        self.t = tempfile.TemporaryDirectory(); self.c = os.path.join(self.t.name, "cand"); self.p = os.path.join(self.t.name, "parent")
+        make_verify(self.c); make_verify(self.p)
+    def tearDown(self): self.t.cleanup()
+    def check(self):
+        p = subprocess.run([sys.executable, os.path.join(HERE, "gate_check.py"), "verify", self.c, self.p], capture_output=True, text=True)
+        return p.returncode, p.stdout
+    def empty(self, stage, kinds=("check", "unaligned")):
+        for f in os.listdir(os.path.join(stage, "verify")):
+            if f.startswith(kinds): open(os.path.join(stage, "verify", f), "w").close()
+
+    def test_complete_verify_is_accepted(self):
+        rc, out = self.check(); self.assertEqual(rc, 0, out); self.assertIn("verify: ACCEPT", out)
+
+    def test_review_case_empty_check_logs_with_same_in_summary(self):
+        # verify.out keeps its SAME lines and VERIFY_DONE rc=0 while every check/unaligned log is empty.
+        self.empty(self.c); self.empty(self.p)
+        rc, out = self.check(); self.assertNotEqual(rc, 0, out); self.assertIn("verify: REJECT", out)
+        self.assertIn("default vs tiled is INVALID", out); self.assertIn("no PyTorchObserver stats", out)
+
+    def test_failed_default_vs_tiled_runs(self):
+        self.empty(self.c); set_rc(self.c, lambda r: r["prompt"] in ("prompt_check.txt", "r1304.txt"), 134)
+        rc, out = self.check(); self.assertNotEqual(rc, 0, out); self.assertIn("runner exit status 134", out)
+
+    def test_teardown_failure_after_stats_were_printed(self):
+        # The log is complete (stats, rate, token); only the recorded exit status shows the crash at exit.
+        set_rc(self.c, lambda r: r["model"].startswith("llama3_1-8b") and r["warmup"] == 1 and not r["env"], 139)
+        rc, out = self.check(); self.assertNotEqual(rc, 0, out); self.assertIn("prefill-8b-4w-default.log: runner exit status 139", out)
+        make_verify(os.path.join(self.t.name, "c2")); self.c = os.path.join(self.t.name, "c2")
+        set_rc(self.c, lambda r: r["prompt"] == "r1304.txt" and r["env"], 139)
+        rc, out = self.check(); self.assertNotEqual(rc, 0, out); self.assertIn("unaligned-1b-4w-tiled.log: runner exit status 139", out)
+
+    def test_exit_statuses_must_be_recorded_once(self):
+        os.remove(os.path.join(self.c, "verify-runs.jsonl")); rc, out = self.check(); self.assertNotEqual(rc, 0); self.assertIn("no verify-runs.jsonl", out)
+        self.c = os.path.join(self.t.name, "c3"); make_verify(self.c); p = os.path.join(self.c, "verify-runs.jsonl"); l = open(p).readlines()
+        open(p, "w").writelines(l + l[:1]); rc, out = self.check(); self.assertNotEqual(rc, 0); self.assertIn("2 recorded runner calls, required 1", out)
+
+    def test_differing_default_and_tiled_tokens(self):
+        f = os.path.join(self.c, "verify", "check-1b-8da4w-default.log"); t = open(f, "rb").read().replace(b" tok\n", b" other\n"); open(f, "wb").write(t)
+        rc, out = self.check(); self.assertNotEqual(rc, 0); self.assertIn("check 1b 8da4w: default vs tiled is DIFFER", out)
+
+    def test_prefill_and_decode_evidence(self):
+        V = os.path.join(self.c, "verify")
+        open(os.path.join(V, "prefill-3b-4w-default.log"), "w").close()
+        f = os.path.join(V, "decode-1b-4w.log"); t = open(f).read().replace('"generated_tokens": 31', '"generated_tokens": 0'); open(f, "w").write(t)
+        f = os.path.join(V, "prefill-1b-4w-tiled.log"); t = open(f).read().replace("1234.5", "999.0"); open(f, "w").write(t)
+        rc, out = self.check(); self.assertNotEqual(rc, 0)
+        for s in ("prefill-3b-4w-default.log: no PyTorchObserver stats", "decode-1b-4w.log: generated tokens '0'", "prefill-1b-4w-tiled.log: verify.out says '1234.5', the log says 999.0"): self.assertIn(s, out)
+
+    def test_microbench_logs_are_read(self):
+        V = os.path.join(self.c, "verify")
+        open(os.path.join(V, "pdiff-llama-3.2-3b-8da4w-buffer.log"), "w").close()
+        f = os.path.join(V, "correctness.log"); t = open(f).read().replace("case3 [1x1] 1.0 μs 100.0 GFLOP/s   PASSED", "case3 [1x1] 1.0 μs 100.0 GFLOP/s   FAILED"); open(f, "w").write(t)
+        rc, out = self.check(); self.assertNotEqual(rc, 0)
+        self.assertIn("pdiff llama-3.2-3b 8da4w buffer: the log does not show", out); self.assertIn("correctness.log: 1 case(s) not PASSED", out)
+
+    def test_correctness_rc1_for_a_fallback_case_must_match_the_parent(self):
+        # rc=1 because a rank-3 case does not dispatch coopmat (seen on this device): fine when the parent has the same.
+        for d in ("c4", "p4"): make_verify(os.path.join(self.t.name, d), correctness_rc="1", fallback=True)
+        self.c, self.p = os.path.join(self.t.name, "c4"), os.path.join(self.t.name, "p4")
+        rc, out = self.check(); self.assertEqual(rc, 0, out)
+        self.p = os.path.join(self.t.name, "parent"); rc, out = self.check(); self.assertNotEqual(rc, 0)
+        self.assertIn("differs from the parent control: correctness rc", out)
+
 if __name__ == "__main__":
     unittest.main(verbosity=1, warnings="ignore")

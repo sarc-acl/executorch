@@ -24,9 +24,11 @@ put() { # put <build tag> <dest> <env>
 }
 put $PB $S/parent "$PE"; put $CB $S/cand "$CE"; put $PB-traced $S/parent-traced "$PE"; put $CB-traced $S/cand-traced "$CE"
 cp -f $KIT/prompts/prompt_*.txt $TOOLS/r1304.txt $S/
-cp -f $S/cand/llama_main $S/cand/libllama_runner.so $A/build/$CB/tests/test_llama_microbench $S/
+# verify.sh runs ./llama_main: that is the exit-status wrapper, the candidate's runner is in verify-bin/.
+source $TOOLS/gatelib.sh; stage_verify_runner $S $S/cand/llama_main
+cp -f $S/cand/libllama_runner.so $A/build/$CB/tests/test_llama_microbench $S/
 { echo "session $1 staged $(date -u +%FT%TZ)"; echo "parent = build/$PB env [$PE] commit $(cat $S/parent/COMMIT)"
   echo "cand   = build/$CB env [$CE] commit $(cat $S/cand/COMMIT)"; echo "$NOTE"
   grep -h '^local-patch\|^tree-sha256\|^source ' $A/build/$PB.src.txt $A/build/$CB.src.txt
-  sha256sum $S/parent/* $S/cand/* $S/parent-traced/llama_main $S/cand-traced/llama_main $S/test_llama_microbench $S/*.txt; } > $S/STAGE.md
+  sha256sum $S/parent/* $S/cand/* $S/parent-traced/llama_main $S/cand-traced/llama_main $S/verify-bin/llama_main $S/llama_main $S/test_llama_microbench $S/*.txt; } > $S/STAGE.md
 cat $S/STAGE.md

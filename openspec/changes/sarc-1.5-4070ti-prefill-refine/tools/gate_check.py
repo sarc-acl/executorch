@@ -1,17 +1,24 @@
 #!/usr/bin/env python3
 """gate_check.py: decide a gate step from the contents of its result files, not from exit statuses.
 
-  gate_check.py verify  <cand verify.out> <parent control verify.out>
+  gate_check.py verify  <cand stage dir> <parent control stage dir>   (verify.out, verify/, verify-runs.jsonl)
   gate_check.py sdpa    <sdpa-correctness dir> [<cand env file>]   (cand-{extended,full}-r1..12.log)
   gate_check.py session <stage/<session>/raw> (--clkmin <clkmin.json> | --calibration) [--require-logs]
   gate_check.py env     <stage/<session>>                          (one candidate environment everywhere)
 
 Prints one line per finding and ends with ACCEPT or REJECT; exit 0 only on ACCEPT.
 
-verify: the candidate must have correctness rc=0, 12 production-diff cases with rc=0 and ALL PASSED, default vs
-tiled SAME on prompt_check and on the unaligned prompt for both schemes, decode rc=0, a prefill rate for all
-twelve (model, scheme, mode) runs, and every status item (correctness, `linear <scheme> rc`, production-diff,
-decode rc and token count, SAME lines) must equal the parent control's. The control must itself be complete.
+verify: read from the files behind verify.out, for the candidate and for the parent control alike. Every runner
+call verify.sh makes (12 prefill, 8 check/unaligned, 2 decode) must have exactly one recorded exit status of 0
+(verify-runs.jsonl, written by llama_main_rc.sh), stats, and the expected prompt tokens. Prefill: a positive
+rate equal to the one in verify.out, 0 generated tokens. Default vs tiled on prompt_check (1972) and r1304.txt
+(1792): recomputed from the two logs with nexttoken.py, so two failed or empty outputs are INVALID, never SAME.
+Decode: generated tokens and a positive rate in the log, text after the prompt, the count verify.out shows.
+Microbench: every case of correctness.log PASSED, the 12 production-diff logs with every shape PASSED and
+ALL PASSED and rc 0, linear-<scheme>.json with dispatched kernels. `correctness rc` and `linear <scheme> rc`
+are not required to be 0 (on this device the shipped state has had rc=1 for a rank-3 case that does not
+dispatch coopmat): they must fit their logs and equal the parent control's, as must the case counts, the set
+of cases without coopmat and the decode token counts.
 sdpa: per tier 12 passes, each with the tier's case count (extended 8, full 4), every case PASSED with
 mismatches=0, qk_coopmat=yes, av_coopmat=yes, and a [sdpa-kernels] line with pairing=ok per case; with an env
 file that names a profile, every pass must carry that profile's banner.
@@ -40,38 +47,128 @@ def verify_items(path):
     it = {}
     for l in open(path, errors="replace"):
         l = l.strip()
-        if m := re.match(r"correctness rc=(\d+)", l): it["correctness"] = m[1]
-        elif m := re.match(r"linear (\S+) rc=(\d+)", l): it[f"linear {m[1]}"] = m[2]
-        elif m := re.match(r"(\S+) (\S+) (tiled|default) prefill_tok_s=(\S*)", l): it[f"prefill {m[1]} {m[2]} {m[3]}"] = "present" if m[4] else "MISSING"
+        if m := re.match(r"correctness rc=(\d+)", l): it["correctness rc"] = m[1]
+        elif m := re.match(r"linear (\S+) rc=(\d+)", l): it[f"linear {m[1]} rc"] = m[2]
+        elif m := re.match(r"(\S+) (\S+) (tiled|default) prefill_tok_s=(\S*)", l): it[f"prefill {m[1]} {m[2]} {m[3]}"] = m[4]
         elif m := re.match(r"(\S+) (\S+) (check|unaligned): default vs tiled output (\S+)", l): it[f"nexttoken {m[1]} {m[2]} {m[3]}"] = m[4]
-        elif m := re.match(r'(\S+) (\S+) decode rc=(\d+) "generated_tokens":(\d*)', l): it[f"decode {m[1]} {m[2]}"] = f"rc={m[3]} tokens={m[4]}"
-        elif m := re.match(r"pdiff (\S+) (\S+) (\S+) rc=(\d+) ?(.*)", l): it[f"pdiff {m[1]} {m[2]} {m[3]}"] = f"rc={m[4]} " + ("ALL PASSED" if "ALL PASSED" in m[5] else "NOT PASSED")
+        elif m := re.match(r'(\S+) (\S+) decode rc=(\d+) "generated_tokens":(\d*)', l): it[f"decode {m[1]} {m[2]}"] = (m[3], m[4])
+        elif m := re.match(r"pdiff (\S+) (\S+) (\S+) rc=(\d+)", l): it[f"pdiff {m[1]} {m[2]} {m[3]} rc"] = m[4]
         elif m := re.match(r"VERIFY_DONE rc=(\d+)", l): it["verify_done"] = m[1]
     return it
 
-def required_verify():
-    req = {"correctness": "0", "verify_done": "0"}
+PTE = {"llama3_2-1b": "1b", "llama3_2-3b": "3b", "llama3_1-8b": "8b"}
+def runner_records(stage, who):
+    """verify-runs.jsonl (llama_main_rc.sh) -> {verify log name: [records]}: the exit status of every runner call."""
+    recs = collections.defaultdict(list); p = os.path.join(stage, "verify-runs.jsonl")
+    if not os.path.exists(p): fail(f"{who}: no verify-runs.jsonl: the runner exit statuses were not recorded"); return recs
+    for l in open(p):
+        try: r = json.loads(l)
+        except ValueError: fail(f"{who}: unreadable line in verify-runs.jsonl"); continue
+        mm = re.match(r"(.+)_vulkan_(4w|8da4w)\.pte$", r.get("model", "")); m = PTE.get(mm[1]) if mm else None
+        mode = "tiled" if "ET_VK_FORCE_TILED_LINEAR=1" in r.get("env", "").split() else "default"
+        pr, nt, wu = r.get("prompt"), str(r.get("max_new_tokens")), r.get("warmup")
+        if not m: name = None
+        elif pr == "prompt_2048.txt" and nt == "1" and wu == 1: name = f"prefill-{m}-{mm[2]}-{mode}.log"
+        elif pr == "prompt_check.txt" and nt == "1" and wu == 0: name = f"check-{m}-{mm[2]}-{mode}.log"
+        elif pr == "r1304.txt" and nt == "1" and wu == 0: name = f"unaligned-{m}-{mm[2]}-{mode}.log"
+        elif pr == "prompt_2048.txt" and nt == "32" and wu == 0 and mode == "default": name = f"decode-{m}-{mm[2]}.log"
+        else: name = None
+        if name is None: fail(f"{who}: runner call that verify.sh does not make: {l.strip()[:160]}")
+        else: recs[name].append(r)
+    return recs
+
+def num(x):
+    try: v = float(x)
+    except (TypeError, ValueError): return None
+    return v if math.isfinite(v) else None
+
+def verify_stage(stage, who):
+    """Check one verify.sh run on its own evidence; return the status items compared between candidate and parent."""
+    V = os.path.join(stage, "verify"); out = os.path.join(stage, "verify.out"); st = {}
+    if not os.path.exists(out) or not os.path.isdir(V): fail(f"{who}: no verify.out or verify/ directory in {stage}"); return st
+    it = verify_items(out); recs = runner_records(stage, who)
+    if it.get("verify_done") != "0": fail(f"{who}: VERIFY_DONE rc = {it.get('verify_done')!r}")
+    if not os.path.exists(os.path.join(V, "done.txt")): fail(f"{who}: verify.sh did not reach its end (no verify/done.txt)")
+    def runner(name, want):
+        """The run behind verify/<name>: exactly one recorded call with rc 0, stats, the expected prompt tokens."""
+        log = os.path.join(V, name); r = recs.get(name, [])
+        if len(r) != 1: fail(f"{who}: {name}: {len(r)} recorded runner calls, required 1"); rc = None
+        else:
+            rc = r[0].get("rc")
+            if rc != 0: fail(f"{who}: {name}: runner exit status {rc}")
+        if not os.path.exists(log): fail(f"{who}: {name}: log missing"); return None, rc
+        obs = nexttoken.observer(log)
+        if obs is None: fail(f"{who}: {name}: no PyTorchObserver stats"); return None, rc
+        if str(obs.get("prompt_tokens")) != want: fail(f"{who}: {name}: prompt tokens {obs.get('prompt_tokens')!r}, required {want}")
+        return obs, rc
     for m, q in CELLS:
-        for mode in ("tiled", "default"): req[f"prefill {m} {q} {mode}"] = "present"
+        for mode in ("tiled", "default"):
+            name = f"prefill-{m}-{q}-{mode}.log"; obs, _ = runner(name, "2048")
+            if obs is None: continue
+            rate = num(obs.get("prefill_token_per_sec"))
+            if rate is None or rate <= 0: fail(f"{who}: {name}: prefill rate {obs.get('prefill_token_per_sec')!r}")
+            if str(obs.get("generated_tokens")) != "0": fail(f"{who}: {name}: generated tokens {obs.get('generated_tokens')!r}, required 0")
+            if num(it.get(f"prefill {m} {q} {mode}")) != rate: fail(f"{who}: {name}: verify.out says {it.get(f'prefill {m} {q} {mode}')!r}, the log says {rate}")
     for q in ("4w", "8da4w"):
-        for k in ("check", "unaligned"): req[f"nexttoken 1b {q} {k}"] = "SAME"
-        for md in ("llama-3.2-1b", "llama-3.2-3b", "llama-3.1-8b"):
-            for st in ("buffer", "texture3d"): req[f"pdiff {md} {q} {st}"] = "rc=0 ALL PASSED"
-    return req
+        for kind, prompt in (("check", "prompt_check.txt"), ("unaligned", "r1304.txt")):
+            _, want, tracked = PROMPTS[prompt]; rcs = {}
+            for mode in ("tiled", "default"): rcs[mode] = runner(f"{kind}-1b-{q}-{mode}.log", want)[1]
+            e = nexttoken.evaluate(tracked, want, os.path.join(V, f"{kind}-1b-{q}-tiled.log"), os.path.join(V, f"{kind}-1b-{q}-default.log"),
+                                   0 if rcs["tiled"] == 0 else "?", 0 if rcs["default"] == 0 else "?")
+            verdict = e["verdict"].replace("parent:", "tiled:").replace("cand:", "default:")
+            if verdict != "SAME": fail(f"{who}: {kind} 1b {q}: default vs tiled is {verdict} on the logs (verify.out says {it.get(f'nexttoken 1b {q} {kind}')!r})")
+            if it.get(f"nexttoken 1b {q} {kind}") != "SAME": fail(f"{who}: {kind} 1b {q}: verify.out says {it.get(f'nexttoken 1b {q} {kind}')!r}")
+        name = f"decode-1b-{q}.log"; obs, _ = runner(name, "2048"); s = it.get(f"decode 1b {q}")
+        if s is None or s[0] != "0": fail(f"{who}: {name}: verify.out decode status {s!r}")
+        if obs is not None:
+            gen = str(obs.get("generated_tokens")); rate = num(obs.get("decode_token_per_sec"))
+            if not gen.isdigit() or int(gen) < 1: fail(f"{who}: {name}: generated tokens {gen!r}")
+            if rate is None or rate <= 0: fail(f"{who}: {name}: decode rate {obs.get('decode_token_per_sec')!r}")
+            if s is not None and s[1] != gen: fail(f"{who}: {name}: verify.out says {s[1]!r} generated tokens, the log says {gen}")
+            text = nexttoken.generated(os.path.join(V, name)); prompt = open(PROMPTS["prompt_2048.txt"][2], "rb").read()
+            if not (text.startswith(prompt) and text[len(prompt):].strip()): fail(f"{who}: {name}: no generated text after the prompt")
+            st[f"decode 1b {q} generated tokens"] = gen
+    # microbench evidence: the logs behind the summary lines
+    c = os.path.join(V, "correctness.log"); cases = failed = 0; fallback = []; final = None
+    for l in (open(c, errors="replace") if os.path.exists(c) else []):
+        w = l.split()
+        if l.startswith("[rank3"):
+            cases += 1; mm = re.match(r"\[rank3[^\]]*\] (\S+) -> \S+ \((.*)\), correctness=(\S+)", l)
+            if not mm or mm[3] != "PASSED": failed += 1
+            elif "NOT coopmat" in mm[2]: fallback.append(mm[1])
+        elif l.startswith("[correctness]"): final = l.strip()
+        elif w and w[-1] in ("PASSED", "FAILED") and "GFLOP/s" in l:
+            cases += 1; failed += w[-1] != "PASSED"
+    if cases == 0 or final is None: fail(f"{who}: correctness.log missing, empty or without its summary line")
+    if failed: fail(f"{who}: correctness.log: {failed} case(s) not PASSED")
+    rc = it.get("correctness rc")
+    if rc is None: fail(f"{who}: no `correctness rc` line")
+    elif (rc == "0") != (final is not None and "PASSED" in final and not fallback): fail(f"{who}: correctness rc={rc} does not fit its log ({final}; fallback cases {fallback})")
+    st["correctness rc"] = rc; st["correctness cases"] = cases; st["correctness cases without coopmat"] = sorted(fallback)
+    for md in ("llama-3.2-1b", "llama-3.2-3b", "llama-3.1-8b"):
+        for q in ("4w", "8da4w"):
+            for sto in ("buffer", "texture3d"):
+                p = os.path.join(V, f"pdiff-{md}-{q}-{sto}.log"); k = f"pdiff {md} {q} {sto}"
+                lines = [l for l in (open(p, errors="replace") if os.path.exists(p) else []) if l.startswith("[production-diff]")]
+                if it.get(k + " rc") != "0": fail(f"{who}: {k}: rc {it.get(k + ' rc')!r}")
+                res = [l for l in lines if " -> " in l]; n = re.search(r"(\d+) shapes", lines[-1]) if lines else None
+                if not lines or "ALL PASSED" not in lines[-1] or not res or any("correctness=PASSED" not in l for l in res) or (n and int(n[1]) != len(res)):
+                    fail(f"{who}: {k}: the log does not show every shape PASSED and ALL PASSED")
+    for q in ("4w", "8da4w"):
+        k = f"linear {q} rc"; p = os.path.join(V, f"linear-{q}.json")
+        if k not in it: fail(f"{who}: no `linear {q}` line")
+        try: n = sum(1 for x in json.load(open(p))["cases"] if x.get("kernel"))
+        except (OSError, ValueError, KeyError, TypeError): n = 0
+        if n == 0: fail(f"{who}: linear-{q}.json missing or without dispatched kernels")
+        st[k] = it.get(k); st[f"linear {q} cases"] = n
+    return st
 
 def do_verify(cand, parent):
-    c, p = verify_items(cand), verify_items(parent)
-    for who, it in (("candidate", c), ("parent control", p)):
-        for k, v in required_verify().items():
-            if it.get(k) != v: fail(f"{who}: {k} = {it.get(k)!r}, required {v!r}")
-        for q in ("4w", "8da4w"):
-            if not it.get(f"decode 1b {q}", "").startswith("rc=0 tokens=") or it[f"decode 1b {q}"].endswith("="):
-                fail(f"{who}: decode 1b {q} = {it.get(f'decode 1b {q}')!r}")
-            if f"linear {q}" not in it: fail(f"{who}: no `linear {q}` line")
+    c = verify_stage(cand, "candidate")
+    p = c if os.path.realpath(cand) == os.path.realpath(parent) else verify_stage(parent, "parent control")
     for k in sorted(set(c) | set(p)):
         if c.get(k) != p.get(k): fail(f"differs from the parent control: {k}: candidate {c.get(k)!r}, parent {p.get(k)!r}")
-    print(f"verify: {len(c)} candidate items, {len(p)} parent items; linear rc candidate/parent: " +
-          ", ".join(f"{q} {c.get('linear ' + q)}/{p.get('linear ' + q)}" for q in ("4w", "8da4w")))
+    print("verify status (candidate / parent): " + "; ".join(f"{k} {c.get(k)}/{p.get(k)}" for k in sorted(c) if "rc" in k))
 
 def do_sdpa(d, envfile=None):
     names = set()

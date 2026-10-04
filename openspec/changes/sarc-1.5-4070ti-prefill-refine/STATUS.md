@@ -18,6 +18,32 @@ The restriction was not bypassed and no raw output was put into the repository. 
 access to `~/hmz-sarc-4070ti/.artifacts/` and to the lock file, and a writable results directory for
 igpu-roofline (for example under `.artifacts/`); then restart the campaign.
 
+## Tool defect from the fourth review (of `06f0e1243`), fixed
+
+**`gate_check.py verify` reads the evidence behind `verify.out`, for the candidate and the parent control.**
+- Exit statuses: `verify.sh` is not edited. The stage directory's `llama_main` is now `tools/llama_main_rc.sh`,
+  which runs the real runner (`verify-bin/llama_main`) with the same arguments, environment and streams,
+  returns its status and appends it to `verify-runs.jsonl`. Dry-tested with a stand-in runner: status passed
+  through (0, 139), a `timeout` kill forwarded and recorded (143). Consequence: the `llama_main` hash in
+  `verify/env.txt` is the wrapper's; the runner's own hash is in `STAGE.md`.
+- Each of the 22 runner calls of `verify.sh` (12 prefill, 8 check/unaligned, 2 decode) needs exactly one
+  recorded status of 0, stats and the expected prompt tokens. Prefill: positive rate equal to the one in
+  `verify.out`, 0 generated tokens. Default vs tiled: recomputed from the two logs with `nexttoken.py`
+  (failed or empty outputs are INVALID). Decode: generated tokens, positive rate, text after the prompt.
+  Microbench: every case of `correctness.log`, every shape of the 12 production-diff logs, the linear JSONs.
+- `test_gate_check.py` (24 tests) holds the review's case (summary lines intact, every check/unaligned log
+  empty), failed default-vs-tiled runs, and a teardown failure after the stats were printed (complete log,
+  recorded status 139). All rejected.
+- Run over the recorded verify logs of this device in `sarc-1.5-4w-port/results/4070ti/sarc`, the parsers for
+  prefill, decode, correctness, production-diff and the linear JSON raise nothing; the only findings are the
+  ones expected there (no recorded exit statuses, no 8da4w).
+- **Changed rule, found on those logs:** the shipped state of this device has had `correctness rc=1` (a rank-3
+  case that does not dispatch coopmat, all numeric cases PASSED). The earlier checker demanded rc=0 and would
+  have rejected the parent control. Now `correctness rc` must fit its log and equal the parent's, with the same
+  case count and the same set of cases without coopmat; any case not PASSED is still a rejection.
+- Open: a strict rc 0 for every runner call may meet the exit-time crashes reported for this device in the
+  e2e benchmark notes. If the parent itself crashes at exit, that is a finding to report, not to waive.
+
 ## Tool defects from the third review (of `1cfadaa2b`), fixed
 
 1. **Timed runs are validated one by one.** `gate_check.py session` no longer counts rows by their `valid`
@@ -82,9 +108,7 @@ igpu-roofline (for example under `.artifacts/`); then restart the campaign.
    the card after each child (`gl.sh`, `e2e5.sh`, `trace.sh`, the gates) and passes 70 up without retrying.
    `gate.sh` / `gate_sdpa.sh` stop at the first failed step and write `GATE_ACCEPTED`, `GATE_REJECTED <step>` or
    `GATE_ABORTED` to `gate.done`. Acceptance is decided by `gate_check.py` from the result files:
-   - `verify`: every status item of the candidate's `verify.out` (correctness, `linear <scheme> rc`, 12
-     production-diff cases, default vs tiled on `prompt_check` and the unaligned prompt, decode) against the
-     parent control produced by `parent_verify.sh`;
+   - `verify`: see the fourth review above;
    - `sdpa`: 12 passes per tier, 8 (`extended`) and 4 (`full`) cases each, `mismatches=0`, both coopmat kernels
      dispatched, `pairing=ok` on every case;
    - `session`: see the second review above.

@@ -6,6 +6,9 @@ PARENT_CTL=$A/stage/s0-parent-verify
 # The per-cell normal-clock thresholds (calibrate_clock.py on the baseline and A/A sessions). Candidate gates
 # refuse to start without it and e2e5.sh applies it; a record-only session cannot pass gate_check.py.
 CLKFILE=$CHANGE/results/4070ti/clkmin.json
+# stage_verify_runner <stage dir> <real llama_main>: verify.sh calls ./llama_main; stage the exit-status wrapper
+# under that name and the real runner beside it, so that every call's status is recorded without touching verify.sh.
+stage_verify_runner() { mkdir -p $1/verify-bin; cp -f $2 $1/verify-bin/llama_main; install -m 755 $TOOLS/llama_main_rc.sh $1/llama_main; }
 # cand_env [given]: the ONE candidate environment of a session is the staged cand/env file (what e2e5.sh and
 # trace.sh read). It must equal cand-traced/env; an environment given on the command line must be the same.
 cand_env() {
@@ -24,7 +27,9 @@ step() { # step <name> <command...>
   [[ $rc == 0 ]] || finish GATE_REJECTED "step $name failed rc=$rc" $rc
 }
 run_verify() { # run_verify "<env>": the unmodified sarc/tools/verify.sh of the working copy
-  need $D/llama_main $D/libllama_runner.so $D/test_llama_microbench $D/prompt_2048.txt $D/prompt_check.txt $D/r1304.txt
+  need $D/llama_main $D/verify-bin/llama_main $D/libllama_runner.so $D/test_llama_microbench $D/prompt_2048.txt $D/prompt_check.txt $D/r1304.txt
+  cmp -s $D/llama_main $TOOLS/llama_main_rc.sh || { echo "$D/llama_main is not the exit-status wrapper" >&2; return 77; }
+  [[ -e $D/verify-runs.jsonl || -e $D/verify.out ]] && { echo "verify.sh already ran in $D; results are kept, use a new session" >&2; return 77; }
   # verify.sh is not modified: foreign GPU processes are watched from outside for its whole duration.
   no_others "before verify.sh"; others_watch_start $D/verify.others
   env $1 $ET/sarc/tools/verify.sh --dir $D --lock $LOCK --models 1b,3b,8b --schemes 4w,8da4w --pdiff --out verify > $D/verify.out 2>&1
