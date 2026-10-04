@@ -10,8 +10,9 @@
 #   - CLKMIN is required: --clkmin, or the value the calibration session stored (host.sh CLKMIN_FILE). Only
 #     --calibrate (the baseline / A-A session, started from a cool idle card) runs without one; when all its
 #     cells are complete it stores the idle temperature and CLKMIN = 97 % of the lowest per-run median clock.
-#   - a GPU process this campaign did not start aborts the session (exit 76) before a launch, and a run during
-#     which one appears is invalid and also aborts it.
+#   - a GPU process this campaign did not start (any DRM client of the card, host.sh gpu_others) aborts the
+#     session with exit 76 (E2E5_ABORTED): before a launch nothing is started; during a run the runner is
+#     stopped within about a second, its partial log and an invalid row (other_gpu_process) are kept.
 #   - next tokens are compared only between runs that ran to completion on the expected prompt and printed text.
 #   - exit status 0 and "E2E5_OK" in done.txt only if every cell has REPS valid runs per build and every
 #     next-token comparison is SAME; otherwise 1 and the reasons. Invalid runs stay in runs.csv with the
@@ -45,7 +46,8 @@ exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK"; flock -w 900 9 || { echo "gpu-lab loc
 FAILS=()
 finish() { # finish <status> [reason...]: record the session status and exit
   local st=$1; shift; echo "others_end: $(others)" >> "$O/env.txt"
-  { date -u; echo "$st $*"; } > "$O/done.txt"; echo "$st $*"; [[ $st == E2E5_OK ]]; exit; }
+  { date -u; echo "$st $*"; } > "$O/done.txt"; echo "$st $*"
+  case $st in E2E5_OK) exit 0 ;; E2E5_ABORTED) exit 76 ;; *) exit 1 ;; esac; }
 gtemp() { echo $(( $(<$HW/temp2_input) / 1000 )); }
 others() { gpu_others; }
 sampler() {  # sampler <file>: epoch_us act_freq_MHz throttle_status card_energy_uJ pkg_temp_mC, every 0.1 s until killed
@@ -77,13 +79,12 @@ run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected 
   log="logs/$tag-$m-$q-$b-r$r.log"
   t0=$SECONDS; cool; cs=$((SECONDS - t0)); tp=$(gtemp); oth=$(others | tr ',' ';')
   [[ -n $oth ]] && finish E2E5_ABORTED "other GPU process before $tag $m $q $b r$r: $oth"
-  others_watch "$O/${log%.log}.others" 9>&- & local wp=$!
   local benv=(); [[ -f $D/$b/env ]] && mapfile -t benv < "$D/$b/env"
   sampler "$O/${log%.log}.clk" 9>&- & sp=$!
-  env "${benv[@]}" LD_LIBRARY_PATH=$D/$b timeout 1800 "$D/$b/llama_main" --model_path "$(pte $m $q)" \
+  guarded "$O/${log%.log}.others" env "${benv[@]}" LD_LIBRARY_PATH=$D/$b timeout 1800 "$D/$b/llama_main" --model_path "$(pte $m $q)" \
     --tokenizer_path "$(tokz $m)" --prompt_file "$p" --max_new_tokens 1 --temperature 0 \
     $([[ $tag == prefill ]] && echo --warmup) < /dev/null > "$O/$log" 2>&1 9>&-
-  rc=$?; kill $sp $wp 2>/dev/null; wait $sp $wp 2>/dev/null; tq=$(gtemp)
+  rc=$?; kill $sp 2>/dev/null; wait $sp 2>/dev/null; tq=$(gtemp)
   oth=$(cut -d' ' -f2- "$O/${log%.log}.others" | sort -u | tr -d '\n' | tr ',' ';')
   python3 - "$O/$log" "$O/${log%.log}.clk" "$want" "$CLKMIN" "$rc" "$oth" "$tag" <<'PY' > "$O/.row"
 import json, re, statistics as st, sys
