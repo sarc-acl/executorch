@@ -1,28 +1,62 @@
 # STATUS: sarc-1.5-4070ti-prefill-refine
 
-**2026-10-04 22:15 UTC, gpu-dev-4004. RUNNING. No candidate is accepted yet: the first gate of candidate 1 was
-aborted by my own process watcher after its SDPA steps had passed (see Incidents); it is queued again. The
-stop rule is not met; the branch is not pushed.**
+**2026-10-04 22:55 UTC, gpu-dev-4004. RUNNING, with one decision open for the owner (below). Candidate 1 was
+REJECTED by its gate at `verify-check`. Nothing is accepted; the stop rule is not met; the branch is not pushed.**
+
+## Decision needed from the owner
+
+Candidate 1 (`4070ti-refine1`, the SDPA prefill kernels) fails one item of the unmodified `verify.sh`:
+`1b 8da4w unaligned: default vs tiled output DIFFER` (the parent control says SAME). Everything else in that
+gate passed: 24 SDPA correctness passes with 0 mismatches and `pairing=ok`, correctness rc=0, 12 of 12
+production-diff, the other three default-vs-tiled items SAME, decode, 22 of 22 runner calls rc 0.
+
+What I measured about it (`results/4070ti/probe/`, logits of the last position with the benchmark kit's
+`logits_probe`, token ids exactly as the runner feeds them):
+
+| arm (1B, 1792-token prompt `r1304.txt`) | top-1 | logit ` ` | logit `1` | margin |
+|---|---|---:|---:|---:|
+| 8da4w parent, tiled linear | ` ` | 17.750 | 17.219 | +0.531 |
+| 8da4w parent, default (zpgtr) | ` ` | 17.812 | 17.484 | +0.328 |
+| 8da4w candidate, tiled linear | `1` | 17.781 | 17.797 | -0.016 |
+| 8da4w candidate, default (zpgtr) | ` ` | 17.922 | 17.719 | +0.203 |
+| 8da4w, plain port of the release SDPA kernels (hook rows, no dev variant), tiled | `1` | 17.781 | 17.797 | -0.016 |
+| 8da4w, SARC softmax with the stock QK^T and attn*V, tiled | ` ` | 17.828 | 17.344 | +0.484 |
+| 4w parent / candidate, tiled and default (4 arms) | ` ` | 17.59 to 17.63 | 17.27 to 17.30 | +0.30 to +0.36 |
+
+- At this position the parent itself has three tokens within 0.5 logit. With any cooperative-matrix QK^T and
+  attn*V (including the unmodified release kernels at subgroup 32) the 8da4w logits move by up to 0.58 and the
+  top two swap in the tiled-linear arm, by 0.016 logit. The 4w logits move by at most 0.03.
+- The arm that flips is the reference arm of the check (tiled linear with the candidate's SDPA), not what the
+  candidate runs: the candidate's own path gives the parent's token.
+- My reading: a near-tie on this prompt, of the kind `sarc-1.5-e2e-benchmark/TECHNICAL-REPORT.md` section 8
+  documents for 8B 8da4w on the check prompt, not a wrong kernel. It is still a failed gate item, and I have
+  not changed the gate, the prompt or the candidate to get around it. Looking for an SDPA variant that happens
+  to keep the token would be fitting to the benchmark prompt, so I am not doing that either.
+- **Question:** is a measured near-tie on the unaligned default-vs-tiled item acceptable for SDPA candidates
+  on this device, or does that item stand as written? As written, no SDPA candidate can be accepted here
+  (every cooperative-matrix SDPA kernel changes these logits), and SDPA is where almost all of the gain is.
+- Until answered: SDPA candidates are measured with the full protocol and reported as **measured, rejected by
+  the gate as written**. They are not counted as accepted and not counted towards the stop rule.
 
 ## Now
 
-- Running (detached, one GPU job at a time): kernel-level tile screens of the linear kernels on build `topic6`
-  (`raw/screen1-4w`, `raw/screen1-8da4w`, 3 repeats, tokens interleaved), then the softmax variant
-  (correctness, then `raw/sdpa-screen3`).
-- Queued behind them: `SDPA_FROM=s2-c1 tools/gate_sdpa.sh s2-c1b`, candidate 1 =
-  `ET_VK_SARC_DEV_PROFILE=4070ti-refine1` (build `topic4`) against the pristine parent: `verify.sh`, the
-  six-cell session, warm traces. The 24 SDPA correctness passes of `s2-c1` (accepted: 12 x 8 `extended` and
-  12 x 4 `full` cases, 0 mismatches, `pairing=ok`) are reused: same test binary, runner library and environment.
-- Kernel-level expectation for candidate 1 from screen 2: attention per layer 3.19 -> 1.27 ms (1B),
-  3.56 -> 1.10 ms (3B), 4.74 -> 1.43 ms (8B); end to end roughly +40 % on 1B and 3B, +30 % on 8B. Not measured
-  end to end yet.
-- Prepared, not measured: (a) linear sweep tiles of this device (`tools/gen_4070ti_lin.py`: 14 4w `ga` tiles,
-  13 zpgtr tiles); (b) a softmax variant without the full zero tail and (c) a fused attention kernel that never
-  writes the score matrix. (b) and (c) cannot be reached from the dev zone: they are built only through local
-  patches that are recorded in `tools/` and not applied to the branch (builds `topic6`, `topic7`).
-- Builds and timed runs: every build so far ended before a timed session started (the last one, `topic7`,
-  at 21:53:05 UTC; the s2-c1 gate never reached its session). No build will run during a timed session.
-- Blocking: nothing.
+- Running (detached): `tools/gate_rest.sh s2-c1b`, the remaining gate steps of candidate 1 for evidence only
+  (six-cell session with the content check, warm traces); `gate.done` stays `GATE_REJECTED`. It started after
+  the `topic8` build had finished; no build runs during it.
+- From the rejected gate's `verify.out` (single runs, not the timed session): prefill 1B 4w 19692 -> 28444,
+  3B 4w 8752 -> 12564, 8B 4w 4481 -> 5902, 1B 8da4w 21113 -> 31508, 3B 8da4w 9660 -> 14525 tok/s.
+- Next: kernel screen of the zpgtr half-texel staging twin (`bh`, dev zone only, meant bit-identical);
+  measured SDPA error against the fp32 reference for stock, port, `refine1`, the softmax variant and the fused
+  kernel (`[sdpa-error]`, new in the test); then the fused kernel end to end.
+- Linear tile sweeps are done and negative: no 4w `ga` tile (14) and no zpgtr tile (13) beats the shipped ones
+  at kernel level (best 0.995x and 0.84x; `results/4070ti/screens/screen1-*.csv`).
+- Softmax variant without the full zero tail (needs a hook): softmax 659 -> 462 us per layer on 1B and 8B,
+  494 -> 345 on 3B; extended and full tiers PASSED (`sdpa-screen3.csv`).
+- Fused attention kernel (needs a node hook): numerically correct on its first run, 0 mismatches in the 8
+  extended cases for column tiles 32, 64 and 128; the test still prints FAILED for it because it looks for
+  separate QK^T and attn*V kernel names. Not timed yet.
+- Builds and timed runs: no build has overlapped a timed session.
+- Blocking: the decision above (only for calling an SDPA candidate accepted).
 
 ## SDPA screens (kernel level, `test_llama_microbench --sdpa`, us per layer at S = 2048, median of 3)
 
@@ -77,7 +111,8 @@ fetching than multiplying.
 | `topic3` | `ee29a3a88` + the same patch | screen 2 (port tiles and direct-feed kernels) |
 | `topic4` | `d3df2bb69` + the same patch | candidate 1 (`4070ti-refine1`) |
 | `topic6` | `06f3e22d6` + `tools/local-hook-nvidia-sdpa-softmax.patch` | linear tile screens, softmax variant |
-| `topic7` | `50675407a` + `tools/local-hook-fused-sdpa.patch` | fused attention kernel (not run yet) |
+| `topic7` | `50675407a` + `tools/local-hook-fused-sdpa.patch` | fused attention kernel, first correctness pass |
+| `topic8` | `296f44725` + `tools/local-hook-fused-sdpa.patch` | zpgtr `bh` twin, SDPA error report in the test |
 
 Both from `git archive` trees with `sarc/tools/build.sh` in `localhost/et-vk-build:rocky10` through the
 docker shim; provenance in `.artifacts/4070ti-prefill-refine/build/<tag>.src.txt`.
@@ -158,6 +193,9 @@ traffic, not by arithmetic, so the gain should come from not writing and not rea
   does report. I have no evidence of a real foreign GPU process at any time: `nvidia-smi` listed no compute
   client that was not ours, nobody else is logged in. The session is kept as aborted; the attempt is repeated
   as `s2-c1b`.
+- 22:40 UTC: `s2-c1b` (second attempt of candidate 1, SDPA passes reused from `s2-c1`): `GATE_REJECTED` at
+  `verify-check`, a real rejection, see "Decision needed". `s2-c1`'s own `verify.out` has the same DIFFER line;
+  it would have been rejected for the same reason had the watcher not aborted it first.
 - No device loss.
 
 ## Open
