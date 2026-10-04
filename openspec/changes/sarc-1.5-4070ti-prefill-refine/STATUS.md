@@ -1,22 +1,120 @@
 # STATUS: sarc-1.5-4070ti-prefill-refine
 
-**2026-10-04, gpu-dev-4004. BLOCKED before the first measurement. Nothing has been built with `build.sh`, no GPU
-job has run, there is no `runs.csv` and no `verify.out`. The stop rule is not met; the branch is not pushed.**
+**2026-10-04 20:15 UTC, gpu-dev-4004. RUNNING. The write fence is lifted; builds, the baseline, the A/A session,
+the parent control and the per-op traces are done. No candidate has been gated yet; the stop rule is not met;
+the branch is not pushed.**
 
-## Blocking (unchanged, re-checked after the review)
+## Now
 
-The agent's shell on this host is confined (`TMPDIR=/tmp/hmz-fence-*`): only the working copy and that scratch
-directory are writable. Denied with `Permission denied`, although owned by `doremy`:
+- Running: igpu-roofline `fast` on the current driver (615.71.09), results in
+  `.artifacts/4070ti-prefill-refine/roofline/2026-10-04-fast/` (detached, under the gpu-lab lock).
+- Next: kernel-level SDPA screen of the 13 dev variants (`tools/sdpa_screen.sh`), then candidate 1
+  (`4070ti-refine1`, QK^T without mask fill + attn*V, both subgroup 32) through `tools/gate_sdpa.sh`; phase
+  timing of the 4w `ga` tiles and of zpgtr with the PROF twins before any linear sweep.
+- Blocking: nothing.
 
-| path | needed for |
-|---|---|
-| `~/hmz-sarc-4070ti/.artifacts/` | every build, source tree, log, ETDump and stage directory |
-| `~/.cache/gpu-lab/lock-81a511a2-de7e-c3c8-f641-3562c315ffa7` (open for append) | the gpu-lab lock; the unmodified `sarc/tools/verify.sh` opens it with `>>` and exits 75 otherwise |
-| `~/.cache`, `~/.docker`, `/tmp` | igpu-roofline results; docker client config (`DOCKER_CONFIG` in the scratch directory is used instead) |
+## Built
 
-The restriction was not bypassed and no raw output was put into the repository. **Needed from the owner:** write
-access to `~/hmz-sarc-4070ti/.artifacts/` and to the lock file, and a writable results directory for
-igpu-roofline (for example under `.artifacts/`); then restart the campaign.
+| tag | commit | note |
+|---|---|---|
+| `parent` | `6a7cc8cc6` pristine | spirv_golden PASS (53 shipped variants) |
+| `topic1` | `3e2b9dc4d` + `tools/local-hook-nvidia-sdpa.patch` (not committed) | spirv_golden PASS (53 shipped variants) |
+
+Both from `git archive` trees with `sarc/tools/build.sh` in `localhost/et-vk-build:rocky10` through the
+docker shim; provenance in `.artifacts/4070ti-prefill-refine/build/<tag>.src.txt`.
+
+## Baseline and A/A (session `s1-aa`, parent vs `topic1` without environment, record-only clock)
+
+tok/s, median of 5 valid runs per arm, arms interleaved:
+
+| cell | parent | topic, no env | ratio | `cells.csv` (dev/1.5) |
+|---|---:|---:|---:|---:|
+| 1B 4w | 19692.3 | 19692.3 | 1.0000 | 19692.3 |
+| 1B 8da4w | 20898.0 | 20898.0 | 1.0000 | 20898.0 |
+| 3B 4w | 8714.9 | 8714.9 | 1.0000 | 8752.1 |
+| 3B 8da4w | 9660.4 | 9615.0 | 0.9953 | 9660.4 |
+| 8B 4w | 4481.4 | 4481.4 | 1.0000 | 4491.2 |
+| 8B 8da4w | 5007.3 | 4995.1 | 0.9976 | 5031.9 |
+
+The baseline agrees with `cells.csv` within 0.5 % in every cell. A/A geomean 0.9988 (-0.12 %), largest cell
+difference 0.47 %, repeat spread at most 2.1 % (1B 8da4w, timer quantisation: 97 ms against 96 or 98 ms).
+Next token SAME in all six cells on the four prompts. 60 timed runs, all rc 0.
+1B quantises as announced: all ten 1B 4w runs read 104 ms = 19692.3 tok/s. One timer step is 1 %.
+
+Clock: the per-run median of `nvidia-smi clocks.gr` is 2565 to 2790 MHz, differs by cell and by repeat without
+any effect on the rate, and one run that followed an idle period still showed the ramp (675 MHz median, same
+rate). `calibrate_clock.py` now writes one device-wide threshold, floor(0.97 x lowest per-cell median) =
+**2502 MHz** (`results/4070ti/clkmin.json`); 1 of 60 calibration runs is below it. This replaces the per-cell
+rule with a 3 % spread limit, which refused this session. My choice; say so if another rule is wanted.
+
+## Parent control (`s0-parent-verify`)
+
+Unmodified `sarc/tools/verify.sh --models 1b,3b,8b --schemes 4w,8da4w --pdiff`, no environment: correctness
+rc=0, `linear 4w rc=1` and `linear 8da4w rc=1` (24 confirmed + 24 `unexpected_coopmat` cases, the known
+texture3d report), 12 of 12 production-diff ALL PASSED, default vs tiled SAME on the check and the unaligned
+prompt for 1B 4w and 8da4w, decode 31 tokens, 22 of 22 runner calls rc 0. `gate_check.py verify`: ACCEPT.
+SDPA correctness on the parent (recorded only): 0 mismatches in every case, `qk_coopmat=NO` (stock kernels).
+
+Two things happened on the way, both kept:
+- First attempt aborted by my own watcher (`superseded/zombie-sighting/`): one sighting of a `llama_main`
+  pid during `verify.sh`. Reproduced with a dummy: a runner of ours between exit and `wait` has no readable
+  environment and was reported as foreign. `common.sh` now judges such a process by its parent (ours ->
+  ignored, foreign parent -> still reported; both tested). No other user was logged in and no GPU client was
+  listed. I read it as our own runner, not as a foreign process; the control was run again from scratch.
+- Second attempt: `verify.sh` complete, but `gate_check.py` rejected it because it demanded a `[correctness]`
+  summary line that the microbench prints only on failure. Fixed (completeness is now the rank-3 verdict block
+  at the end of the log; regression test added, 29 tests); the check was re-run on the same files. The first
+  verdict is kept as `gate.done.first-check`.
+
+## Where the time goes (parent, warm ETDump, ms per 2048-token prefill; `s1-aa/trace`)
+
+| family | 1B 4w | 1B 8da4w | 3B 4w | 3B 8da4w | 8B 4w | 8B 8da4w |
+|---|---:|---:|---:|---:|---:|---:|
+| linear GEMM | 34.2 (33 %) | 26.7 (28 %) | 98.1 (42 %) | 75.6 (36 %) | 242.6 (53 %) | 185.0 (45 %) |
+| QK^T (stock) | 16.3 | 16.0 | 42.7 | 41.8 | 65.3 | 63.1 |
+| attn*V (stock) | 21.7 | 21.4 | 39.6 | 39.1 | 60.2 | 59.7 |
+| softmax (stock) | 13.6 | 13.6 | 17.9 | 17.9 | 27.3 | 27.3 |
+| attention total | 51.6 (51 %) | 51.0 (54 %) | 100.2 (43 %) | 98.8 (47 %) | 152.8 (33 %) | 150.1 (37 %) |
+| copy/view | 7.8 | 4.6 | 17.7 | 11.2 | 29.7 | 18.1 |
+| elementwise | 6.9 | 6.9 | 12.6 | 12.9 | 25.6 | 26.4 |
+| 8-bit quantize | - | 3.4 | - | 8.9 | - | 23.7 |
+| total dispatch | 102.1 | 94.1 | 232.8 | 211.5 | 457.2 | 409.4 |
+
+Attention is the largest block on 1B and 3B and a third of 8B, all of it stock kernels. One fp16 attention
+matrix is 268 MB per layer on 1B (32 heads x 2048 x 2048): QK^T writes it, softmax reads and rewrites it,
+attn*V reads it. My reading, to be checked against the fresh roofs: these three kernels are bound by memory
+traffic, not by arithmetic, so the gain should come from not writing and not reading the masked half.
+
+## Incidents
+
+- 20:01 UTC: the traced `8b 4w parent` runner wrote its ETDump and then spun at 93 % CPU without printing the
+  stats line (GPU idle, `nvidia-smi` answering, no Xid in the kernel log). Killed by me with SIGTERM after
+  10 min; the ETDump is complete (same size and dispatch count as the candidate arm's) and was analysed. One
+  such hang in about 200 runner calls so far; the e2e notes report rare exit-time failures on this card.
+- No device loss, no foreign GPU process.
+
+## Open
+
+- igpu-roofline: the tool is on this host only as `~/.cache/igpu-roofline/fleet-fast-20260926/`; it is run from
+  there with its existing environment and a new results directory under `.artifacts`. Nothing in it is edited.
+- ETDump analysis runs with a venv under `.artifacts` (`executorch` 1.5.1 wheel + CPU torch), `TRACE_PY`.
+- `gate*.sh`, `screen.sh`, `sdpa_screen.sh` and the PROF decode have not run end to end yet.
+- The softmax kernel name is fixed in the release zone (`impl/sarc/SdpaCoopmat.cpp`); no dev variant can
+  replace it.
+
+## Per-cell numbers against the parent
+
+No candidate yet. Baseline above.
+
+## SDPA reachability
+
+SDPA is not reachable from the dev zone on this device: the profile only replaces an existing table choice and
+the SDPA hooks in `impl/sarc/SdpaCoopmat.cpp` need a release-table row. As the campaign allows, the candidate
+builds use `tools/local-hook-nvidia-sdpa.patch` (two `kUnverified` rows in `table_nvidia.cpp`, applied to
+the candidate's archived source tree only, never committed, recorded in the build provenance) with
+`ET_VK_SARC_UNVERIFIED=1`. The parent build is the pristine `6a7cc8cc6` without it.
+
+# Tool history (reviews of the gate tools, before the first measurement)
 
 ## Tool defect from the fifth review (of `819e03685`), fixed
 
@@ -157,34 +255,3 @@ missing, duplicated and invalid cases. The same fallback present in the parent t
   2048 and head_dim 64 / 128.
 - `impl/sarc_dev/Overrides.cpp`: 5 marked blocks added, no line removed. `sarc/tools/check.sh --no-build`:
   PASS (31 rows, 127 candidates). Not done: a full build, and the shipped-SPIR-V comparison on it.
-
-## SDPA reachability
-
-SDPA is not reachable from the dev zone on this device: the profile only replaces an existing table choice and
-the SDPA hooks in `impl/sarc/SdpaCoopmat.cpp` need a release-table row. As the campaign allows, the candidate
-builds will use `tools/local-hook-nvidia-sdpa.patch` (two `kUnverified` rows in `table_nvidia.cpp`, applied to
-the candidate's archived source tree only, never committed, recorded in the build provenance) with
-`ET_VK_SARC_UNVERIFIED=1`. The parent build is the pristine `6a7cc8cc6` without it.
-
-## Open before the baseline
-
-- `results/4070ti/clkmin.json` does not exist yet: it comes from the baseline and A/A sessions.
-- `trace.sh` needs a python with the ExecuTorch devtools (`TRACE_PY`); not looked for yet.
-- igpu-roofline exists on the host only as `~/.cache/igpu-roofline/fleet-fast-20260926/`; no roof measured.
-- 1B timer quantisation (1 ms timer, about 100 ms prefill): report ETDump dispatch time alongside.
-- None of `build-both.sh`, `stage.sh`, `parent_verify.sh`, `e2e5.sh`, `trace.sh`, `gate*.sh`, `screen.sh` has run
-  end to end; expect first-run fixes. In particular the prompt-echo rule of `nexttoken.py` was only checked on
-  older logs of this device, and the profile banner check on no real log at all.
-
-## Next steps once unblocked
-
-1. `tools/build-both.sh parent 6a7cc8cc6`; `tools/build-both.sh topic <head> tools/local-hook-nvidia-sdpa.patch`.
-2. `parent_verify.sh parent`; baseline of the six cells against `cells.csv` (4w 19692 / 8752 / 4491, 8da4w
-   20898 / 9660 / 5032 tok/s) and the A/A session parent vs topic without environment, both with
-   `session.sh <s> --calibrate`; then `calibrate_clock.py` -> `results/4070ti/clkmin.json`.
-3. Per-op ETDump breakdown, phase timing with the PROF twins, igpu-roofline `fast`.
-4. SDPA candidates (`4070ti-refine1` first) through `gate_sdpa.sh`, then 8da4w and 4w linear.
-
-## Per-cell numbers against the parent
-
-None.
