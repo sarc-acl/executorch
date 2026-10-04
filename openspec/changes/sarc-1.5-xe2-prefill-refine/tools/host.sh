@@ -51,10 +51,15 @@ monitor_idle() { [[ $(ps -o comm= -p $1 2>/dev/null) == nvtop ]] || return 1
   ! awk '/^drm-(cycles|total|resident|shared|active)-[a-z0-9]+:/ && $2 + 0 > 0 {f = 1} END {exit !f}' /proc/$1/fdinfo/* 2>/dev/null; }
 gpu_monitors() { local p; for p in $(grep -l -s "^drm-pdev:[[:space:]]*$PDEV" /proc/[0-9]*/fdinfo/* | cut -d/ -f3 | sort -un); do
   monitor_idle $p && printf '%s:%s;' $p "$(ps -o comm= -p $p 2>/dev/null)"; done; }
+# inline_shell <pid>: a shell running an inline command (sh -c "..."). Its command line is text, not a program
+# name: the roofline run of 2026-10-04 21:46 was stopped because an operator shell's command text contained a
+# watched name. Such a process is still caught by the DRM rule if it opens the card.
+inline_shell() { local -a a; mapfile -d '' -t a < /proc/$1/cmdline 2>/dev/null || return 1
+  [[ ${a[0]##*/} =~ ^(bash|sh|dash|zsh|fish)$ && ( ${a[1]:-} == -c || ${a[2]:-} == -c ) ]]; }
 gpu_others() { local p q mine anc=" " a=$XE2_TOP
   while [[ -n $a && $a -gt 1 ]]; do anc+="$a "; a=$(ps -o ppid= -p $a 2>/dev/null | tr -d ' '); done
   for p in $( { grep -l -s "^drm-pdev:[[:space:]]*$PDEV" /proc/[0-9]*/fdinfo/* | cut -d/ -f3
-                pgrep -f 'llama-server|ComfyUI|comfyui|ollama|vllm|llama_main|test_llama_microbench|Runner.Worker|custom_ops'; } | sort -un); do
+                for q in $(pgrep -f 'llama-server|ComfyUI|comfyui|ollama|vllm|llama_main|test_llama_microbench|Runner.Worker|custom_ops'); do inline_shell $q || echo $q; done; } | sort -un); do
     [[ $anc == *" $p "* ]] && continue
     monitor_idle $p && continue
     q=$p; mine=0

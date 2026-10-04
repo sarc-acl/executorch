@@ -46,6 +46,8 @@ while [[ ! -s $W/mon.pid ]]; do sleep 0.1; done; MON=$(cat $W/mon.pid)
   ok "idle nvtop monitor is not a foreign GPU process" '[[ $(gpu_others) != *"$MON:"* ]]'
   ok "idle nvtop monitor is recorded" '[[ $(gpu_monitors) == *"$MON:nvtop"* ]]'
   ok "the same idle DRM client under another name is foreign" '! monitor_idle $$'
+  bash -c ': a shell whose command text names llama_main and test_llama_microbench; sleep 4; :' & IS=$!; sleep 0.5
+  ok "an inline shell command that only names a workload in its text is not foreign" '[[ $(gpu_others) != *"$IS:"* ]]'; wait $IS
   exit $fails ); fails=$((fails + $?)); kill $MON
 ( . $T/host.sh; XE2_TOP=$BASHPID; t0=$SECONDS
   guarded $W/g2 bash -c "echo started > $W/j2; bash -c 'sleep 41; echo JOB_COMPLETED >> $W/j2'; echo JOB_COMPLETED >> $W/j2" 2>/dev/null; rc=$?
