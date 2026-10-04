@@ -6,31 +6,46 @@
 #   - the GT clock (freq0/act_freq), throttle status, card energy and package temperature are sampled every 0.1 s during each run
 #     (logs/<run>.clk) and summarised over the measured execution window of that run;
 #   - a run is VALID only if rc = 0, tok/s present, prompt_tokens = <expected>, generated_tokens = 0, no other GPU
-#     process, the median clock in the measured window >= CLKMIN MHz
-#     (default 0 until the baseline session has shown the normal clock under load) and no throttled sample. Invalid runs stay in runs.csv with the
+#     process, the median clock in the measured window >= CLKMIN MHz and no throttled sample.
+#   - CLKMIN is required: --clkmin, or the value the calibration session stored (host.sh CLKMIN_FILE). Only
+#     --calibrate (the baseline / A-A session, started from a cool idle card) runs without one; when all its
+#     cells are complete it stores the idle temperature and CLKMIN = 97 % of the lowest per-run median clock.
+#   - a GPU process this campaign did not start aborts the session (exit 76) before a launch, and a run during
+#     which one appears is invalid and also aborts it.
+#   - next tokens are compared only between runs that ran to completion on the expected prompt and printed text.
+#   - exit status 0 and "E2E5_OK" in done.txt only if every cell has REPS valid runs per build and every
+#     next-token comparison is SAME; otherwise 1 and the reasons. Invalid runs stay in runs.csv with the
 #     reason; cells with fewer than REPS valid runs per build get extra interleaved pairs (at most EXTRA).
 # One GPU job at a time: everything runs under the gpu-lab lock.
 #
 # usage: e2e5.sh --stage DIR --out NAME --lock UUID [--reps 5] [--extra 3] [--models 1b,3b,8b] [--schemes 4w,8da4w]
-#                [--prompt prompt_2048.txt] [--tokens 2048] [--clkmin MHz] [--no-check]
+#                [--prompt prompt_2048.txt] [--tokens 2048] [--clkmin MHz | --calibrate] [--no-check]
 #   DIR/{parent,cand}/{llama_main,libllama_runner.so,[env]}, DIR/prompt_*.txt; output in DIR/NAME/
 set -uo pipefail
 STAGE=""; OUTN=raw; LOCK=""; REPS=5; EXTRA=3; MODELS=1b,3b,8b; SCHEMES=4w,8da4w
-PROMPT=prompt_2048.txt; TOKENS=2048; CLKMIN=0; CHECK=1; COOLMAX=120; MROOT=/mnt/linux-share/models
+PROMPT=prompt_2048.txt; TOKENS=2048; CLKMIN=""; CALIB=0; CHECK=1; COOLMAX=120; MROOT=/mnt/linux-share/models
 while [[ $# -gt 0 ]]; do
   case $1 in
     --stage) STAGE=$2; shift ;; --out) OUTN=$2; shift ;; --lock) LOCK=$2; shift ;;
     --reps) REPS=$2; shift ;; --extra) EXTRA=$2; shift ;; --models) MODELS=$2; shift ;;
     --schemes) SCHEMES=$2; shift ;; --prompt) PROMPT=$2; shift ;; --tokens) TOKENS=$2; shift ;;
-    --clkmin) CLKMIN=$2; shift ;; --no-check) CHECK=0 ;;
+    --clkmin) CLKMIN=$2; shift ;; --calibrate) CALIB=1 ;; --no-check) CHECK=0 ;;
     *) echo "unknown option $1" >&2; exit 2 ;;
   esac; shift
 done
-[[ -n $STAGE && -n $LOCK ]] || { sed -n '2,17p' "$0"; exit 2; }
+[[ -n $STAGE && -n $LOCK ]] || { sed -n '2,25p' "$0"; exit 2; }
 D=$(cd "$STAGE" && pwd); cd "$D" || exit 2
 O=$D/$OUTN; mkdir -p "$O/logs"
 exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK"; flock -w 900 9 || { echo "gpu-lab lock busy"; exit 75; }
 . "$(dirname "$(readlink -f "$0")")/host.sh"
+[[ -z $CLKMIN && $CALIB == 0 && -s $CLKMIN_FILE ]] && CLKMIN=$(<$CLKMIN_FILE)
+[[ $CALIB == 1 ]] && CLKMIN=${CLKMIN:-0}
+[[ -n $CLKMIN ]] || { echo "no clock threshold: run the calibration session first (--calibrate) or pass --clkmin" >&2; exit 2; }
+[[ $CALIB == 0 && $CLKMIN -le 0 ]] && { echo "clock threshold must be > 0 outside --calibrate" >&2; exit 2; }
+FAILS=()
+finish() { # finish <status> [reason...]: record the session status and exit
+  local st=$1; shift; echo "others_end: $(others)" >> "$O/env.txt"
+  { date -u; echo "$st $*"; } > "$O/done.txt"; echo "$st $*"; [[ $st == E2E5_OK ]]; exit; }
 gtemp() { echo $(( $(<$HW/temp2_input) / 1000 )); }
 others() { gpu_others; }
 sampler() {  # sampler <file>: epoch_us act_freq_MHz throttle_status card_energy_uJ pkg_temp_mC, every 0.1 s until killed
@@ -40,7 +55,7 @@ sampler() {  # sampler <file>: epoch_us act_freq_MHz throttle_status card_energy
   done > "$1" 2>/dev/null
 }
 {
-  date -u; hostname; uname -r; echo "lock=$LOCK reps=$REPS extra=$EXTRA prompt=$PROMPT tokens=$TOKENS clkmin=$CLKMIN"
+  date -u; hostname; uname -r; echo "lock=$LOCK reps=$REPS extra=$EXTRA prompt=$PROMPT tokens=$TOKENS clkmin=$CLKMIN calibrate=$CALIB"
   for b in parent cand; do sha256sum $b/llama_main $b/libllama_runner.so; echo "$b env: $(cat $b/env 2>/dev/null | tr '\n' ' ')"; cat $b/COMMIT 2>/dev/null; done
   sha256sum prompt_*.txt; cat STAGE.md 2>/dev/null
   vulkaninfo --summary 2>/dev/null | grep -E 'deviceName|driverName|driverInfo|apiVersion'
@@ -61,12 +76,15 @@ run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected 
   local m=$1 q=$2 b=$3 r=$4 s=$5 p=$6 tag=$7 want=$8 log t0 tp tq rc oth cs sp
   log="logs/$tag-$m-$q-$b-r$r.log"
   t0=$SECONDS; cool; cs=$((SECONDS - t0)); tp=$(gtemp); oth=$(others | tr ',' ';')
+  [[ -n $oth ]] && finish E2E5_ABORTED "other GPU process before $tag $m $q $b r$r: $oth"
+  others_watch "$O/${log%.log}.others" 9>&- & local wp=$!
   local benv=(); [[ -f $D/$b/env ]] && mapfile -t benv < "$D/$b/env"
   sampler "$O/${log%.log}.clk" 9>&- & sp=$!
   env "${benv[@]}" LD_LIBRARY_PATH=$D/$b timeout 1800 "$D/$b/llama_main" --model_path "$(pte $m $q)" \
     --tokenizer_path "$(tokz $m)" --prompt_file "$p" --max_new_tokens 1 --temperature 0 \
     $([[ $tag == prefill ]] && echo --warmup) < /dev/null > "$O/$log" 2>&1 9>&-
-  rc=$?; kill $sp 2>/dev/null; wait $sp 2>/dev/null; tq=$(gtemp)
+  rc=$?; kill $sp $wp 2>/dev/null; wait $sp $wp 2>/dev/null; tq=$(gtemp)
+  oth=$(cut -d' ' -f2- "$O/${log%.log}.others" | sort -u | tr -d '\n' | tr ',' ';')
   python3 - "$O/$log" "$O/${log%.log}.clk" "$want" "$CLKMIN" "$rc" "$oth" "$tag" <<'PY' > "$O/.row"
 import json, re, statistics as st, sys
 log, clk, want, clkmin, rc, oth, tag = sys.argv[1:8]
@@ -109,11 +127,20 @@ PY
   IFS=, read -r tok pt gt ms n cm cmin bm pw tmax valid reason < "$O/.row"
   echo "xe2-b70,$(hostname),$m,$q,$b,$r,$s,$tok,$rc,$tp,$tq,$cs,act_med=${cm}MHz,$oth,$(date -u +%FT%TZ),$log,$pt,$gt,$ms,$n,$cm,$cmin,$bm,$pw,$tmax,$valid,$reason" >> "$CSV"
   echo "$tag $m $q $b r$r slot$s tok_s=$tok ms=$ms rc=$rc T=$tp->$tq cool=${cs}s clk=$cm/$cmin MHz n=$n throttled=$bm valid=$valid $reason"
+  [[ -n $oth ]] && finish E2E5_ABORTED "other GPU process during $tag $m $q $b r$r: $oth"
 }
+# toklog <tag> <model> <scheme> <build>: log of the first run that completed on the expected prompt (clock and
+# throttle do not matter for a token comparison); empty if there is none.
+toklog() { awk -F, -v p="logs/$1-$2-$3-$4-r" 'NR > 1 && index($16, p) == 1 && $27 !~ /rc|no_tok_s|prompt_tokens|generated_tokens|other_gpu_process/ {print $16; exit}' "$CSV"; }
+cmptok() { # cmptok <tag> <model> <scheme>: SAME / DIFFER / INVALID (a side has no completed run or printed no text)
+  local a b ga gb; a=$(toklog $1 $2 $3 parent); b=$(toklog $1 $2 $3 cand)
+  [[ -n $a && -n $b ]] || { echo INVALID; return; }
+  ga=$(gen "$a"); gb=$(gen "$b"); [[ -n $ga && -n $gb ]] || { echo INVALID; return; }
+  [[ $ga == "$gb" ]] && echo SAME || echo DIFFER; }
 nvalid() { awk -F, -v m=$1 -v q=$2 -v b=$3 'NR > 1 && $3 == m && $4 == q && $5 == b && $16 ~ /^logs\/prefill/ && $26 == 1 {n++} END {print n + 0}' "$CSV"; }
 gen() { grep -v 'PyTorchObserver\|^[IWE] \|^\[sarc_dev\]' "$O/$1"; }
 for m in "${MS[@]}"; do for q in "${QS[@]}"; do
-  [[ -f $(pte $m $q) ]] || { echo "missing $(pte $m $q)"; continue; }
+  [[ -f $(pte $m $q) ]] || { echo "missing $(pte $m $q)"; FAILS+=("$m-$q:missing_model"); continue; }
   r=1
   while :; do
     if (( r % 2 )); then order=(parent cand); else order=(cand parent); fi
@@ -122,14 +149,21 @@ for m in "${MS[@]}"; do for q in "${QS[@]}"; do
     r=$((r + 1))
     (( r <= REPS )) && continue
     (( $(nvalid $m $q parent) >= REPS && $(nvalid $m $q cand) >= REPS )) && break
-    (( r > REPS + EXTRA )) && { echo "CELL $m $q: fewer than $REPS valid runs after $EXTRA extra pairs"; break; }
+    (( r > REPS + EXTRA )) && { echo "CELL $m $q: fewer than $REPS valid runs after $EXTRA extra pairs"; FAILS+=("$m-$q:incomplete"); break; }
   done
   if [[ $CHECK == 1 ]]; then
     run1 $m $q parent 0 0 prompt_check.txt check 1972
     run1 $m $q cand 0 0 prompt_check.txt check 1972
-    if cmp -s <(gen "logs/check-$m-$q-parent-r0.log") <(gen "logs/check-$m-$q-cand-r0.log"); then x=SAME; else x=DIFFER; fi
-    if cmp -s <(gen "logs/prefill-$m-$q-parent-r1.log") <(gen "logs/prefill-$m-$q-cand-r1.log"); then y=SAME; else y=DIFFER; fi
+    x=$(cmptok check $m $q); y=$(cmptok prefill $m $q)
     echo "$m,$q,$PROMPT:$y,prompt_check.txt:$x" >> "$O/nexttoken.csv"; echo "nexttoken $m $q $PROMPT=$y check=$x"
+    [[ $x == SAME && $y == SAME ]] || FAILS+=("$m-$q:nexttoken_${y}_$x")
   fi
 done; done
-echo "others_end: $(others)" >> "$O/env.txt"; date -u > "$O/done.txt"; echo E2E5_DONE
+if [[ $CALIB == 1 && ${#FAILS[@]} == 0 ]]; then
+  echo $((IDLE * 1000)) > "$IDLE_FILE"
+  awk -F, 'NR > 1 && $16 ~ /^logs\/prefill/ && $26 == 1 && $21 != "" {if (m == "" || $21 + 0 < m) m = $21 + 0} END {printf "%d\n", m * 0.97}' "$CSV" > "$CLKMIN_FILE"
+  echo "calibration: idle_temp_mc=$(<$IDLE_FILE) clkmin_mhz=$(<$CLKMIN_FILE)" | tee -a "$O/env.txt"
+  [[ $(<$CLKMIN_FILE) -gt 0 ]] || FAILS+=("calibration:clock_not_readable")
+fi
+[[ ${#FAILS[@]} == 0 ]] && finish E2E5_OK
+finish E2E5_INCOMPLETE "${FAILS[*]}"
