@@ -12,7 +12,8 @@ mkdir -p $O; CSV=$O/screen.csv
 { sha256sum $B; date -u; } >> $O/env.txt
 for ((r = 1; r <= R; r++)); do for p in "$@"; do
   L=$O/$p-r$r.log; [[ -f $L.rc && ( $(<$L.rc) == 0 || ( $p == base && $(<$L.rc) == 1 ) ) ]] && continue
-  E=(); [[ $p != base ]] && E=(ET_VK_SARC_UNVERIFIED=1 "ET_VK_SARC_DEV_PROFILE=$p")
+  E=(); [[ $p != base ]] && E=(ET_VK_SARC_UNVERIFIED=1 "ET_VK_SARC_DEV_PROFILE=${p%%+*}")
+  [[ $p == *+softmax ]] && E+=(ET_VK_SARC_XE2_SOFTMAX=1)   # "<profile>+softmax": hook builds only (tools/build-hook.sh)
   cool_start
   env "${E[@]}" $TOOLS/gl.sh $B --sdpa > $L 2>&1; rc=$?; echo $rc > $L.rc; t=$(( $(gtemp_mc) / 1000 ))
   # RESULT,sdpa,<model>,<scheme>,<regime>,<op>,<K>,<N>,<mean_us>,<stdev_us>,-1,<dispatch>,SKIPPED,<kv>,<variant>

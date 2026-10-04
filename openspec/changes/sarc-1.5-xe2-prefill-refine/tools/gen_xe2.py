@@ -393,6 +393,10 @@ REFINE = {
     # 1.15 to 1.39x per shape at kernel level; every thread stages one A block and one weight texel per chunk).
     "xe2-refine2": [("kSdpaQk", "pk_t128x64k32g44s16m8nf", "nullptr"), ("kSdpaAv", "xe2_t128x64k32g44s16m8", "xe2_head_dim_128"),
                     ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", "nullptr")],
+    # candidate 3 (4w linear), provisional until screen 9: refine2 + the 256 x 256 split-staging tile. A shape
+    # the tile does not fit (N not a multiple of 256) keeps the shipped tile.
+    "xe2-refine3": [("kSdpaQk", "pk_t128x64k32g44s16m8nf", "nullptr"), ("kSdpaAv", "xe2_t128x64k32g44s16m8", "xe2_head_dim_128"),
+                    ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", "nullptr"), ("kQ4gswLinear", "xe2s_t256x256k16g88s16m8flib", "nullptr")],
     # the 8da4w part of refine2 alone (kernel attribution; not a candidate)
     "xe2-dq-k64": [("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", "nullptr")],
 }
