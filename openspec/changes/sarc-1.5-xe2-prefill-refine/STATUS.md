@@ -1,8 +1,7 @@
 # sarc-1.5-xe2-prefill-refine: status
 
-**2026-10-04 21:50 UTC — running. Baseline and A/A measured; SDPA and linear kernels screened; phase timing
-done; candidate 1 (`xe2-refine1`, SDPA) chosen and built, its gate starts after the roofline run. No
-end-to-end number for a candidate exists yet.**
+**2026-10-04 22:55 UTC — running. Baseline, A/A and roofs measured; SDPA and linear kernels screened;
+candidate 1 (`xe2-refine1`, SDPA) is in its gate. No end-to-end number for a candidate exists yet.**
 
 Branch `topic/xe2-prefill-refine`, parent `6a7cc8cc6` (head of `topic/780m-prefill-refine`). Host
 `fedora-gpu-eval`, card `b70-0` only (guest PCI `0000:01:00.0`, Vulkan device 0, **`ETVK_DEVICE_INDEX=0`**,
@@ -11,10 +10,10 @@ B70 or on the B580.
 
 ## Running now
 
-`tools/roof.sh xe2-fast-20261004`: igpu-roofline `fast` plan on `b70-0` (artifacts
-`roofline/xe2-fast-20261004/`), about 15 minutes, started 21:46 UTC. Queued behind it: the gate of candidate 1
-(`gate_sdpa.sh s2-c1`: 12 passes x 3 SDPA tiers, `verify.sh`, timing session, traces; about 1.5 hours), which
-gives the first end-to-end numbers.
+Chain started 22:53 UTC (`.artifacts/logs/chain6.status`): build `topic4` (`bb2713605`), then two short screens
+(balanced K = 64 / 128 8da4w tiles; the 4w band-drain twin), then the gate of candidate 1,
+`gate_sdpa.sh s2-c1` (12 passes x 3 SDPA tiers, `verify.sh`, timing session, traces): about two hours in all.
+It gives the first end-to-end numbers. Nothing else uses the card.
 
 ## Needs the owner's attention
 
@@ -126,17 +125,35 @@ Tile screens (`screens/screen3-8da4w.csv`, `screen4-4w.csv`, kernel time, 2 roun
   cannot run on the shipped 512-thread tile (128 slots); family `xe2bt` (generated, not built yet) can.
 - 4w: every other tile is slower (0.14 to 0.90x), including K = 32 chunks (0.50x).
 
+Texel-wise weight staging (`screens/screen5-8da4w.csv`, `screen6-4w.csv`): fetching each packed-weight texel
+once, with only the threads that own a texel staging it, is slower than the shipped kernels on this device
+(8da4w 0.56 to 0.95x, 0.92x on the shipped tile; 4w 0.80 to 0.85x). The same staging with every thread owning
+exactly one texel and K = 64 per chunk is the 1.12x tile above. So the cost is the serial work of a thread
+per chunk, not the number of fetches; batch 3 (in the build now running) adds balanced K = 64 / 128 tiles.
+
+## Roofs (re-measured, not the old evidence)
+
+igpu-roofline plan `fast`, `b70-0`, 2026-10-04 21:54 to 22:17 UTC, driver Mesa 26.2.3 (109060099), runner
+`810e098c8abb`, clocks not pinned, sentinel healthy at every checkpoint, every roof confirmed by 3 repeats
+(`results/xe2/roofline/xe2-fast-20261004/REPORT.md`; artifacts `roofline/xe2-fast-20261004/`): matrix fp16
+173.3 TFLOP/s, matrix fp16 -> fp32 179.9 TFLOP/s, matrix int8 359.9 TOP/s; fed from shared memory 168.4 /
+166.6 / 323.3; global read 603 GB/s, write 509 GB/s, copy 532 GB/s. The tool is the fleet copy that was already
+on this host, run unchanged from a copy in the artifact directory. A first run was stopped after 4 minutes by
+the campaign guard (its name fallback matched the text of an operator shell command, no GPU process was
+involved); it is under `superseded/`, and the guard no longer matches inline shell command text.
+
 ## Per-cell numbers against the parent
 
 No gated candidate yet.
 
 ## Next
 
-1. Roofs from the run in progress, then the gate of candidate 1 (`s2-c1`) and the per-op breakdown from its
-   traces.
-2. Build with the `xe2bt` 8da4w family and a texel-wise 4w weight staging; screen; candidate 2 (8da4w), then
-   candidate 3 (4w).
-3. Stop after two consecutive gated candidates under 2 % geomean.
+1. Gate of candidate 1 (`s2-c1`), then the per-op breakdown from its traces and percent-of-roof for the
+   linear kernels against the fresh roofs.
+2. Candidate 2: 8da4w linear with the best balanced K = 64 tile per shape (screen 7, running).
+3. 4w linear: no faster variant found yet (tile shapes, K = 32 chunks, texel-wise staging all lose); the 4w
+   band-drain twin is in screen 8.
+4. Stop after two consecutive gated candidates under 2 % geomean.
 
 ## Awaiting B580 confirmation
 
