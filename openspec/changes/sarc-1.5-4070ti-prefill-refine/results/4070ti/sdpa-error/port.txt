@@ -1,0 +1,26 @@
+[sdpa-error] tiny_gqa_pos64 max_abs=0.000325754 rms=5.57627e-05 max_abs_ref=0.205344
+[sdpa-correctness] tiny_gqa_pos64 S=128 input_pos=64 D=64 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/16384 PASSED
+[sdpa-error] tiny_gqa_s256_pos128 max_abs=0.000277489 rms=4.28929e-05 max_abs_ref=0.161491
+[sdpa-correctness] tiny_gqa_s256_pos128 S=256 input_pos=128 D=64 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/32768 PASSED
+[sdpa-error] 1b_head_config_s256_pos256 max_abs=0.00022538 rms=3.16007e-05 max_abs_ref=0.142912
+[sdpa-correctness] 1b_head_config_s256_pos256 S=256 input_pos=256 D=64 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/524288 PASSED
+[sdpa-error] 3b_head_config_s256 max_abs=0.00134528 rms=8.04446e-05 max_abs_ref=0.998598
+[sdpa-correctness] 3b_head_config_s256 S=256 input_pos=0 D=128 Q_H=24 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/786432 PASSED
+[sdpa-error] 8b_head_config_s256 max_abs=0.00151831 rms=8.38049e-05 max_abs_ref=0.999106
+[sdpa-correctness] 8b_head_config_s256 S=256 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/1048576 PASSED
+[sdpa-error] 3b_head_config_pos128 max_abs=0.000356644 rms=4.53996e-05 max_abs_ref=0.249579
+[sdpa-correctness] 3b_head_config_pos128 S=128 input_pos=128 D=128 Q_H=24 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/393216 PASSED
+[sdpa-error] tiny_gqa_s2048 max_abs=0.00106984 rms=3.48808e-05 max_abs_ref=0.98697
+[sdpa-correctness] tiny_gqa_s2048 S=2048 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/262144 PASSED
+[sdpa-error] tiny_d128_s2048 max_abs=0.000999451 rms=3.44992e-05 max_abs_ref=0.997051
+[sdpa-correctness] tiny_d128_s2048 S=2048 input_pos=0 D=128 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/524288 PASSED
+[sdpa-correctness] tier=extended cases_run=8
+[sdpa-error] 1b_head_config_s2048 max_abs=0.00128818 rms=3.48533e-05 max_abs_ref=0.998757
+[sdpa-correctness] 1b_head_config_s2048 S=2048 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/4194304 PASSED
+[sdpa-error] 3b_head_config_s2048 max_abs=0.00157005 rms=3.53554e-05 max_abs_ref=0.999094
+[sdpa-correctness] 3b_head_config_s2048 S=2048 input_pos=0 D=128 Q_H=24 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/6291456 PASSED
+[sdpa-error] 8b_head_config_s2048 max_abs=0.00149834 rms=3.4792e-05 max_abs_ref=0.994699
+[sdpa-correctness] 8b_head_config_s2048 S=2048 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/8388608 PASSED
+[sdpa-error] 8b_head_config_s1024_pos1024 max_abs=0.000157401 rms=1.62089e-05 max_abs_ref=0.0880162
+[sdpa-correctness] 8b_head_config_s1024_pos1024 S=1024 input_pos=1024 D=128 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/4194304 PASSED
+[sdpa-correctness] tier=full cases_run=4

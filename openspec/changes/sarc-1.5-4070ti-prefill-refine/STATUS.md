@@ -1,62 +1,102 @@
 # STATUS: sarc-1.5-4070ti-prefill-refine
 
-**2026-10-04 22:55 UTC, gpu-dev-4004. RUNNING, with one decision open for the owner (below). Candidate 1 was
-REJECTED by its gate at `verify-check`. Nothing is accepted; the stop rule is not met; the branch is not pushed.**
+**2026-10-04 23:50 UTC, gpu-dev-4004. RUNNING. Candidate 1 is REJECTED: it fails the owner's near-tie rule of
+2026-10-04 as I applied it (4 of 6 cells outside twice the noise floor). Nothing is accepted; the stop rule is
+not met; the branch is not pushed. One question for the owner below.**
 
-## Decision needed from the owner
+## Candidate 1 (`4070ti-refine1`, SDPA prefill kernels): measured +42 %, REJECTED
 
-Candidate 1 (`4070ti-refine1`, the SDPA prefill kernels) fails one item of the unmodified `verify.sh`:
-`1b 8da4w unaligned: default vs tiled output DIFFER` (the parent control says SAME). Everything else in that
-gate passed: 24 SDPA correctness passes with 0 mismatches and `pairing=ok`, correctness rc=0, 12 of 12
-production-diff, the other three default-vs-tiled items SAME, decode, 22 of 22 runner calls rc 0.
+Gate (`s2-c1b`): REJECTED at `verify-check` on `1b 8da4w unaligned: default vs tiled output DIFFER`. Every
+other item of `verify.sh` passed, and 24 of 24 SDPA correctness passes had 0 mismatches and `pairing=ok`.
 
-What I measured about it (`results/4070ti/probe/`, logits of the last position with the benchmark kit's
-`logits_probe`, token ids exactly as the runner feeds them):
+Owner decision 2026-10-04 applied (`results/4070ti/probe/`; tools `probe_prompts.py`, `logits_dump/`,
+`probe_run.sh`, `probe_compare.py`):
 
-| arm (1B, 1792-token prompt `r1304.txt`) | top-1 | logit ` ` | logit `1` | margin |
-|---|---|---:|---:|---:|
-| 8da4w parent, tiled linear | ` ` | 17.750 | 17.219 | +0.531 |
-| 8da4w parent, default (zpgtr) | ` ` | 17.812 | 17.484 | +0.328 |
-| 8da4w candidate, tiled linear | `1` | 17.781 | 17.797 | -0.016 |
-| 8da4w candidate, default (zpgtr) | ` ` | 17.922 | 17.719 | +0.203 |
-| 8da4w, plain port of the release SDPA kernels (hook rows, no dev variant), tiled | `1` | 17.781 | 17.797 | -0.016 |
-| 8da4w, SARC softmax with the stock QK^T and attn*V, tiled | ` ` | 17.828 | 17.344 | +0.484 |
-| 4w parent / candidate, tiled and default (4 arms) | ` ` | 17.59 to 17.63 | 17.27 to 17.30 | +0.30 to +0.36 |
+1. Logits at the differing position, four arms (`probe/refine1/position/summary.csv`): the parent's own top-2
+   margin is 0.33 (default) and 0.53 (tiled) logit; with the candidate it is +0.20 (default) and -0.016 (tiled).
+2. Broad comparison: 41 real-text prompts (32 tile-aligned lengths 64 .. 2048, 8 unaligned lengths and the
+   gate's unaligned prompt; 41 different texts), full next-token distribution of the last position, all three
+   models and both schemes. Teacher forcing is not available: the exported models return the last position only.
+3. Noise floor: parent tiled against parent default, same prompts.
+4. Thresholds, fixed in `probe_compare.py` before the data existed (commit `ad81b7b29`): per cell and per
+   metric, candidate-default vs parent-default <= 2 x floor, for top-1 differences, mean KL, max KL, max
+   |logit difference| and |ln perplexity ratio|.
 
-- At this position the parent itself has three tokens within 0.5 logit. With any cooperative-matrix QK^T and
-  attn*V (including the unmodified release kernels at subgroup 32) the 8da4w logits move by up to 0.58 and the
-  top two swap in the tiled-linear arm, by 0.016 logit. The 4w logits move by at most 0.03.
-- The arm that flips is the reference arm of the check (tiled linear with the candidate's SDPA), not what the
-  candidate runs: the candidate's own path gives the parent's token.
-- My reading: a near-tie on this prompt, of the kind `sarc-1.5-e2e-benchmark/TECHNICAL-REPORT.md` section 8
-  documents for 8B 8da4w on the check prompt, not a wrong kernel. It is still a failed gate item, and I have
-  not changed the gate, the prompt or the candidate to get around it. Looking for an SDPA variant that happens
-  to keep the token would be fitting to the benchmark prompt, so I am not doing that either.
-- **Question:** is a measured near-tie on the unaligned default-vs-tiled item acceptable for SDPA candidates
-  on this device, or does that item stand as written? As written, no SDPA candidate can be accepted here
-  (every cooperative-matrix SDPA kernel changes these logits), and SDPA is where almost all of the gain is.
-- Until answered: SDPA candidates are measured with the full protocol and reported as **measured, rejected by
-  the gate as written**. They are not counted as accepted and not counted towards the stop rule.
+| cell | top-1 differences (floor / cand) | mean KL, nats (floor / cand) | max KL | max abs logit diff | abs ln ppl ratio | within 2x |
+|---|---|---|---|---|---|---|
+| 1B 4w | 0 / 0 | 0.000077 / 0.00082 | 0.0011 / 0.0102 | 0.46 / 0.66 | 0.0025 / 0.0170 | NO (mean KL, max KL, ppl) |
+| 1B 8da4w | 2 / 6 | 0.0618 / 0.0678 | 0.606 / 0.560 | 4.42 / 3.90 | 0.105 / 0.063 | NO (top-1) |
+| 3B 4w | 0 / 0 | 0.00057 / 0.00024 | 0.0222 / 0.0028 | 0.45 / 0.63 | 0.0068 / 0.0099 | yes |
+| 3B 8da4w | 1 / 1 | 0.0106 / 0.0246 | 0.152 / 0.226 | 3.73 / 3.74 | 0.052 / 0.109 | NO (mean KL, ppl) |
+| 8B 4w | 0 / 0 | 0.000028 / 0.00029 | 0.00022 / 0.0027 | 0.27 / 0.36 | 0.00027 / 0.0019 | NO (mean KL, max KL, ppl) |
+| 8B 8da4w | 1 / 1 | 0.0278 / 0.0227 | 0.447 / 0.275 | 2.72 / 4.17 | 0.028 / 0.0052 | yes |
+
+**Verdict under the rule as stated: OUTSIDE, candidate rejected** (`probe/refine1/compare.csv`; no
+`NEAR_TIE.json` was written, so the gate cannot accept it).
+
+What else was measured, for the owner's judgement (it does not change the verdict above):
+
+- In the 4w cells the top-1 token never differs (0 of 41) and the differences are small in absolute terms
+  (mean KL below 0.001 nat, perplexity within 1.7 %), but the floor there is ten times smaller still: the two
+  4w linear kernels of the parent are numerically almost the same thing, while the candidate changes the
+  attention arithmetic.
+- In the 8da4w cells the candidate is at the floor in KL and logit difference; the top-1 count on 1B is 6
+  against 2 of 41, which with 41 prompts is not a resolved difference (and pooled over the three 8da4w cells it
+  is 8 against 4, exactly twice).
+- The parent's stock SDPA kernels accumulate in fp16; the candidate's accumulate in fp32. Against the fp32 CPU
+  reference of `test_llama_microbench` the candidate is the more accurate one
+  (`results/4070ti/sdpa-error/summary.csv`, S = 2048 cases): rms error 8.5e-5 (stock) against 3.5e-5
+  (candidate), max 1.4e-3 to 1.7e-3 against 1.0e-3 to 1.6e-3. So "distance from the parent" here is partly the
+  parent's own rounding error.
+- The dev variants add nothing numerically: the output of `4070ti-refine1` is bit-identical to the plain port
+  of the release SDPA kernels (0 of 12.6 million elements differ over the 12 test cases), and so is the
+  softmax variant. Any cooperative-matrix SDPA kernel on this device, including the release kernels the 780M
+  runs, would be rejected by the same numbers.
+
+**Question for the owner:** the rule measures the candidate's distance from the parent against the distance
+between the parent's two linear arms. For an SDPA change on this device that floor is not attainable in the 4w
+cells by any kernel that does not reproduce the parent's fp16 summation. Should SDPA candidates here be judged
+(a) as the rule stands (then no SDPA kernel can be accepted on this device and the campaign has no accepted
+gain), (b) against a reference instead of against the parent (the candidate is closer to the fp32 reference
+than the parent is), or (c) with another floor? I am not choosing among these myself; (a) is what is recorded.
+
+Measured gain of candidate 1, for the record (`s2-c1b`, evidence steps only, `gate.done` stays REJECTED):
+
+| cell | parent | `4070ti-refine1` | gain |
+|---|---:|---:|---:|
+| 1B 4w | 19692.3 | 28444.4 | +44.4 % |
+| 1B 8da4w | 21113.4 | 31030.3 | +47.0 % |
+| 3B 4w | 8678.0 | 12487.8 | +43.9 % |
+| 3B 8da4w | 9660.4 | 14524.8 | +50.4 % |
+| 8B 4w | 4481.4 | 5885.1 | +31.3 % |
+| 8B 8da4w | 4995.1 | 6804.0 | +36.2 % |
+
+Geomean +42.05 %, median of 5 valid interleaved runs per arm, repeat spread at most 2.1 %. Three timed runs
+were invalid and replaced by the next valid pair (two `clock_low`, one parent run that aborted at exit).
+Next token parent vs candidate: SAME in 23 of 24 rows; the 24th (8B 8da4w, timed prompt) is INVALID because the
+parent's first timed run aborted at exit (`corrupted double-linked list`, rc 134) after printing the same
+token as the candidate. `gate_check.py session` therefore says REJECT for that session, as it is built to.
 
 ## Now
 
-- Running (detached): `tools/gate_rest.sh s2-c1b`, the remaining gate steps of candidate 1 for evidence only
-  (six-cell session with the content check, warm traces); `gate.done` stays `GATE_REJECTED`. It started after
-  the `topic8` build had finished; no build runs during it.
-- From the rejected gate's `verify.out` (single runs, not the timed session): prefill 1B 4w 19692 -> 28444,
-  3B 4w 8752 -> 12564, 8B 4w 4481 -> 5902, 1B 8da4w 21113 -> 31508, 3B 8da4w 9660 -> 14525 tok/s.
-- Next: kernel screen of the zpgtr half-texel staging twin (`bh`, dev zone only, meant bit-identical);
-  measured SDPA error against the fp32 reference for stock, port, `refine1`, the softmax variant and the fused
-  kernel (`[sdpa-error]`, new in the test); then the fused kernel end to end.
-- Linear tile sweeps are done and negative: no 4w `ga` tile (14) and no zpgtr tile (13) beats the shipped ones
-  at kernel level (best 0.995x and 0.84x; `results/4070ti/screens/screen1-*.csv`).
-- Softmax variant without the full zero tail (needs a hook): softmax 659 -> 462 us per layer on 1B and 8B,
-  494 -> 345 on 3B; extended and full tiers PASSED (`sdpa-screen3.csv`).
-- Fused attention kernel (needs a node hook): numerically correct on its first run, 0 mismatches in the 8
-  extended cases for column tiles 32, 64 and 128; the test still prints FAILED for it because it looks for
-  separate QK^T and attn*V kernel names. Not timed yet.
+- Running (detached): warm ETDump traces of `s2-c1b` (both arms), then the near-tie evidence for the softmax
+  variant on top of `refine1` (same prompts, build `topic8`).
+- Other results since the last update:
+  - Linear: no tile and no staging change found. 4w `ga` tiles best 0.995x, zpgtr tiles best 0.84x, zpgtr
+    half-texel weight staging (`bh`, production-diff 6 of 6 ALL PASSED) 1.011x at kernel level, inside its
+    1.2 % repeat spread. Not gated.
+  - Softmax variant (needs a hook): -30 % softmax time, SDPA output bit-identical to `refine1`; ungated quick
+    look +4.3 % (1B 4w), +4.8 % (1B 8da4w), +2.5 % (3B 4w) over `refine1`.
+  - Fused attention kernel (needs a node hook): correct and the most accurate (rms 2.0e-5), but slower than
+    `refine1` as written (1B 4w 26.6k against 28.1k tok/s; 3B 4w 10.8k against 12.5k). Not a candidate.
+- The parent itself fails at exit now and then on this card, in three different programs so far: a traced
+  runner (hang, 20:01), a timed 8B 8da4w run (`corrupted double-linked list`, 23:0x) and the logits dump of
+  3B 8da4w (`free(): chunks in smallbin corrupted`, after all 41 prompts were written). Always after the
+  results were printed. This is the release's own behaviour (`TECHNICAL-REPORT.md`, "rare exit-time crash on
+  the 4070 Ti"), not something this change introduces; it does cost a session a finding when it hits a run the
+  gate needs.
 - Builds and timed runs: no build has overlapped a timed session.
-- Blocking: the decision above (only for calling an SDPA candidate accepted).
+- Blocking: the question above, for anything in SDPA to be called accepted.
 
 ## SDPA screens (kernel level, `test_llama_microbench --sdpa`, us per layer at S = 2048, median of 3)
 
