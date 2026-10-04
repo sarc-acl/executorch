@@ -1,0 +1,59 @@
+diff -ruN a/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp b/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
+--- a/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp	2026-10-04 23:26:39.522089870 +0000
++++ b/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp	2026-10-04 23:26:39.613868680 +0000
+@@ -202,6 +202,13 @@
+   if (!device_has_active_rows(device_info(&graph), Op::kSdpaQk)) {
+     return upstream_name;
+   }
++  static const std::string kStem = "sdpa_attn_weights_softmax";
++  const Override& o = get_override();
++  if (o.sdpa_softmax_family != nullptr && upstream_name.rfind(kStem, 0) == 0) {
++    if (const char* family = o.sdpa_softmax_family()) {
++      return family + upstream_name.substr(kStem.size());
++    }
++  }
+   return "sarc_" + upstream_name;
+ }
+ 
+diff -ruN a/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h b/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h
+--- a/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h	2026-10-04 23:26:39.505704060 +0000
++++ b/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h	2026-10-04 23:26:39.613682175 +0000
+@@ -141,6 +141,9 @@
+       const DeviceInfo& device,
+       const ShapeInfo& shape,
+       const std::optional<Choice>& table_choice) = nullptr;
++  // Shader family of the LLM-mode softmax on devices with an SDPA row, or null
++  // for sarc_sdpa_attn_weights_softmax (must be a causally truncated softmax).
++  const char* (*sdpa_softmax_family)() = nullptr;
+ };
+ void set_override(const Override& o);
+ const Override& get_override();
+diff -ruN a/backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp b/backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp
+--- a/backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp	2026-10-04 23:26:39.537319980 +0000
++++ b/backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp	2026-10-04 23:26:39.614184276 +0000
+@@ -869,6 +869,12 @@
+     // the 8da4w variable needs active dq8ca rows (see dev_select).
+     o.force_path = !requested_variant().empty();
+     o.select = dev_select;
++    // xe2 (local hook measurement, tools/hook-sdpa-softmax.patch): ET_VK_SARC_XE2_SOFTMAX=1
++    o.sdpa_softmax_family = []() -> const char* {
++      return env_true("ET_VK_SARC_XE2_SOFTMAX")
++          ? "sarc_dev_sdpa_attn_weights_softmax_xe2"
++          : nullptr;
++    };
+     set_override(o);
+     if (requested_profile() != nullptr) {
+       std::cerr << "[sarc_dev] profile active: " << requested_profile()->name
+diff -ruN a/backends/vulkan/test/sarc_dev/test_llama_microbench.cpp b/backends/vulkan/test/sarc_dev/test_llama_microbench.cpp
+--- a/backends/vulkan/test/sarc_dev/test_llama_microbench.cpp	2026-10-04 23:26:39.554912411 +0000
++++ b/backends/vulkan/test/sarc_dev/test_llama_microbench.cpp	2026-10-04 23:26:39.614958979 +0000
+@@ -2045,7 +2045,8 @@
+       // xe2 end
+       ;
+   const bool softmax_truncated =
+-      softmax_name.rfind("sarc_sdpa_attn_weights_softmax", 0) == 0;
++      softmax_name.rfind("sarc_sdpa_attn_weights_softmax", 0) == 0 ||
++      softmax_name.rfind("sarc_dev_sdpa_attn_weights_softmax_xe2", 0) == 0;
+   const bool pairing_ok = !qk_no_mask_fill || softmax_truncated;
+ 
+   std::vector<uint16_t> outh(q_numel);

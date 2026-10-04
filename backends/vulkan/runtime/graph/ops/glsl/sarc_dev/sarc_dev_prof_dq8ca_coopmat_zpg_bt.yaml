@@ -30,3 +30,28 @@ sarc_dev_prof_dq8ca_coopmat_zpg_bt:
       A_MAP_FULL: true
       A_MULTI_BLOCK: true
       A_BLOCKS: 2
+# xe2 begin: Intel Xe2 variants (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)
+    - NAME: sarc_dev_prof_dq8ca_coopmat_zpg_bt_t128x128k64g84s16m8p_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 64
+      SG_GRID_X: 8
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      MMA_K: 32
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+    - NAME: sarc_dev_prof_dq8ca_coopmat_zpg_bt_t128x128k64g84s16m8p_buffer_texture2d_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 64
+      SG_GRID_X: 8
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      MMA_K: 32
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+# xe2 end

@@ -679,6 +679,14 @@ const Preference kXe2_refine1[] = {
     {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
     {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
 };
+const Preference kXe2_refine2[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+};
+const Preference kXe2_dq_k64[] = {
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+};
 // xe2 end
 struct Profile {
   const char* name;
@@ -773,6 +781,8 @@ const Profile kProfiles[] = {
     {"xe2-qkc-t64x128k32g42s16m8nf", kXe2_qkc_t64x128k32g42s16m8nf, 1},
     {"xe2-sdpa0", nullptr, 0},
     {"xe2-refine1", kXe2_refine1, sizeof(kXe2_refine1) / sizeof(Preference)},
+    {"xe2-refine2", kXe2_refine2, sizeof(kXe2_refine2) / sizeof(Preference)},
+    {"xe2-dq-k64", kXe2_dq_k64, sizeof(kXe2_dq_k64) / sizeof(Preference)},
     // xe2 end
 };
 const Profile* requested_profile() {
