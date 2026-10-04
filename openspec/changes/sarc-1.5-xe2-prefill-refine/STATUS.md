@@ -65,16 +65,16 @@ job**; what could be exercised inside the fence is listed at the end of this sec
 | `e2e5.sh` | samples act_freq, throttle status, card energy, package temperature. A clock threshold is required: `--calibrate` (baseline / A-A session only) stores the idle temperature and 97 % of the lowest per-run median clock in the artifact directory; every other session refuses to start without it. A throttled run is invalid. A foreign GPU process aborts the session. Next tokens are compared only between completed runs that printed text (otherwise `INVALID`). Exit status and `done.txt` are `E2E5_OK` only with 5 valid runs per build in every cell and all comparisons `SAME` |
 | `parent_verify.sh` | parent control `s0-parent-verify`: unmodified `verify.sh` on the pristine parent build and one pass of each SDPA tier |
 | `sdpa_passes.sh` | N passes each of `--sdpa-tier=all`, `extended`, `full`; every log and return status kept |
-| `gate.sh <session> "<env>" [--sdpa]`, `gate_sdpa.sh` | SDPA passes (12 per tier with `--sdpa`), guarded `verify.sh`, timing session, traces; every step runs even after a failure and nothing is deleted; `gate.done` is `GATE_PASS` / `GATE_FAIL` / `GATE_ABORTED` from `gate_check.py`, never unconditional |
-| `gate_check.py` | the acceptance decision, one PASS/FAIL line per requirement: `verify.sh` results and line-by-line equality with the parent control, six complete timing cells with a clock threshold in force, next token `SAME` in six cells on both prompts, traces for six cells x two arms, and for SDPA candidates 12 passes x 3 tiers with the expected case counts (4 / 8 / 4), 0 mismatches and `pairing=ok` |
+| `gate.sh <session> [--sdpa]`, `gate_sdpa.sh <session>` | The candidate environment is read only from the staged `cand/env` (no command-line environment; refuses to start if `cand-traced/env` differs or the top-level binaries are not the staged candidate's), so verification, SDPA passes, timing and traces run one configuration. A foreign GPU process in any step, including both SDPA perf runs, ends the gate at once with `GATE_ABORTED`. SDPA passes (12 per tier with `--sdpa`), guarded `verify.sh`, timing session, traces; every step runs even after a failure and nothing is deleted; `gate.done` is `GATE_PASS` / `GATE_FAIL` / `GATE_ABORTED` from `gate_check.py`, never unconditional |
+| `gate_check.py` | the acceptance decision, one PASS/FAIL line per requirement: `verify.sh` results and line-by-line equality with the parent control, the staged `cand/env` equal to the environment `verify.sh` and the timing session recorded, six complete timing cells with a clock threshold in force, next token `SAME` in six cells on both prompts, traces for six cells x two arms, and for SDPA candidates 12 passes x 3 tiers with the expected case counts (4 / 8 / 4), 0 mismatches and `pairing=ok` |
 | `trace.sh`, `trace_analysis.py` | guarded warm ETDump runs under `raw/xe2`; the analyzer is a campaign-local copy of the kit's (the kit file is unchanged) that reads `xe2` and exits non-zero on a missing, empty or single-execution trace; `trace.ok` only when every run and the analysis succeeded |
 | `roof_util.py` | no built-in roofs: percent-of-roof only with `--roof` and `--source` naming a fresh igpu-roofline run, otherwise rates only |
 | `session.sh`, `screen.sh`, `gl.sh`, `collect.sh`, `summarize.py`, `screen_summary.py`, `prof_decode.py`, `Containerfile` | as on the 780M with this host's paths; `gl.sh` uses the guard |
 
 Exercised inside the fence (no GPU): shell syntax and Python compilation of every tool; `gate_check.py` on the
 780M session `s8-r3final` evidence (passes what that session contains) and on copies with an injected
-mismatch, a `pairing` failure, an `INVALID` next token and a failed production-diff case (each reported as
-FAIL); `roof_util.py` on a 780M `gemm.csv`; the process guard with dummy processes (own child accepted, own
+mismatch, a `pairing` failure, an `INVALID` next token, a failed production-diff case and a `cand/env` that differs from the verified
+environment (each reported as FAIL); the start-up refusals of `gate.sh` on a dummy session; `roof_util.py` on a 780M `gemm.csv`; the process guard with dummy processes (own child accepted, own
 launcher shells ignored, a foreign process before or during a job gives 76). Not exercised: `build-both.sh`,
 `stage.sh`, `e2e5.sh`, `trace.sh`, the gate scripts end to end, and whether `act_freq` is readable under load
 in this VM (the calibration session fails with `clock_not_readable` if it is not).
@@ -95,7 +95,7 @@ None measured. Expected parent (from `sarc-1.5-e2e-benchmark/results/cells.csv`,
    `session.sh s1-aa --calibrate`), which must agree with the expected numbers below within a few percent.
 3. Per-op ETDump breakdown and phase timing of the two Intel linear kernels.
 4. Xe2 SDPA kernels (QK^T, attn*V), then 8da4w linear, then 4w linear; sweeps by resumable script, pruned
-   statically; every candidate through `gate.sh` / `gate_sdpa.sh`; stop after two consecutive gated candidates
+   statically; every candidate staged with its environment and gated with `gate.sh <session>` / `gate_sdpa.sh <session>`; stop after two consecutive gated candidates
    under 2 % geomean.
 
 ## Awaiting B580 confirmation

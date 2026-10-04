@@ -10,6 +10,8 @@ missing or empty evidence is a FAIL.
            (default and tiled), default vs tiled SAME on the real-text and the unaligned prompt for both
            schemes, decode rc=0 with generated tokens, and the same status as the parent control line by line
            (--parent; this is where `linear <scheme> rc=` is compared, since its value is device-specific).
+  env      the staged cand/env is exactly the ET_VK*/ETVK* environment verify.sh recorded, the one the timing
+           session recorded for the candidate arm, and cand-traced/env.
   timing   raw/runs.csv: 5 valid runs per build in each of the six cells, a clock threshold > 0 in force,
            done.txt = E2E5_OK; raw/nexttoken.csv: SAME on both prompts in all six cells.
   trace    trace/trace.ok and one totals row per cell and arm.
@@ -60,6 +62,14 @@ if not CONTROL:
     ps = verify_status(read(PARENT)) if PARENT else {}
     diff = sorted(k for k in set(s) | set(ps) if s.get(k) != ps.get(k))
     check(bool(ps) and ps.get("VERIFY_DONE") == "rc=0" and not diff, "verify: same status as the parent control", f"parent {PARENT}: " + (", ".join(f"{k}: parent [{ps.get(k)}] cand [{s.get(k)}]" for k in diff[:6]) if ps else "missing") if (diff or not ps) else "")
+
+    # one candidate configuration: the staged cand/env must be what verify.sh, the timing session and the traces ran
+    cenv = [l for l in read(D, "cand", "env").splitlines() if l]
+    venv = [l for l in read(D, "verify", "env.txt").splitlines() if re.match(r"ET_?VK\w*=", l) and not l.startswith("ETVK_DEVICE_INDEX=")]
+    tenv = re.search(r"^cand env: (.*)$", read(D, "raw", "env.txt"), re.M)
+    check(os.path.exists(os.path.join(D, "cand", "env")) and sorted(cenv) == sorted(venv) and tenv is not None and tenv[1].split() == cenv
+          and read(D, "cand-traced", "env").splitlines() == read(D, "cand", "env").splitlines(),
+          "one candidate environment in verify, timing and traces", f"cand/env {cenv} verify {venv} timing {tenv[1].split() if tenv else 'missing'}")
 
     try: rows = list(csv.DictReader(open(os.path.join(D, "raw", "runs.csv"))))
     except OSError: rows = []
