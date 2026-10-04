@@ -803,4 +803,29 @@ if TB not in t:
     assert t.count(old) == 1
     t = t.replace(old, '      qk_name.find("s64nf") != std::string::npos\n' + TB + '      || qk_name.find("m8nf") != std::string::npos\n' + TE + "      ;\n")
     c.write_text(t)
+# SDPA correctness: report the error against the fp32 CPU reference per case (owner decision 2026-10-04, second:
+# a candidate that changes kernel arithmetic is judged by its rms and maximum error against the reference
+# beside the parent's). Printing only; the pass criterion of the test is unchanged.
+EB = "  // xe2 begin: error against the fp32 CPU reference (openspec/changes/sarc-1.5-xe2-prefill-refine)\n"; EE = "  // xe2 end\n"
+t = c.read_text()
+if EB not in t:
+    anchor = "  const bool numeric_ok = mismatches == 0;\n  const bool fired_ok = qk_fired && av_fired && pairing_ok;\n"
+    assert t.count(anchor) == 1
+    t = t.replace(anchor, EB + """  {
+    double se = 0.0, sr = 0.0, emax = 0.0;
+    for (int64_t i = 0; i < q_numel; ++i) {
+      const double d = static_cast<double>(outf[i]) - static_cast<double>(ref[i]);
+      se += d * d;
+      sr += static_cast<double>(ref[i]) * static_cast<double>(ref[i]);
+      emax = std::max(emax, std::fabs(d));
+    }
+    std::cout << "[sdpa-error] " << c.name << " elements=" << q_numel
+              << std::scientific << std::setprecision(4)
+              << " rms_err=" << std::sqrt(se / static_cast<double>(q_numel))
+              << " max_abs_err=" << emax
+              << " ref_rms=" << std::sqrt(sr / static_cast<double>(q_numel))
+              << std::defaultfloat << std::setprecision(6) << "\\n";
+  }
+""" + EE + anchor)
+    c.write_text(t)
 print(f"xe2: {len(QK_SWEEP)} qk sweep, {len(QK_PK)} qk pk, {len(QK_XE2)} qk xe2, {len(AV_SWEEP)} av sweep, {len(AV_ML)} av ml, {len(AV_XE2)} av xe2 variants; {len(REFINE)} refine profiles")
