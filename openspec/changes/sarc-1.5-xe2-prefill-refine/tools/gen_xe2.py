@@ -76,6 +76,15 @@ for m, n, k, sx, sy in [(128, 64, 32, 4, 4), (128, 64, 32, 4, 8), (128, 64, 32, 
 for t, m, n, k, sx, sy, _ in AV_ML:
     assert 2 * (m * k + k * n) <= LDS_MAX
     AV_XE2.append((t, m, n, k, sx, sy, ""))
+# screen 2: around the screen-1 best attn*V tile (t128x64k32g44)
+for m, n, sx, sy in [(128, 64, 2, 4), (256, 64, 4, 8), (256, 64, 4, 4), (128, 128, 4, 4), (256, 128, 4, 8)]:
+    assert geometry_ok(m, n, sx, sy) and 2 * (m * 32 + 32 * n) <= LDS_MAX, (m, n, sx, sy)
+    AV_XE2.append((tok(m, n, 32, sx, sy), m, n, 32, sx, sy, ""))
+# QK^T, packed staging + ColumnMajor B (the pk twin, the screen-1 best) with the fragment-contiguous layout
+QK_XE2C = []
+for m, n, k, sx, sy in [(128, 64, 32, 4, 4), (128, 64, 32, 2, 4), (64, 128, 32, 4, 4), (64, 64, 32, 4, 4), (128, 64, 64, 4, 4), (64, 128, 32, 4, 2)]:
+    assert geometry_ok(m, n, sx, sy) and 2 * (m * k + k * n + m * n) <= LDS_MAX, (m, n, k, sx, sy)
+    QK_XE2C.append((tok(m, n, k, sx, sy, "nf"), m, n, k, sx, sy, ""))
 
 def sub(text, old, new, count=1):
     c = text.count(old); assert c == count, f"anchor occurs {c} times, expected {count}: {old[:70]!r}"
@@ -177,6 +186,34 @@ q = sub(q, """                coopMatLoad(
 assert "A_ROW" not in q and "B_ROW" not in q and "FP16_PER_VEC4" not in q
 (g / "sarc_sdpa_qk_coopmat_xe2.glsl").write_text(HDR % ("sarc_sdpa_qk_coopmat_sweep", "sarc_sdpa_qk_coopmat",
     "Differences: fragment-contiguous uvec4 staging of Q and K^T (K^T gathered per thread), WG_TILE_K 32 or 64.") + q)
+# --- QK^T, ColumnMajor B: K rows staged as stored, [d16 block][c][16 d] ---
+qc = (g / "sarc_sdpa_qk_coopmat_pk.glsl").read_text(); qc = qc[qc.index("#version 450 core"):]
+qc = sub(qc, """const uint AB_STRIDE_UV4 = (WG_TILE_K + F16_PER_UV4) / F16_PER_UV4;
+
+shared uvec4 Ash[WG_TILE_M * AB_STRIDE_UV4];
+shared uvec4 Bsh[WG_TILE_N * AB_STRIDE_UV4];
+""", """// Fragment-contiguous (Intel Xe2): A as [d16 block][s][16 d] and B = K rows as
+// [d16 block][c][16 d], no padding, so each MMA_M x 16 A fragment and each
+// 16 x 16 B fragment (loaded ColumnMajor: one context row per column) is one
+// contiguous run with a 32-byte stride. Requires MMA_K == MMA_N == 16.
+const uint FRAG_ROW_UV4 = 2u;
+#define A_SH_IDX(m, c) ((((c) / FRAG_ROW_UV4) * WG_TILE_M + (m)) * FRAG_ROW_UV4 + ((c) % FRAG_ROW_UV4))
+#define BT_SH_IDX(n, c) ((((c) / FRAG_ROW_UV4) * WG_TILE_N + (n)) * FRAG_ROW_UV4 + ((c) % FRAG_ROW_UV4))
+
+shared uvec4 Ash[WG_TILE_M * WG_TILE_K / 8u];
+shared uvec4 Bsh[WG_TILE_N * WG_TILE_K / 8u];
+""")
+qc = sub(qc, "Ash[ls * AB_STRIDE_UV4 + l8] = uvec4(", "Ash[A_SH_IDX(ls, l8)] = uvec4(")
+qc = sub(qc, "Bsh[lc * AB_STRIDE_UV4 + l8] = uvec4(", "Bsh[BT_SH_IDX(lc, l8)] = uvec4(")
+qc = sub(qc, """                    row_a * AB_STRIDE_UV4 + k_start / F16_PER_UV4,
+                    AB_STRIDE_UV4,""", """                    A_SH_IDX(row_a, k_start / F16_PER_UV4),
+                    FRAG_ROW_UV4,""")
+qc = sub(qc, """                    col_b * AB_STRIDE_UV4 + k_start / F16_PER_UV4,
+                    AB_STRIDE_UV4,""", """                    BT_SH_IDX(col_b, k_start / F16_PER_UV4),
+                    FRAG_ROW_UV4,""")
+assert "AB_STRIDE_UV4" not in qc
+(g / "sarc_sdpa_qk_coopmat_xe2c.glsl").write_text(HDR % ("sarc_sdpa_qk_coopmat_pk", "sarc_sdpa_qk_coopmat",
+    "Difference from the pk twin: fragment-contiguous shared-memory layout (no row padding).") + qc)
 # --- attn*V ---
 a = (g / "sarc_sdpa_av_coopmat_ml.glsl").read_text(); a = a[a.index("#version 450 core"):]
 a = sub(a, """const uint A_STRIDE_VEC4 = (WG_TILE_K + FP16_PER_VEC4) / FP16_PER_VEC4;
@@ -205,6 +242,7 @@ def family_yaml(name, cache, extra_default, variants):
         y += f"    - NAME: {name}_{t}\n      WG_TILE_M: {m}\n      WG_TILE_N: {n}\n      WG_TILE_K: {k}\n      SG_GRID_X: {sx}\n      SG_GRID_Y: {sy}\n"
     return y
 (g / "sarc_sdpa_qk_coopmat_xe2.yaml").write_text(family_yaml("sarc_sdpa_qk_coopmat_xe2", "K_CACHE_STORAGE", "    NO_MASK_FILL: true\n", QK_XE2))
+(g / "sarc_sdpa_qk_coopmat_xe2c.yaml").write_text(family_yaml("sarc_sdpa_qk_coopmat_xe2c", "K_CACHE_STORAGE", "    NO_MASK_FILL: true\n", QK_XE2C))
 (g / "sarc_sdpa_av_coopmat_xe2.yaml").write_text(family_yaml("sarc_sdpa_av_coopmat_xe2", "V_CACHE_STORAGE", "", AV_XE2))
 
 FAMILIES = [  # (yaml file, kernel prefix, op, profile prefix, token prefix, variants)
@@ -214,6 +252,7 @@ FAMILIES = [  # (yaml file, kernel prefix, op, profile prefix, token prefix, var
     ("sarc_sdpa_av_coopmat_ml", "sarc_sdpa_av_coopmat_ml", "kSdpaAv", "avml", "ml", AV_ML),
     (None, "sarc_sdpa_qk_coopmat_xe2", "kSdpaQk", "qkfr", "xe2", QK_XE2),
     (None, "sarc_sdpa_av_coopmat_xe2", "kSdpaAv", "avfr", "xe2", AV_XE2),
+    (None, "sarc_sdpa_qk_coopmat_xe2c", "kSdpaQk", "qkc", "xe2c", QK_XE2C),
 ]
 YB = "# xe2 begin: Intel Xe2 variants (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)\n"
 YE = "# xe2 end\n"
@@ -229,9 +268,17 @@ for fname, prefix, op, pp, tp, variants in FAMILIES:
 # The profiles. Base rows = the table choice on Xe2 while an xe2-* profile is requested.
 BASE_QK = QK_SWEEP[0]; BASE_AV = AV_SWEEP[0]
 REFINE = {
-    # name: [(op, token with family prefix)]
+    # name: [(op, token with family prefix, shape predicate or nullptr)]
     "xe2-sdpa0": [],   # the base rows alone
+    # candidate 1 (SDPA prefill): screen 1, best kernel per shape. QK^T with packed staging for every
+    # head_dim; attn*V 128-row fragment-layout tile for head_dim 128 (3B, 8B), the base 64 x 64 tile for 64 (1B).
+    "xe2-refine1": [("kSdpaQk", "pk_t128x64k32g44s16m8nf", "nullptr"), ("kSdpaAv", "xe2_t128x64k32g44s16m8", "xe2_head_dim_128")],
 }
+PREDS = """// attn*V: ShapeInfo::N is head_dim.
+bool xe2_head_dim_128(const ShapeInfo& s) {
+  return s.N >= 128;
+}
+"""
 rows = ""
 def row(dev, pred, op, name, m, n, k, sx, sy):
     return (f'    {{"{dev}", {pred}, Op::{op},\n     "{name}",\n     {{{m}, {n}, {k}, {sx}, {sy}, {SG}, {MMA_M}, false}}, kBufBuf, nullptr,\n'
@@ -250,7 +297,7 @@ for fname, prefix, op, pp, tp, variants in FAMILIES:
 for name, items in REFINE.items():
     ident = "kXe2_" + name[4:].replace("-", "_")
     if items:
-        prefs += f"const Preference {ident}[] = {{\n" + "".join(f'    {{Op::{op}, "{t}", nullptr}},\n' for op, t in items) + "};\n"
+        prefs += f"const Preference {ident}[] = {{\n" + "".join(f'    {{Op::{op}, "{t}", {pred}}},\n' for op, t, pred in items) + "};\n"
         profs += f'    {{"{name}", {ident}, sizeof({ident}) / sizeof(Preference)}},\n'
     else:
         profs += f'    {{"{name}", nullptr, 0}},\n'
@@ -324,6 +371,48 @@ lin_rows = ""; ybody = {}
 for kb, op, dims, st, yf, flags in LIN:
     lin_rows += f'    {{"", nullptr, Op::{op},\n     "{kb}", {dims},\n     {st}, nullptr, Status::kUnverified}},\n'
     ybody[yf] = ybody.get(yf, "") + f"    - NAME: {kb}_texture3d_texture2d_half\n      IO_STORAGE: texture3d\n{flags}    - NAME: {kb}_buffer_texture2d_half\n{flags}"
+
+# ---------------- linear sweep tiles (texture3d = the model path), statically pruned ----------------
+# 8da4w zpg, MMA 8x16x32, subgroup 16. (M, N, K, sgx, sgy). A map full: A blocks per chunk (M/4)*(K/4) is a
+# whole number of blocks per thread; B slots per thread (K/4)*N / WG_SIZE is an integer; shared memory =
+# 2 slices of A (M*32 bytes per K slab) and B (N*32 per slab) + izp/ifs + wsc/wcorr + the drain band.
+def dq_lds(m, n, k, sy): return 2 * (k // 32) * (m * 32 + n * 32) + m * 8 + n * 12 + sy * MMA_M * n * 2
+DQ = [(128, 64, 32, 4, 4), (128, 64, 32, 2, 4), (128, 64, 32, 4, 2), (256, 64, 32, 4, 4), (256, 64, 32, 2, 8),
+      (128, 128, 32, 4, 4), (256, 128, 32, 4, 8), (128, 64, 64, 4, 4), (256, 64, 32, 4, 8)]
+dq_tiles = []
+for m, n, k, sx, sy in DQ:
+    wg = sx * sy * SG; ab, rem = divmod((m // 4) * (k // 4), wg)
+    assert geometry_ok(m, n, sx, sy) and rem == 0 and ab >= 1 and ((k // 4) * n) % wg == 0 and k % 32 == 0, (m, n, k, sx, sy)
+    assert dq_lds(m, n, k, sy) <= LDS_MAX, (m, n, k, dq_lds(m, n, k, sy))
+    dq_tiles.append((m, n, k, sx, sy, ab))
+def dq_yaml(m, n, k, sx, sy, ab):
+    return (f"      WG_TILE_M: {m}\n      WG_TILE_N: {n}\n      WG_TILE_K: {k}\n      SG_GRID_X: {sx}\n      SG_GRID_Y: {sy}\n      SUBGROUP_SIZE: {SG}\n"
+            f"      MMA_M: {MMA_M}\n      MMA_K: 32\n      A_MAP_FULL: true\n      A_MULTI_BLOCK: true\n      A_BLOCKS: {ab}\n")
+for m, n, k, sx, sy, ab in dq_tiles:
+    if (m, n, k, sx, sy) == (256, 64, 32, 4, 8): continue        # the shipped tile; only its bt twin is new (never: 512 threads)
+    kb = f"sarc_linear_dq8ca_coopmat_zpg_sweep_{tok(m, n, k, sx, sy)}"
+    lin_rows += f'    {{"", nullptr, Op::kDq8caLinear,\n     "{kb}",\n     {{{m}, {n}, {k}, {sx}, {sy}, {SG}, {MMA_M}, false}}, kTex3dTex2d, nullptr, Status::kUnverified}},\n'
+    ybody["sarc_linear_dq8ca_coopmat_zpg_sweep"] = ybody.get("sarc_linear_dq8ca_coopmat_zpg_sweep", "") + f"    - NAME: {kb}_texture3d_texture2d_half\n      IO_STORAGE: texture3d\n" + dq_yaml(m, n, k, sx, sy, ab)
+    # texel-wise weight staging (the 780M bt family): a (texel, parity) slot per thread, 2*(K/4)*(N/8) slots
+    if (2 * (k // 4) * (n // 8)) % (sx * sy * SG) == 0:
+        kb = f"sarc_dev_linear_dq8ca_coopmat_zpg_bt_{tok(m, n, k, sx, sy)}"
+        lin_rows += f'    {{"", nullptr, Op::kDq8caLinear,\n     "{kb}",\n     {{{m}, {n}, {k}, {sx}, {sy}, {SG}, {MMA_M}, false}}, kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified}},\n'
+        ybody["sarc_dev_linear_dq8ca_coopmat_zpg_bt"] = ybody.get("sarc_dev_linear_dq8ca_coopmat_zpg_bt", "") + "".join(
+            f"    - NAME: {kb}_{io}_texture2d_half\n      IO_STORAGE: {io}\n" + dq_yaml(m, n, k, sx, sy, ab) for io in ("texture3d", "buffer"))
+# 4w, FRAG_LAYOUT + IMG_A (the shipped Xe2 flags), MMA 8x16x16, subgroup 16. Staging passes must be integral:
+# A rows per pass = WG_SIZE / (K/8) divides M, B rows per pass = WG_SIZE / (N/8) divides K. Shared memory =
+# 2 slices of A (M*K*2 bytes) and B (K*N*2) + the drain band (SG_GRID_Y * 8 rows x N fp16).
+Q4 = [(128, 128, 32, 4, 4), (128, 256, 16, 4, 4), (64, 128, 16, 4, 2), (128, 64, 16, 2, 4), (128, 128, 16, 2, 4),
+      (256, 128, 32, 4, 8), (128, 128, 32, 2, 4)]
+for m, n, k, sx, sy in Q4:
+    wg = sx * sy * SG
+    if 2 * 2 * (m * k + k * n) + sy * MMA_M * n * 2 > LDS_MAX: continue          # pruned: over the shared-memory limit
+    assert geometry_ok(m, n, sx, sy) and wg % (k // 8) == 0 and m % (wg // (k // 8)) == 0 and wg % (n // 8) == 0 and k % (wg // (n // 8)) == 0, (m, n, k, sx, sy)
+    kb = f"sarc_linear_q4gsw_coopmat_sweep_{tok(m, n, k, sx, sy)}fli"
+    lin_rows += f'    {{"", nullptr, Op::kQ4gswLinear,\n     "{kb}",\n     {{{m}, {n}, {k}, {sx}, {sy}, {SG}, {MMA_M}, false}}, kTex3dTex2d, nullptr, Status::kUnverified}},\n'
+    ybody["sarc_linear_q4gsw_coopmat_sweep"] = ybody.get("sarc_linear_q4gsw_coopmat_sweep", "") + (
+        f"    - NAME: {kb}_texture3d_texture2d_half\n      IO_STORAGE: texture3d\n      WEIGHT_STORAGE: texture2d\n      MMA_M: {MMA_M}\n"
+        f"      WG_TILE_M: {m}\n      WG_TILE_N: {n}\n      WG_TILE_K: {k}\n      SG_GRID_X: {sx}\n      SG_GRID_Y: {sy}\n      SUBGROUP_SIZE: {SG}\n      FRAG_LAYOUT: true\n      IMG_A: true\n")
 for yf, y in ybody.items():
     p = g / f"{yf}.yaml"; p.write_text(block(p.read_text(), YB, YE, y))
 (impl / "Xe2Linear.cpp").write_text(f"""/*
@@ -366,7 +455,7 @@ o = impl / "Overrides.cpp"; t = o.read_text()
 CB = "// xe2 begin: Intel Xe2 profiles (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)\n"
 CE = "// xe2 end\n"
 t = block(t, CB, CE, "// Single-kernel screening profiles and the xe2-refineN candidates. They take effect on a device whose\n"
-          "// SDPA base rows are active (impl/sarc_dev/Xe2Sdpa.cpp, ET_VK_SARC_UNVERIFIED=1).\n" + prefs, "struct Profile {\n")
+          "// SDPA base rows are active (impl/sarc_dev/Xe2Sdpa.cpp, ET_VK_SARC_UNVERIFIED=1).\n" + PREDS + prefs, "struct Profile {\n")
 PB = "    // xe2 begin: Intel Xe2 profiles (tools/gen_xe2.py)\n"; PE = "    // xe2 end\n"
 t = block(t, PB, PE, profs, "};\nconst Profile* requested_profile() {")
 o.write_text(t)

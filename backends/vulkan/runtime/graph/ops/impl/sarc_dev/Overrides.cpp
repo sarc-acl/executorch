@@ -614,6 +614,10 @@ const Preference kQkPk_t256x64k32g42s32nf[] = {{Op::kSdpaQk, "pk_t256x64k32g42s3
 // xe2 begin: Intel Xe2 profiles (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)
 // Single-kernel screening profiles and the xe2-refineN candidates. They take effect on a device whose
 // SDPA base rows are active (impl/sarc_dev/Xe2Sdpa.cpp, ET_VK_SARC_UNVERIFIED=1).
+// attn*V: ShapeInfo::N is head_dim.
+bool xe2_head_dim_128(const ShapeInfo& s) {
+  return s.N >= 128;
+}
 const Preference kXe2_qk_t128x64k32g44s16m8nf[] = {{Op::kSdpaQk, "sweep_t128x64k32g44s16m8nf", nullptr}};
 const Preference kXe2_qk_t128x64k32g44s16m8[] = {{Op::kSdpaQk, "sweep_t128x64k32g44s16m8", nullptr}};
 const Preference kXe2_qk_t128x64k32g48s16m8nf[] = {{Op::kSdpaQk, "sweep_t128x64k32g48s16m8nf", nullptr}};
@@ -660,6 +664,21 @@ const Preference kXe2_avfr_t64x128k32g84s16m8[] = {{Op::kSdpaAv, "xe2_t64x128k32
 const Preference kXe2_avfr_t128x128k32g48s16m8[] = {{Op::kSdpaAv, "xe2_t128x128k32g48s16m8", nullptr}};
 const Preference kXe2_avfr_t128x128k32g88s16m8[] = {{Op::kSdpaAv, "xe2_t128x128k32g88s16m8", nullptr}};
 const Preference kXe2_avfr_t32x64k32g42s16m8[] = {{Op::kSdpaAv, "xe2_t32x64k32g42s16m8", nullptr}};
+const Preference kXe2_avfr_t128x64k32g24s16m8[] = {{Op::kSdpaAv, "xe2_t128x64k32g24s16m8", nullptr}};
+const Preference kXe2_avfr_t256x64k32g48s16m8[] = {{Op::kSdpaAv, "xe2_t256x64k32g48s16m8", nullptr}};
+const Preference kXe2_avfr_t256x64k32g44s16m8[] = {{Op::kSdpaAv, "xe2_t256x64k32g44s16m8", nullptr}};
+const Preference kXe2_avfr_t128x128k32g44s16m8[] = {{Op::kSdpaAv, "xe2_t128x128k32g44s16m8", nullptr}};
+const Preference kXe2_avfr_t256x128k32g48s16m8[] = {{Op::kSdpaAv, "xe2_t256x128k32g48s16m8", nullptr}};
+const Preference kXe2_qkc_t128x64k32g44s16m8nf[] = {{Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", nullptr}};
+const Preference kXe2_qkc_t128x64k32g24s16m8nf[] = {{Op::kSdpaQk, "xe2c_t128x64k32g24s16m8nf", nullptr}};
+const Preference kXe2_qkc_t64x128k32g44s16m8nf[] = {{Op::kSdpaQk, "xe2c_t64x128k32g44s16m8nf", nullptr}};
+const Preference kXe2_qkc_t64x64k32g44s16m8nf[] = {{Op::kSdpaQk, "xe2c_t64x64k32g44s16m8nf", nullptr}};
+const Preference kXe2_qkc_t128x64k64g44s16m8nf[] = {{Op::kSdpaQk, "xe2c_t128x64k64g44s16m8nf", nullptr}};
+const Preference kXe2_qkc_t64x128k32g42s16m8nf[] = {{Op::kSdpaQk, "xe2c_t64x128k32g42s16m8nf", nullptr}};
+const Preference kXe2_refine1[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+};
 // xe2 end
 struct Profile {
   const char* name;
@@ -741,7 +760,19 @@ const Profile kProfiles[] = {
     {"xe2-avfr-t128x128k32g48s16m8", kXe2_avfr_t128x128k32g48s16m8, 1},
     {"xe2-avfr-t128x128k32g88s16m8", kXe2_avfr_t128x128k32g88s16m8, 1},
     {"xe2-avfr-t32x64k32g42s16m8", kXe2_avfr_t32x64k32g42s16m8, 1},
+    {"xe2-avfr-t128x64k32g24s16m8", kXe2_avfr_t128x64k32g24s16m8, 1},
+    {"xe2-avfr-t256x64k32g48s16m8", kXe2_avfr_t256x64k32g48s16m8, 1},
+    {"xe2-avfr-t256x64k32g44s16m8", kXe2_avfr_t256x64k32g44s16m8, 1},
+    {"xe2-avfr-t128x128k32g44s16m8", kXe2_avfr_t128x128k32g44s16m8, 1},
+    {"xe2-avfr-t256x128k32g48s16m8", kXe2_avfr_t256x128k32g48s16m8, 1},
+    {"xe2-qkc-t128x64k32g44s16m8nf", kXe2_qkc_t128x64k32g44s16m8nf, 1},
+    {"xe2-qkc-t128x64k32g24s16m8nf", kXe2_qkc_t128x64k32g24s16m8nf, 1},
+    {"xe2-qkc-t64x128k32g44s16m8nf", kXe2_qkc_t64x128k32g44s16m8nf, 1},
+    {"xe2-qkc-t64x64k32g44s16m8nf", kXe2_qkc_t64x64k32g44s16m8nf, 1},
+    {"xe2-qkc-t128x64k64g44s16m8nf", kXe2_qkc_t128x64k64g44s16m8nf, 1},
+    {"xe2-qkc-t64x128k32g42s16m8nf", kXe2_qkc_t64x128k32g42s16m8nf, 1},
     {"xe2-sdpa0", nullptr, 0},
+    {"xe2-refine1", kXe2_refine1, sizeof(kXe2_refine1) / sizeof(Preference)},
     // xe2 end
 };
 const Profile* requested_profile() {
