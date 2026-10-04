@@ -5,7 +5,7 @@
 #       (the microbench header asks for 10+ repeats before a coopmat SDPA pass is trusted), and 3 passes without
 #       it (the table kernels, as the control);
 #   0b. the SDPA perf suite (--sdpa) with and without the candidate env, for the dispatched kernels and times.
-A=$HOME/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-03; S=$1; ENVS=$2; D=$A/stage/$S; B=$D/test_llama_microbench
+A=${ART780M:-$HOME/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-03}; S=$1; ENVS=$2; D=$A/stage/$S; B=$D/test_llama_microbench
 t0=$SECONDS; while (( $(cat /sys/class/hwmon/hwmon2/temp1_input) > 48000 && SECONDS - t0 < 300 )); do sleep 5; done
 O=$D/sdpa-correctness; mkdir -p $O
 for i in $(seq 1 12); do env $ENVS $A/tools/gl.sh $B --sdpa-correctness-only > $O/cand-r$i.log 2>&1; echo "cand r$i rc=$? see summary.txt"; done > $O/summary.txt

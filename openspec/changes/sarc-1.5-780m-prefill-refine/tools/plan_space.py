@@ -9,7 +9,8 @@ builds ("batches": one microbench binary each, at most BATCH variants, so spv.cp
      B  every flag combination (and the texel-wise staging twin) on a few geometries: the shipped tile, the
         refine3 wide tile and their 2x2 / 2x4 grids here; the measured top geometries of stage A with --stage-b
 Writes <out dir>/bNN/{4w,8da4w,qk,av}.txt (gen_space.py selections) and <out dir>/manifest.csv
-(batch,family,stage,token,kernel_base,heads)."""
+(batch,family,stage,token,kernel_base,heads).
+--tokens <file> <stage> [--prefix r] [--first-batch N] plans an explicit 4w token list instead (sample_space.py)."""
 import csv, pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import enum_space as es, gen_space_names as gn
@@ -17,10 +18,15 @@ import enum_space as es, gen_space_names as gn
 BATCH = 560
 out = pathlib.Path(sys.argv[1]); a = sys.argv[2:]
 stage_b = [l.split()[0] for l in open(a[a.index("--stage-b") + 1]) if l.strip()] if "--stage-b" in a else None
+# --tokens <file> <stage>: an explicit 4w token list (the random sample, refinement neighbours, confirmation)
+tokens = [l.split()[0] for l in open(a[a.index("--tokens") + 1]) if l.strip() and not l.startswith("#")] if "--tokens" in a else None
+prefix = a[a.index("--prefix") + 1] if "--prefix" in a else "b"
 B_GEOS = {(128, 128, 32, 4, 2, 32), (128, 256, 32, 4, 2, 32), (128, 128, 32, 2, 2, 32), (128, 128, 32, 2, 4, 32)}
 SHIP = lambda f: {k for k, v in f.items() if v}
 items = {}  # family -> [(stage, token, heads)]
-if stage_b is None:
+if tokens is not None:
+    items["4w"] = [(a[a.index("--tokens") + 2], t, "") for t in tokens]
+elif stage_b is None:
     for fam in ("8da4w", "qk", "av"):
         items[fam] = [("all", *(es.token(fam, c).split("/hd") + [""])[:2]) for c, r in es.space(fam) if r is None]
     geo = {}; b = []
@@ -44,11 +50,11 @@ for i in range(0, len(flat), BATCH):
     if av and chunk[0][0] == "qk":   # the av tokens ride along with the qk runs, spread over the qk batches
         nqk = -(-len(items["qk"]) // BATCH); k = (i // BATCH); per = -(-len(av) // nqk)
         chunk = chunk + [("av", *x) for x in av[k * per:(k + 1) * per]]
-    d = out / f"b{nb:02d}"; d.mkdir(parents=True, exist_ok=True)
+    d = out / f"{prefix}{nb:02d}"; d.mkdir(parents=True, exist_ok=True)
     for fam in ("4w", "8da4w", "qk", "av"):
         toks = [t for f, _, t, _ in chunk if f == fam]
         if toks: (d / f"{fam}.txt").write_text("\n".join(toks) + "\n")
-    rows += [(f"b{nb:02d}", f, s, t, gn.kernel_base(f, t), h) for f, s, t, h in chunk]; nb += 1
+    rows += [(f"{prefix}{nb:02d}", f, s, t, gn.kernel_base(f, t), h) for f, s, t, h in chunk]; nb += 1
 mf = out / "manifest.csv"; new = not mf.exists()
 with open(mf, "a") as f:
     w = csv.writer(f)

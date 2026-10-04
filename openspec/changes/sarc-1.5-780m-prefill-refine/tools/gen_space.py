@@ -15,7 +15,7 @@ from results/780m/space/sweep/ into a scratch copy of the tree and is not commit
 """
 import pathlib, sys, yaml
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
-import enum_space as es
+import enum_space as es, gen_space_names as gn
 
 tree, sel = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
 g = tree / "backends/vulkan/runtime/graph/ops/glsl/sarc_dev"
@@ -58,9 +58,14 @@ for fam, tmpl in TEMPLATES.items():
     found = {}
     if want:
         ws = set(want)
-        for c, r in es.space(fam):
-            t = es.token(fam, c).split("/")[0]
-            if r is None and t in ws: found[t] = c
+        if fam == "4w":   # parse instead of enumerating 75 million combinations
+            for t in ws:
+                c = gn.parse_4w(t)
+                if gn.survives_4w(es, c) is None and es.token(fam, c) == t: found[t] = c
+        else:
+            for c, r in es.space(fam):
+                t = es.token(fam, c).split("/")[0]
+                if r is None and t in ws: found[t] = c
         missing = ws - set(found); assert not missing, f"{fam}: not survivors of enum_space: {sorted(missing)[:5]}"
     by = {px: [] for px in tmpl}
     for t in want: by[prefix(fam, found[t])].append(t)

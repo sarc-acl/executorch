@@ -3,7 +3,7 @@
 # with the traced binaries of stage/<session> (kit trace2.sh protocol), then kit/analysis/trace_analysis.py.
 # Output: stage/<session>/trace/{raw/780m/trace2/*.etdp, report/evidence/trace/{families,gemm,totals}.csv}
 set -uo pipefail
-A=$HOME/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-03; S=$A/stage/$1; MODELS=${2:-1b,3b}; SCHEMES=${3:-4w,8da4w}; BUILDS=${4:-parent cand}
+A=${ART780M:-$HOME/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-03}; S=$A/stage/$1; MODELS=${2:-1b,3b}; SCHEMES=${3:-4w,8da4w}; BUILDS=${4:-parent cand}
 C=$S/trace; O=$C/raw/780m/trace2; mkdir -p $O $C/tools
 cp -f $HOME/hmz-sarc/executorch/openspec/changes/sarc-1.5-e2e-benchmark/kit/analysis/trace_analysis.py $C/tools/
 exec 9>>"$HOME/.cache/gpu-lab/lock-00000000-c400-0000-0000-000000000000"; flock -w 1800 9 || exit 75

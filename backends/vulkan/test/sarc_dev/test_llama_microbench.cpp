@@ -524,6 +524,11 @@ const std::vector<std::pair<const char*, int64_t>> kLinearRegimes = {
 int64_t g_group = 128;
 constexpr int kWarmupRuns = 3;
 constexpr int kTimedRuns = 5;
+// 780m screening mode (linear perf sweep only): --runs=<warmup>,<timed> and
+// --op=<label>[,<label>...]. Without them the sweep is what it always was.
+int g_perf_warmup_runs = kWarmupRuns;
+int g_perf_timed_runs = kTimedRuns;
+std::string g_perf_ops;
 
 // Case selection filters (specs/041 tile sweep). A tile-variant token only
 // affects ONE (scheme, storage) cell: an ET_VK_Q4GSW_COOPMAT_VARIANT token
@@ -1047,6 +1052,12 @@ std::vector<PerfCase> generate_linear_perf_cases(const CaseFilter& filter) {
           continue;
         }
         for (const auto& shape : model.ops) {
+          if (!g_perf_ops.empty() &&
+              ("," + g_perf_ops + ",").find(
+                  std::string(",") + shape.op_label + ",") ==
+                  std::string::npos) {
+            continue;
+          }
           LinearConfig cfg{
               regime.second,
               shape.K,
@@ -1104,8 +1115,8 @@ void run_linear_suite(const std::string& suite, const CaseFilter& filter) {
           [&tc]() { return std::vector<TestCase>{tc}; },
           flop_calc,
           "LlamaMicrobench",
-          kWarmupRuns,
-          kTimedRuns,
+          g_perf_warmup_runs,
+          g_perf_timed_runs,
           bench_reference);
       if (!res.empty()) {
         rec.mean_us = res[0].get_avg_time_us();
@@ -2042,7 +2053,13 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
       qk_name.find("s64nf") != std::string::npos;
   const bool softmax_truncated =
       softmax_name.rfind("sarc_sdpa_attn_weights_softmax", 0) == 0;
-  const bool pairing_ok = !qk_no_mask_fill || softmax_truncated;
+  // 780m: the softmax variant r3 bounds its zero fill to the K-chunks the SARC
+  // attn*V kernels stage, so it is only correct in front of one of them.
+  const bool softmax_bounded_fill =
+      softmax_name.find("softmax_780m_r3") != std::string::npos;
+  const bool av_causal = av_name.rfind("sarc_sdpa_av_coopmat", 0) == 0;
+  const bool pairing_ok = (!qk_no_mask_fill || softmax_truncated) &&
+      (!softmax_bounded_fill || av_causal);
 
   std::vector<uint16_t> outh(q_numel);
   graph.maybe_cast_and_copy_from_staging(
@@ -2278,6 +2295,8 @@ void print_json_report(std::ostream& out) {
   }
   out << ",\n  \"warmup_runs\": " << kWarmupRuns
       << ",\n  \"timed_runs\": " << kTimedRuns
+      << ",\n  \"linear_warmup_runs\": " << g_perf_warmup_runs
+      << ",\n  \"linear_timed_runs\": " << g_perf_timed_runs
       << ",\n  \"group_size\": " << g_group << ",\n  \"cases\": [\n";
   for (size_t i = 0; i < g_records.size(); ++i) {
     const Record& r = g_records[i];
@@ -2663,6 +2682,17 @@ int main(int argc, char** argv) {
                   << filter.storage << "\n";
         return 2;
       }
+    } else if (arg.rfind("--op=", 0) == 0) {
+      g_perf_ops = arg.substr(5);
+    } else if (arg.rfind("--runs=", 0) == 0) {
+      const std::string v = arg.substr(7);
+      const size_t comma = v.find(',');
+      if (comma == std::string::npos) {
+        std::cerr << "--runs wants <warmup>,<timed>, got: " << v << "\n";
+        return 2;
+      }
+      g_perf_warmup_runs = std::stoi(v.substr(0, comma));
+      g_perf_timed_runs = std::stoi(v.substr(comma + 1));
     } else if (arg.rfind("--group-size=", 0) == 0) {
       g_group = std::stoll(arg.substr(13));
     } else if (arg.rfind("--regime=", 0) == 0) {

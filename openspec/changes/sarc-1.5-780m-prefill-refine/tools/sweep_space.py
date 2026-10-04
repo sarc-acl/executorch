@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-"""sweep_space.py <artifact dir> <manifest.csv> <out.csv> [--only fam,fam] [--limit N] [--correctness] [--tmax 55]
+"""sweep_space.py <artifact dir> <manifest.csv> <out.csv> [--only fam,fam] [--limit N] [--first N] [--correctness]
+                  [--linear-args "<microbench args>"] [--tmax 55]
 Resumable kernel-level sweep over plan_space.py's manifest, with <artifact dir>/bin/microbench-<batch> (one
 binary per batch). Run it detached (setsid nohup); it appends one row per (configuration, shape) to <out.csv> and
 skips configurations already there, so it can be killed and restarted at any time.
 
   linear (4w, 8da4w)  one process per token: --linear --regime=prefill --storage=texture3d (the model path), all
                       twelve real shapes; kernel median per shape. --correctness keeps the microbench's own
-                      numeric check on (column "ok"); without it the run is timing only.
+                      numeric check on (column "ok"); without it the run is timing only. --linear-args adds
+                      microbench options, e.g. the screening mode "--op=wq_wo --runs=1,2" (one shape per model, one
+                      warm-up and two timed runs); use one <out.csv> per mode. --first N takes the first N manifest rows.
   SDPA (qk, av)       one qk token and one av token per process pair: first --sdpa-correctness-only
                       --sdpa-tier=extended (8 cases up to S = 2048, both head dims: dispatched kernel names,
                       mismatch counts, pairing), then --sdpa (op mean per model at S = 2048).
@@ -22,7 +25,8 @@ a = sys.argv[1:]; art, manifest, out = a[:3]
 opt = lambda k, d: a[a.index(k) + 1] if k in a else d
 only = set(opt("--only", "4w,8da4w,qk,av").split(",")); limit = int(opt("--limit", "0")); tmax = int(opt("--tmax", "55"))
 batches = set(opt("--batches", "").split(",")) - {""}
-corr = "--correctness" in a
+nopause = "--ignore-pause" in a   # a short job that itself holds PAUSE against the long sweep
+corr = "--correctness" in a; largs = opt("--linear-args", "").split(); first = int(opt("--first", "0"))
 LOCK = "00000000-c400-0000-0000-000000000000"
 ENV = {"4w": "ET_VK_SARC_780M_Q4", "8da4w": "ET_VK_SARC_780M_DQ", "qk": "ET_VK_SARC_780M_QK", "av": "ET_VK_SARC_780M_AV"}
 hw = next(os.path.join("/sys/class/hwmon", h) for h in os.listdir("/sys/class/hwmon")
@@ -35,12 +39,13 @@ done = set()
 if os.path.exists(out): done = {(r["family"], r["token"]) for r in csv.DictReader(open(out))}
 else: csv.writer(open(out, "w")).writerow(COLS)
 rows = [r for r in csv.DictReader(open(manifest)) if r["family"] in only and (not batches or r["batch"] in batches)]
-OTHERS = "llama-server|ollama|llama_main|test_llama_micr|microbench-b.*|vllm"
+if first: rows = rows[:first]
+OTHERS = "llama-server|ollama|llama_main|test_llama_micr|vllm"
 
 def wait_ok():
     while True:
         lt = time.localtime(); hm = lt.tm_hour * 60 + lt.tm_min
-        if os.path.exists(os.path.join(art, "PAUSE")) or 6 * 60 + 40 <= hm < 7 * 60 + 40: time.sleep(30); continue
+        if (os.path.exists(os.path.join(art, "PAUSE")) and not nopause) or 6 * 60 + 40 <= hm < 7 * 60 + 40: time.sleep(30); continue
         if subprocess.run(["pgrep", "-x", OTHERS], capture_output=True).stdout.strip(): time.sleep(30); continue
         return
 
@@ -81,7 +86,7 @@ def linear(r):
         with tempfile.TemporaryDirectory() as td:
             js = os.path.join(td, "o.json")
             rc, log, wall = run(bench, ["--linear", "--regime=prefill", f"--scheme={fam}", "--storage=texture3d",
-                                        f"--json-out={js}"] + ([] if corr else ["--skip-correctness"]), {ENV[fam]: r["kernel_base"]})
+                                        f"--json-out={js}"] + largs + ([] if corr else ["--skip-correctness"]), {ENV[fam]: r["kernel_base"]})
             try: cases = [c for c in json.load(open(js))["cases"] if c.get("suite", "linear") == "linear"]
             except Exception: cases = []
             return rc, cases, wall

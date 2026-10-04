@@ -5,7 +5,7 @@
 #      e2e tiled vs default, next token on the real-text and the unaligned prompt, decode
 #   2. e2e5.sh parent vs candidate, 5 valid runs per cell
 #   3. warm ETDump traces of both arms (1b,3b,8b)
-A=$HOME/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-03; S=$1; ENVS=$2
+A=${ART780M:-$HOME/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-03}; S=$1; ENVS=$2
 t0=$SECONDS; while (( $(cat /sys/class/hwmon/hwmon2/temp1_input) > 48000 && SECONDS - t0 < 300 )); do sleep 5; done
 env $ENVS $HOME/hmz-sarc/executorch/sarc/tools/verify.sh --dir $A/stage/$S --lock 00000000-c400-0000-0000-000000000000 \
   --models 1b,3b,8b --schemes 4w,8da4w --pdiff --out verify > $A/stage/$S/verify.out 2>&1

@@ -4,7 +4,7 @@
 # the traced binaries in {parent,cand}-traced/, the kit prompts and r1304.txt, and (for verify.sh) the candidate's
 # test_llama_microbench + llama_main at the top level. env strings are space-separated KEY=VALUE (may be empty).
 set -euo pipefail
-A=$HOME/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-03; ET=$HOME/hmz-sarc/executorch
+A=${ART780M:-$HOME/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-03}; ET=$HOME/hmz-sarc/executorch
 S=$A/stage/$1; PB=$2; PE=$3; CB=$4; CE=$5; NOTE=${6:-}
 mkdir -p $S/{parent,cand,parent-traced,cand-traced}
 put() { # put <build tag> <dest> <env>
