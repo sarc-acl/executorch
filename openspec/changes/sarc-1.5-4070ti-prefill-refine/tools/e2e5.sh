@@ -5,8 +5,9 @@
 # cand->parent on even ones, failed runs kept), plus what this task adds:
 #   - the GPU clock (nvidia-smi clocks.gr), busy %, power and temperature are sampled every 20 ms during each run
 #     (logs/<run>.clk) and summarised over the measured execution window of that run;
-#   - a GPU process this campaign did not start, seen before or after a run, ends the session (exit 76); a run
-#     it overlapped is kept in runs.csv as invalid. The card not answering nvidia-smi ends it with exit 70;
+#   - a GPU process this campaign did not start ends the session (exit 76): it is looked for before each run,
+#     every 0.5 s while the run executes (logs/<run>.others) and once after it; the abort uses what was captured,
+#     without asking again, and a run it overlapped is kept in runs.csv as invalid. The card not answering nvidia-smi ends it with exit 70;
 #   - a run is VALID only if rc = 0, tok/s present, prompt_tokens = <expected>, generated_tokens = 0, no other GPU
 #     process, and the median clock in the measured window >= CLKMIN MHz (0 = record only; set it from the
 #     baseline session, the idle clock is 210 MHz and the maximum 3120 MHz). The threshold is per cell and
@@ -78,51 +79,16 @@ run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected 
   log="logs/$tag-$m-$q-$b-r$r.log"
   t0=$SECONDS; cool; cs=$((SECONDS - t0)); tp=$(gtemp) || gpu_gone "before $log"; no_others "before $log"
   local benv=(); [[ -f $D/$b/env ]] && mapfile -t benv < "$D/$b/env"
-  sampler_start "$O/${log%.log}.clk"; sleep 0.1
+  others_watch_start "$O/${log%.log}.others"; sampler_start "$O/${log%.log}.clk"; sleep 0.1
   env "${benv[@]}" LD_LIBRARY_PATH=$D/$b timeout 1800 "$D/$b/llama_main" --model_path "$(pte $m $q)" \
     --tokenizer_path "$(tokz $m)" --prompt_file "$p" --max_new_tokens 1 --temperature 0 \
     $([[ $tag == prefill ]] && echo --warmup) < /dev/null > "$O/$log" 2>&1 9>&-
-  rc=$?; oth=$(others | tr ',' ';'); kill $SP 2>/dev/null; wait $SP 2>/dev/null; sleep 0.1; tq=$(gtemp) || gpu_gone "after $log rc=$rc"
-  python3 - "$O/$log" "$O/${log%.log}.clk" "$want" "$cmin_cell" "$rc" "$oth" "$tag" <<'PY' > "$O/.row"
-import json, re, statistics as st, sys
-log, clk, want, clkmin, rc, oth, tag = sys.argv[1:8]
-obs = None
-for line in open(log, errors="replace"):
-    i = line.find("PyTorchObserver")
-    if i >= 0:
-        try: obs = json.loads(line[line.index("{", i):])
-        except Exception: pass
-tok = pt = gt = ms = ""
-rows = []
-if obs:
-    tok = obs.get("prefill_token_per_sec", ""); pt = obs.get("prompt_tokens", ""); gt = obs.get("generated_tokens", "")
-    a, b = obs.get("model_execution_start_ms"), obs.get("model_execution_end_ms")
-    # prefill window: from inference start to prompt-eval end when available, else the execution window
-    a = obs.get("inference_start_ms", a); b2 = obs.get("prompt_eval_end_ms", b)
-    if a and b2:
-        ms = b2 - a
-        for l in open(clk):
-            f = l.split()
-            if len(f) == 5 and a * 1000 <= int(f[0]) <= b2 * 1000: rows.append([float(x) for x in f])
-n = len(rows)
-med = lambda k, d: (round(st.median(r[k] for r in rows) / d, 1) if rows else "")
-cm = med(1, 1); cmin = round(min(r[1] for r in rows), 1) if rows else ""
-reason = []
-if rc != "0": reason.append("rc")
-if tok == "": reason.append("no_tok_s")
-if str(pt) != want: reason.append("prompt_tokens")
-if tag == "prefill" and str(gt) != "0": reason.append("generated_tokens")
-if oth: reason.append("other_gpu_process")
-if tag == "prefill":   # the next-token runs are not timed: their clock is recorded, not judged
-    if n < 2: reason.append("clock_unsampled")
-    elif cm < float(clkmin): reason.append("clock_low")
-valid = 0 if reason else 1
-print(",".join(str(x) for x in [tok, pt, gt, ms, n, cm, cmin, med(2, 1), med(3, 1), round(max(r[4] for r in rows)) if rows else "", valid, "+".join(reason)]))
-PY
+  rc=$?; oth=$(others_watch_stop "$O/${log%.log}.others" | tr ',' ';'); kill $SP 2>/dev/null; wait $SP 2>/dev/null; sleep 0.1; tq=$(gtemp) || gpu_gone "after $log rc=$rc"
+  python3 $TOOLS/runrow.py "$O/$log" "$O/${log%.log}.clk" "$want" "$cmin_cell" "$rc" "$oth" "$tag" > "$O/.row"
   IFS=, read -r tok pt gt ms n cm cmin bm pw tmax valid reason < "$O/.row"
   echo "4070ti,$(hostname),$m,$q,$b,$r,$s,$tok,$rc,$tp,$tq,$cs,gr_med=${cm}MHz,$oth,$(date -u +%FT%TZ),$log,$pt,$gt,$ms,$n,$cm,$cmin,$bm,$pw,$tmax,$valid,$reason,$cmin_cell" >> "$CSV"
   echo "$tag $m $q $b r$r slot$s tok_s=$tok ms=$ms rc=$rc T=$tp->$tq cool=${cs}s clk=$cm/$cmin MHz n=$n busy=$bm valid=$valid $reason"
-  [[ -n $oth ]] && no_others "during $log"
+  [[ -n $oth ]] && abort_others "during $log (the run is kept in runs.csv as invalid)" "$oth"
   LAST_RC=$rc; return 0
 }
 nvalid() { awk -F, -v m=$1 -v q=$2 -v b=$3 'NR > 1 && $3 == m && $4 == q && $5 == b && $16 ~ /^logs\/prefill/ && $26 == 1 {n++} END {print n + 0}' "$CSV"; }

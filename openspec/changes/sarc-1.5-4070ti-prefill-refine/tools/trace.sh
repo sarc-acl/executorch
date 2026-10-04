@@ -2,7 +2,7 @@
 # trace.sh <session> [models=1b,3b,8b] [schemes=4w,8da4w] [builds="parent cand"]: one warm ETDump per cell and arm
 # with the traced binaries of stage/<session> (kit trace2.sh protocol), then kit/analysis/trace_analysis.py.
 # Same rules as a timed run: under the gpu-lab lock, cooled to <= 50 C (max 120 s) before each run, no GPU process
-# of another owner (exit 76), card alive before and after (exit 70). A run with rc != 0 or without 2048 prompt
+# of another owner before or during a run (watched every 0.5 s; exit 76 on what was captured), card alive before and after (exit 70). A run with rc != 0 or without 2048 prompt
 # tokens fails the script (exit 4) after the remaining cells have run.
 # Output: stage/<session>/trace/{raw/4070ti/trace2/*.etdp, report/evidence/trace/{families,gemm,totals}.csv}
 set -uo pipefail
@@ -17,14 +17,15 @@ for b in $BUILDS; do BD=$S/$b-traced
   for m in "${MS[@]}"; do IFS=: read -r MD ST <<< "${STEM[$m]}"; for q in "${QS[@]}"; do
     cool_start 50 120; tp=$(gtemp) || gpu_gone "trace $m $q $b"; no_others "trace $m $q $b"
     benv=(); [[ -f $BD/env ]] && mapfile -t benv < $BD/env
+    others_watch_start $O/$m-$q-$b.others
     env "${benv[@]}" LD_LIBRARY_PATH=$BD timeout 1800 $BD/llama_main --model_path $MROOT/$MD/exported/${ST}_vulkan_$q.pte \
       --tokenizer_path $MROOT/$MD/original/tokenizer.model --prompt_file $S/prompt_2048.txt --max_new_tokens 1 \
       --temperature 0 --warmup --etdump_path $O/$m-$q-$b.etdp < /dev/null > $O/$m-$q-$b.log 2>&1 9>&-
-    rc=$?; gone_check "trace $m $q $b rc=$rc"; oth=$(others)
+    rc=$?; oth=$(others_watch_stop $O/$m-$q-$b.others); gone_check "trace $m $q $b rc=$rc"
     pt=$(grep -o '"prompt_tokens":[0-9]*' $O/$m-$q-$b.log | head -1 | cut -d: -f2)
     [[ $rc == 0 && $pt == 2048 && -s $O/$m-$q-$b.etdp ]] || BAD=1
     echo "trace $m $q $b rc=$rc prompt_tokens=$pt T=$tp->$(gtemp) $(grep -o '"prefill_token_per_sec":[0-9.]*' $O/$m-$q-$b.log)"
-    [[ -n $oth ]] && no_others "during trace $m $q $b"
+    [[ -n $oth ]] && abort_others "during trace $m $q $b (its ETDump is not used)" "$oth"
   done; done
 done
 # TRACE_PY: a python with the executorch devtools (ETDump inspector) installed.

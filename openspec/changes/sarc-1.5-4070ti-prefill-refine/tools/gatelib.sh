@@ -25,10 +25,11 @@ step() { # step <name> <command...>
 }
 run_verify() { # run_verify "<env>": the unmodified sarc/tools/verify.sh of the working copy
   need $D/llama_main $D/libllama_runner.so $D/test_llama_microbench $D/prompt_2048.txt $D/prompt_check.txt $D/r1304.txt
-  no_others "before verify.sh"
+  # verify.sh is not modified: foreign GPU processes are watched from outside for its whole duration.
+  no_others "before verify.sh"; others_watch_start $D/verify.others
   env $1 $ET/sarc/tools/verify.sh --dir $D --lock $LOCK --models 1b,3b,8b --schemes 4w,8da4w --pdiff --out verify > $D/verify.out 2>&1
-  local rc=$?; echo "VERIFY_DONE rc=$rc" >> $D/verify.out; local o; o=$(others)
-  [[ -n $o ]] && { echo "foreign GPU process after verify.sh: $o" >> $D/verify.out; return 76; }
+  local rc=$?; echo "VERIFY_DONE rc=$rc" >> $D/verify.out; local o; o=$(others_watch_stop $D/verify.others)
+  [[ -n $o ]] && { echo "foreign GPU process during verify.sh: $o" | tee -a $D/verify.out >> $A/ABORTED; return 76; }
   return $rc
 }
 timed_and_traced() { # the e2e session, its content check, then the warm traces

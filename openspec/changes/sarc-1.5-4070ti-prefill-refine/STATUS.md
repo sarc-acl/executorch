@@ -18,6 +18,26 @@ The restriction was not bypassed and no raw output was put into the repository. 
 access to `~/hmz-sarc-4070ti/.artifacts/` and to the lock file, and a writable results directory for
 igpu-roofline (for example under `.artifacts/`); then restart the campaign.
 
+## Tool defects from the third review (of `1cfadaa2b`), fixed
+
+1. **Timed runs are validated one by one.** `gate_check.py session` no longer counts rows by their `valid`
+   flag. A timed run counts only if its log and its model/scheme/build/repeat identity are unique and agree,
+   rc is 0, the rate is finite and positive, prompt tokens are 2048, generated tokens 0, no foreign GPU process,
+   at least 2 clock samples and the median clock at or above the cell's calibrated threshold. A row marked
+   valid that fails any of these is a finding. With the logs (`--require-logs`, as in the gates) every timed
+   run is recomputed from its log and clock samples with `runrow.py`, the same code `e2e5.sh` now uses to
+   write the row, and must equal it. `test_gate_check.py` (15 tests) holds both cases from the review: repeats
+   2 to 5 failed (rc=134, no rate, 17 prompt tokens, 4 generated, no clock samples, empty logs) with valid=1
+   kept, and five copies of each arm's r1 row. Both are rejected with and without the logs; so is a rate
+   edited in `runs.csv` alone.
+2. **Foreign GPU processes during a job.** `e2e5.sh`, `trace.sh` and `gl.sh` look for them every 0.5 s while
+   the job runs and once at its end, and abort with exit 76 on what was captured, without asking again; the
+   overlapped run stays in `runs.csv` as invalid and the sightings in `logs/<run>.others`. The gates watch the
+   unmodified `verify.sh` the same way from outside (`verify.others`). Tested live with dummy processes: a
+   tagged one is ignored; an untagged one that had already exited when the job ended is still reported and
+   ends the tool with 76. Limit: a process living less than the 0.5 s between two looks can be missed, and
+   the polling itself (one `nvidia-smi pmon` per look) runs during timed runs, for both arms alike.
+
 ## Tool defects from the second review (of `fb875ea13`), fixed
 
 1. **Next token, every cell.** After the timed runs of a cell `e2e5.sh` runs parent and candidate once each on
@@ -30,7 +50,7 @@ igpu-roofline (for example under `.artifacts/`); then restart the campaign.
 2. **`gate_check.py session`** no longer trusts the SAME strings. Per cell and prompt it requires the row, the
    tracked prompt's hash, both runs in `runs.csv` with rc 0 and the expected prompt tokens, equal non-empty
    outputs and tokens, and in the gates (`--require-logs`) it recomputes every row from the logs.
-   `tools/test_gate_check.py` (11 tests, synthetic sessions, no GPU) includes the review's case, 60 valid timed
+   `tools/test_gate_check.py` (synthetic sessions, no GPU) includes the review's case, 60 valid timed
    rows with all token runs rc=134, no output and SAME written: rejected, with and without the logs.
 3. **Normal clock.** `e2e5.sh` needs either `--calibrate` (record-only, for the baseline and A/A sessions) or
    `--clkmin-file`; the gates always pass `results/4070ti/clkmin.json` and refuse to start without it. The
@@ -54,7 +74,7 @@ igpu-roofline (for example under `.artifacts/`); then restart the campaign.
    is missing, or when the session already has results.
 2. Foreign GPU processes end a measurement (exit 76) in every path: `e2e5.sh` (before and after each run; an
    overlapped run stays in `runs.csv` as invalid), `trace.sh` (which now also cools before each run), `gl.sh`,
-   and before and after `verify.sh` in the gates (not while it runs: the script is unmodified). "Ours" is decided by a tag in the process environment
+   and around `verify.sh` in the gates (see the third review for the monitoring during a job). "Ours" is decided by a tag in the process environment
    (`SARC_CAMPAIGN_TAG`, inherited by everything the tools start), not by the program name. Tested with two
    dummy processes named `llama_main`: the tagged one is ignored, the untagged one is reported and stops the tool.
 3. Device loss: every temperature read is checked; `gpu_gone` writes a marker in the artifact directory, appends a

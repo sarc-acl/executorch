@@ -45,8 +45,16 @@ others() {
   done | tr '\n' ';'
 }
 # no_others <where>: stop measuring when a foreign GPU process is present (reported, never forced).
-no_others() { local o; o=$(others); [[ -z $o ]] && return 0
-  mkdir -p $A; echo "ABORT $(date -u +%FT%TZ) $1: GPU process not started by this campaign: $o" | tee -a $A/ABORTED >&2; exit 76; }
+no_others() { local o; o=$(others); [[ -z $o ]] && return 0; abort_others "$1" "$o"; }
+# abort_others <where> <captured>: end the run on an observation already made; it is not repeated, because the
+# process may be gone by now and the interference still happened.
+abort_others() { mkdir -p $A; echo "ABORT $(date -u +%FT%TZ) $1: GPU process not started by this campaign: $2" | tee -a $A/ABORTED >&2; exit 76; }
+# others_watch_start <file> / others_watch_stop <file>: look for foreign GPU processes every 0.5 s while a job
+# runs (a probe before and after cannot show that none was there in between). stop takes one last look and
+# prints every distinct pid:name seen, empty when none. A process that lives less than the polling interval
+# between two looks can still be missed.
+others_watch_start() { : > "$1"; ( while :; do o=$(others); [[ -n $o ]] && echo "$o" >> "$1"; sleep 0.5; done ) 9>&- & OW=$!; }
+others_watch_stop() { kill $OW 2>/dev/null; wait $OW 2>/dev/null; others >> "$1"; tr ';' '\n' < "$1" | grep . | sort -u | tr '\n' ';'; }
 # cool_start [max C] [timeout s]: wait until the GPU is at or below the given temperature.
 cool_start() { local t0=$SECONDS t
   while :; do t=$(gtemp) || gpu_gone cool_start; (( t > ${1:-50} && SECONDS - t0 < ${2:-300} )) || break; sleep 5; done; }

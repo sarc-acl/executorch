@@ -15,7 +15,11 @@ decode rc and token count, SAME lines) must equal the parent control's. The cont
 sdpa: per tier 12 passes, each with the tier's case count (extended 8, full 4), every case PASSED with
 mismatches=0, qk_coopmat=yes, av_coopmat=yes, and a [sdpa-kernels] line with pairing=ok per case; with an env
 file that names a profile, every pass must carry that profile's banner.
-session: six cells with at least 5 valid timed runs per arm; every timed run judged against the calibrated
+session: six cells with at least 5 timed runs per arm that are valid on their own fields (the `valid` column is
+not trusted): a unique log and model/scheme/build/repeat identity, rc 0, a positive finite rate, 2048 prompt
+tokens, 0 generated tokens, no foreign GPU process, at least 2 clock samples and a median clock at or above the
+threshold; with the logs present each of them is recomputed from its log and clock samples (runrow.py) and must
+equal its row; every timed run is judged against the calibrated
 clock threshold of its cell (--clkmin; a record-only session is rejected unless --calibration says it is the
 baseline or A/A session, which can never accept a candidate); and, per cell, the next token of parent vs
 candidate on the timed prompt, prompt_real_2048.txt (2048 tokens), prompt_check.txt (1972) and r1304.txt (1792).
@@ -25,9 +29,9 @@ are equal and (except for the timed prompt) both tokens are non-empty and equal.
 (--require-logs makes that mandatory, as in the gates) every row is recomputed from the logs with nexttoken.py.
 env: cand/env equals cand-traced/env and parent/env equals parent-traced/env; the ET_VK variables verify.sh
 recorded are exactly cand/env; candidate logs carry the profile banner of cand/env and parent logs none."""
-import collections, csv, glob, hashlib, json, os, re, sys
+import collections, csv, glob, hashlib, json, math, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import nexttoken
+import nexttoken, runrow
 CELLS = [(m, q) for m in ("1b", "3b", "8b") for q in ("4w", "8da4w")]
 bad = []
 def fail(msg): bad.append(msg); print("FAIL:", msg)
@@ -101,25 +105,49 @@ def do_session(d, *opts):
     allrows = list(csv.DictReader(open(os.path.join(d, "runs.csv"))))
     rows = [r for r in allrows if r["log"].startswith("logs/prefill")]
     bylog = {r["log"]: r for r in allrows}
-    for m, q in CELLS:
-        for b in ("parent", "cand"):
-            n = sum(1 for r in rows if (r["model"], r["scheme"], r["build"]) == (m, q, b) and r["valid"] == "1")
-            if n < 5: fail(f"cell {m} {q} {b}: {n} valid timed runs, required 5")
+    have_logs = os.path.isdir(os.path.join(d, "logs"))
+    if require_logs and not have_logs: fail("no logs directory: runs cannot be recomputed")
+    # Every timed run is judged on its own fields, never on its `valid` flag, and counted once.
+    seen_log, seen_id, good = set(), set(), collections.Counter()
     for r in rows:
+        cell = (r["model"], r["scheme"]); log = r["log"]; ident = (*cell, r["build"], r["rep"]); why = []
+        if log in seen_log or ident in seen_id: fail(f"{log}: duplicate timed run (log or model/scheme/build/rep repeated)"); continue
+        seen_log.add(log); seen_id.add(ident)
+        if log != f'logs/prefill-{r["model"]}-{r["scheme"]}-{r["build"]}-r{r["rep"]}.log': why.append("log name does not match the run's identity")
+        if cell not in CELLS or r["build"] not in ("parent", "cand"): why.append("unknown cell or arm")
         applied = r.get("clkmin") or ""
         if calibration:
-            if applied != "0": fail(f'{r["log"]}: clkmin {applied!r} in a calibration session, expected 0')
+            want = "0"
+            if applied != "0": fail(f"{log}: clkmin {applied!r} in a calibration session, expected 0")
         else:
             want = str(clk.get(f'{r["model"]}-{r["scheme"]}', {}).get("clkmin_mhz", ""))
-            if not want.isdigit() or int(want) <= 0: fail(f'no calibrated clock threshold for {r["model"]} {r["scheme"]}')
-            elif applied != want: fail(f'{r["log"]}: clock threshold applied {applied!r}, calibrated {want} (record-only or stale)')
-            elif r["valid"] == "1" and not (r["clk_med_mhz"] and float(r["clk_med_mhz"]) >= int(want)): fail(f'{r["log"]}: valid but clock {r["clk_med_mhz"]} < {want}')
+            if not want.isdigit() or int(want) <= 0: fail(f'no calibrated clock threshold for {r["model"]} {r["scheme"]}'); want = None
+            elif applied != want: fail(f"{log}: clock threshold applied {applied!r}, calibrated {want} (record-only or stale)")
+        if r["rc"] != "0": why.append(f'rc {r["rc"]}')
+        try: ok = math.isfinite(float(r["tok_s"])) and float(r["tok_s"]) > 0
+        except ValueError: ok = False
+        if not ok: why.append(f'tok_s {r["tok_s"]!r}')
+        if r["prompt_tokens"] != "2048": why.append(f'prompt_tokens {r["prompt_tokens"]!r}')
+        if r["generated_tokens"] != "0": why.append(f'generated_tokens {r["generated_tokens"]!r}')
+        if r["others"]: why.append("foreign GPU process")
+        try: n = int(r["clk_n"]); cm = float(r["clk_med_mhz"])
+        except ValueError: n, cm = 0, float("nan")
+        if n < 2: why.append(f'clock samples {r["clk_n"]!r}')
+        elif want is None or not cm >= int(want): why.append(f'clock {r["clk_med_mhz"]} MHz below {want}')
+        if have_logs and want is not None:
+            rec = runrow.evaluate(os.path.join(d, log), os.path.join(d, log[:-4] + ".clk"), "2048", want, r["rc"], r["others"], "prefill")
+            diff = [k for k in runrow.FIELDS if rec[k] != r[k]]
+            if diff: why.append("recomputed from the log and clock samples differs in " + ", ".join(f"{k} ({r[k]!r} -> {rec[k]!r})" for k in diff))
+        if why and r["valid"] == "1": fail(f"{log}: marked valid but " + "; ".join(why))
+        elif not why and r["valid"] != "1": fail(f'{log}: marked invalid ({r["reason"]}) but every field is in order')
+        elif not why: good[(*cell, r["build"])] += 1
+    for m, q in CELLS:
+        for b in ("parent", "cand"):
+            if good[(m, q, b)] < 5: fail(f"cell {m} {q} {b}: {good[(m, q, b)]} independently valid timed runs, required 5")
     if any(r["others"] for r in allrows): fail("a run overlapped a GPU process of another owner")
     nt = collections.defaultdict(dict)
     p = os.path.join(d, "nexttoken.csv")
     for r in (csv.DictReader(open(p)) if os.path.exists(p) else []): nt[(r["model"], r["scheme"])][r["prompt"]] = r
-    have_logs = os.path.isdir(os.path.join(d, "logs"))
-    if require_logs and not have_logs: fail("no logs directory: next-token rows cannot be recomputed")
     for m, q in CELLS:
         for prompt, (tag, want, tracked) in PROMPTS.items():
             r = nt[(m, q)].get(prompt); w = f"next token {m} {q} {prompt}"
