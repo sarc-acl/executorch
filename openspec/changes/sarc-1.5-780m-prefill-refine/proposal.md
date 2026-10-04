@@ -198,3 +198,60 @@ activation quantize is 6 %.
   and without the dev zone: 31 rows, 109 candidates).
 - `sarc/tools/spirv_golden.py` on the topic build: the 53 shipped variants are unchanged.
 - Not run: `check.sh` steps 4 and 5 on a release export (the release zone is untouched).
+
+## Review follow-up (2026-10-04)
+
+An independent review of this change (numbers recomputed from every `runs.csv`, the staging and `NO_MASK_FILL`
+code read against the release bodies and the softmax) found the results reproducible and the change confined to
+the dev zone, and asked for three things before any promotion. All three are done; the recommended profile
+changes from `780m-refine5` to **`780m-refine3`** (candidates 1, 2 and 3).
+
+1. **Wider SDPA correctness coverage.** `test_llama_microbench --sdpa-correctness-only` gains two opt-in tiers;
+   `--sdpa-tier=all` still runs exactly the four original cases.
+   - `extended` (8 cases, about 10 s a pass): `input_pos` 64, 128 and 256 with host-supplied cache history, the
+     3B and 8B head configurations (head_dim 128), and S = 2048 with two heads. 1075 QK^T tiles: 488 masked,
+     503 visible, 84 diagonal (the original tiers: 20 tiles, 4 masked).
+   - `full` (4 cases, about 3 min a pass): the 1B, 3B and 8B head configurations at S = 2048 and the 8B
+     configuration at S = 1024 with `input_pos` = 1024.
+   - Results, build `topic-r1` (`52d015ca4` + this test change), profile `780m-refine3`
+     (`results/780m/sessions/r1-sdpa-ext/`): `extended` 12 passes, 8 of 8 PASSED with 0 mismatches each;
+     `full` 12 passes, 4 of 4 PASSED with 0 mismatches each (up to 8,388,608 elements compared per case).
+     Control with the table kernels (no profile): `extended` 8 of 8 and `full` 4 of 4, 0 mismatches, 1 pass each.
+2. **Kernel pairing check.** Each SDPA correctness case now prints the dispatched QK^T, softmax and attn*V
+   kernel names (`[sdpa-kernels]`) and FAILS, whatever the numbers, if a `NO_MASK_FILL` QK^T kernel (tile token
+   ending in `nf`) is dispatched with any softmax other than `sarc_sdpa_attn_weights_softmax*`. In every pass
+   above the candidate ran `sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf` with the SARC softmax. This is a
+   test-level guard, not a runtime assertion; no mispaired configuration exists today to show it firing.
+3. **Candidate 5 dropped; full gate on the final build.** Candidate 5 (+0.72 %) was inside the +-2 % band, so
+   it is not counted. Session `s8-r3final`: pristine `dev/1.5` build against build `topic-r1` with
+   `ET_VK_SARC_DEV_PROFILE=780m-refine3`, the same gate as every candidate (`tools/gate_sdpa.sh`).
+
+| cell | `dev/1.5` | `780m-refine3` | gain |
+|---|---:|---:|---:|
+| 1B 4w | 2694.74 | 2828.73 | +4.97 % |
+| 1B 8da4w | 2540.94 | 2824.83 | +11.17 % |
+| 3B 4w | 1140.31 | 1187.94 | +4.18 % |
+| 3B 8da4w | 1058.40 | 1170.95 | +10.63 % |
+| 8B 4w | 514.96 | 536.83 | +4.25 % |
+| 8B 8da4w | 486.81 | 548.33 | +12.64 % |
+
+Geomean **+7.91 %**, every cell outside the +-2 % band, repeat spread at most 0.50 %; next token SAME in all six
+cells on both prompts. `verify.sh`: correctness rc = 0, 12 of 12 production-diff cases ALL PASSED, default vs
+tiled SAME on both prompts, decode 31 tokens, `linear <scheme> rc=1` as on the parent. SDPA correctness
+(tier `all`): 12 passes, 4 of 4 with 0 mismatches.
+
+Conditions of `s8-r3final`, which differ from `s7-final`: it started right after the SDPA passes (start
+temperature 48 to 53 C, peak 95 C); one timed run was rejected (`8b 4w parent r3`, `clock_low`) and replaced
+by the next valid one; the 8B 4w cell ran at a median clock of 2698 to 2735 MHz, the other cells at 2760 to
+2800 MHz. The 8B 4w gain (+4.25 % here, +5.01 % in `s7-final` with candidate 5) should be re-measured from a
+cool start before it is quoted.
+
+Other review notes, not acted on here:
+- The profile matches kernels by name suffix; `t128x64k32g22s32` matches both the sweep and the `bt` 8da4w
+  kernels and the first row in the candidate list wins. The dispatched names in every `verify.out` are the
+  intended ones.
+- The texel-wise staging (`bt`) was checked by reading the index arithmetic against the release body: same
+  texel, same widened values, same LDS word for each of the four components. Full output tensors were still not
+  compared bit for bit.
+- Of the 84 unaligned-prompt check runs in sessions `s1` to `s7`, 22 carry `clock_low`; they are next-token
+  checks only and are not timed.
