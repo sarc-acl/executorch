@@ -212,6 +212,22 @@ def set_rc(stage, pred, rc):
         if pred(r): r["rc"] = rc
     with open(p, "w") as f: f.writelines(json.dumps(r) + "\n" for r in recs)
 
+class SessionNearTie(unittest.TestCase):
+    def setUp(self):
+        self.t = tempfile.TemporaryDirectory(); self.s = os.path.join(self.t.name, "stage"); self.d = os.path.join(self.s, "raw"); os.makedirs(self.d)
+        make(self.d, cand_token=b" other")
+        os.makedirs(os.path.join(self.s, "cand")); open(os.path.join(self.s, "cand", "env"), "wb").write(b"ET_VK_X=1\n")
+        e = os.path.join(self.t.name, "ev"); os.makedirs(os.path.join(e, "position"))
+        open(os.path.join(e, "compare.csv"), "w").write("verdict: WITHIN twice the noise floor\n")
+        for a in "abcd": open(os.path.join(e, "position", a + ".json"), "w").write("{}")
+        subprocess.run([sys.executable, os.path.join(HERE, "near_tie.py"), e, "c", os.path.join(self.s, "cand", "env"), "session"], check=True, capture_output=True)
+        self.ev = os.path.join(e, "NEAR_TIE.json")
+    def tearDown(self): self.t.cleanup()
+    def test_differ_rows_reject_without_evidence_and_are_marked_with_it(self):
+        rc, out = check(self.d, "--clkmin", os.path.join(self.d, "clkmin.json"), "--require-logs"); self.assertNotEqual(rc, 0); self.assertIn("DIFFER", out)
+        rc, out = check(self.d, "--clkmin", os.path.join(self.d, "clkmin.json"), "--require-logs", "--near-tie", self.ev)
+        self.assertEqual(rc, 0, out); self.assertIn("session: ACCEPT (near-tie, owner decision 2026-10-04)", out); self.assertIn("NEAR-TIE: next token 1b 4w", out)
+
 class Verify(unittest.TestCase):
     def setUp(self):
         self.t = tempfile.TemporaryDirectory(); self.c = os.path.join(self.t.name, "cand"); self.p = os.path.join(self.t.name, "parent")
@@ -253,6 +269,42 @@ class Verify(unittest.TestCase):
     def test_differing_default_and_tiled_tokens(self):
         f = os.path.join(self.c, "verify", "check-1b-8da4w-default.log"); t = open(f, "rb").read().replace(b" tok\n", b" other\n"); open(f, "wb").write(t)
         rc, out = self.check(); self.assertNotEqual(rc, 0); self.assertIn("check 1b 8da4w: default vs tiled is DIFFER", out)
+
+    # ---- owner decision 2026-10-04: a DIFFER on a next-token item with near-tie evidence ----
+    def differ(self, kind="unaligned"):
+        f = os.path.join(self.c, "verify", f"{kind}-1b-8da4w-tiled.log"); t = open(f, "rb").read().replace(b" tok\n", b" other\n"); open(f, "wb").write(t)
+        v = os.path.join(self.c, "verify.out"); t = open(v).read().replace(f"1b 8da4w {kind}: default vs tiled output SAME", f"1b 8da4w {kind}: default vs tiled output DIFFER"); open(v, "w").write(t)
+    def evidence(self, verdict="WITHIN", env=b"ET_VK_X=1\n"):
+        os.makedirs(os.path.join(self.c, "cand"), exist_ok=True); open(os.path.join(self.c, "cand", "env"), "wb").write(b"ET_VK_X=1\n")
+        e = os.path.join(self.t.name, "ev"); os.makedirs(os.path.join(e, "position"), exist_ok=True)
+        open(os.path.join(e, "compare.csv"), "w").write(f"cell,comparison\nverdict: {verdict} twice the noise floor\n")
+        for a in ("parent-tiled", "parent-default", "cand-tiled", "cand-default"): open(os.path.join(e, "position", a + ".json"), "w").write("{}")
+        envf = os.path.join(self.t.name, "evenv"); open(envf, "wb").write(env)
+        p = subprocess.run([sys.executable, os.path.join(HERE, "near_tie.py"), e, "c", envf, "verify.sh unaligned 1b 8da4w: default vs tiled"], capture_output=True, text=True)
+        return p.returncode, os.path.join(e, "NEAR_TIE.json")
+    def check_near(self, ev):
+        p = subprocess.run([sys.executable, os.path.join(HERE, "gate_check.py"), "verify", self.c, self.p, "--near-tie", ev], capture_output=True, text=True)
+        return p.returncode, p.stdout
+    def test_near_tie_differ_is_rejected_without_evidence(self):
+        self.differ(); rc, out = self.check(); self.assertNotEqual(rc, 0); self.assertIn("verify: REJECT", out)
+    def test_near_tie_differ_with_evidence_is_a_marked_acceptance(self):
+        self.differ(); rc0, ev = self.evidence(); self.assertEqual(rc0, 0)
+        rc, out = self.check_near(ev); self.assertEqual(rc, 0, out)
+        self.assertIn("verify: ACCEPT (near-tie, owner decision 2026-10-04): 1 differing item(s): verify.sh unaligned 1b 8da4w: default vs tiled", out)
+        self.assertNotIn("verify: ACCEPT (0 findings)", out)
+    def test_near_tie_evidence_outside_the_floor_is_not_written(self):
+        rc0, ev = self.evidence(verdict="OUTSIDE"); self.assertNotEqual(rc0, 0); self.assertFalse(os.path.exists(ev))
+    def test_near_tie_evidence_of_another_candidate_or_changed_comparison_rejects(self):
+        self.differ(); rc0, ev = self.evidence(env=b"ET_VK_Y=1\n"); self.assertEqual(rc0, 0)
+        rc, out = self.check_near(ev); self.assertNotEqual(rc, 0); self.assertIn("another candidate environment", out)
+        rc0, ev = self.evidence(); open(os.path.join(os.path.dirname(ev), "compare.csv"), "a").write("x\n")
+        rc, out = self.check_near(ev); self.assertNotEqual(rc, 0); self.assertIn("missing or changed", out)
+    def test_near_tie_evidence_does_not_cover_failed_runs_or_other_findings(self):
+        self.differ(); rc0, ev = self.evidence()
+        self.empty(self.c, kinds=("check",)); rc, out = self.check_near(ev); self.assertNotEqual(rc, 0); self.assertIn("INVALID", out)
+    def test_near_tie_evidence_does_not_cover_the_parent_control(self):
+        f = os.path.join(self.p, "verify", "unaligned-1b-8da4w-tiled.log"); t = open(f, "rb").read().replace(b" tok\n", b" other\n"); open(f, "wb").write(t)
+        rc0, ev = self.evidence(); rc, out = self.check_near(ev); self.assertNotEqual(rc, 0); self.assertIn("parent control: unaligned 1b 8da4w", out)
 
     def test_prefill_and_decode_evidence(self):
         V = os.path.join(self.c, "verify")

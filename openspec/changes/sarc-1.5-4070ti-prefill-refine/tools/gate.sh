@@ -13,9 +13,9 @@
 # The calibrated clock file (results/4070ti/clkmin.json) must exist: the baseline and A/A sessions come first.
 source "$(dirname "$0")/common.sh"; source $TOOLS/gatelib.sh; S=$1; D=$A/stage/$S
 [[ -e $D/gate.done ]] && { echo "session $S already gated: $(cat $D/gate.done)" >&2; exit 2; }
-need $D/STAGE.md $PARENT_CTL/verify.out $CLKFILE; cand_env "${@:2}"; grep -q GATE_ACCEPTED $PARENT_CTL/gate.done || { echo "no accepted parent control" >&2; exit 77; }
+near_tie_arg; need $D/STAGE.md $PARENT_CTL/verify.out $CLKFILE; cand_env "${@:2}"; grep -q GATE_ACCEPTED $PARENT_CTL/gate.done || { echo "no accepted parent control" >&2; exit 77; }
 cool_start 50 300
 step verify run_verify "$ENVS"
-step verify-check python3 $TOOLS/gate_check.py verify $D $PARENT_CTL > $D/verify-check.txt 2>&1
+step verify-check python3 $TOOLS/gate_check.py verify $D $PARENT_CTL $NT > $D/verify-check.txt 2>&1
 timed_and_traced
-finish GATE_ACCEPTED "all steps passed; the gain is in raw/summary.csv" 0
+accepted

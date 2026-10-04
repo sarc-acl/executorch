@@ -47,6 +47,32 @@ CELLS = [(m, q) for m in ("1b", "3b", "8b") for q in ("4w", "8da4w")]
 bad = []
 def fail(msg): bad.append(msg); print("FAIL:", msg)
 
+# Owner decision of 2026-10-04 (CAMPAIGN.md, "Owner decisions"): a DIFFER on a next-token item (default vs tiled
+# in verify.sh, parent vs candidate in the session) does not reject a candidate by itself when the near-tie
+# evidence exists: `--near-tie <NEAR_TIE.json>` (written by near_tie.py only when the broad comparison of the
+# candidate against the parent is within twice the noise floor). The evidence must belong to this candidate
+# (sha256 of cand/env) and its comparison file must be unchanged. Such an item is listed as NEAR-TIE and the
+# verdict reads "ACCEPT (near-tie, owner decision 2026-10-04)", never a plain ACCEPT. Only two valid runs with
+# different tokens qualify: INVALID rows, failed runs and every other finding reject as before.
+near = []; NEAR = None
+def load_near_tie(path, cand_env):
+    global NEAR
+    try:
+        j = json.load(open(path)); base = os.path.dirname(os.path.abspath(path)); why = []
+        if j.get("decision") != "owner decision 2026-10-04": why.append("decision field")
+        if j.get("verdict") != "WITHIN": why.append(f'verdict {j.get("verdict")!r}')
+        if j.get("cand_env_sha256") != hashlib.sha256(open(cand_env, "rb").read()).hexdigest(): why.append("evidence is for another candidate environment")
+        cmpf = os.path.join(base, j.get("compare_csv", "?"))
+        if not os.path.exists(cmpf) or hashlib.sha256(open(cmpf, "rb").read()).hexdigest() != j.get("compare_sha256"): why.append("comparison file missing or changed")
+        elif not any(l.startswith("verdict: WITHIN") for l in open(cmpf)): why.append("comparison file has no WITHIN verdict")
+        if len([f for f in j.get("position_logits", []) if os.path.exists(os.path.join(base, f))]) < 4: why.append("position logits of the four arms missing")
+        if why: fail("near-tie evidence invalid: " + "; ".join(why))
+        else: NEAR = os.path.abspath(path)
+    except Exception as e: fail(f"near-tie evidence unreadable: {e!r}")
+def near_tie(item, msg):
+    if NEAR: near.append(item); print("NEAR-TIE:", msg)
+    else: fail(msg)
+
 def verify_items(path):
     it = {}
     for l in open(path, errors="replace"):
@@ -122,8 +148,12 @@ def verify_stage(stage, who):
             e = nexttoken.evaluate(tracked, want, os.path.join(V, f"{kind}-1b-{q}-tiled.log"), os.path.join(V, f"{kind}-1b-{q}-default.log"),
                                    0 if rcs["tiled"] == 0 else "?", 0 if rcs["default"] == 0 else "?")
             verdict = e["verdict"].replace("parent:", "tiled:").replace("cand:", "default:")
-            if verdict != "SAME": fail(f"{who}: {kind} 1b {q}: default vs tiled is {verdict} on the logs (verify.out says {it.get(f'nexttoken 1b {q} {kind}')!r})")
-            if it.get(f"nexttoken 1b {q} {kind}") != "SAME": fail(f"{who}: {kind} 1b {q}: verify.out says {it.get(f'nexttoken 1b {q} {kind}')!r}")
+            said = it.get(f"nexttoken 1b {q} {kind}")
+            if verdict == "DIFFER" and said == "DIFFER" and who == "candidate":
+                near_tie(f"verify.sh {kind} 1b {q}: default vs tiled", f"{who}: {kind} 1b {q}: default vs tiled is DIFFER on the logs and in verify.out")
+            else:
+                if verdict != "SAME": fail(f"{who}: {kind} 1b {q}: default vs tiled is {verdict} on the logs (verify.out says {said!r})")
+                if said != "SAME": fail(f"{who}: {kind} 1b {q}: verify.out says {said!r}")
         name = f"decode-1b-{q}.log"; obs, _ = runner(name, "2048"); s = it.get(f"decode 1b {q}")
         if s is None or s[0] != "0": fail(f"{who}: {name}: verify.out decode status {s!r}")
         if obs is not None:
@@ -199,7 +229,8 @@ def verify_stage(stage, who):
         for ident in sorted(want - got): fail(f"{who}: linear {q} {' '.join(ident)}: case missing")
     return st
 
-def do_verify(cand, parent):
+def do_verify(cand, parent, *opts):
+    if "--near-tie" in opts: load_near_tie(opts[opts.index("--near-tie") + 1], os.path.join(cand, "cand/env"))
     c = verify_stage(cand, "candidate")
     p = c if os.path.realpath(cand) == os.path.realpath(parent) else verify_stage(parent, "parent control")
     for k in sorted(set(c) | set(p)):
@@ -237,6 +268,7 @@ def do_session(d, *opts):
     opts = list(opts); clk = None; calibration = "--calibration" in opts; require_logs = "--require-logs" in opts
     if "--clkmin" in opts: clk = json.load(open(opts[opts.index("--clkmin") + 1]))["cells"]
     if (clk is None) == (not calibration): return fail("session needs exactly one of --clkmin <json> and --calibration")
+    if "--near-tie" in opts: load_near_tie(opts[opts.index("--near-tie") + 1], os.path.join(d, "../cand/env"))
     allrows = list(csv.DictReader(open(os.path.join(d, "runs.csv"))))
     rows = [r for r in allrows if r["log"].startswith("logs/prefill")]
     bylog = {r["log"]: r for r in allrows}
@@ -287,7 +319,9 @@ def do_session(d, *opts):
         for prompt, (tag, want, tracked) in PROMPTS.items():
             r = nt[(m, q)].get(prompt); w = f"next token {m} {q} {prompt}"
             if r is None: fail(f"{w}: no row"); continue
-            if r["verdict"] != "SAME": fail(f'{w}: {r["verdict"]}'); continue
+            differ = r["verdict"] == "DIFFER"
+            if differ: near_tie(f"session {m} {q} {prompt}: parent vs candidate", f"{w}: DIFFER")
+            elif r["verdict"] != "SAME": fail(f'{w}: {r["verdict"]}'); continue
             if r["prompt_sha256"] != sha(tracked): fail(f"{w}: prompt hash is not the tracked file's")
             if r["expected_tokens"] != want: fail(f'{w}: expected_tokens {r["expected_tokens"]}, required {want}')
             timed = tag == "prefill"; logs = {}
@@ -297,7 +331,8 @@ def do_session(d, *opts):
                 if run["rc"] != "0" or r[f"{b}_rc"] != "0": fail(f'{w}: {b} rc {run["rc"]} (row says {r[f"{b}_rc"]})')
                 if run["prompt_tokens"] != want or r[f"{b}_prompt_tokens"] != want: fail(f'{w}: {b} prompt tokens {run["prompt_tokens"]!r}, required {want}')
                 if not timed and not r[f"{b}_token_hex"]: fail(f"{w}: {b} produced no token")
-            if r["parent_out_sha256"] != r["cand_out_sha256"] or r["parent_token_hex"] != r["cand_token_hex"]: fail(f"{w}: marked SAME but outputs differ")
+            same = r["parent_out_sha256"] == r["cand_out_sha256"] and r["parent_token_hex"] == r["cand_token_hex"]
+            if same == differ: fail(f"{w}: marked SAME but outputs differ" if not same else f"{w}: marked DIFFER but the outputs are equal")
             if r["parent_out_sha256"] == hashlib.sha256(b"").hexdigest(): fail(f"{w}: empty output")
             if have_logs and len(logs) == 2:
                 re_ = nexttoken.evaluate(tracked, want, os.path.join(d, logs["parent"]), os.path.join(d, logs["cand"]), r["parent_rc"], r["cand_rc"], timed)
@@ -337,5 +372,6 @@ try:
     {"verify": do_verify, "sdpa": do_sdpa, "session": do_session, "env": do_env}[mode](*sys.argv[2:])
 except Exception as e:
     fail(f"{mode}: cannot evaluate: {e!r}")
-print(f"{mode}: {'REJECT' if bad else 'ACCEPT'} ({len(bad)} findings)")
+if bad or not near: print(f"{mode}: {'REJECT' if bad else 'ACCEPT'} ({len(bad)} findings)")
+else: print(f"{mode}: ACCEPT (near-tie, owner decision 2026-10-04): {len(near)} differing item(s): {'; '.join(near)}; evidence {NEAR} (0 other findings)")
 sys.exit(1 if bad else 0)

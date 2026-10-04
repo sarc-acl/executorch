@@ -18,6 +18,16 @@ cand_env() {
   if [[ $# -gt 0 ]]; then local g; g=$(echo $1); [[ $g == "$ENVS" ]] || { echo "environment given ($g) is not the staged cand/env ($ENVS)" >&2; exit 77; }; fi
   echo "candidate environment: [$ENVS] sha256 $(sha256sum < $D/cand/env | cut -c1-16)" | tee $D/gate.env
 }
+# NEAR_TIE=<NEAR_TIE.json> (owner decision 2026-10-04): a DIFFER on a next-token item is then judged by
+# gate_check.py against that evidence instead of rejecting by itself; an acceptance that used it is recorded as
+# "ACCEPTED (near-tie, owner decision 2026-10-04)" with the evidence path, never as a plain pass.
+near_tie_arg() { NT=""; if [[ -n ${NEAR_TIE:-} ]]; then need "$NEAR_TIE"; NT="--near-tie $(realpath "$NEAR_TIE")"; fi; }
+accepted() {
+  if grep -qs 'ACCEPT (near-tie, owner decision 2026-10-04)' $D/verify-check.txt $D/session-check.txt; then
+    finish GATE_ACCEPTED "ACCEPTED (near-tie, owner decision 2026-10-04) evidence $(realpath "$NEAR_TIE"); differing items: $(grep -hs '^NEAR-TIE:' $D/verify-check.txt $D/session-check.txt | sed 's/^NEAR-TIE: //' | tr '\n' ';') the gain is in raw/summary.csv" 0
+  fi
+  finish GATE_ACCEPTED "all steps passed; the gain is in raw/summary.csv" 0
+}
 finish() { echo "$1 $(date -u +%FT%TZ) $2" | tee $D/gate.done; exit $3; }
 step() { # step <name> <command...>
   local name=$1; shift; "$@"; local rc=$?
@@ -40,7 +50,7 @@ run_verify() { # run_verify "<env>": the unmodified sarc/tools/verify.sh of the 
 timed_and_traced() { # the e2e session, its content check, then the warm traces
   step session $TOOLS/session.sh $(basename $D) --clkmin-file $CLKFILE > $D/e2e5.out 2>&1
   python3 $TOOLS/summarize.py $D/raw > $D/raw/summary.csv 2>&1
-  step session-check python3 $TOOLS/gate_check.py session $D/raw --clkmin $CLKFILE --require-logs > $D/session-check.txt 2>&1
+  step session-check python3 $TOOLS/gate_check.py session $D/raw --clkmin $CLKFILE --require-logs ${NT:-} > $D/session-check.txt 2>&1
   step trace $TOOLS/trace.sh $(basename $D) 1b,3b,8b 4w,8da4w "parent cand" > $D/trace.out 2>&1
   step env-check python3 $TOOLS/gate_check.py env $D > $D/env-check.txt 2>&1
 }
