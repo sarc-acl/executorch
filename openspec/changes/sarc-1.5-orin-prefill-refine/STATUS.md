@@ -1,10 +1,11 @@
 # STATUS: sarc-1.5-orin-prefill-refine
 
-**2026-10-05 19:40 UTC. RUNNING. Accepted so far: candidate 1h (SDPA prefill kernels + fp32 softmax through the
+**2026-10-05 21:00 UTC. RUNNING. Accepted so far: candidate 1h (SDPA prefill kernels + fp32 softmax through the
 owner-accepted hook), `ACCEPTED (reference-error rule, owner decision 2026-10-04)`, **+57.8 % geomean** over the
 parent; candidate 2 (8da4w linear, whole-texel weight staging), `GATE_ACCEPTED`, **+2.84 %** over the parent
-alone (8da4w cells +3.8 / +6.9 / +6.7 %). Candidate 1 (release softmax) stays REJECTED. A single-read softmax
-was screened and is slower (negative, kept). The stop rule is not met; the branch is not pushed.**
+alone (8da4w cells +3.8 / +6.9 / +6.7 %). Candidate 1 (release softmax) stays REJECTED. Two small candidates
+are in their gates, each on top of what is accepted: candidate 3 (4w tiles, expected below +1 %) and candidate 4
+(softmax with subgroup reductions, expected below +1 %). The stop rule is not met yet; the branch is not pushed.**
 
 All times are UTC from `date -u`.
 
@@ -12,24 +13,23 @@ All times are UTC from `date -u`.
 
 - Device `duck-naughty` (primary: every reported number, session and gate), detached, one GPU job at a time under
   its gpu-lab lock; status in `~/hmz-sarc-orin/jobs/<job>.status` / `.out`, from the workstation
-  `tools/dstat.sh`. Survives a reboot of the workstation:
-  - `chain12d` (since 19:31): 4w screen 2 (build `topic8`, 13 configurations, 2 rounds), then the pre-checks of
-    the 4w tile of `orin-lin-refine3` (bit comparison, production-diff on 8B).
-- Device `duck-stable` (second Orin, SCREENING only; owner decisions of 2026-10-05), job `chain16`
-  (`ORIN_DEVICE=doremy@duck-stable tools/dstat.sh chain16`, since 19:34): SDPA screen 5, the 14 softmax variants
-  with fewer barriers per row (build `topic11`), then their error against the fp32 reference as a sanity check.
-  Nothing measured there is reported as a result. Mirror: `.artifacts/orin-prefill-refine/device-stable/`.
+  `tools/dstat.sh`. Survives a reboot of the workstation. Job `chain19b` (`tools/chain19.sh`, since 20:52), all
+  arms but the pristine parent on build `topic13` (`fd44f8011`):
+  1. `s5-c3`, `gate.sh`: candidate 3 = `orin-refine5` + `4070ti_nzf` against the accepted stack (`orin-refine3` +
+     `4070ti_nzf` = candidates 1h + 2) as the parent arm. Until about 22:15.
+  2. `s6-c4`, `gate_sdpa.sh`: candidate 4 = softmax `orin_g64` on top of what is accepted by then (parent arm:
+     the same profile with `4070ti_nzf`). Until about 00:30.
+  3. `s7-final`, `timed.sh`: everything accepted against the pristine parent (timed session, traces).
+  4. `s8-noenv`, `noenv_verify.sh`: `verify.sh` on `topic13` with nothing selected, against the parent control
+     (the control the hook decision asks for). End about 02:00.
+  A rejected candidate is left out of the later arms by the chain itself; an aborted gate ends the chain.
+- Device `duck-stable`: nothing, and not used any more (see below).
 - Workstation: nothing.
 
 ## Next step
 
-1. SDPA screen 5 (second device): if a softmax variant is faster, confirm it on the primary (kernel time,
-   `z64`: bit comparison with `4070ti_nzf`; the others: error against the fp32 reference), then gate it as the
-   next candidate on top of candidates 1h and 2.
-2. 4w screen 2 and the 4w tile for the fp32 shape (expected about +1 % on one cell): the candidate after that.
-3. The combination of everything accepted as the final candidate against the parent, on a build of the branch
-   head, and the control the hook decision asks for (`tools/noenv_verify.sh`: `verify.sh` on that build with
-   nothing selected, compared line by line with the parent control).
+Read the two gates and the final session; then `proposal.md`, `sarc/tools/check.sh --no-build`, commit, push.
+If both candidates 3 and 4 come out below +2 % over their parents, the stop rule is met.
 
 ## Second Orin (`duck-stable`): agreement batch, retest, owner decision
 
@@ -55,6 +55,17 @@ All times are UTC from `date -u`.
   confirmed on `duck-naughty` before it counts; a contradiction ends the use of the device.
   What the outlier has that the other 25 do not: it is the only 1024-thread tile of the batch (256 x 256, grid
   4 x 4). Not investigated further.
+- Used for: SDPA screens 5 and 6 (softmax, second and third batch; `results/orin/second-device/sdpa-screen{5,6}.csv`).
+- **Contradiction, and the device is not used any more (20:29 UTC).** Screen 6 there ranked the softmax variants
+  `orin_g128` (7.24 ms per 1B layer) before `orin_g64` (7.34), both 10 to 11 % faster than `4070ti_nzf` (8.16).
+  The confirmation on the primary (SDPA screen 7, 2 rounds, `results/orin/screens/sdpa-screen7.csv`) ranks
+  `orin_g64` (8.25 ms) before `orin_g128` (8.36), and both are only 4.4 to 5.6 % faster than `4070ti_nzf`
+  (8.74). The direction holds (subgroup reductions are faster on both devices) but the first place and the
+  size of the gain do not. As the owner's decision says, I report it and stopped using the device (job
+  `chain17` killed; nothing else was queued there). What the two devices differ in, from these runs: the
+  kernels bound by memory traffic are faster on `duck-stable` (the same softmax 8.16 against 8.74 ms, QK^T 6.49
+  against 6.73, attn*V 3.79 against 3.84), while the linear kernels agree within 0.3 %. A screen of a
+  memory-bound kernel on that device does not transfer; a screen of a matrix-bound kernel did.
 
 ## Softmax, single-read variants: negative (SDPA screen 4, primary, `results/orin/screens/sdpa-screen4.csv`)
 
@@ -79,15 +90,44 @@ local variants; they repeat within 0.1 %); the bit comparison was not run. Not a
 screen shows that matters beyond the softmax: on this device a kernel's time grows steeply with the shared
 memory a workgroup declares (64 threads with 8 / 16 / 32 KB: 1.9x / 2.6x / 4.6x).
 
-Second family (build `topic11`, being screened): what a row costs besides its traffic is 14 barriers (two tree
-reductions over 64 workers, 7 each) for on average 4 texels per worker. `z64`: worker 0 walks the same tree
-alone (2 barriers per reduction, same pairs in the same order: meant to be bit-identical). `t` / `z` / `f` with
-fewer workers per row, `f`: one barrier per reduction and every worker combines the partial results in index
-order (down to one thread per row, no reduction at all). All but `z64` sum a row's exponentials in another
-order (fp32, rounded once on the store): an arithmetic change, to be judged by the reference error.
+## Softmax, fewer barriers per row: candidate 4 (`orin_g64`)
 
-No driver-level profiler tracing was or will be used (owner rule of 2026-10-05): the campaign's timing data
-are ETDump, the shader-clock phase counters, `test_llama_microbench` kernel times, igpu-roofline and sensors.
+What a row costs besides its traffic is 14 barriers (two tree reductions over 64 workers, 7 each) for on
+average 4 texels per worker. `tools/gen_orin_softmax.py`, second and third batch (builds `topic11`, `topic12`):
+`t` the tree with fewer workers; `z` worker 0 walks the same tree alone (2 barriers per reduction; `z64` has
+the pairs and order of `4070ti_nzf`); `f` one barrier per reduction, every worker combines the partial results
+in index order; `g` each subgroup reduces without a barrier (`subgroupMax` / `subgroupAdd`), one barrier, every
+worker combines the subgroups' results. The number is the workers per row (the workgroup size is fixed in the
+shader; the dispatch stays one workgroup per row). Kernel time per 1B layer at S = 2048, ms:
+
+| workers per row | 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 256 | 512 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `t` (tree), second device | | | | 31.8 | 17.9 | 11.0 | 8.16 (`4070ti_nzf`) | | | |
+| `z` (worker 0 walks the tree), second device | | | | 32.7 | 19.5 | 14.0 | 14.4 | | | |
+| `f` (flat), second device | 144 | 88.1 | 59.6 | 31.4 | 17.5 | 10.6 | 7.74 | 10.9 | 34.0 | |
+| `g` (subgroup), second device | | | | | | 10.6 | 7.34 | 7.24 | 11.1 | 20.1 |
+| **primary** (screen 7, 2 rounds): `4070ti_nzf` 8.74 | | | | | | | `f` 8.47, **`g` 8.25** | `g` 8.36 | | |
+
+- The time is roughly inverse to the workers per row up to 32 (one thread per row: 144 ms), flat between 64 and
+  128, and rises again beyond: a row needs a full subgroup or two, no more. Anything done by one thread while
+  the others wait is expensive (`z64` 1.76x).
+- Where a row's time goes (second device, exploration only; measurement twins of `4070ti_nzf` that stop early
+  and are wrong by construction, `orin_xp0/1/2`): launch of the workgroups 1.02 ms; pass 1 (the read of the
+  row from DRAM and the maximum) 4.09; pass 2 (exp, sum) 1.56; pass 3 (exp, divide, store) 1.49; sum 8.16.
+  Half of the softmax is the first read; the two reductions are inside the 4.09 and the 1.56.
+- On the primary: `orin_g64` 8.25 / 6.18 / 8.25 ms (1B / 3B / 8B) against 8.74 / 6.53 / 8.74: **-5.6 %** of the
+  softmax, i.e. 8 of 1378 ms on 1B 4w, 16 of 7137 on 8B 4w: an expected +0.2 to +0.6 % end to end.
+- It changes the arithmetic: a row's exponentials are summed in another order (fp32, rounded once on the
+  store). Measured on the primary with the gate's test binary (`results/orin/sdpa-error5/`): 0 mismatches in
+  all 12 cases, `pairing=ok`; error against the fp32 CPU reference on the production cases, rms / maximum:
+  stock 8.55e-5 / 1.713e-3 (1B), 8.69e-5 / 1.408e-3 (3B), 8.70e-5 / 1.587e-3 (8B); `4070ti_nzf` 2.1010e-5 /
+  9.135e-4, 2.0676e-5 / 7.828e-4, 2.0566e-5 / 8.911e-4; `orin_g64` 2.1010e-5 / 9.135e-4, 2.0676e-5 / 7.828e-4,
+  2.0566e-5 / 8.911e-4. Not larger than the parent's in rms and maximum in 12 of 12 cases; the maximum equals
+  `4070ti_nzf`'s in every case and the rms is within 1.2e-4 relative of it. Direct difference from
+  `4070ti_nzf`'s output (`diff-orin_g64-vs-4070ti_nzf.csv`): 0.3 to 0.4 % of the fp16 elements differ, by at
+  most 1.2e-4 (one fp16 step below 1.0), rms 4.6e-7.
+- Candidate 4 = `ET_VK_SARC_SOFTMAX_VARIANT=orin_g64`, judged as an arithmetic change (`gate_sdpa.sh`, the
+  reference error above; if a next-token item differs, the rule's logits evidence is owed before it can count).
 
 ## Owner decision received (2026-10-05): the softmax-name hook is accepted
 
@@ -110,6 +150,8 @@ it (`s4-c1h`), not on the local-patch build `hook4`.
 |---|---|---|---|---|
 | 1 | `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine1` | SDPA prefill kernels (QK^T, attn*V) | yes (`OrinSdpa.cpp`, no hook) | **REJECTED** at `verify-check` (`s2-c1`); evidence session running |
 | 2 | `ET_VK_SARC_DEV_PROFILE=orin-lin-refine2` | 8da4w linear: whole-texel weight staging | yes | **GATE_ACCEPTED** (`s3-c2`, plain pass: output bit-identical to the shipped kernel), +2.84 % (8da4w cells +3.8 / +6.9 / +6.7 %) |
+| 3 | `orin-refine5` + `4070ti_nzf` (on top of 1h + 2) | 4w linear: column-major weight staging on the 256 x 128 tile (K <= 8192), texel-wise staging on the fp32 tile (K > 8192) | yes | in its gate (`s5-c3`); pre-checks: bit-identical to the shipped kernels on the shapes each tile serves |
+| 4 | the accepted profile + `ET_VK_SARC_SOFTMAX_VARIANT=orin_g64` | softmax: reductions inside the subgroups, 2 barriers per row instead of 14 | through the softmax-name hook | queued (`s6-c4`) |
 | 1h | candidate 1 + `ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf` | fp32 softmax without the zero tail | through the softmax-name hook (owner decision 2026-10-05, commit `307abb2ed`), build `topic6` | **`ACCEPTED (reference-error rule, owner decision 2026-10-04)`** (`s4-c1h`, `GATE_ACCEPTED`, no differing item), +57.8 % |
 
 ### Candidate 2, `orin-lin-refine2` (8da4w linear, whole-texel weight staging): `GATE_ACCEPTED`
@@ -383,6 +425,23 @@ Orin serves with fp32 accumulation (8B `w2`, K = 14336, shipped `t128x128k32g42s
 faster: texel-wise weight staging `bx_t128x128k32g42s32f32c` 41.17 ms (1.11x) and column-major staging
 `t128x128k32g42s32f32cbt` 41.75 ms (1.10x). That shape is 14 % of the 8B 4w prefill, so the end-to-end effect is
 about +1 % on one cell. Profile `orin-lin-refine3` = candidate 2 + that tile for K > 8192 (build `topic7`).
+
+4w screen 2 (`results/orin/screens/screen2-4w.txt`, build `topic8`, 2 rounds, primary): 12 staging and grid
+variants of the shipped Orin tiles themselves (`tools/gen_orin_q4.py`). Kernel time against the shipped rows
+over the 11 shapes with K <= 8192: column-major weight staging on the 256 x 128 K = 16 tile, 4 x 2 subgroup
+grid (`orin_t256x128k16g42s32bt`) 1.3 to 1.8 % faster on every shape (1B 2.86 / 0.74 / 11.35 / 10.86 ms against
+2.91 / 0.75 / 11.50 / 11.02; 8B `w1_w3` 38.30 against 38.85); the same staging on the shipped 2 x 2 grid 0.8 %,
+with texel-wise fetches (`cbt`) 0.9 %; the 2 x 4 and 4 x 4 grids 4 to 37 % slower; the K = 32 tiles 8 to 18 %
+slower. (The "geomean vs base" column of the file includes the K = 14336 shape, where a forced fp16 tile is
+faster than the shipped fp32 one and is not valid: it fails production-diff there, `screens/pdiff-q4b.txt`.)
+
+Candidate 3 = profile `orin-refine5`: `orin_t256x128k16g42s32bt` on the shapes the table gives to the 256 x 128
+tile (K <= 8192, and not the M = 256, N % 2048 != 0 case, which keeps the table's tile), and
+`bx_t128x128k32g42s32f32c` for K > 8192. Pre-checks on the primary: the raw output is byte-identical to the
+shipped kernels' on the shapes each tile serves (`screens/bit-q4.txt`, `bit-q4b.txt`: the fp16 tile on the 11
+shapes with K <= 8192, the fp32 tile on the K = 14336 shape; the shipped kernel run twice is identical to
+itself); sampled production-diff ALL PASSED on those shapes. Expected end to end: +0.7 % on the 4w cells from
+the fp16 tile and +1 % more on 8B 4w from the fp32 shape.
 
 ## Softmax variants on the Orin (kernel level, ms per layer at S = 2048; `results/orin/screens/sdpa-screen3.csv`)
 
