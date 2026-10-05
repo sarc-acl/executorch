@@ -1,9 +1,10 @@
 # sarc-1.5-xe2-prefill-refine: status
 
-**2026-10-05 05:10 UTC — finished by the stop rule. Winner `xe2-refine2` (candidates 1 and 2): +57.5 % geomean
-over the parent measured directly (`s6-final`). Candidate 1 is `ACCEPTED (reference-error rule, owner decision
-2026-10-04)`, not a plain pass. Candidates 3 and 4 passed their gates with no measurable gain (+0.32 %,
--0.11 %): two consecutive gated candidates under 2 %. Nothing is running. Summary in `proposal.md`.**
+**2026-10-05 05:45 UTC — running again (review follow-up): the sampled parameter search the owner decision of
+2026-10-04 requires, which the first report had left out. Results so far are unchanged: winner `xe2-refine2`
+(candidates 1 and 2), +57.5 % geomean over the parent (`s6-final`); candidate 1 is `ACCEPTED (reference-error
+rule, owner decision 2026-10-04)`, not a plain pass; candidates 3 and 4 passed their gates with no measurable
+gain.**
 
 Branch `topic/xe2-prefill-refine`, parent `6a7cc8cc6` (head of `topic/780m-prefill-refine`). Host
 `fedora-gpu-eval`, card `b70-0` only (guest PCI `0000:01:00.0`, Vulkan device 0, **`ETVK_DEVICE_INDEX=0`**,
@@ -12,7 +13,28 @@ B70 or on the B580.
 
 ## Running now
 
-Nothing. The last GPU job (`s6-final` and its traces) ended 04:57 UTC.
+The sampled parameter search (`tools/sweep.py`, `sweep_run.py`, `sweep_analyze.py`, `build-sweep.sh`), one GPU
+job at a time through `tools/sweep_queue.sh` (`.artifacts/queue/status`). Seed 20261005 for every space.
+
+Legal spaces after the analytic pruning (workgroup <= 1024, whole 8 x 16 MMA tiles per subgroup, tile sizes
+dividing every production shape, the flag exclusions and the known staging rules of each body), counted by
+`sweep.py count`; then every drawn configuration is compiled with the build's glslc and its exact shared
+memory is read from the SPIR-V (limit 46000 bytes):
+
+| space | parameters | analytically legal | drawn / compile / legal | to screen | cheap mode per configuration | projected |
+|---|---|---:|---|---:|---|---:|
+| 4w linear | body (release, split staging, texel-wise), M, N, K, subgroup grid, subgroup size, layout, IMG_A, IMG_W, drain, accumulator | 338448 | 3000 / 2851 / 2067 | 2000 | 13 s (1B shapes) | 7 h + 1.7 h validation |
+| 8da4w linear | body (zpg, bt, xe2bt, zpgtr), M, N, K, grid, subgroup size, zpgtr flags | 44670 | 3000 drawn, checked when its build runs | 2000 | 13 s | 7 h + 1.7 h |
+| attn*V | family (sweep, ml, xe2), M, N, K, grid, subgroup size | 1131 | all, checked when its build runs | all legal | 7.5 s (1B + 3B) | about 2.5 h |
+| QK^T | family (sweep, pk, xe2, xe2c), M, N, K, grid, subgroup size, NO_MASK_FILL | 4536 | all, checked when its build runs | 2000 | 7.5 s | 4.2 h + 0.4 h |
+
+None of the four can be enumerated with the full measurement inside a day except attn*V, which is enumerated
+in the cheap mode. Stage 1 (queued, in this order: 4w, 8da4w, attn*V, QK^T): validation of the cheap mode on
+the first 60 configurations (cheap once, full twice), then the cheap screen. Stage 2 per space: correctness of
+everything near the top, importance and interaction tables, one-parameter neighbours of the best 20, full
+measurement of the best 10 per shape class against the shipped and the candidate kernels. Projected end of
+stage 1: about 2026-10-06 06:00 UTC; no single run is projected over 48 hours. The sweep variants exist only
+in the sweep builds (`build/sw*`, an export of HEAD plus the generated overlay), never in the working copy.
 
 ## Needs the owner's attention
 
@@ -161,8 +183,8 @@ interleaved (`results/xe2/sessions/s2-c1/`):
 | 8B 4w | 2420.80 | 3282.05 | +35.58 % | SAME / SAME / SAME |
 | 8B 8da4w | 2737.97 | 3835.21 | +40.07 % | **DIFFER / DIFFER** / SAME |
 
-Geomean +46.86 %, every cell far outside the +-2 % band (A/A noise 0.6 %). 61 timed runs, one rejected
-(`8b 4w cand r5`, `clock_low`) and replaced.
+Geomean +46.86 %, every cell far outside the +-2 % band (A/A noise 0.6 %). 62 timed runs: 61 valid and one
+rejected (`8b 4w cand r5`, `clock_low`), replaced by the next valid run of that arm.
 
 **This is not a plain pass.** The gate (`gate_sdpa.sh`, `sessions/s2-c1/gate.txt`) ends `GATE_FAIL` on two
 lines that state one fact: the next token of the candidate differs from the parent's for 8B 8da4w on
