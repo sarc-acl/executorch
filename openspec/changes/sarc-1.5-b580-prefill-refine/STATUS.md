@@ -18,7 +18,7 @@ of this campaign is running.
 ## Result
 
 Final session `s6-final`: pristine parent build (`6a7cc8cc6`, no environment) against build `topic3`
-(`1eec0cda0`) with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine3`; tok/s, median of 5 valid
+(`2a52dfd2b`, per `results/b580/topic3.src.txt`) with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine3`; tok/s, median of 5 valid
 runs per arm, arms interleaved, 60 timed runs, none rejected, foreign engine time 0.00 %
 (`results/b580/sessions/s6-final/`). A measurement, not a gate: its status is `E2E5_INCOMPLETE` only because of
 the two 8B 8da4w next-token items of candidate 0.
@@ -269,8 +269,8 @@ ratio of roofs. After candidate 0 the linear kernels are 56 to 75 % of the prefi
 ### Candidate 1, `b580-refine1` (candidate 0 + 8da4w linear tile `xe2bt_t128x128k64g84s16m8`): GATE_PASS, bit-identical
 
 Kernel: `sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8` (the B70 campaign's texel-wise family:
-128 x 128 tile, K = 64 per chunk, 512 threads, every thread stages one A block and one packed-weight texel per
-chunk) for every 8da4w linear shape, instead of the shipped `zpg_t256x64k32g48s16m8`. Same values and MMA
+128 x 128 tile, K = 64 per chunk, 512 threads, every thread stages one A block and one packed-weight slot (a
+texel and one of its two nibble parities) per chunk) for every 8da4w linear shape, instead of the shipped `zpg_t256x64k32g48s16m8`. Same values and MMA
 order as the release kernel; the 4w cells run the same kernels in both arms.
 
 Session `s3-c1`: build `topic2` in both arms, parent arm = candidate 0 (`b580-refine0`), candidate arm
@@ -316,8 +316,12 @@ GEMM family and nothing else.
 | 8B 8da4w | candidate 1 | 688.5 | 437.4 | 251.1 |
 
 Linear GEMM 1.31x (1B), 1.35x (3B), 1.28x (8B) faster in the model, as in the kernel screen (1.29x, 1.36x,
-1.28x). In the kernel the gain is the fetch phase: each packed-weight texel is fetched once per chunk instead
-of 8 times, with one barrier per 64 K instead of per 32.
+1.28x). That is what was measured: the gain is attributed to the linear GEMM family by these ETDump timings.
+How the kernel differs, as implementation and not as a measurement: its weight staging assigns two slots per
+packed-weight texel, one per nibble parity, and each slot does its own `texelFetch`, so a texel is fetched
+twice per chunk instead of eight times, and a chunk is 64 K, so there is one barrier per 64 K instead of per
+32. The phase timing in this campaign covers the shipped kernel only; the candidate's fetch and barrier
+shares were not measured.
 
 Against the B70: the same tile is the B70's best at kernel level (1.26x there); at the fork point the B70
 campaign had not gated it end to end.
