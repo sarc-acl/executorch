@@ -1,8 +1,61 @@
 # STATUS: sarc-1.5-4070ti-prefill-refine
 
-**2026-10-05 00:00 UTC, gpu-dev-4004. RUNNING. Candidate 1 re-evaluated under the owner's second decision
-(reference-error rule): NOT MET, on one number. Nothing is accepted yet; the stop rule is not met; the branch
-is not pushed.**
+**2026-10-05 00:50 UTC, gpu-dev-4004. RUNNING. Candidate 4 (SDPA kernels + fp32 softmax) meets the owner's
+reference-error rule and is in its full gate now. Candidate 1 stays rejected. Nothing is accepted yet; the
+stop rule is not met; the branch is not pushed.**
+
+## Candidate 4 = `4070ti-refine1` + softmax `4070ti_nzf`: reference-error rule MET, gate running
+
+Environment `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=4070ti-refine1 ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf`,
+build `topic10` (`267edc6a5` + `tools/local-hook-nvidia-sdpa-softmax.patch`: hooks 1 and 2, not committed).
+What changed against candidate 1: the softmax reduces each row in fp32 (maximum, exp, sum, division) and rounds
+once on the store, and it zeroes the masked tail only as far as attn*V reads it. QK^T and attn*V are the
+kernels of candidate 1.
+
+Evidence, `results/4070ti/probe/refine1-nzf/` (`reference-error-rule.txt`, `REFERENCE_ERROR.json`):
+
+Criterion 1, error against the fp32 CPU reference, same seeded inputs, both arms measured with the same test
+binary (`results/4070ti/sdpa-error2/`), 0 mismatches in all 12 cases of both tiers for both arms:
+
+| production case (S = 2048) | rms error, parent / candidate 4 | maximum error, parent / candidate 4 |
+|---|---|---|
+| 1B head configuration | 8.55e-5 / 2.10e-5 | 1.713e-3 / 0.914e-3 |
+| 3B head configuration | 8.69e-5 / 2.07e-5 | 1.408e-3 / 0.783e-3 |
+| 8B head configuration | 8.70e-5 / 2.06e-5 | 1.587e-3 / 0.891e-3 |
+
+Not larger in any case, production or not (12 of 12 for both rms and maximum); the margin is a factor of 4 in
+rms and 1.8 in maximum error, not a close call. The fp32 softmax alone (`4070ti_f32`, full zero tail) gives
+the same numbers as `4070ti_nzf`, element for element.
+
+Criterion 3, gross divergence (41 real-text prompts, `compare.csv`; parent tiled vs parent default beside it):
+
+| cell | top-1 differences of 41 (parent's two arms / candidate vs parent) | mean KL, nats | max KL | max abs logit diff |
+|---|---|---|---|---|
+| 1B 4w | 0 / 0 | 0.000077 / 0.00091 | 0.0011 / 0.0080 | 0.46 / 0.58 |
+| 1B 8da4w | 2 / 5 | 0.0618 / 0.0756 | 0.606 / 0.825 | 4.42 / 4.34 |
+| 3B 4w | 0 / 0 | 0.00057 / 0.00025 | 0.0222 / 0.0019 | 0.45 / 0.73 |
+| 3B 8da4w | 1 / 1 | 0.0106 / 0.0238 | 0.152 / 0.408 | 3.73 / 4.00 |
+| 8B 4w | 0 / 0 | 0.000028 / 0.00024 | 0.00022 / 0.0017 | 0.27 / 0.36 |
+| 8B 8da4w | 1 / 4 | 0.0278 / 0.0251 | 0.447 / 0.299 | 2.72 / 4.56 |
+
+Largest mean KL 0.076 nat (limit 0.5), top-1 differs on at most 5 of 41 prompts (limit one third): no gross
+divergence. (The last line of `compare.csv` still prints the first decision's verdict, "outside twice the
+noise floor"; the second decision replaced that test for arithmetic changes.)
+
+Criterion 2, position of the gate's unaligned item (prompt 0 of the set, `position/summary.csv`): with
+candidate 4 all four arms pick the same token in both 1B cells (1B 8da4w margins: parent +0.31 default, +0.38
+tiled; candidate +0.11 default, +0.30 tiled), so that item is expected to read SAME this time. That is how
+the near-tie happens to fall for this candidate, not something it was built for.
+
+How this candidate came about, plainly: candidate 1 missed criterion 1 on one maximum error (below). The
+softmax was the one part of the candidate's attention block still computing in fp16, so I moved it to fp32
+and measured again with the same thresholds and inputs. Had it not cleared them I would have reported that
+and stopped there.
+
+Gate: `REF_ERROR=results/4070ti/probe/refine1-nzf/REFERENCE_ERROR.json tools/gate_sdpa.sh s5-c4` against the
+pristine parent: 24 SDPA correctness passes, `verify.sh`, six-cell session, traces. Started 00:46 UTC; the
+SDPA passes take about 45 minutes, the session 25 minutes or much longer if the card reads a low idle
+temperature again (see candidate 2 below).
 
 ## Candidate 1 under the reference-error rule (second owner decision, 2026-10-04): NOT MET
 
@@ -36,12 +89,8 @@ be measured against the same fixed thresholds on the same inputs. If it does not
 and nothing further is tried on this point: this is a change that raises precision, not a search for a
 variant that happens to pass.
 
-## Now (00:25 UTC)
+## Other state
 
-- Running (detached): the pipeline of candidate 4 = `4070ti-refine1` + softmax `4070ti_nzf` (fp32 reduction,
-  no full zero tail; hooks 1 and 2 by local patch): build `topic10`, SDPA error against the fp32 reference for
-  parent and candidate with one test binary, the 41-prompt comparison, `tools/ref_error_rule.py`, and
-  `REF_ERROR=... tools/gate_sdpa.sh s5-c4` only if the rule is met.
 - Candidate 2 (`4070ti-refine2`, 8da4w half-texel weight staging, dev zone only): `verify-check` ACCEPT with 0
   findings, then I interrupted its session after 36 of about 84 runs (`gate.done`: GATE_ABORTED by the
   operator). The session had read idle as 46 C and every later run waited the full 120 s for 51 C with the
@@ -197,6 +246,8 @@ fetching than multiplying.
 | `topic6` | `06f3e22d6` + `tools/local-hook-nvidia-sdpa-softmax.patch` | linear tile screens, softmax variant |
 | `topic7` | `50675407a` + `tools/local-hook-fused-sdpa.patch` | fused attention kernel, first correctness pass |
 | `topic8` | `296f44725` + `tools/local-hook-fused-sdpa.patch` | zpgtr `bh` twin, SDPA error report in the test |
+| `topic9` | `fecfbfaa9`, no local patch | candidate 2 (`4070ti-refine2`) |
+| `topic10` | `267edc6a5` + `tools/local-hook-nvidia-sdpa-softmax.patch` | candidate 4 (`4070ti-refine1` + softmax `4070ti_nzf`) |
 
 Both from `git archive` trees with `sarc/tools/build.sh` in `localhost/et-vk-build:rocky10` through the
 docker shim; provenance in `.artifacts/4070ti-prefill-refine/build/<tag>.src.txt`.
