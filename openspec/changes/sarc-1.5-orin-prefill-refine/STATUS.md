@@ -1,9 +1,9 @@
 # STATUS: sarc-1.5-orin-prefill-refine
 
-**2026-10-05 08:30 UTC. RUNNING. Candidate 1 (`orin-refine1`, SDPA prefill kernels) is REJECTED by the gate on
-one next-token item, and the owner's reference-error rule is not met on one maximum error, exactly as on the
-4070 Ti; its timed session is running for evidence only. Candidate 2 (8da4w linear) is next. Nothing accepted
-yet; the stop rule is not met; the branch is not pushed.**
+**2026-10-05 09:55 UTC. RUNNING. The owner accepted the softmax-name hook (committed alone, `307abb2ed`).
+Candidate 1 (`orin-refine1`, release softmax) is REJECTED and stays rejected; it measured +57.5 % geomean.
+Candidate 1h (the same kernels + fp32 softmax through the hook) and candidate 2 (8da4w linear) are queued for
+their gates. Nothing accepted yet; the stop rule is not met; the branch is not pushed.**
 
 All times are UTC from `date -u`.
 
@@ -11,20 +11,21 @@ All times are UTC from `date -u`.
 
 - Device (`duck-naughty`), detached, one GPU job at a time under the gpu-lab lock; status in
   `~/hmz-sarc-orin/jobs/<job>.status` / `.out`, from the workstation `tools/dstat.sh`. Survives a reboot of the
-  workstation. Builds `topic4` = `8973debef`, `topic5` = `96a793e61` (dev zone only), `hook4` = `topic4` +
-  `tools/local-hook-orin-softmax.patch` (NOT committed):
-  - `chain6` (running): evidence session and traces of candidate 1 (`gate_rest.sh s2-c1`); then candidate 2: bit
-    comparison with the shipped kernel (`raw/bit-bf`), production-diff on all three models, `gate.sh s3-c2`.
-  - `chain7b` (waiting): decode A/B; 8da4w screen 3 (second batch of whole-texel tiles) and phase timing; 4w
-    screen of every existing subgroup-32 dev tile; reference error and kernel times of the softmax variants.
-  - `chain8` (waiting): `gate_sdpa.sh s4-c1h`, candidate 1h through the local hook.
-  Expected: `chain6` until about 11:00 UTC, `chain7b` 12:30, `chain8` 14:30.
-- Workstation: nothing.
+  workstation. Build `topic6` = `4718f3e07` (the committed branch with the hook):
+  - `chain9` (running): 8da4w screen 3, round 2; phase timing of two whole-texel tiles.
+  - `chain11b` (waiting): 4w screen of every existing subgroup-32 dev tile; kernel times of the softmax variants.
+  - `chain8c` (waiting): candidate 1h: reference error of the attention block for five arms (`raw/sdpa-error2`),
+    then `gate_sdpa.sh s4-c1h`.
+  - `chain10b` (waiting): candidate 2: bit comparison with the shipped kernel (`raw/bit-bf`), production-diff on
+    all three models, `gate.sh s3-c2`.
+  Expected: `chain11b` until about 10:50 UTC, `chain8c` 13:30, `chain10b` 15:30.
+- Workstation: job `build-topic6` is adding `logits_dump` to build `topic6` (waiting for the desktop build lock).
+  Not needed by the queued chains; start again after a reboot.
 
 ## Next step
 
-Read the session of candidate 1 (measured gain) and the gate of candidate 2. Then candidate 1h, the 41-prompt
-logits comparison for it, and whatever the 8da4w and 4w screens of `chain7b` suggest.
+Read the 4w screen; the gate of candidate 1h (if a next-token item differs again: the 41-prompt logits
+comparison and the reference-error rule); the gate of candidate 2.
 
 ## Owner decision received (2026-10-05): the softmax-name hook is accepted
 
@@ -83,8 +84,11 @@ Build `topic4` (`8973debef`, dev zone only) against the pristine parent.
   (0 findings): parent and candidate print the same next token in all six cells on the timed prompt, the
   real-text prompt, `prompt_check` and the unaligned prompt (24 of 24). The one differing item of the gate is
   the candidate's own default-vs-tiled comparison on the unaligned prompt for 1B 8da4w.
-- To check: the 1B 4w decode of that run reads 17.6 tok/s against the parent control's 19.4 (8da4w: 10.98
-  against 11.01). One run each; a 3-run decode A/B of parent and both candidates is queued (`decode-ab1`).
+- Decode: that `verify.sh` run read 17.6 tok/s for 1B 4w against the parent control's 19.4. A 3-run decode
+  A/B, arms interleaved (`raw/decode-ab1`, 1B, 32 new tokens after the 2048-token prompt), does not confirm it:
+  4w parent 19.29 / 19.39 / 19.31, `orin-refine1` 19.07 / 19.15 / 19.15 (-0.9 %); 8da4w parent 11.05 / 11.02 /
+  (third run pending), `orin-refine1` 10.99 / 10.97 (-0.5 %); `orin-lin-refine2` 4w 19.17 / 19.16 / 19.41,
+  8da4w 10.92 / 10.90 (-1.1 %). All inside the +-2 % band; decode is not what these candidates change.
 
 ## SDPA kernels on the Orin (kernel level, `test_llama_microbench --sdpa`, ms per layer at S = 2048)
 
@@ -176,6 +180,10 @@ Kernel-level screens, all 12 model shapes, geomean of kernel time against the sh
 - The second barrier per chunk that a single staging slice needs costs about 17 % (0.987 against 1.154 on the
   same tile), more than K = 128 gains back. Double buffering stays.
 - All 9 whole-texel tiles pass the sampled production-diff on the 1B shapes (non-zero zero points).
+- Screen 3 (`screen3-8da4w.txt`, second batch of whole-texel tiles, built to test whether smaller subgroup
+  tiles and fewer loads per thread help): no. `t64x128k64g22` 1.021, `t128x128k64g22` 0.994, `t64x128k64g42`
+  0.969, `t64x64k64g22` 0.868, `t64x64k128g42` / `g24` 0.70 / 0.68. The 128 x 128 tile on 256 threads stays the
+  best (1.158 again). All six pass the sampled production-diff on the 1B shapes.
 - Candidate 2 = `orin_bf_t128x128k64g24s32mk32ra` for every shape the Orin row covers.
 
 Phase timing of the Orin 4w tiles (`results/orin/phases/prof2-4w.csv`): `t256x128k16g22s32`: barrier 10 to
