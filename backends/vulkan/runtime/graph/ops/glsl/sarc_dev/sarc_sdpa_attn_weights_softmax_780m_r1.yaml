@@ -4,8 +4,8 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-# SARC development zone, 780M: single-load variant of sarc_sdpa_attn_weights_softmax (not shipped, not
-# reachable without the hook described in openspec/changes/sarc-1.5-780m-prefill-refine/hooks/).
+# SARC development zone, 780M: single-load variant of sarc_sdpa_attn_weights_softmax (not shipped;
+# selected by Override::softmax_variant = "780m_r1", see openspec/changes/sarc-1.5-780m-prefill-refine/hooks/).
 
 sarc_sdpa_attn_weights_softmax_780m_r1:
   parameter_names_with_default_values:
@@ -13,16 +13,20 @@ sarc_sdpa_attn_weights_softmax_780m_r1:
     OUT_DTYPE: float
     STORAGE: texture3d
     MODE: llm
-  generate_variant_forall:
-    STORAGE:
-      - VALUE: texture3d
-      - VALUE: buffer
-    combination:
-      parameter_names: [IN_DTYPE, OUT_DTYPE]
-      combos:
-        - parameter_values: [float, float]
-          suffix: float
-        - parameter_values: [half, half]
-          suffix: half
   shader_variants:
-    - NAME: sarc_sdpa_attn_weights_softmax_780m_r1
+    - NAME: sarc_sdpa_attn_weights_softmax_texture3d_float_780m_r1
+      STORAGE: texture3d
+      IN_DTYPE: float
+      OUT_DTYPE: float
+    - NAME: sarc_sdpa_attn_weights_softmax_texture3d_half_780m_r1
+      STORAGE: texture3d
+      IN_DTYPE: half
+      OUT_DTYPE: half
+    - NAME: sarc_sdpa_attn_weights_softmax_buffer_float_780m_r1
+      STORAGE: buffer
+      IN_DTYPE: float
+      OUT_DTYPE: float
+    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_780m_r1
+      STORAGE: buffer
+      IN_DTYPE: half
+      OUT_DTYPE: half

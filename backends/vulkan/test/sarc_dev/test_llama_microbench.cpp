@@ -2152,7 +2152,7 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
   // 780m: the softmax variant r3 bounds its zero fill to the K-chunks the SARC
   // attn*V kernels stage, so it is only correct in front of one of them.
   const bool softmax_bounded_fill =
-      softmax_name.find("softmax_780m_r3") != std::string::npos;
+      softmax_name.find("_780m_r3") != std::string::npos;
   const bool av_causal = av_name.rfind("sarc_sdpa_av_coopmat", 0) == 0;
   const bool pairing_ok = fused_fired
       ? (qk_name == "?" && softmax_name == "?" && av_name == "?")

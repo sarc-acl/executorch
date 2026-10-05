@@ -10,22 +10,21 @@
 // prefill SDPA kernels, glsl/sarc_dev/sarc_dev_780m_sdpa_fused{,2}.
 //   ET_VK_SARC_780M_SDPA_FUSED=<variant>[,<variant>]
 //   e.g. fused2_d64_t128x32g18s32,fused2_d128_t64x32g14s32
-// one variant (the shader name after sarc_dev_780m_sdpa_) per head_dim. The
+// one variant (the shader name after sarc_dev_780m_sdpa_) per head_dim; without
+// the variable, the variants of ET_VK_SARC_780M_PROFILE (Overrides.cpp). The
 // fused3 family reads V from a transposed scratch copy that a second node
 // (sarc_dev_780m_sdpa_vt) writes first; its packed variants (tile token
 // ending in k, or km1) read tile-packed copies of both K and V
 // (sarc_dev_780m_sdpa_kvt). For the calls it fits (below) the three SDPA
 // kernels dispatch nothing and this node writes the output; every other call
 // (decode, unaligned prompt, a head_dim without a variant) is untouched.
-// Compiled only when the release zone has the fused-SDPA hook (that change's
-// hooks/sdpa-fused-hook.patch, not applied on this branch).
-
-#include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h>
-
-#ifdef SARC_HAS_SDPA_FUSED_HOOK
+// Entry point: Override::sdpa_fused_{serves,add} (impl/sarc/Select.h), handed to
+// Overrides.cpp at the end of this file. In a subdirectory because impl/sarc_dev/*.cpp must stay
+// GPU-free (sarc/tools/check.sh compiles those into test_sarc_select).
 
 #include <executorch/backends/vulkan/runtime/graph/ops/DynamicDispatchNode.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Common.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/SDPA.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/GraphInfo.h>
 
 #include <cmath>
@@ -35,6 +34,13 @@
 
 namespace vkcompute {
 namespace sarc {
+
+// Overrides.cpp, 780m block.
+const char* sdpa_fused_variants_780m();
+void register_sdpa_fused_780m(
+    void (*add)(ComputeGraph&, const std::vector<ValueRef>&),
+    bool (*serves)(ComputeGraph*, const std::vector<ValueRef>&));
+
 namespace {
 
 struct Variant {
@@ -48,7 +54,7 @@ const std::vector<Variant>& variants() {
   static const std::vector<Variant> parsed = [] {
     std::vector<Variant> out;
     const char* e = std::getenv("ET_VK_SARC_780M_SDPA_FUSED");
-    std::string list = e != nullptr ? e : "";
+    std::string list = e != nullptr ? e : sdpa_fused_variants_780m();
     while (!list.empty()) {
       const size_t comma = list.find(',');
       const std::string token = list.substr(0, comma);
@@ -93,13 +99,10 @@ const Variant* variant_for(ComputeGraph* graph, const ValueRef q) {
   return nullptr;
 }
 
-} // namespace
-
-// Registered by the 780m block of Overrides.cpp.
 bool sdpa_fused_active_780m(
     ComputeGraph* graph,
-    const int32_t q,
-    const int32_t input_pos_symint) {
+    const ValueRef q,
+    const ValueRef input_pos_symint) {
   const Variant* v = variant_for(graph, q);
   if (v == nullptr || !is_valid(input_pos_symint)) {
     return false;
@@ -109,8 +112,6 @@ bool sdpa_fused_active_780m(
       static_cast<uint32_t>(graph->read_symint(input_pos_symint));
   return S >= v->m && S % v->m == 0 && S % v->n == 0 && input_pos % v->n == 0;
 }
-
-namespace {
 
 vkapi::ShaderInfo pick_fused_shader(
     ComputeGraph* graph,
@@ -181,15 +182,23 @@ void resize_fused_node(
       args.at(0).refs.at(0), graph->sizes_of(resize_args.at(0)));
 }
 
-} // namespace
+// resize_args are those of the three SDPA nodes:
+// [q, k, input_pos_symint_or_dummy, mode].
+bool sdpa_fused_serves_780m(
+    ComputeGraph* graph,
+    const std::vector<ValueRef>& resize_args) {
+  return static_cast<SDPAMode>(resize_args.at(3)) == SDPAMode::LLM &&
+      sdpa_fused_active_780m(graph, resize_args.at(0), resize_args.at(2));
+}
 
 void sdpa_fused_add_780m(
     ComputeGraph& graph,
-    const int32_t q,
-    const int32_t k,
-    const int32_t v,
-    const int32_t input_pos_symint,
-    const int32_t out) {
+    const std::vector<ValueRef>& refs) {
+  const ValueRef q = refs.at(0);
+  const ValueRef k = refs.at(1);
+  const ValueRef v = refs.at(2);
+  const ValueRef input_pos_symint = refs.at(3);
+  const ValueRef out = refs.at(4);
   if (variant_for(&graph, q) == nullptr || !is_valid(input_pos_symint)) {
     return;
   }
@@ -275,7 +284,13 @@ void sdpa_fused_add_780m(
       resize_fused_node));
 }
 
+struct Registrar780mFused {
+  Registrar780mFused() {
+    register_sdpa_fused_780m(sdpa_fused_add_780m, sdpa_fused_serves_780m);
+  }
+} registrar_780m_fused;
+
+} // namespace
+
 } // namespace sarc
 } // namespace vkcompute
-
-#endif // SARC_HAS_SDPA_FUSED_HOOK
