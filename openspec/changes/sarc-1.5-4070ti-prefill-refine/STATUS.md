@@ -36,16 +36,22 @@ be measured against the same fixed thresholds on the same inputs. If it does not
 and nothing further is tried on this point: this is a change that raises precision, not a search for a
 variant that happens to pass.
 
-## Now
+## Now (00:25 UTC)
 
-- Running (detached): `tools/gate.sh s3-c2`, candidate 2 = `4070ti-refine2` (8da4w zpgtr with half-texel
-  weight staging, dev zone only, build `topic9` without any local patch) against the pristine parent. Its
-  `verify-check` is ACCEPT with 0 findings (all four default-vs-tiled items SAME); the six-cell session is
-  running. No build runs during it.
-- After it: build with the fp32 softmax variants, SDPA error and 41-prompt comparison for
-  `4070ti-refine1` + softmax `4070ti_nzf`, then its gate if the rule is met.
-- The softmax variant without fp32 (`4070ti_nz`) gives logits bit-identical to candidate 1's on all 41 prompts
-  and six cells (`probe/refine1-nz/compare.csv` equals `probe/refine1/compare.csv` number for number).
+- Running (detached): the pipeline of candidate 4 = `4070ti-refine1` + softmax `4070ti_nzf` (fp32 reduction,
+  no full zero tail; hooks 1 and 2 by local patch): build `topic10`, SDPA error against the fp32 reference for
+  parent and candidate with one test binary, the 41-prompt comparison, `tools/ref_error_rule.py`, and
+  `REF_ERROR=... tools/gate_sdpa.sh s5-c4` only if the rule is met.
+- Candidate 2 (`4070ti-refine2`, 8da4w half-texel weight staging, dev zone only): `verify-check` ACCEPT with 0
+  findings, then I interrupted its session after 36 of about 84 runs (`gate.done`: GATE_ABORTED by the
+  operator). The session had read idle as 46 C and every later run waited the full 120 s for 51 C with the
+  fans off; it would have taken about three hours for a variant that is +1.1 % at kernel level. The two cells
+  that completed read +0.00 % (1B 4w) and -1.03 % (1B 8da4w, one timer step). Not a result; it can be run
+  again if GPU time is left.
+- One exception to "nothing else on the host during a timed session", for the record: at 00:02 UTC, during
+  that session, I compiled three shaders (the softmax variants) in a container limited to one CPU for a few
+  seconds, to avoid finding a syntax error only in the next build. It was not a build. The session was
+  discarded anyway.
 - Blocking: nothing.
 
 ## Candidate 1 (`4070ti-refine1`, SDPA prefill kernels): measured +42 %, REJECTED
