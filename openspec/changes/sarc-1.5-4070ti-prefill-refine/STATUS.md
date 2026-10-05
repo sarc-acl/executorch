@@ -1,14 +1,24 @@
 # STATUS: sarc-1.5-4070ti-prefill-refine
 
-**2026-10-05 04:00 UTC, gpu-dev-4004. RUNNING. Candidate 4 (SDPA kernels + fp32 softmax) passed its full gate:
-+46.74 % geomean over the pristine parent. Candidates 5 and 6 (the two linear variants on top of it) measured
-+0.11 % and +0.54 %, both inside the noise band; each lost one gate step to an exit-time abort of the PARENT arm
-and is being gated a second time (`s6-c5b` running now, `s7-c6b` queued behind it, about 70 minutes each). The
-stop rule is expected to be met when those two finish. The branch is not pushed yet.**
+**2026-10-05 06:15 UTC, gpu-dev-4004. FINISHED, nothing running, GPU idle. Recommended configuration:
+candidate 4 (SDPA prefill kernels `4070ti-refine1` + fp32 softmax `4070ti_nzf`), +46.74 % geomean over the
+pristine parent, full gate passed. Candidates 5 and 6 (linear variants on top of it), each measured in two
+complete sessions: +0.11 % / +0.28 % and +0.54 % / +0.47 %, inside the noise band; the campaign stops by its
+stop rule. Reservation: none of the four linear gates reached GATE_ACCEPTED, each lost one step to the runner
+failing after its output (below). Candidate 4 needs two release-zone hooks (SDPA rows for this device, softmax
+name) and is measured through a local patch that is not committed. `proposal.md` has the full account.**
+
+Next step: none in this campaign. For the owner: (1) the two hooks decide whether candidate 4 can be used at
+all; (2) the runner's failure after output (about 0.5 % of calls, with and without this campaign's kernels)
+looks like heap corruption in the runner and is worth locating on its own; (3) the linear kernels are what is
+left (50 to 70 % of the prefill at 64 % / about 41 % of their roofs).
+
+Blocking: nothing.
 
 Note on continuity: the control session of this campaign was lost at about 00:50 UTC. The detached queue
 (`queue9.sh`, `queue10.sh` in the artifact directory) kept running; a new control session picked it up at 02:05
-UTC from the files, changed nothing that was running, and added `queue11.sh` / `queue12.sh` (the two repeats).
+UTC from the files, changed nothing that was running, and added `queue11.sh` / `queue12.sh` (the two repeats)
+and `queue13.sh` (the failure-rate probe).
 
 ## Per-cell numbers against the parent (latest)
 
@@ -56,35 +66,42 @@ All of it is attention: 51.7 -> 17.1 ms on 1B 4w, 152.9 -> 39.7 ms on 8B 4w. The
 ## Candidates 5 and 6 (linear variants on top of candidate 4): inside the noise band
 
 Both on build `topic11` (`42e001462` + `tools/local-hook-nvidia-sdpa-softmax.patch`), parent arm = candidate 4
-(profile `4070ti-refine1`, same build), softmax `4070ti_nzf` in both arms.
+(profile `4070ti-refine1`, same build), softmax `4070ti_nzf` in both arms. tok/s, median of 5 valid interleaved
+runs per arm, gain over the parent arm of the same session (`results/4070ti/sessions/<session>/`):
 
-| cell | candidate 4 | candidate 5 `4070ti-refine4` (`s6-c5`) | candidate 6 `4070ti-refine5` (`s7-c6`, parent arm read) |
-|---|---:|---:|---:|
-| 1B 4w | 29681.2 | 29681.2 (+0.00 %) | 29681.2 (+0.00 %) |
-| 1B 8da4w | 32507.9 | 32507.9 (+0.00 %) | 33032.3 (+1.61 %, one timer step) |
-| 3B 4w | 12800.0 | 12800.0 (+0.00 %) | 12880.5 (+0.63 %, one timer step) |
-| 3B 8da4w | 14948.9 | 14948.9 (+0.00 %) | 14948.9 (+0.00 %) |
-| 8B 4w | 5988.3 | 5988.3 (+0.00 %) | 6005.9 (+0.29 %) |
-| 8B 8da4w | 6942.4 / 6966.0 | 6989.8 (+0.68 %) | 7013.7 (+0.68 %) |
-| geomean | | **+0.11 %** | **+0.54 %** |
+| cell | candidate 5 `4070ti-refine4`, `s6-c5` | again, `s6-c5b` | candidate 6 `4070ti-refine5`, `s7-c6` | again, `s7-c6b` |
+|---|---:|---:|---:|---:|
+| 1B 4w | 29681.2 (+0.00 %) | 29681.2 (+0.00 %) | 29681.2 (+0.00 %) | 29681.2 (+0.00 %) |
+| 1B 8da4w | 32507.9 (+0.00 %) | 32507.9 (+0.00 %) | 33032.3 (+1.61 %) | 33032.3 (+1.61 %) |
+| 3B 4w | 12800.0 (+0.00 %) | 12880.5 (+0.63 %) | 12880.5 (+0.63 %) | 12880.5 (+0.63 %) |
+| 3B 8da4w | 14948.9 (+0.00 %) | 14948.9 (+0.00 %) | 14948.9 (+0.00 %) | 14840.6 (-0.72 %) |
+| 8B 4w | 5988.3 (+0.00 %) | 6005.9 (+0.00 %) | 6005.9 (+0.29 %) | 5988.3 (+0.29 %) |
+| 8B 8da4w | 6989.8 (+0.68 %) | 7013.7 (+1.03 %) | 7013.7 (+0.68 %) | 7013.7 (+1.03 %) |
+| **geomean** | **+0.11 %** | **+0.28 %** | **+0.54 %** | **+0.47 %** |
 
-- Candidate 5 = candidate 4 + 8da4w zpgtr half-texel weight staging (`bh`). `verify-check` ACCEPT (the `bh`
-  kernel dispatched in all 24 8da4w cases, 12 of 12 production-diff ALL PASSED). `gate.done`:
-  **GATE_REJECTED at session-check**, one finding: `next token 3b 4w prompt_2048.txt: INVALID:parent:rc+parent:no_stats`.
-  The first timed run of the parent arm (3B 4w, r1) aborted at exit with `corrupted double-linked list` (rc 134)
-  after printing its output and before the stats line. The other 23 next-token rows are SAME; the cell still has
-  5 valid runs per arm.
-- Candidate 6 = candidate 4 + `bh` + the 4w wide tile with the texture3d drain staged in Ash (`gac`), compared
-  with candidate 4 because candidate 5 was not accepted. `verify-check` ACCEPT, `session-check` ACCEPT (24 of
-  24 next-token rows SAME). `gate.done`: **GATE_REJECTED at the trace step**: the traced parent run of 3B 4w
-  aborted at exit (rc 134); the other 11 traces are complete.
-- Neither rejection is about the candidate: both are the exit-time abort of the arm that plays the parent
-  (candidate 4's build here; the pristine parent showed the same abort in `s2-c1b` and in the logits dump, and
-  the release notes of this device describe it). It is still a failed gate step, so both are recorded as
-  rejected and repeated under new session names: `s6-c5b` (started 03:54 UTC) and `s7-c6b`.
-- Exit-time aborts so far in gated sessions on candidate 4's builds: 2 (both 3B 4w, both the `refine1` arm), in
-  `s6-c5` and `s7-c6`; none in `s5-c4`. Too few to say whether the rate differs from the pristine parent's.
-- Reading: +0.11 % and +0.54 % against a +-2 % band and a 1.4 to 1.6 % timer step on 1B. No linear gain.
+- Candidate 5 = candidate 4 + 8da4w zpgtr half-texel weight staging (`bh`). Candidate 6 = candidate 5 + the 4w
+  wide tile with the texture3d drain staged in Ash (`gac`), compared with candidate 4 because candidate 5 had not
+  been accepted.
+- All four: `verify-check` ACCEPT with the parent control's status; 94 of 96 next-token rows SAME, 2 INVALID.
+- `gate.done` of all four is GATE_REJECTED, each for one runner failure after output:
+  `s6-c5` session-check (timed parent run of 3B 4w aborted, rc 134, next-token row INVALID);
+  `s7-c6` trace step (traced parent run of 3B 4w aborted, rc 134; verify-check and session-check ACCEPT);
+  `s6-c5b` trace step (traced candidate run of 3B 4w hung after writing its ETDump, ended with SIGTERM after
+  8.5 min; verify-check and session-check ACCEPT);
+  `s7-c6b` session-check (timed candidate run of 8B 8da4w aborted, rc 134, next-token row INVALID).
+- Not repeated a third time: neither variant has a gain to accept, and at the measured failure rate a gate of
+  about 135 runner calls completes cleanly about 40 % of the time.
+- The only reading that repeats is 8B 8da4w, +0.7 % to +1.0 % in all four sessions (the kernel-level screen gave
+  1.011x for `bh`). Below the band.
+
+## The runner fails after its output now and then (not specific to a candidate)
+
+Echoes prompt and token, then aborts in the allocator (rc 134) or spins one thread with the GPU idle, before the
+stats line. No Xid, `nvidia-smi` answers. Over the staged sessions: 2 of 299 runner calls without the SDPA
+kernels in use, 5 of 690 with them (0.7 % each); one more in the pristine parent's logits dump. Four of the
+five were 3B 4w, so that cell was run 150 times per arm (pristine parent, candidate 4, interleaved;
+`tools/exit_probe.sh`, `results/4070ti/exit-probe/3b-4w.csv`): 0 failures in either arm. Same rate with and
+without this campaign's kernels; cause unknown; it looks like heap corruption in the runner.
 
 ## Candidate 4 = `4070ti-refine1` + softmax `4070ti_nzf`: the measured error (reference-error rule MET)
 

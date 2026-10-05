@@ -11,14 +11,21 @@ goes, measured against the parent in the same session.
 
 ## Outcome in one paragraph
 
-Attention is where the time is on this card, and SDPA prefill kernels for it are worth **+42 % geomean**
-(+31 % to +50 % per cell), measured with the full protocol. That candidate is **not accepted**: it fails one
-next-token item of the unmodified `verify.sh`, and under the owner's near-tie rule of 2026-10-04 it is outside
-twice the noise floor in 4 of 6 cells. The numbers suggest the cause is the parent's fp16 attention arithmetic
-rather than an error in the candidate, which is closer to the fp32 reference than the parent is; that
-judgement is the owner's and is open. The linear kernels were swept and nothing beats the shipped tiles. Two
-further SDPA kernels were written and measured (a softmax without the zero tail, a fused attention kernel);
-both need a hook outside the dev zone.
+SDPA prefill kernels for this card plus an fp32 softmax (**candidate 4**: profile `4070ti-refine1` with softmax
+`4070ti_nzf`) are worth **+46.74 % geomean** over the parent (+33.9 % to +55.6 % per cell) and pass the whole
+gate, with no next-token item differing and a lower error against the fp32 reference than the parent's own
+attention kernels in every test case. All of the gain is attention time (51.7 -> 17.1 ms on 1B, 152.9 -> 39.7 ms
+on 8B). It is not reachable from the dev zone alone: it needs two small release-zone hooks (SDPA rows for this
+device, a dev name for the softmax), measured here through a local patch that is not committed. The first SDPA
+candidate (same QK^T and attn*V kernels with the release fp16 softmax, +42 %) was rejected on precision grounds
+and stays rejected. The linear kernels were swept and two variants were put through the gate on top of
+candidate 4, twice each: +0.11 % / +0.28 % and +0.54 % / +0.47 % geomean, inside the noise band, which ends the
+campaign by its stop rule (with the reservation that none of those four gates completed every step: see
+"Gated linear candidates"). What limits the prefill now is the
+linear kernels (50 % of the 1B prefill and 70 % of the 8B one at 64 % and about 41 % of their matrix roofs).
+
+**Recommended configuration: candidate 4.** The linear profiles (`4070ti-refine2` to `-refine5`) are recorded
+as measured and are not recommended.
 
 ## What is in the tree
 
@@ -31,14 +38,16 @@ read the release sources and never write them.
 |---|---|---|
 | `sarc_sdpa_qk_coopmat_4070ti`, `_pk`, `sarc_sdpa_av_coopmat_4070ti`, `_ml` | the 780M campaign's SDPA dev twins at subgroup 32, 26 tiles | `gen_4070ti_sdpa.py` |
 | `sarc_sdpa_qk_coopmat_4070ti_df`, `sarc_sdpa_av_coopmat_4070ti_df` | **new**: direct-feed QK^T and attn*V (no shared-memory staging), fp32 / grouped fp16 / fp16 accumulation, 33 variants | `gen_4070ti_df.py` |
-| `sarc_sdpa_attn_weights_softmax_4070ti` | **new**: LLM softmax that zeroes the masked tail only as far as attn*V reads it | `gen_4070ti_softmax.py` |
+| `sarc_sdpa_attn_weights_softmax_4070ti` | **new**: LLM softmax variants: `nz` (zeroes the masked tail only as far as attn*V reads it), `f32` (row reduction in fp32, one rounding on the store), `nzf` (both) | `gen_4070ti_softmax.py` |
 | `sarc_sdpa_fused_coopmat_4070ti` | **new**: fused prefill attention, the score matrix is never written | `gen_4070ti_fused.py` |
 | `sarc_linear_q4gsw_coopmat_4070ti`, `sarc_linear_dq8ca_coopmat_zpgtr_4070ti` | sweep tiles of the two linear families (release bodies), 14 + 13 | `gen_4070ti_lin.py` |
 | `sarc_linear_dq8ca_coopmat_zpgtr_4070ti_bh` | **new**: zpgtr with half-texel weight staging (twin body) | `gen_4070ti_bh.py` |
 | `sarc_dev_prof_4070ti_q4gsw`, `sarc_dev_prof_4070ti_dq8ca_zpgtr` | phase-timing twins, measurement only | `gen_4070ti_prof.py` |
 
 Profiles (`ET_VK_SARC_DEV_PROFILE`): `4070ti-refine1` (SDPA), `4070ti-refine2` (8da4w `bh`), `4070ti-refine3`
-(`refine2` + 4w drain in Ash), and one screening profile per SDPA tile (`4070ti-qk-*`, `4070ti-av-*`).
+(`refine2` + 4w drain in Ash), `4070ti-refine4` (`refine1` + `bh`), `4070ti-refine5` (`refine4` + 4w drain in
+Ash), and one screening profile per SDPA tile (`4070ti-qk-*`, `4070ti-av-*`). The softmax variant is chosen by
+`ET_VK_SARC_SOFTMAX_VARIANT` in a build that carries hook 2.
 
 `test_llama_microbench --sdpa-correctness-only` gained a reported `[sdpa-error]` line (max and rms error against
 its fp32 reference) and `ET_VK_SDPA_DUMP_DIR`; neither changes a verdict.
@@ -52,6 +61,7 @@ recorded in the build provenance, and **not** applied to the branch.
    an existing table choice, and the SDPA hooks in `impl/sarc/SdpaCoopmat.cpp` (spec constants, truncated
    softmax) are enabled by a table row. Smallest hook: two `kUnverified` rows in `impl/sarc/table_nvidia.cpp`,
    or a way for a dev profile to mark a device as having SDPA rows. Every SDPA result here depends on it.
+   Candidate 4 needs this hook and hook 2, nothing else.
 2. **Softmax name** (`tools/local-hook-nvidia-sdpa-softmax.patch`, + 9 lines). `sdpa_softmax_shader_name()` in
    `impl/sarc/SdpaCoopmat.cpp` returns a fixed name. Smallest hook: let the dev override name the softmax.
 3. **Fused node** (`tools/local-hook-fused-sdpa.patch`, + 150 lines in `impl/SDPA.cpp`). LLM-mode SDPA is three
@@ -65,8 +75,8 @@ recorded in the build provenance, and **not** applied to the branch.
 
 - Host gpu-dev-4004, RTX 4070 Ti SUPER, NVIDIA 615.71.09. Builds with the unmodified `sarc/tools/build.sh` in
   `localhost/et-vk-build:rocky10` through a `podman` -> `docker` shim, always from a `git archive` of a commit
-  (`tools/build-both.sh`), never from the working copy. All nine builds: `spirv_golden.py` PASS, 53 shipped
-  variants unchanged.
+  (`tools/build-both.sh`), never from the working copy. All twelve builds (parent, `topic1` to `topic11`):
+  `spirv_golden.py` PASS, 53 shipped variants unchanged.
 - End to end: `tools/e2e5.sh` (the kit `e2e.sh` protocol: fresh `llama_main` per run, `--warmup`,
   `prompt_2048.txt`, one new token, arms interleaved, cool between runs), 5 valid runs per arm and cell, clock,
   busy, power and temperature sampled every 20 ms with `nvidia-smi`. A run counts only with rc 0, 2048 prompt
@@ -74,11 +84,12 @@ recorded in the build provenance, and **not** applied to the branch.
   (`results/4070ti/clkmin.json`, from the A/A session). One GPU job at a time under the gpu-lab lock. No build
   ran during a timed session.
 - Gate: `tools/gate.sh` / `tools/gate_sdpa.sh`, judged on the content of the result files by
-  `tools/gate_check.py` (36 unit tests in `tools/test_gate_check.py`). The owner decision of 2026-10-04 on
-  near-ties is implemented as `--near-tie <NEAR_TIE.json>`: the evidence file is only written when the
-  comparison is within twice the noise floor, and an acceptance that used it is labelled as such.
-- 1B timer quantisation: a 1B prefill is 72 to 104 ms and the runner's timer is 1 ms, so 1B cells move in steps
-  of 1.0 to 1.4 %. The warm ETDump dispatch totals are given alongside.
+  `tools/gate_check.py` (40 unit tests in `tools/test_gate_check.py`). The owner decisions of 2026-10-04 are
+  implemented as `--near-tie <NEAR_TIE.json>` and `--reference-error <REFERENCE_ERROR.json>`
+  (`tools/ref_error_rule.py`): the evidence file is only written when the rule is met, and an acceptance that
+  used it is labelled as such.
+- 1B timer quantisation: a 1B prefill is 62 to 104 ms and the runner's timer is 1 ms, so 1B cells move in steps
+  of 1.0 to 1.6 %. The warm ETDump dispatch totals are given alongside.
 
 ## Baseline, A/A, roofs
 
@@ -203,14 +214,98 @@ What this does and does not show:
   (`results/4070ti/sdpa-error/summary.csv`).
 - Inferred, not measured: that the distance from the parent is mostly the parent's own rounding. There is no
   fp32 reference for whole-model logits here.
-- The rule is the owner's and it is applied as written: **candidate 1 is rejected**. Whether SDPA changes on
-  this device should be judged against a reference rather than against the parent is an open question to the
-  owner (`STATUS.md`).
+- The rule is the owner's and it is applied as written: **candidate 1 is rejected**.
+- The owner then decided (second decision of 2026-10-04) that arithmetic changes are judged against a
+  reference. Under that rule candidate 1 is **still not accepted**
+  (`results/4070ti/probe/refine1/reference-error-rule.txt`): its rms error against the fp32 CPU reference is
+  2.5 times lower than the parent's in every case, but on the 3B head configuration at S = 2048 its maximum
+  error is 1.570e-3 against the parent's 1.408e-3, and the criterion is rms and maximum on every head
+  configuration.
 
 Not complete in the evidence of `s2-c1b`: the session's own check says REJECT, because the first timed parent
 run of 8B 8da4w aborted at exit (`corrupted double-linked list`, rc 134) after printing its token, which leaves
 that next-token row INVALID. The other 23 rows are SAME, and the aborted run printed the same token. One traced
 candidate run (3B 4w) also aborted at exit after writing its ETDump.
+
+## Candidate 4: the same kernels with an fp32 softmax (`4070ti-refine1` + `4070ti_nzf`): +46.74 %, ACCEPTED
+
+What is different from candidate 1: only the softmax. Candidate 1 missed the reference criterion on one maximum
+error, and the one part of its attention block still computing in fp16 was the softmax (row maximum, exp, sum
+and division are fp16 in the release shader). `4070ti_nzf` reduces each row in fp32 and rounds once on the
+store, and zeroes the masked tail only as far as attn*V reads it. It was measured once against the thresholds
+and inputs fixed beforehand; no other variant was tried on this point. Environment
+`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=4070ti-refine1 ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf`, build
+`topic10` (`267edc6a5` + `tools/local-hook-nvidia-sdpa-softmax.patch`, hooks 1 and 2).
+
+End to end (`s5-c4`, pristine parent against candidate 4; tok/s, median of 5 valid interleaved runs per arm;
+`results/4070ti/sessions/s5-c4/`):
+
+| cell | parent | candidate 4 | gain | `dev/1.5` (`cells.csv`) | gain over `dev/1.5` | ETDump dispatch total, ms |
+|---|---:|---:|---:|---:|---:|---|
+| 1B 4w | 19692.3 | 29681.2 | +50.7 % | 19692.3 | +50.7 % | 103.4 -> 66.5 |
+| 1B 8da4w | 20898.0 | 32507.9 | +55.6 % | 20898.0 | +55.6 % | 97.3 -> 61.3 |
+| 3B 4w | 8678.0 | 12800.0 | +47.5 % | 8752.1 | +46.3 % | 233.6 -> 159.4 |
+| 3B 8da4w | 9660.4 | 14948.9 | +54.7 % | 9660.4 | +54.7 % | 211.7 -> 138.4 |
+| 8B 4w | 4471.6 | 5988.3 | +33.9 % | 4491.2 | +33.3 % | 456.3 -> 342.8 |
+| 8B 8da4w | 4983.0 | 6942.4 | +39.3 % | 5031.9 | +38.0 % | 410.6 -> 295.9 |
+
+Geomean **+46.74 %** over the parent (+46.2 % over the `cells.csv` numbers), every cell far outside the +-2 %
+band, repeat spread at most 2.1 %, no run with a non-zero exit status, one run invalid (`clock_low`) and
+replaced. 1B readings are whole milliseconds (104 -> 69, 98 -> 63); the ETDump totals are the finer measure and
+say the same (-35.7 % and -37.0 % dispatch time).
+
+Where the gain comes from (warm ETDump, ms per prefill, parent -> candidate 4, `sessions/s5-c4/trace/families.csv`):
+
+| cell | QK^T | attn*V | softmax | linear GEMM | everything else |
+|---|---|---|---|---|---|
+| 1B 4w | 16.5 -> 4.0 | 21.6 -> 5.6 | 13.6 -> 7.5 | 34.6 -> 33.5 | 17.0 -> 15.8 |
+| 1B 8da4w | 16.5 -> 4.2 | 21.6 -> 5.4 | 13.7 -> 7.5 | 27.9 -> 27.7 | 17.7 -> 16.5 |
+| 3B 4w | 42.9 -> 8.6 | 39.7 -> 8.2 | 17.9 -> 9.9 | 98.5 -> 98.2 | 34.6 -> 34.5 |
+| 3B 8da4w | 41.8 -> 8.5 | 39.2 -> 8.1 | 17.9 -> 9.8 | 75.6 -> 75.0 | 37.2 -> 37.0 |
+| 8B 4w | 65.4 -> 13.1 | 60.2 -> 11.7 | 27.3 -> 14.9 | 241.6 -> 241.5 | 61.9 -> 61.7 |
+| 8B 8da4w | 63.3 -> 12.7 | 60.0 -> 11.7 | 27.3 -> 14.9 | 185.5 -> 183.0 | 74.6 -> 73.6 |
+
+QK^T and attn*V gain as in candidate 1 (same kernels). The softmax goes from 850 / 636 / 851 us per layer
+(1B / 3B / 8B, stock) to 463 / 347 / 463 (`sessions/s5-c4/sdpa-correctness/perf-*.log`): the truncated variant
+does not write the zero half, and computing the row reduction in fp32 costs nothing measurable because the
+kernel is bound by memory traffic. Over candidate 1 that is another +1.8 % (8B 4w) to +4.8 % (1B 8da4w) end to end (two sessions
+compared, not one interleaved measurement).
+
+Gate (`gate.done`: `GATE_ACCEPTED 2026-10-05T02:13:20Z all steps passed`):
+
+- SDPA correctness: 24 of 24 passes (12 extended, 12 full), 0 mismatches, `pairing=ok` on every case.
+- Unmodified `verify.sh`, same status as the parent control: correctness rc 0, linear rc 1 / 1 with the same
+  24 confirmed + 24 `unexpected_coopmat` cases as the parent (the known texture3d report of this device),
+  12 of 12 production-diff ALL PASSED, default vs tiled SAME on all four items, decode 31 tokens, 22 of 22
+  runner calls rc 0.
+- Next token parent vs candidate: SAME in all six cells on four prompts (24 of 24 rows).
+- **No next-token item differs, so the gate recorded a plain pass and did not use the reference-error rule.**
+  The candidate changes accumulation and precision, so its measured error is reported regardless, and it is
+  the evidence the second owner decision asks for (`results/4070ti/probe/refine1-nzf/`):
+
+| production case (S = 2048) | rms error vs fp32 CPU reference, parent / candidate 4 | maximum error, parent / candidate 4 |
+|---|---|---|
+| 1B head configuration | 8.55e-5 / 2.10e-5 | 1.713e-3 / 0.914e-3 |
+| 3B head configuration | 8.69e-5 / 2.07e-5 | 1.408e-3 / 0.783e-3 |
+| 8B head configuration | 8.70e-5 / 2.06e-5 | 1.587e-3 / 0.891e-3 |
+
+Not larger in any of the 12 test cases, for rms and for maximum. On 41 real-text prompts (`compare.csv`; the
+parent's tiled arm against its default arm beside it for scale):
+
+| cell | top-1 differences of 41 (parent's two arms / candidate vs parent) | mean KL, nats | max KL | max abs logit diff |
+|---|---|---|---|---|
+| 1B 4w | 0 / 0 | 0.000077 / 0.00091 | 0.0011 / 0.0080 | 0.46 / 0.58 |
+| 1B 8da4w | 2 / 5 | 0.0618 / 0.0756 | 0.606 / 0.825 | 4.42 / 4.34 |
+| 3B 4w | 0 / 0 | 0.00057 / 0.00025 | 0.0222 / 0.0019 | 0.45 / 0.73 |
+| 3B 8da4w | 1 / 1 | 0.0106 / 0.0238 | 0.152 / 0.408 | 3.73 / 4.00 |
+| 8B 4w | 0 / 0 | 0.000028 / 0.00024 | 0.00022 / 0.0017 | 0.27 / 0.36 |
+| 8B 8da4w | 1 / 4 | 0.0278 / 0.0251 | 0.447 / 0.299 | 2.72 / 4.56 |
+
+Largest mean KL 0.076 nat (the owner's gross-divergence limit is 0.5), top-1 differs on at most 5 of 41 prompts
+(limit: one third). Under the FIRST decision's test (twice the spread of the parent's two linear arms) this
+candidate would still be outside in several cells, as candidate 1 was; the second decision replaced that test
+for arithmetic changes and is the one applied. To be read plainly: on the 8da4w models the top-1 token changes
+against the parent on 5, 1 and 4 of 41 prompts, where the parent's own two arms differ on 2, 1 and 1.
 
 ## Linear kernels: swept, nothing found
 
@@ -230,19 +325,19 @@ Static pruning before any run: shared memory at most 49152 bytes (the double-buf
 on a 256-row tile and every k 64 tile), staging thread maps that divide the workgroup, the texture3d drain band
 fitting in Ash. The space that survives is small enough to enumerate; no sampling was needed.
 
-Candidates 2 and 3 (`4070ti-refine2`, `4070ti-refine3`) put the two near-noise variants through the full gate
-to close this part with end-to-end numbers: see "Gated linear candidates" below.
+The two near-noise variants were then put through the full gate on top of candidate 4, to close this part with
+end-to-end numbers: see "Gated linear candidates" below.
 
 ## Two more SDPA kernels, measured, both behind hooks
 
-**Softmax without the full zero tail** (`sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nz`). With
-candidate 1 the release softmax is half of the attention time and runs at the DRAM write roof; half of what it
-writes is zeros above the diagonal that the SARC attn*V kernels never read beyond their own row tile. Kernel
-level (`sdpa-screen3.csv`): softmax 659 -> 462 us per layer (1B, 8B), 494 -> 345 (3B). SDPA output
-bit-identical to candidate 1; extended and full tiers PASSED. Ungated quick look end to end: +4.3 % (1B 4w),
-+4.8 % (1B 8da4w), +2.5 % (3B 4w) over candidate 1. It is only valid together with attn*V kernels that
-truncate; the variant checks the fit condition of this device's table row itself and otherwise behaves as the
-release shader. Not gated: it inherits candidate 1's rejection (same numerics) and needs hook 2.
+**Softmax without the full zero tail** (`sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nz`, and its fp32
+form `_nzf`, which is part of candidate 4). With candidate 1 the release softmax is half of the attention time
+and runs at the DRAM write roof; half of what it writes is zeros above the diagonal that the SARC attn*V kernels
+never read beyond their own row tile. Kernel level (`sdpa-screen3.csv`): softmax 659 -> 462 us per layer
+(1B, 8B), 494 -> 345 (3B). The fp16 form `nz` gives SDPA output bit-identical to candidate 1 and inherits its
+rejection; the fp32 form is what candidate 4 runs. The variant is only valid together with attn*V kernels that
+truncate; it checks the fit condition of this device's table row itself and otherwise behaves as the release
+shader. Needs hook 2.
 
 **Fused attention** (`sarc_sdpa_fused_coopmat_4070ti_c<tile>d<head_dim>`). One workgroup owns 16 rows of one
 head and walks the visible context twice (row maximum; then exp, row sum and the attn*V accumulation), so the
@@ -256,34 +351,121 @@ because it looks for separate QK^T and attn*V kernel names; the test was not cha
 
 ## Gated linear candidates
 
-TO BE FILLED (candidates 2 and 3).
+Both linear variants were gated on top of candidate 4 (`tools/gate.sh`; build `topic11` = `42e001462` +
+hooks 1 and 2; both arms run the SDPA kernels and the `4070ti_nzf` softmax; the parent arm is candidate 4,
+profile `4070ti-refine1`). tok/s, median of 5 valid interleaved runs per arm, gain over the parent arm of the
+same session:
+
+| cell | candidate 5 `4070ti-refine4`, `s6-c5` | again, `s6-c5b` | candidate 6 `4070ti-refine5`, `s7-c6` | again, `s7-c6b` |
+|---|---:|---:|---:|---:|
+| 1B 4w | 29681.2 (+0.00 %) | 29681.2 (+0.00 %) | 29681.2 (+0.00 %) | 29681.2 (+0.00 %) |
+| 1B 8da4w | 32507.9 (+0.00 %) | 32507.9 (+0.00 %) | 33032.3 (+1.61 %) | 33032.3 (+1.61 %) |
+| 3B 4w | 12800.0 (+0.00 %) | 12880.5 (+0.63 %) | 12880.5 (+0.63 %) | 12880.5 (+0.63 %) |
+| 3B 8da4w | 14948.9 (+0.00 %) | 14948.9 (+0.00 %) | 14948.9 (+0.00 %) | 14840.6 (-0.72 %) |
+| 8B 4w | 5988.3 (+0.00 %) | 6005.9 (+0.00 %) | 6005.9 (+0.29 %) | 5988.3 (+0.29 %) |
+| 8B 8da4w | 6989.8 (+0.68 %) | 7013.7 (+1.03 %) | 7013.7 (+0.68 %) | 7013.7 (+1.03 %) |
+| **geomean** | **+0.11 %** | **+0.28 %** | **+0.54 %** | **+0.47 %** |
+
+- Candidate 5 = candidate 4 + 8da4w zpgtr half-texel weight staging (`bh`).
+- Candidate 6 = candidate 5 + the shipped 4w wide tile with the texture3d drain staged in Ash (`gac`, N > 512),
+  compared with candidate 4 because candidate 5 had not been accepted.
+- No cell is outside the +-2 % band in any of the four sessions. The 1B and 3B figures are single timer steps
+  (1 ms in 62 to 69 ms is 1.5 %; 1 ms in 160 ms is 0.6 %). The only reading that repeats is 8B 8da4w, +0.7 % to
+  +1.0 % in all four sessions, the size the kernel-level screen gave for `bh` (1.011x). It is below the band.
+- In all four gates `verify-check` is ACCEPT with the same status as the parent control (the `bh` and `gac`
+  kernels dispatched where the profile asks for them, 12 of 12 production-diff ALL PASSED, default vs tiled
+  SAME), and every next-token row that could be compared is SAME (94 of 96; the other two are the INVALID
+  rows of `s6-c5` and `s7-c6b`, see below).
+- **None of the four gates reached `GATE_ACCEPTED`.** Each lost one step to the runner failing after it had
+  produced its output:
+
+| session | `gate.done` | what failed |
+|---|---|---|
+| `s6-c5` | REJECTED at session-check | first timed parent run of 3B 4w aborted (`corrupted double-linked list`, rc 134): next-token row of the timed prompt INVALID |
+| `s7-c6` | REJECTED at the trace step (verify-check and session-check ACCEPT) | traced parent run of 3B 4w aborted (rc 134) |
+| `s6-c5b` | REJECTED at the trace step (verify-check and session-check ACCEPT) | traced candidate run of 3B 4w hung after writing its ETDump (one thread at 100 % CPU, GPU idle); ended with SIGTERM after 8.5 minutes |
+| `s7-c6b` | REJECTED at session-check | first timed candidate run of 8B 8da4w aborted (rc 134): next-token row of the timed prompt INVALID |
+
+  The failure is in whichever arm it happens to hit (twice the arm that plays the parent, twice the candidate)
+  and is the one the pristine parent shows too (below). It still fails a gate step, so the sessions are recorded
+  as rejected. They were not repeated a third time: with the failure rate measured below a gate of about 135
+  runner calls completes cleanly well under half of the time, and neither variant has a gain to accept.
+
+**Stop rule.** Two consecutive candidates, each gated twice, gain less than 2 % geomean over their parent
+(+0.11 % / +0.28 % and +0.54 % / +0.47 %). The campaign stops here. Reservation, stated plainly: the rule says
+"gated candidates", and the gates of these two did not complete; what is established is that their measured
+gain is inside the noise band in four complete timed sessions, and that everything the gates did check passed.
+
+### The runner fails after its output now and then, in every build
+
+The symptom is always the same: the runner echoes the prompt and the generated token, then either aborts in
+the allocator (`corrupted double-linked list`, `free(): chunks in smallbin corrupted`, rc 134) or spins one
+thread at 100 % CPU with the GPU idle, before the stats line. `nvidia-smi` answers throughout and the kernel
+log shows no Xid. `TECHNICAL-REPORT.md` of the e2e benchmark already describes a rare exit-time crash on this
+card.
+
+Counted over every runner call of the staged sessions (timed and next-token runs in `runs.csv`, the 22 calls of
+each `verify.sh`, the traces):
+
+| arm | runner calls | failed after output |
+|---|---:|---:|
+| pristine parent, or a build without the SDPA kernels in use | 299 | 2 (0.7 %) |
+| SDPA kernels in use (candidates 1, 4, 5, 6) | 690 | 5 (0.7 %) |
+
+One more in the pristine parent outside the sessions (the 41-prompt logits dump of 3B 8da4w). Four of the five
+SDPA-arm failures were on 3B 4w, so that cell was run 150 times per arm, pristine parent and candidate 4
+interleaved, a fresh process per run (`tools/exit_probe.sh`, `results/4070ti/exit-probe/3b-4w.csv`): **0 failures
+in 150 for either arm.** Read together: the rate is the same with and without this campaign's kernels (about
+0.5 % per call), the 3B 4w cluster did not reproduce, and the cause is not known. The symptom points at heap
+corruption in the runner process, which no test of the gate looks for; nothing here locates it. At 0.7 % per call
+a gate of about 135 runner calls has about a 40 % chance of completing with no failed call, which is what was
+seen (one gate of five on candidate 4's builds completed).
 
 ## What limits further progress
 
-- **Attention is memory traffic.** After candidate 1 the three attention kernels still move 134 MB (QK^T write)
-  + 134 MB read and 268 MB write (softmax) + 134 MB (attn*V read) per layer on 1B. The softmax is at the DRAM
-  roof; QK^T and attn*V are at about 440 and 380 GB/s against 643 and 713. The softmax variant removes 134 MB.
-  Removing the rest needs the fused node (hook 3) and a faster fused kernel than the one here.
-- **None of the SDPA work is reachable or acceptable today**: it needs table rows for this device (hook 1), and
-  on this device it changes logits more than the parent's own linear arms differ.
-- **Linear kernels** sit at 64 % (4w) and 41 % (8da4w) of their matrix roofs and are the largest block of the 8B
-  prefill (240 of 347 ms with candidate 1). Tile sweeps and one staging change found nothing. On 4w a wave
-  spends 22 % at barriers and 25 % staging against 50 % in the MMA; on 8da4w it spends more time fetching than
-  multiplying. The shared-memory limit (49152 bytes) is what excludes the larger 4w tiles; a single-buffered
-  staging loop would lift it. Not tried.
-- `copy/view` and elementwise operators are 14 % of the 1B prefill with candidate 1 and are upstream operators
-  outside both zones.
-- The parent aborts or hangs at exit now and then on this card (five times in several hundred runner calls,
-  in the parent and in the candidate arm, always after the results were written). It costs a session a finding
-  whenever it hits a run the gate needs.
+Shares below are of candidate 4's warm dispatch time (`sessions/s5-c4/trace/`): 66.5 ms on 1B 4w, 342.8 ms on
+8B 4w.
+
+- **The linear kernels are now the prefill**: 50 % of it on 1B 4w, 62 % on 3B 4w, 70 % on 8B 4w (45 %, 54 %,
+  62 % for 8da4w). In the model they run at 118 TFLOP/s for 4w, **64 to 65 % of the fresh fp16 matrix roof**
+  (182.9 TFLOP/s), and at about 144 to 156 TOP/s for 8da4w, **39 to 42 % of the fresh int8 roof** (369.1 TOP/s).
+  The tile sweeps and the two staging changes found nothing above the noise band. What the phase timing says
+  is left: on 4w a wave spends 22 to 32 % at barriers and 25 to 31 % staging against 34 to 50 % in the MMA, and
+  the shared-memory limit (49152 bytes) excludes the larger double-buffered tiles, so a single-buffered staging
+  loop is the untried change; on 8da4w a wave spends more time fetching (34 to 43 %) than multiplying (30 to
+  35 %), halving the number of fetches did not shorten it, and what the fetch phase is waiting for was not
+  established. That is the first thing to find out before writing another 8da4w kernel.
+- **fp32 accumulation is half rate on this card** (92.3 against 182.9 TFLOP/s, re-measured), which is why the 4w
+  kernels group their fp32 accumulation and why 64 % of the fp16 roof is not simply inefficiency.
+- **Attention is memory traffic, and less of it is left**: 26 % of the 1B prefill (17.1 ms), 17 % of 3B, 12 % of
+  8B. Per layer on 1B the three kernels still write 134 MB (QK^T, 266 us), read and write about 134 MB each
+  (softmax, 463 us) and read 134 MB (attn*V, 336 us): roughly 500, 580 and 400 GB/s against fresh DRAM roofs
+  of 643 (write), 646 (copy) and 713 (read). The softmax is within about 10 % of the copy roof; QK^T and attn*V
+  have some room. Removing the traffic itself needs the fused node (hook 3) and a faster fused kernel than the
+  one written here, which was slower than the three-kernel path.
+- **Reachability**: candidate 4 is not usable from the dev zone. It needs hook 1 (SDPA rows for this device)
+  and hook 2 (softmax name), both in `impl/sarc/`.
+- `copy/view` and elementwise operators are 22 % of the 1B prefill and 16 % of the 8B one with candidate 4.
+  They are upstream operators outside both zones.
+- The runner's failure after output (above) limits how much can be gated on this card: at the measured rate a
+  full gate is more likely to lose a step than to complete.
 
 ## Limits of this study
 
-- One device, one driver, 2048-token prompts, clocks as found (unpinned; sampled 2565 to 2790 MHz).
+- One device, one driver, 2048-token prompts, clocks as found (unpinned; sampled 2565 to 2790 MHz). The clock
+  rule (median `clocks.gr` of a run at least 2502 MHz) is this campaign's own; runs that fail it right after an
+  idle period show the same rate as the others, so the sampled value lags the real clock there.
 - The broad logits comparison uses 41 prompts; counts of top-1 differences on that sample are small numbers.
+  There is no fp32 reference for whole-model logits; the reference criterion is measured on the SDPA block.
+- Candidate 4 against candidate 1 is a comparison of two sessions, not one interleaved measurement.
+- The four linear gates did not complete (above). Their timing sessions did.
 - Roofs are `fast`-plan, short-run values. The watcher flagged the roofline run after it had finished, because
   the tool starts its runners with a cleaned environment; the run itself completed with rc 0 and its roofs
-  agree with the earlier evidence within 0.5 %.
+  agree with the earlier evidence within 0.5 %. `shared_fp16_read` (1344 GB/s) is still not understood and is
+  not used.
+- The control session of the campaign was lost once (about 00:50 UTC on 2026-10-05) while the detached queue
+  kept running; the session that took over worked from the files. One `sudo -n dmesg` was issued by it (reading
+  the kernel log for an Xid), which is outside what the campaign permits `sudo` for; nothing was changed.
 - Raw logs, ETDumps, clock samples, logits and binaries are in
   `gpu-dev-4004:~/hmz-sarc-4070ti/.artifacts/4070ti-prefill-refine/`, not in the tree.
 
@@ -292,4 +474,7 @@ TO BE FILLED (candidates 2 and 3).
 - `sarc/tools/check.sh --no-build`: PASS (zone rule, twin wrappers, `test_sarc_select` with and without the dev
   zone).
 - `sarc/tools/spirv_golden.py` on every build: the 53 shipped variants are unchanged.
-- `tools/test_gate_check.py`: 36 tests pass.
+- `tools/test_gate_check.py`: 40 tests pass.
+- `git diff --name-status 6a7cc8cc6 HEAD`: only `glsl/sarc_dev/` (new `4070ti` files), `impl/sarc_dev/Overrides.cpp`
+  (marked `4070ti` blocks), `backends/vulkan/test/sarc_dev/test_llama_microbench.cpp` (a reported error line
+  and an output dump, no verdict or tolerance touched) and this directory.
