@@ -2,7 +2,7 @@
 
 **2026-10-05 14:05 UTC — running (review follow-up): the sampled parameter search the owner decision of
 2026-10-04 requires. 4w linear: 1520 of 2000 sampled configurations screened, none faster than the shipped
-tile so far. Projected end of the whole search: about 2026-10-07 00:00 UTC (about 42 hours after its start;
+tile so far. Projected end of the whole search: about 2026-10-07 03:30 UTC (about 46 hours after its start;
 no single run over 11 hours). Earlier results are unchanged: winner `xe2-refine2` (candidates 1 and 2), +57.5 %
 geomean over the parent (`s6-final`); candidate 1 is `ACCEPTED (reference-error rule, owner decision
 2026-10-04)`, not a plain pass; candidates 3 and 4 passed their gates with no measurable gain.**
@@ -32,11 +32,12 @@ memory is read from the SPIR-V (limit 46000 bytes; a tile over the device limit 
 | 4w linear | body (release, split staging `xe2s`, texel-wise `xe2bx`), M, N, K, subgroup grid, subgroup size, layout, IMG_A, IMG_W, drain, accumulator | 338448 | 3000 / 2851 / 2067 | 2000 | 1580 cheap, 60 of them also full x 2 | 15.0 s per configuration (cheap), 50 s (full) |
 | 8da4w linear | body (zpg, bt, xe2bt, zpgtr), M, N, K, grid, subgroup size, zpgtr flags | 44670 | 3000 drawn; checked when its build runs | 2000 | 0 | expected as 4w |
 | attn*V | family (sweep, ml, xe2), M, N, K, grid, subgroup size | 1131 | all drawn; checked when its build runs | every legal one (about 850) | 0 | about 9 s expected (7.5 s in the smoke test) |
-| QK^T | family (sweep, pk, xe2, xe2c), M, N, K, grid, subgroup size, NO_MASK_FILL | 4536 | all drawn; checked when its build runs | 2000 | 0 | about 9 s expected |
+| QK^T | family (sweep, pk, xe2, xe2c), M, N, K, grid, subgroup size, NO_MASK_FILL | 4536 | all drawn; checked when its build runs | every legal one (about 3400) | 0 | about 9 s expected |
 
-Sample size: 2000 per space where the legal space is larger (the lower end of the owner's 2000 to 3000, to keep
-the whole search under 48 hours); attn*V is small enough to enumerate in the cheap mode. A full enumeration
-with the full measurement would take 4 months (4w), 3 weeks (8da4w), 2.5 days (QK^T).
+Sample size: 2000 per linear space (the lower end of the owner's 2000 to 3000, to keep the whole search under
+48 hours): a full enumeration with the full measurement would take about 4 months (4w) and 3 weeks (8da4w).
+The two SDPA spaces are small enough to enumerate inside a day, so they are not sampled: every legal
+configuration is screened in the cheap mode.
 
 ### Projection
 
@@ -46,9 +47,10 @@ with the full measurement would take 4 months (4w), 3 weeks (8da4w), 2.5 days (Q
 | 4w stage 2 (correctness of the top, at most 600 one-parameter neighbours, full x 2 of the best 10 per shape class) | about 4.5 h | 10-05 20:15 |
 | 8da4w stage 1, stage 2 | about 10.2 h + 4.5 h | 10-06 11:00 |
 | attn*V stage 1, stage 2 | about 3 h + 2 h | 10-06 16:00 |
-| QK^T stage 1, stage 2 | about 5.5 h + 2.5 h | 10-07 00:00 |
+| QK^T stage 1, stage 2 | about 9 h + 2.5 h | 10-07 03:30 |
 
-About 42 hours in all, the longest single run about 8.5 hours; nothing is projected over 48 hours. If a
+About 46 hours in all, the longest single run about 9 hours; nothing is projected over 48 hours, but the
+margin is two hours. If a
 stage runs long enough to push the end past 2026-10-07 05:30 UTC (48 hours) I will stop and report before
 starting the next one. The gate of any candidate the search produces is not in this projection (about 1 hour
 for a linear candidate, 2 for an SDPA one).
