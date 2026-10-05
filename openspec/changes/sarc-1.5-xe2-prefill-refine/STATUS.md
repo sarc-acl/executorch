@@ -1,8 +1,9 @@
 # sarc-1.5-xe2-prefill-refine: status
 
-**2026-10-05 02:50 UTC — running. Candidate 1 (`xe2-refine1`, SDPA): +46.9 % geomean over the parent,
-`ACCEPTED (reference-error rule, owner decision 2026-10-04)`, not a plain pass. Candidate 2 (`xe2-refine2`,
-8da4w linear): +6.9 % geomean over candidate 1, `GATE_PASS`, logits bit-identical. Candidate 3 is in its gate.**
+**2026-10-05 05:10 UTC — finished by the stop rule. Winner `xe2-refine2` (candidates 1 and 2): +57.5 % geomean
+over the parent measured directly (`s6-final`). Candidate 1 is `ACCEPTED (reference-error rule, owner decision
+2026-10-04)`, not a plain pass. Candidates 3 and 4 passed their gates with no measurable gain (+0.32 %,
+-0.11 %): two consecutive gated candidates under 2 %. Nothing is running. Summary in `proposal.md`.**
 
 Branch `topic/xe2-prefill-refine`, parent `6a7cc8cc6` (head of `topic/780m-prefill-refine`). Host
 `fedora-gpu-eval`, card `b70-0` only (guest PCI `0000:01:00.0`, Vulkan device 0, **`ETVK_DEVICE_INDEX=0`**,
@@ -11,9 +12,7 @@ B70 or on the B580.
 
 ## Running now
 
-One GPU job at a time (`.artifacts/logs/chain11.status`): `gate_sdpa.sh s4-c3` (`xe2-refine3` against
-`xe2-refine2`, build `topic7` in both arms), its logits probe and decode A/B; then, only if candidate 3 is
-accepted, `gate.sh s5-c4` (`xe2-refine4` against `xe2-refine3`). Expected to finish about 05:00 UTC.
+Nothing. The last GPU job (`s6-final` and its traces) ended 04:57 UTC.
 
 ## Needs the owner's attention
 
@@ -21,7 +20,7 @@ accepted, `gate.sh s5-c4` (`xe2-refine4` against `xe2-refine3`). Expected to fin
   is not a workload: every DRM client it owns shows zero engine cycles and zero GPU memory. The campaign guard
   records it per session as an idle monitor (`env.txt`: `idle monitors ... 1952:nvtop`) and would treat it as a
   foreign GPU process, and stop, the moment either number is non-zero. If measuring beside it is not wanted,
-  close it and tell me; every session so far ran with it open.
+  close it before any re-measurement; every session of this campaign ran with it open.
 - No other GPU process has appeared. `llama-server`, `comfyui`, `vllm`, `ollama` were inactive at the start.
 
 ## Parent control and baseline (re-measured here, not copied)
@@ -107,7 +106,7 @@ Kernel-level screens (`test_llama_microbench --sdpa`, S = 2048, ms per layer, `r
   fixed in the release zone (`impl/sarc/SdpaCoopmat.cpp`), so a dev variant cannot replace it without a hook.
 - `xe2-sdpa0`, SDPA correctness tier `all`, one pass: 4 of 4 PASSED, 0 mismatches, `pairing=ok`.
 
-## Linear kernels (step 1 and step 3, so far measurement only)
+## Linear kernels (step 1 and step 3): phase timing and screens
 
 Phase timing of the shipped tiles (shader clock, 1B shapes, share of a wave; `results/xe2/phases/`):
 
@@ -129,7 +128,10 @@ Texel-wise weight staging (`screens/screen5-8da4w.csv`, `screen6-4w.csv`): fetch
 once, with only the threads that own a texel staging it, is slower than the shipped kernels on this device
 (8da4w 0.56 to 0.95x, 0.92x on the shipped tile; 4w 0.80 to 0.85x). The same staging with every thread owning
 exactly one texel and K = 64 per chunk is the 1.12x tile above. So the cost is the serial work of a thread
-per chunk, not the number of fetches; batch 3 (in the build now running) adds balanced K = 64 / 128 tiles.
+per chunk, not the number of fetches. Screen 7 (balanced K = 64 / 128 tiles) gave candidate 2's tile
+`xe2bt_t128x128k64g84s16m8` at 1.26x; screens 8, 9 and 11 (4w band drain and split staging) found no 4w tile
+faster than the shipped one (best 1.002x); screens 10 and 12 (hook-only softmax variants) no faster softmax.
+All are listed in `results/xe2/screens/README.md`.
 
 ## Roofs (re-measured, not the old evidence)
 
@@ -278,27 +280,63 @@ candidate with half as many K chunks (K = 64 against 32). Total 128176 cycles ag
 36672 against 68640, barrier 20344 against 35104, shared-memory store 21008 against 29480, MMA 33088 against
 43200. The saving is mostly in fetch and barrier.
 
+### Candidate 3, `xe2-refine3` (fragment-contiguous ColumnMajor QK^T): GATE_PASS, no measurable gain, not adopted
+
+Session `s4-c3`, build `topic7` in both arms, `xe2-refine2` against `xe2-refine3` (`gate_sdpa.sh`): geomean
++0.32 %, cells -0.16 to +1.01 %, all inside the +-2 % band. No FAIL line: SDPA tiers all / extended / full 12
+passes each, 0 mismatches, `pairing=ok`; `verify.sh` status as candidate 2; next token SAME in all six cells
+on the three prompts; logits bit-identical on every probe window (`probe/s4-c3/`). The trace does show the
+kernel-level gain (QK^T per prefill 9.3 -> 8.8 ms on 3B 4w, 14.5 -> 13.6 ms on 8B 4w, 4.8 -> 4.8 ms on 1B),
+which is 0.1 to 0.2 % of a prefill.
+
+### Candidate 4, `xe2-refine4` (8da4w 64-column K = 64 tile where N >= 4K): GATE_PASS, no gain, not adopted
+
+Session `s5-c4`, build `topic7` in both arms, `xe2-refine3` against `xe2-refine4` (`gate.sh`): geomean -0.11 %,
+cells -1.98 to +0.66 %, all inside the band. No FAIL line; next token SAME everywhere; logits bit-identical
+(`probe/s5-c4/`). The predicate matches only the 1B w1 / w3 layers (N = 8192, K = 2048); there the tile is
+slower in the model than the candidate 2 tile (1B 8da4w linear GEMM 36.7 -> 37.8 ms per prefill, cell
+-1.98 %). In screen 7 it was 1.11x of the shipped tile over all 1B layers, the candidate 2 tile 1.19x.
+
+### Winner against the parent, measured directly (session `s6-final`)
+
+Pristine parent build, no environment, against build `topic7` (`8666b6531`) with `ET_VK_SARC_UNVERIFIED=1
+ET_VK_SARC_DEV_PROFILE=xe2-refine2`; tok/s, median of 5 valid runs per arm, arms interleaved; the last column
+is the device's SARC number in `sarc-1.5-e2e-benchmark/results/cells.csv`:
+
+| cell | parent | winner | gain | `cells.csv` | winner vs `cells.csv` |
+|---|---:|---:|---:|---:|---:|
+| 1B 4w | 11770.10 | 17504.30 | +48.72 % | 11702.9 | +49.57 % |
+| 1B 8da4w | 12412.10 | 20686.90 | +66.67 % | 12412.1 | +66.67 % |
+| 3B 4w | 4864.61 | 7393.50 | +51.99 % | 4864.61 | +51.99 % |
+| 3B 8da4w | 5264.78 | 9615.02 | +82.63 % | 5251.28 | +83.10 % |
+| 8B 4w | 2435.20 | 3292.60 | +35.21 % | 2438.10 | +35.05 % |
+| 8B 8da4w | 2734.31 | 4481.40 | +63.90 % | 2737.97 | +63.68 % |
+
+Geomean +57.47 % over the parent. 60 timed runs, none rejected. The session ends `E2E5_INCOMPLETE` on the two
+next-token items of candidate 1 (8B 8da4w on `prompt_2048.txt` and `prompt_check.txt`), the same items as in
+`s2-c1`; the other 16 comparisons are SAME. This session has timing and traces only: the gate of the winner's
+kernels is `s2-c1` (SDPA) and `s3-c2` (8da4w linear).
+
+Linear kernels of the winner in the model against the fresh roofs (`sessions/s6-final/trace/gemm.csv`): 4w
+63.2 to 67.6 TFLOP/s = 36.5 to 39.0 % of the fp16 matrix roof (173.3), unchanged; 8da4w 104.8 to 115.3 TOP/s
+= 29.1 to 32.0 % of the int8 matrix roof (359.9), from 82.1 to 87.7 (22.8 to 24.4 %).
+
 
 ## Next
 
-1. Candidate 3 (`xe2-refine3`): fragment-contiguous ColumnMajor QK^T, 0.02 to 0.03 ms per layer at kernel
-   level; candidate 4 (`xe2-refine4`): the 64-column K = 64 8da4w tile where N >= 4K.
-2. 4w linear: tile shapes, K = 32 chunks, texel-wise staging and a smaller drain all fail to beat the shipped
-   tile; the first split-staging body was 15 % slower than the release kernel on the shipped geometry
-   (screen 9), the revised one is in screen 11.
-3. Softmax: now the largest attention kernel (12.7 of 108 ms on 1B). The single-read variant is not faster
-   (screen 10); a variant with subgroup reductions is in screen 12. Both need a release-zone hook and are
-   measured through a local uncommitted patch only (`tools/hook-sdpa-softmax.patch`).
-4. Stop after two consecutive gated candidates under 2 % geomean.
+Nothing is queued. What a further campaign could try, and what was not done here, is in `proposal.md`
+("Limits" and "Not done").
 
 ## Awaiting B580 confirmation
+
+The winner `xe2-refine2` is candidates 1 and 2; candidates 3 and 4 are not adopted and need no confirmation.
 
 Candidate 2 (`xe2-refine2`, plain gate pass on the B70): 8da4w linear
 `sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8`.
 
 Candidate 1 (`xe2-refine1`, accepted under the reference-error rule on the B70): QK^T `sarc_sdpa_qk_coopmat_pk_t128x64k32g44s16m8nf`,
 attn*V `sarc_sdpa_av_coopmat_xe2_t128x64k32g44s16m8` (head_dim 128) and
-`sarc_sdpa_av_coopmat_sweep_t64x64k32g44s16m8` (head_dim 64), with the truncated SARC softmax. Every Xe2 variant so far keeps its shared memory under 46000 bytes (the B70
+`sarc_sdpa_av_coopmat_sweep_t64x64k32g44s16m8` (head_dim 64), with the truncated SARC softmax. Every Xe2 variant keeps its shared memory under 46000 bytes (the B70
 reports `maxComputeSharedMemorySize` 49152; the B580's value was not read here and should be confirmed), uses
 workgroups of at most 1024 invocations and the 8x16x16 / subgroup-16 shapes the shipped Intel rows already use
 on both cards, and does not depend on the amount of device memory.
