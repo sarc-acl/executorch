@@ -482,8 +482,8 @@ Session `c10-q4-refine10` (`results/780m/sessions/c10-q4-refine10/`), started 08
 Geomean **+0.47 %**, every cell inside the +-2 % band: by the campaign's rule not a gain, and the first of the
 two candidates under 2 % that end the campaign. `verify.sh`: correctness rc = 0, 12 of 12 production-diff cases
 ALL PASSED, default vs tiled SAME on both prompts, decode 31 tokens, `linear <scheme> rc=1` as on the parent; no
-SDPA kernel changes, so the SDPA tiers were not repeated. Traces: 4w linear GEMM 351.4 -> 347.2 ms (1B),
-1016.8 -> 996.4 ms (3B), 2540 -> 2514 ms (8B). The 4w cells move by what the kernel timing predicts (+0.9 /
+SDPA kernel changes, so the SDPA tiers were not repeated. Traces: 4w linear GEMM 350.6 -> 346.8 ms (1B, -1.1 %),
+1015.9 -> 995.4 ms (3B, -2.0 %), 2538.4 -> 2508.4 ms (8B, -1.2 %). The 4w cells move by what the kernel timing predicts (+0.9 /
 +1.7 / +1.4 %); the 8da4w cells run the same kernels in both arms and scatter by -0.7 to +0.1 %.
 
 ## Can the sweep slot in between two timed runs of a session? No (checked 2026-10-04 18:44 PDT, during `c7`)
