@@ -25,7 +25,7 @@ if [[ ! -f $A/build/sw2-$S.src.txt ]]; then
   python3 $TOOLS/sweep.py neighbours $S $A/sweep/sw1-$S/checked.csv $C/$S-seeds.csv 50000 $C/$S-neighbours.csv || exit 1
   bash $TOOLS/build-sweep.sh sw2-$S 600 $C/$S-neighbours.csv || exit 1
 fi
-python3 $TOOLS/sweep_run.py sw2-$S sw2-$S $S cheap 1 $A/sweep/sw2-$S/checked.csv "$@" || exit $?
+bash $TOOLS/sweep_screen.sh sw2-$S $S $A/sweep/sw2-$S/checked.csv "$@" || exit $?
 correctness || exit $?
 if [[ ! -f $A/build/sw3-$S.src.txt ]]; then
   python3 $TOOLS/sweep.py subset $AN/top10.csv $C/$S-finalists.csv $A/sweep/sw1-$S/checked.csv $A/sweep/sw2-$S/checked.csv || exit 1

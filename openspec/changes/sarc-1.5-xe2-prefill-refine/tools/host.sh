@@ -1,16 +1,27 @@
-# host.sh: host constants and guards of the Xe2 campaign (fedora-gpu-eval, card b70-0), sourced by every tool here.
-# b70-0 is guest PCI 0000:01:00.0 = Vulkan device 0 (deviceUUID 868023e2-0000-0000-0100-000000000000).
+# host.sh: host constants and guards of the Xe2 campaign (fedora-gpu-eval), sourced by every tool here.
+# XE2_CARD selects the card (default 0):
+#   0 = b70-0, guest PCI 0000:01:00.0 = Vulkan device 0 (deviceUUID 868023e2-0000-0000-0100-000000000000). Every
+#       selecting measurement, session, gate and reported number.
+#   1 = the second Arc Pro B70, guest PCI 0000:02:00.0 = Vulkan device 1 (deviceUUID ...-0200-...; index and UUID
+#       read with `vulkaninfo --summary`, and the index is checked against the DRM client of a running job by
+#       card_test.sh). Cheap-mode screens only (owner decision 2026-10-05).
 TOOLS=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")"); C=$(dirname $TOOLS)
 ET=$(cd $C/../../.. && pwd); XE2_ROOT=$(dirname $ET)          # ~/hmz-sarc-xe2/executorch, ~/hmz-sarc-xe2
 A=${XE2_ARTIFACTS:-$XE2_ROOT/.artifacts}
-LOCK=868023e2-0000-0000-0100-000000000000
+export XE2_CARD=${XE2_CARD:-0}
+case $XE2_CARD in
+  0) LOCK=868023e2-0000-0000-0100-000000000000; PDEV=0000:01:00.0;;
+  1) LOCK=868023e2-0000-0000-0200-000000000000; PDEV=0000:02:00.0;;
+  *) echo "XE2_CARD must be 0 or 1" >&2; exit 2;;
+esac
+PDEVS='0000:01:00.0|0000:02:00.0'; RUN=$A/run
 PARENT_COMMIT=6a7cc8cc6
-PDEV=0000:01:00.0; PCI=/sys/bus/pci/devices/$PDEV
+PCI=/sys/bus/pci/devices/$PDEV
 HW=$(echo $PCI/hwmon/hwmon*); FREQ=$PCI/tile0/gt0/freq0
 # Calibration written by `e2e5.sh --calibrate` (the baseline session) and required by every later session:
 IDLE_FILE=$A/idle_temp_mc     # package temperature of the cool, idle card (millidegrees C)
 CLKMIN_FILE=$A/clkmin_mhz     # lowest accepted median GT clock of a timed run (MHz)
-export ETVK_DEVICE_INDEX=0 SARC_MOUNT_ROOT=$XE2_ROOT XE2_TOP=${XE2_TOP:-$$}
+export ETVK_DEVICE_INDEX=$XE2_CARD SARC_MOUNT_ROOT=$XE2_ROOT XE2_TOP=${XE2_TOP:-$$}
 export XE2_PYTHON=${XE2_PYTHON:-$A/venv/bin/python}   # executorch.devtools for trace_analysis.py (a venv in the artifact directory)
 gtemp_mc() { cat $HW/temp2_input; }   # package temperature, millidegrees C
 # cool_start: wait (at most 5 min) until the package is within 3 C of the calibrated idle temperature, or has
@@ -39,31 +50,36 @@ export_commit() { local wt=$1 sha=$2 dest=$3 rel=${4:-.} idx p s
   done < <(git -C "$wt" ls-tree -r "$sha" | awk '$2 == "commit" {print $3, $4}'); }
 # gpu_others: GPU workloads that this campaign job did not start, as "pid:command;" entries; empty = the card
 # is ours. A process counts when
-#   - it holds a DRM file of b70-0 (any /proc/<pid>/fdinfo entry with drm-pdev = PDEV), whatever its name; or
+#   - it holds a DRM file of either B70 (any /proc/<pid>/fdinfo entry with drm-pdev in PDEVS), whatever its
+#     name (a Vulkan process opens every card when it enumerates them, so the cards are not told apart here); or
 #   - its command line names a known GPU workload. This second rule is the fallback for processes of other
 #     users, whose fdinfo an unprivileged user cannot read (the fleet's LLM services run as this user).
-# Ours = the top-level tool (XE2_TOP), its descendants, and its ancestors (the shells that launched it).
+# Ours = the top-level tool (XE2_TOP), its descendants, and its ancestors (the shells that launched it); and the
+# job this campaign runs on the other card: gl.sh registers itself in run/card<N>.job (pid and start time, so a
+# reused pid does not count), and the descendants of a registered, living gl.sh are ours on either card.
 # Not counted: an idle monitor (monitor_idle). The owner's nvtop was open on this host before the campaign
 # started; it holds a DRM file of both cards to read their counters and submits nothing. It is exempt only
 # while every DRM client it owns shows zero engine cycles and zero GPU memory; the moment either is non-zero it
 # is a foreign GPU process like any other. Exempt monitors are listed by gpu_monitors and recorded per session.
 monitor_idle() { [[ $(ps -o comm= -p $1 2>/dev/null) == nvtop ]] || return 1
   ! awk '/^drm-(cycles|total|resident|shared|active)-[a-z0-9]+:/ && $2 + 0 > 0 {f = 1} END {exit !f}' /proc/$1/fdinfo/* 2>/dev/null; }
-gpu_monitors() { local p; for p in $(grep -l -s "^drm-pdev:[[:space:]]*$PDEV" /proc/[0-9]*/fdinfo/* | cut -d/ -f3 | sort -un); do
+gpu_monitors() { local p; for p in $(grep -l -s -E "^drm-pdev:[[:space:]]*($PDEVS)" /proc/[0-9]*/fdinfo/* | cut -d/ -f3 | sort -un); do
   monitor_idle $p && printf '%s:%s;' $p "$(ps -o comm= -p $p 2>/dev/null)"; done; }
 # inline_shell <pid>: a shell running an inline command (sh -c "..."). Its command line is text, not a program
 # name: the roofline run of 2026-10-04 21:46 was stopped because an operator shell's command text contained a
 # watched name. Such a process is still caught by the DRM rule if it opens the card.
 inline_shell() { local -a a; mapfile -d '' -t a < /proc/$1/cmdline 2>/dev/null || return 1
   [[ ${a[0]##*/} =~ ^(bash|sh|dash|zsh|fish)$ && ( ${a[1]:-} == -c || ${a[2]:-} == -c ) ]]; }
-gpu_others() { local p q mine anc=" " a=$XE2_TOP
+campaign_tops() { local f p s; for f in $RUN/card*.job; do read -r p s < $f 2>/dev/null || continue
+  [[ -n $p && $(cut -d' ' -f22 /proc/$p/stat 2>/dev/null) == "$s" ]] && printf '%s ' $p; done; }
+gpu_others() { local p q mine anc=" " a=$XE2_TOP tops; tops=" $XE2_TOP $(campaign_tops)"
   while [[ -n $a && $a -gt 1 ]]; do anc+="$a "; a=$(ps -o ppid= -p $a 2>/dev/null | tr -d ' '); done
-  for p in $( { grep -l -s "^drm-pdev:[[:space:]]*$PDEV" /proc/[0-9]*/fdinfo/* | cut -d/ -f3
+  for p in $( { grep -l -s -E "^drm-pdev:[[:space:]]*($PDEVS)" /proc/[0-9]*/fdinfo/* | cut -d/ -f3
                 for q in $(pgrep -f 'llama-server|ComfyUI|comfyui|ollama|vllm|llama_main|test_llama_microbench|Runner.Worker|custom_ops'); do inline_shell $q || echo $q; done; } | sort -un); do
     [[ $anc == *" $p "* ]] && continue
     monitor_idle $p && continue
     q=$p; mine=0
-    while [[ -n $q && $q -gt 1 ]]; do [[ $q == "$XE2_TOP" ]] && { mine=1; break; }; q=$(ps -o ppid= -p $q 2>/dev/null | tr -d ' '); done
+    while [[ -n $q && $q -gt 1 ]]; do [[ $tops == *" $q "* ]] && { mine=1; break; }; q=$(ps -o ppid= -p $q 2>/dev/null | tr -d ' '); done
     [[ $mine == 0 && -d /proc/$p ]] && printf '%s:%s;' $p "$(ps -o comm= -p $p 2>/dev/null)"
   done; }
 # kill_tree <pid>: stop a campaign job and every process descended from it (TERM, then KILL after 3 s). Only
@@ -89,3 +105,14 @@ guarded() { local f=$1 o j rc; shift
   wait $j; rc=$?
   o=$(gpu_others); [[ -n $o ]] && { echo "$(date -u +%T) at end: $o" >> "$f"; echo "other GPU process at the end of the job: $o" >&2; return 76; }
   return $rc; }
+# pair_lock shared|excl: the two cards share the VM's CPUs, memory bandwidth and power. A cheap-mode screen holds
+# run/pair.lock shared (both cards may screen at once); everything else that measures or builds holds it
+# exclusively (a full measurement, a session, a gate and a build each run with the other card idle and no
+# build beside them). A waiting exclusive holder announces itself (run/excl-wanted.<pid>) and new shared holders
+# wait for it, so two alternating screens cannot starve it. Held on fd 7 by the calling shell until it exits;
+# a tool started under a holder (XE2_PAIR_HELD) does not take it again.
+pair_wanted() { local f; for f in $RUN/excl-wanted.*; do [[ -e $f ]] || continue; [[ -d /proc/${f##*.} ]] && return 0; rm -f $f; done; return 1; }
+pair_lock() { [[ -n ${XE2_PAIR_HELD:-} ]] && return 0; mkdir -p $RUN; exec 7>>$RUN/pair.lock
+  if [[ $1 == shared ]]; then while pair_wanted; do sleep 2; done; flock -s 7
+  else : > $RUN/excl-wanted.$BASHPID; flock -x 7; rm -f $RUN/excl-wanted.$BASHPID; fi
+  export XE2_PAIR_HELD=$1; }

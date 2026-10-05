@@ -6,6 +6,7 @@
 # device ids named here. Results: <artifacts>/roofline/<name>/b70-0/ (REPORT.md under report/).
 # Runs under the campaign guard: a foreign GPU process stops it (status 76).
 . "$(dirname "$(readlink -f "$0")")/host.sh"; N=${1:?name}; R=$A/roofline/$N; T=$A/igpu-roofline
+pair_lock excl
 [[ -x $T/build/host/roofline ]] || { echo "no igpu-roofline copy in $T" >&2; exit 2; }
 mkdir -p $R; cd $T || exit 2; cool_start
 guarded $R/others.txt $XE2_PYTHON campaign.py $R fedora-gpu-eval b70-0 > $R/controller.log 2>&1; rc=$?

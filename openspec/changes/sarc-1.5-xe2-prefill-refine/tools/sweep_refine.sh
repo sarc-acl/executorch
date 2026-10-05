@@ -24,7 +24,7 @@ if [[ ! -f $A/build/sw2$R-$S.src.txt ]]; then
   python3 $TOOLS/sweep.py neighbours $S $C/$S-measured$R.csv $C/$S-seeds$R.csv $FIRST $C/$S-neighbours$R.csv || exit 1
   bash $TOOLS/build-sweep.sh sw2$R-$S 600 $C/$S-neighbours$R.csv || exit 1
 fi
-python3 $TOOLS/sweep_run.py sw2$R-$S sw2$R-$S $S cheap 1 $A/sweep/sw2$R-$S/checked.csv "$@" || exit $?
+bash $TOOLS/sweep_screen.sh sw2$R-$S $S $A/sweep/sw2$R-$S/checked.csv "$@" || exit $?
 correctness || exit $?
 if [[ ! -f $A/build/sw3$R-$S.src.txt ]]; then
   W=(); for b in $(builds); do W+=($A/sweep/$b-$S/checked.csv); done

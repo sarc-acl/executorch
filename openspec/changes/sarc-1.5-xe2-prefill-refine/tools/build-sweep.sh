@@ -9,6 +9,7 @@
 #   2. sweep.py overlay: the variants to run, their candidate rows and SDPA profiles;
 #   3. sarc/tools/build.sh (backend + tests, no llama_main) into build/<tag>; the 53 shipped SPIR-V variants must
 #      still match sarc/golden/spirv.json.
+# Holds the pair lock exclusively (host.sh): no measurement runs on either card during the build.
 # build/<tag>.src.txt records `sweep_overlay=` with the sha256 of checked.csv: a sweep build is a measurement
 # build, never a candidate build (stage.sh needs llama_main, which it does not have). No GPU is used.
 set -uo pipefail
@@ -22,6 +23,7 @@ P=$A/build/$TAG.src.txt; SRC=$A/src/$TAG/executorch; W=$A/sweep/$TAG
 [[ -e $P || -e $SRC || -e $W ]] && { echo "tag $TAG already exists; use a new tag" >&2; exit 2; }
 podman image exists $IMAGE || { echo "missing image $IMAGE" >&2; exit 2; }
 mkdir -p $A/build $A/src $W
+pair_lock excl
 export XE2_EXPORT_MANIFEST=$A/src/$TAG.export-manifest
 export_commit $ET $SHA $SRC || { echo "export failed" >&2; exit 2; }
 python3 $TOOLS/sweep.py precheck-dir $SRC $W/glsl "${CFGS[@]}" || exit 2

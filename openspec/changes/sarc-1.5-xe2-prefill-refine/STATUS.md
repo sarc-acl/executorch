@@ -1,7 +1,7 @@
 # sarc-1.5-xe2-prefill-refine: status
 
-**2026-10-05 18:05 UTC — CHECKPOINT for a restart of the control session; the sampled parameter search keeps
-running detached. Read "Handoff" first. Earlier results are unchanged: winner `xe2-refine2` (candidates 1 and
+**2026-10-05 18:45 UTC — the sampled parameter search is running detached (control session restarted 18:03;
+second-card tooling added, card test queued). Read "Handoff" first. Earlier results are unchanged: winner `xe2-refine2` (candidates 1 and
 2), +57.5 % geomean over the parent (`s6-final`); candidate 1 is `ACCEPTED (reference-error rule, owner
 decision 2026-10-04)`, not a plain pass; candidates 3 and 4 passed their gates with no measurable gain.**
 
@@ -54,21 +54,28 @@ the second card (below) before the 8da4w stage starts, or else to report before 
    `/sys/bus/pci/devices/0000:02:00.0/{hwmon/hwmon1,tile0/gt0/freq0}`; index and UUID read with `vulkaninfo
    --summary` at 17:58, pin the index, do not assume) may run cheap-mode SCREENS only. Every selecting
    measurement (full x 2 confirmation), session, gate and reported number stays on `b70-0` alone with the
-   second card idle. **NOT STARTED: nothing has run on the second card and no tool knows about it yet.**
-   Required before splitting, in this order:
-   - teach the tools a card parameter: `host.sh` (PDEV, LOCK, `ETVK_DEVICE_INDEX`, sensors) and
-     `sweep_run.py` (the hwmon path is hard-coded to `0000:01:00.0`; add a `card` column to every row);
-     `gpu_others` must not count this campaign's own job on the other card (its ancestry rule only knows
-     `XE2_TOP`) and must still catch anything else on either card; one queue per card, each with its own lock;
-     builds stay out of screening windows on both cards;
-   - fix the acceptance threshold BEFORE looking, as for the cheap mode. Intended: Spearman rank correlation
-     of the layer-weighted score >= 0.95 and of every shape class >= 0.90, both for card-to-card and for
-     alone-versus-together, on one identical batch of about 30 configurations of the space in progress (the
-     first 30 of `sweep/sw1-8da4w/checked.csv` once that build exists, or of `sw1-4w`); also report the time
-     ratios. Screen it (a) on `b70-0` alone, (b) on the second card alone, (c) on both at once;
-   - if together disturbs the ranking: alternate the cards or do not use the second one, and say so;
-   - then split the remaining cheap screens (8da4w, attn*V, QK^T) in two halves by row parity of
-     `checked.csv`, keep refinement confirmation and `corr` on `b70-0`, and update the projection here.
+   second card idle. **State 18:45 UTC: the tools know the card; the test below is queued as `018-card-test`
+   behind the 4w round b; nothing has run on the second card yet.**
+   - Tools: `XE2_CARD` (0 or 1) selects lock, PCI device, sensors and `ETVK_DEVICE_INDEX` in `host.sh`; the
+     foreign-process guard looks at the DRM clients of both cards (a Vulkan process opens both when it
+     enumerates) and accepts, besides its own tree, only the job a registered, living `gl.sh` of this campaign
+     runs on the other card (`run/card<N>.job`: pid and start time); `test_guard.sh` has the cases. A cheap
+     screen holds `run/pair.lock` shared, every other measurement and every build holds it exclusively, so a
+     full measurement, a session, a gate and a build always run with the other card idle. `sweep_run.py` writes
+     a `card` column and refuses any mode but `cheap` on card 1. One queue per card (`queue/`, `queue1/`).
+   - **Acceptance, fixed before the first run** (`tools/card_test.sh`): one identical batch, the first 30
+     configurations of `sweep/sw1-4w/checked.csv` plus the shipped kernel, cheap mode, (a) on `b70-0` alone,
+     (b) on the second card alone, (c) on both at once. Spearman rank correlation of the layer-weighted score
+     >= 0.95 and of every shape class >= 0.90, for card-to-card (a against b) and for alone against together on
+     each card (a against c0, b against c1), on at least 20 configurations; and the wall time of (c) at most
+     1.5 times the longer of (a) and (b). Time ratios and the scatter of single configurations around them are
+     reported without a threshold. The test also records which card's DRM client did the work.
+   - If accepted, the test starts the second card's queue and `sweep_screen.sh` splits every later cheap
+     screen by row position (odd rows to the second card, `raw/<build>-c1/`); when both halves have ended the
+     second card's times are scaled per shape by the ratio of the two cards' `base` arms and appended to the
+     first card's `results.csv` with `card` = 1 (`sweep_merge.py`, factors in `card1-scale.csv`). If rejected,
+     or if the second card's queue stops, everything runs on `b70-0` as before. Correctness, refinement
+     confirmation (full x 2) and every later step stay on `b70-0`.
    If an `llm-api-*` service or ComfyUI comes back and takes a card: stop using that card and report.
 4. Owner decision of 2026-10-05 in `CAMPAIGN.md`, "the release-zone hooks the accepted candidates need may be
    committed": not needed here. No accepted candidate of this campaign needs a hook (the SDPA rows are

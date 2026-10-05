@@ -5,7 +5,9 @@
 # process with an unfamiliar name that only holds the b70-0 render node open (a DRM client, no job).
 #   1. guard:  an unfamiliar DRM client is detected; our own descendants and launcher shells are not; a job is
 #              stopped within seconds of a foreign process appearing, never completes, and the foreign process
-#              is left running.
+#              is left running. Two cards: a DRM client of the second card is foreign for a job on the first;
+#              this campaign's own job on the other card (a registered gl.sh) is not, an unregistered one is;
+#              two cheap screens (XE2_SHARED) run side by side, any other job waits for the other card to idle.
 #   2. gate A: a foreign process that appears before a timed launch -> e2e5.sh/session.sh exit 76,
 #              gate.done = GATE_ABORTED, exit 76, tracing never started.
 #   4. screen: with a foreign process present screen.sh launches nothing further, records SCREEN_ABORTED and
@@ -20,9 +22,10 @@ T=$(dirname "$(readlink -f "$0")"); W=$(mktemp -d); fails=0
 ok() { if eval "$2"; then echo "ok   $1"; else echo "FAIL $1   [$2]"; fails=$((fails + 1)); fi; }
 unset XE2_TOP; export HOME=$W/home XE2_ARTIFACTS=$W/art; mkdir -p $HOME/.cache/gpu-lab $XE2_ARTIFACTS
 RN=/dev/dri/$(basename /sys/bus/pci/devices/0000:01:00.0/drm/renderD*)
-foreign() { # an unfamiliar process name holding the render node; prints its pid
+RN1=/dev/dri/$(basename /sys/bus/pci/devices/0000:02:00.0/drm/renderD*)
+foreign() { # an unfamiliar process name holding the render node (of b70-0, or the node given); prints its pid
   rm -f $W/foreign.pid
-  python3 -c "import os,sys,time; os.open('$RN', os.O_RDWR); sys.stdout.write(str(os.getpid())+'\n'); sys.stdout.flush(); time.sleep(600)" \
+  python3 -c "import os,sys,time; os.open('${1:-$RN}', os.O_RDWR); sys.stdout.write(str(os.getpid())+'\n'); sys.stdout.flush(); time.sleep(600)" \
     > $W/foreign.pid 2>/dev/null 9>&- & disown; while [[ ! -s $W/foreign.pid ]]; do sleep 0.1; done; cat $W/foreign.pid; }
 
 echo "== 1 guard"
@@ -33,6 +36,17 @@ echo "== 1 guard"
   guarded $W/g0 bash -c "exec -a llama_main sleep 2"; ok "own job named like a GPU workload runs to completion" "[[ $? == 0 ]]"
   guarded $W/g0 python3 -c "import os,time; os.open('$RN', os.O_RDWR); time.sleep(2)"; ok "own DRM client runs to completion" "[[ $? == 0 ]]"
   exit $fails ); fails=$((fails + $?))
+F=$(foreign $RN1)
+( . $T/host.sh; XE2_TOP=$BASHPID; ok "DRM client of the second card detected from the first" '[[ $(gpu_others) == *"$F:python3"* ]]'; exit $fails ); fails=$((fails + $?))
+( export XE2_CARD=1; . $T/host.sh; XE2_TOP=$BASHPID; ok "and from the second" '[[ $(gpu_others) == *"$F:python3"* ]]'; exit $fails ); fails=$((fails + $?)); kill $F
+XE2_CARD=1 XE2_SHARED=1 $T/gl.sh bash -c "exec -a llama_main sleep 5" & g=$!; sleep 2
+( . $T/host.sh; XE2_TOP=$BASHPID
+  ok "this campaign's job on the other card is not foreign" '[[ -z $(gpu_others) ]]'
+  t0=$SECONDS; XE2_TOP= XE2_SHARED=1 $T/gl.sh true; ok "two cheap screens run side by side" "[[ $? == 0 ]] && (( SECONDS - t0 < 2 ))"
+  t0=$SECONDS; XE2_TOP= $T/gl.sh true; ok "any other job waits until the other card is idle" "[[ $? == 0 ]] && (( SECONDS - t0 >= 2 ))"
+  exit $fails ); fails=$((fails + $?)); wait $g; ok "the other card's job ran to completion" "[[ $? == 0 ]]"
+bash -c "exec -a llama_main sleep 5" & g=$!; sleep 1
+( . $T/host.sh; XE2_TOP=$BASHPID; ok "an unregistered job named like a GPU workload is foreign" '[[ $(gpu_others) == *"$g:"* ]]'; exit $fails ); fails=$((fails + $?)); wait $g
 F=$(foreign)
 ( . $T/host.sh; XE2_TOP=$BASHPID
   ok "unfamiliar DRM client detected" '[[ $(gpu_others) == *"$F:python3"* ]]'

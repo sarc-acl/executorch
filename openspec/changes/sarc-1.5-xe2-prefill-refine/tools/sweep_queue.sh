@@ -1,11 +1,11 @@
 #!/bin/bash
 # sweep_queue.sh: runs the jobs of .artifacts/queue/pending/ one at a time, in name order (detached; one queue
-# per host). A job is a bash script; add one at any time by writing <NNN>-<name>.sh into pending/. Builds go
+# per card: XE2_CARD=1 uses .artifacts/queue1/ and takes cheap-mode screens only). A job is a bash script; add one at any time by writing <NNN>-<name>.sh into pending/. Builds go
 # through the queue too: the measurement guard counts a running build container as a foreign GPU process.
 # Each job's output goes to queue/log/<job>.out and its status to queue/status. A job that ends 76 or 75 (a
 # foreign GPU process, or the lock busy) stops the queue (QUEUE_STOPPED): stop measuring and report. The queue
 # ends when queue/STOP exists and nothing is pending.
-. "$(dirname "$(readlink -f "$0")")/host.sh"; Q=$A/queue; mkdir -p $Q/{pending,done,log}
+. "$(dirname "$(readlink -f "$0")")/host.sh"; Q=$A/queue; [[ $XE2_CARD == 1 ]] && Q=$A/queue1; mkdir -p $Q/{pending,done,log}
 exec 8>$Q/lock; flock -n 8 || { echo "a queue is already running" >&2; exit 2; }
 while :; do
   j=$(ls $Q/pending/*.sh 2>/dev/null | head -1)

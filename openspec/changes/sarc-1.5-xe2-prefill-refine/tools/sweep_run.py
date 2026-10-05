@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""sweep_run.py <name> <build tag> <space> <mode> <reps> <checked.csv> [ref=<label>:<token> ...]
+"""sweep_run.py <name> <build tag> <space> <mode> <reps> <checked.csv> [part=<i>/<n>] [ref=<label>:<token> ...]
 
-Resumable kernel-level measurement of sweep configurations (tools/sweep.py) on b70-0, one process per
+Resumable kernel-level measurement of sweep configurations (tools/sweep.py) on the card XE2_CARD selects
+(default 0 = b70-0; 1 = the second B70, cheap mode only), one process per
 (configuration, mode, repeat), each under the gpu-lab lock and the foreign-process guard (tools/gl.sh). Run it
 detached. Appends one row per (configuration, shape) to .artifacts/raw/<name>/results.csv and skips every
 (configuration, mode, repeat) already there, so a stopped run continues where it ended. Nothing is overwritten:
@@ -22,8 +23,11 @@ logs of an attempt that left no row (interrupted) are moved to raw/<name>/supers
   ref=<label>:<token> extra arms measured like a configuration: a variant token (linear) or a profile name
                       (SDPA); an empty token is the device's table choice. `base` (no environment) is always
                       measured first and again after every 50 configurations, as a drift monitor.
+  part=<i>/<n>        only the configurations at positions i, i + n, ... of the list to run (the split of a
+                      cheap screen over the two cards; base and the ref arms are measured on each card)
 
-Row: id,mode,rep,model,shape,M,N,K,us,cov,dispatched,correct,rc,temp_c,utc. `us` is the kernel median (linear)
+Row: id,mode,rep,model,shape,M,N,K,us,cov,dispatched,correct,rc,temp_c,utc,card (a results.csv begun before
+the second card was used has no card column: all of it is card 0). `us` is the kernel median (linear)
 or the mean per layer (SDPA); dispatched = 1 if the configuration's own kernel ran that shape (linear; a tile
 that does not fit a shape falls back to the table kernel; the SDPA timing output does not name its kernels, so
 SDPA dispatch is known from the corr rows only). rc 124 = timeout. A foreign GPU process or a busy lock (gl.sh 76 / 75)
@@ -34,15 +38,20 @@ import csv, datetime, json, os, pathlib, re, shutil, signal, subprocess, sys
 TOOLS = pathlib.Path(__file__).resolve().parent; ART = pathlib.Path(os.environ.get("XE2_ARTIFACTS", TOOLS.parents[4] / ".artifacts"))
 name, tag, space, mode, reps, cfgfile = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], int(sys.argv[5]), sys.argv[6]
 refs = [a[4:].split(":", 1) for a in sys.argv[7:] if a.startswith("ref=")]
+part = next((tuple(map(int, a[5:].split("/"))) for a in sys.argv[7:] if a.startswith("part=")), (0, 1))
+CARD = os.environ.get("XE2_CARD", "0"); PDEV = {"0": "0000:01:00.0", "1": "0000:02:00.0"}[CARD]
+if CARD != "0" and mode != "cheap": sys.exit("the second card runs cheap-mode screens only")
 O = ART / "raw" / name; (O / "logs").mkdir(parents=True, exist_ok=True); RES = O / "results.csv"
 BIN = ART / "build" / tag / "tests/test_llama_microbench"; LINEAR = space in ("4w", "8da4w")
-COLS = ["id", "mode", "rep", "model", "shape", "M", "N", "K", "us", "cov", "dispatched", "correct", "rc", "temp_c", "utc"]
-HW = next(pathlib.Path("/sys/bus/pci/devices/0000:01:00.0/hwmon").glob("hwmon*")) / "temp2_input"
+COLS = ["id", "mode", "rep", "model", "shape", "M", "N", "K", "us", "cov", "dispatched", "correct", "rc", "temp_c", "utc", "card"]
+HW = next(pathlib.Path(f"/sys/bus/pci/devices/{PDEV}/hwmon").glob("hwmon*")) / "temp2_input"
 utc = lambda: datetime.datetime.now(datetime.timezone.utc).strftime("%FT%TZ")
 if not RES.exists(): RES.write_text(",".join(COLS) + "\n")
+COLS = open(RES).readline().strip().split(",")
+if CARD != "0" and "card" not in COLS: sys.exit(f"{RES} has no card column")
 done = {(r["id"], r["mode"], r["rep"]) for r in csv.DictReader(open(RES))}
 with open(O / "env.txt", "a") as f:
-    f.write(f"{utc()} start: build {tag} {subprocess.run(['sha256sum', str(BIN)], capture_output=True, text=True).stdout.split()[0]} space {space} mode {mode} reps {reps} cfg {cfgfile} refs {refs} done {len(done)}\n")
+    f.write(f"{utc()} start: build {tag} {subprocess.run(['sha256sum', str(BIN)], capture_output=True, text=True).stdout.split()[0]} space {space} mode {mode} reps {reps} cfg {cfgfile} part {part[0]}/{part[1]} card {CARD} refs {refs} done {len(done)}\n")
 
 child = None
 def on_signal(sig, _):                        # a stopped runner takes its GPU job with it
@@ -54,7 +63,7 @@ signal.signal(signal.SIGTERM, on_signal); signal.signal(signal.SIGINT, on_signal
 def run(cmd, env, log, timeout):
     global child
     with open(log, "w") as f:
-        child = subprocess.Popen([str(TOOLS / "gl.sh"), "timeout", str(timeout), str(BIN)] + cmd, env=dict(os.environ, **env),
+        child = subprocess.Popen([str(TOOLS / "gl.sh"), "timeout", str(timeout), str(BIN)] + cmd, env=dict(os.environ, XE2_SHARED="1" if mode == "cheap" else "", **env),
                                  stdout=f, stderr=subprocess.STDOUT, start_new_session=True)
         return child.wait()
 
@@ -101,18 +110,18 @@ def measure(cid, tok, rep):
                     rows.append(dict(base, model=c["model"], shape=c["op"], M=c["M"], N=c["N"], K=c["K"], us=c["op_mean_us"], cov="", dispatched="", correct="-"))
     if not rows: rows = [dict(base, model="-", shape="-")]
     t = int(HW.read_text()) // 1000; now = utc()
-    for r in rows: r.update(rc=rc, temp_c=t, utc=now)
+    for r in rows: r.update(rc=rc, temp_c=t, utc=now, card=CARD)
     return rows, rc
 
 def record(rows):
     with open(RES, "a", newline="") as f:
-        csv.DictWriter(f, COLS, restval="").writerows(rows)
+        csv.DictWriter(f, COLS, restval="", extrasaction="ignore").writerows(rows)
 
 def stop(word, why):
     with open(O / "env.txt", "a") as f: f.write(f"{utc()} {word} {why}\n")
     print(word, why); sys.exit(76 if word == "SWEEP_ABORTED" else 1)
 
-cfgs = [c for c in csv.DictReader(open(cfgfile)) if c.get("run", "1") == "1"]
+cfgs = [c for c in csv.DictReader(open(cfgfile)) if c.get("run", "1") == "1"][part[0]::part[1]]
 arms = [("base", None)] + [(f"ref-{l}", t) for l, t in refs]
 for c in cfgs:
     arms.append((c["id"], f'xs{c["id"]}' if LINEAR else f'xe2-xs{c["id"]}'))

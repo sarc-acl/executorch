@@ -9,7 +9,7 @@ set -uo pipefail
 . "$(dirname "$(readlink -f "$0")")/host.sh"; S=$A/stage/$1; MODELS=${2:-1b,3b}; SCHEMES=${3:-4w,8da4w}; BUILDS=${4:-parent cand}
 TR=$S/trace; O=$TR/raw/xe2/trace2; mkdir -p $O $TR/tools || exit 2
 rm -f $TR/trace.ok; cp -f $TOOLS/trace_analysis.py $TR/tools/
-exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK"; flock -w 1800 9 || exit 75
+pair_lock excl; exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK"; flock -w 1800 9 || exit 75
 MROOT=/mnt/linux-share/models; bad=0; n=0
 declare -A STEM=([1b]=llama-3.2-1b:llama3_2-1b [3b]=llama-3.2-3b:llama3_2-3b [8b]=llama-3.1-8b:llama3_1-8b)
 IFS=, read -ra MS <<< "$MODELS"; IFS=, read -ra QS <<< "$SCHEMES"

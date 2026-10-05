@@ -16,4 +16,4 @@ w = csv.DictWriter(open(sys.argv[2], "w", newline=""), r[0].keys()); w.writehead
 P
 python3 $TOOLS/sweep_run.py sw1-$S sw1-$S $S cheap 1 $C/$S-val.csv "$@" || exit $?
 python3 $TOOLS/sweep_run.py sw1-$S sw1-$S $S full 2 $C/$S-val.csv "$@" || exit $?
-python3 $TOOLS/sweep_run.py sw1-$S sw1-$S $S cheap 1 $W "$@" || exit $?
+bash $TOOLS/sweep_screen.sh sw1-$S $S $W "$@" || exit $?
