@@ -772,6 +772,16 @@ const Preference kB580_refine0[] = {
     {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
     {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
 };
+// candidate 1 = refine0 + the balanced K = 64 8da4w tile with texel-wise weight staging (B580 screen 2: 1.31x at kernel level)
+const Preference kB580_refine1[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+};
+// the 8da4w tile of refine1 alone, on the release SDPA path
+const Preference kB580_dq_k64[] = {
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+};
 // b580 end
 struct Profile {
   const char* name;
@@ -931,6 +941,8 @@ const Profile kProfiles[] = {
     {"b580-qk-xe2c-t64x128k32g42s16m8nf", kB580_qk_xe2c_t64x128k32g42s16m8nf, 1},
     {"b580-sdpa0", nullptr, 0},
     {"b580-refine0", kB580_refine0, sizeof(kB580_refine0) / sizeof(Preference)},
+    {"b580-refine1", kB580_refine1, sizeof(kB580_refine1) / sizeof(Preference)},
+    {"b580-dq-k64", kB580_dq_k64, sizeof(kB580_dq_k64) / sizeof(Preference)},
     // b580 end
 };
 const Profile* requested_profile() {
