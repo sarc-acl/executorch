@@ -273,7 +273,7 @@ takes). Two hypotheses, both tested at kernel level (`tools/gen_orin_softmax.py`
    or shared memory, 16 variants; `screens/sdpa-screen4.csv`) is 1.12x to 4.7x slower. The re-reads are cache
    hits; and a workgroup that declares 8 / 16 / 32 KB of shared memory runs 1.9x / 2.6x / 4.6x longer.
 2. *The 14 barriers per row (two 64-worker tree reductions) and the split of a row over workers.* Partly.
-   Fewer workers per row is slower in proportion (one thread per row: 16x), more than 128 is slower again;
+   Fewer workers per row is slower in proportion (one thread per row: 18x), more than 128 is slower again;
    reducing inside each subgroup with `subgroupMax` / `subgroupAdd` and one barrier is the fastest form:
    `orin_g64` 8.25 / 6.18 / 8.25 ms against 8.74 / 6.53 / 8.74 on the primary (`screens/sdpa-screen7.csv`),
    -5.6 %. Pass timing (measurement twins, second device): workgroup launch 1.0 ms, the first read and the
