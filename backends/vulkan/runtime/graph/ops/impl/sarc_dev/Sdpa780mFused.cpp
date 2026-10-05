@@ -150,7 +150,15 @@ GlobalWorkGrid pick_vt_gwg(
   (void)shader;
   const ValueRef q = resize_args.at(0);
   const ValueRef input_pos_symint = resize_args.at(1);
-  const LocalWorkGroup lwg(8u, 8u, 1u);
+  // ET_VK_SARC_780M_KVT_LWG=<x>,<y>: workgroup shape of the copy pass (x along
+  // context, y along head_dim, in 4 x 4 blocks); 8,8 by default.
+  static const LocalWorkGroup lwg = [] {
+    unsigned x = 8, y = 8;
+    if (const char* e = std::getenv("ET_VK_SARC_780M_KVT_LWG")) {
+      std::sscanf(e, "%u,%u", &x, &y);
+    }
+    return LocalWorkGroup(x, y, 1u);
+  }();
   if (!sdpa_fused_active_780m(graph, q, input_pos_symint)) {
     return GlobalWorkGrid({0u, 0u, 0u}, kTiledWorkGrid, lwg);
   }

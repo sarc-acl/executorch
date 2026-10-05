@@ -1,6 +1,6 @@
 # STATUS: 780M prefill campaign, round 2 (parameter space + beyond)
 
-Updated 2026-10-04 21:20 PDT (2026-10-05 04:20 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
+Updated 2026-10-04 23:00 PDT (2026-10-05 06:00 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
 Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (new raw data) and
 `.../780m-prefill-refine-2026-10-03/` (earlier builds and sessions).
 
@@ -8,28 +8,52 @@ Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (
 
 | item | state |
 |---|---|
-| candidate 7 (softmax r3) | gate passed; bit-identical to its parent on all 21 SDPA cases; five cells +2.4 to +6.8 % (geomean +4.45 %); the 8B 8da4w timing cell is queued for its repeat (`chain4.sh`) |
-| igpu-roofline `fast` plan | finished 20:15 PDT; matrix roofs 14.766 TFLOP/s (fp16 -> fp32) and 14.379 TOP/s (int8), see below |
-| candidate 8 (fused SDPA kernel, Part 2) | third structure written and correct on every tier; kernel time per layer 10.0 -> 2.8 ms (1B), 10.2 -> 4.3 ms (3B), 13.5 -> 5.6 ms (8B); one end-to-end sanity run 1B 4w 3020.65 -> 3624.78 tok/s (+20.0 %); **not gated yet**, gate queued (`chain7.sh`) |
-| 4w refinement round 1 | running since 20:21 PDT, 1,669 of 3,006 rows; slowed by the candidate-8 development runs slotted in between (see "Pauses") |
-| 8da4w screen, QK^T / attn*V enumeration | not started; they follow the candidate-8 gate (`chain6b.sh`) |
+| candidate 7 (softmax r3) | **complete**: gate passed, bit-identical to its parent, six cells +2.39 to +6.78 %, geomean **+4.10 %** over `780m-refine3` |
+| candidate 8 (fused SDPA kernel, Part 2) | **e2e session done: +7.84 to +20.14 %, geomean +13.16 % over candidate 7**, all 60 runs valid; the rest of the gate is running (`chain7.sh`); next token differs in 1 of 12 checks, so it is judged by the reference-error rule, whose evidence is being collected. Not accepted yet |
+| igpu-roofline `fast` plan | finished 20:15 PDT; matrix roofs 14.766 TFLOP/s (fp16 -> fp32) and 14.379 TOP/s (int8) |
+| 4w refinement round 1 | finished 21:41 PDT: 991 neighbours screened; nothing beats the sample's best by more than the screening scatter; the confirmation with the full measurement is queued |
+| 8da4w screen, 4w / 8da4w confirmation, QK^T / attn*V enumeration | queued behind the candidate-8 gate (`chain6d.sh`) |
+
+Chained over the three sessions (`t1-recheck`, `c7-softmax-r3`, `c8-fused3`; not a direct measurement, that comes
+at the end): candidate 8 is about +27 % geomean over `dev/1.5` (1B 4w 2698 -> 3625 tok/s, 8B 8da4w 488 -> 606).
 
 ## Running now (detached chains; nothing needs attention)
 
-1. `chain3b.sh`: 4w refinement round 1 (1,002 neighbour configurations, `raw/refine1/screen.csv`), until about 21:45 PDT.
-2. `chain4.sh`: the 8B 8da4w cell of the candidate-7 session again, from a cool start (up to 30 min wait).
-3. `chain7.sh`: gate of candidate 8 from a cool start: e2e session against candidate 7 as parent, SDPA tiers `all`,
-   `extended`, `full` (12 passes each), `verify.sh`, traces; then the `peaked` tier (12 passes), the error against
-   the fp64 reference for both arms, steady-clock kernel timing and the real-text logits probe (32 prompts, four
-   arms, six cells). About 2.5 h.
-4. `chain6b.sh` (replaces `chain6.sh`, which was only waiting): 8da4w. All 2,238 survivors are still enumerated, but
-   in the screening mode (`wq_wo`, 1 + 2 runs, 2.7 s instead of 15.8 s a configuration; about 2 h instead of 9.8 h)
-   after a validation on 64 configurations drawn at random with the same seed (full measurement against two
-   screening modes, `raw/dq/agreement.csv`). The best 10 per shape get the full measurement afterwards, as for 4w.
-   This changes how each 8da4w configuration is timed, not which ones: say so if the full measurement of all
-   2,238 is wanted instead.
-5. Then the QK^T / attn*V enumeration resumes by itself (`raw/space/results.csv`; 55 of 1,724 SDPA runs done;
-   about 6 h, pausing 06:40 to 07:40).
+1. `chain7.sh`, the gate of candidate 8. Done: e2e session; SDPA tiers `all` and `extended`, 12 passes each, 0
+   mismatches. Running: tier `full` (6 of 12 passes done, about 3 min each). Then `verify.sh`, traces, tier
+   `peaked` (12 passes), the error against the fp64 reference for both arms on the `extended`, `peaked` and `full`
+   tiers, steady-clock kernel timing, and the real-text logits probe (32 prompts, four arms, six cells). Until
+   about 00:30 PDT.
+2. `chain6d.sh` (replaces `chain6.sh` .. `chain6c.sh`, which were only waiting), after that:
+   - the SDPA sweep binaries again, so that the SDPA suite can be timed at a steady clock (below);
+   - 4w confirmation (`tools/confirm.sh`): every configuration within 8 % of the fastest of the random sample and
+     of refinement round 1 (96 configurations), full measurement; the 10 fastest per shape 5 times; 12
+     production-diff passes each. About 2.5 h;
+   - 8da4w: validation of the screening mode on 64 configurations, then all 2,238 survivors screened (`wq_wo`,
+     3 + 3 runs), then the same confirmation. This changes how each 8da4w configuration is timed, not which
+     ones: say so if the full measurement of all 2,238 is wanted instead (9.8 h);
+   - the QK^T / attn*V enumeration (1,724 runs, 20 warm-up + 8 timed runs each, about 7 h, pausing 06:40 to
+     07:40), into `raw/space/results-steady.csv`.
+
+### What the clock does to the microbench (found 2026-10-04, affects how the sweeps are read)
+
+The GPU clock idles at 800 MHz and needs sustained load to reach 2800 MHz. In `llama_main` it is at 2800 MHz
+throughout; in the microbench it is not always:
+
+- SDPA suite, 3 warm-up + 5 timed runs of 3 to 15 ms each: the timed runs are still on the rising clock. The
+  coefficient of variation over the 5 runs is 7 to 9 % (median of the 330 enumeration rows measured so far) and a
+  compute-bound kernel reads up to 1.7 times slower than at 40 + 10 runs, while a memory-bound one barely moves.
+  `ET_VK_SDPA_PERF_RUNS` (added) sets the run counts; the enumeration will use 20 + 8. The 55 runs done with 3 + 5
+  stay in `raw/space/results.csv` and are not used for ranking.
+- Linear suite, full measurement (3 + 5): steady, coefficient of variation 0.5 to 1 %. Longer runs only heat the
+  device (300 + 5: +5 %).
+- Linear suite, screening mode (1 + 2): the first timed run is still rising (12 to 15 % between the two timed
+  runs). On 14 configurations across the ranking the screening value is 3 to 13 % above the steady one, by a
+  different amount per configuration; the order is kept overall (Spearman 0.987) but not among the first five
+  (`results/780m/space/clock-check.csv`). The random sample and refinement round 1 were screened this way, so their
+  single values scatter by about +-5 %: fine for the parameter-importance table (averages over many
+  configurations), not for choosing among near-ties. Therefore the confirmation takes everything within 8 % of the
+  fastest (not the 10 best by rank), and the 8da4w screen uses 3 + 3 runs.
 
 ### Pauses and overlaps (for whoever audits the timings)
 
@@ -39,6 +63,9 @@ Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (
 - Candidate-8 correctness and kernel-timing runs took the gpu-lab lock between sweep runs from 03:28 to 04:16 UTC.
   They cannot overlap a sweep run, but they warm the device, and the sweep waits until it is back under 62 C
   before each run: that is why round 1 is slow, not a change in what it measures.
+- During the candidate-8 gate: a build (05:29 to 05:34 UTC) and correctness / kernel-timing runs of the one-pass
+  variant and the four-arm logits run (05:35 to 05:57 UTC) were slotted in while the gate ran its SDPA
+  correctness tiers, after the timed session had ended (05:28 UTC). Nothing ran next to the session.
 - One build of mine started while the roofline was still running and was stopped after about 15 s (03:05:28 to
   03:05:42 UTC, `-j6`). It overlapped the confirm runs of `mem_write`, `mem_copy`, `mem_triad` and
   `sharedbw_fp16`. The matrix roofs used below were confirmed earlier in the run and repeat within 0.1 %; the
@@ -61,7 +88,7 @@ The last two rows are what shaped candidate 8: operand loads, not the matrix uni
 tile pair for fewer than about 8 multiply-adds, and contiguous tiles in a cache-resident buffer load faster than
 tiles in shared memory.
 
-## Candidate 7 (softmax r3, through the uncommitted hook): gate passed, bit-identical, one timing cell owed
+## Candidate 7 (softmax r3, through the uncommitted hook): ACCEPTED, bit-identical, +4.10 % geomean
 
 Session `c7-softmax-r3` (`results/780m/sessions/c7-softmax-r3/`, raw data `<artifacts>/stage/c7-softmax-r3`),
 started 18:13 PDT at 45 C after the full 30 min wait. Both arms are the same binary (build `hook3` = the branch +
@@ -75,10 +102,13 @@ adds `ET_VK_SARC_780M_SOFTMAX=r3`. Tok/s, median of 5 valid runs per arm, arms i
 | 3B 4w | 1190.70 | 1231.51 | **+3.43 %** | 0.12 / 0.18 % | SAME / SAME |
 | 3B 8da4w | 1170.29 | 1206.12 | **+3.06 %** | 0.40 / 0.35 % | SAME / SAME |
 | 8B 4w | 541.23 | 554.41 | **+2.44 %** | 0.71 / 0.11 % | SAME / SAME |
-| 8B 8da4w | (548.03, 549.06, ...) | (562.48, 562.02, ...) | INCOMPLETE | 4 valid runs per arm | SAME / SAME |
+| 8B 8da4w (repeat, 21:46 PDT, start 44 C) | 548.47 | 561.56 | **+2.39 %** | 0.56 / 0.36 % | SAME / SAME |
 
-Geomean of the five complete cells +4.45 %, each outside the +-2 % band and far above the A/A floor (+-0.23 %).
+Geomean of the six cells **+4.10 %**, each outside the +-2 % band and far above the A/A floor (+-0.23 %).
 The parent arm agrees with `t3-aa` within 0.5 % (2828.73 / 2828.73, 1192.08 / 1172.97, 544.10 / 549.50).
+The 8B 8da4w cell is from the repeat (`sessions/c7-softmax-r3/repeat-8b8da4w/`, both arms interleaved, 5 valid
+runs each, cool start); in the first session 8 of its runs carry `other_gpu_process` (below) and its 4 valid runs
+per arm read 548.0 to 549.1 against 562.0 to 562.5 tok/s, the same gain.
 
 Gate items (all with the candidate's environment):
 
@@ -106,8 +136,7 @@ Where the time is after candidate 7 (`sessions/c7-softmax-r3/trace/families.csv`
 Single traced runs: the linear rows of the two arms differ by up to 3 % (8B 4w 2716 against 2799 ms) without any
 linear kernel having changed, so differences of that size between sessions are not resolved by a trace.
 
-**The 8B 8da4w cell is incomplete and will be measured again** (`chain4.sh`, cool start, sweep paused): its
-runs 4 to 8 (eight runs) are marked `other_gpu_process`. The process the session saw was pid 576199,
+Why the cell was repeated: in the first session its runs 4 to 8 (eight runs) are marked `other_gpu_process`. The process the session saw was pid 576199,
 `/bin/bash`: an interactive monitoring shell of this campaign whose command line contained the name of the
 runner binary as text. `e2e5.sh` looks for other GPU processes with `pgrep -af`, which matches full command lines,
 so the shell was counted for the 6 minutes it was alive. No GPU process ran (the lock holder was the session; the
@@ -120,7 +149,7 @@ every correctness case of the tiers `all`, `extended`, `peaked` and `full` (21 c
 production head configurations at S = 2048 among them) is **byte-identical** between the parent kernels and the
 parent kernels with softmax r3. Candidate 7 therefore does not use the near-tie or the reference-error rule.
 
-## Candidate 8 (Part 2): fused SDPA kernel `sarc_dev_780m_sdpa_fused3`, gate queued
+## Candidate 8 (Part 2): fused SDPA kernel `sarc_dev_780m_sdpa_fused3`, session done, gate running
 
 After candidate 7, QK^T + softmax + attn*V are still 160 of 680 ms on 1B, 299 of 1694 ms on 3B and 452 of
 3797 ms on 8B, and all three kernels are bound by the traffic of the S x S attention matrix (QK^T writes it,
@@ -129,6 +158,48 @@ arithmetic. The fused kernel never writes that matrix. For a block of query rows
 in blocks, twice: pass A computes the scores (fp32 accumulate, scaled, rounded to fp16, exactly as the QK^T kernel
 does) and keeps the row maxima; pass B computes the scores again, e = exp(score - max) in fp16, the row sums in
 fp32 and `acc += e V` in fp32; the output is `acc / sum`.
+
+### Gate so far (session `c8-fused3`, `results/780m/sessions/c8-fused3/`)
+
+Started 21:59 PDT at 44 C. Both arms are the same binary (build `fused5` = the branch + both hook patches in a
+scratch tree) with `ET_VK_SARC_DEV_PROFILE=780m-refine3 ET_VK_SARC_780M_SOFTMAX=r3` (= candidate 7); the candidate
+arm adds `ET_VK_SARC_780M_SDPA_FUSED=fused3_d64_t32x32g11s32rk,fused3_d128_t16x64g11s32rk`. Tok/s, median of 5
+valid runs per arm, arms interleaved; recomputed from `runs.csv`:
+
+| cell | parent (candidate 7) | candidate 8 | gain | repeat spread parent / candidate | next token (2048 / unaligned prompt) |
+|---|---:|---:|---:|---|---|
+| 1B 4w | 3020.65 | 3624.78 | **+20.00 %** | 0.15 / 0.18 % | SAME / SAME |
+| 1B 8da4w | 3011.76 | 3618.37 | **+20.14 %** | 0.15 / 0.18 % | SAME / SAME |
+| 3B 4w | 1232.25 | 1376.34 | **+11.69 %** | 0.06 / 0.20 % | SAME / SAME |
+| 3B 8da4w | 1201.88 | 1344.71 | **+11.88 %** | 1.24 / 0.79 % | SAME / SAME |
+| 8B 4w | 556.07 | 601.12 | **+8.10 %** | 0.46 / 0.59 % | SAME / SAME |
+| 8B 8da4w | 561.71 | 605.74 | **+7.84 %** | 0.19 / 0.21 % | **DIFFER** / SAME |
+
+Geomean **+13.16 %**; 60 timed runs, none rejected; median clock 2783 to 2800 MHz; start temperature 44 to 50 C,
+peak 93 C. The unaligned prompt (1972 tokens) is not served by the fused kernel, so its checks compare the same
+kernels in both arms.
+
+The one differing item, 8B 8da4w on `prompt_2048.txt` (2048 times the token " the"): the model is undecided there.
+Next-token logits of the top candidates in the four arms (`results/780m/probe/c8-differ-8b-8da4w-prompt_2048.csv`):
+
+| token | parent tiled | parent default | candidate tiled | candidate default |
+|---|---:|---:|---:|---:|
+| 118 (a byte token) | 11.461 (p 0.0126) | 11.500 (p 0.0129) | 11.125 | 11.156 |
+| 53 `V` | 11.297 | 11.234 (p 0.0099) | 11.422 (p 0.0119) | 11.367 (p 0.0113) |
+| 5531 `cal` | 11.047 | 11.180 | 11.102 | 11.016 |
+| top-2 margin | 0.164 | 0.266 | 0.297 | 0.211 |
+
+The parent's top token has probability 1.3 % and leads by 0.27 logit (0.16 in its tiled arm); the candidate moves
+token 118 by -0.34 and token 53 by +0.13. Largest logit difference over the vocabulary: candidate default against
+parent default 0.66, parent tiled against parent default 0.83; KL 8.2e-3 against 4.6e-3 nat. This is item 1 of
+the evidence; the candidate is not accepted on it alone (the error against the reference on the production shapes
+and the real-text comparison decide, both still running).
+
+Done so far in the gate: SDPA tiers `all` (4 of 4) and `extended` (8 of 8), 12 passes each, 0 mismatches, the
+fused kernel the only SDPA kernel dispatched, `pairing=ok`; controls with the table kernels 1 pass each; tier
+`full` 6 of 12 passes, 4 of 4 each.
+
+### Structures
 
 Three structures were built and measured; the third is the candidate.
 
@@ -159,7 +230,18 @@ What the measurements say about why:
   matrix roof. Without pass A the same kernel takes 1.58 / 3.12 ms (measurement-only variant `...rkm1`): a
   one-pass (running-maximum) form would save at most that, about 2 % end to end; not attempted.
 - The copy pass (`sarc_dev_780m_sdpa_kvt`, 4 to 16 MB a layer) costs 0.35 (1B) to 0.7 ms (8B), three times what
-  the bytes cost at the copy roof; not tuned yet.
+  the bytes cost at the copy roof; a 16 x 4 workgroup instead of 8 x 8 is slower (2.36 against 2.27 ms on 1B);
+  not tuned further.
+
+### One-pass variant (`...rko`, built and measured, a later candidate)
+
+`ONLINE` keeps a running row maximum instead of pass A: when a block raises the maximum of a row, that row's
+accumulator and sum are scaled by exp(old - new) (an element-wise divide of the accumulator tiles by a divisor
+tile from shared memory, only in subgroups where some row moved). Build `fused6`: correct on tiers `all`,
+`extended`, `peaked` and `fused` (one pass each, 0 mismatches), error against the fp64 reference equal to or
+slightly below the two-pass kernel's. Kernel time per layer, copy pass included, steady clock: 1B 2.80 -> 2.27 ms,
+3B 4.33 -> 3.22 ms, 8B 5.54 -> 4.04 ms. End to end that is about +1.5 to +2 %, so it is not gated alone: it goes
+into the next candidate together with the Part 1 winners per shape.
 
 Variants chosen (`ET_VK_SARC_780M_SDPA_FUSED=fused3_d64_t32x32g11s32rk,fused3_d128_t16x64g11s32rk`): for head_dim
 64, 32 rows x 32-column blocks (2.80 ms; 16 x 32 reads 2.77 to 2.79 ms, a tie); for head_dim 128, 16 rows x 64
@@ -354,6 +436,22 @@ with the geometry (drain: a different best level in 10 of 21 strata; `FRAG_LAYOU
 "best geometry first, then best flags on it" could have missed combinations; at the size of those effects
 (1 to 10 %) that is exactly the margin this campaign is looking for.
 
+### Refinement round 1 (`results/780m/space/refine1/`, 20:21 to 21:41 PDT, screening mode)
+
+1,002 configurations that differ from one of the 22 best sampled ones in one parameter (and in two for the best
+five); 991 dispatched their kernel on the three screened shapes. `tools/refine_summary.py`:
+
+- Fastest by geomean of the three shapes: `t256x128k32g24s32f32bbt` 3533 us, `t256x128k32g18s32f32bbt` 3535,
+  `bx_t128x256k32g42s32f32xpi` 3578, `t128x256k32g42s32f32cbt` 3598; the sample's best was 3612 and the
+  refine3 tile `t128x256k32g42s32f32c` reads 3623 (+2.5 %). All of that is inside the screening scatter (+-5 %):
+  the round found no geometry or option that clearly beats what the sample already had. The full measurement
+  decides (queued).
+- Fastest alternative level of each parameter, relative to its centre (median over the centres; below 1 = faster):
+  accumulator 12.0 (fp32 everywhere), subgroup size 1.49, tile K 1.20, grid X 1.19, grid Y 1.17, tile M 1.14,
+  tile N 1.14, `FRAG_LAYOUT` 1.06, `B_COLMAJOR` 1.02, texel-wise staging 1.01, drain mode 1.01, `IMG_W` 1.00,
+  `IMG_A` 1.00, `SH_F16V4` 0.96 (4 centres only). So around the best configurations every geometry parameter is at
+  a local optimum (the nearest alternative costs 14 to 49 %), and the options are flat within the scatter.
+
 ## Part 1: parameter space (static count, `tools/enum_space.py`)
 
 | family | combinations | device | flags | geometry | shared memory | shape | survivors | tile geometries |
@@ -413,11 +511,12 @@ runs each; all variants reached through `hooks/softmax-name-hook.patch` applied 
 
 ## Next
 
-1. Candidate 8 gate (`chain7.sh`), then its record under the reference-error rule: error against the reference on
-   the production shapes for both arms, the real-text comparison, the next-token items.
-2. 4w refinement round 1 -> the best 10 per shape with the full measurement; 8da4w screen -> the same; QK^T and
-   attn*V enumeration; response surface per family.
-3. A candidate from the Part 1 winners per shape, gated against candidate 8.
+1. Finish the candidate-8 gate and record it under the reference-error rule (or reject it, with the numbers).
+2. 4w and 8da4w confirmation -> the best configuration per shape, the local effect of each parameter around it.
+3. Candidate 9: candidate 8 + the one-pass fused variant + the Part 1 winners per shape, gated against candidate 8.
+4. QK^T / attn*V enumeration and their repeat stage (response surface; with the fused kernel these two kernels
+   only serve the calls it does not take).
+5. A direct session of the final configuration against `dev/1.5` and against `780m-refine3`.
 
 ## Blocking
 

@@ -27,6 +27,15 @@
  * - scores, e, row maxima, row sums and the divisor live in shared memory
  *   that only this subgroup touches.
  *
+ * ONLINE: one pass instead of two. The row maximum is a running maximum:
+ * each block's scores first update it; when it rises for a row of the
+ * subgroup, that row's accumulator and sum are scaled by
+ * exp(old max - new max) (the accumulator by an element-wise divide with a
+ * divisor tile from shared memory) before the block's e, computed against the
+ * new maximum, is added. Same result up to fp32 rounding of the rescales; e
+ * is no longer rounded to fp16 relative to the final maximum but to the
+ * running one, which is never smaller in relative terms.
+ *
  * Fit (impl/sarc_dev/Sdpa780mFused.cpp): fp16 buffers, head_dim == HEAD_DIM,
  * S % WG_TILE_M == 0, S % WG_TILE_N == 0, input_pos % WG_TILE_N == 0.
  */
@@ -36,6 +45,7 @@
 #extension GL_KHR_cooperative_matrix : require
 #extension GL_KHR_memory_scope_semantics : require
 #extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_KHR_shader_subgroup_vote : enable
 #extension GL_EXT_shader_explicit_arithmetic_types : require
 #extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
 #extension GL_EXT_control_flow_attributes : enable
@@ -46,6 +56,8 @@ $if AQ_REG:
   #define AQ_REG
 $if PACKED:
   #define PACKED
+$if ONLINE:
+  #define ONLINE
 $if ONE_PASS_WRONG:
   // MEASUREMENT ONLY, wrong results: no pass A (row maximum taken as 0).
   #define ONE_PASS_WRONG
@@ -91,6 +103,9 @@ const uint SEG_V8 = WG_TILE_N / SEGS / 8u;
 const uint P_STRIDE = max(WG_TILE_N / 8u + 1u, 4u);
 shared uvec4 Psh[WG_TILE_M * P_STRIDE]; // scores, then e [s][c]
 shared float Rsh[WG_TILE_M * SEGS];     // per-invocation row maxima / sums
+#ifdef ONLINE
+shared vec4 Dsh[WG_TILE_M * 4u];        // per-row rescale divisors, one MMA tile wide
+#endif
 
 coopmat<float, gl_ScopeSubgroup, MMA, MMA, gl_MatrixUseAccumulator> sc[MMAS_M][MMAS_C];
 coopmat<float, gl_ScopeSubgroup, MMA, MMA, gl_MatrixUseAccumulator> acc[MMAS_M][MMAS_D];
@@ -237,7 +252,9 @@ void main() {
 
   // ---- pass A: row maxima ----
   float row_max = 0.0;
-#ifndef ONE_PASS_WRONG
+#ifdef ONLINE
+  row_max = -1.0 / 0.0;
+#elif !defined(ONE_PASS_WRONG)
   row_max = -1.0 / 0.0;
   for (uint b = 0; b < num_blocks; ++b) {
     qk_block(q_base, b * K_BLOCK + k_head);
@@ -272,8 +289,56 @@ void main() {
   for (uint b = 0; b < num_blocks; ++b) {
     qk_block(q_base, b * K_BLOCK + k_head);
     memoryBarrierShared();
+#ifdef ONLINE
+    // Running maximum of this row over the blocks so far, both segments.
+    float blk_max = -1.0 / 0.0;
+    uvec4 own[SEG_V8];
     [[unroll]] for (uint i = 0; i < SEG_V8; ++i) {
       const uvec4 u = Psh[e_idx + i];
+      own[i] = u;
+      const int lim = e_last - int(b * WG_TILE_N + e_col + 8u * i);
+      const vec4 lo = vec4(f16vec4(unpackFloat2x16(u.x), unpackFloat2x16(u.y)));
+      const vec4 hi = vec4(f16vec4(unpackFloat2x16(u.z), unpackFloat2x16(u.w)));
+      const vec4 mlo = mix(vec4(-1.0 / 0.0), lo, lessThanEqual(LANE, ivec4(lim)));
+      const vec4 mhi = mix(vec4(-1.0 / 0.0), hi, lessThanEqual(LANE + 4, ivec4(lim)));
+      const vec4 m4 = max(mlo, mhi);
+      blk_max = max(blk_max, max(max(m4.x, m4.y), max(m4.z, m4.w)));
+    }
+    if (SEGS > 1u) {
+      Rsh[e_row * SEGS + e_seg] = blk_max;
+      memoryBarrierShared();
+      [[unroll]] for (uint p = 0; p < SEGS; ++p) {
+        blk_max = max(blk_max, Rsh[e_row * SEGS + p]);
+      }
+      memoryBarrierShared();
+    }
+    const float new_max = max(row_max, blk_max);
+    if (subgroupAny(new_max > row_max)) {
+      // exp(new - old) is 1 for a row whose maximum did not move and +inf
+      // for the first visible block (old maximum -inf, accumulator 0).
+      const float grow = new_max > row_max ? exp(new_max - row_max) : 1.0;
+      row_sum = row_sum / grow;
+      for (uint j = e_seg; j < 4u; j += SEGS) {
+        Dsh[e_row * 4u + j] = vec4(grow);
+      }
+      memoryBarrierShared();
+      [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
+        coopmat<float, gl_ScopeSubgroup, MMA, MMA, gl_MatrixUseAccumulator> grow_tile;
+        coopMatLoad(grow_tile, Dsh, MMA * i * 4u, 4u, gl_CooperativeMatrixLayoutRowMajor);
+        [[unroll]] for (uint j = 0; j < MMAS_D; ++j) {
+          acc[i][j] = acc[i][j] / grow_tile;
+        }
+      }
+      memoryBarrierShared();
+      row_max = new_max;
+    }
+#endif
+    [[unroll]] for (uint i = 0; i < SEG_V8; ++i) {
+#ifdef ONLINE
+      const uvec4 u = own[i];
+#else
+      const uvec4 u = Psh[e_idx + i];
+#endif
       const int lim = e_last - int(b * WG_TILE_N + e_col + 8u * i);
       const vec4 lo = vec4(f16vec4(unpackFloat2x16(u.x), unpackFloat2x16(u.y)));
       const vec4 hi = vec4(f16vec4(unpackFloat2x16(u.z), unpackFloat2x16(u.w)));
