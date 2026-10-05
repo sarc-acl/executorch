@@ -38,8 +38,8 @@ if it wins in every round (the rule fixed in `proposal.md`).
 The three tiles of the texel-wise family that fit the static rules and that the B70 campaign had not built
 (`impl/sarc_dev/B580Linear.cpp`): `b580bt_t128x128k32g84s16m8` 1.10x, `b580bt_t64x128k64g84s16m8` 0.80x,
 `b580bt_t64x128k64g88s16m8` 0.45x, against 1.30x for `xe2bt_t128x128k64g84s16m8` in the same screen. With
-the 46000-byte shared-memory rule nothing larger fits (a 256-row or K = 128 tile of this family needs 51 to
-70 KiB), so the 8da4w tile space of this family is exhausted on this card.
+the 46000-byte shared-memory rule nothing larger fits (a 256-row or K = 128 tile of this family needs 52 to
+76 kB), so the 8da4w tile space of this family is exhausted on this card.
 
 ## screen1-sdpa
 
