@@ -425,6 +425,11 @@ configurations that differ in one parameter, full measurement, ratio of kernel t
 | tile N | 128 -> 256 | 0.970 | 0.833 to 1.080 | by shape, with M and the grid |
 | grid X / Y | 2 -> 4, 1 -> 2, 4 -> 8 | 0.985 to 1.012 | 0.917 to 1.108 | by shape |
 
+Beyond the parameter space, tried on the winners and not pursued: a slab layout of both operands in shared
+memory (`tools/gen_sl.py`: A as `FRAG_LAYOUT` has it, B column-major as [k16 slab][n][16 k], no padding; the
+layout the 8da4w zpg kernel uses). It is 8 to 25 % slower than the padded column-major kernels of the same tile on
+all twelve shapes (`results/780m/space/slab/kernel-time.txt`); the generated files are not kept in the tree.
+
 Tile K (32), subgroup size (32) and the fp32 accumulator have no alternative within 14 % of the leaders
 (refinement round 1). Still open: refinement round 2 around these winners (queued), and the 12 production-diff
 passes per confirmed configuration (3 done, all passed).
