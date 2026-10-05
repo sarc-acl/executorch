@@ -1,36 +1,135 @@
 # STATUS: sarc-1.5-orin-prefill-refine
 
-**2026-10-05 05:10 UTC. RUNNING: SDPA screen on the device. Baseline, A/A, parent control, roofs and traces done. No candidate yet.**
+**2026-10-05 07:15 UTC. RUNNING: the gate of candidate 1 (`orin-refine1`, SDPA prefill kernels), then candidate 2
+(`orin-lin-refine2`, 8da4w whole-texel weight staging). Nothing accepted yet; the stop rule is not met; the
+branch is not pushed.**
 
-(The first version of this file carried a wrong clock time; all times here are UTC from `date -u`.)
+All times are UTC from `date -u`.
 
 ## Running now
 
 - Device (`duck-naughty`), detached, one GPU job at a time under the gpu-lab lock; status in
-  `~/hmz-sarc-orin/jobs/<job>.status` / `.out`, from the workstation `tools/dstat.sh`. These survive a reboot of
-  the workstation:
-  - `chain2b` (`tools/chain2.sh`): SDPA screen 1 (59 `orin-qk-*` / `orin-av-*` profiles + stock, 1 round, about
-    1.5 min per profile), then the 8da4w phase timing. Its earlier steps (session `s1-aa`, traces) are done.
-  - `chain3`, waiting: kernel screen of the 4070 Ti campaign's 8da4w dev tiles (13 sweep tiles, 4 half-texel
-    `bh` tiles) on the Orin, then the stock arm of the SDPA reference error.
-  - `chain4`, waiting: build `topic2`: production-diff and a 2-round screen of the Orin whole-texel 8da4w
-    twins (`orin_bf*`, see "8da4w" below).
-- Workstation: nothing.
+  `~/hmz-sarc-orin/jobs/<job>.status` / `.out`, from the workstation `tools/dstat.sh`. Survives a reboot of the
+  workstation. Job `chain6` (`tools/chain6.sh`), build `topic4` = `8973debef`, dev zone only:
+  1. reference error of the attention block, stock arm and `orin-refine1`, same test binary (`raw/sdpa-error1`);
+  2. `gate_sdpa.sh s2-c1` (24 SDPA correctness passes, `verify.sh`, six-cell session, traces); if it ends
+     `GATE_REJECTED` at `verify-check`, `gate_rest.sh` runs the session and traces for evidence only;
+  3. candidate 2: bit comparison with the shipped kernel (`raw/bit-bf`), production-diff on all three models,
+     `gate.sh s3-c2`.
+  Expected to finish about 10:30 UTC.
+- Workstation: job `build-topic4` is building `hook4` (= `topic4` + `tools/local-hook-orin-softmax.patch`, NOT
+  committed: the softmax-name hook, see "What the SDPA candidate is expected to hit"). It does not survive a
+  workstation reboot (start it again; the tag directory must be moved away first).
 
 ## Next step
 
-Read SDPA screen 1, pick the kernel per head_dim (`tools/orin_refine.py` -> profile `orin-refine1`), build,
-measure the reference error of both arms, run `gate_sdpa.sh`.
+Read the gate of candidate 1. If it is rejected on a next-token item, as on the 4070 Ti: logits probe (41
+prompts, four arms) and the reference-error rule for `orin-refine1`, then the same for the softmax variant
+through `hook4`, reported for the owner. Then the 4w linear kernel (phase timing below).
 
-## 8da4w: what the kernel does with its weight fetches (hypothesis, being measured)
+## Candidates
 
-The shipped `t128x128k64g44s32mk32ra` stages the weights with 2 `texelFetch` per thread and chunk and keeps one
-32-bit word of each fetched 4-word texel: every packed-weight texel is fetched four times per chunk, by four
-threads, through the texture2d path, the slowest read path of this device (roofs above). For the 1B `w1` shape
-that is 33.5 million texel fetches per dispatch. `tools/gen_orin_bf.py` generates a twin of the release body in
-which a slot is a whole texel (one fetch, eight shared-memory words; same values, same shared-memory layout,
-same MMA order): `orin_bf_*` with two staging slices as shipped, `orin_bf1_*` with one slice and K = 128 per
-chunk (one texel per thread for 512 threads). 9 tiles, build `topic2` (`dcd7cbe88`), compiled, not measured yet.
+| # | profile / environment | what | reachable from the dev zone | state |
+|---|---|---|---|---|
+| 1 | `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine1` | SDPA prefill kernels (QK^T, attn*V) | yes (`OrinSdpa.cpp`, no hook) | gate running |
+| 2 | `ET_VK_SARC_DEV_PROFILE=orin-lin-refine2` | 8da4w linear: whole-texel weight staging | yes | queued |
+| 1h | candidate 1 + `ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf` | fp32 softmax without the zero tail | NO: needs the softmax-name hook (build `hook4`, local patch) | to be measured for the owner |
+
+## SDPA kernels on the Orin (kernel level, `test_llama_microbench --sdpa`, ms per layer at S = 2048)
+
+`results/orin/screens/sdpa-screen{1,2}.csv`: screen 1 = 59 profiles + stock, 1 round; screen 2 = the best of
+screen 1 and 12 new Orin QK^T tiles, 2 rounds (the two screens agree within 0.01 ms). Reached from the dev zone
+through `impl/sarc_dev/OrinSdpa.cpp` (two `kUnverified` base rows for `tegra orin` that match only while the
+profile is `orin-*` and not `orin-lin-*`); the softmax is the release SARC softmax in every row but stock.
+
+| kernels | 1B QK^T / softmax / attn*V | 3B | 8B |
+|---|---|---|---|
+| stock (the parent) | 36.29 / 10.97 / 28.60 | 53.11 / 8.23 / 42.64 | 70.87 / 10.97 / 56.76 |
+| base rows (the 4070 Ti port tiles, mask fill) | 10.05 / 9.03 / 3.84 | 10.04 / 6.79 / 5.59 | 13.38 / 9.03 / 7.39 |
+| **`orin-refine1`** | **6.73 / 9.03 / 3.84** | **7.10 / 6.79 / 5.13** | **9.40 / 9.03 / 6.75** |
+
+- QK^T: packed staging wins on this device and direct feed loses (10.3 to 20 ms; the opposite of the 4070 Ti,
+  where direct feed won for head_dim 64). K = 64 per chunk beats K = 32 on the same tile (9.40 against 10.27 ms
+  on 8B). Best: `4070ti_pk_t128x64k64g42s32nf` for all three head configurations. None of the 12 Orin tiles
+  (`tools/gen_orin_qk.py`: K = 64 on other tiles and grids, K = 128) beats it: best 6.82 / 7.28 / 9.66
+  (`orin_pk_t64x64k64g22s32nf`); K = 128 tiles 8.3 to 15 ms. Negative result, kept.
+- attn*V: head_dim 64 keeps the 64 x 64 tile (3.84 ms; every other tile 4.1 to 10.8); head_dim 128 takes
+  `4070ti_ml_t64x128k32g42s32` (5.13 / 6.75 against 5.59 / 7.39). Direct-feed attn*V: 5.99 to 21 ms.
+- Against the fresh roofs, 1B per layer: QK^T writes 134 MB (the unmasked half) and does 8.6 GFLOP: 2.3 ms at
+  the DRAM write roof plus 0.9 ms at the fp16 -> fp32 matrix roof; measured 6.73. attn*V reads 134 MB: 2.2 ms
+  at the read roof plus 0.9 ms; measured 3.84. The softmax reads 134 MB and writes 268 MB (half of it the zero
+  tail): 6.8 ms of traffic at the roofs; measured 9.03. After candidate 1 the softmax is the largest of the
+  three, and its name is fixed in the release zone.
+- fp16-accumulating variants (`dfg`, `dfh`) were screened with the rest and are not pursued (no gain, and they
+  would change precision).
+
+### What the SDPA candidate is expected to hit (measured before the gate, `results/orin/sdpa-error-early/`)
+
+The error of the attention block against the fp32 CPU reference, same test binary and seeded inputs, is on the
+Orin digit for digit what the 4070 Ti campaign measured, for the stock kernels and for the SARC kernels:
+
+| production case (S = 2048) | rms error, stock / SARC kernels | maximum error, stock / SARC kernels |
+|---|---|---|
+| 1B head configuration | 8.55e-5 / 3.49e-5 | 1.713e-3 / 1.288e-3 |
+| 3B head configuration | 8.69e-5 / 3.54e-5 | 1.408e-3 / **1.570e-3** |
+| 8B head configuration | 8.70e-5 / 3.48e-5 | 1.587e-3 / 1.498e-3 |
+
+0 mismatches in all 12 cases of both arms. So the SARC kernels are 2.5 times closer to the reference in rms and
+closer in maximum error in two of the three production cases, and 11 % further in the third: the owner's
+reference-error rule (criterion 1, every head configuration, rms and maximum) is NOT met by a candidate that
+keeps the release softmax, exactly as for the 4070 Ti's candidate 1. That only matters if the gate shows a
+next-token DIFFER (the 4070 Ti's did: `1b 8da4w unaligned`). On the 4070 Ti the fp32 softmax variant
+(`4070ti_nzf`) met the rule; it needs the softmax-name hook, which is outside the dev zone. I am not looking
+for an attention kernel that happens to pass: the gate result is reported as it comes.
+
+## A test fix the reviewer should look at
+
+`backends/vulkan/test/sarc_dev/test_llama_microbench.cpp`, the SDPA pairing check ("a QK^T kernel without mask
+fill must run with the truncated SARC softmax"): it compared the softmax kernel name by PREFIX. The Orin cross
+build links the event tracer (as the campaign that produced the `cells.csv` numbers did), and then kernel names
+are reported as `"kernel_name": "<name>", "operator_id": N`, so the prefix never matched and a correct pairing
+read `pairing=BROKEN` with 0 mismatches (`results/orin/sdpa-error-early/qkpk.txt`, build `topic3`: the line
+shows `softmax="kernel_name": "sarc_sdpa_attn_weights_softmax_buffer_half"` next to `pairing=BROKEN`). Commit
+`417bd7a03` makes it a substring test. The stock softmax name (`sdpa_attn_weights_softmax_...`) does not contain
+the SARC name, so a wrong pairing is still reported. No tolerance, case or mismatch rule is touched. Say so if
+this should instead be solved by a tracer-free test build.
+
+## 8da4w linear: phase timing and the whole-texel twin
+
+Phase timing of the shipped `t128x128k64g44s32mk32ra` on the Orin (shader clock, share of one wave, the 12
+model shapes; `results/orin/phases/prof1-8da4w.csv`): barrier 10 to 15 %, **fetch 38 to 47 %**, MMA 24 to
+31 %, shared-memory store 8 to 10 %, epilogue 4 %, prologue + write 5 %. A wave spends more time fetching than
+multiplying, as on the other devices.
+
+The shipped kernel fetches every packed-weight texel four times per chunk (2 `texelFetch` per thread, one of
+the four 32-bit words kept). `tools/gen_orin_bf.py` generates a twin of the release body in which a staging slot
+is a whole texel: one fetch, eight shared-memory words; same values, same shared-memory layout, same MMA order.
+Kernel-level screens, all 12 model shapes, geomean of kernel time against the shipped kernel
+(`results/orin/screens/screen{1,2}-8da4w.txt`; 2 rounds for the Orin tiles, repeat spread below 0.3 %):
+
+| tile | threads | weight fetches per thread and chunk | speed against shipped |
+|---|---:|---:|---:|
+| shipped `t128x128k64g44` | 512 | 2 (one word kept of each) | 1.000 |
+| half texel `4070ti_bh_..g44` | 512 | 1 | 1.049 |
+| whole texel `orin_bf_..k64g44` | 512 | 0.5 (every second thread) | 1.019 |
+| plain 256-thread tile `4070ti_..k64g42` | 256 | 4 | 0.775 |
+| half texel `4070ti_bh_..k64g42` | 256 | 2 | 0.908 |
+| **whole texel `orin_bf_t128x128k64g24`** (`g42`: 1.154) | 256 | 1 | **1.158** |
+| whole texel, one staging slice, K = 128 (`orin_bf1_..k128g44`; `g42` 0.964, `g24` 0.924) | 512 | 1 | 0.917 |
+| whole texel, one slice, K = 64 (`orin_bf1_..k64g42`) | 256 | 1 | 0.987 |
+| 12 other 4070 Ti sweep tiles | | | 0.69 to 0.87 |
+
+- What matters is the number of weight fetches a thread makes per chunk, and that every thread makes the same
+  number: one whole texel per thread on a 256-thread tile is +15.8 %; the same staging with half the threads
+  idle is +1.9 %.
+- The second barrier per chunk that a single staging slice needs costs about 17 % (0.987 against 1.154 on the
+  same tile), more than K = 128 gains back. Double buffering stays.
+- All 9 whole-texel tiles pass the sampled production-diff on the 1B shapes (non-zero zero points).
+- Candidate 2 = `orin_bf_t128x128k64g24s32mk32ra` for every shape the Orin row covers.
+
+Phase timing of the Orin 4w tiles (`results/orin/phases/prof2-4w.csv`): `t256x128k16g22s32`: barrier 10 to
+11 %, fetch 17 to 18 %, MMA 45 to 49 %, shared-memory store (weight dequantisation) 18 to 20 %;
+`t128x128k32g42s32f32` (8B, K = 14336): barrier 14 to 15 %, fetch 15 to 17 %, MMA 30 to 37 %, store 26 to 38 %.
 
 ## Baseline and A/A (session `s1-aa`, pristine parent against build `topic1` with no environment)
 
