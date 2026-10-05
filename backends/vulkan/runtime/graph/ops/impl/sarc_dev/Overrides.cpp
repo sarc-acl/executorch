@@ -1222,6 +1222,25 @@ const Profile* requested_profile() {
   }();
   return p;
 }
+// >>> 4070ti softmax-variant
+// RTX 4070 Ti SUPER: the refine profiles that carry the SDPA kernels run the
+// fp32 softmax without the full zero tail
+// (glsl/sarc_dev/sarc_sdpa_attn_weights_softmax_4070ti.yaml), as candidates 4
+// to 6 were measured. 4070ti-refine1 is candidate 4.
+const char* softmax_variant_4070ti() {
+  const Profile* p = requested_profile();
+  if (p == nullptr) {
+    return nullptr;
+  }
+  for (const char* name :
+       {"4070ti-refine1", "4070ti-refine4", "4070ti-refine5"}) {
+    if (std::strcmp(p->name, name) == 0) {
+      return "4070ti_nzf";
+    }
+  }
+  return nullptr;
+}
+// <<< 4070ti softmax-variant
 
 std::optional<Choice> dev_select(
     const DeviceInfo& device,
@@ -1290,6 +1309,9 @@ struct Registrar {
     // the 8da4w variable needs active dq8ca rows (see dev_select).
     o.force_path = !requested_variant().empty();
     o.select = dev_select;
+    // >>> 4070ti softmax-override
+    o.softmax_variant = softmax_variant_4070ti();
+    // <<< 4070ti softmax-override
     set_override(o);
     if (requested_profile() != nullptr) {
       std::cerr << "[sarc_dev] profile active: " << requested_profile()->name

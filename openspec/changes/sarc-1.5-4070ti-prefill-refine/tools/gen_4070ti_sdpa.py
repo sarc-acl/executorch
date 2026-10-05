@@ -24,7 +24,8 @@ contain "coopmat" and, for NO_MASK_FILL, a tile token ending in "s32nf" (the tes
 follows the family name, so profile tokens start with "4070ti_" and match no other device's rows.
 
 NO_MASK_FILL is only valid with the truncated SARC softmax. On this device that softmax, and the spec constants
-of these kernels, are only enabled when the release tables hold SDPA rows for it: see local-hook-nvidia-sdpa.patch.
+of these kernels, are only enabled when the device has active SDPA rows: impl/sarc_dev/Rtx4070tiSdpa.cpp registers
+them from the dev zone (up to build topic11: superseded/local-hook-nvidia-sdpa.patch, never committed).
 """
 import pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))

@@ -2,7 +2,7 @@
 # build-both.sh <tag> <commit> [local patch]: build an immutable source tree, never the working copy.
 #   1. mktree.sh archives <commit> (and its pinned submodules) into src/<tag>/executorch;
 #   2. an optional local patch (a release-zone hook that is measured but never committed, e.g.
-#      tools/local-hook-nvidia-sdpa.patch) is applied to that tree only and recorded;
+#      tools/superseded/local-hook-nvidia-sdpa.patch) is applied to that tree only and recorded;
 #   3. sarc/tools/build.sh (unmodified, from the tree being built) builds build/<tag> (backend + tests +
 #      llama_main) and build/<tag>-traced (ETDump llama_main); the tree is read-only from then on.
 # The parent is `build-both.sh parent 6a7cc8cc6`. Provenance (commit, patch and tree hashes, toolchain, binary

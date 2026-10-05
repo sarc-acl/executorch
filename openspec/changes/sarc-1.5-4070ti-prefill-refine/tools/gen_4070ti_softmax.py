@@ -26,9 +26,10 @@ of 64, head_dim a multiple of 64, context a multiple of 32, not single-token). O
 the release shader. The body is the release shader with that one loop bound changed; the release file is read,
 never written.
 
-NOT REACHABLE FROM THE DEV ZONE: the softmax name is fixed in impl/sarc/SdpaCoopmat.cpp. It is measured through
-tools/local-hook-nvidia-sdpa-softmax.patch (not committed), which appends "_" + $ET_VK_SARC_SOFTMAX_VARIANT to
-the name. The hook that would be needed is written down in proposal.md.
+Selected by the dev override: Override::softmax_variant (the release-zone hook of the owner decision 2026-10-05),
+set in impl/sarc_dev/Overrides.cpp for the profiles 4070ti-refine1, -refine4 and -refine5 (4070ti_nzf). Up to
+build topic11 it was measured through tools/superseded/local-hook-nvidia-sdpa-softmax.patch (never committed),
+which read the suffix from $ET_VK_SARC_SOFTMAX_VARIANT; that variable no longer exists.
 """
 import pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
