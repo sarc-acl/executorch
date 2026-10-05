@@ -136,3 +136,75 @@ sarc_linear_dq8ca_coopmat_zpgtr_orin_bf:
       A_RAW: true
       B_PAIR: true
       ONE_SLICE: true
+    - NAME: sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t64x128k64g42s32mk32ra_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      CSH_IN_ASH: true
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 64
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      MMA_K: 32
+      A_RAW: true
+      B_PAIR: true
+    - NAME: sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t64x128k64g22s32mk32ra_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      CSH_IN_ASH: true
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      MMA_K: 32
+      A_RAW: true
+      B_PAIR: true
+    - NAME: sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t64x64k128g24s32mk32ra_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      CSH_IN_ASH: true
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 128
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+      MMA_K: 32
+      A_RAW: true
+      B_PAIR: true
+    - NAME: sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t64x64k128g42s32mk32ra_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      CSH_IN_ASH: true
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 128
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      MMA_K: 32
+      A_RAW: true
+      B_PAIR: true
+    - NAME: sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t64x64k64g22s32mk32ra_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      CSH_IN_ASH: true
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      MMA_K: 32
+      A_RAW: true
+      B_PAIR: true
+    - NAME: sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g22s32mk32ra_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      CSH_IN_ASH: true
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      MMA_K: 32
+      A_RAW: true
+      B_PAIR: true
