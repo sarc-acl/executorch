@@ -1,0 +1,286 @@
+
+=== Compute Shader Performance Benchmark ===
+Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; prefill 2048 / decode 1 @ ctx3072; linear group_size=128; 3 warmup + 5 timed runs per case)
+DEVICE,intel(r) arc(tm) b580 graphics (bmg g21),timestamp_period_ns=52.0833,subgroup_size=32,coopmat=yes,max_shared_mem_bytes=49152
+----------------------------------------------------------------------
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+transpose_cast_contig_to_vectorized_4x4_half..     (32,16,1)       (2,16,1)                                                                                                                    5.073 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_h..     (8,16,1)        (1,128,1)                                                                                                                  25.220 μs                                 
+et_vk.linear_q4gsw.default                                                     linear_q4gsw_M64_K128_N64_Texture3D                                                          [64x128]          30.293 μs         34.615 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+transpose_cast_contig_to_vectorized_half_buf..     (128,16,1)      (8,8,1)                                                                                                                     5.009 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half       (8,16,1)        (1,128,1)                                                                                                                  23.187 μs                                 
+et_vk.linear_q4gsw.default                                                     linear_q4gsw_M64_K128_N64_Buffer                                                             [64x128]          28.196 μs         37.189 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (256,1,1)       (256,1,1)   linear_q4gsw_M128_K256_N128_Texture3D                                                       [128x256]          15.042 μs        557.662 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (256,1,1)       (256,1,1)   linear_q4gsw_M128_K256_N128_Buffer                                                          [128x256]          13.102 μs        640.268 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (256,1,1)       (256,1,1)   linear_q4gsw_M128_K128_N128_Texture3D                                                       [128x128]          10.951 μs        383.006 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (256,1,1)       (256,1,1)   linear_q4gsw_M128_K128_N128_Buffer                                                          [128x128]           8.781 μs        477.630 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (512,2,1)       (256,1,1)   linear_q4gsw_M256_K256_N256_Texture3D                                                       [256x256]          17.111 μs       1960.977 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (512,2,1)       (256,1,1)   linear_q4gsw_M256_K256_N256_Buffer                                                          [256x256]          14.257 μs       2353.591 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (512,1,1)       (256,1,1)   linear_q4gsw_M128_K128_N256_Texture3D                                                       [128x128]          10.978 μs        764.155 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (512,1,1)       (256,1,1)   linear_q4gsw_M128_K128_N256_Buffer                                                          [128x128]           9.134 μs        918.384 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (256,2,1)       (256,1,1)   linear_q4gsw_M256_K128_N128_Texture3D                                                       [256x128]          10.972 μs        764.528 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (256,2,1)       (256,1,1)   linear_q4gsw_M256_K128_N128_Buffer                                                          [256x128]           8.685 μs        965.899 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+transpose_cast_contig_to_vectorized_4x4_half..     (32,16,1)       (2,16,1)                                                                                                                    4.965 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_h..     (8,64,1)        (1,128,1)                                                                                                                  22.942 μs                                 
+et_vk.linear_q4gsw.default                                                     linear_q4gsw_M64_K128_N256_Texture3D                                                         [64x128]          27.907 μs        150.296 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+transpose_cast_contig_to_vectorized_half_buf..     (128,16,1)      (8,8,1)                                                                                                                     5.006 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half       (8,64,1)        (1,128,1)                                                                                                                  23.522 μs                                 
+et_vk.linear_q4gsw.default                                                     linear_q4gsw_M64_K128_N256_Buffer                                                            [64x128]          28.527 μs        147.027 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+transpose_cast_contig_to_vectorized_4x4_half..     (32,64,1)       (2,16,1)                                                                                                                    5.117 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_h..     (32,16,1)       (1,128,1)                                                                                                                  23.164 μs                                 
+et_vk.linear_q4gsw.default                                                     linear_q4gsw_M256_K128_N64_Texture3D                                                        [256x128]          28.281 μs        148.308 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+transpose_cast_contig_to_vectorized_half_buf..     (128,64,1)      (8,8,1)                                                                                                                     5.097 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half       (32,16,1)       (1,128,1)                                                                                                                  26.098 μs                                 
+et_vk.linear_q4gsw.default                                                     linear_q4gsw_M256_K128_N64_Buffer                                                           [256x128]          31.195 μs        134.456 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (256,1,1)       (256,1,1)   linear_q4gsw_M128_K2048_N128_Texture3D                                                     [128x2048]          87.007 μs        771.304 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (256,1,1)       (256,1,1)   linear_q4gsw_M128_K2048_N128_Buffer                                                        [128x2048]          70.975 μs        945.533 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (256,1,1)       (256,1,1)   linear_q4gsw_M128_K4096_N128_Texture3D                                                     [128x4096]         162.361 μs        826.662 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (256,1,1)       (256,1,1)   linear_q4gsw_M128_K4096_N128_Buffer                                                        [128x4096]         132.458 μs       1013.289 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,16,1)        (4,1,16)                                                                                                                    5.749 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (8,16,1)        (8,8,1)                                                                                                                     9.032 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M64_K128_N64_Texture3D                                                    [64x128]          14.780 μs         70.944 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,16,1)        (4,1,16)                                                                                                                    5.740 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (8,16,1)        (8,8,1)                                                                                                                     9.256 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M64_K128_N64_Buffer                                                       [64x128]          14.996 μs         69.926 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,32,1)        (4,1,16)                                                                                                                    6.122 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,32,1)       (8,8,1)                                                                                                                    14.094 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K256_N128_Texture3D                                                 [128x256]          20.215 μs        414.964 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,32,1)        (4,1,16)                                                                                                                    6.147 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (16,32,1)       (8,8,1)                                                                                                                    14.359 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K256_N128_Buffer                                                    [128x256]          20.507 μs        409.062 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,32,1)        (4,1,16)                                                                                                                    5.806 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,32,1)       (8,8,1)                                                                                                                     9.252 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K128_N128_Texture3D                                                 [128x128]          15.058 μs        278.538 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,32,1)        (4,1,16)                                                                                                                    5.976 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (16,32,1)       (8,8,1)                                                                                                                     9.833 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K128_N128_Buffer                                                    [128x128]          15.809 μs        265.313 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,64,1)        (4,1,16)                                                                                                                    6.945 μs                                 
+sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s..     (2048,1,1)      (512,1,1)                                                                                                                  11.759 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K256_N256_Texture3D                                                 [256x256]          18.704 μs       1793.968 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,64,1)        (4,1,16)                                                                                                                    6.811 μs                                 
+sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s..     (2048,1,1)      (512,1,1)                                                                                                                  10.341 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K256_N256_Buffer                                                    [256x256]          17.152 μs       1956.298 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,32,1)        (4,1,16)                                                                                                                    6.267 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (32,32,1)       (8,8,1)                                                                                                                    10.155 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K128_N256_Texture3D                                                 [128x128]          16.423 μs        510.793 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,32,1)        (4,1,16)                                                                                                                    5.882 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (32,32,1)       (8,8,1)                                                                                                                     9.933 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K128_N256_Buffer                                                    [128x128]          15.815 μs        530.423 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,64,1)        (4,1,16)                                                                                                                    6.187 μs                                 
+sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s..     (1024,1,1)      (512,1,1)                                                                                                                   8.313 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K128_N128_Texture3D                                                 [256x128]          14.500 μs        578.527 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,64,1)        (4,1,16)                                                                                                                    6.403 μs                                 
+sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s..     (1024,1,1)      (512,1,1)                                                                                                                   7.871 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K128_N128_Buffer                                                    [256x128]          14.274 μs        587.701 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,16,1)        (4,1,16)                                                                                                                    5.835 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (32,16,1)       (8,8,1)                                                                                                                     9.598 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M64_K128_N256_Texture3D                                                   [64x128]          15.433 μs        271.774 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,16,1)        (4,1,16)                                                                                                                    5.618 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (32,16,1)       (8,8,1)                                                                                                                     9.499 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M64_K128_N256_Buffer                                                      [64x128]          15.117 μs        277.464 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,64,1)        (4,1,16)                                                                                                                    6.007 μs                                 
+sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s..     (512,1,1)       (512,1,1)                                                                                                                   8.055 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K128_N64_Texture3D                                                  [256x128]          14.062 μs        298.268 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,64,1)        (4,1,16)                                                                                                                    5.945 μs                                 
+sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s..     (512,1,1)       (512,1,1)                                                                                                                   7.213 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K128_N64_Buffer                                                     [256x128]          13.158 μs        318.769 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,32,1)       (2,1,32)                                                                                                                    7.448 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,32,1)       (8,8,1)                                                                                                                    76.628 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K2048_N128_Texture3D                                               [128x2048]          84.076 μs        798.190 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,32,1)       (2,1,32)                                                                                                                    6.619 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (16,32,1)       (8,8,1)                                                                                                                    77.625 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K2048_N128_Buffer                                                  [128x2048]          84.245 μs        796.594 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,32,1)       (2,1,32)                                                                                                                    8.633 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,32,1)       (8,8,1)                                                                                                                   144.567 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K4096_N128_Texture3D                                               [128x4096]         153.200 μs        876.095 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,32,1)       (2,1,32)                                                                                                                    7.343 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (16,32,1)       (8,8,1)                                                                                                                   146.504 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K4096_N128_Buffer                                                  [128x4096]         153.847 μs        872.409 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (256,1,1)       (256,1,1)   linear_q4gsw_M128_K128_N128_rank3batch1_Buffer                                            [1x128x128]           8.665 μs        484.068 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (256,1,1)       (256,1,1)   linear_q4gsw_M128_K4096_N128_rank3batch1_Buffer                                          [1x128x4096]         132.511 μs       1012.882 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,32,1)        (4,1,16)                                                                                                                    5.785 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (16,32,1)       (8,8,1)                                                                                                                     9.483 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K128_N128_rank3batch1_Buffer                                      [1x128x128]          15.269 μs        274.701 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+Executing 1 test cases for LlamaMicrobenchCorrectness
+----------------------------------------------------------------------
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,32,1)       (2,1,32)                                                                                                                    7.340 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (16,32,1)       (8,8,1)                                                                                                                   146.570 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M128_K4096_N128_rank3batch1_Buffer                                    [1x128x4096]         153.910 μs        872.056 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 1 test cases
+[rank3 batch=1] linear_q4gsw_M128_K128_N128_rank3batch1_Buffer -> sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_buffer_texture2d_half (coopmat dispatched), correctness=PASSED
+[rank3 batch=1] linear_q4gsw_M128_K4096_N128_rank3batch1_Buffer -> sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_buffer_texture2d_half (coopmat dispatched), correctness=PASSED
+[rank3 batch=1] linear_dq8ca_q4gsw_M128_K128_N128_rank3batch1_Buffer -> linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8 (NOT coopmat -- fallback), correctness=PASSED
+[rank3 batch=1] linear_dq8ca_q4gsw_M128_K4096_N128_rank3batch1_Buffer -> linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8 (NOT coopmat -- fallback), correctness=PASSED
+[correctness] FAILED -- numeric failure(s) and/or a rank-3 case did not dispatch coopmat

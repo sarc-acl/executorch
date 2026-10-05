@@ -58,7 +58,7 @@ drm_clients() { local p q mine
     q=$p; mine=0
     while [[ -n $q && $q -gt 1 ]]; do [[ $q == "$B580_TOP" ]] && { mine=1; break; }; q=$(ps -o ppid= -p $q 2>/dev/null | tr -d ' '); done
     [[ $mine == 0 && -d /proc/$p ]] && printf '%s:%s;' $p "$(ps -o comm= -p $p 2>/dev/null | tr ' ,' '__')"
-  done; }
+  done; 2>/dev/null; }
 # gpu_others: GPU *workloads* that this campaign job did not start, as "pid:command;" entries; empty = no
 # foreign compute job. A process counts when the name of the program it runs (argv[0], not the text of its
 # command line: shells, ssh and build containers of the other campaigns carry these names as arguments) is a
@@ -74,7 +74,7 @@ gpu_others() { local p q mine a0 anc=" " a=$B580_TOP
     q=$p; mine=0
     while [[ -n $q && $q -gt 1 ]]; do [[ $q == "$B580_TOP" ]] && { mine=1; break; }; q=$(ps -o ppid= -p $q 2>/dev/null | tr -d ' '); done
     [[ $mine == 0 && -d /proc/$p ]] && printf '%s:%s;' $p "$(ps -o comm= -p $p 2>/dev/null)"
-  done; }
+  done 2>/dev/null; }   # a process that exits while it is examined must not write into the job's log
 # kill_tree <pid>: stop a campaign job and every process descended from it (TERM, then KILL after 3 s). Only
 # descendants of <pid> are signalled; a foreign process is never touched.
 kill_tree() { local all=$1 new=$1 k
