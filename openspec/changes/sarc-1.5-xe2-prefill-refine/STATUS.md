@@ -1,8 +1,8 @@
 # sarc-1.5-xe2-prefill-refine: status
 
-**2026-10-05 01:27 UTC — running. Candidate 1 (`xe2-refine1`, SDPA): +46.9 % geomean over the parent,
-`ACCEPTED (reference-error rule, owner decision 2026-10-04)`, not a plain pass. Candidate 2 (8da4w linear) is
-queued for its gate.**
+**2026-10-05 02:50 UTC — running. Candidate 1 (`xe2-refine1`, SDPA): +46.9 % geomean over the parent,
+`ACCEPTED (reference-error rule, owner decision 2026-10-04)`, not a plain pass. Candidate 2 (`xe2-refine2`,
+8da4w linear): +6.9 % geomean over candidate 1, `GATE_PASS`, logits bit-identical. Candidate 3 is in its gate.**
 
 Branch `topic/xe2-prefill-refine`, parent `6a7cc8cc6` (head of `topic/780m-prefill-refine`). Host
 `fedora-gpu-eval`, card `b70-0` only (guest PCI `0000:01:00.0`, Vulkan device 0, **`ETVK_DEVICE_INDEX=0`**,
@@ -11,10 +11,9 @@ B70 or on the B580.
 
 ## Running now
 
-One GPU job at a time (`.artifacts/logs/chain9.status`, `chain10.status`): builds `topic6` and `hook2`; the
-revised 4w split-staging screen (screen 11); the two hook-only softmax variants (correctness, error against
-the reference, screen 12); then candidate 2: `gate.sh s3-c2` (`xe2-refine2` against `xe2-refine1`, build
-`topic5` in both arms), its logits probe and a decode A/B. Expected to finish about 03:00 UTC.
+One GPU job at a time (`.artifacts/logs/chain11.status`): `gate_sdpa.sh s4-c3` (`xe2-refine3` against
+`xe2-refine2`, build `topic7` in both arms), its logits probe and decode A/B; then, only if candidate 3 is
+accepted, `gate.sh s5-c4` (`xe2-refine4` against `xe2-refine3`). Expected to finish about 05:00 UTC.
 
 ## Needs the owner's attention
 
@@ -242,11 +241,48 @@ Linear kernels in the model against the fresh roofs (both arms the same kernels)
 roof (359.9).
 
 
+### Candidate 2, `xe2-refine2` (8da4w linear, texel-wise weight staging on a balanced K = 64 tile): GATE_PASS
+
+Session `s3-c2`: build `topic5` in both arms, `xe2-refine1` (candidate 1) against `xe2-refine2`; tok/s, median
+of 5 valid runs per arm, arms interleaved (`results/xe2/sessions/s3-c2/`):
+
+| cell | candidate 1 | candidate 2 | gain | next token (timed / real-text / unaligned prompt) |
+|---|---:|---:|---:|---|
+| 1B 4w | 17504.30 | 17504.30 | 0.00 % | SAME / SAME / SAME |
+| 1B 8da4w | 18789.00 | 20480.00 | +9.00 % | SAME / SAME / SAME |
+| 3B 4w | 7393.50 | 7366.91 | -0.36 % | SAME / SAME / SAME |
+| 3B 8da4w | 8192.00 | 9570.09 | +16.82 % | SAME / SAME / SAME |
+| 8B 4w | 3292.60 | 3297.91 | +0.16 % | SAME / SAME / SAME |
+| 8B 8da4w | 3828.04 | 4491.23 | +17.32 % | SAME / SAME / SAME |
+
+Geomean +6.88 %; the three 8da4w cells are outside the +-2 % band, the three 4w cells (whose kernels are the
+same in both arms) are inside +-0.4 %. 60 timed runs, none rejected. `gate.txt`: no FAIL line; unmodified
+`verify.sh` completed, 12 of 12 production-diff cases ALL PASSED, 28 of 28 numeric correctness cases, default
+vs tiled SAME on both prompts for both schemes (also on the 1B 8da4w unaligned prompt, where the parent
+control reads DIFFER), decode 31 tokens. Logits probe (`results/xe2/probe/s3-c2/`): bit-identical to candidate
+1 on all 35 real-text windows of all six cells, so this is a staging change with no arithmetic change
+(`decision.txt`: `GATE_PASS`). Decode A/B, 3 runs per arm: 0.98 to 1.00x, inside the repeat range.
+
+Where the gain comes from (warm ETDump, ms per prefill, `sessions/s3-c2/trace/families.csv`): only the linear
+GEMM family moves.
+
+| cell | total, candidate 1 -> 2 | linear GEMM, candidate 1 -> 2 |
+|---|---|---|
+| 1B 8da4w | 100.9 -> 91.8 | 45.4 -> 36.4 (1.25x) |
+| 3B 8da4w | 242.5 -> 206.4 | 136.3 -> 100.1 (1.36x) |
+| 8B 8da4w | 524.6 -> 448.6 | 348.2 -> 272.6 (1.28x) |
+
+Phase timing of the two tiles (`results/xe2/phases/prof-parent-8da4w.csv`, `prof-c2-8da4w.csv`, 1B wq/wo,
+shader-clock cycles of one wave over the kernel): both cover the layer with 256 tiles of 16384 outputs, the
+candidate with half as many K chunks (K = 64 against 32). Total 128176 cycles against 190448; weight fetch
+36672 against 68640, barrier 20344 against 35104, shared-memory store 21008 against 29480, MMA 33088 against
+43200. The saving is mostly in fetch and barrier.
+
 
 ## Next
 
-1. Candidate 2 (`xe2-refine2`): 8da4w linear, balanced K = 64 tile with texel-wise weight staging, 1.26x at
-   kernel level (screen 7). Meant to be bit-identical to its parent; its logits probe must show that.
+1. Candidate 3 (`xe2-refine3`): fragment-contiguous ColumnMajor QK^T, 0.02 to 0.03 ms per layer at kernel
+   level; candidate 4 (`xe2-refine4`): the 64-column K = 64 8da4w tile where N >= 4K.
 2. 4w linear: tile shapes, K = 32 chunks, texel-wise staging and a smaller drain all fail to beat the shipped
    tile; the first split-staging body was 15 % slower than the release kernel on the shipped geometry
    (screen 9), the revised one is in screen 11.
@@ -256,6 +292,9 @@ roof (359.9).
 4. Stop after two consecutive gated candidates under 2 % geomean.
 
 ## Awaiting B580 confirmation
+
+Candidate 2 (`xe2-refine2`, plain gate pass on the B70): 8da4w linear
+`sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8`.
 
 Candidate 1 (`xe2-refine1`, accepted under the reference-error rule on the B70): QK^T `sarc_sdpa_qk_coopmat_pk_t128x64k32g44s16m8nf`,
 attn*V `sarc_sdpa_av_coopmat_xe2_t128x64k32g44s16m8` (head_dim 128) and
