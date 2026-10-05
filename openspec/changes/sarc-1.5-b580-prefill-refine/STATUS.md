@@ -31,7 +31,7 @@ gnome-shell" of the campaign notes was not observed in that state. Calibration f
 the 8B 4w cell), idle package temperature 47 C. A/A spread asks for 5 repeats, not 7 (largest A/A cell
 deviation 0.08 %, largest arm spread 0.43 %).
 
-Between about 05:40 and 07:30 UTC the owner was using the desktop (`IdleHint=no`). The 4w kernel screen ran
+From about 05:40 UTC, for at least an hour, the owner was using the desktop (`IdleHint=no`). The 4w kernel screen ran
 in that period and shows it: repeat spreads of 10 to 34 % on several tiles, and one hot / disturbed base run
 that made a tile look 20 % faster than it is (`results/b580/screens/README.md`). Session `s3-c1` also ran in
 it: foreign engine time 1.2 to 1.4 % per cell (median), 2.3 % at most, no run rejected, arm spreads up to
@@ -289,8 +289,8 @@ Per layer, S = 2048, us (tables in `results/b580/screens/README.md`). QK^T: `xe2
 (8B) / 440 (3B) against candidate 0's `pk` kernel 619 / 472, i.e. 7.6 % and 6.8 % faster; on 1B (head_dim 64)
 the best kernel is 2.7 % faster than `pk`, under the 3 % rule, so `pk` stays there. attn*V: candidate 0's
 kernels are the best for both head dimensions. Every ranking equals the B70's. Candidate 3 = candidate 1 with
-that QK^T kernel for head_dim 128; QK^T is 2.4 to 3.1 % of the prefill on 3B / 8B, so the expected end-to-end
-effect is about 0.2 %.
+that QK^T kernel for head_dim 128; QK^T is 2.4 to 4.3 % of the prefill on 3B / 8B, so the expected end-to-end
+effect is 0.2 to 0.3 %.
 
 ## Roofs (re-measured, not the old evidence)
 
@@ -298,7 +298,8 @@ igpu-roofline plan `fast`, device `b580`, 2026-10-05 07:40 to 08:03 UTC, driver 
 runner `810e098c8abb`, clocks not pinned, sentinel `ok` at all 34 checkpoints, every roof confirmed by 3
 repeats (`results/b580/roofline/b580-fast-20261005/REPORT.md`; artifacts `roofline/b580-fast-20261005/`).
 The tool is the fleet copy already on this host (`~/.cache/igpu-roofline/fleet-fast-20260926`), run unchanged
-from a copy in the artifact directory, with the campaign's venv. The desktop was quiet during the run.
+from a copy in the artifact directory, with the campaign's venv. The jobs just before and after it (SDPA
+screen, `s4-c2`) saw a quiet card; the tool's own sentinel is the evidence for the run itself.
 
 | roof | B580 (this run) | B70 (its campaign's run) | B580 / B70 |
 |---|---:|---:|---:|
