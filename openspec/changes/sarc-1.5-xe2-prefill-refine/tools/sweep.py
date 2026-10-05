@@ -10,6 +10,8 @@ can be regenerated) and the result csv.
                                                   (n = 0: the whole list); ids are <space digit><rank>
   sweep.py neighbours <space> <measured.csv> <best.csv> <first rank> <out.csv>
                                                   every legal configuration one parameter away from a best one
+                                                  and not in <measured.csv>, in a seeded random order
+  sweep.py subset <ids.txt | ids.csv> <out.csv> <cfg.csv>...   the rows of the given ids
   sweep.py precheck-dir <tree> <dir> <cfg.csv>... a glsl directory holding only these variants (compile check)
   sweep.py lds <spv dir> <out.csv> <keep> <cfg.csv>...
                                                   per configuration: compiled or not, exact shared-memory bytes
@@ -200,8 +202,13 @@ def main():
             k = key(c, space)
             if k in have or k in seen: continue
             if any(sum(a != b for a, b in zip(k, b_)) == 1 for b_ in bk): seen.add(k); L.append(c)
+        random.Random(20261005).shuffle(L)                                    # build-sweep.sh may keep only the first ones
         for i, c in enumerate(L): c["id"] = f"{SPACES[space]}{first + i:05d}"
         write(out, L); print(f"{space}: {len(L)} unmeasured one-parameter neighbours of {len(bk)} configurations -> {out}")
+    elif cmd == "subset":
+        ids = [l.split(",")[0].strip() for l in open(sys.argv[2]) if l.strip()]; rows = {c["id"]: c for c in read(sys.argv[4:])}
+        keep = [rows[i] for i in dict.fromkeys(ids) if i in rows]
+        write(sys.argv[3], keep, list(keep[0].keys()) if keep else COLS); print(f"{len(keep)} of {len(set(ids))} ids -> {sys.argv[3]}")
     elif cmd == "precheck-dir":
         tree, d = sys.argv[2], pathlib.Path(sys.argv[3]); cfgs = read(sys.argv[4:]); d.mkdir(parents=True)
         g, blocks = variants_block(tree, cfgs)

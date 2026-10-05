@@ -1,10 +1,11 @@
 # sarc-1.5-xe2-prefill-refine: status
 
-**2026-10-05 05:45 UTC — running again (review follow-up): the sampled parameter search the owner decision of
-2026-10-04 requires, which the first report had left out. Results so far are unchanged: winner `xe2-refine2`
-(candidates 1 and 2), +57.5 % geomean over the parent (`s6-final`); candidate 1 is `ACCEPTED (reference-error
-rule, owner decision 2026-10-04)`, not a plain pass; candidates 3 and 4 passed their gates with no measurable
-gain.**
+**2026-10-05 14:05 UTC — running (review follow-up): the sampled parameter search the owner decision of
+2026-10-04 requires. 4w linear: 1520 of 2000 sampled configurations screened, none faster than the shipped
+tile so far. Projected end of the whole search: about 2026-10-07 00:00 UTC (about 42 hours after its start;
+no single run over 11 hours). Earlier results are unchanged: winner `xe2-refine2` (candidates 1 and 2), +57.5 %
+geomean over the parent (`s6-final`); candidate 1 is `ACCEPTED (reference-error rule, owner decision
+2026-10-04)`, not a plain pass; candidates 3 and 4 passed their gates with no measurable gain.**
 
 Branch `topic/xe2-prefill-refine`, parent `6a7cc8cc6` (head of `topic/780m-prefill-refine`). Host
 `fedora-gpu-eval`, card `b70-0` only (guest PCI `0000:01:00.0`, Vulkan device 0, **`ETVK_DEVICE_INDEX=0`**,
@@ -13,28 +14,64 @@ B70 or on the B580.
 
 ## Running now
 
-The sampled parameter search (`tools/sweep.py`, `sweep_run.py`, `sweep_analyze.py`, `build-sweep.sh`), one GPU
-job at a time through `tools/sweep_queue.sh` (`.artifacts/queue/status`). Seed 20261005 for every space.
+The sampled parameter search (`tools/sweep.py`, `sweep_run.py`, `sweep_analyze.py`, `build-sweep.sh`,
+`sweep_stage1.sh`, `sweep_stage2.sh`), one GPU job at a time through `tools/sweep_queue.sh`
+(`.artifacts/queue/status`), started 2026-10-05 05:33 UTC. Seed 20261005 for every space. The sweep variants
+exist only in the sweep builds (`build/sw*`: an export of HEAD plus the generated overlay), never in the
+working copy; raw rows are in `.artifacts/raw/sw*/results.csv` until a space is finished and collected.
 
-Legal spaces after the analytic pruning (workgroup <= 1024, whole 8 x 16 MMA tiles per subgroup, tile sizes
-dividing every production shape, the flag exclusions and the known staging rules of each body), counted by
-`sweep.py count`; then every drawn configuration is compiled with the build's glslc and its exact shared
-memory is read from the SPIR-V (limit 46000 bytes):
+### Spaces, counts and progress (14:00 UTC)
 
-| space | parameters | analytically legal | drawn / compile / legal | to screen | cheap mode per configuration | projected |
-|---|---|---:|---|---:|---|---:|
-| 4w linear | body (release, split staging, texel-wise), M, N, K, subgroup grid, subgroup size, layout, IMG_A, IMG_W, drain, accumulator | 338448 | 3000 / 2851 / 2067 | 2000 | 13 s (1B shapes) | 7 h + 1.7 h validation |
-| 8da4w linear | body (zpg, bt, xe2bt, zpgtr), M, N, K, grid, subgroup size, zpgtr flags | 44670 | 3000 drawn, checked when its build runs | 2000 | 13 s | 7 h + 1.7 h |
-| attn*V | family (sweep, ml, xe2), M, N, K, grid, subgroup size | 1131 | all, checked when its build runs | all legal | 7.5 s (1B + 3B) | about 2.5 h |
-| QK^T | family (sweep, pk, xe2, xe2c), M, N, K, grid, subgroup size, NO_MASK_FILL | 4536 | all, checked when its build runs | 2000 | 7.5 s | 4.2 h + 0.4 h |
+Legal space = after the analytic pruning (`sweep.py count`): workgroup <= 1024 invocations, whole 8 x 16 MMA
+tiles per subgroup, tile sizes dividing every production shape, the flag exclusions and the known staging
+rules of each body. Then every drawn configuration is compiled with the build's glslc and its exact shared
+memory is read from the SPIR-V (limit 46000 bytes; a tile over the device limit can hang the GPU).
 
-None of the four can be enumerated with the full measurement inside a day except attn*V, which is enumerated
-in the cheap mode. Stage 1 (queued, in this order: 4w, 8da4w, attn*V, QK^T): validation of the cheap mode on
-the first 60 configurations (cheap once, full twice), then the cheap screen. Stage 2 per space: correctness of
-everything near the top, importance and interaction tables, one-parameter neighbours of the best 20, full
-measurement of the best 10 per shape class against the shipped and the candidate kernels. Projected end of
-stage 1: about 2026-10-06 06:00 UTC; no single run is projected over 48 hours. The sweep variants exist only
-in the sweep builds (`build/sw*`, an export of HEAD plus the generated overlay), never in the working copy.
+| kernel family (space) | parameters | analytically legal | drawn / compile / fit shared memory | planned | done | measured rate |
+|---|---|---:|---|---:|---:|---|
+| 4w linear | body (release, split staging `xe2s`, texel-wise `xe2bx`), M, N, K, subgroup grid, subgroup size, layout, IMG_A, IMG_W, drain, accumulator | 338448 | 3000 / 2851 / 2067 | 2000 | 1580 cheap, 60 of them also full x 2 | 15.0 s per configuration (cheap), 50 s (full) |
+| 8da4w linear | body (zpg, bt, xe2bt, zpgtr), M, N, K, grid, subgroup size, zpgtr flags | 44670 | 3000 drawn; checked when its build runs | 2000 | 0 | expected as 4w |
+| attn*V | family (sweep, ml, xe2), M, N, K, grid, subgroup size | 1131 | all drawn; checked when its build runs | every legal one (about 850) | 0 | about 9 s expected (7.5 s in the smoke test) |
+| QK^T | family (sweep, pk, xe2, xe2c), M, N, K, grid, subgroup size, NO_MASK_FILL | 4536 | all drawn; checked when its build runs | 2000 | 0 | about 9 s expected |
+
+Sample size: 2000 per space where the legal space is larger (the lower end of the owner's 2000 to 3000, to keep
+the whole search under 48 hours); attn*V is small enough to enumerate in the cheap mode. A full enumeration
+with the full measurement would take 4 months (4w), 3 weeks (8da4w), 2.5 days (QK^T).
+
+### Projection
+
+| step | duration | projected end (UTC) |
+|---|---:|---|
+| 4w stage 1 (validation 60 x cheap + 60 x full x 2, then the cheap screen) | 10.2 h, 8.5 h done | 10-05 15:45 |
+| 4w stage 2 (correctness of the top, at most 600 one-parameter neighbours, full x 2 of the best 10 per shape class) | about 4.5 h | 10-05 20:15 |
+| 8da4w stage 1, stage 2 | about 10.2 h + 4.5 h | 10-06 11:00 |
+| attn*V stage 1, stage 2 | about 3 h + 2 h | 10-06 16:00 |
+| QK^T stage 1, stage 2 | about 5.5 h + 2.5 h | 10-07 00:00 |
+
+About 42 hours in all, the longest single run about 8.5 hours; nothing is projected over 48 hours. If a
+stage runs long enough to push the end past 2026-10-07 05:30 UTC (48 hours) I will stop and report before
+starting the next one. The gate of any candidate the search produces is not in this projection (about 1 hour
+for a linear candidate, 2 for an SDPA one).
+
+### What the 4w sample shows so far (1576 configurations with all four 1B shapes, interim, cheap mode)
+
+- **Validation of the cheap mode** (60 configurations, cheap once against the median of two full runs): Spearman
+  rank correlation 0.963 to 1.000 over the twelve (model, shape) pairs and 0.995 to 1.000 for the layer-weighted
+  score; the two full repeats differ by 0.05 to 0.11 % (median). The cheap mode (the four 1B shapes, one per
+  shape class) ranks the 3B and 8B shapes as well.
+- **Drift**: the shipped kernel measured 32 times through the run (every 50 configurations) spreads 0.14 to
+  0.48 % per shape.
+- **No sampled configuration beats the shipped tile on the layer-weighted score.** Best 0.951x (the shipped
+  128 x 128 K = 16 tile with an 8 x 2 subgroup grid and a band drain), 2 of 1576 above 0.9x, 6 above 0.8x, 47
+  above 0.5x; the median configuration is 8 times slower (0.123x). Per shape class one configuration is ahead
+  of the shipped tile on wk/wv (1.043x, not yet checked for correctness or repeated) and none on the others.
+- **Parameter importance, interim** (share of the variance of log time explained by each parameter alone):
+  subgroup grid rows `sy` 31 %, grid columns `sx` 16 %, body 8 %, accumulator 6 %, tile M 5 %; N, layout, K,
+  subgroup size, IMG_A, drain and IMG_W each 1 % or less. Largest pair interactions: body x N 3 %, M x `sy`
+  2 %, N x layout 2 %, `sx` x `sy` 2 %. The final table comes with stage 2.
+
+Not concluded from this yet: stage 2 (correctness, neighbours of the best 20, full measurement of the best 10
+per shape class) has not run for any space.
 
 ## Needs the owner's attention
 
