@@ -55,8 +55,10 @@ export_commit() { local wt=$1 sha=$2 dest=$3 rel=${4:-.} idx p s
 #   - its command line names a known GPU workload. This second rule is the fallback for processes of other
 #     users, whose fdinfo an unprivileged user cannot read (the fleet's LLM services run as this user).
 # Ours = the top-level tool (XE2_TOP), its descendants, and its ancestors (the shells that launched it); and the
-# job this campaign runs on the other card: gl.sh registers itself in run/card<N>.job (pid and start time, so a
-# reused pid does not count), and the descendants of a registered, living gl.sh are ours on either card.
+# jobs this campaign runs on the other card: each card's queue registers itself in run/queue<N>.top and every
+# gl.sh in run/card<N>.job (pid and start time, so a reused pid does not count), and the descendants of a
+# registered, living queue or gl.sh are ours on either card. (The queue registration is what covers a gl.sh
+# that has started but not yet registered: the first split screen stopped on exactly that, 2026-10-05 23:00.)
 # Not counted: an idle monitor (monitor_idle). The owner's nvtop was open on this host before the campaign
 # started; it holds a DRM file of both cards to read their counters and submits nothing. It is exempt only
 # while every DRM client it owns shows zero engine cycles and zero GPU memory; the moment either is non-zero it
@@ -70,7 +72,7 @@ gpu_monitors() { local p; for p in $(grep -l -s -E "^drm-pdev:[[:space:]]*($PDEV
 # watched name. Such a process is still caught by the DRM rule if it opens the card.
 inline_shell() { local -a a; mapfile -d '' -t a < /proc/$1/cmdline 2>/dev/null || return 1
   [[ ${a[0]##*/} =~ ^(bash|sh|dash|zsh|fish)$ && ( ${a[1]:-} == -c || ${a[2]:-} == -c ) ]]; }
-campaign_tops() { local f p s; for f in $RUN/card*.job; do [[ -e $f ]] || continue; read -r p s < $f || continue
+campaign_tops() { local f p s; for f in $RUN/card*.job $RUN/queue*.top; do [[ -e $f ]] || continue; read -r p s < $f || continue
   [[ -n $p && $(cut -d' ' -f22 /proc/$p/stat 2>/dev/null) == "$s" ]] && printf '%s ' $p; done; }
 gpu_others() { local p q mine anc=" " a=$XE2_TOP tops; tops=" $XE2_TOP $(campaign_tops)"
   while [[ -n $a && $a -gt 1 ]]; do anc+="$a "; a=$(ps -o ppid= -p $a 2>/dev/null | tr -d ' '); done

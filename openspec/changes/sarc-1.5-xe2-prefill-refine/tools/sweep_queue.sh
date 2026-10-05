@@ -7,6 +7,7 @@
 # ends when queue/STOP exists and nothing is pending.
 . "$(dirname "$(readlink -f "$0")")/host.sh"; Q=$A/queue; [[ $XE2_CARD == 1 ]] && Q=$A/queue1; mkdir -p $Q/{pending,done,log}
 exec 8>$Q/lock; flock -n 8 || { echo "a queue is already running" >&2; exit 2; }
+mkdir -p $RUN; echo "$$ $(cut -d' ' -f22 /proc/$$/stat)" > $RUN/queue$XE2_CARD.top
 while :; do
   j=$(ls $Q/pending/*.sh 2>/dev/null | head -1)
   if [[ -z $j ]]; then [[ -e $Q/STOP ]] && { echo "$(date -u +%FT%TZ) QUEUE_DONE" >> $Q/status; exit 0; }; sleep 20; continue; fi
