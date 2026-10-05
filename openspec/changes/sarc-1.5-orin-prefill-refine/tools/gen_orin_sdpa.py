@@ -92,7 +92,9 @@ ident = lambda s: re.sub(r"[^A-Za-z0-9]", "_", s)
 prefs = "// Jetson Orin (tools/gen_orin_sdpa.py): single-kernel SDPA screening profiles and orin-refineN.\n"
 PREDS = {"head_dim_64_orin": "  return (s.op == Op::kSdpaQk ? s.K : s.N) == 64;",
          # the shapes the Orin's fp32-accumulating 4w row serves (orin_large_k in impl/sarc/table_nvidia.cpp)
-         "k_above_8192_orin": "  return s.K > 8192;"}
+         "k_above_8192_orin": "  return s.K > 8192;",
+         # the shapes the table gives to the Orin's 256 x 128 fp16-accumulating 4w tile (orin_256, same file)
+         "orin_256_shape": "  return s.K <= 8192 && (s.M != 256 || s.N % 2048 == 0);"}
 for name, body in PREDS.items():
     if any(pred == name for e in REFINE.values() for _, _, pred in e):
         prefs += f"bool {name}(const ShapeInfo& s) {{\n{body}\n}}\n"

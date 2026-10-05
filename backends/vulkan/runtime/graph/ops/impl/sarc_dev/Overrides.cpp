@@ -1337,6 +1337,9 @@ const Preference k4070tiRefine5[] = {
 bool k_above_8192_orin(const ShapeInfo& s) {
   return s.K > 8192;
 }
+bool orin_256_shape(const ShapeInfo& s) {
+  return s.K <= 8192 && (s.M != 256 || s.N % 2048 == 0);
+}
 const Preference kOrin_av_df_t16x128k32g11s32[] = {{Op::kSdpaAv, "4070ti_df_t16x128k32g11s32", nullptr}};
 const Preference kOrin_av_df_t16x64k32g11s32[] = {{Op::kSdpaAv, "4070ti_df_t16x64k32g11s32", nullptr}};
 const Preference kOrin_av_df_t32x128k32g11s32[] = {{Op::kSdpaAv, "4070ti_df_t32x128k32g11s32", nullptr}};
@@ -1432,6 +1435,19 @@ const Preference kOrinRefine4[] = {
     {Op::kSdpaAv, "4070ti_t64x64k32g42s32", nullptr},
     {Op::kDq8caLinear, "orin_bf_t128x128k64g24s32mk32ra", nullptr},
     {Op::kQ4gswLinear, "bx_t128x128k32g42s32f32c", k_above_8192_orin},
+};
+const Preference kOrinLinRefine5[] = {
+    {Op::kDq8caLinear, "orin_bf_t128x128k64g24s32mk32ra", nullptr},
+    {Op::kQ4gswLinear, "bx_t128x128k32g42s32f32c", k_above_8192_orin},
+    {Op::kQ4gswLinear, "orin_t256x128k16g42s32bt", orin_256_shape},
+};
+const Preference kOrinRefine5[] = {
+    {Op::kSdpaQk, "4070ti_pk_t128x64k64g42s32nf", nullptr},
+    {Op::kSdpaAv, "4070ti_ml_t64x128k32g42s32", nullptr},
+    {Op::kSdpaAv, "4070ti_t64x64k32g42s32", nullptr},
+    {Op::kDq8caLinear, "orin_bf_t128x128k64g24s32mk32ra", nullptr},
+    {Op::kQ4gswLinear, "bx_t128x128k32g42s32f32c", k_above_8192_orin},
+    {Op::kQ4gswLinear, "orin_t256x128k16g42s32bt", orin_256_shape},
 };
 // <<< orin sdpa-preferences
 struct Profile {
@@ -1614,6 +1630,8 @@ const Profile kProfiles[] = {
     {"orin-refine3", kOrinRefine3, sizeof(kOrinRefine3) / sizeof(Preference)},
     {"orin-lin-refine3", kOrinLinRefine3, sizeof(kOrinLinRefine3) / sizeof(Preference)},
     {"orin-refine4", kOrinRefine4, sizeof(kOrinRefine4) / sizeof(Preference)},
+    {"orin-lin-refine5", kOrinLinRefine5, sizeof(kOrinLinRefine5) / sizeof(Preference)},
+    {"orin-refine5", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
     // <<< orin sdpa-profiles
 };
 const Profile* requested_profile() {
