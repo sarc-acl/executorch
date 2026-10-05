@@ -1,7 +1,8 @@
 # sarc-1.5-xe2-prefill-refine: status
 
-**2026-10-04 22:55 UTC — running. Baseline, A/A and roofs measured; SDPA and linear kernels screened;
-candidate 1 (`xe2-refine1`, SDPA) is in its gate. No end-to-end number for a candidate exists yet.**
+**2026-10-05 00:20 UTC — running. Candidate 1 (`xe2-refine1`, SDPA) measured: +46.9 % geomean over the
+parent, every correctness item clean, but the next token differs from the parent in one cell, so it is NOT
+accepted yet: the evidence the owner's reference-error rule requires is being measured now.**
 
 Branch `topic/xe2-prefill-refine`, parent `6a7cc8cc6` (head of `topic/780m-prefill-refine`). Host
 `fedora-gpu-eval`, card `b70-0` only (guest PCI `0000:01:00.0`, Vulkan device 0, **`ETVK_DEVICE_INDEX=0`**,
@@ -10,10 +11,11 @@ B70 or on the B580.
 
 ## Running now
 
-Chain started 22:53 UTC (`.artifacts/logs/chain6.status`): build `topic4` (`bb2713605`), then two short screens
-(balanced K = 64 / 128 8da4w tiles; the 4w band-drain twin), then the gate of candidate 1,
-`gate_sdpa.sh s2-c1` (12 passes x 3 SDPA tiers, `verify.sh`, timing session, traces): about two hours in all.
-It gives the first end-to-end numbers. Nothing else uses the card.
+Two chains, one GPU job at a time (`.artifacts/logs/chain7.status`, `chain8.status`), started 00:16 UTC:
+builds `topic5` (`451633c0f`) and `hook1` (the same commit with the local softmax hook patch, measurement
+only); SDPA error against the fp32 reference for parent and candidate; decode A/B of candidate 1; 4w
+split-staging screen; phase timing of the candidate-2 kernel; hook softmax screen; then the logits probe of
+candidate 1 (four arms, 37 prompts per cell, about 45 minutes). Expected to finish about 01:45 UTC.
 
 ## Needs the owner's attention
 
@@ -144,20 +146,78 @@ involved); it is under `superseded/`, and the guard no longer matches inline she
 
 ## Per-cell numbers against the parent
 
-No gated candidate yet.
+### Candidate 1, `xe2-refine1` (SDPA prefill kernels): measured, acceptance pending
+
+Session `s2-c1`: pristine parent build (no environment) against build `topic4` with
+`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=xe2-refine1`; tok/s, median of 5 valid runs per arm, arms
+interleaved (`results/xe2/sessions/s2-c1/`):
+
+| cell | parent | candidate 1 | gain | next token parent vs candidate (timed / real-text / unaligned prompt) |
+|---|---:|---:|---:|---|
+| 1B 4w | 11702.90 | 17504.30 | +49.57 % | SAME / SAME / SAME |
+| 1B 8da4w | 12337.30 | 18450.50 | +49.55 % | SAME / SAME / SAME |
+| 3B 4w | 4853.08 | 7366.91 | +51.80 % | SAME / SAME / SAME |
+| 3B 8da4w | 5264.78 | 8192.00 | +55.60 % | SAME / SAME / SAME |
+| 8B 4w | 2420.80 | 3282.05 | +35.58 % | SAME / SAME / SAME |
+| 8B 8da4w | 2737.97 | 3835.21 | +40.07 % | **DIFFER / DIFFER** / SAME |
+
+Geomean +46.86 %, every cell far outside the +-2 % band (A/A noise 0.6 %). 61 timed runs, one rejected
+(`8b 4w cand r5`, `clock_low`) and replaced.
+
+Gate (`gate_sdpa.sh`, `sessions/s2-c1/gate.txt`): **GATE_FAIL on two lines, both the same fact**: next token
+parent vs candidate differs for 8B 8da4w on `prompt_2048.txt` and `prompt_check.txt`. Everything else passes:
+SDPA correctness 12 passes x tiers all / extended / full, 0 mismatches and `pairing=ok` in all 192 cases;
+unmodified `verify.sh` completed, 12 of 12 production-diff cases ALL PASSED, 28 of 28 numeric correctness
+cases, default vs tiled SAME on both prompts for both schemes (the parent's own `1b 8da4w unaligned DIFFER`
+becomes SAME), decode 31 tokens, every other status line equal to the parent control; traces for 12 runs.
+
+This candidate replaces the stock attention kernels (which accumulate in fp16) by kernels that accumulate in
+fp32, so it changes kernel arithmetic. Under the owner decisions of 2026-10-04 (`CAMPAIGN.md`) a next-token
+`DIFFER` then neither rejects nor passes it by itself; it is decided by (1) its rms and maximum error against
+the fp32 CPU reference on the S = 2048 cases being no larger than the parent's, (2) the logits of four arms at
+the differing positions and a comparison on at least 32 real-text prompts per cell, (3) the fixed
+gross-divergence thresholds (mean KL above 0.5 nat, or top-1 differing on more than a third of the prompts).
+That evidence is being measured now (`tools/probe.sh`, `tools/probe_analysis.py`, the `[sdpa-error]` lines of
+the correctness test). Until it is in, candidate 1 is **measured, not accepted**.
+
+Where the gain comes from (warm ETDump of both arms, ms per prefill, `sessions/s2-c1/trace/families.csv`):
+
+| cell | arm | total | linear GEMM | QK^T | attn*V | softmax | other |
+|---|---|---:|---:|---:|---:|---:|---:|
+| 1B 4w | parent | 165.5 | 59.0 | 29.9 | 34.8 | 16.5 | 25.3 |
+| 1B 4w | candidate 1 | 108.2 | 59.1 | 4.8 | 6.2 | 12.7 | 25.4 |
+| 3B 4w | parent | 412.3 | 172.0 | 76.2 | 85.2 | 22.0 | 56.9 |
+| 3B 4w | candidate 1 | 269.1 | 174.1 | 9.4 | 11.1 | 17.0 | 57.5 |
+| 8B 4w | parent | 831.2 | 443.9 | 117.1 | 134.7 | 33.6 | 101.9 |
+| 8B 4w | candidate 1 | 611.1 | 451.6 | 14.6 | 16.3 | 26.0 | 102.6 |
+| 8B 8da4w | parent | 737.5 | 348.2 | 108.3 | 126.2 | 32.6 | 122.2 |
+| 8B 8da4w | candidate 1 | 524.3 | 348.1 | 13.4 | 15.2 | 25.0 | 122.6 |
+
+Linear kernels in the model against the fresh roofs (both arms the same kernels): 4w 63.3 to 67.5 TFLOP/s =
+36.5 to 38.9 % of the fp16 matrix roof (173.3); 8da4w 82.1 to 87.8 TOP/s = 22.8 to 24.4 % of the int8 matrix
+roof (359.9).
+
+One thing still to settle: the single decode run inside `verify.sh` was slower than the parent's (1B 4w 101.3
+-> 78.1 tok/s, 1B 8da4w 94.8 -> 90.4). It is one short run per arm; a 5-repeat decode A/B of both arms for all
+six cells is in the chain now running.
 
 ## Next
 
-1. Gate of candidate 1 (`s2-c1`), then the per-op breakdown from its traces and percent-of-roof for the
-   linear kernels against the fresh roofs.
-2. Candidate 2: 8da4w linear with the best balanced K = 64 tile per shape (screen 7, running).
-3. 4w linear: no faster variant found yet (tile shapes, K = 32 chunks, texel-wise staging all lose); the 4w
-   band-drain twin is in screen 8.
-4. Stop after two consecutive gated candidates under 2 % geomean.
+1. Decide candidate 1 from the reference-error evidence; record it as `ACCEPTED (reference-error rule, owner
+   decision 2026-10-04)` or as rejected, with the numbers either way.
+2. Candidate 2 (`xe2-refine2`): 8da4w linear, balanced K = 64 tile with texel-wise weight staging, 1.26x at
+   kernel level (screen 7). Meant to be bit-identical to its parent; the logits probe will show whether it is.
+3. 4w linear: tile shapes, K = 32 chunks, texel-wise staging and a smaller drain all fail to beat the shipped
+   tile; the 256 x 256 split-staging tile (screen 9, in the running chain) is the remaining idea.
+4. Softmax: now the largest attention kernel. A single-read variant exists but needs a release-zone hook; it
+   is measured through a local uncommitted patch only (`tools/hook-sdpa-softmax.patch`).
+5. Stop after two consecutive gated candidates under 2 % geomean.
 
 ## Awaiting B580 confirmation
 
-Nothing yet (no gated candidate). Every Xe2 variant so far keeps its shared memory under 46000 bytes (the B70
+Candidate 1 (`xe2-refine1`) once its acceptance is decided: QK^T `sarc_sdpa_qk_coopmat_pk_t128x64k32g44s16m8nf`,
+attn*V `sarc_sdpa_av_coopmat_xe2_t128x64k32g44s16m8` (head_dim 128) and
+`sarc_sdpa_av_coopmat_sweep_t64x64k32g44s16m8` (head_dim 64), with the truncated SARC softmax. Every Xe2 variant so far keeps its shared memory under 46000 bytes (the B70
 reports `maxComputeSharedMemorySize` 49152; the B580's value was not read here and should be confirmed), uses
 workgroups of at most 1024 invocations and the 8x16x16 / subgroup-16 shapes the shipped Intel rows already use
 on both cards, and does not depend on the amount of device memory.
