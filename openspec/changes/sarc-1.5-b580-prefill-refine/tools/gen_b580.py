@@ -26,6 +26,14 @@ REFINE = [
                       ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", None)],
      "candidate 1 = refine0 + the balanced K = 64 8da4w tile with texel-wise weight staging (B580 screen 2: 1.31x at kernel level)"),
     ("b580-dq-k64", [("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", None)], "the 8da4w tile of refine1 alone, on the release SDPA path"),
+    ("b580-refine2", [("kSdpaQk", "pk_t128x64k32g44s16m8nf", None), ("kSdpaAv", "xe2_t128x64k32g44s16m8", "b580_head_dim_128"),
+                      ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", None),
+                      ("kQ4gswLinear", "sweep_t128x128k16g44s16m8flib", None)],
+     "candidate 2 = refine1 + the shipped 4w tile with the texture3d drain staged one band at a time (release body, CSH_BAND)"),
+    ("b580-refine2x", [("kSdpaQk", "pk_t128x64k32g44s16m8nf", None), ("kSdpaAv", "xe2_t128x64k32g44s16m8", "b580_head_dim_128"),
+                      ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", None),
+                       ("kQ4gswLinear", "xe2s_t128x128k16g44s16m8flib", None)],
+     "refine2 with the split-staging twin of the same tile (B580 screen 3, round 1: 1.17 to 1.22x per shape at kernel level)"),
 ]
 BASE = [("kSdpaQk", "sarc_sdpa_qk_coopmat_sweep_t128x64k32g44s16m8nf", "128, 64, 32, 4, 4"),
         ("kSdpaAv", "sarc_sdpa_av_coopmat_sweep_t64x64k32g44s16m8", "64, 64, 32, 4, 4")]

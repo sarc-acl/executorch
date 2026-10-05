@@ -782,6 +782,20 @@ const Preference kB580_refine1[] = {
 const Preference kB580_dq_k64[] = {
     {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
 };
+// candidate 2 = refine1 + the shipped 4w tile with the texture3d drain staged one band at a time (release body, CSH_BAND)
+const Preference kB580_refine2[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g44s16m8flib", nullptr},
+};
+// refine2 with the split-staging twin of the same tile (B580 screen 3, round 1: 1.17 to 1.22x per shape at kernel level)
+const Preference kB580_refine2x[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+    {Op::kQ4gswLinear, "xe2s_t128x128k16g44s16m8flib", nullptr},
+};
 // b580 end
 struct Profile {
   const char* name;
@@ -943,6 +957,8 @@ const Profile kProfiles[] = {
     {"b580-refine0", kB580_refine0, sizeof(kB580_refine0) / sizeof(Preference)},
     {"b580-refine1", kB580_refine1, sizeof(kB580_refine1) / sizeof(Preference)},
     {"b580-dq-k64", kB580_dq_k64, sizeof(kB580_dq_k64) / sizeof(Preference)},
+    {"b580-refine2", kB580_refine2, sizeof(kB580_refine2) / sizeof(Preference)},
+    {"b580-refine2x", kB580_refine2x, sizeof(kB580_refine2x) / sizeof(Preference)},
     // b580 end
 };
 const Profile* requested_profile() {
