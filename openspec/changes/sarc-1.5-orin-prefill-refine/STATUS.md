@@ -1,6 +1,6 @@
 # STATUS: sarc-1.5-orin-prefill-refine
 
-**2026-10-05 21:00 UTC. RUNNING. Accepted so far: candidate 1h (SDPA prefill kernels + fp32 softmax through the
+**2026-10-05 22:05 UTC. RUNNING (candidate 3 accepted at 21:59, +0.82 %: the first gated candidate below 2 %). Accepted so far: candidate 1h (SDPA prefill kernels + fp32 softmax through the
 owner-accepted hook), `ACCEPTED (reference-error rule, owner decision 2026-10-04)`, **+57.8 % geomean** over the
 parent; candidate 2 (8da4w linear, whole-texel weight staging), `GATE_ACCEPTED`, **+2.84 %** over the parent
 alone (8da4w cells +3.8 / +6.9 / +6.7 %). Candidate 1 (release softmax) stays REJECTED. Two small candidates
@@ -15,10 +15,9 @@ All times are UTC from `date -u`.
   its gpu-lab lock; status in `~/hmz-sarc-orin/jobs/<job>.status` / `.out`, from the workstation
   `tools/dstat.sh`. Survives a reboot of the workstation. Job `chain19b` (`tools/chain19.sh`, since 20:52), all
   arms but the pristine parent on build `topic13` (`fd44f8011`):
-  1. `s5-c3`, `gate.sh`: candidate 3 = `orin-refine5` + `4070ti_nzf` against the accepted stack (`orin-refine3` +
-     `4070ti_nzf` = candidates 1h + 2) as the parent arm. Until about 22:15.
-  2. `s6-c4`, `gate_sdpa.sh`: candidate 4 = softmax `orin_g64` on top of what is accepted by then (parent arm:
-     the same profile with `4070ti_nzf`). Until about 00:30.
+  1. `s5-c3`, `gate.sh`: candidate 3: done, `GATE_ACCEPTED` at 21:59.
+  2. `s6-c4`, `gate_sdpa.sh` (running since 21:59): candidate 4 = softmax `orin_g64` on top of candidates 1h + 2
+     + 3 (parent arm: `orin-refine5` + `4070ti_nzf`). Until about 00:15.
   3. `s7-final`, `timed.sh`: everything accepted against the pristine parent (timed session, traces).
   4. `s8-noenv`, `noenv_verify.sh`: `verify.sh` on `topic13` with nothing selected, against the parent control
      (the control the hook decision asks for). End about 02:00.
@@ -150,9 +149,42 @@ it (`s4-c1h`), not on the local-patch build `hook4`.
 |---|---|---|---|---|
 | 1 | `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine1` | SDPA prefill kernels (QK^T, attn*V) | yes (`OrinSdpa.cpp`, no hook) | **REJECTED** at `verify-check` (`s2-c1`); evidence session running |
 | 2 | `ET_VK_SARC_DEV_PROFILE=orin-lin-refine2` | 8da4w linear: whole-texel weight staging | yes | **GATE_ACCEPTED** (`s3-c2`, plain pass: output bit-identical to the shipped kernel), +2.84 % (8da4w cells +3.8 / +6.9 / +6.7 %) |
-| 3 | `orin-refine5` + `4070ti_nzf` (on top of 1h + 2) | 4w linear: column-major weight staging on the 256 x 128 tile (K <= 8192), texel-wise staging on the fp32 tile (K > 8192) | yes | in its gate (`s5-c3`); pre-checks: bit-identical to the shipped kernels on the shapes each tile serves |
-| 4 | the accepted profile + `ET_VK_SARC_SOFTMAX_VARIANT=orin_g64` | softmax: reductions inside the subgroups, 2 barriers per row instead of 14 | through the softmax-name hook | queued (`s6-c4`) |
+| 3 | `orin-refine5` + `4070ti_nzf` (on top of 1h + 2) | 4w linear: column-major weight staging on the 256 x 128 tile (K <= 8192), texel-wise staging on the fp32 tile (K > 8192) | yes | **GATE_ACCEPTED** (`s5-c3`, plain pass: bit-identical to the shipped kernels on the shapes each tile serves), **+0.82 %** over its parent (candidates 1h + 2); below 2 % |
+| 4 | the accepted profile + `ET_VK_SARC_SOFTMAX_VARIANT=orin_g64` | softmax: reductions inside the subgroups, 2 barriers per row instead of 14 | through the softmax-name hook | in its gate (`s6-c4`, since 21:59) |
 | 1h | candidate 1 + `ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf` | fp32 softmax without the zero tail | through the softmax-name hook (owner decision 2026-10-05, commit `307abb2ed`), build `topic6` | **`ACCEPTED (reference-error rule, owner decision 2026-10-04)`** (`s4-c1h`, `GATE_ACCEPTED`, no differing item), +57.8 % |
+
+### Candidate 3, `orin-refine5` (4w linear tiles) on top of candidates 1h + 2: `GATE_ACCEPTED`, +0.82 %
+
+Build `topic13` (`fd44f8011`) in both arms. Parent arm: `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine3
+ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf` (candidates 1h + 2, the accepted stack); candidate arm: the same with
+`orin-refine5`, which adds `orin_t256x128k16g42s32bt` (K <= 8192) and `bx_t128x128k32g42s32f32c` (K > 8192) for
+the 4w linear layers. So the session measures candidate 3 over its parent directly, and its `verify.sh` run is
+the first gate of the whole stack 1h + 2 + 3 together.
+
+- Bit identity (the tiles claim the shipped arithmetic): see "4w linear" below; identical on every shape a tile
+  serves.
+- Unmodified `verify.sh` with the candidate environment: `gate_check.py verify`: ACCEPT, 0 findings: every item
+  equals the parent control, all four default-vs-tiled next-token items SAME.
+- Timed session (`results/orin/sessions/s5-c3/`; tok/s, median of 5 valid interleaved runs per arm):
+
+  | cell | parent arm (1h + 2) | candidate 3 | gain | next token (4 prompts) |
+  |---|---:|---:|---:|---|
+  | 1B 4w | 1472.32 | 1484.06 | +0.80 % | SAME |
+  | 1B 8da4w | 1374.50 | 1376.34 | +0.13 % | SAME |
+  | 3B 4w | 621.55 | 627.84 | +1.01 % | SAME |
+  | 3B 8da4w | 569.05 | 569.21 | +0.03 % | SAME |
+  | 8B 4w | 286.43 | 294.97 | +2.98 % | SAME |
+  | 8B 8da4w | 268.59 | 268.66 | +0.03 % | SAME |
+
+  Geomean **+0.82 %**: below the 2 % of the stop rule. Only 8B 4w is outside the +-2 % band (repeat spread there
+  0.06 %); the other 4w cells gain 0.8 to 1.0 % with a spread of 0.1 to 0.4 %, which the A/A floor (0.09 %)
+  resolves but the +-2 % rule calls noise; the 8da4w cells do not use the kernels. 60 timed runs all valid at
+  612 MHz; `gate_check.py session`: ACCEPT, 0 findings (24 of 24 next-token rows SAME); `env-check`: ACCEPT.
+- Where it comes from (warm ETDump, ms, parent arm -> candidate; `s5-c3/trace/`): the linear GEMM family of the
+  4w cells, 667 -> 655 (1B), 1895 -> 1862 (3B), 4862 -> 4654 (8B; 150 of the 208 ms are the K = 14336 shape on
+  the fp32 tile); total dispatch 1378 -> 1366, 3277 -> 3245, 7132 -> 6924. Nothing else moves.
+- The parent arm of this session is also the first end-to-end measurement of candidates 1h + 2 together:
+  1B 1472.3 / 1374.5, 3B 621.6 / 569.1, 8B 286.4 / 268.6 tok/s (4w / 8da4w).
 
 ### Candidate 2, `orin-lin-refine2` (8da4w linear, whole-texel weight staging): `GATE_ACCEPTED`
 
