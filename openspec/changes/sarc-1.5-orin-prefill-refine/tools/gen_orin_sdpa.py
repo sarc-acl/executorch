@@ -103,4 +103,16 @@ for name, entries in REFINE.items():
     profs += f'    {{"{name}", {v}, sizeof({v}) / sizeof(Preference)}},\n'
 put_block(o, "struct Profile {\n", "sdpa-preferences", prefs)
 put_block(o, "};\nconst Profile* requested_profile() {", "sdpa-profiles", profs, "    ")
+# The softmax variant (release hook Override::softmax_variant, owner decision 2026-10-05) is named from the dev zone.
+soft = """    // ET_VK_SARC_SOFTMAX_VARIANT=<suffix>: a dev-zone variant of the SARC softmax, e.g. 4070ti_nzf
+    // (fp32 reduction, no zero tail). Through Override::softmax_variant, the release hook of the owner
+    // decision of 2026-10-05; unset, the release softmax is used.
+    if (const char* v = std::getenv("ET_VK_SARC_SOFTMAX_VARIANT")) {
+      if (*v != 0) {
+        o.softmax_variant = v;
+        std::cerr << "[sarc_dev] softmax variant: " << v << std::endl;
+      }
+    }
+"""
+put_block(o, "    set_override(o);\n", "softmax-variant", soft, "    ")
 print(f"OrinSdpa.cpp written; {len(cands)} screening profiles, {len(REFINE)} refine profiles")

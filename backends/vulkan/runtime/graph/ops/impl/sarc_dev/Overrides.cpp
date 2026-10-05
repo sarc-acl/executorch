@@ -1645,6 +1645,17 @@ struct Registrar {
     // the 8da4w variable needs active dq8ca rows (see dev_select).
     o.force_path = !requested_variant().empty();
     o.select = dev_select;
+    // >>> orin softmax-variant
+    // ET_VK_SARC_SOFTMAX_VARIANT=<suffix>: a dev-zone variant of the SARC softmax, e.g. 4070ti_nzf
+    // (fp32 reduction, no zero tail). Through Override::softmax_variant, the release hook of the owner
+    // decision of 2026-10-05; unset, the release softmax is used.
+    if (const char* v = std::getenv("ET_VK_SARC_SOFTMAX_VARIANT")) {
+      if (*v != 0) {
+        o.softmax_variant = v;
+        std::cerr << "[sarc_dev] softmax variant: " << v << std::endl;
+      }
+    }
+    // <<< orin softmax-variant
     set_override(o);
     if (requested_profile() != nullptr) {
       std::cerr << "[sarc_dev] profile active: " << requested_profile()->name
