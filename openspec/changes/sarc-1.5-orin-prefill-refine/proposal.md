@@ -154,4 +154,64 @@ Attention is half of the 1B and 3B prefill and 37 to 41 % of the 8B one. Linear 
 the fresh roofs: 4w 5.74 to 6.21 TFLOP/s = 59 to 64 % of the fp16 matrix roof (54 % for the fp32-accumulating
 tile of 8B `w2`); 8da4w 4.39 to 4.85 TOP/s = 22.5 to 24.9 % of the int8 matrix roof.
 
-DRAFT: the candidate sections follow when the gates have ended.
+## SDPA prefill kernels: candidates 1 and 1h
+
+The Orin has no SARC SDPA row; attention ran the upstream kernels (fp16 accumulation). `impl/sarc_dev/OrinSdpa.cpp`
+registers two `kUnverified` base rows for `tegra orin` that match only under an `orin-*` profile (not
+`orin-lin-*`), which enables the SARC SDPA path (spec constants, SARC softmax) from the dev zone. The kernels
+are the 4070 Ti campaign's dev variants: the Orin exposes the same cooperative-matrix shapes (16x16x16 fp16 with
+fp32 result, subgroup size 32 only; `results/orin/vk-caps.txt`).
+
+Kernel per head_dim, chosen at kernel level (`results/orin/screens/sdpa-screen{1,2}.csv`: 59 + 21 profiles; ms
+per layer at S = 2048):
+
+| kernels | 1B QK^T / softmax / attn*V | 3B | 8B |
+|---|---|---|---|
+| stock (the parent) | 36.29 / 10.97 / 28.60 | 53.11 / 8.23 / 42.64 | 70.87 / 10.97 / 56.76 |
+| `orin-refine1` (candidate 1) | 6.73 / 9.03 / 3.84 | 7.10 / 6.79 / 5.13 | 9.40 / 9.03 / 6.75 |
+| + softmax `4070ti_nzf` (candidate 1h) | 6.73 / 8.75 / 3.84 | 7.10 / 6.55 / 5.14 | 9.39 / 8.74 / 6.75 |
+
+QK^T: packed staging with K = 64 per chunk on a 128 x 64 tile (`4070ti_pk_t128x64k64g42s32nf`), all head dims.
+attn*V: head_dim 64 the 64 x 64 tile, head_dim 128 `4070ti_ml_t64x128k32g42s32`. Direct feed, which won for
+head_dim 64 on the 4070 Ti, loses on this device (10 to 20 ms for QK^T): feeding the matrix unit from DRAM is
+slow here (fresh roofs: 2.8 TFLOP/s fed from DRAM against 8.8 fed from shared memory). Twelve further Orin
+QK^T tiles (K = 64 on other tiles and grids, K = 128) were generated and screened: none is faster.
+
+### Candidate 1 (`orin-refine1`, release softmax): +57.5 % measured, REJECTED
+
+Gate `s2-c1`: 144 of 144 SDPA correctness cases with 0 mismatches and `pairing=ok`; unmodified `verify.sh` equal
+to the parent control in every item except `1b 8da4w unaligned: default vs tiled output DIFFER`, the item the
+4070 Ti's candidate 1 failed on. Under the reference-error rule the candidate is not larger than the parent in
+rms and maximum error in 11 of 12 cases; on the 3B production case its maximum error is 1.570e-3 against the
+parent's 1.408e-3. Not met; rejected. The owner confirmed this on 2026-10-05 (option (b) not granted).
+Evidence session (verdict unchanged): 1B 1466.0 / 1290.5, 3B 620.2 / 510.2, 8B 286.0 / 244.3 tok/s, geomean
++57.5 %, next token parent vs candidate SAME in 24 of 24 rows.
+
+### Candidate 1h (`orin-refine1` + `ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf`): +57.8 %, GATE_ACCEPTED
+
+The softmax reduces each row in fp32 (maximum, exp, sum, division), rounds once on the store and does not write
+the masked tail. It is the 4070 Ti campaign's dev shader, selected through the release-zone hook above.
+Build `topic6` = `4718f3e07`, gate `s4-c1h` against the pristine parent:
+
+- Error against the fp32 CPU reference (`results/orin/sdpa-error2/summary.txt`), production cases, rms / maximum:
+  1B 2.10e-5 / 0.914e-3 (parent 8.55e-5 / 1.713e-3), 3B 2.07e-5 / 0.783e-3 (8.69e-5 / 1.408e-3), 8B 2.06e-5 /
+  0.891e-3 (8.70e-5 / 1.587e-3). Not larger than the parent in 12 of 12 cases, both measures.
+- 144 of 144 SDPA correctness cases: 0 mismatches, `pairing=ok`, softmax kernel `..._4070ti_nzf`.
+- Unmodified `verify.sh`: `gate_check.py verify` ACCEPT with 0 findings; all four default-vs-tiled next-token
+  items SAME.
+- Session (tok/s, median of 5 valid interleaved runs per arm):
+
+| cell | parent | candidate 1h | gain | `dev/1.5` (`cells.csv`) | ETDump dispatch total, ms |
+|---|---:|---:|---:|---:|---|
+| 1B 4w | 890.82 | 1471.26 | +65.2 % | 890.82 | 2283 -> 1378 |
+| 1B 8da4w | 822.82 | 1292.93 | +57.1 % | 822.82 | 2475 -> 1570 |
+| 3B 4w | 360.50 | 621.36 | +72.4 % | 360.37 | 5662 -> 3278 |
+| 3B 8da4w | 320.45 | 511.23 | +59.5 % | 320.30 | 6372 -> 3986 |
+| 8B 4w | 189.74 | 286.23 | +50.9 % | 189.74 | 10776 -> 7137 |
+| 8B 8da4w | 170.45 | 244.57 | +43.5 % | 170.43 | 11995 -> 8363 |
+
+  Geomean +57.81 %; next token parent vs candidate SAME in 24 of 24 rows; 60 timed runs, all valid.
+- The gain is attention alone (ETDump, ms): 1B 1215 -> 309, 3B 2912 -> 526, 8B 4437 -> 798; every other family
+  is unchanged within 1 ms.
+
+DRAFT: the rule's real-text evidence, candidate 2 and the final sections follow.
