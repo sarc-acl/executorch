@@ -74,3 +74,11 @@ CPU side of the SYCL runtime that an in-process warm-up removes. ExecuTorch's `-
 of cost from its number. The warm number (`lb`) is therefore the one comparable with the ExecuTorch arms; the
 fresh-process number (`lc`) is kept and reported as the cold-start cost, and its runs are expected to be
 rejected by the clock rule.
+
+## Third session: 8B only (written before it ran, 2026-10-05)
+
+Two purposes. (1) Repeat the 8B part of the SYCL session: desktop use of the card pushed foreign engine time
+to 5 to 12 % there, so the ExecuTorch reference arms and three SYCL arms did not reach five valid runs (the SYCL
+Q4_0 `best` arm did: 3107 tok/s). (2) Screen llama.cpp Vulkan settings on the 8B model, since its `best` tier
+was chosen on 1B only: micro-batch 256, 512, 1024, 2048 with flash attention off, and 1024 with it on.
+The Vulkan `best` number reported for 8B becomes the fastest of these. Exact lines: `arms-8b.tsv`.
