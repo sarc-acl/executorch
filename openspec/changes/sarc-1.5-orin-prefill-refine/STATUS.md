@@ -1,9 +1,9 @@
 # STATUS: sarc-1.5-orin-prefill-refine
 
-**2026-10-05 12:25 UTC. RUNNING. Candidate 1h (`orin-refine1` + the fp32 softmax through the owner-accepted
-hook) has passed the SDPA correctness passes and `verify.sh` with 0 findings (no next-token item differs) and
-meets criterion 1 of the reference-error rule in all 12 cases; its timed session is running. Candidate 1
-(release softmax) stays REJECTED. Candidate 2 (8da4w linear) is queued. Nothing accepted yet; the stop rule is
+**2026-10-05 13:20 UTC. RUNNING. Candidate 1h (`orin-refine1` + the fp32 softmax through the owner-accepted
+hook): `GATE_ACCEPTED`, **+57.8 % geomean** over the parent, no next-token item differs, criterion 1 of the
+reference-error rule met in 12 of 12 cases; the rest of the rule's evidence (41-prompt logits comparison) is
+running. Candidate 1 (release softmax) stays REJECTED. Candidate 2 (8da4w linear) is queued. The stop rule is
 not met; the branch is not pushed.**
 
 All times are UTC from `date -u`.
@@ -13,15 +13,13 @@ All times are UTC from `date -u`.
 - Device (`duck-naughty`), detached, one GPU job at a time under the gpu-lab lock; status in
   `~/hmz-sarc-orin/jobs/<job>.status` / `.out`, from the workstation `tools/dstat.sh`. Survives a reboot of the
   workstation:
-  - `chain8c` (running): `gate_sdpa.sh s4-c1h`, candidate 1h on build `topic6` = `4718f3e07`: SDPA passes and
-    `verify.sh` done, six-cell session and traces to go.
-  - `chain13` (waiting): the reference-error rule evidence for candidate 1h: logits of the 41 real-text prompts
+  - `chain13` (running since 13:15): the reference-error rule evidence for candidate 1h: logits of the 41 real-text prompts
     for parent default / tiled and candidate default / tiled, comparison and rule (`probe/refine1-nzf/`).
     About 3.3 hours (the tiled arms run at 25 to 230 tok/s).
   - `chain10d` (waiting): candidate 2: bit comparison, production-diff, `gate.sh s3-c2` (build `topic6`).
   - `chain12b` (waiting): 4w screen 2 (staging variants of the shipped Orin 4w tiles, build `topic8`) and the
     pre-checks of the 4w tile of `orin-lin-refine3`.
-  Expected: `chain8c` until 13:30 UTC, `chain13` 16:50, `chain10d` 18:50, `chain12b` 19:30.
+  Expected: `chain13` until 16:40 UTC, `chain10d` 18:40, `chain12b` 19:20.
 - Workstation: nothing.
 
 ## Next step
@@ -50,9 +48,9 @@ it (`s4-c1h`), not on the local-patch build `hook4`.
 |---|---|---|---|---|
 | 1 | `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine1` | SDPA prefill kernels (QK^T, attn*V) | yes (`OrinSdpa.cpp`, no hook) | **REJECTED** at `verify-check` (`s2-c1`); evidence session running |
 | 2 | `ET_VK_SARC_DEV_PROFILE=orin-lin-refine2` | 8da4w linear: whole-texel weight staging | yes | queued (`s3-c2`) |
-| 1h | candidate 1 + `ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf` | fp32 softmax without the zero tail | through the softmax-name hook (owner decision 2026-10-05, commit `307abb2ed`), build `topic6` | queued (`s4-c1h`) |
+| 1h | candidate 1 + `ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf` | fp32 softmax without the zero tail | through the softmax-name hook (owner decision 2026-10-05, commit `307abb2ed`), build `topic6` | **`GATE_ACCEPTED`** (`s4-c1h`), +57.8 %; rule evidence running |
 
-### Candidate 1h, `orin-refine1` + `ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf`: gate `s4-c1h`, running
+### Candidate 1h, `orin-refine1` + `ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf`: gate `s4-c1h`, GATE_ACCEPTED
 
 Build `topic6` (`4718f3e07`: the branch with the softmax-name hook `307abb2ed`) against the pristine parent.
 What differs from candidate 1: the softmax reduces each row in fp32 and does not write the zero tail; QK^T and
@@ -76,9 +74,38 @@ attn*V are candidate 1's kernels.
   all 144 cases (`gate_check.py sdpa`: ACCEPT, 0 findings).
 - Unmodified `verify.sh`: `gate_check.py verify`: **ACCEPT, 0 findings**. Every item equals the parent control,
   including all four next-token items: `1b 8da4w unaligned: default vs tiled output SAME` this time.
-- Timed session and traces: running. The 41-prompt logits comparison and the rule's own verdict follow
-  (`chain13`): the owner's decision asks for the rule as written, so its evidence is collected in full although
-  no next-token item differs.
+- Timed session (`results/orin/sessions/s4-c1h/`; pristine parent against `topic6` with the candidate
+  environment; tok/s, median of 5 valid interleaved runs per arm; `cells.csv` = the original `dev/1.5` numbers):
+
+  | cell | parent | candidate 1h | gain | `cells.csv` | next token parent vs candidate (4 prompts) |
+  |---|---:|---:|---:|---:|---|
+  | 1B 4w | 890.82 | 1471.26 | +65.2 % | 890.82 | SAME |
+  | 1B 8da4w | 822.82 | 1292.93 | +57.1 % | 822.82 | SAME |
+  | 3B 4w | 360.50 | 621.36 | +72.4 % | 360.37 | SAME |
+  | 3B 8da4w | 320.45 | 511.23 | +59.5 % | 320.30 | SAME |
+  | 8B 4w | 189.74 | 286.23 | +50.9 % | 189.74 | SAME |
+  | 8B 8da4w | 170.45 | 244.57 | +43.5 % | 170.43 | SAME |
+
+  Geomean **+57.81 %**, every cell far outside the +-2 % band (A/A noise 0.09 %), repeat spread at most
+  0.25 %, 60 timed runs all valid (clock 612 MHz in every run), `gate_check.py session`: ACCEPT, 0 findings
+  (24 of 24 next-token rows SAME). `env-check`: ACCEPT. `gate.done`: `GATE_ACCEPTED ... all steps passed`.
+- Where the gain comes from (warm ETDump of both arms, ms per 2048-token prefill, parent -> candidate;
+  `results/orin/sessions/s4-c1h/trace/`):
+
+  | family | 1B 4w | 1B 8da4w | 3B 4w | 3B 8da4w | 8B 4w | 8B 8da4w |
+  |---|---|---|---|---|---|---|
+  | QK^T | 581 -> 108 | 581 -> 108 | 1487 -> 199 | 1488 -> 198 | 2268 -> 302 | 2268 -> 301 |
+  | attn*V | 457 -> 61 | 457 -> 61 | 1194 -> 144 | 1194 -> 144 | 1818 -> 216 | 1818 -> 216 |
+  | softmax | 177 -> 140 | 177 -> 140 | 231 -> 183 | 231 -> 183 | 351 -> 280 | 352 -> 280 |
+  | linear GEMM | 666 -> 667 | 870 -> 870 | 1894 -> 1895 | 2577 -> 2577 | 4865 -> 4865 | 6055 -> 6063 |
+  | everything else | 402 -> 402 | 390 -> 391 | 856 -> 857 | 882 -> 884 | 1474 -> 1474 | 1502 -> 1503 |
+  | total dispatch | 2283 -> 1378 | 2475 -> 1570 | 5662 -> 3278 | 6372 -> 3986 | 10776 -> 7137 | 11995 -> 8363 |
+
+  The whole gain is attention: 1215 -> 309 ms on 1B, 2912 -> 526 on 3B, 4437 -> 798 on 8B. Nothing else moves.
+- The gate found no differing next-token item, so it did not need the reference-error rule to accept. The
+  owner's decision of 2026-10-05 asks for the rule as written all the same: criterion 1 is met (above); the
+  41-prompt logits comparison of the four arms and the rule's own verdict are running (`chain13`,
+  `probe/refine1-nzf/`). The final label of this candidate is written when that evidence is in.
 
 ### Candidate 1, `orin-refine1` (SDPA prefill kernels): gate `s2-c1`, REJECTED
 
