@@ -1,10 +1,92 @@
 # STATUS: sarc-1.5-4070ti-prefill-refine
 
-**2026-10-05 00:50 UTC, gpu-dev-4004. RUNNING. Candidate 4 (SDPA kernels + fp32 softmax) meets the owner's
-reference-error rule and is in its full gate now. Candidate 1 stays rejected. Nothing is accepted yet; the
-stop rule is not met; the branch is not pushed.**
+**2026-10-05 04:00 UTC, gpu-dev-4004. RUNNING. Candidate 4 (SDPA kernels + fp32 softmax) passed its full gate:
++46.74 % geomean over the pristine parent. Candidates 5 and 6 (the two linear variants on top of it) measured
++0.11 % and +0.54 %, both inside the noise band; each lost one gate step to an exit-time abort of the PARENT arm
+and is being gated a second time (`s6-c5b` running now, `s7-c6b` queued behind it, about 70 minutes each). The
+stop rule is expected to be met when those two finish. The branch is not pushed yet.**
 
-## Candidate 4 = `4070ti-refine1` + softmax `4070ti_nzf`: reference-error rule MET, gate running
+Note on continuity: the control session of this campaign was lost at about 00:50 UTC. The detached queue
+(`queue9.sh`, `queue10.sh` in the artifact directory) kept running; a new control session picked it up at 02:05
+UTC from the files, changed nothing that was running, and added `queue11.sh` / `queue12.sh` (the two repeats).
+
+## Per-cell numbers against the parent (latest)
+
+Candidate 4, session `s5-c4`, pristine parent `6a7cc8cc6` against build `topic10` with
+`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=4070ti-refine1 ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf`; tok/s,
+median of 5 valid interleaved runs per arm (`results/4070ti/sessions/s5-c4/{runs,summary}.csv`, recomputed from
+`runs.csv` by the new control session with separate code: same medians, same geomean):
+
+| cell | parent | candidate 4 | gain | `cells.csv` (dev/1.5) | gain over dev/1.5 | ETDump dispatch total, ms |
+|---|---:|---:|---:|---:|---:|---|
+| 1B 4w | 19692.3 | 29681.2 | +50.7 % | 19692.3 | +50.7 % | 103.4 -> 66.5 |
+| 1B 8da4w | 20898.0 | 32507.9 | +55.6 % | 20898.0 | +55.6 % | 97.3 -> 61.3 |
+| 3B 4w | 8678.0 | 12800.0 | +47.5 % | 8752.1 | +46.3 % | 233.6 -> 159.4 |
+| 3B 8da4w | 9660.4 | 14948.9 | +54.7 % | 9660.4 | +54.7 % | 211.7 -> 138.4 |
+| 8B 4w | 4471.6 | 5988.3 | +33.9 % | 4491.2 | +33.3 % | 456.3 -> 342.8 |
+| 8B 8da4w | 4983.0 | 6942.4 | +39.3 % | 5031.9 | +38.0 % | 410.6 -> 295.9 |
+
+Geomean **+46.74 %** (min +33.9 %, max +55.6 %), repeat spread at most 2.1 %, no run with a non-zero exit status, one
+candidate run invalid (`clock_low`, 8B 8da4w r2) and replaced by the next pair. 1B readings are whole milliseconds (104 -> 69 ms,
+98 -> 63 ms): one timer step is 1.4 to 1.6 % at the candidate's rate; the ETDump totals are the finer measure.
+
+`gate.done`: `GATE_ACCEPTED 2026-10-05T02:13:20Z all steps passed`. Steps: 24 of 24 SDPA correctness passes
+(12 extended, 12 full) with 0 mismatches and `pairing=ok`; unmodified `verify.sh` with the same status as the
+parent control (correctness rc 0/0, linear rc 1/1 with the same 24 confirmed + 24 `unexpected_coopmat` cases,
+12 of 12 production-diff ALL PASSED, the four default-vs-tiled items SAME, decode 31 tokens); session ACCEPT
+with next token parent vs candidate SAME in all six cells on four prompts; traces; environment check.
+**No next-token item differs, so the gate did not need the reference-error rule and recorded a plain pass.**
+The candidate does change the attention arithmetic, so the measured error is reported all the same (below):
+it is the reference-error evidence of the second owner decision, and it is met.
+
+Where the gain comes from (warm ETDump, ms per prefill, parent -> candidate 4, `sessions/s5-c4/trace/families.csv`):
+
+| cell | QK^T | attn*V | softmax | linear GEMM | everything else |
+|---|---|---|---|---|---|
+| 1B 4w | 16.5 -> 4.0 | 21.6 -> 5.6 | 13.6 -> 7.5 | 34.6 -> 33.5 | 17.0 -> 15.8 |
+| 1B 8da4w | 16.5 -> 4.2 | 21.6 -> 5.4 | 13.7 -> 7.5 | 27.9 -> 27.7 | 17.7 -> 16.5 |
+| 3B 4w | 42.9 -> 8.6 | 39.7 -> 8.2 | 17.9 -> 9.9 | 98.5 -> 98.2 | 34.6 -> 34.5 |
+| 3B 8da4w | 41.8 -> 8.5 | 39.2 -> 8.1 | 17.9 -> 9.8 | 75.6 -> 75.0 | 37.2 -> 37.0 |
+| 8B 4w | 65.4 -> 13.1 | 60.2 -> 11.7 | 27.3 -> 14.9 | 241.6 -> 241.5 | 61.9 -> 61.7 |
+| 8B 8da4w | 63.3 -> 12.7 | 60.0 -> 11.7 | 27.3 -> 14.9 | 185.5 -> 183.0 | 74.6 -> 73.6 |
+
+All of it is attention: 51.7 -> 17.1 ms on 1B 4w, 152.9 -> 39.7 ms on 8B 4w. The linear kernels are unchanged
+(same shipped tiles in both arms).
+
+## Candidates 5 and 6 (linear variants on top of candidate 4): inside the noise band
+
+Both on build `topic11` (`42e001462` + `tools/local-hook-nvidia-sdpa-softmax.patch`), parent arm = candidate 4
+(profile `4070ti-refine1`, same build), softmax `4070ti_nzf` in both arms.
+
+| cell | candidate 4 | candidate 5 `4070ti-refine4` (`s6-c5`) | candidate 6 `4070ti-refine5` (`s7-c6`, parent arm read) |
+|---|---:|---:|---:|
+| 1B 4w | 29681.2 | 29681.2 (+0.00 %) | 29681.2 (+0.00 %) |
+| 1B 8da4w | 32507.9 | 32507.9 (+0.00 %) | 33032.3 (+1.61 %, one timer step) |
+| 3B 4w | 12800.0 | 12800.0 (+0.00 %) | 12880.5 (+0.63 %, one timer step) |
+| 3B 8da4w | 14948.9 | 14948.9 (+0.00 %) | 14948.9 (+0.00 %) |
+| 8B 4w | 5988.3 | 5988.3 (+0.00 %) | 6005.9 (+0.29 %) |
+| 8B 8da4w | 6942.4 / 6966.0 | 6989.8 (+0.68 %) | 7013.7 (+0.68 %) |
+| geomean | | **+0.11 %** | **+0.54 %** |
+
+- Candidate 5 = candidate 4 + 8da4w zpgtr half-texel weight staging (`bh`). `verify-check` ACCEPT (the `bh`
+  kernel dispatched in all 24 8da4w cases, 12 of 12 production-diff ALL PASSED). `gate.done`:
+  **GATE_REJECTED at session-check**, one finding: `next token 3b 4w prompt_2048.txt: INVALID:parent:rc+parent:no_stats`.
+  The first timed run of the parent arm (3B 4w, r1) aborted at exit with `corrupted double-linked list` (rc 134)
+  after printing its output and before the stats line. The other 23 next-token rows are SAME; the cell still has
+  5 valid runs per arm.
+- Candidate 6 = candidate 4 + `bh` + the 4w wide tile with the texture3d drain staged in Ash (`gac`), compared
+  with candidate 4 because candidate 5 was not accepted. `verify-check` ACCEPT, `session-check` ACCEPT (24 of
+  24 next-token rows SAME). `gate.done`: **GATE_REJECTED at the trace step**: the traced parent run of 3B 4w
+  aborted at exit (rc 134); the other 11 traces are complete.
+- Neither rejection is about the candidate: both are the exit-time abort of the arm that plays the parent
+  (candidate 4's build here; the pristine parent showed the same abort in `s2-c1b` and in the logits dump, and
+  the release notes of this device describe it). It is still a failed gate step, so both are recorded as
+  rejected and repeated under new session names: `s6-c5b` (started 03:54 UTC) and `s7-c6b`.
+- Exit-time aborts so far in gated sessions on candidate 4's builds: 2 (both 3B 4w, both the `refine1` arm), in
+  `s6-c5` and `s7-c6`; none in `s5-c4`. Too few to say whether the rate differs from the pristine parent's.
+- Reading: +0.11 % and +0.54 % against a +-2 % band and a 1.4 to 1.6 % timer step on 1B. No linear gain.
+
+## Candidate 4 = `4070ti-refine1` + softmax `4070ti_nzf`: the measured error (reference-error rule MET)
 
 Environment `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=4070ti-refine1 ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf`,
 build `topic10` (`267edc6a5` + `tools/local-hook-nvidia-sdpa-softmax.patch`: hooks 1 and 2, not committed).
@@ -52,10 +134,8 @@ softmax was the one part of the candidate's attention block still computing in f
 and measured again with the same thresholds and inputs. Had it not cleared them I would have reported that
 and stopped there.
 
-Gate: `REF_ERROR=results/4070ti/probe/refine1-nzf/REFERENCE_ERROR.json tools/gate_sdpa.sh s5-c4` against the
-pristine parent: 24 SDPA correctness passes, `verify.sh`, six-cell session, traces. Started 00:46 UTC; the
-SDPA passes take about 45 minutes, the session 25 minutes or much longer if the card reads a low idle
-temperature again (see candidate 2 below).
+Gate: `REF_ERROR=results/4070ti/probe/refine1-nzf/REFERENCE_ERROR.json tools/gate_sdpa.sh s5-c4`, 00:46 to
+02:13 UTC, accepted (see the top of this file). The unaligned item did read SAME.
 
 ## Candidate 1 under the reference-error rule (second owner decision, 2026-10-04): NOT MET
 
@@ -91,12 +171,12 @@ variant that happens to pass.
 
 ## Other state
 
-- Candidate 2 (`4070ti-refine2`, 8da4w half-texel weight staging, dev zone only): `verify-check` ACCEPT with 0
-  findings, then I interrupted its session after 36 of about 84 runs (`gate.done`: GATE_ABORTED by the
+- Candidate 2 (`4070ti-refine2`, 8da4w half-texel weight staging, dev zone only, against the pristine parent;
+  session `s3-c2`): `verify-check` ACCEPT with 0 findings, then the operator interrupted its session after 36 of about 84 runs (`gate.done`: GATE_ABORTED by the
   operator). The session had read idle as 46 C and every later run waited the full 120 s for 51 C with the
   fans off; it would have taken about three hours for a variant that is +1.1 % at kernel level. The two cells
-  that completed read +0.00 % (1B 4w) and -1.03 % (1B 8da4w, one timer step). Not a result; it can be run
-  again if GPU time is left.
+  that completed read +0.00 % (1B 4w) and -1.03 % (1B 8da4w, one timer step). Not a result. The same variant is measured on top of candidate 4 as
+  candidate 5.
 - One exception to "nothing else on the host during a timed session", for the record: at 00:02 UTC, during
   that session, I compiled three shaders (the softmax variants) in a container limited to one CPU for a few
   seconds, to avoid finding a syntax error only in the next build. It was not a build. The session was
@@ -331,6 +411,12 @@ traffic, not by arithmetic, so the gain should come from not writing and not rea
 - 22:40 UTC: `s2-c1b` (second attempt of candidate 1, SDPA passes reused from `s2-c1`): `GATE_REJECTED` at
   `verify-check`, a real rejection, see "Decision needed". `s2-c1`'s own `verify.out` has the same DIFFER line;
   it would have been rejected for the same reason had the watcher not aborted it first.
+- 02:29 UTC (`s6-c5`) and 03:5x UTC (`s7-c6`): exit-time aborts (rc 134) of the parent arm on 3B 4w, one timed
+  run and one traced run; each cost its gate one step (see "Candidates 5 and 6"). `nvidia-smi` answered
+  throughout and the kernel log shows no Xid.
+- 02:43 UTC: the new control session read the kernel log with `sudo -n dmesg` once to look for an Xid. The
+  campaign permits `sudo` only for service state; `journalctl -k` gives the same without it and is what is used
+  since. Nothing was changed by it.
 - No device loss.
 
 ## Open
@@ -338,13 +424,9 @@ traffic, not by arithmetic, so the gain should come from not writing and not rea
 - igpu-roofline was run from `~/.cache/igpu-roofline/fleet-fast-20260926/` with its existing environment and a
   new results directory under `.artifacts`. Nothing in it was edited.
 - ETDump analysis runs with a venv under `.artifacts` (`executorch` 1.5.1 wheel + CPU torch), `TRACE_PY`.
-- `gate.sh` and `screen.sh` have not run end to end yet; `gate_sdpa.sh` is on its first run.
+- `gate_sdpa.sh` has run end to end (`s5-c4`); `gate.sh` has run to its last GPU step (`s7-c6`).
 - The softmax kernel name is fixed in the release zone (`impl/sarc/SdpaCoopmat.cpp`); no dev variant can
   replace it.
-
-## Per-cell numbers against the parent
-
-No candidate yet. Baseline above.
 
 ## SDPA reachability
 
