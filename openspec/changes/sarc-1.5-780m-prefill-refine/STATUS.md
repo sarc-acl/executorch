@@ -1,6 +1,6 @@
 # STATUS: 780M prefill campaign, round 2 (parameter space + beyond)
 
-Updated 2026-10-05 04:20 PDT (11:20 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
+Updated 2026-10-05 06:20 PDT (13:20 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
 Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (new raw data) and
 `.../780m-prefill-refine-2026-10-03/` (earlier builds and sessions).
 
@@ -13,19 +13,21 @@ Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (
 | igpu-roofline `fast` plan | finished 20:15 PDT; matrix roofs 14.766 TFLOP/s (fp16 -> fp32) and 14.379 TOP/s (int8) |
 | candidate 9 (candidate 8 + one-pass fused kernel + 4w kernel per shape) | **gate passed** (finished 04:10 PDT): +4.50 to +5.45 % in the 4w cells, +1.06 to +1.80 % in the 8da4w cells (inside the band), geomean **+3.19 %** over candidate 8; every next-token item SAME; record below |
 | 4w, Part 1 | random sample, refinement round 1 and the confirmation are done: **best kernel per shape below**, 4.0 to 4.8 % less linear time per layer than `780m-refine3`, byte-identical output; refinement round 2 (51 neighbours of the winners) and the 12 production-diff passes are queued |
-| 4w refinement round 2; 8da4w validation, screen and confirmation; production-diff passes; QK^T / attn*V enumeration | running since 04:10 PDT (`chain9.sh`, `chain6e.sh`) |
+| 4w, after candidate 9 | refinement rounds 2 and 3 and a geometry scan with the leading flag set are done: the in-Ash drain on the 256-row tiles and one 128 x 128 grid are 1.4 to 2.4 % per layer better than `refine9` (single measurements; repeats running, `chain12.sh`); not a candidate by itself |
+| 8da4w | screening mode validated on 64 configurations (rank correlation 0.998 to 1.000, the full top 10 inside the screen's top 20 on all three models); screen of the 2,238 survivors running since 05:50 PDT (`chain6e.sh`) |
+| production-diff passes; QK^T / attn*V enumeration | queued behind the 8da4w steps |
 
 Chained over the three sessions (`t1-recheck`, `c7-softmax-r3`, `c8-fused3`; not a direct measurement, that comes
 at the end): candidate 8 is about +27 % geomean over `dev/1.5` (1B 4w 2698 -> 3625 tok/s, 8B 8da4w 488 -> 606).
 
 ## Running now (detached chains; nothing needs attention)
 
-1. `chain9.sh`: 4w refinement round 2, the 51 untested single-parameter neighbours of the confirmed
-   winners, full measurement, twice (about 40 min, sharing the GPU run by run with the chain below).
+1. `chain12.sh`: 4w second confirmation, the 28 leading configurations after rounds 2 and 3 and the geometry
+   scan, four more full measurements each (about 1 h, sharing the GPU run by run with the chain below).
 2. `chain6e.sh` (replaces `chain6d.sh`; same steps, the timing of both linear families before the production-diff
    passes), continued at 04:10 PDT:
-   - 8da4w: validation of the screening mode on 64 configurations (40 done), then all 2,238 survivors screened
-     (`wq_wo`, 3 + 3 runs), then the confirmation timing (everything within 8 % of the fastest, full measurement;
+   - 8da4w: all 2,238 survivors screened (`wq_wo`, 3 + 3 runs; 53 done at 06:13 PDT; the sweeps wait from 06:40
+     to 07:40), then the confirmation timing (everything within 8 % of the fastest, full measurement;
      the 10 fastest per shape 5 times). This changes how each 8da4w configuration is timed, not which ones: say
      so if the full measurement of all 2,238 is wanted instead (9.8 h);
    - 12 production-diff passes for the 35 confirmed 4w configurations (3 of 1,260 done) and for the 8da4w ones;
@@ -431,7 +433,24 @@ layout the 8da4w zpg kernel uses). It is 8 to 25 % slower than the padded column
 all twelve shapes (`results/780m/space/slab/kernel-time.txt`); the generated files are not kept in the tree.
 
 Tile K (32), subgroup size (32) and the fp32 accumulator have no alternative within 14 % of the leaders
-(refinement round 1). Still open: refinement round 2 around these winners (queued), and the 12 production-diff
+(refinement round 1).
+
+After candidate 9 the local search was continued until it stopped moving (`results/780m/space/{refine2,refine3,
+geo-cbt}/`, full measurement on all twelve shapes):
+
+- Round 2, the 51 untested single-parameter neighbours of the winners above: the in-Ash drain instead of the
+  band drain on the 256-row tiles (`t256x128k32g{18,24,28}s32f32cbt`) is 0.3 to 2.3 % faster on 9 of the 12
+  shapes; nothing else moves.
+- Round 3, the 29 untested neighbours of those: `t128x128k32g24s32f32cbt` (a 2 x 4 grid on the shipped tile
+  size, column-major B) is the fastest on the two small 1B shapes (wk_wv 420 against 440 us, wq_wo 1544 against
+  1586 us); `IMG_A` / `IMG_W` on the leaders are within 0.3 %.
+- Geometry scan: the 85 surviving geometries with the leading flag set (fp32 accumulator, in-Ash drain,
+  column-major B; subgroup 32, tile K 16 or 32, M and N at least 64, 2 to 32 MMA tiles per subgroup) that no
+  earlier stage had measured: none enters the first five on any shape.
+
+Best per shape now against `refine9`, per layer: -1.4 % (1B), -2.4 % (3B), -1.7 % (8B), single or double
+measurements; the repeats are running. That is about +1 to +1.7 % end to end in the 4w cells: inside the band, so
+it is kept for a combined candidate with the 8da4w result, not gated alone. Still open: the 12 production-diff
 passes per confirmed configuration (3 done, all passed).
 
 ## Can the sweep slot in between two timed runs of a session? No (checked 2026-10-04 18:44 PDT, during `c7`)
@@ -669,8 +688,8 @@ runs each; all variants reached through `hooks/softmax-name-hook.patch` applied 
 
 ## Next
 
-1. 4w refinement round 2; 8da4w validation, screen and confirmation -> the 8da4w kernel per shape; a candidate 10
-   from them if anything is outside the band.
+1. 4w second confirmation; 8da4w screen and confirmation -> the 8da4w kernel per shape; candidate 10 = candidate 9
+   + the refined 4w table + the 8da4w kernels per shape.
 2. Production-diff passes for the confirmed configurations; QK^T / attn*V enumeration and repeat stage.
 3. A direct session of the final configuration against `dev/1.5` and against `780m-refine3`.
 
