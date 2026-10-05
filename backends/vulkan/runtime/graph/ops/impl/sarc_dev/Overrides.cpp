@@ -710,6 +710,10 @@ const Preference kXe2_dq_k64[] = {
 bool b580_head_dim_128(const ShapeInfo& s) {
   return s.N >= 128;
 }
+// QK^T: ShapeInfo::K is head_dim.
+bool b580_qk_head_dim_128(const ShapeInfo& s) {
+  return s.K >= 128;
+}
 const Preference kB580_qk_sweep_t128x64k32g44s16m8nf[] = {{Op::kSdpaQk, "sweep_t128x64k32g44s16m8nf", nullptr}};
 const Preference kB580_av_sweep_t64x64k32g44s16m8[] = {{Op::kSdpaAv, "sweep_t64x64k32g44s16m8", nullptr}};
 const Preference kB580_qk_sweep_t128x64k32g44s16m8[] = {{Op::kSdpaQk, "sweep_t128x64k32g44s16m8", nullptr}};
@@ -795,6 +799,13 @@ const Preference kB580_refine2x[] = {
     {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
     {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
     {Op::kQ4gswLinear, "xe2s_t128x128k16g44s16m8flib", nullptr},
+};
+// candidate 3 = refine1 with the column-major fragment-layout QK^T for head_dim 128 (B580 screen 1: 7 to 8 % faster than pk on 3B / 8B, under 3 % on 1B)
+const Preference kB580_refine3[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
 };
 // b580 end
 struct Profile {
@@ -959,6 +970,7 @@ const Profile kProfiles[] = {
     {"b580-dq-k64", kB580_dq_k64, sizeof(kB580_dq_k64) / sizeof(Preference)},
     {"b580-refine2", kB580_refine2, sizeof(kB580_refine2) / sizeof(Preference)},
     {"b580-refine2x", kB580_refine2x, sizeof(kB580_refine2x) / sizeof(Preference)},
+    {"b580-refine3", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     // b580 end
 };
 const Profile* requested_profile() {

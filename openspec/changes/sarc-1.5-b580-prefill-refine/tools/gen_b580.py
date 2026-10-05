@@ -34,6 +34,9 @@ REFINE = [
                       ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", None),
                        ("kQ4gswLinear", "xe2s_t128x128k16g44s16m8flib", None)],
      "refine2 with the split-staging twin of the same tile (B580 screen 3, round 1: 1.17 to 1.22x per shape at kernel level)"),
+    ("b580-refine3", [("kSdpaQk", "xe2c_t128x64k32g44s16m8nf", "b580_qk_head_dim_128"), ("kSdpaQk", "pk_t128x64k32g44s16m8nf", None),
+                      ("kSdpaAv", "xe2_t128x64k32g44s16m8", "b580_head_dim_128"), ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", None)],
+     "candidate 3 = refine1 with the column-major fragment-layout QK^T for head_dim 128 (B580 screen 1: 7 to 8 % faster than pk on 3B / 8B, under 3 % on 1B)"),
 ]
 BASE = [("kSdpaQk", "sarc_sdpa_qk_coopmat_sweep_t128x64k32g44s16m8nf", "128, 64, 32, 4, 4"),
         ("kSdpaAv", "sarc_sdpa_av_coopmat_sweep_t64x64k32g44s16m8", "64, 64, 32, 4, 4")]
@@ -102,7 +105,8 @@ struct Registrar {{
 ident = lambda s: re.sub(r"[^A-Za-z0-9]", "_", s)
 prefs = ("// Single-kernel screening profiles and the b580-refineN candidates. They take effect on the Arc B580 only\n"
          "// (SDPA base rows of impl/sarc_dev/B580Sdpa.cpp, ET_VK_SARC_UNVERIFIED=1).\n"
-         "// attn*V: ShapeInfo::N is head_dim.\nbool b580_head_dim_128(const ShapeInfo& s) {\n  return s.N >= 128;\n}\n")
+         "// attn*V: ShapeInfo::N is head_dim.\nbool b580_head_dim_128(const ShapeInfo& s) {\n  return s.N >= 128;\n}\n"
+         "// QK^T: ShapeInfo::K is head_dim.\nbool b580_qk_head_dim_128(const ShapeInfo& s) {\n  return s.K >= 128;\n}\n")
 profs = ""
 for op, fam, tile in cands:
     kind = "qk" if op == "kSdpaQk" else "av"; name = f"b580-{kind}-{fam}-{tile}"
