@@ -351,7 +351,25 @@ class Verify(unittest.TestCase):
         open(os.path.join(V, "pdiff-llama-3.2-3b-8da4w-buffer.log"), "w").close()
         f = os.path.join(V, "correctness.log"); t = open(f).read().replace("case3 [1x1] 1.0 μs 100.0 GFLOP/s   PASSED", "case3 [1x1] 1.0 μs 100.0 GFLOP/s   FAILED"); open(f, "w").write(t)
         rc, out = self.check(); self.assertNotEqual(rc, 0)
-        self.assertIn("pdiff llama-3.2-3b 8da4w buffer: the log does not show", out); self.assertIn("correctness.log: 1 case(s) not PASSED", out)
+        self.assertIn("pdiff llama-3.2-3b 8da4w buffer: the log is incomplete", out)
+        self.assertIn("differs from the parent control: correctness cases not PASSED: candidate ['case3:FAILED'], parent []", out)
+
+    def test_orin_parent_status_is_compared_not_required_to_pass(self):
+        # The pristine parent on the Orin: buffer production-diff runs the upstream kernel and ends FAILED, and an
+        # upstream correctness case fails. The same status in both arms is accepted and listed; a candidate that
+        # adds a failing shape, or turns a parent failure into something else, is rejected.
+        def orin(d):
+            V = os.path.join(d, "verify"); f = os.path.join(V, "pdiff-llama-3.2-1b-4w-buffer.log")
+            open(f, "w").write("[production-diff] s1 -> k (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED\n"
+                               "[production-diff] s2 threw: Correctness validation failed\n[production-diff] FAILED (llama-3.2-1b, 2 shapes, M=2048, linear_q4gsw, buffer)\n")
+            o = os.path.join(d, "verify.out"); x = open(o).read().replace("pdiff llama-3.2-1b 4w buffer rc=0", "pdiff llama-3.2-1b 4w buffer rc=1"); open(o, "w").write(x)
+        orin(self.c); orin(self.p)
+        rc, out = self.check(); self.assertEqual(rc, 0, out)
+        self.assertIn("PARENT-STATUS: pdiff llama-3.2-1b 4w buffer verdict: FAILED", out); self.assertIn("PARENT-STATUS: pdiff llama-3.2-1b 4w buffer shape s2: threw", out)
+        f = os.path.join(self.c, "verify", "pdiff-llama-3.2-1b-4w-texture3d.log")
+        open(f, "w").write("[production-diff] s1 threw: Correctness validation failed\n[production-diff] FAILED (x, 1 shapes)\n")
+        rc, out = self.check(); self.assertNotEqual(rc, 0, out)
+        self.assertIn("differs from the parent control: pdiff llama-3.2-1b 4w texture3d shape s1: candidate 'threw', parent 'coopmat:PASSED'", out)
 
     def test_correctness_log_cut_before_its_rank3_block(self):
         f = os.path.join(self.c, "verify", "correctness.log"); keep = [l for l in open(f) if not l.startswith("[rank3")]

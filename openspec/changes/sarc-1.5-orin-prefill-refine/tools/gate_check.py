@@ -186,12 +186,12 @@ def verify_stage(stage, who):
     # microbench evidence: the logs behind the summary lines
     # The microbench prints no summary line when everything passed (only `[correctness] ... FAILED` lines
     # otherwise), so completeness is judged by the rank-3 verdict block that ends the run.
-    c = os.path.join(V, "correctness.log"); cases = failed = rank3 = 0; fallback = []; final = None; kclass = {}; last = ""
+    c = os.path.join(V, "correctness.log"); cases = failed = rank3 = 0; fallback = []; final = None; kclass = {}; last = ""; notpassed = []
     for l in (open(c, errors="replace") if os.path.exists(c) else []):
         w = l.split(); last = l if l.strip() else last
         if l.startswith("[rank3"):
             cases += 1; rank3 += 1; mm = re.match(r"\[rank3[^\]]*\] (\S+) -> (\S+) \((.*)\), correctness=(\S+)", l)
-            if not mm or mm[4] != "PASSED": failed += 1
+            if not mm or mm[4] != "PASSED": failed += 1; notpassed.append("rank3 " + (mm[1] if mm else l.strip()[:80]) + ":" + (mm[4] if mm else "unparsed"))
             else:
                 kclass["rank3 " + mm[1]] = "coopmat" if "coopmat" in mm[2] and "NOT coopmat" not in mm[3] else "other"
                 if "NOT coopmat" in mm[3]: fallback.append(mm[1])
@@ -199,13 +199,17 @@ def verify_stage(stage, who):
         elif w and w[-1] in ("PASSED", "FAILED", "SKIPPED", "CRASHED") and "GFLOP/s" in l:
             cases += 1; failed += w[-1] != "PASSED"
             name = next((w[i - 1] for i in range(1, len(w)) if w[i].startswith("[")), None)
+            if w[-1] != "PASSED": notpassed.append(f"{name}:{w[-1]}")
             if name is None or name in kclass: fail(f"{who}: correctness.log: case without a unique name: {l.strip()[:120]}")
             else: kclass[name] = "coopmat" if "coopmat" in w[0] else "other"
     if cases == 0 or rank3 == 0 or not last.startswith(("[rank3", "[correctness]")): fail(f"{who}: correctness.log missing, empty or cut short (no rank-3 verdict block at its end)")
-    if failed: fail(f"{who}: correctness.log: {failed} case(s) not PASSED")
+    # Orin: the pristine parent itself has cases that are not PASSED (the upstream fp16 kernels at K = 4096 with
+    # M = 128, which no Orin row covers). The set of such cases, by name and status, must equal the parent
+    # control's: a candidate may not add one, and the control's own check lists them (PARENT-STATUS).
+    st["correctness cases not PASSED"] = sorted(notpassed)
     rc = it.get("correctness rc")
     if rc is None: fail(f"{who}: no `correctness rc` line")
-    elif (rc == "0") != (final is None and not failed and not fallback): fail(f"{who}: correctness rc={rc} does not fit its log ({final}; fallback cases {fallback})")
+    elif (rc == "0") != (final in (None, "[correctness] ALL PASSED") and not failed and not fallback): fail(f"{who}: correctness rc={rc} does not fit its log ({final}; fallback cases {fallback})")
     st["correctness rc"] = rc; st["correctness cases"] = cases; st["correctness cases without coopmat"] = sorted(fallback)
     for name, k in kclass.items(): st[f"correctness case {name} kernel class"] = k   # a new fallback shows as a difference
     for md in ("llama-3.2-1b", "llama-3.2-3b", "llama-3.1-8b"):
@@ -213,10 +217,23 @@ def verify_stage(stage, who):
             for sto in ("buffer", "texture3d"):
                 p = os.path.join(V, f"pdiff-{md}-{q}-{sto}.log"); k = f"pdiff {md} {q} {sto}"
                 lines = [l for l in (open(p, errors="replace") if os.path.exists(p) else []) if l.startswith("[production-diff]")]
-                if it.get(k + " rc") != "0": fail(f"{who}: {k}: rc {it.get(k + ' rc')!r}")
-                res = [l for l in lines if " -> " in l]; n = re.search(r"(\d+) shapes", lines[-1]) if lines else None
-                if not lines or "ALL PASSED" not in lines[-1] or not res or any("correctness=PASSED" not in l for l in res) or (n and int(n[1]) != len(res)):
-                    fail(f"{who}: {k}: the log does not show every shape PASSED and ALL PASSED")
+                # Orin: buffer IO has no Orin row, so the pristine parent's buffer cases run the upstream kernel
+                # ("NOT coopmat -- fallback, cannot validate the shader under test") and end FAILED, one of
+                # them (4w, K = 8192) with a numeric failure of that upstream kernel. Every production-diff
+                # case is therefore recorded per shape (coopmat or not, its correctness, or that it threw)
+                # together with its rc and final line, and must EQUAL the parent control's; the log must be
+                # complete (a final ALL PASSED / FAILED line naming the shape count, every shape reported).
+                res = [l for l in lines if " -> " in l or " threw: " in l]; n = re.search(r"(\d+) shapes", lines[-1]) if lines else None
+                final_ok = bool(lines) and ("ALL PASSED" in lines[-1] or "] FAILED (" in lines[-1])
+                shapes = {}
+                for l in res:
+                    nm = l.split()[1]
+                    if " threw: " in l: shapes[nm] = "threw"
+                    else:
+                        cm = re.search(r"correctness=(\S+)", l); shapes[nm] = ("fallback" if "NOT coopmat" in l else "coopmat") + ":" + (cm[1].rstrip(",") if cm else "?")
+                if not final_ok or not shapes or (n and int(n[1]) != len(shapes)): fail(f"{who}: {k}: the log is incomplete (no final verdict line, or not every shape reported)")
+                st[k + " rc"] = it.get(k + " rc"); st[k + " verdict"] = "ALL PASSED" if final_ok and "ALL PASSED" in lines[-1] else "FAILED"
+                for nm, s in shapes.items(): st[f"{k} shape {nm}"] = s
     for q in ("4w", "8da4w"):
         k = f"linear {q} rc"; p = os.path.join(V, f"linear-{q}.json")
         if k not in it: fail(f"{who}: no `linear {q}` line")
@@ -255,6 +272,11 @@ def do_verify(cand, parent, *opts):
     p = c if os.path.realpath(cand) == os.path.realpath(parent) else verify_stage(parent, "parent control")
     for k in sorted(set(c) | set(p)):
         if c.get(k) != p.get(k): fail(f"differs from the parent control: {k}: candidate {c.get(k)!r}, parent {p.get(k)!r}")
+    for k in sorted(p):   # what the pristine parent itself shows that a naive checker would call a failure
+        v = p[k]
+        if (k.endswith(" verdict") and v != "ALL PASSED") or (k == "correctness cases not PASSED" and v) or (" shape " in k and v != "coopmat:PASSED") \
+           or (k.startswith("pdiff") and k.endswith(" rc") and v != "0"):
+            print(f"PARENT-STATUS: {k}: {v}")
     print("verify status (candidate / parent): " + "; ".join(f"{k} {c.get(k)}/{p.get(k)}" for k in sorted(c) if k.endswith(" rc")))
     for arm, s in (("candidate", c), ("parent", p)):
         print(f"{arm} linear dispatch states: " + ", ".join(f"{k[1]}={n}" for k, n in sorted(collections.Counter(v for k, v in s.items() if k.endswith(" dispatch")).items())))
