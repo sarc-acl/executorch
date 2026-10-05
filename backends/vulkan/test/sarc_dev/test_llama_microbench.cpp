@@ -2067,6 +2067,15 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
       outh.data(),
       static_cast<size_t>(q_numel),
       vkapi::kHalf);
+  // 780m: raw fp16 output of the case, for bitwise comparison of two kernel
+  // sets on the same inputs (the inputs are a fixed function of the case).
+  if (const char* dump_dir = std::getenv("ET_VK_DUMP_OUTPUT_DIR")) {
+    const std::string path = std::string(dump_dir) + "/sdpa_" + c.name + ".bin";
+    if (FILE* f = std::fopen(path.c_str(), "wb")) {
+      std::fwrite(outh.data(), sizeof(uint16_t), outh.size(), f);
+      std::fclose(f);
+    }
+  }
   std::vector<float> outf(q_numel);
   for (int64_t i = 0; i < q_numel; ++i) {
     outf[i] = half_to_float(outh[i]);
