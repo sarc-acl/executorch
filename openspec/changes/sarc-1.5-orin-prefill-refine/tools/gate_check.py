@@ -407,7 +407,8 @@ def banner_check(logs, lines, who):
         gs = set(re.findall(r"\[sarc_dev\] softmax variant: (\S+)", text))
         if gs != ({soft} if soft else set()): fail(f"{who} {os.path.basename(f)}: softmax variant banner {sorted(gs)}, environment says {soft}")
 
-def do_env(stage):
+def do_env(stage, *opts):
+    # --timed-only (timed.sh): a session that by design has no verify.sh run; the gates never pass it.
     e = {b: env_lines(os.path.join(stage, b, "env")) for b in ("parent", "cand", "parent-traced", "cand-traced")}
     if e["cand"] != e["cand-traced"]: fail(f'cand/env {e["cand"]} != cand-traced/env {e["cand-traced"]}')
     if e["parent"] != e["parent-traced"]: fail(f'parent/env {e["parent"]} != parent-traced/env {e["parent-traced"]}')
@@ -415,7 +416,7 @@ def do_env(stage):
     if os.path.exists(v):
         got = sorted(l.strip() for l in open(v) if re.match(r"ET_VK_", l))
         if got != e["cand"]: fail(f"verify.sh ran with {got}, cand/env is {e['cand']}")
-    else: fail("no verify/env.txt")
+    elif "--timed-only" not in opts: fail("no verify/env.txt")
     banner_check(sorted(glob.glob(os.path.join(stage, "raw/logs/*-cand-r*.log"))), e["cand"], "session")
     banner_check(sorted(glob.glob(os.path.join(stage, "raw/logs/*-parent-r*.log"))), e["parent"], "session")
     banner_check(sorted(glob.glob(os.path.join(stage, "sdpa-correctness/cand-*.log"))), e["cand"], "sdpa")
