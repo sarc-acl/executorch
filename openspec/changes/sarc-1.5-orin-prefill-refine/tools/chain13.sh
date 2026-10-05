@@ -17,6 +17,6 @@ python3 probe_position.py $P/broad $O parent-default parent-tiled nzf-default nz
 python3 probe_compare.py $P/broad parent-default parent-tiled nzf-default nzf-tiled > $O/compare.csv; echo "compare rc=$? $(tail -1 $O/compare.csv)"
 cp $A/raw/sdpa-error2/stock.txt $O/sdpa-error-parent.txt; cp $A/raw/sdpa-error2/refine1-nzf.txt $O/sdpa-error-candidate.txt
 printf '%s\n' $E > $O/cand.env
-mapfile -t ITEMS < $O/differing-items.txt
+mapfile -t ITEMS < <(grep . $O/differing-items.txt)   # no empty item when nothing differs
 python3 ref_error_rule.py $O refine1-nzf $O/cand.env $O/sdpa-error-parent.txt $O/sdpa-error-candidate.txt $O/compare.csv "${ITEMS[@]}" > $O/reference-error-rule.txt; echo "rule rc=$? $(tail -1 $O/reference-error-rule.txt)"
 echo CHAIN_DONE
