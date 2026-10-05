@@ -1,19 +1,21 @@
 # STATUS: sarc-1.5-4070ti-prefill-refine
 
-**2026-10-05 06:15 UTC, gpu-dev-4004. FINISHED, nothing running, GPU idle. Recommended configuration:
-candidate 4 (SDPA prefill kernels `4070ti-refine1` + fp32 softmax `4070ti_nzf`), +46.74 % geomean over the
-pristine parent, full gate passed. Candidates 5 and 6 (linear variants on top of it), each measured in two
-complete sessions: +0.11 % / +0.28 % and +0.54 % / +0.47 %, inside the noise band; the campaign stops by its
-stop rule. Reservation: none of the four linear gates reached GATE_ACCEPTED, each lost one step to the runner
-failing after its output (below). Candidate 4 needs two release-zone hooks (SDPA rows for this device, softmax
-name) and is measured through a local patch that is not committed. `proposal.md` has the full account.**
+**2026-10-05 06:20 UTC, gpu-dev-4004. RUNNING. The stop rule is NOT met yet. Candidate 4 (SDPA prefill kernels
+`4070ti-refine1` + fp32 softmax `4070ti_nzf`) is accepted by its full gate, +46.74 % geomean over the pristine
+parent. Candidates 5 and 6 (linear variants on top of it) measured +0.11 % / +0.28 % and +0.54 % / +0.47 % in
+two timed sessions each, but all four of their gates are GATE_REJECTED (each lost one step to the runner failing
+after its output), and rejected gates do not count as gated candidates. An earlier version of this file said
+FINISHED on that basis; the reviewer corrected it and it was wrong.**
 
-Next step: none in this campaign. For the owner: (1) the two hooks decide whether candidate 4 can be used at
-all; (2) the runner's failure after output (about 0.5 % of calls, with and without this campaign's kernels)
-looks like heap corruption in the runner and is worth locating on its own; (3) the linear kernels are what is
-left (50 to 70 % of the prefill at 64 % / about 41 % of their roofs).
+Running now: `queue14.sh` (artifact directory) stages candidate 5 again as `s6-c5c`, then `s6-c5d` ... (at most
+six attempts) until one gate completes with GATE_ACCEPTED, and only then candidate 6 the same way (`s7-c6c` ...).
+Same builds, environments and comparison as before (both arms `topic11`, parent profile `4070ti-refine1`,
+softmax `4070ti_nzf` in both arms). About 50 to 75 minutes per attempt. Every rejected attempt is kept.
 
-Blocking: nothing.
+Next step: when both have an accepted gate with a gain below 2 %, the stop rule is met; update `proposal.md`,
+check, commit, push. If six attempts of a candidate are all rejected, that is reported as it is.
+
+Blocking: nothing. Risk: the runner fails after its output in about 0.7 % of calls and a gate has about 135.
 
 Note on continuity: the control session of this campaign was lost at about 00:50 UTC. The detached queue
 (`queue9.sh`, `queue10.sh` in the artifact directory) kept running; a new control session picked it up at 02:05

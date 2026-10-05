@@ -19,9 +19,7 @@ on 8B). It is not reachable from the dev zone alone: it needs two small release-
 device, a dev name for the softmax), measured here through a local patch that is not committed. The first SDPA
 candidate (same QK^T and attn*V kernels with the release fp16 softmax, +42 %) was rejected on precision grounds
 and stays rejected. The linear kernels were swept and two variants were put through the gate on top of
-candidate 4, twice each: +0.11 % / +0.28 % and +0.54 % / +0.47 % geomean, inside the noise band, which ends the
-campaign by its stop rule (with the reservation that none of those four gates completed every step: see
-"Gated linear candidates"). What limits the prefill now is the
+candidate 4, twice each: +0.11 % / +0.28 % and +0.54 % / +0.47 % geomean, inside the noise band (@@OUTCOME@@). What limits the prefill now is the
 linear kernels (50 % of the 1B prefill and 70 % of the 8B one at 64 % and about 41 % of their matrix roofs).
 
 **Recommended configuration: candidate 4.** The linear profiles (`4070ti-refine2` to `-refine5`) are recorded
@@ -391,10 +389,12 @@ same session:
   as rejected. They were not repeated a third time: with the failure rate measured below a gate of about 135
   runner calls completes cleanly well under half of the time, and neither variant has a gain to accept.
 
-**Stop rule.** Two consecutive candidates, each gated twice, gain less than 2 % geomean over their parent
-(+0.11 % / +0.28 % and +0.54 % / +0.47 %). The campaign stops here. Reservation, stated plainly: the rule says
-"gated candidates", and the gates of these two did not complete; what is established is that their measured
-gain is inside the noise band in four complete timed sessions, and that everything the gates did check passed.
+**Stop rule: not met by these four sessions.** The rule asks for two consecutive gated candidates below 2 %;
+a gate that is rejected at one of its steps is not a completed gate, whatever the reason for the step's failure.
+What these sessions establish is the measured gain, not the gate. Both candidates are gated again in fresh
+sessions (below).
+
+@@FRESH@@
 
 ### The runner fails after its output now and then, in every build
 
