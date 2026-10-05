@@ -9,6 +9,8 @@ per shape. SDPA screens: `tools/screen_sdpa.sh` (ms per layer, S = 2048).
 |---|---|---|
 | `screen2-8da4w` | topic1 | every 8da4w tile in the dev zone (24, the B70 campaign's), 2 rounds |
 | `screen3-4w` | topic1 | every 4w tile in the dev zone (17), 2 rounds; noisy, see below |
+| `screen4-8da4w` | topic2 | three more texel-wise 8da4w tiles for this card (`b580bt`), 2 rounds, cooled runs |
+| `screen1-sdpa` | topic1 | all 59 `b580-*` SDPA profiles (every SDPA kernel in the dev zone, one at a time), 2 rounds |
 
 ## screen2-8da4w
 
@@ -30,3 +32,41 @@ Against round 2 they are **1.00x** (8B `w1_w3` 5422 / 5425 against 5431 us), whi
 `b580-refine2x` were added on the strength of round 1 alone and are not candidates; they are kept for an
 end-to-end confirmation of the null result. `screen.sh` now cools before every run, and a tile is chosen only
 if it wins in every round (the rule fixed in `proposal.md`).
+
+## screen4-8da4w
+
+The three tiles of the texel-wise family that fit the static rules and that the B70 campaign had not built
+(`impl/sarc_dev/B580Linear.cpp`): `b580bt_t128x128k32g84s16m8` 1.10x, `b580bt_t64x128k64g84s16m8` 0.80x,
+`b580bt_t64x128k64g88s16m8` 0.45x, against 1.30x for `xe2bt_t128x128k64g84s16m8` in the same screen. With
+the 46000-byte shared-memory rule nothing larger fits (a 256-row or K = 128 tile of this family needs 51 to
+70 KiB), so the 8da4w tile space of this family is exhausted on this card.
+
+## screen1-sdpa
+
+Kernel times in us per layer, S = 2048, round 1 / round 2 (the two rounds agree within 0.5 % everywhere):
+
+| QK^T kernel | 8B | 3B | 1B |
+|---|---|---|---|
+| stock (`base`) | 4697 / 4702 | 3632 / 3636 | 2538 / 2538 |
+| `sweep_t128x64k32g44s16m8nf` (base row, `b580-sdpa0`) | 1259 / 1262 | 948 / 948 | 659 / 658 |
+| `pk_t128x64k32g44s16m8nf` (candidate 0) | 619 / 618 | 472 / 471 | 423 / 422 |
+| `xe2c_t128x64k32g44s16m8nf` | **572 / 571** | **440 / 439** | 416 / 417 |
+| `xe2c_t64x128k32g44s16m8nf` | 582 / 581 | 439 / 440 | 411 / 412 |
+
+| attn*V kernel | 8B | 3B | 1B |
+|---|---|---|---|
+| stock (`base`) | 5730 / 5726 | 4424 / 4410 | 3030 / 3027 |
+| `sweep_t64x64k32g44s16m8` (base row; candidate 0 for head_dim 64) | 831 / 834 | 635 / 633 | 496 / 497 |
+| `xe2_t128x64k32g44s16m8` (candidate 0 for head_dim 128) | **657 / 658** | **521 / 523** | 493 / 497 (falls back to 64 x 64) |
+| `ml_t128x128k32g48s16m8` | 714 / 716 | 564 / 558 | 488 / 490 |
+| `xe2_t64x64k32g44s16m8` | 808 / 807 | 622 / 625 | 489 / 490 |
+
+- QK^T: the column-major fragment-layout kernel `xe2c_t128x64k32g44s16m8nf` is 7.6 % (8B) and 6.8 % (3B)
+  faster than candidate 0's `pk` kernel in both rounds, 1.4 % on 1B; the best 1B kernel
+  (`xe2c_t64x128k32g44s16m8nf`) is 2.7 % faster than `pk`, under the 3 % rule, so head_dim 64 keeps `pk`.
+  B70: the same kernel, 7 % (8B) and 6.5 % (3B), 0 % on 1B.
+- attn*V: `xe2_t128x64k32g44s16m8` is the best head_dim-128 kernel (as on the B70); for head_dim 64 nothing
+  is 3 % faster than the 64 x 64 tile.
+- The truncated softmax is 1074 (8B), 810 (3B), 1075 (1B) us in every profile: larger than QK^T or attn*V.
+- Every ranking is the B70's ranking. Ratio of B580 to B70 kernel time: 1.5 for QK^T, 1.37 for attn*V, 1.35
+  for the softmax.
