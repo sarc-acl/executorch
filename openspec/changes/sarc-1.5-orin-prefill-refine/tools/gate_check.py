@@ -282,7 +282,8 @@ def do_verify(cand, parent, *opts):
         print(f"{arm} linear dispatch states: " + ", ".join(f"{k[1]}={n}" for k, n in sorted(collections.Counter(v for k, v in s.items() if k.endswith(" dispatch")).items())))
 
 def do_sdpa(d, envfile=None):
-    names = set()
+    names = set(); soft = softmax_of(env_lines(envfile)) if envfile else None
+    want_soft = "sarc_sdpa_attn_weights_softmax_buffer_half" + (f"_{soft}" if soft else "")
     if envfile: banner_check(sorted(glob.glob(os.path.join(d, "cand-*.log"))), env_lines(envfile), "sdpa")
     for tier, ncase in (("extended", 8), ("full", 4)):
         logs = sorted(glob.glob(os.path.join(d, f"cand-{tier}-r*.log")))
@@ -300,6 +301,8 @@ def do_sdpa(d, envfile=None):
                     fail(f"{b}: {l.strip()[:160]}")
             for l in ker:
                 if not l.rstrip().endswith("pairing=ok"): fail(f"{b}: {l.strip()[:200]}")
+                # the softmax that ran is the environment's (the release SARC softmax, or the named variant)
+                if envfile and f'"{want_soft}"' not in l and f"softmax={want_soft} " not in l: fail(f"{b}: softmax kernel is not {want_soft}: {l.strip()[:200]}")
                 names.update(re.findall(r"(?:qk|softmax|av)=(\S+)", l))
     print("sdpa kernels dispatched:", ", ".join(sorted(names)) or "none")
 
@@ -389,11 +392,20 @@ def profile_of(lines):
     for l in lines:
         if l.startswith("ET_VK_SARC_DEV_PROFILE="): return l.split("=", 1)[1]
     return None
+def softmax_of(lines):
+    for l in lines:
+        if l.startswith("ET_VK_SARC_SOFTMAX_VARIANT="): return l.split("=", 1)[1]
+    return None
 def banner_check(logs, lines, who):
-    prof = profile_of(lines)
+    # Orin: the softmax variant (release hook, owner decision 2026-10-05) prints its own banner; it must be the
+    # environment's variant in every candidate log and absent where the environment names none.
+    prof = profile_of(lines); soft = softmax_of(lines)
     for f in logs:
-        got = set(re.findall(r"\[sarc_dev\] profile active: (\S+)", open(f, errors="replace").read()))
+        text = open(f, errors="replace").read()
+        got = set(re.findall(r"\[sarc_dev\] profile active: (\S+)", text))
         if got != ({prof} if prof else set()): fail(f"{who} {os.path.basename(f)}: profile banner {sorted(got)}, environment says {prof}")
+        gs = set(re.findall(r"\[sarc_dev\] softmax variant: (\S+)", text))
+        if gs != ({soft} if soft else set()): fail(f"{who} {os.path.basename(f)}: softmax variant banner {sorted(gs)}, environment says {soft}")
 
 def do_env(stage):
     e = {b: env_lines(os.path.join(stage, b, "env")) for b in ("parent", "cand", "parent-traced", "cand-traced")}
