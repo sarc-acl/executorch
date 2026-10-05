@@ -1,6 +1,6 @@
 # STATUS: 780M prefill campaign, round 2 (parameter space + beyond)
 
-Updated 2026-10-05 12:15 PDT (19:15 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
+Updated 2026-10-05 13:25 PDT (20:25 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
 Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (new raw data) and
 `.../780m-prefill-refine-2026-10-03/` (earlier builds and sessions).
 
@@ -17,6 +17,7 @@ Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (
 | 4w, Part 1 | finished except for the production-diff passes: the search stopped moving after refinement round 3 and the geometry scan; the best kernel per shape (5 repeats) is profile `refine10` |
 | 8da4w | screening mode validated on 64 configurations (rank correlation 0.998 to 1.000, the full top 10 inside the screen's top 20 on all three models); screen of the 2,238 survivors: 261 done when the host hung at 08:53 PDT, continued after the reboot |
 | production-diff passes; QK^T / attn*V enumeration | queued behind the 8da4w steps |
+| release-zone hooks (owner decision 2026-10-05) | committed (`b969e8f1c`, `1c8861aa7`, dev side `8518659ef`); candidate 10 reproduced from the committed build: gate passed, **+22.64 %** geomean over `780m-refine3` measured directly (section "Committed build") |
 
 Chained over the three sessions (`t1-recheck`, `c7-softmax-r3`, `c8-fused3`; not a direct measurement, that comes
 at the end): candidate 8 is about +27 % geomean over `dev/1.5` (1B 4w 2698 -> 3625 tok/s, 8B 8da4w 488 -> 606).
@@ -59,18 +60,12 @@ Where the capture material is (kept as evidence, nothing calls it):
 
 ## Running now
 
-`chain16.sh` (detached, started 2026-10-05 12:10 PDT), raw data in
-`rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-05/`: the reproduction from the committed branch
-that the owner decision of 2026-10-05 on release-zone hooks requires.
-
-1. build of the branch head `8518659ef` with no local patch (`build/head1`, `build/head1-traced`);
-2. `h0-control`: that build with no environment: `--sdpa-correctness-only` three times and unmodified
-   `verify.sh`, to be compared line by line with the pristine `dev/1.5` control (`s0-parent-verify`);
-3. `h1-c10`: `780m-refine3` against candidate 10 selected by `ET_VK_SARC_780M_PROFILE=c10`, the full gate
-   (timed session from a cool start, SDPA tiers 12 passes each, `verify.sh`, traces).
-
-Then (not started): the 8da4w screen from configuration 262 of 2,238 (11 to 15 h), its confirmation,
-production-diff passes, the QK^T / attn*V enumeration.
+`chain17.sh` (detached, started behind the gate; screening since 2026-10-05 13:26 PDT: a `PAUSE` marker of
+08:49 PDT, left behind by the hang, held it for four minutes until it was found and removed): the 8da4w screen from
+configuration 263 of 2,238 (same binaries, mode and CSV as before the reboot, `<artifacts 10-04>/raw/dq/screen.csv`;
+20 to 28 s a configuration: 11 to 15 h, with the 06:40 to 07:40 pause), then its confirmation timing.
+Queued after it: candidate 11 (candidate 10 + the 8da4w kernel per shape), production-diff passes, the QK^T /
+attn*V enumeration.
 
 ### After the reboot: re-check and A/A (`<artifacts 10-05>/stage/t4-recheck`, `t5-aa`; 10:28 to 11:38 PDT)
 
@@ -82,7 +77,7 @@ start: 1B 2694.74 -> 2832.64 (+5.12 %), 2537.79 -> 2828.73 (+11.46 %); 3B 1146.7
 `t5-aa`, candidate 10 (build `fused9`) on both arms, 3 repeats: cells -0.09 to +0.19 %, geomean 0.00 %.
 (`summary.csv` of that session says INCOMPLETE because the tool expects 5 runs; the medians are from `runs.csv`.)
 
-### The hook commits, and the edit that was interrupted (12:10 PDT)
+### The hook commits, and the edit that was interrupted (found and fixed 11:15 to 11:43 PDT)
 
 The control session was stopped by the owner's coordinator in the middle of the dev-zone edit that follows the
 two hook commits (`b969e8f1c` softmax variant name, `1c8861aa7` fused attention node). The working tree was
@@ -95,6 +90,59 @@ applied by whichever initializer runs last), rebuilt (`build/wt2`), and checked 
 (`raw/wt2-smoke/`): no profile -> release kernels and release softmax; `c7` -> softmax `..._780m_r3`; `c8` ->
 `fused3_..rk`; `c9`, `c10` -> `fused3_..rko`; the names of the measured builds. `check.sh --no-build` passes.
 Committed as `8518659ef`. Nothing was measured with the broken build.
+
+## Committed build: candidate 10 reproduced from the branch alone (owner decision 2026-10-05, release-zone hooks)
+
+Build `head1` = branch head `8518659ef`, clean tree, no local patch (`<artifacts 10-05>/build/head1`). Evidence in
+`results/780m/sessions/{h0-control,h1-c10}/` and `results/780m/hooks/`.
+
+**Nothing selected: every dispatch as before.**
+
+- `test_sarc_select`: PASS, 1240 checks / 31 rows (release tables) and 1432 checks / 121 candidates (dev zone),
+  the counts of the parent. `spirv_golden.py` on `head1`: PASS (53 shipped variants).
+- All 1,325 shaders of the pristine `dev/1.5` build (`build/parent`) are byte-identical in `head1`.
+- `h0-control`: `head1` with no environment, unmodified `verify.sh`, against the pristine `dev/1.5` control
+  (`s0-parent-verify`): the 34 lines are identical once the measured tok/s figures are set aside (kernel names,
+  return codes, 12 production-diff cases ALL PASSED, default vs tiled SAME on both prompts, decode 31 tokens).
+  `--sdpa-correctness-only` three times: 4 of 4, release QK^T / softmax / attn*V names, `fused=-`.
+
+**Candidate 10 dispatches what was measured.** Selected by `ET_VK_SARC_780M_PROFILE=c10` on top of
+`ET_VK_SARC_DEV_PROFILE=780m-refine3`. All 1,468 SPIR-V binaries of the measured build (`fused9`) are
+byte-identical in `head1` (the six softmax variants under their new names). Kernel names in `verify.sh`
+(`linear 4w` / `linear 8da4w` lines) and in the SDPA tiers (`fused3_d64_t32x32g11s32rko`,
+`fused3_d128_t16x64g11s32rko`) are those of the candidate-10 gate; `verify.out` of `h1-c10` equals that gate's
+line for line apart from the tok/s figures.
+
+**Gate, once, on the committed build (`h1-c10`, 12:03 to 13:22 PDT):** SDPA tiers `all`, `extended`, `full`, 12
+passes each: 48 / 96 / 48 cases passed, 0 failed, 0 mismatches, pairing ok in every line; `verify.sh` rc = 0 as
+above. Next token against the parent: SAME in eleven of twelve items; 8B 8da4w on `prompt_2048.txt` DIFFERS,
+the item already recorded for candidate 8 (**ACCEPTED (reference-error rule, owner decision 2026-10-04)**,
+evidence `results/780m/probe/`, `results/780m/sdpa-error/`; the kernels are byte-identical, so that evidence
+stands).
+
+**Timed session against the parent (`780m-refine3`), same binary in both arms, started at 44 C, 5 valid runs per
+arm.** This is also the first direct measurement of candidate 10 against the round's parent; until now the
+figure was chained over four sessions (1.0410 x 1.1316 x 1.0319 x 1.0047 = +22.13 %).
+
+| cell | `780m-refine3` | candidate 10, committed build | gain | candidate 10 through the patches (`c10-q4-refine10`) | spread parent / candidate |
+|---|---:|---:|---:|---:|---|
+| 1B 4w | 2828.73 | 3835.21 | **+35.58 %** | 3842.40 | 0.28 / 0.19 % |
+| 1B 8da4w | 2824.83 | 3690.09 | **+30.63 %** | 3690.09 | 0.28 / 0.18 % |
+| 3B 4w | 1190.01 | 1459.73 | **+22.67 %** | 1459.73 | 0.06 / 0.07 % |
+| 3B 8da4w | 1166.29 | 1379.12 | **+18.25 %** | 1360.80 | 0.57 / 1.46 % |
+| 8B 4w | 542.09 | 641.40 | **+18.32 %** | 642.21 | 0.16 / 0.28 % |
+| 8B 8da4w | 549.50 | 615.20 | **+11.96 %** | 615.20 | 0.43 / 0.42 % |
+
+Geomean **+22.64 %** over `780m-refine3`. Committed build against patch build: -0.19 to +1.35 %, geomean +0.17 %
+(different sessions; the A/A floor is +-0.2 %, and 3B 8da4w is the cell with the 1.4 % repeat spread in both).
+Traces (warm, one run per arm): 718.2 -> 536.2 ms (1B 4w), 719.2 -> 552.0, 1719.6 -> 1417.5, 1742.7 -> 1484.7,
+3809.2 -> 3250.7, 3741.0 -> 3364.6 ms (8B 8da4w); in 1B 4w the three attention kernels (46.5 + 115.3 + 42.1 ms)
+are gone, the copy family grows by 35.6 ms (copy pass + fused kernel are counted there), linear GEMM 366.6 ->
+352.9 ms.
+
+`sarc/tools/check.sh --no-build`: PASS. Its zone rule compares against `release/1.5`, where the release zone is
+allowed and `SDPA.cpp` is already listed in `sarc/HOOKS`, so it does not flag the two entry points; they are the
+two commits named above, permitted by the owner decision of 2026-10-05 and by nothing else.
 
 ### What the clock does to the microbench (found 2026-10-04, affects how the sweeps are read)
 

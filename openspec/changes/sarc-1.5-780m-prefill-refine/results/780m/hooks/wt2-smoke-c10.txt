@@ -1,0 +1,8 @@
+[sdpa-kernels] tiny_gqa qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] tiny_gqa S=128 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/16384 PASSED
+[sdpa-kernels] 1b_head_config qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] 1b_head_config S=128 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/262144 PASSED
+[sdpa-kernels] tiny_gqa_s256 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] tiny_gqa_s256 S=256 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/32768 PASSED
+[sdpa-kernels] 1b_head_config_s256 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] 1b_head_config_s256 S=256 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/524288 PASSED
