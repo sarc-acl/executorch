@@ -37,7 +37,9 @@ the same checkpoints is not recorded with them; the checkpoint files are Meta's 
 | `llama3_2_1b_q4_0.gguf` | 703,205,536 | 1,235,814,432 | 4.552 | August, llama.cpp b10229, note beside the file |
 | `llama3_2_3b_q4_0.gguf` | 1,815,607,904 | 3,212,749,888 | 4.521 | same |
 | `llama3_1_8b_q4_0.gguf` | 4,525,773,568 | 8,030,261,312 | 4.509 | same |
-| `*_q4_k_m.gguf` | filled by task 1.4 | | | this change, pinned commit, default quantization |
+| `llama3_2_1b_q4_k_m.gguf` | 807,690,400 | 1,235,814,432 | 5.229 | this change, llama.cpp b11430, default quantization (llama-quantize reports 5.18 for the tensors) |
+| `llama3_2_3b_q4_k_m.gguf` | 2,019,373,664 | 3,212,749,888 | 5.028 | same (5.01) |
+| `llama3_1_8b_q4_k_m.gguf` | 4,920,734,464 | 8,030,261,312 | 4.902 | same (4.89) |
 
 The F16 intermediates (2.5 / 6.4 / 16.1 GB) are kept beside them; sha256 of every copied file against its
 source is in `SHA256.source` / `SHA256.nas` in the model directory.
