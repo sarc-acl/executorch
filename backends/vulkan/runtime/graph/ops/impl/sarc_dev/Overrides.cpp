@@ -333,6 +333,19 @@ const Row kQ4gswCandidates[] = {
      "sarc_linear_q4gsw_coopmat_4070ti_t128x128k32g42s32gacbt", {128, 128, 32, 4, 2, 32, 16, true},
      kTex3dTex2d, nullptr, Status::kUnverified},
     // <<< 4070ti lin-q4gsw-rows
+    // >>> orin prof-q4gsw-rows
+    // Jetson Orin phase timing, MEASUREMENT ONLY (glsl/sarc_dev/sarc_dev_prof_orin_q4gsw.yaml): the shipped
+    // Orin 4w tiles with shader-clock phase counters written over their output.
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_prof_orin_q4gsw_t256x128k16g22s32p", {256, 128, 16, 2, 2, 32, 16, false},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_prof_orin_q4gsw_t128x128k32g42s32f32p", {128, 128, 32, 4, 2, 32, 16, false},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_prof_orin_q4gsw_t128x128k16g22s32p", {128, 128, 16, 2, 2, 32, 16, false},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    // <<< orin prof-q4gsw-rows
     // >>> 4070ti prof-q4gsw-rows
     // RTX 4070 Ti SUPER phase timing, MEASUREMENT ONLY (glsl/sarc_dev/sarc_dev_prof_4070ti_q4gsw.yaml):
     // the shipped `ga` tiles with shader-clock phase counters written over their output.
@@ -686,6 +699,45 @@ const Row kDq8caCandidates[] = {
      kTex3dTex2d, nullptr, Status::kUnverified,
      /*rowmajor_a=*/true},
     // <<< orin bf-dq8ca-rows
+    // >>> orin prof-dq8ca-rows
+    // Jetson Orin phase timing, MEASUREMENT ONLY (glsl/sarc_dev/sarc_dev_prof_orin_dq8ca_bf.yaml).
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_prof_orin_dq8ca_bf_orin_bf_t128x128k64g44s32mk32rap", {128, 128, 64, 4, 4, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_prof_orin_dq8ca_bf_orin_bf_t128x128k64g42s32mk32rap", {128, 128, 64, 4, 2, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_prof_orin_dq8ca_bf_orin_bf_t128x128k64g24s32mk32rap", {128, 128, 64, 2, 4, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_prof_orin_dq8ca_bf_orin_bf_t256x128k32g44s32mk32rap", {256, 128, 32, 4, 4, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_prof_orin_dq8ca_bf_orin_bf1_t128x128k128g44s32mk32rap", {128, 128, 128, 4, 4, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_prof_orin_dq8ca_bf_orin_bf1_t128x128k128g42s32mk32rap", {128, 128, 128, 4, 2, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_prof_orin_dq8ca_bf_orin_bf1_t128x128k128g24s32mk32rap", {128, 128, 128, 2, 4, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_prof_orin_dq8ca_bf_orin_bf1_t256x128k64g44s32mk32rap", {256, 128, 64, 4, 4, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_prof_orin_dq8ca_bf_orin_bf1_t128x128k64g42s32mk32rap", {128, 128, 64, 4, 2, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    // <<< orin prof-dq8ca-rows
     // >>> 4070ti prof-dq8ca-rows
     // RTX 4070 Ti SUPER phase timing, MEASUREMENT ONLY (glsl/sarc_dev/sarc_dev_prof_4070ti_dq8ca_zpgtr.yaml).
     {"", nullptr, Op::kDq8caLinear,
