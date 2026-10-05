@@ -815,6 +815,45 @@ const Pick780m k780mRefine9[] = {
      "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x256k32g42s32f32cbt",
      q4_n_at_least_1024},
 };
+// refine10: refine9 after two more refinement rounds and a geometry scan
+// (confirm2-4w): the in-Ash drain instead of the band drain on the 256-row
+// tiles, their 2 x 4 grid at K = 3072, and a 2 x 4 grid of the 128 x 128 tile
+// with column-major B for the small shapes at K = 2048.
+bool q4_k_at_least_4096(const ShapeInfo& s) {
+  return s.N >= 1024 && s.K >= 4096;
+}
+bool q4_k_3072(const ShapeInfo& s) {
+  return s.N >= 2048 && s.K >= 3072 && s.K < 4096;
+}
+bool q4_k_below_3072(const ShapeInfo& s) {
+  return s.K < 3072;
+}
+const Pick780m k780mRefine10[] = {
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g18s32f32cbt",
+     q4_k_at_least_4096},
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt",
+     q4_k_3072},
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt",
+     q4_wide_small_k},
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x128k32g24s32f32cbt",
+     q4_k_below_3072},
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x256k32g42s32f32cbt",
+     q4_n_at_least_1024},
+};
+struct Profile780m {
+  const char* name;
+  const Pick780m* picks;
+  size_t count;
+};
+const Profile780m k780mProfiles[] = {
+    {"refine9", k780mRefine9, sizeof(k780mRefine9) / sizeof(Pick780m)},
+    {"refine10", k780mRefine10, sizeof(k780mRefine10) / sizeof(Pick780m)},
+};
 
 std::optional<Choice> (*select_before_780m)(
     const DeviceInfo&,
@@ -837,8 +876,15 @@ std::optional<Choice> select_780m(
   static const std::string profile = std::getenv("ET_VK_SARC_780M_PROFILE")
       ? std::getenv("ET_VK_SARC_780M_PROFILE")
       : "";
-  if (want.empty() && profile == "refine9" && before.has_value()) {
-    for (const Pick780m& pick : k780mRefine9) {
+  const Profile780m* active = nullptr;
+  for (const Profile780m& p : k780mProfiles) {
+    if (profile == p.name) {
+      active = &p;
+    }
+  }
+  if (want.empty() && active != nullptr && before.has_value()) {
+    for (size_t i = 0; i < active->count; ++i) {
+      const Pick780m& pick = active->picks[i];
       if (pick.op != shape.op || !pick.shape_ok(shape)) {
         continue;
       }
