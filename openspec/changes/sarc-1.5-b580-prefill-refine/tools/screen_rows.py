@@ -6,7 +6,7 @@ The saved-row bookkeeping of screen.sh and screen_sdpa.sh: one CSV row per (conf
 appended once, never rewritten by a later run. Decides from the saved row keys whether one (configuration,
 repeat) still has to be measured.
 
-  exit 0   every shape of this (configuration, repeat) has its row. Rows that were missing were recovered
+  exit 0   every expected shape of this (configuration, repeat) has its row. Rows that were missing were recovered
            from the validated cached result of that run (the JSON of a linear run, the log of an SDPA run);
            only keys that are not in the CSV are appended, so recovery can be repeated any number of times.
   exit 10  the run has to be made: there is no validated cached result. Whatever an earlier failed or
@@ -15,20 +15,32 @@ repeat) still has to be measured.
            With --no-supersede nothing is moved or removed (used after a run, and by the recover-only mode).
 
 CSV: linear rows.csv, key token,rep,model,op,storage,variant; SDPA screen.csv, key profile,rep,model,op,variant.
-A CSV with a truncated or duplicated line (an append that was interrupted) is copied to
-superseded/csv-damaged-<utc>/ and rewritten with its well-formed rows before anything else.
+A CSV with a malformed or duplicated line, or whose last record is not terminated by a newline (an append
+that was interrupted; such a record is dropped even if its field count fits), is copied to
+superseded/csv-damaged-<utc>/ and rewritten with its trusted rows before anything else; the dropped record is
+then recovered from the cached result like any other missing row.
 A cached result is valid when the run is not marked interrupted (<base>.started without <base>.rc), its
 status is one the suite returns for a completed run (0, or 1: the suite reports an unexpected dispatch that
 way on this card, and the stock SDPA kernels of `base` likewise), the result is complete (JSON parses with a
-positive time for every case; SDPA log of a run that ended with such a status) and it has every shape the
-screen has (the stock-kernel log of `base` ends with the suite's dispatch warning, not with a geomean line).
+positive time for every case; SDPA log of a run that ended with such a status) and its shapes are exactly
+the screen's expected shapes (EXPECT_LIN / EXPECT_SDPA below, defined by the screen's command line, never
+inferred from saved rows or results). The stock-kernel log of `base` ends with the suite's dispatch warning,
+not with a geomean line, so no closing line is required.
 Results saved before these markers existed have no .started and, for linear screens, no .rc: they are
 judged by the completeness of the result alone, and their rc and temperature columns stay empty. An SDPA
 result always needs its status marker."""
-import csv, datetime, glob, io, json, os, re, shutil, sys
+import csv, datetime, glob, io, json, os, shutil, sys
 
 LIN = ("rows.csv", "token,rep,model,op,storage,variant,M,K,N,kernel,kernel_median_us,kernel_mean_us,kernel_cov,dispatch,rc,temp_c".split(","), 6)
 SDPA = ("screen.csv", "profile,rep,model,op,variant,mean_us,stdev_us,dispatch,temp_c,rc".split(","), 5)
+# The shapes of a screen, fixed by the command line the screen scripts run and by nothing that was saved:
+# test_llama_microbench --linear --regime=prefill --storage=texture3d times the four linear shapes of the three
+# models on the coopmat arm; --sdpa times QK^T, softmax, attn*V and their total for the three head
+# configurations on the stock (tiled) and the selected (coopmat) arm. A result with any other shape set, and a
+# CSV that lacks one of these keys, is incomplete, however much or little evidence exists beside it.
+MODELS = ("llama-3.2-1b", "llama-3.2-3b", "llama-3.1-8b")
+EXPECT_LIN = frozenset((m, o, "texture3d", "coopmat") for m in MODELS for o in ("wq_wo", "wk_wv", "w1_w3", "w2"))
+EXPECT_SDPA = frozenset((m, o, v) for m in MODELS for o in ("qk", "softmax", "av", "total") for v in ("tiled", "coopmat"))
 utc = lambda: datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
 
@@ -43,7 +55,8 @@ def load(d, spec):
         open(p, "w").write(line(header)); return {}
     text = open(p, newline="").read(); rows = {}; bad = not text.endswith("\n")
     lines = text.split("\n")
-    if lines and lines[-1] == "": lines.pop()
+    lines.pop()   # after the last newline: empty, or the unterminated record of an interrupted append, which is not
+                  # trusted even when its field count happens to fit (a cut inside the last field looks whole)
     if not lines or next(csv.reader([lines[0]])) != header: bad = True
     for l in lines[1:]:
         try: f = next(csv.reader([l]))
@@ -93,23 +106,16 @@ def main():
     kind, d = sys.argv[1], sys.argv[2]; keep = "--no-supersede" in sys.argv
     if kind == "linear":
         spec = LIN; q, cfg, rep = sys.argv[3:6]; cache = lambda c, r: lin_cache(d, q, c, r)
-        stem = f"{q}-{cfg}-r{rep}"; found = [(m[1], m[2]) for f in glob.glob(os.path.join(d, f"{q}-*-r*.json")) if (m := re.fullmatch(rf"{re.escape(q)}-(.*)-r(\d+)\.json", os.path.basename(f)))]
+        stem = f"{q}-{cfg}-r{rep}"; full = EXPECT_LIN
     else:
         spec = SDPA; cfg, rep = sys.argv[3:5]; cache = lambda c, r: sdpa_cache(d, c, r)
-        stem = f"{cfg}-r{rep}"; found = [(m[1], m[2]) for f in glob.glob(os.path.join(d, "*-r*.log")) if (m := re.fullmatch(r"(.*)-r(\d+)\.log", os.path.basename(f)))]
+        stem = f"{cfg}-r{rep}"; full = EXPECT_SDPA
     name, header, nk = spec; rows = load(d, spec)
-    # the shapes of this screen: the largest shape set a saved configuration has, in the CSV or in a valid cache
-    sets = {}
-    for k in rows: sets.setdefault(k[:2], set()).add(k[2:])
-    for c, r in found:
-        if (c, r) != (cfg, rep) and (x := cache(c, r)):   # every configuration runs the same shapes: one other valid result is enough
-            sets.setdefault(("cache", c, r), set()).update(k[2:] for k in x); break
     mine = cache(cfg, rep)
-    if mine: sets.setdefault(("cache", cfg, rep), set()).update(k[2:] for k in mine)
-    full = max(sets.values(), key=len) if sets else set()
+    if mine and {k[2:] for k in mine} != full: mine = None    # a result with missing (or foreign) shapes is not a result
     have = {k[2:] for k in rows if k[:2] == (cfg, rep)}
-    if full and have == full: return 0
-    if mine and {k[2:] for k in mine} == full:
+    if have >= full: return 0
+    if mine:
         new = [f for k, f in mine.items() if k not in rows]
         with open(os.path.join(d, name), "a") as f:
             f.write("".join(line(x) for x in new)); f.flush(); os.fsync(f.fileno())

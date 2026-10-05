@@ -9,6 +9,10 @@
 #   marker    (SDPA) the status marker exists and the rows do not: the old script skipped such a run forever
 #   interrupt one run's result is missing / marked interrupted, with partial rows -> exactly 1 launch, the
 #             earlier attempt and its rows preserved under superseded/, final CSV complete
+#   incomplete evidence (screen_rows.py alone, in an otherwise empty directory): one saved row and nothing else,
+#             a cached JSON with one case, a cached SDPA log with one RESULT line -> rerun requested, the
+#             attempt preserved; a CSV cut inside its last field (field count still fits) -> that record is
+#             dropped and recovered from the cache
 # After every case: exactly one row per (configuration, repeat, shape) and the original logs / JSON unchanged.
 set -u
 T=$(dirname "$(readlink -f "$0")"); REAL=${B580_ARTIFACTS:-$(cd $T/../../../../.. && pwd)/.artifacts}
@@ -93,6 +97,27 @@ ok "interrupt: status 0, exactly one launch" '[[ $(sdpa) == 0 ]] && [[ $(launche
 ok "interrupt: stale log and partial rows preserved" 'd=$(ls -d $W/raw/sdpa/superseded/interrupted-$p1-r2-*) && grep -q "stale log" $d/$p1-r2.log && [[ $(grep -c "^$p1,2," $d/screen.csv) == 16 ]]'
 ok "interrupt: complete again, one row per key" '[[ $(uniq_rows $W/raw/sdpa/screen.csv 5) == $WANT_S ]]'
 ok "interrupt: every other log unchanged" 'manifest sdpa | grep -v "/$p1-r2\.log" | diff -q - <(grep -v "/$p1-r2\.log" $W/sdpa.sha) > /dev/null'
+echo "== incomplete evidence is never taken for a complete run (review follow-up 2)"; : > $W/launches.txt
+RL=$T/screen_rows.py; H_L=$(head -1 $W/lin-complete.csv); H_S=$(head -1 $W/sdpa-original.csv)
+fresh() { rm -rf $W/x; mkdir -p $W/x; }
+fresh; { echo "$H_L"; grep -m1 '^base,1,' $W/lin-complete.csv; } > $W/x/rows.csv
+ok "linear: 1 of 12 rows, nothing else in the directory -> rerun requested (--no-supersede)" 'python3 $RL linear $W/x 4w base 1 --no-supersede > /dev/null; [[ $? == 10 ]] && [[ $(wc -l < $W/x/rows.csv) == 2 ]]'
+ok "linear: the same without the flag -> rerun, partial row preserved and removed from the live CSV" 'python3 $RL linear $W/x 4w base 1 > /dev/null; [[ $? == 10 ]] && [[ $(wc -l < $W/x/rows.csv) == 1 ]] && [[ $(grep -c "^base,1," $W/x/superseded/interrupted-4w-base-r1-*/rows.csv) == 1 ]]'
+fresh; { echo "$H_S"; grep -m1 '^base,1,' $W/sdpa-original.csv; } > $W/x/screen.csv
+ok "SDPA: 1 of 24 rows, nothing else -> rerun, partial row preserved" 'python3 $RL sdpa $W/x base 1 --no-supersede > /dev/null; [[ $? == 10 ]] && python3 $RL sdpa $W/x base 1 > /dev/null; [[ $? == 10 ]] && [[ $(wc -l < $W/x/screen.csv) == 1 ]] && [[ $(grep -c "^base,1," $W/x/superseded/interrupted-base-r1-*/screen.csv) == 1 ]]'
+fresh; python3 -c "
+import json,sys; j=json.load(open(sys.argv[1])); j['cases']=j['cases'][:1]; json.dump(j,open(sys.argv[2],'w'))" $W/replay.json $W/x/4w-base-r1.json; echo "0 42" > $W/x/4w-base-r1.rc
+ok "linear: a cached JSON with 1 of 12 cases is not a result -> rerun, nothing recovered, JSON preserved" 'python3 $RL linear $W/x 4w base 1 > /dev/null; [[ $? == 10 ]] && [[ $(wc -l < $W/x/rows.csv) == 1 ]] && ls $W/x/superseded/interrupted-4w-base-r1-*/4w-base-r1.json > /dev/null'
+fresh; grep -m1 '^RESULT,sdpa,.*,prefill,' $W/replay.log > $W/x/p-r1.log; echo "0 42" > $W/x/p-r1.log.rc
+ok "SDPA: a cached log with 1 RESULT line is not a result -> rerun, nothing recovered, log preserved" 'python3 $RL sdpa $W/x p 1 > /dev/null; [[ $? == 10 ]] && [[ $(wc -l < $W/x/screen.csv) == 1 ]] && ls $W/x/superseded/interrupted-p-r1-*/p-r1.log > /dev/null'
+fresh; cp $W/replay.json $W/x/4w-base-r1.json; echo "0 42" > $W/x/4w-base-r1.rc
+ok "linear: a complete cache is still recovered (12 rows, temperature 42)" 'python3 $RL linear $W/x 4w base 1 > /dev/null; [[ $? == 0 ]] && [[ $(grep -c ",0,42$" $W/x/rows.csv) == 12 ]]'
+cp $W/x/rows.csv $W/x-complete.csv; head -c -2 $W/x-complete.csv > $W/x/rows.csv
+ok "truncation inside the last field: the cut record still has 16 fields and reads temperature 4" '[[ $(tail -c 4 $W/x/rows.csv) == ",0,4" ]] && [[ $(tail -1 $W/x/rows.csv | tr -cd , | wc -c) == 15 ]]'
+ok "truncation inside the last field: record dropped and recovered from the cache as 42, damaged CSV preserved" 'python3 $RL linear $W/x 4w base 1 > /dev/null; [[ $? == 0 ]] && diff -q <(sort $W/x/rows.csv) <(sort $W/x-complete.csv) > /dev/null && [[ $(tail -c 4 $W/x/superseded/csv-damaged-*/rows.csv) == ",0,4" ]]'
+fresh; cp $W/replay.log $W/x/p-r1.log; echo "0 42" > $W/x/p-r1.log.rc; python3 $RL sdpa $W/x p 1 > /dev/null; cp $W/x/screen.csv $W/x-complete.csv; head -c -2 $W/x-complete.csv > $W/x/screen.csv
+ok "SDPA: truncation inside the last field recovered the same way" 'python3 $RL sdpa $W/x p 1 > /dev/null; [[ $? == 0 ]] && [[ $(wc -l < $W/x-complete.csv) == 25 ]] && diff -q <(sort $W/x/screen.csv) <(sort $W/x-complete.csv) > /dev/null && ls $W/x/superseded/csv-damaged-*/screen.csv > /dev/null'
+ok "none of these cases launched anything" '[[ $(launches) == 0 ]]'
 echo "== recover-only mode launches nothing"; : > $W/launches.txt; rm -f $W/raw/lin/4w-base-r3.json; sed -i '/^base,3,/d' $W/raw/lin/rows.csv
 ok "recover-only: reports the missing run, launches nothing, moves nothing" '[[ $(B580_SCREEN_RECOVER_ONLY=1 lin) == 0 ]] && grep -q "WOULD_RUN 4w base r3" $W/out.txt && [[ $(launches) == 0 ]] && [[ -f $W/raw/lin/4w-base-r3.log ]]'
 echo "scratch: $W"; [[ $fails == 0 ]] && { echo "RESUME_TEST_OK"; rm -rf $W; exit 0; }; echo "RESUME_TEST_FAILED ($fails)"; exit 1

@@ -120,6 +120,25 @@ files from their cached JSON in recover-only mode (600, 432, 144 and 216 rows; `
 and `screen1-sdpa`'s 2880 rows were confirmed complete; nothing was launched and all 473 cached files are
 unchanged. No conclusion of this file depends on the change.
 
+Second review round (11:15 UTC), two defects of that first fix, both in `tools/screen_rows.py`:
+
+- It inferred the complete shape set from whatever was saved, including the run being checked, so one saved
+  row (1 of 12, or 1 of 24 for SDPA) in an otherwise empty directory, a cached JSON with one case, or an SDPA
+  log with one RESULT line counted as a complete run. The expected shapes are now constants defined by the
+  screens' command line (3 models x 4 linear shapes on texture3d / coopmat; 3 head configurations x QK^T,
+  softmax, attn*V, total x the tiled and coopmat arms). A cache is valid only if its shapes are exactly that
+  set, a (configuration, round) is complete only if the CSV holds all of them, and anything less requests a
+  rerun with the attempt preserved under `superseded/`.
+- It noticed a missing final newline but kept the last record when its field count still fitted, so a CSV
+  cut inside the last field kept a wrong value (temperature 4 instead of 42). An unterminated last record is
+  now never trusted: the damaged CSV is preserved, the record dropped and recovered from the cache.
+
+`tools/test_resume.sh` has 10 more checks for exactly these cases (38 in all, all pass,
+`.artifacts/logs/test_resume-4.log`; `test_resume-3.log` is a run in which two of the new assertions were
+themselves off by one byte). The five real screens were checked again in recover-only mode under the new
+rules: all complete (600, 432, 144, 216 and 2880 rows), nothing launched, every cached file and CSV
+unchanged by sha256.
+
 ## How noisy the card was
 
 Until about 05:40 UTC the desktop session was idle and locked (`loginctl`: `IdleHint=yes`, `LockedHint=yes`).
