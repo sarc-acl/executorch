@@ -12,6 +12,13 @@ sarc_sdpa_attn_weights_softmax_orin:
     CACHE_N: 8
     CACHE_EXP: false
   shader_variants:
+    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_l2
+      CACHE: local
+      CACHE_N: 2
+    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_l2e
+      CACHE: local
+      CACHE_N: 2
+      CACHE_EXP: true
     - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_l8
       CACHE: local
       CACHE_N: 8
@@ -32,6 +39,13 @@ sarc_sdpa_attn_weights_softmax_orin:
     - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_l32e
       CACHE: local
       CACHE_N: 32
+      CACHE_EXP: true
+    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_s2
+      CACHE: shared
+      CACHE_N: 2
+    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_s2e
+      CACHE: shared
+      CACHE_N: 2
       CACHE_EXP: true
     - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_s8
       CACHE: shared
