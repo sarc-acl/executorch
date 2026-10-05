@@ -186,9 +186,38 @@ Kernel-level screens, all 12 model shapes, geomean of kernel time against the sh
   best (1.158 again). All six pass the sampled production-diff on the 1B shapes.
 - Candidate 2 = `orin_bf_t128x128k64g24s32mk32ra` for every shape the Orin row covers.
 
+Where candidate 2's gain comes from (phase timing of its tile, `results/orin/phases/prof3-8da4w.csv`, against
+the shipped kernel's above): fetch 15 to 24 % of a wave (shipped: 38 to 47 %), MMA 48 to 59 % (shipped: 24 to
+31 %), barrier 10 %, shared-memory store 7 %. The wave now spends half its time multiplying.
+
+## 4w linear: phase timing and screen (negative, one shape excepted)
+
 Phase timing of the Orin 4w tiles (`results/orin/phases/prof2-4w.csv`): `t256x128k16g22s32`: barrier 10 to
 11 %, fetch 17 to 18 %, MMA 45 to 49 %, shared-memory store (weight dequantisation) 18 to 20 %;
-`t128x128k32g42s32f32` (8B, K = 14336): barrier 14 to 15 %, fetch 15 to 17 %, MMA 30 to 37 %, store 26 to 38 %.
+`t128x128k32g42s32f32` (8B `w2`, K = 14336): barrier 14 to 15 %, fetch 15 to 17 %, MMA 30 to 37 %, store 26 to
+38 %. The weight staging has the same four-fold texel fetch as 8da4w, but here the activations are the larger
+fetch load (8 texture3d fetches per thread and chunk against 2 weight fetches on the 256 x 128 tile).
+
+4w screen 1 (`results/orin/screens/screen1-4w.txt`, kernel time, all 12 model shapes, 1 round): every existing
+subgroup-32 dev tile, 25 of them (the 780M sweep tiles with fp32 accumulation, drain in Ash, column-major and
+texel-wise weight staging; the 4070 Ti `ga` tiles). None beats the shipped Orin rows over the 12 shapes: best
+0.94x (`bx_t128x128k32g42s32f32c`), `..f32cbt` 0.93x, the 4070 Ti `ga` tiles 0.42 to 0.79x. On the one shape the
+Orin serves with fp32 accumulation (8B `w2`, K = 14336, shipped `t128x128k32g42s32f32`: 45.87 ms) two tiles are
+faster: texel-wise weight staging `bx_t128x128k32g42s32f32c` 41.17 ms (1.11x) and column-major staging
+`t128x128k32g42s32f32cbt` 41.75 ms (1.10x). That shape is 14 % of the 8B 4w prefill, so the end-to-end effect is
+about +1 % on one cell. Profile `orin-lin-refine3` = candidate 2 + that tile for K > 8192 (build `topic7`).
+
+## Softmax variants on the Orin (kernel level, ms per layer at S = 2048; `results/orin/screens/sdpa-screen3.csv`)
+
+| softmax | 1B | 3B | 8B |
+|---|---:|---:|---:|
+| release SARC softmax (candidate 1) | 9.03 | 6.79 | 9.04 |
+| `4070ti_f32` (fp32 reduction) | 9.80 | 7.36 | 9.81 |
+| `4070ti_nz` (no zero tail) | 8.01 | 6.00 | 8.01 |
+| `4070ti_nzf` (both; candidate 1h) | 8.75 | 6.55 | 8.74 |
+
+On this device the zero tail is worth 11 % of the softmax (30 % on the 4070 Ti) and the fp32 reduction costs
+8.5 %, so candidate 1h is about as fast as candidate 1; its purpose is precision, not speed.
 
 ## Baseline and A/A (session `s1-aa`, pristine parent against build `topic1` with no environment)
 
