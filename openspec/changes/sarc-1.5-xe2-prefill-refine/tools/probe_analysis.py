@@ -18,6 +18,7 @@ import csv, glob, json, os, sys
 import numpy as np
 
 D = sys.argv[1]
+PC_ONLY = "--pc" in sys.argv   # only the arms P and C were run (a candidate meant to be bit-identical): PT columns are empty
 KL_MAX, TOP1_MAX = 0.5, 1.0 / 3.0   # owner decision 2026-10-04 (second), item 3
 prompts = [l.split()[0] for l in open(os.path.join(D, "prompts.txt")) if l.strip()]
 wins = [p for p in prompts if p.startswith("w")]; gates = [p for p in prompts if p.startswith("gate-")]
@@ -41,6 +42,8 @@ for cell in cells:
     st = {}
     for other in ("C", "PT"):
         n = miss = d1 = ident = 0; kls = []; mx = 0.0; nllp = []; nllo = []
+        if other == "PT" and PC_ONLY:
+            st[other] = dict(n=0, miss=0, d1=0, ident=0, klmean=float("nan"), klmax=float("nan"), mx=float("nan"), pplp=float("nan"), pplo=float("nan"), nppl=0); continue
         for p in wins:
             a, b = load(cell, "P", p), load(cell, other, p)
             if a is None or b is None: miss += 1; continue

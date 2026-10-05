@@ -43,7 +43,7 @@ declare -A STEM=([1b]=llama-3.2-1b:llama3_2-1b [3b]=llama-3.2-3b:llama3_2-3b [8b
 IFS=, read -ra MS <<< "$MODELS"; IFS=, read -ra QS <<< "$SCHEMES"
 for m in "${MS[@]}"; do IFS=: read -r MD ST <<< "${STEM[$m]}"; for q in "${QS[@]}"; do
   PTE=$MROOT/$MD/exported/${ST}_vulkan_$q.pte
-  for arm in P C PT CT; do
+  for arm in ${XE2_PROBE_ARMS:-P C PT CT}; do   # XE2_PROBE_ARMS="P C": enough to show bit-identity; the analysis then needs --pc
     case $arm in P|PT) t=$PT; e=$S/parent/env ;; *) t=$CT; e=$S/cand/env ;; esac
     benv=(); mapfile -t benv < $e; [[ $arm == *T ]] && benv+=(ET_VK_FORCE_TILED_LINEAR=1)
     gate=""; [[ $arm == CT ]] && gate=gate
@@ -53,4 +53,4 @@ for m in "${MS[@]}"; do IFS=: read -r MD ST <<< "${STEM[$m]}"; for q in "${QS[@]
     [[ $rc == 75 || $rc == 76 ]] && { echo "PROBE_ABORTED rc=$rc"; exit $rc; }
   done
 done; done
-$XE2_PYTHON $TOOLS/probe_analysis.py $O > $O/analysis.txt 2>&1; echo "analysis rc=$?"; tail -30 $O/analysis.txt; echo PROBE_DONE
+$XE2_PYTHON $TOOLS/probe_analysis.py $O $([[ ${XE2_PROBE_ARMS:-} == "P C" ]] && echo --pc) > $O/analysis.txt 2>&1; echo "analysis rc=$?"; tail -30 $O/analysis.txt; echo PROBE_DONE

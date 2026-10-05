@@ -484,16 +484,25 @@ REFINE = {
     # 1.15 to 1.39x per shape at kernel level; every thread stages one A block and one weight texel per chunk).
     "xe2-refine2": [("kSdpaQk", "pk_t128x64k32g44s16m8nf", "nullptr"), ("kSdpaAv", "xe2_t128x64k32g44s16m8", "xe2_head_dim_128"),
                     ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", "nullptr")],
-    # candidate 3 (4w linear), provisional until screen 9: refine2 + the 256 x 256 split-staging tile. A shape
-    # the tile does not fit (N not a multiple of 256) keeps the shipped tile.
-    "xe2-refine3": [("kSdpaQk", "pk_t128x64k32g44s16m8nf", "nullptr"), ("kSdpaAv", "xe2_t128x64k32g44s16m8", "xe2_head_dim_128"),
-                    ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", "nullptr"), ("kQ4gswLinear", "xe2s_t256x256k16g88s16m8flib", "nullptr")],
+    # candidate 3 (SDPA QK^T): refine2 with the fragment-contiguous ColumnMajor QK^T (screen 2: 0.38 against
+    # 0.41 ms per layer on 8B, 0.29 against 0.31 on 3B, equal on 1B). A layout change, meant to be bit-identical.
+    # (No 4w candidate exists: every 4w variant of screens 4, 6, 8, 9 and 11 is slower than the shipped tile.)
+    "xe2-refine3": [("kSdpaQk", "xe2c_t128x64k32g44s16m8nf", "nullptr"), ("kSdpaAv", "xe2_t128x64k32g44s16m8", "xe2_head_dim_128"),
+                    ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", "nullptr")],
+    # candidate 4 (8da4w, per shape): refine3 with the 64-column K = 64 tile for the one shape class where it
+    # measured faster than the 128-column tile (screen 7: N >= 4 K, i.e. 1B w1/w3, 622 against 647 us).
+    "xe2-refine4": [("kSdpaQk", "xe2c_t128x64k32g44s16m8nf", "nullptr"), ("kSdpaAv", "xe2_t128x64k32g44s16m8", "xe2_head_dim_128"),
+                    ("kDq8caLinear", "bt_t128x64k64g44s16m8", "xe2_wide_output"), ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", "nullptr")],
     # the 8da4w part of refine2 alone (kernel attribution; not a candidate)
     "xe2-dq-k64": [("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", "nullptr")],
 }
 PREDS = """// attn*V: ShapeInfo::N is head_dim.
 bool xe2_head_dim_128(const ShapeInfo& s) {
   return s.N >= 128;
+}
+// 8da4w linear: an output at least four times as wide as the input (1B w1 / w3).
+bool xe2_wide_output(const ShapeInfo& s) {
+  return s.N >= 4 * s.K;
 }
 """
 rows = ""

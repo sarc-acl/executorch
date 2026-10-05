@@ -618,6 +618,10 @@ const Preference kQkPk_t256x64k32g42s32nf[] = {{Op::kSdpaQk, "pk_t256x64k32g42s3
 bool xe2_head_dim_128(const ShapeInfo& s) {
   return s.N >= 128;
 }
+// 8da4w linear: an output at least four times as wide as the input (1B w1 / w3).
+bool xe2_wide_output(const ShapeInfo& s) {
+  return s.N >= 4 * s.K;
+}
 const Preference kXe2_qk_t128x64k32g44s16m8nf[] = {{Op::kSdpaQk, "sweep_t128x64k32g44s16m8nf", nullptr}};
 const Preference kXe2_qk_t128x64k32g44s16m8[] = {{Op::kSdpaQk, "sweep_t128x64k32g44s16m8", nullptr}};
 const Preference kXe2_qk_t128x64k32g48s16m8nf[] = {{Op::kSdpaQk, "sweep_t128x64k32g48s16m8nf", nullptr}};
@@ -685,10 +689,15 @@ const Preference kXe2_refine2[] = {
     {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
 };
 const Preference kXe2_refine3[] = {
-    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", nullptr},
     {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
     {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
-    {Op::kQ4gswLinear, "xe2s_t256x256k16g88s16m8flib", nullptr},
+};
+const Preference kXe2_refine4[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "bt_t128x64k64g44s16m8", xe2_wide_output},
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
 };
 const Preference kXe2_dq_k64[] = {
     {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
@@ -789,6 +798,7 @@ const Profile kProfiles[] = {
     {"xe2-refine1", kXe2_refine1, sizeof(kXe2_refine1) / sizeof(Preference)},
     {"xe2-refine2", kXe2_refine2, sizeof(kXe2_refine2) / sizeof(Preference)},
     {"xe2-refine3", kXe2_refine3, sizeof(kXe2_refine3) / sizeof(Preference)},
+    {"xe2-refine4", kXe2_refine4, sizeof(kXe2_refine4) / sizeof(Preference)},
     {"xe2-dq-k64", kXe2_dq_k64, sizeof(kXe2_dq_k64) / sizeof(Preference)},
     // xe2 end
 };
