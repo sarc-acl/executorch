@@ -20,7 +20,25 @@ never run in a test: the variants with N = 2 (l2, l2e, s2, s2e) exist to exercis
 elements takes it) in the bit comparison; they are not candidates. Every variant is NZ + ACC32 (the arithmetic of 4070ti_nzf: fp32 reduction, zero
 tail limited to what the SARC attn*V kernels read). The values, the operations and their order are those of
 4070ti_nzf, so the output is meant to be bit-identical to it; the gate checks that, it is not assumed.
-Selected by ET_VK_SARC_SOFTMAX_VARIANT=orin_<variant> through the release hook Override::softmax_variant."""
+Selected by ET_VK_SARC_SOFTMAX_VARIANT=orin_<variant> through the release hook Override::softmax_variant.
+
+RESULT (SDPA screen 4, results/orin/screens/sdpa-screen4.csv): all of them are slower than 4070ti_nzf. Local
+array 1.13x to 1.42x the time; shared memory 1.86x (8 texels per worker, 8 KB), 2.6x (16 KB), 4.6x (32 KB):
+the time grows with the shared memory a workgroup declares. The re-reads were not the cost. Kept as measured.
+
+Second family, glsl/sarc_dev/sarc_sdpa_attn_weights_softmax_orin_wg.{glsl,yaml}: what a row costs besides its
+traffic is 14 barriers (two tree reductions over 64 workers, 7 each) for, on average, 4 texels per worker.
+      sarc_sdpa_attn_weights_softmax_buffer_half_orin_z64        worker 0 walks the same tree alone: 2 barriers
+                                                                per reduction; same pairs in the same order as
+                                                                4070ti_nzf, so meant to be bit-identical
+      ..._orin_t{8,16,32}   the tree as it is, with fewer workers per row
+      ..._orin_z{8,16,32}   worker 0 walks the tree, fewer workers
+      ..._orin_f{1,2,4,8,16,32,64}   one barrier per reduction: every worker combines the partial results
+                                     itself, in index order
+The workgroup size is fixed in the shader for these (the node asks for 64 x 1 x 1 by specialization constants,
+which a shader without those ids ignores; the dispatch stays one workgroup per row). Every variant but z64
+sums the exponentials of a row in another order than 4070ti_nzf (fp32, rounded once on the store): an
+arithmetic change, judged by the reference error, not by bit identity."""
 import pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from devzone import write_new
@@ -153,3 +171,71 @@ write_new(g / f"sarc_dev/{F}.yaml", f"""# SARC development zone, Jetson Orin: LL
 """ + "".join(f"    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_{c[0]}{n}{'e' if e else ''}\n"
               f"      CACHE: {c}\n      CACHE_N: {n}\n" + ("      CACHE_EXP: true\n" if e else "") for c, n, e in V))
 print(" ".join(f"orin_{c[0]}{n}{'e' if e else ''}" for c, n, e in V))
+
+# ---- second family: workers per row and the form of the two reductions
+s = (g / "sarc_dev/sarc_sdpa_attn_weights_softmax_4070ti.glsl").read_text()
+s = s[s.index("#version 450 core"):]
+s = sub(s, "#define NUM_WORKERS_PER_WG 64\n", "#define NUM_WORKERS_PER_WG ${WORKERS}\n")
+s = sub(s, "layout(local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2) in;\n",
+        "// orin: the workgroup is one row's workers; fixed here, the node's specialization constants are not used.\n"
+        "layout(local_size_x = NUM_WORKERS_PER_WG, local_size_y = 1, local_size_z = 1) in;\n")
+def red(what, arr, comb, result):
+    tree = f"""  // Tree reduction to {what}
+  for (int i = NUM_WORKERS_PER_WG / 2; i > 0; i >>= 1) {{
+    if (worker_id < i) {{
+      {arr}[worker_id] = {comb('%s[worker_id]' % arr, '%s[worker_id + i]' % arr, 10)};
+    }}
+    memoryBarrierShared();
+    barrier();
+  }}
+
+  {result} = {arr}[0];
+"""
+    return tree, f"""$if RED == "tree":
+{tree.rstrip(chr(10)).replace(chr(10), chr(10) + "  ").replace("  " + chr(10), chr(10))}
+$elif RED == "serial":
+    // orin z: worker 0 walks the same tree alone (same pairs, same order), one barrier after it.
+    if (worker_id == 0) {{
+      for (int i = NUM_WORKERS_PER_WG / 2; i > 0; i >>= 1) {{
+        for (int k = 0; k < i; ++k) {{
+          {arr}[k] = {comb('%s[k]' % arr, '%s[k + i]' % arr, 14)};
+        }}
+      }}
+    }}
+    memoryBarrierShared();
+    barrier();
+
+    {result} = {arr}[0];
+$else:
+    // orin f: no second barrier; every worker combines the partial results itself, in index order.
+    SOFTMAX_ACC_T {arr}_all = {arr}[0];
+    for (int k = 1; k < NUM_WORKERS_PER_WG; ++k) {{
+      {arr}_all = {comb('%s_all' % arr, '%s[k]' % arr, 10)};
+    }}
+    {result} = {arr}_all;
+"""
+mx = lambda a, b, ind: f"max(\n{' ' * ind}{a}, {b})"
+ad = lambda a, b, ind: f"{a} +\n{' ' * ind}{b}"
+for what, arr, comb, result in (("find the global max", "shared_max", mx, "const SOFTMAX_ACC_T global_max"),
+                                ("compute the overall exp sum", "shared_exp_sum", ad, "local_exp_sum")):
+    old, new = red(what, arr, comb, result); s = sub(s, old, new)
+F2 = "sarc_sdpa_attn_weights_softmax_orin_wg"
+W = [("tree", "t", n) for n in (8, 16, 32)] + [("serial", "z", n) for n in (8, 16, 32, 64)] + [("flat", "f", n) for n in (1, 2, 4, 8, 16, 32, 64)]
+write_new(g / f"sarc_dev/{F2}.glsl", HDR.replace("in which a\n * worker keeps the first CACHE_N texels of its row after pass 1 (local array or shared memory) instead of\n * loading them again in passes 2 and 3, and optionally (CACHE_EXP) keeps exp(x - max) after pass 2.\n * Same values, operations and order as the 4070ti variant with the same NZ / ACC32.",
+    "with WORKERS workers\n * per row (the workgroup size is fixed here) and the two reductions as a barrier tree (tree), as the same tree\n * walked by worker 0 alone (serial), or combined by every worker in index order after one barrier (flat).\n * serial with 64 workers has the arithmetic of the 4070ti variant; the others sum a row in another order.") + s)
+assert "WORKERS workers" in (g / f"sarc_dev/{F2}.glsl").read_text()
+write_new(g / f"sarc_dev/{F2}.yaml", f"""# SARC development zone, Jetson Orin: LLM softmax variants with fewer barriers per row (generated by gen_orin_softmax.py). Not shipped.
+
+{F2}:
+  parameter_names_with_default_values:
+    IN_DTYPE: half
+    OUT_DTYPE: half
+    STORAGE: buffer
+    MODE: llm
+    NZ: true
+    ACC32: true
+    WORKERS: 64
+    RED: serial
+  shader_variants:
+""" + "".join(f"    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_{c}{n}\n      WORKERS: {n}\n      RED: {r}\n" for r, c, n in W))
+print(" ".join(f"orin_{c}{n}" for r, c, n in W))
