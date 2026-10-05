@@ -343,8 +343,8 @@ not pinned): matrix fp16 -> fp32 14.766 TFLOP/s, matrix int8 14.379 TOP/s.
   tile K 16 or 64 and fp16 accumulation are 14 % or more behind (refinement round 1).
 - After candidate 9 the upstream operators are the largest part that is not GEMM: elementwise `mul` / `sigmoid` /
   `add` 68 / 130 / 244 ms, `view_copy` and other copies 61 / 135 / 229 ms (4w) or 36 / 86 / 137 ms (8da4w), the
-  8da4w activation quantize 43 / 101 / 167 ms, RMSNorm + RoPE 14 / 40 / 60 ms (1B / 3B / 8B); together 26 %, 24 %
-  and 18 % of the 4w prefill. They are outside both zones and were not changed.
+  8da4w activation quantize 43 / 101 / 167 ms, RMSNorm + RoPE 14 / 40 / 60 ms (1B / 3B / 8B); together 27 %, 21 %
+  and 17 % of the 4w prefill (533 / 1420 / 3228 ms). They are outside both zones and were not changed.
 - The fused kernel's copy pass costs 0.35 to 0.7 ms a layer, three times its bytes at the copy roof; packing K
   and V where the cache is written would remove it (a change outside the dev zone).
 
