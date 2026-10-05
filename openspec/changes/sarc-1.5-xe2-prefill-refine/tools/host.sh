@@ -70,7 +70,7 @@ gpu_monitors() { local p; for p in $(grep -l -s -E "^drm-pdev:[[:space:]]*($PDEV
 # watched name. Such a process is still caught by the DRM rule if it opens the card.
 inline_shell() { local -a a; mapfile -d '' -t a < /proc/$1/cmdline 2>/dev/null || return 1
   [[ ${a[0]##*/} =~ ^(bash|sh|dash|zsh|fish)$ && ( ${a[1]:-} == -c || ${a[2]:-} == -c ) ]]; }
-campaign_tops() { local f p s; for f in $RUN/card*.job; do read -r p s < $f 2>/dev/null || continue
+campaign_tops() { local f p s; for f in $RUN/card*.job; do [[ -e $f ]] || continue; read -r p s < $f || continue
   [[ -n $p && $(cut -d' ' -f22 /proc/$p/stat 2>/dev/null) == "$s" ]] && printf '%s ' $p; done; }
 gpu_others() { local p q mine anc=" " a=$XE2_TOP tops; tops=" $XE2_TOP $(campaign_tops)"
   while [[ -n $a && $a -gt 1 ]]; do anc+="$a "; a=$(ps -o ppid= -p $a 2>/dev/null | tr -d ' '); done

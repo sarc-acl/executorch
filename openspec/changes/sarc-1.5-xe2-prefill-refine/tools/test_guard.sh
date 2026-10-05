@@ -39,11 +39,11 @@ echo "== 1 guard"
 F=$(foreign $RN1)
 ( . $T/host.sh; XE2_TOP=$BASHPID; ok "DRM client of the second card detected from the first" '[[ $(gpu_others) == *"$F:python3"* ]]'; exit $fails ); fails=$((fails + $?))
 ( export XE2_CARD=1; . $T/host.sh; XE2_TOP=$BASHPID; ok "and from the second" '[[ $(gpu_others) == *"$F:python3"* ]]'; exit $fails ); fails=$((fails + $?)); kill $F
-XE2_CARD=1 XE2_SHARED=1 $T/gl.sh bash -c "exec -a llama_main sleep 5" & g=$!; sleep 2
+XE2_CARD=1 XE2_SHARED=1 $T/gl.sh bash -c "exec -a llama_main sleep 12" & g=$!; sleep 2
 ( . $T/host.sh; XE2_TOP=$BASHPID
   ok "this campaign's job on the other card is not foreign" '[[ -z $(gpu_others) ]]'
-  t0=$SECONDS; XE2_TOP= XE2_SHARED=1 $T/gl.sh true; ok "two cheap screens run side by side" "[[ $? == 0 ]] && (( SECONDS - t0 < 2 ))"
-  t0=$SECONDS; XE2_TOP= $T/gl.sh true; ok "any other job waits until the other card is idle" "[[ $? == 0 ]] && (( SECONDS - t0 >= 2 ))"
+  XE2_TOP= XE2_SHARED=1 $T/gl.sh true; ok "two cheap screens run side by side" "[[ $? == 0 ]] && kill -0 $g"
+  XE2_TOP= $T/gl.sh true; ok "any other job waits until the other card is idle" "[[ $? == 0 ]] && ! kill -0 $g 2>/dev/null"
   exit $fails ); fails=$((fails + $?)); wait $g; ok "the other card's job ran to completion" "[[ $? == 0 ]]"
 bash -c "exec -a llama_main sleep 5" & g=$!; sleep 1
 ( . $T/host.sh; XE2_TOP=$BASHPID; ok "an unregistered job named like a GPU workload is foreign" '[[ $(gpu_others) == *"$g:"* ]]'; exit $fails ); fails=$((fails + $?)); wait $g
