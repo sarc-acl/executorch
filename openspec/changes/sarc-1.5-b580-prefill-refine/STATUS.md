@@ -1,7 +1,8 @@
 # sarc-1.5-b580-prefill-refine: status
 
-**2026-10-05 03:55 UTC — running. Parent control, baseline and A/A are done; candidate 0 (`b580-refine0`,
-the B70's SDPA kernels) is in its gate.**
+**2026-10-05 05:15 UTC — running. Candidate 0 (`b580-refine0`, the B70's SDPA kernels on this card): +45.95 %
+geomean over the parent, `ACCEPTED (reference-error rule, owner decision 2026-10-04)`, not a plain pass. Kernel
+screens for this card are running.**
 
 Branch `topic/b580-prefill-refine`, parent `6a7cc8cc6` (no profile). Host `fedora` (the owner's desktop), Arc
 B580 = PCI `0000:03:00.0`, Vulkan device 0, `ETVK_DEVICE_INDEX=0`, lock
@@ -9,15 +10,11 @@ B580 = PCI `0000:03:00.0`, Vulkan device 0, `ETVK_DEVICE_INDEX=0`, lock
 
 ## Running now
 
-Detached chains, one GPU job at a time, status files under `.artifacts/logs/`. **If the machine reboots these
-are gone**; restart from the first step whose status line is missing.
-
-1. `chain2.sh` (`chain2.status`): probe build, `gate_sdpa.sh s2-c0` (parent against build `topic1` with
-   `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine0`), `sdpa_ref.sh` (error against the fp32
-   reference, both arms), `probe.sh s2-c0` (logits), `decide.py --arithmetic`, `decode_ab.sh`.
-2. `after2.sh` waits for it and starts `chain3.sh` (`chain3.status`): SDPA kernel screen of all 59 `b580-*`
-   profiles (2 rounds), 8da4w and 4w linear tile screens (24 and 17 tiles, 2 rounds), phase timing of the two
-   shipped linear tiles, igpu-roofline `fast`.
+Detached chain `chain3.sh` (`.artifacts/logs/chain3.status`), one GPU job at a time, started 05:09 UTC. **If
+the machine reboots it is gone**; restart from the first step whose status line is missing. Steps: 8da4w
+linear tile screen (24 tiles, 2 rounds, `screen2-8da4w`), 4w linear tile screen (17 tiles, `screen3-4w`),
+phase timing of the two shipped linear tiles (`prof-*`), SDPA kernel screen of all 59 `b580-*` profiles
+(`screen1-sdpa`), igpu-roofline `fast` (`roofline/b580-fast-20261005`).
 
 ## How noisy the card was
 
@@ -72,12 +69,114 @@ are the shipped rows. Every comparison below is against the parent re-measured i
 
 ## Per-cell numbers against the parent
 
-Candidate 0 is being gated; nothing to report yet.
+### Candidate 0, `b580-refine0` (the B70's SDPA prefill kernels): ACCEPTED (reference-error rule, owner decision 2026-10-04)
+
+Kernels: QK^T `sarc_sdpa_qk_coopmat_pk_t128x64k32g44s16m8nf`, attn*V
+`sarc_sdpa_av_coopmat_xe2_t128x64k32g44s16m8` (head_dim 128) and `sarc_sdpa_av_coopmat_sweep_t64x64k32g44s16m8`
+(head_dim 64), with the truncated SARC softmax: exactly the B70's `xe2-refine1`, reached through
+`impl/sarc_dev/B580Sdpa.cpp` (device string `bmg g21`, `b580-*` profiles only).
+
+Session `s2-c0`: pristine parent build (no environment) against build `topic1` with
+`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine0`; tok/s, median of 5 valid runs per arm, arms
+interleaved (`results/b580/sessions/s2-c0/`):
+
+| cell | parent | candidate 0 | gain | B70 gain (`xe2-refine1`) | next token parent vs candidate (timed / real-text / unaligned) |
+|---|---:|---:|---:|---:|---|
+| 1B 4w | 8641.35 | 12962.00 | +50.00 % | +49.57 % | SAME / SAME / SAME |
+| 1B 8da4w | 8865.80 | 13473.70 | +51.97 % | +49.55 % | SAME / SAME / SAME |
+| 3B 4w | 3442.02 | 5171.72 | +50.25 % | +51.80 % | SAME / SAME / SAME |
+| 3B 8da4w | 3524.96 | 5417.99 | +53.70 % | +55.60 % | SAME / SAME / SAME |
+| 8B 4w | 1725.36 | 2306.31 | +33.67 % | +35.58 % | SAME / SAME / SAME |
+| 8B 8da4w | 1843.38 | 2531.52 | +37.33 % | +40.07 % | **DIFFER / DIFFER** / SAME |
+
+Geomean +45.95 % (B70: +46.86 %), every cell far outside the +-2 % band (A/A +0.01 %). 60 timed runs, none
+rejected; foreign engine time 0.00 % in every run; median clocks 2717 to 2850 MHz (the candidate's 8B 4w runs
+are power-limited at 2733 MHz against the parent's 2783).
+
+**This is not a plain pass.** The gate (`gate_sdpa.sh`, `sessions/s2-c0/gate.txt`, 34 PASS lines) ends
+`GATE_FAIL` on two lines that state one fact: the candidate's next token differs from the parent's for 8B 8da4w
+on `prompt_2048.txt` and on `prompt_check.txt`. Everything else passes: SDPA correctness 12 passes x tiers
+all / extended / full, 0 mismatches and `pairing=ok` in all 192 cases; unmodified `verify.sh` completed, 12 of 12
+production-diff cases ALL PASSED, 28 of 28 numeric correctness cases, default vs tiled SAME on both prompts for
+both schemes (the parent's `1b 8da4w unaligned DIFFER` becomes SAME), decode 31 tokens, every other status line
+equal to the parent control; traces for 12 runs. The candidate replaces fp16-accumulating attention kernels by
+fp32-accumulating ones, an arithmetic change, so it is decided by the owner's second decision of 2026-10-04
+with the thresholds fixed there (`tools/decide.py` unchanged from the B70 campaign, `sessions/s2-c0/decision.txt`):
+
+1. **Error against the fp32 CPU reference** (`tools/sdpa_ref.sh`, both arms with the `topic1` test binary on
+   the same inputs; `results/b580/sdpa-error/c0-full.csv`): not larger than the parent's in every case.
+
+   | case (S = 2048 unless noted) | parent rms / max | candidate rms / max |
+   |---|---|---|
+   | 1B head configuration | 1.27e-4 / 1.37e-3 | 2.76e-5 / 1.19e-3 |
+   | 3B head configuration | 1.28e-4 / 1.33e-3 | 2.79e-5 / 1.15e-3 |
+   | 8B head configuration | 1.28e-4 / 1.75e-3 | 2.76e-5 / 1.06e-3 |
+   | 8B, S = 1024 at input_pos 1024 | 1.42e-4 / 1.27e-3 | 1.29e-5 / 1.24e-4 |
+
+   The eight `extended` cases agree (`c0-extended.csv`): candidate rms 2.5e-5 to 6.6e-5 against 1.0e-4 to
+   1.3e-4, maximum 2.5e-4 to 1.2e-3 against 6.9e-4 to 1.7e-3.
+2. **Logits** (`tools/probe.sh`, a fresh process per prompt, four arms; `results/b580/probe/s2-c0/`). The probe
+   reproduces the gate: of the 12 gate-prompt comparisons only the two 8B 8da4w ones differ.
+   - `prompt_check.txt` (real text), 8B 8da4w: a three-way near-tie in the parent, logits 15.469 / 15.320 /
+     15.000 for ids 45647 / 6062 / 70159 (top-2 margin 0.148, parent tiled identical); the candidate has
+     15.172 / 15.172 / 15.242, so id 70159 leads by 0.070. KL(parent || candidate) = 0.042 nat.
+   - `prompt_2048.txt` (2048 times " the"), 8B 8da4w: parent top-2 margin 0.336 (ids 247 / 118 at 11.664 /
+     11.328); the candidate moves id 247 to 8.930 and id 53 from 8.125 to 11.328: KL 0.975 nat, largest logit
+     change 6.06. Not a small move; it is on the degenerate prompt where every attention row averages 2048
+     identical values and the parent's fp16 accumulation is at its worst. Reported in full, not explained away.
+   - 35 real-text windows per cell, candidate default against parent default, and beside it parent tiled
+     against parent default:
+
+     | cell | top-1 differs (cand / parent-tiled) | mean KL nat (cand / parent-tiled) | max KL | max logit diff | perplexity ratio, 27 windows |
+     |---|---|---|---|---|---|
+     | 1B 4w | 1 / 0 of 35 | 3.0e-3 / 9.7e-4 | 0.033 / 0.010 | 0.80 / 0.75 | 1.011 / 0.994 |
+     | 1B 8da4w | 1 / 0 | 7.5e-2 / 4.6e-2 | 0.91 / 0.33 | 5.08 / 5.17 | 0.913 / 0.933 |
+     | 3B 4w | 1 / 0 | 7.7e-4 / 4.2e-4 | 0.008 / 0.005 | 0.83 / 0.61 | 1.018 / 1.014 |
+     | 3B 8da4w | 1 / 1 | 2.5e-2 / 5.3e-2 | 0.29 / 1.14 | 3.62 / 3.10 | 0.976 / 0.995 |
+     | 8B 4w | 0 / 0 | 7.1e-4 / 4.2e-4 | 0.007 / 0.006 | 0.70 / 0.61 | 0.993 / 1.005 |
+     | 8B 8da4w | 0 / 1 | 1.4e-2 / 2.5e-2 | 0.25 / 0.31 | 2.73 / 2.92 | 1.011 / 0.909 |
+
+3. **Gross-divergence check** (reject above 0.5 nat mean KL or top-1 differing on more than a third of the
+   windows, in any cell): largest mean KL 0.075 nat, at most 1 of 35 windows differs. Passed.
+4. Next-token items that differ, listed and not waived: 8B 8da4w on `prompt_2048.txt` and `prompt_check.txt`.
+   Windows where the candidate's top-1 differs from the parent's: `w1280-gpl-384` (1B 4w), `w1536-gpl-0`
+   (1B 8da4w, 3B 4w, 3B 8da4w); logits of all arms in `probe/s2-c0/differing.md`.
+
+**Equal to the B70 to the last digit.** The reference-error table and the probe summary (top-1 counts, KL,
+logit differences, perplexities; first 12 columns of `summary.csv`) are identical to the B70 campaign's
+`xe2-refine1` files: on the same kernels the two cards compute the same values, for the parent arm too. The
+B70's acceptance evidence therefore carries over, and was nevertheless re-measured here.
+
+Decode (not part of the prefill gate; `sessions/s2-c0/decode/summary.csv`, 5 runs per arm, 31 tokens after a
+2048-token prefill): candidate / parent 0.994 to 1.003 in the six cells, no direction (the B70 saw 0.7 to
+2.0 % slower everywhere).
+
+Where the gain comes from (warm ETDump of both arms, ms per prefill, `sessions/s2-c0/trace/families.csv`):
+
+| cell | arm | total | linear GEMM | QK^T | attn*V | softmax | other |
+|---|---|---:|---:|---:|---:|---:|---:|
+| 1B 4w | parent | 235.2 | 88.0 | 40.7 | 48.2 | 22.4 | 35.9 |
+| 1B 4w | candidate 0 | 156.9 | 88.3 | 7.0 | 7.9 | 17.5 | 36.2 |
+| 3B 4w | parent | 593.1 | 256.2 | 102.0 | 124.0 | 29.9 | 81.0 |
+| 3B 4w | candidate 0 | 393.2 | 259.7 | 14.0 | 14.7 | 22.9 | 81.9 |
+| 8B 4w | parent | 1180.5 | 652.3 | 153.7 | 188.0 | 45.3 | 141.2 |
+| 8B 4w | candidate 0 | 885.1 | 664.7 | 21.4 | 21.8 | 34.7 | 142.5 |
+| 8B 8da4w | parent | 1104.9 | 554.4 | 150.1 | 183.5 | 44.7 | 172.2 |
+| 8B 8da4w | candidate 0 | 803.6 | 554.5 | 20.8 | 21.0 | 34.4 | 172.9 |
+
+QK^T and attn*V together go from 38 % (1B) and 29 % (8B) of the prefill to 9 % and 5 %. Kernel times per layer
+(`sessions/s2-c0/sdpa-correctness/perf-*.log`, S = 2048, ms): 8B QK^T 4.69 -> 0.62, attn*V 5.73 -> 0.66,
+softmax 1.40 -> 1.08; 3B 3.62 -> 0.47, 4.40 -> 0.52, 1.06 -> 0.82; 1B 2.53 -> 0.42, 3.02 -> 0.49, 1.41 -> 1.08.
+The B580 runs these kernels 1.35 to 1.5 times slower than the B70 (0.41 / 0.48 / 0.80 on 8B), about its
+ratio of roofs. After candidate 0 the linear kernels are 56 to 75 % of the prefill and the truncated softmax
+(4 to 12 %) is larger than QK^T and attn*V together in the 1B cells.
 
 ## Next
 
-1. Candidate 0 decision (reference-error rule).
-2. Screens on this card, then B580-specific candidates per shape.
+1. Screens on this card (running), then B580-specific choices per shape and the next candidate. The 8da4w
+   linear kernel is the largest remaining item: the B70's best tile was `xe2bt_t128x128k64g84s16m8` (1.26x at
+   kernel level there, not yet gated there at the fork point).
+2. Roofs (igpu-roofline `fast`) for percent-of-roof.
 
 ## Blocking
 

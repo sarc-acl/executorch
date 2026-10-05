@@ -1,0 +1,4 @@
+ACCEPTED (reference-error rule, owner decision 2026-10-04)
+error against the fp32 reference not larger than the parent's on ['1b_head_config_s2048', '3b_head_config_s2048', '8b_head_config_s2048'] and every other case of results/b580/sdpa-error/c0-full.csv
+probe: 1b-4w top-1 differs on 1/35, mean KL 2.955e-03 nat; 1b-8da4w top-1 differs on 1/35, mean KL 7.549e-02 nat; 3b-4w top-1 differs on 1/35, mean KL 7.748e-04 nat; 3b-8da4w top-1 differs on 1/35, mean KL 2.474e-02 nat; 8b-4w top-1 differs on 0/35, mean KL 7.097e-04 nat; 8b-8da4w top-1 differs on 0/35, mean KL 1.388e-02 nat
+next-token items that differ (listed, not waived): timing: session complete : E2E5_INCOMPLETE 8b-8da4w:nexttoken_DIFFER_DIFFER_SAME | next token parent vs cand: 8b 8da4w on prompt_2048.txt, prompt_check.txt, r1304.txt : prompt_2048.txt:DIFFER,prompt_check.txt:DIFFER,r1304.txt:SAME
