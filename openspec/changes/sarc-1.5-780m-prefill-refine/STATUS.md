@@ -1,37 +1,67 @@
 # STATUS: 780M prefill campaign, round 2 (parameter space + beyond)
 
-Updated 2026-10-04 20:05 PDT (2026-10-05 03:05 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
+Updated 2026-10-04 21:20 PDT (2026-10-05 04:20 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
 Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (new raw data) and
 `.../780m-prefill-refine-2026-10-03/` (earlier builds and sessions).
 
-## Since the last update (19:00 PDT)
+## State
 
 | item | state |
 |---|---|
-| candidate 7 gate (softmax r3) | **finished 19:45 PDT**, every item passed; one timing cell (8B 8da4w) still to be repeated, bitwise comparison still owed (below) |
-| igpu-roofline `fast` plan | **running** since 19:46 PDT (`chain2.sh`), about 30 min; not finished, no roof value yet |
-| 4w refinement round 1 | **not started**: it waits for the roofline and a build window (`chain3b.sh`) |
-| candidate 8 (fused SDPA kernel, new) | written, builds, first correctness and timing runs done (below); not gated |
+| candidate 7 (softmax r3) | gate passed; bit-identical to its parent on all 21 SDPA cases; five cells +2.4 to +6.8 % (geomean +4.45 %); the 8B 8da4w timing cell is queued for its repeat (`chain4.sh`) |
+| igpu-roofline `fast` plan | finished 20:15 PDT; matrix roofs 14.766 TFLOP/s (fp16 -> fp32) and 14.379 TOP/s (int8), see below |
+| candidate 8 (fused SDPA kernel, Part 2) | third structure written and correct on every tier; kernel time per layer 10.0 -> 2.8 ms (1B), 10.2 -> 4.3 ms (3B), 13.5 -> 5.6 ms (8B); one end-to-end sanity run 1B 4w 3020.65 -> 3624.78 tok/s (+20.0 %); **not gated yet**, gate queued (`chain7.sh`) |
+| 4w refinement round 1 | running since 20:21 PDT, 1,669 of 3,006 rows; slowed by the candidate-8 development runs slotted in between (see "Pauses") |
+| 8da4w screen, QK^T / attn*V enumeration | not started; they follow the candidate-8 gate (`chain6b.sh`) |
 
 ## Running now (detached chains; nothing needs attention)
 
-1. `chain2.sh`: igpu-roofline `fast` plan (`~/igpu-roofline/campaigns/780m/2026-10-04-fast-prefill-refine2`).
-2. `chain3b.sh` + `chain5.sh`, after the roofline: CPU window (the two neighbour batches, the five 8da4w batches
-   again with the screening options, the hook test binary), then 4w refinement round 1 (1,002 neighbour
-   configurations, `raw/refine1/screen.csv`), about 1 h.
-3. `chain4.sh`, after that: the 8B 8da4w cell of the candidate-7 session again, from a cool start.
-4. `chain6.sh`: 8da4w. All 2,238 survivors are still enumerated, but in the screening mode (`wq_wo`, 1 + 2 runs,
-   2.7 s instead of 15.8 s a configuration; about 2 h instead of 9.8 h) after a validation on 64 configurations
-   drawn at random with the same seed (full measurement against two screening modes, `raw/dq/agreement.csv`).
-   The best 10 per shape get the full measurement afterwards, as for 4w. This changes how each 8da4w
-   configuration is timed, not which ones: say so if the full measurement of all 2,238 is wanted instead.
+1. `chain3b.sh`: 4w refinement round 1 (1,002 neighbour configurations, `raw/refine1/screen.csv`), until about 21:45 PDT.
+2. `chain4.sh`: the 8B 8da4w cell of the candidate-7 session again, from a cool start (up to 30 min wait).
+3. `chain7.sh`: gate of candidate 8 from a cool start: e2e session against candidate 7 as parent, SDPA tiers `all`,
+   `extended`, `full` (12 passes each), `verify.sh`, traces; then the `peaked` tier (12 passes), the error against
+   the fp64 reference for both arms, steady-clock kernel timing and the real-text logits probe (32 prompts, four
+   arms, six cells). About 2.5 h.
+4. `chain6b.sh` (replaces `chain6.sh`, which was only waiting): 8da4w. All 2,238 survivors are still enumerated, but
+   in the screening mode (`wq_wo`, 1 + 2 runs, 2.7 s instead of 15.8 s a configuration; about 2 h instead of 9.8 h)
+   after a validation on 64 configurations drawn at random with the same seed (full measurement against two
+   screening modes, `raw/dq/agreement.csv`). The best 10 per shape get the full measurement afterwards, as for 4w.
+   This changes how each 8da4w configuration is timed, not which ones: say so if the full measurement of all
+   2,238 is wanted instead.
 5. Then the QK^T / attn*V enumeration resumes by itself (`raw/space/results.csv`; 55 of 1,724 SDPA runs done;
    about 6 h, pausing 06:40 to 07:40).
 
-Short correctness and kernel-timing runs of candidate 8 are slotted in between these under the gpu-lab lock, never
-during a timed session, a cool-down wait or the roofline.
+### Pauses and overlaps (for whoever audits the timings)
 
-## Candidate 7 (softmax r3, through the uncommitted hook): gate passed, one cell and one check owed
+- Builds are CPU work and the screening sweep does not look at `PAUSE`, so the sweep process was stopped
+  (`SIGSTOP`, between two runs) for each build and continued afterwards: 03:33:14 to 03:34:33, 03:41:31 to
+  03:41:33, 03:41:53 to 03:43:11, 03:49:09 to 04:05:35 and 04:13:42 to 04:13:45 UTC (`logs/sweep-pauses.txt`).
+- Candidate-8 correctness and kernel-timing runs took the gpu-lab lock between sweep runs from 03:28 to 04:16 UTC.
+  They cannot overlap a sweep run, but they warm the device, and the sweep waits until it is back under 62 C
+  before each run: that is why round 1 is slow, not a change in what it measures.
+- One build of mine started while the roofline was still running and was stopped after about 15 s (03:05:28 to
+  03:05:42 UTC, `-j6`). It overlapped the confirm runs of `mem_write`, `mem_copy`, `mem_triad` and
+  `sharedbw_fp16`. The matrix roofs used below were confirmed earlier in the run and repeat within 0.1 %; the
+  shared-memory fp16 read / write roofs show a 15 % repeat range and are not used.
+
+## Roofs, re-measured (igpu-roofline `fast` plan, 2026-10-04 19:46 to 20:15 PDT)
+
+Run `~/igpu-roofline/campaigns/780m/2026-10-04-fast-prefill-refine2` (code `dbdd193e`, RADV PHOENIX, Mesa 25.2.7,
+GPU clock DVFS-governed, not pinned). Confirmed medians (3 repeats each):
+
+| roof | value | repeat range | earlier value (`sarc-1.5-e2e-benchmark/evidence/roofline.md`) |
+|---|---:|---:|---:|
+| `matrix_fp16_fp32` (4w linear, SDPA) | 14.766 TFLOP/s | 0.1 % | 14.772 |
+| `matrix_int8` (8da4w linear) | 14.379 TOP/s | 0.1 % | 14.393 |
+| `global_read` / `global_write` / `global_copy` | 86.6 / 77.6 / 71.5 GB/s | 0.0 to 0.1 % | |
+| MMA fed from shared memory, one tile pair per 1 / 2 / 4 / 8 multiply-adds | 2.42 / 4.82 / 9.65 / 14.73 TFLOP/s | | |
+| MMA fed from a cache-resident buffer, same | 4.01 / 7.89 / 10.75 / 12.80 TFLOP/s | | |
+
+The last two rows are what shaped candidate 8: operand loads, not the matrix unit, limit a kernel that loads a
+tile pair for fewer than about 8 multiply-adds, and contiguous tiles in a cache-resident buffer load faster than
+tiles in shared memory.
+
+## Candidate 7 (softmax r3, through the uncommitted hook): gate passed, bit-identical, one timing cell owed
 
 Session `c7-softmax-r3` (`results/780m/sessions/c7-softmax-r3/`, raw data `<artifacts>/stage/c7-softmax-r3`),
 started 18:13 PDT at 45 C after the full 30 min wait. Both arms are the same binary (build `hook3` = the branch +
@@ -85,46 +115,84 @@ flagged runs read 548.0 to 549.4 and 561.9 to 562.5 tok/s, the same as the valid
 and the tool is not changed; the cell is repeated instead. Pitfall for anyone watching a session: do not put the
 runner or microbench binary names in a shell command while `e2e5.sh` is running.
 
-Still owed for this candidate: the bitwise comparison of the SDPA output against the parent (it claims to be
-bit-identical on every element that is read; runs right after the roofline).
+Bitwise comparison against the parent (`results/780m/softmax/bitwise-c7.txt`): the raw fp16 SDPA output of
+every correctness case of the tiers `all`, `extended`, `peaked` and `full` (21 cases, up to 16.8 MB each, the three
+production head configurations at S = 2048 among them) is **byte-identical** between the parent kernels and the
+parent kernels with softmax r3. Candidate 7 therefore does not use the near-tie or the reference-error rule.
 
-## Candidate 8 (new, Part 2): fused SDPA kernel, not gated yet
+## Candidate 8 (Part 2): fused SDPA kernel `sarc_dev_780m_sdpa_fused3`, gate queued
 
 After candidate 7, QK^T + softmax + attn*V are still 160 of 680 ms on 1B, 299 of 1694 ms on 3B and 452 of
 3797 ms on 8B, and all three kernels are bound by the traffic of the S x S attention matrix (QK^T writes it,
 the softmax reads and rewrites it, attn*V reads it; about 550 MB per layer on 1B by count of bytes), not by
-arithmetic.
-`sarc_dev_780m_sdpa_fused` never writes that matrix: one workgroup owns a block of query rows of one head and
-walks the context in blocks. Pass A computes the scores and keeps only the row maxima; pass B computes the scores again,
-e = exp(score - max) in fp16, the row sum in fp32 and `acc += e V` in fp32; the output is `acc / sum`.
+arithmetic. The fused kernel never writes that matrix. For a block of query rows of one head it walks the context
+in blocks, twice: pass A computes the scores (fp32 accumulate, scaled, rounded to fp16, exactly as the QK^T kernel
+does) and keeps the row maxima; pass B computes the scores again, e = exp(score - max) in fp16, the row sums in
+fp32 and `acc += e V` in fp32; the output is `acc / sum`.
 
-- Files: `glsl/sarc_dev/sarc_dev_780m_sdpa_fused.{glsl,yaml}` (8 variants), `impl/sarc_dev/Sdpa780mFused.cpp`,
-  the 780m block of `Overrides.cpp`. Selected with `ET_VK_SARC_780M_SDPA_FUSED=<variant per head_dim>`.
-- It needs a hook in the release zone and in `SDPA.cpp`, `hooks/sdpa-fused-hook.patch` (about 60 added lines,
-  not applied on this branch): one more node after the three SDPA nodes, and an empty dispatch for those three
-  when the fused node serves the call. It serves only tile-aligned prefill calls; decode, unaligned prompts and
-  `input_pos` not on a block boundary keep the three kernels.
-- It changes the arithmetic (where the normalisation is rounded), so it is judged by the reference-error rule
-  of the second owner decision, not as a bit-identical change.
-- Test additions (`test/sarc_dev/test_llama_microbench.cpp`): the fused kernel is recognised by the SDPA
-  correctness cases (it must then be the only SDPA kernel dispatched); `ET_VK_SDPA_ERROR_REPORT=1` prints rms and
-  maximum error against an fp64 reference computed from the fp16 inputs; a new opt-in tier `peaked` (Q scaled by
-  8, so a few context positions carry most of a row's weight; the existing tiers have near-uniform attention).
-  No tolerance and no existing case is changed.
+Three structures were built and measured; the third is the candidate.
 
-First results, build `fused1` (the working tree + both hook patches in a scratch tree), one pass each
-(`<artifacts>/fx/`):
+| structure | what a workgroup is | kernel time per layer, 1B / 8B head configuration |
+|---|---|---|
+| three kernels (candidate 7) | | 9.97 / 13.52 ms |
+| `fused`: K and V staged in shared memory, 4 to 6 barriers a block | 4 to 8 subgroups, 64 or 128 rows | 3.84 / 11.7 ms |
+| `fused2`: staging double-buffered (1 barrier a block), score rows private to a subgroup, V transposed | 2 to 8 subgroups | not faster than `fused` (first 5 runs: 6.2 against 5.9 ms on 1B) |
+| `fused3`: one subgroup, no staging, no barrier; Q tiles in registers, K from the cache buffer, V from a transposed copy | 1 subgroup, 16 or 32 rows | 2.55 / 9.95 ms |
+| `fused3`, packed (`...rk`): K and V read from tile-packed copies in which a 16 x 16 operand tile is 512 contiguous bytes | same | **2.80 / 5.57 ms, copy pass included** (2.46 / 4.84 ms without it) |
 
-- Correctness: tiers `all` 4 of 4, `extended` 8 of 8, `peaked` 5 of 5, 0 mismatches, the fused kernel the only
-  SDPA kernel dispatched in every case.
-- Error against the fp64 reference, parent (three kernels, softmax r3) -> fused: rms 1.9e-5 to 4.6e-5 ->
-  0.95e-5 to 2.4e-5 on the 8 `extended` cases (about half), maximum lower in all 8; on the 5 `peaked` cases rms
-  2.6e-4 to 2.7e-4 -> 2.2e-4 to 2.4e-4, maximum lower in 4 and higher in 1 (`peaked_tiny_gqa_s256`: 1.74e-3 ->
-  1.98e-3). The `full` tier (the production shapes the rule names) is not run yet.
-- Kernel time per layer at S = 2048 (microbench mean of 5 runs, one run of the suite; QK^T + softmax +
-  attn*V -> fused): 1B 11.1 -> 7.2 ms, 3B 11.4 -> 10.6 ms, 8B 14.3 -> 12.8 ms. The 1B figure would be worth about
-  7 % end to end; the head_dim 128 variants are not faster yet (twice the MMA work in a workgroup that fits only
-  64 rows). The other tile variants are not timed yet.
+(Steady GPU clock: 40 warm-up and 10 timed runs, median; `results/780m/fused/kernel-time-steady.csv`. With the
+default 3 + 5 runs of the microbench the clock is still rising and the fused kernels read up to 1.7 times slower:
+`kernel-time-development.csv`, where only values in the same column compare.)
+
+What the measurements say about why:
+
+- The disassembly shows two 128-bit shared-memory loads per lane for every operand tile; `fused` and `fused2` load
+  1.0 to 1.5 tiles per multiply-add, which the roofline table above puts at a small fraction of the matrix roof.
+  Removing the row padding from the shared tiles made `fused2` 2.6 times slower (15.5 against 5.9 ms): shared
+  memory loads were the limit, not the barriers.
+- Keeping the Q tiles in registers and reading K straight from the buffer halves the loads per multiply-add.
+  Reloading Q from the buffer for every block instead costs 2.2 to 3.0 times (1B 10.2 against 4.6 ms, 8B 44.7
+  against 15.0 ms, first-5-run values): loads from the cache buffers are only cheap when a tile is contiguous. In
+  the caches a 16 x 16 tile is 16 runs a row stride apart; the packed copies make it one run, which is what
+  brought head_dim 128 from 9.95 to 4.96 ms (16 x 16 tile, steady clock).
+- The packed `fused3` runs 3.1 M (1B) and 6.3 M (8B) multiply-adds a layer in 2.46 and 4.84 ms: about 71 % of the
+  matrix roof. Without pass A the same kernel takes 1.58 / 3.12 ms (measurement-only variant `...rkm1`): a
+  one-pass (running-maximum) form would save at most that, about 2 % end to end; not attempted.
+- The copy pass (`sarc_dev_780m_sdpa_kvt`, 4 to 16 MB a layer) costs 0.35 (1B) to 0.7 ms (8B), three times what
+  the bytes cost at the copy roof; not tuned yet.
+
+Variants chosen (`ET_VK_SARC_780M_SDPA_FUSED=fused3_d64_t32x32g11s32rk,fused3_d128_t16x64g11s32rk`): for head_dim
+64, 32 rows x 32-column blocks (2.80 ms; 16 x 32 reads 2.77 to 2.79 ms, a tie); for head_dim 128, 16 rows x 64
+(8B 5.56 to 5.58 ms, 3B 4.32 ms; 16 x 16, 16 x 32 and 32 x 32 are 1.5 to 4 % behind on both models, twice).
+
+- Files: `glsl/sarc_dev/sarc_dev_780m_sdpa_{fused,fused2,fused3,vt,kvt}.{glsl,yaml}`,
+  `impl/sarc_dev/Sdpa780mFused.cpp`, the 780m block of `Overrides.cpp`.
+- It needs `hooks/sdpa-fused-hook.patch` (about 70 added lines in the release zone and `SDPA.cpp`, not applied on
+  this branch; described in `hooks/README.md`): nodes appended after the three SDPA nodes, and an empty dispatch
+  for those three when the fused node serves the call. It serves prefill calls whose S and `input_pos` are
+  multiples of the row tile and the context block; decode, unaligned prompts and `ET_VK_DISABLE_COOPMAT` keep the
+  three kernels. It also serves aligned lengths the 128-row QK^T tile does not (64, 192, ...), which the stock path
+  runs on the tiled kernels.
+- It changes the arithmetic (the three kernels round e / sum to fp16 before attn*V; this kernel rounds e and
+  divides the fp32 accumulator), so it is judged by the reference-error rule of the second owner decision.
+- Test additions (`test/sarc_dev/test_llama_microbench.cpp`, no tolerance and no existing case changed): the fused
+  kernel is recognised by the SDPA cases (it must then be the only SDPA kernel dispatched);
+  `ET_VK_SDPA_ERROR_REPORT=1` prints rms and maximum error against an fp64 reference computed from the fp16
+  inputs; tier `peaked` (Q scaled by 8, so a few context positions carry most of a row's weight; the existing
+  tiers have near-uniform attention); tier `fused` (S = 32, 64, 192, 320, shapes only the fused kernel takes);
+  `ET_VK_SDPA_PERF_RUNS` for the steady-clock timing. `test/sarc_dev/probe/logits_probe` writes the next-token
+  logits of token prompts, for the real-text comparison (`tools/probe_{prompts,run,compare}.*`).
+
+Results so far (one pass each unless said; `<artifacts>/fx/`, `<artifacts>/stage/c8-fused3/`):
+
+- Correctness, chosen variants: tiers `all` 4 of 4, `extended` 8 of 8, `peaked` 5 of 5; tier `fused` 12 passes,
+  5 of 5 each; 0 mismatches, the fused kernel the only SDPA kernel dispatched.
+- Error against the fp64 reference, three kernels -> fused: rms 1.9e-5 to 4.6e-5 -> 0.95e-5 to 2.4e-5 on the 8
+  `extended` cases (about half), maximum lower in all 8; on the 5 `peaked` cases rms 2.6e-4 to 2.7e-4 -> 2.2e-4 to
+  2.4e-4, maximum lower in 4 and higher in 1 (`peaked_tiny_gqa_s256`: 1.74e-3 -> 1.98e-3; both arms round the
+  same fp16 scores there). The `full` tier, which holds the production shapes the rule names, runs in the gate.
+- End to end, one run per arm, not a session: 1B 4w 3020.65 -> 3624.78 tok/s (+20.0 %). Projected from the
+  kernel times and the candidate-7 traces: about +20 % (1B), +12 % (3B), +8 % (8B).
 
 ## Can the sweep slot in between two timed runs of a session? No (checked 2026-10-04 18:44 PDT, during `c7`)
 
@@ -345,13 +413,11 @@ runs each; all variants reached through `hooks/softmax-name-hook.patch` applied 
 
 ## Next
 
-1. After the roofline: bitwise comparison of candidate 7 against its parent; roof values into this file.
-2. Candidate 8: time the other tile variants, find what limits the head_dim 128 case, `full` tier with the error
-   report for both arms, then the gate (session against candidate 7 as parent, real-text comparison on at least
-   32 prompts as the reference-error rule requires).
-3. 4w refinement round 1 -> the best 10 per shape with the full measurement; 8da4w screen -> the same; QK^T and
+1. Candidate 8 gate (`chain7.sh`), then its record under the reference-error rule: error against the reference on
+   the production shapes for both arms, the real-text comparison, the next-token items.
+2. 4w refinement round 1 -> the best 10 per shape with the full measurement; 8da4w screen -> the same; QK^T and
    attn*V enumeration; response surface per family.
-4. Repeat the 8B 8da4w cell of candidate 7.
+3. A candidate from the Part 1 winners per shape, gated against candidate 8.
 
 ## Blocking
 

@@ -41,7 +41,7 @@
 //                       actually reaches. Host-side only, no GPU. A path no
 //                       case produces a tile for is UNCOVERED, however many
 //                       times --sdpa-correctness-only passes.
-//   --sdpa-tier=<fast|regions|all|extended|full|peaked>
+//   --sdpa-tier=<fast|regions|all|extended|full|peaked|fused>
 //                       which SDPA correctness tier to run; default all.
 //                       "fast" = the original S=128 cases, the cheap
 //                       post-edit pre-check. "regions" = the S=256 cases
@@ -1345,7 +1345,13 @@ SdpaRunResult sdpa_run_case(
   // the attention shaders' dispatch size/access pattern depends solely on
   // the cache's shape (context_len), not its contents.
 
-  for (int i = 0; i < kWarmupRuns; ++i) {
+  // 780m: ET_VK_SDPA_PERF_RUNS=<warmup>,<timed> for this suite (the GPU clock
+  // is still rising after 3 + 5 runs of a few milliseconds each).
+  int sdpa_warmup_runs = kWarmupRuns, sdpa_timed_runs = kTimedRuns;
+  if (const char* e = std::getenv("ET_VK_SDPA_PERF_RUNS")) {
+    std::sscanf(e, "%d,%d", &sdpa_warmup_runs, &sdpa_timed_runs);
+  }
+  for (int i = 0; i < sdpa_warmup_runs; ++i) {
     graph.execute();
   }
 
@@ -1354,7 +1360,7 @@ SdpaRunResult sdpa_run_case(
   std::vector<float> av_timings_us;
   std::vector<float> softmax_timings_us;
   std::vector<std::string> last_dispatched;
-  for (int i = 0; i < kTimedRuns; ++i) {
+  for (int i = 0; i < sdpa_timed_runs; ++i) {
     graph.execute();
     graph.context()->querypool().extract_results();
     const auto shader_results =
@@ -1373,7 +1379,10 @@ SdpaRunResult sdpa_run_case(
       // "sdpa_attn_weights", but NOT "sdpa_compute_attn_weights", so the qk
       // test below cannot capture it. Checked first regardless, so a future
       // rename cannot silently fold softmax into the qk bucket.
-      if (r.kernel_name.find("sdpa_fused") != std::string::npos) {
+      if (r.kernel_name.find("sdpa_fused") != std::string::npos ||
+          r.kernel_name.find("sdpa_kvt") != std::string::npos ||
+          r.kernel_name.find("sdpa_vt") != std::string::npos) {
+        // The fused kernel and the copy pass that feeds it.
         fused_time_us += static_cast<float>(duration_ns) / 1000.0f;
       } else if (r.kernel_name.find("softmax") != std::string::npos) {
         softmax_time_us += static_cast<float>(duration_ns) / 1000.0f;
@@ -1394,6 +1403,14 @@ SdpaRunResult sdpa_run_case(
     total_timings_us.push_back(
         qk_time_us + av_time_us + softmax_time_us + fused_time_us);
   }
+
+  // 780m: the timed runs one by one (the records carry mean and stdev only).
+  std::cout << "[sdpa-runs] " << m.name << " " << regime.regime << " "
+            << (enable_coopmat ? "coopmat" : "tiled") << " total_us";
+  for (const float t : total_timings_us) {
+    std::cout << " " << t;
+  }
+  std::cout << "\n";
 
   SdpaRunResult result;
   result.mean_us = mean_of(total_timings_us);
@@ -1614,6 +1631,15 @@ const std::vector<SdpaCorrectnessCase> kSdpaCorrectnessCases = {
     {"peaked_8b_head_config_s256", 256, 128, 32, 8, "peaked", 0, 8.0f},
     {"peaked_tiny_gqa_s2048", 2048, 64, 2, 1, "peaked", 0, 8.0f},
     {"peaked_tiny_d128_s2048", 2048, 128, 2, 1, "peaked", 0, 8.0f},
+    // ---- fused tier (780m) ---------------------------------------------
+    // Shapes only the fused prefill kernel (sarc_dev_780m_sdpa_fused*) takes:
+    // S below or between multiples of the 128-row QK^T tile. Without that
+    // kernel no coopmat kernel fits them, so the cases fail by design.
+    {"fused_s32", 32, 64, 2, 1, "fused"},
+    {"fused_s64", 64, 64, 32, 8, "fused"},
+    {"fused_s64_d128", 64, 128, 32, 8, "fused"},
+    {"fused_s192_pos64", 192, 64, 32, 8, "fused", 64},
+    {"fused_s320_d128_pos192", 320, 128, 24, 8, "fused", 192, 8.0f},
 };
 
 // ---------------- QK^T mask-region enumeration (host-side) ----------------
@@ -2661,7 +2687,7 @@ void print_usage() {
          "cases\n"
          "  --sdpa-regions-only  enumerate the QK^T mask-region tile grid "
          "(no GPU)\n"
-         "  --sdpa-tier=<fast|regions|all|extended|full|peaked>  which SDPA correctness tier to "
+         "  --sdpa-tier=<fast|regions|all|extended|full|peaked|fused>  which SDPA correctness tier to "
          "run (default all)\n"
          "  --sdpa-force-fallback  run SDPA correctness with coopmat "
          "DISABLED (control)\n"

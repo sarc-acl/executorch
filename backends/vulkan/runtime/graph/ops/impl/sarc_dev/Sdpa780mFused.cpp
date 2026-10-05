@@ -7,9 +7,14 @@
  */
 
 // 780m (openspec/changes/sarc-1.5-780m-prefill-refine): the node of the fused
-// prefill SDPA kernel, glsl/sarc_dev/sarc_dev_780m_sdpa_fused.
-//   ET_VK_SARC_780M_SDPA_FUSED=<variant>[,<variant>]   e.g. d64_t128x64g24s32,d128_t64x64g24s32
-// one variant per head_dim. For the calls it fits (below) the three SDPA
+// prefill SDPA kernels, glsl/sarc_dev/sarc_dev_780m_sdpa_fused{,2}.
+//   ET_VK_SARC_780M_SDPA_FUSED=<variant>[,<variant>]
+//   e.g. fused2_d64_t128x32g18s32,fused2_d128_t64x32g14s32
+// one variant (the shader name after sarc_dev_780m_sdpa_) per head_dim. The
+// fused3 family reads V from a transposed scratch copy that a second node
+// (sarc_dev_780m_sdpa_vt) writes first; its packed variants (tile token
+// ending in k, or km1) read tile-packed copies of both K and V
+// (sarc_dev_780m_sdpa_kvt). For the calls it fits (below) the three SDPA
 // kernels dispatch nothing and this node writes the output; every other call
 // (decode, unaligned prompt, a head_dim without a variant) is untouched.
 // Compiled only when the release zone has the fused-SDPA hook (that change's
@@ -26,6 +31,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <memory>
 
 namespace vkcompute {
 namespace sarc {
@@ -34,6 +40,8 @@ namespace {
 struct Variant {
   std::string name;
   uint32_t head_dim, m, n, wg_size;
+  bool needs_vt;
+  bool packed;
 };
 
 const std::vector<Variant>& variants() {
@@ -46,12 +54,23 @@ const std::vector<Variant>& variants() {
       const std::string token = list.substr(0, comma);
       list = comma == std::string::npos ? "" : list.substr(comma + 1);
       unsigned d, m, n, gx, gy, sg;
+      const size_t dims = token.find("_d");
       VK_CHECK_COND(
-          std::sscanf(
-              token.c_str(), "d%u_t%ux%ug%1u%1us%u", &d, &m, &n, &gx, &gy, &sg) ==
-              6,
-          "ET_VK_SARC_780M_SDPA_FUSED: expected d<D>_t<M>x<N>g<X><Y>s<S>");
-      out.push_back({"sarc_dev_780m_sdpa_fused_" + token, d, m, n, gx * gy * sg});
+          dims != std::string::npos &&
+              std::sscanf(
+                  token.c_str() + dims,
+                  "_d%u_t%ux%ug%1u%1us%u",
+                  &d, &m, &n, &gx, &gy, &sg) == 6,
+          "ET_VK_SARC_780M_SDPA_FUSED: expected <family>_d<D>_t<M>x<N>g<X><Y>s<S>");
+      out.push_back(
+          {"sarc_dev_780m_sdpa_" + token,
+           d,
+           m,
+           n,
+           gx * gy * sg,
+           token.rfind("fused3", 0) == 0,
+           token.rfind("fused3", 0) == 0 &&
+               token.find("s32rk") != std::string::npos});
     }
     return out;
   }();
@@ -88,7 +107,7 @@ bool sdpa_fused_active_780m(
   const uint32_t S = graph->size_at<uint32_t>(-3, q);
   const uint32_t input_pos =
       static_cast<uint32_t>(graph->read_symint(input_pos_symint));
-  return S >= v->m && S % v->m == 0 && input_pos % v->n == 0;
+  return S >= v->m && S % v->m == 0 && S % v->n == 0 && input_pos % v->n == 0;
 }
 
 namespace {
@@ -123,6 +142,29 @@ GlobalWorkGrid pick_fused_gwg(
       LocalWorkGroup(v->wg_size, 1u, 1u));
 }
 
+GlobalWorkGrid pick_vt_gwg(
+    ComputeGraph* graph,
+    const vkapi::ShaderInfo& shader,
+    const std::vector<ArgGroup>& args,
+    const std::vector<ValueRef>& resize_args) {
+  (void)shader;
+  const ValueRef q = resize_args.at(0);
+  const ValueRef input_pos_symint = resize_args.at(1);
+  const LocalWorkGroup lwg(8u, 8u, 1u);
+  if (!sdpa_fused_active_780m(graph, q, input_pos_symint)) {
+    return GlobalWorkGrid({0u, 0u, 0u}, kTiledWorkGrid, lwg);
+  }
+  const ValueRef v = args.at(1).refs.back();
+  const uint32_t context_len = graph->size_at<uint32_t>(-3, q) +
+      static_cast<uint32_t>(graph->read_symint(input_pos_symint));
+  return GlobalWorkGrid(
+      {context_len / 4u,
+       graph->size_at<uint32_t>(-1, v) / 4u,
+       graph->size_at<uint32_t>(-2, v)},
+      kTiledWorkGrid,
+      lwg);
+}
+
 void resize_fused_node(
     ComputeGraph* graph,
     const std::vector<ArgGroup>& args,
@@ -151,21 +193,74 @@ void sdpa_fused_add_780m(
   }
   const int32_t head_dim = graph.size_at<int32_t>(-1, q);
   const int32_t num_q_heads = graph.size_at<int32_t>(-2, q);
+  const int32_t num_kv_heads = graph.size_at<int32_t>(-2, v);
+  const int32_t max_context = graph.size_at<int32_t>(-3, v);
+
+  // The transposed V [kv_h][d][c] of the fused3 family; other families read
+  // the cache itself.
+  ValueRef k_arg = k;
+  ValueRef v_arg = v;
+  std::unique_ptr<TmpTensor> kt;
+  std::unique_ptr<TmpTensor> vt;
+  const Variant* variant = variant_for(&graph, q);
+  if (variant->needs_vt) {
+    VK_CHECK_COND(max_context % 16 == 0);
+    const std::vector<int64_t> scratch_sizes = {
+        1, num_kv_heads, head_dim, max_context};
+    vt = std::make_unique<TmpTensor>(
+        &graph, scratch_sizes, vkapi::kHalf, utils::kBuffer, utils::kWidthPacked);
+    v_arg = *vt;
+    std::vector<ValueRef> written = {v_arg};
+    std::vector<ValueRef> read = {v};
+    if (variant->packed) {
+      kt = std::make_unique<TmpTensor>(
+          &graph, scratch_sizes, vkapi::kHalf, utils::kBuffer, utils::kWidthPacked);
+      k_arg = *kt;
+      written = {k_arg, v_arg};
+      read = {k, v};
+    }
+    graph.execute_nodes().emplace_back(new DynamicDispatchNode(
+        graph,
+        VK_KERNEL_FROM_STR(
+            variant->packed ? "sarc_dev_780m_sdpa_kvt_buffer_half"
+                            : "sarc_dev_780m_sdpa_vt_buffer_half"),
+        pick_vt_gwg,
+        pick_required_lwg,
+        // Inputs and Outputs
+        {{written, vkapi::kWrite}, {read, vkapi::kRead}},
+        // Shader param buffers
+        {graph.sizes_ubo(q),
+         graph.sizes_ubo(v),
+         graph.get_or_create_int_param_buffer(input_pos_symint)},
+        // Push Constants
+        {},
+        // Specialization Constants
+        {max_context},
+        // Resize Args
+        {q, input_pos_symint},
+        // Resizing Logic
+        nullptr));
+  }
+
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
       graph,
       pick_fused_shader,
       pick_fused_gwg,
       pick_required_lwg,
       // Inputs and Outputs
-      {{out, vkapi::kWrite}, {{q, k, v}, vkapi::kRead}},
+      {{out, vkapi::kWrite}, {{q, k_arg, v_arg}, vkapi::kRead}},
       // Shader param buffers
       {graph.sizes_ubo(q),
        graph.sizes_ubo(k),
        graph.get_or_create_int_param_buffer(input_pos_symint)},
       // Push Constants
       {},
-      // Specialization Constants
-      {1.0f / std::sqrt(static_cast<float>(head_dim)), num_q_heads * head_dim},
+      // Specialization Constants: {inv_scale, row strides of q / out, of the
+      // caches and of the transposed V}; the first two families declare two.
+      {1.0f / std::sqrt(static_cast<float>(head_dim)),
+       num_q_heads * head_dim,
+       num_kv_heads * head_dim,
+       max_context},
       // Resize Args
       {q, input_pos_symint},
       // Resizing Logic
