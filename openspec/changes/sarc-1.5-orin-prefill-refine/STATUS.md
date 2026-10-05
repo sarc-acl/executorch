@@ -1,8 +1,9 @@
 # STATUS: sarc-1.5-orin-prefill-refine
 
-**2026-10-05 07:15 UTC. RUNNING: the gate of candidate 1 (`orin-refine1`, SDPA prefill kernels), then candidate 2
-(`orin-lin-refine2`, 8da4w whole-texel weight staging). Nothing accepted yet; the stop rule is not met; the
-branch is not pushed.**
+**2026-10-05 08:30 UTC. RUNNING. Candidate 1 (`orin-refine1`, SDPA prefill kernels) is REJECTED by the gate on
+one next-token item, and the owner's reference-error rule is not met on one maximum error, exactly as on the
+4070 Ti; its timed session is running for evidence only. Candidate 2 (8da4w linear) is next. Nothing accepted
+yet; the stop rule is not met; the branch is not pushed.**
 
 All times are UTC from `date -u`.
 
@@ -10,30 +11,67 @@ All times are UTC from `date -u`.
 
 - Device (`duck-naughty`), detached, one GPU job at a time under the gpu-lab lock; status in
   `~/hmz-sarc-orin/jobs/<job>.status` / `.out`, from the workstation `tools/dstat.sh`. Survives a reboot of the
-  workstation. Job `chain6` (`tools/chain6.sh`), build `topic4` = `8973debef`, dev zone only:
-  1. reference error of the attention block, stock arm and `orin-refine1`, same test binary (`raw/sdpa-error1`);
-  2. `gate_sdpa.sh s2-c1` (24 SDPA correctness passes, `verify.sh`, six-cell session, traces); if it ends
-     `GATE_REJECTED` at `verify-check`, `gate_rest.sh` runs the session and traces for evidence only;
-  3. candidate 2: bit comparison with the shipped kernel (`raw/bit-bf`), production-diff on all three models,
-     `gate.sh s3-c2`.
-  Expected to finish about 10:30 UTC.
-- Workstation: job `build-topic4` is building `hook4` (= `topic4` + `tools/local-hook-orin-softmax.patch`, NOT
-  committed: the softmax-name hook, see "What the SDPA candidate is expected to hit"). It does not survive a
-  workstation reboot (start it again; the tag directory must be moved away first).
+  workstation. Builds `topic4` = `8973debef`, `topic5` = `96a793e61` (dev zone only), `hook4` = `topic4` +
+  `tools/local-hook-orin-softmax.patch` (NOT committed):
+  - `chain6` (running): evidence session and traces of candidate 1 (`gate_rest.sh s2-c1`); then candidate 2: bit
+    comparison with the shipped kernel (`raw/bit-bf`), production-diff on all three models, `gate.sh s3-c2`.
+  - `chain7b` (waiting): decode A/B; 8da4w screen 3 (second batch of whole-texel tiles) and phase timing; 4w
+    screen of every existing subgroup-32 dev tile; reference error and kernel times of the softmax variants.
+  - `chain8` (waiting): `gate_sdpa.sh s4-c1h`, candidate 1h through the local hook.
+  Expected: `chain6` until about 11:00 UTC, `chain7b` 12:30, `chain8` 14:30.
+- Workstation: nothing.
 
 ## Next step
 
-Read the gate of candidate 1. If it is rejected on a next-token item, as on the 4070 Ti: logits probe (41
-prompts, four arms) and the reference-error rule for `orin-refine1`, then the same for the softmax variant
-through `hook4`, reported for the owner. Then the 4w linear kernel (phase timing below).
+Read the session of candidate 1 (measured gain) and the gate of candidate 2. Then candidate 1h, the 41-prompt
+logits comparison for it, and whatever the 8da4w and 4w screens of `chain7b` suggest.
+
+## Decision needed from the owner
+
+**The SDPA prefill kernels cannot pass the gate from the dev zone on this device, for the reason already found
+on the 4070 Ti.** With the release softmax (fp16 arithmetic) the attention block is 2.5 times closer to the
+fp32 reference in rms than the parent's, but its maximum error on the 3B head configuration is 11 % larger, so
+the reference-error rule rejects it once a next-token item differs, and one does (`1b 8da4w unaligned`). The
+softmax that removed this on the 4070 Ti (`4070ti_nzf`: fp32 reduction, no zero tail) is in the tree, but its
+name can only be selected through a hook in `impl/sarc/SdpaCoopmat.cpp` (9 lines,
+`tools/local-hook-orin-softmax.patch`), which is outside the dev zone. Candidate 1h measures exactly that
+through an uncommitted local patch. Options: (a) accept the softmax-name hook into `sarc/HOOKS`, after which
+candidate 1h is reachable; (b) accept candidate 1 as it is under a per-device reading of the rule (its largest
+error over the three production cases, 1.570e-3, is below the parent's largest, 1.713e-3); (c) leave attention
+stock on the Orin. I applied the rule as written (per case) and did not look for a kernel that passes.
 
 ## Candidates
 
 | # | profile / environment | what | reachable from the dev zone | state |
 |---|---|---|---|---|
-| 1 | `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine1` | SDPA prefill kernels (QK^T, attn*V) | yes (`OrinSdpa.cpp`, no hook) | gate running |
-| 2 | `ET_VK_SARC_DEV_PROFILE=orin-lin-refine2` | 8da4w linear: whole-texel weight staging | yes | queued |
-| 1h | candidate 1 + `ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf` | fp32 softmax without the zero tail | NO: needs the softmax-name hook (build `hook4`, local patch) | to be measured for the owner |
+| 1 | `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine1` | SDPA prefill kernels (QK^T, attn*V) | yes (`OrinSdpa.cpp`, no hook) | **REJECTED** at `verify-check` (`s2-c1`); evidence session running |
+| 2 | `ET_VK_SARC_DEV_PROFILE=orin-lin-refine2` | 8da4w linear: whole-texel weight staging | yes | queued (`s3-c2`) |
+| 1h | candidate 1 + `ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf` | fp32 softmax without the zero tail | NO: needs the softmax-name hook (build `hook4`, local patch, not committed) | queued (`s4-c1h`), measured for the owner |
+
+### Candidate 1, `orin-refine1` (SDPA prefill kernels): gate `s2-c1`, REJECTED
+
+Build `topic4` (`8973debef`, dev zone only) against the pristine parent.
+
+- SDPA correctness: 12 passes x tiers extended and full, 8 + 4 cases each: 0 mismatches, both cooperative-matrix
+  kernels dispatched and `pairing=ok` in all 144 cases (`gate_check.py sdpa`: ACCEPT, 0 findings).
+- Unmodified `verify.sh`: every item equals the parent control (correctness cases, 24 linear cases, the 12
+  production-diff cases shape by shape, decode 31 tokens, default vs tiled SAME on `prompt_check` for both
+  schemes and on the unaligned prompt for 4w) **except one**: `1b 8da4w unaligned: default vs tiled output
+  DIFFER`. `gate_check.py verify`: REJECT, 1 finding. `gate.done`: `GATE_REJECTED ... step verify-check`.
+  This is the item the 4070 Ti's candidate 1 failed on, with the same attention arithmetic and the same 8da4w
+  linear kernel.
+- Reference-error rule (second owner decision of 2026-10-04), criterion 1, measured with the gate's own test
+  binary (`results/orin/sdpa-error1/`, table below under "What the SDPA candidate is expected to hit"; the
+  numbers are the same): rms error lower than the parent's in all 12 cases, maximum error lower in the 1B and 8B
+  production cases and **11 % higher in the 3B production case (1.570e-3 against 1.408e-3)**. The criterion
+  says rms and maximum, every head configuration: NOT MET. The candidate stays rejected; I did not collect the
+  41-prompt logits comparison for it, because it cannot change this verdict (it is collected for candidate 1h).
+- Prefill rates of that `verify.sh` run (one run each, not the timed session): 1B 1463.9 / 1293.8, 3B 620.0 /
+  510.2, 8B 286.1 / 244.1 tok/s (4w / 8da4w) against the parent control's 890.4 / 822.5, 360.4 / 320.2, 189.7 /
+  170.4. The interleaved six-cell session and the traces are running now (`gate_rest.sh`, evidence only; the
+  verdict stays).
+- To check: the 1B 4w decode of that run reads 17.6 tok/s against the parent control's 19.4 (8da4w: 10.98
+  against 11.01). One run each; a 3-run decode A/B of parent and both candidates is queued (`decode-ab1`).
 
 ## SDPA kernels on the Orin (kernel level, `test_llama_microbench --sdpa`, ms per layer at S = 2048)
 
