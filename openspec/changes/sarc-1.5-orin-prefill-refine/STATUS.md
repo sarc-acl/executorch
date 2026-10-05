@@ -1,10 +1,10 @@
 # STATUS: sarc-1.5-orin-prefill-refine
 
-**2026-10-05 18:10 UTC. RUNNING. Candidate 1h (`orin-refine1` + the fp32 softmax through the owner-accepted
-hook) is `ACCEPTED (reference-error rule, owner decision 2026-10-04)`: full gate passed with 0 findings, no
-next-token item differs, rule met in full; **+57.8 % geomean** over the parent. Candidate 1 (release softmax)
-stays REJECTED. Candidate 2 (8da4w linear) is in its gate. A further candidate is being built: a softmax that
-reads its row once. The stop rule is not met; the branch is not pushed.**
+**2026-10-05 19:40 UTC. RUNNING. Accepted so far: candidate 1h (SDPA prefill kernels + fp32 softmax through the
+owner-accepted hook), `ACCEPTED (reference-error rule, owner decision 2026-10-04)`, **+57.8 % geomean** over the
+parent; candidate 2 (8da4w linear, whole-texel weight staging), `GATE_ACCEPTED`, **+2.84 %** over the parent
+alone (8da4w cells +3.8 / +6.9 / +6.7 %). Candidate 1 (release softmax) stays REJECTED. A single-read softmax
+was screened and is slower (negative, kept). The stop rule is not met; the branch is not pushed.**
 
 All times are UTC from `date -u`.
 
@@ -13,44 +13,78 @@ All times are UTC from `date -u`.
 - Device `duck-naughty` (primary: every reported number, session and gate), detached, one GPU job at a time under
   its gpu-lab lock; status in `~/hmz-sarc-orin/jobs/<job>.status` / `.out`, from the workstation
   `tools/dstat.sh`. Survives a reboot of the workstation:
-  - `chain10d` (running since 17:43): candidate 2 on build `topic6`: bit comparison with the shipped kernel
-    (`raw/bit-bf`), production-diff on all three models, `gate.sh s3-c2` (started 17:50, in `verify.sh`). Until
-    about 19:45 UTC.
-  - `chain12b` (waiting for `chain10d`): 4w screen 2 (build `topic8`) and the pre-checks of the 4w tile of
-    `orin-lin-refine3`.
-- Device `duck-stable` (second Orin, owner offer of 2026-10-05, SCREENING only), job `chain-s1`
-  (`ORIN_DEVICE=doremy@duck-stable tools/dstat.sh`, running since 17:47): the agreement batch (the 26
-  configurations of 4w screen 1), then 4w screen 2. Threshold fixed before it ran (`tools/agree.py`): Spearman
-  rank correlation >= 0.95 and every time ratio within 0.95 to 1.05; otherwise the device is not used. Nothing
-  measured there is reported as a result. Mirror of its files: `.artifacts/orin-prefill-refine/device-stable/`.
-- Workstation, detached (`tools/wsrun.sh`, status `.artifacts/orin-prefill-refine/jobs/build-topic9.status`;
-  lost if the workstation reboots, then start it again with a new tag): cross-build `topic9` = `4f69299c7`
-  (the 12 softmax variants), under the desktop build lock, since 18:06.
+  - `chain12d` (since 19:31): 4w screen 2 (build `topic8`, 13 configurations, 2 rounds), then the pre-checks of
+    the 4w tile of `orin-lin-refine3` (bit comparison, production-diff on 8B).
+- Device `duck-stable` (second Orin, SCREENING only; owner decisions of 2026-10-05), job `chain16`
+  (`ORIN_DEVICE=doremy@duck-stable tools/dstat.sh chain16`, since 19:34): SDPA screen 5, the 14 softmax variants
+  with fewer barriers per row (build `topic11`), then their error against the fp32 reference as a sanity check.
+  Nothing measured there is reported as a result. Mirror: `.artifacts/orin-prefill-refine/device-stable/`.
+- Workstation: nothing.
 
 ## Next step
 
-1. When `topic9` is built: SDPA screen 4 (`tools/chain14.sh`: the 12 single-read softmax variants against
-   `4070ti_nzf`) on `duck-stable` if the agreement batch passes its threshold, otherwise on the primary after
-   `chain12b`. The best ones are confirmed on the primary, with a bit comparison of the attention output
-   against `4070ti_nzf` (the variants claim the same arithmetic: it must be bit-identical).
-2. Verdict of candidate 2's gate; 4w screen 2.
+1. SDPA screen 5 (second device): if a softmax variant is faster, confirm it on the primary (kernel time,
+   `z64`: bit comparison with `4070ti_nzf`; the others: error against the fp32 reference), then gate it as the
+   next candidate on top of candidates 1h and 2.
+2. 4w screen 2 and the 4w tile for the fp32 shape (expected about +1 % on one cell): the candidate after that.
 3. The combination of everything accepted as the final candidate against the parent, on a build of the branch
    head, and the control the hook decision asks for (`tools/noenv_verify.sh`: `verify.sh` on that build with
    nothing selected, compared line by line with the parent control).
 
-## Candidate in preparation: a softmax that reads its row once (not measured yet)
+## Second Orin (`duck-stable`): agreement batch, retest, owner decision
 
-After candidate 1h the softmax is the largest attention kernel (140 of 1378 ms on 1B 4w, 280 of 7137 on 8B
-4w). It makes three passes over a row (maximum, sum of exp, normalise) and loads the row from the buffer in
-each: per layer of the 1B model that is 3 x 134 MB read and 134 MB written, which at the fresh DRAM roofs
-(62.1 GB/s read, 58.0 write) is 6.5 + 2.3 = 8.8 ms; measured 8.75 ms. The time is the traffic. A worker owns
-every 64th texel of its row (8 texels at 2048 tokens), so it can keep them after the first pass:
-`tools/gen_orin_softmax.py` generates 12 variants of `4070ti_nzf` (kept texels in a local array or in shared
-memory; 8, 16 or 32 texels per worker; optionally the exponentials are kept too, so that the third pass only
-divides). Rows longer than what is kept are loaded again beyond it, as before: no context length is excluded.
-Same values, operations and order as `4070ti_nzf`, so the claim is bit-identical output, to be shown, not
-assumed. Expectation if the two extra reads disappear: about 4.3 of 8.75 ms per layer on 1B, i.e. roughly +5 %
-on 1B, +3 % on 3B and +2 % on 8B end to end. Commit `4f69299c7`; compiles (12 SPIR-V, `shadercheck/softmax1`).
+- Agreement batch (the 26 configurations of 4w screen 1, one round per device; threshold fixed before it ran in
+  `tools/agree.py`: rank correlation >= 0.95 and every ratio within 0.95 to 1.05):
+  `results/orin/second-device/agreement-screen1-4w.csv`. Spearman rank correlation 0.9973; 25 of 26 ratios
+  second / primary within 0.975 to 1.002; one, `4070ti_t256x256k16g44s32gac`, at 0.8037. Verdict by the
+  threshold: **DISAGREE**. I stopped using the device at 18:21 UTC (job `chain-s1` killed). That verdict stands
+  as recorded; the threshold was not touched.
+- Owner decision of 19:10 UTC (`CAMPAIGN.md`): retest that configuration with at least three rounds per
+  device, then use the device for screening in any case. Retest (`tools/chain15.sh`, same build and
+  invocation, 3 rounds, both devices idle otherwise; `results/orin/second-device/agreement-retest.csv`):
+
+  | configuration | primary, geomean kernel time (3 rounds) | second device | ratio |
+  |---|---:|---:|---:|
+  | `base` (the shipped Orin rows) | 7898 / 7901 / 7899 us | 7885 / 7885 / 7888 us | 0.998 |
+  | `4070ti_t256x256k16g44s32gac` | 18628 / 18411 / 18618 us | 15057 / 15140 / 15053 us | **0.809** (first batch 0.804) |
+
+  The retest does **not** fall inside 0.95 to 1.05: the difference is reproducible (each device repeats within
+  1.2 %), so it is a property of the two devices for this configuration, not noise. As decided by the owner the
+  configuration is treated as device-sensitive (it is 2.4 times slower than `base` and cannot be selected) and
+  `duck-stable` is used for screening from 19:34 UTC. Unchanged: whatever a screen there ranks first is
+  confirmed on `duck-naughty` before it counts; a contradiction ends the use of the device.
+  What the outlier has that the other 25 do not: it is the only 1024-thread tile of the batch (256 x 256, grid
+  4 x 4). Not investigated further.
+
+## Softmax, single-read variants: negative (SDPA screen 4, primary, `results/orin/screens/sdpa-screen4.csv`)
+
+Hypothesis: after candidate 1h the softmax is the largest attention kernel (140 of 1378 ms on 1B 4w); it makes
+three passes over a row and loads the row in each, and 3 x 134 MB read + 134 MB written at the DRAM roofs is
+8.8 ms per 1B layer against 8.75 measured, so the time would be the traffic. `tools/gen_orin_softmax.py`, first
+family: a worker keeps the texels it loaded in pass 1 (local array `l`, or shared memory `s`; 8, 16 or 32
+texels per worker; `e`: the exponentials too). Kernel time per layer at S = 2048, ms:
+
+| softmax | 1B | 3B | 8B |
+|---|---:|---:|---:|
+| `4070ti_nzf` (candidate 1h) | 8.74 | 6.54 | 8.74 |
+| local array, 8 / 16 / 32 texels | 11.50 / 9.80 / 9.81 | 8.63 / 7.42 / 7.38 | 11.51 / 9.83 / 9.88 |
+| local array + exponentials, 8 / 16 / 32 | 12.37 / 12.37 / 12.70 | 9.30 / 9.30 / 9.54 | 12.41 / 12.34 / 12.41 |
+| shared memory, 8 / 16 / 32 texels (8 / 16 / 32 KB) | 16.26 / 22.69 / 40.38 | 12.17 / 16.93 / 30.21 | 16.27 / 22.69 / 40.37 |
+| shared memory + exponentials, 8 / 16 / 32 | 19.22 / 24.25 / 40.76 | 14.43 / 18.11 / 30.49 | 19.25 / 24.29 / 40.75 |
+
+Every variant is slower (1.12x to 4.7x the time), so the hypothesis is wrong: the re-reads of a row are not
+what the softmax pays for (a row is at most 4 KB and was just read), and the agreement of the traffic sum with
+the measured time was a coincidence. Stopped after round 1 (round 2 only for `4070ti_nzf` and the two 8-texel
+local variants; they repeat within 0.1 %); the bit comparison was not run. Not a candidate. One thing the
+screen shows that matters beyond the softmax: on this device a kernel's time grows steeply with the shared
+memory a workgroup declares (64 threads with 8 / 16 / 32 KB: 1.9x / 2.6x / 4.6x).
+
+Second family (build `topic11`, being screened): what a row costs besides its traffic is 14 barriers (two tree
+reductions over 64 workers, 7 each) for on average 4 texels per worker. `z64`: worker 0 walks the same tree
+alone (2 barriers per reduction, same pairs in the same order: meant to be bit-identical). `t` / `z` / `f` with
+fewer workers per row, `f`: one barrier per reduction and every worker combines the partial results in index
+order (down to one thread per row, no reduction at all). All but `z64` sum a row's exponentials in another
+order (fp32, rounded once on the store): an arithmetic change, to be judged by the reference error.
 
 No driver-level profiler tracing was or will be used (owner rule of 2026-10-05): the campaign's timing data
 are ETDump, the shader-clock phase counters, `test_llama_microbench` kernel times, igpu-roofline and sensors.
