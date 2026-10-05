@@ -15,6 +15,10 @@ time in us, `_x` = base / token, above 1 is faster; `base` = the shipped Xe2 til
 | `screen6-4w` | topic3 | 4w texel-wise staging (`xe2bx`), 2 rounds |
 | `screen7-8da4w` | topic4 | balanced K = 64 / 128 8da4w tiles with texel-wise staging, 2 rounds |
 | `screen8-4w` | topic4 | the shipped 4w tile with a band-at-a-time drain (18.4 KiB of shared memory instead of 24.6), 2 rounds |
+| `screen9-4w` | topic5 | 4w split staging (`xe2s`), first body: 15 % slower than the release kernel on the shipped geometry |
+| `screen10-sdpa-hook` | hook1 | HOOK BUILD (local patch, measurement only): single-read softmax |
+| `screen11-4w` | topic6 | 4w split staging, revised body: 1.002x on the shipped geometry, larger tiles 0.80 to 0.95x |
+| `screen12-sdpa-hook` | hook2 | HOOK BUILD: single-read softmax (`+softmax1`) and subgroup-reduction softmax (`+softmax2`) |
 
 Mislabelled row: in `screen6-4w.csv` the token `t128x128k16g44s16m8flib` matched the texel-wise kernel
 `sarc_dev_linear_q4gsw_coopmat_xe2bx_t128x128k16g44s16m8flib` (tokens are matched by suffix and it was
