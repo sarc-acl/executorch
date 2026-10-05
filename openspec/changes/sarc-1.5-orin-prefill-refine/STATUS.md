@@ -75,8 +75,39 @@ it (`s4-c1h`), not on the local-patch build `hook4`.
 | # | profile / environment | what | reachable from the dev zone | state |
 |---|---|---|---|---|
 | 1 | `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine1` | SDPA prefill kernels (QK^T, attn*V) | yes (`OrinSdpa.cpp`, no hook) | **REJECTED** at `verify-check` (`s2-c1`); evidence session running |
-| 2 | `ET_VK_SARC_DEV_PROFILE=orin-lin-refine2` | 8da4w linear: whole-texel weight staging | yes | queued (`s3-c2`) |
+| 2 | `ET_VK_SARC_DEV_PROFILE=orin-lin-refine2` | 8da4w linear: whole-texel weight staging | yes | **GATE_ACCEPTED** (`s3-c2`, plain pass: output bit-identical to the shipped kernel), +2.84 % (8da4w cells +3.8 / +6.9 / +6.7 %) |
 | 1h | candidate 1 + `ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf` | fp32 softmax without the zero tail | through the softmax-name hook (owner decision 2026-10-05, commit `307abb2ed`), build `topic6` | **`ACCEPTED (reference-error rule, owner decision 2026-10-04)`** (`s4-c1h`, `GATE_ACCEPTED`, no differing item), +57.8 % |
+
+### Candidate 2, `orin-lin-refine2` (8da4w linear, whole-texel weight staging): `GATE_ACCEPTED`
+
+Build `topic6` with `ET_VK_SARC_DEV_PROFILE=orin-lin-refine2` against the pristine parent (so this session
+measures candidate 2 alone; its effect on top of candidate 1h is measured by the combined candidate).
+Kernel: `sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra` for every shape of the Orin row.
+
+- The kernel claims not to change the arithmetic, so it is shown, not assumed: the raw output of all 12 model
+  shapes (test's seeded inputs) is byte-identical to the shipped kernel's, as is the `g42` grid; the shipped
+  kernel run twice is identical to itself (`results/orin/screens/bit-bf.txt`, 36 of 36 identical). Sampled
+  production-diff with non-zero zero points: ALL PASSED on 1B, 3B, 8B (`screens/pdiff-bf2.txt`).
+- Unmodified `verify.sh`: `gate_check.py verify`: ACCEPT, 0 findings: every item equals the parent control.
+- Timed session (`results/orin/sessions/s3-c2/`; tok/s, median of 5 valid interleaved runs per arm):
+
+  | cell | parent | candidate 2 | gain | next token parent vs candidate (4 prompts) |
+  |---|---:|---:|---:|---|
+  | 1B 4w | 891.21 | 891.21 | 0.00 % | SAME |
+  | 1B 8da4w | 823.81 | 854.76 | +3.76 % | SAME |
+  | 3B 4w | 360.63 | 360.56 | -0.02 % | SAME |
+  | 3B 8da4w | 320.45 | 342.59 | +6.91 % | SAME |
+  | 8B 4w | 189.82 | 189.84 | +0.01 % | SAME |
+  | 8B 8da4w | 170.51 | 181.88 | +6.67 % | SAME |
+
+  Geomean **+2.84 %** over six cells (the three 8da4w cells alone: +5.77 %; the 4w cells do not use the
+  kernel and do not move). Repeat spread at most 0.40 %, 60 timed runs all valid at 612 MHz, `gate_check.py
+  session`: ACCEPT, 0 findings; `env-check`: ACCEPT. `gate.done`: `GATE_ACCEPTED ... all steps passed`.
+- Where the gain comes from (warm ETDump, ms per 2048-token prefill, parent -> candidate; `s3-c2/trace/`):
+  the linear GEMM family of the 8da4w cells, 870 -> 778 (1B), 2577 -> 2171 (3B), 6054 -> 5306 (8B), i.e.
+  1.12x / 1.19x / 1.14x; total dispatch 2474 -> 2381, 6369 -> 5964, 11990 -> 11244. The 8-bit quantize
+  (99 / 252 / 425 ms), attention and everything else are unchanged, and so is every family of the 4w cells.
+  In the kernel: the weight fetch falls from 38 to 47 % of a wave to 15 to 24 % (phase timing below).
 
 ### Candidate 1h, `orin-refine1` + `ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf`: `ACCEPTED (reference-error rule, owner decision 2026-10-04)`
 
