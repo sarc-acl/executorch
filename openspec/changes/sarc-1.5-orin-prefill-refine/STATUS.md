@@ -1,9 +1,10 @@
 # STATUS: sarc-1.5-orin-prefill-refine
 
-**2026-10-05 17:55 UTC. RUNNING. Candidate 1h (`orin-refine1` + the fp32 softmax through the owner-accepted
+**2026-10-05 18:10 UTC. RUNNING. Candidate 1h (`orin-refine1` + the fp32 softmax through the owner-accepted
 hook) is `ACCEPTED (reference-error rule, owner decision 2026-10-04)`: full gate passed with 0 findings, no
 next-token item differs, rule met in full; **+57.8 % geomean** over the parent. Candidate 1 (release softmax)
-stays REJECTED. Candidate 2 (8da4w linear) is in its gate. The stop rule is not met; the branch is not pushed.**
+stays REJECTED. Candidate 2 (8da4w linear) is in its gate. A further candidate is being built: a softmax that
+reads its row once. The stop rule is not met; the branch is not pushed.**
 
 All times are UTC from `date -u`.
 
@@ -13,21 +14,43 @@ All times are UTC from `date -u`.
   its gpu-lab lock; status in `~/hmz-sarc-orin/jobs/<job>.status` / `.out`, from the workstation
   `tools/dstat.sh`. Survives a reboot of the workstation:
   - `chain10d` (running since 17:43): candidate 2 on build `topic6`: bit comparison with the shipped kernel
-    (`raw/bit-bf`), production-diff on all three models, `gate.sh s3-c2`. Until about 19:45 UTC.
-  - `chain12b` (waiting): 4w screen 2 (build `topic8`) and the pre-checks of the 4w tile of `orin-lin-refine3`.
+    (`raw/bit-bf`), production-diff on all three models, `gate.sh s3-c2` (started 17:50, in `verify.sh`). Until
+    about 19:45 UTC.
+  - `chain12b` (waiting for `chain10d`): 4w screen 2 (build `topic8`) and the pre-checks of the 4w tile of
+    `orin-lin-refine3`.
 - Device `duck-stable` (second Orin, owner offer of 2026-10-05, SCREENING only), job `chain-s1`
-  (`ORIN_DEVICE=doremy@duck-stable tools/dstat.sh`): the agreement batch (the 26 configurations of 4w screen 1),
-  then 4w screen 2. Threshold fixed before it ran (`tools/agree.py`): Spearman rank correlation >= 0.95 and
-  every time ratio within 0.95 to 1.05; otherwise the device is not used. Nothing measured there is reported
-  as a result. Why it is used at all: the only screening left is the 4w screen, and having its ranking before
-  candidate 2's gate ends lets the final profile be built while the primary is busy.
-- Workstation: nothing.
+  (`ORIN_DEVICE=doremy@duck-stable tools/dstat.sh`, running since 17:47): the agreement batch (the 26
+  configurations of 4w screen 1), then 4w screen 2. Threshold fixed before it ran (`tools/agree.py`): Spearman
+  rank correlation >= 0.95 and every time ratio within 0.95 to 1.05; otherwise the device is not used. Nothing
+  measured there is reported as a result. Mirror of its files: `.artifacts/orin-prefill-refine/device-stable/`.
+- Workstation, detached (`tools/wsrun.sh`, status `.artifacts/orin-prefill-refine/jobs/build-topic9.status`;
+  lost if the workstation reboots, then start it again with a new tag): cross-build `topic9` = `4f69299c7`
+  (the 12 softmax variants), under the desktop build lock, since 18:06.
 
 ## Next step
 
-Gate of candidate 2; 4w screen 2; then the combination of everything accepted as the final candidate against
-the parent, and the control the hook decision asks for (`verify.sh` on the branch head with nothing selected,
-compared line by line with the parent control).
+1. When `topic9` is built: SDPA screen 4 (`tools/chain14.sh`: the 12 single-read softmax variants against
+   `4070ti_nzf`) on `duck-stable` if the agreement batch passes its threshold, otherwise on the primary after
+   `chain12b`. The best ones are confirmed on the primary, with a bit comparison of the attention output
+   against `4070ti_nzf` (the variants claim the same arithmetic: it must be bit-identical).
+2. Verdict of candidate 2's gate; 4w screen 2.
+3. The combination of everything accepted as the final candidate against the parent, on a build of the branch
+   head, and the control the hook decision asks for (`tools/noenv_verify.sh`: `verify.sh` on that build with
+   nothing selected, compared line by line with the parent control).
+
+## Candidate in preparation: a softmax that reads its row once (not measured yet)
+
+After candidate 1h the softmax is the largest attention kernel (140 of 1378 ms on 1B 4w, 280 of 7137 on 8B
+4w). It makes three passes over a row (maximum, sum of exp, normalise) and loads the row from the buffer in
+each: per layer of the 1B model that is 3 x 134 MB read and 134 MB written, which at the fresh DRAM roofs
+(62.1 GB/s read, 58.0 write) is 6.5 + 2.3 = 8.8 ms; measured 8.75 ms. The time is the traffic. A worker owns
+every 64th texel of its row (8 texels at 2048 tokens), so it can keep them after the first pass:
+`tools/gen_orin_softmax.py` generates 12 variants of `4070ti_nzf` (kept texels in a local array or in shared
+memory; 8, 16 or 32 texels per worker; optionally the exponentials are kept too, so that the third pass only
+divides). Rows longer than what is kept are loaded again beyond it, as before: no context length is excluded.
+Same values, operations and order as `4070ti_nzf`, so the claim is bit-identical output, to be shown, not
+assumed. Expectation if the two extra reads disappear: about 4.3 of 8.75 ms per layer on 1B, i.e. roughly +5 %
+on 1B, +3 % on 3B and +2 % on 8B end to end. Commit `4f69299c7`; compiles (12 SPIR-V, `shadercheck/softmax1`).
 
 No driver-level profiler tracing was or will be used (owner rule of 2026-10-05): the campaign's timing data
 are ETDump, the shader-clock phase counters, `test_llama_microbench` kernel times, igpu-roofline and sensors.
