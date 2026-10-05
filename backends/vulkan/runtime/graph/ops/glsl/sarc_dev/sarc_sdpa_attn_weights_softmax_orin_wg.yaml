@@ -10,6 +10,7 @@ sarc_sdpa_attn_weights_softmax_orin_wg:
     ACC32: true
     WORKERS: 64
     RED: serial
+    PHASE: 3
   shader_variants:
     - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_t8
       WORKERS: 8
@@ -53,3 +54,33 @@ sarc_sdpa_attn_weights_softmax_orin_wg:
     - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_f64
       WORKERS: 64
       RED: flat
+    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_f128
+      WORKERS: 128
+      RED: flat
+    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_f256
+      WORKERS: 256
+      RED: flat
+    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_g32
+      WORKERS: 32
+      RED: subgroup
+    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_g64
+      WORKERS: 64
+      RED: subgroup
+    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_g128
+      WORKERS: 128
+      RED: subgroup
+    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_g256
+      WORKERS: 256
+      RED: subgroup
+    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_g512
+      WORKERS: 512
+      RED: subgroup
+    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_xp0
+      RED: tree
+      PHASE: 0
+    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_xp1
+      RED: tree
+      PHASE: 1
+    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_xp2
+      RED: tree
+      PHASE: 2

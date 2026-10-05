@@ -38,7 +38,16 @@ traffic is 14 barriers (two tree reductions over 64 workers, 7 each) for, on ave
 The workgroup size is fixed in the shader for these (the node asks for 64 x 1 x 1 by specialization constants,
 which a shader without those ids ignores; the dispatch stays one workgroup per row). Every variant but z64
 sums the exponentials of a row in another order than 4070ti_nzf (fp32, rounded once on the store): an
-arithmetic change, judged by the reference error, not by bit identity."""
+arithmetic change, judged by the reference error, not by bit identity.
+
+RESULT so far (SDPA screen 5 on the second Orin, round 1): f64 0.95x the time of 4070ti_nzf; z64 1.76x; and
+fewer workers is slower in proportion (32 workers 1.3x, 16 2.1x, 8 3.8x). So the third batch goes the other way:
+      ..._orin_f{128,256}          more workers per row, flat combination
+      ..._orin_g{32,64,128,256,512}  reduction inside each subgroup (subgroupMax / subgroupAdd, no barrier), one
+                                   barrier, then every worker combines the subgroups' results in index order
+      ..._orin_xp{0,1,2}           MEASUREMENT ONLY, wrong output, never a candidate: 4070ti_nzf that stops after
+                                   the bounds check / after pass 1 / after pass 2 (one texel written so that the
+                                   pass is not removed), to see where a row's time goes."""
 import pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from devzone import write_new
@@ -176,6 +185,20 @@ print(" ".join(f"orin_{c[0]}{n}{'e' if e else ''}" for c, n, e in V))
 s = (g / "sarc_dev/sarc_sdpa_attn_weights_softmax_4070ti.glsl").read_text()
 s = s[s.index("#version 450 core"):]
 s = sub(s, "#define NUM_WORKERS_PER_WG 64\n", "#define NUM_WORKERS_PER_WG ${WORKERS}\n")
+s = sub(s, "#extension GL_EXT_control_flow_attributes : require\n",
+        "#extension GL_EXT_control_flow_attributes : require\n$if RED == \"subgroup\":\n"
+        "  #extension GL_KHR_shader_subgroup_basic : require\n  #extension GL_KHR_shader_subgroup_arithmetic : require\n")
+for arr, loc, op in (("shared_max", "local_max", "subgroupMax"), ("shared_exp_sum", "local_exp_sum", "subgroupAdd")):
+    s = sub(s, f"  {arr}[worker_id] = {loc};\n",
+            f"$if RED == \"subgroup\":\n    // orin g: reduced inside the subgroup; one slot per subgroup.\n"
+            f"    {arr}[gl_SubgroupID] = {op}({loc});\n$else:\n    {arr}[worker_id] = {loc};\n")
+XP = ("    // orin xp: MEASUREMENT ONLY (wrong output): the kernel ends here.\n"
+      "    if (worker_id == 0) {{\n      store_attn_weights_softmax_c4(\n"
+      "          VEC4_T(T({v})), 0, s, q_h, context_texel_len, attn_S, Q_H);\n    }}\n    return;\n")
+B = "  // =========================================================================\n  // Pass "
+s = sub(s, B + "1:", "$if PHASE == 0:\n" + XP.format(v="1.0") + B + "1:")
+s = sub(s, B + "2:", "$if PHASE == 1:\n" + XP.format(v="global_max") + B + "2:")
+s = sub(s, B + "3:", "$if PHASE == 2:\n" + XP.format(v="local_exp_sum") + B + "3:")
 s = sub(s, "layout(local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2) in;\n",
         "// orin: the workgroup is one row's workers; fixed here, the node's specialization constants are not used.\n"
         "layout(local_size_x = NUM_WORKERS_PER_WG, local_size_y = 1, local_size_z = 1) in;\n")
@@ -206,6 +229,13 @@ $elif RED == "serial":
     barrier();
 
     {result} = {arr}[0];
+$elif RED == "subgroup":
+    // orin g: every worker combines the subgroups' results, in subgroup order.
+    SOFTMAX_ACC_T {arr}_all = {arr}[0];
+    for (uint k = 1u; k < gl_NumSubgroups; ++k) {{
+      {arr}_all = {comb('%s_all' % arr, '%s[k]' % arr, 10)};
+    }}
+    {result} = {arr}_all;
 $else:
     // orin f: no second barrier; every worker combines the partial results itself, in index order.
     SOFTMAX_ACC_T {arr}_all = {arr}[0];
@@ -220,7 +250,7 @@ for what, arr, comb, result in (("find the global max", "shared_max", mx, "const
                                 ("compute the overall exp sum", "shared_exp_sum", ad, "local_exp_sum")):
     old, new = red(what, arr, comb, result); s = sub(s, old, new)
 F2 = "sarc_sdpa_attn_weights_softmax_orin_wg"
-W = [("tree", "t", n) for n in (8, 16, 32)] + [("serial", "z", n) for n in (8, 16, 32, 64)] + [("flat", "f", n) for n in (1, 2, 4, 8, 16, 32, 64)]
+W = [("tree", "t", n) for n in (8, 16, 32)] + [("serial", "z", n) for n in (8, 16, 32, 64)] + [("flat", "f", n) for n in (1, 2, 4, 8, 16, 32, 64, 128, 256)] + [("subgroup", "g", n) for n in (32, 64, 128, 256, 512)]
 write_new(g / f"sarc_dev/{F2}.glsl", HDR.replace("in which a\n * worker keeps the first CACHE_N texels of its row after pass 1 (local array or shared memory) instead of\n * loading them again in passes 2 and 3, and optionally (CACHE_EXP) keeps exp(x - max) after pass 2.\n * Same values, operations and order as the 4070ti variant with the same NZ / ACC32.",
     "with WORKERS workers\n * per row (the workgroup size is fixed here) and the two reductions as a barrier tree (tree), as the same tree\n * walked by worker 0 alone (serial), or combined by every worker in index order after one barrier (flat).\n * serial with 64 workers has the arithmetic of the 4070ti variant; the others sum a row in another order.") + s)
 assert "WORKERS workers" in (g / f"sarc_dev/{F2}.glsl").read_text()
@@ -236,6 +266,8 @@ write_new(g / f"sarc_dev/{F2}.yaml", f"""# SARC development zone, Jetson Orin: L
     ACC32: true
     WORKERS: 64
     RED: serial
+    PHASE: 3
   shader_variants:
-""" + "".join(f"    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_{c}{n}\n      WORKERS: {n}\n      RED: {r}\n" for r, c, n in W))
-print(" ".join(f"orin_{c}{n}" for r, c, n in W))
+""" + "".join(f"    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_{c}{n}\n      WORKERS: {n}\n      RED: {r}\n" for r, c, n in W)
+    + "".join(f"    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_orin_xp{n}\n      RED: tree\n      PHASE: {n}\n" for n in (0, 1, 2)))
+print(" ".join(f"orin_{c}{n}" for r, c, n in W), "orin_xp0 orin_xp1 orin_xp2")

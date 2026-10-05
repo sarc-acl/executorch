@@ -42,6 +42,9 @@ ${define_active_storage_type(STORAGE)}
 ${define_required_extensions(STORAGE, [IN_DTYPE, OUT_DTYPE])}
 
 #extension GL_EXT_control_flow_attributes : require
+$if RED == "subgroup":
+  #extension GL_KHR_shader_subgroup_basic : require
+  #extension GL_KHR_shader_subgroup_arithmetic : require
 
 layout(std430) buffer;
 
@@ -177,6 +180,13 @@ void main() {
   const int reduce_len_aligned_down = reduce_len - mod_4(reduce_len);
   const int R4_limit = div_4(reduce_len_aligned_down);
 
+$if PHASE == 0:
+    // orin xp: MEASUREMENT ONLY (wrong output): the kernel ends here.
+    if (worker_id == 0) {
+      store_attn_weights_softmax_c4(
+          VEC4_T(T(1.0)), 0, s, q_h, context_texel_len, attn_S, Q_H);
+    }
+    return;
   // =========================================================================
   // Pass 1: Find the maximum value across the row for numerical stability.
   // Without this, exp(x) can overflow float32 when x > ~88.7.
@@ -206,7 +216,11 @@ void main() {
     }
   }
 
-  shared_max[worker_id] = local_max;
+$if RED == "subgroup":
+    // orin g: reduced inside the subgroup; one slot per subgroup.
+    shared_max[gl_SubgroupID] = subgroupMax(local_max);
+$else:
+    shared_max[worker_id] = local_max;
 
   memoryBarrierShared();
   barrier();
@@ -237,6 +251,14 @@ $elif RED == "serial":
     barrier();
 
     const SOFTMAX_ACC_T global_max = shared_max[0];
+$elif RED == "subgroup":
+    // orin g: every worker combines the subgroups' results, in subgroup order.
+    SOFTMAX_ACC_T shared_max_all = shared_max[0];
+    for (uint k = 1u; k < gl_NumSubgroups; ++k) {
+      shared_max_all = max(
+          shared_max_all, shared_max[k]);
+    }
+    const SOFTMAX_ACC_T global_max = shared_max_all;
 $else:
     // orin f: no second barrier; every worker combines the partial results itself, in index order.
     SOFTMAX_ACC_T shared_max_all = shared_max[0];
@@ -246,6 +268,13 @@ $else:
     }
     const SOFTMAX_ACC_T global_max = shared_max_all;
 
+$if PHASE == 1:
+    // orin xp: MEASUREMENT ONLY (wrong output): the kernel ends here.
+    if (worker_id == 0) {
+      store_attn_weights_softmax_c4(
+          VEC4_T(T(global_max)), 0, s, q_h, context_texel_len, attn_S, Q_H);
+    }
+    return;
   // =========================================================================
   // Pass 2: Compute sum(exp(x - max)) using the global max for stability
   // =========================================================================
@@ -274,7 +303,11 @@ $else:
     }
   }
 
-  shared_exp_sum[worker_id] = local_exp_sum;
+$if RED == "subgroup":
+    // orin g: reduced inside the subgroup; one slot per subgroup.
+    shared_exp_sum[gl_SubgroupID] = subgroupAdd(local_exp_sum);
+$else:
+    shared_exp_sum[worker_id] = local_exp_sum;
 
   memoryBarrierShared();
   barrier();
@@ -305,6 +338,14 @@ $elif RED == "serial":
     barrier();
 
     local_exp_sum = shared_exp_sum[0];
+$elif RED == "subgroup":
+    // orin g: every worker combines the subgroups' results, in subgroup order.
+    SOFTMAX_ACC_T shared_exp_sum_all = shared_exp_sum[0];
+    for (uint k = 1u; k < gl_NumSubgroups; ++k) {
+      shared_exp_sum_all = shared_exp_sum_all +
+          shared_exp_sum[k];
+    }
+    local_exp_sum = shared_exp_sum_all;
 $else:
     // orin f: no second barrier; every worker combines the partial results itself, in index order.
     SOFTMAX_ACC_T shared_exp_sum_all = shared_exp_sum[0];
@@ -314,6 +355,13 @@ $else:
     }
     local_exp_sum = shared_exp_sum_all;
 
+$if PHASE == 2:
+    // orin xp: MEASUREMENT ONLY (wrong output): the kernel ends here.
+    if (worker_id == 0) {
+      store_attn_weights_softmax_c4(
+          VEC4_T(T(local_exp_sum)), 0, s, q_h, context_texel_len, attn_S, Q_H);
+    }
+    return;
   // =========================================================================
   // Pass 3: Normalize each element: out = exp(x - max) / sum(exp(x - max))
   // =========================================================================
