@@ -9,7 +9,8 @@ profile, impl/sarc/SdpaCoopmat.cpp builds the SARC SDPA path (spec constants, tr
 picks the kernel per shape.
 
 The kernels are the 4070 Ti campaign's dev-zone SDPA variants (subgroup 32, MMA 16x16x16 fp16 x fp16 -> fp32,
-the shapes vk-caps lists for the Orin as well): nothing of theirs is changed, they are only named. Profiles added
+the shapes vk-caps lists for the Orin as well): nothing of theirs is changed, they are only named; plus the Orin
+QK^T tiles of gen_orin_qk.py (profile names orin-qk-orin_pk_<tile>). Profiles added
 to impl/sarc_dev/Overrides.cpp inside `orin` blocks: one screening profile per candidate (orin-qk-<tile>,
 orin-av-<tile>), and the orin-refineN profiles listed in REFINE below. Run from anywhere; a second run changes
 nothing."""
@@ -27,7 +28,7 @@ if (pathlib.Path(__file__).parent / "orin_refine.py").exists():
 
 text = o.read_text()
 for name, _ in (BASE_QK, BASE_AV): assert f'"{name}"' in text, f"{name} is not a registered candidate"
-cands = sorted(set(re.findall(r'"sarc_sdpa_(qk|av)_coopmat_(4070ti_[a-z0-9_]+)"', text)))
+cands = sorted(set(re.findall(r'"sarc_sdpa_(qk|av)_coopmat_((?:4070ti|orin)_[a-z0-9_]+)"', text)))
 cpp = '''/*
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  * All rights reserved.
@@ -91,7 +92,7 @@ if any(pred == "head_dim_64_orin" for e in REFINE.values() for _, _, pred in e):
     prefs += "bool head_dim_64_orin(const ShapeInfo& s) {\n  return (s.op == Op::kSdpaQk ? s.K : s.N) == 64;\n}\n"
 profs = ""
 for op, tok in cands:
-    short = tok[len("4070ti_"):]; v = f"kOrin_{op}_{ident(short)}"; OP = "kSdpaQk" if op == "qk" else "kSdpaAv"
+    short = tok[len("4070ti_"):] if tok.startswith("4070ti_") else tok; v = f"kOrin_{op}_{ident(short)}"; OP = "kSdpaQk" if op == "qk" else "kSdpaAv"
     prefs += f'const Preference {v}[] = {{{{Op::{OP}, "{tok}", nullptr}}}};\n'
     profs += f'    {{"orin-{op}-{short}", {v}, 1}},\n'
 for name, entries in REFINE.items():

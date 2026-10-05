@@ -853,6 +853,58 @@ const Row kDq8caCandidates[] = {
      {256, 64, 32, 4, 4, 32, 16, false}, kBufBuf, nullptr,
      Status::kUnverified},
     // <<< 4070ti sdpa-rows
+    // >>> orin qk-rows
+    // Jetson Orin: packed-staging QK^T, more tiles (glsl/sarc_dev/sarc_sdpa_qk_coopmat_orin_pk.yaml).
+    // Selected only through ET_VK_SARC_DEV_PROFILE=orin-*.
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_orin_pk_t64x64k64g22s32nf",
+     {64, 64, 64, 2, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_orin_pk_t64x64k64g21s32nf",
+     {64, 64, 64, 2, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_orin_pk_t64x64k64g42s32nf",
+     {64, 64, 64, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_orin_pk_t128x64k64g24s32nf",
+     {128, 64, 64, 2, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_orin_pk_t128x64k64g44s32nf",
+     {128, 64, 64, 4, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_orin_pk_t128x64k64g22s32nf",
+     {128, 64, 64, 2, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_orin_pk_t64x128k64g42s32nf",
+     {64, 128, 64, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_orin_pk_t32x64k64g42s32nf",
+     {32, 64, 64, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_orin_pk_t64x64k128g22s32nf",
+     {64, 64, 128, 2, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_orin_pk_t64x64k128g42s32nf",
+     {64, 64, 128, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_orin_pk_t64x64k128g21s32nf",
+     {64, 64, 128, 2, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_orin_pk_t64x64k128g44s32nf",
+     {64, 64, 128, 4, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    // <<< orin qk-rows
     // >>> 4070ti df-rows
     // RTX 4070 Ti SUPER direct-feed SDPA kernels: glsl/sarc_dev/sarc_sdpa_{qk,av}_coopmat_4070ti_df.yaml.
     {"", nullptr, Op::kSdpaQk,
@@ -1254,6 +1306,18 @@ const Preference kOrin_qk_t128x64k32g22s32nf[] = {{Op::kSdpaQk, "4070ti_t128x64k
 const Preference kOrin_qk_t128x64k32g24s32nf[] = {{Op::kSdpaQk, "4070ti_t128x64k32g24s32nf", nullptr}};
 const Preference kOrin_qk_t128x64k32g42s32[] = {{Op::kSdpaQk, "4070ti_t128x64k32g42s32", nullptr}};
 const Preference kOrin_qk_t128x64k32g42s32nf[] = {{Op::kSdpaQk, "4070ti_t128x64k32g42s32nf", nullptr}};
+const Preference kOrin_qk_orin_pk_t128x64k64g22s32nf[] = {{Op::kSdpaQk, "orin_pk_t128x64k64g22s32nf", nullptr}};
+const Preference kOrin_qk_orin_pk_t128x64k64g24s32nf[] = {{Op::kSdpaQk, "orin_pk_t128x64k64g24s32nf", nullptr}};
+const Preference kOrin_qk_orin_pk_t128x64k64g44s32nf[] = {{Op::kSdpaQk, "orin_pk_t128x64k64g44s32nf", nullptr}};
+const Preference kOrin_qk_orin_pk_t32x64k64g42s32nf[] = {{Op::kSdpaQk, "orin_pk_t32x64k64g42s32nf", nullptr}};
+const Preference kOrin_qk_orin_pk_t64x128k64g42s32nf[] = {{Op::kSdpaQk, "orin_pk_t64x128k64g42s32nf", nullptr}};
+const Preference kOrin_qk_orin_pk_t64x64k128g21s32nf[] = {{Op::kSdpaQk, "orin_pk_t64x64k128g21s32nf", nullptr}};
+const Preference kOrin_qk_orin_pk_t64x64k128g22s32nf[] = {{Op::kSdpaQk, "orin_pk_t64x64k128g22s32nf", nullptr}};
+const Preference kOrin_qk_orin_pk_t64x64k128g42s32nf[] = {{Op::kSdpaQk, "orin_pk_t64x64k128g42s32nf", nullptr}};
+const Preference kOrin_qk_orin_pk_t64x64k128g44s32nf[] = {{Op::kSdpaQk, "orin_pk_t64x64k128g44s32nf", nullptr}};
+const Preference kOrin_qk_orin_pk_t64x64k64g21s32nf[] = {{Op::kSdpaQk, "orin_pk_t64x64k64g21s32nf", nullptr}};
+const Preference kOrin_qk_orin_pk_t64x64k64g22s32nf[] = {{Op::kSdpaQk, "orin_pk_t64x64k64g22s32nf", nullptr}};
+const Preference kOrin_qk_orin_pk_t64x64k64g42s32nf[] = {{Op::kSdpaQk, "orin_pk_t64x64k64g42s32nf", nullptr}};
 // <<< orin sdpa-preferences
 struct Profile {
   const char* name;
@@ -1418,6 +1482,18 @@ const Profile kProfiles[] = {
     {"orin-qk-t128x64k32g24s32nf", kOrin_qk_t128x64k32g24s32nf, 1},
     {"orin-qk-t128x64k32g42s32", kOrin_qk_t128x64k32g42s32, 1},
     {"orin-qk-t128x64k32g42s32nf", kOrin_qk_t128x64k32g42s32nf, 1},
+    {"orin-qk-orin_pk_t128x64k64g22s32nf", kOrin_qk_orin_pk_t128x64k64g22s32nf, 1},
+    {"orin-qk-orin_pk_t128x64k64g24s32nf", kOrin_qk_orin_pk_t128x64k64g24s32nf, 1},
+    {"orin-qk-orin_pk_t128x64k64g44s32nf", kOrin_qk_orin_pk_t128x64k64g44s32nf, 1},
+    {"orin-qk-orin_pk_t32x64k64g42s32nf", kOrin_qk_orin_pk_t32x64k64g42s32nf, 1},
+    {"orin-qk-orin_pk_t64x128k64g42s32nf", kOrin_qk_orin_pk_t64x128k64g42s32nf, 1},
+    {"orin-qk-orin_pk_t64x64k128g21s32nf", kOrin_qk_orin_pk_t64x64k128g21s32nf, 1},
+    {"orin-qk-orin_pk_t64x64k128g22s32nf", kOrin_qk_orin_pk_t64x64k128g22s32nf, 1},
+    {"orin-qk-orin_pk_t64x64k128g42s32nf", kOrin_qk_orin_pk_t64x64k128g42s32nf, 1},
+    {"orin-qk-orin_pk_t64x64k128g44s32nf", kOrin_qk_orin_pk_t64x64k128g44s32nf, 1},
+    {"orin-qk-orin_pk_t64x64k64g21s32nf", kOrin_qk_orin_pk_t64x64k64g21s32nf, 1},
+    {"orin-qk-orin_pk_t64x64k64g22s32nf", kOrin_qk_orin_pk_t64x64k64g22s32nf, 1},
+    {"orin-qk-orin_pk_t64x64k64g42s32nf", kOrin_qk_orin_pk_t64x64k64g42s32nf, 1},
     // <<< orin sdpa-profiles
 };
 const Profile* requested_profile() {
