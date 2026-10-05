@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""calibrate_clock.py <session raw dir> [...] > results/4070ti/clkmin.json
+"""calibrate_clock.py <session raw dir> [...] > results/orin/clkmin.json
 
 The "normal clock" threshold of a timed run, from the baseline and A/A sessions (run with --calibrate).
-Measured on this card (session s1-aa): the per-run median of nvidia-smi clocks.gr inside the measured window
+Measured on this card (session s1-aa): the per-run median of the devfreq clock of the GPU inside the measured window
 sits between 2565 and 2790 MHz, differs between cells and between repeats of one cell by up to 5 % with no
 effect on the rate, and the first run after an idle period can still show the ramp from the 210 MHz idle clock
 (675 MHz median, same rate). So one device-wide threshold is used: normal = the lowest per-cell median of the
@@ -27,5 +27,5 @@ allv = [v for c in names for v in acc[c]]; low = sorted(f"{c}:{v}" for c in name
 if len(low) > MAX_LOW * len(allv): sys.exit(f"calibration refused: {len(low)} of {len(allv)} usable runs below {clkmin} MHz: {low}")
 for c in names:
     v = acc[c]; cells[c] = {"clkmin_mhz": clkmin, "cell_median_mhz": st.median(v), "min_mhz": min(v), "max_mhz": max(v), "runs": len(v)}
-json.dump({"rule": f"floor({FACTOR} * lowest per-cell median of per-run median clocks.gr), device-wide", "normal_mhz": normal,
+json.dump({"rule": f"floor({FACTOR} * lowest per-cell median of per-run median devfreq clock), device-wide", "normal_mhz": normal,
            "runs_below_threshold": low, "sources": src, "cells": cells}, sys.stdout, indent=1); print()

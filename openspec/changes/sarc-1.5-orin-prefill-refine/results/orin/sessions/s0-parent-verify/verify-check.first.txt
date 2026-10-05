@@ -1,0 +1,18 @@
+FAIL: candidate: correctness.log: 6 case(s) not PASSED
+FAIL: candidate: pdiff llama-3.2-1b 4w buffer: rc '1'
+FAIL: candidate: pdiff llama-3.2-1b 4w buffer: the log does not show every shape PASSED and ALL PASSED
+FAIL: candidate: pdiff llama-3.2-1b 8da4w buffer: rc '1'
+FAIL: candidate: pdiff llama-3.2-1b 8da4w buffer: the log does not show every shape PASSED and ALL PASSED
+FAIL: candidate: pdiff llama-3.2-3b 4w buffer: rc '1'
+FAIL: candidate: pdiff llama-3.2-3b 4w buffer: the log does not show every shape PASSED and ALL PASSED
+FAIL: candidate: pdiff llama-3.2-3b 8da4w buffer: rc '1'
+FAIL: candidate: pdiff llama-3.2-3b 8da4w buffer: the log does not show every shape PASSED and ALL PASSED
+FAIL: candidate: pdiff llama-3.1-8b 4w buffer: rc '1'
+FAIL: candidate: pdiff llama-3.1-8b 4w buffer: the log does not show every shape PASSED and ALL PASSED
+FAIL: candidate: pdiff llama-3.1-8b 8da4w buffer: rc '1'
+FAIL: candidate: pdiff llama-3.1-8b 8da4w buffer: the log does not show every shape PASSED and ALL PASSED
+verify status (candidate / parent): correctness rc 1/1; linear 4w rc 1/1; linear 8da4w rc 1/1
+candidate linear dispatch states: unexpected_coopmat=24, fallback_tiled=24
+parent linear dispatch states: unexpected_coopmat=24, fallback_tiled=24
+verify: REJECT (13 findings)
+GATE_REJECTED 2026-10-05T03:51:22Z step verify-check failed rc=1

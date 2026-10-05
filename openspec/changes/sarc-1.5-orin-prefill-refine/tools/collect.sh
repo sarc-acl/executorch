@@ -1,21 +1,23 @@
 #!/bin/bash
-# collect.sh: copy the small evidence files of this study from .artifacts into the topic tree
-# (openspec/changes/sarc-1.5-4070ti-prefill-refine/). Raw logs, ETDumps, clock samples and binaries stay in
-# ~/hmz-sarc-4070ti/.artifacts/4070ti-prefill-refine/ on gpu-dev-4004. The tools live in the tree and are run from there.
+# collect.sh: workstation side, after pull.sh. Copies the small evidence files of this study from the device
+# mirror (<artifacts>/device/) into the topic tree (results/orin/). Raw logs, ETDumps, clock samples and binaries
+# stay in the artifact directory and on the device.
 set -uo pipefail
-source "$(dirname "$0")/common.sh"; C=$ET/openspec/changes/sarc-1.5-4070ti-prefill-refine
-R=$C/results/4070ti; mkdir -p $R/screens $R/phases
-for s in $A/stage/*/; do n=$(basename $s); [[ -f $s/raw/runs.csv || -f $s/verify.out ]] || continue
-  D=$R/sessions/$n; mkdir -p $D
-  cp -f $s/STAGE.md $s/raw/runs.csv $s/raw/env.txt $D/ 2>/dev/null
-  cp -f $s/gate.done* $s/*-check.txt $s/verify-runs.jsonl $D/ 2>/dev/null
-  [[ -f $s/raw/done.txt ]] && python3 "$(dirname "$0")/summarize.py" $s/raw > $D/summary.csv
-  cp -f $s/raw/nexttoken.csv $D/ 2>/dev/null
-  [[ -f $s/verify.out ]] && { cp -f $s/verify.out $D/; mkdir -p $D/verify; cp -f $s/verify/env.txt $s/verify/correctness.log $D/verify/ 2>/dev/null
-    for q in 4w 8da4w; do grep -E '^(linear|baseline) |geomean|unexpected|confirmed|crashed' $s/verify/linear-$q.log > $D/verify/linear-$q.txt 2>/dev/null; done; }
-  [[ -d $s/trace/report/evidence/trace ]] && { mkdir -p $D/trace; cp -f $s/trace/report/evidence/trace/*.csv $D/trace/; }
-  [[ -d $s/sdpa-correctness ]] && cp -rf $s/sdpa-correctness $D/
+source "$(dirname "$0")/common.sh"; D=$A/device; R=$CHANGE/results/orin; mkdir -p $R/screens $R/phases $R/sessions
+for s in $D/stage/*/; do n=$(basename $s); [[ -f $s/raw/runs.csv || -f $s/verify.out ]] || continue
+  O=$R/sessions/$n; mkdir -p $O
+  cp -f $s/STAGE.md $s/raw/runs.csv $s/raw/env.txt $O/ 2>/dev/null
+  cp -f $s/gate.done* $s/*-check*.txt $s/verify-runs.jsonl $s/gate.env $O/ 2>/dev/null
+  [[ -f $s/raw/done.txt ]] && python3 "$TOOLS/summarize.py" $s/raw > $O/summary.csv
+  cp -f $s/raw/nexttoken.csv $O/ 2>/dev/null
+  [[ -f $s/verify.out ]] && { cp -f $s/verify.out $O/; mkdir -p $O/verify; cp -f $s/verify/env.txt $s/verify/correctness.log $O/verify/ 2>/dev/null
+    for q in 4w 8da4w; do grep -E '^(linear|baseline) |geomean|unexpected|confirmed|crashed' $s/verify/linear-$q.log > $O/verify/linear-$q.txt 2>/dev/null; done
+    grep -h '^\[production-diff\]\|total mismatched' $s/verify/pdiff-*.log > $O/verify/pdiff.txt 2>/dev/null; }
+  [[ -d $s/trace/report/evidence/trace ]] && { mkdir -p $O/trace; cp -f $s/trace/report/evidence/trace/*.csv $O/trace/; }
+  if [[ -d $s/sdpa-correctness ]]; then mkdir -p $O/sdpa-correctness; cp -f $s/sdpa-correctness/*.txt $O/sdpa-correctness/ 2>/dev/null
+    for f in $s/sdpa-correctness/*.log; do grep -h '^\[sdpa-correctness\]\|^\[sdpa-error\]\|^\[sdpa-kernels\]\|^\[sarc_dev\]' $f | cut -c1-400 > $O/sdpa-correctness/$(basename $f .log).txt; done; fi
 done
-for d in $A/raw/screen*/; do n=$(basename $d); [[ -f $d/summary.csv ]] && cp -f $d/summary.csv $R/screens/$n.csv; [[ -f $d/summary.txt ]] && cp -f $d/summary.txt $R/screens/$n.txt; done
-for d in $A/raw/prof-*/; do n=$(basename $d); for q in 4w 8da4w; do [[ -f $d/$q/phases.csv ]] && cp -f $d/$q/phases.csv $R/phases/$n-$q.csv; done; done
-find $C -type f | wc -l; du -sh $C
+for d in $D/raw/*screen*/; do n=$(basename $d); [[ -f $d/rows.csv ]] && cp -f $d/rows.csv $R/screens/$n-rows.csv; [[ -f $d/summary.csv ]] && cp -f $d/summary.csv $R/screens/$n.csv; done
+for d in $D/raw/prof*/; do n=$(basename $d); for q in 4w 8da4w; do [[ -f $d/$q/phases.csv ]] && cp -f $d/$q/phases.csv $R/phases/$n-$q.csv; done; done
+for d in $D/raw/sdpa-error*/; do n=$(basename $d); mkdir -p $R/$n; cp -f $d/*.txt $R/$n/ 2>/dev/null; done
+find $CHANGE -type f | wc -l; du -sh $CHANGE
