@@ -1,0 +1,12 @@
+#!/bin/bash
+# chain2.sh: device side, one GPU job at a time. Parent control, baseline + A/A (record-only clock), warm traces
+# of the parent, then the first SDPA kernel screen and the 8da4w phase timing. Each step's status goes to stdout.
+cd "$(dirname "$0")"
+step() { echo "== $(date -u +%FT%TZ) $*"; "$@"; local rc=$?; echo "== rc=$rc $1"; [[ $rc == 70 || $rc == 75 || $rc == 76 ]] && { echo "CHAIN_STOPPED rc=$rc"; exit $rc; }; return 0; }
+step ./parent_verify.sh parent
+step ./stage.sh s1-aa parent "" topic1 "" "baseline + A/A: pristine parent against the topic build with no environment"
+step ./session.sh s1-aa --calibrate
+step ./trace.sh s1-aa 1b,3b,8b 4w,8da4w "parent cand"
+step ./sdpa_screen.sh sdpa-screen1 topic1 1 stock orin-av-df_t16x128k32g11s32 orin-av-df_t16x64k32g11s32 orin-av-df_t32x128k32g11s32 orin-av-df_t32x128k32g21s32 orin-av-df_t32x64k32g11s32 orin-av-df_t32x64k32g21s32 orin-av-df_t64x128k32g21s32 orin-av-df_t64x128k32g22s32 orin-av-df_t64x64k32g11s32 orin-av-df_t64x64k32g12s32 orin-av-dfg_t32x128k32g11s32 orin-av-dfg_t32x128k32g21s32 orin-av-dfg_t32x64k32g11s32 orin-av-dfg_t64x64k32g11s32 orin-av-dfh_t32x128k32g11s32 orin-av-dfh_t32x128k32g21s32 orin-av-dfh_t32x64k32g11s32 orin-av-dfh_t64x64k32g11s32 orin-av-ml_t128x128k32g42s32 orin-av-ml_t128x128k32g44s32 orin-av-ml_t128x64k32g24s32 orin-av-ml_t128x64k32g42s32 orin-av-ml_t128x64k32g44s32 orin-av-ml_t256x64k32g42s32 orin-av-ml_t256x64k32g44s32 orin-av-ml_t32x64k32g42s32 orin-av-ml_t64x128k32g42s32 orin-av-ml_t64x128k32g44s32 orin-av-t64x64k32g24s32 orin-av-t64x64k32g42s32 orin-qk-df_t128x128k32g22s32nf orin-qk-df_t128x64k32g22s32nf orin-qk-df_t128x64k32g42s32nf orin-qk-df_t16x64k32g11s32nf orin-qk-df_t32x32k32g11s32nf orin-qk-df_t32x64k32g11s32nf orin-qk-df_t64x32k32g11s32nf orin-qk-df_t64x64k32g11s32nf orin-qk-df_t64x64k32g22s32nf orin-qk-dfg_t32x64k32g11s32nf orin-qk-dfg_t64x64k32g11s32nf orin-qk-dfg_t64x64k32g22s32nf orin-qk-dfh_t32x64k32g11s32nf orin-qk-dfh_t64x64k32g11s32nf orin-qk-dfh_t64x64k32g22s32nf orin-qk-pk_t128x64k32g24s32nf orin-qk-pk_t128x64k32g42s32nf orin-qk-pk_t128x64k32g44s32nf orin-qk-pk_t128x64k64g42s32nf orin-qk-pk_t32x64k32g42s32nf orin-qk-pk_t64x128k32g42s32nf orin-qk-pk_t64x64k32g21s32nf orin-qk-pk_t64x64k32g22s32nf orin-qk-pk_t64x64k32g42s32nf orin-qk-pk_t64x64k32g44s32nf orin-qk-t128x64k32g22s32nf orin-qk-t128x64k32g24s32nf orin-qk-t128x64k32g42s32 orin-qk-t128x64k32g42s32nf 
+step ./prof.sh prof1 topic1
+echo CHAIN_DONE
