@@ -18,8 +18,11 @@ attention kernels in every test case. All of the gain is attention time (51.7 ->
 on 8B). It is not reachable from the dev zone alone: it needs two small release-zone hooks (SDPA rows for this
 device, a dev name for the softmax), measured here through a local patch that is not committed. The first SDPA
 candidate (same QK^T and attn*V kernels with the release fp16 softmax, +42 %) was rejected on precision grounds
-and stays rejected. The linear kernels were swept and two variants were put through the gate on top of
-candidate 4, twice each: +0.11 % / +0.28 % and +0.54 % / +0.47 % geomean, inside the noise band (@@OUTCOME@@). What limits the prefill now is the
+and stays rejected. The linear kernels were swept and two variants were gated on top of candidate 4: -0.13 %
+and +0.40 % geomean in the sessions whose gates completed (`s6-c5d`, `s7-c6e`), inside the noise band there and
+in five further timed sessions. That meets the stop rule: two consecutive gated candidates below 2 %. Seven other
+gate attempts on these two candidates were rejected, each for one runner call failing after its output; they
+are kept and listed. What limits the prefill now is the
 linear kernels (50 % of the 1B prefill and 70 % of the 8B one at 64 % and about 41 % of their matrix roofs).
 
 **Recommended configuration: candidate 4.** The linear profiles (`4070ti-refine2` to `-refine5`) are recorded
@@ -386,15 +389,48 @@ same session:
 
   The failure is in whichever arm it happens to hit (twice the arm that plays the parent, twice the candidate)
   and is the one the pristine parent shows too (below). It still fails a gate step, so the sessions are recorded
-  as rejected. They were not repeated a third time: with the failure rate measured below a gate of about 135
-  runner calls completes cleanly well under half of the time, and neither variant has a gain to accept.
+  as rejected.
 
 **Stop rule: not met by these four sessions.** The rule asks for two consecutive gated candidates below 2 %;
 a gate that is rejected at one of its steps is not a completed gate, whatever the reason for the step's failure.
 What these sessions establish is the measured gain, not the gate. Both candidates are gated again in fresh
 sessions (below).
 
-@@FRESH@@
+### Fresh gate sessions (2026-10-05, 06:14 to 09:48 UTC)
+
+Same builds, environments and comparison (`queue14.sh` in the artifact directory: a rejected attempt is kept and
+the candidate staged again under the next name; candidate 6 only after candidate 5 had an accepted gate).
+Nothing was waived and no two incomplete gates were combined.
+
+| session | candidate | `gate.done` | geomean | what failed |
+|---|---|---|---:|---|
+| `s6-c5c` | 5 | REJECTED at the trace step (verify-check and session-check ACCEPT) | -0.10 % | traced candidate run of 3B 8da4w aborted (rc 134) |
+| **`s6-c5d`** | 5 | **GATE_ACCEPTED**, all steps passed | **-0.13 %** | nothing |
+| `s7-c6c` | 6 | REJECTED at verify-check | no session | `verify.sh` prefill call 3B 8da4w tiled aborted (rc 134) |
+| `s7-c6d` | 6 | REJECTED at verify-check | no session | `verify.sh` prefill call 8B 4w default aborted (rc 134) |
+| **`s7-c6e`** | 6 | **GATE_ACCEPTED**, all steps passed | **+0.40 %** | nothing |
+
+The two accepted gates, tok/s, median of 5 valid interleaved runs per arm (`results/4070ti/sessions/s6-c5d/`,
+`s7-c6e/`; geomeans recomputed from `runs.csv` with separate code: -0.128 % and +0.405 %):
+
+| cell | candidate 4 -> candidate 5 (`s6-c5d`) | candidate 4 -> candidate 6 (`s7-c6e`) |
+|---|---:|---:|
+| 1B 4w | 29681.2 -> 29681.2 (+0.00 %) | 29681.2 -> 29681.2 (+0.00 %) |
+| 1B 8da4w | 32507.9 -> 32507.9 (+0.00 %) | 33032.3 -> 33032.3 (+0.00 %) |
+| 3B 4w | 12880.5 -> 12880.5 (+0.00 %) | 12880.5 -> 12880.5 (+0.00 %) |
+| 3B 8da4w | 14948.9 -> 14733.8 (-1.44 %) | 14733.8 -> 14948.9 (+1.46 %) |
+| 8B 4w | 5988.3 -> 5988.3 (+0.00 %) | 5988.3 -> 6005.9 (+0.29 %) |
+| 8B 8da4w | 6966.0 -> 7013.7 (+0.68 %) | 6966.0 -> 7013.7 (+0.68 %) |
+| **geomean** | **-0.13 %** | **+0.40 %** |
+
+Both: `verify-check`, `session-check` and `env-check` ACCEPT with 0 findings, 24 of 24 next-token rows SAME, no
+runner call with a non-zero exit status, all 12 traces complete. No cell outside the +-2 % band. The 3B 8da4w
+readings of -1.44 % and +1.46 % are the same two values (139 and 137 ms) swapping arms, i.e. noise.
+
+**Stop rule: met.** Candidates 5 and 6, consecutive, each with a completed gate, gain -0.13 % and +0.40 % geomean
+over their parent (candidate 4). Neither is a gain; **candidate 4 remains the recommended configuration.**
+Candidate 6 was compared with candidate 4 rather than with candidate 5 (as in every earlier attempt); against
+candidate 5 it would be the 4w `gac` tile alone, which the 4w cells above put at +0.00 % to +0.29 %.
 
 ### The runner fails after its output now and then, in every build
 
@@ -404,22 +440,26 @@ thread at 100 % CPU with the GPU idle, before the stats line. `nvidia-smi` answe
 log shows no Xid. `TECHNICAL-REPORT.md` of the e2e benchmark already describes a rare exit-time crash on this
 card.
 
-Counted over every runner call of the staged sessions (timed and next-token runs in `runs.csv`, the 22 calls of
-each `verify.sh`, the traces):
+Counted over every runner call of the 15 staged sessions (timed and next-token runs in `runs.csv`, the 22 calls
+of each `verify.sh`, the traces):
 
-| arm | runner calls | failed after output |
+| | runner calls | failed after output |
 |---|---:|---:|
 | pristine parent, or a build without the SDPA kernels in use | 299 | 2 (0.7 %) |
-| SDPA kernels in use (candidates 1, 4, 5, 6) | 690 | 5 (0.7 %) |
+| SDPA kernels in use (candidates 1, 4, 5, 6) | 1132 | 8 (0.7 %) |
+| timed and next-token runs (untraced runner) | 1027 | 3 (0.3 %) |
+| `verify.sh` calls (untraced runner) | 308 | 2 (0.6 %) |
+| traced runs (ETDump build) | 96 | 5 (5.2 %) |
 
-One more in the pristine parent outside the sessions (the 41-prompt logits dump of 3B 8da4w). Four of the five
-SDPA-arm failures were on 3B 4w, so that cell was run 150 times per arm, pristine parent and candidate 4
-interleaved, a fresh process per run (`tools/exit_probe.sh`, `results/4070ti/exit-probe/3b-4w.csv`): **0 failures
-in 150 for either arm.** Read together: the rate is the same with and without this campaign's kernels (about
-0.5 % per call), the 3B 4w cluster did not reproduce, and the cause is not known. The symptom points at heap
-corruption in the runner process, which no test of the gate looks for; nothing here locates it. At 0.7 % per call
-a gate of about 135 runner calls has about a 40 % chance of completing with no failed call, which is what was
-seen (one gate of five on candidate 4's builds completed).
+One more in the pristine parent outside the sessions (the 41-prompt logits dump of 3B 8da4w). Read by arm, the
+rate is the same with and without this campaign's kernels. Read by kind of run, **the traced build fails about
+ten times as often as the untraced one** (5 of 96 against 5 of 1335), in both arms (1 of 24 pristine, 4 of 72
+with the SDPA kernels). Four of the first five SDPA-arm failures were on 3B 4w, so that cell was run 150 times
+per arm, pristine parent and candidate 4 interleaved, untraced, a fresh process per run (`tools/exit_probe.sh`,
+`results/4070ti/exit-probe/3b-4w.csv`): **0 failures in 150 for either arm**; the cluster did not reproduce and
+later failures were on other cells. The cause is not known. The symptom points at heap corruption in the runner
+process, which no test of the gate looks for; nothing here locates it, and the traced build is where to look
+first. Of the ten gates run on candidate 4's builds, three completed.
 
 ## What limits further progress
 
@@ -447,8 +487,8 @@ Shares below are of candidate 4's warm dispatch time (`sessions/s5-c4/trace/`): 
   and hook 2 (softmax name), both in `impl/sarc/`.
 - `copy/view` and elementwise operators are 22 % of the 1B prefill and 16 % of the 8B one with candidate 4.
   They are upstream operators outside both zones.
-- The runner's failure after output (above) limits how much can be gated on this card: at the measured rate a
-  full gate is more likely to lose a step than to complete.
+- The runner's failure after output (above) limits how much can be gated on this card: a full gate is more
+  likely to lose a step than to complete, mostly through its 12 traced runs.
 
 ## Limits of this study
 
@@ -458,7 +498,8 @@ Shares below are of candidate 4's warm dispatch time (`sessions/s5-c4/trace/`): 
 - The broad logits comparison uses 41 prompts; counts of top-1 differences on that sample are small numbers.
   There is no fp32 reference for whole-model logits; the reference criterion is measured on the SDPA block.
 - Candidate 4 against candidate 1 is a comparison of two sessions, not one interleaved measurement.
-- The four linear gates did not complete (above). Their timing sessions did.
+- Seven of the nine linear gate attempts were rejected for a runner failure; the two that count are the two
+  that completed.
 - Roofs are `fast`-plan, short-run values. The watcher flagged the roofline run after it had finished, because
   the tool starts its runners with a cleaned environment; the run itself completed with rc 0 and its roofs
   agree with the earlier evidence within 0.5 %. `shared_fp16_read` (1344 GB/s) is still not understood and is

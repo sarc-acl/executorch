@@ -1,21 +1,24 @@
 # STATUS: sarc-1.5-4070ti-prefill-refine
 
-**2026-10-05 06:20 UTC, gpu-dev-4004. RUNNING. The stop rule is NOT met yet. Candidate 4 (SDPA prefill kernels
-`4070ti-refine1` + fp32 softmax `4070ti_nzf`) is accepted by its full gate, +46.74 % geomean over the pristine
-parent. Candidates 5 and 6 (linear variants on top of it) measured +0.11 % / +0.28 % and +0.54 % / +0.47 % in
-two timed sessions each, but all four of their gates are GATE_REJECTED (each lost one step to the runner failing
-after its output), and rejected gates do not count as gated candidates. An earlier version of this file said
-FINISHED on that basis; the reviewer corrected it and it was wrong.**
+**2026-10-05 09:55 UTC, gpu-dev-4004. FINISHED, nothing running, GPU idle. The stop rule is met: candidates 5
+and 6, consecutive, each completed a full gate (`s6-c5d` and `s7-c6e`, both GATE_ACCEPTED) with -0.13 % and
++0.40 % geomean over their parent, candidate 4. Recommended configuration: candidate 4 (SDPA prefill kernels
+`4070ti-refine1` + fp32 softmax `4070ti_nzf`), accepted by its full gate, +46.74 % geomean over the pristine
+parent. It needs two release-zone hooks (SDPA rows for this device, softmax name) and is measured through a
+local patch that is not committed. `proposal.md` has the full account.**
 
-Running now: `queue14.sh` (artifact directory) stages candidate 5 again as `s6-c5c`, then `s6-c5d` ... (at most
-six attempts) until one gate completes with GATE_ACCEPTED, and only then candidate 6 the same way (`s7-c6c` ...).
-Same builds, environments and comparison as before (both arms `topic11`, parent profile `4070ti-refine1`,
-softmax `4070ti_nzf` in both arms). About 50 to 75 minutes per attempt. Every rejected attempt is kept.
+Correction kept on record: at 06:15 UTC this file said FINISHED on the strength of four timed sessions whose
+gates were all GATE_REJECTED. That was wrong (rejected gates are not gated candidates); the reviewer said so and
+both candidates were gated again until a gate completed. Attempts, all kept: candidate 5 `s6-c5`, `s6-c5b`,
+`s6-c5c` rejected, `s6-c5d` accepted; candidate 6 `s7-c6`, `s7-c6b`, `s7-c6c`, `s7-c6d` rejected, `s7-c6e`
+accepted. Every rejection is one runner call that failed after its output.
 
-Next step: when both have an accepted gate with a gain below 2 %, the stop rule is met; update `proposal.md`,
-check, commit, push. If six attempts of a candidate are all rejected, that is reported as it is.
+Next step: none in this campaign. For the owner: (1) the two hooks decide whether candidate 4 can be used at
+all; (2) the runner fails after its output in 0.4 % of untraced and 5 % of traced calls, with and without this
+campaign's kernels; it looks like heap corruption and is worth locating on its own; (3) the linear kernels are
+what is left (50 to 70 % of the prefill at 64 % / about 41 % of their roofs).
 
-Blocking: nothing. Risk: the runner fails after its output in about 0.7 % of calls and a gate has about 135.
+Blocking: nothing.
 
 Note on continuity: the control session of this campaign was lost at about 00:50 UTC. The detached queue
 (`queue9.sh`, `queue10.sh` in the artifact directory) kept running; a new control session picked it up at 02:05
@@ -91,19 +94,24 @@ runs per arm, gain over the parent arm of the same session (`results/4070ti/sess
   `s6-c5b` trace step (traced candidate run of 3B 4w hung after writing its ETDump, ended with SIGTERM after
   8.5 min; verify-check and session-check ACCEPT);
   `s7-c6b` session-check (timed candidate run of 8B 8da4w aborted, rc 134, next-token row INVALID).
-- Not repeated a third time: neither variant has a gain to accept, and at the measured failure rate a gate of
-  about 135 runner calls completes cleanly about 40 % of the time.
+- Fresh sessions after the review (`queue14.sh`, 06:14 to 09:48 UTC):
+  `s6-c5c` REJECTED at the trace step (traced candidate run of 3B 8da4w aborted; session -0.10 %);
+  **`s6-c5d` GATE_ACCEPTED, -0.13 %** (1B +0.00 / +0.00, 3B +0.00 / -1.44, 8B +0.00 / +0.68 %, 4w / 8da4w);
+  `s7-c6c` and `s7-c6d` REJECTED at verify-check (one `verify.sh` prefill call aborted in each, rc 134);
+  **`s7-c6e` GATE_ACCEPTED, +0.40 %** (1B +0.00 / +0.00, 3B +0.00 / +1.46, 8B +0.29 / +0.68 %).
+  In both accepted gates: verify, session and env checks 0 findings, 24 of 24 next-token rows SAME, no failed
+  runner call, 12 of 12 traces.
 - The only reading that repeats is 8B 8da4w, +0.7 % to +1.0 % in all four sessions (the kernel-level screen gave
   1.011x for `bh`). Below the band.
 
 ## The runner fails after its output now and then (not specific to a candidate)
 
 Echoes prompt and token, then aborts in the allocator (rc 134) or spins one thread with the GPU idle, before the
-stats line. No Xid, `nvidia-smi` answers. Over the staged sessions: 2 of 299 runner calls without the SDPA
-kernels in use, 5 of 690 with them (0.7 % each); one more in the pristine parent's logits dump. Four of the
-five were 3B 4w, so that cell was run 150 times per arm (pristine parent, candidate 4, interleaved;
-`tools/exit_probe.sh`, `results/4070ti/exit-probe/3b-4w.csv`): 0 failures in either arm. Same rate with and
-without this campaign's kernels; cause unknown; it looks like heap corruption in the runner.
+stats line. No Xid, `nvidia-smi` answers. Over the 15 staged sessions: 2 of 299 runner calls without the SDPA
+kernels in use, 8 of 1132 with them (0.7 % each). By kind of run: 5 of 1335 untraced calls (0.4 %) against 5 of
+96 traced calls (5.2 %), in both arms. A 150-run-per-arm probe of 3B 4w (pristine parent, candidate 4,
+untraced; `tools/exit_probe.sh`, `results/4070ti/exit-probe/3b-4w.csv`) had 0 failures in either arm. Cause
+unknown; it looks like heap corruption in the runner, and the traced build is where to look first.
 
 ## Candidate 4 = `4070ti-refine1` + softmax `4070ti_nzf`: the measured error (reference-error rule MET)
 
