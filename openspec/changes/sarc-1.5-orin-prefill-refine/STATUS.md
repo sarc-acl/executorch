@@ -1,9 +1,10 @@
 # STATUS: sarc-1.5-orin-prefill-refine
 
-**2026-10-05 09:55 UTC. RUNNING. The owner accepted the softmax-name hook (committed alone, `307abb2ed`).
-Candidate 1 (`orin-refine1`, release softmax) is REJECTED and stays rejected; it measured +57.5 % geomean.
-Candidate 1h (the same kernels + fp32 softmax through the hook) and candidate 2 (8da4w linear) are queued for
-their gates. Nothing accepted yet; the stop rule is not met; the branch is not pushed.**
+**2026-10-05 12:25 UTC. RUNNING. Candidate 1h (`orin-refine1` + the fp32 softmax through the owner-accepted
+hook) has passed the SDPA correctness passes and `verify.sh` with 0 findings (no next-token item differs) and
+meets criterion 1 of the reference-error rule in all 12 cases; its timed session is running. Candidate 1
+(release softmax) stays REJECTED. Candidate 2 (8da4w linear) is queued. Nothing accepted yet; the stop rule is
+not met; the branch is not pushed.**
 
 All times are UTC from `date -u`.
 
@@ -11,21 +12,22 @@ All times are UTC from `date -u`.
 
 - Device (`duck-naughty`), detached, one GPU job at a time under the gpu-lab lock; status in
   `~/hmz-sarc-orin/jobs/<job>.status` / `.out`, from the workstation `tools/dstat.sh`. Survives a reboot of the
-  workstation. Build `topic6` = `4718f3e07` (the committed branch with the hook):
-  - `chain9` (running): 8da4w screen 3, round 2; phase timing of two whole-texel tiles.
-  - `chain11b` (waiting): 4w screen of every existing subgroup-32 dev tile; kernel times of the softmax variants.
-  - `chain8c` (waiting): candidate 1h: reference error of the attention block for five arms (`raw/sdpa-error2`),
-    then `gate_sdpa.sh s4-c1h`.
-  - `chain10b` (waiting): candidate 2: bit comparison with the shipped kernel (`raw/bit-bf`), production-diff on
-    all three models, `gate.sh s3-c2`.
-  Expected: `chain11b` until about 10:50 UTC, `chain8c` 13:30, `chain10b` 15:30.
-- Workstation: job `build-topic6` is adding `logits_dump` to build `topic6` (waiting for the desktop build lock).
-  Not needed by the queued chains; start again after a reboot.
+  workstation:
+  - `chain8c` (running): `gate_sdpa.sh s4-c1h`, candidate 1h on build `topic6` = `4718f3e07`: SDPA passes and
+    `verify.sh` done, six-cell session and traces to go.
+  - `chain13` (waiting): the reference-error rule evidence for candidate 1h: logits of the 41 real-text prompts
+    for parent default / tiled and candidate default / tiled, comparison and rule (`probe/refine1-nzf/`).
+    About 3.3 hours (the tiled arms run at 25 to 230 tok/s).
+  - `chain10d` (waiting): candidate 2: bit comparison, production-diff, `gate.sh s3-c2` (build `topic6`).
+  - `chain12b` (waiting): 4w screen 2 (staging variants of the shipped Orin 4w tiles, build `topic8`) and the
+    pre-checks of the 4w tile of `orin-lin-refine3`.
+  Expected: `chain8c` until 13:30 UTC, `chain13` 16:50, `chain10d` 18:50, `chain12b` 19:30.
+- Workstation: nothing.
 
 ## Next step
 
-Read the 4w screen; the gate of candidate 1h (if a next-token item differs again: the 41-prompt logits
-comparison and the reference-error rule); the gate of candidate 2.
+Read the session of candidate 1h (the gate verdict), then the rule evidence, then the gate of candidate 2.
+After that: the combination (`orin-refine4` + the softmax variant) as the final candidate.
 
 ## Owner decision received (2026-10-05): the softmax-name hook is accepted
 
@@ -49,6 +51,34 @@ it (`s4-c1h`), not on the local-patch build `hook4`.
 | 1 | `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine1` | SDPA prefill kernels (QK^T, attn*V) | yes (`OrinSdpa.cpp`, no hook) | **REJECTED** at `verify-check` (`s2-c1`); evidence session running |
 | 2 | `ET_VK_SARC_DEV_PROFILE=orin-lin-refine2` | 8da4w linear: whole-texel weight staging | yes | queued (`s3-c2`) |
 | 1h | candidate 1 + `ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf` | fp32 softmax without the zero tail | through the softmax-name hook (owner decision 2026-10-05, commit `307abb2ed`), build `topic6` | queued (`s4-c1h`) |
+
+### Candidate 1h, `orin-refine1` + `ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf`: gate `s4-c1h`, running
+
+Build `topic6` (`4718f3e07`: the branch with the softmax-name hook `307abb2ed`) against the pristine parent.
+What differs from candidate 1: the softmax reduces each row in fp32 and does not write the zero tail; QK^T and
+attn*V are candidate 1's kernels.
+
+- Reference error (criterion 1 of the rule), measured before the gate with the gate's test binary
+  (`results/orin/sdpa-error2/summary.txt`, five arms, same seeded inputs, 0 mismatches in all 12 cases of every
+  arm):
+
+  | production case (S = 2048) | rms error: parent / candidate 1 / candidate 1h | maximum error: parent / candidate 1 / candidate 1h |
+  |---|---|---|
+  | 1B head configuration | 8.55e-5 / 3.49e-5 / 2.10e-5 | 1.713e-3 / 1.288e-3 / 0.914e-3 |
+  | 3B head configuration | 8.69e-5 / 3.54e-5 / 2.07e-5 | 1.408e-3 / **1.570e-3** / 0.783e-3 |
+  | 8B head configuration | 8.70e-5 / 3.48e-5 / 2.06e-5 | 1.587e-3 / 1.498e-3 / 0.891e-3 |
+
+  Candidate 1h is not larger than the parent in rms and in maximum error in 12 of 12 cases (candidate 1: 11 of
+  12). The fp32 softmax alone (`4070ti_f32`) gives the same numbers as `4070ti_nzf`, element for element; the
+  no-zero-tail softmax alone (`4070ti_nz`) the same as the release softmax.
+- SDPA correctness: 12 passes x tiers extended and full: 0 mismatches, both cooperative-matrix kernels
+  dispatched, `pairing=ok`, and the softmax kernel is `sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf` in
+  all 144 cases (`gate_check.py sdpa`: ACCEPT, 0 findings).
+- Unmodified `verify.sh`: `gate_check.py verify`: **ACCEPT, 0 findings**. Every item equals the parent control,
+  including all four next-token items: `1b 8da4w unaligned: default vs tiled output SAME` this time.
+- Timed session and traces: running. The 41-prompt logits comparison and the rule's own verdict follow
+  (`chain13`): the owner's decision asks for the rule as written, so its evidence is collected in full although
+  no next-token item differs.
 
 ### Candidate 1, `orin-refine1` (SDPA prefill kernels): gate `s2-c1`, REJECTED
 
