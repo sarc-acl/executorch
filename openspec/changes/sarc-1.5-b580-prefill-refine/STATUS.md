@@ -102,6 +102,24 @@ tile and equal for everything else.
   were not measured here.
 - QK^T and attn*V together are now 5 to 11 % of the prefill; a further 10 % on either is 0.2 to 0.6 % end to end.
 
+## Tooling follow-up after review (2026-10-05 10:55 UTC, no kernel measured again)
+
+`tools/screen.sh` and `tools/screen_sdpa.sh` did not meet the campaign rule for sweeps (resumable, one appended
+CSV row per configuration and shape, saved rows skipped): the first overwrote `env.txt`, logs and JSON on a
+restart, re-ran every configuration and wrote no per-shape CSV; the second decided by a status marker that is
+written before the rows, so an interruption between the two lost rows for good. Both now decide from the
+saved row keys, recover missing rows from the validated cached result of a run, move a failed or interrupted
+attempt to `superseded/<reason>/` before repeating it, and append to `env.txt` (`tools/screen_rows.py`).
+`tools/test_resume.sh` checks this on copies of `raw/screen5-4w` and `raw/screen1-sdpa` with a stub runner:
+empty, partial (cut mid-line) and complete CSV, an interrupted run with partial rows, and the recover-only
+mode; 28 checks pass, with exactly one row per key after every case, the original logs and JSON unchanged
+and no launch for completed work (`.artifacts/logs/test_resume-2.log`; the first run of the test,
+`test_resume-1.log`, failed 7 SDPA checks because the validity rule wrongly required a geomean line that the
+stock-kernel `base` log does not print). The four linear screens of this campaign got their per-shape row
+files from their cached JSON in recover-only mode (600, 432, 144 and 216 rows; `results/b580/screens/*-rows.csv`),
+and `screen1-sdpa`'s 2880 rows were confirmed complete; nothing was launched and all 473 cached files are
+unchanged. No conclusion of this file depends on the change.
+
 ## How noisy the card was
 
 Until about 05:40 UTC the desktop session was idle and locked (`loginctl`: `IdleHint=yes`, `LockedHint=yes`).

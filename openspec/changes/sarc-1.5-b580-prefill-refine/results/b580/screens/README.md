@@ -5,6 +5,16 @@ per-layer-weighted kernel time in us, `_x` = base / token, above 1 is faster; `b
 which the B580 shares with the B70). `<name>.csv` has the medians over the rounds, `<name>.txt` every round
 per shape. SDPA screens: `tools/screen_sdpa.sh` (ms per layer, S = 2048).
 
+Raw rows: `<name>-rows.csv` (linear: one row per token, round and shape, key `token,rep,model,op,storage,variant`)
+and `<name>-runs.csv` (SDPA: one row per profile, round, model, sub-op and variant). The linear row files were
+written on 2026-10-05 10:51 UTC by `screen.sh` in its recover-only mode from the cached JSON of the original
+runs, with no kernel run again and the cached logs and JSON unchanged (sha256 of all 473 files before and
+after); their `rc` and `temp_c` columns are empty because the screens ran before the scripts saved a status
+marker per run. Both scripts now resume by saved row keys and never overwrite a result (`tools/screen_rows.py`,
+`tools/test_resume.sh`). One thing the earlier scripts did lose: `screen1-sdpa` was first started at 06:15 UTC
+and stopped seconds later so that a build could run; the log of that interrupted `base` run was overwritten
+when the screen was started again at 07:12 UTC. It was never part of a result.
+
 | file | build | what |
 |---|---|---|
 | `screen2-8da4w` | topic1 | every 8da4w tile in the dev zone (24, the B70 campaign's), 2 rounds |
