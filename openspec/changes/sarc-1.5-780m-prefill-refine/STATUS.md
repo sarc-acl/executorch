@@ -1,6 +1,6 @@
 # STATUS: 780M prefill campaign, round 2 (parameter space + beyond)
 
-Updated 2026-10-05 06:20 PDT (13:20 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
+Updated 2026-10-05 08:55 PDT (15:55 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
 Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (new raw data) and
 `.../780m-prefill-refine-2026-10-03/` (earlier builds and sessions).
 
@@ -13,7 +13,8 @@ Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (
 | igpu-roofline `fast` plan | finished 20:15 PDT; matrix roofs 14.766 TFLOP/s (fp16 -> fp32) and 14.379 TOP/s (int8) |
 | candidate 9 (candidate 8 + one-pass fused kernel + 4w kernel per shape) | **gate passed** (finished 04:10 PDT): +4.50 to +5.45 % in the 4w cells, +1.06 to +1.80 % in the 8da4w cells (inside the band), geomean **+3.19 %** over candidate 8; every next-token item SAME; record below |
 | 4w, Part 1 | random sample, refinement round 1 and the confirmation are done: **best kernel per shape below**, 4.0 to 4.8 % less linear time per layer than `780m-refine3`, byte-identical output; refinement round 2 (51 neighbours of the winners) and the 12 production-diff passes are queued |
-| 4w, after candidate 9 | refinement rounds 2 and 3 and a geometry scan with the leading flag set are done: the in-Ash drain on the 256-row tiles and one 128 x 128 grid are 1.4 to 2.4 % per layer better than `refine9` (single measurements; repeats running, `chain12.sh`); not a candidate by itself |
+| candidate 10 (candidate 9 with the refined 4w table, profile `refine10`) | **gate passed, +0.47 % geomean: inside the band, not a gain** (4w cells +0.94 / +1.43 / +1.16 %, 8da4w cells 0.00 / -0.73 / +0.06 %); byte-identical 4w output; first candidate under 2 % |
+| 4w, Part 1 | finished except for the production-diff passes: the search stopped moving after refinement round 3 and the geometry scan; the best kernel per shape (5 repeats) is profile `refine10` |
 | 8da4w | screening mode validated on 64 configurations (rank correlation 0.998 to 1.000, the full top 10 inside the screen's top 20 on all three models); screen of the 2,238 survivors running since 05:50 PDT (`chain6e.sh`) |
 | production-diff passes; QK^T / attn*V enumeration | queued behind the 8da4w steps |
 
@@ -22,9 +23,7 @@ at the end): candidate 8 is about +27 % geomean over `dev/1.5` (1B 4w 2698 -> 36
 
 ## Running now (detached chains; nothing needs attention)
 
-1. `chain12.sh`: 4w second confirmation, the 28 leading configurations after rounds 2 and 3 and the geometry
-   scan, four more full measurements each (about 1 h, sharing the GPU run by run with the chain below).
-2. `chain6e.sh` (replaces `chain6d.sh`; same steps, the timing of both linear families before the production-diff
+1. `chain6e.sh` (replaces `chain6d.sh`; same steps, the timing of both linear families before the production-diff
    passes), continued at 04:10 PDT:
    - 8da4w: all 2,238 survivors screened (`wq_wo`, 3 + 3 runs; 53 done at 06:13 PDT; the sweeps wait from 06:40
      to 07:40), then the confirmation timing (everything within 8 % of the fastest, full measurement;
@@ -448,10 +447,44 @@ geo-cbt}/`, full measurement on all twelve shapes):
   column-major B; subgroup 32, tile K 16 or 32, M and N at least 64, 2 to 32 MMA tiles per subgroup) that no
   earlier stage had measured: none enters the first five on any shape.
 
-Best per shape now against `refine9`, per layer: -1.4 % (1B), -2.4 % (3B), -1.7 % (8B), single or double
-measurements; the repeats are running. That is about +1 to +1.7 % end to end in the 4w cells: inside the band, so
-it is kept for a combined candidate with the 8da4w result, not gated alone. Still open: the 12 production-diff
-passes per confirmed configuration (3 done, all passed).
+Second confirmation (`results/780m/space/confirm2-4w/`): the 28 leaders of all of the above, 5 full
+measurements each, repeat spread 0.15 to 1.1 %. **Within the existing kernel bodies the best 4w kernel per shape
+on this device and driver is:**
+
+| shapes | kernel (profile `refine10`) | tied within 2 % | against `780m-refine3` | against `refine9` |
+|---|---|---|---:|---:|
+| K >= 4096, N >= 1024 (all of 8B; w2 of 1B and 3B) | `t256x128k32g18s32f32cbt` | its `IMG_A` / `IMG_W` twins; for the three w2 shapes and 8B wk_wv also the band-drain twins | -2.2 to -7.2 % | -0.1 to -2.9 % |
+| K = 3072, N >= 2048 (3B wq_wo, w1_w3) | `t256x128k32g24s32f32cbt` | `t256x128k32g18s32f32cbt` | -4.8 to -5.6 % | -3.1 to -3.4 % |
+| K = 3072, N = 1024 (3B wk_wv) | `t128x256k32g42s32f32cbt` | ten flag variants of the same tile | -2.6 % | 0 |
+| K = 2048, N = 8192 (1B w1_w3) | `t256x128k32g28s32f32cbt` | its `IMG` twins and band-drain twins | -6.1 % | -1.7 % |
+| K = 2048, N <= 2048 (1B wq_wo, wk_wv) | `t128x128k32g24s32f32cbt` | wq_wo: `t256x128k32g28s32f32cbt`; wk_wv: none (the shipped tile is 4.5 % behind) | -5.4 / -4.6 % | -2.7 / -4.6 % |
+
+Per layer: -6.10 / -5.30 / -5.93 % linear time against `780m-refine3` (1B / 3B / 8B) and -1.41 / -2.37 / -1.82 %
+against `refine9`. The raw output of the 12 production-diff cases is byte-identical to `780m-refine3`
+(`results/780m/space/bitwise-4w-refine10.txt`). Still open: the 12 production-diff passes per confirmed
+configuration (3 done, all passed).
+
+## Candidate 10: candidate 9 with the refined 4w table (`refine10`): gate passed, +0.47 %, inside the band
+
+Session `c10-q4-refine10` (`results/780m/sessions/c10-q4-refine10/`), started 08:19 PDT at 43 C; same binary
+(build `fused9`) in both arms, candidate 9's environment with `ET_VK_SARC_780M_PROFILE=refine10` instead of
+`refine9`:
+
+| cell | parent (candidate 9) | candidate 10 | gain | repeat spread parent / candidate | next token |
+|---|---:|---:|---:|---|---|
+| 1B 4w | 3806.69 | 3842.40 | +0.94 % | 0.00 / 0.38 % | SAME / SAME |
+| 1B 8da4w | 3690.09 | 3690.09 | 0.00 % | 0.36 / 0.18 % | SAME / SAME |
+| 3B 4w | 1439.21 | 1459.73 | +1.43 % | 0.14 / 0.00 % | SAME / SAME |
+| 3B 8da4w | 1370.82 | 1360.80 | -0.73 % | 1.47 / 1.41 % | SAME / SAME |
+| 8B 4w | 634.84 | 642.21 | +1.16 % | 0.15 / 0.41 % | SAME / SAME |
+| 8B 8da4w | 614.83 | 615.20 | +0.06 % | 0.30 / 0.27 % | SAME / SAME |
+
+Geomean **+0.47 %**, every cell inside the +-2 % band: by the campaign's rule not a gain, and the first of the
+two candidates under 2 % that end the campaign. `verify.sh`: correctness rc = 0, 12 of 12 production-diff cases
+ALL PASSED, default vs tiled SAME on both prompts, decode 31 tokens, `linear <scheme> rc=1` as on the parent; no
+SDPA kernel changes, so the SDPA tiers were not repeated. Traces: 4w linear GEMM 351.4 -> 347.2 ms (1B),
+1016.8 -> 996.4 ms (3B), 2540 -> 2514 ms (8B). The 4w cells move by what the kernel timing predicts (+0.9 /
++1.7 / +1.4 %); the 8da4w cells run the same kernels in both arms and scatter by -0.7 to +0.1 %.
 
 ## Can the sweep slot in between two timed runs of a session? No (checked 2026-10-04 18:44 PDT, during `c7`)
 
@@ -688,10 +721,11 @@ runs each; all variants reached through `hooks/softmax-name-hook.patch` applied 
 
 ## Next
 
-1. 4w second confirmation; 8da4w screen and confirmation -> the 8da4w kernel per shape; candidate 10 = candidate 9
-   + the refined 4w table + the 8da4w kernels per shape.
-2. Production-diff passes for the confirmed configurations; QK^T / attn*V enumeration and repeat stage.
-3. A direct session of the final configuration against `dev/1.5` and against `780m-refine3`.
+1. 8da4w screen and confirmation -> the 8da4w kernel per shape; candidate 11 = candidate 10 + those kernels.
+   If it is under 2 % too, the stop rule is met.
+2. RGP captures (owner request of 2026-10-05), fitted in between sweep runs, never next to a session or gate.
+3. Production-diff passes for the confirmed configurations; QK^T / attn*V enumeration and repeat stage.
+4. A direct session of the final configuration against `dev/1.5` and against `780m-refine3`.
 
 ## Blocking
 
