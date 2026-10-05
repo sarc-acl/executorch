@@ -255,3 +255,109 @@ Other review notes, not acted on here:
   compared bit for bit.
 - Of the 84 unaligned-prompt check runs in sessions `s1` to `s7`, 22 carry `clock_low`; they are next-token
   checks only and are not timed.
+
+## Round 2 (2026-10-04 to 2026-10-05): the parameter space, and beyond it
+
+Parent: profile `780m-refine3` (+7.91 % over `dev/1.5`, above). Same host, driver and protocol; new raw data in
+`rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/`. `STATUS.md` is the running log with every
+table; this section is the summary. Still dev zone only; two candidates need a hook outside it (`hooks/`).
+
+### Candidates
+
+Each against its parent in the same session, median of 5 valid runs per arm, arms interleaved, cool start:
+
+| candidate | what | 1B 4w / 8da4w | 3B 4w / 8da4w | 8B 4w / 8da4w | geomean | gate |
+|---|---|---|---|---|---:|---|
+| 7 | softmax r3: the row prefix loaded once, exp once, zero fill bounded to what attn*V reads (`ET_VK_SARC_780M_SOFTMAX=r3`; `hooks/softmax-name-hook.patch`) | **+6.78** / **+6.62** % | **+3.43** / **+3.06** % | **+2.44** / **+2.39** % | +4.10 % | pass; SDPA output byte-identical to the parent on 21 cases |
+| 8 | fused SDPA kernel `sarc_dev_780m_sdpa_fused3` (`ET_VK_SARC_780M_SDPA_FUSED`; `hooks/sdpa-fused-hook.patch`) | **+20.00** / **+20.14** % | **+11.69** / **+11.88** % | **+8.10** / **+7.84** % | +13.16 % | ACCEPTED (reference-error rule, owner decision 2026-10-04); one next-token item differs (8B 8da4w, `prompt_2048.txt`) |
+| 9 | candidate 8 + one-pass form of the fused kernel + the 4w kernel per shape (`ET_VK_SARC_780M_PROFILE=refine9`) | **+4.83** / +1.80 % | **+4.50** / +1.06 % | **+5.45** / +1.59 % | +3.19 % | pass; no next-token item differs; 4w output byte-identical; the 8da4w cells are inside the band |
+
+Bold = outside the +-2 % band. A/A floor of this round: geomean +0.01 %, cells within +-0.23 % (`t3-aa`).
+Chained over the sessions, candidate 9 is about +31 % geomean over `dev/1.5` and +21.6 % over `780m-refine3`;
+the direct measurement is in "Final configuration" below once it is run.
+
+### Where the gains come from
+
+- **Softmax (candidate 7).** Traces: 115.1 -> 70.5 ms (1B), 150.2 -> 93.3 ms (3B), 229.1 -> 142.3 ms (8B). The
+  kernel is bound by memory traffic: removing exp entirely changes nothing (`m1`), bounding the zero fill does.
+- **Fused SDPA (candidate 8).** QK^T, softmax and attn*V each move the S x S attention matrix through memory
+  (about 550 MB a layer on 1B). The fused kernel never writes it: per 16 or 32 query rows of a head it walks the
+  context in blocks, computes the scores, exponentiates them in shared memory private to one subgroup and
+  accumulates e V in fp32. Traces: QK^T + softmax + attn*V 158.9 / 296.2 / 449.4 ms are replaced by the copy pass
+  + fused kernel at 45.3 / 120.7 / 184.2 ms. Kernel time per layer at a steady clock: 9.96 -> 2.82 ms (1B),
+  10.24 -> 4.32 ms (3B), 13.51 -> 5.54 ms (8B). What made it fast, in the order found (roofline fed-MMA table and
+  the disassembly, `STATUS.md`): no shared staging and no barrier (one subgroup per workgroup); Q tiles kept in
+  registers; K and V read from tile-packed copies in which a 16 x 16 operand tile is 512 contiguous bytes
+  (head_dim 128: 9.95 -> 4.96 ms from that alone). It runs at about 71 % of the fp16 -> fp32 matrix roof.
+- **One-pass fused kernel (candidate 9).** A running row maximum with rescaled accumulators instead of a first
+  pass over the scores: 2.82 -> 2.26 ms (1B), 4.31 -> 3.22 ms (3B), 5.54 -> 4.05 ms (8B) per layer; -10 / -31 /
+  -48 ms in the traces. Alone it is +1.1 to +1.8 % end to end, inside the band.
+- **4w kernel per shape (candidate 9).** Traces: linear GEMM 367.5 -> 350.9 ms (1B, -4.5 %), 1049 -> 1018 ms (3B,
+  -2.9 %), 2659 -> 2551 ms (8B, -4.1 %). The 256-row tile halves how often the weights are staged and wins once K
+  is large, but only with B staged column-major (`B_COLMAJOR`: -18 % on that tile, neutral elsewhere).
+
+### Part 1: the existing parameter space
+
+Static count (`tools/enum_space.py`): 75,497,472 4w combinations, 125,712 survive the device, flag, geometry and
+shared-memory rules; 8da4w 165,888 -> 2,238; QK^T 9,216 -> 1,724; attn*V 4,608 -> 470. Thirty timed samples
+projected 26.8 days for the 4w survivors, so by owner decision 4w was searched by a seeded uniform sample of
+2,500 (2,444 timed), a refinement around the best 22 (991), and a confirmation with the full measurement.
+
+**4w: within the existing kernel bodies, the best configuration per shape on this device and driver is**
+(`results/780m/space/confirm-4w/summary.csv`; 5 repeats, spread 0.1 to 0.4 %):
+
+| shapes | kernel | against the `780m-refine3` choice |
+|---|---|---|
+| N = 512 (1B wk_wv) | the shipped `t128x128k32g42s32f32c` (ten configurations within 0.5 %) | 0 |
+| N = 1024 (3B, 8B wk_wv); K = 2048 with N = 2048 (1B wq_wo) | `t128x256k32g42s32f32cbt` | -1.7 to -2.9 % |
+| K >= 4096 with N >= 2048 (8B wq_wo, w1_w3, w2; 1B and 3B w2) | `t256x128k32g18s32f32bbt` | -3.4 to -7.0 % |
+| N = 8192 with K = 2048 (1B w1_w3) | `t256x128k32g28s32f32bbt` | -4.4 % |
+| K = 3072 with N >= 2048 (3B wq_wo, w1_w3) | `t256x128k32g24s32f32bbt`; `..cbt` and `..g18..` are within 2 % | -3.2 to -3.7 % (`..cbt`: -1.8 to -2.3 %) |
+
+Per layer that is 4.0 to 4.8 % less linear time than `780m-refine3`; profile `refine9` (which keeps `..cbt` on
+the tied K = 3072 shapes) gets 3.1 to 4.8 %. Response surface: `STATUS.md`, "The random sample" (importance over
+the whole space: tile M and N, the grid and the accumulator explain it, through the number of MMA tiles a
+subgroup owns; no pair of boolean options interacts) and "Part 1, 4w" (near the optimum: `IMG_A`, `IMG_W` and the
+drain mode do not matter; `SH_F16V4` always costs 3 %; `B_COLMAJOR`, tile M / N and the grid are decided by the
+shape). 8da4w, QK^T and attn*V: see `STATUS.md` until their enumerations are in.
+
+### Hooks (not applied on the branch; `hooks/README.md`)
+
+- `softmax-name-hook.patch`, 5 lines in the release zone: the softmax shader name goes through the override.
+- `sdpa-fused-hook.patch`, about 70 lines in the release zone and `SDPA.cpp`: nodes appended after the three SDPA
+  nodes, and an empty dispatch for those three when the fused node serves a call.
+
+Without them the branch behaves as `780m-refine3` plus, with `ET_VK_SARC_780M_PROFILE=refine9`, the 4w kernels
+per shape (dev zone only, byte-identical output).
+
+### Roofs and what limits further progress
+
+Roofs re-measured with igpu-roofline (`fast` plan, run `2026-10-04-fast-prefill-refine2`, Mesa 25.2.7, clocks
+not pinned): matrix fp16 -> fp32 14.766 TFLOP/s, matrix int8 14.379 TOP/s.
+
+- The matrix unit is not what limits these kernels; feeding it is. The roofline's fed-MMA rows give 2.4 / 4.8 /
+  9.7 / 14.7 TFLOP/s when a tile pair is loaded from shared memory for every 1 / 2 / 4 / 8 multiply-adds. The 4w
+  kernel loads one tile per two multiply-adds at best (a subgroup owns 4 x 4 accumulator tiles, 128 of its
+  registers); larger per-subgroup tiles do not fit the register file with fp32 accumulators.
+- A slab layout of the 4w operands (both tiles contiguous, no padding) is 8 to 25 % slower; subgroup size 64,
+  tile K 16 or 64 and fp16 accumulation are 14 % or more behind (refinement round 1).
+- After candidate 9 the upstream operators are the largest part that is not GEMM: elementwise `mul` / `sigmoid` /
+  `add` 68 / 130 / 244 ms, `view_copy` and other copies 61 / 135 / 229 ms (4w) or 36 / 86 / 137 ms (8da4w), the
+  8da4w activation quantize 43 / 101 / 167 ms, RMSNorm + RoPE 14 / 40 / 60 ms (1B / 3B / 8B); together 26 %, 24 %
+  and 18 % of the 4w prefill. They are outside both zones and were not changed.
+- The fused kernel's copy pass costs 0.35 to 0.7 ms a layer, three times its bytes at the copy roof; packing K
+  and V where the cache is written would remove it (a change outside the dev zone).
+
+### Failed and rejected in this round
+
+- Softmax `r2` (in-wave tree reductions instead of barriers): same time as `r1`, dropped.
+- Fused SDPA, first two structures (`fused`: K and V staged in shared memory with 4 to 6 barriers a block;
+  `fused2`: double-buffered staging, one barrier a block): 3.8 / 11.7 ms and no better, against 2.8 / 5.6 ms for
+  the third. Removing the row padding from `fused2`'s shared tiles: 2.6 times slower. `fused3` reloading Q from
+  the buffer for every block: 2.2 to 3 times slower. All kept as variants, none selected.
+- 4w slab layout: above. A 16 x 4 workgroup for the copy pass: 4 % slower than 8 x 8.
+- A first start of the candidate-9 gate measured nothing (the sweep had been stopped while holding the gpu-lab
+  lock); recorded in `<artifacts>/superseded/`.
+- Measurement pitfalls found: the microbench's SDPA suite (3 + 5 runs) and the linear screening mode (1 + 2 runs)
+  are taken on a rising GPU clock (`STATUS.md`, "What the clock does to the microbench"); a process whose command
+  line contains a runner's name is counted as another GPU process by `e2e5.sh`.
