@@ -1,11 +1,10 @@
 # sarc-1.5-b580-prefill-refine: status
 
-**2026-10-05 08:35 UTC — running. Accepted: candidate 0 (`b580-refine0`, SDPA kernels, +45.95 % geomean over
-the parent, `ACCEPTED (reference-error rule, owner decision 2026-10-04)`, not a plain pass) and candidate 1
-(`b580-refine1`, + 8da4w tile `xe2bt_t128x128k64g84s16m8`, +7.67 % geomean over candidate 0, `GATE_PASS`,
-bit-identical). Candidate 2 (`b580-refine2`, 4w band-drain tile): `GATE_PASS`, bit-identical, **-0.07 %**
-geomean, no gain, not adopted: the first candidate under 2 %. Candidate 3 (`b580-refine3`, QK^T `xe2c` for
-head_dim 128) is being built and gated.**
+**2026-10-05 10:00 UTC — done by the rule: candidates 2 and 3 are two consecutive gated candidates under 2 %
+(-0.07 % and +0.16 %). Recommended profile `b580-refine3`: +57.65 % geomean over the parent `6a7cc8cc6`
+(per cell +33.6 to +81.9 %), measured directly in session `s6-final`. Its acceptance rests on candidate 0,
+`ACCEPTED (reference-error rule, owner decision 2026-10-04)`, not a plain pass: the next token of 8B 8da4w
+differs from the parent's on `prompt_2048.txt` and `prompt_check.txt`.**
 
 Branch `topic/b580-prefill-refine`, parent `6a7cc8cc6` (no profile). Host `fedora` (the owner's desktop), Arc
 B580 = PCI `0000:03:00.0`, Vulkan device 0, `ETVK_DEVICE_INDEX=0`, lock
@@ -13,12 +12,95 @@ B580 = PCI `0000:03:00.0`, Vulkan device 0, `ETVK_DEVICE_INDEX=0`, lock
 
 ## Running now
 
-Detached chain `chain5.sh` (`.artifacts/logs/chain5.status`), one GPU job at a time. **If the machine reboots
-it is gone**; restart from the first step whose status line is missing. Remaining steps: build `topic3`
-(`1eec0cda0`) and its probe; `gate_sdpa.sh s5-c3` (`b580-refine3` against `b580-refine1`, both arms build
-`topic3`; 12 passes of the three SDPA tiers, `verify.sh`, timing, traces); `sdpa_ref.sh` (error against the
-fp32 reference); `probe.sh s5-c3` (arms P and C); `decide.py`. After it: a quiet rerun of the 4w screen and a
-final session of the recommended profile against the pristine parent.
+Nothing. All chains have ended (`.artifacts/logs/chain1.status` to `chain6.status`); no build and no GPU job
+of this campaign is running.
+
+## Result
+
+Final session `s6-final`: pristine parent build (`6a7cc8cc6`, no environment) against build `topic3`
+(`1eec0cda0`) with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine3`; tok/s, median of 5 valid
+runs per arm, arms interleaved, 60 timed runs, none rejected, foreign engine time 0.00 %
+(`results/b580/sessions/s6-final/`). A measurement, not a gate: its status is `E2E5_INCOMPLETE` only because of
+the two 8B 8da4w next-token items of candidate 0.
+
+| cell | parent | `b580-refine3` | gain | original `dev/1.5` (`cells.csv`) | vs original | next token (timed / real-text / unaligned) |
+|---|---:|---:|---:|---:|---:|---|
+| 1B 4w | 8641.35 | 12962.00 | +50.00 % | 8605.04 | +50.6 % | SAME / SAME / SAME |
+| 1B 8da4w | 8827.59 | 15170.40 | +71.85 % | 8789.70 | +72.6 % | SAME / SAME / SAME |
+| 3B 4w | 3436.24 | 5184.81 | +50.89 % | 3419.03 | +51.6 % | SAME / SAME / SAME |
+| 3B 8da4w | 3518.90 | 6400.00 | +81.88 % | 3506.85 | +82.5 % | SAME / SAME / SAME |
+| 8B 4w | 1726.81 | 2306.31 | +33.56 % | 1693.96 | +36.1 % | SAME / SAME / SAME |
+| 8B 8da4w | 1845.05 | 2998.54 | +62.52 % | 1680.07 | +78.5 % (see the baseline note) | **DIFFER / DIFFER** / SAME |
+
+Geomean **+57.65 %** over the parent (the product of the three gated steps is +57.4 %); +61.1 % over the
+published numbers, of which the 8B 8da4w cell is inflated by the old run's disturbed median (baseline section).
+
+Where each gain came from (warm ETDump of `s6-final`, ms per prefill, `sessions/s6-final/trace/families.csv`):
+
+| cell | arm | total | linear GEMM | QK^T | attn*V | softmax | 8-bit quantize | other |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| 1B 4w | parent | 235.1 | 87.9 | 40.7 | 48.3 | 22.4 | - | 35.8 |
+| 1B 4w | `b580-refine3` | 156.5 | 88.2 | 7.0 | 8.0 | 17.3 | - | 36.0 |
+| 1B 8da4w | parent | 229.7 | 74.0 | 40.6 | 48.3 | 22.4 | 15.0 | 29.5 |
+| 1B 8da4w | `b580-refine3` | 134.2 | 57.6 | 6.9 | 8.0 | 17.2 | 15.0 | 29.6 |
+| 3B 4w | parent | 593.3 | 256.4 | 102.0 | 124.0 | 29.9 | - | 81.0 |
+| 3B 4w | `b580-refine3` | 393.2 | 260.6 | 13.1 | 14.7 | 23.0 | - | 82.0 |
+| 3B 8da4w | parent | 580.3 | 224.3 | 101.4 | 123.1 | 29.6 | 34.0 | 67.9 |
+| 3B 8da4w | `b580-refine3` | 319.6 | 167.5 | 12.9 | 14.5 | 22.7 | 34.0 | 68.0 |
+| 8B 4w | parent | 1179.1 | 651.8 | 153.7 | 187.9 | 45.2 | - | 140.5 |
+| 8B 4w | `b580-refine3` | 884.4 | 665.5 | 20.1 | 21.8 | 34.8 | - | 142.2 |
+| 8B 8da4w | parent | 1104.9 | 554.5 | 150.0 | 183.4 | 44.8 | 59.8 | 112.5 |
+| 8B 8da4w | `b580-refine3` | 680.4 | 433.2 | 19.4 | 21.0 | 34.3 | 59.9 | 112.7 |
+
+- QK^T 5.8 to 7.9 times faster, attn*V 6.0 to 8.7 times, the truncated softmax 1.3 times: candidate 0, 304 to
+  310 ms of the 8B prefill, 79 ms of the 1B prefill.
+- 8da4w linear GEMM 1.28 to 1.34 times faster: candidate 1, 121 ms of the 8B prefill.
+- The `xe2c` QK^T of candidate 3 is about 1.3 ms (8B) and 0.9 ms (3B) of that, not visible end to end.
+- 4w linear GEMM, quantize and everything else: unchanged (8B 4w GEMM reads 2 % slower in the candidate arm
+  because its runs are power-limited at 2717 to 2733 MHz against the parent's 2783 MHz).
+
+Percent of the freshly measured roofs (igpu-roofline `fast` of 2026-10-05, section "Roofs"), final profile:
+4w linear 45.2 / 44.3 / 43.0 TFLOP/s (1B / 3B / 8B) = **40.0 / 39.2 / 38.0 %** of the fp16 matrix roof
+(112.9 TFLOP/s); 8da4w linear 69.2 / 68.9 / 66.0 TOP/s = **29.9 / 29.8 / 28.5 %** of the int8 matrix roof
+(231.4 TOP/s), up from 23.3 / 22.3 / 22.3 %.
+
+### Kernel choices for this card, against the B70's
+
+| item | B580 choice (this campaign) | B70 (its campaign) | equal? | difference |
+|---|---|---|---|---|
+| QK^T, head_dim 128 | `xe2c_t128x64k32g44s16m8nf` | same kernel is its fastest at kernel level (provisional `xe2-refine3`); its accepted candidate uses `pk_t128x64k32g44s16m8nf` | same ranking | gain over `pk`: 7.6 % / 6.8 % (8B / 3B) here, 7 % / 6.5 % there |
+| QK^T, head_dim 64 | `pk_t128x64k32g44s16m8nf` | same | equal | best alternative +2.7 % here (under the 3 % rule), 0 % there |
+| attn*V, head_dim 128 | `xe2_t128x64k32g44s16m8` | same | equal | 657 / 521 us here, 480 / 380 us there (1.37x) |
+| attn*V, head_dim 64 | `sweep_t64x64k32g44s16m8` | same | equal | 495 us here, 380 us there |
+| softmax | truncated SARC softmax (name fixed in the release zone) | same | equal | 1.07 / 0.81 / 1.08 ms here, 0.80 / 0.60 / 0.80 there; hook variants not measured here |
+| 8da4w linear | `xe2bt_t128x128k64g84s16m8` | same tile is its fastest at kernel level; not gated there at the fork point | equal | 1.31x at kernel level here, 1.26x there; +12 to +18 % end to end here |
+| 4w linear | shipped `t128x128k16g44s16m8fli` | same | equal | band drain 1.00x here, 1.004x there; every other tile slower on both |
+| SDPA end to end (candidate 0) | +45.95 % | +46.86 % | | 0.9 points |
+| shared-memory limit, shapes | 49152 bytes, MMA 8x16x16 / 8x16x32, subgroup 16 | same | equal | the B70's open question about this card is answered |
+| arithmetic | identical values | | equal | reference-error table and probe summary equal to the last digit |
+| percent of matrix roofs, shipped linear tiles | 38 to 40 % (4w), 22 to 23 % (8da4w) | 36.5 to 38.9 %, 22.8 to 24.4 % | equal within 2 points | the card is 0.64 of the B70 in matrix roofs, 0.77 in memory rates |
+| clocks under load | 2700 to 2850 MHz; `pl` flags in the 4w cells | 2580 to 2800 MHz; `pl2` in every run | | calibrated per card |
+
+Tuned separately, the two cards want the same kernels. No tile, staging variant or SDPA kernel in the dev zone
+ranks differently on the B580 by more than the 3 % rule; the gains are a few points larger here for the 8da4w
+tile and equal for everything else.
+
+### What limits further progress
+
+- **4w linear** is 56 % (1B) to 75 % (8B) of the 4w prefill and runs at 38 to 40 % of the fp16 matrix roof. A
+  wave is 40 % MMA and 60 % staging (barrier 19 to 23 %, fetch 22 to 25 %, shared-memory store 13 to 14 %).
+  All 17 tiles and staging variants in the dev zone are slower than or equal to the shipped tile on this card
+  (two screens, and candidate 2 end to end).
+- **8da4w linear** is 43 % (1B) to 64 % (8B) of the 8da4w prefill at 28 to 30 % of the int8 matrix roof. The
+  texel-wise family is exhausted under the 49152-byte shared-memory limit: the next balanced tiles (256 rows or
+  K = 128 per chunk) need 52 to 76 kB.
+- **Not reachable from the dev zone**: the truncated softmax (4 to 13 % of the prefill, larger than QK^T and
+  attn*V together in the 1B cells) has its shader name fixed in `impl/sarc/SdpaCoopmat.cpp`; the 8-bit
+  activation quantize-and-pack (9 to 11 % of the 8da4w cells) is a release-zone shader; elementwise, copy /
+  view, RMSNorm and RoPE (16 to 23 %) are upstream ops. The smallest hook for the softmax is the B70 campaign's
+  `tools/hook-sdpa-softmax.patch` (one name lookup); its two softmax variants gained nothing on the B70 and
+  were not measured here.
+- QK^T and attn*V together are now 5 to 11 % of the prefill; a further 10 % on either is 0.2 to 0.6 % end to end.
 
 ## How noisy the card was
 
@@ -263,6 +345,28 @@ runs, none rejected, foreign engine time 0.00 %. This confirms end to end what t
 its second round, and it is the B70's result (1.004x at kernel level there). The shipped 4w tile stays;
 candidate 2 is recorded as the **first candidate under 2 %**.
 
+### Candidate 3, `b580-refine3` (candidate 1 with QK^T `xe2c_t128x64k32g44s16m8nf` for head_dim 128): GATE_PASS, bit-identical, +0.16 %
+
+Session `s5-c3`: build `topic3` in both arms, parent arm = candidate 1 (`b580-refine1`); median of 5 valid runs
+per arm (`results/b580/sessions/s5-c3/`): 1B 4w 13044.60 -> 13044.60 (0.00 %), 1B 8da4w 15170.40 -> 15170.40
+(0.00 %), 3B 4w 5171.72 -> 5184.81 (+0.25 %), 3B 8da4w 6380.06 -> 6400.00 (+0.31 %), 8B 4w 2288.27 -> 2293.39
+(+0.22 %), 8B 8da4w 2994.15 -> 2998.54 (+0.15 %). Geomean **+0.16 %**, every cell inside the +-2 % band: the
+**second consecutive candidate under 2 %**. The four cells whose model has head_dim 128 all move by the
+expected 0.2 to 0.3 % and the two 1B cells, where nothing changes, by 0.00 %, but that is below what this
+protocol can claim.
+
+Gate (`gate_sdpa.sh`, `sessions/s5-c3/gate.txt`): `GATE_PASS`, 36 PASS lines: SDPA correctness 12 passes x
+tiers all / extended / full, 0 mismatches and `pairing=ok` in all 192 cases with `xe2c` dispatched for the 3B
+and 8B head configurations and `pk` for 1B; unmodified `verify.sh` as for candidate 1; next token SAME in all
+six cells on all three prompts. Error against the fp32 reference (`results/b580/sdpa-error/c3-full.csv`):
+identical to candidate 0's to the last digit. Logits bit-identical to candidate 1 on all 35 windows and both
+gate prompts in all six cells (`results/b580/probe/s5-c3/`): the kernel stages K^T differently and computes
+the same values.
+
+It is the recommended profile because its QK^T kernel is the fastest on this card at kernel level by the
+3 % rule in both rounds, it passes the full gate and it is bit-identical to candidate 1. The end-to-end gain
+that is claimed for it is candidate 1's.
+
 ## Linear kernels on this card (screens and phase timing; `results/b580/screens/`, `results/b580/phases/`)
 
 Phase timing of the shipped tiles (shader clock, 1B shapes, share of a wave), B580 against B70:
@@ -278,10 +382,12 @@ The two cards spend a wave the same way; the B580 fetches slightly longer in the
 
 - **8da4w** (`screen2-8da4w`, quiet card): `xe2bt_t128x128k64g84s16m8` is the fastest tile on all 12 shapes in
   both rounds, 1.19x to 1.45x per shape, 1.31x weighted (B70: the same tile, 1.26x). Same choice as the B70,
-  3 to 4 points more gain. It is candidate 1.
+  3 to 4 points more gain. It is candidate 1. Three more tiles of the family built for this card
+  (`screen4-8da4w`): 1.10x, 0.80x, 0.45x; nothing larger fits the shared-memory limit.
 - **4w** (`screen3-4w`, desktop in use): no tile beats the shipped one in both rounds. The band-drain tiles
   are 1.00x against the undisturbed base round (B70: 1.004x); a 1.2x reading after round 1 was a slow base
-  run. Same result as the B70: the shipped 4w tile stays.
+  run. Same result as the B70: the shipped 4w tile stays. Repeated on a quiet card with cooled runs
+  (`screen5-4w`, 3 rounds, spread at most 0.4 %): band drain 1.000x, the other tiles 0.87x to 0.92x.
 
 ## SDPA kernels on this card (`screen1-sdpa`, 59 profiles, 2 rounds agreeing within 0.5 %)
 
@@ -324,12 +430,13 @@ matrix roofs but 0.77 of its memory rates; both cards sit at the same percentage
 
 ## Next
 
-1. Candidate 3 gate. If it is under 2 % too, the campaign is done by the rule (two consecutive candidates
-   under 2 %).
-2. A quiet rerun of the 4w screen.
-3. Final session of the recommended profile against the pristine parent, proposal and report.
+Nothing in this campaign. For the owner:
+
+- Promotion is a release-zone change and was not made: SDPA rows for `bmg g21` in `table_intel.cpp` (QK^T and
+  attn*V, with their shader variants moved from the `sarc_dev` yamls), and the 8da4w row changed to the
+  texel-wise tile, whose body is a dev-zone file today.
+- The reference-error acceptance of candidate 0 and its two differing next-token items stand as recorded.
 
 ## Blocking
 
-Nothing. The desktop is in use now; if timed runs keep being rejected for foreign engine time the sessions
-will take longer or end incomplete, and this file will say so.
+Nothing.

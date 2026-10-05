@@ -11,6 +11,7 @@ per shape. SDPA screens: `tools/screen_sdpa.sh` (ms per layer, S = 2048).
 | `screen3-4w` | topic1 | every 4w tile in the dev zone (17), 2 rounds; noisy, see below |
 | `screen4-8da4w` | topic2 | three more texel-wise 8da4w tiles for this card (`b580bt`), 2 rounds, cooled runs |
 | `screen1-sdpa` | topic1 | all 59 `b580-*` SDPA profiles (every SDPA kernel in the dev zone, one at a time), 2 rounds |
+| `screen5-4w` | topic3 | quiet rerun of the 4w screen: 5 tiles, 3 rounds, cooled runs |
 
 ## screen2-8da4w
 
@@ -70,3 +71,11 @@ Kernel times in us per layer, S = 2048, round 1 / round 2 (the two rounds agree 
 - The truncated softmax is 1074 (8B), 810 (3B), 1075 (1B) us in every profile: larger than QK^T or attn*V.
 - Every ranking is the B70's ranking. Ratio of B580 to B70 kernel time: 1.5 for QK^T, 1.37 for attn*V, 1.35
   for the softmax.
+
+## screen5-4w: the 4w screen again on a quiet card
+
+Three rounds with a cool-down before every run, repeat spread at most 0.4 %. Band drain on the shipped
+geometry 1.000x (`sweep_...flib`) and 1.000x (`xe2s_...flib`); `sweep_t128x64k16g24s16m8fli` 0.91x,
+`sweep_t64x128k16g42s16m8fli` 0.87x, `xe2s_t128x256k16g84s16m8flib` 0.92x (B70: 1.004x, 1.002x, 0.90x, 0.86x,
+0.95x). The shipped 4w tile stays, as on the B70. This replaces the noisy `screen3-4w` as the 4w evidence;
+that one is kept for its other 11 tiles (0.15x to 0.76x) and for the record of the trap.
