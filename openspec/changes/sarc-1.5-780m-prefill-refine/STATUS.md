@@ -1,6 +1,6 @@
 # STATUS: 780M prefill campaign, round 2 (parameter space + beyond)
 
-Updated 2026-10-05 10:45 PDT (17:45 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
+Updated 2026-10-05 12:15 PDT (19:15 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
 Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (new raw data) and
 `.../780m-prefill-refine-2026-10-03/` (earlier builds and sessions).
 
@@ -59,14 +59,42 @@ Where the capture material is (kept as evidence, nothing calls it):
 
 ## Running now
 
-`chain14.sh` (detached, started 2026-10-05 10:50 PDT), new raw data in
-`rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-05/`:
+`chain16.sh` (detached, started 2026-10-05 12:10 PDT), raw data in
+`rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-05/`: the reproduction from the committed branch
+that the owner decision of 2026-10-05 on release-zone hooks requires.
 
-1. post-reboot re-check `t4-recheck` (pristine `dev/1.5` build against build `topic-r1` with `780m-refine3`, the
-   binaries of `t1-recheck`), then a short A/A `t5-aa` (candidate 10 on both arms, 3 repeats);
-2. the 8da4w screen continued from configuration 262 of 2,238 (same mode, same CSV; 20 to 28 s a configuration
-   with the cooling waits: 11 to 15 h), then its confirmation timing;
-3. production-diff passes, QK^T / attn*V enumeration (as queued before the hang).
+1. build of the branch head `8518659ef` with no local patch (`build/head1`, `build/head1-traced`);
+2. `h0-control`: that build with no environment: `--sdpa-correctness-only` three times and unmodified
+   `verify.sh`, to be compared line by line with the pristine `dev/1.5` control (`s0-parent-verify`);
+3. `h1-c10`: `780m-refine3` against candidate 10 selected by `ET_VK_SARC_780M_PROFILE=c10`, the full gate
+   (timed session from a cool start, SDPA tiers 12 passes each, `verify.sh`, traces).
+
+Then (not started): the 8da4w screen from configuration 262 of 2,238 (11 to 15 h), its confirmation,
+production-diff passes, the QK^T / attn*V enumeration.
+
+### After the reboot: re-check and A/A (`<artifacts 10-05>/stage/t4-recheck`, `t5-aa`; 10:28 to 11:38 PDT)
+
+`t4-recheck`, pristine `dev/1.5` build against build `topic-r1` with `780m-refine3`, 5 valid runs per arm, cool
+start: 1B 2694.74 -> 2832.64 (+5.12 %), 2537.79 -> 2828.73 (+11.46 %); 3B 1146.70 -> 1192.08 (+3.96 %), 1060.04 ->
+1168.28 (+10.21 %); 8B 522.32 -> 545.99 (+4.53 %), 488.43 -> 549.80 (+12.56 %) (4w, 8da4w); geomean **+7.92 %**
+(before the reboot: +7.91 %). Clock 2771 to 2800 MHz, all next-token items SAME. The device is as it was.
+
+`t5-aa`, candidate 10 (build `fused9`) on both arms, 3 repeats: cells -0.09 to +0.19 %, geomean 0.00 %.
+(`summary.csv` of that session says INCOMPLETE because the tool expects 5 runs; the medians are from `runs.csv`.)
+
+### The hook commits, and the edit that was interrupted (12:10 PDT)
+
+The control session was stopped by the owner's coordinator in the middle of the dev-zone edit that follows the
+two hook commits (`b969e8f1c` softmax variant name, `1c8861aa7` fused attention node). The working tree was
+inspected before anything else: the edit was textually complete but **not working**. The first build of it
+(`build/wt1`) selected the softmax variant and never fired the fused node (`raw/wt1-smoke/`: `fused=-` with
+profiles `c8` and `c10`, and with the explicit variable). Cause: `Sdpa780mFused.cpp`, now its own file under
+`780m/`, registered its two functions from its own static initializer; the shared `Registrar` of `Overrides.cpp`
+starts from an empty `Override` and ran afterwards. Fixed inside the 780m block (the pair is kept there and
+applied by whichever initializer runs last), rebuilt (`build/wt2`), and checked with every profile
+(`raw/wt2-smoke/`): no profile -> release kernels and release softmax; `c7` -> softmax `..._780m_r3`; `c8` ->
+`fused3_..rk`; `c9`, `c10` -> `fused3_..rko`; the names of the measured builds. `check.sh --no-build` passes.
+Committed as `8518659ef`. Nothing was measured with the broken build.
 
 ### What the clock does to the microbench (found 2026-10-04, affects how the sweeps are read)
 
