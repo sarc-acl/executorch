@@ -1,19 +1,56 @@
 # STATUS: sarc-1.5-orin-prefill-refine
 
-**2026-10-04 20:20 UTC. SETTING UP. Nothing measured yet. The parent cross-build is running on the workstation.**
+**2026-10-05 03:45 UTC. RUNNING: parent control on the device, baseline + A/A queued behind it. No candidate yet.**
+
+(The first version of this file carried a wrong clock time; all times here are UTC from `date -u`.)
 
 ## Running now
 
-- Workstation (`fedora`, build host): `tools/build-orin.sh parent 6a7cc8cc6`, detached, under
-  `flock ~/.cache/gpu-lab/lock-desktop-build`. Output `.artifacts/orin-prefill-refine/jobs/build-parent.out`,
-  end marker `jobs/build-parent.done`, provenance `build/parent.src.txt`. If the workstation reboots this job is
-  gone and has to be started again (the tag directory must be removed first: tags are immutable).
-- Device (`duck-naughty`): nothing.
+- Device (`duck-naughty`), detached, one GPU job at a time under the gpu-lab lock:
+  - job `s0-parent-verify` (`tools/parent_verify.sh parent`): unmodified `verify.sh` on the pristine parent.
+  - job `chain2b` (`tools/chain2.sh`), waiting for it: stage `s1-aa`, baseline + A/A session (`--calibrate`),
+    warm traces, SDPA screen 1 (59 `orin-qk-*` / `orin-av-*` profiles + stock), 8da4w phase timing.
+  - Status on the device: `~/hmz-sarc-orin/jobs/<job>.status` and `.out`; from the workstation `tools/dstat.sh`.
+  These survive a reboot of the workstation.
+- Workstation: job `build-extra1` (`logits_dump` for builds `parent` and `topic1`), waiting for the desktop
+  build lock, which the B580 campaign holds. It does not survive a workstation reboot (start again).
 
-## Next step
+## Done so far
 
-Deploy the parent build, test the temperature / clock / power probes on the device, parent control
-(`parent_verify.sh`), baseline + A/A session (`--calibrate`), then the SDPA screen.
+- Builds (cross image `localhost/et-jetson-cross:jp7.2.1`, GCC 13.3, shaderc v2026.1, 8 jobs, under the desktop
+  build lock): `parent` = pristine `6a7cc8cc6`; `topic1` = `1d827a139` (dev zone only: `OrinSdpa.cpp`, the
+  `orin-*` profiles). Provenance `.artifacts/orin-prefill-refine/build/<tag>.src.txt`.
+- Shipped SPIR-V (`tools/shipped.py`, `build/topic1.shipped.txt`): all 53 shipped variants byte-identical
+  between `parent` and `topic1`. Against the golden, 14 variants differ in BOTH builds (the cross image's glslc
+  is not the one the goldens were made with; the e2e report documents the same for 11 of 48); none belongs to
+  the Orin rows, whose variants all match the golden.
+- Device capabilities (`results/orin/vk-caps.txt`): subgroup size 32 only (min = max = 32), shared memory
+  49152 bytes, cooperative matrix fp16 16x16x16 / 16x8x16 / 16x8x8 with fp16 or fp32 result, int8 16x16x32 /
+  16x8x32. The same shapes the 4070 Ti SDPA kernels use (16x16x16 fp16 -> fp32, subgroup 32).
+- Fresh roofs, igpu-roofline `fast`, driver 595.78, run `raw/roof-2026-10-05-fast` (2026-10-05 02:52 to 03:33
+  UTC, 2474 s, clocks not pinned: 612 MHz under load, 15 W mode; every roof confirmed with 3 repeats within
+  1.4 %; report in `results/orin/roofline/2026-10-05-fast/`): matrix fp16 9.716 TFLOP/s, fp16 -> fp32 9.722,
+  int8 19.482 TOP/s; fed from shared memory 9.511 / 8.771 / 17.818; DRAM read 62.1, write 58.0, copy 64.1 GB/s;
+  texture2d read from DRAM 20.1 GB/s against 40.1 for texture3d and 62 for a buffer.
+  The tool is the fleet copy already on the device (`~/.cache/igpu-roofline/fleet-quick-20260925`, runner
+  `c7fba81beb1e`), run from a copy under `~/hmz-sarc-orin/roofline` with `tools/roof_fast.py`: that tree's
+  controller without its clock pinning (the original pins the GPU to 1020 MHz with sudo, which is not allowed
+  here). The report's own clock field says "unavailable"; the clock was sampled every 10 s beside it.
+- First numbers of the parent control (still running): 1B 4w 890.4, 1B 8da4w 822.5, 3B 4w 360.4, 3B 8da4w
+  320.2 tok/s (`cells.csv`: 890.8 / 822.8 / 360.4 / 320.3).
+
+## Incidents
+
+- I edited `tools/build-orin.sh` while its first invocation was running from the same file. I stopped that
+  invocation before it reached the edited lines (its tree step ran on and completed), made the build resumable
+  and added `tools/wsrun.sh`, which runs workstation jobs from a private copy of the tools.
+- `chain2` was started while the parent control still had 20 minutes to go; its session would have given up
+  after the 900 s lock wait. Killed before any run (`jobs/chain2.status`); restarted as `chain2b`, which waits
+  for the control. Killing it by a name pattern also killed my own ssh shell twice; `tools/dkill.sh` now ends a
+  job by its recorded session id.
+- `nvidia-smi pmon -c 1` hangs on this device (my probe, killed). Not used by any tool.
+- With the 8B model loaded the device has about 1.3 GB available and swap use rose from 107 to 155 MB during
+  the parent control. Every session records memory and swap counters per run (`logs/<run>.mem`).
 
 ## Thresholds, fixed before any measurement
 

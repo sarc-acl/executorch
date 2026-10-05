@@ -1,9 +1,9 @@
 #!/bin/bash
-# chain2.sh: device side, one GPU job at a time. Parent control, baseline + A/A (record-only clock), warm traces
+# chain2.sh: device side, one GPU job at a time. After the parent control (parent_verify.sh, started on its own): baseline + A/A (record-only clock), warm traces
 # of the parent, then the first SDPA kernel screen and the 8da4w phase timing. Each step's status goes to stdout.
 cd "$(dirname "$0")"
 step() { echo "== $(date -u +%FT%TZ) $*"; "$@"; local rc=$?; echo "== rc=$rc $1"; [[ $rc == 70 || $rc == 75 || $rc == 76 ]] && { echo "CHAIN_STOPPED rc=$rc"; exit $rc; }; return 0; }
-step ./parent_verify.sh parent
+while ! grep -q "^DONE" ~/hmz-sarc-orin/jobs/s0-parent-verify.status; do sleep 20; done   # the parent control first
 step ./stage.sh s1-aa parent "" topic1 "" "baseline + A/A: pristine parent against the topic build with no environment"
 step ./session.sh s1-aa --calibrate
 step ./trace.sh s1-aa 1b,3b,8b 4w,8da4w "parent cand"

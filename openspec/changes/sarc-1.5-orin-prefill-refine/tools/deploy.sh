@@ -4,7 +4,7 @@
 #   executorch/<this change>/results/orin/clkmin.json   when it exists
 #   executorch/sarc/tools/verify.sh      UNMODIFIED: must be byte-identical to the parent commit's file
 #   executorch/<kit>/prompts/            the kit prompts (hashes checked against the commit)
-#   build/<tag>/bundle/ and build/<tag>.src.txt   for each build tag given
+#   build/<tag>/bundle/ and build/<tag>.src.txt   for each build tag given (--extra <tag>...: only logits_dump)
 # and makes sure the gpu-lab lock file exists and is writable.
 set -euo pipefail
 source "$(dirname "$0")/common.sh"; [[ $SIDE == ws ]] || { echo "workstation only" >&2; exit 2; }
@@ -17,7 +17,12 @@ dssh "mkdir -p $D/$CHANGE_REL/results/orin $D/sarc/tools $D/${KIT#$ET/}/prompts 
 rsync -a --delete --exclude jetson-cross --exclude __pycache__ $TOOLS/ $DEVICE:$D/$CHANGE_REL/tools/
 [[ -f $CHANGE/results/orin/clkmin.json ]] && rsync -a $CHANGE/results/orin/clkmin.json $DEVICE:$D/$CHANGE_REL/results/orin/
 rsync -a $ET/$V $DEVICE:$D/sarc/tools/; rsync -a $KIT/prompts/ $DEVICE:$D/${KIT#$ET/}/prompts/
+EXTRA=0; [[ ${1:-} == --extra ]] && { EXTRA=1; shift; }
 for t in "$@"; do need $A/build/$t.src.txt $A/build/$t/bundle/llama_main
+  if [[ $EXTRA == 1 ]]; then   # only the logits_dump added by build-extra.sh
+    need $A/build/$t/bundle/logits_dump; rsync -a $A/build/$t/bundle/logits_dump $DEVICE:$DEVROOT/build/$t/bundle/
+    h=$(dssh "sha256sum $DEVROOT/build/$t/bundle/logits_dump" | cut -d' ' -f1); grep -q "^$h .*/bundle/logits_dump\$" $A/build/$t.src.txt || { echo "hash mismatch: $t logits_dump" >&2; exit 4; }
+    echo "deployed logits_dump of $t"; continue; fi
   dssh "test ! -e $DEVROOT/build/$t.src.txt" || { echo "build $t already on the device (tags are immutable)"; continue; }
   rsync -a $A/build/$t/bundle $DEVICE:$DEVROOT/build/$t/; rsync -a $A/build/$t.src.txt $DEVICE:$DEVROOT/build/
   dssh "cd $DEVROOT/build/$t/bundle && sha256sum llama_main libllama_runner.so test_llama_microbench" | while read -r h f; do
