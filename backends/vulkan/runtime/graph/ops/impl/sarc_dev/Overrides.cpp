@@ -1318,6 +1318,20 @@ const Preference kOrin_qk_orin_pk_t64x64k128g44s32nf[] = {{Op::kSdpaQk, "orin_pk
 const Preference kOrin_qk_orin_pk_t64x64k64g21s32nf[] = {{Op::kSdpaQk, "orin_pk_t64x64k64g21s32nf", nullptr}};
 const Preference kOrin_qk_orin_pk_t64x64k64g22s32nf[] = {{Op::kSdpaQk, "orin_pk_t64x64k64g22s32nf", nullptr}};
 const Preference kOrin_qk_orin_pk_t64x64k64g42s32nf[] = {{Op::kSdpaQk, "orin_pk_t64x64k64g42s32nf", nullptr}};
+const Preference kOrinRefine1[] = {
+    {Op::kSdpaQk, "4070ti_pk_t128x64k64g42s32nf", nullptr},
+    {Op::kSdpaAv, "4070ti_ml_t64x128k32g42s32", nullptr},
+    {Op::kSdpaAv, "4070ti_t64x64k32g42s32", nullptr},
+};
+const Preference kOrinLinRefine2[] = {
+    {Op::kDq8caLinear, "orin_bf_t128x128k64g24s32mk32ra", nullptr},
+};
+const Preference kOrinRefine3[] = {
+    {Op::kSdpaQk, "4070ti_pk_t128x64k64g42s32nf", nullptr},
+    {Op::kSdpaAv, "4070ti_ml_t64x128k32g42s32", nullptr},
+    {Op::kSdpaAv, "4070ti_t64x64k32g42s32", nullptr},
+    {Op::kDq8caLinear, "orin_bf_t128x128k64g24s32mk32ra", nullptr},
+};
 // <<< orin sdpa-preferences
 struct Profile {
   const char* name;
@@ -1494,6 +1508,9 @@ const Profile kProfiles[] = {
     {"orin-qk-orin_pk_t64x64k64g21s32nf", kOrin_qk_orin_pk_t64x64k64g21s32nf, 1},
     {"orin-qk-orin_pk_t64x64k64g22s32nf", kOrin_qk_orin_pk_t64x64k64g22s32nf, 1},
     {"orin-qk-orin_pk_t64x64k64g42s32nf", kOrin_qk_orin_pk_t64x64k64g42s32nf, 1},
+    {"orin-refine1", kOrinRefine1, sizeof(kOrinRefine1) / sizeof(Preference)},
+    {"orin-lin-refine2", kOrinLinRefine2, sizeof(kOrinLinRefine2) / sizeof(Preference)},
+    {"orin-refine3", kOrinRefine3, sizeof(kOrinRefine3) / sizeof(Preference)},
     // <<< orin sdpa-profiles
 };
 const Profile* requested_profile() {

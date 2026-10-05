@@ -14,8 +14,8 @@
 // builds the SARC SDPA path (spec constants, truncated softmax) only on a
 // device with an active SDPA row. The rows below are that row, from the dev
 // zone: kUnverified (so they need ET_VK_SARC_UNVERIFIED=1) and matching only
-// while ET_VK_SARC_DEV_PROFILE names an orin-* profile, so every other
-// configuration of a dev build selects exactly what the release tables
+// while ET_VK_SARC_DEV_PROFILE names an orin-* profile other than orin-lin-*,
+// so every other configuration of a dev build selects exactly what the release tables
 // select. WG_TILE_K of the base rows is 32, which the spec constants assume.
 
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h>
@@ -27,9 +27,11 @@ namespace vkcompute {
 namespace sarc {
 namespace {
 
+// orin-lin-* profiles change linear kernels only and leave attention alone.
 bool orin_profile_requested(const DeviceInfo&) {
   const char* e = std::getenv("ET_VK_SARC_DEV_PROFILE");
-  return e != nullptr && std::strncmp(e, "orin-", 5) == 0;
+  return e != nullptr && std::strncmp(e, "orin-", 5) == 0 &&
+      std::strncmp(e, "orin-lin-", 9) != 0;
 }
 
 const Row kOrinSdpaRows[] = {
