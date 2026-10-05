@@ -3,7 +3,7 @@
 # and the 12 Orin packed-staging QK^T tiles, 2 rounds, no stock arm), then phase timing of the Orin 4w tiles and
 # of two whole-texel 8da4w twins.
 cd "$(dirname "$0")"
-while ! grep -q "^DONE\|^KILLED" ~/hmz-sarc-orin/jobs/chain4.status; do sleep 20; done
+while ! grep -q "^DONE\|^KILLED" ~/hmz-sarc-orin/jobs/${1:-chain4}.status; do sleep 20; done   # $1 = the job to wait for
 step() { echo "== $(date -u +%FT%TZ) $*"; "$@"; local rc=$?; echo "== rc=$rc $1"; [[ $rc == 70 || $rc == 75 || $rc == 76 ]] && { echo "CHAIN_STOPPED rc=$rc"; exit $rc; }; return 0; }
 O=orin-qk-orin_pk
 step ./sdpa_screen.sh sdpa-screen2 topic3 2 orin-qk-pk_t128x64k64g42s32nf orin-qk-pk_t128x64k32g42s32nf orin-qk-pk_t64x64k32g22s32nf orin-qk-pk_t64x64k32g21s32nf \

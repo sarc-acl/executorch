@@ -2041,8 +2041,10 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
   }
   const bool qk_no_mask_fill = qk_name.find("s32nf") != std::string::npos ||
       qk_name.find("s64nf") != std::string::npos;
+  // Substring, not prefix: a build with the event tracer reports kernel names
+  // as `"kernel_name": "<name>", "operator_id": N` (the Orin cross build).
   const bool softmax_truncated =
-      softmax_name.rfind("sarc_sdpa_attn_weights_softmax", 0) == 0;
+      softmax_name.find("sarc_sdpa_attn_weights_softmax") != std::string::npos;
   const bool pairing_ok = !qk_no_mask_fill || softmax_truncated;
 
   std::vector<uint16_t> outh(q_numel);
