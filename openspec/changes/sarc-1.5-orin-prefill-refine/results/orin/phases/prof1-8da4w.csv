@@ -1,0 +1,14 @@
+# t128x128k64g44s32mk32rap rc=0 dumps=12
+case,N,tiles,barrier_cyc,fetch_cyc,mma_cyc,lds_store_cyc,prologue_cyc,group_epilog_cyc,drain_cyc,write_cyc,total_cyc,barrier_pct,fetch_pct,mma_pct,lds_store_pct,prologue_pct,group_epilog_pct,drain_pct,write_pct,spread_mma_pct
+llama-3.1-8b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K4096_N4096_rank3batch1_Texture3D,4096,512,24128,86592,61536,19512,4736,9104,0,4740,210348,11.5,41.2,29.3,9.3,2.3,4.3,0.0,2.3,8.7
+llama-3.1-8b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K4096_N1024_rank3batch1_Texture3D,1024,128,23896,75584,62144,19664,4516,9080,0,4784,199668,12.0,37.9,31.1,9.8,2.3,4.5,0.0,2.4,10.4
+llama-3.1-8b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K4096_N14336_rank3batch1_Texture3D,14336,1792,24280,86528,61472,19584,4840,9096,0,4770,210570,11.5,41.1,29.2,9.3,2.3,4.3,0.0,2.3,9.3
+llama-3.1-8b_prefill_w2_linear_dq8ca_q4gsw_M2048_K14336_N4096_rank3batch1_Texture3D,4096,512,79128,342048,190288,62216,16192,27840,0,4552,722264,11.0,47.4,26.3,8.6,2.2,3.9,0.0,0.6,4.4
+llama-3.2-3b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K3072_N3072_rank3batch1_Texture3D,3072,384,16362,71784,40644,13008,4256,6308,0,4572,156934,10.4,45.7,25.9,8.3,2.7,4.0,0.0,2.9,8.9
+llama-3.2-3b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K3072_N1024_rank3batch1_Texture3D,1024,128,16356,64752,40704,12972,3828,6328,0,4606,149546,10.9,43.3,27.2,8.7,2.6,4.2,0.0,3.1,8.8
+llama-3.2-3b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K3072_N8192_rank3batch1_Texture3D,8192,1024,16590,72096,40440,12996,4224,6348,0,4624,157318,10.5,45.8,25.7,8.3,2.7,4.0,0.0,2.9,8.8
+llama-3.2-3b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N3072_rank3batch1_Texture3D,3072,384,45040,193472,108160,35376,10568,16160,0,4654,413430,10.9,46.8,26.2,8.6,2.6,3.9,0.0,1.1,5.7
+llama-3.2-1b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K2048_N2048_rank3batch1_Texture3D,2048,256,11140,43184,26696,8708,3515,4442,0,4568,102253,10.9,42.2,26.1,8.5,3.4,4.3,0.0,4.5,11.3
+llama-3.2-1b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K2048_N512_rank3batch1_Texture3D,512,64,14856,40352,23568,8984,2937,4556,0,4634,99887,14.9,40.4,23.6,9.0,2.9,4.6,0.0,4.6,15.8
+llama-3.2-1b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K2048_N8192_rank3batch1_Texture3D,8192,1024,11064,46144,26720,8608,3635,4440,0,4516,105127,10.5,43.9,25.4,8.2,3.5,4.2,0.0,4.3,11.3
+llama-3.2-1b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N2048_rank3batch1_Texture3D,2048,256,44336,193920,108512,35152,10580,16036,0,4606,413142,10.7,46.9,26.3,8.5,2.6,3.9,0.0,1.1,5.6
