@@ -1,6 +1,6 @@
 # sarc-1.5-xe2-prefill-refine: status
 
-**2026-10-05 01:35 UTC — running. Candidate 1 (`xe2-refine1`, SDPA): +46.9 % geomean over the parent,
+**2026-10-05 01:27 UTC — running. Candidate 1 (`xe2-refine1`, SDPA): +46.9 % geomean over the parent,
 `ACCEPTED (reference-error rule, owner decision 2026-10-04)`, not a plain pass. Candidate 2 (8da4w linear) is
 queued for its gate.**
 
@@ -184,7 +184,7 @@ that accumulate in fp32: an arithmetic change. It is therefore decided by the ow
    | 8B, S = 1024 at input_pos 1024 | 1.42e-4 / 1.27e-3 | 1.29e-5 / 1.24e-4 |
 
    The eight `extended` cases agree (`c1-extended.csv`): candidate rms 2.5e-5 to 6.6e-5 against 1.0e-4 to
-   1.2e-4.
+   1.3e-4.
 2. **Logits** (`tools/probe.sh`: a fresh process per prompt, whole logits vector kept, four arms;
    `results/xe2/probe/s2-c1/`). The probe reproduces the gate: of the 12 gate-prompt comparisons only the two
    8B 8da4w ones differ.
