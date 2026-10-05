@@ -1102,6 +1102,68 @@ const Preference k4070tiRefine5[] = {
     {Op::kQ4gswLinear, "4070ti_t256x128k16g42s32gac", n_above_512_4070ti},
 };
 // <<< 4070ti lin-preferences
+// >>> orin sdpa-preferences
+// Jetson Orin (tools/gen_orin_sdpa.py): single-kernel SDPA screening profiles and orin-refineN.
+const Preference kOrin_av_df_t16x128k32g11s32[] = {{Op::kSdpaAv, "4070ti_df_t16x128k32g11s32", nullptr}};
+const Preference kOrin_av_df_t16x64k32g11s32[] = {{Op::kSdpaAv, "4070ti_df_t16x64k32g11s32", nullptr}};
+const Preference kOrin_av_df_t32x128k32g11s32[] = {{Op::kSdpaAv, "4070ti_df_t32x128k32g11s32", nullptr}};
+const Preference kOrin_av_df_t32x128k32g21s32[] = {{Op::kSdpaAv, "4070ti_df_t32x128k32g21s32", nullptr}};
+const Preference kOrin_av_df_t32x64k32g11s32[] = {{Op::kSdpaAv, "4070ti_df_t32x64k32g11s32", nullptr}};
+const Preference kOrin_av_df_t32x64k32g21s32[] = {{Op::kSdpaAv, "4070ti_df_t32x64k32g21s32", nullptr}};
+const Preference kOrin_av_df_t64x128k32g21s32[] = {{Op::kSdpaAv, "4070ti_df_t64x128k32g21s32", nullptr}};
+const Preference kOrin_av_df_t64x128k32g22s32[] = {{Op::kSdpaAv, "4070ti_df_t64x128k32g22s32", nullptr}};
+const Preference kOrin_av_df_t64x64k32g11s32[] = {{Op::kSdpaAv, "4070ti_df_t64x64k32g11s32", nullptr}};
+const Preference kOrin_av_df_t64x64k32g12s32[] = {{Op::kSdpaAv, "4070ti_df_t64x64k32g12s32", nullptr}};
+const Preference kOrin_av_dfg_t32x128k32g11s32[] = {{Op::kSdpaAv, "4070ti_dfg_t32x128k32g11s32", nullptr}};
+const Preference kOrin_av_dfg_t32x128k32g21s32[] = {{Op::kSdpaAv, "4070ti_dfg_t32x128k32g21s32", nullptr}};
+const Preference kOrin_av_dfg_t32x64k32g11s32[] = {{Op::kSdpaAv, "4070ti_dfg_t32x64k32g11s32", nullptr}};
+const Preference kOrin_av_dfg_t64x64k32g11s32[] = {{Op::kSdpaAv, "4070ti_dfg_t64x64k32g11s32", nullptr}};
+const Preference kOrin_av_dfh_t32x128k32g11s32[] = {{Op::kSdpaAv, "4070ti_dfh_t32x128k32g11s32", nullptr}};
+const Preference kOrin_av_dfh_t32x128k32g21s32[] = {{Op::kSdpaAv, "4070ti_dfh_t32x128k32g21s32", nullptr}};
+const Preference kOrin_av_dfh_t32x64k32g11s32[] = {{Op::kSdpaAv, "4070ti_dfh_t32x64k32g11s32", nullptr}};
+const Preference kOrin_av_dfh_t64x64k32g11s32[] = {{Op::kSdpaAv, "4070ti_dfh_t64x64k32g11s32", nullptr}};
+const Preference kOrin_av_ml_t128x128k32g42s32[] = {{Op::kSdpaAv, "4070ti_ml_t128x128k32g42s32", nullptr}};
+const Preference kOrin_av_ml_t128x128k32g44s32[] = {{Op::kSdpaAv, "4070ti_ml_t128x128k32g44s32", nullptr}};
+const Preference kOrin_av_ml_t128x64k32g24s32[] = {{Op::kSdpaAv, "4070ti_ml_t128x64k32g24s32", nullptr}};
+const Preference kOrin_av_ml_t128x64k32g42s32[] = {{Op::kSdpaAv, "4070ti_ml_t128x64k32g42s32", nullptr}};
+const Preference kOrin_av_ml_t128x64k32g44s32[] = {{Op::kSdpaAv, "4070ti_ml_t128x64k32g44s32", nullptr}};
+const Preference kOrin_av_ml_t256x64k32g42s32[] = {{Op::kSdpaAv, "4070ti_ml_t256x64k32g42s32", nullptr}};
+const Preference kOrin_av_ml_t256x64k32g44s32[] = {{Op::kSdpaAv, "4070ti_ml_t256x64k32g44s32", nullptr}};
+const Preference kOrin_av_ml_t32x64k32g42s32[] = {{Op::kSdpaAv, "4070ti_ml_t32x64k32g42s32", nullptr}};
+const Preference kOrin_av_ml_t64x128k32g42s32[] = {{Op::kSdpaAv, "4070ti_ml_t64x128k32g42s32", nullptr}};
+const Preference kOrin_av_ml_t64x128k32g44s32[] = {{Op::kSdpaAv, "4070ti_ml_t64x128k32g44s32", nullptr}};
+const Preference kOrin_av_t64x64k32g24s32[] = {{Op::kSdpaAv, "4070ti_t64x64k32g24s32", nullptr}};
+const Preference kOrin_av_t64x64k32g42s32[] = {{Op::kSdpaAv, "4070ti_t64x64k32g42s32", nullptr}};
+const Preference kOrin_qk_df_t128x128k32g22s32nf[] = {{Op::kSdpaQk, "4070ti_df_t128x128k32g22s32nf", nullptr}};
+const Preference kOrin_qk_df_t128x64k32g22s32nf[] = {{Op::kSdpaQk, "4070ti_df_t128x64k32g22s32nf", nullptr}};
+const Preference kOrin_qk_df_t128x64k32g42s32nf[] = {{Op::kSdpaQk, "4070ti_df_t128x64k32g42s32nf", nullptr}};
+const Preference kOrin_qk_df_t16x64k32g11s32nf[] = {{Op::kSdpaQk, "4070ti_df_t16x64k32g11s32nf", nullptr}};
+const Preference kOrin_qk_df_t32x32k32g11s32nf[] = {{Op::kSdpaQk, "4070ti_df_t32x32k32g11s32nf", nullptr}};
+const Preference kOrin_qk_df_t32x64k32g11s32nf[] = {{Op::kSdpaQk, "4070ti_df_t32x64k32g11s32nf", nullptr}};
+const Preference kOrin_qk_df_t64x32k32g11s32nf[] = {{Op::kSdpaQk, "4070ti_df_t64x32k32g11s32nf", nullptr}};
+const Preference kOrin_qk_df_t64x64k32g11s32nf[] = {{Op::kSdpaQk, "4070ti_df_t64x64k32g11s32nf", nullptr}};
+const Preference kOrin_qk_df_t64x64k32g22s32nf[] = {{Op::kSdpaQk, "4070ti_df_t64x64k32g22s32nf", nullptr}};
+const Preference kOrin_qk_dfg_t32x64k32g11s32nf[] = {{Op::kSdpaQk, "4070ti_dfg_t32x64k32g11s32nf", nullptr}};
+const Preference kOrin_qk_dfg_t64x64k32g11s32nf[] = {{Op::kSdpaQk, "4070ti_dfg_t64x64k32g11s32nf", nullptr}};
+const Preference kOrin_qk_dfg_t64x64k32g22s32nf[] = {{Op::kSdpaQk, "4070ti_dfg_t64x64k32g22s32nf", nullptr}};
+const Preference kOrin_qk_dfh_t32x64k32g11s32nf[] = {{Op::kSdpaQk, "4070ti_dfh_t32x64k32g11s32nf", nullptr}};
+const Preference kOrin_qk_dfh_t64x64k32g11s32nf[] = {{Op::kSdpaQk, "4070ti_dfh_t64x64k32g11s32nf", nullptr}};
+const Preference kOrin_qk_dfh_t64x64k32g22s32nf[] = {{Op::kSdpaQk, "4070ti_dfh_t64x64k32g22s32nf", nullptr}};
+const Preference kOrin_qk_pk_t128x64k32g24s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t128x64k32g24s32nf", nullptr}};
+const Preference kOrin_qk_pk_t128x64k32g42s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t128x64k32g42s32nf", nullptr}};
+const Preference kOrin_qk_pk_t128x64k32g44s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t128x64k32g44s32nf", nullptr}};
+const Preference kOrin_qk_pk_t128x64k64g42s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t128x64k64g42s32nf", nullptr}};
+const Preference kOrin_qk_pk_t32x64k32g42s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t32x64k32g42s32nf", nullptr}};
+const Preference kOrin_qk_pk_t64x128k32g42s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t64x128k32g42s32nf", nullptr}};
+const Preference kOrin_qk_pk_t64x64k32g21s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t64x64k32g21s32nf", nullptr}};
+const Preference kOrin_qk_pk_t64x64k32g22s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t64x64k32g22s32nf", nullptr}};
+const Preference kOrin_qk_pk_t64x64k32g42s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t64x64k32g42s32nf", nullptr}};
+const Preference kOrin_qk_pk_t64x64k32g44s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t64x64k32g44s32nf", nullptr}};
+const Preference kOrin_qk_t128x64k32g22s32nf[] = {{Op::kSdpaQk, "4070ti_t128x64k32g22s32nf", nullptr}};
+const Preference kOrin_qk_t128x64k32g24s32nf[] = {{Op::kSdpaQk, "4070ti_t128x64k32g24s32nf", nullptr}};
+const Preference kOrin_qk_t128x64k32g42s32[] = {{Op::kSdpaQk, "4070ti_t128x64k32g42s32", nullptr}};
+const Preference kOrin_qk_t128x64k32g42s32nf[] = {{Op::kSdpaQk, "4070ti_t128x64k32g42s32nf", nullptr}};
+// <<< orin sdpa-preferences
 struct Profile {
   const char* name;
   const Preference* prefs;
@@ -1205,6 +1267,67 @@ const Profile kProfiles[] = {
     {"4070ti-refine4", k4070tiRefine4, sizeof(k4070tiRefine4) / sizeof(Preference)},
     {"4070ti-refine5", k4070tiRefine5, sizeof(k4070tiRefine5) / sizeof(Preference)},
     // <<< 4070ti lin-profiles
+    // >>> orin sdpa-profiles
+    {"orin-av-df_t16x128k32g11s32", kOrin_av_df_t16x128k32g11s32, 1},
+    {"orin-av-df_t16x64k32g11s32", kOrin_av_df_t16x64k32g11s32, 1},
+    {"orin-av-df_t32x128k32g11s32", kOrin_av_df_t32x128k32g11s32, 1},
+    {"orin-av-df_t32x128k32g21s32", kOrin_av_df_t32x128k32g21s32, 1},
+    {"orin-av-df_t32x64k32g11s32", kOrin_av_df_t32x64k32g11s32, 1},
+    {"orin-av-df_t32x64k32g21s32", kOrin_av_df_t32x64k32g21s32, 1},
+    {"orin-av-df_t64x128k32g21s32", kOrin_av_df_t64x128k32g21s32, 1},
+    {"orin-av-df_t64x128k32g22s32", kOrin_av_df_t64x128k32g22s32, 1},
+    {"orin-av-df_t64x64k32g11s32", kOrin_av_df_t64x64k32g11s32, 1},
+    {"orin-av-df_t64x64k32g12s32", kOrin_av_df_t64x64k32g12s32, 1},
+    {"orin-av-dfg_t32x128k32g11s32", kOrin_av_dfg_t32x128k32g11s32, 1},
+    {"orin-av-dfg_t32x128k32g21s32", kOrin_av_dfg_t32x128k32g21s32, 1},
+    {"orin-av-dfg_t32x64k32g11s32", kOrin_av_dfg_t32x64k32g11s32, 1},
+    {"orin-av-dfg_t64x64k32g11s32", kOrin_av_dfg_t64x64k32g11s32, 1},
+    {"orin-av-dfh_t32x128k32g11s32", kOrin_av_dfh_t32x128k32g11s32, 1},
+    {"orin-av-dfh_t32x128k32g21s32", kOrin_av_dfh_t32x128k32g21s32, 1},
+    {"orin-av-dfh_t32x64k32g11s32", kOrin_av_dfh_t32x64k32g11s32, 1},
+    {"orin-av-dfh_t64x64k32g11s32", kOrin_av_dfh_t64x64k32g11s32, 1},
+    {"orin-av-ml_t128x128k32g42s32", kOrin_av_ml_t128x128k32g42s32, 1},
+    {"orin-av-ml_t128x128k32g44s32", kOrin_av_ml_t128x128k32g44s32, 1},
+    {"orin-av-ml_t128x64k32g24s32", kOrin_av_ml_t128x64k32g24s32, 1},
+    {"orin-av-ml_t128x64k32g42s32", kOrin_av_ml_t128x64k32g42s32, 1},
+    {"orin-av-ml_t128x64k32g44s32", kOrin_av_ml_t128x64k32g44s32, 1},
+    {"orin-av-ml_t256x64k32g42s32", kOrin_av_ml_t256x64k32g42s32, 1},
+    {"orin-av-ml_t256x64k32g44s32", kOrin_av_ml_t256x64k32g44s32, 1},
+    {"orin-av-ml_t32x64k32g42s32", kOrin_av_ml_t32x64k32g42s32, 1},
+    {"orin-av-ml_t64x128k32g42s32", kOrin_av_ml_t64x128k32g42s32, 1},
+    {"orin-av-ml_t64x128k32g44s32", kOrin_av_ml_t64x128k32g44s32, 1},
+    {"orin-av-t64x64k32g24s32", kOrin_av_t64x64k32g24s32, 1},
+    {"orin-av-t64x64k32g42s32", kOrin_av_t64x64k32g42s32, 1},
+    {"orin-qk-df_t128x128k32g22s32nf", kOrin_qk_df_t128x128k32g22s32nf, 1},
+    {"orin-qk-df_t128x64k32g22s32nf", kOrin_qk_df_t128x64k32g22s32nf, 1},
+    {"orin-qk-df_t128x64k32g42s32nf", kOrin_qk_df_t128x64k32g42s32nf, 1},
+    {"orin-qk-df_t16x64k32g11s32nf", kOrin_qk_df_t16x64k32g11s32nf, 1},
+    {"orin-qk-df_t32x32k32g11s32nf", kOrin_qk_df_t32x32k32g11s32nf, 1},
+    {"orin-qk-df_t32x64k32g11s32nf", kOrin_qk_df_t32x64k32g11s32nf, 1},
+    {"orin-qk-df_t64x32k32g11s32nf", kOrin_qk_df_t64x32k32g11s32nf, 1},
+    {"orin-qk-df_t64x64k32g11s32nf", kOrin_qk_df_t64x64k32g11s32nf, 1},
+    {"orin-qk-df_t64x64k32g22s32nf", kOrin_qk_df_t64x64k32g22s32nf, 1},
+    {"orin-qk-dfg_t32x64k32g11s32nf", kOrin_qk_dfg_t32x64k32g11s32nf, 1},
+    {"orin-qk-dfg_t64x64k32g11s32nf", kOrin_qk_dfg_t64x64k32g11s32nf, 1},
+    {"orin-qk-dfg_t64x64k32g22s32nf", kOrin_qk_dfg_t64x64k32g22s32nf, 1},
+    {"orin-qk-dfh_t32x64k32g11s32nf", kOrin_qk_dfh_t32x64k32g11s32nf, 1},
+    {"orin-qk-dfh_t64x64k32g11s32nf", kOrin_qk_dfh_t64x64k32g11s32nf, 1},
+    {"orin-qk-dfh_t64x64k32g22s32nf", kOrin_qk_dfh_t64x64k32g22s32nf, 1},
+    {"orin-qk-pk_t128x64k32g24s32nf", kOrin_qk_pk_t128x64k32g24s32nf, 1},
+    {"orin-qk-pk_t128x64k32g42s32nf", kOrin_qk_pk_t128x64k32g42s32nf, 1},
+    {"orin-qk-pk_t128x64k32g44s32nf", kOrin_qk_pk_t128x64k32g44s32nf, 1},
+    {"orin-qk-pk_t128x64k64g42s32nf", kOrin_qk_pk_t128x64k64g42s32nf, 1},
+    {"orin-qk-pk_t32x64k32g42s32nf", kOrin_qk_pk_t32x64k32g42s32nf, 1},
+    {"orin-qk-pk_t64x128k32g42s32nf", kOrin_qk_pk_t64x128k32g42s32nf, 1},
+    {"orin-qk-pk_t64x64k32g21s32nf", kOrin_qk_pk_t64x64k32g21s32nf, 1},
+    {"orin-qk-pk_t64x64k32g22s32nf", kOrin_qk_pk_t64x64k32g22s32nf, 1},
+    {"orin-qk-pk_t64x64k32g42s32nf", kOrin_qk_pk_t64x64k32g42s32nf, 1},
+    {"orin-qk-pk_t64x64k32g44s32nf", kOrin_qk_pk_t64x64k32g44s32nf, 1},
+    {"orin-qk-t128x64k32g22s32nf", kOrin_qk_t128x64k32g22s32nf, 1},
+    {"orin-qk-t128x64k32g24s32nf", kOrin_qk_t128x64k32g24s32nf, 1},
+    {"orin-qk-t128x64k32g42s32", kOrin_qk_t128x64k32g42s32, 1},
+    {"orin-qk-t128x64k32g42s32nf", kOrin_qk_t128x64k32g42s32nf, 1},
+    // <<< orin sdpa-profiles
 };
 const Profile* requested_profile() {
   static const Profile* p = []() -> const Profile* {
