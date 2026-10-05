@@ -66,10 +66,22 @@ Build `topic4` (`8973debef`, dev zone only) against the pristine parent.
   production cases and **11 % higher in the 3B production case (1.570e-3 against 1.408e-3)**. The criterion
   says rms and maximum, every head configuration: NOT MET. The candidate stays rejected; I did not collect the
   41-prompt logits comparison for it, because it cannot change this verdict (it is collected for candidate 1h).
-- Prefill rates of that `verify.sh` run (one run each, not the timed session): 1B 1463.9 / 1293.8, 3B 620.0 /
-  510.2, 8B 286.1 / 244.1 tok/s (4w / 8da4w) against the parent control's 890.4 / 822.5, 360.4 / 320.2, 189.7 /
-  170.4. The interleaved six-cell session and the traces are running now (`gate_rest.sh`, evidence only; the
-  verdict stays).
+- Measured gain, for the record (`s2-c1`, `gate_rest.sh`: evidence only, `gate.done` stays REJECTED; pristine
+  parent against `topic4` with the candidate environment, tok/s, median of 5 valid interleaved runs per arm):
+
+  | cell | parent | `orin-refine1` | gain | next token parent vs candidate (4 prompts) |
+  |---|---:|---:|---:|---|
+  | 1B 4w | 890.82 | 1466.00 | +64.6 % | SAME |
+  | 1B 8da4w | 822.82 | 1290.49 | +56.8 % | SAME |
+  | 3B 4w | 360.44 | 620.23 | +72.1 % | SAME |
+  | 3B 8da4w | 320.40 | 510.21 | +59.2 % | SAME |
+  | 8B 4w | 189.79 | 285.99 | +50.7 % | SAME |
+  | 8B 8da4w | 170.48 | 244.28 | +43.3 % | SAME |
+
+  Geomean **+57.5 %**, repeat spread at most 0.43 %, 60 timed runs all valid, `gate_check.py session`: ACCEPT
+  (0 findings): parent and candidate print the same next token in all six cells on the timed prompt, the
+  real-text prompt, `prompt_check` and the unaligned prompt (24 of 24). The one differing item of the gate is
+  the candidate's own default-vs-tiled comparison on the unaligned prompt for 1B 8da4w.
 - To check: the 1B 4w decode of that run reads 17.6 tok/s against the parent control's 19.4 (8da4w: 10.98
   against 11.01). One run each; a 3-run decode A/B of parent and both candidates is queued (`decode-ab1`).
 
