@@ -12,12 +12,16 @@
 # marker file blocks every later tool until a person removes it), 75 = gpu-lab lock busy, 76 = a GPU process this
 # campaign did not start, 77 = a required input is missing.
 TOOLS=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-DEVICE=doremy@duck-naughty; DEVROOT=hmz-sarc-orin   # relative to the device's $HOME
+# ORIN_DEVICE=doremy@duck-stable addresses the second Orin (owner offer 2026-10-05): SCREENING only (kernel and
+# tile screens, exploratory phase timing). Timed sessions, gates, reference-error measurements and every reported
+# number stay on duck-naughty.
+DEVICE=${ORIN_DEVICE:-doremy@duck-naughty}; DEVROOT=hmz-sarc-orin   # relative to the device's $HOME
 CHANGE_REL=openspec/changes/sarc-1.5-orin-prefill-refine
 if [[ $(uname -m) == aarch64 ]]; then SIDE=device; R=$HOME/$DEVROOT; A=$R
 else SIDE=ws; R=/mnt/linux-share/hmz-campaigns/jetson; A=$R/.artifacts/orin-prefill-refine; fi
 ET=$R/executorch; CHANGE=$ET/$CHANGE_REL
-LOCK=b49259c9-868c-5b7c-b6f1-65a2bf4b63be
+LOCK=b49259c9-868c-5b7c-b6f1-65a2bf4b63be                               # duck-naughty
+[[ $(hostname) == duck-stable ]] && LOCK=1337cda6-7e77-5fd3-9a91-da7f9d080cab   # the screening device
 KIT=$ET/openspec/changes/sarc-1.5-e2e-benchmark/kit
 PARENT_COMMIT=6a7cc8cc6
 MODELDIR=$HOME/.cache/et-jetson-study/models   # device, flat layout, read-only

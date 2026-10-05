@@ -13,7 +13,7 @@ V=sarc/tools/verify.sh
 for f in prompt_2048.txt prompt_check.txt prompt_real_2048.txt; do K=openspec/changes/sarc-1.5-e2e-benchmark/kit/prompts/$f
   [[ $(git -C $ET rev-parse $PARENT_COMMIT:$K) == $(git -C $ET hash-object $ET/$K) ]] || { echo "$f differs from the parent commit" >&2; exit 77; }; done
 D=$DEVROOT/executorch
-dssh "mkdir -p $D/$CHANGE_REL/results/orin/probe/broad $D/sarc/tools $D/${KIT#$ET/}/prompts $DEVROOT/build $DEVROOT/jobs ~/.cache/gpu-lab && touch ~/.cache/gpu-lab/lock-$LOCK && test -w ~/.cache/gpu-lab/lock-$LOCK"
+dssh "mkdir -p $D/$CHANGE_REL/results/orin/probe/broad $D/sarc/tools $D/${KIT#$ET/}/prompts $DEVROOT/build $DEVROOT/jobs ~/.cache/gpu-lab && L=\$(ls ~/.cache/gpu-lab/lock-* | head -1) && test -w \$L"
 rsync -a --delete --exclude jetson-cross --exclude __pycache__ $TOOLS/ $DEVICE:$D/$CHANGE_REL/tools/
 [[ -f $CHANGE/results/orin/clkmin.json ]] && rsync -a $CHANGE/results/orin/clkmin.json $DEVICE:$D/$CHANGE_REL/results/orin/
 [[ -d $CHANGE/results/orin/probe/broad ]] && rsync -a --include "prompts_*" --exclude "*" $CHANGE/results/orin/probe/broad/ $DEVICE:$D/$CHANGE_REL/results/orin/probe/broad/
