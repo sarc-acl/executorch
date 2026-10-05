@@ -1,0 +1,151 @@
+gpu,model,scheme,build,family,ms,share
+orin,1b,4w,cand,prefill GEMM (linear layers),666.61,0.4823
+orin,1b,4w,cand,copy/view/other,266.484,0.1928
+orin,1b,4w,cand,attention: softmax,144.596,0.1046
+orin,1b,4w,cand,attention: QK^T,107.67,0.0779
+orin,1b,4w,cand,elementwise,100.575,0.0728
+orin,1b,4w,cand,attention: AV,61.329,0.0444
+orin,1b,4w,cand,RMSNorm,18.024,0.013
+orin,1b,4w,cand,RoPE,6.908,0.005
+orin,1b,4w,cand,LM head (1 token),3.834,0.0028
+orin,1b,4w,cand,attention: KV update,3.476,0.0025
+orin,1b,4w,cand,embedding,2.61,0.0019
+orin,1b,4w,cand,staging,0.083,0.0001
+orin,1b,4w,parent,prefill GEMM (linear layers),666.293,0.2917
+orin,1b,4w,parent,attention: QK^T,581.082,0.2544
+orin,1b,4w,parent,attention: AV,457.681,0.2004
+orin,1b,4w,parent,copy/view/other,266.371,0.1166
+orin,1b,4w,parent,attention: softmax,176.744,0.0774
+orin,1b,4w,parent,elementwise,100.787,0.0441
+orin,1b,4w,parent,RMSNorm,18.023,0.0079
+orin,1b,4w,parent,RoPE,6.856,0.003
+orin,1b,4w,parent,LM head (1 token),3.84,0.0017
+orin,1b,4w,parent,attention: KV update,3.483,0.0015
+orin,1b,4w,parent,embedding,2.608,0.0011
+orin,1b,4w,parent,staging,0.083,0.0
+orin,1b,8da4w,cand,prefill GEMM (linear layers),871.036,0.5536
+orin,1b,8da4w,cand,copy/view/other,154.176,0.098
+orin,1b,8da4w,cand,attention: softmax,144.621,0.0919
+orin,1b,8da4w,cand,attention: QK^T,107.607,0.0684
+orin,1b,8da4w,cand,elementwise,100.292,0.0637
+orin,1b,8da4w,cand,8-bit activation quantize,98.79,0.0628
+orin,1b,8da4w,cand,attention: AV,61.492,0.0391
+orin,1b,8da4w,cand,RMSNorm,17.958,0.0114
+orin,1b,8da4w,cand,RoPE,6.875,0.0044
+orin,1b,8da4w,cand,LM head (1 token),4.196,0.0027
+orin,1b,8da4w,cand,attention: KV update,3.525,0.0022
+orin,1b,8da4w,cand,embedding,2.608,0.0017
+orin,1b,8da4w,cand,staging,0.088,0.0001
+orin,1b,8da4w,parent,prefill GEMM (linear layers),870.126,0.3515
+orin,1b,8da4w,parent,attention: QK^T,581.062,0.2347
+orin,1b,8da4w,parent,attention: AV,457.188,0.1847
+orin,1b,8da4w,parent,attention: softmax,176.842,0.0714
+orin,1b,8da4w,parent,copy/view/other,154.183,0.0623
+orin,1b,8da4w,parent,8-bit activation quantize,100.704,0.0407
+orin,1b,8da4w,parent,elementwise,100.409,0.0406
+orin,1b,8da4w,parent,RMSNorm,17.933,0.0072
+orin,1b,8da4w,parent,RoPE,6.86,0.0028
+orin,1b,8da4w,parent,LM head (1 token),4.193,0.0017
+orin,1b,8da4w,parent,attention: KV update,3.446,0.0014
+orin,1b,8da4w,parent,embedding,2.607,0.0011
+orin,1b,8da4w,parent,staging,0.084,0.0
+orin,3b,4w,cand,prefill GEMM (linear layers),1894.049,0.5768
+orin,3b,4w,cand,copy/view/other,580.253,0.1767
+orin,3b,4w,cand,attention: QK^T,198.331,0.0604
+orin,3b,4w,cand,attention: softmax,190.152,0.0579
+orin,3b,4w,cand,elementwise,189.846,0.0578
+orin,3b,4w,cand,attention: AV,143.668,0.0437
+orin,3b,4w,cand,RMSNorm,46.684,0.0142
+orin,3b,4w,cand,RoPE,19.023,0.0058
+orin,3b,4w,cand,attention: KV update,12.11,0.0037
+orin,3b,4w,cand,LM head (1 token),5.713,0.0017
+orin,3b,4w,cand,embedding,4.001,0.0012
+orin,3b,4w,cand,staging,0.087,0.0
+orin,3b,4w,parent,prefill GEMM (linear layers),1893.981,0.3344
+orin,3b,4w,parent,attention: QK^T,1487.367,0.2626
+orin,3b,4w,parent,attention: AV,1193.515,0.2108
+orin,3b,4w,parent,copy/view/other,580.196,0.1025
+orin,3b,4w,parent,attention: softmax,230.516,0.0407
+orin,3b,4w,parent,elementwise,189.907,0.0335
+orin,3b,4w,parent,RMSNorm,46.744,0.0083
+orin,3b,4w,parent,RoPE,19.008,0.0034
+orin,3b,4w,parent,attention: KV update,12.003,0.0021
+orin,3b,4w,parent,LM head (1 token),5.694,0.001
+orin,3b,4w,parent,embedding,3.987,0.0007
+orin,3b,4w,parent,staging,0.083,0.0
+orin,3b,8da4w,cand,prefill GEMM (linear layers),2576.801,0.6453
+orin,3b,8da4w,cand,copy/view/other,351.715,0.0881
+orin,3b,8da4w,cand,8-bit activation quantize,254.09,0.0636
+orin,3b,8da4w,cand,attention: QK^T,198.66,0.0497
+orin,3b,8da4w,cand,elementwise,190.151,0.0476
+orin,3b,8da4w,cand,attention: softmax,190.029,0.0476
+orin,3b,8da4w,cand,attention: AV,143.917,0.036
+orin,3b,8da4w,cand,RMSNorm,46.562,0.0117
+orin,3b,8da4w,cand,RoPE,19.096,0.0048
+orin,3b,8da4w,cand,attention: KV update,12.107,0.003
+orin,3b,8da4w,cand,LM head (1 token),6.105,0.0015
+orin,3b,8da4w,cand,embedding,3.996,0.001
+orin,3b,8da4w,cand,staging,0.087,0.0
+orin,3b,8da4w,parent,prefill GEMM (linear layers),2576.564,0.4044
+orin,3b,8da4w,parent,attention: QK^T,1487.473,0.2335
+orin,3b,8da4w,parent,attention: AV,1193.161,0.1873
+orin,3b,8da4w,parent,copy/view/other,351.235,0.0551
+orin,3b,8da4w,parent,8-bit activation quantize,253.76,0.0398
+orin,3b,8da4w,parent,attention: softmax,230.776,0.0362
+orin,3b,8da4w,parent,elementwise,190.584,0.0299
+orin,3b,8da4w,parent,RMSNorm,46.615,0.0073
+orin,3b,8da4w,parent,RoPE,19.087,0.003
+orin,3b,8da4w,parent,attention: KV update,11.788,0.0019
+orin,3b,8da4w,parent,LM head (1 token),6.099,0.001
+orin,3b,8da4w,parent,embedding,3.991,0.0006
+orin,3b,8da4w,parent,staging,0.086,0.0
+orin,8b,4w,cand,prefill GEMM (linear layers),4862.638,0.6807
+orin,8b,4w,cand,copy/view/other,984.688,0.1378
+orin,8b,4w,cand,elementwise,362.295,0.0507
+orin,8b,4w,cand,attention: QK^T,301.506,0.0422
+orin,8b,4w,cand,attention: softmax,289.58,0.0405
+orin,8b,4w,cand,attention: AV,216.244,0.0303
+orin,8b,4w,cand,RMSNorm,72.284,0.0101
+orin,8b,4w,cand,RoPE,27.397,0.0038
+orin,8b,4w,cand,attention: KV update,13.825,0.0019
+orin,8b,4w,cand,LM head (1 token),7.573,0.0011
+orin,8b,4w,cand,embedding,5.205,0.0007
+orin,8b,4w,cand,staging,0.087,0.0
+orin,8b,4w,parent,prefill GEMM (linear layers),4861.622,0.4515
+orin,8b,4w,parent,attention: QK^T,2266.704,0.2105
+orin,8b,4w,parent,attention: AV,1816.219,0.1687
+orin,8b,4w,parent,copy/view/other,984.363,0.0914
+orin,8b,4w,parent,elementwise,361.64,0.0336
+orin,8b,4w,parent,attention: softmax,351.263,0.0326
+orin,8b,4w,parent,RMSNorm,72.122,0.0067
+orin,8b,4w,parent,RoPE,27.356,0.0025
+orin,8b,4w,parent,attention: KV update,13.528,0.0013
+orin,8b,4w,parent,LM head (1 token),7.602,0.0007
+orin,8b,4w,parent,embedding,5.211,0.0005
+orin,8b,4w,parent,staging,0.086,0.0
+orin,8b,8da4w,cand,prefill GEMM (linear layers),6056.317,0.724
+orin,8b,8da4w,cand,copy/view/other,573.975,0.0686
+orin,8b,8da4w,cand,8-bit activation quantize,425.171,0.0508
+orin,8b,8da4w,cand,elementwise,375.586,0.0449
+orin,8b,8da4w,cand,attention: QK^T,302.065,0.0361
+orin,8b,8da4w,cand,attention: softmax,289.524,0.0346
+orin,8b,8da4w,cand,attention: AV,216.379,0.0259
+orin,8b,8da4w,cand,RMSNorm,71.968,0.0086
+orin,8b,8da4w,cand,RoPE,27.402,0.0033
+orin,8b,8da4w,cand,attention: KV update,13.714,0.0016
+orin,8b,8da4w,cand,LM head (1 token),8.044,0.001
+orin,8b,8da4w,cand,embedding,5.26,0.0006
+orin,8b,8da4w,cand,staging,0.086,0.0
+orin,8b,8da4w,parent,prefill GEMM (linear layers),6055.683,0.5049
+orin,8b,8da4w,parent,attention: QK^T,2266.919,0.189
+orin,8b,8da4w,parent,attention: AV,1817.097,0.1515
+orin,8b,8da4w,parent,copy/view/other,573.797,0.0478
+orin,8b,8da4w,parent,8-bit activation quantize,424.944,0.0354
+orin,8b,8da4w,parent,elementwise,376.756,0.0314
+orin,8b,8da4w,parent,attention: softmax,351.545,0.0293
+orin,8b,8da4w,parent,RMSNorm,72.031,0.006
+orin,8b,8da4w,parent,RoPE,27.457,0.0023
+orin,8b,8da4w,parent,attention: KV update,13.692,0.0011
+orin,8b,8da4w,parent,LM head (1 token),8.063,0.0007
+orin,8b,8da4w,parent,embedding,5.205,0.0004
+orin,8b,8da4w,parent,staging,0.086,0.0
