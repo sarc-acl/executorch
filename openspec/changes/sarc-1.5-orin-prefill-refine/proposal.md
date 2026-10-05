@@ -30,14 +30,71 @@ the release sources and the sibling campaign's dev sources and never write them.
 | `glsl/sarc_dev/sarc_dev_prof_orin_q4gsw`, `sarc_dev_prof_orin_dq8ca_bf` | phase-timing twins, measurement only | `gen_orin_prof.py` |
 | `backends/vulkan/test/sarc_dev/test_llama_microbench.cpp` | one line: the SDPA pairing check reads the softmax kernel name by substring (see `STATUS.md`, "A test fix") | by hand |
 
+## Release-zone hook (owner decision 2026-10-05)
+
+The owner answered the question raised in `STATUS.md` ("Decision needed from the owner") with option (a): one
+release-zone edit, the softmax-name hook, is accepted for this campaign. It is commit `307abb2ed`, alone, so it
+can be reviewed or reverted by itself (the dev-zone commit `4718f3e07` that uses the new field has to be
+reverted with it, or the dev zone does not compile).
+
+Form: the existing `Override` mechanism, not an environment variable in release code. `Override` gains one
+field, `softmax_variant` (null by default); `sdpa_softmax_shader_name` appends it to the SARC softmax name.
+With no override, or an override that names no variant (every release build, every configuration without the
+dev zone's `ET_VK_SARC_SOFTMAX_VARIANT`), the function returns exactly what it returned before.
+
+```diff
+diff --git a/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp b/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
+index d45f720bc..5a264e27e 100644
+--- a/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
++++ b/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
+@@ -202,7 +202,11 @@ std::string sdpa_softmax_shader_name(
+   if (!device_has_active_rows(device_info(&graph), Op::kSdpaQk)) {
+     return upstream_name;
+   }
+-  return "sarc_" + upstream_name;
++  const char* variant = get_override().softmax_variant;
++  if (variant == nullptr) {
++    return "sarc_" + upstream_name;
++  }
++  return "sarc_" + upstream_name + "_" + variant;
+ }
+ 
+ } // namespace sarc
+diff --git a/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h b/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h
+index 93a9b8e96..166eba3e0 100644
+--- a/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h
++++ b/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h
+@@ -141,6 +141,9 @@ struct Override {
+       const DeviceInfo& device,
+       const ShapeInfo& shape,
+       const std::optional<Choice>& table_choice) = nullptr;
++  // Suffix of a development softmax variant ("sarc_<softmax>_<suffix>"), or
++  // null: the release softmax.
++  const char* softmax_variant = nullptr;
+ };
+ void set_override(const Override& o);
+ const Override& get_override();
+```
+
+- The variant is named from the dev zone: `impl/sarc_dev/Overrides.cpp`, block `orin softmax-variant`, reads
+  `ET_VK_SARC_SOFTMAX_VARIANT` and prints `[sarc_dev] softmax variant: <suffix>`; `tools/gate_check.py` requires
+  that banner, and the softmax kernel name in every SDPA correctness case, to match the candidate environment.
+- Nothing else in the release zone changes: no table row, no shipped shader, no golden.
+  `sarc/tools/check.sh --no-build` after the edit: `check.sh: PASS`; `test_sarc_select` with the release
+  tables alone reads `PASS (1240 checks, 31 rows, 0 candidates, dev zone absent, unverified off)`, the same line
+  as before the edit; shipped SPIR-V of the build that contains the hook: see "Builds" in `STATUS.md`
+  (`tools/shipped.py`: all 53 shipped variants byte-identical to the parent build). `check.sh` does not flag the
+  edit: its zone rule allows the release zone; the campaign's dev-zone-only rule is stricter, and this decision
+  is the exception to it.
+- Option (b) was not granted: candidate 1 (the release softmax) stays rejected.
+
 ## What cannot be reached from the dev zone
 
-1. **Softmax name.** `sdpa_softmax_shader_name()` in `impl/sarc/SdpaCoopmat.cpp` returns a fixed name, so no dev
-   variant can replace the release softmax (fp16 arithmetic, full zero tail). Smallest hook: let the dev override
-   name the softmax (`tools/local-hook-orin-softmax.patch`, 9 lines, the sibling's hook 2). Measured through
-   build `hook4` = `topic4` + that patch, applied to the archived source tree only and NOT committed.
+1. **Softmax name**: was not reachable; now the hook above (the sibling campaigns' "hook 2"). Before the
+   decision it was measured through `tools/local-hook-orin-softmax.patch` (the environment-variable form,
+   build `hook4`, never committed, kept in `tools/` for the record and no longer used).
 2. Everything outside the linear and SDPA kernels: copy / view, elementwise, RMSNorm and the 8-bit activation
-   quantisation are upstream kernels (15 to 25 % of the prefill after the candidates).
+   quantisation are upstream kernels.
 
 SDPA rows for the device are NOT in this list: `OrinSdpa.cpp` reaches the SARC SDPA path from the dev zone.
 

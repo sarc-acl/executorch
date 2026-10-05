@@ -26,19 +26,20 @@ All times are UTC from `date -u`.
 Read the session of candidate 1 (measured gain) and the gate of candidate 2. Then candidate 1h, the 41-prompt
 logits comparison for it, and whatever the 8da4w and 4w screens of `chain7b` suggest.
 
-## Decision needed from the owner
+## Owner decision received (2026-10-05): the softmax-name hook is accepted
 
-**The SDPA prefill kernels cannot pass the gate from the dev zone on this device, for the reason already found
-on the 4070 Ti.** With the release softmax (fp16 arithmetic) the attention block is 2.5 times closer to the
-fp32 reference in rms than the parent's, but its maximum error on the 3B head configuration is 11 % larger, so
-the reference-error rule rejects it once a next-token item differs, and one does (`1b 8da4w unaligned`). The
-softmax that removed this on the 4070 Ti (`4070ti_nzf`: fp32 reduction, no zero tail) is in the tree, but its
-name can only be selected through a hook in `impl/sarc/SdpaCoopmat.cpp` (9 lines,
-`tools/local-hook-orin-softmax.patch`), which is outside the dev zone. Candidate 1h measures exactly that
-through an uncommitted local patch. Options: (a) accept the softmax-name hook into `sarc/HOOKS`, after which
-candidate 1h is reachable; (b) accept candidate 1 as it is under a per-device reading of the rule (its largest
-error over the three production cases, 1.570e-3, is below the parent's largest, 1.713e-3); (c) leave attention
-stock on the Orin. I applied the rule as written (per case) and did not look for a kernel that passes.
+Asked here as "Decision needed from the owner" at 08:30 UTC (candidate 1 cannot pass the gate from the dev
+zone: one next-token item differs and the reference-error rule fails on one maximum error; the softmax that
+removes this needs a hook). Answer, in `CAMPAIGN.md`: option (a). One release-zone edit for the softmax name,
+as its own commit; candidate 1h is judged by the unchanged gate and the reference-error rule per case; option
+(b) is not granted and candidate 1 stays rejected.
+
+Done: commit `307abb2ed` (`Override::softmax_variant`, 8 lines in `impl/sarc/Select.h` and
+`impl/sarc/SdpaCoopmat.cpp`; the `Override` form, no environment variable in release code), diff and checks in
+`proposal.md` under "Release-zone hook (owner decision 2026-10-05)". The dev zone names the variant
+(`ET_VK_SARC_SOFTMAX_VARIANT`, commit `4718f3e07`). `sarc/tools/check.sh --no-build`: PASS, `test_sarc_select`
+on the release tables unchanged (1240 checks, 31 rows). Build `topic6` contains both; candidate 1h is gated on
+it (`s4-c1h`), not on the local-patch build `hook4`.
 
 ## Candidates
 
@@ -46,7 +47,7 @@ stock on the Orin. I applied the rule as written (per case) and did not look for
 |---|---|---|---|---|
 | 1 | `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine1` | SDPA prefill kernels (QK^T, attn*V) | yes (`OrinSdpa.cpp`, no hook) | **REJECTED** at `verify-check` (`s2-c1`); evidence session running |
 | 2 | `ET_VK_SARC_DEV_PROFILE=orin-lin-refine2` | 8da4w linear: whole-texel weight staging | yes | queued (`s3-c2`) |
-| 1h | candidate 1 + `ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf` | fp32 softmax without the zero tail | NO: needs the softmax-name hook (build `hook4`, local patch, not committed) | queued (`s4-c1h`), measured for the owner |
+| 1h | candidate 1 + `ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf` | fp32 softmax without the zero tail | through the softmax-name hook (owner decision 2026-10-05, commit `307abb2ed`), build `topic6` | queued (`s4-c1h`) |
 
 ### Candidate 1, `orin-refine1` (SDPA prefill kernels): gate `s2-c1`, REJECTED
 
