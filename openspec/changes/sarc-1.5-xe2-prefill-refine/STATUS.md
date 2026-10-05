@@ -1,26 +1,121 @@
 # sarc-1.5-xe2-prefill-refine: status
 
-**2026-10-05 14:05 UTC — running (review follow-up): the sampled parameter search the owner decision of
-2026-10-04 requires. 4w linear: 1520 of 2000 sampled configurations screened, none faster than the shipped
-tile so far. Projected end of the whole search: about 2026-10-07 03:30 UTC (about 46 hours after its start;
-no single run over 11 hours). Earlier results are unchanged: winner `xe2-refine2` (candidates 1 and 2), +57.5 %
-geomean over the parent (`s6-final`); candidate 1 is `ACCEPTED (reference-error rule, owner decision
-2026-10-04)`, not a plain pass; candidates 3 and 4 passed their gates with no measurable gain.**
+**2026-10-05 18:05 UTC — CHECKPOINT for a restart of the control session; the sampled parameter search keeps
+running detached. Read "Handoff" first. Earlier results are unchanged: winner `xe2-refine2` (candidates 1 and
+2), +57.5 % geomean over the parent (`s6-final`); candidate 1 is `ACCEPTED (reference-error rule, owner
+decision 2026-10-04)`, not a plain pass; candidates 3 and 4 passed their gates with no measurable gain.**
+
+## Handoff (written 2026-10-05 18:05 UTC, for an actor with no memory of this session)
+
+**Task in progress.** The reviewer of the first report asked for three things: (1) the sampled parameter search
+of the owner decision "how large parameter spaces are searched" with its parameter-importance table, (2) a
+resumable linear sweep, (3) a corrected run count for `s2-c1`. Items 2 and 3 are done and committed
+(`tools/screen.sh`, `tools/sweep_run.py`; `screen13-resume-test` shows interrupt and resume). Item 1 is running.
+When it is finished: update `proposal.md` (its "Not done" section still says the search was not run) and this
+file, run `bash sarc/tools/check.sh --no-build`, commit, `git push origin topic/xe2-prefill-refine`. No PR.
+
+**What is running detached, and how to check it.** One queue, `tools/sweep_queue.sh` (started with `nohup
+setsid`; it survives the session). It runs the scripts in `.artifacts/queue/pending/` one at a time in name
+order and moves each to `queue/done/`. Check: `cat ~/hmz-sarc-xe2/.artifacts/queue/status` (start / end and rc
+per job), `tail .artifacts/queue/log/<job>.out`, `pgrep -af sweep_queue`. Never start a second GPU job or a
+build beside it on `b70-0`: the guard of the running job treats it as a foreign GPU process and stops (rc 76);
+put new work into `queue/pending/<NNN>-<name>.sh` instead. If the queue has died, restart it with `nohup
+setsid bash tools/sweep_queue.sh > .artifacts/queue/queue.out 2>&1 &`; every runner is resumable (it skips rows
+already in `raw/<name>/results.csv` and moves an interrupted attempt to `raw/<name>/superseded/`). To end the
+queue when nothing is pending: `touch .artifacts/queue/STOP`.
+
+**Queue at 18:05 UTC** (seed 20261005 everywhere):
+
+| job | what | state |
+|---|---|---|
+| `010-stage1-4w` | sample 3000 -> 2000 legal, validation, cheap screen | done 15:44 |
+| `015-screen-resume-test` | `screen.sh` interrupt / resume | done |
+| `016-stage2-4w` | correctness of the top, 326 neighbours (`sw2-4w`), full x 2 of 23 finalists (`sw3-4w`) | done 17:53 |
+| `017-refine-b-4w` | second refinement round (`tools/sweep_refine.sh 4w b`): neighbours of the new best, then finalists `sw3b-4w` | RUNNING since 17:53, about 2.5 h |
+| `020-stage1-8da4w`, `025-stage2-8da4w` | 3000 drawn -> 2000 legal; refs shipped, candidate 2 tile, candidate 4 tile | pending, about 10 h + 4.5 h |
+| `030-stage1-av`, `035-stage2-av` | every legal attn*V configuration | pending, about 3 h + 2 h |
+| `040-stage1-qk`, `045-stage2-qk` | every legal QK^T configuration (enumerated, not sampled) | pending, about 9 h + 2.5 h |
+
+Projected end on one card: about 2026-10-07 06:00 UTC, which is past the 48-hour mark of the search (started
+2026-10-05 05:33 UTC) by half an hour because of the second 4w round. That is the reason to do the split onto
+the second card (below) before the 8da4w stage starts, or else to report before starting QK^T.
+
+**Instructions received today that the files did not yet reflect.**
+
+1. Owner, 14:00 UTC: keep this file current with planned / done per family, rate, projected end, interim
+   findings. Done here; repeat after every stage.
+2. Owner, 16:50 UTC, shared rule now in `CAMPAIGN.md` "Not allowed": no driver-level profiler tracing
+   (`MESA_VK_TRACE*`, `RADV_*TRACE*`, `INTEL_MEASURE`, Perfetto GPU sources, capture tools, kernel settings).
+   Nothing in this campaign uses any of them; ETDump, shader-clock phase timing, microbench timing,
+   igpu-roofline and sensors stay allowed.
+3. Owner, about 17:55 UTC, `CAMPAIGN.md` section "Owner decision, 2026-10-05: the second B70 may be used for the
+   search" (read it with `cat`): the second Arc Pro B70 (guest PCI `0000:02:00.0`, Vulkan device **1**,
+   deviceUUID and lock `868023e2-0000-0000-0200-000000000000`, sensors under
+   `/sys/bus/pci/devices/0000:02:00.0/{hwmon/hwmon1,tile0/gt0/freq0}`; index and UUID read with `vulkaninfo
+   --summary` at 17:58, pin the index, do not assume) may run cheap-mode SCREENS only. Every selecting
+   measurement (full x 2 confirmation), session, gate and reported number stays on `b70-0` alone with the
+   second card idle. **NOT STARTED: nothing has run on the second card and no tool knows about it yet.**
+   Required before splitting, in this order:
+   - teach the tools a card parameter: `host.sh` (PDEV, LOCK, `ETVK_DEVICE_INDEX`, sensors) and
+     `sweep_run.py` (the hwmon path is hard-coded to `0000:01:00.0`; add a `card` column to every row);
+     `gpu_others` must not count this campaign's own job on the other card (its ancestry rule only knows
+     `XE2_TOP`) and must still catch anything else on either card; one queue per card, each with its own lock;
+     builds stay out of screening windows on both cards;
+   - fix the acceptance threshold BEFORE looking, as for the cheap mode. Intended: Spearman rank correlation
+     of the layer-weighted score >= 0.95 and of every shape class >= 0.90, both for card-to-card and for
+     alone-versus-together, on one identical batch of about 30 configurations of the space in progress (the
+     first 30 of `sweep/sw1-8da4w/checked.csv` once that build exists, or of `sw1-4w`); also report the time
+     ratios. Screen it (a) on `b70-0` alone, (b) on the second card alone, (c) on both at once;
+   - if together disturbs the ranking: alternate the cards or do not use the second one, and say so;
+   - then split the remaining cheap screens (8da4w, attn*V, QK^T) in two halves by row parity of
+     `checked.csv`, keep refinement confirmation and `corr` on `b70-0`, and update the projection here.
+   If an `llm-api-*` service or ComfyUI comes back and takes a card: stop using that card and report.
+4. Owner decision of 2026-10-05 in `CAMPAIGN.md`, "the release-zone hooks the accepted candidates need may be
+   committed": not needed here. No accepted candidate of this campaign needs a hook (the SDPA rows are
+   registered from the dev zone; the two hook-only softmax variants were not faster and are not candidates).
+   If a softmax variant is ever adopted, use `softmax-variant-hook.patch` beside `CAMPAIGN.md` unchanged and
+   drop `tools/hook-sdpa-softmax.patch`.
+5. Relayed, 18:00 UTC: the control session is being restarted; do not start a new long step before it.
+
+**Next concrete steps.**
+
+1. When `017-refine-b-4w` ends: `python3 tools/sweep_confirm.py 4w .artifacts/sweep/sw3b-4w/checked.csv
+   .artifacts/raw/sw3b-4w/results.csv .artifacts/sweep/an-4w/confirm-b.csv`. If round b moved the best score or
+   a class best by more than 2 % over round 1, queue round c (`sweep_refine.sh 4w c ref=shipped:`); otherwise
+   the 4w search is finished. Copy `sweep/an-4w/*.csv`, the `checked.csv` and `results.csv` of every 4w build
+   into `results/xe2/sweep/4w/` (the copies there now are the state after round 1).
+2. Decide the 4w candidate (below), do the second-card work of item 3, then let 8da4w, attn*V and QK^T run.
+3. For each space after its stage 2: `sweep_confirm.py`, the 2 % rule for a further round, collect, update
+   this file.
+4. Any kernel that beats the incumbent by more than 2 % in the full x 2 confirmation with correctness `ok`
+   becomes a candidate the usual way: add it to `tools/gen_xe2.py` (kernel + row + a profile `xe2-refine5`
+   with shape predicates), commit, `build-both.sh`, `stage.sh`, `gate.sh` (or `gate_sdpa.sh`), `probe.sh`,
+   `decide.py --bit-identical` if it only changes staging, as `chain11.sh` in `.artifacts/logs/` did.
+
+**The 4w finding so far (round 1, `results/xe2/sweep/4w/`).** The uniform sample of 2000 found nothing faster
+than the shipped tile (best 0.951x on the layer-weighted score). The neighbours of its best 20 did:
+
+| configuration | what differs from the shipped `t128x128k16g44s16m8fli` | full x 2 confirmation against the shipped kernel (`sw3-4w`) |
+|---|---|---|
+| `150312` (release body) | subgroup grid 8 x 2 instead of 4 x 4, band drain (`CSH_BAND`) | 1B wq/wo 1.034x, w1/w3 1.019x, w2 1.040x; 3B 1.029x / 1.022x / 1.030x and wk/wv 1.060x; 8B 1.020x / 1.015x / 1.051x and wk/wv 1.063x; repeat spread at most 0.44 % |
+| `150202` (`xe2s` body) | K = 32, grid 8 x 4 (512 threads), no IMG_A, default drain | 1B wk/wv 1.166x (79.2 against 92.4 us); slower than shipped on the other shapes (0.80 to 0.85x) |
+
+Both have correctness `ok` (numeric cases that dispatched them). Per layer of 1B this is about 3 % less linear
+time, i.e. about 2 % end to end on a 4w cell: at the edge of the noise band, so it is a candidate only if
+round b or c finds more. Neither is a candidate yet; nothing was gated.
 
 Branch `topic/xe2-prefill-refine`, parent `6a7cc8cc6` (head of `topic/780m-prefill-refine`). Host
 `fedora-gpu-eval`, card `b70-0` only (guest PCI `0000:01:00.0`, Vulkan device 0, **`ETVK_DEVICE_INDEX=0`**,
 deviceUUID = lock UUID `868023e2-0000-0000-0100-000000000000`), ANV, Mesa 26.2.3. Nothing was run on the second
 B70 or on the B580.
 
-## Running now
+## The sampled parameter search (review follow-up; state at 18:05 UTC, see "Handoff" for what runs)
 
-The sampled parameter search (`tools/sweep.py`, `sweep_run.py`, `sweep_analyze.py`, `build-sweep.sh`,
-`sweep_stage1.sh`, `sweep_stage2.sh`), one GPU job at a time through `tools/sweep_queue.sh`
-(`.artifacts/queue/status`), started 2026-10-05 05:33 UTC. Seed 20261005 for every space. The sweep variants
-exist only in the sweep builds (`build/sw*`: an export of HEAD plus the generated overlay), never in the
-working copy; raw rows are in `.artifacts/raw/sw*/results.csv` until a space is finished and collected.
-
-### Spaces, counts and progress (14:00 UTC)
+Tools: `tools/sweep.py` (spaces, static pruning, seeded sample, neighbours, overlay), `build-sweep.sh` (compile
+check, exact shared memory from the SPIR-V, sweep build), `sweep_run.py` (resumable runner: modes cheap / full
+/ corr), `sweep_analyze.py`, `sweep_confirm.py`, `sweep_stage1.sh`, `sweep_stage2.sh`, `sweep_refine.sh`,
+`sweep_queue.sh`. The sweep variants exist only in the sweep builds (`build/sw*`: an export of HEAD plus the
+generated overlay), never in the working copy.
 
 Legal space = after the analytic pruning (`sweep.py count`): workgroup <= 1024 invocations, whole 8 x 16 MMA
 tiles per subgroup, tile sizes dividing every production shape, the flag exclusions and the known staging
@@ -29,51 +124,30 @@ memory is read from the SPIR-V (limit 46000 bytes; a tile over the device limit 
 
 | kernel family (space) | parameters | analytically legal | drawn / compile / fit shared memory | planned | done | measured rate |
 |---|---|---:|---|---:|---:|---|
-| 4w linear | body (release, split staging `xe2s`, texel-wise `xe2bx`), M, N, K, subgroup grid, subgroup size, layout, IMG_A, IMG_W, drain, accumulator | 338448 | 3000 / 2851 / 2067 | 2000 | 1580 cheap, 60 of them also full x 2 | 15.0 s per configuration (cheap), 50 s (full) |
-| 8da4w linear | body (zpg, bt, xe2bt, zpgtr), M, N, K, grid, subgroup size, zpgtr flags | 44670 | 3000 drawn; checked when its build runs | 2000 | 0 | expected as 4w |
-| attn*V | family (sweep, ml, xe2), M, N, K, grid, subgroup size | 1131 | all drawn; checked when its build runs | every legal one (about 850) | 0 | about 9 s expected (7.5 s in the smoke test) |
+| 4w linear | body (release, split staging `xe2s`, texel-wise `xe2bx`), M, N, K, subgroup grid, subgroup size, layout, IMG_A, IMG_W, drain, accumulator | 338448 | 3000 / 2851 / 2067 | 2000 + neighbours | 2000 cheap (60 also full x 2), 326 neighbours cheap, 23 finalists full x 2; round b running | 15.0 s per configuration (cheap), 50 s (full) |
+| 8da4w linear | body (zpg, bt, xe2bt, zpgtr), M, N, K, grid, subgroup size, zpgtr flags | 44670 | 3000 drawn; checked when its build runs | 2000 + neighbours | 0 | expected as 4w |
+| attn*V | family (sweep, ml, xe2), M, N, K, grid, subgroup size | 1131 | all drawn; checked when its build runs | every legal one (about 850) | 0 | about 9 s expected |
 | QK^T | family (sweep, pk, xe2, xe2c), M, N, K, grid, subgroup size, NO_MASK_FILL | 4536 | all drawn; checked when its build runs | every legal one (about 3400) | 0 | about 9 s expected |
 
-Sample size: 2000 per linear space (the lower end of the owner's 2000 to 3000, to keep the whole search under
-48 hours): a full enumeration with the full measurement would take about 4 months (4w) and 3 weeks (8da4w).
-The two SDPA spaces are small enough to enumerate inside a day, so they are not sampled: every legal
-configuration is screened in the cheap mode.
+Sample size: 2000 per linear space (the lower end of the owner's 2000 to 3000): a full enumeration with the
+full measurement would take about 4 months (4w) and 3 weeks (8da4w). The two SDPA spaces can be enumerated
+inside a day, so they are not sampled: every legal configuration is screened in the cheap mode.
 
-### Projection
+### 4w, stage 1 and round 1 of stage 2 (`results/xe2/sweep/4w/`)
 
-| step | duration | projected end (UTC) |
-|---|---:|---|
-| 4w stage 1 (validation 60 x cheap + 60 x full x 2, then the cheap screen) | 10.2 h, 8.5 h done | 10-05 15:45 |
-| 4w stage 2 (correctness of the top, at most 600 one-parameter neighbours, full x 2 of the best 10 per shape class) | about 4.5 h | 10-05 20:15 |
-| 8da4w stage 1, stage 2 | about 10.2 h + 4.5 h | 10-06 11:00 |
-| attn*V stage 1, stage 2 | about 3 h + 2 h | 10-06 16:00 |
-| QK^T stage 1, stage 2 | about 9 h + 2.5 h | 10-07 03:30 |
-
-About 46 hours in all, the longest single run about 9 hours; nothing is projected over 48 hours, but the
-margin is two hours. If a
-stage runs long enough to push the end past 2026-10-07 05:30 UTC (48 hours) I will stop and report before
-starting the next one. The gate of any candidate the search produces is not in this projection (about 1 hour
-for a linear candidate, 2 for an SDPA one).
-
-### What the 4w sample shows so far (1576 configurations with all four 1B shapes, interim, cheap mode)
-
-- **Validation of the cheap mode** (60 configurations, cheap once against the median of two full runs): Spearman
-  rank correlation 0.963 to 1.000 over the twelve (model, shape) pairs and 0.995 to 1.000 for the layer-weighted
-  score; the two full repeats differ by 0.05 to 0.11 % (median). The cheap mode (the four 1B shapes, one per
-  shape class) ranks the 3B and 8B shapes as well.
-- **Drift**: the shipped kernel measured 32 times through the run (every 50 configurations) spreads 0.14 to
-  0.48 % per shape.
-- **No sampled configuration beats the shipped tile on the layer-weighted score.** Best 0.951x (the shipped
-  128 x 128 K = 16 tile with an 8 x 2 subgroup grid and a band drain), 2 of 1576 above 0.9x, 6 above 0.8x, 47
-  above 0.5x; the median configuration is 8 times slower (0.123x). Per shape class one configuration is ahead
-  of the shipped tile on wk/wv (1.043x, not yet checked for correctness or repeated) and none on the others.
-- **Parameter importance, interim** (share of the variance of log time explained by each parameter alone):
-  subgroup grid rows `sy` 31 %, grid columns `sx` 16 %, body 8 %, accumulator 6 %, tile M 5 %; N, layout, K,
-  subgroup size, IMG_A, drain and IMG_W each 1 % or less. Largest pair interactions: body x N 3 %, M x `sy`
-  2 %, N x layout 2 %, `sx` x `sy` 2 %. The final table comes with stage 2.
-
-Not concluded from this yet: stage 2 (correctness, neighbours of the best 20, full measurement of the best 10
-per shape class) has not run for any space.
+- **Validation of the cheap mode** (`validation.csv`; 60 configurations, cheap once against the median of two
+  full runs): Spearman rank correlation 0.963 to 1.000 over the twelve (model, shape) pairs and 0.995 to 1.000
+  for the layer-weighted score; the two full repeats differ by 0.05 to 0.11 % (median). The threshold was
+  not written down before this measurement; 0.9 was the working figure.
+- **Drift** (`drift.csv`): the shipped kernel repeated every 50 configurations spreads under 0.5 % per shape.
+- **Sample** (1993 of 2000 with all four shapes dispatched): none ahead of the shipped tile on the score, best
+  0.951x, the median configuration about 8 times slower.
+- **Parameter importance** (`importance.csv`, share of the variance of log time explained by each parameter
+  alone, sample + round-1 neighbours; the final table follows the last round): see the file; in the sample
+  alone the subgroup grid dominates (`sy` 31 %, `sx` 16 %), then body 8 %, accumulator 6 %, tile M 5 %; N,
+  layout, K, subgroup size, IMG_A, drain, IMG_W 1 % or less each. Pair interactions in `interactions.csv`.
+- **Refinement round 1** (`sw2-4w`: 370 one-parameter neighbours of the 20 best + 5 per class, 326 legal) and
+  **confirmation** (`sw3-4w`, `confirm.csv`): the two configurations in "Handoff".
 
 ## Needs the owner's attention
 
