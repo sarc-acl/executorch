@@ -1,6 +1,6 @@
 # STATUS: 780M prefill campaign, round 2 (parameter space + beyond)
 
-Updated 2026-10-05 08:55 PDT (15:55 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
+Updated 2026-10-05 10:45 PDT (17:45 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
 Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (new raw data) and
 `.../780m-prefill-refine-2026-10-03/` (earlier builds and sessions).
 
@@ -15,23 +15,58 @@ Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (
 | 4w, Part 1 | random sample, refinement round 1 and the confirmation are done: **best kernel per shape below**, 4.0 to 4.8 % less linear time per layer than `780m-refine3`, byte-identical output; refinement round 2 (51 neighbours of the winners) and the 12 production-diff passes are queued |
 | candidate 10 (candidate 9 with the refined 4w table, profile `refine10`) | **gate passed, +0.47 % geomean: inside the band, not a gain** (4w cells +0.94 / +1.43 / +1.16 %, 8da4w cells 0.00 / -0.73 / +0.06 %); byte-identical 4w output; first candidate under 2 % |
 | 4w, Part 1 | finished except for the production-diff passes: the search stopped moving after refinement round 3 and the geometry scan; the best kernel per shape (5 repeats) is profile `refine10` |
-| 8da4w | screening mode validated on 64 configurations (rank correlation 0.998 to 1.000, the full top 10 inside the screen's top 20 on all three models); screen of the 2,238 survivors running since 05:50 PDT (`chain6e.sh`) |
+| 8da4w | screening mode validated on 64 configurations (rank correlation 0.998 to 1.000, the full top 10 inside the screen's top 20 on all three models); screen of the 2,238 survivors: 261 done when the host hung at 08:53 PDT, continued after the reboot |
 | production-diff passes; QK^T / attn*V enumeration | queued behind the 8da4w steps |
 
 Chained over the three sessions (`t1-recheck`, `c7-softmax-r3`, `c8-fused3`; not a direct measurement, that comes
 at the end): candidate 8 is about +27 % geomean over `dev/1.5` (1B 4w 2698 -> 3625 tok/s, 8B 8da4w 488 -> 606).
 
-## Running now (detached chains; nothing needs attention)
+## Host hang and reboot, 2026-10-05 08:53 PDT (recorded 10:45 PDT, before anything was restarted)
 
-1. `chain6e.sh` (replaces `chain6d.sh`; same steps, the timing of both linear families before the production-diff
-   passes), continued at 04:10 PDT:
-   - 8da4w: all 2,238 survivors screened (`wq_wo`, 3 + 3 runs; 53 done at 06:13 PDT; the sweeps wait from 06:40
-     to 07:40), then the confirmation timing (everything within 8 % of the fastest, full measurement;
-     the 10 fastest per shape 5 times). This changes how each 8da4w configuration is timed, not which ones: say
-     so if the full measurement of all 2,238 is wanted instead (9.8 h);
-   - 12 production-diff passes for the 35 confirmed 4w configurations (3 of 1,260 done) and for the 8da4w ones;
-   - the QK^T / attn*V enumeration (1,724 runs, 20 warm-up + 8 timed runs each, about 7 h, pausing 06:40 to
-     07:40), into `raw/space/results-steady.csv`.
+The host stopped responding at 08:53 PDT (last journal entry of that boot 08:53:42) and was rebooted by hand at
+09:34 PDT. Same kernel (6.12.0-211.61.1.el10_2), same driver (RADV PHOENIX, Mesa 25.2.7), GPU at `auto` with the
+800 / 1100 / 2799 MHz levels as before.
+
+**Owner decision 2026-10-05: no profiler captures on this device.** The RGP request of the same morning is
+withdrawn. No `MESA_VK_TRACE*`, `RADV_THREAD_TRACE_*` or `RADV_PROFILE_PSTATE` in any process; `tools/gl.sh`
+refuses to start a job that carries one. Evidence stays ETDump, shader-clock phase timing, kernel timing and
+igpu-roofline.
+
+What was running when the host went down (from `<artifacts>/rgp/`, `raw/dq/screen.{csv,out}`,
+`logs/sweep-pauses.txt`; `<artifacts>` = `.../780m-prefill-refine-2026-10-04`):
+
+| job | state at 08:53 | lost |
+|---|---|---|
+| `rgp/take.sh` (RGP captures with `MESA_VK_TRACE=rgp`, per submit, 512 MB thread-trace buffer, cache counters; one microbench SDPA run each, under the gpu-lab lock) | captures 1 and 2 (three kernels, release softmax and softmax r3) finished at 08:53:17 and 08:53:23. Capture 3 (fused two-pass) started 08:53:26 and its run returned rc = 0; capture 4 (fused one-pass) had started (its three files are stamped 08:53:31 to 08:53:33) when the machine hung | the files of captures 3 and 4 are zero-length (never reached the disk). Nothing from any capture is used anywhere in this change |
+| `chain6e.sh`: 8da4w screen of the 2,238 survivors, sharing the GPU run by run with the captures | 261 configurations done, last row 08:53:25 | the process. `raw/dq/screen.csv` is intact (783 rows, 21 fields each, all dispatched); the sweep resumes from it |
+| queued behind it in the same chain: 8da4w confirmation, production-diff passes, QK^T / attn*V enumeration | not started | the queue (restarted below) |
+
+Not lost: every gated session (the candidate-10 gate finished at 08:49 and was committed at 08:50); the staged
+binaries of `c7` to `c10` still match the sha256 in their `STAGE.md`; `git fsck` is clean; no result file written
+near the hang is truncated.
+
+Where the capture material is (kept as evidence, nothing calls it):
+
+- `<artifacts>/rgp/take.sh.DISABLED-by-owner-2026-10-05` and `cap.sh.DISABLED-by-owner-2026-10-05`: the capture
+  scripts, renamed and not executable, with `README-DISABLED.txt`. No chain script, tool or timer references
+  them (checked with grep over `<artifacts>/*.sh`, both `tools/` directories; no crontab, no user timers).
+- `<artifacts>/rgp/<capture>/`: the capture files and what was extracted from the first two.
+  `/tmp/rgpmb_2026.10.05_08.53.3{1,2,3}.rgp`: the files RADV was writing for capture 4, left where they are.
+- `<artifacts>/fx/rgpmb`: a copy of the microbench under another name (so that the capture files were named
+  after it); an ordinary binary, not used by anything else.
+- `tools/rgp_chunks.py` in this directory (untracked, not committed): a reader for `.rgp` files. It sets no
+  variable and starts no GPU job; nothing calls it.
+
+## Running now
+
+`chain14.sh` (detached, started 2026-10-05 10:50 PDT), new raw data in
+`rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-05/`:
+
+1. post-reboot re-check `t4-recheck` (pristine `dev/1.5` build against build `topic-r1` with `780m-refine3`, the
+   binaries of `t1-recheck`), then a short A/A `t5-aa` (candidate 10 on both arms, 3 repeats);
+2. the 8da4w screen continued from configuration 262 of 2,238 (same mode, same CSV; 20 to 28 s a configuration
+   with the cooling waits: 11 to 15 h), then its confirmation timing;
+3. production-diff passes, QK^T / attn*V enumeration (as queued before the hang).
 
 ### What the clock does to the microbench (found 2026-10-04, affects how the sweeps are read)
 
@@ -723,7 +758,7 @@ runs each; all variants reached through `hooks/softmax-name-hook.patch` applied 
 
 1. 8da4w screen and confirmation -> the 8da4w kernel per shape; candidate 11 = candidate 10 + those kernels.
    If it is under 2 % too, the stop rule is met.
-2. RGP captures (owner request of 2026-10-05), fitted in between sweep runs, never next to a session or gate.
+2. (withdrawn: RGP captures. Owner decision 2026-10-05, see "Host hang and reboot".)
 3. Production-diff passes for the confirmed configurations; QK^T / attn*V enumeration and repeat stage.
 4. A direct session of the final configuration against `dev/1.5` and against `780m-refine3`.
 
