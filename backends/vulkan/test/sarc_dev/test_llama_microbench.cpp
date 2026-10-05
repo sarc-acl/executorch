@@ -41,7 +41,7 @@
 //                       actually reaches. Host-side only, no GPU. A path no
 //                       case produces a tile for is UNCOVERED, however many
 //                       times --sdpa-correctness-only passes.
-//   --sdpa-tier=<fast|regions|all|extended|full>
+//   --sdpa-tier=<fast|regions|all|extended|full|peaked>
 //                       which SDPA correctness tier to run; default all.
 //                       "fast" = the original S=128 cases, the cheap
 //                       post-edit pre-check. "regions" = the S=256 cases
@@ -1363,6 +1363,8 @@ SdpaRunResult sdpa_run_case(
     float qk_time_us = 0.0f;
     float av_time_us = 0.0f;
     float softmax_time_us = 0.0f;
+    // 780m: the fused prefill kernel; counted in the total only.
+    float fused_time_us = 0.0f;
     last_dispatched.clear();
     for (const auto& r : shader_results) {
       last_dispatched.push_back(r.kernel_name);
@@ -1371,7 +1373,9 @@ SdpaRunResult sdpa_run_case(
       // "sdpa_attn_weights", but NOT "sdpa_compute_attn_weights", so the qk
       // test below cannot capture it. Checked first regardless, so a future
       // rename cannot silently fold softmax into the qk bucket.
-      if (r.kernel_name.find("softmax") != std::string::npos) {
+      if (r.kernel_name.find("sdpa_fused") != std::string::npos) {
+        fused_time_us += static_cast<float>(duration_ns) / 1000.0f;
+      } else if (r.kernel_name.find("softmax") != std::string::npos) {
         softmax_time_us += static_cast<float>(duration_ns) / 1000.0f;
       } else if (
           r.kernel_name.find("sdpa_compute_attn_weights") !=
@@ -1387,7 +1391,8 @@ SdpaRunResult sdpa_run_case(
     qk_timings_us.push_back(qk_time_us);
     av_timings_us.push_back(av_time_us);
     softmax_timings_us.push_back(softmax_time_us);
-    total_timings_us.push_back(qk_time_us + av_time_us + softmax_time_us);
+    total_timings_us.push_back(
+        qk_time_us + av_time_us + softmax_time_us + fused_time_us);
   }
 
   SdpaRunResult result;
@@ -1477,7 +1482,9 @@ bool run_sdpa_suite(const std::string& model_filter) {
         const bool av_coopmat = (has_kernel_containing(
              coopmat.dispatched_kernels, "sdpa_compute_out_coopmat") ||
          has_kernel_containing(coopmat.dispatched_kernels, "sarc_sdpa_av_coopmat"));
-        dispatch = (tiled_is_tiled && qk_coopmat && av_coopmat)
+        const bool fused = has_kernel_containing(
+            coopmat.dispatched_kernels, "sarc_dev_780m_sdpa_fused");
+        dispatch = (tiled_is_tiled && ((qk_coopmat && av_coopmat) || fused))
             ? "confirmed"
             : "fallback_tiled";
         all_confirmed = all_confirmed && dispatch == "confirmed";
@@ -1533,6 +1540,10 @@ struct SdpaCorrectnessCase {
   // Tokens already in the KV cache. context_len = input_pos + seq_len; the
   // cache rows below input_pos are filled by the host with random history.
   int64_t input_pos = 0;
+  // 780m: Q is uniform in [-q_scale, q_scale]. 1 gives near-uniform attention
+  // (scores within about +-1); the "peaked" tier uses 8, where a few context
+  // positions carry most of a row's weight.
+  float q_scale = 1.0f;
 };
 // "all" keeps its original meaning (fast + regions) so existing gates run the
 // same cases as before; the later tiers are opt-in by name.
@@ -1596,6 +1607,13 @@ const std::vector<SdpaCorrectnessCase> kSdpaCorrectnessCases = {
     {"3b_head_config_s2048", 2048, 128, 24, 8, "full"},
     {"8b_head_config_s2048", 2048, 128, 32, 8, "full"},
     {"8b_head_config_s1024_pos1024", 1024, 128, 32, 8, "full", 1024},
+    // ---- peaked tier (780m) --------------------------------------------
+    // Same shapes as above with sharp attention rows; not part of "all".
+    {"peaked_tiny_gqa_s256", 256, 64, 2, 1, "peaked", 0, 8.0f},
+    {"peaked_1b_head_config_s256_pos256", 256, 64, 32, 8, "peaked", 256, 8.0f},
+    {"peaked_8b_head_config_s256", 256, 128, 32, 8, "peaked", 0, 8.0f},
+    {"peaked_tiny_gqa_s2048", 2048, 64, 2, 1, "peaked", 0, 8.0f},
+    {"peaked_tiny_d128_s2048", 2048, 128, 2, 1, "peaked", 0, 8.0f},
 };
 
 // ---------------- QK^T mask-region enumeration (host-side) ----------------
@@ -1866,6 +1884,50 @@ std::vector<float> sdpa_reference(
   return out;
 }
 
+// 780m: the same computation in fp64, for the error report of
+// sdpa_correctness_case (ET_VK_SDPA_ERROR_REPORT).
+std::vector<double> sdpa_reference_f64(
+    const std::vector<double>& q,
+    const std::vector<double>& k,
+    const std::vector<double>& v,
+    int64_t S,
+    int64_t D,
+    int64_t Q_H,
+    int64_t KV_H,
+    int64_t input_pos) {
+  const double scale = 1.0 / std::sqrt(static_cast<double>(D));
+  const int64_t group = Q_H / KV_H;
+  std::vector<double> out(static_cast<size_t>(S * Q_H * D), 0.0);
+  std::vector<double> scores(static_cast<size_t>(S + input_pos));
+  for (int64_t h = 0; h < Q_H; ++h) {
+    const int64_t kv_h = h / group;
+    for (int64_t s = 0; s < S; ++s) {
+      double max_score = -std::numeric_limits<double>::infinity();
+      for (int64_t c = 0; c <= s + input_pos; ++c) {
+        double acc = 0.0;
+        for (int64_t d = 0; d < D; ++d) {
+          acc += q[(s * Q_H + h) * D + d] * k[(c * KV_H + kv_h) * D + d];
+        }
+        scores[c] = acc * scale;
+        max_score = std::max(max_score, scores[c]);
+      }
+      double denom = 0.0;
+      for (int64_t c = 0; c <= s + input_pos; ++c) {
+        scores[c] = std::exp(scores[c] - max_score);
+        denom += scores[c];
+      }
+      for (int64_t d = 0; d < D; ++d) {
+        double acc = 0.0;
+        for (int64_t c = 0; c <= s + input_pos; ++c) {
+          acc += scores[c] * v[(c * KV_H + kv_h) * D + d];
+        }
+        out[(s * Q_H + h) * D + d] = acc / denom;
+      }
+    }
+  }
+  return out;
+}
+
 // Builds+runs one coopmat SDPA case via direct ComputeGraph construction
 // (mirrors sdpa_run_case's graph shape), reads Q/K/V/out host-side in
 // float/half, computes the CPU reference, and compares. Returns true iff
@@ -1965,7 +2027,8 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
   std::vector<float> qf(q_numel), kf(kv_numel), vf(kv_numel);
   std::vector<uint16_t> qh(q_numel), kh(kv_numel), vh(kv_numel);
   for (int64_t i = 0; i < q_numel; ++i) {
-    qf[i] = (static_cast<float>(std::rand()) / RAND_MAX) * 2.0f - 1.0f;
+    qf[i] = c.q_scale *
+        ((static_cast<float>(std::rand()) / RAND_MAX) * 2.0f - 1.0f);
     qh[i] = float_to_half(qf[i]);
   }
   for (int64_t i = 0; i < kv_numel; ++i) {
@@ -2028,6 +2091,10 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
   const bool av_fired =
       (has_kernel_containing(dispatched, "sdpa_compute_out_coopmat") ||
        has_kernel_containing(dispatched, "sarc_sdpa_av_coopmat"));
+  // 780m: the fused prefill kernel computes QK^T, softmax and attn*V itself;
+  // the three kernels must then not have run.
+  const bool fused_fired =
+      has_kernel_containing(dispatched, "sarc_dev_780m_sdpa_fused");
 
   // Kernel pairing. A QK^T kernel built with NO_MASK_FILL (tile token ending
   // in "nf") leaves every attn_weights element above the causal diagonal
@@ -2036,8 +2103,11 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
   // (sarc_sdpa_attn_weights_softmax*) and of no other. Fail the case, whatever
   // the numbers say, if such a kernel is ever dispatched with another softmax.
   std::string qk_name = "?", av_name = "?", softmax_name = "?";
+  std::string fused_name = "-";
   for (const auto& k : dispatched) {
-    if (k.find("softmax") != std::string::npos) {
+    if (k.find("sdpa_fused") != std::string::npos) {
+      fused_name = k;
+    } else if (k.find("softmax") != std::string::npos) {
       softmax_name = k;
     } else if (
         k.find("sdpa_compute_attn_weights") != std::string::npos ||
@@ -2058,8 +2128,10 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
   const bool softmax_bounded_fill =
       softmax_name.find("softmax_780m_r3") != std::string::npos;
   const bool av_causal = av_name.rfind("sarc_sdpa_av_coopmat", 0) == 0;
-  const bool pairing_ok = (!qk_no_mask_fill || softmax_truncated) &&
-      (!softmax_bounded_fill || av_causal);
+  const bool pairing_ok = fused_fired
+      ? (qk_name == "?" && softmax_name == "?" && av_name == "?")
+      : ((!qk_no_mask_fill || softmax_truncated) &&
+         (!softmax_bounded_fill || av_causal));
 
   std::vector<uint16_t> outh(q_numel);
   graph.maybe_cast_and_copy_from_staging(
@@ -2141,9 +2213,39 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
   }
 
   const bool numeric_ok = mismatches == 0;
-  const bool fired_ok = qk_fired && av_fired && pairing_ok;
+  const bool fired_ok =
+      ((qk_fired && av_fired) || fused_fired) && pairing_ok;
+  // 780m, ET_VK_SDPA_ERROR_REPORT=1: error of the device output against an
+  // fp64 reference computed from the fp16 inputs the device saw (so input
+  // rounding is not counted). Report only; the verdict above is unchanged.
+  if (std::getenv("ET_VK_SDPA_ERROR_REPORT") != nullptr) {
+    std::vector<double> qd(q_numel), kd(cache_numel), vd(cache_numel);
+    for (int64_t i = 0; i < q_numel; ++i) {
+      qd[i] = half_to_float(qh[i]);
+    }
+    for (int64_t i = 0; i < cache_numel; ++i) {
+      kd[i] = half_to_float(float_to_half(kcf[i]));
+      vd[i] = half_to_float(float_to_half(vcf[i]));
+    }
+    const std::vector<double> ref64 = sdpa_reference_f64(
+        qd, kd, vd, c.seq_len, c.head_dim, c.num_heads, c.num_kv_heads,
+        c.input_pos);
+    double sq = 0.0, ref_sq = 0.0, max_abs = 0.0;
+    for (int64_t i = 0; i < q_numel; ++i) {
+      const double e = static_cast<double>(outf[i]) - ref64[i];
+      sq += e * e;
+      ref_sq += ref64[i] * ref64[i];
+      max_abs = std::max(max_abs, std::fabs(e));
+    }
+    std::cout << "[sdpa-error] " << c.name << " n=" << q_numel
+              << std::scientific << std::setprecision(6)
+              << " rms=" << std::sqrt(sq / q_numel) << " max=" << max_abs
+              << " ref_rms=" << std::sqrt(ref_sq / q_numel)
+              << std::defaultfloat << "\n";
+  }
   std::cout << "[sdpa-kernels] " << c.name << " qk=" << qk_name
             << " softmax=" << softmax_name << " av=" << av_name
+            << " fused=" << fused_name
             << " no_mask_fill=" << (qk_no_mask_fill ? "yes" : "no")
             << " pairing=" << (pairing_ok ? "ok" : "BROKEN") << "\n";
   std::cout << "[sdpa-correctness] " << c.name << " S=" << c.seq_len
@@ -2559,7 +2661,7 @@ void print_usage() {
          "cases\n"
          "  --sdpa-regions-only  enumerate the QK^T mask-region tile grid "
          "(no GPU)\n"
-         "  --sdpa-tier=<fast|regions|all|extended|full>  which SDPA correctness tier to "
+         "  --sdpa-tier=<fast|regions|all|extended|full|peaked>  which SDPA correctness tier to "
          "run (default all)\n"
          "  --sdpa-force-fallback  run SDPA correctness with coopmat "
          "DISABLED (control)\n"

@@ -756,6 +756,24 @@ struct Registrar {
 // when they disable an op.
 namespace vkcompute {
 namespace sarc {
+
+#ifdef SARC_HAS_SDPA_FUSED_HOOK
+// Sdpa780mFused.cpp (ET_VK_SARC_780M_SDPA_FUSED). Compiled only when the
+// release zone has the fused-SDPA hook (that change's
+// hooks/sdpa-fused-hook.patch, not applied on this branch).
+bool sdpa_fused_active_780m(
+    ComputeGraph* graph,
+    int32_t q,
+    int32_t input_pos_symint);
+void sdpa_fused_add_780m(
+    ComputeGraph& graph,
+    int32_t q,
+    int32_t k,
+    int32_t v,
+    int32_t input_pos_symint,
+    int32_t out);
+#endif
+
 namespace {
 
 const Row k780mSpace[] = {
@@ -817,6 +835,10 @@ struct Registrar780m {
     o.select = select_780m;
 #ifdef SARC_HAS_SDPA_SOFTMAX_OVERRIDE
     o.sdpa_softmax = softmax_780m;
+#endif
+#ifdef SARC_HAS_SDPA_FUSED_HOOK
+    o.sdpa_fused_active = sdpa_fused_active_780m;
+    o.sdpa_fused_add = sdpa_fused_add_780m;
 #endif
     set_override(o);
   }

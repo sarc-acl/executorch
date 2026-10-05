@@ -1,0 +1,91 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# SARC development zone, 780M: fused LLM-mode prefill SDPA (not shipped, not reachable without the hook
+# described in openspec/changes/sarc-1.5-780m-prefill-refine/hooks/).
+# Name: d<HEAD_DIM>_t<WG_TILE_M>x<WG_TILE_N>g<SG_GRID_X><SG_GRID_Y>s<SUBGROUP_SIZE>.
+# Each variant needs: WG_TILE_M / SG_GRID_Y, WG_TILE_N / SG_GRID_X and HEAD_DIM / SG_GRID_X multiples of 16;
+# WG_SIZE a multiple of WG_TILE_M with WG_TILE_N / (WG_SIZE / WG_TILE_M) a multiple of 8; shared memory
+# 16 * ((M + N) * (D / 8 + 1) + M * (N / 8 + 1)) + 4 * M * (WG_SIZE / M + 16) bytes at most 65536.
+
+sarc_dev_780m_sdpa_fused:
+  parameter_names_with_default_values:
+    DTYPE: half
+    PRECISION: highp
+    IO_STORAGE: buffer
+    K_CACHE_STORAGE: buffer
+    HEAD_DIM: 64
+    WG_TILE_M: 128
+    WG_TILE_N: 64
+    SG_GRID_X: 2
+    SG_GRID_Y: 4
+    SUBGROUP_SIZE: 32
+  generate_variant_forall:
+    combination:
+      parameter_names: [IO_STORAGE, K_CACHE_STORAGE]
+      combos:
+        - parameter_values: [buffer, buffer]
+    DTYPE:
+      - VALUE: half
+  shader_variants:
+    # head_dim 64 (1B). Shared memory 54.0 / 32.0 / 31.5 / 41.5 KiB.
+    - NAME: sarc_dev_780m_sdpa_fused_d64_t128x64g24s32
+      HEAD_DIM: 64
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+    - NAME: sarc_dev_780m_sdpa_fused_d64_t64x64g24s32
+      HEAD_DIM: 64
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+    - NAME: sarc_dev_780m_sdpa_fused_d64_t64x64g22s32
+      HEAD_DIM: 64
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    - NAME: sarc_dev_780m_sdpa_fused_d64_t128x32g24s32
+      HEAD_DIM: 64
+      WG_TILE_M: 128
+      WG_TILE_N: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+    # head_dim 128 (3B, 8B). Shared memory 48.0 / 47.5 / 61.5 / 35.5 KiB.
+    - NAME: sarc_dev_780m_sdpa_fused_d128_t64x64g24s32
+      HEAD_DIM: 128
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+    - NAME: sarc_dev_780m_sdpa_fused_d128_t64x64g22s32
+      HEAD_DIM: 128
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    - NAME: sarc_dev_780m_sdpa_fused_d128_t128x32g24s32
+      HEAD_DIM: 128
+      WG_TILE_M: 128
+      WG_TILE_N: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+    - NAME: sarc_dev_780m_sdpa_fused_d128_t64x32g24s32
+      HEAD_DIM: 128
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
