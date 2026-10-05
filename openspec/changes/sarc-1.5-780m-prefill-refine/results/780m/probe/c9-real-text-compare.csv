@@ -1,0 +1,19 @@
+model,scheme,pair,prompts,top1_diff,kl_mean_nat,kl_max_nat,max_abs_logit_diff,ppl_first,ppl_second,ppl_ratio,gross_divergence
+1b,4w,cand-default vs parent-default,32,0,2.186e-05,1.783e-04,0.1504,9.7180,9.7383,0.99791,ok
+1b,4w,parent-tiled vs parent-default,32,0,3.937e-05,2.381e-04,0.1172,9.7367,9.7383,0.99983,
+1b,4w,cand-tiled vs cand-default,32,0,2.654e-05,1.489e-04,0.1777,9.7450,9.7180,1.00278,
+1b,8da4w,cand-default vs parent-default,32,3,2.789e-02,1.329e-01,3.7461,9.6100,9.7303,0.98763,ok
+1b,8da4w,parent-tiled vs parent-default,32,3,4.527e-02,2.662e-01,4.0859,9.8289,9.7303,1.01013,
+1b,8da4w,cand-tiled vs cand-default,32,4,2.440e-02,8.889e-02,4.7852,10.1180,9.6100,1.05286,
+3b,4w,cand-default vs parent-default,32,0,2.061e-05,3.453e-04,0.0703,4.8889,4.8857,1.00066,ok
+3b,4w,parent-tiled vs parent-default,32,0,1.900e-05,1.344e-04,0.0781,4.8922,4.8857,1.00134,
+3b,4w,cand-tiled vs cand-default,32,0,2.319e-05,1.820e-04,0.1094,4.8857,4.8889,0.99934,
+3b,8da4w,cand-default vs parent-default,32,4,2.021e-02,1.544e-01,3.3125,4.7946,4.5738,1.04827,ok
+3b,8da4w,parent-tiled vs parent-default,32,3,2.746e-02,2.455e-01,5.1562,4.7403,4.5738,1.03641,
+3b,8da4w,cand-tiled vs cand-default,32,4,2.823e-02,2.352e-01,3.5625,5.0965,4.7946,1.06297,
+8b,4w,cand-default vs parent-default,32,0,1.594e-05,9.894e-05,0.0605,4.6378,4.6293,1.00182,ok
+8b,4w,parent-tiled vs parent-default,32,0,2.720e-05,2.327e-04,0.1074,4.6415,4.6293,1.00264,
+8b,4w,cand-tiled vs cand-default,32,0,2.478e-05,3.696e-04,0.1055,4.6382,4.6378,1.00010,
+8b,8da4w,cand-default vs parent-default,32,1,1.668e-02,1.088e-01,2.5488,4.9586,4.8166,1.02948,ok
+8b,8da4w,parent-tiled vs parent-default,32,2,2.678e-02,2.564e-01,2.8379,4.7835,4.8166,0.99313,
+8b,8da4w,cand-tiled vs cand-default,32,3,3.791e-02,3.638e-01,3.4531,4.5500,4.9586,0.91761,

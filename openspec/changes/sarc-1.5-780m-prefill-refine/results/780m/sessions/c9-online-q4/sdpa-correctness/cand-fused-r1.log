@@ -1,0 +1,32 @@
+[sarc_dev] profile active: 780m-refine3
+
+=== Compute Shader Performance Benchmark ===
+Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; prefill 2048 / decode 1 @ ctx3072; linear group_size=128; 3 warmup + 5 timed runs per case)
+DEVICE,amd radeon 780m graphics (radv phoenix),timestamp_period_ns=10,subgroup_size=64,coopmat=yes,max_shared_mem_bytes=65536
+----------------------------------------------------------------------
+[sdpa-regions] fused_s32 S=32 context_len=32 tile=128x64 num_tiles_m=1 num_tiles_n=1 tiles=1 all_masked=0 all_visible=0 diagonal=1 overlap=0
+[sdpa-boundary] fused_s32 m=0 last_visible=-1 first_diagonal=0 last_diagonal=0 first_masked=-1
+[sdpa-regions] fused_s64 S=64 context_len=64 tile=128x64 num_tiles_m=1 num_tiles_n=1 tiles=1 all_masked=0 all_visible=0 diagonal=1 overlap=0
+[sdpa-boundary] fused_s64 m=0 last_visible=-1 first_diagonal=0 last_diagonal=0 first_masked=-1
+[sdpa-regions] fused_s64_d128 S=64 context_len=64 tile=128x64 num_tiles_m=1 num_tiles_n=1 tiles=1 all_masked=0 all_visible=0 diagonal=1 overlap=0
+[sdpa-boundary] fused_s64_d128 m=0 last_visible=-1 first_diagonal=0 last_diagonal=0 first_masked=-1
+[sdpa-regions] fused_s192_pos64 S=192 context_len=256 tile=128x64 num_tiles_m=2 num_tiles_n=4 tiles=8 all_masked=1 all_visible=4 diagonal=3 overlap=0
+[sdpa-boundary] fused_s192_pos64 m=0 last_visible=0 first_diagonal=1 last_diagonal=2 first_masked=3
+[sdpa-boundary] fused_s192_pos64 m=1 last_visible=2 first_diagonal=3 last_diagonal=3 first_masked=-1
+[sdpa-regions] fused_s320_d128_pos192 S=320 context_len=512 tile=128x64 num_tiles_m=3 num_tiles_n=8 tiles=24 all_masked=4 all_visible=15 diagonal=5 overlap=0
+[sdpa-boundary] fused_s320_d128_pos192 m=0 last_visible=2 first_diagonal=3 last_diagonal=4 first_masked=5
+[sdpa-boundary] fused_s320_d128_pos192 m=1 last_visible=4 first_diagonal=5 last_diagonal=6 first_masked=7
+[sdpa-boundary] fused_s320_d128_pos192 m=2 last_visible=6 first_diagonal=7 last_diagonal=7 first_masked=-1
+[sdpa-regions] TOTAL tiles=35 all_masked=5 all_visible=19 diagonal=11 overlap=0 exhaustive=yes all_three_covered=yes
+[sdpa-regions] boundaries_ok=yes
+[sdpa-kernels] fused_s32 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] fused_s32 S=32 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/4096 PASSED
+[sdpa-kernels] fused_s64 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] fused_s64 S=64 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/131072 PASSED
+[sdpa-kernels] fused_s64_d128 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d128_t16x64g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] fused_s64_d128 S=64 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/262144 PASSED
+[sdpa-kernels] fused_s192_pos64 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] fused_s192_pos64 S=192 input_pos=64 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/393216 PASSED
+[sdpa-kernels] fused_s320_d128_pos192 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d128_t16x64g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] fused_s320_d128_pos192 S=320 input_pos=192 D=128 Q_H=24 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/983040 PASSED
+[sdpa-correctness] tier=fused cases_run=5

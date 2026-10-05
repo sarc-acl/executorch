@@ -1,6 +1,6 @@
 # STATUS: 780M prefill campaign, round 2 (parameter space + beyond)
 
-Updated 2026-10-05 02:50 PDT (09:50 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
+Updated 2026-10-05 04:20 PDT (11:20 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
 Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (new raw data) and
 `.../780m-prefill-refine-2026-10-03/` (earlier builds and sessions).
 
@@ -11,23 +11,19 @@ Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (
 | candidate 7 (softmax r3) | **complete**: gate passed, bit-identical to its parent, six cells +2.39 to +6.78 %, geomean **+4.10 %** over `780m-refine3` |
 | candidate 8 (fused SDPA kernel, Part 2) | **ACCEPTED (reference-error rule, owner decision 2026-10-04)**: +7.84 to +20.14 %, geomean **+13.16 %** over candidate 7, 60 valid runs; gate finished 00:04 PDT; one next-token item differs (8B 8da4w, `prompt_2048.txt`); record below. It needs `hooks/sdpa-fused-hook.patch`, so adopting it is the owner's decision |
 | igpu-roofline `fast` plan | finished 20:15 PDT; matrix roofs 14.766 TFLOP/s (fp16 -> fp32) and 14.379 TOP/s (int8) |
-| candidate 9 (candidate 8 + one-pass fused kernel + 4w kernel per shape) | **e2e session done: +4.50 to +5.45 % in the 4w cells, +1.06 to +1.80 % in the 8da4w cells (inside the band), geomean +3.19 % over candidate 8**, next token SAME in all 12 checks; the rest of the gate is running (`chain8.sh`). Not accepted yet |
+| candidate 9 (candidate 8 + one-pass fused kernel + 4w kernel per shape) | **gate passed** (finished 04:10 PDT): +4.50 to +5.45 % in the 4w cells, +1.06 to +1.80 % in the 8da4w cells (inside the band), geomean **+3.19 %** over candidate 8; every next-token item SAME; record below |
 | 4w, Part 1 | random sample, refinement round 1 and the confirmation are done: **best kernel per shape below**, 4.0 to 4.8 % less linear time per layer than `780m-refine3`, byte-identical output; refinement round 2 (51 neighbours of the winners) and the 12 production-diff passes are queued |
-| 8da4w validation, screen and confirmation, production-diff passes, QK^T / attn*V enumeration | `chain6e.sh`, held while the candidate-9 gate runs (8da4w validation 40 of 64 configurations done) |
+| 4w refinement round 2; 8da4w validation, screen and confirmation; production-diff passes; QK^T / attn*V enumeration | running since 04:10 PDT (`chain9.sh`, `chain6e.sh`) |
 
 Chained over the three sessions (`t1-recheck`, `c7-softmax-r3`, `c8-fused3`; not a direct measurement, that comes
 at the end): candidate 8 is about +27 % geomean over `dev/1.5` (1B 4w 2698 -> 3625 tok/s, 8B 8da4w 488 -> 606).
 
 ## Running now (detached chains; nothing needs attention)
 
-1. `chain8.sh`: gate of candidate 9 (`stage/c9-online-q4`), started 02:18 PDT from 44 C. Done: e2e session.
-   Running: SDPA tiers `all`, `extended`, `full` (12 passes each), then `verify.sh`, traces, tiers `peaked` and
-   `fused`, error against the fp64 reference for both arms, steady-clock kernel timing, real-text logits probe.
-   Until about 04:45 PDT.
-2. `chain9.sh`, after that: 4w refinement round 2, the 51 untested single-parameter neighbours of the confirmed
+1. `chain9.sh`: 4w refinement round 2, the 51 untested single-parameter neighbours of the confirmed
    winners, full measurement, twice (about 40 min, sharing the GPU run by run with the chain below).
-3. `chain6e.sh` (replaces `chain6d.sh`; same steps, the timing of both linear families before the production-diff
-   passes), held (its sweep process is stopped between two runs) until the gate is done:
+2. `chain6e.sh` (replaces `chain6d.sh`; same steps, the timing of both linear families before the production-diff
+   passes), continued at 04:10 PDT:
    - 8da4w: validation of the screening mode on 64 configurations (40 done), then all 2,238 survivors screened
      (`wq_wo`, 3 + 3 runs), then the confirmation timing (everything within 8 % of the fastest, full measurement;
      the 10 fastest per shape 5 times). This changes how each 8da4w configuration is timed, not which ones: say
@@ -339,7 +335,7 @@ Results so far (one pass each unless said; `<artifacts>/fx/`, `<artifacts>/stage
 - End to end, one run per arm, not a session: 1B 4w 3020.65 -> 3624.78 tok/s (+20.0 %). Projected from the
   kernel times and the candidate-7 traces: about +20 % (1B), +12 % (3B), +8 % (8B).
 
-## Candidate 9: candidate 8 + one-pass fused kernel + 4w kernel per shape; session done, gate running
+## Candidate 9: candidate 8 + one-pass fused kernel + 4w kernel per shape: gate passed, +3.19 % geomean
 
 Session `c9-online-q4` (`results/780m/sessions/c9-online-q4/`), started 02:18 PDT at 44 C. Both arms are the same
 binary (build `fused7` = the branch + both hook patches) with candidate 8's environment; the candidate arm uses
@@ -366,6 +362,23 @@ The two parts, measured separately before the gate:
 - One-pass fused kernel: it does (rescaling instead of a first pass), so it is judged against the reference. On
   the four production shapes its rms error is 0.996 to 0.998 times candidate 8's and its maximum is equal or lower
   (`results/780m/sdpa-error/c9-online-full-precheck.csv`); the gate repeats this.
+
+Gate (finished 04:10 PDT), all with the candidate's environment:
+
+| item | result |
+|---|---|
+| `verify.sh --models 1b,3b,8b --schemes 4w,8da4w --pdiff` | correctness rc = 0; 12 of 12 production-diff cases ALL PASSED; default vs tiled SAME on the real-text and the unaligned prompt; decode 31 tokens; `linear <scheme> rc=1` as on the parent; status lines identical to candidate 8's. The 4w texture3d cases dispatch the `refine9` kernels |
+| next token parent vs candidate | SAME in all six cells on both prompts: **no differing item** |
+| SDPA tiers, 12 passes each | `all` 4 of 4, `extended` 8 of 8, `full` 4 of 4, `peaked` 5 of 5, `fused` 5 of 5 in every pass, 0 mismatches, the fused kernel the only SDPA kernel dispatched, `pairing=ok`; controls with the table kernels 1 pass each |
+| error against the fp64 reference (`results/780m/sdpa-error/c9-online-q4.csv`) | production shapes: rms 0.996 to 0.998 times candidate 8's, maximum equal or lower: **not larger on any of them**. All 17 cases of `extended`, `peaked` and `full`: rms ratio 0.992 to 1.000 |
+| real-text comparison, 32 prompts, six cells (`results/780m/probe/c9-real-text-compare.csv`) | 4w cells: top-1 differences 0, mean KL 1.6e-5 to 2.2e-5 (candidate 8 tiled vs default: 1.9e-5 to 3.9e-5). 8da4w cells: top-1 differences 3 / 4 / 1 of 32, mean KL 0.028 / 0.020 / 0.017 (candidate 8 tiled vs default: 3 / 3 / 2 and 0.045 / 0.027 / 0.027). Gross-divergence check passed (limits 0.5 nat, one third of the prompts) |
+| traces, one warm run per arm (`sessions/c9-online-q4/trace/`) | 4w linear GEMM 367.5 -> 350.9 ms (1B, -4.5 %), 1049 -> 1018 ms (3B, -2.9 %), 2659 -> 2551 ms (8B, -4.1 %); 8da4w GEMM unchanged (+0.1 / +0.1 / -0.5 %); copy pass + fused kernel -10 / -31 / -48 ms in both schemes; totals 560.0 -> 533.3, 1481 -> 1420, 3382 -> 3228 ms (4w) |
+| kernel time per layer, steady clock, three runs (`results/780m/fused/kernel-time-steady-c9-gate.csv`) | copy pass + fused kernel 2.82 -> 2.26 ms (1B), 4.31 -> 3.22 ms (3B), 5.54 -> 4.05 ms (8B) |
+
+The candidate changes the SDPA arithmetic but no next-token item differs, so nothing has to be excused; the
+reference-error evidence is recorded anyway. The 8da4w cells' gain (+1.06 to +1.80 %) comes from the one-pass
+kernel alone and is inside the band; whether that kernel is kept for 8da4w is therefore a matter of preference
+for the simpler two-pass form, not of a measured gain.
 
 ## Part 1, 4w: the best kernel per shape within the existing bodies (`results/780m/space/confirm-4w/`)
 
@@ -651,12 +664,10 @@ runs each; all variants reached through `hooks/softmax-name-hook.patch` applied 
 
 ## Next
 
-1. Finish the candidate-9 gate; record it (the 4w part is byte-identical, the one-pass kernel goes by the
-   reference-error rule).
-2. 4w refinement round 2; 8da4w validation, screen and confirmation -> the 8da4w kernel per shape; a candidate 10
+1. 4w refinement round 2; 8da4w validation, screen and confirmation -> the 8da4w kernel per shape; a candidate 10
    from them if anything is outside the band.
-3. Production-diff passes for the confirmed configurations; QK^T / attn*V enumeration and repeat stage.
-4. A direct session of the final configuration against `dev/1.5` and against `780m-refine3`.
+2. Production-diff passes for the confirmed configurations; QK^T / attn*V enumeration and repeat stage.
+3. A direct session of the final configuration against `dev/1.5` and against `780m-refine3`.
 
 ## Blocking
 

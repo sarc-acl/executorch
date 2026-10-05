@@ -1,0 +1,13 @@
+[sdpa-error] 1b_head_config_s2048 n=4194304 rms=1.024378e-05 max=3.855802e-04 ref_rms=3.768393e-02
+[sdpa-kernels] 1b_head_config_s2048 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] 1b_head_config_s2048 S=2048 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/4194304 PASSED
+[sdpa-error] 3b_head_config_s2048 n=6291456 rms=1.032373e-05 max=3.566209e-04 ref_rms=3.809580e-02
+[sdpa-kernels] 3b_head_config_s2048 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d128_t16x64g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] 3b_head_config_s2048 S=2048 input_pos=0 D=128 Q_H=24 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/6291456 PASSED
+[sdpa-error] 8b_head_config_s2048 n=8388608 rms=1.033182e-05 max=3.693156e-04 ref_rms=3.792842e-02
+[sdpa-kernels] 8b_head_config_s2048 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d128_t16x64g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] 8b_head_config_s2048 S=2048 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/8388608 PASSED
+[sdpa-error] 8b_head_config_s1024_pos1024 n=4194304 rms=4.781532e-06 max=3.931700e-05 ref_rms=1.564780e-02
+[sdpa-kernels] 8b_head_config_s1024_pos1024 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d128_t16x64g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] 8b_head_config_s1024_pos1024 S=1024 input_pos=1024 D=128 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/4194304 PASSED
+[sdpa-correctness] tier=full cases_run=4
