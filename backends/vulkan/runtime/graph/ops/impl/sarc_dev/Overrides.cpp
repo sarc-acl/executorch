@@ -1086,6 +1086,21 @@ const Preference k4070tiRefine3[] = {
     {Op::kDq8caLinear, "bh_t128x128k64g44s32mk32ra", nullptr},
     {Op::kQ4gswLinear, "4070ti_t256x128k16g42s32gac", n_above_512_4070ti},
 };
+const Preference k4070tiRefine4[] = {
+    {Op::kSdpaQk, "4070ti_df_t64x64k32g11s32nf", head_dim_64_4070ti},
+    {Op::kSdpaQk, "4070ti_pk_t64x128k32g42s32nf", nullptr},
+    {Op::kSdpaAv, "4070ti_ml_t32x64k32g42s32", head_dim_64_4070ti},
+    {Op::kSdpaAv, "4070ti_ml_t64x128k32g42s32", nullptr},
+    {Op::kDq8caLinear, "bh_t128x128k64g44s32mk32ra", nullptr},
+};
+const Preference k4070tiRefine5[] = {
+    {Op::kSdpaQk, "4070ti_df_t64x64k32g11s32nf", head_dim_64_4070ti},
+    {Op::kSdpaQk, "4070ti_pk_t64x128k32g42s32nf", nullptr},
+    {Op::kSdpaAv, "4070ti_ml_t32x64k32g42s32", head_dim_64_4070ti},
+    {Op::kSdpaAv, "4070ti_ml_t64x128k32g42s32", nullptr},
+    {Op::kDq8caLinear, "bh_t128x128k64g44s32mk32ra", nullptr},
+    {Op::kQ4gswLinear, "4070ti_t256x128k16g42s32gac", n_above_512_4070ti},
+};
 // <<< 4070ti lin-preferences
 struct Profile {
   const char* name;
@@ -1187,6 +1202,8 @@ const Profile kProfiles[] = {
     // >>> 4070ti lin-profiles
     {"4070ti-refine2", k4070tiRefine2, sizeof(k4070tiRefine2) / sizeof(Preference)},
     {"4070ti-refine3", k4070tiRefine3, sizeof(k4070tiRefine3) / sizeof(Preference)},
+    {"4070ti-refine4", k4070tiRefine4, sizeof(k4070tiRefine4) / sizeof(Preference)},
+    {"4070ti-refine5", k4070tiRefine5, sizeof(k4070tiRefine5) / sizeof(Preference)},
     // <<< 4070ti lin-profiles
 };
 const Profile* requested_profile() {
