@@ -28,6 +28,9 @@ the release sources and the sibling campaign's dev sources and never write them.
 | `glsl/sarc_dev/sarc_sdpa_qk_coopmat_orin_pk` | 12 more packed-staging QK^T tiles (K = 64, K = 128); the shader is the sibling's, identical from `#version` on | `gen_orin_qk.py` |
 | `glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpgtr_orin_bf` | **new**: 8da4w zpgtr with whole-texel weight staging (twin of the release body), 15 tiles, two forms (`bf`: two staging slices, `bf1`: one) | `gen_orin_bf.py` |
 | `glsl/sarc_dev/sarc_dev_prof_orin_q4gsw`, `sarc_dev_prof_orin_dq8ca_bf` | phase-timing twins, measurement only | `gen_orin_prof.py` |
+| `glsl/sarc_dev/sarc_linear_q4gsw_coopmat_orin` (sweep variants) | 4w: staging and grid variants of the shipped Orin tiles (column-major weight staging `bt`, texel-wise fetches `c`, other subgroup grids); candidate 3 uses `orin_t256x128k16g42s32bt` | `gen_orin_q4.py` |
+| `glsl/sarc_dev/sarc_sdpa_attn_weights_softmax_orin`, `..._orin_wg` | softmax variants of `4070ti_nzf`: 16 that keep a row after the first pass (negative), 24 with other reductions and workers per row (candidate 4 is `orin_g64`), 3 measurement-only pass twins (`orin_xp*`, wrong output by construction) | `gen_orin_softmax.py` |
+| profiles `orin-lin-refine3`, `orin-refine4`, `orin-lin-refine5`, `orin-refine5` | the linear candidates alone and with the SDPA kernels; `orin-refine5` is everything | `orin_refine.py` |
 | `backends/vulkan/test/sarc_dev/test_llama_microbench.cpp` | one line: the SDPA pairing check reads the softmax kernel name by substring (see `STATUS.md`, "A test fix") | by hand |
 
 ## Release-zone hook (owner decision 2026-10-05)
@@ -214,4 +217,80 @@ Build `topic6` = `4718f3e07`, gate `s4-c1h` against the pristine parent:
 - The gain is attention alone (ETDump, ms): 1B 1215 -> 309, 3B 2912 -> 526, 8B 4437 -> 798; every other family
   is unchanged within 1 ms.
 
-DRAFT: the rule's real-text evidence, candidate 2 and the final sections follow.
+- Reference-error rule, as written (`results/orin/probe/refine1-nzf/`): criterion 1 met in 12 of 12 cases; the
+  41-prompt real-text comparison of the four arms shows, per cell, top-1 differences candidate vs parent of 0 /
+  5 / 0 / 1 / 0 / 4 of 41 (the parent's own two arms: 0 / 2 / 0 / 1 / 0 / 1), mean KL at most 0.076 nat (limit
+  0.5), perplexity ratio 0.996 to 1.078; no gross divergence; no differing next-token item in the gate. Recorded
+  as `ACCEPTED (reference-error rule, owner decision 2026-10-04)`. The table is in `STATUS.md`.
+
+## 8da4w linear: candidate 2 (whole-texel weight staging), +2.84 % alone, GATE_ACCEPTED
+
+Phase timing of the shipped `zpgtr_t128x128k64g44s32mk32ra` on this device (shader clock, share of a wave;
+`results/orin/phases/prof1-8da4w.csv`): weight and activation fetch 38 to 47 %, MMA 24 to 31 %, barrier 10 to
+15 %. The shipped kernel fetches every packed-weight texel four times per chunk and keeps one 32-bit word of
+it each time, and a texture2d read is the slowest path the roofs show (20 GB/s from DRAM against 62 for a
+buffer). `glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpgtr_orin_bf` is a twin of the release body in which a
+staging slot is a whole texel (one fetch, eight shared-memory words): same values, same shared-memory layout,
+same MMA order.
+
+- Kernel level, geomean over the 12 model shapes against the shipped kernel (`results/orin/screens/
+  screen{1,2,3}-8da4w.txt`, 30 tiles in all): whole texel on the shipped 512-thread tile 1.019 (every second
+  thread has no texel), on a 256-thread 128 x 128 tile **1.158** (`g24`; `g42` 1.154); one staging slice with a
+  second barrier per chunk 0.92 to 0.99; smaller tiles 0.68 to 1.02; the 4070 Ti sweep tiles 0.69 to 0.87. What
+  matters is that every thread makes one fetch per chunk. Phase timing of the chosen tile: fetch 15 to 24 %,
+  MMA 48 to 59 %.
+- Bit-identical to the shipped kernel on all 12 shapes (`screens/bit-bf.txt`); production-diff with non-zero
+  zero points ALL PASSED on the three models.
+- Gate `s3-c2` (`ET_VK_SARC_DEV_PROFILE=orin-lin-refine2` against the pristine parent, build `topic6`):
+  `verify.sh` equal to the parent control, 0 findings; 1B 8da4w 823.81 -> 854.76 (+3.76 %), 3B 320.45 -> 342.59
+  (+6.91 %), 8B 170.51 -> 181.88 (+6.67 %), the 4w cells within 0.02 %; geomean +2.84 %; next token SAME in 24
+  of 24 rows. ETDump: linear GEMM of the 8da4w cells 870 -> 778, 2577 -> 2171, 6054 -> 5306 ms.
+- On top of candidate 1h the same milliseconds weigh more: the 8da4w cells of the stack 1h + 2 read 1374.5 /
+  569.1 / 268.6 tok/s against 1292.9 / 511.2 / 244.6 for 1h alone (+6.3 / +11.3 / +9.8 %; two sessions).
+
+## 4w linear: candidate 3, +0.82 % over its parent, GATE_ACCEPTED
+
+Phase timing of the shipped Orin 4w tiles (`results/orin/phases/prof2-4w.csv`): MMA 45 to 49 %, weight
+dequantisation into shared memory 18 to 20 %, fetch 17 to 18 %, barrier 10 to 11 % (the fp32 tile of 8B `w2`:
+MMA 30 to 37 %, store 26 to 38 %). Two screens at kernel level, 37 tiles in all (`screens/screen{1,2}-4w.txt`):
+no existing subgroup-32 dev tile beats the shipped rows (best 0.94x), except on the fp32-accumulating shape
+(K = 14336), where texel-wise weight staging is 1.11x; of the staging and grid variants of the shipped tiles
+themselves, column-major weight staging on a 4 x 2 grid is 1.3 to 1.8 % faster on every K <= 8192 shape, and
+nothing else is. Candidate 3 = profile `orin-refine5` = those two tiles, each bit-identical to the shipped
+kernel on the shapes it serves (`screens/bit-q4.txt`, `bit-q4b.txt`).
+
+Gate `s5-c3` (build `topic13`, parent arm = candidates 1h + 2, candidate arm = the same + the 4w tiles):
+`verify.sh` equal to the parent control, 0 findings; 1B 4w 1472.32 -> 1484.06 (+0.80 %), 3B 621.55 -> 627.84
+(+1.01 %), 8B 286.43 -> 294.97 (+2.98 %), the 8da4w cells within 0.13 %; geomean **+0.82 %**; next token SAME
+in 24 of 24 rows. ETDump: linear GEMM of the 4w cells 667 -> 655, 1895 -> 1862, 4862 -> 4654 ms.
+
+## Softmax after candidate 1h: one negative family, candidate 4
+
+After candidate 1h the softmax is the largest attention kernel (8.74 ms of the 19.3 ms a 1B layer's attention
+takes). Two hypotheses, both tested at kernel level (`tools/gen_orin_softmax.py`):
+
+1. *The three passes re-read the row from DRAM.* Negative. Keeping the row after the first pass (local array
+   or shared memory, 16 variants; `screens/sdpa-screen4.csv`) is 1.12x to 4.7x slower. The re-reads are cache
+   hits; and a workgroup that declares 8 / 16 / 32 KB of shared memory runs 1.9x / 2.6x / 4.6x longer.
+2. *The 14 barriers per row (two 64-worker tree reductions) and the split of a row over workers.* Partly.
+   Fewer workers per row is slower in proportion (one thread per row: 16x), more than 128 is slower again;
+   reducing inside each subgroup with `subgroupMax` / `subgroupAdd` and one barrier is the fastest form:
+   `orin_g64` 8.25 / 6.18 / 8.25 ms against 8.74 / 6.53 / 8.74 on the primary (`screens/sdpa-screen7.csv`),
+   -5.6 %. Pass timing (measurement twins, second device): workgroup launch 1.0 ms, the first read and the
+   maximum 4.1, exp and sum 1.6, exp, divide and store 1.5: half of the softmax is the first read of the row.
+
+`orin_g64` sums a row's exponentials in another order (fp32, rounded once on the store), so it is an arithmetic
+change. Against the fp32 CPU reference its rms and maximum error equal `4070ti_nzf`'s to four digits in all 12
+cases and are 4 times (rms) and 2 times (maximum) below the parent's (`results/orin/sdpa-error5/summary.txt`);
+0.3 to 0.4 % of the fp16 output elements differ from `4070ti_nzf`'s, by one fp16 step at most.
+
+## The second Orin (`duck-stable`)
+
+Offered by the owner for screening. Agreement batch of 26 linear configurations: rank correlation 0.997, 25
+ratios within 0.975 to 1.002, one (a 1024-thread tile, never selectable) at 0.80, reproducibly (3 rounds per
+device: 0.81). By the threshold fixed beforehand that is DISAGREE and I stopped; the owner then decided to use
+the device for screening regardless. It screened two softmax batches. Its ranking of the two best softmax
+variants (`g128` before `g64`, 10 to 11 % faster than `4070ti_nzf`) was not confirmed on the primary (`g64`
+before `g128`, 4.4 to 5.6 %), so, as that decision says, it was not used again. The two devices agree within
+0.3 % on matrix-bound kernels and differ by 1 to 7 % on memory-bound ones (the same softmax: 8.16 against
+8.74 ms). No number in this document comes from it except where it says so.
