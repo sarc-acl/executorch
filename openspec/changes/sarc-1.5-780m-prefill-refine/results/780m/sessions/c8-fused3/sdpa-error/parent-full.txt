@@ -1,0 +1,13 @@
+[sdpa-error] 1b_head_config_s2048 n=4194304 rms=1.967484e-05 max=8.440498e-04 ref_rms=3.768393e-02
+[sdpa-kernels] 1b_head_config_s2048 qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_780m_r3_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half fused=- no_mask_fill=yes pairing=ok
+[sdpa-correctness] 1b_head_config_s2048 S=2048 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/4194304 PASSED
+[sdpa-error] 3b_head_config_s2048 n=6291456 rms=1.999579e-05 max=9.517330e-04 ref_rms=3.809580e-02
+[sdpa-kernels] 3b_head_config_s2048 qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_780m_r3_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half fused=- no_mask_fill=yes pairing=ok
+[sdpa-correctness] 3b_head_config_s2048 S=2048 input_pos=0 D=128 Q_H=24 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/6291456 PASSED
+[sdpa-error] 8b_head_config_s2048 n=8388608 rms=1.979420e-05 max=1.039031e-03 ref_rms=3.792842e-02
+[sdpa-kernels] 8b_head_config_s2048 qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_780m_r3_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half fused=- no_mask_fill=yes pairing=ok
+[sdpa-correctness] 8b_head_config_s2048 S=2048 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/8388608 PASSED
+[sdpa-error] 8b_head_config_s1024_pos1024 n=4194304 rms=9.621782e-06 max=9.506601e-05 ref_rms=1.564780e-02
+[sdpa-kernels] 8b_head_config_s1024_pos1024 qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_780m_r3_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half fused=- no_mask_fill=yes pairing=ok
+[sdpa-correctness] 8b_head_config_s1024_pos1024 S=1024 input_pos=1024 D=128 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/4194304 PASSED
+[sdpa-correctness] tier=full cases_run=4

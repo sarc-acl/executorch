@@ -1,6 +1,6 @@
 # STATUS: 780M prefill campaign, round 2 (parameter space + beyond)
 
-Updated 2026-10-04 23:00 PDT (2026-10-05 06:00 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
+Updated 2026-10-05 00:15 PDT (07:15 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
 Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (new raw data) and
 `.../780m-prefill-refine-2026-10-03/` (earlier builds and sessions).
 
@@ -9,22 +9,17 @@ Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (
 | item | state |
 |---|---|
 | candidate 7 (softmax r3) | **complete**: gate passed, bit-identical to its parent, six cells +2.39 to +6.78 %, geomean **+4.10 %** over `780m-refine3` |
-| candidate 8 (fused SDPA kernel, Part 2) | **e2e session done: +7.84 to +20.14 %, geomean +13.16 % over candidate 7**, all 60 runs valid; the rest of the gate is running (`chain7.sh`); next token differs in 1 of 12 checks, so it is judged by the reference-error rule, whose evidence is being collected. Not accepted yet |
+| candidate 8 (fused SDPA kernel, Part 2) | **ACCEPTED (reference-error rule, owner decision 2026-10-04)**: +7.84 to +20.14 %, geomean **+13.16 %** over candidate 7, 60 valid runs; gate finished 00:04 PDT; one next-token item differs (8B 8da4w, `prompt_2048.txt`); record below. It needs `hooks/sdpa-fused-hook.patch`, so adopting it is the owner's decision |
 | igpu-roofline `fast` plan | finished 20:15 PDT; matrix roofs 14.766 TFLOP/s (fp16 -> fp32) and 14.379 TOP/s (int8) |
 | 4w refinement round 1 | finished 21:41 PDT: 991 neighbours screened; nothing beats the sample's best by more than the screening scatter; the confirmation with the full measurement is queued |
-| 8da4w screen, 4w / 8da4w confirmation, QK^T / attn*V enumeration | queued behind the candidate-8 gate (`chain6d.sh`) |
+| 4w confirmation, 8da4w screen and confirmation, QK^T / attn*V enumeration | running since 00:04 PDT (`chain6d.sh`), in that order |
 
 Chained over the three sessions (`t1-recheck`, `c7-softmax-r3`, `c8-fused3`; not a direct measurement, that comes
 at the end): candidate 8 is about +27 % geomean over `dev/1.5` (1B 4w 2698 -> 3625 tok/s, 8B 8da4w 488 -> 606).
 
 ## Running now (detached chains; nothing needs attention)
 
-1. `chain7.sh`, the gate of candidate 8. Done: e2e session; SDPA tiers `all` and `extended`, 12 passes each, 0
-   mismatches. Running: tier `full` (6 of 12 passes done, about 3 min each). Then `verify.sh`, traces, tier
-   `peaked` (12 passes), the error against the fp64 reference for both arms on the `extended`, `peaked` and `full`
-   tiers, steady-clock kernel timing, and the real-text logits probe (32 prompts, four arms, six cells). Until
-   about 00:30 PDT.
-2. `chain6d.sh` (replaces `chain6.sh` .. `chain6c.sh`, which were only waiting), after that:
+1. `chain6d.sh` (replaces `chain6.sh` .. `chain6c.sh`, which were only waiting), started 00:04 PDT:
    - the SDPA sweep binaries again, so that the SDPA suite can be timed at a steady clock (below);
    - 4w confirmation (`tools/confirm.sh`): every configuration within 8 % of the fastest of the random sample and
      of refinement round 1 (96 configurations), full measurement; the 10 fastest per shape 5 times; 12
@@ -149,7 +144,7 @@ every correctness case of the tiers `all`, `extended`, `peaked` and `full` (21 c
 production head configurations at S = 2048 among them) is **byte-identical** between the parent kernels and the
 parent kernels with softmax r3. Candidate 7 therefore does not use the near-tie or the reference-error rule.
 
-## Candidate 8 (Part 2): fused SDPA kernel `sarc_dev_780m_sdpa_fused3`, session done, gate running
+## Candidate 8 (Part 2): fused SDPA kernel `sarc_dev_780m_sdpa_fused3`: ACCEPTED (reference-error rule, owner decision 2026-10-04)
 
 After candidate 7, QK^T + softmax + attn*V are still 160 of 680 ms on 1B, 299 of 1694 ms on 3B and 452 of
 3797 ms on 8B, and all three kernels are bound by the traffic of the S x S attention matrix (QK^T writes it,
@@ -159,7 +154,7 @@ in blocks, twice: pass A computes the scores (fp32 accumulate, scaled, rounded t
 does) and keeps the row maxima; pass B computes the scores again, e = exp(score - max) in fp16, the row sums in
 fp32 and `acc += e V` in fp32; the output is `acc / sum`.
 
-### Gate so far (session `c8-fused3`, `results/780m/sessions/c8-fused3/`)
+### Gate (session `c8-fused3`, `results/780m/sessions/c8-fused3/`)
 
 Started 21:59 PDT at 44 C. Both arms are the same binary (build `fused5` = the branch + both hook patches in a
 scratch tree) with `ET_VK_SARC_DEV_PROFILE=780m-refine3 ET_VK_SARC_780M_SOFTMAX=r3` (= candidate 7); the candidate
@@ -191,13 +186,71 @@ Next-token logits of the top candidates in the four arms (`results/780m/probe/c8
 
 The parent's top token has probability 1.3 % and leads by 0.27 logit (0.16 in its tiled arm); the candidate moves
 token 118 by -0.34 and token 53 by +0.13. Largest logit difference over the vocabulary: candidate default against
-parent default 0.66, parent tiled against parent default 0.83; KL 8.2e-3 against 4.6e-3 nat. This is item 1 of
-the evidence; the candidate is not accepted on it alone (the error against the reference on the production shapes
-and the real-text comparison decide, both still running).
+parent default 0.66, parent tiled against parent default 0.83; KL 8.2e-3 against 4.6e-3 nat.
 
-Done so far in the gate: SDPA tiers `all` (4 of 4) and `extended` (8 of 8), 12 passes each, 0 mismatches, the
-fused kernel the only SDPA kernel dispatched, `pairing=ok`; controls with the table kernels 1 pass each; tier
-`full` 6 of 12 passes, 4 of 4 each.
+Record under the second owner decision of 2026-10-04 (arithmetic changes are judged against a reference). No
+threshold was chosen here; the two in item 3 are the decision's.
+
+1. **Gate criterion, error against the reference** (`results/780m/sdpa-error/c8-fused3.csv`; fp64 CPU reference
+   computed from the fp16 inputs the device saw; parent = candidate 7 kernels, same inputs). Production shapes
+   (tier `full`):
+
+   | case | elements | rms parent -> candidate | maximum parent -> candidate |
+   |---|---:|---|---|
+   | 1B head configuration, S = 2048 | 4,194,304 | 1.968e-5 -> 1.029e-5 (x 0.52) | 8.44e-4 -> 3.86e-4 (x 0.46) |
+   | 3B head configuration, S = 2048 | 6,291,456 | 2.000e-5 -> 1.035e-5 (x 0.52) | 9.52e-4 -> 3.57e-4 (x 0.37) |
+   | 8B head configuration, S = 2048 | 8,388,608 | 1.979e-5 -> 1.036e-5 (x 0.52) | 1.039e-3 -> 3.69e-4 (x 0.36) |
+   | 8B head configuration, S = 1024, `input_pos` 1024 | 4,194,304 | 9.62e-6 -> 4.79e-6 (x 0.50) | 9.51e-5 -> 4.05e-5 (x 0.43) |
+
+   The candidate's rms and maximum error are not larger than the parent's on every production shape: **met**.
+   Outside the production shapes: lower in all 8 `extended` cases (rms x 0.51 to 0.53); in the 5 `peaked` cases rms
+   x 0.81 to 0.91, maximum lower in 4 and higher in 1 (`peaked_tiny_gqa_s256`, S = 256, 2 heads: 1.74e-3 ->
+   1.98e-3).
+   Correctness tiers with the candidate's environment, 12 passes each, 0 mismatches in every pass: `all` 4 of 4,
+   `extended` 8 of 8, `full` 4 of 4, `peaked` 5 of 5, `fused` 5 of 5; the fused kernel the only SDPA kernel
+   dispatched, `pairing=ok`; one control pass of `all`, `extended` and `full` with the table kernels.
+2. **Evidence.** The logits at the differing position for the four arms: the table above. The real-text
+   comparison (`results/780m/probe/c8-real-text-compare.csv`; 32 prompts of 128 to 1920 tokens cut from six real
+   texts by the fixed recipe of `tools/probe_prompts.py`, next-token distribution after each prompt, 24 runs of
+   `logits_probe`):
+
+   | cell | pair | top-1 differs | KL mean / max (nat) | largest logit difference | perplexity ratio |
+   |---|---|---:|---|---:|---:|
+   | 1B 4w | candidate vs parent (default arms) | 0 of 32 | 2.2e-5 / 1.3e-4 | 0.11 | 1.0029 |
+   | | parent tiled vs parent default | 0 | 3.9e-5 / 2.6e-4 | 0.11 | 1.0044 |
+   | 3B 4w | candidate vs parent | 0 | 1.5e-5 / 1.1e-4 | 0.09 | 0.9993 |
+   | | parent tiled vs parent default | 0 | 3.2e-5 / 5.9e-4 | 0.11 | 0.9993 |
+   | 8B 4w | candidate vs parent | 0 | 2.1e-5 / 2.0e-4 | 0.07 | 1.0003 |
+   | | parent tiled vs parent default | 0 | 2.6e-5 / 2.5e-4 | 0.11 | 1.0014 |
+   | 1B 8da4w | candidate vs parent | 2 | 3.3e-2 / 0.39 | 3.69 | 0.951 |
+   | | parent tiled vs parent default | 1 | 3.7e-2 / 0.55 | 3.45 | 0.896 |
+   | 3B 8da4w | candidate vs parent | 5 | 3.4e-2 / 0.45 | 3.32 | 0.912 |
+   | | parent tiled vs parent default | 3 | 3.6e-2 / 0.47 | 2.91 | 0.937 |
+   | 8B 8da4w | candidate vs parent | 4 | 2.6e-2 / 0.30 | 2.63 | 0.990 |
+   | | parent tiled vs parent default | 4 | 6.3e-2 / 0.58 | 2.81 | 0.902 |
+
+   (Perplexity of the true next token over the 32 prompts, first arm over second; the csv also has the
+   candidate-tiled vs candidate-default rows.) In the 4w cells the candidate is closer to its parent than the
+   parent's two linear arms are to each other. The 8da4w cells are three orders of magnitude noisier in every
+   pair, including the two parent arms (the activations are re-quantized to 8 bit from their own range at every
+   linear layer); the candidate against its parent is of the same size as that spread in each of them (top-1
+   differences 2 / 5 / 4 against 1 / 3 / 4, mean KL 0.033 / 0.034 / 0.026 against 0.037 / 0.036 / 0.063).
+3. **Gross-divergence check** (reject if, in any cell, the mean KL of candidate-default against parent-default
+   exceeds 0.5 nat or the top-1 token differs on more than one third of the prompts): largest mean KL 0.034 nat,
+   at most 5 of 32 prompts: **passed**.
+4. **Next-token items that differ**: one. 8B 8da4w, `prompt_2048.txt`, parent against candidate (the e2e session).
+   Every other item is SAME: parent vs candidate in the other 11 cell x prompt checks, and `verify.sh` default vs
+   tiled on the real-text and the unaligned prompt.
+
+The rest of the gate: unmodified `verify.sh --models 1b,3b,8b --schemes 4w,8da4w --pdiff` with the candidate's
+environment: correctness rc = 0, 12 of 12 production-diff cases ALL PASSED, default vs tiled SAME on both
+prompts, decode 31 tokens, `linear <scheme> rc=1` as on the parent. Traces (one warm run per arm,
+`sessions/c8-fused3/trace/`): total dispatch time 672.5 -> 563.9 ms (1B 4w), 1657 -> 1499 ms (3B 4w), 3700 ->
+3458 ms (8B 4w); QK^T + softmax + attn*V 158.9 / 296.2 / 449.4 ms are gone and the copy pass + fused kernel add
+45.3 / 120.7 / 184.2 ms (they are in the trace tool's "copy/view/other" family); the other families are
+unchanged within 2 %. Kernel time per layer at a steady clock after the gate, three runs
+(`results/780m/fused/kernel-time-steady-c8-gate.csv`): 9.96 -> 2.82 ms (1B), 10.24 -> 4.32 to 4.36 ms (3B),
+13.51 -> 5.54 to 5.66 ms (8B).
 
 ### Structures
 
@@ -511,12 +564,11 @@ runs each; all variants reached through `hooks/softmax-name-hook.patch` applied 
 
 ## Next
 
-1. Finish the candidate-8 gate and record it under the reference-error rule (or reject it, with the numbers).
-2. 4w and 8da4w confirmation -> the best configuration per shape, the local effect of each parameter around it.
-3. Candidate 9: candidate 8 + the one-pass fused variant + the Part 1 winners per shape, gated against candidate 8.
-4. QK^T / attn*V enumeration and their repeat stage (response surface; with the fused kernel these two kernels
+1. 4w and 8da4w confirmation -> the best configuration per shape, the local effect of each parameter around it.
+2. Candidate 9: candidate 8 + the one-pass fused variant + the Part 1 winners per shape, gated against candidate 8.
+3. QK^T / attn*V enumeration and their repeat stage (response surface; with the fused kernel these two kernels
    only serve the calls it does not take).
-5. A direct session of the final configuration against `dev/1.5` and against `780m-refine3`.
+4. A direct session of the final configuration against `dev/1.5` and against `780m-refine3`.
 
 ## Blocking
 
