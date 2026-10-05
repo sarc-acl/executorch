@@ -90,8 +90,12 @@ write_new(IMPL / "sarc_dev/OrinSdpa.cpp", cpp)
 
 ident = lambda s: re.sub(r"[^A-Za-z0-9]", "_", s)
 prefs = "// Jetson Orin (tools/gen_orin_sdpa.py): single-kernel SDPA screening profiles and orin-refineN.\n"
-if any(pred == "head_dim_64_orin" for e in REFINE.values() for _, _, pred in e):
-    prefs += "bool head_dim_64_orin(const ShapeInfo& s) {\n  return (s.op == Op::kSdpaQk ? s.K : s.N) == 64;\n}\n"
+PREDS = {"head_dim_64_orin": "  return (s.op == Op::kSdpaQk ? s.K : s.N) == 64;",
+         # the shapes the Orin's fp32-accumulating 4w row serves (orin_large_k in impl/sarc/table_nvidia.cpp)
+         "k_above_8192_orin": "  return s.K > 8192;"}
+for name, body in PREDS.items():
+    if any(pred == name for e in REFINE.values() for _, _, pred in e):
+        prefs += f"bool {name}(const ShapeInfo& s) {{\n{body}\n}}\n"
 profs = ""
 for op, tok in cands:
     short = tok[len("4070ti_"):] if tok.startswith("4070ti_") else tok; v = f"kOrin_{op}_{ident(short)}"; OP = "kSdpaQk" if op == "qk" else "kSdpaAv"

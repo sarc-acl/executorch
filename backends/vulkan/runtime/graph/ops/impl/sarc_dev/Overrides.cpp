@@ -1295,6 +1295,9 @@ const Preference k4070tiRefine5[] = {
 // <<< 4070ti lin-preferences
 // >>> orin sdpa-preferences
 // Jetson Orin (tools/gen_orin_sdpa.py): single-kernel SDPA screening profiles and orin-refineN.
+bool k_above_8192_orin(const ShapeInfo& s) {
+  return s.K > 8192;
+}
 const Preference kOrin_av_df_t16x128k32g11s32[] = {{Op::kSdpaAv, "4070ti_df_t16x128k32g11s32", nullptr}};
 const Preference kOrin_av_df_t16x64k32g11s32[] = {{Op::kSdpaAv, "4070ti_df_t16x64k32g11s32", nullptr}};
 const Preference kOrin_av_df_t32x128k32g11s32[] = {{Op::kSdpaAv, "4070ti_df_t32x128k32g11s32", nullptr}};
@@ -1379,6 +1382,17 @@ const Preference kOrinRefine3[] = {
     {Op::kSdpaAv, "4070ti_ml_t64x128k32g42s32", nullptr},
     {Op::kSdpaAv, "4070ti_t64x64k32g42s32", nullptr},
     {Op::kDq8caLinear, "orin_bf_t128x128k64g24s32mk32ra", nullptr},
+};
+const Preference kOrinLinRefine3[] = {
+    {Op::kDq8caLinear, "orin_bf_t128x128k64g24s32mk32ra", nullptr},
+    {Op::kQ4gswLinear, "bx_t128x128k32g42s32f32c", k_above_8192_orin},
+};
+const Preference kOrinRefine4[] = {
+    {Op::kSdpaQk, "4070ti_pk_t128x64k64g42s32nf", nullptr},
+    {Op::kSdpaAv, "4070ti_ml_t64x128k32g42s32", nullptr},
+    {Op::kSdpaAv, "4070ti_t64x64k32g42s32", nullptr},
+    {Op::kDq8caLinear, "orin_bf_t128x128k64g24s32mk32ra", nullptr},
+    {Op::kQ4gswLinear, "bx_t128x128k32g42s32f32c", k_above_8192_orin},
 };
 // <<< orin sdpa-preferences
 struct Profile {
@@ -1559,6 +1573,8 @@ const Profile kProfiles[] = {
     {"orin-refine1", kOrinRefine1, sizeof(kOrinRefine1) / sizeof(Preference)},
     {"orin-lin-refine2", kOrinLinRefine2, sizeof(kOrinLinRefine2) / sizeof(Preference)},
     {"orin-refine3", kOrinRefine3, sizeof(kOrinRefine3) / sizeof(Preference)},
+    {"orin-lin-refine3", kOrinLinRefine3, sizeof(kOrinLinRefine3) / sizeof(Preference)},
+    {"orin-refine4", kOrinRefine4, sizeof(kOrinRefine4) / sizeof(Preference)},
     // <<< orin sdpa-profiles
 };
 const Profile* requested_profile() {
