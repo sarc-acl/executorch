@@ -2,10 +2,10 @@
 
 ## 1. Inputs and prior work
 
-- [ ] 1.1 Read the August 2026 llama.cpp preparation (scripts, logs, any results, the prompt file) and write
+- [x] 1.1 Read the August 2026 llama.cpp preparation (scripts, logs, any results, the prompt file) and write
   what it contains into `kit/PRIOR-WORK.md`; verify by listing every file read and every number found
 - [ ] 1.2 Copy the F16 and Q4_0 GGUF files and their notes to shared storage; verify sha256 against the source
-- [ ] 1.3 Record for each ExecuTorch model file to be measured its context length, group size and embedding
+- [x] 1.3 Record for each ExecuTorch model file to be measured its context length, group size and embedding
   quantization (read from the file's metadata) in `kit/MODELS.md`; verify the three values per file are filled
 - [ ] 1.4 Pin the llama.cpp commit in `kit/VERSIONS.md` and produce Q4_K_M from the F16 files with it; verify
   each note beside the file names source revision, commit and exact command, and that bits per weight are computed
