@@ -1,34 +1,29 @@
 # STATUS: sarc-1.5-orin-prefill-refine
 
-**2026-10-05 22:05 UTC. RUNNING (candidate 3 accepted at 21:59, +0.82 %: the first gated candidate below 2 %). Accepted so far: candidate 1h (SDPA prefill kernels + fp32 softmax through the
-owner-accepted hook), `ACCEPTED (reference-error rule, owner decision 2026-10-04)`, **+57.8 % geomean** over the
-parent; candidate 2 (8da4w linear, whole-texel weight staging), `GATE_ACCEPTED`, **+2.84 %** over the parent
-alone (8da4w cells +3.8 / +6.9 / +6.7 %). Candidate 1 (release softmax) stays REJECTED. Two small candidates
-are in their gates, each on top of what is accepted: candidate 3 (4w tiles, expected below +1 %) and candidate 4
-(softmax with subgroup reductions, expected below +1 %). The stop rule is not met yet; the branch is not pushed.**
+**2026-10-06 00:05 UTC. STOP RULE MET; the closing measurements are running. Four candidates are accepted, in
+this order: 1h (SDPA prefill kernels + fp32 softmax, +57.8 % over the parent), 2 (8da4w linear, +2.84 % over the
+parent alone), 3 (4w linear tiles, **+0.82 %** over its parent), 4 (softmax with subgroup reductions,
+**+0.41 %** over its parent, inside the +-2 % band). Candidates 3 and 4 are two consecutive gated candidates
+below +2 %. Candidate 1 (release softmax) stays REJECTED. The branch is not pushed yet.**
 
 All times are UTC from `date -u`.
 
 ## Running now
 
-- Device `duck-naughty` (primary: every reported number, session and gate), detached, one GPU job at a time under
-  its gpu-lab lock; status in `~/hmz-sarc-orin/jobs/<job>.status` / `.out`, from the workstation
-  `tools/dstat.sh`. Survives a reboot of the workstation. Job `chain19b` (`tools/chain19.sh`, since 20:52), all
-  arms but the pristine parent on build `topic13` (`fd44f8011`):
-  1. `s5-c3`, `gate.sh`: candidate 3: done, `GATE_ACCEPTED` at 21:59.
-  2. `s6-c4`, `gate_sdpa.sh` (running since 21:59): candidate 4 = softmax `orin_g64` on top of candidates 1h + 2
-     + 3 (parent arm: `orin-refine5` + `4070ti_nzf`). Until about 00:15.
-  3. `s7-final`, `timed.sh`: everything accepted against the pristine parent (timed session, traces).
-  4. `s8-noenv`, `noenv_verify.sh`: `verify.sh` on `topic13` with nothing selected, against the parent control
-     (the control the hook decision asks for). End about 02:00.
-  A rejected candidate is left out of the later arms by the chain itself; an aborted gate ends the chain.
-- Device `duck-stable`: nothing, and not used any more (see below).
+- Device `duck-naughty` (primary), detached, under its gpu-lab lock; `tools/dstat.sh <job>` from the workstation:
+  - `chain19b` (`tools/chain19.sh`): `s5-c3` and `s6-c4` done (both `GATE_ACCEPTED`); running since 23:55:
+    `s7-final` (`timed.sh`: the final stack `orin-refine5` + `orin_g64` on build `topic13` against the pristine
+    parent, timed session and traces), then `s8-noenv` (`noenv_verify.sh`: `verify.sh` on `topic13` with nothing
+    selected, against the parent control). Until about 01:45.
+  - `chain20` (waiting for `chain19b`): the 41-prompt real-text logits of the final stack, default and tiled
+    (the parent's two arms exist), comparison and reference-error rule in `probe/final-g64/`. About 2.5 hours.
+- Device `duck-stable`: nothing; not used any more.
 - Workstation: nothing.
 
 ## Next step
 
-Read the two gates and the final session; then `proposal.md`, `sarc/tools/check.sh --no-build`, commit, push.
-If both candidates 3 and 4 come out below +2 % over their parents, the stop rule is met.
+Read `s7-final` and `s8-noenv`; final tables in `proposal.md`; `sarc/tools/check.sh --no-build`; commit; push.
+The real-text evidence of `chain20` is added when it ends.
 
 ## Second Orin (`duck-stable`): agreement batch, retest, owner decision
 
@@ -150,8 +145,42 @@ it (`s4-c1h`), not on the local-patch build `hook4`.
 | 1 | `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine1` | SDPA prefill kernels (QK^T, attn*V) | yes (`OrinSdpa.cpp`, no hook) | **REJECTED** at `verify-check` (`s2-c1`); evidence session running |
 | 2 | `ET_VK_SARC_DEV_PROFILE=orin-lin-refine2` | 8da4w linear: whole-texel weight staging | yes | **GATE_ACCEPTED** (`s3-c2`, plain pass: output bit-identical to the shipped kernel), +2.84 % (8da4w cells +3.8 / +6.9 / +6.7 %) |
 | 3 | `orin-refine5` + `4070ti_nzf` (on top of 1h + 2) | 4w linear: column-major weight staging on the 256 x 128 tile (K <= 8192), texel-wise staging on the fp32 tile (K > 8192) | yes | **GATE_ACCEPTED** (`s5-c3`, plain pass: bit-identical to the shipped kernels on the shapes each tile serves), **+0.82 %** over its parent (candidates 1h + 2); below 2 % |
-| 4 | the accepted profile + `ET_VK_SARC_SOFTMAX_VARIANT=orin_g64` | softmax: reductions inside the subgroups, 2 barriers per row instead of 14 | through the softmax-name hook | in its gate (`s6-c4`, since 21:59) |
+| 4 | the accepted profile + `ET_VK_SARC_SOFTMAX_VARIANT=orin_g64` | softmax: reductions inside the subgroups, 2 barriers per row instead of 14 | through the softmax-name hook | **GATE_ACCEPTED** (`s6-c4`; no next-token item differs; an arithmetic change, reference error reported), **+0.41 %** over its parent (1h + 2 + 3): inside the +-2 % band |
 | 1h | candidate 1 + `ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf` | fp32 softmax without the zero tail | through the softmax-name hook (owner decision 2026-10-05, commit `307abb2ed`), build `topic6` | **`ACCEPTED (reference-error rule, owner decision 2026-10-04)`** (`s4-c1h`, `GATE_ACCEPTED`, no differing item), +57.8 % |
+
+### Candidate 4, softmax `orin_g64` on top of candidates 1h + 2 + 3: `GATE_ACCEPTED`, +0.41 % (inside the noise band)
+
+Build `topic13` in both arms. Parent arm: `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine5
+ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf`; candidate arm: the same with `ET_VK_SARC_SOFTMAX_VARIANT=orin_g64`.
+What the kernel is, its kernel-level screens and its measured error: "Softmax, fewer barriers per row" below.
+
+- SDPA correctness with the candidate environment: 12 passes x tiers extended and full: 0 mismatches,
+  `pairing=ok`, softmax kernel `sarc_sdpa_attn_weights_softmax_buffer_half_orin_g64` in all 144 cases
+  (`gate_check.py sdpa`: ACCEPT, 0 findings).
+- Unmodified `verify.sh`: `gate_check.py verify`: ACCEPT, 0 findings; all four default-vs-tiled next-token
+  items SAME.
+- Timed session (`results/orin/sessions/s6-c4/`; tok/s, median of 5 valid interleaved runs per arm):
+
+  | cell | parent arm (1h + 2 + 3) | candidate 4 | gain | next token (4 prompts) |
+  |---|---:|---:|---:|---|
+  | 1B 4w | 1482.98 | 1491.62 | +0.58 % | SAME |
+  | 1B 8da4w | 1373.57 | 1385.66 | +0.88 % | SAME |
+  | 3B 4w | 628.03 | 629.77 | +0.28 % | SAME |
+  | 3B 8da4w | 569.05 | 570.79 | +0.31 % | SAME |
+  | 8B 4w | 295.06 | 295.78 | +0.25 % | SAME |
+  | 8B 8da4w | 268.66 | 269.15 | +0.18 % | SAME |
+
+  Geomean **+0.41 %**, no cell outside the +-2 % band: by the protocol this is noise, not a gain, and I do not
+  claim one. (It is positive in all six cells and matches the ETDump below, but the rule is the rule.) 60 timed
+  runs all valid; `gate_check.py session`: ACCEPT, 0 findings (24 of 24 next-token rows SAME); `env-check`:
+  ACCEPT. `gate.done`: `GATE_ACCEPTED ... all steps passed`.
+- ETDump (warm, ms, parent arm -> candidate; `s6-c4/trace/`): softmax 140.1 -> 132.2 (1B), 183.0 -> 172.8 (3B),
+  279.8 -> 264.3 (8B), -5.6 % as at kernel level; total dispatch 1366 -> 1358, 3245 -> 3234, 6924 -> 6910 (4w).
+- Recording: the gate passed without a differing next-token item, so the reference-error rule was not needed
+  to accept it. Because it changes the arithmetic (the order of a row's sum), its measured error against the
+  fp32 reference is reported (not larger than the parent's in 12 of 12 cases, equal to `4070ti_nzf`'s to four
+  digits), and the rule's real-text logits comparison is being collected for the final stack (`chain20`).
+  The candidate can be dropped without a measurable loss: the stack without it is this session's parent arm.
 
 ### Candidate 3, `orin-refine5` (4w linear tiles) on top of candidates 1h + 2: `GATE_ACCEPTED`, +0.82 %
 
