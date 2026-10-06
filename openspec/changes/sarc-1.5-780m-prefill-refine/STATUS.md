@@ -1,6 +1,6 @@
 # STATUS: 780M prefill campaign, round 2 (parameter space + beyond)
 
-Updated 2026-10-06 00:55 PDT (2026-10-06 07:55 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
+Updated 2026-10-06 03:30 PDT (2026-10-06 10:30 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
 Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (new raw data) and
 `.../780m-prefill-refine-2026-10-03/` (earlier builds and sessions).
 
@@ -100,16 +100,20 @@ Where the capture material is (kept as evidence, nothing calls it):
 
 ## Running now
 
-`chain18.sh` (detached), state at 2026-10-06 07:55 UTC:
+`chain18.sh` and `chain21.sh` (detached), state at 2026-10-06 10:35 UTC:
 
 1. 12 production-diff passes of the 22 confirmed 8da4w configurations x 3 models: **done 07:47 UTC, 792 of 792
    passes ALL PASSED** (4 of 4 real shapes on the configuration's own kernel in every pass, non-zero
    zero-points; `results/780m/space/confirm-8da4w/pdiff.csv`).
-2. The same for the 35 confirmed 4w configurations: running, 65 of 1,260 passes, about 11 s a pass: until about
-   11:40 UTC (04:40 PDT).
-3. Then the QK^T / attn*V enumeration at a steady clock (20 warm-up + 8 timed runs; 1,724 runs, each a QK^T and
-   an attn*V configuration with the 8 correctness cases): Part 1's last open item. It pauses from 06:40 to 07:40
-   local. Its rate is recorded here once the first runs are in.
+2. The same for the 35 configurations of the first 4w confirmation: **done 10:30 UTC, 1,260 of 1,260 passes ALL
+   PASSED** (`results/780m/space/confirm-4w/pdiff.csv`).
+3. Running (`chain21.sh`, since 10:33 UTC, about 2 h): the same 12 passes for the 28 configurations of the
+   second 4w confirmation (`confirm2-4w`). That list holds four of the five 4w kernels of the final profile; it
+   was missing from the queue, which only knew the first list. Until now those four kernels have the single
+   production-diff pass of each of the gates of candidates 10 and 11 and of the committed-build gate.
+4. Paused behind it, resumes by itself: the QK^T / attn*V enumeration at a steady clock (20 warm-up + 8 timed
+   runs; 1,724 runs, each a QK^T and an attn*V configuration with the 8 correctness cases): Part 1's last open
+   item. It pauses from 06:40 to 07:40 local. Its rate is recorded here once the first runs are in.
 
 Everything else is done: the stop rule is met (candidates 10 and 11 under 2 %), the final configuration is
 measured against both parents (next section). The branch was pushed at `f5f1bf10c` (05:37 UTC) and is pushed
