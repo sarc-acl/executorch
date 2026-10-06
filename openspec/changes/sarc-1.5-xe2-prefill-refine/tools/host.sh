@@ -117,4 +117,30 @@ pair_wanted() { local f; for f in $RUN/excl-wanted.*; do [[ -e $f ]] || continue
 pair_lock() { [[ -n ${XE2_PAIR_HELD:-} ]] && return 0; mkdir -p $RUN; exec 7>>$RUN/pair.lock
   if [[ $1 == shared ]]; then while pair_wanted; do sleep 2; done; flock -s 7
   else : > $RUN/excl-wanted.$BASHPID; flock -x 7; rm -f $RUN/excl-wanted.$BASHPID; fi
-  export XE2_PAIR_HELD=$1; }
+  XE2_PAIR_OWN=1; export XE2_PAIR_HELD=$1; }
+# Coordinator hold (owner decision 2026-10-06): while the file HOLD exists in the artifact directory, nothing of
+# this campaign starts on either card: no GPU process, no session, no gate, no build. Whatever is running is
+# finished normally. The coordinator creates and removes HOLD; nobody else does.
+#   coordinator_hold <what would start next>: returns at once without HOLD. Otherwise appends one line
+#     `HELD <UTC time> card<N> <what would start next>` to the file HELD beside it, but only at a moment when
+#     no measurement and no build of this campaign is running on either card (it must get run/pair.lock
+#     exclusively for that moment, or be running under a tool that holds it), so HELD never appears while the
+#     other card still works; then polls once a minute, and when HOLD is gone removes HELD and returns.
+#   gpu_begin shared|excl <what>: pair_lock, then the hold check WITH the lock held (so a job cannot slip in
+#     between the check and its start); under a hold the lock is given back first. Every tool that measures or
+#     builds starts with it: gl.sh before each GPU process (the smallest unit: one configuration), the session,
+#     gate, trace, parent-control and roofline tools, build-sweep.sh, and the queue before each job.
+HOLD=$A/HOLD; HELD=$A/HELD
+coordinator_hold() { local said=0 line
+  while [[ -e $HOLD ]]; do
+    if [[ $said == 0 ]]; then line="HELD $(date -u +%FT%TZ) card$XE2_CARD $*"; mkdir -p $RUN
+      if [[ -n ${XE2_PAIR_HELD:-} ]]; then echo "$line" >> $HELD; said=1
+      elif ( exec 6>>$RUN/pair.lock; flock -n -x 6 && echo "$line" >> $HELD ); then said=1; fi
+    fi
+    if [[ $said == 1 ]]; then sleep ${XE2_HOLD_POLL:-60}; else sleep 5; fi
+  done
+  [[ $said == 1 ]] && rm -f $HELD; return 0; }
+gpu_begin() { local mode=$1; shift
+  while :; do pair_lock $mode; [[ -e $HOLD ]] || return 0
+    [[ -n ${XE2_PAIR_OWN:-} ]] && { exec 7>&-; unset XE2_PAIR_HELD XE2_PAIR_OWN; }
+    coordinator_hold "$@"; done; }

@@ -94,6 +94,41 @@ registered from the dev zone, the two hook-only softmax variants were not faster
 softmax variant is ever adopted, use `softmax-variant-hook.patch` beside `CAMPAIGN.md` unchanged and drop
 `tools/hook-sdpa-softmax.patch`).
 
+## Coordinator hold
+
+In place since 2026-10-06 01:40 UTC (owner decision 2026-10-06 00:35 UTC), on both cards, without a queue
+restart and without losing a running job (every unit sources `tools/host.sh` afresh).
+
+- Files: **`/home/doremy/hmz-sarc-xe2/.artifacts/HOLD`** (created and removed by the coordinator only; this
+  campaign never creates or removes it) and **`/home/doremy/hmz-sarc-xe2/.artifacts/HELD`** (written by this
+  campaign).
+- While `HOLD` exists nothing of this campaign starts on either card: no GPU process, no session, no gate, no
+  build. What is running is finished normally, not killed. Each unit that would start next appends one line
+  `HELD <UTC time> card<N> <what it would start next>` to `HELD` and polls once a minute. **`HELD` is written
+  only at a moment when no measurement and no build of this campaign is running on either card** (the writer
+  must get `run/pair.lock` exclusively for that moment), so it never appears while the other card still works:
+  its existence means both cards are idle. When `HOLD` is gone the waiting units remove `HELD` and continue
+  exactly where they were (the same configuration, the same queue job; nothing is skipped or repeated).
+- Smallest unit = one GPU process of `tools/gl.sh`, i.e. during the search one configuration: cheap screen
+  10 to 20 s normally and at most 240 s (its timeout); full measurement about 50 s, at most 600 s; correctness
+  at most 300 s. A sweep build (compile check + build, at most 5 minutes so far) is also one unit. So after
+  `HOLD` appears, `HELD` follows within 4 minutes during a screen and within 10 minutes otherwise. Later, while
+  a candidate is gated, the units that cannot be interrupted are longer: unmodified `verify.sh` (about 8
+  minutes) and one timed session (about 12 minutes); `HELD` then follows within about 12 minutes.
+- Where the check is: `gpu_begin` in `host.sh`, called by `gl.sh` before every GPU process, by the session,
+  gate, trace, parent-control and roofline tools and by `build-sweep.sh` before they start, and by
+  `sweep_queue.sh` before each job (this last one from the next queue start; it is not needed for the hold to
+  work). The check is made with the pair lock held, so a job cannot slip in between the check and its start.
+- Tested without the coordinator: `tools/test_hold.sh` (a dry run of the same functions in a temporary artifact
+  directory, CPU only, so it can run beside the queues): 11 assertions, `TEST_HOLD_PASS` at 01:40 UTC. It
+  covers: no `HELD` without `HOLD`; a running job is not killed; no `HELD` while a job still runs on the other
+  card; nothing new starts; one `HELD` line per waiting unit of both cards once idle; a unit arriving later and
+  a unit inside a tool that already holds the pair lock wait too; after `HOLD` is removed every unit runs and
+  `HELD` is gone.
+- Not done on purpose: the guard does not know the coordinator's measurement and was not taught to. CPU-only
+  analysis steps between two units (`sweep_analyze.py`, seconds to a minute) are not GPU jobs and can still
+  finish during a hold; no GPU job and no build is started by hand while `HELD` exists.
+
 ## The second B70 (owner decision 2026-10-05; `results/xe2/sweep/cardtest/`)
 
 Tools: `XE2_CARD` (0 or 1) selects lock, PCI device, sensors and `ETVK_DEVICE_INDEX` in `host.sh`. The

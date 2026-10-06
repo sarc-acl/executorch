@@ -23,7 +23,7 @@ P=$A/build/$TAG.src.txt; SRC=$A/src/$TAG/executorch; W=$A/sweep/$TAG
 [[ -e $P || -e $SRC || -e $W ]] && { echo "tag $TAG already exists; use a new tag" >&2; exit 2; }
 podman image exists $IMAGE || { echo "missing image $IMAGE" >&2; exit 2; }
 mkdir -p $A/build $A/src $W
-pair_lock excl
+gpu_begin excl "build-sweep.sh $TAG"
 export XE2_EXPORT_MANIFEST=$A/src/$TAG.export-manifest
 export_commit $ET $SHA $SRC || { echo "export failed" >&2; exit 2; }
 python3 $TOOLS/sweep.py precheck-dir $SRC $W/glsl "${CFGS[@]}" || exit 2

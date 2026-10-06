@@ -42,7 +42,7 @@ done
 [[ -n $STAGE && -n $LOCK ]] || { sed -n '2,29p' "$0"; exit 2; }
 D=$(cd "$STAGE" && pwd); cd "$D" || exit 2
 O=$D/$OUTN; mkdir -p "$O/logs"
-pair_lock excl; exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK"; flock -w 900 9 || { echo "gpu-lab lock busy"; exit 75; }
+gpu_begin excl "$0 $*"; exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK"; flock -w 900 9 || { echo "gpu-lab lock busy"; exit 75; }
 . "$(dirname "$(readlink -f "$0")")/host.sh"
 [[ -z $CLKMIN && $CALIB == 0 && -s $CLKMIN_FILE ]] && CLKMIN=$(<$CLKMIN_FILE)
 [[ $CALIB == 1 ]] && CLKMIN=${CLKMIN:-0}
