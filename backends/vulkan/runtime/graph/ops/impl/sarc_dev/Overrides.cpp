@@ -1076,8 +1076,9 @@ struct ProfileM51 {
 };
 // Screen of 2026-10-06 (texture3d, 1B/3B/8B shapes, 3 rounds): the 780M's
 // texel-wise 8da4w staging (zpg_bt) is at least 3 % faster than the xclipse
-// zpgtr row on every shape; t128x128k32g42s32f32xp on the 4w shapes with
-// K = 4096 (8B w1_w3, wk_wv, wq_wo); no other tile on any shape.
+// zpgtr row on every shape; on the 4w shapes with K = 4096 (8B w1_w3, wk_wv,
+// wq_wo) t128x128k32g42s32f32xp and, slightly faster, the same tile with
+// texel-wise B staging (bx); no other tile on any shape.
 bool any_shape(const ShapeInfo&) {
   return true;
 }
@@ -1089,7 +1090,7 @@ const PickM51 kM51PicksC2[] = {
 };
 const PickM51 kM51PicksC3[] = {
     {Op::kDq8caLinear, "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32", any_shape},
-    {Op::kQ4gswLinear, "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32xp", k_is_4096},
+    {Op::kQ4gswLinear, "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32xp", k_is_4096},
 };
 const char kFusedM51[] = "fused3_d64_t32x32g11s32rk,fused3_d128_t16x64g11s32rk";
 const ProfileM51 kM51Profiles[] = {
