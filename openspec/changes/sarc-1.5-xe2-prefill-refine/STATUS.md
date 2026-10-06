@@ -207,7 +207,7 @@ memory is read from the SPIR-V (limit 46000 bytes; a tile over the device limit 
 | QK^T | family (sweep, pk, xe2, xe2c), M, N, K, grid, subgroup size, NO_MASK_FILL | 4536 | 4536 / 4536 / 2828 (enumerated) | every legal one | **finished**: 2828 cheap (60 also full x 2; 1384 on card 1); correctness of the top 39; 14 finalists full x 2 | 4.9 to 5.7 s per configuration and card (cheap) |
 
 Sample size: 2000 per linear space (the lower end of the owner's 2000 to 3000): a full enumeration with the
-full measurement would take about 4 months (4w) and 3 weeks (8da4w). The two SDPA spaces can be enumerated
+full measurement would take about 6 months (4w, 50 s per configuration) and one month (8da4w). The two SDPA spaces can be enumerated
 inside a day, so they are not sampled: every legal configuration is screened in the cheap mode.
 
 Refinement rounds, by rule (`tools/sweep_rounds.sh`, numbers used in `rounds.txt`): round b runs if round 1
