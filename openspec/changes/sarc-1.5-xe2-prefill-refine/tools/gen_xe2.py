@@ -493,6 +493,18 @@ REFINE = {
     # measured faster than the 128-column tile (screen 7: N >= 4 K, i.e. 1B w1/w3, 622 against 647 us).
     "xe2-refine4": [("kSdpaQk", "xe2c_t128x64k32g44s16m8nf", "nullptr"), ("kSdpaAv", "xe2_t128x64k32g44s16m8", "xe2_head_dim_128"),
                     ("kDq8caLinear", "bt_t128x64k64g44s16m8", "xe2_wide_output"), ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", "nullptr")],
+    # candidate 5 (4w linear, from the sampled parameter search; results/xe2/sweep/4w/confirm-c.csv): refine2 with
+    # the shipped 128 x 128 K = 16 tile on a subgroup grid of 8 x 2 (subgroup tile 16 x 64 instead of 32 x 32)
+    # and the band drain (search id 150312: 1.02 to 1.06x of the shipped kernel on every shape of the three
+    # models except 1B wk / wv, 0.98x), and for an output of at most 512 columns the K = 32 tile on a grid of
+    # 8 x 4 with IMG_W (search id 170243: 1.18x on 1B wk / wv, the only such shape; 0.71 and 0.89x on the
+    # 1024-column wk / wv of 3B and 8B, which therefore keep the first tile).
+    "xe2-refine5": [("kSdpaQk", "pk_t128x64k32g44s16m8nf", "nullptr"), ("kSdpaAv", "xe2_t128x64k32g44s16m8", "xe2_head_dim_128"),
+                    ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", "nullptr"),
+                    ("kQ4gswLinear", "sweep_t128x128k32g84s16m8flw", "xe2_narrow_output"),
+                    ("kQ4gswLinear", "sweep_t128x128k16g82s16m8flib", "nullptr")],
+    # the 4w part of refine5 alone (kernel attribution; not a candidate)
+    "xe2-q4-g82": [("kQ4gswLinear", "sweep_t128x128k32g84s16m8flw", "xe2_narrow_output"), ("kQ4gswLinear", "sweep_t128x128k16g82s16m8flib", "nullptr")],
     # the 8da4w part of refine2 alone (kernel attribution; not a candidate)
     "xe2-dq-k64": [("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", "nullptr")],
 }
@@ -503,6 +515,10 @@ bool xe2_head_dim_128(const ShapeInfo& s) {
 // 8da4w linear: an output at least four times as wide as the input (1B w1 / w3).
 bool xe2_wide_output(const ShapeInfo& s) {
   return s.N >= 4 * s.K;
+}
+// 4w linear: an output of at most 512 columns (1B wk / wv).
+bool xe2_narrow_output(const ShapeInfo& s) {
+  return s.N <= 512;
 }
 """
 rows = ""
@@ -854,6 +870,18 @@ lin_rows += f'    {{"", nullptr, Op::kQ4gswLinear,\n     "{kb}",\n     {{128, 12
 ybody["sarc_linear_q4gsw_coopmat_sweep"] += (
     f"    - NAME: {kb}_texture3d_texture2d_half\n      IO_STORAGE: texture3d\n      WEIGHT_STORAGE: texture2d\n      MMA_M: {MMA_M}\n"
     f"      WG_TILE_K: 16\n      SG_GRID_X: 4\n      SG_GRID_Y: 4\n      SUBGROUP_SIZE: {SG}\n      FRAG_LAYOUT: true\n      IMG_A: true\n      CSH_BAND: true\n")
+# The two 4w tiles the sampled parameter search confirmed (candidate 5, profile xe2-refine5): the release body
+# with exactly the flags of search ids 150312 and 170243, so the SPIR-V is that of the measured sweep variants.
+Q4F = ["FRAG_LAYOUT", "B_COLMAJOR", "SH_F16V4", "IMG_A", "IMG_W", "CSH_BAND", "CSH_FULL", "CSH_POOL", "CSH_IN_ASH", "ACC_FP32", "ACC_GROUP_FP32"]
+for m, n, k, sx, sy, suffix, on in [(128, 128, 16, 8, 2, "flib", {"FRAG_LAYOUT", "IMG_A", "CSH_BAND"}), (128, 128, 32, 8, 4, "flw", {"FRAG_LAYOUT", "IMG_W"})]:
+    wg = sx * sy * SG
+    assert geometry_ok(m, n, sx, sy) and wg % (k // 8) == 0 and m % (wg // (k // 8)) == 0 and wg % (n // 8) == 0 and k % (wg // (n // 8)) == 0, (m, n, k, sx, sy)
+    kb = f"sarc_linear_q4gsw_coopmat_sweep_{tok(m, n, k, sx, sy)}{suffix}"
+    lin_rows += f'    {{"", nullptr, Op::kQ4gswLinear,\n     "{kb}",\n     {{{m}, {n}, {k}, {sx}, {sy}, {SG}, {MMA_M}, false}}, kTex3dTex2d, nullptr, Status::kUnverified}},\n'
+    ybody["sarc_linear_q4gsw_coopmat_sweep"] += (
+        f"    - NAME: {kb}_texture3d_texture2d_half\n      IO_STORAGE: texture3d\n      WEIGHT_STORAGE: texture2d\n"
+        f"      WG_TILE_M: {m}\n      WG_TILE_N: {n}\n      WG_TILE_K: {k}\n      SG_GRID_X: {sx}\n      SG_GRID_Y: {sy}\n      SUBGROUP_SIZE: {SG}\n      MMA_M: {MMA_M}\n"
+        + "".join(f"      {f}: {'true' if f in on else 'false'}\n" for f in Q4F))
 for yf, y in ybody.items():
     p = g / f"{yf}.yaml"; p.write_text(block(p.read_text(), YB, YE, y))
 (impl / "Xe2Linear.cpp").write_text(f"""/*

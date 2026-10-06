@@ -622,6 +622,10 @@ bool xe2_head_dim_128(const ShapeInfo& s) {
 bool xe2_wide_output(const ShapeInfo& s) {
   return s.N >= 4 * s.K;
 }
+// 4w linear: an output of at most 512 columns (1B wk / wv).
+bool xe2_narrow_output(const ShapeInfo& s) {
+  return s.N <= 512;
+}
 const Preference kXe2_qk_t128x64k32g44s16m8nf[] = {{Op::kSdpaQk, "sweep_t128x64k32g44s16m8nf", nullptr}};
 const Preference kXe2_qk_t128x64k32g44s16m8[] = {{Op::kSdpaQk, "sweep_t128x64k32g44s16m8", nullptr}};
 const Preference kXe2_qk_t128x64k32g48s16m8nf[] = {{Op::kSdpaQk, "sweep_t128x64k32g48s16m8nf", nullptr}};
@@ -698,6 +702,17 @@ const Preference kXe2_refine4[] = {
     {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
     {Op::kDq8caLinear, "bt_t128x64k64g44s16m8", xe2_wide_output},
     {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+};
+const Preference kXe2_refine5[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+const Preference kXe2_q4_g82[] = {
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
 };
 const Preference kXe2_dq_k64[] = {
     {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
@@ -799,6 +814,8 @@ const Profile kProfiles[] = {
     {"xe2-refine2", kXe2_refine2, sizeof(kXe2_refine2) / sizeof(Preference)},
     {"xe2-refine3", kXe2_refine3, sizeof(kXe2_refine3) / sizeof(Preference)},
     {"xe2-refine4", kXe2_refine4, sizeof(kXe2_refine4) / sizeof(Preference)},
+    {"xe2-refine5", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
+    {"xe2-q4-g82", kXe2_q4_g82, sizeof(kXe2_q4_g82) / sizeof(Preference)},
     {"xe2-dq-k64", kXe2_dq_k64, sizeof(kXe2_dq_k64) / sizeof(Preference)},
     // xe2 end
 };

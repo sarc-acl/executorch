@@ -7,6 +7,7 @@ set -uo pipefail
 . "$(dirname "$(readlink -f "$0")")/host.sh"; TAG=${1:?build tag}; IMAGE=${SARC_BUILD_IMAGE:-localhost/et-vk-build:rocky10}
 B=$A/build/$TAG; SRC=$A/src/$TAG/executorch; P=$A/src/$TAG/logits_probe
 grep -qx BUILD_BOTH_OK $A/build/$TAG.src.txt || { echo "build/$TAG is not a successful build" >&2; exit 2; }
+gpu_begin excl "$0 $*"   # no measurement on either card during a build; obeys the coordinator hold
 rm -rf $P $B/probe; mkdir -p $P && cp $TOOLS/logits_probe/main.cpp $TOOLS/logits_probe/CMakeLists.txt $P/ || exit 2
 podman run --rm --userns=keep-id --security-opt label=disable -v "$XE2_ROOT:$XE2_ROOT" "$IMAGE" bash -euo pipefail -c "
   cmake $P -B$B/probe -DCMAKE_BUILD_TYPE=Release -DEXECUTORCH_ROOT=$SRC -DCMAKE_PREFIX_PATH=$B/llama -DCMAKE_FIND_ROOT_PATH=$B/llama
