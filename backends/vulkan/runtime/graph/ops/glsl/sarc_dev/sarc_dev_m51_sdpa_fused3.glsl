@@ -117,7 +117,8 @@ const uint MMAS_D = HEAD_DIM / MMA;
 const uint SEGS = SUBGROUP_SIZE / WG_TILE_M;
 const uint SEG_V8 = WG_TILE_N / SEGS / 8u;
 
-// A row of Psh (padded by one uvec4) also holds the row's 16 fp32 divisors at the end.
+// After the last block, the first 4 uvec4 of a row of Psh (padded by one uvec4)
+// hold the row's 16 fp32 divisors.
 const uint P_STRIDE = max(WG_TILE_N / 8u + 1u, 4u);
 shared uvec4 Psh[WG_TILE_M * P_STRIDE]; // scores, then e [s][c]
 shared float Rsh[WG_TILE_M * SEGS];     // per-invocation row maxima / sums

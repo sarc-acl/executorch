@@ -36,6 +36,6 @@ wait $bp; rc=$?
   echo "ndk $(grep -m1 Pkg.Revision "${NDK:-<android-ndk>}/source.properties")"
   echo "glslc $("${GLSLC:-<vulkan-sdk>/glslc}" --version | head -1)"
   echo "golden (working-copy sarc/tools/spirv_golden.py; native glslc, so a mismatch is expected: pending):"
-  "$ART/venv/m51/bin/python" "$TOOLS/../../../../sarc/tools/spirv_golden.py" "$B/vulkan_compute_shaders" "$SRC/executorch/sarc/golden/spirv.json" 2>&1 | tail -5
+  "$ART/venv/m51/bin/python" "$TOOLS/../../../../sarc/tools/spirv_golden.py" "$B/vulkan_compute_shaders" "$SRC/executorch/sarc/golden/spirv.json" 2>&1
   echo "end $(date -u +%FT%TZ)"; } >&3
 echo "BUILD $TAG rc=$rc"; cat "$R"

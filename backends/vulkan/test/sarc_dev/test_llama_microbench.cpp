@@ -2050,6 +2050,15 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
   const int64_t q_numel = c.seq_len * c.num_heads * c.head_dim;
   const int64_t kv_numel = c.seq_len * c.num_kv_heads * c.head_dim;
 
+  // m51: seed each case from its name, so that two kernel configurations see
+  // the same inputs (the reference-error comparison needs that); a single
+  // srand(0) at start-up left the inputs of later cases depending on what else
+  // drew from rand() before them.
+  uint32_t seed = 2166136261u;
+  for (const char* p = c.name; *p != 0; ++p) {
+    seed = (seed ^ static_cast<uint8_t>(*p)) * 16777619u;
+  }
+  std::srand(seed);
   std::vector<float> qf(q_numel), kf(kv_numel), vf(kv_numel);
   std::vector<uint16_t> qh(q_numel), kh(kv_numel), vh(kv_numel);
   for (int64_t i = 0; i < q_numel; ++i) {

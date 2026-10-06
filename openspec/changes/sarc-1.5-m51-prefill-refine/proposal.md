@@ -53,7 +53,7 @@ separate local file, by the rule written in the frozen one.
 | `summarize.py` | 780M `tools/summarize.py` | column names; repeat count from the environment; load time; three next-token items |
 | `stage.sh` | 780M `tools/stage.sh` | pushes the binaries and prompts to the board; adds the `verify.sh` wrappers and the flat model links |
 | `build-native.sh` | workspace `tools/sarc-build-native.sh` | venv, glslc and NDK paths from the environment; lower default parallelism (another campaign measures on the workstation) |
-| `sdpa_error_table.py` | 780M `tools/sdpa_error_table.py` | unchanged |
+| `sdpa_error_table.py` | 780M `tools/sdpa_error_table.py` | prints both arms' reference rms; the criterion requires identical inputs |
 | `probe_compare.py` | 780M `tools/probe_compare.py` | unchanged |
 | `probe_prompts.py` | 780M `tools/probe_prompts.py` | tokenizer read with tiktoken and the Llama 3 split pattern |
 | `prof_decode.py` | 780M `tools/prof_decode.py` | K tile as a parameter |
