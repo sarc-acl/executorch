@@ -1,6 +1,6 @@
 # STATUS: 780M prefill campaign, round 2 (parameter space + beyond)
 
-Updated 2026-10-06 03:30 PDT (2026-10-06 10:30 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
+Updated 2026-10-06 04:52 PDT (2026-10-06 11:52 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
 Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (new raw data) and
 `.../780m-prefill-refine-2026-10-03/` (earlier builds and sessions).
 
@@ -17,7 +17,8 @@ Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (
 | 4w, Part 1 | finished except for the production-diff passes: the search stopped moving after refinement round 3 and the geometry scan; the best kernel per shape (5 repeats) is profile `refine10` |
 | 8da4w, Part 1 | **done** (792 of 792 production-diff passes ALL PASSED): all 2,238 survivors screened, 49 measured in full, 22 five times; best kernel per shape below ("Part 1, 8da4w"), 2.1 to 3.1 % less 8da4w linear time per layer than `780m-refine3` |
 | candidate 11 (candidate 10 + the 8da4w kernel per shape, profile `c11`) | **gate passed, +1.20 % geomean** (8da4w cells +2.02 / +2.82 / +2.36 %, 4w cells 0.00 / 0.00 / +0.06 %): the second consecutive candidate under 2 %, **stop rule met**; kept as the final configuration |
-| production-diff passes; QK^T / attn*V enumeration | running / queued (Part 1's last open item) |
+| production-diff passes | **done**: 2,628 of 2,628 passes ALL PASSED (73 configurations x 3 models x 12), the six kernels of the final profile among them |
+| QK^T / attn*V enumeration | running since 2026-10-06 11:56 UTC, until about 22:30 UTC (Part 1's last open item) |
 | final configuration (candidate 11), measured directly | **+33.82 % geomean over `dev/1.5`** (+23.42 to +48.35 %), **+24.12 % over `780m-refine3`** (+14.56 to +35.83 %); section "Final configuration" |
 | release-zone hooks (owner decision 2026-10-05) | committed (`b969e8f1c`, `1c8861aa7`, dev side `8518659ef`); candidate 10 reproduced from the committed build: gate passed, **+22.64 %** geomean over `780m-refine3` measured directly (section "Committed build") |
 
@@ -100,20 +101,36 @@ Where the capture material is (kept as evidence, nothing calls it):
 
 ## Running now
 
-`chain18.sh` and `chain21.sh` (detached), state at 2026-10-06 10:35 UTC:
+`chain22.sh` (detached, since 2026-10-06 11:56 UTC): **the QK^T / attn*V enumeration at a steady clock** (20
+warm-up + 8 timed runs), Part 1's last open item. 1,724 runs, each one QK^T and one attn*V configuration: the 8
+correctness cases of the extended tier (dispatched kernel names, mismatches, pairing), then the op time per model
+at S = 2048. Measured rate 18 to 20 s a run, coefficient of variation of the timed runs 0.2 to 0.5 % (it was 7.9 %
+with 3 + 5 runs): **about 9.5 h, plus the pause from 06:40 to 07:40 local: until about 22:30 UTC (15:30 PDT)**.
+Then: the 10 fastest per shape five times with 12 correctness passes, and the response surface.
 
-1. 12 production-diff passes of the 22 confirmed 8da4w configurations x 3 models: **done 07:47 UTC, 792 of 792
-   passes ALL PASSED** (4 of 4 real shapes on the configuration's own kernel in every pass, non-zero
-   zero-points; `results/780m/space/confirm-8da4w/pdiff.csv`).
-2. The same for the 35 configurations of the first 4w confirmation: **done 10:30 UTC, 1,260 of 1,260 passes ALL
-   PASSED** (`results/780m/space/confirm-4w/pdiff.csv`).
-3. Running (`chain21.sh`, since 10:33 UTC, about 2 h): the same 12 passes for the 28 configurations of the
-   second 4w confirmation (`confirm2-4w`). That list holds four of the five 4w kernels of the final profile; it
-   was missing from the queue, which only knew the first list. Until now those four kernels have the single
-   production-diff pass of each of the gates of candidates 10 and 11 and of the committed-build gate.
-4. Paused behind it, resumes by itself: the QK^T / attn*V enumeration at a steady clock (20 warm-up + 8 timed
-   runs; 1,724 runs, each a QK^T and an attn*V configuration with the 8 correctness cases): Part 1's last open
-   item. It pauses from 06:40 to 07:40 local. Its rate is recorded here once the first runs are in.
+Production-diff passes (12 per configuration and model, texture3d, M = 2048, the real shapes, the
+configuration's own kernel on 4 of 4 shapes in every pass; 8da4w with non-zero zero-points): **all done, all
+passed.**
+
+| list | configurations | passes | result |
+|---|---:|---:|---|
+| 8da4w confirmation (`results/780m/space/confirm-8da4w/pdiff.csv`) | 22 | 792 | 792 ALL PASSED |
+| 4w, first confirmation (`confirm-4w/pdiff.csv`) | 35 | 1,260 | 1,260 ALL PASSED |
+| 4w, second confirmation (`confirm2-4w/pdiff.csv`; the 16 not in the first list) | 16 | 576 | 576 ALL PASSED |
+
+The six kernels of the final profile `c11` are in those lists with 36 of 36 passes each: 4w
+`t256x128k32g18s32f32cbt`, `..g24..cbt`, `..g28..cbt`, `t128x128k32g24s32f32cbt`, `t128x256k32g42s32f32cbt`;
+8da4w `t256x64k64g48s32afmb1`; and the `780m-refine3` 8da4w kernel (`bt_t128x64k32g22s32afmb2`).
+
+Two faults of my own queue, found and corrected on 2026-10-06:
+
+- The second 4w confirmation list (four of the five final 4w kernels) was not in the production-diff queue,
+  which only knew the first list. Its passes were run separately (10:33 to 11:46 UTC, table above).
+- The enumeration's first 36 runs (10:30 and 11:46 to 11:53 UTC) were recorded with `dispatched = 0`,
+  `NOT_DISPATCHED`: `sweep_space.py` did not parse the kernel line of the batch binaries rebuilt on 2026-10-05,
+  which has a `fused=` field. Nothing was ranked from them; they are in
+  `<artifacts 10-04>/superseded/sdpa-steady-kernel-line-not-parsed/`, the parser is fixed, and the enumeration
+  restarted from zero (first rows: 8 of 8 cases on the configuration's kernel, PASS).
 
 Everything else is done: the stop rule is met (candidates 10 and 11 under 2 %), the final configuration is
 measured against both parents (next section). The branch was pushed at `f5f1bf10c` (05:37 UTC) and is pushed

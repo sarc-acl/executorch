@@ -118,7 +118,7 @@ def sdpa(q, v):
             except Exception: cases = []
         return rc1, rc2, log, cases, w1 + w2
     (rc1, rc2, log, cases, wall), temps = locked(go, f"sdpa qk={q and q['token']} av={v and v['token']}")
-    kern = re.findall(r"\[sdpa-kernels\] (\S+) qk=(\S+) softmax=(\S+) av=(\S+) no_mask_fill=\S+ pairing=(\S+)", log)
+    kern = re.findall(r"\[sdpa-kernels\] (\S+) qk=(\S+) softmax=(\S+) av=(\S+)(?: fused=\S+)? no_mask_fill=\S+ pairing=(\S+)", log)
     res = dict(re.findall(r"\[sdpa-correctness\] (\S+) S=.*?mismatches=(\S+ \S+)", log))
     tail = [f"{rc1}/{rc2}"] + temps + [f"{wall:.1f}", time.strftime("%FT%TZ", time.gmtime())]
     lines = []
