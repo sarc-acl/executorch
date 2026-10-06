@@ -5,9 +5,8 @@ The host was rebooted at 05:57 UTC by someone else (not by this campaign); both 
 restarted at 06:11 UTC; no measured row was lost (see "The reboot of 05:57 UTC"). Done: 4w sample and two
 refinement rounds; 8da4w sample and refinement (nothing beats the candidate 2 tile). Running: 4w round c. Then
 the 8da4w incumbents (requeued after an id collision of mine), attn*V and QK^T. Projected end of the search:
-2026-10-06 21:30 UTC at the earliest, 2026-10-07 05:00 UTC if attn*V and QK^T run both further rounds. Since
-the reboot the `llm-api-*` services are active again; none has taken a card (see "Needs the owner's
-attention"). A coordinator hold is in place. Earlier results are unchanged: winner `xe2-refine2` (candidates 1
+2026-10-06 21:30 UTC at the earliest, 2026-10-07 05:00 UTC if attn*V and QK^T run both further rounds. The `llm-api-*` services that came
+back with the reboot were stopped by the owner at 06:30 UTC. A coordinator hold is in place. Earlier results are unchanged: winner `xe2-refine2` (candidates 1
 and 2), +57.5 % geomean over the parent (`s6-final`); candidate 1 is `ACCEPTED (reference-error rule, owner
 decision 2026-10-04)`, not a plain pass; candidates 3 and 4 passed their gates with no measurable gain. Nothing
 found by the search is adopted or gated yet.**
@@ -311,14 +310,11 @@ more than 2 % faster than the best of round 1's confirmation; no round d.
 
 ## Needs the owner's attention
 
-- **Since the reboot of 2026-10-06 05:57 UTC eight `llm-api-*` services are `active (running)`**
-  (`llm-api-coder`, `-flash`, `-qwen36`, `-qwen36vlm`, `-qwen38`, `-qwen38fp8`, `-qwen38heretic`,
-  `-qwen38uncensored`: "Bounded request admission for ..."). They came up with the boot; this campaign did not
-  start them and does not stop them. At 06:10 UTC no process held a DRM file of either B70 and
-  `llama-server`, `comfyui`, `vllm`, `ollama` were inactive, so no card is taken and the search continues. If a
-  request makes one of them load a model on a card, the guard stops the queue of the job that sees it (rc 76,
-  `QUEUE_STOPPED`), and I stop using that card and report, as the campaign section says. If these services are
-  meant to stay off for the campaign, they need to be stopped again by the owner.
+- Nothing open at 2026-10-06 07:15 UTC. Cleared: the eight `llm-api-*` services that came up with the reboot of
+  05:57 UTC were stopped again by the owner at 06:30 UTC (all inactive; they are left enabled, so another
+  reboot would bring them back, and the check after any reboot is `systemctl list-units --type=service
+  --state=running | grep llm-api`). None had taken a card; the queues kept running and nothing of this campaign
+  was touched.
 - `nvtop` did not come back after the reboot; the paragraph below describes the sessions before it.
 - **`nvtop` (pid 1952, pts/0, started 17:01 UTC, before the campaign) holds a DRM file of both B70 cards.** It
   is not a workload: every DRM client it owns shows zero engine cycles and zero GPU memory. The campaign guard
