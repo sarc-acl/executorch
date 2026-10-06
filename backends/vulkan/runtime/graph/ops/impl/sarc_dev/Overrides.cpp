@@ -999,8 +999,9 @@ const char* sdpa_fused_variants_780m() {
 // --- m51 begin (openspec/changes/sarc-1.5-m51-prefill-refine, 2026-10-06) ---
 // ET_VK_SARC_M51_PROFILE=<name>: the M51 candidates, on top of
 // ET_VK_SARC_UNVERIFIED=1 (the xclipse rows). A profile names the fused
-// attention kernels per head_dim (m51/SdpaM51Fused.cpp); shapes and calls they
-// do not cover keep what the selection above returns. Not meant together with
+// attention kernels per head_dim (m51/SdpaM51Fused.cpp) and linear kernels per
+// shape; shapes and calls they do not cover keep what the selection above
+// returns. Not meant together with
 // ET_VK_SARC_780M_PROFILE: for the fused node the M51 profile wins.
 namespace vkcompute {
 namespace sarc {
@@ -1050,12 +1051,41 @@ const Row kM51Q4[] = {
      kTex3dTex2d, nullptr, Status::kUnverified},
 };
 
+// A pick sends the shapes its predicate accepts to one candidate kernel (exact
+// name) when the kernel fits; every other shape keeps the selection above.
+struct PickM51 {
+  Op op;
+  const char* kernel_base;
+  bool (*shape_ok)(const ShapeInfo&);
+};
 struct ProfileM51 {
   const char* name;
   const char* fused;
+  const PickM51* picks;
+  size_t count;
 };
+// Screen of 2026-10-06 (texture3d, 1B/3B/8B shapes, 3 rounds): the 780M's
+// texel-wise 8da4w staging (zpg_bt) is at least 3 % faster than the xclipse
+// zpgtr row on every shape; t128x128k32g42s32f32xp on the 4w shapes with
+// K = 4096 (8B w1_w3, wk_wv, wq_wo); no other tile on any shape.
+bool any_shape(const ShapeInfo&) {
+  return true;
+}
+bool k_is_4096(const ShapeInfo& s) {
+  return s.K == 4096;
+}
+const PickM51 kM51PicksC2[] = {
+    {Op::kDq8caLinear, "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32", any_shape},
+};
+const PickM51 kM51PicksC3[] = {
+    {Op::kDq8caLinear, "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32", any_shape},
+    {Op::kQ4gswLinear, "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32xp", k_is_4096},
+};
+const char kFusedM51[] = "fused3_d64_t32x32g11s32rk,fused3_d128_t16x64g11s32rk";
 const ProfileM51 kM51Profiles[] = {
-    {"c1", "fused3_d64_t32x32g11s32rk,fused3_d128_t16x64g11s32rk"},
+    {"c1", kFusedM51, nullptr, 0},
+    {"c2", kFusedM51, kM51PicksC2, sizeof(kM51PicksC2) / sizeof(PickM51)},
+    {"c3", kFusedM51, kM51PicksC3, sizeof(kM51PicksC3) / sizeof(PickM51)},
 };
 const ProfileM51* active_profile_m51() {
   static const ProfileM51* const active = []() -> const ProfileM51* {
@@ -1109,7 +1139,25 @@ std::optional<Choice> select_m51(
     const ShapeInfo& shape,
     const std::optional<Choice>& table_choice) {
   install_fused_m51();
-  return select_before_m51(device, shape, table_choice);
+  const std::optional<Choice> before =
+      select_before_m51(device, shape, table_choice);
+  const ProfileM51* active = active_profile_m51();
+  if (active == nullptr || !before.has_value()) {
+    return before;
+  }
+  for (size_t i = 0; i < active->count; ++i) {
+    const PickM51& pick = active->picks[i];
+    if (pick.op != shape.op || !pick.shape_ok(shape)) {
+      continue;
+    }
+    for (const Row& row : candidates()) {
+      if (row.op == shape.op && row.kernel_base == std::string(pick.kernel_base) &&
+          q4gsw_coopmat_fits(device, shape, row)) {
+        return Choice{row.kernel_base, row.dims, row.rowmajor_a};
+      }
+    }
+  }
+  return before;
 }
 
 struct RegistrarM51 {
