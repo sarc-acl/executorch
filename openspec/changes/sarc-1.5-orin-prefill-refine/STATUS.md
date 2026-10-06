@@ -1,9 +1,10 @@
 # STATUS: sarc-1.5-orin-prefill-refine
 
-**2026-10-06 01:30 UTC. STOP RULE MET. Final stack (candidates 1h + 2 + 3 + 4) against the pristine parent:
-+66.70 % geomean (`s7-final`), +66.77 % over the original `dev/1.5` numbers. Candidates 3 and 4, two consecutive
-gated candidates, gained +0.82 % and +0.41 % over their parents. One evidence job is still running (real-text
-logits of the final stack); the branch is pushed when it has ended.**
+**2026-10-06 03:45 UTC. STOP RULE MET, CAMPAIGN CLOSED. Final stack (candidates 1h + 2 + 3 + 4) against the
+pristine parent: +66.70 % geomean (`s7-final`), +66.77 % over the original `dev/1.5` numbers. Candidates 3 and 4,
+two consecutive gated candidates, gained +0.82 % and +0.41 % over their parents. The last evidence job
+(`chain20`, real-text logits of the final stack) ended at 03:28 UTC: reference-error rule MET, no differing
+next-token item. Nothing is running on either device or on the workstation.**
 
 All times are UTC from `date -u`.
 
@@ -36,18 +37,57 @@ of 2026-10-05.
 
 ## Running now
 
-- Device `duck-naughty` (primary), detached, under its gpu-lab lock: `chain20` (`tools/chain20.sh`, since
-  01:17; `tools/dstat.sh chain20`): the 41-prompt real-text logits of the final stack, default and tiled (the
-  parent's two arms exist), then the comparison and the reference-error rule in `probe/final-g64/`. Until about
-  03:45. It adds evidence; it cannot change a gate verdict or a rate.
-- Device `duck-stable`: nothing; not used any more.
-- Workstation: nothing.
+Nothing. `duck-naughty`: no job of this campaign (`chain20` `DONE rc=0 2026-10-06T03:28:12Z`); `duck-stable`:
+nothing, not used any more; workstation: nothing.
+
+From 03:40 UTC, for about three hours, the coordinator uses `duck-naughty` under this campaign's gpu-lab lock for
+a separate measurement the owner ordered (ExecuTorch against llama.cpp; processes under `~/llamacpp-compare`).
+That is not a job of this campaign; nothing under `~/hmz-sarc-orin` is touched, and this campaign starts no GPU
+job there.
 
 ## Next step
 
-Add the real-text evidence when `chain20` ends; push `topic/orin-prefill-refine`. Nothing else is planned: the
-remaining levers (a fused attention kernel, an Orin-specific linear kernel, the upstream kernels) are outside
-this campaign's reach or scope and are listed in `proposal.md`.
+None in this campaign. The remaining levers (a fused attention kernel, an Orin-specific linear kernel, the
+upstream kernels) are outside its reach or scope and are listed in `proposal.md`.
+
+## Final stack: real-text evidence under the reference-error rule (`results/orin/probe/final-g64/`)
+
+`tools/chain20.sh` on the primary, build `topic13`, the final environment, default and tiled; the parent's two
+arms are those of `chain13` (pristine parent build, same 41 prompts, `prompts_ids.txt` unchanged). The gate of
+the final stack (`s6-c4`) had no differing next-token item, so nothing depended on this; it is the evidence the
+rule asks for whenever the arithmetic changes, now for the stack as shipped and not only for candidate 1h.
+
+- Criterion 1 (error against the fp32 CPU reference, `orin_g64` path against the stock kernels, measured on the
+  primary, `results/orin/sdpa-error5/`): candidate not larger than the parent in rms and in maximum in 12 of 12
+  cases; production shapes rms 2.1e-05 against 8.5e-05 to 8.7e-05, maximum 7.8e-04 to 9.1e-04 against 1.4e-03 to
+  1.7e-03 (`reference-error-rule.txt`).
+- Criterion 2, evidence. Logits at the position of the gate's unaligned item (`position/summary.csv`): the four
+  arms pick the same token in all six cells (220 on 1B, 82816 on 3B and 8B); 1B 8da4w top-2 margin parent +0.31
+  (default) / +0.38 (tiled), final +0.30 / +0.42. Real-text comparison, 41 prompts, full next-token
+  distribution of the last position (`compare.csv`):
+
+    | cell | top-1 differences of 41 (parent's two arms / final vs parent) | mean KL, nats | max KL | max abs logit diff | perplexity (parent / final) |
+    |---|---|---|---|---|---|
+    | 1B 4w | 0 / 0 | 0.00055 / 0.00186 | 0.0109 / 0.0189 | 0.73 / 1.22 | 8.70 / 8.98 |
+    | 1B 8da4w | 2 / 4 | 0.0618 / 0.0841 | 0.606 / 1.099 | 4.42 / 4.76 | 9.58 / 9.71 |
+    | 3B 4w | 0 / 0 | 0.00012 / 0.00039 | 0.0014 / 0.0046 | 0.33 / 0.76 | 3.72 / 3.73 |
+    | 3B 8da4w | 1 / 0 | 0.0106 / 0.0133 | 0.152 / 0.099 | 3.73 / 4.13 | 3.63 / 3.83 |
+    | 8B 4w | 0 / 0 | 0.00023 / 0.00050 | 0.0027 / 0.0028 | 0.49 / 0.77 | 2.72 / 2.72 |
+    | 8B 8da4w | 1 / 3 | 0.0278 / 0.0158 | 0.447 / 0.204 | 2.72 / 3.26 | 2.84 / 2.83 |
+
+- Criterion 3, gross divergence: largest mean KL 0.084 nat (limit 0.5); the top-1 token differs on at most 4 of
+  41 prompts (limit: one third). None.
+- Verdict of `tools/ref_error_rule.py`: **MET**, differing next-token items: none (`REFERENCE_ERROR.json`).
+  As for candidate 1h, the last line of `compare.csv` prints the first decision's test ("outside twice the noise
+  floor": the 4w cells on mean KL, where the parent's two arms differ by 1e-4 to 5e-4 nat, and 8B 8da4w on 3
+  top-1 differences against 1); the second decision replaced that test for arithmetic changes, and the numbers
+  are reported here as it requires. The largest single-prompt KL is 1.10 nat (1B 8da4w, parent's own two arms:
+  0.61).
+- Against candidate 1h's comparison (`probe/refine1-nzf/`) the final stack is the same picture: top-1
+  differences 0 / 4 / 0 / 0 / 0 / 3 (1h: 0 / 5 / 0 / 1 / 0 / 4), mean KL at most 0.084 (1h: 0.076), perplexity
+  ratio 0.994 to 1.057 (1h: 0.996 to 1.078).
+- Memory during the probe: at least 5.7 GB available before and after every model, swap free unchanged
+  (5816 to 5818 MB), no abort marker.
 
 ## Second Orin (`duck-stable`): agreement batch, retest, owner decision
 
@@ -203,7 +243,8 @@ What the kernel is, its kernel-level screens and its measured error: "Softmax, f
 - Recording: the gate passed without a differing next-token item, so the reference-error rule was not needed
   to accept it. Because it changes the arithmetic (the order of a row's sum), its measured error against the
   fp32 reference is reported (not larger than the parent's in 12 of 12 cases, equal to `4070ti_nzf`'s to four
-  digits), and the rule's real-text logits comparison is being collected for the final stack (`chain20`).
+  digits), and the rule's real-text logits comparison of the final stack is MET (`results/orin/probe/final-g64/`,
+  section above).
   The candidate can be dropped without a measurable loss: the stack without it is this session's parent arm.
 
 ### Candidate 3, `orin-refine5` (4w linear tiles) on top of candidates 1h + 2: `GATE_ACCEPTED`, +0.82 %

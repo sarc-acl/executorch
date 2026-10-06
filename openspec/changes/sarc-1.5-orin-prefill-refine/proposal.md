@@ -346,7 +346,12 @@ session 1B 1482.98 -> 1491.62 / 1373.57 -> 1385.66, 3B 628.03 -> 629.77 / 569.05
 24 rows. ETDump: softmax 140 -> 132, 183 -> 173, 280 -> 264 ms. By the protocol this is noise, not a gain; it is
 in the final stack because the gate accepted it, and the stack without it is that session's parent arm.
 
-REALTEXT_PLACEHOLDER
+Real-text evidence for the final stack under the reference-error rule (`results/orin/probe/final-g64/`, 41
+prompts, four arms, build `topic13`): criterion 1 met in 12 of 12 cases; top-1 differences final vs parent per
+cell 0 / 4 / 0 / 0 / 0 / 3 of 41 (the parent's own two arms: 0 / 2 / 0 / 1 / 0 / 1), mean KL at most 0.084 nat
+(limit 0.5), perplexity ratio 0.994 to 1.057; no gross divergence; at the gate's unaligned position the four arms
+pick the same token in all six cells. `tools/ref_error_rule.py`: MET, no differing next-token item. The table is
+in `STATUS.md`.
 
 ## The second Orin (`duck-stable`)
 
