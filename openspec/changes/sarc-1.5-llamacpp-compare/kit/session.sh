@@ -46,7 +46,7 @@ gpu_shared || exit 75
 # Thresholds: the campaign's calibration files where it has them (Intel), else the values its host file sets
 # (DEV_CLKMIN; DEV_BUSYMAX may be empty where the device has no per-client engine accounting).
 CLKMIN=${DEV_CLKMIN:-}; BUSYMAX=${DEV_BUSYMAX:-}
-[[ -z $CLKMIN && -s ${CLKMIN_FILE:-/nonexistent} ]] && { CLKMIN=$(<"$CLKMIN_FILE"); BUSYMAX=$(<"$BUSYMAX_FILE"); }
+[[ -z $CLKMIN && -s ${CLKMIN_FILE:-/nonexistent} ]] && { CLKMIN=$(<"$CLKMIN_FILE"); BUSYMAX=$(cat "${BUSYMAX_FILE:-/nonexistent}" 2>/dev/null); }
 [[ -n $CLKMIN && ${CLKMIN%.*} -gt 0 ]] || { echo "no clock floor from the campaign" >&2; exit 2; }
 declare -F gtemp > /dev/null || gtemp() { echo $(( $(<$HW/temp2_input) / 1000 )); }
 declare -F dev_sampler > /dev/null || dev_sampler() { exec python3 "$CT/sampler.py" "$1" 0.01 $TOP; }
