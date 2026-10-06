@@ -1006,6 +1006,50 @@ namespace vkcompute {
 namespace sarc {
 namespace {
 
+// 4w per-shape screen (glsl/sarc_dev/sarc_linear_q4gsw_coopmat_sweep.yaml, m51
+// block): the xclipse row's fp32 accumulation and one-pass texture3d drain on
+// other tiles; and the phase-timing twin of the row (MEASUREMENT ONLY,
+// glsl/sarc_dev/sarc_dev_prof_q4gsw.yaml). Selected with ET_VK_SARC_Q4GSW_VARIANT.
+constexpr TileDims xp_tile(
+    uint32_t m, uint32_t n, uint32_t k, uint32_t sgx, uint32_t sgy, uint32_t sg) {
+  return {m, n, k, sgx, sgy, sg, 16, false, /*csh_full=*/true, /*csh_pool=*/true};
+}
+const Row kM51Q4[] = {
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g22s32f32xp", xp_tile(128, 128, 32, 2, 2, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g42s32f32xp", xp_tile(128, 128, 16, 4, 2, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32xp", xp_tile(128, 128, 32, 4, 2, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g24s32f32xp", xp_tile(128, 128, 16, 2, 4, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x64k16g22s32f32xp", xp_tile(128, 64, 16, 2, 2, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t64x128k16g22s32f32xp", xp_tile(64, 128, 16, 2, 2, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g21s64f32xp", xp_tile(128, 128, 16, 2, 1, 64),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g21s64f32xp", xp_tile(128, 128, 32, 2, 1, 64),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g22s64f32xp", xp_tile(128, 128, 16, 2, 2, 64),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g12s64f32xp", xp_tile(128, 128, 16, 1, 2, 64),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_prof_q4gsw_t128x128k16g22s32f32xpp", xp_tile(128, 128, 16, 2, 2, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+};
+
 struct ProfileM51 {
   const char* name;
   const char* fused;
@@ -1070,6 +1114,7 @@ std::optional<Choice> select_m51(
 
 struct RegistrarM51 {
   RegistrarM51() {
+    register_candidates(kM51Q4, sizeof(kM51Q4) / sizeof(kM51Q4[0]));
     Override o = get_override();
     select_before_m51 = o.select;
     o.select = select_m51;

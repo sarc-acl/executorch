@@ -49,3 +49,14 @@ sarc_dev_prof_q4gsw:
       SG_GRID_Y: 2
       ACC_FP32: true
       CSH_IN_ASH: true
+    # --- m51 begin (openspec/changes/sarc-1.5-m51-prefill-refine, 2026-10-06) ---
+    # M51 phase timing, MEASUREMENT ONLY: the xclipse 4w row (t128x128k16g22s32f32xp) with phase counters.
+    - NAME: sarc_dev_prof_q4gsw_t128x128k16g22s32f32xpp_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      ACC_FP32: true
+      CSH_FULL: true
+      CSH_POOL: true
+    # --- m51 end ---

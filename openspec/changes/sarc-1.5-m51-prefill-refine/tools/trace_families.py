@@ -35,7 +35,7 @@ def last_execution(path):
         for ev in rd.events or []:
             pe = ev.profile_event
             if pe is None: continue
-            name = pe.name or ""
+            name = pe.name or pe.delegate_debug_id_str or ""
             if name == "ETVK_COMPUTE_GRAPH_EXECUTE":
                 cur = []; runs.append(cur); continue
             m = DISPATCH.match(name)

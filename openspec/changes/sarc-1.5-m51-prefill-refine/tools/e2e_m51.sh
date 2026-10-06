@@ -15,6 +15,7 @@
 #
 # usage: e2e_m51.sh --stage DIR [--out raw] [--reps 5] [--extra 3] [--models 1b,3b,8b] [--schemes 4w,8da4w]
 #                   [--prompt prompt_2048.txt] [--tokens 2048] [--clkmin <kHz>] [--clkn 5] [--no-check]
+# EXTRA_ARGS: more llama_main arguments for every run (e.g. --num_bos=1 for a prompt file without BOS).
 set -uo pipefail
 [[ -n ${SARC_HOLD_UNIT:-} ]] || exec env SARC_HOLD_UNIT=1 "$(dirname "$(readlink -f "$0")")/hold.sh" run "timed session e2e_m51.sh $*" "$0" "$@"
 source "$(dirname "$(readlink -f "$0")")/dev.sh"
@@ -34,7 +35,7 @@ st=$(device_state); [[ $st == ok ]] || { echo "board not fit: $st"; exit 4; }
 declare -A STEM=([1b]=llama3_2_1b [3b]=llama3_2_3b [8b]=llama3_1_8b)
 IFS=, read -ra MS <<< "$MODELS"; IFS=, read -ra QS <<< "$SCHEMES"
 {
-  date -u; echo "reps=$REPS extra=$EXTRA prompt=$PROMPT tokens=$TOKENS clkmin=$CLKMIN clkn=$CLKN coolmax=$COOLMAX coold=$COOLD"
+  date -u; echo "reps=$REPS extra=$EXTRA prompt=$PROMPT tokens=$TOKENS extra_args=[${EXTRA_ARGS:-}] clkmin=$CLKMIN clkn=$CLKN coolmax=$COOLMAX coold=$COOLD"
   for b in parent cand; do echo "$b env: $(cat $D/$b/env | tr '\n' ' ')"; echo "$b commit: $(cat $D/$b/COMMIT)"; done
   A shell "cd $DS && sha256sum parent/llama_main cand/llama_main parent/$PROMPT parent/prompt_check.txt parent/r1329.txt" < /dev/null
   A shell "getprop ro.soc.model; uname -r; md5sum /vendor/lib64/hw/vulkan.samsung.so; cat /sys/class/devfreq/23400000.sgpu/governor; cat /sys/kernel/gpu/gpu_reset_count" < /dev/null
@@ -66,7 +67,7 @@ run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected 
     (cat /sys/kernel/gpu/gpu_clock_stats; cat /sys/kernel/gpu/gpu_reset_count) > run.pre
     touch run.on
     (while [ -e run.on ]; do echo \$(date +%s%N) \$(cat /sys/kernel/gpu/gpu_clock) \$(cat /sys/kernel/gpu/gpu_busy) \$(cat /sys/class/thermal/thermal_zone4/temp) \$(cat /sys/class/thermal/cooling_device7/cur_state); sleep 0.05; done > run.clk) &
-    $benv LD_LIBRARY_PATH=$DS/$b timeout 1190 ./llama_main --model_path=$DEV_ROOT/models/${STEM[$m]}_${q}_embq_ctx3072.pte --tokenizer_path=$DEV_ROOT/models/tokenizer.model --prompt_file=$p --max_new_tokens=1 --temperature=0 $w < /dev/null > run.log 2>&1
+    $benv LD_LIBRARY_PATH=$DS/$b timeout 1190 ./llama_main --model_path=$DEV_ROOT/models/${STEM[$m]}_${q}_embq_ctx3072.pte --tokenizer_path=$DEV_ROOT/models/tokenizer.model --prompt_file=$p --max_new_tokens=1 --temperature=0 $w ${EXTRA_ARGS:-} < /dev/null > run.log 2>&1
     echo \$? > run.rc; rm -f run.on; wait
     (cat /sys/kernel/gpu/gpu_clock_stats; cat /sys/kernel/gpu/gpu_reset_count) > run.post" < /dev/null > /dev/null 2>&1
   alive || { echo "board gone during $log $(date -u +%FT%TZ)" | tee -a "$ART/ABORTED"; exit 3; }
