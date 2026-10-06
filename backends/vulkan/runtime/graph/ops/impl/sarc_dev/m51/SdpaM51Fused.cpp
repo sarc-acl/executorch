@@ -8,7 +8,7 @@
 
 // M51 (openspec/changes/sarc-1.5-m51-prefill-refine): the node of the fused
 // prefill SDPA kernels glsl/sarc_dev/sarc_dev_m51_sdpa_fused3 (the 780M's
-// fused3 with subgroup control barriers), the 780M's 780m/Sdpa780mFused.cpp
+// fused3 with barriers at its shared-memory exchanges), the 780M's 780m/Sdpa780mFused.cpp
 // restricted to the packed form:
 //   ET_VK_SARC_M51_SDPA_FUSED=<variant>[,<variant>]
 //   e.g. fused3_d64_t32x32g11s32rko,fused3_d128_t16x64g11s32rko

@@ -2119,7 +2119,7 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
        has_kernel_containing(dispatched, "sarc_sdpa_av_coopmat"));
   // 780m: the fused prefill kernel computes QK^T, softmax and attn*V itself;
   // the three kernels must then not have run.
-  // m51: the same kernel with subgroup barriers (sarc_dev_m51_sdpa_fused3).
+  // m51: the same kernel with barriers at its shared-memory exchanges.
   const bool fused_fired =
       has_kernel_containing(dispatched, "sarc_dev_780m_sdpa_fused") ||
       has_kernel_containing(dispatched, "sarc_dev_m51_sdpa_fused");

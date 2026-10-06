@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 # SARC development zone, M51: the 780M's fused LLM-mode prefill SDPA kernel (sarc_dev_780m_sdpa_fused3.yaml) with
-# subgroup control barriers at its shared-memory exchanges (not shipped; reached only through
+# workgroup barriers at its shared-memory exchanges (not shipped; reached only through
 # ET_VK_SARC_M51_PROFILE, impl/sarc_dev/m51/SdpaM51Fused.cpp). Only the packed one-pass form (rko) is built.
 # Name: d<HEAD_DIM>_t<WG_TILE_M>x<WG_TILE_N>g11s<SUBGROUP_SIZE>rko. Each variant needs WG_TILE_M 16 or 32 and
 # WG_TILE_N / (SUBGROUP_SIZE / WG_TILE_M) a multiple of 8.

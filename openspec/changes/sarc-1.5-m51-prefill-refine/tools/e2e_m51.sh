@@ -38,6 +38,7 @@ IFS=, read -ra MS <<< "$MODELS"; IFS=, read -ra QS <<< "$SCHEMES"
   A shell "cd $DS && sha256sum parent/llama_main cand/llama_main parent/$PROMPT parent/prompt_check.txt parent/r1304.txt" < /dev/null
   A shell "getprop ro.soc.model; uname -r; md5sum /vendor/lib64/hw/vulkan.samsung.so; cat /sys/class/devfreq/23400000.sgpu/governor; cat /sys/kernel/gpu/gpu_reset_count" < /dev/null
   echo "clocks: $(clocks)"; echo "others: $(gpu_others)"
+  A shell 'for p in /sys/devices/system/cpu/cpufreq/policy*; do echo "$p $(cat $p/scaling_governor) min=$(cat $p/scaling_min_freq) max=$(cat $p/scaling_max_freq)"; done' < /dev/null
   for m in "${MS[@]}"; do for q in "${QS[@]}"; do echo "model $m $q $(A shell "ls -l $DEV_ROOT/models/${STEM[$m]}_${q}_embq_ctx3072.pte" < /dev/null | awk '{print $5}')"; done; done
 } > "$O/env.txt" 2>&1
 sleep 60; IDLE=$(gtemp); echo "idle_temp=$IDLE" >> "$O/env.txt"

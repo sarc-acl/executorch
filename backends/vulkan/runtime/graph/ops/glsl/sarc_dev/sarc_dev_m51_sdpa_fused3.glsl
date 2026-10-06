@@ -10,11 +10,11 @@
  * SARC development zone, M51 (openspec/changes/sarc-1.5-m51-prefill-refine):
  * the 780M's fused prefill SDPA kernel sarc_dev_780m_sdpa_fused3 (see that file
  * for the description), with one change: every point where one invocation
- * reads shared memory that another invocation of the subgroup wrote is a
- * subgroup control barrier with shared-memory acquire/release semantics
- * (SH_SYNC) instead of memoryBarrierShared(). memoryBarrierShared() orders only
- * the calling invocation's own accesses; on the M51 driver the 780M form gave
- * random wrong rows at S = 2048. Arithmetic and memory layout are unchanged.
+ * reads shared memory that another invocation of the subgroup wrote is
+ * memoryBarrierShared() followed by barrier() (SH_SYNC) instead of
+ * memoryBarrierShared() alone, which orders only the calling invocation's own
+ * accesses; on the M51 driver the 780M form gave random wrong rows at
+ * S = 2048. Arithmetic and memory layout are unchanged.
  *
  * From the 780M file:
  *
@@ -77,8 +77,12 @@ layout(std430) buffer;
 
 #include "common.glslh"
 
+// The workgroup is one subgroup, so a workgroup barrier costs little. The
+// release kernels' form (coopmat-lds-fence in sarc_sdpa_qk_coopmat.glsl): a
+// subgroup-scope control barrier left random wrong rows on M51.
 #define SH_SYNC() \
-  controlBarrier(gl_ScopeSubgroup, gl_ScopeSubgroup, gl_StorageSemanticsShared, gl_SemanticsAcquireRelease)
+  memoryBarrierShared(); \
+  barrier()
 
 ${layout_declare_tensor(B, "w", "t_output", DTYPE, IO_STORAGE, is_scalar_array=True)}
 ${layout_declare_tensor(B, "r", "t_q", DTYPE, IO_STORAGE, is_scalar_array=True)}
@@ -260,7 +264,7 @@ void main() {
   const int e_last = int(s_base + e_row) + input_pos;
   const ivec4 LANE = ivec4(0, 1, 2, 3);
 
-  // Everything shared here is subgroup-private; SH_SYNC orders every exchange
+  // Everything shared here is workgroup- (= subgroup-) private; SH_SYNC orders every exchange
   // between invocations (coopMatStore -> element reads, element writes ->
   // coopMatLoad, per-invocation partials -> row reductions).
 
