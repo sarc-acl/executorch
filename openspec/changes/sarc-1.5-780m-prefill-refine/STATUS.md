@@ -1,6 +1,6 @@
 # STATUS: 780M prefill campaign, round 2 (parameter space + beyond)
 
-Updated 2026-10-05 22:40 PDT (2026-10-06 05:40 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
+Updated 2026-10-06 00:55 PDT (2026-10-06 07:55 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
 Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (new raw data) and
 `.../780m-prefill-refine-2026-10-03/` (earlier builds and sessions).
 
@@ -15,7 +15,7 @@ Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (
 | 4w, Part 1 | random sample, refinement round 1 and the confirmation are done: **best kernel per shape below**, 4.0 to 4.8 % less linear time per layer than `780m-refine3`, byte-identical output; refinement round 2 (51 neighbours of the winners) and the 12 production-diff passes are queued |
 | candidate 10 (candidate 9 with the refined 4w table, profile `refine10`) | **gate passed, +0.47 % geomean: inside the band, not a gain** (4w cells +0.94 / +1.43 / +1.16 %, 8da4w cells 0.00 / -0.73 / +0.06 %); byte-identical 4w output; first candidate under 2 % |
 | 4w, Part 1 | finished except for the production-diff passes: the search stopped moving after refinement round 3 and the geometry scan; the best kernel per shape (5 repeats) is profile `refine10` |
-| 8da4w, Part 1 | **done except for the production-diff passes**: all 2,238 survivors screened, 49 measured in full, 22 five times; best kernel per shape below ("Part 1, 8da4w"), 2.1 to 3.1 % less 8da4w linear time per layer than `780m-refine3` |
+| 8da4w, Part 1 | **done** (792 of 792 production-diff passes ALL PASSED): all 2,238 survivors screened, 49 measured in full, 22 five times; best kernel per shape below ("Part 1, 8da4w"), 2.1 to 3.1 % less 8da4w linear time per layer than `780m-refine3` |
 | candidate 11 (candidate 10 + the 8da4w kernel per shape, profile `c11`) | **gate passed, +1.20 % geomean** (8da4w cells +2.02 / +2.82 / +2.36 %, 4w cells 0.00 / 0.00 / +0.06 %): the second consecutive candidate under 2 %, **stop rule met**; kept as the final configuration |
 | production-diff passes; QK^T / attn*V enumeration | running / queued (Part 1's last open item) |
 | final configuration (candidate 11), measured directly | **+33.82 % geomean over `dev/1.5`** (+23.42 to +48.35 %), **+24.12 % over `780m-refine3`** (+14.56 to +35.83 %); section "Final configuration" |
@@ -100,11 +100,21 @@ Where the capture material is (kept as evidence, nothing calls it):
 
 ## Running now
 
-`chain18.sh` (detached): the 12 production-diff passes of the confirmed 8da4w and 4w configurations, then the
-QK^T / attn*V enumeration at a steady clock (20 warm-up + 8 timed runs): Part 1's last open item. Everything
-else is done: the stop rule is met (candidates 10 and 11 under 2 %), the final configuration is measured against
-both parents (next section), and the branch is pushed at this state (owner decision headed "2026-10-06 (05:50 UTC)", received 05:35 UTC by this host's clock); it is
-pushed again when the campaign closes.
+`chain18.sh` (detached), state at 2026-10-06 07:55 UTC:
+
+1. 12 production-diff passes of the 22 confirmed 8da4w configurations x 3 models: **done 07:47 UTC, 792 of 792
+   passes ALL PASSED** (4 of 4 real shapes on the configuration's own kernel in every pass, non-zero
+   zero-points; `results/780m/space/confirm-8da4w/pdiff.csv`).
+2. The same for the 35 confirmed 4w configurations: running, 65 of 1,260 passes, about 11 s a pass: until about
+   11:40 UTC (04:40 PDT).
+3. Then the QK^T / attn*V enumeration at a steady clock (20 warm-up + 8 timed runs; 1,724 runs, each a QK^T and
+   an attn*V configuration with the 8 correctness cases): Part 1's last open item. It pauses from 06:40 to 07:40
+   local. Its rate is recorded here once the first runs are in.
+
+Everything else is done: the stop rule is met (candidates 10 and 11 under 2 %), the final configuration is
+measured against both parents (next section). The branch was pushed at `f5f1bf10c` (05:37 UTC) and is pushed
+again with every committed state from here on (owner decision headed "2026-10-06 (05:50 UTC)"), and when the
+campaign closes.
 
 The coordinator's hold was used once: `HOLD` 2026-10-06 00:53:06 UTC, `HELD` 00:53:12 UTC, `HOLD` removed about
 02:08 UTC; the queue removed `HELD` and continued with the configuration it had named, by itself.
@@ -739,7 +749,8 @@ configurations within 8 % of the fastest on some shape were measured in full (tw
 Per layer (2 `wq_wo` + 2 `wk_wv` + 2 `w1_w3` + `w2`): the best kernel per shape is 2.9 / 3.1 / 2.1 % less 8da4w
 linear time than `780m-refine3` (1B / 3B / 8B); profile `c11` (one kernel added, for N >= 2048 with K <= 4096)
 gets 2.4 / 2.6 / 1.6 %. The shipped tile (`t128x64k32g42s32`, release table) is 28 % behind the refine3 kernel.
-The 12 production-diff passes of the 22 confirmed configurations are running (`raw/confirm-8da4w/pdiff.csv`).
+The 12 production-diff passes of the 22 confirmed configurations on the three models: 792 of 792 ALL PASSED
+(`results/780m/space/confirm-8da4w/pdiff.csv`).
 
 Response surface (`results/780m/space/dq/importance/`; y = log kernel time, mean of the three screened shapes;
 slowest configuration 17.5 times the fastest):
