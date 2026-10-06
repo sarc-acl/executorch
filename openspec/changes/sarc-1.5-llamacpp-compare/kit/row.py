@@ -21,6 +21,7 @@ least 5 clock samples in the window, median clock >= clkmin, no thermal throttle
 <= busymax. tag `check` (next-token text runs) is judged on rc and token count only.
 """
 import json
+import os
 import re
 import statistics as st
 import sys
@@ -114,7 +115,7 @@ if str(pt) != want:
 if oth:
     reason.append("other_gpu_process")
 if tag == "prefill":
-    if n < 5:
+    if n < int(os.environ.get("MIN_CLK_SAMPLES", "5")):
         reason.append("clock_unsampled")
     elif kind != "lb" and cm < float(clkmin):
         reason.append("clock_low")
