@@ -995,3 +995,96 @@ const char* sdpa_fused_variants_780m() {
 } // namespace sarc
 } // namespace vkcompute
 // --- 780m end ---
+
+// --- rx7600 begin (openspec/changes/sarc-1.5-rx7600-prefill-refine, 2026-10-06) ---
+// ET_VK_SARC_RX7600_PROFILE=<name>: the RX 7600 campaign's candidates, on top of
+// the selection above: a linear kernel per layer shape among the registered
+// candidates, and the softmax variant. A shape whose entry does not apply or
+// whose kernel does not fit keeps the earlier selection. The fused attention
+// kernels are chosen with ET_VK_SARC_780M_SDPA_FUSED (780m/Sdpa780mFused.cpp).
+namespace vkcompute {
+namespace sarc {
+namespace {
+
+struct PickRx7600 {
+  Op op;
+  const char* kernel_base;
+  bool (*shape_ok)(const ShapeInfo&);
+};
+struct ProfileRx7600 {
+  const char* name;
+  const PickRx7600* picks;
+  size_t count;
+  const char* softmax_variant;
+};
+const ProfileRx7600 kRx7600Profiles[] = {
+    {"rx7600-refine1", nullptr, 0, "780m_r3"},
+};
+const ProfileRx7600* active_profile_rx7600() {
+  static const ProfileRx7600* const active = []() -> const ProfileRx7600* {
+    const char* e = std::getenv("ET_VK_SARC_RX7600_PROFILE");
+    if (e == nullptr || *e == 0) {
+      return nullptr;
+    }
+    for (const ProfileRx7600& p : kRx7600Profiles) {
+      if (std::strcmp(p.name, e) == 0) {
+        return &p;
+      }
+    }
+    std::cerr << "[sarc_dev] unknown ET_VK_SARC_RX7600_PROFILE=" << e << std::endl;
+    std::abort();
+  }();
+  return active;
+}
+
+std::optional<Choice> (*select_before_rx7600)(
+    const DeviceInfo&,
+    const ShapeInfo&,
+    const std::optional<Choice>&) = nullptr;
+
+std::optional<Choice> select_rx7600(
+    const DeviceInfo& device,
+    const ShapeInfo& shape,
+    const std::optional<Choice>& table_choice) {
+  const std::optional<Choice> before =
+      select_before_rx7600(device, shape, table_choice);
+  const ProfileRx7600* active = active_profile_rx7600();
+  if (active == nullptr || !before.has_value()) {
+    return before;
+  }
+  for (size_t i = 0; i < active->count; ++i) {
+    const PickRx7600& pick = active->picks[i];
+    if (pick.op != shape.op || !pick.shape_ok(shape)) {
+      continue;
+    }
+    for (const Row& row : candidates()) {
+      if (row.op == shape.op && row.kernel_base == std::string(pick.kernel_base) &&
+          q4gsw_coopmat_fits(device, shape, row)) {
+        return Choice{row.kernel_base, row.dims, row.rowmajor_a};
+      }
+    }
+  }
+  return before;
+}
+
+struct RegistrarRx7600 {
+  RegistrarRx7600() {
+    Override o = get_override();
+    select_before_rx7600 = o.select;
+    o.select = select_rx7600;
+    const ProfileRx7600* active = active_profile_rx7600();
+    if (active != nullptr && active->softmax_variant != nullptr &&
+        !env_true("ET_VK_DISABLE_COOPMAT")) {
+      o.softmax_variant = active->softmax_variant;
+    }
+    set_override(o);
+    if (active != nullptr) {
+      std::cerr << "[sarc_dev] rx7600 profile active: " << active->name << std::endl;
+    }
+  }
+} registrar_rx7600;
+
+} // namespace
+} // namespace sarc
+} // namespace vkcompute
+// --- rx7600 end ---
