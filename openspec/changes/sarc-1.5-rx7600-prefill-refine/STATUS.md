@@ -1,19 +1,45 @@
 # STATUS: RX 7600 prefill campaign
 
-Updated 2026-10-06 07:30 UTC. Artifacts: `/local/yanwen.xu/campaign-rx7600/.artifacts/`.
+Updated 2026-10-06 09:30 UTC. Artifacts: `/local/yanwen.xu/campaign-rx7600/.artifacts/`.
 
 ## Running now
 
-- Native build of the parent `f5f1bf10c` (tag `parent`; main build done 07:19 UTC, traced build running).
+- `chain0.sh` (detached, `.artifacts/logs/chain0.status`): `s0-parent-verify` (unmodified `verify.sh` on the parent
+  build, `ET_VK_SARC_UNVERIFIED=1`), then the SDPA tiers of the parent, one pass each (control).
+- `chain1.sh` (waits for chain0): logits_probe build; **candidate 1** gate (softmax `r3`, `ET_VK_SARC_780M_PROFILE=c7`,
+  on the parent binary) with its bit-identity evidence; then the kernel-level screen of the fused attention variants.
+- `chain2.sh` (waits for chain1): kernel-level screens of 21 4w and 24 8da4w linear kernels on the twelve real shapes.
+- `hold.sh watch` (coordinator hold watcher).
 
 ## State
 
 | step | state |
 |---|---|
-| change directory, tools, thresholds | written (`proposal.md`, `tools/thresholds.txt`), committed before any measurement |
-| parent build `parent` | main build done, traced build running |
-| `s0-parent-verify` | next |
-| baseline + A/A | after the snapshot |
+| change directory, tools, thresholds | committed before any measurement (`f605e36ea`); thermal rule made precise before the A/A (`308327c0d`) |
+| parent build `parent` (`f5f1bf10c`, native) | done; shipped SPIR-V: golden PENDING (14 of 53 differ, native glslc); reference for later builds `golden-ref-parent.json` |
+| baseline + A/A `aa2` | **done**, 120 timed runs, 116 valid (2 `host_build`, re-run); parent against itself |
+| calibration (`tools/thresholds.txt`) | clock floor **2420 MHz**, **5** repeats, thermal mask unchanged (no timed run carried a temperature bit) |
+| `s0-parent-verify` | running |
+| coordinator hold | tested 07:21 UTC (`results/rx7600/hold-test.txt`); watcher running |
+
+### Baseline and A/A (`aa2`, 07:34 to 09:24 UTC; `results/rx7600/sessions/aa2/`)
+
+Parent build `f5f1bf10c`, `ET_VK_SARC_UNVERIFIED=1`, in both arms; tok/s, median of the first 5 valid runs per arm.
+
+| cell | published (2026-09-28) | parent arm | vs published | A/A (cand / parent) | repeat spread parent / cand |
+|---|---:|---:|---:|---:|---|
+| 1B 4w | 7787 | 7816.79 | +0.38 % | +0.38 % | 0.38 / 0.38 % |
+| 1B 8da4w | 7340 | 7340.50 | +0.01 % | 0.00 % | 0.36 / 0.72 % |
+| 3B 4w | 3287 | 3292.60 | +0.17 % | 0.00 % | 0.32 / 0.48 % |
+| 3B 8da4w | 3080 | 3075.08 | -0.16 % | 0.00 % | 0.45 / 0.00 % |
+| 8B 4w | 1517 | 1517.04 | +0.00 % | 0.00 % | 0.15 / 0.15 % |
+| 8B 8da4w | 1403 | 1401.78 | -0.09 % | 0.00 % | 0.14 / 0.07 % |
+
+A/A geomean +0.06 % (7 runs per arm: 0.00 %). Every cell within 3 % of the published value. Median clock in the
+prefill window 2495 to 2586 MHz; start temperatures 42 to 52 C (idle 46 C). Next token SAME in all six cells on the
+timed, the real-text and the unaligned prompt. The 1B prefill takes 261 to 262 ms, and the runner's timer step is
+1 ms (0.38 %): the +0.38 % of 1B 4w is one timer step. The two timed runs that overlapped an M51 build read 3292.6
+(the cell median) and 3070.46 tok/s (-0.15 % against the median), within the repeat spread.
 
 ## Findings so far (host)
 
@@ -29,6 +55,15 @@ Updated 2026-10-06 07:30 UTC. Artifacts: `/local/yanwen.xu/campaign-rx7600/.arti
 - The unaligned 1304-token prompt `r1304.txt` that `verify.sh` also uses (`ls r*.txt`) is not on this host; its
   `unaligned` lines are absent from every `verify.sh` output here, the parent snapshot included. The unaligned
   1972-token `prompt_check.txt` (`check` lines) is present.
+- Roofs: igpu-roofline is on this host only in another workspace, which this campaign does not read, and its remote is
+  not known to me. The confirmed `fast` run of 2026-09-28 was made on this card with the same driver build (Mesa
+  26.2.3, `31e9a6b2e9`); its roofs (`sarc-1.5-e2e-benchmark/contrib/rx7600/roofline.json`: `matrix_fp16_fp32`
+  43.42 TFLOP/s, `matrix_int8` 43.90 TOP/s) are cited, not re-measured. A re-run needs the tool's remote, or permission
+  to use the workspace copy (owner).
+- The softmax that the port list calls "fp32 softmax" is, on this branch, the 780M's `r3`: it loads the row once,
+  evaluates exp once and bounds the zero fill. It reduces in fp16 like the release softmax and is meant to be
+  bit-identical to it. No fp32 softmax exists on this branch. `r3` is valid with this card's attn*V row (tile 64 x 64,
+  K 32: both divide 256, the condition in the shader).
 - Python imports from `/tool/pkg` (NFS) are slow: importing torch took over 5 minutes under load, so the ETDump
   analysis will not use the kit's `Inspector` script.
 
@@ -54,7 +89,6 @@ end the campaign before items 3 and 4. The 780M measured them the other way roun
 
 ## Next
 
-1. `s0-parent-verify` on the parent build.
-2. Baseline + A/A session; write the clock floor into `tools/thresholds.txt`.
-3. Coordinator-hold test (`HOLD-TEST`), recorded here.
-4. Locate (ETDump families for the six cells).
+1. Candidate 1 (softmax `r3`) gate; its traces are the first locate step (ETDump families of the six cells, both arms).
+2. Fused-variant screen, then candidate 2 (fused attention kernel) with the reference-error evidence (D3).
+3. Linear screens, then candidates 3 and 4 (kernel per shape; whole-texel 8da4w staging).
