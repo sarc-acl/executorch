@@ -15,13 +15,13 @@ two consecutive gated candidates gained under 2 %. Afterwards every device was c
 
 | device | 4w gain | 8da4w gain | both | x stock, September -> now | state on 2026-10-06 |
 |---|---:|---:|---:|---|---|
-| Jetson Orin Nano | +65.7 % | +67.8 % | +66.8 % | 4.46 -> 7.43 | reopened by review; re-gate running |
+| Jetson Orin Nano | +65.7 % | +67.8 % | +66.7 % | 4.46 -> 7.43 | finished, pushed (corrected build) |
 | Arc B580 | +46.0 % | +77.8 % | +61.1 % | 2.19 -> 3.53 | finished, pushed |
 | Arc Pro B70 | +45.3 % | +70.9 % | +57.6 % | 2.17 -> 3.42 | stable; sampled search still running |
 | RTX 4070 Ti SUPER | +43.2 % | +49.2 % | +46.2 % | 3.57 -> 5.22 | finished, pushed |
 | Radeon 780M | +30.0 % | +33.8 % | +31.9 % | 2.08 -> 2.74 | stop rule met, closing |
 
-Gains are over the September SARC release; "x stock" is over unmodified ExecuTorch 1.5. Orin, B70 and 780M:
+Gains are over the September SARC release; "x stock" is over unmodified ExecuTorch 1.5. B70 and 780M:
 as of 2026-10-06, to be updated.
 
 Against llama.cpp (its warm timer, best screened setting): tuned Vulkan kernels are 1.16 to 1.80 times
@@ -57,7 +57,9 @@ llama.cpp Vulkan on AMD and Intel and level on NVIDIA (0.93 to 1.21). Vendor bac
 
 ## What is left
 
-1. **Close three campaigns**: Orin re-gate of the fixed softmax kernel; B70 sampled search (still running);
+1. **Close two campaigns** (the Orin closed on 2026-10-06 on the corrected build, +66.7 % in its own final
+   session): B70 sampled search (still running; its attention x V enumeration found tiles 1.13 to 1.22 times
+   faster at kernel level, not yet gated);
    780M closing and push. Then update the three rows above and `results.md`.
 2. **Next devices**: Radeon RX 7900 XTX and Radeon RX 7600, from `topic/780m-prefill-refine`, with your
    defaults N1 to N9: port the 780M's second layer, no sampled search, no verification pass first, expect +20

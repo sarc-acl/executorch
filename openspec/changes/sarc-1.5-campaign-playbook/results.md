@@ -18,7 +18,7 @@ final sessions.
 
 | device | 4w gain | 8da4w gain | both | x stock, September -> now | state on 2026-10-06 | branch |
 |---|---:|---:|---:|---|---|---|
-| Jetson Orin Nano | +65.7 % | +67.8 % | +66.8 % | 4.46 -> 7.43 | closed and pushed, then reopened by review (`LESSONS.md` L8); re-gate running | `topic/orin-prefill-refine` |
+| Jetson Orin Nano | +65.7 % | +67.8 % | +66.7 % | 4.46 -> 7.43 | finished and pushed on the corrected build (reopened once by review, `LESSONS.md` L8) |
 | Arc B580 | +46.0 % | +77.8 % | +61.1 % | 2.19 -> 3.53 | finished, pushed | `topic/b580-prefill-refine` |
 | Arc Pro B70 | +45.3 % | +70.9 % | +57.6 % | 2.17 -> 3.42 | result stable; sampled search still running | `topic/xe2-prefill-refine` |
 | RTX 4070 Ti SUPER | +43.2 % | +49.2 % | +46.2 % | 3.57 -> 5.22 | finished, pushed | `topic/4070ti-prefill-refine` |
@@ -85,6 +85,13 @@ Where the time went (warm ETDump, ms per prefill, same source):
 | 8B 8da4w | tuned | 680.4 | 433.2 | 19.4 | 21.0 | 34.3 | 172.6 |
 
 ("other" of the 8da4w rows includes the 8-bit activation quantize, 59.8 ms.)
+
+**Update 2026-10-06 10:45 UTC, Jetson Orin Nano closed.** The corrected softmax kernel (only the elected lane
+stores) was gated again and accepted (+0.34 % over its parent, where the first form had read +0.41 %), and the
+final session of the whole stack on the corrected build reads, in tok/s (parent -> final): 1B 890.8 -> 1489.5 and
+824.8 -> 1382.9; 3B 360.5 -> 629.0 and 320.3 -> 570.3; 8B 189.8 -> 295.5 and 170.4 -> 269.2 (4w and 8da4w), +66.65 %
+geomean, every next-token item the same as the parent's. These replace the numbers of the first form in the table
+below by at most 0.2 % per cell. The llama.cpp comparison on this device was taken with the first form.
 
 ### Jetson Orin Nano (as of 2026-10-06, to be updated; source: its `STATUS.md`, session before the re-gate)
 
