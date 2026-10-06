@@ -841,10 +841,38 @@ const Pick780m k780mRefine10[] = {
      "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x256k32g42s32f32cbt",
      q4_n_at_least_1024},
 };
+// refine11: refine10 plus the 8da4w result of the round-2 search (that change's
+// results/780m/space/confirm-8da4w, all 2,238 surviving configurations
+// screened): the 256 x 64 tile with K-chunks of 64 where N >= 2048 and
+// K <= 4096 (wq_wo, w1_w3). The other shapes are tied with the 780m-refine3
+// kernel and keep it.
+bool dq_wide_k_up_to_4096(const ShapeInfo& s) {
+  return s.N >= 2048 && s.K <= 4096;
+}
+const Pick780m k780mRefine11[] = {
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g18s32f32cbt",
+     q4_k_at_least_4096},
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt",
+     q4_k_3072},
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt",
+     q4_wide_small_k},
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x128k32g24s32f32cbt",
+     q4_k_below_3072},
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x256k32g42s32f32cbt",
+     q4_n_at_least_1024},
+    {Op::kDq8caLinear,
+     "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1",
+     dq_wide_k_up_to_4096},
+};
 // A profile may also name a softmax variant (Override::softmax_variant:
 // glsl/sarc_dev/sarc_sdpa_attn_weights_softmax_780m_<tag>.yaml) and the fused
-// attention kernels (Sdpa780mFused.cpp). c7 to c10 are that change's
-// candidates 7 to 10, each on top of ET_VK_SARC_DEV_PROFILE=780m-refine3.
+// attention kernels (Sdpa780mFused.cpp). c7 to c11 are that change's
+// candidates 7 to 11, each on top of ET_VK_SARC_DEV_PROFILE=780m-refine3.
 // Softmax r3 is only valid in front of a SARC attn*V kernel.
 struct Profile780m {
   const char* name;
@@ -865,6 +893,7 @@ const Profile780m k780mProfiles[] = {
     {"c8", nullptr, 0, "780m_r3", kFused780mTwoPass},
     {"c9", k780mRefine9, sizeof(k780mRefine9) / sizeof(Pick780m), "780m_r3", kFused780mOnePass},
     {"c10", k780mRefine10, sizeof(k780mRefine10) / sizeof(Pick780m), "780m_r3", kFused780mOnePass},
+    {"c11", k780mRefine11, sizeof(k780mRefine11) / sizeof(Pick780m), "780m_r3", kFused780mOnePass},
 };
 const Profile780m* active_profile_780m() {
   static const Profile780m* const active = []() -> const Profile780m* {

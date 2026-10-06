@@ -8,6 +8,7 @@
 {"", nullptr, Op::kQ4gswLinear, "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt", {256, 128, 32, 2, 4, 32, 16, true, false, false}, kTex3dTex2d, nullptr, Status::kUnverified},
 {"", nullptr, Op::kQ4gswLinear, "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt", {256, 128, 32, 2, 8, 32, 16, true, false, false}, kTex3dTex2d, nullptr, Status::kUnverified},
 {"", nullptr, Op::kQ4gswLinear, "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x128k32g24s32f32cbt", {128, 128, 32, 2, 4, 32, 16, true, false, false}, kTex3dTex2d, nullptr, Status::kUnverified},
+{"", nullptr, Op::kDq8caLinear, "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1", {256, 64, 64, 4, 8, 32, 16, false, false, false}, kTex3dTex2d, nullptr, Status::kUnverified},
 {"", nullptr, Op::kDq8caLinear, "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32afmb2", {128, 64, 32, 2, 2, 32, 16, false, false, false}, kTex3dTex2d, nullptr, Status::kUnverified},
 {"", nullptr, Op::kSdpaQk, "sarc_sdpa_qk_coopmat_x780m_t128x64k32g22s64nf", {128, 64, 32, 2, 2, 64, 16, false, false, false}, kBufBuf, nullptr, Status::kUnverified},
 {"", nullptr, Op::kSdpaAv, "sarc_sdpa_av_coopmat_x780m_t64x64k32g42s32", {64, 64, 32, 4, 2, 32, 16, false, false, false}, kBufBuf, nullptr, Status::kUnverified},
