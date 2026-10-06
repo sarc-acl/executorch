@@ -271,10 +271,46 @@ Each against its parent in the same session, median of 5 valid runs per arm, arm
 | 7 | softmax r3: the row prefix loaded once, exp once, zero fill bounded to what attn*V reads (`ET_VK_SARC_780M_SOFTMAX=r3`; `hooks/softmax-name-hook.patch`) | **+6.78** / **+6.62** % | **+3.43** / **+3.06** % | **+2.44** / **+2.39** % | +4.10 % | pass; SDPA output byte-identical to the parent on 21 cases |
 | 8 | fused SDPA kernel `sarc_dev_780m_sdpa_fused3` (`ET_VK_SARC_780M_SDPA_FUSED`; `hooks/sdpa-fused-hook.patch`) | **+20.00** / **+20.14** % | **+11.69** / **+11.88** % | **+8.10** / **+7.84** % | +13.16 % | ACCEPTED (reference-error rule, owner decision 2026-10-04); one next-token item differs (8B 8da4w, `prompt_2048.txt`) |
 | 9 | candidate 8 + one-pass form of the fused kernel + the 4w kernel per shape (`ET_VK_SARC_780M_PROFILE=refine9`) | **+4.83** / +1.80 % | **+4.50** / +1.06 % | **+5.45** / +1.59 % | +3.19 % | pass; no next-token item differs; 4w output byte-identical; the 8da4w cells are inside the band |
+| 10 | candidate 9 with the refined 4w table (`refine10`: two more refinement rounds and a geometry scan) | +0.94 / 0.00 % | +1.43 / -0.73 % | +1.16 / +0.06 % | +0.47 % | pass; inside the band, not a gain; 4w output byte-identical |
+| 11 | candidate 10 + the 8da4w kernel per shape (`ET_VK_SARC_780M_PROFILE=c11`; all 2,238 surviving 8da4w configurations screened) | 0.00 / **+2.02** % | 0.00 / **+2.82** % | +0.06 / **+2.36** % | +1.20 % | pass; no next-token item differs; second consecutive candidate under 2 %: stop rule met |
 
 Bold = outside the +-2 % band. A/A floor of this round: geomean +0.01 %, cells within +-0.23 % (`t3-aa`).
-Chained over the sessions, candidate 9 is about +31 % geomean over `dev/1.5` and +21.6 % over `780m-refine3`;
-the direct measurement is in "Final configuration" below once it is run.
+Candidates 7 to 9 were measured through two local patches; since the owner decision of 2026-10-05 the entry
+points are committed and every candidate is one profile of the committed branch (`c7` to `c11`).
+
+### Final configuration (candidate 11), measured directly
+
+Committed head `a8fffa5ea`, `ET_VK_SARC_DEV_PROFILE=780m-refine3 ET_VK_SARC_780M_PROFILE=c11`, no local patch.
+Sessions `s9-final-dev15` and `s10-final-refine3` (2026-10-05, cool starts, 5 valid runs per arm, interleaved):
+
+| cell | `dev/1.5` | candidate 11 | gain over `dev/1.5` | `780m-refine3` | candidate 11 | gain over `780m-refine3` |
+|---|---:|---:|---:|---:|---:|---:|
+| 1B 4w | 2691.20 | 3835.21 | **+42.51 %** | 2828.73 | 3842.40 | **+35.83 %** |
+| 1B 8da4w | 2537.79 | 3764.71 | **+48.35 %** | 2824.83 | 3771.64 | **+33.52 %** |
+| 3B 4w | 1140.95 | 1458.69 | **+27.85 %** | 1188.62 | 1458.69 | **+22.72 %** |
+| 3B 8da4w | 1049.72 | 1403.70 | **+33.72 %** | 1166.95 | 1412.41 | **+21.03 %** |
+| 8B 4w | 517.43 | 638.60 | **+23.42 %** | 540.23 | 640.00 | **+18.47 %** |
+| 8B 8da4w | 487.85 | 628.03 | **+28.73 %** | 549.21 | 629.19 | **+14.56 %** |
+| geomean | | | **+33.82 %** | | | **+24.12 %** |
+
+Next token: SAME in eleven of twelve items against either parent; 8B 8da4w on `prompt_2048.txt` differs, the
+item of candidate 8, accepted under the reference-error rule (owner decision 2026-10-04; `results/780m/probe/`,
+`results/780m/sdpa-error/`). Adopting this configuration is the owner's decision: it rests on the fused attention
+entry point, which is committed but subject to the owner's review before any promotion.
+
+Warm traces of both arms of `s9` (ms per prefill, `dev/1.5` -> candidate 11):
+
+| | 1B 4w | 1B 8da4w | 3B 4w | 3B 8da4w | 8B 4w | 8B 8da4w |
+|---|---:|---:|---:|---:|---:|---:|
+| total | 758 -> 537 | 801 -> 544 | 1799 -> 1419 | 1949 -> 1460 | 3998 -> 3247 | 4237 -> 3304 |
+| QK^T + softmax + attn*V | 234 -> 0 | 235 -> 0 | 397 -> 0 | 397 -> 0 | 600 -> 0 | 600 -> 0 |
+| copy / view / other (holds the fused kernel and its copy pass) | 61 -> 97 | 36 -> 71 | 134 -> 225 | 86 -> 177 | 228 -> 361 | 137 -> 268 |
+| linear GEMM | 375 -> 354 | 401 -> 343 | 1088 -> 1015 | 1183 -> 999 | 2854 -> 2570 | 3017 -> 2553 |
+| elementwise (upstream) | 68 | 68 | 129 | 131 | 244 | 243 |
+
+Percent of the re-measured roofs, by shape, in that trace: 4w linear 65 to 81 % of the fp16 -> fp32 matrix roof
+(9.6 to 12.0 of 14.766 TFLOP/s), 8da4w linear 69 to 84 % of the int8 matrix roof (9.9 to 12.1 of 14.379 TOP/s),
+the fused attention kernel about 71 % of the fp16 -> fp32 roof (kernel timing).
 
 ### Where the gains come from
 
@@ -319,7 +355,21 @@ the tied K = 3072 shapes) gets 3.1 to 4.8 %. Response surface: `STATUS.md`, "The
 the whole space: tile M and N, the grid and the accumulator explain it, through the number of MMA tiles a
 subgroup owns; no pair of boolean options interacts) and "Part 1, 4w" (near the optimum: `IMG_A`, `IMG_W` and the
 drain mode do not matter; `SH_F16V4` always costs 3 %; `B_COLMAJOR`, tile M / N and the grid are decided by the
-shape). 8da4w, QK^T and attn*V: see `STATUS.md` until their enumerations are in.
+shape). 
+**8da4w zpg: all 2,238 surviving configurations were measured** (screen on `wq_wo`, 49 in full, 22 five times;
+`results/780m/space/{dq,confirm-8da4w}/`). **Within the existing kernel bodies the best configuration per shape
+on this device and driver is:** `t256x64k64g48s32afmb1` for `wq_wo` and `w1_w3` (N >= 2048 with K <= 4096; 1.8 to
+3.8 % faster than the `780m-refine3` kernel, which is tied only on 8B `wq_wo`); the `780m-refine3` kernel
+`bt_t128x64k32g22s32` (`A_MAP_FULL`, 2 blocks) for `w2` and `wk_wv`, where 6 to 12 configurations are tied with
+it within 2 % (1B `wk_wv`, 0.1 % of the layer, is the exception: 14 tied configurations 2.9 to 3.4 % ahead of it,
+not selected). Per layer that is 2.1 to 3.1 % less 8da4w linear time; profile `c11` takes 1.6 to 2.6 %.
+Response surface (`STATUS.md`, "Part 1, 8da4w"): tile M, tile N, tile K, the grid rows and `A_MAP_FULL` matter
+(best of level 2.6 to 32 % behind at the wrong level); subgroup size, the `bt` weight staging and `A_BLOCKS` do
+not (under 2 %); the parameters interact strongly (an additive model explains 47 % of the variance) through one
+derived quantity, activation slots per thread, which wants to be 1.
+
+QK^T and attn*V: the enumeration (1,724 and 470 survivors) is the last open item; see `STATUS.md`. With the
+fused attention node these two kernels only serve the calls it does not take (unaligned prompts, decode).
 
 ### Release-zone hook (owner decision 2026-10-05)
 
