@@ -1,13 +1,11 @@
 #!/bin/bash
-# build_probe.sh <tree> <build dir of that tree made by sarc/tools/build.sh --llama>: builds
-# backends/vulkan/test/sarc_dev/probe (logits_probe) against <build dir>/llama into <build dir>/probe, in the
-# build container. CPU only. The tree is the scratch tree the runner was built from (hooks applied or not).
+# build_probe.sh <build tag>: builds backends/vulkan/test/sarc_dev/probe (logits_probe) of the exported tree of
+# <build tag> against build/rx7600/<tag>/llama into build/rx7600/<tag>/probe, natively (podman cannot run here).
 set -euo pipefail
-S=$(realpath "$1"); OUT=$(realpath "$2"); ROOT=${SARC_MOUNT_ROOT:-$(dirname "$S")}
-podman run --rm --userns=keep-id --security-opt label=disable -v "$ROOT:$ROOT" -e S="$S" -e OUT="$OUT" \
-  -e JOBS="${SARC_JOBS:-12}" localhost/et-vk-build:rocky10 bash -euo pipefail -c '
-cd "$S"; export PYTHONPATH=$(dirname "$S")
+source "$(dirname "$(readlink -f "$0")")/env.sh"
+S=$A/src/rx7600/$1/executorch; OUT=$A/build/rx7600/$1; export PYTHONPATH=$(dirname "$S") CCACHE_DIR=$A/ccache
+cd "$S"
 cmake backends/vulkan/test/sarc_dev/probe -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$OUT/llama \
-  -DCMAKE_FIND_ROOT_PATH=$OUT/llama -DEXECUTORCH_ROOT=$S -B$OUT/probe
-cmake --build $OUT/probe -j$JOBS
-ls -la $OUT/probe/logits_probe'
+  -DCMAKE_FIND_ROOT_PATH=$OUT/llama -DEXECUTORCH_ROOT=$S -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -B$OUT/probe
+cmake --build $OUT/probe -j${SARC_JOBS:-24}
+ls -la $OUT/probe/logits_probe

@@ -34,6 +34,15 @@ Updated 2026-10-06 07:30 UTC. Artifacts: `/local/yanwen.xu/campaign-rx7600/.arti
 
 ## Decision needed from the owner
 
+**Host builds of the M51 campaign during timed sessions.** Rule R5 says no build runs during a timed session on the
+same host, by anyone. The M51 campaign (`/local/yanwen.xu/campaign-m51`) builds on this host's CPU nearly continuously
+(`nice -n 19`, `-j8`, Android NDK; one build was 12 minutes in at 07:54 UTC). My sessions honour the rule
+conservatively: every timed run waits until no compiler, linker or build driver of anyone runs, and a run during
+which one appears is invalid and replaced. The sessions therefore only move in the gaps between M51 builds. The first
+A/A (`aa2`) needed about 25 minutes for its 1B cells and stalled for more than 15 minutes on one 3B run. **Default
+unless the owner rules otherwise:** keep this rule. A shared host-wide marker that the M51 builds wait for would
+need the M51 campaign's cooperation; I do not touch its checkout or jobs.
+
 **Order of port items 1 and 2.** Item 1, the fused attention kernel, replaces QK^T, softmax and attn*V for every
 tile-aligned prefill call, including the timed 2048-token prompt. Item 2, the softmax without the zero tail, then
 runs only where the fused kernel does not (unaligned prompts). On the timed prompt it would measure about 0 %. That
