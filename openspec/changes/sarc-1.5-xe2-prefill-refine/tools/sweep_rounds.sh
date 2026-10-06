@@ -7,7 +7,7 @@
 # is sweep_analyze.py over the builds before and after the round (rounds.txt records every number used). Then the confirmation tables of every round (sweep_confirm.py against the
 # incumbent arm: the first ref, or base) are written into sweep/an-<space>/.
 . "$(dirname "$(readlink -f "$0")")/host.sh"; S=$1; shift; AN=$A/sweep/an-$S; PY=$XE2_PYTHON; T=$(mktemp -d)
-best() { local w= r= b; for b in "$@"; do w+=${w:+,}$A/sweep/$b-$S/checked.csv; r+=${r:+,}$A/raw/$b-$S/results.csv; done
+best() { local w= r= b; for b in "$@"; do [[ -f $A/raw/$b-$S/results.csv ]] || continue; w+=${w:+,}$A/sweep/$b-$S/checked.csv; r+=${r:+,}$A/raw/$b-$S/results.csv; done
   $PY $TOOLS/sweep_analyze.py $S $T $w $r | sed -n 's/^best score_x \([0-9.]*\).*/score \1/p; s/^best \([a-z0-9_]*\): \([0-9.]*\)x.*/\1 \2/p'; }
 moved() { join <(best "${@:2:$1}" | sort) <(best "${@:2}" | sort) | tee -a $AN/rounds.txt | awk '$3 > 1.02 * $2 {f = 1} END {exit !f}'; }
 INC=base; for a in "$@"; do [[ $a == ref=* ]] && { INC=ref-${a#ref=}; INC=${INC%%:*}; break; }; done
@@ -23,8 +23,8 @@ for k in sorted(a):
 ' $AN/confirm.csv $AN/confirm-b.csv | tee -a $AN/rounds.txt | grep -q MOVED; }
 for R in b c; do
   if [[ ! -f $A/raw/sw3$R-$S/results.csv ]] || ! grep -q SWEEP_DONE $A/raw/sw3$R-$S/env.txt; then
-    if [[ $R == b ]]; then echo "round b? best x of sw1, of sw1+sw2:" >> $AN/rounds.txt; moved 1 sw1 sw2 || break
-    else echo "round c? best x of sw1+sw2, of sw1+sw2+sw2b:" >> $AN/rounds.txt; moved 2 sw1 sw2 sw2b; m=$?
+    if [[ $R == b ]]; then echo "round b? best x of sw1, of sw1+sw2 (+sw2i, the incumbents and their neighbours, where it exists):" >> $AN/rounds.txt; moved 1 sw1 sw2 sw2i || break
+    else echo "round c? best x of sw1+sw2, of sw1+sw2+sw2b:" >> $AN/rounds.txt; moved 3 sw1 sw2 sw2i sw2b; m=$?
       echo "confirmation, best x per (model, shape) of sw3, of sw3b:" >> $AN/rounds.txt; cmoved || [[ $m == 0 ]] || break; fi
     echo "round $R runs" >> $AN/rounds.txt
     bash $TOOLS/sweep_refine.sh $S $R "$@" || exit $?

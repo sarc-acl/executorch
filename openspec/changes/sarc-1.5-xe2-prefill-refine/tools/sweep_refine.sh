@@ -9,7 +9,7 @@
 . "$(dirname "$(readlink -f "$0")")/host.sh"; S=$1; R=$2; shift 2; C=$A/sweep/cfg; AN=$A/sweep/an-$S; PY=$XE2_PYTHON
 [[ $R == b || $R == c ]] || { echo "round must be b or c" >&2; exit 2; }
 FIRST=60000; [[ $R == c ]] && FIRST=70000
-builds() { local b; for b in sw1 sw2 sw2b sw2c; do [[ -f $A/raw/$b-$S/results.csv ]] && echo $b; done; }
+builds() { local b; for b in sw1 sw2 sw2i sw2b sw2c; do [[ -f $A/raw/$b-$S/results.csv ]] && echo $b; done; }
 analyze() { local w= r= b; for b in $(builds); do w+=${w:+,}$A/sweep/$b-$S/checked.csv; r+=${r:+,}$A/raw/$b-$S/results.csv; done
   $PY $TOOLS/sweep_analyze.py $S $AN $w $r; }
 correctness() { local i b
