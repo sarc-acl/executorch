@@ -60,3 +60,12 @@ sarc_sdpa_qk_coopmat_xe2c:
       WG_TILE_K: 32
       SG_GRID_X: 4
       SG_GRID_Y: 2
+    - NAME: sarc_sdpa_qk_coopmat_xe2c_t64x128k32g82s16m8nf
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 8
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      NO_MASK_FILL: true

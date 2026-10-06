@@ -452,6 +452,23 @@ def family_yaml(name, cache, extra_default, variants):
 (g / "sarc_sdpa_qk_coopmat_xe2c.yaml").write_text(family_yaml("sarc_sdpa_qk_coopmat_xe2c", "K_CACHE_STORAGE", "    NO_MASK_FILL: true\n", QK_XE2C))
 (g / "sarc_sdpa_av_coopmat_xe2.yaml").write_text(family_yaml("sarc_sdpa_av_coopmat_xe2", "V_CACHE_STORAGE", "", AV_XE2))
 
+# Attention tiles confirmed by the enumeration of the legal spaces (results/xe2/sweep/{av,qk}/confirm.csv), used
+# by candidate 6. Unlike everything above they may use subgroup size 32, so the size is part of the entry:
+# (yaml file or None for a generated Xe2 family, kernel prefix, op, token prefix, M, N, K, sgx, sgy, subgroup size, nf)
+FOUND = [
+    (None, "sarc_sdpa_av_coopmat_xe2", "kSdpaAv", "xe2", 64, 64, 64, 4, 4, 32, False),     # search id 400163: head_dim 64
+    (None, "sarc_sdpa_av_coopmat_xe2", "kSdpaAv", "xe2", 128, 64, 64, 4, 4, 32, False),    # search id 400819: head_dim 128
+    (None, "sarc_sdpa_qk_coopmat_xe2c", "kSdpaQk", "xe2c", 64, 128, 32, 8, 2, 16, True),   # search id 303340
+]
+def found_tok(m, n, k, sx, sy, sg, nf): return f"t{m}x{n}k{k}g{sx}{sy}s{sg}m8" + ("nf" if nf else "")
+def found_yaml(prefix, op, m, n, k, sx, sy, sg, nf):
+    return (f"    - NAME: {prefix}_{found_tok(m, n, k, sx, sy, sg, nf)}\n      WG_TILE_M: {m}\n      WG_TILE_N: {n}\n      WG_TILE_K: {k}\n"
+            f"      SG_GRID_X: {sx}\n      SG_GRID_Y: {sy}\n      SUBGROUP_SIZE: {sg}\n      MMA_M: {MMA_M}\n"
+            + (f"      NO_MASK_FILL: {'true' if nf else 'false'}\n" if op == "kSdpaQk" else ""))
+for fname, prefix, op, tp, m, n, k, sx, sy, sg, nf in FOUND:
+    assert sx * sy * sg <= 1024 and m % sy == 0 and n % sx == 0 and (m // sy) % MMA_M == 0 and (n // sx) % 16 == 0, (prefix, m, n, sx, sy, sg)
+    if fname is None:
+        p = g / f"{prefix}.yaml"; p.write_text(p.read_text() + found_yaml(prefix, op, m, n, k, sx, sy, sg, nf))
 FAMILIES = [  # (yaml file, kernel prefix, op, profile prefix, token prefix, variants)
     ("sarc_sdpa_qk_coopmat_sweep", "sarc_sdpa_qk_coopmat_sweep", "kSdpaQk", "qk", "sweep", QK_SWEEP),
     ("sarc_sdpa_qk_coopmat_pk", "sarc_sdpa_qk_coopmat_pk", "kSdpaQk", "qkpk", "pk", QK_PK),
@@ -470,6 +487,7 @@ for fname, prefix, op, pp, tp, variants in FAMILIES:
     for t, m, n, k, sx, sy, extra in variants:
         y += (f"    - NAME: {prefix}_{t}\n      MMA_M: {MMA_M}\n      WG_TILE_M: {m}\n      WG_TILE_N: {n}\n      WG_TILE_K: {k}\n"
               f"      SG_GRID_X: {sx}\n      SG_GRID_Y: {sy}\n      SUBGROUP_SIZE: {SG}\n{extra}")
+    y += "".join(found_yaml(f[1], f[2], *f[4:]) for f in FOUND if f[0] == fname)
     p = g / f"{fname}.yaml"; p.write_text(block(p.read_text(), YB, YE, y))
 
 # The profiles. Base rows = the table choice on Xe2 while an xe2-* profile is requested.
@@ -500,6 +518,15 @@ REFINE = {
     # 8 x 4 with IMG_W (search id 170243: 1.18x on 1B wk / wv, the only such shape; 0.71 and 0.89x on the
     # 1024-column wk / wv of 3B and 8B, which therefore keep the first tile).
     "xe2-refine5": [("kSdpaQk", "pk_t128x64k32g44s16m8nf", "nullptr"), ("kSdpaAv", "xe2_t128x64k32g44s16m8", "xe2_head_dim_128"),
+                    ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", "nullptr"),
+                    ("kQ4gswLinear", "sweep_t128x128k32g84s16m8flw", "xe2_narrow_output"),
+                    ("kQ4gswLinear", "sweep_t128x128k16g82s16m8flib", "nullptr")],
+    # candidate 6 (attention, from the enumeration of the legal spaces; results/xe2/sweep/{qk,av}/confirm.csv):
+    # refine5 with QK^T on the fragment-contiguous ColumnMajor 64 x 128 tile, grid 8 x 2 (search id 303340: 1.03 /
+    # 1.12 / 1.12x of the refine1 kernel on 1B / 3B / 8B) and attn*V on K = 64 tiles with subgroup size 32:
+    # 128 x 64 for head_dim 128 (400819: 1.20 / 1.22x on 3B / 8B), 64 x 64 for head_dim 64 (400163: 1.13x on 1B).
+    "xe2-refine6": [("kSdpaQk", "xe2c_t64x128k32g82s16m8nf", "nullptr"), ("kSdpaAv", "xe2_t128x64k64g44s32m8", "xe2_head_dim_128"),
+                    ("kSdpaAv", "xe2_t64x64k64g44s32m8", "nullptr"),
                     ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", "nullptr"),
                     ("kQ4gswLinear", "sweep_t128x128k32g84s16m8flw", "xe2_narrow_output"),
                     ("kQ4gswLinear", "sweep_t128x128k16g82s16m8flib", "nullptr")],
@@ -536,6 +563,9 @@ for fname, prefix, op, pp, tp, variants in FAMILIES:
         ident = f"kXe2_{pp}_{t}"
         prefs += f'const Preference {ident}[] = {{{{Op::{op}, "{tp}_{t}", nullptr}}}};\n'
         profs += f'    {{"xe2-{pp}-{t}", {ident}, 1}},\n'
+for fname, prefix, op, tp, m, n, k, sx, sy, sg, nf in FOUND:
+    cand += (f'    {{"", nullptr, Op::{op},\n     "{prefix}_{found_tok(m, n, k, sx, sy, sg, nf)}",\n     {{{m}, {n}, {k}, {sx}, {sy}, {sg}, {MMA_M}, false}}, kBufBuf, nullptr,\n'
+             f"     Status::kUnverified}},\n")
 for name, items in REFINE.items():
     ident = "kXe2_" + name[4:].replace("-", "_")
     if items:

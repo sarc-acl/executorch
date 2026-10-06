@@ -710,6 +710,14 @@ const Preference kXe2_refine5[] = {
     {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
     {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
 };
+const Preference kXe2_refine6[] = {
+    {Op::kSdpaQk, "xe2c_t64x128k32g82s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k64g44s32m8", xe2_head_dim_128},
+    {Op::kSdpaAv, "xe2_t64x64k64g44s32m8", nullptr},
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
 const Preference kXe2_q4_g82[] = {
     {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
     {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
@@ -815,6 +823,7 @@ const Profile kProfiles[] = {
     {"xe2-refine3", kXe2_refine3, sizeof(kXe2_refine3) / sizeof(Preference)},
     {"xe2-refine4", kXe2_refine4, sizeof(kXe2_refine4) / sizeof(Preference)},
     {"xe2-refine5", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
+    {"xe2-refine6", kXe2_refine6, sizeof(kXe2_refine6) / sizeof(Preference)},
     {"xe2-q4-g82", kXe2_q4_g82, sizeof(kXe2_q4_g82) / sizeof(Preference)},
     {"xe2-dq-k64", kXe2_dq_k64, sizeof(kXe2_dq_k64) / sizeof(Preference)},
     // xe2 end

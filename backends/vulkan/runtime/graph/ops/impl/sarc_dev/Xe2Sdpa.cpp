@@ -283,6 +283,18 @@ const Row kXe2SdpaCandidates[] = {
      "sarc_sdpa_qk_coopmat_xe2c_t64x128k32g42s16m8nf",
      {64, 128, 32, 4, 2, 16, 8, false}, kBufBuf, nullptr,
      Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_xe2_t64x64k64g44s32m8",
+     {64, 64, 64, 4, 4, 32, 8, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_xe2_t128x64k64g44s32m8",
+     {128, 64, 64, 4, 4, 32, 8, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_xe2c_t64x128k32g82s16m8nf",
+     {64, 128, 32, 8, 2, 16, 8, false}, kBufBuf, nullptr,
+     Status::kUnverified},
 };
 
 struct Registrar {
