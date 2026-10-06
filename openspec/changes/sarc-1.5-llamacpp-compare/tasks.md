@@ -40,25 +40,25 @@
 
 ## 4. SYCL on Intel
 
-- [ ] 4.1 Container image with the oneAPI toolchain and a SYCL build of the pinned commit; verify the GPU is
+- [x] 4.1 Container image with the oneAPI toolchain and a SYCL build of the pinned commit; verify the GPU is
   visible inside the container (device listing) or record why not
-- [ ] 4.2 Add the SYCL arms on the B580 and measure them in a session with the Vulkan `best` arm as the common
+- [x] 4.2 Add the SYCL arms on the B580 and measure them in a session with the Vulkan `best` arm as the common
   reference; verify five valid runs per cell, or mark the cells "not run" with the reason
 
 ## 5. RTX 4070 Ti SUPER (after its campaign has pushed)
 
-- [ ] 5.1 Build llama.cpp Vulkan and CUDA at the pinned commit; verify both binaries report the device
-- [ ] 5.2 ExecuTorch CUDA: upstream plus the export-guard removal only; export 1B, 3B and 8B `4w` and build
+- [x] 5.1 Build llama.cpp Vulkan and CUDA at the pinned commit; verify both binaries report the device
+- [x] 5.2 ExecuTorch CUDA: upstream plus the export-guard removal only; export 1B, 3B and 8B `4w` and build
   the runner; verify each takes the 2048-token prompt (prompt token count in the run record)
-- [ ] 5.3 Arms written down in `results/4070ti/ARMS.md`, then the timed session as in group 3; verify as 3.4
+- [x] 5.3 Arms written down in `results/4070ti/ARMS.md`, then the timed session as in group 3; verify as 3.4
   and 3.5, with the CUDA `8da4w` cells reading "not supported"
-- [ ] 5.4 Deliver the table to the owner privately; verify against the raw records
+- [x] 5.4 Deliver the table to the owner privately; verify against the raw records
 
 ## 6. Arc Pro B70, Radeon 780M, Jetson Orin Nano (each when its device is free)
 
-- [ ] 6.1 Arc Pro B70: Vulkan and SYCL arms, session, delivery; verify as group 3
-- [ ] 6.2 Radeon 780M: Vulkan arms, session, delivery; verify as group 3, and record the memory of the 8B cells
-- [ ] 6.3 Jetson Orin Nano: Vulkan and CUDA arms of llama.cpp, session, delivery; the ExecuTorch CUDA cells
+- [x] 6.1 Arc Pro B70: Vulkan and SYCL arms, session, delivery; verify as group 3
+- [x] 6.2 Radeon 780M: Vulkan arms, session, delivery; verify as group 3, and record the memory of the 8B cells
+- [x] 6.3 Jetson Orin Nano: Vulkan and CUDA arms of llama.cpp, session, delivery; the ExecuTorch CUDA cells
   read "not supported"; verify as group 3, and record the memory of the 8B cells
 
 ## 7. Whole comparison
