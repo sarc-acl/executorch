@@ -63,7 +63,7 @@
 
 ## 7. Whole comparison
 
-- [ ] 7.1 `results/cells.csv` for all devices and the private page with one table and chart per device and the
+- [x] 7.1 `results/cells.csv` for all devices and the private page with one table and chart per device and the
   disclosed differences; verify a second reader recomputes three cells per device from the raw records
-- [ ] 7.2 Record what the owner released for publication and what stays private in `results/RELEASE.md`;
+- [x] 7.2 Record what the owner released for publication and what stays private in `results/RELEASE.md`;
   verify nothing else of this change is in a published location
