@@ -995,3 +995,105 @@ const char* sdpa_fused_variants_780m() {
 } // namespace sarc
 } // namespace vkcompute
 // --- 780m end ---
+
+// --- m51 begin (openspec/changes/sarc-1.5-m51-prefill-refine, 2026-10-06) ---
+// ET_VK_SARC_M51_PROFILE=<name>: the M51 candidates, on top of
+// ET_VK_SARC_UNVERIFIED=1 (the xclipse rows). A profile names the fused
+// attention kernels per head_dim (m51/SdpaM51Fused.cpp); shapes and calls they
+// do not cover keep what the selection above returns. Not meant together with
+// ET_VK_SARC_780M_PROFILE: for the fused node the M51 profile wins.
+namespace vkcompute {
+namespace sarc {
+namespace {
+
+struct ProfileM51 {
+  const char* name;
+  const char* fused;
+};
+const ProfileM51 kM51Profiles[] = {
+    {"c1", "fused3_d64_t32x32g11s32rko,fused3_d128_t16x64g11s32rko"},
+};
+const ProfileM51* active_profile_m51() {
+  static const ProfileM51* const active = []() -> const ProfileM51* {
+    const char* e = std::getenv("ET_VK_SARC_M51_PROFILE");
+    if (e == nullptr || *e == 0) {
+      return nullptr;
+    }
+    for (const ProfileM51& p : kM51Profiles) {
+      if (std::strcmp(p.name, e) == 0) {
+        return &p;
+      }
+    }
+    std::cerr << "[sarc_dev] unknown ET_VK_SARC_M51_PROFILE=" << e << std::endl;
+    std::abort();
+  }();
+  return active;
+}
+
+Override& fused_m51() {
+  static Override fused;
+  return fused;
+}
+
+std::optional<Choice> (*select_before_m51)(
+    const DeviceInfo&,
+    const ShapeInfo&,
+    const std::optional<Choice>&) = nullptr;
+
+// The fused node registers from another file, and the 780M's node does too, in
+// an order the linker decides. So the M51 node is installed into the override
+// on the first selection, which every SDPA node makes before its launch geometry
+// asks whether the fused node serves its call.
+void install_fused_m51() {
+  static const bool installed = [] {
+    if (fused_m51().sdpa_fused_add == nullptr ||
+        (active_profile_m51() == nullptr &&
+         std::getenv("ET_VK_SARC_M51_SDPA_FUSED") == nullptr)) {
+      return false;
+    }
+    Override o = get_override();
+    o.sdpa_fused_add = fused_m51().sdpa_fused_add;
+    o.sdpa_fused_serves = fused_m51().sdpa_fused_serves;
+    set_override(o);
+    return true;
+  }();
+  (void)installed;
+}
+
+std::optional<Choice> select_m51(
+    const DeviceInfo& device,
+    const ShapeInfo& shape,
+    const std::optional<Choice>& table_choice) {
+  install_fused_m51();
+  return select_before_m51(device, shape, table_choice);
+}
+
+struct RegistrarM51 {
+  RegistrarM51() {
+    Override o = get_override();
+    select_before_m51 = o.select;
+    o.select = select_m51;
+    set_override(o);
+    if (active_profile_m51() != nullptr) {
+      std::cerr << "[sarc_dev] m51 profile active: " << active_profile_m51()->name
+                << std::endl;
+    }
+  }
+} registrar_m51;
+
+} // namespace
+
+void register_sdpa_fused_m51(
+    void (*add)(ComputeGraph&, const std::vector<int32_t>&),
+    bool (*serves)(ComputeGraph*, const std::vector<int32_t>&)) {
+  fused_m51().sdpa_fused_add = add;
+  fused_m51().sdpa_fused_serves = serves;
+}
+
+const char* sdpa_fused_variants_m51() {
+  const ProfileM51* active = active_profile_m51();
+  return active != nullptr ? active->fused : "";
+}
+} // namespace sarc
+} // namespace vkcompute
+// --- m51 end ---
