@@ -38,4 +38,4 @@ and its two timers within 9 % (llama-bench higher on 1B, llama-completion higher
 slower than Q4_0 here, unlike on the Arc B580 where the two were level.
 
 Text check: every arm continues the real-text prompt fluently; ExecuTorch arms agree with each other except
-8B `8da4w` (known), llama.cpp Q4_0 and Q4_K_M differ from ExecuTorch on 1B only.
+8B `8da4w` (known); llama.cpp gives the same next word as ExecuTorch on 3B and a different, equally plausible one on 1B and 8B.
