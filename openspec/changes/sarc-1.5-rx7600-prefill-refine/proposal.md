@@ -1,0 +1,76 @@
+# sarc-1.5-rx7600-prefill-refine
+
+Second-layer prefill tuning of the Radeon RX 7600 (Navi33, gfx1102, RADV Mesa 26.2.3 user-space build), the
+780M's position (`CAMPAIGN.md`, owner decision N1): port the 780M's second-layer results, gate each, stop when
+two consecutive gated candidates gain under 2 %. Dev zone only. Branch `topic/rx7600-prefill-refine`, forked
+from `origin/topic/780m-prefill-refine` at `f5f1bf10c` (the parent).
+
+## Parent
+
+`f5f1bf10c510da347a556f716c2c9025a85d6228` with `ET_VK_SARC_UNVERIFIED=1` and
+`VK_ICD_FILENAMES=/local/yanwen.xu/mesa/install/share/vulkan/icd.d/radeon_icd.x86_64.json`, no profile. The rows
+for "rx 7600" are already in `impl/sarc/table_amd.cpp` (kUnverified): 4w `t256x128k32g24s32f32cbt`, 8da4w zpg
+`t128x64k32g42s32`, SDPA `qk_coopmat_t128x64k32g22s64` / `av_coopmat_t64x64k32g22s64`, SARC truncated softmax.
+The two release-zone hooks of owner decision D4 (softmax variant name `b969e8f1c`, fused attention node
+`1c8861aa7`) are already on the starting branch.
+
+## Thresholds (fixed 2026-10-06 before the first measurement; `tools/thresholds.txt`)
+
+| threshold | value | source |
+|---|---|---|
+| noise band | a difference inside +-2 % is noise, not a gain | R6 |
+| baseline tolerance | each of the six parent cells within 3 % of the published value (`sarc-1.5-e2e-benchmark/contrib/rx7600/NOTES.md`: 4w 7787 / 3287 / 1517, 8da4w 7340 / 3080 / 1403 tok/s), else explained before anything is optimised | R4.4 |
+| clock floor | 97 % of the lowest per-run median clock (sclk, prefill window) of the valid runs of the A/A session, one device-wide value; written into `thresholds.txt` once, before the first candidate | R6, L16 |
+| clock samples | at least 5 samples (20 ms period) inside the prefill window | R6 |
+| thermal throttle | a run whose window shows any temperature bit of `gpu_metrics` `indep_throttle_status` (bits 32 to 47) is invalid; power and current bits are recorded, not rejected | R6, L16 |
+| foreign GPU use | any other holder of `/dev/dri/{renderD128,card1}` or GPU runner process before, during (0.5 s poll) or after a run makes it invalid (no per-process engine accounting exists for other users' processes here) | R6, L22 |
+| host builds | runs wait until no compiler / linker / ninja process of anyone runs; one that appears during a run makes it invalid | R5 |
+| repeats | 5 valid runs per arm and cell; 7 if any cell of the A/A session shows a repeat spread ((max - min) / median) above 2 % in either arm | R6, L22 |
+| kernel screen | a kernel replaces the incumbent for a shape only if at least 3 % faster in every round; a tie keeps the incumbent | R8 |
+| stop rule | two consecutive gated candidates each under 2 % geometric mean over their parent | R11 |
+| cooling | to idle + 5 C, or until the temperature has not fallen for 30 s, at most 300 s, before every run | R6, L20 |
+| next-token items | D1 / D3 as written (near-tie evidence; reference-error rule for arithmetic changes) | owner |
+
+## Host and environment (sj1-yanwen-d01)
+
+- Ubuntu 22.04, kernel 6.8.0-107-generic, 48 cores, 45 GiB RAM (the six models, 14 GB, fit the page cache), RX 7600
+  8 GiB at `0000:04:00.0` = `card1`, hwmon1. Governor `auto`, sclk levels 255 / 2356 MHz (as found, not changed).
+- Vulkan: only the user-space RADV ICD is loaded with `VK_ICD_FILENAMES` set, so the RX 7600 is device 0.
+- Builds: native (`tools/build-native.sh`), because podman fails on this host (owner fact, 2026-10-05): host gcc
+  11.4, `/tool/pkg` Python 3.12.9, Vulkan SDK 1.4.350.1 glslc. The shipped-SPIR-V golden check is therefore
+  **pending** for every build of this campaign (glslc differs from the container's shaderc v2023.8).
+- Models: the six `*_embq_ctx3072.pte` copied to this host on 2026-09-28
+  (`/local/yanwen.xu/new-workspace/.artifacts/2026-09-28/e2eb/rx7600/models-src/`), read-only, sha256 equal to the
+  shared manifest; linked under `.artifacts/models` in `verify.sh`'s flat layout. The copy at
+  `/local/yanwen.xu/campaign-rx7600/models` is incomplete (8B 4w truncated at 3.26 of 4.17 GB, 8B 8da4w missing)
+  and is not used.
+- Another campaign (M51, an Android phone over adb) builds natively on this host's CPU. Timed runs wait for its
+  builds to end and are invalid if one starts during them (thresholds above).
+
+## Tools (copied from `sarc-1.5-780m-prefill-refine/tools/`; originals untouched)
+
+| tool | change against the 780M copy |
+|---|---|
+| `env.sh` (new) | host constants: artifact directory, lock `rx7600-sj1`, hwmon1 / card1 sensors (checked to be the same device), `VK_ICD_FILENAMES`, `ETVK_DEVICE_INDEX=0`, `TMPDIR`; stops on a `GPU_GONE` / `ABORTED` marker |
+| `export_commit.sh` (new) | exports one commit and, recursively, each pinned submodule from this clone's object stores; writes `COMMIT` and `MANIFEST` |
+| `build-native.sh` (new) | native mirror of `sarc/tools/build.sh --llama [--traced]` (the container cannot run here) |
+| `build-both.sh` | export + native build, instead of a container build of the working tree |
+| `sampler.py` (new) | one-process sampler (no child processes, L39): sclk, busy, power, max of the three temperatures, `gpu_metrics` v1.3 throttle status, every 20 ms |
+| `others.sh` (new) | foreign GPU users by `fuser` on `/dev/dri` and by program name (comm), host builds by compiler / linker processes |
+| `e2e5.sh` | sensors and lock of this host; page cache filled per cell (D5) and model load time recorded; throttle, foreign-GPU and host-build rules above; samples every 20 ms and a 5-sample minimum; cooling also ends when the temperature stops falling; next token also on `prompt_real_2048.txt`; flat model layout |
+| `gl.sh` | lock `rx7600-sj1`, `others.sh` guard, waits out builds; the 780M's tracing refusal kept for unattended jobs |
+| `hold.sh` | artifact directory of this campaign |
+| `stage.sh` | paths of this host; `ET_VK_SARC_UNVERIFIED=1` belongs to both arms' env |
+| `summarize.py` | repeat count as an argument; three next-token prompts |
+| `thresholds.txt` (new) | the thresholds above |
+
+The other copied tools (search, screen and plot scripts of the 780M) are unchanged and used only where named.
+
+## Plan (`CAMPAIGN.md`, rx7600 section 6)
+
+1. Snapshot `s0-parent-verify`: unmodified `verify.sh` on the parent build, stored once.
+2. Baseline and A/A: parent against the same binary, six cells; calibrate the clock floor and repeats.
+3. Locate: per-operator ETDump breakdown for the six cells, phase timing of the linear kernels.
+4. Port list (each a gated candidate): fused attention kernel; fp32 softmax without the zero tail (D4.1);
+   linear kernel per layer shape; whole-texel 8da4w weight staging.
+5. Further candidates only where step 3 points. No tile sweep first, no sampled search (N1).
