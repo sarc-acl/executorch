@@ -5,7 +5,7 @@
 # A foreign GPU process ends it at once: gate.done = GATE_ABORTED, exit 76, no gate_check.py verdict. The
 # aborted directory stays as evidence; move it to superseded/ before running the control again.
 . "$(dirname "$(readlink -f "$0")")/host.sh"; D=$A/stage/s0-parent-verify
-gpu_begin excl "$0 $*"
+gpu_begin excl "$0 $*" || { echo "guard not acquired" >&2; exit 75; }
 UNALIGNED=${XE2_UNALIGNED:-$HOME/.cache/et-e2e/sarc15-r4/r1304.txt}
 grep -qx BUILD_BOTH_OK $A/build/parent.src.txt || { echo "build/parent is not a successful build" >&2; exit 2; }
 [[ -e $D ]] && { echo "$D already exists" >&2; exit 2; }

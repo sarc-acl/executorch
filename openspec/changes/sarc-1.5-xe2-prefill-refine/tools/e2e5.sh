@@ -42,8 +42,12 @@ done
 [[ -n $STAGE && -n $LOCK ]] || { sed -n '2,29p' "$0"; exit 2; }
 D=$(cd "$STAGE" && pwd); cd "$D" || exit 2
 O=$D/$OUTN; mkdir -p "$O/logs"
-gpu_begin excl "$0 $*"; exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK"; flock -w 900 9 || { echo "gpu-lab lock busy"; exit 75; }
-. "$(dirname "$(readlink -f "$0")")/host.sh"
+# host.sh first: it defines the guard. (Until 2026-10-06 the guard call stood one line above the source, so a
+# session started outside gate.sh printed "gpu_begin: command not found" and ran without the pair lock and the
+# coordinator hold: s10-final5, s11-final6. tools/test_e2e5_guard.sh now runs this entry point.)
+ARG_LOCK=$LOCK; . "$(dirname "$(readlink -f "$0")")/host.sh" || { echo "host.sh not loaded" >&2; exit 75; }; LOCK=$ARG_LOCK
+gpu_begin excl "$0 --stage $STAGE" || { echo "guard not acquired (pair lock / coordinator hold): nothing was run" >&2; exit 75; }
+exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK"; flock -w 900 9 || { echo "gpu-lab lock busy"; exit 75; }
 [[ -z $CLKMIN && $CALIB == 0 && -s $CLKMIN_FILE ]] && CLKMIN=$(<$CLKMIN_FILE)
 [[ $CALIB == 1 ]] && CLKMIN=${CLKMIN:-0}
 [[ -n $CLKMIN ]] || { echo "no clock threshold: run the calibration session first (--calibrate) or pass --clkmin" >&2; exit 2; }

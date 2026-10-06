@@ -115,9 +115,12 @@ guarded() { local f=$1 o j rc; shift
 # wait for it, so two alternating screens cannot starve it. Held on fd 7 by the calling shell until it exits;
 # a tool started under a holder (XE2_PAIR_HELD) does not take it again.
 pair_wanted() { local f; for f in $RUN/excl-wanted.*; do [[ -e $f ]] || continue; [[ -d /proc/${f##*.} ]] && return 0; rm -f $f; done; return 1; }
-pair_lock() { [[ -n ${XE2_PAIR_HELD:-} ]] && return 0; mkdir -p $RUN; exec 7>>$RUN/pair.lock
-  if [[ $1 == shared ]]; then while pair_wanted; do sleep 2; done; flock -s 7
-  else : > $RUN/excl-wanted.$BASHPID; flock -x 7; rm -f $RUN/excl-wanted.$BASHPID; fi
+pair_lock() { local rc; [[ -n ${XE2_PAIR_HELD:-} ]] && return 0
+  mkdir -p $RUN 2>/dev/null && [[ -w $RUN ]] || { echo "pair lock: cannot use $RUN" >&2; return 1; }
+  exec 7>>$RUN/pair.lock || return 1
+  if [[ $1 == shared ]]; then while pair_wanted; do sleep 2; done; flock -s 7; rc=$?
+  else : > $RUN/excl-wanted.$BASHPID; flock -x 7; rc=$?; rm -f $RUN/excl-wanted.$BASHPID; fi
+  [[ $rc == 0 ]] || { echo "pair lock: not acquired" >&2; return 1; }
   XE2_PAIR_OWN=1; export XE2_PAIR_HELD=$1; }
 # Coordinator hold (owner decision 2026-10-06): while the file HOLD exists in the artifact directory, nothing of
 # this campaign starts on either card: no GPU process, no session, no gate, no build. Whatever is running is
@@ -130,7 +133,7 @@ pair_lock() { [[ -n ${XE2_PAIR_HELD:-} ]] && return 0; mkdir -p $RUN; exec 7>>$R
 #     Every hold that was obeyed is recorded in <artifacts>/hold.log (the HELD line and when it was released).
 #   gpu_begin shared|excl <what>: pair_lock, then the hold check WITH the lock held (so a job cannot slip in
 #     between the check and its start); under a hold the lock is given back first. Every tool that measures or
-#     builds starts with it: gl.sh before each GPU process (the smallest unit: one configuration), the session,
+#     builds starts with it, and stops (status 75) if it does not return 0: gl.sh before each GPU process (the smallest unit: one configuration), the session,
 #     gate, trace, parent-control and roofline tools, build-sweep.sh, and the queue before each job.
 HOLD=$A/HOLD; HELD=$A/HELD
 coordinator_hold() { local said=0 line
@@ -143,6 +146,6 @@ coordinator_hold() { local said=0 line
   done
   [[ $said == 1 ]] && { rm -f $HELD; echo "$line; released $(date -u +%FT%TZ)" >> $A/hold.log; }; return 0; }
 gpu_begin() { local mode=$1; shift
-  while :; do pair_lock $mode; [[ -e $HOLD ]] || return 0
+  while :; do pair_lock $mode || return 1; [[ -e $HOLD ]] || return 0
     [[ -n ${XE2_PAIR_OWN:-} ]] && { exec 7>&-; unset XE2_PAIR_HELD XE2_PAIR_OWN; }
     coordinator_hold "$@"; done; }

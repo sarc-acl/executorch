@@ -16,7 +16,7 @@
 # deleted. gate.done holds GATE_PASS or GATE_FAIL and gate.txt the per-requirement lines; exit status follows.
 # A foreign GPU process aborts the gate (GATE_ABORTED, exit 76): stop measuring and report it.
 . "$(dirname "$(readlink -f "$0")")/host.sh"; S=${1:?session}; SDPA=${2:-}; D=$A/stage/$S
-gpu_begin excl "$0 $*"
+gpu_begin excl "$0 $*" || { echo "guard not acquired" >&2; exit 75; }
 [[ $# -le 2 && ( -z $SDPA || $SDPA == --sdpa ) ]] || { echo "usage: gate.sh <session> [--sdpa] (the environment comes from cand/env)" >&2; exit 2; }
 PV=$A/stage/s0-parent-verify/verify.out
 [[ -x $D/test_llama_microbench && -f $D/STAGE.md ]] || { echo "session $S is not staged" >&2; exit 2; }

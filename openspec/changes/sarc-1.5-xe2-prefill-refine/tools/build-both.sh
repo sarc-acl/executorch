@@ -15,7 +15,7 @@ TAG=${1:?tag}; REV=${2:-}; [[ -z $REV && $TAG == parent ]] && REV=$PARENT_COMMIT
 IMAGE=${SARC_BUILD_IMAGE:-localhost/et-vk-build:rocky10}
 SHA=$(git -C $ET rev-parse --verify "$REV^{commit}") || { echo "unknown commit $REV" >&2; exit 2; }
 mkdir -p $A/build $A/src || { echo "cannot create $A/build" >&2; exit 2; }
-gpu_begin excl "$0 $*"   # no measurement on either card during a build; obeys the coordinator hold
+gpu_begin excl "$0 $*" || { echo "guard not acquired" >&2; exit 75; }   # no measurement on either card during a build; obeys the coordinator hold
 P=$A/build/$TAG.src.txt; SRC=$A/src/$TAG/executorch
 [[ -e $P || -e $SRC ]] && { echo "tag $TAG already exists ($P); use a new tag" >&2; exit 2; }
 podman image exists $IMAGE || { echo "missing image $IMAGE: podman build -t $IMAGE -f $TOOLS/Containerfile $TOOLS" >&2; exit 2; }
