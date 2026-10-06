@@ -1,16 +1,23 @@
 # sarc-1.5-xe2-prefill-refine: status
 
-**2026-10-06 14:35 UTC. The sampled parameter search (review follow-up) is complete: it ended at 14:15 UTC,
-32 h 42 min after its start, inside the 48-hour mark; all four spaces are finished (two sampled, two
-enumerated) with their importance tables. What it found: 4w tiles 2 to 6 % faster per shape (candidate 5,
-`xe2-refine5`: `GATE_PASS`, bit-identical, +1.75 / +1.84 / +2.31 % on the 4w cells, +1.10 % geomean); nothing
-for 8da4w beyond the candidate 2 tile; attention tiles 3 to 22 % faster at kernel level (candidate 6,
-`xe2-refine6`: its build, SDPA gate, reference-error measurement, probe and session are RUNNING on `b70-0` with
-the second card idle, until about 16:30 UTC). After that: one direct session of the final profile against the
-pristine parent, `proposal.md`, `check.sh`, push. The second card has no more work. The winner measured
-against the parent is so far `xe2-refine2` (candidates 1 and 2), +57.5 % geomean (`s6-final`); candidate 1 is
-`ACCEPTED (reference-error rule, owner decision 2026-10-04)`, not a plain pass; candidates 3, 4 and 5 each
-gained less than 2 % geomean. A coordinator hold is in place.**
+**2026-10-06 17:30 UTC. Finished: nothing is running or queued on either card. The sampled parameter search
+(review follow-up) ran from 2026-10-05 05:33 to 2026-10-06 14:15 UTC over all four kernel families (two
+sampled, two enumerated), with the parameter-importance tables. What it found was gated as two further
+candidates, both `GATE_PASS` with bit-identical logits and both under 2 % geomean:**
+
+- **candidate 5, `xe2-refine5`** (4w tiles): +1.75 / +1.84 / +2.31 % on the 1B / 3B / 8B 4w cells, +1.10 %
+  geomean; one cell outside the +-2 % band. **Accepted: this is the final profile.**
+- **candidate 6, `xe2-refine6`** (attention tiles): +0.95 % and +0.59 % geomean in two sessions, every cell
+  inside the band both times. By the protocol not a gain; not part of the final profile (the trace does show
+  the kernel saving, 0.7 to 1.1 % of a prefill).
+- 8da4w: the search found nothing beyond the candidate 2 tile.
+
+**Final profile against the pristine parent (session `s10-final5`): +59.23 % geomean; tok/s 4w / 8da4w: 1B
+17964.90 / 20480.00, 3B 7529.41 / 9615.02, 8B 3368.42 / 4481.40.** (`xe2-refine2`, the winner before the
+search: +57.47 %, `s6-final`; `xe2-refine6` for comparison: +60.72 %, `s11-final6`.) Candidate 1 remains
+`ACCEPTED (reference-error rule, owner decision 2026-10-04)`, not a plain pass. Four gated candidates in a row
+(3, 4, 5, 6) gained less than 2 % geomean: the stop rule holds. A coordinator hold is in place; both queues were
+told to end (`STOP`).
 
 Branch `topic/xe2-prefill-refine`, parent `6a7cc8cc6` (head of `topic/780m-prefill-refine`). Host
 `fedora-gpu-eval`. Card `b70-0` (guest PCI `0000:01:00.0`, Vulkan device 0, **`ETVK_DEVICE_INDEX=0`**,
@@ -19,7 +26,7 @@ and reported number; the second B70 (guest PCI `0000:02:00.0`, Vulkan device 1, 
 `868023e2-0000-0000-0200-000000000000`) for cheap-mode screens only, since 20:34 UTC (owner decision
 2026-10-05). ANV, Mesa 26.2.3. Nothing was run on the B580.
 
-## What is running, and how to follow or restart it (for an actor with no memory of this session)
+## How the search was run, and how to restart a queue (nothing is running now)
 
 The reviewer of the first report asked for (1) the sampled parameter search of the owner decision "how large
 parameter spaces are searched" with its parameter-importance table, (2) a resumable linear sweep, (3) a
@@ -68,7 +75,7 @@ command; `027-rounds-4w` and `sw2c-4w-c1` re-entered and continued after the las
 the host went down (measured again; their partial logs, if any, are under `raw/<name>/superseded/`), and 14
 minutes.
 
-**Queues at 14:35 UTC, 2026-10-06** (seed 20261005 everywhere):
+**Queues at 17:30 UTC, 2026-10-06 (both idle, `STOP` set)** (seed 20261005 everywhere):
 
 | job | what | state |
 |---|---|---|
@@ -83,19 +90,15 @@ minutes.
 | `0295-candidate5` | build `topic8` (`c561e2ca5`), stage `s7-c5`, gate, probe, decode A/B, decision, all on `b70-0` with card 1 idle | done 08:08: `GATE_PASS` |
 | `030-stage1-av` (+ `sw1-av-c1`), `035-stage2-av`, `036-rounds-av` | every legal attn*V configuration (1102, enumerated): validation, split cheap screen, correctness of the top, 15 finalists full x 2; no neighbours exist, so no further round | done 10:14 |
 | `040-stage1-qk` (+ `sw1-qk-c1`), `045-stage2-qk`, `046-rounds-qk` | every legal QK^T configuration (2828, enumerated): validation, split cheap screen, correctness of the top 39, 14 finalists full x 2; no neighbours exist, so no further round | done 14:15: **end of the search** |
-| `050-candidate6` | build `topic9` (`ff29c08ef`), stage `s8-c6` (`xe2-refine5` against `xe2-refine6`), `gate_sdpa.sh`, error against the fp32 reference for parent / refine5 / refine6, probe, decode A/B, decision | RUNNING since 14:26, about 2 h |
+| `050-candidate6` | build `topic9` (`ff29c08ef`), stage `s8-c6` (`xe2-refine5` against `xe2-refine6`), `gate_sdpa.sh`, error against the fp32 reference for parent / refine5 / refine6, probe, decode A/B | done 15:41: `GATE_FAIL` on one item that a guard message in a run log caused (see candidate 6) |
+| `055-c6b-final` | guard fixed; candidate 6 gated again (`s9-c6`: `GATE_PASS`); final sessions against the pristine parent with `xe2-refine5` (`s10-final5`) and `xe2-refine6` (`s11-final6`) with traces | done 17:14: **nothing further queued** |
 
 **Rate with two cards:** 8da4w screen 18.5 s per configuration on card 0 and 18.0 s on card 1, i.e. 9.1 s for
 the pair (12 of the 2000 ran into the 240 s timeout); 4w 13.5 s per card. 8da4w stage 2 took 1 h 15 min.
 QK^T: 4.9 s per configuration on card 0 and about 5.7 s on card 1 (cheap).
-**Projection:** candidate 6 until about 16:30 UTC, the final session and the write-up after it. The search ran
-from 2026-10-05 05:33 UTC to 2026-10-06 14:15 UTC; no refinement round had to be withheld for the 48-hour mark.
-
-**Then:** the 4w finds are gated (candidate 5, below). If the attention spaces yield a kernel that beats the
-incumbent by more than 2 % in a full x 2 confirmation with correctness `ok`, it becomes candidate 6 the same
-way (`gate_sdpa.sh`). Last: a direct session of the final profile against the pristine parent, `proposal.md`,
-`check.sh --no-build`, commit, push. Everything of this kind runs on `b70-0` with the second card idle
-(`gpu_begin excl` in the tools enforces it).
+The search ran from 2026-10-05 05:33 UTC to 2026-10-06 14:15 UTC (32 h 42 min); no refinement round had to be
+withheld for the 48-hour mark. Candidates 5 and 6 and the final sessions ran on `b70-0` with the second card
+idle (`gpu_begin excl` in the tools enforces it).
 
 Owner instructions of 2026-10-05 and how they are met: status kept current with planned / done per family,
 rate, projected end and interim findings (this file); no driver-level profiler tracing (nothing here uses any;
@@ -713,7 +716,82 @@ family of the 4w cells moves.
 This agrees with the kernel-level confirmation (1.026 to 1.031x layer-weighted). It is the third gated
 candidate in a row under 2 % geomean (candidates 3, 4, 5).
 
-### Winner against the parent, measured directly (session `s6-final`)
+### Candidate 6, `xe2-refine6` (attention tiles from the enumerated spaces): GATE_PASS, no measurable gain, not adopted
+
+Profile = `xe2-refine5` with QK^T on `sarc_sdpa_qk_coopmat_xe2c_t64x128k32g82s16m8nf` (search id `303340`) and
+attn*V on `sarc_sdpa_av_coopmat_xe2_t128x64k64g44s32m8` for head_dim 128 (`400819`) and
+`..._xe2_t64x64k64g44s32m8` for head_dim 64 (`400163`); the attn*V tiles use subgroup size 32 and K = 64
+(`tools/gen_xe2.py`, commit `ff29c08ef`). Build `topic9` in both arms, `xe2-refine5` against `xe2-refine6`, on
+`b70-0` with the second card idle. Gated twice:
+
+| cell | `s8-c6`: candidate 5 -> 6 | gain | `s9-c6`: candidate 5 -> 6 | gain |
+|---|---|---:|---|---:|
+| 1B 4w | 17964.90 -> 18123.90 | +0.89 % | 17964.90 -> 18123.90 | +0.89 % |
+| 1B 8da4w | 20686.90 -> 20898.00 | +1.02 % | 20686.90 -> 20686.90 | 0.00 % |
+| 3B 4w | 7529.41 -> 7613.38 | +1.12 % | 7557.20 -> 7613.38 | +0.74 % |
+| 3B 8da4w | 9615.02 -> 9706.16 | +0.95 % | 9615.02 -> 9706.16 | +0.95 % |
+| 8B 4w | 3379.54 -> 3407.65 | +0.83 % | 3379.54 -> 3390.73 | +0.33 % |
+| 8B 8da4w | 4481.40 -> 4520.97 | +0.88 % | 4491.23 -> 4520.97 | +0.66 % |
+| geomean | | +0.95 % | | +0.59 % |
+
+Every cell is inside the +-2 % band in both sessions; 60 timed runs each, none rejected.
+
+- **`s8-c6`: `GATE_FAIL` on one item, and why.** Next token parent vs candidate, 8B 8da4w on
+  `prompt_check.txt`: DIFFER (and the session line that names it). The two run logs differ in exactly one line,
+  `host.sh: line 74: a[0]: unbound variable`: the campaign guard (`inline_shell`) had looked at a process that
+  ended in that instant, and under `set -u` the shell wrote the message into the candidate's run log, which the
+  comparison reads as generated text. Without that line the two logs are identical
+  (`stage/s8-c6/raw/logs/check-8b-8da4w-{parent,cand}-r0.log`), and the logits probe of the same session has
+  identical logits for that prompt in both arms (top-1 id 70159, margin 0.0703). The gate result is recorded
+  as it is (`sessions/s8-c6/gate.txt`, `decision.txt`: `REJECTED`); the guard was fixed (`tools/host.sh`) and
+  the candidate gated again in a new session rather than the item being argued away.
+- **`s9-c6`: `GATE_PASS`** (`gate.txt`: no FAIL line). SDPA correctness 12 passes x tiers all / extended /
+  full, 0 mismatches and `pairing=ok` in all 192 cases (also in `s8-c6`); unmodified `verify.sh` completed, 12
+  of 12 production-diff cases, 28 of 28 numeric and 4 of 4 rank-3 cases, default vs tiled SAME on both prompts
+  for both schemes, decode 31 tokens; next token SAME in all six cells on the three prompts. Logits probe
+  (`probe/s9-c6/`, and `probe/s8-c6/`): bit-identical to candidate 5 on every window of all six cells
+  (`decision.txt`: `GATE_PASS`).
+- **Error against the fp32 CPU reference** (measured because the kernels change the K chunking and the
+  subgroup size; `results/xe2/sdpa-error/c6-full.csv`, `c6-extended.csv`, build `topic9`): identical to
+  candidate 5's in every case to the digits printed (S = 2048: rms 2.76e-5 / 2.79e-5 / 2.76e-5, maximum
+  1.19e-3 / 1.15e-3 / 1.06e-3 for the 1B / 3B / 8B head configurations; stock parent 1.27e-4 to 1.28e-4 and
+  1.33e-3 to 1.75e-3). (The csv ends `SDPA_ERROR_LARGER` because its third arm is the stock parent, whose error
+  is larger than the first arm's; the candidate's rows read `yes,yes`.)
+- Decode A/B (`s9-c6`, 3 runs per arm): 0.997 to 1.010x.
+- Where the time goes (warm ETDump of `s9-c6`, ms per prefill, candidate 5 -> 6): QK^T 4.8 -> 4.6 (1B), 9.3 ->
+  8.2 (3B), 14.5 -> 13.0 (8B 4w); attn*V 6.1 -> 5.4, 11.0 -> 9.0, 16.2 -> 13.1. Together 0.9 / 3.0 / 4.6 ms of
+  a 106 / 263 / 597 ms prefill, i.e. 0.8 / 1.1 / 0.8 %: real at kernel level, below what the end-to-end
+  protocol resolves (timer 1 ms, band +-2 %).
+
+Not adopted, for the same reason as candidates 3 and 4: no cell shows a gain outside the noise band. It is
+gated and available as `xe2-refine6`.
+
+### Final profile against the parent, measured directly (sessions `s10-final5`, `s11-final6`)
+
+Pristine parent build, no environment, against build `topic9` (`ff29c08ef`) with `ET_VK_SARC_UNVERIFIED=1
+ET_VK_SARC_DEV_PROFILE=xe2-refine5` (`s10-final5`) and, for comparison, `xe2-refine6` (`s11-final6`); `b70-0`,
+second card idle; tok/s, median of 5 valid runs per arm, arms interleaved; 60 timed runs each, none rejected:
+
+| cell | parent (`s10`) | **`xe2-refine5`** | gain | `cells.csv` | vs `cells.csv` | parent (`s11`) | `xe2-refine6` | gain |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1B 4w | 11770.10 | **17964.90** | +52.63 % | 11702.9 | +53.51 % | 11770.10 | 18123.90 | +53.98 % |
+| 1B 8da4w | 12337.30 | **20480.00** | +66.00 % | 12412.1 | +65.00 % | 12412.10 | 20686.90 | +66.67 % |
+| 3B 4w | 4864.61 | **7529.41** | +54.78 % | 4864.61 | +54.78 % | 4864.61 | 7613.38 | +56.51 % |
+| 3B 8da4w | 5264.78 | **9615.02** | +82.63 % | 5251.28 | +83.10 % | 5264.78 | 9752.38 | +85.24 % |
+| 8B 4w | 2432.30 | **3368.42** | +38.49 % | 2438.10 | +38.16 % | 2432.30 | 3407.65 | +40.10 % |
+| 8B 8da4w | 2727.03 | **4481.40** | +64.33 % | 2737.97 | +63.68 % | 2734.31 | 4520.97 | +65.34 % |
+| geomean | | | **+59.23 %** | | | | | +60.72 % |
+
+Both sessions end `E2E5_INCOMPLETE` on the two next-token items of candidate 1 (8B 8da4w on `prompt_2048.txt`
+and `prompt_check.txt`), the same items as in `s2-c1` and `s6-final`; the other 16 comparisons are SAME. These
+sessions are timing and traces only; the kernels were gated in `s2-c1`, `s3-c2`, `s7-c5` (and `s9-c6`).
+
+Linear kernels of the final profile in the model against the fresh roofs (`sessions/s10-final5/trace/gemm.csv`,
+flops-weighted over all linear dispatches of a prefill): 4w 65.3 to 70.0 TFLOP/s = 37.7 to 40.4 % of the fp16
+matrix roof (173.3), from 64.6 to 67.5 (37.3 to 39.0 %) in the parent arm of the same session; 8da4w 104.9 to
+115.3 TOP/s = 29.1 to 32.0 % of the int8 matrix roof (359.9), from 82.1 to 87.6 (22.8 to 24.3 %).
+
+### Winner before the search against the parent (session `s6-final`)
 
 Pristine parent build, no environment, against build `topic7` (`8666b6531`) with `ET_VK_SARC_UNVERIFIED=1
 ET_VK_SARC_DEV_PROFILE=xe2-refine2`; tok/s, median of 5 valid runs per arm, arms interleaved; the last column
@@ -740,12 +818,16 @@ Linear kernels of the winner in the model against the fresh roofs (`sessions/s6-
 
 ## Next
 
-See "What is running" at the top: the search, then the gate of what it found (`xe2-refine5`), then the final
-update of `proposal.md` and the push.
+Nothing is running and nothing is queued. `proposal.md` has the summary, the limits and what a further campaign
+could try.
 
 ## Awaiting B580 confirmation
 
-The winner `xe2-refine2` is candidates 1 and 2; candidates 3 and 4 are not adopted and need no confirmation.
+The final profile `xe2-refine5` is candidates 1, 2 and 5; candidates 3, 4 and 6 are not adopted and need no
+confirmation (candidate 6 would add one more requirement: subgroup size 32 for its attn*V tiles).
+
+Candidate 5 (plain gate pass on the B70): 4w linear `sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib`
+and, for outputs of at most 512 columns, `sarc_linear_q4gsw_coopmat_sweep_t128x128k32g84s16m8flw`.
 
 Candidate 2 (`xe2-refine2`, plain gate pass on the B70): 8da4w linear
 `sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8`.
@@ -755,4 +837,5 @@ attn*V `sarc_sdpa_av_coopmat_xe2_t128x64k32g44s16m8` (head_dim 128) and
 `sarc_sdpa_av_coopmat_sweep_t64x64k32g44s16m8` (head_dim 64), with the truncated SARC softmax. Every Xe2 variant keeps its shared memory under 46000 bytes (the B70
 reports `maxComputeSharedMemorySize` 49152; the B580's value was not read here and should be confirmed), uses
 workgroups of at most 1024 invocations and the 8x16x16 / subgroup-16 shapes the shipped Intel rows already use
-on both cards, and does not depend on the amount of device memory.
+on both cards, and does not depend on the amount of device memory. Nothing was run on the B580. The second B70
+of this host ran cheap-mode screens of the search only.
