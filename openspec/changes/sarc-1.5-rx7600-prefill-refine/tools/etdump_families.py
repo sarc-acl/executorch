@@ -4,7 +4,8 @@
 The kit's trace_analysis.py needs executorch.devtools.Inspector (torch); on this host that import takes minutes
 from NFS, so the ETDump is decoded here with the build's own flatc (--json --size-prefixed, the same call the
 Inspector makes) and the same reading as trace_analysis.py: Vulkan dispatch events are named by a JSON string with
-kernel_name and operator; the last of the two executions (--warmup) is the warm one; the kernel families are
+kernel_name (in delegate_debug_id_str; no operator metadata in these dumps, so the linear shapes come from the
+order of the dispatches only where stated); the last of the two executions (--warmup) is the warm one; the kernel families are
 trace_analysis.py's, plus the fused attention node of this branch.
 
 Outputs in <trace dir>: families.csv (model, scheme, build, family, ms, share), kernels.csv (per kernel name and
@@ -72,9 +73,9 @@ def load(path):
         rows, graph = [], None
         for e in rd.get("events", []):
             pe = e.get("profile_event")
-            if not pe or not pe.get("name"):
+            n = (pe or {}).get("name") or (pe or {}).get("delegate_debug_id_str")
+            if not n:
                 continue
-            n = pe["name"]
             ms = (int(pe.get("end_time", 0)) - int(pe.get("start_time", 0))) / 1e6
             if n == "ETVK_COMPUTE_GRAPH_EXECUTE":
                 graph = ms
