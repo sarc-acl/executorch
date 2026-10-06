@@ -1,15 +1,18 @@
 # sarc-1.5-xe2-prefill-refine: status
 
-**2026-10-06 06:20 UTC. The sampled parameter search (review follow-up) is running detached on both B70 cards.
-The host was rebooted at 05:57 UTC by someone else (not by this campaign); both queues died with it and were
-restarted at 06:11 UTC; no measured row was lost (see "The reboot of 05:57 UTC"). Done: 4w sample and two
-refinement rounds; 8da4w sample and refinement (nothing beats the candidate 2 tile). Running: 4w round c. Then
-the 8da4w incumbents (requeued after an id collision of mine), attn*V and QK^T. Projected end of the search:
-2026-10-06 21:30 UTC at the earliest, 2026-10-07 05:00 UTC if attn*V and QK^T run both further rounds. The `llm-api-*` services that came
-back with the reboot were stopped by the owner at 06:30 UTC. A coordinator hold is in place. Earlier results are unchanged: winner `xe2-refine2` (candidates 1
-and 2), +57.5 % geomean over the parent (`s6-final`); candidate 1 is `ACCEPTED (reference-error rule, owner
-decision 2026-10-04)`, not a plain pass; candidates 3 and 4 passed their gates with no measurable gain. Nothing
-found by the search is adopted or gated yet.**
+**2026-10-06 08:20 UTC. The sampled parameter search (review follow-up) is running detached on both B70 cards;
+the two linear spaces are finished, the two attention spaces (enumerated) are running / pending.
+4w: the search found tiles 2 to 6 % faster per shape than the shipped one; as candidate 5 (`xe2-refine5`) they
+passed the full gate (`GATE_PASS`, logits bit-identical) with +1.75 / +1.84 / +2.31 % on the 1B / 3B / 8B 4w
+cells and +1.10 % geomean over the winner: a third candidate under 2 % geomean. 8da4w: nothing in the sample,
+its refinement or the neighbourhood of the incumbents beats the candidate 2 tile. Projected end of the search:
+2026-10-06 21:00 UTC without further rounds, 2026-10-07 05:00 UTC with them. The host was rebooted at 05:57 UTC
+by someone else; both queues were restarted at 06:11 with no measured row lost; the `llm-api-*` services that
+came back with the reboot were stopped by the owner at 06:30 UTC. A coordinator hold is in place. The winner
+measured against the parent is still `xe2-refine2` (candidates 1 and 2), +57.5 % geomean (`s6-final`);
+candidate 1 is `ACCEPTED (reference-error rule, owner decision 2026-10-04)`, not a plain pass; candidates 3 and
+4 passed their gates with no measurable gain. A direct session of `xe2-refine5` against the parent follows the
+search.**
 
 Branch `topic/xe2-prefill-refine`, parent `6a7cc8cc6` (head of `topic/780m-prefill-refine`). Host
 `fedora-gpu-eval`. Card `b70-0` (guest PCI `0000:01:00.0`, Vulkan device 0, **`ETVK_DEVICE_INDEX=0`**,
@@ -67,7 +70,7 @@ command; `027-rounds-4w` and `sw2c-4w-c1` re-entered and continued after the las
 the host went down (measured again; their partial logs, if any, are under `raw/<name>/superseded/`), and 14
 minutes.
 
-**Queues at 06:20 UTC, 2026-10-06** (seed 20261005 everywhere):
+**Queues at 08:20 UTC, 2026-10-06** (seed 20261005 everywhere):
 
 | job | what | state |
 |---|---|---|
@@ -77,24 +80,24 @@ minutes.
 | `020`, `022`, `023` stage 1 8da4w | sample, build (`020`, stopped by me after the build so that the card test runs first); validation and the stop of 23:00 (`022`); the split screen of the 2000 (`023` + `sw1-8da4w-c1`) | done 04:18 |
 | `025-stage2-8da4w` (+ `sw2-8da4w-c1`) | correctness of the top, 323 neighbours cheap on both cards, 19 finalists full x 2 | done 05:33 |
 | `0255-incumbent-8da4w`, `026-rounds-8da4w` | incumbents and neighbours with colliding ids: **superseded** (`results/xe2/superseded/sw2i-8da4w-id-collision/`); the round-b check that used them: no round | done 05:39, replaced by `028`, `029` |
-| `027-rounds-4w` (+ `sw2c-4w-c1`) | round c for 4w (the full confirmation of round b moved 8B w2 by 3 %): 320 neighbours cheap on both cards, then correctness and finalists full x 2 | RUNNING (started 05:39, re-entered 06:11 after the reboot); about 07:30 |
-| `028-incumbent-8da4w`, `029-rounds-8da4w` | the three incumbent 8da4w tiles and their 26 unmeasured legal neighbours with ids from 290000; then the round rule and the confirmation tables | pending, about 15 min + up to 4 h if a round runs |
-| `030-stage1-av`, `035-stage2-av`, `036-rounds-av` | every legal attn*V configuration (enumerated) | pending, about 1.5 h + 1.5 h + up to 2.5 h |
+| `027-rounds-4w` (+ `sw2c-4w-c1`) | round c for 4w: 320 neighbours cheap on both cards, 28 finalists full x 2 (interrupted by the reboot, re-entered 06:11) | done 07:15 |
+| `028-incumbent-8da4w` (+ `sw2i-8da4w-c1`), `029-rounds-8da4w` | the three incumbent 8da4w tiles and their 26 unmeasured legal neighbours, ids from 290000, cheap on both cards; round rule: no round (best 1.209x against 1.203x) | done 07:21 / 08:08 |
+| `0295-candidate5` | build `topic8` (`c561e2ca5`), stage `s7-c5`, gate, probe, decode A/B, decision, all on `b70-0` with card 1 idle | done 08:08: `GATE_PASS` |
+| `030-stage1-av`, `035-stage2-av`, `036-rounds-av` | every legal attn*V configuration (enumerated) | RUNNING since 08:08; about 1.5 h + 1.5 h + up to 2.5 h |
 | `040-stage1-qk`, `045-stage2-qk`, `046-rounds-qk` | every legal QK^T configuration (enumerated) | pending, about 5 h + 2 h + up to 3 h |
 
 **Rate with two cards:** 8da4w screen 18.5 s per configuration on card 0 and 18.0 s on card 1, i.e. 9.1 s for
 the pair (12 of the 2000 ran into the 240 s timeout); 4w 13.5 s per card. 8da4w stage 2 took 1 h 15 min.
-**Projection:** 4w round c until about 07:30; 8da4w incumbents 07:45; attn*V 11:00 to 13:30; QK^T 20:30 to
-23:30 without further rounds, up to 2026-10-07 05:00 UTC with both. The search started 2026-10-05 05:33 UTC, so
+**Projection:** attn*V until 11:30 to 14:00; QK^T until 21:00 to 23:30 without further rounds, up to
+2026-10-07 05:00 UTC with both. The search started 2026-10-05 05:33 UTC, so
 the 48-hour mark is 2026-10-07 05:33 UTC: a refinement round that would start so late that it cannot end
 before that mark is not started; it is reported instead with its count and projection.
 
-**Then (not started):** every kernel that beats the incumbent by more than 2 % in a full x 2 confirmation with
-correctness `ok` goes, per shape, into one profile `xe2-refine5` in `tools/gen_xe2.py` (kernel + row + shape
-predicates), then commit, `build-both.sh`, `stage.sh`, `gate.sh` (`gate_sdpa.sh` if an SDPA kernel changes),
-`probe.sh`, `decide.py --bit-identical` for staging-only changes, and a timed session against `xe2-refine2`,
-as `chain11.sh` in `.artifacts/logs/` did for candidate 4. All of it on `b70-0` with the second card idle
-(`pair_lock excl` in the tools enforces it).
+**Then:** the 4w finds are gated (candidate 5, below). If the attention spaces yield a kernel that beats the
+incumbent by more than 2 % in a full x 2 confirmation with correctness `ok`, it becomes candidate 6 the same
+way (`gate_sdpa.sh`). Last: a direct session of the final profile against the pristine parent, `proposal.md`,
+`check.sh --no-build`, commit, push. Everything of this kind runs on `b70-0` with the second card idle
+(`gpu_begin excl` in the tools enforces it).
 
 Owner instructions of 2026-10-05 and how they are met: status kept current with planned / done per family,
 rate, projected end and interim findings (this file); no driver-level profiler tracing (nothing here uses any;
@@ -197,8 +200,8 @@ memory is read from the SPIR-V (limit 46000 bytes; a tile over the device limit 
 
 | kernel family (space) | parameters | analytically legal | drawn / compile / fit shared memory | planned | done | measured rate |
 |---|---|---:|---|---:|---:|---|
-| 4w linear | body (release, split staging `xe2s`, texel-wise `xe2bx`), M, N, K, subgroup grid, subgroup size, layout, IMG_A, IMG_W, drain, accumulator | 338448 | 3000 / 2851 / 2067 | 2000 + neighbours | 2000 cheap (60 also full x 2); 326 + 319 neighbours cheap; 23 + 26 finalists full x 2; round c pending | 13.5 s per configuration (cheap), 50 s (full), one card |
-| 8da4w linear | body (zpg, bt, xe2bt, zpgtr), M, N, K, grid, subgroup size, zpgtr flags | 44670 | 3000 / 2333 / 2093 | 2000 + neighbours | 2000 cheap (60 also full x 2; 970 on card 1); 323 neighbours cheap; 19 finalists full x 2; incumbents pending | 18.3 s per configuration and card (cheap), 9.1 s for the two cards |
+| 4w linear | body (release, split staging `xe2s`, texel-wise `xe2bx`), M, N, K, subgroup grid, subgroup size, layout, IMG_A, IMG_W, drain, accumulator | 338448 | 3000 / 2851 / 2067 | 2000 + neighbours | **finished**: 2000 cheap (60 also full x 2); 326 + 319 + 320 neighbours cheap; 23 + 26 + 28 finalists full x 2 | 13.5 s per configuration (cheap), 50 s (full), one card |
+| 8da4w linear | body (zpg, bt, xe2bt, zpgtr), M, N, K, grid, subgroup size, zpgtr flags | 44670 | 3000 / 2333 / 2093 | 2000 + neighbours | **finished**: 2000 cheap (60 also full x 2; 970 on card 1); 323 neighbours cheap; 19 finalists full x 2; 3 incumbents + 26 neighbours cheap | 18.3 s per configuration and card (cheap), 9.1 s for the two cards |
 | attn*V | family (sweep, ml, xe2), M, N, K, grid, subgroup size | 1131 | all drawn; checked when its build runs | every legal one (about 850) | 0 | about 9 s expected |
 | QK^T | family (sweep, pk, xe2, xe2c), M, N, K, grid, subgroup size, NO_MASK_FILL | 4536 | all drawn; checked when its build runs | every legal one (about 3400) | 0 | about 9 s expected |
 
@@ -258,13 +261,22 @@ more than 2 % faster than the best of round 1's confirmation; no round d.
   | `160178` (`xe2s`), round b | K = 32, grid 8 x 4 (512 threads), IMG_W, default drain | 0.869, 1.171, 0.847, 0.808 | 0.646, 0.710, 0.625, 0.820 | 0.778, 0.887, 0.788, 0.787 |
 
   (Speed relative to the shipped kernel in the round-b confirmation, x > 1 = faster; every arm in the csv.)
-  Shapes are independent: the best per shape is `160178` for 1B wk/wv, `160054` for 1B wq/wo and w2 and for 8B
-  wk/wv and w2, `160001` / `150312` elsewhere. Round b moved no cheap (1B) class best by more than 1.3 %, but
-  its confirmation moved 8B w2 from 1.050x to 1.082x, so round c is queued (`027`). Per layer this is 2 to 5 %
-  less 4w linear time, i.e. about 1.5 to 3 % of a 4w cell: at the edge of the noise band. It is a candidate
-  for `xe2-refine5` after round c; nothing is gated yet.
+- **Round c** (`sw2c-4w`: 320 legal neighbours; `sw3c-4w`: 28 finalists full x 2, `confirm-c.csv`; run because
+  the confirmation of round b had moved 8B w2 from 1.050x to 1.082x): the best per (model, shape) moved by at
+  most 1.7 % (1B wq/wo 1.046 -> 1.064x, 8B wk/wv 1.074 -> 1.088x, both a 128 x 256 tile with another
+  shared-memory layout), so the 4w search ends here (`rounds.txt`). Final picture, layer-weighted over a
+  model's seven linear layers (1B / 3B / 8B): release body with grid 8 x 2 and band drain (`150312`) 1.026 /
+  1.029 / 1.029x, its split-staging twin (`160001`) 1.026 / 1.029 / 1.031x; the 128 x 256 tiles (`160054`,
+  `170087`, `170152`) 1.01 to 1.02 / **0.81 to 0.82** / 1.00 to 1.035x; the K = 32 tiles (`160178`, `170243`)
+  1.18x on 1B wk/wv and 0.61 to 0.89x on every other shape.
+- **What became candidate 5** (`xe2-refine5`): `150312` for every shape, and `170243` (the release-body twin of
+  `160178`) where the output has at most 512 columns, which among the production shapes is 1B wk/wv only.
+  **Not adopted: the 128 x 256 tiles.** They are the best on 1B wq/wo and w2 and on 8B wk/wv and w2 (by 1 to
+  3 % over `150312`), but 0.69 to 0.92x on every 3B shape, and no property of a shape that I can state without
+  naming the model separates the two groups (3B and 8B wk/wv have the same N); a rule fitted to these twelve
+  shapes would be a benchmark-derived constant. Why they collapse on 3B is not known.
 
-### 8da4w (`results/xe2/sweep/8da4w/`; sample and refinement done, incumbents pending)
+### 8da4w (`results/xe2/sweep/8da4w/`; finished, no candidate)
 
 - **Validation of the cheap mode** (`validation.csv`; 59 configurations with all shapes, cheap once against
   the median of two full runs; threshold 0.9, as for 4w, this time fixed beforehand): Spearman rank correlation
@@ -307,6 +319,14 @@ more than 2 % faster than the best of round 1's confirmation; no round d.
   together with their unmeasured one-parameter neighbours (build `sw2i-8da4w`), and the rule-based rounds then
   refine from the best 20 of everything. This adds to the owner's procedure; the sample and its own refinement
   are unchanged.
+
+- **Result of the incumbent step** (`sw2i-8da4w`, 29 legal configurations, `ranking.csv` over all three
+  builds): the candidate 2 tile measured as a configuration (`290001`) is 1.209x of the shipped tile on the
+  layer-weighted score, the reference arm of the same kernel 1.203x (run-to-run). Its best neighbours: the
+  same tile on the `bt` body 1.20x (`290022`), with K = 32 1.05x, with 64 columns (the candidate 4 tile and its
+  twin) 1.10x; every other neighbour lower. Rule check for round b: 1.209 against 1.203, no class moved by
+  more than 0.5 % (`rounds.txt`), so no further round. **The 8da4w search ends with the candidate 2 tile as the
+  best configuration found; there is no new 8da4w candidate.**
 
 ## Needs the owner's attention
 
@@ -596,6 +616,46 @@ cells -1.98 to +0.66 %, all inside the band. No FAIL line; next token SAME every
 (`probe/s5-c4/`). The predicate matches only the 1B w1 / w3 layers (N = 8192, K = 2048); there the tile is
 slower in the model than the candidate 2 tile (1B 8da4w linear GEMM 36.7 -> 37.8 ms per prefill, cell
 -1.98 %). In screen 7 it was 1.11x of the shipped tile over all 1B layers, the candidate 2 tile 1.19x.
+
+### Candidate 5, `xe2-refine5` (4w linear tiles from the sampled search): GATE_PASS, +1.10 % geomean
+
+Profile = `xe2-refine2` plus two 4w kernels of the release body (`tools/gen_xe2.py`, commit `c561e2ca5`):
+`sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib` (the shipped 128 x 128 K = 16 tile on a subgroup grid
+of 8 x 2 with the band drain; search id `150312`) for every shape, and `..._t128x128k32g84s16m8flw` (K = 32,
+grid 8 x 4, IMG_W; search id `170243`) where the output has at most 512 columns (`xe2_narrow_output`; 1B wk/wv).
+
+Session `s7-c5`: build `topic8` in both arms, `xe2-refine2` against `xe2-refine5`, on `b70-0` with the second
+card idle; tok/s, median of 5 valid runs per arm, arms interleaved (`results/xe2/sessions/s7-c5/`):
+
+| cell | winner (`xe2-refine2`) | candidate 5 | gain | outside +-2 % | next token (timed / real-text / unaligned prompt) |
+|---|---:|---:|---:|---|---|
+| 1B 4w | 17655.20 | 17964.90 | +1.75 % | no | SAME / SAME / SAME |
+| 1B 8da4w | 20686.90 | 20686.90 | 0.00 % | no | SAME / SAME / SAME |
+| 3B 4w | 7393.50 | 7529.41 | +1.84 % | no | SAME / SAME / SAME |
+| 3B 8da4w | 9481.48 | 9570.09 | +0.93 % | no | SAME / SAME / SAME |
+| 8B 4w | 3297.91 | 3373.97 | +2.31 % | yes | SAME / SAME / SAME |
+| 8B 8da4w | 4491.23 | 4481.40 | -0.22 % | no | SAME / SAME / SAME |
+
+Geomean +1.10 %. 60 timed runs, none rejected. By the protocol only 8B 4w is a gain; 1B and 3B 4w are inside
+the noise band, in the same direction. `gate.txt`: no FAIL line (`GATE_PASS`): unmodified `verify.sh`
+completed, 12 of 12 production-diff cases, 28 of 28 numeric correctness cases and 4 of 4 rank-3 cases, default
+vs tiled SAME on both prompts for both schemes, decode 31 tokens, status equal to the parent control. Logits
+probe (`results/xe2/probe/s7-c5/`): bit-identical to the winner on every window of all six cells, so a staging
+and geometry change without an arithmetic change (`decision.txt`: `GATE_PASS`). Decode A/B, 3 runs per arm:
+0.995 to 1.013x, inside the repeat range.
+
+Where it comes from (warm ETDump, ms per prefill, `sessions/s7-c5/trace/families.csv`): only the linear GEMM
+family of the 4w cells moves.
+
+| cell | total, winner -> candidate 5 | linear GEMM, winner -> candidate 5 |
+|---|---|---|
+| 1B 4w | 108.0 -> 105.9 | 58.9 -> 56.9 (1.036x) |
+| 3B 4w | 267.8 -> 262.7 | 173.1 -> 168.2 (1.029x) |
+| 8B 4w | 608.4 -> 597.4 | 449.4 -> 438.2 (1.025x) |
+| 1B / 3B / 8B 8da4w | 91.7 -> 91.9, 206.4 -> 206.3, 448.6 -> 448.3 | 36.3 -> 36.5, 100.2 -> 100.1, 272.6 -> 272.3 |
+
+This agrees with the kernel-level confirmation (1.026 to 1.031x layer-weighted). It is the third gated
+candidate in a row under 2 % geomean (candidates 3, 4, 5).
 
 ### Winner against the parent, measured directly (session `s6-final`)
 

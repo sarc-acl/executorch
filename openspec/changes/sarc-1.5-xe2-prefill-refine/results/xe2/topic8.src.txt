@@ -1,0 +1,17 @@
+tag=topic8
+commit=c561e2ca5a0db644d6e5a6ca0fdf0e4f5032630f
+tree=f05a8cc0cb764f679b67ccc725351459a541da8d
+subject=[SARC][dev] Xe2 prefill refine: candidate 5 (4w tiles from the sampled search: grid 8 x 2 with band drain, K = 32 tile for outputs of at most 512 columns), profile xe2-refine5; 4w round c results; builds take the pair lock
+requested=HEAD parent_commit=6a7cc8cc6
+export_manifest=31 trees sha256=1e41f496dbb653d2349f7c8300e9374569469b16803bafb5aef60ba337e64fef
+image=localhost/et-vk-build:rocky10 b2debb3c815fc7b8df79b9ec32f6261bb55d75ece39c93b9caa8316a8edfcca7
+glslc=shaderc v2023.8 2024-01-03spirv-tools v2025.4 2025-09-22glslang 73743588fe9c39f2f1c780a087d94afac691a189 Target: SPIR-V 1.0 
+start=2026-10-06T07:22:01Z
+main_rc=0
+traced_rc=0
+golden_rc=0 (spirv golden: PASS (53 shipped variants))
+d897530ef69f18b75ed1655de2b913581b4df137b37bc6904d498f5efc33a929  /home/doremy/hmz-sarc-xe2/.artifacts/build/topic8/llama/examples/models/llama/llama_main
+4b3b96b880f419df5507c695c9c5dddaaf010e8433a1c9d937a32a65a3cd7ae0  /home/doremy/hmz-sarc-xe2/.artifacts/build/topic8/tests/test_llama_microbench
+fbe4898bbd7b82d12cfe810c8c37913a37a22bfa96dac2eff03462bcd3d6acc2  /home/doremy/hmz-sarc-xe2/.artifacts/build/topic8-traced/llama/examples/models/llama/llama_main
+end=2026-10-06T07:28:01Z
+BUILD_BOTH_OK
