@@ -1,6 +1,6 @@
 # STATUS: 780M prefill campaign, round 2 (parameter space + beyond)
 
-Updated 2026-10-06 04:52 PDT (2026-10-06 11:52 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
+Updated 2026-10-06 09:49 PDT (2026-10-06 16:49 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
 Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (new raw data) and
 `.../780m-prefill-refine-2026-10-03/` (earlier builds and sessions).
 
@@ -106,7 +106,11 @@ warm-up + 8 timed runs), Part 1's last open item. 1,724 runs, each one QK^T and 
 correctness cases of the extended tier (dispatched kernel names, mismatches, pairing), then the op time per model
 at S = 2048. Measured rate 18 to 20 s a run, coefficient of variation of the timed runs 0.2 to 0.5 % (it was 7.9 %
 with 3 + 5 runs): **about 9.5 h, plus the pause from 06:40 to 07:40 local: until about 22:00 UTC (15:00 PDT)**.
-Then: the 10 fastest per shape five times with 12 correctness passes, and the response surface.
+Then (`chain23.sh`, queued behind it, `tools/confirm_sdpa.sh`): the 10 fastest per model five times with 12
+correctness passes, and the response surface.
+
+Progress at 16:50 UTC: 750 of 1,724 runs (29 to 34 runs per 10 min; paused 13:40 to 14:40 UTC as planned), every
+configuration so far on its own kernel in 8 of 8 cases with 0 mismatches. Expected end about 22:30 UTC.
 
 Production-diff passes (12 per configuration and model, texture3d, M = 2048, the real shapes, the
 configuration's own kernel on 4 of 4 shapes in every pass; 8da4w with non-zero zero-points): **all done, all
