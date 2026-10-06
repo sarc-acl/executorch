@@ -1,6 +1,6 @@
 # STATUS: RX 7600 prefill campaign
 
-Updated 2026-10-06 09:30 UTC. Artifacts: `/local/yanwen.xu/campaign-rx7600/.artifacts/`.
+Updated 2026-10-06 10:45 UTC. Artifacts: `/local/yanwen.xu/campaign-rx7600/.artifacts/`.
 
 ## Running now
 
@@ -19,8 +19,27 @@ Updated 2026-10-06 09:30 UTC. Artifacts: `/local/yanwen.xu/campaign-rx7600/.arti
 | parent build `parent` (`f5f1bf10c`, native) | done; shipped SPIR-V: golden PENDING (14 of 53 differ, native glslc); reference for later builds `golden-ref-parent.json` |
 | baseline + A/A `aa2` | **done**, 120 timed runs, 116 valid (2 `host_build`, re-run); parent against itself |
 | calibration (`tools/thresholds.txt`) | clock floor **2420 MHz**, **5** repeats, thermal mask unchanged (no timed run carried a temperature bit) |
-| `s0-parent-verify` | running |
+| `s0-parent-verify` | **done** 09:34 UTC: the parent's own status, the reference for every candidate: `correctness rc=1` and `4w buffer` production-diff FAILED (1B, 3B, 8B) in the release-1.5 fallback kernels (buffer I/O), as on 2026-09-28 and on the 7900 XTX; all texture3d and 8da4w production-diff cases ALL PASSED; default vs tiled SAME; decode 31 tokens. SDPA tiers of the parent (table kernels): `all` 4/4, `extended` 8/8, `full` 4/4, 0 mismatches |
+| 8da4w phase timing (release tile `zpg_t128x64k32g42s32`, twin `sarc_dev_prof_dq8ca_zpg_t128x64k32g42s32p`) | done (`results/rx7600/phases/parent-8da4w.csv`): per wave barrier 21 to 23 %, fetch 11 to 17 %, MMA 35 to 38 %, LDS store 21 to 23 % (1B wk_wv: 18 / 13 / 26 / 37 %). Staging (fetch + LDS store) costs as much as the MMA, as on the 780M before its candidates 1 and 2 |
+| candidate 1 (softmax `r3`) | timed session done (`c1-softmax`): **+1.48 % geomean**, under 2 %; SDPA tiers, `verify.sh`, traces and bit-identity evidence running |
 | coordinator hold | tested 07:21 UTC (`results/rx7600/hold-test.txt`); watcher running |
+
+### Candidate 1: softmax `r3` (session `c1-softmax`, 09:44 to 10:37 UTC)
+
+Both arms the parent binary; parent `ET_VK_SARC_UNVERIFIED=1`, candidate adds `ET_VK_SARC_780M_PROFILE=c7` (the 780M's
+softmax `r3` only: no linear or attention-kernel change). Tok/s, median of 5 valid runs per arm, 60 timed runs, none
+invalid:
+
+| cell | parent | candidate 1 | gain | spread parent / cand | next token (2048 / real / check) |
+|---|---:|---:|---:|---|---|
+| 1B 4w | 7846.74 | 8031.37 | **+2.35 %** | 0.38 / 0.78 % | SAME / SAME / SAME |
+| 1B 8da4w | 7340.50 | 7501.83 | **+2.20 %** | 0.72 / 0.74 % | SAME / SAME / SAME |
+| 3B 4w | 3292.60 | 3335.50 | +1.30 % | 0.16 / 0.33 % | SAME / SAME / SAME |
+| 3B 8da4w | 3079.70 | 3117.20 | +1.22 % | 0.15 / 0.30 % | SAME / SAME / SAME |
+| 8B 4w | 1518.16 | 1531.79 | +0.90 % | 0.15 / 0.67 % | SAME / SAME / SAME |
+| 8B 8da4w | 1401.78 | 1414.36 | +0.90 % | 0.27 / 0.14 % | SAME / SAME / SAME |
+
+Geomean **+1.48 %**; inside the band in four cells. Clock 2494 to 2590 MHz, start 46 to 52 C.
 
 ### Baseline and A/A (`aa2`, 07:34 to 09:24 UTC; `results/rx7600/sessions/aa2/`)
 
