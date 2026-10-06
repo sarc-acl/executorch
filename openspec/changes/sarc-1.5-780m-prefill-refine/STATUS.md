@@ -1,6 +1,6 @@
 # STATUS: 780M prefill campaign, round 2 (parameter space + beyond)
 
-Updated 2026-10-05 13:25 PDT (20:25 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
+Updated 2026-10-05 18:15 PDT (2026-10-06 01:15 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
 Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (new raw data) and
 `.../780m-prefill-refine-2026-10-03/` (earlier builds and sessions).
 
@@ -21,6 +21,44 @@ Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (
 
 Chained over the three sessions (`t1-recheck`, `c7-softmax-r3`, `c8-fused3`; not a direct measurement, that comes
 at the end): candidate 8 is about +27 % geomean over `dev/1.5` (1B 4w 2698 -> 3625 tok/s, 8B 8da4w 488 -> 606).
+
+## Coordinator hold (owner decision 2026-10-06 00:35 UTC): in place since 2026-10-05 17:50 PDT
+
+- The coordinator creates and removes **`/home/doremy/hmz-sarc/.artifacts/HOLD`** (on `rocky-ryzen`).
+- The queue answers with **`/home/doremy/hmz-sarc/.artifacts/HELD`**: one line
+  `HELD <UTC time> <what it would start next>` per waiting queue, written only when nothing of the campaign is
+  running; removed when `HOLD` is gone. While `HOLD` exists nothing new starts; the poll is once a minute; a unit
+  that is running when `HOLD` appears finishes normally; afterwards the queue continues where it was (every step
+  is resumable from its CSV).
+- Mechanism (`tools/hold.sh`): every unit holds a shared lock on `.artifacts/.hold-busy` while it runs and looks
+  at `HOLD` again after taking it (and after taking the gpu-lab lock), so `HELD` can only be written when an
+  exclusive lock on that file is free: no unit is running and none can start. A watcher (`hold.sh watch`,
+  detached, pid in `<artifacts 10-05>/logs/hold-watch.out`'s process) writes `HELD` when `HOLD` appears while the
+  queue is idle or waiting on a marker, so the coordinator is never left waiting.
+- Units, and how long one lasts at most:
+
+  | unit | where the hold is checked | lasts |
+  |---|---|---|
+  | one sweep configuration (`sweep_space.py`: screen, confirmation timing, SDPA enumeration) | before every configuration | 3 to 40 s; hard limit 600 s per process |
+  | one microbench job through `gl.sh` (production-diff pass, SDPA correctness pass, SDPA perf run) | before every job | seconds; up to 3.5 min (`--sdpa-tier=full`) |
+  | one warm trace set (`trace.sh`, 12 runs) | at its start | about 5 min |
+  | one `verify.sh` (not editable, so wrapped as a whole) | at its start | 8 to 15 min |
+  | one build (`build-both.sh`, `build_space.sh`; CPU only) | at its start | 2 to 25 min |
+  | **one timed session** (`e2e5.sh`: 5 valid runs x 6 cells x 2 arms, interleaved) | at its start; the cool start is taken again after a hold | 35 min measured, **at most about 50 min: the longest unit** |
+
+  A timed session is not split: a foreign workload between its interleaved runs would make it a different
+  session, and it could not be resumed without discarding it.
+- The existing `PAUSE` marker is **not** this mechanism and is unchanged: it lives in the dated directory, is set
+  by the campaign's own gates against its own sweep, writes no `HELD`, and the confirmation steps ignore it.
+  `HOLD` is checked in addition, by everything, and `--ignore-pause` does not skip it.
+- Tested 2026-10-06 00:44 to 00:46 UTC with the test name (`SARC_HOLD_NAME=HOLD-TEST`, same code path, 2 s
+  poll): a unit running when `HOLD-TEST` appeared finished; no `HELD-TEST` while it ran; then
+  `HELD 2026-10-06T00:44:40Z test unit B (would start next)`; unit B did not start until `HOLD-TEST` was removed,
+  then ran within 1 s and `HELD-TEST` was gone. Watcher alone: `HELD-TEST` with "queue idle" after 5 s, removed
+  when the test file was removed. The sweep's Python path was tested the same way (below, "Running now").
+- The running queue picked it up at a job boundary without being killed: the confirmation repeat that was running
+  (`full-r4`, started before the change) finished with the old code; `full-r5` and everything after it start as
+  new processes with the hold. While `HELD` exists I start no GPU job and no build by hand either.
 
 ## Host hang and reboot, 2026-10-05 08:53 PDT (recorded 10:45 PDT, before anything was restarted)
 
@@ -60,12 +98,23 @@ Where the capture material is (kept as evidence, nothing calls it):
 
 ## Running now
 
-`chain17.sh` (detached, started behind the gate; screening since 2026-10-05 13:26 PDT: a `PAUSE` marker of
-08:49 PDT, left behind by the hang, held it for four minutes until it was found and removed): the 8da4w screen from
-configuration 263 of 2,238 (same binaries, mode and CSV as before the reboot, `<artifacts 10-04>/raw/dq/screen.csv`;
-20 to 28 s a configuration: 11 to 15 h, with the 06:40 to 07:40 pause), then its confirmation timing.
-Queued after it: candidate 11 (candidate 10 + the 8da4w kernel per shape), production-diff passes, the QK^T /
-attn*V enumeration.
+**Held by the coordinator since 2026-10-06 00:53:06 UTC** (`HOLD` created; `HELD` written 00:53:12 UTC, six
+seconds later, when the configuration that was running had finished). Nothing of the campaign runs on the GPU and
+no build is started until `HOLD` is removed. `HELD` says what continues then:
+`sweep_space.py full-r5.csv: 8da4w bt_t128x128k64g42s32afmb2` (the 8th of 22 configurations of the last
+confirmation repeat).
+
+Queue behind the hold (`chain17.sh`, `chain18.sh`, detached, all steps resumable):
+
+1. 8da4w confirmation, repeat 5 of 5 (15 configurations left, 16 s each), then its summary;
+2. 12 production-diff passes of the confirmed 8da4w and 4w configurations;
+3. QK^T / attn*V enumeration at a steady clock (20 warm-up + 8 timed runs).
+
+Prepared and not yet built (a build is a unit, so it waits for the hold too): candidate 11 = candidate 10 + the
+8da4w kernel per shape (`ET_VK_SARC_780M_PROFILE=c11`), then its gate. The 8da4w screen of all 2,238 survivors
+finished 17:10 PDT; with four complete repeats the best kernel per shape is 1.9 to 3.0 % less 8da4w linear time
+per layer than the `780m-refine3` kernel, which predicts about +1.6 to +2.3 % in the three 8da4w cells and about
++1 % geomean: expected to be the second candidate under 2 %.
 
 ### After the reboot: re-check and A/A (`<artifacts 10-05>/stage/t4-recheck`, `t5-aa`; 10:28 to 11:38 PDT)
 

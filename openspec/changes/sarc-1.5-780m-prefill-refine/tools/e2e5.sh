@@ -14,6 +14,7 @@
 #                [--prompt prompt_2048.txt] [--tokens 2048] [--clkmin 2700] [--no-check]
 #   DIR/{parent,cand}/{llama_main,libllama_runner.so,[env]}, DIR/prompt_*.txt; output in DIR/NAME/
 set -uo pipefail
+[[ -n ${SARC_HOLD_UNIT:-} ]] || exec env SARC_HOLD_UNIT=1 "$(dirname "$(readlink -f "$0")")/hold.sh" run "timed session e2e5.sh $*" "$0" "$@"  # coordinator hold: one unit
 STAGE=""; OUTN=raw; LOCK=""; REPS=5; EXTRA=3; MODELS=1b,3b,8b; SCHEMES=4w,8da4w
 PROMPT=prompt_2048.txt; TOKENS=2048; CLKMIN=2700; CHECK=1; COOLMAX=120; MROOT=/mnt/linux-share/models
 while [[ $# -gt 0 ]]; do

@@ -12,7 +12,7 @@ for b in "$@"; do
   [[ -x $A/bin/microbench-$b ]] && { echo "$b: already built"; continue; }
   rsync -a --delete --exclude .git --exclude __pycache__ "$ET/" "$S/"
   python3 "$T/gen_space.py" "$S" "$A/space/${SPACE_PLAN:-sweep}/$b" > "$A/logs/gen-$b.log"
-  SARC_MOUNT_ROOT=$(dirname "$ET") "$ET/sarc/tools/build.sh" "$S" "$A/build/space" > "$A/logs/build-$b.log" 2>&1 \
+  SARC_MOUNT_ROOT=$(dirname "$ET") "$(dirname "$(readlink -f "$0")")/hold.sh" run "build batch $b" "$ET/sarc/tools/build.sh" "$S" "$A/build/space" > "$A/logs/build-$b.log" 2>&1 \
     || { echo "$b: BUILD FAILED, see logs/build-$b.log"; exit 1; }
   cp -f "$A/build/space/tests/test_llama_microbench" "$A/bin/microbench-$b"
   echo "$b: built $(tail -1 "$A/logs/gen-$b.log") $(date -u +%FT%TZ)"

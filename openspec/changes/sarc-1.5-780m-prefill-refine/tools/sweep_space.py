@@ -17,8 +17,8 @@ A token is selected by exact kernel base name (ET_VK_SARC_780M_*); a shape it do
 kernel and is recorded with dispatched=0.
 
 One GPU job at a time under the gpu-lab lock. Before each run it waits while <artifact dir>/PAUSE exists, between
-06:40 and 07:40 local (the host's daily job), while another GPU process runs, and until the GPU is at most --tmax C
-(at most 120 s). Three failed processes in a row stop the sweep (a lost context means a GPU reset)."""
+06:40 and 07:40 local (the host's daily job), while another GPU process runs, while the coordinator's HOLD exists
+(hold.sh; this one is not skipped by --ignore-pause), and until the GPU is at most --tmax C (at most 120 s). Three failed processes in a row stop the sweep (a lost context means a GPU reset)."""
 import csv, fcntl, json, os, re, subprocess, sys, tempfile, time
 
 a = sys.argv[1:]; art, manifest, out = a[:3]
@@ -58,8 +58,17 @@ def run(bench, args, env):
     except subprocess.TimeoutExpired:
         return 124, "", time.time() - t0
 
-def locked(fn):
-    wait_ok(); fcntl.flock(fd, fcntl.LOCK_EX)
+# Coordinator hold (hold.sh): one configuration is one unit; HOLD is looked at again once both locks are held.
+HOLD_SH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "hold.sh")
+HV = dict(l.split("=", 1) for l in subprocess.run([HOLD_SH, "vars"], capture_output=True, text=True).stdout.split())
+busy_fd = os.open(HV["BUSY"], os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+
+def locked(fn, what):
+    while True:
+        wait_ok(); subprocess.run([HOLD_SH, "wait", f"sweep_space.py {os.path.basename(out)}: {what}"])
+        fcntl.flock(busy_fd, fcntl.LOCK_SH); fcntl.flock(fd, fcntl.LOCK_EX)
+        if not os.path.exists(HV["HOLD"]): break
+        fcntl.flock(fd, fcntl.LOCK_UN); fcntl.flock(busy_fd, fcntl.LOCK_UN)
     try:
         t0 = time.time()
         while rd("temp1_input") > tmax * 1000 and time.time() - t0 < 120: time.sleep(5)
@@ -67,7 +76,7 @@ def locked(fn):
         res = fn()
         return res, [tp, rd("temp1_input") // 1000, rd("freq1_input") // 10**6]
     finally:
-        fcntl.flock(fd, fcntl.LOCK_UN)
+        fcntl.flock(fd, fcntl.LOCK_UN); fcntl.flock(busy_fd, fcntl.LOCK_UN)
 
 def emit(lines):
     with open(out, "a") as f: csv.writer(f).writerows(lines)
@@ -90,7 +99,7 @@ def linear(r):
             try: cases = [c for c in json.load(open(js))["cases"] if c.get("suite", "linear") == "linear"]
             except Exception: cases = []
             return rc, cases, wall
-    (rc, cases, wall), temps = locked(go)
+    (rc, cases, wall), temps = locked(go, f"{fam} {r['token']}")
     head = [fam, r["stage"], r["batch"], r["token"]]; tail = [rc] + temps + [f"{wall:.1f}", time.strftime("%FT%TZ", time.gmtime())]
     emit([head + [c["model"], c["op"], c["M"], c["N"], c["K"], c["kernel"], int(c["kernel"].startswith(r["kernel_base"] + "_")),
                   c.get("kernel_median_us", ""), c.get("kernel_cov", ""), c.get("correctness", ""), c.get("detail", "")[:80]] + tail
@@ -108,7 +117,7 @@ def sdpa(q, v):
             try: cases = json.load(open(js))["cases"]
             except Exception: cases = []
         return rc1, rc2, log, cases, w1 + w2
-    (rc1, rc2, log, cases, wall), temps = locked(go)
+    (rc1, rc2, log, cases, wall), temps = locked(go, f"sdpa qk={q and q['token']} av={v and v['token']}")
     kern = re.findall(r"\[sdpa-kernels\] (\S+) qk=(\S+) softmax=(\S+) av=(\S+) no_mask_fill=\S+ pairing=(\S+)", log)
     res = dict(re.findall(r"\[sdpa-correctness\] (\S+) S=.*?mismatches=(\S+ \S+)", log))
     tail = [f"{rc1}/{rc2}"] + temps + [f"{wall:.1f}", time.strftime("%FT%TZ", time.gmtime())]

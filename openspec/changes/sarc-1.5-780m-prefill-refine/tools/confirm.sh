@@ -6,7 +6,8 @@
 #   2. the 10 fastest per shape of that, four more times (5 repeats in all): full-r2..r5.csv
 #   3. those configurations, 12 passes of --production-diff on the three models (texture3d, M = 2048, sampled
 #      reference; 8da4w with non-zero zero-points as in verify.sh): pdiff/<token>-<model>-r<i>.log, pdiff.csv
-# One GPU job at a time under the gpu-lab lock; resumable (every step skips what is already there).
+# One GPU job at a time under the gpu-lab lock; resumable (every step skips what is already there). Step 3 waits
+# while <artifact dir>/PAUSE exists (a gate is running).
 # CONFIRM_STEPS=timing runs steps 1 and 2 only, CONFIRM_STEPS=pdiff step 3 only (default: all).
 set -uo pipefail
 D=$(realpath "$1"); FAM=$2; MAN=$3; shift 3; T=$(cd "$(dirname "$0")" && pwd)
@@ -31,6 +32,7 @@ tail -n +2 space/confirm-$FAM/top.csv | while IFS=, read -r batch fam stage toke
   cp -f bin/microbench-$batch $O/pdiff/mb-$batch
   for m in llama-3.2-1b llama-3.2-3b llama-3.1-8b; do for i in $(seq 1 12); do
     grep -q "^$token,$m,$i," $O/pdiff.csv && continue
+    while [[ -f $D/PAUSE ]]; do sleep 20; done
     L=$O/pdiff/$token-$m-r$i.log
     env ${ENVV[$FAM]}=$kb $T/gl.sh $O/pdiff/mb-$batch --production-diff --production-diff-model=$m --production-diff-op=$FAM \
       --production-diff-storage=texture3d "${ZP[@]}" > $L 2>&1 < /dev/null; rc=$?

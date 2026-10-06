@@ -12,7 +12,7 @@ for i in $(seq 1 12); do env $ENVS $A/tools/gl.sh $B --sdpa-correctness-only > $
 for i in 1 2 3; do $A/tools/gl.sh $B --sdpa-correctness-only > $O/table-r$i.log 2>&1; echo "table r$i rc=$? $(grep -c 'PASS' $O/table-r$i.log) pass-lines $(grep -ci 'FAIL\|MISMATCH' $O/table-r$i.log) fail-lines"; done >> $O/summary.txt
 env $ENVS $A/tools/gl.sh $B --sdpa --json-out=$O/perf-cand.json > $O/perf-cand.log 2>&1; echo "perf cand rc=$?" >> $O/summary.txt
 $A/tools/gl.sh $B --sdpa --json-out=$O/perf-table.json > $O/perf-table.log 2>&1; echo "perf table rc=$?" >> $O/summary.txt
-env $ENVS $HOME/hmz-sarc/executorch/sarc/tools/verify.sh --dir $D --lock 00000000-c400-0000-0000-000000000000 \
+env $ENVS $A/tools/hold.sh run "verify.sh $S" $HOME/hmz-sarc/executorch/sarc/tools/verify.sh --dir $D --lock 00000000-c400-0000-0000-000000000000 \
   --models 1b,3b,8b --schemes 4w,8da4w --pdiff --out verify > $D/verify.out 2>&1
 echo "VERIFY_DONE rc=$?" >> $D/verify.out
 $A/tools/session.sh $S > $D/e2e5.out 2>&1

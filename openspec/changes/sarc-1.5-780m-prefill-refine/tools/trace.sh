@@ -3,6 +3,7 @@
 # with the traced binaries of stage/<session> (kit trace2.sh protocol), then kit/analysis/trace_analysis.py.
 # Output: stage/<session>/trace/{raw/780m/trace2/*.etdp, report/evidence/trace/{families,gemm,totals}.csv}
 set -uo pipefail
+[[ -n ${SARC_HOLD_UNIT:-} ]] || exec env SARC_HOLD_UNIT=1 "$(dirname "$(readlink -f "$0")")/hold.sh" run "trace set trace.sh $*" "$0" "$@"  # coordinator hold: one unit
 A=${ART780M:-$HOME/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-03}; S=$A/stage/$1; MODELS=${2:-1b,3b}; SCHEMES=${3:-4w,8da4w}; BUILDS=${4:-parent cand}
 C=$S/trace; O=$C/raw/780m/trace2; mkdir -p $O $C/tools
 cp -f $HOME/hmz-sarc/executorch/openspec/changes/sarc-1.5-e2e-benchmark/kit/analysis/trace_analysis.py $C/tools/
