@@ -1,6 +1,6 @@
 # STATUS: 780M prefill campaign, round 2 (parameter space + beyond)
 
-Updated 2026-10-06 09:49 PDT (2026-10-06 16:49 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
+Updated 2026-10-06 15:55 PDT (2026-10-06 22:55 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
 Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (new raw data) and
 `.../780m-prefill-refine-2026-10-03/` (earlier builds and sessions).
 
@@ -18,7 +18,7 @@ Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (
 | 8da4w, Part 1 | **done** (792 of 792 production-diff passes ALL PASSED): all 2,238 survivors screened, 49 measured in full, 22 five times; best kernel per shape below ("Part 1, 8da4w"), 2.1 to 3.1 % less 8da4w linear time per layer than `780m-refine3` |
 | candidate 11 (candidate 10 + the 8da4w kernel per shape, profile `c11`) | **gate passed, +1.20 % geomean** (8da4w cells +2.02 / +2.82 / +2.36 %, 4w cells 0.00 / 0.00 / +0.06 %): the second consecutive candidate under 2 %, **stop rule met**; kept as the final configuration |
 | production-diff passes | **done**: 2,628 of 2,628 passes ALL PASSED (73 configurations x 3 models x 12), the six kernels of the final profile among them |
-| QK^T / attn*V enumeration | running since 2026-10-06 11:51 UTC, until about 22:00 UTC (Part 1's last open item) |
+| QK^T / attn*V enumeration | running since 2026-10-06 11:51 UTC; 1,742 of 1,796 runs at 22:55 UTC, ends about 23:16 UTC; its repeat stage until about 00:50 UTC (Part 1's last open item) |
 | final configuration (candidate 11), measured directly | **+33.82 % geomean over `dev/1.5`** (+23.42 to +48.35 %), **+24.12 % over `780m-refine3`** (+14.56 to +35.83 %); section "Final configuration" |
 | release-zone hooks (owner decision 2026-10-05) | committed (`b969e8f1c`, `1c8861aa7`, dev side `8518659ef`); candidate 10 reproduced from the committed build: gate passed, **+22.64 %** geomean over `780m-refine3` measured directly (section "Committed build") |
 
@@ -102,15 +102,26 @@ Where the capture material is (kept as evidence, nothing calls it):
 ## Running now
 
 `chain22.sh` (detached, since 2026-10-06 11:51 UTC): **the QK^T / attn*V enumeration at a steady clock** (20
-warm-up + 8 timed runs), Part 1's last open item. 1,724 runs, each one QK^T and one attn*V configuration: the 8
+warm-up + 8 timed runs), Part 1's last open item. 1,796 runs, each one QK^T and / or one attn*V configuration: the 8
 correctness cases of the extended tier (dispatched kernel names, mismatches, pairing), then the op time per model
-at S = 2048. Measured rate 18 to 20 s a run, coefficient of variation of the timed runs 0.2 to 0.5 % (it was 7.9 %
-with 3 + 5 runs): **about 9.5 h, plus the pause from 06:40 to 07:40 local: until about 22:00 UTC (15:00 PDT)**.
+at S = 2048. Coefficient of variation of the timed runs 0.2 to 0.5 % (it was 7.9 % with 3 + 5 runs).
 Then (`chain23.sh`, queued behind it, `tools/confirm_sdpa.sh`): the 10 fastest per model five times with 12
 correctness passes, and the response surface.
 
-Progress at 16:50 UTC: 750 of 1,724 runs (29 to 34 runs per 10 min; paused 13:40 to 14:40 UTC as planned), every
-configuration so far on its own kernel in 8 of 8 cases with 0 mismatches. Expected end about 22:30 UTC.
+**State at 2026-10-06 22:55 UTC: 1,742 of 1,796 runs done, 54 left** (attn*V configurations of the last batch,
+run alone), measured rate 22.6 s a run over the last hour (159 runs): **the enumeration ends at about 23:16
+UTC**. 2,140 of the 2,194 configurations (1,724 QK^T + 470 attn*V) are measured; every one ran its own kernel in
+8 of 8 correctness cases with 0 mismatches, none failed.
+
+My earlier estimate ("until about 22:00 UTC", then 22:30) was wrong for two reasons: I counted 1,724 runs, the
+number of QK^T configurations, but the last batch holds more attn*V than QK^T configurations, so there are 1,796
+runs; and the rate was 26 to 34 runs per 10 min (22.6 s a run at the end, the large tiles being slower), not the
+18 to 20 s of the first minutes. The planned pause from 13:40 to 14:40 UTC was taken.
+
+The repeat stage (`chain23.sh`) starts by itself when the enumeration ends: four more timing repeats of the 10
+fastest per model and family plus the table and `780m-refine3` kernels (about 45 min), then seven more
+correctness passes for each (about 45 min): **expected end about 00:50 UTC on 2026-10-07.** After it: the QK^T /
+attn*V statement and response surface, `proposal.md`, the closing check, commit and push.
 
 Production-diff passes (12 per configuration and model, texture3d, M = 2048, the real shapes, the
 configuration's own kernel on 4 of 4 shapes in every pass; 8da4w with non-zero zero-points): **all done, all
