@@ -8,7 +8,7 @@ set -uo pipefail
 source "$(dirname "$(readlink -f "$0")")/env.sh"
 S=$A/stage/$1; MODELS=${2:-1b,3b,8b}; SCHEMES=${3:-4w,8da4w}; BUILDS=${4:-parent cand}
 O=$S/trace; mkdir -p $O
-while [[ -e $A/.building || $($T/others.sh) == *build=?* ]]; do sleep 20; done
+while [[ -e $A/.building ]]; do sleep 20; done
 exec 9>>"$LOCKF"; flock -w 3600 9 || exit 75
 declare -A STEM=([1b]=llama3_2-1b [3b]=llama3_2-3b [8b]=llama3_1-8b)
 IFS=, read -ra MS <<< "$MODELS"; IFS=, read -ra QS <<< "$SCHEMES"

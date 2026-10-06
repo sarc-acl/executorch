@@ -17,7 +17,7 @@ for r in $(seq 1 $R); do for i in $(seq 0 $((n - 1))); do p=${PAIRS[$(( (i + r -
 import re, statistics as st, sys, time, json
 log, r, p = sys.argv[1:4]
 txt = open(log).read()
-try: recs = json.load(open(log[:-4] + ".json")).get("results", [])
+try: recs = json.load(open(log[:-4] + ".json")).get("cases", [])
 except Exception: recs = []
 for m in re.finditer(r"\[sdpa-runs\] (\S+) prefill coopmat total_us ([0-9. e+-]+)", txt):
     v = [float(x) for x in m.group(2).split()]
