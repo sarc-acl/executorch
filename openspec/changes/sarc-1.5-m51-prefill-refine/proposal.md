@@ -54,8 +54,48 @@ separate local file, by the rule written in the frozen one.
 | `stage.sh` | 780M `tools/stage.sh` | pushes the binaries and prompts to the board; adds the `verify.sh` wrappers and the flat model links |
 | `build-native.sh` | workspace `tools/sarc-build-native.sh` | venv, glslc and NDK paths from the environment; lower default parallelism (another campaign measures on the workstation) |
 | `sdpa_error_table.py` | 780M `tools/sdpa_error_table.py` | unchanged |
-| `build_tag.sh`, `export_commit.sh`, `adbshim.sh`, `dev.sh`, `push_models.sh`, `verify_m51.sh`, `mbstage.sh`, `spv_compare.py` | new | |
+| `probe_compare.py` | 780M `tools/probe_compare.py` | unchanged |
+| `probe_prompts.py` | 780M `tools/probe_prompts.py` | tokenizer read with tiktoken and the Llama 3 split pattern |
+| `prof_decode.py` | 780M `tools/prof_decode.py` | K tile as a parameter |
+| `build_probe.sh`, `probe_m51.sh` | 780M `tools/build_probe.sh`, `probe_run.sh` | native NDK build; runs on the board |
+| `build_tag.sh`, `export_commit.sh`, `adbshim.sh`, `dev.sh`, `push_models.sh`, `verify_m51.sh`, `verify_compare.py`, `mbstage.sh`, `spv_compare.py`, `trace_m51.sh`, `trace_families.py`, `lscreen.sh`, `lscreen_summary.py`, `phase_m51.sh`, `pdiff_error_table.py` | new | |
 | `r1329.txt` | new | an unaligned real-text prompt (the first part of the kit's `prompt_real_2048.txt`) for the `r*.txt` item of `verify.sh` |
+
+## Candidates (number-free; every figure is in the local `STATUS.md`)
+
+Selected by `ET_VK_SARC_M51_PROFILE=<name>` on top of `ET_VK_SARC_UNVERIFIED=1`
+(`impl/sarc_dev/Overrides.cpp`, m51 block). Without the variable every dispatch is the parent's: the shipped SPIR-V
+of every build is byte-identical to the parent build's (`tools/spv_compare.py`), and the A/A session agreed within
+the noise band.
+
+1. **`c1`: fused attention.** The 780M's fused prefill attention kernel, ported as `sarc_dev_m51_sdpa_fused3`
+   (`glsl/sarc_dev/`, node `impl/sarc_dev/m51/SdpaM51Fused.cpp`). Two findings on this device:
+   - the kernel exchanges data between the invocations of its subgroup through shared memory with
+     `memoryBarrierShared()` alone, which orders only an invocation's own accesses; the port uses
+     `memoryBarrierShared()` followed by `barrier()` at every exchange (the workgroup is one subgroup);
+   - the one-pass form (running row maximum) gave random wrong rows at S = 2048 on this driver with either barrier
+     form, while the two-pass form passed every screen pass; the port uses the two-pass packed form.
+   The node is installed into the override on the first selection, because the 780M's node registers into the
+   same entry point from another file in an order the linker decides.
+2. **Port item 2 (fp32 softmax without the zero tail) does not apply after `c1`:** the fused node serves every
+   attention call of the timed prefill, so no softmax is dispatched there.
+3. **`c2`: the linear kernel per shape for 8da4w, which is the 780M's texel-wise weight staging
+   (`sarc_dev_linear_dq8ca_coopmat_zpg_bt`) on every 8da4w shape.** A kernel screen chose it on every shape (R8
+   margin in every round); its production-diff errors equal the parent's on every shape.
+4. **`c3`: `c2` plus the 4w tile `t128x128k32g42s32f32xp` on the 4w shapes with K = 4096** (only the 8B model has
+   them). The other 4w tiles with the xclipse flags were not selected on any 1B or 3B shape.
+5. Screened next: texel-wise 4w weight staging (`sarc_dev_linear_q4gsw_coopmat_bx` on the xclipse flags), because
+   the 4w kernel's phase timing shows about a third of each wave in shared-memory stores.
+
+Measurement aids added in the dev zone (never selected by default): 4w sweep tiles carrying the xclipse row's
+drain flags, the phase-timing twin of the xclipse 4w row.
+
+## Open
+
+- **8B.** The gate's 8B *tiled* run crashed this board to fastboot once (the documented recovery was used). Every
+  8B end-to-end run is held until the owner decides how 8B is to be gated; until then the gates and timed
+  sessions cover 1B and 3B and are recorded as partial.
+- The golden check stays pending (no pinned build container on this workstation).
 
 ## Status
 
