@@ -1,8 +1,9 @@
 #!/bin/bash
 # e2e_m51.sh: parent vs candidate end-to-end prefill session on the M51 board (adapted from the 780M's e2e5.sh).
 # Protocol: fresh llama_main per run on the board, --warmup, 1 new token, temperature 0; arms interleaved (parent
-# first on odd repeats, cand first on even ones); before every run the board cools until the GPU (G3D) temperature
-# is at most idle + COOLD C, or has stopped falling for 30 s, or COOLMAX s have passed; failed runs are kept.
+# first on odd repeats, cand first on even ones); the session starts from a cool board (below START_C, default 38 C,
+# or no new minimum for 120 s); before every run the board cools until the GPU (G3D) temperature is at most
+# idle + COOLD C, or has stopped falling for 30 s, or COOLMAX s have passed; failed runs are kept.
 # Per run, a sampler on the board records at a short fixed interval: time, gpu_clock, gpu_busy, G3D temperature, the GPU
 # thermal cooling state; and the run records gpu_clock_stats (active time per frequency) and gpu_reset_count
 # before and after. A run is VALID only if: rc 0; tok/s present; prompt_tokens = expected; generated_tokens = 0;
@@ -41,6 +42,12 @@ IFS=, read -ra MS <<< "$MODELS"; IFS=, read -ra QS <<< "$SCHEMES"
   A shell 'for p in /sys/devices/system/cpu/cpufreq/policy*; do echo "$p $(cat $p/scaling_governor) min=$(cat $p/scaling_min_freq) max=$(cat $p/scaling_max_freq)"; done' < /dev/null
   for m in "${MS[@]}"; do for q in "${QS[@]}"; do echo "model $m $q $(A shell "ls -l $DEV_ROOT/models/${STEM[$m]}_${q}_embq_ctx3072.pte" < /dev/null | awk '{print $5}')"; done; done
 } > "$O/env.txt" 2>&1
+# Cool start: wait until the GPU is below START_C or has made no new minimum for 120 s (at most 30 min), then
+# take the idle temperature that the per-run cooling aims at.
+t0=$SECONDS; best=999; tb=$SECONDS
+while :; do t=$(gtemp); [[ $t =~ ^[0-9]+$ ]] || break; (( t < best )) && { best=$t; tb=$SECONDS; }
+  (( t < ${START_C:-38} || SECONDS - tb >= 120 || SECONDS - t0 >= 1800 )) && break; sleep 10; done
+echo "start_cool_s=$((SECONDS - t0)) start_temp=$(gtemp)" >> "$O/env.txt"
 sleep 60; IDLE=$(gtemp); echo "idle_temp=$IDLE" >> "$O/env.txt"
 cool() { local t0=$SECONDS t best=999 tb=$SECONDS
   while :; do t=$(gtemp); [[ $t =~ ^[0-9]+$ ]] || break
@@ -54,12 +61,13 @@ run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected 
   t0=$SECONDS; cool; cs=$((SECONDS - t0)); tp=$(gtemp); oth=$(gpu_others); g0=$(device_state)
   [[ $g0 == device_gone || $g0 == marker* ]] && { echo "board gone before $log" | tee -a "$ART/ABORTED"; exit 3; }
   benv=$(tr '\n' ' ' < "$D/$b/env"); w=""; [[ $tag == prefill ]] && w=--warmup
-  A shell "cd $DS/$b && rm -f run.log run.clk run.rc run.pre run.post
+  # The sampler stops when run.on is removed (on this board's shell, kill + wait of the sampler ends the command).
+  A shell "cd $DS/$b && rm -f run.log run.clk run.rc run.pre run.post run.on
     (cat /sys/kernel/gpu/gpu_clock_stats; cat /sys/kernel/gpu/gpu_reset_count) > run.pre
-    (while :; do echo \$(date +%s%N) \$(cat /sys/kernel/gpu/gpu_clock) \$(cat /sys/kernel/gpu/gpu_busy) \$(cat /sys/class/thermal/thermal_zone4/temp) \$(cat /sys/class/thermal/cooling_device7/cur_state); sleep 0.05; done > run.clk) &
-    sp=\$!
+    touch run.on
+    (while [ -e run.on ]; do echo \$(date +%s%N) \$(cat /sys/kernel/gpu/gpu_clock) \$(cat /sys/kernel/gpu/gpu_busy) \$(cat /sys/class/thermal/thermal_zone4/temp) \$(cat /sys/class/thermal/cooling_device7/cur_state); sleep 0.05; done > run.clk) &
     $benv LD_LIBRARY_PATH=$DS/$b timeout 1190 ./llama_main --model_path=$DEV_ROOT/models/${STEM[$m]}_${q}_embq_ctx3072.pte --tokenizer_path=$DEV_ROOT/models/tokenizer.model --prompt_file=$p --max_new_tokens=1 --temperature=0 $w < /dev/null > run.log 2>&1
-    echo \$? > run.rc; kill \$sp; wait \$sp 2>/dev/null
+    echo \$? > run.rc; rm -f run.on; wait
     (cat /sys/kernel/gpu/gpu_clock_stats; cat /sys/kernel/gpu/gpu_reset_count) > run.post" < /dev/null > /dev/null 2>&1
   alive || { echo "board gone during $log $(date -u +%FT%TZ)" | tee -a "$ART/ABORTED"; exit 3; }
   A pull "$DS/$b/run.log" "$O/$log" > /dev/null; A pull "$DS/$b/run.clk" "$O/${log%.log}.clk" > /dev/null

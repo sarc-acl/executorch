@@ -29,3 +29,8 @@ device_state() {
 }
 # gpu_others: other processes on the board that use the GPU (none expected: only our runner and microbench).
 gpu_others() { A shell 'ps -A -o PID,NAME' 2>/dev/null | tr -d '\r' | awk 'NR>1 && $2 ~ /llama_main|test_llama_microbench|igpu|vkcube|benchmark/ {printf "%s:%s;", $1, $2}'; }
+# other_timed_session: true while another campaign on this workstation is in a timed session (R5: no build then).
+other_timed_session() {
+  { [[ -n ${OTHER_TIMED_SESSION:-} ]] && pgrep -f "$OTHER_TIMED_SESSION" > /dev/null; } ||
+    { [[ -n ${OTHER_GPU_LOCK:-} ]] && lslocks -n -o PATH 2>/dev/null | grep -q "$OTHER_GPU_LOCK"; }
+}

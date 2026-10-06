@@ -7,6 +7,7 @@ source "$(dirname "$(readlink -f "$0")")/dev.sh"
 SRC=$ART/src/m51/$1/executorch; B=$ART/build/m51/$1; V=$ART/venv/m51
 NDK=${NDK:-<android-ndk>}
 export PATH=$V/bin:/usr/bin:/bin CCACHE_DIR=<local-home>/.ccache
+while other_timed_session; do sleep 60; done
 nice -n 19 cmake "$SRC/backends/vulkan/test/sarc_dev/probe" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$B/llama \
   -DCMAKE_FIND_ROOT_PATH=$B/llama -DEXECUTORCH_ROOT=$SRC -DCMAKE_CXX_FLAGS="-include algorithm" \
   -DCMAKE_TOOLCHAIN_FILE=$NDK/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-28 \
