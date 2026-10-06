@@ -8,6 +8,7 @@ st "waiting for chain1"; until grep -q CHAIN1_DONE $A/logs/chain1.status 2>/dev/
 INC=fused3_d64_t32x32g11s32rko,fused3_d128_t16x64g11s32rko
 FUSED=$(/usr/bin/python3 $T/fused_pick.py $A/stage/c1-softmax/fused-screen.csv $INC 2> $A/stage/c1-softmax/fused-pick.txt)
 st "fused variants: $FUSED"
+[[ $FUSED == fused3_d64_*,fused3_d128_* ]] || { st "STOP: no valid fused variant pair"; exit 1; }
 C1="ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_780M_PROFILE=c7"; C2="$C1 ET_VK_SARC_780M_SDPA_FUSED=$FUSED"
 $T/stage.sh c2-fused parent "$C1" parent "$C2" "candidate 2: fused attention kernel (780M fused3, $FUSED) on top of candidate 1, parent binary" > $A/logs/stage-c2.out 2>&1
 cp -f $A/build/rx7600/parent/probe/logits_probe $A/stage/c2-fused/lp

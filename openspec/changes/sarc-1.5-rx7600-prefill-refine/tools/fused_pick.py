@@ -2,7 +2,7 @@
 """fused_pick.py <fused-screen.csv> <incumbent pair>: the screen rule of R8 (fixed in proposal.md) applied per head_dim:
 a variant replaces the incumbent (the 780M's choice) only if it is at least 3 % faster in every round on every model
 of that head_dim (d64: 1B; d128: 3B and 8B); among several, the fastest median wins; a tie keeps the incumbent.
-A variant that occurs in more than one pair is judged by its slowest occurrence in a round. Prints the analysis to
+A pair is "<d64>+<d128>". A variant that occurs in more than one pair is judged by its slowest occurrence in a round. Prints the analysis to
 stderr and the chosen pair (ET_VK_SARC_780M_SDPA_FUSED) to stdout."""
 import csv, statistics as st, sys
 from collections import defaultdict
@@ -10,7 +10,7 @@ rows = list(csv.DictReader(open(sys.argv[1]))); inc = sys.argv[2].split(",")
 HD = {"d64": ("1b",), "d128": ("3b", "8b")}
 t = defaultdict(list)  # (variant, model, round) -> [us]
 for r in rows:
-    d64, d128 = r["pair"].split(",")
+    d64, d128 = r["pair"].split("+")
     m = next(k for k in ("1b", "3b", "8b") if k in r["model"].lower())
     v = d64 if m == "1b" else d128
     t[(v, m, r["round"])].append(float(r["median_us"]))
