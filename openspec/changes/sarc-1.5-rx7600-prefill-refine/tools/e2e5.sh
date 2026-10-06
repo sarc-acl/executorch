@@ -12,7 +12,8 @@
 #     and polled during it;
 #   - a run is VALID only if rc = 0, tok/s present, prompt_tokens = <expected>, generated_tokens = 0, no foreign
 #     GPU user and no host build before / during / after it, >= CLKN clock samples in the prefill window, a
-#     median clock >= CLKMIN MHz there, and no thermal throttle bit (indep_throttle_status bits 32-47) in it.
+#     median clock >= CLKMIN MHz there, and no thermal throttle bit (indep_throttle_status bits 32-47, masked by
+#     thermal_mask of thresholds.txt) in it.
 #     Invalid runs stay in runs.csv with the reason; cells with fewer than REPS valid runs per arm get extra
 #     interleaved pairs (at most EXTRA).
 #   - next token parent vs candidate on the timed prompt (repeat 1), prompt_real_2048.txt and prompt_check.txt.
@@ -25,7 +26,7 @@ set -uo pipefail
 [[ -n ${SARC_HOLD_UNIT:-} ]] || exec env SARC_HOLD_UNIT=1 "$(dirname "$(readlink -f "$0")")/hold.sh" run "timed session e2e5.sh $*" "$0" "$@"
 source "$(dirname "$(readlink -f "$0")")/env.sh"
 STAGE=""; OUTN=raw; REPS=5; EXTRA=3; MODELS=1b,3b,8b; SCHEMES=4w,8da4w
-PROMPT=prompt_2048.txt; TOKENS=2048; CLKMIN=$(sed -n 's/^clkmin=//p' $T/thresholds.txt 2>/dev/null); CLKN=5; CHECK=1; COOLMAX=300
+PROMPT=prompt_2048.txt; TOKENS=2048; CLKMIN=$(sed -n 's/^clkmin=//p' $T/thresholds.txt 2>/dev/null); TMASK=$(sed -n 's/^thermal_mask=//p' $T/thresholds.txt 2>/dev/null); CLKN=5; CHECK=1; COOLMAX=300
 while [[ $# -gt 0 ]]; do
   case $1 in
     --stage) STAGE=$2; shift ;; --out) OUTN=$2; shift ;;
@@ -36,13 +37,13 @@ while [[ $# -gt 0 ]]; do
   esac; shift
 done
 [[ -n $STAGE ]] || { sed -n '2,26p' "$0"; exit 2; }
-CLKMIN=${CLKMIN:-0}
+CLKMIN=${CLKMIN:-0}; TMASK=${TMASK:-0xffff}
 D=$(cd "$STAGE" && pwd); cd "$D" || exit 2
 O=$D/$OUTN; mkdir -p "$O/logs"
 while [[ -e $A/.building ]]; do sleep 30; done
 exec 9>>"$LOCKF"; flock -w 1800 9 || { echo "gpu-lab lock busy"; exit 75; }
 {
-  date -u; hostname; uname -r; echo "lock=$LOCK reps=$REPS extra=$EXTRA prompt=$PROMPT tokens=$TOKENS clkmin=$CLKMIN clkn=$CLKN"
+  date -u; hostname; uname -r; echo "lock=$LOCK reps=$REPS extra=$EXTRA prompt=$PROMPT tokens=$TOKENS clkmin=$CLKMIN clkn=$CLKN thermal_mask=$TMASK"
   for b in parent cand; do sha256sum $b/llama_main $b/libllama_runner.so; echo "$b env: $(tr '\n' ' ' < $b/env 2>/dev/null)"; cat $b/COMMIT 2>/dev/null; done
   sha256sum prompt_*.txt; cat STAGE.md 2>/dev/null
   echo "VK_ICD_FILENAMES=$VK_ICD_FILENAMES ETVK_DEVICE_INDEX=$ETVK_DEVICE_INDEX"
@@ -88,9 +89,9 @@ run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected 
   gp=$!
   wait $lp; rc=$?
   wait $gp; kill $sp 2>/dev/null; wait $sp 2>/dev/null; tq=$(gtemp); oth2=$($T/others.sh)
-  /usr/bin/python3 - "$O/$log" "$clk" "$want" "$CLKMIN" "$rc" "$oth" "$oth2" "$tag" "$CLKN" "$O/${log%.log}.oth" <<'PY' > "$O/.row"
+  /usr/bin/python3 - "$O/$log" "$clk" "$want" "$CLKMIN" "$rc" "$oth" "$oth2" "$tag" "$CLKN" "$O/${log%.log}.oth" "$TMASK" <<'PY' > "$O/.row"
 import json, statistics as st, sys
-log, clk, want, clkmin, rc, oth, oth2, tag, clkn, othf = sys.argv[1:11]
+log, clk, want, clkmin, rc, oth, oth2, tag, clkn, othf, tmask = sys.argv[1:12]
 obs = None
 for line in open(log, errors="replace"):
     i = line.find("PyTorchObserver")
@@ -127,7 +128,7 @@ if fg: reason.append("other_gpu_process")
 if fb: reason.append("host_build")
 if n < int(clkn): reason.append("clock_unsampled")
 elif cm < float(clkmin): reason.append("clock_low")
-if (thr >> 32) & 0xFFFF: reason.append("thermal_throttle")
+if (thr >> 32) & int(tmask, 16): reason.append("thermal_throttle")
 valid = 0 if reason else 1
 print(",".join(str(x) for x in [tok, pt, gt, ms, n, cm, cmin, med(2, 1), med(3, 1e6), round(max(r[4] for r in rows) / 1000) if rows else "", valid, "+".join(reason), lms, hex(thr)]))
 PY
