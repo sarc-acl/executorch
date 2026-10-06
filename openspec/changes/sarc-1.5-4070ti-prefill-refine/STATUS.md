@@ -1,5 +1,159 @@
 # STATUS: sarc-1.5-4070ti-prefill-refine
 
+**2026-10-06 03:25 UTC, gpu-dev-4004. FOLLOW-UP FINISHED; nothing of this campaign is running. The branch head
+reproduces candidate 4 with no local patch: build `topic12` (= `6397f868f`) with
+`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=4070ti-refine1` dispatches the same five SDPA kernels as the
+patched build `topic10`, its gate `s8-c4e` is `GATE_ACCEPTED` (the one gate the owner decision of 2026-10-06
+00:35 UTC allowed, model file in the page cache before each cell), and its timed session against the pristine
+parent gives **+46.35 % geomean, beside +46.74 % through the patch** (`s5-c4`): 0.39 points apart, inside the
++-2 % band; the candidate's own medians differ by +0.06 % geomean between the two builds. The campaign itself was
+not restarted: no new candidate, no sweep. Since 03:20 UTC the GPU is used by the coordinator for a separate
+measurement the owner ordered (about two hours, under this device's gpu-lab lock); this campaign starts no GPU
+job and no build beside it.**
+
+Blocking: nothing. Next step: none. Three earlier gates of the same build were rejected, each for one runner call
+that aborted after its output in a slow-load process, and a fourth was stopped by the operator; all are kept and
+described below.
+
+## Follow-up 2026-10-05: candidate 4 from the committed branch alone (build `topic12` = `6397f868f`, no patch)
+
+What is committed (owner decision 2026-10-05):
+- `acdc04d54`, release-zone hook: `softmax-variant-hook.patch` applied unchanged with `git am` (the Orin
+  campaign's commit, same diff byte for byte: `Override::softmax_variant` in `impl/sarc/Select.h`, read in
+  `sdpa_softmax_shader_name`).
+- `6397f868f`, dev zone only: the two SDPA base rows are registered from `impl/sarc_dev/Rtx4070tiSdpa.cpp`
+  (`kUnverified`, matching only while `ET_VK_SARC_DEV_PROFILE` names a `4070ti-*` profile), so
+  `impl/sarc/table_nvidia.cpp` is NOT edited; the override sets `softmax_variant = "4070ti_nzf"` for
+  `4070ti-refine1`, `-refine4`, `-refine5`. `ET_VK_SARC_SOFTMAX_VARIANT` no longer exists. Candidate 4 is now
+  `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=4070ti-refine1`.
+
+Checked so far:
+
+| condition | result |
+|---|---|
+| nothing selected: `verify.sh` against the parent control | `s8-ctl`: `CONTROL_SAME`, 34 lines equal line by line (rates aside), `control.diff` empty, verify-check ACCEPT |
+| `spirv_golden.py` | PASS, 53 shipped variants unchanged (`build/topic12.golden.txt`) |
+| `test_sarc_select`, release tables | identical output before and after the two commits (1240 checks, 31 rows) |
+| `test_sarc_select`, dev zone linked | PASS; 33 rows and 1536 checks instead of 31 and 1534: the two registered rows |
+| SPIR-V, `topic12` against `topic10` (the measured build) | all 1513 files byte-identical; the 1388 files of the parent build are byte-identical in `topic12` |
+| dispatched kernels, candidate 4 | `sdpa-check.txt` identical to `s5-c4`'s (same five SDPA kernel names); `verify.out` equal to `s5-c4`'s line by line, rates aside |
+| SDPA correctness, 12 extended + 12 full | 0 mismatches, `pairing=ok` (`s8-c4`, `s8-c4b`) |
+| `verify.sh` with the candidate environment | verify-check ACCEPT, 0 findings (`s8-c4`, `s8-c4b`) |
+| `sarc/tools/check.sh --no-build` | PASS (it does not report the release-zone edit: `impl/sarc/` is inside its zones) |
+| SDPA correctness and `verify.sh`, third attempt | same: 24 of 24 passes, verify-check ACCEPT (`s8-c4c`) |
+| gate | **`s8-c4e` GATE_ACCEPTED** 2026-10-06T03:18:44Z (24 of 24 SDPA passes, 0 mismatches, `pairing=ok`; verify-check, session-check, env-check ACCEPT, 0 findings each; 24 of 24 next-token rows SAME; 12 of 12 traced runs rc 0). Before it: `s8-c4`, `s8-c4b` GATE_REJECTED at session-check, `s8-c4c` GATE_REJECTED at the trace step, `s8-c4d` GATE_ABORTED by the operator (moved to `results/4070ti/superseded/operator-stop/`); see below |
+
+**Result: the accepted gate `s8-c4e`** (pristine parent `6a7cc8cc6` against `topic12`, tok/s, median of 5 valid
+interleaved runs per arm; `results/4070ti/sessions/s8-c4e/{runs,summary}.csv`, medians and geomean recomputed
+from `runs.csv` with separate code: the same). Beside it the patched build's session `s5-c4`:
+
+| cell | parent | candidate 4, committed | gain, committed (`s8-c4e`) | gain, patched (`s5-c4`) | candidate median, committed against patched | ETDump dispatch total, ms |
+|---|---:|---:|---:|---:|---:|---|
+| 1B 4w | 19692.3 | 29681.2 | +50.72 % | +50.72 % | +0.00 % | 102.8 -> 67.8 |
+| 1B 8da4w | 21113.4 | 32507.9 | +53.97 % | +55.56 % | +0.00 % | 95.8 -> 61.0 |
+| 3B 4w | 8714.9 | 12880.5 | +47.80 % | +47.50 % | +0.63 % | 233.1 -> 157.8 |
+| 3B 8da4w | 9660.4 | 14948.9 | +54.74 % | +54.74 % | +0.00 % | 210.4 -> 135.2 |
+| 8B 4w | 4471.6 | 5970.9 | +33.53 % | +33.92 % | -0.29 % | 458.7 -> 342.3 |
+| 8B 8da4w | 5007.3 | 6942.4 | +38.64 % | +39.32 % | +0.00 % | 409.5 -> 293.6 |
+| geomean | | | **+46.35 %** | **+46.74 %** | +0.06 % | |
+
+Every cell is within 1.6 points of the patched session and every candidate median within 0.63 %; where a gain
+differs (1B 8da4w, 8B 8da4w) it is the parent's median that moved by one timer step (97 against 98 ms on 1B).
+In `s8-c4e` all 60 timed and 36 next-token runs are valid with rc 0, none replaced; `raw/loads.csv`: 0 slow
+loads of 96 (48 per arm). Warming records: `warm.csv` (96 rows, 6 of them had to read the file, at the first
+process of each cell), `verify-warm.csv` (22 calls of `verify.sh`, all rc 0), `trace/warm.csv` and `wall.csv`
+(12 traced runs, each warmed, all rc 0, 0.9 to 4.1 s).
+
+The three rejected gates of the same build, for the record (the aborted run is replaced by the next pair, as
+the task says). These are numbers from rejected gates, not the reported result:
+
+| cell | `s5-c4` (patched `topic10`) | `s8-c4` | `s8-c4b` | `s8-c4c` |
+|---|---:|---:|---:|---:|
+| 1B 4w | +50.7 % | +50.72 % | +50.72 % | +50.72 % |
+| 1B 8da4w | +55.6 % | +53.97 % | +53.97 % | +53.97 % |
+| 3B 4w | +47.5 % | +47.80 % | +47.80 % | +46.88 % |
+| 3B 8da4w | +54.7 % | +53.62 % | +54.35 % | +53.62 % |
+| 8B 4w | +33.9 % | +33.63 % | +33.92 % | +33.53 % |
+| 8B 8da4w | +39.3 % | +38.98 % | +39.12 % | +38.98 % |
+| geomean | **+46.74 %** | **+46.25 %** | **+46.44 %** | **+46.08 %** |
+
+**Finding about the runner (was the open problem): the same run aborted in the first two gates.** In `s8-c4` and in `s8-c4b` the FIRST candidate process of
+the 8B 4w cell (`prefill 8b 4w cand r1`, right after `parent r1`) printed the prompt and the token (" question"),
+then `corrupted double-linked list` and rc 134, no stats line; repetitions 2 to 6 and every other cell ran clean.
+The next-token row of `prompt_2048` takes that first run, hence `INVALID:cand:rc+cand:no_stats` and the
+rejection. Two identical failures at one position are not the occasional exit crash. What is known:
+- All five timed aborts of the whole campaign are an `r1` (first or second process after the model changes):
+  `s2-c1b` 8B 8da4w parent, `s6-c5` 3B 4w parent, `s7-c6b` 8B 8da4w candidate, and these two. The 150-run probe
+  that found 0 failures never changed the model. The host has 15 GB of memory and the 8B files are 4.2 and 4.4 GB,
+  so the first processes after a change read the model from disk.
+- With the patched build `topic10` the same position passed once (`s5-c4`).
+- Not known yet: whether `topic12` aborts there every time, and whether `topic10` does under the same conditions.
+- Third attempt, `s8-c4c`: the same run PASSED (5936.2 tok/s), so the abort at that position is not
+  deterministic: 2 of 3 on `topic12`. Its session is complete with no failed call (session-check ACCEPT, 24 of 24
+  next-token rows SAME, +46.08 %). It was rejected later, at the trace step: the traced candidate run of 3B 4w
+  aborted (rc 134) after writing its ETDump, the failure of traced runs already counted at 5 %.
+The retry queue (`queue16.sh`) was stopped by the operator after `s8-c4c` (SIGTERM to the queue shell only, the
+running gate untouched); `queue17.sh` likewise after it had started `s8-c4d`.
+
+**What the abort goes with (found 2026-10-06 00:20 UTC, from the clock samples of every timed run): a slow model
+load, in either arm.** A clean 8B run lasts 3.7 s. Each of the five aborted runs lasted 8 to 21 s, with the GPU
+clock falling to idle for 2.5 s or more in the middle: the process was reading the model file from the share
+because it was not (or no longer fully) in the page cache. Over the 15 staged sessions up to `s8-c4c`:
+
+| process duration | runs | aborted (rc 134) |
+|---|---:|---:|
+| normal (within 2 s of the clean time of its model) | 1261 | 0 |
+| slow load | 60 (1B 2, 3B 13, 8B 45) | 5 (3B 1, 8B 4): 2 parent-arm, 3 candidate-arm |
+
+So it is the runner's known failure after output, and it is conditional: 8 % of slow-load processes, none
+otherwise. `prefill 8b 4w cand r1` is a slow load in every session (10 s, 8.3 s, 7.4 s in the three gates: the
+parent's `r1` before it does not leave the 4.2 GB file fully cached on this 15 GB host), which is why the failure
+landed there twice; the third time the same slow load passed. It also explains the probe of 2026-10-05 (150 runs
+per arm of one model, never a cold file, 0 failures).
+- `tools/first_use_probe.sh` (`raw/first-use-8b-4w/rows.csv`, 6 trials per build: evict the file, parent,
+  first candidate process, second): 36 runs, 0 aborts, `topic12` and `topic10` alike. Only the parent step was
+  a cold load there (12 runs, 9 to 10 s); the candidate steps found the file fully cached, because that probe
+  ran with free memory. It shows that a cold file alone does not abort every time, nothing about the builds.
+  The cold-load comparison of the two builds that was planned next was NOT run: the owner decided first (below).
+- With `tools/load_report.py` (the rule now written down: the clock below 1500 MHz for 1 s or more between the
+  first and the last sample at 2000 MHz or above) over every staged session including `s8-c4c` and `s8-c4d`:
+  63 slow loads (38 parent-arm, 25 candidate-arm), 5 aborted (2 and 3); 1285 other runs, 0 aborted. The table
+  above used process duration instead and counted 60 and 1261 before those two sessions.
+- Why a cell's second process was still a slow load: this kernel reclaims with the multi-generation LRU
+  (`/sys/kernel/mm/lru_gen/enabled` = 0x0007), and with the cache full of other models, pages that were only
+  read once are the first to go. Measured on the 1B files with 8.6 GB of other reads afterwards: a file warmed
+  with `cat` was 0 % cached, a file warmed by mapping it and touching every page was 99 % cached.
+
+**Owner decision 2026-10-06 00:35 UTC** (`CAMPAIGN.md`): the tools may bring a cell's model file into the page
+cache before its first process, both arms and every step alike, recording per run whether the load was slow;
+criteria, `gate_check.py`, `verify.sh`, goldens, thresholds and run counts unchanged; then ONE gate on the
+committed build. If that is rejected for an abort in a process that was not a slow load: stop and report.
+What was done:
+- `s8-c4d` (the fourth unwarmed attempt) was stopped by the operator at 01:03 UTC, 27 runs into its session, no
+  failed call until then, sdpa-check and verify-check ACCEPT: `GATE_ABORTED`, not a result.
+- Tools: `warm_model` in `tools/common.sh` (`tools/warm_file.py`: map the file and touch every page, what
+  `vmtouch -t` does; vmtouch is not installed), called before every run of `e2e5.sh` (timed and next-token) and
+  `trace.sh`, and inside `llama_main_rc.sh`, the wrapper through which the unmodified `verify.sh` starts the
+  runner. It warms when the model changes and whenever the file is not fully cached, the same for both arms.
+  Records: `raw/warm.csv`, `trace/.../warm.csv` and `wall.csv`, `verify-warm.csv` (cached share before, passes,
+  cached share after, per call), and `raw/loads.csv` from `load_report.py` (duration, clock gap, slow yes/no per
+  timed run). `tools/test_gate_check.py`: 40 tests pass; `gate_check.py` is untouched.
+
+- The one gate, `s8-c4e` (01:06 to 03:18 UTC): `GATE_ACCEPTED`, no slow load and no abort among its 130 runner
+  calls (96 in the session, 22 in `verify.sh`, 12 traced). Over every staged session, `s8-c4d` and `s8-c4e`
+  included: 63 slow loads, 5 of them aborted (8 %); 1381 other timed or next-token runs, 0 aborted. One warmed
+  gate does not prove that the abort cannot happen in a fast load; it removed the condition under which every
+  abort of a timed run was seen. The runner is not fixed and was not touched; the failure is in the pristine
+  parent too (2 of the 5).
+
+`sarc/tools/check.sh --no-build` on the final tree (03:21 UTC, run while holding the gpu-lab lock, which was free): `check.sh: PASS` (zone rule against
+`origin/release/1.5`, twin wrappers, `test_sarc_select` 1240 checks and 31 rows without the dev zone, 1536 checks and
+33 rows with it). It does not report the two files of the release-zone hook (`impl/sarc/Select.h`,
+`impl/sarc/SdpaCoopmat.cpp`, commit `acdc04d54`): `impl/sarc/` is inside the zones it checks; they are named here
+and in `proposal.md` under the owner decision of 2026-10-05. `tools/test_gate_check.py`: 40 tests pass.
+
+## State at the end of the campaign (09:55 UTC), kept
+
 **2026-10-05 09:55 UTC, gpu-dev-4004. FINISHED, nothing running, GPU idle. The stop rule is met: candidates 5
 and 6, consecutive, each completed a full gate (`s6-c5d` and `s7-c6e`, both GATE_ACCEPTED) with -0.13 % and
 +0.40 % geomean over their parent, candidate 4. Recommended configuration: candidate 4 (SDPA prefill kernels

@@ -71,5 +71,17 @@ others_watch_stop() { kill $OW 2>/dev/null; wait $OW 2>/dev/null; others >> "$1"
 # cool_start [max C] [timeout s]: wait until the GPU is at or below the given temperature.
 cool_start() { local t0=$SECONDS t
   while :; do t=$(gtemp) || gpu_gone cool_start; (( t > ${1:-50} && SECONDS - t0 < ${2:-300} )) || break; sleep 5; done; }
+# Owner decision 2026-10-06 (00:35 UTC): the runner's abort after its output happens only in processes that have to
+# read their model from the share (STATUS.md, "a slow model load"), so the measuring tools may read the model into
+# the page cache first, for both arms alike. cached_pct <file>: share of the file in the page cache.
+# warm_model <pte> [<csv> [<tag>]]: when the model changes (the first process of a cell), and whenever the file is
+# not fully cached, map it and touch every page (warm_file.py: a plain read does not hold on this host, see there),
+# at most 3 passes; one row utc,file,cached_before_pct,passes,cached_after_pct,tag is appended to <csv> whether or
+# not anything had to be read.
+cached_pct() { fincore -n -b -o RES,SIZE "$1" 2>/dev/null | awk '{printf "%d", 100 * $1 / $2}'; }
+warm_model() { local f=$1 b a n=0; b=$(cached_pct "$f"); a=$b
+  [[ ${WARM_LAST:-} == "$f" ]] || { python3 $TOOLS/warm_file.py "$f"; n=1; a=$(cached_pct "$f"); WARM_LAST=$f; }
+  while [[ ${a:-0} -lt 100 && $n -lt 3 ]]; do python3 $TOOLS/warm_file.py "$f"; n=$((n + 1)); a=$(cached_pct "$f"); done
+  [[ -z ${2:-} ]] || echo "$(date -u +%FT%TZ),$(basename "$f"),$b,$n,$a,${3:-}" >> "$2"; }
 take_lock() { exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK" || exit 75; flock -w ${1:-1800} 9 || { echo "gpu-lab lock busy" >&2; exit 75; }; }
 need() { local f; for f in "$@"; do [[ -s $f ]] || { echo "missing required file: $f" >&2; exit 77; }; done; }

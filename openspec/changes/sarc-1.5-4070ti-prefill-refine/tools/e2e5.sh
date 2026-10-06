@@ -77,6 +77,7 @@ run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected 
   local m=$1 q=$2 b=$3 r=$4 s=$5 p=$6 tag=$7 want=$8 log t0 tp tq rc oth cs sp cmin_cell=0
   [[ $tag == prefill ]] && { cmin_cell=$(clkmin $m $q) || exit 77; }
   log="logs/$tag-$m-$q-$b-r$r.log"
+  warm_model "$(pte $m $q)" "$O/warm.csv" "$log"   # owner decision 2026-10-06: no process reads its model from the share
   t0=$SECONDS; cool; cs=$((SECONDS - t0)); tp=$(gtemp) || gpu_gone "before $log"; no_others "before $log"
   local benv=(); [[ -f $D/$b/env ]] && mapfile -t benv < "$D/$b/env"
   others_watch_start "$O/${log%.log}.others"; sampler_start "$O/${log%.log}.clk"; sleep 0.1

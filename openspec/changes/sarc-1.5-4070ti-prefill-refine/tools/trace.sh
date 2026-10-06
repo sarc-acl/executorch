@@ -15,13 +15,15 @@ declare -A STEM=([1b]=llama-3.2-1b:llama3_2-1b [3b]=llama-3.2-3b:llama3_2-3b [8b
 IFS=, read -ra MS <<< "$MODELS"; IFS=, read -ra QS <<< "$SCHEMES"
 for b in $BUILDS; do BD=$S/$b-traced
   for m in "${MS[@]}"; do IFS=: read -r MD ST <<< "${STEM[$m]}"; for q in "${QS[@]}"; do
-    cool_start 50 120; tp=$(gtemp) || gpu_gone "trace $m $q $b"; no_others "trace $m $q $b"
+    warm_model $MROOT/$MD/exported/${ST}_vulkan_$q.pte $O/warm.csv $m-$q-$b   # owner decision 2026-10-06
+    cool_start 50 120; tp=$(gtemp) || gpu_gone "trace $m $q $b"; no_others "trace $m $q $b"; w0=$EPOCHREALTIME
     benv=(); [[ -f $BD/env ]] && mapfile -t benv < $BD/env
     others_watch_start $O/$m-$q-$b.others
     env "${benv[@]}" LD_LIBRARY_PATH=$BD timeout 1800 $BD/llama_main --model_path $MROOT/$MD/exported/${ST}_vulkan_$q.pte \
       --tokenizer_path $MROOT/$MD/original/tokenizer.model --prompt_file $S/prompt_2048.txt --max_new_tokens 1 \
       --temperature 0 --warmup --etdump_path $O/$m-$q-$b.etdp < /dev/null > $O/$m-$q-$b.log 2>&1 9>&-
-    rc=$?; oth=$(others_watch_stop $O/$m-$q-$b.others); gone_check "trace $m $q $b rc=$rc"
+    rc=$?; echo "$m-$q-$b,$rc,$(awk -v a=$w0 -v b=$EPOCHREALTIME 'BEGIN {printf "%.1f", b - a}')" >> $O/wall.csv
+    oth=$(others_watch_stop $O/$m-$q-$b.others); gone_check "trace $m $q $b rc=$rc"
     pt=$(grep -o '"prompt_tokens":[0-9]*' $O/$m-$q-$b.log | head -1 | cut -d: -f2)
     [[ $rc == 0 && $pt == 2048 && -s $O/$m-$q-$b.etdp ]] || BAD=1
     echo "trace $m $q $b rc=$rc prompt_tokens=$pt T=$tp->$(gtemp) $(grep -o '"prefill_token_per_sec":[0-9.]*' $O/$m-$q-$b.log)"

@@ -2,7 +2,8 @@
 
 Dev zone only (2026-10-04). Branch `topic/4070ti-prefill-refine`, forked from `topic/780m-prefill-refine` at
 `6a7cc8cc6`. That commit with no profile (the shipped NVIDIA rows) is the parent of every comparison. Nothing is
-promoted; no release-zone or upstream file is edited. Day-to-day state and incidents are in `STATUS.md`.
+promoted; no upstream file is edited, and the one release-zone edit is the softmax-variant hook the owner allowed
+on 2026-10-05 (section "Release-zone hook" below). Day-to-day state and incidents are in `STATUS.md`.
 
 ## Why
 
@@ -15,8 +16,11 @@ SDPA prefill kernels for this card plus an fp32 softmax (**candidate 4**: profil
 `4070ti_nzf`) are worth **+46.74 % geomean** over the parent (+33.9 % to +55.6 % per cell) and pass the whole
 gate, with no next-token item differing and a lower error against the fp32 reference than the parent's own
 attention kernels in every test case. All of the gain is attention time (51.7 -> 17.1 ms on 1B, 152.9 -> 39.7 ms
-on 8B). It is not reachable from the dev zone alone: it needs two small release-zone hooks (SDPA rows for this
-device, a dev name for the softmax), measured here through a local patch that is not committed. The first SDPA
+on 8B). It was measured through a local patch that was not committed (SDPA rows for this device, a dev name
+for the softmax). Since the follow-up of 2026-10-05 the branch reproduces it alone: the rows are registered from
+the dev zone and the softmax is named through the one release-zone hook the owner allowed (section "Release-zone
+hook (owner decision 2026-10-05)"); the committed build passes the whole gate again and measures **+46.35 %
+geomean** in its own session (`s8-c4e`), 0.39 points from the patched figure and inside the noise band. The first SDPA
 candidate (same QK^T and attn*V kernels with the release fp16 softmax, +42 %) was rejected on precision grounds
 and stays rejected. The linear kernels were swept and two variants were gated on top of candidate 4: -0.13 %
 and +0.40 % geomean in the sessions whose gates completed (`s6-c5d`, `s7-c6e`), inside the noise band there and
@@ -31,7 +35,8 @@ as measured and are not recommended.
 ## What is in the tree
 
 All under `backends/vulkan/runtime/graph/ops/{glsl,impl}/sarc_dev/`, `backends/vulkan/test/sarc_dev/` and this
-directory. Every shader file of this campaign carries `4070ti` in its name; `impl/sarc_dev/Overrides.cpp` is
+directory, except the 8-line softmax-variant hook in `impl/sarc/` (below). `impl/sarc_dev/Rtx4070tiSdpa.cpp`
+(new) registers the two SDPA base rows of this device. Every shader file of this campaign carries `4070ti` in its name; `impl/sarc_dev/Overrides.cpp` is
 changed only inside `// >>> 4070ti <id>` .. `// <<< 4070ti <id>` blocks. The generators in `tools/gen_4070ti_*.py`
 read the release sources and never write them.
 
@@ -47,23 +52,28 @@ read the release sources and never write them.
 
 Profiles (`ET_VK_SARC_DEV_PROFILE`): `4070ti-refine1` (SDPA), `4070ti-refine2` (8da4w `bh`), `4070ti-refine3`
 (`refine2` + 4w drain in Ash), `4070ti-refine4` (`refine1` + `bh`), `4070ti-refine5` (`refine4` + 4w drain in
-Ash), and one screening profile per SDPA tile (`4070ti-qk-*`, `4070ti-av-*`). The softmax variant is chosen by
-`ET_VK_SARC_SOFTMAX_VARIANT` in a build that carries hook 2.
+Ash), and one screening profile per SDPA tile (`4070ti-qk-*`, `4070ti-av-*`). The softmax variant is set by the
+dev override: `4070ti_nzf` for `4070ti-refine1`, `-refine4` and `-refine5`, the release softmax otherwise. So
+`4070ti-refine1` IS candidate 4 on the branch head; candidate 1 (the same profile with the release softmax) can
+only be rebuilt from `267edc6a5` and earlier. Up to build `topic11` the variant was read from
+`ET_VK_SARC_SOFTMAX_VARIANT` by the local patch; that variable no longer exists.
 
 `test_llama_microbench --sdpa-correctness-only` gained a reported `[sdpa-error]` line (max and rms error against
 its fp32 reference) and `ET_VK_SDPA_DUMP_DIR`; neither changes a verdict.
 
 ## What cannot be reached from the dev zone (hooks that would be needed)
 
-These are measured through local patches in `tools/` that are applied to an archived source tree at build time,
+As written during the campaign. Hooks 1 and 2 are resolved by the follow-up (next section); the patches are kept
+in `tools/superseded/`. Hook 3 is unchanged: still a local patch, still not committed, not needed by candidate 4.
+They were measured through local patches that are applied to an archived source tree at build time,
 recorded in the build provenance, and **not** applied to the branch.
 
-1. **SDPA rows for this device** (`tools/local-hook-nvidia-sdpa.patch`, 13 lines). The dev profile only replaces
+1. **SDPA rows for this device** (`tools/superseded/local-hook-nvidia-sdpa.patch`, 13 lines). The dev profile only replaces
    an existing table choice, and the SDPA hooks in `impl/sarc/SdpaCoopmat.cpp` (spec constants, truncated
    softmax) are enabled by a table row. Smallest hook: two `kUnverified` rows in `impl/sarc/table_nvidia.cpp`,
    or a way for a dev profile to mark a device as having SDPA rows. Every SDPA result here depends on it.
    Candidate 4 needs this hook and hook 2, nothing else.
-2. **Softmax name** (`tools/local-hook-nvidia-sdpa-softmax.patch`, + 9 lines). `sdpa_softmax_shader_name()` in
+2. **Softmax name** (`tools/superseded/local-hook-nvidia-sdpa-softmax.patch`, + 9 lines). `sdpa_softmax_shader_name()` in
    `impl/sarc/SdpaCoopmat.cpp` returns a fixed name. Smallest hook: let the dev override name the softmax.
 3. **Fused node** (`tools/local-hook-fused-sdpa.patch`, + 150 lines in `impl/SDPA.cpp`). LLM-mode SDPA is three
    nodes; a fused kernel needs one node bound to q, k_cache, v_cache and out, and the three-node path must
@@ -71,6 +81,92 @@ recorded in the build provenance, and **not** applied to the branch.
    `sarc::try_add_fused_sdpa(graph, q, k_cache, v_cache, input_pos, out)` in `sdpa_impl`, in the style of
    `sarc::try_add_q4gsw_coopmat`. The local patch instead reduces the three nodes to one junk workgroup each
    when the fused kernel applies; that is good enough to measure and not good enough to ship.
+
+## Release-zone hook (owner decision 2026-10-05)
+
+Commit `acdc04d54`: `softmax-variant-hook.patch` as the owner supplied it, applied with `git am`, unchanged. It is
+the Orin campaign's commit (same author date, same message, same diff), so the branches merge without a conflict.
+8 lines in `impl/sarc/`: the dev override can name a softmax variant; null, the default, gives the release name.
+
+```diff
+diff --git a/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp b/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
+index d45f720bc..5a264e27e 100644
+--- a/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
++++ b/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
+@@ -202,7 +202,11 @@ std::string sdpa_softmax_shader_name(
+   if (!device_has_active_rows(device_info(&graph), Op::kSdpaQk)) {
+     return upstream_name;
+   }
+-  return "sarc_" + upstream_name;
++  const char* variant = get_override().softmax_variant;
++  if (variant == nullptr) {
++    return "sarc_" + upstream_name;
++  }
++  return "sarc_" + upstream_name + "_" + variant;
+ }
+ 
+ } // namespace sarc
+diff --git a/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h b/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h
+index 93a9b8e96..166eba3e0 100644
+--- a/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h
++++ b/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h
+@@ -141,6 +141,9 @@ struct Override {
+       const DeviceInfo& device,
+       const ShapeInfo& shape,
+       const std::optional<Choice>& table_choice) = nullptr;
++  // Suffix of a development softmax variant ("sarc_<softmax>_<suffix>"), or
++  // null: the release softmax.
++  const char* softmax_variant = nullptr;
+ };
+ void set_override(const Override& o);
+ const Override& get_override();
+```
+
+Nothing else in the release zone is edited. Hook 2 of the decision (attention rows) took its first choice: the
+two `kUnverified` rows are registered from the dev zone, `impl/sarc_dev/Rtx4070tiSdpa.cpp` (commit `6397f868f`),
+and they select the same kernels as the two rows the local patch had put in `impl/sarc/table_nvidia.cpp`, so
+that file is not touched. The rows match only while `ET_VK_SARC_DEV_PROFILE` names a `4070ti-*` profile. Hook 3
+(fused node) is not committed: candidate 4 does not use it.
+
+### The committed build reproduces candidate 4 (build `topic12` = `6397f868f`, no local patch)
+
+Candidate 4 on the branch head is `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=4070ti-refine1`. The conditions
+of the decision, each with its evidence (`results/4070ti/sessions/`):
+
+| condition | result |
+|---|---|
+| nothing selected: every device dispatches what it did before | `s8-ctl` (the hook build with an empty environment, `tools/hook_control.sh`): unmodified `verify.sh` equal to the parent control line by line, 34 lines, rates aside (`control.diff` empty, `CONTROL_SAME`), verify-check ACCEPT |
+| `test_sarc_select` unchanged | release tables: identical output before and after the two commits (1240 checks, 31 rows); with the dev zone linked 33 rows and 1536 checks instead of 31 and 1534, the two registered rows |
+| `spirv_golden.py` unchanged | PASS, 53 shipped variants |
+| same kernels as the measured build `topic10` | `sdpa-check.txt` of `s8-c4e` identical to `s5-c4`'s (softmax `..._4070ti_nzf`, attn*V `4070ti_ml_t32x64k32g42s32` and `t64x128k32g42s32`, QK^T `4070ti_df_t64x64k32g11s32nf` and `4070ti_pk_t64x128k32g42s32nf`); `verify.out` equal to `s5-c4`'s line by line, rates aside; all 1513 SPIR-V files of `topic12` byte-identical to `topic10`'s, and the parent's 1388 byte-identical in `topic12` |
+| the gate, once | `s8-c4e`: **`GATE_ACCEPTED 2026-10-06T03:18:44Z`**: 24 of 24 SDPA correctness passes (12 extended, 12 full), 0 mismatches, `pairing=ok`; unmodified `verify.sh` with the parent control's status; session-check ACCEPT, next token parent vs candidate SAME on 24 of 24 rows (six cells, four prompts); 12 of 12 traced runs; a plain pass, no next-token item differs |
+| one timed session against the pristine parent | below: **+46.35 % geomean, beside +46.74 % through the patch** |
+
+tok/s, median of 5 valid interleaved runs per arm (`s8-c4e/{runs,summary}.csv`; recomputed from `runs.csv` with
+separate code: same medians, same geomean), beside the patched build's session `s5-c4`:
+
+| cell | parent | candidate 4, committed | gain, committed (`s8-c4e`) | gain, patched (`s5-c4`) | candidate median, committed against patched | ETDump dispatch total, ms |
+|---|---:|---:|---:|---:|---:|---|
+| 1B 4w | 19692.3 | 29681.2 | +50.72 % | +50.72 % | +0.00 % | 102.8 -> 67.8 |
+| 1B 8da4w | 21113.4 | 32507.9 | +53.97 % | +55.56 % | +0.00 % | 95.8 -> 61.0 |
+| 3B 4w | 8714.9 | 12880.5 | +47.80 % | +47.50 % | +0.63 % | 233.1 -> 157.8 |
+| 3B 8da4w | 9660.4 | 14948.9 | +54.74 % | +54.74 % | +0.00 % | 210.4 -> 135.2 |
+| 8B 4w | 4471.6 | 5970.9 | +33.53 % | +33.92 % | -0.29 % | 458.7 -> 342.3 |
+| 8B 8da4w | 5007.3 | 6942.4 | +38.64 % | +39.32 % | +0.00 % | 409.5 -> 293.6 |
+| geomean | | | **+46.35 %** | **+46.74 %** | +0.06 % | |
+
+The two builds agree inside the +-2 % band in every cell (largest difference 1.6 points, 1B 8da4w, where the
+parent's median moved by one timer step, 97 against 98 ms, and the candidate's is the same reading). All 60 timed
+and 36 next-token runs of `s8-c4e` are valid with rc 0; none was replaced.
+
+This gate was the fifth attempt on the committed build and the only one run under the owner decision of
+2026-10-06 (00:35 UTC), which let the measuring tools bring the model file into the page cache before the first
+process of each cell, both arms and every step alike (`warm_model` in `tools/common.sh`, `tools/warm_file.py`,
+called from `e2e5.sh`, `trace.sh` and the `verify.sh` wrapper `llama_main_rc.sh`; criteria, `gate_check.py`,
+`verify.sh`, thresholds and run counts untouched). The four before it, all kept: `s8-c4` and `s8-c4b` rejected
+at session-check and `s8-c4c` at the trace step, each for one runner call that aborted after its output in a
+slow-load process (their sessions gave +46.25 %, +46.44 % and +46.08 %); `s8-c4d` stopped by the operator
+(`superseded/operator-stop/`). The account of the abort is in "The runner fails after its output" below.
 
 ## Method
 
@@ -457,9 +553,33 @@ ten times as often as the untraced one** (5 of 96 against 5 of 1335), in both ar
 with the SDPA kernels). Four of the first five SDPA-arm failures were on 3B 4w, so that cell was run 150 times
 per arm, pristine parent and candidate 4 interleaved, untraced, a fresh process per run (`tools/exit_probe.sh`,
 `results/4070ti/exit-probe/3b-4w.csv`): **0 failures in 150 for either arm**; the cluster did not reproduce and
-later failures were on other cells. The cause is not known. The symptom points at heap corruption in the runner
+later failures were on other cells.
+
+**What the abort of a timed run goes with: a slow model load** (found in the follow-up, 2026-10-06, from the
+20 ms clock samples of every timed and next-token run; `tools/load_report.py`, a load is called slow when the
+GPU clock is below 1500 MHz for 1 s or more between the first and the last sample at 2000 MHz or above, that
+is when the process waits for its model file to come from the share):
+
+| load | runs | aborted after output (rc 134) |
+|---|---:|---:|
+| slow | 63 (38 parent arm, 25 candidate arm) | 5 (2 parent arm, 3 candidate arm), 8 % |
+| not slow | 1381 | 0 |
+
+Over every staged session up to the last (`s8-c4e`). It happens in the pristine parent as in the candidate. The
+host has 15 GB of memory and the 8B files are 4.2 and 4.4 GB; with the page cache full of other models the first
+processes of a cell read the file again (this kernel's multi-generation LRU drops pages that were read once
+first: a 1B file warmed with `cat` was 0 % cached after 8.6 GB of other reads, one mapped and touched page by
+page 99 %). That is why the 150-run probe, which never changed the model, saw nothing, and why `prefill 8b 4w
+cand r1` aborted in two gates running (a slow load in every unwarmed session). A cold file alone does not abort
+every time (`tools/first_use_probe.sh`, `exit-probe/first-use-8b-4w.csv`: 12 cold loads, 0 aborts). With the
+file brought into the page cache before each cell (owner decision 2026-10-06) the gate `s8-c4e` had no slow load
+and no abort in its 130 runner calls; `loads.csv`, `warm.csv` and `verify-warm.csv` of that session record it
+per run. This is one gate: it removes the condition under which the aborts were seen and does not show that a
+fast load cannot abort. Traced runs were not classified this way (they have no clock samples). The runner was
+not changed. The cause is not known. The symptom points at heap corruption in the runner
 process, which no test of the gate looks for; nothing here locates it, and the traced build is where to look
-first. Of the ten gates run on candidate 4's builds, three completed.
+first. Of the ten gates run on candidate 4's builds during the campaign, three completed; the five of the follow-up are
+in "The committed build reproduces candidate 4" above.
 
 ## What limits further progress
 
@@ -483,12 +603,14 @@ Shares below are of candidate 4's warm dispatch time (`sessions/s5-c4/trace/`): 
   of 643 (write), 646 (copy) and 713 (read). The softmax is within about 10 % of the copy roof; QK^T and attn*V
   have some room. Removing the traffic itself needs the fused node (hook 3) and a faster fused kernel than the
   one written here, which was slower than the three-kernel path.
-- **Reachability**: candidate 4 is not usable from the dev zone. It needs hook 1 (SDPA rows for this device)
-  and hook 2 (softmax name), both in `impl/sarc/`.
+- **Reachability**: resolved by the follow-up of 2026-10-05. Candidate 4 runs from the branch head with
+  `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=4070ti-refine1`; the only release-zone change is the
+  softmax-variant hook. It is still a dev-zone configuration with `kUnverified` rows: nothing is promoted.
 - `copy/view` and elementwise operators are 22 % of the 1B prefill and 16 % of the 8B one with candidate 4.
   They are upstream operators outside both zones.
-- The runner's failure after output (above) limits how much can be gated on this card: a full gate is more
-  likely to lose a step than to complete, mostly through its 12 traced runs.
+- The runner's failure after output (above) limits how much can be gated on this card: without the model file
+  in the page cache a full gate was more likely to lose a step than to complete (3 of the 13 such gates of
+  candidate 4's builds completed, the operator-stopped one aside). The one gate run with the file cached completed.
 
 ## Limits of this study
 
@@ -516,6 +638,9 @@ Shares below are of candidate 4's warm dispatch time (`sessions/s5-c4/trace/`): 
   zone).
 - `sarc/tools/spirv_golden.py` on every build: the 53 shipped variants are unchanged.
 - `tools/test_gate_check.py`: 40 tests pass.
-- `git diff --name-status 6a7cc8cc6 HEAD`: only `glsl/sarc_dev/` (new `4070ti` files), `impl/sarc_dev/Overrides.cpp`
-  (marked `4070ti` blocks), `backends/vulkan/test/sarc_dev/test_llama_microbench.cpp` (a reported error line
-  and an output dump, no verdict or tolerance touched) and this directory.
+- `git diff --name-status 6a7cc8cc6 HEAD`: `glsl/sarc_dev/` (new `4070ti` files), `impl/sarc_dev/Overrides.cpp`
+  (marked `4070ti` blocks), `impl/sarc_dev/Rtx4070tiSdpa.cpp` (new), `backends/vulkan/test/sarc_dev/test_llama_microbench.cpp`
+  (a reported error line and an output dump, no verdict or tolerance touched), this directory, and the
+  release-zone hook: `impl/sarc/Select.h` and `impl/sarc/SdpaCoopmat.cpp`, 8 lines, owner decision 2026-10-05.
+  `check.sh` does not report these two files (`impl/sarc/` is inside the zones it checks against
+  `origin/release/1.5`); they are named here instead.
