@@ -217,8 +217,12 @@ $if PHASE == 0:
   }
 
 $if RED == "subgroup":
-    // orin g: reduced inside the subgroup; one slot per subgroup.
-    shared_max[gl_SubgroupID] = subgroupMax(local_max);
+    // orin g: reduced inside the subgroup by every lane; one slot per subgroup, written by the
+    // elected lane alone (every lane storing the same value is still a data race).
+    const SOFTMAX_ACC_T shared_max_sg = subgroupMax(local_max);
+    if (subgroupElect()) {
+      shared_max[gl_SubgroupID] = shared_max_sg;
+    }
 $else:
     shared_max[worker_id] = local_max;
 
@@ -304,8 +308,12 @@ $if PHASE == 1:
   }
 
 $if RED == "subgroup":
-    // orin g: reduced inside the subgroup; one slot per subgroup.
-    shared_exp_sum[gl_SubgroupID] = subgroupAdd(local_exp_sum);
+    // orin g: reduced inside the subgroup by every lane; one slot per subgroup, written by the
+    // elected lane alone (every lane storing the same value is still a data race).
+    const SOFTMAX_ACC_T shared_exp_sum_sg = subgroupAdd(local_exp_sum);
+    if (subgroupElect()) {
+      shared_exp_sum[gl_SubgroupID] = shared_exp_sum_sg;
+    }
 $else:
     shared_exp_sum[worker_id] = local_exp_sum;
 

@@ -47,7 +47,15 @@ fewer workers is slower in proportion (32 workers 1.3x, 16 2.1x, 8 3.8x). So the
                                    barrier, then every worker combines the subgroups' results in index order
       ..._orin_xp{0,1,2}           MEASUREMENT ONLY, wrong output, never a candidate: 4070ti_nzf that stops after
                                    the bounds check / after pass 1 / after pass 2 (one texel written so that the
-                                   pass is not removed), to see where a row's time goes."""
+                                   pass is not removed), to see where a row's time goes.
+
+REVISION 2026-10-06 (review finding). As first generated, every lane of a subgroup stored the reduced value into
+its subgroup's slot (shared_max[gl_SubgroupID] = subgroupMax(...)): unordered non-atomic writes of one location
+by several invocations, a data race by the Vulkan memory model even though the values are equal. Now the
+reduction is still computed by every lane and stored by the elected lane alone (subgroupElect()); the workgroup
+barriers are unchanged. This changes the SPIR-V of every g variant: the measurements of the g variants up to
+build topic13 (SDPA screens 6 and 7, sdpa-error5, sessions s6-c4 and s7-final, probe/final-g64) are of the first
+form and are kept as measured; candidate 4 (orin_g64) is gated and measured again on the corrected build."""
 import pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from devzone import write_new
@@ -190,8 +198,10 @@ s = sub(s, "#extension GL_EXT_control_flow_attributes : require\n",
         "  #extension GL_KHR_shader_subgroup_basic : require\n  #extension GL_KHR_shader_subgroup_arithmetic : require\n")
 for arr, loc, op in (("shared_max", "local_max", "subgroupMax"), ("shared_exp_sum", "local_exp_sum", "subgroupAdd")):
     s = sub(s, f"  {arr}[worker_id] = {loc};\n",
-            f"$if RED == \"subgroup\":\n    // orin g: reduced inside the subgroup; one slot per subgroup.\n"
-            f"    {arr}[gl_SubgroupID] = {op}({loc});\n$else:\n    {arr}[worker_id] = {loc};\n")
+            f"$if RED == \"subgroup\":\n    // orin g: reduced inside the subgroup by every lane; one slot per subgroup, written by the\n"
+            f"    // elected lane alone (every lane storing the same value is still a data race).\n"
+            f"    const SOFTMAX_ACC_T {arr}_sg = {op}({loc});\n"
+            f"    if (subgroupElect()) {{\n      {arr}[gl_SubgroupID] = {arr}_sg;\n    }}\n$else:\n    {arr}[worker_id] = {loc};\n")
 XP = ("    // orin xp: MEASUREMENT ONLY (wrong output): the kernel ends here.\n"
       "    if (worker_id == 0) {{\n      store_attn_weights_softmax_c4(\n"
       "          VEC4_T(T({v})), 0, s, q_h, context_texel_len, attn_S, Q_H);\n    }}\n    return;\n")
