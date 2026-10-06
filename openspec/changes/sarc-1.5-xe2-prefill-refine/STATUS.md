@@ -1,14 +1,16 @@
 # sarc-1.5-xe2-prefill-refine: status
 
-**2026-10-06 04:40 UTC. The sampled parameter search (review follow-up) is running detached on both B70 cards
-(card test `CARD_SPLIT_OK`: identical rankings, 1.86 times the throughput of one card). 4w: sample and two
-refinement rounds done, a third queued. 8da4w: the sample of 2000 was screened by 04:18 UTC (nothing in it
-beats the candidate 2 tile or even the shipped one); its refinement is running. attn*V and QK^T follow.
-Projected end of the whole search: 2026-10-06 21:00 UTC at the earliest, 2026-10-07 05:00 UTC if every space
-runs both further refinement rounds. A coordinator hold is in place (see "Coordinator hold"). Earlier results
-are unchanged: winner `xe2-refine2` (candidates 1 and 2), +57.5 % geomean over the parent (`s6-final`);
-candidate 1 is `ACCEPTED (reference-error rule, owner decision 2026-10-04)`, not a plain pass; candidates 3 and
-4 passed their gates with no measurable gain. Nothing found by the search is adopted or gated yet.**
+**2026-10-06 06:20 UTC. The sampled parameter search (review follow-up) is running detached on both B70 cards.
+The host was rebooted at 05:57 UTC by someone else (not by this campaign); both queues died with it and were
+restarted at 06:11 UTC; no measured row was lost (see "The reboot of 05:57 UTC"). Done: 4w sample and two
+refinement rounds; 8da4w sample and refinement (nothing beats the candidate 2 tile). Running: 4w round c. Then
+the 8da4w incumbents (requeued after an id collision of mine), attn*V and QK^T. Projected end of the search:
+2026-10-06 21:30 UTC at the earliest, 2026-10-07 05:00 UTC if attn*V and QK^T run both further rounds. Since
+the reboot the `llm-api-*` services are active again; none has taken a card (see "Needs the owner's
+attention"). A coordinator hold is in place. Earlier results are unchanged: winner `xe2-refine2` (candidates 1
+and 2), +57.5 % geomean over the parent (`s6-final`); candidate 1 is `ACCEPTED (reference-error rule, owner
+decision 2026-10-04)`, not a plain pass; candidates 3 and 4 passed their gates with no measurable gain. Nothing
+found by the search is adopted or gated yet.**
 
 Branch `topic/xe2-prefill-refine`, parent `6a7cc8cc6` (head of `topic/780m-prefill-refine`). Host
 `fedora-gpu-eval`. Card `b70-0` (guest PCI `0000:01:00.0`, Vulkan device 0, **`ETVK_DEVICE_INDEX=0`**,
@@ -54,33 +56,39 @@ restart. Card 1 kept screening through the stop. One known waste: card 1 re-scre
 configurations of the validation set, which card 0 already had (about 9 minutes; `sweep_merge.py` keeps card
 0's rows).
 
-**Queues at 04:40 UTC, 2026-10-06** (seed 20261005 everywhere):
+**The reboot of 05:57 UTC.** `last -x` shows a system boot at 05:58; the journal of the previous boot ends at
+05:55 with user sessions logging out from 05:52. This campaign did not cause or request it (no `sudo` beyond
+`systemctl is-active`, no kernel setting, no profiler). The control session lost the host at the same time and
+got it back at 06:01. Both queues and their runners were gone. State found: last rows of `sw2c-4w` at 05:56:52
+(card 0) and of `sw2c-4w-c1` a few seconds earlier; pending jobs intact; `HOLD` absent; Vulkan device order and
+UUIDs unchanged (checked with `vulkaninfo --summary`); models mounted; build image present. Stale
+`run/*.job` / `run/*.top` files removed, queue 1 and then queue 0 restarted at 06:11 with the documented
+command; `027-rounds-4w` and `sw2c-4w-c1` re-entered and continued after the last recorded configuration.
+**Kept:** every recorded row and every build. **Lost:** the two configurations that were being measured when
+the host went down (measured again; their partial logs, if any, are under `raw/<name>/superseded/`), and 14
+minutes.
+
+**Queues at 06:20 UTC, 2026-10-06** (seed 20261005 everywhere):
 
 | job | what | state |
 |---|---|---|
-| `010-stage1-4w`, `016-stage2-4w`, `017-refine-b-4w` | sample 3000 drawn -> 2000 legal, validation, cheap screen; round 1 (326 neighbours, 23 finalists full x 2); round b (319 neighbours, 26 finalists full x 2) | done 2026-10-05 19:59 |
-| `018-card-test` | guard test failed on one timing assertion of the test itself, so the card test did not run | done, superseded by `021` |
-| `019-rounds-4w` | rule check for round c on the cheap numbers: not run (see 4w below; rule extended, `027`) | done |
-| `020-stage1-8da4w` | sample, sweep build `sw1-8da4w`; stopped by me (SIGTERM, rc 130) after the build so that the card test runs first; one interrupted validation run is under `raw/sw1-8da4w/superseded/` | done |
-| `021-card-test` | `test_guard.sh` (41 assertions, pass), `card_test.sh`: `CARD_SPLIT_OK` | done 20:34 |
-| `022-stage1-8da4w` | validation (60 configurations cheap, full x 2) on card 0, 20:34 to 23:00; first split screen stopped by the guard's false positive | rc 76 at 23:00, queue stopped |
-| `023-stage1-8da4w` (card 0), `sw1-8da4w-c1` (card 1) | the cheap screen of the 2000, split by row position; 970 configurations of card 1 merged (scale factors 0.9969 to 1.0030) | done 04:18 |
-| `025-stage2-8da4w` (card 0), `sw2-8da4w-c1` (card 1) | correctness of the top; 323 neighbours of the best 20 + 5 per class, cheap, split; finalists full x 2 | RUNNING since 04:18, about 3 h |
-| `0255-incumbent-8da4w` | the three incumbent tiles as configurations, and their unmeasured one-parameter neighbours (about 35), cheap (see 8da4w below) | pending, about 15 min |
-| `026-rounds-8da4w` | rounds b / c by rule, confirmation tables | pending, up to 5 h |
-| `027-rounds-4w` | round c for 4w (the full confirmation of round b moved 8B w2 by 3 %) | pending, about 1.5 h |
+| `010`, `016`, `017` (4w) | sample 3000 drawn -> 2000 legal, validation, cheap screen; round 1 (326 neighbours, 23 finalists full x 2); round b (319 neighbours, 26 finalists full x 2) | done 2026-10-05 19:59 |
+| `018`, `021` card test | `018` did not run the test (a timing assertion of the guard test itself); `021`: `test_guard.sh` 41 assertions pass, `card_test.sh` `CARD_SPLIT_OK` | done 20:34 |
+| `019-rounds-4w` | rule check for round c on the cheap numbers only: not run; rule extended, see `027` | done |
+| `020`, `022`, `023` stage 1 8da4w | sample, build (`020`, stopped by me after the build so that the card test runs first); validation and the stop of 23:00 (`022`); the split screen of the 2000 (`023` + `sw1-8da4w-c1`) | done 04:18 |
+| `025-stage2-8da4w` (+ `sw2-8da4w-c1`) | correctness of the top, 323 neighbours cheap on both cards, 19 finalists full x 2 | done 05:33 |
+| `0255-incumbent-8da4w`, `026-rounds-8da4w` | incumbents and neighbours with colliding ids: **superseded** (`results/xe2/superseded/sw2i-8da4w-id-collision/`); the round-b check that used them: no round | done 05:39, replaced by `028`, `029` |
+| `027-rounds-4w` (+ `sw2c-4w-c1`) | round c for 4w (the full confirmation of round b moved 8B w2 by 3 %): 320 neighbours cheap on both cards, then correctness and finalists full x 2 | RUNNING (started 05:39, re-entered 06:11 after the reboot); about 07:30 |
+| `028-incumbent-8da4w`, `029-rounds-8da4w` | the three incumbent 8da4w tiles and their 26 unmeasured legal neighbours with ids from 290000; then the round rule and the confirmation tables | pending, about 15 min + up to 4 h if a round runs |
 | `030-stage1-av`, `035-stage2-av`, `036-rounds-av` | every legal attn*V configuration (enumerated) | pending, about 1.5 h + 1.5 h + up to 2.5 h |
 | `040-stage1-qk`, `045-stage2-qk`, `046-rounds-qk` | every legal QK^T configuration (enumerated) | pending, about 5 h + 2 h + up to 3 h |
 
-**Rate with two cards (8da4w screen, 23:05 to 04:18 UTC):** 18.5 s per configuration on card 0 and 18.0 s on
-card 1, i.e. 9.1 s per configuration for the pair (4w on one card: 13.5 s; the 8da4w sample has more slow
-kernels and 12 that ran into the 240 s timeout). The 1940 configurations left after the validation set took
-5 h 13 min including the stop of 23:00 (4 min) and the pause of 02:32 to 02:52. **Projection:** 8da4w stage 2
-ends about 07:30; then, depending on which refinement rounds the 2 % rule starts, the search ends between
-2026-10-06 21:00 UTC (no further round in any space) and 2026-10-07 05:00 UTC (rounds b and c in every space).
-The search started 2026-10-05 05:33 UTC, so the 48-hour mark is 2026-10-07 05:33 UTC: a refinement round that
-would start so late that it cannot end before that mark is not started; it is reported instead with its count
-and projection.
+**Rate with two cards:** 8da4w screen 18.5 s per configuration on card 0 and 18.0 s on card 1, i.e. 9.1 s for
+the pair (12 of the 2000 ran into the 240 s timeout); 4w 13.5 s per card. 8da4w stage 2 took 1 h 15 min.
+**Projection:** 4w round c until about 07:30; 8da4w incumbents 07:45; attn*V 11:00 to 13:30; QK^T 20:30 to
+23:30 without further rounds, up to 2026-10-07 05:00 UTC with both. The search started 2026-10-05 05:33 UTC, so
+the 48-hour mark is 2026-10-07 05:33 UTC: a refinement round that would start so late that it cannot end
+before that mark is not started; it is reported instead with its count and projection.
 
 **Then (not started):** every kernel that beats the incumbent by more than 2 % in a full x 2 confirmation with
 correctness `ok` goes, per shape, into one profile `xe2-refine5` in `tools/gen_xe2.py` (kernel + row + shape
@@ -191,7 +199,7 @@ memory is read from the SPIR-V (limit 46000 bytes; a tile over the device limit 
 | kernel family (space) | parameters | analytically legal | drawn / compile / fit shared memory | planned | done | measured rate |
 |---|---|---:|---|---:|---:|---|
 | 4w linear | body (release, split staging `xe2s`, texel-wise `xe2bx`), M, N, K, subgroup grid, subgroup size, layout, IMG_A, IMG_W, drain, accumulator | 338448 | 3000 / 2851 / 2067 | 2000 + neighbours | 2000 cheap (60 also full x 2); 326 + 319 neighbours cheap; 23 + 26 finalists full x 2; round c pending | 13.5 s per configuration (cheap), 50 s (full), one card |
-| 8da4w linear | body (zpg, bt, xe2bt, zpgtr), M, N, K, grid, subgroup size, zpgtr flags | 44670 | 3000 / 2333 / 2093 | 2000 + neighbours | 2000 cheap (60 also full x 2; 970 on card 1); 323 neighbours running | 18.3 s per configuration and card (cheap), 9.1 s for the two cards |
+| 8da4w linear | body (zpg, bt, xe2bt, zpgtr), M, N, K, grid, subgroup size, zpgtr flags | 44670 | 3000 / 2333 / 2093 | 2000 + neighbours | 2000 cheap (60 also full x 2; 970 on card 1); 323 neighbours cheap; 19 finalists full x 2; incumbents pending | 18.3 s per configuration and card (cheap), 9.1 s for the two cards |
 | attn*V | family (sweep, ml, xe2), M, N, K, grid, subgroup size | 1131 | all drawn; checked when its build runs | every legal one (about 850) | 0 | about 9 s expected |
 | QK^T | family (sweep, pk, xe2, xe2c), M, N, K, grid, subgroup size, NO_MASK_FILL | 4536 | all drawn; checked when its build runs | every legal one (about 3400) | 0 | about 9 s expected |
 
@@ -257,7 +265,7 @@ more than 2 % faster than the best of round 1's confirmation; no round d.
   less 4w linear time, i.e. about 1.5 to 3 % of a 4w cell: at the edge of the noise band. It is a candidate
   for `xe2-refine5` after round c; nothing is gated yet.
 
-### 8da4w (`results/xe2/sweep/8da4w/`; stage 1 done, stage 2 running)
+### 8da4w (`results/xe2/sweep/8da4w/`; sample and refinement done, incumbents pending)
 
 - **Validation of the cheap mode** (`validation.csv`; 59 configurations with all shapes, cheap once against
   the median of two full runs; threshold 0.9, as for 4w, this time fixed beforehand): Spearman rank correlation
@@ -287,7 +295,14 @@ more than 2 % faster than the best of round 1's confirmation; no round d.
   `zpgtr` body with its five flags (42240 of 44670); the three other bodies are 2.5 to 4 times faster at the
   median. **Pair interactions** (`interactions-sample.csv`): M x `sy` 2.6 %, K x `sy` 2.2 %, M x N 2.1 %,
   M x B_PAIR 1.9 %, M x DRAIN_UNROLL 1.7 %, N x A_RAW 1.6 %; the rest smaller.
-- **The incumbents in the search** (`tools/sweep_incumbent.sh`, job `0255`): because the kernels already in use
+- **Refinement and confirmation** (`sw2-8da4w`: 323 legal one-parameter neighbours of the best 20 + 5 per
+  class, cheap on both cards; `sw3-8da4w`: 19 finalists full x 2 against the candidate 2 tile, `confirm.csv`):
+  the best neighbour is 1.012x of the shipped tile on the layer-weighted score (`250192`, a `zpgtr` 128 x 128
+  K = 64 tile). In the full confirmation the best configuration per (model, shape) is 0.78 to 0.90x of the
+  candidate 2 tile; the shipped tile is 0.72 to 0.88x of it and the candidate 4 tile 0.71 to 1.03x (1.033x
+  only on 1B w1/w3, the shape candidate 4 was gated for, without an end-to-end gain). The sample and its
+  refinement therefore contain no 8da4w candidate.
+- **The incumbents in the search** (`tools/sweep_incumbent.sh`, job `028`; the first attempt, `0255`, numbered its configurations in the id range of `sw2-8da4w` and is superseded): because the kernels already in use
   beat the whole sample, a refinement that starts from the sample's best 20 never visits their neighbourhood.
   The candidate 2 tile, the candidate 4 tile and the shipped tile are therefore added as configurations
   together with their unmeasured one-parameter neighbours (build `sw2i-8da4w`), and the rule-based rounds then
@@ -296,6 +311,15 @@ more than 2 % faster than the best of round 1's confirmation; no round d.
 
 ## Needs the owner's attention
 
+- **Since the reboot of 2026-10-06 05:57 UTC eight `llm-api-*` services are `active (running)`**
+  (`llm-api-coder`, `-flash`, `-qwen36`, `-qwen36vlm`, `-qwen38`, `-qwen38fp8`, `-qwen38heretic`,
+  `-qwen38uncensored`: "Bounded request admission for ..."). They came up with the boot; this campaign did not
+  start them and does not stop them. At 06:10 UTC no process held a DRM file of either B70 and
+  `llama-server`, `comfyui`, `vllm`, `ollama` were inactive, so no card is taken and the search continues. If a
+  request makes one of them load a model on a card, the guard stops the queue of the job that sees it (rc 76,
+  `QUEUE_STOPPED`), and I stop using that card and report, as the campaign section says. If these services are
+  meant to stay off for the campaign, they need to be stopped again by the owner.
+- `nvtop` did not come back after the reboot; the paragraph below describes the sessions before it.
 - **`nvtop` (pid 1952, pts/0, started 17:01 UTC, before the campaign) holds a DRM file of both B70 cards.** It
   is not a workload: every DRM client it owns shows zero engine cycles and zero GPU memory. The campaign guard
   records it per session as an idle monitor (`env.txt`: `idle monitors ... 1952:nvtop`) and would treat it as a
