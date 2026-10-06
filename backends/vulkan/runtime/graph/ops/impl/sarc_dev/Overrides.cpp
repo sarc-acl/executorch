@@ -1152,7 +1152,20 @@ std::optional<Choice> select_m51(
   const std::optional<Choice> before =
       select_before_m51(device, shape, table_choice);
   const ProfileM51* active = active_profile_m51();
-  if (active == nullptr || !before.has_value()) {
+  if (active == nullptr) {
+    return before;
+  }
+  std::optional<Choice> served = before;
+  if (!served.has_value() && shape.op == Op::kDq8caLinear &&
+      shape.int8_layout != Int8Layout::kAny) {
+    // The activation layout was fixed by the kernel chosen for the build-time
+    // shape, which may be a pick of the other layout than the table row's:
+    // ask again with the layout open. The fit check below keeps the layout.
+    ShapeInfo any_layout = shape;
+    any_layout.int8_layout = Int8Layout::kAny;
+    served = select_before_m51(device, any_layout, select_table(device, any_layout));
+  }
+  if (!served.has_value()) {
     return before;
   }
   for (size_t i = 0; i < active->count; ++i) {
