@@ -125,6 +125,13 @@ restart and without losing a running job (every unit sources `tools/host.sh` afr
   card; nothing new starts; one `HELD` line per waiting unit of both cards once idle; a unit arriving later and
   a unit inside a tool that already holds the pair lock wait too; after `HOLD` is removed every unit runs and
   `HELD` is gone.
+- Holds obeyed: from 2026-10-06 03:10 UTC on each is recorded in `.artifacts/hold.log` (the `HELD` line and
+  the release time). Before that there is one that the result rows show but no log records: both cards
+  started nothing between 02:32 UTC (card 1) / 02:36 UTC (card 0, after its running configuration ended) and
+  02:52:12 / 02:52:16 UTC, when both continued with the next configuration of their lists. I did not create
+  `HOLD`; I take this to be the coordinator's use or test of it. No row was lost or repeated. The
+  configuration that was running on card 0 when it began (`202040`) ended in its 240 s timeout (rc 124) at
+  02:35:58, before `HELD` could be written; it is one of 10 timeouts of this screen and is not re-measured.
 - Not done on purpose: the guard does not know the coordinator's measurement and was not taught to. CPU-only
   analysis steps between two units (`sweep_analyze.py`, seconds to a minute) are not GPU jobs and can still
   finish during a hold; no GPU job and no build is started by hand while `HELD` exists.

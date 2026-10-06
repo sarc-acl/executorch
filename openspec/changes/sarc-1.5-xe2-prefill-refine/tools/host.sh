@@ -126,6 +126,7 @@ pair_lock() { [[ -n ${XE2_PAIR_HELD:-} ]] && return 0; mkdir -p $RUN; exec 7>>$R
 #     no measurement and no build of this campaign is running on either card (it must get run/pair.lock
 #     exclusively for that moment, or be running under a tool that holds it), so HELD never appears while the
 #     other card still works; then polls once a minute, and when HOLD is gone removes HELD and returns.
+#     Every hold that was obeyed is recorded in <artifacts>/hold.log (the HELD line and when it was released).
 #   gpu_begin shared|excl <what>: pair_lock, then the hold check WITH the lock held (so a job cannot slip in
 #     between the check and its start); under a hold the lock is given back first. Every tool that measures or
 #     builds starts with it: gl.sh before each GPU process (the smallest unit: one configuration), the session,
@@ -139,7 +140,7 @@ coordinator_hold() { local said=0 line
     fi
     if [[ $said == 1 ]]; then sleep ${XE2_HOLD_POLL:-60}; else sleep 5; fi
   done
-  [[ $said == 1 ]] && rm -f $HELD; return 0; }
+  [[ $said == 1 ]] && { rm -f $HELD; echo "$line; released $(date -u +%FT%TZ)" >> $A/hold.log; }; return 0; }
 gpu_begin() { local mode=$1; shift
   while :; do pair_lock $mode; [[ -e $HOLD ]] || return 0
     [[ -n ${XE2_PAIR_OWN:-} ]] && { exec 7>&-; unset XE2_PAIR_HELD XE2_PAIR_OWN; }
