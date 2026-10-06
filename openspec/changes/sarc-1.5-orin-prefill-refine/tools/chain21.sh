@@ -12,10 +12,11 @@
 #   probe        41-prompt real-text logits of the corrected final stack, default and tiled, then the comparison
 #                and the reference-error rule (probe/final-g64r/; the parent's two arms are those of chain13).
 # The coordinator uses the device under the same gpu-lab lock for a separate measurement: the chain first waits,
-# without a time limit, until the lock is free, and every tool takes the lock for each GPU job as before.
+# without a time limit, until the lock is free and no process of ~/llamacpp-compare is left, and every tool takes the lock for each GPU job as before.
 cd "$(dirname "$0")"; source ./common.sh
 [[ -n ${1:-} ]] && while ! grep -q "^DONE\|^KILLED" $A/jobs/$1.status; do sleep 20; done
-echo "== $(date -u +%FT%TZ) waiting for the gpu-lab lock"; flock "$HOME/.cache/gpu-lab/lock-$LOCK" true; echo "== $(date -u +%FT%TZ) lock free"
+echo "== $(date -u +%FT%TZ) waiting for the coordinator's session and the gpu-lab lock"
+while :; do flock "$HOME/.cache/gpu-lab/lock-$LOCK" true; pgrep -f 'llamacpp-compare/' > /dev/null || break; sleep 30; done; echo "== $(date -u +%FT%TZ) lock free"
 step() { echo "== $(date -u +%FT%TZ) $*"; "$@"; local rc=$?; echo "== rc=$rc $1"; [[ $rc == 70 || $rc == 75 || $rc == 76 ]] && { echo "CHAIN_STOPPED rc=$rc"; exit $rc; }; return 0; }
 ok() { grep -q '^GATE_ACCEPTED' $A/stage/$1/gate.done 2>/dev/null; }
 U="ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE"; NZF=ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf; G=ET_VK_SARC_SOFTMAX_VARIANT=orin_g64

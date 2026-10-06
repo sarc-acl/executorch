@@ -1,10 +1,13 @@
 # STATUS: sarc-1.5-orin-prefill-refine
 
-**2026-10-06 03:45 UTC. STOP RULE MET, CAMPAIGN CLOSED. Final stack (candidates 1h + 2 + 3 + 4) against the
-pristine parent: +66.70 % geomean (`s7-final`), +66.77 % over the original `dev/1.5` numbers. Candidates 3 and 4,
-two consecutive gated candidates, gained +0.82 % and +0.41 % over their parents. The last evidence job
-(`chain20`, real-text logits of the final stack) ended at 03:28 UTC: reference-error rule MET, no differing
-next-token item. Nothing is running on either device or on the workstation.**
+**2026-10-06 03:55 UTC. REOPENED by a review finding: candidate 4 (`orin_g64`) is being built and gated again.
+In build `topic13` every lane of a subgroup stored the subgroup's reduced value into the same shared slot
+(`shared_max[gl_SubgroupID] = subgroupMax(...)`, likewise the sum): unordered non-atomic writes of one location,
+a data race by the Vulkan memory model even though the values are equal. Fixed in `aa66ea1e6` (the elected lane
+alone stores; barriers unchanged). Everything measured with `orin_g64` on `topic13` (`s6-c4`, `s7-final`,
+`sdpa-error5`, `probe/final-g64`, SDPA screens 6 and 7) is kept as measured and is NOT evidence for the corrected
+kernel; candidates 1h, 2 and 3 are not affected (they do not use the `g` softmax). The numbers below are those
+of `topic13` until the re-gate (`s9-c4r`, `s10-final`) has ended.**
 
 All times are UTC from `date -u`.
 
@@ -37,20 +40,23 @@ of 2026-10-05.
 
 ## Running now
 
-Nothing. `duck-naughty`: no job of this campaign (`chain20` `DONE rc=0 2026-10-06T03:28:12Z`); `duck-stable`:
-nothing, not used any more; workstation: nothing.
-
-From 03:40 UTC, for about three hours, the coordinator uses `duck-naughty` under this campaign's gpu-lab lock for
-a separate measurement the owner ordered (ExecuTorch against llama.cpp; processes under `~/llamacpp-compare`).
-That is not a job of this campaign; nothing under `~/hmz-sarc-orin` is touched, and this campaign starts no GPU
-job there.
+- Workstation, detached (`tools/wsrun.sh`, job `build-topic14`, since 03:53 UTC, under the desktop build lock):
+  cross-build of tag `topic14` from `aa66ea1e6`, then `logits_dump` for it.
+- `duck-naughty`: from 03:40 UTC, for about three hours, the coordinator uses the device under this campaign's
+  gpu-lab lock for a separate measurement the owner ordered (ExecuTorch against llama.cpp; processes under
+  `~/llamacpp-compare`). Not a job of this campaign. Queued behind it: `chain21` (`tools/chain21.sh`), which
+  waits on the lock without a time limit and then runs `sdpa-error6`, the gate `s9-c4r` (candidate 4 over
+  candidates 1h + 2 + 3, both arms on `topic14`), `s10-final` (corrected stack against the pristine parent),
+  `s11-noenv`, and the 41-prompt real-text probe (`probe/final-g64r/`). About 6.5 hours of device time.
+- `duck-stable`: nothing, not used any more.
 
 ## Next step
 
-None in this campaign. The remaining levers (a fused attention kernel, an Orin-specific linear kernel, the
-upstream kernels) are outside its reach or scope and are listed in `proposal.md`.
+When `chain21` has ended: pull, record candidate 4 on the corrected build under the reference-error rule with
+its differing-item list, reconfirm the stop rule from `s9-c4r`, replace the final table by `s10-final`, commit,
+push.
 
-## Final stack: real-text evidence under the reference-error rule (`results/orin/probe/final-g64/`)
+## Final stack on `topic13` (first form of `orin_g64`): real-text evidence under the reference-error rule (`results/orin/probe/final-g64/`)
 
 `tools/chain20.sh` on the primary, build `topic13`, the final environment, default and tiled; the parent's two
 arms are those of `chain13` (pristine parent build, same 41 prompts, `prompts_ids.txt` unchanged). The gate of
