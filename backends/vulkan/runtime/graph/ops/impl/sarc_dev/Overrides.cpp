@@ -1075,7 +1075,7 @@ struct ProfileM51 {
   size_t count;
 };
 // Screen of 2026-10-06 (texture3d, 1B/3B/8B shapes, 3 rounds): the 780M's
-// texel-wise 8da4w staging (zpg_bt) is at least 3 % faster than the xclipse
+// texel-wise 8da4w staging (zpg_bt) is faster than the xclipse by the RULES R8 margin
 // zpgtr row on every shape; on the 4w shapes with K = 4096 (8B w1_w3, wk_wv,
 // wq_wo) t128x128k32g42s32f32xp and, slightly faster, the same tile with
 // texel-wise B staging (bx); no other tile on any shape.

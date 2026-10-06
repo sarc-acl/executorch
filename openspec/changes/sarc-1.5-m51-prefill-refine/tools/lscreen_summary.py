@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """lscreen_summary.py <screen csv> [incumbent token=base]: per shape (model, op, M, K, N), each token's kernel time
 in every round relative to the incumbent's in the same round, the dispatched kernel, and the screen verdict of
-RULES R8: a token is selected for a shape only if it is at least 3 % faster than the incumbent in every round and
+RULES R8: a token is selected for a shape only if it beats the incumbent by the R8 margin in every round and
 dispatched its own kernel (not the incumbent's); among those the fastest median wins; a tie keeps the incumbent."""
 import collections, csv, statistics as st, sys
 rows = list(csv.DictReader(open(sys.argv[1]))); inc = sys.argv[2] if len(sys.argv) > 2 else "base"
