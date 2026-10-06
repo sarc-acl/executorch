@@ -1,6 +1,6 @@
 # STATUS: RX 7600 prefill campaign
 
-Updated 2026-10-06 13:30 UTC. Artifacts: `/local/yanwen.xu/campaign-rx7600/.artifacts/`.
+Updated 2026-10-06 15:20 UTC. Artifacts: `/local/yanwen.xu/campaign-rx7600/.artifacts/`.
 
 ## Running now
 
@@ -21,8 +21,40 @@ Updated 2026-10-06 13:30 UTC. Artifacts: `/local/yanwen.xu/campaign-rx7600/.arti
 | 8da4w phase timing (release tile `zpg_t128x64k32g42s32`, twin `sarc_dev_prof_dq8ca_zpg_t128x64k32g42s32p`) | done (`results/rx7600/phases/parent-8da4w.csv`): per wave barrier 21 to 23 %, fetch 11 to 17 %, MMA 35 to 38 %, LDS store 21 to 23 % (1B wk_wv: 18 / 13 / 26 / 37 %). Staging (fetch + LDS store) costs as much as the MMA, as on the 780M before its candidates 1 and 2 |
 | candidate 1 (softmax `r3`) | **gate passed**, **+1.48 % geomean: under 2 % (the first)**. `verify.sh` identical to `s0` (32 / 32 lines, rates removed); SDPA tiers `all` / `extended` / `full` 12 passes each, 0 mismatches, `pairing=ok`; SDPA output **byte-identical** to the parent in all 21 cases (`all`, `extended`, `peaked`, `full`); traces: softmax 32.4 -> 26.8 ms (1B), 42.7 -> 35.4 (3B), 64.2 -> 53.1 (8B) |
 | fused-variant screen (kernel level, 3 rounds, `results/rx7600/fused/`) | done: no variant at least 3 % faster in every round; the 780M's `fused3_d64_t32x32g11s32rko` / `fused3_d128_t16x64g11s32rko` stay (others 0.76 to 1.62 x, not consistently faster) |
-| candidate 2 (fused attention kernel) | gate running (`c2-fused`). A first start at 13:14 UTC ran without the fused kernel (the screen CSV wrote the variant pair unquoted, the pick script failed, the variable was empty); stopped within 7 minutes before any cell finished, moved to `superseded/c2-empty-fused-variable/`, fixed, restarted 13:22 UTC with a guard |
+| candidate 2 (fused attention kernel) | timed session done: **+18.22 % geomean** over candidate 1, every cell outside the band, next token SAME in all 18 items; SDPA tiers (`all`, `extended` 12/12 passed), `full` running, then `verify.sh`, traces, reference-error evidence, logits probe (`c2-fused`). A first start at 13:14 UTC ran without the fused kernel (the screen CSV wrote the variant pair unquoted, the pick script failed, the variable was empty); stopped within 7 minutes before any cell finished, moved to `superseded/c2-empty-fused-variable/`, fixed, restarted 13:22 UTC with a guard |
 | coordinator hold | tested 07:21 UTC (`results/rx7600/hold-test.txt`); watcher running |
+
+### Candidate 2: fused attention kernel (session `c2-fused`, 13:24 to 14:15 UTC)
+
+Both arms the parent binary. Parent = candidate 1 (`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_780M_PROFILE=c7`); the candidate
+adds `ET_VK_SARC_780M_SDPA_FUSED=fused3_d64_t32x32g11s32rko,fused3_d128_t16x64g11s32rko` (the 780M's one-pass fused
+kernel and its K / V copy pass; the screen kept the 780M's variants). Tok/s, median of 5 valid runs per arm; all 60
+timed runs valid (only untimed next-token runs carry `clock_low` / `thermal_throttle`):
+
+| cell | parent (candidate 1) | candidate 2 | gain | spread parent / cand | next token (2048 / real / check) |
+|---|---:|---:|---:|---|---|
+| 1B 4w | 8031.37 | 10395.90 | **+29.44 %** | 0.39 / 0.51 % | SAME / SAME / SAME |
+| 1B 8da4w | 7529.41 | 9481.48 | **+25.93 %** | 0.74 / 3.17 % | SAME / SAME / SAME |
+| 3B 4w | 3340.95 | 3930.90 | **+17.66 %** | 0.16 / 0.19 % | SAME / SAME / SAME |
+| 3B 8da4w | 3117.20 | 3592.98 | **+15.26 %** | 0.46 / 1.24 % | SAME / SAME / SAME |
+| 8B 4w | 1532.93 | 1723.91 | **+12.46 %** | 0.07 / 0.08 % | SAME / SAME / SAME |
+| 8B 8da4w | 1416.32 | 1555.05 | **+9.80 %** | 0.14 / 0.23 % | SAME / SAME / SAME |
+
+Geomean **+18.22 %**. The 3.17 % spread of 1B 8da4w is one slower candidate run (r5, 222 ms against 215 to 217 ms);
+the median is unaffected. The parent arm reproduces candidate 1's candidate arm within 0.4 % in every cell.
+Clock 2498 to 2592 MHz, start 42 to 54 C. The tiers dispatch `sarc_dev_780m_sdpa_fused3_d64_t32x32g11s32rko` (head_dim
+64) and `..._d128_t16x64g11s32rko` (128), `pairing=ok`.
+
+Shared memory of the ported kernels, read before the gate (R7): `r3` (softmax): every worker writes only its own
+slot of `shared_max` / `shared_exp_sum`, every cross-worker read follows `barrier()`; clean. `kvt` (copy pass): no
+shared memory. `fused3`: no two invocations write the same shared location (each lane writes its own (row,
+segment) slots of `Psh`, `Rsh`, `Dsh`; the stores of whole tiles are cooperative); but a lane reads slots that other
+lanes of the same subgroup wrote, ordered only by `memoryBarrierShared()`, without `subgroupBarrier()`. The
+workgroup is one subgroup and the code relies on it executing in lockstep. Under the Vulkan memory model that is
+formally unsynchronised; on RDNA3 (one wave, no divergent branch between the write and the read) it is benign, and
+every correctness pass agrees. The 780M uses the same kernel. **Finding for the owner, not changed here:** adding
+`subgroupBarrier()` after each `memoryBarrierShared()` in `sarc_dev_780m_sdpa_fused3.glsl` would make it formally
+correct, but that file is the 780M campaign's.
 
 ### Candidate 1: softmax `r3` (session `c1-softmax`, 09:44 to 10:37 UTC)
 
