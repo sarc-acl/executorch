@@ -70,7 +70,8 @@ gpu_monitors() { local p; for p in $(grep -l -s -E "^drm-pdev:[[:space:]]*($PDEV
 # inline_shell <pid>: a shell running an inline command (sh -c "..."). Its command line is text, not a program
 # name: the roofline run of 2026-10-04 21:46 was stopped because an operator shell's command text contained a
 # watched name. Such a process is still caught by the DRM rule if it opens the card.
-inline_shell() { local -a a; mapfile -d '' -t a < /proc/$1/cmdline 2>/dev/null || return 1
+inline_shell() { local -a a; { mapfile -d '' -t a < /proc/$1/cmdline; } 2>/dev/null || return 1
+  [[ ${#a[@]} -gt 0 ]] || return 1   # the process ended meanwhile (under `set -u` the test below then wrote an error into the run's log: s8-c6)
   [[ ${a[0]##*/} =~ ^(bash|sh|dash|zsh|fish)$ && ( ${a[1]:-} == -c || ${a[2]:-} == -c ) ]]; }
 campaign_tops() { local f p s; for f in $RUN/card*.job $RUN/queue*.top; do [[ -e $f ]] || continue; read -r p s < $f || continue
   [[ -n $p && $(cut -d' ' -f22 /proc/$p/stat 2>/dev/null) == "$s" ]] && printf '%s ' $p; done; }
