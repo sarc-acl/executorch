@@ -35,7 +35,7 @@ IFS=, read -ra MS <<< "$MODELS"; IFS=, read -ra QS <<< "$SCHEMES"
 {
   date -u; echo "reps=$REPS extra=$EXTRA prompt=$PROMPT tokens=$TOKENS clkmin=$CLKMIN clkn=$CLKN coolmax=$COOLMAX coold=$COOLD"
   for b in parent cand; do echo "$b env: $(cat $D/$b/env | tr '\n' ' ')"; echo "$b commit: $(cat $D/$b/COMMIT)"; done
-  A shell "cd $DS && sha256sum parent/llama_main cand/llama_main parent/$PROMPT parent/prompt_check.txt parent/r1304.txt" < /dev/null
+  A shell "cd $DS && sha256sum parent/llama_main cand/llama_main parent/$PROMPT parent/prompt_check.txt parent/r1329.txt" < /dev/null
   A shell "getprop ro.soc.model; uname -r; md5sum /vendor/lib64/hw/vulkan.samsung.so; cat /sys/class/devfreq/23400000.sgpu/governor; cat /sys/kernel/gpu/gpu_reset_count" < /dev/null
   echo "clocks: $(clocks)"; echo "others: $(gpu_others)"
   A shell 'for p in /sys/devices/system/cpu/cpufreq/policy*; do echo "$p $(cat $p/scaling_governor) min=$(cat $p/scaling_min_freq) max=$(cat $p/scaling_max_freq)"; done' < /dev/null
@@ -134,11 +134,11 @@ for m in "${MS[@]}"; do for q in "${QS[@]}"; do
     (( r > REPS + EXTRA )) && { echo "CELL $m $q: fewer than $REPS valid runs after $EXTRA extra pairs"; break; }
   done
   if [[ $CHECK == 1 ]]; then
-    for c in prompt_check.txt:check:1972 r1304.txt:unaligned:any; do IFS=: read -r cp ct cn <<< "$c"
+    for c in prompt_check.txt:check:1972 r1329.txt:unaligned:any; do IFS=: read -r cp ct cn <<< "$c"
       run1 $m $q parent 0 0 $cp $ct "$cn"; run1 $m $q cand 0 0 $cp $ct "$cn"; done
     x=(); for k in "prefill:r1" "check:r0" "unaligned:r0"; do IFS=: read -r kt kr <<< "$k"
       if cmp -s <(gen "logs/$kt-$m-$q-parent-$kr.log") <(gen "logs/$kt-$m-$q-cand-$kr.log"); then x+=(SAME); else x+=(DIFFER); fi; done
-    echo "$m,$q,$PROMPT:${x[0]},prompt_check.txt:${x[1]},r1304.txt:${x[2]}" >> "$O/nexttoken.csv"; echo "nexttoken $m $q ${x[*]}"
+    echo "$m,$q,$PROMPT:${x[0]},prompt_check.txt:${x[1]},r1329.txt:${x[2]}" >> "$O/nexttoken.csv"; echo "nexttoken $m $q ${x[*]}"
   fi
 done; done
 echo "others_end: $(gpu_others)" >> "$O/env.txt"; echo "clocks_end: $(clocks)" >> "$O/env.txt"; date -u > "$O/done.txt"; echo E2E_DONE
