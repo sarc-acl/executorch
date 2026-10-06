@@ -1,14 +1,12 @@
 # STATUS: RX 7600 prefill campaign
 
-Updated 2026-10-06 10:45 UTC. Artifacts: `/local/yanwen.xu/campaign-rx7600/.artifacts/`.
+Updated 2026-10-06 13:30 UTC. Artifacts: `/local/yanwen.xu/campaign-rx7600/.artifacts/`.
 
 ## Running now
 
-- `chain0.sh` (detached, `.artifacts/logs/chain0.status`): `s0-parent-verify` (unmodified `verify.sh` on the parent
-  build, `ET_VK_SARC_UNVERIFIED=1`), then the SDPA tiers of the parent, one pass each (control).
-- `chain1.sh` (waits for chain0): logits_probe build; **candidate 1** gate (softmax `r3`, `ET_VK_SARC_780M_PROFILE=c7`,
-  on the parent binary) with its bit-identity evidence; then the kernel-level screen of the fused attention variants.
-- `chain2.sh` (waits for chain1): kernel-level screens of 21 4w and 24 8da4w linear kernels on the twelve real shapes.
+- `chain3.sh` (detached, `.artifacts/logs/chain3.status`): **candidate 2** gate (fused attention kernel on top of
+  candidate 1; started 13:22 UTC), its reference-error evidence (D3) and real-text logits probe; then the
+  kernel-level screens of 21 4w and 24 8da4w linear kernels.
 - `hold.sh watch` (coordinator hold watcher).
 
 ## State
@@ -21,7 +19,9 @@ Updated 2026-10-06 10:45 UTC. Artifacts: `/local/yanwen.xu/campaign-rx7600/.arti
 | calibration (`tools/thresholds.txt`) | clock floor **2420 MHz**, **5** repeats, thermal mask unchanged (no timed run carried a temperature bit) |
 | `s0-parent-verify` | **done** 09:34 UTC: the parent's own status, the reference for every candidate: `correctness rc=1` and `4w buffer` production-diff FAILED (1B, 3B, 8B) in the release-1.5 fallback kernels (buffer I/O), as on 2026-09-28 and on the 7900 XTX; all texture3d and 8da4w production-diff cases ALL PASSED; default vs tiled SAME; decode 31 tokens. SDPA tiers of the parent (table kernels): `all` 4/4, `extended` 8/8, `full` 4/4, 0 mismatches |
 | 8da4w phase timing (release tile `zpg_t128x64k32g42s32`, twin `sarc_dev_prof_dq8ca_zpg_t128x64k32g42s32p`) | done (`results/rx7600/phases/parent-8da4w.csv`): per wave barrier 21 to 23 %, fetch 11 to 17 %, MMA 35 to 38 %, LDS store 21 to 23 % (1B wk_wv: 18 / 13 / 26 / 37 %). Staging (fetch + LDS store) costs as much as the MMA, as on the 780M before its candidates 1 and 2 |
-| candidate 1 (softmax `r3`) | timed session done (`c1-softmax`): **+1.48 % geomean**, under 2 %; SDPA tiers, `verify.sh`, traces and bit-identity evidence running |
+| candidate 1 (softmax `r3`) | **gate passed**, **+1.48 % geomean: under 2 % (the first)**. `verify.sh` identical to `s0` (32 / 32 lines, rates removed); SDPA tiers `all` / `extended` / `full` 12 passes each, 0 mismatches, `pairing=ok`; SDPA output **byte-identical** to the parent in all 21 cases (`all`, `extended`, `peaked`, `full`); traces: softmax 32.4 -> 26.8 ms (1B), 42.7 -> 35.4 (3B), 64.2 -> 53.1 (8B) |
+| fused-variant screen (kernel level, 3 rounds, `results/rx7600/fused/`) | done: no variant at least 3 % faster in every round; the 780M's `fused3_d64_t32x32g11s32rko` / `fused3_d128_t16x64g11s32rko` stay (others 0.76 to 1.62 x, not consistently faster) |
+| candidate 2 (fused attention kernel) | gate running (`c2-fused`). A first start at 13:14 UTC ran without the fused kernel (the screen CSV wrote the variant pair unquoted, the pick script failed, the variable was empty); stopped within 7 minutes before any cell finished, moved to `superseded/c2-empty-fused-variable/`, fixed, restarted 13:22 UTC with a guard |
 | coordinator hold | tested 07:21 UTC (`results/rx7600/hold-test.txt`); watcher running |
 
 ### Candidate 1: softmax `r3` (session `c1-softmax`, 09:44 to 10:37 UTC)
@@ -40,6 +40,23 @@ invalid:
 | 8B 8da4w | 1401.78 | 1414.36 | +0.90 % | 0.27 / 0.14 % | SAME / SAME / SAME |
 
 Geomean **+1.48 %**; inside the band in four cells. Clock 2494 to 2590 MHz, start 46 to 52 C.
+
+Where the time goes (warm ETDumps of `c1-softmax`, parent arm, ms per 2048-token prefill; `results/rx7600/sessions/c1-softmax/trace/`):
+
+| family | 1B 4w | 1B 8da4w | 3B 4w | 3B 8da4w | 8B 4w | 8B 8da4w |
+|---|---:|---:|---:|---:|---:|---:|
+| total (dispatches) | 248.8 | 265.4 | 609.1 | 652.4 | 1335.3 | 1446.9 |
+| linear GEMM | 143.0 | 153.2 | 416.6 | 445.6 | 1031.8 | 1111.2 |
+| attention QK^T + softmax + attn*V | 76.3 | 75.9 | 127.9 | 127.1 | 192.7 | 191.9 |
+| elementwise (upstream) | 19.8 | 19.0 | 37.5 | 35.9 | 70.9 | 70.6 |
+| 8-bit activation quantize (upstream) | - | 7.7 | - | 17.2 | - | 34.1 |
+| copy / view / other | 6.7 | 6.5 | 18.8 | 18.6 | 26.7 | 26.3 |
+
+In-kernel phase timing (`results/rx7600/phases/`, cycles of one wave): the 8da4w release tile spends 35 to 38 % in
+the MMA and as much in staging (fetch 11 to 17 %, LDS store 21 to 23 %) plus 21 to 23 % at barriers; the 780M's 4w
+tiles on this card (the release 4w tile here has no shader-clock twin) spend 48 to 57 % (`t128x128`) or about 32 %
+(`t128x256`) of a wave at the barrier and 27 to 38 % in the MMA, with fetch issue at 2 to 4 %: waves wait for
+staged data, i.e. the global-load latency is not hidden by the single-buffered staging.
 
 ### Baseline and A/A (`aa2`, 07:34 to 09:24 UTC; `results/rx7600/sessions/aa2/`)
 
