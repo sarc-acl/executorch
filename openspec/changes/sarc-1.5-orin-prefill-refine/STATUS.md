@@ -1,29 +1,53 @@
 # STATUS: sarc-1.5-orin-prefill-refine
 
-**2026-10-06 00:05 UTC. STOP RULE MET; the closing measurements are running. Four candidates are accepted, in
-this order: 1h (SDPA prefill kernels + fp32 softmax, +57.8 % over the parent), 2 (8da4w linear, +2.84 % over the
-parent alone), 3 (4w linear tiles, **+0.82 %** over its parent), 4 (softmax with subgroup reductions,
-**+0.41 %** over its parent, inside the +-2 % band). Candidates 3 and 4 are two consecutive gated candidates
-below +2 %. Candidate 1 (release softmax) stays REJECTED. The branch is not pushed yet.**
+**2026-10-06 01:30 UTC. STOP RULE MET. Final stack (candidates 1h + 2 + 3 + 4) against the pristine parent:
++66.70 % geomean (`s7-final`), +66.77 % over the original `dev/1.5` numbers. Candidates 3 and 4, two consecutive
+gated candidates, gained +0.82 % and +0.41 % over their parents. One evidence job is still running (real-text
+logits of the final stack); the branch is pushed when it has ended.**
 
 All times are UTC from `date -u`.
 
+## Final result (`results/orin/sessions/s7-final/`)
+
+`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine5 ET_VK_SARC_SOFTMAX_VARIANT=orin_g64` on build
+`topic13` (`fd44f8011`) against the pristine parent `6a7cc8cc6`, same session, arms interleaved, tok/s, median
+of 5 valid runs per arm (60 timed runs, all valid, 612 MHz, repeat spread at most 0.28 %):
+
+| cell | parent | final | gain | `dev/1.5` (`cells.csv`) | gain over `dev/1.5` | next token (4 prompts) |
+|---|---:|---:|---:|---:|---:|---|
+| 1B 4w | 890.82 | 1490.54 | +67.3 % | 890.82 | +67.3 % | SAME |
+| 1B 8da4w | 824.14 | 1380.98 | +67.6 % | 822.82 | +67.8 % | SAME |
+| 3B 4w | 360.44 | 629.38 | +74.6 % | 360.37 | +74.7 % | SAME |
+| 3B 8da4w | 320.30 | 570.95 | +78.3 % | 320.30 | +78.3 % | SAME |
+| 8B 4w | 189.77 | 295.61 | +55.8 % | 189.74 | +55.8 % | SAME |
+| 8B 8da4w | 170.53 | 269.19 | +57.9 % | 170.43 | +57.9 % | SAME |
+
+`gate_check.py session`: ACCEPT, 0 findings; `env-check`: ACCEPT; `gate.done`: `SESSION_ACCEPTED` (this session
+has no `verify.sh` run of its own: the full gate of exactly these binaries and this environment is `s6-c4`).
+Where the gain comes from, the percent of the fresh roofs and what limits further progress: `proposal.md`,
+"Outcome" and "What limits further progress".
+
+Control of the hook decision (`s8-noenv`): unmodified `verify.sh` on `topic13` with nothing selected:
+`gate_check.py verify` against the parent control ACCEPT, 0 findings; `verify.out` equals the parent control's
+line by line with the rates removed (0 differing lines). `sarc/tools/check.sh --no-build`: PASS
+(`test_sarc_select` on the release tables: 1240 checks, 31 rows, as the parent). It does not flag the
+release-zone hook `307abb2ed` (its zone rule allows the release zone); that edit rests on the owner decision
+of 2026-10-05.
+
 ## Running now
 
-- Device `duck-naughty` (primary), detached, under its gpu-lab lock; `tools/dstat.sh <job>` from the workstation:
-  - `chain19b` (`tools/chain19.sh`): `s5-c3` and `s6-c4` done (both `GATE_ACCEPTED`); running since 23:55:
-    `s7-final` (`timed.sh`: the final stack `orin-refine5` + `orin_g64` on build `topic13` against the pristine
-    parent, timed session and traces), then `s8-noenv` (`noenv_verify.sh`: `verify.sh` on `topic13` with nothing
-    selected, against the parent control). Until about 01:45.
-  - `chain20` (waiting for `chain19b`): the 41-prompt real-text logits of the final stack, default and tiled
-    (the parent's two arms exist), comparison and reference-error rule in `probe/final-g64/`. About 2.5 hours.
+- Device `duck-naughty` (primary), detached, under its gpu-lab lock: `chain20` (`tools/chain20.sh`, since
+  01:17; `tools/dstat.sh chain20`): the 41-prompt real-text logits of the final stack, default and tiled (the
+  parent's two arms exist), then the comparison and the reference-error rule in `probe/final-g64/`. Until about
+  03:45. It adds evidence; it cannot change a gate verdict or a rate.
 - Device `duck-stable`: nothing; not used any more.
 - Workstation: nothing.
 
 ## Next step
 
-Read `s7-final` and `s8-noenv`; final tables in `proposal.md`; `sarc/tools/check.sh --no-build`; commit; push.
-The real-text evidence of `chain20` is added when it ends.
+Add the real-text evidence when `chain20` ends; push `topic/orin-prefill-refine`. Nothing else is planned: the
+remaining levers (a fused attention kernel, an Orin-specific linear kernel, the upstream kernels) are outside
+this campaign's reach or scope and are listed in `proposal.md`.
 
 ## Second Orin (`duck-stable`): agreement batch, retest, owner decision
 

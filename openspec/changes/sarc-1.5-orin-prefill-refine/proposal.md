@@ -2,8 +2,8 @@
 
 Dev zone only (2026-10-05). Branch `topic/orin-prefill-refine`, forked from `topic/4070ti-prefill-refine` at
 `42e001462`. The parent of every comparison is commit `6a7cc8cc6` with no profile (the shipped NVIDIA rows).
-Nothing is promoted; no release-zone or upstream file is edited. Day-to-day state, incidents and the tool
-history are in `STATUS.md`.
+Nothing is promoted and no upstream file is edited. One release-zone edit is committed, by owner decision: the
+softmax-name hook (its own section below). Day-to-day state, incidents and the tool history are in `STATUS.md`.
 
 ## Why
 
@@ -12,7 +12,61 @@ as it goes, measured against the parent in the same session.
 
 ## Outcome
 
-DRAFT: the candidate gates are running; this section is written when they have ended. See `STATUS.md`.
+Stopped by the stop rule on 2026-10-06: candidates 3 and 4, two consecutive gated candidates, gained +0.82 %
+and +0.41 % geomean over their parents. Four candidates are accepted; one release-zone hook is committed by
+owner decision; nothing is promoted.
+
+Final stack = `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine5 ET_VK_SARC_SOFTMAX_VARIANT=orin_g64`
+on build `topic13` (`fd44f8011`, the last commit that changes code), against the pristine parent `6a7cc8cc6` in
+the same session (`results/orin/sessions/s7-final/`; tok/s, median of 5 valid interleaved runs per arm, 60
+timed runs all valid at 612 MHz, repeat spread at most 0.28 %):
+
+| cell | parent | final | gain | `dev/1.5` (`cells.csv`) | gain over `dev/1.5` | next token (4 prompts) |
+|---|---:|---:|---:|---:|---:|---|
+| 1B 4w | 890.82 | 1490.54 | +67.3 % | 890.82 | +67.3 % | SAME |
+| 1B 8da4w | 824.14 | 1380.98 | +67.6 % | 822.82 | +67.8 % | SAME |
+| 3B 4w | 360.44 | 629.38 | +74.6 % | 360.37 | +74.7 % | SAME |
+| 3B 8da4w | 320.30 | 570.95 | +78.3 % | 320.30 | +78.3 % | SAME |
+| 8B 4w | 189.77 | 295.61 | +55.8 % | 189.74 | +55.8 % | SAME |
+| 8B 8da4w | 170.53 | 269.19 | +57.9 % | 170.43 | +57.9 % | SAME |
+
+Geomean **+66.70 %** over the parent, +66.77 % over the original `dev/1.5` numbers. 8da4w is still slower than
+4w end to end in every model, by 7 to 9 % (it was 7 to 11 %).
+
+| # | what | gate | gain over its parent (geomean of six cells) | recorded as |
+|---|---|---|---:|---|
+| 1 | SDPA prefill kernels, release softmax | `s2-c1` | (+57.5 % measured) | **REJECTED**: one next-token item differs, reference-error rule not met in 1 of 12 cases |
+| 1h | the same kernels + fp32 softmax without the zero tail (`4070ti_nzf`), through the hook | `s4-c1h` | +57.81 % (parent: pristine) | `ACCEPTED (reference-error rule, owner decision 2026-10-04)` |
+| 2 | 8da4w linear: whole-texel weight staging (`orin-lin-refine2`) | `s3-c2` | +2.84 % (parent: pristine; 8da4w cells +3.8 / +6.9 / +6.7 %) | `GATE_ACCEPTED`, bit-identical to the shipped kernel |
+| 3 | 4w linear tiles (`orin-refine5`) | `s5-c3` | **+0.82 %** (parent: 1h + 2) | `GATE_ACCEPTED`, bit-identical to the shipped kernels on the shapes served |
+| 4 | softmax with subgroup reductions (`orin_g64`) | `s6-c4` | **+0.41 %** (parent: 1h + 2 + 3), inside the +-2 % band: not a gain by the protocol | `GATE_ACCEPTED`, no differing item; arithmetic change, reference error reported |
+
+Where the gain is (warm ETDump of both arms of `s7-final`, ms per 2048-token prefill, parent -> final):
+
+| family | 1B 4w | 1B 8da4w | 3B 4w | 3B 8da4w | 8B 4w | 8B 8da4w |
+|---|---|---|---|---|---|---|
+| QK^T | 581 -> 108 | 581 -> 108 | 1488 -> 198 | 1488 -> 198 | 2269 -> 301 | 2269 -> 301 |
+| attn*V | 457 -> 61 | 457 -> 61 | 1194 -> 144 | 1195 -> 144 | 1818 -> 216 | 1818 -> 216 |
+| softmax | 177 -> 132 | 177 -> 132 | 231 -> 173 | 231 -> 173 | 352 -> 264 | 352 -> 264 |
+| linear GEMM | 666 -> 656 | 871 -> 779 | 1895 -> 1862 | 2578 -> 2171 | 4865 -> 4657 | 6057 -> 5305 |
+| copy / view / other (upstream) | 266 -> 266 | 154 -> 154 | 580 -> 581 | 351 -> 351 | 985 -> 985 | 574 -> 574 |
+| elementwise, 8-bit quantize, RMSNorm (upstream) | 119 -> 119 | 218 -> 216 | 236 -> 236 | 491 -> 490 | 435 -> 434 | 874 -> 873 |
+| total dispatch | 2283 -> 1359 | 2476 -> 1467 | 5664 -> 3235 | 6373 -> 3568 | 10779 -> 6913 | 11997 -> 7589 |
+
+Of the 924 ms saved on 1B 4w, 914 are attention (1215 -> 301) and 10 the 4w tile; of the 1009 ms on 1B 8da4w,
+914 are attention and 92 the 8da4w linear kernel. On 8B 8da4w: 3658 of 4408 ms are attention, 752 the linear
+kernel.
+
+Against the fresh roofs (igpu-roofline `fast`, driver 595.78, run `raw/roof-2026-10-05-fast`; `tools/roof_util.py`
+on the `gemm.csv` of `s7-final`, time-weighted over the model's linear layers):
+
+| kernels | parent | final |
+|---|---|---|
+| 4w linear, share of the fp16 matrix roof (9.716 TFLOP/s) | 61.6 / 62.7 / 60.5 % (1B / 3B / 8B) | 62.6 / 63.8 / 63.2 % |
+| 8da4w linear, share of the int8 matrix roof (19.482 TOP/s) | 23.5 / 23.0 / 24.2 % | 26.3 / 27.3 / 27.7 % |
+| QK^T, 1B layer: 2.3 ms (134 MB written at the DRAM write roof) + 0.9 ms (8.6 GFLOP at the fp16 -> fp32 roof) | 36.3 ms | 6.73 ms = 48 % |
+| attn*V, 1B layer: 2.2 ms (134 MB read) + 0.9 ms | 28.6 ms | 3.84 ms = 81 % |
+| softmax, 1B layer: 2.2 ms read + 2.3 ms written | 11.0 ms | 8.25 ms = 55 % |
 
 ## What is in the tree
 
@@ -284,6 +338,16 @@ change. Against the fp32 CPU reference its rms and maximum error equal `4070ti_n
 cases and are 4 times (rms) and 2 times (maximum) below the parent's (`results/orin/sdpa-error5/summary.txt`);
 0.3 to 0.4 % of the fp16 output elements differ from `4070ti_nzf`'s, by one fp16 step at most.
 
+Gate `s6-c4` (build `topic13`; parent arm = candidates 1h + 2 + 3, candidate arm = the same with
+`ET_VK_SARC_SOFTMAX_VARIANT=orin_g64`): 144 of 144 SDPA correctness cases with 0 mismatches, `pairing=ok` and the
+`orin_g64` kernel; `verify.sh` equal to the parent control, 0 findings, all four default-vs-tiled items SAME;
+session 1B 1482.98 -> 1491.62 / 1373.57 -> 1385.66, 3B 628.03 -> 629.77 / 569.05 -> 570.79, 8B 295.06 -> 295.78
+/ 268.66 -> 269.15 (4w / 8da4w): geomean **+0.41 %**, every cell inside the +-2 % band, next token SAME in 24 of
+24 rows. ETDump: softmax 140 -> 132, 183 -> 173, 280 -> 264 ms. By the protocol this is noise, not a gain; it is
+in the final stack because the gate accepted it, and the stack without it is that session's parent arm.
+
+REALTEXT_PLACEHOLDER
+
 ## The second Orin (`duck-stable`)
 
 Offered by the owner for screening. Agreement batch of 26 linear configurations: rank correlation 0.997, 25
@@ -294,3 +358,70 @@ variants (`g128` before `g64`, 10 to 11 % faster than `4070ti_nzf`) was not conf
 before `g128`, 4.4 to 5.6 %), so, as that decision says, it was not used again. The two devices agree within
 0.3 % on matrix-bound kernels and differ by 1 to 7 % on memory-bound ones (the same softmax: 8.16 against
 8.74 ms). No number in this document comes from it except where it says so.
+
+## Reproducible from the committed branch alone
+
+- Every accepted candidate was gated on a build of a commit of this branch, cross-built from a `git archive`
+  tree (`build/<tag>.src.txt`): 1h on `topic6` = `4718f3e07`, which already contains the committed hook
+  `307abb2ed`; 2 on `topic6`; 3, 4 and the final session on `topic13` = `fd44f8011`. No commit after
+  `fd44f8011` changes anything outside this directory. No local patch is in any of these builds.
+- The only build with a local patch was `hook4` (the environment-variable form of the hook, before the owner's
+  decision). It was used for one kernel-level softmax screen (`screens/sdpa-screen3.csv`): `4070ti_nzf` 8.75 /
+  6.55 / 8.74 ms per layer; the committed builds read 8.74 / 6.54 / 8.74 (`topic10`) and 8.74 / 6.53 / 8.74
+  (`topic13`). No end-to-end number was measured through the patch.
+- The kernels of candidates 1h and 2 are byte-identical SPIR-V in `hook4`, `topic6` and `topic13`
+  (`build/<tag>.spv.sha256`: the QK^T tile, both attn*V tiles, the `4070ti_nzf` softmax, the `orin_bf` tile), and
+  the gates of `s5-c3` and `s6-c4` ran the whole stack on `topic13` with the same kernel names.
+- With nothing selected the branch dispatches what the parent dispatches: `s8-noenv` = unmodified `verify.sh` on
+  `topic13` without any environment: `gate_check.py verify` against the parent control ACCEPT with 0 findings,
+  and `verify.out` equal to the parent control's line by line once the rates are removed (0 differing lines,
+  `sessions/s8-noenv/verify-lines.txt`). `test_sarc_select` on the release tables: `PASS (1240 checks, 31 rows,
+  0 candidates, dev zone absent, unverified off)`, the line of the parent. Shipped SPIR-V: all 53 shipped
+  variants byte-identical between the parent build and every build of this campaign (`tools/shipped.py`).
+
+## What limits further progress
+
+1. **Linear layers are now 48 % (1B 4w) to 70 % (8B 8da4w) of the prefill**, and neither scheme is bound by
+   the tile: 37 4w tiles and 30 8da4w tiles were screened. 4w sits at 63 % of the fp16 matrix roof with the
+   MMA at 45 to 49 % of a wave (weight dequantisation into shared memory 18 to 20 %, fetch 17 %, barriers
+   10 %). 8da4w is at 27 % of the int8 roof; after candidate 2 the MMA is half of a wave and the rest is
+   fetch (15 to 24 %), barrier (10 %) and store (7 %). On this device int8 has twice the fp16 matrix rate
+   and 8da4w is still the slower scheme end to end: its kernel keeps half of each wave for something other
+   than multiplying, and 8da4w pays 98 to 425 ms of upstream 8-bit quantisation on top.
+2. **Upstream kernels that the dev zone cannot reach** (copy / view, elementwise, RMSNorm, 8-bit quantise) are
+   385 of 1359 ms on 1B 4w (28 %), 370 of 1467 on 1B 8da4w, 1419 of 6913 on 8B 4w (21 %). They did not move.
+3. **Attention is bound by memory traffic, not by the matrix unit.** What is left of it (301 of 1359 ms on 1B)
+   writes the S x S attention weights to DRAM (QK^T), reads and rewrites them (softmax) and reads them again
+   (attn*V). The softmax measurements say where: half of its time is the first read of a row. A fused
+   attention kernel that never stores the S x S matrix is the remaining structural step; it needs its own
+   node, an entry point outside the dev zone (the 780M campaign's fused attention node), which this campaign
+   was not given and did not build.
+4. **Shared memory is expensive on this device.** A 64-thread workgroup that declares 8 / 16 / 32 KB of shared
+   memory ran 1.9x / 2.6x / 4.6x longer in the softmax screen, and the only 1024-thread linear tile was the one
+   configuration on which two identical Orins disagreed. The linear kernels stage whole tiles in shared memory
+   (the device allows 48 KB per workgroup). I did not
+   find a linear tile that wins by declaring less (smaller tiles lose more than they gain), but a kernel
+   designed around that limit, not around the desktop cards' tiles, has not been tried.
+
+## Negative results (kept with their numbers)
+
+- QK^T: direct feed of the matrix unit from DRAM loses on this device (10 to 20 ms against 6.7 with packed
+  staging; it won on the 4070 Ti); 12 further packed tiles (K = 64 on other grids, K = 128): none faster.
+- fp16-accumulating attention variants: no gain, not pursued.
+- 8da4w: one staging slice with a second barrier per chunk (K = 128): 0.92 to 0.99x; smaller tiles 0.68 to
+  1.02x; the 4070 Ti sweep tiles 0.69 to 0.87x.
+- 4w: every existing subgroup-32 dev tile (25) is slower than the shipped Orin rows except on the fp32 shape;
+  K = 32 tiles 8 to 18 % slower; 2 x 4 and 4 x 4 subgroup grids 4 to 37 % slower.
+- Softmax that reads its row once: 1.12x to 4.7x slower (16 variants). Fewer than 64 workers per row: slower in
+  proportion. One thread walking the reduction tree: 1.76x slower.
+- The second Orin as a screening device: agreement on matrix-bound kernels (rank correlation 0.997), not on
+  memory-bound ones; its softmax ranking was not confirmed on the primary.
+
+## Not done
+
+- No fused attention kernel (item 3 above).
+- No Orin-specific linear kernel beyond staging changes of the existing bodies (item 4 above).
+- Decode was not optimized; the candidates leave it within the +-2 % band (decode A/B of candidates 1 and 2,
+  `results/orin/decode/`).
+- Only the 2048-token prefill shapes of the three models are covered; the Orin rows carry shape predicates
+  and the profiles never extend them (a shape the table does not serve keeps the stock kernel).
