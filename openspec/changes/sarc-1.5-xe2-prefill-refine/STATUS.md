@@ -83,13 +83,14 @@ minutes.
 | `027-rounds-4w` (+ `sw2c-4w-c1`) | round c for 4w: 320 neighbours cheap on both cards, 28 finalists full x 2 (interrupted by the reboot, re-entered 06:11) | done 07:15 |
 | `028-incumbent-8da4w` (+ `sw2i-8da4w-c1`), `029-rounds-8da4w` | the three incumbent 8da4w tiles and their 26 unmeasured legal neighbours, ids from 290000, cheap on both cards; round rule: no round (best 1.209x against 1.203x) | done 07:21 / 08:08 |
 | `0295-candidate5` | build `topic8` (`c561e2ca5`), stage `s7-c5`, gate, probe, decode A/B, decision, all on `b70-0` with card 1 idle | done 08:08: `GATE_PASS` |
-| `030-stage1-av`, `035-stage2-av`, `036-rounds-av` | every legal attn*V configuration (enumerated) | RUNNING since 08:08; about 1.5 h + 1.5 h + up to 2.5 h |
-| `040-stage1-qk`, `045-stage2-qk`, `046-rounds-qk` | every legal QK^T configuration (enumerated) | pending, about 5 h + 2 h + up to 3 h |
+| `030-stage1-av` (+ `sw1-av-c1`), `035-stage2-av`, `036-rounds-av` | every legal attn*V configuration (1102, enumerated): validation, split cheap screen, correctness of the top, 15 finalists full x 2; no neighbours exist, so no further round | done 10:14 |
+| `040-stage1-qk`, `045-stage2-qk`, `046-rounds-qk` | every legal QK^T configuration (enumerated) | RUNNING since 10:14; about 5 h + 1 h |
 
 **Rate with two cards:** 8da4w screen 18.5 s per configuration on card 0 and 18.0 s on card 1, i.e. 9.1 s for
 the pair (12 of the 2000 ran into the 240 s timeout); 4w 13.5 s per card. 8da4w stage 2 took 1 h 15 min.
-**Projection:** attn*V until 11:30 to 14:00; QK^T until 21:00 to 23:30 without further rounds, up to
-2026-10-07 05:00 UTC with both. The search started 2026-10-05 05:33 UTC, so
+**Projection:** QK^T stage 1 until about 15:30, stage 2 about 16:30 UTC (an enumerated space has no
+unmeasured neighbours, so there are no further rounds). Then candidate 6 (attention) and the final session:
+about 19:00 UTC. The search started 2026-10-05 05:33 UTC, so
 the 48-hour mark is 2026-10-07 05:33 UTC: a refinement round that would start so late that it cannot end
 before that mark is not started; it is reported instead with its count and projection.
 
@@ -202,7 +203,7 @@ memory is read from the SPIR-V (limit 46000 bytes; a tile over the device limit 
 |---|---|---:|---|---:|---:|---|
 | 4w linear | body (release, split staging `xe2s`, texel-wise `xe2bx`), M, N, K, subgroup grid, subgroup size, layout, IMG_A, IMG_W, drain, accumulator | 338448 | 3000 / 2851 / 2067 | 2000 + neighbours | **finished**: 2000 cheap (60 also full x 2); 326 + 319 + 320 neighbours cheap; 23 + 26 + 28 finalists full x 2 | 13.5 s per configuration (cheap), 50 s (full), one card |
 | 8da4w linear | body (zpg, bt, xe2bt, zpgtr), M, N, K, grid, subgroup size, zpgtr flags | 44670 | 3000 / 2333 / 2093 | 2000 + neighbours | **finished**: 2000 cheap (60 also full x 2; 970 on card 1); 323 neighbours cheap; 19 finalists full x 2; 3 incumbents + 26 neighbours cheap | 18.3 s per configuration and card (cheap), 9.1 s for the two cards |
-| attn*V | family (sweep, ml, xe2), M, N, K, grid, subgroup size | 1131 | all drawn; checked when its build runs | every legal one (about 850) | 0 | about 9 s expected |
+| attn*V | family (sweep, ml, xe2), M, N, K, grid, subgroup size | 1131 | 1131 / 1131 / 1102 (enumerated) | every legal one | **finished**: 1102 cheap (60 also full x 2; 521 on card 1); correctness of the top 54; 15 finalists full x 2 | 6.9 s per configuration and card (cheap) |
 | QK^T | family (sweep, pk, xe2, xe2c), M, N, K, grid, subgroup size, NO_MASK_FILL | 4536 | all drawn; checked when its build runs | every legal one (about 3400) | 0 | about 9 s expected |
 
 Sample size: 2000 per linear space (the lower end of the owner's 2000 to 3000): a full enumeration with the
@@ -327,6 +328,37 @@ more than 2 % faster than the best of round 1's confirmation; no round d.
   twin) 1.10x; every other neighbour lower. Rule check for round b: 1.209 against 1.203, no class moved by
   more than 0.5 % (`rounds.txt`), so no further round. **The 8da4w search ends with the candidate 2 tile as the
   best configuration found; there is no new 8da4w candidate.**
+
+### attn*V (`results/xe2/sweep/av/`; enumerated, finished)
+
+- All 1131 analytically legal configurations compile; 1102 fit the shared-memory limit and were screened
+  (cheap mode = the 1B and 3B head configurations, i.e. head_dim 64 and 128; 521 of them on card 1, scale
+  factors 0.9983 to 1.0013). A tile whose N does not divide head_dim does not run that class (661 run
+  head_dim 64, all 1102 run 128).
+- **Validation of the cheap mode** (`validation.csv`, 60 configurations, threshold 0.9): Spearman 0.998 to 0.999
+  per (model, class); full repeats differ by 0.4 to 0.6 % (median). **Drift**: 0.25 to 0.9 % over 12 base runs.
+- **Parameter importance** (`importance-sample.csv`; here "sample" is the whole space; share of the variance
+  of log time, head_dim 64 / head_dim 128): subgroup grid y 40.8 / 35.4 % (best 8), tile M 16.0 / 11.8 %
+  (best 64 / 32; M = 256 is 3 to 4 times slower), grid x 11.4 / 15.9 % (best 4 / 8), family 2.8 / 2.1 %,
+  N 0.0 / 1.5 %, K 0.8 / 0.1 %, subgroup size 0.7 / 0.3 % (32 better at the median: 0.91 against 1.03 to
+  1.07). **Pair interactions** (`interactions-sample.csv`): M x grid y 5.0 %, grid x x grid y 2.6 %, the rest
+  under 1 %.
+- **Correctness decides the top.** The eight fastest configurations by time are all `sweep`-family tiles with
+  K = 64 (up to 1.74x of candidate 1's kernel) and all FAIL the extended correctness tier (`corr64` /
+  `corr128` rows in `sw1-results.csv`); they are excluded. That family's K = 64 variants are not a candidate.
+- **Confirmation** (`confirm.csv`, 15 finalists full x 2 against candidate 1's kernels, correctness `ok` for
+  each, repeat spread at most 1.1 %): time per layer in us and speed relative to candidate 1's kernel:
+
+  | configuration | 1B (head_dim 64) | 3B (128) | 8B (128) |
+  |---|---|---|---|
+  | candidate 1 (`sweep` 64 x 64 K = 32 for 64; `xe2` 128 x 64 K = 32 g44 s16 for 128) | 380.0 | 376.8 | 476.5 |
+  | `400163`: `xe2` 64 x 64, K = 64, grid 4 x 4, subgroup size 32 | 335.8 (**1.132x**) | 343.2 (1.098x) | 441.1 (1.080x) |
+  | `400819`: `xe2` 128 x 64, K = 64, grid 4 x 4, subgroup size 32 | 344.5 (1.103x) | 313.8 (**1.201x**) | 389.9 (**1.222x**) |
+  | `400000`: `xe2` 128 x 128, K = 64, grid 8 x 4, subgroup size 32 | does not run | 317.1 (1.188x) | 404.5 (1.178x) |
+
+  Both winners use subgroup size 32 and K = 64, which no hand-chosen screen had tried. attn*V is 6 to 16 ms of
+  a 106 to 600 ms prefill, so this is about 0.4 to 0.6 % end to end. It goes into candidate 6 together with
+  whatever the QK^T enumeration finds.
 
 ## Needs the owner's attention
 
