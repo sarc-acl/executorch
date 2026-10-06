@@ -1547,7 +1547,8 @@ sarc_linear_q4gsw_coopmat_sweep:
       CSH_IN_ASH: true
     # --- m51 begin (openspec/changes/sarc-1.5-m51-prefill-refine, 2026-10-06) ---
     # M51 per-shape screen: the xclipse row's flags (ACC_FP32, and for texture3d CSH_FULL + CSH_POOL, which that
-    # device needs) on other tiles. LDS: max(A + B, the fp16 M x N drain tile) <= 32 KiB for every entry.
+    # device needs) on other tiles. LDS = max(double-buffered padded A + B, the fp16 M x N drain tile): 37 KiB for the
+    # K = 32 tiles, at most 32 KiB for the others; every entry under the 64 KiB limit.
     - NAME: sarc_linear_q4gsw_coopmat_sweep_t128x128k32g22s32f32xp_texture3d_texture2d_half
       IO_STORAGE: texture3d
       WEIGHT_STORAGE: texture2d
