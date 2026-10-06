@@ -1,6 +1,6 @@
 # STATUS: 780M prefill campaign, round 2 (parameter space + beyond)
 
-Updated 2026-10-05 20:50 PDT (2026-10-06 03:50 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
+Updated 2026-10-05 22:40 PDT (2026-10-06 05:40 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
 Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (new raw data) and
 `.../780m-prefill-refine-2026-10-03/` (earlier builds and sessions).
 
@@ -18,6 +18,7 @@ Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (
 | 8da4w, Part 1 | **done except for the production-diff passes**: all 2,238 survivors screened, 49 measured in full, 22 five times; best kernel per shape below ("Part 1, 8da4w"), 2.1 to 3.1 % less 8da4w linear time per layer than `780m-refine3` |
 | candidate 11 (candidate 10 + the 8da4w kernel per shape, profile `c11`) | **gate passed, +1.20 % geomean** (8da4w cells +2.02 / +2.82 / +2.36 %, 4w cells 0.00 / 0.00 / +0.06 %): the second consecutive candidate under 2 %, **stop rule met**; kept as the final configuration |
 | production-diff passes; QK^T / attn*V enumeration | running / queued (Part 1's last open item) |
+| final configuration (candidate 11), measured directly | **+33.82 % geomean over `dev/1.5`** (+23.42 to +48.35 %), **+24.12 % over `780m-refine3`** (+14.56 to +35.83 %); section "Final configuration" |
 | release-zone hooks (owner decision 2026-10-05) | committed (`b969e8f1c`, `1c8861aa7`, dev side `8518659ef`); candidate 10 reproduced from the committed build: gate passed, **+22.64 %** geomean over `780m-refine3` measured directly (section "Committed build") |
 
 Chained over the three sessions (`t1-recheck`, `c7-softmax-r3`, `c8-fused3`; not a direct measurement, that comes
@@ -99,14 +100,11 @@ Where the capture material is (kept as evidence, nothing calls it):
 
 ## Running now
 
-`chain20.sh` (detached, started 2026-10-05 20:35 PDT): the closing direct measurements of the final configuration
-(candidate 11, committed head `a8fffa5ea`, `ET_VK_SARC_780M_PROFILE=c11`), each from a cool start, 5 valid runs
-per cell: `s9-final-dev15` (pristine `dev/1.5` build against candidate 11, then warm traces) and
-`s10-final-refine3` (`780m-refine3` against candidate 11, same binary).
-
-Paused behind it (`PAUSE` in the 10-04 directory), resumes by itself (`chain18.sh`): the 12 production-diff
-passes of the confirmed 8da4w and 4w configurations, then the QK^T / attn*V enumeration at a steady clock
-(20 warm-up + 8 timed runs), which is the last open item of Part 1.
+`chain18.sh` (detached): the 12 production-diff passes of the confirmed 8da4w and 4w configurations, then the
+QK^T / attn*V enumeration at a steady clock (20 warm-up + 8 timed runs): Part 1's last open item. Everything
+else is done: the stop rule is met (candidates 10 and 11 under 2 %), the final configuration is measured against
+both parents (next section), and the branch is pushed at this state (owner decision headed "2026-10-06 (05:50 UTC)", received 05:35 UTC by this host's clock); it is
+pushed again when the campaign closes.
 
 The coordinator's hold was used once: `HOLD` 2026-10-06 00:53:06 UTC, `HELD` 00:53:12 UTC, `HOLD` removed about
 02:08 UTC; the queue removed `HELD` and continued with the configuration it had named, by itself.
@@ -134,6 +132,47 @@ applied by whichever initializer runs last), rebuilt (`build/wt2`), and checked 
 (`raw/wt2-smoke/`): no profile -> release kernels and release softmax; `c7` -> softmax `..._780m_r3`; `c8` ->
 `fused3_..rk`; `c9`, `c10` -> `fused3_..rko`; the names of the measured builds. `check.sh --no-build` passes.
 Committed as `8518659ef`. Nothing was measured with the broken build.
+
+## Final configuration, measured directly (2026-10-05 21:07 to 22:34 PDT)
+
+Candidate 11 = committed branch head with `ET_VK_SARC_DEV_PROFILE=780m-refine3 ET_VK_SARC_780M_PROFILE=c11`
+(build `head2` of `a8fffa5ea`, no local patch). Two sessions, each from a cool start (45 C and 43 C after the 30
+min wait; the device idled at 44 to 45 C that evening), 5 valid runs per arm, arms interleaved, clock 2728 to
+2800 MHz: `s9-final-dev15` (pristine `dev/1.5` build `ef079ac41`, no environment) and `s10-final-refine3`
+(`780m-refine3`, same binary as the candidate). Evidence: `results/780m/sessions/{s9-final-dev15,s10-final-refine3}/`.
+
+| cell | `dev/1.5` | candidate 11 (s9) | gain over `dev/1.5` | `780m-refine3` | candidate 11 (s10) | gain over `780m-refine3` |
+|---|---:|---:|---:|---:|---:|---:|
+| 1B 4w | 2691.20 | 3835.21 | **+42.51 %** | 2828.73 | 3842.40 | **+35.83 %** |
+| 1B 8da4w | 2537.79 | 3764.71 | **+48.35 %** | 2824.83 | 3771.64 | **+33.52 %** |
+| 3B 4w | 1140.95 | 1458.69 | **+27.85 %** | 1188.62 | 1458.69 | **+22.72 %** |
+| 3B 8da4w | 1049.72 | 1403.70 | **+33.72 %** | 1166.95 | 1412.41 | **+21.03 %** |
+| 8B 4w | 517.43 | 638.60 | **+23.42 %** | 540.23 | 640.00 | **+18.47 %** |
+| 8B 8da4w | 487.85 | 628.03 | **+28.73 %** | 549.21 | 629.19 | **+14.56 %** |
+| geomean | | | **+33.82 %** | | | **+24.12 %** |
+
+Repeat spread 0.07 to 0.37 % (3B 8da4w candidate in s9: 1.11 %). Next token against either parent: SAME in eleven
+of twelve items; 8B 8da4w on `prompt_2048.txt` DIFFERS, the item of candidate 8 (**ACCEPTED (reference-error
+rule, owner decision 2026-10-04)**, `results/780m/probe/`, `results/780m/sdpa-error/`). The `dev/1.5` arm agrees
+with `sarc-1.5-e2e-benchmark/results/cells.csv` and with the re-check after the reboot within 1 %.
+
+Where it comes from (warm traces of both arms of `s9`, ms per prefill; `dev/1.5` -> candidate 11):
+
+| | 1B 4w | 1B 8da4w | 3B 4w | 3B 8da4w | 8B 4w | 8B 8da4w |
+|---|---:|---:|---:|---:|---:|---:|
+| total | 758 -> 537 | 801 -> 544 | 1799 -> 1419 | 1949 -> 1460 | 3998 -> 3247 | 4237 -> 3304 |
+| QK^T + softmax + attn*V | 234 -> 0 | 235 -> 0 | 397 -> 0 | 397 -> 0 | 600 -> 0 | 600 -> 0 |
+| copy / view / other (holds the fused kernel and its copy pass) | 61 -> 97 | 36 -> 71 | 134 -> 225 | 86 -> 177 | 228 -> 361 | 137 -> 268 |
+| linear GEMM | 375 -> 354 | 401 -> 343 | 1088 -> 1015 | 1183 -> 999 | 2854 -> 2570 | 3017 -> 2553 |
+| elementwise (upstream) | 68 | 68 | 129 | 131 | 244 | 243 |
+
+Attention is 198 / 306 / 467 ms less (three kernels replaced by the fused node: 234 -> 36, 397 -> 91, 600 -> 133
+ms), linear GEMM 21 / 73 / 284 ms less in 4w and 58 / 184 / 464 ms less in 8da4w.
+
+Percent of the re-measured roofs (run `2026-10-04-fast-prefill-refine2`), candidate arm of that trace, by shape:
+4w linear 9.6 to 12.0 TFLOP/s = 65 to 81 % of `matrix_fp16_fp32` (14.766); 8da4w linear 9.9 to 12.1 TOP/s = 69 to
+84 % of `matrix_int8` (14.379); the fused attention kernel about 71 % of `matrix_fp16_fp32` (kernel timing,
+"Candidate 8").
 
 ## Committed build: candidate 10 reproduced from the branch alone (owner decision 2026-10-05, release-zone hooks)
 
