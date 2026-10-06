@@ -4,7 +4,7 @@
 # best 20 of the uniform sample; where the kernels already in use are faster than everything in the sample
 # (8da4w: the candidate 2 tile is 1.20x of the shipped one, the best of the sample 0.97x), that refinement never
 # visits their neighbourhood. This job adds the named incumbent configurations themselves and every legal
-# one-parameter neighbour of them that is not measured yet as the sweep build sw2i-<space> (ids from 50000) and
+# one-parameter neighbour of them that is not measured yet as the sweep build sw2i-<space> (ids from 90000; the neighbour builds use 50000, 60000 and 70000) and
 # screens them in the cheap mode. The later steps (sweep_rounds.sh: correctness, refinement rounds by the 2 %
 # rule, full x 2 confirmation) then treat them like any other configuration. An addition to the procedure, not
 # a replacement: the sample, its analysis and its refinement are unchanged.
@@ -20,7 +20,7 @@ seeds = [c for c in L if geo(c) in inc]; assert len(seeds) == len(inc), (inc, [g
 have = {sweep.key(c, space) for c in sweep.read([measured])}; bk = [sweep.key(c, space) for c in seeds]
 rows = [c for c in seeds if sweep.key(c, space) not in have]
 rows += [c for c in L if sweep.key(c, space) not in have and any(sum(a != b for a, b in zip(sweep.key(c, space), k)) == 1 for k in bk)]
-for i, c in enumerate(rows): c["id"] = f"{sweep.SPACES[space]}{50000 + i:05d}"
+for i, c in enumerate(rows): c["id"] = f"{sweep.SPACES[space]}{90000 + i:05d}"
 sweep.write(out, rows); print(f"{space}: {len(seeds)} incumbents, {len(rows)} configurations to add -> {out}")
 P
   bash $TOOLS/build-sweep.sh sw2i-$S 0 $C/$S-incumbents.csv || exit 1
