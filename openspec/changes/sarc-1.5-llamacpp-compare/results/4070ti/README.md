@@ -38,3 +38,24 @@ kernels (7 % ahead on 1B, 3 to 8 % behind on 3B and 8B), and its Q4_K_M files ru
 (34239 / 12765 / 6235), which puts Q4_K_M ahead of tuned 4w on 8B as well. llama.cpp CUDA is 23 to 38 % faster
 than tuned 4w and 6 to 24 % faster than tuned 8da4w. llama.cpp's fresh-process timer agrees with its warm one
 within 10 % on CUDA here. Text check: all arms continue the real-text prompt fluently.
+
+## ExecuTorch CUDA backend (measured 2026-10-06, `et-cuda-runs.csv`)
+
+The arm: upstream ExecuTorch `12668f8b8` plus only the export-guard removal in
+`backends/cuda/triton/kernels/sdpa.py` (`et-cuda-guard-fix.diff`, 4 insertions and 3 deletions), without which
+the 3B and 8B models cannot take a prompt longer than 511 tokens. No performance change, no export patch.
+Exported with `optimum-cli export executorch --recipe cuda --dtype bfloat16 --qlinear 4w
+--qlinear_packing_format tile_packed_to_4d --max_seq_len 3072` (8B through layer-wise quantization so that it
+fits in 16 GB); a different exporter and model definition than the Vulkan arms, context 3072 instead of 2560,
+embedding left in bf16. Runner built from unmodified upstream. torch 2.14.0.dev20260810+cu134, CUDA 13.4.
+
+| model | tok/s (median of 5) | min | max | against stock Vulkan 4w | tuned Vulkan 4w against it |
+|---|---:|---:|---:|---:|---:|
+| 1B | 5802 | 5785 | 5802 | 0.85 | 5.1 |
+| 3B | 1930 | 1928 | 1938 | 0.76 | 6.7 |
+| 8B | 836 | 835 | 836 | 0.75 | 7.2 |
+
+All runs valid at exactly 2048 prompt tokens; taken in its own run of fresh processes (one discarded, five
+timed, `--warmup`), not interleaved with the Vulkan session. 1B and 3B reuse the exports of 2026-10-03 and
+reproduce the numbers measured then (5785, about 1925) within 0.3 %; the 8B export is new. `8da4w` cannot be
+exported for this backend and the backend is not built for Jetson upstream: not supported, no number.
