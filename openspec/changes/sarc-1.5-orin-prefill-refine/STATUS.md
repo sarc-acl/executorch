@@ -1,17 +1,133 @@
 # STATUS: sarc-1.5-orin-prefill-refine
 
-**2026-10-06 03:55 UTC. REOPENED by a review finding: candidate 4 (`orin_g64`) is being built and gated again.
-In build `topic13` every lane of a subgroup stored the subgroup's reduced value into the same shared slot
-(`shared_max[gl_SubgroupID] = subgroupMax(...)`, likewise the sum): unordered non-atomic writes of one location,
-a data race by the Vulkan memory model even though the values are equal. Fixed in `aa66ea1e6` (the elected lane
-alone stores; barriers unchanged). Everything measured with `orin_g64` on `topic13` (`s6-c4`, `s7-final`,
-`sdpa-error5`, `probe/final-g64`, SDPA screens 6 and 7) is kept as measured and is NOT evidence for the corrected
-kernel; candidates 1h, 2 and 3 are not affected (they do not use the `g` softmax). The numbers below are those
-of `topic13` until the re-gate (`s9-c4r`, `s10-final`) has ended.**
+**2026-10-06 10:42 UTC. STOP RULE MET (reconfirmed on the corrected build), CAMPAIGN CLOSED. Final stack
+(candidates 1h + 2 + 3 + 4) on build `topic14` (`aa66ea1e6`) against the pristine parent: +66.65 % geomean
+(`s10-final`), +66.73 % over the original `dev/1.5` numbers. Candidates 3 and 4, two consecutive gated
+candidates, gained +0.82 % (`s5-c3`) and +0.34 % (`s9-c4r`) over their parents. Candidate 4 was built, gated and
+measured again after a review finding (a data race in the first form of `orin_g64`); it is recorded as
+`ACCEPTED (reference-error rule, owner decision 2026-10-04)`, differing next-token items: none. Nothing is
+running on either device or on the workstation.**
 
 All times are UTC from `date -u`.
 
-## Final result (`results/orin/sessions/s7-final/`)
+## Final result (`results/orin/sessions/s10-final/`, corrected build)
+
+`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine5 ET_VK_SARC_SOFTMAX_VARIANT=orin_g64` on build
+`topic14` (`aa66ea1e6`) against the pristine parent `6a7cc8cc6`, same session, arms interleaved, tok/s, median
+of 5 valid runs per arm (60 timed runs, all valid, 612 MHz, repeat spread at most 0.54 %):
+
+| cell | parent | final | gain | `dev/1.5` (`cells.csv`) | gain over `dev/1.5` | next token (4 prompts) |
+|---|---:|---:|---:|---:|---:|---|
+| 1B 4w | 890.82 | 1489.45 | +67.2 % | 890.82 | +67.2 % | SAME |
+| 1B 8da4w | 824.81 | 1382.85 | +67.7 % | 822.82 | +68.1 % | SAME |
+| 3B 4w | 360.50 | 628.99 | +74.5 % | 360.37 | +74.5 % | SAME |
+| 3B 8da4w | 320.30 | 570.32 | +78.1 % | 320.30 | +78.1 % | SAME |
+| 8B 4w | 189.77 | 295.53 | +55.7 % | 189.74 | +55.8 % | SAME |
+| 8B 8da4w | 170.44 | 269.19 | +57.9 % | 170.43 | +58.0 % | SAME |
+
+Geomean **+66.65 %** over the parent, +66.73 % over `dev/1.5`. `gate_check.py session`: ACCEPT, 0 findings (24
+of 24 next-token rows SAME); `env-check`: ACCEPT; `gate.done`: `SESSION_ACCEPTED` (no `verify.sh` run of its own:
+the full gate of exactly these binaries and this environment is `s9-c4r`). The same stack on `topic13` (first
+form of `orin_g64`) measured +66.70 % in `s7-final`; the difference is inside the repeat spread.
+
+Control of the hook decision on the corrected build (`s11-noenv`): unmodified `verify.sh` on `topic14` with
+nothing selected: `gate_check.py verify` against the parent control ACCEPT, 0 findings; `verify.out` equals the
+parent control's line by line with the rates removed (0 differing lines). `sarc/tools/check.sh --no-build`:
+see "Review finding" below.
+
+## Review finding (2026-10-06): data race in the first form of `orin_g64`; candidate 4 again on `topic14`
+
+**Why candidate 4 needed revalidation.** In the `g` softmax variants as first generated (builds `topic12`,
+`topic13`), every lane of a subgroup executed `shared_max[gl_SubgroupID] = subgroupMax(local_max)` and
+`shared_exp_sum[gl_SubgroupID] = subgroupAdd(local_exp_sum)`: up to 32 invocations storing to the same shared
+location with no ordering between them. The values are equal, but the Vulkan memory model makes unordered
+non-atomic writes of one location a data race whatever the values, and the `barrier()` that follows orders the
+later reads, not the competing stores. The behaviour of such a shader is undefined, so a gate passed by it is
+not evidence for a defined one. The reviewer found it; the gate could not (the driver happens to produce the
+expected values).
+
+**Fix** (`aa66ea1e6`; `tools/gen_orin_softmax.py`, shader regenerated): every lane still computes the reduction;
+the store is inside `if (subgroupElect())`, so one lane per subgroup writes its slot; `memoryBarrierShared()` and
+`barrier()` stay unconditional, outside the branch. Checked in the SPIR-V of `topic14`'s `orin_g64`
+(`spirv-dis`): `OpGroupNonUniformFMax` / `FAdd`, then `OpGroupNonUniformElect`, `OpBranchConditional`, the
+`OpStore` inside the selected block, `OpControlBarrier` after the merge. Against `topic13`, 5 of 1610 compiled
+shaders differ: the `g32 / g64 / g128 / g256 / g512` softmax variants and nothing else; all 53 shipped variants
+are byte-identical to the parent build's (`tools/shipped.py`: UNCHANGED).
+
+**What is kept and what it is worth.** Everything measured with a `g` variant before the fix is kept as
+measured and is not evidence for the corrected kernel: SDPA screens 6 and 7, `sdpa-error5`, `s6-c4`, `s7-final`,
+`probe/final-g64`. Candidates 1h, 2 and 3 never use a `g` variant and are not affected (`s4-c1h`, `s3-c2`,
+`s5-c3` stand). `g128` and the other `g` variants were not measured again; they are not candidates.
+
+**The re-gate** (`tools/chain21.sh` on the primary, 05:10 to 10:38 UTC, after the coordinator's separate
+session had released the device; build `topic14` in every arm but the pristine parent):
+
+- Output against the first form (`results/orin/sdpa-error6/diff-orin_g64-vs-topic13-orin_g64.csv`): 0 of 26.6
+  million fp16 output elements differ in the 12 cases; the 12 full-logits files of the 41-prompt probe
+  (six cells, default and tiled) are byte-identical to `topic13`'s (`cmp` on the device). The correction removes
+  the undefined behaviour and, on this driver, changes no output bit.
+- Error against the fp32 CPU reference, measured again (`results/orin/sdpa-error6/`): candidate not larger
+  than the parent in rms and in maximum in 12 of 12 cases; production shapes rms 2.1e-05 against 8.5e-05 to
+  8.7e-05, maximum 7.8e-04 to 9.1e-04 against 1.4e-03 to 1.7e-03. Against `4070ti_nzf`: 0.3 to 0.4 % of the
+  elements differ, by at most 1.2e-04 (`diff-orin_g64-vs-4070ti_nzf.csv`).
+- Gate `s9-c4r` (`gate_sdpa.sh`; parent arm = candidates 1h + 2 + 3 with `4070ti_nzf`, candidate arm = the
+  same with `orin_g64`): SDPA correctness 12 passes x tiers extended and full: 0 mismatches, `pairing=ok`,
+  softmax kernel `sarc_sdpa_attn_weights_softmax_buffer_half_orin_g64` in all 144 cases (`gate_check.py sdpa`:
+  ACCEPT, 0 findings). Unmodified `verify.sh`: `gate_check.py verify` ACCEPT, 0 findings; all four
+  default-vs-tiled next-token items SAME; `verify.out` equals `s6-c4`'s line by line with the rates removed.
+  Timed session (tok/s, median of 5 valid interleaved runs per arm, 60 runs all valid at 612 MHz):
+
+  | cell | parent arm (1h + 2 + 3) | candidate 4, corrected | gain | next token (4 prompts) |
+  |---|---:|---:|---:|---|
+  | 1B 4w | 1481.91 | 1489.45 | +0.51 % | SAME |
+  | 1B 8da4w | 1373.57 | 1381.92 | +0.61 % | SAME |
+  | 3B 4w | 627.64 | 629.57 | +0.31 % | SAME |
+  | 3B 8da4w | 569.05 | 570.63 | +0.28 % | SAME |
+  | 8B 4w | 295.06 | 295.57 | +0.17 % | SAME |
+  | 8B 8da4w | 268.56 | 269.01 | +0.17 % | SAME |
+
+  Geomean **+0.34 %**, every cell inside the +-2 % band: noise by the protocol, not a gain (first form: +0.41 %).
+  `gate_check.py session`: ACCEPT, 0 findings (24 of 24 next-token rows SAME); `env-check`: ACCEPT.
+  `gate.done`: `GATE_ACCEPTED 2026-10-06T07:13:05Z all steps passed`.
+- Timing (warm ETDump of `s9-c4r`, ms, parent arm -> candidate): softmax 140.1 -> 133.0 (1B), 183.1 -> 173.8
+  (3B), 279.9 -> 265.8 (8B), -5.0 %; kernel level in the gate's perf suite 8.30 / 6.21 / 8.30 ms per layer
+  (first form 8.25 / 6.18 / 8.26; `4070ti_nzf` 8.74 / 6.53 / 8.74). The elected-lane store costs 0.05 ms per
+  layer, about 1 ms per 1B prefill.
+- Real-text evidence (`results/orin/probe/final-g64r/`, arms `finalr-default`, `finalr-tiled`; the parent's two
+  arms are those of `chain13`). Logits at the position of the gate's unaligned item: the four arms pick the
+  same token in all six cells (220 on 1B, 82816 on 3B and 8B); 1B 8da4w top-2 margin parent +0.31 / +0.38,
+  final +0.30 / +0.42 (default / tiled). 41 prompts, full next-token distribution of the last position:
+
+    | cell | top-1 differences of 41 (parent's two arms / final vs parent) | mean KL, nats | max KL | max abs logit diff | perplexity (parent / final) |
+    |---|---|---|---|---|---|
+    | 1B 4w | 0 / 0 | 0.00055 / 0.00186 | 0.0109 / 0.0189 | 0.73 / 1.22 | 8.70 / 8.98 |
+    | 1B 8da4w | 2 / 4 | 0.0618 / 0.0841 | 0.606 / 1.099 | 4.42 / 4.76 | 9.58 / 9.71 |
+    | 3B 4w | 0 / 0 | 0.00012 / 0.00039 | 0.0014 / 0.0046 | 0.33 / 0.76 | 3.72 / 3.73 |
+    | 3B 8da4w | 1 / 0 | 0.0106 / 0.0133 | 0.152 / 0.099 | 3.73 / 4.13 | 3.63 / 3.83 |
+    | 8B 4w | 0 / 0 | 0.00023 / 0.00050 | 0.0027 / 0.0028 | 0.49 / 0.77 | 2.72 / 2.72 |
+    | 8B 8da4w | 1 / 3 | 0.0278 / 0.0158 | 0.447 / 0.204 | 2.72 / 3.26 | 2.84 / 2.83 |
+
+  Gross divergence: largest mean KL 0.084 nat (limit 0.5); top-1 differs on at most 4 of 41 prompts (limit one
+  third): none. `tools/ref_error_rule.py`: **MET**. (`compare.csv` is byte-identical to `probe/final-g64/`'s, as
+  the logits are; its last line prints the first decision's "outside twice the noise floor" test, which the
+  second decision replaced for arithmetic changes.) Memory: at least 5.7 GB available before and after every
+  model, swap free unchanged (5763 to 5767 MB).
+- **Recorded as `ACCEPTED (reference-error rule, owner decision 2026-10-04)`**, evidence
+  `results/orin/probe/final-g64r/REFERENCE_ERROR.json` and `results/orin/sdpa-error6/`. Differing next-token
+  items: **none** (`differing-items.txt` is empty: `verify.sh` default vs tiled SAME on both prompts for 1B, and
+  parent vs candidate SAME in 24 of 24 rows). The gate tool itself wrote `all steps passed` because no item
+  differed; the candidate changes the order of a row's sum, so it is recorded under the rule and not as a plain
+  pass.
+- Stop rule: candidate 3 +0.82 % (`s5-c3`, unaffected) and candidate 4 +0.34 % (`s9-c4r`): two consecutive gated
+  candidates below 2 %. Met.
+- `sarc/tools/check.sh --no-build` on the final tree: both `test_sarc_select` runs PASS (1240 checks, 31 rows on
+  the release tables, as the parent; 1593 checks with the dev zone linked). Its
+  overall verdict is FAIL for one reason only: the zone rule reports `.agents/skills/review-notes/SKILL.md`, an
+  untracked file the reviewer supplied, which is outside the zones. It is not part of this branch (not
+  committed); neither it nor `check.sh` was touched. Before that file existed the same command printed PASS
+  (03:35 UTC, same tree but for the shader correction, which is inside the dev zone).
+
+## Superseded by the correction, kept as measured: final result on `topic13` (`s7-final`, first form of `orin_g64`)
 
 `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine5 ET_VK_SARC_SOFTMAX_VARIANT=orin_g64` on build
 `topic13` (`fd44f8011`) against the pristine parent `6a7cc8cc6`, same session, arms interleaved, tok/s, median
@@ -40,21 +156,15 @@ of 2026-10-05.
 
 ## Running now
 
-- Workstation, detached (`tools/wsrun.sh`, job `build-topic14`, since 03:53 UTC, under the desktop build lock):
-  cross-build of tag `topic14` from `aa66ea1e6`, then `logits_dump` for it.
-- `duck-naughty`: from 03:40 UTC, for about three hours, the coordinator uses the device under this campaign's
-  gpu-lab lock for a separate measurement the owner ordered (ExecuTorch against llama.cpp; processes under
-  `~/llamacpp-compare`). Not a job of this campaign. Queued behind it: `chain21` (`tools/chain21.sh`), which
-  waits on the lock without a time limit and then runs `sdpa-error6`, the gate `s9-c4r` (candidate 4 over
-  candidates 1h + 2 + 3, both arms on `topic14`), `s10-final` (corrected stack against the pristine parent),
-  `s11-noenv`, and the 41-prompt real-text probe (`probe/final-g64r/`). About 6.5 hours of device time.
-- `duck-stable`: nothing, not used any more.
+Nothing. `duck-naughty`: no job of this campaign (`chain21` `DONE rc=0 2026-10-06T10:38:29Z`); the coordinator's
+separate session (ExecuTorch against llama.cpp, under this campaign's lock) ran from 03:40 to 05:10 UTC and was
+not interleaved with any job of this campaign. `duck-stable`: nothing, not used any more. Workstation: nothing
+(build `topic14` done 04:12 UTC).
 
 ## Next step
 
-When `chain21` has ended: pull, record candidate 4 on the corrected build under the reference-error rule with
-its differing-item list, reconfirm the stop rule from `s9-c4r`, replace the final table by `s10-final`, commit,
-push.
+None in this campaign. The remaining levers (a fused attention kernel, an Orin-specific linear kernel, the
+upstream kernels) are outside its reach or scope and are listed in `proposal.md`.
 
 ## Final stack on `topic13` (first form of `orin_g64`): real-text evidence under the reference-error rule (`results/orin/probe/final-g64/`)
 
@@ -218,7 +328,10 @@ it (`s4-c1h`), not on the local-patch build `hook4`.
 | 4 | the accepted profile + `ET_VK_SARC_SOFTMAX_VARIANT=orin_g64` | softmax: reductions inside the subgroups, 2 barriers per row instead of 14 | through the softmax-name hook | **GATE_ACCEPTED** (`s6-c4`; no next-token item differs; an arithmetic change, reference error reported), **+0.41 %** over its parent (1h + 2 + 3): inside the +-2 % band |
 | 1h | candidate 1 + `ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf` | fp32 softmax without the zero tail | through the softmax-name hook (owner decision 2026-10-05, commit `307abb2ed`), build `topic6` | **`ACCEPTED (reference-error rule, owner decision 2026-10-04)`** (`s4-c1h`, `GATE_ACCEPTED`, no differing item), +57.8 % |
 
-### Candidate 4, softmax `orin_g64` on top of candidates 1h + 2 + 3: `GATE_ACCEPTED`, +0.41 % (inside the noise band)
+### Candidate 4, softmax `orin_g64` on top of candidates 1h + 2 + 3: on the corrected build `ACCEPTED (reference-error rule, owner decision 2026-10-04)`, +0.34 % (`s9-c4r`, "Review finding" above)
+
+What follows is the first gate (`s6-c4`, build `topic13`, the first form of the kernel with the racing stores),
+kept as measured; it is superseded by `s9-c4r`.
 
 Build `topic13` in both arms. Parent arm: `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine5
 ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf`; candidate arm: the same with `ET_VK_SARC_SOFTMAX_VARIANT=orin_g64`.

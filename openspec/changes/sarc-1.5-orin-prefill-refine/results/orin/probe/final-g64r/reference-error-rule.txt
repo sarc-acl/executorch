@@ -1,0 +1,21 @@
+case,parent_rms,candidate_rms,parent_max,candidate_max,rms_not_larger,max_not_larger
+1b_head_config_s2048 (production shape),8.54687e-05,2.101e-05,0.0017128,0.000913501,yes,yes
+3b_head_config_s2048 (production shape),8.68625e-05,2.06763e-05,0.00140828,0.000782847,yes,yes
+8b_head_config_s2048 (production shape),8.69643e-05,2.0566e-05,0.00158703,0.000891089,yes,yes
+1b_head_config_s256_pos256,8.29997e-05,1.79961e-05,0.000718169,0.000113532,yes,yes
+3b_head_config_pos128,9.49144e-05,2.60317e-05,0.00118469,0.000175104,yes,yes
+3b_head_config_s256,0.000122078,4.95622e-05,0.00166237,0.000778675,yes,yes
+8b_head_config_s1024_pos1024,7.92873e-05,9.01809e-06,0.00102516,6.94245e-05,yes,yes
+8b_head_config_s256,0.000123011,4.98951e-05,0.00181824,0.00086993,yes,yes
+tiny_d128_s2048,8.384e-05,2.0707e-05,0.00146663,0.000779569,yes,yes
+tiny_gqa_pos64,9.73765e-05,3.23192e-05,0.000689417,0.000173852,yes,yes
+tiny_gqa_s2048,8.35745e-05,2.08004e-05,0.00149816,0.000694275,yes,yes
+tiny_gqa_s256_pos128,9.67958e-05,2.37706e-05,0.00088235,0.000142887,yes,yes
+cell,prompts,top1_diff,mean_kl,gross_divergence
+1b-4w,41,0,0.00186266,no
+1b-8da4w,41,4,0.0841258,no
+3b-4w,41,0,0.000392496,no
+3b-8da4w,41,0,0.0133429,no
+8b-4w,41,0,0.000495678,no
+8b-8da4w,41,3,0.0157977,no
+verdict: MET (reference-error rule, owner decision 2026-10-04); written /home/doremy/hmz-sarc-orin/probe/final-g64r/REFERENCE_ERROR.json

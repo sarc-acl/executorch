@@ -13,24 +13,26 @@ as it goes, measured against the parent in the same session.
 ## Outcome
 
 Stopped by the stop rule on 2026-10-06: candidates 3 and 4, two consecutive gated candidates, gained +0.82 %
-and +0.41 % geomean over their parents. Four candidates are accepted; one release-zone hook is committed by
-owner decision; nothing is promoted.
+and +0.34 % geomean over their parents. Four candidates are accepted; one release-zone hook is committed by
+owner decision; nothing is promoted. Candidate 4 was corrected after a review finding (a data race in its first
+form) and built, gated and measured again; every number in this section is from the corrected build (section
+"Review finding" below; the first measurements are kept in `STATUS.md` and under `results/orin/`).
 
 Final stack = `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine5 ET_VK_SARC_SOFTMAX_VARIANT=orin_g64`
-on build `topic13` (`fd44f8011`, the last commit that changes code), against the pristine parent `6a7cc8cc6` in
-the same session (`results/orin/sessions/s7-final/`; tok/s, median of 5 valid interleaved runs per arm, 60
-timed runs all valid at 612 MHz, repeat spread at most 0.28 %):
+on build `topic14` (`aa66ea1e6`, the last commit that changes code), against the pristine parent `6a7cc8cc6` in
+the same session (`results/orin/sessions/s10-final/`; tok/s, median of 5 valid interleaved runs per arm, 60
+timed runs all valid at 612 MHz, repeat spread at most 0.54 %):
 
 | cell | parent | final | gain | `dev/1.5` (`cells.csv`) | gain over `dev/1.5` | next token (4 prompts) |
 |---|---:|---:|---:|---:|---:|---|
-| 1B 4w | 890.82 | 1490.54 | +67.3 % | 890.82 | +67.3 % | SAME |
-| 1B 8da4w | 824.14 | 1380.98 | +67.6 % | 822.82 | +67.8 % | SAME |
-| 3B 4w | 360.44 | 629.38 | +74.6 % | 360.37 | +74.7 % | SAME |
-| 3B 8da4w | 320.30 | 570.95 | +78.3 % | 320.30 | +78.3 % | SAME |
-| 8B 4w | 189.77 | 295.61 | +55.8 % | 189.74 | +55.8 % | SAME |
-| 8B 8da4w | 170.53 | 269.19 | +57.9 % | 170.43 | +57.9 % | SAME |
+| 1B 4w | 890.82 | 1489.45 | +67.2 % | 890.82 | +67.2 % | SAME |
+| 1B 8da4w | 824.81 | 1382.85 | +67.7 % | 822.82 | +68.1 % | SAME |
+| 3B 4w | 360.50 | 628.99 | +74.5 % | 360.37 | +74.5 % | SAME |
+| 3B 8da4w | 320.30 | 570.32 | +78.1 % | 320.30 | +78.1 % | SAME |
+| 8B 4w | 189.77 | 295.53 | +55.7 % | 189.74 | +55.8 % | SAME |
+| 8B 8da4w | 170.44 | 269.19 | +57.9 % | 170.43 | +58.0 % | SAME |
 
-Geomean **+66.70 %** over the parent, +66.77 % over the original `dev/1.5` numbers. 8da4w is still slower than
+Geomean **+66.65 %** over the parent, +66.73 % over the original `dev/1.5` numbers. 8da4w is still slower than
 4w end to end in every model, by 7 to 9 % (it was 7 to 11 %).
 
 | # | what | gate | gain over its parent (geomean of six cells) | recorded as |
@@ -39,34 +41,34 @@ Geomean **+66.70 %** over the parent, +66.77 % over the original `dev/1.5` numbe
 | 1h | the same kernels + fp32 softmax without the zero tail (`4070ti_nzf`), through the hook | `s4-c1h` | +57.81 % (parent: pristine) | `ACCEPTED (reference-error rule, owner decision 2026-10-04)` |
 | 2 | 8da4w linear: whole-texel weight staging (`orin-lin-refine2`) | `s3-c2` | +2.84 % (parent: pristine; 8da4w cells +3.8 / +6.9 / +6.7 %) | `GATE_ACCEPTED`, bit-identical to the shipped kernel |
 | 3 | 4w linear tiles (`orin-refine5`) | `s5-c3` | **+0.82 %** (parent: 1h + 2) | `GATE_ACCEPTED`, bit-identical to the shipped kernels on the shapes served |
-| 4 | softmax with subgroup reductions (`orin_g64`) | `s6-c4` | **+0.41 %** (parent: 1h + 2 + 3), inside the +-2 % band: not a gain by the protocol | `GATE_ACCEPTED`, no differing item; arithmetic change, reference error reported |
+| 4 | softmax with subgroup reductions (`orin_g64`), corrected form | `s9-c4r` (first form: `s6-c4`, +0.41 %, superseded) | **+0.34 %** (parent: 1h + 2 + 3), inside the +-2 % band: not a gain by the protocol | `ACCEPTED (reference-error rule, owner decision 2026-10-04)`, differing next-token items: none |
 
-Where the gain is (warm ETDump of both arms of `s7-final`, ms per 2048-token prefill, parent -> final):
+Where the gain is (warm ETDump of both arms of `s10-final`, ms per 2048-token prefill, parent -> final):
 
 | family | 1B 4w | 1B 8da4w | 3B 4w | 3B 8da4w | 8B 4w | 8B 8da4w |
 |---|---|---|---|---|---|---|
-| QK^T | 581 -> 108 | 581 -> 108 | 1488 -> 198 | 1488 -> 198 | 2269 -> 301 | 2269 -> 301 |
-| attn*V | 457 -> 61 | 457 -> 61 | 1194 -> 144 | 1195 -> 144 | 1818 -> 216 | 1818 -> 216 |
-| softmax | 177 -> 132 | 177 -> 132 | 231 -> 173 | 231 -> 173 | 352 -> 264 | 352 -> 264 |
-| linear GEMM | 666 -> 656 | 871 -> 779 | 1895 -> 1862 | 2578 -> 2171 | 4865 -> 4657 | 6057 -> 5305 |
-| copy / view / other (upstream) | 266 -> 266 | 154 -> 154 | 580 -> 581 | 351 -> 351 | 985 -> 985 | 574 -> 574 |
-| elementwise, 8-bit quantize, RMSNorm (upstream) | 119 -> 119 | 218 -> 216 | 236 -> 236 | 491 -> 490 | 435 -> 434 | 874 -> 873 |
-| total dispatch | 2283 -> 1359 | 2476 -> 1467 | 5664 -> 3235 | 6373 -> 3568 | 10779 -> 6913 | 11997 -> 7589 |
+| QK^T | 581 -> 108 | 581 -> 108 | 1488 -> 198 | 1489 -> 199 | 2268 -> 301 | 2269 -> 302 |
+| attn*V | 458 -> 61 | 457 -> 61 | 1193 -> 144 | 1194 -> 144 | 1818 -> 216 | 1818 -> 216 |
+| softmax | 177 -> 133 | 177 -> 133 | 230 -> 174 | 231 -> 174 | 351 -> 266 | 352 -> 266 |
+| linear GEMM | 667 -> 656 | 869 -> 778 | 1894 -> 1862 | 2578 -> 2172 | 4864 -> 4657 | 6055 -> 5302 |
+| copy / view / other (upstream) | 267 -> 266 | 154 -> 154 | 580 -> 580 | 351 -> 351 | 985 -> 985 | 574 -> 574 |
+| elementwise, 8-bit quantize, RMSNorm (upstream) | 119 -> 118 | 219 -> 214 | 236 -> 236 | 491 -> 492 | 436 -> 434 | 873 -> 872 |
+| total dispatch | 2284 -> 1359 | 2474 -> 1465 | 5663 -> 3235 | 6374 -> 3571 | 10777 -> 6913 | 11995 -> 7587 |
 
-Of the 924 ms saved on 1B 4w, 914 are attention (1215 -> 301) and 10 the 4w tile; of the 1009 ms on 1B 8da4w,
-914 are attention and 92 the 8da4w linear kernel. On 8B 8da4w: 3658 of 4408 ms are attention, 752 the linear
+Of the 925 ms saved on 1B 4w, 914 are attention (1216 -> 302) and 11 the 4w tile; of the 1009 ms on 1B 8da4w,
+913 are attention and 91 the 8da4w linear kernel. On 8B 8da4w: 3655 of 4407 ms are attention, 753 the linear
 kernel.
 
 Against the fresh roofs (igpu-roofline `fast`, driver 595.78, run `raw/roof-2026-10-05-fast`; `tools/roof_util.py`
-on the `gemm.csv` of `s7-final`, time-weighted over the model's linear layers):
+on the `gemm.csv` of `s10-final`, time-weighted over the model's linear layers):
 
 | kernels | parent | final |
 |---|---|---|
-| 4w linear, share of the fp16 matrix roof (9.716 TFLOP/s) | 61.6 / 62.7 / 60.5 % (1B / 3B / 8B) | 62.6 / 63.8 / 63.2 % |
+| 4w linear, share of the fp16 matrix roof (9.716 TFLOP/s) | 61.5 / 62.7 / 60.5 % (1B / 3B / 8B) | 62.6 / 63.8 / 63.2 % |
 | 8da4w linear, share of the int8 matrix roof (19.482 TOP/s) | 23.5 / 23.0 / 24.2 % | 26.3 / 27.3 / 27.7 % |
 | QK^T, 1B layer: 2.3 ms (134 MB written at the DRAM write roof) + 0.9 ms (8.6 GFLOP at the fp16 -> fp32 roof) | 36.3 ms | 6.73 ms = 48 % |
 | attn*V, 1B layer: 2.2 ms (134 MB read) + 0.9 ms | 28.6 ms | 3.84 ms = 81 % |
-| softmax, 1B layer: 2.2 ms read + 2.3 ms written | 11.0 ms | 8.25 ms = 55 % |
+| softmax, 1B layer: 2.2 ms read + 2.3 ms written | 11.0 ms | 8.30 ms = 54 % |
 
 ## What is in the tree
 
@@ -338,20 +340,42 @@ change. Against the fp32 CPU reference its rms and maximum error equal `4070ti_n
 cases and are 4 times (rms) and 2 times (maximum) below the parent's (`results/orin/sdpa-error5/summary.txt`);
 0.3 to 0.4 % of the fp16 output elements differ from `4070ti_nzf`'s, by one fp16 step at most.
 
-Gate `s6-c4` (build `topic13`; parent arm = candidates 1h + 2 + 3, candidate arm = the same with
+### Review finding (2026-10-06): the first form of `orin_g64` had a data race; corrected and gated again
+
+As first generated, every lane of a subgroup stored the subgroup's reduced value into the subgroup's slot
+(`shared_max[gl_SubgroupID] = subgroupMax(local_max)`, and the same for the sum): unordered non-atomic writes
+of one location by several invocations, a data race by the Vulkan memory model even though the values are
+equal; the barrier that follows orders the later reads, not the stores. Fixed in `aa66ea1e6`: every lane
+computes the reduction, the lane chosen by `subgroupElect()` alone stores it, the workgroup barriers are
+unchanged (confirmed in the SPIR-V of build `topic14`; against `topic13` only the five `g` softmax variants
+differ). The measurements made with the first form (`s6-c4`: +0.41 %; `s7-final`: +66.70 %; `sdpa-error5`;
+`probe/final-g64`; SDPA screens 6 and 7) are kept as measured and are not evidence for the corrected kernel,
+which was therefore gated again from the start. The kernel-level screen numbers above (8.25 / 6.18 / 8.25 ms,
+the `g128` and worker-count rows) are of the first form.
+
+Gate `s9-c4r` (build `topic14` = `aa66ea1e6`; parent arm = candidates 1h + 2 + 3, candidate arm = the same with
 `ET_VK_SARC_SOFTMAX_VARIANT=orin_g64`): 144 of 144 SDPA correctness cases with 0 mismatches, `pairing=ok` and the
 `orin_g64` kernel; `verify.sh` equal to the parent control, 0 findings, all four default-vs-tiled items SAME;
-session 1B 1482.98 -> 1491.62 / 1373.57 -> 1385.66, 3B 628.03 -> 629.77 / 569.05 -> 570.79, 8B 295.06 -> 295.78
-/ 268.66 -> 269.15 (4w / 8da4w): geomean **+0.41 %**, every cell inside the +-2 % band, next token SAME in 24 of
-24 rows. ETDump: softmax 140 -> 132, 183 -> 173, 280 -> 264 ms. By the protocol this is noise, not a gain; it is
-in the final stack because the gate accepted it, and the stack without it is that session's parent arm.
+session 1B 1481.91 -> 1489.45 / 1373.57 -> 1381.92, 3B 627.64 -> 629.57 / 569.05 -> 570.63, 8B 295.06 -> 295.57
+/ 268.56 -> 269.01 (4w / 8da4w): geomean **+0.34 %**, every cell inside the +-2 % band, next token SAME in 24 of
+24 rows. ETDump: softmax 140 -> 133, 183 -> 174, 280 -> 266 ms (-5.0 %); kernel level 8.30 / 6.21 / 8.30 ms per
+layer (the elected-lane store costs 0.05 ms per layer against the first form). By the protocol this is noise,
+not a gain; it is in the final stack because the gate accepted it, and the stack without it is that session's
+parent arm.
 
-Real-text evidence for the final stack under the reference-error rule (`results/orin/probe/final-g64/`, 41
-prompts, four arms, build `topic13`): criterion 1 met in 12 of 12 cases; top-1 differences final vs parent per
-cell 0 / 4 / 0 / 0 / 0 / 3 of 41 (the parent's own two arms: 0 / 2 / 0 / 1 / 0 / 1), mean KL at most 0.084 nat
-(limit 0.5), perplexity ratio 0.994 to 1.057; no gross divergence; at the gate's unaligned position the four arms
-pick the same token in all six cells. `tools/ref_error_rule.py`: MET, no differing next-token item. The table is
-in `STATUS.md`.
+Error against the fp32 CPU reference, measured again (`results/orin/sdpa-error6/`): not larger than the
+parent's in rms and in maximum in 12 of 12 cases (production shapes: rms 2.1e-05 against 8.5e-05 to 8.7e-05,
+maximum 7.8e-04 to 9.1e-04 against 1.4e-03 to 1.7e-03). The corrected kernel's output is bit-identical to the
+first form's in all 12 cases (0 of 26.6 million elements differ), and so are the 12 full-logits files of the
+real-text probe: on this driver the correction removes the undefined behaviour without changing an output bit.
+
+Real-text evidence for the corrected final stack under the reference-error rule
+(`results/orin/probe/final-g64r/`, 41 prompts, four arms, build `topic14`): criterion 1 met in 12 of 12 cases;
+top-1 differences final vs parent per cell 0 / 4 / 0 / 0 / 0 / 3 of 41 (the parent's own two arms: 0 / 2 / 0 / 1
+/ 0 / 1), mean KL at most 0.084 nat (limit 0.5), perplexity ratio 0.994 to 1.057; no gross divergence; at the
+gate's unaligned position the four arms pick the same token in all six cells. `tools/ref_error_rule.py`: MET.
+Recorded as `ACCEPTED (reference-error rule, owner decision 2026-10-04)`; differing next-token items: none. The
+table is in `STATUS.md`.
 
 ## The second Orin (`duck-stable`)
 
@@ -368,19 +392,20 @@ before `g128`, 4.4 to 5.6 %), so, as that decision says, it was not used again. 
 
 - Every accepted candidate was gated on a build of a commit of this branch, cross-built from a `git archive`
   tree (`build/<tag>.src.txt`): 1h on `topic6` = `4718f3e07`, which already contains the committed hook
-  `307abb2ed`; 2 on `topic6`; 3, 4 and the final session on `topic13` = `fd44f8011`. No commit after
-  `fd44f8011` changes anything outside this directory. No local patch is in any of these builds.
+  `307abb2ed`; 2 on `topic6`; 3 on `topic13` = `fd44f8011`; 4 (corrected) and the final session on `topic14` =
+  `aa66ea1e6`. No commit after `aa66ea1e6` changes anything outside this directory. No local patch is in any of these builds.
 - The only build with a local patch was `hook4` (the environment-variable form of the hook, before the owner's
   decision). It was used for one kernel-level softmax screen (`screens/sdpa-screen3.csv`): `4070ti_nzf` 8.75 /
   6.55 / 8.74 ms per layer; the committed builds read 8.74 / 6.54 / 8.74 (`topic10`) and 8.74 / 6.53 / 8.74
   (`topic13`). No end-to-end number was measured through the patch.
 - The kernels of candidates 1h and 2 are byte-identical SPIR-V in `hook4`, `topic6` and `topic13`
   (`build/<tag>.spv.sha256`: the QK^T tile, both attn*V tiles, the `4070ti_nzf` softmax, the `orin_bf` tile), and
-  the gates of `s5-c3` and `s6-c4` ran the whole stack on `topic13` with the same kernel names.
-- With nothing selected the branch dispatches what the parent dispatches: `s8-noenv` = unmodified `verify.sh` on
-  `topic13` without any environment: `gate_check.py verify` against the parent control ACCEPT with 0 findings,
+  the gate of `s5-c3` ran the stack on `topic13` and the gate of `s9-c4r` the whole stack on `topic14`, with the
+  same kernel names; between `topic13` and `topic14` only the five `g` softmax variants differ.
+- With nothing selected the branch dispatches what the parent dispatches: `s11-noenv` (and `s8-noenv`
+  before the correction) = unmodified `verify.sh` on `topic14` (`topic13`) without any environment: `gate_check.py verify` against the parent control ACCEPT with 0 findings,
   and `verify.out` equal to the parent control's line by line once the rates are removed (0 differing lines,
-  `sessions/s8-noenv/verify-lines.txt`). `test_sarc_select` on the release tables: `PASS (1240 checks, 31 rows,
+  `sessions/s11-noenv/verify-lines.txt`). `test_sarc_select` on the release tables: `PASS (1240 checks, 31 rows,
   0 candidates, dev zone absent, unverified off)`, the line of the parent. Shipped SPIR-V: all 53 shipped
   variants byte-identical between the parent build and every build of this campaign (`tools/shipped.py`).
 
