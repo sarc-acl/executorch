@@ -69,7 +69,7 @@ the noise band, not part of the final profile.
   new token, temperature 0, arms interleaved, median of the first 5 valid runs per arm), clock, throttle
   reasons, energy and temperature sampled every 10 ms. Valid = rc 0, 2048 prompt tokens, 0 generated tokens,
   no foreign DRM client of the card, median clock >= 2505 MHz, no thermal throttle reason. Differences from
-  the 780M protocol and their reasons are in `STATUS.md` ("How this host differs"). 662 timed runs in eleven
+  the 780M protocol and their reasons are in `STATUS.md` ("How this host differs"). 722 timed runs in twelve
   sessions, one rejected (`clock_low`) and replaced.
 - Gate per candidate: `tools/gate.sh` / `gate_sdpa.sh` (unmodified `sarc/tools/verify.sh --models 1b,3b,8b
   --schemes 4w,8da4w --pdiff` under the candidate environment, the timing session, next token parent vs
@@ -138,6 +138,24 @@ original `dev/1.5` numbers of this device (`cells.csv`) within 0.6 %:
 | 8B 8da4w | 2727.03 | **4481.40** | +64.33 % | 2737.97 | +63.68 % | 4481.40 | 4520.97 |
 | geomean over the parent of its session | | | **+59.23 %** | | | +57.47 % | +60.72 % |
 
+The same comparison was measured a second time (`s12-final5`, 60 timed runs, none rejected) after the reviewer
+found that the timing runner, when started outside a gate, had skipped its guard (`tools/e2e5.sh` called
+`gpu_begin` one line before loading it: no pair lock and no coordinator hold for `s10-final5` and
+`s11-final6`; nothing else was running and no hold was set, so the numbers stand, but the guarantee was not in
+force). With the runner corrected and tested through its entry point (`tools/test_e2e5_guard.sh`):
+
+| cell | parent | final profile | gain | final vs `cells.csv` |
+|---|---:|---:|---:|---:|
+| 1B 4w | 11770.10 | **17964.90** | +52.63 % | +53.51 % |
+| 1B 8da4w | 12412.10 | **20686.90** | +66.67 % | +66.67 % |
+| 3B 4w | 4864.61 | **7529.41** | +54.78 % | +54.78 % |
+| 3B 8da4w | 5251.28 | **9570.09** | +82.24 % | +82.24 % |
+| 8B 4w | 2435.20 | **3379.54** | +38.78 % | +38.61 % |
+| 8B 8da4w | 2737.97 | **4481.40** | +63.68 % | +63.68 % |
+| geomean | | | **+59.23 %** | |
+
+The two sessions agree within one step of the 1 ms timer in every cell.
+
 Next token SAME in 16 of 18 comparisons; the two that differ are candidate 1's items above (8B 8da4w on
 `prompt_2048.txt` and `prompt_check.txt`), as in every session against the stock parent. These sessions are
 timing and traces only; the kernels were gated in `s2-c1`, `s3-c2` and `s7-c5`. (1B 8da4w reads 20480.00 here
@@ -188,7 +206,7 @@ flops-weighted over all linear dispatches of a prefill):
 
 | | parent | final profile | roof |
 |---|---|---|---|
-| 4w, fp16 matrix | 64.6 to 67.5 TFLOP/s, 37.3 to 39.0 % | 65.3 to 70.0 TFLOP/s, 37.7 to 40.4 % | 173.3 TFLOP/s |
+| 4w, fp16 matrix | 64.6 to 67.5 TFLOP/s, 37.3 to 39.0 % | 65.3 to 70.0 TFLOP/s, 37.7 to 40.4 % (`s12-final5`: 65.4 to 70.2, 37.7 to 40.5 %) | 173.3 TFLOP/s |
 | 8da4w, int8 matrix | 82.1 to 87.6 TOP/s, 22.8 to 24.3 % | 104.9 to 115.3 TOP/s, 29.1 to 32.0 % | 359.9 TOP/s |
 
 The SDPA kernels have no in-model rate in the trace tables. From the screen-2 kernel times and the dense
@@ -303,7 +321,8 @@ Superseded runs (kept with reasons under `results/xe2/superseded/`): the first A
 and 0.1 s sampler rejected every run), the first roofline attempt (guard false positive on an operator shell
 command), and the first build of the 8da4w incumbents (`sw2i-8da4w-id-collision`: I numbered its
 configurations in a range the neighbour build already used; repeated with distinct ids). Recorded as it ended
-and not superseded: `s8-c6`, the first gate of candidate 6 (`GATE_FAIL` on an item caused by a guard message).
+and not superseded: `s8-c6`, the first gate of candidate 6 (`GATE_FAIL` on an item caused by a guard message),
+and `s10-final5` / `s11-final6`, whose runner had skipped its guard (repeated as `s12-final5`).
 Interruptions of the search, none of which lost a measured row (`STATUS.md`): a false positive of the new
 two-card guard stopped one queue for 4 minutes; the host was rebooted by someone else at 2026-10-06 05:57 UTC
 and both queues were restarted 14 minutes later; both cards paused once for 20 minutes (02:32 to 02:52 UTC), which I take to be the coordinator's hold being used.
@@ -365,7 +384,7 @@ would also need subgroup size 32.) Nothing was run on the B580.
 
 ## Checks on the branch
 
-`bash sarc/tools/check.sh --no-build` at the head, 2026-10-06 17:45 UTC:
+`bash sarc/tools/check.sh --no-build` at the head, 2026-10-06 18:00 UTC:
 
 ```
 == 1 zone rule vs origin/release/1.5

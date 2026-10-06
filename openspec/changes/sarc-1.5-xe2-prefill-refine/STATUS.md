@@ -1,6 +1,6 @@
 # sarc-1.5-xe2-prefill-refine: status
 
-**2026-10-06 17:30 UTC. Finished: nothing is running or queued on either card. The sampled parameter search
+**2026-10-06 18:00 UTC. Finished: nothing is running or queued on either card. The sampled parameter search
 (review follow-up) ran from 2026-10-05 05:33 to 2026-10-06 14:15 UTC over all four kernel families (two
 sampled, two enumerated), with the parameter-importance tables. What it found was gated as two further
 candidates, both `GATE_PASS` with bit-identical logits and both under 2 % geomean:**
@@ -12,9 +12,19 @@ candidates, both `GATE_PASS` with bit-identical logits and both under 2 % geomea
   the kernel saving, 0.7 to 1.1 % of a prefill).
 - 8da4w: the search found nothing beyond the candidate 2 tile.
 
-**Final profile against the pristine parent (session `s10-final5`): +59.23 % geomean; tok/s 4w / 8da4w: 1B
-17964.90 / 20480.00, 3B 7529.41 / 9615.02, 8B 3368.42 / 4481.40.** (`xe2-refine2`, the winner before the
-search: +57.47 %, `s6-final`; `xe2-refine6` for comparison: +60.72 %, `s11-final6`.) Candidate 1 remains
+**Final profile against the pristine parent: +59.23 % geomean in both final sessions. `s12-final5` (through the
+corrected timing runner, see below), tok/s 4w / 8da4w: 1B 17964.90 / 20686.90, 3B 7529.41 / 9570.09, 8B
+3379.54 / 4481.40; `s10-final5`: 17964.90 / 20480.00, 7529.41 / 9615.02, 3368.42 / 4481.40.** (`xe2-refine2`,
+the winner before the search: +57.47 %, `s6-final`; `xe2-refine6` for comparison: +60.72 %, `s11-final6`.)
+
+**Defect found by the reviewer and fixed (2026-10-06 17:30 UTC):** in `tools/e2e5.sh` the guard call
+(`gpu_begin`) stood one line above the line that loads it, so a timing session started outside `gate.sh`
+printed `gpu_begin: command not found` and ran without the pair lock and without the coordinator hold. That
+is how `s10-final5` and `s11-final6` ran (the queue records show the second card idle and no hold was set, so
+the numbers are not affected, but the guarantee was not in force). Sessions inside a gate (`s7-c5`, `s8-c6`,
+`s9-c6`) printed the same message but were covered by the gate's own lock. Fixed, a guard that is not acquired
+now stops every tool (status 75), `tools/test_e2e5_guard.sh` tests the runner through its entry point, and the
+final session was repeated as `s12-final5`. Details under "Coordinator hold". Candidate 1 remains
 `ACCEPTED (reference-error rule, owner decision 2026-10-04)`, not a plain pass. Four gated candidates in a row
 (3, 4, 5, 6) gained less than 2 % geomean: the stop rule holds. A coordinator hold is in place; both queues were
 told to end (`STOP`).
@@ -30,10 +40,10 @@ and reported number; the second B70 (guest PCI `0000:02:00.0`, Vulkan device 1, 
 
 The reviewer of the first report asked for (1) the sampled parameter search of the owner decision "how large
 parameter spaces are searched" with its parameter-importance table, (2) a resumable linear sweep, (3) a
-corrected run count for `s2-c1`. Items 2 and 3 are done (`tools/screen.sh`, `screen13-resume-test`; the count
-is in the candidate 1 section). Item 1 is running. When it has ended: gate what it found (below), update
-`proposal.md` ("Not done" still says the search was not run) and this file, run `bash sarc/tools/check.sh
---no-build`, commit, `git push origin topic/xe2-prefill-refine`. No PR.
+corrected run count for `s2-c1`. All three are done: item 1 below ("The sampled parameter search") and in
+`proposal.md` ("Parameter search"), item 2 in `tools/screen.sh` (`screen13-resume-test`), item 3 in the
+candidate 1 section. What the search found was gated (candidates 5 and 6), `proposal.md` is rewritten, the
+branch is pushed. The rest of this section records how the search was run, for whoever restarts a queue.
 
 Two queues, `tools/sweep_queue.sh`, one per card, both started with `nohup setsid` (they survive the session):
 `.artifacts/queue/` (card 0, every stage) and `.artifacts/queue1/` (card 1; it only receives the odd half of a
@@ -129,10 +139,30 @@ restart and without losing a running job (every unit sources `tools/host.sh` afr
   `HOLD` appears, `HELD` follows within 4 minutes during a screen and within 10 minutes otherwise. Later, while
   a candidate is gated, the units that cannot be interrupted are longer: unmodified `verify.sh` (about 8
   minutes) and one timed session (about 12 minutes); `HELD` then follows within about 12 minutes.
-- Where the check is: `gpu_begin` in `host.sh`, called by `gl.sh` before every GPU process, by the session,
-  gate, trace, parent-control and roofline tools and by `build-sweep.sh` before they start, and by
-  `sweep_queue.sh` before each job (this last one from the next queue start; it is not needed for the hold to
-  work). The check is made with the pair lock held, so a job cannot slip in between the check and its start.
+- Where the check is: `gpu_begin` in `host.sh`, called by `gl.sh` before every GPU process, by the session
+  runner (`e2e5.sh`), the gate, trace, parent-control and roofline tools and by every build script before they
+  start, and by `sweep_queue.sh` before each job. The check is made with the pair lock held, so a job cannot
+  slip in between the check and its start. If the guard cannot be acquired the tool stops with status 75 and
+  runs nothing.
+- **Correction, 2026-10-06 17:30 UTC (found by the reviewer).** From 01:40 to 17:30 UTC the session runner
+  did NOT have the check: in `tools/e2e5.sh` the call stood one line above the line that sources `host.sh`,
+  bash reported `gpu_begin: command not found`, and the runner went on. The hold and the exclusive pair lock
+  therefore did not work for a timing session started directly (`session.sh`), which is how the two final
+  sessions `s10-final5` and `s11-final6` ran (16:55 and 17:13 UTC); their `e2e5.out` begins with that message.
+  The sessions inside `gate.sh` (`s7-c5`, `s8-c6`, `s9-c6`) show the same message but ran under the gate's own
+  guard. No hold was set during any of them (`HOLD` absent, no `HELD`, no entry in `hold.log`), and the second
+  card's queue was idle with nothing pending, so no measurement was disturbed; but had the coordinator set
+  `HOLD` in those minutes, the session would have started regardless. The search itself (every unit through
+  `gl.sh`) and the sweep builds were covered throughout; `build-both.sh` / `build-probe.sh` since 07:20 UTC. Fix (`446aa1777`): `host.sh` is sourced first; every tool
+  stops if `gpu_begin` does not return 0; `pair_lock` reports a failure instead of continuing.
+- Tested through the entry point: `tools/test_e2e5_guard.sh` runs the real `e2e5.sh` on a staged session of
+  stubs in a temporary artifact directory (its own `HOLD`, `HELD` and pair lock; the real ones are compared
+  before and after and never touched): a hold keeps the session from starting and `HELD` names it, it starts
+  when the hold is removed; an occupied pair lock blocks it until released; a guard that cannot be acquired
+  ends it with status 75; no `command not found`. 11 assertions, `TEST_E2E5_GUARD_PASS`; the same test against
+  the runner as committed at `47e85d272` fails. `test_hold.sh` (the functions) still passes. The repeated
+  final session `s12-final5` held `run/pair.lock` exclusively while it ran (checked from outside at 17:33 UTC)
+  and its `e2e5.out` has no such message.
 - Tested without the coordinator: `tools/test_hold.sh` (a dry run of the same functions in a temporary artifact
   directory, CPU only, so it can run beside the queues): 11 assertions, `TEST_HOLD_PASS` at 01:40 UTC. It
   covers: no `HELD` without `HOLD`; a running job is not killed; no `HELD` while a job still runs on the other
@@ -766,7 +796,7 @@ Every cell is inside the +-2 % band in both sessions; 60 timed runs each, none r
 Not adopted, for the same reason as candidates 3 and 4: no cell shows a gain outside the noise band. It is
 gated and available as `xe2-refine6`.
 
-### Final profile against the parent, measured directly (sessions `s10-final5`, `s11-final6`)
+### Final profile against the parent, measured directly (sessions `s10-final5`, `s11-final6`, `s12-final5`)
 
 Pristine parent build, no environment, against build `topic9` (`ff29c08ef`) with `ET_VK_SARC_UNVERIFIED=1
 ET_VK_SARC_DEV_PROFILE=xe2-refine5` (`s10-final5`) and, for comparison, `xe2-refine6` (`s11-final6`); `b70-0`,
@@ -782,7 +812,25 @@ second card idle; tok/s, median of 5 valid runs per arm, arms interleaved; 60 ti
 | 8B 8da4w | 2727.03 | **4481.40** | +64.33 % | 2737.97 | +63.68 % | 2734.31 | 4520.97 | +65.34 % |
 | geomean | | | **+59.23 %** | | | | | +60.72 % |
 
-Both sessions end `E2E5_INCOMPLETE` on the two next-token items of candidate 1 (8B 8da4w on `prompt_2048.txt`
+**Repeated through the corrected runner, session `s12-final5`** (2026-10-06 17:31 to 17:47 UTC; the same
+builds and environment as `s10-final5`; the runner held the pair lock exclusively and obeyed the hold; 60
+timed runs, none rejected):
+
+| cell | parent | **`xe2-refine5`** | gain | vs `cells.csv` | `s10-final5` for comparison |
+|---|---:|---:|---:|---:|---:|
+| 1B 4w | 11770.10 | **17964.90** | +52.63 % | +53.51 % | 17964.90 |
+| 1B 8da4w | 12412.10 | **20686.90** | +66.67 % | +66.67 % | 20480.00 |
+| 3B 4w | 4864.61 | **7529.41** | +54.78 % | +54.78 % | 7529.41 |
+| 3B 8da4w | 5251.28 | **9570.09** | +82.24 % | +82.24 % | 9615.02 |
+| 8B 4w | 2435.20 | **3379.54** | +38.78 % | +38.61 % | 3368.42 |
+| 8B 8da4w | 2737.97 | **4481.40** | +63.68 % | +63.68 % | 4481.40 |
+| geomean | | | **+59.23 %** | | +59.23 % |
+
+The two sessions agree within one step of the 1 ms timer in every cell (at most 1.0 %). In-model linear rates
+of `s12-final5`: 4w 65.4 to 70.2 TFLOP/s (37.7 to 40.5 % of the fp16 roof), 8da4w 104.9 to 115.2 TOP/s (29.1 to
+32.0 % of the int8 roof).
+
+All three sessions end `E2E5_INCOMPLETE` on the two next-token items of candidate 1 (8B 8da4w on `prompt_2048.txt`
 and `prompt_check.txt`), the same items as in `s2-c1` and `s6-final`; the other 16 comparisons are SAME. These
 sessions are timing and traces only; the kernels were gated in `s2-c1`, `s3-c2`, `s7-c5` (and `s9-c6`).
 
