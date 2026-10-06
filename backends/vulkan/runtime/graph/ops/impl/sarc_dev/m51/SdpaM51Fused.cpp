@@ -11,7 +11,7 @@
 // fused3 with barriers at its shared-memory exchanges), the 780M's 780m/Sdpa780mFused.cpp
 // restricted to the packed form:
 //   ET_VK_SARC_M51_SDPA_FUSED=<variant>[,<variant>]
-//   e.g. fused3_d64_t32x32g11s32rko,fused3_d128_t16x64g11s32rko
+//   e.g. fused3_d64_t32x32g11s32rk,fused3_d128_t16x64g11s32rk
 // one variant (the shader name after sarc_dev_m51_sdpa_) per head_dim; without
 // the variable, the variants of ET_VK_SARC_M51_PROFILE (Overrides.cpp, m51
 // block). A copy pass (the 780M's sarc_dev_780m_sdpa_kvt, unchanged) first
@@ -63,7 +63,7 @@ const std::vector<Variant>& variants() {
                   token.c_str() + dims,
                   "_d%u_t%ux%ug%1u%1us%u",
                   &d, &m, &n, &gx, &gy, &sg) == 6,
-          "ET_VK_SARC_M51_SDPA_FUSED: expected fused3_d<D>_t<M>x<N>g<X><Y>s<S>rko");
+          "ET_VK_SARC_M51_SDPA_FUSED: expected fused3_d<D>_t<M>x<N>g<X><Y>s<S>rk[o]");
       out.push_back({"sarc_dev_m51_sdpa_" + token, d, m, n, gx * gy * sg});
     }
     return out;

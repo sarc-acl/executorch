@@ -1011,7 +1011,7 @@ struct ProfileM51 {
   const char* fused;
 };
 const ProfileM51 kM51Profiles[] = {
-    {"c1", "fused3_d64_t32x32g11s32rko,fused3_d128_t16x64g11s32rko"},
+    {"c1", "fused3_d64_t32x32g11s32rk,fused3_d128_t16x64g11s32rk"},
 };
 const ProfileM51* active_profile_m51() {
   static const ProfileM51* const active = []() -> const ProfileM51* {
