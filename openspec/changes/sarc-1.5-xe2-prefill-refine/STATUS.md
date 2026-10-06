@@ -1,18 +1,16 @@
 # sarc-1.5-xe2-prefill-refine: status
 
-**2026-10-06 08:20 UTC. The sampled parameter search (review follow-up) is running detached on both B70 cards;
-the two linear spaces are finished, the two attention spaces (enumerated) are running / pending.
-4w: the search found tiles 2 to 6 % faster per shape than the shipped one; as candidate 5 (`xe2-refine5`) they
-passed the full gate (`GATE_PASS`, logits bit-identical) with +1.75 / +1.84 / +2.31 % on the 1B / 3B / 8B 4w
-cells and +1.10 % geomean over the winner: a third candidate under 2 % geomean. 8da4w: nothing in the sample,
-its refinement or the neighbourhood of the incumbents beats the candidate 2 tile. Projected end of the search:
-2026-10-06 21:00 UTC without further rounds, 2026-10-07 05:00 UTC with them. The host was rebooted at 05:57 UTC
-by someone else; both queues were restarted at 06:11 with no measured row lost; the `llm-api-*` services that
-came back with the reboot were stopped by the owner at 06:30 UTC. A coordinator hold is in place. The winner
-measured against the parent is still `xe2-refine2` (candidates 1 and 2), +57.5 % geomean (`s6-final`);
-candidate 1 is `ACCEPTED (reference-error rule, owner decision 2026-10-04)`, not a plain pass; candidates 3 and
-4 passed their gates with no measurable gain. A direct session of `xe2-refine5` against the parent follows the
-search.**
+**2026-10-06 14:35 UTC. The sampled parameter search (review follow-up) is complete: it ended at 14:15 UTC,
+32 h 42 min after its start, inside the 48-hour mark; all four spaces are finished (two sampled, two
+enumerated) with their importance tables. What it found: 4w tiles 2 to 6 % faster per shape (candidate 5,
+`xe2-refine5`: `GATE_PASS`, bit-identical, +1.75 / +1.84 / +2.31 % on the 4w cells, +1.10 % geomean); nothing
+for 8da4w beyond the candidate 2 tile; attention tiles 3 to 22 % faster at kernel level (candidate 6,
+`xe2-refine6`: its build, SDPA gate, reference-error measurement, probe and session are RUNNING on `b70-0` with
+the second card idle, until about 16:30 UTC). After that: one direct session of the final profile against the
+pristine parent, `proposal.md`, `check.sh`, push. The second card has no more work. The winner measured
+against the parent is so far `xe2-refine2` (candidates 1 and 2), +57.5 % geomean (`s6-final`); candidate 1 is
+`ACCEPTED (reference-error rule, owner decision 2026-10-04)`, not a plain pass; candidates 3, 4 and 5 each
+gained less than 2 % geomean. A coordinator hold is in place.**
 
 Branch `topic/xe2-prefill-refine`, parent `6a7cc8cc6` (head of `topic/780m-prefill-refine`). Host
 `fedora-gpu-eval`. Card `b70-0` (guest PCI `0000:01:00.0`, Vulkan device 0, **`ETVK_DEVICE_INDEX=0`**,
@@ -70,7 +68,7 @@ command; `027-rounds-4w` and `sw2c-4w-c1` re-entered and continued after the las
 the host went down (measured again; their partial logs, if any, are under `raw/<name>/superseded/`), and 14
 minutes.
 
-**Queues at 08:20 UTC, 2026-10-06** (seed 20261005 everywhere):
+**Queues at 14:35 UTC, 2026-10-06** (seed 20261005 everywhere):
 
 | job | what | state |
 |---|---|---|
@@ -84,15 +82,14 @@ minutes.
 | `028-incumbent-8da4w` (+ `sw2i-8da4w-c1`), `029-rounds-8da4w` | the three incumbent 8da4w tiles and their 26 unmeasured legal neighbours, ids from 290000, cheap on both cards; round rule: no round (best 1.209x against 1.203x) | done 07:21 / 08:08 |
 | `0295-candidate5` | build `topic8` (`c561e2ca5`), stage `s7-c5`, gate, probe, decode A/B, decision, all on `b70-0` with card 1 idle | done 08:08: `GATE_PASS` |
 | `030-stage1-av` (+ `sw1-av-c1`), `035-stage2-av`, `036-rounds-av` | every legal attn*V configuration (1102, enumerated): validation, split cheap screen, correctness of the top, 15 finalists full x 2; no neighbours exist, so no further round | done 10:14 |
-| `040-stage1-qk`, `045-stage2-qk`, `046-rounds-qk` | every legal QK^T configuration (enumerated) | RUNNING since 10:14; about 5 h + 1 h |
+| `040-stage1-qk` (+ `sw1-qk-c1`), `045-stage2-qk`, `046-rounds-qk` | every legal QK^T configuration (2828, enumerated): validation, split cheap screen, correctness of the top 39, 14 finalists full x 2; no neighbours exist, so no further round | done 14:15: **end of the search** |
+| `050-candidate6` | build `topic9` (`ff29c08ef`), stage `s8-c6` (`xe2-refine5` against `xe2-refine6`), `gate_sdpa.sh`, error against the fp32 reference for parent / refine5 / refine6, probe, decode A/B, decision | RUNNING since 14:26, about 2 h |
 
 **Rate with two cards:** 8da4w screen 18.5 s per configuration on card 0 and 18.0 s on card 1, i.e. 9.1 s for
 the pair (12 of the 2000 ran into the 240 s timeout); 4w 13.5 s per card. 8da4w stage 2 took 1 h 15 min.
-**Projection:** QK^T stage 1 until about 15:30, stage 2 about 16:30 UTC (an enumerated space has no
-unmeasured neighbours, so there are no further rounds). Then candidate 6 (attention) and the final session:
-about 19:00 UTC. The search started 2026-10-05 05:33 UTC, so
-the 48-hour mark is 2026-10-07 05:33 UTC: a refinement round that would start so late that it cannot end
-before that mark is not started; it is reported instead with its count and projection.
+QK^T: 4.9 s per configuration on card 0 and about 5.7 s on card 1 (cheap).
+**Projection:** candidate 6 until about 16:30 UTC, the final session and the write-up after it. The search ran
+from 2026-10-05 05:33 UTC to 2026-10-06 14:15 UTC; no refinement round had to be withheld for the 48-hour mark.
 
 **Then:** the 4w finds are gated (candidate 5, below). If the attention spaces yield a kernel that beats the
 incumbent by more than 2 % in a full x 2 confirmation with correctness `ok`, it becomes candidate 6 the same
@@ -204,7 +201,7 @@ memory is read from the SPIR-V (limit 46000 bytes; a tile over the device limit 
 | 4w linear | body (release, split staging `xe2s`, texel-wise `xe2bx`), M, N, K, subgroup grid, subgroup size, layout, IMG_A, IMG_W, drain, accumulator | 338448 | 3000 / 2851 / 2067 | 2000 + neighbours | **finished**: 2000 cheap (60 also full x 2); 326 + 319 + 320 neighbours cheap; 23 + 26 + 28 finalists full x 2 | 13.5 s per configuration (cheap), 50 s (full), one card |
 | 8da4w linear | body (zpg, bt, xe2bt, zpgtr), M, N, K, grid, subgroup size, zpgtr flags | 44670 | 3000 / 2333 / 2093 | 2000 + neighbours | **finished**: 2000 cheap (60 also full x 2; 970 on card 1); 323 neighbours cheap; 19 finalists full x 2; 3 incumbents + 26 neighbours cheap | 18.3 s per configuration and card (cheap), 9.1 s for the two cards |
 | attn*V | family (sweep, ml, xe2), M, N, K, grid, subgroup size | 1131 | 1131 / 1131 / 1102 (enumerated) | every legal one | **finished**: 1102 cheap (60 also full x 2; 521 on card 1); correctness of the top 54; 15 finalists full x 2 | 6.9 s per configuration and card (cheap) |
-| QK^T | family (sweep, pk, xe2, xe2c), M, N, K, grid, subgroup size, NO_MASK_FILL | 4536 | all drawn; checked when its build runs | every legal one (about 3400) | 0 | about 9 s expected |
+| QK^T | family (sweep, pk, xe2, xe2c), M, N, K, grid, subgroup size, NO_MASK_FILL | 4536 | 4536 / 4536 / 2828 (enumerated) | every legal one | **finished**: 2828 cheap (60 also full x 2; 1384 on card 1); correctness of the top 39; 14 finalists full x 2 | 4.9 to 5.7 s per configuration and card (cheap) |
 
 Sample size: 2000 per linear space (the lower end of the owner's 2000 to 3000): a full enumeration with the
 full measurement would take about 4 months (4w) and 3 weeks (8da4w). The two SDPA spaces can be enumerated
@@ -359,6 +356,33 @@ more than 2 % faster than the best of round 1's confirmation; no round d.
   Both winners use subgroup size 32 and K = 64, which no hand-chosen screen had tried. attn*V is 6 to 16 ms of
   a 106 to 600 ms prefill, so this is about 0.4 to 0.6 % end to end. It goes into candidate 6 together with
   whatever the QK^T enumeration finds.
+
+### QK^T (`results/xe2/sweep/qk/`; enumerated, finished)
+
+- All 4536 analytically legal configurations compile; 2828 fit the shared-memory limit and were screened
+  (1384 on card 1, scale factors 0.9999 to 1.0002 on the QK^T shapes).
+- **Validation of the cheap mode** (`validation.csv`, 60 configurations, threshold 0.9): Spearman 0.9999 for
+  every (model, class); full repeats differ by 0.05 to 0.07 % (median). **Drift**: under 0.6 % over 29 base
+  runs.
+- **Parameter importance** (`importance-sample.csv`, the whole space; score = geometric mean over head_dim 64
+  and 128): subgroup grid y 30.8 % (best 8; 1 is 3.7 times the median), grid x 15.4 % (best 4), NO_MASK_FILL
+  4.6 % (on: 0.80, off: 1.19), tile M 3.5 % (256 is 3.5 times the median), tile N 3.4 % (256: 1.9 times),
+  family 3.2 % (`xe2c` 0.86, `pk` 0.90, `xe2` 0.94, `sweep` 1.73), K 0.6 % (64 better at the median), subgroup
+  size 0.2 %. **Pair interactions**: grid x x grid y 8.9 %, M x grid y 5.4 %, N x grid x 1.4 %, the rest under
+  1 %.
+- **Correctness**: all 39 configurations near the top pass the extended tier (no failure in this space).
+- **Confirmation** (`confirm.csv`, 14 finalists full x 2 against candidate 1's kernel; repeat spread at most
+  0.3 %): time per layer in us and speed relative to candidate 1's kernel:
+
+  | configuration | 1B (head_dim 64) | 3B (128) | 8B (128) |
+  |---|---|---|---|
+  | candidate 1: `pk` 128 x 64, K = 32, grid 4 x 4 | 297.0 | 314.7 | 410.8 |
+  | candidate 3: `xe2c` 128 x 64, K = 32, grid 4 x 4 (gated, no end-to-end gain) | 295.0 (1.007x) | 294.7 (1.068x) | 382.4 (1.074x) |
+  | `303340`: `xe2c` 64 x 128, K = 32, grid 8 x 2, subgroup size 16 | 287.5 (1.033x) | 280.0 (**1.124x**) | 368.4 (**1.115x**) |
+  | `302248`: `xe2c` 64 x 64, K = 64, grid 4 x 2 | 281.7 (**1.054x**) | 359.8 (0.875x) | 472.5 (0.869x) |
+
+  `303340` goes into candidate 6 for every head_dim (on 1B it is 2 % behind `302248`, which is not used: one
+  kernel for the op, and QK^T is 5 ms of a 106 ms prefill there).
 
 ## Needs the owner's attention
 
