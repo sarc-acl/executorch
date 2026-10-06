@@ -73,7 +73,7 @@ elif kind == "lb":
     except (ValueError, IndexError, KeyError):
         pass
 
-rows, drm = [], []
+rows, drm, amd_power = [], [], []
 fb = ""
 if a is not None:
     for line in open(clk, errors="replace"):
@@ -82,6 +82,10 @@ if a is not None:
             drm.append([int(x) for x in f[1:4]])
         elif len(f) == 6 and a <= int(f[0]) <= b:
             rows.append([int(x) for x in f[:5]] + [f[5]])
+        elif len(f) == 5 and a <= int(f[0]) <= b:
+            # AMD sampler: epoch_us sclk_Hz busy_pct power_uW temp_mC -> clock MHz, no status, no energy counter
+            rows.append([int(f[0]), int(f[1]) / 1e6, 0, None, int(f[4]), ""])
+            amd_power.append(int(f[3]) / 1e6)
     lo = [d for d in drm if d[0] <= a]
     hi = [d for d in drm if d[0] >= b]
     if kind == "lb" and drm:
@@ -92,7 +96,10 @@ if a is not None:
 n = len(rows)
 cm = round(st.median(r[1] for r in rows), 1) if rows else ""
 cmin = min(r[1] for r in rows) if rows else ""
-pw = round((rows[-1][3] - rows[0][3]) / (rows[-1][0] - rows[0][0]), 1) if n > 1 else ""
+if amd_power:
+    pw = round(st.median(amd_power), 1)
+else:
+    pw = round((rows[-1][3] - rows[0][3]) / (rows[-1][0] - rows[0][0]), 1) if n > 1 else ""
 thr = sum(1 for r in rows if r[2])
 thermal = sum(1 for r in rows if re.search(r"thermal|prochot|ratl", r[5]))
 tmax = round(max(r[4] for r in rows) / 1000) if rows else ""
@@ -113,7 +120,7 @@ if tag == "prefill":
         reason.append("clock_low")
     elif thermal:
         reason.append("thermal_throttled")
-    if fb == "":
+    if busymax and fb == "":
         reason.append("busy_unsampled")
     elif busymax and fb > float(busymax):
         reason.append("foreign_busy")

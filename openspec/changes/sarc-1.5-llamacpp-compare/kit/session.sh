@@ -7,8 +7,9 @@
 # is the tuning campaign's: this script sources its tools/host.sh and uses its sampler.py, so the validity
 # rules and the calibrated thresholds (clock floor, foreign-busy ceiling) are the campaign's own.
 # Implemented against the host.sh of the Intel campaigns (functions gpu_shared, guarded, gpu_others,
-# drm_clients; variables HW, LOCK, CLKMIN_FILE, BUSYMAX_FILE, *_TOP). Other devices need their host.sh
-# to offer the same names, or an adapter.
+# drm_clients; variables HW, LOCK, CLKMIN_FILE, BUSYMAX_FILE, *_TOP). A device whose campaign has no such
+# file gets an adapter with the same names under kit/hosts/<device>/host.sh (optionally gtemp, dev_sampler,
+# DEV_CLKMIN, DEV_BUSYMAX), written from that campaign's own session script.
 #
 # usage: session.sh --tools DIR --stage DIR --out NAME [--reps 5] [--extra 3] [--models 1b,3b,8b]
 #                   [--arms FILE] [--tokens 2048] [--check-tokens 1972] [--no-check]
@@ -42,9 +43,13 @@ CT=$(readlink -f "$TOOLS"); . "$CT/host.sh"
 TOP=$$; export B580_TOP=$TOP XE2_TOP=$TOP
 exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK"; flock -w 900 9 || { echo "gpu-lab lock busy"; exit 75; }
 gpu_shared || exit 75
-CLKMIN=$(<"$CLKMIN_FILE"); BUSYMAX=$(<"$BUSYMAX_FILE")
-[[ -n $CLKMIN && $CLKMIN -gt 0 && -n $BUSYMAX ]] || { echo "no calibration (clock floor, busy ceiling) from the campaign" >&2; exit 2; }
-gtemp() { echo $(( $(<$HW/temp2_input) / 1000 )); }
+# Thresholds: the campaign's calibration files where it has them (Intel), else the values its host file sets
+# (DEV_CLKMIN; DEV_BUSYMAX may be empty where the device has no per-client engine accounting).
+CLKMIN=${DEV_CLKMIN:-}; BUSYMAX=${DEV_BUSYMAX:-}
+[[ -z $CLKMIN && -s ${CLKMIN_FILE:-/nonexistent} ]] && { CLKMIN=$(<"$CLKMIN_FILE"); BUSYMAX=$(<"$BUSYMAX_FILE"); }
+[[ -n $CLKMIN && ${CLKMIN%.*} -gt 0 ]] || { echo "no clock floor from the campaign" >&2; exit 2; }
+declare -F gtemp > /dev/null || gtemp() { echo $(( $(<$HW/temp2_input) / 1000 )); }
+declare -F dev_sampler > /dev/null || dev_sampler() { exec python3 "$CT/sampler.py" "$1" 0.01 $TOP; }
 finish() { local st=$1; shift; { date -u; echo "$st $*"; } > "$O/done.txt"; echo "$st $*"; [[ $st == SESSION_OK ]] && exit 0; [[ $st == SESSION_ABORTED ]] && exit 76; exit 1; }
 declare -A STEM=([1b]=llama-3.2-1b:llama3_2-1b [3b]=llama-3.2-3b:llama3_2-3b [8b]=llama-3.1-8b:llama3_1-8b)
 declare -A GSTEM=([1b]=llama3_2_1b [3b]=llama3_2_3b [8b]=llama3_1_8b)
@@ -77,7 +82,7 @@ run1() {  # run1 <model> <arm line> <rep> <slot> <tag: prefill|discard|check>
   log="logs/$tag-$m-$name-r$r.log"
   t0=$SECONDS; cool; cs=$((SECONDS - t0)); tp=$(gtemp); oth=$(gpu_others | tr ',' ';')
   [[ -n $oth ]] && finish SESSION_ABORTED "other GPU workload before $tag $m $name r$r: $oth"
-  python3 "$CT/sampler.py" "$O/${log%.log}.clk" 0.01 $TOP 9>&- 8>&- & sp=$!
+  dev_sampler "$O/${log%.log}.clk" 9>&- 8>&- & sp=$!
   us0=$(date +%s%6N)
   case $kind in
     et) local benv=(); [[ -f $D/$x/env ]] && mapfile -t benv < "$D/$x/env"
