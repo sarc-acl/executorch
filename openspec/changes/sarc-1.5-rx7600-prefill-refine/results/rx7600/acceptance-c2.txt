@@ -1,0 +1,11 @@
+Accepted under reference-error rule (owner decision 2026-10-04).
+
+Evidence:
+- Probe comparison: $RESULTS_DIR/probe/comparison.csv
+- SDPA error table: $RESULTS_DIR/sdpa-error/error.csv
+- SDPA evidence bitwise: $ARTIFACTS_DIR/stage/c2-fused/sdpa-error/bitwise.txt
+- SDPA evidence runs: $ARTIFACTS_DIR/stage/c2-fused/sdpa-error/runs.txt
+
+All next-token items in the timed, real-text, and unaligned prompts are SAME (as seen in the gate status for candidate 2).
+Gross divergence check passed (mean KL <= 0.5 nat and top-1 token differs in at most 1/3 of the prompts).
+Candidate error against fp64 reference is not larger than parent's for all production shapes (see SDPA error table).

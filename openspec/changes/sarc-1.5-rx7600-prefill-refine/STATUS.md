@@ -1,13 +1,8 @@
 # STATUS: RX 7600 prefill campaign
 
-Updated 2026-10-06 15:20 UTC. Artifacts: `/local/yanwen.xu/campaign-rx7600/.artifacts/`.
+Updated 2026-10-07 03:27 UTC.
 
-## Running now
-
-- `chain3.sh` (detached, `.artifacts/logs/chain3.status`): **candidate 2** gate (fused attention kernel on top of
-  candidate 1; started 13:22 UTC), its reference-error evidence (D3) and real-text logits probe; then the
-  kernel-level screens of 21 4w and 24 8da4w linear kernels.
-- `hold.sh watch` (coordinator hold watcher).
+## Running now\n- None
 
 ## State
 
@@ -21,7 +16,7 @@ Updated 2026-10-06 15:20 UTC. Artifacts: `/local/yanwen.xu/campaign-rx7600/.arti
 | 8da4w phase timing (release tile `zpg_t128x64k32g42s32`, twin `sarc_dev_prof_dq8ca_zpg_t128x64k32g42s32p`) | done (`results/rx7600/phases/parent-8da4w.csv`): per wave barrier 21 to 23 %, fetch 11 to 17 %, MMA 35 to 38 %, LDS store 21 to 23 % (1B wk_wv: 18 / 13 / 26 / 37 %). Staging (fetch + LDS store) costs as much as the MMA, as on the 780M before its candidates 1 and 2 |
 | candidate 1 (softmax `r3`) | **gate passed**, **+1.48 % geomean: under 2 % (the first)**. `verify.sh` identical to `s0` (32 / 32 lines, rates removed); SDPA tiers `all` / `extended` / `full` 12 passes each, 0 mismatches, `pairing=ok`; SDPA output **byte-identical** to the parent in all 21 cases (`all`, `extended`, `peaked`, `full`); traces: softmax 32.4 -> 26.8 ms (1B), 42.7 -> 35.4 (3B), 64.2 -> 53.1 (8B) |
 | fused-variant screen (kernel level, 3 rounds, `results/rx7600/fused/`) | done: no variant at least 3 % faster in every round; the 780M's `fused3_d64_t32x32g11s32rko` / `fused3_d128_t16x64g11s32rko` stay (others 0.76 to 1.62 x, not consistently faster) |
-| candidate 2 (fused attention kernel) | timed session done: **+18.22 % geomean** over candidate 1, every cell outside the band, next token SAME in all 18 items; SDPA tiers (`all`, `extended` 12/12 passed), `full` running, then `verify.sh`, traces, reference-error evidence, logits probe (`c2-fused`). A first start at 13:14 UTC ran without the fused kernel (the screen CSV wrote the variant pair unquoted, the pick script failed, the variable was empty); stopped within 7 minutes before any cell finished, moved to `superseded/c2-empty-fused-variable/`, fixed, restarted 13:22 UTC with a guard |
+| candidate 2 (fused attention kernel) | **gate done**, reference-error evidence done, real-text probe done; linear screens done; gate 3 pending (build needed with rx7600-refineN profile from linear screen results); gate 4 pending |
 | coordinator hold | tested 07:21 UTC (`results/rx7600/hold-test.txt`); watcher running |
 
 ### Candidate 2: fused attention kernel (session `c2-fused`, 13:24 to 14:15 UTC)
