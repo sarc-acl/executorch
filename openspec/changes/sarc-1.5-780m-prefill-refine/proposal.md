@@ -339,19 +339,39 @@ shared-memory rules; 8da4w 165,888 -> 2,238; QK^T 9,216 -> 1,724; attn*V 4,608 -
 projected 26.8 days for the 4w survivors, so by owner decision 4w was searched by a seeded uniform sample of
 2,500 (2,444 timed), a refinement around the best 22 (991), and a confirmation with the full measurement.
 
-**4w: within the existing kernel bodies, the best configuration per shape on this device and driver is**
-(`results/780m/space/confirm-4w/summary.csv`; 5 repeats, spread 0.1 to 0.4 %):
+**4w: within the existing kernel bodies, the best configuration per shape on this device and driver is** (final
+result, profile `refine10`, which candidates 10 and 11 run; median over all full measurements of the round, at
+least 5 per configuration; `results/780m/space/final-4w/per-shape.csv`, `confirm2-4w/summary.csv`):
 
-| shapes | kernel | against the `780m-refine3` choice |
-|---|---|---|
-| N = 512 (1B wk_wv) | the shipped `t128x128k32g42s32f32c` (ten configurations within 0.5 %) | 0 |
-| N = 1024 (3B, 8B wk_wv); K = 2048 with N = 2048 (1B wq_wo) | `t128x256k32g42s32f32cbt` | -1.7 to -2.9 % |
-| K >= 4096 with N >= 2048 (8B wq_wo, w1_w3, w2; 1B and 3B w2) | `t256x128k32g18s32f32bbt` | -3.4 to -7.0 % |
-| N = 8192 with K = 2048 (1B w1_w3) | `t256x128k32g28s32f32bbt` | -4.4 % |
-| K = 3072 with N >= 2048 (3B wq_wo, w1_w3) | `t256x128k32g24s32f32bbt`; `..cbt` and `..g18..` are within 2 % | -3.2 to -3.7 % (`..cbt`: -1.8 to -2.3 %) |
+| shapes | kernel (`refine10`) | behind the fastest of the shape | tied within 2 % | against the `780m-refine3` choice | against the release table kernel |
+|---|---|---:|---:|---:|---:|
+| K >= 4096, N >= 1024 (8B wq_wo, w1_w3, w2, wk_wv; w2 of 1B and 3B) | `t256x128k32g18s32f32cbt` | 0 to 0.6 % | 3 to 20 | -2.1 to -6.9 % | -8.0 to -11.0 % |
+| K = 3072, N >= 2048 (3B wq_wo, w1_w3) | `t256x128k32g24s32f32cbt` | 0.0 to 0.1 % | 7, 10 | -5.6 / -4.8 % | -6.8 / -5.9 % |
+| K = 3072, N = 1024 (3B wk_wv) | `t128x256k32g42s32f32cbt` | 0 (fastest) | 12 | -2.7 % | -4.9 % |
+| K = 2048, N = 8192 (1B w1_w3) | `t256x128k32g28s32f32cbt` | 0 (fastest) | 7 | -6.1 % | -7.3 % |
+| K = 2048, N <= 2048 (1B wq_wo, wk_wv) | `t128x128k32g24s32f32cbt` | 0 (fastest) | 4, 1 | -5.7 / -4.6 % | -5.4 / -4.6 % |
 
-Per layer that is 4.0 to 4.8 % less linear time than `780m-refine3`; profile `refine9` (which keeps `..cbt` on
-the tied K = 3072 shapes) gets 3.1 to 4.8 %. Response surface: `STATUS.md`, "The random sample" (importance over
+On every one of the twelve shapes the `refine10` kernel is the fastest or within 0.62 % of it. Per layer
+(2 wq_wo + 2 wk_wv + 2 w1_w3 + w2), against `780m-refine3`: **-6.09 / -5.30 / -5.93 %** linear time (1B / 3B /
+8B); the best kernel per shape would be -6.25 / -5.35 / -6.12 %; the release table kernel is +1.6 / +2.1 / +3.9 %.
+
+Evidence and coverage (`results/780m/space/final-4w/coverage.csv`, `tools/q4_final.py`): 260 configurations were
+measured in full on the twelve real shapes; the 41 that are among the ten fastest of some shape each have at
+least 5 full measurements and 12 of 12 production-diff passes on each of the three models (1,908 passes over 53
+configurations in `confirm-4w`, `confirm2-4w`, `confirm3-4w`; 0 failed). One measurement is an outlier and is
+kept: the fifth of `t128x128k32g24s32f32cbt` (2026-10-05 15:06 UTC) reads 6 to 9 % above the other four on three
+1B shapes, cause not identified; the other four agree within 0.4 % and the median does not move.
+
+How it got there (historical stages, not the recommendation): the first confirmation (35 configurations five
+times, `confirm-4w/`) gave profile `refine9`, which candidate 9 ran: the shipped tile on N = 512,
+`t128x256k32g42s32f32cbt` on N = 1024 and on K below 4096, `t256x128k32g18s32f32bbt` / `..g28..bbt` on the large
+shapes; per layer -4.76 / -2.99 / -4.18 % against `780m-refine3`. Two more refinement rounds and a geometry scan
+(`refine2`, `refine3`, `geo-cbt`) replaced the band drain by the in-Ash drain on the 256-row tiles and found
+`t128x128k32g24s32f32cbt` for the two small 1B shapes, where `refine9` still ran the shipped tile (4.8 % behind);
+`refine10` is 1.4 / 2.4 / 1.8 % less linear time per layer than `refine9`. End to end that was candidate 10,
++0.47 % geomean, inside the band.
+
+Response surface: `STATUS.md`, "The random sample" (importance over
 the whole space: tile M and N, the grid and the accumulator explain it, through the number of MMA tiles a
 subgroup owns; no pair of boolean options interacts) and "Part 1, 4w" (near the optimum: `IMG_A`, `IMG_W` and the
 drain mode do not matter; `SH_F16V4` always costs 3 %; `B_COLMAJOR`, tile M / N and the grid are decided by the
@@ -386,7 +406,7 @@ serve the calls it does not take (unaligned prompts, decode), so they change not
 (three-kernel path per layer 9.97 -> 9.53, 10.23 -> 9.09, 13.55 -> 11.95 ms, against 2.26 / 3.22 / 4.05 ms for
 the fused kernel), and they change the accumulation, which needs its own gate. Left to the owner.
 
-Correctness of everything confirmed in Part 1: 2,628 of 2,628 production-diff passes ALL PASSED (73 linear
+Correctness of everything confirmed in Part 1: 2,700 of 2,700 production-diff passes ALL PASSED (75 linear
 configurations x 3 models x 12, each on its own kernel on the real shapes), the six kernels of the final profile
 among them.
 

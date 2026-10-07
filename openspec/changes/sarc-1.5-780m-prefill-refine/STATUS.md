@@ -1,6 +1,6 @@
 # STATUS: 780M prefill campaign, round 2 (parameter space + beyond)
 
-Updated 2026-10-06 17:49 PDT (2026-10-07 00:49 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
+Updated 2026-10-06 18:10 PDT (2026-10-07 01:10 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
 Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (new raw data) and
 `.../780m-prefill-refine-2026-10-03/` (earlier builds and sessions).
 
@@ -12,12 +12,11 @@ Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (
 | candidate 8 (fused SDPA kernel, Part 2) | **ACCEPTED (reference-error rule, owner decision 2026-10-04)**: +7.84 to +20.14 %, geomean **+13.16 %** over candidate 7, 60 valid runs; gate finished 00:04 PDT; one next-token item differs (8B 8da4w, `prompt_2048.txt`); record below. It needs `hooks/sdpa-fused-hook.patch`, so adopting it is the owner's decision |
 | igpu-roofline `fast` plan | finished 20:15 PDT; matrix roofs 14.766 TFLOP/s (fp16 -> fp32) and 14.379 TOP/s (int8) |
 | candidate 9 (candidate 8 + one-pass fused kernel + 4w kernel per shape) | **gate passed** (finished 04:10 PDT): +4.50 to +5.45 % in the 4w cells, +1.06 to +1.80 % in the 8da4w cells (inside the band), geomean **+3.19 %** over candidate 8; every next-token item SAME; record below |
-| 4w, Part 1 | random sample, refinement round 1 and the confirmation are done: **best kernel per shape below**, 4.0 to 4.8 % less linear time per layer than `780m-refine3`, byte-identical output; refinement round 2 (51 neighbours of the winners) and the 12 production-diff passes are queued |
+| 4w, Part 1 | **done** (final table in "Part 1, 4w", second confirmation): seeded sample of 2,500, three refinement rounds, a geometry scan; 260 configurations measured in full, the 41 in a top ten each with at least 5 full measurements and 36 of 36 production-diff passes; profile `refine10` is the fastest or within 0.62 % of it on all twelve shapes, 5.3 to 6.1 % less 4w linear time per layer than `780m-refine3` |
 | candidate 10 (candidate 9 with the refined 4w table, profile `refine10`) | **gate passed, +0.47 % geomean: inside the band, not a gain** (4w cells +0.94 / +1.43 / +1.16 %, 8da4w cells 0.00 / -0.73 / +0.06 %); byte-identical 4w output; first candidate under 2 % |
-| 4w, Part 1 | finished except for the production-diff passes: the search stopped moving after refinement round 3 and the geometry scan; the best kernel per shape (5 repeats) is profile `refine10` |
 | 8da4w, Part 1 | **done** (792 of 792 production-diff passes ALL PASSED): all 2,238 survivors screened, 49 measured in full, 22 five times; best kernel per shape below ("Part 1, 8da4w"), 2.1 to 3.1 % less 8da4w linear time per layer than `780m-refine3` |
 | candidate 11 (candidate 10 + the 8da4w kernel per shape, profile `c11`) | **gate passed, +1.20 % geomean** (8da4w cells +2.02 / +2.82 / +2.36 %, 4w cells 0.00 / 0.00 / +0.06 %): the second consecutive candidate under 2 %, **stop rule met**; kept as the final configuration |
-| production-diff passes | **done**: 2,628 of 2,628 passes ALL PASSED (73 configurations x 3 models x 12), the six kernels of the final profile among them |
+| production-diff passes | **done**: 2,700 of 2,700 passes ALL PASSED (75 configurations x 3 models x 12), the six kernels of the final profile among them |
 | QK^T / attn*V, Part 1 | **done**: all 1,724 + 470 survivors measured (0 failures), 44 configurations five times with 12 correctness passes (0 failed cases); best kernel per head dimension in "Part 1, SDPA": QK^T 9 to 30 % and attn*V 8 to 10 % faster than the `780m-refine3` choices on the three-kernel path; not in a profile, not gated |
 | campaign | **closed 2026-10-07 00:48 UTC**: stop rule met, Part 1 complete for all four families, final configuration measured, branch pushed |
 | final configuration (candidate 11), measured directly | **+33.82 % geomean over `dev/1.5`** (+23.42 to +48.35 %), **+24.12 % over `780m-refine3`** (+14.56 to +35.83 %); section "Final configuration" |
@@ -102,7 +101,8 @@ Where the capture material is (kept as evidence, nothing calls it):
 
 ## Running now
 
-**Nothing. The campaign is closed** (2026-10-07 00:48 UTC): no detached job of the campaign is running except
+**Nothing. The campaign is closed** (2026-10-07 00:48 UTC; review follow-up on the 4w evidence 00:56 to 01:07 UTC,
+"Part 1, 4w", second confirmation): no detached job of the campaign is running except
 the hold watcher (`hold.sh watch`, which only answers a coordinator `HOLD` with `HELD` "queue idle").
 
 - Stop rule met: candidates 10 (+0.47 %) and 11 (+1.20 %) are two consecutive gated candidates under 2 % geomean.
@@ -122,6 +122,7 @@ passed.**
 | 8da4w confirmation (`results/780m/space/confirm-8da4w/pdiff.csv`) | 22 | 792 | 792 ALL PASSED |
 | 4w, first confirmation (`confirm-4w/pdiff.csv`) | 35 | 1,260 | 1,260 ALL PASSED |
 | 4w, second confirmation (`confirm2-4w/pdiff.csv`; the 16 not in the first list) | 16 | 576 | 576 ALL PASSED |
+| 4w, review follow-up (`confirm3-4w/pdiff.csv`; the two top-ten configurations the second confirmation left out) | 2 | 72 | 72 ALL PASSED |
 
 The six kernels of the final profile `c11` are in those lists with 36 of 36 passes each: 4w
 `t256x128k32g18s32f32cbt`, `..g24..cbt`, `..g28..cbt`, `t128x128k32g24s32f32cbt`, `t128x256k32g42s32f32cbt`;
@@ -136,6 +137,10 @@ Faults of my own queue on 2026-10-06, found and corrected:
   which has a `fused=` field. Nothing was ranked from them; they are in
   `<artifacts 10-04>/superseded/sdpa-steady-kernel-line-not-parsed/`, the parser is fixed, and the enumeration
   restarted from zero.
+- Found by the reviewer, corrected 2026-10-07: the second 4w confirmation took 6 per shape instead of 10, so two
+  top-ten configurations had 2 full measurements and no production-diff pass; the committed copy of
+  `confirm2-4w/full-r4.csv` was 48 rows short; and `proposal.md` still gave the `refine9` kernels as the 4w
+  result. All three are corrected ("Part 1, 4w"); no selected kernel and no reported tok/s changes.
 - My estimates of the enumeration's end (22:00, then 22:30 UTC) were wrong: 1,796 runs, not 1,724, at 22.6 s a
   run. It ended at 23:15 UTC; the repeat stage at 00:48 UTC.
 
@@ -674,22 +679,52 @@ geo-cbt}/`, full measurement on all twelve shapes):
   column-major B; subgroup 32, tile K 16 or 32, M and N at least 64, 2 to 32 MMA tiles per subgroup) that no
   earlier stage had measured: none enters the first five on any shape.
 
-Second confirmation (`results/780m/space/confirm2-4w/`): the 28 leaders of all of the above, 5 full
-measurements each, repeat spread 0.15 to 1.1 %. **Within the existing kernel bodies the best 4w kernel per shape
-on this device and driver is:**
+Second confirmation (`results/780m/space/confirm2-4w/`, `confirm3-4w/`, `final-4w/`; corrected 2026-10-07 after
+review). The second confirmation of 2026-10-05 (`chain12.sh`) took the **6** fastest per shape of everything
+measured in full, plus the `refine9` kernels (28 configurations), four more times; the campaign asks for 10. Over
+all full measurements two further configurations are in a top ten (`t256x128k32g24s32f32bibt` and `..biwbt`: 3B
+wq_wo and w1_w3, ranks 8 to 10) and had 2 measurements and no production-diff pass. They were given three more
+full measurements and 12 production-diff passes x 3 models on 2026-10-07 00:56 to 01:07 UTC (`chain24.sh`, same
+commands, lock and hold as the confirmations): 72 of 72 passes ALL PASSED; they stay at ranks 8 to 10 on those
+two shapes, 1.8 to 2.3 % behind the fastest. The committed `confirm2-4w/full-r4.csv` had been copied two minutes
+before that repeat finished (288 of 336 rows); it is now the complete file, and `confirm2-4w/summary.{csv,txt}`
+is regenerated from all 16 full-measurement files (`tools/q4_final.py`).
 
-| shapes | kernel (profile `refine10`) | tied within 2 % | against `780m-refine3` | against `refine9` |
-|---|---|---|---:|---:|
-| K >= 4096, N >= 1024 (all of 8B; w2 of 1B and 3B) | `t256x128k32g18s32f32cbt` | its `IMG_A` / `IMG_W` twins; for the three w2 shapes and 8B wk_wv also the band-drain twins | -2.2 to -7.2 % | -0.1 to -2.9 % |
-| K = 3072, N >= 2048 (3B wq_wo, w1_w3) | `t256x128k32g24s32f32cbt` | `t256x128k32g18s32f32cbt` | -4.8 to -5.6 % | -3.1 to -3.4 % |
-| K = 3072, N = 1024 (3B wk_wv) | `t128x256k32g42s32f32cbt` | ten flag variants of the same tile | -2.6 % | 0 |
-| K = 2048, N = 8192 (1B w1_w3) | `t256x128k32g28s32f32cbt` | its `IMG` twins and band-drain twins | -6.1 % | -1.7 % |
-| K = 2048, N <= 2048 (1B wq_wo, wk_wv) | `t128x128k32g24s32f32cbt` | wq_wo: `t256x128k32g28s32f32cbt`; wk_wv: none (the shipped tile is 4.5 % behind) | -5.4 / -4.6 % | -2.7 / -4.6 % |
+State of the evidence (`final-4w/coverage.csv`): 260 configurations measured in full; **41 are among the ten
+fastest of some shape, each with at least 5 full measurements and 12 of 12 passes on each model, 0 failed
+passes.** Repeat spread of the 120 top-ten rows: at most 1.5 % for 117. The other three are one configuration,
+`t128x128k32g24s32f32cbt` on 1B wq_wo, wk_wv and w1_w3 (8.7, 6.2, 8.8 %): its fifth measurement (2026-10-05
+15:06:10 UTC, 90 s before a build started) reads 1671 / 445 / 6526 us where the other four read 1537 to 1544 /
+419 to 420 / 6000 to 6024 us. I have not identified the cause; the measurement is kept, the median is unchanged.
 
-Per layer: -6.10 / -5.30 / -5.93 % linear time against `780m-refine3` (1B / 3B / 8B) and -1.41 / -2.37 / -1.82 %
-against `refine9`. The raw output of the 12 production-diff cases is byte-identical to `780m-refine3`
-(`results/780m/space/bitwise-4w-refine10.txt`). Still open: the 12 production-diff passes per confirmed
-configuration (3 done, all passed).
+**Within the existing kernel bodies the best 4w kernel per shape on this device and driver is** (median over
+all full measurements; `final-4w/per-shape.csv`):
+
+| shape (N, K) | fastest | tied within 2 % | profile `refine10` (final) | behind the fastest | against `780m-refine3` | `refine9` behind the fastest | release table kernel behind the fastest |
+|---|---|---:|---|---:|---:|---:|---:|
+| 1B wq_wo (2048, 2048) | `t128x128k32g24s32f32cbt` 1539 us | 4 | the same | 0 | -5.70 % | +3.03 % | +5.70 % |
+| 1B wk_wv (512, 2048) | `t128x128k32g24s32f32cbt` 420 us | 1 | the same | 0 | -4.62 % | +4.84 % | +4.84 % |
+| 1B w1_w3 (8192, 2048) | `t256x128k32g28s32f32cbt` 5915 us | 7 | the same | 0 | -6.08 % | +1.73 % | +7.89 % |
+| 1B w2 (2048, 8192) | `t256x128k32g18s32f32biwbt` 5872 us | 6 | `t256x128k32g18s32f32cbt` | +0.62 % | -6.54 % | +0.09 % | +11.24 % |
+| 3B wq_wo (3072, 3072) | `t256x128k32g24s32f32cibt` 3337 us | 7 | `t256x128k32g24s32f32cbt` | +0.10 % | -5.61 % | +3.63 % | +7.38 % |
+| 3B wk_wv (1024, 3072) | `t128x256k32g42s32f32cbt` 1202 us | 12 | the same | 0 | -2.66 % | 0 | +5.15 % |
+| 3B w1_w3 (8192, 3072) | `t256x128k32g24s32f32ciwbt` 8973 us | 10 | `t256x128k32g24s32f32cbt` | +0.03 % | -4.76 % | +3.28 % | +6.25 % |
+| 3B w2 (3072, 8192) | `t256x128k32g18s32f32cibt` 8530 us | 6 | `t256x128k32g18s32f32cbt` | +0.09 % | -6.87 % | +0.65 % | +12.44 % |
+| 8B wq_wo (4096, 4096) | `t256x128k32g18s32f32cibt` 5852 us | 3 | `t256x128k32g18s32f32cbt` | +0.09 % | -5.41 % | +2.17 % | +11.73 % |
+| 8B wk_wv (1024, 4096) | `t256x128k32g18s32f32cbt` 1581 us | 20 | the same | 0 | -2.14 % | +0.51 % | +8.75 % |
+| 8B w1_w3 (14336, 4096) | `t256x128k32g18s32f32cibt` 20152 us | 3 | `t256x128k32g18s32f32cbt` | +0.27 % | -6.67 % | +2.94 % | +10.72 % |
+| 8B w2 (4096, 14336) | `t256x128k32g18s32f32cibt` 20270 us | 12 | `t256x128k32g18s32f32cbt` | +0.15 % | -5.31 % | +0.49 % | +10.32 % |
+
+Where the fastest differs from the `refine10` kernel it is its `IMG_A` / `IMG_W` or band-drain twin, within
+0.62 %: tied, and the profile keeps the simplest. Its rule (`Overrides.cpp`, 780m block): K >= 4096 with
+N >= 1024 -> `t256x128k32g18s32f32cbt`; K = 3072 with N >= 2048 -> `..g24..cbt`; N = 8192 with K below 3072 ->
+`..g28..cbt`; other K below 3072 -> `t128x128k32g24s32f32cbt`; otherwise N >= 1024 -> `t128x256k32g42s32f32cbt`.
+
+Per layer (`final-4w/per-layer.txt`), against `780m-refine3`: best per shape -6.25 / -5.35 / -6.12 %, **profile
+`refine10` -6.09 / -5.30 / -5.93 %**, `refine9` -4.76 / -2.99 / -4.18 %, the release table kernel +1.60 / +2.10 /
++3.91 % (1B / 3B / 8B). The raw output of the 12 production-diff cases is byte-identical to `780m-refine3`
+(`results/780m/space/bitwise-4w-refine10.txt`). Everything above this paragraph in this section (the first
+confirmation and profile `refine9`) is the earlier stage, kept as measured; this table is the final result.
 
 ## Candidate 10: candidate 9 with the refined 4w table (`refine10`): gate passed, +0.47 %, inside the band
 
@@ -1103,7 +1138,7 @@ runs each; all variants reached through `hooks/softmax-name-hook.patch` applied 
   `ET_VK_DISABLE_COOPMAT`) r3 would be wrong; the microbench pairing check now fails such a pairing.
 - Expected end to end (16 / 28 / 32 layers): about -44 ms (1B), -59 ms (3B), -89 ms (8B).
 
-## Closing checks (2026-10-07 00:55 UTC, branch head)
+## Closing checks (2026-10-07 00:55 UTC; `check.sh --no-build` run again 01:15 UTC after the review follow-up: PASS)
 
 - `sarc/tools/check.sh --no-build`: **PASS** (zone rule against `release/1.5`, twin wrappers, `test_sarc_select`
   1240 checks / 31 rows on the release tables and 1433 checks / 122 candidates with the dev zone).
