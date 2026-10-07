@@ -1,7 +1,8 @@
 # Merge plan (draft for the owner)
 
 What it takes to bring the five campaign branches into `dev/1.5`. Nothing here has been started; nothing is
-merged. This is a list of the work and its order, written on 2026-10-06 while two campaigns were still closing.
+merged. This is a list of the work and its order, written on 2026-10-06 and updated on 2026-10-07, when all five
+campaigns had closed.
 Items marked **[owner]** need a decision before they can be done.
 
 ## What is to be merged
@@ -11,13 +12,20 @@ Items marked **[owner]** need a decision before they can be done.
 | `topic/b580-prefill-refine` | Arc B580 | finished, pushed |
 | `topic/4070ti-prefill-refine` | RTX 4070 Ti SUPER | finished, pushed |
 | `topic/orin-prefill-refine` | Jetson Orin Nano | finished, pushed |
-| `topic/780m-prefill-refine` | Radeon 780M | closing |
-| `topic/xe2-prefill-refine` | Arc Pro B70 | closing |
+| `topic/780m-prefill-refine` | Radeon 780M | finished, pushed |
+| `topic/xe2-prefill-refine` | Arc Pro B70 | finished, pushed |
 
 All five forked, directly or through a sibling, from one commit of `topic/780m-prefill-refine`, and all five
 add to the same dev-zone files (`impl/sarc_dev/Overrides.cpp`, sweep yaml), each inside a block marked with its
 device tag. The comparison (`topic/llamacpp-compare`) and this package (`topic/campaign-playbook`) add
 documents and tools only.
+
+`dev/1.5` has moved by one commit since the campaigns forked (`44e22be60f`, an `8da4w` decode fix in
+`impl/sarc/Dq8caCoopmat.cpp`). It touches the decode path only and no file a campaign changed; it arrives with
+the merges and needs no rework, but decode is re-checked after M3 because of it.
+
+A further campaign has since forked from the 780M branch (`topic/rx7600-prefill-refine`, Radeon RX 7600). It
+uses the 780M's fused attention kernel, so M2a below concerns it as well, and it merges after the 780M.
 
 ## Tasks, in order
 
@@ -69,6 +77,36 @@ Three hooks were committed under the owner decision of 2026-10-05, each inert wh
   which is the form to keep.
 
 Decide the final form of each and add them to `sarc/HOOKS`.
+
+### M2a. Add the missing subgroup barriers to the fused attention kernel
+
+Found by the RX 7600 campaign when it read the kernel it was porting: in
+`glsl/sarc_dev/sarc_dev_780m_sdpa_fused3.glsl` a lane reads shared-memory slots that other lanes of its subgroup
+wrote, ordered only by `memoryBarrierShared()`, with no `subgroupBarrier()`. No two invocations write the same
+location, the workgroup is one subgroup, and every correctness pass on both AMD cards agrees; but under the
+Vulkan memory model the read is formally unsynchronised and the kernel relies on one wave running in lockstep.
+It is the same class of defect as the Orin's (`LESSONS.md` L8), found before it failed.
+
+Do: add `subgroupBarrier()` after each such `memoryBarrierShared()`, then gate and time the kernel again on the
+780M (and on the RX 7600 once its campaign has adopted it). A barrier can cost time; the result is reported
+either way. Before this kernel is ported to any device whose subgroup is smaller than the workgroup, the fix is
+mandatory.
+
+### M2b. Rebuild in the pinned container where a campaign built natively
+
+The RX 7600 host cannot run the container, so every build of that campaign used a native shader compiler and
+its shipped-SPIR-V check is pending (14 of 53 release shaders differ from the golden for that reason alone).
+Before that branch merges, build it once in the pinned container on a host that can, and run
+`sarc/tools/check.sh` there. The five campaigns of this package built in the container.
+
+### M2c. Remove home-directory paths from committed result files **[owner]**
+
+Raw logs and result tables committed under `openspec/changes/*/results/` contain absolute paths with a local
+user name: about 780 lines already on `dev/1.5` (the September benchmark results) and 120 to 780 more on each
+campaign branch. No credential is involved. Do, before M3: replace the prefix with a placeholder in the
+campaign branches' result files (one mechanical commit per branch). Whether to do the same for the lines
+already on `dev/1.5` is the owner's call; removing them from history would need a rewrite of a branch that is
+never force-pushed, so the practical choice is a forward commit or leaving them.
 
 ### M3. Merge the dev zone, one branch at a time
 

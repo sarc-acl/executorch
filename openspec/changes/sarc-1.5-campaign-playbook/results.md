@@ -16,17 +16,18 @@ are over it. "x stock" is the speed-up over unmodified ExecuTorch 1.5 (`release/
 campaign. All values are geometric means over the three models. Source: the owner's summary of the campaigns'
 final sessions.
 
-| device | 4w gain | 8da4w gain | both | x stock, September -> now | state on 2026-10-06 | branch |
+| device | 4w gain | 8da4w gain | both | x stock, September -> now | state on 2026-10-07 | branch |
 |---|---:|---:|---:|---|---|---|
-| Jetson Orin Nano | +65.7 % | +67.8 % | +66.7 % | 4.46 -> 7.43 | finished and pushed on the corrected build (reopened once by review, `LESSONS.md` L8) |
+| Jetson Orin Nano | +65.7 % | +67.8 % | +66.7 % | 4.46 -> 7.43 | finished and pushed on the corrected build (reopened once by review, `LESSONS.md` L8) | `topic/orin-prefill-refine` |
 | Arc B580 | +46.0 % | +77.8 % | +61.1 % | 2.19 -> 3.53 | finished, pushed | `topic/b580-prefill-refine` |
-| Arc Pro B70 | +45.3 % | +70.9 % | +57.6 % | 2.17 -> 3.42 | result stable; sampled search still running | `topic/xe2-prefill-refine` |
+| Arc Pro B70 | +48.8 % | +70.7 % | +59.4 % | 2.17 -> 3.46 | finished, pushed | `topic/xe2-prefill-refine` |
 | RTX 4070 Ti SUPER | +43.2 % | +49.2 % | +46.2 % | 3.57 -> 5.22 | finished, pushed | `topic/4070ti-prefill-refine` |
-| Radeon 780M | +30.0 % | +33.8 % | +31.9 % | 2.08 -> 2.74 | stop rule met, closing | `topic/780m-prefill-refine` |
+| Radeon 780M | +29.8 % | +36.4 % | +33.1 % | 2.08 -> 2.76 | finished, pushed | `topic/780m-prefill-refine` |
 
-**The Jetson Orin Nano, Arc Pro B70 and Radeon 780M rows are as of 2026-10-06 and are to be updated** when the
-re-gate, the search and the closing session have ended. The Orin numbers were measured with the first form of
-its last softmax kernel, before the fix of L8.
+All five rows are final: every campaign ended by the stop rule, was signed off by the independent reviewer and
+is pushed (the last one, the Radeon 780M, on 2026-10-07 01:16 UTC). Measured against the parent re-measured in
+the campaign's own final session the gains are +59.23 % (Arc Pro B70) and +33.82 % (Radeon 780M); the table
+uses the September report's values as the base, as for the other rows.
 
 Two notes on reading the table:
 
@@ -51,7 +52,9 @@ What did not pay:
 | attempt | result | cost |
 |---|---|---|
 | Tile sweeps of the linear kernels | nothing faster, on every device | hours per sweep |
-| Sampled parameter search, 2000 samples per space, B70 4w and 8da4w spaces | nothing faster | about two days |
+| Sampled parameter search, 2000 samples per space, B70 4w and 8da4w spaces | 4w tiles 2 to 6 % faster per shape, +1.1 % end to end; nothing for 8da4w | 33 hours with the two enumerations below |
+| Enumeration of the attention kernels' parameters, B70 (1102 + 2828 configurations) | 3 to 22 % at kernel level; +0.6 and +0.95 % end to end, inside the band, not adopted | hours |
+| The same enumeration on the 780M (1796 configurations) | QK^T 9 to 30 %, attention x V 8 to 10 % at kernel level, on the three-kernel path that the fused kernel replaces; not gated | 11 hours |
 | Softmax that reads its row once (Orin) | slower | one candidate |
 
 ## 3. Per-cell numbers
@@ -93,7 +96,7 @@ final session of the whole stack on the corrected build reads, in tok/s (parent 
 geomean, every next-token item the same as the parent's. These replace the numbers of the first form in the table
 below by at most 0.2 % per cell. The llama.cpp comparison on this device was taken with the first form.
 
-### Jetson Orin Nano (as of 2026-10-06, to be updated; source: its `STATUS.md`, session before the re-gate)
+### Jetson Orin Nano (session before the re-gate; the final build's numbers are in the update above; source: its `STATUS.md`)
 
 | cell | parent | tuned | gain |
 |---|---:|---:|---:|
@@ -107,12 +110,31 @@ below by at most 0.2 % per cell. The llama.cpp comparison on this device was tak
 60 timed runs, all valid, every run at 612 MHz, repeat spread at most 0.28 %. Next token equal to the parent's
 in all six cells.
 
-### Arc Pro B70, RTX 4070 Ti SUPER, Radeon 780M
+### Arc Pro B70 (final session `s12-final5`; source: its `STATUS.md`)
 
-Their campaigns' own final tables are in `STATUS.md` on their branches and were not copied here. The cells of
-section 4 are the same builds measured again in the comparison sessions; on the B70 they reproduce the
-campaign's final session within 0.3 %, on the RTX 4070 Ti SUPER the tuned 4w arm reads 29681 / 12881 / 5988
-against the campaign's 29681 / 12800 / 5988.
+Tuned = profile `xe2-refine5`. tok/s, 4w / 8da4w: 1B 17964.90 / 20686.90, 3B 7529.41 / 9570.09, 8B 3379.54 /
+4481.40; +59.23 % geomean over the pristine parent, in two final sessions.
+
+### Radeon 780M (final sessions; source: its `STATUS.md`)
+
+Tuned = `ET_VK_SARC_DEV_PROFILE=780m-refine3 ET_VK_SARC_780M_PROFILE=c11`.
+
+| cell | `dev/1.5` | tuned | gain |
+|---|---:|---:|---:|
+| 1B 4w | 2691.20 | 3835.21 | +42.51 % |
+| 1B 8da4w | 2537.79 | 3764.71 | +48.35 % |
+| 3B 4w | 1140.95 | 1458.69 | +27.85 % |
+| 3B 8da4w | 1049.72 | 1403.70 | +33.72 % |
+| 8B 4w | 517.43 | 638.60 | +23.42 % |
+| 8B 8da4w | 487.85 | 628.03 | +28.73 % |
+
++33.82 % geomean over `dev/1.5`.
+
+### RTX 4070 Ti SUPER
+
+Its campaign's final table is in `STATUS.md` on its branch and was not copied here. The cells of section 4 are
+the same build measured again in the comparison session: the tuned 4w arm reads 29681 / 12881 / 5988 against
+the campaign's 29681 / 12800 / 5988.
 
 ## 4. Comparison with llama.cpp (2026-10-05 and 2026-10-06)
 
@@ -137,15 +159,16 @@ number.
 
 ExecuTorch and llama.cpp Vulkan from session `s1`; SYCL from session `s2-sycl` (1B, 3B) and `s3-8b` (8B).
 
-### Arc Pro B70 (llama.cpp Vulkan and SYCL; as of 2026-10-06, to be updated)
+### Arc Pro B70 (llama.cpp Vulkan and SYCL; second session, with the campaign's final kernels)
 
 | model | stock 4w | stock 8da4w | SARC 4w | SARC 8da4w | tuned 4w | tuned 8da4w | llama.cpp Vulkan | llama.cpp SYCL | tuned 4w / Vulkan | tuned 4w / SYCL | tuned 8da4w / SYCL |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1B | 4582 | 8325 | 11703 | 12412 | 17504 | 20687 | 9704 | 21571 | 1.80 | 0.81 | 0.96 |
-| 3B | 1702 | 3256 | 4830 | 5265 | 7367 | 9570 | 5232 | 9296 | 1.41 | 0.79 | 1.03 |
-| 8B | 778 | 1375 | 2421 | 2734 | 3285 | 4481 | 2695 | 4521 | 1.22 | 0.73 | 0.99 |
+| 1B | 4592 | 8359 | 11703 | 12412 | 17965 | 20687 | 9697 | 21547 | 1.85 | 0.83 | 0.96 |
+| 3B | 1705 | 3266 | 4842 | 5211 | 7502 | 9526 | 5203 | 9300 | 1.44 | 0.81 | 1.02 |
+| 8B | 781 | 1381 | 2435 | 2731 | 3380 | 4491 | 2743 | 4530 | 1.23 | 0.75 | 0.99 |
 
-8B tuned 4w: four valid runs (two of six read a median clock 5 MHz under the floor at the same speed).
+Five valid runs in every cell. Every arm other than tuned 4w is within 1.8 % of the first session (profile
+`xe2-refine2`: tuned 4w 17504 / 7367 / 3285), which is kept beside it as `*-s1.csv`.
 
 ### RTX 4070 Ti SUPER (llama.cpp Vulkan and CUDA)
 
@@ -165,7 +188,7 @@ ExecuTorch's own upstream CUDA backend on the same card, 4w, its own exporter (c
 | 3B | 1930 | 0.76 |
 | 8B | 836 | 0.75 |
 
-### Jetson Orin Nano (llama.cpp Vulkan and CUDA; as of 2026-10-06, to be updated)
+### Jetson Orin Nano (llama.cpp Vulkan and CUDA; tuned arm = the first form of the last softmax kernel, within 0.2 % of the final build)
 
 | model | stock 4w | SARC 4w | SARC 8da4w | tuned 4w | tuned 8da4w | llama.cpp Vulkan | llama.cpp CUDA | tuned 4w / Vulkan | tuned 4w / CUDA | tuned 8da4w / CUDA |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -173,7 +196,7 @@ ExecuTorch's own upstream CUDA backend on the same card, 4w, its own exporter (c
 | 3B | 82.5 | 360.4 | 320.3 | 629.2 | 570.3 | 557.2 | 630.2 | 1.13 | 1.00 | 0.90 |
 | 8B | 35.4 | 189.7 | 170.4 | 295.3 | 268.9 | 244.3 | 286.4 | 1.21 | 1.03 | 0.94 |
 
-### Radeon 780M (llama.cpp Vulkan only; as of 2026-10-06, to be updated)
+### Radeon 780M (llama.cpp Vulkan only; tuned arm one step before the final configuration, whose 8da4w cells are about 2 % higher)
 
 | model | stock 4w | stock 8da4w | SARC 4w | SARC 8da4w | tuned 4w | tuned 8da4w | llama.cpp Q4_0 | llama.cpp Q4_K_M | tuned 4w / llama.cpp |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -182,11 +205,12 @@ ExecuTorch's own upstream CUDA backend on the same card, 4w, its own exporter (c
 | 8B | 184* | 275* | 507* | 483 | 630 | 610 | 451* | 308 | 1.40 |
 
 \* ran at a workload-dependent clock below the campaign's floor and is counted with its clock recorded
-(`LESSONS.md` L17). No vendor backend of llama.cpp was measured on this device.
+(`LESSONS.md` L17). No vendor backend of llama.cpp was measured on this device: its HIP (ROCm) backend exists, but
+this integrated GPU is outside ROCm's support list and it was not tried.
 
 ### What the comparison shows
 
-- Against llama.cpp's Vulkan backend the tuned kernels are 1.16 to 1.80 times as fast on the AMD and Intel
+- Against llama.cpp's Vulkan backend the tuned kernels are 1.16 to 1.85 times as fast on the AMD and Intel
   devices and level on the NVIDIA ones (0.93 to 1.21).
 - Vendor backends of llama.cpp are faster than tuned 4w: SYCL by 19 to 39 %, CUDA by 23 to 38 % on the
   RTX 4070 Ti SUPER; on the Orin CUDA is 13 % ahead on 1B and level on 3B and 8B. Tuned 8da4w is within 6 % of
@@ -208,3 +232,7 @@ a native toolchain (not the pinned container) and `ET_VK_SARC_UNVERIFIED=1`. Pro
 These are the "published table" a new AMD campaign compares its baseline with (3 % per cell, else explain).
 They were taken on different commits and a different toolchain than a campaign will build, so a difference is
 possible and must be explained, not assumed away.
+
+The Radeon RX 7600 campaign started on 2026-10-06 (`topic/rx7600-prefill-refine`): its baseline reproduced the
+row above within 0.4 % per cell, the 780M's softmax timed +1.48 % and the 780M's fused attention kernel +18.22 %
+on top of it (+9.8 to +29.4 % per cell, every next-token item the same).

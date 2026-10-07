@@ -28,9 +28,13 @@ adapted tools and should not pay that again.
   a variant that won on one device wins on the next.
 - **L5. On the device that already had the attention kernels (780M) the second layer was smaller.** One fused
   attention kernel +13 %, fp32 softmax +4 %, a linear kernel chosen per layer shape +3 %, an initial parameter
-  refinement +8 %; +31.9 % in all. Do: on a device in that position expect +20 to +30 %, not +50 %.
-- **L6. The sampled parameter search found nothing.** 2000 samples per space on the B70's 4w and 8da4w spaces
-  found no configuration faster than the incumbent and cost about two days of device time. What the 780M's
+  refinement +8 %; +33.1 % in all. Do: on a device in that position expect +20 to +30 %, not +50 %.
+- **L6. The sampled parameter search paid about 1 %.** On the B70 it ran 33 hours over four kernel families (two
+  sampled at 2000 configurations, two enumerated): 4w tiles 2 to 6 % faster per shape gave +1.1 % end to end,
+  8da4w nothing. The attention kernels' enumeration found kernels 3 to 22 % faster at kernel level that read
+  +0.6 and +0.95 % end to end in two sessions, inside the noise band, and were not adopted. On the 780M the same
+  enumeration found QK^T 9 to 30 % and attention x V 8 to 10 % faster, on a path its fused kernel no longer
+  takes. A kernel-level gain in a kernel that is a few per cent of the prefill does not reach the end-to-end number. What the 780M's
   earlier search did yield was one derived quantity, the number of 16 x 16 matrix tiles one subgroup owns (8 or
   16 best; 64 and more 11 to 25 times slower), which explained as much variance as all yaml parameters together;
   five boolean options did not matter. Do: no sampled search by default (`OWNER-DECISIONS.md` N1); if one is

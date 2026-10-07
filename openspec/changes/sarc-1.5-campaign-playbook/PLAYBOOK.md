@@ -338,8 +338,10 @@ Run by the coordinator, not by the campaign, with the kit on branch `topic/llama
 3. Build llama.cpp at the kit's pinned tag (`kit/VERSIONS.md`) outside the repository:
    `-DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON -DGGML_NATIVE=ON`, targets `llama-completion llama-bench`.
    Include the vendor's own llama.cpp backend where one exists (SYCL on Intel and CUDA on NVIDIA were
-   measured). For an AMD card no vendor backend was measured on the 780M; **[recommended]** ask the owner
-   which, if any, to add, and otherwise report Vulkan only and say so.
+   measured). For AMD, llama.cpp has a HIP backend (`-DGGML_HIP=ON`, needs ROCm; it is the CUDA backend's code
+   compiled for AMD). It was not measured on the 780M, an integrated GPU outside ROCm's support list.
+   **[recommended]** On a discrete AMD card build and measure it as the vendor backend; where ROCm does not
+   support the device, report Vulkan only and say so.
 4. Arms: ExecuTorch `stock` (`kit/build-stock.sh`), `sarc` (the campaign's parent build), `tuned` (the accepted
    profile, with its commit), each in 4w and 8da4w; llama.cpp Q4_0 and Q4_K_M. Context `-c 2560`; pass
    `--override-kv tokenizer.ggml.add_bos_token=bool:false` so that the prompt is 2048 tokens.
@@ -352,9 +354,10 @@ Run by the coordinator, not by the campaign, with the kit on branch `topic/llama
    `kit/session.sh --tools <campaign tools> --stage <stage> --out <name>` and `kit/aggregate.py`.
 7. **Compare warm against warm**: quote llama.cpp by `llama-bench`. Its fresh-process timer read 2.1 to 4.8
    times lower on SYCL (L43).
-8. What to expect **[measured]**: tuned Vulkan kernels 1.16 to 1.80 times llama.cpp Vulkan on AMD and Intel,
+8. What to expect **[measured]**: tuned Vulkan kernels 1.16 to 1.85 times llama.cpp Vulkan on AMD and Intel,
    level on NVIDIA (0.93 to 1.21); vendor backends faster than tuned 4w (SYCL by 19 to 39 %, CUDA by 23 to 38 %
-   on the RTX 4070 Ti SUPER, level on the Orin), tuned 8da4w within 6 % of SYCL; ExecuTorch's own upstream
+   on the RTX 4070 Ti SUPER, level on the Orin), tuned 8da4w within 6 % of SYCL. No AMD vendor backend has been
+   measured, so on a discrete AMD card expect the HIP backend, not Vulkan, to be the one to beat; ExecuTorch's own upstream
    CUDA backend at 0.75 to 0.85 times stock Vulkan in 4w on the RTX 4070 Ti SUPER.
 
 ### Step 15. Deliver

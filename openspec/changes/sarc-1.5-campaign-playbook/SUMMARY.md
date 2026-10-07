@@ -13,16 +13,16 @@ two consecutive gated candidates gained under 2 %. Afterwards every device was c
 
 ## Results (prefill tok/s, geometric mean over the three models)
 
-| device | 4w gain | 8da4w gain | both | x stock, September -> now | state on 2026-10-06 |
+| device | 4w gain | 8da4w gain | both | x stock, September -> now | state on 2026-10-07 |
 |---|---:|---:|---:|---|---|
 | Jetson Orin Nano | +65.7 % | +67.8 % | +66.7 % | 4.46 -> 7.43 | finished, pushed (corrected build) |
 | Arc B580 | +46.0 % | +77.8 % | +61.1 % | 2.19 -> 3.53 | finished, pushed |
-| Arc Pro B70 | +45.3 % | +70.9 % | +57.6 % | 2.17 -> 3.42 | stable; sampled search still running |
+| Arc Pro B70 | +48.8 % | +70.7 % | +59.4 % | 2.17 -> 3.46 | finished, pushed |
 | RTX 4070 Ti SUPER | +43.2 % | +49.2 % | +46.2 % | 3.57 -> 5.22 | finished, pushed |
-| Radeon 780M | +30.0 % | +33.8 % | +31.9 % | 2.08 -> 2.74 | stop rule met, closing |
+| Radeon 780M | +29.8 % | +36.4 % | +33.1 % | 2.08 -> 2.76 | finished, pushed |
 
-Gains are over the September SARC release; "x stock" is over unmodified ExecuTorch 1.5. B70 and 780M:
-as of 2026-10-06, to be updated.
+Gains are over the September SARC release; "x stock" is over unmodified ExecuTorch 1.5. All five
+campaigns ended by the stop rule, were signed off by the independent reviewer and are pushed.
 
 Against llama.cpp (its warm timer, best screened setting): tuned Vulkan kernels are 1.16 to 1.80 times
 llama.cpp Vulkan on AMD and Intel and level on NVIDIA (0.93 to 1.21). Vendor backends are faster than tuned
@@ -46,8 +46,11 @@ llama.cpp Vulkan on AMD and Intel and level on NVIDIA (0.93 to 1.21). Vendor bac
 ## What did not work
 
 - **Tile sweeps of the linear kernels**: nothing faster on any device.
-- **The sampled parameter search**: 2000 samples per space on the B70's 4w and 8da4w spaces, about two days,
-  nothing faster.
+- **The sampled parameter search** (B70, about 33 hours over four kernel families): 4w tiles 2 to 6 % faster
+  per shape, +1.1 % end to end; nothing for 8da4w.
+- **Enumerating the attention kernels' parameters**: faster kernels at kernel level on both devices that did it
+  (B70 3 to 22 %, 780M 8 to 30 %), nothing end to end: +0.6 and +0.95 % on the B70 (inside the noise band, not
+  adopted), and unused on the 780M because its fused kernel replaces those kernels.
 - **A softmax that reads its row once** (Orin): slower.
 - **Next-token equality as the gate for arithmetic changes**: replaced by your reference-error rule (D3).
 - **Process failures**, each once: a campaign closed and pushed before the race was found; three gates spent
@@ -57,14 +60,12 @@ llama.cpp Vulkan on AMD and Intel and level on NVIDIA (0.93 to 1.21). Vendor bac
 
 ## What is left
 
-1. **Close two campaigns** (the Orin closed on 2026-10-06 on the corrected build, +66.7 % in its own final
-   session): B70 sampled search (still running; its attention x V enumeration found tiles 1.13 to 1.22 times
-   faster at kernel level, not yet gated);
-   780M closing and push. Then update the three rows above and `results.md`.
-2. **Next devices**: Radeon RX 7900 XTX and Radeon RX 7600, from `topic/780m-prefill-refine`, with your
+1. **Nothing is left of the five campaigns**: all closed between 2026-10-05 and 2026-10-07.
+2. **Next devices**: Radeon RX 7900 XTX and Radeon RX 7600 (its campaign started on 2026-10-06 on
+   `topic/rx7600-prefill-refine`: the fused attention kernel timed +18 % there), from `topic/780m-prefill-refine`, with your
    defaults N1 to N9: port the 780M's second layer, no sampled search, no verification pass first, expect +20
    to +30 %. Then the llama.cpp comparison on each.
-3. **Merge** the five topic branches into `dev/1.5`: separate, later work. The fused attention entry point
+3. **Merge** the five topic branches into `dev/1.5`: separate, later work, planned in `MERGE-PLAN.md`. The fused attention entry point
    awaits your review before any promotion (D4.3).
 4. **Open points this package could not settle**:
    - how the Q4_0 GGUF files of the comparison were converted is recorded beside the files, on storage the
