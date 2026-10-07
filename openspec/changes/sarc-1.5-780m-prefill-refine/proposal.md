@@ -368,8 +368,27 @@ Response surface (`STATUS.md`, "Part 1, 8da4w"): tile M, tile N, tile K, the gri
 not (under 2 %); the parameters interact strongly (an additive model explains 47 % of the variance) through one
 derived quantity, activation slots per thread, which wants to be 1.
 
-QK^T and attn*V: the enumeration (1,724 and 470 survivors) is the last open item; see `STATUS.md`. With the
-fused attention node these two kernels only serve the calls it does not take (unaligned prompts, decode).
+**SDPA QK^T and attn*V: all survivors were measured** (1,724 and 470; steady clock, the 8 extended correctness
+cases in every run, 0 failures; 44 configurations five times with 12 correctness passes, 0 failed cases;
+`results/780m/space/{sdpa,confirm-sdpa}/`). **Within the existing kernel bodies the best configuration per shape
+on this device and driver is**, by head dimension: QK^T `pk_t64x32k16g22s32nf` (head_dim 64) and
+`pk_t64x64k32g42s32nf` (head_dim 128), 9.4 % and 28 to 30 % faster than the `780m-refine3` choice and 69 to 78 %
+faster than the release table kernel; attn*V `ml_t32x32k32g21s32` (head_dim 64) and `ml_t64x64k32g22s32`
+(head_dim 128), 7.8 to 9.9 % faster than the `780m-refine3` choice and 12 to 21 % faster than the table kernel.
+1 to 11 configurations are tied within 2 % per shape. Response surface (`STATUS.md`, "Part 1, SDPA"): for QK^T
+the mask fill (off: +52 %) and the packed K staging (off: +9 %) dominate, then tile M and N (256: +12 to +19 %);
+the grid up to 4 and the subgroup size do not matter. For attn*V every parameter matters (tile M 256: +24 to
++27 %, grid rows 8: +13 to +17 %, no multi-load: +7 to +9 %). In both, the parameters interact through the MMA
+tiles a subgroup owns (2 to 8) and the threads of the workgroup (64 to 256).
+
+These SDPA kernels are **not in a profile and not gated end to end**: with the fused attention node they only
+serve the calls it does not take (unaligned prompts, decode), so they change nothing on the benchmark prompt
+(three-kernel path per layer 9.97 -> 9.53, 10.23 -> 9.09, 13.55 -> 11.95 ms, against 2.26 / 3.22 / 4.05 ms for
+the fused kernel), and they change the accumulation, which needs its own gate. Left to the owner.
+
+Correctness of everything confirmed in Part 1: 2,628 of 2,628 production-diff passes ALL PASSED (73 linear
+configurations x 3 models x 12, each on its own kernel on the real shapes), the six kernels of the final profile
+among them.
 
 ### Release-zone hook (owner decision 2026-10-05)
 
@@ -593,6 +612,14 @@ are gone, the copy family grows by 35.6 ms (copy pass + fused kernel are counted
 `sarc/tools/check.sh --no-build`: PASS. Its zone rule compares against `release/1.5`, where the release zone is
 allowed and `SDPA.cpp` is already listed in `sarc/HOOKS`, so it does not flag the two entry points; they are the
 two commits named above, permitted by the owner decision of 2026-10-05 and by nothing else.
+
+### State at the close (2026-10-07)
+
+The stop rule is met: candidates 10 (+0.47 %) and 11 (+1.20 %) are two consecutive gated candidates under 2 %
+geomean. Part 1 is complete for the four families. The final configuration is candidate 11. During the round the
+host hung once under a profiler capture (2026-10-05; profiler tracing is forbidden on this device since, and
+`tools/gl.sh` refuses it), and the queue has a coordinator hold (`tools/hold.sh`; `STATUS.md`, "Coordinator
+hold"), used once.
 
 ### Roofs and what limits further progress
 

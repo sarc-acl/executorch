@@ -1,6 +1,6 @@
 # STATUS: 780M prefill campaign, round 2 (parameter space + beyond)
 
-Updated 2026-10-06 15:55 PDT (2026-10-06 22:55 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
+Updated 2026-10-06 17:49 PDT (2026-10-07 00:49 UTC). Parent for this round: profile `780m-refine3` (build `topic-r1`).
 Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (new raw data) and
 `.../780m-prefill-refine-2026-10-03/` (earlier builds and sessions).
 
@@ -18,7 +18,8 @@ Artifacts: `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-04/` (
 | 8da4w, Part 1 | **done** (792 of 792 production-diff passes ALL PASSED): all 2,238 survivors screened, 49 measured in full, 22 five times; best kernel per shape below ("Part 1, 8da4w"), 2.1 to 3.1 % less 8da4w linear time per layer than `780m-refine3` |
 | candidate 11 (candidate 10 + the 8da4w kernel per shape, profile `c11`) | **gate passed, +1.20 % geomean** (8da4w cells +2.02 / +2.82 / +2.36 %, 4w cells 0.00 / 0.00 / +0.06 %): the second consecutive candidate under 2 %, **stop rule met**; kept as the final configuration |
 | production-diff passes | **done**: 2,628 of 2,628 passes ALL PASSED (73 configurations x 3 models x 12), the six kernels of the final profile among them |
-| QK^T / attn*V enumeration | running since 2026-10-06 11:51 UTC; 1,742 of 1,796 runs at 22:55 UTC, ends about 23:16 UTC; its repeat stage until about 00:50 UTC (Part 1's last open item) |
+| QK^T / attn*V, Part 1 | **done**: all 1,724 + 470 survivors measured (0 failures), 44 configurations five times with 12 correctness passes (0 failed cases); best kernel per head dimension in "Part 1, SDPA": QK^T 9 to 30 % and attn*V 8 to 10 % faster than the `780m-refine3` choices on the three-kernel path; not in a profile, not gated |
+| campaign | **closed 2026-10-07 00:48 UTC**: stop rule met, Part 1 complete for all four families, final configuration measured, branch pushed |
 | final configuration (candidate 11), measured directly | **+33.82 % geomean over `dev/1.5`** (+23.42 to +48.35 %), **+24.12 % over `780m-refine3`** (+14.56 to +35.83 %); section "Final configuration" |
 | release-zone hooks (owner decision 2026-10-05) | committed (`b969e8f1c`, `1c8861aa7`, dev side `8518659ef`); candidate 10 reproduced from the committed build: gate passed, **+22.64 %** geomean over `780m-refine3` measured directly (section "Committed build") |
 
@@ -101,27 +102,16 @@ Where the capture material is (kept as evidence, nothing calls it):
 
 ## Running now
 
-`chain22.sh` (detached, since 2026-10-06 11:51 UTC): **the QK^T / attn*V enumeration at a steady clock** (20
-warm-up + 8 timed runs), Part 1's last open item. 1,796 runs, each one QK^T and / or one attn*V configuration: the 8
-correctness cases of the extended tier (dispatched kernel names, mismatches, pairing), then the op time per model
-at S = 2048. Coefficient of variation of the timed runs 0.2 to 0.5 % (it was 7.9 % with 3 + 5 runs).
-Then (`chain23.sh`, queued behind it, `tools/confirm_sdpa.sh`): the 10 fastest per model five times with 12
-correctness passes, and the response surface.
+**Nothing. The campaign is closed** (2026-10-07 00:48 UTC): no detached job of the campaign is running except
+the hold watcher (`hold.sh watch`, which only answers a coordinator `HOLD` with `HELD` "queue idle").
 
-**State at 2026-10-06 22:55 UTC: 1,742 of 1,796 runs done, 54 left** (attn*V configurations of the last batch,
-run alone), measured rate 22.6 s a run over the last hour (159 runs): **the enumeration ends at about 23:16
-UTC**. 2,140 of the 2,194 configurations (1,724 QK^T + 470 attn*V) are measured; every one ran its own kernel in
-8 of 8 correctness cases with 0 mismatches, none failed.
-
-My earlier estimate ("until about 22:00 UTC", then 22:30) was wrong for two reasons: I counted 1,724 runs, the
-number of QK^T configurations, but the last batch holds more attn*V than QK^T configurations, so there are 1,796
-runs; and the rate was 26 to 34 runs per 10 min (22.6 s a run at the end, the large tiles being slower), not the
-18 to 20 s of the first minutes. The planned pause from 13:40 to 14:40 UTC was taken.
-
-The repeat stage (`chain23.sh`) starts by itself when the enumeration ends: four more timing repeats of the 10
-fastest per model and family plus the table and `780m-refine3` kernels (about 45 min), then seven more
-correctness passes for each (about 45 min): **expected end about 00:50 UTC on 2026-10-07.** After it: the QK^T /
-attn*V statement and response surface, `proposal.md`, the closing check, commit and push.
+- Stop rule met: candidates 10 (+0.47 %) and 11 (+1.20 %) are two consecutive gated candidates under 2 % geomean.
+- Final configuration: candidate 11, `ET_VK_SARC_DEV_PROFILE=780m-refine3 ET_VK_SARC_780M_PROFILE=c11` on the
+  committed branch: **+33.82 % geomean over `dev/1.5`, +24.12 % over `780m-refine3`** ("Final configuration").
+- Part 1 is complete for all four families: 4w ("Part 1, 4w"), 8da4w ("Part 1, 8da4w"), QK^T and attn*V
+  ("Part 1, SDPA").
+- Part 2: softmax r3 (candidate 7), the fused attention node (candidates 8, 9); upstream operator costs reported
+  in `proposal.md`, not changed.
 
 Production-diff passes (12 per configuration and model, texture3d, M = 2048, the real shapes, the
 configuration's own kernel on 4 of 4 shapes in every pass; 8da4w with non-zero zero-points): **all done, all
@@ -137,20 +127,17 @@ The six kernels of the final profile `c11` are in those lists with 36 of 36 pass
 `t256x128k32g18s32f32cbt`, `..g24..cbt`, `..g28..cbt`, `t128x128k32g24s32f32cbt`, `t128x256k32g42s32f32cbt`;
 8da4w `t256x64k64g48s32afmb1`; and the `780m-refine3` 8da4w kernel (`bt_t128x64k32g22s32afmb2`).
 
-Two faults of my own queue, found and corrected on 2026-10-06:
+Faults of my own queue on 2026-10-06, found and corrected:
 
 - The second 4w confirmation list (four of the five final 4w kernels) was not in the production-diff queue,
   which only knew the first list. Its passes were run separately (10:33 to 11:46 UTC, table above).
-- The enumeration's first 36 runs (10:30 and 11:46 to 11:50 UTC) were recorded with `dispatched = 0`,
+- The SDPA enumeration's first 36 runs (10:30 and 11:46 to 11:50 UTC) were recorded with `dispatched = 0`,
   `NOT_DISPATCHED`: `sweep_space.py` did not parse the kernel line of the batch binaries rebuilt on 2026-10-05,
   which has a `fused=` field. Nothing was ranked from them; they are in
   `<artifacts 10-04>/superseded/sdpa-steady-kernel-line-not-parsed/`, the parser is fixed, and the enumeration
-  restarted from zero (first rows: 8 of 8 cases on the configuration's kernel, PASS).
-
-Everything else is done: the stop rule is met (candidates 10 and 11 under 2 %), the final configuration is
-measured against both parents (next section). The branch was pushed at `f5f1bf10c` (05:37 UTC) and is pushed
-again with every committed state from here on (owner decision headed "2026-10-06 (05:50 UTC)"), and when the
-campaign closes.
+  restarted from zero.
+- My estimates of the enumeration's end (22:00, then 22:30 UTC) were wrong: 1,796 runs, not 1,724, at 22.6 s a
+  run. It ended at 23:15 UTC; the repeat stage at 00:48 UTC.
 
 The coordinator's hold was used once: `HOLD` 2026-10-06 00:53:06 UTC, `HELD` 00:53:12 UTC, `HOLD` removed about
 02:08 UTC; the queue removed `HELD` and continued with the configuration it had named, by itself.
@@ -816,6 +803,73 @@ slowest configuration 17.5 times the fastest):
   32-wide subgroups is 1024 threads for 1024 slots, with a 32 x 16 tile per subgroup (two MMA tiles), against
   128 x 64, K = 32, 2 x 2 grid (128 threads, 2 slots each, 64 x 32 per subgroup).
 
+## Part 1, SDPA QK^T and attn*V: the best kernel per shape within the existing bodies (`results/780m/space/{sdpa,confirm-sdpa}/`)
+
+**All statically surviving configurations were measured**: 1,724 QK^T (of 9,216 combinations) and 470 attn*V (of
+4,608), 1,796 runs from 2026-10-06 11:51 to 23:15 UTC at a steady clock (20 warm-up + 8 timed runs, coefficient of
+variation 0.2 to 0.5 %). Each run: the 8 cases of the extended correctness tier, then the op time per model at
+S = 2048. Every configuration ran its own kernel with 0 mismatches and pairing ok; none failed. Repeat stage: the
+10 fastest per model and family plus the table and `780m-refine3` kernels (44 configurations), five timing
+repeats (spread at most 1.5 % for 122 of 129 rows) and **12 correctness passes each: 308 separate passes + the 5
+of the timing repeats, 0 failed cases** (`confirm-sdpa/passes.csv`; three attn*V configurations fit only
+head_dim 128 and run their kernel in 4 of the 8 cases, two configurations in 7 of 8).
+
+**Within the existing kernel bodies, the best configuration per shape on this device and driver is** (op time per
+layer at S = 2048, median of 5):
+
+| family | shape | kernel | op time | tied within 2 % | `780m-refine3` choice | release table kernel |
+|---|---|---|---:|---:|---:|---:|
+| QK^T | head_dim 64 (1B, 32 heads) | `pk_t64x32k16g22s32nf` | 2,661 us | 11 | `t128x64k32g22s64nf` 2,911 (+9.4 %) | `t128x64k32g22s64` 4,735 (+77.9 %) |
+| QK^T | head_dim 128 (3B, 24 heads) | `pk_t64x64k32g42s32nf` | 3,317 us | 5 | 4,233 (+27.6 %) | 5,589 (+68.5 %) |
+| QK^T | head_dim 128 (8B, 32 heads) | `pk_t64x64k32g42s32nf` | 4,221 us | 6 | 5,486 (+30.0 %) | 7,219 (+71.0 %) |
+| attn*V | head_dim 64 (1B) | `ml_t32x32k32g21s32` | 2,449 us | 2 | `t64x64k32g42s32` 2,639 (+7.8 %) | `t64x64k32g22s64` 2,740 (+11.9 %) |
+| attn*V | head_dim 128 (3B) | `ml_t64x64k32g22s32` | 2,460 us | 1 | 2,692 (+9.4 %) | 2,964 (+20.5 %) |
+| attn*V | head_dim 128 (8B) | `ml_t64x64k32g22s32` | 3,290 us | 2 | 3,617 (+9.9 %) | 3,980 (+21.0 %) |
+
+The choice follows the head dimension, not the model: the head_dim 64 winners are 9 to 13 % behind on head_dim
+128 and the other way round.
+
+**These kernels are not in any profile and were not gated end to end.** With the fused attention node
+(candidates 8 to 11) QK^T and attn*V only serve the calls it does not take (unaligned prompts, decode), so on the
+benchmark prompt they would change nothing; they are a result for the three-kernel path: QK^T + softmax r3 +
+attn*V per layer 9.97 -> 9.53 ms (1B), 10.23 -> 9.09 ms (3B), 13.55 -> 11.95 ms (8B), against 2.26 / 3.22 / 4.05 ms
+for the fused kernel. Adopting them would be a new candidate: the QK^T winners accumulate in different chunks
+(K = 16 on head_dim 64) and read packed K, an arithmetic change that needs the SDPA tiers at 12 passes, the
+error against the fp32 reference and the real-text comparison of the owner decisions of 2026-10-04.
+
+Response surface, QK^T (`sdpa/importance-qk/`; 1,724 configurations, mean over the three models; slowest 14
+times the fastest; best of level against the best):
+
+| parameter | effect | matters |
+|---|---|---|
+| `NO_MASK_FILL` ("nf") | on: best; off: +51.5 % | yes, the largest |
+| packed K staging ("pk") | on: best; off: +8.9 % | yes |
+| `WG_TILE_M` | 64: best; 32: +2.6 %; 128: +3.6 %; 256: +18.9 % | yes |
+| `WG_TILE_N` | 64: best; 32: +3.2 %; 128: +3.6 %; 256: +12.0 % (per head_dim: 32 on head_dim 64, 64 on 128) | yes |
+| `WG_TILE_K` | 32: best; 16: +0.3 %; 64: +6.5 % (16 on head_dim 64, 32 on 128) | only 64 |
+| `SG_GRID_X`, `SG_GRID_Y` | 1 to 4: within 0.8 %; 8: +4.1 / +5.6 % | only 8 |
+| `SUBGROUP_SIZE` | 32 and 64 equal (0.0 %) | no |
+
+attn*V (`sdpa/importance-av-d128/`, 470 configurations on 3B and 8B; `importance-av-d64/`, the 268 whose tile N
+divides 64, on 1B):
+
+| parameter | head_dim 128 | head_dim 64 | matters |
+|---|---|---|---|
+| `WG_TILE_M` | 64: best; 32: +1.5 %; 128: +9.3 %; 256: +23.9 % | 32: best; 64: +4.1 %; 128: +12.0 %; 256: +27.4 % | yes |
+| `WG_TILE_N` | 64: best; 128: +1.5 %; 32: +8.6 % | 32: best; 64: +4.1 % | yes |
+| `WG_TILE_K` | 32: best; 64: +5.9 % | 32: best; 64: +4.1 % | yes |
+| `SG_GRID_Y` | 2: best; 1: +1.5 %; 4: +8.2 %; 8: +17.1 % | 1: best; 2: +1.1 %; 4: +4.3 %; 8: +12.7 % | yes |
+| `SG_GRID_X` | 2: best; 4: +1.5 %; 8: +6.6 %; 1: +6.9 % | 2: best; 1: +1.1 %; 4: +4.1 % | yes |
+| `SUBGROUP_SIZE` | 32: best; 64: +6.6 % | 32: best; 64: +2.3 % | yes |
+| multi-load ("ml") | on: best; off: +9.4 % (only 24 configurations exist without it) | on: best; off: +7.0 % | yes |
+
+- Interactions: the additive model explains 58 % (QK^T), 37 % and 47 % (attn*V) of the variance. The pairs that
+  carry the rest are the same in all three: grid X x grid Y (0.073 to 0.085), tile M x grid Y (0.049 to 0.149),
+  tile N x grid X or tile M x grid X (0.025 to 0.033), grid x subgroup size (0.02 to 0.05).
+- As for the linear families, they reduce to derived quantities: the MMA tiles a subgroup owns (2 to 8 is within
+  1 % for QK^T, 2 to 4 within 3 % for attn*V; 32 costs +8 to +30 %, 64 three to five times the time, 128 eleven
+  times) and the threads of the workgroup (64 to 256; 32 threads +11 to +32 %, 1024 threads +7 to +27 %).
+
 ## Can the sweep slot in between two timed runs of a session? No (checked 2026-10-04 18:44 PDT, during `c7`)
 
 Asked by the owner after seeing `sweep_space.py` alive and the GPU at 79 C during the candidate-7 session.
@@ -1049,13 +1103,32 @@ runs each; all variants reached through `hooks/softmax-name-hook.patch` applied 
   `ET_VK_DISABLE_COOPMAT`) r3 would be wrong; the microbench pairing check now fails such a pairing.
 - Expected end to end (16 / 28 / 32 layers): about -44 ms (1B), -59 ms (3B), -89 ms (8B).
 
-## Next
+## Closing checks (2026-10-07 00:55 UTC, branch head)
 
-1. 8da4w screen and confirmation -> the 8da4w kernel per shape; candidate 11 = candidate 10 + those kernels.
-   If it is under 2 % too, the stop rule is met.
-2. (withdrawn: RGP captures. Owner decision 2026-10-05, see "Host hang and reboot".)
-3. Production-diff passes for the confirmed configurations; QK^T / attn*V enumeration and repeat stage.
-4. A direct session of the final configuration against `dev/1.5` and against `780m-refine3`.
+- `sarc/tools/check.sh --no-build`: **PASS** (zone rule against `release/1.5`, twin wrappers, `test_sarc_select`
+  1240 checks / 31 rows on the release tables and 1433 checks / 122 candidates with the dev zone).
+- `sarc/tools/spirv_golden.py` on the final build (`head2`): spirv golden: PASS (53 shipped variants). No shipped SPIR-V changed.
+- `git diff --name-status ef079ac41 HEAD` outside the dev zone and this change directory: exactly four files,
+  `impl/SDPA.cpp`, `impl/sarc/SdpaCoopmat.cpp`, `impl/sarc/SdpaCoopmat.h`, `impl/sarc/Select.h`: the two entry
+  points committed under the owner decision of 2026-10-05 (`b969e8f1c`, `1c8861aa7`; diffs in `proposal.md`).
+  `check.sh` does not flag them (its zone rule allows the release zone, and `SDPA.cpp` is listed in
+  `sarc/HOOKS`); they are permitted by that decision and by nothing else. No gate, golden, tolerance, prompt or
+  tool under `sarc/tools/` was edited; nothing was promoted.
+- `tools/rgp_chunks.py` stays untracked (a reader for `.rgp` files from before the owner's decision; it sets no
+  variable, starts no GPU job, nothing calls it).
+
+## Next (nothing is queued; these are the owner's decisions)
+
+1. Whether candidate 11 is adopted: it rests on the fused attention entry point (`1c8861aa7`), which is committed
+   but subject to the owner's review before any promotion, and on the softmax variant hook (`b969e8f1c`).
+   Without the fused node the branch still offers `c7` (softmax r3, bit-identical output, +4.10 % over
+   `780m-refine3`) and the 4w / 8da4w kernels per shape.
+2. Whether the QK^T / attn*V kernels per head dimension ("Part 1, SDPA") become a candidate for the three-kernel
+   path (unaligned prompts): 0.4 to 1.6 ms a layer there, nothing on the benchmark prompt; an arithmetic change
+   that needs its own gate.
+3. Outside both zones, reported and not changed: the upstream operators (elementwise, copies, the 8da4w
+   activation quantize) are now 17 to 27 % of the prefill; packing K and V where the cache is written would
+   remove the fused kernel's copy pass.
 
 ## Blocking
 

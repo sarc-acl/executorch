@@ -42,7 +42,9 @@ for r in csv.DictReader(open(src)):
 nshape = len(models); X = []; y = []; left = collections.Counter()
 for t, rs in by.items():
     rows = [rs.get(m) for m in models]
-    if all(r and r["ok"] == "PASS" and r["us"] for r in rows):
+    if fam == "av" and "llama-3.2-1b" in models and 64 % params(t)["WG_TILE_N"]:
+        left["tile N does not divide head_dim 64 (the 1B row is the table kernel)"] += 1
+    elif all(r and r["ok"] == "PASS" and r["us"] for r in rows):
         X.append(params(t)); y.append(sum(math.log(float(r["us"])) for r in rows) / nshape)
     else: left[",".join(sorted({(r["ok"] if r else "no row") for r in rows}))] += 1
 y = np.array(y); n = len(y); mu = y.mean(); sst = ((y - mu) ** 2).sum(); best = y.min()
