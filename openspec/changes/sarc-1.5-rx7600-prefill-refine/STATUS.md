@@ -1,8 +1,13 @@
 # STATUS: RX 7600 prefill campaign
 
-Updated 2026-10-07 06:31 UTC.
+Updated 2026-10-07 23:58 UTC.
 
-## Running now\n- None
+## Running now
+
+- **Complete linear screens** (`tools/chain4.sh`, detached, status `.artifacts/logs/chain4.status`, started 23:53 UTC): 4w
+  (table + 20 kernels) then 8da4w (table + 23 kernels), 3 rounds, on the twelve real prefill shapes; kernel timings
+  under `gl.sh`, not a timed session. Output `.artifacts/stage/screens/screen-{4w,8da4w}.csv`.
+- Nothing else of this campaign. M51 started its own campaign on this host at 23:13 UTC (builds here).
 
 ## State
 
@@ -10,13 +15,17 @@ Updated 2026-10-07 06:31 UTC.
 |---|---|
 | change directory, tools, thresholds | committed before any measurement (`f605e36ea`); thermal rule made precise before the A/A (`308327c0d`) |
 | parent build `parent` (`f5f1bf10c`, native) | done; shipped SPIR-V: golden PENDING (14 of 53 differ, native glslc); reference for later builds `golden-ref-parent.json` |
-| baseline + A/A `aa2` | **done**, 120 timed runs, 116 valid (2 `host_build`, re-run); parent against itself |
+| baseline + A/A `aa2` | **done**; `raw/runs.csv`: 112 rows = 88 timed (86 valid, 2 `host_build`, replaced) + 24 untimed next-token runs (15 valid, 9 `thermal_throttle`); 7 valid timed runs per arm per cell (84) plus the 2 replacement runs; parent against itself |
 | calibration (`tools/thresholds.txt`) | clock floor **2420 MHz**, **5** repeats, thermal mask unchanged (no timed run carried a temperature bit) |
 | `s0-parent-verify` | **done** 09:34 UTC: the parent's own status, the reference for every candidate: `correctness rc=1` and `4w buffer` production-diff FAILED (1B, 3B, 8B) in the release-1.5 fallback kernels (buffer I/O), as on 2026-09-28 and on the 7900 XTX; all texture3d and 8da4w production-diff cases ALL PASSED; default vs tiled SAME; decode 31 tokens. SDPA tiers of the parent (table kernels): `all` 4/4, `extended` 8/8, `full` 4/4, 0 mismatches |
 | 8da4w phase timing (release tile `zpg_t128x64k32g42s32`, twin `sarc_dev_prof_dq8ca_zpg_t128x64k32g42s32p`) | done (`results/rx7600/phases/parent-8da4w.csv`): per wave barrier 21 to 23 %, fetch 11 to 17 %, MMA 35 to 38 %, LDS store 21 to 23 % (1B wk_wv: 18 / 13 / 26 / 37 %). Staging (fetch + LDS store) costs as much as the MMA, as on the 780M before its candidates 1 and 2 |
 | candidate 1 (softmax `r3`) | **gate passed**, **+1.48 % geomean: under 2 % (the first)**. `verify.sh` identical to `s0` (32 / 32 lines, rates removed); SDPA tiers `all` / `extended` / `full` 12 passes each, 0 mismatches, `pairing=ok`; SDPA output **byte-identical** to the parent in all 21 cases (`all`, `extended`, `peaked`, `full`); traces: softmax 32.4 -> 26.8 ms (1B), 42.7 -> 35.4 (3B), 64.2 -> 53.1 (8B) |
 | fused-variant screen (kernel level, 3 rounds, `results/rx7600/fused/`) | done: no variant at least 3 % faster in every round; the 780M's `fused3_d64_t32x32g11s32rko` / `fused3_d128_t16x64g11s32rko` stay (others 0.76 to 1.62 x, not consistently faster) |
-| candidate 2 (fused attention kernel) | **gate done**, reference-error evidence done, real-text probe done; linear screens done; gate 3 pending (build needed with rx7600-refineN profile from linear screen results); gate 4 pending |
+| candidate 2 (fused attention kernel) | **ACCEPTED (reference-error rule, owner decision 2026-10-04)**, +18.22 % geomean over candidate 1 (parent binary, env switches). Gate: `verify.sh` identical to `s0` (32 / 32 lines); SDPA tiers 12 passes each, 0 mismatches, `pairing=ok`; next token SAME in all items (none differ); real-text probe complete, gross-divergence check passed. Reference error (D3.1): one coherent run of 2026-10-07 23:14 to 23:49 UTC, `results/rx7600/sdpa-error/` (17 rows, complete): 16 `yes`; **1 `NO`**, `peaked_tiny_gqa_s256` (S = 256, max-error ratio 1.140, rms ratio 0.812), not a production shape, explained in `sdpa-error/README.md`. Record: `results/rx7600/acceptance-c2.txt`. Not yet built from a committed head (every arm so far is the parent binary with env switches) |
+| linear screens (port items 3, 4) | **not done**. The earlier files (`stage/c2-fused/linear-screen-*.csv`: one kernel, rounds 1 to 2) are incomplete (a base-environment argument error made most jobs fail). Complete 3-round screens of 21 4w and 24 8da4w kernels (table included): **running** (`tools/chain4.sh`) |
+| candidate 3 (linear kernel per shape) | **not gated**. First attempt `c3-linear-per-shape` FAILED and is superseded (rc 127, no binaries staged, the profile would have changed nothing): `results/rx7600/sessions/c3-first-attempt-failed/`. To do: profile from the screens, exported commit, real build, golden check, gate, timed session |
+| candidate 4 (whole-texel 8da4w staging) | not started |
+| M2a (`subgroupBarrier()` after each `memoryBarrierShared()` in the fused kernel) | not started; its own gated candidate after 3 and 4 (owner decision 2026-10-07 23:15 UTC) |
 | coordinator hold | tested 07:21 UTC (`results/rx7600/hold-test.txt`); watcher running |
 
 ### Candidate 2: fused attention kernel (session `c2-fused`, 13:24 to 14:15 UTC)
@@ -47,9 +56,10 @@ segment) slots of `Psh`, `Rsh`, `Dsh`; the stores of whole tiles are cooperative
 lanes of the same subgroup wrote, ordered only by `memoryBarrierShared()`, without `subgroupBarrier()`. The
 workgroup is one subgroup and the code relies on it executing in lockstep. Under the Vulkan memory model that is
 formally unsynchronised; on RDNA3 (one wave, no divergent branch between the write and the read) it is benign, and
-every correctness pass agrees. The 780M uses the same kernel. **Finding for the owner, not changed here:** adding
-`subgroupBarrier()` after each `memoryBarrierShared()` in `sarc_dev_780m_sdpa_fused3.glsl` would make it formally
-correct, but that file is the 780M campaign's.
+every correctness pass agrees. The 780M uses the same kernel. Adding `subgroupBarrier()` after each
+`memoryBarrierShared()` would make it formally correct; per the owner decision of 2026-10-07 23:15 UTC it is done as its
+own gated candidate (M2a) in an rx7600-named copy of the kernel after candidates 3 and 4, not by editing the 780M's file.
+The wave size RADV picks for a 32-invocation workgroup (the yaml sets no required subgroup size) is UNVERIFIED.
 
 ### Candidate 1: softmax `r3` (session `c1-softmax`, 09:44 to 10:37 UTC)
 
@@ -152,9 +162,9 @@ end the campaign before items 3 and 4. The 780M measured them the other way roun
 
 ## Next
 
-1. Candidate 1 (softmax `r3`) gate; its traces are the first locate step (ETDump families of the six cells, both arms).
-2. Fused-variant screen, then candidate 2 (fused attention kernel) with the reference-error evidence (D3).
-3. Linear screens, then candidates 3 and 4 (kernel per shape; whole-texel 8da4w staging).
+1. Finish the complete linear screens; select per shape by the 3 %-in-every-round rule.
+2. Candidate 3: `rx7600-refineN` profile, exported commit, real native build (`tools/build-native.sh`), golden check against `golden-ref-parent.json`, gate, timed session.
+3. Candidate 4 (whole-texel 8da4w staging), then M2a; stop rule R11; final verification on the committed head; `check.sh --no-build`.
 
 ### Decision needed from the owner
 The branch history was rewritten and force-pushed over the coordinator's scrubbed copy (see below). This violates owner decisions 2026-10-06 16:19 and 19:40 UTC: do not rewrite or amend existing commits, do not run git push, must never be forced.
@@ -171,3 +181,5 @@ Hashes:
 The branch also now sits on 90fe4d013 rather than directly on the parent f5f1bf10c. It carries 10 extra 780M commits (+12.3k lines under openspec/changes/sarc-1.5-780m-prefill-refine) that no measured build contained.
 
 Do not push again and do not 'fix' this with another rewrite or force push. Wait for the coordinator.
+
+Update, owner decision 2026-10-07 23:15 UTC: the coordinator handles the public branch (a forward commit that replaces host names and home paths); this actor never pushes (the push URL is `DISABLED`) and does not rewrite or amend published commits.
