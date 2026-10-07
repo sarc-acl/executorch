@@ -101,18 +101,18 @@ Parent build `f5f1bf10c`, `ET_VK_SARC_UNVERIFIED=1`, in both arms; tok/s, median
 A/A geomean +0.06 % (7 runs per arm: 0.00 %). Every cell within 3 % of the published value. Median clock in the
 prefill window 2495 to 2586 MHz; start temperatures 42 to 52 C (idle 46 C). Next token SAME in all six cells on the
 timed, the real-text and the unaligned prompt. The 1B prefill takes 261 to 262 ms, and the runner's timer step is
-1 ms (0.38 %): the +0.38 % of 1B 4w is one timer step. The two timed runs that overlapped an M51 build read 3292.6
+1 ms (0.38 %): the +0.38 % of 1B 4w is one timer step. The two timed runs that overlapped a build of the other campaign read 3292.6
 (the cell median) and 3070.46 tok/s (-0.15 % against the median), within the repeat spread.
 
 ## Findings so far (host)
 
-- The model copy at `/local/yanwen.xu/campaign-rx7600/models` is incomplete: 8B 4w 3,263,430,656 of 4,173,751,424
+- The model copy at `<campaign-root>/models` is incomplete: 8B 4w 3,263,430,656 of 4,173,751,424
   bytes (sha256 `be58a01b...`, manifest `695dd232...`), 8B 8da4w missing; no copy was running at 06:49 UTC. The
   complete 2026-09-28 copies (all six sha256 equal to the manifest) are used instead, read-only, through links in
   `.artifacts/models`. The incomplete directory was left as found.
 - `podman` cannot run here (owner fact); builds are native, so the shipped-SPIR-V golden check is pending for every
   build of this campaign.
-- The M51 campaign builds on this host's CPU (seen 07:00 UTC: Android NDK `clang++`, `cmake --build -j8`). Timed
+- Another campaign builds on this host's CPU (seen 07:00 UTC: Android NDK `clang++`, `cmake --build -j8`). Timed
   runs wait until no compiler or linker of anyone runs and are invalid if one appears during the run.
 - No compositor or other process holds `/dev/dri` at 07:00 UTC (both DisplayPort connectors are connected).
 - The unaligned 1304-token prompt `r1304.txt` that `verify.sh` also uses (`ls r*.txt`) is not on this host; its
@@ -127,19 +127,19 @@ timed, the real-text and the unaligned prompt. The 1B prefill takes 261 to 262 m
   evaluates exp once and bounds the zero fill. It reduces in fp16 like the release softmax and is meant to be
   bit-identical to it. No fp32 softmax exists on this branch. `r3` is valid with this card's attn*V row (tile 64 x 64,
   K 32: both divide 256, the condition in the shader).
-- Python imports from `/tool/pkg` (NFS) are slow: importing torch took over 5 minutes under load, so the ETDump
+- Python imports from `<toolchain-share>` (NFS) are slow: importing torch took over 5 minutes under load, so the ETDump
   analysis will not use the kit's `Inspector` script.
 
 ## Decision needed from the owner
 
-**Host builds of the M51 campaign during timed sessions.** Rule R5 says no build runs during a timed session on the
-same host, by anyone. The M51 campaign (`/local/yanwen.xu/campaign-m51`) builds on this host's CPU nearly continuously
+**Host builds of another campaign during timed sessions.** Rule R5 says no build runs during a timed session on the
+same host, by anyone. Another campaign (`<other-campaign-root>`) builds on this host's CPU nearly continuously
 (`nice -n 19`, `-j8`, Android NDK; one build was 12 minutes in at 07:54 UTC). My sessions honour the rule
 conservatively: every timed run waits until no compiler, linker or build driver of anyone runs, and a run during
-which one appears is invalid and replaced. The sessions therefore only move in the gaps between M51 builds. The first
+which one appears is invalid and replaced. The sessions therefore only move in the gaps between the other campaign's builds. The first
 A/A (`aa2`) needed about 25 minutes for its 1B cells and stalled for more than 15 minutes on one 3B run. **Default
-unless the owner rules otherwise:** keep this rule. A shared host-wide marker that the M51 builds wait for would
-need the M51 campaign's cooperation; I do not touch its checkout or jobs.
+unless the owner rules otherwise:** keep this rule. A shared host-wide marker that the the other campaign's builds wait for would
+need the other campaign's cooperation; I do not touch its checkout or jobs.
 
 **Order of port items 1 and 2.** Item 1, the fused attention kernel, replaces QK^T, softmax and attn*V for every
 tile-aligned prefill call, including the timed 2048-token prompt. Item 2, the softmax without the zero tail, then

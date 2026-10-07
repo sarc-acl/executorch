@@ -1,15 +1,15 @@
-# env.sh: host constants of the RX 7600 campaign (sj1-yanwen-d01), sourced by every tool here.
-A=/local/yanwen.xu/campaign-rx7600/.artifacts
-ET=/local/yanwen.xu/campaign-rx7600/executorch
+# env.sh: host constants of the RX 7600 campaign (host-ws1), sourced by every tool here.
+A=<campaign-root>/.artifacts
+ET=<campaign-root>/executorch
 T=$ET/openspec/changes/sarc-1.5-rx7600-prefill-refine/tools
-LOCK=rx7600-sj1
+LOCK=rx7600-host
 LOCKF=$HOME/.cache/gpu-lab/lock-$LOCK
 MFLAT=$A/models                      # verify.sh --flat-models layout (links to the 2026-09-28 copies)
 CARD=/sys/class/drm/card1/device
 HW=/sys/class/hwmon/hwmon1           # amdgpu hwmon of card1 (0000:04:00.0)
 [[ $(cat $HW/name 2>/dev/null) == amdgpu && $(readlink -f $HW/device) == $(readlink -f $CARD) ]] || {
   echo "env.sh: hwmon1 is not the amdgpu of card1" >&2; exit 70; }
-export VK_ICD_FILENAMES=/local/yanwen.xu/mesa/install/share/vulkan/icd.d/radeon_icd.x86_64.json
+export VK_ICD_FILENAMES=<mesa-install>/share/vulkan/icd.d/radeon_icd.x86_64.json
 export ETVK_DEVICE_INDEX=0
 export TMPDIR=$A/tmp
 gtemp() { local a b c; a=$(<$HW/temp1_input); b=$(<$HW/temp2_input); c=$(<$HW/temp3_input)

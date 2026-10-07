@@ -3,7 +3,7 @@
 #   <artifacts>/HOLD   created and removed by the coordinator, never by the campaign
 #   <artifacts>/HELD   written here once HOLD exists and no unit of the queue is running:
 #                      one line "HELD <UTC time> <what would start next>" per waiting queue; removed when HOLD is gone
-#   <artifacts> = /local/yanwen.xu/campaign-rx7600/.artifacts (RX 7600 campaign)
+#   <artifacts> = <campaign-root>/.artifacts (RX 7600 campaign)
 # Every unit of the queue (one sweep configuration, one microbench run, one timed session, one verify.sh, one
 # trace set, one build) holds a shared lock on <artifacts>/.hold-busy while it runs and looks at HOLD after taking
 # it, so HELD is only written when an exclusive lock on that file can be had: nothing is running and nothing can
@@ -14,7 +14,7 @@
 #                                                 idle (no chain at a unit boundary), removes a stale HELD
 #   hold.sh vars                                  prints HOLD=..., HELD=..., BUSY=... (for gl.sh, sweep_space.py)
 # Test without touching HOLD: SARC_HOLD_NAME=HOLD-TEST (then HELD-TEST), SARC_HOLD_POLL=<seconds>.
-D=${SARC_HOLD_DIR:-/local/yanwen.xu/campaign-rx7600/.artifacts}; N=${SARC_HOLD_NAME:-HOLD}; POLL=${SARC_HOLD_POLL:-60}
+D=${SARC_HOLD_DIR:-<campaign-root>/.artifacts}; N=${SARC_HOLD_NAME:-HOLD}; POLL=${SARC_HOLD_POLL:-60}
 HOLD=$D/$N; HELD=$D/HELD${N#HOLD}; BUSY=$D/.hold-busy
 held_if_idle() {
   ( flock -n -x 7 || exit 0

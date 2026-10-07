@@ -1,7 +1,7 @@
 #!/bin/bash
 # build-native.sh [--traced] [--no-tests] <exported tree>/executorch <out>: native mirror of sarc/tools/build.sh
 # --llama for this host (podman cannot run here: /etc/subgid maps the user GID). Same cmake invocations and
-# layout (<out>/{backend,tests,llama}); host gcc, /tool/pkg python 3.12 (torch, yaml), Vulkan SDK 1.4.350.1 glslc
+# layout (<out>/{backend,tests,llama}); host gcc, <toolchain-share> python 3.12 (torch, yaml), Vulkan SDK 1.4.350.1 glslc
 # instead of the pinned container's shaderc v2023.8: shipped SPIR-V does not match sarc/golden (golden: pending).
 set -euo pipefail
 source "$(dirname "$(readlink -f "$0")")/env.sh"
@@ -10,7 +10,7 @@ while [[ $1 == --* ]]; do case $1 in --traced) TRACED=1 ;; --no-tests) TESTS=0 ;
 SRC=$(realpath "$1"); OUT=$(realpath -m "$2"); mkdir -p "$OUT"; cd "$SRC"
 [[ $(basename "$SRC") == executorch ]] || { echo "tree must be named executorch" >&2; exit 2; }
 export PYTHONPATH=$(dirname "$SRC") CCACHE_DIR=$A/ccache
-PY=/tool/pkg/Python-3.12.9-1/bin/python3; GL=/local/yanwen.xu/vulkan-sdk/1.4.350.1/x86_64/bin/glslc; JOBS=${SARC_JOBS:-24}
+PY=<toolchain-share>/Python-3.12.9-1/bin/python3; GL=<vulkan-sdk>/1.4.350.1/x86_64/bin/glslc; JOBS=${SARC_JOBS:-24}
 CC=(-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache)
 EXTRA=(); [[ $TRACED == 1 ]] && EXTRA+=(-DEXECUTORCH_BUILD_DEVTOOLS=ON -DEXECUTORCH_ENABLE_EVENT_TRACER=ON)
 { echo "src $(cat $(dirname "$SRC")/COMMIT) traced=$TRACED tests=$TESTS $(date -u +%FT%TZ)"; gcc --version | sed -n 1p

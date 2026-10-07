@@ -15,7 +15,7 @@ cp -f $A/build/rx7600/parent/probe/logits_probe $A/stage/c2-fused/lp
 st "c2 gate"; $T/gate.sh c2-fused "$C2" sdpa; st "c2 gate done"
 $T/sdpa_evidence.sh c2-fused "all extended peaked full fused" > $A/stage/c2-fused/sdpa-evidence.out 2>&1; st "c2 sdpa evidence done"
 $T/probe_run.sh c2-fused > $A/stage/c2-fused/probe.out 2>&1
-/tool/pkg/Python-3.12.9-1/bin/python3 $T/probe_compare.py $A/stage/c2-fused/probe $A/stage/c2-fused/probe/real-text-compare.csv > $A/stage/c2-fused/probe/compare.out 2>&1
+<toolchain-share>/Python-3.12.9-1/bin/python3 $T/probe_compare.py $A/stage/c2-fused/probe $A/stage/c2-fused/probe/real-text-compare.csv > $A/stage/c2-fused/probe/compare.out 2>&1
 st "c2 probe done: $(tail -1 $A/stage/c2-fused/probe/compare.out)"
 S=$A/stage/screens; mkdir -p $S; cp -f $A/build/rx7600/parent/tests/test_llama_microbench $S/
 { echo "kernel screens, parent build test_llama_microbench, env ET_VK_SARC_UNVERIFIED=1"; sha256sum $S/test_llama_microbench; } > $S/STAGE.md

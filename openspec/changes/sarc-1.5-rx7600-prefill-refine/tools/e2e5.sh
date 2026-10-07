@@ -1,5 +1,5 @@
 #!/bin/bash
-# e2e5.sh: parent vs candidate end-to-end prefill session on the Radeon RX 7600 (sj1-yanwen-d01).
+# e2e5.sh: parent vs candidate end-to-end prefill session on the Radeon RX 7600 (host-ws1).
 # Protocol = openspec/changes/sarc-1.5-e2e-benchmark/kit/host/e2e.sh (fresh llama_main per run, --warmup,
 # 1 new token, temperature 0, cool to idle + 5 C, arms interleaved parent->cand on odd repeats and cand->parent
 # on even ones, failed runs kept), plus:

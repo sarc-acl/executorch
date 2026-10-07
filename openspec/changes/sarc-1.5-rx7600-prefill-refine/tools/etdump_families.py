@@ -13,7 +13,7 @@ linear shape: count, ms), totals.csv (dispatch_ms, graph_ms, n_dispatch per run)
 import csv, glob, json, os, subprocess, sys, tempfile
 from collections import defaultdict
 
-ART = "/local/yanwen.xu/campaign-rx7600/.artifacts"
+ART = "<campaign-root>/.artifacts"
 FLATC = f"{ART}/build/rx7600/parent-traced/llama/third-party/flatc_ep/bin/flatc"
 SCHEMA = f"{ART}/src/rx7600/parent/executorch/devtools/etdump"
 

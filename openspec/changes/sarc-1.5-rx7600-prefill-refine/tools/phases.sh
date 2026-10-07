@@ -11,5 +11,5 @@ $B --list --linear --regime=prefill --scheme=$F --storage=texture3d > $O/cases.t
 env ET_VK_SARC_UNVERIFIED=1 ${V[$F]}=$K ET_VK_DUMP_OUTPUT_DIR=$O $T/gl.sh $B --linear --regime=prefill --scheme=$F \
   --storage=texture3d --skip-correctness --json-out=$O/run.json > $O/run.log 2>&1
 echo "run rc=$?"
-/tool/pkg/Python-3.12.9-1/bin/python3 $T/prof_decode.py $O $TM $TN > $T/../results/rx7600/phases/$TAG.csv 2> $O/decode.err
+<toolchain-share>/Python-3.12.9-1/bin/python3 $T/prof_decode.py $O $TM $TN > $T/../results/rx7600/phases/$TAG.csv 2> $O/decode.err
 cat $T/../results/rx7600/phases/$TAG.csv

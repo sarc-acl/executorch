@@ -8,7 +8,7 @@ from `origin/topic/780m-prefill-refine` at `f5f1bf10c` (the parent).
 ## Parent
 
 `f5f1bf10c510da347a556f716c2c9025a85d6228` with `ET_VK_SARC_UNVERIFIED=1` and
-`VK_ICD_FILENAMES=/local/yanwen.xu/mesa/install/share/vulkan/icd.d/radeon_icd.x86_64.json`, no profile. The rows
+`VK_ICD_FILENAMES=<mesa-install>/share/vulkan/icd.d/radeon_icd.x86_64.json`, no profile. The rows
 for "rx 7600" are already in `impl/sarc/table_amd.cpp` (kUnverified): 4w `t256x128k32g24s32f32cbt`, 8da4w zpg
 `t128x64k32g42s32`, SDPA `qk_coopmat_t128x64k32g22s64` / `av_coopmat_t64x64k32g22s64`, SARC truncated softmax.
 The two release-zone hooks of owner decision D4 (softmax variant name `b969e8f1c`, fused attention node
@@ -31,34 +31,34 @@ The two release-zone hooks of owner decision D4 (softmax variant name `b969e8f1c
 | cooling | to idle + 5 C, or until the temperature has not fallen for 30 s, at most 300 s, before every run | R6, L20 |
 | next-token items | D1 / D3 as written (near-tie evidence; reference-error rule for arithmetic changes) | owner |
 
-## Host and environment (sj1-yanwen-d01)
+## Host and environment (host-ws1)
 
 - Ubuntu 22.04, kernel 6.8.0-107-generic, 48 cores, 45 GiB RAM (the six models, 14 GB, fit the page cache), RX 7600
   8 GiB at `0000:04:00.0` = `card1`, hwmon1. Governor `auto`, sclk levels 255 / 2356 MHz (as found, not changed).
 - Vulkan: only the user-space RADV ICD is loaded with `VK_ICD_FILENAMES` set, so the RX 7600 is device 0.
 - Builds: native (`tools/build-native.sh`), because podman fails on this host (owner fact, 2026-10-05): host gcc
-  11.4, `/tool/pkg` Python 3.12.9, Vulkan SDK 1.4.350.1 glslc. The shipped-SPIR-V golden check is therefore
+  11.4, `<toolchain-share>` Python 3.12.9, Vulkan SDK 1.4.350.1 glslc. The shipped-SPIR-V golden check is therefore
   **pending** for every build of this campaign (glslc differs from the container's shaderc v2023.8).
 - Models: the six `*_embq_ctx3072.pte` copied to this host on 2026-09-28
-  (`/local/yanwen.xu/new-workspace/.artifacts/2026-09-28/e2eb/rx7600/models-src/`), read-only, sha256 equal to the
+  (`<workspace>/.artifacts/2026-09-28/e2eb/rx7600/models-src/`), read-only, sha256 equal to the
   shared manifest; linked under `.artifacts/models` in `verify.sh`'s flat layout. The copy at
-  `/local/yanwen.xu/campaign-rx7600/models` is incomplete (8B 4w truncated at 3.26 of 4.17 GB, 8B 8da4w missing)
+  `<campaign-root>/models` is incomplete (8B 4w truncated at 3.26 of 4.17 GB, 8B 8da4w missing)
   and is not used.
-- Another campaign (M51, an Android phone over adb) builds natively on this host's CPU. Timed runs wait for its
+- Another campaign (an Android device over adb) builds natively on this host's CPU. Timed runs wait for its
   builds to end and are invalid if one starts during them (thresholds above).
 
 ## Tools (copied from `sarc-1.5-780m-prefill-refine/tools/`; originals untouched)
 
 | tool | change against the 780M copy |
 |---|---|
-| `env.sh` (new) | host constants: artifact directory, lock `rx7600-sj1`, hwmon1 / card1 sensors (checked to be the same device), `VK_ICD_FILENAMES`, `ETVK_DEVICE_INDEX=0`, `TMPDIR`; stops on a `GPU_GONE` / `ABORTED` marker |
+| `env.sh` (new) | host constants: artifact directory, lock `rx7600-host`, hwmon1 / card1 sensors (checked to be the same device), `VK_ICD_FILENAMES`, `ETVK_DEVICE_INDEX=0`, `TMPDIR`; stops on a `GPU_GONE` / `ABORTED` marker |
 | `export_commit.sh` (new) | exports one commit and, recursively, each pinned submodule from this clone's object stores; writes `COMMIT` and `MANIFEST` |
 | `build-native.sh` (new) | native mirror of `sarc/tools/build.sh --llama [--traced]` (the container cannot run here) |
 | `build-both.sh` | export + native build, instead of a container build of the working tree |
 | `sampler.py` (new) | one-process sampler (no child processes, L39): sclk, busy, power, max of the three temperatures, `gpu_metrics` v1.3 throttle status, every 20 ms |
 | `others.sh` (new) | foreign GPU users by `fuser` on `/dev/dri` and by program name (comm), host builds by compiler / linker processes |
 | `e2e5.sh` | sensors and lock of this host; page cache filled per cell (D5) and model load time recorded; throttle, foreign-GPU and host-build rules above; samples every 20 ms and a 5-sample minimum; cooling also ends when the temperature stops falling; next token also on `prompt_real_2048.txt`; flat model layout |
-| `gl.sh` | lock `rx7600-sj1`, `others.sh` guard, waits out builds; the 780M's tracing refusal kept for unattended jobs |
+| `gl.sh` | lock `rx7600-host`, `others.sh` guard, waits out builds; the 780M's tracing refusal kept for unattended jobs |
 | `hold.sh` | artifact directory of this campaign |
 | `stage.sh` | paths of this host; `ET_VK_SARC_UNVERIFIED=1` belongs to both arms' env |
 | `summarize.py` | repeat count as an argument; three next-token prompts |

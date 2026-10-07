@@ -6,7 +6,7 @@ serve them), cut as token windows from six real texts: the two real-text kit pro
 repository. The recipe is fixed here, not tuned: prompt i takes source i % 6, length 128 * (1 + (7 * i) % 15) and
 start (131 * i) % (tokens - length); the token after the window is recorded as the true next token.
 Writes prompts-<model>.txt (one prompt per line, token ids, for logits_probe) and prompts-<model>.json.
-Run with a Python that has pytorch_tokenizers (/tool/pkg Python 3.12 on the RX 7600 host); read-only on everything else."""
+Run with a Python that has pytorch_tokenizers (<toolchain-share> Python 3.12 on the RX 7600 host); read-only on everything else."""
 import json, os, sys
 import pytorch_tokenizers as ptk
 
@@ -18,7 +18,7 @@ SOURCES = [os.path.join(KIT, "prompt_real_2048.txt"), os.path.join(KIT, "prompt_
 MODELS = {"1b": "llama-3.2-1b", "3b": "llama-3.2-3b", "8b": "llama-3.1-8b"}
 out = sys.argv[1]; os.makedirs(out, exist_ok=True)
 for m, d in MODELS.items():
-    tok = ptk.CppTiktoken(); tok.load("/local/yanwen.xu/campaign-rx7600/.artifacts/models/tokenizer.model")  # one tokenizer for the three models (sha256 82e9d319...)
+    tok = ptk.CppTiktoken(); tok.load("<campaign-root>/.artifacts/models/tokenizer.model")  # one tokenizer for the three models (sha256 82e9d319...)
     ids = [list(tok.encode(open(s, encoding="utf-8").read(), 0, 0)) for s in SOURCES]
     rows = []
     for i in range(32):
