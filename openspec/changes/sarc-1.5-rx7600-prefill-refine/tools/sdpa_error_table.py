@@ -17,8 +17,9 @@ for tier in ("extended", "peaked", "full"):
     for c in P:
         if c not in C: continue
         n, pr, pm, rr = P[c]; _, cr, cm, _ = C[c]; good = cr <= pr and cm <= pm
-        if tier == "full": ok = ok and good
+        if tier == "full": ok = good if ok is None else (ok and good)
         rows.append(f"{tier},{c},{n},{rr:.4e},{pr:.4e},{cr:.4e},{cr / pr:.3f},{pm:.4e},{cm:.4e},{cm / pm:.3f},{'yes' if good else 'NO'},{K.get(('parent', c), '')},{K.get(('cand', c), '').replace('_buffer_buffer_half', '')}")
 text = "\n".join(rows) + "\n"
 if len(sys.argv) > 2: open(sys.argv[2], "w").write(text)
-sys.stdout.write(text); print("production shapes (tier full): candidate error not larger than the parent's:", "yes" if ok else "NO")
+sys.stdout.write(text); print("production shapes (tier full): candidate error not larger than the parent's:", "no data" if ok is None else "yes" if ok else "NO")
+if len(rows) == 1 or ok is None: sys.exit("sdpa_error_table: no complete parent/candidate rows (header only or no tier full): not a table")

@@ -1,11 +1,17 @@
-Accepted under reference-error rule (owner decision 2026-10-04).
+ACCEPTED (reference-error rule, owner decision 2026-10-04)
 
-Evidence:
-- Probe comparison: $RESULTS_DIR/probe/comparison.csv
-- SDPA error table: $RESULTS_DIR/sdpa-error/error.csv
-- SDPA evidence bitwise: $ARTIFACTS_DIR/stage/c2-fused/sdpa-error/bitwise.txt
-- SDPA evidence runs: $ARTIFACTS_DIR/stage/c2-fused/sdpa-error/runs.txt
+Candidate 2: fused attention kernel (`fused3_d64_t32x32g11s32rko`, `fused3_d128_t16x64g11s32rko`) on top of candidate 1.
+Timed session `c2-fused`: geomean +18.22 % over candidate 1 (results/rx7600/sessions/c2-fused).
 
-All next-token items in the timed, real-text, and unaligned prompts are SAME (as seen in the gate status for candidate 2).
-Gross divergence check passed (mean KL <= 0.5 nat and top-1 token differs in at most 1/3 of the prompts).
-Candidate error against fp64 reference is not larger than parent's for all production shapes (see SDPA error table).
+Evidence (all in this directory, paths relative to results/rx7600/):
+- D3.1 error against the fp64 reference, one coherent run: sdpa-error/error.csv (17 rows, complete), sdpa-error/README.md,
+  sdpa-error/runs.txt, sdpa-error/bitwise.txt, raw logs sdpa-error/logs/. Production shapes (tier full, S = 2048):
+  4 of 4 "yes". One non-production row reads NO (peaked_tiny_gqa_s256, S = 256, max ratio 1.140, rms ratio 0.812),
+  explained in sdpa-error/README.md; it is not counted as a pass.
+- D3.2 real-text probe: probe/comparison.csv (18 rows, 32 prompts per cell).
+- D3.3 gross-divergence check: largest top-1 difference 4 of 32 prompts (limit one third), largest mean KL 0.0345 nat
+  (limit 0.5): passed.
+- Attention tiers extended and full: sdpa-correctness/ (12 passes each, 0 mismatches, pairing=ok).
+- verify.sh identical to the parent snapshot s0-parent-verify (rates removed), 32 of 32 lines.
+
+Next-token items that differ: none (timed, real-text and unaligned prompts all SAME in the six cells).
