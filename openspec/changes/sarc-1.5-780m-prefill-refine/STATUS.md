@@ -1138,7 +1138,7 @@ runs each; all variants reached through `hooks/softmax-name-hook.patch` applied 
   `ET_VK_DISABLE_COOPMAT`) r3 would be wrong; the microbench pairing check now fails such a pairing.
 - Expected end to end (16 / 28 / 32 layers): about -44 ms (1B), -59 ms (3B), -89 ms (8B).
 
-## Closing checks (2026-10-07 00:55 UTC; `check.sh --no-build` run again 01:15 UTC after the review follow-up: PASS)
+## Closing checks (2026-10-07 00:55 UTC; `check.sh --no-build` run again 01:10 UTC after the review follow-up: PASS)
 
 - `sarc/tools/check.sh --no-build`: **PASS** (zone rule against `release/1.5`, twin wrappers, `test_sarc_select`
   1240 checks / 31 rows on the release tables and 1433 checks / 122 candidates with the dev zone).
