@@ -808,6 +808,40 @@ const Preference kB580_refine3[] = {
     {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
 };
 // b580 end
+// b580-fused begin: fused attention on the Arc B580 (openspec/changes/sarc-1.5-b580-fused-port)
+// A b580-fused profile is b580-refine3 for every call the fused kernel does not take, plus the fused
+// kernel variants below, one per head_dim (shader name after sarc_dev_b580_sdpa_fused_; "" = none).
+// b580-fused-<variant> are single-variant screening profiles.
+struct FusedB580 {
+  const char* profile;
+  const char* variants;
+};
+const FusedB580 kFusedB580[] = {
+    {"b580-fused1", "d64_t16x32s16m8ro,d128_t16x64s16m8ro"},
+    {"b580-fused1p2", "d64_t16x32s16m8r,d128_t16x64s16m8r"},
+    {"b580-fused-d64_t16x32s16m8ro", "d64_t16x32s16m8ro"},
+    {"b580-fused-d64_t16x32s16m8o", "d64_t16x32s16m8o"},
+    {"b580-fused-d64_t8x32s16m8ro", "d64_t8x32s16m8ro"},
+    {"b580-fused-d64_t16x64s16m8ro", "d64_t16x64s16m8ro"},
+    {"b580-fused-d64_t8x64s16m8ro", "d64_t8x64s16m8ro"},
+    {"b580-fused-d64_t16x32s16m8r", "d64_t16x32s16m8r"},
+    {"b580-fused-d64_t32x32s32m8ro", "d64_t32x32s32m8ro"},
+    {"b580-fused-d128_t16x64s16m8ro", "d128_t16x64s16m8ro"},
+    {"b580-fused-d128_t16x64s16m8o", "d128_t16x64s16m8o"},
+    {"b580-fused-d128_t8x64s16m8ro", "d128_t8x64s16m8ro"},
+    {"b580-fused-d128_t8x64s16m8o", "d128_t8x64s16m8o"},
+    {"b580-fused-d128_t16x32s16m8ro", "d128_t16x32s16m8ro"},
+    {"b580-fused-d128_t8x32s16m8ro", "d128_t8x32s16m8ro"},
+    {"b580-fused-d128_t16x64s16m8r", "d128_t16x64s16m8r"},
+    {"b580-fused-d128_t8x64s16m8r", "d128_t8x64s16m8r"},
+    {"b580-fused-d128_t16x64s32m8ro", "d128_t16x64s32m8ro"},
+};
+// The function pointers of impl/sarc_dev/b580/SdpaB580Fused.cpp, whichever static initializer runs first.
+Override& fused_b580() {
+  static Override fused;
+  return fused;
+}
+// b580-fused end
 struct Profile {
   const char* name;
   const Preference* prefs;
@@ -972,6 +1006,26 @@ const Profile kProfiles[] = {
     {"b580-refine2x", kB580_refine2x, sizeof(kB580_refine2x) / sizeof(Preference)},
     {"b580-refine3", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     // b580 end
+    // b580-fused begin
+    {"b580-fused1", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused1p2", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x32s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x32s16m8o", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t8x32s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x64s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t8x64s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x32s16m8r", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t32x32s32m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x64s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x64s16m8o", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x64s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x64s16m8o", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x32s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x32s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x64s16m8r", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x64s16m8r", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x64s32m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    // b580-fused end
 };
 const Profile* requested_profile() {
   static const Profile* p = []() -> const Profile* {
@@ -989,6 +1043,18 @@ const Profile* requested_profile() {
   }();
   return p;
 }
+
+// b580-fused begin
+const char* fused_variants_b580() {
+  const Profile* p = requested_profile();
+  for (const FusedB580& f : kFusedB580) {
+    if (p != nullptr && std::strcmp(p->name, f.profile) == 0) {
+      return f.variants;
+    }
+  }
+  return "";
+}
+// b580-fused end
 
 std::optional<Choice> dev_select(
     const DeviceInfo& device,
@@ -1057,6 +1123,12 @@ struct Registrar {
     // the 8da4w variable needs active dq8ca rows (see dev_select).
     o.force_path = !requested_variant().empty();
     o.select = dev_select;
+    // b580-fused begin
+    if (*fused_variants_b580() != 0) {
+      o.sdpa_fused_add = fused_b580().sdpa_fused_add;
+      o.sdpa_fused_serves = fused_b580().sdpa_fused_serves;
+    }
+    // b580-fused end
     set_override(o);
     if (requested_profile() != nullptr) {
       std::cerr << "[sarc_dev] profile active: " << requested_profile()->name
@@ -1072,5 +1144,24 @@ struct Registrar {
 } registrar;
 
 } // namespace
+
+// b580-fused begin: called by impl/sarc_dev/b580/SdpaB580Fused.cpp
+const char* sdpa_fused_variants_b580() {
+  return fused_variants_b580();
+}
+void register_sdpa_fused_b580(
+    void (*add)(ComputeGraph&, const std::vector<int32_t>&),
+    bool (*serves)(ComputeGraph*, const std::vector<int32_t>&)) {
+  fused_b580().sdpa_fused_add = add;
+  fused_b580().sdpa_fused_serves = serves;
+  if (*fused_variants_b580() != 0) {
+    Override o = get_override();
+    o.sdpa_fused_add = add;
+    o.sdpa_fused_serves = serves;
+    set_override(o);
+  }
+}
+// b580-fused end
+
 } // namespace sarc
 } // namespace vkcompute
