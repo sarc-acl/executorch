@@ -132,3 +132,36 @@ What limits further progress: the linear GEMMs are about 77 % of the 8B prefill 
 no screened 4w kernel is 3 % faster than the one the release table already ships in every round; 8da4w staging and barriers cost as much as the
 MMA (phase timing). Percent of the roofs: not re-measured (no igpu-roofline on this host; owner question in `STATUS.md`); the cited
 2026-09-28 roofs are 43.42 TFLOP/s (fp16) and 43.90 TOP/s (int8).
+
+## Round 2 (owner decision 2026-10-08 23:38 UTC): the linear kernels, structure first
+
+Round 1 is closed (DONE, +26.90 % geomean, head `fd2690e85`). Round 2's parent is round 1's final stack: build `final` (commit
+`18cc0d53a`), environment `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_780M_PROFILE=c7
+ET_VK_SARC_780M_SDPA_FUSED=fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko ET_VK_SARC_RX7600_PROFILE=rx7600-refine2` and
+`VK_ICD_FILENAMES` of the user-space RADV. The pristine parent `f5f1bf10c` stays the second reference of the final session. Thresholds
+(`tools/thresholds.txt`: noise band 2 %, clock floor 2420 MHz, 5 repeats, 3 % kernel screen) are unchanged and not re-calibrated.
+
+Candidates (owner order), each in new dev-zone files under the device-tag prefix `rx7600`, default off, golden unchanged:
+1. 8da4w: a variant of the shipped 8da4w kernel with less synchronisation / LDS cost per K step, proven by phase timing before it is
+   timed end to end.
+2. 4w: the same treatment for the 4w kernel on the shapes where the shipped kernel won the screen.
+3. Only if the trace shows attention above 10 % of a cell: the 780M's best per-head-dimension QK^T / attention x V kernels where the
+   fused node does not serve the call.
+
+Rules fixed on 2026-10-08 23:56 UTC, before any round-2 measurement (the commit carrying this text is the time stamp):
+- **Kernel screen:** a variant replaces the incumbent of a shape only if at least 3 % faster in every round of a 3-round kernel screen
+  (`test_llama_microbench --linear --regime=prefill --storage=texture3d`, the twelve real shapes), as in round 1.
+- **Candidate adoption:** a candidate is adopted into the round-2 stack if its gate passes (R7) and its geomean gain over its parent in
+  one timed session is at least 2 % (outside the noise band). Otherwise it is recorded as a negative result with its numbers and counts
+  as a candidate under 2 % for the stop rule. A candidate that changes arithmetic is judged by the D3 reference-error rule; one that
+  claims not to must show bit-identical outputs (`tools/linear_bitwise.sh`).
+- **Phase timing:** the share of barrier + LDS-store time of the candidate's measurement twin must fall against the incumbent twin
+  (same tile, same shapes) before the candidate is timed end to end; if it does not fall, the candidate is dropped without a session
+  and recorded.
+- **Measurement-only kernels** (phase-timing twins, ablations) write wrong results by design, are never selected by a profile and are
+  never part of a gated binary's selection.
+- **Stop rule (round 2):** two consecutive gated candidates each under 2 % geomean over their parent, or all three candidates done.
+  Then: final verification of the round-2 stack on the committed head (build from an exported commit, no local patch), a final session
+  against round 1's final stack and against the pristine parent, write-up. Never pushed from here.
+- **Shared host:** a timed run waits until no compiler, linker or build of anyone runs and is invalid if one appears (R5); timed tools
+  keep the names `e2e5`, `gl`, `verify` under `<campaign-root>/.../tools/`.
