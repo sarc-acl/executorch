@@ -11,7 +11,7 @@
 # o = ONLINE (one pass, running row maximum), j = QK_J_OUTER (one column of score tiles live; needs r),
 # a = ACC_SH (accumulators in shared memory); g<G> before the letters = SUBGROUPS (G subgroups per workgroup, each
 # owning 1 / G of the score columns and of the accumulator's head_dim tiles; needs j, not a, and
-# WG_TILE_N / 16 and HEAD_DIM / 16 multiples of G, G * SUBGROUP_SIZE / WG_TILE_M <= 8).
+# WG_TILE_N / 16 and HEAD_DIM / 16 multiples of G, and WG_TILE_N / 8 a multiple of G * SUBGROUP_SIZE / WG_TILE_M).
 # Each variant needs: WG_TILE_M a multiple of MMA_M that divides SUBGROUP_SIZE, WG_TILE_N and HEAD_DIM multiples of
 # 16, WG_TILE_N / (SUBGROUP_SIZE / WG_TILE_M) a multiple of 8, SUBGROUP_SIZE / WG_TILE_M <= 4.
 
@@ -378,3 +378,57 @@ sarc_dev_b580_sdpa_fused:
       ONLINE: true
       QK_J_OUTER: true
       SUBGROUPS: 1
+    - NAME: sarc_dev_b580_sdpa_fused_d128_t16x128s16m8g8oj
+      HEAD_DIM: 128
+      WG_TILE_M: 16
+      WG_TILE_N: 128
+      SUBGROUP_SIZE: 16
+      AQ_REG: false
+      ONLINE: true
+      QK_J_OUTER: true
+      SUBGROUPS: 8
+    - NAME: sarc_dev_b580_sdpa_fused_d128_t32x64s16m8g8oj
+      HEAD_DIM: 128
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      SUBGROUP_SIZE: 16
+      AQ_REG: false
+      ONLINE: true
+      QK_J_OUTER: true
+      SUBGROUPS: 8
+    - NAME: sarc_dev_b580_sdpa_fused_d128_t8x128s16m8g8roj
+      HEAD_DIM: 128
+      WG_TILE_M: 8
+      WG_TILE_N: 128
+      SUBGROUP_SIZE: 16
+      AQ_REG: true
+      ONLINE: true
+      QK_J_OUTER: true
+      SUBGROUPS: 8
+    - NAME: sarc_dev_b580_sdpa_fused_d64_t16x64s16m8g4oj
+      HEAD_DIM: 64
+      WG_TILE_M: 16
+      WG_TILE_N: 64
+      SUBGROUP_SIZE: 16
+      AQ_REG: false
+      ONLINE: true
+      QK_J_OUTER: true
+      SUBGROUPS: 4
+    - NAME: sarc_dev_b580_sdpa_fused_d64_t16x128s16m8g4roj
+      HEAD_DIM: 64
+      WG_TILE_M: 16
+      WG_TILE_N: 128
+      SUBGROUP_SIZE: 16
+      AQ_REG: true
+      ONLINE: true
+      QK_J_OUTER: true
+      SUBGROUPS: 4
+    - NAME: sarc_dev_b580_sdpa_fused_d64_t8x64s16m8g4roj
+      HEAD_DIM: 64
+      WG_TILE_M: 8
+      WG_TILE_N: 64
+      SUBGROUP_SIZE: 16
+      AQ_REG: true
+      ONLINE: true
+      QK_J_OUTER: true
+      SUBGROUPS: 4

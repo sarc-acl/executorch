@@ -865,6 +865,12 @@ const FusedB580 kFusedB580[] = {
     {"b580-fused-d64_t16x32s16m8g2roj", "d64_t16x32s16m8g2roj"},
     {"b580-fused-d64_t16x64s16m8g4roj", "d64_t16x64s16m8g4roj"},
     {"b580-fused-d64_t8x32s16m8oj", "d64_t8x32s16m8oj"},
+    {"b580-fused-d128_t16x128s16m8g8oj", "d128_t16x128s16m8g8oj"},
+    {"b580-fused-d128_t32x64s16m8g8oj", "d128_t32x64s16m8g8oj"},
+    {"b580-fused-d128_t8x128s16m8g8roj", "d128_t8x128s16m8g8roj"},
+    {"b580-fused-d64_t16x64s16m8g4oj", "d64_t16x64s16m8g4oj"},
+    {"b580-fused-d64_t16x128s16m8g4roj", "d64_t16x128s16m8g4roj"},
+    {"b580-fused-d64_t8x64s16m8g4roj", "d64_t8x64s16m8g4roj"},
 };
 // The function pointers of impl/sarc_dev/b580/SdpaB580Fused.cpp, whichever static initializer runs first.
 Override& fused_b580() {
@@ -1082,6 +1088,12 @@ const Profile kProfiles[] = {
     {"b580-fused-d64_t16x32s16m8g2roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     {"b580-fused-d64_t16x64s16m8g4roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     {"b580-fused-d64_t8x32s16m8oj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x128s16m8g8oj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t32x64s16m8g8oj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x128s16m8g8roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x64s16m8g4oj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x128s16m8g4roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t8x64s16m8g4roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     // b580-fused end
 };
 const Profile* requested_profile() {
