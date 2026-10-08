@@ -885,6 +885,11 @@ const char kFused780mTwoPass[] =
     "fused3_d64_t32x32g11s32rk,fused3_d128_t16x64g11s32rk";
 const char kFused780mOnePass[] =
     "fused3_d64_t32x32g11s32rko,fused3_d128_t16x64g11s32rko";
+// fused3sb: fused3 with subgroupBarrier() after every memoryBarrierShared()
+// (round 3, 2026-10-08). c8 to c10 stay on the fused3 names they were measured
+// with.
+const char kFused780mOnePassSb[] =
+    "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko";
 const Profile780m k780mProfiles[] = {
     {"refine9", k780mRefine9, sizeof(k780mRefine9) / sizeof(Pick780m), nullptr, ""},
     {"refine10", k780mRefine10, sizeof(k780mRefine10) / sizeof(Pick780m), nullptr, ""},
@@ -893,7 +898,7 @@ const Profile780m k780mProfiles[] = {
     {"c8", nullptr, 0, "780m_r3", kFused780mTwoPass},
     {"c9", k780mRefine9, sizeof(k780mRefine9) / sizeof(Pick780m), "780m_r3", kFused780mOnePass},
     {"c10", k780mRefine10, sizeof(k780mRefine10) / sizeof(Pick780m), "780m_r3", kFused780mOnePass},
-    {"c11", k780mRefine11, sizeof(k780mRefine11) / sizeof(Pick780m), "780m_r3", kFused780mOnePass},
+    {"c11", k780mRefine11, sizeof(k780mRefine11) / sizeof(Pick780m), "780m_r3", kFused780mOnePassSb},
 };
 const Profile780m* active_profile_780m() {
   static const Profile780m* const active = []() -> const Profile780m* {
