@@ -1017,8 +1017,56 @@ struct ProfileRx7600 {
   size_t count;
   const char* softmax_variant;
 };
+// rx7600-refine2 (candidate 3): a linear kernel per layer shape, from the complete
+// 3-round kernel screens of 2026-10-07 (results/rx7600/screens/): a kernel
+// replaces the table kernel of a shape only if at least 3 % faster in every
+// round. The shapes are the twelve real prefill shapes (M = 2048); N and K
+// identify a layer of one model. 4w: the 256 x 128 tile with column-major B
+// (cbt) on the w2 shapes and 8B w1_w3, the same tile with row-major B staging
+// (bbt) on 1B wk_wv and 3B w1_w3; the other 4w shapes keep the table kernel.
+// 8da4w: the 780M's 256 x 64 tile (K step 64) on all twelve shapes. The
+// texel-wise family (zpg_bt) is candidate 4's, screened against these picks.
+bool q4_cbt_shape(const ShapeInfo& s) {
+  return !s.gemv &&
+      ((s.N == 14336 && s.K == 4096) || (s.N == 4096 && s.K == 14336) ||
+       (s.N == 2048 && s.K == 8192) || (s.N == 3072 && s.K == 8192));
+}
+bool q4_bbt_shape(const ShapeInfo& s) {
+  return !s.gemv &&
+      ((s.N == 512 && s.K == 2048) || (s.N == 8192 && s.K == 3072));
+}
+bool dq_prefill_shape(const ShapeInfo& s) {
+  static const int64_t nk[][2] = {
+      {4096, 4096}, {1024, 4096}, {14336, 4096}, {4096, 14336},
+      {2048, 2048}, {512, 2048},  {8192, 2048},  {2048, 8192},
+      {3072, 3072}, {1024, 3072}, {8192, 3072},  {3072, 8192}};
+  if (s.gemv) {
+    return false;
+  }
+  for (const auto& e : nk) {
+    if (s.N == e[0] && s.K == e[1]) {
+      return true;
+    }
+  }
+  return false;
+}
+const PickRx7600 kRx7600Refine2[] = {
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt",
+     q4_cbt_shape},
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32bbt",
+     q4_bbt_shape},
+    {Op::kDq8caLinear,
+     "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1",
+     dq_prefill_shape},
+};
 const ProfileRx7600 kRx7600Profiles[] = {
     {"rx7600-refine1", nullptr, 0, "780m_r3"},
+    {"rx7600-refine2",
+     kRx7600Refine2,
+     sizeof(kRx7600Refine2) / sizeof(PickRx7600),
+     "780m_r3"},
 };
 const ProfileRx7600* active_profile_rx7600() {
   static const ProfileRx7600* const active = []() -> const ProfileRx7600* {
