@@ -120,4 +120,16 @@ The other copied tools (search, screen and plot scripts) are unchanged and used 
 
 ## Results
 
-(none yet; A/A and baseline above)
+Stop rule counter: candidate 1 is the first gated candidate under 2 % geomean.
+
+| # | candidate | parent | geomean | state | evidence |
+|---|---|---|---:|---|---|
+| 1 | softmax `r3` (the 780M's, `ET_VK_SARC_780M_PROFILE=c7`, D4.1 hook, on the parent binary) | pristine parent | +1.56 % | gated: `verify.sh` identical to `s0-parent-verify` (32 of 32 lines), SDPA tiers all / extended / full 12 passes each, 0 failed, 0 mismatches, `pairing=ok`, bit-identical to the release softmax in 21 of 21 SDPA cases, error against the reference not larger; next token SAME on the timed, real-text and unaligned prompts in all six cells | `results/7900xtx/sessions/c1-softmax/` |
+
+Candidate 1, per cell (median of 7 valid runs, `sessions/c1-softmax/raw/summary.csv`): 1B 4w 20078.40 -> 20686.90 (+3.03 %), 1B 8da4w 22260.90 -> 22755.60 (+2.22 %),
+3B 4w 10138.60 -> 10240.00 (+1.00 %), 3B 8da4w 10449.00 -> 10502.60 (+0.51 %), 8B 4w 4762.79 -> 4841.61 (+1.65 %), 8B 8da4w 4982.97 -> 5031.94 (+0.98 %); geomean +1.56 %.
+Where it came from (warm ETDump, ms per 2048-token prefill, parent -> candidate 1, `sessions/c1-softmax/trace/families.csv`): softmax 10.2 -> 8.2 (1B 4w),
+11.8 -> 9.3 (3B 4w), 18.7 -> 15.2 (8B 4w); the other families unchanged within 1 ms.
+
+Locate (same traces, parent, share of the dispatch time): linear GEMMs 63 % / 71 % / 78 % (1B / 3B / 8B, 4w) and 56 % / 66 % / 75 % (8da4w); attention (QK^T + softmax + AV)
+29.9 % / 22.2 % / 13.9 % (4w); everything else under 12 %. The fused attention kernel can therefore pay most on 1B and least on 8B, where the GEMMs decide.

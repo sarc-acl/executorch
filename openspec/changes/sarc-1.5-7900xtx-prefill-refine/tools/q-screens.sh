@@ -10,7 +10,7 @@ S=c1-softmax; D=$A/stage/$S; BASE="ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_780M_PROFI
 F0=fused3_d64_t32x32g11s32rko,fused3_d128_t16x64g11s32rko
 if [[ ! -f $D/fused-guard.log ]]; then
   env $BASE ET_VK_SARC_780M_SDPA_FUSED=$F0 $T/gl.sh $D/test_llama_microbench --sdpa-correctness-only --sdpa-tier=all > $D/fused-guard.log 2>&1; rc=$?
-  p=$(grep -c PASSED $D/fused-guard.log); f=$(grep -c FAILED $D/fused-guard.log); k=$(grep 'sdpa-kernels' $D/fused-guard.log | grep -c 'fused=fused3')
+  p=$(grep -c PASSED $D/fused-guard.log); f=$(grep -c FAILED $D/fused-guard.log); k=$(grep 'sdpa-kernels' $D/fused-guard.log | grep -c 'fused=sarc_dev_780m_sdpa_fused3')
   st "fused guard rc=$rc passed=$p failed=$f fused_kernel_lines=$k"
   { (( rc == 0 && f == 0 && p > 0 && k > 0 )); } || { st "STOP: fused guard did not pass (see fused-guard.log)"; exit 1; }
 fi
