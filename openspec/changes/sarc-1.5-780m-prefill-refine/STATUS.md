@@ -6,7 +6,7 @@ Updated 2026-10-08 23:03 UTC. **Not closed: the owner decided option (a) at 22:5
 
 **Running now (started 23:03 UTC, detached, one after the other): `chain27.sh`, then `chain28.sh`** (copies in
 `results/780m/round3/`; status files `<artifacts 10-08>/logs/chain27.status`, `chain28.status`).
-`chain27.sh`: check of the export `src/head4` (written 23:10 UTC by `tools/export_recursive.sh c639d4760`: `git
+`chain27.sh`: check of the export `src/head4` (written 23:00 UTC by `tools/export_recursive.sh c639d4760`: `git
 archive` of the commit, the 23 submodules and 7 nested ones fetched at their pinned commits into bare
 repositories under `<artifacts 10-08>/submodules/` and written from there; nothing from a working tree), builds
 `head4` and `head4-traced`, `spirv_golden.py`, SPIR-V against `head2` and `head3`, staging, dispatch smoke, SDPA
@@ -209,7 +209,10 @@ release-zone file, nothing under `sarc/tools` or `sarc/golden`, no tolerance, pr
 campaign changed in this round (`tools/` is byte-identical to the copy that ran). `tools/rgp_chunks.py` stays
 untracked. (Correction, 22:59 UTC: commit `b3ec12057` added `tools/rgp_chunks.py` to git by mistake, against the
 task file's "Leave it untracked"; found by the review. It was taken out of the index again with `git rm --cached`
-in the next commit, the local file kept, history not rewritten: the file is in the tree of `b3ec12057` only.)
+in the next commit (`3942401f5`), the local file kept, history not rewritten. The commit after that, `aead6ed25`,
+added it once more through a `git add` of the whole change directory; taken out again in the commit that follows it,
+and the path is now in this clone's `.git/info/exclude` so that a directory-wide `git add` cannot pick it up. The
+file is in the trees of `b3ec12057` and `aead6ed25` only.)
 
 ### Decision needed from the owner
 
