@@ -31,6 +31,20 @@ The two release-zone hooks of owner decision D4 (softmax variant name `b969e8f1c
 | cooling | to idle + 5 C, or until the temperature has not fallen for 30 s, at most 300 s, before every run | R6, L20 |
 | next-token items | D1 / D3 as written (near-tie evidence; reference-error rule for arithmetic changes) | owner |
 
+## Adoption rules for the last candidates (written 2026-10-08 03:35 UTC, before the M2a session; the candidate-4 rule only restates the table above)
+
+- **Candidate 4** (whole-texel 8da4w staging everywhere, `rx7600-refine3`, against candidate 3): adopted only if its
+  geomean gain over candidate 3 is at least 2 % and its gate passes; otherwise candidate 3's kernel stays and the number is
+  reported as a negative result.
+- **M2a** (`fused3sb`: `subgroupBarrier()` after every `memoryBarrierShared()` in the fused kernel; its own gated candidate by
+  the owner decision of 2026-10-07 23:15 UTC, reported either way): it is a correctness-hygiene change (an execution
+  barrier where the 780M kernel relies on lockstep), not a speed-up. It enters the final stack if (a) the gate passes (SDPA tiers
+  all / extended / full, 12 passes each, 0 mismatches, `pairing=ok`; `verify.sh` as the snapshot; next token SAME) and its
+  output is byte-identical to `fused3` in the SDPA evidence (else D3, error against the fp32 reference not larger) and (b)
+  its geomean change over candidate 3 is not worse than -2 % (inside the noise band or better). Otherwise it stays out and
+  the stack keeps `fused3` with the formal-race finding recorded.
+- The stop rule counts candidates 4 and M2a only as gated candidates that were timed against their parent.
+
 ## Host and environment (host-ws1)
 
 - Ubuntu 22.04, kernel 6.8.0-107-generic, 48 cores, 45 GiB RAM (the six models, 14 GB, fit the page cache), RX 7600
