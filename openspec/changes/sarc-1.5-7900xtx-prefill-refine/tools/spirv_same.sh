@@ -7,8 +7,8 @@
 #     toolchain. This is the check a candidate must pass.
 source "$(dirname "$(readlink -f "$0")")/env.sh"
 B=$A/build/7900xtx/$1/llama/vulkan_compute_shaders; G=$ET/sarc/tools/spirv_golden.py
-[[ -f $A/golden-ref-parent.json ]] || /usr/bin/python3 $G $A/build/7900xtx/parent/llama/vulkan_compute_shaders $A/golden-ref-parent.json --update --owner native-parent > /dev/null
-/usr/bin/python3 $G $B $ET/sarc/golden/spirv.json > $A/logs/golden-$1.txt 2>&1
+[[ -f $A/golden-ref-parent.json ]] || $PY $G $A/build/7900xtx/parent/llama/vulkan_compute_shaders $A/golden-ref-parent.json --update --owner native-parent > /dev/null
+$PY $G $B $ET/sarc/golden/spirv.json > $A/logs/golden-$1.txt 2>&1
 echo "golden sarc/golden/spirv.json (PENDING, native glslc): $(tail -1 $A/logs/golden-$1.txt), $(grep -c '^DIFF' $A/logs/golden-$1.txt) DIFF"
-/usr/bin/python3 $G $B $A/golden-ref-parent.json > $A/logs/golden-ref-$1.txt 2>&1
+$PY $G $B $A/golden-ref-parent.json > $A/logs/golden-ref-$1.txt 2>&1
 echo "shipped SPIR-V vs native parent: $(tail -1 $A/logs/golden-ref-$1.txt)"; grep -v '^spirv golden' $A/logs/golden-ref-$1.txt | head -5

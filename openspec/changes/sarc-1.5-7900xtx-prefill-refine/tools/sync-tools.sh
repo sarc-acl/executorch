@@ -9,6 +9,8 @@ M=${GMODELS:-$(dirname "$GROOT")/et-models}
 clog "rsync tools + verify.sh to <gpu-root>; flat model links"
 rsh "mkdir -p $GROOT/{tools,sarc-tools,models,stage,logs,tmp}"
 rsync -a --delete --exclude=__pycache__ -e "ssh -o BatchMode=yes" "$T/" "$GPUHOST:$GROOT/tools/"
+rsh "mkdir -p $GROOT/results/7900xtx/probe"
+rsync -a -e "ssh -o BatchMode=yes" "$T/../results/7900xtx/probe/" "$GPUHOST:$GROOT/results/7900xtx/probe/"   # probe prompt sets (same as the 780M's)
 rsync -a -e "ssh -o BatchMode=yes" "$ET/sarc/tools/verify.sh" "$GPUHOST:$GROOT/sarc-tools/verify.sh"
 rsh "touch $GROOT/tools/ON_GPU_HOST; printf 'LOCK=%s\nGCACHE=%s\n' '${GLOCK:-7900xtx-gpu-host}' '$(dirname "$GROOT")/.cache' > $GROOT/env.gpu
 mkdir -p $(dirname "$GROOT")/.cache/gpu-lab; touch $(dirname "$GROOT")/.cache/gpu-lab/lock-${GLOCK:-7900xtx-gpu-host}
