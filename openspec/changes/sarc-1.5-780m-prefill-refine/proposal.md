@@ -682,7 +682,7 @@ gets one name. Dev zone only; no release-zone file is touched in this round. Raw
 `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-08/`, evidence in `results/780m/round3/` and
 `results/780m/sessions/{r3a-fused3sb,r3b-final-dev15}/`.
 
-**Status 2026-10-08 22:40 UTC: not closed.** The build this section measured does not satisfy R5 (below, "What
+**Status 2026-10-08, after review: not closed.** The build this section measured does not satisfy R5 (below, "What
 was not done, and what is open"); the numbers stand for that build only.
 
 **The recommended configuration is now `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final`.** It

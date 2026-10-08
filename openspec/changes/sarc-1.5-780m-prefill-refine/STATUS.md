@@ -2,7 +2,7 @@
 
 ## Round 3 (2026-10-08): `fused3sb` and `780m-final` (closing task, not a tuning round)
 
-Updated 2026-10-08 23:05 UTC. **Not closed: blocked on an owner decision (build provenance, R5); see "Decision needed from the owner" at the end of this section.** Task file: `~/hmz-sarc/CAMPAIGN-round3.md`. Raw data of this round:
+Updated 2026-10-08 22:31 UTC. **Not closed: blocked on an owner decision (build provenance, R5); see "Decision needed from the owner" at the end of this section.** Task file: `~/hmz-sarc/CAMPAIGN-round3.md`. Raw data of this round:
 `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-08/`; evidence in `results/780m/round3/` and
 `results/780m/sessions/{r3a-fused3sb,r3b-final-dev15}/`; summary in `proposal.md`, "Round 3".
 
@@ -229,7 +229,7 @@ GPU job was started after the review.
    item A and once before the session of item B. Inside them the model changes without another read: the cell
    loop of `tools/e2e5.sh` (lines 114 to 128), `sarc/tools/verify.sh` and `tools/trace.sh`. What is on record:
    rc = 0 in all 144 runs of the two sessions and no abort line in any log; the host has 28 GB of RAM for 12.4 GB
-   of model files, and `fincore` showed all six fully resident at 22:30 UTC, after everything. Whether a file
+   of model files, and `fincore` showed all six fully resident when checked after everything (about 22:20 UTC). Whether a file
    was resident at each model change was not recorded, so a slow load cannot be excluded for any single run.
 
    For a replacement validation I would, with the owner's agreement (these are the campaign's own tools under
@@ -255,7 +255,7 @@ GPU job was started after the review.
    the test binary's log lines (the second reviewer did not reconstruct them; the first did). `check.sh
    --no-build` was run by the actor only.
 
-**State 2026-10-08 23:05 UTC: the task file still ends without an owner decision; nothing is queued and nothing
+**State 2026-10-08 22:31 UTC: the task file still ends without an owner decision; nothing is queued and nothing
 runs.** With no exception granted, the plan is 1 (a) with 2 and 3 corrected, started only on the owner's word.
 
 For the record, not blocking:
