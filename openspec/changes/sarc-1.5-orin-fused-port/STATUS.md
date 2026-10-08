@@ -1,6 +1,6 @@
 # STATUS: sarc-1.5-orin-fused-port
 
-**2026-10-08 22:10 UTC. Hook control accepted (`s2n-noenv`: nothing selected, nothing changed, 0 differing
+**2026-10-08 22:08 UTC. Hook control accepted (`s2n-noenv`: nothing selected, nothing changed, 0 differing
 lines). Candidate 1 (fused attention kernel, profile `orin-fused1`) is correct at kernel level on the device: 26
 of 26 cases of the five tiers PASSED with 0 mismatches, and its error against the fp32 reference is below the
 parent's on all five S = 2048 cases (pre-check, one pass). Its reference-error measurement, kernel timing and
