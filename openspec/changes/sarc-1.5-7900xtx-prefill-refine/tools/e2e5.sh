@@ -73,13 +73,14 @@ cool() {  # until idle + 5 C, or the temperature has not fallen for 30 s, or COO
     sleep 2
   done
 }
+waitforeign() { local t0=$SECONDS; while [[ $($T/others.sh) != "gpu= "* ]] && (( SECONDS - t0 < 7200 )); do sleep 10; done; echo $((SECONDS - t0)); }   # a foreign GPU user (a monitor of the owner, another user's job): wait, never force
 waitbuild() { local t0=$SECONDS; while [[ $($T/others.sh) == *build=?* ]] && (( SECONDS - t0 < 7200 )); do sleep 20; done; echo $((SECONDS - t0)); }
 CSV=$O/runs.csv
-[[ -f $CSV ]] || echo "gpu,host,model,scheme,build,rep,slot,tok_s,rc,temp_pre,temp_post,cool_s,clocks,others,utc,log,prompt_tokens,generated_tokens,prefill_ms,clk_n,clk_med_mhz,clk_min_mhz,busy_med,power_med_w,temp_max,valid,reason,load_ms,throttle,load1,buildwait_s,vram_pre_mb,busy_pre_max" > "$CSV"
+[[ -f $CSV ]] || echo "gpu,host,model,scheme,build,rep,slot,tok_s,rc,temp_pre,temp_post,cool_s,clocks,others,utc,log,prompt_tokens,generated_tokens,prefill_ms,clk_n,clk_med_mhz,clk_min_mhz,busy_med,power_med_w,temp_max,valid,reason,load_ms,throttle,load1,buildwait_s,vram_pre_mb,busy_pre_max,foreign_wait_s" > "$CSV"
 run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected tokens>
-  local m=$1 q=$2 b=$3 r=$4 s=$5 p=$6 tag=$7 want=$8 log t0 tp tq rc oth oth2 cs sp gp lp bw vr
+  local m=$1 q=$2 b=$3 r=$4 s=$5 p=$6 tag=$7 want=$8 log t0 tp tq rc oth oth2 cs sp gp lp bw vr fw
   log="logs/$tag-$m-$q-$b-r$r.log"
-  bw=$(waitbuild)
+  bw=$(waitbuild); fw=$(waitforeign)
   t0=$SECONDS; cool; cs=$((SECONDS - t0)); tp=$(gtemp); oth=$($T/others.sh); vr=$(( $(<$CARD/mem_info_vram_used) / 1048576 ))
   local benv=(); [[ -f $D/$b/env ]] && mapfile -t benv < "$D/$b/env"
   local clk=$O/${log%.log}.clk bp=0 i x; rm -f "$clk"
@@ -140,7 +141,7 @@ print(",".join(str(x) for x in [tok, pt, gt, ms, n, cm, cmin, med(2, 1), med(3, 
 PY
   IFS=, read -r tok pt gt ms n cm cmin bm pw tmax valid reason lms thr < "$O/.row"
   local l1; l1=$(cut -d' ' -f1 /proc/loadavg)
-  echo "7900xtx,<gpu-host>,$m,$q,$b,$r,$s,$tok,$rc,$tp,$tq,$cs,sclk_med=${cm}MHz,$(echo "$oth" | tr ', ' ';_'),$(date -u +%FT%TZ),$log,$pt,$gt,$ms,$n,$cm,$cmin,$bm,$pw,$tmax,$valid,$reason,$lms,$thr,$l1,$bw,$vr,$bp" >> "$CSV"
+  echo "7900xtx,<gpu-host>,$m,$q,$b,$r,$s,$tok,$rc,$tp,$tq,$cs,sclk_med=${cm}MHz,$(echo "$oth" | tr ', ' ';_'),$(date -u +%FT%TZ),$log,$pt,$gt,$ms,$n,$cm,$cmin,$bm,$pw,$tmax,$valid,$reason,$lms,$thr,$l1,$bw,$vr,$bp,$fw" >> "$CSV"
   echo "$tag $m $q $b r$r slot$s tok_s=$tok ms=$ms rc=$rc T=$tp->$tq cool=${cs}s clk=$cm/$cmin MHz n=$n busy=$bm load_ms=$lms thr=$thr vram=${vr}MB valid=$valid $reason"
 }
 nvalid() { awk -F, -v m=$1 -v q=$2 -v b=$3 'NR > 1 && $3 == m && $4 == q && $5 == b && $16 ~ /^logs\/prefill/ && $26 == 1 {n++} END {print n + 0}' "$CSV"; }

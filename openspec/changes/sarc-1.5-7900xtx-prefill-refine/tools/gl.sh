@@ -13,6 +13,9 @@ while :; do
   [[ -e $HOLD ]] || break
   exec 9>&- 8>&-
 done
-o=$($T/others.sh); [[ $o == "gpu= "* ]] || { echo "gl.sh: foreign GPU user: $o" >&2; exit 76; }
+# a foreign GPU user (a monitor of the owner, another user's job): wait for it to go (at most 2 h), never force; the wait is logged
+t0=$SECONDS; while :; do o=$($T/others.sh); [[ $o == "gpu= "* ]] && break
+  (( SECONDS - t0 >= 7200 )) && { echo "gl.sh: foreign GPU user for 2 h: $o" >&2; exit 76; }; sleep 10; done
+(( SECONDS - t0 > 0 )) && echo "$(date -u +%FT%TZ) gl.sh waited $((SECONDS - t0)) s for a foreign GPU user" >> $A/logs/gl.log
 echo "$(date -u +%FT%TZ) gl.sh load=$(cut -d" " -f1 /proc/loadavg) $o $*" >> $A/logs/gl.log
 "$@" 9>&-
