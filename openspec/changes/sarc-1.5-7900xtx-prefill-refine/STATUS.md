@@ -1,6 +1,6 @@
 # STATUS: sarc-1.5-7900xtx-prefill-refine
 
-Updated 2026-10-08 21:04 UTC (`date -u`). Branch `topic/7900xtx-prefill-refine`, parent `90fe4d013`. Nothing pushed.
+Updated 2026-10-08 21:45 UTC (`date -u`). Branch `topic/7900xtx-prefill-refine`, parent `90fe4d013`. Nothing pushed.
 
 ## Running now (2026-10-08 21:04 UTC)
 - GPU host: `q-c2` (candidate 2: fused attention `fused3sb`, rk variants picked by the screen, against candidate 1): the gate is **waiting for a foreign GPU user to leave**. `amdgpu_top` of another session of this account (not started by this campaign) has held the card since about 21:00 UTC. By rule it makes every run invalid, and `e2e5.sh` / `gl.sh` now wait for it (logged) instead of running. If this is the owner's monitor, closing it lets the queue continue; nothing was forced or killed.
@@ -36,4 +36,5 @@ Per-cell table of the parent (A/A, median of 7, tok/s): 1B 4w 20277.2 | 1B 8da4w
 Candidate 1 gate and timed session -> locate (ETDump families of the parent and candidate 1 come with the gate) -> fused-variant screen (`fused_screen.sh`, 3 rounds, on the parent binary with the `fused3` variants) -> candidate 2 (`fused3sb`, build `c2`) gate and session -> linear screens and candidate 3.
 
 ## Decision needed from the owner
+0. **A monitor holds the card.** An `amdgpu_top` in an interactive shell of this account (pts/0, started about 21:00 UTC) has been open on the GPU host for the whole time since; the queue (candidate 2 gate, then the rest of the 8da4w screen, then the phase timing) waits for it, as the rules ask (no runs are taken while another process holds the card). Please close it when convenient; the queue then continues by itself. If a passive monitor may stay open during timed runs, say so: that is a change of rule R6 / `others.sh` and needs your decision (its effect on the timing is UNVERIFIED).
 1. **Thermal-mask rule (ratification).** The rule fixed before the A/A (`proposal.md`, Thresholds) gave `thermal_mask=0xffff` on this card: bit 36 of `indep_throttle_status` is present in every run, so every later run would be invalid. Evidence: it is set in 98.4 % of the in-window samples at the card's highest clock (2824 MHz median); the samples without it are ramp samples. I masked bit 36 only (recorded, not rejected), kept every other temperature bit rejecting, and kept the clock-floor rule (2670 MHz); this was done after the A/A and before any candidate was measured. All raw words are kept, so a literal reading can be applied afterwards. Please confirm or reject; rejecting makes every measurement of this campaign invalid under the rule as written.
