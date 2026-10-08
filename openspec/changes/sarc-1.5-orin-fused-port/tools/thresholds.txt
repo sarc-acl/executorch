@@ -1,0 +1,36 @@
+# thresholds.txt: sarc-1.5-orin-fused-port. Fixed 2026-10-08, before the first measurement of this campaign.
+# Nobody changes a value here after a candidate's numbers exist.
+
+parent            8973ced76 with ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine5 ET_VK_SARC_SOFTMAX_VARIANT=orin_g64
+pristine          8973ced76 with no environment (the dev/1.5 state of the device: nothing selected)
+
+baseline          each of the six cells of the parent within 3 % of the first campaign's final session s10-final
+                  (tok/s, 4w / 8da4w: 1B 1489.45 / 1382.85, 3B 628.99 / 570.32, 8B 295.53 / 269.19);
+                  a cell outside 3 % is explained before any candidate
+noise band        a difference inside +-2 % is noise, not a gain
+repeats           median of the first 5 valid runs per arm and cell, arms interleaved; up to 3 extra pairs replace
+                  invalid runs (e2e5.sh --reps 5 --extra 3)
+valid run         rc 0, 2048 prompt tokens, 0 generated tokens, no GPU process this campaign did not start, at
+                  least 5 clock samples (0.1 s sampler) inside the prefill window, median clock >= the clock floor
+clock floor       floor(0.97 x the lowest per-cell median of the per-run median devfreq clock of the valid runs of
+                  this campaign's own A/A session), one device-wide value (tools/calibrate_clock.py ->
+                  results/orin/clkmin.json)
+kernel screen     a kernel replaces the incumbent only when it is at least 3 % faster in every round; a tie keeps
+                  the incumbent
+reference error   (owner decision D3) "the parent" is the parent of this campaign, i.e. the arithmetic of the tuned
+                  stack (the 4070 Ti QK^T / attn*V kernels + softmax orin_g64), measured with the same test binary
+                  on the same seeded inputs. Criterion 1: on every S = 2048 case of the tiers extended and full
+                  the candidate's rms AND maximum error against the fp32 CPU reference of test_llama_microbench
+                  are not larger than the parent's (compared on the printed values); all SDPA tiers 0 mismatches.
+                  The same numbers for the stock kernels (the pristine arm) are reported beside them, not judged.
+                  Gross divergence (41-prompt real-text probe, every cell): reject when mean KL of
+                  candidate-default against parent-default > 0.5 nat or top-1 differs on more than 1/3 of the prompts.
+candidate 2       candidate 1 is the one-pass packed form. Candidate 2 exists only if, at kernel level
+                  (test_llama_microbench --sdpa, copy pass + fused kernel per layer at S = 2048), the unpacked
+                  one-pass form is at least 3 % faster than the packed one in every round for at least one
+                  head_dim; then it uses the unpacked form on exactly those head_dims. Otherwise there is no
+                  candidate 2 and the campaign closes by N3 with candidate 1 as the only gated candidate.
+stop              after candidate 2, or when candidate 1 cannot be made correct within 24 hours of device time,
+                  or when two consecutive gated candidates each gain less than 2 % geomean over their parent
+memory            MemAvailable and the swap counters are recorded before and after every run; an 8B run is not
+                  started with less than 5000 MB available; swap-out during a run is reported
