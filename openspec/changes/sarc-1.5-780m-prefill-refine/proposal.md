@@ -682,6 +682,9 @@ gets one name. Dev zone only; no release-zone file is touched in this round. Raw
 `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-08/`, evidence in `results/780m/round3/` and
 `results/780m/sessions/{r3a-fused3sb,r3b-final-dev15}/`.
 
+**Status 2026-10-08 22:40 UTC: not closed.** The build this section measured does not satisfy R5 (below, "What
+was not done, and what is open"); the numbers stand for that build only.
+
 **The recommended configuration is now `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final`.** It
 dispatches what candidate 11 dispatched, with the `fused3sb` pair in place of the `fused3` pair.
 `ET_VK_SARC_DEV_PROFILE=780m-refine3 ET_VK_SARC_780M_PROFILE=c11` still works and selects the same kernels.
@@ -881,10 +884,15 @@ of `s9-final-dev15`, and the fused kernel's output is byte-identical to the kern
 
 - No driver-level capture, no sweep, no new candidate. Percent of roof, the sources of the gain and the negative
   results are those of round 2 (above); the kernels are the same but for the barriers.
-- The submodules of `head3` come from the working copy's directories, not from git object stores (this clone
-  has none). The earlier builds of the campaign used the same directories in place.
-- The page cache was filled with the six model files before each part (owner decision 2026-10-06), for both
-  arms alike; no runner abort occurred (rc = 0 in all 144 runs of the two sessions).
+- **Blocking, found in review (2026-10-08): `head3` does not satisfy R5.** Its 23 submodules were copied from
+  the working copy's directories, not exported from git object stores at the pinned commits (this clone has
+  none). Every number of this section is evidence for `head3` only. The round stays open until a recursive
+  export from object stores is built under a new tag and the golden check, the gate and both sessions are
+  repeated on it, or the owner grants a dated exception (`STATUS.md`, "Decision needed from the owner").
+- **Protocol deviation (R6, owner decision 2026-10-06):** the six model files were read into the page cache once
+  before the gate of item A and once before the session of item B, not again at each model change inside
+  `e2e5.sh`, `verify.sh` and `trace.sh`. No runner abort occurred (rc = 0 in all 144 runs of the two sessions)
+  and all six files were fully resident afterwards, but residency was not recorded per run.
 - `fused3` and its 33 variants stay in the tree as the record of round 2 (`c8` to `c10`). Whether the other
   `fused3` variants get barriers too, and whether `fused3` is removed at promotion, is the promotion's decision.
 - The fused attention entry point (`1c8861aa7`) is still subject to the owner's review before any promotion.

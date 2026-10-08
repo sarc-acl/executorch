@@ -2,11 +2,11 @@
 
 ## Round 3 (2026-10-08): `fused3sb` and `780m-final` (closing task, not a tuning round)
 
-Updated 2026-10-08 22:15 UTC. Task file: `~/hmz-sarc/CAMPAIGN-round3.md`. Raw data of this round:
+Updated 2026-10-08 22:40 UTC. **Not closed: blocked on an owner decision (build provenance, R5); see "Decision needed from the owner" at the end of this section.** Task file: `~/hmz-sarc/CAMPAIGN-round3.md`. Raw data of this round:
 `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-08/`; evidence in `results/780m/round3/` and
 `results/780m/sessions/{r3a-fused3sb,r3b-final-dev15}/`; summary in `proposal.md`, "Round 3".
 
-**Running now: nothing.** The two detached chains of this round (`chain25.sh` 19:44 to 20:07 UTC, `chain26.sh`
+**Running now: nothing, and nothing is queued.** The two detached chains of this round (`chain25.sh` 19:44 to 20:07 UTC, `chain26.sh`
 20:08 to 22:09 UTC; copies and their status files in `results/780m/round3/`) have ended. Only the hold watcher
 (`hold.sh watch`, started again 19:44 UTC; it did not survive the reboot) is alive; it starts no GPU job.
 
@@ -15,13 +15,13 @@ Updated 2026-10-08 22:15 UTC. Task file: `~/hmz-sarc/CAMPAIGN-round3.md`. Raw da
 | A.1 the two `fused3sb` files of `b3bb758e38` | taken unchanged (same blobs), commit `8d909b3fb`. Diff against `fused3`: the header comment and 13 inserted `subgroupBarrier();` lines, nothing else (listed below). **The kernel has 13 `memoryBarrierShared()` calls, not 14** as the task file says; the fourteenth text match is the sentence in the new header |
 | A.2 `kFused780mOnePassSb`, `c11` uses it | commit `8d909b3fb`; `c8`, `c9`, `c10` unchanged |
 | B.1 dev profile `780m-final` | commit `c639d4760`; `c11` still works |
-| A.3 build of the branch head | `head3` = export of `c639d4760`, no local patch; `spirv_golden.py` PASS (53 shipped variants); all 1,469 SPIR-V files of `head2` (candidate 11's gate) byte-identical, 2 new (the `fused3sb` pair) |
-| A.4 gate with `fused3sb` | **passed**: `verify.sh` rc = 0 and equal to candidate 11's gate apart from the tok/s figures; tiers `all` / `extended` / `full` 12 passes each, 192 cases, 0 failed, 0 mismatches, `pairing=ok`; next token SAME in 12 of 12 items; SDPA output **byte-identical to `fused3` in 21 of 21 cases** (and in the 5 of tier `fused`) |
+| A.3 build of the branch head | **does not satisfy R5** (submodules copied from the working copy, not exported from object stores). `head3` = export of `c639d4760` for the repository itself, no local patch; `spirv_golden.py` PASS (53 shipped variants); all 1,469 SPIR-V files of `head2` (candidate 11's gate) byte-identical, 2 new (the `fused3sb` pair) |
+| A.4 gate with `fused3sb` | **passed on `head3`** (to be repeated on a compliant build; model files not re-read at each model change): `verify.sh` rc = 0 and equal to candidate 11's gate apart from the tok/s figures; tiers `all` / `extended` / `full` 12 passes each, 192 cases, 0 failed, 0 mismatches, `pairing=ok`; next token SAME in 12 of 12 items; SDPA output **byte-identical to `fused3` in 21 of 21 cases** (and in the 5 of tier `fused`) |
 | A.5 session `c11` with `fused3` against `c11` with `fused3sb` | **-0.01 % geomean** (cells -0.09 to +0.07 %), 60 of 60 timed runs valid: inside the band |
 | B.1 dispatch of `780m-final` alone | equals candidate 11's gate: `verify.out` identical line for line (34 lines, tok/s set aside); SDPA tiers dispatch the `fused3sb` pair of the same tokens; the three-kernel path has the `780m-refine3` QK^T / attn*V and softmax `780m_r3` (table below) |
 | B.2 session `780m-final` against `dev/1.5` | **+33.77 % geomean** (+23.09 to +48.16 %), 60 of 60 timed runs valid; round 2 measured +33.82 %: inside the band |
-| C `proposal.md`, `check.sh --no-build`, commits, push | section "Round 3 (2026-10-08): fused3sb and 780m-final"; `check.sh: PASS` (output below); branch pushed |
-| **recommended configuration** | **`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final`** |
+| C `proposal.md`, `check.sh --no-build`, commits, push | **open until the blocker is resolved**; section "Round 3 (2026-10-08): fused3sb and 780m-final"; `check.sh: PASS` (output below); branch pushed |
+| **recommended configuration** | **`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final`** (measured on `head3` only) |
 
 Host as found 2026-10-08 19:38 UTC: idle, no campaign process, no `HOLD`, branch = origin at `90fe4d013`; kernel
 6.12.0-211.62.1.el10_2, RADV PHOENIX Mesa 25.2.7, GPU `auto` (800 / 1100 / 2799 MHz), 39 C. Booted 2026-10-07
@@ -195,13 +195,56 @@ untracked.
 
 ### Decision needed from the owner
 
-Nothing blocks. For the record, three things the task file did not foresee:
+**Round 3 is not closed. Two findings of the review of 2026-10-08 block it; nothing further is queued until the
+owner answers** (task file, "If something takes a different turn ... stop"). Nothing is running; no build and no
+GPU job was started after the review.
 
-1. The kernel has 13 barrier pairs, not 14 (above). Nothing else differs, so the work was not stopped.
-2. `head3` is an export of the commit for the repository itself; the submodules could only be copied from the
-   working copy (no object stores in this clone). If builds from object stores are wanted for the promotion, this
-   clone needs `git submodule update --init` first (network access; not done here).
-3. The task defines the `dev/1.5` arm of item B as the branch head with no profile; that is what was measured
+1. **BLOCKING: build `head3` does not satisfy R5.** R5 asks for an export of one commit "and, recursively, of
+   every submodule at the commit it pins, taken from the git object stores, never from the live working tree".
+   The repository itself was exported with `git archive` (all 11,406 blobs of `c639d4760` equal the export, checked
+   by the reviewer), but the 23 submodules were copied with `cp -a` from the working copy
+   (`round3/chain25.sh` lines 28 to 31; `source=working-copy-directory` on every line of
+   `round3/build-head3.EXPORT-MANIFEST`). This clone has no submodule object stores (`.git/modules` does not
+   exist), so it cannot be shown that those directories are the pinned commits. Calling this "nothing blocks"
+   in the first version of this section was wrong. Everything measured on `head3` (gate `r3a-fused3sb`, session
+   `r3b-final-dev15`, the SPIR-V comparison, the byte comparison) is kept as measured and is **evidence for
+   `head3` only**, not for a build that satisfies R5.
+
+   The owner's choice:
+   - **(a) replacement build, recommended.** Fetch the 23 submodules (and their nested ones) at the pinned
+     commits into bare repositories under `<artifacts 10-08>/submodules/` (network access to the upstream URLs
+     of `.gitmodules`; `git ls-remote` answers from this host, checked 2026-10-08 for two of them; the working
+     copy is not touched), export `c639d4760` recursively from object stores only, build it under a new tag
+     (`head4`), and compare each exported submodule tree with the directory `head3` used, so that it is known
+     whether `head3` differed at all. Then, on `head4`, everything again: `spirv_golden.py`, the SPIR-V
+     comparison with `head2`, the dispatch comparison, the byte comparison of the SDPA output, the gate of item A
+     (`verify.sh`, tiers `all` / `extended` / `full` at 12 passes, next token), the session of item A and the
+     session, `verify.sh` and tiers of item B. Cost as measured today: export and build about 10 min plus the
+     fetch, pre-gate checks 15 min, item A 75 min, item B 40 min; about 2.5 hours of device time.
+   - **(b) a dated owner exception** appended to the task file, accepting `head3` with submodules from the
+     working copy (as every build of rounds 1 and 2 was made).
+
+2. **Protocol deviation, R6 / owner decision 2026-10-06 (D5): the model file was not read into the page cache
+   at each model change.** `chain26.sh` (lines 22 and 26) reads all six model files once before the gate of
+   item A and once before the session of item B. Inside them the model changes without another read: the cell
+   loop of `tools/e2e5.sh` (lines 114 to 128), `sarc/tools/verify.sh` and `tools/trace.sh`. What is on record:
+   rc = 0 in all 144 runs of the two sessions and no abort line in any log; the host has 28 GB of RAM for 12.4 GB
+   of model files, and `fincore` showed all six fully resident at 22:30 UTC, after everything. Whether a file
+   was resident at each model change was not recorded, so a slow load cannot be excluded for any single run.
+
+   For a replacement validation I would, with the owner's agreement (these are the campaign's own tools under
+   `tools/`, listed as changes in `proposal.md`; nothing under `sarc/tools`, no threshold, tolerance or prompt):
+   - `tools/e2e5.sh` and `tools/trace.sh`: `cat <model> > /dev/null` before the first process of each cell, the
+     same for both arms, and the `fincore` residency of the model recorded per run;
+   - `sarc/tools/verify.sh` is not edited. It would be run once per model (`--models 1b`, then `3b`, then `8b`),
+     with the read before each, and its three outputs concatenated in model order for the line-by-line
+     comparison; or, if the owner prefers the single invocation of the snapshot, run as before with the six
+     files read first and their residency recorded before and after. **Which of the two is the owner's call.**
+
+For the record, not blocking:
+
+3. The kernel has 13 barrier pairs, not 14 (above). Nothing else differs, so the work was not stopped for it.
+4. The task defines the `dev/1.5` arm of item B as the branch head with no profile; that is what was measured
    (same binary). The pristine `dev/1.5` build `ef079ac41` of round 2 was not re-timed; the arm agrees with it
    within 0.48 % per cell.
 
