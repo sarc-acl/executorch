@@ -126,7 +126,7 @@ kernel, 8da4w linear time 1304.2 -> 1163.6 ms with the 256 x 64 tile (K step 64)
 Negative results: whole-texel staging on every shape (-0.15 %); the 780M's fused-variant alternatives (no variant >= 3 % faster in every round,
 `results/rx7600/fused/`); 4w kernels: only 6 of 12 shapes pass the 3 % rule and give +0.5 to +1.5 % per cell.
 
-What limits further progress: the linear GEMMs are 80 to 85 % of the 8B prefill (1031.8 of 1335.3 ms before candidates 2 and 3) and the 4w kernel
-the release table already ships is within 4 % of every screened alternative on 6 of 12 shapes; 8da4w staging and barriers cost as much as the
+What limits further progress: the linear GEMMs are about 77 % of the 8B prefill (1031.8 of 1335.3 ms 4w, 1111.2 of 1446.9 ms 8da4w, parent) and on 6 of 12 shapes
+no screened 4w kernel is 3 % faster than the one the release table already ships in every round; 8da4w staging and barriers cost as much as the
 MMA (phase timing). Percent of the roofs: not re-measured (no igpu-roofline on this host; owner question in `STATUS.md`); the cited
 2026-09-28 roofs are 43.42 TFLOP/s (fp16) and 43.90 TOP/s (int8).
