@@ -191,7 +191,9 @@ The counts are those of the close of round 2 (1240 / 31 and 1433 / 122): the rou
 `A glsl/sarc_dev/sarc_dev_780m_sdpa_fused3sb.yaml`, `M impl/sarc_dev/Overrides.cpp`: dev zone only. No
 release-zone file, nothing under `sarc/tools` or `sarc/golden`, no tolerance, prompt, threshold or tool of the
 campaign changed in this round (`tools/` is byte-identical to the copy that ran). `tools/rgp_chunks.py` stays
-untracked.
+untracked. (Correction, 22:59 UTC: commit `b3ec12057` added `tools/rgp_chunks.py` to git by mistake, against the
+task file's "Leave it untracked"; found by the review. It was taken out of the index again with `git rm --cached`
+in the next commit, the local file kept, history not rewritten: the file is in the tree of `b3ec12057` only.)
 
 ### Decision needed from the owner
 
