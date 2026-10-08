@@ -22,5 +22,6 @@ for m in "${MS[@]}"; do for q in "${QS[@]}"; do P=$MFLAT/${STEM[$m]}_vulkan_$q.p
     echo "trace $m $q $b rc=$? $(grep -o '"prefill_token_per_sec":[0-9.]*' $O/$m-$q-$b.log) others=$($T/others.sh)"
   done
 done; done
-/usr/bin/python3 $T/etdump_families.py $O > $O/analysis.out 2>&1; tail -3 $O/analysis.out
+# the ETDump analysis (flatc, schema of the exported tree) runs on the control workstation after pull-stage.sh: tools/trace-analyze.sh
+[[ $WHERE == ws ]] && { $PY $T/etdump_families.py $O > $O/analysis.out 2>&1; tail -3 $O/analysis.out; }
 echo TRACE_DONE
