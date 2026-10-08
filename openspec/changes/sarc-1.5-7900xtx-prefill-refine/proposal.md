@@ -141,9 +141,16 @@ Why (warm ETDump, `sessions/c2-fused/trace/`, ms per 2048-token prefill, attenti
 The rest of the gate (SDPA tiers beyond the passes above, `verify.sh`, the reference-error evidence and the real-text probe) was not run for a candidate that loses 13.8 %: it would only
 re-check the correctness of a rejected kernel. Nothing of candidate 2 enters the final stack. The attention share left to gain after candidate 1 is small anyway (QK^T + AV about 20 % of the 1B prefill, 9 % of 8B).
 
+**Phase timing (work-order step 3), 8da4w table kernel `t128x64k32g42s32`** (PROF twin `sarc_dev_prof_dq8ca_zpg_t128x64k32g42s32p`, shader clock, twelve prefill shapes, `results/7900xtx/phases/parent-8da4w.csv`),
+share of the wave's cycles, median over the shapes (range over the shapes): barrier wait 31.4 % (18.0 to 33.7), LDS store 25.6 % (24.8 to 37.3), MMA 21.8 % (21.0 to 22.7), global weight fetch 10.9 % (10.4 to 14.5),
+prologue 3.5 %, group epilogue 4.2 %, drain 0.9 %, write 0.6 %. The MMA is a fifth of the wave's time; staging into LDS and the barriers around it are over half; the weight fetch itself is 11 %: the kernel is not bound
+on weight loads (the precondition the work order sets for whole-texel staging, candidate 4). No twin of the 4w table kernel (`t256x128k32g24s32f32cbt`) exists in the dev zone; a new one would be shader work and was not made.
+
 **Stop rule, reading.** Candidates 1 (+1.56 %) and 2 (-13.79 %) are two consecutive candidates under 2 %, so the rule of R11 is met by its letter. The port list of the work order still has two items that nothing has tried
 (the linear kernel per layer shape, and the whole-texel 8da4w staging), and the complete linear screens already show kernel-level gains of 4 to 40 % on single shapes. This campaign therefore continues with
 item 3 (candidate 3) as a further gated candidate and reports the reading to the owner (`STATUS.md`); if candidate 3 gains under 2 % as well, the campaign stops there.
+Candidate 4 (whole-texel 8da4w staging, the texel-wise `zpg_bt` family): its precondition (weight-load bound) is not met by the phase timing above, but the 8da4w screen has the family at 1.05 to 1.07 against the table kernel
+in the worst round on 11 of 12 shapes, so it is measured once as `7900xtx-refine3` against candidate 3 (`7900xtx-refine2`, the same picks with the texel-wise family held out) and adopted only by the rule of the thresholds table.
 
 Locate (same traces, parent, share of the dispatch time): linear GEMMs 63 % / 71 % / 78 % (1B / 3B / 8B, 4w) and 56 % / 66 % / 75 % (8da4w); attention (QK^T + softmax + AV)
 30.1 % / 22.2 % / 13.9 % (4w); everything else under 12 %. The fused attention kernel can therefore pay most on 1B and least on 8B, where the GEMMs decide.
