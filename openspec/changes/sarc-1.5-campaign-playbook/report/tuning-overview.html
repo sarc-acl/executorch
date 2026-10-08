@@ -143,10 +143,10 @@
 
   <figure id="fig-llama">
     <h2>图 5 · 调优后相对 llama.cpp 的位置</h2>
-    <p class="claim">调优后的 ExecuTorch 4w 预填充速度除以 llama.cpp Q4_0 最佳设置的速度，每台设备三个点对应 1B、3B、8B。对 llama.cpp 的 Vulkan 后端，我们在五台中的四台领先；对厂商后端（SYCL、CUDA），仍落后两到三成，Orin 除外。</p>
+    <p class="claim">调优后的 ExecuTorch 4w 预填充速度除以 llama.cpp Q4_0 最佳设置的速度，每台设备三个点对应 1B、3B、8B。对 llama.cpp 的 Vulkan 后端，我们在六台中的五台领先（RTX 4070 Ti SUPER 和 Jetson Orin Nano 在 1B 上略低于 1.0）；对厂商后端（SYCL、CUDA），仍落后两到三成，Orin 除外。</p>
     <div class="legend"><span><i style="background:var(--s1)"></i>相对 llama.cpp Vulkan</span><span><i style="background:var(--s2)"></i>相对厂商后端（Intel SYCL，NVIDIA CUDA）</span><span><i style="border-top:2px dashed var(--ref);width:16px;height:0;border-radius:0"></i>1.0 持平</span></div>
     <div class="scroll"><div id="chart-llama"></div></div>
-    <figcaption>来源：topic/llamacpp-compare 的 cells.csv，llama.cpp b11430，各设备筛选过的最佳设置，5 次中位数。780M 没有可用的厂商后端（ROCm 不支持该集成显卡，未测）。RX 7600 尚未对比。</figcaption>
+    <figcaption>来源：topic/llamacpp-compare 的 cells.csv，llama.cpp b11430，各设备筛选过的最佳设置，5 次中位数。780M 没有可用的厂商后端（ROCm 不支持该集成显卡，未测）。RX 7600 由公司侧于 2026-10-08 测得，仅 Vulkan；其 8B 的 llama-bench 数字因该卡在 1024 个提示 token 以上走了一条慢的 GPU 路径而弃用，该处取 llama-completion 计时。</figcaption>
     <details><summary>数据表</summary><div id="table-llama"></div></details>
   </figure>
 
@@ -894,6 +894,16 @@
     0.81
    ],
    "vn": "CUDA"
+  },
+  {
+   "name": "RX 7600",
+   "vk": [
+    1.79,
+    1.63,
+    1.52
+   ],
+   "vendor": null,
+   "vn": "无（HIP 未测：ROCm 未安装）"
   }
  ],
  "meta": {
