@@ -10,6 +10,8 @@ declare -A STEM=([1b]=llama-3.2-1b:llama3_2-1b [3b]=llama-3.2-3b:llama3_2-3b [8b
 for ((r = 1; r <= R; r++)); do for m in 1b 3b 8b; do IFS=: read -r MD ST <<< "${STEM[$m]}"; for q in 4w 8da4w; do for le in "$@"; do
   lab=${le%%=*}; IFS=, read -ra E <<< "${le#*=}"; [[ $le == *=* ]] || E=()
   grep -q "^$lab,$m,$q,$r," $O/rows.csv && continue
+  hold_point "screen run of $(basename $O)"
+  warm_model /mnt/linux-share/models/$MD/exported/${ST}_vulkan_$q.pte $O/warm.csv $lab-$m-$q-r$r   # owner decision D5
   cool_start 55 120; tp=$(gtemp)
   env "${E[@]}" LD_LIBRARY_PATH=$SO $T/gl.sh $L --model_path /mnt/linux-share/models/$MD/exported/${ST}_vulkan_$q.pte \
     --tokenizer_path /mnt/linux-share/models/$MD/original/tokenizer.model --prompt_file $KIT/prompts/prompt_2048.txt \

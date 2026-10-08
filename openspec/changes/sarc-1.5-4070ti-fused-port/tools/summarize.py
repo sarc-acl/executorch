@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
-"""summarize.py <stage/<session>/raw>: per cell, the median of the first 5 VALID timed runs of each arm
+"""summarize.py <stage/<session>/raw> [reps]: per cell, the median of the first REPS VALID timed runs of each arm
+(REPS = the argument, else `reps` of thresholds.txt, else 5; the A/A session s1-aa was run and summarised with 5)
 (parent, cand), cand/parent, repeat spread, clock/temperature ranges, invalid runs, next-token results; then the
-geomean over the cells that have 5 valid runs on both arms. Gains inside the +-2 % noise band are marked."""
+geomean over the cells that have REPS valid runs on both arms. Gains inside the +-2 % noise band are marked."""
 import csv, math, os, statistics as st, sys, collections
+def threshold_reps():
+    for l in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "thresholds.txt")):
+        if l.startswith("reps=") and l.strip()[5:].isdigit(): return int(l.strip()[5:])
+    return 5
+REPS = int(sys.argv[2]) if len(sys.argv) > 2 else threshold_reps()
 d = sys.argv[1]; rows = list(csv.DictReader(open(os.path.join(d, "runs.csv"))))
 timed = [r for r in rows if r["log"].startswith("logs/prefill")]
 cells = collections.OrderedDict()
@@ -15,11 +21,11 @@ if os.path.exists(p):
 print("model,scheme,parent_med_tok_s,cand_med_tok_s,ratio,gain_pct,outside_2pct_band,parent_spread_pct,cand_spread_pct,valid_parent,valid_cand,invalid,clk_med_mhz_range,temp_pre_range,clkmin,next_token")
 ratios = []
 for (m, q), a in cells.items():
-    v = {b: [float(r["tok_s"]) for r in a[b] if r["valid"] == "1"][:5] for b in a}
+    v = {b: [float(r["tok_s"]) for r in a[b] if r["valid"] == "1"][:REPS] for b in a}
     inv = [f'{r["build"]}:r{r["rep"]}:{r["reason"]}' for b in a for r in a[b] if r["valid"] != "1"]
     clk = [float(r["clk_med_mhz"]) for b in a for r in a[b] if r["clk_med_mhz"]]
     tp = [int(r["temp_pre"]) for b in a for r in a[b] if r["temp_pre"]] or [0]
-    if len(v["parent"]) < 5 or len(v["cand"]) < 5:
+    if len(v["parent"]) < REPS or len(v["cand"]) < REPS:
         print(f'{m},{q},INCOMPLETE,{len(v["parent"])},{len(v["cand"])},{";".join(inv)}'); continue
     mp, mc = st.median(v["parent"]), st.median(v["cand"]); x = mc / mp; ratios.append(x)
     sp = lambda l: (max(l) - min(l)) / st.median(l) * 100

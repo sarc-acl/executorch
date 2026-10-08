@@ -56,7 +56,8 @@ run_verify() { # run_verify "<env>": the unmodified sarc/tools/verify.sh of the 
   return $rc
 }
 timed_and_traced() { # the e2e session, its content check, then the warm traces
-  step session $TOOLS/session.sh $(basename $D) --clkmin-file $CLKFILE > $D/e2e5.out 2>&1
+  local reps; reps=$(sed -n 's/^reps=\([0-9][0-9]*\)$/\1/p' $TOOLS/thresholds.txt); [[ -n $reps ]] || { echo "no repeat count in thresholds.txt" >&2; exit 77; }
+  step session $TOOLS/session.sh $(basename $D) --clkmin-file $CLKFILE --reps $reps > $D/e2e5.out 2>&1
   python3 $TOOLS/summarize.py $D/raw > $D/raw/summary.csv 2>&1
   step session-check python3 $TOOLS/gate_check.py session $D/raw --clkmin $CLKFILE --require-logs ${NT:-} > $D/session-check.txt 2>&1
   step trace $TOOLS/trace.sh $(basename $D) 1b,3b,8b 4w,8da4w "parent cand" > $D/trace.out 2>&1

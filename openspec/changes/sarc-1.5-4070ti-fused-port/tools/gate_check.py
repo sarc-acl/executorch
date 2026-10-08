@@ -30,7 +30,7 @@ sarc_dev_4070ti_sdpa_fused kernel> with qk=? softmax=? av=?: the three kernels d
 else; with an env file that names a 4070ti-fused profile, the three production-shape cases (S = 2048, the 1B, 3B
 and 8B head configurations) must be served by the fused kernel in every pass. With an env file that names a
 profile, every pass must carry that profile's banner.
-session: six cells with at least 5 timed runs per arm that are valid on their own fields (the `valid` column is
+session: six cells with at least REPS timed runs per arm (`reps` of thresholds.txt; 5 for a --calibration session) that are valid on their own fields (the `valid` column is
 not trusted): a unique log and model/scheme/build/repeat identity, rc 0, a positive finite rate, 2048 prompt
 tokens, 0 generated tokens, no foreign GPU process, at least 2 clock samples and a median clock at or above the
 threshold; with the logs present each of them is recomputed from its log and clock samples (runrow.py) and must
@@ -295,6 +295,10 @@ def do_sdpa(d, envfile=None):
     print("sdpa kernels dispatched:", ", ".join(sorted(names)) or "none")
 
 from gate_check_paths import PROMPTS
+def threshold_reps():
+    for l in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "thresholds.txt")):
+        if l.startswith("reps=") and l.strip()[5:].isdigit(): return int(l.strip()[5:])
+    return 5
 def sha(path): return hashlib.sha256(open(path, "rb").read()).hexdigest()
 
 def do_session(d, *opts):
@@ -303,6 +307,7 @@ def do_session(d, *opts):
     if (clk is None) == (not calibration): return fail("session needs exactly one of --clkmin <json> and --calibration")
     if "--near-tie" in opts: load_near_tie(opts[opts.index("--near-tie") + 1], os.path.join(d, "../cand/env"))
     if "--reference-error" in opts: load_reference_error(opts[opts.index("--reference-error") + 1], os.path.join(d, "../cand/env"))
+    need_reps = 5 if calibration else threshold_reps()
     allrows = list(csv.DictReader(open(os.path.join(d, "runs.csv"))))
     rows = [r for r in allrows if r["log"].startswith("logs/prefill")]
     bylog = {r["log"]: r for r in allrows}
@@ -344,7 +349,7 @@ def do_session(d, *opts):
         elif not why: good[(*cell, r["build"])] += 1
     for m, q in CELLS:
         for b in ("parent", "cand"):
-            if good[(m, q, b)] < 5: fail(f"cell {m} {q} {b}: {good[(m, q, b)]} independently valid timed runs, required 5")
+            if good[(m, q, b)] < need_reps: fail(f"cell {m} {q} {b}: {good[(m, q, b)]} independently valid timed runs, required {need_reps}")
     if any(r["others"] for r in allrows): fail("a run overlapped a GPU process of another owner")
     nt = collections.defaultdict(dict)
     p = os.path.join(d, "nexttoken.csv")

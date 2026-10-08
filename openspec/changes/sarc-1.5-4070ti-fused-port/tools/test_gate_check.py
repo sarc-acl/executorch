@@ -10,6 +10,7 @@ import nexttoken, gate_check_paths  # noqa: E402  (prompt table shared with gate
 CELLS = [(m, q) for m in ("1b", "3b", "8b") for q in ("4w", "8da4w")]
 HEADER = "gpu,host,model,scheme,build,rep,slot,tok_s,rc,temp_pre,temp_post,cool_s,clocks,others,utc,log,prompt_tokens,generated_tokens,prefill_ms,clk_n,clk_med_mhz,clk_min_mhz,busy_med,power_med_w,temp_max,valid,reason,clkmin".split(",")
 PROMPTS = gate_check_paths.PROMPTS
+REPS = int(next(l.strip()[5:] for l in open(os.path.join(HERE, "thresholds.txt")) if l.startswith("reps=")) or 5)  # timed repeats a gate requires
 
 T0 = 1790000000000  # ms; every synthetic run measures from T0 to T0 + 100 ms
 def log_text(prompt, token, want):
@@ -39,7 +40,7 @@ def make(d, clkmin="2900", check_rc="0", token=b" tok", cand_token=None, write_l
                  valid="1" if ok else "0", reason="" if ok else "rc+no_tok_s+prompt_tokens", clkmin=clkmin if timed else "0")
         rows.append(r); return log
     for m, q in CELLS:
-        for rep in range(1, 6):
+        for rep in range(1, REPS + 1):
             for b in ("parent", "cand"): run(m, q, b, "prefill", rep, PROMPTS["prompt_2048.txt"][2], "2048", "0", b" the")
         for name, (tag, want, path) in PROMPTS.items():
             if name == drop: continue
@@ -75,7 +76,7 @@ class Session(unittest.TestCase):
     def test_review_case_failed_token_runs_marked_same(self):
         # 60 valid timed rows; every next-token run rc=134 with no output; nexttoken.csv says SAME.
         make(self.d, check_rc="134", forge_same=True)
-        self.assertEqual(sum(1 for r in csv.DictReader(open(os.path.join(self.d, "runs.csv"))) if r["valid"] == "1"), 60)
+        self.assertEqual(sum(1 for r in csv.DictReader(open(os.path.join(self.d, "runs.csv"))) if r["valid"] == "1"), 12 * REPS)
         rc, out = self.gate("--require-logs"); self.assertNotEqual(rc, 0, out); self.assertIn("session: REJECT", out)
         self.assertIn("rc 134", out)
         rc, out = self.gate(); self.assertNotEqual(rc, 0, out)   # also without recomputing from the logs
@@ -95,7 +96,7 @@ class Session(unittest.TestCase):
         rewrite(self.d, brk)
         for extra in (("--require-logs",), ()):
             rc, out = self.gate(*extra); self.assertNotEqual(rc, 0, out); self.assertIn("session: REJECT", out)
-            self.assertIn("marked valid but rc 134", out); self.assertIn("1 independently valid timed runs, required 5", out)
+            self.assertIn("marked valid but rc 134", out); self.assertIn(f"1 independently valid timed runs, required {REPS}", out)
 
     def test_review_case_five_copies_of_one_run(self):
         # Each arm's five timed repeats replaced by five copies of its r1 row.
@@ -108,7 +109,7 @@ class Session(unittest.TestCase):
         rewrite(self.d, dup)
         for extra in (("--require-logs",), ()):
             rc, out = self.gate(*extra); self.assertNotEqual(rc, 0, out)
-            self.assertIn("duplicate timed run", out); self.assertIn("1 independently valid timed runs, required 5", out)
+            self.assertIn("duplicate timed run", out); self.assertIn(f"1 independently valid timed runs, required {REPS}", out)
 
     def test_row_edited_without_its_log_is_caught(self):
         # A faster rate typed into runs.csv: every field looks valid, only the recomputation from the log shows it.

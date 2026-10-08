@@ -13,6 +13,7 @@ for ((r = 1; r <= R; r++)); do for p in "$@"; do
   # "<profile>+VAR=VALUE[+VAR=VALUE]" adds environment (e.g. the softmax variant of a local-hook build)
   IFS=+ read -ra X <<< "$p"; pn=${X[0]}
   E=(ET_VK_SARC_UNVERIFIED=1); [[ $pn == stock ]] && E=(); [[ $pn != table && $pn != stock ]] && E+=("ET_VK_SARC_DEV_PROFILE=$pn"); E+=("${X[@]:1}")
+  hold_point "screen run of $(basename $O)"
   cool_start 60 120
   env "${E[@]}" $T/gl.sh $B --sdpa --json-out=$O/$p-r$r.json > $O/$p-r$r.log 2>&1
   rc=$?; [[ $rc == 70 || $rc == 75 || $rc == 76 ]] && { echo "screen stopped rc=$rc (70 device lost, 75 lock busy, 76 foreign GPU process)"; exit $rc; }

@@ -11,7 +11,7 @@ for s in $A/stage/*/; do n=$(basename $s); [[ -f $s/raw/runs.csv || -f $s/verify
   cp -f $s/gate.done* $s/*-check.txt $s/verify-runs.jsonl $D/ 2>/dev/null
   cp -f $s/control.done $s/control.diff $s/verify-warm.csv $s/raw/warm.csv $s/raw/loads.csv $D/ 2>/dev/null
   [[ -f $s/trace/raw/4070ti/trace2/warm.csv ]] && { mkdir -p $D/trace; cp -f $s/trace/raw/4070ti/trace2/warm.csv $D/trace/warm.csv; cp -f $s/trace/raw/4070ti/trace2/wall.csv $D/trace/wall.csv; }
-  [[ -f $s/raw/done.txt ]] && python3 "$(dirname "$0")/summarize.py" $s/raw > $D/summary.csv
+  [[ -f $s/raw/done.txt ]] && python3 "$(dirname "$0")/summarize.py" $s/raw $(sed -n 's/.* reps=\([0-9]*\) .*/\1/p' $s/raw/env.txt | head -1) > $D/summary.csv
   cp -f $s/raw/nexttoken.csv $D/ 2>/dev/null
   [[ -f $s/verify.out ]] && { cp -f $s/verify.out $D/; mkdir -p $D/verify; cp -f $s/verify/env.txt $s/verify/correctness.log $D/verify/ 2>/dev/null
     for q in 4w 8da4w; do grep -E '^(linear|baseline) |geomean|unexpected|confirmed|crashed' $s/verify/linear-$q.log > $D/verify/linear-$q.txt 2>/dev/null; done; }
