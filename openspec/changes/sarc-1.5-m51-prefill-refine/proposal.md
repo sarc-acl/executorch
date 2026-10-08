@@ -126,9 +126,15 @@ drain flags, the phase-timing twin of the xclipse 4w row.
   build's, and the golden check against `sarc/golden/spirv.json` stays pending (the pinned container is not available here;
   the native compiler gives the same set of differing variants for the parent build and for the final build).
   `sarc/tools/check.sh --no-build` passes.
-- **An observation, not a claim:** with a prompt whose length is not a multiple of 128 (the real-text and unaligned prompts of
-  the gate) the 8da4w cells of the final stack were slower than the parent's, on both boards that were measured. The
-  timed prompt is 2048 tokens, so the headline is not affected; the cause was not looked into.
+- **Known limitation of the final stack (diagnosed from an ETDump of the unaligned prompt):** candidate 2 picks `zpg_bt`, a
+  kernel of the 4h4w activation layout. That layout is fixed when the graph is built, with an aligned sequence length. At run
+  time `q4gsw_coopmat_fits` requires the sequence length to be a multiple of 128; for a prompt that is not, nothing fits,
+  and the release code keeps a coopmat kernel for any length only for the row-major layout (the parent's `zpgtr` row), so the
+  4h4w layout falls to the release stock tiled linear kernel. The 8da4w cells of the final stack are therefore slower than
+  the parent's for prompts whose length is not a multiple of 128 (seen in the gate's real-text and unaligned prompts, on both
+  boards). The fused attention is not dispatched at such lengths either, so the 4w cells equal the parent's there. The timed
+  2048-token prompt is aligned, so the headline is not affected. A shape predicate cannot cure it (the pick is made at build
+  time); the options (keep and document, drop the c2 pick, or a row-major-A variant of `zpg_bt`) are the owner's.
 - **Evidence that exists** (figures local): timed sessions per candidate and for the final stack with all runs valid,
   next token equal on all items run, SDPA tiers 12 passes each with 0 mismatches on the cases that ran, reference error
   on identical inputs not larger than the parent's on the production shapes, production-diff of the 8da4w linear equal
