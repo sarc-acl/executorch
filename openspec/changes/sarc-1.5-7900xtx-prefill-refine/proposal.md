@@ -23,7 +23,7 @@ candidate).
 | baseline tolerance | each of the six parent cells within 3 % of the published value (`sarc-1.5-e2e-benchmark/contrib/7900xtx/NOTES.md`, 2026-09-28: 4w 20078 / 10089 / 4774, 8da4w 22261 / 10396 / 4971 tok/s), else explained before anything is optimised | R4.4 |
 | clock floor | 97 % of the lowest per-run median clock (sclk, prefill window) of the valid runs of the A/A session, one device-wide value; written into `thresholds.txt` once, before the first candidate | R6, L16 |
 | clock samples | sampled every 5 ms (`sample_period_s`; measured interval on the GPU host 6.3 ms median, 7.1 ms max), at least 5 samples inside the prefill window (a 1B prefill is about 90 ms) | R6, L19 |
-| thermal throttle | `gpu_metrics` v1.3 `indep_throttle_status` bits 32 to 47 in the prefill window. The A/A session decides each temperature bit it shows, per cell: if the median clock of the A/A runs whose window carries the bit is within 1 % of that of the runs without it (or, where every run carries it, within 1 % of the other cells' A/A clocks), the bit is masked (recorded, not rejected); otherwise it rejects. A bit no A/A run shows rejects. Until the calibration is written, every bit rejects (`thermal_mask=0xffff`). Power and current bits are recorded, not rejected | R6, L16 |
+| thermal throttle (amended after the A/A, see Calibration) | `gpu_metrics` v1.3 `indep_throttle_status` bits 32 to 47 in the prefill window. The A/A session decides each temperature bit it shows, per cell: if the median clock of the A/A runs whose window carries the bit is within 1 % of that of the runs without it (or, where every run carries it, within 1 % of the other cells' A/A clocks), the bit is masked (recorded, not rejected); otherwise it rejects. A bit no A/A run shows rejects. Until the calibration is written, every bit rejects (`thermal_mask=0xffff`). Power and current bits are recorded, not rejected | R6, L16 |
 | foreign GPU use | the card drives the host's display. (a) any other runner process of anyone (`llama_main`, `test_llama_micr`, `llama-*`, `vulkaninfo`, `igpu-roofline`, an `ollama runner`) or other holder of `/dev/dri/{renderD128,card1}` that `fuser` can see, before, during (0.5 s poll) or after a run, makes it invalid (the idle `ollama serve` is not a runner and is never stopped); (b) `gpu_busy_percent` is sampled 10 x 50 ms before every run (`busy_pre_max` column); the ceiling is the highest value among the valid timed A/A runs rounded up to a multiple of 5, at least 5, and a later run above it is invalid (`foreign_busy`). Other users' processes are invisible without root and no per-process engine accounting exists; (b) bounds them. Every row records the values | R6, L22 |
 | host builds | nothing is built on the GPU host by this campaign; a compiler, linker or ninja process of anyone on it before, during or after a run makes the run invalid | R5 |
 | repeats | 5 valid runs per arm and cell; 7 if any cell of the A/A session shows a repeat spread ((max - min) / median, first 7 valid runs) above 2 % in either arm | R6, L22 |
@@ -33,6 +33,50 @@ candidate).
 | page cache | the GPU host has 123 GB RAM, the six models (14 GB) stay in the page cache; the model file is read once before each cell all the same (D5, both arms alike); the load time of every run is recorded | D5 |
 | next-token items | D1 / D3 as written (near-tie evidence; reference-error rule for arithmetic changes) | owner |
 | tok/s | `prefill_token_per_sec` of the runner (1 ms timer: one step is about 1 % for the 1B cells); ETDump dispatch time is reported beside it | L19 |
+
+## Calibration and baseline (A/A session `aa`, 2026-10-08 17:36 to 18:16 UTC; `results/7900xtx/sessions/aa/`)
+
+The parent build (`90fe4d013`, `ET_VK_SARC_UNVERIFIED=1`) in both arms, 7 repeats plus up to 3 extra pairs per cell (the session ran before its
+own calibration was written: every temperature bit rejected and no clock floor was set, as announced above, so `runs.csv` of the session
+carries `thermal_throttle` on every run; `tools/revalidate.py` re-judges the recorded runs under the final thresholds without editing them).
+Values written into `tools/thresholds.txt` once, by the rules above (`tools/calibrate.py`, output `raw/calibration.txt`):
+
+| threshold | value | derivation |
+|---|---|---|
+| clock floor | 2670 MHz | 97 % of the lowest per-run median clock of the 120 timed A/A runs (2752.5 MHz; range 2752.5 to 2901.5) |
+| repeats | 7 | repeat spread above 2 % in at least one cell and arm (largest 5.95 %, 3B 4w parent) |
+| foreign-busy ceiling | 5 % | highest pre-run `gpu_busy_percent` of the valid timed runs was 0 |
+| thermal mask | `0xffef` (bit 36 masked) | **amended, see below** |
+
+**Amendment of the thermal-mask rule (2026-10-08, after the A/A and before any candidate was measured; for the owner to ratify).**
+The rule as fixed above, applied by `calibrate.py`, gives `thermal_mask=0xffff`: bit 36 of `indep_throttle_status` is in the window of all 120 timed
+runs, there are no runs without it to compare with, and the fallback comparison (cell median clock against the other cells', all of which
+carry the bit too) shows +2.19 % and -1.20 % on the two 1B cells, which is the workload dependence of the clock and not an effect of
+the bit. Taken literally every later run would be invalid and no candidate could be measured. The sample-level comparison inside the
+same runs shows what the bit is: in the prefill windows 4858 of 4937 samples (98.4 %) carry bit 36 and run at a median 2824 MHz (the
+highest clock the card reaches); the 79 samples without it are window-edge ramp samples at a median 2126 MHz. Bit 36 is set whenever the
+card is loaded (it also shows in about 31 % of all samples including idle ones, and at 44 C in the smoke test) and does not limit the clock. It
+is therefore masked (recorded, not rejected); every other temperature bit (32 to 35, 37 to 47) still rejects, and real throttling is caught by the
+clock floor. Nothing is lost: the `throttle` field of every run keeps the full word, so any session can be re-judged under the literal rule.
+Every result of this campaign stands under this amendment until the owner decides (question in `STATUS.md`).
+
+Baseline (parent arm of the A/A, median of the first 7 valid runs; published values from `contrib/7900xtx/NOTES.md`, 2026-09-28) and the A/A itself
+(same binary in both arms):
+
+| cell | published | measured | vs published | other arm | A/A ratio | repeat spread parent / cand |
+|---|---:|---:|---:|---:|---:|---|
+| 1B 4w | 20078 | 20277.20 | +0.99 % | 20277.20 | +0.00 % | 1.98 / 1.98 % |
+| 1B 8da4w | 22261 | 22021.50 | -1.08 % | 22021.50 | +0.00 % | 3.26 / 3.26 % |
+| 3B 4w | 10089 | 10138.60 | +0.49 % | 10039.20 | -0.98 % | 5.95 / 5.05 % |
+| 3B 8da4w | 10396 | 10449.00 | +0.51 % | 10449.00 | +0.00 % | 5.16 / 3.03 % |
+| 8B 4w | 4774 | 4785.05 | +0.23 % | 4773.89 | -0.23 % | 1.63 / 1.87 % |
+| 8B 8da4w | 4971 | 4995.12 | +0.49 % | 4982.97 | -0.24 % | 1.69 / 0.73 % |
+
+All six cells are within 3 % of the published numbers (largest +0.99 % / -1.08 %); the A/A geometric mean is -0.24 % (inside the +-2 % band; the
+1B cells' identical medians come from the runner's 1 ms timer: 91 to 94 ms per prefill, one step is 1.1 %). Next token on the timed, the
+real-text and the unaligned prompt is SAME in all six cells. The 24 untimed next-token runs (real, check) carry `clock_low` under the final floor: they
+run cold without `--warmup` and their window is shorter; they are compared as text only. The prompt is the kit's `prompt_2048.txt`
+(sha256 bfce65eb...), as in the published notes.
 
 ## Host and environment
 
@@ -76,4 +120,4 @@ The other copied tools (search, screen and plot scripts) are unchanged and used 
 
 ## Results
 
-(none yet)
+(none yet; A/A and baseline above)

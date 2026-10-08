@@ -1,0 +1,30 @@
+valid timed runs (thermal reason ignored): 120; per-run median clock 2752.5 to 2901.5 MHz
+clock floor = 0.97 x 2752.5 = 2669.9 MHz
+spread 1b 4w parent: 1.98 % over 7 runs
+spread 1b 4w cand: 1.98 % over 7 runs
+spread 1b 8da4w parent: 3.26 % over 7 runs
+spread 1b 8da4w cand: 3.26 % over 7 runs
+spread 3b 4w parent: 5.95 % over 7 runs
+spread 3b 4w cand: 5.05 % over 7 runs
+spread 3b 8da4w parent: 5.16 % over 7 runs
+spread 3b 8da4w cand: 3.03 % over 7 runs
+spread 8b 4w parent: 1.63 % over 7 runs
+spread 8b 4w cand: 1.87 % over 7 runs
+spread 8b 8da4w parent: 1.69 % over 7 runs
+spread 8b 8da4w cand: 0.73 % over 7 runs
+repeats = 7
+bit 36: REJECTS
+  ('1b', '4w', 'prefill'): all 20 runs carry bit 36, median clock 2875.8 vs 2814.0 of the other cells' timed runs (+2.19 %)
+  ('1b', '8da4w', 'prefill'): all 20 runs carry bit 36, median clock 2789.8 vs 2823.8 of the other cells' timed runs (-1.20 %)
+  ('3b', '4w', 'prefill'): all 20 runs carry bit 36, median clock 2819.2 vs 2818.8 of the other cells' timed runs (+0.02 %)
+  ('3b', '8da4w', 'prefill'): all 20 runs carry bit 36, median clock 2814.0 vs 2821.2 of the other cells' timed runs (-0.26 %)
+  ('8b', '4w', 'prefill'): all 20 runs carry bit 36, median clock 2832.2 vs 2814.0 of the other cells' timed runs (+0.65 %)
+  ('8b', '8da4w', 'prefill'): all 20 runs carry bit 36, median clock 2811.8 vs 2823.8 of the other cells' timed runs (-0.42 %)
+thermal_mask = 0xffff
+pre-run busy % of the valid timed runs: max 0; ceiling 5
+
+# thresholds.txt lines
+clkmin=2670
+reps=7
+thermal_mask=0xffff
+busy_pre_max=5
