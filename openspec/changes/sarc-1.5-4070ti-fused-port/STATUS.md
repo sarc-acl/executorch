@@ -1,22 +1,67 @@
 # STATUS: sarc-1.5-4070ti-fused-port
 
-**2026-10-08 20:45 UTC. Steps 1 and 2 done (baseline, A/A, snapshots, hook commit and its controls). Step 3
-(candidate 1, the fused attention kernel, profile `4070ti-fused1`) is under way. Running now, detached
-(`<artifact-dir>/queue/q03-c1-first.sh`): the build of `topic2` (`6217da0a9`), then one first correctness pass
-per tier (`all`, `fused`, `peaked`, `extended`, `full`), a kernel-level SDPA screen (stock, `4070ti-refine1`,
-`4070ti-fused1`, 3 rounds) and an ungated end-to-end quick look. Candidate 1 has not run on the GPU yet.**
+**2026-10-08 20:57 UTC. Step 3 (candidate 1, the fused attention kernel, profile `4070ti-fused1`, build
+`topic2` = `6217da0a9`). Its first correctness run is clean on every tier and the ungated looks are inside the
+predicted band; nothing below is a gated number yet. Running now, detached
+(`<artifact-dir>/queue/q04-c1-gate.sh`): the reference-error evidence (SDPA error of both arms with one test
+binary, logits of 41 real-text prompts for four arms), then the gate `s2-c1` (`gate_sdpa.sh`: 24 SDPA passes,
+`verify.sh`, timed session with 7 repeats, traces). Expected to end around 23:30 UTC.**
 
-Next: read the first correctness passes; if clean, the reference-error evidence (SDPA error of both arms, the
-41-prompt logits comparison), then the gate (`gate_sdpa.sh`) with its timed session.
+Next: read the gate; if accepted, close by task section 6.4 (candidate 1 is one-pass, so no second port item is
+left): final verification on the committed head, the timed session against the pristine `dev/1.5` state, report.
 
 Blocking: nothing.
+
+## Candidate 1 (`4070ti-fused1`): first runs, not gated
+
+Environment `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=4070ti-fused1`, build `topic2` (spirv_golden PASS,
+53 shipped variants).
+
+Correctness, one pass per tier (`results/4070ti/first-correctness/`): `all` 4 of 4, `fused` 5 of 5, `peaked` 5
+of 5, `extended` 8 of 8, `full` 4 of 4 cases PASSED with 0 mismatches; every case was served by the fused
+kernel (`fused=sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko` or `..d128_t16x64g11s32rko`, `qk=? softmax=?
+av=?`, `pairing=ok`). Nothing in the kernel turned out to depend on lockstep execution: the first run on this
+card was correct.
+
+Error against the fp32 CPU reference, same seeded inputs (parent: `s0-parent-verify`, one pass; candidate: the
+passes above; the gate evidence repeats this with one test binary for both arms):
+
+| case | rms, parent / candidate 1 | maximum, parent / candidate 1 |
+|---|---|---|
+| 1B head configuration, S = 2048 (production) | 2.101e-5 / 2.049e-5 | 9.14e-4 / 7.23e-4 |
+| 3B head configuration, S = 2048 (production) | 2.068e-5 / 2.053e-5 | 7.83e-4 / 7.06e-4 |
+| 8B head configuration, S = 2048 (production) | 2.057e-5 / 2.022e-5 | 8.91e-4 / 7.91e-4 |
+| 8B, S = 1024 at position 1024 | 9.018e-6 / 8.980e-6 | 6.94e-5 / **7.23e-5** |
+| tiny, S = 128 at position 64 | 3.232e-5 / **3.238e-5** | 1.74e-4 / 1.46e-4 |
+| 3B, S = 256 | 4.956e-5 / 4.875e-5 | 7.79e-4 / **8.20e-4** |
+| the other six cases of `extended` | not larger | not larger |
+
+Not larger on the three production shapes (criterion 1 of D3 names those); on three of the nine other shapes
+one of the two numbers is larger by 0.2 to 5 %. The two arms are equally accurate to within a few per cent:
+the parent already reduces its softmax in fp32.
+
+Kernel level (`test_llama_microbench --sdpa`, us per layer at S = 2048, three rounds, profiles interleaved;
+`results/4070ti/screens/sdpa-screen1.csv`). The fused number includes its K / V copy pass:
+
+| model | stock (`dev/1.5`): QK^T + softmax + attention x V | parent `4070ti-refine1`: QK^T + softmax + attention x V = total | `4070ti-fused1`: fused + copy | fused / parent, per round |
+|---|---|---|---|---|
+| 1B | 3213 / 3234 / 3202 | 257 + 463 + 329 = 1048 / 1066 / 1060 | 382 / 387 / 388 | 0.364 / 0.363 / 0.366 |
+| 3B | 3543 / 3547 / 3548 | 301 + 347 + 288 = 936 / 952 / 938 | 483 / 511 / 504 | 0.516 / 0.537 / 0.537 |
+| 8B | 4708 / 4703 / 4712 | 397 + 462 + 350 = 1209 / 1227 / 1211 | 620 / 650 / 651 | 0.513 / 0.530 / 0.538 |
+
+(The three-kernel split is round 1; the totals are the three rounds.) The fused kernel removes 64 % of the
+attention time on 1B and 46 to 49 % on 3B and 8B, in every round.
+
+Ungated end-to-end quick look (`quick_e2e.sh`, 2 runs per label, labels interleaved, same build;
+`results/4070ti/screens/quick1.csv`): 1B +20.9 % / +21.6 %, 3B +8.6 % / +7.9 %, 8B +5.8 % / +6.9 % (4w / 8da4w),
+geomean +11.75 %. A screen for deciding what to gate, not a result.
 
 (Correction: the first version of this file, commit `e7a157bbe`, carried the time 20:30 UTC; it was written at
 about 19:45 UTC.)
 
 ## Per-cell numbers against the parent
 
-No candidate measured yet. Baseline and A/A, session `s1-aa` (parent `6050b1287` against `topic1` = `35e3728c9`,
+No gated candidate number yet. Baseline and A/A, session `s1-aa` (parent `6050b1287` against `topic1` = `35e3728c9`,
 the hook commit; both arms `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=4070ti-refine1`; tok/s, median of 5
 valid interleaved runs per arm; `results/4070ti/sessions/s1-aa/`):
 
@@ -76,7 +121,7 @@ lock; `HELD-TEST` was removed.
 |---|---|---|
 | `parent` | `6050b1287` | spirv_golden PASS (53 shipped variants) |
 | `topic1` | `35e3728c9` (hook) | spirv_golden PASS; hook controls, A/A arm |
-| `topic2` | `6217da0a9` (candidate 1) | building |
+| `topic2` | `6217da0a9` (candidate 1) | spirv_golden PASS; first correctness passes, screen, gate `s2-c1` |
 
 All from exports of the commit and its 30 pinned submodules (`tools/mktree.sh`), `sarc/tools/build.sh --llama`
 (and `--traced`) in `localhost/et-vk-build:rocky10` through the docker shim; provenance in

@@ -1,0 +1,13 @@
+[sdpa-error] tiny_gqa max_abs=0.000552952 rms=6.35293e-05 max_abs_ref=0.98152
+[sdpa-kernels] tiny_gqa qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] tiny_gqa S=128 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/16384 PASSED
+[sdpa-error] 1b_head_config max_abs=0.000705659 rms=6.34867e-05 max_abs_ref=0.998901
+[sdpa-kernels] 1b_head_config qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] 1b_head_config S=128 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/262144 PASSED
+[sdpa-error] tiny_gqa_s256 max_abs=0.000498354 rms=4.93793e-05 max_abs_ref=0.993831
+[sdpa-kernels] tiny_gqa_s256 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] tiny_gqa_s256 S=256 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/32768 PASSED
+[sdpa-error] 1b_head_config_s256 max_abs=0.000731945 rms=4.90862e-05 max_abs_ref=0.998859
+[sdpa-kernels] 1b_head_config_s256 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] 1b_head_config_s256 S=256 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/524288 PASSED
+[sdpa-correctness] tier=all cases_run=4
