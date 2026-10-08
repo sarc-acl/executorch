@@ -7,8 +7,9 @@
 # SARC development zone, Arc B580 (openspec/changes/sarc-1.5-b580-fused-port): fused LLM-mode prefill SDPA for the
 # 8 x 16 x 16 cooperative-matrix shape, one subgroup per workgroup. Not shipped; reached only through the fused
 # attention entry point (Override::sdpa_fused_*) from impl/sarc_dev/b580/SdpaB580Fused.cpp.
-# Name: d<HEAD_DIM>_t<WG_TILE_M>x<WG_TILE_N>s<SUBGROUP_SIZE>m<MMA_M>[r][o]; r = AQ_REG (Q tiles kept in registers),
-# o = ONLINE (one pass, running row maximum).
+# Name: d<HEAD_DIM>_t<WG_TILE_M>x<WG_TILE_N>s<SUBGROUP_SIZE>m<MMA_M>[r][o][j][a]; r = AQ_REG (Q tiles kept in registers),
+# o = ONLINE (one pass, running row maximum), j = QK_J_OUTER (one column of score tiles live; needs r),
+# a = ACC_SH (accumulators in shared memory).
 # Each variant needs: WG_TILE_M a multiple of MMA_M that divides SUBGROUP_SIZE, WG_TILE_N and HEAD_DIM multiples of
 # 16, WG_TILE_N / (SUBGROUP_SIZE / WG_TILE_M) a multiple of 8, SUBGROUP_SIZE / WG_TILE_M <= 4.
 
@@ -27,6 +28,8 @@ sarc_dev_b580_sdpa_fused:
     SUBGROUP_SIZE: 16
     AQ_REG: false
     ONLINE: false
+    QK_J_OUTER: false
+    ACC_SH: false
   generate_variant_forall:
     combination:
       parameter_names: [IO_STORAGE, K_CACHE_STORAGE]
@@ -147,3 +150,129 @@ sarc_dev_b580_sdpa_fused:
       SUBGROUP_SIZE: 32
       AQ_REG: true
       ONLINE: true
+    - NAME: sarc_dev_b580_sdpa_fused_d64_t8x32s16m8roj
+      HEAD_DIM: 64
+      WG_TILE_M: 8
+      WG_TILE_N: 32
+      SUBGROUP_SIZE: 16
+      AQ_REG: true
+      ONLINE: true
+      QK_J_OUTER: true
+      ACC_SH: false
+    - NAME: sarc_dev_b580_sdpa_fused_d64_t16x32s16m8roj
+      HEAD_DIM: 64
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      SUBGROUP_SIZE: 16
+      AQ_REG: true
+      ONLINE: true
+      QK_J_OUTER: true
+      ACC_SH: false
+    - NAME: sarc_dev_b580_sdpa_fused_d64_t8x32s16m8roja
+      HEAD_DIM: 64
+      WG_TILE_M: 8
+      WG_TILE_N: 32
+      SUBGROUP_SIZE: 16
+      AQ_REG: true
+      ONLINE: true
+      QK_J_OUTER: true
+      ACC_SH: true
+    - NAME: sarc_dev_b580_sdpa_fused_d64_t16x32s16m8roja
+      HEAD_DIM: 64
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      SUBGROUP_SIZE: 16
+      AQ_REG: true
+      ONLINE: true
+      QK_J_OUTER: true
+      ACC_SH: true
+    - NAME: sarc_dev_b580_sdpa_fused_d64_t16x64s16m8roja
+      HEAD_DIM: 64
+      WG_TILE_M: 16
+      WG_TILE_N: 64
+      SUBGROUP_SIZE: 16
+      AQ_REG: true
+      ONLINE: true
+      QK_J_OUTER: true
+      ACC_SH: true
+    - NAME: sarc_dev_b580_sdpa_fused_d64_t16x32s16m8oa
+      HEAD_DIM: 64
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      SUBGROUP_SIZE: 16
+      AQ_REG: false
+      ONLINE: true
+      QK_J_OUTER: false
+      ACC_SH: true
+    - NAME: sarc_dev_b580_sdpa_fused_d128_t8x64s16m8roj
+      HEAD_DIM: 128
+      WG_TILE_M: 8
+      WG_TILE_N: 64
+      SUBGROUP_SIZE: 16
+      AQ_REG: true
+      ONLINE: true
+      QK_J_OUTER: true
+      ACC_SH: false
+    - NAME: sarc_dev_b580_sdpa_fused_d128_t8x64s16m8roja
+      HEAD_DIM: 128
+      WG_TILE_M: 8
+      WG_TILE_N: 64
+      SUBGROUP_SIZE: 16
+      AQ_REG: true
+      ONLINE: true
+      QK_J_OUTER: true
+      ACC_SH: true
+    - NAME: sarc_dev_b580_sdpa_fused_d128_t16x64s16m8roja
+      HEAD_DIM: 128
+      WG_TILE_M: 16
+      WG_TILE_N: 64
+      SUBGROUP_SIZE: 16
+      AQ_REG: true
+      ONLINE: true
+      QK_J_OUTER: true
+      ACC_SH: true
+    - NAME: sarc_dev_b580_sdpa_fused_d128_t8x64s16m8oa
+      HEAD_DIM: 128
+      WG_TILE_M: 8
+      WG_TILE_N: 64
+      SUBGROUP_SIZE: 16
+      AQ_REG: false
+      ONLINE: true
+      QK_J_OUTER: false
+      ACC_SH: true
+    - NAME: sarc_dev_b580_sdpa_fused_d128_t16x64s16m8oa
+      HEAD_DIM: 128
+      WG_TILE_M: 16
+      WG_TILE_N: 64
+      SUBGROUP_SIZE: 16
+      AQ_REG: false
+      ONLINE: true
+      QK_J_OUTER: false
+      ACC_SH: true
+    - NAME: sarc_dev_b580_sdpa_fused_d128_t8x32s16m8roja
+      HEAD_DIM: 128
+      WG_TILE_M: 8
+      WG_TILE_N: 32
+      SUBGROUP_SIZE: 16
+      AQ_REG: true
+      ONLINE: true
+      QK_J_OUTER: true
+      ACC_SH: true
+    - NAME: sarc_dev_b580_sdpa_fused_d128_t16x32s16m8roja
+      HEAD_DIM: 128
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      SUBGROUP_SIZE: 16
+      AQ_REG: true
+      ONLINE: true
+      QK_J_OUTER: true
+      ACC_SH: true
+    - NAME: sarc_dev_b580_sdpa_fused_d128_t8x64s16m8rja
+      HEAD_DIM: 128
+      WG_TILE_M: 8
+      WG_TILE_N: 64
+      SUBGROUP_SIZE: 16
+      AQ_REG: true
+      ONLINE: false
+      QK_J_OUTER: true
+      ACC_SH: true

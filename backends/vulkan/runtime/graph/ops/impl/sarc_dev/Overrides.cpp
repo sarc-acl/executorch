@@ -840,6 +840,20 @@ const FusedB580 kFusedB580[] = {
     {"b580-fused-d128_t16x64s16m8r", "d128_t16x64s16m8r"},
     {"b580-fused-d128_t8x64s16m8r", "d128_t8x64s16m8r"},
     {"b580-fused-d128_t16x64s32m8ro", "d128_t16x64s32m8ro"},
+    {"b580-fused-d64_t8x32s16m8roj", "d64_t8x32s16m8roj"},
+    {"b580-fused-d64_t16x32s16m8roj", "d64_t16x32s16m8roj"},
+    {"b580-fused-d64_t8x32s16m8roja", "d64_t8x32s16m8roja"},
+    {"b580-fused-d64_t16x32s16m8roja", "d64_t16x32s16m8roja"},
+    {"b580-fused-d64_t16x64s16m8roja", "d64_t16x64s16m8roja"},
+    {"b580-fused-d64_t16x32s16m8oa", "d64_t16x32s16m8oa"},
+    {"b580-fused-d128_t8x64s16m8roj", "d128_t8x64s16m8roj"},
+    {"b580-fused-d128_t8x64s16m8roja", "d128_t8x64s16m8roja"},
+    {"b580-fused-d128_t16x64s16m8roja", "d128_t16x64s16m8roja"},
+    {"b580-fused-d128_t8x64s16m8oa", "d128_t8x64s16m8oa"},
+    {"b580-fused-d128_t16x64s16m8oa", "d128_t16x64s16m8oa"},
+    {"b580-fused-d128_t8x32s16m8roja", "d128_t8x32s16m8roja"},
+    {"b580-fused-d128_t16x32s16m8roja", "d128_t16x32s16m8roja"},
+    {"b580-fused-d128_t8x64s16m8rja", "d128_t8x64s16m8rja"},
 };
 // The function pointers of impl/sarc_dev/b580/SdpaB580Fused.cpp, whichever static initializer runs first.
 Override& fused_b580() {
@@ -1032,6 +1046,20 @@ const Profile kProfiles[] = {
     {"b580-fused-d128_t16x64s16m8r", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     {"b580-fused-d128_t8x64s16m8r", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     {"b580-fused-d128_t16x64s32m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t8x32s16m8roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x32s16m8roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t8x32s16m8roja", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x32s16m8roja", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x64s16m8roja", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x32s16m8oa", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x64s16m8roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x64s16m8roja", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x64s16m8roja", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x64s16m8oa", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x64s16m8oa", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x32s16m8roja", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x32s16m8roja", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x64s16m8rja", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     // b580-fused end
 };
 const Profile* requested_profile() {

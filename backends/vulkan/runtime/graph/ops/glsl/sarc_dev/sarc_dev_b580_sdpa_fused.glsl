@@ -45,6 +45,13 @@
  *   so the packed copies have the 780M's layout.
  * - SUBGROUP_SIZE is 16; a lane owns row id % WG_TILE_M and segment
  *   id / WG_TILE_M of it, as before, with SEGS = 16 / WG_TILE_M.
+ * - register file: on this card the kernel is fast only while its live matrix
+ *   tiles fit the thread's registers (screen1-fused: head_dim 128 with 16
+ *   accumulator, 16 Q and 8 score tiles live is 7 times slower than the three
+ *   kernels it replaces). QK_J_OUTER keeps one column of score tiles live
+ *   instead of a block's; ACC_SH keeps the accumulators in shared memory (Ash)
+ *   and loads / stores a column of them around its products. Neither changes
+ *   a product or the order of a sum.
  * - only the packed form exists (no unpacked K / transposed V path, no
  *   measurement-only variant).
  * - the one-subgroup-per-workgroup assumption is checked at run time (NaN
@@ -71,6 +78,12 @@ $if AQ_REG:
   #define AQ_REG
 $if ONLINE:
   #define ONLINE
+$if QK_J_OUTER:
+  // One score tile column at a time (needs AQ_REG): MMAS_M live score tiles instead of MMAS_M * MMAS_C.
+  #define QK_J_OUTER
+$if ACC_SH:
+  // The fp32 accumulators live in shared memory, loaded and stored around each block's products.
+  #define ACC_SH
 
 layout(std430) buffer;
 
@@ -119,8 +132,15 @@ shared float Rsh[WG_TILE_M * SEGS];     // per-invocation row maxima / sums
 shared vec4 Dsh[WG_TILE_M * 4u];        // per-row rescale divisors, one tile wide
 #endif
 
-coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> sc[MMAS_M][MMAS_C];
+#ifdef ACC_SH
+shared float Ash[WG_TILE_M * HEAD_DIM];  // accumulators [s][d]
+#define ACC_TILE(i, j) Ash, MMA_M * (i) * HEAD_DIM + MMA_N * (j), HEAD_DIM, gl_CooperativeMatrixLayoutRowMajor
+#else
 coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> acc[MMAS_M][MMAS_D];
+#endif
+#ifndef QK_J_OUTER
+coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> sc[MMAS_M][MMAS_C];
+#endif
 #ifdef AQ_REG
 coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA> aq[MMAS_M][MMAS_D];
 #endif
@@ -139,6 +159,30 @@ uvec4 pack8(const f16vec4 v0, const f16vec4 v1) {
 // Scores of the block at context column c0 into Psh. q_base is the element
 // of row 0, d 0 of this tile in t_q; k_base that of the block in t_k.
 void qk_block(const uint q_base, const uint k_base) {
+#ifdef QK_J_OUTER
+  // Same products in the same k order per tile as below.
+  [[unroll]] for (uint j = 0; j < MMAS_C; ++j) {
+    coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> sc_j[MMAS_M];
+    [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
+      sc_j[i] = coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0.0);
+    }
+    [[unroll]] for (uint k = 0; k < MMAS_D; ++k) {
+      coopmat<float16_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> matB;
+      coopMatLoad(
+          matB, t_k, K_TILE(k_base, j, k), gl_CooperativeMatrixLayoutColumnMajor);
+      [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
+        sc_j[i] = coopMatMulAdd(aq[i][k], matB, sc_j[i]);
+      }
+    }
+    [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
+      sc_j[i] = sc_j[i] * inv_scale;
+      coopMatStore(
+          coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(sc_j[i]),
+          Psh, MMA_M * i * P_STRIDE + j * 2u, P_STRIDE,
+          gl_CooperativeMatrixLayoutRowMajor);
+    }
+  }
+#else
   [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
     [[unroll]] for (uint j = 0; j < MMAS_C; ++j) {
       sc[i][j] = coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0.0);
@@ -175,10 +219,39 @@ void qk_block(const uint q_base, const uint k_base) {
           gl_CooperativeMatrixLayoutRowMajor);
     }
   }
+#endif
 }
 
 // acc += e V for the block; vt_base is the element of the block in t_vt.
 void av_block(const uint vt_base) {
+#ifdef ACC_SH
+  // Same products in the same k order per accumulator tile as below.
+  coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA> matE[MMAS_M][MMAS_C];
+  [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
+    [[unroll]] for (uint k = 0; k < MMAS_C; ++k) {
+      coopMatLoad(
+          matE[i][k], Psh, MMA_M * i * P_STRIDE + k * 2u, P_STRIDE,
+          gl_CooperativeMatrixLayoutRowMajor);
+    }
+  }
+  [[unroll]] for (uint j = 0; j < MMAS_D; ++j) {
+    coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> acc_j[MMAS_M];
+    [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
+      coopMatLoad(acc_j[i], ACC_TILE(i, j));
+    }
+    [[unroll]] for (uint k = 0; k < MMAS_C; ++k) {
+      coopmat<float16_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> matB;
+      coopMatLoad(
+          matB, t_vt, VT_TILE(vt_base, j, k), gl_CooperativeMatrixLayoutColumnMajor);
+      [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
+        acc_j[i] = coopMatMulAdd(matE[i][k], matB, acc_j[i]);
+      }
+    }
+    [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
+      coopMatStore(acc_j[i], ACC_TILE(i, j));
+    }
+  }
+#else
   [[unroll]] for (uint k = 0; k < MMAS_C; ++k) {
     coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA> matA[MMAS_M];
     [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
@@ -195,6 +268,7 @@ void av_block(const uint vt_base) {
       }
     }
   }
+#endif
 }
 
 void main() {
@@ -294,9 +368,19 @@ void main() {
   // ---- pass B: e = exp(score - max), row sums, acc += e V ----
   [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
     [[unroll]] for (uint j = 0; j < MMAS_D; ++j) {
+#ifdef ACC_SH
+      coopMatStore(
+          coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0.0),
+          ACC_TILE(i, j));
+#else
       acc[i][j] = coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0.0);
+#endif
     }
   }
+#ifdef ACC_SH
+  memoryBarrierShared();
+  subgroupBarrier();
+#endif
   float row_sum = 0.0;
   for (uint b = 0; b < num_blocks; ++b) {
     qk_block(q_base, kv_head + b * KV_BLOCK);
@@ -342,7 +426,13 @@ void main() {
         coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> grow_tile;
         coopMatLoad(grow_tile, Dsh, MMA_M * i * 4u, 4u, gl_CooperativeMatrixLayoutRowMajor);
         [[unroll]] for (uint j = 0; j < MMAS_D; ++j) {
+#ifdef ACC_SH
+          coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> a;
+          coopMatLoad(a, ACC_TILE(i, j));
+          coopMatStore(a / grow_tile, ACC_TILE(i, j));
+#else
           acc[i][j] = acc[i][j] / grow_tile;
+#endif
         }
       }
       memoryBarrierShared();
@@ -396,8 +486,14 @@ void main() {
     coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> den;
     coopMatLoad(den, Psh, MMA_M * i * P_STRIDE, P_STRIDE, gl_CooperativeMatrixLayoutRowMajor);
     [[unroll]] for (uint j = 0; j < MMAS_D; ++j) {
+#ifdef ACC_SH
+      coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> a;
+      coopMatLoad(a, ACC_TILE(i, j));
+#else
+      const coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> a = acc[i][j];
+#endif
       coopMatStore(
-          coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(acc[i][j] / den),
+          coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(a / den),
           t_output,
           q_base + MMA_M * i * uint(out_row_stride_arg) + MMA_N * j, uint(out_row_stride_arg),
           gl_CooperativeMatrixLayoutRowMajor);
