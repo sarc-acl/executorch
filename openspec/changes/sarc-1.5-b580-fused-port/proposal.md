@@ -48,46 +48,76 @@ the copy (`host.sh` derives the artifact directory from it).
 | `sdpa_ref.sh` | the parent arm runs with the parent environment (`b580-refine3`) instead of no environment; tier `peaked` is run and tabulated too, reported only | the parent of this campaign already has attention kernels; the fused kernel's rescale path is only exercised by sharp rows |
 | `screen_sdpa_summary.py` | optional reference profile (default still `base`), and the smallest per-round ratio | the screen compares fused variants with `b580-refine3`, and the rule is "in every round" |
 | `verify_diff.py` (new) | two `verify.sh` outputs line by line, rates removed | hook condition D4 |
-| `chain1.sh` (new) | the first detached chain | R8 |
+| `chain1.sh` to `chain8.sh` (new) | the detached chains, as run | R8 |
+| `host.sh`, `e2e5.sh`, `session.sh`, `trace.sh`, `screen_sdpa.sh` | `idle_wait`: a timed run, a trace run and a screen run start only while the desktop session of seat0 reports `IdleHint=yes` | the first A/A ran into the owner's desktop use (4 to 10 % foreign engine time, 6 to 9 % lower tok/s); a start condition, not a validity rule |
+| `host.sh` | an inherited `B580_TOP` that is not an ancestor of the shell is dropped | a chain launched from a shell that had sourced `host.sh` was stopped by its own guard |
 
 ## The port: what changed from the 780M / RX 7600 kernel
 
 Source: `sarc_dev_780m_sdpa_fused3sb.glsl` (`topic/rx7600-prefill-refine`, `b3bb758e38`), the `fused3` kernel with a
 `subgroupBarrier()` after every `memoryBarrierShared()`. Result: `glsl/sarc_dev/sarc_dev_b580_sdpa_fused.glsl`.
-The arithmetic, the block walk, the masks, the packed K / V layout and every barrier are the 780M's.
+The arithmetic, the block walk, the masks and the packed K / V layout are the 780M's. Two things had to change:
+the matrix shape, which is mechanical, and the unit of work, which is not.
+
+**1. Matrix shape (mechanical).**
 
 | item | 780M / RX 7600 | B580 | why |
 |---|---|---|---|
 | matrix shape | `MMA = 16`, square, for every tile | `MMA_M = 8`, `MMA_N = 16`, `MMA_K = 16`, three constants | ANV exposes fp16 8 x 16 x 16 only |
 | score, e, accumulator, Q, divisor tiles | 16 rows x 16 | 8 rows x 16: `coopmat<.., MMA_M, MMA_N, Accumulator>`, Q as `coopmat<.., MMA_M, MMA_K, A>` | the M of every product is the query row |
-| operand tiles K^T (d x c) and V (c x d) | 16 x 16 `B` | `coopmat<.., MMA_K, MMA_N, B>` = 16 x 16 | both are K x N, unchanged, so the packed copies (`kvt`) keep the 780M's layout and the copy shader is the 780M's |
+| operand tiles K^T (d x c) and V (c x d) | 16 x 16 `B` | `coopmat<.., MMA_K, MMA_N, B>` = 16 x 16 | both are K x N, unchanged, so the packed copies keep the 780M's layout and the copy shader (`kvt`) is the 780M's |
 | tile counts | `MMAS_M = WG_TILE_M / 16`, `MMAS_C = WG_TILE_N / 16`, `MMAS_D = HEAD_DIM / 16` | `MMAS_M = WG_TILE_M / MMA_M`, the other two `/ MMA_N` | row tiling follows the 8-row matrix |
-| row offsets of tile i into `Psh`, `Dsh`, `t_q`, `t_output` | `16 * i * stride` | `MMA_M * i * stride` | as above; the softmax part itself indexes `Psh` per row and segment and does not change |
-| subgroup size | 32 (not required by the pipeline; RADV's wave size was not verified) | 16, required by the pipeline through the yaml `SUBGROUP_SIZE` like the Xe2 kernels; 32-lane variants exist for the screen | Intel runs 8, 16 or 32 lanes |
-| rows per workgroup | 32 (head_dim 64), 16 (head_dim 128): 1 or 2 lanes per row | 16 or 8 with 16 lanes (1 or 2 lanes per row); `SEGS = SUBGROUP_SIZE / WG_TILE_M` as before | a lane owns one row, or one segment of a row |
-| one subgroup per workgroup | assumed | checked in the kernel (`gl_NumSubgroups == 1`, `gl_SubgroupSize == SUBGROUP_SIZE`), NaN rows otherwise | the release-zone pipeline code sets the required size but not the full-subgroups flag |
-| forms kept | unpacked, transposed-V, packed; measurement-only variant | packed only; one-pass (`o`) and two-pass | the packed form is what both AMD campaigns ship |
+| row offsets of tile i into `Psh`, `Dsh`, `t_q`, `t_output` | `16 * i * stride` | `MMA_M * i * stride` | as above; the softmax part indexes `Psh` per row and segment and does not change |
+| subgroup size | 32, not required by the pipeline | 16, required by the pipeline through the yaml `SUBGROUP_SIZE`, like the Xe2 kernels | Intel runs 8, 16 or 32 lanes |
 | selection | `ET_VK_SARC_780M_SDPA_FUSED` beside the profile | the profile alone: `b580-fused1` | owner: single-name configurations |
+| forms kept | unpacked, transposed-V, packed; measurement-only variant | packed only; one-pass (`o`) and two-pass | the packed form is what both AMD campaigns ship |
+
+With only these changes the kernel is correct (five tiers, 0 mismatches) and 3 to 6 times slower than the
+parent's three kernels in the 780M's shapes (`results/b580/screens/screen5-select.csv`: 5.9 ms against 2.0 ms
+for head_dim 64, 14.4 ms against 2.3 ms for head_dim 128 on 8B).
+
+**2. Unit of work: several subgroups per workgroup instead of one.** The 780M kernel assumes that one subgroup
+keeps all its tiles in registers: for head_dim 128 that is 16 fp32 accumulator tiles, 16 fp16 Q tiles and a
+block of score tiles. On this card a thread has 128 registers = 4096 bytes of 16-lane values, and the fp32
+accumulators of 8 rows x 128 alone are 4096 bytes. The compiler's statistics (`INTEL_DEBUG=cs`,
+`results/b580/compile/`) show 199 to 1250 spilled values for the head_dim 128 variants and 32 for the one
+single-subgroup variant that beat the three kernels. What was tried and what it did is in `STATUS.md`; what
+is kept:
+
+| item | 780M / RX 7600 | B580 (`MULTI_SG`, G = 4 or 8 subgroups) |
+|---|---|---|
+| workgroup | one subgroup, 16 or 32 rows | G subgroups of 16 lanes, 16 rows; local size G x 16 |
+| accumulators | all head_dim tiles of the rows in one subgroup | each subgroup owns `HEAD_DIM / 16 / G` head_dim tiles of the rows (one 16-wide slice in the chosen variants): 2 tiles |
+| scores of a block | all tiles computed and stored by the one subgroup | subgroup g computes the columns j with `j % G == g`, one column at a time (`QK_J_OUTER`), and stores them to `Psh` |
+| softmax part | lane = (row, segment), `SEGS = 32 / WG_TILE_M` | the same over all G x 16 lanes: `lane = gl_SubgroupID * 16 + gl_SubgroupInvocationID`, `SEGS = G * 16 / WG_TILE_M` |
+| e of a block | loaded from `Psh` by the one subgroup | loaded from `Psh` by every subgroup (it needs all columns for its head_dim slice) |
+| barriers | `memoryBarrierShared()` (`fused3`), plus `subgroupBarrier()` (`fused3sb`) | `memoryBarrierShared(); barrier();` at the same places (`SYNC()`): the slots are now shared between subgroups |
+| rescale decision of the one-pass form | `subgroupAny(new_max > row_max)` | an atomic flag in shared memory read by every lane after a barrier, so that the branch, which contains barriers, is uniform for the workgroup |
+| Q tiles | in registers (`AQ_REG`) | head_dim 64: in registers; head_dim 128: loaded per product (16 Q tiles are 2048 bytes of registers) |
+| workgroup = G full subgroups | assumed (one subgroup) | checked in the kernel (`gl_NumSubgroups == G`, `gl_SubgroupSize == 16`), NaN rows otherwise: the release-zone pipeline code sets the required size but not the full-subgroups flag |
+
+No product changes and every tile accumulates in the same order as in the 780M kernel; the row sum is added
+up per lane segment first, as there, with 4 or 8 segments a row instead of 1 or 2. K and V are still read
+straight from the packed copies and nothing is staged for another subgroup except the block's scores and e,
+which the single-subgroup form also keeps in shared memory.
 
 Shared memory (device limit 49152 bytes, measured in the first campaign): `Psh` `WG_TILE_M x max(WG_TILE_N / 8 + 1, 4)`
-uvec4, `Rsh` `SUBGROUP_SIZE` floats, `Dsh` `WG_TILE_M x 4` vec4.
+uvec4, `Rsh` one float per lane, `Dsh` `WG_TILE_M x 4` vec4, `Gsh` one uint.
 
 | variant (rows x block, lanes) | `Psh` | `Rsh` | `Dsh` | total bytes |
 |---|---:|---:|---:|---:|
-| 16 x 32, 16 | 1280 | 64 | 1024 | 2368 |
-| 16 x 64, 16 | 2304 | 64 | 1024 | 3392 |
-| 8 x 32, 16 | 640 | 64 | 512 | 1216 |
-| 8 x 64, 16 | 1152 | 64 | 512 | 1728 |
-| 32 x 32, 32 | 2560 | 128 | 2048 | 4736 |
-| 16 x 64, 32 | 2304 | 128 | 1024 | 3456 |
+| `b580-fused1`, head_dim 64: 16 x 64, 4 x 16 | 2304 | 256 | 1024 | 3588 |
+| `b580-fused1`, head_dim 128: 16 x 128, 8 x 16 | 4352 | 512 | 1024 | 5892 |
+| the 780M's shapes: 32 x 32, 32 and 16 x 64, 32 | 2560 / 2304 | 128 | 2048 / 1024 | 4736 / 3456 |
 
 Who writes each slot and what orders each cross-lane read: the table in `STATUS.md`.
 
 The node (`impl/sarc_dev/b580/SdpaB580Fused.cpp`, from `780m/Sdpa780mFused.cpp`): it serves an LLM-mode call when
 q is an fp16 buffer, the device has active attention rows (only the B580 with a `b580-*` profile and
 `ET_VK_SARC_UNVERIFIED=1`), the profile names a variant for the head_dim, and S and `input_pos` are multiples of
-the row tile and of the block. Every other call (decode, the unaligned prompt, `ET_VK_DISABLE_COOPMAT`) runs the
-three kernels of `b580-refine3`, which the profile also selects.
+the row tile and of the block (64 columns for head_dim 64, 128 for head_dim 128). Every other call (decode, the
+1972-token prompt, `ET_VK_DISABLE_COOPMAT`) runs the three kernels of `b580-refine3`, which the profile also
+selects.
 
 ## Release-zone hooks (owner decision 2026-10-05, D4)
 
