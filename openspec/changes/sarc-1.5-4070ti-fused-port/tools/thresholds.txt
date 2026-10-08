@@ -1,0 +1,32 @@
+# Thresholds of the RTX 4070 Ti SUPER fused-attention port campaign (proposal.md, "Thresholds").
+# Fixed and committed before the first measurement. clkmin and reps are filled in once, from the A/A session
+# s1-aa, by the rules below, before the first candidate is measured; nothing here changes afterwards.
+noise_band_pct=2
+baseline_tolerance_pct=3
+aa_geomean_tolerance_pct=1
+aa_cell_tolerance_pct=2
+screen_margin_pct=3
+# a timed run needs at least this many clock samples inside the prefill window (nvidia-smi answers every 20 ms
+# and a 1B prefill lasts 60 to 70 ms; task file section 2)
+clkn=2
+# clock floor: floor(0.97 x the lowest per-run median clock of the usable A/A runs). Usable = rc 0, 2048 prompt
+# tokens, no foreign GPU process, at least clkn samples, and a per-run median of at least clk_ramp_mhz: a run
+# that starts while the card still ramps from its 210 MHz idle clock (the first campaign saw one, 675 MHz median,
+# same rate) is listed, not used for the floor. One device-wide value.
+clk_factor=0.97
+clk_ramp_mhz=1500
+# repeats: 5; 7 if any A/A cell is further than 1.0 % from 1 or any arm's repeat spread exceeds 3.0 %
+reps_default=5
+reps_if_aa_cell_off_pct=1.0
+reps_if_aa_spread_pct=3.0
+# reference-error rule (owner decision D3): candidate rms and maximum error against the fp32 reference not larger
+# than the parent's on every production-shape case; gross divergence = mean KL > 0.5 nat or top-1 differing on
+# more than one third of the prompts in any cell
+ref_error_mean_kl_nat=0.5
+ref_error_top1_fraction=0.3333
+# stop rule: two consecutive gated candidates under this gain (geomean), or the port list of the task is exhausted
+stop_gain_pct=2
+# filled in from s1-aa (tools/calibrate_clock.py, results/4070ti/clkmin.json):
+clkmin=
+reps=
+calibrated=
