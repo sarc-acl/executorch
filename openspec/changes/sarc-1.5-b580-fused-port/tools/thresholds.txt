@@ -1,0 +1,25 @@
+# thresholds.txt: comparison thresholds of sarc-1.5-b580-fused-port. The rules were committed before the first
+# measurement; the calibrated values are appended (dated) after the A/A session s1-aa and before candidate 1.
+# Nobody changes a line of this file after a candidate's numbers exist.
+
+valid_run          rc 0; 2048 prompt tokens; 0 generated tokens; no foreign GPU workload (host.sh gpu_others);
+                   >= 5 clock samples in the prefill window (sampler period 10 ms); no sample with a thermal
+                   throttle reason (thermal, prochot, ratl); median GT clock >= CLKMIN; foreign engine share in
+                   the prefill window <= BUSYMAX. Power-limit flags (pl1, pl2, pl4) are counted, not rejected.
+CLKMIN             97 % of the lowest per-run median clock of the valid runs of s1-aa (one device-wide value)
+BUSYMAX            max(5 %, 2 x the 90th percentile of the per-run foreign engine share over the valid runs of s1-aa)
+repeats            5 valid runs per arm and cell; 7 if in s1-aa any cell's A/A ratio is further than 1.0 % from 1
+                   or any arm's spread (max - min over its valid runs, relative to its median) exceeds 3.0 %
+noise_band         a difference inside +-2 % is noise, not a gain. If the A/A geomean is further than 1 % from 1
+                   or any A/A cell is outside +-2 %, nothing is optimised until the cause is found
+baseline           each cell of the re-measured parent (51d9d757f, b580-refine3) within 3 % of the first
+                   campaign's s6-final: 1B 12962.00 / 15170.40, 3B 5184.81 / 6400.00, 8B 2306.31 / 2998.54 tok/s
+                   (4w / 8da4w); a cell outside 3 % is explained before any candidate
+kernel_screen      a fused variant replaces another only when it is at least 3 % faster at kernel level in every
+                   round (3 rounds, cooled before every run); a tie keeps the 780M / RX 7600 tile shape
+arithmetic (D3)    the fused kernel changes summation order: candidate rms and max error against the fp32 CPU
+                   reference not larger than the parent's (b580-refine3) on every S = 2048 head configuration;
+                   tiers all / extended / full 12 passes each, 0 mismatches, pairing=ok; gross-divergence limits
+                   0.5 nat mean KL and one third of the real-text windows (tools/decide.py, unchanged)
+stop               two consecutive gated candidates under 2 % geomean, or after candidate 2 whatever its result,
+                   or 24 hours of device time without a correct candidate 1, or the end of the budget
