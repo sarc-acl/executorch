@@ -119,9 +119,11 @@ Geomean **+26.90 %** (expected range of N1: +20 to +30 %). Recommended configura
 ET_VK_SARC_RX7600_PROFILE=rx7600-refine2` and `VK_ICD_FILENAMES` of the user-space RADV (Mesa 26.2.3). Nothing outside the dev zone changed
 since the parent (`sessions/final/files-outside-dev-zone.txt`); `sarc/tools/check.sh --no-build` PASS (`sessions/final/check-no-build.txt`).
 
-Where each gain came from (ETDump, 8B 8da4w, ms per 2048-token prefill, `sessions/*/trace.out`): total dispatch time 1447.0 (pristine parent) ->
-1162.1 (final); the softmax 64.2 -> 53.1 ms (8B) with `r3`, QK^T + softmax + attn x V (192 ms, 8B) replaced by the one-pass fused
-kernel, 8da4w linear time 1304.2 -> 1163.6 ms with the 256 x 64 tile (K step 64) on the twelve shapes.
+Where each gain came from (warm ETDump, 8B 8da4w, ms per 2048-token prefill, final session: `sessions/final/trace-families.csv`, `trace-totals.csv`):
+total dispatch time 1447.0 (pristine parent) -> 1162.1 (final). Attention: QK^T 72.4 + softmax 64.6 + attn x V 55.1 = 192.2 ms -> the one-pass fused
+kernel with its K / V copy pass 46.7 ms (candidate 2; the softmax `r3` alone, candidate 1, took the softmax from 64.2 to 53.1 ms in the `c1-softmax` trace).
+Linear GEMM family: 1110.9 -> 972.1 ms (candidate 3: the 256 x 64 tile, K step 64, on the twelve shapes), now 84 % of the final stack's 1162.1 ms.
+(The 1304.2 -> 1163.6 ms in `sessions/c3-linear/trace.out` are candidate 3's total dispatch times against candidate 2, not the linear family.)
 
 Negative results: whole-texel staging on every shape (-0.15 %); the 780M's fused-variant alternatives (no variant >= 3 % faster in every round,
 `results/rx7600/fused/`); 4w kernels: only 6 of 12 shapes pass the 3 % rule and give +0.5 to +1.5 % per cell.
