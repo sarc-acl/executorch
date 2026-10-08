@@ -44,3 +44,14 @@ kernel_screen, reading of "the 780M / RX 7600 tile shape" (the incumbents of the
                    incumbent's in every one of the 3 rounds, for every model of that head_dim; among several such
                    challengers the one with the lowest median. Two-pass variants (no "o") are screened for the
                    record and are not challengers.
+
+# 2026-10-08 21:40 UTC, calibrated from s1-aa2 (21:27 to 21:37 UTC, idle desktop; 60 timed runs, all valid), before
+# candidate 1 was timed.
+CLKMIN             2635 MHz (97 % of 2717 MHz, the lowest per-run median clock: 8B 4w)
+BUSYMAX            5.0 % (the floor: the 90th percentile of the per-run foreign engine share is 1.03 %)
+idle temperature   42 C
+repeats            7: the A/A ratio of 1B 4w is 1.0191, further than 1.0 % from 1 (three of its five parent runs had
+                   0.7 to 1.6 % foreign engine time and read 1.3 to 2.5 % lower). Largest arm spread 2.90 %.
+noise_band         A/A geomean +0.26 %, every cell inside +-2 % (largest +1.91 %): the session stands.
+baseline           parent vs s6-final: 1B -1.25 % / +0.75 %, 3B -1.00 % / -0.62 %, 8B -0.78 % / -0.73 % (4w / 8da4w):
+                   every cell within 3 %.
