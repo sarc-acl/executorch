@@ -1,25 +1,72 @@
 # STATUS: sarc-1.5-orin-fused-port
 
-**2026-10-08 21:23 UTC. Baseline and A/A done (`s1-aa`): the parent is within 0.09 % of `s10-final` in every cell,
-A/A geomean -0.05 %; clock floor 593 MHz. Both controls accepted. Running: traces of `s1-aa`, the hook control
-`s2n-noenv`, then candidate 1 (`chain3`). No candidate measured yet.**
+**2026-10-08 22:10 UTC. Hook control accepted (`s2n-noenv`: nothing selected, nothing changed, 0 differing
+lines). Candidate 1 (fused attention kernel, profile `orin-fused1`) is correct at kernel level on the device: 26
+of 26 cases of the five tiers PASSED with 0 mismatches, and its error against the fp32 reference is below the
+parent's on all five S = 2048 cases (pre-check, one pass). Its reference-error measurement, kernel timing and
+gate are running (`chain3`); no end-to-end number yet.**
 
 All times are UTC from `date -u`.
 
 ## Running now
 
 - Device `duck-naughty` (detached, `~/hmz-sarc-orin-fused/jobs/<job>.{status,out}`):
-  - `chain2` (session part done 21:20): warm traces of both arms of `s1-aa`, then `s2n-noenv` = unmodified
-    `verify.sh` on `topic1` with nothing selected against `s0n-noenv` (hook control, D4).
-  - `chain3` (queued behind `chain2`): candidate 1 = profile `orin-fused1` on `topic1`: one correctness pass per
-    tier (`all`, `extended`, `full`, `peaked`, `fused`; the chain stops if a case is not PASSED), error against the
-    fp32 reference for stock / parent / candidate (`sdpa-error1`), kernel timing of the four forms of the fused
-    kernel, 3 rounds (`sdpa-screen1`), then the gate `s3-c1` (`gate_sdpa.sh`: 12 passes of `all`, `extended`,
-    `full`, 3 of `peaked` and `fused`, unmodified `verify.sh`, interleaved session, traces). About 3.5 hours.
-- Workstation: nothing. `logits_dump` built for `parent` and `topic1` (20:49) and deployed.
+  - `chain3` (since 21:52): pre-check done 22:05 (below); now `sdpa-error1` (stock / parent / candidate, same
+    binary), then `sdpa-screen1` (kernel timing of the four forms, 3 rounds), then the gate `s3-c1`
+    (`gate_sdpa.sh`: 12 passes of `all`, `extended`, `full`, 3 of `peaked` and `fused`, unmodified `verify.sh`,
+    interleaved session, traces). Expected to end about 01:00 UTC.
+  - `chain4` (queued behind `chain3`): peaked-tier error of parent and candidate (for the record), then the
+    41-prompt real-text logits of the four arms (parent / candidate x default / tiled), the logits at the gate's
+    unaligned position, the comparison and `ref_error_rule.py` (`probe/c1-fused/`). About 1.5 hours.
+- Workstation: nothing.
 - Coordinator hold: `tools/HOLD.md` (device: `~/hmz-sarc-orin-fused/HOLD`; builds: `.artifacts/HOLD`). None seen.
 - The workstation's build lock was held by the Arc B580 campaign (exclusively for its build until 19:51, shared
   for timed sessions afterwards); my builds waited for it each time, as the task says.
+
+## Hook control `s2n-noenv` (21:35 to 21:52 UTC): `GATE_ACCEPTED`, owner decision D4
+
+Unmodified `verify.sh` on build `topic1` (`0f14f2a1a`: the hook `9d91480b2` + the whole dev zone of this
+campaign) with **nothing selected** (no environment), against `s0n-noenv` (the parent build, nothing selected):
+
+- `verify.out` equal line by line with the rates removed: **0 differing lines** (`verify-lines.txt`);
+- `gate_check.py verify` against `s0n-noenv`: ACCEPT, 0 findings (every correctness case, production-diff shape
+  and linear dispatch state equal); 22 of 22 runner calls rc 0; no `[sarc_dev]` banner in any log;
+- default-arm prefill runs 890.44 / 821.83, 360.37 / 320.15, 189.67 / 170.50 tok/s (`s0n-noenv`: 890.82 / 823.15,
+  360.25 / 320.20, 189.63 / 170.33);
+- `test_sarc_select` on the release tables: `PASS (1240 checks, 31 rows, 0 candidates, dev zone absent,
+  unverified off)`, the parent's line; shipped SPIR-V: all 53 variants byte-identical to the parent build;
+- with the parent environment selected instead, `topic1` times like the parent build: the A/A below.
+
+So with nothing selected the branch dispatches what the parent dispatches. The entry point stays subject to the
+owner's review before any promotion (hook D4.3).
+
+## Candidate 1 pre-check (`raw/c1-pre/`, 21:54 to 22:05 UTC, one pass per tier, build `topic1`)
+
+`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-fused1`. Banners: `softmax variant: orin_g64`, `profile active:
+orin-fused1`, `orin fused attention: ...d64_t32x32g11s32rko ...d128_t16x64g11s32rko`.
+
+| tier | cases | PASSED, 0 mismatches | kernels |
+|---|---:|---:|---|
+| `all` | 4 | 4 | fused only (`qk=? softmax=? av=?`, `pairing=ok`) |
+| `extended` | 8 | 8 | fused only |
+| `full` | 4 | 4 | fused only |
+| `peaked` (sharp rows: the rescale path) | 5 | 5 | fused only |
+| `fused` (S = 32, 64, 192, 320: shapes no three-kernel tile fits) | 5 | 5 | fused only |
+
+Error against the fp32 CPU reference on the S = 2048 cases, parent (from `s0-parent-verify`) -> candidate
+(this pass); the formal comparison on one binary is `sdpa-error1`:
+
+| case | rms parent -> candidate | maximum parent -> candidate |
+|---|---|---|
+| `1b_head_config_s2048` | 2.101e-05 -> 2.049e-05 | 9.135e-04 -> 7.227e-04 |
+| `3b_head_config_s2048` | 2.068e-05 -> 2.053e-05 | 7.828e-04 -> 7.061e-04 |
+| `8b_head_config_s2048` | 2.057e-05 -> 2.022e-05 | 8.911e-04 -> 7.911e-04 |
+| `tiny_gqa_s2048` | 2.080e-05 -> 2.050e-05 | 6.943e-04 -> 6.078e-04 |
+| `tiny_d128_s2048` | 2.071e-05 -> 2.034e-05 | 7.796e-04 -> 5.595e-04 |
+
+Not an S = 2048 case and so outside the criterion as fixed in `thresholds.txt`, but on record:
+`8b_head_config_s1024_pos1024` reads rms 9.018e-06 -> 8.980e-06 and maximum 6.942e-05 -> 7.226e-05 (the
+candidate's maximum is 4 % larger there).
 
 ## Baseline and A/A (`s1-aa`, 20:35 to 21:20 UTC, record-only clock)
 
