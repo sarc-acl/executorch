@@ -126,7 +126,9 @@ drain flags, the phase-timing twin of the xclipse 4w row.
   build's, and the golden check against `sarc/golden/spirv.json` stays pending (the pinned container is not available here;
   the native compiler gives the same set of differing variants for the parent build and for the final build).
   `sarc/tools/check.sh --no-build` passes.
-- **Known limitation of the final stack (diagnosed from an ETDump of the unaligned prompt):** candidate 2 picks `zpg_bt`, a
+- **Known property of the final stack at other prompt lengths (diagnosed from an ETDump of the unaligned prompt; the
+  campaign's target is the 2048-token prefill, owner decision 2026-10-08, and the speed at other lengths is not a criterion;
+  those prompts are in the gate for correctness only):** candidate 2 picks `zpg_bt`, a
   kernel of the 4h4w activation layout. That layout is fixed when the graph is built, with an aligned sequence length. At run
   time `q4gsw_coopmat_fits` requires the sequence length to be a multiple of 128; for a prompt that is not, nothing fits,
   and the release code keeps a coopmat kernel for any length only for the row-major layout (the parent's `zpgtr` row), so the
@@ -134,7 +136,7 @@ drain flags, the phase-timing twin of the xclipse 4w row.
   the parent's for prompts whose length is not a multiple of 128 (seen in the gate's real-text and unaligned prompts, on both
   boards). The fused attention is not dispatched at such lengths either, so the 4w cells equal the parent's there. The timed
   2048-token prompt is aligned, so the headline is not affected. A shape predicate cannot cure it (the pick is made at build
-  time); the options (keep and document, drop the c2 pick, or a row-major-A variant of `zpg_bt`) are the owner's.
+  time). The final stack is kept unchanged by the owner's decision; this is recorded as a property, not as a finding to fix.
 - **Evidence that exists** (figures local): timed sessions per candidate and for the final stack with all runs valid,
   next token equal on all items run, SDPA tiers 12 passes each with 0 mismatches on the cases that ran, reference error
   on identical inputs not larger than the parent's on the production shapes, production-diff of the 8da4w linear equal
@@ -144,7 +146,11 @@ drain flags, the phase-timing twin of the xclipse 4w row.
 - **Directions left for later work:** a new 4w or 8da4w GEMM kernel (the linear kernels are most of the prefill and the
   screens found no tile that beats the incumbents), a fused SwiGLU (the elementwise operators are stock kernels), the 8B cells.
 - **Builds:** the golden check is pending; the compiler launches of a build wait while a timed session runs
-  (`tools/gate_launcher.sh`; a stop signal to the build had no effect in the agent's environment).
+  (`tools/gate_launcher.sh`; a stop signal to the build had no effect in the agent's environment). That gate was shown
+  with a fake session on the build host only: the one build made with it (`f2`, the head that added it) was interrupted
+  before it finished and was never used, so the gate has not been shown inside a completed real build. The final
+  verification uses build `f1`, whose sources equal the head's compiled sources (later commits change this change
+  directory and the campaign tools only).
 - The fused attention kernel's subgroup size inside the shader (`gl_SubgroupSize` read-back) is not verified on the device; the
   pipelines declare a required subgroup size and the correctness tiers pass.
 
