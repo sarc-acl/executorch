@@ -1,18 +1,84 @@
 # STATUS: sarc-1.5-4070ti-fused-port
 
-**2026-10-08 20:57 UTC. Step 3 (candidate 1, the fused attention kernel, profile `4070ti-fused1`, build
-`topic2` = `6217da0a9`). Its first correctness run is clean on every tier and the ungated looks are inside the
-predicted band; nothing below is a gated number yet. Running now, detached
-(`<artifact-dir>/queue/q04-c1-gate.sh`): the reference-error evidence (SDPA error of both arms with one test
-binary, logits of 41 real-text prompts for four arms), then the gate `s2-c1` (`gate_sdpa.sh`: 24 SDPA passes,
-`verify.sh`, timed session with 7 repeats, traces). Expected to end around 23:30 UTC.**
+**2026-10-08 22:45 UTC. Candidate 1 (the fused attention kernel, profile `4070ti-fused1`, build `topic2` =
+`6217da0a9`) is gated: `s2-c1` GATE_ACCEPTED, +11.64 % geomean over the parent. It is a one-pass kernel, so by
+task section 6.4 no second port item is left on this card: the campaign closes with candidate 1 as its only
+gated candidate. Running now, detached (`<artifact-dir>/queue/q05-roof-pristine.sh`): igpu-roofline `fast`
+(fresh roofs), then the closing timed session `s3-pristine` (final stack against the pristine `dev/1.5` state,
+7 repeats, about one hour).**
 
-Next: read the gate; if accepted, close by task section 6.4 (candidate 1 is one-pass, so no second port item is
-left): final verification on the committed head, the timed session against the pristine `dev/1.5` state, report.
+Next: read `s3-pristine`, write the closing report, `sarc/tools/check.sh --no-build`, push.
 
 Blocking: nothing.
 
-## Candidate 1 (`4070ti-fused1`): first runs, not gated
+## Candidate 1 gated: `s2-c1` GATE_ACCEPTED 2026-10-08T22:39:57Z (all steps passed, plain pass)
+
+Parent `6050b1287` with `4070ti-refine1` against `topic2` with `4070ti-fused1`; tok/s, median of 7 valid
+interleaved runs per arm (`results/4070ti/sessions/s2-c1/{runs,summary}.csv`; medians, gains and geomean
+recomputed from `runs.csv` with separate code: the same):
+
+| cell | parent | candidate 1 | gain | prefill ms, parent -> candidate | ETDump dispatch total, ms | repeat spread, parent / candidate |
+|---|---:|---:|---:|---|---|---|
+| 1B 4w | 29681.2 | 35310.3 | +18.97 % | 69 -> 58 | 67.6 -> 56.3 | 1.47 % / 1.75 % |
+| 1B 8da4w | 32507.9 | 39384.6 | +21.15 % | 63 -> 52 | 61.0 -> 50.2 | 1.61 % / 1.96 % |
+| 3B 4w | 12962.0 | 14027.4 | +8.22 % | 158 -> 146 | 156.5 -> 143.7 | 0.63 % / 0.69 % |
+| 3B 8da4w | 14948.9 | 16384.0 | +9.60 % | 137 -> 125 | 133.9 -> 123.9 | 2.88 % / 2.38 % |
+| 8B 4w | 6023.5 | 6380.1 | +5.92 % | 340 -> 321 | 339.9 -> 320.6 | 0.88 % / 0.31 % |
+| 8B 8da4w | 6989.8 | 7474.5 | +6.93 % | 293 -> 274 | 291.1 -> 271.8 | 0.68 % / 0.37 % |
+| geomean | | | **+11.64 %** | | | |
+
+84 timed and 36 next-token runs, all rc 0, all valid, none replaced; clock floor 2517 MHz applied, lowest
+per-run median 2595 MHz, at least 2 clock samples per window; 0 slow loads of 120 (`raw/loads.csv`). On 1B one
+step of the 1 ms timer is 1.7 to 1.9 % of the candidate's time; the ETDump totals (-16.6 %, -17.7 % dispatch
+time) are the finer measure and agree.
+
+Gate steps: 24 of 24 SDPA correctness passes (12 `extended`, 12 `full`) with 0 mismatches and `pairing=ok`,
+every case served by the fused kernel (`sdpa-check.txt`: ACCEPT); unmodified `verify.sh` with the candidate
+environment on the timed binaries: `verify.out` equals `s0-parent-verify` line by line, rates aside (34 lines;
+verify-check ACCEPT, 0 findings); session-check ACCEPT, 0 findings, next token parent vs candidate SAME in all
+24 rows (six cells x timed, real-text, check and unaligned prompt); 12 of 12 traced runs rc 0; env-check
+ACCEPT. **No next-token item differs, so the gate recorded a plain pass and did not use the reference-error
+rule.** The candidate does change the attention arithmetic, so that evidence was produced before the gate and
+is reported all the same (below): the rule is met.
+
+Where the gain comes from (warm ETDump, ms per 2048-token prefill, parent -> candidate 1;
+`results/4070ti/sessions/s2-c1/trace/attention.csv`, `tools/attention_families.py`):
+
+| cell | QK^T | softmax | attention x V | fused kernel | K / V copy | attention total | linear GEMM | everything else | attention share |
+|---|---|---|---|---|---|---|---|---|---|
+| 1B 4w | 4.17 -> 0 | 7.47 -> 0 | 5.49 -> 0 | 5.72 | 0.11 | 17.13 -> 5.84 | 34.28 -> 34.24 | 16.16 -> 16.27 | 25 % -> 10 % |
+| 1B 8da4w | 4.15 -> 0 | 7.46 -> 0 | 5.28 -> 0 | 5.75 | 0.11 | 16.89 -> 5.86 | 27.65 -> 27.76 | 16.45 -> 16.57 | 28 % -> 12 % |
+| 3B 4w | 8.46 -> 0 | 9.80 -> 0 | 8.14 -> 0 | 13.65 | 0.35 | 26.40 -> 14.00 | 96.90 -> 96.59 | 33.16 -> 33.16 | 17 % -> 10 % |
+| 3B 8da4w | 8.24 -> 0 | 9.71 -> 0 | 8.07 -> 0 | 13.42 | 0.33 | 26.02 -> 13.75 | 73.22 -> 75.00 | 34.71 -> 35.14 | 19 % -> 11 % |
+| 8B 4w | 13.00 -> 0 | 14.93 -> 0 | 11.62 -> 0 | 20.32 | 0.44 | 39.55 -> 20.76 | 239.40 -> 239.14 | 60.96 -> 60.69 | 12 % -> 6 % |
+| 8B 8da4w | 12.50 -> 0 | 14.83 -> 0 | 11.51 -> 0 | 19.36 | 0.37 | 38.84 -> 19.73 | 181.12 -> 180.95 | 71.18 -> 71.08 | 13 % -> 7 % |
+
+All of the gain is attention: the fused kernel removes 66 % of the attention time on 1B and 47 to 49 % on 3B
+and 8B (the RX 7600 saw 76 %; its parent's softmax was a larger share). The copy pass costs 0.1 to 0.4 ms per
+prefill. Linear kernels and everything else are unchanged.
+
+Reference-error evidence (`results/4070ti/probe/fused1/`: `reference-error-rule.txt`, `REFERENCE_ERROR.json`,
+`compare.csv`, `position/`), produced before the gate started:
+
+- Criterion 1, error against the fp32 CPU reference on the same seeded inputs, both arms with `topic2`'s test
+  binary, 0 mismatches in all 12 cases of both tiers for both arms. Production shapes (S = 2048), parent /
+  candidate: 1B rms 2.101e-5 / 2.049e-5, maximum 9.14e-4 / 7.23e-4; 3B 2.068e-5 / 2.053e-5, 7.83e-4 / 7.06e-4;
+  8B 2.057e-5 / 2.022e-5, 8.91e-4 / 7.91e-4: not larger in any production case. Outside the production shapes
+  one of the two numbers is larger in 3 of 9 cases (3B S = 256 maximum +5 %, 8B S = 1024 at position 1024
+  maximum +4 %, tiny S = 128 at position 64 rms +0.2 %); the full table is in the file. The two arms are equally
+  accurate within a few per cent.
+- Criterion 3, gross divergence on 41 real-text prompts (candidate default against parent default): top-1
+  differs on 0 / 3 / 0 / 0 / 0 / 4 of 41 prompts (1B 4w / 1B 8da4w / 3B 4w / 3B 8da4w / 8B 4w / 8B 8da4w; the
+  parent's own two linear arms differ on 0 / 6 / 0 / 1 / 0 / 2), mean KL at most 0.045 nat (limit 0.5), maximum
+  KL 0.79 nat (1B 8da4w; the parent's own arms 1.67): none.
+- Criterion 2, the position of the gate's unaligned item (prompt 0): all four arms pick the same token in every
+  cell; `differing-items.txt` is empty.
+- The last line of `compare.csv` prints the first decision's verdict ("outside twice the noise floor", in the
+  three 4w cells, where the floor is the distance between two almost identical linear kernels: mean KL
+  1.5e-5 to 3.5e-5 nat against the candidate's 5e-5 to 2.7e-4); the second decision replaced that test for
+  arithmetic changes.
+
+## Candidate 1 (`4070ti-fused1`): first runs, before the gate
 
 Environment `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=4070ti-fused1`, build `topic2` (spirv_golden PASS,
 53 shipped variants).
@@ -61,7 +127,7 @@ about 19:45 UTC.)
 
 ## Per-cell numbers against the parent
 
-No gated candidate number yet. Baseline and A/A, session `s1-aa` (parent `6050b1287` against `topic1` = `35e3728c9`,
+Candidate 1: the table at the top. Baseline and A/A, session `s1-aa` (parent `6050b1287` against `topic1` = `35e3728c9`,
 the hook commit; both arms `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=4070ti-refine1`; tok/s, median of 5
 valid interleaved runs per arm; `results/4070ti/sessions/s1-aa/`):
 
@@ -121,7 +187,7 @@ lock; `HELD-TEST` was removed.
 |---|---|---|
 | `parent` | `6050b1287` | spirv_golden PASS (53 shipped variants) |
 | `topic1` | `35e3728c9` (hook) | spirv_golden PASS; hook controls, A/A arm |
-| `topic2` | `6217da0a9` (candidate 1) | spirv_golden PASS; first correctness passes, screen, gate `s2-c1` |
+| `topic2` | `6217da0a9` (candidate 1) | spirv_golden PASS; first correctness passes, screen, reference-error evidence, gate `s2-c1` (accepted) |
 
 All from exports of the commit and its 30 pinned submodules (`tools/mktree.sh`), `sarc/tools/build.sh --llama`
 (and `--traced`) in `localhost/et-vk-build:rocky10` through the docker shim; provenance in

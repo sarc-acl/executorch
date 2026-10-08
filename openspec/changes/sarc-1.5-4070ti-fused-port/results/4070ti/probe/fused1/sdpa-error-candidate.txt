@@ -1,0 +1,38 @@
+[sdpa-error] tiny_gqa_pos64 max_abs=0.000146136 rms=3.23778e-05 max_abs_ref=0.205344
+[sdpa-kernels] tiny_gqa_pos64 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] tiny_gqa_pos64 S=128 input_pos=64 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/16384 PASSED
+[sdpa-error] tiny_gqa_s256_pos128 max_abs=0.000138402 rms=2.35808e-05 max_abs_ref=0.161491
+[sdpa-kernels] tiny_gqa_s256_pos128 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] tiny_gqa_s256_pos128 S=256 input_pos=128 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/32768 PASSED
+[sdpa-error] 1b_head_config_s256_pos256 max_abs=0.000113517 rms=1.79174e-05 max_abs_ref=0.142912
+[sdpa-kernels] 1b_head_config_s256_pos256 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] 1b_head_config_s256_pos256 S=256 input_pos=256 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/524288 PASSED
+[sdpa-error] 3b_head_config_s256 max_abs=0.000820339 rms=4.87529e-05 max_abs_ref=0.998598
+[sdpa-kernels] 3b_head_config_s256 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d128_t16x64g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] 3b_head_config_s256 S=256 input_pos=0 D=128 Q_H=24 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/786432 PASSED
+[sdpa-error] 8b_head_config_s256 max_abs=0.000817358 rms=4.92015e-05 max_abs_ref=0.999106
+[sdpa-kernels] 8b_head_config_s256 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d128_t16x64g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] 8b_head_config_s256 S=256 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/1048576 PASSED
+[sdpa-error] 3b_head_config_pos128 max_abs=0.000160053 rms=2.58869e-05 max_abs_ref=0.249579
+[sdpa-kernels] 3b_head_config_pos128 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d128_t16x64g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] 3b_head_config_pos128 S=128 input_pos=128 D=128 Q_H=24 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/393216 PASSED
+[sdpa-error] tiny_gqa_s2048 max_abs=0.000607848 rms=2.04966e-05 max_abs_ref=0.98697
+[sdpa-kernels] tiny_gqa_s2048 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] tiny_gqa_s2048 S=2048 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/262144 PASSED
+[sdpa-error] tiny_d128_s2048 max_abs=0.000559509 rms=2.03423e-05 max_abs_ref=0.997051
+[sdpa-kernels] tiny_d128_s2048 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d128_t16x64g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] tiny_d128_s2048 S=2048 input_pos=0 D=128 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/524288 PASSED
+[sdpa-correctness] tier=extended cases_run=8
+[sdpa-error] 1b_head_config_s2048 max_abs=0.000722766 rms=2.04856e-05 max_abs_ref=0.998757
+[sdpa-kernels] 1b_head_config_s2048 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] 1b_head_config_s2048 S=2048 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/4194304 PASSED
+[sdpa-error] 3b_head_config_s2048 max_abs=0.000706196 rms=2.0532e-05 max_abs_ref=0.999094
+[sdpa-kernels] 3b_head_config_s2048 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d128_t16x64g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] 3b_head_config_s2048 S=2048 input_pos=0 D=128 Q_H=24 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/6291456 PASSED
+[sdpa-error] 8b_head_config_s2048 max_abs=0.000791192 rms=2.0223e-05 max_abs_ref=0.994699
+[sdpa-kernels] 8b_head_config_s2048 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d128_t16x64g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] 8b_head_config_s2048 S=2048 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/8388608 PASSED
+[sdpa-error] 8b_head_config_s1024_pos1024 max_abs=7.22557e-05 rms=8.97997e-06 max_abs_ref=0.0880162
+[sdpa-kernels] 8b_head_config_s1024_pos1024 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d128_t16x64g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] 8b_head_config_s1024_pos1024 S=1024 input_pos=1024 D=128 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/4194304 PASSED
+[sdpa-correctness] tier=full cases_run=4
