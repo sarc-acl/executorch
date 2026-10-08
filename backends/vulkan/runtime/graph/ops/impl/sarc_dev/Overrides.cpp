@@ -1061,11 +1061,30 @@ const PickRx7600 kRx7600Refine2[] = {
      "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1",
      dq_prefill_shape},
 };
+// rx7600-refine3 (candidate 4): refine2 with the whole-texel weight staging
+// family (zpg_bt) on every 8da4w shape instead of the 256 x 64 tile; the 4w
+// picks are refine2's. The screen has it within 1.5 % of refine2's kernel on
+// every shape (not the 3 % that replaces it), so this is measured as a whole.
+const PickRx7600 kRx7600Refine3[] = {
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt",
+     q4_cbt_shape},
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32bbt",
+     q4_bbt_shape},
+    {Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k64g42s32",
+     dq_prefill_shape},
+};
 const ProfileRx7600 kRx7600Profiles[] = {
     {"rx7600-refine1", nullptr, 0, "780m_r3"},
     {"rx7600-refine2",
      kRx7600Refine2,
      sizeof(kRx7600Refine2) / sizeof(PickRx7600),
+     "780m_r3"},
+    {"rx7600-refine3",
+     kRx7600Refine3,
+     sizeof(kRx7600Refine3) / sizeof(PickRx7600),
      "780m_r3"},
 };
 const ProfileRx7600* active_profile_rx7600() {

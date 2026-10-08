@@ -4,10 +4,11 @@ Updated 2026-10-07 23:58 UTC.
 
 ## Running now
 
-- **Complete linear screens** (`tools/chain4.sh`, detached, status `.artifacts/logs/chain4.status`, started 23:53 UTC): 4w
-  (table + 20 kernels) then 8da4w (table + 23 kernels), 3 rounds, on the twelve real prefill shapes; kernel timings
-  under `gl.sh`, not a timed session. Output `.artifacts/stage/screens/screen-{4w,8da4w}.csv`.
-- Nothing else of this campaign. M51 started its own campaign on this host at 23:13 UTC (builds here).
+- **Candidate 3 gate** (`tools/chain5.sh` -> `gate.sh c3-linear`, detached, status `.artifacts/logs/chain5.status` and
+  `.artifacts/stage/c3-linear/gate.status`, started 2026-10-08 01:55 UTC): timed session (waits out host builds of
+  anyone), `verify.sh`, traces. Parent arm = candidate 2 (parent binary, env switches), candidate arm = build `c3`
+  (commit `6ebf39484`, native, golden PASS against `golden-ref-parent.json`) with `ET_VK_SARC_RX7600_PROFILE=rx7600-refine2`.
+- M51 runs its own campaign on this host (builds here).
 
 ## State
 
