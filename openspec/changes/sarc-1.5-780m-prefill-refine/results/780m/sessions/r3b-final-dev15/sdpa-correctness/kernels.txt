@@ -1,0 +1,6 @@
+# distinct [sdpa-kernels] lines, one pass per tier, environment ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final
+all       4 [sdpa-kernels] <case> qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+extended       4 [sdpa-kernels] <case> qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3sb_d128_t16x64g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+extended       4 [sdpa-kernels] <case> qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+full       3 [sdpa-kernels] <case> qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3sb_d128_t16x64g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+full       1 [sdpa-kernels] <case> qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok

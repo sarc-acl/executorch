@@ -1,0 +1,36 @@
+# Dispatched kernel names, build head3 (c639d4760) against candidate 11's gate (build head2, a8fffa5ea).
+# 1. verify.sh kernel lines (linear 4w / 8da4w, 12 production-diff cases x buffer and texture3d)
+## candidate 11's gate (results/780m/sessions/c11-dq-refine11/verify.out; ET_VK_SARC_DEV_PROFILE=780m-refine3 ET_VK_SARC_780M_PROFILE=c11)
+linear 4w rc=1 kernels: 2 "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x128k32g24s32f32cbt_texture3d_texture2d_half"; 1 "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x256k32g42s32f32cbt_texture3d_texture2d_half"; 6 "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g18s32f32cbt_texture3d_texture2d_half"; 2 "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt_texture3d_texture2d_half"; 1 "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt_texture3d_texture2d_half"; 12 "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_buffer_texture2d_half";
+linear 8da4w rc=1 kernels: 6 "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1_texture3d_texture2d_half"; 12 "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32_buffer_texture2d_half"; 6 "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32_texture3d_texture2d_half";
+## head3, same two variables (sessions/r3a-fused3sb/verify.out)
+linear 4w rc=1 kernels: 2 "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x128k32g24s32f32cbt_texture3d_texture2d_half"; 1 "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x256k32g42s32f32cbt_texture3d_texture2d_half"; 6 "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g18s32f32cbt_texture3d_texture2d_half"; 2 "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt_texture3d_texture2d_half"; 1 "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt_texture3d_texture2d_half"; 12 "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_buffer_texture2d_half";
+linear 8da4w rc=1 kernels: 6 "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1_texture3d_texture2d_half"; 12 "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32_buffer_texture2d_half"; 6 "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32_texture3d_texture2d_half";
+## head3, ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final, ET_VK_SARC_780M_PROFILE unset (sessions/r3b-final-dev15/verify.out)
+linear 4w rc=1 kernels: 2 "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x128k32g24s32f32cbt_texture3d_texture2d_half"; 1 "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x256k32g42s32f32cbt_texture3d_texture2d_half"; 6 "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g18s32f32cbt_texture3d_texture2d_half"; 2 "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt_texture3d_texture2d_half"; 1 "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt_texture3d_texture2d_half"; 12 "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_buffer_texture2d_half";
+linear 8da4w rc=1 kernels: 6 "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1_texture3d_texture2d_half"; 12 "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32_buffer_texture2d_half"; 6 "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32_texture3d_texture2d_half";
+## equal: yes (780m-final against candidate 11's gate), yes (780m-final against c11 on head3)
+## whole verify.out, tok/s figures set aside: 780m-final against candidate 11's gate identical, 34 lines
+# 2. SDPA kernels ([sdpa-kernels] lines of --sdpa-correctness-only, tier all unless said; qk / softmax / av are '?' when the fused node serves the case)
+## (no environment): 4 passed, 0 failed
+      4 qk=sarc_sdpa_qk_coopmat_t128x64k32g22s64_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half av=sarc_sdpa_av_coopmat_t64x64k32g22s64_buffer_buffer_half fused=- no_mask_fill=no pairing=ok
+## ET_VK_SARC_DEV_PROFILE=780m-refine3: 4 passed, 0 failed
+      4 qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half fused=- no_mask_fill=yes pairing=ok
+## 780m-refine3 + ET_VK_SARC_780M_PROFILE=c10: 4 passed, 0 failed
+      4 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+## 780m-refine3 + c11 + ET_VK_SARC_780M_SDPA_FUSED=fused3_d64_t32x32g11s32rko,fused3_d128_t16x64g11s32rko: 4 passed, 0 failed
+      4 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+## 780m-refine3 + ET_VK_SARC_780M_PROFILE=c11: 4 passed, 0 failed
+      4 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+## ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final: 4 passed, 0 failed
+      4 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+## ET_VK_SARC_DEV_PROFILE=780m-final: 4 passed, 0 failed
+      4 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+## ET_VK_SARC_DEV_PROFILE=780m-final ET_VK_SARC_780M_PROFILE=c10: 4 passed, 0 failed
+      4 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+## tiers all / extended / full: candidate 10's gate on the committed build (sessions/h1-c10, the last gate that ran the tiers before round 3) dispatched sarc_dev_780m_sdpa_fused3_d64_t32x32g11s32rko and ..fused3_d128_t16x64g11s32rko; head3 with c11 and with 780m-final dispatches the fused3sb kernels of the same tokens (sessions/{r3a-fused3sb,r3b-final-dev15}/sdpa-correctness/kernels.txt)
+# 3. the three-kernel path under the final configuration (what serves decode and unaligned prompts): the same two environments with ET_VK_SARC_780M_SDPA_FUSED set to the empty string, so that the fused node takes no case (run 2026-10-08 22:10 UTC, after the sessions)
+## c11-nofused: rc=0, 4 passed, 0 failed
+      4 qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half_780m_r3 av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half fused=- no_mask_fill=yes pairing=ok
+## final-nofused: rc=0, 4 passed, 0 failed
+      4 qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half_780m_r3 av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half fused=- no_mask_fill=yes pairing=ok

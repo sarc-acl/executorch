@@ -1,0 +1,10 @@
+# distinct [sdpa-kernels] lines over the 12 passes of each tier, candidate environment (c11 as committed); count = cases x passes
+all      48 [sdpa-kernels] <case> qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+extended      48 [sdpa-kernels] <case> qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3sb_d128_t16x64g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+extended      48 [sdpa-kernels] <case> qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+full      36 [sdpa-kernels] <case> qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3sb_d128_t16x64g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+full      12 [sdpa-kernels] <case> qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+# control, table kernels, 1 pass per tier
+all       4 [sdpa-kernels] <case> qk=sarc_sdpa_qk_coopmat_t128x64k32g22s64_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half av=sarc_sdpa_av_coopmat_t64x64k32g22s64_buffer_buffer_half fused=- no_mask_fill=no pairing=ok
+extended       8 [sdpa-kernels] <case> qk=sarc_sdpa_qk_coopmat_t128x64k32g22s64_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half av=sarc_sdpa_av_coopmat_t64x64k32g22s64_buffer_buffer_half fused=- no_mask_fill=no pairing=ok
+full       4 [sdpa-kernels] <case> qk=sarc_sdpa_qk_coopmat_t128x64k32g22s64_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half av=sarc_sdpa_av_coopmat_t64x64k32g22s64_buffer_buffer_half fused=- no_mask_fill=no pairing=ok

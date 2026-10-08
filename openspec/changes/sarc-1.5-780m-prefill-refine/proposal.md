@@ -672,3 +672,219 @@ not pinned): matrix fp16 -> fp32 14.766 TFLOP/s, matrix int8 14.379 TOP/s.
 - Measurement pitfalls found: the microbench's SDPA suite (3 + 5 runs) and the linear screening mode (1 + 2 runs)
   are taken on a rising GPU clock (`STATUS.md`, "What the clock does to the microbench"); a process whose command
   line contains a runner's name is counted as another GPU process by `e2e5.sh`.
+
+## Round 3 (2026-10-08): fused3sb and 780m-final
+
+A closing task, not a tuning round (`~/hmz-sarc/CAMPAIGN-round3.md`; merge plan `topic/campaign-playbook`,
+`MERGE-PLAN.md`, item M2a and the naming item): no new candidate, no sweep. Two things change on the branch:
+the fused attention kernel of the final configuration gets its subgroup barriers, and the final configuration
+gets one name. Dev zone only; no release-zone file is touched in this round. Raw data in
+`rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-08/`, evidence in `results/780m/round3/` and
+`results/780m/sessions/{r3a-fused3sb,r3b-final-dev15}/`.
+
+**The recommended configuration is now `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final`.** It
+dispatches what candidate 11 dispatched, with the `fused3sb` pair in place of the `fused3` pair.
+`ET_VK_SARC_DEV_PROFILE=780m-refine3 ET_VK_SARC_780M_PROFILE=c11` still works and selects the same kernels.
+
+### What changed (commits `8d909b3fb`, `c639d4760`)
+
+- `glsl/sarc_dev/sarc_dev_780m_sdpa_fused3sb.{glsl,yaml}`: the two files of `origin/topic/rx7600-prefill-refine`
+  commit `b3bb758e38`, taken unchanged (same blobs, `cb5f0e3af` and `9981870b4`, so the two branches merge
+  without a conflict). Nothing else of that commit was taken. The file keeps the 780M prefix because
+  `impl/sarc_dev/780m/Sdpa780mFused.cpp` builds the shader name from it; its header names the RX 7600 campaign,
+  where it was written.
+- `impl/sarc_dev/Overrides.cpp` (`git diff 90fe4d013 c639d4760`):
+
+```diff
+@@ -644,6 +644,9 @@ const Profile kProfiles[] = {
+     {"qkpk-t256x64k32g42s32nf", kQkPk_t256x64k32g42s32nf, 1},
+     {"780m-refine1-dq", k780mRefine1Dq, sizeof(k780mRefine1Dq) / sizeof(Preference)},
+     {"780m-refine1-q4", k780mRefine1Q4, sizeof(k780mRefine1Q4) / sizeof(Preference)},
++    // 780M final configuration: these preferences plus what profile c11 of the
++    // 780m block below adds (active_profile_780m).
++    {"780m-final", k780mRefine3, sizeof(k780mRefine3) / sizeof(Preference)},
+ };
+ const Profile* requested_profile() {
+   static const Profile* p = []() -> const Profile* {
+@@ -885,6 +888,11 @@ const char kFused780mTwoPass[] =
+     "fused3_d64_t32x32g11s32rk,fused3_d128_t16x64g11s32rk";
+ const char kFused780mOnePass[] =
+     "fused3_d64_t32x32g11s32rko,fused3_d128_t16x64g11s32rko";
++// fused3sb: fused3 with subgroupBarrier() after every memoryBarrierShared()
++// (round 3, 2026-10-08). c8 to c10 stay on the fused3 names they were measured
++// with.
++const char kFused780mOnePassSb[] =
++    "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko";
+ const Profile780m k780mProfiles[] = {
+     {"refine9", k780mRefine9, sizeof(k780mRefine9) / sizeof(Pick780m), nullptr, ""},
+     {"refine10", k780mRefine10, sizeof(k780mRefine10) / sizeof(Pick780m), nullptr, ""},
+@@ -893,11 +901,17 @@ const Profile780m k780mProfiles[] = {
+     {"c8", nullptr, 0, "780m_r3", kFused780mTwoPass},
+     {"c9", k780mRefine9, sizeof(k780mRefine9) / sizeof(Pick780m), "780m_r3", kFused780mOnePass},
+     {"c10", k780mRefine10, sizeof(k780mRefine10) / sizeof(Pick780m), "780m_r3", kFused780mOnePass},
+-    {"c11", k780mRefine11, sizeof(k780mRefine11) / sizeof(Pick780m), "780m_r3", kFused780mOnePass},
++    {"c11", k780mRefine11, sizeof(k780mRefine11) / sizeof(Pick780m), "780m_r3", kFused780mOnePassSb},
+ };
+ const Profile780m* active_profile_780m() {
+   static const Profile780m* const active = []() -> const Profile780m* {
+     const char* e = std::getenv("ET_VK_SARC_780M_PROFILE");
++    // ET_VK_SARC_DEV_PROFILE=780m-final alone is the final configuration:
++    // 780m-refine3 (kProfiles above) with c11.
++    const char* dev = std::getenv("ET_VK_SARC_DEV_PROFILE");
++    if (e == nullptr && dev != nullptr && std::string(dev) == "780m-final") {
++      e = "c11";
++    }
+     for (const Profile780m& p : k780mProfiles) {
+       if (e != nullptr && std::string(e) == p.name) {
+         return &p;
+```
+
+  `c8`, `c9` and `c10` stay on the `fused3` names: they are the record of what was measured in round 2, and the
+  sessions of that round can be repeated with them. `c11` is the one profile that moves, because it is the final
+  configuration; what round 2 measured as candidate 11 is still reachable as `c11` with
+  `ET_VK_SARC_780M_SDPA_FUSED=fused3_d64_t32x32g11s32rko,fused3_d128_t16x64g11s32rko` (the parent arm of the
+  session below). `780m-final` is `780m-refine3`'s preference list under a second name plus `c11`; an explicit
+  `ET_VK_SARC_780M_PROFILE` still wins over it.
+
+### Why the barriers
+
+`fused3` runs one subgroup per workgroup and keeps its scores, e values, row maxima, row sums and rescale
+divisors in shared memory. No two invocations write the same location (read again on 2026-10-08: a lane writes
+only its own `Psh[e_idx + i]`, `Rsh[e_row * SEGS + e_seg]`, and the `Dsh` / `Psh` divisor slots `j` of its row
+with `j mod SEGS = e_seg`), but a lane reads what other lanes of its subgroup wrote: the scores a subgroup-wide
+`coopMatStore` put into `Psh`, the other segment's `Rsh` slot (16-row variants, two lanes per row), and the
+`coopMatLoad`s of e, of the divisor tile and of the row sums. Those reads were ordered against the writes by
+`memoryBarrierShared()` alone.
+
+- Why that is a race under the Vulkan memory model: a memory barrier orders the memory accesses of the
+  invocation that executes it; it makes no invocation wait for another. Only a control barrier does that
+  (`barrier()` for the workgroup, `subgroupBarrier()` for the subgroup). Without one, the invocations of a
+  workgroup have no defined order relative to each other, so nothing says that lane A's store has executed when
+  lane B executes its load: formally an unsynchronised read, whatever the values.
+- Why RDNA3 tolerated it: the workgroup is one subgroup and the subgroup is one 32-lane wave, which executes
+  each instruction for all its lanes before the next one; and every barrier sits in subgroup-uniform control
+  flow (the loop counts depend on the workgroup, the one data-dependent branch is taken on `subgroupAny`). So on
+  this hardware every lane's store has run before any lane's load. That is how a wave executes, not something
+  the API promises, and it does not hold on a device whose subgroup is smaller than the workgroup or whose
+  compiler may move a load across the memory barrier. It is the class of defect of lesson L8, found by reading
+  before it failed.
+- What the RX 7600 found (its `STATUS.md`, branch `topic/rx7600-prefill-refine`): the defect, while reading the
+  kernel it was porting; and, for the copy with `subgroupBarrier()` after every `memoryBarrierShared()`, +0.00 %
+  geomean against its candidate 3 (cells -0.19 to +0.17 %), the tiers `all` / `extended` / `full` at 12 passes
+  each with 0 mismatches, and output byte-identical to `fused3` in 21 of 21 cases.
+
+The copy differs from `fused3` in the header comment (8 lines) and in 13 inserted `subgroupBarrier();` lines,
+one after each `memoryBarrierShared();`, nothing else (`results/780m/round3/shader-diff-fused3-fused3sb.txt`;
+every line is listed in `STATUS.md`). The task file and the commit message speak of 14 calls: the kernel has 13;
+the fourteenth match of a text search is the sentence in the new header. The yaml lists the two variants of the
+final pair with the parameters of their `fused3` twins.
+
+### Build and what it dispatches
+
+Build `head3`: an export of commit `c639d4760` (`git archive`; the submodule directories copied from the working
+copy, because this clone has no submodule object stores; manifest in `results/780m/round3/`), built with
+`sarc/tools/build.sh` in the campaign's container, no local patch.
+
+- `spirv_golden.py`: PASS (53 shipped variants). All 1,469 SPIR-V files of `head2`, the build of candidate 11's
+  gate, are byte-identical in `head3`; `head3` has two more, the `fused3sb` pair (`round3/spirv/`).
+- `sarc/tools/check.sh --no-build`: PASS (output in `STATUS.md`).
+- Dispatch, by environment (`round3/dispatch.txt`):
+
+| environment | linear kernels (`verify.sh` kernel lines) | SDPA on the benchmark prompt | SDPA where the fused node does not serve |
+|---|---|---|---|
+| candidate 11's gate (`head2`): `780m-refine3` + `c11` | the five 4w and two 8da4w kernels of `c11-dq-refine11/verify.out` | `fused3_d64_t32x32g11s32rko`, `fused3_d128_t16x64g11s32rko` | `780m-refine3` QK^T and attn*V, softmax `780m_r3` |
+| `head3`: `780m-refine3` + `c11` | the same two lines | `fused3sb_d64_t32x32g11s32rko`, `fused3sb_d128_t16x64g11s32rko` | the same |
+| `head3`: `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final`, `ET_VK_SARC_780M_PROFILE` unset | the same two lines | the same `fused3sb` pair | the same |
+| `head3`: `c11` + `ET_VK_SARC_780M_SDPA_FUSED` naming the `fused3` pair | the same two lines | the `fused3` pair | the same |
+| `head3`: no environment | release table kernels | release QK^T, softmax, attn*V; `fused=-` | |
+
+  `verify.out` under `780m-final` equals candidate 11's gate line for line (34 lines) once the tok/s figures are
+  set aside, and so does `verify.out` under `c11`. `780m-final` therefore reproduces candidate 11's dispatch
+  exactly, except for the two fused kernel names, which item A changes on purpose. With or without
+  `ET_VK_SARC_UNVERIFIED=1` the names are the same: the 780M's release rows are verified, so the variable
+  activates nothing on this device. `780m-final` with `ET_VK_SARC_780M_PROFILE=c10` gives `c10` (the explicit
+  variable wins).
+
+### Item A: gate and session with `fused3sb` (`r3a-fused3sb`)
+
+Both arms are the same binary (`head3`) on `ET_VK_SARC_DEV_PROFILE=780m-refine3 ET_VK_SARC_780M_PROFILE=c11`; the
+parent arm names the `fused3` pair with `ET_VK_SARC_780M_SDPA_FUSED`, the candidate arm is `c11` as committed.
+Started 2026-10-08 20:10 UTC at 43 C, 5 valid runs per arm, arms interleaved, 60 of 60 timed runs valid, clock
+2774 to 2800 MHz (floor 2700):
+
+| cell | `c11` with `fused3` | `c11` with `fused3sb` | difference | repeat spread parent / candidate | next token (2048 / unaligned prompt) |
+|---|---:|---:|---:|---|---|
+| 1B 4w | 3842.40 | 3842.40 | 0.00 % | 0.19 / 0.19 % | SAME / SAME |
+| 1B 8da4w | 3764.71 | 3764.71 | 0.00 % | 0.18 / 0.18 % | SAME / SAME |
+| 3B 4w | 1459.73 | 1458.69 | -0.07 % | 0.07 / 0.14 % | SAME / SAME |
+| 3B 8da4w | 1412.41 | 1413.39 | +0.07 % | 1.10 / 0.89 % | SAME / SAME |
+| 8B 4w | 640.60 | 641.00 | +0.06 % | 1.21 / 0.75 % | SAME / SAME |
+| 8B 8da4w | 629.57 | 628.99 | -0.09 % | 0.25 / 0.12 % | SAME / SAME |
+| geomean | | | **-0.01 %** | | |
+
+Inside the band: the barriers cost nothing that this measurement resolves (A/A floor of round 2: cells within
++-0.23 %). The fused kernel's own time at a steady clock, copy pass included (40 + 10 runs, three runs per arm,
+`results/780m/fused/kernel-time-steady-r3-fused3sb.csv`): 2.268 -> 2.271 ms a layer (1B), 3.219 -> 3.210 ms (3B),
+4.050 -> 4.049 ms (8B); +0.12 / -0.27 / -0.02 %.
+
+Gate, with the candidate's environment, on the binary that was timed:
+
+| item | result |
+|---|---|
+| unmodified `verify.sh --models 1b,3b,8b --schemes 4w,8da4w --pdiff` | rc = 0; equal to candidate 11's gate line for line apart from the tok/s figures; against the parent snapshot `s0-parent-verify` only the two linear kernel-name lines differ (as for candidate 11): correctness rc = 0, 12 of 12 production-diff cases ALL PASSED, default vs tiled SAME on the real-text and the unaligned prompt, decode 31 tokens |
+| SDPA tiers, 12 passes each | `all` 4 of 4, `extended` 8 of 8, `full` 4 of 4 in every pass: 192 cases, 0 failed, 0 mismatches, `pairing=ok` in every line, the `fused3sb` kernel the only SDPA kernel dispatched; one control pass per tier with the table kernels |
+| next token, `fused3` arm against `fused3sb` arm | SAME in all six cells on both prompts |
+| SDPA output against `fused3`, byte for byte (`round3/bitwise/bitwise-fused3sb.txt`) | **identical in 21 of 21 cases** (tiers `all`, `extended`, `peaked`, `full`) and in the 5 cases of tier `fused`: 26 of 26. The kernel does not change arithmetic, so it uses neither the near-tie nor the reference-error rule; its error against the fp64 reference is that of `fused3` to the last digit (`round3/bitwise/sdpa-error.txt`) |
+| shipped-SPIR-V golden | PASS |
+| shader read for unsynchronised shared writes | none: no location has two writers, and every read of another lane's slot now follows a `subgroupBarrier()` |
+| warm traces, one run per arm (`sessions/r3a-fused3sb/trace/`) | the family that holds the copy pass and the fused kernel: -0.4 to +1.3 %; the linear GEMM, same kernels in both arms: +0.8 to +1.7 %. The candidate arm is traced after the parent arm without cooling, so this shows no change beyond that drift |
+
+Not repeated, as the task says: the production-diff passes of the six linear kernels of the final profile (36
+of 36 each in round 2) and the real-text comparison of candidate 8 (the output is byte-identical).
+
+Invalid runs: none of the 60 timed runs. 3 of the 12 untimed next-token runs on the unaligned prompt carry
+`clock_low` (median clock 2641 to 2698 MHz against the floor of 2700): they run without `--warmup` from an
+idling clock, as in every session of round 2 (4 to 6 such rows each); they are compared by output only.
+
+### Item B: `780m-final` against `dev/1.5` (`r3b-final-dev15`)
+
+Both arms are the same binary (`head3`): the parent arm has no environment (no profile, `ET_VK_SARC_UNVERIFIED`
+unset; it dispatches the release table kernels, as `dev/1.5` does), the candidate arm has
+`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final` and nothing else. Started 2026-10-08 21:30 UTC at
+43 C, 5 valid runs per arm, arms interleaved, 60 of 60 timed runs valid, clock 2748 to 2800 MHz:
+
+| cell | `dev/1.5` dispatch | `780m-final` | gain | round 2 (`s9-final-dev15`, candidate 11) | published `dev/1.5` (`cells.csv`) | repeat spread parent / candidate | next token (2048 / unaligned prompt) |
+|---|---:|---:|---:|---:|---:|---|---|
+| 1B 4w | 2694.74 | 3835.21 | **+42.32 %** | +42.51 % | 2698.29 | 0.13 / 0.19 % | SAME / SAME |
+| 1B 8da4w | 2540.94 | 3764.71 | **+48.16 %** | +48.35 % | 2544.10 | 0.12 / 0.18 % | SAME / SAME |
+| 3B 4w | 1142.22 | 1458.69 | **+27.71 %** | +27.85 % | 1151.21 | 0.17 / 0.07 % | SAME / SAME |
+| 3B 8da4w | 1052.96 | 1411.44 | **+34.04 %** | +33.72 % | 1051.33 | 0.21 / 0.07 % | SAME / SAME |
+| 8B 4w | 519.93 | 640.00 | **+23.09 %** | +23.42 % | 525.80 | 0.23 / 0.34 % | SAME / SAME |
+| 8B 8da4w | 487.39 | 628.41 | **+28.94 %** | +28.73 % | 489.13 | 0.10 / 0.25 % | **DIFFER** / SAME |
+| geomean | | | **+33.77 %** | +33.82 % | | | |
+
+The campaign's +33.82 % is reproduced within the band: -0.05 points in the geomean, cells within 0.33 points.
+The candidate arm is within 0.55 % of round 2's candidate arm in every cell and the parent arm within 0.48 %
+of round 2's pristine `dev/1.5` build and within 1.12 % of the published numbers.
+
+The one differing next-token item is the one recorded for candidate 8 (8B 8da4w on `prompt_2048.txt`,
+**ACCEPTED (reference-error rule, owner decision 2026-10-04)**, evidence `results/780m/probe/`,
+`results/780m/sdpa-error/`): the generated output of both arms in that cell is byte-identical to the same arm
+of `s9-final-dev15`, and the fused kernel's output is byte-identical to the kernel that evidence was taken with.
+4 of the 12 untimed runs on the unaligned prompt carry `clock_low`, as above.
+
+`verify.sh` and one pass of each SDPA tier with the `780m-final` environment: rc = 0, the 34 lines of candidate
+11's gate; `all` 4 of 4, `extended` 8 of 8, `full` 4 of 4, 0 mismatches, `pairing=ok`
+(`sessions/r3b-final-dev15/`).
+
+### What was not done, and what is open
+
+- No driver-level capture, no sweep, no new candidate. Percent of roof, the sources of the gain and the negative
+  results are those of round 2 (above); the kernels are the same but for the barriers.
+- The submodules of `head3` come from the working copy's directories, not from git object stores (this clone
+  has none). The earlier builds of the campaign used the same directories in place.
+- The page cache was filled with the six model files before each part (owner decision 2026-10-06), for both
+  arms alike; no runner abort occurred (rc = 0 in all 144 runs of the two sessions).
+- `fused3` and its 33 variants stay in the tree as the record of round 2 (`c8` to `c10`). Whether the other
+  `fused3` variants get barriers too, and whether `fused3` is removed at promotion, is the promotion's decision.
+- The fused attention entry point (`1c8861aa7`) is still subject to the owner's review before any promotion.
