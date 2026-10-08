@@ -1,8 +1,8 @@
 #!/bin/bash
 # gate_sdpa.sh <session> ["<cand env>"]: gate.sh for a candidate that changes an SDPA kernel. The same steps,
 # preceded by what sarc/tools/verify.sh does not run:
-#   0a. test_llama_microbench --sdpa-correctness-only, tiers extended and full, 12 passes each with the candidate
-#       env; accepted only with the full case count per pass, 0 mismatches and pairing=ok on every case
+#   0a. test_llama_microbench --sdpa-correctness-only, tiers all, extended and full, 12 passes each with the
+#       candidate env (and, when the environment names an orin-fused profile, the tiers peaked and fused, 3 passes each); accepted only with the full case count per pass, 0 mismatches and pairing=ok on every case
 #       (gate_check.py sdpa);
 #   0b. the SDPA perf suite (--sdpa) with and without the candidate env, for the dispatched kernels and times.
 # SDPA_FROM=<earlier session>: a gate that was aborted AFTER its SDPA steps (0a, 0b) had been accepted is repeated
@@ -21,7 +21,8 @@ if [[ -n ${SDPA_FROM:-} ]]; then
   step sdpa-check python3 $TOOLS/gate_check.py sdpa $O $D/cand/env > $D/sdpa-check.txt 2>&1
 else
 sdpa_pass() { cool_start 300; env $ENVS $TOOLS/gl.sh $B --sdpa-correctness-only --sdpa-tier=$1 > $O/cand-$1-r$2.log 2>&1; }
-for tier in extended full; do for i in $(seq 1 12); do
+PASSES="all:12 extended:12 full:12"; [[ $ENVS == *ET_VK_SARC_DEV_PROFILE=orin-fused* ]] && PASSES="$PASSES peaked:3 fused:3"
+for tp in $PASSES; do tier=${tp%:*}; for i in $(seq 1 ${tp#*:}); do
   step "sdpa $tier r$i" sdpa_pass $tier $i; echo "cand $tier r$i rc=0" >> $O/summary.txt
 done; done
 step sdpa-check python3 $TOOLS/gate_check.py sdpa $O $D/cand/env > $D/sdpa-check.txt 2>&1

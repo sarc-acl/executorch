@@ -2,7 +2,8 @@
 # gatelib.sh: shared steps of gate.sh, gate_sdpa.sh and parent_verify.sh (sourced after common.sh, with D = the
 # stage directory). A failed step ends the gate: no further GPU job runs and gate.done records the step.
 # Device loss (exit 70), a busy lock (75) and a foreign GPU process (76) are passed up unchanged as GATE_ABORTED.
-PARENT_CTL=$A/stage/s0-parent-verify
+# PARENT_CTL_NAME=<session>: another control than the tuned parent's (s0n-noenv: the parent build with nothing selected).
+PARENT_CTL=$A/stage/${PARENT_CTL_NAME:-s0-parent-verify}
 # The per-cell normal-clock thresholds (calibrate_clock.py on the baseline and A/A sessions). Candidate gates
 # refuse to start without it and e2e5.sh applies it; a record-only session cannot pass gate_check.py.
 CLKFILE=$CHANGE/results/orin/clkmin.json

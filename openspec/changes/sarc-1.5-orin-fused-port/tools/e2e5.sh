@@ -12,6 +12,9 @@
 #     every 0.5 s while the run executes (logs/<run>.others) and once after it; the abort uses what was captured,
 #     without asking again, and a run it overlapped is kept in runs.csv as invalid. GPU sensors not answering
 #     end it with exit 70;
+#   - owner decision D5: the model file of a cell is read into the page cache before the first process of that
+#     cell (both arms alike); the model load time of every run is recorded (logs/<run>.mem, load_ms);
+#   - an 8B run is not started with less than 5000 MB available (waits up to 120 s, then the session ends, exit 77);
 #   - a run is VALID only if rc = 0, tok/s present, prompt_tokens = <expected>, generated_tokens = 0, no other GPU
 #     process, and the median clock in the measured window >= CLKMIN MHz. The threshold comes from --clkmin-file
 #     (calibrate_clock.py on the baseline and A/A sessions); --calibrate runs record-only (clkmin 0 in runs.csv)
@@ -82,12 +85,14 @@ run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected 
   log="logs/$tag-$m-$q-$b-r$r.log"
   t0=$SECONDS; cool; cs=$((SECONDS - t0)); tp=$(gtemp) || gpu_gone "before $log"; no_others "before $log"
   local benv=(); [[ -f $D/$b/env ]] && mapfile -t benv < "$D/$b/env"
+  if [[ $m == 8b ]]; then local w=0; while (( $(mem_avail_mb) < 5000 && w < 120 )); do sleep 5; w=$((w + 5)); done
+    (( $(mem_avail_mb) >= 5000 )) || { echo "less than 5000 MB available before $log: $(mem_line)" | tee -a $A/ABORTED >&2; exit 77; }; fi
   echo "pre $(mem_line)load=$(cat $GPULOAD)" > "$O/${log%.log}.mem"
   others_watch_start "$O/${log%.log}.others"; sampler_start "$O/${log%.log}.clk"; sleep 0.1
   env "${benv[@]}" LD_LIBRARY_PATH=$D/$b timeout 1800 "$D/$b/llama_main" --model_path "$(pte $m $q)" \
     --tokenizer_path "$(tokz $m)" --prompt_file "$p" --max_new_tokens 1 --temperature 0 \
     $([[ $tag == prefill ]] && echo --warmup) < /dev/null > "$O/$log" 2>&1 9>&-
-  rc=$?; oth=$(others_watch_stop "$O/${log%.log}.others" | tr ',' ';'); sampler_stop; echo "post $(mem_line)" >> "$O/${log%.log}.mem"; tq=$(gtemp) || gpu_gone "after $log rc=$rc"
+  rc=$?; oth=$(others_watch_stop "$O/${log%.log}.others" | tr ',' ';'); sampler_stop; echo "post $(mem_line)load_ms=$(PYTHONPATH=$TOOLS python3 -c 'import sys, nexttoken; o = nexttoken.observer(sys.argv[1]) or {}; print(o.get("model_load_end_ms", 0) - o.get("model_load_start_ms", 0))' "$O/$log" 2>/dev/null)" >> "$O/${log%.log}.mem"; tq=$(gtemp) || gpu_gone "after $log rc=$rc"
   python3 $TOOLS/runrow.py "$O/$log" "$O/${log%.log}.clk" "$want" "$cmin_cell" "$rc" "$oth" "$tag" > "$O/.row"
   IFS=, read -r tok pt gt ms n cm cmin bm pw tmax valid reason < "$O/.row"
   echo "orin,$(hostname),$m,$q,$b,$r,$s,$tok,$rc,$tp,$tq,$cs,devfreq_med=${cm}MHz,$oth,$(date -u +%FT%TZ),$log,$pt,$gt,$ms,$n,$cm,$cmin,$bm,$pw,$tmax,$valid,$reason,$cmin_cell" >> "$CSV"
@@ -99,6 +104,7 @@ nvalid() { awk -F, -v m=$1 -v q=$2 -v b=$3 'NR > 1 && $3 == m && $4 == q && $5 =
 NT_HEADER=$(python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import nexttoken; print(",".join(nexttoken.FIELDS))' $TOOLS)
 for m in "${MS[@]}"; do for q in "${QS[@]}"; do
   [[ -f $(pte $m $q) ]] || { echo "missing $(pte $m $q)"; INCOMPLETE=1; continue; }
+  cat "$(pte $m $q)" > /dev/null   # D5: page cache, before the first process of the cell
   r=1
   while :; do
     if (( r % 2 )); then order=(parent cand); else order=(cand parent); fi

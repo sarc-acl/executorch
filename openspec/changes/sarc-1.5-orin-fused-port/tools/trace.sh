@@ -17,6 +17,7 @@ declare -A STEM=([1b]=llama3_2-1b [3b]=llama3_2-3b [8b]=llama3_1-8b)
 IFS=, read -ra MS <<< "$MODELS"; IFS=, read -ra QS <<< "$SCHEMES"
 for b in $BUILDS; do BD=$S/$b-traced
   for m in "${MS[@]}"; do ST=${STEM[$m]}; for q in "${QS[@]}"; do
+    cat $MODELDIR/${ST}_vulkan_$q.pte > /dev/null   # D5: page cache
     cool_start 120; tp=$(gtemp) || gpu_gone "trace $m $q $b"; no_others "trace $m $q $b"
     benv=(); [[ -f $BD/env ]] && mapfile -t benv < $BD/env
     others_watch_start $O/$m-$q-$b.others

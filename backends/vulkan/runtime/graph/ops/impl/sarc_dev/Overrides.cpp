@@ -1633,6 +1633,10 @@ const Profile kProfiles[] = {
     {"orin-lin-refine5", kOrinLinRefine5, sizeof(kOrinLinRefine5) / sizeof(Preference)},
     {"orin-refine5", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
     // <<< orin sdpa-profiles
+    // >>> orin-fused profiles
+    // orin-refine5 + the fused attention node (impl/sarc_dev/orin/SdpaOrinFused.cpp names its kernels).
+    {"orin-fused1", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    // <<< orin-fused profiles
 };
 const Profile* requested_profile() {
   static const Profile* p = []() -> const Profile* {
@@ -1729,6 +1733,18 @@ struct Registrar {
       }
     }
     // <<< orin softmax-variant
+    // >>> orin-fused override
+    // An orin-fused* profile is the whole stack: the calls its fused node does not serve use the softmax orin_g64
+    // unless the variable above names another. The fused node (impl/sarc_dev/orin/SdpaOrinFused.cpp) sets its
+    // entry points from its own static initializer, which may have run already: keep them.
+    if (o.softmax_variant == nullptr && requested_profile() != nullptr &&
+        std::strncmp(requested_profile()->name, "orin-fused", 10) == 0) {
+      o.softmax_variant = "orin_g64";
+      std::cerr << "[sarc_dev] softmax variant: " << o.softmax_variant << std::endl;
+    }
+    o.sdpa_fused_add = get_override().sdpa_fused_add;
+    o.sdpa_fused_serves = get_override().sdpa_fused_serves;
+    // <<< orin-fused override
     set_override(o);
     if (requested_profile() != nullptr) {
       std::cerr << "[sarc_dev] profile active: " << requested_profile()->name

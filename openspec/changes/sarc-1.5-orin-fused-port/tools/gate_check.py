@@ -23,8 +23,10 @@ is a difference. The same holds per case of correctness.log (coopmat kernel or n
 `linear <scheme> rc` are not required to be 0 (on this device the shipped state has had rc=1 for a rank-3 case that does not
 dispatch coopmat): they must fit their logs and equal the parent control's, as must the case counts, the set
 of cases without coopmat and the decode token counts.
-sdpa: per tier 12 passes, each with the tier's case count (extended 8, full 4), every case PASSED with
-mismatches=0, qk_coopmat=yes, av_coopmat=yes, and a [sdpa-kernels] line with pairing=ok per case; with an env
+sdpa: per tier 12 passes, each with the tier's case count (all 4, extended 8, full 4; under an orin-fused profile
+also peaked 5 and fused 5, 3 passes each), every case PASSED with mismatches=0 and a [sdpa-kernels] line with
+pairing=ok; a case the profile's fused node serves names that fused kernel and no QK^T / softmax / attn*V kernel,
+every other case has qk_coopmat=yes, av_coopmat=yes and the environment's softmax; with an env
 file that names a profile, every pass must carry that profile's banner.
 session: six cells with at least 5 timed runs per arm that are valid on their own fields (the `valid` column is
 not trusted): a unique log and model/scheme/build/repeat identity, rc 0, a positive finite rate, 2048 prompt
@@ -282,28 +284,37 @@ def do_verify(cand, parent, *opts):
         print(f"{arm} linear dispatch states: " + ", ".join(f"{k[1]}={n}" for k, n in sorted(collections.Counter(v for k, v in s.items() if k.endswith(" dispatch")).items())))
 
 def do_sdpa(d, envfile=None):
-    names = set(); soft = softmax_of(env_lines(envfile)) if envfile else None
+    names = set(); lines = env_lines(envfile) if envfile else []; soft = softmax_of(lines); fused = fused_of(lines)
     want_soft = "sarc_sdpa_attn_weights_softmax_buffer_half" + (f"_{soft}" if soft else "")
-    if envfile: banner_check(sorted(glob.glob(os.path.join(d, "cand-*.log"))), env_lines(envfile), "sdpa")
-    for tier, ncase in (("extended", 8), ("full", 4)):
+    if envfile: banner_check(sorted(glob.glob(os.path.join(d, "cand-*.log"))), lines, "sdpa")
+    # orin-fused: the tier all (fast + regions) is gated too; under a fused profile also the 780M's tiers peaked and
+    # fused (3 passes each). A case the fused node serves must name that kernel and none of the three SDPA kernels.
+    tiers = [("all", 4, 12), ("extended", 8, 12), ("full", 4, 12)] + ([("peaked", 5, 3), ("fused", 5, 3)] if fused else [])
+    for tier, ncase, npass in tiers:
         logs = sorted(glob.glob(os.path.join(d, f"cand-{tier}-r*.log")))
-        if len(logs) != 12: fail(f"{tier}: {len(logs)} pass logs, required 12")
+        if len(logs) != npass: fail(f"{tier}: {len(logs)} pass logs, required {npass}")
         for f in logs:
             cor = [l for l in open(f, errors="replace") if l.startswith("[sdpa-correctness]") and " S=" in l]
             tot = [l for l in open(f, errors="replace") if l.startswith(f"[sdpa-correctness] tier={tier} ")]
             if len(tot) != 1 or f"cases_run={ncase}" not in tot[0].split(): fail(f"{os.path.basename(f)}: summary line {tot}")
-            ker = [l for l in open(f, errors="replace") if l.startswith("[sdpa-kernels]")]
+            ker = {l.split()[1]: l for l in open(f, errors="replace") if l.startswith("[sdpa-kernels]")}
             b = os.path.basename(f)
             if len(cor) != ncase: fail(f"{b}: {len(cor)} cases, required {ncase}")
             if len(ker) != ncase: fail(f"{b}: {len(ker)} [sdpa-kernels] lines, required {ncase}")
             for l in cor:
-                if not (l.rstrip().endswith(" PASSED") and re.search(r" mismatches=0/\d+", l) and "qk_coopmat=yes" in l and "av_coopmat=yes" in l):
-                    fail(f"{b}: {l.strip()[:160]}")
-            for l in ker:
-                if not l.rstrip().endswith("pairing=ok"): fail(f"{b}: {l.strip()[:200]}")
-                # the softmax that ran is the environment's (the release SARC softmax, or the named variant)
-                if envfile and f'"{want_soft}"' not in l and f"softmax={want_soft} " not in l: fail(f"{b}: softmax kernel is not {want_soft}: {l.strip()[:200]}")
-                names.update(re.findall(r"(?:qk|softmax|av)=(\S+)", l))
+                name = l.split()[1]; k = ker.get(name, ""); g = re.search(r" S=(\d+) input_pos=(\d+) D=(\d+) ", l)
+                want_fused = fused_serves(fused, int(g[1]), int(g[3]), int(g[2])) if g else None
+                if not (l.rstrip().endswith(" PASSED") and re.search(r" mismatches=0/\d+", l)): fail(f"{b}: {l.strip()[:160]}")
+                if not k.rstrip().endswith("pairing=ok"): fail(f"{b}: {name}: {k.strip()[:200]}")
+                if want_fused:
+                    if not re.search(r' fused=(?:"kernel_name": ")?' + re.escape(want_fused) + r'_buffer_buffer_half\b', k): fail(f"{b}: {name}: fused kernel is not {want_fused}: {k.strip()[:300]}")
+                    if not re.search(r" qk=\? softmax=\? av=\? ", k) or "qk_coopmat=NO" not in l or "av_coopmat=NO" not in l: fail(f"{b}: {name}: an SDPA kernel ran beside the fused node: {k.strip()[:300]}")
+                else:
+                    if not ("qk_coopmat=yes" in l and "av_coopmat=yes" in l): fail(f"{b}: {l.strip()[:160]}")
+                    if " fused=- " not in k and " fused=" in k: fail(f"{b}: {name}: a fused kernel ran where none fits: {k.strip()[:300]}")
+                    # the softmax that ran is the environment's (the release SARC softmax, or the named variant)
+                    if envfile and f'"{want_soft}"' not in k and f"softmax={want_soft} " not in k: fail(f"{b}: softmax kernel is not {want_soft}: {k.strip()[:200]}")
+                names.update(re.findall(r"(?:qk|softmax|av|fused)=(?:\"kernel_name\": \")?([A-Za-z0-9_?-]+)", k))
     print("sdpa kernels dispatched:", ", ".join(sorted(names)) or "none")
 
 from gate_check_paths import PROMPTS
@@ -395,7 +406,18 @@ def profile_of(lines):
 def softmax_of(lines):
     for l in lines:
         if l.startswith("ET_VK_SARC_SOFTMAX_VARIANT="): return l.split("=", 1)[1]
-    return None
+    # orin-fused: an orin-fused* profile is the whole stack and names the softmax orin_g64 itself (Overrides.cpp)
+    return "orin_g64" if (profile_of(lines) or "").startswith("orin-fused") else None
+# orin-fused: the fused attention kernels of a profile per head_dim, (kernel, WG_TILE_M, WG_TILE_N), as in
+# impl/sarc_dev/orin/SdpaOrinFused.cpp. A call is served by the fused node when S % M == 0, S % N == 0 and
+# input_pos % N == 0; the three SDPA kernels then dispatch nothing.
+FUSED = {"orin-fused1": {64: ("sarc_dev_orin_sdpa_fused3sb_d64_t32x32g11s32rko", 32, 32), 128: ("sarc_dev_orin_sdpa_fused3sb_d128_t16x64g11s32rko", 16, 64)},
+         "orin-fused2": {64: ("sarc_dev_orin_sdpa_fused3sb_d64_t32x32g11s32ro", 32, 32), 128: ("sarc_dev_orin_sdpa_fused3sb_d128_t16x64g11s32ro", 16, 64)}}
+def fused_of(lines): return FUSED.get(profile_of(lines) or "", {})
+def fused_serves(fused, S, D, pos):
+    if D not in fused: return None
+    k, m, n = fused[D]
+    return k if S >= m and S % m == 0 and S % n == 0 and pos % n == 0 else None
 def banner_check(logs, lines, who):
     # Orin: the softmax variant (release hook, owner decision 2026-10-05) prints its own banner; it must be the
     # environment's variant in every candidate log and absent where the environment names none.
@@ -406,6 +428,8 @@ def banner_check(logs, lines, who):
         if got != ({prof} if prof else set()): fail(f"{who} {os.path.basename(f)}: profile banner {sorted(got)}, environment says {prof}")
         gs = set(re.findall(r"\[sarc_dev\] softmax variant: (\S+)", text))
         if gs != ({soft} if soft else set()): fail(f"{who} {os.path.basename(f)}: softmax variant banner {sorted(gs)}, environment says {soft}")
+        gf = set(re.findall(r"\[sarc_dev\] orin fused attention: (.+)", text)); wf = " ".join(v[0] for _, v in sorted(fused_of(lines).items()))
+        if gf != ({wf} if wf else set()): fail(f"{who} {os.path.basename(f)}: fused attention banner {sorted(gf)}, environment says {wf or None}")
 
 def do_env(stage, *opts):
     # --timed-only (timed.sh): a session that by design has no verify.sh run; the gates never pass it.
