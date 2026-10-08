@@ -24,6 +24,8 @@ One HTML file, two parts, deliberately separated:
    | `waste` | the searches: hours of device time and end-to-end gain | `LESSONS.md` L6, the campaign's `STATUS.md` |
    | `llama` | tuned 4w tok/s divided by llama.cpp at its best setting, per model, Vulkan and vendor backend | `sarc-1.5-llamacpp-compare/results/cells.csv` |
    | `meta.updated` | the date of the last data change | |
+   | `tokps` | per device, per model: `stock4w`, `stock8`, `sarc4w`, `sarc8`, `tuned4w`, `tuned8`, `vk` (best llama.cpp Vulkan Q4_0), `vkk` (best Vulkan Q4_K_M), `vendor` (best SYCL / CUDA Q4_0), `etcuda` (ExecuTorch CUDA 4w, 4070 Ti only), tok/s medians | `sarc-1.5-llamacpp-compare/results/cells.csv`: the max over that backend's `best` and `default` arms per model |
+   | `branches` | the lane diagram of figure 6: one entry per branch with its lane geometry (`x0`, `x1`, `fork`, `nodes`), head hash, date, state (`ok`, `run`, `ext`, `base`) and chip text | `git ls-remote origin` and the campaign STATUS files; update heads and chips when a branch moves or a run ends |
 
 2. **The rendering code**: the second `<script>`. It reads the block, draws inline SVG, builds the tooltips
    and the data tables. It has no numbers in it. Change it only for a new figure or a layout fix.
@@ -51,8 +53,8 @@ do not check anything out): openspec/changes/sarc-1.5-<tag>-prefill-refine/propo
 final stack) and STATUS.md (final session, traces). Take geomean gains as printed there; recompute from
 results/<tag>/sessions/<final>/runs.csv when the two disagree and say which you used.
 
-Then: 1. update `devices.final`, `reported`, `chains`, the device's column in `techs`, and `timeRows` if a
-trace exists; add a device as a new entry in `devices` (keep the order by final gain), `chains`, `reported`, and
+Then: 1. update `devices.final`, `reported`, `chains`, the device's column in `techs`, `timeRows` if a
+trace exists, the device's `tokps` entry from cells.csv, and the branch's head and chip in `branches`; add a device as a new entry in `devices` (keep the order by final gain), `chains`, `reported`, and
 a new key in every `techs[].cells`; 2. set `meta.updated`; 3. verify the JSON parses
 (`python3 -c 'import json,re,sys; s=open(sys.argv[1]).read(); json.loads(re.search(r"report-data\" type=\"application/json\">\n(.*?)\n</script>", s, re.S).group(1))' <file>`)
 and that the rendering script still parses (`node --check` on the second script block); 4. grep the file for

@@ -91,13 +91,27 @@
   .note h3 { margin: 0 0 4px; font-size: 0.95rem; }
   .note p { margin: 0; color: var(--fg2); }
   @media (prefers-reduced-motion: reduce) { .tip { transition: none; } }
+  svg .lane { stroke: currentColor; stroke-width: 2.2; fill: none; }
+  svg .fork { stroke: currentColor; stroke-width: 1.6; fill: none; }
+  svg .base-lane { stroke: var(--fg3); }
+  svg .fork-node { fill: var(--accent); stroke: var(--surface); stroke-width: 1.5; }
+  svg .head-run { fill: var(--run); stroke: var(--surface); stroke-width: 1.5; }
+  svg .head-ok { fill: var(--ok); stroke: var(--surface); stroke-width: 1.5; }
+  svg .head-ext { fill: var(--ext); stroke: var(--surface); stroke-width: 1.5; }
+  svg .head-base { fill: var(--fg3); stroke: var(--surface); stroke-width: 1.5; }
+  svg .chip { rx: 9; }
+  svg .chip-run { fill: var(--run-bg); } svg .chip-ok { fill: var(--ok-bg); } svg .chip-ext { fill: var(--ext-bg); }
+  svg .chip-text { font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; fill: var(--fg2); }
+  :root { --accent: #0f7f8c; --run: #b9700a; --run-bg: #fbf1df; --ok: #2a7d4f; --ok-bg: #e2f2e8; --ext: #6b5ca5; --ext-bg: #ece8f7; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --accent: #4fc0cc; --run: #e6a94a; --run-bg: #3a2d14; --ok: #5cc98a; --ok-bg: #16331f; --ext: #a99ae0; --ext-bg: #2a2440; } }
+  :root[data-theme="dark"] { --accent: #4fc0cc; --run: #e6a94a; --run-bg: #3a2d14; --ok: #5cc98a; --ok-bg: #16331f; --ext: #a99ae0; --ext-bg: #2a2440; }
 </style>
 
 <main>
   <header>
     <h1>SARC 1.5 调优全景</h1>
     <p>六台 GPU 上 2048 token 预填充的内核调优：每台的收益、收益来自哪一步、哪些技术用在了哪里、时间省在了哪、哪些工作没有回报。全部数字取自各 campaign 分支的 proposal.md 与门禁场次，几何平均跨 1B、3B、8B 三个模型。</p>
-    <div class="meta">数据截至 2026-10-08 · 基线为 9 月 SARC 发布版（RX 7600 为其父提交）· 悬停任何数据标记可看明细</div>
+    <div class="meta">数据截至 2026-10-08 21:00 UTC · 基线为 9 月 SARC 发布版（RX 7600 为其父提交）· 悬停任何数据标记可看明细</div>
   </header>
 
   <section class="tiles" id="tiles" aria-label="每台设备的最终收益"></section>
@@ -148,6 +162,22 @@
     <div class="scroll"><div id="chart-llama"></div></div>
     <figcaption>来源：topic/llamacpp-compare 的 cells.csv，llama.cpp b11430，各设备筛选过的最佳设置，5 次中位数。780M 没有可用的厂商后端（ROCm 不支持该集成显卡，未测）。RX 7600 由公司侧于 2026-10-08 测得，仅 Vulkan；其 8B 的 llama-bench 数字因该卡在 1024 个提示 token 以上走了一条慢的 GPU 路径而弃用，该处取 llama-completion 计时。</figcaption>
     <details><summary>数据表</summary><div id="table-llama"></div></details>
+  </figure>
+
+
+  <figure id="fig-branches">
+    <h2>图 6 · 分支关系与状态</h2>
+    <p class="claim">每条水平线是 sarc-acl/executorch 上的一个分支，时间从左到右，不按比例。所有 campaign 分支都从 780M 分支派生，所以融合注意力内核和开发区覆盖文件在每一条里都有；合并 PR 因此只能一条一条进。右侧三条短线是今天新开的融合内核移植分支，从各自第一轮的头部拉出。</p>
+    <div class="legend" id="legend-branches"></div>
+    <div class="scroll"><div id="chart-branches"></div></div>
+    <figcaption>"+N" 为领先 dev/1.5 的提交数；箭头表示分支从该提交创建。头部状态截至 2026-10-08 21:00 UTC。</figcaption>
+  </figure>
+
+  <figure id="fig-tokps">
+    <h2>图 7 · 全部 tok/s</h2>
+    <p class="claim">六台设备、三个模型、每格的 2048 token 预填充速度（tok/s，5 次有效运行的中位数，单一来源：llama.cpp 对比分支的 cells.csv）。stock 是未修改的 ExecuTorch 1.5，SARC 是 9 月发布版，调优后是各 campaign 的最终配置；llama.cpp 取各后端筛选过的最佳设置、两种计时器里较高者。</p>
+    <div class="scroll"><div id="table-tokps"></div></div>
+    <figcaption>标 * 的格按设备 README 的说明计入了低于时钟下限的运行（负载本身把时钟压低，不是干扰）。RX 7600 的 8B llama.cpp 取 llama-completion 计时（llama-bench 在该卡 1024 token 以上走慢路径）。780M 与 RX 7600 无厂商后端数据（HIP 未测）。</figcaption>
   </figure>
 
   <section class="notes">
@@ -909,6 +939,568 @@
  "meta": {
   "updated": "2026-10-08",
   "note": "All figures from the campaign branches proposal.md / STATUS.md and topic/llamacpp-compare cells.csv. Edit this block only; the rendering code below reads it."
+ },
+ "tokps": [
+  {
+   "id": "orin",
+   "name": "Jetson Orin Nano",
+   "vendorName": "CUDA",
+   "cells": [
+    {
+     "model": "1B",
+     "stock4w": 229.37,
+     "stock8": 212.62,
+     "sarc4w": 890.43,
+     "sarc8": 823.15,
+     "tuned4w": 1491.62,
+     "tuned8": 1380.98,
+     "vk": 1538.1,
+     "vkk": 1695.9,
+     "vendor": 1689.3,
+     "etcuda": null
+    },
+    {
+     "model": "3B",
+     "stock4w": 82.54,
+     "stock8": 75.79,
+     "sarc4w": 360.37,
+     "sarc8": 320.25,
+     "tuned4w": 629.19,
+     "tuned8": 570.32,
+     "vk": 557.2,
+     "vkk": 645.8,
+     "vendor": 630.2,
+     "etcuda": null
+    },
+    {
+     "model": "8B",
+     "stock4w": 35.44,
+     "stock8": 32.31,
+     "sarc4w": 189.65,
+     "sarc8": 170.35,
+     "tuned4w": 295.31,
+     "tuned8": 268.94,
+     "vk": 244.7,
+     "vkk": 287.3,
+     "vendor": 286.4,
+     "etcuda": null
+    }
+   ]
+  },
+  {
+   "id": "b580",
+   "name": "Arc B580",
+   "vendorName": "SYCL",
+   "cells": [
+    {
+     "model": "1B",
+     "stock4w": 3180.12,
+     "stock8": 5953.49,
+     "sarc4w": 8641.35,
+     "sarc8": 8865.8,
+     "tuned4w": 13044.6,
+     "tuned8": 15283.6,
+     "vk": 7551.0,
+     "vkk": 7482.7,
+     "vendor": 15522.7,
+     "etcuda": null
+    },
+    {
+     "model": "3B",
+     "stock4w": 1191.39,
+     "stock8": 2195.07,
+     "sarc4w": 3442.02,
+     "sarc8": 3518.9,
+     "tuned4w": 5197.97,
+     "tuned8": 6420.06,
+     "vk": 3674.9,
+     "vkk": 3687.2,
+     "vendor": 6231.7,
+     "etcuda": null
+    },
+    {
+     "model": "8B",
+     "stock4w": 540.51,
+     "stock8": 919.62,
+     "sarc4w": 1726.81,
+     "sarc8": 1845.05,
+     "tuned4w": 2301.12,
+     "tuned8": 3002.93,
+     "vk": 1981.8,
+     "vkk": 1886.8,
+     "vendor": 3188.8,
+     "etcuda": null
+    }
+   ]
+  },
+  {
+   "id": "b70",
+   "name": "Arc Pro B70",
+   "vendorName": "SYCL",
+   "cells": [
+    {
+     "model": "1B",
+     "stock4w": 4591.93,
+     "stock8": 8359.18,
+     "sarc4w": 11702.9,
+     "sarc8": 12412.1,
+     "tuned4w": 17964.9,
+     "tuned8": 20686.9,
+     "vk": 9696.6,
+     "vkk": 9357.5,
+     "vendor": 21546.9,
+     "etcuda": null
+    },
+    {
+     "model": "3B",
+     "stock4w": 1705.25,
+     "stock8": 3266.35,
+     "sarc4w": 4841.61,
+     "sarc8": 5211.2,
+     "tuned4w": 7501.83,
+     "tuned8": 9525.58,
+     "vk": 5203.2,
+     "vkk": 4951.9,
+     "vendor": 9300.3,
+     "etcuda": null
+    },
+    {
+     "model": "8B",
+     "stock4w": 780.78,
+     "stock8": 1380.98,
+     "sarc4w": 2435.2,
+     "sarc8": 2730.67,
+     "tuned4w": 3379.54,
+     "tuned8": 4491.23,
+     "vk": 2742.6,
+     "vkk": 2614.8,
+     "vendor": 4530.3,
+     "etcuda": null
+    }
+   ]
+  },
+  {
+   "id": "4070ti",
+   "name": "RTX 4070 Ti SUPER",
+   "vendorName": "CUDA",
+   "cells": [
+    {
+     "model": "1B",
+     "stock4w": 6803.99,
+     "stock8": 6872.48,
+     "sarc4w": 19692.3,
+     "sarc8": 21113.4,
+     "tuned4w": 29681.2,
+     "tuned8": 33032.3,
+     "vk": 31892.6,
+     "vkk": 34239.2,
+     "vendor": 40860.5,
+     "etcuda": 5801.7
+    },
+    {
+     "model": "3B",
+     "stock4w": 2553.62,
+     "stock8": 2560.0,
+     "sarc4w": 8714.89,
+     "sarc8": 9660.38,
+     "tuned4w": 12880.5,
+     "tuned8": 14948.9,
+     "vk": 12471.4,
+     "vkk": 12765.1,
+     "vendor": 15837.2,
+     "etcuda": 1930.3
+    },
+    {
+     "model": "8B",
+     "stock4w": 1110.03,
+     "stock8": 1104.04,
+     "sarc4w": 4471.62,
+     "sarc8": 5007.33,
+     "tuned4w": 5988.3,
+     "tuned8": 6954.18,
+     "vk": 5539.1,
+     "vkk": 6234.8,
+     "vendor": 7417.6,
+     "etcuda": 836.3
+    }
+   ]
+  },
+  {
+   "id": "780m",
+   "name": "Radeon 780M",
+   "vendorName": null,
+   "cells": [
+    {
+     "model": "1B",
+     "stock4w": 1176.34,
+     "stock8": 1620.25,
+     "sarc4w": 2680.63,
+     "sarc8": 2537.79,
+     "tuned4w": 3828.04,
+     "tuned8": 3690.09,
+     "vk": 2879.5,
+     "vkk": 2081.0,
+     "vendor": null,
+     "etcuda": null
+    },
+    {
+     "model": "3B",
+     "stock4w": 403.71,
+     "stock8": 560.17,
+     "sarc4w": 1125.89,
+     "sarc8": 1044.37,
+     "tuned4w": 1450.42,
+     "tuned8": 1365.33,
+     "vk": 958.7,
+     "vkk": 690.0,
+     "vendor": null,
+     "etcuda": null
+    },
+    {
+     "model": "8B",
+     "stock4w": 184.26,
+     "stock8": 275.42,
+     "sarc4w": 507.06,
+     "sarc8": 482.9,
+     "tuned4w": 630.35,
+     "tuned8": 610.43,
+     "vk": 450.66,
+     "vkk": 308.3,
+     "vendor": null,
+     "etcuda": null
+    }
+   ]
+  },
+  {
+   "id": "rx7600",
+   "name": "RX 7600",
+   "vendorName": null,
+   "cells": [
+    {
+     "model": "1B",
+     "stock4w": 2708.99,
+     "stock8": 3799.63,
+     "sarc4w": 7846.74,
+     "sarc8": 7314.29,
+     "tuned4w": 10502.6,
+     "tuned8": 10291.5,
+     "vk": 5882.0,
+     "vkk": 5006.4,
+     "vendor": null,
+     "etcuda": null
+    },
+    {
+     "model": "3B",
+     "stock4w": 975.24,
+     "stock8": 1386.59,
+     "sarc4w": 3297.91,
+     "sarc8": 3084.34,
+     "tuned4w": 3992.2,
+     "tuned8": 3961.32,
+     "vk": 2448.9,
+     "vkk": 2038.6,
+     "vendor": null,
+     "etcuda": null
+    },
+    {
+     "model": "8B",
+     "stock4w": 472.27,
+     "stock8": 729.61,
+     "sarc4w": 1518.16,
+     "sarc8": 1403.7,
+     "tuned4w": 1750.43,
+     "tuned8": 1741.5,
+     "vk": 1150.27,
+     "vkk": 940.58,
+     "vendor": null,
+     "etcuda": null
+    }
+   ]
+  }
+ ],
+ "branches": {
+  "lanes": [
+   {
+    "id": "release",
+    "name": "release/1.5",
+    "x0": 130,
+    "x1": 260,
+    "base": true,
+    "nodes": [
+     {
+      "x": 140,
+      "h": "985c1cecc",
+      "d": "09-22",
+      "n": "上游 1.5 发布"
+     }
+    ],
+    "label": ""
+   },
+   {
+    "id": "dev",
+    "name": "dev/1.5",
+    "x0": 260,
+    "x1": 420,
+    "base": true,
+    "fork": {
+     "lane": "release",
+     "x": 200
+    },
+    "nodes": [
+     {
+      "x": 300,
+      "h": "ef079ac41",
+      "d": "09-28",
+      "n": "所有 topic 分支的分叉基点"
+     }
+    ],
+    "head": {
+     "h": "44e22be60",
+     "d": "09-30",
+     "state": "base",
+     "chip": "合并目标，尚无 campaign PR 合入"
+    }
+   },
+   {
+    "id": "compare",
+    "name": "topic/llamacpp-compare",
+    "x0": 360,
+    "x1": 960,
+    "fork": {
+     "lane": "dev",
+     "x": 300
+    },
+    "label": "+18 · 六台设备对 llama.cpp 的对比，结果全部公开",
+    "head": {
+     "h": "618e33692",
+     "d": "10-08",
+     "state": "ok",
+     "chip": "公司侧推了 RX 7600 对比"
+    }
+   },
+   {
+    "id": "playbook",
+    "name": "topic/campaign-playbook",
+    "x0": 360,
+    "x1": 960,
+    "fork": {
+     "lane": "dev",
+     "x": 300
+    },
+    "label": "规则、教训、合并计划、COMPANY-SIDE.md、本报告",
+    "head": {
+     "h": "243bc575f",
+     "d": "10-08",
+     "state": "ext",
+     "chip": "本地领先 origin 1 个提交"
+    }
+   },
+   {
+    "id": "b580f",
+    "name": "topic/b580-fused-port",
+    "x0": 1000,
+    "x1": 1160,
+    "fork": {
+     "lane": "b580",
+     "x": 960
+    },
+    "label": "融合内核移植，Intel 8×16×16",
+    "head": {
+     "h": "运行中",
+     "d": "10-08 19:22 起",
+     "state": "run",
+     "chip": "候选 1 内核级冒烟通过"
+    }
+   },
+   {
+    "id": "b580",
+    "name": "topic/b580-prefill-refine",
+    "x0": 600,
+    "x1": 960,
+    "fork": {
+     "lane": "xe2",
+     "x": 560
+    },
+    "label": "+55 · Arc B580 · b580-refine3 · +61.1 %",
+    "head": {
+     "h": "51d9d757f",
+     "d": "10-05",
+     "state": "ok",
+     "chip": "done"
+    }
+   },
+   {
+    "id": "xe2",
+    "name": "topic/xe2-prefill-refine",
+    "x0": 520,
+    "x1": 960,
+    "fork": {
+     "lane": "780m",
+     "x": 480
+    },
+    "label": "+67 · Arc Pro B70 · xe2-refine5 · +59.4 %",
+    "nodes": [
+     {
+      "x": 560,
+      "h": "8666b6531",
+      "d": "10-05",
+      "n": "b580 从此分叉"
+     }
+    ],
+    "head": {
+     "h": "5617714b0",
+     "d": "10-06",
+     "state": "ok",
+     "chip": "done"
+    }
+   },
+   {
+    "id": "rx7600",
+    "name": "topic/rx7600-prefill-refine",
+    "x0": 760,
+    "x1": 960,
+    "fork": {
+     "lane": "780m",
+     "x": 720
+    },
+    "label": "+55 · RX 7600，公司侧 · +26.9 %，含 fused3sb",
+    "head": {
+     "h": "c0be2c6c2",
+     "d": "10-08",
+     "state": "ok",
+     "chip": "done，历史被重写过"
+    }
+   },
+   {
+    "id": "780m",
+    "name": "topic/780m-prefill-refine",
+    "x0": 360,
+    "x1": 960,
+    "fork": {
+     "lane": "dev",
+     "x": 300
+    },
+    "label": "+47 · Radeon 780M · 家族的主干 · +33.1 %",
+    "nodes": [
+     {
+      "x": 480,
+      "h": "6a7cc8cc6",
+      "d": "10-04",
+      "n": "xe2、4070ti 从此分叉；后续门禁的原始父配置"
+     },
+     {
+      "x": 720,
+      "h": "f5f1bf10c",
+      "d": "10-05",
+      "n": "候选 11 最终配置；rx7600 从此分叉"
+     }
+    ],
+    "head": {
+     "h": "90fe4d013",
+     "d": "10-06",
+     "state": "run",
+     "chip": "round 3 收尾进行中：fused3sb、780m-final"
+    }
+   },
+   {
+    "id": "4070ti",
+    "name": "topic/4070ti-prefill-refine",
+    "x0": 520,
+    "x1": 960,
+    "fork": {
+     "lane": "780m",
+     "x": 480
+    },
+    "label": "+47 · RTX 4070 Ti SUPER · 4070ti-refine1 · +46.2 %",
+    "nodes": [
+     {
+      "x": 600,
+      "h": "42e001462",
+      "d": "10-05",
+      "n": "orin 从此分叉"
+     }
+    ],
+    "head": {
+     "h": "6050b1287",
+     "d": "10-06",
+     "state": "ok",
+     "chip": "done"
+    }
+   },
+   {
+    "id": "4070tif",
+    "name": "topic/4070ti-fused-port",
+    "x0": 1000,
+    "x1": 1160,
+    "fork": {
+     "lane": "4070ti",
+     "x": 960
+    },
+    "label": "融合内核移植，fused3sb 语义",
+    "head": {
+     "h": "运行中",
+     "d": "10-08 19:37 起",
+     "state": "run",
+     "chip": "A/A 完成，候选 1 构建中"
+    }
+   },
+   {
+    "id": "orin",
+    "name": "topic/orin-prefill-refine",
+    "x0": 640,
+    "x1": 960,
+    "fork": {
+     "lane": "4070ti",
+     "x": 600
+    },
+    "label": "+91 · Jetson Orin Nano · orin-refine5 + orin_g64 · +66.7 %",
+    "head": {
+     "h": "8973ced76",
+     "d": "10-06",
+     "state": "ok",
+     "chip": "done"
+    }
+   },
+   {
+    "id": "orinf",
+    "name": "topic/orin-fused-port",
+    "x0": 1000,
+    "x1": 1160,
+    "fork": {
+     "lane": "orin",
+     "x": 960
+    },
+    "label": "融合内核移植，交叉构建",
+    "head": {
+     "h": "运行中",
+     "d": "10-08 19:37 起",
+     "state": "run",
+     "chip": "父构建一致，A/A 进行中"
+    }
+   }
+  ],
+  "legend": [
+   [
+    "fork",
+    "分叉点"
+   ],
+   [
+    "ok",
+    "campaign 已关闭"
+   ],
+   [
+    "run",
+    "进行中"
+   ],
+   [
+    "ext",
+    "本地 / 非本机运行"
+   ],
+   [
+    "base",
+    "基线分支"
+   ]
+  ]
  }
 }
 </script>
@@ -1060,5 +1652,46 @@
     rows.forEach((r) => { tb.push(`<tr><td>${r.name}</td><td>相对 llama.cpp Vulkan</td>${r.vk.map((v) => `<td class="num">${v.toFixed(2)}x</td>`).join('')}</tr>`); if (r.vendor) tb.push(`<tr><td></td><td>相对 ${r.vn}</td>${r.vendor.map((v) => `<td class="num">${v.toFixed(2)}x</td>`).join('')}</tr>`); });
     tb.push('</tbody></table>'); $('#table-llama').innerHTML = tb.join('');
   })();
+  // ---------- 图 6：分支关系 ----------
+  (function drawBranches() {
+    const B = DATA.branches; const lanes = B.lanes; const W = 1400, top = 40, rowH = 46; const H = top + lanes.length * rowH + 40;
+    const y = {}; lanes.forEach((l, i) => { y[l.id] = top + i * rowH + 20; });
+    const stateCls = { ok: 'head-ok', run: 'head-run', ext: 'head-ext', base: 'head-base' };
+    const chipCls = { ok: 'chip-ok', run: 'chip-run', ext: 'chip-ext', base: 'chip-ext' };
+    const lg = $('#legend-branches'); B.legend.forEach(([k, n]) => { const sp = document.createElement('span'); const col = k === 'fork' ? 'var(--accent)' : k === 'ok' ? 'var(--ok)' : k === 'run' ? 'var(--run)' : k === 'ext' ? 'var(--ext)' : 'var(--base)'; sp.innerHTML = `<i style="background:${col};border-radius:50%"></i>${n}`; lg.appendChild(sp); });
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '分支关系：所有 campaign 分支派生于 780M 分支，三条融合内核移植分支今天从各自第一轮的头部拉出' }, null);
+    svg.setAttribute('style', 'min-width:1180px');
+    const defs = el('defs', {}, svg); const mk = el('marker', { id: 'arr-b', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 8, markerHeight: 8, orient: 'auto-start-reverse' }, defs); el('path', { d: 'M0,0 L10,5 L0,10 z', fill: 'currentColor' }, mk);
+    const cjk = (t) => [...t].reduce((a, c) => a + (c.charCodeAt(0) > 255 ? 11 : 6.6), 0) + 16;
+    lanes.forEach((l) => {
+      const yy = y[l.id]; const base = l.base ? ' base-lane' : '';
+      if (l.fork) { const py = y[l.fork.lane]; el('path', { d: `M${l.fork.x},${py} C ${l.fork.x + 20},${py} ${l.x0 - 20},${yy} ${l.x0},${yy}`, class: 'fork' + base, 'marker-end': l.base ? '' : 'url(#arr-b)' }, svg); }
+      el('line', { x1: l.x0, x2: l.x1, y1: yy, y2: yy, class: 'lane' + base }, svg);
+      if (l.base) text(svg, l.x0 - 12, yy + 4, l.name, 'mono', 'end'); else { text(svg, l.x0 + 8, yy - 7, l.name, 'mono'); if (l.label) text(svg, l.x0 + 8, yy + 15, l.label, 'tiny'); }
+      (l.nodes || []).forEach((n) => { const c = el('circle', { cx: n.x, cy: yy, r: 6, class: 'fork-node' }, svg); text(svg, n.x, yy + 30, `${n.h} · ${n.d}`, 'mono tiny', 'middle'); attach(c, `<b>${n.h}</b> · ${n.d}<br>${n.n}`); });
+      if (l.head) { const h = l.head; const c = el('circle', { cx: l.x1, cy: yy, r: 6, class: stateCls[h.state] }, svg); text(svg, l.x1 + 14, yy - 4, `${h.h} · ${h.d}`, 'mono'); const w = cjk(h.chip); el('rect', { x: l.x1 + 14, y: yy + 3, width: w, height: 17, class: 'chip ' + chipCls[h.state] }, svg); text(svg, l.x1 + 14 + w / 2, yy + 15, h.chip, 'chip-text', 'middle'); attach(c, `<b>${l.name}</b><br>${h.h} · ${h.d}<br>${h.chip}${l.label ? '<br>' + l.label : ''}`); }
+    });
+    $('#chart-branches').appendChild(svg);
+  })();
+
+  // ---------- 图 7：全部 tok/s ----------
+  (function drawTokps() {
+    const fmt = (v) => v == null ? '—' : Math.round(v).toLocaleString();
+    const ratio = (a, b) => (a && b) ? (a / b).toFixed(2) + 'x' : '—';
+    const star = { '780m': { '8B': ['stock4w', 'stock8', 'sarc4w', 'vk'] }, 'rx7600': { '8B': ['stock4w'] } };
+    const parts = [];
+    DATA.tokps.forEach((d) => {
+      parts.push(`<h3 style="margin:14px 0 4px;font-size:0.95rem">${d.name}${d.vendorName ? ` <span style="color:var(--fg3);font-weight:400;font-size:0.8rem">厂商后端：llama.cpp ${d.vendorName}</span>` : ' <span style="color:var(--fg3);font-weight:400;font-size:0.8rem">无厂商后端数据</span>'}</h3>`);
+      parts.push('<table><thead><tr><th>模型</th><th class="num">stock 4w</th><th class="num">stock 8da4w</th><th class="num">SARC 4w</th><th class="num">SARC 8da4w</th><th class="num">调优后 4w</th><th class="num">调优后 8da4w</th><th class="num">llama.cpp Vulkan Q4_0</th><th class="num">Vulkan Q4_K_M</th><th class="num">厂商后端 Q4_0</th><th class="num">调优 4w / Vulkan</th><th class="num">调优 4w / 厂商</th><th class="num">调优 4w / stock</th></tr></thead><tbody>');
+      d.cells.forEach((c) => {
+        const st = (star[d.id] || {})[c.model] || []; const s = (k, v) => fmt(v) + (st.includes(k) ? '*' : '');
+        parts.push(`<tr><td>${c.model}</td><td class="num">${s('stock4w', c.stock4w)}</td><td class="num">${s('stock8', c.stock8)}</td><td class="num">${s('sarc4w', c.sarc4w)}</td><td class="num">${s('sarc8', c.sarc8)}</td><td class="num"><b>${fmt(c.tuned4w)}</b></td><td class="num"><b>${fmt(c.tuned8)}</b></td><td class="num">${s('vk', c.vk)}</td><td class="num">${fmt(c.vkk)}</td><td class="num">${fmt(c.vendor)}</td><td class="num">${ratio(c.tuned4w, c.vk)}</td><td class="num">${ratio(c.tuned4w, c.vendor)}</td><td class="num">${ratio(c.tuned4w, c.stock4w)}</td></tr>`);
+      });
+      parts.push('</tbody></table>');
+      if (d.cells.some((c) => c.etcuda)) parts.push(`<div style="font-size:0.78rem;color:var(--fg3);margin-top:4px">ExecuTorch CUDA 后端（上游，4w，仅去掉导出守卫）：${d.cells.map((c) => c.model + ' ' + fmt(c.etcuda)).join(' · ')} tok/s，远低于 Vulkan 后端。</div>`);
+    });
+    $('#table-tokps').innerHTML = parts.join('');
+  })();
+
 })();
 </script>
