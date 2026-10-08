@@ -1564,7 +1564,13 @@ struct SdpaCorrectnessCase {
 };
 // "all" keeps its original meaning (fast + regions) so existing gates run the
 // same cases as before; the later tiers are opt-in by name.
+// ET_VK_MB_SKIP_8B=1 (m51 campaign: no 8B shape on that board) leaves out the cases named after the 8B head
+// configuration; every other case, tolerance and tier is as before. The count of cases run shows it.
 bool sdpa_tier_selected(const char* tier, const SdpaCorrectnessCase& c) {
+  static const bool skip_8b = std::getenv("ET_VK_MB_SKIP_8B") != nullptr;
+  if (skip_8b && std::string(c.name).find("8b_") != std::string::npos) {
+    return false;
+  }
   const std::string want(tier), have(c.tier);
   if (want == "all") {
     return have == "fast" || have == "regions";
