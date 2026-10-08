@@ -59,6 +59,7 @@ separate local file, by the rule written in the frozen one.
 | `prof_decode.py` | 780M `tools/prof_decode.py` | K tile as a parameter |
 | `build_probe.sh`, `probe_m51.sh` | 780M `tools/build_probe.sh`, `probe_run.sh` | native NDK build; runs on the board |
 | `fscreen.sh`, `fscreen_summary.py` | new | ETDump screen of the fused attention variants, with the kernel-screen rule of the other screens |
+| `gate_launcher.sh` | new | compiler launcher: no compile starts while a timed session runs |
 | `build_tag.sh`, `export_commit.sh`, `adbshim.sh`, `dev.sh`, `push_models.sh`, `verify_m51.sh`, `verify_compare.py`, `mbstage.sh`, `spv_compare.py`, `trace_m51.sh`, `trace_families.py`, `lscreen.sh`, `lscreen_summary.py`, `phase_m51.sh`, `pdiff_error_table.py` | new | |
 | `r1329.txt` | new | an unaligned real-text prompt (the first part of the kit's `prompt_real_2048.txt`) for the `r*.txt` item of `verify.sh` |
 
@@ -99,17 +100,37 @@ configuration (no tolerance, tier or other case changes; the count of cases run 
 Measurement aids added in the dev zone (never selected by default): 4w sweep tiles carrying the xclipse row's
 drain flags, the phase-timing twin of the xclipse 4w row.
 
-## Open
+## Outcome and what stays open
 
-- **8B is not covered, by the owner's decision of 2026-10-06 (reaffirmed 2026-10-07).** No end-to-end, `verify.sh`, probe, timed or traced run of
-  the 8B model and no microbench of an 8B shape was made on the board of this campaign. Therefore unverified: the tiled 8B path, the 8B
-  reference error, the 8B timing, and `c3` (its only effect is on 8B shapes). Every gate of this campaign is partial (1B and 3B).
-- `sarc/tools/verify.sh` run unmodified also executes microbench steps on 8B shapes (correctness, the linear listing, the 8B
-  production-diff) whatever `--models` says. It has not been run on the current board; the owner is asked how to read the
-  8B decision for it. The evidence of the gates is otherwise the pieces `verify.sh` combines, run separately on 1B and 3B.
-- The golden check stays pending (no pinned build container on this workstation).
-- The fused attention kernel's subgroup size inside the shader (`gl_SubgroupSize` read-back) is not verified on the device; the pipelines
-  declare a required subgroup size and the correctness tiers pass.
+- **R11 is met in part and the campaign ends by owner decision of 2026-10-08.** Three candidates were gated and timed
+  (fused attention; whole-texel 8da4w staging; a fused-attention variant for one head dimension). The first two were
+  faster outside the noise band; the third was inside it, so one sub-threshold candidate exists, not two. No further
+  candidate passes a screen for the 1B and 3B models, and the owner closed the campaign on that basis. No new kernel
+  was written for this and the 8B model was not opened.
+- **What the final profile (`c4`) is:** the three candidates together. Its final timed session against the pristine
+  parent was faster in every cell; the figures are in the local `STATUS.md` only.
+- **Not covered: the 8B model end to end, the tiled 8B path and 8B timing.** By the owner's decision of 2026-10-06 no 8B model
+  was loaded on the board of this campaign, so every gate is partial (1B and 3B). `c3` (a 4w tile that acts on 8B shapes only)
+  is therefore neither gated nor part of the final stack. Since the owner's decision of 2026-10-08 the microbenchmark
+  steps of `verify.sh` and the SDPA cases of the 8B head configuration (synthetic tensors only) may run; they have not run
+  on the current board yet (see below).
+- **Gate state, stated as it is:** no candidate is recorded as accepted. Missing, all needing the board:
+  `s0-parent-verify` on the current board, the unmodified `verify.sh --models 1b,3b` of the final stack compared with it
+  line by line, the SDPA tiers and the reference-error runs of the final stack without the test option that leaves out the
+  8B-head cases (the runs made with it do not count as final evidence), and two next-token items of one cell for the final
+  build. The shipped SPIR-V of the final build equals the parent build's; the golden check stays pending (the pinned container
+  is not available here).
+- **Evidence that exists** (figures local): timed sessions per candidate and for the final stack with all runs valid,
+  next token equal on all items run, SDPA tiers 12 passes each with 0 mismatches on the cases that ran, reference error
+  on identical inputs not larger than the parent's on the production shapes, production-diff of the 8da4w linear equal
+  to the parent's, logits probes with the gross-divergence check passed, ETDump showing the dispatched kernels, and a
+  read of the changed shaders for unsynchronised shared writes.
+- **Directions left for later work:** a new 4w or 8da4w GEMM kernel (the linear kernels are most of the prefill and the
+  screens found no tile that beats the incumbents), a fused SwiGLU (the elementwise operators are stock kernels), the 8B cells.
+- **Builds:** the golden check is pending; the compiler launches of a build wait while a timed session runs
+  (`tools/gate_launcher.sh`; a stop signal to the build had no effect in the agent's environment).
+- The fused attention kernel's subgroup size inside the shader (`gl_SubgroupSize` read-back) is not verified on the device; the
+  pipelines declare a required subgroup size and the correctness tiers pass.
 
 ## Status
 
