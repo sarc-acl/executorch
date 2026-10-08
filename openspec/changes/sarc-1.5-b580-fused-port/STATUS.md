@@ -1,10 +1,9 @@
 # sarc-1.5-b580-fused-port: status
 
-**2026-10-08 22:55 UTC — the straight port is correct but slow on this card (register spills: the compiler
-reports 199 to 1250 spilled values for head_dim 128). A restructured form of the same kernel, several subgroups
-per workgroup sharing each block's scores, compiles without spills, is correct in a first pass, and in a first
-disturbed look is about 1.5 times (head_dim 128) and 3 times (head_dim 64) faster than the parent's three
-kernels. Not screened on an idle desktop yet; no candidate timed end to end yet.**
+**2026-10-08 23:35 UTC — candidate 1 is defined and its gate is running. `b580-fused1` = the fused attention
+kernel in a multi-subgroup form: at kernel level 2.75 times faster than the parent's three kernels for head_dim
+64 and 1.55 to 1.57 times for head_dim 128 (3-round selection screen on the idle desktop). The 780M's
+one-subgroup shapes are 3 to 6 times SLOWER than the three kernels on this card. No end-to-end number yet.**
 
 Branch `topic/b580-fused-port`, parent `51d9d757f` with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine3`.
 Host `fedora` (the owner's desktop), Arc B580 = PCI `0000:03:00.0`, Vulkan device 0, `ETVK_DEVICE_INDEX=0`, lock
@@ -15,12 +14,48 @@ desktop session idle and locked at 20:00 UTC.
 
 ## Running now
 
-Detached `tools/chain6.sh` (since 22:53 UTC; `.artifacts/logs/chain6.status`, ends `CHAIN6_DONE` or
-`CHAIN6_STOPPED`): build `topic5` (= `f8c2a6a0e`, container build); one correctness pass of tiers `extended`,
-`peaked`, `fused` and the compiler statistics for each of 6 new variants (GPU, not timed, `raw/c1-smoke4/`);
-one-round look `screen4-fused` of the multi-subgroup variants (GPU, timed, each run behind the idle wait; at
-22:55 UTC the desktop is in use, so it waits). Chains 1 to 5 have ended (3, 4 and 5 stopped by the actor when
-their screens were overtaken by a new variant set; their status files say so).
+Detached `tools/chain8.sh 247d08851 topic6 s2-c1 b580-fused1 c1-ref6` (since 23:28 UTC; status lines in
+`.artifacts/logs/chain8-s2-c1.status`, ends `CHAIN8_DONE s2-c1` or `CHAIN8_STOPPED`), one unit at a time:
+
+1. build `topic6` (= `247d08851`) and its logits probe (container builds);
+2. stage `s2-c1` (parent `parent2` with `b580-refine3` against `topic6` with `b580-fused1`) and `gate_sdpa.sh`:
+   12 passes x tiers `all` / `extended` / `full`, the SDPA perf suite, unmodified `verify.sh`, the timed session
+   with 7 repeats and the traces (timed: each run behind the idle wait), `gate_check.py`;
+3. 12 passes each of tiers `peaked` and `fused` (reported, not gate items);
+4. `c1-ref6`: error against the fp32 reference, parent kernels and candidate on the staged test binary;
+5. logits probe (four arms, 37 prompts x 6 cells), `decide.py --arithmetic`, decode comparison, collection.
+
+No build may start on this host while it runs. Chains 1 to 7 have ended.
+
+## Candidate 1: `b580-fused1`, selected by screen 5 (`results/b580/screens/screen5-select.csv`, build `topic5`)
+
+Three rounds on the idle desktop, cooled before every run; kernel time per layer at S = 2048, us (fused kernel
++ copy pass; for the parent QK^T + softmax + attn*V); each round's value:
+
+| head_dim | variant | 1B | 3B | 8B | vs parent's three kernels |
+|---|---|---|---|---|---|
+| | parent `b580-refine3` | 1989 / 1990 / 1985 | 1766 / 1771 / 1877 | 2297 / 2454 / 2295 | 1.00x |
+| 64 | incumbent `d64_t32x32s32m8ro` (the 780M's) | 5939 / 5970 / 5737 | | | 0.34x |
+| 64 | **`d64_t16x64s16m8g4roj`** | **724 / 724 / 725** | | | **2.75x** |
+| 64 | `d64_t16x64s16m8g4oj` | 821 / 821 / 819 | | | 2.42x |
+| 128 | incumbent `d128_t16x64s32m8ro` (the 780M's) | | 11004 / 10635 / 11077 | 14419 / 14357 / 14688 | 0.16x |
+| 128 | **`d128_t16x128s16m8g8oj`** | | **1139 / 1139 / 1191** | **1464 / 1465 / 1462** | **1.55x / 1.57x** |
+| 128 | `d128_t16x64s16m8g4oj` | | 1230 / 1209 / 1204 | 1563 / 1561 / 1505 | 1.47x |
+
+By the rule fixed in `thresholds.txt` (at least 3 % below the incumbent in every round for every model of the
+head_dim; among those the lowest median) the challengers win by a factor of 8 to 10, and `b580-fused1` is
+`d64_t16x64s16m8g4roj` + `d128_t16x128s16m8g8oj`. The challengers were the two fastest variants per head_dim of
+the one-round look `screen4-fused` (11 profiles, `results/b580/screens/screen4-fused.csv`); 47 variants exist
+in the yaml, all of them what was built on the way, none found by a search. For the B70 (same driver, same
+matrix shapes, same register file): expect the same two variants.
+
+What the pair is: 16 query rows per workgroup. Head_dim 64: 4 subgroups (64 lanes), 64-column blocks, each
+subgroup owns one score-tile column and one 16-wide slice of head_dim (2 accumulator tiles), Q tiles in
+registers. Head_dim 128: 8 subgroups (128 lanes), 128-column blocks, each subgroup owns one score-tile column
+and one 16-wide slice of head_dim, Q tiles loaded per product. One pass (running row maximum). It serves a
+prefill call when S and `input_pos` are multiples of 64 (head_dim 64) or 128 (head_dim 128); the 2048-token
+prompt and the 1792-token prompt `r1304.txt` qualify, the 1972-token `prompt_check.txt` and decode do not and
+run the parent's kernels.
 
 ## Why the straight port is slow here, and the form that is not (22:10 to 22:55 UTC)
 
@@ -53,8 +88,9 @@ What was tried, in order (all correct in a pass of tiers `extended`, `peaked`, `
    1 / G of the head_dim tiles of the accumulators; the block's scores and e values go through shared memory
    (`Psh`), which every subgroup reads, so the barriers become workgroup barriers and the rescale decision of
    the one-pass form is taken for the whole workgroup (an atomic flag in shared memory instead of
-   `subgroupAny`). K and V are still read straight from the packed copies; no product and no order of a sum
-   changes. One-shot look with the desktop in use (`results/b580/looks/look2-*.txt`; the parent's kernels read
+   `subgroupAny`). K and V are still read straight from the packed copies; no product changes and every tile
+   accumulates in the same order; the row sum is added up per lane segment first, as before, with 4 or 8
+   segments a row instead of 1 or 2. One-shot look with the desktop in use (`results/b580/looks/look2-*.txt`; the parent's kernels read
    2308 / 1788 / 2255 us for 8B / 3B / 1B in the same look, 0 to 9 % above their idle values):
    `d128_t16x64 g4 oj` 1508 / 1195 us (8B / 3B), `d128_t8x64 g4 roj` 2063 / 1716, `d128_t8x64 g2 oj` 2217 / 1732;
    `d64_t16x64 g4 roj` 726 us (1B), `d64_t8x32 g2 roj` 944, `d64_t8x32 oj` 1178. These are single disturbed runs:
@@ -184,31 +220,40 @@ Error against the fp32 CPU reference in that pass, tier `full`: rms 2.05e-5 / 2.
 first campaign measured 2.76e-5 to 2.79e-5 / 1.06e-3 to 1.19e-3 and 1.29e-5 / 1.24e-4 for the parent's kernels;
 the side-by-side run on the same binary (`tools/sdpa_ref.sh`) belongs to the gate and has not run yet.
 
-## Shared-memory reading of the fused kernel (R7; written before any gate)
+## Shared-memory reading of the fused kernel (R7; the final form, written before its gate)
 
-A workgroup is one subgroup of `SUBGROUP_SIZE` lanes. Lane `id` owns row `id % WG_TILE_M` and segment
-`id / WG_TILE_M` of every block (a bijection between lanes and (row, segment) pairs).
+Read on `glsl/sarc_dev/sarc_dev_b580_sdpa_fused.glsl` at `247d08851`, multi-subgroup form (`MULTI_SG`), one-pass
+(`ONLINE`), as `b580-fused1` builds it. A workgroup is G subgroups of 16 lanes (G = 4 or 8). Lane
+`L = gl_SubgroupID * 16 + gl_SubgroupInvocationID` owns row `L % 16` and segment `L / 16` of every block: a
+bijection between the G x 16 invocations and the (row, segment) pairs. Every barrier is
+`memoryBarrierShared(); barrier();` (`SYNC()`), a workgroup barrier.
 
-| slot | writer | cross-lane reader | what orders the read after the write |
+| slot | writer | reader | what orders the read after the write |
 |---|---|---|---|
-| `Psh` scores, tile (i, j) | `coopMatStore` in `qk_block` (one subgroup-wide store per tile, tiles disjoint) | each lane reads its own segment of its own row | `memoryBarrierShared(); subgroupBarrier();` right after `qk_block` |
-| `Rsh[row * SEGS + seg]` (block maximum, later the row sum) | the one lane that owns (row, seg) | the lanes of the same row read all `SEGS` slots | barrier pair between the store and the reads, and another after the reads before the slot is written again |
-| `Dsh[row * 4 + j]` (rescale divisors, one-pass form) | the lane of the row with `j % SEGS == seg`: one writer per slot | `coopMatLoad` of the divisor tiles | barrier pair after the stores, barrier pair after the loads |
-| `Psh` e values, own segment | the one lane that owns (row, seg) | `coopMatLoad` in `av_block` | barrier pair before `av_block`, barrier pair after it (before the next block's `coopMatStore`) |
-| `Psh[row * P_STRIDE + j]`, final divisors | the lane of the row with `j % SEGS == seg` | `coopMatLoad` of `den` | barrier pair after the stores; the last reads of `Psh` (`av_block`) are a barrier pair earlier |
+| `Psh` scores, tile (i, j) | one `coopMatStore` by the subgroup that owns column j (`j % G == gl_SubgroupID`); tiles are disjoint ranges of `Psh` | each lane reads its own segment of its own row | `SYNC()` right after `qk_block` |
+| `Rsh[row * SEGS + seg]` (block maximum; at the end the row's partial sum) | the one lane that owns (row, seg) | every lane of the row reads all `SEGS` slots | `SYNC()` between the store and the reads, and another after the reads before the slot is written again |
+| `Gsh` ("some row's maximum rose") | any lane, only with `atomicOr(Gsh, 1)`; cleared by lane 0 alone | every lane reads it once to decide the rescale | `SYNC()` after the `atomicOr`s and before the read; lane 0 clears it only after the `SYNC()` that follows the divisor stores, i.e. after every read; the next `atomicOr` is two `SYNC()`s later |
+| `Dsh[row * 4 + j]` (rescale divisors) | the lane of the row whose segment is j (segments 0 to 3): one writer per slot, and the lanes of a row hold the same value | `coopMatLoad` of the divisor tiles by every subgroup | `SYNC()` after the stores, `SYNC()` after the loads |
+| `Psh` e values, own segment | the one lane that owns (row, seg) | `coopMatLoad` in `av_block` by every subgroup | `SYNC()` before `av_block`, `SYNC()` after it (before the next block's score stores) |
+| `Psh[row * P_STRIDE + j]`, final divisors | the lane of the row whose segment is j | `coopMatLoad` of `den` by every subgroup | `SYNC()` after the stores; the last loads of `Psh` are a `SYNC()` earlier |
+| `t_output` | one `coopMatStore` per tile by the subgroup that owns that head_dim slice | none in this kernel | |
 
-No slot has two writers in one phase, so no elected lane is needed. Every barrier sits in control flow that is
-uniform for the subgroup (`num_blocks` and `s_base` are per workgroup; the rescale branch is taken on
-`subgroupAny`). The one-subgroup assumption: the pipeline is created with the variant's required subgroup size
-(yaml `SUBGROUP_SIZE`, as for the Xe2 kernels) and the node launches a local size equal to it; the release-zone
-pipeline code does not set the full-subgroups flag, so the kernel itself checks `gl_NumSubgroups == 1` and
-`gl_SubgroupSize == SUBGROUP_SIZE` and writes NaN rows otherwise (one writer per row), which every correctness
-tier would report.
+No slot has two plain writers in a phase; the only slot several lanes write is `Gsh`, atomically and with the
+same value. Control flow around every `barrier()` is uniform for the workgroup: `num_blocks` and `s_base` are
+per workgroup, the two early returns come before the first barrier, and the rescale branch is taken on the
+value of `Gsh` that every lane reads after the same barrier (that is why the vote of the single-subgroup form,
+`subgroupAny`, is replaced). The accumulators and the Q tiles are per-subgroup registers and are never shared.
+The assumption "the workgroup is exactly G full subgroups of 16": the pipeline is created with required
+subgroup size 16 (yaml `SUBGROUP_SIZE`, as for the Xe2 kernels) and the node launches a local size of G x 16;
+the release-zone pipeline code does not set the full-subgroups flag, so the kernel checks
+`gl_NumSubgroups == G` and `gl_SubgroupSize == 16` and writes NaN rows otherwise (one writer per row), which
+every correctness tier would report. The copy pass `sarc_dev_b580_sdpa_kvt` has no shared memory.
 
 ## Next
 
-After chain 2: fix the variants of `b580-fused1` by the screen rule of `thresholds.txt` (a rebuild under a new
-tag if they change), then the gate of candidate 1 (`gate_sdpa.sh`, reference-error run, logits probe, decision).
+Read the gate of candidate 1; apply the reference-error rule if a next token moved; then candidate 2
+(`b580-fused2` = candidate 1 + the 4070 Ti campaign's fp32 no-tail softmax for the calls the fused kernel does
+not take; its sources are already in `topic6`).
 
 ## Blocking
 
