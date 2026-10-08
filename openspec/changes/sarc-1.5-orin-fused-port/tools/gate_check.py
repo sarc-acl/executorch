@@ -412,7 +412,7 @@ def softmax_of(lines):
 # impl/sarc_dev/orin/SdpaOrinFused.cpp. A call is served by the fused node when S % M == 0, S % N == 0 and
 # input_pos % N == 0; the three SDPA kernels then dispatch nothing.
 FUSED = {"orin-fused1": {64: ("sarc_dev_orin_sdpa_fused3sb_d64_t32x32g11s32rko", 32, 32), 128: ("sarc_dev_orin_sdpa_fused3sb_d128_t16x64g11s32rko", 16, 64)},
-         "orin-fused2": {64: ("sarc_dev_orin_sdpa_fused3sb_d64_t32x32g11s32ro", 32, 32), 128: ("sarc_dev_orin_sdpa_fused3sb_d128_t16x64g11s32ro", 16, 64)}}
+         "orin-fused2": {64: ("sarc_dev_orin_sdpa_fused3sb_d64_t32x32g11s32rk", 32, 32), 128: ("sarc_dev_orin_sdpa_fused3sb_d128_t16x64g11s32rko", 16, 64)}}
 def fused_of(lines): return FUSED.get(profile_of(lines) or "", {})
 def fused_serves(fused, S, D, pos):
     if D not in fused: return None

@@ -11,6 +11,7 @@
 // A port of impl/sarc_dev/780m/Sdpa780mFused.cpp (topic/780m-prefill-refine,
 // 8518659efb); the node, its launch geometry and the fit rule are unchanged.
 //   ET_VK_SARC_DEV_PROFILE=orin-fused1   the one-pass packed variants below
+//   ET_VK_SARC_DEV_PROFILE=orin-fused2   two passes for head_dim 64, one for 128
 //   ET_VK_SARC_ORIN_SDPA_FUSED=<variant>[,<variant>]   kernel-level timing only:
 //   other variants (the shader name after sarc_dev_orin_sdpa_), one per head_dim
 // The kernel reads V from a transposed scratch copy that a second node
@@ -53,6 +54,11 @@ const char* profile_variants() {
   const char* e = std::getenv("ET_VK_SARC_DEV_PROFILE");
   if (e != nullptr && std::strcmp(e, "orin-fused1") == 0) {
     return "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko";
+  }
+  // The faster form per head_dim at kernel level on this device: two passes
+  // for head_dim 64, one pass for 128.
+  if (e != nullptr && std::strcmp(e, "orin-fused2") == 0) {
+    return "fused3sb_d64_t32x32g11s32rk,fused3sb_d128_t16x64g11s32rko";
   }
   return "";
 }

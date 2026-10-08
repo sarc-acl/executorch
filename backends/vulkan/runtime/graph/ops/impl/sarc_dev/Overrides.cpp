@@ -1636,6 +1636,7 @@ const Profile kProfiles[] = {
     // >>> orin-fused profiles
     // orin-refine5 + the fused attention node (impl/sarc_dev/orin/SdpaOrinFused.cpp names its kernels).
     {"orin-fused1", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused2", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
     // <<< orin-fused profiles
 };
 const Profile* requested_profile() {
