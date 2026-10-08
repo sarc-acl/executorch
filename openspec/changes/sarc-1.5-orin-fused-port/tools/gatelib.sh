@@ -50,7 +50,7 @@ run_verify() { # run_verify "<env>": the unmodified sarc/tools/verify.sh (deploy
   cmp -s $D/llama_main $TOOLS/llama_main_rc.sh || { echo "$D/llama_main is not the exit-status wrapper" >&2; return 77; }
   [[ -e $D/verify-runs.jsonl || -e $D/verify.out ]] && { echo "verify.sh already ran in $D; results are kept, use a new session" >&2; return 77; }
   # verify.sh is not modified: foreign GPU processes are watched from outside for its whole duration.
-  no_others "before verify.sh"; others_watch_start $D/verify.others
+  hold_wait; no_others "before verify.sh"; others_watch_start $D/verify.others
   env $1 $ET/sarc/tools/verify.sh --dir $D --lock $LOCK --models 1b,3b,8b --schemes 4w,8da4w --pdiff --out verify --flat-models $MODELDIR > $D/verify.out 2>&1
   local rc=$?; echo "VERIFY_DONE rc=$rc" >> $D/verify.out; local o; o=$(others_watch_stop $D/verify.others)
   [[ -n $o ]] && { echo "foreign GPU process during verify.sh: $o" | tee -a $D/verify.out >> $A/ABORTED; return 76; }

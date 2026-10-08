@@ -37,7 +37,7 @@ if [[ -n ${BASE_TAG:-} && -z $PATCH ]]; then echo "tree-sha256 $TAG: not recompu
 else echo "tree-sha256 $TAG: $(cd $T && find . -type f -not -name '*.pyc' -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)" >> $P; fi
 echo "image $(podman image inspect --format '{{.Id}}' localhost/et-jetson-cross:jp7.2.1 2>&1)" >> $P
 echo "recipe $(cd $TOOLS/jetson-cross && sha256sum build.sh container.sh aarch64.cmake | sha256sum | cut -d' ' -f1)" >> $P
-rc=0
+rc=0; hold_wait
 flock ~/.cache/gpu-lab/lock-desktop-build env JETSON_CROSS_WORK=$W $TOOLS/jetson-cross/container.sh > $A/build/$TAG.log 2>&1 || rc=$?
 echo "rc=$rc cross build" >> $P
 if [[ $rc == 0 ]]; then

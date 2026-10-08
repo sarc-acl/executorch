@@ -29,6 +29,17 @@ GONE=$A/GPU_GONE
 need() { local f; for f in "$@"; do [[ -s $f ]] || { echo "missing required file: $f" >&2; exit 77; }; done; }
 # dssh <command>: one command on the device (workstation side).
 dssh() { ssh -o BatchMode=yes -o ConnectTimeout=20 $DEVICE "$@"; }
+# hold_wait: the coordinator hold (owner decision D6, 2026-10-06). While the file HOLD exists in the artifact
+# directory of the side that runs the job (device: ~/hmz-sarc-orin-fused/HOLD; workstation: .artifacts/HOLD) no
+# new GPU job and no new build starts; the running one finishes. The coordinator creates and removes the file,
+# this campaign never does. Called at every job boundary: by take_lock (e2e5.sh, trace.sh, gl.sh), before
+# verify.sh (gatelib.sh run_verify) and before a cross build (build-orin.sh).
+hold_wait() { local n=0
+  while [[ -e $A/HOLD ]]; do
+    if [[ $n == 0 ]]; then echo "HOLD $(date -u +%FT%TZ): waiting at a job boundary ($A/HOLD)" >&2; fi
+    n=1; sleep 30
+  done
+  if [[ $n == 1 ]]; then echo "HOLD released $(date -u +%FT%TZ)" >&2; fi; return 0; }
 [[ $SIDE == ws ]] && return 0
 
 # ---- device side only ----
@@ -96,4 +107,4 @@ cool_to() { local t0=$SECONDS t ref tref
   done; }
 # cool_start [timeout s]: before a job, wait until the temperature has stopped falling.
 cool_start() { cool_to 0 ${1:-300}; }
-take_lock() { exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK" || exit 75; flock -w ${1:-1800} 9 || { echo "gpu-lab lock busy" >&2; exit 75; }; }
+take_lock() { hold_wait; exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK" || exit 75; flock -w ${1:-1800} 9 || { echo "gpu-lab lock busy" >&2; exit 75; }; }
