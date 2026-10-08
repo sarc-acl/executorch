@@ -1,6 +1,6 @@
 # STATUS: RX 7600 prefill campaign
 
-Updated 2026-10-08 12:30 UTC.
+Updated 2026-10-08 12:11 UTC.
 
 ## Running now
 
@@ -11,7 +11,7 @@ Updated 2026-10-08 12:30 UTC.
 
 | step | state |
 |---|---|
-| change directory, tools, thresholds | committed before any measurement (`f605e36ea`); thermal rule made precise before the A/A (`308327c0d`) |
+| change directory, tools, thresholds | committed before any measurement (`246fda77a`); thermal rule made precise before the A/A (`829f8508f`) |
 | parent build `parent` (`f5f1bf10c`, native) | done; shipped SPIR-V: golden PENDING (14 of 53 differ, native glslc); reference for later builds `golden-ref-parent.json` |
 | baseline + A/A `aa2` | **done**; `raw/runs.csv`: 112 rows = 88 timed (86 valid, 2 `host_build`, replaced) + 24 untimed next-token runs (15 valid, 9 `thermal_throttle`); 7 valid timed runs per arm per cell (84) plus the 2 replacement runs; parent against itself |
 | calibration (`tools/thresholds.txt`) | clock floor **2420 MHz**, **5** repeats, thermal mask unchanged (no timed run carried a temperature bit) |
@@ -25,7 +25,7 @@ Updated 2026-10-08 12:30 UTC.
 | candidate 4 (whole-texel 8da4w staging everywhere, profile `rx7600-refine3`) | gated against candidate 3: **-0.15 % geomean** (cells 0.00 to +0.50 %, 8B 8da4w -1.51 %); 61 / 61 counted runs valid; next token SAME; not adopted. **The first gated candidate under 2 %** (candidate 3 +5.49 % is the last above it). `results/rx7600/sessions/c4-texel/` |
 | M2a (`fused3sb`: `subgroupBarrier()` after each `memoryBarrierShared()` in the fused kernel) | gated against candidate 3: **+0.00 % geomean** (cells -0.19 to +0.17 %), tiers `all` / `extended` / `full` 12 passes each 0 mismatches `pairing=ok`, output **byte-identical** to `fused3` in 21 / 21 cases, `verify.sh` as candidate 3; adopted under the rule fixed beforehand (`proposal.md`). **The second consecutive gated candidate under 2 %: the stop rule R11 is met.** `results/rx7600/sessions/m2a-sgbarrier/` |
 | **final verification + final session** (build `final`, commit `18cc0d53a`, no local patch) | **done**: pristine parent against the final stack (`rx7600-refine2` + `fused3sb` + softmax `r3`): **+26.90 % geomean** (1B / 3B / 8B 4w +33.85 / +20.82 / +15.19 %, 8da4w +40.91 / +28.38 / +23.94 %); 60 / 60 timed runs valid; next token SAME in all cells. Golden: PASS against `golden-ref-parent.json`, PENDING against `sarc/golden/spirv.json` (native glslc, the parent's own 14 differences). `verify.sh` = snapshot except the two linear kernel-name lines; SDPA tiers 36 passes 0 mismatches `pairing=ok`; reference error 16 of 17 rows `yes` (the `NO` row is `peaked_tiny_gqa_s256`, S = 256); real-text probe gross-divergence check ok. Outside the dev zone since the parent: nothing. `check.sh --no-build`: PASS. Record: **ACCEPTED (reference-error rule, owner decision 2026-10-04)** |
-| coordinator hold | tested 07:21 UTC (`results/rx7600/hold-test.txt`); watcher running |
+| coordinator hold | tested 2026-10-06 07:21 UTC (`results/rx7600/hold-test.txt`); the watcher process (pid 1897041) is no longer alive: its output file was last written 2026-10-06 07:22 UTC, the time it ended is not recorded (UNVERIFIED). |
 
 ### Candidate 2: fused attention kernel (session `c2-fused`, 13:24 to 14:15 UTC)
 
@@ -57,7 +57,7 @@ workgroup is one subgroup and the code relies on it executing in lockstep. Under
 formally unsynchronised; on RDNA3 (one wave, no divergent branch between the write and the read) it is benign, and
 every correctness pass agrees. The 780M uses the same kernel. Adding `subgroupBarrier()` after each
 `memoryBarrierShared()` would make it formally correct; per the owner decision of 2026-10-07 23:15 UTC it is done as its
-own gated candidate (M2a) in an rx7600-named copy of the kernel after candidates 3 and 4, not by editing the 780M's file.
+own gated candidate (M2a) in a copy of the kernel, `sarc_dev_780m_sdpa_fused3sb`, after candidates 3 and 4, not by editing the 780M's file. The copy keeps the 780M's name prefix (it does not carry the device tag R3 asks for) because `Sdpa780mFused.cpp` builds the shader name as `sarc_dev_780m_sdpa_` + variant; see "Decision needed from the owner", item 3.
 The wave size RADV picks for a 32-invocation workgroup (the yaml sets no required subgroup size) is UNVERIFIED.
 
 ### Candidate 1: softmax `r3` (session `c1-softmax`, 09:44 to 10:37 UTC)
@@ -139,50 +139,16 @@ timed, the real-text and the unaligned prompt. The 1B prefill takes 261 to 262 m
 - Python imports from `<toolchain-share>` (NFS) are slow: importing torch took over 5 minutes under load, so the ETDump
   analysis will not use the kit's `Inspector` script.
 
-## Decision needed from the owner
-
-**Host builds of another campaign during timed sessions.** Rule R5 says no build runs during a timed session on the
-same host, by anyone. Another campaign (`<other-campaign-root>`) builds on this host's CPU nearly continuously
-(`nice -n 19`, `-j8`, Android NDK; one build was 12 minutes in at 07:54 UTC). My sessions honour the rule
-conservatively: every timed run waits until no compiler, linker or build driver of anyone runs, and a run during
-which one appears is invalid and replaced. The sessions therefore only move in the gaps between the other campaign's builds. The first
-A/A (`aa2`) needed about 25 minutes for its 1B cells and stalled for more than 15 minutes on one 3B run. **Default
-unless the owner rules otherwise:** keep this rule. A shared host-wide marker that the the other campaign's builds wait for would
-need the other campaign's cooperation; I do not touch its checkout or jobs.
-
-**Order of port items 1 and 2 (resolved: the default was followed, candidate 1 softmax first, then the fused kernel).** Item 1, the fused attention kernel, replaces QK^T, softmax and attn*V for every
-tile-aligned prefill call, including the timed 2048-token prompt. Item 2, the softmax without the zero tail, then
-runs only where the fused kernel does not (unaligned prompts). On the timed prompt it would measure about 0 %. That
-gated candidate would count toward the stop rule (two consecutive candidates under 2 %), and the stop rule could then
-end the campaign before items 3 and 4. The 780M measured them the other way round: softmax as candidate 7
-(+4.10 %), fused kernel as candidate 8. **Default unless the owner says otherwise:** gate the softmax first
-(candidate 1, on the parent's three-kernel path, where it is measurable), then the fused kernel on top
-(candidate 2), then items 3 and 4.
-
 ## Next
 
 Done. The coordinator publishes the branch (scrubbed forward commit); a reviewer round follows (R12).
 
-## Decision needed from the owner (this run)
+## Decision needed from the owner
 
 1. **Percent of the roofs.** R6 asks for the freshly measured roofs; igpu-roofline is not on this host except in another workspace that this campaign does not read. The 2026-09-28 roofs (43.42 TFLOP/s fp16, 43.90 TOP/s int8, same card and driver build) are cited, not re-measured. A re-run needs the tool or permission to use the workspace copy.
 2. **Fused attention node (D4.3 hook).** The fused kernel `fused3` (and `fused3sb`) runs through the D4.3 entry point already on the starting branch; it stays subject to the owner's review before any promotion (`proposal.md`).
-3. **Branch history.** The branch sits on `90fe4d013` (10 extra 780M commits that no measured build contains) after the earlier actor's rebase and force push, see below; nothing was rewritten or pushed by this run.
+3. **Name of the `fused3sb` kernel family (R3).** The files are `glsl/sarc_dev/sarc_dev_780m_sdpa_fused3sb.{glsl,yaml}`: a new kernel family in the 780M's namespace, not under the device-tag prefix R3 asks for (`rx7600`). Reason, from the shader header: `impl/sarc_dev/780m/Sdpa780mFused.cpp` builds the shader name as `sarc_dev_780m_sdpa_` + the variant token of `ET_VK_SARC_780M_SDPA_FUSED`, so a differently prefixed file is not reachable without editing that 780M file or adding an rx7600 selector. Not renamed. **Default unless the owner rules otherwise:** keep the name (the content is separable: two new files, nothing of the 780M's edited). Renaming needs a new build and a new gate (tiers, `verify.sh`, a timed session, the evidence of M2a).
+4. **Branch history.** The branch was rewritten and force-pushed over the coordinator's scrubbed copy by the earlier actor, against the owner decisions of 2026-10-06 16:19 and 19:40 UTC (do not rewrite or amend, do not push, never force). Reflog (local time): 20:35 pull of `origin/topic/rx7600-prefill-refine`, then that rebase aborted; 20:38 rebase onto `origin/topic/780m-prefill-refine`, which re-picked all 16 rx7600 commits (old `d51142e38` became `724469b1c`, old `797f6c0a4` became `bb3cfcd22`, ...); 20:40 remote ref updated by push from `364954ed2` (the published scrubbed head, coordinator's copy) to `5febfe4f3` (on the remote now). The branch sits on `90fe4d013`, not directly on the parent `f5f1bf10c`, and carries 10 extra 780M commits (+12.3k lines under `openspec/changes/sarc-1.5-780m-prefill-refine`) that no measured build contained. Owner decision 2026-10-07 23:15 UTC: the coordinator handles the public branch (a forward commit that replaces host names and home paths); this run never pushed (push URL `DISABLED`) and did not rewrite or amend any commit.
+5. **Host builds of another campaign during timed sessions.** Rule R5 says no build runs during a timed session on the same host, by anyone. Another campaign builds on this host's CPU (Android NDK). Every timed run of this campaign waited until no compiler, linker or build driver of anyone ran, and a run during which one appeared was invalid and replaced (one such run in the c4 session, two in `aa2`). **Default unless the owner rules otherwise:** keep this rule.
 
-### Decision needed from the owner
-The branch history was rewritten and force-pushed over the coordinator's scrubbed copy (see below). This violates owner decisions 2026-10-06 16:19 and 19:40 UTC: do not rewrite or amend existing commits, do not run git push, must never be forced.
-
-Reflog (local time):
-  20:35 pull origin topic/rx7600-prefill-refine, then that rebase was aborted;
-  20:38 rebase (start): checkout origin/topic/780m-prefill-refine, which re-picked all 16 rx7600 commits (old d51142e38 became 724469b1c, old 797f6c0a4 became bb3cfcd22, and so on);
-  20:40 refs/remotes/origin/topic/rx7600-prefill-refine@{...}: update by push, from 364954ed2 to 5febfe4f3.
-
-Hashes:
-  364954ed2 was the published scrubbed head (coordinator's copy).
-  5febfe4f3 is what is on the remote now.
-
-The branch also now sits on 90fe4d013 rather than directly on the parent f5f1bf10c. It carries 10 extra 780M commits (+12.3k lines under openspec/changes/sarc-1.5-780m-prefill-refine) that no measured build contained.
-
-Do not push again and do not 'fix' this with another rewrite or force push. Wait for the coordinator.
-
-Update, owner decision 2026-10-07 23:15 UTC: the coordinator handles the public branch (a forward commit that replaces host names and home paths); this actor never pushes (the push URL is `DISABLED`) and does not rewrite or amend published commits.
+Resolved: the order of port items 1 and 2 (the default was followed: candidate 1 softmax first, then the fused kernel).

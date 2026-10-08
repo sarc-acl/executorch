@@ -38,3 +38,12 @@ Record: **ACCEPTED (reference-error rule, owner decision 2026-10-04)** for the f
 `sdpa-error/`, `probe/`; no next-token item differs.
 
 Files changed since the parent outside the dev zone: none (`files-outside-dev-zone.txt` is empty). `check-no-build.txt`: `check.sh --no-build` PASS.
+
+## Record of a failed chain step (real-text probe comparison)
+
+`chain7.sh` (the final queue) logged `final probe done: FileNotFoundError ... stage/final/probe/prompts-1b.json` at 2026-10-08 11:58:44 UTC: the 24
+logits files had been produced (`probe_run.sh`, 24 of 24), but the comparison step failed because `probe_compare.py` reads `prompts-<model>.json`
+from the probe directory and the stage directory did not hold them. They were copied by hand from `results/rx7600/probe/prompts-{1b,3b,8b}.json`
+(the same files candidate 2's probe used: byte-identical to the copies in its stage directory) at 11:58:54 UTC, and `probe_compare.py` was run
+again by hand at 11:58:58 UTC on the unchanged 24 `.bin` files; `probe/real-text-compare.csv` and `probe/compare.out` here are that rerun's output.
+`chain7.status` keeps the failed line as written; `chain7.sh` itself was not changed. The reviewer recomputed the table from the `.bin` files and got the committed numbers.

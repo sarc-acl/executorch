@@ -31,7 +31,7 @@ The two release-zone hooks of owner decision D4 (softmax variant name `b969e8f1c
 | cooling | to idle + 5 C, or until the temperature has not fallen for 30 s, at most 300 s, before every run | R6, L20 |
 | next-token items | D1 / D3 as written (near-tie evidence; reference-error rule for arithmetic changes) | owner |
 
-## Adoption rules for the last candidates (written 2026-10-08 03:35 UTC, before the M2a session; the candidate-4 rule only restates the table above)
+## Adoption rules for the last candidates (written 2026-10-08 03:24 UTC, the time of commit `52e39f623`, before the M2a session; the candidate-4 rule only restates the table above)
 
 - **Candidate 4** (whole-texel 8da4w staging everywhere, `rx7600-refine3`, against candidate 3): adopted only if its
   geomean gain over candidate 3 is at least 2 % and its gate passes; otherwise candidate 3's kernel stays and the number is
