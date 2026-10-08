@@ -1,0 +1,1054 @@
+<title>SARC 1.5 调优全景</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* 布局：先六张收益卡，再五张图自上而下，每张图一个结论。冷灰底，数据色来自验证过的默认调色板，状态色与系列色分开。 */
+  :root {
+    --bg: #f4f5f7; --surface: #fcfcfb; --fg: #0b0b0b; --fg2: #52514e; --fg3: #7d7c78; --line: #dcdbd6; --grid: #e8e7e3;
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #4a3aa7;
+    --seq1: #cde2fb; --seq2: #9ec5f4; --seq3: #6da7ec; --seq4: #3987e5; --seq5: #256abf; --seq6: #184f95;
+    --neutral: #c9c8c2; --neutral-fill: #efeeea; --ref: #52514e;
+    --sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141414; --surface: #1a1a19; --fg: #ffffff; --fg2: #c3c2b7; --fg3: #8e8d86; --line: #35352f; --grid: #2a2a27;
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #9085e9;
+      --seq1: #184f95; --seq2: #1c5cab; --seq3: #256abf; --seq4: #3987e5; --seq5: #6da7ec; --seq6: #9ec5f4;
+      --neutral: #4a4a45; --neutral-fill: #262623; --ref: #c3c2b7; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141414; --surface: #1a1a19; --fg: #ffffff; --fg2: #c3c2b7; --fg3: #8e8d86; --line: #35352f; --grid: #2a2a27;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #9085e9;
+    --seq1: #184f95; --seq2: #1c5cab; --seq3: #256abf; --seq4: #3987e5; --seq5: #6da7ec; --seq6: #9ec5f4;
+    --neutral: #4a4a45; --neutral-fill: #262623; --ref: #c3c2b7; color-scheme: dark;
+  }
+  body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.6; padding-block: 28px 64px; padding-inline: 16px; }
+  main { max-width: 1120px; margin: 0 auto; display: grid; gap: 28px; }
+  header h1 { font-size: 1.7rem; font-weight: 700; margin: 0 0 6px; text-wrap: balance; letter-spacing: 0.01em; }
+  header p { margin: 0; color: var(--fg2); max-width: 64ch; }
+  .meta { font-family: var(--mono); font-size: 0.78rem; color: var(--fg3); margin-top: 8px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; min-width: 0; }
+  .tile .label { font-size: 0.8rem; color: var(--fg2); }
+  .tile .value { font-size: 1.7rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; margin-top: 2px; }
+  .tile .sub { font-size: 0.78rem; color: var(--fg3); font-family: var(--mono); margin-top: 4px; }
+  .tile .meter { height: 6px; background: var(--seq1); border-radius: 3px; margin-top: 10px; overflow: hidden; }
+  .tile .meter > span { display: block; height: 100%; background: var(--seq5); border-radius: 3px; }
+  figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 18px 18px 14px; min-width: 0; }
+  figure h2 { font-size: 1.1rem; font-weight: 700; margin: 0 0 2px; }
+  figure .claim { margin: 0 0 12px; color: var(--fg2); font-size: 0.92rem; max-width: 80ch; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.8rem; color: var(--fg2); margin: 0 0 8px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+  .legend i.hatch { background: repeating-linear-gradient(135deg, var(--neutral) 0 2px, var(--surface) 2px 5px); border: 1px solid var(--neutral); }
+  .legend i.empty { border: 1px dashed var(--neutral); }
+  .scroll { overflow-x: auto; }
+  svg { display: block; width: 100%; height: auto; font-family: var(--sans); }
+  svg text { fill: var(--fg2); font-size: 12px; }
+  svg text.strong { fill: var(--fg); font-weight: 500; }
+  svg text.mono { font-family: var(--mono); font-size: 11px; }
+  svg text.tiny { font-size: 10.5px; fill: var(--fg3); }
+  svg .grid { stroke: var(--grid); stroke-width: 1; }
+  svg .axis { stroke: var(--line); stroke-width: 1; }
+  svg .ref { stroke: var(--ref); stroke-width: 1.5; stroke-dasharray: 4 3; }
+  svg rect.hit { fill: transparent; }
+  svg .hover-target { cursor: default; }
+  svg .hover-target:hover { filter: brightness(0.92); }
+  figcaption { margin-top: 10px; color: var(--fg3); font-size: 0.82rem; }
+  details { margin-top: 8px; font-size: 0.85rem; }
+  details summary { cursor: pointer; color: var(--fg2); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.82rem; margin-top: 8px; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+  td.num, th.num { text-align: right; font-family: var(--mono); }
+  th { color: var(--fg3); font-weight: 500; font-size: 0.75rem; letter-spacing: 0.04em; }
+  .matrix { display: grid; grid-template-columns: minmax(170px, 1.3fr) repeat(6, minmax(92px, 1fr)); gap: 3px; min-width: 760px; font-size: 0.82rem; }
+  .matrix .h { color: var(--fg2); font-weight: 500; padding: 6px 8px; align-self: end; }
+  .matrix .h.dev { text-align: center; }
+  .matrix .h.dev small { display: block; font-family: var(--mono); font-size: 0.72rem; color: var(--fg3); font-weight: 400; }
+  .matrix .t { padding: 6px 8px; color: var(--fg); display: flex; align-items: center; }
+  .matrix .t b { font-family: var(--mono); color: var(--fg3); font-weight: 400; margin-right: 8px; font-size: 0.75rem; }
+  .matrix .c { min-height: 44px; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 4px 6px; position: relative; font-variant-numeric: tabular-nums; }
+  .matrix .c .v { font-family: var(--mono); font-weight: 500; font-size: 0.82rem; }
+  .matrix .c .n { font-size: 0.7rem; opacity: 0.85; line-height: 1.25; }
+  .matrix .c.q1 { background: var(--seq1); color: var(--fg); } .matrix .c.q2 { background: var(--seq2); color: var(--fg); }
+  .matrix .c.q3 { background: var(--seq3); color: #0b0b0b; } .matrix .c.q4 { background: var(--seq4); color: #fff; }
+  .matrix .c.q5 { background: var(--seq5); color: #fff; } .matrix .c.q6 { background: var(--seq6); color: #fff; }
+  :root[data-theme="dark"] .matrix .c.q1, :root[data-theme="dark"] .matrix .c.q2 { color: #fff; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .matrix .c.q1, :root:not([data-theme="light"]) .matrix .c.q2 { color: #fff; }
+    :root:not([data-theme="light"]) .matrix .c.q5, :root:not([data-theme="light"]) .matrix .c.q6 { color: #0b0b0b; } }
+  :root[data-theme="dark"] .matrix .c.q5, :root[data-theme="dark"] .matrix .c.q6 { color: #0b0b0b; }
+  .matrix .c.tried { background: repeating-linear-gradient(135deg, var(--neutral-fill) 0 3px, var(--surface) 3px 7px); border: 1px solid var(--neutral); color: var(--fg2); }
+  .matrix .c.none { border: 1px dashed var(--line); color: var(--fg3); }
+  .matrix .c.inherit { background: var(--neutral-fill); color: var(--fg2); }
+  .matrix .c.pending { border: 1px solid var(--s2); color: var(--fg2); }
+  .matrix .c:hover { outline: 2px solid var(--fg); outline-offset: -2px; }
+  .tip { position: fixed; pointer-events: none; background: var(--fg); color: var(--bg); font-size: 0.8rem; padding: 6px 9px; border-radius: 4px; max-width: 280px; line-height: 1.4; z-index: 10; opacity: 0; transition: opacity 0.08s; }
+  .tip b { font-family: var(--mono); font-weight: 500; }
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .note { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; font-size: 0.9rem; min-width: 0; }
+  .note h3 { margin: 0 0 4px; font-size: 0.95rem; }
+  .note p { margin: 0; color: var(--fg2); }
+  @media (prefers-reduced-motion: reduce) { .tip { transition: none; } }
+</style>
+
+<main>
+  <header>
+    <h1>SARC 1.5 调优全景</h1>
+    <p>六台 GPU 上 2048 token 预填充的内核调优：每台的收益、收益来自哪一步、哪些技术用在了哪里、时间省在了哪、哪些工作没有回报。全部数字取自各 campaign 分支的 proposal.md 与门禁场次，几何平均跨 1B、3B、8B 三个模型。</p>
+    <div class="meta">数据截至 2026-10-08 · 基线为 9 月 SARC 发布版（RX 7600 为其父提交）· 悬停任何数据标记可看明细</div>
+  </header>
+
+  <section class="tiles" id="tiles" aria-label="每台设备的最终收益"></section>
+
+  <figure id="fig-chain">
+    <h2>图 1 · 收益是一步步叠出来的</h2>
+    <p class="claim">每个水平条是一台设备；每一段是一个被采纳的候选，长度为其相对父配置的几何平均增益（对数叠加，所以段长可以相加）。四台原本跑 stock 注意力的设备靠第一段就拿到了大部分；780M 和 RX 7600 已经有注意力内核，收益来自融合内核。</p>
+    <div class="legend" id="legend-chain"></div>
+    <div class="scroll"><div id="chart-chain"></div></div>
+    <figcaption>段的宽度按 ln(1+增益) 比例，横轴刻度换算回累计百分比。叠乘结果与各 campaign 最终场次直接测得的数字相差在 2 个百分点以内（不同场次、不同基线）。</figcaption>
+    <details><summary>数据表</summary><div id="table-chain"></div></details>
+  </figure>
+
+  <figure id="fig-matrix">
+    <h2>图 2 · 技术 × 设备</h2>
+    <p class="claim">深色为采纳并计入最终配置，数字是相对父配置的几何平均增益；斜纹为试过但未采纳或被门禁拒绝；虚线为没做。Intel 两张卡没碰 softmax 和融合内核，AMD 两张卡是融合内核唯一生效的地方。</p>
+    <div class="legend">
+      <span><i style="background:var(--seq5)"></i>采纳，颜色深浅按增益</span>
+      <span><i class="hatch"></i>试过，未采纳</span>
+      <span><i style="background:var(--neutral-fill);border:1px solid var(--line)"></i>已有或继承</span>
+      <span><i style="border:1px solid var(--s2)"></i>待定</span>
+      <span><i class="empty"></i>没做</span>
+    </div>
+    <div class="scroll"><div class="matrix" id="matrix" role="table" aria-label="技术与设备矩阵"></div></div>
+    <figcaption>第 1 行四台设备的数字含移植时一并带上的 softmax（4070 Ti、Orin），因为那两台的候选 1 带 stock softmax 时被门禁拒绝，无法单独计量。</figcaption>
+  </figure>
+
+  <figure id="fig-time">
+    <h2>图 3 · 时间省在了哪</h2>
+    <p class="claim">8B 模型一次 2048 token 预填充的 GPU 派发时间（毫秒，热态 ETDump）。Intel 上注意力三个内核从 341 ms 压到 42 ms，线性 GEMM 几乎不动；RX 7600 上融合内核把注意力压到四分之一，线性内核再省 139 ms。</p>
+    <div class="legend" id="legend-time"></div>
+    <div class="scroll"><div id="chart-time"></div></div>
+    <figcaption>RX 7600 的注意力三项未在其 trace-families 中拆开，按合计绘制。"其他"含激活量化、嵌入、输出投影等。</figcaption>
+    <details><summary>数据表</summary><div id="table-time"></div></details>
+  </figure>
+
+  <figure id="fig-waste">
+    <h2>图 4 · 没有回报的工作</h2>
+    <p class="claim">参数搜索在内核层面找到了更快的配置，但一个只占预填充百分之几的内核，内核级的提升到不了端到端。B70 的 33 小时换来 +1.1 %，780M 的枚举换来 0。</p>
+    <div class="scroll"><div id="chart-waste"></div></div>
+    <figcaption>横轴为设备机时（小时），条尾标注端到端几何平均增益。瓦片扫描在三台设备上各花了数小时且无一更快，机时未精确记录，不入图。</figcaption>
+  </figure>
+
+  <figure id="fig-llama">
+    <h2>图 5 · 调优后相对 llama.cpp 的位置</h2>
+    <p class="claim">调优后的 ExecuTorch 4w 预填充速度除以 llama.cpp Q4_0 最佳设置的速度，每台设备三个点对应 1B、3B、8B。对 llama.cpp 的 Vulkan 后端，我们在五台中的四台领先；对厂商后端（SYCL、CUDA），仍落后两到三成，Orin 除外。</p>
+    <div class="legend"><span><i style="background:var(--s1)"></i>相对 llama.cpp Vulkan</span><span><i style="background:var(--s2)"></i>相对厂商后端（Intel SYCL，NVIDIA CUDA）</span><span><i style="border-top:2px dashed var(--ref);width:16px;height:0;border-radius:0"></i>1.0 持平</span></div>
+    <div class="scroll"><div id="chart-llama"></div></div>
+    <figcaption>来源：topic/llamacpp-compare 的 cells.csv，llama.cpp b11430，各设备筛选过的最佳设置，5 次中位数。780M 没有可用的厂商后端（ROCm 不支持该集成显卡，未测）。RX 7600 尚未对比。</figcaption>
+    <details><summary>数据表</summary><div id="table-llama"></div></details>
+  </figure>
+
+  <section class="notes">
+    <div class="note"><h3>还没合并</h3><p>六条分支都在 origin 上，没有一条进了 dev/1.5。合并前要做：独立复核、融合内核采用 fused3sb、给最终配置一个单一名字、清理结果文件里的路径。</p></div>
+    <div class="note"><h3>剩余空间在哪</h3><p>Intel 两张卡还没有试 fp32 softmax 和融合内核；AMD 独显上 llama.cpp 的 HIP 后端还没测，领先结论只对 Vulkan 成立。</p></div>
+    <div class="note"><h3>流程产物</h3><p>A/A 校准与时钟下限、每候选过门禁、参考误差规则、两连候选低于 2 % 的停止规则、协调者 hold、独立审阅。这些是手册的一部分，不在图里。</p></div>
+  </section>
+</main>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script id="report-data" type="application/json">
+{
+ "devices": [
+  {
+   "id": "orin",
+   "name": "Jetson Orin Nano",
+   "vendor": "NVIDIA",
+   "final": 66.7,
+   "stock": [
+    4.46,
+    7.43
+   ],
+   "base": "相对 9 月基线"
+  },
+  {
+   "id": "b580",
+   "name": "Arc B580",
+   "vendor": "Intel",
+   "final": 61.1,
+   "stock": [
+    2.19,
+    3.53
+   ],
+   "base": "相对 9 月基线"
+  },
+  {
+   "id": "b70",
+   "name": "Arc Pro B70",
+   "vendor": "Intel",
+   "final": 59.4,
+   "stock": [
+    2.17,
+    3.46
+   ],
+   "base": "相对 9 月基线"
+  },
+  {
+   "id": "4070ti",
+   "name": "RTX 4070 Ti SUPER",
+   "vendor": "NVIDIA",
+   "final": 46.2,
+   "stock": [
+    3.57,
+    5.22
+   ],
+   "base": "相对 9 月基线"
+  },
+  {
+   "id": "780m",
+   "name": "Radeon 780M",
+   "vendor": "AMD",
+   "final": 33.1,
+   "stock": [
+    2.08,
+    2.76
+   ],
+   "base": "相对 9 月基线"
+  },
+  {
+   "id": "rx7600",
+   "name": "RX 7600",
+   "vendor": "AMD",
+   "final": 26.9,
+   "stock": null,
+   "base": "相对父提交（公司侧）"
+  }
+ ],
+ "cats": [
+  {
+   "key": "attn",
+   "name": "协作矩阵注意力内核",
+   "color": "var(--s1)"
+  },
+  {
+   "key": "fused",
+   "name": "融合注意力内核",
+   "color": "var(--s2)"
+  },
+  {
+   "key": "softmax",
+   "name": "fp32 无零尾 softmax",
+   "color": "var(--s3)"
+  },
+  {
+   "key": "texel",
+   "name": "8da4w 按纹素取权重",
+   "color": "var(--s4)"
+  },
+  {
+   "key": "linear",
+   "name": "线性内核按形状选择",
+   "color": "var(--s5)"
+  },
+  {
+   "key": "param",
+   "name": "注意力参数细化",
+   "color": "var(--s6)"
+  }
+ ],
+ "chains": {
+  "orin": [
+   {
+    "c": "attn",
+    "g": 57.81,
+    "n": "候选 1h：注意力内核 + fp32 softmax（nzf）"
+   },
+   {
+    "c": "texel",
+    "g": 2.84,
+    "n": "候选 2：8da4w 整纹素取权重"
+   },
+   {
+    "c": "linear",
+    "g": 0.82,
+    "n": "候选 3：4w 瓦片 orin-refine5"
+   },
+   {
+    "c": "softmax",
+    "g": 0.34,
+    "n": "候选 4：softmax 子组归约 orin_g64（带内，门禁接受）"
+   }
+  ],
+  "b580": [
+   {
+    "c": "attn",
+    "g": 45.95,
+    "n": "候选 0：B70 的注意力内核 b580-refine0"
+   },
+   {
+    "c": "texel",
+    "g": 7.67,
+    "n": "候选 1：8da4w 瓦片 xe2bt_t128x128k64"
+   },
+   {
+    "c": "param",
+    "g": 0.16,
+    "n": "候选 3：QK^T xe2c（head_dim 128），带内"
+   }
+  ],
+  "b70": [
+   {
+    "c": "attn",
+    "g": 46.86,
+    "n": "候选 1：注意力内核 xe2-refine1"
+   },
+   {
+    "c": "texel",
+    "g": 6.88,
+    "n": "候选 2：8da4w 按纹素取权重，128×128 K=64 瓦片"
+   },
+   {
+    "c": "linear",
+    "g": 1.1,
+    "n": "候选 5：抽样搜索得到的 4w 瓦片（33 小时）"
+   }
+  ],
+  "4070ti": [
+   {
+    "c": "attn",
+    "g": 46.74,
+    "n": "候选 4：注意力内核 + fp32 softmax（nzf）。候选 1 带 stock softmax 时 +42 % 但精度被拒"
+   }
+  ],
+  "780m": [
+   {
+    "c": "linear",
+    "g": 2.95,
+    "n": "候选 1：初始瓦片细化（8da4w t128x64，4w t128x256）"
+   },
+   {
+    "c": "texel",
+    "g": 1.97,
+    "n": "候选 2：8da4w 按纹素取权重"
+   },
+   {
+    "c": "param",
+    "g": 2.86,
+    "n": "候选 3：QK^T NO_MASK_FILL，attn·V 子组 32"
+   },
+   {
+    "c": "param",
+    "g": 0.72,
+    "n": "候选 5：QK^T packed staging"
+   },
+   {
+    "c": "softmax",
+    "g": 4.1,
+    "n": "候选 7：softmax r3"
+   },
+   {
+    "c": "fused",
+    "g": 13.16,
+    "n": "候选 8：融合注意力内核 fused3（参考误差规则接受）"
+   },
+   {
+    "c": "fused",
+    "g": 3.19,
+    "n": "候选 9：one-pass 融合 + 4w 按形状"
+   },
+   {
+    "c": "linear",
+    "g": 0.47,
+    "n": "候选 10：refine10 4w 表（带内）"
+   },
+   {
+    "c": "linear",
+    "g": 1.2,
+    "n": "候选 11：8da4w 按形状，触发停止规则"
+   }
+  ],
+  "rx7600": [
+   {
+    "c": "softmax",
+    "g": 1.48,
+    "n": "候选 1：softmax r3"
+   },
+   {
+    "c": "fused",
+    "g": 18.22,
+    "n": "候选 2：融合注意力内核 fused3"
+   },
+   {
+    "c": "linear",
+    "g": 5.49,
+    "n": "候选 3：线性内核按形状 rx7600-refine2"
+   },
+   {
+    "c": "fused",
+    "g": 0,
+    "n": "M2a：fused3sb 子组屏障，+0.00 %，逐字节一致"
+   }
+  ]
+ },
+ "reported": {
+  "orin": 66.65,
+  "b580": 57.65,
+  "b70": 59.23,
+  "4070ti": 46.74,
+  "780m": 33.82,
+  "rx7600": 26.9
+ },
+ "techs": [
+  {
+   "n": "1",
+   "name": "协作矩阵注意力内核",
+   "cells": {
+    "780m": {
+     "k": "inherit",
+     "v": "9 月已有",
+     "t": "2026 年 9 月发布版就带着 780M 的注意力内核；其余设备从它移植"
+    },
+    "b580": {
+     "k": "ok",
+     "g": 45.95
+    },
+    "b70": {
+     "k": "ok",
+     "g": 46.86
+    },
+    "4070ti": {
+     "k": "ok",
+     "g": 46.74,
+     "n": "含 nzf softmax"
+    },
+    "orin": {
+     "k": "ok",
+     "g": 57.81,
+     "n": "含 nzf softmax"
+    },
+    "rx7600": {
+     "k": "inherit",
+     "v": "继承",
+     "t": "分支从 780M 的候选 11 拉出，注意力内核随之带来"
+    }
+   }
+  },
+  {
+   "n": "2",
+   "name": "注意力参数细化",
+   "cells": {
+    "780m": {
+     "k": "ok",
+     "g": 3.6,
+     "n": "候选 3 +2.86，候选 5 +0.72"
+    },
+    "b580": {
+     "k": "tried",
+     "v": "+0.16",
+     "t": "候选 3 QK^T xe2c，通过门禁，带内，算作停止规则的一个计数"
+    },
+    "b70": {
+     "k": "tried",
+     "v": "+0.32 / +0.59",
+     "t": "候选 3 和候选 6，通过门禁，带内，未采纳"
+    },
+    "4070ti": {
+     "k": "none"
+    },
+    "orin": {
+     "k": "none"
+    },
+    "rx7600": {
+     "k": "tried",
+     "v": "无更优",
+     "t": "融合内核的参数变体筛了三轮，没有一个每轮都快 3 %"
+    }
+   }
+  },
+  {
+   "n": "3",
+   "name": "fp32 无零尾 softmax",
+   "cells": {
+    "780m": {
+     "k": "ok",
+     "g": 4.1,
+     "n": "r3"
+    },
+    "b580": {
+     "k": "none"
+    },
+    "b70": {
+     "k": "none"
+    },
+    "4070ti": {
+     "k": "ok",
+     "v": "在第 1 行内",
+     "n": "nzf",
+     "t": "nzf 是候选 4 与候选 1 的唯一差别；候选 1 +42 % 被拒，候选 4 +46.74 % 通过。单独贡献约 +1.8 到 +4.8 %"
+    },
+    "orin": {
+     "k": "ok",
+     "v": "在第 1 行内",
+     "n": "nzf",
+     "t": "同 4070 Ti：候选 1 带 stock softmax 被拒，1h 加 nzf 通过"
+    },
+    "rx7600": {
+     "k": "ok",
+     "g": 1.48,
+     "n": "r3"
+    }
+   }
+  },
+  {
+   "n": "4",
+   "name": "融合注意力内核",
+   "cells": {
+    "780m": {
+     "k": "ok",
+     "g": 16.77,
+     "n": "c8 +13.16，c9 +3.19"
+    },
+    "b580": {
+     "k": "none"
+    },
+    "b70": {
+     "k": "none"
+    },
+    "4070ti": {
+     "k": "none"
+    },
+    "orin": {
+     "k": "none"
+    },
+    "rx7600": {
+     "k": "ok",
+     "g": 18.22
+    }
+   }
+  },
+  {
+   "n": "5",
+   "name": "融合内核子组屏障（fused3sb）",
+   "cells": {
+    "780m": {
+     "k": "pending",
+     "v": "待定",
+     "t": "780M 分支上仍是没有屏障的 fused3。采用 fused3sb 需要候选 8 到 11 重新过一次门禁"
+    },
+    "b580": {
+     "k": "none"
+    },
+    "b70": {
+     "k": "none"
+    },
+    "4070ti": {
+     "k": "none"
+    },
+    "orin": {
+     "k": "none"
+    },
+    "rx7600": {
+     "k": "ok",
+     "g": 0,
+     "n": "逐字节一致"
+    }
+   }
+  },
+  {
+   "n": "6",
+   "name": "8da4w 按纹素取权重",
+   "cells": {
+    "780m": {
+     "k": "ok",
+     "g": 1.97
+    },
+    "b580": {
+     "k": "ok",
+     "g": 7.67
+    },
+    "b70": {
+     "k": "ok",
+     "g": 6.88
+    },
+    "4070ti": {
+     "k": "none"
+    },
+    "orin": {
+     "k": "ok",
+     "g": 2.84
+    },
+    "rx7600": {
+     "k": "tried",
+     "v": "-0.15",
+     "t": "候选 4 在全部形状上套用整纹素取权重，-0.15 %，8B 8da4w -1.51 %，未采纳"
+    }
+   }
+  },
+  {
+   "n": "7",
+   "name": "线性内核按形状选择 / 瓦片表",
+   "cells": {
+    "780m": {
+     "k": "ok",
+     "g": 4.65,
+     "n": "c1 +2.95，c10 +0.47，c11 +1.20"
+    },
+    "b580": {
+     "k": "tried",
+     "v": "-0.07",
+     "t": "候选 2 的 4w band-drain 瓦片，-0.07 %，未采纳"
+    },
+    "b70": {
+     "k": "ok",
+     "g": 1.1,
+     "n": "4w 瓦片"
+    },
+    "4070ti": {
+     "k": "tried",
+     "v": "-0.13",
+     "t": "扫了 27 个瓦片，最好 0.995x；两个近噪声变体过门禁 -0.13 %，不推荐"
+    },
+    "orin": {
+     "k": "ok",
+     "g": 0.82,
+     "n": "4w 瓦片"
+    },
+    "rx7600": {
+     "k": "ok",
+     "g": 5.49
+    }
+   }
+  },
+  {
+   "n": "8",
+   "name": "softmax 子组归约（orin_g64）",
+   "cells": {
+    "780m": {
+     "k": "none"
+    },
+    "b580": {
+     "k": "none"
+    },
+    "b70": {
+     "k": "none"
+    },
+    "4070ti": {
+     "k": "none"
+    },
+    "orin": {
+     "k": "ok",
+     "g": 0.34,
+     "n": "带内，门禁接受"
+    },
+    "rx7600": {
+     "k": "none"
+    }
+   }
+  },
+  {
+   "n": "9",
+   "name": "发布区挂钩（入口点）",
+   "cells": {
+    "780m": {
+     "k": "ok",
+     "v": "2 个",
+     "n": "softmax 名、融合入口",
+     "t": "所有者决定 2026-10-05 允许的小入口点，各自单独提交"
+    },
+    "b580": {
+     "k": "inherit",
+     "v": "无需",
+     "t": "全部内核都能从开发区选到"
+    },
+    "b70": {
+     "k": "inherit",
+     "v": "无需",
+     "t": "全部内核都能从开发区选到"
+    },
+    "4070ti": {
+     "k": "ok",
+     "v": "1 个",
+     "n": "softmax 名；注意力行走开发区注册"
+    },
+    "orin": {
+     "k": "ok",
+     "v": "1 个",
+     "n": "softmax 名"
+    },
+    "rx7600": {
+     "k": "inherit",
+     "v": "继承",
+     "t": "随 780M 分支带来两个挂钩"
+    }
+   }
+  },
+  {
+   "n": "10",
+   "name": "参数空间搜索",
+   "cells": {
+    "780m": {
+     "k": "tried",
+     "v": "1796 项，0",
+     "t": "QK^T / attn·V 全枚举，内核级快 8 到 30 %，但在融合内核不走的路径上；未过门禁"
+    },
+    "b580": {
+     "k": "none"
+    },
+    "b70": {
+     "k": "tried",
+     "v": "33 h，+1.1",
+     "t": "四个内核族抽样搜索与枚举，33 小时，产出第 7 行的 4w 瓦片 +1.10 %；注意力枚举 +0.6 / +0.95 %，带内未采纳"
+    },
+    "4070ti": {
+     "k": "none"
+    },
+    "orin": {
+     "k": "none"
+    },
+    "rx7600": {
+     "k": "none"
+    }
+   }
+  }
+ ],
+ "fams": [
+  {
+   "key": "linear",
+   "name": "线性 GEMM",
+   "color": "var(--s5)"
+  },
+  {
+   "key": "qk",
+   "name": "QK^T",
+   "color": "var(--s1)"
+  },
+  {
+   "key": "av",
+   "name": "attn·V",
+   "color": "var(--s3)"
+  },
+  {
+   "key": "softmax",
+   "name": "softmax",
+   "color": "var(--s4)"
+  },
+  {
+   "key": "attn",
+   "name": "注意力（未拆分）",
+   "color": "var(--s2)"
+  },
+  {
+   "key": "other",
+   "name": "其他",
+   "color": "var(--neutral)"
+  }
+ ],
+ "timeRows": [
+  {
+   "dev": "Arc B580 · 8B 4w",
+   "arm": "父配置",
+   "v": {
+    "linear": 651.8,
+    "qk": 153.7,
+    "av": 187.9,
+    "softmax": 45.2,
+    "other": 140.5
+   }
+  },
+  {
+   "dev": "Arc B580 · 8B 4w",
+   "arm": "调优后",
+   "v": {
+    "linear": 665.5,
+    "qk": 20.1,
+    "av": 21.8,
+    "softmax": 34.8,
+    "other": 142.2
+   }
+  },
+  {
+   "dev": "Arc B580 · 8B 8da4w",
+   "arm": "父配置",
+   "v": {
+    "linear": 554.5,
+    "qk": 150,
+    "av": 183.4,
+    "softmax": 44.8,
+    "other": 172.3
+   }
+  },
+  {
+   "dev": "Arc B580 · 8B 8da4w",
+   "arm": "调优后",
+   "v": {
+    "linear": 433.2,
+    "qk": 19.4,
+    "av": 21,
+    "softmax": 34.3,
+    "other": 172.6
+   }
+  },
+  {
+   "dev": "RX 7600 · 8B 8da4w",
+   "arm": "父配置",
+   "v": {
+    "linear": 1110.9,
+    "attn": 192.2,
+    "other": 143.9
+   }
+  },
+  {
+   "dev": "RX 7600 · 8B 8da4w",
+   "arm": "调优后",
+   "v": {
+    "linear": 972.1,
+    "attn": 46.7,
+    "other": 143.3
+   }
+  }
+ ],
+ "waste": [
+  {
+   "name": "B70 · 四个内核族的抽样搜索与枚举",
+   "hours": 33,
+   "gain": "+1.1 %",
+   "note": "4w 瓦片每形状快 2 到 6 %，端到端 +1.1 %；注意力枚举内核级快 3 到 22 %，端到端 +0.6 / +0.95 %，带内未采纳"
+  },
+  {
+   "name": "780M · QK^T 与 attn·V 全枚举（1796 项）",
+   "hours": 11,
+   "gain": "0",
+   "note": "内核级快 8 到 30 %，但在融合内核不走的三内核路径上；未过门禁，最终配置不变"
+  },
+  {
+   "name": "Orin · 读行一次的 softmax",
+   "hours": 1,
+   "gain": "更慢",
+   "note": "一个候选，负结果"
+  }
+ ],
+ "llama": [
+  {
+   "name": "Arc Pro B70",
+   "vk": [
+    1.85,
+    1.44,
+    1.23
+   ],
+   "vendor": [
+    0.83,
+    0.81,
+    0.75
+   ],
+   "vn": "SYCL"
+  },
+  {
+   "name": "Arc B580",
+   "vk": [
+    1.73,
+    1.41,
+    1.16
+   ],
+   "vendor": [
+    0.83,
+    0.83,
+    0.71
+   ],
+   "vn": "SYCL"
+  },
+  {
+   "name": "Radeon 780M",
+   "vk": [
+    1.33,
+    1.51,
+    1.4
+   ],
+   "vendor": null,
+   "vn": "无（ROCm 不支持）"
+  },
+  {
+   "name": "Jetson Orin Nano",
+   "vk": [
+    0.97,
+    1.13,
+    1.21
+   ],
+   "vendor": [
+    0.88,
+    1,
+    1.03
+   ],
+   "vn": "CUDA"
+  },
+  {
+   "name": "RTX 4070 Ti SUPER",
+   "vk": [
+    0.93,
+    1.03,
+    1.08
+   ],
+   "vendor": [
+    0.73,
+    0.81,
+    0.81
+   ],
+   "vn": "CUDA"
+  }
+ ],
+ "meta": {
+  "updated": "2026-10-08",
+  "note": "All figures from the campaign branches proposal.md / STATUS.md and topic/llamacpp-compare cells.csv. Edit this block only; the rendering code below reads it."
+ }
+}
+</script>
+<script>
+(function () {
+  const DATA = JSON.parse(document.getElementById('report-data').textContent);
+  const $ = (s) => document.querySelector(s);
+  const tip = $('#tip');
+  function showTip(html, ev) { tip.innerHTML = html; tip.style.opacity = 1; moveTip(ev); }
+  function moveTip(ev) { const x = Math.min(ev.clientX + 14, window.innerWidth - 300); const y = ev.clientY + 16; tip.style.left = x + 'px'; tip.style.top = y + 'px'; }
+  function hideTip() { tip.style.opacity = 0; }
+  function attach(el, html) { el.classList.add('hover-target'); el.addEventListener('mouseenter', (e) => showTip(html, e)); el.addEventListener('mousemove', moveTip); el.addEventListener('mouseleave', hideTip); el.setAttribute('tabindex', '0'); el.addEventListener('focus', (e) => { const r = el.getBoundingClientRect(); showTip(html, { clientX: r.left, clientY: r.top }); }); el.addEventListener('blur', hideTip); }
+  const svgNS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs, parent) { const e = document.createElementNS(svgNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+  function text(parent, x, y, s, cls, anchor) { const t = el('text', { x, y, 'text-anchor': anchor || 'start', class: cls || '' }, parent); t.textContent = s; return t; }
+  const pct = (g) => (g >= 0 ? '+' : '') + g.toFixed(2) + ' %';
+
+  // ---------- 设备与最终收益 ----------
+  const devices = DATA.devices;
+  const tiles = $('#tiles');
+  const maxFinal = 70;
+  devices.forEach((d) => {
+    const t = document.createElement('div'); t.className = 'tile';
+    t.innerHTML = `<div class="label">${d.name}</div><div class="value">+${d.final.toFixed(1)} %</div><div class="sub">${d.stock ? `相对 stock ${d.stock[0]}x → ${d.stock[1]}x` : d.base}</div><div class="meter" aria-hidden="true"><span style="width:${(d.final / maxFinal * 100).toFixed(1)}%"></span></div>`;
+    attach(t, `<b>${d.name}</b><br>最终几何平均 +${d.final.toFixed(1)} %，${d.base}${d.stock ? `<br>相对未修改的 ExecuTorch 1.5：${d.stock[0]}x → ${d.stock[1]}x` : ''}`);
+    tiles.appendChild(t);
+  });
+
+  // ---------- 图 1：候选链 ----------
+  const cats = DATA.cats;
+  const catBy = Object.fromEntries(cats.map((c) => [c.key, c]));
+  const chains = DATA.chains;
+  const reported = DATA.reported;
+  const lg = $('#legend-chain');
+  cats.forEach((c) => { const s = document.createElement('span'); s.innerHTML = `<i style="background:${c.color}"></i>${c.name}`; lg.appendChild(s); });
+  (function drawChain() {
+    const W = 1040, left = 170, right = 70, rowH = 40, top = 30;
+    const rows = devices.map((d) => d.id);
+    const H = top + rows.length * rowH + 30;
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '每台设备被采纳候选的累计增益堆叠图' });
+    const maxLn = Math.log(1.72);
+    const x = (ln) => left + (ln / maxLn) * (W - left - right);
+    [0, 10, 20, 30, 40, 50, 60, 70].forEach((p) => { const xx = x(Math.log(1 + p / 100)); el('line', { x1: xx, x2: xx, y1: top - 6, y2: H - 28, class: 'grid' }, svg); text(svg, xx, H - 12, (p ? '+' : '') + p + ' %', 'mono', 'middle'); });
+    rows.forEach((id, i) => {
+      const d = devices.find((v) => v.id === id); const y = top + i * rowH;
+      text(svg, left - 12, y + 16, d.name, 'strong', 'end');
+      let acc = 0; const barH = 22;
+      chains[id].forEach((seg) => {
+        const w = Math.log(1 + seg.g / 100); const x0 = x(acc), x1 = x(acc + w); acc += w;
+        const r = el('rect', { x: x0 + 1, y, width: Math.max(0, x1 - x0 - 2), height: barH, fill: catBy[seg.c].color, rx: 0 }, svg);
+        if (seg.g <= 0) { r.setAttribute('width', 2); r.setAttribute('x', x0 - 1); }
+        const hit = el('rect', { x: x0 - 2, y: y - 4, width: Math.max(8, x1 - x0 + 4), height: barH + 8, class: 'hit' }, svg);
+        attach(hit, `<b>${d.name}</b><br>${seg.n}<br>相对父配置 <b>${pct(seg.g)}</b> · ${catBy[seg.c].name}`);
+      });
+      const total = (Math.exp(acc) - 1) * 100;
+      text(svg, x(acc) + 8, y + 16, pct(total).replace('.00', ''), 'mono strong');
+      text(svg, left - 12, y + 32, `最终场次直接测得 ${pct(reported[id]).replace(' %', '%')}`, 'tiny', 'end');
+    });
+    $('#chart-chain').appendChild(svg);
+    const tb = ['<table><thead><tr><th>设备</th><th>候选</th><th>技术</th><th class="num">增益</th></tr></thead><tbody>'];
+    rows.forEach((id) => chains[id].forEach((s) => tb.push(`<tr><td>${devices.find((v) => v.id === id).name}</td><td>${s.n}</td><td>${catBy[s.c].name}</td><td class="num">${pct(s.g)}</td></tr>`)));
+    tb.push('</tbody></table>'); $('#table-chain').innerHTML = tb.join('');
+  })();
+
+  // ---------- 图 2：矩阵 ----------
+  const devOrder = ['780m', 'b580', 'b70', '4070ti', 'orin', 'rx7600'];
+  const techs = DATA.techs;
+  (function drawMatrix() {
+    const m = $('#matrix');
+    const h0 = document.createElement('div'); h0.className = 'h'; h0.textContent = '技术'; m.appendChild(h0);
+    devOrder.forEach((id) => { const d = devices.find((v) => v.id === id); const h = document.createElement('div'); h.className = 'h dev'; h.innerHTML = `${d.name}<small>${d.vendor} · +${d.final.toFixed(1)} %</small>`; m.appendChild(h); });
+    const q = (g) => g >= 40 ? 'q6' : g >= 15 ? 'q5' : g >= 6 ? 'q4' : g >= 3 ? 'q3' : g >= 1 ? 'q2' : 'q1';
+    techs.forEach((t) => {
+      const th = document.createElement('div'); th.className = 't'; th.innerHTML = `<b>${t.n}</b>${t.name}`; m.appendChild(th);
+      devOrder.forEach((id) => {
+        const c = t.cells[id]; const d = devices.find((v) => v.id === id); const cell = document.createElement('div'); cell.setAttribute('role', 'cell');
+        let html = '', tipHtml = `<b>${d.name}</b> · ${t.name}<br>`;
+        if (c.k === 'ok') { cell.className = 'c ' + (c.g !== undefined ? q(c.g) : 'q4'); html = `<span class="v">${c.g !== undefined ? pct(c.g).replace(' %', '%') : c.v}</span>${c.n ? `<span class="n">${c.n}</span>` : ''}`; tipHtml += c.t || (c.g !== undefined ? `采纳，相对父配置 ${pct(c.g)}${c.n ? '（' + c.n + '）' : ''}` : c.v); }
+        else if (c.k === 'tried') { cell.className = 'c tried'; html = `<span class="v">${c.v}</span><span class="n">未采纳</span>`; tipHtml += c.t; }
+        else if (c.k === 'inherit') { cell.className = 'c inherit'; html = `<span class="n">${c.v}</span>`; tipHtml += c.t; }
+        else if (c.k === 'pending') { cell.className = 'c pending'; html = `<span class="n">${c.v}</span>`; tipHtml += c.t; }
+        else { cell.className = 'c none'; html = '<span class="n">—</span>'; tipHtml += '没做'; }
+        cell.innerHTML = html; attach(cell, tipHtml); m.appendChild(cell);
+      });
+    });
+  })();
+
+  // ---------- 图 3：时间去向 ----------
+  const fams = DATA.fams;
+  const timeRows = DATA.timeRows;
+  const lt = $('#legend-time');
+  fams.forEach((f) => { const s = document.createElement('span'); s.innerHTML = `<i style="background:${f.color}"></i>${f.name}`; lt.appendChild(s); });
+  (function drawTime() {
+    const W = 1040, left = 190, right = 80, rowH = 30, groupGap = 18, top = 24;
+    const groups = [...new Set(timeRows.map((r) => r.dev))];
+    const H = top + timeRows.length * rowH + (groups.length - 1) * groupGap + 34;
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '调优前后 8B 预填充各内核族的派发时间堆叠条' });
+    const maxMs = 1500; const x = (ms) => left + (ms / maxMs) * (W - left - right);
+    [0, 250, 500, 750, 1000, 1250, 1500].forEach((ms) => { const xx = x(ms); el('line', { x1: xx, x2: xx, y1: top - 6, y2: H - 30, class: 'grid' }, svg); text(svg, xx, H - 12, ms.toLocaleString() + (ms === 1500 ? ' ms' : ''), 'mono', 'middle'); });
+    let y = top, lastDev = null;
+    timeRows.forEach((r) => {
+      if (lastDev && r.dev !== lastDev) y += groupGap; lastDev = r.dev;
+      if (r.arm === '父配置') text(svg, left - 12, y + 14, r.dev, 'strong', 'end');
+      text(svg, left - 12, y + 14 + (r.arm === '父配置' ? 14 : 0), r.arm, 'tiny', 'end');
+      let acc = 0; const total = Object.values(r.v).reduce((a, b) => a + b, 0);
+      fams.forEach((f) => { if (!(f.key in r.v)) return; const ms = r.v[f.key]; const x0 = x(acc), x1 = x(acc + ms); acc += ms; const rect = el('rect', { x: x0 + 1, y, width: Math.max(0, x1 - x0 - 2), height: 20, fill: f.color }, svg); attach(rect, `<b>${r.dev} · ${r.arm}</b><br>${f.name}：<b>${ms.toFixed(1)} ms</b>，占 ${(ms / total * 100).toFixed(0)} %`); });
+      text(svg, x(total) + 8, y + 15, total.toFixed(0) + ' ms', 'mono strong');
+      y += rowH;
+    });
+    $('#chart-time').appendChild(svg);
+    const tb = ['<table><thead><tr><th>格</th><th>臂</th>' + fams.map((f) => `<th class="num">${f.name}</th>`).join('') + '<th class="num">合计</th></tr></thead><tbody>'];
+    timeRows.forEach((r) => { const total = Object.values(r.v).reduce((a, b) => a + b, 0); tb.push(`<tr><td>${r.dev}</td><td>${r.arm}</td>${fams.map((f) => `<td class="num">${f.key in r.v ? r.v[f.key].toFixed(1) : ''}</td>`).join('')}<td class="num">${total.toFixed(1)}</td></tr>`); });
+    tb.push('</tbody></table>'); $('#table-time').innerHTML = tb.join('');
+  })();
+
+  // ---------- 图 4：无回报 ----------
+  (function drawWaste() {
+    const rows = DATA.waste;
+    const W = 1040, left = 330, right = 120, rowH = 40, top = 24; const H = top + rows.length * rowH + 30;
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '参数搜索的机时与端到端收益' });
+    const maxH = 36; const x = (h) => left + (h / maxH) * (W - left - right);
+    [0, 6, 12, 18, 24, 30, 36].forEach((h) => { const xx = x(h); el('line', { x1: xx, x2: xx, y1: top - 6, y2: H - 28, class: 'grid' }, svg); text(svg, xx, H - 12, h + (h === 36 ? ' 小时' : ''), 'mono', 'middle'); });
+    rows.forEach((r, i) => { const y = top + i * rowH; text(svg, left - 12, y + 16, r.name, 'strong', 'end'); const rect = el('rect', { x: x(0), y, width: Math.max(2, x(r.hours) - x(0)), height: 22, fill: 'var(--neutral)' }, svg); attach(rect, `<b>${r.name}</b><br>机时约 ${r.hours} 小时，端到端 <b>${r.gain}</b><br>${r.note}`); text(svg, x(r.hours) + 8, y + 16, `${r.hours} h → ${r.gain}`, 'mono strong'); });
+    $('#chart-waste').appendChild(svg);
+  })();
+
+  // ---------- 图 5：llama.cpp ----------
+  (function drawLlama() {
+    const rows = DATA.llama;
+    const models = ['1B', '3B', '8B'];
+    const W = 1040, left = 170, right = 30, rowH = 44, top = 30; const H = top + rows.length * rowH + 34;
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '调优后相对 llama.cpp 两种后端的速度比' });
+    const minR = 0.6, maxR = 2.0; const x = (r) => left + ((r - minR) / (maxR - minR)) * (W - left - right);
+    [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0].forEach((r) => { const xx = x(r); el('line', { x1: xx, x2: xx, y1: top - 8, y2: H - 30, class: r === 1 ? 'ref' : 'grid' }, svg); text(svg, xx, H - 12, r.toFixed(1) + 'x', 'mono', 'middle'); });
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + 10;
+      text(svg, left - 12, y + 4, r.name, 'strong', 'end');
+      text(svg, left - 12, y + 19, `厂商后端：${r.vn}`, 'tiny', 'end');
+      const lineY = y;
+      [['vk', 'var(--s1)', 'llama.cpp Vulkan'], ['vendor', 'var(--s2)', '厂商后端 ' + r.vn]].forEach(([k, color, label], j) => {
+        const vals = r[k]; if (!vals) return; const yy = lineY + j * 14;
+        el('line', { x1: x(Math.min(...vals)), x2: x(Math.max(...vals)), y1: yy, y2: yy, stroke: color, 'stroke-width': 2, 'stroke-linecap': 'round' }, svg);
+        vals.forEach((v, mi) => { el('circle', { cx: x(v), cy: yy, r: 6, fill: 'var(--surface)' }, svg); const c = el('circle', { cx: x(v), cy: yy, r: 4.5, fill: color }, svg); attach(c, `<b>${r.name}</b> · ${models[mi]}<br>调优后 4w / ${label}：<b>${v.toFixed(2)}x</b>`); });
+        text(svg, x(Math.max(...vals)) + 10, yy + 4, models.map((m, mi) => `${m} ${vals[mi].toFixed(2)}`).join(' · '), 'tiny');
+      });
+    });
+    $('#chart-llama').appendChild(svg);
+    const tb = ['<table><thead><tr><th>设备</th><th>对比</th><th class="num">1B</th><th class="num">3B</th><th class="num">8B</th></tr></thead><tbody>'];
+    rows.forEach((r) => { tb.push(`<tr><td>${r.name}</td><td>相对 llama.cpp Vulkan</td>${r.vk.map((v) => `<td class="num">${v.toFixed(2)}x</td>`).join('')}</tr>`); if (r.vendor) tb.push(`<tr><td></td><td>相对 ${r.vn}</td>${r.vendor.map((v) => `<td class="num">${v.toFixed(2)}x</td>`).join('')}</tr>`); });
+    tb.push('</tbody></table>'); $('#table-llama').innerHTML = tb.join('');
+  })();
+})();
+</script>
