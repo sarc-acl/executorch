@@ -27,6 +27,15 @@ export ETVK_DEVICE_INDEX=0 SARC_MOUNT_ROOT=$B580_ROOT B580_TOP=${B580_TOP:-$$}
 export B580_PYTHON=${B580_PYTHON:-$A/venv/bin/python}   # executorch.devtools for trace_analysis.py (a venv in the artifact directory)
 export TMPDIR=${B580_TMPDIR:-$A/tmp}; mkdir -p $TMPDIR 2>/dev/null   # nothing large under /tmp or /home on this machine
 gtemp_mc() { cat $HW/temp2_input; }   # package temperature, millidegrees C
+# desktop_idle / idle_wait: the card drives the owner's desktop, and a desktop in use costs 4 to 10 % of the
+# engine time of a run (s1-aa of 2026-10-08, superseded). A timed unit (a timed run, a trace run, a kernel screen
+# run) therefore starts only while the graphical session of seat0 reports IdleHint=yes (no input for GNOME's idle
+# delay, 900 s as found). Nothing is changed on the desktop; the wait is logged in logs/idle_wait.log. A run the
+# owner's return disturbs is still caught by the foreign-engine-time limit (BUSYMAX).
+desktop_idle() { [[ $(loginctl show-session "$(loginctl list-sessions --no-legend | awk '$4 == "seat0" && $6 == "user" {print $1; exit}')" -p IdleHint --value 2>/dev/null) == yes ]]; }
+idle_wait() { local n=0
+  until desktop_idle; do (( n++ % 45 == 0 )) && echo "$(date -u +%FT%TZ) desktop in use, waiting: ${1:-timed unit}" >> $A/logs/idle_wait.log; sleep 20; done
+  (( n > 0 )) && echo "$(date -u +%FT%TZ) desktop idle after $((n * 20)) s: ${1:-timed unit}" >> $A/logs/idle_wait.log; return 0; }
 # gpu_shared / build_exclusive: the desktop-build lock shared with the Jetson Orin campaign, which cross-builds
 # on this machine. Every GPU job of this campaign holds it shared (fd 8, inherited by its children), every
 # build holds it exclusive, so a build never runs during a measurement.

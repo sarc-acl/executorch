@@ -95,6 +95,7 @@ CSV=$O/runs.csv
 run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected tokens>
   local m=$1 q=$2 b=$3 r=$4 s=$5 p=$6 tag=$7 want=$8 log t0 tp tq rc oth cs sp
   log="logs/$tag-$m-$q-$b-r$r.log"
+  [[ $tag == prefill ]] && idle_wait "$tag $m $q $b r$r"   # desktop: a timed run starts only on an idle desktop (host.sh)
   t0=$SECONDS; cool; cs=$((SECONDS - t0)); tp=$(gtemp); oth=$(others | tr ',' ';')
   [[ -n $oth ]] && finish E2E5_ABORTED "other GPU process before $tag $m $q $b r$r: $oth"
   local benv=(); [[ -f $D/$b/env ]] && mapfile -t benv < "$D/$b/env"

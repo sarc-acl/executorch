@@ -23,3 +23,24 @@ arithmetic (D3)    the fused kernel changes summation order: candidate rms and m
                    0.5 nat mean KL and one third of the real-text windows (tools/decide.py, unchanged)
 stop               two consecutive gated candidates under 2 % geomean, or after candidate 2 whatever its result,
                    or 24 hours of device time without a correct candidate 1, or the end of the budget
+
+# 2026-10-08 21:10 UTC, appended before any kernel-screen timing was read and before any candidate was timed.
+s1-aa (20:49 to 20:59 UTC) is not the calibration session: the owner returned to the desktop when it started
+                   (seat0 IdleHint=no from 20:50 UTC), foreign engine time was 3.6 to 9.7 % in every timed run, one
+                   A/A cell read +2.96 % (outside +-2 %) and every parent cell read 5.9 to 9.2 % below the first
+                   campaign's s6-final (outside 3 %). By the noise_band rule nothing is optimised until the cause is
+                   found; the cause is the desktop in use. The session, the three calibration files it wrote
+                   (BUSYMAX 15.62 %, CLKMIN 2651 MHz, idle 47 C) and the three screen runs made in that period are
+                   kept under superseded/desktop-in-use-20261008T2050Z/ and are not used. The calibration session is
+                   s1-aa2, the same two arms, run behind an idle wait; the rules above apply to it unchanged.
+idle_wait          a timed run, a trace run and a kernel-screen run start only while the graphical session of seat0
+                   reports IdleHint=yes (host.sh idle_wait). This adds a start condition, not a validity rule: the
+                   validity rules above are unchanged, and a run the owner's return disturbs is rejected by BUSYMAX.
+kernel_screen, reading of "the 780M / RX 7600 tile shape" (the incumbents of the rule): the literal 780M variants,
+                   d64_t32x32s32m8ro (head_dim 64) and d128_t16x64s32m8ro (head_dim 128), 32 lanes. If one of them
+                   does not run on this driver, the incumbent for that head_dim is its 16-lane twin with the same
+                   block width (d64_t16x32s16m8ro, d128_t16x64s16m8ro). A challenger is selected only if its
+                   kernel time (fused kernel + copy pass, per model of that head_dim) is at least 3 % below the
+                   incumbent's in every one of the 3 rounds, for every model of that head_dim; among several such
+                   challengers the one with the lowest median. Two-pass variants (no "o") are screened for the
+                   record and are not challengers.

@@ -22,7 +22,7 @@ for ((r = 1; r <= R; r++)); do for p in "$@"; do
   [[ -n $DRY ]] && { echo "WOULD_RUN $p r$r"; todo=$((todo + 1)); continue; }
   E=(); [[ $p != base ]] && E=(ET_VK_SARC_UNVERIFIED=1 "ET_VK_SARC_DEV_PROFILE=${p%%+*}")
   [[ $p == *+softmax* ]] && E+=("ET_VK_SARC_XE2_SOFTMAX=${p##*+softmax}")   # "<profile>+softmax1|2": hook builds only (tools/build-hook.sh)
-  cool_start
+  idle_wait "screen $N $p r$r"; cool_start
   date -u +%FT%TZ > $L.started
   env "${E[@]}" $TOOLS/gl.sh $B --sdpa > $L 2>&1; rc=$?; t=$(( $(gtemp_mc) / 1000 )); echo "$rc $t" > $L.rc
   echo "$p r$r rc=$rc temp=$t $(grep -o 'sarc_sdpa_[a-z0-9_]*' $L | sort -u | tr '\n' ' ')"

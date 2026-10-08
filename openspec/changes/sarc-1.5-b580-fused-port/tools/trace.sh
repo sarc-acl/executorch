@@ -18,6 +18,7 @@ for b in $BUILDS; do BD=$S/$b-traced
   for m in "${MS[@]}"; do IFS=: read -r MD ST <<< "${STEM[$m]}"; for q in "${QS[@]}"; do
     benv=(); [[ -f $BD/env ]] && mapfile -t benv < $BD/env
     n=$((n + 1)); rm -f $O/$m-$q-$b.etdp
+    idle_wait "trace $m $q $b"
     guarded $O/$m-$q-$b.others env "${benv[@]}" LD_LIBRARY_PATH=$BD timeout 1800 $BD/llama_main \
       --model_path $MROOT/$MD/exported/${ST}_vulkan_$q.pte --tokenizer_path $MROOT/$MD/original/tokenizer.model \
       --prompt_file $S/prompt_2048.txt --max_new_tokens 1 --temperature 0 --warmup \
