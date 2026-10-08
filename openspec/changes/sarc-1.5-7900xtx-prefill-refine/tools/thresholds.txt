@@ -1,0 +1,13 @@
+# Thresholds of the RX 7900 XTX campaign, fixed before any measurement (proposal.md, "Thresholds").
+# clkmin, reps, thermal_mask and busy_pre_max are filled in once, from the A/A session (tools/calibrate.py), before the first
+# candidate is measured; they are not changed afterwards. Until then: clkmin=0, thermal_mask=0xffff (every temperature bit rejects),
+# busy_pre_max=100 (the foreign-busy check does not reject).
+noise_band_pct=2
+baseline_tolerance_pct=3
+clkn=5
+sample_period_s=0.005
+reps=5
+screen_margin_pct=3
+clkmin=0
+thermal_mask=0xffff
+busy_pre_max=100
