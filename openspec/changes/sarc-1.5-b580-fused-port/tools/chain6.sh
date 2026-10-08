@@ -7,7 +7,7 @@ set -uo pipefail
 . "$(dirname "$(readlink -f "$0")")/host.sh"; ST=$A/logs/chain6.status; REV=${1:?commit}
 say() { echo "$(date -u +%FT%TZ) $*" | tee -a $ST; }
 say "chain6 start $REV"
-$TOOLS/build-both.sh topic5 $REV > $A/logs/build-topic5.out 2>&1 || { say "CHAIN5_STOPPED topic5 build failed"; exit 1; }
+grep -qsx BUILD_BOTH_OK $A/build/topic5.src.txt || $TOOLS/build-both.sh topic5 $REV > $A/logs/build-topic5.out 2>&1 || { say "CHAIN6_STOPPED topic5 build failed"; exit 1; }
 say "topic5 built"
 V="d128_t16x128s16m8g8oj d128_t32x64s16m8g8oj d128_t8x128s16m8g8roj d64_t16x64s16m8g4oj d64_t16x128s16m8g4roj d64_t8x64s16m8g4roj"
 O=$A/raw/c1-smoke4; mkdir -p $O; T=$A/build/topic5/tests/test_llama_microbench
@@ -23,4 +23,4 @@ P="b580-refine3 b580-fused-d64_t16x64s16m8g4roj b580-fused-d64_t8x32s16m8g2roj b
 $TOOLS/screen_sdpa.sh screen4-fused topic5 1 $P > $A/logs/screen4-fused.out 2>&1; rc=$?
 python3 $TOOLS/screen_sdpa_summary.py $A/raw/screen4-fused/screen.csv b580-refine3 > $A/raw/screen4-fused/summary.csv 2>&1
 say "screen4-fused rc=$rc $(tail -1 $A/raw/screen4-fused/env.txt)"
-say "CHAIN5_DONE"
+say "CHAIN6_DONE"

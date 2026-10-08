@@ -23,6 +23,10 @@ HW=$(echo $PCI/hwmon/hwmon*); FREQ=$PCI/tile0/gt0/freq0
 IDLE_FILE=$A/idle_temp_mc     # package temperature of the cool, idle card (millidegrees C)
 CLKMIN_FILE=$A/clkmin_mhz     # lowest accepted median GT clock of a timed run (MHz)
 BUSYMAX_FILE=$A/busymax_pct   # highest accepted foreign engine time inside the timed prefill window (percent)
+# B580_TOP: the top-level tool of a job. A value inherited from a process that is not an ancestor of this shell
+# (a chain launched from a shell that had sourced this file) is replaced, or the guard would take the job's own
+# runners for foreign ones.
+case " $(ps -o pid= -p $$ 2>/dev/null) $(p=$$; while [[ -n $p && $p -gt 1 ]]; do p=$(ps -o ppid= -p $p 2>/dev/null | tr -d ' '); echo -n "$p "; done)" in *" ${B580_TOP:-none} "*) ;; *) unset B580_TOP ;; esac
 export ETVK_DEVICE_INDEX=0 SARC_MOUNT_ROOT=$B580_ROOT B580_TOP=${B580_TOP:-$$}
 export B580_PYTHON=${B580_PYTHON:-$A/venv/bin/python}   # executorch.devtools for trace_analysis.py (a venv in the artifact directory)
 export TMPDIR=${B580_TMPDIR:-$A/tmp}; mkdir -p $TMPDIR 2>/dev/null   # nothing large under /tmp or /home on this machine
