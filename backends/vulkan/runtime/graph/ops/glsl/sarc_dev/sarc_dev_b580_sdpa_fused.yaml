@@ -9,7 +9,9 @@
 # attention entry point (Override::sdpa_fused_*) from impl/sarc_dev/b580/SdpaB580Fused.cpp.
 # Name: d<HEAD_DIM>_t<WG_TILE_M>x<WG_TILE_N>s<SUBGROUP_SIZE>m<MMA_M>[r][o][j][a]; r = AQ_REG (Q tiles kept in registers),
 # o = ONLINE (one pass, running row maximum), j = QK_J_OUTER (one column of score tiles live; needs r),
-# a = ACC_SH (accumulators in shared memory).
+# a = ACC_SH (accumulators in shared memory); g<G> before the letters = SUBGROUPS (G subgroups per workgroup, each
+# owning 1 / G of the score columns and of the accumulator's head_dim tiles; needs j, not a, and
+# WG_TILE_N / 16 and HEAD_DIM / 16 multiples of G, G * SUBGROUP_SIZE / WG_TILE_M <= 8).
 # Each variant needs: WG_TILE_M a multiple of MMA_M that divides SUBGROUP_SIZE, WG_TILE_N and HEAD_DIM multiples of
 # 16, WG_TILE_N / (SUBGROUP_SIZE / WG_TILE_M) a multiple of 8, SUBGROUP_SIZE / WG_TILE_M <= 4.
 
@@ -30,6 +32,7 @@ sarc_dev_b580_sdpa_fused:
     ONLINE: false
     QK_J_OUTER: false
     ACC_SH: false
+    SUBGROUPS: 1
   generate_variant_forall:
     combination:
       parameter_names: [IO_STORAGE, K_CACHE_STORAGE]
@@ -276,3 +279,102 @@ sarc_dev_b580_sdpa_fused:
       ONLINE: false
       QK_J_OUTER: true
       ACC_SH: true
+    - NAME: sarc_dev_b580_sdpa_fused_d128_t8x64s16m8g2oj
+      HEAD_DIM: 128
+      WG_TILE_M: 8
+      WG_TILE_N: 64
+      SUBGROUP_SIZE: 16
+      AQ_REG: false
+      ONLINE: true
+      QK_J_OUTER: true
+      SUBGROUPS: 2
+    - NAME: sarc_dev_b580_sdpa_fused_d128_t8x64s16m8g2j
+      HEAD_DIM: 128
+      WG_TILE_M: 8
+      WG_TILE_N: 64
+      SUBGROUP_SIZE: 16
+      AQ_REG: false
+      ONLINE: false
+      QK_J_OUTER: true
+      SUBGROUPS: 2
+    - NAME: sarc_dev_b580_sdpa_fused_d128_t8x64s16m8g4roj
+      HEAD_DIM: 128
+      WG_TILE_M: 8
+      WG_TILE_N: 64
+      SUBGROUP_SIZE: 16
+      AQ_REG: true
+      ONLINE: true
+      QK_J_OUTER: true
+      SUBGROUPS: 4
+    - NAME: sarc_dev_b580_sdpa_fused_d128_t8x64s16m8g4oj
+      HEAD_DIM: 128
+      WG_TILE_M: 8
+      WG_TILE_N: 64
+      SUBGROUP_SIZE: 16
+      AQ_REG: false
+      ONLINE: true
+      QK_J_OUTER: true
+      SUBGROUPS: 4
+    - NAME: sarc_dev_b580_sdpa_fused_d128_t8x32s16m8g2oj
+      HEAD_DIM: 128
+      WG_TILE_M: 8
+      WG_TILE_N: 32
+      SUBGROUP_SIZE: 16
+      AQ_REG: false
+      ONLINE: true
+      QK_J_OUTER: true
+      SUBGROUPS: 2
+    - NAME: sarc_dev_b580_sdpa_fused_d128_t16x64s16m8g4oj
+      HEAD_DIM: 128
+      WG_TILE_M: 16
+      WG_TILE_N: 64
+      SUBGROUP_SIZE: 16
+      AQ_REG: false
+      ONLINE: true
+      QK_J_OUTER: true
+      SUBGROUPS: 4
+    - NAME: sarc_dev_b580_sdpa_fused_d64_t8x32s16m8g2roj
+      HEAD_DIM: 64
+      WG_TILE_M: 8
+      WG_TILE_N: 32
+      SUBGROUP_SIZE: 16
+      AQ_REG: true
+      ONLINE: true
+      QK_J_OUTER: true
+      SUBGROUPS: 2
+    - NAME: sarc_dev_b580_sdpa_fused_d64_t16x32s16m8g2oj
+      HEAD_DIM: 64
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      SUBGROUP_SIZE: 16
+      AQ_REG: false
+      ONLINE: true
+      QK_J_OUTER: true
+      SUBGROUPS: 2
+    - NAME: sarc_dev_b580_sdpa_fused_d64_t16x32s16m8g2roj
+      HEAD_DIM: 64
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      SUBGROUP_SIZE: 16
+      AQ_REG: true
+      ONLINE: true
+      QK_J_OUTER: true
+      SUBGROUPS: 2
+    - NAME: sarc_dev_b580_sdpa_fused_d64_t16x64s16m8g4roj
+      HEAD_DIM: 64
+      WG_TILE_M: 16
+      WG_TILE_N: 64
+      SUBGROUP_SIZE: 16
+      AQ_REG: true
+      ONLINE: true
+      QK_J_OUTER: true
+      SUBGROUPS: 4
+    - NAME: sarc_dev_b580_sdpa_fused_d64_t8x32s16m8oj
+      HEAD_DIM: 64
+      WG_TILE_M: 8
+      WG_TILE_N: 32
+      SUBGROUP_SIZE: 16
+      AQ_REG: false
+      ONLINE: true
+      QK_J_OUTER: true
+      SUBGROUPS: 1

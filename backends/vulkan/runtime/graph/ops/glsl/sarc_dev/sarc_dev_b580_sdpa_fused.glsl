@@ -68,6 +68,7 @@
 #extension GL_KHR_memory_scope_semantics : require
 #extension GL_KHR_shader_subgroup_basic : enable
 #extension GL_KHR_shader_subgroup_vote : enable
+#extension GL_KHR_shader_subgroup_ballot : enable
 #extension GL_EXT_shader_explicit_arithmetic_types : require
 #extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
 #extension GL_EXT_control_flow_attributes : enable
@@ -81,6 +82,11 @@ $if ONLINE:
 $if QK_J_OUTER:
   // One score tile column at a time (needs AQ_REG): MMAS_M live score tiles instead of MMAS_M * MMAS_C.
   #define QK_J_OUTER
+$if SUBGROUPS > 1:
+  // A workgroup is SUBGROUPS subgroups that share the block's scores and e
+  // through shared memory; each owns 1 / SUBGROUPS of the score tile columns
+  // and of the head_dim tiles of the accumulators (needs QK_J_OUTER, not ACC_SH).
+  #define MULTI_SG
 $if ACC_SH:
   // The fp32 accumulators live in shared memory, loaded and stored around each block's products.
   #define ACC_SH
@@ -113,6 +119,17 @@ const uint HEAD_DIM = ${HEAD_DIM};
 const uint WG_TILE_M = ${WG_TILE_M};
 const uint WG_TILE_N = ${WG_TILE_N};
 const uint SUBGROUP_SIZE = ${SUBGROUP_SIZE};
+const uint SGS = ${SUBGROUPS};
+const uint LANES = SUBGROUP_SIZE * SGS;
+
+// Every read of a shared slot another invocation wrote follows one of these.
+#ifdef MULTI_SG
+#define SYNC() memoryBarrierShared(); barrier()
+#define SG_ID gl_SubgroupID
+#else
+#define SYNC() memoryBarrierShared(); subgroupBarrier()
+#define SG_ID 0u
+#endif
 
 // Query-row tiles are MMA_M high; context and head_dim tiles are 16 wide both
 // as the N of one product and as the K of the other (MMA_N == MMA_K == 16).
@@ -121,7 +138,7 @@ const uint MMAS_C = WG_TILE_N / MMA_N;
 const uint MMAS_D = HEAD_DIM / MMA_N;
 
 // An invocation owns SEG_V8 uvec4 (8 fp16 each) of one row of a block.
-const uint SEGS = SUBGROUP_SIZE / WG_TILE_M;
+const uint SEGS = LANES / WG_TILE_M;
 const uint SEG_V8 = WG_TILE_N / SEGS / 8u;
 
 // A row of Psh (padded by one uvec4) also holds the row's 16 fp32 divisors at the end.
@@ -130,13 +147,16 @@ shared uvec4 Psh[WG_TILE_M * P_STRIDE]; // scores, then e [s][c]
 shared float Rsh[WG_TILE_M * SEGS];     // per-invocation row maxima / sums
 #ifdef ONLINE
 shared vec4 Dsh[WG_TILE_M * 4u];        // per-row rescale divisors, one tile wide
+#ifdef MULTI_SG
+shared uint Gsh;                        // some row's maximum rose in this block
+#endif
 #endif
 
 #ifdef ACC_SH
 shared float Ash[WG_TILE_M * HEAD_DIM];  // accumulators [s][d]
 #define ACC_TILE(i, j) Ash, MMA_M * (i) * HEAD_DIM + MMA_N * (j), HEAD_DIM, gl_CooperativeMatrixLayoutRowMajor
 #else
-coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> acc[MMAS_M][MMAS_D];
+coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> acc[MMAS_M][MMAS_D / SGS];
 #endif
 #ifndef QK_J_OUTER
 coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> sc[MMAS_M][MMAS_C];
@@ -161,7 +181,8 @@ uvec4 pack8(const f16vec4 v0, const f16vec4 v1) {
 void qk_block(const uint q_base, const uint k_base) {
 #ifdef QK_J_OUTER
   // Same products in the same k order per tile as below.
-  [[unroll]] for (uint j = 0; j < MMAS_C; ++j) {
+  [[unroll]] for (uint jj = 0; jj < MMAS_C / SGS; ++jj) {
+    const uint j = jj * SGS + SG_ID;
     coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> sc_j[MMAS_M];
     [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
       sc_j[i] = coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0.0);
@@ -171,7 +192,15 @@ void qk_block(const uint q_base, const uint k_base) {
       coopMatLoad(
           matB, t_k, K_TILE(k_base, j, k), gl_CooperativeMatrixLayoutColumnMajor);
       [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
+#ifdef AQ_REG
         sc_j[i] = coopMatMulAdd(aq[i][k], matB, sc_j[i]);
+#else
+        coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA> matA;
+        coopMatLoad(
+            matA, t_q, q_base + MMA_M * i * uint(out_row_stride_arg) + MMA_K * k,
+            uint(out_row_stride_arg), gl_CooperativeMatrixLayoutRowMajor);
+        sc_j[i] = coopMatMulAdd(matA, matB, sc_j[i]);
+#endif
       }
     }
     [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
@@ -260,9 +289,10 @@ void av_block(const uint vt_base) {
           gl_CooperativeMatrixLayoutRowMajor);
     }
     coopmat<float16_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> matB;
-    [[unroll]] for (uint j = 0; j < MMAS_D; ++j) {
+    [[unroll]] for (uint j = 0; j < MMAS_D / SGS; ++j) {
       coopMatLoad(
-          matB, t_vt, VT_TILE(vt_base, j, k), gl_CooperativeMatrixLayoutColumnMajor);
+          matB, t_vt, VT_TILE(vt_base, SG_ID * (MMAS_D / SGS) + j, k),
+          gl_CooperativeMatrixLayoutColumnMajor);
       [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
         acc[i][j] = coopMatMulAdd(matA[i], matB, acc[i][j]);
       }
@@ -292,11 +322,11 @@ void main() {
       (s_base + WG_TILE_M - 1u + uint(input_pos)) / WG_TILE_N + 1u);
 
   const uint q_base = (s_base * Q_H + q_h) * HEAD_DIM;
-  // Everything below assumes the workgroup is exactly one subgroup: the
-  // pipeline requires SUBGROUP_SIZE and the local size equals it. If a driver
-  // ever splits the workgroup anyway, the rows are written as NaN (one writer
-  // per row) instead of being computed from slots another subgroup may race on.
-  if (gl_NumSubgroups != 1u || gl_SubgroupSize != SUBGROUP_SIZE) {
+  // Everything below assumes the workgroup is exactly SGS subgroups of
+  // SUBGROUP_SIZE: the pipeline requires SUBGROUP_SIZE and the local size is
+  // SGS times it. If a driver ever splits the workgroup differently, the rows
+  // are written as NaN (one writer per row) instead of being computed.
+  if (gl_NumSubgroups != SGS || gl_SubgroupSize != SUBGROUP_SIZE) {
     if (gl_LocalInvocationIndex < WG_TILE_M) {
       const uint row = q_base + gl_LocalInvocationIndex * uint(out_row_stride_arg);
       for (uint d = 0; d < HEAD_DIM; ++d) {
@@ -322,8 +352,9 @@ void main() {
 
   // This invocation owns row e_row, columns e_col + [0, 8 * SEG_V8) of every
   // block.
-  const uint e_row = gl_SubgroupInvocationID % WG_TILE_M;
-  const uint e_seg = gl_SubgroupInvocationID / WG_TILE_M;
+  const uint lane = SG_ID * SUBGROUP_SIZE + gl_SubgroupInvocationID;
+  const uint e_row = lane % WG_TILE_M;
+  const uint e_seg = lane / WG_TILE_M;
   const uint e_col = e_seg * SEG_V8 * 8u;
   const uint e_idx = e_row * P_STRIDE + e_col / 8u;
   // Column c of the row is visible when c <= e_last.
@@ -340,8 +371,7 @@ void main() {
 #ifndef ONLINE
   for (uint b = 0; b < num_blocks; ++b) {
     qk_block(q_base, kv_head + b * KV_BLOCK);
-    memoryBarrierShared();
-    subgroupBarrier();
+    SYNC();
     [[unroll]] for (uint i = 0; i < SEG_V8; ++i) {
       const uvec4 u = Psh[e_idx + i];
       const int lim = e_last - int(b * WG_TILE_N + e_col + 8u * i);
@@ -352,22 +382,19 @@ void main() {
       const vec4 m4 = max(mlo, mhi);
       row_max = max(row_max, max(max(m4.x, m4.y), max(m4.z, m4.w)));
     }
-    memoryBarrierShared();
-    subgroupBarrier();
+    SYNC();
   }
   Rsh[e_row * SEGS + e_seg] = row_max;
-  memoryBarrierShared();
-  subgroupBarrier();
+  SYNC();
   [[unroll]] for (uint p = 0; p < SEGS; ++p) {
     row_max = max(row_max, Rsh[e_row * SEGS + p]);
   }
-  memoryBarrierShared();
-  subgroupBarrier();
+  SYNC();
 #endif
 
   // ---- pass B: e = exp(score - max), row sums, acc += e V ----
   [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
-    [[unroll]] for (uint j = 0; j < MMAS_D; ++j) {
+    [[unroll]] for (uint j = 0; j < MMAS_D / SGS; ++j) {
 #ifdef ACC_SH
       coopMatStore(
           coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0.0),
@@ -377,15 +404,18 @@ void main() {
 #endif
     }
   }
-#ifdef ACC_SH
-  memoryBarrierShared();
-  subgroupBarrier();
+#if defined(ONLINE) && defined(MULTI_SG)
+  if (lane == 0u) {
+    Gsh = 0u;
+  }
+#endif
+#if defined(ACC_SH) || defined(MULTI_SG)
+  SYNC();
 #endif
   float row_sum = 0.0;
   for (uint b = 0; b < num_blocks; ++b) {
     qk_block(q_base, kv_head + b * KV_BLOCK);
-    memoryBarrierShared();
-    subgroupBarrier();
+    SYNC();
 #ifdef ONLINE
     // Running maximum of this row over the blocks so far, all segments.
     float blk_max = -1.0 / 0.0;
@@ -403,16 +433,23 @@ void main() {
     }
     if (SEGS > 1u) {
       Rsh[e_row * SEGS + e_seg] = blk_max;
-      memoryBarrierShared();
-      subgroupBarrier();
+      SYNC();
       [[unroll]] for (uint p = 0; p < SEGS; ++p) {
         blk_max = max(blk_max, Rsh[e_row * SEGS + p]);
       }
-      memoryBarrierShared();
-      subgroupBarrier();
+      SYNC();
     }
     const float new_max = max(row_max, blk_max);
+#ifdef MULTI_SG
+    // The rescale has barriers, so every subgroup must take it together.
+    if (new_max > row_max) {
+      atomicOr(Gsh, 1u);
+    }
+    SYNC();
+    if (Gsh != 0u) {
+#else
     if (subgroupAny(new_max > row_max)) {
+#endif
       // exp(new - old) is 1 for a row whose maximum did not move and +inf
       // for the first visible block (old maximum -inf, accumulator 0).
       const float grow = new_max > row_max ? exp(new_max - row_max) : 1.0;
@@ -420,12 +457,11 @@ void main() {
       for (uint j = e_seg; j < 4u; j += SEGS) {
         Dsh[e_row * 4u + j] = vec4(grow);
       }
-      memoryBarrierShared();
-      subgroupBarrier();
+      SYNC();
       [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
         coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> grow_tile;
         coopMatLoad(grow_tile, Dsh, MMA_M * i * 4u, 4u, gl_CooperativeMatrixLayoutRowMajor);
-        [[unroll]] for (uint j = 0; j < MMAS_D; ++j) {
+        [[unroll]] for (uint j = 0; j < MMAS_D / SGS; ++j) {
 #ifdef ACC_SH
           coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> a;
           coopMatLoad(a, ACC_TILE(i, j));
@@ -435,8 +471,12 @@ void main() {
 #endif
         }
       }
-      memoryBarrierShared();
-      subgroupBarrier();
+#ifdef MULTI_SG
+      if (lane == 0u) {
+        Gsh = 0u;
+      }
+#endif
+      SYNC();
       row_max = new_max;
     }
 #endif
@@ -461,17 +501,14 @@ void main() {
       row_sum += ehi.w;
       Psh[e_idx + i] = pack8(f16vec4(elo), f16vec4(ehi));
     }
-    memoryBarrierShared();
-    subgroupBarrier();
+    SYNC();
     av_block(kv_head + b * KV_BLOCK);
-    memoryBarrierShared();
-    subgroupBarrier();
+    SYNC();
   }
 
   // ---- normalise and store ----
   Rsh[e_row * SEGS + e_seg] = row_sum;
-  memoryBarrierShared();
-  subgroupBarrier();
+  SYNC();
   row_sum = 0.0;
   [[unroll]] for (uint p = 0; p < SEGS; ++p) {
     row_sum += Rsh[e_row * SEGS + p];
@@ -479,13 +516,12 @@ void main() {
   for (uint j = e_seg; j < 4u; j += SEGS) {
     Psh[e_row * P_STRIDE + j] = uvec4(floatBitsToUint(row_sum));
   }
-  memoryBarrierShared();
-  subgroupBarrier();
+  SYNC();
 
   [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
     coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> den;
     coopMatLoad(den, Psh, MMA_M * i * P_STRIDE, P_STRIDE, gl_CooperativeMatrixLayoutRowMajor);
-    [[unroll]] for (uint j = 0; j < MMAS_D; ++j) {
+    [[unroll]] for (uint j = 0; j < MMAS_D / SGS; ++j) {
 #ifdef ACC_SH
       coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> a;
       coopMatLoad(a, ACC_TILE(i, j));
@@ -495,7 +531,8 @@ void main() {
       coopMatStore(
           coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(a / den),
           t_output,
-          q_base + MMA_M * i * uint(out_row_stride_arg) + MMA_N * j, uint(out_row_stride_arg),
+          q_base + MMA_M * i * uint(out_row_stride_arg) + MMA_N * (SG_ID * (MMAS_D / SGS) + j),
+          uint(out_row_stride_arg),
           gl_CooperativeMatrixLayoutRowMajor);
     }
   }

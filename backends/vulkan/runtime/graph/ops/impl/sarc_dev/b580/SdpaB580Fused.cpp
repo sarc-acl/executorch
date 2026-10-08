@@ -42,11 +42,11 @@ void register_sdpa_fused_b580(
 
 namespace {
 
-// One workgroup is one subgroup of `sg` invocations and owns `m` query rows;
+// One workgroup is `g` subgroups of `sg` invocations and owns `m` query rows;
 // a block is `n` context columns.
 struct Variant {
   std::string name;
-  uint32_t head_dim, m, n, sg;
+  uint32_t head_dim, m, n, sg, g;
 };
 
 const std::vector<Variant>& variants() {
@@ -57,11 +57,11 @@ const std::vector<Variant>& variants() {
       const size_t comma = list.find(',');
       const std::string token = list.substr(0, comma);
       list = comma == std::string::npos ? "" : list.substr(comma + 1);
-      unsigned d, m, n, sg;
+      unsigned d, m, n, sg, g = 1;
       VK_CHECK_COND(
-          std::sscanf(token.c_str(), "d%u_t%ux%us%u", &d, &m, &n, &sg) == 4,
-          "b580-fused: expected d<D>_t<M>x<N>s<S>m8...");
-      out.push_back({"sarc_dev_b580_sdpa_fused_" + token, d, m, n, sg});
+          std::sscanf(token.c_str(), "d%u_t%ux%us%um8g%u", &d, &m, &n, &sg, &g) >= 4,
+          "b580-fused: expected d<D>_t<M>x<N>s<S>m8[g<G>]...");
+      out.push_back({"sarc_dev_b580_sdpa_fused_" + token, d, m, n, sg, g});
     }
     return out;
   }();
@@ -107,8 +107,8 @@ vkapi::ShaderInfo pick_fused_shader(
       variant_for(graph, resize_args.at(0))->name + "_buffer_buffer_half");
 }
 
-// The local size is the required subgroup size of the variant, so a workgroup
-// is one subgroup; the kernel checks it and writes NaN otherwise.
+// The local size is `g` times the required subgroup size of the variant, so a
+// workgroup is `g` subgroups; the kernel checks it and writes NaN otherwise.
 GlobalWorkGrid pick_fused_gwg(
     ComputeGraph* graph,
     const vkapi::ShaderInfo& shader,
@@ -118,16 +118,17 @@ GlobalWorkGrid pick_fused_gwg(
   (void)args;
   const ValueRef q = resize_args.at(0);
   const Variant* v = variant_for(graph, q);
+  const uint32_t wg = v->sg * v->g;
   if (!fused_active(graph, q, resize_args.at(1))) {
     return GlobalWorkGrid(
-        {0u, 0u, 0u}, kTiledWorkGrid, LocalWorkGroup(v->sg, 1u, 1u));
+        {0u, 0u, 0u}, kTiledWorkGrid, LocalWorkGroup(wg, 1u, 1u));
   }
   return GlobalWorkGrid(
-      {v->sg,
+      {wg,
        graph->size_at<uint32_t>(-3, q) / v->m,
        graph->size_at<uint32_t>(-2, q)},
       kTiledWorkGrid,
-      LocalWorkGroup(v->sg, 1u, 1u));
+      LocalWorkGroup(wg, 1u, 1u));
 }
 
 GlobalWorkGrid pick_kvt_gwg(
