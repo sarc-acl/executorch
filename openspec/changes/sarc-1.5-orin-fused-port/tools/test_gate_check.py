@@ -418,5 +418,65 @@ class Verify(unittest.TestCase):
         self.p = os.path.join(self.t.name, "parent"); rc, out = self.check(); self.assertNotEqual(rc, 0)
         self.assertIn("differs from the parent control: correctness rc", out)
 
+class Sdpa(unittest.TestCase):
+    """gate_check.py sdpa on synthetic pass logs (orin-fused): per tier the pass and case counts, every case PASSED,
+    and per case the kernels the environment asks for: the fused kernel alone where the profile's fused node
+    serves the shape, the three SDPA kernels with the environment's softmax elsewhere."""
+    CASES = {"all": [("a%d" % i, 128, 0, 64) for i in range(4)], "extended": [("e%d" % i, 256, 128, 128) for i in range(8)],
+             "full": [("f%d" % i, 2048, 0, 64 if i < 2 else 128) for i in range(4)],
+             "peaked": [("p%d" % i, 256, 0, 64) for i in range(5)], "fused": [("u%d" % i, 64, 0, 128) for i in range(5)]}
+    F = {64: "sarc_dev_orin_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half", 128: "sarc_dev_orin_sdpa_fused3sb_d128_t16x64g11s32rko_buffer_buffer_half"}
+    def kn(self, name): return '"kernel_name": "%s", "operator_id": 0' % name
+    def make(self, env, fused=True, soft="orin_g64", mutate=None):
+        self.t = tempfile.TemporaryDirectory(); d = self.t.name; self.envf = os.path.join(d, "env")
+        open(self.envf, "w").write("".join(e + "\n" for e in env))
+        prof = [e.split("=", 1)[1] for e in env if e.startswith("ET_VK_SARC_DEV_PROFILE=")][0]
+        tiers = [("all", 12), ("extended", 12), ("full", 12)] + ([("peaked", 3), ("fused", 3)] if fused else [])
+        for tier, n in tiers:
+            for r in range(1, n + 1):
+                L = [f"[sarc_dev] softmax variant: {soft}\n", f"[sarc_dev] profile active: {prof}\n"]
+                if fused: L.insert(0, "[sarc_dev] orin fused attention: " + " ".join(self.F[k][:-19] for k in (64, 128)) + "\n")
+                for name, S, pos, D in self.CASES[tier]:
+                    if fused:
+                        L.append(f"[sdpa-kernels] {name} qk=? softmax=? av=? fused={self.kn(self.F[D])} no_mask_fill=no pairing=ok\n")
+                        L.append(f"[sdpa-correctness] {name} S={S} input_pos={pos} D={D} Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/100 PASSED\n")
+                    else:
+                        L.append(f"[sdpa-kernels] {name} qk={self.kn('sarc_sdpa_qk_coopmat_x')} softmax={self.kn('sarc_sdpa_attn_weights_softmax_buffer_half_' + soft)} av={self.kn('sarc_sdpa_av_coopmat_x')} fused=- no_mask_fill=yes pairing=ok\n")
+                        L.append(f"[sdpa-correctness] {name} S={S} input_pos={pos} D={D} Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/100 PASSED\n")
+                L.append(f"[sdpa-correctness] tier={tier} cases_run={len(self.CASES[tier])}\n")
+                text = "".join(L)
+                if mutate: text = mutate(tier, r, text)
+                open(os.path.join(d, f"cand-{tier}-r{r}.log"), "w").write(text)
+        p = subprocess.run([sys.executable, os.path.join(HERE, "gate_check.py"), "sdpa", d, self.envf], capture_output=True, text=True)
+        self.t.cleanup(); return p.returncode, p.stdout
+    FUSED_ENV = ["ET_VK_SARC_UNVERIFIED=1", "ET_VK_SARC_DEV_PROFILE=orin-fused1"]
+    PARENT_ENV = ["ET_VK_SARC_UNVERIFIED=1", "ET_VK_SARC_DEV_PROFILE=orin-refine5", "ET_VK_SARC_SOFTMAX_VARIANT=orin_g64"]
+    def test_fused_profile_accepts(self):
+        rc, out = self.make(self.FUSED_ENV); self.assertEqual(rc, 0, out); self.assertIn("sdpa: ACCEPT (0 findings)", out)
+    def test_parent_profile_accepts_three_kernels(self):
+        rc, out = self.make(self.PARENT_ENV, fused=False); self.assertEqual(rc, 0, out)
+    def test_fused_profile_without_fused_kernel_is_rejected(self):
+        # the profile names the fused node but the three SDPA kernels ran (a silent fallback)
+        def m(tier, r, text):
+            if tier != "full" or r != 7: return text
+            return text.replace(f"qk=? softmax=? av=? fused={self.kn(self.F[64])}", f"qk={self.kn('sarc_sdpa_qk_coopmat_x')} softmax={self.kn('sarc_sdpa_attn_weights_softmax_buffer_half_orin_g64')} av={self.kn('sarc_sdpa_av_coopmat_x')} fused=-").replace("D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO", "D=64 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes")
+        rc, out = self.make(self.FUSED_ENV, mutate=m); self.assertNotEqual(rc, 0, out); self.assertIn("fused kernel is not", out)
+    def test_wrong_fused_variant_is_rejected(self):
+        m = lambda tier, r, text: text.replace("t32x32g11s32rko_buffer", "t32x32g11s32ro_buffer") if (tier, r) == ("all", 1) else text
+        rc, out = self.make(self.FUSED_ENV, mutate=m); self.assertNotEqual(rc, 0, out); self.assertIn("fused kernel is not", out)
+    def test_sdpa_kernel_beside_the_fused_node_is_rejected(self):
+        m = lambda tier, r, text: text.replace("qk=? softmax=? av=? fused=", f"qk=? softmax={self.kn('sarc_sdpa_attn_weights_softmax_buffer_half_orin_g64')} av=? fused=", 1) if (tier, r) == ("extended", 3) else text
+        rc, out = self.make(self.FUSED_ENV, mutate=m); self.assertNotEqual(rc, 0, out); self.assertIn("an SDPA kernel ran beside the fused node", out)
+    def test_mismatch_missing_pass_and_broken_pairing_are_rejected(self):
+        rc, out = self.make(self.FUSED_ENV, mutate=lambda tier, r, text: text.replace("mismatches=0/100 PASSED", "mismatches=3/100 FAILED", 1) if (tier, r) == ("peaked", 2) else text)
+        self.assertNotEqual(rc, 0, out); self.assertIn("mismatches=3/100", out)
+        rc, out = self.make(self.FUSED_ENV, mutate=lambda tier, r, text: text.replace("pairing=ok", "pairing=BROKEN", 1) if (tier, r) == ("fused", 1) else text)
+        self.assertNotEqual(rc, 0, out)
+        rc, out = self.make(self.FUSED_ENV, mutate=lambda tier, r, text: text.split("[sdpa-correctness] tier=")[0] if (tier, r) == ("all", 12) else text)
+        self.assertNotEqual(rc, 0, out); self.assertIn("summary line", out)
+    def test_fused_kernel_under_the_parent_environment_is_rejected(self):
+        # logs of the fused node judged against the parent environment: banner and kernels do not fit it
+        rc, out = self.make(self.PARENT_ENV, fused=True); self.assertNotEqual(rc, 0, out); self.assertIn("fused attention banner", out)
+
 if __name__ == "__main__":
     unittest.main(verbosity=1, warnings="ignore")
