@@ -132,4 +132,4 @@ Where it came from (warm ETDump, ms per 2048-token prefill, parent -> candidate 
 11.8 -> 9.3 (3B 4w), 18.7 -> 15.2 (8B 4w); the other families unchanged within 1 ms.
 
 Locate (same traces, parent, share of the dispatch time): linear GEMMs 63 % / 71 % / 78 % (1B / 3B / 8B, 4w) and 56 % / 66 % / 75 % (8da4w); attention (QK^T + softmax + AV)
-29.9 % / 22.2 % / 13.9 % (4w); everything else under 12 %. The fused attention kernel can therefore pay most on 1B and least on 8B, where the GEMMs decide.
+30.1 % / 22.2 % / 13.9 % (4w); everything else under 12 %. The fused attention kernel can therefore pay most on 1B and least on 8B, where the GEMMs decide.
