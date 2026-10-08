@@ -112,19 +112,29 @@ drain flags, the phase-timing twin of the xclipse 4w row.
 - **Not covered: the 8B model end to end, the tiled 8B path and 8B timing.** By the owner's decision of 2026-10-06 no 8B model
   was loaded on the board of this campaign, so every gate is partial (1B and 3B). `c3` (a 4w tile that acts on 8B shapes only)
   is therefore neither gated nor part of the final stack. Since the owner's decision of 2026-10-08 the microbenchmark
-  steps of `verify.sh` and the SDPA cases of the 8B head configuration (synthetic tensors only) may run; they have not run
-  on the current board yet (see below).
-- **Gate state, stated as it is:** no candidate is recorded as accepted. Missing, all needing the board:
-  `s0-parent-verify` on the current board, the unmodified `verify.sh --models 1b,3b` of the final stack compared with it
-  line by line, the SDPA tiers and the reference-error runs of the final stack without the test option that leaves out the
-  8B-head cases (the runs made with it do not count as final evidence), and two next-token items of one cell for the final
-  build. The shipped SPIR-V of the final build equals the parent build's; the golden check stays pending (the pinned container
-  is not available here).
+  steps of `verify.sh` and the SDPA cases of the 8B head configuration (synthetic tensors only) may run; they ran on the
+  final board in the final verification (below) without the test option that leaves them out.
+- **Gate state of the final stack (profile `c4`, build of the head's sources, 1B and 3B only: PARTIAL):**
+  recorded as `ACCEPTED (reference-error rule, owner decision 2026-10-04), PARTIAL: 1B and 3B end to end; 8B shapes by
+  microbenchmark and SDPA cases only`. On the final board: the unmodified `verify.sh --models 1b,3b` of the pristine parent
+  (`s0-parent-verify`) and of the final stack agree line by line except for the one line that names the dispatched 8da4w
+  linear kernel (the intended change of candidate 2); the SDPA tiers `extended` and `full`, 12 passes each, include the 8B-head
+  cases and have 0 mismatches and `pairing=ok`; the reference error of the fused attention is smaller than the parent's in every
+  case, the production shapes and the 8B-head cases included; the 8da4w production-diff of the linear kernel is as exact as
+  the parent's on every shape; the next token equals the parent's on the timed, real-text and unaligned prompts in all four
+  cells; the real-text probe passes the gross-divergence check. The shipped SPIR-V of the final build equals the parent
+  build's, and the golden check against `sarc/golden/spirv.json` stays pending (the pinned container is not available here;
+  the native compiler gives the same set of differing variants for the parent build and for the final build).
+  `sarc/tools/check.sh --no-build` passes.
+- **An observation, not a claim:** with a prompt whose length is not a multiple of 128 (the real-text and unaligned prompts of
+  the gate) the 8da4w cells of the final stack were slower than the parent's, on both boards that were measured. The
+  timed prompt is 2048 tokens, so the headline is not affected; the cause was not looked into.
 - **Evidence that exists** (figures local): timed sessions per candidate and for the final stack with all runs valid,
   next token equal on all items run, SDPA tiers 12 passes each with 0 mismatches on the cases that ran, reference error
   on identical inputs not larger than the parent's on the production shapes, production-diff of the 8da4w linear equal
   to the parent's, logits probes with the gross-divergence check passed, ETDump showing the dispatched kernels, and a
-  read of the changed shaders for unsynchronised shared writes.
+  read of the new shader (the fused attention kernel) for unsynchronised shared writes: every exchange between lanes of the
+  workgroup, which is one subgroup, is separated by a shared-memory barrier, and no two lanes write one location.
 - **Directions left for later work:** a new 4w or 8da4w GEMM kernel (the linear kernels are most of the prefill and the
   screens found no tile that beats the incumbents), a fused SwiGLU (the elementwise operators are stock kernels), the 8B cells.
 - **Builds:** the golden check is pending; the compiler launches of a build wait while a timed session runs
