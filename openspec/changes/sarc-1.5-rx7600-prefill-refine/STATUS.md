@@ -1,14 +1,11 @@
 # STATUS: RX 7600 prefill campaign
 
-Updated 2026-10-08 07:55 UTC.
+Updated 2026-10-08 12:30 UTC.
 
 ## Running now
 
-- **Final verification** (`tools/chain7.sh`, detached, status `.artifacts/logs/chain7.status`, started 2026-10-08 07:51 UTC): native build `final`
-  of commit `18cc0d53a` (the committed head at its start; later commits touch only results, tools and docs), then logits-probe build, stage
-  `final`, gate (timed session pristine parent against the final stack, SDPA tiers 12 passes each, `verify.sh`, traces), SDPA output and
-  reference-error evidence, real-text probe. No other job of this campaign.
-- M51 runs its own campaign on this host (builds here); my timed runs wait for its compilers.
+- Nothing of this campaign. Final verification and final session finished 2026-10-08 11:58 UTC (`results/rx7600/sessions/final/`).
+- Never pushed from here (owner decision 2026-10-07 23:15 UTC): the coordinator publishes.
 
 ## State
 
@@ -27,6 +24,7 @@ Updated 2026-10-08 07:55 UTC.
 | candidate 3 (linear kernel per shape, profile `rx7600-refine2`) | **gate passed, +5.49 % geomean over candidate 2** (4w +0.5 / +1.0 / +1.5 %, 8da4w +8.54 / +10.02 / +11.97 %); 60 / 60 timed runs valid; next token SAME in all cells; `verify.sh` = snapshot except the two kernel-name lines; production-diff errors identical in 24 / 24; outputs of the 24 prefill linear shapes **byte-identical** to the parent (no arithmetic change, D3 not needed). Real build `c3` of commit `6ebf39484`, golden PASS against `golden-ref-parent.json`. `results/rx7600/sessions/c3-linear/`. A failed first attempt stays recorded under `results/rx7600/sessions/c3-first-attempt-failed/` |
 | candidate 4 (whole-texel 8da4w staging everywhere, profile `rx7600-refine3`) | gated against candidate 3: **-0.15 % geomean** (cells 0.00 to +0.50 %, 8B 8da4w -1.51 %); 61 / 61 counted runs valid; next token SAME; not adopted. **The first gated candidate under 2 %** (candidate 3 +5.49 % is the last above it). `results/rx7600/sessions/c4-texel/` |
 | M2a (`fused3sb`: `subgroupBarrier()` after each `memoryBarrierShared()` in the fused kernel) | gated against candidate 3: **+0.00 % geomean** (cells -0.19 to +0.17 %), tiers `all` / `extended` / `full` 12 passes each 0 mismatches `pairing=ok`, output **byte-identical** to `fused3` in 21 / 21 cases, `verify.sh` as candidate 3; adopted under the rule fixed beforehand (`proposal.md`). **The second consecutive gated candidate under 2 %: the stop rule R11 is met.** `results/rx7600/sessions/m2a-sgbarrier/` |
+| **final verification + final session** (build `final`, commit `18cc0d53a`, no local patch) | **done**: pristine parent against the final stack (`rx7600-refine2` + `fused3sb` + softmax `r3`): **+26.90 % geomean** (1B / 3B / 8B 4w +33.85 / +20.82 / +15.19 %, 8da4w +40.91 / +28.38 / +23.94 %); 60 / 60 timed runs valid; next token SAME in all cells. Golden: PASS against `golden-ref-parent.json`, PENDING against `sarc/golden/spirv.json` (native glslc, the parent's own 14 differences). `verify.sh` = snapshot except the two linear kernel-name lines; SDPA tiers 36 passes 0 mismatches `pairing=ok`; reference error 16 of 17 rows `yes` (the `NO` row is `peaked_tiny_gqa_s256`, S = 256); real-text probe gross-divergence check ok. Outside the dev zone since the parent: nothing. `check.sh --no-build`: PASS. Record: **ACCEPTED (reference-error rule, owner decision 2026-10-04)** |
 | coordinator hold | tested 07:21 UTC (`results/rx7600/hold-test.txt`); watcher running |
 
 ### Candidate 2: fused attention kernel (session `c2-fused`, 13:24 to 14:15 UTC)
@@ -152,7 +150,7 @@ A/A (`aa2`) needed about 25 minutes for its 1B cells and stalled for more than 1
 unless the owner rules otherwise:** keep this rule. A shared host-wide marker that the the other campaign's builds wait for would
 need the other campaign's cooperation; I do not touch its checkout or jobs.
 
-**Order of port items 1 and 2.** Item 1, the fused attention kernel, replaces QK^T, softmax and attn*V for every
+**Order of port items 1 and 2 (resolved: the default was followed, candidate 1 softmax first, then the fused kernel).** Item 1, the fused attention kernel, replaces QK^T, softmax and attn*V for every
 tile-aligned prefill call, including the timed 2048-token prompt. Item 2, the softmax without the zero tail, then
 runs only where the fused kernel does not (unaligned prompts). On the timed prompt it would measure about 0 %. That
 gated candidate would count toward the stop rule (two consecutive candidates under 2 %), and the stop rule could then
@@ -163,8 +161,13 @@ end the campaign before items 3 and 4. The 780M measured them the other way roun
 
 ## Next
 
-1. Final verification and final session (running, chain7); golden check on the `final` build; reference-error and probe evidence of the final stack against the pristine parent.
-2. `sarc/tools/check.sh --no-build`; proposal.md results; this file; the coordinator publishes (no push from here).
+Done. The coordinator publishes the branch (scrubbed forward commit); a reviewer round follows (R12).
+
+## Decision needed from the owner (this run)
+
+1. **Percent of the roofs.** R6 asks for the freshly measured roofs; igpu-roofline is not on this host except in another workspace that this campaign does not read. The 2026-09-28 roofs (43.42 TFLOP/s fp16, 43.90 TOP/s int8, same card and driver build) are cited, not re-measured. A re-run needs the tool or permission to use the workspace copy.
+2. **Fused attention node (D4.3 hook).** The fused kernel `fused3` (and `fused3sb`) runs through the D4.3 entry point already on the starting branch; it stays subject to the owner's review before any promotion (`proposal.md`).
+3. **Branch history.** The branch sits on `90fe4d013` (10 extra 780M commits that no measured build contains) after the earlier actor's rebase and force push, see below; nothing was rewritten or pushed by this run.
 
 ### Decision needed from the owner
 The branch history was rewritten and force-pushed over the coordinator's scrubbed copy (see below). This violates owner decisions 2026-10-06 16:19 and 19:40 UTC: do not rewrite or amend existing commits, do not run git push, must never be forced.
