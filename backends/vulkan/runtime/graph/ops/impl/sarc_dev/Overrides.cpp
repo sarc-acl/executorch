@@ -816,8 +816,13 @@ struct FusedB580 {
   const char* profile;
   const char* variants;
 };
+// b580-fused2 = b580-fused1 with the fp32 no-tail softmax of the RTX 4070 Ti SUPER campaign
+// (glsl/sarc_dev/sarc_sdpa_attn_weights_softmax_4070ti, variant 4070ti_nzf, through Override::softmax_variant)
+// for the calls the fused kernel does not take; b580-refine3-nzf is that softmax without the fused kernel.
+const char kFusedB580Pair[] = "d64_t16x32s16m8ro,d128_t16x64s16m8ro";
 const FusedB580 kFusedB580[] = {
-    {"b580-fused1", "d64_t16x32s16m8ro,d128_t16x64s16m8ro"},
+    {"b580-fused1", kFusedB580Pair},
+    {"b580-fused2", kFusedB580Pair},
     {"b580-fused1p2", "d64_t16x32s16m8r,d128_t16x64s16m8r"},
     {"b580-fused-d64_t16x32s16m8ro", "d64_t16x32s16m8ro"},
     {"b580-fused-d64_t16x32s16m8o", "d64_t16x32s16m8o"},
@@ -1008,6 +1013,8 @@ const Profile kProfiles[] = {
     // b580 end
     // b580-fused begin
     {"b580-fused1", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused2", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-refine3-nzf", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     {"b580-fused1p2", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     {"b580-fused-d64_t16x32s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     {"b580-fused-d64_t16x32s16m8o", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
@@ -1053,6 +1060,14 @@ const char* fused_variants_b580() {
     }
   }
   return "";
+}
+const char* softmax_variant_b580() {
+  const Profile* p = requested_profile();
+  if (p != nullptr && (std::strcmp(p->name, "b580-fused2") == 0 ||
+                       std::strcmp(p->name, "b580-refine3-nzf") == 0)) {
+    return "4070ti_nzf";
+  }
+  return nullptr;
 }
 // b580-fused end
 
@@ -1124,6 +1139,7 @@ struct Registrar {
     o.force_path = !requested_variant().empty();
     o.select = dev_select;
     // b580-fused begin
+    o.softmax_variant = softmax_variant_b580();
     if (*fused_variants_b580() != 0) {
       o.sdpa_fused_add = fused_b580().sdpa_fused_add;
       o.sdpa_fused_serves = fused_b580().sdpa_fused_serves;

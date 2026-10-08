@@ -1,6 +1,6 @@
 # sarc-1.5-b580-fused-port: status
 
-**2026-10-08 20:00 UTC — candidate 1 (`b580-fused1`, one-pass fused kernel) is correct at kernel level in a
+**2026-10-08 20:50 UTC — candidate 1 (`b580-fused1`, one-pass fused kernel) is correct at kernel level in a
 first smoke pass of all five tiers. Not gated, nothing timed yet.**
 
 Branch `topic/b580-fused-port`, parent `51d9d757f` with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine3`.
@@ -15,9 +15,8 @@ desktop session idle and locked at 20:00 UTC.
 Detached, one unit at a time (status lines in `.artifacts/logs/chain1.status` and `chain2.status`; each chain
 ends with `CHAINn_DONE` or `CHAINn_STOPPED`):
 
-- `tools/chain1.sh` (since 19:31 UTC), remaining units: parent snapshots `s0-parent-verify` (parent
-  environment) and `s0-parent-noenv`; hook condition `s0-topic1-noenv` against `s0-parent-noenv`; baseline + A/A
-  with calibration, session `s1-aa` (GPU, timed: no build on this host while it runs).
+- `tools/chain1.sh` (since 19:31 UTC), last unit: baseline + A/A with calibration, session `s1-aa`, started
+  20:49 UTC (GPU, timed: no build on this host while it runs).
 - `tools/chain2.sh`, waiting for chain 1: kernel-level screen `screen1-fused` of the 16 fused variants against
   the parent's three attention kernels, 3 rounds, cooled before every run.
 
@@ -34,10 +33,16 @@ one-subgroup assumption added; the node, the profile and the tests are new.
   `b969e8f1c2`) and `0ffc84a2d` (fused attention entry point, D4.3, from `1c8861aa7e`).
 - Builds, each from an export of one commit, shipped SPIR-V golden PASS (53 variants) on both:
   `build/parent2` = `51d9d757f`, `build/topic1` = `9baf2de3f` (hooks + candidate 1 sources).
-- Hook condition D4, first part: `test_sarc_select` built from the parent export and from the branch head gives
-  the same output for the release tables (1240 checks, 31 rows) and with the dev zone and
-  `ET_VK_SARC_UNVERIFIED=1` (1562 checks, 37 rows, 213 candidates): `.artifacts/raw/d4/select-*.txt`. The
-  `verify.sh` part (no environment, line by line) is a unit of chain 1.
+- **Hook condition D4 (nothing selected, nothing changed): met.** (1) `test_sarc_select` built from the parent
+  export and from the branch head gives the same output for the release tables (1240 checks, 31 rows) and with
+  the dev zone and `ET_VK_SARC_UNVERIFIED=1` (1562 checks, 37 rows, 213 candidates): `.artifacts/raw/d4/select-*.txt`.
+  (2) `spirv_golden.py`: PASS, 53 shipped variants, on `parent2` and on `topic1`. (3) Unmodified `verify.sh`
+  with no environment on `topic1` (`s0-topic1-noenv`) against the parent's (`s0-parent-noenv`): identical line
+  by line with the rates removed, 34 lines, dispatched kernel names included (`tools/verify_diff.py`,
+  `stage/s0-topic1-noenv/verify_diff.txt`); both `CONTROL_RECORDED` with the same five device-status items.
+- Parent snapshot `s0-parent-verify` (parent environment `b580-refine3`): `CONTROL_RECORDED`, one device-status
+  item (`correctness rc=1` with 28 of 28 numeric and 4 of 4 rank-3 cases PASSED); SDPA tiers 4 / 8 / 4 cases with
+  0 mismatches on the parent's cooperative-matrix kernels.
 - Candidate 1 sources: `glsl/sarc_dev/sarc_dev_b580_sdpa_fused.{glsl,yaml}` (the `fused3sb` kernel for the
   8 x 16 x 16 matrix shape, packed form, one-pass and two-pass variants), `sarc_dev_b580_sdpa_kvt.{glsl,yaml}`
   (the 780M's copy pass, unchanged), `impl/sarc_dev/b580/SdpaB580Fused.cpp` (the node), a `b580-fused` block in
