@@ -3,6 +3,6 @@
 # stage/<session>. The first session of the campaign (baseline, A/A) passes --calibrate; every later one uses
 # the clock threshold and idle temperature that session recorded. Exit status = e2e5.sh's (76 = aborted by a foreign GPU process).
 . "$(dirname "$(readlink -f "$0")")/host.sh"; S=$1; shift
-hold_wait "session $S"; gpu_shared || exit 75
-idle_wait "session $S"; cool_start
+hold_wait "session $S"; idle_wait "session $S"   # before the build lock: a build may run while the session waits for an idle desktop
+gpu_shared || exit 75; cool_start
 $TOOLS/e2e5.sh --stage $A/stage/$S --out raw --lock $LOCK "$@"; exit $?
