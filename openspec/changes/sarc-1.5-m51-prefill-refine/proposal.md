@@ -58,6 +58,7 @@ separate local file, by the rule written in the frozen one.
 | `probe_prompts.py` | 780M `tools/probe_prompts.py` | tokenizer read with tiktoken and the Llama 3 split pattern |
 | `prof_decode.py` | 780M `tools/prof_decode.py` | K tile as a parameter |
 | `build_probe.sh`, `probe_m51.sh` | 780M `tools/build_probe.sh`, `probe_run.sh` | native NDK build; runs on the board |
+| `fscreen.sh`, `fscreen_summary.py` | new | ETDump screen of the fused attention variants, with the kernel-screen rule of the other screens |
 | `build_tag.sh`, `export_commit.sh`, `adbshim.sh`, `dev.sh`, `push_models.sh`, `verify_m51.sh`, `verify_compare.py`, `mbstage.sh`, `spv_compare.py`, `trace_m51.sh`, `trace_families.py`, `lscreen.sh`, `lscreen_summary.py`, `phase_m51.sh`, `pdiff_error_table.py` | new | |
 | `r1329.txt` | new | an unaligned real-text prompt (the first part of the kit's `prompt_real_2048.txt`) for the `r*.txt` item of `verify.sh` |
 
@@ -84,18 +85,31 @@ the noise band.
    margin in every round); its production-diff errors equal the parent's on every shape.
 4. **`c3`: `c2` plus the 4w tile `t128x128k32g42s32f32xp` on the 4w shapes with K = 4096** (only the 8B model has
    them). The other 4w tiles with the xclipse flags were not selected on any 1B or 3B shape.
-5. Screened next: texel-wise 4w weight staging (`sarc_dev_linear_q4gsw_coopmat_bx` on the xclipse flags), because
+5. **`c4`: `c2` plus the head_dim 64 fused attention variant that the ETDump screen of the fused variants selected** (the 16 x 64
+   tile on a 64-wide subgroup; no head_dim 128 variant passed the screen, so the 780M's choice stays there). It acts on the 1B
+   model only. Until `c4` existed as a profile it was selected through `ET_VK_SARC_M51_SDPA_FUSED` on top of `c2`, and the
+   evidence of its gate was taken in that form.
+6. Screened: texel-wise 4w weight staging (`sarc_dev_linear_q4gsw_coopmat_bx` on the xclipse flags), because
    the 4w kernel's phase timing shows about a third of each wave in shared-memory stores.
+
+Test option added in the dev zone: `ET_VK_MB_SKIP_8B=1` leaves out the SDPA correctness cases named after the 8B head
+configuration (no tolerance, tier or other case changes; the count of cases run shows it). `push_models.sh` takes
+`PUSH_MODELS` to limit the model sizes pushed to the board.
 
 Measurement aids added in the dev zone (never selected by default): 4w sweep tiles carrying the xclipse row's
 drain flags, the phase-timing twin of the xclipse 4w row.
 
 ## Open
 
-- **8B.** The gate's 8B *tiled* run crashed this board to fastboot once (the documented recovery was used). Every
-  8B end-to-end run is held until the owner decides how 8B is to be gated; until then the gates and timed
-  sessions cover 1B and 3B and are recorded as partial.
+- **8B is not covered, by the owner's decision of 2026-10-06 (reaffirmed 2026-10-07).** No end-to-end, `verify.sh`, probe, timed or traced run of
+  the 8B model and no microbench of an 8B shape was made on the board of this campaign. Therefore unverified: the tiled 8B path, the 8B
+  reference error, the 8B timing, and `c3` (its only effect is on 8B shapes). Every gate of this campaign is partial (1B and 3B).
+- `sarc/tools/verify.sh` run unmodified also executes microbench steps on 8B shapes (correctness, the linear listing, the 8B
+  production-diff) whatever `--models` says. It has not been run on the current board; the owner is asked how to read the
+  8B decision for it. The evidence of the gates is otherwise the pieces `verify.sh` combines, run separately on 1B and 3B.
 - The golden check stays pending (no pinned build container on this workstation).
+- The fused attention kernel's subgroup size inside the shader (`gl_SubgroupSize` read-back) is not verified on the device; the pipelines
+  declare a required subgroup size and the correctness tiers pass.
 
 ## Status
 
