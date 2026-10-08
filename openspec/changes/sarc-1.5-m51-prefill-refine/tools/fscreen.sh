@@ -5,7 +5,7 @@
 #   for the head_dim 128 variants (the fused kernel is the same in 4w and 8da4w); the other head_dim keeps the profile's
 #   variant. Variants are the two-pass `rk` forms of sarc_dev_m51_sdpa_fused3.yaml (the one-pass `rko` form gave wrong
 #   rows on this driver). Result: <out>/round<r>/<cell>-<variant id>.etdp, then fscreen_summary.py applies the R8 margin
-#   (3 % faster than the profile's variant in every round). Resumable (skips files already pulled); a board that is not fit
+#   (faster than the profile's variant by the kernel-screen margin of RULES R8 in every round). Resumable (skips files already pulled); a board that is not fit
 #   stops it; no timing figure of a trace is a tok/s. One coordinator-hold unit.
 set -uo pipefail
 [[ -n ${SARC_HOLD_UNIT:-} ]] || exec env SARC_HOLD_UNIT=1 "$(dirname "$(readlink -f "$0")")/hold.sh" run "fused screen fscreen.sh $*" "$0" "$@"
