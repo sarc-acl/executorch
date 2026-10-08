@@ -11,6 +11,6 @@ while other_timed_session; do sleep 60; done
 nice -n 19 cmake "$SRC/backends/vulkan/test/sarc_dev/probe" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$B/llama \
   -DCMAKE_FIND_ROOT_PATH=$B/llama -DEXECUTORCH_ROOT=$SRC -DCMAKE_CXX_FLAGS="-include algorithm" \
   -DCMAKE_TOOLCHAIN_FILE=$NDK/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-28 \
-  -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -B$B/probe
+  -DCMAKE_C_COMPILER_LAUNCHER="$(dirname "$(readlink -f "$0")")/gate_launcher.sh;ccache" -DCMAKE_CXX_COMPILER_LAUNCHER="$(dirname "$(readlink -f "$0")")/gate_launcher.sh;ccache" -B$B/probe
 nice -n 19 cmake --build $B/probe -j${J:-8}
 ls -la $B/probe/logits_probe

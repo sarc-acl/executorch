@@ -26,7 +26,8 @@ B=${OUT_DIR:-$ET/cmake-out-$TGT$SUF}; T=$B/sarc_dev; J=${J:-8}
 # ShaderLibrary.cmake's DEPENDS globs glsl/*.yaml|glsl non-recursively, so edits under glsl/sarc*/ never trigger
 # codegen; drop the generated spv.cpp so every build regenerates (as sarc/tools/build.sh does).
 regen() { find "$1" -path '*vulkan_compute_shaders/spv.cpp' -delete 2>/dev/null || true; }
-CC=(-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+GATE="$(dirname "$(readlink -f "$0")")/gate_launcher.sh"   # waits while a timed session runs (R5), then ccache
+CC=(-DCMAKE_C_COMPILER_LAUNCHER="$GATE;ccache" -DCMAKE_CXX_COMPILER_LAUNCHER="$GATE;ccache"
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5)   # CMake 4 rejects third-party cmake_minimum_required < 3.5
 if [ $LLAMA = 1 ]; then
   L=$B/llama; DT=()

@@ -6,7 +6,7 @@
 #                    llama_main) and build/m51/<tag>-etdump/ (llama_main with ETDump)
 #   build/m51/<tag>.txt  commit, manifest digest, toolchain, start/end, rc, golden check output
 # Builds run at nice 19 with J=8 (another campaign measures on this host), wait while a timed session runs
-# (dev.sh other_timed_session), and are suspended while one runs after they started. One coordinator-hold unit.
+# (dev.sh other_timed_session), and no compiler launch starts while one runs (gate_launcher.sh). One coordinator-hold unit.
 set -uo pipefail
 source "$(dirname "$(readlink -f "$0")")/dev.sh"
 TAG=$1; C=$(git -C "$TOOLS" rev-parse "$2^{commit}") || exit 2
@@ -15,8 +15,9 @@ SRC=$ART/src/m51/$TAG; B=$ART/build/m51/$TAG; R=$ART/build/m51/$TAG.txt
 while other_timed_session; do sleep 60; done
 exec 3>>"$R"
 { echo "tag $TAG commit $C${MB_ONLY:+ (MB_ONLY: no llama_main)}"; echo "start $(date -u +%FT%TZ)"; } >&3
-# The build runs in its own process group, suspended (SIGSTOP) while a timed session runs and resumed after it:
-# a session can start after the build has started.
+# A timed session can start after the build has started: every compiler launch of the build goes through gate_launcher.sh, which waits
+# while a timed session runs (no SIGSTOP: it has no effect in this environment, see that file) and logs the wait to the record.
+export GATE_LOG=$R
 setsid "$TOOLS/hold.sh" run "build $TAG" bash -c '
   set -e; "$1" "$2" "$3" >&4
   ln -s "$5" "$3/executorch/.venv"
@@ -24,13 +25,7 @@ setsid "$TOOLS/hold.sh" run "build $TAG" bash -c '
   OUT_DIR=$4 nice -n 19 "$6/build-native.sh" "$3/executorch" android --llama
   OUT_DIR=$4-etdump nice -n 19 "$6/build-native.sh" "$3/executorch" android --etdump --no-tests
 ' _ "$TOOLS/export_commit.sh" "$C" "$SRC" "$B" "$ART/venv/m51" "$TOOLS" "${MB_ONLY:-}" > "$ART/build/m51/$TAG.log" 2>&1 4>&3 &
-bp=$!; stopped=0
-while kill -0 $bp 2>/dev/null; do
-  if other_timed_session; then
-    (( stopped )) || { kill -STOP -- -$bp 2>/dev/null; stopped=1; echo "suspended $(date -u +%FT%TZ) (timed session)" >&3; }
-  elif (( stopped )); then kill -CONT -- -$bp 2>/dev/null; stopped=0; echo "resumed $(date -u +%FT%TZ)" >&3; fi
-  sleep 20
-done
+bp=$!
 wait $bp; rc=$?
 { echo "rc $rc"; echo "manifest_sha256 $(sha256sum "$SRC/MANIFEST.txt" | cut -d' ' -f1)"
   echo "ndk $(grep -m1 Pkg.Revision "${NDK:-<android-ndk>}/source.properties")"
