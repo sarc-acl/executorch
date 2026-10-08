@@ -8,6 +8,11 @@
 #   - a run is VALID only if rc = 0, tok/s present, prompt_tokens = <expected>, generated_tokens = 0, no other GPU
 #     process, and the median clock in the measured window >= CLKMIN MHz. Invalid runs stay in runs.csv with the
 #     reason; cells with fewer than REPS valid runs per build get extra interleaved pairs (at most EXTRA).
+#   - round 3, replacement validation (owner decision 2026-10-08 22:55 UTC, D5): the model file is read into the
+#     page cache before the first process of each cell (one read, the cell's two arms use the same file); each
+#     row records the file's page-cache residency just before the process (resident_pct, fincore), the runner's
+#     model load time (load_ms) and the other GPU processes found after the run (others_post; a run with any is
+#     invalid, as with any before it). The next token is also compared on the unaligned prompt r1304.txt.
 # One GPU job at a time: everything runs under the gpu-lab lock.
 #
 # usage: e2e5.sh --stage DIR --out NAME --lock UUID [--reps 5] [--extra 3] [--models 1b,3b,8b] [--schemes 4w,8da4w]
@@ -59,18 +64,19 @@ for m in "${MS[@]}"; do for q in "${QS[@]}"; do
 sleep 60; IDLE=$(gtemp); echo "idle_temp=$IDLE" >> "$O/env.txt"
 cool() { local t0=$SECONDS t; while :; do t=$(gtemp); [[ $t -le $((IDLE + 5)) || $((SECONDS - t0)) -ge $COOLMAX ]] && break; sleep 5; done; }
 CSV=$O/runs.csv
-[[ -f $CSV ]] || echo "gpu,host,model,scheme,build,rep,slot,tok_s,rc,temp_pre,temp_post,cool_s,clocks,others,utc,log,prompt_tokens,generated_tokens,prefill_ms,clk_n,clk_med_mhz,clk_min_mhz,busy_med,power_med_w,temp_max,valid,reason" > "$CSV"
+[[ -f $CSV ]] || echo "gpu,host,model,scheme,build,rep,slot,tok_s,rc,temp_pre,temp_post,cool_s,clocks,others,utc,log,prompt_tokens,generated_tokens,prefill_ms,clk_n,clk_med_mhz,clk_min_mhz,busy_med,power_med_w,temp_max,valid,reason,resident_pct,load_ms,others_post" > "$CSV"
 run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected tokens>
-  local m=$1 q=$2 b=$3 r=$4 s=$5 p=$6 tag=$7 want=$8 log t0 tp tq rc oth cs sp
+  local m=$1 q=$2 b=$3 r=$4 s=$5 p=$6 tag=$7 want=$8 log t0 tp tq rc oth cs sp res oth2
   log="logs/$tag-$m-$q-$b-r$r.log"
   t0=$SECONDS; cool; cs=$((SECONDS - t0)); tp=$(gtemp); oth=$(others | tr ',' ';')
   local benv=(); [[ -f $D/$b/env ]] && mapfile -t benv < "$D/$b/env"
+  res=$(fincore -nbo RES,SIZE "$(pte $m $q)" | awk '{printf "%.2f", 100 * $1 / $2}')
   sampler "$O/${log%.log}.clk" 9>&- & sp=$!
   env "${benv[@]}" LD_LIBRARY_PATH=$D/$b timeout 1800 "$D/$b/llama_main" --model_path "$(pte $m $q)" \
     --tokenizer_path "$(tokz $m)" --prompt_file "$p" --max_new_tokens 1 --temperature 0 \
     $([[ $tag == prefill ]] && echo --warmup) < /dev/null > "$O/$log" 2>&1 9>&-
-  rc=$?; kill $sp 2>/dev/null; wait $sp 2>/dev/null; tq=$(gtemp)
-  python3 - "$O/$log" "$O/${log%.log}.clk" "$want" "$CLKMIN" "$rc" "$oth" "$tag" <<'PY' > "$O/.row"
+  rc=$?; kill $sp 2>/dev/null; wait $sp 2>/dev/null; tq=$(gtemp); oth2=$(others | tr ',' ';')
+  python3 - "$O/$log" "$O/${log%.log}.clk" "$want" "$CLKMIN" "$rc" "$oth$oth2" "$tag" <<'PY' > "$O/.row"
 import json, re, statistics as st, sys
 log, clk, want, clkmin, rc, oth, tag = sys.argv[1:8]
 obs = None
@@ -79,11 +85,12 @@ for line in open(log, errors="replace"):
     if i >= 0:
         try: obs = json.loads(line[line.index("{", i):])
         except Exception: pass
-tok = pt = gt = ms = ""
+tok = pt = gt = ms = load = ""
 rows = []
 if obs:
     tok = obs.get("prefill_token_per_sec", ""); pt = obs.get("prompt_tokens", ""); gt = obs.get("generated_tokens", "")
     a, b = obs.get("model_execution_start_ms"), obs.get("model_execution_end_ms")
+    if obs.get("model_load_start_ms") and obs.get("model_load_end_ms"): load = obs["model_load_end_ms"] - obs["model_load_start_ms"]
     # prefill window: from inference start to prompt-eval end when available, else the execution window
     a = obs.get("inference_start_ms", a); b2 = obs.get("prompt_eval_end_ms", b)
     if a and b2:
@@ -103,16 +110,17 @@ if oth: reason.append("other_gpu_process")
 if n < 2: reason.append("clock_unsampled")
 elif cm < float(clkmin): reason.append("clock_low")
 valid = 0 if reason else 1
-print(",".join(str(x) for x in [tok, pt, gt, ms, n, cm, cmin, med(2, 1), med(3, 1e6), round(max(r[4] for r in rows) / 1000) if rows else "", valid, "+".join(reason)]))
+print(",".join(str(x) for x in [tok, pt, gt, ms, n, cm, cmin, med(2, 1), med(3, 1e6), round(max(r[4] for r in rows) / 1000) if rows else "", valid, "+".join(reason), load]))
 PY
-  IFS=, read -r tok pt gt ms n cm cmin bm pw tmax valid reason < "$O/.row"
-  echo "780m,$(hostname),$m,$q,$b,$r,$s,$tok,$rc,$tp,$tq,$cs,sclk_med=${cm}MHz,$oth,$(date -u +%FT%TZ),$log,$pt,$gt,$ms,$n,$cm,$cmin,$bm,$pw,$tmax,$valid,$reason" >> "$CSV"
-  echo "$tag $m $q $b r$r slot$s tok_s=$tok ms=$ms rc=$rc T=$tp->$tq cool=${cs}s clk=$cm/$cmin MHz n=$n busy=$bm valid=$valid $reason"
+  IFS=, read -r tok pt gt ms n cm cmin bm pw tmax valid reason load < "$O/.row"
+  echo "780m,$(hostname),$m,$q,$b,$r,$s,$tok,$rc,$tp,$tq,$cs,sclk_med=${cm}MHz,$oth,$(date -u +%FT%TZ),$log,$pt,$gt,$ms,$n,$cm,$cmin,$bm,$pw,$tmax,$valid,$reason,$res,$load,$oth2" >> "$CSV"
+  echo "$tag $m $q $b r$r slot$s tok_s=$tok ms=$ms rc=$rc T=$tp->$tq cool=${cs}s clk=$cm/$cmin MHz n=$n busy=$bm resident=$res% load=${load}ms valid=$valid $reason"
 }
 nvalid() { awk -F, -v m=$1 -v q=$2 -v b=$3 'NR > 1 && $3 == m && $4 == q && $5 == b && $16 ~ /^logs\/prefill/ && $26 == 1 {n++} END {print n + 0}' "$CSV"; }
 gen() { grep -v 'PyTorchObserver\|^[IWE] \|^\[sarc_dev\]' "$O/$1"; }
 for m in "${MS[@]}"; do for q in "${QS[@]}"; do
   [[ -f $(pte $m $q) ]] || { echo "missing $(pte $m $q)"; continue; }
+  cat "$(pte $m $q)" > /dev/null
   r=1
   while :; do
     if (( r % 2 )); then order=(parent cand); else order=(cand parent); fi
@@ -128,7 +136,10 @@ for m in "${MS[@]}"; do for q in "${QS[@]}"; do
     run1 $m $q cand 0 0 prompt_check.txt check 1972
     if cmp -s <(gen "logs/check-$m-$q-parent-r0.log") <(gen "logs/check-$m-$q-cand-r0.log"); then x=SAME; else x=DIFFER; fi
     if cmp -s <(gen "logs/prefill-$m-$q-parent-r1.log") <(gen "logs/prefill-$m-$q-cand-r1.log"); then y=SAME; else y=DIFFER; fi
-    echo "$m,$q,$PROMPT:$y,prompt_check.txt:$x" >> "$O/nexttoken.csv"; echo "nexttoken $m $q $PROMPT=$y check=$x"
+    run1 $m $q parent 0 0 r1304.txt unaligned 1792
+    run1 $m $q cand 0 0 r1304.txt unaligned 1792
+    if cmp -s <(gen "logs/unaligned-$m-$q-parent-r0.log") <(gen "logs/unaligned-$m-$q-cand-r0.log"); then z=SAME; else z=DIFFER; fi
+    echo "$m,$q,$PROMPT:$y,prompt_check.txt:$x,r1304.txt:$z" >> "$O/nexttoken.csv"; echo "nexttoken $m $q $PROMPT=$y check=$x unaligned=$z"
   fi
 done; done
 echo "others_end: $(others)" >> "$O/env.txt"; date -u > "$O/done.txt"; echo E2E5_DONE

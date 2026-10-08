@@ -2,6 +2,9 @@
 # trace.sh <session> [models=1b,3b] [schemes=4w,8da4w] [builds="parent cand"]: one warm ETDump per cell and arm
 # with the traced binaries of stage/<session> (kit trace2.sh protocol), then kit/analysis/trace_analysis.py.
 # Output: stage/<session>/trace/{raw/780m/trace2/*.etdp, report/evidence/trace/{families,gemm,totals}.csv}
+# Round 3, replacement validation (owner decision 2026-10-08 22:55 UTC, D5): the model file is read into the page
+# cache before each process (the model changes with every cell here), the same for both arms, and its residency
+# (fincore) is written to raw/780m/trace2/residency.txt per run.
 set -uo pipefail
 [[ -n ${SARC_HOLD_UNIT:-} ]] || exec env SARC_HOLD_UNIT=1 "$(dirname "$(readlink -f "$0")")/hold.sh" run "trace set trace.sh $*" "$0" "$@"  # coordinator hold: one unit
 A=${ART780M:-$HOME/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-03}; S=$A/stage/$1; MODELS=${2:-1b,3b}; SCHEMES=${3:-4w,8da4w}; BUILDS=${4:-parent cand}
@@ -14,6 +17,8 @@ IFS=, read -ra MS <<< "$MODELS"; IFS=, read -ra QS <<< "$SCHEMES"
 for b in $BUILDS; do BD=$S/$b-traced
   for m in "${MS[@]}"; do IFS=: read -r MD ST <<< "${STEM[$m]}"; for q in "${QS[@]}"; do
     benv=(); [[ -f $BD/env ]] && mapfile -t benv < $BD/env
+    cat $MROOT/$MD/exported/${ST}_vulkan_$q.pte > /dev/null
+    echo "$m $q $b $(date -u +%FT%TZ) resident_pct=$(fincore -nbo RES,SIZE $MROOT/$MD/exported/${ST}_vulkan_$q.pte | awk '{printf "%.2f", 100 * $1 / $2}')" >> $O/residency.txt
     env "${benv[@]}" LD_LIBRARY_PATH=$BD timeout 1800 $BD/llama_main --model_path $MROOT/$MD/exported/${ST}_vulkan_$q.pte \
       --tokenizer_path $MROOT/$MD/original/tokenizer.model --prompt_file $S/prompt_2048.txt --max_new_tokens 1 \
       --temperature 0 --warmup --etdump_path $O/$m-$q-$b.etdp < /dev/null > $O/$m-$q-$b.log 2>&1 9>&-

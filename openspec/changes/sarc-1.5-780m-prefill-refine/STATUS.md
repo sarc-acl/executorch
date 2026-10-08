@@ -2,11 +2,27 @@
 
 ## Round 3 (2026-10-08): `fused3sb` and `780m-final` (closing task, not a tuning round)
 
-Updated 2026-10-08 22:31 UTC. **Not closed: blocked on an owner decision (build provenance, R5); see "Decision needed from the owner" at the end of this section.** Task file: `~/hmz-sarc/CAMPAIGN-round3.md`. Raw data of this round:
+Updated 2026-10-08 23:03 UTC. **Not closed: the owner decided option (a) at 22:55 UTC (task file, last section); the replacement build `head4` and its validation are running.**
+
+**Running now (started 23:03 UTC, detached, one after the other): `chain27.sh`, then `chain28.sh`** (copies in
+`results/780m/round3/`; status files `<artifacts 10-08>/logs/chain27.status`, `chain28.status`).
+`chain27.sh`: check of the export `src/head4` (written 23:10 UTC by `tools/export_recursive.sh c639d4760`: `git
+archive` of the commit, the 23 submodules and 7 nested ones fetched at their pinned commits into bare
+repositories under `<artifacts 10-08>/submodules/` and written from there; nothing from a working tree), builds
+`head4` and `head4-traced`, `spirv_golden.py`, SPIR-V against `head2` and `head3`, staging, dispatch smoke, SDPA
+output byte comparison, kernel time. `chain28.sh`: item A on `head4` (timed session, tiers 12 passes, `verify.sh`,
+traces), then item B (timed session, `verify.sh`, tiers). About 2.5 hours; no build overlaps a timed session (one
+chain). Tools changed for it, as decided: `tools/e2e5.sh` and `tools/trace.sh` read the model file before each
+cell and record its `fincore` residency per run; `e2e5.sh` also records the runner's model load time and the GPU
+processes after each run, and compares the next token on `r1304.txt` too (1,792 tokens; the open point 3 below).
+`verify.sh` is not edited: one invocation, the six files read first, residency recorded before and after.
+Everything below this paragraph was measured on `head3` and is evidence for `head3` only.
+
+State before the decision, as written 22:31 UTC: not closed, blocked on an owner decision (build provenance, R5); see "Decision needed from the owner" at the end of this section. Task file: `~/hmz-sarc/CAMPAIGN-round3.md`. Raw data of this round:
 `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-08/`; evidence in `results/780m/round3/` and
 `results/780m/sessions/{r3a-fused3sb,r3b-final-dev15}/`; summary in `proposal.md`, "Round 3".
 
-**Running now: nothing, and nothing is queued.** The two detached chains of this round (`chain25.sh` 19:44 to 20:07 UTC, `chain26.sh`
+As of 22:31 UTC nothing ran and nothing was queued. The two detached chains of this round (`chain25.sh` 19:44 to 20:07 UTC, `chain26.sh`
 20:08 to 22:09 UTC; copies and their status files in `results/780m/round3/`) have ended. Only the hold watcher
 (`hold.sh watch`, started again 19:44 UTC; it did not survive the reboot) is alive; it starts no GPU job.
 
