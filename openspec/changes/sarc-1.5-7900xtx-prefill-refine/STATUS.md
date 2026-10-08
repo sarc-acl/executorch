@@ -1,10 +1,16 @@
 # STATUS: sarc-1.5-7900xtx-prefill-refine
 
-Updated 2026-10-08 18:28 UTC (`date -u`). Branch `topic/7900xtx-prefill-refine`, parent `90fe4d013`. Nothing pushed.
+Updated 2026-10-08 21:04 UTC (`date -u`). Branch `topic/7900xtx-prefill-refine`, parent `90fe4d013`. Nothing pushed.
 
-## Running now
-- GPU host: `q-c1` (candidate 1, softmax `r3` via `ET_VK_SARC_780M_PROFILE=c7` on the parent binary): gate = timed session against the parent (7 repeats), SDPA tiers (12 passes each), `verify.sh` against the snapshot, ETDump traces; then the SDPA output evidence. Started 18:23 UTC.
-- Control workstation: native build of commit 86a7f96c8 as tag `c2` (parent + the `fused3sb` variants; for candidate 2).
+## Running now (2026-10-08 21:04 UTC)
+- GPU host: `q-c2` (candidate 2: fused attention `fused3sb`, rk variants picked by the screen, against candidate 1): the gate is **waiting for a foreign GPU user to leave**. `amdgpu_top` of another session of this account (not started by this campaign) has held the card since about 21:00 UTC. By rule it makes every run invalid, and `e2e5.sh` / `gl.sh` now wait for it (logged) instead of running. If this is the owner's monitor, closing it lets the queue continue; nothing was forced or killed.
+- Queued behind it: `q-screens2` (completes the 8da4w linear screen: the first pass lost its jobs after the 13th of round 1 to the same kind of foreign user, `nvtop`, because `gl.sh` refused to start and the screen script skipped the job).
+- Control workstation: nothing running.
+
+## Done since the last update
+- Candidate 1 (softmax `r3`) gated, +1.56 % geomean (details in `proposal.md`, `results/7900xtx/sessions/c1-softmax/`).
+- Fused-variant screen: `fused3_d64_t32x32g11s32rk` and `fused3_d128_t16x64g11s32rk` win by the 3 % rule in every round (`results/7900xtx/fused/`); candidate 2 stage `c2-fused` uses their `fused3sb` versions (build `c2`, commit 86a7f96c8; golden DIFF set equal to the parent build's).
+- 4w linear screen complete (21 kernels, 3 rounds): picks only on 1B (`sweep_t128x128k32g42s32f32cbt` on w2 +4.0 %, wk_wv +40 %, wq_wo +13 % in the worst round); every other 4w shape keeps the table kernel.
 
 ## State
 | step | result |
