@@ -1,8 +1,10 @@
 # sarc-1.5-b580-fused-port: status
 
-**2026-10-08 21:05 UTC — candidate 1 (`b580-fused1`, one-pass fused kernel) is correct at kernel level in a
-first smoke pass of all five tiers; hook condition met. Nothing timed that counts yet: the first A/A session
-ran into the owner's desktop use and is superseded. Timed units now wait for an idle desktop.**
+**2026-10-08 21:55 UTC — the straight port is correct but not fast on this card: with the 780M's tile shapes the
+fused kernel is 7 times slower than the parent's three kernels for head_dim 128 and 1.25 times slower for
+head_dim 64 (screen 1, round 1). Its time follows the number of matrix tiles it keeps live. An 8-row head_dim 64
+variant is 1.5 times faster than the three kernels; no head_dim 128 variant of the first set is. Register-saving
+variants are being built. No candidate timed end to end yet.**
 
 Branch `topic/b580-fused-port`, parent `51d9d757f` with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine3`.
 Host `fedora` (the owner's desktop), Arc B580 = PCI `0000:03:00.0`, Vulkan device 0, `ETVK_DEVICE_INDEX=0`, lock
@@ -13,18 +15,57 @@ desktop session idle and locked at 20:00 UTC.
 
 ## Running now
 
-Detached `tools/chain3.sh` (since 21:02 UTC; status lines in `.artifacts/logs/chain3.status`, ends with
-`CHAIN3_DONE` or `CHAIN3_STOPPED`), one unit at a time:
+Detached `tools/chain4.sh` (since 21:52 UTC; `.artifacts/logs/chain4.status`, ends `CHAIN4_DONE` or
+`CHAIN4_STOPPED`): build `topic3` (= `0ac2250f5`, container build); one correctness pass of tiers `all`,
+`extended`, `peaked`, `fused` for each of the 14 new variants (GPU, not timed, `raw/c1-smoke2/`); one-round
+look `screen2-fused` (GPU, timed, each run behind the idle wait). Chains 1 to 3 have ended (chain 3 stopped by
+the actor after round 1 of screen 1, see below).
 
-1. logits-probe builds for `parent2` and `topic1` (container builds);
-2. `c1-ref`: error against the fp32 reference, parent kernels and `b580-fused1` on the same binary (GPU, not timed);
-3. baseline + A/A with calibration, session `s1-aa2` (GPU, timed);
-4. kernel screen `screen1-fused`, 18 profiles x 3 rounds (GPU, timed).
+## Calibration and baseline (session `s1-aa2`, 21:27 to 21:37 UTC, idle desktop)
 
-Units 3 and 4 start each run only while the desktop session of seat0 reports `IdleHint=yes`
-(`.artifacts/logs/idle_wait.log` says what is waiting). At 21:02 UTC the desktop is in use, so they wait; no
-build may start on this host while they run. Chains 1 and 2 have ended (`chain1.status`: `CHAIN1_DONE`;
-`chain2.status`: stopped by the actor, see below).
+Parent `parent2` (`51d9d757f`) against `topic1`, both with the parent environment; median of 5 valid runs per
+arm, arms interleaved, 60 timed runs, none rejected; tok/s:
+
+| cell | parent | topic, same environment | A/A | expected (`s6-final`) | parent vs expected | foreign engine time, median / max |
+|---|---:|---:|---:|---:|---:|---|
+| 1B 4w | 12800.00 | 13044.60 | +1.91 % | 12962.00 | -1.25 % | 0.02 / 1.63 % |
+| 1B 8da4w | 15283.60 | 15283.60 | 0.00 % | 15170.40 | +0.75 % | 0.01 / 1.74 % |
+| 3B 4w | 5132.83 | 5145.73 | +0.25 % | 5184.81 | -1.00 % | 0.59 / 0.74 % |
+| 3B 8da4w | 6360.25 | 6340.56 | -0.31 % | 6400.00 | -0.62 % | 0.73 / 0.92 % |
+| 8B 4w | 2288.27 | 2288.27 | 0.00 % | 2306.31 | -0.78 % | 0.60 / 0.75 % |
+| 8B 8da4w | 2976.74 | 2968.12 | -0.29 % | 2998.54 | -0.73 % | 0.64 / 0.94 % |
+
+A/A geomean +0.26 %, every cell inside +-2 %; baseline within 1.3 % of the first campaign in every cell (limit
+3 %); next token SAME in all six cells on the three prompts. Calibration (`tools/thresholds.txt`, dated block):
+`CLKMIN` 2635 MHz, `BUSYMAX` 5.0 % (the floor), idle 42 C, and **7 repeats** for every later session, because the
+1B 4w A/A is further than 1 % from 1: three of its five parent runs had 0.7 to 1.6 % foreign engine time
+(firefox, ghostty) and read 1.3 to 2.5 % lower. The desktop was idle but not as quiet as in the first campaign
+(0.00 % there).
+
+## Screen 1, round 1: the 780M's shapes are slow here (`results/b580/screens/screen1-fused.csv`, build `topic1`)
+
+Kernel time per layer at S = 2048, microbench `--sdpa`, us; one round on the idle desktop, cooled before every
+run (round 2 had only begun when the screen was stopped; its two runs are in the run table). The parent's three
+kernels: 8B 2400 (QK^T 571, softmax 1127, attn*V 702), 3B 1766, 1B 2069. Fused kernel + copy pass:
+
+| head_dim 64 variant (1B) | us | vs parent | | head_dim 128 variant | 8B us | 3B us | vs parent |
+|---|---:|---:|---|---|---:|---:|---:|
+| `t8x32 ro` | 1375 | 1.50x | | `t8x64 ro` | 3520 | 2830 | 0.68x / 0.62x |
+| `t8x64 ro` | 1511 | 1.37x | | `t8x64 o` | 3782 | 2853 | 0.63x |
+| `t16x32 r` (two-pass) | 1721 | 1.20x | | `t8x64 r` (two-pass) | 4105 | 3467 | 0.58x |
+| `t16x32 o` | 2358 | 0.88x | | `t8x32 ro` | 4208 | 3652 | 0.57x |
+| `t16x32 ro` (= `b580-fused1` so far) | 2585 to 2718 | 0.78x | | `t16x64 o` | 7589 | 6193 | 0.32x |
+| `t16x64 ro` | 2722 | 0.76x | | `t16x64 r` (two-pass) | 8150 | 6677 | 0.29x |
+| `t32x32 s32 ro` (the 780M's) | 5982 | 0.35x | | `t16x32 ro` | 8307 | 7159 | 0.29x |
+| | | | | `t16x64 s32 ro` (the 780M's) | 14643 | 10762 | 0.16x |
+| | | | | `t16x64 ro` (= `b580-fused1` so far) | 17056 to 17170 | 12936 to 13929 | 0.14x |
+
+Reading (an inference from these timings, not yet from a shader dump): the time follows the number of matrix
+tiles a thread keeps live. With 16 lanes an 8 x 16 fp32 tile is 512 bytes and an fp16 tile 256; head_dim 128 at
+8 rows keeps 8 accumulator, 8 Q and 4 score tiles = 8192 bytes, and 16 rows twice that; the only variants that
+beat the three kernels keep 4096 bytes or less (head_dim 64 at 8 rows). The 780M's kernel assumed tiles stay in
+registers. The new variants keep one column of score tiles live (`j`) and move the accumulators to shared
+memory (`a`); neither changes a product or the order of a sum.
 
 ## The desktop went into use during the first A/A (20:50 UTC)
 
