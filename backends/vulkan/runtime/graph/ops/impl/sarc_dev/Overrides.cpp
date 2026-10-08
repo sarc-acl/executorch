@@ -644,6 +644,9 @@ const Profile kProfiles[] = {
     {"qkpk-t256x64k32g42s32nf", kQkPk_t256x64k32g42s32nf, 1},
     {"780m-refine1-dq", k780mRefine1Dq, sizeof(k780mRefine1Dq) / sizeof(Preference)},
     {"780m-refine1-q4", k780mRefine1Q4, sizeof(k780mRefine1Q4) / sizeof(Preference)},
+    // 780M final configuration: these preferences plus what profile c11 of the
+    // 780m block below adds (active_profile_780m).
+    {"780m-final", k780mRefine3, sizeof(k780mRefine3) / sizeof(Preference)},
 };
 const Profile* requested_profile() {
   static const Profile* p = []() -> const Profile* {
@@ -903,6 +906,12 @@ const Profile780m k780mProfiles[] = {
 const Profile780m* active_profile_780m() {
   static const Profile780m* const active = []() -> const Profile780m* {
     const char* e = std::getenv("ET_VK_SARC_780M_PROFILE");
+    // ET_VK_SARC_DEV_PROFILE=780m-final alone is the final configuration:
+    // 780m-refine3 (kProfiles above) with c11.
+    const char* dev = std::getenv("ET_VK_SARC_DEV_PROFILE");
+    if (e == nullptr && dev != nullptr && std::string(dev) == "780m-final") {
+      e = "c11";
+    }
     for (const Profile780m& p : k780mProfiles) {
       if (e != nullptr && std::string(e) == p.name) {
         return &p;
