@@ -1,0 +1,32 @@
+correctness rc=1 [correctness] FAILED -- numeric failure(s) and/or a rank-3 case did not dispatch coopmat
+linear 4w rc=1 kernels:  12 "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half"; 2 "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32bbt_texture3d_texture2d_half"; 4 "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt_texture3d_texture2d_half"; 6 "sarc_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt_texture3d_texture2d_half";
+linear 8da4w rc=1 kernels:  12 "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1_texture3d_texture2d_half"; 12 "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_buffer_texture2d_half";
+1b 4w tiled prefill_tok_s=2096.21
+1b 4w default prefill_tok_s=10502.6
+1b 4w check: default vs tiled output SAME
+1b 4w decode rc=0 "generated_tokens":31 decode_tok_s=70.2948
+1b 8da4w tiled prefill_tok_s=7757.58
+1b 8da4w default prefill_tok_s=10291.5
+1b 8da4w check: default vs tiled output SAME
+1b 8da4w decode rc=0 "generated_tokens":31 decode_tok_s=65.1261
+3b 4w tiled prefill_tok_s=735.897
+3b 4w default prefill_tok_s=3976.7
+3b 8da4w tiled prefill_tok_s=2868.35
+3b 8da4w default prefill_tok_s=3961.32
+8b 4w tiled prefill_tok_s=299.59
+8b 4w default prefill_tok_s=1750.43
+8b 8da4w tiled prefill_tok_s=1229.29
+8b 8da4w default prefill_tok_s=1741.5
+pdiff llama-3.2-1b 4w buffer rc=1 [production-diff] FAILED (llama-3.2-1b, 4 shapes, M=2048, linear_q4gsw, buffer)
+pdiff llama-3.2-1b 4w texture3d rc=0 [production-diff] ALL PASSED (llama-3.2-1b, 4 shapes, M=2048, linear_q4gsw, texture3d)
+pdiff llama-3.2-1b 8da4w buffer rc=0 [production-diff] ALL PASSED (llama-3.2-1b, 4 shapes, M=2048, linear_dq8ca_q4gsw, buffer)
+pdiff llama-3.2-1b 8da4w texture3d rc=0 [production-diff] ALL PASSED (llama-3.2-1b, 4 shapes, M=2048, linear_dq8ca_q4gsw, texture3d)
+pdiff llama-3.2-3b 4w buffer rc=1 [production-diff] FAILED (llama-3.2-3b, 4 shapes, M=2048, linear_q4gsw, buffer)
+pdiff llama-3.2-3b 4w texture3d rc=0 [production-diff] ALL PASSED (llama-3.2-3b, 4 shapes, M=2048, linear_q4gsw, texture3d)
+pdiff llama-3.2-3b 8da4w buffer rc=0 [production-diff] ALL PASSED (llama-3.2-3b, 4 shapes, M=2048, linear_dq8ca_q4gsw, buffer)
+pdiff llama-3.2-3b 8da4w texture3d rc=0 [production-diff] ALL PASSED (llama-3.2-3b, 4 shapes, M=2048, linear_dq8ca_q4gsw, texture3d)
+pdiff llama-3.1-8b 4w buffer rc=1 [production-diff] FAILED (llama-3.1-8b, 4 shapes, M=2048, linear_q4gsw, buffer)
+pdiff llama-3.1-8b 4w texture3d rc=0 [production-diff] ALL PASSED (llama-3.1-8b, 4 shapes, M=2048, linear_q4gsw, texture3d)
+pdiff llama-3.1-8b 8da4w buffer rc=0 [production-diff] ALL PASSED (llama-3.1-8b, 4 shapes, M=2048, linear_dq8ca_q4gsw, buffer)
+pdiff llama-3.1-8b 8da4w texture3d rc=0 [production-diff] ALL PASSED (llama-3.1-8b, 4 shapes, M=2048, linear_dq8ca_q4gsw, texture3d)
+VERIFY_DONE rc=0
