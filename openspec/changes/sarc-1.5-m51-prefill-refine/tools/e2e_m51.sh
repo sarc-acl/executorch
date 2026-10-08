@@ -65,14 +65,19 @@ run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected 
   # The sampler stops when run.on is removed (on this board's shell, kill + wait of the sampler ends the command).
   A shell "cd $DS/$b && rm -f run.log run.clk run.rc run.pre run.post run.on
     (cat /sys/kernel/gpu/gpu_clock_stats; cat /sys/kernel/gpu/gpu_reset_count) > run.pre
+    grep -E 'MemAvailable|SwapFree' /proc/meminfo > run.mem0
     touch run.on
     (while [ -e run.on ]; do echo \$(date +%s%N) \$(cat /sys/kernel/gpu/gpu_clock) \$(cat /sys/kernel/gpu/gpu_busy) \$(cat /sys/class/thermal/thermal_zone4/temp) \$(cat /sys/class/thermal/cooling_device7/cur_state); sleep 0.05; done > run.clk) &
     $benv LD_LIBRARY_PATH=$DS/$b timeout 1190 ./llama_main --model_path=$DEV_ROOT/models/${STEM[$m]}_${q}_embq_ctx3072.pte --tokenizer_path=$DEV_ROOT/models/tokenizer.model --prompt_file=$p --max_new_tokens=1 --temperature=0 $w ${EXTRA_ARGS:-} < /dev/null > run.log 2>&1
     echo \$? > run.rc; rm -f run.on; wait
-    (cat /sys/kernel/gpu/gpu_clock_stats; cat /sys/kernel/gpu/gpu_reset_count) > run.post" < /dev/null > /dev/null 2>&1
+    (cat /sys/kernel/gpu/gpu_clock_stats; cat /sys/kernel/gpu/gpu_reset_count) > run.post
+    grep -E 'MemAvailable|SwapFree' /proc/meminfo > run.mem1" < /dev/null > /dev/null 2>&1
   alive || { echo "board gone during $log $(date -u +%FT%TZ)" | tee -a "$ART/ABORTED"; exit 3; }
   A pull "$DS/$b/run.log" "$O/$log" > /dev/null; A pull "$DS/$b/run.clk" "$O/${log%.log}.clk" > /dev/null
   A pull "$DS/$b/run.pre" "$O/${log%.log}.pre" > /dev/null; A pull "$DS/$b/run.post" "$O/${log%.log}.post" > /dev/null
+  # board memory before and after the run (kB), one line per run in mem.csv (8B runs: one process at a time, N10)
+  A pull "$DS/$b/run.mem0" "$O/${log%.log}.mem0" > /dev/null 2>&1; A pull "$DS/$b/run.mem1" "$O/${log%.log}.mem1" > /dev/null 2>&1
+  echo "$log,$(awk '/MemAvailable/{printf "%s",$2}' "$O/${log%.log}.mem0" 2>/dev/null),$(awk '/SwapFree/{printf "%s",$2}' "$O/${log%.log}.mem0" 2>/dev/null),$(awk '/MemAvailable/{printf "%s",$2}' "$O/${log%.log}.mem1" 2>/dev/null),$(awk '/SwapFree/{printf "%s",$2}' "$O/${log%.log}.mem1" 2>/dev/null)" >> "$O/mem.csv"
   local rc; rc=$(A shell "cat $DS/$b/run.rc" < /dev/null | tr -d '\r\n'); tq=$(gtemp); g1=$(device_state)
   python3 - "$O/$log" "$O/${log%.log}" "$want" "$CLKMIN" "$CLKN" "${rc:-255}" "$oth" "$tag" "$g0" "$g1" "$M51_GPU_KHZ" <<'PY' > "$O/.row"
 import json, statistics as st, sys
