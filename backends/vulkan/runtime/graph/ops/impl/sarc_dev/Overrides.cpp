@@ -1134,8 +1134,15 @@ std::optional<Choice> select_rx7600(
   return before;
 }
 
+// Round 2 (2026-10-08): the 8da4w variants of glsl/sarc_dev/sarc_dev_rx7600_dq8ca_zpg.yaml (generated table). Reachable by exact
+// name (ET_VK_SARC_780M_DQ) and by the rx7600-refine4 profile of round 2; no earlier profile picks them.
+const Row kRx7600Space[] = {
+#include "SpaceRx7600Dq.inc"
+};
+
 struct RegistrarRx7600 {
   RegistrarRx7600() {
+    register_candidates(kRx7600Space, sizeof(kRx7600Space) / sizeof(kRx7600Space[0]));
     Override o = get_override();
     select_before_rx7600 = o.select;
     o.select = select_rx7600;
