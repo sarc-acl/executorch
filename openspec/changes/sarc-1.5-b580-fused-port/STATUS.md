@@ -1,10 +1,10 @@
 # sarc-1.5-b580-fused-port: status
 
-**2026-10-08 21:55 UTC — the straight port is correct but not fast on this card: with the 780M's tile shapes the
-fused kernel is 7 times slower than the parent's three kernels for head_dim 128 and 1.25 times slower for
-head_dim 64 (screen 1, round 1). Its time follows the number of matrix tiles it keeps live. An 8-row head_dim 64
-variant is 1.5 times faster than the three kernels; no head_dim 128 variant of the first set is. Register-saving
-variants are being built. No candidate timed end to end yet.**
+**2026-10-08 22:55 UTC — the straight port is correct but slow on this card (register spills: the compiler
+reports 199 to 1250 spilled values for head_dim 128). A restructured form of the same kernel, several subgroups
+per workgroup sharing each block's scores, compiles without spills, is correct in a first pass, and in a first
+disturbed look is about 1.5 times (head_dim 128) and 3 times (head_dim 64) faster than the parent's three
+kernels. Not screened on an idle desktop yet; no candidate timed end to end yet.**
 
 Branch `topic/b580-fused-port`, parent `51d9d757f` with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine3`.
 Host `fedora` (the owner's desktop), Arc B580 = PCI `0000:03:00.0`, Vulkan device 0, `ETVK_DEVICE_INDEX=0`, lock
@@ -15,11 +15,50 @@ desktop session idle and locked at 20:00 UTC.
 
 ## Running now
 
-Detached `tools/chain4.sh` (since 21:52 UTC; `.artifacts/logs/chain4.status`, ends `CHAIN4_DONE` or
-`CHAIN4_STOPPED`): build `topic3` (= `0ac2250f5`, container build); one correctness pass of tiers `all`,
-`extended`, `peaked`, `fused` for each of the 14 new variants (GPU, not timed, `raw/c1-smoke2/`); one-round
-look `screen2-fused` (GPU, timed, each run behind the idle wait). Chains 1 to 3 have ended (chain 3 stopped by
-the actor after round 1 of screen 1, see below).
+Detached `tools/chain6.sh` (since 22:53 UTC; `.artifacts/logs/chain6.status`, ends `CHAIN6_DONE` or
+`CHAIN6_STOPPED`): build `topic5` (= `f8c2a6a0e`, container build); one correctness pass of tiers `extended`,
+`peaked`, `fused` and the compiler statistics for each of 6 new variants (GPU, not timed, `raw/c1-smoke4/`);
+one-round look `screen4-fused` of the multi-subgroup variants (GPU, timed, each run behind the idle wait; at
+22:55 UTC the desktop is in use, so it waits). Chains 1 to 5 have ended (3, 4 and 5 stopped by the actor when
+their screens were overtaken by a new variant set; their status files say so).
+
+## Why the straight port is slow here, and the form that is not (22:10 to 22:55 UTC)
+
+Compiler statistics of the fused pipelines (`INTEL_DEBUG=cs` with the shader cache disabled: a compile-time
+dump of the test process, no hardware counter; `results/b580/compile/topic4-fused-kernels.txt`). ANV compiles
+the kernel for 16 lanes with 128 registers:
+
+| variant | instructions | spills : fills | kernel us per layer (where measured) |
+|---|---:|---:|---|
+| `d64_t8x32 ro` (the only form of screen 1 that beat the three kernels) | 1304 | 32 : 57 | 1375 (1B), idle |
+| `d64_t16x32 ro` | 3974 | 204 : 313 | 2585 to 2718 |
+| `d128_t8x64 ro` | 4178 to 5187 | 199 : 336 to 268 : 470 | 3520 (8B) |
+| `d128_t16x64 ro` (the 780M's shape at 16 lanes) | 15093 to 16537 | 1114 : 1309 to 1250 : 1467 | 17056 (8B) |
+| `d128_t8x64 g2 oj` (2 subgroups) | 1107 | 0 : 0 | |
+| `d128_t8x64 g4 roj` (4 subgroups) | 768 | 0 : 0 | |
+| `d128_t16x64 g4 oj` | 1155 | 0 : 0 | |
+| `d64_t16x64 g4 roj` | 924 | 0 : 0 | |
+
+A thread's register file holds 4096 bytes of 16-lane values; the fp32 accumulators of 8 rows x head_dim 128
+alone are 4096 bytes. So one subgroup cannot own whole rows of head_dim 128 on this card, whatever the tile.
+
+What was tried, in order (all correct in a pass of tiers `extended`, `peaked`, `fused`; `raw/c1-smoke2..3/`):
+
+1. `j`: one column of score tiles live instead of a block's. No real effect (1B `t8x32`: 1311 against 1339 us,
+   idle).
+2. `a`: accumulators in shared memory, loaded and stored around each block. Slower in every case (one-shot look
+   with the desktop in use, `results/b580/looks/look1-*.txt`: head_dim 128 5.7 to 11 ms against 3.5 ms). Shared
+   memory is not a cheap extension of the register file here.
+3. `g<G>`: **a workgroup of G subgroups.** Each subgroup owns 1 / G of the score-tile columns of a block and
+   1 / G of the head_dim tiles of the accumulators; the block's scores and e values go through shared memory
+   (`Psh`), which every subgroup reads, so the barriers become workgroup barriers and the rescale decision of
+   the one-pass form is taken for the whole workgroup (an atomic flag in shared memory instead of
+   `subgroupAny`). K and V are still read straight from the packed copies; no product and no order of a sum
+   changes. One-shot look with the desktop in use (`results/b580/looks/look2-*.txt`; the parent's kernels read
+   2308 / 1788 / 2255 us for 8B / 3B / 1B in the same look, 0 to 9 % above their idle values):
+   `d128_t16x64 g4 oj` 1508 / 1195 us (8B / 3B), `d128_t8x64 g4 roj` 2063 / 1716, `d128_t8x64 g2 oj` 2217 / 1732;
+   `d64_t16x64 g4 roj` 726 us (1B), `d64_t8x32 g2 roj` 944, `d64_t8x32 oj` 1178. These are single disturbed runs:
+   a direction, not a result.
 
 ## Calibration and baseline (session `s1-aa2`, 21:27 to 21:37 UTC, idle desktop)
 
