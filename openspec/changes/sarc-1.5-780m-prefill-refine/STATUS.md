@@ -2,7 +2,7 @@
 
 ## Round 3 (2026-10-08): `fused3sb` and `780m-final` (closing task, not a tuning round)
 
-Updated 2026-10-08 22:40 UTC. **Not closed: blocked on an owner decision (build provenance, R5); see "Decision needed from the owner" at the end of this section.** Task file: `~/hmz-sarc/CAMPAIGN-round3.md`. Raw data of this round:
+Updated 2026-10-08 23:05 UTC. **Not closed: blocked on an owner decision (build provenance, R5); see "Decision needed from the owner" at the end of this section.** Task file: `~/hmz-sarc/CAMPAIGN-round3.md`. Raw data of this round:
 `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-08/`; evidence in `results/780m/round3/` and
 `results/780m/sessions/{r3a-fused3sb,r3b-final-dev15}/`; summary in `proposal.md`, "Round 3".
 
@@ -241,10 +241,27 @@ GPU job was started after the review.
      comparison; or, if the owner prefers the single invocation of the snapshot, run as before with the six
      files read first and their residency recorded before and after. **Which of the two is the owner's call.**
 
+3. **Open, second review of 2026-10-08: parent-versus-candidate next token on two prompts, not three.** R7 asks
+   for all six cells on the timed, the real-text and the unaligned prompt. `tools/e2e5.sh` (lines 126 to 131)
+   compares `prompt_2048.txt` and the 1,972-token `prompt_check.txt`; nothing compares parent and candidate on
+   `r1304.txt`. `verify.sh` runs that prompt only as default versus tiled, for 1B. The tables above head the
+   second column "unaligned prompt", as the tables of round 2 do: it is `prompt_check.txt`. Every session of
+   rounds 1 and 2 has the same two-prompt coverage. For a replacement validation I would add the six-cell
+   parent-versus-candidate runs on `r1304.txt` for both items with a campaign-local script (the same runner
+   command as `e2e5.sh`'s check runs, same lock and guard), **unless the owner rules that two prompts suffice.**
+4. **Not evidenced, same review:** the sessions record other GPU processes once before each run (not during or
+   after it) and record temperatures and the clock, but no thermal throttle reason; "60 of 60 valid" means the
+   predicates `e2e5.sh` records, as in rounds 1 and 2. The absolute error values against the fp64 reference are
+   the test binary's log lines (the second reviewer did not reconstruct them; the first did). `check.sh
+   --no-build` was run by the actor only.
+
+**State 2026-10-08 23:05 UTC: the task file still ends without an owner decision; nothing is queued and nothing
+runs.** With no exception granted, the plan is 1 (a) with 2 and 3 corrected, started only on the owner's word.
+
 For the record, not blocking:
 
-3. The kernel has 13 barrier pairs, not 14 (above). Nothing else differs, so the work was not stopped for it.
-4. The task defines the `dev/1.5` arm of item B as the branch head with no profile; that is what was measured
+5. The kernel has 13 barrier pairs, not 14 (above). Nothing else differs, so the work was not stopped for it.
+6. The task defines the `dev/1.5` arm of item B as the branch head with no profile; that is what was measured
    (same binary). The pristine `dev/1.5` build `ef079ac41` of round 2 was not re-timed; the arm agrees with it
    within 0.48 % per cell.
 
