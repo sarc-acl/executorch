@@ -1,23 +1,62 @@
 # STATUS: sarc-1.5-orin-fused-port
 
-**2026-10-08 20:19 UTC. Builds `parent` (`8973ced76`) and `topic1` (`0f14f2a1a`: hook + candidate 1) are done and
-deployed; the parent control `s0-parent-verify` is accepted; `s0n-noenv`, the A/A + baseline session and the hook
-control are running on the device (`chain1`, then `chain2`). No candidate measured yet.**
+**2026-10-08 21:25 UTC. Baseline and A/A done (`s1-aa`): the parent is within 0.09 % of `s10-final` in every cell,
+A/A geomean -0.05 %; clock floor 593 MHz. Both controls accepted. Running: traces of `s1-aa`, the hook control
+`s2n-noenv`, then candidate 1 (`chain3`). No candidate measured yet.**
 
 All times are UTC from `date -u`.
 
 ## Running now
 
 - Device `duck-naughty` (detached, `~/hmz-sarc-orin-fused/jobs/<job>.{status,out}`):
-  - `chain1` (since 19:57): `s0-parent-verify` done 20:14; now `s0n-noenv` (unmodified `verify.sh` on the parent
-    build with nothing selected).
-  - `chain2` (queued behind `chain1`): `s1-aa` = baseline + A/A, record-only clock, parent build against `topic1`,
-    both with the parent environment; warm traces of both arms; `s2n-noenv` = `verify.sh` on `topic1` with nothing
-    selected against `s0n-noenv` (hook control, D4).
-- Workstation: `build-extra1` (`logits_dump` for `parent` and `topic1`, under the build lock). The build lock was
-  held by the Arc B580 campaign (exclusively for its build until 19:51, shared for a timed session until 20:13);
-  both of my builds waited for it, as the task says.
+  - `chain2` (session part done 21:20): warm traces of both arms of `s1-aa`, then `s2n-noenv` = unmodified
+    `verify.sh` on `topic1` with nothing selected against `s0n-noenv` (hook control, D4).
+  - `chain3` (queued behind `chain2`): candidate 1 = profile `orin-fused1` on `topic1`: one correctness pass per
+    tier (`all`, `extended`, `full`, `peaked`, `fused`; the chain stops if a case is not PASSED), error against the
+    fp32 reference for stock / parent / candidate (`sdpa-error1`), kernel timing of the four forms of the fused
+    kernel, 3 rounds (`sdpa-screen1`), then the gate `s3-c1` (`gate_sdpa.sh`: 12 passes of `all`, `extended`,
+    `full`, 3 of `peaked` and `fused`, unmodified `verify.sh`, interleaved session, traces). About 3.5 hours.
+- Workstation: nothing. `logits_dump` built for `parent` and `topic1` (20:49) and deployed.
 - Coordinator hold: `tools/HOLD.md` (device: `~/hmz-sarc-orin-fused/HOLD`; builds: `.artifacts/HOLD`). None seen.
+- The workstation's build lock was held by the Arc B580 campaign (exclusively for its build until 19:51, shared
+  for timed sessions afterwards); my builds waited for it each time, as the task says.
+
+## Baseline and A/A (`s1-aa`, 20:35 to 21:20 UTC, record-only clock)
+
+Parent arm = build `parent` (`8973ced76`), candidate arm = build `topic1` (`0f14f2a1a`: hook + candidate 1
+code), **both with the parent environment** (`orin-refine5` + `orin_g64`): the A/A also shows that the hook and
+the linked dev code cost nothing while the fused node is not selected. Tok/s, median of 5 valid runs per arm,
+arms interleaved; recomputed from `runs.csv`:
+
+| cell | parent | `topic1`, parent environment | ratio | `s10-final` (expected) | parent vs expected | repeat spread (parent / `topic1`) |
+|---|---:|---:|---:|---:|---:|---|
+| 1B 4w | 1489.45 | 1488.37 | 0.9993 | 1489.45 | 0.00 % | 0.07 / 0.15 % |
+| 1B 8da4w | 1382.85 | 1380.05 | 0.9980 | 1382.85 | 0.00 % | 0.34 / 0.47 % |
+| 3B 4w | 629.38 | 629.19 | 0.9997 | 628.99 | +0.06 % | 0.15 / 0.12 % |
+| 3B 8da4w | 570.16 | 570.16 | 1.0000 | 570.32 | -0.03 % | 0.14 / 0.08 % |
+| 8B 4w | 295.27 | 295.27 | 1.0000 | 295.53 | -0.09 % | 0.19 / 0.12 % |
+| 8B 8da4w | 269.05 | 269.12 | 1.0003 | 269.19 | -0.05 % | 0.08 / 0.09 % |
+
+- Baseline: every cell within 0.09 % of the first campaign's final session (threshold 3 %).
+- A/A: geomean -0.05 %, largest cell -0.20 %, repeat spread at most 0.47 %. The noise on this device is far
+  inside the +-2 % band. The runner's timer has a 1 ms step: 0.07 % of a 1B prefill (1375 ms).
+- 60 timed runs, all valid: rc 0, 2048 prompt tokens, 0 generated, no foreign GPU process, 13 to 126 clock
+  samples per prefill window (threshold 5), median clock 612 MHz in every run. Start temperature 57 to 62 C.
+  Next token parent vs `topic1`: SAME in 24 of 24 rows. `gate_check.py session --calibration --require-logs`:
+  ACCEPT, 0 findings.
+- Clock floor (`results/orin/clkmin.json`, `calibrate_clock.py`): floor(0.97 x 612) = **593 MHz**, device-wide; no
+  run below it.
+- Memory: at least 5628 MB available before every timed run; swap in use 74 to 110 MB since the first 8B run of
+  the parent control (the model file is read into the page cache before each cell, D5). Model load 1.6 to 10.8 s,
+  none slow enough to abort: 0 runner aborts in the session.
+
+## Pristine control `s0n-noenv` (20:35 UTC, `GATE_ACCEPTED`)
+
+Unmodified `verify.sh` on the `parent` build with nothing selected: the dev/1.5 state of this device.
+`gate_check.py verify`: ACCEPT, 0 findings. Its default-arm prefill runs: 1B 890.82 / 823.15, 3B 360.25 / 320.20,
+8B 189.63 / 170.33 tok/s; the published `cells.csv` numbers are 890.82 / 822.82, 360.37 / 320.30, 189.74 / 170.43:
+within 0.1 %. Error of the stock attention kernels against the fp32 reference on the S = 2048 cases: rms 8.4e-05
+to 8.7e-05, maximum 1.41e-03 to 1.71e-03 (four times and twice the parent's).
 
 ## Builds
 
@@ -120,9 +159,8 @@ Not lockstep-dependent, but worth watching in the tiers: the one-pass form start
 
 ## Next step
 
-After `chain2`: pull, clock floor from `s1-aa` (`calibrate_clock.py`), baseline against `s10-final`, then
-`chain3`: candidate 1 pre-check (one pass per tier), its reference error, kernel timing of the four forms, and
-the gate `s3-c1`.
+`chain3` (candidate 1) is queued. After its gate: the 41-prompt real-text probe of the four arms and
+`ref_error_rule.py`, then the candidate-2 decision from `sdpa-screen1` by the rule in `tools/thresholds.txt`.
 
 ## Thresholds
 
