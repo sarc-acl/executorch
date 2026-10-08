@@ -1,7 +1,8 @@
 # sarc-1.5-b580-fused-port: status
 
-**2026-10-08 20:50 UTC — candidate 1 (`b580-fused1`, one-pass fused kernel) is correct at kernel level in a
-first smoke pass of all five tiers. Not gated, nothing timed yet.**
+**2026-10-08 21:05 UTC — candidate 1 (`b580-fused1`, one-pass fused kernel) is correct at kernel level in a
+first smoke pass of all five tiers; hook condition met. Nothing timed that counts yet: the first A/A session
+ran into the owner's desktop use and is superseded. Timed units now wait for an idle desktop.**
 
 Branch `topic/b580-fused-port`, parent `51d9d757f` with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine3`.
 Host `fedora` (the owner's desktop), Arc B580 = PCI `0000:03:00.0`, Vulkan device 0, `ETVK_DEVICE_INDEX=0`, lock
@@ -12,13 +13,46 @@ desktop session idle and locked at 20:00 UTC.
 
 ## Running now
 
-Detached, one unit at a time (status lines in `.artifacts/logs/chain1.status` and `chain2.status`; each chain
-ends with `CHAINn_DONE` or `CHAINn_STOPPED`):
+Detached `tools/chain3.sh` (since 21:02 UTC; status lines in `.artifacts/logs/chain3.status`, ends with
+`CHAIN3_DONE` or `CHAIN3_STOPPED`), one unit at a time:
 
-- `tools/chain1.sh` (since 19:31 UTC), last unit: baseline + A/A with calibration, session `s1-aa`, started
-  20:49 UTC (GPU, timed: no build on this host while it runs).
-- `tools/chain2.sh`, waiting for chain 1: kernel-level screen `screen1-fused` of the 16 fused variants against
-  the parent's three attention kernels, 3 rounds, cooled before every run.
+1. logits-probe builds for `parent2` and `topic1` (container builds);
+2. `c1-ref`: error against the fp32 reference, parent kernels and `b580-fused1` on the same binary (GPU, not timed);
+3. baseline + A/A with calibration, session `s1-aa2` (GPU, timed);
+4. kernel screen `screen1-fused`, 18 profiles x 3 rounds (GPU, timed).
+
+Units 3 and 4 start each run only while the desktop session of seat0 reports `IdleHint=yes`
+(`.artifacts/logs/idle_wait.log` says what is waiting). At 21:02 UTC the desktop is in use, so they wait; no
+build may start on this host while they run. Chains 1 and 2 have ended (`chain1.status`: `CHAIN1_DONE`;
+`chain2.status`: stopped by the actor, see below).
+
+## The desktop went into use during the first A/A (20:50 UTC)
+
+Session `s1-aa` (parent `parent2` against `topic1`, both with the parent environment) started at 20:49 UTC; the
+owner returned to the desktop at 20:50 (seat0 `IdleHint=no`, top foreign clients gnome-shell and ghostty). All
+60 timed runs were formally valid, with foreign engine time 3.6 to 9.7 % per run (0.00 % in the first campaign's
+idle sessions):
+
+| cell | parent | topic, same environment | A/A | expected (`s6-final`) | parent vs expected | arm spreads |
+|---|---:|---:|---:|---:|---:|---|
+| 1B 4w | 11770.10 | 12118.30 | **+2.96 %** | 12962.00 | **-9.2 %** | 2.3 / 4.2 % |
+| 1B 8da4w | 14027.40 | 14222.20 | +1.39 % | 15170.40 | **-7.5 %** | 7.5 / 6.0 % |
+| 3B 4w | 4807.51 | 4830.19 | +0.47 % | 5184.81 | **-7.3 %** | 1.4 / 3.1 % |
+| 3B 8da4w | 6023.53 | 6023.53 | 0.00 % | 6400.00 | **-5.9 %** | 2.7 / 2.7 % |
+| 8B 4w | 2169.49 | 2181.04 | +0.53 % | 2306.31 | **-5.9 %** | 1.4 / 2.2 % |
+| 8B 8da4w | 2817.06 | 2813.19 | -0.14 % | 2998.54 | **-6.1 %** | 1.9 / 2.4 % |
+
+Every cell is outside the 3 % baseline tolerance and one A/A cell is outside +-2 %, so by the rules fixed in
+`tools/thresholds.txt` nothing is optimised until the cause is found. The cause is the desktop in use, not the
+build: the parent snapshot `s0-parent-verify`, taken 40 minutes earlier on the idle desktop with the same
+binaries, read 12962 / 15170.4 / 5197.97 / 6380.06 / 2288.27 / 3002.93 tok/s (single runs), within 0.8 % of the
+expected values, and the loss per run is of the size of its foreign engine share. The session is not used as
+the calibration session (it would have set `BUSYMAX` to 15.62 %); it, the calibration files it wrote and the
+three screen runs made in that period are kept in `.artifacts/superseded/desktop-in-use-20261008T2050Z/` (run
+table copied to `results/` at the next collection). The rules are unchanged; what was added, before any
+candidate was timed (`thresholds.txt`, dated block): the calibration session is `s1-aa2`; a timed run, a trace
+run and a screen run start only on an idle desktop (`host.sh idle_wait`, called from `e2e5.sh`, `session.sh`,
+`trace.sh`, `screen_sdpa.sh`); and the reading of the screen rule's incumbents.
 
 The first actor run of this campaign was stopped at 19:22:50 UTC, two and a half minutes into its build of tag
 `parent`; that build died with it at about 70 % and is kept, unused, under
