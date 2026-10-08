@@ -1,2 +1,2 @@
 kernel screens, parent build test_llama_microbench, env ET_VK_SARC_UNVERIFIED=1
-21cfb63da92705314aceaa0fbb61e519d1e7be22e8a8aa19f00c7619e9b79ee7  <campaign-root>/.artifacts/stage/screens/test_llama_microbench
+21cfb63da92705314aceaa0fbb61e519d1e7be22e8a8aa19f00c7619e9b79ee7  <artifacts>/stage/screens/test_llama_microbench
