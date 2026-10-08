@@ -1,13 +1,11 @@
 # STATUS: RX 7600 prefill campaign
 
-Updated 2026-10-07 23:58 UTC.
+Updated 2026-10-08 03:45 UTC.
 
 ## Running now
 
-- **Candidate 3 gate** (`tools/chain5.sh` -> `gate.sh c3-linear`, detached, status `.artifacts/logs/chain5.status` and
-  `.artifacts/stage/c3-linear/gate.status`, started 2026-10-08 01:55 UTC): timed session (waits out host builds of
-  anyone), `verify.sh`, traces. Parent arm = candidate 2 (parent binary, env switches), candidate arm = build `c3`
-  (commit `6ebf39484`, native, golden PASS against `golden-ref-parent.json`) with `ET_VK_SARC_RX7600_PROFILE=rx7600-refine2`.
+- Native build `c4` (commit `129cea7ac`: profiles `rx7600-refine2` / `rx7600-refine3`, kernel family `fused3sb`), detached, `.artifacts/build/rx7600/c4.src.txt`
+  (CPU only; no timed session runs meanwhile). Next: candidate 4 gate, then M2a gate.
 - M51 runs its own campaign on this host (builds here).
 
 ## State
@@ -23,10 +21,10 @@ Updated 2026-10-07 23:58 UTC.
 | candidate 1 (softmax `r3`) | **gate passed**, **+1.48 % geomean: under 2 % (the first)**. `verify.sh` identical to `s0` (32 / 32 lines, rates removed); SDPA tiers `all` / `extended` / `full` 12 passes each, 0 mismatches, `pairing=ok`; SDPA output **byte-identical** to the parent in all 21 cases (`all`, `extended`, `peaked`, `full`); traces: softmax 32.4 -> 26.8 ms (1B), 42.7 -> 35.4 (3B), 64.2 -> 53.1 (8B) |
 | fused-variant screen (kernel level, 3 rounds, `results/rx7600/fused/`) | done: no variant at least 3 % faster in every round; the 780M's `fused3_d64_t32x32g11s32rko` / `fused3_d128_t16x64g11s32rko` stay (others 0.76 to 1.62 x, not consistently faster) |
 | candidate 2 (fused attention kernel) | **ACCEPTED (reference-error rule, owner decision 2026-10-04)**, +18.22 % geomean over candidate 1 (parent binary, env switches). Gate: `verify.sh` identical to `s0` (32 / 32 lines); SDPA tiers 12 passes each, 0 mismatches, `pairing=ok`; next token SAME in all items (none differ); real-text probe complete, gross-divergence check passed. Reference error (D3.1): one coherent run of 2026-10-07 23:14 to 23:49 UTC, `results/rx7600/sdpa-error/` (17 rows, complete): 16 `yes`; **1 `NO`**, `peaked_tiny_gqa_s256` (S = 256, max-error ratio 1.140, rms ratio 0.812), not a production shape, explained in `sdpa-error/README.md`. Record: `results/rx7600/acceptance-c2.txt`. Not yet built from a committed head (every arm so far is the parent binary with env switches) |
-| linear screens (port items 3, 4) | **not done**. The earlier files (`stage/c2-fused/linear-screen-*.csv`: one kernel, rounds 1 to 2) are incomplete (a base-environment argument error made most jobs fail). Complete 3-round screens of 21 4w and 24 8da4w kernels (table included): **running** (`tools/chain4.sh`) |
-| candidate 3 (linear kernel per shape) | **not gated**. First attempt `c3-linear-per-shape` FAILED and is superseded (rc 127, no binaries staged, the profile would have changed nothing): `results/rx7600/sessions/c3-first-attempt-failed/`. To do: profile from the screens, exported commit, real build, golden check, gate, timed session |
-| candidate 4 (whole-texel 8da4w staging) | not started |
-| M2a (`subgroupBarrier()` after each `memoryBarrierShared()` in the fused kernel) | not started; its own gated candidate after 3 and 4 (owner decision 2026-10-07 23:15 UTC) |
+| linear screens (port items 3, 4) | **done** (`results/rx7600/screens/`): 4w table + 20 kernels, 8da4w table + 23 kernels, 3 rounds, all rows dispatched. 3 %-in-every-round rule: 6 of 12 4w shapes pass (3.2 to 4.0 %), all 12 8da4w shapes pass with `zpg_t256x64k64g48s32afmb1` (worst round 1.106 to 1.142); the texel-wise family is within 1.1 % of it |
+| candidate 3 (linear kernel per shape, profile `rx7600-refine2`) | **gate passed, +5.49 % geomean over candidate 2** (4w +0.5 / +1.0 / +1.5 %, 8da4w +8.54 / +10.02 / +11.97 %); 60 / 60 timed runs valid; next token SAME in all cells; `verify.sh` = snapshot except the two kernel-name lines; production-diff errors identical in 24 / 24; outputs of the 24 prefill linear shapes **byte-identical** to the parent (no arithmetic change, D3 not needed). Real build `c3` of commit `6ebf39484`, golden PASS against `golden-ref-parent.json`. `results/rx7600/sessions/c3-linear/`. A failed first attempt stays recorded under `results/rx7600/sessions/c3-first-attempt-failed/` |
+| candidate 4 (whole-texel 8da4w staging, profile `rx7600-refine3`) | built (`c4`), not gated. Kernel screen: against candidate 3's kernel the best texel-wise kernel reads 0.977 to 1.011 in the worst round, i.e. not the 3 % the rule needs; measured as a whole (`zpg_bt_t128x64k64g42s32` on every 8da4w shape) to complete the stop rule |
+| M2a (`subgroupBarrier()` after each `memoryBarrierShared()` in the fused kernel) | kernel family `fused3sb` written (generated from the 780M file, 13 barriers added, nothing else changed), in `c4`; not gated (owner decision 2026-10-07 23:15 UTC: reported either way) |
 | coordinator hold | tested 07:21 UTC (`results/rx7600/hold-test.txt`); watcher running |
 
 ### Candidate 2: fused attention kernel (session `c2-fused`, 13:24 to 14:15 UTC)
@@ -163,9 +161,8 @@ end the campaign before items 3 and 4. The 780M measured them the other way roun
 
 ## Next
 
-1. Finish the complete linear screens; select per shape by the 3 %-in-every-round rule.
-2. Candidate 3: `rx7600-refineN` profile, exported commit, real native build (`tools/build-native.sh`), golden check against `golden-ref-parent.json`, gate, timed session.
-3. Candidate 4 (whole-texel 8da4w staging), then M2a; stop rule R11; final verification on the committed head; `check.sh --no-build`.
+1. Candidate 4 gate (c4 build, profile `rx7600-refine3`, against candidate 3), then M2a gate (`fused3sb`, tiers, reference error).
+2. Stop rule R11; final verification on a build of the committed head (verify.sh, SDPA tiers, golden, reference-error evidence); final session against the pristine parent; `sarc/tools/check.sh --no-build`; proposal.md.
 
 ### Decision needed from the owner
 The branch history was rewritten and force-pushed over the coordinator's scrubbed copy (see below). This violates owner decisions 2026-10-06 16:19 and 19:40 UTC: do not rewrite or amend existing commits, do not run git push, must never be forced.
