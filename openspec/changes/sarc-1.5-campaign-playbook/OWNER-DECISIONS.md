@@ -251,3 +251,32 @@ One hmz workspace per device, plus one coordinating Claude Code session (`COORDI
 With the kit on branch `topic/llamacpp-compare`: add `kit/hosts/<device>/host.sh`, screen llama.cpp's settings on
 the device, include the vendor's own llama.cpp backend where one exists. Results of a public device go back to
 the public remote.
+
+### N10. M51: the 8B model goes on the board (owner decision 2026-10-08, 22:50 UTC)
+
+The M51 campaign (`topic/m51-prefill-refine`, closed 2026-10-08) ran without the 8B model by the device owner's
+decision of 2026-10-06, so every gate is PARTIAL (1B and 3B), candidate c3 (a 4w tile that acts on 8B shapes only)
+is ungated, and the final stack has no 8B number. That decision is lifted: **8B is required for the campaign to be
+complete.**
+
+What makes 8B run on this board where 1B and 3B needed nothing: the setting the owner calls **"thread hold = 32"**
+for the 8B runs (the company side knows which setting this is). 1B and 3B do not need it; keep their environment
+unchanged so that their numbers stay comparable.
+
+Do, in this order, each as a unit of the coordinator hold:
+
+1. Push the 8B 4w and 8da4w `.pte` files and check them as the metadata rule requires (context length, group
+   size, embedding quantization against `kit/MODELS.md`); record free memory on the board before the first 8B
+   process and after each run; one process at a time.
+2. Parent snapshot and baseline for 8B only (`s0` and the A/A rule of R4.4), with the setting in both arms.
+3. Re-run the gates that were PARTIAL, for 8B: the final stack c4 against the pristine parent (`verify.sh
+   --models 8b`, the SDPA tiers with the 8B head cases end to end, next token on the three prompts, reference
+   error), and the timed session for the 8B cells.
+4. Gate c3 (the 4w tile for K = 4096) on top of c4; adopt it only by the campaign's own rules (R8 margin, N3
+   band). If adopted, the final profile becomes c5 = c4 + c3 and gets its own single name.
+5. Record the setting as part of the 8B configuration in `proposal.md` and in the local `STATUS.md`, with the
+   reason, so that the promotion PR and the llama.cpp comparison use the same setting.
+
+Numbers stay local, as the device owner's rule says. Stop and report under "Decision needed from the owner" if
+the board swaps, resets, or an 8B run aborts in the same place twice.
+

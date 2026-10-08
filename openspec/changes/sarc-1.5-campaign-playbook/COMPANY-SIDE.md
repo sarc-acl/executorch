@@ -51,18 +51,31 @@ list and nothing after it:
 Budget for this shape, from the RX 7600's first day: the two attention candidates took about 14 hours of
 device time including the A/A and the gates, with the actor sharing the host's CPU with another job.
 
-### M51/Xclipse is the exception
+### M51/Xclipse: what the port looked like there (closed 2026-10-08; 8B still to do)
 
-Nothing ports from RDNA3 to Xclipse: subgroup size, cooperative-matrix shapes and the shared-memory budget
-differ, and the fused kernel assumes a workgroup that is one subgroup. For this device:
+The M51 campaign (`topic/m51-prefill-refine`, 38 commits, forked from the 780M's candidate 11 like the RX 7600)
+followed the port list and closed on 2026-10-08. What it taught, number-free because the device owner's rule keeps
+every figure local:
 
-- Start with what needs device hours and no judgment: the attention rows (L1, the +46 to +58 % layer, which
-  this device does not have yet) through the sibling-independent path of `RULES.md` R3 (a `<Device>Sdpa.cpp`
-  registration of `kUnverified` rows), then the linear tile screen as a deterministic sweep with a fixed
-  configuration list, not a sampled search.
-- Try the fused kernel only after the attention rows are in and gated, and only as a candidate that may fail.
-- If any frontier-model budget exists, spend it here, on reading the first Xclipse shader dumps and the attention
-  kernel's shape choices, and nowhere else. The RDNA3 campaigns do not need it.
+- The device already had attention rows (`impl/sarc/table_amd.cpp`, xclipse, `kUnverified`), so it was in the
+  780M's position, and the fused kernel ported: candidate c1 gated outside the band. Two findings: the 780M form
+  with `memoryBarrierShared()` alone **gave random wrong rows at S = 2048 on this driver** (the race of section 6
+  is real on non-lockstep hardware; the port uses `memoryBarrierShared()` + `barrier()` at every exchange), and
+  **the one-pass form failed with either barrier form while the two-pass packed form passed**: the one-pass path
+  carries another lockstep assumption. The NVIDIA ports should read this before trusting one-pass on a new driver.
+- The whole-texel 8da4w staging (`zpg_bt`) on every shape: c2, outside the band. A head_dim 64 fused variant on a
+  64-wide subgroup: c4, inside the band. The fp32 softmax: not applicable once the fused node serves every call.
+- **Known property**: `zpg_bt` is a 4h4w-layout kernel; for prompts whose length is not a multiple of 128 the
+  layout falls to the stock tiled kernel, so the 8da4w cells of the final stack are **slower than the parent at
+  unaligned lengths**, and the fused attention is not dispatched there. The 2048-token headline is unaffected; the
+  owner kept the stack and recorded this as a property. It must be in the promotion decision.
+- **8B was not loaded on the board** (device owner's decision of 2026-10-06), so every gate is PARTIAL and c3 is
+  ungated. **Lifted on 2026-10-08: `OWNER-DECISIONS.md` N10 says how 8B is done** (the setting the owner calls
+  "thread hold = 32" for the 8B runs).
+- Review with no numbers: our side can read the code and the prose and check the tools, but cannot recompute a
+  single cell. Where the device owner's rule applies, the campaign's own `summarize.py` output and `runs.csv` stay
+  local, and the reviewer on our side states that its review is of code and method only.
+
 
 ## 2. Talking to an actor that is not Claude (C1)
 

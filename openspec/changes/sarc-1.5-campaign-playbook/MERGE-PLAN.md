@@ -108,6 +108,16 @@ campaign branches' result files (one mechanical commit per branch). Whether to d
 already on `dev/1.5` is the owner's call; removing them from history would need a rewrite of a branch that is
 never force-pushed, so the practical choice is a forward commit or leaving them.
 
+### M2d. M51: unaligned prompt lengths and the 8B gap **[owner]**
+
+`topic/m51-prefill-refine` closed on 2026-10-08 with two things the promotion must weigh: (1) its final stack's
+8da4w kernel (`zpg_bt`, a 4h4w-layout pick) falls to the stock tiled kernel for prompt lengths that are not a
+multiple of 128, so those cells are slower than the parent there (recorded as a property, not fixed); a profile
+promoted for M51 either excludes that pick for unaligned lengths or ships with the caveat. (2) Every M51 gate is
+PARTIAL (1B and 3B) until the 8B work of `OWNER-DECISIONS.md` N10 is done; until then the M51 profile is
+labelled "verified 1B and 3B only". Its numbers are local to the device owner; the review on our side is of code
+and method.
+
 ### M3. Merge the dev zone, one branch at a time
 
 Order: 780M first (the others forked from it), then B70, B580, RTX 4070 Ti SUPER, Orin. Each as its own fork PR
