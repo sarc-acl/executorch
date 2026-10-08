@@ -19,9 +19,9 @@ Final stack = build `final` with
 | 8B 4w | 1517 | 1517.04 | 1747.44 | **+15.19 %** | +15.2 % | 0.37 / 0.34 % | SAME / SAME / SAME |
 | 8B 8da4w | 1403 | 1402.74 | 1738.54 | **+23.94 %** | +23.9 % | 0.14 / 0.17 % | SAME / SAME / SAME |
 
-Geomean **+26.90 %** over the pristine parent (the six-cell product of the candidates' own sessions, +1.48 x +18.22 x +5.49 %, is +26.6 %).
+Geomean **+26.90 %** over the pristine parent (the product of the candidates' own geomeans, +1.48 %, +18.22 %, +5.49 % and +0.00 %, is +26.6 %).
 Clock 2490 to 2597 MHz (floor 2420), start 40 to 54 C. The parent medians reproduce the A/A session's (`aa2`) within 0.4 %.
-Per-cell timer step 1 ms (0.38 % at 1B 4w).
+The runner's timer step is 1 ms (0.38 % at 1B 4w). The 2.46 % repeat spread of 1B 8da4w (final arm) is one slower run, the median is unaffected.
 
 ## Gate items on the committed build
 
@@ -31,7 +31,7 @@ Per-cell timer step 1 ms (0.38 % at 1B 4w).
 | `verify.sh` unmodified | `verify.out` is identical (rates removed) to the candidate-3 and M2a gates; against `s0-parent-verify` 30 of 32 lines identical, the two that differ are the dispatched kernel names of the linear lines (`verify-compare.txt`); all texture3d and 8da4w production-diff cases ALL PASSED; the 4w `buffer` FAILED lines and `correctness rc=1` are the parent's own |
 | SDPA tiers `all` / `extended` / `full`, 12 passes each | 0 failed, 0 mismatches, `pairing=ok` in all 36 (+3 table control passes) (`sdpa-correctness/summary.txt`) |
 | D3.1, error against the fp64 reference (`sdpa-error/error.csv`, one coherent run, 17 rows) | production shapes (tier full, S = 2048 and 1024): 4 of 4 `yes`; `extended` 8 of 8 `yes`; `peaked` 4 of 5 `yes`; the one `NO` is `peaked_tiny_gqa_s256` (S = 256, not a production shape; max ratio 1.140, rms ratio 0.812), unchanged from `sdpa-error/README.md` of candidate 2. rms error of the final stack is 0.50 to 0.53 x the parent's on every non-peaked case |
-| D3.2 / D3.3, real text (`probe/real-text-compare.csv`, 32 prompts per cell, final vs pristine, with parent-tiled vs parent-default beside) | top-1 differences 0 / 0 / 0 / 0 on 4w, 4 / 1 / 3 on 8da4w (1B / 3B / 8B) of 32; mean KL 1.3e-5 to 3.5e-2 nat; gross-divergence check ok (limits 10.7 prompts, 0.5 nat). Same numbers as candidate 2's probe: candidates 3 and M2a are bit-identical to it |
+| D3.2 / D3.3, real text (`probe/real-text-compare.csv`, 32 prompts per cell, final vs pristine, with parent-tiled vs parent-default beside) | top-1 differences 0 on all three 4w cells, 4 / 1 / 3 on 8da4w (1B / 3B / 8B), of 32 prompts; mean KL 1.3e-5 to 3.5e-2 nat; gross-divergence check ok (limits 10.7 prompts, 0.5 nat). Same numbers as candidate 2's probe: candidates 3 and M2a are bit-identical to it |
 | outputs | the SDPA output differs from the pristine parent in 21 of 21 cases (different kernel and accumulation: judged by D3, `sdpa-error/bitwise.txt`); linear outputs identical (candidate 3) |
 
 Record: **ACCEPTED (reference-error rule, owner decision 2026-10-04)** for the fused attention kernel (the only arithmetic change); evidence

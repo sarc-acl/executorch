@@ -88,3 +88,45 @@ The other copied tools (search, screen and plot scripts of the 780M) are unchang
 4. Port list (each a gated candidate): fused attention kernel; fp32 softmax without the zero tail (D4.1);
    linear kernel per layer shape; whole-texel 8da4w weight staging.
 5. Further candidates only where step 3 points. No tile sweep first, no sampled search (N1).
+
+## Results (2026-10-08; all evidence under `results/rx7600/`, raw runs under the artifact directory)
+
+Stop rule met (R11): candidates 4 (-0.15 %) and M2a (+0.00 %) are two consecutive gated candidates under 2 %.
+
+| # | candidate | parent | geomean | state | evidence |
+|---|---|---|---:|---|---|
+| 1 | softmax `r3` (the 780M's; `ET_VK_SARC_780M_PROFILE=c7`) | pristine parent | +1.48 % | gated, bit-identical to the release softmax in 21 of 21 SDPA cases | `sessions/c1-softmax` |
+| 2 | fused attention kernel `fused3` (D4.3 hook, owner review before promotion) | 1 | +18.22 % | **ACCEPTED (reference-error rule, owner decision 2026-10-04)**; next token SAME everywhere | `sessions/c2-fused`, `sdpa-error/`, `probe/`, `acceptance-c2.txt` |
+| 3 | linear kernel per layer shape (`rx7600-refine2`, real build `c3`) | 2 | +5.49 % | gated; outputs byte-identical in 24 of 24 linear shapes (no arithmetic change) | `screens/`, `sessions/c3-linear` |
+| 4 | whole-texel 8da4w staging everywhere (`rx7600-refine3`, build `c4`) | 3 | -0.15 % | gated, **not adopted** (8B 8da4w -1.51 %) | `sessions/c4-texel` |
+| M2a | `fused3sb`: `subgroupBarrier()` after every `memoryBarrierShared()` | 3 | +0.00 % | gated, output byte-identical to `fused3`, adopted under the rule above | `sessions/m2a-sgbarrier` |
+
+Failed first attempt of candidate 3 (rc 127, no binaries; superseded): `sessions/c3-first-attempt-failed`.
+
+**Final stack against the pristine parent** (build `final`, commit `18cc0d53a`, no local patch; `sessions/final`):
+
+| cell | parent | final | gain | published 2026-09-28 |
+|---|---:|---:|---:|---:|
+| 1B 4w | 7846.74 | 10502.60 | +33.85 % | 7787 |
+| 1B 8da4w | 7340.50 | 10343.40 | +40.91 % | 7340 |
+| 3B 4w | 3297.91 | 3984.44 | +20.82 % | 3287 |
+| 3B 8da4w | 3079.70 | 3953.67 | +28.38 % | 3080 |
+| 8B 4w | 1517.04 | 1747.44 | +15.19 % | 1517 |
+| 8B 8da4w | 1402.74 | 1738.54 | +23.94 % | 1403 |
+
+Geomean **+26.90 %** (expected range of N1: +20 to +30 %). Recommended configuration, all of it committed code, selected by environment:
+`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_780M_PROFILE=c7 ET_VK_SARC_780M_SDPA_FUSED=fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko
+ET_VK_SARC_RX7600_PROFILE=rx7600-refine2` and `VK_ICD_FILENAMES` of the user-space RADV (Mesa 26.2.3). Nothing outside the dev zone changed
+since the parent (`sessions/final/files-outside-dev-zone.txt`); `sarc/tools/check.sh --no-build` PASS (`sessions/final/check-no-build.txt`).
+
+Where each gain came from (ETDump, 8B 8da4w, ms per 2048-token prefill, `sessions/*/trace.out`): total dispatch time 1447.0 (pristine parent) ->
+1162.1 (final); the softmax 64.2 -> 53.1 ms (8B) with `r3`, QK^T + softmax + attn x V (192 ms, 8B) replaced by the one-pass fused
+kernel, 8da4w linear time 1304.2 -> 1163.6 ms with the 256 x 64 tile (K step 64) on the twelve shapes.
+
+Negative results: whole-texel staging on every shape (-0.15 %); the 780M's fused-variant alternatives (no variant >= 3 % faster in every round,
+`results/rx7600/fused/`); 4w kernels: only 6 of 12 shapes pass the 3 % rule and give +0.5 to +1.5 % per cell.
+
+What limits further progress: the linear GEMMs are 80 to 85 % of the 8B prefill (1031.8 of 1335.3 ms before candidates 2 and 3) and the 4w kernel
+the release table already ships is within 4 % of every screened alternative on 6 of 12 shapes; 8da4w staging and barriers cost as much as the
+MMA (phase timing). Percent of the roofs: not re-measured (no igpu-roofline on this host; owner question in `STATUS.md`); the cited
+2026-09-28 roofs are 43.42 TFLOP/s (fp16) and 43.90 TOP/s (int8).
