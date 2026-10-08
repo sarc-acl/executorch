@@ -819,11 +819,12 @@ struct FusedB580 {
 // b580-fused2 = b580-fused1 with the fp32 no-tail softmax of the RTX 4070 Ti SUPER campaign
 // (glsl/sarc_dev/sarc_sdpa_attn_weights_softmax_4070ti, variant 4070ti_nzf, through Override::softmax_variant)
 // for the calls the fused kernel does not take; b580-refine3-nzf is that softmax without the fused kernel.
-const char kFusedB580Pair[] = "d64_t16x32s16m8ro,d128_t16x64s16m8ro";
+// Selected by screen5-select (3 rounds): 16 rows per workgroup; head_dim 64 in 4 subgroups with 64-column
+// blocks and the Q tiles in registers, head_dim 128 in 8 subgroups with 128-column blocks.
+const char kFusedB580Pair[] = "d64_t16x64s16m8g4roj,d128_t16x128s16m8g8oj";
 const FusedB580 kFusedB580[] = {
     {"b580-fused1", kFusedB580Pair},
     {"b580-fused2", kFusedB580Pair},
-    {"b580-fused1p2", "d64_t16x32s16m8r,d128_t16x64s16m8r"},
     {"b580-fused-d64_t16x32s16m8ro", "d64_t16x32s16m8ro"},
     {"b580-fused-d64_t16x32s16m8o", "d64_t16x32s16m8o"},
     {"b580-fused-d64_t8x32s16m8ro", "d64_t8x32s16m8ro"},
@@ -866,7 +867,6 @@ const FusedB580 kFusedB580[] = {
     {"b580-fused-d64_t16x64s16m8g4roj", "d64_t16x64s16m8g4roj"},
     {"b580-fused-d64_t8x32s16m8oj", "d64_t8x32s16m8oj"},
     {"b580-fused-d128_t16x128s16m8g8oj", "d128_t16x128s16m8g8oj"},
-    {"b580-fused-d128_t32x64s16m8g8oj", "d128_t32x64s16m8g8oj"},
     {"b580-fused-d128_t8x128s16m8g8roj", "d128_t8x128s16m8g8roj"},
     {"b580-fused-d64_t16x64s16m8g4oj", "d64_t16x64s16m8g4oj"},
     {"b580-fused-d64_t16x128s16m8g4roj", "d64_t16x128s16m8g4roj"},
@@ -1046,7 +1046,6 @@ const Profile kProfiles[] = {
     {"b580-fused1", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     {"b580-fused2", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     {"b580-refine3-nzf", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
-    {"b580-fused1p2", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     {"b580-fused-d64_t16x32s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     {"b580-fused-d64_t16x32s16m8o", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     {"b580-fused-d64_t8x32s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
@@ -1089,7 +1088,6 @@ const Profile kProfiles[] = {
     {"b580-fused-d64_t16x64s16m8g4roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     {"b580-fused-d64_t8x32s16m8oj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     {"b580-fused-d128_t16x128s16m8g8oj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
-    {"b580-fused-d128_t32x64s16m8g8oj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     {"b580-fused-d128_t8x128s16m8g8roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     {"b580-fused-d64_t16x64s16m8g4oj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     {"b580-fused-d64_t16x128s16m8g4roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},

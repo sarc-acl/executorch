@@ -18,17 +18,20 @@
  * columns, scores = Q K^T (fp32 accumulation, stored fp16), e =
  * exp(score - max) in fp16, row sums and acc += e V in fp32, out = acc / sum.
  *
- * A workgroup is one subgroup (local size == SUBGROUP_SIZE, which the
- * pipeline requires; impl/sarc_dev/b580/SdpaB580Fused.cpp) and nothing is
- * staged for another subgroup, so there is no barrier():
- * - Q tiles are loaded once (AQ_REG: kept in registers; else reloaded from the
- *   buffer for every block);
+ * A workgroup is SUBGROUPS subgroups of SUBGROUP_SIZE lanes (the pipeline
+ * requires the subgroup size and the local size is SUBGROUPS times it;
+ * impl/sarc_dev/b580/SdpaB580Fused.cpp). K and V are never staged:
+ * - Q tiles are loaded once (AQ_REG: kept in registers) or for every product;
  * - K and V are read from the tile-packed copies sarc_dev_b580_sdpa_kvt
  *   writes before this kernel runs, in which every 16 x 16 operand tile is
  *   512 contiguous bytes (t_k [kv_h][c / 16][d / 16][c % 16][d % 16],
  *   t_vt [kv_h][c / 16][d][c % 16]);
- * - scores, e, row maxima, row sums and the divisors live in shared memory
- *   that only this subgroup touches.
+ * - a block's scores and e, the row maxima, the row sums and the divisors
+ *   live in shared memory. With one subgroup only that subgroup touches it
+ *   and the barrier is subgroupBarrier(); with several, every subgroup
+ *   writes its own score columns, every lane reads and rewrites its own
+ *   segment of a row, every subgroup loads the whole block of e, and the
+ *   barrier is barrier() (SYNC()).
  *
  * ONLINE: one pass instead of two. The row maximum is a running maximum:
  * each block's scores first update it; when it rises for a row of the
@@ -43,20 +46,27 @@
  *   MMAS_M = WG_TILE_M / 8 and the row offsets into Psh / Dsh / t_q / t_output
  *   step by 8. The operand tiles of K^T (d x c) and V (c x d) stay 16 x 16,
  *   so the packed copies have the 780M's layout.
- * - SUBGROUP_SIZE is 16; a lane owns row id % WG_TILE_M and segment
- *   id / WG_TILE_M of it, as before, with SEGS = 16 / WG_TILE_M.
- * - register file: on this card the kernel is fast only while its live matrix
- *   tiles fit the thread's registers (screen1-fused: head_dim 128 with 16
- *   accumulator, 16 Q and 8 score tiles live is 7 times slower than the three
- *   kernels it replaces). QK_J_OUTER keeps one column of score tiles live
- *   instead of a block's; ACC_SH keeps the accumulators in shared memory (Ash)
- *   and loads / stores a column of them around its products. Neither changes
- *   a product or the order of a sum.
+ * - SUBGROUP_SIZE is 16. Lane = subgroup id * 16 + invocation id owns row
+ *   lane % WG_TILE_M and segment lane / WG_TILE_M of it
+ *   (SEGS = SUBGROUPS * 16 / WG_TILE_M segments a row).
+ * - register file: a thread has 4096 bytes of registers for 16-lane values,
+ *   and the fp32 accumulators of 8 rows x head_dim 128 are 4096 bytes. One
+ *   subgroup owning whole rows therefore spills (the compiler reports 199 to
+ *   1250 spilled values for head_dim 128) and is slower than the three
+ *   kernels it replaces. MULTI_SG splits the accumulators' head_dim tiles and
+ *   the score columns over the subgroups of a workgroup, which share the
+ *   block's e through shared memory; QK_J_OUTER keeps one column of score
+ *   tiles live; ACC_SH (accumulators in shared memory) was measured slower
+ *   and is kept for the record. None of them changes a product or the order
+ *   in which a tile accumulates; the row sum is added up per segment first.
+ * - the rescale of the one-pass form has barriers, so with several subgroups
+ *   the decision is taken for the workgroup: an atomic flag in shared memory
+ *   (Gsh) instead of subgroupAny.
  * - only the packed form exists (no unpacked K / transposed V path, no
  *   measurement-only variant).
- * - the one-subgroup-per-workgroup assumption is checked at run time (NaN
- *   output otherwise): on this driver nothing but the required subgroup size
- *   states it.
+ * - the workgroup = SUBGROUPS full subgroups assumption is checked at run
+ *   time (NaN output otherwise): on this driver nothing but the required
+ *   subgroup size states it.
  *
  * Fit (SdpaB580Fused.cpp): fp16 buffers, head_dim == HEAD_DIM,
  * S % WG_TILE_M == 0, S % WG_TILE_N == 0, input_pos % WG_TILE_N == 0.
@@ -361,10 +371,11 @@ void main() {
   const int e_last = int(s_base + e_row) + input_pos;
   const ivec4 LANE = ivec4(0, 1, 2, 3);
 
-  // Every shared slot has exactly one writing invocation per phase (its own
-  // row and segment), and every read of a slot another invocation wrote,
-  // including every coopMatLoad from shared memory, follows a
-  // memoryBarrierShared() + subgroupBarrier() pair placed after that write.
+  // Every shared slot has exactly one writer per phase (a lane's own row and
+  // segment, or one cooperative store of a tile only this subgroup owns); the
+  // one exception is Gsh, which lanes only set with atomicOr and lane 0 alone
+  // clears. Every read of a slot another invocation wrote, including every
+  // coopMatLoad from shared memory, follows a SYNC() placed after that write.
 
   // ---- pass A: row maxima ----
   float row_max = -1.0 / 0.0;
