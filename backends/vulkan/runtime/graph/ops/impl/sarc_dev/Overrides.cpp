@@ -1093,10 +1093,15 @@ const PickM51 kM51PicksC3[] = {
     {Op::kQ4gswLinear, "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32xp", k_is_4096},
 };
 const char kFusedM51[] = "fused3_d64_t32x32g11s32rk,fused3_d128_t16x64g11s32rk";
+// Fused-variant screen (ETDump of the fused kernel, 3 rounds, RULES R8 margin): for head_dim 64 the
+// 16 x 64 tile on a 64-wide subgroup beat the 780M's choice in every round; for head_dim 128 no variant did.
+const char kFusedM51B[] = "fused3_d64_t16x64g11s64rk,fused3_d128_t16x64g11s32rk";
 const ProfileM51 kM51Profiles[] = {
     {"c1", kFusedM51, nullptr, 0},
     {"c2", kFusedM51, kM51PicksC2, sizeof(kM51PicksC2) / sizeof(PickM51)},
     {"c3", kFusedM51, kM51PicksC3, sizeof(kM51PicksC3) / sizeof(PickM51)},
+    // c4: c2 plus the head_dim 64 fused variant above (c3, the 4w pick for K = 4096, acts on the 8B model only).
+    {"c4", kFusedM51B, kM51PicksC2, sizeof(kM51PicksC2) / sizeof(PickM51)},
 };
 const ProfileM51* active_profile_m51() {
   static const ProfileM51* const active = []() -> const ProfileM51* {
