@@ -1,0 +1,16 @@
+[sarc_dev] softmax variant: orin_g64
+[sarc_dev] profile active: orin-refine5
+[sarc_dev] overrides active: unverified=1 variant= dq8ca_variant=
+[sdpa-error] tiny_gqa max_abs=0.000760555 rms=6.58067e-05 max_abs_ref=0.98152
+[sdpa-kernels] tiny_gqa qk="kernel_name": "sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k64g42s32nf_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sarc_sdpa_attn_weights_softmax_buffer_half_orin_g64", "operator_id": 0 av="kernel_name": "sarc_sdpa_av_coopmat_4070ti_t64x64k32g42s32_buffer_buffer_half", "operator_id": 0 no_mask_fill=yes pairing=ok
+[sdpa-correctness] tiny_gqa S=128 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/16384 PASSED
+[sdpa-error] 1b_head_config max_abs=0.000781 rms=6.51387e-05 max_abs_ref=0.998901
+[sdpa-kernels] 1b_head_config qk="kernel_name": "sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k64g42s32nf_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sarc_sdpa_attn_weights_softmax_buffer_half_orin_g64", "operator_id": 0 av="kernel_name": "sarc_sdpa_av_coopmat_4070ti_t64x64k32g42s32_buffer_buffer_half", "operator_id": 0 no_mask_fill=yes pairing=ok
+[sdpa-correctness] 1b_head_config S=128 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/262144 PASSED
+[sdpa-error] tiny_gqa_s256 max_abs=0.000816762 rms=5.02459e-05 max_abs_ref=0.993831
+[sdpa-kernels] tiny_gqa_s256 qk="kernel_name": "sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k64g42s32nf_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sarc_sdpa_attn_weights_softmax_buffer_half_orin_g64", "operator_id": 0 av="kernel_name": "sarc_sdpa_av_coopmat_4070ti_t64x64k32g42s32_buffer_buffer_half", "operator_id": 0 no_mask_fill=yes pairing=ok
+[sdpa-correctness] tiny_gqa_s256 S=256 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/32768 PASSED
+[sdpa-error] 1b_head_config_s256 max_abs=0.00090009 rms=5.00375e-05 max_abs_ref=0.998859
+[sdpa-kernels] 1b_head_config_s256 qk="kernel_name": "sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k64g42s32nf_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sarc_sdpa_attn_weights_softmax_buffer_half_orin_g64", "operator_id": 0 av="kernel_name": "sarc_sdpa_av_coopmat_4070ti_t64x64k32g42s32_buffer_buffer_half", "operator_id": 0 no_mask_fill=yes pairing=ok
+[sdpa-correctness] 1b_head_config_s256 S=256 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/524288 PASSED
+[sdpa-correctness] tier=all cases_run=4
