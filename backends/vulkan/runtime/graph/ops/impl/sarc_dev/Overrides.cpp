@@ -1102,6 +1102,8 @@ const ProfileM51 kM51Profiles[] = {
     {"c3", kFusedM51, kM51PicksC3, sizeof(kM51PicksC3) / sizeof(PickM51)},
     // c4: c2 plus the head_dim 64 fused variant above (c3, the 4w pick for K = 4096, acts on the 8B model only).
     {"c4", kFusedM51B, kM51PicksC2, sizeof(kM51PicksC2) / sizeof(PickM51)},
+    // c5: c4 plus the 4w pick of c3 (K = 4096, 8B model only), one name for the stack that the 8B round gates.
+    {"c5", kFusedM51B, kM51PicksC3, sizeof(kM51PicksC3) / sizeof(PickM51)},
 };
 const ProfileM51* active_profile_m51() {
   static const ProfileM51* const active = []() -> const ProfileM51* {
