@@ -1,6 +1,6 @@
 # sarc-1.5-b580-fused-port: status
 
-**2026-10-08 19:50 UTC — port written, not yet built or run on the card. Nothing measured yet.**
+**2026-10-08 19:31 UTC — port written, not yet built or run on the card. Nothing measured yet.**
 
 Branch `topic/b580-fused-port`, parent `51d9d757f` with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine3`.
 Host `fedora` (the owner's desktop), Arc B580 = PCI `0000:03:00.0`, Vulkan device 0, `ETVK_DEVICE_INDEX=0`, lock
@@ -8,9 +8,15 @@ Host `fedora` (the owner's desktop), Arc B580 = PCI `0000:03:00.0`, Vulkan devic
 
 ## Running now
 
-Detached: build of the parent `51d9d757f` as `build/parent2` and `build/parent2-traced`
-(`tools/build-both.sh parent2 51d9d757f`, log `.artifacts/logs/build-parent2.out`, end marker
-`.artifacts/logs/build-parent2.status`). No GPU job.
+Detached chain `tools/chain1.sh` (status lines in `.artifacts/logs/chain1.status`, ends with `CHAIN1_DONE` or
+`CHAIN1_STOPPED`), one unit at a time:
+
+1. build of the parent `51d9d757f` as `build/parent2` and `build/parent2-traced` (`.artifacts/logs/build-parent2.out`);
+2. build of the topic commit as `build/topic1`;
+3. smoke run of the fused kernel, one pass of each SDPA correctness tier with `b580-fused1` (`raw/c1-smoke/`; not a gate);
+4. parent snapshots `s0-parent-verify` (parent environment) and `s0-parent-noenv`;
+5. hook condition D4: `s0-topic1-noenv` against `s0-parent-noenv`, line by line (`tools/verify_diff.py`);
+6. baseline + A/A with calibration, session `s1-aa` (GPU, timed: do not build on this host while it runs).
 
 The first actor run of this campaign was stopped at 19:22:50 UTC, two and a half minutes into its build of tag
 `parent`; that build died with it at about 70 % and is kept, unused, under
