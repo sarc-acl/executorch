@@ -1205,6 +1205,12 @@ const Profile kProfiles[] = {
     {"4070ti-refine4", k4070tiRefine4, sizeof(k4070tiRefine4) / sizeof(Preference)},
     {"4070ti-refine5", k4070tiRefine5, sizeof(k4070tiRefine5) / sizeof(Preference)},
     // <<< 4070ti lin-profiles
+    // >>> 4070ti-fused profiles
+    // RTX 4070 Ti SUPER fused attention port
+    // (openspec/changes/sarc-1.5-4070ti-fused-port): the kernels of
+    // 4070ti-refine1 for every call the fused node does not serve.
+    {"4070ti-fused1", k4070tiRefine1, sizeof(k4070tiRefine1) / sizeof(Preference)},
+    // <<< 4070ti-fused profiles
 };
 const Profile* requested_profile() {
   static const Profile* p = []() -> const Profile* {
@@ -1241,6 +1247,27 @@ const char* softmax_variant_4070ti() {
   return nullptr;
 }
 // <<< 4070ti softmax-variant
+// >>> 4070ti-fused variants
+// RTX 4070 Ti SUPER fused attention port: the fused kernels of the requested
+// profile, one per head_dim (the shader name after sarc_dev_4070ti_sdpa_), or
+// null. The node lives in 4070ti/Sdpa4070tiFused.cpp, which needs the graph
+// headers this file (GPU-free, test_sarc_select) must not include; it hands its
+// Override::sdpa_fused_* functions over from its own static initializer
+// (register_sdpa_fused_4070ti, below). The order of the two files'
+// initializers is not defined: the pair is kept here and applied by whichever
+// runs last, and only while a fused profile is requested.
+const char* fused_variants_4070ti() {
+  const Profile* p = requested_profile();
+  if (p != nullptr && std::strcmp(p->name, "4070ti-fused1") == 0) {
+    return "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko";
+  }
+  return nullptr;
+}
+Override& fused_4070ti() {
+  static Override fused;
+  return fused;
+}
+// <<< 4070ti-fused variants
 
 std::optional<Choice> dev_select(
     const DeviceInfo& device,
@@ -1312,6 +1339,13 @@ struct Registrar {
     // >>> 4070ti softmax-override
     o.softmax_variant = softmax_variant_4070ti();
     // <<< 4070ti softmax-override
+    // >>> 4070ti-fused override
+    if (fused_variants_4070ti() != nullptr) {
+      o.softmax_variant = "4070ti_nzf";
+      o.sdpa_fused_add = fused_4070ti().sdpa_fused_add;
+      o.sdpa_fused_serves = fused_4070ti().sdpa_fused_serves;
+    }
+    // <<< 4070ti-fused override
     set_override(o);
     if (requested_profile() != nullptr) {
       std::cerr << "[sarc_dev] profile active: " << requested_profile()->name
@@ -1327,5 +1361,23 @@ struct Registrar {
 } registrar;
 
 } // namespace
+// >>> 4070ti-fused entry
+const char* sdpa_fused_variants_4070ti() {
+  const char* v = fused_variants_4070ti();
+  return v != nullptr ? v : "";
+}
+void register_sdpa_fused_4070ti(
+    void (*add)(ComputeGraph&, const std::vector<int32_t>&),
+    bool (*serves)(ComputeGraph*, const std::vector<int32_t>&)) {
+  fused_4070ti().sdpa_fused_add = add;
+  fused_4070ti().sdpa_fused_serves = serves;
+  if (fused_variants_4070ti() != nullptr) {
+    Override o = get_override();
+    o.sdpa_fused_add = add;
+    o.sdpa_fused_serves = serves;
+    set_override(o);
+  }
+}
+// <<< 4070ti-fused entry
 } // namespace sarc
 } // namespace vkcompute

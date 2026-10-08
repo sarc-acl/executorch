@@ -24,8 +24,12 @@ is a difference. The same holds per case of correctness.log (coopmat kernel or n
 dispatch coopmat): they must fit their logs and equal the parent control's, as must the case counts, the set
 of cases without coopmat and the decode token counts.
 sdpa: per tier 12 passes, each with the tier's case count (extended 8, full 4), every case PASSED with
-mismatches=0, qk_coopmat=yes, av_coopmat=yes, and a [sdpa-kernels] line with pairing=ok per case; with an env
-file that names a profile, every pass must carry that profile's banner.
+mismatches=0 and a [sdpa-kernels] line with pairing=ok per case. A case is served either by the three coopmat
+kernels (qk_coopmat=yes, av_coopmat=yes, no fused kernel) or by the fused attention kernel (fused=<a
+sarc_dev_4070ti_sdpa_fused kernel> with qk=? softmax=? av=?: the three kernels did not run), never by anything
+else; with an env file that names a 4070ti-fused profile, the three production-shape cases (S = 2048, the 1B, 3B
+and 8B head configurations) must be served by the fused kernel in every pass. With an env file that names a
+profile, every pass must carry that profile's banner.
 session: six cells with at least 5 timed runs per arm that are valid on their own fields (the `valid` column is
 not trusted): a unique log and model/scheme/build/repeat identity, rc 0, a positive finite rate, 2048 prompt
 tokens, 0 generated tokens, no foreign GPU process, at least 2 clock samples and a median clock at or above the
@@ -259,8 +263,9 @@ def do_verify(cand, parent, *opts):
     for arm, s in (("candidate", c), ("parent", p)):
         print(f"{arm} linear dispatch states: " + ", ".join(f"{k[1]}={n}" for k, n in sorted(collections.Counter(v for k, v in s.items() if k.endswith(" dispatch")).items())))
 
+PROD_CASES = ("1b_head_config_s2048", "3b_head_config_s2048", "8b_head_config_s2048")
 def do_sdpa(d, envfile=None):
-    names = set()
+    names = set(); fused_profile = bool(envfile) and (profile_of(env_lines(envfile)) or "").startswith("4070ti-fused")
     if envfile: banner_check(sorted(glob.glob(os.path.join(d, "cand-*.log"))), env_lines(envfile), "sdpa")
     for tier, ncase in (("extended", 8), ("full", 4)):
         logs = sorted(glob.glob(os.path.join(d, f"cand-{tier}-r*.log")))
@@ -273,12 +278,20 @@ def do_sdpa(d, envfile=None):
             b = os.path.basename(f)
             if len(cor) != ncase: fail(f"{b}: {len(cor)} cases, required {ncase}")
             if len(ker) != ncase: fail(f"{b}: {len(ker)} [sdpa-kernels] lines, required {ncase}")
-            for l in cor:
-                if not (l.rstrip().endswith(" PASSED") and re.search(r" mismatches=0/\d+", l) and "qk_coopmat=yes" in l and "av_coopmat=yes" in l):
-                    fail(f"{b}: {l.strip()[:160]}")
+            kof = {}
             for l in ker:
                 if not l.rstrip().endswith("pairing=ok"): fail(f"{b}: {l.strip()[:200]}")
-                names.update(re.findall(r"(?:qk|softmax|av)=(\S+)", l))
+                kv = dict(re.findall(r"(qk|softmax|av|fused)=(\S+)", l)); kof[l.split()[1]] = kv
+                names.update(v for v in kv.values() if v not in ("?", "-"))
+            for l in cor:
+                kv = kof.get(l.split()[1], {}); fused = kv.get("fused", "-")
+                three = "qk_coopmat=yes" in l and "av_coopmat=yes" in l and fused == "-"
+                by_fused = fused.startswith("sarc_dev_4070ti_sdpa_fused") and (kv.get("qk"), kv.get("softmax"), kv.get("av")) == ("?", "?", "?") \
+                    and "qk_coopmat=NO" in l and "av_coopmat=NO" in l
+                if not (l.rstrip().endswith(" PASSED") and re.search(r" mismatches=0/\d+", l) and (three or by_fused)):
+                    fail(f"{b}: {l.strip()[:160]} [kernels {kv}]")
+                if fused_profile and l.split()[1] in PROD_CASES and not by_fused: fail(f"{b}: production case {l.split()[1]} not served by the fused kernel")
+            if fused_profile and tier == "full" and not all(c in kof for c in PROD_CASES): fail(f"{b}: production cases missing")
     print("sdpa kernels dispatched:", ", ".join(sorted(names)) or "none")
 
 from gate_check_paths import PROMPTS

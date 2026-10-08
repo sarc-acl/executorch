@@ -400,5 +400,55 @@ class Verify(unittest.TestCase):
         self.p = os.path.join(self.t.name, "parent"); rc, out = self.check(); self.assertNotEqual(rc, 0)
         self.assertIn("differs from the parent control: correctness rc", out)
 
+TIER_CASES = {"extended": ["e%d" % i for i in range(8)], "full": ["1b_head_config_s2048", "3b_head_config_s2048", "8b_head_config_s2048", "8b_head_config_s1024_pos1024"]}
+def make_sdpa(d, fused=(), profile="4070ti-refine1", edit=None):
+    """24 pass logs; the cases named in `fused` are served by the fused kernel, the others by the three kernels.
+    edit(tier, rep, case, kernels_line, correctness_line) may return replacements for the two lines."""
+    os.makedirs(d, exist_ok=True)
+    for tier, cases in TIER_CASES.items():
+        for r in range(1, 13):
+            out = [f"[sarc_dev] profile active: {profile}\n"]
+            for c in cases:
+                fu = c in fused
+                k = (f"[sdpa-kernels] {c} qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok\n" if fu else
+                     f"[sdpa-kernels] {c} qk=sarc_sdpa_qk_coopmat_4070ti_df_t64x64k32g11s32nf softmax=sarc_sdpa_attn_weights_softmax_4070ti_nzf av=sarc_sdpa_av_coopmat_4070ti_ml_t32x64k32g42s32 fused=- no_mask_fill=yes pairing=ok\n")
+                yn = "NO" if fu else "yes"
+                l = f"[sdpa-correctness] {c} S=2048 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat={yn} av_coopmat={yn} mismatches=0/100 PASSED\n"
+                if edit: k, l = edit(tier, r, c, k, l) or (k, l)
+                out += [k, l]
+            out.append(f"[sdpa-correctness] tier={tier} cases_run={len(cases)} failed=0\n")
+            open(os.path.join(d, f"cand-{tier}-r{r}.log"), "w").write("".join(out))
+    envf = os.path.join(d, "env"); open(envf, "w").write(f"ET_VK_SARC_UNVERIFIED=1\nET_VK_SARC_DEV_PROFILE={profile}\n"); return envf
+
+class Sdpa(unittest.TestCase):
+    ALL = TIER_CASES["extended"] + TIER_CASES["full"]
+    def setUp(self): self.t = tempfile.TemporaryDirectory(); self.d = os.path.join(self.t.name, "sdpa-correctness")
+    def tearDown(self): self.t.cleanup()
+    def gate(self, envf):
+        p = subprocess.run([sys.executable, os.path.join(HERE, "gate_check.py"), "sdpa", self.d, envf], capture_output=True, text=True); return p.returncode, p.stdout
+    def test_three_kernel_passes_are_accepted(self):
+        rc, out = self.gate(make_sdpa(self.d)); self.assertEqual(rc, 0, out)
+    def test_fused_passes_are_accepted(self):
+        rc, out = self.gate(make_sdpa(self.d, fused=self.ALL, profile="4070ti-fused1")); self.assertEqual(rc, 0, out)
+        self.assertIn("sarc_dev_4070ti_sdpa_fused3sb", out)
+    def test_fused_profile_needs_the_fused_kernel_on_the_production_cases(self):
+        rc, out = self.gate(make_sdpa(self.d, fused=[c for c in self.ALL if c != "3b_head_config_s2048"], profile="4070ti-fused1"))
+        self.assertEqual(rc, 1, out); self.assertIn("3b_head_config_s2048 not served by the fused kernel", out)
+    def test_fused_kernel_beside_one_of_the_three_is_rejected(self):
+        def both(tier, r, c, k, l):
+            if (tier, r, c) == ("extended", 7, "e3"): return k.replace("qk=?", "qk=sarc_sdpa_qk_coopmat_4070ti_x"), l
+        rc, out = self.gate(make_sdpa(self.d, fused=self.ALL, profile="4070ti-fused1", edit=both)); self.assertEqual(rc, 1, out)
+    def test_a_case_nothing_served_and_a_mismatch_are_rejected(self):
+        def nothing(tier, r, c, k, l):
+            if (tier, r, c) == ("full", 2, "8b_head_config_s2048"): return k.replace("fused=sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half", "fused=-"), l
+            if (tier, r, c) == ("extended", 1, "e0"): return k, l.replace("mismatches=0/100 PASSED", "mismatches=3/100 FAILED")
+        rc, out = self.gate(make_sdpa(self.d, fused=self.ALL, profile="4070ti-fused1", edit=nothing)); self.assertEqual(rc, 1, out)
+        self.assertEqual(out.count("FAIL:"), 3, out)   # the unserved case twice (itself, and as a production case), the mismatch once
+    def test_broken_pairing_and_a_missing_pass(self):
+        def broken(tier, r, c, k, l):
+            if (tier, r, c) == ("extended", 12, "e5"): return k.replace("pairing=ok", "pairing=BROKEN"), l
+        envf = make_sdpa(self.d, fused=self.ALL, profile="4070ti-fused1", edit=broken); os.remove(os.path.join(self.d, "cand-full-r9.log"))
+        rc, out = self.gate(envf); self.assertEqual(rc, 1, out); self.assertIn("pass logs, required 12", out); self.assertIn("pairing=BROKEN", out)
+
 if __name__ == "__main__":
     unittest.main(verbosity=1, warnings="ignore")
