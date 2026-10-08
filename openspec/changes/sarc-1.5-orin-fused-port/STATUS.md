@@ -1,24 +1,58 @@
 # STATUS: sarc-1.5-orin-fused-port
 
-**2026-10-08 19:55 UTC. Started 19:37 UTC. Nothing measured yet: the parent cross-build waits for the
-workstation's build lock; candidate 1 is written, committed (`0f14f2a1a`) and queued to build.**
+**2026-10-08 20:25 UTC. Builds `parent` (`8973ced76`) and `topic1` (`0f14f2a1a`: hook + candidate 1) are done and
+deployed; the parent control `s0-parent-verify` is accepted; `s0n-noenv`, the A/A + baseline session and the hook
+control are running on the device (`chain1`, then `chain2`). No candidate measured yet.**
 
 All times are UTC from `date -u`.
 
 ## Running now
 
-- Workstation (detached, `.artifacts/jobs/<job>.{status,out}`):
-  - `build-parent`: cross-build of the parent `8973ced76` (tag `parent`). Source tree exported 19:43
-    (`build/parent.src.txt`: `git archive` + 30 pinned submodules, tree sha256 `3bbbd4cb...`); the container build
-    waits for `~/.cache/gpu-lab/lock-desktop-build`, held exclusively since before 19:45 by the Arc B580
-    campaign's own build (pid 4091732, `b580-fused/.../build-both.sh`). Not mine; waiting, as the task says.
-  - `build-topic1`: queued behind `build-parent`: `0f14f2a1a` (hook + candidate 1), tag `topic1`.
-  - `shadercheck1`: the three new shaders through the cross image's glslc, queued behind the same lock.
-- Device `duck-naughty`: nothing of this campaign. Found idle at 19:37 (no runner process, no Actions job, 6.5 GB
-  available, swap unused, 53 to 57 C, power mode 15 W, governor `nvhost_podgov`, devfreq 306 to 612 MHz).
-  Tools deployed to `~/hmz-sarc-orin-fused/` at 19:48; the probes were tested there (`gtemp` 56 C, `gclk`
-  306 MHz idle, sampler 12 lines in 1.2 s, `others` empty, `cool_to` returns).
-- Coordinator hold: `tools/HOLD.md` (device: `~/hmz-sarc-orin-fused/HOLD`; builds: `.artifacts/HOLD`).
+- Device `duck-naughty` (detached, `~/hmz-sarc-orin-fused/jobs/<job>.{status,out}`):
+  - `chain1` (since 19:57): `s0-parent-verify` done 20:14; now `s0n-noenv` (unmodified `verify.sh` on the parent
+    build with nothing selected).
+  - `chain2` (queued behind `chain1`): `s1-aa` = baseline + A/A, record-only clock, parent build against `topic1`,
+    both with the parent environment; warm traces of both arms; `s2n-noenv` = `verify.sh` on `topic1` with nothing
+    selected against `s0n-noenv` (hook control, D4).
+- Workstation: `build-extra1` (`logits_dump` for `parent` and `topic1`, under the build lock). The build lock was
+  held by the Arc B580 campaign (exclusively for its build until 19:51, shared for a timed session until 20:13);
+  both of my builds waited for it, as the task says.
+- Coordinator hold: `tools/HOLD.md` (device: `~/hmz-sarc-orin-fused/HOLD`; builds: `.artifacts/HOLD`). None seen.
+
+## Builds
+
+Cross image `localhost/et-jetson-cross:jp7.2.1` (`d182f725bb32`), shaderc v2026.1, 8 jobs, exclusive build lock;
+provenance `.artifacts/build/<tag>.src.txt`.
+
+| tag | commit | source | SPIR-V |
+|---|---|---|---|
+| `parent` | `8973ced76` | `git archive` + 30 pinned submodules, tree sha256 `3bbbd4cb...` | 1610 shaders, **all byte-identical to the first campaign's final build `topic14`** (`diff` of the two `spv.sha256` lists: 0 lines); `libllama_runner.so` has `topic14`'s hash |
+| `topic1` | `0f14f2a1a` | hard links to `parent` + 77 changed paths, each verified by blob hash | 1620 shaders: the parent's 1610 byte-identical + the 10 new `sarc_dev_orin_sdpa_*`; `tools/shipped.py`: all 53 shipped variants byte-identical to `parent`: **UNCHANGED** |
+
+`spirv_golden.py` reads FAIL with 14 DIFF lines on both builds, as on every build of the first campaign: the
+cross image's glslc is not the one the goldens were made with; none of the 14 is a kernel the Orin rows
+dispatch (`build/topic1.shipped.txt`: same set in parent and candidate, Orin kernels differing: 0).
+
+## Parent control `s0-parent-verify` (20:14 UTC, `GATE_ACCEPTED`)
+
+Unmodified `sarc/tools/verify.sh --models 1b,3b,8b --schemes 4w,8da4w --pdiff` on the `parent` build with the
+parent environment. `gate_check.py verify` against itself: ACCEPT, 0 findings. What it prints (and every
+candidate must print again): `correctness rc=1`, `linear 4w rc=1`, `linear 8da4w rc=1`, the six `pdiff ... buffer
+rc=1` lines (no buffer row for this device; the same lines as in the first campaign), six `pdiff ... texture3d`
+ALL PASSED, default vs tiled SAME on the check and the unaligned prompt for 1B 4w and 8da4w, decode 31 tokens.
+Its single default-arm prefill runs: 1B 1489.45 / 1379.12, 3B 628.99 / 570.47, 8B 294.85 / 269.01 tok/s
+(expected 1489.45 / 1382.85, 628.99 / 570.32, 295.53 / 269.19): within 0.3 %.
+
+Error of the parent's attention kernels against the fp32 CPU reference (one pass per tier, recorded with the
+control; this is what criterion 1 of the reference-error rule compares the candidate with):
+
+| case (S = 2048) | rms | maximum |
+|---|---:|---:|
+| `1b_head_config_s2048` | 2.101e-05 | 9.135e-04 |
+| `3b_head_config_s2048` | 2.068e-05 | 7.828e-04 |
+| `8b_head_config_s2048` | 2.057e-05 | 8.911e-04 |
+| `tiny_gqa_s2048` | 2.080e-05 | 6.943e-04 |
+| `tiny_d128_s2048` | 2.071e-05 | 7.796e-04 |
 
 ## Parent
 
@@ -44,7 +78,7 @@ The task expects +5 to +12 % geomean. On this device attention is bound by memor
 half of the softmax is the first read of a row) and shared memory is expensive, so the lower half is as likely
 as the upper.
 
-## Candidate 1: what was written (commit `0f14f2a1a`), not measured yet
+## Candidate 1: what was written (commit `0f14f2a1a`, build `topic1`), not measured yet
 
 - Hook: `9d91480b2` = cherry-pick of `1c8861aa7e`, alone, same patch-id (`0027e89f...`), 49 lines in `SDPA.cpp`,
   `sarc/SdpaCoopmat.{cpp,h}`, `sarc/Select.h`. `sarc/tools/check.sh --no-build` on `0f14f2a1a`: `check.sh: PASS`;
@@ -64,8 +98,8 @@ as the upper.
 
 ### Shared-memory reading of the kernel (R7, before any gate)
 
-Read in the source and in the SPIR-V of all eight variants (host glslc, shaderc v2026.1, the cross image's
-version): every `OpMemoryBarrier` is followed by `OpControlBarrier` with execution scope Subgroup (7 pairs in the
+Read in the source and in the SPIR-V of all eight variants (host glslc, shaderc v2026.1; the ten binaries of
+build `topic1` have the same sha256): every `OpMemoryBarrier` is followed by `OpControlBarrier` with execution scope Subgroup (7 pairs in the
 `t32x32` one-pass variants, 9 in `t16x64`).
 
 | shared object | writer | readers | ordered by |
@@ -86,10 +120,9 @@ Not lockstep-dependent, but worth watching in the tiers: the one-pass form start
 
 ## Next step
 
-When `parent` is built: deploy, `chain1` on the device (`s0-parent-verify` with the parent environment,
-`s0n-noenv` with nothing selected). When `topic1` is built: A/A + baseline session `s1-aa` (parent build against
-`topic1`, both with the parent environment), clock floor, `s2n-noenv` (hook control), then candidate 1 at kernel
-level and its gate.
+After `chain2`: pull, clock floor from `s1-aa` (`calibrate_clock.py`), baseline against `s10-final`, then
+`chain3`: candidate 1 pre-check (one pass per tier), its reference error, kernel timing of the four forms, and
+the gate `s3-c1`.
 
 ## Thresholds
 
