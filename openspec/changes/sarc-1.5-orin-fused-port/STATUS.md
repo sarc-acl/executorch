@@ -1,6 +1,6 @@
 # STATUS: sarc-1.5-orin-fused-port
 
-**2026-10-08 21:25 UTC. Baseline and A/A done (`s1-aa`): the parent is within 0.09 % of `s10-final` in every cell,
+**2026-10-08 21:23 UTC. Baseline and A/A done (`s1-aa`): the parent is within 0.09 % of `s10-final` in every cell,
 A/A geomean -0.05 %; clock floor 593 MHz. Both controls accepted. Running: traces of `s1-aa`, the hook control
 `s2n-noenv`, then candidate 1 (`chain3`). No candidate measured yet.**
 
@@ -40,13 +40,13 @@ arms interleaved; recomputed from `runs.csv`:
 - Baseline: every cell within 0.09 % of the first campaign's final session (threshold 3 %).
 - A/A: geomean -0.05 %, largest cell -0.20 %, repeat spread at most 0.47 %. The noise on this device is far
   inside the +-2 % band. The runner's timer has a 1 ms step: 0.07 % of a 1B prefill (1375 ms).
-- 60 timed runs, all valid: rc 0, 2048 prompt tokens, 0 generated, no foreign GPU process, 13 to 126 clock
+- 60 timed runs, all valid: rc 0, 2048 prompt tokens, 0 generated, no foreign GPU process, 13 to 73 clock
   samples per prefill window (threshold 5), median clock 612 MHz in every run. Start temperature 57 to 62 C.
   Next token parent vs `topic1`: SAME in 24 of 24 rows. `gate_check.py session --calibration --require-logs`:
   ACCEPT, 0 findings.
 - Clock floor (`results/orin/clkmin.json`, `calibrate_clock.py`): floor(0.97 x 612) = **593 MHz**, device-wide; no
   run below it.
-- Memory: at least 5628 MB available before every timed run; swap in use 74 to 110 MB since the first 8B run of
+- Memory: at least 5628 MB available before every timed run; swap in use (74 and 106 MB at two looks) since the first 8B run of
   the parent control (the model file is read into the page cache before each cell, D5). Model load 1.6 to 10.8 s,
   none slow enough to abort: 0 runner aborts in the session.
 
