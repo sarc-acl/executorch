@@ -1,6 +1,6 @@
 # STATUS: sarc-1.5-orin-fused-port
 
-**2026-10-08 20:25 UTC. Builds `parent` (`8973ced76`) and `topic1` (`0f14f2a1a`: hook + candidate 1) are done and
+**2026-10-08 20:19 UTC. Builds `parent` (`8973ced76`) and `topic1` (`0f14f2a1a`: hook + candidate 1) are done and
 deployed; the parent control `s0-parent-verify` is accepted; `s0n-noenv`, the A/A + baseline session and the hook
 control are running on the device (`chain1`, then `chain2`). No candidate measured yet.**
 
