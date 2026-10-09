@@ -1,29 +1,49 @@
 # STATUS: sarc-1.5-orin-fused-port
 
-**2026-10-09 00:55 UTC. Candidate 1 (fused attention kernel, profile `orin-fused1`) passed its gate `s3-c1` on
+**2026-10-09 01:45 UTC. Candidate 1 (fused attention kernel, profile `orin-fused1`) passed its gate `s3-c1` on
 build `topic1`: +6.01 % geomean over the tuned parent (1B +10.9 / +10.0 %, 3B +4.8 / +4.4 %, 8B +3.3 / +3.0 %), no
 next-token item differs, reference-error criterion 1 met. NOT CLOSED: reading the 4070 Ti fused port's review
 showed two things my first sessions lack (no thermal-throttle record in the timed runs; the shared test file
 edited in place), so both are put right and candidate 1 is gated again on build `topic3` before anything is
-reported as final. A second candidate (the faster form of the kernel per head_dim) follows; see "Decision needed
-from the owner".**
+reported as final. Candidate 2 (the faster form of the kernel per head_dim, `orin-fused2`) follows, with the
+owner's agreement of 01:00 UTC; the closing chain is queued behind it. Nothing measured on `topic3` exists yet.**
 
 All times are UTC from `date -u`.
 
 ## Running now
 
-- Device `duck-naughty` (detached, `~/hmz-sarc-orin-fused/jobs/<job>.{status,out}`):
-  - `chain4` (since 00:35): 41-prompt real-text logits of the four arms (parent / candidate 1 x default / tiled,
-    builds `parent` and `topic1`), then the logits at the gate's unaligned position, the comparison and
-    `ref_error_rule.py` (`probe/c1-fused/`); before them the peaked-tier error of both arms. Until about 02:10.
-  - `chain6` (to be queued behind `chain4` as soon as `topic3` is deployed), about 8.5 hours: `s4-aa2` (A/A
-    re-check, parent build against `topic3`, both with the parent environment, committed clock floor, with the
-    throttle record); `sdpa-error2` (stock / parent / candidate 1 / candidate 2, `topic3`'s test binary); `s5-c1`
-    (candidate 1 gated again: parent build against `topic3` with `orin-fused1`); `c2-pre` and `s6-c2` (candidate 2,
-    `orin-fused2`, against candidate 1, both on `topic3`).
+- Device `duck-naughty` (detached, `~/hmz-sarc-orin-fused/jobs/<job>.{status,out}`), three chains in a row:
+  - `chain4` (waiting since 22:07, measuring since 00:35): 41-prompt real-text logits of the four arms (parent /
+    candidate 1 x default / tiled, builds `parent` and `topic1`), then the logits at the gate's unaligned position,
+    the comparison and `ref_error_rule.py` (`probe/c1-fused/`), and the peaked-tier error of both arms. One arm
+    takes 42 minutes (parent-default 00:35 to 01:17), so it ends about 03:30, not 02:10 as written before.
+  - `chain6` (queued 00:55 behind `chain4`), about 8.5 hours, until about 12:00: `s4-aa2` (A/A re-check, parent
+    build against `topic3`, both with the parent environment, committed clock floor, with the throttle record);
+    `sdpa-error2` (stock / parent / candidate 1 / candidate 2, `topic3`'s test binary); `s5-c1` (candidate 1 gated
+    again: parent build against `topic3` with `orin-fused1`); `c2-pre` and `s6-c2` (candidate 2, `orin-fused2`,
+    against candidate 1, both on `topic3`).
+  - `chain7` (queued behind `chain6`), the closing chain, 4.5 to 7.5 hours: `s7n-noenv` (hook control on `topic3`);
+    `s7-final` (only if the final stack is `orin-fused2`: its full gate against the tuned parent); `s8-pristine`
+    (final stack against the pristine state); the real-text probe of the final stack on `topic3`
+    (`probe/final-fused/`); `mem1` (memory probe of the K / V copies); `roof-final` (fresh roofs, igpu-roofline
+    `fast`, 41 minutes in the first campaign).
   - `chain5` (the first form of the candidate-2 chain, on `topic2`) was ended at 00:41 before it started a job.
-- Workstation: `build-topic3` (`ca62778e6`, the last commit that changes code), then `logits_dump` for it.
+- Workstation: nothing. `topic3` (`ca62778e6`) was built 00:42 to 00:55 and is deployed with its `logits_dump`.
 - Coordinator hold: `tools/HOLD.md` (device: `~/hmz-sarc-orin-fused/HOLD`; builds: `.artifacts/HOLD`). None seen.
+
+## Final stack: the rule, fixed 01:40 UTC before `s5-c1` and `s6-c2` have a number
+
+`chain7.sh` applies it without me: the final stack is `orin-fused2` only if `s6-c2` is `GATE_ACCEPTED` and its
+geomean gain over candidate 1 is at least 2 % (outside the noise band); in every other case it is `orin-fused1`,
+provided `s5-c1` is accepted (otherwise the chain stops and nothing is final). This is the owner's sentence of
+01:00 UTC ("if `s6-c2` is inside the band, candidate 1 alone is the final stack") read on the geomean, the
+quantity R11 stops on. If the two 1B cells alone come out above 2 % while the geomean stays under it, candidate 2
+is still not adopted and the cells are reported as measured. Either way the campaign stops after candidate 2
+(`thresholds.txt`, "stop").
+
+The build that is measured as final is `topic3` = `ca62778e6`. Later commits change only this change directory
+(tools, evidence, text): `git diff ca62778e6 HEAD` outside `openspec/changes/sarc-1.5-orin-fused-port/` is empty
+and is checked again at closing, so `topic3` is the build of the branch head's code.
 
 ## Decision needed from the owner
 
@@ -40,11 +60,11 @@ So I gate it as candidate 2 (`orin-fused2` = two passes for head_dim 64, one pas
 +2 % on the two 1B cells and nothing elsewhere (under +1 % geomean), and I say here that this is my reading, not
 the letter of my own pre-registered clause, which I have not edited.
 
-- If the owner wants the letter: discard candidate 2. Candidate 1 is gated by itself (`s3-c1`, and again in
-  `s5-c1` on the final build) and every number of it stands without candidate 2.
-- If the owner agrees: nothing to do; the final stack will be whatever `s6-c2` accepts.
+**Answered by the owner, 2026-10-09 01:00 UTC (task file, "candidate 2 as you read it"):** agreed; gate
+`orin-fused2` as candidate 2; the pre-registered clause stays unedited and this note stays. If `s6-c2` is inside
+the band, candidate 1 alone is the final stack and the campaign closes by N3 with candidate 2 as the first
+sub-threshold candidate. Nothing is open under this heading now.
 
-Nothing is blocked by this question: both stacks are gated and timed either way.
 
 ## Candidate 1 (`orin-fused1`): gate `s3-c1`, `GATE_ACCEPTED 2026-10-09T00:34:54Z all steps passed`
 
@@ -274,7 +294,7 @@ provenance `.artifacts/build/<tag>.src.txt`.
 | `parent` | `8973ced76` | `git archive` + 30 pinned submodules, tree sha256 `3bbbd4cb...` | 1610 shaders, **all byte-identical to the first campaign's final build `topic14`** (`diff` of the two `spv.sha256` lists: 0 lines); `libllama_runner.so` has `topic14`'s hash |
 | `topic1` | `0f14f2a1a` | hard links to `parent` + 77 changed paths, each verified by blob hash | 1620 shaders: the parent's 1610 byte-identical + the 10 new `sarc_dev_orin_sdpa_*`; `tools/shipped.py`: all 53 shipped variants byte-identical to `parent`: **UNCHANGED** |
 | `topic2` | `c6be297f1` (profile `orin-fused2` added) | hard links to `topic1` + changed paths | 1620 shaders, all byte-identical to `topic1`; shipped: **UNCHANGED**. Deployed, used for nothing (superseded by `topic3` before any job ran on it) |
-| `topic3` | `ca62778e6` (test support as insert-only blocks; the last commit that changes code) | hard links to `topic2` + changed paths | building |
+| `topic3` | `ca62778e6` (test support as insert-only blocks; the last commit that changes code) | hard links to `topic2` + 104 changed paths | 1620 shaders; shipped: **UNCHANGED** (53 of 53 equal to `parent`; `build/topic3.shipped.txt`); `llama_main` `d37d44dd...`, `test_llama_microbench` `c1cfe15b...` |
 
 `spirv_golden.py` reads FAIL with 14 DIFF lines on both builds, as on every build of the first campaign: the
 cross image's glslc is not the one the goldens were made with; none of the 14 is a kernel the Orin rows
@@ -367,9 +387,8 @@ Not lockstep-dependent, but worth watching in the tiers: the one-pass form start
 
 ## Next step
 
-Deploy `topic3`, queue `chain6`. After it: the final sessions on `topic3` (final stack against the parent and
-against the pristine state), the hook control on `topic3`, the real-text probe of the final stack if it is not
-candidate 1's, the memory probe of the K / V copies, `check.sh`, `proposal.md`, push.
+Wait for `chain4`, `chain6`, `chain7`. After each: `pull.sh`, `collect.sh`, recompute from `runs.csv`, STATUS, commit.
+At the end: trace analysis and percent of the fresh roofs, `check.sh --no-build`, `proposal.md`, push.
 
 ## Thresholds
 
