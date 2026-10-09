@@ -335,7 +335,20 @@ Not blocking; the campaign is closed on what the task asked.
    for a promotion, locating it needs a decode trace and possibly a change in the node file that came from the
    B580 unchanged; neither is in the scope of a confirmation.
 2. The B580 campaign's finding F1 (full-subgroups flag) applies here unchanged.
+3. **Blocks the reviewer's sign-off, nothing else (recorded once, 2026-10-09, after review round 2).** Rule R12.3
+   has the reviewer list files changed under "threshold files" and requires an owner decision for each entry
+   it treats as protected; `git diff --name-status 5617714b0 HEAD` prints
+   `A openspec/changes/sarc-1.5-b70-fused-port/tools/thresholds.txt`. The same task requires that file: R4.2
+   ("write the comparison thresholds ... and commit them before the first measurement"), R6 and task section
+   4.2 ("BEFORE the first session, write in `thresholds.txt` which reasons are thermal ..."). Its whole history
+   is two commits: created at `0160cf633` (rules, before any measurement) and appended at `4172bc183` (the
+   calibrated values from the A/A `s1-aa`: `CLKMIN` 2457 MHz, idle 58 C, 7 repeats, noise band, baseline,
+   foreign engine time), before candidate 1 was timed. No line was changed after a candidate's numbers
+   existed; the reviewer found the same. **Ruling asked for:** that the creation of
+   `openspec/changes/sarc-1.5-b70-fused-port/tools/thresholds.txt` at `0160cf633` and the appended calibration
+   block at `4172bc183`, exactly those two additions, are covered. The file and the evidence stay as they
+   are; nothing is rebuilt, re-timed or re-checked while this is pending.
 
 ## Blocking
 
-Nothing.
+Only the reviewer's sign-off: owner ruling 3 above. No measurement, build or gate depends on it.
