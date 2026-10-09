@@ -107,5 +107,38 @@ rep("""#ifdef CSH_IN_ASH
           vec4(unpackHalf2x16(hi ? q.z : q.x), unpackHalf2x16(hi ? q.w : q.y)));
 #endif""")
 
+# ---- third pass (second set, item 3): RX_ABL, removed work, MEASUREMENT ONLY (wrong results by design): 4 = the shared-memory stores of the next chunk, 16 = the barrier of the chunk loop ----
+rep("#define SARC_DEV_X7900XTX_Q4GSW_BODY_GLSLH\n", """#define SARC_DEV_X7900XTX_Q4GSW_BODY_GLSLH
+
+// RX_ABL (MEASUREMENT ONLY, wrong results by design; set by the wrapper from ABL): bit mask of removed work, 4 = the shared-memory stores of the next
+// chunk, 16 = the memory barrier and barrier() at the top of the chunk loop. Default 0: nothing removed.
+#ifndef RX_ABL
+#define RX_ABL 0
+#endif
+""")
+rep("""    memoryBarrierShared();
+    barrier();
+
+    // --- prefetch chunk+1 -> temp ---""", """#if (RX_ABL & 16) == 0
+    memoryBarrierShared();
+    barrier();
+#endif
+
+    // --- prefetch chunk+1 -> temp ---""")
+rep("""    // --- store temp (chunk+1) -> nxt slice, dequantizing B ---
+    {""", """    // --- store temp (chunk+1) -> nxt slice, dequantizing B ---
+#if (RX_ABL & 4) == 0
+    {""")
+rep("""#endif
+    }
+  }
+
+  // --- epilogue: barrier, then MMA on the last chunk (loop peeled) ---""", """#endif
+    }
+#endif // RX_ABL & 4
+  }
+
+  // --- epilogue: barrier, then MMA on the last chunk (loop peeled) ---""")
+
 open(dst, "w").write(t)
 print("ok", len(t.splitlines()), "lines")

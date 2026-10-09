@@ -17,3 +17,6 @@
 {"", nullptr, Op::kQ4gswLinear, "sarc_dev_7900xtx_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbtap4bp12", {256, 128, 32, 2, 8, 32, 16, true, false, false}, kTex3dTex2d, nullptr, Status::kUnverified},
 {"", nullptr, Op::kQ4gswLinear, "sarc_dev_7900xtx_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbtap12bp4", {256, 128, 32, 2, 8, 32, 16, true, false, false}, kTex3dTex2d, nullptr, Status::kUnverified},
 {"", nullptr, Op::kQ4gswLinear, "sarc_dev_7900xtx_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbtap8bp12", {256, 128, 32, 2, 8, 32, 16, true, false, false}, kTex3dTex2d, nullptr, Status::kUnverified},
+{"", nullptr, Op::kQ4gswLinear, "sarc_dev_7900xtx_x_linear_q4gsw_coopmat_t256x128k32g24s32f32cbtbp8abl4", {256, 128, 32, 2, 4, 32, 16, true, false, false}, kTex3dTex2d, nullptr, Status::kUnverified},
+{"", nullptr, Op::kQ4gswLinear, "sarc_dev_7900xtx_x_linear_q4gsw_coopmat_t256x128k32g24s32f32cbtbp8abl16", {256, 128, 32, 2, 4, 32, 16, true, false, false}, kTex3dTex2d, nullptr, Status::kUnverified},
+{"", nullptr, Op::kQ4gswLinear, "sarc_dev_7900xtx_x_linear_q4gsw_coopmat_t256x128k32g24s32f32cbtbp8abl20", {256, 128, 32, 2, 4, 32, 16, true, false, false}, kTex3dTex2d, nullptr, Status::kUnverified},

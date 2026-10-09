@@ -27,6 +27,12 @@
 #ifndef SARC_DEV_X7900XTX_Q4GSW_BODY_GLSLH
 #define SARC_DEV_X7900XTX_Q4GSW_BODY_GLSLH
 
+// RX_ABL (MEASUREMENT ONLY, wrong results by design; set by the wrapper from ABL): bit mask of removed work, 4 = the shared-memory stores of the next
+// chunk, 16 = the memory barrier and barrier() at the top of the chunk loop. Default 0: nothing removed.
+#ifndef RX_ABL
+#define RX_ABL 0
+#endif
+
 const uint NUM_SUBGROUPS = SG_GRID_X * SG_GRID_Y;
 const uint WG_SIZE = NUM_SUBGROUPS * SUBGROUP_SIZE;
 
@@ -490,8 +496,10 @@ void main() {
     // 2026-09-02 in sdpa_compute_out_coopmat.glsl). Measured cost of the fence:
     // none (see this change's results). See memory
     // `coopmat-lds-needs-explicit-memorybarriershared`.
+#if (RX_ABL & 16) == 0
     memoryBarrierShared();
     barrier();
+#endif
 
     // --- prefetch chunk+1 -> temp ---
     {
@@ -610,6 +618,7 @@ void main() {
 #endif
 
     // --- store temp (chunk+1) -> nxt slice, dequantizing B ---
+#if (RX_ABL & 4) == 0
     {
       [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
         ASH_STORE(nxt_base_A + A_SH_IDX(p * A_ROWS_PER_PASS + a_row_offset, a_col),
@@ -628,6 +637,7 @@ void main() {
       }
 #endif
     }
+#endif // RX_ABL & 4
   }
 
   // --- epilogue: barrier, then MMA on the last chunk (loop peeled) ---

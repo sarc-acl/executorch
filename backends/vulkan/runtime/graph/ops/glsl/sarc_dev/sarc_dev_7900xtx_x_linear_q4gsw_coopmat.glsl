@@ -118,6 +118,9 @@ $if FRAG_LAYOUT:
 $if A_V2:
   #define RX_A_V2
 
+$if ABL > 0:
+  #define RX_ABL ${ABL}
+
 $if IMG_A and IO_STORAGE == "texture3d":
   #define IMG_A
 
