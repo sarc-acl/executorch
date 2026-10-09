@@ -7,6 +7,7 @@ st() { echo "$(date -u +%FT%TZ) $*" >> $A/logs/chain10.status; }
 st "probe build"; touch $A/.building; $T/hold.sh run "build probe $TAG" $T/build_probe.sh $TAG > $A/build/rx7600/$TAG-probe.log 2>&1; st "probe build rc=$?"; rm -f $A/.building
 cp -f $A/build/rx7600/$TAG/probe/logits_probe $A/stage/$S/lp
 st "probe run"; $T/probe_run.sh $S > $A/stage/$S/probe.out 2>&1
+cp -f "$(dirname "$(readlink -f "$0")")"/../results/rx7600/probe/prompts-*.json $A/stage/$S/probe/
 <toolchain-share>/Python-3.12.9-1/bin/python3 $T/probe_compare.py $A/stage/$S/probe $A/stage/$S/probe/real-text-compare.csv > $A/stage/$S/probe/compare.out 2>&1
 st "probe done: $(tail -1 $A/stage/$S/probe/compare.out)"
 st CHAIN10_DONE

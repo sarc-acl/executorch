@@ -9,3 +9,7 @@
   tiled-versus-default pair for scale (parent-tiled vs parent-default: 8da4w 1 / 2 / 2 of 32, KL mean 0.049 / 0.031 / 0.035 nat).
 - **The whole table (first 11 columns, every row) is identical to round 1's final-stack table** (`../../sessions/final/probe/real-text-compare.csv`), as it has to be: the linear outputs of the
   round-2 kernels are byte-identical to the pristine parent's (24 of 24 shapes) and the attention kernels are byte-identical to round 1's.
+
+**First compare call failed, then rerun.** The first call of `probe_compare.py` at the end of `chain10.sh` failed with `FileNotFoundError` (`prompts-1b.json` was not in the probe directory; `chain10.status`: `probe done: FileNotFoundError ...`, 11:59:15 UTC).
+The probe runs themselves had finished (24 arms rc 0, `PROBE_DONE`). `results/rx7600/probe/prompts-*.json` were copied into the probe directory (11:59:41 UTC) and `probe_compare.py` was run again (11:59:47 UTC) on the unchanged probe outputs;
+the copied files equal the committed ones. `tools/chain10.sh` now copies them before the compare call.

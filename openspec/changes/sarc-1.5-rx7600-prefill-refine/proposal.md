@@ -228,7 +228,7 @@ Stop rule (round 2): **all three candidates done** (candidate 3 is not applicabl
 Both candidates leave the arithmetic unchanged: the outputs of all 24 prefill linear shapes (4w and 8da4w, the real model shapes) are byte-identical to the parent's (24 of 24 in each
 gate and in the final one), so D3 does not apply to them; no candidate touches the attention kernels. Same tile, K step and thread maps as the kernels they replace.
 
-**Final stack, final verification on the build of the committed head (`f2` = commit `73648f5bd`, no local patch)** (`sessions/r2-final`, `sessions/r2-final-r1`):
+**Final stack, final verification on build `f2` (= commit `73648f5bd`, no local patch; the branch head differs from it only by the default-off 4w phase-timing twins of `9dab4ef78` and `e96fa9ed3`, evidence in `results/rx7600/round2/head-vs-f2.txt`; no binary was built from the head itself)** (`sessions/r2-final`, `sessions/r2-final-r1`):
 
 | cell | pristine parent | round 1 final | round 2 final | vs pristine parent | vs round 1 final | published 2026-09-28 |
 |---|---:|---:|---:|---:|---:|---:|
@@ -279,7 +279,7 @@ instruction mix per loop block), `screen_ratio.py`, `screen_from_logs.py`, `q4_p
 
 **Incidents**: the root filesystem of the host filled up twice (at 03:07 and 09:25 UTC; free space was 188 KB to 1.2 MB each time and came back to 75 to 80 GB without this run deleting anything, so a transient
 use by something else is likely: UNVERIFIED, the cause was not looked for; this run's own builds had used about 20 GB of the 35 GB free at the start) while round 2 built and measured; the traced half of build `c5` and the linear byte comparison
-and SDPA evidence of the final verification failed with ENOSPC, were kept under `<artifacts>/superseded/` and redone (`c6`, `r2-final`); the artifacts of round 2 were moved to `<scratch-disk>`. No run counted in a
+and SDPA evidence of the final verification failed with ENOSPC, were kept under `<artifacts>/superseded/` and redone (`c6`, `r2-final`); the artifacts of round 2 were moved to the local scratch disk (`<scratch>`). No run counted in a
 timed table was affected (the sessions' runs were complete and valid before either event). The first event overlapped the last ten minutes of the no-profile 4w kernel screen of build `r2g` (03:07 to 03:16 UTC);
 its rows are complete, and the later screen of build `r2h` (clean disk) reproduced its ratios (`ap4bp12` was added there, `bp12` passes 11 of 12 shapes in both). One untracked stub script of mine (`chain9b.sh`, 20 lines, content reproduced in `chain9c.sh`) was deleted.
 
@@ -312,9 +312,9 @@ the final stack would be `rx7600-refine2` plus the 4w pick of candidate 2 (a sta
    stays recorded as a deviation (note above).
 2. **Rule (b) is ratified as an owner rule for every campaign from now on:** a candidate that by construction changes only one scheme is judged on the cells it changes (each at least 2 %, outside the band), and counts
    as one candidate under 2 % for the stop rule when its six-cell geomean is under 2 %. Candidate 1 stays adopted. The heading time of the clarification is corrected to the commit time (03:39:15 UTC).
-3. **Host disk:** noted; the coordinator moved data off the root filesystem (about 90 GB free). Builds stay on `<scratch-disk>`.
+3. **Host disk:** noted; the coordinator moved data off the root filesystem (about 90 GB free). Builds stay on the local scratch disk (`<scratch>`).
 4. **Candidate 2: kept as measured** (+3.33 % geomean), flagged as timed before its phase evidence; the evidence measured afterwards (share 60.1 / 55.4 % -> 31.6 %) is recorded as such.
-5. **The final stack is `rx7600-refine5`** (+33.59 % over the pristine parent, +5.44 % over round 1's final), verified on the build of the committed head.
+5. **The final stack is `rx7600-refine5`** (+33.59 % over the pristine parent, +5.44 % over round 1's final), verified on build `f2` (commit `73648f5bd`); the head differs from it only by default-off phase twins (`results/rx7600/round2/head-vs-f2.txt`).
 
 Result of the last open probe: the real-text probe `chain10` finished 2026-10-09 11:59 UTC, gross-divergence check ok in all six cells (`results/rx7600/round2/final-probe/README.md`).
 `sarc/tools/check.sh --no-build` was run once more on the final head of this file's commit (`results/rx7600/round2/check-no-build-head.txt`, unedited): PASS; release tables alone 1240 checks, 0 candidates; with the dev

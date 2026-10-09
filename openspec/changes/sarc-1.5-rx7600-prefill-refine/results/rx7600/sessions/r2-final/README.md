@@ -1,6 +1,6 @@
 # Round 2 final verification: the final stack against the pristine parent, session `r2-final`, 2026-10-09 06:17 to 09:41 UTC (gate), 09:41 to 10:16 (evidence)
 
-Build `f2` = exported commit `73648f5bd` (the branch head at the time; no local patch; only documentation and result files were committed after it; native toolchain,
+Build `f2` = exported commit `73648f5bd` (the branch head at the time; no local patch; after it only documentation and result files were committed, plus four dev-zone files that add default-off 4w phase-timing twins (commits `9dab4ef78`, `e96fa9ed3`); the head is therefore not the measured build, see `../../round2/head-vs-f2.txt`; native toolchain,
 Mesa 26.2.3 user-space RADV `31e9a6b2e9`). Candidate arm: `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_780M_PROFILE=c7
 ET_VK_SARC_780M_SDPA_FUSED=fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko ET_VK_SARC_RX7600_PROFILE=rx7600-refine5` (softmax `r3`, the fused attention node with its
 `subgroupBarrier()` fix, the 8da4w kernel with 24-byte A staging rows, the 4w kernel with 72 / 88-byte A / B staging rows). Parent arm: the pristine parent `f5f1bf10c`
