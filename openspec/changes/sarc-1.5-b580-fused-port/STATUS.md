@@ -1,15 +1,13 @@
 # sarc-1.5-b580-fused-port: status
 
-**2026-10-09 01:26 UTC — the desktop was rebooted at 01:17 UTC (an orderly `systemd` reboot, not started by
-this campaign; kernel 7.2.8-200 -> 7.2.9-200, Mesa 26.2.3 unchanged, card present, GT frequency policy as
-before). It stopped chain 8 inside the logits probe of `s2-c1` and chain 9 while it waited; nothing measured was
-lost (all 450 saved logits files have the full size). `tools/chain10.sh` resumed at 01:21 UTC. Candidate 1
-(`b580-fused1`, the fused attention kernel in a multi-subgroup form): `GATE_PASS`, a plain pass (next token SAME
-in all 18 cell x prompt comparisons), **+9.18 % geomean** over the parent `b580-refine3` (1B +17.1 / +19.0 %, 3B
-+5.4 / +6.8 %, 8B +3.5 / +4.3 %; 4w / 8da4w), 84 timed runs, all valid, on the desktop in use. Its error against
-the fp32 reference is not larger than the parent's in all 4 production-shape cases and all 8 `extended` cases;
-in 1 of 5 synthetic `peaked` cases its maximum error is larger (rms smaller). The specification quotes are in;
-no quote contradicts the kernel. Candidate 2 follows in the same chain.**
+**2026-10-09 03:30 UTC — candidate 1 (`b580-fused1`) is accepted as a plain pass, +9.18 % geomean (logits probe
+`PROBE_CHECK_OK`, `decide.py` `GATE_PASS`). The gate of candidate 2 (`b580-fused2`, session `s3-c2`) is
+`GATE_FAIL` on its seven timing items only and passes the other 29: a Discord renderer on the desktop held 33
+to 45 % of the card's engine time for the whole timed session (02:59 to 03:13 UTC), so 216 of 216 timed runs were
+rejected by `BUSYMAX` (5 %). Candidate 2 has no timing yet. Its gate is repeated on the build of the committed
+head (`tools/chain12.sh`) once the desktop's share is at or below `BUSYMAX` (a wait of at most 3 hours, then it
+starts anyway). The desktop was rebooted at 01:17 UTC (not by this campaign; kernel 7.2.8 -> 7.2.9); nothing
+measured was lost.**
 
 Branch `topic/b580-fused-port`, parent `51d9d757f` with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine3`.
 Host `fedora` (the owner's desktop), Arc B580 = PCI `0000:03:00.0`, Vulkan device 0, `ETVK_DEVICE_INDEX=0`, lock
@@ -20,18 +18,50 @@ desktop session idle and locked at 20:00 UTC.
 
 ## Running now
 
-Detached, one GPU job at a time, no idle wait (owner decision 2026-10-09 00:22 UTC):
+Detached, one GPU job at a time:
 
-- `tools/chain10.sh` (started 01:21 UTC; `.artifacts/logs/chain8-s2-c1.status`, then `chain9.status`): the units
-  the reboot cut off: the logits probe of `s2-c1` (resumes; saved prompts are skipped), `decide.py`, the decode
-  comparison, collection; writes `CHAIN8_DONE s2-c1`; then `tools/chain9.sh` unchanged: candidate 2, session
-  `s3-c2` (`b580-fused2` against candidate 1, both build `topic6`): softmax look, `gate_sdpa.sh` with 7 repeats
-  (timed), reference error, probe, decision, decode. Ends `CHAIN9_DONE`.
+- `tools/chain10.sh` -> `tools/chain9.sh` (`.artifacts/logs/chain9.status`): the rest of candidate 2's evidence in
+  session `s3-c2`: reference error, logits probe, `decide.py`, decode comparison, collection. Ends `CHAIN9_DONE`.
+- `tools/chain12.sh e1e450530` (`.artifacts/logs/chain12.status`), waiting for chain 9: builds `pristine`
+  (`6a7cc8cc6`) and `topic7` (the committed head; its sources outside `openspec/` are those of `topic6`), the
+  no-environment hook check on `topic7`, then the gate of candidate 2 again as session `s3b-c2` (`topic7` with
+  `b580-fused1` against `topic7` with `b580-fused2`, 7 repeats) behind `busy_wait`, reference error, probe,
+  decision, decode. Ends `CHAIN12_DONE`.
+- Then, by hand: `tools/chain11.sh <final profile>` (the closing: full gate of the final stack on `topic7`
+  against the parent, the timed session against the pristine parent, roofs). The profile follows the rule
+  `final_stack` of `thresholds.txt`, fixed at 03:25 UTC before candidate 2 had a valid timed run.
 
-If the machine reboots again, both are gone; restart with `chain10.sh` (every unit is resumable or is repeated
-whole; a half-run session directory goes to `superseded/` first).
+If the machine reboots, all of it is gone: look at the three status files and restart the chain whose `DONE`
+line is missing (a half-run session directory goes to `superseded/` first).
 
-No build may start on this host while they run.
+## Candidate 2, session `s3-c2` (01:58 to 03:15 UTC): gate failed on timing only; the desktop held a third of the card
+
+`b580-fused2` (candidate 1 + the fp32 no-tail softmax `4070ti_nzf` for the calls the fused kernel does not take)
+against candidate 1, both build `topic6`. `stage/s3-c2/gate.txt`: 29 PASS lines (SDPA tiers 12 passes each with 0
+mismatches, unmodified `verify.sh` against the parent snapshot, next token, traces) and 7 FAIL lines, all of them
+"7 valid runs per build" and "session complete". `stage/s3-c2/raw/runs.csv`: 237 rows, 216 timed runs, every one
+with reason `foreign_busy`: the desktop's share of the engine time in the prefill window was 32.9 to 45.1 % in
+every run, limit 5.0 %; the top foreign client in every run was pid 243998, a Discord renderer (the desktop
+session also had firefox, slack and gnome-remote-desktop open). The 12 extra pairs per cell were used up in all
+six cells. No median, no gain: **candidate 2 has no timing result.** This is not a failed candidate; it is a
+session without a measurement, kept where it is as the record.
+
+Two things changed in the tools because of it (commit `e1e450530`, dated block in `thresholds.txt`):
+
+- One run (3B 8da4w parent r12) had a share of -5274 % (a client's cycle counter went backwards between two
+  samples) and `e2e5.sh` counted it valid. A share outside 0 to 100 % is now `busy_unreadable`, invalid. It
+  did not reach a result: its cell had 1 valid run of 7. Sessions `s1-aa2` and `s2-c1` have no such row
+  (lowest share 0.00 %).
+- `busy_wait` (host.sh; called by `session.sh` and before a gate): a timed session starts when the desktop's
+  share over 5 s is at or below `BUSYMAX`, checked once a minute, for at most 3 hours, then starts anyway.
+  **This is the actor's reading of the owner decision of 00:22 UTC, not part of it**: that decision lifted the
+  wait for `IdleHint=yes` and kept `BUSYMAX`; with a third of the card taken, starting at once can only produce
+  rejected runs. See "Decision needed from the owner".
+
+Smoke runs before the gate (`raw/c2-smoke/`): `b580-refine3-nzf` tiers `all` / `extended` / `full` / `peaked` 4 /
+8 / 4 / 5 cases with 0 mismatches, softmax `sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf`; the control
+with the cooperative-matrix kernels disabled under `b580-fused2`: 8 of 8 cases with 0 mismatches (the test
+prints FAILED there by design: it requires the cooperative-matrix kernels).
 
 From 01:17 UTC on the kernel is 7.2.9-200.fc44 (7.2.8-200 before): the baseline and A/A (`s1-aa2`), the screens
 and session `s2-c1` were measured on 7.2.8; `s3-c2` and the closing sessions run on 7.2.9. Every session
@@ -434,10 +464,21 @@ instance of Vulkan 1.3; neither was done. ANV launches full subgroups for these 
 
 ## Next
 
-Read the probe, the decision and the decode comparison of candidate 1; read the gate of candidate 2
-(`b580-fused2` = candidate 1 + the 4070 Ti campaign's fp32 no-tail softmax for the calls the fused kernel does
-not take). Then stop by the task (two candidates at most) and close: build the committed head, full gate of the
-final stack, one timed session against the parent of section 3 and one against the pristine parent `6a7cc8cc6`.
+Read chain 12: the gate of candidate 2 on `topic7`. Choose the final stack by the `final_stack` rule, run
+`chain11.sh`, then `proposal.md`, `check.sh --no-build`, push.
+
+## Decision needed from the owner
+
+Not blocking; the campaign continues on the reading described above.
+
+1. **The desktop's own load.** With Discord (or anything else) holding a third of the card, no timed run passes
+   `BUSYMAX` and a session cannot be measured. The campaign now waits up to 3 hours per session for the share
+   to fall to 5 % and then runs anyway. If you would rather have it (a) measure regardless and report the
+   numbers with their share (that needs your ruling: it sets `BUSYMAX` aside), or (b) wait without a limit, say
+   so here in the task file.
+2. **Finding F1** (section "Specification quotes"): the cooperative-matrix pipelines of this branch, the
+   shipped ones included, are SPIR-V 1.3 without the full-subgroups flag, which the specification requires for
+   them. A fix belongs to the release-zone pipeline code and is outside this campaign.
 
 ## Blocking
 
