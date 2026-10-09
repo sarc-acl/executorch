@@ -132,6 +132,8 @@ Stop rule counter: candidate 1 (+1.56 %) and candidate 2 (-13.79 %) were two con
 
 | 4 | whole-texel 8da4w staging (the texel-wise `zpg_bt` family on the 8da4w shapes where the screen has it best; `7900xtx-refine3`, same build `c3`) | 3 | -0.42 % | gated (verify.sh as the snapshot except the two kernel-name lines, outputs byte-identical to candidate 3 in 24 of 24 shapes, next token SAME), **not adopted** | `sessions/c4-texel/` |
 
+| 5 | unfused attention kernels of the screen (`7900xtx-refine4`, build `c5` = commit 958bc07e7: QK^T `pk_t128x128k32g42s32nf`, attn*V `sweep_t64x64k32g42s32`, on every prefill call that fits) | 3 | **+4.09 %** | gated: SDPA tiers all / extended / full 12 passes each + 1 control pass each, 0 failed, 0 mismatches, `pairing=ok`; `verify.sh` as the snapshot except the two kernel-name lines; SDPA output **bit-identical** to candidate 3 in 21 of 21 cases and error against the reference not larger (D3.1); real-text probe 32 prompts x 6 cells: 0 top-1 differences, KL 0; next token SAME on all three prompts | `sessions/c5-sdpa/`, `sdpa-screen/` |
+
 Candidate 1, per cell (median of 7 valid runs, `sessions/c1-softmax/raw/summary.csv`): 1B 4w 20078.40 -> 20686.90 (+3.03 %), 1B 8da4w 22260.90 -> 22755.60 (+2.22 %),
 3B 4w 10138.60 -> 10240.00 (+1.00 %), 3B 8da4w 10449.00 -> 10502.60 (+0.51 %), 8B 4w 4762.79 -> 4841.61 (+1.65 %), 8B 8da4w 4982.97 -> 5031.94 (+0.98 %); geomean +1.56 %.
 Where it came from (warm ETDump, ms per 2048-token prefill, parent -> candidate 1, `sessions/c1-softmax/trace/families.csv`): softmax 10.2 -> 8.2 (1B 4w),
@@ -156,6 +158,12 @@ Candidate 4, per cell against candidate 3 (median of 7 valid runs, 0 invalid, `s
 3B 8da4w 11070.30 -> 11070.30 (+0.00 %), 8B 4w 4818.82 -> 4785.05 (-0.70 %), 8B 8da4w 5278.35 -> 5291.99 (+0.26 %); geomean -0.42 %. The 4w picks of `refine2` and `refine3` are the same kernels, so the 4w cells are the same configuration in both arms:
 their -2.08 % / -0.70 % / +0.00 % are the run-to-run noise of this session (repeat spread up to 7.4 % in the 1B 4w parent arm). The kernel-level edge of the texel-wise family over the other picks (0.1 to 3.5 % in the worst round, 1B
 wk_wv the other way) does not show end to end: whole-texel staging is not adopted, as the phase timing (weight fetch 11 % of the wave) predicted.
+
+Candidate 5, per cell against candidate 3 (median of 7 valid runs, 0 invalid, `sessions/c5-sdpa/raw/summary.csv`): 1B 4w 21787.20 -> 23011.20 (+5.62 %), 1B 8da4w 23814.00 -> 24674.70 (+3.61 %),
+3B 4w 10138.60 -> 10556.70 (+4.12 %), 3B 8da4w 10893.60 -> 11570.60 (+6.21 %), 8B 4w 4807.51 -> 4923.08 (+2.40 %), 8B 8da4w 5224.49 -> 5361.26 (+2.62 %); geomean +4.09 %.
+Where it came from (warm ETDump, ms per prefill, candidate 3 -> candidate 5, `sessions/c5-sdpa/trace/families.csv`): QK^T 6.4 -> 4.8 (1B), 17.7 -> 9.8 (3B), 21.0 -> 14.0 (8B); attn*V 11.8 -> 10.7, 14.4 -> 13.0, 19.4 -> 17.2; softmax and GEMM unchanged.
+The screen (`sdpa-screen/`): QK^T without the mask fill and with packed K staging, in the 128 x 128 tile: 1.30x (head dim 64) and 1.45x (head dim 128) in the worst round; attn*V `sweep t64x64k32g42s32` 1.08x / 1.10x.
+The "recommended" QK^T / attn*V pair is the largest QK^T tile that the dev zone had; the second attention screen below extends the tile family around it.
 
 **Phase timing (work-order step 3), 8da4w table kernel `t128x64k32g42s32`** (PROF twin `sarc_dev_prof_dq8ca_zpg_t128x64k32g42s32p`, shader clock, twelve prefill shapes, `results/7900xtx/phases/parent-8da4w.csv`),
 share of the wave's cycles, median over the shapes (range over the shapes): barrier wait 31.4 % (18.0 to 33.7), LDS store 25.6 % (24.8 to 37.3), MMA 21.8 % (21.0 to 22.7), global weight fetch 10.9 % (10.4 to 14.5),
