@@ -1006,6 +1006,7 @@ const char* sdpa_fused_variants_780m() {
 //   7900xtx-refine2: refine1 and the screen's picks, texel-wise (zpg_bt) family excluded (candidate 3); 4w only on 1B
 //   7900xtx-refine3: refine2 with the screen's picks over all kernels on the 8da4w shapes, i.e. the texel-wise
 //                    weight staging family where it is the best (candidate 4)
+//   ET_VK_SARC_7900XTX_QK / ET_VK_SARC_7900XTX_AV=<kernel_base>: a registered attention candidate by exact name (screening), whatever the profile
 //   7900xtx-refine4: refine2 and the unfused attention kernels of the screen of 2026-10-09 (results/7900xtx/sdpa-screen/):
 //                    QK^T with packed K staging and no mask fill (pk_t128x128k32g42s32nf, valid with the truncated SARC
 //                    softmax only) and the sweep attn*V tile t64x64k32g42s32, on every prefill call that fits (candidate 5)
@@ -1115,6 +1116,25 @@ const Pick7900xtx kRefine4[] = {
     {Op::kSdpaQk, "sarc_sdpa_qk_coopmat_pk_t128x128k32g42s32nf", nullptr, 0},
     {Op::kSdpaAv, "sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32", nullptr, 0},
 };
+// Attention kernel variants of the 7900 XTX screen (glsl/sarc_dev/sarc_sdpa_{qk_coopmat_pk,av_coopmat_sweep}.yaml, 7900xtx blocks); selected
+// only by name: ET_VK_SARC_7900XTX_QK / ET_VK_SARC_7900XTX_AV = <kernel_base> (screening), or by a profile pick.
+const Row k7900xtxSdpaSpace[] = {
+    {"", nullptr, Op::kSdpaQk, "sarc_sdpa_qk_coopmat_pk_t128x128k32g24s32nf", {128, 128, 32, 2, 4, 32, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk, "sarc_sdpa_qk_coopmat_pk_t128x128k32g22s64nf", {128, 128, 32, 2, 2, 64, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk, "sarc_sdpa_qk_coopmat_pk_t128x128k32g44s32nf", {128, 128, 32, 4, 4, 32, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk, "sarc_sdpa_qk_coopmat_pk_t128x128k32g22s32nf", {128, 128, 32, 2, 2, 32, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk, "sarc_sdpa_qk_coopmat_pk_t64x128k32g42s32nf", {64, 128, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv, "sarc_sdpa_av_coopmat_sweep_t128x128k32g44s32", {128, 128, 32, 4, 4, 32, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv, "sarc_sdpa_av_coopmat_sweep_t128x128k32g82s32", {128, 128, 32, 8, 2, 32, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv, "sarc_sdpa_av_coopmat_sweep_t128x128k32g42s64", {128, 128, 32, 4, 2, 64, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv, "sarc_sdpa_av_coopmat_sweep_t32x32k32g22s32", {32, 32, 32, 2, 2, 32, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv, "sarc_sdpa_av_coopmat_sweep_t32x32k32g41s32", {32, 32, 32, 4, 1, 32, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+};
+const char* exact_name_7900xtx(Op op) {
+  static const char* const qk = std::getenv("ET_VK_SARC_7900XTX_QK");
+  static const char* const av = std::getenv("ET_VK_SARC_7900XTX_AV");
+  return op == Op::kSdpaQk ? qk : (op == Op::kSdpaAv ? av : nullptr);
+}
 const Profile7900xtx k7900xtxProfiles[] = {
     {"7900xtx-refine1", nullptr, 0, "780m_r3"},
     {"7900xtx-refine2", kRefine2, SARC_7900XTX_N(kRefine2), "780m_r3"},
@@ -1150,7 +1170,21 @@ std::optional<Choice> select_7900xtx(
   const std::optional<Choice> before =
       select_before_7900xtx(device, shape, table_choice);
   const Profile7900xtx* active = active_profile_7900xtx();
-  if (active == nullptr || !before.has_value() || shape.gemv) {
+  if (!before.has_value() || shape.gemv) {
+    return before;
+  }
+  if (const char* want = exact_name_7900xtx(shape.op)) {
+    if (*want != 0) {
+      for (const Row& row : candidates()) {
+        if (row.op == shape.op && row.kernel_base == std::string(want) &&
+            q4gsw_coopmat_fits(device, shape, row)) {
+          return Choice{row.kernel_base, row.dims, row.rowmajor_a};
+        }
+      }
+      return before;
+    }
+  }
+  if (active == nullptr) {
     return before;
   }
   for (size_t i = 0; i < active->count; ++i) {
@@ -1178,6 +1212,7 @@ std::optional<Choice> select_7900xtx(
 struct Registrar7900xtx {
   Registrar7900xtx() {
     Override o = get_override();
+    register_candidates(k7900xtxSdpaSpace, sizeof(k7900xtxSdpaSpace) / sizeof(k7900xtxSdpaSpace[0]));
     select_before_7900xtx = o.select;
     o.select = select_7900xtx;
     const Profile7900xtx* active = active_profile_7900xtx();

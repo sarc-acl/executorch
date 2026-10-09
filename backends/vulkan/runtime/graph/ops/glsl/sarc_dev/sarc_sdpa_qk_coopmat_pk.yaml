@@ -81,3 +81,40 @@ sarc_sdpa_qk_coopmat_pk:
       SG_GRID_X: 4
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 32
+    # --- 7900xtx begin: variants of the 7900 XTX attention screen (openspec/changes/sarc-1.5-7900xtx-prefill-refine) ---
+    - NAME: sarc_sdpa_qk_coopmat_pk_t128x128k32g24s32nf
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+    - NAME: sarc_sdpa_qk_coopmat_pk_t128x128k32g22s64nf
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64
+    - NAME: sarc_sdpa_qk_coopmat_pk_t128x128k32g44s32nf
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+    - NAME: sarc_sdpa_qk_coopmat_pk_t128x128k32g22s32nf
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    - NAME: sarc_sdpa_qk_coopmat_pk_t64x128k32g42s32nf
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+    # --- 7900xtx end ---
