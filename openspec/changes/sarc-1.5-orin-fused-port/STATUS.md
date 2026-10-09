@@ -1,6 +1,6 @@
 # STATUS: sarc-1.5-orin-fused-port
 
-**2026-10-09 05:10 UTC. Candidate 1 (fused attention kernel, profile `orin-fused1`) passed its gate `s3-c1` on
+**2026-10-09 06:05 UTC. Candidate 1 (fused attention kernel, profile `orin-fused1`) passed its gate `s3-c1` on
 build `topic1`: +6.01 % geomean over the tuned parent (1B +10.9 / +10.0 %, 3B +4.8 / +4.4 %, 8B +3.3 / +3.0 %), no
 next-token item differs, reference-error rule met with the real-text evidence (`probe/c1-fused/`). NOT CLOSED,
 and `s3-c1` is not the result that will be reported: three things taken from the 4070 Ti fused port are put
@@ -14,11 +14,10 @@ All times are UTC from `date -u`.
 ## Running now
 
 - Device `duck-naughty` (detached, `~/hmz-sarc-orin-fused/jobs/<job>.{status,out}`):
-  - `chain8` (measuring since 04:59), about 9 hours, until about 14:00, everything on `topic4`: `g-pre` done
-    (below); `s4-aa2` running (A/A re-check, parent build against `topic4`, both with the parent environment,
-    committed clock floor, with the throttle record); then `sdpa-error2` (stock / parent / candidate 1 /
-    candidate 2, `topic4`'s test binary); `s5-c1` (candidate 1 gated again: parent build against `topic4` with
-    `orin-fused1`); `c2-pre` and `s6-c2` (candidate 2, `orin-fused2`, against candidate 1, both on `topic4`).
+  - `chain8` (measuring since 04:59), until about 12:00, everything on `topic4`: `g-pre`, `s4-aa2` and
+    `sdpa-error2` done (below); `s5-c1` running since 05:55 (candidate 1 gated again: parent build against
+    `topic4` with `orin-fused1`; about 3 hours); then `c2-pre` and `s6-c2` (candidate 2, `orin-fused2`, against
+    candidate 1, both on `topic4`).
   - `chain9` (queued behind `chain8`), the closing chain, 4.5 to 7.5 hours: `s7n-noenv` (hook control on
     `topic4`); `s7-final` (only if the final stack is `orin-fused2`: its full gate against the tuned parent);
     `s8-pristine` (final stack against the pristine state); the real-text probe of the final stack on `topic4`
@@ -28,6 +27,43 @@ All times are UTC from `date -u`.
     `chain6` and `chain7` (the same steps as `chain8` and `chain9`, fixed on `topic3`; 01:26).
 - Workstation: nothing. `topic4` (`0bed38090`) was built 01:25 to 01:36 and deployed 01:36.
 - Coordinator hold: `tools/HOLD.md` (device: `~/hmz-sarc-orin-fused/HOLD`; builds: `.artifacts/HOLD`). None seen.
+
+## On `topic4`: A/A re-check `s4-aa2` (05:05 to 05:41 UTC) and reference error `sdpa-error2`
+
+`s4-aa2`: parent build against `topic4`, both with the parent environment, under the committed clock floor
+(593 MHz), every clock sample with the throttle record. Recomputed from `runs.csv`:
+
+| cell | parent | `topic4`, parent environment | ratio | repeat spread (parent / `topic4`) |
+|---|---:|---:|---:|---|
+| 1B 4w | 1490.54 | 1490.54 | 1.0000 | 0.15 / 0.15 % |
+| 1B 8da4w | 1380.98 | 1385.66 | 1.0034 | 0.41 / 0.47 % |
+| 3B 4w | 629.38 | 629.19 | 0.9997 | 0.12 / 0.09 % |
+| 3B 8da4w | 570.47 | 570.47 | 1.0000 | 0.14 / 0.20 % |
+| 8B 4w | 295.23 | 295.57 | 1.0012 | 0.20 / 0.25 % |
+| 8B 8da4w | 269.08 | 269.05 | 0.9999 | 0.13 / 0.08 % |
+
+Geomean +0.07 %, largest cell +0.34 %. 60 of 60 timed runs valid: rc 0, 2048 prompt tokens, 0 generated, no
+foreign GPU process, 13 to 72 clock samples per window, median clock 612 MHz in every run, **throttle state 0 in
+all 8214 clock samples of the 60 runs** (12 cooling devices), start temperature 55 to 60 C, maximum 64 C. Next
+token SAME in 24 of 24 rows; `gate_check.py session`: ACCEPT, 0 findings. Parent within 0.2 % of `s10-final` in
+every cell. The hook, the dev code and the kernel's new check cost nothing while the fused node is not selected.
+
+`sdpa-error2` (one binary, `topic4`'s; same seeded inputs; stock / parent / candidate 1 / candidate 2), the five
+S = 2048 cases criterion 1 judges:
+
+| case | rms | maximum | candidate 1 / 2 not larger than the parent |
+|---|---|---|---|
+| `1b_head_config_s2048` | 8.547e-05 / 2.101e-05 / 2.049e-05 / 2.050e-05 | 1.713e-03 / 9.135e-04 / 7.227e-04 / 7.227e-04 | yes / yes |
+| `3b_head_config_s2048` | 8.686e-05 / 2.068e-05 / 2.053e-05 / 2.053e-05 | 1.408e-03 / 7.828e-04 / 7.061e-04 / 7.061e-04 | yes / yes |
+| `8b_head_config_s2048` | 8.696e-05 / 2.057e-05 / 2.022e-05 / 2.022e-05 | 1.587e-03 / 8.911e-04 / 7.911e-04 / 7.911e-04 | yes / yes |
+| `tiny_gqa_s2048` | 8.357e-05 / 2.080e-05 / 2.050e-05 / 2.047e-05 | 1.498e-03 / 6.943e-04 / 6.078e-04 / 6.078e-04 | yes / yes |
+| `tiny_d128_s2048` | 8.384e-05 / 2.071e-05 / 2.034e-05 / 2.034e-05 | 1.467e-03 / 7.796e-04 / 5.595e-04 / 5.595e-04 | yes / yes |
+
+Criterion 1 is met by both candidates; 12 of 12 cases per arm with 0 mismatches. Candidate 2 differs from
+candidate 1 only where head_dim is 64 (two-pass kernel on 5 of 12 cases, the same one-pass kernel on the other
+7). Outside the criterion, on record, as on `topic1`: the maximum is larger than the parent's for both candidates
+on `3b_head_config_s256` (8.203e-04 against 7.787e-04) and `8b_head_config_s1024_pos1024` (7.226e-05 against
+6.942e-05), and candidate 1's rms on `tiny_gqa_pos64` (3.238e-05 against 3.232e-05; candidate 2: 3.220e-05).
 
 ## Build with the one-full-subgroup check: pre-check `g-pre` (04:59 to 05:04 UTC, `topic4`, `orin-fused1`)
 
