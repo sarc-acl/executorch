@@ -5,7 +5,8 @@
 set -euo pipefail
 source "$(dirname "$(readlink -f "$0")")/env.sh"
 C=$(git -C $ET rev-parse "$1^{commit}"); TAG=$2; D=$A/src/rx7600/$TAG
-[[ -e $D ]] && { echo "export $TAG exists" >&2; exit 2; }
+[[ -e $D || -L $D ]] && { echo "export $TAG exists" >&2; exit 2; }
+[[ -n ${SARC_BIG:-} ]] && { mkdir -p $SARC_BIG/src; D=$SARC_BIG/src/$TAG; [[ -e $D ]] && { echo "export $TAG exists on $SARC_BIG" >&2; exit 2; }; }
 mkdir -p $D/executorch
 git -C $ET archive $C | tar -x -C $D/executorch
 echo ". $C" > $D/MANIFEST
@@ -19,4 +20,5 @@ sub() { # sub <repo dir> <commit> <prefix>
   done
 }
 sub $ET $C ""
+[[ -n ${SARC_BIG:-} ]] && ln -s $D $A/src/rx7600/$TAG
 echo $C > $D/COMMIT; echo "exported $C -> $D ($(wc -l < $D/MANIFEST) entries)"

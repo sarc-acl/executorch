@@ -9,7 +9,7 @@ S=$1; TAG=$2; PROF=$3; NOTE=$4; PT=${PARENT_TAG:-final}; PP=${PARENT_PROFILE:-rx
 st() { echo "$(date -u +%FT%TZ) $*" >> $A/logs/chain8-$S.status; }
 st "waiting for the build $TAG"; until grep -q BUILD_BOTH_DONE $A/build/rx7600/$TAG.src.txt 2>/dev/null; do sleep 30; done
 grep -q 'rc=0 main' $A/build/rx7600/$TAG.src.txt && grep -q 'rc=0 traced' $A/build/rx7600/$TAG.src.txt || { st "STOP: build $TAG failed"; exit 1; }
-while ! grep -q 'q4 done' $A/logs/r2g-screen.status 2>/dev/null && pgrep -f 'linear_screen.sh' > /dev/null; do sleep 30; done
+while pgrep -f 'tools/linear_screen.sh' > /dev/null; do sleep 30; done   # kernel screens are GPU jobs: not alongside a timed session
 st "golden"; $T/spirv_same.sh $TAG > $A/logs/golden-$TAG.out 2>&1; st "golden: $(tail -2 $A/logs/golden-$TAG.out | tr '\n' ' ')"
 B="ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_780M_PROFILE=c7 ET_VK_SARC_780M_SDPA_FUSED=fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko"
 PE="$B ET_VK_SARC_RX7600_PROFILE=$PP"; CE="$B ET_VK_SARC_RX7600_PROFILE=$PROF"

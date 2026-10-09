@@ -5,7 +5,8 @@
 set -uo pipefail
 source "$(dirname "$(readlink -f "$0")")/env.sh"
 C=$1; TAG=$2; S=$A/src/rx7600/$TAG; O=$A/build/rx7600/$TAG
-[[ -e $O ]] && { echo "build $TAG exists: a rebuild takes a new tag" >&2; exit 2; }
+[[ -e $O || -L $O ]] && { echo "build $TAG exists: a rebuild takes a new tag" >&2; exit 2; }
+if [[ -n ${SARC_BIG:-} ]]; then mkdir -p $SARC_BIG/build; [[ -e $SARC_BIG/build/$TAG ]] && { echo "build $TAG exists on $SARC_BIG" >&2; exit 2; }; mkdir -p $SARC_BIG/build/$TAG; ln -s $SARC_BIG/build/$TAG $O; fi
 $T/export_commit.sh $C $TAG > $A/build/rx7600/$TAG.export.log 2>&1 || { echo "export failed" >&2; exit 3; }
 { date -u +%FT%TZ; echo "commit $(cat $S/COMMIT)"; echo "mesa: $VK_ICD_FILENAMES (Mesa 26.2.3 31e9a6b2e9)"; } > $A/build/rx7600/$TAG.src.txt
 touch $A/.building
