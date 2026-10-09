@@ -319,7 +319,10 @@ Adapter::Adapter(
       shader_layout_cache_(device_.handle),
       shader_cache_(device_.handle),
       pipeline_layout_cache_(device_.handle),
-      compute_pipeline_cache_(device_.handle, cache_data_path),
+      compute_pipeline_cache_(
+          device_.handle,
+          cache_data_path,
+          supports_compute_full_subgroups()),
       sampler_cache_(device_.handle),
       vma_(instance_, physical_device_.handle, device_.handle),
       linear_tiling_3d_enabled_{test_linear_tiling_3d_image_support(
@@ -343,7 +346,10 @@ Adapter::Adapter(
       shader_layout_cache_(device_.handle),
       shader_cache_(device_.handle),
       pipeline_layout_cache_(device_.handle),
-      compute_pipeline_cache_(device_.handle, cache_data_path),
+      compute_pipeline_cache_(
+          device_.handle,
+          cache_data_path,
+          supports_compute_full_subgroups()),
       sampler_cache_(device_.handle),
       vma_(instance_, physical_device_.handle, device_.handle),
       linear_tiling_3d_enabled_{test_linear_tiling_3d_image_support(
