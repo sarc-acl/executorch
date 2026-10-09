@@ -172,6 +172,24 @@ test_sarc_select: PASS (1536 checks, 33 rows, 204 candidates, dev zone linked, u
 check.sh: PASS
 ```
 
+The two CPU selector executables of step 3 are retained for the reviewer, who may not build
+(`<artifact-dir>/check-select/`, 2026-10-09 03:47 UTC). `check.sh` deletes its own, so the unmodified script was
+run once more with `CXX=<artifact-dir>/check-select/cxx-keep.sh`, a wrapper that calls `c++` with the arguments
+it is given and copies the output file; `check.sh` reads `CXX` from the environment and is unchanged (byte-identical
+to the parent's). The run printed the same seven lines and PASS (`check.out`).
+
+| file | content |
+|---|---|
+| `test_sarc_select.rel` | release tables alone; sha256 `954efa2fef42a363394c7d5707a25c67fefb19928d98dd08d5b3ad992fb181a5` |
+| `test_sarc_select.dev` | with the dev zone; sha256 `76bede2257eec0e261e0d7f737c9a7cb53891bd9f49c106600a73ae55ae20ddf` |
+| `compile-commands.txt` | the two exact compiler commands and their working directory |
+| `yamls.txt` | the 34 yaml arguments, in `check.sh`'s order |
+| `run.sh` | runs both executables as step 3 does (`ET_VK_SARC_UNVERIFIED=1` for the second), no compilation: `bash <artifact-dir>/check-select/run.sh` |
+| `PROVENANCE.txt` | time, compiler (`c++` 15.2.0), hashes, working-copy head `88bedad43` with a clean tree; its source equals the measured commit `ed8b5af91` outside `openspec/` |
+
+Run again from the retained files: 1240 checks, 31 rows, 0 candidates (release); 1536 checks, 33 rows, 204
+candidates (dev zone); both rc 0.
+
 It does not report the release-zone hook: `impl/sarc/` is inside the zones it checks and `impl/SDPA.cpp` is
 listed in `sarc/HOOKS`. Files changed against the parent outside the dev zone and this directory: the four of
 the hook (`impl/SDPA.cpp`, `impl/sarc/SdpaCoopmat.cpp`, `impl/sarc/SdpaCoopmat.h`, `impl/sarc/Select.h`, commit
