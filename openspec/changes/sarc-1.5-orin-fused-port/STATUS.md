@@ -1,29 +1,57 @@
 # STATUS: sarc-1.5-orin-fused-port
 
-**2026-10-09 10:20 UTC. Both candidates are gated on `topic4`. Candidate 1 (fused attention kernel,
+**2026-10-09 11:35 UTC. Both candidates are gated on `topic4`. Candidate 1 (fused attention kernel,
 `orin-fused1`): `s5-c1` `GATE_ACCEPTED`, **+6.13 % geomean over the tuned parent** (1B +11.2 / +10.2 %,
 3B +4.8 / +4.4 %, 8B +3.4 / +3.0 %). Candidate 2 (`orin-fused2`, two-pass kernel for head_dim 64): `s6-c2`
 `GATE_ACCEPTED` on correctness, **+0.54 % geomean over candidate 1** (1B +1.7 / +1.6 %, 3B and 8B +-0.1 %): every
 cell inside the +-2 % band, so it is not adopted. **The final stack is `orin-fused1`**, and the campaign stops
 here by its rule (two candidates at most; candidate 2 is the first sub-threshold candidate, N3 and the owner's
-decision of 01:00 UTC). NOT CLOSED: the closing chain is running (hook control, pristine session, real-text
-probe on `topic4`, memory probe, fresh roofs).**
+decision of 01:00 UTC). Against the pristine state the final stack is +76.70 % (`s8-pristine`); the hook control on `topic4` is accepted.
+NOT CLOSED: the closing chain is still running (real-text probe on `topic4`, memory probe, fresh roofs).**
 
 All times are UTC from `date -u`.
 
 ## Running now
 
 - Device `duck-naughty` (detached, `~/hmz-sarc-orin-fused/jobs/<job>.{status,out}`):
-  - `chain9` (since 10:09), the closing chain, about 4.5 hours, until about 14:45, on `topic4` with `orin-fused1`
-    (`FINAL.txt` on the device): `s7n-noenv` (hook control: `verify.sh` with nothing selected); `s8-pristine`
-    (final stack against the pristine state: timed session, traces); the real-text probe of the final stack
-    (`probe/final-fused/`); `mem1` (memory probe of the K / V copies); `roof-final` (fresh roofs, igpu-roofline
-    `fast`, 41 minutes in the first campaign). No `s7-final`: the final stack is candidate 1 and its full gate
-    against the tuned parent on `topic4` is `s5-c1`.
+  - `chain9` (since 10:09), the closing chain, until about 14:00, on `topic4` with `orin-fused1` (`FINAL.txt` on
+    the device): `s7n-noenv` and `s8-pristine` done (below); running: the real-text probe of the final stack
+    (`probe/final-fused/`); then `mem1` (memory probe of the K / V copies) and `roof-final` (fresh roofs,
+    igpu-roofline `fast`). No `s7-final`: the final stack is candidate 1 and its full gate against the tuned
+    parent on `topic4` is `s5-c1`.
   - Done: `chain4` (00:35 to 04:59), `chain8` (04:59 to 10:09). Ended before they started a job: `chain5`
     (00:41), `chain6` and `chain7` (01:26).
 - Workstation: nothing.
 - Coordinator hold: `tools/HOLD.md` (device: `~/hmz-sarc-orin-fused/HOLD`; builds: `.artifacts/HOLD`). None seen.
+
+## Final stack against the pristine state: `s8-pristine` (10:27 to 11:18 UTC), `SESSION_ACCEPTED`
+
+Parent arm: build `parent` (`8973ced76`) with no environment (the `dev/1.5` state of this device). Candidate arm:
+build `topic4` with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-fused1`. Recomputed from `runs.csv`:
+
+| cell | pristine | published (`cells.csv`) | final stack | gain over pristine | repeat spread (pristine / final) |
+|---|---:|---:|---:|---:|---|
+| 1B 4w | 891.60 | 890.82 | 1651.61 | +85.24 % | 0.26 / 0.08 % |
+| 1B 8da4w | 823.81 | 822.82 | 1521.55 | +84.70 % | 0.32 / 0.37 % |
+| 3B 4w | 360.50 | 360.37 | 659.58 | +82.96 % | 0.09 / 0.10 % |
+| 3B 8da4w | 320.35 | 320.30 | 595.18 | +85.79 % | 0.05 / 0.06 % |
+| 8B 4w | 189.84 | 189.74 | 305.54 | +60.94 % | 0.07 / 0.07 % |
+| 8B 8da4w | 170.48 | 170.43 | 277.21 | +62.60 % | 0.08 / 0.08 % |
+
+Geomean **+76.70 %** over the pristine state (the first campaign closed at +66.65 %; 1.6665 x 1.0613 = 1.769). 60
+of 60 timed runs valid: clock 612 MHz in every run of both arms (the pristine arm does not settle lower here),
+throttle state 0 in all 9647 clock samples, 11 to 114 samples per window, start temperature 53 to 58 C. Next
+token pristine vs final SAME in 24 of 24 rows. `gate_check.py session` and `env`: ACCEPT, 0 findings.
+Attention per prefill, pristine -> final (warm ETDump): 1215 -> 175 ms (1B), 2913 -> 382 ms (3B), 4436 -> 574 ms (8B).
+
+## Hook control on `topic4`: `s7n-noenv` (10:09 to 10:27 UTC), `GATE_ACCEPTED`, owner decision D4
+
+Unmodified `verify.sh` on build `topic4` (`0bed38090`: the hook + the whole dev zone of this campaign) with
+nothing selected, against `s0n-noenv` (the parent build, nothing selected): `verify.out` (34 lines) equal line by
+line with the rates removed, **0 differing lines**; `gate_check.py verify`: ACCEPT, 0 findings; 22 of 22 runner
+calls rc 0; no `[sarc_dev]` banner in any log; default-arm prefill 890.05 / 823.15, 360.37 / 320.30,
+189.79 / 170.43 tok/s. Shipped SPIR-V of `topic4`: 53 of 53 byte-identical to the parent build. `test_sarc_select`
+on the release tables is run again with `check.sh` at closing.
 
 ## Candidate 2 (`orin-fused2`) on `topic4`: gate `s6-c2`, `GATE_ACCEPTED 2026-10-09T10:09:39Z`, NOT ADOPTED (+0.54 %)
 

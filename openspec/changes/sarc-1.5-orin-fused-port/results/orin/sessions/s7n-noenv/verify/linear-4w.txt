@@ -1,0 +1,38 @@
+RESULT,linear,llama-3.1-8b,4w,prefill,coopmat,4096,4096,11156.288,14.482,6159.708,unexpected_coopmat,SKIPPED,texture3d,2048,11156.288,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0
+RESULT,linear,llama-3.1-8b,4w,prefill,coopmat,4096,1024,2842.614,4.117,6043.688,unexpected_coopmat,SKIPPED,texture3d,2048,2842.614,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0
+RESULT,linear,llama-3.1-8b,4w,prefill,coopmat,4096,14336,38845.789,28.453,6191.615,unexpected_coopmat,SKIPPED,texture3d,2048,38845.789,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0
+RESULT,linear,llama-3.1-8b,4w,prefill,coopmat,14336,4096,45845.711,46.146,5246.252,unexpected_coopmat,SKIPPED,texture3d,2048,45845.707,"kernel_name": "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32_texture3d_texture2d_half", "operator_id": 0
+RESULT,linear,llama-3.2-3b,4w,prefill,coopmat,3072,3072,6363.714,7.994,6074.237,unexpected_coopmat,SKIPPED,texture3d,2048,6363.714,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0
+RESULT,linear,llama-3.2-3b,4w,prefill,coopmat,3072,1024,2154.781,3.362,5979.680,unexpected_coopmat,SKIPPED,texture3d,2048,2154.781,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0
+RESULT,linear,llama-3.2-3b,4w,prefill,coopmat,3072,8192,16857.756,24.026,6114.646,unexpected_coopmat,SKIPPED,texture3d,2048,16857.756,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0
+RESULT,linear,llama-3.2-3b,4w,prefill,coopmat,8192,3072,16494.488,4.724,6249.313,unexpected_coopmat,SKIPPED,texture3d,2048,16494.486,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0
+RESULT,linear,llama-3.2-1b,4w,prefill,coopmat,2048,2048,2914.074,1.434,5895.482,unexpected_coopmat,SKIPPED,texture3d,2048,2914.074,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0
+RESULT,linear,llama-3.2-1b,4w,prefill,coopmat,2048,512,747.610,1.034,5744.934,unexpected_coopmat,SKIPPED,texture3d,2048,747.610,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0
+RESULT,linear,llama-3.2-1b,4w,prefill,coopmat,2048,8192,11506.546,11.842,5972.207,unexpected_coopmat,SKIPPED,texture3d,2048,11506.548,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0
+RESULT,linear,llama-3.2-1b,4w,prefill,coopmat,8192,2048,11041.248,15.295,6223.887,unexpected_coopmat,SKIPPED,texture3d,2048,11041.246,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0
+linear    llama-3.1-8b  4w     prefill  wq_wo  texture3d  coopmat  (2048,4096,4096)          11156.3      14.5   11156.3    6159.7  unexpected_coopmat
+linear    llama-3.1-8b  4w     prefill  wq_wo  buffer     tiled    (2048,4096,4096)         120267.7      58.7  119457.6     571.4  fallback_tiled
+linear    llama-3.1-8b  4w     prefill  wk_wv  texture3d  coopmat  (2048,4096,1024)           2842.6       4.1    2842.6    6043.7  unexpected_coopmat
+linear    llama-3.1-8b  4w     prefill  wk_wv  buffer     tiled    (2048,4096,1024)          31489.0      38.3   30677.7     545.6  fallback_tiled
+linear    llama-3.1-8b  4w     prefill  w1_w3  texture3d  coopmat  (2048,4096,14336)         38845.8      28.5   38845.8    6191.6  unexpected_coopmat
+linear    llama-3.1-8b  4w     prefill  w1_w3  buffer     tiled    (2048,4096,14336)        416742.5     191.9  415916.6     577.1  fallback_tiled
+linear    llama-3.1-8b  4w     prefill  w2     texture3d  coopmat  (2048,14336,4096)         45845.7      46.1   45845.7    5246.3  unexpected_coopmat
+linear    llama-3.1-8b  4w     prefill  w2     buffer     tiled    (2048,14336,4096)        422869.0     126.3  418984.8     568.8  fallback_tiled
+linear    llama-3.2-3b  4w     prefill  wq_wo  texture3d  coopmat  (2048,3072,3072)           6363.7       8.0    6363.7    6074.2  unexpected_coopmat
+linear    llama-3.2-3b  4w     prefill  wq_wo  buffer     tiled    (2048,3072,3072)          68029.7     125.5   67403.9     568.2  fallback_tiled
+linear    llama-3.2-3b  4w     prefill  wk_wv  texture3d  coopmat  (2048,3072,1024)           2154.8       3.4    2154.8    5979.7  unexpected_coopmat
+linear    llama-3.2-3b  4w     prefill  wk_wv  buffer     tiled    (2048,3072,1024)          23663.6      19.2   23041.1     544.5  fallback_tiled
+linear    llama-3.2-3b  4w     prefill  w1_w3  texture3d  coopmat  (2048,3072,8192)          16857.8      24.0   16857.8    6114.6  unexpected_coopmat
+linear    llama-3.2-3b  4w     prefill  w1_w3  buffer     tiled    (2048,3072,8192)         179256.0     160.0  178633.5     575.0  fallback_tiled
+linear    llama-3.2-3b  4w     prefill  w2     texture3d  coopmat  (2048,8192,3072)          16494.5       4.7   16494.5    6249.3  unexpected_coopmat
+linear    llama-3.2-3b  4w     prefill  w2     buffer     tiled    (2048,8192,3072)         181726.6     102.0  180115.3     567.2  fallback_tiled
+linear    llama-3.2-1b  4w     prefill  wq_wo  texture3d  coopmat  (2048,2048,2048)           2914.1       1.4    2914.1    5895.5  unexpected_coopmat
+linear    llama-3.2-1b  4w     prefill  wq_wo  buffer     tiled    (2048,2048,2048)          30624.8      45.7   30214.4     561.0  fallback_tiled
+linear    llama-3.2-1b  4w     prefill  wk_wv  texture3d  coopmat  (2048,2048,512)             747.6       1.0     747.6    5744.9  unexpected_coopmat
+linear    llama-3.2-1b  4w     prefill  wk_wv  buffer     tiled    (2048,2048,512)            8491.4      14.2    8083.3     505.8  fallback_tiled
+linear    llama-3.2-1b  4w     prefill  w1_w3  texture3d  coopmat  (2048,2048,8192)          11506.5      11.8   11506.5    5972.2  unexpected_coopmat
+linear    llama-3.2-1b  4w     prefill  w1_w3  buffer     tiled    (2048,2048,8192)         119589.3      78.2  119178.5     574.6  fallback_tiled
+linear    llama-3.2-1b  4w     prefill  w2     texture3d  coopmat  (2048,8192,2048)          11041.2      15.3   11041.2    6223.9  unexpected_coopmat
+linear    llama-3.2-1b  4w     prefill  w2     buffer     tiled    (2048,8192,2048)         122336.3     128.3  120716.4     561.7  fallback_tiled
+(! = buffer case did NOT dispatch a coopmat shader; shown for reference, excluded from speedups/geomeans)
+One or more cases crashed or did not dispatch the expected kernel (see dispatch column) -- do not trust their speedup numbers.
