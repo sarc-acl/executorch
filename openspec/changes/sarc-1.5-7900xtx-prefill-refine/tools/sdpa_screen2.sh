@@ -12,7 +12,7 @@ for r in $(seq 1 $R); do for i in $(seq 0 $((n - 1))); do p=${PS[$(( (i + r - 1)
   grep -q "^$r,$p," $OUT && continue
   log=$L/r$r-$p.log; qk=$QI; av=$AI
   case $p in qk-*) qk=${p#qk-} ;; av-*) av=${p#av-} ;; esac
-  t0=$SECONDS; while (( $(gtemp) > 55 && SECONDS - t0 < 300 )); do sleep 5; done
+  t0=$SECONDS; while (( $(gtemp_core) > 55 && SECONDS - t0 < 300 )); do sleep 5; done
   env $(cat "$BASE") ET_VK_SARC_7900XTX_QK=$qk ET_VK_SARC_7900XTX_AV=$av ET_VK_SDPA_PERF_RUNS=20,8 $T/gl.sh $S/test_llama_microbench --sdpa --json-out=${log%.log}.json > $log 2>&1
   /usr/bin/python3 - "${log%.log}.json" "$r" "$p" >> $OUT <<'PY'
 import json, sys, time

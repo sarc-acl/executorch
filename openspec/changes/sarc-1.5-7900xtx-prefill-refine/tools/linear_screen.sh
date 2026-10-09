@@ -13,7 +13,7 @@ n=${#KS[@]}
 for r in $(seq 1 $R); do for i in $(seq 0 $((n - 1))); do k=${KS[$(( (i + r - 1) % n ))]}
   grep -q "^$r,$k," $OUT && continue
   log=$L/r$r-$k.log; e=""; [[ $k != table ]] && e="${V[$F]}=$k"
-  t0=$SECONDS; while (( $(gtemp) > 55 && SECONDS - t0 < 300 )); do sleep 5; done
+  t0=$SECONDS; while (( $(gtemp_core) > 55 && SECONDS - t0 < 300 )); do sleep 5; done
   env $(cat "$BASE") $e $T/gl.sh $S/test_llama_microbench --linear --regime=prefill --scheme=$F --storage=texture3d --skip-correctness \
     --json-out=${log%.log}.json > $log 2>&1
   /usr/bin/python3 - "${log%.log}.json" "$r" "$k" >> $OUT <<'PY'

@@ -11,7 +11,7 @@ n=${#PAIRS[@]}
 for r in $(seq 1 $R); do for i in $(seq 0 $((n - 1))); do p=${PAIRS[$(( (i + r - 1) % n ))]}
   grep -q "^$r,${p//,/+}," $OUT && continue
   log=$L/r$r-${p//,/+}.log
-  t0=$SECONDS; while (( $(gtemp) > 55 && SECONDS - t0 < 300 )); do sleep 5; done
+  t0=$SECONDS; while (( $(gtemp_core) > 55 && SECONDS - t0 < 300 )); do sleep 5; done
   env $BASE ET_VK_SARC_780M_SDPA_FUSED=$p ET_VK_SDPA_PERF_RUNS=20,8 $T/gl.sh $S/test_llama_microbench --sdpa --json-out=${log%.log}.json > $log 2>&1
   /usr/bin/python3 - "$log" "$r" "$p" >> $OUT <<'PY'
 import re, statistics as st, sys, time, json

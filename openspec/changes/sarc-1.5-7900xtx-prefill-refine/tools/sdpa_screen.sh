@@ -10,7 +10,7 @@ n=${#PS[@]}
 for r in $(seq 1 $R); do for i in $(seq 0 $((n - 1))); do p=${PS[$(( (i + r - 1) % n ))]}
   grep -q "^$r,$p," $OUT && continue
   log=$L/r$r-$p.log; e=""; [[ $p != table ]] && e="ET_VK_SARC_DEV_PROFILE=$p"
-  t0=$SECONDS; while (( $(gtemp) > 55 && SECONDS - t0 < 300 )); do sleep 5; done
+  t0=$SECONDS; while (( $(gtemp_core) > 55 && SECONDS - t0 < 300 )); do sleep 5; done
   env $(cat "$BASE") $e ET_VK_SDPA_PERF_RUNS=20,8 $T/gl.sh $S/test_llama_microbench --sdpa --json-out=${log%.log}.json > $log 2>&1
   /usr/bin/python3 - "${log%.log}.json" "$r" "$p" >> $OUT <<'PY'
 import json, sys, time

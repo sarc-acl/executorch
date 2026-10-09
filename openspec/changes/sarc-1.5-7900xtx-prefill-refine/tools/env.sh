@@ -24,6 +24,9 @@ if [[ -e $T/ON_GPU_HOST ]]; then
   gtemp() { local a b c; a=$(<$HW/temp1_input); b=$(<$HW/temp2_input); c=$(<$HW/temp3_input)
     echo $(( (a > b ? (a > c ? a : c) : (b > c ? b : c)) / 1000 )); }
   VERIFY=$A/sarc-tools/verify.sh     # the unmodified sarc/tools/verify.sh of the working copy, copied by sync-tools.sh (sha256 in sync.log)
+  # cool-start waits (owner decision 2026-10-08 22:13 UTC): core temperatures only, edge (temp1) and junction (temp2); the memory sensor (temp3)
+  # reads about 46 to 50 C at idle on this card and made every 48 C wait run its full cap. gtemp (max of all three) stays for the per-run cooling and the records.
+  gtemp_core() { local a b; a=$(<$HW/temp1_input); b=$(<$HW/temp2_input); echo $(( (a > b ? a : b) / 1000 )); }
   export PATH=$(dirname "$A")/bin:$PATH     # glslc, spirv-dis, spirv-val of the GPU host's bin directory (not needed to run)
 else
   WHERE=ws; ET=$(cd "$T/../../../.." && pwd); A=$(dirname "$ET")/.artifacts

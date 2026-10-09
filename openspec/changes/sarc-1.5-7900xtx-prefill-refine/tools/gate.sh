@@ -1,6 +1,6 @@
 #!/bin/bash
 # gate.sh <session> "<cand env>" [sdpa] [reps]: the gate of one staged candidate (stage.sh), one GPU job at a time:
-#   1. wait until the GPU is at most idle + 3 C (48 C; at most 30 min), then e2e5.sh parent vs candidate (<reps> valid
+#   1. wait until the GPU core (edge and junction, gtemp_core) is at most 48 C (at most 30 min), then e2e5.sh parent vs candidate (<reps> valid
 #      runs per cell, next token on the timed, the real-text and the unaligned prompt)
 #   2. with "sdpa": test_llama_microbench --sdpa-correctness-only, tiers all, extended and full, 12 passes each with the
 #      candidate env, one control pass each without it (the parent env)
@@ -15,10 +15,10 @@ st "gate start reps=$REPS sdpa=$SDPA env=[$ENVS]"
 eval "$($T/hold.sh vars)"
 while :; do
   $T/hold.sh wait "gate.sh $S: timed session"
-  t0=$SECONDS; while (( $(gtemp) > 48 && SECONDS - t0 < 1800 )); do sleep 10; done
+  t0=$SECONDS; while (( $(gtemp_core) > 48 && SECONDS - t0 < 1800 )); do sleep 10; done
   [[ -e $HOLD ]] || break
 done
-echo "prestart_temp=$(gtemp) waited=$((SECONDS - t0))s $(date -u +%FT%TZ)" > $D/prestart.txt
+echo "prestart_temp=$(gtemp_core) (max of all three: $(gtemp)) waited=$((SECONDS - t0))s $(date -u +%FT%TZ)" > $D/prestart.txt
 $T/e2e5.sh --stage $D --out raw --reps $REPS > $D/e2e5.out 2>&1
 /usr/bin/python3 $T/summarize.py $D/raw $REPS > $D/raw/summary.csv 2>&1
 st "timed session done"
