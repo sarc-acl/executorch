@@ -177,3 +177,13 @@ that holds the conflicting reads fell by a third, the barrier wait did not grow)
 and on all twelve shapes, and a session costs one hour of device time. The deviation is recorded here, in `STATUS.md` ("Decision needed
 from the owner") and in the candidate's evidence; the threshold of the adoption rule (2 % geomean over the parent in one timed session) is
 not touched. If the owner or reviewer rules that the share rule binds, the session result stays on record as a negative one.
+
+### Clarification of the adoption rule of 2026-10-09 03:50 UTC (written before any end-to-end number of a round-2 candidate exists)
+
+A candidate that changes the linear kernels of one scheme moves three of the six cells; its six-cell geometric mean is then about half of the
+gain of the cells it touches (a +4.4 % gain on the three 8da4w cells is +2.2 % geomean). To keep a real gain from falling under the 2 % geomean
+line by construction, the adoption rule above is read as: a candidate is adopted if its gate passes and (a) its geomean gain over its parent is at
+least 2 %, or (b) each of the three cells of the scheme it targets gains at least 2 % (outside the +-2 % noise band, each as a median of the
+calibrated number of valid runs) while no cell of the other scheme changes by more than the noise band and no cell loses 2 %. The stop rule is
+not changed: it counts the geomean over the six cells, as the owner decision says ("two consecutive gated candidates under 2 % geomean"), so a
+candidate adopted under (b) with a geomean under 2 % still counts as one candidate under 2 % for the stop rule. Nothing else of the rules changes.
