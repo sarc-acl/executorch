@@ -4,8 +4,8 @@
 # (.git/modules), never from a working tree. Writes $A/src/7900xtx/<tag>/{COMMIT,MANIFEST}. A tag is exported once.
 set -euo pipefail
 source "$(dirname "$(readlink -f "$0")")/env.sh"
-C=$(git -C $ET rev-parse "$1^{commit}"); TAG=$2; D=$A/src/7900xtx/$TAG
-[[ -e $D ]] && { echo "export $TAG exists" >&2; exit 2; }
+C=$(git -C $ET rev-parse "$1^{commit}"); TAG=$2; L=$A/src/7900xtx/$TAG; D=${BIG:+$BIG/src/7900xtx/$TAG}; D=${D:-$L}   # BIG (env.local): the scratch disk; $L stays valid as a symlink
+[[ -e $L || -e $D ]] && { echo "export $TAG exists" >&2; exit 2; }
 mkdir -p $D/executorch
 git -C $ET archive $C | tar -x -C $D/executorch
 echo ". $C" > $D/MANIFEST
@@ -20,3 +20,4 @@ sub() { # sub <repo dir> <commit> <prefix>
 }
 sub $ET $C ""
 echo $C > $D/COMMIT; echo "exported $C -> $D ($(wc -l < $D/MANIFEST) entries)"
+[[ $D != $L ]] && ln -s $D $L

@@ -4,12 +4,13 @@
 # hold each. CPU work of the control workstation only; the GPU host builds nothing (R5).
 set -uo pipefail
 source "$(dirname "$(readlink -f "$0")")/env.sh"
-C=$1; TAG=$2; S=$A/src/7900xtx/$TAG; O=$A/build/7900xtx/$TAG
-[[ -e $O ]] && { echo "build $TAG exists: a rebuild takes a new tag" >&2; exit 2; }
+C=$1; TAG=$2; S=$A/src/7900xtx/$TAG; O=$A/build/7900xtx/$TAG; OR=${BIG:+$BIG/build/7900xtx/$TAG}; OR=${OR:-$O}   # BIG (env.local): the scratch disk
+[[ -e $O || -e $OR ]] && { echo "build $TAG exists: a rebuild takes a new tag" >&2; exit 2; }
+mkdir -p $(dirname $OR)
 $T/export_commit.sh $C $TAG > $A/build/7900xtx/$TAG.export.log 2>&1 || { echo "export failed" >&2; exit 3; }
 { date -u +%FT%TZ; echo "commit $(cat $S/COMMIT)"; echo "icd: AMDVLK 2025.Q2.1 on the GPU host (/etc/vulkan/icd.d/amd_icd64.json)"; } > $A/build/7900xtx/$TAG.src.txt
 touch $A/.building
-$T/hold.sh run "build $TAG" nice -n 10 $T/build-native.sh $S/executorch $O > $A/build/7900xtx/$TAG.log 2>&1; echo "rc=$? main" >> $A/build/7900xtx/$TAG.src.txt
-$T/hold.sh run "build $TAG-traced" nice -n 10 $T/build-native.sh --traced --no-tests $S/executorch $O-traced > $A/build/7900xtx/$TAG-traced.log 2>&1; echo "rc=$? traced" >> $A/build/7900xtx/$TAG.src.txt
+$T/hold.sh run "build $TAG" nice -n 10 $T/build-native.sh $S/executorch $OR > $A/build/7900xtx/$TAG.log 2>&1; echo "rc=$? main" >> $A/build/7900xtx/$TAG.src.txt
+$T/hold.sh run "build $TAG-traced" nice -n 10 $T/build-native.sh --traced --no-tests $S/executorch $OR-traced > $A/build/7900xtx/$TAG-traced.log 2>&1; echo "rc=$? traced" >> $A/build/7900xtx/$TAG.src.txt
 rm -f $A/.building
-cp $S/MANIFEST $O/EXPORT-MANIFEST; date -u +%FT%TZ >> $A/build/7900xtx/$TAG.src.txt; echo BUILD_BOTH_DONE >> $A/build/7900xtx/$TAG.src.txt
+cp $S/MANIFEST $OR/EXPORT-MANIFEST; [[ $OR != $O ]] && { ln -s $OR $O; ln -s $OR-traced $O-traced; }; date -u +%FT%TZ >> $A/build/7900xtx/$TAG.src.txt; echo BUILD_BOTH_DONE >> $A/build/7900xtx/$TAG.src.txt
