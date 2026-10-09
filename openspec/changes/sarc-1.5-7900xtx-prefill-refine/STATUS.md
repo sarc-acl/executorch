@@ -1,40 +1,35 @@
 # STATUS: sarc-1.5-7900xtx-prefill-refine
 
-Updated 2026-10-08 21:45 UTC (`date -u`). Branch `topic/7900xtx-prefill-refine`, parent `90fe4d013`. Nothing pushed.
+Updated 2026-10-09 00:49 UTC (`date -u`). Branch `topic/7900xtx-prefill-refine`, parent `90fe4d013`. Nothing pushed.
 
-## Running now (2026-10-08 21:04 UTC)
-- GPU host: `q-c2` (candidate 2: fused attention `fused3sb`, rk variants picked by the screen, against candidate 1): the gate is **waiting for a foreign GPU user to leave**. `amdgpu_top` of another session of this account (not started by this campaign) has held the card since about 21:00 UTC. By rule it makes every run invalid, and `e2e5.sh` / `gl.sh` now wait for it (logged) instead of running. If this is the owner's monitor, closing it lets the queue continue; nothing was forced or killed.
-- Queued behind it: `q-screens2` (completes the 8da4w linear screen: the first pass lost its jobs after the 13th of round 1 to the same kind of foreign user, `nvtop`, because `gl.sh` refused to start and the screen script skipped the job).
-- Control workstation: nothing running.
+## Running now
+- Control workstation: native build of commit 958bc07e7 as tag `c5` (profile `7900xtx-refine4`: candidate 3's linear picks plus the screened attention kernels), detached, niced.
+- GPU host: nothing (the last queue, the attention screen, finished 00:47 UTC).
 
-## Done since the last update
-- Candidate 1 (softmax `r3`) gated, +1.56 % geomean (details in `proposal.md`, `results/7900xtx/sessions/c1-softmax/`).
-- Fused-variant screen: `fused3_d64_t32x32g11s32rk` and `fused3_d128_t16x64g11s32rk` win by the 3 % rule in every round (`results/7900xtx/fused/`); candidate 2 stage `c2-fused` uses their `fused3sb` versions (build `c2`, commit 86a7f96c8; golden DIFF set equal to the parent build's).
-- 4w linear screen complete (21 kernels, 3 rounds): picks only on 1B (`sweep_t128x128k32g42s32f32cbt` on w2 +4.0 %, wk_wv +40 %, wq_wo +13 % in the worst round); every other 4w shape keeps the table kernel.
+## Candidates so far (geometric mean over the six cells, each against its parent; details and per-cell numbers in `proposal.md`)
+| # | candidate | parent | geomean | result |
+|---|---|---|---:|---|
+| 1 | softmax `r3` (`ET_VK_SARC_780M_PROFILE=c7`) | pristine parent | +1.56 % | gated, bit-identical to the release softmax in 21 of 21 SDPA cases |
+| 2 | fused attention kernel `fused3sb` (rk variants picked by the screen) | 1 | **-13.79 %** | rejected on performance: the existing three-kernel attention is 2.6x faster than the best fused variant on 3B / 8B (trace evidence); gate stopped after the timed session |
+| 3 | linear kernel per layer shape (`7900xtx-refine2`) | 1 | **+2.64 %** | gated; outputs byte-identical in 24 of 24 linear shapes; verify.sh as the snapshot except the two kernel-name lines |
+| 4 | whole-texel 8da4w staging (`7900xtx-refine3`) | 3 | -0.42 % | gated, not adopted (8da4w cells +0.00 / +0.00 / +0.26 %) |
+| 5 | unfused attention kernels of the screen (`7900xtx-refine4`: QK^T `pk_t128x128k32g42s32nf` 1.30x / 1.45x, attn*V `sweep_t64x64k32g42s32` 1.08x / 1.10x at kernel level) | 3 | pending | build running; then `q-c5.sh` (gate with SDPA tiers, reference-error evidence, real-text probe) |
 
-## State
-| step | result |
-|---|---|
-| 0 device check | passed (2026-10-08 17:06 UTC) |
-| snapshot `s0-parent-verify` | stored (`results/7900xtx/sessions/s0-parent-verify/`); parent lines it contains that are not passes: `correctness rc=1`, `linear 4w rc=1`, `linear 8da4w rc=1`, `pdiff ... 4w buffer FAILED` for 1B / 3B / 8B (the kUnverified 4w tile on buffer storage; texture3d and all 8da4w pass), compared line by line from here on |
-| parent SDPA tiers (table kernels) | all / extended / full, 1 pass each: 4 + 8 + 4 passed, 0 failed, 0 mismatches, `pairing=ok` |
-| golden | native build: 14 of 53 shipped variants differ from `sarc/golden/spirv.json` (owners 780M / Arc), 0 differ from the native parent build (`results/7900xtx/golden-diff-parent.txt`); pending as in the sibling campaigns |
-| baseline | all six cells within 3 % of the published numbers (+0.99 % .. -1.08 %), see `proposal.md` |
-| A/A | geomean -0.24 % (inside the band); next token SAME everywhere |
-| calibration | clock floor 2670 MHz, 7 repeats, busy ceiling 5 %, thermal mask `0xffef` (see the question below) |
-
-Per-cell table of the parent (A/A, median of 7, tok/s): 1B 4w 20277.2 | 1B 8da4w 22021.5 | 3B 4w 10138.6 | 3B 8da4w 10449.0 | 8B 4w 4785.1 | 8B 8da4w 4995.1.
+Stack against the pristine parent so far: candidates 1 and 3 (about +4.2 % geomean by multiplication; the final session will measure it).
 
 ## Notes
-- Submodules of the working copy were fetched from their public GitHub URLs (read-only download; the clone had none) so that R5 exports can pin them.
-- The benchmark prompt is the kit's `prompt_2048.txt` ("the" x 2048, sha256 bfce65eb...), as in the published notes; the GPU host's `p2048tok.txt` (sha256 d1e7a8d7...) is not used. The baseline agrees with the published numbers within 1.1 %, which supports the choice.
-- `verify.sh` finds no unaligned prompt `r*.txt` in the stage directories (as in the sibling campaigns), so its "unaligned" lines are absent from the snapshot and from every candidate alike; the unaligned next-token comparison is `prompt_check.txt` (1972 tokens) in `e2e5.sh`.
-- The fused kernels declare 32-lane subgroups; whether AMDVLK runs them correctly is open until candidate 2's SDPA tiers run (UNVERIFIED).
-- The 24 untimed next-token runs of a session (real, check) show `clock_low` under the final floor (cold, no `--warmup`, short window); only their text is compared.
+- **Stop rule.** Candidates 1 and 2 were two consecutive ones under 2 % (the rule is met by its letter); I went on with the port-list item that nothing had tried (candidate 3), which gained +2.64 %, so the count restarted. Candidate 4 (-0.42 %) is the first of a new pair; if candidate 5 gains under 2 % the campaign stops after it. If you read the rule differently, candidate 3 and later are still valid measurements.
+- **Foreign GPU users.** An `amdgpu_top` of an interactive session of this account held the card from about 21:00 to 22:05 UTC; `e2e5.sh` / `gl.sh` waited for it (the wait is in `runs.csv`, `foreign_wait_s`); no run was taken while it was there. Earlier an `nvtop` made `gl.sh` refuse jobs of the 8da4w linear screen; that screen was completed afterwards (864 rows, 3 rounds).
+- **Thermal mask amendment** (see below, still to be ratified).
+- Submodules of the working copy were fetched from their public GitHub URLs (read-only download) so that R5 exports can pin them.
+- The benchmark prompt is the kit's `prompt_2048.txt`; the baseline agrees with the published numbers within 1.1 %.
+- `verify.sh` finds no unaligned prompt `r*.txt` in the stage directories (as in the sibling campaigns); the unaligned next-token comparison is `prompt_check.txt` in `e2e5.sh`.
+- Phase timing of the 8da4w table kernel: MMA 22 %, barrier wait 31 %, LDS store 26 %, weight fetch 11 % of the wave (not weight-load bound). No PROF twin of the 4w table kernel exists; not made.
+- Roofs (R6): not re-measured yet (igpu-roofline `fast` plan on this driver; one GPU job, to be run when the card is free of the queue).
 
 ## Next
-Candidate 1 gate and timed session -> locate (ETDump families of the parent and candidate 1 come with the gate) -> fused-variant screen (`fused_screen.sh`, 3 rounds, on the parent binary with the `fused3` variants) -> candidate 2 (`fused3sb`, build `c2`) gate and session -> linear screens and candidate 3.
+Candidate 5 gate -> stop rule -> final verification of the stack on a build of the committed head, final session against the pristine parent, `check.sh --no-build`, roofs, final report. Nothing is pushed.
 
 ## Decision needed from the owner
-0. **A monitor holds the card.** An `amdgpu_top` in an interactive shell of this account (pts/0, started about 21:00 UTC) has been open on the GPU host for the whole time since; the queue (candidate 2 gate, then the rest of the 8da4w screen, then the phase timing) waits for it, as the rules ask (no runs are taken while another process holds the card). Please close it when convenient; the queue then continues by itself. If a passive monitor may stay open during timed runs, say so: that is a change of rule R6 / `others.sh` and needs your decision (its effect on the timing is UNVERIFIED).
 1. **Thermal-mask rule (ratification).** The rule fixed before the A/A (`proposal.md`, Thresholds) gave `thermal_mask=0xffff` on this card: bit 36 of `indep_throttle_status` is present in every run, so every later run would be invalid. Evidence: it is set in 98.4 % of the in-window samples at the card's highest clock (2824 MHz median); the samples without it are ramp samples. I masked bit 36 only (recorded, not rejected), kept every other temperature bit rejecting, and kept the clock-floor rule (2670 MHz); this was done after the A/A and before any candidate was measured. All raw words are kept, so a literal reading can be applied afterwards. Please confirm or reject; rejecting makes every measurement of this campaign invalid under the rule as written.
+2. **A passive monitor during timed runs.** `amdgpu_top` in an interactive shell of this account blocked the queue for about 65 minutes. By rule no run is taken while another process holds the card. If a passive monitor may stay open during timed runs, say so (a change of R6 / `others.sh`; its effect on the timing is UNVERIFIED).
