@@ -16,7 +16,8 @@ it; GT frequency policy as found and unchanged (`min_freq` 1200, `max_freq` 2850
 
 ## Running now
 
-Nothing. Last chain: `tools/chain11.sh b580-fused1 e1e450530`, `CHAIN11_DONE` at 09:15 UTC.
+Nothing. Last chain: `tools/chain11.sh b580-fused1 e1e450530`, `CHAIN11_DONE` at 09:15 UTC. Branch pushed to
+`origin/topic/b580-fused-port` at 09:30 UTC (no force, no pull request).
 
 ## Final result (sessions `s4-final` and `s5-pristine`, 2026-10-09 07:28 to 08:49 UTC, build `topic7` = `e1e450530`)
 
