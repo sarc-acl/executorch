@@ -1,15 +1,64 @@
 # STATUS: sarc-1.5-4070ti-fused-port
 
-**2026-10-08 22:45 UTC. Candidate 1 (the fused attention kernel, profile `4070ti-fused1`, build `topic2` =
-`6217da0a9`) is gated: `s2-c1` GATE_ACCEPTED, +11.64 % geomean over the parent. It is a one-pass kernel, so by
-task section 6.4 no second port item is left on this card: the campaign closes with candidate 1 as its only
-gated candidate. Running now, detached (`<artifact-dir>/queue/q05-roof-pristine.sh`): igpu-roofline `fast`
-(fresh roofs), then the closing timed session `s3-pristine` (final stack against the pristine `dev/1.5` state,
-7 repeats, about one hour).**
+**2026-10-09 00:05 UTC. FINISHED; nothing of this campaign is running, the GPU is idle. The fused attention
+kernel of the Radeon 780M is ported to the RTX 4070 Ti SUPER as profile `4070ti-fused1` and is the only gated
+candidate, as task section 6.4 provides for a one-pass kernel: gate `s2-c1` GATE_ACCEPTED (plain pass),
+**+11.64 % geomean over the parent** (the first campaign's stack `4070ti-refine1`), and the closing session
+`s3-pristine` gives **+63.53 % geomean over the pristine `dev/1.5` state** (the first campaign ended at
++46.35 %). Final configuration: `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=4070ti-fused1` on this branch,
+build `topic2` = `6217da0a9`, no local patch; the head differs from that commit only under `openspec/`.
+`proposal.md` has the full account.**
 
-Next: read `s3-pristine`, write the closing report, `sarc/tools/check.sh --no-build`, push.
+Next step: none in this campaign. Blocking: nothing. No decision is needed from the owner; for the owner's
+review before any promotion: the release-zone entry point of the fused node (hook D4.3, commit `35e3728c9`,
+49 lines, larger than a switch).
 
-Blocking: nothing.
+## Closing numbers
+
+tok/s, median of 7 valid interleaved runs per arm (`results/4070ti/sessions/{s2-c1,s3-pristine}/`; every median,
+gain and geomean recomputed from `runs.csv` with separate code: the same):
+
+| cell | pristine `dev/1.5` | published | parent `4070ti-refine1` | `4070ti-fused1` (`s2-c1` / `s3-pristine`) | over the parent | over pristine |
+|---|---:|---:|---:|---|---:|---:|
+| 1B 4w | 19692.3 | 19692.3 | 29681.2 | 35310.3 / 35310.3 | +18.97 % | +79.31 % |
+| 1B 8da4w | 21113.4 | 20898.0 | 32507.9 | 39384.6 / 39384.6 | +21.15 % | +86.54 % |
+| 3B 4w | 8789.7 | 8752.1 | 12962.0 | 14027.4 / 14027.4 | +8.22 % | +59.59 % |
+| 3B 8da4w | 9706.2 | 9660.4 | 14948.9 | 16384.0 / 16516.1 | +9.60 % | +70.16 % |
+| 8B 4w | 4501.1 | 4491.2 | 6023.5 | 6380.1 / 6380.1 | +5.92 % | +41.74 % |
+| 8B 8da4w | 5031.9 | 5031.9 | 6989.8 | 7474.5 / 7474.5 | +6.93 % | +48.54 % |
+| geomean | | | | | **+11.64 %** | **+63.53 %** |
+
+`s3-pristine` (2026-10-08 23:06 to 23:59 UTC; parent build with no environment against `topic2` with
+`4070ti-fused1`): 84 timed and 36 next-token runs, all rc 0 and valid, none replaced; clock floor 2517 MHz
+applied, lowest per-run median 2565 MHz; 0 slow loads of 120; `gate_check.py session`: ACCEPT, 0 findings; next
+token SAME in 24 of 24 rows against the stock attention kernels as well. The pristine arm is within 1.03 % of
+the published numbers in every cell. It is a timed session, not a gate.
+
+Fresh roofs (igpu-roofline `fast`, run `roofline/2026-10-08-fast`, 22:40 to 23:05 UTC, driver 615.71.09, rc 0):
+matrix fp16 182.8 TFLOP/s, fp16 with fp32 accumulator 92.3, int8 369.2 TOP/s; DRAM read 714, write 641, copy
+646 GB/s. The fused kernel runs at 53 % (d64) and 59 to 63 % (d128) of the fp16 -> fp32 matrix roof; the
+unchanged linear kernels at 64 to 65 % (4w) and 39 to 43 % (8da4w) of theirs (`results/4070ti/roofline/`).
+
+`sarc/tools/check.sh --no-build` on the final tree (2026-10-09 00:00 UTC):
+
+```
+== 1 zone rule vs origin/release/1.5
+== 2 twin wrappers
+== 3 test_sarc_select
+test_sarc_select: PASS (1240 checks, 31 rows, 0 candidates, dev zone absent, unverified off)
+[sarc_dev] overrides active: unverified=1 variant= dq8ca_variant=
+test_sarc_select: PASS (1536 checks, 33 rows, 204 candidates, dev zone linked, unverified on)
+check.sh: PASS
+```
+
+It does not report the release-zone hook: `impl/sarc/` is inside the zones it checks and `impl/SDPA.cpp` is
+listed in `sarc/HOOKS`. The four files (`impl/SDPA.cpp`, `impl/sarc/SdpaCoopmat.cpp`, `impl/sarc/SdpaCoopmat.h`,
+`impl/sarc/Select.h`, commit `35e3728c9`) are named here under the owner decision of 2026-10-05 (D4.3).
+`tools/test_gate_check.py`: 46 tests pass. Files changed against the parent outside the dev zone and this
+directory: those four and nothing else; nothing under `sarc/`.
+
+All 482 `llama_main` calls of the campaign ended with rc 0; no runner abort, no device loss, no foreign GPU
+process, no Xid in the kernel log since the start.
 
 ## Candidate 1 gated: `s2-c1` GATE_ACCEPTED 2026-10-08T22:39:57Z (all steps passed, plain pass)
 
@@ -122,12 +171,9 @@ Ungated end-to-end quick look (`quick_e2e.sh`, 2 runs per label, labels interlea
 `results/4070ti/screens/quick1.csv`): 1B +20.9 % / +21.6 %, 3B +8.6 % / +7.9 %, 8B +5.8 % / +6.9 % (4w / 8da4w),
 geomean +11.75 %. A screen for deciding what to gate, not a result.
 
-(Correction: the first version of this file, commit `e7a157bbe`, carried the time 20:30 UTC; it was written at
-about 19:45 UTC.)
-
 ## Per-cell numbers against the parent
 
-Candidate 1: the table at the top. Baseline and A/A, session `s1-aa` (parent `6050b1287` against `topic1` = `35e3728c9`,
+Candidate 1: the tables above. Baseline and A/A, session `s1-aa` (parent `6050b1287` against `topic1` = `35e3728c9`,
 the hook commit; both arms `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=4070ti-refine1`; tok/s, median of 5
 valid interleaved runs per arm; `results/4070ti/sessions/s1-aa/`):
 
@@ -196,3 +242,6 @@ All from exports of the commit and its 30 pinned submodules (`tools/mktree.sh`),
 ## Incidents
 
 None. No device loss, no foreign GPU process, no aborted run.
+
+Correction kept on record: the first version of this file (commit `e7a157bbe`) carried the time 20:30 UTC; it
+was written at about 19:45 UTC.
