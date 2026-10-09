@@ -142,7 +142,8 @@ the worked description.
 The B70 confirmation measured decode 0 to 2.5 % slower with the fused node present, and the B580 record shows
 the same direction. Prefill was the goal of the port campaigns, so nobody traced it. Before promotion: one
 decode trace per device family with and without the fused profile, and, if the loss is real, the fused node
-must leave the decode path untouched. Open: the owner has not said whether to do this now or with M2e.
+must leave the decode path untouched. Owner decision 2026-10-09: not investigated now; it is done here, before
+promotion, with M2e.
 
 ### M3. Merge the dev zone, one branch at a time
 
