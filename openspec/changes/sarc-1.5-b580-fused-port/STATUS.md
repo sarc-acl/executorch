@@ -1,10 +1,15 @@
 # sarc-1.5-b580-fused-port: status
 
-**2026-10-09 01:00 UTC — candidate 1 (`b580-fused1`, the fused attention kernel in a multi-subgroup form):
-`GATE_PASS`, a plain pass (next token SAME in all 18 cell x prompt comparisons), **+9.18 % geomean** over the
-parent `b580-refine3` (1B +17.1 / +19.0 %, 3B +5.4 / +6.8 %, 8B +3.5 / +4.3 %; 4w / 8da4w), 84 timed runs, all
-valid, on the desktop in use. Its reference-error evidence, logits probe and decode comparison are running;
-candidate 2 is queued behind them. The specification quotes for the shared-memory reading are still owed.**
+**2026-10-09 01:26 UTC — the desktop was rebooted at 01:17 UTC (an orderly `systemd` reboot, not started by
+this campaign; kernel 7.2.8-200 -> 7.2.9-200, Mesa 26.2.3 unchanged, card present, GT frequency policy as
+before). It stopped chain 8 inside the logits probe of `s2-c1` and chain 9 while it waited; nothing measured was
+lost (all 450 saved logits files have the full size). `tools/chain10.sh` resumed at 01:21 UTC. Candidate 1
+(`b580-fused1`, the fused attention kernel in a multi-subgroup form): `GATE_PASS`, a plain pass (next token SAME
+in all 18 cell x prompt comparisons), **+9.18 % geomean** over the parent `b580-refine3` (1B +17.1 / +19.0 %, 3B
++5.4 / +6.8 %, 8B +3.5 / +4.3 %; 4w / 8da4w), 84 timed runs, all valid, on the desktop in use. Its error against
+the fp32 reference is not larger than the parent's in all 4 production-shape cases and all 8 `extended` cases;
+in 1 of 5 synthetic `peaked` cases its maximum error is larger (rms smaller). The specification quotes are in;
+no quote contradicts the kernel. Candidate 2 follows in the same chain.**
 
 Branch `topic/b580-fused-port`, parent `51d9d757f` with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine3`.
 Host `fedora` (the owner's desktop), Arc B580 = PCI `0000:03:00.0`, Vulkan device 0, `ETVK_DEVICE_INDEX=0`, lock
@@ -17,14 +22,41 @@ desktop session idle and locked at 20:00 UTC.
 
 Detached, one GPU job at a time, no idle wait (owner decision 2026-10-09 00:22 UTC):
 
-- `tools/chain8.sh ... s2-c1 b580-fused1` (`.artifacts/logs/chain8-s2-c1.status`): the gate is done; remaining
-  units: 12 passes each of tiers `peaked` and `fused`, `c1-ref6` (reference error on the staged binary), the
-  logits probe of `s2-c1`, `decide.py`, the decode comparison, collection. Ends `CHAIN8_DONE s2-c1`.
-- `tools/chain9.sh` (`.artifacts/logs/chain9.status`), waiting for chain 8: candidate 2, session `s3-c2`
-  (`b580-fused2` against candidate 1, both build `topic6`): softmax look, `gate_sdpa.sh` with 7 repeats (timed),
-  reference error, probe, decision, decode. Ends `CHAIN9_DONE`.
+- `tools/chain10.sh` (started 01:21 UTC; `.artifacts/logs/chain8-s2-c1.status`, then `chain9.status`): the units
+  the reboot cut off: the logits probe of `s2-c1` (resumes; saved prompts are skipped), `decide.py`, the decode
+  comparison, collection; writes `CHAIN8_DONE s2-c1`; then `tools/chain9.sh` unchanged: candidate 2, session
+  `s3-c2` (`b580-fused2` against candidate 1, both build `topic6`): softmax look, `gate_sdpa.sh` with 7 repeats
+  (timed), reference error, probe, decision, decode. Ends `CHAIN9_DONE`.
+
+If the machine reboots again, both are gone; restart with `chain10.sh` (every unit is resumable or is repeated
+whole; a half-run session directory goes to `superseded/` first).
 
 No build may start on this host while they run.
+
+From 01:17 UTC on the kernel is 7.2.9-200.fc44 (7.2.8-200 before): the baseline and A/A (`s1-aa2`), the screens
+and session `s2-c1` were measured on 7.2.8; `s3-c2` and the closing sessions run on 7.2.9. Every session
+compares two arms interleaved on one kernel; the closing session against the parent shows whether the parent's
+absolute numbers moved with it.
+
+### Candidate 1: error against the fp32 reference (`c1-ref6`, staged binary of `s2-c1`, 01:02 UTC)
+
+`.artifacts/raw/c1-ref6/{full,extended,peaked}.csv` (copied to `results/` by the collection); rms / maximum
+absolute error, parent's kernels -> `b580-fused1`, 0 mismatches in every case of both arms:
+
+| tier | case | parent | `b580-fused1` | not larger (rms / max) |
+|---|---|---|---|---|
+| `full` | 1B heads, S = 2048 | 2.76e-5 / 1.19e-3 | 2.05e-5 / 7.2e-4 | yes / yes |
+| `full` | 3B heads, S = 2048 | 2.79e-5 / 1.15e-3 | 2.05e-5 / 7.1e-4 | yes / yes |
+| `full` | 8B heads, S = 2048 | 2.76e-5 / 1.06e-3 | 2.02e-5 / 7.9e-4 | yes / yes |
+| `full` | 8B heads, S = 1024 at input_pos 1024 | 1.29e-5 / 1.24e-4 | 8.96e-6 / 6.9e-5 | yes / yes |
+| `extended` | 8 cases | | | yes / yes in all 8 |
+| `peaked` | `peaked_tiny_gqa_s256` | 4.06e-4 / 2.32e-3 | 3.77e-4 / **2.50e-3** | yes / **no** |
+| `peaked` | the other 4 cases | | | yes / yes |
+
+The gate criterion of decision D3 is the production-shape cases (`full`): met (`SDPA_ERROR_OK`), and it is not
+needed for acceptance, because no next token moved. The `peaked` tier is synthetic (sharp rows, to exercise the
+rescale of the one-pass form) and is reported, not a gate item (`chain8.sh`, fixed before the run): in one of
+its five cases the candidate's maximum error is 8 % above the parent's while its rms error is 7 % below.
 
 ## Result so far: candidate 1, `b580-fused1`: GATE_PASS, +9.18 % geomean
 
@@ -57,9 +89,7 @@ environment: identical to the parent snapshot `s0-parent-verify` line by line wi
 and 4 of 4 rank-3 correctness cases, default vs tiled SAME on both prompts for both schemes, decode 31 tokens.
 Next token parent vs candidate SAME in all six cells on all three prompts, so no next-token item needs the
 near-tie or the reference-error decision; the candidate does change the arithmetic, and its error against the
-fp32 reference is reported below as soon as `c1-ref6` has run on the staged binary (on the first build of the
-same kernel family, `c1-ref` on `topic1` with the single-subgroup variants: not larger than the parent's in all
-4 `full` and all 8 `extended` cases).
+fp32 reference is in the table above (`c1-ref6`).
 
 Where the gain comes from (warm ETDump of both arms, ms per 2048-token prefill, attention kernels by name,
 `stage/s2-c1/trace/attention.csv`; everything else in `trace/report/evidence/trace/families.csv`):
@@ -309,33 +339,105 @@ the release-zone pipeline code does not set the full-subgroups flag, so the kern
 `gl_NumSubgroups == G` and `gl_SubgroupSize == 16` and writes NaN rows otherwise (one writer per row), which
 every correctness tier would report. The copy pass `sarc_dev_b580_sdpa_kvt` has no shared memory.
 
-## Owed: specification quotes for the shared-memory reading (owner note 2026-10-09 00:20 UTC)
+## Specification quotes for the shared-memory reading (owner note 2026-10-09 00:20 UTC; looked up 01:25 UTC)
 
-The owner note asks that Vulkan / GLSL semantics be answered from the `vulkan-docs` MCP server and that the
-sentence relied on be quoted here. The server's tools were not present in the actor session that wrote the
-multi-subgroup kernel (two tool searches at 00:09 UTC by this host's clock found none; the note says they appear after the next
-resume), so **the reading above rests on the actor's understanding of the specification, not on quoted text,
-and no quote has been checked yet.** The points to look up and quote, each of which the kernel relies on:
+From the `vulkan-docs` MCP server (pages under `https://docs.vulkan.org`). The sentences were collected by a
+subagent of the actor session reading the index; four of them (marked *) were searched again as exact phrases by
+the actor and found on the page named. **No sentence found contradicts the reading above; two points are not
+covered by a normative sentence in the index, and one requirement of the specification is not met by the
+pipeline code of this branch, the parent's kernels included (finding F1 below).**
 
-1. `barrier()` in a compute shader: that it orders execution of all invocations of the workgroup, and what it
-   guarantees for writes to `shared` variables made before it (with and without `memoryBarrierShared()`).
-2. That `barrier()` must be called in control flow that is uniform for the workgroup (the rescale branch is made
-   uniform through `Gsh` for this reason).
-3. `atomicOr` on a `shared uint` (several lanes set `Gsh` concurrently).
-4. Subgroups of a compute workgroup: `gl_SubgroupID`, `gl_NumSubgroups`, and what the required subgroup size
-   (`VkPipelineShaderStageRequiredSubgroupSizeCreateInfo`) guarantees about full subgroups when the local size
-   is a multiple of it and the full-subgroups flag is not set (the kernel checks at run time instead).
-5. `coopMatLoad` / `coopMatStore` of `gl_ScopeSubgroup` matrices on a `shared` array from several subgroups of
-   one workgroup (disjoint tiles written, the same tiles read).
+1. `barrier()` and writes to `shared` variables.
+   - * "For any given static instance of barrier(), all tessellation control shader invocations for a single
+     input patch must enter it before any will be allowed to continue beyond it, or all compute shader
+     invocations for a single workgroup must enter it before any will continue beyond it."
+     (`glsl/latest/builtinfunctions.md`, /glsl/latest/chapters/builtinfunctions.html)
+   - "A barrier() affects control flow but only synchronizes memory accesses to shared variables and
+     tessellation control output variables." (same page)
+   - "In compute shaders, barrier() is equivalent to controlBarrier() with execution and memory scope equal to
+     gl_ScopeWorkgroup, storage semantics equal to gl_StorageSemanticsShared, and sem equal to
+     gl_SemanticsAcquireRelease." (`glslext/latest/GL_KHR_memory_scope_semantics.md`)
+   - Not normative (tutorial `04_memory_consistency.md`): a `memoryBarrierShared()` before `barrier()` "is
+     redundant". So `SYNC()` = `memoryBarrierShared(); barrier();` orders as the reading assumes through the
+     `barrier()` alone; the first call adds nothing and is kept (it is the 780M kernel's form).
+2. Uniform control flow.
+   - "For compute shaders, the barrier() function may be placed within control flow, but that control flow must
+     be uniform control flow." and "Otherwise, some shader invocations will stall indefinitely, waiting for a
+     barrier that is never reached by other invocations." (`glsl/latest/builtinfunctions.md`)
+   - Checked again in the kernel at `247d08851`: both early returns come before the first `SYNC()` and depend
+     only on `gl_WorkGroupID`, uniforms, `gl_NumSubgroups` ("uniform across the invocation group",
+     `GL_KHR_shader_subgroup`) and `gl_SubgroupSize`; the rescale branch depends on `Gsh` read after a `SYNC()`.
+3. Atomics and data races.
+   - "Atomic memory functions perform atomic operations on an individual signed or unsigned integer stored in
+     buffer object or shared variable storage." and "The contents of the memory being updated by the atomic
+     operation are guaranteed not to be modified by any other assignment or atomic memory function in any shader
+     invocation between the time the original value is read and the time the new value is written."
+     (`glsl/latest/builtinfunctions.md`)
+   - "Let X and Y be operations that access overlapping sets of memory locations M, where X != Y, and at least
+     one of X and Y is a write, and X and Y are not mutually-ordered atomic operations. If there does not exist
+     a location-ordered relation between X and Y for each location in M, then there is a data race.
+     Applications must ensure that no data races occur during the execution of their application."
+     (`spec/latest/memorymodel.md`, /spec/latest/appendices/memorymodel.html)
+   - Consequence for `Gsh`: the concurrent `atomicOr`s are atomic operations; the plain clear by lane 0 and the
+     plain reads are each separated from them by a `SYNC()` (table above), as the second quote requires.
+4. Subgroups of the workgroup.
+   - "If the shader was created with a required subgroup size, the SubgroupSize decorated variable will match
+     that value." (`refpages/latest/SubgroupSize.md`)
+   - * "Full subgroups are required when the X dimension of the workgroup size is a multiple of the reported
+     value of the SubgroupSize built-in, and one of the following is true: The shader was created from SPIR-V
+     with version number of 1.6 or higher. The shader was created with vkCreateShadersEXT and the
+     VK_SHADER_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT flag was set. The shader was created as part of a pipeline
+     and the VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT flag was set." (`spec/latest/shaders.md`)
+   - "If full subgroups are not enabled, some subgroups may be dispatched with inactive invocations that do not
+     correspond to a local workgroup invocation, making the value of index unreliable." and "There is no direct
+     relationship between SubgroupLocalInvocationId and LocalInvocationId or LocalInvocationIndex."
+     (`refpages/latest/SubgroupLocalInvocationId.md`)
+   - What this means here: the fused shaders are SPIR-V 1.3 (header word `00010300` in `build/topic6`; the
+     instance asks for Vulkan 1.1, `vk_api/Runtime.cpp`) and the pipeline does not set the flag, so **the
+     specification does not guarantee full subgroups for this kernel**; the run-time check is what the kernel
+     rests on. It is sufficient: the local size is G x 16 in X (`SdpaB580Fused.cpp`, `LocalWorkGroup(wg, 1, 1)`),
+     and `gl_NumSubgroups == G` with `gl_SubgroupSize == 16` leaves no room for a subgroup with fewer than 16 of
+     the workgroup's invocations. The kernel indexes lanes by `gl_SubgroupID` and `gl_SubgroupInvocationID`
+     only, never by `gl_LocalInvocationIndex` (except in the NaN fallback, where any `WG_TILE_M` distinct
+     invocations do).
+5. Cooperative-matrix loads and stores on `shared` arrays.
+   - "VUID-StandaloneSpirv-Pointer-08973 The Storage Class of the Pointer operand to OpCooperativeMatrixLoadKHR
+     or OpCooperativeMatrixStoreKHR must be limited to Workgroup, StorageBuffer, or PhysicalStorageBuffer"
+     (`refpages/latest/StandaloneSpirv.md`)
+   - * "For each memory location accessed by a dynamic instance of a cooperative matrix store instruction
+     (...), a single implementation-dependent invocation within the instance of the matrix's scope performs a
+     non-atomic store to that memory location." and, for loads, "some implementation-dependent invocation(s)
+     within the instance of the matrix's scope perform a non-atomic load from each memory location that is
+     defined to be accessed by the instruction." (`spec/latest/memorymodel.md`)
+   - "VUID-RuntimeSpirv-OpCooperativeMatrixLoadKHR-08986 For OpCooperativeMatrixLoadKHR and
+     OpCooperativeMatrixStoreKHR instructions, the Pointer and Stride operands must be aligned to at least the
+     lesser of 16 bytes or the natural alignment of a row or column (...)" (`refpages/latest/RuntimeSpirv.md`).
+     Met: `Psh` is `uvec4[]` and `Dsh` `vec4[]`, so every element offset and stride is a multiple of 16 bytes.
+   - So a tile store is one plain store per location and a tile load plain loads: disjoint tiles stored by
+     different subgroups do not overlap, the same tile loaded by several subgroups has no writer, and every
+     load of a tile another subgroup stored follows a `SYNC()` (table above). **Not covered by a sentence in the
+     index:** that all invocations of the subgroup must execute a load or store with the same operands (the
+     SPIR-V extension specification is not indexed and the built-in function section of the GLSL extension page
+     is cut short). The kernel's operands depend only on loop counters and `gl_SubgroupID`, equal within a
+     subgroup.
 
-If a quote contradicts the reading, the kernel is changed and re-gated; results measured before that are kept
-but are not evidence for the changed kernel (lesson L8).
+**Finding F1 (not a change of this campaign; reported for the owner).**
+* "VUID-RuntimeSpirv-OpTypeCooperativeMatrixKHR-10770 Any pipeline containing a shader with
+OpTypeCooperativeMatrixKHR or OpCooperativeMatrix*KHR instructions must be created with the
+VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT flag or the shader module must be version 1.6 or
+greater" (`refpages/latest/RuntimeSpirv.md`). Every cooperative-matrix pipeline of this branch is SPIR-V 1.3
+without the flag: the shipped release kernels, the parent's Xe2 attention kernels and the fused kernel alike
+(checked on `sarc_sdpa_qk_coopmat_xe2c_...` and both fused variants of `build/topic6`). Setting the flag is a
+change of the release-zone pipeline code (`vk_api/`), which decision D4 does not cover, and SPIR-V 1.6 needs an
+instance of Vulkan 1.3; neither was done. ANV launches full subgroups for these kernels in every run measured
+(the fused kernel would have written NaN rows otherwise, and every correctness tier passes).
 
 ## Next
 
-Read the gate of candidate 1; apply the reference-error rule if a next token moved; then candidate 2
+Read the probe, the decision and the decode comparison of candidate 1; read the gate of candidate 2
 (`b580-fused2` = candidate 1 + the 4070 Ti campaign's fp32 no-tail softmax for the calls the fused kernel does
-not take; its sources are already in `topic6`).
+not take). Then stop by the task (two candidates at most) and close: build the committed head, full gate of the
+final stack, one timed session against the parent of section 3 and one against the pristine parent `6a7cc8cc6`.
 
 ## Blocking
 
