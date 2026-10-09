@@ -113,9 +113,11 @@ drain flags, the phase-timing twin of the xclipse 4w row.
   candidate passes a screen for the 1B and 3B models, and the owner closed the campaign on that basis. No new kernel
   was written for this. The campaign was reopened for the 8B model on 2026-10-08 (22:37 UTC, playbook decision N10): see the
   8B round below.
-- **What the final profile (`c5`, superseded by `c8` below, pending its final verification) is:** the three candidates and the 8B pick of `c3` together (`c4` is the same stack without
-  the `c3` pick; on the 1B and 3B models the two are identical). The final timed sessions against the pristine parent were
-  faster in every cell, the 8B cells included; the figures are in the local `STATUS.md` only.
+- **What the final profile is (`c8`):** the three candidates of round 1 (`c4`) plus the `bz` 4w kernel on every 4w shape (second
+  round, below). `c5` (`c4` plus the 8B pick of `c3`) was the stack of the 8B round and is an intermediate stage: `c8` replaces
+  its 4w pick. The final timed sessions of `c8` against the pristine parent, on the build of the committed head and with no local
+  patch, were faster in every one of the six cells, the 8B cells included, outside the noise band; the figures are in the local
+  `STATUS.md` only.
 - **The 8B round (owner decision 2026-10-08, 22:37 UTC; playbook decision N10).** The 8B model is required for the campaign to
   be complete, and the earlier partial gates (1B and 3B) are now complemented for 8B. What was done, in the order of the decision:
   both 8B model files were pushed to the board and checked against the manifest's digests; the pristine parent's
@@ -212,16 +214,29 @@ drain flags, the phase-timing twin of the xclipse 4w row.
   against `c5` (the unmodified `verify.sh` agrees with the parent snapshots except for the two intended kernel-name lines;
   SDPA tiers and reference error as before; next token equal in all items) and timed against `c5` (the 4w cells of all three
   models faster outside the noise band, the 8da4w cells, which it does not touch, unchanged). The final verification of `c8`
-  on a build of the committed head, and its final session against the pristine parent, were queued and could not run: the board's
-  driver was replaced by another user while the queue was idle (recorded in the local `STATUS.md`).
+  ran on the build of the committed head (`fin2`, no local patch) after the board was restored by its owner (the board's driver had
+  been replaced by another user while the queue was idle, and the verification waited for the restore; recorded in the local
+  `STATUS.md`). PARTIAL as before, the 8B cells with the setting in both arms: the unmodified `verify.sh` (`--models 8b` and
+  `--models 1b,3b`) agrees line by line with the parent snapshots except for the two lines that name the dispatched kernels (the
+  intended change); the production-diff of both schemes on all three models, both storages, three passes, passes with errors not
+  larger than the parent's on every shape; the SDPA tiers `extended` and `full`, 12 passes each, pass with no mismatch and
+  `pairing=ok`, with the SDPA error not larger than the parent's; the real-text probe passes the gross-divergence check in every
+  cell; next token on the three prompts is the parent's in all cells but the 8B 8da4w timed prompt, which stays the recorded
+  near-tie (accepted under the reference-error rule, owner decision 2026-10-04: the same item as for `c4`, its path is the
+  unchanged 8da4w kernel). The shipped SPIR-V of the head build equals both parent builds' (53 of 53 shipped variants
+  byte-identical, none changed) and the golden check stays pending (native compiler; the same set of differing variants as the
+  parent build). The final session against the pristine parent was valid in every run (8B cells and 1B/3B cells) and every cell
+  was faster outside the noise band. Reference-error evidence for the whole stack: the `c4` and `c5` evidence stands for the
+  8da4w path and the attention kernels, and the 4w `bz` kernel produces output bit-identical to `c5`'s on all 32 prompts of every
+  cell (`c8` against `c5`) as well as errors not larger than the parent's in the production-diff.
 - **Directions left for later work:** a new 4w or 8da4w GEMM kernel (the linear kernels are most of the prefill and the
   screens found no tile that beats the incumbents, apart from the 4w pick of `c3` on the 8B shapes), a fused SwiGLU (the elementwise operators are stock kernels), an 8B decode check, and a driver-side fix for the job watchdog that makes the 8B setting unnecessary.
 - **Builds:** the golden check is pending; the compiler launches of a build wait while a timed session runs
   (`tools/gate_launcher.sh`; a stop signal to the build had no effect in the agent's environment). That gate was shown
   with a fake session on the build host only: the one build made with it (`f2`, the head that added it) was interrupted
   before it finished and was never used, so the gate has not been shown inside a completed real build. The final
-  verification uses build `f1`, whose sources equal the head's compiled sources (later commits change this change
-  directory and the campaign tools only).
+  verification of the second round uses build `fin2` (commit of the last kernel change; later commits change this change
+  directory only).
 - The fused attention kernel's subgroup size inside the shader (`gl_SubgroupSize` read-back) is not verified on the device; the
   pipelines declare a required subgroup size and the correctness tiers pass.
 
