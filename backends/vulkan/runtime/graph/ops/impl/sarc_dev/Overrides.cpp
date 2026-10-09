@@ -1061,6 +1061,25 @@ const Row kM51Q4[] = {
      kTex3dTex2d, nullptr, Status::kUnverified},
 };
 
+// 8da4w, second round (glsl/sarc_dev/sarc_dev_m51_linear_dq8ca_coopmat_zpgd.yaml): zpg_bt's texel-wise B
+// staging with the A operand loaded by coopMatLoad straight from the row-major activations (rowmajor_a, so the
+// graph quantizes row-major and an unaligned prompt keeps the table's zpgtr coopmat kernel). Selected with
+// ET_VK_SARC_DQ8CA_VARIANT=zpgd_<tile> or by profile c6.
+const Row kM51Dq[] = {
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_m51_linear_dq8ca_coopmat_zpgd_t128x64k32g22s32",
+     {128, 64, 32, 2, 2, 32, 16, false}, kTex3dTex2d | kBufTex2d, nullptr,
+     Status::kUnverified, true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_m51_linear_dq8ca_coopmat_zpgd_t128x64k64g22s32",
+     {128, 64, 64, 2, 2, 32, 16, false}, kTex3dTex2d | kBufTex2d, nullptr,
+     Status::kUnverified, true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_m51_linear_dq8ca_coopmat_zpgd_t128x128k32g42s32",
+     {128, 128, 32, 4, 2, 32, 16, false}, kTex3dTex2d | kBufTex2d, nullptr,
+     Status::kUnverified, true},
+};
+
 // A pick sends the shapes its predicate accepts to one candidate kernel (exact
 // name) when the kernel fits; every other shape keeps the selection above.
 struct PickM51 {
@@ -1092,6 +1111,11 @@ const PickM51 kM51PicksC3[] = {
     {Op::kDq8caLinear, "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32", any_shape},
     {Op::kQ4gswLinear, "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32xp", k_is_4096},
 };
+// c6: c5 with the 8da4w pick replaced by the direct-A kernel (second round). Default off.
+const PickM51 kM51PicksC6[] = {
+    {Op::kDq8caLinear, "sarc_dev_m51_linear_dq8ca_coopmat_zpgd_t128x64k32g22s32", any_shape},
+    {Op::kQ4gswLinear, "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32xp", k_is_4096},
+};
 const char kFusedM51[] = "fused3_d64_t32x32g11s32rk,fused3_d128_t16x64g11s32rk";
 // Fused-variant screen (ETDump of the fused kernel, 3 rounds, RULES R8 margin): for head_dim 64 the
 // 16 x 64 tile on a 64-wide subgroup beat the 780M's choice in every round; for head_dim 128 no variant did.
@@ -1104,6 +1128,8 @@ const ProfileM51 kM51Profiles[] = {
     {"c4", kFusedM51B, kM51PicksC2, sizeof(kM51PicksC2) / sizeof(PickM51)},
     // c5: c4 plus the 4w pick of c3 (K = 4096, 8B model only), one name for the stack that the 8B round gates.
     {"c5", kFusedM51B, kM51PicksC3, sizeof(kM51PicksC3) / sizeof(PickM51)},
+    // c6: c5 with the direct-A 8da4w kernel (second round of the M51 campaign).
+    {"c6", kFusedM51B, kM51PicksC6, sizeof(kM51PicksC6) / sizeof(PickM51)},
 };
 const ProfileM51* active_profile_m51() {
   static const ProfileM51* const active = []() -> const ProfileM51* {
@@ -1194,6 +1220,7 @@ std::optional<Choice> select_m51(
 struct RegistrarM51 {
   RegistrarM51() {
     register_candidates(kM51Q4, sizeof(kM51Q4) / sizeof(kM51Q4[0]));
+    register_candidates(kM51Dq, sizeof(kM51Dq) / sizeof(kM51Dq[0]));
     Override o = get_override();
     select_before_m51 = o.select;
     o.select = select_m51;

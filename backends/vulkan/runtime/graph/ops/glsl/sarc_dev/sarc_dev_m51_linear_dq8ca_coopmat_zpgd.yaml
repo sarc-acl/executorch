@@ -1,0 +1,64 @@
+# SARC development zone, M51 prefill refine (second round): 8da4w zpg with texel-wise B staging and the
+# A operand loaded straight from the row-major activations in global memory. Not shipped, default off.
+# Select with ET_VK_SARC_M51_PROFILE=c6 or ET_VK_SARC_DQ8CA_VARIANT=zpgd_<tile>.
+# B slots per thread = 2 * (WG_TILE_K / 4) * (WG_TILE_N / 8) / WG_SIZE must be an integer:
+#   t128x64k32g22s32:  128 / 128 = 1     t128x64k64g22s32:  256 / 128 = 2     t128x128k32g42s32: 256 / 256 = 1
+
+sarc_dev_m51_linear_dq8ca_coopmat_zpgd:
+  parameter_names_with_default_values:
+    PRECISION: highp
+    HAS_BIAS: false
+    IO_STORAGE: buffer
+    WEIGHT_STORAGE: texture2d
+    MMA_M: 16
+    MMA_N: 16
+    MMA_K: 16
+    WG_TILE_M: 128
+    WG_TILE_N: 64
+    WG_TILE_K: 32
+    SG_GRID_X: 2
+    SG_GRID_Y: 2
+    SUBGROUP_SIZE: 32
+  shader_variants:
+    - NAME: sarc_dev_m51_linear_dq8ca_coopmat_zpgd_t128x64k32g22s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+    - NAME: sarc_dev_m51_linear_dq8ca_coopmat_zpgd_t128x64k32g22s32_buffer_texture2d_half
+      IO_STORAGE: buffer
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+    - NAME: sarc_dev_m51_linear_dq8ca_coopmat_zpgd_t128x64k64g22s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+    - NAME: sarc_dev_m51_linear_dq8ca_coopmat_zpgd_t128x64k64g22s32_buffer_texture2d_half
+      IO_STORAGE: buffer
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+    - NAME: sarc_dev_m51_linear_dq8ca_coopmat_zpgd_t128x128k32g42s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+    - NAME: sarc_dev_m51_linear_dq8ca_coopmat_zpgd_t128x128k32g42s32_buffer_texture2d_half
+      IO_STORAGE: buffer
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
