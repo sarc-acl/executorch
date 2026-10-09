@@ -2,9 +2,11 @@
 
 ## Round 3 (2026-10-08): `fused3sb` and `780m-final` (closing task, not a tuning round)
 
-Updated 2026-10-09 05:15 UTC. **Round 3 is measured and recorded, and the review of `81b9973ce` passed its five
-artifact checks; two scope questions of that review are open for the owner ("Decision needed from the owner"
-below the table), neither involving a measurement.** The owner answered the question about `throttle_status` (task file, "Owner decision,
+Updated 2026-10-09 05:22 UTC. **Round 3 is measured and recorded; no owner decision is open.** The reviews of
+`81b9973ce` and `3d491848c` passed their five artifact checks (numbers recomputed, golden, zone list, shader
+read, gate evidence); the two scope questions they left were answered by the owner (task file, "Owner decision,
+2026-10-09 (05:15 UTC)", recorded below the table). What remains is the reviewer's closing statement on the
+pushed head. The owner answered the question about `throttle_status` (task file, "Owner decision,
 2026-10-09 (04:55 UTC)", option (a)): the thermal throttle reasons are bits 4, 5, 6 and 9, 10, any bit above 12
 rejects too, the power- and current-limit bits are recorded and do not reject. The two monitored sessions were
 recomputed under that rule from the rows already recorded, no new run. Nothing is running and nothing is
@@ -18,7 +20,16 @@ queued; only the hold watcher is alive; no `nvtop` on the host.
 | B, `780m-final` against `dev/1.5` | **+33.90 % geomean** (cells +23.00 to +48.07 %); round 2 measured +33.82 %: within the band of it |
 | recommended configuration | `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final` |
 
-### Decision needed from the owner (open, 2026-10-09 05:15 UTC; scope of the review, no measurement involved)
+### Owner decision of 2026-10-09 05:15 UTC on the scope of the review (answers the two questions recorded below)
+
+1. `check.sh --no-build`: the actor's output is accepted for R11 item 3; the reviewer records it as "run by the
+   actor, output read, not re-run", and that entry does not keep the round open.
+2. The RX 7600 figures in `proposal.md` are a citation of another campaign, not part of this round's numeric
+   audit; the reviewer checks that the citation names its source (branch `topic/rx7600-prefill-refine`, commit
+   `c0be2c6c27`, session `m2a-sgbarrier`) and that the text says the figures are that campaign's. It does.
+3. With these two, a review whose artifact checks pass says "done". No further measurement, build or session.
+
+### Record: the two scope questions (asked 2026-10-09 05:15 UTC; answered, see above; kept as written)
 
 The review of `81b9973ce` passed its five artifact checks (numbers recomputed, golden, zone list, shader read,
 gate evidence) and left two items in its not-checked list, so by R12 it does not say "done". Neither needs the
