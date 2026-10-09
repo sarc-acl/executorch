@@ -9,11 +9,11 @@ set -uo pipefail
 source "$(dirname "$(readlink -f "$0")")/dev.sh"
 SES=$1; M=$2; Q=$3; PF=${4:-prompt_2048.txt}; S=$ART/stage/$LOC/$SES; DS=$DEV_ROOT/stage/$SES; O=$S/probe-timed; mkdir -p "$O"
 declare -A STEM=([1b]=llama3_2_1b [3b]=llama3_2_3b [8b]=llama3_1_8b)
-"$ART/venv/m51/bin/python" -I - "$S/$PF" "$O/tokens-$M-$PF" <<'PY' || exit 2
+TOKENIZER=$(readlink -f "$S/models-flat/tokenizer.model") "$ART/venv/m51/bin/python" -I - "$S/$PF" "$O/tokens-$M-$PF" <<'PY' || exit 2
 import os, sys, tiktoken
 from tiktoken.load import load_tiktoken_bpe
 PAT = (r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+")
-tok = os.environ.get("TOKENIZER", "<tokenizer>")
+tok = os.environ["TOKENIZER"]
 ranks = load_tiktoken_bpe(tok); n = len(ranks)
 sp = {"<|begin_of_text|>": n, "<|end_of_text|>": n + 1}
 enc = tiktoken.Encoding(name="l3", pat_str=PAT, mergeable_ranks=ranks, special_tokens=sp)
