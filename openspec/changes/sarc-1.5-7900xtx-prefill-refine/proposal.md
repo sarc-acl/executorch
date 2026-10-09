@@ -143,6 +143,8 @@ Stop rule counter: candidate 1 (+1.56 %) and candidate 2 (-13.79 %) were two con
 
 | 5 | unfused attention kernels of the screen (`7900xtx-refine4`, build `c5` = commit 958bc07e7: QK^T `pk_t128x128k32g42s32nf`, attn*V `sweep_t64x64k32g42s32`, on every prefill call that fits) | 3 | **+4.09 %** | gated: SDPA tiers all / extended / full 12 passes each + 1 control pass each, 0 failed, 0 mismatches, `pairing=ok`; `verify.sh` as the snapshot except the two kernel-name lines; SDPA output **bit-identical** to candidate 3 in 21 of 21 cases and error against the reference not larger (D3.1); real-text probe 32 prompts x 6 cells: 0 top-1 differences, KL 0; next token SAME on all three prompts | `sessions/c5-sdpa/`, `sdpa-screen/` |
 
+| 6 | attn*V `sweep_t32x32k32g22s32` for head dimension 64 (`7900xtx-refine5`, build `final` = commit a8dd09570) | 5 | +0.67 % | gated: tiers 39 passes 0 mismatches `pairing=ok`, `verify.sh` as the snapshot except the two kernel-name lines, SDPA output bit-identical to candidate 5 in 21 of 21 cases; **adopted** under the rule written before its session (geomean not worse than -2 %, neither 1B cell worse than -2 %; the gain is under the +-2 % band and is not claimed) | `sessions/c6-attn/`, `sdpa-screen2/` |
+
 Candidate 1, per cell (median of 7 valid runs, `sessions/c1-softmax/raw/summary.csv`): 1B 4w 20078.40 -> 20686.90 (+3.03 %), 1B 8da4w 22260.90 -> 22755.60 (+2.22 %),
 3B 4w 10138.60 -> 10240.00 (+1.00 %), 3B 8da4w 10449.00 -> 10502.60 (+0.51 %), 8B 4w 4762.79 -> 4841.61 (+1.65 %), 8B 8da4w 4982.97 -> 5031.94 (+0.98 %); geomean +1.56 %.
 Where it came from (warm ETDump, ms per 2048-token prefill, parent -> candidate 1, `sessions/c1-softmax/trace/families.csv`): softmax 10.2 -> 8.2 (1B 4w),
@@ -173,6 +175,10 @@ Candidate 5, per cell against candidate 3 (median of 7 valid runs, 0 invalid, `s
 Where it came from (warm ETDump, ms per prefill, candidate 3 -> candidate 5, `sessions/c5-sdpa/trace/families.csv`): QK^T 6.4 -> 4.8 (1B), 17.7 -> 9.8 (3B), 21.0 -> 14.0 (8B); attn*V 11.8 -> 10.7, 14.4 -> 13.0, 19.4 -> 17.2; softmax and GEMM unchanged.
 The screen (`sdpa-screen/`): QK^T without the mask fill and with packed K staging, in the 128 x 128 tile: 1.30x (head dim 64) and 1.45x (head dim 128) in the worst round; attn*V `sweep t64x64k32g42s32` 1.08x / 1.10x.
 The "recommended" QK^T / attn*V pair is the largest QK^T tile that the dev zone had; the second attention screen below extends the tile family around it.
+
+Candidate 6, per cell against candidate 5 (median of 7 valid runs, 0 invalid, `sessions/c6-attn/raw/summary.csv`): 1B 4w 21787.20 -> 22260.90 (+2.17 %), 1B 8da4w 24094.10 -> 24674.70 (+2.41 %),
+3B 4w 10611.40 -> 10556.70 (-0.52 %), 3B 8da4w 11505.60 -> 11505.60 (+0.00 %), 8B 4w 4911.27 -> 4923.08 (+0.24 %), 8B 8da4w 5347.26 -> 5333.33 (-0.26 %); geomean +0.67 %. The kernel is selected only for head dimension 64,
+so the four other cells run the same kernels in both arms: their -0.52 to +0.24 % are the noise of the session. Attn*V in the traces of the two 1B cells: 10.6 -> 8.8 ms (4w), 10.6 -> 9.0 ms (8da4w).
 
 **Phase timing (work-order step 3), 8da4w table kernel `t128x64k32g42s32`** (PROF twin `sarc_dev_prof_dq8ca_zpg_t128x64k32g42s32p`, shader clock, twelve prefill shapes, `results/7900xtx/phases/parent-8da4w.csv`),
 share of the wave's cycles, median over the shapes (range over the shapes): barrier wait 31.4 % (18.0 to 33.7), LDS store 25.6 % (24.8 to 37.3), MMA 21.8 % (21.0 to 22.7), global weight fetch 10.9 % (10.4 to 14.5),
