@@ -14,7 +14,7 @@ Final stack against the pristine parent, one timed session on the build of the c
 | 8B 4w | 4762.79 | 4899.52 | +2.87 % | 4774 |
 | 8B 8da4w | 5019.61 | 5375.33 | +7.09 % | 4971 |
 
-Geometric mean **+8.33 %** (earlier sessions of the same stack: +8.24 % on `c9`, +7.91 % on `final`). N1 expected +20 to +30 %. Recommended configuration: `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_7900XTX_PROFILE=7900xtx-refine5`, AMDVLK ICD.
+Geometric mean **+8.33 %** (earlier sessions of the same stack: +8.24 % on `c9`, +7.91 % on `final`). **Noise caveat:** per-cell gains of a few percent, e.g. 8B 4w +2.87 %, are of the size seen as noise between identical kernels in this setup: in candidate 7's session the 1B 4w and 3B 8da4w cells ran the same kernels in both arms and still read +2.35 % and +2.92 %. The thresholds are unchanged (+-2 %); the large gains (1B, 3B 8da4w, 8B 8da4w) are not in doubt, the small ones are indicative only. N1 expected +20 to +30 %. Recommended configuration: `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_7900XTX_PROFILE=7900xtx-refine5`, AMDVLK ICD.
 Evidence: `results/7900xtx/sessions/final3/` (and `inert3/`); full account: `proposal.md`.
 
 | # | candidate | parent | geomean | state |
@@ -51,9 +51,9 @@ Roofs (igpu-roofline quick + fast, this driver): matrix fp16 / fp32-acc 140.83 T
 
 ## For the reviewer: open or not checked by me
 - **Stop rule.** Met: candidate 6 (+0.67 %, adopted by the pre-written rule, not claimed as a gain) and candidate 7 (+1.16 %, gated, not adopted) are two consecutive gated candidates under 2 %. Earlier (after candidate 5) it was not, and an earlier version of this file said the screens' pick did not exist ("0 of 12 shapes in every screen"): wrong, the 8B w2 pick is candidate 7.
-  evidence leaves is a different 8da4w / 4w MMA-loop structure (new kernel family), which the ablations bound at 7 to 10 % of the 8da4w kernel for all staging and which the owner decisions did not order.
+- **Further gains.** The only lever the evidence leaves is a different 8da4w / 4w MMA-loop structure (a new kernel family), which the ablations bound at 7 to 10 % of the 8da4w kernel for all staging and which the owner decisions did not order.
 - Whether AMDVLK runs the 32-lane fused kernels as wave32 (UNVERIFIED; they were correct, 18 tier passes, but 2.6x slower than the unfused path; rejected on its timed session).
-- The very large 4w tile `t128x256 ... cbt` takes about 14 minutes to run its 12-shape microbench job (probably driver compile time; UNVERIFIED); it is not in the final stack. The workgroup-memory overrun of the shipped kernels is decision item 2 above.
+- The very large 4w tile `t128x256 ... cbt` takes about 14 minutes to run its 12-shape microbench job (probably driver compile time; UNVERIFIED); it is not in the final stack. The workgroup-memory overrun of the shipped kernels is decision item 1 above.
 - New shaders: `fused3sb` (read for shared writes, not in the final stack); candidate 6's `sarc_sdpa_av_coopmat_sweep_t32x32k32g22s32` is a new yaml variant of an existing template (the reviewer read it: race-free); the second set adds copies of the release linear bodies with options (copies reproducible from the release bodies by the generators; the pitch / drain-in-A-buffer code read by me: address changes only, barriers unchanged,
   none of the new variants is in the final profile).
 - The golden against `sarc/golden/spirv.json` is pending (no container image); the DIFF set equals the parent build's in every build measured (`c2`, `c3`, `c5`, `c6b`, `final`, `c7`, `c8`, `c9`, `c10`).
