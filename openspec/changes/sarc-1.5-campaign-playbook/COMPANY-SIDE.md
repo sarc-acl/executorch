@@ -5,7 +5,8 @@ under four constraints that the first five campaigns did not have. This file say
 them, and what does not. It is an addendum to `COORDINATOR.md` and `PLAYBOOK.md`, which remain the authority
 for everything it does not mention. Written 2026-10-07 from the five finished campaigns and from the first day
 of the RX 7600 campaign, which already ran under these constraints and is the worked example throughout;
-section 6 updated 2026-10-08 after the RX 7600 campaign closed.
+section 6 updated 2026-10-08 after the RX 7600 campaign closed; section 6 again and section 9 added 2026-10-10
+after the second round on our side (the fused kernel ported to four more devices, 780M round 3).
 
 The four constraints:
 
@@ -228,12 +229,16 @@ campaign itself on 2026-10-08; the second is still open on both branches. State 
    A dispatch guard that checks the subgroup size against the workgroup size belongs in the device's selector
    before the kernel is tried on anything but RDNA3.
 
-   What is still open on our side: `topic/780m-prefill-refine` ships `fused3`. Whether the 780M adopts
-   `fused3sb` (one re-gate of candidates 8 to 11 and one timed session, by the RX 7600's numbers a no-op) is a
-   merge-plan decision, not a prerequisite for the company side any more.
+   Closed on our side 2026-10-09: `topic/780m-prefill-refine` (head `71b43d903`) adopted `fused3sb` in its final
+   configuration; measured against `fused3` on the same build: -0.14 % geomean, inside the band, SDPA output
+   byte-identical. Every fused port since (RTX 4070 Ti SUPER, Arc B580, Arc Pro B70, Jetson Orin Nano) carries
+   the barriers. Nothing ships `fused3` any more.
 
-2. **The final configurations still have no single name.** The 780M's candidate 11 is
-   `ET_VK_SARC_DEV_PROFILE=780m-refine3` plus `ET_VK_SARC_780M_PROFILE=c11`. The RX 7600's recommended
+2. **The RX 7600's final configuration still has no single name.** The 780M's is now one name,
+   `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final` (round 3, 2026-10-09: dispatch identical to
+   candidate 11, +33.90 % over `dev/1.5`); before that it was `ET_VK_SARC_DEV_PROFILE=780m-refine3` plus
+   `ET_VK_SARC_780M_PROFILE=c11`. The four second-round ports were single names from the start
+   (`4070ti-fused1`, `b580-fused1`, `b70-fused1`, `orin-fused1`): copy that pattern. The RX 7600's recommended
    configuration is four variables: `ET_VK_SARC_UNVERIFIED=1`, `ET_VK_SARC_780M_PROFILE=c7` (the softmax),
    `ET_VK_SARC_780M_SDPA_FUSED=<the two fused3sb variants>`, and `ET_VK_SARC_RX7600_PROFILE=rx7600-refine2` (the
    linear kernel per shape; `rx7600-refine3` is the rejected whole-texel candidate). The RX 7600's own first
@@ -276,4 +281,145 @@ and the coordinator says so in `STATUS.md` with a placeholder ("host detail with
 | what the actor must never decide alone | gate pass or fail, inside or outside the band, a retry after a failure, a release-zone edit, a push without the check |
 | what to do with an owner question | "Decision needed from the owner" in `STATUS.md`, then continue with independent work |
 | which fused kernel to port | `fused3sb`, never `fused3`; add a subgroup-size guard before a non-RDNA3 device (section 6) |
-| what still has no name | the final configurations of the 780M and the RX 7600; give the stack one dev-profile entry (section 6) |
+| what still has no name | the RX 7600's final configuration; give the stack one dev-profile entry, as `780m-final` now is (section 6) |
+| what a review will reopen a campaign for | the eight items of section 9.2; do them before the first timed run |
+| the full-subgroups pipeline flag (F1) | a known release-zone defect; record it, do not repair it in a campaign (section 9.3) |
+| decode | measure it with and without the final profile at closing and report it (section 9.4) |
+| a throttle flag in loaded runs | find out per device which bits are thermal; power and current limits are recorded, not rejected (section 9.2 item 3) |
+| waiting for the owner | record the question once, do the independent work, then do nothing; no recomputation while waiting (section 9.5) |
+
+## 9. What the second round on our side found (2026-10-09), and what to do with it
+
+Between 2026-10-08 and 2026-10-10 the fused attention kernel was ported from the two RDNA3 devices to every
+other device on our side, and the 780M was closed with `fused3sb` and one profile name. Five campaigns, five
+reviews. This section is what the company-side coordinator needs from them. Branches named here are on the
+public remote; read with `git show origin/<branch>:<path>`.
+
+### 9.1 Results, and which branch is the worked example for which kind of device
+
+| device | what was ported | over its tuned parent | over pristine `dev/1.5` | branch (change directory `sarc-1.5-<tag>-fused-port`) |
+|---|---|---:|---:|---|
+| RTX 4070 Ti SUPER | `fused3sb` unchanged, plus a guard: the kernel returns unless the workgroup is exactly one 32-wide subgroup | +11.49 % | +63.28 % | `topic/4070ti-fused-port` |
+| Arc B580 | a multi-subgroup form: 8 x 16 x 16 matrix shape, a workgroup of 4 or 8 subgroups of 16 lanes, each subgroup owning part of the score columns | +8.82 % | about +72 % | `topic/b580-fused-port` |
+| Arc Pro B70 | the B580's kernel, brought over unchanged and confirmed (5 hours, one candidate) | +8.26 % | +72.87 % | `topic/b70-fused-port` |
+| Jetson Orin Nano | `fused3sb` with the same guard as the 4070 Ti | +6.13 % (cross build, item 7 of 9.2) | +76.70 % | `topic/orin-fused-port` |
+| Radeon 780M | `fused3` replaced by `fused3sb`, profile `780m-final` | -0.14 % (no change) | +33.90 % | `topic/780m-prefill-refine`, "Round 3" |
+
+Which one to read before a port:
+
+- **A device with a 16 x 16 x 16 fp16 matrix shape and one subgroup size (RX 7900 XTX, most likely)**: the 780M
+  and RX 7600 records, then `topic/4070ti-fused-port` for the guard and for what a review asks of a port.
+- **A device whose matrix shape or subgroup size differs from the kernel's assumptions**: `topic/b580-fused-port`,
+  `proposal.md`, "the port in two parts". The straight port compiled but spilled registers and was slower than
+  the three separate kernels; the form that won splits the workgroup into several subgroups. Read the compiler
+  statistics before timing anything.
+- **A device where the one-pass form does not work (M51)**: the Orin record measured one-pass against two-pass
+  per head dimension; two-pass was 17 % faster at kernel level for head_dim 64 and still inside the band end to
+  end (+0.54 %). A two-pass kernel is a legitimate final answer.
+- **A second device of a family that already has a port**: do a confirmation, not a port. The B70 task
+  (`topic/b70-fused-port`, section "What to bring from the B580 and how") is the template: pin the source commit,
+  bring the files unchanged, show the SPIR-V is byte-identical, repeat only the selection screen over variants
+  that already exist, gate once, time once. If the RX 7900 XTX behaves like the RX 7600, this is its shape.
+
+A second candidate was tried on three devices (fp32 no-tail softmax for the calls the fused kernel does not
+take on the B580: -0.13 %; two-pass for head_dim 64 on the Orin: +0.54 %; none on the 4070 Ti) and adopted on
+none. After the fused kernel, attention is a few percent of the prefill; do not expect a second attention
+candidate to leave the band.
+
+### 9.2 What the reviews reopened campaigns for: do these before the first timed run
+
+Every item below is a rule that already existed. Each one cost a campaign between three hours and a day when a
+reviewer found it afterwards.
+
+1. **All three SDPA tiers in the gate** (`all`, `extended`, `full`), 12 passes each, with the hashes of the test
+   binary and runner library and every pass's exit status recorded. The 4070 Ti gate ran two tiers and was
+   reopened.
+2. **R6, every predicate evidenced per run.** "No other GPU workload during the run" needs sampling WHILE the
+   runner executes (the guard's process pattern and the DRM clients with their engine time), not a check before
+   and after. A monitor such as `nvtop` attached to the device counts as something to record; put monitors in
+   the guard's pattern. The 780M round was reopened for this.
+3. **R6, the throttle record, and which reasons are thermal.** Sample the driver's throttle status in the same
+   loop as the clock. Then decide BEFORE the first session, in `thresholds.txt`, which reasons reject a run. On
+   the 780M the status word had bit 1 set in most loaded runs: that bit is a package power limit, set by design
+   under load; the thermal bits never appeared. Owner ruling: thermal reasons reject, power and current limits
+   are recorded only, unknown bits reject until read. The bit table is per chip family (for the 780M:
+   `drivers/gpu/drm/amd/pm/swsmu/inc/pmfw_if/smu13_driver_if_v13_0_4.h`); a discrete RDNA3 card uses a
+   different header. Do not copy the 780M's mask: read the header for the device at hand and quote it (L16).
+4. **R3, the shared test file is never edited in place.** What a new kernel needs in
+   `test_llama_microbench.cpp` goes in as insert-only delimited blocks; `git diff --numstat` must show 0
+   removed lines. Take the blocks from `topic/4070ti-fused-port`.
+5. **R5, the measured build is an export of one commit and, recursively, of its submodules from object stores.**
+   A build whose submodule trees came from the working directory was rejected on the 780M and everything was
+   measured again. `tools/export_recursive.sh` on `topic/780m-prefill-refine` is the worked example.
+6. **Thresholds are written before the first candidate and not touched after.** A rule added to
+   `thresholds.txt` after a candidate had numbers was removed by review on the B580. Creating and calibrating
+   the campaign's own file before the first candidate is what R4.2 asks for and is not a "protected file"
+   change (owner ruling on the B70).
+7. **Know which shader compiler built what you measure.** The Orin's cross image carried a different `glslc`
+   than the pinned one; `spirv_golden.py` differed on 14 shipped variants of other devices and the campaign's
+   own kernels were compiled to other bytes. The reviewer reopened the campaign at closing. Owner ruling
+   2026-10-09: byte identity with the golden is not required of a cross build; the numbers stand as measured
+   and the compiler difference is recorded as a known limitation. What to take from it: run `spirv_golden.py`
+   on the parent build BEFORE the baseline, and if it differs only because of the compiler, write that down on
+   day one ("Known limitation: shader compiler") instead of discovering it in the last review. This matters
+   most where the build is a cross build or runs outside the container (M51).
+8. **No wait that the owner did not order.** An actor added "wait until the desktop's share of the card drops"
+   after the owner had ruled "measure at once"; the sessions behind it were repeated. If runs are rejected
+   because something else holds the card, report it; do not add a wait.
+
+For the reviewer's side: keep the two `test_sarc_select` executables of the final check, because a reviewer who
+may not build cannot run `check.sh --no-build` (it compiles them); the actor's output is accepted for that item
+(owner ruling). Figures quoted from another campaign are citations with branch and commit, outside the numeric
+audit of the campaign that quotes them.
+
+### 9.3 F1: the full-subgroups pipeline flag is a known defect; do not repair it in a campaign
+
+The specification requires (VUID-RuntimeSpirv-OpTypeCooperativeMatrixKHR-10770) that a pipeline whose shader
+uses cooperative matrices is created with `VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT`, or that
+the module is SPIR-V 1.6 or later. The runtime does neither: SPIR-V 1.3, a Vulkan 1.1 instance, stage `flags`
+0 in `vk_api/Pipeline.cpp`. Every cooperative-matrix pipeline of every device has this, the shipped ones and the
+RX 7600's and M51's included. Results and correctness are not affected; a validation layer reports it.
+
+Owner decision 2026-10-09: no campaign repairs it. Record it in `proposal.md` under "Known defect: F1" (one
+paragraph; the B580's `STATUS.md` has the full description and two forms of a fix) and close as measured. It is
+repaired once in the release zone before any promotion (`MERGE-PLAN.md`, M2e), and every device is gated and
+timed again then: the company side will be asked for one gate and one timed session per device at that point.
+If a reviewer on your side raises it, this paragraph is the answer.
+
+A device where a missing full-subgroups guarantee shows up as wrong output, not as a validation message, is a
+different matter: report it at once with the failing case. The fused kernels check `gl_NumSubgroups` and
+`gl_SubgroupSize` at run time and return if the workgroup is not what they assume; a port must keep that check.
+
+### 9.4 Decode: measure it at closing
+
+The B70 confirmation measured decode 0 to 2.5 % slower with the fused node present, and the B580's record
+points the same way. Nobody traced it: prefill was the goal. It is open as `MERGE-PLAN.md` M2f. Until it is
+settled, every campaign whose final profile contains the fused kernel reports, at closing, decode tok/s with
+and without the profile (the same runner, 5 valid runs per arm, the three models, one scheme is enough), in
+`proposal.md`. Do not tune for it and do not investigate it inside the campaign; a number is what is asked.
+
+### 9.5 Cost: what burned budget on our side, and the rule that stopped it
+
+The 780M closing round was planned at one day and one budget unit and took three. One unit went almost
+entirely to an actor and a reviewer re-checking and recomputing while an owner question was open. With a
+metered model this is the first thing to prevent:
+
+- A question for the owner is written ONCE, under "Decision needed from the owner", with the options, what each
+  costs in device time, and a recommendation. Then the independent work is finished. Then nothing: no
+  recomputation, no re-review, no new commit. The task file is checked for an answer at most every 20 minutes.
+- Put this sentence in the task file from the start (the B70 task has it), and the same sentence in the
+  reviewer's instructions.
+- If the run reaches its budget while only the review's closing statement is missing, resume with a small cap,
+  not the full one.
+- If a run reaches its budget while waiting for the owner, do not resume it until the answer exists.
+
+### 9.6 What the company side is asked to do now
+
+- **M51: the 8B model** (`OWNER-DECISIONS.md` N10), with the setting the owner calls "thread hold = 32". Unchanged
+  from 2026-10-08; listed here so that this section is complete.
+- **RX 7600**: one dev-profile name for the final configuration (section 6 item 2); a decode number with and
+  without it (9.4); nothing else. The kernel already has the barriers.
+- **RX 7900 XTX**, when it starts: a confirmation in the shape of the B70's (9.1), with items 1 to 8 of 9.2 in
+  the task file from the first day.
+- **Every device, later**: one gate and one timed session under the F1 repair (9.3), when our side announces it.
+

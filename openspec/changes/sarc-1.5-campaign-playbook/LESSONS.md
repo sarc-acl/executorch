@@ -180,3 +180,29 @@ adapted tools and should not pay that again.
   against warm.
 - **L44. The comparison protocol is the campaign's protocol.** The same lock, guard, sampler and validity rules
   were reused through one adapter file per device. Do: add `kit/hosts/<device>/host.sh`, nothing more.
+
+## From the second round (fused kernel ports, 2026-10-09)
+
+- **L45. A review reopens a campaign for a rule that was skipped, not for a wrong number.** Four of five
+  second-round campaigns were reopened; in every one the performance result reproduced. Do: put the checklist of
+  `COMPANY-SIDE.md` section 9.2 in the task file from the first day.
+- **L46. A throttle status word mixes thermal reasons with power and current limits.** On the 780M one power-limit
+  bit was set in most loaded runs and "any non-zero status rejects" invalidated 113 of 186 runs. Do: read the
+  device's bit table, decide before the first session which bits reject, quote the source (L16).
+- **L47. "No other GPU workload during the run" needs sampling during the run.** A monitor attached for a whole
+  session was invisible to a guard that looked before and after. Do: sample processes and DRM clients with engine
+  time while the runner executes; put monitors in the pattern.
+- **L48. The shader compiler is part of the build.** A cross image with another `glslc` compiled the same source to
+  other bytes, and the last review found it. The owner accepted the numbers with the difference recorded. Do: run
+  `spirv_golden.py` on the parent build before the baseline and record a compiler difference on day one.
+- **L49. A second device of a family is a confirmation, not a port.** The B70 took the B580's kernel unchanged:
+  5 hours and one candidate against 20 hours. Do: pin the source commit, show byte-identical SPIR-V, repeat only
+  the selection screen, gate once.
+- **L50. A straight port can compile and be slower.** On the B580 the fused kernel with the Intel matrix shape
+  spilled registers; a multi-subgroup form did not. Do: read the compiler statistics before timing.
+- **L51. Waiting for the owner costs money when two agents keep checking.** One closing round spent a full
+  budget on re-reviews of an open question. Do: record once, finish independent work, then nothing; check for the
+  answer at most every 20 minutes; do not resume a run that stopped while waiting.
+- **L52. A prefill gain can cost decode.** The fused node made decode 0 to 2.5 % slower on the B70 and nobody had
+  looked. Do: report decode with and without the final profile at closing.
+
