@@ -5,4 +5,6 @@
 . "$(dirname "$(readlink -f "$0")")/host.sh"; S=$1; shift
 hold_wait "session $S"; idle_wait "session $S"   # before the build lock: a build may run while the session waits for an idle desktop
 gpu_shared || exit 75; cool_start
-$TOOLS/e2e5.sh --stage $A/stage/$S --out raw --lock $LOCK "$@"; exit $?
+# --extra 12: with the idle wait lifted (owner decision 2026-10-09) the desktop disturbs more runs; a run above
+# BUSYMAX is invalid and replaced as before, by up to 12 extra interleaved pairs a cell instead of e2e5.sh's 3.
+$TOOLS/e2e5.sh --stage $A/stage/$S --out raw --lock $LOCK --extra 12 "$@"; exit $?
