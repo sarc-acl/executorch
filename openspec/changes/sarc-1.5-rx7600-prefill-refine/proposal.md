@@ -166,7 +166,7 @@ Rules fixed on 2026-10-08 23:56 UTC, before any round-2 measurement (the commit 
 - **Shared host:** a timed run waits until no compiler, linker or build of anyone runs and is invalid if one appears (R5); timed tools
   keep the names `e2e5`, `gl`, `verify` under `<campaign-root>/.../tools/`.
 
-### Note of 2026-10-09 02:35 UTC on the phase-timing rule (written after the phase twin of the A row pitch 24 bytes was measured, before any end-to-end session of it)
+### Note of 2026-10-09 02:30 UTC on the phase-timing rule (commit time 02:30:05 UTC of `c5fde30d2`; the heading read 02:35 UTC, corrected here for the same reason; written after the phase twin of the A row pitch 24 bytes was measured, before any end-to-end session of it)
 
 The rule above says the *share* of barrier + LDS-store time of a candidate's twin must fall against the incumbent twin. For candidate 1
 (A staging row pitch of 24 bytes, `pa6pb4csha`) the twins give (`results/rx7600/round2/r2e-phase-compare.txt`): total cycles 0.878 of the
@@ -178,7 +178,7 @@ and on all twelve shapes, and a session costs one hour of device time. The devia
 from the owner") and in the candidate's evidence; the threshold of the adoption rule (2 % geomean over the parent in one timed session) is
 not touched. If the owner or reviewer rules that the share rule binds, the session result stays on record as a negative one.
 
-### Clarification of the adoption rule of 2026-10-09 03:50 UTC (written before any end-to-end number of a round-2 candidate exists)
+### Clarification of the adoption rule of 2026-10-09 03:39 UTC (commit time 03:39:15 UTC of `50b742e5c`; the heading read 03:50 UTC until the reviewer found the difference; written before any end-to-end number of a round-2 candidate exists)
 
 A candidate that changes the linear kernels of one scheme moves three of the six cells; its six-cell geometric mean is then about half of the
 gain of the cells it touches (a +4.4 % gain on the three 8da4w cells is +2.2 % geomean). To keep a real gain from falling under the 2 % geomean
@@ -300,8 +300,22 @@ The twin was implemented afterwards (measurement only, default off; the SPIR-V o
 Result, sums over the twelve prefill shapes: barrier + LDS-store cycles 1.709e9 (g28 pick, 60.1 % of the twin's total) and 1.575e9 (g24 table twin, 55.4 %) against **0.912e9 (31.6 %) for `ap4bp12`**: the share
 falls by the rule's letter, the barrier phase to 0.454 and the MMA phase to 0.892 of the g28 pick's cycles. But the twin's total per-wave cycles are equal (x1.014) and the cycles moved into the `fetch` bucket (3.6 % -> 36.3 %): the
 clock reads change where a wave waits, so this is a shift between buckets plus a smaller MMA phase, not a cleaner proof of the mechanism than candidate 1's. It was measured **after** the session and was not available as a
-decision input; the session is not re-timed (no instruction to). Open as item 4 of "Decision needed from the owner" in STATUS.md.
+decision input; the session is not re-timed (no instruction to). Answered by the owner decision of 2026-10-09 12:56 UTC, item 4: keep candidate 2 as measured (+3.33 % geomean), flagged as timed before its phase evidence; the evidence measured afterwards is recorded as such.
 
 Plain statement of what the pre-registered rules imply: under the rules as first written, candidate 1 (share rose 59.6 -> 62.2 %; geomean +1.96 % < 2 %, adopted only through rule (b) written afterwards) would have been dropped, and
-the final stack would be `rx7600-refine2` plus the 4w pick of candidate 2 (a stack that was neither built nor timed; candidate 2 was timed on top of candidate 1). Candidate 1's 8da4w gain (+3.65 / +4.01 / +4.25 % in its own
-session, +5 % at kernel level in every round on all twelve shapes) is therefore **provisional on the owner's ruling** on items 1 and 2.
+the final stack would be `rx7600-refine2` plus the 4w pick of candidate 2 (a stack that was neither built nor timed; candidate 2 was timed on top of candidate 1). The owner has ruled on this (below), so candidate 1's gain stands as adopted.
+
+### Owner decision of 2026-10-09 12:56 UTC, items 1 to 5 of round 2 (recorded 2026-10-09, after the decision; no new build, gate or session)
+
+1. **Phase-share rule, candidate 1: waived for this candidate; kept as recorded.** The rule was a precondition meant to avoid sessions on candidates without a mechanism. Candidate 1's barrier/LDS cycles fell to 0.917
+   and its MMA phase to 0.660, and its session showed +3.65 / +4.01 / +4.25 % on the 8da4w cells with spreads under 1 % and byte-identical outputs. The session is valid evidence; the rule's letter was not met, and that
+   stays recorded as a deviation (note above).
+2. **Rule (b) is ratified as an owner rule for every campaign from now on:** a candidate that by construction changes only one scheme is judged on the cells it changes (each at least 2 %, outside the band), and counts
+   as one candidate under 2 % for the stop rule when its six-cell geomean is under 2 %. Candidate 1 stays adopted. The heading time of the clarification is corrected to the commit time (03:39:15 UTC).
+3. **Host disk:** noted; the coordinator moved data off the root filesystem (about 90 GB free). Builds stay on `<scratch-disk>`.
+4. **Candidate 2: kept as measured** (+3.33 % geomean), flagged as timed before its phase evidence; the evidence measured afterwards (share 60.1 / 55.4 % -> 31.6 %) is recorded as such.
+5. **The final stack is `rx7600-refine5`** (+33.59 % over the pristine parent, +5.44 % over round 1's final), verified on the build of the committed head.
+
+Result of the last open probe: the real-text probe `chain10` finished 2026-10-09 11:59 UTC, gross-divergence check ok in all six cells (`results/rx7600/round2/final-probe/README.md`).
+`sarc/tools/check.sh --no-build` was run once more on the final head of this file's commit (`results/rx7600/round2/check-no-build-head.txt`, unedited): PASS; release tables alone 1240 checks, 0 candidates; with the dev
+zone 1475 checks, 164 candidates (161 in the earlier run of `sessions/r2-final`: the three added candidates are the 4w phase twins, measurement only, default off).

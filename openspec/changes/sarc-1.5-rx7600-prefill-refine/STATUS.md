@@ -1,6 +1,6 @@
 # STATUS: RX 7600 prefill campaign
 
-Updated 2026-10-09 12:32 UTC (round 2 finished, reviewer findings of 2026-10-09 answered; round 1 below is unchanged and closed).
+Updated 2026-10-09 15:46 UTC (round 2 finished; owner decision of 2026-10-09 12:56 UTC recorded; round 1 below is unchanged and closed).
 
 ## Running now
 
@@ -159,24 +159,13 @@ timed, the real-text and the unaligned prompt. The 1B prefill takes 261 to 262 m
 
 ## Next
 
-Done. A reviewer round follows (R12); the coordinator publishes the branch (scrubbed forward commit). Nothing of this run is pushed.
+Done. Nothing is running. A reviewer round follows (R12); the coordinator publishes the branch (scrubbed forward commit). Nothing of this run is pushed (owner decision 2026-10-07 23:15 UTC).
+
+`sarc/tools/check.sh --no-build` on the committed head, run 2026-10-09 15:46 UTC (`results/rx7600/round2/check-no-build-head.txt`, unedited): `check.sh: PASS`; release tables alone 1240 checks, 0 candidates;
+dev zone linked 1475 checks, 164 candidates (161 in the earlier run in `sessions/r2-final`: the three added rows are the 4w phase twins, measurement only, default off).
 
 ## Decision needed from the owner
 
-Answered by the owner decision of 2026-10-08 23:38 UTC and therefore removed: the percent of the roofs (cited roofs accepted), the fused attention node (stays subject to the D4.3 review before promotion),
-the name `fused3sb` in the 780M's namespace (stays until the merge), the branch history (noted), host builds during timed sessions (R5 stands).
-
-1. **Phase-timing rule of round 2 (`proposal.md`, "Note of 2026-10-09 02:35 UTC").** The rule fixed before round 2 asked that the *share* of barrier + LDS-store time of a candidate's phase twin fall
-   against the incumbent's before the candidate is timed end to end. For candidate 1 the share rose from 59.6 % to 62.2 % while the absolute cycles of those phases fell to 0.917 and the MMA phase (which holds
-   the conflicting fragment loads) to 0.660; the candidate was timed anyway and the deviation recorded before the session. **Default unless the owner rules otherwise:** keep it as recorded. If the owner rules
-   that the share rule binds, candidate 1's session stays on record as a negative result and candidate 2's parent would have been round 1's final stack instead of build `c6`.
-2. **Adoption of candidate 1 under rule (b)** (`proposal.md`, clarification of 2026-10-09 03:50 UTC, written before any end-to-end number of round 2): a candidate that moves three of six cells is adopted when each
-   of those cells gains at least 2 %, although its geomean (+1.96 %) is under 2 %; it counts as one candidate under 2 % for the stop rule. **Default:** keep.
-3. **Host disk.** The root filesystem of this workstation was full twice during round 2 (188 KB to 1.2 MB free at 03:07 and 09:25 UTC) and stands at 92 to 98 % in between; it is a hazard to every campaign here.
-   This run moved its large artifacts to `<scratch>` (the builds alone are 33 GB, measured; exports and stage directories come on top; the parent directory also holds other data of this user that is not this run's).
-   Nothing was deleted except one untracked 20-line stub script of this run.
-4. **Candidate 2 had no phase-timing evidence when it was timed** (reviewer finding; `proposal.md`, the reviewer-finding section at the end). The rule fixed before round 2 applies to the 4w candidate too; no 4w twin existed and this was not
-   recorded at the time. The twin was added and measured afterwards (share 60.1 % / 55.4 % -> 31.6 %, equal total cycles, shift into the fetch bucket). **Default unless the owner rules otherwise:** keep candidate 2 as
-   measured (+3.33 % geomean), flagged as timed without the prior evidence; if the owner rules the rule binds as written, candidate 2 is a negative result.
-5. **What the final stack is depends on items 1, 2 and 4.** Under the rules as first written, candidate 1 would have been dropped (phase share rose; geomean +1.96 % < 2 %) and the final stack would be `rx7600-refine2`
-   plus the 4w pick of candidate 2, which was neither built nor timed (candidate 2 was timed on top of candidate 1). The recorded final stack (`rx7600-refine5`, +33.59 % over the pristine parent) contains candidate 1's kernel.
+None. Round 2's items 1 to 5 were answered by the owner decision of 2026-10-09 12:56 UTC (recorded in `proposal.md`, "Owner decision of 2026-10-09 12:56 UTC"): the phase-share rule is waived for candidate 1 (deviation stays recorded),
+rule (b) is ratified for every campaign, the host disk is noted, candidate 2 is kept as measured (flagged as timed before its phase evidence), and the final stack is `rx7600-refine5` (+33.59 % over the pristine parent,
++5.44 % over round 1's final). Earlier questions (cited roofs, fused node D4.3 review before promotion, the `fused3sb` name until the merge, branch history, R5) were answered by the decision of 2026-10-08 23:38 UTC.
