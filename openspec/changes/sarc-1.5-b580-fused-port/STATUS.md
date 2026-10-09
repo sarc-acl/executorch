@@ -249,6 +249,28 @@ the release-zone pipeline code does not set the full-subgroups flag, so the kern
 `gl_NumSubgroups == G` and `gl_SubgroupSize == 16` and writes NaN rows otherwise (one writer per row), which
 every correctness tier would report. The copy pass `sarc_dev_b580_sdpa_kvt` has no shared memory.
 
+## Owed: specification quotes for the shared-memory reading (owner note 2026-10-09 00:20 UTC)
+
+The owner note asks that Vulkan / GLSL semantics be answered from the `vulkan-docs` MCP server and that the
+sentence relied on be quoted here. The server's tools were not present in the actor session that wrote the
+multi-subgroup kernel (two tool searches at 00:25 UTC found none; the note says they appear after the next
+resume), so **the reading above rests on the actor's understanding of the specification, not on quoted text,
+and no quote has been checked yet.** The points to look up and quote, each of which the kernel relies on:
+
+1. `barrier()` in a compute shader: that it orders execution of all invocations of the workgroup, and what it
+   guarantees for writes to `shared` variables made before it (with and without `memoryBarrierShared()`).
+2. That `barrier()` must be called in control flow that is uniform for the workgroup (the rescale branch is made
+   uniform through `Gsh` for this reason).
+3. `atomicOr` on a `shared uint` (several lanes set `Gsh` concurrently).
+4. Subgroups of a compute workgroup: `gl_SubgroupID`, `gl_NumSubgroups`, and what the required subgroup size
+   (`VkPipelineShaderStageRequiredSubgroupSizeCreateInfo`) guarantees about full subgroups when the local size
+   is a multiple of it and the full-subgroups flag is not set (the kernel checks at run time instead).
+5. `coopMatLoad` / `coopMatStore` of `gl_ScopeSubgroup` matrices on a `shared` array from several subgroups of
+   one workgroup (disjoint tiles written, the same tiles read).
+
+If a quote contradicts the reading, the kernel is changed and re-gated; results measured before that are kept
+but are not evidence for the changed kernel (lesson L8).
+
 ## Next
 
 Read the gate of candidate 1; apply the reference-error rule if a next token moved; then candidate 2
