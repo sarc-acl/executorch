@@ -16,7 +16,9 @@
 #     cell (both arms alike); the model load time of every run is recorded (logs/<run>.mem, load_ms);
 #   - an 8B run is not started with less than 5000 MB available (waits up to 120 s, then the session ends, exit 77);
 #   - a run is VALID only if rc = 0, tok/s present, prompt_tokens = <expected>, generated_tokens = 0, no other GPU
-#     process, and the median clock in the measured window >= CLKMIN MHz. The threshold comes from --clkmin-file
+#     process, at least 5 clock samples in the measured window, a median clock >= CLKMIN MHz there, and no thermal
+#     throttle reason: every sample carries the state of the thermal cooling devices (common.sh throttle_read); a
+#     nonzero state, or a sample without the record, makes the run invalid (runrow.py). The threshold comes from --clkmin-file
 #     (calibrate_clock.py on the baseline and A/A sessions); --calibrate runs record-only (clkmin 0 in runs.csv)
 #     and is only for those sessions: gate_check.py rejects such a session as a candidate gate. Invalid runs stay
 #     in runs.csv with the reason; cells with fewer than REPS valid runs per build get extra interleaved pairs
@@ -67,6 +69,8 @@ clkmin() { if [[ $CALIBRATE == 1 ]]; then echo 0; else local v=${CLK[$1-$2]:-}; 
   echo "devfreq: governor=$(cat $GPUDEV/governor) cur=$(cat $GPUDEV/cur_freq) min=$(cat $GPUDEV/min_freq) max=$(cat $GPUDEV/max_freq) available=[$(cat $GPUDEV/available_frequencies)]"
   echo "fan: pwm=$(cat /sys/class/hwmon/hwmon*/pwm1 2>/dev/null | head -1) rpm=$(cat /sys/class/hwmon/hwmon*/rpm 2>/dev/null | head -1)"
   echo "temp: gpu=$(gtemp_m) mC; load=$(cat $GPULOAD); mem: $(mem_line)"
+  throttle_read; echo "throttle record: ${#CDEV[@]} cooling devices [${CDEVT[*]}], state now: $THR"
+  for z in /sys/class/thermal/thermal_zone*; do echo "zone $(cat $z/type): temp=$(cat $z/temp 2>/dev/null) trips=$(for t in $z/trip_point_*_temp; do echo -n "$(cat $t 2>/dev/null)/$(cat ${t%_temp}_type 2>/dev/null) "; done)"; done
   echo "others: $(others)"
 } > "$O/env.txt" 2>&1
 declare -A STEM=([1b]=llama-3.2-1b:llama3_2-1b [3b]=llama-3.2-3b:llama3_2-3b [8b]=llama-3.1-8b:llama3_1-8b)
@@ -96,7 +100,7 @@ run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected 
   python3 $TOOLS/runrow.py "$O/$log" "$O/${log%.log}.clk" "$want" "$cmin_cell" "$rc" "$oth" "$tag" > "$O/.row"
   IFS=, read -r tok pt gt ms n cm cmin bm pw tmax valid reason < "$O/.row"
   echo "orin,$(hostname),$m,$q,$b,$r,$s,$tok,$rc,$tp,$tq,$cs,devfreq_med=${cm}MHz,$oth,$(date -u +%FT%TZ),$log,$pt,$gt,$ms,$n,$cm,$cmin,$bm,$pw,$tmax,$valid,$reason,$cmin_cell" >> "$CSV"
-  echo "$tag $m $q $b r$r slot$s tok_s=$tok ms=$ms rc=$rc T=$tp->$tq cool=${cs}s clk=$cm/$cmin MHz n=$n busy=$bm valid=$valid $reason"
+  echo "$tag $m $q $b r$r slot$s tok_s=$tok ms=$ms rc=$rc T=$tp->$tq cool=${cs}s clk=$cm/$cmin MHz n=$n busy=$bm thr=$(cut -d' ' -f6 "$O/${log%.log}.clk" | sort -u | tr '\n' ' ')valid=$valid $reason"
   [[ -n $oth ]] && abort_others "during $log (the run is kept in runs.csv as invalid)" "$oth"
   LAST_RC=$rc; return 0
 }

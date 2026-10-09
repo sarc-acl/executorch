@@ -14,7 +14,7 @@ PROMPTS = gate_check_paths.PROMPTS
 T0 = 1790000000000  # ms; every synthetic run measures from T0 to T0 + 100 ms
 def log_text(prompt, token, want):
     return open(prompt, "rb").read() + token + b"\n" + ('PyTorchObserver {"prompt_tokens":%s,"generated_tokens":0,"prefill_token_per_sec":1000.0,"inference_start_ms":%d,"prompt_eval_end_ms":%d}\n' % (want, T0, T0 + 100)).encode()
-def clk_text(mhz=3000): return "".join(f"{(T0 + 20 * i) * 1000} {mhz} 97 250.0 55\n" for i in range(5))
+def clk_text(mhz=3000, thr=" 0"): return "".join(f"{(T0 + 20 * i) * 1000} {mhz} 97 250.0 55{thr}\n" for i in range(5))
 def rewrite(d, fn):
     """Apply fn(row) to every row of runs.csv (fn may return a list of rows to replace it)."""
     p = os.path.join(d, "runs.csv"); out = []
@@ -417,6 +417,43 @@ class Verify(unittest.TestCase):
         rc, out = self.check(); self.assertEqual(rc, 0, out)
         self.p = os.path.join(self.t.name, "parent"); rc, out = self.check(); self.assertNotEqual(rc, 0)
         self.assertIn("differs from the parent control: correctness rc", out)
+
+class Throttle(unittest.TestCase):
+    """The thermal throttle record of a timed run (orin-fused): every clock sample carries the state of the thermal
+    cooling devices; a nonzero state or a missing record makes the run invalid, in runrow.py and so in the session check."""
+    def row(self, thr, n=5):
+        import runrow
+        with tempfile.TemporaryDirectory() as d:
+            log = os.path.join(d, "x.log"); clk = os.path.join(d, "x.clk"); open(log, "wb").write(log_text(__file__, b" tok", "2048"))
+            open(clk, "w").write("".join(f"{(T0 + 20 * i) * 1000} 3000 97 250.0 55{thr}\n" for i in range(n)))
+            return runrow.evaluate(log, clk, "2048", "2900", "0", "", "prefill")
+    def test_clean_record_is_valid(self):
+        r = self.row(" 0"); self.assertEqual((r["valid"], r["reason"]), ("1", ""), r)
+    def test_throttle_state_is_invalid(self):
+        r = self.row(" devfreq-17000000.gpu:1"); self.assertEqual(r["valid"], "0"); self.assertIn("thermal_throttle", r["reason"])
+    def test_one_throttled_sample_is_enough(self):
+        import runrow
+        with tempfile.TemporaryDirectory() as d:
+            log = os.path.join(d, "x.log"); clk = os.path.join(d, "x.clk"); open(log, "wb").write(log_text(__file__, b" tok", "2048"))
+            open(clk, "w").write("".join(f"{(T0 + 20 * i) * 1000} 3000 97 250.0 55 {'hot-surface-alert:1' if i == 3 else '0'}\n" for i in range(5)))
+            r = runrow.evaluate(log, clk, "2048", "2900", "0", "", "prefill")
+        self.assertEqual(r["valid"], "0"); self.assertIn("thermal_throttle", r["reason"])
+    def test_missing_record_is_invalid_not_clean(self):
+        r = self.row(""); self.assertEqual(r["valid"], "0"); self.assertIn("no_throttle_record", r["reason"])
+        r = self.row(" ?"); self.assertEqual(r["valid"], "0"); self.assertIn("no_throttle_record", r["reason"])
+    def test_fewer_than_five_samples_is_invalid(self):
+        r = self.row(" 0", n=4); self.assertEqual(r["valid"], "0"); self.assertIn("clock_unsampled", r["reason"])
+    def test_session_with_a_run_marked_valid_without_the_record_is_rejected(self):
+        # runs.csv says valid=1 for a timed run whose clock samples carry no throttle record (the old sampler format)
+        with tempfile.TemporaryDirectory() as tmp:
+            d = os.path.join(tmp, "raw"); os.mkdir(d); make(d)
+            for b in ("parent", "cand"):
+                open(os.path.join(d, f"logs/prefill-3b-4w-{b}-r2.clk"), "w").write(clk_text(thr=""))
+            rc, out = check(d, "--clkmin", os.path.join(d, "clkmin.json"), "--require-logs")
+            self.assertNotEqual(rc, 0, out); self.assertIn("session: REJECT", out); self.assertIn("no_throttle_record", out)
+            for b in ("parent", "cand"):
+                open(os.path.join(d, f"logs/prefill-3b-4w-{b}-r2.clk"), "w").write(clk_text(thr=" cpufreq-cpu0:3"))
+            rc, out = check(d, "--clkmin", os.path.join(d, "clkmin.json"), "--require-logs"); self.assertNotEqual(rc, 0, out)
 
 class Sdpa(unittest.TestCase):
     """gate_check.py sdpa on synthetic pass logs (orin-fused): per tier the pass and case counts, every case PASSED,

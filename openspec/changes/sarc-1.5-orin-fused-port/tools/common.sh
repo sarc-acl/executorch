@@ -56,12 +56,23 @@ gpu_gone() {
   echo "$msg" >&2; mkdir -p $A; echo "$msg" >> $GONE; exit 70
 }
 gone_check() { [[ -f $GONE ]] && exit 70; gpu_alive || gpu_gone "${1:-health check}"; }
-# sampler_start <file>: "epoch_us clock_MHz busy% power_W temp_C" every 0.1 s (runs take 2 to 63 s here); stop
-# with sampler_stop. power = VDD_IN (whole module), temp = gpu-thermal.
+# Thermal throttle record. On this module the kernel throttles through thermal cooling devices
+# (/sys/class/thermal/cooling_device*): cpufreq-cpu0, cpufreq-cpu4 and devfreq-17000000.gpu cap the CPU and GPU
+# clocks (trip 99 C on every zone), the <zone>-throttle-alert devices and hot-surface-alert (trip 70 C) signal it.
+# State 0 = not throttling. The fan (pwm-fan) is cooling, not throttling, and is left out. throttle_read sets THR
+# to "0" when every such device reads 0, to "<type>:<state>+..." for those that do not, and to "?" when a device
+# cannot be read or none is found: no record, which runrow.py never counts as clean.
+CDEV=(); CDEVT=()
+for c in /sys/class/thermal/cooling_device*; do t=$(cat $c/type 2>/dev/null); [[ -n $t && $t != pwm-fan ]] && { CDEV+=("$c/cur_state"); CDEVT+=("$t"); }; done
+throttle_read() { local i s; THR=""
+  for i in "${!CDEV[@]}"; do s="?"; read -r s < "${CDEV[$i]}" 2>/dev/null; [[ $s == 0 ]] || THR+="${THR:++}${CDEVT[$i]}:$s"; done
+  [[ ${#CDEV[@]} -gt 0 ]] || THR="?"; THR=${THR:-0}; }
+# sampler_start <file>: "epoch_us clock_MHz busy% power_W temp_C throttle" every 0.1 s (runs take 2 to 63 s here);
+# stop with sampler_stop. power = VDD_IN (whole module), temp = gpu-thermal, throttle = throttle_read.
 sampler_start() {
   ( exec 9>&-; while :; do
-      read -r f < $GPUDEV/cur_freq; read -r l < $GPULOAD; read -r t < $GZ/temp; read -r mv < $HW/in1_input; read -r ma < $HW/curr1_input
-      mw=$((mv * ma / 1000)); printf '%s %d %d %d.%03d %d.%01d\n' "${EPOCHREALTIME/./}" $((f / 1000000)) $((l / 10)) $((mw / 1000)) $((mw % 1000)) $((t / 1000)) $((t % 1000 / 100))
+      read -r f < $GPUDEV/cur_freq; read -r l < $GPULOAD; read -r t < $GZ/temp; read -r mv < $HW/in1_input; read -r ma < $HW/curr1_input; throttle_read
+      mw=$((mv * ma / 1000)); printf '%s %d %d %d.%03d %d.%01d %s\n' "${EPOCHREALTIME/./}" $((f / 1000000)) $((l / 10)) $((mw / 1000)) $((mw % 1000)) $((t / 1000)) $((t % 1000 / 100)) "$THR"
       sleep 0.1
     done > "$1" 2>/dev/null ) & SP=$!
 }
