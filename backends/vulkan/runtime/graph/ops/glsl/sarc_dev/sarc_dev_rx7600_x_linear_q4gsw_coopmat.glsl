@@ -20,6 +20,8 @@
 #extension GL_EXT_shader_explicit_arithmetic_types : require
 #extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
 #extension GL_EXT_control_flow_attributes : enable
+$if PROF:
+  #extension GL_ARB_shader_clock : require
 
 #define PRECISION ${PRECISION}
 
@@ -117,6 +119,9 @@ $if FRAG_LAYOUT:
 
 $if A_V2:
   #define RX_A_V2
+
+$if PROF:
+  #define RX_PROF
 
 $if IMG_A and IO_STORAGE == "texture3d":
   #define IMG_A

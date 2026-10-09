@@ -14,7 +14,7 @@
 //     ds_read_b64 fragment load over the LDS banks).
 //   RX_A_V2 (with A_PAD_H, constant from the wrapper): the A staging array is uvec2 (not uvec4) with a row pitch of WG_TILE_K + A_PAD_H fp16;
 //     A_PAD_H = 4 or 12 gives 72 or 88 bytes. Needs B_COLMAJOR and CSH_IN_ASH and none of SH_F16V4, CSH_POOL, CSH_FULL, CSH_BAND, FRAG_LAYOUT.
-//   RX_PROF: shader-clock phase timing, MEASUREMENT ONLY (wrong results by design).
+//   RX_PROF: shader-clock phase timing, MEASUREMENT ONLY (wrong results by design). Added after candidate 2's session (2026-10-09); texture3d banded drain only.
 // Body of the SARC q4gsw coopmat linear. Included by a template header
 // (sarc_linear_q4gsw_coopmat.glsl, or its sweep twin in sarc_dev/) that defines
 // the bindings, the spec constants, ACC_T, the optional IO_TEXTURE /
@@ -337,7 +337,20 @@ uvec4 load_a_vec4(const uint row, const uint k_hv4, const uint K4) {
 #endif
 }
 
+#ifdef RX_PROF
+#define PTICK(acc) { const uint p_n = clock2x32ARB().x; acc += (p_n - p_t) & 0xFFFFFu; p_t = p_n; }
+#else
+#define PTICK(acc)
+#endif
+
 void main() {
+#ifdef RX_PROF
+#if !defined(IO_TEXTURE) || defined(CSH_FULL) || defined(CSH_BAND) || defined(CSH_POOL)
+#error "RX_PROF needs the texture3d banded drain"
+#endif
+  uint p_pro = 0u, p_bar = 0u, p_pre = 0u, p_mma = 0u, p_st = 0u, p_ep = 0u, p_dr = 0u, p_wr = 0u;
+  uint p_t = clock2x32ARB().x;
+#endif
   const uvec2 tileID = uvec2(gl_WorkGroupID.xy);
   const uvec2 warpInTile = uvec2(
       gl_SubgroupID % SG_GRID_X,
@@ -466,6 +479,7 @@ void main() {
   //   3. MMA math     — on slice (chunk%2)
   //   4. store        — temp (chunk+1, dequantized) into slice ((chunk+1)%2)
   // =========================================================
+  PTICK(p_pro)
   uint chunk;
   for (chunk = 0; chunk + 1u < num_chunks; ++chunk) {
     const uint cur_base_A = (chunk % 2u) * ASH_SLICE;
@@ -492,6 +506,7 @@ void main() {
     // `coopmat-lds-needs-explicit-memorybarriershared`.
     memoryBarrierShared();
     barrier();
+    PTICK(p_bar)
 
     // --- prefetch chunk+1 -> temp ---
     {
@@ -537,6 +552,7 @@ void main() {
 #endif
     }
 
+    PTICK(p_pre)
     // --- MMA math on the cur slice ---
     [[unroll]] for (uint k = 0; k < WG_TILE_K / MMA_K; ++k) {
       const uint k_start = MMA_K * k;
@@ -609,6 +625,7 @@ void main() {
     }
 #endif
 
+    PTICK(p_mma)
     // --- store temp (chunk+1) -> nxt slice, dequantizing B ---
     {
       [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
@@ -628,6 +645,7 @@ void main() {
       }
 #endif
     }
+    PTICK(p_st)
   }
 
   // --- epilogue: barrier, then MMA on the last chunk (loop peeled) ---
@@ -764,6 +782,7 @@ void main() {
   // compiler has broken before, so check this first if the texture variants
   // miscompile on a new device. Fully unrolling would need the drain hand-expanded so
   // each i gets its own barrier.
+  PTICK(p_ep)
   const uint CSH_TEXELS_PER_ROW = WG_TILE_N / 4u;
   const uint CSH_TEXELS = CSH_ROWS * CSH_TEXELS_PER_ROW;
 #ifdef CSH_FULL
@@ -898,6 +917,7 @@ void main() {
     }
     memoryBarrierShared();
     barrier();
+    PTICK(p_dr)
 
     for (uint t = gl_LocalInvocationID.x; t < CSH_TEXELS; t += WG_SIZE) {
       const uint lr = t / CSH_TEXELS_PER_ROW;
@@ -933,6 +953,7 @@ void main() {
               float(Csh[base + 3u])));
 #endif
     }
+    PTICK(p_wr)
   }
 #endif // CSH_FULL / CSH_BAND
 #else
@@ -963,6 +984,21 @@ void main() {
     }
   }
 #endif // IO_TEXTURE
+#ifdef RX_PROF
+  // PROF output: subgroup 0 writes the phase means over the first two texels of its tile (same layout as the 8da4w twins).
+  PTICK(p_wr)
+  {
+    const float it = float(max(num_chunks, 1u));
+    const vec4 v0 = vec4(float(p_bar), float(p_pre), float(p_mma), float(p_st)) / it;
+    const vec4 v1 = vec4(float(p_pro), float(p_ep), float(p_dr), float(p_wr)) / 64.0;
+    memoryBarrierImage();
+    barrier();
+    if (gl_SubgroupID == 0u && subgroupElect()) {
+      imageStore(t_output, ivec3(tile_n_start / 4u, tile_m_start, 0), v0);
+      imageStore(t_output, ivec3(tile_n_start / 4u + 1u, tile_m_start, 0), v1);
+    }
+  }
+#endif
 }
 
 #endif // SARC_DEV_RX7600_Q4GSW_BODY_GLSLH
