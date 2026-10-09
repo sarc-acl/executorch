@@ -1,0 +1,11 @@
+Round 2, candidate 3 (best per-head-dimension QK^T / attention x V kernels of the 780M's enumeration where the fused node does not serve the call):
+condition of the owner decision: "only if the trace shows attention above 10 % of a cell".
+Attention family of the warm ETDump of round 1's final stack (results/rx7600/sessions/final/trace-families.csv, ms per 2048-token prefill, build `final`):
+  cell        total dispatch   attention   share
+  1B 4w            182.0          13.3      7.3 %
+  1B 8da4w         184.8          13.2      7.1 %
+  3B 4w            500.7          33.3      6.7 %
+  3B 8da4w         505.6          33.3      6.6 %
+  8B 4w           1158.0          49.2      4.2 %
+  8B 8da4w        1162.1          48.7      4.2 %
+No cell is above 10 %: candidate 3 is not started (recorded as not applicable, not as a negative result).
