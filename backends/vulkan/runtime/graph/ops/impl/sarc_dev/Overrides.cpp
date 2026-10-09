@@ -1080,6 +1080,17 @@ const Row kM51Dq[] = {
      Status::kUnverified, true},
 };
 
+// 8da4w, second round: smaller subgroup tiles of zpg_bt (glsl/sarc_dev/sarc_dev_linear_dq8ca_coopmat_zpg_bt.yaml, m51
+// block), for the screen. Selected with ET_VK_SARC_DQ8CA_VARIANT=bt_<tile>.
+const Row kM51DqBt[] = {
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t64x64k32g22s32",
+     {64, 64, 32, 2, 2, 32, 16, false}, kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t64x128k32g22s32",
+     {64, 128, 32, 2, 2, 32, 16, false}, kTex3dTex2d, nullptr, Status::kUnverified},
+};
+
 // A pick sends the shapes its predicate accepts to one candidate kernel (exact
 // name) when the kernel fits; every other shape keeps the selection above.
 struct PickM51 {
@@ -1221,6 +1232,7 @@ struct RegistrarM51 {
   RegistrarM51() {
     register_candidates(kM51Q4, sizeof(kM51Q4) / sizeof(kM51Q4[0]));
     register_candidates(kM51Dq, sizeof(kM51Dq) / sizeof(kM51Dq[0]));
+    register_candidates(kM51DqBt, sizeof(kM51DqBt) / sizeof(kM51DqBt[0]));
     Override o = get_override();
     select_before_m51 = o.select;
     o.select = select_m51;
