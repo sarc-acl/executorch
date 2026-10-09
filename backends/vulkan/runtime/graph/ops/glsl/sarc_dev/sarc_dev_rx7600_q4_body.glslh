@@ -12,6 +12,8 @@
 //   BT_PAD_H (constant from the wrapper; default 8): padding in fp16 of one row (one N column) of the column-major B staging
 //     (B_COLMAJOR), so that the row pitch is WG_TILE_K + BT_PAD_H fp16 (80 bytes for the default; 72 or 88 spread the 16 lanes of a
 //     ds_read_b64 fragment load over the LDS banks).
+//   RX_A_V2 (with A_PAD_H, constant from the wrapper): the A staging array is uvec2 (not uvec4) with a row pitch of WG_TILE_K + A_PAD_H fp16;
+//     A_PAD_H = 4 or 12 gives 72 or 88 bytes. Needs B_COLMAJOR and CSH_IN_ASH and none of SH_F16V4, CSH_POOL, CSH_FULL, CSH_BAND, FRAG_LAYOUT.
 //   RX_PROF: shader-clock phase timing, MEASUREMENT ONLY (wrong results by design).
 // Body of the SARC q4gsw coopmat linear. Included by a template header
 // (sarc_linear_q4gsw_coopmat.glsl, or its sweep twin in sarc_dev/) that defines
@@ -51,7 +53,15 @@ const uint BSH_SLICE = WG_TILE_K * (WG_TILE_N / FP16_PER_VEC4);
 #define A_SH_IDX(m, c) ((((c) / FRAG_ROW_VEC4) * WG_TILE_M + (m)) * FRAG_ROW_VEC4 + ((c) % FRAG_ROW_VEC4))
 #define B_SH_IDX(k, c) ((((c) / FRAG_ROW_VEC4) * WG_TILE_K + (k)) * FRAG_ROW_VEC4 + ((c) % FRAG_ROW_VEC4))
 #else
+#ifdef RX_A_V2
+#if !defined(B_COLMAJOR) || !defined(CSH_IN_ASH) || defined(SH_F16V4) || defined(CSH_POOL) || defined(CSH_FULL) || defined(CSH_BAND)
+#error "RX_A_V2 needs B_COLMAJOR and CSH_IN_ASH, and excludes SH_F16V4, CSH_POOL, CSH_FULL and CSH_BAND"
+#endif
+// uvec2 elements: the A row pitch in elements of the staging array (uvec2)
+const uint A_STRIDE_VEC4 = (WG_TILE_K + A_PAD_H) / 4u;
+#else
 const uint A_STRIDE_VEC4 = (WG_TILE_K + FP16_PER_VEC4) / FP16_PER_VEC4;
+#endif
 const uint B_STRIDE_VEC4 = (WG_TILE_N + FP16_PER_VEC4) / FP16_PER_VEC4;
 
 // One ping-pong slice of each shared-memory buffer (in uvec4 units).
@@ -60,7 +70,11 @@ const uint BSH_SLICE = WG_TILE_K * B_STRIDE_VEC4;
 // No outer parentheses: every use is `base + X_SH_IDX(...)` or a subscript,
 // and this keeps `base + row * STRIDE + col` associated exactly as before
 // FRAG_LAYOUT existed, so the non-Xe2 SPIR-V is unchanged (sarc/golden).
+#ifdef RX_A_V2
+#define A_SH_IDX(m, c) (m) * A_STRIDE_VEC4 + 2u * (c)
+#else
 #define A_SH_IDX(m, c) (m) * A_STRIDE_VEC4 + (c)
+#endif
 #define B_SH_IDX(k, c) (k) * B_STRIDE_VEC4 + (c)
 #endif
 
@@ -102,7 +116,11 @@ const uint POOL_C = WG_TILE_M * WG_TILE_N / FP16_PER_VEC4;
 shared uvec4 Ash[POOL_A_B > POOL_C ? POOL_A_B : POOL_C];
 #define Bsh Ash
 #else
+#ifdef RX_A_V2
+shared uvec2 Ash[2 * ASH_SLICE];
+#else
 shared uvec4 Ash[2 * ASH_SLICE];
+#endif
 #endif
 #ifdef B_COLMAJOR
 // B_COLMAJOR (RX 7900 XTX / RDNA3, 2026-09-27): the WMMA B operand is one N
@@ -121,7 +139,11 @@ shared uvec2 BshT[2 * BT_SLICE];
 shared uvec4 Bsh[2 * BSH_SLICE];
 #endif
 // Expands to exactly the plain stores (keeps the non-SH_F16V4 SPIR-V).
+#ifdef RX_A_V2
+#define ASH_STORE(idx, v) { const uint ash_i = (idx); Ash[ash_i] = (v).xy; Ash[ash_i + 1u] = (v).zw; }
+#else
 #define ASH_STORE(idx, v) Ash[idx] = v
+#endif
 #define BSH_STORE(idx, v) Bsh[idx] = v
 #endif
 #ifdef HAS_BIAS
@@ -850,12 +872,21 @@ void main() {
       }
 #endif
 #ifdef CSH_IN_ASH
+#ifdef RX_A_V2
+      coopMatStore(
+          coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]), Ash,
+          (warpInTile.y * MMA_M * WG_TILE_N +
+              MMA_N * (MMAS_PER_SG_N * warpInTile.x + j)) / 4u,
+          WG_TILE_N / 4u,
+          gl_CooperativeMatrixLayoutRowMajor);
+#else
       coopMatStore(
           coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]), Ash,
           (warpInTile.y * MMA_M * WG_TILE_N +
               MMA_N * (MMAS_PER_SG_N * warpInTile.x + j)) / FP16_PER_VEC4,
           WG_TILE_N / FP16_PER_VEC4,
           gl_CooperativeMatrixLayoutRowMajor);
+#endif
 #else
       coopMatStore(
           coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]), Csh,
@@ -875,6 +906,14 @@ void main() {
           tile_m_start + (lr / MMA_M) * SG_TILE_M + i * MMA_M + (lr % MMA_M);
       const uint base = lr * WG_TILE_N + lc4 * 4u;
 #ifdef CSH_IN_ASH
+#ifdef RX_A_V2
+      // base is a multiple of 4 halves: the texel is one uvec2.
+      const uvec2 q = Ash[base / 4u];
+      imageStore(
+          t_output,
+          ivec3(tile_n_start / 4u + lc4, m, 0),
+          vec4(unpackHalf2x16(q.x), unpackHalf2x16(q.y)));
+#else
       // base is a multiple of 4 halves: the texel is one half of a uvec4.
       const uvec4 q = Ash[base / FP16_PER_VEC4];
       const bool hi = (base % FP16_PER_VEC4) != 0u;
@@ -882,6 +921,7 @@ void main() {
           t_output,
           ivec3(tile_n_start / 4u + lc4, m, 0),
           vec4(unpackHalf2x16(hi ? q.z : q.x), unpackHalf2x16(hi ? q.w : q.y)));
+#endif
 #else
       imageStore(
           t_output,

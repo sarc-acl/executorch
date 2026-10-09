@@ -29,6 +29,8 @@ sarc_dev_rx7600_x_linear_q4gsw_coopmat:
     CSH_FULL: false
     CSH_POOL: false
     BT_PAD_H: 8
+    A_V2: false
+    A_PAD_H: 8
   shader_variants:
     - NAME: sarc_dev_rx7600_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt_texture3d_texture2d_half
     - NAME: sarc_dev_rx7600_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbtbp4_texture3d_texture2d_half
@@ -46,3 +48,25 @@ sarc_dev_rx7600_x_linear_q4gsw_coopmat:
       SG_GRID_X: 2
       SG_GRID_Y: 4
       BT_PAD_H: 12
+    - NAME: sarc_dev_rx7600_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbtap8bp8_texture3d_texture2d_half
+      A_V2: true
+      A_PAD_H: 8
+    - NAME: sarc_dev_rx7600_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbtap4bp8_texture3d_texture2d_half
+      A_V2: true
+      A_PAD_H: 4
+    - NAME: sarc_dev_rx7600_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbtap4bp4_texture3d_texture2d_half
+      BT_PAD_H: 4
+      A_V2: true
+      A_PAD_H: 4
+    - NAME: sarc_dev_rx7600_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbtap4bp12_texture3d_texture2d_half
+      BT_PAD_H: 12
+      A_V2: true
+      A_PAD_H: 4
+    - NAME: sarc_dev_rx7600_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbtap12bp4_texture3d_texture2d_half
+      BT_PAD_H: 4
+      A_V2: true
+      A_PAD_H: 12
+    - NAME: sarc_dev_rx7600_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbtap8bp12_texture3d_texture2d_half
+      BT_PAD_H: 12
+      A_V2: true
+      A_PAD_H: 8

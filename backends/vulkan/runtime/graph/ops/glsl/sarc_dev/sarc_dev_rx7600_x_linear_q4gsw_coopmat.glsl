@@ -9,7 +9,7 @@
 /*
  * SARC development zone, RX 7600 campaign round 2 (openspec/changes/sarc-1.5-rx7600-prefill-refine): the 4w coopmat linear wrapper (the
  * 780m sweep twin's text from the version directive on) over sarc_dev_rx7600_q4_body.glslh, a copy of the release body with the options
- * named there (BT_PAD_H: row padding of the column-major B staging). All options default off.
+ * named there (BT_PAD_H: row padding of the column-major B staging; A_V2 / A_PAD_H: uvec2 A staging with its own row padding). All options default off.
  */
 
 #version 450 core
@@ -115,6 +115,9 @@ $if CSH_BAND:
 $if FRAG_LAYOUT:
   #define FRAG_LAYOUT
 
+$if A_V2:
+  #define RX_A_V2
+
 $if IMG_A and IO_STORAGE == "texture3d":
   #define IMG_A
 
@@ -134,5 +137,6 @@ const uint SG_GRID_X = ${SG_GRID_X};
 const uint SG_GRID_Y = ${SG_GRID_Y};
 const uint SUBGROUP_SIZE = ${SUBGROUP_SIZE};
 const uint BT_PAD_H = ${BT_PAD_H};
+const uint A_PAD_H = ${A_PAD_H};
 
 #include "sarc_dev_rx7600_q4_body.glslh"
