@@ -563,8 +563,9 @@ pipeline code of this branch, the parent's kernels included (finding F1 below).*
      (`refpages/latest/SubgroupLocalInvocationId.md`)
    - What this means here: the fused shaders are SPIR-V 1.3 (header word `00010300` in `build/topic6`; the
      instance asks for Vulkan 1.1, `vk_api/Runtime.cpp`) and the pipeline does not set the flag, so **the
-     specification does not guarantee full subgroups for this kernel**; the run-time check is what the kernel
-     rests on. It is sufficient: the local size is G x 16 in X (`SdpaB580Fused.cpp`, `LocalWorkGroup(wg, 1, 1)`),
+     specification does not guarantee full subgroups for this kernel**; the run-time check is what the
+     kernel's arithmetic rests on (it does not make the pipeline valid: finding F1). For the arithmetic it is
+     sufficient: the local size is G x 16 in X (`SdpaB580Fused.cpp`, `LocalWorkGroup(wg, 1, 1)`),
      and `gl_NumSubgroups == G` with `gl_SubgroupSize == 16` leaves no room for a subgroup with fewer than 16 of
      the workgroup's invocations. The kernel indexes lanes by `gl_SubgroupID` and `gl_SubgroupInvocationID`
      only, never by `gl_LocalInvocationIndex` (except in the NaN fallback, where any `WG_TILE_M` distinct
@@ -590,7 +591,8 @@ pipeline code of this branch, the parent's kernels included (finding F1 below).*
      is cut short). The kernel's operands depend only on loop counters and `gl_SubgroupID`, equal within a
      subgroup.
 
-**Finding F1 (not a change of this campaign; reported for the owner).**
+**Finding F1 (an open validity defect of the two new fused pipelines as well; the fix needs an owner decision,
+see "Decision needed from the owner").**
 * "VUID-RuntimeSpirv-OpTypeCooperativeMatrixKHR-10770 Any pipeline containing a shader with
 OpTypeCooperativeMatrixKHR or OpCooperativeMatrix*KHR instructions must be created with the
 VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT flag or the shader module must be version 1.6 or
