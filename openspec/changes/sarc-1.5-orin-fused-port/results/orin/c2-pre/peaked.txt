@@ -1,0 +1,20 @@
+[sarc_dev] softmax variant: orin_g64
+[sarc_dev] profile active: orin-fused2
+[sarc_dev] overrides active: unverified=1 variant= dq8ca_variant=
+[sarc_dev] orin fused attention: sarc_dev_orin_sdpa_fused3sb_d64_t32x32g11s32rk sarc_dev_orin_sdpa_fused3sb_d128_t16x64g11s32rko
+[sdpa-error] peaked_tiny_gqa_s256 max_abs=0.00244129 rms=0.000375728 max_abs_ref=0.988095
+[sdpa-kernels] peaked_tiny_gqa_s256 qk=? softmax=? av=? fused="kernel_name": "sarc_dev_orin_sdpa_fused3sb_d64_t32x32g11s32rk_buffer_buffer_half", "operator_id": 0 no_mask_fill=no pairing=ok
+[sdpa-correctness] peaked_tiny_gqa_s256 S=256 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/32768 PASSED
+[sdpa-error] peaked_1b_head_config_s256_pos256 max_abs=0.00277597 rms=0.000374231 max_abs_ref=0.985859
+[sdpa-kernels] peaked_1b_head_config_s256_pos256 qk=? softmax=? av=? fused="kernel_name": "sarc_dev_orin_sdpa_fused3sb_d64_t32x32g11s32rk_buffer_buffer_half", "operator_id": 0 no_mask_fill=no pairing=ok
+[sdpa-correctness] peaked_1b_head_config_s256_pos256 S=256 input_pos=256 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/524288 PASSED
+[sdpa-error] peaked_8b_head_config_s256 max_abs=0.00288782 rms=0.00036986 max_abs_ref=0.999783
+[sdpa-kernels] peaked_8b_head_config_s256 qk=? softmax=? av=? fused="kernel_name": "sarc_dev_orin_sdpa_fused3sb_d128_t16x64g11s32rko_buffer_buffer_half", "operator_id": 0 no_mask_fill=no pairing=ok
+[sdpa-correctness] peaked_8b_head_config_s256 S=256 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/1048576 PASSED
+[sdpa-error] peaked_tiny_gqa_s2048 max_abs=0.0027566 rms=0.000361834 max_abs_ref=0.981968
+[sdpa-kernels] peaked_tiny_gqa_s2048 qk=? softmax=? av=? fused="kernel_name": "sarc_dev_orin_sdpa_fused3sb_d64_t32x32g11s32rk_buffer_buffer_half", "operator_id": 0 no_mask_fill=no pairing=ok
+[sdpa-correctness] peaked_tiny_gqa_s2048 S=2048 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/262144 PASSED
+[sdpa-error] peaked_tiny_d128_s2048 max_abs=0.00252268 rms=0.000363462 max_abs_ref=0.998644
+[sdpa-kernels] peaked_tiny_d128_s2048 qk=? softmax=? av=? fused="kernel_name": "sarc_dev_orin_sdpa_fused3sb_d128_t16x64g11s32rko_buffer_buffer_half", "operator_id": 0 no_mask_fill=no pairing=ok
+[sdpa-correctness] peaked_tiny_d128_s2048 S=2048 input_pos=0 D=128 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/524288 PASSED
+[sdpa-correctness] tier=peaked cases_run=5
