@@ -1,40 +1,74 @@
 # STATUS: sarc-1.5-orin-fused-port
 
-**2026-10-09 01:37 UTC. Candidate 1 (fused attention kernel, profile `orin-fused1`) passed its gate `s3-c1` on
+**2026-10-09 05:10 UTC. Candidate 1 (fused attention kernel, profile `orin-fused1`) passed its gate `s3-c1` on
 build `topic1`: +6.01 % geomean over the tuned parent (1B +10.9 / +10.0 %, 3B +4.8 / +4.4 %, 8B +3.3 / +3.0 %), no
-next-token item differs, reference-error criterion 1 met. NOT CLOSED, and `s3-c1` is not the result that will be
-reported: three things taken from the 4070 Ti fused port are put right first (thermal-throttle record in the
-timed runs; the shared test file as insert-only blocks; the kernel's own check that its workgroup is one full
-subgroup), and candidate 1 is gated again on the build that has all three (`topic4`). Candidate 2 (the faster
-form of the kernel per head_dim, `orin-fused2`) follows, with the owner's agreement of 01:00 UTC; the closing
-chain is queued behind it. Nothing measured on `topic3` or `topic4` exists yet.**
+next-token item differs, reference-error rule met with the real-text evidence (`probe/c1-fused/`). NOT CLOSED,
+and `s3-c1` is not the result that will be reported: three things taken from the 4070 Ti fused port are put
+right first (thermal-throttle record in the timed runs; the shared test file as insert-only blocks; the kernel's
+own check that its workgroup is one full subgroup), and candidate 1 is being gated again on the build that has
+all three (`topic4`, which passed its correctness pre-check `g-pre`). Candidate 2 (`orin-fused2`) follows, with
+the owner's agreement of 01:00 UTC; the closing chain is queued behind it. No timed number on `topic4` exists yet.**
 
 All times are UTC from `date -u`.
 
 ## Running now
 
-- Device `duck-naughty` (detached, `~/hmz-sarc-orin-fused/jobs/<job>.{status,out}`), three chains in a row:
-  - `chain4` (waiting since 22:07, measuring since 00:35): 41-prompt real-text logits of the four arms (parent /
-    candidate 1 x default / tiled, builds `parent` and `topic1`), then the logits at the gate's unaligned position,
-    the comparison and `ref_error_rule.py` (`probe/c1-fused/`), and the peaked-tier error of both arms. One arm
-    takes 42 minutes (parent-default 00:35 to 01:17), so it ends about 03:30, not 02:10 as written before.
-  - `chain8` (queued 01:26 behind `chain4`), about 9 hours, until about 12:30: `g-pre` (candidate 1 on `topic4`,
-    one correctness pass per tier; all PASSED: everything below is on `topic4`; otherwise on `topic3`, and the
-    failure is a finding; the choice is written to `BUILD.txt` on the device); `s4-aa2` (A/A re-check, parent
-    build against that build, both with the parent environment, committed clock floor, with the throttle
-    record); `sdpa-error2` (stock / parent / candidate 1 / candidate 2, that build's test binary); `s5-c1`
-    (candidate 1 gated again: parent build against that build with `orin-fused1`); `c2-pre` and `s6-c2`
-    (candidate 2, `orin-fused2`, against candidate 1, both on that build).
-  - `chain9` (queued behind `chain8`), the closing chain, 4.5 to 7.5 hours: `s7n-noenv` (hook control on the
-    final build); `s7-final` (only if the final stack is `orin-fused2`: its full gate against the tuned parent);
-    `s8-pristine` (final stack against the pristine state); the real-text probe of the final stack on the final
-    build (`probe/final-fused/`); `mem1` (memory probe of the K / V copies); `roof-final` (fresh roofs,
-    igpu-roofline `fast`, 41 minutes in the first campaign).
-  - Ended before they started a job: `chain5` (candidate 2 on `topic2`, 00:41), `chain6` and `chain7` (the same
-    steps as `chain8` and `chain9`, fixed on `topic3`; 01:26).
-- Workstation: nothing. `topic4` (`0bed38090`) was built 01:25 to 01:36 and is deployed with its `logits_dump`
-  (01:36, before `chain4` ended).
+- Device `duck-naughty` (detached, `~/hmz-sarc-orin-fused/jobs/<job>.{status,out}`):
+  - `chain8` (measuring since 04:59), about 9 hours, until about 14:00, everything on `topic4`: `g-pre` done
+    (below); `s4-aa2` running (A/A re-check, parent build against `topic4`, both with the parent environment,
+    committed clock floor, with the throttle record); then `sdpa-error2` (stock / parent / candidate 1 /
+    candidate 2, `topic4`'s test binary); `s5-c1` (candidate 1 gated again: parent build against `topic4` with
+    `orin-fused1`); `c2-pre` and `s6-c2` (candidate 2, `orin-fused2`, against candidate 1, both on `topic4`).
+  - `chain9` (queued behind `chain8`), the closing chain, 4.5 to 7.5 hours: `s7n-noenv` (hook control on
+    `topic4`); `s7-final` (only if the final stack is `orin-fused2`: its full gate against the tuned parent);
+    `s8-pristine` (final stack against the pristine state); the real-text probe of the final stack on `topic4`
+    (`probe/final-fused/`); `mem1` (memory probe of the K / V copies); `roof-final` (fresh roofs, igpu-roofline
+    `fast`, 41 minutes in the first campaign).
+  - Done: `chain4` (00:35 to 04:59). Ended before they started a job: `chain5` (candidate 2 on `topic2`, 00:41),
+    `chain6` and `chain7` (the same steps as `chain8` and `chain9`, fixed on `topic3`; 01:26).
+- Workstation: nothing. `topic4` (`0bed38090`) was built 01:25 to 01:36 and deployed 01:36.
 - Coordinator hold: `tools/HOLD.md` (device: `~/hmz-sarc-orin-fused/HOLD`; builds: `.artifacts/HOLD`). None seen.
+
+## Build with the one-full-subgroup check: pre-check `g-pre` (04:59 to 05:04 UTC, `topic4`, `orin-fused1`)
+
+One pass per tier: `all` 4 of 4, `extended` 8 of 8, `full` 4 of 4, `peaked` 5 of 5, `fused` 5 of 5 PASSED; all 26
+cases served by the fused kernel (`fused=...fused3sb...`, `pairing=ok` on every line). So the check does not
+fire on this driver: a workgroup of 32 is one subgroup of 32 here, now tested by the kernel and no longer
+assumed. The error against the fp32 reference on the five S = 2048 cases equals `topic1`'s in every printed
+digit (1B rms 2.04856e-05, maximum 7.22706e-04). `chain8` wrote `topic4` into `BUILD.txt`.
+
+## Candidate 1 under the reference-error rule: real-text evidence (`chain4`, builds `parent` and `topic1`)
+
+`results/orin/probe/c1-fused/`: `ref_error_rule.py` verdict **MET**; no next-token item differs
+(`differing-items.txt` is empty), so nothing has to be accepted under the rule; the evidence is on record as D3
+asks. 41 prompts per cell, last-position logits, `compare.csv`:
+
+| cell | top-1 differs: floor / candidate | mean KL: floor / candidate | maximum KL: floor / candidate | \|ln ppl ratio\|: floor / candidate |
+|---|---|---|---|---|
+| 1B 4w | 0 / 0 | 5.4e-04 / 9.0e-04 | 0.0137 / 0.0144 | 0.0126 / 0.0150 |
+| 1B 8da4w | 1 / 2 | 0.0729 / 0.0410 | 0.808 / 0.291 | 0.0081 / 0.0259 |
+| 3B 4w | 0 / 0 | 1.6e-04 / 5.0e-04 | 0.0026 / 0.0131 | 0.0005 / 0.0039 |
+| 3B 8da4w | 1 / 0 | 0.0158 / 0.0190 | 0.103 / 0.292 | 0.0441 / 0.0005 |
+| 8B 4w | 0 / 0 | 1.5e-04 / 5.0e-04 | 0.0025 / 0.0152 | 0.0021 / 0.0028 |
+| 8B 8da4w | 1 / 2 | 0.0219 / 0.0170 | 0.366 / 0.118 | 0.0135 / 0.0106 |
+
+floor = parent tiled against parent default (two arms that share the attention kernels); candidate = candidate
+default against parent default.
+
+- Gross-divergence check (D3 item 3: mean KL above 0.5 nat or top-1 differing on more than a third of the
+  prompts): not met in any cell; the largest mean KL is 0.041 nat (1B 8da4w), top-1 differs on at most 2 of 41.
+- Said plainly: against the older near-tie measure (D1 item 4, twice the floor) the candidate is outside in four
+  cells (3B 4w and 8B 4w on KL, where the floor is 1.5e-04 nat because both parent arms run the same attention
+  kernels; 3B 8da4w on maximum KL; 1B 8da4w on the perplexity ratio). D3 replaced that measure for arithmetic
+  changes for exactly this reason; the numbers are in `compare.csv`.
+- Criterion 1 on the cases that are not S = 2048 (outside the criterion, on record): the candidate's maximum error
+  is larger than the parent's on `3b_head_config_s256` (8.203e-04 against 7.787e-04) and
+  `8b_head_config_s1024_pos1024` (7.226e-05 against 6.942e-05), its rms on `tiny_gqa_pos64` (3.2378e-05 against
+  3.2319e-05); smaller or equal on the other 9 of 12 in both measures.
+- Peaked tier (sharp rows, the rescale path; `raw/sdpa-error1-peaked/`, recorded only): rms 3.62e-04 to 3.76e-04
+  for candidate 1 and 3.65e-04 to 3.78e-04 for the parent on the five cases; maximum 2.44e-03 to 2.89e-03 against
+  2.26e-03 to 3.02e-03.
+- This evidence is for `topic1`'s kernel. The final stack's probe is repeated on `topic4` by `chain9`.
 
 ## Final stack: the rule, fixed 01:22 UTC before `s5-c1` and `s6-c2` have a number
 
