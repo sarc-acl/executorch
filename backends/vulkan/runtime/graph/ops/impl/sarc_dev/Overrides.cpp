@@ -726,6 +726,31 @@ const Preference kXe2_dq_k64[] = {
     {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
 };
 // xe2 end
+// b70-fused begin: fused attention on the Arc Pro B70 (openspec/changes/sarc-1.5-b70-fused-port)
+// A b70-fused profile is xe2-refine5 for every call the fused kernel does not take, plus the B580's fused
+// kernel variants below, one per head_dim (shader name after sarc_dev_b580_sdpa_fused_; "" = none).
+// b70-fused1 is the pair the B580 campaign selected (b580-fused1 at cea76c634): 16 rows per workgroup;
+// head_dim 64 in 4 subgroups with 64-column blocks, head_dim 128 in 8 subgroups with 128-column blocks.
+// b70-fused-<variant> are the single-variant profiles of the one kernel screen (the B580's screen5-select).
+struct FusedB70 {
+  const char* profile;
+  const char* variants;
+};
+const FusedB70 kFusedB70[] = {
+    {"b70-fused1", "d64_t16x64s16m8g4roj,d128_t16x128s16m8g8oj"},
+    {"b70-fused-d64_t32x32s32m8ro", "d64_t32x32s32m8ro"},
+    {"b70-fused-d64_t16x64s16m8g4roj", "d64_t16x64s16m8g4roj"},
+    {"b70-fused-d64_t16x64s16m8g4oj", "d64_t16x64s16m8g4oj"},
+    {"b70-fused-d128_t16x64s32m8ro", "d128_t16x64s32m8ro"},
+    {"b70-fused-d128_t16x128s16m8g8oj", "d128_t16x128s16m8g8oj"},
+    {"b70-fused-d128_t16x64s16m8g4oj", "d128_t16x64s16m8g4oj"},
+};
+// The function pointers of impl/sarc_dev/b580/SdpaB580Fused.cpp, whichever static initializer runs first.
+Override& fused_b70() {
+  static Override fused;
+  return fused;
+}
+// b70-fused end
 struct Profile {
   const char* name;
   const Preference* prefs;
@@ -827,6 +852,15 @@ const Profile kProfiles[] = {
     {"xe2-q4-g82", kXe2_q4_g82, sizeof(kXe2_q4_g82) / sizeof(Preference)},
     {"xe2-dq-k64", kXe2_dq_k64, sizeof(kXe2_dq_k64) / sizeof(Preference)},
     // xe2 end
+    // b70-fused begin
+    {"b70-fused1", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
+    {"b70-fused-d64_t32x32s32m8ro", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
+    {"b70-fused-d64_t16x64s16m8g4roj", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
+    {"b70-fused-d64_t16x64s16m8g4oj", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
+    {"b70-fused-d128_t16x64s32m8ro", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
+    {"b70-fused-d128_t16x128s16m8g8oj", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
+    {"b70-fused-d128_t16x64s16m8g4oj", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
+    // b70-fused end
 };
 const Profile* requested_profile() {
   static const Profile* p = []() -> const Profile* {
@@ -844,6 +878,17 @@ const Profile* requested_profile() {
   }();
   return p;
 }
+// b70-fused begin
+const char* fused_variants_b70() {
+  const Profile* p = requested_profile();
+  for (const FusedB70& f : kFusedB70) {
+    if (p != nullptr && std::strcmp(p->name, f.profile) == 0) {
+      return f.variants;
+    }
+  }
+  return "";
+}
+// b70-fused end
 
 std::optional<Choice> dev_select(
     const DeviceInfo& device,
@@ -912,6 +957,12 @@ struct Registrar {
     // the 8da4w variable needs active dq8ca rows (see dev_select).
     o.force_path = !requested_variant().empty();
     o.select = dev_select;
+    // b70-fused begin
+    if (*fused_variants_b70() != 0) {
+      o.sdpa_fused_add = fused_b70().sdpa_fused_add;
+      o.sdpa_fused_serves = fused_b70().sdpa_fused_serves;
+    }
+    // b70-fused end
     set_override(o);
     if (requested_profile() != nullptr) {
       std::cerr << "[sarc_dev] profile active: " << requested_profile()->name
@@ -927,5 +978,23 @@ struct Registrar {
 } registrar;
 
 } // namespace
+
+// b70-fused begin: called by impl/sarc_dev/b580/SdpaB580Fused.cpp (the B580's node, used unchanged)
+const char* sdpa_fused_variants_b580() {
+  return fused_variants_b70();
+}
+void register_sdpa_fused_b580(
+    void (*add)(ComputeGraph&, const std::vector<int32_t>&),
+    bool (*serves)(ComputeGraph*, const std::vector<int32_t>&)) {
+  fused_b70().sdpa_fused_add = add;
+  fused_b70().sdpa_fused_serves = serves;
+  if (*fused_variants_b70() != 0) {
+    Override o = get_override();
+    o.sdpa_fused_add = add;
+    o.sdpa_fused_serves = serves;
+    set_override(o);
+  }
+}
+// b70-fused end
 } // namespace sarc
 } // namespace vkcompute
