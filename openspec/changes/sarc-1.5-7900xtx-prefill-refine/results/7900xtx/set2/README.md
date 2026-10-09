@@ -14,3 +14,10 @@ Owner decision 2026-10-08 23:38 UTC and coordinator note 2026-10-09 04:26 UTC. T
 - `phases/`: phase timing of the twins (shader clock, share of a wave's cycles, median over the twelve shapes): 4w table kernel: barrier 51.8 %, LDS stores 15.9 %,
   MMA 28.6 %, fetch 1.9 % (the same pattern as 8da4w); 8da4w t256x64k32g24: barrier 31.5 -> 31.6 %, LDS stores 17.4 -> 31.4 % with the 24-byte pitch (barrier + LDS 48.9 -> 63.0 %, up);
   so the barrier + LDS share does not drop, which the owner decision asked to show first. The RDNA3 7900 XTX does not behave like the RX 7600 here (cause not investigated; UNVERIFIED).
+
+## Second screen of item 2 (build `c8`, commit d5d65ac5f, 2026-10-09 09:15 to 09:35 UTC, `tools/q-set2b.sh`)
+Branch-free chunk loop (`bf`), the stores of the next chunk interleaved with the MMAs (`bfaXbY`), and the ablation twins on the incumbent tile `t256x64k32g24s32`
+(`sync-variants-8da4w.txt`, `screen3-8da4w.csv`): **no synchronisation variant qualifies** (`picks-8da4w-sync.csv`: 0 of 12 shapes; medians 0.90 to 0.97 of the incumbent).
+What the ablations bound (median over the twelve shapes, ratio incumbent / twin): without the barrier 1.008, without the stores of the next chunk 1.069, without all staging 1.069,
+without staging and barrier 1.101. The barrier of the chunk loop is worth under 1 % of the kernel and the staging at most 7 to 10 %; the barrier share of the phase timing (31 %) is
+time a wave waits while the other waves of the workgroup work, not a cost that removing the barrier recovers.
