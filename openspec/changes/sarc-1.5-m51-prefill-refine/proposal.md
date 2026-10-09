@@ -229,6 +229,14 @@ drain flags, the phase-timing twin of the xclipse 4w row.
   was faster outside the noise band. Reference-error evidence for the whole stack: the `c4` and `c5` evidence stands for the
   8da4w path and the attention kernels, and the 4w `bz` kernel produces output bit-identical to `c5`'s on all 32 prompts of every
   cell (`c8` against `c5`) as well as errors not larger than the parent's in the production-diff.
+  After the build `fin2` of that verification, one later commit changed a comment in the yaml of the 8da4w kernel (it had stated a
+  register count) and nothing else outside this change directory (`git diff` of the head against `fin2`'s commit, outside
+  `openspec/`, is that one comment line; a yaml comment does not reach code generation), so `fin2` remains the build of the head's
+  sources.
+- **Compiler dependence of the `bz` kernel:** its shared-memory stores of the two halves of a pool vector (`.xy` / `.zw`) are only
+  free of a race if the compiler emits them as component stores. This was checked in the SPIR-V of the build made with the
+  native compiler (component stores, no load-modify-store of the whole vector); it is UNVERIFIED for the pinned compiler of the
+  container. Re-check the SPIR-V when the kernel is first built there.
 - **Directions left for later work:** a new 4w or 8da4w GEMM kernel (the linear kernels are most of the prefill and the
   screens found no tile that beats the incumbents, apart from the 4w pick of `c3` on the 8B shapes), a fused SwiGLU (the elementwise operators are stock kernels), an 8B decode check, and a driver-side fix for the job watchdog that makes the 8B setting unnecessary.
 - **Builds:** the golden check is pending; the compiler launches of a build wait while a timed session runs
