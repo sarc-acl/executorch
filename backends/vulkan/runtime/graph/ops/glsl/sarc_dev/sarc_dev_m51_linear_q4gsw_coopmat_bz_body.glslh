@@ -485,9 +485,9 @@ void main() {
     const uint cur_base_B = (chunk % 2u) * BSH_SLICE;
 #endif
     const uint nxt_base_A = ((chunk + 1u) % 2u) * ASH_SLICE;
-#if defined(CSH_POOL)
+#if defined(CSH_POOL) && !defined(B_COLMAJOR)
     const uint nxt_base_B = BSH_BASE + ((chunk + 1u) % 2u) * BSH_SLICE;
-#elif !defined(B_COLMAJOR)
+#elif !defined(B_COLMAJOR) && !defined(CSH_POOL)
     const uint nxt_base_B = ((chunk + 1u) % 2u) * BSH_SLICE;
 #endif
 
