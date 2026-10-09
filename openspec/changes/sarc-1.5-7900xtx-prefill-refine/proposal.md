@@ -229,56 +229,56 @@ A tile of K step 64 for 4w would halve the barriers but was not tried: the relea
 **No variant passes the pre-registered screen rule, so there is nothing to gate: items 2 and 3 end as negative results with measured ceilings.** The stop rule cannot count candidates that do not exist; it applies to this set as "no gated candidate" (see the stop-rule paragraph below).
 The RX 7600's +5 % from the 24-byte pitch does not carry over to this card (cause not investigated; UNVERIFIED).
 
-## Final stack against the pristine parent, on the head's build (2026-10-09, `sessions/final2/`; supersedes the first verification of 2026-10-09 06:00 UTC, `sessions/final/`, run before the second set)
+## Final stack against the pristine parent, on the build of the committed head (2026-10-09, `sessions/final3/`; supersedes `sessions/final2/` on build c9 and `sessions/final/`)
 
-Build `c9` = commit `a554a5791`, no local patch. After it the only code change is the 33-line profile `7900xtx-refine6` of candidate 7 in the `7900xtx` block of `Overrides.cpp` (`git diff a554a5791 HEAD -- backends sarc`), selected by name only; with `refine5` or nothing selected it is inert (candidate 7's own gate ran `refine5` on the new build `c10` as its parent arm, `sessions/c7-w2/`; the final session itself was not repeated on the newer head). The other later commits are evidence, documents and tools. The head contains the second-set variants, all default off: with nothing selected it reproduces the parent snapshot
-(`sessions/inert/`, 32 of 32 lines). Native build, shipped-SPIR-V golden pending as in the sibling campaigns: 14 of 53 variants differ from `sarc/golden/spirv.json` (owners 780M / Arc), the same 14 as in the parent build, 0 differ from the parent build's own
-(`results/7900xtx/golden-diff-parent.txt`, `sessions/final2/golden-c9.txt`). Pristine parent = build `parent` (commit `90fe4d013`), `ET_VK_SARC_UNVERIFIED=1` only. One timed session, both arms interleaved, 7 valid runs per arm and cell (84 of 84 timed runs valid; the 24 untimed next-token rows of the file hold 22 invalid runs, 11 real-text and 11 unaligned-prompt runs with `clock_low`: cold runs without `--warmup`, compared as text only, kept in `runs.csv`;
-every observer value in the 84 logs equal to `runs.csv`, prompt 2048 tokens, 0 generated; no foreign GPU user, `foreign_wait_s` at most 1). The cool-start wait used the core temperature (47 C at the start, memory sensor 60 C): it began at once.
+Build `c10` = commit `5950764fa`, exported from the git object stores with pinned submodules, built natively on the scratch disk, no local patch. It is the code of the committed head: `git diff --name-only 5950764fa HEAD -- . ':!openspec'` is empty (the later commits are evidence, documents and tools).
+The head contains the second-set variants and the `refine6` profile, all inert unless named: with nothing selected the build reproduces the parent snapshot (`sessions/inert3/`, 32 of 32 `verify.sh` lines). Native build, shipped-SPIR-V golden pending as in the sibling campaigns: 14 of 53 variants differ
+from `sarc/golden/spirv.json` (owners 780M / Arc), the same 14 as in the parent build, 0 differ from the parent build's own (`results/7900xtx/golden-diff-parent.txt`, `sessions/final3/golden-c10.txt`); the dispatched kernel set of the final stack on c10 equals that of the earlier session on c9
+(139 (model, scheme, kernel, count) rows in `kernels.csv`, identical). Pristine parent = build `parent` (commit `90fe4d013`), `ET_VK_SARC_UNVERIFIED=1` only. One timed session, both arms interleaved, 7 valid runs per arm and cell (84 of 84 timed runs valid; the 24 untimed next-token rows of the file hold 23 invalid runs, all `clock_low`:
+cold runs without `--warmup`, compared as text only, kept in `runs.csv`; every observer value in the 84 timed logs equal to `runs.csv`, prompt 2048 tokens, 0 generated; no foreign GPU user, `foreign_wait_s` at most 1). The cool-start wait used the core temperature (`gtemp_core`).
 
 | cell | pristine parent tok/s | final stack tok/s | gain | published 2026-09-28 | parent vs published |
 |---|---:|---:|---:|---:|---:|
-| 1B 4w | 19883.50 | 22260.90 | +11.96 % | 20078 | -0.97 % |
-| 1B 8da4w | 22260.90 | 24674.70 | +10.84 % | 22261 | -0.00 % |
-| 3B 4w | 10189.10 | 10556.70 | +3.61 % | 10089 | +0.99 % |
-| 3B 8da4w | 10502.60 | 11838.20 | +12.72 % | 10396 | +1.03 % |
-| 8B 4w | 4762.79 | 4911.27 | +3.12 % | 4774 | -0.23 % |
-| 8B 8da4w | 5007.33 | 5389.47 | +7.63 % | 4971 | +0.73 % |
+| 1B 4w | 20480.00 | 23011.20 | +12.36 % | 20078 | +2.00 % |
+| 1B 8da4w | 22021.50 | 24381.00 | +10.71 % | 22261 | -1.08 % |
+| 3B 4w | 10138.60 | 10666.70 | +5.21 % | 10089 | +0.49 % |
+| 3B 8da4w | 10502.60 | 11770.10 | +12.07 % | 10396 | +1.03 % |
+| 8B 4w | 4762.79 | 4899.52 | +2.87 % | 4774 | -0.23 % |
+| 8B 8da4w | 5019.61 | 5375.33 | +7.09 % | 4971 | +0.98 % |
 
-Geometric mean **+8.24 %** (min +3.12 %, max +12.72 %); the first verification, on the build of `a8dd09570` before the second set, gave +7.91 % (1B 4w +9.78 %, 1B 8da4w +10.98 %, 3B 4w +5.76 %, 3B 8da4w +11.30 %, 8B 4w +2.87 %, 8B 8da4w +7.03 %): the two sessions
-are the same stack on two builds whose shipped paths are identical; their difference is session noise (repeat spreads of 1 to 6 % in the parent arms). The N1 expectation was +20 to +30 %; this card lands below it (what limits it: below). The stages
-measured one by one multiply to +9.2 % (candidates 1, 3, 5, 6, each in its own session); the single final session is the figure of record.
+Geometric mean **+8.33 %** (min +2.87 %, max +12.36 %; every cell outside the +-2 % band). Earlier sessions of the same stack: +8.24 % on build `c9` (`sessions/final2/`) and +7.91 % on build `final` (`sessions/final/`, before the second set): same shipped paths, the differences are session noise
+(repeat spreads of 1 to 6 % in the parent arms; candidate 7's session shows two cells with identical kernels in both arms moving +2.4 and +2.9 %). The N1 expectation was +20 to +30 %; this card lands below it (what limits it: below). The stages measured one by one multiply to +9.2 % (candidates 1, 3, 5, 6, each in its own session); the single final session is the figure of record.
 
 **Recommended configuration** (all committed code): `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_7900XTX_PROFILE=7900xtx-refine5` with the AMDVLK ICD (`VK_ICD_FILENAMES=/etc/vulkan/icd.d/amd_icd64.json`). The profile selects the softmax variant `780m_r3` (candidate 1), the linear kernel per layer
-shape of the screens (candidate 3), QK^T `pk_t128x128k32g42s32nf` and attn*V `sweep_t64x64k32g42s32` (candidate 5) and attn*V `sweep_t32x32k32g22s32` for head dimension 64 (candidate 6).
+shape of the screens (candidate 3), QK^T `pk_t128x128k32g42s32nf` and attn*V `sweep_t64x64k32g42s32` (candidate 5) and attn*V `sweep_t32x32k32g22s32` for head dimension 64 (candidate 6). Candidate 7's `7900xtx-refine6` is not part of it.
 No release-zone file changed (the D4 hooks were already on the starting branch): `git diff --name-status 90fe4d013 HEAD` outside the change directory lists only dev-zone files (`glsl/sarc_dev/` and `impl/sarc_dev/`: the `fused3sb` pair, the 7900xtx linear bodies, wrappers, yaml and row files,
-two appended blocks in `sarc_sdpa_av_coopmat_sweep.yaml` / `sarc_sdpa_qk_coopmat_pk.yaml`, one in `sarc_dev_prof_q4gsw.yaml`, and the `7900xtx` block of `Overrides.cpp`; `sessions/final2/files-outside-change-dir.txt`); nothing under `sarc/tools`, `sarc/golden`, no tolerance, prompt or
+appended blocks in `sarc_sdpa_av_coopmat_sweep.yaml`, `sarc_sdpa_qk_coopmat_pk.yaml` and `sarc_dev_prof_q4gsw.yaml`, and the `7900xtx` block of `Overrides.cpp`; `sessions/final3/files-outside-change-dir.txt`); nothing under `sarc/tools`, `sarc/golden`, no tolerance, prompt or
 threshold file changed (`tools/thresholds.txt` only by the calibration commit).
 
-**Final verification of everything together** (all on the build `c9`, `sessions/final2/`, `sessions/inert/`):
+**Final verification of everything together** (all on the build `c10`, `sessions/final3/`, `sessions/inert3/`):
 - unmodified `verify.sh --models 1b,3b,8b --schemes 4w,8da4w --pdiff` on the timed binaries and environment against `s0-parent-verify`: 30 of 32 lines identical; the two that differ are the dispatched-kernel-name lines of the `linear 4w` and `linear 8da4w` microbench (candidate 3's picks); every correctness, production-diff,
   default-vs-tiled and decode line is identical, including the parent's own non-pass lines (`correctness rc=1`, 4w buffer production-diff FAILED). With the parent's environment only (nothing selected): 32 of 32 identical;
 - SDPA tiers all / extended / full: 12 passes each with the final environment and 1 control pass each: 39 runs, 0 failed cases, 0 mismatches, `pairing=ok` everywhere;
 - SDPA output of the final stack against the pristine parent on the same inputs: byte-identical in 21 of 21 cases and rms / maximum error against the fp64 reference not larger (`sdpa-error/error.csv`), so the stack does not change the arithmetic (D3.1 holds with equality);
 - every prefill linear output byte-identical to the parent's in 24 of 24 shapes (candidate 3's check; candidates 5 and 6 do not touch linear kernels);
-- real-text probe, 32 prompts x 6 cells: final-default against parent-default: 0 top-1 differences, mean and maximum KL 0, maximum logit difference 0 (the parent's own tiled-vs-default arms, for scale: up to 2 top-1 differences, KL up to 0.03, on 8da4w);
+- real-text probe, 32 prompts x 6 cells: final-default against parent-default: 0 top-1 differences, mean and maximum KL 0, maximum logit difference 0;
 - next token SAME parent against final on the timed, the real-text and the unaligned prompt in all six cells;
-- `sarc/tools/check.sh --no-build`: PASS (`sessions/final2/check-no-build.txt`); the golden step is the pending native-glslc comparison above.
+- `sarc/tools/check.sh --no-build` on the head: PASS (`sessions/final3/check-no-build.txt`); the golden step is the pending native-glslc comparison above.
 
 **Where each gain came from** (warm ETDump, ms per 2048-token prefill, pristine parent -> final stack; GEMM = prefill linear layers; the GEMM rate is the linear-layer FLOPs of the prefill, 2 x 2048 x sum(N x K) = 3.99 / 11.54 / 28.59 TFLOP for 1B / 3B / 8B, over the traced GEMM time; percent of the freshly measured roofs, `results/7900xtx/roofline/`:
 matrix fp16 with fp32 accumulate 140.83 TFLOP/s for the 4w kernels, matrix int8 141.60 TOP/s for the 8da4w kernels; in brackets the parent's):
 
 | cell | QK^T | softmax | attn*V | GEMM | everything else | dispatch total | GEMM rate, final | % of roof (parent) |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1B 4w | 6.2 -> 4.6 | 10.3 -> 7.6 | 12.3 -> 8.8 | 60.1 -> 56.8 | 6.4 -> 6.5 | 95.5 -> 84.3 | 70.2 TFLOP/s | 50 % (47 %) |
-| 1B 8da4w | 6.7 -> 4.9 | 10.0 -> 7.6 | 12.5 -> 9.0 | 49.5 -> 47.4 | 9.5 -> 9.5 | 88.3 -> 78.5 | 84.1 TOP/s | 59 % (57 %) |
-| 3B 4w | 17.4 -> 9.7 | 11.8 -> 9.3 | 14.9 -> 12.9 | 139.4 -> 140.5 | 14.6 -> 14.7 | 198.0 -> 187.0 | 82.2 TFLOP/s | 58 % (59 %) |
-| 3B 8da4w | 17.6 -> 9.7 | 11.8 -> 9.2 | 15.0 -> 13.1 | 125.6 -> 121.2 | 20.6 -> 20.6 | 190.6 -> 173.8 | 95.2 TOP/s | 67 % (65 %) |
-| 8B 4w | 20.8 -> 13.9 | 18.8 -> 15.1 | 19.8 -> 17.2 | 332.5 -> 332.0 | 32.4 -> 32.3 | 424.3 -> 410.4 | 86.1 TFLOP/s | 61 % (61 %) |
-| 8B 8da4w | 20.9 -> 13.8 | 19.0 -> 14.9 | 19.8 -> 17.3 | 305.7 -> 293.0 | 41.3 -> 41.0 | 406.7 -> 380.0 | 97.6 TOP/s | 69 % (66 %) |
+| 1B 4w | 6.2 -> 4.7 | 10.3 -> 7.6 | 12.4 -> 8.8 | 59.9 -> 57.0 | 6.4 -> 6.5 | 95.3 -> 84.7 | 69.9 TFLOP/s | 50 % (47 %) |
+| 1B 8da4w | 6.5 -> 4.9 | 10.1 -> 7.6 | 12.6 -> 9.0 | 48.2 -> 47.4 | 9.4 -> 9.5 | 86.8 -> 78.5 | 84.0 TOP/s | 59 % (58 %) |
+| 3B 4w | 17.2 -> 9.6 | 11.8 -> 9.3 | 14.9 -> 12.9 | 137.9 -> 139.5 | 14.5 -> 14.6 | 196.4 -> 186.0 | 82.7 TFLOP/s | 59 % (59 %) |
+| 3B 8da4w | 17.6 -> 9.6 | 11.8 -> 9.3 | 15.0 -> 13.0 | 125.5 -> 120.5 | 20.6 -> 20.5 | 190.5 -> 172.9 | 95.8 TOP/s | 68 % (65 %) |
+| 8B 4w | 20.7 -> 13.9 | 18.8 -> 15.1 | 19.8 -> 17.3 | 332.7 -> 332.8 | 32.4 -> 32.4 | 424.4 -> 411.5 | 85.9 TFLOP/s | 61 % (61 %) |
+| 8B 8da4w | 21.0 -> 13.8 | 18.9 -> 14.9 | 19.9 -> 17.4 | 306.0 -> 293.3 | 41.3 -> 41.1 | 407.2 -> 380.6 | 97.5 TOP/s | 69 % (66 %) |
 
-Softmax `r3` (candidate 1) takes 2.5 to 4.1 ms off; QK^T without the never-read mask fill and with packed staging (candidate 5) 1.6 to 7.9 ms; attn*V 1.9 to 3.5 ms (candidate 5 on all cells, candidate 6 on 1B); the linear kernels per shape (candidate 3) 2.1 to 12.7 ms on the 1B 4w cell and the three 8da4w cells, and nothing on 3B and 8B 4w
-(their GEMM family differs by +1.1 and -0.5 ms, within the +-3 ms by which the family time varies between traces of the same configuration). The ETDump sums are single warm executions; the tok/s medians of the timed session are the figures of record.
+Softmax `r3` (candidate 1) takes 2.5 to 4.0 ms off; QK^T without the never-read mask fill and with packed staging (candidate 5) 1.5 to 8.0 ms; attn*V 2.0 to 3.6 ms (candidate 5 on all cells, candidate 6 on 1B); the linear kernels per shape (candidate 3) 0.8 to 12.7 ms on the 1B 4w cell and the three 8da4w cells, and nothing on 3B and 8B 4w
+(their GEMM family differs by +1.6 and +0.1 ms, within the +-3 ms by which the family time varies between traces of the same configuration). The ETDump sums are single warm executions; the tok/s medians of the timed session are the figures of record.
 
 **Negative results** (all with numbers above): the fused attention kernel `fused3sb` (-13.79 %; the existing three-kernel coopmat attention is 2.6x faster than the best fused variant on 3B / 8B; the kernel itself is correct on AMDVLK: 12 + 6 tier passes, 0 mismatches before its gate was stopped); whole-texel 8da4w staging (-0.42 %);
 every 4w kernel of the screens on 3B and 8B (none 3 % faster in every round); the wider QK^T grids and the large attn*V tiles of the second attention screen (0.62 to 1.02x); the online-softmax fused variants (1.3 to 2.6x slower than the two-pass ones); and the whole second set: the RX 7600's padded staging rows, the branch-free chunk loop and the interleaved stores
