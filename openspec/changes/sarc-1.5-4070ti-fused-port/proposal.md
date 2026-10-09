@@ -171,73 +171,83 @@ evidence and are not the reported result.
 | with nothing selected every dispatch is as before | `s1-ctl-noenv`: unmodified `verify.sh` on `topic1` (`35e3728c9`) with no environment equals `s0-pristine-verify` line by line, rates aside (34 lines, `control.diff` empty, verify-check ACCEPT) |
 | the same under the parent's own profile | `s1-ctl-parent`: `verify.sh` with `4070ti-refine1` equals `s0-parent-verify` line by line (`control.diff` empty); A/A `s1-aa` geomean 1.0039 |
 | `test_sarc_select` unchanged | 1240 checks, 31 rows (release tables); 1536 checks, 33 rows (dev zone): the counts of the first campaign's final tree |
-| `spirv_golden.py` unchanged | PASS, 53 shipped variants, on `parent`, `topic1` and `topic2`; beyond the golden, all 1513 SPIR-V files of the parent build are byte-identical in `topic1` and in `topic2` (which adds three: the two fused variants and the copy pass). The 8da4w kernel shared with the Orin is among them |
-| reproducible from the committed branch, no local patch | `topic2` is commit `6217da0a9` of this branch, built from its export; its gate `s2-c1` and both timed sessions are on that build. The branch head differs from it only under `openspec/` (`git diff --name-status 6217da0a9 HEAD -- . ':!openspec'` is empty) |
+| `spirv_golden.py` unchanged | PASS, 53 shipped variants, on `parent`, `topic1`, `topic2` and `topic3`; beyond the golden, all 1513 SPIR-V files of the parent build are byte-identical in `topic1`, `topic2` and `topic3` (the last two add three, the same bytes in both: the two fused variants and the copy pass). The 8da4w kernel shared with the Orin is among them |
+| reproducible from the committed branch, no local patch | `topic3` is commit `ed8b5af91` of this branch, built from its export; the hook controls `s4-ctl-noenv` and `s4-ctl-parent` (CONTROL_SAME), the A/A re-check `s4-aa` (geomean 1.0002), the gate `s4-c1` and the closing session `s5-pristine` are on that build. The branch head differs from it only under `openspec/` (`git diff --name-status ed8b5af91 HEAD -- . ':!openspec'` is empty). `topic2` (`6217da0a9`) carried the first gate `s2-c1`, superseded after the review |
 | `sarc/tools/check.sh` | PASS. It does not report the hook: `impl/sarc/` is inside the zones it checks and `impl/SDPA.cpp` is listed in `sarc/HOOKS`; the four files are named here under the owner decision of 2026-10-05 |
 
 ## Result
 
-One candidate, gated once, accepted: **+11.64 % geomean over the parent** (the first campaign's stack), inside
-the band the task predicted (+8 to +12 %), **+63.53 % over the pristine `dev/1.5` state** (the first campaign
-ended at +46.35 %; 1.4635 x 1.1164 = 1.634). tok/s, median of 7 valid interleaved runs per arm:
+One candidate, accepted: **+11.49 % geomean over the parent** (the first campaign's stack), inside the band the
+task predicted (+8 to +12 %), **+63.28 % over the pristine `dev/1.5` state** (the first campaign ended at
++46.35 %). The numbers are those of build `topic3` (`ed8b5af91`), gate `s4-c1` and closing session
+`s5-pristine`, the sessions that record the driver's throttle reasons per run. tok/s, median of 7 valid
+interleaved runs per arm:
 
-| cell | pristine `dev/1.5` (`s3-pristine`) | published (`cells.csv`) | parent, `4070ti-refine1` (`s2-c1`) | `4070ti-fused1` (`s2-c1` / `s3-pristine`) | gain over the parent | gain over pristine | gain over published |
+| cell | pristine `dev/1.5` (`s5-pristine`) | published (`cells.csv`) | parent, `4070ti-refine1` (`s4-c1`) | `4070ti-fused1` (`s4-c1` / `s5-pristine`) | gain over the parent | gain over pristine | gain over published |
 |---|---:|---:|---:|---|---:|---:|---:|
-| 1B 4w | 19692.3 | 19692.3 | 29681.2 | 35310.3 / 35310.3 | +18.97 % | +79.31 % | +79.3 % |
-| 1B 8da4w | 21113.4 | 20898.0 | 32507.9 | 39384.6 / 39384.6 | +21.15 % | +86.54 % | +88.5 % |
-| 3B 4w | 8789.7 | 8752.1 | 12962.0 | 14027.4 / 14027.4 | +8.22 % | +59.59 % | +60.3 % |
-| 3B 8da4w | 9706.2 | 9660.4 | 14948.9 | 16384.0 / 16516.1 | +9.60 % | +70.16 % | +71.0 % |
-| 8B 4w | 4501.1 | 4491.2 | 6023.5 | 6380.1 / 6380.1 | +5.92 % | +41.74 % | +42.1 % |
-| 8B 8da4w | 5031.9 | 5031.9 | 6989.8 | 7474.5 / 7474.5 | +6.93 % | +48.54 % | +48.5 % |
-| geomean | | | | | **+11.64 %** | **+63.53 %** | +64.12 % |
+| 1B 4w | 19883.5 | 19692.3 | 29681.2 | 35310.3 / 35929.8 | +18.97 % | +80.70 % | +82.46 % |
+| 1B 8da4w | 21113.4 | 20898.0 | 32507.9 | 39384.6 / 39384.6 | +21.15 % | +86.54 % | +88.46 % |
+| 3B 4w | 8752.1 | 8752.1 | 12962.0 | 14027.4 / 14027.4 | +8.22 % | +60.27 % | +60.27 % |
+| 3B 8da4w | 9752.4 | 9660.4 | 14948.9 | 16254.0 / 16254.0 | +8.73 % | +66.67 % | +68.25 % |
+| 8B 4w | 4511.0 | 4491.2 | 6023.5 | 6380.1 / 6400.0 | +5.92 % | +41.88 % | +42.50 % |
+| 8B 8da4w | 5056.8 | 5031.9 | 6989.8 | 7474.5 / 7501.8 | +6.93 % | +48.35 % | +49.09 % |
+| geomean | | | | | **+11.49 %** | **+63.28 %** | +64.34 % |
 
-- `s2-c1` (the gate, 2026-10-08 21:12 to 22:40 UTC): GATE_ACCEPTED, plain pass: 24 of 24 SDPA passes with 0
-  mismatches, `verify.out` equal to the parent snapshot line by line, next token SAME in 24 of 24 rows, 84 timed
-  runs all valid, 12 traces. `s3-pristine` (23:06 to 23:59 UTC): 84 timed runs all valid, `gate_check.py
-  session` ACCEPT with 0 findings, next token SAME in 24 of 24 rows against the stock attention kernels too. The
-  candidate's medians of the two sessions are equal in five cells and 0.8 % apart in the sixth. The pristine
+- `s4-c1` (the gate, 2026-10-09 01:09 to 02:38 UTC): GATE_ACCEPTED, plain pass: 36 of 36 SDPA passes (12 each of
+  `all`, `extended`, `full`; 192 cases) with 0 mismatches and `pairing=ok`, `verify.out` equal to the parent
+  snapshot line by line with rates removed, next token SAME in 24 of 24 rows, 84 timed runs all valid, 12
+  traces. `s5-pristine` (02:40 to 02:54 UTC): 84 timed runs all valid, `gate_check.py session` ACCEPT with 0
+  findings, next token SAME in 24 of 24 rows against the stock attention kernels too. In both, every timed run
+  has at least 48 samples of the driver's throttle reasons and no thermal reason in any of them. The pristine
   arm is within 1.03 % of the published numbers in every cell.
+- History: the first gate (`s2-c1`, build `topic2`) read +11.64 % and the first closing session (`s3-pristine`)
+  +63.53 %. Review round 1 found that they had not recorded throttle reasons, that the gate lacked the 12 `all`
+  passes, and that the shared test file had been edited in place. They are kept as evidence with that
+  limitation; the absence of throttling in them is not inferred. The candidate's medians agree with the new
+  sessions within two steps of the 1 ms timer in every cell (at most 1.6 %, on 3B 8da4w).
 - 1B cells are whole milliseconds (69 -> 58 ms, 63 -> 52 ms); one timer step is 1.7 to 1.9 % of the candidate's
-  time. ETDump dispatch totals: 67.6 -> 56.3 ms and 61.0 -> 50.2 ms.
+  time. ETDump dispatch totals: 67.6 -> 56.3 ms and 61.2 -> 50.0 ms.
 
 Where the gain comes from: the attention block alone (warm ETDump, ms per prefill, parent -> candidate;
-`results/4070ti/sessions/s2-c1/trace/attention.csv`):
+`results/4070ti/sessions/s4-c1/trace/attention.csv`):
 
 | cell | QK^T + softmax + attention x V (parent) | fused kernel + K / V copy (candidate) | attention removed | linear GEMM | everything else | attention share of the prefill |
 |---|---|---|---:|---|---|---|
-| 1B 4w | 4.17 + 7.47 + 5.49 = 17.13 | 5.72 + 0.11 = 5.84 | 66 % | 34.28 -> 34.24 | 16.16 -> 16.27 | 25 % -> 10 % |
-| 1B 8da4w | 4.15 + 7.46 + 5.28 = 16.89 | 5.75 + 0.11 = 5.86 | 65 % | 27.65 -> 27.76 | 16.45 -> 16.57 | 28 % -> 12 % |
-| 3B 4w | 8.46 + 9.80 + 8.14 = 26.40 | 13.65 + 0.35 = 14.00 | 47 % | 96.90 -> 96.59 | 33.16 -> 33.16 | 17 % -> 10 % |
-| 3B 8da4w | 8.24 + 9.71 + 8.07 = 26.02 | 13.42 + 0.33 = 13.75 | 47 % | 73.22 -> 75.00 | 34.71 -> 35.14 | 19 % -> 11 % |
-| 8B 4w | 13.00 + 14.93 + 11.62 = 39.55 | 20.32 + 0.44 = 20.76 | 48 % | 239.40 -> 239.14 | 60.96 -> 60.69 | 12 % -> 6 % |
-| 8B 8da4w | 12.50 + 14.83 + 11.51 = 38.84 | 19.36 + 0.37 = 19.73 | 49 % | 181.12 -> 180.95 | 71.18 -> 71.08 | 13 % -> 7 % |
+| 1B 4w | 4.18 + 7.47 + 5.42 = 17.07 | 5.71 + 0.11 = 5.82 | 66 % | 34.30 -> 34.21 | 16.19 -> 16.29 | 25 % -> 10 % |
+| 1B 8da4w | 4.15 + 7.46 + 5.41 = 17.02 | 5.70 + 0.11 = 5.81 | 66 % | 27.66 -> 27.67 | 16.50 -> 16.56 | 28 % -> 12 % |
+| 3B 4w | 8.44 + 9.80 + 8.17 = 26.40 | 13.58 + 0.34 = 13.92 | 47 % | 96.58 -> 95.74 | 33.06 -> 32.94 | 17 % -> 10 % |
+| 3B 8da4w | 8.35 + 9.70 + 8.09 = 26.14 | 13.34 + 0.33 = 13.67 | 48 % | 74.76 -> 74.38 | 35.11 -> 35.01 | 19 % -> 11 % |
+| 8B 4w | 13.01 + 14.92 + 11.63 = 39.56 | 20.29 + 0.44 = 20.73 | 48 % | 239.58 -> 238.70 | 60.96 -> 60.79 | 12 % -> 6 % |
+| 8B 8da4w | 12.51 + 14.83 + 11.49 = 38.83 | 19.40 + 0.42 = 19.82 | 49 % | 181.16 -> 181.27 | 71.21 -> 73.08 | 13 % -> 7 % |
 
 Kernel level, for comparison with the other devices (`test_llama_microbench --sdpa`, us per layer at S = 2048,
-three interleaved rounds, `results/4070ti/screens/sdpa-screen1.csv`): fused kernel plus copy pass against
-QK^T + softmax + attention x V of the parent: 1B 382 to 388 against 1048 to 1066 (0.36x), 3B 483 to 511 against
-936 to 952 (0.52 to 0.54x), 8B 620 to 651 against 1209 to 1227 (0.51 to 0.54x); the stock kernels of `dev/1.5`
-take 3213, 3545 and 4708. The d64 variant gains more than the d128 one, as the 1B cells show end to end.
+three interleaved rounds on `topic3`, `results/4070ti/screens/sdpa-screen2.csv`): fused kernel plus copy pass
+against QK^T + softmax + attention x V of the parent: 1B 369 to 381 against 1059 to 1065 (0.35 to 0.36x), 3B 488
+to 510 against 935 to 942 (0.52 to 0.55x), 8B 619 to 654 against 1211 to 1215 (0.51 to 0.54x); the stock
+kernels of `dev/1.5` take about 3220, 3545 and 4705. The d64 variant gains more than the d128 one, as the 1B
+cells show end to end. (`sdpa-screen1.csv` is the same screen on `topic2`: the same ratios within 0.02.)
 
 Percent of the freshly measured roofs (igpu-roofline `fast`, run `roofline/2026-10-08-fast`, driver 615.71.09,
-clocks as found; `results/4070ti/roofline/`): matrix fp16 182.8 TFLOP/s, fp16 with fp32 accumulator 92.3
-TFLOP/s, int8 369.2 TOP/s, DRAM read 714 / write 641 / copy 646 GB/s, all confirmed with 3 repeats within
-0.6 % and equal to the run of 2026-10-04 within 0.3 %.
+clocks as found; `results/4070ti/roofline/`, rates from `s4-c1`'s traces): matrix fp16 182.8 TFLOP/s, fp16 with
+fp32 accumulator 92.3 TFLOP/s, int8 369.2 TOP/s, DRAM read 714 / write 641 / copy 646 GB/s, all confirmed with
+3 repeats within 0.6 % and equal to the run of 2026-10-04 within 0.3 %.
 
 | kernel | rate in the prefill | roof | percent |
 |---|---|---|---|
-| fused attention, d64 (1B) | 48.6 to 48.8 TFLOP/s of executed matrix work (98.5 % of it below the causal diagonal) | 92.3 (fp16 -> fp32 matrix) | 53 % |
-| fused attention, d128 (3B, 8B) | 54.5 to 58.6 TFLOP/s (97 % causal) | 92.3 | 59 to 63 % |
-| 4w linear (`ga` tiles), unchanged | 116 to 120 TFLOP/s | 182.8 (fp16 matrix) | 64 to 65 % |
+| fused attention, d64 (1B) | 48.9 to 49.0 TFLOP/s of executed matrix work (98.5 % of it below the causal diagonal) | 92.3 (fp16 -> fp32 matrix) | 53 % |
+| fused attention, d128 (3B, 8B) | 54.8 to 58.4 TFLOP/s (97 % causal) | 92.3 | 59 to 63 % |
+| 4w linear (`ga` tiles), unchanged | 116 to 121 TFLOP/s | 182.8 (fp16 matrix) | 64 to 66 % |
 | 8da4w linear (zpgtr), unchanged | 144 to 158 TOP/s | 369.2 (int8 matrix) | 39 to 43 % |
 
 Negative results and things that did not go as written:
 
-- No candidate was rejected and no gate failed. No runner abort occurred in the 482 `llama_main` calls of this
-  campaign (88 in four `verify.sh` controls, 22 in the gate's `verify.sh`, 336 in three sessions, 12 traced, 24 in
-  the quick look): all rc 0, with the model file warmed before every call (D5) and 0 slow loads recorded.
+- No candidate was rejected and no gate failed, but the first gate was incomplete and the campaign was reopened
+  once after review (see History above). No runner abort occurred in the 920 `llama_main` calls of this
+  campaign (176 in eight `verify.sh` runs, 696 in six sessions, 24 traced, 24 in the quick look): all rc 0, with the model file warmed before every call (D5) and 0 slow loads recorded.
 - Outside the production shapes the candidate's error against the reference is larger than the parent's in one
   metric on 3 of 9 test shapes, by 0.2 to 5 %. Criterion 1 of D3 names the production shapes, where it is not
-  larger; the numbers are all in `results/4070ti/probe/fused1/reference-error-rule.txt`.
+  larger; the numbers are all in `results/4070ti/probe/fused1-topic3/reference-error-rule.txt` (and, identical,
+  in `probe/fused1/` for `topic2`).
 - Measured against the first decision's test (twice the distance of the parent's two linear arms), the three 4w
   cells are outside (`compare.csv`, last line), as the first campaign's candidates were; D3 replaced that test
   for arithmetic changes, and no next-token item differed, so neither rule was needed for the verdict.
@@ -253,17 +263,18 @@ What limits further progress on this card:
 - Attention is now 6 to 12 % of the prefill and the fused kernel runs at 53 to 63 % of the fp16 -> fp32 matrix
   roof; even at the roof it would return about 5 % on 1B, 4 % on 3B and 2.5 % on 8B.
 - The linear kernels are 55 to 75 % of the prefill (34 of 56 ms on 1B 4w, 239 of 321 ms on 8B 4w) at 64 to
-  65 % (4w) and 39 to 43 % (8da4w) of their matrix roofs; the first campaign swept their tiles and staging and
+  66 % (4w) and 39 to 43 % (8da4w) of their matrix roofs; the first campaign swept their tiles and staging and
   found nothing above the noise band. In 8da4w a wave still spends more time fetching weights than multiplying.
 - "Everything else" (copies and views, elementwise kernels, the 8-bit quantisation of 8da4w, RMSNorm) is 16 to
-  71 ms per prefill, 19 to 33 % of it, in kernels this campaign does not own.
+  73 ms per prefill, 19 to 33 % of it, in kernels this campaign does not own.
 
 ## Final verification
 
 The final stack is `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=4070ti-fused1` on the committed branch
-(build `topic2` = `6217da0a9`, no local patch; later commits change only this directory). Its gate `s2-c1` is
+(build `topic3` = `ed8b5af91`, no local patch; later commits change only this directory). Its gate `s4-c1` is
 the verification of everything together: unmodified `verify.sh` with the candidate environment on the timed
-binaries, the attention tiers (12 `extended` + 12 `full` passes; one pass each of `all`, `fused` and `peaked`
-before it), the golden check on the build, the reference-error evidence, and the timed session against the
-parent; `s3-pristine` is the timed session against the pristine state. `sarc/tools/check.sh --no-build`: PASS
-(output in `STATUS.md`). `tools/test_gate_check.py`: 46 tests pass.
+binaries, the attention tiers (12 passes each of `all`, `extended` and `full`; one pass each of `fused` and
+`peaked` before it), the golden check on the build, the reference-error evidence on the same build, and the
+timed session against the parent; `s5-pristine` is the timed session against the pristine state. Every timed
+run of both records the driver's throttle reasons and has no thermal one. `sarc/tools/check.sh --no-build`:
+PASS (output in `STATUS.md`). `tools/test_gate_check.py`: 48 tests pass.

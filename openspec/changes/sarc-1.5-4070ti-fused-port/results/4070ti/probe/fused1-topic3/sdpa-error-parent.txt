@@ -1,0 +1,38 @@
+[sdpa-error] tiny_gqa_pos64 max_abs=0.000173882 rms=3.23205e-05 max_abs_ref=0.205344
+[sdpa-kernels] tiny_gqa_pos64 qk=sarc_sdpa_qk_coopmat_4070ti_df_t64x64k32g11s32nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf av=sarc_sdpa_av_coopmat_4070ti_ml_t32x64k32g42s32_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] tiny_gqa_pos64 S=128 input_pos=64 D=64 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/16384 PASSED
+[sdpa-error] tiny_gqa_s256_pos128 max_abs=0.000142887 rms=2.37677e-05 max_abs_ref=0.161491
+[sdpa-kernels] tiny_gqa_s256_pos128 qk=sarc_sdpa_qk_coopmat_4070ti_df_t64x64k32g11s32nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf av=sarc_sdpa_av_coopmat_4070ti_ml_t32x64k32g42s32_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] tiny_gqa_s256_pos128 S=256 input_pos=128 D=64 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/32768 PASSED
+[sdpa-error] 1b_head_config_s256_pos256 max_abs=0.000113517 rms=1.7996e-05 max_abs_ref=0.142912
+[sdpa-kernels] 1b_head_config_s256_pos256 qk=sarc_sdpa_qk_coopmat_4070ti_df_t64x64k32g11s32nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf av=sarc_sdpa_av_coopmat_4070ti_ml_t32x64k32g42s32_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] 1b_head_config_s256_pos256 S=256 input_pos=256 D=64 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/524288 PASSED
+[sdpa-error] 3b_head_config_s256 max_abs=0.000778675 rms=4.95641e-05 max_abs_ref=0.998598
+[sdpa-kernels] 3b_head_config_s256 qk=sarc_sdpa_qk_coopmat_4070ti_pk_t64x128k32g42s32nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf av=sarc_sdpa_av_coopmat_4070ti_ml_t64x128k32g42s32_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] 3b_head_config_s256 S=256 input_pos=0 D=128 Q_H=24 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/786432 PASSED
+[sdpa-error] 8b_head_config_s256 max_abs=0.00086987 rms=4.98958e-05 max_abs_ref=0.999106
+[sdpa-kernels] 8b_head_config_s256 qk=sarc_sdpa_qk_coopmat_4070ti_pk_t64x128k32g42s32nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf av=sarc_sdpa_av_coopmat_4070ti_ml_t64x128k32g42s32_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] 8b_head_config_s256 S=256 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/1048576 PASSED
+[sdpa-error] 3b_head_config_pos128 max_abs=0.000175089 rms=2.6032e-05 max_abs_ref=0.249579
+[sdpa-kernels] 3b_head_config_pos128 qk=sarc_sdpa_qk_coopmat_4070ti_pk_t64x128k32g42s32nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf av=sarc_sdpa_av_coopmat_4070ti_ml_t64x128k32g42s32_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] 3b_head_config_pos128 S=128 input_pos=128 D=128 Q_H=24 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/393216 PASSED
+[sdpa-error] tiny_gqa_s2048 max_abs=0.000694275 rms=2.0798e-05 max_abs_ref=0.98697
+[sdpa-kernels] tiny_gqa_s2048 qk=sarc_sdpa_qk_coopmat_4070ti_df_t64x64k32g11s32nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf av=sarc_sdpa_av_coopmat_4070ti_ml_t32x64k32g42s32_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] tiny_gqa_s2048 S=2048 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/262144 PASSED
+[sdpa-error] tiny_d128_s2048 max_abs=0.000779569 rms=2.07073e-05 max_abs_ref=0.997051
+[sdpa-kernels] tiny_d128_s2048 qk=sarc_sdpa_qk_coopmat_4070ti_pk_t64x128k32g42s32nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf av=sarc_sdpa_av_coopmat_4070ti_ml_t64x128k32g42s32_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] tiny_d128_s2048 S=2048 input_pos=0 D=128 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/524288 PASSED
+[sdpa-correctness] tier=extended cases_run=8
+[sdpa-error] 1b_head_config_s2048 max_abs=0.000913501 rms=2.101e-05 max_abs_ref=0.998757
+[sdpa-kernels] 1b_head_config_s2048 qk=sarc_sdpa_qk_coopmat_4070ti_df_t64x64k32g11s32nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf av=sarc_sdpa_av_coopmat_4070ti_ml_t32x64k32g42s32_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] 1b_head_config_s2048 S=2048 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/4194304 PASSED
+[sdpa-error] 3b_head_config_s2048 max_abs=0.000782907 rms=2.06762e-05 max_abs_ref=0.999094
+[sdpa-kernels] 3b_head_config_s2048 qk=sarc_sdpa_qk_coopmat_4070ti_pk_t64x128k32g42s32nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf av=sarc_sdpa_av_coopmat_4070ti_ml_t64x128k32g42s32_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] 3b_head_config_s2048 S=2048 input_pos=0 D=128 Q_H=24 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/6291456 PASSED
+[sdpa-error] 8b_head_config_s2048 max_abs=0.000891089 rms=2.05662e-05 max_abs_ref=0.994699
+[sdpa-kernels] 8b_head_config_s2048 qk=sarc_sdpa_qk_coopmat_4070ti_pk_t64x128k32g42s32nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf av=sarc_sdpa_av_coopmat_4070ti_ml_t64x128k32g42s32_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] 8b_head_config_s2048 S=2048 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/8388608 PASSED
+[sdpa-error] 8b_head_config_s1024_pos1024 max_abs=6.94171e-05 rms=9.01779e-06 max_abs_ref=0.0880162
+[sdpa-kernels] 8b_head_config_s1024_pos1024 qk=sarc_sdpa_qk_coopmat_4070ti_pk_t64x128k32g42s32nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf av=sarc_sdpa_av_coopmat_4070ti_ml_t64x128k32g42s32_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] 8b_head_config_s1024_pos1024 S=1024 input_pos=1024 D=128 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/4194304 PASSED
+[sdpa-correctness] tier=full cases_run=4
