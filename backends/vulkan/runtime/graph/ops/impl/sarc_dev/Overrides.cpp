@@ -1126,6 +1126,14 @@ const Row kM51Bz[] = {
      kTex3dTex2d, nullptr, Status::kUnverified},
 };
 
+// 4w, second round (glsl/sarc_dev/sarc_dev_m51_linear_q4gsw_coopmat_bw.yaml): bz with packed fp16 dequantisation of the
+// weights (bit-identical result). Selected with ET_VK_SARC_Q4GSW_VARIANT=bw_<tile> or by profile c9.
+const Row kM51Bw[] = {
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_m51_linear_q4gsw_coopmat_bw_t128x128k32g42s32f32xp", xp_tile(128, 128, 32, 4, 2, 32),
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
+};
+
 // A pick sends the shapes its predicate accepts to one candidate kernel (exact
 // name) when the kernel fits; every other shape keeps the selection above.
 struct PickM51 {
@@ -1172,6 +1180,11 @@ const PickM51 kM51PicksC8[] = {
     {Op::kDq8caLinear, "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32", any_shape},
     {Op::kQ4gswLinear, "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g42s32f32xp", any_shape},
 };
+// c9: c8 with the packed-dequantisation 4w kernel (second round).
+const PickM51 kM51PicksC9[] = {
+    {Op::kDq8caLinear, "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32", any_shape},
+    {Op::kQ4gswLinear, "sarc_dev_m51_linear_q4gsw_coopmat_bw_t128x128k32g42s32f32xp", any_shape},
+};
 const char kFusedM51[] = "fused3_d64_t32x32g11s32rk,fused3_d128_t16x64g11s32rk";
 // Fused-variant screen (ETDump of the fused kernel, 3 rounds, RULES R8 margin): for head_dim 64 the
 // 16 x 64 tile on a 64-wide subgroup beat the 780M's choice in every round; for head_dim 128 no variant did.
@@ -1190,6 +1203,8 @@ const ProfileM51 kM51Profiles[] = {
     {"c7", kFusedM51B, kM51PicksC7, sizeof(kM51PicksC7) / sizeof(PickM51)},
     // c8: c5 with the N-major-B 4w kernel on every 4w shape (second round of the M51 campaign).
     {"c8", kFusedM51B, kM51PicksC8, sizeof(kM51PicksC8) / sizeof(PickM51)},
+    // c9: c8 with the packed-dequantisation 4w kernel (second round).
+    {"c9", kFusedM51B, kM51PicksC9, sizeof(kM51PicksC9) / sizeof(PickM51)},
 };
 const ProfileM51* active_profile_m51() {
   static const ProfileM51* const active = []() -> const ProfileM51* {
@@ -1284,6 +1299,7 @@ struct RegistrarM51 {
     register_candidates(kM51DqBt, sizeof(kM51DqBt) / sizeof(kM51DqBt[0]));
     register_candidates(kM51DqF, sizeof(kM51DqF) / sizeof(kM51DqF[0]));
     register_candidates(kM51Bz, sizeof(kM51Bz) / sizeof(kM51Bz[0]));
+    register_candidates(kM51Bw, sizeof(kM51Bw) / sizeof(kM51Bw[0]));
     Override o = get_override();
     select_before_m51 = o.select;
     o.select = select_m51;
