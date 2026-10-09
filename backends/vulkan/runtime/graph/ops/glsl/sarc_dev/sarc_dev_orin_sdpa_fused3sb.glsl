@@ -9,7 +9,8 @@
 /*
  * SARC development zone, Jetson Orin (openspec/changes/sarc-1.5-orin-fused-port): the fused prefill SDPA kernel.
  * The body, from `#version` on, is sarc_dev_780m_sdpa_fused3sb.glsl of topic/rx7600-prefill-refine (b3bb758e38)
- * unchanged: the 780M's third structure (sarc_dev_780m_sdpa_fused3) with a subgroupBarrier() after every
+ * plus one check (as the 4070 Ti port has it: the kernel writes nothing unless the workgroup is one full subgroup
+ * of SUBGROUP_SIZE): the 780M's third structure (sarc_dev_780m_sdpa_fused3) with a subgroupBarrier() after every
  * memoryBarrierShared(). On this device (NVIDIA, subgroup size 32) the invocations of a subgroup are not
  * guaranteed to run in lockstep, so every read of a shared slot that another invocation wrote is ordered by that
  * execution barrier, and every shared slot has exactly one writing invocation (or is written by a cooperative
@@ -196,6 +197,11 @@ void main() {
 
   const uint s_base = WG_TILE_M * gl_WorkGroupID.y;
   if (s_base >= S) {
+    return;
+  }
+  // orin: Psh, Rsh and Dsh are private to this subgroup, and every slot has
+  // one writer, only if the workgroup is one full subgroup.
+  if (gl_NumSubgroups != 1u || gl_SubgroupSize != SUBGROUP_SIZE) {
     return;
   }
   // Blocks past the one holding column s_base + WG_TILE_M - 1 + input_pos are
