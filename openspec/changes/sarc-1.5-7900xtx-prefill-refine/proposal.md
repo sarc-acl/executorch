@@ -112,7 +112,10 @@ It counts toward the stop rule as a gated candidate under 2 % if its geomean gai
 | `build-native.sh`, `build-both.sh`, `build_probe.sh`, `export_commit.sh` | toolchain from `env.local`; `nice -n 10`, 16 jobs (other work runs on the workstation); no `.building` guard on the GPU host |
 | `calibrate.py` | also writes `busy_pre_max` |
 | `thresholds.txt` | the table above |
-| `chain0..7.sh` | not carried over (they hard-code the RX 7600 commits); this campaign writes its own queue scripts |
+| `chain0..7.sh` | not carried over (they hard-code the RX 7600 commits); this campaign writes its own queue scripts (`q-*.sh`: A/A + snapshot, candidate gates, screens, phase timing, roofs, final verification) |
+| `e2e5.sh`, `gl.sh` (later change) | wait for a foreign GPU user to leave instead of invalidating runs / refusing jobs (an `amdgpu_top` of another session of this account and an `nvtop` held the card during the campaign); the wait is recorded (`foreign_wait_s`) |
+| `revalidate.py`, `collect-results.sh`, `trace-analyze.sh`, `phases.sh` (two-machine), `spirv_same.sh` (toolchain python) | A/A re-judging under the final thresholds; scrubbed evidence copies; ETDump analysis on the workstation; phase timing run on the GPU host and decoded locally |
+| `sdpa_screen.sh`, `sdpa_screen2.sh`, `sdpa_pick.py`, `q-screens.sh`, `q-screens2.sh`, `q-sdpa*.sh` (new) | kernel-level screens (fused variants, linear kernels, unfused attention kernels, exact-name attention variants) with the R8 rule applied by `fused_pick.py` / `screen_pick.py` / `sdpa_pick.py` |
 
 The other copied tools (search, screen and plot scripts) are unchanged and used only where named.
 
@@ -193,3 +196,82 @@ in the worst round on 11 of 12 shapes, so it is measured once as `7900xtx-refine
 
 Locate (same traces, parent, share of the dispatch time): linear GEMMs 63 % / 71 % / 78 % (1B / 3B / 8B, 4w) and 56 % / 66 % / 75 % (8da4w); attention (QK^T + softmax + AV)
 30.1 % / 22.2 % / 13.9 % (4w); everything else under 12 %. The fused attention kernel can therefore pay most on 1B and least on 8B, where the GEMMs decide.
+
+## Final stack against the pristine parent (2026-10-09, `sessions/final/`)
+
+Build `final` = commit `a8dd09570`, no local patch (nothing after it changed code: `git diff a8dd09570 HEAD -- backends sarc` is empty; later commits are evidence and documents). Native build, shipped SPIR-V golden pending as in the
+sibling campaigns: 14 of 53 variants differ from `sarc/golden/spirv.json` (owners 780M / Arc), the same 14 as in the parent build, and 0 differ from the parent build's own (`results/7900xtx/golden-diff-parent.txt`,
+`sessions/final/golden-final.txt`). Pristine parent = build `parent` (commit `90fe4d013`), `ET_VK_SARC_UNVERIFIED=1` only. One timed session, both arms interleaved, 7 valid runs per arm and cell (84 of 84 valid, 0 invalid,
+clock median 2724 to 2920 MHz, start temperature 44 to 50 C, no foreign GPU user, `foreign_wait_s` at most 1).
+
+| cell | pristine parent tok/s | final stack tok/s | gain | published 2026-09-28 | parent vs published |
+|---|---:|---:|---:|---:|---:|
+| 1B 4w | 20277.20 | 22260.90 | +9.78 % | 20078 | +0.99 % |
+| 1B 8da4w | 22505.50 | 24975.60 | +10.98 % | 22261 | +1.10 % |
+| 3B 4w | 10138.60 | 10722.50 | +5.76 % | 10089 | +0.49 % |
+| 3B 8da4w | 10395.90 | 11570.60 | +11.30 % | 10396 | -0.00 % |
+| 8B 4w | 4762.79 | 4899.52 | +2.87 % | 4774 | -0.23 % |
+| 8B 8da4w | 4982.97 | 5333.33 | +7.03 % | 4971 | +0.24 % |
+
+Geometric mean **+7.91 %** (min +2.87 %, max +11.30 %). The expected range of N1 was +20 to +30 %; this device lands below it (what limits it: below). The stages measured one by one multiply to +9.2 % (1.56 x 2.64 x 4.09 x 0.67 %
+gains of candidates 1, 3, 5, 6, each against its own parent in its own session); the single final session is the figure of record, the difference is session noise (repeat spreads of 2 to 11 % on the 1B and 3B cells).
+
+**Recommended configuration** (all committed code): `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_7900XTX_PROFILE=7900xtx-refine5` with the AMDVLK ICD (`VK_ICD_FILENAMES=/etc/vulkan/icd.d/amd_icd64.json`). The profile selects the softmax variant `780m_r3`
+(candidate 1), the linear kernel per layer shape of the screens (candidate 3), QK^T `pk_t128x128k32g42s32nf` and attn*V `sweep_t64x64k32g42s32` (candidate 5) and attn*V `sweep_t32x32k32g22s32` for head dimension 64 (candidate 6).
+No release-zone file changed (the D4 hooks were already on the starting branch): `git diff --name-status 90fe4d013 HEAD` outside the change directory lists exactly the five dev-zone files `glsl/sarc_dev/sarc_dev_780m_sdpa_fused3sb.{glsl,yaml}`,
+`glsl/sarc_dev/sarc_sdpa_av_coopmat_sweep.yaml`, `glsl/sarc_dev/sarc_sdpa_qk_coopmat_pk.yaml` and `impl/sarc_dev/Overrides.cpp` (`sessions/final/files-outside-change-dir.txt`); nothing under `sarc/tools`, `sarc/golden`, no tolerance,
+prompt or threshold file. With no profile and no exact-name variable set, the new block is inert: `test_sarc_select` unchanged (1240 and 1442 checks pass), the parent's `verify.sh` lines identical.
+
+**Final verification of everything together** (all on the build `final`, `sessions/final/`):
+- unmodified `verify.sh --models 1b,3b,8b --schemes 4w,8da4w --pdiff` on the timed binaries and environment, compared line by line with `s0-parent-verify`: 30 of 32 lines identical; the two that differ are the dispatched-kernel-name
+  lines of the `linear 4w` and `linear 8da4w` microbench (the point of candidate 3); every correctness, production-diff, default-vs-tiled and decode line is identical, including the parent's own non-pass lines
+  (`correctness rc=1`, 4w buffer production-diff FAILED), which the snapshot records;
+- SDPA tiers all / extended / full: 12 passes each with the final environment, 1 control pass each with the parent's: 39 runs, 0 failed cases, 0 mismatches, `pairing=ok` everywhere;
+- SDPA output of the final stack against the pristine parent on the same inputs: byte-identical in 21 of 21 cases (all, extended, peaked and full tiers) and rms / maximum error against the fp64 reference not larger
+  (`sdpa-error/error.csv`), so the reference-error rule (D3.1) holds with equality and the candidate is judged as one that does not change the arithmetic;
+- every prefill linear output byte-identical to the parent's in 24 of 24 shapes (candidate 3's check; candidates 5 and 6 do not touch linear kernels);
+- real-text probe, 32 prompts x 6 cells: final-default against parent-default: 0 top-1 differences, mean and maximum KL exactly 0, maximum logit difference 0 (the parent's own tiled-vs-default arms, for scale: up to 2 top-1 differences, KL up to 0.03, on 8da4w);
+- next token SAME parent against final on the timed, the real-text and the unaligned prompt in all six cells;
+- `sarc/tools/check.sh --no-build`: PASS (`sessions/final/check-no-build.txt`); the golden step is the pending native-glslc comparison above.
+
+**Where each gain came from** (warm ETDump, ms per 2048-token prefill, pristine parent -> final stack, `sessions/final/trace/families.csv`; GEMM = prefill linear layers):
+
+| cell | QK^T | softmax | attn*V | GEMM | everything else | dispatch total |
+|---|---:|---:|---:|---:|---:|---:|
+| 1B 4w | 6.3 -> 4.7 | 10.2 -> 7.7 | 12.5 -> 8.8 | 60.7 -> 57.6 | 6.5 -> 6.5 | 96.1 -> 85.2 |
+| 1B 8da4w | 6.5 -> 4.8 | 10.1 -> 7.6 | 12.5 -> 8.8 | 48.3 -> 46.3 | 9.4 -> 9.4 | 86.8 -> 76.9 |
+| 3B 4w | 17.4 -> 9.8 | 11.8 -> 9.3 | 14.9 -> 13.0 | 140.3 -> 143.3 | 14.6 -> 14.8 | 199.1 -> 190.1 |
+| 3B 8da4w | 17.7 -> 9.8 | 11.8 -> 9.2 | 15.1 -> 13.0 | 127.4 -> 122.8 | 20.8 -> 20.7 | 192.8 -> 175.5 |
+| 8B 4w | 20.9 -> 13.9 | 18.8 -> 15.1 | 19.8 -> 17.3 | 333.3 -> 333.8 | 32.5 -> 32.3 | 425.3 -> 412.4 |
+| 8B 8da4w | 21.0 -> 13.8 | 18.9 -> 15.0 | 19.9 -> 17.4 | 306.3 -> 294.4 | 41.4 -> 41.1 | 407.5 -> 381.6 |
+
+Softmax `r3` (candidate 1) takes 2.5 to 3.7 ms off; QK^T without the never-read mask fill and with packed staging (candidate 5) 1.6 to 7.9 ms; attn*V 2.5 to 3.7 ms (candidate 5 on all cells, candidate 6 on 1B);
+the linear kernels per shape (candidate 3) 2 to 12 ms on the 1B, 3B and 8B 8da4w cells and on 1B 4w, nothing on 3B and 8B 4w. (The dispatch totals of the 1B and 3B 4w cells fall by 11 % and 4.5 %, the measured gains are +9.8 % and +5.8 %;
+the runner's tok/s is the prefill window, the trace sums the dispatches.)
+
+**Percent of the freshly measured roofs** (igpu-roofline, `results/7900xtx/roofline/`, 2026-10-09, AMDVLK 2025.Q2.1, DVFS: matrix fp16 with fp32 accumulate 140.83 TFLOP/s, matrix int8 141.60 TOP/s; the 4w kernels accumulate
+in fp32 on fp16 operands, the 8da4w kernels run int8 MMA; the achieved rate is the linear-layer FLOPs of the prefill, 2 x 2048 x sum(N x K), divided by the traced GEMM family time):
+
+| cell | GEMM FLOPs | GEMM time parent -> final | achieved rate, final | % of roof, final (parent) |
+|---|---:|---:|---:|---:|
+| 1B 4w | 3.99 T | 60.7 -> 57.6 ms | 69.2 TFLOP/s | 49 % (47 %) |
+| 1B 8da4w | 3.99 T | 48.3 -> 46.3 ms | 86.0 TOP/s | 61 % (58 %) |
+| 3B 4w | 11.54 T | 140.3 -> 143.3 ms | 80.6 TFLOP/s | 57 % (58 %) |
+| 3B 8da4w | 11.54 T | 127.4 -> 122.8 ms | 94.0 TOP/s | 66 % (64 %) |
+| 8B 4w | 28.59 T | 333.3 -> 333.8 ms | 85.7 TFLOP/s | 61 % (61 %) |
+| 8B 8da4w | 28.59 T | 306.3 -> 294.4 ms | 97.1 TOP/s | 69 % (66 %) |
+
+**Negative results** (all with numbers above): the fused attention kernel `fused3sb` (-13.79 %; the existing three-kernel coopmat attention is 2.6x faster than the best fused variant on 3B / 8B; the kernel itself is correct
+on AMDVLK: 12 + 6 tier passes, 0 mismatches before the gate was stopped); whole-texel 8da4w staging (-0.42 %; phase timing shows the 8da4w kernel is not weight-load bound: fetch 11 % of the wave); every 4w kernel of the screen on 3B and 8B
+(none 3 % faster than the table kernel in every round); the wider QK^T grids and the large attn*V tiles of the second attention screen (0.62 to 1.02x); the online-softmax fused variants (`rko`, 1.3 to 2.6x slower than the two-pass ones).
+Process notes: the first fused-kernel guard stopped its queue on a wrong grep pattern (a tool bug, corrected); two jobs were lost to foreign GPU users and re-run; one attention variant (`t32x32k32g41s32`) did not compile and was removed.
+
+**What limits further progress.** The linear GEMMs are 56 to 78 % of the final prefill (57.6 of 85.2 ms on 1B 4w up to 333.8 of 412.4 ms on 8B 4w) and run at 49 to 69 % of the matrix roofs; on 4w nothing in the dev zone is 3 % faster
+than the table kernel on 3B and 8B. The phase timing of the 8da4w kernel says why more is possible but needs new shader work: the MMA is 22 % of a wave's time, barrier waits 31 % and LDS stores 26 % (weight fetch 11 %), so
+the kernel is limited by its staging pipeline, not by the memory system or the MMA. A GEMM kernel with a deeper pipeline (double-buffered LDS, fewer barriers) is the next step; it is a new kernel, which the owner decisions
+(N1) leave out of a port campaign, and it would have to pass the same gates. After the attention picks, attention is 13 to 25 % of the prefill and every named kernel of the dev zone has been screened. A decode-side or graph-level
+change (the `mul` and copy kernels are 3 to 5 % of the 8B prefill) is outside the dev zone's kernels.
+
+**Stop rule.** Candidates 1 and 2 were two consecutive ones under 2 % (the second not fully gated: rejected on performance after its timed session); candidate 3 (+2.64 %) restarted the count; candidates 4 (-0.42 %) and 5 (+4.09 %) are not both
+under 2 %; candidate 6 (+0.67 %) is the first of a new pair. No second candidate follows: every screen of the named kernels is complete and the screens' own rule (3 % in every round) leaves nothing to test, so the campaign ends
+on "the candidates are exhausted" and not on two consecutive gated candidates under 2 % since candidate 5 (reported as open for the reviewer and the owner in `STATUS.md`).
