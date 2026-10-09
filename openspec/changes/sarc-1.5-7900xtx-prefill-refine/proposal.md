@@ -120,13 +120,15 @@ The other copied tools (search, screen and plot scripts) are unchanged and used 
 
 ## Results
 
-Stop rule counter: candidate 1 is the first gated candidate under 2 % geomean.
+Stop rule counter: candidate 1 (+1.56 %) and candidate 2 (-13.79 %) were two consecutive candidates under 2 %; candidate 3 (+2.64 %) is above, so the count starts again.
 
 | # | candidate | parent | geomean | state | evidence |
 |---|---|---|---:|---|---|
 | 1 | softmax `r3` (the 780M's, `ET_VK_SARC_780M_PROFILE=c7`, D4.1 hook, on the parent binary) | pristine parent | +1.56 % | gated: `verify.sh` identical to `s0-parent-verify` (32 of 32 lines), SDPA tiers all / extended / full 12 passes each, 0 failed, 0 mismatches, `pairing=ok`, bit-identical to the release softmax in 21 of 21 SDPA cases, error against the reference not larger; next token SAME on the timed, real-text and unaligned prompts in all six cells | `results/7900xtx/sessions/c1-softmax/` |
 
 | 2 | fused attention kernel `fused3sb` (`rk` variants picked by the fused-variant screen; D4.3 hook; build `c2`) | 1 | **-13.79 %** | **rejected on performance**; gate not completed (see below); next token SAME everywhere; the SDPA tiers that ran (all x 12, extended x 6) passed with 0 mismatches | `sessions/c2-fused`, `fused/` |
+
+| 3 | linear kernel per layer shape (`7900xtx-refine2`, build `c3` = commit 773e306d8; the screen's picks by the 3 % rule, texel-wise family held out) | 1 | **+2.64 %** | gated: `verify.sh` as the snapshot except the two dispatched-kernel-name lines (30 of 32 identical), outputs byte-identical in 24 of 24 prefill linear shapes (no arithmetic change), next token SAME on the timed, real-text and unaligned prompts in all six cells, golden DIFF set equal to the parent build's | `sessions/c3-linear/`, `screens/` |
 
 Candidate 1, per cell (median of 7 valid runs, `sessions/c1-softmax/raw/summary.csv`): 1B 4w 20078.40 -> 20686.90 (+3.03 %), 1B 8da4w 22260.90 -> 22755.60 (+2.22 %),
 3B 4w 10138.60 -> 10240.00 (+1.00 %), 3B 8da4w 10449.00 -> 10502.60 (+0.51 %), 8B 4w 4762.79 -> 4841.61 (+1.65 %), 8B 8da4w 4982.97 -> 5031.94 (+0.98 %); geomean +1.56 %.
@@ -140,6 +142,13 @@ Why (warm ETDump, `sessions/c2-fused/trace/`, ms per 2048-token prefill, attenti
 (d128) per layer. The fused-variant screen (`fused/`) compared the fused variants with each other only and could not show this; on the RX 7600, where the unfused path is slow, the same kernel gained +18 %.
 The rest of the gate (SDPA tiers beyond the passes above, `verify.sh`, the reference-error evidence and the real-text probe) was not run for a candidate that loses 13.8 %: it would only
 re-check the correctness of a rejected kernel. Nothing of candidate 2 enters the final stack. The attention share left to gain after candidate 1 is small anyway (QK^T + AV about 20 % of the 1B prefill, 9 % of 8B).
+
+Candidate 3, per cell against candidate 1 (median of 7 valid runs, 0 invalid runs, `sessions/c3-linear/raw/summary.csv`): 1B 4w 20277.20 -> 21113.40 (+4.12 %), 1B 8da4w 23011.20 -> 23814.00 (+3.49 %),
+3B 4w 10088.70 -> 10138.60 (+0.49 %), 3B 8da4w 10556.70 -> 10951.90 (+3.74 %), 8B 4w 4818.82 -> 4830.19 (+0.24 %), 8B 8da4w 5044.33 -> 5237.85 (+3.84 %); geomean +2.64 %.
+Where it came from (warm ETDump, GEMM family, ms per prefill, candidate 1 -> candidate 3, `sessions/c3-linear/trace/families.csv`): 1B 4w 61.6 -> 58.5, 1B 8da4w 48.9 -> 47.9, 3B 8da4w 129.3 -> 124.2,
+8B 8da4w 307.1 -> 296.0; 3B and 8B 4w unchanged (every 4w shape there keeps the table kernel: no screened 4w kernel is 3 % faster in every round).
+Dispatched kernels per shape: `sessions/c3-linear/linear-bitwise/kernels.txt` (8da4w: the 256 x 64 sweep tile on 6 shapes, the 128 x 64 sweep tile on the 8B wk_wv / wq_wo, the 780M's `afmb1` on 1B w2, the 64 x 64 tile on 1B wk_wv;
+8B w2 and 3B wk_wv keep the table kernel; 4w: the 128 x 128 `cbt` sweep tile on the three 1B shapes).
 
 **Phase timing (work-order step 3), 8da4w table kernel `t128x64k32g42s32`** (PROF twin `sarc_dev_prof_dq8ca_zpg_t128x64k32g42s32p`, shader clock, twelve prefill shapes, `results/7900xtx/phases/parent-8da4w.csv`),
 share of the wave's cycles, median over the shapes (range over the shapes): barrier wait 31.4 % (18.0 to 33.7), LDS store 25.6 % (24.8 to 37.3), MMA 21.8 % (21.0 to 22.7), global weight fetch 10.9 % (10.4 to 14.5),
