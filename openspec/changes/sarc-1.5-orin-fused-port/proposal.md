@@ -44,7 +44,8 @@ local hook patch. Byte-identical to the sibling's and not listed: 37 files (`gl.
 | `trace_analyze.sh`, `trace_kernels.py` (new) | the ETDump analysis uses the first campaign's devtools venv read-only; `trace_kernels.py` adds `attention.csv` and `kernels.csv` (the fused kernel and its copy pass by name) |
 | `sdpa_screen_summary.py`, `collect.sh` | under a fused profile the per-layer total is the copy pass + the fused kernel, every round listed; the pre-checks, the probes and the error files of this campaign are collected |
 | `pull.sh`, `build-orin.sh`, `deploy.sh`, `drun.sh`, `trace.sh` | paths and comments; the second Orin's mirror removed; D5 in `trace.sh` |
-| new | `thresholds.txt`; `HOLD.md`; `buildq.sh`, `extraq.sh` (build queue under the desktop build lock); `memprobe.sh` (memory of the K / V copies); `chain1.sh` to `chain9.sh` (the detached device queues as they ran; `chain5`, `chain6`, `chain7` were ended before they started a job) |
+| `jetson-cross/{container,build}.sh`, `build-orin.sh` | option `GLSLC_DIR` (off by default): compile the shaders with a `glslc` given by directory instead of the image's; used for the unmeasured builds `parentg` / `topic4p` only ("Known limitation") |
+| new | `thresholds.txt`; `HOLD.md`; `buildq.sh`, `extraq.sh` (build queue under the desktop build lock); `memprobe.sh` (memory of the K / V copies); `chain1.sh` to `chain10.sh` (the detached device queues as they ran; `chain10` was stopped by the owner in its first step, "Known limitation"; `chain5`, `chain6`, `chain7` were ended before they started a job) |
 
 ## Release-zone hook (owner decision 2026-10-05)
 
@@ -165,6 +166,50 @@ zone, in a change of its own before any promotion pull request, with every devic
   `orin-fused2` 18.98 / 10.83 (`s6-c2`). With nothing selected: 19.15 / 10.95 on the parent build, 19.18 / 10.94 on
   `topic4`. Single runs; the differences are of the size the B70 confirmation saw (0 to 2.5 %).
 
+## Known limitation: shader compiler of the cross build (owner decision 2026-10-09 15:50 UTC)
+
+**Every number of this campaign is measured on builds whose shaders were compiled by the cross image's `glslc`,
+not by the compiler the goldens were made with.** By the owner's decision byte identity of the measured build's
+SPIR-V with `sarc/golden/spirv.json` is not required for this campaign, the numbers stand as measured on `topic4`,
+nothing is measured again, and the difference does not keep the campaign open.
+
+- The two compilers: the cross image `localhost/et-jetson-cross:jp7.2.1` has shaderc v2026.1; the goldens were
+  made with the `glslc` of `localhost/et-vk-build:rocky10` (shaderc v2023.8, spirv-tools v2025.4, glslang
+  `73743588`; `.artifacts/pinned-glslc/SOURCE.txt`).
+- `sarc/tools/spirv_golden.py`, unmodified, reads `FAIL (53 shipped variants)` with 14 DIFF lines on the measured
+  builds `parent` and `topic4` (the same 14; `.artifacts/build/{parent,topic4}.golden.txt`). All 14 are shipped
+  variants of other devices: 4 of the Radeon 780M (two 8da4w linear, its QK^T and attention x V), 2 of the Arc
+  B580 / B70, 2 of the Xclipse M51, 3 of the Adreno 840, 3 of the Mali G1. None is a kernel the Orin rows
+  dispatch. Between the parent build and `topic4` all 53 shipped variants are byte-identical (`tools/shipped.py`).
+- This campaign's own kernels are compiled to other bytes than the pinned compiler produces. All 1620 shaders
+  of `topic4`'s source were compiled with each compiler by the tree's `gen_vulkan_spv.py`
+  (`.artifacts/shadercheck/pinned-topic4/`): the cross image's output equals the measured build's in all 1620,
+  the pinned compiler's passes the golden, and 348 files differ between the two (248 named `sarc_*`, of them 9 dev-zone ones with the 4 `sarc_dev_orin_*` fused kernels, and the 6
+  stock `sdpa_compute_attn_weights_*`). The comparison that exists is
+  byte identity and file size; no instruction-level comparison was made:
+
+  | kernel | role | cross image, bytes | pinned compiler, bytes |
+  |---|---|---:|---:|
+  | `sarc_dev_orin_sdpa_fused3sb_d64_t32x32g11s32rko` | candidate 1, head_dim 64 | 16524 | 16684 |
+  | `sarc_dev_orin_sdpa_fused3sb_d128_t16x64g11s32rko` | candidate 1 and 2, head_dim 128 | 20832 | 21472 |
+  | `sarc_dev_orin_sdpa_fused3sb_d64_t32x32g11s32rk` | candidate 2, head_dim 64 | 19240 | 19400 |
+  | `sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k64g42s32nf` | parent QK^T | 10200 | 10216 |
+  | `sarc_sdpa_av_coopmat_4070ti_t64x64k32g42s32` | parent attention x V | 6616 | 6632 |
+  | `sarc_sdpa_attn_weights_softmax_buffer_half_orin_g64` | parent softmax | 10172 | 10172 (identical) |
+  | `sdpa_compute_attn_weights_tiled_buffer_buffer_half` | stock attention (pristine arm) | 11236 | 11256 |
+
+  So both arms of every comparison of this campaign were compiled by the same compiler, and it is not the
+  pinned one. What the pinned compiler's kernels would time or compute on this device is not measured.
+- The first Orin campaign (`sarc-1.5-orin-prefill-refine`) used the same image: its builds read the same FAIL,
+  and this campaign's `parent` build is byte-identical to its final build `topic14` in all 1610 shaders.
+- What exists and is not measured: builds `parentg` (`8973ced76`) and `topic4p` (`0bed38090`), the same commits
+  compiled with the pinned compiler inside the cross recipe (`GLSLC_DIR`, off by default): `spirv golden: PASS
+  (53 shipped variants)` on both. They stay as evidence of what the pinned compiler produces. `topic4g` failed
+  to build (rc 141, a logging line of mine) and is nothing. The device queue `chain10`, which was to gate and
+  time everything again on them, was stopped at 15:48:46 UTC inside its first step (the `verify.sh` of
+  `s0g-parent-verify`, about 14 minutes in); that step's partial output is kept on the device under
+  `stage/superseded/chain10-stopped-owner-decision-1550/` and is evidence for nothing.
+
 ## Hook control (D4 conditions)
 
 | condition | evidence |
@@ -255,6 +300,8 @@ prefill and where the first campaign left it; copy / view / other is 8 to 22 %.
 ## Final verification
 
 `STATUS.md`, "Final verification (R11)": every item on build `topic4`, whose commit is the last that changes code.
+One item is not passed as the rules write it and is accepted by the owner: `spirv_golden.py` on the measured build
+("Known limitation: shader compiler of the cross build"). F1 is the other owner-accepted label ("Known defect: F1").
 What was taken from the 4070 Ti port's review and changed the course of this campaign: the thermal-throttle
 record in every timed run, the test change as insert-only blocks, the 12 passes of tier `all` (already present)
 and the kernel's own one-full-subgroup check; the sessions measured before them (`s1-aa`, `s3-c1` on `topic1`)

@@ -1,45 +1,83 @@
 # STATUS: sarc-1.5-orin-fused-port
 
-**2026-10-09 15:35 UTC. REOPENED by the review of 15:00 UTC; not closed. The measurements below stand and were
-reproduced by the reviewer from the raw files, but the builds they were taken on (`parent`, `topic4`) fail the
-unmodified `sarc/tools/spirv_golden.py`: 14 shipped variants of other devices compile to other bytes with the
-cross image's glslc (shaderc v2026.1) than with the compiler the goldens were made with (shaderc v2023.8). R5
-says such a build is not usable, and no owner decision waives it. What I found on top: 348 of the 1620 shaders
-differ between the two compilers, **among them the attention kernels this campaign compares** (the parent's QK^T
-and attention x V, the stock attention kernel and both fused kernels), so this is not only a formality of
-other devices' shaders. I rebuilt the same two commits with the golden's glslc inside the same cross recipe
-(`parentg`, `topic4p`: golden PASS) and everything is being gated and timed again on them (`chain10`, about 10.5
-hours). Until that is done the result is: +6.13 % over the tuned parent and +76.70 % over pristine, measured
-on builds that fail the golden. Separately, finding F1 (full-subgroups flag) is an owner-accepted known defect
-(section below) and does not keep the campaign open.**
+**2026-10-09 15:50 UTC. Ready for the review to close. Result: `orin-fused1`, +6.13 % geomean over the tuned
+parent (`s5-c1`) and +76.70 % over pristine `dev/1.5` (`s8-pristine`), measured on build `topic4`; candidate 2
+(`orin-fused2`) +0.54 %, gated, not adopted. Two labels go with every number, both by owner decision and neither
+keeping the campaign open: the shaders were compiled by the cross image's `glslc`, so the measured builds fail
+`spirv_golden.py` on 14 shipped variants of other devices (section "Known limitation", decision of 15:50 UTC),
+and the pipelines were created without the full-subgroups flag (section "Known defect: F1", decision of
+15:25 UTC). The re-measurement on the pinned-compiler builds that the entry of 15:35 UTC announced was stopped
+by the owner (`chain10`, killed 15:48:46 UTC in its first step) and produced no result.**
 
 All times are UTC from `date -u`.
 
 ## Running now
 
-- Workstation: nothing. `topic4p` (`0bed38090` with the golden's glslc) was built 15:27 to 15:34: `spirv golden: PASS`, its 1620 shaders equal the pinned image's output byte for byte.
-  `parentg` (`8973ced76`, same compiler) is built: `spirv golden: PASS (53 shipped variants)`.
-- Device: `chain10` (since 15:35, until about 02:00 UTC on 2026-10-10). It repeats on `parentg` / `topic4p`:
-  the two parent controls (`s0g-parent-verify`, `s0gn-noenv`), the A/A (`s9-aa2g`), the reference error
-  (`sdpa-error3`), candidate 1's gate (`s10-c1g`), candidate 2's pre-check and gate (`s11-c2g`), the final-stack
-  rule of 01:22 UTC applied to it, the hook control (`s12n-noenv`), the pristine session (`s13-pristineg`) and
-  the 41-prompt probe of all four arms (`probe/finalg-fused/`). Thresholds, clock floor and tools are unchanged.
-  Not repeated: the memory probe and the roofs (neither depends on how the shaders were compiled).
-- No `ABORTED`, `GPU_GONE` or `HOLD` file on the device.
+- Workstation: nothing of this campaign (no build, no queue).
+- Device: nothing. `chain10` was ended with `dkill.sh` at 15:48:46 UTC (owner decision of 15:50 UTC); no
+  `llama_main`, `test_llama_microbench` or `logits_dump` of this campaign is left, 5.8 GB available, GPU at
+  306 MHz and 57 C afterwards. No `ABORTED`, `GPU_GONE` or `HOLD` file.
+- An older hmz run of this same campaign (`hmz exec` pid 8272, started 01:20 UTC, its actor session waiting on
+  `chain10` since 15:44 UTC) was still alive when this session started at 15:47 UTC; it had ended by itself by
+  15:51 UTC. I did not touch it, and it started nothing after `chain10` was stopped (device checked again).
 
 ## Review of 15:00 UTC: what it found and what I did
 
 | finding | what I did |
 |---|---|
-| `spirv_golden.py` FAILS on `topic4` and on `parent` (14 DIFF lines, the same set); `shipped.py`'s parent comparison cannot replace it | Agreed. Checks made first, no device time: (1) `check.sh` with its build steps (release export, host build in `localhost/et-vk-build:rocky10`): `host build OK`, `spirv golden: PASS (53 shipped variants)`. (2) All 1620 shaders of `topic4`'s source compiled with each compiler by the tree's `gen_vulkan_spv.py`: the cross image's output equals the measured build's in all 1620 (the method is right), the pinned one passes the golden, and 348 differ between the two (239 `sarc_*`, the stock `sdpa_compute_*`, 4 `sarc_dev_orin_*` among them). (3) The golden's `glslc` with its two SPIRV-Tools libraries runs inside the cross image and gives all 1620 shaders byte-identical to the pinned image's. So the recipe copy got an option (`GLSLC_DIR`, off by default; `tools/jetson-cross/{container,build}.sh`, `tools/build-orin.sh`; the compiler is kept under `.artifacts/pinned-glslc/` with a manifest) and the two commits were built again with it. No golden, shipped shader, tolerance or `sarc/tools` file is touched |
+| `spirv_golden.py` FAILS on `topic4` and on `parent` (14 DIFF lines, the same set); `shipped.py`'s parent comparison cannot replace it | **Settled by the owner at 15:50 UTC: byte identity with the golden is not required for this campaign, no re-measurement (section "Known limitation" below).** What I had done before that decision: checks made first, no device time: (1) `check.sh` with its build steps (release export, host build in `localhost/et-vk-build:rocky10`): `host build OK`, `spirv golden: PASS (53 shipped variants)`. (2) All 1620 shaders of `topic4`'s source compiled with each compiler by the tree's `gen_vulkan_spv.py`: the cross image's output equals the measured build's in all 1620 (the method is right), the pinned one passes the golden, and 348 differ between the two (239 `sarc_*`, the stock `sdpa_compute_*`, 4 `sarc_dev_orin_*` among them). (3) The golden's `glslc` with its two SPIRV-Tools libraries runs inside the cross image and gives all 1620 shaders byte-identical to the pinned image's. So the recipe copy got an option (`GLSLC_DIR`, off by default; `tools/jetson-cross/{container,build}.sh`, `tools/build-orin.sh`; the compiler is kept under `.artifacts/pinned-glslc/` with a manifest) and the two commits were built again with it (`parentg`, `topic4p`; kept, not measured). No golden, shipped shader, tolerance or `sarc/tools` file is touched |
 | `proposal.md`: "everything else is unchanged within 0.3 %" is false | Corrected from the raw sums: attention is 89 to 95 % of the reduction; linear GEMM -0.1 to -0.5 %, copy / view / other -0.2 to -0.7 %, everything else -0.8 to -4.6 % (4 to 13 ms per prefill), not located |
 | the residual row of "Where the time goes now" used rounded subtraction | Recomputed from the raw sums (1B: 130 / 231 ms) |
 | fp16 roof 9.7195 rounded to 9.720 | 9.719 |
-| `check.sh` not re-run by the reviewer | Re-run with and without the build steps (end of this file). **It now prints FAIL at step 1** for one untracked file that is not mine and that I have not touched: `.agents/skills/review-notes/SKILL.md` (dated 2026-10-04, in the working copy since about 14:46 UTC; a review-instruction file of the review tooling). Every other step passes. It is not committed and not part of this branch; whoever placed it should move it out of the working copy or the check keeps failing on it |
+| `check.sh` not re-run by the reviewer | Re-run with and without the build steps (end of this file). **It now prints FAIL at step 1** for one untracked file that is not mine and that I have not touched: `.agents/skills/review-notes/SKILL.md` (dated 2026-10-04, in the working copy since about 14:46 UTC; a review-instruction file of the review tooling). Every other step passes. It is not committed and not part of this branch; whoever placed it should move it out of the working copy or the check keeps failing on it. At 15:50 UTC the check prints `check.sh: PASS`, rc 0 (end of this file); the directory disappeared with the older hmz run at about 15:51 UTC |
 
 Build tag `topic4g` failed (rc 141: a `glslc --version | head -1` line I had added to the recipe, killed by
 `pipefail`; `parentg` got through the same line by timing) and is not used; `topic4p` is the same commit with
 that line fixed. The recipe hash of `parentg` and `topic4p` therefore differs in that one logging line.
+
+## Known limitation: shader compiler of the cross build (owner decision 2026-10-09 15:50 UTC)
+
+**Every number of this campaign is measured on builds whose shaders were compiled by the cross image's `glslc`,
+not by the compiler the goldens were made with.** By the owner's decision byte identity of the measured build's
+SPIR-V with `sarc/golden/spirv.json` is not required for this campaign, the numbers stand as measured on `topic4`,
+nothing is measured again, and the difference does not keep the campaign open.
+
+- The two compilers: the cross image `localhost/et-jetson-cross:jp7.2.1` has shaderc v2026.1; the goldens were
+  made with the `glslc` of `localhost/et-vk-build:rocky10` (shaderc v2023.8, spirv-tools v2025.4, glslang
+  `73743588`; `.artifacts/pinned-glslc/SOURCE.txt`).
+- `sarc/tools/spirv_golden.py`, unmodified, reads `FAIL (53 shipped variants)` with 14 DIFF lines on the measured
+  builds `parent` and `topic4` (the same 14; `.artifacts/build/{parent,topic4}.golden.txt`). All 14 are shipped
+  variants of other devices: 4 of the Radeon 780M (two 8da4w linear, its QK^T and attention x V), 2 of the Arc
+  B580 / B70, 2 of the Xclipse M51, 3 of the Adreno 840, 3 of the Mali G1. None is a kernel the Orin rows
+  dispatch. Between the parent build and `topic4` all 53 shipped variants are byte-identical (`tools/shipped.py`).
+- This campaign's own kernels are compiled to other bytes than the pinned compiler produces. All 1620 shaders
+  of `topic4`'s source were compiled with each compiler by the tree's `gen_vulkan_spv.py`
+  (`.artifacts/shadercheck/pinned-topic4/`): the cross image's output equals the measured build's in all 1620,
+  the pinned compiler's passes the golden, and 348 files differ between the two (248 named `sarc_*`, of them 9 dev-zone ones with the 4 `sarc_dev_orin_*` fused kernels, and the 6
+  stock `sdpa_compute_attn_weights_*`). The comparison that exists is
+  byte identity and file size; no instruction-level comparison was made:
+
+  | kernel | role | cross image, bytes | pinned compiler, bytes |
+  |---|---|---:|---:|
+  | `sarc_dev_orin_sdpa_fused3sb_d64_t32x32g11s32rko` | candidate 1, head_dim 64 | 16524 | 16684 |
+  | `sarc_dev_orin_sdpa_fused3sb_d128_t16x64g11s32rko` | candidate 1 and 2, head_dim 128 | 20832 | 21472 |
+  | `sarc_dev_orin_sdpa_fused3sb_d64_t32x32g11s32rk` | candidate 2, head_dim 64 | 19240 | 19400 |
+  | `sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k64g42s32nf` | parent QK^T | 10200 | 10216 |
+  | `sarc_sdpa_av_coopmat_4070ti_t64x64k32g42s32` | parent attention x V | 6616 | 6632 |
+  | `sarc_sdpa_attn_weights_softmax_buffer_half_orin_g64` | parent softmax | 10172 | 10172 (identical) |
+  | `sdpa_compute_attn_weights_tiled_buffer_buffer_half` | stock attention (pristine arm) | 11236 | 11256 |
+
+  So both arms of every comparison of this campaign were compiled by the same compiler, and it is not the
+  pinned one. What the pinned compiler's kernels would time or compute on this device is not measured.
+- The first Orin campaign (`sarc-1.5-orin-prefill-refine`) used the same image: its builds read the same FAIL,
+  and this campaign's `parent` build is byte-identical to its final build `topic14` in all 1610 shaders.
+- What exists and is not measured: builds `parentg` (`8973ced76`) and `topic4p` (`0bed38090`), the same commits
+  compiled with the pinned compiler inside the cross recipe (`GLSLC_DIR`, off by default): `spirv golden: PASS
+  (53 shipped variants)` on both. They stay as evidence of what the pinned compiler produces. `topic4g` failed
+  to build (rc 141, a logging line of mine) and is nothing. The device queue `chain10`, which was to gate and
+  time everything again on them, was stopped at 15:48:46 UTC inside its first step (the `verify.sh` of
+  `s0g-parent-verify`, about 14 minutes in); that step's partial output is kept on the device under
+  `stage/superseded/chain10-stopped-owner-decision-1550/` and is evidence for nothing.
 
 ## Known defect: F1 (owner decision 2026-10-09 15:25 UTC: option C, no release-zone change in this campaign)
 
@@ -109,14 +147,14 @@ The "over pristine" column is the ratio measured inside `s8-pristine` (its final
 1521.55, 659.58, 595.18, 305.54, 277.21, within 0.3 % of the `s5-c1` ones). The task expected +5 to +12 %: the
 result is inside the band, at its lower end; the 4070 Ti port of the same kernel closed at +11.64 %.
 
-## Final verification (R11) as it stood at 15:00 UTC, all on build `topic4` (which fails the golden: see the top)
+## Final verification (R11), all on build `topic4` (cross image's `glslc`: "Known limitation" above)
 
 | item | session | result |
 |---|---|---|
 | the build is the branch head's code | | `topic4` is an export of `0bed38090`; `git diff --name-only 0bed38090 HEAD` lists nothing outside `openspec/changes/sarc-1.5-orin-fused-port/` |
 | unmodified `verify.sh`, final environment, on the timed binaries | `s5-c1` | 34 lines equal to `s0-parent-verify` with the rates removed (0 differing); 22 of 22 runner calls rc 0; `gate_check.py verify` ACCEPT |
 | attention tiers | `s5-c1` | `all`, `extended`, `full` x 12 and `peaked`, `fused` x 3: 222 of 222 cases PASSED, 0 mismatches, fused kernel alone, `pairing=ok` |
-| shipped SPIR-V | build | **`spirv_golden.py`: FAIL, 14 DIFF lines** (the same 14 on the parent build; cross image's glslc). 53 of 53 shipped variants byte-identical to the parent build; none of the 14 is a shipped Orin kernel. This item is not passed |
+| shipped SPIR-V | build | **`spirv_golden.py`: FAIL, 14 DIFF lines** (the same 14 on the parent build; cross image's glslc). 53 of 53 shipped variants byte-identical to the parent build; none of the 14 is a shipped Orin kernel. Not passed as R5 / R7 write it; byte identity with the golden is not required for this campaign (owner decision 2026-10-09 15:50 UTC, "Known limitation") |
 | reference error, criterion 1 | `sdpa-error2` | rms and maximum not larger than the parent's on all five S = 2048 cases |
 | real-text evidence | `probe/final-fused/` | no differing next-token item; gross-divergence check not met in any cell; `ref_error_rule.py` MET |
 | timed session against the tuned parent | `s5-c1` | +6.13 % geomean, 60 of 60 valid, throttle state 0 |
@@ -686,7 +724,11 @@ provenance `.artifacts/build/<tag>.src.txt`.
 | `topic3` | `ca62778e6` (test support as insert-only blocks) | hard links to `topic2` + 104 changed paths | 1620 shaders; shipped: **UNCHANGED** (53 of 53 equal to `parent`; `build/topic3.shipped.txt`); `llama_main` `d37d44dd...`, `test_llama_microbench` `c1cfe15b...` |
 | `topic4` | `0bed38090` (the one-full-subgroup check in the fused kernel; the last commit that changes code) | hard links to `topic3` + 7 changed paths | 1620 shaders: the 8 `fused3sb` variants differ from `topic3`, the other 1612 are byte-identical; shipped: **UNCHANGED** (53 of 53 equal to `parent`; `build/topic4.shipped.txt`); `llama_main` `d33b5330...`, `test_llama_microbench` `72535d0f...` |
 
-`spirv_golden.py` reads FAIL with 14 DIFF lines on both builds, as on every build of the first campaign: the
+| `parentg` | `8973ced76`, shaders compiled with the pinned `glslc` (`GLSLC_DIR`) | as `parent` | `spirv golden: PASS (53 shipped variants)`. **Not measured** (owner decision 15:50 UTC); only the interrupted first step of `chain10` ran on it |
+| `topic4p` | `0bed38090`, the same compiler | as `topic4` | `spirv golden: PASS (53 shipped variants)`; its 1620 shaders equal the pinned image's output byte for byte. **Not measured**; nothing ran on it |
+| `topic4g` | `0bed38090` | | build failed (rc 141), not used |
+
+`spirv_golden.py` reads FAIL with 14 DIFF lines on the five measured builds (`parent`, `topic1` to `topic4`), as on every build of the first campaign: the
 cross image's glslc is not the one the goldens were made with; none of the 14 is a kernel the Orin rows
 dispatch (`build/topic1.shipped.txt`: same set in parent and candidate, Orin kernels differing: 0).
 
@@ -781,7 +823,9 @@ Not lockstep-dependent, but worth watching in the tiers: the one-pass form start
 
 ## `sarc/tools/check.sh --no-build` at closing
 
-Run 2026-10-09 15:05 UTC on the workstation, working tree = the closing commit's content (steps 4 and 5 of the
+Run again 2026-10-09 15:50 UTC on the workstation (the same output as at 15:05 UTC, below; the untracked
+`.agents/` directory that made step 1 fail in between was not mine and is gone from the working copy since
+about 15:51 UTC), working tree = the closing commit's content (steps 4 and 5 of the
 script need a build and are skipped by `--no-build`; the shipped SPIR-V of the cross build is compared by
 `tools/shipped.py`, above):
 
