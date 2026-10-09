@@ -78,6 +78,15 @@ real-text and the unaligned prompt is SAME in all six cells. The 24 untimed next
 run cold without `--warmup` and their window is shorter; they are compared as text only. The prompt is the kit's `prompt_2048.txt`
 (sha256 bfce65eb...), as in the published notes.
 
+## Adoption rule for candidate 6 (written 2026-10-09 04:00 UTC, before the data; the thresholds table above is unchanged)
+
+Candidate 6 (`7900xtx-refine5`: candidate 5 plus attn*V `sweep_t32x32k32g22s32` for head dimension 64 only, i.e. the 1B cells) comes from the second attention screen, which found it 1.16x faster
+than the incumbent on that op in every round. At the 1B model's attention share this is worth about 1.5 ms of 93 ms, below what a 7-repeat session resolves (repeat spreads of 2 to 8 % on the
+1B cells), so a session cannot confirm a gain; it can only show harm. It enters the final stack if (a) its gate passes (SDPA tiers all / extended / full, 12 passes each, 0 mismatches,
+`pairing=ok`; `verify.sh` as the snapshot except kernel-name lines; the SDPA output byte-identical to candidate 5's, else D3.1: error against the reference not larger), and (b) its geometric-mean change
+over candidate 5 is not worse than -2 % and neither 1B cell is worse than -2 %. Otherwise candidate 5 is the final attention stack. A gain is not claimed for it unless it is outside +-2 %.
+It counts toward the stop rule as a gated candidate under 2 % if its geomean gain is under 2 %.
+
 ## Host and environment
 
 - Control workstation (`host-ws1`): Ubuntu 22.04, native builds (`tools/build-native.sh`): host gcc, the toolchain Python 3.12.9
