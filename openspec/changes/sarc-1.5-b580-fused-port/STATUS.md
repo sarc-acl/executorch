@@ -1,6 +1,6 @@
 # sarc-1.5-b580-fused-port: status
 
-**2026-10-09 03:30 UTC — candidate 1 (`b580-fused1`) is accepted as a plain pass, +9.18 % geomean (logits probe
+**2026-10-09 03:18 UTC — candidate 1 (`b580-fused1`) is accepted as a plain pass, +9.18 % geomean (logits probe
 `PROBE_CHECK_OK`, `decide.py` `GATE_PASS`). The gate of candidate 2 (`b580-fused2`, session `s3-c2`) is
 `GATE_FAIL` on its seven timing items only and passes the other 29: a Discord renderer on the desktop held 33
 to 45 % of the card's engine time for the whole timed session (02:59 to 03:13 UTC), so 216 of 216 timed runs were
@@ -29,7 +29,7 @@ Detached, one GPU job at a time:
   decision, decode. Ends `CHAIN12_DONE`.
 - Then, by hand: `tools/chain11.sh <final profile>` (the closing: full gate of the final stack on `topic7`
   against the parent, the timed session against the pristine parent, roofs). The profile follows the rule
-  `final_stack` of `thresholds.txt`, fixed at 03:25 UTC before candidate 2 had a valid timed run.
+  `final_stack` of `thresholds.txt`, fixed at 03:17 UTC before candidate 2 had a valid timed run.
 
 If the machine reboots, all of it is gone: look at the three status files and restart the chain whose `DONE`
 line is missing (a half-run session directory goes to `superseded/` first).
