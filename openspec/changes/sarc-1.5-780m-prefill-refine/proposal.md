@@ -788,7 +788,14 @@ with `j mod SEGS = e_seg`), but a lane reads what other lanes of its subgroup wr
 - What the RX 7600 found (its `STATUS.md`, branch `topic/rx7600-prefill-refine`): the defect, while reading the
   kernel it was porting; and, for the copy with `subgroupBarrier()` after every `memoryBarrierShared()`, +0.00 %
   geomean against its candidate 3 (cells -0.19 to +0.17 %), the tiers `all` / `extended` / `full` at 12 passes
-  each with 0 mismatches, and output byte-identical to `fused3` in 21 of 21 cases.
+  each with 0 mismatches, and output byte-identical to `fused3` in 21 of 21 cases. These are that campaign's
+  figures, not measured here. Where they can be recomputed without that host: the branch at `c0be2c6c27`,
+  `openspec/changes/sarc-1.5-rx7600-prefill-refine/results/rx7600/sessions/m2a-sgbarrier/` (`git show
+  c0be2c6c27:<path>`). From its `runs.csv` (60 timed rows, 60 valid, first 5 per arm per cell) I get 0.000000,
+  0.000000, 0.000000, -0.192732, 0.000000, +0.169826 %, geomean -0.003873 %; its `sdpa-correctness/summary.txt`
+  has 12 passes per tier with 4 / 8 / 4 passed, 0 failed, 0 mismatches, 0 pairing not ok; its
+  `sdpa-error/bitwise.txt` has 21 lines, 21 `IDENTICAL`. The per-run logs and clock files behind that `runs.csv`
+  are on the RX 7600 host and were not read.
 
 The copy differs from `fused3` in the header comment (8 lines) and in 13 inserted `subgroupBarrier();` lines,
 one after each `memoryBarrierShared();`, nothing else (`results/780m/round3/shader-diff-fused3-fused3sb.txt`;
@@ -826,7 +833,7 @@ under that rule from the recorded rows, no new run: 94 of 94 and 92 of 92 timed 
 | geomean | | | **-0.14 %** | | | **+33.90 %** | +33.82 % |
 
 Item A is inside the +-2 % band in every cell: the barriers cost nothing measurable, as on the RX 7600. Item B
-reproduces round 2 within the band (+0.08 points in the geomean); its parent arm is within 1.19 % of the
+reproduces round 2 within the band (+0.085 points in the geomean); its parent arm is within 1.19 % of the
 published `dev/1.5` numbers. 3B 8da4w has two rate levels about 1 % apart in both arms of item A (four of eight rows on each;
 median of all eight 1406.1 in both arms): its -0.96 % is which level the first five rows fell on. The same cell
 is the one furthest from round 2 in item B (+1.29 points, repeat spread 0.93 / 0.55 %). The one

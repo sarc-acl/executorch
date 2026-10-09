@@ -2,8 +2,9 @@
 
 ## Round 3 (2026-10-08): `fused3sb` and `780m-final` (closing task, not a tuning round)
 
-Updated 2026-10-09 05:00 UTC. **Round 3 is measured and recorded; nothing is open on my side; the reviewer
-checks once more.** The owner answered the question about `throttle_status` (task file, "Owner decision,
+Updated 2026-10-09 05:15 UTC. **Round 3 is measured and recorded, and the review of `81b9973ce` passed its five
+artifact checks; two scope questions of that review are open for the owner ("Decision needed from the owner"
+below the table), neither involving a measurement.** The owner answered the question about `throttle_status` (task file, "Owner decision,
 2026-10-09 (04:55 UTC)", option (a)): the thermal throttle reasons are bits 4, 5, 6 and 9, 10, any bit above 12
 rejects too, the power- and current-limit bits are recorded and do not reject. The two monitored sessions were
 recomputed under that rule from the rows already recorded, no new run. Nothing is running and nothing is
@@ -16,6 +17,26 @@ queued; only the hold watcher is alive; no `nvtop` on the host.
 | A, `c11` with `fused3` against `c11` with `fused3sb` | **-0.14 % geomean** (cells -0.96 to +0.16 %): inside the +-2 % band, noise, not a gain or a loss |
 | B, `780m-final` against `dev/1.5` | **+33.90 % geomean** (cells +23.00 to +48.07 %); round 2 measured +33.82 %: within the band of it |
 | recommended configuration | `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final` |
+
+### Decision needed from the owner (open, 2026-10-09 05:15 UTC; scope of the review, no measurement involved)
+
+The review of `81b9973ce` passed its five artifact checks (numbers recomputed, golden, zone list, shader read,
+gate evidence) and left two items in its not-checked list, so by R12 it does not say "done". Neither needs the
+GPU and neither is mine to settle:
+
+1. **`sarc/tools/check.sh --no-build`.** The reviewer may not build, and the script compiles the two selector
+   test binaries (CPU only, lines 47 and 49) even with `--no-build`. Its PASS (1240 / 1433 checks) is therefore
+   the actor's run alone (output above and in `<artifacts 10-08>/logs/check-no-build-r6-ruled.out`). Asked:
+   may the reviewer run it, as an exception to "no builds" for these two compilations; or is the actor's
+   output accepted for R11 item 3.
+2. **The RX 7600 figures quoted in `proposal.md` ("Why the barriers").** They are another campaign's. The small
+   evidence files are on its branch (`c0be2c6c27`, `.../results/rx7600/sessions/m2a-sgbarrier/`); `proposal.md`
+   now names them and gives what I recompute from them (geomean -0.003873 %, cells -0.192732 to +0.169826 %, 36
+   tier passes with 0 mismatches, 21 of 21 identical). The per-run logs are on that host. Asked: is the
+   quotation inside this round's numeric audit (then the reviewer can recompute it from that branch's files,
+   to the depth they allow), or outside it.
+
+Nothing is running; nothing will be started for either item.
 
 ### Monitored sessions under the decision of 2026-10-09 04:55 UTC (the round's numbers)
 
@@ -62,7 +83,7 @@ and it is inside the band.
 | 8B 8da4w | 487.16 | 628.41 | **+29.00 %** | +28.73 % | 489.13 (-0.40 %) | 0.26 / 0.21 % | 4 / 5 | **DIFFER** |
 | geomean | | | **+33.90 %** | +33.82 % | | | | |
 
-Every gain is far outside the band. Against round 2: +0.08 points in the geomean, cells within 1.29 points
+Every gain is far outside the band. Against round 2: +0.085 points in the geomean (+33.903000 against +33.817880 %), cells within 1.29 points
 (3B 8da4w, repeat spread 0.93 / 0.55 % here; the others within 0.42). The parent arm is within 1.19 % of the published
 numbers (tolerance 3 %). The next-token column is the output of the first timed run of each arm (the gate's
 next-token runs were not repeated, as decided); in every cell each arm's output is byte-identical to the same
