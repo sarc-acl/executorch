@@ -1,23 +1,21 @@
 # STATUS: sarc-1.5-orin-fused-port
 
-**2026-10-09 06:05 UTC. Candidate 1 (fused attention kernel, profile `orin-fused1`) passed its gate `s3-c1` on
-build `topic1`: +6.01 % geomean over the tuned parent (1B +10.9 / +10.0 %, 3B +4.8 / +4.4 %, 8B +3.3 / +3.0 %), no
-next-token item differs, reference-error rule met with the real-text evidence (`probe/c1-fused/`). NOT CLOSED,
-and `s3-c1` is not the result that will be reported: three things taken from the 4070 Ti fused port are put
-right first (thermal-throttle record in the timed runs; the shared test file as insert-only blocks; the kernel's
-own check that its workgroup is one full subgroup), and candidate 1 is being gated again on the build that has
-all three (`topic4`, which passed its correctness pre-check `g-pre`). Candidate 2 (`orin-fused2`) follows, with
-the owner's agreement of 01:00 UTC; the closing chain is queued behind it. No timed number on `topic4` exists yet.**
+**2026-10-09 08:15 UTC. Candidate 1 (fused attention kernel, profile `orin-fused1`) passed its gate again on
+the build that has everything taken from the 4070 Ti port (`topic4`: throttle record, insert-only test blocks,
+one-full-subgroup check): `s5-c1` `GATE_ACCEPTED`, **+6.13 % geomean over the tuned parent** (1B +11.2 / +10.2 %,
+3B +4.8 / +4.4 %, 8B +3.4 / +3.0 %), no next-token item differs, reference-error criterion 1 met. This replaces
+`s3-c1` (+6.01 % on `topic1`) as the number of candidate 1. NOT CLOSED: candidate 2 (`orin-fused2`) is being
+gated against candidate 1 (`s6-c2`), then the closing chain runs (hook control, pristine session, real-text probe
+on `topic4`, memory probe, fresh roofs).**
 
 All times are UTC from `date -u`.
 
 ## Running now
 
 - Device `duck-naughty` (detached, `~/hmz-sarc-orin-fused/jobs/<job>.{status,out}`):
-  - `chain8` (measuring since 04:59), until about 12:00, everything on `topic4`: `g-pre`, `s4-aa2` and
-    `sdpa-error2` done (below); `s5-c1` running since 05:55 (candidate 1 gated again: parent build against
-    `topic4` with `orin-fused1`; about 3 hours); then `c2-pre` and `s6-c2` (candidate 2, `orin-fused2`, against
-    candidate 1, both on `topic4`).
+  - `chain8` (measuring since 04:59), until about 11:00, everything on `topic4`: `g-pre`, `s4-aa2`,
+    `sdpa-error2` and `s5-c1` done (below); running: `c2-pre`, then `s6-c2` (candidate 2, `orin-fused2`, against
+    candidate 1, both on `topic4`; about 3 hours).
   - `chain9` (queued behind `chain8`), the closing chain, 4.5 to 7.5 hours: `s7n-noenv` (hook control on
     `topic4`); `s7-final` (only if the final stack is `orin-fused2`: its full gate against the tuned parent);
     `s8-pristine` (final stack against the pristine state); the real-text probe of the final stack on `topic4`
@@ -27,6 +25,59 @@ All times are UTC from `date -u`.
     `chain6` and `chain7` (the same steps as `chain8` and `chain9`, fixed on `topic3`; 01:26).
 - Workstation: nothing. `topic4` (`0bed38090`) was built 01:25 to 01:36 and deployed 01:36.
 - Coordinator hold: `tools/HOLD.md` (device: `~/hmz-sarc-orin-fused/HOLD`; builds: `.artifacts/HOLD`). None seen.
+
+## Candidate 1 on `topic4`: gate `s5-c1`, `GATE_ACCEPTED 2026-10-09T08:00:47Z all steps passed`
+
+Parent arm: build `parent` (`8973ced76`) with the parent environment. Candidate arm: build `topic4` (`0bed38090`)
+with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-fused1`. Tok/s, median of 5 valid interleaved runs per
+arm, recomputed from `runs.csv` with a script of my own (`results/orin/sessions/s5-c1/`):
+
+| cell | parent | candidate 1 | gain | repeat spread (parent / candidate) | `s3-c1` gain (`topic1`) | next token (4 prompts) |
+|---|---:|---:|---:|---|---:|---|
+| 1B 4w | 1490.54 | 1656.96 | +11.17 % | 0.36 / 0.40 % | +10.89 % | SAME |
+| 1B 8da4w | 1379.12 | 1520.42 | +10.25 % | 0.54 / 0.37 % | +9.96 % | SAME |
+| 3B 4w | 629.19 | 659.58 | +4.83 % | 0.15 / 0.10 % | +4.83 % | SAME |
+| 3B 8da4w | 570.32 | 595.35 | +4.39 % | 0.14 / 0.06 % | +4.36 % | SAME |
+| 8B 4w | 295.44 | 305.49 | +3.40 % | 0.06 / 0.10 % | +3.29 % | SAME |
+| 8B 8da4w | 269.05 | 277.24 | +3.05 % | 0.09 / 0.04 % | +3.02 % | SAME |
+
+Geomean **+6.13 %**, every cell outside the +-2 % band. Inside the task's expected +5 to +12 %, at its lower end.
+
+- 60 timed runs, all valid: rc 0, 2048 prompt tokens, 0 generated, no foreign GPU process, 11 to 72 clock
+  samples per window, median clock 612 MHz in every run (floor 593), **throttle state 0 in all 8051 clock samples**,
+  start temperature 55 to 60 C, maximum 63 C.
+- SDPA correctness, 12 passes of `all`, `extended`, `full` and 3 of `peaked`, `fused` (42 logs, 222 cases): 222
+  PASSED with 0 mismatches, 222 kernel lines `qk=? softmax=? av=? fused=...fused3sb... pairing=ok` (counted from
+  the logs); `gate_check.py sdpa`: ACCEPT, 0 findings.
+- Unmodified `verify.sh` with the candidate environment on the timed binaries (`llama_main` `d33b5330...`,
+  `test_llama_microbench` `72535d0f...`, the hashes of build `topic4`): `verify.out` (34 lines) equals the parent
+  snapshot `s0-parent-verify` line by line with the rates removed (0 differing lines); 22 of 22 runner calls rc 0;
+  `gate_check.py verify`: ACCEPT, 0 findings; decode 31 tokens at 18.9 / 10.9 tok/s.
+- `gate_check.py session`: ACCEPT, 0 findings; next token parent vs candidate SAME in 24 of 24 rows; `env-check`:
+  ACCEPT. Shipped SPIR-V of `topic4`: UNCHANGED (53 of 53).
+- **How it is recorded:** the gate wrote `all steps passed` because no next-token item differs. The candidate is
+  an arithmetic change, so the reference-error evidence is on record beside it: criterion 1 on `topic4`
+  (`sdpa-error2`, below); the real-text probe of `topic1`'s kernel (`probe/c1-fused/`, below) and, by `chain9`,
+  of the final stack on `topic4`.
+- Memory: at least 5752 MB available before every timed run. Swap-out during 1B and 3B runs: 0 or 1 page (once
+  24, parent arm). During 8B runs both arms swap out alike: parent 1 to 2872 pages per run (4 KiB each: up to
+  11 MB), candidate 25 to 1268, the first run of a cell most (the model file enters the page cache, D5). The K / V
+  copies do not add to it. Model load 1.6 to 10.4 s; 0 runner aborts.
+
+Where the gain comes from (warm ETDump of both arms of `s5-c1`, ms per 2048-token prefill, parent -> candidate
+1; `results/orin/sessions/s5-c1/trace/attention.csv`):
+
+| cell | QK^T | softmax | attn*V | fused kernel | K / V copy | attention total | linear GEMM | dispatch total |
+|---|---|---|---|---:|---:|---|---|---|
+| 1B 4w | 107.6 -> 0 | 133.1 -> 0 | 61.4 -> 0 | 172.2 | 3.1 | 302.1 -> 175.3 | 655.3 -> 654.5 | 1359.2 -> 1225.2 |
+| 1B 8da4w | 107.6 -> 0 | 133.0 -> 0 | 61.4 -> 0 | 171.9 | 3.1 | 302.1 -> 175.0 | 777.9 -> 774.4 | 1469.9 -> 1333.9 |
+| 3B 4w | 198.4 -> 0 | 173.9 -> 0 | 143.6 -> 0 | 371.0 | 11.5 | 516.0 -> 382.5 | 1862.8 -> 1860.4 | 3236.6 -> 3086.8 |
+| 3B 8da4w | 198.8 -> 0 | 174.2 -> 0 | 143.6 -> 0 | 371.2 | 11.3 | 516.6 -> 382.4 | 2170.8 -> 2164.8 | 3571.0 -> 3420.0 |
+| 8B 4w | 301.2 -> 0 | 265.9 -> 0 | 216.1 -> 0 | 561.8 | 13.0 | 783.2 -> 574.7 | 4661.6 -> 4651.6 | 6916.6 -> 6686.1 |
+| 8B 8da4w | 301.0 -> 0 | 266.0 -> 0 | 216.3 -> 0 | 561.1 | 12.9 | 783.3 -> 573.9 | 5304.2 -> 5297.0 | 7588.6 -> 7363.1 |
+
+The same as on `topic1` within 0.5 ms: the kernel's new check costs nothing measurable. All of the gain is
+attention: -42 % on 1B, -26 % on 3B, -27 % on 8B.
 
 ## On `topic4`: A/A re-check `s4-aa2` (05:05 to 05:41 UTC) and reference error `sdpa-error2`
 
@@ -142,7 +193,7 @@ the band, candidate 1 alone is the final stack and the campaign closes by N3 wit
 sub-threshold candidate. Nothing is open under this heading now.
 
 
-## Candidate 1 (`orin-fused1`): gate `s3-c1`, `GATE_ACCEPTED 2026-10-09T00:34:54Z all steps passed`
+## Earlier: candidate 1 on `topic1`, gate `s3-c1`, `GATE_ACCEPTED 2026-10-09T00:34:54Z all steps passed` (superseded by `s5-c1`; kept as measured)
 
 Parent arm: build `parent` (`8973ced76`) with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-refine5
 ET_VK_SARC_SOFTMAX_VARIANT=orin_g64`. Candidate arm: build `topic1` (`0f14f2a1a`) with `ET_VK_SARC_UNVERIFIED=1
