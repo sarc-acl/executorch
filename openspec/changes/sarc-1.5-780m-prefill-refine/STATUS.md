@@ -450,8 +450,9 @@ file is in the trees of `b3ec12057` and `aead6ed25` only.)
 ### Decision needed from the owner
 
 **Answered: the owner decided option (a) on 2026-10-08 22:55 UTC (task file, last section); points 1 to 3 were
-carried out on `head4` (top of this file) and point 4 is stated there. Nothing is open. The text below is the
-question as it was put.**
+carried out on `head4` (top of this file). Point 4 (validity predicates that are not evidenced) was not waived and
+is the decision that is open now, at the top of this file. The text below is the question as it was put on
+2026-10-08.**
 
 **Round 3 is not closed. Two findings of the review of 2026-10-08 block it; nothing further is queued until the
 owner answers** (task file, "If something takes a different turn ... stop"). Nothing is running; no build and no
