@@ -1158,6 +1158,11 @@ const PickM51 kM51PicksC7[] = {
     {Op::kDq8caLinear, "sarc_dev_m51_linear_dq8ca_coopmat_zpgf_t128x64k32g22s32", any_shape},
     {Op::kQ4gswLinear, "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32xp", k_is_4096},
 };
+// c8: c5 with the 4w kernel bz_t128x128k32g42s32f32xp on every 4w shape (second round; the K = 4096 pick of c3 is replaced by it).
+const PickM51 kM51PicksC8[] = {
+    {Op::kDq8caLinear, "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32", any_shape},
+    {Op::kQ4gswLinear, "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g42s32f32xp", any_shape},
+};
 const char kFusedM51[] = "fused3_d64_t32x32g11s32rk,fused3_d128_t16x64g11s32rk";
 // Fused-variant screen (ETDump of the fused kernel, 3 rounds, RULES R8 margin): for head_dim 64 the
 // 16 x 64 tile on a 64-wide subgroup beat the 780M's choice in every round; for head_dim 128 no variant did.
@@ -1174,6 +1179,8 @@ const ProfileM51 kM51Profiles[] = {
     {"c6", kFusedM51B, kM51PicksC6, sizeof(kM51PicksC6) / sizeof(PickM51)},
     // c7: c5 with the fragments-first 8da4w kernel (second round).
     {"c7", kFusedM51B, kM51PicksC7, sizeof(kM51PicksC7) / sizeof(PickM51)},
+    // c8: c5 with the N-major-B 4w kernel on every 4w shape (second round of the M51 campaign).
+    {"c8", kFusedM51B, kM51PicksC8, sizeof(kM51PicksC8) / sizeof(PickM51)},
 };
 const ProfileM51* active_profile_m51() {
   static const ProfileM51* const active = []() -> const ProfileM51* {
