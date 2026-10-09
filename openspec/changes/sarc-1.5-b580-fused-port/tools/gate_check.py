@@ -109,8 +109,11 @@ if not CONTROL:
     except OSError: rows = []
     done = read(D, "raw", "done.txt"); env = read(D, "raw", "env.txt")
     REPS = int((re.search(r"reps=(\d+)", env) or [0, 5])[1])
+    sys.path.insert(0, os.path.dirname(os.path.realpath(__file__))); import adjudicate   # tools/adjudication.csv; runs.csv is not rewritten
+    OK, PROBLEMS = adjudicate.countable(os.path.basename(os.path.realpath(D)), rows)
+    check(not PROBLEMS, "timing: no run stored valid without a readable foreign engine share", "; ".join(PROBLEMS) or "none")
     for m, q in CELLS:
-        n = {b: sum(1 for r in rows if (r["model"], r["scheme"], r["build"]) == (m, q, b) and r["log"].startswith("logs/prefill") and r["valid"] == "1") for b in ("parent", "cand")}
+        n = {b: sum(1 for r in OK if (r["model"], r["scheme"], r["build"]) == (m, q, b)) for b in ("parent", "cand")}
         check(REPS >= 5 and n["parent"] >= REPS and n["cand"] >= REPS, f"timing: {m} {q} {REPS} valid runs per build", f'parent {n["parent"]} cand {n["cand"]}')
     check("E2E5_OK" in done, "timing: session complete", done.strip().splitlines()[-1] if done.strip() else "no done.txt")
     ck = re.search(r"clkmin=(\d+)", env)

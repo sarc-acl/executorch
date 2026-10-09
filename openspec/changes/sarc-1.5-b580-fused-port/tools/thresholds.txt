@@ -61,16 +61,3 @@ idle_wait          lifted: a timed run, a trace run and a screen run start at on
                    the desktop state of every such unit is recorded (logs/idle_wait.log) beside the per-run
                    foreign engine share of runs.csv. Nothing else in this file changes: CLKMIN, BUSYMAX 5.0 %,
                    7 repeats, the noise band, and a run above BUSYMAX is invalid and replaced.
-
-# 2026-10-09 03:17 UTC, appended while no valid timed run of candidate 2 exists (session s3-c2: 0 valid runs in
-# five cells and 1 in the sixth, that one a sampler artefact; its gate is GATE_FAIL on the timing items only).
-valid_run          clarified, not changed: a foreign engine share outside 0 to 100 % is not a reading and makes
-                   the run invalid (busy_unreadable). s3-c2 had one run with -5274 % that e2e5.sh counted valid.
-busy_wait          a timed session (and the gate that contains it) starts only when the desktop's share of the
-                   engine time over 5 s is at or below BUSYMAX, checked once a minute for at most 3 hours, then
-                   starts anyway (host.sh busy_wait). A start condition, not a validity rule, and not the idle
-                   wait the owner lifted (IdleHint is not read): BUSYMAX 5.0 %, 7 repeats, 12 extra pairs and the
-                   replacement of rejected runs are unchanged.
-final_stack        candidate 2 (b580-fused2) enters the final stack only if its gate passes and its geomean gain
-                   over candidate 1 is above +2 % (outside the noise band); otherwise the final stack is
-                   candidate 1 (b580-fused1) and candidate 2 is reported with its numbers.

@@ -7,6 +7,8 @@ d = sys.argv[1]; rows = list(csv.DictReader(open(os.path.join(d, "runs.csv"))))
 import re
 REPS = int((re.search(r"reps=(\d+)", open(os.path.join(d, "env.txt")).read()) or [0, 5])[1])
 timed = [r for r in rows if r["log"].startswith("logs/prefill")]
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__))); import adjudicate
+OK, PROBLEMS = adjudicate.countable(adjudicate.session_of(d), rows); OKID = {id(r) for r in OK}   # tools/adjudication.csv; runs.csv is not rewritten
 cells = collections.OrderedDict()
 for r in timed: cells.setdefault((r["model"], r["scheme"]), {"parent": [], "cand": []})[r["build"]].append(r)
 nt = {}
@@ -18,8 +20,8 @@ if os.path.exists(p):
 print("model,scheme,parent_med_tok_s,cand_med_tok_s,ratio,gain_pct,outside_2pct_band,parent_spread_pct,cand_spread_pct,valid_parent,valid_cand,invalid,clk_med_mhz_range,temp_pre_range,next_token_2048/check/unaligned,fbusy_pct_med_max")
 ratios = []
 for (m, q), a in cells.items():
-    v = {b: [float(r["tok_s"]) for r in a[b] if r["valid"] == "1"][:REPS] for b in a}
-    inv = [f'{r["build"]}:r{r["rep"]}:{r["reason"]}' for b in a for r in a[b] if r["valid"] != "1"]
+    v = {b: [float(r["tok_s"]) for r in a[b] if id(r) in OKID][:REPS] for b in a}
+    inv = [f'{r["build"]}:r{r["rep"]}:{r["reason"] or "not_countable"}' for b in a for r in a[b] if id(r) not in OKID]
     clk = [float(r["clk_med_mhz"]) for b in a for r in a[b] if r["clk_med_mhz"]]
     tp = [int(r["temp_pre"]) for b in a for r in a[b]]
     fb = [float(r["fbusy_pct"]) for b in a for r in a[b] if r.get("fbusy_pct")] or [0.0]
@@ -31,3 +33,4 @@ for (m, q), a in cells.items():
 if ratios:
     g = math.exp(sum(math.log(x) for x in ratios) / len(ratios))
     print(f"geomean over {len(ratios)} cells: {g:.4f} ({(g - 1) * 100:+.2f} %), min {min(ratios):.4f}, max {max(ratios):.4f}")
+for p in PROBLEMS: print("UNADJUDICATED", p)
