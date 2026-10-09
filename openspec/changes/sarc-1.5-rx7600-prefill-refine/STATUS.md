@@ -4,8 +4,7 @@ Updated 2026-10-09 12:40 UTC (round 2 finished; round 1 below is unchanged and c
 
 ## Running now
 
-- Nothing of the timed work. The real-text logits probe of the final build (`tools/chain10.sh`, session `r2-final`) may still be running; its status is in `<artifacts>/logs/chain10.status`
-  and its result goes to `results/rx7600/round2/final-probe/` when done.
+- Nothing. The real-text logits probe of the final build finished 2026-10-09 11:59 UTC (`results/rx7600/round2/final-probe/`: gross-divergence check ok in all six cells, table identical to round 1's).
 - Never pushed from here (owner decision 2026-10-07 23:15 UTC): the coordinator publishes.
 
 ## Round 2 (owner decision 2026-10-08 23:38 UTC: push the linear kernels further): DONE, stop rule = all three candidates done
