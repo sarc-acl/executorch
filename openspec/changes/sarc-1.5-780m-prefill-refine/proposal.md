@@ -682,20 +682,17 @@ gets one name. Dev zone only; no release-zone file is touched in this round. Raw
 `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-08/`, evidence in `results/780m/round3/` and
 `results/780m/sessions/{r3a-fused3sb,r3b-final-dev15}{,-head4}/`.
 
-**Status 2026-10-09 04:55 UTC: not closed, one owner decision is open** (`STATUS.md`, "Decision needed from the
-owner (open, 2026-10-09 04:55 UTC)"). The build, the gate, the tiers, the dispatch and the byte comparison are
-done on the replacement build `head4` and stand. The timed sessions do not yet have final numbers: the `head4`
-sessions in the table below were measured with a tool that did not record two predicates of the R6 validity
-rule (and item B with an idle `nvtop` attached); the owner ordered monitored replacements (2026-10-09 02:50
-UTC), and those are incomplete because the device's `throttle_status` is non-zero in most runs (subsection
-"Monitored timed sessions on `head4`" below). The round was built twice from the same commit `c639d4760`:
-`head3` (2026-10-08 19:44 UTC) took its submodules from the working copy and so did not satisfy R5; the review
-found it, and the owner decided a replacement (2026-10-08 22:55 UTC, task file). `head4` is a recursive export
-from git object stores only. The subsections that carry "(build `head3`)" in their heading are kept as measured
-and are evidence for `head3` only.
+**Status 2026-10-09 05:00 UTC: measured and recorded.** The round's numbers are those of the monitored timed
+sessions on the replacement build `head4` (subsection "Monitored timed sessions on `head4`" below): item A
+**-0.14 %** geomean (inside the band: no difference), item B **+33.90 %** (round 2: +33.82 %). The build, the
+gate, the tiers, the dispatch and the byte comparison were done once on `head4` and stand. The round was built
+twice from the same commit `c639d4760`: `head3` (2026-10-08 19:44 UTC) took its submodules from the working copy
+and so did not satisfy R5; the review found it, and the owner decided a replacement (2026-10-08 22:55 UTC, task
+file). `head4` is a recursive export from git object stores only. The subsections that carry "(build `head3`)"
+in their heading are kept as measured and are evidence for `head3` only.
 
 Sessions with the earlier tool (R6 predicates as recorded by the earlier tool; `head4` item B with an idle
-`nvtop` attached), not the round's final numbers:
+`nvtop` attached), kept on record, not the round's numbers:
 
 | | `head3` | `head4` |
 |---|---:|---:|
@@ -799,28 +796,49 @@ every line is listed in `STATUS.md`). The task file and the commit message speak
 the fourteenth match of a text search is the sentence in the new header. The yaml lists the two variants of the
 final pair with the parameters of their `fused3` twins.
 
-### Monitored timed sessions on `head4` (owner decision 2026-10-09 02:50 UTC, option (b)): incomplete
+### Monitored timed sessions on `head4` (owner decisions 2026-10-09 02:50 and 04:55 UTC): the round's numbers
 
-The earlier `head4` sessions below (item A -0.12 %, item B +33.92 %) carry the label the owner gave them: R6
-predicates as recorded by the earlier tool; item B with an idle `nvtop` attached. They were to be replaced by
-sessions on the same binaries with `tools/e2e5.sh` also recording `throttle_status` of `gpu_metrics` in its
-0.1 s sampler (non-zero in the measured window: invalid), the guard's processes and the DRM clients readable to
-this user during each run (a foreign one with engine time: invalid), a clock-sample minimum of 5, and `nvtop` in
-the guard's pattern. Limits accepted by the decision: the greeter's `fdinfo` is not readable (device-wide busy %
-only), and the status bits are recorded raw, not interpreted.
+The earlier `head4` sessions (item A -0.12 %, item B +33.92 %) did not record two predicates of the R6 validity
+rule: GPU workload during a run, and a thermal throttle reason. The owner ordered them replaced by sessions on
+the same binaries with `tools/e2e5.sh` also recording `throttle_status` of `gpu_metrics` in its 0.1 s sampler,
+the guard's processes and the DRM clients readable to this user during each run (a foreign one with engine
+time: invalid), a clock-sample minimum of 5, and `nvtop` in the guard's pattern. The gate, the tiers and the
+byte comparison were not repeated.
 
-Result (`results/780m/sessions/{r3a-fused3sb-head4-r6,r3b-final-dev15-head4-r6}/`, recomputed by
-`tools/r6_analyze.py`): no foreign process and no foreign DRM client in any of the 186 timed runs, clock and
-sample predicates met in all; but `throttle_status` reads `0x00000002` in at least one window sample of 113
-runs (53 of 94 in item A, 60 of 92 in item B; every 8B run of item A, 31 of 32 8B runs of item B). With at most
-3 extra pairs per cell, item A has 5 valid runs per arm in 3 of 6 cells (1B 4w 0.00 %, 1B 8da4w 0.00 %,
-3B 8da4w +0.07 %) and item B in 1 of 6 (1B 8da4w +48.35 %). **Neither session is complete; these are not the
-round's numbers.** Per-cell counts, what the bit correlates with (clock dips to a median of 2752 to 2790 MHz in
-the samples that carry it; equal rates with and without it in three cells), the unverified reading of the bit
-from the upstream kernel header (`THROTTLER_STATUS_BIT_FPPT`, a power limit, not one of the thermal bits), the
-table of the same rows without that one predicate (item A -0.14 %, item B +33.90 %; for the ruling only), and
-the three options are in `STATUS.md` under "Decision needed from the owner". Nothing was tuned, no cap or
-window was changed, no cell was re-run.
+The sessions (2026-10-09 03:28 to 04:40 UTC) first ran under "any non-zero status rejects" and came out
+incomplete: `throttle_status` reads `0x00000002` in at least one window sample of 113 of 186 timed runs (every
+8B run of item A), and nothing else was found. Asked, the owner ruled (04:55 UTC): on this APU the thermal
+reasons are bits 4, 5, 6 (`THM_CORE`, `THM_GFX`, `THM_SOC`) and 9, 10 (`PROCHOT`); bits 0 to 3 (package power
+limits; bit 1 is `FPPT`) and 7, 8, 11, 12 (current limits) are recorded and do not reject; any bit above 12
+rejects. This is lesson L16: a power-limit flag that a loaded APU sets by design. The sessions were recomputed
+under that rule from the recorded rows, no new run: 94 of 94 and 92 of 92 timed rows valid, medians of the first
+5 per arm per cell (`results/780m/sessions/{r3a-fused3sb-head4-r6,r3b-final-dev15-head4-r6}/`, `runs-ruled.csv`,
+`analysis.txt`; `tools/r6_analyze.py`).
+
+| cell | A: `c11` with `fused3` | A: `c11` with `fused3sb` | A: difference | B: `dev/1.5` dispatch | B: `780m-final` | B: gain | round 2 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 1B 4w | 3835.21 | 3835.21 | 0.00 % | 2694.74 | 3835.21 | +42.32 % | +42.51 % |
+| 1B 8da4w | 3764.71 | 3764.71 | 0.00 % | 2537.79 | 3757.80 | +48.07 % | +48.35 % |
+| 3B 4w | 1457.65 | 1457.65 | 0.00 % | 1141.58 | 1457.65 | +27.69 % | +27.85 % |
+| 3B 8da4w | 1412.41 | 1398.91 | -0.96 % | 1047.57 | 1414.36 | +35.01 % | +33.72 % |
+| 8B 4w | 639.00 | 640.00 | +0.16 % | 519.53 | 639.00 | +23.00 % | +23.42 % |
+| 8B 8da4w | 628.80 | 628.61 | -0.03 % | 487.16 | 628.41 | +29.00 % | +28.73 % |
+| geomean | | | **-0.14 %** | | | **+33.90 %** | +33.82 % |
+
+Item A is inside the +-2 % band in every cell: the barriers cost nothing measurable, as on the RX 7600. Item B
+reproduces round 2 within the band (+0.08 points in the geomean); its parent arm is within 1.19 % of the
+published `dev/1.5` numbers. 3B 8da4w has two rate levels about 1 % apart in both arms of item A (four of eight rows on each;
+median of all eight 1406.1 in both arms): its -0.96 % is which level the first five rows fell on. The same cell
+is the one furthest from round 2 in item B (+1.29 points, repeat spread 0.93 / 0.55 %). The one
+next-token difference (8B 8da4w, `prompt_2048`, item B) is candidate 8's, ACCEPTED (reference-error rule, owner
+decision 2026-10-04); each arm's output equals the earlier sessions' byte for byte.
+
+What the monitoring shows and does not: no process of the guard's pattern outside the session and no foreign
+DRM client in any run; clock medians 2718 to 2800 MHz (floor 2700); no thermal bit and no bit above 12 in 3,335
+window samples; bit 1 in 811 of them, with the short clock dips (median 2752 to 2790 MHz in those samples) and
+with equal rates in the cells that have rows with and without it. Limits, accepted by the owner: the greeter's
+`fdinfo` is not readable to this user, so for other users' processes only the device-wide busy % is recorded.
+Not checked: the bit table against the source of this host's distribution kernel (upstream v6.12 header only).
 
 A first start (`chain29.sh`) was stopped after 18 rows and superseded: the launching shell's command line
 contained a word of the guard's pattern and the guard rejected the first 10 rows for it (`STATUS.md`).
@@ -1012,10 +1030,9 @@ of `s9-final-dev15`, and the fused kernel's output is byte-identical to the kern
   copied from the working copy), and on it the six model files were read into the page cache once per gate or
   session, not at each model change. The owner decided a replacement (2026-10-08 22:55 UTC); `head4` and its
   validation are above. The `head3` numbers stay on record for `head3` only.
-- **Open, owner decision needed (`STATUS.md`, 2026-10-09 04:55 UTC):** see "Monitored timed sessions" below. The
-  two R6 predicates the earlier tool did not record were recorded in replacement sessions on `head4`; one of
-  them, `throttle_status`, is non-zero (bit 1 only) in most runs, so the replacement sessions are incomplete
-  under the rule as decided and the round has no final session numbers yet.
+- **Resolved by the owner's decisions of 2026-10-09 02:50 and 04:55 UTC:** the two R6 predicates the earlier
+  tool did not record are recorded in the monitored sessions above, and which bits of `throttle_status` reject
+  a run is ruled. Still a limit: foreign engine time of other users' processes cannot be read.
 - The specification sentences behind the barrier reasoning above are quoted in `STATUS.md` ("The specification
   sentences behind the barriers"), from the published GLSL specification and `GL_KHR_shader_subgroup`; the
   `vulkan-docs` server did not connect (`CONNECTION_CLOSED`). They say what the reasoning says: a memory barrier

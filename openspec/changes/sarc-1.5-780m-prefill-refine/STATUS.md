@@ -2,19 +2,111 @@
 
 ## Round 3 (2026-10-08): `fused3sb` and `780m-final` (closing task, not a tuning round)
 
-Updated 2026-10-09 04:55 UTC. **Not closed: the replacement timed sessions the owner ordered (option (b),
-2026-10-09 02:50 UTC) were run and are incomplete under the rule as decided; one owner decision is needed
-("Decision needed from the owner (open, 2026-10-09 04:55 UTC)" directly below).** Nothing is running and nothing
-is queued; only the hold watcher is alive. No `nvtop` on the host (PID 245296 gone at 03:18 UTC; none found
-before either session, `prestart.txt`).
+Updated 2026-10-09 05:00 UTC. **Round 3 is measured and recorded; nothing is open on my side; the reviewer
+checks once more.** The owner answered the question about `throttle_status` (task file, "Owner decision,
+2026-10-09 (04:55 UTC)", option (a)): the thermal throttle reasons are bits 4, 5, 6 and 9, 10, any bit above 12
+rejects too, the power- and current-limit bits are recorded and do not reject. The two monitored sessions were
+recomputed under that rule from the rows already recorded, no new run. Nothing is running and nothing is
+queued; only the hold watcher is alive; no `nvtop` on the host.
 
-In one sentence: with `throttle_status` sampled, bit 1 (`0x00000002`, no other value) is set in at least one
-sample of the measured window in 113 of 186 timed runs, in every run of several cells, so "a non-zero status in
-the window makes the run invalid" leaves 1 of 6 cells (item B) and 3 of 6 (item A) with 5 valid runs per arm;
-nothing else was found: no foreign GPU process, no foreign DRM client, clock medians at or above the floor,
-at least 5 clock samples, rc 0 in every row. No number of round 3 is reported as final from these sessions.
+**The round's numbers (build `head4`, monitored sessions, decision of 04:55 UTC):**
 
-### Decision needed from the owner (open, 2026-10-09 04:55 UTC)
+| item | result |
+|---|---|
+| A, `c11` with `fused3` against `c11` with `fused3sb` | **-0.14 % geomean** (cells -0.96 to +0.16 %): inside the +-2 % band, noise, not a gain or a loss |
+| B, `780m-final` against `dev/1.5` | **+33.90 % geomean** (cells +23.00 to +48.07 %); round 2 measured +33.82 %: within the band of it |
+| recommended configuration | `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final` |
+
+### Monitored sessions under the decision of 2026-10-09 04:55 UTC (the round's numbers)
+
+Evidence: `results/780m/sessions/{r3a-fused3sb-head4-r6,r3b-final-dev15-head4-r6}/`: `runs.csv` as the tool
+wrote it (its `valid` / `reason` columns are those of the rule of 02:50 UTC, any non-zero status rejects, and
+are not rewritten), `runs-ruled.csv` (per run: clock, `thr_or`, `thr_bits` = window samples per set bit,
+validity as recorded and under the decision, whether the row is one of the 5 used), `analysis.txt` (output of
+`tools/r6_analyze.py <raw dir>`, which recomputes every row from its log, `.clk` and `.mon` file). Raw data
+`<artifacts 10-08>/stage/*-head4/raw-r6b/`. Sessions: A 03:28 to 04:03 UTC, B 04:07 to 04:40 UTC, each from
+43 C, same staged binaries as the gate (`llama_main` sha256 `578935be...`, `libllama_runner.so` `f94c058a...`).
+
+What changed with the decision: one predicate in `tools/e2e5.sh` and `tools/r6_analyze.py` (`throttle` only if
+`thr_or & 0xFFFFE670`), and a column `thr_bits`. Under it all 94 timed rows of A and all 92 of B are valid
+(under the earlier rule 41 and 32). The medians are those of the first 5 valid rows per arm per cell, which are
+now repeats 1 to 5; the 34 and 32 rows of repeats 6 to 8 exist only because the earlier rule asked for
+replacements, are valid, and are not used. 0 interleave violations.
+
+**Item A:**
+
+| cell | `c11` with `fused3` | `c11` with `fused3sb` | difference | repeat spread parent / candidate | of the 5 rows used, with bit 1 in the window, parent / candidate | next token on `prompt_2048` |
+|---|---:|---:|---:|---|---|---|
+| 1B 4w | 3835.21 | 3835.21 | 0.00 % | 0.19 / 0.19 % | 0 / 3 | SAME |
+| 1B 8da4w | 3764.71 | 3764.71 | 0.00 % | 0.37 / 0.37 % | 0 / 2 | SAME |
+| 3B 4w | 1457.65 | 1457.65 | 0.00 % | 0.07 / 0.14 % | 3 / 2 | SAME |
+| 3B 8da4w | 1412.41 | 1398.91 | -0.96 % | 1.03 / 0.97 % | 2 / 3 | SAME |
+| 8B 4w | 639.00 | 640.00 | +0.16 % | 0.34 / 0.34 % | 5 / 5 | SAME |
+| 8B 8da4w | 628.80 | 628.61 | -0.03 % | 0.18 / 0.25 % | 5 / 5 | SAME |
+| geomean | | | **-0.14 %** | | | |
+
+Every cell inside +-2 %: no measurable difference (earlier tool -0.12 %, `head3` -0.01 %). 3B 8da4w has
+two rate levels in this session, 1398.9 to 1399.9 and 1412.4 to 1414.4, four rows of each in both arms; over
+all 8 rows the median is 1406.1 in both arms. -0.96 % is which level the first five rows of each arm fell on,
+and it is inside the band.
+
+**Item B:**
+
+| cell | `dev/1.5` dispatch | `780m-final` | gain | round 2 (`s9-final-dev15`) | published `dev/1.5` (parent arm against it) | repeat spread parent / candidate | of the 5 rows used, with bit 1, parent / candidate | next token on `prompt_2048` |
+|---|---:|---:|---:|---:|---:|---|---|---|
+| 1B 4w | 2694.74 | 3835.21 | **+42.32 %** | +42.51 % | 2698.29 (-0.13 %) | 0.13 / 0.19 % | 4 / 1 | SAME |
+| 1B 8da4w | 2537.79 | 3757.80 | **+48.07 %** | +48.35 % | 2544.10 (-0.25 %) | 0.12 / 0.37 % | 0 / 1 | SAME |
+| 3B 4w | 1141.58 | 1457.65 | **+27.69 %** | +27.85 % | 1151.21 (-0.84 %) | 0.11 / 0.00 % | 5 / 2 | SAME |
+| 3B 8da4w | 1047.57 | 1414.36 | **+35.01 %** | +33.72 % | 1051.33 (-0.36 %) | 0.93 / 0.55 % | 0 / 4 | SAME |
+| 8B 4w | 519.53 | 639.00 | **+23.00 %** | +23.42 % | 525.80 (-1.19 %) | 0.23 / 0.31 % | 5 / 5 | SAME |
+| 8B 8da4w | 487.16 | 628.41 | **+29.00 %** | +28.73 % | 489.13 (-0.40 %) | 0.26 / 0.21 % | 4 / 5 | **DIFFER** |
+| geomean | | | **+33.90 %** | +33.82 % | | | | |
+
+Every gain is far outside the band. Against round 2: +0.08 points in the geomean, cells within 1.29 points
+(3B 8da4w, repeat spread 0.93 / 0.55 % here; the others within 0.42). The parent arm is within 1.19 % of the published
+numbers (tolerance 3 %). The next-token column is the output of the first timed run of each arm (the gate's
+next-token runs were not repeated, as decided); in every cell each arm's output is byte-identical to the same
+arm of the earlier `head4` session. The one differing item, 8B 8da4w on `prompt_2048.txt`, is candidate 8's:
+**ACCEPTED (reference-error rule, owner decision 2026-10-04)**, evidence `results/780m/probe/`,
+`results/780m/sdpa-error/`; not a plain pass, and no new differing item.
+
+**Validity, all 186 timed rows, every predicate of R6 recorded during the run:** rc 0; 2,048 prompt tokens, 0
+generated; guard pattern (with `nvtop`) empty before and after each run; 6 to 46 monitor samples per run, no
+process of the pattern outside the session, no foreign DRM client, the runner's own client read in every run
+(940 to 8,677 ms engine time); 5 to 40 clock samples in the window; clock median 2800 MHz in every row of A and
+2718 to 2800 in B (floor 2700); lowest single sample 2584 / 2595 MHz; peak 91 C (A), 94 C (B); starts at 43 to
+49 C; model file 100.00 % resident before every process, load 332 to 3,249 ms, no slow load, no abort.
+`throttle_status`: `0x00000002` in 811 of 3,335 window samples (275 of 1,559 in A, 536 of 1,776 in B), 0 in the
+others, no other value; so no thermal bit (4, 5, 6, 9, 10) and no bit above 12 in any sample. Per run:
+`thr_bits` in `runs-ruled.csv` (bit 1 in 53 of 94 runs of A and 60 of 92 of B, 1 to 30 samples a run).
+
+**Limits of the monitoring, accepted by the owner (decision of 02:50 UTC):** the `fdinfo` of other users'
+processes (the gdm greeter, which holds the display on this GPU) cannot be read without sudo, so foreign engine
+time is excluded for this user's processes, and for the others only the device-wide `gpu_busy_percent` is
+recorded. **Not checked (decision of 04:55 UTC, item 1):** the bit table is the upstream one
+(`smu13_driver_if_v13_0_4.h`, v6.12, lines 145 to 157, read by the coordinator and by me); it was not compared
+with the source of this host's kernel `6.12.0-211.62.1.el10_2`: `kernel-devel` is installed but does not carry
+that header, and no source package is at hand.
+
+**`check.sh --no-build`** (04:52 UTC, unedited, after the recomputation; run by the actor, it compiles the two
+selector tests):
+
+```
+== 1 zone rule vs origin/release/1.5
+== 2 twin wrappers
+== 3 test_sarc_select
+test_sarc_select: PASS (1240 checks, 31 rows, 0 candidates, dev zone absent, unverified off)
+[sarc_dev] overrides active: unverified=1 variant= dq8ca_variant=
+test_sarc_select: PASS (1433 checks, 31 rows, 122 candidates, dev zone linked, unverified on)
+check.sh: PASS
+```
+
+A correction of times: the question below is headed "04:55 UTC" and so is the owner's answer; I wrote that
+heading ahead of the clock. The question was committed and pushed at about 04:47 UTC (`bbfa6eaeb`), the task
+file's answer was saved at 04:48 UTC, and the `check.sh` output quoted in the question was run at about 04:44,
+not 04:50.
+
+### Record: the question about `throttle_status` (headed 04:55 UTC; answered by the owner: option (a); kept as written)
 
 **What happened.** `tools/e2e5.sh` was changed as decided and nothing else (list below); items A and B were
 timed again on `head4`, the staged binaries of the earlier sessions (`llama_main` sha256 `578935be...`,
@@ -155,6 +247,7 @@ The `vulkan-docs` MCP server was unavailable again in this session (`CONNECTION_
 so the text is taken from the published sources, fetched 2026-10-09 03:40 UTC (KhronosGroup/GLSL, branch `main`
 at `0099bf83b028`). No shader was written or changed after the note.
 
+- (The `vulkan-docs` server connected at 04:52 UTC; `search_docs` finds the first sentence below in `glsl/latest/builtinfunctions.md`, https://docs.vulkan.org/glsl/latest/chapters/builtinfunctions.html, and `subgroupBarrier` in `glslext/latest/GL_KHR_shader_subgroup.md`, https://docs.vulkan.org/glslext/latest/glslext/khr/GL_KHR_shader_subgroup.html: the same documents.)
 - `memoryBarrierShared()` does not make an invocation wait for another. The OpenGL Shading Language
   specification, "Shader Memory Control Functions"
   (https://github.com/KhronosGroup/GLSL/blob/main/chapters/builtinfunctions.adoc): "When called, these functions
@@ -183,8 +276,8 @@ The part "Replacement build `head4`" below is unchanged. Its build, export, SPIR
 byte-comparison results stand and were not repeated (decision of 02:50 UTC). Its two session tables (item A
 -0.12 %, item B +33.92 %) are kept as measured, with this label: R6 predicates as recorded by the earlier tool
 (processes before and after each run only, no throttle status, clock-sample minimum 2 in the tool although
-every timed row had at least 5); item B with an idle `nvtop` attached. By the decision they are not the round's
-reported numbers; which numbers are depends on the answer to the question above.
+every timed row had at least 5); item B with an idle `nvtop` attached. By the decisions they are not the round's
+reported numbers; those are the monitored sessions at the top of this file.
 
 **Which build each number comes from:** the part "Replacement build `head4`" directly below is `head4`
 (`c639d4760`, recursive export from object stores) and is what closes the round. Everything from "State before
@@ -196,10 +289,10 @@ part below.
 |---|---|
 | A.3 build of the branch head | `head4` = `c639d4760`, exported from object stores only, no local patch; `spirv_golden.py` PASS (53 shipped variants); 1,469 of 1,469 SPIR-V files of `head2` (candidate 11's gate) byte-identical, 2 new (the `fused3sb` pair); 1,471 of 1,471 identical to `head3` |
 | A.4 gate with `fused3sb` | `verify.sh` rc = 0, equal to candidate 11's gate apart from the tok/s figures; tiers `all` / `extended` / `full` 12 passes each: 192 cases, 0 failed, 0 mismatches, `pairing=ok`; next token SAME in 18 of 18 items (six cells, three prompts); SDPA output byte-identical to `fused3` in 21 of 21 cases (and the 5 of tier `fused`) |
-| A.5 session `c11` with `fused3` against `c11` with `fused3sb` | earlier tool: -0.12 % geomean (cells -0.41 to 0.00 %), 60 of 60 valid on the predicates it recorded. **Monitored session: incomplete (3 of 6 cells; `throttle_status` 0x2), owner decision needed** |
+| A.5 session `c11` with `fused3` against `c11` with `fused3sb` | earlier tool: -0.12 % geomean (cells -0.41 to 0.00 %), 60 of 60 valid on the predicates it recorded. **Monitored session, decision of 04:55 UTC: -0.14 % geomean (cells -0.96 to +0.16 %), 94 of 94 timed rows valid: inside the band** |
 | B.1 dispatch of `780m-final` alone | equals candidate 11's gate: `verify.out` identical line for line (tok/s set aside); the tiers dispatch the `fused3sb` pair; three-kernel path as `c11` |
-| B.2 session `780m-final` against `dev/1.5` | earlier tool, idle `nvtop` attached: +33.92 % geomean (+23.62 to +48.43 %), 60 of 60 valid on the predicates it recorded; round 2 measured +33.82 %. **Monitored session: incomplete (1 of 6 cells; `throttle_status` 0x2), owner decision needed** |
-| C | `proposal.md` section "Round 3" says which build each number comes from; `check.sh --no-build` PASS (02:10 UTC, output below; run by the actor only, it compiles the two selector tests); committed and pushed. **Round not closed: see the decision above** |
+| B.2 session `780m-final` against `dev/1.5` | earlier tool, idle `nvtop` attached: +33.92 % geomean (+23.62 to +48.43 %), 60 of 60 valid on the predicates it recorded; round 2 measured +33.82 %. **Monitored session, decision of 04:55 UTC: +33.90 % geomean (+23.00 to +48.07 %), 92 of 92 timed rows valid: within the band of round 2** |
+| C | `proposal.md` section "Round 3" says which build each number comes from; `check.sh --no-build` PASS (02:10 UTC, output below; run by the actor only, it compiles the two selector tests); committed and pushed. the round's session numbers are those of the monitored sessions (top of this file); `check.sh --no-build` PASS again 04:52 UTC |
 | **recommended configuration** | **`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final`** |
 
 ### Record: the question of 2026-10-09 02:15 UTC (answered 02:50 UTC: option (b); kept as written)

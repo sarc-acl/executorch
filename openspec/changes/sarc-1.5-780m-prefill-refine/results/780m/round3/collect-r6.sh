@@ -7,7 +7,7 @@ R=$C/results/780m; cp -f $A/logs/chain29.status $A/logs/chain30.status $R/round3
 for n in r3a-fused3sb-head4 r3b-final-dev15-head4; do s=$A/stage/$n; D=$R/sessions/$n-r6; mkdir -p $D
   cp -f $s/raw-r6b/runs.csv $s/raw-r6b/env.txt $s/raw-r6b/summary.csv $D/; cp -f $s/prestart-r6b.txt $D/prestart.txt
   sed -i "s|$A/||g" $D/env.txt
-  python3 $C/tools/r6_analyze.py $s/raw-r6b > $D/analysis.txt
+  python3 $C/tools/r6_analyze.py $s/raw-r6b $D/runs-ruled.csv > $D/analysis.txt
 done
 D=$R/sessions/r3a-fused3sb-head4-r6/superseded/r6-actor-shell-matched-guard; mkdir -p $D
 cp -f $A/stage/r3a-fused3sb-head4/superseded/r6-actor-shell-matched-guard/raw-r6/runs.csv $D/

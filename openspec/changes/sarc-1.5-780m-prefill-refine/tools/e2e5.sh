@@ -21,6 +21,10 @@
 #     process that does not descend from this script, or a foreign client whose engine time grows, makes the run
 #     invalid (other_gpu_process, foreign_gpu_client). fdinfo of other users (the gdm greeter) is not readable:
 #     for them only the device-wide busy % is recorded. The clock-sample minimum is 5; nvtop is in the pattern.
+#   - owner decision 2026-10-09 04:55 UTC: the thermal throttle reasons are bits 4, 5, 6 (THM_CORE, THM_GFX,
+#     THM_SOC) and 9, 10 (PROCHOT_CPU, PROCHOT_GFX) of throttle_status, and any bit above 12 rejects too (mask
+#     0xFFFFE670); bits 0 to 3 (power limits) and 7, 8, 11, 12 (current limits) are recorded and do not reject.
+#     thr_bits = samples of the window per set bit, "bit:count" joined by ";".
 # One GPU job at a time: everything runs under the gpu-lab lock.
 #
 # usage: e2e5.sh --stage DIR --out NAME --lock UUID [--reps 5] [--extra 3] [--models 1b,3b,8b] [--schemes 4w,8da4w]
@@ -120,7 +124,7 @@ for m in "${MS[@]}"; do for q in "${QS[@]}"; do
 sleep 60; IDLE=$(gtemp); echo "idle_temp=$IDLE" >> "$O/env.txt"
 cool() { local t0=$SECONDS t; while :; do t=$(gtemp); [[ $t -le $((IDLE + 5)) || $((SECONDS - t0)) -ge $COOLMAX ]] && break; sleep 5; done; }
 CSV=$O/runs.csv
-[[ -f $CSV ]] || echo "gpu,host,model,scheme,build,rep,slot,tok_s,rc,temp_pre,temp_post,cool_s,clocks,others,utc,log,prompt_tokens,generated_tokens,prefill_ms,clk_n,clk_med_mhz,clk_min_mhz,busy_med,power_med_w,temp_max,valid,reason,resident_pct,load_ms,others_post,thr_n,thr_or,thr_run_or,gm_temp_max,mon_n,others_during,foreign_clients,own_engine_ms" > "$CSV"
+[[ -f $CSV ]] || echo "gpu,host,model,scheme,build,rep,slot,tok_s,rc,temp_pre,temp_post,cool_s,clocks,others,utc,log,prompt_tokens,generated_tokens,prefill_ms,clk_n,clk_med_mhz,clk_min_mhz,busy_med,power_med_w,temp_max,valid,reason,resident_pct,load_ms,others_post,thr_n,thr_or,thr_run_or,gm_temp_max,mon_n,others_during,foreign_clients,own_engine_ms,thr_bits" > "$CSV"
 run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected tokens>
   local m=$1 q=$2 b=$3 r=$4 s=$5 p=$6 tag=$7 want=$8 log t0 tp tq rc oth cs sp mp res oth2
   log="logs/$tag-$m-$q-$b-r$r.log"
@@ -169,7 +173,8 @@ for x in thr: thr_or |= x
 run_or = 0
 for r in allrows: run_or |= max(r[5], 0)
 if len(thr) < 5: reason.append("throttle_unsampled")
-elif thr_or: reason.append("throttle")
+elif thr_or & 0xFFFFE670: reason.append("throttle")
+bits = ";".join(f"{i}:{c}" for i in range(32) if (c := sum(1 for x in thr if x >> i & 1)))
 # monitor: processes of the guard's pattern outside this session, and DRM clients with their summed engine time
 during, eng, mon_n = set(), {}, 0
 for l in open(mon):
@@ -188,7 +193,7 @@ if during: reason.append("other_gpu_process_during")
 if any(grow(k) > 0 for k in eng if k[2] == "foreign"): reason.append("foreign_gpu_client")
 valid = 0 if reason else 1
 print(",".join(str(x) for x in [tok, pt, gt, ms, n, cm, cmin, med(2, 1), med(3, 1e6), round(max(r[4] for r in rows) / 1000) if rows else "", valid, "+".join(reason), load,
-    len(thr), f"0x{thr_or:08x}", f"0x{run_or:08x}", max((r[6] for r in rows), default=""), mon_n, ";".join(sorted(during)), ";".join(foreign), own_ms]))
+    len(thr), f"0x{thr_or:08x}", f"0x{run_or:08x}", max((r[6] for r in rows), default=""), mon_n, ";".join(sorted(during)), ";".join(foreign), own_ms, bits]))
 PY
   IFS=, read -r tok pt gt ms n cm cmin bm pw tmax valid reason load mcols < "$O/.row"
   echo "780m,$(hostname),$m,$q,$b,$r,$s,$tok,$rc,$tp,$tq,$cs,sclk_med=${cm}MHz,$oth,$(date -u +%FT%TZ),$log,$pt,$gt,$ms,$n,$cm,$cmin,$bm,$pw,$tmax,$valid,$reason,$res,$load,$oth2,$mcols" >> "$CSV"
