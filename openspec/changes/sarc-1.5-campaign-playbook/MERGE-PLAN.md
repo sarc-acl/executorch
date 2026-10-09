@@ -118,6 +118,32 @@ PARTIAL (1B and 3B) until the 8B work of `OWNER-DECISIONS.md` N10 is done; until
 labelled "verified 1B and 3B only". Its numbers are local to the device owner; the review on our side is of code
 and method.
 
+### M2e. F1: create cooperative-matrix pipelines with the full-subgroups flag **[owner]**
+
+Found by the B580 fused-port campaign (2026-10-09), confirmed there by its reviewer. The specification requires
+(VUID-RuntimeSpirv-OpTypeCooperativeMatrixKHR-10770) that a pipeline whose shader uses cooperative matrices is
+created with `VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT` or that the module is SPIR-V 1.6 or
+later. The runtime does neither: the shaders are SPIR-V 1.3, the instance is created for Vulkan 1.1, and
+`vk_api/Pipeline.cpp` creates every compute stage with `flags` 0. Every cooperative-matrix pipeline of every
+device has this, the shipped ones included. Results and correctness are not affected (the fused kernels check
+`gl_NumSubgroups` and `gl_SubgroupSize` at run time), but the pipelines are not valid as created.
+
+Owner decision 2026-10-09 (option C): no campaign repairs it locally; each fused-port campaign records it as a
+known defect and closes as measured. It is repaired here, once, in the release zone: set the flag wherever a
+required subgroup size is in force and the device reports `computeFullSubgroups` (about 10 lines in
+`Pipeline.cpp` plus the feature bit in the descriptor; with the flag the local size in X must be a multiple of
+the required subgroup size, VUID-VkPipelineShaderStageCreateInfo-pNext-02757, to be checked for every shipped
+variant). Then every device: `spirv_golden.py`, the full gate, one timed session of the final profile against
+its own closing session. The B580 campaign's `STATUS.md` ("Decision needed from the owner", forms A and B) is
+the worked description.
+
+### M2f. Decode with the fused attention node present **[owner]**
+
+The B70 confirmation measured decode 0 to 2.5 % slower with the fused node present, and the B580 record shows
+the same direction. Prefill was the goal of the port campaigns, so nobody traced it. Before promotion: one
+decode trace per device family with and without the fused profile, and, if the loss is real, the fused node
+must leave the decode path untouched. Open: the owner has not said whether to do this now or with M2e.
+
 ### M3. Merge the dev zone, one branch at a time
 
 Order: 780M first (the others forked from it), then B70, B580, RTX 4070 Ti SUPER, Orin. Each as its own fork PR
