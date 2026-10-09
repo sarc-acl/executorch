@@ -329,7 +329,7 @@ pull request). `check.sh --no-build` at that head: `check.sh: PASS`.
 
 ## Decision needed from the owner
 
-Not blocking; the campaign is closed on what the task asked.
+Nothing is pending: item 3 was ruled on 2026-10-09 (below); items 1 and 2 are noted by the owner for the merge.
 
 1. **Decode is 0 to 2.5 % slower with the fused node present** (both sessions; see candidate 1). If that matters
    for a promotion, locating it needs a decode trace and possibly a change in the node file that came from the
@@ -349,6 +349,14 @@ Not blocking; the campaign is closed on what the task asked.
    block at `4172bc183`, exactly those two additions, are covered. The file and the evidence stay as they
    are; nothing is rebuilt, re-timed or re-checked while this is pending.
 
+   **Ruled, covered** (task file, "Owner decision, 2026-10-09 (11:20 UTC): the campaign's own `thresholds.txt`
+   is covered (item 3)", decided by the coordinator under the owner's standing authorisation; read here at
+   11:18 UTC host clock): the creation at `0160cf633` and the calibration block appended at `4172bc183`,
+   exactly those two additions, are covered; the reviewer records the entry as covered by that decision. The
+   file's history is still those two commits and it is unchanged since `4172bc183`. The same decision notes
+   items 1 and 2 as not blocking, open items for the merge, with nothing to be done about them in this
+   campaign, and orders no further measurement, build or session. None was run.
+
 ## Blocking
 
-Only the reviewer's sign-off: owner ruling 3 above. No measurement, build or gate depends on it.
+Nothing. Item 3 is ruled (covered); items 1 and 2 are open items for the merge, not for this campaign.
