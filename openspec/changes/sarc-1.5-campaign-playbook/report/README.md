@@ -77,4 +77,5 @@ the link). Push on the owner's word.
   Nano) shows the softmax as "within row 1" in the matrix; do not invent a split.
 - A technique that was tried and not adopted stays on the page as hatched, with its number. Negative results
   are results.
-- The Radeon 780M's `fused3sb` cell stays "pending" until the branch adopts it.
+- The Radeon 780M adopted `fused3sb` in round 3 (2026-10-09); its cell is "ok" with no gain (speed unchanged).
+- The Jetson Orin Nano's second-round numbers come from a cross build whose `glslc` differs from the pinned one; the owner accepted them as measured (2026-10-09). Keep that note in the Orin tooltips.
