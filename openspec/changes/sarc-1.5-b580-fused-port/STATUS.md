@@ -29,6 +29,48 @@ If the machine reboots it is gone: restart `chain13.sh` after moving a half-run 
 Waiting for the owner: finding F1 (below). After that decision: a new build from an exported commit, the full
 gate, the reference error, the golden check and both timed sessions again.
 
+## Sessions under the authorized protocol (chain 13, from 09:37 UTC; build `topic7` = `e1e450530`; no wait)
+
+Every timed run started at once; `BUSYMAX` 5.0 %, `CLKMIN` 2635 MHz, 7 repeats. Tok/s, median of 7 valid runs per
+arm, arms interleaved, recomputed from `stage/<session>/raw/runs.csv`. The desktop was idle (`IdleHint=yes`,
+`logs/idle_wait.log`).
+
+`s7-pristine` (09:38 to 09:58 UTC): pristine `6a7cc8cc6` with no profile against `topic7` with `b580-fused1`; 84
+timed runs, 84 valid; foreign engine time 0.25 to 0.42 %:
+
+| cell | pristine | `b580-fused1` | total gain | spread pristine / final |
+|---|---:|---:|---:|---|
+| 1B 4w | 8677.97 | 15058.80 | **+73.53 %** | 0.4 / 0.7 % |
+| 1B 8da4w | 8865.80 | 18285.70 | **+106.25 %** | 0.4 / 0.9 % |
+| 3B 4w | 3442.02 | 5461.33 | **+58.67 %** | 0.2 / 0.3 % |
+| 3B 8da4w | 3524.96 | 6849.50 | **+94.31 %** | 0.2 / 0.3 % |
+| 8B 4w | 1726.81 | 2384.17 | **+38.07 %** | 0.1 / 0.3 % |
+| 8B 8da4w | 1845.05 | 3141.10 | **+70.24 %** | 0.4 / 0.3 % |
+
+Geomean **+72.05 %** (`s5-pristine`, behind the wait: +71.77 %). The session ends `E2E5_INCOMPLETE
+8b-8da4w:nexttoken_DIFFER_DIFFER_SAME`, as `s5-pristine` did: all 84 timed runs are valid and every cell has its
+7; the incomplete mark is the next-token item of 8B 8da4w against the pristine parent, which the first campaign
+recorded for `b580-refine3` and accepted under the reference-error rule. It is a timing statement, not a gate.
+(The repeat rule of the owner decision of 09:55 UTC is for a cell short of valid runs; no cell is.)
+
+`s3c-c2` (10:00 to 10:06 UTC): `topic7` with `b580-fused1` against `topic7` with `b580-fused2`, timed only; 84
+timed runs, 84 valid; foreign engine time 0.24 to 0.43 %; `E2E5_OK`, next token SAME in all 18 comparisons:
+
+| cell | candidate 1 | candidate 2 | gain |
+|---|---:|---:|---:|
+| 1B 4w | 14948.90 | 15058.80 | +0.74 % |
+| 1B 8da4w | 18285.70 | 18285.70 | +0.00 % |
+| 3B 4w | 5461.33 | 5446.81 | -0.27 % |
+| 3B 8da4w | 6849.50 | 6849.50 | +0.00 % |
+| 8B 4w | 2373.12 | 2373.12 | +0.00 % |
+| 8B 8da4w | 3141.10 | 3141.10 | +0.00 % |
+
+Geomean **+0.08 %**, every cell inside +-2 % (`s3b-c2`, behind the wait: -0.13 %). Candidate 2 is not a gain by
+the `noise_band` rule; the final stack stays `b580-fused1`. Its gate items that do not depend on the start time
+are those of `s3b-c2` (36 PASS lines).
+
+`s6-final` (the full gate of `b580-fused1` against the parent): running; its result goes here.
+
 ## Result of the first closing (sessions `s4-final` and `s5-pristine`, 07:28 to 08:49 UTC, build `topic7` = `e1e450530`); being repeated
 
 **These two sessions were started through `busy_wait` (it read 0.3 to 0.4 % and let them start at once; the
@@ -649,16 +691,10 @@ check, and the timed sessions against both parents.
    both parents, through the queue (about 3 hours of device time). The numbers of `topic7` stay on record as
    measured on pipelines that lack the flag.
 
-2. **A foreign engine share that is not a reading.** `e2e5.sh` as calibrated rejects a run only when its share
-   is above `BUSYMAX`; a share of -5274 % passed as valid once (`s3-c2`). The runner is back to its calibrated
-   form; the analyses refuse such a row (`tools/adjudicate.py`) and a session that contains one fails until the
-   row is adjudicated by key. May the runner itself reject a run whose share is outside 0 to 100 %
-   (`busy_unreadable`), so that it is replaced inside the session like any other rejected run?
-
-3. **A desktop that holds the card.** Under the authorized protocol (start at once, `BUSYMAX` 5 %) a session
-   run while a desktop client holds a third of the card ends without a valid run, as `s3-c2` did. The actor
-   does not wait for a quieter desktop any more. If a session of chain 13 ends that way it is reported and
-   repeated only when you say how.
+Items 2 and 3 of the earlier list (a share that is not a reading; a desktop that holds the card) were decided on
+2026-10-09 09:55 UTC (task file; recorded in `thresholds-history.md`): the runner rejects an unreadable share
+(`busy_unreadable`, applied to `e2e5.sh` at 10:08 UTC before the timed runs of `s6-final`), and there is no wait;
+a session short of valid runs for the foreign share alone is repeated once, at least 30 minutes later.
 
 ## Blocking
 
