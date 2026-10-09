@@ -1,13 +1,13 @@
 # sarc-1.5-b580-fused-port: status
 
-**2026-10-09 03:18 UTC — candidate 1 (`b580-fused1`) is accepted as a plain pass, +9.18 % geomean (logits probe
-`PROBE_CHECK_OK`, `decide.py` `GATE_PASS`). The gate of candidate 2 (`b580-fused2`, session `s3-c2`) is
-`GATE_FAIL` on its seven timing items only and passes the other 29: a Discord renderer on the desktop held 33
-to 45 % of the card's engine time for the whole timed session (02:59 to 03:13 UTC), so 216 of 216 timed runs were
-rejected by `BUSYMAX` (5 %). Candidate 2 has no timing yet. Its gate is repeated on the build of the committed
-head (`tools/chain12.sh`) once the desktop's share is at or below `BUSYMAX` (a wait of at most 3 hours, then it
-starts anyway). The desktop was rebooted at 01:17 UTC (not by this campaign; kernel 7.2.8 -> 7.2.9); nothing
-measured was lost.**
+**2026-10-09 06:20 UTC — both candidates are gated; the campaign stops by its rule (after candidate 2) and the
+closing runs. Candidate 1 (`b580-fused1`, the fused attention kernel in a multi-subgroup form): plain pass,
+**+9.18 % geomean** over the parent `b580-refine3`. Candidate 2 (`b580-fused2`, candidate 1 + the fp32 no-tail
+softmax for the calls the fused kernel does not take): `GATE_PASS` on the committed head (session `s3b-c2`),
+**-0.13 % geomean** over candidate 1, every cell inside the +-2 % band: no gain, not adopted (`final_stack` rule).
+**Final stack: `b580-fused1`.** Running: the rest of candidate 2's evidence (chain 12), then the closing (chain
+11): full gate of `b580-fused1` on the build of the committed head against the parent, the timed session
+against the pristine parent, roofs.**
 
 Branch `topic/b580-fused-port`, parent `51d9d757f` with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine3`.
 Host `fedora` (the owner's desktop), Arc B580 = PCI `0000:03:00.0`, Vulkan device 0, `ETVK_DEVICE_INDEX=0`, lock
@@ -20,21 +20,63 @@ desktop session idle and locked at 20:00 UTC.
 
 Detached, one GPU job at a time:
 
-- `tools/chain10.sh` -> `tools/chain9.sh` (`.artifacts/logs/chain9.status`): the rest of candidate 2's evidence in
-  session `s3-c2`: reference error, logits probe, `decide.py`, decode comparison, collection. Ends `CHAIN9_DONE`.
-- `tools/chain12.sh e1e450530` (`.artifacts/logs/chain12.status`), waiting for chain 9: builds `pristine`
-  (`6a7cc8cc6`) and `topic7` (the committed head; its sources outside `openspec/` are those of `topic6`), the
-  no-environment hook check on `topic7`, then the gate of candidate 2 again as session `s3b-c2` (`topic7` with
-  `b580-fused1` against `topic7` with `b580-fused2`, 7 repeats) behind `busy_wait`, reference error, probe,
-  decision, decode. Ends `CHAIN12_DONE`.
-- Then, by hand: `tools/chain11.sh <final profile>` (the closing: full gate of the final stack on `topic7`
-  against the parent, the timed session against the pristine parent, roofs). The profile follows the rule
-  `final_stack` of `thresholds.txt`, fixed at 03:17 UTC before candidate 2 had a valid timed run.
+- `tools/chain12.sh e1e450530` (`.artifacts/logs/chain12.status`): builds and gate done; remaining: reference
+  error of `b580-fused2` and `b580-refine3-nzf` on `topic7`, logits probe of `s3b-c2`, `decide.py`, decode
+  comparison, collection. Ends `CHAIN12_DONE`.
+- `tools/chain11.sh b580-fused1 e1e450530` (`.artifacts/logs/chain11.status`), waiting for chain 12: stage
+  `s4-final` (`parent2` with the parent environment against `topic7` with `b580-fused1`), `gate_sdpa.sh` with 7
+  repeats behind `busy_wait`, 12 passes of tiers `peaked` and `fused`, reference error `final-ref`, session
+  `s5-pristine` (build `pristine` = `6a7cc8cc6`, no environment, against `topic7` with `b580-fused1`, timed
+  only), roofs (`roof.sh final`), decode comparison, collection. Ends `CHAIN11_DONE`.
 
-If the machine reboots, all of it is gone: look at the three status files and restart the chain whose `DONE`
-line is missing (a half-run session directory goes to `superseded/` first).
+If the machine reboots, both are gone: look at the status files and restart the chain whose `DONE` line is
+missing (a half-run session directory goes to `superseded/` first).
 
-## Candidate 2, session `s3-c2` (01:58 to 03:15 UTC): gate failed on timing only; the desktop held a third of the card
+Builds for the closing (chain 12, 04:25 to 04:49 UTC): `pristine` = `6a7cc8cc6` and `topic7` = `e1e450530` (the
+committed head at that time; later commits change files under `openspec/` only), both with shipped SPIR-V
+golden PASS (53 variants). Hook condition on `topic7`: unmodified `verify.sh` with no environment
+(`s0-topic7-noenv`) against `s0-parent-noenv`: `VERIFY_SAME` (34 lines).
+
+## Candidate 2, `b580-fused2`: GATE_PASS, -0.13 % geomean, not adopted (session `s3b-c2`, 05:04 to 06:15 UTC)
+
+Parent of this comparison = candidate 1: build `topic7` with `b580-fused1`; candidate = the same build with
+`b580-fused2`. Tok/s, median of 7 valid runs per arm, arms interleaved; recomputed from
+`stage/s3b-c2/raw/runs.csv`:
+
+| cell | candidate 1 | candidate 2 | gain | spread c1 / c2 | foreign engine time, median / max | next token (2048 / real-text / 1792-token prompt) |
+|---|---:|---:|---:|---|---|---|
+| 1B 4w | 14733.80 | 14733.80 | +0.00 % | 0.7 / 2.1 % | 1.48 / 1.93 % | SAME / SAME / SAME |
+| 1B 8da4w | 17964.90 | 17808.70 | -0.87 % | 1.8 / 0.0 % | 1.52 / 2.08 % | SAME / SAME / SAME |
+| 3B 4w | 5361.26 | 5375.33 | +0.26 % | 2.1 / 0.5 % | 1.44 / 1.57 % | SAME / SAME / SAME |
+| 3B 8da4w | 6736.84 | 6714.75 | -0.33 % | 1.0 / 2.9 % | 1.42 / 1.53 % | SAME / SAME / SAME |
+| 8B 4w | 2329.92 | 2327.27 | -0.11 % | 0.3 / 0.5 % | 1.50 / 1.91 % | SAME / SAME / SAME |
+| 8B 8da4w | 2994.15 | 3002.93 | +0.29 % | 5.6 / 5.1 % | 3.26 / 4.99 % | SAME / SAME / SAME |
+
+Geomean **-0.13 %**, every cell inside +-2 %. 86 timed runs, 85 valid, 1 rejected and replaced (8B 8da4w parent
+r2, foreign engine time 5.94 %). The replacement pair left the candidate arm of 8B 8da4w with 8 valid runs;
+`summarize.py` takes the first 7 (3002.93, +0.29 %); over all 8 the median is 3014.02 (+0.66 %) and the geomean
+-0.07 %. The 1B times are quantised by the runner's 1 ms timer (139 ms: one step is 0.7 %). Desktop in use
+(`IdleHint=no`); the session started when the desktop's share had fallen to 2.4 % (`logs/busy_wait.log`).
+
+Gate (`stage/s3b-c2/gate.txt`): `GATE_PASS`, 36 PASS lines. On the timed prompt the two arms dispatch the same
+kernels (the fused kernel takes every attention call), so no gain was possible there; the softmax variant acts
+on the calls the fused kernel does not take (the 1972-token prompt, decode). Logits probe of the first session
+(`s3-c2`, same sources): candidate 2 bit-identical to candidate 1 in all 35 aligned real-text windows of all six
+cells. Reference error (`c2-ref6`, `topic6`), the softmax variant between the parent's QK^T and attn*V kernels
+(`b580-refine3-nzf`), rms / maximum, parent -> variant: 1B heads 2.76e-5 / 1.19e-3 -> 2.10e-5 / 9.1e-4, 3B
+2.79e-5 / 1.15e-3 -> 2.07e-5 / 7.8e-4, 8B 2.76e-5 / 1.06e-3 -> 2.06e-5 / 8.9e-4, S = 1024 at input_pos 1024
+1.29e-5 / 1.24e-4 -> 9.0e-6 / 6.9e-5: not larger in all 4 `full`, all 8 `extended` and all 5 `peaked` cases.
+`b580-fused2` itself: as candidate 1 (the same one `peaked` case with a larger maximum). Decode (`s3-c2`,
+medians of 5): 0.988 to 1.015 of candidate 1.
+
+By the rule `final_stack` (fixed 03:17 UTC): no gain outside the band, so **the final stack is `b580-fused1`**.
+Candidate 2 stays selectable as profile `b580-fused2`; what it offers is a smaller error on the calls the fused
+kernel does not take, not speed.
+
+Stop rule: "after candidate 2 whatever its result" holds. (Candidate 1 gained more than 2 %, so the
+two-consecutive rule is not what ends the campaign.)
+
+## Candidate 2, first session `s3-c2` (01:58 to 03:15 UTC): gate failed on timing only; the desktop held a third of the card
 
 `b580-fused2` (candidate 1 + the fp32 no-tail softmax `4070ti_nzf` for the calls the fused kernel does not take)
 against candidate 1, both build `topic6`. `stage/s3-c2/gate.txt`: 29 PASS lines (SDPA tiers 12 passes each with 0
@@ -464,8 +506,7 @@ instance of Vulkan 1.3; neither was done. ANV launches full subgroups for these 
 
 ## Next
 
-Read chain 12: the gate of candidate 2 on `topic7`. Choose the final stack by the `final_stack` rule, run
-`chain11.sh`, then `proposal.md`, `check.sh --no-build`, push.
+Read chain 11 (final gate, both closing sessions, roofs); then `proposal.md`, `check.sh --no-build`, push.
 
 ## Decision needed from the owner
 
