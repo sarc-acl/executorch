@@ -450,5 +450,43 @@ rep("""              slab_b_base_u32 + col_b * B_STRIDE_U32,
 rep("//   RX_PROF: shader-clock phase timing, MEASUREMENT ONLY", """//   RX_UV4: the shared staging arrays are uvec4 (aligned 128-bit fragment loads; component-wise 32-bit stores).
 //   RX_PROF: shader-clock phase timing, MEASUREMENT ONLY""")
 
+
+# ---- fourth pass (round 2): row pitch of the A / B staging in shared memory (A_PITCH_U32 / B_PITCH_U32 from the wrapper, default 16 bytes) ----
+rep("""const uint A_SLAB_INT8     = WG_TILE_M * MMA_K;""", """const uint A_SLAB_INT8     = WG_TILE_M * MMA_K;""")
+rep("""const uint B_STRIDE_U32    = B_USEFUL_U32;
+const uint B_SLAB_U32      = WG_TILE_N * B_STRIDE_U32;""", """// RX row pitch: A_PITCH_U32 / B_PITCH_U32 (uint per LDS row of one K slab, default MMA_K / 4 = 16 bytes). A pitch of 6 (24 bytes) makes
+// the two ds_read_b64 per fragment row conflict-free over 16 lanes (a 16-byte pitch puts lanes l and l + 8 on the same banks).
+const uint B_STRIDE_U32    = B_PITCH_U32;
+const uint B_SLAB_U32      = WG_TILE_N * B_STRIDE_U32;
+const uint B_DENSE_SLAB    = WG_TILE_N * B_USEFUL_U32;""")
+rep("""const uint A_SLAB_U32      = A_SLAB_INT8 / 4u;
+const uint A_STRIDE_U32    = MMA_K / 4u;""", """const uint A_STRIDE_U32    = A_PITCH_U32;
+const uint A_SLAB_U32      = WG_TILE_M * A_STRIDE_U32;""")
+rep("""    const uint a           = gl_LocalInvocationID.x + si * WG_SIZE;
+    const uint slab_idx    = a / B_SLAB_U32;
+    const uint local_a     = a % B_SLAB_U32;
+    const uint n_col       = local_a / B_STRIDE_U32;
+    const uint k4_in_slab  = local_a % B_STRIDE_U32;""", """    const uint a           = gl_LocalInvocationID.x + si * WG_SIZE;
+#ifdef RX_PITCH
+    // dense thread index a -> (slab, column, k4); the LDS address uses the padded pitch
+    const uint slab_idx    = a / B_DENSE_SLAB;
+    const uint local_a     = a % B_DENSE_SLAB;
+    const uint n_col       = local_a / B_USEFUL_U32;
+    const uint k4_in_slab  = local_a % B_USEFUL_U32;
+#else
+    const uint slab_idx    = a / B_SLAB_U32;
+    const uint local_a     = a % B_SLAB_U32;
+    const uint n_col       = local_a / B_STRIDE_U32;
+    const uint k4_in_slab  = local_a % B_STRIDE_U32;
+#endif""")
+rep("""    b_lds_off[si] = a;""", """#ifdef RX_PITCH
+    b_lds_off[si] = slab_idx * B_SLAB_U32 + n_col * B_STRIDE_U32 + k4_in_slab;
+#else
+    b_lds_off[si] = a;
+#endif""")
+rep("//   RX_UV4: the shared staging arrays", """//   A_PITCH_U32 / B_PITCH_U32 (constants from the wrapper) and RX_PITCH (set when either is not 4): row pitch of the A / B staging in shared
+//     memory in uint (default 4 = 16 bytes); 6 = 24 bytes.
+//   RX_UV4: the shared staging arrays""")
+
 open(dst, "w").write(t)
 print("ok", len(t.splitlines()), "lines")

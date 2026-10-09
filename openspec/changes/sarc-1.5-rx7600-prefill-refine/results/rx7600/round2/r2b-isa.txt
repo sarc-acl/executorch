@@ -1,0 +1,23 @@
+=== t256x64k64g48s32
+shader#8 wg=1024x1x1 shared=60160 VGPRs=64 spill_st=3 spill_ld=3 wmma=16 ds_read_b128=0 ds_read_b64=54 ds_read_b32=2 ds_write_b32=4 ds_write_b128=2 s_barrier=0
+   BB10: wmma=8 ds_read_b128=0 ds_read_b64=24 ds_read_b32=0 ds_write=0 lines=71
+   BB22: wmma=8 ds_read_b128=0 ds_read_b64=24 ds_read_b32=0 ds_write=0 lines=65
+=== t256x64k64g48s32uv4abl4
+shader#8 wg=1024x1x1 shared=60160 VGPRs=64 spill_st=0 spill_ld=0 wmma=16 ds_read_b128=0 ds_read_b64=54 ds_read_b32=2 ds_write_b32=5 ds_write_b128=2 s_barrier=0
+   BB7: wmma=16 ds_read_b128=0 ds_read_b64=48 ds_read_b32=1 ds_write=0 lines=260
+=== t256x64k64g48s32uv4
+shader#8 wg=1024x1x1 shared=60160 VGPRs=64 spill_st=1 spill_ld=1 wmma=16 ds_read_b128=0 ds_read_b64=54 ds_read_b32=2 ds_write_b32=16 ds_write_b128=2 s_barrier=0
+   BB10: wmma=8 ds_read_b128=0 ds_read_b64=24 ds_read_b32=0 ds_write=0 lines=115
+   BB22: wmma=8 ds_read_b128=0 ds_read_b64=24 ds_read_b32=0 ds_write=0 lines=103
+=== t256x64k64g28s32
+shader#8 wg=512x1x1 shared=60160 VGPRs=128 spill_st=0 spill_ld=0 wmma=32 ds_read_b128=0 ds_read_b64=74 ds_read_b32=0 ds_write_b32=1 ds_write_b128=2 s_barrier=0
+   BB10: wmma=16 ds_read_b128=0 ds_read_b64=32 ds_read_b32=0 ds_write=0 lines=98
+   BB22: wmma=16 ds_read_b128=0 ds_read_b64=32 ds_read_b32=0 ds_write=0 lines=95
+=== t256x64k64g44s32
+shader#8 wg=512x1x1 shared=51968 VGPRs=128 spill_st=0 spill_ld=0 wmma=32 ds_read_b128=0 ds_read_b64=92 ds_read_b32=2 ds_write_b32=1 ds_write_b128=2 s_barrier=0
+   BB10: wmma=16 ds_read_b128=0 ds_read_b64=40 ds_read_b32=0 ds_write=0 lines=109
+   BB22: wmma=16 ds_read_b128=0 ds_read_b64=40 ds_read_b32=0 ds_write=0 lines=107
+=== t256x64k64g48s32bf
+shader#8 wg=1024x1x1 shared=60160 VGPRs=64 spill_st=3 spill_ld=3 wmma=16 ds_read_b128=0 ds_read_b64=54 ds_read_b32=2 ds_write_b32=4 ds_write_b128=2 s_barrier=0
+   BB7: wmma=8 ds_read_b128=0 ds_read_b64=24 ds_read_b32=0 ds_write=3 lines=129
+   BB13: wmma=8 ds_read_b128=0 ds_read_b64=24 ds_read_b32=0 ds_write=3 lines=83

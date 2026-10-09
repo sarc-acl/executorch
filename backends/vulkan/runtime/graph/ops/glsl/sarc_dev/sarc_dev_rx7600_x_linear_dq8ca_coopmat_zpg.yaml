@@ -17,6 +17,8 @@ sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg:
     CSH_IN_ASH: false
     BF: false
     UV4: false
+    A_PITCH: 4
+    B_PITCH: 4
     ST_A: -1
     ST_B: -1
     PROF: false
@@ -34,66 +36,32 @@ sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg:
     - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32_texture3d_texture2d_half
     - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32bf_texture3d_texture2d_half
       BF: true
-    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32bfa1b1_texture3d_texture2d_half
-      BF: true
-      ST_A: 1
-      ST_B: 1
-    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32bfa1b2_texture3d_texture2d_half
-      BF: true
-      ST_A: 1
-      ST_B: 2
-    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32bfa2b2_texture3d_texture2d_half
-      BF: true
-      ST_A: 2
-      ST_B: 2
-    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32uv4abl4_texture3d_texture2d_half
-      UV4: true
-      ABL: 4
-    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32uv4_texture3d_texture2d_half
-      UV4: true
-    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g44s32_texture3d_texture2d_half
-      SG_GRID_X: 4
-      SG_GRID_Y: 4
-      A_BLOCKS: 2
-    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g44s32uv4_texture3d_texture2d_half
-      SG_GRID_X: 4
-      SG_GRID_Y: 4
-      A_BLOCKS: 2
-      UV4: true
-    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g28s32_texture3d_texture2d_half
-      SG_GRID_X: 2
-      SG_GRID_Y: 8
-      A_BLOCKS: 2
-    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g28s32uv4_texture3d_texture2d_half
-      SG_GRID_X: 2
-      SG_GRID_Y: 8
-      A_BLOCKS: 2
-      UV4: true
-    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g24s32_texture3d_texture2d_half
-      SG_GRID_X: 2
-      SG_GRID_Y: 4
-      A_BLOCKS: 4
-    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g24s32uv4_texture3d_texture2d_half
-      SG_GRID_X: 2
-      SG_GRID_Y: 4
-      A_BLOCKS: 4
-      UV4: true
-    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g42s32_texture3d_texture2d_half
-      SG_GRID_X: 4
-      SG_GRID_Y: 2
-      A_BLOCKS: 4
-    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g42s32uv4_texture3d_texture2d_half
-      SG_GRID_X: 4
-      SG_GRID_Y: 2
-      A_BLOCKS: 4
-      UV4: true
-    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g44s32p_texture3d_texture2d_half
-      SG_GRID_X: 4
-      SG_GRID_Y: 4
-      A_BLOCKS: 2
+    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32pb6_texture3d_texture2d_half
+      B_PITCH: 6
+    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32pa6csha_texture3d_texture2d_half
+      CSH_IN_ASH: true
+      A_PITCH: 6
+    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32pa6pb6csha_texture3d_texture2d_half
+      CSH_IN_ASH: true
+      A_PITCH: 6
+      B_PITCH: 6
+    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32pa6pad4csha_texture3d_texture2d_half
+      A_PAD: 4
+      CSH_IN_ASH: true
+      A_PITCH: 6
+    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32pa6pb6pad4csha_texture3d_texture2d_half
+      A_PAD: 4
+      CSH_IN_ASH: true
+      A_PITCH: 6
+      B_PITCH: 6
+    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32pa6pb6p_texture3d_texture2d_half
+      CSH_IN_ASH: true
+      A_PITCH: 6
+      B_PITCH: 6
       PROF: true
-    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g28s32p_texture3d_texture2d_half
-      SG_GRID_X: 2
-      SG_GRID_Y: 8
-      A_BLOCKS: 2
+    - NAME: sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32pa6pb6pad4cshap_texture3d_texture2d_half
+      A_PAD: 4
+      CSH_IN_ASH: true
+      A_PITCH: 6
+      B_PITCH: 6
       PROF: true

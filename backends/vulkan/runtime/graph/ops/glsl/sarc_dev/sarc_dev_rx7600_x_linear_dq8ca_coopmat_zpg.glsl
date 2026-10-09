@@ -53,6 +53,9 @@ $if BF:
 $if UV4:
   #define RX_UV4
 
+$if A_PITCH != 4 or B_PITCH != 4:
+  #define RX_PITCH
+
 $if ST_A >= 0:
   #define RX_ST_A ${ST_A}
 
@@ -117,5 +120,7 @@ $if A_MULTI_BLOCK:
   #define A_MULTI_BLOCK
 const uint A_BLOCKS = ${A_BLOCKS};
 const uint A_PAD_U32 = ${A_PAD};
+const uint A_PITCH_U32 = ${A_PITCH};
+const uint B_PITCH_U32 = ${B_PITCH};
 
 #include "sarc_dev_rx7600_dq8ca_zpg_body.glslh"

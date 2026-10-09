@@ -16,6 +16,8 @@
 //     last chunk and stores it into the unused buffer), so that no branch separates the MMAs from the stores.
 //   RX_ST_A / RX_ST_B (need RX_BF): issue the shared-memory stores of the next chunk's A / B staging right after K slab RX_ST_A /
 //     RX_ST_B of the current chunk's MMAs instead of after the last slab, so that the stores of one wave overlap the MMAs of others.
+//   A_PITCH_U32 / B_PITCH_U32 (constants from the wrapper) and RX_PITCH (set when either is not 4): row pitch of the A / B staging in shared
+//     memory in uint (default 4 = 16 bytes); 6 = 24 bytes.
 //   RX_UV4: the shared staging arrays are uvec4 (aligned 128-bit fragment loads; component-wise 32-bit stores).
 //   RX_PROF: shader-clock phase timing, MEASUREMENT ONLY (wrong results by design: the counters overwrite the output tile).
 //   RX_ABL: bit mask of removed work, MEASUREMENT ONLY (wrong results by design): 1 A global fetch, 2 B global fetch,
@@ -40,12 +42,15 @@ const uint B_USEFUL_U32    = MMA_K / 4u;
 // (dq8ca-dequant-unpack-ablation Addenda 6/9): stride=4 beats stride=5 on
 // this hardware, and writing via the inverted contiguous-index mapping
 // (see the F-hoist block below) beats the natural strided-scatter mapping.
-const uint B_STRIDE_U32    = B_USEFUL_U32;
+// RX row pitch: A_PITCH_U32 / B_PITCH_U32 (uint per LDS row of one K slab, default MMA_K / 4 = 16 bytes). A pitch of 6 (24 bytes) makes
+// the two ds_read_b64 per fragment row conflict-free over 16 lanes (a 16-byte pitch puts lanes l and l + 8 on the same banks).
+const uint B_STRIDE_U32    = B_PITCH_U32;
 const uint B_SLAB_U32      = WG_TILE_N * B_STRIDE_U32;
+const uint B_DENSE_SLAB    = WG_TILE_N * B_USEFUL_U32;
 const uint NUM_K_SLABS     = WG_TILE_K / MMA_K;
 
-const uint A_SLAB_U32      = A_SLAB_INT8 / 4u;
-const uint A_STRIDE_U32    = MMA_K / 4u;
+const uint A_STRIDE_U32    = A_PITCH_U32;
+const uint A_SLAB_U32      = WG_TILE_M * A_STRIDE_U32;
 // Distance between two K slabs of A in shared memory (A_SLAB_U32 plus the option's padding).
 const uint A_SLAB_PITCH_U32 = A_SLAB_U32 + A_PAD_U32;
 
@@ -244,14 +249,26 @@ void main() {
   // B_STRIDE_U32-strided, non-coalesced writes this fix replaces).
   [[unroll]] for (uint si = 0; si < B_SLOTS_PER_THREAD; ++si) {
     const uint a           = gl_LocalInvocationID.x + si * WG_SIZE;
+#ifdef RX_PITCH
+    // dense thread index a -> (slab, column, k4); the LDS address uses the padded pitch
+    const uint slab_idx    = a / B_DENSE_SLAB;
+    const uint local_a     = a % B_DENSE_SLAB;
+    const uint n_col       = local_a / B_USEFUL_U32;
+    const uint k4_in_slab  = local_a % B_USEFUL_U32;
+#else
     const uint slab_idx    = a / B_SLAB_U32;
     const uint local_a     = a % B_SLAB_U32;
     const uint n_col       = local_a / B_STRIDE_U32;
     const uint k4_in_slab  = local_a % B_STRIDE_U32;
+#endif
     const uint k4_in_chunk = slab_idx * (MMA_K >> 2u) + k4_in_slab;
     const uint n8_in_tile  = n_col >> 3u;
     const uint rem         = n_col & 7u;
+#ifdef RX_PITCH
+    b_lds_off[si] = slab_idx * B_SLAB_U32 + n_col * B_STRIDE_U32 + k4_in_slab;
+#else
     b_lds_off[si] = a;
+#endif
     b_comp[si]    = rem & 3u;
     b_par[si]     = rem >> 2u;
     b_n8blk[si]   = (tile_n_start >> 3u) + n8_in_tile;
