@@ -73,3 +73,8 @@ exact-name selection on the shapes it covers (six shapes were measured against t
   11 of 12, 1.065; `ap4bp8` 10 of 12; `ap4bp4` 1 of 12 (1.006) and `ap8bp8` (the shipped pitches in the uvec2 typing) 0.999. The `g24` tile with any padding
   is far behind (3 of 12 shapes).
 Candidate 2 = `ap4bp12` on all twelve 4w prefill shapes (profile `rx7600-refine5`: refine4 plus that pick).
+
+## Round 2, 4w phase twins (build `r2j`, added after candidate 2's session at the reviewer's request)
+
+`r2j-4w-phase-compare.txt`, `phases/r2j-q4-{g28pick,g24pick,ap4bp12}.csv` (`tools/phases3.sh`, `tools/prof_decode2.py` with tile 256 x 128, K step 32): measurement-only twins of the 4w kernels (the base copies of the
+round-1 picks' tiles and `ap4bp12`). Barrier + LDS-store share 60.1 % (g28 pick) / 55.4 % (g24) -> 31.6 % (`ap4bp12`); total per-wave cycles equal; the cycles reappear in the fetch bucket. Measured after the session; see `proposal.md`.

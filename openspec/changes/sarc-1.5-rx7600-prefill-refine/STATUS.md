@@ -1,6 +1,6 @@
 # STATUS: RX 7600 prefill campaign
 
-Updated 2026-10-09 12:40 UTC (round 2 finished; round 1 below is unchanged and closed).
+Updated 2026-10-09 12:32 UTC (round 2 finished, reviewer findings of 2026-10-09 answered; round 1 below is unchanged and closed).
 
 ## Running now
 
@@ -16,10 +16,11 @@ Parent of round 2: round 1's final stack (build `final`, commit `18cc0d53a`). Fu
 | diagnosis of the shipped 8da4w kernel | done: already double-buffered with one barrier per chunk; staging about 7 % and barrier about 5 % of the kernel, the MMA loop (LDS fragment loads + WMMA) about 93 % at about 67 % of the cited int8 roof; 64 VGPRs, 3 spills outside the loop, two `ds_read_b64` per fragment (`round2/README.md`, `r2a-*`) |
 | candidate 1: 8da4w A staging row pitch 24 bytes (`rx7600-refine4`, build `c6`) | gated and timed against round 1's final: 8da4w +3.65 / +4.01 / +4.25 %, 4w -0.19 to +0.17 %, **geomean +1.96 % (under 2 %)**; adopted under rule (b) of the clarification in `proposal.md`; outputs byte-identical in 24 of 24 linear shapes; `sessions/r2-c6-pitch` |
 | candidate 2: 4w 256 x 128 tile, A staging uvec2 with 72-byte rows, B staging 88-byte rows (`rx7600-refine5`, build `c7`) | gated and timed against candidate 1: 4w +5.38 / +7.52 / +7.46 %, 8da4w unchanged, **geomean +3.33 %**; adopted under rule (a); outputs byte-identical in 24 of 24; `sessions/r2-c7-q4` |
-| candidate 3: attention kernels | not applicable: attention is 4.2 to 7.8 % of every cell (condition: above 10 %); `round2/candidate3-condition.txt` |
+| candidate 3: attention kernels | not applicable: attention is 4.2 to 7.3 % of every cell in round 1's final trace (`round2/candidate3-condition.txt`) and 4.4 to 7.8 % in round 2's final trace (`sessions/r2-final/trace-families.csv`); the condition is above 10 % |
 | final verification on the build of the committed head (`f2` = commit `73648f5bd`) | done: pristine parent against the final stack **+33.59 % geomean** (1B / 3B / 8B 4w +41.08 / +29.58 / +24.31 %, 8da4w +45.31 / +33.07 / +29.32 %); round 1's final against the final stack **+5.44 %** (4w +5.98 / +7.08 / +7.93 %, 8da4w +3.65 / +3.81 / +4.25 %); 60 / 60 timed runs valid in the second session, 60 counted of 62 in the first (1 `host_build` replaced); next token SAME in all cells; `sessions/r2-final`, `sessions/r2-final-r1` |
 | gate of the final stack | `verify.sh` unmodified = snapshot except the two dispatched-kernel lines; SDPA tiers 12 passes each + control, 0 mismatches, `pairing=ok`; golden PASS against `golden-ref-parent.json` (PENDING against `sarc/golden/spirv.json`: native glslc, the parent's own 14 differences); 24 of 24 linear outputs byte-identical to the pristine parent's; attention reference error 16 of 17 rows `yes` (`NO`: `peaked_tiny_gqa_s256`, S = 256), same as round 1; nothing outside the dev zone changed; `check.sh --no-build` PASS |
 | owner decision 2026-10-09 02:33 UTC (appeared in `CAMPAIGN.md` while round 2 ran; read at the end) | host builds no longer invalidate runs; this run kept replacing runs that overlapped a build (one in `r2-final`), so its tables are conservative; the `r2e-diag` screen rows stand (`proposal.md`, last paragraph) |
+| phase-timing evidence of candidate 2 | **was missing when it was timed** (no 4w twin existed) and was not recorded; implemented and measured afterwards: barrier + LDS-store share 60.1 % / 55.4 % (g28 / g24 incumbents) -> 31.6 % (`round2/r2j-4w-phase-compare.txt`), total per-wave cycles equal, the cycles moved into the fetch bucket; not a decision input; see item 4 below and `proposal.md` |
 | incidents | the root filesystem of the host filled up twice (03:07 and 09:25 UTC; cause not looked for); the traced half of build `c5` and the linear byte comparison / SDPA evidence of the final verification failed with ENOSPC and were redone (`c6`, `r2-final`); everything large now lives on `<scratch-disk>` (`SARC_BIG` in `tools/env.sh`); details in `proposal.md` |
 
 Percent of the cited roofs (not re-measured, owner answer 1): linear GEMM at 70.3 to 72.0 % in every cell (8B 4w 72.0 %, 8B 8da4w 70.4 %). The roof values are the 2026-09-28 ones.
@@ -174,3 +175,8 @@ the name `fused3sb` in the 780M's namespace (stays until the merge), the branch 
 3. **Host disk.** The root filesystem of this workstation was full twice during round 2 (188 KB to 1.2 MB free at 03:07 and 09:25 UTC) and stands at 92 to 98 % in between; it is a hazard to every campaign here.
    This run moved its large artifacts to `<scratch>` (the builds alone are 33 GB, measured; exports and stage directories come on top; the parent directory also holds other data of this user that is not this run's).
    Nothing was deleted except one untracked 20-line stub script of this run.
+4. **Candidate 2 had no phase-timing evidence when it was timed** (reviewer finding; , last section but one). The rule fixed before round 2 applies to the 4w candidate too; no 4w twin existed and this was not
+   recorded at the time. The twin was added and measured afterwards (share 60.1 % / 55.4 % -> 31.6 %, equal total cycles, shift into the fetch bucket). **Default unless the owner rules otherwise:** keep candidate 2 as
+   measured (+3.33 % geomean), flagged as timed without the prior evidence; if the owner rules the rule binds as written, candidate 2 is a negative result.
+5. **What the final stack is depends on items 1, 2 and 4.** Under the rules as first written, candidate 1 would have been dropped (phase share rose; geomean +1.96 % < 2 %) and the final stack would be 
+   plus the 4w pick of candidate 2, which was neither built nor timed (candidate 2 was timed on top of candidate 1). The recorded final stack (, +33.59 % over the pristine parent) contains candidate 1's kernel.

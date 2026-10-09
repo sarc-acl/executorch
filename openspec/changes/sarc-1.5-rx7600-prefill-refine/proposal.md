@@ -289,3 +289,19 @@ measurements and timed sessions: a run is not invalid because `others.sh` shows 
 (`results/rx7600/round2/r2e-screen-8da4w.csv`). (2) This run kept its stricter handling of host builds after that time: a timed run that overlapped a build was marked `host_build` and replaced by a further valid run
 (one such run in `r2-final`, none counted in any other timed table; every cell still has its 5 valid runs per arm from the same protocol), so no number depends on the relaxed rule, and the sessions are
 conservative with respect to the new one. The proposal's text above ("a timed run waits until no compiler ... runs and is invalid if one appears (R5)") is therefore superseded for builds by that decision.
+
+### Reviewer finding (round 2, 2026-10-09 12:32 UTC): candidate 2 was timed without the phase-timing evidence the rule asks for; the omission was not recorded
+
+The phase-timing rule of this round ("Rules fixed on 2026-10-08 23:56 UTC ... the share of barrier + LDS-store time of the candidate's measurement twin must fall against the incumbent twin before the
+candidate is timed end to end; if it does not fall, the candidate is dropped without a session") also binds the 4w candidate ("the same treatment for the 4w kernel"). **No 4w twin existed when candidate 2 was timed**
+(the header of `sarc_dev_rx7600_q4_body.glslh` listed an `RX_PROF` option that was not implemented), and neither STATUS.md nor this file recorded that. It is a deviation, recorded here after the fact.
+The twin was implemented afterwards (measurement only, default off; the SPIR-V of the `ap4bp12` kernel is byte-identical with and without it) and measured (`results/rx7600/round2/r2j-4w-phase-compare.txt`,
+`phases/r2j-q4-*.csv`, build `r2j`; a first attempt `r2i` ran the table kernel because a row table was missing from its commit, is kept under `<artifacts>/superseded/r2i-missing-rows/` and is not used).
+Result, sums over the twelve prefill shapes: barrier + LDS-store cycles 1.709e9 (g28 pick, 60.1 % of the twin's total) and 1.575e9 (g24 table twin, 55.4 %) against **0.912e9 (31.6 %) for `ap4bp12`**: the share
+falls by the rule's letter, the barrier phase to 0.454 and the MMA phase to 0.892 of the g28 pick's cycles. But the twin's total per-wave cycles are equal (x1.014) and the cycles moved into the `fetch` bucket (3.6 % -> 36.3 %): the
+clock reads change where a wave waits, so this is a shift between buckets plus a smaller MMA phase, not a cleaner proof of the mechanism than candidate 1's. It was measured **after** the session and was not available as a
+decision input; the session is not re-timed (no instruction to). Open as item 4 of "Decision needed from the owner" in STATUS.md.
+
+Plain statement of what the pre-registered rules imply: under the rules as first written, candidate 1 (share rose 59.6 -> 62.2 %; geomean +1.96 % < 2 %, adopted only through rule (b) written afterwards) would have been dropped, and
+the final stack would be `rx7600-refine2` plus the 4w pick of candidate 2 (a stack that was neither built nor timed; candidate 2 was timed on top of candidate 1). Candidate 1's 8da4w gain (+3.65 / +4.01 / +4.25 % in its own
+session, +5 % at kernel level in every round on all twelve shapes) is therefore **provisional on the owner's ruling** on items 1 and 2.
