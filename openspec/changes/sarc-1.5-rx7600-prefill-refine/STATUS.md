@@ -175,8 +175,8 @@ the name `fused3sb` in the 780M's namespace (stays until the merge), the branch 
 3. **Host disk.** The root filesystem of this workstation was full twice during round 2 (188 KB to 1.2 MB free at 03:07 and 09:25 UTC) and stands at 92 to 98 % in between; it is a hazard to every campaign here.
    This run moved its large artifacts to `<scratch>` (the builds alone are 33 GB, measured; exports and stage directories come on top; the parent directory also holds other data of this user that is not this run's).
    Nothing was deleted except one untracked 20-line stub script of this run.
-4. **Candidate 2 had no phase-timing evidence when it was timed** (reviewer finding; , last section but one). The rule fixed before round 2 applies to the 4w candidate too; no 4w twin existed and this was not
+4. **Candidate 2 had no phase-timing evidence when it was timed** (reviewer finding; `proposal.md`, the reviewer-finding section at the end). The rule fixed before round 2 applies to the 4w candidate too; no 4w twin existed and this was not
    recorded at the time. The twin was added and measured afterwards (share 60.1 % / 55.4 % -> 31.6 %, equal total cycles, shift into the fetch bucket). **Default unless the owner rules otherwise:** keep candidate 2 as
    measured (+3.33 % geomean), flagged as timed without the prior evidence; if the owner rules the rule binds as written, candidate 2 is a negative result.
-5. **What the final stack is depends on items 1, 2 and 4.** Under the rules as first written, candidate 1 would have been dropped (phase share rose; geomean +1.96 % < 2 %) and the final stack would be 
-   plus the 4w pick of candidate 2, which was neither built nor timed (candidate 2 was timed on top of candidate 1). The recorded final stack (, +33.59 % over the pristine parent) contains candidate 1's kernel.
+5. **What the final stack is depends on items 1, 2 and 4.** Under the rules as first written, candidate 1 would have been dropped (phase share rose; geomean +1.96 % < 2 %) and the final stack would be `rx7600-refine2`
+   plus the 4w pick of candidate 2, which was neither built nor timed (candidate 2 was timed on top of candidate 1). The recorded final stack (`rx7600-refine5`, +33.59 % over the pristine parent) contains candidate 1's kernel.
