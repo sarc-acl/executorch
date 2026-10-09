@@ -1102,6 +1102,21 @@ const Row kM51DqF[] = {
      {128, 64, 64, 2, 2, 32, 16, false}, kTex3dTex2d, nullptr, Status::kUnverified},
 };
 
+// 4w, second round (glsl/sarc_dev/sarc_dev_m51_linear_q4gsw_coopmat_bz.yaml): the texel-wise bx staging with the B operand
+// staged N-major inside the shared pool (B_COLMAJOR + CSH_POOL), so the matrix unit's B loads are wide. Selected with
+// ET_VK_SARC_Q4GSW_VARIANT=bz_<tile> or by profile c8.
+const Row kM51Bz[] = {
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k16g22s32f32xp", xp_tile(128, 128, 16, 2, 2, 32),
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g22s32f32xp", xp_tile(128, 128, 32, 2, 2, 32),
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g42s32f32xp", xp_tile(128, 128, 32, 4, 2, 32),
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
+};
+
 // A pick sends the shapes its predicate accepts to one candidate kernel (exact
 // name) when the kernel fits; every other shape keeps the selection above.
 struct PickM51 {
@@ -1252,6 +1267,7 @@ struct RegistrarM51 {
     register_candidates(kM51Dq, sizeof(kM51Dq) / sizeof(kM51Dq[0]));
     register_candidates(kM51DqBt, sizeof(kM51DqBt) / sizeof(kM51DqBt[0]));
     register_candidates(kM51DqF, sizeof(kM51DqF) / sizeof(kM51DqF[0]));
+    register_candidates(kM51Bz, sizeof(kM51Bz) / sizeof(kM51Bz[0]));
     Override o = get_override();
     select_before_m51 = o.select;
     o.select = select_m51;

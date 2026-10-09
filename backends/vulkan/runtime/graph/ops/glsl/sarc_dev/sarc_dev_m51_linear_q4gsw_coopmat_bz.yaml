@@ -1,0 +1,86 @@
+# SARC development zone, M51 prefill refine (second round): 4w with texel-wise weight staging, B staged N-major (B_COLMAJOR) INSIDE the shared pool (CSH_POOL),
+# so the WMMA B operand is loaded with wide LDS reads instead of 16-bit gathers. Not shipped, default off.
+# Select with ET_VK_SARC_Q4GSW_VARIANT=bz_<tile> or ET_VK_SARC_M51_PROFILE=c8.
+
+sarc_dev_m51_linear_q4gsw_coopmat_bz:
+  parameter_names_with_default_values:
+    PRECISION: highp
+    HAS_BIAS: false
+    IO_STORAGE: buffer
+    WEIGHT_STORAGE: texture2d
+    MMA_M: 16
+    MMA_N: 16
+    MMA_K: 16
+    WG_TILE_M: 128
+    WG_TILE_N: 128
+    WG_TILE_K: 16
+    SG_GRID_X: 2
+    SG_GRID_Y: 2
+    SUBGROUP_SIZE: 32
+    ACC_FP32: false
+    CSH_IN_ASH: false
+    ACC_GROUP_FP32: false
+    ACC_GROUP_FP32_REG: false
+    FRAG_LAYOUT: false
+    IMG_A: false
+    IMG_W: false
+    SH_F16V4: false
+    CSH_BAND: false
+    B_COLMAJOR: false
+    CSH_FULL: false
+    CSH_POOL: false
+  shader_variants:
+    - NAME: sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k16g22s32f32xp_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      ACC_FP32: true
+      CSH_FULL: true
+      CSH_POOL: true
+      B_COLMAJOR: true
+    - NAME: sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k16g22s32f32xp_buffer_texture2d_half
+      IO_STORAGE: buffer
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      ACC_FP32: true
+      CSH_FULL: true
+      CSH_POOL: true
+      B_COLMAJOR: true
+    - NAME: sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g22s32f32xp_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      ACC_FP32: true
+      CSH_FULL: true
+      CSH_POOL: true
+      B_COLMAJOR: true
+    - NAME: sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g22s32f32xp_buffer_texture2d_half
+      IO_STORAGE: buffer
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      ACC_FP32: true
+      CSH_FULL: true
+      CSH_POOL: true
+      B_COLMAJOR: true
+    - NAME: sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g42s32f32xp_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      ACC_FP32: true
+      CSH_FULL: true
+      CSH_POOL: true
+      B_COLMAJOR: true
+    - NAME: sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g42s32f32xp_buffer_texture2d_half
+      IO_STORAGE: buffer
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      ACC_FP32: true
+      CSH_FULL: true
+      CSH_POOL: true
+      B_COLMAJOR: true
