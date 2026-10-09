@@ -2,7 +2,7 @@
 
 ## Round 3 (2026-10-08): `fused3sb` and `780m-final` (closing task, not a tuning round)
 
-Updated 2026-10-09 02:23 UTC. **Not closed: one owner decision is open ("Decision needed from the owner (open,
+Updated 2026-10-09 02:36 UTC. **Not closed: one owner decision is open ("Decision needed from the owner (open,
 2026-10-09)" below the table).** Round 3 is measured on the replacement build `head4` as the owner decided
 (option (a), 2026-10-08 22:55 UTC), and the reported numbers were recomputed by the review of 2026-10-09; but two
 predicates of the R6 validity rule are not evidenced for any timed run, and the owner's decision kept the
@@ -90,10 +90,18 @@ What the saved data and the host do show (read 2026-10-09 02:20 to 02:35 UTC, no
   `throttle_status` on this APU would be recorded as raw values, not interpreted. The owner would also need to
   say whether `nvtop` may keep running.
 
+State 02:36 UTC, after the second review of this record: the task file still ends with the owner's note of
+00:20 UTC, no answer to this choice; nothing was started and nothing is queued; `nvtop` (PID 245296) is still
+running. The review recomputed both `head4` tables, the export, the SPIR-V comparison, the gates and, this time,
+the fp64 reference figures of the 26 dumps, and keeps the round open on this point only. It could not read
+`/proc/245296/fdinfo` (permission denied in its context), so "no engine time for `nvtop`" is the actor's reading
+alone (repeated 02:36 UTC: still no `drm-engine-*` line), and it does not accept the kernel-log and `fdinfo`
+indications as a substitute for monitoring during the runs. Neither do I: they are context for the owner's
+ruling, not evidence of validity.
+
 Also still open, not blocking by itself: the specification sentence the owner's note of 2026-10-09 00:20 UTC
 asks for (the `vulkan-docs` server failed to connect again at 02:22 UTC, `CONNECTION_CLOSED`); and the review's
-not-checked list (the fp64 reference figures are the harness's own lines, not regenerated in the last review;
-`check.sh --no-build` was run by the actor only; the RX 7600's numbers quoted in `proposal.md` are that
+not-checked list (`check.sh --no-build` was run by the actor only; the RX 7600's numbers quoted in `proposal.md` are that
 campaign's, not checked here).
 
 ### Replacement build `head4` (2026-10-08 23:00 UTC to 2026-10-09 02:08 UTC)
