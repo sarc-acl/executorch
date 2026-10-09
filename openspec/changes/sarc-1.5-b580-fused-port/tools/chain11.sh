@@ -9,12 +9,13 @@
 #   4. 12 passes each of tiers peaked and fused; reference error on the final build (sdpa_ref.sh)
 #   5. stage s5-pristine (pristine, no environment, against topic7 with the final profile): timed session only
 #   6. roofs (igpu-roofline, plan fast), decode comparison of s4-final, collection
-# Every unit waits for the coordinator hold through the tools it calls. Ends CHAIN11_DONE.
+# Waits for chain 12. Every unit waits for the coordinator hold through the tools it calls. Ends CHAIN11_DONE.
 set -uo pipefail
 . "$(dirname "$(readlink -f "$0")")/host.sh"; PROF=${1:?final profile}; REV=$(git -C $ET rev-parse --verify "${2:-HEAD}^{commit}") || exit 2
 TAG=topic7; S=s4-final; SP=s5-pristine; CE="ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=$PROF"
 ST=$A/logs/chain11.status; say() { echo "$(date -u +%FT%TZ) $*" | tee -a $ST; }
 say "chain11 start $REV $TAG $PROF (kernel $(uname -r))"
+until grep -q 'CHAIN12_DONE\|CHAIN12_STOPPED' $A/logs/chain12.status 2>/dev/null; do sleep 30; done
 for t in pristine $TAG; do grep -qsx BUILD_BOTH_OK $A/build/$t.src.txt || { say "CHAIN11_STOPPED build $t missing (chain12.sh builds it)"; exit 1; }; done
 [[ $(sed -n 's/^commit=//p' $A/build/$TAG.src.txt) == "$REV" ]] || git -C $ET diff --quiet $(sed -n 's/^commit=//p' $A/build/$TAG.src.txt) $REV -- . ':!openspec' || { say "CHAIN11_STOPPED $TAG is not the build of $REV (sources differ outside openspec/)"; exit 1; }
 busy_wait "gate $S"
