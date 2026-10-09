@@ -66,7 +66,8 @@ reference makes it non-finite (`max_abs_err` alone would not: `std::max` drops a
   with finite `rms_err`, `max_abs_err` and `ref_rms`; a non-finite or missing record fails the gate. No
   tolerance, threshold or file under `sarc/tools` changed; the requirement can only turn a pass into a fail.
 - Regression test `tools/test_gate_finite.sh` (`results/b580/gate-recheck/test_gate_finite.out`,
-  `TEST_GATE_FINITE_OK`): on a copy of the `s6-final` gate files the gate passes; with `rms_err` set to `nan`,
+  `TEST_GATE_FINITE_OK`; run again end to end after the second review round, 2026-10-09 15:55 UTC, with
+  `.artifacts/tmp` writable: rc 0, output identical to the recorded file): on a copy of the `s6-final` gate files the gate passes; with `rms_err` set to `nan`,
   `-nan` or `inf`, with `ref_rms=nan`, or with one record removed, in one log whose four cases still read
   `mismatches=0 ... PASSED`, it fails on that pass.
 - The five recorded gates decided again with the requirement (`results/b580/gate-recheck/`; the `gate.txt` of
@@ -199,9 +200,9 @@ FAIL line):
   accepted under the reference-error rule; this campaign's stack does not move any token against its parent.
   `e2e5.sh` therefore ends `s5-pristine` with `E2E5_INCOMPLETE 8b-8da4w:nexttoken_DIFFER_DIFFER_SAME`; the
   session is a timing statement, not a gate.
-- Decode (`s4-final`, 32 tokens, medians of 5): final / parent 0.985 / 0.991 / 0.992 / 0.990 / 0.998 / 0.996:
-  inside the band, but below 1 in all six cells, here and in `s2-c1` (0.992 to 0.999). Decode does not run the
-  fused kernel; the cost was not located.
+- Decode (`s4-final`, 32 tokens, medians of 5): final / parent 0.98462 / 0.99148 / 0.99150 / 0.98960 / 0.99830 /
+  0.99603: inside the band, but below 1 in all six cells, here and in `s2-c1` (0.99177 to 0.99918). Decode does
+  not run the fused kernel; the cost was not located.
 
 Where the gain comes from (warm ETDump, ms per 2048-token prefill, attention kernels by name,
 `stage/s4-final/trace/attention.csv`):
