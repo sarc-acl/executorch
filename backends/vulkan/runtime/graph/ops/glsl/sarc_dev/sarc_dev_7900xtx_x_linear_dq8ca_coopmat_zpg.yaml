@@ -224,6 +224,153 @@ sarc_dev_7900xtx_x_linear_dq8ca_coopmat_zpg:
       A_MULTI_BLOCK: false
       A_PITCH: 6
       PROF: true
+    - NAME: sarc_dev_7900xtx_x_linear_dq8ca_coopmat_zpg_t256x64k32g24s32bf_texture3d_texture2d_half
+      WG_TILE_M: 256
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      A_BLOCKS: 2
+      A_MULTI_BLOCK: true
+      BF: true
+    - NAME: sarc_dev_7900xtx_x_linear_dq8ca_coopmat_zpg_t256x64k32g24s32bfa0b0_texture3d_texture2d_half
+      WG_TILE_M: 256
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      A_BLOCKS: 2
+      A_MULTI_BLOCK: true
+      BF: true
+      ST_A: 0
+      ST_B: 0
+    - NAME: sarc_dev_7900xtx_x_linear_dq8ca_coopmat_zpg_t256x64k32g24s32bfa0b1_texture3d_texture2d_half
+      WG_TILE_M: 256
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      A_BLOCKS: 2
+      A_MULTI_BLOCK: true
+      BF: true
+      ST_A: 0
+      ST_B: 1
+    - NAME: sarc_dev_7900xtx_x_linear_dq8ca_coopmat_zpg_t256x64k32g24s32bfa1b1_texture3d_texture2d_half
+      WG_TILE_M: 256
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      A_BLOCKS: 2
+      A_MULTI_BLOCK: true
+      BF: true
+      ST_A: 1
+      ST_B: 1
+    - NAME: sarc_dev_7900xtx_x_linear_dq8ca_coopmat_zpg_t128x64k32g42s32bf_texture3d_texture2d_half
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      A_BLOCKS: 1
+      A_MULTI_BLOCK: false
+      BF: true
+    - NAME: sarc_dev_7900xtx_x_linear_dq8ca_coopmat_zpg_t128x64k32g42s32bfa0b0_texture3d_texture2d_half
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      A_BLOCKS: 1
+      A_MULTI_BLOCK: false
+      BF: true
+      ST_A: 0
+      ST_B: 0
+    - NAME: sarc_dev_7900xtx_x_linear_dq8ca_coopmat_zpg_t128x64k32g42s32bfa0b1_texture3d_texture2d_half
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      A_BLOCKS: 1
+      A_MULTI_BLOCK: false
+      BF: true
+      ST_A: 0
+      ST_B: 1
+    - NAME: sarc_dev_7900xtx_x_linear_dq8ca_coopmat_zpg_t128x64k32g42s32bfa1b1_texture3d_texture2d_half
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      A_BLOCKS: 1
+      A_MULTI_BLOCK: false
+      BF: true
+      ST_A: 1
+      ST_B: 1
+    - NAME: sarc_dev_7900xtx_x_linear_dq8ca_coopmat_zpg_t256x64k32g24s32abl1_texture3d_texture2d_half
+      WG_TILE_M: 256
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      A_BLOCKS: 2
+      A_MULTI_BLOCK: true
+      ABL: 1
+    - NAME: sarc_dev_7900xtx_x_linear_dq8ca_coopmat_zpg_t256x64k32g24s32abl2_texture3d_texture2d_half
+      WG_TILE_M: 256
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      A_BLOCKS: 2
+      A_MULTI_BLOCK: true
+      ABL: 2
+    - NAME: sarc_dev_7900xtx_x_linear_dq8ca_coopmat_zpg_t256x64k32g24s32abl4_texture3d_texture2d_half
+      WG_TILE_M: 256
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      A_BLOCKS: 2
+      A_MULTI_BLOCK: true
+      ABL: 4
+    - NAME: sarc_dev_7900xtx_x_linear_dq8ca_coopmat_zpg_t256x64k32g24s32abl7_texture3d_texture2d_half
+      WG_TILE_M: 256
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      A_BLOCKS: 2
+      A_MULTI_BLOCK: true
+      ABL: 7
+    - NAME: sarc_dev_7900xtx_x_linear_dq8ca_coopmat_zpg_t256x64k32g24s32abl8_texture3d_texture2d_half
+      WG_TILE_M: 256
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      A_BLOCKS: 2
+      A_MULTI_BLOCK: true
+      ABL: 8
+    - NAME: sarc_dev_7900xtx_x_linear_dq8ca_coopmat_zpg_t256x64k32g24s32abl16_texture3d_texture2d_half
+      WG_TILE_M: 256
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      A_BLOCKS: 2
+      A_MULTI_BLOCK: true
+      ABL: 16
+    - NAME: sarc_dev_7900xtx_x_linear_dq8ca_coopmat_zpg_t256x64k32g24s32abl23_texture3d_texture2d_half
+      WG_TILE_M: 256
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      A_BLOCKS: 2
+      A_MULTI_BLOCK: true
+      ABL: 23
     - NAME: sarc_dev_7900xtx_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32_texture3d_texture2d_half
       WG_TILE_M: 256
       WG_TILE_N: 64
