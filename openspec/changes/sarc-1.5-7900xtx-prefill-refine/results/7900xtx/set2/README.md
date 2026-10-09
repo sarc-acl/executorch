@@ -21,3 +21,12 @@ Branch-free chunk loop (`bf`), the stores of the next chunk interleaved with the
 What the ablations bound (median over the twelve shapes, ratio incumbent / twin): without the barrier 1.008, without the stores of the next chunk 1.069, without all staging 1.069,
 without staging and barrier 1.101. The barrier of the chunk loop is worth under 1 % of the kernel and the staging at most 7 to 10 %; the barrier share of the phase timing (31 %) is
 time a wave waits while the other waves of the workgroup work, not a cost that removing the barrier recovers.
+
+## Item 3 (4w) in the same terms (build `c9`, commit a554a5791, 2026-10-09 09:57 to 10:02 UTC, `tools/q-set2c.sh`)
+- Phase timing of the release 4w table kernel (twin `sarc_dev_prof_q4gsw_t256x128k32g24s32f32cbtp`): barrier 51.8 %, LDS stores 15.9 %, MMA 28.6 %, fetch 1.9 % (`phases/s2-q4-table.csv`): the same pattern as 8da4w, so the treatment applies.
+- Variants screened (`screen2-4w.csv`, 20 kernels, 3 rounds): the RX 7600's 72-byte A / 88-byte B staging rows (`ap4bp12`) and the other pitch combinations on the table kernel's grid (g24) and on 16 waves (g28):
+  **0 of 12 shapes qualify** (worst-round ratios 0.42 to 1.00; the control copy `bp8` 0.986 median). `picks-4w.csv`.
+- Ablation twins (`ablation-4w.txt`, `screen3-4w.csv`; measurement only): without the barrier of the chunk loop 1.069 (median over the shapes; up to 1.143), without the stores of the next chunk 1.025,
+  without both 1.090. This is a ceiling that cannot be reached (the barrier orders those stores against the MMA fragment loads of the other waves); a K step of 64 (half the barriers) needs about 52 KB of shared memory (my estimate from the tile sizes)
+  where the card reports 32768 bytes (`max_shared_mem_bytes` of the microbench) and the table kernel uses about 30 KB (the same estimate).
+- Conclusion for items 2 and 3: no variant passes the 3 % rule on any shape, so there is nothing to gate; the ceilings measured are +1 % (8da4w barrier), +7 to +10 % (8da4w staging and barrier together) and +7 % (4w barrier).
