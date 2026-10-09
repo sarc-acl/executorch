@@ -193,6 +193,17 @@ drain flags, the phase-timing twin of the xclipse 4w row.
   to the parent's, logits probes with the gross-divergence check passed, ETDump showing the dispatched kernels, and a
   read of the new shader (the fused attention kernel) for unsynchronised shared writes: every exchange between lanes of the
   workgroup, which is one subgroup, is separated by a shared-memory barrier, and no two lanes write one location.
+- **Second round of linear kernels (owner decision 2026-10-08, 23:38 UTC), state: measured, no new kernel written.** In-kernel phase timing
+  of the final stack's two linear kernels (the 8da4w kernel and the 4w incumbent row, on the shapes of all three models) shows per
+  wave: the cooperative-matrix math about half of the 4w wave and a little over a third of the 8da4w wave; the staging of the
+  operands (global fetch plus shared-memory stores) about as much as the math or more; the workgroup barrier roughly a tenth;
+  and, for 8da4w only, the per-quantization-group epilogue about a tenth. Both kernels already use double-buffered staging with one
+  barrier per K step. The test of "fewer barriers per K" that needs no new kernel, the existing 8da4w tiles with twice the K per
+  barrier, changed the kernel time by less than the screen margin on every shape (no shape selected), as did the earlier 4w
+  screens of a larger K per barrier except on the K = 4096 shapes (the pick of `c5`). So per-step synchronisation is not the
+  lever; the staging stores and fetch, and for 8da4w the group epilogue, are. A kernel that attacks those (for example operands
+  fed to the matrix unit without a shared-memory round trip) is a new kernel design, not started; see the local `STATUS.md`
+  for the question put to the owner.
 - **Directions left for later work:** a new 4w or 8da4w GEMM kernel (the linear kernels are most of the prefill and the
   screens found no tile that beats the incumbents, apart from the 4w pick of `c3` on the 8B shapes), a fused SwiGLU (the elementwise operators are stock kernels), an 8B decode check, and a driver-side fix for the job watchdog that makes the 8B setting unnecessary.
 - **Builds:** the golden check is pending; the compiler launches of a build wait while a timed session runs
