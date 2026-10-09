@@ -1,9 +1,10 @@
 # sarc-1.5-b580-fused-port: status
 
-**2026-10-08 23:35 UTC — candidate 1 is defined and its gate is running. `b580-fused1` = the fused attention
-kernel in a multi-subgroup form: at kernel level 2.75 times faster than the parent's three kernels for head_dim
-64 and 1.55 to 1.57 times for head_dim 128 (3-round selection screen on the idle desktop). The 780M's
-one-subgroup shapes are 3 to 6 times SLOWER than the three kernels on this card. No end-to-end number yet.**
+**2026-10-09 01:00 UTC — candidate 1 (`b580-fused1`, the fused attention kernel in a multi-subgroup form):
+`GATE_PASS`, a plain pass (next token SAME in all 18 cell x prompt comparisons), **+9.18 % geomean** over the
+parent `b580-refine3` (1B +17.1 / +19.0 %, 3B +5.4 / +6.8 %, 8B +3.5 / +4.3 %; 4w / 8da4w), 84 timed runs, all
+valid, on the desktop in use. Its reference-error evidence, logits probe and decode comparison are running;
+candidate 2 is queued behind them. The specification quotes for the shared-memory reading are still owed.**
 
 Branch `topic/b580-fused-port`, parent `51d9d757f` with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine3`.
 Host `fedora` (the owner's desktop), Arc B580 = PCI `0000:03:00.0`, Vulkan device 0, `ETVK_DEVICE_INDEX=0`, lock
@@ -14,18 +15,77 @@ desktop session idle and locked at 20:00 UTC.
 
 ## Running now
 
-Detached `tools/chain8.sh 247d08851 topic6 s2-c1 b580-fused1 c1-ref6` (since 23:28 UTC; status lines in
-`.artifacts/logs/chain8-s2-c1.status`, ends `CHAIN8_DONE s2-c1` or `CHAIN8_STOPPED`), one unit at a time:
+Detached, one GPU job at a time, no idle wait (owner decision 2026-10-09 00:22 UTC):
 
-1. build `topic6` (= `247d08851`) and its logits probe (container builds);
-2. stage `s2-c1` (parent `parent2` with `b580-refine3` against `topic6` with `b580-fused1`) and `gate_sdpa.sh`:
-   12 passes x tiers `all` / `extended` / `full`, the SDPA perf suite, unmodified `verify.sh`, the timed session
-   with 7 repeats and the traces (timed: each run behind the idle wait), `gate_check.py`;
-3. 12 passes each of tiers `peaked` and `fused` (reported, not gate items);
-4. `c1-ref6`: error against the fp32 reference, parent kernels and candidate on the staged test binary;
-5. logits probe (four arms, 37 prompts x 6 cells), `decide.py --arithmetic`, decode comparison, collection.
+- `tools/chain8.sh ... s2-c1 b580-fused1` (`.artifacts/logs/chain8-s2-c1.status`): the gate is done; remaining
+  units: 12 passes each of tiers `peaked` and `fused`, `c1-ref6` (reference error on the staged binary), the
+  logits probe of `s2-c1`, `decide.py`, the decode comparison, collection. Ends `CHAIN8_DONE s2-c1`.
+- `tools/chain9.sh` (`.artifacts/logs/chain9.status`), waiting for chain 8: candidate 2, session `s3-c2`
+  (`b580-fused2` against candidate 1, both build `topic6`): softmax look, `gate_sdpa.sh` with 7 repeats (timed),
+  reference error, probe, decision, decode. Ends `CHAIN9_DONE`.
 
-No build may start on this host while it runs. Chains 1 to 7 have ended.
+No build may start on this host while they run.
+
+## Result so far: candidate 1, `b580-fused1`: GATE_PASS, +9.18 % geomean
+
+Session `s2-c1` (2026-10-09 00:34 to 00:50 UTC): parent = build `parent2` (`51d9d757f`) with
+`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine3`; candidate = build `topic6` (`247d08851`) with
+`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-fused1`. Tok/s, median of 7 valid runs per arm (the
+repeat count the A/A asked for), arms interleaved; recomputed from `stage/s2-c1/raw/runs.csv`:
+
+| cell | parent | candidate 1 | gain | spread parent / cand | foreign engine time, median / max | next token (2048 / real-text / 1792-token prompt) |
+|---|---:|---:|---:|---|---|---|
+| 1B 4w | 12487.80 | 14628.60 | **+17.14 %** | 3.7 / 4.8 % | 2.15 / 3.69 % | SAME / SAME / SAME |
+| 1B 8da4w | 14840.60 | 17655.20 | **+18.97 %** | 5.0 / 2.6 % | 1.65 / 3.36 % | SAME / SAME / SAME |
+| 3B 4w | 5019.61 | 5291.99 | **+5.43 %** | 0.7 / 2.8 % | 2.31 / 2.74 % | SAME / SAME / SAME |
+| 3B 8da4w | 6206.06 | 6627.83 | **+6.80 %** | 1.8 / 1.9 % | 2.21 / 2.55 % | SAME / SAME / SAME |
+| 8B 4w | 2228.51 | 2306.31 | **+3.49 %** | 0.7 / 2.7 % | 2.24 / 3.55 % | SAME / SAME / SAME |
+| 8B 8da4w | 2904.96 | 3029.59 | **+4.29 %** | 0.9 / 2.1 % | 2.29 / 2.91 % | SAME / SAME / SAME |
+
+Geomean **+9.18 %**, every cell outside the +-2 % band (A/A +0.26 %). 84 timed runs, none rejected. **The
+desktop was in use for the whole session** (seat0 `IdleHint=no` at every one of its runs,
+`logs/idle_wait.log`; the owner lifted the idle wait at 00:22 UTC): foreign engine time 1.7 to 2.3 % per cell
+(median), 3.7 % at most, under the 5 % limit; both arms read 2 to 3 % lower than on the idle desktop
+(`s1-aa2`), and the arm spreads are 0.7 to 5.0 %. The gains are a ratio of two arms interleaved under the same
+conditions; the absolute tok/s are not idle-desktop numbers. The closing session repeats the measurement.
+
+Gate (`gate_sdpa.sh`, `stage/s2-c1/gate.txt`): `GATE_PASS`, 36 PASS lines, no FAIL line. SDPA correctness 12
+passes x tiers `all` / `extended` / `full` (4 / 8 / 4 cases), 0 mismatches and `pairing=ok` in all 192 case
+runs with the fused kernel the only attention kernel dispatched. Unmodified `verify.sh` with the candidate
+environment: identical to the parent snapshot `s0-parent-verify` line by line with the rates removed
+(`tools/verify_diff.py`: `VERIFY_SAME`, 34 lines): 12 of 12 production-diff cases ALL PASSED, 28 of 28 numeric
+and 4 of 4 rank-3 correctness cases, default vs tiled SAME on both prompts for both schemes, decode 31 tokens.
+Next token parent vs candidate SAME in all six cells on all three prompts, so no next-token item needs the
+near-tie or the reference-error decision; the candidate does change the arithmetic, and its error against the
+fp32 reference is reported below as soon as `c1-ref6` has run on the staged binary (on the first build of the
+same kernel family, `c1-ref` on `topic1` with the single-subgroup variants: not larger than the parent's in all
+4 `full` and all 8 `extended` cases).
+
+Where the gain comes from (warm ETDump of both arms, ms per 2048-token prefill, attention kernels by name,
+`stage/s2-c1/trace/attention.csv`; everything else in `trace/report/evidence/trace/families.csv`):
+
+| cell | arm | dispatch total | QK^T | softmax | attn*V | fused kernel | K/V copy pass | attention |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| 1B 4w | parent | 160.9 | 7.0 | 17.5 | 7.9 | | | 32.4 |
+| 1B 4w | candidate 1 | 141.8 | | | | 11.3 | 0.2 | 11.6 |
+| 1B 8da4w | parent | 137.1 | 7.1 | 17.6 | 8.3 | | | 33.0 |
+| 1B 8da4w | candidate 1 | 117.7 | | | | 10.9 | 0.2 | 11.2 |
+| 3B 4w | parent | 407.9 | 13.8 | 25.2 | 15.4 | | | 54.5 |
+| 3B 4w | candidate 1 | 388.8 | | | | 31.6 | 0.9 | 32.5 |
+| 3B 8da4w | parent | 334.3 | 13.0 | 22.8 | 14.6 | | | 50.4 |
+| 3B 8da4w | candidate 1 | 307.7 | | | | 30.4 | 0.8 | 31.2 |
+| 8B 4w | parent | 916.8 | 20.3 | 36.9 | 22.1 | | | 79.3 |
+| 8B 4w | candidate 1 | 883.8 | | | | 48.0 | 1.0 | 48.9 |
+| 8B 8da4w | parent | 704.3 | 20.0 | 35.5 | 21.7 | | | 77.1 |
+| 8B 8da4w | candidate 1 | 680.3 | | | | 44.7 | 1.0 | 45.7 |
+
+The attention family goes from 32.4 to 11.6 ms on 1B (-64 %), 54.5 to 32.5 ms on 3B (-40 %) and 79.3 to 48.9 ms
+on 8B (-38 %); the other families move by less than 1 % of the prefill. What the fused kernel removes is mostly
+the softmax's traffic over the S x S matrix (17.5 of 32.4 ms on 1B), which was larger than QK^T and attn*V
+together.
+
+Kernel level, for predicting the B70 (L7; screen 5, idle desktop, us per layer at S = 2048): the three kernels
+1989 (1B) / 1771 (3B) / 2297 (8B); the fused kernel with its copy pass 724 / 1139 / 1464: 2.75x / 1.55x / 1.57x.
 
 ## Candidate 1: `b580-fused1`, selected by screen 5 (`results/b580/screens/screen5-select.csv`, build `topic5`)
 

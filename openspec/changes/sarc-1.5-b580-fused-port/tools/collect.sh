@@ -15,6 +15,8 @@ for s in $A/stage/*/; do n=$(basename $s); [[ -f $s/raw/runs.csv || -f $s/verify
   [[ -f $s/verify.out ]] && { cp -f $s/verify.out $D/; mkdir -p $D/verify; cp -f $s/verify/env.txt $s/verify/correctness.log $D/verify/ 2>/dev/null
     for q in 4w 8da4w; do grep -E '^(linear|baseline) |geomean|unexpected|confirmed|crashed' $s/verify/linear-$q.log > $D/verify/linear-$q.txt 2>/dev/null; done; }
   [[ -d $s/trace/report/evidence/trace ]] && { mkdir -p $D/trace; cp -f $s/trace/report/evidence/trace/*.csv $D/trace/; }
+  [[ -f $s/trace/attention.csv ]] && cp -f $s/trace/attention.csv $D/trace/
+  [[ -d $s/sdpa-correctness-extra ]] && { mkdir -p $D/sdpa-correctness-extra; cp -f $s/sdpa-correctness-extra/rc.csv $D/sdpa-correctness-extra/; grep -h 'sdpa-correctness\] \|sdpa-kernels\]' $s/sdpa-correctness-extra/*.log | sort | uniq -c > $D/sdpa-correctness-extra/cases.txt; }
   [[ -d $s/sdpa-correctness ]] && cp -rf $s/sdpa-correctness $D/
   cp -f $s/decision.txt $D/ 2>/dev/null
   [[ -f $s/decode/summary.csv ]] && { mkdir -p $D/decode; cp -f $s/decode/summary.csv $s/decode/decode.csv $D/decode/; }
@@ -22,10 +24,12 @@ for s in $A/stage/*/; do n=$(basename $s); [[ -f $s/raw/runs.csv || -f $s/verify
   [[ -f $s/probe/summary.csv ]] && { mkdir -p $R/probe/$n; cp -f $s/probe/summary.csv $s/probe/per_prompt.csv $s/probe/differing.md $s/probe/analysis.txt $s/probe/env.txt $s/probe/prompts.txt $R/probe/$n/; }
 done
 cp -f $A/build/*.src.txt $A/build/*.golden.txt $R/ 2>/dev/null
+for d in $A/raw/c?-ref*/; do n=$(basename $d); mkdir -p $R/sdpa-error; for t in full extended peaked; do [[ -f $d/$t.csv ]] && cp -f $d/$t.csv $R/sdpa-error/$n-$t.csv; done; done
 for d in $A/raw/screen*/; do n=$(basename $d); [[ -f $d/summary.csv ]] && cp -f $d/summary.csv $R/screens/$n.csv; [[ -f $d/summary.txt ]] && cp -f $d/summary.txt $R/screens/$n.txt; done
 for d in $A/raw/screen*/; do n=$(basename $d); [[ -f $d/rows.csv ]] && cp -f $d/rows.csv $R/screens/$n-rows.csv; done   # linear screens: one row per (token, round, shape)
 for d in $A/raw/prof-*/; do n=$(basename $d); [[ -f $d/phases.csv ]] && cp -f $d/phases.csv $R/phases/$n.csv; done
-for d in $A/raw/screen*/; do n=$(basename $d); [[ -f $d/screen.csv ]] && { cp -f $d/screen.csv $R/screens/$n-runs.csv; python3 $TOOLS/screen_sdpa_summary.py $d/screen.csv > $R/screens/$n.csv; }; done
+for d in $A/raw/screen*/; do n=$(basename $d); [[ -f $d/screen.csv ]] && { cp -f $d/screen.csv $R/screens/$n-runs.csv; python3 $TOOLS/screen_sdpa_summary.py $d/screen.csv b580-refine3 > $R/screens/$n.csv; }; done
+cp -f $A/logs/idle_wait.log $A/logs/chain*.status $R/ 2>/dev/null
 # stopped or bad sessions: the reason, the run table and the session log
 for d in $A/superseded/*/; do n=$(basename $d); mkdir -p $R/superseded/$n; cp -f $d/README $d/*.out $R/superseded/$n/ 2>/dev/null; find $d -name runs.csv -exec cp -f {} $R/superseded/$n/ \; ; done
 find $C -type f | wc -l; du -sh $C
