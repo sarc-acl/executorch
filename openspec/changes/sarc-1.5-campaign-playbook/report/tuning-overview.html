@@ -45,6 +45,9 @@
   .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
   .legend i.hatch { background: repeating-linear-gradient(135deg, var(--neutral) 0 2px, var(--surface) 2px 5px); border: 1px solid var(--neutral); }
   .legend i.empty { border: 1px dashed var(--neutral); }
+  .legend i.band { background: repeating-linear-gradient(135deg, var(--fg3) 0 2px, var(--surface) 2px 5px); border: 1px solid var(--fg3); }
+  .legend i.inband { background: var(--surface); border: 2px solid var(--seq3); }
+  .legend i.split { background: linear-gradient(var(--s2) 0 50%, var(--s5) 50% 100%); }
   .scroll { overflow-x: auto; }
   svg { display: block; width: 100%; height: auto; font-family: var(--sans); }
   svg text { fill: var(--fg2); font-size: 12px; }
@@ -80,6 +83,7 @@
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .matrix .c.q1, :root:not([data-theme="light"]) .matrix .c.q2 { color: #fff; }
     :root:not([data-theme="light"]) .matrix .c.q5, :root:not([data-theme="light"]) .matrix .c.q6 { color: #0b0b0b; } }
   :root[data-theme="dark"] .matrix .c.q5, :root[data-theme="dark"] .matrix .c.q6 { color: #0b0b0b; }
+  .matrix .c.band { background: var(--surface); border: 2px solid var(--seq3); color: var(--fg2); }
   .matrix .c.tried { background: repeating-linear-gradient(135deg, var(--neutral-fill) 0 3px, var(--surface) 3px 7px); border: 1px solid var(--neutral); color: var(--fg2); }
   .matrix .c.none { border: 1px dashed var(--line); color: var(--fg3); }
   .matrix .c.inherit { background: var(--neutral-fill); color: var(--fg2); }
@@ -125,40 +129,45 @@
 <main>
   <header>
     <h1>SARC 1.5 tuning overview</h1>
-    <p><strong>Compared with unmodified ExecuTorch 1.5 (Vulkan backend, no cooperative matrix instructions), 2048-token prefill is 2.8 to 7.9 times faster on the seven GPUs with published figures</strong> (geometric mean of six cells: the three models 1B, 3B and 8B, and the two quantization schemes 4w and 8da4w). The large number on each card below is this speed-up; the card's second line splits it into two parts: what the September SARC release had already achieved, and the percentage that this round of tuning added on top of it. Figures 1 to 4 are about the second part: which step the gain over the September release came from, which techniques were used where, where the time was saved, and which work did not pay. For the M51, at the device owner's request, only qualitative conclusions are listed. Figure 8 separately shows how far the tuned kernels of five of the devices are from the hardware roof; its numbers come from the roof study of igpu-roofline.</p>
-    <div class="meta">Data as of 2026-10-09 20:00 UTC · eight figures in total · the headline baseline is unmodified ExecuTorch 1.5; the gains in figures 1 to 4 are relative to the September SARC release (for the RX 7600 and the RX 7900 XTX, their own parent commits) · hover over any data mark for details</div>
+    <p><strong>Compared with unmodified ExecuTorch 1.5 (Vulkan backend, no cooperative matrix instructions), 2048-token prefill is 2.8 to 7.9 times faster on the seven GPUs with published figures</strong> (geometric mean of six cells: the three models 1B, 3B and 8B, and the two quantization schemes 4w and 8da4w). The large number on each card below is this speed-up; the card's second line splits it into two parts: what the earlier configuration had already achieved (the September SARC release; for the RX 7600 and the RX 7900 XTX the device's own parent commit, and the card says so), and the percentage that this round of tuning added on top of it. Figures 1 to 4 are about the second part: which step the gain over the earlier configuration came from, which techniques were used where, where the time was saved, and which work did not pay. For the M51, at the device owner's request, only qualitative conclusions are listed. Figure 8 separately compares the tuned kernels of five of the devices with reference shaders that only perform the matrix multiply-add; its numbers come from the roof study of igpu-roofline.</p>
+    <div class="meta">Data as of 2026-10-10 · measurements as of 2026-10-09 20:00 UTC, no new measurements since; text and derived percentages corrected after review · eight figures in total · the headline baseline is unmodified ExecuTorch 1.5; the gains in figures 1 to 4 are relative to the September SARC release (for the RX 7600 and the RX 7900 XTX, their own parent commits) · hover over any data mark for details</div>
   </header>
 
   <section class="tiles" id="tiles" aria-label="Speed-up of each device over unmodified ExecuTorch"></section>
 
   <figure id="fig-chain">
-    <h2>Figure 1 · The gain was stacked up step by step</h2>
-    <p class="claim">Each horizontal bar is one device; each segment is one adopted candidate, and its length is that candidate's geometric mean gain over its parent configuration (stacked logarithmically, so segment lengths add). The four devices that previously ran the stock attention got most of their gain from the first segment; the 780M and the RX 7600 already had attention kernels, and their gain comes from the fused kernel. The second round ported the fused kernel to those four devices, adding a further +6 % to +11 % each; the RX 7600's second round changed the staging row stride of the linear kernels, adding a further +5.4 %. The RX 7900 XTX did not adopt the fused kernel, and its four segments total less than +10 %. No figures are published for the M51, so no bar is drawn for it.</p>
+    <h2>Figure 1 · What went into each final configuration, step by step</h2>
+    <p class="claim">Each horizontal bar is one device; each segment is one candidate that was put into the device's final configuration, and its length is that candidate's geometric mean change over its parent configuration (stacked logarithmically, so segment lengths add). The chain is the history of what was put into the configuration, in order; it is not a set of independent ablations, and the size of a segment depends on what was already in place. Solid segments are demonstrated gains. Hatched segments are retained inside the ±2 % noise band: they are in the final configuration and passed the gate, but they are not demonstrated gains, although the total at the end of each bar includes them. The four devices that previously ran the stock attention got most of their gain from the first segment; the 780M and the RX 7600 already had attention kernels, and their largest segment is the fused kernel. The second round ported the fused kernel to those four devices, adding a further +6 % to +11 % each; the RX 7600's second round changed the staging row stride of the linear kernels, adding a further +5.4 %. The RX 7900 XTX did not adopt the fused kernel; its two demonstrated segments are +2.64 % and +4.09 %, and its four segments multiply to less than +10 %. No figures are published for the M51, so no bar is drawn for it.</p>
     <div class="legend" id="legend-chain"></div>
     <div class="scroll"><div id="chart-chain"></div></div>
-    <figcaption>Segment width is proportional to ln(1+gain); the ticks of the horizontal axis are converted back to cumulative percent. The product of the segments is within 3 percentage points of the figure measured directly in each campaign's final session (different sessions, different baselines). The Jetson Orin Nano's second-round figures (+6.13 %, +76.70 % and the values derived from them) were measured on a cross build whose shader compiler (glslc) differs from the pinned version. On 10-09 the owner ruled to accept them as they are, without re-measuring, and the compiler difference is recorded as a known limitation. The M51's device owner does not allow any figure for this device to be published, so no figure on this page carries a value for it; figure 2 only lists which techniques were adopted.</figcaption>
+    <figcaption>Segment width is proportional to ln(1+gain); the ticks of the horizontal axis are converted back to cumulative percent. The product of the segments is within 3 percentage points of the figure measured directly in each campaign's final session (different sessions, different baselines). Three percentages per device should not be confused. The percentage on each card at the top of the page and in the column headers of figure 2 follows one rule for every device: the geometric mean, over the six cells of figure 7, of the tuned speed divided by the speed of the earlier configuration. The "final session" figure under each device name here is the final configuration measured directly against its parent in one session; it differs from the card's percentage by a fraction of a point on five devices (Arc B580: +72.2 % on the card, +72.05 % in the final session) and by up to 1.1 points on the RTX 4070 Ti SUPER and the 780M. The number at the end of each bar is the product of the segments. A split segment is one candidate that bundles two techniques, whose gain is not split between them. The Jetson Orin Nano's second-round figures (+6.13 %, +76.70 % and the values derived from them) were measured on a cross build whose shader compiler (glslc) differs from the pinned version. On 10-09 the owner ruled to accept them as they are, without re-measuring, and the compiler difference is recorded as a known limitation. The M51's device owner does not allow any figure for this device to be published, so no figure on this page carries a value for it; figure 2 only lists which techniques were adopted.</figcaption>
     <details><summary>Data table</summary><div id="table-chain"></div></details>
   </figure>
 
   <figure id="fig-matrix">
     <h2>Figure 2 · Technique × device</h2>
-    <p class="claim">Dark cells are adopted and counted in the final configuration, and the number is the geometric mean gain over the parent configuration; hatched cells were tried but not adopted, or rejected by the gate; dashed cells were not done. The fused kernel is adopted on six devices; on the RX 7900 XTX it was tried under the AMDVLK driver, was 13.79 % slower and was rejected; the M51 adopted the two-pass form. The M51 column carries no numbers and only marks adopted or not; its color does not indicate the size of a gain. The fp32 softmax was tried on the B580, fell inside the noise band and was not adopted, so it was not done on the B70.</p>
+    <p class="claim">A cell is in one of three states, the same three as in figure 1 and in the glossary. Filled cells are adopted with a demonstrated gain, and the number is the geometric mean gain over the parent configuration (a darker cell is a larger gain). Outlined cells are retained, in band: in the final configuration and through the gate, but with a gain inside the ±2 % noise band, which is not a demonstrated gain. Hatched cells were tried but not adopted, or rejected; dashed cells were not done. The fused kernel is adopted on six devices; on the RX 7900 XTX it was tried under the AMDVLK driver, was 13.79 % slower and was rejected; the M51 adopted the two-pass form. The M51 column carries no numbers and only marks the state; its color does not indicate the size of a gain. The fp32 softmax was tried on the B580, fell inside the noise band and was not adopted, so it was not done on the B70.</p>
     <div class="legend">
-      <span><i style="background:var(--seq5)"></i>Adopted, shade by gain</span>
-      <span><i class="hatch"></i>Tried, not adopted</span>
+      <span><i style="background:var(--seq5)"></i>Adopted, demonstrated gain (shade by gain)</span>
+      <span><i class="inband"></i>Retained, in band (in the final configuration, not a demonstrated gain)</span>
+      <span><i class="hatch"></i>Tried, not adopted or rejected</span>
       <span><i style="background:var(--neutral-fill);border:1px solid var(--line)"></i>Existing or inherited</span>
       <span><i style="border:1px solid var(--s2)"></i>Pending</span>
       <span><i class="empty"></i>Not done</span>
     </div>
     <div class="scroll"><div class="matrix" id="matrix" role="table" aria-label="Technique by device matrix"></div></div>
-    <details><summary>Reasons for empty cells and for "not adopted"</summary>
+    <details><summary>Reasons for empty cells, for "not adopted" and for "retained, in band"</summary>
       <table>
         <tr><th>Cell</th><th>Status</th><th>Reason</th></tr>
-        <tr><td>RTX 4070 Ti SUPER · attention parameter refinement</td><td>Not done separately</td><td>When the cooperative matrix attention kernels were ported (row 1), the fastest variant for each shape had already been chosen from a batch of variants, so parameter selection was folded into row 1. Candidates 5 and 6 then came in below 2 % in a row, the stop rule took effect, and no separate round was opened for attention. On the other devices this row returned +3.6 % on the 780M and stayed inside the noise band elsewhere; the fused kernel has since replaced those two attention kernels, so doing it now would be of very little value.</td></tr>
+        <tr><td>RTX 4070 Ti SUPER · attention parameter refinement</td><td>Not done separately</td><td>When the cooperative matrix attention kernels were ported (row 1), the fastest variant for each shape had already been chosen from a batch of variants, so parameter selection was folded into row 1. Candidates 5 and 6 then came in below 2 % in a row, the stop rule took effect, and no separate round was opened for attention. On the other devices this row returned +2.9 % on the 780M and +4.1 % on the RX 7900 XTX and stayed inside the noise band elsewhere; the fused kernel has since replaced those two attention kernels, so doing it now would be of very little value.</td></tr>
         <tr><td>RTX 4070 Ti SUPER · 8da4w whole-texel weight staging</td><td>Tried, not adopted</td><td>Candidate 5 is a variant of this technique: each staging slot keeps two words of the texel, which halves the number of weight fetches. It is only 1.1 % faster at kernel level and −0.13 % after the full gate, inside the noise band. The weight-fetch stage takes 34 % to 43 % of this kernel's time, but halving the number of reads did not shorten it, which indicates that the bottleneck on this card is not the number of reads, unlike the +7 % case on Intel.</td></tr>
         <tr><td>Arc Pro B70 · no-tail softmax (fp32)</td><td>Deliberately not done</td><td>On Intel the stock softmax already passes the gate (the 4070 Ti and the Orin need the variant because their error exceeded the limit). The B580 tried it as second-round candidate 2; the two sessions gave −0.13 % and +0.08 %, and it was not adopted. The B70's confirmation task carries over only what the B580 adopted.</td></tr>
         <tr><td>Softmax subgroup reduction · devices other than the Orin</td><td>Not done</td><td>This is a candidate of the Orin's own first round; on the Orin it gave only +0.34 %, inside the noise band, so there is no reason to carry it elsewhere. Once the fused kernel absorbs the softmax, the standalone softmax handles only unaligned prompts and decode, an even smaller share.</td></tr>
-        <tr><td>RX 7900 XTX · fused attention kernel</td><td>Tried, rejected</td><td>fused3sb is −13.79 % against candidate 1 (1B unchanged, the 3B and 8B cells −15 % to −24 %). On the AMDVLK driver the three original separate cooperative matrix attention kernels are about 2.6 times faster than the best fused variant on 3B and 8B. The same kernel is +18.22 % on the RX 7600, which runs Mesa RADV. Row 5 (the barrier) therefore does not apply on this device.</td></tr>
+        <tr><td>Arc B580 · attention parameter refinement</td><td>Retained, in band</td><td>Candidate 3 (+0.16 %) is the last step of the profile b580-refine3, which is the parent that the fused port is stacked on, so it is in the final configuration b580-fused1. Its gain is inside the noise band and is not a demonstrated gain. Figure 1 draws the same candidate as a hatched segment.</td></tr>
+        <tr><td>RX 7900 XTX · attention parameter refinement</td><td>Adopted (candidate 5), with candidate 6 retained in band</td><td>The cell shows candidate 5 (+4.09 %). Candidate 6 (+0.67 %) is in the final configuration under a rule written before its session, which asked only that it do no harm; it is not a demonstrated gain, and the chain product of figure 1 includes it.</td></tr>
+        <tr><td>Arc Pro B70 · linear kernel selection and parameter search</td><td>Retained, in band (both rows)</td><td>The search of row 10 produced the 4w tiles of row 7 (candidate 5). They are in the final configuration at +1.10 % geometric mean, inside the noise band; one of the three 4w cells is outside it (+2.31 %), and the campaign adopted the candidate on that cell and on its trace. Both rows show the same state. The search produced nothing else that was adopted.</td></tr>
+        <tr><td>Radeon 780M · attention parameter refinement, candidate 5</td><td>Tried, not kept</td><td>Candidate 5 (+0.72 %, inside the band) was dropped at the review of 2026-10-04; the final configuration is built on the profile with candidates 1, 2 and 3. It is therefore not a segment of figure 1.</td></tr>
+        <tr><td>RX 7900 XTX · fused attention kernel</td><td>Tried, rejected; gate not completed</td><td>fused3sb is −13.79 % against candidate 1 (1B unchanged, the 3B and 8B cells −15 % to −24 %). It was rejected on performance after its timed session, with part of its gate run (two correctness tiers, 12 and 6 passes, 0 mismatches; next token unchanged) and the rest not run; the cell's tooltip lists both parts. On the AMDVLK driver the three original separate cooperative matrix attention kernels are about 2.6 times faster than the best fused variant on 3B and 8B. The same kernel is +18.22 % on the RX 7600, which runs Mesa RADV. Row 5 (the barrier) therefore does not apply on this device.</td></tr>
         <tr><td>M51 · no-tail softmax (fp32)</td><td>n/a</td><td>Once the fused kernel is adopted, all attention calls in the timed prefill are handled by the fused node, and no separate softmax is dispatched.</td></tr>
         <tr><td>The second attention candidate (the softmax on the B580, the two-pass form on the Orin)</td><td>Tried, not adopted</td><td>After the fused kernel, attention is only a few percent of prefill; the two candidates gave −0.13 % and +0.54 %, both inside the noise band.</td></tr>
       </table>
@@ -178,7 +187,7 @@
 
   <figure id="fig-time">
     <h2>Figure 3 · Where the time was saved</h2>
-    <p class="claim">GPU dispatch time of one 2048-token prefill of the 8B model (milliseconds, warm ETDump). On Intel the three attention kernels drop from 341 ms to 42 ms, and the linear GEMM hardly moves; on the RX 7600 the fused kernel cuts attention to a quarter, the linear kernels save a further 139 ms, and the second-round change of the staging row stride saves another 47 ms. The second-round fused kernel cuts attention further, from 77 ms to 48 ms on the B580 and from 57 ms to 32 ms on the B70.</p>
+    <p class="claim">GPU dispatch time of one 2048-token prefill of the 8B model (milliseconds, warm ETDump). On the Arc B580 with 4w, the two attention matrix kernels (QK^T and attn·V) drop from 341.6 ms to 41.9 ms; counting the softmax as well, the three attention kernels drop from 386.8 ms to 76.7 ms, and to 47.5 ms after the second-round fused kernel. The linear GEMM does not get faster for 4w (651.8 ms to 665.5 ms); for 8da4w it drops from 554.5 ms to 433.2 ms (−21.9 %, the whole-texel weight staging of row 6), while the three attention kernels drop from 378.2 ms to 74.7 ms. On the RX 7600 (8da4w) the fused kernel cuts attention to a quarter (192.2 ms to 46.7 ms), the linear kernels save a further 139 ms, and the second-round change of the staging row stride saves another 47 ms. On the Arc Pro B70 (4w) the second-round fused kernel cuts the three attention kernels from 56.5 ms to 32.1 ms, and the linear GEMM does not move.</p>
     <div class="legend" id="legend-time"></div>
     <div class="scroll"><div id="chart-time"></div></div>
     <figcaption>The RX 7600's three attention items are not split in its trace-families and are drawn as a total. "Other" includes activation quantization, embedding, output projection and so on. The parent configuration of the RTX 4070 Ti SUPER is its first-round final configuration (which already contains the cooperative matrix attention kernels); the tuned fused kernel and the K/V copy total 20.7 ms and are drawn unsplit. The Arc B580's "after fusion" row (s4-final) and the Arc Pro B70's two rows (s3-final) come from the traces of their fused-port branches and are drawn the same way; the B70's parent configuration is its first-round final configuration. The Jetson Orin Nano's 8B prefill takes on the order of seconds, which is beyond the scale of this figure, so it is not drawn. The RX 7600's "after second round" row comes from the trace of its second-round closing session (r2-final). The RX 7900 XTX is not in the figure; no figures are published for the M51.</figcaption>
@@ -187,15 +196,15 @@
 
   <figure id="fig-waste">
     <h2>Figure 4 · Work that did not pay</h2>
-    <p class="claim">Parameter search found faster configurations at kernel level, but for a kernel that takes only a few percent of prefill, a kernel-level improvement does not reach end to end. The B70's 33 hours bought +1.1 %, and the 780M's enumeration bought 0.</p>
+    <p class="claim">Parameter search found faster configurations at kernel level, but little of it reached the final configurations. The B70's 33 hours yielded one set of 4w tiles, which is retained in the final configuration at +1.1 % geometric mean, inside the ±2 % noise band and so not a demonstrated gain; its attention tiles were not adopted. The 780M's enumeration led to no change being adopted: the variants it found are on the three-kernel attention path, which the fused kernel no longer uses on the timed prompt, and they were not put into a profile or through the gate. That is "no change adopted", not a measured zero effect.</p>
     <div class="scroll"><div id="chart-waste"></div></div>
-    <figcaption>The horizontal axis is device time (hours), and the end of each bar is labeled with the end-to-end geometric mean gain. The tile sweeps took several hours on each of three devices and none was faster; their device time was not recorded precisely, so they are not in the figure.</figcaption>
+    <figcaption>The horizontal axis is device time (hours), and the end of each bar is labeled with the end-to-end result. The tile sweeps took several hours on each of three devices and none was faster; their device time was not recorded precisely, so they are not in the figure.</figcaption>
   </figure>
 
   <figure id="fig-llama">
     <h2>Figure 5 · Where the tuned build stands against llama.cpp</h2>
-    <p class="claim">The tuned ExecuTorch 4w prefill speed divided by the speed of llama.cpp Q4_0 at its best setting; the three points per device are 1B, 3B and 8B. Against llama.cpp's Vulkan backend, all three models lead on all six devices; against the vendor backends (SYCL, CUDA), the two Intel cards and the RTX 4070 Ti SUPER still trail by 3 % to 25 %, and the Orin is roughly at parity (0.98 to 1.07). The RX 7900 XTX and the M51 have no llama.cpp comparison data and are not in the figure.</p>
-    <div class="legend"><span><i style="background:var(--s1)"></i>vs llama.cpp Vulkan</span><span><i style="background:var(--s2)"></i>vs vendor backend (Intel SYCL, NVIDIA CUDA)</span><span><i style="border-top:2px dashed var(--ref);width:16px;height:0;border-radius:0"></i>1.0 parity</span></div>
+    <p class="claim">The tuned ExecuTorch 4w prefill speed divided by the speed of llama.cpp Q4_0 at its best setting; the three points per device are 1B, 3B and 8B. Against llama.cpp Vulkan Q4_0, all three models lead on all six devices; against the vendor backends (SYCL, CUDA, also Q4_0), the two Intel cards and the RTX 4070 Ti SUPER still trail by 3 % to 25 %, and the Orin is roughly at parity (0.98 to 1.07). The lead is stated for Q4_0 only. Against the llama.cpp Vulkan Q4_K_M column of figure 7 the same ratio runs from 0.97 (Jetson Orin Nano 1B, the one cell below 1.0) to 2.21 (RX 7600 1B): it is smaller than the Q4_0 ratio on the Orin and the RTX 4070 Ti SUPER, where Q4_K_M is the faster llama.cpp setting for every model, and larger on the 780M, the RX 7600 and the B70, where it is the slower one. The RX 7900 XTX and the M51 have no llama.cpp comparison data and are not in the figure.</p>
+    <div class="legend"><span><i style="background:var(--s1)"></i>vs llama.cpp Vulkan Q4_0</span><span><i style="background:var(--s2)"></i>vs vendor backend Q4_0 (Intel SYCL, NVIDIA CUDA)</span><span><i style="border-top:2px dashed var(--ref);width:16px;height:0;border-radius:0"></i>1.0 parity</span></div>
     <div class="scroll"><div id="chart-llama"></div></div>
     <figcaption>Source: cells.csv of topic/llamacpp-compare, llama.cpp b11430, the screened best setting of each device, median of 5 runs. The 780M has no usable vendor backend (ROCm does not support this integrated GPU; not measured). The RX 7600 was measured by the company side on 2026-10-08, Vulkan only; its 8B llama-bench figure is discarded because above 1024 prompt tokens the card took a slow GPU path, and the llama-completion timing is used there. The tuned speeds of the RTX 4070 Ti SUPER, Arc Pro B70 and Arc B580 come from the closing sessions of their fused-port branches (s5-pristine, s4-pristine, s7-pristine, median of 7 runs), and the Jetson Orin Nano's from s8-pristine (median of 5 runs, cross build). The RX 7600's tuned speed comes from its second-round closing session r2-final (median of 5 runs); the llama.cpp side is still the figure of 10-08.</figcaption>
     <details><summary>Data table</summary><div id="table-llama"></div></details>
@@ -212,31 +221,31 @@
 
   <figure id="fig-tokps">
     <h2>Figure 7 · All tok/s</h2>
-    <p class="claim">Seven devices, three models, and the 2048-token prefill speed of each cell (tok/s, median of 5 valid runs; the source is cells.csv of the llama.cpp comparison branch, except for the two tuned columns listed in the caption). stock is unmodified ExecuTorch 1.5, SARC is the September release, and tuned is each campaign's final configuration; llama.cpp uses the screened best setting of each backend and the higher of the two timers.</p>
+    <p class="claim">Seven devices, three models, and the 2048-token prefill speed of each cell (tok/s, median of 5 valid runs; the source is cells.csv of the llama.cpp comparison branch, except for the two tuned columns listed in the caption). stock is unmodified ExecuTorch 1.5, SARC is the September release (for the RX 7600 and the RX 7900 XTX, the device's parent commit), and tuned is each campaign's final configuration; llama.cpp uses the screened best setting of each backend and the higher of the two timers.</p>
     <div class="scroll"><div id="table-tokps"></div></div>
     <figcaption>Cells marked * include runs below the clock floor, as the device README explains (the load itself pulls the clock down; this is not interference). The RX 7600's 8B llama.cpp figure uses the llama-completion timing (llama-bench takes a slow path above 1024 tokens on that card). The 780M and the RX 7600 have no vendor backend data (HIP not measured). The two tuned columns of the RTX 4070 Ti SUPER, Arc Pro B70, Arc B580 and Jetson Orin Nano come from the closing sessions of their fused-port branches (s5-pristine, s4-pristine and s7-pristine are medians of 7 valid runs, the Orin's s8-pristine of 5) and are not in cells.csv. The RX 7600's two tuned columns come from its second-round closing session r2-final (median of 5 valid runs) and are not in cells.csv either. The RX 7900 XTX's two SARC columns and two tuned columns are its parent commit and its final configuration measured in the same closing session (final3, median of 7 valid runs, AMDVLK driver); each parent-commit cell is within 2 % of the number published on 2026-09-28; this device has no same-session stock figure and llama.cpp was not measured on it, so the corresponding cells show "—". The M51's device owner does not allow figures to be published, so it is not in the table.</figcaption>
   </figure>
 
   <figure id="fig-roofs">
-    <h2>Figure 8 · How far the kernels are from the hardware roof</h2>
-    <p class="claim">Each horizontal track is one quantization scheme on one device. The right end (100 %) is the rate roof of the matrix instruction when the operands stay entirely in registers, and the blue bar is the measured rate of the tuned linear kernel. The two 780M kernels are at 78 % to 82 % of the roof; on the two NVIDIA devices 4w is at 63 % to 67 %, and 8da4w is about 41 % on the RTX 4070 Ti SUPER and about 27 % on the Orin; on the two Intel cards 4w is about 40 % and 8da4w about 30 %. For 8da4w on the two Intel cards and the Orin, most of the remaining distance lies in "reuse" and not in how well the kernel is written: the kernel performs only a few matrix multiply-adds for each operand it loads, and when fed at that reuse the hardware itself reaches only thirty to fifty percent of the register roof (the diamond). On the B580 this item accounts for 81 % of the whole distance, and the kernel itself for only 4 %. The RTX 4070 Ti SUPER is different: there, feeding from shared memory costs almost nothing, and the whole gap is in the last step, which is the time the matrix unit spends idle waiting for fetches and for barriers.</p>
+    <h2>Figure 8 · Kernel rate against the register roof and two fed reference measurements</h2>
+    <p class="claim">Each horizontal track is one quantization scheme on one device. The right end (100 %) is the register roof: the rate of a reference shader that only performs the matrix multiply-add, with its operands held in registers. The blue bar is the measured rate of the tuned linear kernel as a share of it: 79 % (4w) and 81 % (8da4w) on the 780M, 65 % and 41 % on the RTX 4070 Ti SUPER, 63 % and 27 % on the Orin, 40 % and 30 % on the B580, 39 % and 30 % on the B70. Each bar is the mean of the three models; a model's figure is time-weighted over a layer's seven linear calls on the 780M and the B580, and the plain mean of four shapes on the B70, the RTX 4070 Ti SUPER and the Orin. The vertical mark and the diamond are two further reference measurements, not ceilings: the same kind of shader with its operands loaded from shared memory, at the tool's highest reuse (the mark) and at the kernel's reuse, that is, the number of multiply-adds per loaded operand (the diamond). At the reference shader's rate for the same reuse, the 8da4w kernel is at 94 % on the B580, 94 % on the B70, 58 % on the Orin and 41 % on the RTX 4070 Ti SUPER. The diamond is a yardstick for four reasons: kernels exceed that reference on some shapes (up to 103 % on Intel, and 111 % to 294 % on the 780M, which is why the 780M has no diamond); the reference shaders run at SIMD32 against SIMD16 kernels on Intel and at wave64 against wave32 on the 780M; some reference rows are single runs; and the Orin's diamond is the 32 ops/B row while its kernel's reuse is 42.7 (the next row, 64 ops/B, is 15.8 TOP/s). On Intel and the Orin the reference shader itself is at thirty to fifty percent of the register roof when fed at the kernel's reuse, so low reuse is an explanation consistent with these rows for most of the distance; it is a hypothesis that has not been tested by changing reuse in a real kernel. On the RTX 4070 Ti SUPER the reference shader loses almost nothing when fed from shared memory (the diamond is at 99 % of the register roof), so reuse does not explain that kernel's distance.</p>
     <div class="legend">
       <span><i style="background:var(--seq5)"></i>Measured kernel rate (mean of three models)</span>
-      <span><i style="background:var(--neutral-fill);border:1px solid var(--neutral)"></i>Headroom to the register roof (100 %)</span>
-      <span><i style="width:0;height:14px;border-left:2px solid var(--ref);border-radius:0"></i>Fed roof (from shared memory)</span>
-      <span><i style="width:9px;height:9px;border:2px solid var(--ref);background:var(--surface);border-radius:0;transform:rotate(45deg);margin-inline:2px"></i>Fed roof at the kernel's reuse</span>
+      <span><i style="background:var(--neutral-fill);border:1px solid var(--neutral)"></i>Distance to the register roof (100 %)</span>
+      <span><i style="width:0;height:14px;border-left:2px solid var(--ref);border-radius:0"></i>Fed reference (operands from shared memory, highest reuse)</span>
+      <span><i style="width:9px;height:9px;border:2px solid var(--ref);background:var(--surface);border-radius:0;transform:rotate(45deg);margin-inline:2px"></i>Fed reference at the kernel's reuse (a yardstick, not a ceiling)</span>
     </div>
     <div class="scroll"><div id="chart-roofs"></div></div>
-    <details open><summary>Worked example: the four steps from the register roof to the kernel</summary><div id="table-roofchain"></div></details>
+    <details open><summary>Worked example: four measured rates from the register roof to the kernel</summary><div id="table-roofchain"></div></details>
     <details><summary>Data table</summary><div id="table-roofs"></div></details>
-    <figcaption>All three roofs are measured with the matrix shaders of the igpu-roofline tool, with the same input type, accumulator type and matrix shape as the kernel. Register roof: the operands stay in registers throughout, and the shader only performs matrix multiply-adds. Fed roof (from shared memory): the operands of every step are loaded from workgroup shared memory, and the tool's highest-reuse row is used. Fed roof at the kernel's reuse: also loaded from shared memory, but each operand is used for the same number of multiply-adds as in the kernel, or the nearest available number. Measurement date 2026-10-09; each device's roofs and kernel rates were measured in the same session on the device; the kernel rates come from a microbenchmark (prefill M = 2048, texture3d storage) and equal 2·M·N·K divided by the kernel time. The per-model figures of the 780M and the B580 are time-weighted over a layer's seven linear calls; the study records of the B70, the RTX 4070 Ti SUPER and the Orin give only per-shape values, and the arithmetic mean of the four shapes is used here; the blue bar is the mean of the three models, and the per-model values are in the hover tooltips and the data table. All Orin figures are for the 15 W power mode (GPU clock 612 MHz). The matrix instructions of the two Intel cards (dpas) and of the 780M have been checked one by one in the driver-generated code, with no register spills; the drivers of the two NVIDIA devices give no disassembly, so these are not ISA-verified and the evidence is indirect. The subgroup widths of the roof shaders and the kernels are not always the same: on Intel the roof is SIMD32 and the kernel is SIMD16; on the 780M the roof is subgroup 64 and the kernel is subgroup 32. Rows without a diamond: 4w on the B580, the B70 and the Orin has no matching roof (the tool's low-reuse rows with fp16 accumulation did not pass the quality gate); the two 780M rows are not drawn because the tool's corresponding row is below the kernel (the kernel is 111 % to 294 % of it) and cannot serve as a roof. Among the rows with a diamond, 8da4w on the B70 and 8da4w on the RTX 4070 Ti SUPER are single runs, not confirmed by repetition; on the B580 and the B70 the kernel reads slightly above the diamond on a few shapes (up to 103 %), so it is a yardstick, not a strict roof; the Orin's diamond uses the 32 ops/B row, the kernel's own reuse is 42.7, and the next row is 15.8 TOP/s. The fused attention kernel is listed in the data table only; its timing includes copies, and the basis differs from device to device. The three company-side devices RX 7600, RX 7900 XTX and M51 are not in this study.</figcaption>
+    <figcaption>All three reference rates are measured with the matrix shaders of the igpu-roofline tool, with the same input type, accumulator type and matrix shape as the kernel. Register roof: the operands stay in registers throughout, and the shader only performs matrix multiply-adds. Fed reference (from shared memory): the operands of every step are loaded from workgroup shared memory, and the tool's highest-reuse row is used. Fed reference at the kernel's reuse: also loaded from shared memory, but each operand is used for the same number of multiply-adds as in the kernel, or the nearest available number. The two fed rates are measurements of another shader, not upper bounds on the kernel. Measurement date 2026-10-09; each device's roofs and kernel rates were measured in the same session on the device; the kernel rates come from a microbenchmark (prefill M = 2048, texture3d storage) and equal 2·M·N·K divided by the kernel time. The per-model figures of the 780M and the B580 are time-weighted over a layer's seven linear calls; the study records of the B70, the RTX 4070 Ti SUPER and the Orin give only per-shape values, and the arithmetic mean of the four shapes is used here; the blue bar is the mean of the three models, and the per-model values are in the hover tooltips and the data table. All Orin figures are for the 15 W power mode (GPU clock 612 MHz). The matrix instructions of the two Intel cards (dpas) and of the 780M have been checked one by one in the driver-generated code, with no register spills; the drivers of the two NVIDIA devices give no disassembly, so these are not ISA-verified and the evidence is indirect. The subgroup widths of the reference shaders and the kernels are not always the same: on Intel the reference shader is SIMD32 and the kernel is SIMD16; on the 780M the reference shader is subgroup 64 and the kernel is subgroup 32. Rows without a diamond: 4w on the B580, the B70 and the Orin has no matching reference row (the tool's low-reuse rows with fp16 accumulation did not pass the quality gate); the two 780M rows are not drawn because the tool's corresponding row is below the kernel (the kernel is 111 % to 294 % of it) and cannot serve as a reference. Among the rows with a diamond, 8da4w on the B70 and 8da4w on the RTX 4070 Ti SUPER are single runs, not confirmed by repetition; on the B580 and the B70 the kernel reads slightly above the diamond on a few shapes (up to 103 %), so it is a yardstick, not a ceiling; the Orin's diamond uses the 32 ops/B row, the kernel's own reuse is 42.7, and the next row (64 ops/B) is 15.8 TOP/s. In the worked example the two percentage columns have different denominators: the loss relative to the previous step, and the share of the whole register-to-kernel distance. The fused attention kernel is listed in the data table only; its timing includes copies, and the basis differs from device to device. The three company-side devices RX 7600, RX 7900 XTX and M51 are not in this study.</figcaption>
   </figure>
 
   <section class="notes">
     <div class="note"><h3>Not merged yet</h3><p>The twelve campaign branches (eight first-round, four fused-port) are all on origin, and none has gone into dev/1.5. The 780M switched to fused3sb in round 3, and its final configuration is named 780m-final. Still to do before merging: add the full-subgroups flag to the pipelines (see "Known defect") and clean the paths out of the result files.</p></div>
-    <div class="note"><h3>Where the remaining headroom is</h3><p>The fused kernel is adopted on six devices, and the M51 uses the two-pass form; the fused-kernel result on the RX 7900 XTX was measured under the AMDVLK driver, with the subgroup width unverified; on 2026-10-09 the owner decided not to re-measure under RADV, and the result is kept as it is. On the B580, the B70 and the Orin attention is down to 5 % to 14 % of prefill dispatch time, and the headroom is in the linear kernels. The roof study of 2026-10-09 (figure 8) shows that the 8da4w kernels of the two Intel cards have only a few percent left within the current structure (an estimated 4 % to 9 % on the B580); the multiply-add stage of the Orin's 8da4w kernel is already at the fed roof at its reuse, and what remains is staging time. For a larger gain the kernel has to perform more matrix multiply-adds for each operand it loads, which is limited by the number of registers (the Orin's 8da4w kernel already uses 209 registers per thread, and 4w uses 128). On 2026-10-09 the owner decided not to start a third round now. On the Orin the fused kernel reaches only 16 % to 20 % of the matrix roof; going faster needs a new kernel that stages K and V through shared memory. On AMD discrete GPUs the HIP backend of llama.cpp has not been measured yet, so the lead holds for Vulkan only.</p></div>
-    <div class="note"><h3>Process artifacts</h3><p>A/A calibration and the clock floor, a gate for every candidate, the reference-error rule, the stop rule of two consecutive candidates below 2 %, coordinator holds, independent review. These are part of the playbook and are not in the figures.</p></div>
-    <div class="note"><h3>Known defect: pipelines lack the full-subgroups flag</h3><p>The Vulkan specification requires compute pipelines of this kind, which depend on full subgroups, to be created with the "full subgroups" flag. None of the cooperative matrix pipelines on the branches carries it, including the released ones and those of the fused kernels. On 2026-10-09 the owner decided to record this as a known defect and to fix it once, in the release zone, before any merge. The measurements on this page are not affected. The RX 7900 XTX's campaign additionally found that some kernels declare more workgroup shared memory than the limit AMDVLK reports, among them one released 4w kernel; the driver accepts these pipelines and all gates pass. This item will be handled before merging, together with the full-subgroups flag (F1).</p></div>
+    <div class="note"><h3>Where the remaining headroom is</h3><p>The fused kernel is adopted on six devices, and the M51 uses the two-pass form; the fused-kernel result on the RX 7900 XTX was measured under the AMDVLK driver, with the subgroup width unverified; on 2026-10-09 the owner decided not to re-measure under RADV, and the result is kept as it is. On the B580, the B70 and the Orin attention is down to 5 % to 14 % of prefill dispatch time, and most of the remaining time is in the linear kernels. The reference measurements of 2026-10-09 (figure 8) put the 8da4w kernel at 91 % to 96 % of the rate of a reference shader fed at the same reuse on the B580 and at 92 % to 98 % on the B70 (per model), and at 58 % of the 32 ops/B reference row on the Orin, whose kernel has a reuse of 42.7. That reference is a yardstick, not a ceiling (it runs at a different subgroup width on Intel, some of its rows are single runs, and the kernel reads above it on some shapes), so these figures do not say how much speed remains. That low reuse is what keeps these kernels far from the register roof is a hypothesis consistent with the reference rows; it has not been tested by changing reuse in a real kernel. Raising reuse would mean performing more matrix multiply-adds for each operand loaded, which is limited by the number of registers (the Orin's 8da4w kernel already uses 209 registers per thread, and 4w uses 128). On 2026-10-09 the owner decided not to start a third round now. On the Orin the fused kernel reaches only 16 % to 20 % of the matrix roof; going faster needs a new kernel that stages K and V through shared memory. On AMD discrete GPUs the HIP backend of llama.cpp has not been measured yet, so the lead there holds for llama.cpp Vulkan Q4_0 only.</p></div>
+    <div class="note"><h3>Process artifacts</h3><p>A/A calibration and the clock floor, a complete gate for every candidate before it is adopted, the reference-error rule, the stop rule of two consecutive candidates below 2 %, coordinator holds, independent review. These are part of the playbook and are not in the figures.</p></div>
+    <div class="note"><h3>Known defect: pipelines lack the full-subgroups flag</h3><p>The Vulkan specification requires compute pipelines of this kind, which depend on full subgroups, to be created with the "full subgroups" flag. None of the cooperative matrix pipelines on the branches carries it, including the released ones and those of the fused kernels. On 2026-10-09 the owner decided to record this as a known defect and to fix it once, in the release zone, before any merge. What is known: every gate passes on the drivers used, and both arms of every comparison between SARC configurations on this page (parent and candidate, and the released kernels against the tuned ones) create their pipelines the same way, without the flag, so those comparisons are like for like. In the comparisons against unmodified ExecuTorch and against llama.cpp only the SARC side has the defect. What is not known: the effect of creating the pipelines with the flag has not been measured. After the fix every device is to be gated and timed again. The RX 7900 XTX's campaign additionally found that some kernels declare more workgroup shared memory than the limit AMDVLK reports, among them one released 4w kernel. The driver accepts these pipelines and every gate passes; the largest overrun is in the parent's kernel table, so both arms of that campaign's comparisons have it. Whether staying within the reported limit changes the timing has not been measured. This item will be handled before merging, together with the full-subgroups flag (F1).</p></div>
     <div class="note"><h3>Decode slightly slower, cause not investigated</h3><p>On the B70, with the fused node, decode (generating tokens one by one after prefill) is 0 to 2.5 % slower than the parent configuration; on the B580 all six cells are also slightly below the parent configuration (0.985 to 0.998). The fused kernel does not handle decode calls, and where the slowdown occurs has not been located yet. Decode is not a gate item; it is recorded here so that it is not missed at promotion. The owner decided on 2026-10-09 that the investigation is scheduled before promotion and is not done now.</p></div>
     <div class="note"><h3>The Orin's clock</h3><p>The Orin earlier had two sets of roof figures (matrix fp16 about 16.0 and 9.7 TFLOP/s). The difference comes from the GPU clock: the set of 2026-09-26 was measured with the clock locked at 1020 MHz; the device was rebooted afterwards, and in the 15 W power mode the clock limit is 612 MHz. All Orin figures on this page (tok/s, kernel rates, the roofs of figure 8) are for the 15 W state. The higher power mode was not measured; on 2026-10-09 the owner decided not to measure it.</p></div>
   </section>
@@ -255,18 +264,8 @@
     4.46,
     7.88
    ],
+   "prev_label": "September release",
    "base": "over the September baseline (the cross build's shader compiler differs from the pinned version; recorded as a limitation)"
-  },
-  {
-   "id": "b580",
-   "name": "Arc B580",
-   "vendor": "Intel",
-   "final": 76.2,
-   "stock": [
-    2.22,
-    3.83
-   ],
-   "base": "over the September baseline"
   },
   {
    "id": "b70",
@@ -277,17 +276,31 @@
     2.17,
     3.76
    ],
+   "prev_label": "September release",
+   "base": "over the September baseline"
+  },
+  {
+   "id": "b580",
+   "name": "Arc B580",
+   "vendor": "Intel",
+   "final": 72.2,
+   "stock": [
+    2.22,
+    3.83
+   ],
+   "prev_label": "September release",
    "base": "over the September baseline"
   },
   {
    "id": "4070ti",
    "name": "RTX 4070 Ti SUPER",
    "vendor": "NVIDIA",
-   "final": 64.3,
+   "final": 64.4,
    "stock": [
     3.58,
     5.88
    ],
+   "prev_label": "September release",
    "base": "over the September baseline"
   },
   {
@@ -299,6 +312,7 @@
     2.53,
     3.37
    ],
+   "prev_label": "parent commit",
    "base": "over the parent commit (company side)",
    "stock_note": "the stock and tuned figures come from the same table on the comparison branch"
   },
@@ -306,11 +320,12 @@
    "id": "780m",
    "name": "Radeon 780M",
    "vendor": "AMD",
-   "final": 33.1,
+   "final": 32.8,
    "stock": [
     2.12,
     2.81
    ],
+   "prev_label": "September release",
    "base": "over the September baseline"
   },
   {
@@ -322,8 +337,9 @@
     2.9,
     3.15
    ],
+   "prev_label": "parent commit",
    "base": "over its parent commit (AMDVLK driver)",
-   "note": "This device's campaign ran on the AMDVLK driver (the RX 7600 ran on Mesa RADV). The fused attention kernel is 13.79 % slower on that driver and was rejected, so the gain comes only from the softmax, per-shape selection of linear kernels and variants of the separate attention kernels. The branch has no same-session figure against unmodified ExecuTorch, so none is listed here.",
+   "note": "This device's campaign ran on the AMDVLK driver (the RX 7600 ran on Mesa RADV). The fused attention kernel is 13.79 % slower on that driver and was rejected, so the final configuration differs from the parent commit in the softmax (retained inside the noise band), the per-shape selection of linear kernels and variants of the separate attention kernels. The branch has no same-session figure against unmodified ExecuTorch, so none is listed here.",
    "stock_note": "stock comes from the benchmark session of 2026-09-28 (same driver), which is not the same session as this tuning session"
   },
   {
@@ -383,12 +399,14 @@
    {
     "c": "linear",
     "g": 0.82,
-    "n": "Candidate 3: 4w tile orin-refine5"
+    "n": "Candidate 3: 4w tiles orin-refine5. Geometric mean inside the band (4w cells +0.80 / +1.01 / +2.98 %, one of them outside it); passed the gate; retained",
+    "band": true
    },
    {
     "c": "softmax",
     "g": 0.34,
-    "n": "Candidate 4: softmax subgroup reduction orin_g64 (inside the band, accepted by the gate)"
+    "n": "Candidate 4: softmax subgroup reduction orin_g64. Every cell inside the band; accepted by the gate; retained",
+    "band": true
    },
    {
     "c": "fused",
@@ -410,7 +428,8 @@
    {
     "c": "param",
     "g": 0.16,
-    "n": "Candidate 3: QK^T xe2c (head_dim 128), inside the band"
+    "n": "Candidate 3: QK^T xe2c (head_dim 128), profile b580-refine3. Inside the band; passed the gate; retained: b580-refine3 is the first-round final profile and the parent that the fused port b580-fused1 is stacked on",
+    "band": true
    },
    {
     "c": "fused",
@@ -432,7 +451,8 @@
    {
     "c": "linear",
     "g": 1.1,
-    "n": "Candidate 5: 4w tile found by the sampled search (33 hours)"
+    "n": "Candidate 5: 4w tiles found by the parameter search (33 hours), xe2-refine5. Geometric mean inside the band (4w cells +1.75 / +1.84 / +2.31 %, one of them outside it); the campaign adopted it on that cell and on the trace (4w linear time down 2.5 % to 3.6 %); retained",
+    "band": true
    },
    {
     "c": "fused",
@@ -461,17 +481,13 @@
    {
     "c": "texel",
     "g": 1.97,
-    "n": "Candidate 2: 8da4w whole-texel weight staging"
+    "n": "Candidate 2: 8da4w whole-texel weight staging",
+    "why": "changes only 8da4w kernels and is judged on those cells: +3.44 / +3.94 / +4.58 %, all three outside the band, while the 4w cells do not move; the six-cell geometric mean is under 2 %"
    },
    {
     "c": "param",
     "g": 2.86,
     "n": "Candidate 3: QK^T NO_MASK_FILL, attn·V subgroup 32"
-   },
-   {
-    "c": "param",
-    "g": 0.72,
-    "n": "Candidate 5: QK^T packed staging"
    },
    {
     "c": "softmax",
@@ -486,24 +502,28 @@
    {
     "c": "fused",
     "g": 3.19,
-    "n": "Candidate 9: one-pass fusion + 4w per shape"
+    "n": "Candidate 9: a bundle of two changes gated together, the one-pass form of the fused kernel and the 4w kernel per shape. The +3.19 % is not attributed to fusion alone: the 4w cells gain +4.83 / +4.50 / +5.45 %, and the 8da4w cells, which get only the one-pass form, +1.80 / +1.06 / +1.59 %, inside the band",
+    "c2": "linear"
    },
    {
     "c": "linear",
     "g": 0.47,
-    "n": "Candidate 10: refine10 4w table (inside the band)"
+    "n": "Candidate 10: refine10 4w table. Inside the band, recorded by the campaign as not a gain; passed the gate; retained",
+    "band": true
    },
    {
     "c": "linear",
     "g": 1.2,
-    "n": "Candidate 11: 8da4w per shape, triggered the stop rule"
+    "n": "Candidate 11: 8da4w kernel per shape; its six-cell geometric mean is under 2 %, which triggered the stop rule",
+    "why": "changes only 8da4w kernels and is judged on those cells: +2.02 / +2.82 / +2.36 %, all three outside the band, while the 4w cells do not move; the six-cell geometric mean is under 2 %"
    }
   ],
   "rx7600": [
    {
     "c": "softmax",
     "g": 1.48,
-    "n": "Candidate 1: softmax r3"
+    "n": "Candidate 1: softmax r3. Geometric mean inside the band (inside the band in four of the six cells); passed the gate; retained",
+    "band": true
    },
    {
     "c": "fused",
@@ -518,12 +538,14 @@
    {
     "c": "fused",
     "g": 0,
-    "n": "M2a: fused3sb subgroup barrier, +0.00 %, byte-identical"
+    "n": "M2a: fused3sb subgroup barrier, +0.00 %, byte-identical. A correctness change, not a speed-up; retained under a rule written before its session (gate passes, geometric mean not worse than -2 %)",
+    "band": true
    },
    {
     "c": "linear",
     "g": 1.96,
-    "n": "Round 2 candidate 1: the A staging row stride of the 8da4w kernel changed from 16 bytes to 24 bytes (rx7600-refine4), which removes bank conflicts in shared-memory reads. The three 8da4w cells gain +3.65 / +4.01 / +4.25 %; the six-cell geometric mean is below 2 %; adopted under the rule \"a candidate that changes only one quantization scheme is judged on the cells it changes\""
+    "n": "Round 2 candidate 1: the A staging row stride of the 8da4w kernel changed from 16 bytes to 24 bytes (rx7600-refine4), which removes bank conflicts in shared-memory reads. The three 8da4w cells gain +3.65 / +4.01 / +4.25 %; the six-cell geometric mean is below 2 %; adopted under the rule \"a candidate that changes only one quantization scheme is judged on the cells it changes\"",
+    "why": "adopted under the campaign rule that a candidate changing only one quantization scheme is judged on the cells it changes: the three 8da4w cells gain +3.65 / +4.01 / +4.25 %, all outside the band; the six-cell geometric mean is under 2 %"
    },
    {
     "c": "linear",
@@ -535,7 +557,8 @@
    {
     "c": "softmax",
     "g": 1.56,
-    "n": "Candidate 1: softmax r3 (the 780M's variant)"
+    "n": "Candidate 1: softmax r3 (the 780M's variant). Geometric mean inside the band (the two 1B cells +3.03 % and +2.22 %, the other four inside it); passed the gate; retained",
+    "band": true
    },
    {
     "c": "linear",
@@ -550,7 +573,8 @@
    {
     "c": "param",
     "g": 0.67,
-    "n": "Candidate 6: attn·V tile for head_dim 64 (7900xtx-refine5), inside the band, adopted under the rule written down in advance, not counted as a gain"
+    "n": "Candidate 6: attn·V tile for head_dim 64 (7900xtx-refine5). Inside the band; retained under a rule written before its session (no harm: gate passes, geometric mean and both 1B cells not worse than -2 %). Not a demonstrated gain; the product at the end of this bar includes its +0.67 %",
+    "band": true
    }
   ]
  },
@@ -612,7 +636,7 @@
     "what": "Attention contains two large matrix multiplications (QK^T and attn·V). This technique rewrites them with Vulkan's \"cooperative matrix\" extension: a group of GPU threads works together and computes one small block of the matrix product (for example 16×16) at a time, instead of each thread computing one number.",
     "why": "The driver can hand this block-wise multiplication directly to the hardware unit dedicated to matrix multiplication, or to the best-suited vector instructions; the data is half precision, and there are far fewer reads and writes. Attention in unmodified ExecuTorch is the slowest part of the whole prefill, so replacing it gives the largest gain.",
     "like": "One person filling in a 2048×2048 table cell by cell, replaced by a team filling it in block by block.",
-    "res": "The four devices that previously ran the stock attention gain +46 % to +58 % each. On Intel, attention time drops from 341 ms to 42 ms (figure 3)."
+    "res": "The four devices that previously ran the stock attention gain +46 % to +58 % each. On the Arc B580 (8B, 4w) the two kernels of this row, QK^T and attn·V, drop from 341.6 ms to 41.9 ms (figure 3)."
    }
   },
   {
@@ -621,13 +645,15 @@
    "cells": {
     "780m": {
      "k": "ok",
-     "g": 3.6,
-     "n": "c3 +2.86, c5 +0.72"
+     "g": 2.86,
+     "n": "c3; c5 not kept",
+     "t": "Candidate 3 (QK^T NO_MASK_FILL, attn·V subgroup 32): +2.86 %. Candidate 5 (QK^T packed staging) passed the gate at +0.72 %, inside the band, and was dropped at the review of 2026-10-04: the final configuration 780m-final is built on the profile 780m-refine3 (candidates 1, 2 and 3). Since candidate 8 the fused kernel takes the attention calls of the timed prefill"
     },
     "b580": {
-     "k": "tried",
-     "v": "+0.16",
-     "t": "Candidate 3, QK^T xe2c: passed the gate, inside the band, counted once toward the stop rule"
+     "k": "band",
+     "g": 0.16,
+     "n": "c3, b580-refine3",
+     "t": "Candidate 3, QK^T xe2c for head_dim 128 (profile b580-refine3): passed the gate, bit-identical, +0.16 %, inside the band, counted once toward the stop rule. It is in the final configuration: b580-refine3 is the first-round final profile and the parent that the fused port b580-fused1 is stacked on. Retained, in band; not a demonstrated gain"
     },
     "b70": {
      "k": "tried",
@@ -650,14 +676,13 @@
     },
     "7900xtx": {
      "k": "ok",
-     "g": 4.79,
-     "n": "c5 +4.09, c6 +0.67",
-     "t": "This card did not adopt the fused kernel and the separate attention kernels are still in use, so changing variants pays. Candidate 5: QK^T 128×128 tile without mask fill and with packed staging, attn·V 64×64 tile, +4.09 % (all six cells outside the noise band), output bit-identical. Candidate 6: attn·V tile for head_dim 64, +0.67 %, inside the band, adopted under the rule written down in advance, not counted as a gain. The wider QK^T grid and the larger attn·V tiles tried afterwards were not faster"
+     "g": 4.09,
+     "n": "c5; c6 +0.67 retained in band",
+     "t": "This card did not adopt the fused kernel and the separate attention kernels are still in use, so changing variants pays. Candidate 5: QK^T 128×128 tile without mask fill and with packed staging, attn·V 64×64 tile, +4.09 % (all six cells outside the noise band), output bit-identical; this is the demonstrated gain shown in the cell. Candidate 6: attn·V tile for head_dim 64, +0.67 %, inside the band. It is in the final configuration under a rule written before its session (its gate passes, and neither the geometric mean nor a 1B cell is worse than -2 %): retained, in band, not a demonstrated gain. The chain product of figure 1 includes it (the two candidates multiply to +4.79 %). The wider QK^T grid and the larger attn·V tiles tried afterwards were not faster"
     },
     "m51": {
-     "k": "ok",
-     "v": "adopted",
-     "n": "inside the band",
+     "k": "band",
+     "v": "retained",
      "t": "Screening of fused-kernel variants selected a variant for the head dimension that occurs only in the 1B model; for the other head dimension no variant passed the screening, so the 780M's choice is kept. It passed the gate, its gain falls inside the noise band, and it stays in the final configuration. Figures not published"
     }
    },
@@ -666,7 +691,7 @@
     "what": "The kernel's code stays the same; only a few of its knobs are adjusted: how large a block (tile) each workgroup processes at a time, how many threads a workgroup has, and how much data is read at a time.",
     "why": "The best block size for the same program differs from GPU to GPU; it depends on the cache, the number of registers and how threads are grouped.",
     "like": "The same engine with a better-suited set of gear ratios.",
-    "res": "Small gains: +3.6 % on the 780M and +4.8 % on the RX 7900 XTX (which did not adopt the fused kernel, so the separate attention kernels are still in use); all other devices fall inside the ±2 % noise band."
+    "res": "Small gains: +2.9 % on the 780M (candidate 3; the fused kernel has since taken over those calls on the timed prompt) and +4.1 % on the RX 7900 XTX (which did not adopt the fused kernel, so the separate attention kernels are still in use). On the B580, the RX 7900 XTX (a further candidate) and the M51 a variant is retained in the final configuration inside the ±2 % noise band, which is not a demonstrated gain. On the B70 and the Orin the variants tried were inside the band and were not adopted."
    }
   },
   {
@@ -700,15 +725,16 @@
      "t": "Same as the 4070 Ti: candidate 1 with the stock softmax was rejected, 1h with nzf added passed"
     },
     "rx7600": {
-     "k": "ok",
+     "k": "band",
      "g": 1.48,
-     "n": "r3"
+     "n": "r3",
+     "t": "Candidate 1: the 780M's softmax r3, +1.48 % geometric mean, inside the band (inside the band in four of the six cells); bit-identical to the release softmax on 21 test cases. Retained in the final configuration; not a demonstrated gain"
     },
     "7900xtx": {
-     "k": "ok",
+     "k": "band",
      "g": 1.56,
      "n": "r3",
-     "t": "Candidate 1: the 780M's softmax r3, +1.56 % over the parent commit (below 2 %), bit-identical to the release softmax on 21 test cases"
+     "t": "Candidate 1: the 780M's softmax r3, +1.56 % over the parent commit, inside the band by geometric mean (the two 1B cells +3.03 % and +2.22 %, the other four inside it); bit-identical to the release softmax on 21 test cases. Retained in the final configuration; not a demonstrated gain"
     },
     "m51": {
      "k": "none",
@@ -721,7 +747,7 @@
     "what": "Softmax is the middle step of attention: it turns each token's scores for the other tokens into weights that sum to 1. This variant makes two changes: a row's sum and division are computed in 32-bit floating point and rounded only once at the end (fp32); and the tail that is hidden by the mask and never read afterwards is no longer zeroed element by element (no-tail).",
     "why": "It is faster because it writes less data that nobody reads; it is more accurate because 32-bit accumulation reduces rounding error. The second point is essential: on the 4070 Ti and the Orin, the cooperative matrix kernels with the stock softmax exceeded the error limit and were rejected by the gate; they passed only with this variant.",
     "like": "When averaging a long column of numbers, add them all at high precision and round once, instead of rounding after every addition.",
-    "res": "+1.5 % to +4.8 % where it was measured on its own; on the 4070 Ti and the Orin it is the precondition for row 1 passing the gate."
+    "res": "+4.1 % on the 780M. On the RX 7600 and the RX 7900 XTX it is retained in the final configuration inside the noise band (+1.5 % and +1.6 %), which is not a demonstrated gain. On the 4070 Ti and the Orin it is the precondition for row 1 passing the gate, and its own contribution was not measured apart."
    }
   },
   {
@@ -731,7 +757,8 @@
     "780m": {
      "k": "ok",
      "g": 16.77,
-     "n": "c8 +13.16, c9 +3.19"
+     "n": "c8 +13.16; c9 +3.19 is a bundle",
+     "t": "Candidate 8, the fused kernel fused3: +13.16 %. Candidate 9 is a bundle of two changes gated together, the one-pass form of the fused kernel and a per-shape change of the 4w linear kernels: +3.19 %, which is not attributed to fusion alone. The 8da4w cells, which get only the one-pass form, gain +1.06 % to +1.80 %, inside the band, and the campaign puts the one-pass form alone at +1.1 % to +1.8 % end to end. The cell shows the product of the two candidates"
     },
     "b580": {
      "k": "ok",
@@ -764,7 +791,8 @@
     "7900xtx": {
      "k": "tried",
      "v": "-13.79",
-     "t": "Candidate 2: fused3sb, -13.79 % against candidate 1 (1B unchanged, the 3B and 8B cells -15 % to -24 %), rejected on performance; the gate was not run to completion. On this driver the three original separate cooperative matrix attention kernels are about 2.6 times faster than the best fused variant on 3B and 8B. Driver note: this device runs on AMDVLK, and the RX 7600 (fused kernel +18.22 %) runs on Mesa RADV; whether AMDVLK executes the 32-thread fused kernel as a 32-wide subgroup is recorded as unverified. This conclusion holds for that driver only and should be re-measured under RADV"
+     "t": "Candidate 2: fused3sb, -13.79 % against candidate 1 in a timed session (median of 7 valid runs; 1B unchanged, the 3B and 8B cells -15 % to -24 %), rejected on performance. Its gate was not completed. What was run: the attention correctness tier \"all\" for 12 passes and the tier \"extended\" for 6 passes, 0 mismatches, and the next-token check, unchanged in all six cells. What was not run: the remaining \"extended\" passes, the tier \"full\", the build verification, the reference-error evidence and the real-text probe, because they would only re-check a kernel that had already been rejected. Nothing of this candidate is in the final configuration. On this driver the three original separate cooperative matrix attention kernels are about 2.6 times faster than the best fused variant on 3B and 8B. Driver note: this device runs on AMDVLK, and the RX 7600 (fused kernel +18.22 %) runs on Mesa RADV; whether AMDVLK executes the 32-thread fused kernel as a 32-wide subgroup is recorded as unverified. This conclusion holds for that driver only; it was not re-measured under RADV (owner decision 2026-10-09)",
+     "n": "rejected; gate not completed"
     },
     "m51": {
      "k": "ok",
@@ -778,7 +806,7 @@
     "what": "Merges the three steps of attention (QK^T scoring, softmax, attn·V mixing) into one kernel. Once a row of scores is computed it is not written back to GPU memory; it stays in the thread group's shared memory for the softmax and is then multiplied by V.",
     "why": "Done separately, the 2048×2048 score table has to be written to GPU memory in full and read back in full twice, and two more GPU jobs have to be dispatched. Merged, this intermediate table is never stored.",
     "like": "Three processing steps used to sit in three separate workshops, with half-finished parts carried back and forth; now one assembly line does them all.",
-    "res": "780M +16.8 %, RX 7600 +18.2 % (company side). Ported in round 2 to the other four, each on top of its first-round configuration: RTX 4070 Ti SUPER +11.5 %, Arc B580 +9.1 %, Arc Pro B70 +8.3 %, Jetson Orin Nano +6.1 %. The timing of all ports is complete; no port is still running. On the RX 7900 XTX it was tried under the AMDVLK driver, was 13.8 % slower and was rejected. The M51 adopted the two-pass form; figures not published."
+    "res": "780M +16.8 % (+13.2 % from the fused kernel and +3.2 % from a later candidate that bundles its one-pass form with a 4w per-shape change, so that part is not attributed to fusion alone), RX 7600 +18.2 % (company side). Ported in round 2 to the other four, each on top of its first-round configuration: RTX 4070 Ti SUPER +11.5 %, Arc B580 +9.1 %, Arc Pro B70 +8.3 %, Jetson Orin Nano +6.1 %. The timing of all ports is complete; no port is still running. On the RX 7900 XTX it was tried under the AMDVLK driver, was 13.8 % slower and was rejected. The M51 adopted the two-pass form; figures not published."
    }
   },
   {
@@ -786,10 +814,10 @@
    "name": "Fused-kernel subgroup barrier (fused3sb)",
    "cells": {
     "780m": {
-     "k": "ok",
-     "v": "speed unchanged",
-     "n": "adopted in round 3",
-     "t": "Round 3 (2026-10-08, a wrap-up task, not a tuning round) replaced fused3 in the final configuration with fused3sb, which has the subgroup barrier: geometric mean -0.14 % (cells from -0.96 % to +0.16 %), inside the noise band. The final configuration now has a single name, 780m-final, at +33.90 % over dev/1.5 (round 2 measured +33.82 %)"
+     "k": "band",
+     "g": -0.14,
+     "n": "fused3sb, round 3",
+     "t": "Round 3 (2026-10-08, a wrap-up task, not a tuning round) replaced fused3 in the final configuration with fused3sb, which has the subgroup barrier: geometric mean -0.14 % (cells from -0.96 % to +0.16 %), inside the noise band. The final configuration now has a single name, 780m-final, at +33.90 % over dev/1.5 (round 2 measured +33.82 %). A correctness change that is retained in the final configuration; not a gain"
     },
     "b580": {
      "k": "ok",
@@ -816,9 +844,10 @@
      "t": "The port uses the RX 7600's fused3sb source as is, with a subgroupBarrier() after every memoryBarrierShared(); the same check as on the 4070 Ti was added: the kernel returns immediately when the workgroup is not exactly one full 32-thread subgroup. There is no barrier-free version to compare against; counted within row 4"
     },
     "rx7600": {
-     "k": "ok",
+     "k": "band",
      "g": 0,
-     "n": "byte-identical"
+     "n": "byte-identical",
+     "t": "M2a: fused3sb adds a subgroup barrier after every shared-memory barrier of the fused kernel. A correctness change, not a speed-up: +0.00 %, output byte-identical to fused3. Retained in the final configuration under a rule written before its session (gate passes, geometric mean not worse than -2 %)"
     },
     "7900xtx": {
      "k": "none",
@@ -846,7 +875,9 @@
    "cells": {
     "780m": {
      "k": "ok",
-     "g": 1.97
+     "g": 1.97,
+     "n": "8da4w cells +3.4 to +4.6",
+     "t": "Candidate 2 changes only 8da4w kernels: the three 8da4w cells gain +3.44 / +3.94 / +4.58 %, all outside the band, and the 4w cells do not move. The six-cell geometric mean is +1.97 %. Counted as a demonstrated gain on the cells it changes"
     },
     "b580": {
      "k": "ok",
@@ -886,7 +917,7 @@
     "what": "8da4w is a quantization scheme (4-bit weights, 8-bit activations). The weights are stored in a texture, and a texel has 4 channels. This variant fetches the whole texel once and stages it for the following steps to share, instead of reading the texture again for each channel it uses.",
     "why": "The linear layers take the most time in prefill, and reading weights is one of their main costs; with fewer texture reads the time drops accordingly.",
     "like": "Bringing back a whole box from the warehouse on each trip, instead of making one trip per item.",
-    "res": "About +7 % on the two Intel cards, +2.8 % on the Orin, +2.0 % on the 780M; slightly slower on the RX 7600 and the RX 7900 XTX, where it was not adopted; adopted on the M51. It affects 8da4w models only."
+    "res": "About +7 % on the two Intel cards, +2.8 % on the Orin, +2.0 % on the 780M (six-cell geometric mean; its three 8da4w cells gain +3.4 % to +4.6 %); slightly slower on the RX 7600 and the RX 7900 XTX, where it was not adopted; adopted on the M51. It affects 8da4w models only."
    }
   },
   {
@@ -895,8 +926,9 @@
    "cells": {
     "780m": {
      "k": "ok",
-     "g": 4.65,
-     "n": "c1 +2.95, c10 +0.47, c11 +1.20"
+     "g": 4.19,
+     "n": "c1 +2.95, c11 +1.20; c10 +0.47 retained in band",
+     "t": "Candidate 1 (initial tile refinement), +2.95 %. Candidate 11 (8da4w kernel per shape), +1.20 % six-cell geometric mean, with its three 8da4w cells at +2.02 / +2.82 / +2.36 %, all outside the band. The cell shows the product of these two. Candidate 10 (the refined 4w table), +0.47 %, is inside the band: retained in the final configuration, not a demonstrated gain, and not in the cell's number. Candidate 9 also contains a 4w per-shape change, bundled with the one-pass fused form; see row 4"
     },
     "b580": {
      "k": "tried",
@@ -904,9 +936,10 @@
      "t": "Candidate 2, a 4w band-drain tile: -0.07 %, not adopted"
     },
     "b70": {
-     "k": "ok",
+     "k": "band",
      "g": 1.1,
-     "n": "4w tile"
+     "n": "4w tiles from the search",
+     "t": "Candidate 5 (xe2-refine5): 4w tiles found by the parameter search of row 10. Passed the gate, bit-identical. Geometric mean +1.10 %, inside the band; the three 4w cells gain +1.75 / +1.84 / +2.31 %, one of them outside the band, and the campaign adopted it on that cell together with the trace (4w linear time down 2.5 % to 3.6 %, nothing else moving). It is in the final configuration. On this page: retained, in band; not a demonstrated gain"
     },
     "4070ti": {
      "k": "tried",
@@ -914,9 +947,10 @@
      "t": "27 tiles swept, best 0.995x; candidate 6 (wide 4w tile) passed the gate at +0.40 %, inside the band, not adopted"
     },
     "orin": {
-     "k": "ok",
+     "k": "band",
      "g": 0.82,
-     "n": "4w tile"
+     "n": "4w tiles",
+     "t": "Candidate 3 (orin-refine5): two 4w tiles, bit-identical to the shipped kernels on the shapes they serve. Geometric mean +0.82 %, inside the band (4w cells +0.80 / +1.01 / +2.98 %, the 8da4w cells unchanged); passed the gate. Retained in the final configuration; not a demonstrated gain"
     },
     "rx7600": {
      "k": "ok",
@@ -942,7 +976,7 @@
     "what": "The linear layers (matrix multiplications) in the model come in several shapes, for example 2048 wide in and 8192 wide out. This technique picks the fastest kernel code and block size for each shape separately, records them in a table, and looks the table up by shape at run time.",
     "why": "No single configuration is fastest for every shape: wide and narrow matrices place different demands on the cache and on thread grouping.",
     "like": "Goods of different sizes go into boxes of different sizes, instead of one box size for everything.",
-    "res": "780M +4.7 %, RX 7600 +5.5 %, RX 7900 XTX +2.6 %; the RX 7600's second round changed the staging row stride of the linear kernels for a further +5.4 %; B70 and Orin about +1 %; on the B580 and the 4070 Ti a tile sweep found nothing faster, so nothing was adopted."
+    "res": "780M +4.2 % (two candidates; a third is retained inside the noise band), RX 7600 +5.5 %, RX 7900 XTX +2.6 %; the RX 7600's second round changed the staging row stride of the linear kernels for a further +5.4 %. On the B70 and the Orin the 4w tiles are retained in the final configuration inside the noise band (+1.1 % and +0.8 %), which is not a demonstrated gain. On the B580 and the 4070 Ti a tile sweep found nothing faster, so nothing was adopted."
    }
   },
   {
@@ -966,9 +1000,10 @@
      "t": "Not done: this is a candidate of the Orin's own first round; on the Orin it gave only +0.34 % (inside the band), so there is no reason to carry it to other devices. Once the fused kernel absorbs the softmax, the standalone softmax handles only unaligned prompts and decode, an even smaller share"
     },
     "orin": {
-     "k": "ok",
+     "k": "band",
      "g": 0.34,
-     "n": "inside the band, accepted by gate"
+     "n": "orin_g64",
+     "t": "Candidate 4, corrected form: +0.34 %, every cell inside the band; accepted by the gate under the reference-error rule. Retained in the final configuration; not a demonstrated gain"
     },
     "rx7600": {
      "k": "none",
@@ -988,7 +1023,7 @@
     "what": "Softmax needs the maximum and the sum of a whole row. This variant computes them with \"subgroup\" instructions: a subgroup is a small batch of threads that the hardware really executes at the same time, and a single instruction can add up the numbers each of them holds or take their maximum.",
     "why": "It saves a few reads, writes and waits compared with merging round by round through shared memory.",
     "like": "A table of people calling out their numbers at once and getting the total directly, instead of passing notes one by one.",
-    "res": "Done on the Orin only, +0.34 %, inside the noise band; it passed the gate and stays in the final configuration."
+    "res": "Done on the Orin only, +0.34 %, inside the noise band. It passed the gate and is retained in the final configuration; this is not a demonstrated gain."
    }
   },
   {
@@ -1056,16 +1091,18 @@
    "cells": {
     "780m": {
      "k": "tried",
-     "v": "1796 items, 0",
-     "t": "Full enumeration of QK^T / attn·V, 8 to 30 % faster at kernel level, but on a path the fused kernel does not take; did not pass the gate"
+     "v": "1796 runs",
+     "n": "not gated, not adopted",
+     "t": "Full enumeration of the QK^T and attn·V parameter spaces (1796 runs, about 11 hours). The best variants are 8 % to 30 % faster at kernel level than the kernels of 780m-refine3. They were not put into a profile and not put through the gate: with the fused kernel, QK^T and attn·V serve only the calls the fused node does not take (unaligned prompts, decode), so they would change nothing on the timed prompt, and they change the accumulation, which needs its own gate. No change was adopted. This is not a measured zero effect"
     },
     "b580": {
      "k": "none"
     },
     "b70": {
-     "k": "tried",
-     "v": "33 h, +1.1",
-     "t": "Sampled search and enumeration over four kernel families, 33 hours, produced the 4w tile of row 7 at +1.10 %; attention enumeration +0.6 / +0.95 %, inside the band, not adopted"
+     "k": "band",
+     "g": 1.1,
+     "n": "33 h; the 4w tiles of row 7",
+     "t": "Sampled search and enumeration over four kernel families, about 33 hours. What it yielded: the 4w tiles of row 7 (candidate 5), found by the refinement around the sample (the uniform sample itself found nothing faster than the shipped tile). They are in the final configuration at +1.10 % geometric mean: retained, in band, the same state as in row 7. What it did not yield: no 8da4w configuration faster than the tile of candidate 2; attention tiles (candidate 6) that gave +0.59 % end to end (+0.95 % in an earlier gate session), inside the band, not adopted; 128×256 4w tiles that were faster on four shapes and slower on every 3B shape, not used"
     },
     "4070ti": {
      "k": "none"
@@ -1090,7 +1127,7 @@
     "what": "A program enumerates or samples hundreds or thousands of parameter combinations, times each one on the device and finds the fastest. It is the automated version of rows 2 and 7.",
     "why": "In theory it can find configurations a person would not think of. In practice a single kernel does get 8 % to 30 % faster, but that kernel takes only a few percent of prefill time, or is not on the path finally taken at all, so end to end the effect is barely visible.",
     "like": "Spending a lot of time making a stretch of road as smooth as possible when it is only 3 % of the route.",
-    "res": "The B70 spent 33 hours for +1.1 %; the 780M enumerated 1796 items for 0 end to end (figure 4). Conclusion: look at where the time goes first, then decide whether to search."
+    "res": "The B70 spent 33 hours; what the search yielded is a set of 4w tiles that is retained in the final configuration inside the noise band (+1.1 %). The 780M ran 1796 enumeration runs and adopted no change: the variants are on a path the fused kernel no longer uses on the timed prompt and were not put through the gate, so this is not a measured zero effect (figure 4). Conclusion: look at where the time goes first, then decide whether to search."
    }
   }
  ],
@@ -1252,14 +1289,14 @@
   {
    "name": "B70 · sampling and enumeration, four kernel families",
    "hours": 33,
-   "gain": "+1.1 %",
-   "note": "4w tiles 2 to 6 % faster per shape, +1.1 % end to end; attention enumeration 3 to 22 % faster at kernel level, +0.6 / +0.95 % end to end, inside the band, not adopted"
+   "gain": "+1.1 % (in band)",
+   "note": "What it yielded: 4w tiles 2 to 6 % faster per shape at kernel level, retained in the final configuration at +1.1 % end to end, inside the ±2 % band (one cell outside it). What it did not yield: nothing faster for 8da4w; attention tiles 3 to 22 % faster at kernel level gave +0.59 % end to end (+0.95 % in an earlier gate session), inside the band, not adopted"
   },
   {
-   "name": "780M · full QK^T and attn·V enumeration (1796 items)",
+   "name": "780M · full QK^T and attn·V enumeration (1796 runs)",
    "hours": 11,
-   "gain": "0",
-   "note": "8 to 30 % faster at kernel level, but on the three-kernel path that the fused kernel does not take; did not pass the gate, final configuration unchanged"
+   "gain": "no change adopted",
+   "note": "8 to 30 % faster at kernel level, on the three-kernel attention path, which the fused kernel no longer uses on the timed prompt. The variants were not put into a profile and not put through the gate (they also change the accumulation, which needs its own gate), so the final configuration is unchanged. This is not a measured zero effect"
   },
   {
    "name": "Orin · softmax that reads each row once",
@@ -1347,8 +1384,8 @@
   }
  ],
  "meta": {
-  "updated": "2026-10-09",
-  "note": "All figures from the campaign branches proposal.md / STATUS.md and topic/llamacpp-compare cells.csv; roofs from the igpu-roofline study branches (see roofs.study). Edit this block only; the rendering code below reads it."
+  "updated": "2026-10-10",
+  "note": "All figures from the campaign branches proposal.md / STATUS.md and topic/llamacpp-compare cells.csv; roofs from the igpu-roofline study branches (see roofs.study). Edit this block only; the rendering code below reads it. 2026-10-10: corrections after review; no new measurements. devices[].final is recomputed from tokps (see README)."
  },
  "tokps": [
   {
@@ -1761,7 +1798,7 @@
      "lane": "b580",
      "x": 960
     },
-    "label": "+98 · b580-fused1 · +76.2 %",
+    "label": "+98 · b580-fused1 · +72.2 %",
     "head": {
      "h": "a434a4962",
      "d": "10-09",
@@ -1871,7 +1908,7 @@
      "lane": "dev",
      "x": 300
     },
-    "label": "+69 · Radeon 780M · trunk of the family · +33.1 %",
+    "label": "+69 · Radeon 780M · trunk of the family · +32.8 %",
     "nodes": [
      {
       "x": 480,
@@ -1933,7 +1970,7 @@
      "lane": "4070ti",
      "x": 960
     },
-    "label": "+59 · 4070ti-fused1 · +64.3 %",
+    "label": "+59 · 4070ti-fused1 · +64.4 %",
     "head": {
      "h": "8f8c44e22",
      "d": "10-09",
@@ -2026,11 +2063,11 @@
   },
   {
    "term": "Gate",
-   "def": "Before it is timed, every candidate must first prove that it computes correctly: the output error against the reference implementation is within the limit and the predicted next token is unchanged. A candidate that fails the gate does not count, however fast it is."
+   "def": "A candidate must prove that it computes correctly before it is adopted: over the complete gate, the output error against the reference implementation is within the limit and the predicted next token is unchanged. A candidate that fails the gate is not adopted, however fast it is. A candidate that a kernel-level screen or an early timed session shows to be slower may be rejected without completing the gate; the tooltip of its cell in figure 2 then says what was run (this happened for the fused kernel on the RX 7900 XTX)."
   },
   {
    "term": "Noise band",
-   "def": "Repeated measurements of the same program still vary by about ±2 %. A gain inside this range cannot be called faster; the matrix marks it \"inside the band\"."
+   "def": "Repeated measurements of the same program still vary by about ±2 %, so a gain inside this range is not a demonstrated gain. The page uses three states. Adopted: in the final configuration with a demonstrated gain, which means the six-cell geometric mean is outside the band, or the candidate changes one quantization scheme only and every cell of that scheme is outside the band. Retained, in band: in the final configuration and through the gate, but with a gain that cannot be told from noise. Tried, not adopted: measured and left out of the final configuration."
   }
  ],
  "roofs": {
@@ -2060,7 +2097,7 @@
      "head": "653f971"
     }
    },
-   "note": "Source: efficiency.csv and STUDY.md of each study branch. Kernel rates are per model (1B, 3B, 8B), prefill M = 2048, texture3d storage; reg / fed / reuse are the register roof, the fed-from-shared-memory roof at best reuse, and the fed roof at the kernel own reuse (null when no usable row exists; reuse_note says why)."
+   "note": "Source: efficiency.csv and STUDY.md of each study branch. Kernel rates are per model (1B, 3B, 8B), prefill M = 2048, texture3d storage; reg / fed / reuse are the register roof, the reference shader fed from shared memory at best reuse, and the same at the kernel own reuse (null when no usable row exists; reuse_note says why). The two fed rows are reference measurements, not ceilings."
   },
   "order": [
    "780m",
@@ -2292,7 +2329,7 @@
        "share": 4.1
       }
      ],
-     "note": "\"Loss\" is relative to the previous step; \"share of the whole distance\" is this step's share of the full gap from the register roof to the kernel (165.31 TOP/s). The last step for 3B and 1B is 4.3 % and 4.0 %"
+     "note": "Two different percentages. \"Loss relative to the previous step\" divides a step's drop by the rate of the step before it. \"Share of the whole register-to-kernel distance\" divides the same drop by the full gap from the register roof to the kernel (165.30 TOP/s for 8B). For 3B and 1B the study gives the last step as 4.3 % and 4.0 % below the reference at its reuse (loss relative to the previous step; 4.35 % and 4.02 % from the rounded rates of the data table); as shares of the whole distance these are 2.0 % and 1.8 %. The fed rows are reference measurements taken at SIMD32 against a SIMD16 kernel, and the kernel reads above the reuse row on two shapes, so the last step is not a statement of how much speed could be recovered."
     }
    },
    "b70": {
@@ -2487,7 +2524,7 @@
        "loss": 57.7
       }
      ],
-     "note": "The whole gap is in the last step: on this card loading operands from shared memory costs nothing at any reuse (365.9 to 367.8 TOP/s), and what the kernel loses is the time the matrix unit spends waiting. Across the 12 shapes the last step is 57.7 % to 63.1 %"
+     "note": "The whole gap is in the last step: on this card the reference shader loses nothing when its operands are loaded from shared memory, at any reuse (365.9 to 367.8 TOP/s). The campaign's stage timing attributes the kernel's distance to time the matrix unit spends waiting for fetches and barriers; the instructions are not verified on this driver. Across the 12 shapes the last step is 57.7 % to 63.1 %"
     }
    },
    "orin": {
@@ -2586,7 +2623,7 @@
        "loss": 41.6
       }
      ],
-     "note": "The multiply-add stage itself is already at the roof at reuse (the kernel rate divided by the multiply-add stage's share gives 9.0 to 11.1 TOP/s); the last step is the staging time around it"
+     "note": "The kernel rate divided by the multiply-add stage's share of the kernel time gives 9.0 to 11.1 TOP/s, at or above the 32 ops/B reference row; the kernel's own reuse is 42.7, between that row and the 64 ops/B row (15.8 TOP/s), so the comparison is indicative only. The last step is the staging time around the multiply-adds"
     }
    }
   }
@@ -2610,13 +2647,14 @@
   // ---------- Devices and final gain ----------
   const devices = DATA.devices;
   const tiles = $('#tiles');
-  // Headline number: the speed-up over unmodified ExecuTorch (Vulkan backend, no cooperative matrix), d.stock = [September release, tuned].
+  // Headline number: the speed-up over unmodified ExecuTorch (Vulkan backend, no cooperative matrix), d.stock = [earlier configuration, tuned]; d.prev_label names the earlier configuration.
   // The gain over the September release, d.final, goes on the sub-line. Devices without published figures: final is not a number (null).
   const maxStock = 8;
   const NO_FIG = 'figures not published';
   const hasNum = (d) => typeof d.final === 'number';
   const fin = (d) => '+' + d.final.toFixed(1) + ' %';
   const sx = (v) => v.toFixed(2) + '×';
+  const prev = (d) => d.prev_label || 'September release';
   const tileOrder = devices.slice().sort((p, q) => ((q.stock ? q.stock[1] : -1) - (p.stock ? p.stock[1] : -1)));
   tileOrder.forEach((d) => {
     const t = document.createElement('div'); t.className = 'tile';
@@ -2624,8 +2662,8 @@
       t.innerHTML = `<div class="label">${d.name}</div><div class="value text">${NO_FIG}</div><div class="sub">${d.base}</div>`;
       attach(t, `<b>${d.name}</b><br>${d.note || d.base}`);
     } else if (d.stock) {
-      t.innerHTML = `<div class="label">${d.name}</div><div class="value">${sx(d.stock[1])}</div><div class="sub">over stock ExecuTorch</div><div class="sub">September release ${sx(d.stock[0])} · this round ${fin(d)}</div><div class="meter" aria-hidden="true"><span style="width:${Math.min(100, Math.max(0, d.stock[1] / maxStock * 100)).toFixed(1)}%"></span></div>`;
-      attach(t, `<b>${d.name}</b><br>Over unmodified ExecuTorch 1.5 (Vulkan backend, no cooperative matrix): ${sx(d.stock[1])}, geometric mean of six cells<br>Of this, the September release had already reached ${sx(d.stock[0])}, and this round of tuning adds ${fin(d)} (${d.base})${d.stock_note ? '<br>' + d.stock_note : ''}${d.note ? '<br>' + d.note : ''}`);
+      t.innerHTML = `<div class="label">${d.name}</div><div class="value">${sx(d.stock[1])}</div><div class="sub">over stock ExecuTorch</div><div class="sub">${prev(d)} ${sx(d.stock[0])} · this round ${fin(d)}</div><div class="meter" aria-hidden="true"><span style="width:${Math.min(100, Math.max(0, d.stock[1] / maxStock * 100)).toFixed(1)}%"></span></div>`;
+      attach(t, `<b>${d.name}</b><br>Over unmodified ExecuTorch 1.5 (Vulkan backend, no cooperative matrix): ${sx(d.stock[1])}, geometric mean of six cells<br>Of this, the ${prev(d)} had already reached ${sx(d.stock[0])}, and this round of tuning adds ${fin(d)} (${d.base}; geometric mean over the six cells of figure 7 of tuned divided by ${prev(d)})${d.stock_note ? '<br>' + d.stock_note : ''}${d.note ? '<br>' + d.note : ''}`);
     } else {
       t.innerHTML = `<div class="label">${d.name}</div><div class="value">${fin(d)}</div><div class="sub">${d.base}</div>`;
       attach(t, `<b>${d.name}</b><br>Final geometric mean ${fin(d)}, ${d.base}${d.note ? '<br>' + d.note : ''}`);
@@ -2640,13 +2678,20 @@
   const reported = DATA.reported;
   const lg = $('#legend-chain');
   cats.forEach((c) => { const s = document.createElement('span'); s.innerHTML = `<i style="background:${c.color}"></i>${c.name}`; lg.appendChild(s); });
+  // Segment states: seg.band = retained inside the noise band (hatched in the category color); seg.c2 = a bundle of two categories (split fill).
+  const BAND_TXT = 'retained, inside the ±2 % band (not a demonstrated gain)';
+  [['band', 'Hatched, in the category color: ' + BAND_TXT], ['split', 'Split: one candidate that bundles two techniques (gain not split)']].forEach(([cls, txt]) => { const s = document.createElement('span'); s.innerHTML = `<i class="${cls}"></i>${txt}`; lg.appendChild(s); });
+  const segCat = (seg) => catBy[seg.c].name + (seg.c2 ? ' + ' + catBy[seg.c2].name + ' (one bundle, gain not split)' : '');
+  const segState = (seg) => seg.band ? BAND_TXT : 'demonstrated gain' + (seg.why ? ': ' + seg.why : '');
   (function drawChain() {
     const W = 1040, left = 170, right = 70, rowH = 40, top = 30;
     const rows = devices.map((d) => d.id);
     const H = top + rows.length * rowH + 30;
-    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Stacked chart of the cumulative gain of the adopted candidates of each device' });
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Stacked chart of the candidates in the final configuration of each device, with their change over the parent configuration' });
     const maxLn = Math.log(1.82);
     const x = (ln) => left + (ln / maxLn) * (W - left - right);
+    const defs = el('defs', {}, svg);
+    cats.forEach((c) => { const p = el('pattern', { id: 'band-' + c.key, patternUnits: 'userSpaceOnUse', width: 5, height: 5, patternTransform: 'rotate(45)' }, defs); el('rect', { width: 5, height: 5, fill: 'var(--surface)' }, p); el('rect', { width: 2, height: 5, fill: c.color }, p); });
     [0, 10, 20, 30, 40, 50, 60, 70, 80].forEach((p) => { const xx = x(Math.log(1 + p / 100)); el('line', { x1: xx, x2: xx, y1: top - 6, y2: H - 28, class: 'grid' }, svg); text(svg, xx, H - 12, (p ? '+' : '') + p + ' %', 'mono', 'middle'); });
     rows.forEach((id, i) => {
       const d = devices.find((v) => v.id === id); const y = top + i * rowH;
@@ -2655,18 +2700,21 @@
       if (!chains[id] || !chains[id].length) { text(svg, left + 6, y + 16, `${d.base}; see figure 2 for which techniques were adopted`, 'tiny'); return; }
       chains[id].forEach((seg) => {
         const w = Math.log(1 + seg.g / 100); const x0 = x(acc), x1 = x(acc + w); acc += w;
-        const r = el('rect', { x: x0 + 1, y, width: Math.max(0, x1 - x0 - 2), height: barH, fill: catBy[seg.c].color, rx: 0 }, svg);
+        const r = seg.band
+          ? el('rect', { x: x0 + 1.5, y: y + 0.5, width: Math.max(2, x1 - x0 - 3), height: barH - 1, fill: `url(#band-${seg.c})`, stroke: catBy[seg.c].color, 'stroke-width': 1 }, svg)
+          : el('rect', { x: x0 + 1, y, width: Math.max(0, x1 - x0 - 2), height: seg.c2 ? barH / 2 : barH, fill: catBy[seg.c].color, rx: 0 }, svg);
+        if (seg.c2 && !seg.band) el('rect', { x: x0 + 1, y: y + barH / 2, width: Math.max(0, x1 - x0 - 2), height: barH / 2, fill: catBy[seg.c2].color }, svg);
         if (seg.g <= 0) { r.setAttribute('width', 2); r.setAttribute('x', x0 - 1); }
         const hit = el('rect', { x: x0 - 2, y: y - 4, width: Math.max(8, x1 - x0 + 4), height: barH + 8, class: 'hit' }, svg);
-        attach(hit, `<b>${d.name}</b><br>${seg.n}<br><b>${pct(seg.g)}</b> over parent configuration · ${catBy[seg.c].name}`);
+        attach(hit, `<b>${d.name}</b><br>${seg.n}<br><b>${pct(seg.g)}</b> over parent configuration · ${segCat(seg)}<br>${segState(seg)}`);
       });
       const total = (Math.exp(acc) - 1) * 100;
       text(svg, x(acc) + 8, y + 16, pct(total).replace('.00', ''), 'mono strong');
       if (typeof reported[id] === 'number') text(svg, left - 12, y + 32, `final session: ${pct(reported[id]).replace(' %', '%')}`, 'tiny', 'end');
     });
     $('#chart-chain').appendChild(svg);
-    const tb = ['<table><thead><tr><th>Device</th><th>Candidate</th><th>Technique</th><th class="num">Gain</th></tr></thead><tbody>'];
-    rows.forEach((id) => (chains[id] || []).forEach((s) => tb.push(`<tr><td>${devices.find((v) => v.id === id).name}</td><td>${s.n}</td><td>${catBy[s.c].name}</td><td class="num">${pct(s.g)}</td></tr>`)));
+    const tb = ['<table><thead><tr><th>Device</th><th>Candidate</th><th>Technique</th><th>State</th><th class="num">Change over parent</th></tr></thead><tbody>'];
+    rows.forEach((id) => (chains[id] || []).forEach((s) => tb.push(`<tr><td>${devices.find((v) => v.id === id).name}</td><td>${s.n}</td><td>${segCat(s)}</td><td>${s.band ? 'retained, in band' : 'adopted' + (s.why ? ' (' + s.why + ')' : '')}</td><td class="num">${pct(s.g)}</td></tr>`)));
     tb.push('</tbody></table>'); $('#table-chain').innerHTML = tb.join('');
   })();
 
@@ -2687,7 +2735,8 @@
         const c = t.cells[id] || { k: 'none' }; const d = devices.find((v) => v.id === id); const cell = document.createElement('div'); cell.setAttribute('role', 'cell');
         let html = '', tipHtml = `<b>${d.name}</b> · ${t.name}<br>`;
         if (c.k === 'ok') { cell.className = 'c ' + (c.g !== undefined ? q(c.g) : 'q4'); html = `<span class="v">${c.g !== undefined ? pct(c.g).replace(' %', '%') : (c.v || 'adopted')}</span>${c.n ? `<span class="n">${c.n}</span>` : ''}`; tipHtml += c.t || (c.g !== undefined ? `adopted, ${pct(c.g)} over parent configuration${c.n ? ' (' + c.n + ')' : ''}` : (c.v || 'adopted')); }
-        else if (c.k === 'tried') { cell.className = 'c tried'; html = `<span class="v">${c.v || 'tried'}</span><span class="n">not adopted</span>`; tipHtml += (c.t || 'tried, not adopted'); }
+        else if (c.k === 'band') { cell.className = 'c band'; html = `<span class="v">${c.g !== undefined ? pct(c.g).replace(' %', '%') : (c.v || 'retained')}</span><span class="n">${c.g !== undefined ? 'retained, in band' : 'in band'}</span>${c.n ? `<span class="n">${c.n}</span>` : ''}`; tipHtml += c.t || `retained in the final configuration, ${pct(c.g)} over parent configuration, inside the ±2 % band (not a demonstrated gain)`; }
+        else if (c.k === 'tried') { cell.className = 'c tried'; html = `<span class="v">${c.v || 'tried'}</span><span class="n">${c.n || 'not adopted'}</span>`; tipHtml += (c.t || 'tried, not adopted'); }
         else if (c.k === 'inherit') { cell.className = 'c inherit'; html = `<span class="n">${c.v || 'inherited'}</span>`; tipHtml += (c.t || c.v || 'inherited'); }
         else if (c.k === 'pending') { cell.className = 'c pending'; html = `<span class="n">${c.v || 'pending'}</span>`; tipHtml += (c.t || c.v || 'pending'); }
         else { cell.className = 'c none'; html = `<span class="n">${c.v || '—'}</span>`; tipHtml += (c.t || c.v || 'not done'); }
@@ -2728,10 +2777,10 @@
   (function drawWaste() {
     const rows = DATA.waste;
     const W = 1040, left = 330, right = 120, rowH = 40, top = 24; const H = top + rows.length * rowH + 30;
-    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Device time and end-to-end gain of the parameter searches' });
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Device time and end-to-end result of the parameter searches' });
     const maxH = 36; const x = (h) => left + (h / maxH) * (W - left - right);
     [0, 6, 12, 18, 24, 30, 36].forEach((h) => { const xx = x(h); el('line', { x1: xx, x2: xx, y1: top - 6, y2: H - 28, class: 'grid' }, svg); text(svg, xx, H - 12, h + (h === 36 ? ' hours' : ''), 'mono', 'middle'); });
-    rows.forEach((r, i) => { const y = top + i * rowH; text(svg, left - 12, y + 16, r.name, 'strong', 'end'); const rect = el('rect', { x: x(0), y, width: Math.max(2, x(r.hours) - x(0)), height: 22, fill: 'var(--neutral)' }, svg); attach(rect, `<b>${r.name}</b><br>About ${r.hours} hours of device time, end to end <b>${r.gain}</b><br>${r.note}`); text(svg, x(r.hours) + 8, y + 16, `${r.hours} h → ${r.gain}`, 'mono strong'); });
+    rows.forEach((r, i) => { const y = top + i * rowH; text(svg, left - 12, y + 16, r.name, 'strong', 'end'); const rect = el('rect', { x: x(0), y, width: Math.max(2, x(r.hours) - x(0)), height: 22, fill: 'var(--neutral)' }, svg); attach(rect, `<b>${r.name}</b><br>About ${r.hours} hours of device time; end-to-end result: <b>${r.gain}</b><br>${r.note}`); text(svg, x(r.hours) + 8, y + 16, `${r.hours} h → ${r.gain}`, 'mono strong'); });
     $('#chart-waste').appendChild(svg);
   })();
 
@@ -2740,7 +2789,7 @@
     const rows = DATA.llama;
     const models = ['1B', '3B', '8B'];
     const W = 1040, left = 170, right = 30, rowH = 44, top = 30; const H = top + rows.length * rowH + 34;
-    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Speed ratio of the tuned build against the two llama.cpp backends' });
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Speed ratio of the tuned build against the two llama.cpp backends, both at Q4_0' });
     const minR = 0.6, maxR = 2.4; const x = (r) => left + ((r - minR) / (maxR - minR)) * (W - left - right);
     [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4].forEach((r) => { const xx = x(r); el('line', { x1: xx, x2: xx, y1: top - 8, y2: H - 30, class: r === 1 ? 'ref' : 'grid' }, svg); text(svg, xx, H - 12, r.toFixed(1) + 'x', 'mono', 'middle'); });
     rows.forEach((r, i) => {
@@ -2748,7 +2797,7 @@
       text(svg, left - 12, y + 4, r.name, 'strong', 'end');
       text(svg, left - 12, y + 19, `vendor: ${r.vn}`, 'tiny', 'end');
       const lineY = y;
-      [['vk', 'var(--s1)', 'llama.cpp Vulkan'], ['vendor', 'var(--s2)', 'vendor backend ' + r.vn]].forEach(([k, color, label], j) => {
+      [['vk', 'var(--s1)', 'llama.cpp Vulkan Q4_0'], ['vendor', 'var(--s2)', 'vendor backend ' + r.vn + ' Q4_0']].forEach(([k, color, label], j) => {
         const vals = r[k]; if (!vals) return; const yy = lineY + j * 14;
         el('line', { x1: x(Math.min(...vals)), x2: x(Math.max(...vals)), y1: yy, y2: yy, stroke: color, 'stroke-width': 2, 'stroke-linecap': 'round' }, svg);
         vals.forEach((v, mi) => { el('circle', { cx: x(v), cy: yy, r: 6, fill: 'var(--surface)' }, svg); const c = el('circle', { cx: x(v), cy: yy, r: 4.5, fill: color }, svg); attach(c, `<b>${r.name}</b> · ${models[mi]}<br>tuned 4w / ${label}: <b>${v.toFixed(2)}x</b>`); });
@@ -2757,7 +2806,7 @@
     });
     $('#chart-llama').appendChild(svg);
     const tb = ['<table><thead><tr><th>Device</th><th>Comparison</th><th class="num">1B</th><th class="num">3B</th><th class="num">8B</th></tr></thead><tbody>'];
-    rows.forEach((r) => { tb.push(`<tr><td>${r.name}</td><td>vs llama.cpp Vulkan</td>${(r.vk || [null, null, null]).map((v) => `<td class="num">${v == null ? '—' : v.toFixed(2) + 'x'}</td>`).join('')}</tr>`); if (r.vendor) tb.push(`<tr><td></td><td>vs ${r.vn}</td>${r.vendor.map((v) => `<td class="num">${v.toFixed(2)}x</td>`).join('')}</tr>`); });
+    rows.forEach((r) => { tb.push(`<tr><td>${r.name}</td><td>vs llama.cpp Vulkan Q4_0</td>${(r.vk || [null, null, null]).map((v) => `<td class="num">${v == null ? '—' : v.toFixed(2) + 'x'}</td>`).join('')}</tr>`); if (r.vendor) tb.push(`<tr><td></td><td>vs ${r.vn} Q4_0</td>${r.vendor.map((v) => `<td class="num">${v.toFixed(2)}x</td>`).join('')}</tr>`); });
     tb.push('</tbody></table>'); $('#table-llama').innerHTML = tb.join('');
   })();
   // ---------- Figure 6: branch relationships ----------
@@ -2790,10 +2839,10 @@
     const parts = [];
     DATA.tokps.forEach((d) => {
       parts.push(`<h3 style="margin:14px 0 4px;font-size:0.95rem">${d.name}${d.note ? ` <span style="color:var(--fg3);font-weight:400;font-size:0.8rem">${d.note}</span>` : d.vendorName ? ` <span style="color:var(--fg3);font-weight:400;font-size:0.8rem">vendor backend: llama.cpp ${d.vendorName}</span>` : ' <span style="color:var(--fg3);font-weight:400;font-size:0.8rem">no vendor backend data</span>'}</h3>`);
-      parts.push('<table><thead><tr><th>Model</th><th class="num">stock 4w</th><th class="num">stock 8da4w</th><th class="num">SARC 4w</th><th class="num">SARC 8da4w</th><th class="num">tuned 4w</th><th class="num">tuned 8da4w</th><th class="num">llama.cpp Vulkan Q4_0</th><th class="num">Vulkan Q4_K_M</th><th class="num">vendor backend Q4_0</th><th class="num">tuned 4w / Vulkan</th><th class="num">tuned 4w / vendor</th><th class="num">tuned 4w / stock</th></tr></thead><tbody>');
+      parts.push('<table><thead><tr><th>Model</th><th class="num">stock 4w</th><th class="num">stock 8da4w</th><th class="num">SARC 4w</th><th class="num">SARC 8da4w</th><th class="num">tuned 4w</th><th class="num">tuned 8da4w</th><th class="num">llama.cpp Vulkan Q4_0</th><th class="num">Vulkan Q4_K_M</th><th class="num">vendor backend Q4_0</th><th class="num">tuned 4w / Vulkan Q4_0</th><th class="num">tuned 4w / Vulkan Q4_K_M</th><th class="num">tuned 4w / vendor Q4_0</th><th class="num">tuned 4w / stock</th></tr></thead><tbody>');
       d.cells.forEach((c) => {
         const st = (star[d.id] || {})[c.model] || []; const s = (k, v) => fmt(v) + (st.includes(k) ? '*' : '');
-        parts.push(`<tr><td>${c.model}</td><td class="num">${s('stock4w', c.stock4w)}</td><td class="num">${s('stock8', c.stock8)}</td><td class="num">${s('sarc4w', c.sarc4w)}</td><td class="num">${s('sarc8', c.sarc8)}</td><td class="num"><b>${fmt(c.tuned4w)}</b></td><td class="num"><b>${fmt(c.tuned8)}</b></td><td class="num">${s('vk', c.vk)}</td><td class="num">${fmt(c.vkk)}</td><td class="num">${fmt(c.vendor)}</td><td class="num">${ratio(c.tuned4w, c.vk)}</td><td class="num">${ratio(c.tuned4w, c.vendor)}</td><td class="num">${ratio(c.tuned4w, c.stock4w)}</td></tr>`);
+        parts.push(`<tr><td>${c.model}</td><td class="num">${s('stock4w', c.stock4w)}</td><td class="num">${s('stock8', c.stock8)}</td><td class="num">${s('sarc4w', c.sarc4w)}</td><td class="num">${s('sarc8', c.sarc8)}</td><td class="num"><b>${fmt(c.tuned4w)}</b></td><td class="num"><b>${fmt(c.tuned8)}</b></td><td class="num">${s('vk', c.vk)}</td><td class="num">${fmt(c.vkk)}</td><td class="num">${fmt(c.vendor)}</td><td class="num">${ratio(c.tuned4w, c.vk)}</td><td class="num">${ratio(c.tuned4w, c.vkk)}</td><td class="num">${ratio(c.tuned4w, c.vendor)}</td><td class="num">${ratio(c.tuned4w, c.stock4w)}</td></tr>`);
       });
       parts.push('</tbody></table>');
       if (d.cells.some((c) => c.etcuda)) parts.push(`<div style="font-size:0.78rem;color:var(--fg3);margin-top:4px">ExecuTorch CUDA backend (upstream, 4w, only the export guard removed): ${d.cells.map((c) => c.model + ' ' + fmt(c.etcuda)).join(' · ')} tok/s, far below the Vulkan backend.</div>`);
@@ -2802,7 +2851,7 @@
   })();
 
   // ---------- Figure 8: kernels against the hardware roof ----------
-  // All values come from DATA.roofs; a device without an entry does not appear. Rows whose reuse is null get no diamond.
+  // All values come from DATA.roofs; a device without an entry does not appear. Rows whose reuse is null get no diamond. The fed rows are reference measurements, not ceilings.
   (function drawRoofs() {
     const R = DATA.roofs; if (!R || !$('#chart-roofs')) return;
     const models = R.models; const plotted = R.schemes.filter((sc) => sc.plot);
@@ -2814,7 +2863,7 @@
     const W = 1040, left = 200, right = 230, rowH = 34, groupGap = 16, top = 26, barH = 16;
     const nRows = devs.length * plotted.length;
     const H = top + nRows * rowH + (devs.length - 1) * groupGap + 34;
-    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Kernel rate as a share of the register roof for two quantization schemes on five devices, with the positions of the two fed roofs' });
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Kernel rate as a share of the register roof for two quantization schemes on five devices, with the positions of the two fed reference measurements' });
     svg.setAttribute('style', 'min-width:720px');
     const x = (p) => left + (p / 100) * (W - left - right);
     [0, 20, 40, 60, 80, 100].forEach((p) => { const xx = x(p); el('line', { x1: xx, x2: xx, y1: top - 6, y2: H - 30, class: 'grid' }, svg); text(svg, xx, H - 12, p + ' %' + (p === 100 ? ' = register roof' : ''), 'mono', p === 100 ? 'start' : 'middle'); });
@@ -2837,15 +2886,15 @@
           const xf = x(row.fed / row.reg * 100);
           el('line', { x1: xf, x2: xf, y1: y - 3, y2: y + barH + 3, stroke: 'var(--ref)', 'stroke-width': 2 }, svg);
           const hit = el('rect', { x: xf - 6, y: y - 5, width: 12, height: barH + 10, class: 'hit' }, svg);
-          attach(hit, `${head}Fed roof (from shared memory) <b>${rate(row.fed)} ${row.unit}</b><br>${share(row.fed, row)} of the register roof; the kernel is at ${(k / row.fed * 100).toFixed(1)} % of it`);
+          attach(hit, `${head}Fed reference (from shared memory, highest reuse) <b>${rate(row.fed)} ${row.unit}</b><br>${share(row.fed, row)} of the register roof; the kernel is at ${(k / row.fed * 100).toFixed(1)} % of it<br>A reference measurement, not a ceiling`);
         }
         if (row.reuse != null) {
           const xr = x(row.reuse / row.reg * 100), cy = y + barH / 2, s = 7;
           const dm = el('path', { d: `M${xr},${cy - s} L${xr + s},${cy} L${xr},${cy + s} L${xr - s},${cy} Z`, fill: 'var(--surface)', stroke: 'var(--ref)', 'stroke-width': 2 }, svg);
-          attach(dm, `${head}Fed roof at the kernel's reuse <b>${rate(row.reuse)} ${row.unit}</b><br>${share(row.reuse, row)} of the register roof; the kernel is at ${(k / row.reuse * 100).toFixed(1)} % of it${row.reuse_note ? '<br>' + row.reuse_note : ''}`);
+          attach(dm, `${head}Fed reference at the kernel's reuse <b>${rate(row.reuse)} ${row.unit}</b><br>${share(row.reuse, row)} of the register roof; the kernel (mean of three models) is at ${(k / row.reuse * 100).toFixed(1)} % of it<br>A yardstick, not a ceiling${row.reuse_note ? '<br>' + row.reuse_note : ''}`);
         }
         text(svg, x(100) + 12, y + 12, `kernel ${pk.toFixed(1)} %`, 'mono strong');
-        text(svg, x(100) + 112, y + 12, row.reuse != null ? `reuse roof ${share(row.reuse, row)}` : 'no usable reuse roof', 'tiny');
+        text(svg, x(100) + 112, y + 12, row.reuse != null ? `reuse ref. ${share(row.reuse, row)}` : 'no usable reuse ref.', 'tiny');
         y += rowH;
       });
     });
@@ -2853,7 +2902,7 @@
 
     // Data table: includes the fused attention kernel
     const num = (v) => v == null ? '—' : rate(v);
-    const tb = ['<div class="scroll"><table><thead><tr><th>Device</th><th>Scheme</th><th>Dispatched kernel</th><th>Matrix · types · kernel subgroup</th><th>Unit</th><th class="num">Register roof</th><th class="num">Fed from shared memory</th><th class="num">Fed at kernel reuse</th>' + models.map((m) => `<th class="num">Kernel ${m}</th>`).join('') + `<th class="num">Share of register roof (${models.join(' / ')})</th><th>Instructions</th></tr></thead><tbody>`];
+    const tb = ['<div class="scroll"><table><thead><tr><th>Device</th><th>Scheme</th><th>Dispatched kernel</th><th>Matrix · types · kernel subgroup</th><th>Unit</th><th class="num">Register roof</th><th class="num">Fed reference (highest reuse)</th><th class="num">Fed reference at kernel reuse</th>' + models.map((m) => `<th class="num">Kernel ${m}</th>`).join('') + `<th class="num">Share of register roof (${models.join(' / ')})</th><th>Instructions</th></tr></thead><tbody>`];
     const notes = [];
     devs.forEach((dv) => R.schemes.forEach((sc, si) => {
       const row = dv.r.rows[sc.key]; if (!row) return;
@@ -2873,7 +2922,7 @@
       const sn = (R.schemes.find((sc) => sc.key === ch.scheme) || { name: ch.scheme }).name;
       const pc = (v) => v == null ? '—' : v.toFixed(1) + ' %';
       const first = ch.steps[0].rate;
-      $('#table-roofchain').innerHTML = `<div class="scroll"><table><thead><tr><th>${ex.name} · ${sn} (${ch.basis})</th><th class="num">Rate, ${ch.unit}</th><th class="num">Share of register roof</th><th class="num">Loss vs. previous step</th><th class="num">Share of the whole distance</th></tr></thead><tbody>` +
+      $('#table-roofchain').innerHTML = `<div class="scroll"><table><thead><tr><th>${ex.name} · ${sn} (${ch.basis})</th><th class="num">Rate, ${ch.unit}</th><th class="num">Rate as share of register roof</th><th class="num">Loss relative to the previous step</th><th class="num">Share of the whole register-to-kernel distance</th></tr></thead><tbody>` +
         ch.steps.map((st) => `<tr><td>${st.label}</td><td class="num">${rate(st.rate)}</td><td class="num">${pc(st.rate / first * 100)}</td><td class="num">${pc(st.loss)}</td><td class="num">${pc(st.share)}</td></tr>`).join('') +
         `</tbody></table></div><div style="font-size:0.78rem;color:var(--fg3);margin-top:6px">${ch.note}</div>`;
     }

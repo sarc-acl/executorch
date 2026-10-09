@@ -15,14 +15,14 @@ One HTML file, two parts, deliberately separated:
 
    | key | what it holds | source of truth |
    |---|---|---|
-   | `devices` | one row per device: name, vendor, `final` (geomean gain over the September table, in %; `null` for a device without published figures), `stock` (speed-up over unmodified ExecuTorch, before and after; `null` when not measured), `base`, optional `note` | `results.md` section 1 |
+   | `devices` | one row per device, ordered by `final` descending: name, vendor, `final` (one rule for every device, see "The headline"; `null` for a device without published figures), `stock` (speed-up over unmodified ExecuTorch, before and after; `null` when not measured), `prev_label` (what `stock[0]` and the SARC columns of `tokps` are for this device: "September release", or "parent commit" for the RX 7600 and the RX 7900 XTX; shown on the tile and in its tooltip), `base`, optional `note` | computed from `tokps` |
    | `cats` | the six technique categories of figure 1 with their fixed colors (`--s1` to `--s6`; never reorder, never add a seventh) | this file |
-   | `chains` | per device, the accepted candidates in order: `c` (category key), `g` (geomean gain over its parent, %), `n` (label) | each campaign's `proposal.md` candidate table, accepted rows only |
+   | `chains` | per device, the candidates that are in the final configuration, in order: `c` (category key), `g` (geomean change over its parent, %), `n` (label), and the state fields: `band: true` when the candidate is retained inside the noise band (drawn hatched), `why` (required on a segment with `g` under 2 that is not flagged `band`: the recorded reason it counts as a demonstrated gain), `c2` (second category key when one candidate bundles two techniques; drawn as a split segment) | each campaign's `proposal.md` candidate table; only candidates in the final configuration (a candidate that passed the gate and was later dropped, like the 780M's candidate 5, is not a segment) |
    | `reported` | per device, the final stack measured directly against the pristine parent, % | each campaign's final session |
-   | `techs` | the ten rows of the matrix; per device a cell `{k, g, v, n, t}`: `k` is `ok`, `tried`, `inherit`, `pending` or `none`; `g` the gain when adopted; `v` a short value when there is no gain to show; `n` a sub-label; `t` the tooltip | `proposal.md` of every campaign |
+   | `techs` | the ten rows of the matrix; per device a cell `{k, g, v, n, t}`: `k` is `ok` (adopted with a demonstrated gain), `band` (retained, in band), `tried`, `inherit`, `pending` or `none`; `g` the gain when adopted or the in-band change when retained; `v` a short value when there is no gain to show; `n` a sub-label; `t` the tooltip | `proposal.md` of every campaign |
    | `techs[].ex`, `primer` | the plain-language section before figure 3: per technique `kind`, `what`, `why`, `like` (an analogy), `res` (result in one sentence); `primer` is the list of background terms. Update `res` when a technique lands on a new device | this file; `proposal.md` of the campaign that introduced the technique |
    | `fams`, `timeRows` | kernel families and the before/after dispatch time of 8B cells, ms | `trace-families.csv` / `STATUS.md` traces |
-   | `waste` | the searches: hours of device time and end-to-end gain | `LESSONS.md` L6, the campaign's `STATUS.md` |
+   | `waste` | the searches: hours of device time and end-to-end result (`gain` is a text, for example "no change adopted") | `LESSONS.md` L6, the campaign's `STATUS.md` |
    | `llama` | tuned 4w tok/s divided by llama.cpp at its best setting, per model, Vulkan and vendor backend | `sarc-1.5-llamacpp-compare/results/cells.csv` |
    | `meta.updated` | the date of the last data change | |
    | `tokps` | per device, per model: `stock4w`, `stock8`, `sarc4w`, `sarc8`, `tuned4w`, `tuned8`, `vk` (best llama.cpp Vulkan Q4_0), `vkk` (best Vulkan Q4_K_M), `vendor` (best SYCL / CUDA Q4_0), `etcuda` (ExecuTorch CUDA 4w, 4070 Ti only), tok/s medians | `sarc-1.5-llamacpp-compare/results/cells.csv`: the max over that backend's `best` and `default` arms per model |
@@ -30,12 +30,13 @@ One HTML file, two parts, deliberately separated:
    | `roofs` | figure 8, kernel rate against the hardware roofs, for the five devices of the roofline study (780m, b580, b70, 4070ti, orin; a device that was not studied has no entry and is absent from the figure). `study`: campaign id, date, and per device the igpu-roofline branch name and short head. `order`: row order of the figure. `schemes`: `4w`, `8da4w`, `attn` (`plot: false` keeps the fused attention kernel in the data table only). `example`: the device whose chain is shown as the worked example. `devices.<id>`: `isa` (true when the driver's generated instructions were inspected) with `isa_note`, `state` (driver, power and clock state), `width` (subgroup width of roof shaders against kernels), `weight` (how the per-model kernel figure was formed), and `rows.<scheme>`: `unit`, `reg` (register roof), `fed` (fed from shared memory, best reuse), `reuse` (fed at the kernel's own reuse; `null` when no usable row exists, with the reason in `reuse_note`), `kernel` (rate per model, in the order of `models`), `mma` / `in` / `acc` / `sg` (matrix shape, input and accumulator type, kernel subgroup), `name` (dispatched kernel, storage suffix dropped) and `also` (other tiles dispatched by shape). `devices.<id>.chain`: part D of that device's study for its lowest scheme: `steps` with `rate`, `loss` (relative to the previous step unless `loss_basis` is `points`, then points of the register roof) and, where the study states it, `share` of the whole distance | `efficiency.csv` and `STUDY.md` on the igpu-roofline branches `study/et-20261010-<device>` |
 
 2. **The rendering code**: the second `<script>`. It reads the block, draws inline SVG, builds the tooltips
-   and the data tables. It has no numbers in it. Change it only for a new figure or a layout fix.
+   and the data tables. It has no numbers in it (layout constants only). Change it only for a new figure, a new
+   state or a layout fix.
 
 **Devices without published figures, and the column count.** A device whose owner forbids publishing figures
 (M51) is a `devices` entry with `"final": null`, a `base` text that says so and a `note` for the tooltip. It has
 no entry in `chains`, `reported`, `timeRows`, `llama` or `tokps`, and its `techs` cells carry only `k`, a short
-text `v` (for example "adopted", "n/a"), an optional `n` and a qualitative tooltip `t`: no percentage, speed,
+text `v` (for example "adopted", "retained", "n/a"), an optional `n` and a qualitative tooltip `t`: no percentage, speed,
 time, driver or board identifier anywhere, in the data block or in the prose. The rendering code shows the text
 "figures not published" on its tile and in the matrix header and draws no bar for it in figure 1. A device that has figures
 but no llama.cpp or stock measurement (RX 7900 XTX) keeps those `tokps` fields `null`, which the table prints as
@@ -55,8 +56,39 @@ or make it a matrix row only.
 The tiles at the top lead with the speed-up over unmodified ExecuTorch 1.5 (Vulkan backend, no cooperative-matrix
 kernels): `devices[].stock = [September release, tuned]`, both the geometric mean over the six cells of
 `tokps` (`sarc*/stock*` and `tuned*/stock*`), so the headline can be recomputed from figure 7's table. The gain over
-the September release (`devices[].final`) is the second line of each tile and the subject of figures 1 to 4: it is
-for the owner and his manager, not the headline. When `tokps` changes for a device, recompute its `stock` pair.
+the earlier configuration (`devices[].final`) is the second line of each tile and the subject of figures 1 to 4: it is
+for the owner and his manager, not the headline.
+
+`devices[].final` follows ONE rule for every device with figures: the geometric mean over the six cells of `tokps`
+of tuned / SARC (`tuned4w/sarc4w` and `tuned8/sarc8` for 1B, 3B and 8B), minus one, in percent, one decimal. With
+this rule `stock[0] x (1 + final/100) = stock[1]` holds on every tile within the rounding of the displayed digits;
+check it after every data edit. Do not copy `final` from a proposal ("over the published numbers") or from
+`reported`: `reported` is the final configuration measured directly against its parent in the final session, is
+printed under the device name in figure 1 as "final session", and may differ from `final` (by a fraction of a point
+on five devices, about 1.1 points on the RTX 4070 Ti SUPER and the 780M). The branch-lane labels of the final
+branches in `branches` quote `final`; the labels of the first-round branches quote first-round figures and are a
+different quantity. When `tokps` changes for a device, recompute its `stock` pair and its `final`, re-sort
+`devices`, and update the lane label.
+
+## The three states
+
+Everything that is in a final configuration or was tried is in one of three states, with the same words in figure
+1, figure 2, the glossary (`primer`, "Noise band") and the prose:
+
+- **adopted** (a demonstrated gain): the six-cell geomean is outside the +-2 % band, or the candidate changes one
+  quantization scheme only and every cell of that scheme is outside the band (the single-scheme rule of the RX 7600
+  and RX 7900 XTX campaigns; a chain segment adopted this way has `g` under 2 and must carry `why`). Solid segment
+  in figure 1, filled cell (`k: "ok"`) in figure 2.
+- **retained, in band**: in the final configuration and through the gate, but the gain is not distinguishable from
+  noise (also a correctness change with no speed effect, and a candidate kept under a pre-written "no harm" rule).
+  `band: true` on the chain segment (hatched in the category color), `k: "band"` on the matrix cell (outlined).
+  Never call it a gain. A cell that combines a demonstrated candidate with a retained one shows only the
+  demonstrated part as `g` and names the retained one in `n` with the words "retained in band".
+- **tried, not adopted** / rejected / not done / n/a: `k: "tried"` or `"none"`; not a chain segment.
+
+A matrix cell and the chain segment of the same candidate must be in the same state. A candidate whose geomean is
+in the band but which the campaign adopted on a single cell (B70 candidate 5, Orin candidate 3) is "retained, in
+band" on this page; the label says what the campaign recorded.
 The RX 7900 XTX's stock column comes from the benchmark session of 2026-09-28 (same driver), not from the tuning
 session; `stock_note` says so.
 
@@ -78,8 +110,8 @@ do not check anything out): openspec/changes/sarc-1.5-<tag>-prefill-refine/propo
 final stack) and STATUS.md (final session, traces). Take geomean gains as printed there; recompute from
 results/<tag>/sessions/<final>/runs.csv when the two disagree and say which you used.
 
-Then: 1. update `devices.final`, `reported`, `chains`, the device's column in `techs`, `timeRows` if a
-trace exists, the device's `tokps` entry from cells.csv, and the branch's head and chip in `branches`; add a device as a new entry in `devices` (keep the order by final gain), `chains`, `reported`, and
+Then: 1. update `reported`, `chains` (with `band` / `why`, see "The three states" in README.md), the device's column in `techs`, `timeRows` if a
+trace exists, the device's `tokps` entry from cells.csv, then `devices.final` and `stock` recomputed from `tokps` by the rule in README.md, and the branch's head and chip in `branches`; add a device as a new entry in `devices` (keep the order by final gain), `chains`, `reported`, and
 a new key in every `techs[].cells`; 2. set `meta.updated`; 3. verify the JSON parses
 (`python3 -c 'import json,re,sys; s=open(sys.argv[1]).read(); json.loads(re.search(r"report-data\" type=\"application/json\">\n(.*?)\n</script>", s, re.S).group(1))' <file>`)
 and that the rendering script still parses (`node --check` on the second script block); 4. grep the file for
@@ -123,7 +155,25 @@ attention rows).
   Nano) shows the softmax as "within row 1" in the matrix; do not invent a split.
 - A technique that was tried and not adopted stays on the page as hatched, with its number. Negative results
   are results.
-- The Radeon 780M adopted `fused3sb` in round 3 (2026-10-09); its cell is "ok" with no gain (speed unchanged).
+- The Radeon 780M adopted `fused3sb` in round 3 (2026-10-09); its cell is "retained, in band" (-0.14 %, a
+  correctness change, speed unchanged).
+- Rules added after the mock review of 2026-10-10:
+  - Every statement that the tuned build leads llama.cpp Vulkan carries the qualifier "Q4_0". Against Vulkan
+    Q4_K_M the ratio is different (below 1.0 on the Orin 1B cell); figure 5 says so and figure 7 lists the ratio.
+  - The fed rows of figure 8 are reference measurements and yardsticks, not ceilings: no "only N % left", no
+    recoverable speed-up, no "the distance is in reuse" as an established cause. Reuse is a hypothesis that has
+    not been tested in a real kernel. Keep "loss relative to the previous step" and "share of the whole
+    register-to-kernel distance" apart, and say how each bar is aggregated.
+  - A gain inside the band is retained, not gained (see "The three states"). Figure 1 is the history of what was
+    put into each configuration, not a set of independent ablations.
+  - No "unaffected" claim without a measurement. For a known defect, say what is known (gates pass, which
+    comparisons are like for like), what has not been measured, and what is scheduled.
+  - A candidate must pass the complete gate before it is adopted. A candidate rejected on speed without a
+    complete gate says in its tooltip what was run and what was not (RX 7900 XTX, fused kernel).
+  - "No change adopted" is not a measured zero (780M enumeration: not put into a profile, not gated). A candidate
+    that bundles two changes is labeled as a bundle (`c2`), and its gain is not attributed to one of them.
+  - The tile's second line names the earlier configuration from `prev_label`; do not write "September release" for
+    a device whose earlier configuration is its parent commit.
 - Every Jetson Orin Nano number is for the 15 W power mode (GPU clock 612 MHz). The higher mode was not measured
   (owner decision 2026-10-09); do not present the expected gain of that mode as a result.
 - Figure 8: the NVIDIA devices are not ISA-verified; the fed-at-reuse mark is a yardstick, not a strict ceiling
