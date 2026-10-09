@@ -47,3 +47,17 @@ arithmetic (D3)    the fused kernel changes summation order. If a next-token ite
 candidate 2        only if the B580 campaign's STATUS.md, read when candidate 1 here is gated, records its
                    candidate 2 (b580-fused2) as accepted with a geomean gain above +2 %; otherwise none.
 stop               after candidate 1 (and candidate 2 if it exists), or the end of the budget (one day, 40 USD)
+
+# 2026-10-09 06:58 UTC, calibrated from s1-aa (06:44 to 06:56 UTC; parent build against topic1, both with the
+# parent environment; 60 timed runs, all valid), appended before candidate 1 is timed and before the kernel
+# screen (running since 06:56) was read.
+CLKMIN             2457 MHz (97 % of 2533 MHz, the lowest per-run median clock: 8B 4w)
+idle temperature   58 C
+repeats            7: the parent arm of 1B 8da4w has a spread of 7.48 % (above 3.0 %). No A/A cell is further than
+                   1.0 % from 1 (largest -0.22 %).
+noise_band         A/A geomean -0.06 %, every cell inside +-2 %: the session stands.
+baseline           parent vs s12-final5: 1B 0.00 % / 0.00 %, 3B 0.00 % / 0.00 %, 8B +0.17 % / +0.22 % (4w / 8da4w):
+                   every cell within 3 %. (The runner's timer has a step of 1 ms: 114 ms for 1B 4w, so one step is
+                   0.9 % there; identical medians are the same number of milliseconds.)
+foreign engine     0.00 % in all 60 timed runs; at least one guard poll and at least 9 clock samples in every run;
+                   throttle reasons seen in the samples: none (12843) and pl2 (1852), no thermal reason.
