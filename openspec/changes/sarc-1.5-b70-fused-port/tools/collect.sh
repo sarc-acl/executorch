@@ -35,4 +35,5 @@ mkdir -p $R/identity $R/d4 $R/chains
 cp -f $A/logs/spv-identity-*.txt $R/identity/ 2>/dev/null; cp -f $A/logs/select-d4.txt $A/raw/d4/select-*.txt $A/raw/d4/hashes.txt $R/d4/ 2>/dev/null
 cp -f $A/logs/chain*.status $A/logs/foreign.log $A/reps $R/chains/ 2>/dev/null
 for d in $A/raw/*-ref*/; do n=$(basename $d); [[ -f $d/full.csv ]] && { mkdir -p $R/sdpa-error/$n; cp -f $d/*.csv $d/env.txt $R/sdpa-error/$n/; }; done
+cp -f $A/logs/select-final.txt $A/logs/check-no-build.txt $R/d4/ 2>/dev/null; mkdir -p $R/d4/final-select; cp -f $A/raw/final-select/select-*.txt $A/raw/final-select/hashes.txt $R/d4/final-select/ 2>/dev/null
 exit 0
