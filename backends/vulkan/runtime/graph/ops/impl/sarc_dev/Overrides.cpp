@@ -1115,6 +1115,15 @@ const Row kM51Bz[] = {
     {"", nullptr, Op::kQ4gswLinear,
      "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g42s32f32xp", xp_tile(128, 128, 32, 4, 2, 32),
      kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k16g42s32f32xp", xp_tile(128, 128, 16, 4, 2, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g24s32f32xp", xp_tile(128, 128, 32, 2, 4, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k16g24s32f32xp", xp_tile(128, 128, 16, 2, 4, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
 };
 
 // A pick sends the shapes its predicate accepts to one candidate kernel (exact

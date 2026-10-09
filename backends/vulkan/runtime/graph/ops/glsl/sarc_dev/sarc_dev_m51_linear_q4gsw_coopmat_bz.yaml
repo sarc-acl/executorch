@@ -84,3 +84,31 @@ sarc_dev_m51_linear_q4gsw_coopmat_bz:
       CSH_FULL: true
       CSH_POOL: true
       B_COLMAJOR: true
+    # second screen: more subgroup grids
+    - NAME: sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k16g42s32f32xp_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      ACC_FP32: true
+      CSH_FULL: true
+      CSH_POOL: true
+      B_COLMAJOR: true
+    - NAME: sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g24s32f32xp_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      ACC_FP32: true
+      CSH_FULL: true
+      CSH_POOL: true
+      B_COLMAJOR: true
+    - NAME: sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k16g24s32f32xp_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      ACC_FP32: true
+      CSH_FULL: true
+      CSH_POOL: true
+      B_COLMAJOR: true
