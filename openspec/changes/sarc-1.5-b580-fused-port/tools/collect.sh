@@ -24,7 +24,7 @@ for s in $A/stage/*/; do n=$(basename $s); [[ -f $s/raw/runs.csv || -f $s/verify
   [[ -f $s/probe/summary.csv ]] && { mkdir -p $R/probe/$n; cp -f $s/probe/summary.csv $s/probe/per_prompt.csv $s/probe/differing.md $s/probe/analysis.txt $s/probe/env.txt $s/probe/prompts.txt $R/probe/$n/; }
 done
 cp -f $A/build/*.src.txt $A/build/*.golden.txt $R/ 2>/dev/null
-for d in $A/raw/c?-ref*/; do n=$(basename $d); mkdir -p $R/sdpa-error; for t in full extended peaked; do [[ -f $d/$t.csv ]] && cp -f $d/$t.csv $R/sdpa-error/$n-$t.csv; done; done
+for d in $A/raw/c?-ref*/ $A/raw/final-ref*/; do n=$(basename $d); mkdir -p $R/sdpa-error; for t in full extended peaked; do [[ -f $d/$t.csv ]] && cp -f $d/$t.csv $R/sdpa-error/$n-$t.csv; done; done
 for d in $A/raw/screen*/; do n=$(basename $d); [[ -f $d/summary.csv ]] && cp -f $d/summary.csv $R/screens/$n.csv; [[ -f $d/summary.txt ]] && cp -f $d/summary.txt $R/screens/$n.txt; done
 for d in $A/raw/screen*/; do n=$(basename $d); [[ -f $d/rows.csv ]] && cp -f $d/rows.csv $R/screens/$n-rows.csv; done   # linear screens: one row per (token, round, shape)
 for d in $A/raw/prof-*/; do n=$(basename $d); [[ -f $d/phases.csv ]] && cp -f $d/phases.csv $R/phases/$n.csv; done
@@ -35,3 +35,5 @@ for d in $A/superseded/*/; do n=$(basename $d); mkdir -p $R/superseded/$n; cp -f
 find $C -type f | wc -l; du -sh $C
 # roofs: the report of the igpu-roofline run used for percent-of-roof (tools/roof.sh)
 for d in $A/roofline/*/b580; do n=$(basename $(dirname $d)); mkdir -p $R/roofline/$n; cp -f $d/report/REPORT.md $d/report/summary.json $d/report/sustained-runs.csv $d/fleet-metadata.json $R/roofline/$n/ 2>/dev/null; done
+# gates re-decided with the finite-error requirement of gate_check.py (stage/<session>/gate.txt is not rewritten), and its regression test
+mkdir -p $R/gate-recheck; cp -f $A/logs/gate-recheck-finite-*.txt $A/logs/test_gate_finite.out $R/gate-recheck/ 2>/dev/null

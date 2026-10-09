@@ -54,6 +54,7 @@ the copy (`host.sh` derives the artifact directory from it).
 | `host.sh` (`idle_wait`) | returns at once and records the desktop state | owner decision 2026-10-09 00:22 UTC |
 | `session.sh` | `--extra 12`: up to 12 replacement pairs a cell instead of 3 | with the idle wait lifted the desktop disturbs more runs; validity rules unchanged |
 | `adjudication.csv`, `adjudicate.py` (new), `summarize.py`, `gate_check.py` | timed rows are counted through a keyed adjudication; a row stored valid without a foreign engine share between 0 and 100 % is not counted and fails the analysis | session `s3-c2`: one run with -5274 % is stored valid in `runs.csv`, which is kept as written (`thresholds-history.md`) |
+| `gate_check.py`, `test_gate_finite.sh` (new), `collect.sh` | closing, 2026-10-09: the SDPA tiers also need one `[sdpa-error]` record per case with finite values (the test's mismatch count is false for a NaN); regression test; `collect.sh` also copies `raw/final-ref*` and the gate rechecks | the last review found that `mismatches=0` does not exclude a NaN output (`STATUS.md`, "Finding F2"); the requirement can only fail a gate, no tolerance or threshold changed |
 | (removed) `busy_wait`, a validity test in `e2e5.sh`, a block in `thresholds.txt` | added by the actor in `e1e450530`, removed in `917b471af` | not authorized: the owner decision of 00:22 UTC orders every timed run to start at once, and `thresholds.txt` is not changed after a candidate is measured (`thresholds-history.md`) |
 | `chain9.sh` to `chain13.sh` (new) | the detached chains of candidate 2, the resume after the reboot, the first closing, and the timed sessions again without the wait | R8 |
 | `trace_attention.py` (new) | attention kernels of a trace by kernel name | the fused kernel is not one of the analyzer's families |
@@ -100,7 +101,7 @@ is kept:
 | barriers | `memoryBarrierShared()` (`fused3`), plus `subgroupBarrier()` (`fused3sb`) | `memoryBarrierShared(); barrier();` at the same places (`SYNC()`): the slots are now shared between subgroups |
 | rescale decision of the one-pass form | `subgroupAny(new_max > row_max)` | an atomic flag in shared memory read by every lane after a barrier, so that the branch, which contains barriers, is uniform for the workgroup |
 | Q tiles | in registers (`AQ_REG`) | head_dim 64: in registers; head_dim 128: loaded per product (16 Q tiles are 2048 bytes of registers) |
-| workgroup = G full subgroups | assumed (one subgroup) | checked in the kernel (`gl_NumSubgroups == G`, `gl_SubgroupSize == 16`), NaN rows otherwise: the release-zone pipeline code sets the required size but not the full-subgroups flag |
+| workgroup = G full subgroups | assumed (one subgroup) | checked in the kernel (`gl_NumSubgroups == G`, `gl_SubgroupSize == 16`), NaN rows otherwise (seen by the gate through the non-finite `[sdpa-error]` record, not through the mismatch count): the release-zone pipeline code sets the required size but not the full-subgroups flag (known defect F1) |
 
 No product changes and every tile accumulates in the same order as in the 780M kernel; the row sum is added
 up per lane segment first, as there, with 4 or 8 segments a row instead of 1 or 2. K and V are still read
@@ -291,53 +292,74 @@ environment against the parent's, line by line) is in `STATUS.md`.
 
 ## Result
 
-**Not final.** The table below is the first closing (`s4-final`, `s5-pristine`), whose sessions were started
-through a wait the owner had not authorized. Repeated with every run started at once (`s6-final`, `s7-pristine`,
-`STATUS.md`): +15.44 / +20.54 / +5.07 / +6.69 / +3.14 / +4.92 % over the parent, geomean **+9.12 %**, `GATE_PASS`;
-**+72.05 %** over the pristine parent. Both measure fused pipelines that lack a pipeline flag the Vulkan
-specification requires (next section); a build with the fix has to be gated and timed again before the result
-is final.
-
 Final stack: the branch head with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-fused1`. Measured on the
-build of the committed head (`topic7` = `e1e450530`, no local patch), 7 valid runs per arm, tok/s
-(`STATUS.md`, section "Final result", has the validity counts, the traces and the verification):
+build of the committed head (`topic7` = `e1e450530`, no local patch; later commits change `openspec/` only), 7
+valid runs per arm, every run started at once, tok/s, sessions `s6-final` (parent) and `s7-pristine` (pristine
+parent); `STATUS.md` has the validity counts, the traces and the verification. **These are numbers of pipelines
+created without the full-subgroups flag (F1, next section).**
 
-| cell | parent `b580-refine3` | `b580-fused1` | gain | pristine `6a7cc8cc6` | total gain |
-|---|---:|---:|---:|---:|---:|
-| 1B 4w | 13044.60 | 14948.90 | +14.60 % | 8677.97 | +72.26 % |
-| 1B 8da4w | 15283.60 | 18285.70 | +19.64 % | 8865.80 | +106.25 % |
-| 3B 4w | 5197.97 | 5446.81 | +4.79 % | 3442.02 | +58.67 % |
-| 3B 8da4w | 6420.06 | 6849.50 | +6.69 % | 3524.96 | +93.67 % |
-| 8B 4w | 2298.54 | 2373.12 | +3.24 % | 1726.81 | +38.07 % |
-| 8B 8da4w | 2998.54 | 3145.93 | +4.92 % | 1843.38 | +70.40 % |
+| cell | parent `b580-refine3` | `b580-fused1` | gain | pristine `6a7cc8cc6` | `b580-fused1` (that session) | total gain |
+|---|---:|---:|---:|---:|---:|---:|
+| 1B 4w | 13044.60 | 15058.80 | +15.44 % | 8677.97 | 15058.80 | +73.53 % |
+| 1B 8da4w | 15170.40 | 18285.70 | +20.54 % | 8865.80 | 18285.70 | +106.25 % |
+| 3B 4w | 5197.97 | 5461.33 | +5.07 % | 3442.02 | 5461.33 | +58.67 % |
+| 3B 8da4w | 6420.06 | 6849.50 | +6.69 % | 3524.96 | 6849.50 | +94.31 % |
+| 8B 4w | 2308.91 | 2381.40 | +3.14 % | 1726.81 | 2384.17 | +38.07 % |
+| 8B 8da4w | 2998.54 | 3145.93 | +4.92 % | 1845.05 | 3141.10 | +70.24 % |
 
-Geomean +8.82 % over the parent (expected ceiling +5 to +8 %), +71.77 % over the pristine parent. A plain pass:
-the next token is the parent's in all six cells on the three prompts, and the error against the fp32 reference
-is smaller than the parent's on every production shape. Candidate 2 (`b580-fused2`, the fp32 no-tail softmax
-`4070ti_nzf` through the D4.1 hook for the calls the fused kernel does not take) passed its gate at -0.13 % and
-is not part of the final stack; the profile stays selectable.
+Geomean **+9.12 %** over the parent (expected ceiling +5 to +8 %), **+72.05 %** over the pristine parent, +76.2 %
+over the published numbers. `s6-final` is `GATE_PASS`, a plain pass: the next token is the parent's in all six
+cells on the three prompts, and the error against the fp32 reference is not larger than the parent's on every
+production shape. The first closing (`s4-final`, `s5-pristine`: +8.82 % and +71.77 %), started through a wait the
+owner had not authorized, is kept in `STATUS.md` and is not the evidence. Candidate 2 (`b580-fused2`, the fp32
+no-tail softmax `4070ti_nzf` through the D4.1 hook for the calls the fused kernel does not take) read +0.08 %
+(`s3c-c2`; -0.13 % with `GATE_PASS` in `s3b-c2`) and is not part of the final stack; the profile stays
+selectable. The stop rule "after candidate 2 whatever the result" ended the campaign.
 
 Kernel level (us per layer at S = 2048, idle desktop, screen 5), for predicting the B70: the parent's three
 kernels 1989 (1B) / 1771 (3B) / 2297 (8B); the fused kernel with its copy pass 724 / 1139 / 1464: 2.75x / 1.55x /
 1.57x. Variants: `d64_t16x64s16m8g4roj` (head_dim 64) and `d128_t16x128s16m8g8oj` (head_dim 128).
 
-## Specification basis of the shared-memory exchange, and an open validity defect (F1)
+The fused attention entry point (hook D4.3, `0ffc84a2d`) is larger than a switch and stays subject to the
+owner's review before any promotion.
+
+## Known defect: F1 (owner decision 2026-10-09 15:25 UTC, option C: no release-zone change in this campaign)
 
 The sentences of the Vulkan and GLSL specifications that the multi-subgroup form relies on are quoted in
 `STATUS.md` (section "Specification quotes"), from the `vulkan-docs` MCP server as the owner asked. None
-contradicts the exchange through shared memory. One requirement is not met:
+contradicts the exchange through shared memory. One requirement is not met, here and in every
+cooperative-matrix pipeline of every device, the shipped ones included:
 
-- A pipeline that uses cooperative matrices must be created with
-  `VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT`, or its module must be SPIR-V 1.6 or later
-  (VUID-RuntimeSpirv-OpTypeCooperativeMatrixKHR-10770). The fused shaders are SPIR-V 1.3 and the release-zone
-  pipeline code creates every stage with flags 0. **The two fused pipelines of this campaign are therefore not
-  valid as created**, like the parent's and the shipped cooperative-matrix pipelines.
-- The kernel checks `gl_NumSubgroups` and `gl_SubgroupSize` and writes NaN rows if the workgroup is not exactly G
-  full subgroups. That check guards the kernel's arithmetic against a driver that splits the workgroup
-  differently. It is not a substitute for the flag and does not make the pipeline valid.
-- The fix is a release-zone change (`vk_api/Pipeline.cpp` and what feeds it). No owner decision covers it; the
-  request, with two exact forms, is in `STATUS.md` under "Decision needed from the owner". Until it is decided
-  and the corrected build is gated and timed, the campaign is not closed.
+- **The sentence.** "VUID-RuntimeSpirv-OpTypeCooperativeMatrixKHR-10770 Any pipeline containing a shader with
+  OpTypeCooperativeMatrixKHR or OpCooperativeMatrix*KHR instructions must be created with the
+  VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT flag or the shader module must be version 1.6 or
+  greater" (`refpages/latest/RuntimeSpirv.md`).
+- **The SPIR-V version.** 1.3 (header `0x00010300`) for both fused shaders of `b580-fused1` and for the parent's
+  cooperative-matrix kernels.
+- **The code.** `backends/vulkan/runtime/vk_api/Pipeline.cpp` lines 305 and 540: every compute stage is created
+  with `flags` `0u` (the required subgroup size is chained in `pNext`). `vk_api/Runtime.cpp:91`: the instance is
+  created for `VK_API_VERSION_1_1`, so SPIR-V 1.6 is not available. `vk_api/Device.cpp:317` already reads
+  `computeFullSubgroups`.
+- **The kernel's run-time check** (`gl_NumSubgroups == G`, `gl_SubgroupSize == 16`, NaN rows otherwise)
+  guarantees that whenever the kernel computes, the workgroup is exactly G full subgroups of 16 and the lane
+  mapping of the shared-memory table holds. It does not make the pipeline valid, it does not cover the parent's
+  and the shipped kernels, and its NaN rows are not counted by the correctness test's mismatch counter (a NaN
+  comparison is false); they do make the test's `[sdpa-error]` record non-finite, which `tools/gate_check.py`
+  now rejects (`STATUS.md`, "Finding F2"; all 960 records of the five gates are finite).
+- **The two forms** for the later change. A: a per-shader yaml parameter carried through `gen_vulkan_spv.py`,
+  `vk_api/Shader.{h,cpp}` and `vk_api/Pipeline.{h,cpp}` that sets the stage flag when a required subgroup size is
+  in force and the device reports `computeFullSubgroups`; 30 to 40 lines; inert for every shader that does not
+  ask. B: set the flag in `Pipeline.cpp` at both places for every pipeline with a required subgroup size on a
+  device that reports the feature; about 10 lines; it changes how every such pipeline of every device is
+  created (the local size in X must then be a multiple of the required size,
+  VUID-VkPipelineShaderStageCreateInfo-pNext-02757).
+- **The ruling.** F1 is repaired once, in the release zone, in a change of its own before any promotion pull
+  request, with every device gated and timed again under it. Nothing is rebuilt, re-gated or re-timed for it
+  here; the numbers above stand as measured.
+- **Decode with the fused node present** (not investigated): final / parent 0.985 / 0.991 / 0.991 / 0.990 / 0.998
+  / 0.996 (`s4-final`, 32 tokens, medians of 5; 1B 4w, 1B 8da4w, 3B 4w, 3B 8da4w, 8B 4w, 8B 8da4w) and 0.994 /
+  0.995 / 0.992 / 0.996 / 0.999 / 0.995 (`s2-c1`): 0.1 to 1.5 % slower, inside the +-2 % band, below 1 in all
+  twelve readings. Decode does not run the fused kernel.
 
 ## What the same port needs on NVIDIA (RTX 4070 Ti SUPER, Jetson Orin)
 
@@ -349,7 +371,7 @@ as here. (2) A required subgroup size and the full-subgroups flag
 (`VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT`) in the pipeline: the specification requires the
 flag (or SPIR-V 1.6) for every cooperative-matrix pipeline, so it is not optional and the run-time check of
 this kernel is not an alternative to it; the check may be kept in addition, as a guard. Setting the flag is a
-release-zone change that this campaign has asked the owner for and does not have yet (finding F1). (3) Before choosing shapes, look at whether the tiles of one
+release-zone change the owner has reserved for a change of its own (known defect F1); this campaign does not make it. (3) Before choosing shapes, look at whether the tiles of one
 subgroup stay in registers: on the B580 the single-subgroup form was 3 to 7 times slower than three separate
 kernels until the work was split so that no thread held more than about 4 KiB of matrix values; the compiler
 statistics showed it (spills), the timings alone did not say why. If the NVIDIA compiler keeps 16 accumulator

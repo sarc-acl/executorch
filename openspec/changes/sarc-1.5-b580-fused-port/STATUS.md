@@ -1,14 +1,12 @@
 # sarc-1.5-b580-fused-port: status
 
-**2026-10-09 11:10 UTC — NOT closed; waiting for the owner's decision on finding F1. The reviewer's protocol
-corrections are done: the unauthorized desktop-load wait and the late additions to `thresholds.txt` are removed
-(`thresholds-history.md`), the invalid run of `s3-c2` is adjudicated by key, and the three timed sessions were
-repeated with every run started at once: final stack `b580-fused1` on the committed head **+9.12 % geomean**
-over the parent (`s6-final`, `GATE_PASS`), **+72.05 %** over the pristine parent (`s7-pristine`), candidate 2
-+0.08 % (`s3c-c2`, not a gain). Open: the two new fused pipelines are created without the full-subgroups flag
-the Vulkan specification requires (F1); the fix is a release-zone change that needs an exact owner decision:
-**see "Decision needed from the owner". The campaign cannot close before the corrected build is gated and
-timed.**
+**2026-10-09 15:26 UTC — closing. Final stack `b580-fused1` on the committed head: **+9.12 % geomean** over the
+parent (`s6-final`, `GATE_PASS`), **+72.05 %** over the pristine parent (`s7-pristine`), +76.2 % over the published
+numbers; candidate 2 +0.08 % (`s3c-c2`, not a gain, not adopted). All numbers are measured on **pipelines created
+without the full-subgroups flag (F1)**: by the owner decision of 15:25 UTC ("F1: C") F1 is a known defect of the
+release zone shared with every cooperative-matrix pipeline of every device, it is not changed in this campaign,
+and nothing is rebuilt, re-gated or re-timed for it: see "Known defect: F1". A second finding of the last review
+(the correctness test cannot count a NaN) is answered on the recorded logs, without a build: see "Finding F2".**
 
 Branch `topic/b580-fused-port`, parent `51d9d757f` with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine3`.
 Final configuration: the branch head with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-fused1`.
@@ -20,11 +18,69 @@ it; GT frequency policy as found and unchanged (`min_freq` 1200, `max_freq` 2850
 
 ## Running now
 
-Nothing. `tools/chain13.sh` ended `CHAIN13_DONE` at 11:06 UTC.
+Nothing. No GPU job and no build was started after `tools/chain13.sh` ended `CHAIN13_DONE` at 11:06 UTC; the
+closing work of 15:25 to 15:26 UTC read recorded files only (and compiled the two CPU binaries of
+`sarc/tools/check.sh --no-build`).
 
-Waiting for the owner: finding F1 (below). After that decision: a new build from an exported commit, the full
-gate, the reference error, the golden check and both timed sessions again. By the instruction of 09:55 UTC
-nothing else is recomputed or re-run while waiting.
+## Closing (2026-10-09, after the owner decision of 15:25 UTC)
+
+- Measured build: `topic7` = `e1e450530`; `git diff --name-only e1e450530 HEAD -- . ':(exclude)openspec/**'` is
+  empty, so the branch head builds the binaries that were gated and timed. No local patch.
+- Final verification on that build (R11.1): `s6-final` `GATE_PASS` (unmodified `verify.sh` the same as the parent
+  snapshot, SDPA tiers `all` / `extended` / `full` 12 passes each with 0 mismatches, finite error and
+  `pairing=ok`, next token SAME in 18 of 18 comparisons); shipped SPIR-V golden PASS (53 variants); reference
+  error `raw/final-ref`, now also `results/b580/sdpa-error/final-ref-{full,extended,peaked}.csv`.
+- Timed sessions (R11.2): `s6-final` against the parent, `s7-pristine` against the pristine parent `6a7cc8cc6`.
+- `sarc/tools/check.sh --no-build`, run again at closing (`.artifacts/logs/check-close.out`, rc 0):
+
+  ```
+  == 1 zone rule vs origin/release/1.5
+  == 2 twin wrappers
+  == 3 test_sarc_select
+  test_sarc_select: PASS (1240 checks, 31 rows, 0 candidates, dev zone absent, unverified off)
+  [sarc_dev] overrides active: unverified=1 variant= dq8ca_variant=
+  test_sarc_select: PASS (1562 checks, 37 rows, 213 candidates, dev zone linked, unverified on)
+  check.sh: PASS
+  ```
+
+  The release-zone edits on this branch are the two D4 hooks only (`fab9606c3`, D4.1; `0ffc84a2d`, D4.3; owner
+  decision 2026-10-05); `Pipeline.cpp` is not edited.
+- Final `b580-fused1` (`s6-final`) against the published numbers (`cells.csv`): +75.0 / +108.0 / +59.7 / +95.3 /
+  +40.6 / +87.2 %, geomean +76.2 % (the published run of 8B 8da4w was disturbed: first campaign, baseline note).
+  The parent of `s6-final` reads +0.64 / 0.00 / +0.25 / +0.31 / +0.11 / 0.00 % against the expected parent
+  numbers of the task file.
+
+## Finding F2 of the last review: the correctness test does not count a NaN (answered on the recorded logs)
+
+An earlier version of the shared-memory reading below said that NaN rows written by the kernel's fallback are
+something "every correctness tier would report". **That was wrong.** `test_llama_microbench.cpp` counts a
+mismatch with `diff > thresh` (line 2119), which is false when `diff` is NaN, so a NaN output leaves
+`mismatches=0` and the case prints PASSED. The comparator is the first campaigns' and was not changed here; the
+tolerances are untouched.
+
+What does see a NaN is the `[sdpa-error]` record the same test prints for every case: `rms_err` is the square
+root of a sum over every output element (lines 2165 to 2177), so one NaN or infinity in the output or in the
+reference makes it non-finite (`max_abs_err` alone would not: `std::max` drops a NaN). On that basis:
+
+- `tools/gate_check.py` now requires, for every pass of every SDPA tier, one `[sdpa-error]` record per case
+  with finite `rms_err`, `max_abs_err` and `ref_rms`; a non-finite or missing record fails the gate. No
+  tolerance, threshold or file under `sarc/tools` changed; the requirement can only turn a pass into a fail.
+- Regression test `tools/test_gate_finite.sh` (`results/b580/gate-recheck/test_gate_finite.out`,
+  `TEST_GATE_FINITE_OK`): on a copy of the `s6-final` gate files the gate passes; with `rms_err` set to `nan`,
+  `-nan` or `inf`, with `ref_rms=nan`, or with one record removed, in one log whose four cases still read
+  `mismatches=0 ... PASSED`, it fails on that pass.
+- The five recorded gates decided again with the requirement (`results/b580/gate-recheck/`; the `gate.txt` of
+  each session is kept as written): `s2-c1`, `s3b-c2`, `s4-final`, `s6-final` `GATE_PASS`, 37 PASS lines each;
+  `s3-c2` `GATE_FAIL` with its 7 timing lines as before; the parent control `CONTROL_RECORDED`. All 960 records
+  of the five gates (5 x 12 passes x 16 cases) are finite, so **no measured gate saw a NaN or infinite output**,
+  and the fallback did not fire in any of them. The reference-error runs (`c1-ref6`, `c2-ref6-*`, `final-ref`)
+  hold finite values in every row as well.
+- Not done, and why: the test's own counter is not changed. That is a source change outside `openspec/`, after
+  which the branch head would no longer be the measured build, and the owner decision of 15:25 UTC orders no
+  rebuild, no re-gate and no new session. It belongs to the later change that repairs F1, which gates every
+  device again: count `!(diff <= thresh)` or test `std::isfinite` on output and reference in the microbench.
+  The production-diff and the `verify.sh` correctness cases are other comparators and were not audited for the
+  same blind spot; they run the linear kernels, which have no such fallback.
 
 ## Sessions under the authorized protocol (chain 13, from 09:37 UTC; build `topic7` = `e1e450530`; no wait)
 
@@ -85,8 +141,8 @@ use: +9.18 %). `stage/s6-final/gate.txt`: `GATE_PASS`, 37 PASS lines (the 36 of 
 line "no run stored valid without a readable foreign engine share"), no FAIL line: SDPA tiers `all` /
 `extended` / `full` 12 passes each with 0 mismatches and `pairing=ok`, unmodified `verify.sh` with the final
 environment the same as the parent snapshot, next token SAME in all 18 comparisons. A plain pass on the timing
-and correctness items. **It is a gate of pipelines that lack the full-subgroups flag (F1), so it does not close
-the campaign.** Reference error, the extra tiers, the golden check and the roofs do not depend on the start time
+and correctness items, on pipelines created without the full-subgroups flag (F1; known defect, owner decision
+of 15:25 UTC). Reference error, the extra tiers, the golden check and the roofs do not depend on the start time
 and are those of the first closing on the same build (below).
 
 Chain 13 ended `CHAIN13_DONE` at 11:06 UTC. Nothing is running.
@@ -129,8 +185,8 @@ FAIL line):
 - Unmodified `verify.sh` with the final environment against the parent snapshot `s0-parent-verify`, line by
   line with the rates removed: the same. Next token parent vs final: SAME in all six cells on the three
   prompts, so the result is a plain pass; no item needs decision D1 or D3.
-- Error against the fp32 reference (`.artifacts/raw/final-ref/{full,extended,peaked}.csv` and its logs; not yet copied into `results/`:
-  `collect.sh` copies only `c?-ref*`, to be extended with the next authorized work): not larger than
+- Error against the fp32 reference (`.artifacts/raw/final-ref/{full,extended,peaked}.csv` and its logs; copied to
+  `results/b580/sdpa-error/final-ref-*.csv` at closing): not larger than
   the parent's in all 4 `full` and all 8 `extended` cases (rms 2.02e-5 to 2.05e-5 against 2.76e-5 to 2.79e-5 at
   S = 2048); in 1 of 5 synthetic `peaked` cases the maximum error is larger (2.50e-3 against 2.32e-3) with a
   smaller rms; the same values as on `topic6`.
@@ -569,8 +625,9 @@ value of `Gsh` that every lane reads after the same barrier (that is why the vot
 The assumption "the workgroup is exactly G full subgroups of 16": the pipeline is created with required
 subgroup size 16 (yaml `SUBGROUP_SIZE`, as for the Xe2 kernels) and the node launches a local size of G x 16;
 the release-zone pipeline code does not set the full-subgroups flag, so the kernel checks
-`gl_NumSubgroups == G` and `gl_SubgroupSize == 16` and writes NaN rows otherwise (one writer per row), which
-every correctness tier would report. The copy pass `sarc_dev_b580_sdpa_kvt` has no shared memory.
+`gl_NumSubgroups == G` and `gl_SubgroupSize == 16` and writes NaN rows otherwise (one writer per row). The tiers' mismatch count
+would not report them (corrected: "Finding F2"); the `[sdpa-error]` record would, and the gate now requires it
+finite. The copy pass `sarc_dev_b580_sdpa_kvt` has no shared memory.
 
 ## Specification quotes for the shared-memory reading (owner note 2026-10-09 00:20 UTC; looked up 01:25 UTC)
 
@@ -655,8 +712,7 @@ pipeline code of this branch, the parent's kernels included (finding F1 below).*
      is cut short). The kernel's operands depend only on loop counters and `gl_SubgroupID`, equal within a
      subgroup.
 
-**Finding F1 (an open validity defect of the two new fused pipelines as well; the fix needs an owner decision,
-see "Decision needed from the owner").**
+**Finding F1 (a validity defect of the two new fused pipelines as well).**
 * "VUID-RuntimeSpirv-OpTypeCooperativeMatrixKHR-10770 Any pipeline containing a shader with
 OpTypeCooperativeMatrixKHR or OpCooperativeMatrix*KHR instructions must be created with the
 VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT flag or the shader module must be version 1.6 or
@@ -665,60 +721,79 @@ without the flag: the shipped release kernels, the parent's Xe2 attention kernel
 (checked on `sarc_sdpa_qk_coopmat_xe2c_...` and both fused variants of `build/topic6`). Setting the flag is a
 change of the release-zone pipeline code (`vk_api/`), which decision D4 does not cover, and SPIR-V 1.6 needs an
 instance of Vulkan 1.3; neither was done. ANV launches full subgroups for these kernels in every run measured
-(the fused kernel would have written NaN rows otherwise, and every correctness tier passes).
+(the fused kernel would have written NaN rows otherwise, and every `[sdpa-error]` record of
+every gate is finite: "Finding F2"). **Decided by the owner at 15:25 UTC: "Known defect: F1" below.**
+
+## Known defect: F1 (owner decision 2026-10-09 15:25 UTC, "F1: C")
+
+The owner's ruling: no release-zone change for F1 in this campaign; neither form below is authorised here. F1
+is a known defect shared with every cooperative-matrix pipeline of every device, the shipped ones included
+(this campaign's parent has it; so do the fused ports closed on 2026-10-09 on the RTX 4070 Ti SUPER, the Radeon
+780M and the Arc Pro B70). It will be repaired once, in the release zone, in a change of its own before any
+promotion pull request, with every device gated and timed again under it. **Every number of this campaign
+stands as measured and is a number of pipelines created without the full-subgroups flag (F1).**
+
+- The specification sentence: "VUID-RuntimeSpirv-OpTypeCooperativeMatrixKHR-10770 Any pipeline containing a
+  shader with OpTypeCooperativeMatrixKHR or OpCooperativeMatrix*KHR instructions must be created with the
+  VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT flag or the shader module must be version 1.6 or
+  greater" (`refpages/latest/RuntimeSpirv.md`, `vulkan-docs` MCP server).
+- The SPIR-V version: 1.3 (header word `0x00010300`) for both selected fused shaders,
+  `sarc_dev_b580_sdpa_fused_d64_t16x64s16m8g4roj` and `..._d128_t16x128s16m8g8oj`, in `build/topic7` (and
+  `topic6`), and for the parent's `sarc_sdpa_qk_coopmat_xe2c_...`.
+- The code: `backends/vulkan/runtime/vk_api/Pipeline.cpp` creates every compute stage with `flags` `0u`, at line
+  305 (`ComputePipeline`) and line 540 (the batched pipeline creation); the required subgroup size is chained
+  in `pNext` just above each. `backends/vulkan/runtime/vk_api/Runtime.cpp:91` creates the instance with
+  `VK_API_VERSION_1_1`, so SPIR-V 1.6 (Vulkan 1.3) is not available either. The runtime already reads
+  `computeFullSubgroups` (`vk_api/Device.cpp:317`); the B580 reports it.
+- What the kernel's run-time check guarantees: it compares `gl_NumSubgroups` with G and `gl_SubgroupSize` with
+  16 before the first barrier; with a local size of G x 16 in X that leaves no room for a subgroup holding
+  fewer than 16 of the workgroup's invocations, so whenever the kernel computes, its lane-to-(row, segment)
+  mapping is the bijection the shared-memory reading assumes. If the check fails, the rows are written as NaN
+  instead of being computed.
+- What it does not guarantee: it does not make the pipeline valid Vulkan (the requirement is on pipeline
+  creation; a driver may reject or mis-handle such a pipeline without the kernel ever running); it relies on the
+  two built-ins being meaningful in a pipeline the specification does not cover; it says nothing about the
+  parent's and the shipped cooperative-matrix kernels, which have no such check; and its NaN rows are not
+  counted by the correctness test's mismatch counter ("Finding F2"). ANV launched full subgroups in every gated
+  run: all 960 `[sdpa-error]` records are finite.
+- The two forms put to the owner, as input to the later change:
+  - **Form A, per shader, inert unless a shader asks for it.** A yaml parameter (say `FULL_SUBGROUPS: 1`) that
+    `gen_vulkan_spv.py` passes into `ShaderInfo` beside the required subgroup size, a field in the pipeline
+    descriptor and its hash / equality, and in `Pipeline.cpp` the stage flag
+    `VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT` when the field is set, a required subgroup
+    size is in force and the device reports `computeFullSubgroups`. Files:
+    `backends/vulkan/runtime/gen_vulkan_spv.py`, `vk_api/Shader.{h,cpp}`, `vk_api/Pipeline.{h,cpp}`, and where
+    the descriptor is filled; an estimated 30 to 40 lines. Shaders that do not set it keep their pipelines.
+  - **Form B, for every pipeline with a required subgroup size.** In `Pipeline.cpp` at both places, set the
+    flag whenever a required subgroup size is in force and the device reports `computeFullSubgroups`; about 10
+    lines in one file plus the feature bit in the descriptor. It repairs the shipped and the parents'
+    cooperative-matrix pipelines too, and changes how each of them is created: with the flag, the local size
+    in X must be a multiple of the required subgroup size (VUID-VkPipelineShaderStageCreateInfo-pNext-02757).
+- Decode with the fused node present (not investigated, as ordered). Decode does not run the fused kernel.
+  Final / parent, 32 tokens, medians of 5, tok/s, `s4-final` (`topic7`, idle desktop):
+
+  | cell | parent | final | ratio | `s2-c1` ratio (`topic6`, desktop in use) |
+  |---|---:|---:|---:|---:|
+  | 1B 4w | 96.88 | 95.38 | 0.985 | 0.994 |
+  | 1B 8da4w | 88.83 | 88.07 | 0.991 | 0.995 |
+  | 3B 4w | 44.29 | 43.91 | 0.991 | 0.992 |
+  | 3B 8da4w | 40.74 | 40.31 | 0.990 | 0.996 |
+  | 8B 4w | 26.47 | 26.43 | 0.998 | 0.999 |
+  | 8B 8da4w | 24.74 | 24.64 | 0.996 | 0.995 |
+
+  0.2 to 1.5 % slower in `s4-final` and 0.1 to 0.8 % in `s2-c1`: inside the +-2 % band in every cell, and below 1
+  in all twelve readings (the B70 confirmation measured 0 to 2.5 %).
 
 ## Next
 
-Wait for the owner's decision on F1 (nothing is recomputed or re-run meanwhile); with it: extend `collect.sh`
-to copy `raw/final-ref*`, and commit the change exactly as authorized, build
-a new tag from the exported commit, and through the queue: the full gate, the reference error, the golden
-check, and the timed sessions against both parents.
+Nothing in this campaign. For the later release-zone change that repairs F1: one of the two forms above, the
+microbench's NaN-blind mismatch counter ("Finding F2"), then every device gated and timed again.
 
 ## Decision needed from the owner
 
-1. **Finding F1: the two new fused pipelines are not valid Vulkan as created. A release-zone change is needed;
-   please authorize one of the two forms below, or say what else.**
-
-   The requirement: "VUID-RuntimeSpirv-OpTypeCooperativeMatrixKHR-10770 Any pipeline containing a shader with
-   OpTypeCooperativeMatrixKHR or OpCooperativeMatrix*KHR instructions must be created with the
-   VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT flag or the shader module must be version 1.6 or
-   greater" (`refpages/latest/RuntimeSpirv.md`). The state: both selected fused shaders are SPIR-V 1.3 (header
-   `0x00010300`), and `backends/vulkan/runtime/vk_api/Pipeline.cpp` creates every compute stage with `flags` 0
-   (lines 305 and 540). The kernel's run-time check of `gl_NumSubgroups` and `gl_SubgroupSize` protects its
-   arithmetic; **it does not make the pipeline valid.** SPIR-V 1.6 is not available from the dev zone: the
-   instance is created for Vulkan 1.1 (`vk_api/Runtime.cpp:91`). The parent's cooperative-matrix pipelines and
-   the shipped ones have the same defect; this campaign adds two more. Decision D4 names three hooks and does
-   not cover this; the actor does not extend it.
-
-   - **Form A, per shader, inert unless a shader asks for it (recommended for this campaign).** A yaml
-     parameter (say `FULL_SUBGROUPS: 1`) that `gen_vulkan_spv.py` passes into `ShaderInfo` beside the required
-     subgroup size, a field in the pipeline descriptor and its hash / equality, and in `Pipeline.cpp` the stage
-     flag `VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT` when the field is set, a required
-     subgroup size is in force and the device reports `computeFullSubgroups` (the runtime already reads that
-     feature, `vk_api/Device.cpp:317`; the B580 reports it). Files: `backends/vulkan/runtime/gen_vulkan_spv.py`,
-     `vk_api/Shader.{h,cpp}`, `vk_api/Pipeline.{h,cpp}`, and where the descriptor is filled; an estimated 30 to
-     40 lines. Only the fused shaders of this campaign would set it, so every shipped pipeline of every device
-     stays as it is (`spirv_golden.py`, `test_sarc_select` and the no-environment `verify.sh` comparison would
-     show it, as for the D4 hooks). It leaves the parent's and the shipped cooperative-matrix pipelines with
-     the defect.
-   - **Form B, for every pipeline with a required subgroup size.** In `Pipeline.cpp` at both places, set the
-     flag whenever a required subgroup size is in force and the device reports `computeFullSubgroups`; about 10
-     lines in one file plus the feature bit in the descriptor. It repairs the shipped and the parent's
-     cooperative-matrix pipelines too, and therefore changes how every such pipeline of every device is
-     created: with the flag, the local size in X must be a multiple of the required subgroup size
-     (VUID-VkPipelineShaderStageCreateInfo-pNext-02757) for each of them, the parent of this campaign would no
-     longer be the pipeline state that was measured, and the other campaigns' results would need re-checking.
-
-   Either form: the commit is made exactly as authorized, under its own heading; then a new build tag from the
-   exported commit, the full gate, the reference-error evidence, the golden check and the timed sessions against
-   both parents, through the queue (about 3 hours of device time). The numbers of `topic7` stay on record as
-   measured on pipelines that lack the flag.
-
-Items 2 and 3 of the earlier list (a share that is not a reading; a desktop that holds the card) were decided on
-2026-10-09 09:55 UTC (task file; recorded in `thresholds-history.md`): the runner rejects an unreadable share
-(`busy_unreadable`, applied to `e2e5.sh` at 10:08 UTC before the timed runs of `s6-final`), and there is no wait;
-a session short of valid runs for the foreign share alone is repeated once, at least 30 minutes later.
+None. Finding F1 was decided on 2026-10-09 15:25 UTC (option C, section "Known defect: F1"); items 2 and 3 of the
+earlier list on 2026-10-09 09:55 UTC (`thresholds-history.md`).
 
 ## Blocking
 
-Closing is blocked on decision 1 (F1). Nothing else is.
+Nothing.

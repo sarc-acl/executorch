@@ -84,3 +84,11 @@ Appended to the task file by the coordinator under the owner's standing authoris
   first ended; if the repeat ends the same way it is reported and not repeated again. Nothing is kept from a
   session that did not complete.
 - **Item 1 (F1)** is with the owner.
+
+## Closing, 2026-10-09 (after the owner decision of 15:25 UTC): a gate requirement added, no threshold changed
+
+`tools/gate_check.py` additionally requires, in every pass of the SDPA tiers, one `[sdpa-error]` record per case
+with finite `rms_err`, `max_abs_err` and `ref_rms` (`STATUS.md`, "Finding F2": the test's mismatch count is false
+for a NaN). It was added after every gate had run and can only turn a pass into a fail; the five recorded gates
+decided again with it give the same verdicts (`results/b580/gate-recheck/`), and each session's `gate.txt` is
+kept as written. `thresholds.txt` is not edited.

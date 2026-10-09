@@ -24,12 +24,15 @@ missing or empty evidence is a FAIL.
            matched by prompt name.
   trace    trace/trace.ok and one totals row per cell and arm.
   sdpa     (--sdpa) 12 passes each of tiers all, extended and full with the candidate environment: rc 0, the
-           expected number of cases PASSED (4 / 8 / 4), none FAILED, every case mismatches=0 and pairing=ok.
+           expected number of cases PASSED (4 / 8 / 4), none FAILED, every case mismatches=0 and pairing=ok,
+           and one [sdpa-error] record per case with finite rms_err, max_abs_err and ref_rms. The test counts a
+           mismatch with `diff > threshold`, which is false for a NaN, so mismatches=0 alone does not exclude
+           a non-finite output or reference; rms_err sums over every element and does.
   --control records the parent control session: the verify block and one sdpa pass per tier with the table
            kernels. Requirements that are device status rather than a defect (the two above, and SDPA tiers
            that ran the stock kernels with 0 mismatches because the device has no SDPA row) are printed as
            STATUS lines; the last line is CONTROL_RECORDED, or CONTROL_FAIL if anything else failed."""
-import csv, os, re, sys
+import csv, math, os, re, sys
 args = sys.argv[1:]
 D = args[0]; SDPA = "--sdpa" in args; CONTROL = "--control" in args
 PARENT = args[args.index("--parent") + 1] if "--parent" in args else None
@@ -47,6 +50,9 @@ def note(what, detail):
 def read(*p):
     try: return open(os.path.join(*p), errors="replace").read()
     except OSError: return ""
+def finite(x):
+    try: return math.isfinite(float(x))
+    except ValueError: return False
 
 def verify_status(text):
     """status lines of a verify.out with the measured numbers and kernel names removed"""
@@ -150,9 +156,12 @@ if SDPA or CONTROL:
             if any(not re.search(r"mismatches=0/\d+", l) for l in res): why.append("mismatches")
             if "FAILED" in t: why.append("FAILED line")
             if len(ker) != cases or any("pairing=ok" not in l for l in ker): why.append(f'pairing ok in {sum("pairing=ok" in l for l in ker)}/{len(ker)} kernel lines, want {cases}')
+            err = [l.split()[3:] for l in t.splitlines() if l.startswith("[sdpa-error] ")]
+            nonfinite = len(err) != cases or any(len(e) != 3 or not all(finite(x.split("=")[-1]) for x in e) for e in err)
+            if nonfinite: why.append(f"{len(err)} error records, want {cases} with finite rms_err, max_abs_err, ref_rms")
             if why: bad.append(f"r{i}: " + "; ".join(why))
-        what = f"sdpa: tier {tier}, {passes} pass(es) x {cases} cases, 0 mismatches, pairing=ok ({arm})"
-        if CONTROL and bad:
+        what = f"sdpa: tier {tier}, {passes} pass(es) x {cases} cases, 0 mismatches, finite error, pairing=ok ({arm})"
+        if CONTROL and bad and not nonfinite:
             # the table kernels of a device without an SDPA row are the stock ones: the test reports FAILED for
             # the missing coopmat dispatch. Device status if all cases ran, 0 mismatches, pairing ok.
             t = read(S, f"{arm}-{tier}-r1.log")
