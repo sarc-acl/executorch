@@ -60,3 +60,16 @@ in the A buffer:
 `r2g-screen-8da4w.csv` / `-summary.txt`: `t256x64k64g48s32pa6pb4csha` (the candidate kernel) 1.051 / 1.051, all twelve shapes at least 1.03 in
 both rounds, 33709 us against 35488 us for the shipped kernel over the twelve shapes; the pitch-6 variants of the smaller workgroups
 (`g44` 0.932, `g28` 0.933, `g24` 0.900, `g42` 0.895) do not move: occupancy, not the pitch, decides there.
+
+## Round 2, candidate 2 (4w): builds `r2g` and `r2h` (micro builds, two screen rounds each)
+
+`r2g-screen-4w-noprofile.csv` / `r2g-screen-4w-vs-picks.txt`, `r2h-screen-4w.csv` / `r2h-screen-4w-vs-picks.txt` (tool `tools/q4_pick_compare.py`:
+per shape the worst-round ratio of the round-1 pick over the candidate; the incumbent per shape is the pick of `rx7600-refine2`, measured by exact
+name in the same screen). The first 4w screen of `r2g` with the profile in the environment is not used: the profile's picks override an
+exact-name selection on the shapes it covers (six shapes were measured against themselves); `r2g-screen-4w-noprofile.csv` is the repeat without it.
+- B staging row padding (`cbtbp4` / `cbtbp12`: 72 / 88 bytes instead of 80): `g28bp12` 11 of 12 shapes at least 1.03 in both rounds (geomean of the
+  worst-round ratios 1.050); the 16-lane `ds_read_b64` fragment loads at an 80-byte pitch collide on LDS banks, as the 8da4w A reads did at 16 bytes.
+- A staging typed uvec2 with a row padding of its own (`ap<a>bp<b>`): **`ap4bp12` (A 72 bytes, B 88 bytes) 12 of 12 shapes, geomean 1.067**; `ap12bp4`
+  11 of 12, 1.065; `ap4bp8` 10 of 12; `ap4bp4` 1 of 12 (1.006) and `ap8bp8` (the shipped pitches in the uvec2 typing) 0.999. The `g24` tile with any padding
+  is far behind (3 of 12 shapes).
+Candidate 2 = `ap4bp12` on all twelve 4w prefill shapes (profile `rx7600-refine5`: refine4 plus that pick).
