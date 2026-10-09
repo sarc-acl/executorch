@@ -1,11 +1,27 @@
 # STATUS: RX 7600 prefill campaign
 
-Updated 2026-10-08 12:11 UTC.
+Updated 2026-10-09 02:05 UTC (round 2 in progress; round 1 below is unchanged and closed).
 
 ## Running now
 
-- Nothing of this campaign. Final verification and final session finished 2026-10-08 11:58 UTC (`results/rx7600/sessions/final/`).
+- Round 2 (owner decision 2026-10-08 23:38 UTC: the linear kernels), candidate 1 (8da4w), kernel-level work: a 2-round screen of the
+  pitch variants of build `r2e` (detached, `<artifacts>/logs/r2e-screen1.status`). No timed session is running.
 - Never pushed from here (owner decision 2026-10-07 23:15 UTC): the coordinator publishes.
+
+## Round 2: where it stands (details in `results/rx7600/round2/README.md`, rules in `proposal.md` "Round 2")
+
+Parent of round 2: round 1's final stack (build `final`, commit `18cc0d53a`, environment in `proposal.md`). Candidate 1 (8da4w kernel):
+- The shipped kernel (`afmb1`, 256 x 64 tile, K step 64, 32 waves) is already double-buffered with one barrier per chunk, so the first
+  idea of the owner decision (double buffering, one barrier per step) is in place. Ablations (kernels that remove work, measurement
+  only): the staging (global fetch + LDS stores) is about 7 % of the kernel, the barrier about 5 %, the MMA loop (LDS fragment loads +
+  WMMA) about 93 %; the MMA loop alone reaches about 67 % of the cited int8 roof, the best case with almost nothing else (`abl55`) about 78 %.
+  RADV gives the kernel 64 VGPRs (a 1024-invocation workgroup caps the register budget), 3 spills outside the loop, and two `ds_read_b64`
+  per fragment.
+- Negative so far (kernel level, 1 to 3 rounds): padding between the K slabs of A (0.996 to 1.003), the 256 x 128 tile (0.73), a
+  branch-free loop (1.014, to repeat), stores interleaved with the MMAs (0.99 to 1.00), uvec4-typed staging (0.89), smaller workgroups
+  (0.88 to 0.94, 128 VGPRs, no spills), B row pitch 24 bytes (0.96).
+- Positive so far: A staging row pitch of 24 bytes instead of 16 (`pa6csha`: the LDS fragment reads of 16 lanes at a 16-byte pitch collide
+  on banks) **+5.0 to +5.5 % at kernel level, all twelve shapes at least 1.03 in both rounds**. Not yet gated or timed end to end.
 
 ## State
 
