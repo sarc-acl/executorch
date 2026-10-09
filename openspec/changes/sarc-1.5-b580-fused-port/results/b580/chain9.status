@@ -1,1 +1,13 @@
 2026-10-09T00:51:15Z chain9 waiting for chain8
+2026-10-09T01:55:30Z chain9 waiting for chain8
+2026-10-09T01:55:31Z smoke b580-refine3-nzf all rc=0 4/4 cases with 0 mismatches, softmax softmax=sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf 
+2026-10-09T01:55:38Z smoke b580-refine3-nzf extended rc=0 8/8 cases with 0 mismatches, softmax softmax=sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf 
+2026-10-09T01:57:46Z smoke b580-refine3-nzf full rc=0 4/4 cases with 0 mismatches, softmax softmax=sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf 
+2026-10-09T01:57:53Z smoke b580-refine3-nzf peaked rc=0 5/5 cases with 0 mismatches, softmax softmax=sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf 
+2026-10-09T01:58:00Z control b580-fused2 with the cooperative-matrix kernels disabled, tier extended: rc=1 8/8 cases with 0 mismatches, softmax softmax=sarc_sdpa_attn_weights_softmax_buffer_half_4070ti_nzf 
+2026-10-09T03:15:37Z gate s3-c2 rc=1 GATE_FAIL (7 requirement(s))
+2026-10-09T03:25:35Z c2-ref6-b580-fused2 rc=0 full: SDPA_ERROR_OK extended: SDPA_ERROR_OK peaked: SDPA_ERROR_LARGER (1)
+2026-10-09T03:35:01Z c2-ref6-b580-refine3-nzf rc=0 full: SDPA_ERROR_OK extended: SDPA_ERROR_OK peaked: SDPA_ERROR_OK
+2026-10-09T04:21:52Z probe s3-c2 rc=0 PROBE_CHECK_OK
+2026-10-09T04:21:52Z decide s3-c2 rc=1 REJECTED
+2026-10-09T04:24:37Z decode s3-c2 rc=0

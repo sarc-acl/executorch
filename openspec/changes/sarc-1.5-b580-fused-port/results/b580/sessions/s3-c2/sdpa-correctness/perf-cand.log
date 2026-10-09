@@ -1,0 +1,97 @@
+[sarc_dev] profile active: b580-fused2
+[sarc_dev] overrides active: unverified=1 variant= dq8ca_variant=
+
+=== Compute Shader Performance Benchmark ===
+Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; prefill 2048 / decode 1 @ ctx3072; linear group_size=128; 3 warmup + 5 timed runs per case)
+DEVICE,intel(r) arc(tm) b580 graphics (bmg g21),timestamp_period_ns=52.0833,subgroup_size=32,coopmat=yes,max_shared_mem_bytes=49152
+----------------------------------------------------------------------
+RESULT,sdpa,llama-3.1-8b,,prefill,qk,128,32,4842.15,213.178,-1,confirmed,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.1-8b,,prefill,softmax,128,32,888.95,3.87295,-1,confirmed,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.1-8b,,prefill,av,128,32,6023.33,578.55,-1,confirmed,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.1-8b,,prefill,total,128,32,11754.4,550.389,-1,confirmed,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.1-8b,,prefill,qk,128,32,0,0,-1,confirmed,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.1-8b,,prefill,softmax,128,32,0,0,-1,confirmed,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.1-8b,,prefill,av,128,32,0,0,-1,confirmed,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.1-8b,,prefill,total,128,32,1878.09,252.852,-1,confirmed,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.1-8b,,decode,qk,128,32,148.886,4.83969,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.1-8b,,decode,softmax,128,32,10.2856,1.54712,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.1-8b,,decode,av,128,32,33.0824,3.5724,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.1-8b,,decode,total,128,32,192.254,7.91626,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-3b,,prefill,qk,128,24,3917.74,362.285,-1,confirmed,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-3b,,prefill,softmax,128,24,734.344,103.831,-1,confirmed,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-3b,,prefill,av,128,24,4751.54,470.882,-1,confirmed,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-3b,,prefill,total,128,24,9403.63,930.383,-1,confirmed,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-3b,,prefill,qk,128,24,0,0,-1,confirmed,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.2-3b,,prefill,softmax,128,24,0,0,-1,confirmed,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.2-3b,,prefill,av,128,24,0,0,-1,confirmed,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.2-3b,,prefill,total,128,24,1236.7,107.839,-1,confirmed,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.2-3b,,decode,qk,128,24,115.565,5.89789,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-3b,,decode,softmax,128,24,9.6304,0.0854448,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-3b,,decode,av,128,24,31.7512,2.8893,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-3b,,decode,total,128,24,156.946,8.80594,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-1b,,prefill,qk,64,32,3290.3,399.216,-1,confirmed,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-1b,,prefill,softmax,64,32,988.51,184.897,-1,confirmed,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-1b,,prefill,av,64,32,4043.4,363.652,-1,confirmed,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-1b,,prefill,total,64,32,8322.21,699.527,-1,confirmed,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-1b,,prefill,qk,64,32,0,0,-1,confirmed,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.2-1b,,prefill,softmax,64,32,0,0,-1,confirmed,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.2-1b,,prefill,av,64,32,0,0,-1,confirmed,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.2-1b,,prefill,total,64,32,732.857,20.0905,-1,confirmed,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.2-1b,,decode,qk,64,32,146.858,4.35582,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-1b,,decode,softmax,64,32,9.6616,0.0232551,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-1b,,decode,av,64,32,26.1352,6.50443,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-1b,,decode,total,64,32,182.655,10.3746,-1,not_applicable,SKIPPED,8,tiled
+----------------------------------------------------------------------
+==================== RAW RESULTS ====================
+suite     model         scheme regime   op     storage    variant  (M,K,N)                   mean_us     stdev   kern_us   GFLOP/s  dispatch
+sdpa      llama-3.1-8b  -      prefill  qk     -          tiled    (2048,128,32)              4842.1     213.2         -         -  confirmed
+sdpa      llama-3.1-8b  -      prefill  softmax-          tiled    (2048,128,32)               889.0       3.9         -         -  confirmed
+sdpa      llama-3.1-8b  -      prefill  av     -          tiled    (2048,128,32)              6023.3     578.5         -         -  confirmed
+sdpa      llama-3.1-8b  -      prefill  total  -          tiled    (2048,128,32)             11754.4     550.4         -         -  confirmed
+sdpa      llama-3.1-8b  -      prefill  qk     -          coopmat  (2048,128,32)                 0.0       0.0         -         -  confirmed
+sdpa      llama-3.1-8b  -      prefill  softmax-          coopmat  (2048,128,32)                 0.0       0.0         -         -  confirmed
+sdpa      llama-3.1-8b  -      prefill  av     -          coopmat  (2048,128,32)                 0.0       0.0         -         -  confirmed
+sdpa      llama-3.1-8b  -      prefill  total  -          coopmat  (2048,128,32)              1878.1     252.9         -         -  confirmed
+sdpa      llama-3.1-8b  -      decode   qk     -          tiled    (1,128,32)                  148.9       4.8         -         -  not_applicable
+sdpa      llama-3.1-8b  -      decode   softmax-          tiled    (1,128,32)                   10.3       1.5         -         -  not_applicable
+sdpa      llama-3.1-8b  -      decode   av     -          tiled    (1,128,32)                   33.1       3.6         -         -  not_applicable
+sdpa      llama-3.1-8b  -      decode   total  -          tiled    (1,128,32)                  192.3       7.9         -         -  not_applicable
+sdpa      llama-3.2-3b  -      prefill  qk     -          tiled    (2048,128,24)              3917.7     362.3         -         -  confirmed
+sdpa      llama-3.2-3b  -      prefill  softmax-          tiled    (2048,128,24)               734.3     103.8         -         -  confirmed
+sdpa      llama-3.2-3b  -      prefill  av     -          tiled    (2048,128,24)              4751.5     470.9         -         -  confirmed
+sdpa      llama-3.2-3b  -      prefill  total  -          tiled    (2048,128,24)              9403.6     930.4         -         -  confirmed
+sdpa      llama-3.2-3b  -      prefill  qk     -          coopmat  (2048,128,24)                 0.0       0.0         -         -  confirmed
+sdpa      llama-3.2-3b  -      prefill  softmax-          coopmat  (2048,128,24)                 0.0       0.0         -         -  confirmed
+sdpa      llama-3.2-3b  -      prefill  av     -          coopmat  (2048,128,24)                 0.0       0.0         -         -  confirmed
+sdpa      llama-3.2-3b  -      prefill  total  -          coopmat  (2048,128,24)              1236.7     107.8         -         -  confirmed
+sdpa      llama-3.2-3b  -      decode   qk     -          tiled    (1,128,24)                  115.6       5.9         -         -  not_applicable
+sdpa      llama-3.2-3b  -      decode   softmax-          tiled    (1,128,24)                    9.6       0.1         -         -  not_applicable
+sdpa      llama-3.2-3b  -      decode   av     -          tiled    (1,128,24)                   31.8       2.9         -         -  not_applicable
+sdpa      llama-3.2-3b  -      decode   total  -          tiled    (1,128,24)                  156.9       8.8         -         -  not_applicable
+sdpa      llama-3.2-1b  -      prefill  qk     -          tiled    (2048,64,32)               3290.3     399.2         -         -  confirmed
+sdpa      llama-3.2-1b  -      prefill  softmax-          tiled    (2048,64,32)                988.5     184.9         -         -  confirmed
+sdpa      llama-3.2-1b  -      prefill  av     -          tiled    (2048,64,32)               4043.4     363.7         -         -  confirmed
+sdpa      llama-3.2-1b  -      prefill  total  -          tiled    (2048,64,32)               8322.2     699.5         -         -  confirmed
+sdpa      llama-3.2-1b  -      prefill  qk     -          coopmat  (2048,64,32)                  0.0       0.0         -         -  confirmed
+sdpa      llama-3.2-1b  -      prefill  softmax-          coopmat  (2048,64,32)                  0.0       0.0         -         -  confirmed
+sdpa      llama-3.2-1b  -      prefill  av     -          coopmat  (2048,64,32)                  0.0       0.0         -         -  confirmed
+sdpa      llama-3.2-1b  -      prefill  total  -          coopmat  (2048,64,32)                732.9      20.1         -         -  confirmed
+sdpa      llama-3.2-1b  -      decode   qk     -          tiled    (1,64,32)                   146.9       4.4         -         -  not_applicable
+sdpa      llama-3.2-1b  -      decode   softmax-          tiled    (1,64,32)                     9.7       0.0         -         -  not_applicable
+sdpa      llama-3.2-1b  -      decode   av     -          tiled    (1,64,32)                    26.1       6.5         -         -  not_applicable
+sdpa      llama-3.2-1b  -      decode   total  -          tiled    (1,64,32)                   182.7      10.4         -         -  not_applicable
+
+========== SDPA: coopmat (WMMA) vs tiled, prefill S=2048 ==========
+model         sub        tiled_us  coopmat_us  speedup  dispatch
+llama-3.1-8b  qk           4842.1         0.0        -  confirmed
+llama-3.1-8b  av           6023.3         0.0        -  confirmed
+llama-3.1-8b  total       11754.4      1878.1    6.26x  confirmed
+llama-3.2-3b  qk           3917.7         0.0        -  confirmed
+llama-3.2-3b  av           4751.5         0.0        -  confirmed
+llama-3.2-3b  total        9403.6      1236.7    7.60x  confirmed
+llama-3.2-1b  qk           3290.3         0.0        -  confirmed
+llama-3.2-1b  av           4043.4         0.0        -  confirmed
+llama-3.2-1b  total        8322.2       732.9   11.36x  confirmed
+sdpa geomean (total, all models): 8.15x
+
+OVERALL WMMA geomean (3 sites: linear prefill shapes + sdpa prefill totals): 8.15x
