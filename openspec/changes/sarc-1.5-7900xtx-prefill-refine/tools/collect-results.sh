@@ -4,5 +4,5 @@
 source "$(dirname "$(readlink -f "$0")")/env.sh"
 S=$1; shift; O=$T/../results/7900xtx/sessions/$S; mkdir -p "$O"
 for f in "$@"; do mkdir -p "$O/$(dirname "$f")"
-  sed -e "s#${GPUHOST:-<gpu-host>}#<gpu-host>#g" -e "s#$GROOT#<gpu-root>#g" -e "s#$(dirname "$GROOT")#<gpu-home>#g" \
+  sed -e "s#${GPUHOST:?GPUHOST in env.local}#<gpu-host>#g" -e "s#$GROOT#<gpu-root>#g" -e "s#$(dirname "$GROOT")#<gpu-home>#g" \
       -e "s#$A#<artifacts>#g" -e "s#$(dirname "$A")#<campaign-root>#g" "$A/stage/$S/$f" > "$O/$f"; done
