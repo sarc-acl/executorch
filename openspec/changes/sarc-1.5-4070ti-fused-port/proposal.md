@@ -235,7 +235,7 @@ fp32 accumulator 92.3 TFLOP/s, int8 369.2 TOP/s, DRAM read 714 / write 641 / cop
 | kernel | rate in the prefill | roof | percent |
 |---|---|---|---|
 | fused attention, d64 (1B) | 48.9 to 49.0 TFLOP/s of executed matrix work (98.5 % of it below the causal diagonal) | 92.3 (fp16 -> fp32 matrix) | 53 % |
-| fused attention, d128 (3B, 8B) | 54.8 to 58.4 TFLOP/s (97 % causal) | 92.3 | 59 to 63 % |
+| fused attention, d128 (3B, 8B) | 54.8 to 58.5 TFLOP/s (97 % causal) | 92.3 | 59 to 63 % |
 | 4w linear (`ga` tiles), unchanged | 116 to 121 TFLOP/s | 182.8 (fp16 matrix) | 64 to 66 % |
 | 8da4w linear (zpgtr), unchanged | 144 to 158 TOP/s | 369.2 (int8 matrix) | 39 to 43 % |
 
@@ -243,7 +243,10 @@ Negative results and things that did not go as written:
 
 - No candidate was rejected and no gate failed, but the first gate was incomplete and the campaign was reopened
   once after review (see History above). No runner abort occurred in the 920 `llama_main` calls of this
-  campaign (176 in eight `verify.sh` runs, 696 in six sessions, 24 traced, 24 in the quick look): all rc 0, with the model file warmed before every call (D5) and 0 slow loads recorded.
+  campaign (176 in eight `verify.sh` runs, 696 in six sessions, 24 traced, 24 in the quick look): all rc 0, with the model file warmed before every call (D5).
+  One slow load was recorded among the 696 session runs: `prefill-8b-8da4w-parent-r1` of `s4-c1` (3.0 s before
+  the first loaded clock sample, `results/4070ti/sessions/s4-c1/loads.csv`); it ended rc 0, is valid under the
+  fixed criteria (clock, samples, no thermal reason) and is kept. The other five sessions record none.
 - Outside the production shapes the candidate's error against the reference is larger than the parent's in one
   metric on 3 of 9 test shapes, by 0.2 to 5 %. Criterion 1 of D3 names the production shapes, where it is not
   larger; the numbers are all in `results/4070ti/probe/fused1-topic3/reference-error-rule.txt` (and, identical,

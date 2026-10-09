@@ -72,7 +72,11 @@ Parent `6050b1287` with `4070ti-refine1` against `topic3` with `4070ti-fused1`.
   (24 confirmed + 24 `unexpected_coopmat`, as the parent); 22 runner calls rc 0; verify-check ACCEPT.
 - Timed session (01:54 to 02:30 UTC): 84 timed and 36 next-token runs, all rc 0, all valid, none replaced;
   arms alternate parent-first on odd repeats; lowest per-run median clock 2595 MHz against the floor 2517; at
-  least 2 clock samples per window; 0 slow loads; start temperatures 45 to 50 C, maximum 67 C.
+  least 2 clock samples per window; start temperatures 45 to 50 C, maximum 67 C. **1 slow load of 120**
+  (`loads.csv`: `prefill-8b-8da4w-parent-r1`, the first process of the cell, 3.0 s between process start and
+  the first loaded clock sample, 7.5 s in all, model file 93 % cached before the warming pass). The run ended
+  rc 0 with 15 clock samples in its window at a median of 2760 MHz and no thermal reason; it is valid under the
+  fixed criteria and is kept, classified slow as recorded.
   **Throttle reasons: at least 48 samples per timed run, a thermal reason (`sw_thermal_slowdown`,
   `hw_thermal_slowdown`) active in 0 samples of every run, `hw_slowdown` in 0.** The raw masks seen are
   `0x1` (idle), `0x4` (the power cap, set under load on this card by design, L16), `0x400` and `0x404`; the
@@ -145,7 +149,8 @@ above); 0 slow loads; next token SAME in 24 of 24 rows against the stock attenti
 igpu-roofline `fast`, run `roofline/2026-10-08-fast` (22:40 to 23:05 UTC, driver 615.71.09): matrix fp16
 182.8 TFLOP/s, fp16 with fp32 accumulator 92.3, int8 369.2 TOP/s; DRAM read 714, write 641, copy 646 GB/s.
 From `s4-c1`'s traces (`results/4070ti/roofline/{fused,gemm}-roof-s4-c1.txt`): the fused kernel runs at 53 %
-(d64, 48.9 to 49.0 TFLOP/s) and 59 to 63 % (d128, 54.8 to 58.4) of the fp16 -> fp32 matrix roof; the unchanged
+(d64, 48.9 to 49.0 TFLOP/s) and 59 to 63 % (d128, 54.8 to 58.5; rates from the unrounded dispatch times) of the
+fp16 -> fp32 matrix roof; the unchanged
 linear kernels at 64 to 66 % (4w, 116 to 121 TFLOP/s) and 39 to 43 % (8da4w, 144 to 158 TOP/s) of theirs.
 
 ### Final checks on the committed tree (2026-10-09 03:05 UTC)
@@ -170,7 +175,8 @@ the hook (`impl/SDPA.cpp`, `impl/sarc/SdpaCoopmat.cpp`, `impl/sarc/SdpaCoopmat.h
 pass.
 
 All 920 `llama_main` calls of the campaign ended with rc 0 (176 in eight `verify.sh` runs, 696 in six
-sessions, 24 traced, 24 in the quick look): no runner abort, no device loss, no foreign GPU process. The kernel
+sessions, 24 traced, 24 in the quick look): no runner abort, no device loss, no foreign GPU process. One of the 696 session runs was a slow load (in
+`s4-c1`, above); the other five sessions record none. The kernel
 log of this boot (since 2026-10-07 16:45 UTC, read with `journalctl -k`) has no `Xid` line.
 
 **Everything below this line is the record of the state before the review (build `topic2`, sessions without
