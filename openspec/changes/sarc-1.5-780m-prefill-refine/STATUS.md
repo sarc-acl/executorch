@@ -2,38 +2,189 @@
 
 ## Round 3 (2026-10-08): `fused3sb` and `780m-final` (closing task, not a tuning round)
 
-Updated 2026-10-09 03:35 UTC. **Not closed: the replacement timed sessions the owner ordered are running.**
-The owner answered the question below on 2026-10-09 02:50 UTC with option (b) (task file, last section): items A
-and B are timed again on `head4`, the same binaries, with `tools/e2e5.sh` recording the two missing R6
-predicates; the gate, the tiers and the byte comparison are not repeated. The numbers of round 3 will be those
-of the replacement sessions; the tables below are the earlier sessions ("R6 predicates as recorded by the
-earlier tool; item B with an idle `nvtop` attached") until this file is updated.
+Updated 2026-10-09 04:55 UTC. **Not closed: the replacement timed sessions the owner ordered (option (b),
+2026-10-09 02:50 UTC) were run and are incomplete under the rule as decided; one owner decision is needed
+("Decision needed from the owner (open, 2026-10-09 04:55 UTC)" directly below).** Nothing is running and nothing
+is queued; only the hold watcher is alive. No `nvtop` on the host (PID 245296 gone at 03:18 UTC; none found
+before either session, `prestart.txt`).
 
-**Running now (started 03:36 UTC, detached): `chain29.sh`** (copy in `results/780m/round3/`; status file
-`<artifacts 10-08>/logs/chain29.status`): session A into `stage/r3a-fused3sb-head4/raw-r6`, then session B into
-`stage/r3b-final-dev15-head4/raw-r6`, each from a cool start, `--no-check` (timed runs only), about 35 minutes
-each plus cooling. Nothing else runs; the hold watcher is alive. PID 245296 (`nvtop`) is gone (checked 03:18
-UTC), no `nvtop` is running.
+In one sentence: with `throttle_status` sampled, bit 1 (`0x00000002`, no other value) is set in at least one
+sample of the measured window in 113 of 186 timed runs, in every run of several cells, so "a non-zero status in
+the window makes the run invalid" leaves 1 of 6 cells (item B) and 3 of 6 (item A) with 5 valid runs per arm;
+nothing else was found: no foreign GPU process, no foreign DRM client, clock medians at or above the floor,
+at least 5 clock samples, rc 0 in every row. No number of round 3 is reported as final from these sessions.
 
-What `tools/e2e5.sh` does now, and nothing else (smoke-tested 03:21 UTC on 1B 4w, 4 runs, `stage/
-r3a-fused3sb-head4/smoke-r6`: 3828 to 3842 tok/s, `throttle_status` 0 in every sample, the runner's own DRM
-client seen with 1.0 s of engine time, no foreign process or client; synthetic monitor files check each reason):
+### Decision needed from the owner (open, 2026-10-09 04:55 UTC)
+
+**What happened.** `tools/e2e5.sh` was changed as decided and nothing else (list below); items A and B were
+timed again on `head4`, the staged binaries of the earlier sessions (`llama_main` sha256 `578935be...`,
+`libllama_runner.so` `f94c058a...`, checked by the chain before the start and written to each `env.txt`),
+`--no-check`, 5 runs per arm per cell, at most 3 extra pairs per cell as the tool always had. Chain
+`chain30.sh`, 03:26 to 04:40 UTC (`results/780m/round3/chain30.status`); session A 03:28 to 04:03 UTC from
+43 C, session B 04:07 to 04:40 UTC from 43 C. Evidence: `results/780m/sessions/{r3a-fused3sb-head4-r6,
+r3b-final-dev15-head4-r6}/` (`runs.csv`, `env.txt`, `summary.csv`, `analysis.txt` = output of
+`tools/r6_analyze.py`, which recomputes every row from the per-run log, `.clk` and `.mon` files: 94 of 94 and
+92 of 92 rows equal `runs.csv`); raw data `<artifacts 10-08>/stage/*-head4/raw-r6b/`.
+
+**Item A, `c11` with `fused3` against `c11` with `fused3sb`, monitored** (valid = every R6 predicate as decided):
+
+| cell | valid / rows, parent | valid / rows, candidate | samples in the window with status 0x2, parent / candidate | median of 5 valid, parent -> candidate | difference |
+|---|---|---|---|---|---:|
+| 1B 4w | 8 / 8 | 5 / 8 | 0 of 40 / 3 of 40 | 3835.21 -> 3835.21 | 0.00 % |
+| 1B 8da4w | 7 / 7 | 5 / 7 | 0 of 35 / 2 of 35 | 3764.71 -> 3764.71 | 0.00 % |
+| 3B 4w | 2 / 8 | 4 / 8 | 7 of 104 / 4 of 106 | **incomplete** | |
+| 3B 8da4w | 5 / 8 | 5 / 8 | 3 of 112 / 4 of 112 | 1398.91 -> 1399.86 | +0.07 % |
+| 8B 4w | 0 / 8 | 0 / 8 | 77 of 240 / 80 of 240 | **incomplete** | |
+| 8B 8da4w | 0 / 8 | 0 / 8 | 48 of 248 / 47 of 247 | **incomplete** | |
+
+94 timed rows: 41 valid, 53 invalid, all 53 with the single reason `throttle`. Geomean over the 3 complete cells
++0.02 %; that is not the item's number (R11 asks for six cells).
+
+**Item B, `780m-final` against `dev/1.5`, monitored:**
+
+| cell | valid / rows, parent | valid / rows, candidate | samples in the window with status 0x2, parent / candidate | median of 5 valid, parent -> candidate | gain |
+|---|---|---|---|---|---:|
+| 1B 4w | 1 / 8 | 6 / 8 | 19 of 56 / 2 of 40 | **incomplete** | |
+| 1B 8da4w | 6 / 6 | 5 / 6 | 0 of 47 / 1 of 30 | 2537.79 -> 3764.71 | +48.35 % |
+| 3B 4w | 0 / 8 | 3 / 8 | 78 of 136 / 6 of 107 | **incomplete** | |
+| 3B 8da4w | 8 / 8 | 2 / 8 | 0 of 147 / 6 of 109 | **incomplete** | |
+| 8B 4w | 0 / 8 | 0 / 8 | 214 of 296 / 113 of 241 | **incomplete** | |
+| 8B 8da4w | 1 / 8 | 0 / 8 | 17 of 319 / 80 of 248 | **incomplete** | |
+
+92 timed rows: 32 valid, 60 invalid, all 60 with the single reason `throttle`. One complete cell.
+
+**The other predicates, both sessions, all 186 timed rows** (recomputed, `analysis.txt`): rc 0, 2,048 prompt
+tokens, 0 generated; guard pattern (now with `nvtop`) empty before and after every run; the monitor took 6 to
+46 samples per run, none with a process of the pattern outside the session and none with a foreign DRM client;
+the runner's own client was read in every run (940 to 8,677 ms of engine time), so the `fdinfo` reading worked;
+5 to 40 clock samples in the window; clock median 2800 MHz in every row of A, 2718 to 2800 in B (floor 2700);
+lowest single sample 2584 (A) and 2595 MHz (B); peak temperature 91 C (A), 94 C (B); runs start at 43 to 49 C.
+
+**Limits of the monitoring, accepted by the decision of 02:50 UTC:** the `fdinfo` of other users' processes
+(the gdm greeter, which holds the display on this GPU) is not readable without sudo, so for them only the
+device-wide `gpu_busy_percent` is recorded; the bits of `throttle_status` are recorded raw and the tool does
+not interpret them.
+
+**What the status looks like** (measured; the reading of the bit that follows is not):
+
+- The only non-zero value in 3,335 window samples is `0x00000002` (811 samples). It is 0 at idle, 0 in all 60
+  samples of the smoke test, and in 1B cells it appears as one 0.1 s sample in some runs.
+- Samples with the bit have a median clock of 2790 MHz (A) and 2752 MHz (B), minimum 2584; samples without it
+  2800 MHz, minimum 2628. So the bit goes with the short clock dips the campaign has always seen inside runs
+  whose median stays at the top level.
+- Rates of rows with and without the bit, same cell and arm, where both exist: equal medians in 1B 4w, 1B 8da4w
+  and 3B 4w (A: 3835.21 / 3835.21, 3764.71 / 3764.71, 1458.17 / 1458.17); 3B 8da4w is 1412.41 with against
+  1398.91 without (the cell with two rate levels in every session of this round, spread 1.0 to 1.1 %).
+- It depends on the workload: parent arm of item B (stock attention kernels) 78 of 136 samples in 3B 4w and
+  0 of 147 in 3B 8da4w.
+- Not measured, read only: in the upstream kernel's interface header for this SMU family
+  (`drivers/gpu/drm/amd/pm/swsmu/inc/pmfw_if/smu13_driver_if_v13_0_4.h`, v6.12; `smu_v13_0_4_ppt.c` copies
+  `metrics.ThrottlerStatus` into `gpu_metrics->throttle_status`) bit 1 is `THROTTLER_STATUS_BIT_FPPT`, a
+  package power limit; the thermal bits there are 4 to 6 (`THM_CORE`, `THM_GFX`, `THM_SOC`) and 9 to 10
+  (`PROCHOT`). I have not checked this against the source of this host's distribution kernel or against the
+  firmware, and the decision of 02:50 UTC says the bits are not to be interpreted by the tool. If the reading is
+  right, this is the case of lesson L16 (a power-limit flag set in loaded runs by design) and R6 as written
+  ("no thermal throttle reason") would not reject these runs; that is the owner's to say, not mine.
+
+**For the ruling only, NOT the round's numbers:** the same rows with every predicate applied except `throttle`
+(first 5 such rows per arm; `analysis.txt`, second table). No run would be added or removed, nothing re-run.
+
+| cell | item A: parent -> candidate | difference | item B: parent -> candidate | gain |
+|---|---|---:|---|---:|
+| 1B 4w | 3835.21 -> 3835.21 | 0.00 % | 2694.74 -> 3835.21 | +42.32 % |
+| 1B 8da4w | 3764.71 -> 3764.71 | 0.00 % | 2537.79 -> 3757.80 | +48.07 % |
+| 3B 4w | 1457.65 -> 1457.65 | 0.00 % | 1141.58 -> 1457.65 | +27.69 % |
+| 3B 8da4w | 1412.41 -> 1398.91 | -0.96 % | 1047.57 -> 1414.36 | +35.01 % |
+| 8B 4w | 639.00 -> 640.00 | +0.16 % | 519.53 -> 639.00 | +23.00 % |
+| 8B 8da4w | 628.80 -> 628.61 | -0.03 % | 487.16 -> 628.41 | +29.00 % |
+| geomean | | -0.14 % | | +33.90 % |
+
+**The owner's choice:**
+
+- **(a)** say which bits of `throttle_status` are a "thermal throttle reason" on this APU (for instance: bits 4
+  to 6 and 9 to 10 reject, bit 1 is recorded). Then both sessions are complete on the rows already recorded
+  (the table just above, if bit 1 does not reject), with no new run; I would change the one predicate in
+  `e2e5.sh` and `r6_analyze.py`, recompute, and put the numbers in as the round's.
+- **(b)** keep "any non-zero status rejects". Then the 8B cells cannot be measured on this device (1 of
+  64 runs valid in the two sessions), and the round cannot close with six cells; say what closes it instead.
+- **(c)** accept the earlier `head4` sessions (below) as the round's numbers, with the two predicates now
+  evidenced by these sessions on the same binaries rather than by the sessions themselves.
+
+I did not raise the cap of 3 extra pairs, change the window, or re-run a cell: each would have been fitting the
+protocol to the result.
+
+**A session stopped and superseded (03:23 to 03:26 UTC), my error.** `chain29.sh` was the first start. The
+shell that launched it stayed alive for two minutes with the commit message in its command line, which
+contained the word `nvtop`; the guard, now matching that word, marked the first 10 rows `other_gpu_process`
+(before) and `other_gpu_process_during` (the listed process is `277383:/bin/bash`). The guard did what it was
+changed to do; the process was not a GPU job. I stopped the chain after 18 rows (the cell could no longer reach
+5 valid runs), moved its output to `stage/r3a-fused3sb-head4/superseded/r6-actor-shell-matched-guard/`
+(`runs.csv` copied to `results/780m/sessions/r3a-fused3sb-head4-r6/superseded/`), and started `chain30.sh`, the
+same script, from a command line without such a word. The header comment of `chain30.sh` says 03:27 UTC for the
+stop; `chain29.status` has the time.
+
+**What `tools/e2e5.sh` does now** (commit `36179ebe0`; smoke test 03:21 UTC on 1B 4w, 4 runs,
+`results/780m/round3/e2e5-smoke-r6/runs.csv`; each reason below was also produced once from a synthetic file):
 
 - the 0.1 s sampler also writes `throttle_status` (u32 at offset 108) and `temperature_gfx` of `gpu_metrics`
-  (format 2.1); a run with a non-zero status among the samples of its measured window is invalid (`throttle`);
-  fewer than 5 status samples there: `throttle_unsampled`. The OR over the window (`thr_or`) and over the whole
-  process (`thr_run_or`) are recorded raw; the bits are not interpreted;
+  (format 2.1); a non-zero status among the samples of the measured window (the prefill window the clock
+  predicate uses) makes the run invalid (`throttle`); fewer than 5 status samples there: `throttle_unsampled`.
+  The OR over the window (`thr_or`) and over the whole process (`thr_run_or`) are recorded;
 - a monitor samples every 0.25 s, while the runner executes, the processes the guard's pattern matches and the
   DRM clients in the `fdinfo` this user can read (`logs/<run>.mon`). A matching process that does not descend
   from the session script makes the run invalid (`other_gpu_process_during`); so does a foreign client whose
   summed `drm-engine-*` time grows during the run (`foreign_gpu_client`), and a run without a monitor sample
-  (`monitor_unsampled`). The runner's own engine time is recorded (`own_engine_ms`), which shows per run that
-  the monitor could read a client;
-- the clock-sample minimum is 5 (`clock_unsampled` below it); `nvtop` is in the guard's pattern.
+  (`monitor_unsampled`). The runner's own engine time is recorded (`own_engine_ms`);
+- the clock-sample minimum is 5 (`clock_unsampled`); `nvtop` is in the guard's pattern.
 
-Limits, accepted by the owner's decision: the `fdinfo` of other users' processes (the gdm greeter, which holds
-the display on this GPU) cannot be read without sudo, so for them only the device-wide `gpu_busy_percent` is
-recorded; the bits of `throttle_status` are raw values.
+**`check.sh --no-build`** (04:50 UTC, unedited, with the evidence files of these sessions in the tree):
+
+```
+== 1 zone rule vs origin/release/1.5
+== 2 twin wrappers
+== 3 test_sarc_select
+test_sarc_select: PASS (1240 checks, 31 rows, 0 candidates, dev zone absent, unverified off)
+[sarc_dev] overrides active: unverified=1 variant= dq8ca_variant=
+test_sarc_select: PASS (1433 checks, 31 rows, 122 candidates, dev zone linked, unverified on)
+check.sh: PASS
+```
+
+### The specification sentences behind the barriers (owner note 2026-10-09 00:20 UTC, decision 02:50 UTC item 4)
+
+The `vulkan-docs` MCP server was unavailable again in this session (`CONNECTION_CLOSED: "Connection closed"`),
+so the text is taken from the published sources, fetched 2026-10-09 03:40 UTC (KhronosGroup/GLSL, branch `main`
+at `0099bf83b028`). No shader was written or changed after the note.
+
+- `memoryBarrierShared()` does not make an invocation wait for another. The OpenGL Shading Language
+  specification, "Shader Memory Control Functions"
+  (https://github.com/KhronosGroup/GLSL/blob/main/chapters/builtinfunctions.adoc): "When called, these functions
+  will wait for the completion of all reads and writes previously performed by the caller that access selected
+  variable types, and then return with no other effect." And: "When these functions return, the effects of any
+  memory stores performed using coherent variables prior to the call will be visible to any future^1^ coherent
+  access to the same memory performed by any other shader invocation", with the footnote "An access is only a
+  _future_ access if a _happens-before_ relation can be established between the store and the load." The memory
+  barrier alone establishes no such relation between two invocations.
+- What does: same document, "Shader Invocation Control Functions": "For any given static instance of
+  *barrier*(), [...] all compute shader invocations for a single workgroup must enter it before any will continue
+  beyond it." And, the sentence `fused3sb` relies on, `GL_KHR_shader_subgroup`
+  (https://github.com/KhronosGroup/GLSL/blob/main/extensions/khr/GL_KHR_shader_subgroup.txt): "The function
+  subgroupBarrier() enforces that all active invocations within a subgroup must execute this function before any
+  are allowed to continue their execution, and the results of any memory stores performed using coherent
+  variables performed prior to the call will be visible to any future coherent access to the same memory
+  performed by any other shader invocation within the same subgroup."
+- What this covers and what it does not: the guarantee is for the invocations of one subgroup. `fused3sb` is
+  shipped in two variants whose workgroup is 32 invocations (`s32` in their names), one subgroup on this
+  device (`proposal.md`, "Why the barriers"); on a device whose subgroup is smaller than the workgroup, `subgroupBarrier()` does not order lanes of different subgroups, and `barrier()`
+  would be the function to use. That is a note for the ports, not a change here.
+
+### The earlier `head4` sessions: R6 predicates as recorded by the earlier tool; item B with an idle `nvtop` attached
+
+The part "Replacement build `head4`" below is unchanged. Its build, export, SPIR-V, dispatch, gate, tier and
+byte-comparison results stand and were not repeated (decision of 02:50 UTC). Its two session tables (item A
+-0.12 %, item B +33.92 %) are kept as measured, with this label: R6 predicates as recorded by the earlier tool
+(processes before and after each run only, no throttle status, clock-sample minimum 2 in the tool although
+every timed row had at least 5); item B with an idle `nvtop` attached. By the decision they are not the round's
+reported numbers; which numbers are depends on the answer to the question above.
 
 **Which build each number comes from:** the part "Replacement build `head4`" directly below is `head4`
 (`c639d4760`, recursive export from object stores) and is what closes the round. Everything from "State before
@@ -45,13 +196,13 @@ part below.
 |---|---|
 | A.3 build of the branch head | `head4` = `c639d4760`, exported from object stores only, no local patch; `spirv_golden.py` PASS (53 shipped variants); 1,469 of 1,469 SPIR-V files of `head2` (candidate 11's gate) byte-identical, 2 new (the `fused3sb` pair); 1,471 of 1,471 identical to `head3` |
 | A.4 gate with `fused3sb` | `verify.sh` rc = 0, equal to candidate 11's gate apart from the tok/s figures; tiers `all` / `extended` / `full` 12 passes each: 192 cases, 0 failed, 0 mismatches, `pairing=ok`; next token SAME in 18 of 18 items (six cells, three prompts); SDPA output byte-identical to `fused3` in 21 of 21 cases (and the 5 of tier `fused`) |
-| A.5 session `c11` with `fused3` against `c11` with `fused3sb` | **-0.12 % geomean** (cells -0.41 to 0.00 %), 60 of 60 timed runs valid on the recorded predicates: inside the band |
+| A.5 session `c11` with `fused3` against `c11` with `fused3sb` | earlier tool: -0.12 % geomean (cells -0.41 to 0.00 %), 60 of 60 valid on the predicates it recorded. **Monitored session: incomplete (3 of 6 cells; `throttle_status` 0x2), owner decision needed** |
 | B.1 dispatch of `780m-final` alone | equals candidate 11's gate: `verify.out` identical line for line (tok/s set aside); the tiers dispatch the `fused3sb` pair; three-kernel path as `c11` |
-| B.2 session `780m-final` against `dev/1.5` | **+33.92 % geomean** (+23.62 to +48.43 %), 60 of 60 timed runs valid on the recorded predicates; round 2 measured +33.82 %: inside the band |
-| C | `proposal.md` section "Round 3" says which build each number comes from; `check.sh --no-build` PASS (02:10 UTC, output below; run by the actor only, it compiles the two selector tests); committed and pushed. **Round not closed: R6 validity, see the decision below** |
+| B.2 session `780m-final` against `dev/1.5` | earlier tool, idle `nvtop` attached: +33.92 % geomean (+23.62 to +48.43 %), 60 of 60 valid on the predicates it recorded; round 2 measured +33.82 %. **Monitored session: incomplete (1 of 6 cells; `throttle_status` 0x2), owner decision needed** |
+| C | `proposal.md` section "Round 3" says which build each number comes from; `check.sh --no-build` PASS (02:10 UTC, output below; run by the actor only, it compiles the two selector tests); committed and pushed. **Round not closed: see the decision above** |
 | **recommended configuration** | **`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final`** |
 
-### Decision needed from the owner (asked 2026-10-09 02:15 UTC; answered 02:50 UTC: option (b))
+### Record: the question of 2026-10-09 02:15 UTC (answered 02:50 UTC: option (b); kept as written)
 
 **R6 validity is not fully evidenced for the timed runs of round 3, on `head4` or on `head3`.** R6: "A run is
 valid only with rc 0, 2048 prompt tokens, 0 generated tokens, no other GPU workload before, during or after,

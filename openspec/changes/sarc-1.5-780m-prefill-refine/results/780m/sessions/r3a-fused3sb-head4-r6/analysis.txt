@@ -1,0 +1,35 @@
+rows 94, all recomputed from logs/.clk/.mon equal runs.csv: 94
+thr_or per row: {'0x00000000': 41, '0x00000002': 53}  per sample in window: {0: 1284, 2: 275}
+reasons: {'valid': 41, 'throttle': 53}
+rows with a foreign process or DRM client in any monitor sample: 0 ; mon_n 6 to 39 ; own_engine_ms 940.6 to 6775.2 ; others before/after non-empty: 0
+clk_n 5 to 31 ; clk_med 2800.0 to 2800.0 ; lowest sample 2584.0 ; peak temp1 91 C, gpu_metrics 91.62 C; temp_pre 43 to 48
+clock of samples with status != 0: n=275 median 2790 min 2584 max 2800; with status 0: n=1284 median 2800 min 2636 max 2800
+## rule as decided (first 5 valid rows)
+1b 4w: 3835.21 -> 3835.21 +0.000000 % spread 0.19/0.00 valid/rows parent 8/8 cand 5/8; samples with status parent 0/40 cand 3/40
+1b 8da4w: 3764.71 -> 3764.71 +0.000000 % spread 0.37/0.37 valid/rows parent 7/7 cand 5/7; samples with status parent 0/35 cand 2/35
+3b 4w: INCOMPLETE valid/rows parent 2/8 cand 4/8; samples with status parent 7/104 cand 4/106
+3b 8da4w: 1398.91 -> 1399.86 +0.067910 % spread 1.04/1.10 valid/rows parent 5/8 cand 5/8; samples with status parent 3/112 cand 4/112
+8b 4w: INCOMPLETE valid/rows parent 0/8 cand 0/8; samples with status parent 77/240 cand 80/240
+8b 8da4w: INCOMPLETE valid/rows parent 0/8 cand 0/8; samples with status parent 48/248 cand 47/247
+geomean over 3 cells: +0.022632 %
+## NOT the rule, for the owner's ruling: first 5 rows valid on every predicate but `throttle`
+1b 4w: 3835.21 -> 3835.21 +0.000000 % spread 0.19/0.19 valid/rows parent 8/8 cand 5/8; samples with status parent 0/40 cand 3/40
+1b 8da4w: 3764.71 -> 3764.71 +0.000000 % spread 0.37/0.37 valid/rows parent 7/7 cand 5/7; samples with status parent 0/35 cand 2/35
+3b 4w: 1457.65 -> 1457.65 +0.000000 % spread 0.07/0.14 valid/rows parent 2/8 cand 4/8; samples with status parent 7/104 cand 4/106
+3b 8da4w: 1412.41 -> 1398.91 -0.955813 % spread 1.03/0.97 valid/rows parent 5/8 cand 5/8; samples with status parent 3/112 cand 4/112
+8b 4w: 639.002 -> 640 +0.156181 % spread 0.34/0.34 valid/rows parent 0/8 cand 0/8; samples with status parent 77/240 cand 80/240
+8b 8da4w: 628.8 -> 628.607 -0.030693 % spread 0.18/0.25 valid/rows parent 0/8 cand 0/8; samples with status parent 48/248 cand 47/247
+geomean over 6 cells: -0.139078 %
+## tok/s of rows with and without status in the window, per cell and arm (median, n)
+1b 4w parent: with - (n=0), without 3835.21 (n=8)
+1b 4w cand: with 3835.21 (n=3), without 3835.21 (n=5)
+1b 8da4w parent: with - (n=0), without 3764.71 (n=7)
+1b 8da4w cand: with 3764.71 (n=2), without 3764.71 (n=5)
+3b 4w parent: with 1458.17 (n=6), without 1458.17 (n=2)
+3b 4w cand: with 1458.17 (n=4), without 1458.17 (n=4)
+3b 8da4w parent: with 1412.41 (n=3), without 1398.91 (n=5)
+3b 8da4w cand: with 1412.41 (n=3), without 1399.86 (n=5)
+8b 4w parent: with 639.1015 (n=8), without - (n=0)
+8b 4w cand: with 639.9 (n=8), without - (n=0)
+8b 8da4w parent: with 628.607 (n=8), without - (n=0)
+8b 8da4w cand: with 628.5105 (n=8), without - (n=0)

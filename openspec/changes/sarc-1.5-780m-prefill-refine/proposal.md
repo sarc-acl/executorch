@@ -682,19 +682,25 @@ gets one name. Dev zone only; no release-zone file is touched in this round. Raw
 `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-08/`, evidence in `results/780m/round3/` and
 `results/780m/sessions/{r3a-fused3sb,r3b-final-dev15}{,-head4}/`.
 
-**Status 2026-10-09: measured on the replacement build `head4`; not closed, one owner decision is open** (R6
-validity: no evidence of GPU workload during a run or of a throttle reason, and a monitor (`nvtop`) started by an
-ssh session ran during item B; `STATUS.md`, "Decision needed from the owner (open, 2026-10-09)"). The round was measured twice, on two builds of
-the same commit `c639d4760`. `head3` (2026-10-08 19:44 UTC) took its submodules from the working copy and so did
-not satisfy R5; the review found it, and the owner decided a replacement (2026-10-08 22:55 UTC, task file).
-`head4` is a recursive export from git object stores only. **The numbers that close the round are `head4`'s**:
-subsection "Replacement build `head4`" directly below. The subsections after it that carry "(build `head3`)" in
-their heading are kept as measured and are evidence for `head3` only.
+**Status 2026-10-09 04:55 UTC: not closed, one owner decision is open** (`STATUS.md`, "Decision needed from the
+owner (open, 2026-10-09 04:55 UTC)"). The build, the gate, the tiers, the dispatch and the byte comparison are
+done on the replacement build `head4` and stand. The timed sessions do not yet have final numbers: the `head4`
+sessions in the table below were measured with a tool that did not record two predicates of the R6 validity
+rule (and item B with an idle `nvtop` attached); the owner ordered monitored replacements (2026-10-09 02:50
+UTC), and those are incomplete because the device's `throttle_status` is non-zero in most runs (subsection
+"Monitored timed sessions on `head4`" below). The round was built twice from the same commit `c639d4760`:
+`head3` (2026-10-08 19:44 UTC) took its submodules from the working copy and so did not satisfy R5; the review
+found it, and the owner decided a replacement (2026-10-08 22:55 UTC, task file). `head4` is a recursive export
+from git object stores only. The subsections that carry "(build `head3`)" in their heading are kept as measured
+and are evidence for `head3` only.
+
+Sessions with the earlier tool (R6 predicates as recorded by the earlier tool; `head4` item B with an idle
+`nvtop` attached), not the round's final numbers:
 
 | | `head3` | `head4` |
 |---|---:|---:|
-| item A, `c11` with `fused3` against `c11` with `fused3sb`, geomean | -0.01 % | **-0.12 %** |
-| item B, `dev/1.5` dispatch against `780m-final`, geomean (round 2: +33.82 %) | +33.77 % | **+33.92 %** |
+| item A, `c11` with `fused3` against `c11` with `fused3sb`, geomean | -0.01 % | -0.12 % |
+| item B, `dev/1.5` dispatch against `780m-final`, geomean (round 2: +33.82 %) | +33.77 % | +33.92 % |
 
 **The recommended configuration is now `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final`.** It
 dispatches what candidate 11 dispatched, with the `fused3sb` pair in place of the `fused3` pair.
@@ -792,6 +798,32 @@ one after each `memoryBarrierShared();`, nothing else (`results/780m/round3/shad
 every line is listed in `STATUS.md`). The task file and the commit message speak of 14 calls: the kernel has 13;
 the fourteenth match of a text search is the sentence in the new header. The yaml lists the two variants of the
 final pair with the parameters of their `fused3` twins.
+
+### Monitored timed sessions on `head4` (owner decision 2026-10-09 02:50 UTC, option (b)): incomplete
+
+The earlier `head4` sessions below (item A -0.12 %, item B +33.92 %) carry the label the owner gave them: R6
+predicates as recorded by the earlier tool; item B with an idle `nvtop` attached. They were to be replaced by
+sessions on the same binaries with `tools/e2e5.sh` also recording `throttle_status` of `gpu_metrics` in its
+0.1 s sampler (non-zero in the measured window: invalid), the guard's processes and the DRM clients readable to
+this user during each run (a foreign one with engine time: invalid), a clock-sample minimum of 5, and `nvtop` in
+the guard's pattern. Limits accepted by the decision: the greeter's `fdinfo` is not readable (device-wide busy %
+only), and the status bits are recorded raw, not interpreted.
+
+Result (`results/780m/sessions/{r3a-fused3sb-head4-r6,r3b-final-dev15-head4-r6}/`, recomputed by
+`tools/r6_analyze.py`): no foreign process and no foreign DRM client in any of the 186 timed runs, clock and
+sample predicates met in all; but `throttle_status` reads `0x00000002` in at least one window sample of 113
+runs (53 of 94 in item A, 60 of 92 in item B; every 8B run of item A, 31 of 32 8B runs of item B). With at most
+3 extra pairs per cell, item A has 5 valid runs per arm in 3 of 6 cells (1B 4w 0.00 %, 1B 8da4w 0.00 %,
+3B 8da4w +0.07 %) and item B in 1 of 6 (1B 8da4w +48.35 %). **Neither session is complete; these are not the
+round's numbers.** Per-cell counts, what the bit correlates with (clock dips to a median of 2752 to 2790 MHz in
+the samples that carry it; equal rates with and without it in three cells), the unverified reading of the bit
+from the upstream kernel header (`THROTTLER_STATUS_BIT_FPPT`, a power limit, not one of the thermal bits), the
+table of the same rows without that one predicate (item A -0.14 %, item B +33.90 %; for the ruling only), and
+the three options are in `STATUS.md` under "Decision needed from the owner". Nothing was tuned, no cap or
+window was changed, no cell was re-run.
+
+A first start (`chain29.sh`) was stopped after 18 rows and superseded: the launching shell's command line
+contained a word of the guard's pattern and the guard rejected the first 10 rows for it (`STATUS.md`).
 
 ### Replacement build `head4` (owner decision 2026-10-08 22:55 UTC)
 
@@ -980,13 +1012,16 @@ of `s9-final-dev15`, and the fused kernel's output is byte-identical to the kern
   copied from the working copy), and on it the six model files were read into the page cache once per gate or
   session, not at each model change. The owner decided a replacement (2026-10-08 22:55 UTC); `head4` and its
   validation are above. The `head3` numbers stay on record for `head3` only.
-- **Open, owner decision needed (`STATUS.md`):** not evidenced on either build, as in rounds 1 and 2: GPU
-  processes during a run (checked before and after each), and a thermal throttle reason; "valid" means the
-  predicates `e2e5.sh` records, not full R6 validity. An `nvtop` monitor (no engine time in its `fdinfo`) ran
-  on the host from 2026-10-09 01:18 UTC, through item B on `head4`.
-- The barrier reasoning above was written from reading on 2026-10-08. The owner's note of 2026-10-09 00:20 UTC
-  asks for the specification sentence from the `vulkan-docs` server; the server did not connect in the closing
-  session, so that quotation is still to be added. No shader was written or changed after the note.
+- **Open, owner decision needed (`STATUS.md`, 2026-10-09 04:55 UTC):** see "Monitored timed sessions" below. The
+  two R6 predicates the earlier tool did not record were recorded in replacement sessions on `head4`; one of
+  them, `throttle_status`, is non-zero (bit 1 only) in most runs, so the replacement sessions are incomplete
+  under the rule as decided and the round has no final session numbers yet.
+- The specification sentences behind the barrier reasoning above are quoted in `STATUS.md` ("The specification
+  sentences behind the barriers"), from the published GLSL specification and `GL_KHR_shader_subgroup`; the
+  `vulkan-docs` server did not connect (`CONNECTION_CLOSED`). They say what the reasoning says: a memory barrier
+  waits for the caller's own accesses and makes stores visible to "future" accesses, which need a
+  happens-before relation; `subgroupBarrier()` is what makes all active invocations of the subgroup arrive
+  before any continues. No shader was written or changed after the owner's note.
 - `fused3` and its 33 variants stay in the tree as the record of round 2 (`c8` to `c10`). Whether the other
   `fused3` variants get barriers too, and whether `fused3` is removed at promotion, is the promotion's decision.
 - The fused attention entry point (`1c8861aa7`) is still subject to the owner's review before any promotion.
