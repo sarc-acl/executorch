@@ -2,7 +2,7 @@
 # probe_timed.sh <session> <model 1b|3b|8b> <scheme> [prompt file name in the stage dir = prompt_2048.txt]: the next-token logits at the last position of ONE prompt (default: the timed prompt)
 # for the four arms of stage/m51-LOCAL-ONLY/<session>: parent and candidate (logits_probe of each build, env of each arm), each default and with ET_VK_FORCE_TILED_LINEAR=1
 # (owner decision D1 item 1: the logits at the differing position for every arm). Needs the logits_probe binaries that probe_m51.sh pushed (lp-parent, lp-cand).
-# Tokenization: probe_prompts.py's tokenizer (tiktoken, Llama 3 file) with BOS prepended; the token count must equal 2048 for the timed prompt.
+# Tokenization: probe_prompts.py's tokenizer (tiktoken, Llama 3 file), no BOS (llama_main adds none for prompt_2048.txt: its run reports 2048 prompt tokens, and so does this tokenization); PROBE_BOS=1 prepends one. The token count must equal 2048.
 # Output: <stage>/probe-timed/<model>-<scheme>-<arm>-<mode>.{bin,log}, tokens-<model>.txt; analysis: probe_pos.py. One coordinator-hold unit.
 set -uo pipefail
 [[ -n ${SARC_HOLD_UNIT:-} ]] || exec env SARC_HOLD_UNIT=1 "$(dirname "$(readlink -f "$0")")/hold.sh" run "timed-prompt logits probe_timed.sh $*" "$0" "$@"
@@ -17,7 +17,7 @@ tok = os.environ.get("TOKENIZER", "<tokenizer>")
 ranks = load_tiktoken_bpe(tok); n = len(ranks)
 sp = {"<|begin_of_text|>": n, "<|end_of_text|>": n + 1}
 enc = tiktoken.Encoding(name="l3", pat_str=PAT, mergeable_ranks=ranks, special_tokens=sp)
-ids = [n] + enc.encode(open(sys.argv[1]).read(), disallowed_special=())
+ids = ([n] if os.environ.get("PROBE_BOS") == "1" else []) + enc.encode(open(sys.argv[1]).read(), disallowed_special=())
 print("tokens", len(ids), file=sys.stderr)
 open(sys.argv[2], "w").write(" ".join(map(str, ids)) + "\n")
 PY
