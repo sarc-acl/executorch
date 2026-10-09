@@ -4,8 +4,10 @@ Updated 2026-10-09 02:05 UTC (round 2 in progress; round 1 below is unchanged an
 
 ## Running now
 
-- Round 2 (owner decision 2026-10-08 23:38 UTC: the linear kernels), candidate 1 (8da4w), kernel-level work: a 2-round screen of the
-  pitch variants of build `r2e` (detached, `<artifacts>/logs/r2e-screen1.status`). No timed session is running.
+- Round 2, candidate 1 (8da4w A staging row pitch 24 bytes, profile `rx7600-refine4`, build `c6` = commit `36c7d1cc0`) against round 1's final stack
+  (build `final`): the gate (`tools/chain8.sh`, session `r2-c6-pitch`: timed session, `verify.sh` against `s0`, warm traces, byte comparison of the linear outputs),
+  started 2026-10-09 03:57 UTC, detached, status in `<artifacts>/logs/chain8-r2-c6-pitch.status`.
+- Candidate 2 (4w, profile `rx7600-refine5`, commit `d6d67ba78`) is committed; its build `c7` starts when the timed part of candidate 1's session is done (R5).
 - Never pushed from here (owner decision 2026-10-07 23:15 UTC): the coordinator publishes.
 
 ## Round 2: where it stands (details in `results/rx7600/round2/README.md`, rules in `proposal.md` "Round 2")
