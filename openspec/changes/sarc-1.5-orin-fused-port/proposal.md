@@ -242,8 +242,8 @@ cell. A/A under the same rules (`s4-aa2`): +0.07 %.
 
 | candidate | profile | gate | gain over its parent | outcome |
 |---|---|---|---:|---|
-| 1: fused attention kernel, one pass, packed K / V | `orin-fused1` | `s5-c1` on `topic4` (first: `s3-c1` on `topic1`, +6.01 %) | +6.13 % | GATE_ACCEPTED, no next-token item differs; arithmetic change, so the reference-error evidence is recorded beside it (criterion 1 met on the five S = 2048 cases; 41-prompt probe: no gross divergence) |
-| 2: two-pass form for head_dim 64 | `orin-fused2` | `s6-c2` on `topic4`, against candidate 1 | +0.54 % (1B +1.72 / +1.59 %) | GATE_ACCEPTED on correctness; every cell inside the +-2 % band: not adopted. Gated as candidate 2 by the owner's decision of 2026-10-09 01:00 UTC; the pre-registered clause of `thresholds.txt` (an unpacked form) stays unedited and by its letter there was no candidate 2 |
+| 1: fused attention kernel, one pass, packed K / V | `orin-fused1` | `s5-c1` on `topic4` (first: `s3-c1` on `topic1`, +6.01 %) | +6.13 % | **ACCEPTED (reference-error rule, owner decision 2026-10-04)**: criterion 1 met on the five S = 2048 cases (`results/orin/sdpa-error2/`), 41-prompt probe of the final stack with no gross divergence (`results/orin/probe/final-fused/`), differing next-token items: none. The gate's own `gate.done` reads `GATE_ACCEPTED ... all steps passed` and is kept as written |
+| 2: two-pass form for head_dim 64 | `orin-fused2` | `s6-c2` on `topic4`, against candidate 1 | +0.54 % (1B +1.72 / +1.59 %) | GATE_ACCEPTED on the gate and on criterion 1 of the reference-error rule only (`sdpa-error2`, next token SAME in 24 of 24 rows); no broad real-text probe of `orin-fused2` exists, so no D3 acceptance is claimed for it; every cell inside the +-2 % band: not adopted. Gated as candidate 2 by the owner's decision of 2026-10-09 01:00 UTC; the pre-registered clause of `thresholds.txt` (an unpacked form) stays unedited and by its letter there was no candidate 2 |
 
 Stop: two candidates at most (task), candidate 2 sub-threshold; closed by N3 with candidate 1 as the result.
 

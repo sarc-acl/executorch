@@ -1,6 +1,6 @@
 # STATUS: sarc-1.5-orin-fused-port
 
-**2026-10-09 15:50 UTC. Ready for the review to close. Result: `orin-fused1`, +6.13 % geomean over the tuned
+**2026-10-09 16:06 UTC. Review round 2 answered (wording, acceptance labels; one item is the coordinator's, below). Result: `orin-fused1`, +6.13 % geomean over the tuned
 parent (`s5-c1`) and +76.70 % over pristine `dev/1.5` (`s8-pristine`), measured on build `topic4`; candidate 2
 (`orin-fused2`) +0.54 %, gated, not adopted. Two labels go with every number, both by owner decision and neither
 keeping the campaign open: the shaders were compiled by the cross image's `glslc`, so the measured builds fail
@@ -8,6 +8,11 @@ keeping the campaign open: the shaders were compiled by the cross image's `glslc
 and the pipelines were created without the full-subgroups flag (section "Known defect: F1", decision of
 15:25 UTC). The re-measurement on the pinned-compiler builds that the entry of 15:35 UTC announced was stopped
 by the owner (`chain10`, killed 15:48:46 UTC in its first step) and produced no result.**
+
+**For the coordinator (blocks a clean `check.sh`):** the review tooling puts `.agents/skills/review-notes/SKILL.md`
+into this working copy, untracked. `sarc/tools/check.sh --no-build` fails its zone rule on it and on nothing else.
+Please place that skill outside the checkout and run the unmodified check again; the campaign will not edit
+`check.sh` or `sarc/HOOKS`, commit the file, or delete a file it does not own.
 
 All times are UTC from `date -u`.
 
@@ -29,7 +34,7 @@ All times are UTC from `date -u`.
 | `proposal.md`: "everything else is unchanged within 0.3 %" is false | Corrected from the raw sums: attention is 89 to 95 % of the reduction; linear GEMM -0.1 to -0.5 %, copy / view / other -0.2 to -0.7 %, everything else -0.8 to -4.6 % (4 to 13 ms per prefill), not located |
 | the residual row of "Where the time goes now" used rounded subtraction | Recomputed from the raw sums (1B: 130 / 231 ms) |
 | fp16 roof 9.7195 rounded to 9.720 | 9.719 |
-| `check.sh` not re-run by the reviewer | Re-run with and without the build steps (end of this file). **It now prints FAIL at step 1** for one untracked file that is not mine and that I have not touched: `.agents/skills/review-notes/SKILL.md` (dated 2026-10-04, in the working copy since about 14:46 UTC; a review-instruction file of the review tooling). Every other step passes. It is not committed and not part of this branch; whoever placed it should move it out of the working copy or the check keeps failing on it. At 15:50 UTC the check prints `check.sh: PASS`, rc 0 (end of this file); the directory disappeared with the older hmz run at about 15:51 UTC |
+| `check.sh` not re-run by the reviewer | Re-run with and without the build steps (end of this file). **It now prints FAIL at step 1** for one untracked file that is not mine and that I have not touched: `.agents/skills/review-notes/SKILL.md` (dated 2026-10-04, in the working copy since about 14:46 UTC; a review-instruction file of the review tooling). Every other step passes. It is not committed and not part of this branch; whoever placed it should move it out of the working copy or the check keeps failing on it. Still so at 16:06 UTC (the file was absent for a few minutes around 15:50 UTC and came back); see the end of this file |
 
 Build tag `topic4g` failed (rc 141: a `glslc --version | head -1` line I had added to the recipe, killed by
 `pipefail`; `parentg` got through the same line by timing) and is not used; `topic4p` is the same commit with
@@ -157,6 +162,7 @@ result is inside the band, at its lower end; the 4070 Ti port of the same kernel
 | shipped SPIR-V | build | **`spirv_golden.py`: FAIL, 14 DIFF lines** (the same 14 on the parent build; cross image's glslc). 53 of 53 shipped variants byte-identical to the parent build; none of the 14 is a shipped Orin kernel. Not passed as R5 / R7 write it; byte identity with the golden is not required for this campaign (owner decision 2026-10-09 15:50 UTC, "Known limitation") |
 | reference error, criterion 1 | `sdpa-error2` | rms and maximum not larger than the parent's on all five S = 2048 cases |
 | real-text evidence | `probe/final-fused/` | no differing next-token item; gross-divergence check not met in any cell; `ref_error_rule.py` MET |
+| how candidate 1 is recorded | | `ACCEPTED (reference-error rule, owner decision 2026-10-04)`; `results/orin/sdpa-error2/`, `results/orin/probe/final-fused/`; differing next-token items: none |
 | timed session against the tuned parent | `s5-c1` | +6.13 % geomean, 60 of 60 valid, throttle state 0 |
 | timed session against the pristine state | `s8-pristine` | +76.70 % geomean, 60 of 60 valid, throttle state 0 |
 | hook control, nothing selected (D4) | `s7n-noenv` | `verify.out` equal to `s0n-noenv` line by line; no `[sarc_dev]` banner |
@@ -307,6 +313,11 @@ Geomean **+0.54 %**. By the rule fixed at 01:22 UTC (adopt only at 2 % geomean o
 `orin-fused1`. The two 1B cells are a real, repeatable +1.6 to +1.7 % (repeat spread 0.1 to 0.3 %), but they are
 inside the band the campaign fixed before measuring, so they are reported and not claimed.
 
+- **Scope of this acceptance: the gate and criterion 1 only, not a full D3 acceptance.** For `orin-fused2` there
+  is the gate (below), the reference error on the five S = 2048 cases (`sdpa-error2`) and 24 of 24 next-token
+  rows SAME. There is **no broad real-text probe of `orin-fused2`** (D3 items 2 and 3: logits, KL, perplexity on
+  41 prompts): `probe/c1-fused/` and `probe/final-fused/` are both `orin-fused1`. The candidate is not adopted, so
+  no D3 acceptance is claimed for it and none was measured; whoever adopts it later owes that probe first.
 - The gate itself passed: 60 of 60 timed runs valid (throttle state 0 in all 7953 clock samples, clock 612 MHz,
   start temperature 54 to 58 C); SDPA 222 of 222 cases PASSED with 0 mismatches, 126 served by the two-pass d64
   kernel and 96 by the one-pass d128 kernel, `pairing=ok` on all; `verify.out` equal to the parent snapshot line
@@ -348,10 +359,14 @@ Geomean **+6.13 %**, every cell outside the +-2 % band. Inside the task's expect
   `gate_check.py verify`: ACCEPT, 0 findings; decode 31 tokens at 18.9 / 10.9 tok/s.
 - `gate_check.py session`: ACCEPT, 0 findings; next token parent vs candidate SAME in 24 of 24 rows; `env-check`:
   ACCEPT. Shipped SPIR-V of `topic4`: UNCHANGED (53 of 53).
-- **How it is recorded:** the gate wrote `all steps passed` because no next-token item differs. The candidate is
-  an arithmetic change, so the reference-error evidence is on record beside it: criterion 1 on `topic4`
-  (`sdpa-error2`, below); the real-text probe of `topic1`'s kernel (`probe/c1-fused/`, below) and of the final
-  stack on `topic4` (`probe/final-fused/`, above; bit-identical logits).
+- **How it is recorded: `ACCEPTED (reference-error rule, owner decision 2026-10-04)`**, not as a plain pass: the
+  candidate replaces the three attention kernels, an arithmetic change (D3). Evidence: criterion 1 on `topic4`,
+  `results/orin/sdpa-error2/` (candidate not larger than the parent in rms and maximum on all five S = 2048 cases,
+  below); the real-text probe of the final stack on `topic4`, `results/orin/probe/final-fused/` (41 prompts x 6
+  cells; gross-divergence check not met in any cell; logits bit-identical to `topic1`'s, `probe/c1-fused/`).
+  Next-token items that differ: none (`differing-items.txt` empty). The gate's own files are kept as it wrote
+  them: `gate.done` and `verify.out` of `s5-c1` read `GATE_ACCEPTED ... all steps passed`, because the gate
+  script knows no other wording; that is the historical output, this line is the record.
 - Memory: at least 5752 MB available before every timed run. Swap-out during 1B and 3B runs: 0 or 1 page (once
   24, parent arm). During 8B runs both arms swap out alike: parent 1 to 2872 pages per run (4 KiB each: up to
   11 MB), candidate 25 to 1268, the first run of a cell most (the model file enters the page cache, D5). The K / V
@@ -476,7 +491,7 @@ change directory (tools, evidence, text): `git diff <that commit> HEAD` outside
 says candidate 2 exists only if the unpacked one-pass form is at least 3 % faster at kernel level, and otherwise
 there is none. That clause is answered: the unpacked forms are 1.5 to 3.4 times slower (`sdpa-screen1`), so by
 it there is no candidate 2. The same screen, which measured all four forms of the ported kernel, showed
-something the clause did not anticipate: for head_dim 64 the **two-pass** packed form is 17 % faster than the
+something the clause did not anticipate: for head_dim 64 the **two-pass** packed form takes 17 % less time than the
 one-pass form in every round (9.62 against 11.59 ms per 1B layer); for head_dim 128 the one-pass form stays
 faster (13.9 against 19.2 ms, 18.3 against 25.3). The task's own candidate-2 list names the one-pass / two-pass
 choice (in the other direction), R8 says "choose the best kernel per shape" with the 3 % in every round margin,
@@ -576,8 +591,9 @@ attn*V), 3 rounds interleaved, every round listed (`results/orin/screens/sdpa-sc
 
 - The copy passes save far more than they cost: unpacked is 1.5 times (head_dim 64) and 3.4 times (128) slower.
   By the clause of `thresholds.txt` there is no "unpacked" candidate.
-- One pass against two: for head_dim 128 the one-pass form is 28 % faster, as on the 780M; for head_dim 64 it is
-  17 % slower. On the 780M the one-pass form won for both. The two-pass form computes the scores twice, but it
+- One pass against two: for head_dim 128 the one-pass form takes 28 % less time, as on the 780M; for head_dim 64 it is
+  20.4 % slower (median 11.59 against 9.62 ms; the two-pass form takes 17.0 % less time and clears the 3 % margin
+  in every round). On the 780M the one-pass form won for both. The two-pass form computes the scores twice, but it
   declares 2 KB less shared memory per workgroup (no rescale divisors) and has no rescale branch; the first
   campaign measured that a workgroup's time on this device grows with the shared memory it declares. That is an
   observation that fits, not a measured cause.
@@ -823,11 +839,14 @@ Not lockstep-dependent, but worth watching in the tiers: the one-pass form start
 
 ## `sarc/tools/check.sh --no-build` at closing
 
-Run again 2026-10-09 15:50 UTC on the workstation (the same output as at 15:05 UTC, below; the untracked
-`.agents/` directory that made step 1 fail in between was not mine and is gone from the working copy since
-about 15:51 UTC), working tree = the closing commit's content (steps 4 and 5 of the
-script need a build and are skipped by `--no-build`; the shipped SPIR-V of the cross build is compared by
-`tools/shipped.py`, above):
+**Not a clean PASS at closing.** Run again 2026-10-09 16:06 UTC on the workstation, unmodified: step 1 prints
+`FAIL: .agents/skills/review-notes/SKILL.md is outside the zones and not in sarc/HOOKS`, both selector tests pass
+(1240 checks / 31 rows / 0 candidates; 1593 checks / 33 rows / 261 candidates), `check.sh: FAIL`, rc 1. The file
+is untracked, dated 2026-10-04, placed in the working copy by the review tooling (it was absent for a few
+minutes around 15:50 UTC, when the check printed PASS, and was back at 15:51 UTC); it is not part of this branch
+and I have neither committed, edited nor removed it, nor touched `check.sh` or `sarc/HOOKS`. See "For the
+coordinator" at the top. The output below is the run of 15:05 UTC, with the file absent, steps 4 and 5 skipped by
+`--no-build` (the shipped SPIR-V of the cross build is compared by `tools/shipped.py`, above):
 
 ```
 == 1 zone rule vs origin/release/1.5
