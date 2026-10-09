@@ -55,3 +55,9 @@ repeats            7: the A/A ratio of 1B 4w is 1.0191, further than 1.0 % from 
 noise_band         A/A geomean +0.26 %, every cell inside +-2 % (largest +1.91 %): the session stands.
 baseline           parent vs s6-final: 1B -1.25 % / +0.75 %, 3B -1.00 % / -0.62 %, 8B -0.78 % / -0.73 % (4w / 8da4w):
                    every cell within 3 %.
+
+# 2026-10-09 00:32 UTC. Owner decision, 2026-10-09 (00:22 UTC): do not wait for an idle desktop; measure now.
+idle_wait          lifted: a timed run, a trace run and a screen run start at once whatever the desktop reports;
+                   the desktop state of every such unit is recorded (logs/idle_wait.log) beside the per-run
+                   foreign engine share of runs.csv. Nothing else in this file changes: CLKMIN, BUSYMAX 5.0 %,
+                   7 repeats, the noise band, and a run above BUSYMAX is invalid and replaced.

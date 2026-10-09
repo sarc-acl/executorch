@@ -37,9 +37,10 @@ gtemp_mc() { cat $HW/temp2_input; }   # package temperature, millidegrees C
 # delay, 900 s as found). Nothing is changed on the desktop; the wait is logged in logs/idle_wait.log. A run the
 # owner's return disturbs is still caught by the foreign-engine-time limit (BUSYMAX).
 desktop_idle() { [[ $(loginctl show-session "$(loginctl list-sessions --no-legend | awk '$4 == "seat0" && $6 == "user" {print $1; exit}')" -p IdleHint --value 2>/dev/null) == yes ]]; }
-idle_wait() { local n=0
-  until desktop_idle; do (( n++ % 45 == 0 )) && echo "$(date -u +%FT%TZ) desktop in use, waiting: ${1:-timed unit}" >> $A/logs/idle_wait.log; sleep 20; done
-  (( n > 0 )) && echo "$(date -u +%FT%TZ) desktop idle after $((n * 20)) s: ${1:-timed unit}" >> $A/logs/idle_wait.log; return 0; }
+# Owner decision, 2026-10-09 (00:22 UTC): do not wait for an idle desktop; measure now. idle_wait returns at
+# once; it only records the desktop state of the unit that is about to start (logs/idle_wait.log). BUSYMAX and
+# every validity rule are unchanged, so a run the desktop disturbed is still rejected and replaced.
+idle_wait() { echo "$(date -u +%FT%TZ) $(desktop_idle && echo idle || echo in-use): ${1:-timed unit}" >> $A/logs/idle_wait.log; return 0; }
 # gpu_shared / build_exclusive: the desktop-build lock shared with the Jetson Orin campaign, which cross-builds
 # on this machine. Every GPU job of this campaign holds it shared (fd 8, inherited by its children), every
 # build holds it exclusive, so a build never runs during a measurement.
