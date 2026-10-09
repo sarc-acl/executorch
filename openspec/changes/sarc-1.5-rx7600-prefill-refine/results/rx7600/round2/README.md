@@ -30,3 +30,17 @@ Ratios against the shipped kernel (`afmb1`, 35414 us over the twelve shapes in t
 - Smaller workgroups (A_BLOCKS / B slots scaled): `g44` 0.926, `g28` 0.942, `g24` 0.904, `g42` 0.877 (all plain; the `uv4` twins 0.80 to
   0.86). They get 128 VGPRs and no spill (the shipped 1024-invocation kernel gets 64 VGPRs and 3 spills outside the loop) and are
   still slower: the register cap is not what limits the shipped kernel.
+
+## Round 2, build `r2d` (micro build of commit in `stage` STAGE.md; two screen rounds)
+
+Ratios against the shipped kernel (`afmb1`, 35401 us over the twelve shapes). Row pitch of the A / B staging in shared memory (uint; 4 = the
+shipped 16 bytes) with the drain tile aliased onto the A buffer (`csha`, needed to stay under 64 KiB):
+- `pa6csha` (A pitch 24 bytes, B unchanged): **1.055 / 1.050**, every one of the 12 shapes at least 1.03 in both rounds (passes the 3 % rule
+  of `proposal.md`); `pa6pad4csha` (plus 4 uint between the K slabs) 1.049 / 1.046: the A stores are not the point.
+- `pb6` (B pitch 24 bytes, A unchanged): 0.958 / 0.955; `pa6pb6csha` 0.968 / 0.965. Same instruction mix as the shipped kernel in
+  `r2d-isa.txt` (two `ds_read_b64` per fragment, 64 VGPRs): only the LDS addresses differ.
+- Fragment reuse (`abl32`: the fragments of K slab 0 serve the MMAs of slabs 1 to 3, a quarter of the LDS fragment loads): 1.056 / 1.053;
+  no staging and no barrier (`abl23`) 1.108 / 1.093; reuse and no staging (`abl39`) 1.067 / 1.080; reuse and no barrier (`abl48`) 1.091 /
+  1.090; reuse, no staging, no barrier (`abl55`): 28085 us, i.e. the WMMA loop cannot get much past about 78 % of the cited int8 roof in this
+  structure (per-shape times in the CSV). The LDS fragment loads are therefore worth at most about 5 % of the kernel, and the staging plus
+  barrier about 10 %; the shipped kernel is at about 62 % of the roof.
