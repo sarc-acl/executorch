@@ -213,7 +213,7 @@ tok/s (recomputed from `runs.csv`):
 
 A/A geomean -0.06 %; baseline within 0.22 % (limit 3 %); next token SAME in all six cells on the three prompts.
 Equal medians are equal millisecond counts: the runner's timer has a 1 ms step (114 ms for 1B 4w, 0.9 % a step).
-Per run: foreign engine time 0.00 % in all 60, at least one guard poll while the runner executed, 9 to 45 clock
+Per run: foreign engine time 0.00 % in all 60, at least one guard poll while the runner executed, 9 to 59 clock
 samples in the prefill window, model file 100 % resident before every run, throttle reasons in the samples `none`
 and `pl2` only. Calibration (`tools/thresholds.txt`, dated block, committed `4172bc183` before candidate 1 was
 timed): `CLKMIN` 2457 MHz, idle 58 C, **7 repeats** (the parent arm of 1B 8da4w spread 7.48 %: one run of five
@@ -231,7 +231,7 @@ each round's value; `results/b70/screens/screen1-select{,-runs}.csv`):
 | 64 | `d64_t16x64s16m8g4oj` | 553 / 551 / 550 | | | 2.69x |
 | 128 | `d128_t16x64s32m8ro` (the 780M's) | | 9569 / 9606 / 9528 | 12577 / 12565 / 12604 | 0.13x |
 | 128 | **`d128_t16x128s16m8g8oj`** (incumbent, the B580's) | | **750 / 749 / 748** | **969 / 966 / 967** | **1.72x / 1.75x** |
-| 128 | `d128_t16x64s16m8g4oj` | | 824 / 813 / 819 | 1047 / 1047 / 1043 | 1.57x / 1.61x |
+| 128 | `d128_t16x64s16m8g4oj` | | 824 / 813 / 819 | 1047 / 1047 / 1043 | 1.57x / 1.62x |
 
 No screened variant is faster than the incumbent of its head_dim in any round (the nearest is 8 to 14 % slower),
 so by the `kernel_screen` rule **`b70-fused1` is the B580's pair**, as committed. Same ranking as the B580's
@@ -246,7 +246,7 @@ Source: `/mnt/linux-share/hmz-campaigns/b580-fused/executorch`, branch `topic/b5
 |---|---|---|
 | `cfa31c1d2` | release-zone hook D4.1, softmax variant name | cherry-pick of `fab9606c3` (B580 branch; from `b969e8f1c2`) |
 | `cbbe36e0c` | release-zone hook D4.3, entry point of the fused attention node | cherry-pick of `0ffc84a2d` (B580 branch; from `1c8861aa7e`) |
-| `087d4c4a9` | `test_llama_microbench.cpp`: insert-only `4070ti-fused` blocks (98 added lines, 0 removed) | `origin/topic/4070ti-fused-port`, `ed8b5af91`, unchanged |
+| `087d4c4a9` | `test_llama_microbench.cpp`: insert-only `4070ti-fused` blocks (99 added lines, 0 removed) | `origin/topic/4070ti-fused-port`, `ed8b5af91`, unchanged |
 | `7d7877980` | `sarc_dev_b580_sdpa_fused.{glsl,yaml}`, `sarc_dev_b580_sdpa_kvt.{glsl,yaml}`, `impl/sarc_dev/b580/SdpaB580Fused.cpp` | `cea76c634`, files unchanged |
 | `dfbaecca1` | `impl/sarc_dev/B70Sdpa.cpp` (base rows for `b70-*` profile names) and the `b70-fused` blocks of `Overrides.cpp` | new here |
 

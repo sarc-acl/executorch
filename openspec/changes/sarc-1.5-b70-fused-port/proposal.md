@@ -28,7 +28,7 @@ are marked "B580" below. Pushing this branch publishes them; that is intended (t
 |---|---|---|
 | `cfa31c1d2` | release-zone hook D4.1: `Override::softmax_variant` | B580: cherry-pick (`-x`) of `fab9606c3`, itself from `b969e8f1c2` (Orin campaign) |
 | `cbbe36e0c` | release-zone hook D4.3: entry point of the fused attention node | B580: cherry-pick (`-x`) of `0ffc84a2d`, itself from `1c8861aa7e` (`topic/780m-prefill-refine`) |
-| `087d4c4a9` | `test_llama_microbench.cpp`: the insert-only `4070ti-fused` blocks (98 lines added, none removed) | `origin/topic/4070ti-fused-port` at `ed8b5af91`, unchanged |
+| `087d4c4a9` | `test_llama_microbench.cpp`: the insert-only `4070ti-fused` blocks (99 lines added, none removed) | `origin/topic/4070ti-fused-port` at `ed8b5af91`, unchanged |
 | `7d7877980` | `glsl/sarc_dev/sarc_dev_b580_sdpa_fused.{glsl,yaml}`, `sarc_dev_b580_sdpa_kvt.{glsl,yaml}`, `impl/sarc_dev/b580/SdpaB580Fused.cpp` | B580: the files at `cea76c634`, byte for byte |
 | `dfbaecca1` | `impl/sarc_dev/B70Sdpa.cpp`; the `b70-fused` blocks of `impl/sarc_dev/Overrides.cpp` (69 lines added, none removed) | new here |
 
@@ -65,9 +65,166 @@ and `topic2`.
 ## Release-zone hooks (owner decision 2026-10-05, D4)
 
 Two cherry-picks, each its own commit, unchanged. **The fused attention entry point (D4.3) is larger than a
-switch and stays subject to the owner's review before any promotion.** The diffs are those printed in the B580
-campaign's `proposal.md` at `cea76c634` (`git show cfa31c1d2 cbbe36e0c` here): `impl/SDPA.cpp` +7,
-`impl/sarc/SdpaCoopmat.cpp` +26 -1, `impl/sarc/SdpaCoopmat.h` +8, `impl/sarc/Select.h` +16.
+switch and stays subject to the owner's review before any promotion.** Together: `impl/SDPA.cpp` +7,
+`impl/sarc/SdpaCoopmat.cpp` +26 -1, `impl/sarc/SdpaCoopmat.h` +8, `impl/sarc/Select.h` +16. The diffs, as
+`git show cfa31c1d2 cbbe36e0c` prints them:
+
+**Softmax variant name, D4.1 (`cfa31c1d2`, cherry-pick of `fab9606c3`, from `b969e8f1c2`)**; nothing in this
+campaign sets the field.
+
+```diff
+diff --git a/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp b/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
+index d45f720bc..5a264e27e 100644
+--- a/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
++++ b/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
+@@ -202,7 +202,11 @@ std::string sdpa_softmax_shader_name(
+   if (!device_has_active_rows(device_info(&graph), Op::kSdpaQk)) {
+     return upstream_name;
+   }
+-  return "sarc_" + upstream_name;
++  const char* variant = get_override().softmax_variant;
++  if (variant == nullptr) {
++    return "sarc_" + upstream_name;
++  }
++  return "sarc_" + upstream_name + "_" + variant;
+ }
+ 
+ } // namespace sarc
+diff --git a/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h b/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h
+index 93a9b8e96..166eba3e0 100644
+--- a/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h
++++ b/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h
+@@ -141,6 +141,9 @@ struct Override {
+       const DeviceInfo& device,
+       const ShapeInfo& shape,
+       const std::optional<Choice>& table_choice) = nullptr;
++  // Suffix of a development softmax variant ("sarc_<softmax>_<suffix>"), or
++  // null: the release softmax.
++  const char* softmax_variant = nullptr;
+ };
+ void set_override(const Override& o);
+ const Override& get_override();
+```
+
+**Fused attention node, D4.3 (`cbbe36e0c`, cherry-pick of `0ffc84a2d`, from `1c8861aa7e` of
+`topic/780m-prefill-refine`).**
+
+```diff
+diff --git a/backends/vulkan/runtime/graph/ops/impl/SDPA.cpp b/backends/vulkan/runtime/graph/ops/impl/SDPA.cpp
+index c623a7235..c76a9c52f 100644
+--- a/backends/vulkan/runtime/graph/ops/impl/SDPA.cpp
++++ b/backends/vulkan/runtime/graph/ops/impl/SDPA.cpp
+@@ -317,6 +317,9 @@ GlobalWorkGrid pick_sdpa_softmax_gwg(
+     const std::vector<ArgGroup>& args,
+     const std::vector<ValueRef>& resize_args) {
+   (void)shader;
++  if (auto skip = sarc::sdpa_fused_skip(graph, resize_args)) { // SARC
++    return *skip;
++  }
+   const SDPAMode mode = mode_of(resize_args);
+   const ValueRef q = resize_args.at(0);
+   // LLM reads H from axis -2, fused from axis -3 (handled by
+@@ -815,6 +818,10 @@ void sdpa_impl(ComputeGraph& graph, const std::vector<ValueRef>& args) {
+       input_pos_symint,
+       out,
+       SDPAMode::LLM);
++
++  // SARC development hook: fused attention node (no-op without an override).
++  sarc::add_sdpa_fused(
++      graph, {q_projected, k_cache, v_cache, input_pos_symint, out});
+ }
+ 
+ void sdpa_with_kv_cache_impl(
+diff --git a/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp b/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
+index 5a264e27e..c6f9e9d3d 100644
+--- a/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
++++ b/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
+@@ -122,6 +122,9 @@ std::optional<GlobalWorkGrid> sdpa_gwg(
+     ComputeGraph* graph,
+     const vkapi::ShaderInfo& shader,
+     const std::vector<ValueRef>& resize_args) {
++  if (auto skip = sdpa_fused_skip(graph, resize_args)) {
++    return skip;
++  }
+   const std::optional<TileDims> dims = dims_for_kernel(shader.kernel_name);
+   if (!dims.has_value()) {
+     return std::nullopt;
+@@ -143,6 +146,24 @@ std::optional<GlobalWorkGrid> sdpa_gwg(
+       LocalWorkGroup(wg, 1u, 1u));
+ }
+ 
++std::optional<GlobalWorkGrid> sdpa_fused_skip(
++    ComputeGraph* graph,
++    const std::vector<ValueRef>& resize_args) {
++  const Override& o = get_override();
++  if (o.sdpa_fused_serves == nullptr ||
++      !o.sdpa_fused_serves(graph, resize_args)) {
++    return std::nullopt;
++  }
++  return GlobalWorkGrid(
++      {0u, 0u, 0u}, kTiledWorkGrid, LocalWorkGroup(64u, 1u, 1u));
++}
++
++void add_sdpa_fused(ComputeGraph& graph, const std::vector<ValueRef>& refs) {
++  if (get_override().sdpa_fused_add != nullptr) {
++    get_override().sdpa_fused_add(graph, refs);
++  }
++}
++
+ vkapi::SpecVarList sdpa_qk_spec_vars(
+     ComputeGraph& graph,
+     const ValueRef q,
+diff --git a/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.h b/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.h
+index ab9d546fc..bc8a18fe0 100644
+--- a/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.h
++++ b/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.h
+@@ -38,6 +38,14 @@ std::optional<GlobalWorkGrid> sdpa_gwg(
+     const vkapi::ShaderInfo& shader,
+     const std::vector<ValueRef>& resize_args);
+ 
++// Development hook (Override::sdpa_fused_*, null in a release). The empty
++// launch geometry for a QK^T / softmax / attn*V node whose call the fused
++// attention node serves, else std::nullopt; and the fused node itself.
++std::optional<GlobalWorkGrid> sdpa_fused_skip(
++    ComputeGraph* graph,
++    const std::vector<ValueRef>& resize_args);
++void add_sdpa_fused(ComputeGraph& graph, const std::vector<ValueRef>& refs);
++
+ // Spec constants for the QK / AV nodes. `upstream` is release 1.5's list; it
+ // is returned unchanged unless the device has an SDPA row, in which case the
+ // SARC kernels' constants are appended after it.
+diff --git a/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h b/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h
+index 166eba3e0..f1278114e 100644
+--- a/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h
++++ b/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h
+@@ -24,6 +24,9 @@
+ #include <vector>
+ 
+ namespace vkcompute {
++
++class ComputeGraph;
++
+ namespace sarc {
+ 
+ enum class Op {
+@@ -144,6 +147,16 @@ struct Override {
+   // Suffix of a development softmax variant ("sarc_<softmax>_<suffix>"), or
+   // null: the release softmax.
+   const char* softmax_variant = nullptr;
++  // Fused attention node (development; subject to the owner's review before
++  // any promotion). `sdpa_fused_add` may append nodes after the three SDPA
++  // nodes of an LLM-mode op, given the ValueRefs {q, k, v, input_pos, out}.
++  // While `sdpa_fused_serves` is true for a node's resize args, those nodes
++  // write the output and the three SDPA kernels dispatch nothing.
++  void (*sdpa_fused_add)(ComputeGraph& graph, const std::vector<int32_t>& refs) =
++      nullptr;
++  bool (*sdpa_fused_serves)(
++      ComputeGraph* graph,
++      const std::vector<int32_t>& resize_args) = nullptr;
+ };
+ void set_override(const Override& o);
+ const Override& get_override();
+```
 
 With nothing selected nothing changes, shown on `topic1` and again on the final build `topic2`:
 
@@ -129,7 +286,7 @@ per layer at S = 2048 in us (median of the rounds; every round is in `STATUS.md`
 | 64 | `d64_t16x64s16m8g4oj` | 551 | | | 2.69x |
 | 128 | `d128_t16x64s32m8ro` (the 780M's) | | 9569 | 12577 | 0.13x |
 | 128 | **`d128_t16x128s16m8g8oj`** | | **749** | **967** | **1.72x / 1.75x** |
-| 128 | `d128_t16x64s16m8g4oj` | | 819 | 1047 | 1.57x / 1.61x |
+| 128 | `d128_t16x64s16m8g4oj` | | 819 | 1047 | 1.57x / 1.62x |
 
 No variant beats the B580's pair in any round; `b70-fused1` is the B580's pair.
 
