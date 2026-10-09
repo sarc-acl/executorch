@@ -50,6 +50,16 @@ data-viz method (six categorical slots in fixed order, one sequential blue ramp 
 "tried, not adopted"). Do not add a seventh categorical color; fold a new technique into an existing category
 or make it a matrix row only.
 
+## The headline
+
+The tiles at the top lead with the speed-up over unmodified ExecuTorch 1.5 (Vulkan backend, no cooperative-matrix
+kernels): `devices[].stock = [September release, tuned]`, both the geometric mean over the six cells of
+`tokps` (`sarc*/stock*` and `tuned*/stock*`), so the headline can be recomputed from figure 7's table. The gain over
+the September release (`devices[].final`) is the second line of each tile and the subject of figures 1 to 4: it is
+for the owner and his manager, not the headline. When `tokps` changes for a device, recompute its `stock` pair.
+The RX 7900 XTX's stock column comes from the benchmark session of 2026-09-28 (same driver), not from the tuning
+session; `stock_note` says so.
+
 ## Updating after a campaign closes or a branch changes
 
 The update is a data edit, not a redesign. Do it with a subagent so that the reading of six branches does not

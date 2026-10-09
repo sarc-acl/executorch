@@ -125,11 +125,11 @@
 <main>
   <header>
     <h1>SARC 1.5 调优全景</h1>
-    <p>八台 GPU 上 2048 token 预填充的内核调优（七台公布数字；M51 按设备所有者的要求只列定性结论）：每台的收益、收益来自哪一步、哪些技术用在了哪里、时间省在了哪、哪些工作没有回报。全部数字取自各 campaign 分支的 proposal.md 与门禁场次，几何平均跨 1B、3B、8B 三个模型。图 8 另列其中五台设备的调优后内核离硬件上限有多远，数字取自 igpu-roofline 的上限研究。</p>
-    <div class="meta">数据截至 2026-10-09 20:00 UTC · 共八张图 · 基线为 9 月 SARC 发布版（RX 7600 与 RX 7900 XTX 为各自的父提交）· 悬停任何数据标记可看明细</div>
+    <p><strong>相对未修改的 ExecuTorch 1.5（Vulkan 后端，不用协作矩阵指令），2048 token 预填充在七台公布数字的 GPU 上快 2.8 到 7.9 倍</strong>（六格几何平均：1B、3B、8B 三个模型，4w 与 8da4w 两种量化）。下面每张卡片的大数字就是这个加速比；卡片第二行把它拆成两段：9 月 SARC 发布版已经做到的，和本轮调优在它之上再加的百分比。图 1 到图 4 讲的是第二段，即相对 9 月发布版的增益来自哪一步、哪些技术用在了哪里、时间省在了哪、哪些工作没有回报。M51 按设备所有者的要求只列定性结论。图 8 另列其中五台设备的调优后内核离硬件上限有多远，数字取自 igpu-roofline 的上限研究。</p>
+    <div class="meta">数据截至 2026-10-09 20:00 UTC · 共八张图 · 头条基线为原版 ExecuTorch 1.5；图 1 到图 4 的增益相对 9 月 SARC 发布版（RX 7600 与 RX 7900 XTX 为各自的父提交）· 悬停任何数据标记可看明细</div>
   </header>
 
-  <section class="tiles" id="tiles" aria-label="每台设备的最终收益"></section>
+  <section class="tiles" id="tiles" aria-label="每台设备相对原版 ExecuTorch 的加速比"></section>
 
   <figure id="fig-chain">
     <h2>图 1 · 收益是一步步叠出来的</h2>
@@ -253,7 +253,7 @@
    "final": 76.8,
    "stock": [
     4.46,
-    7.89
+    7.88
    ],
    "base": "相对 9 月基线（交叉构建的着色器编译器与规定版本不同，已记为局限）"
   },
@@ -263,8 +263,8 @@
    "vendor": "Intel",
    "final": 76.2,
    "stock": [
-    2.19,
-    3.86
+    2.22,
+    3.83
    ],
    "base": "相对 9 月基线"
   },
@@ -285,8 +285,8 @@
    "vendor": "NVIDIA",
    "final": 64.3,
    "stock": [
-    3.57,
-    5.87
+    3.58,
+    5.88
    ],
    "base": "相对 9 月基线"
   },
@@ -295,8 +295,12 @@
    "name": "RX 7600",
    "vendor": "AMD",
    "final": 33.6,
-   "stock": null,
-   "base": "相对父提交（公司侧）"
+   "stock": [
+    2.53,
+    3.37
+   ],
+   "base": "相对父提交（公司侧）",
+   "stock_note": "stock 与调优后的数取自对比分支的同一张表"
   },
   {
    "id": "780m",
@@ -304,8 +308,8 @@
    "vendor": "AMD",
    "final": 33.1,
    "stock": [
-    2.08,
-    2.76
+    2.12,
+    2.81
    ],
    "base": "相对 9 月基线"
   },
@@ -314,9 +318,13 @@
    "name": "RX 7900 XTX",
    "vendor": "AMD",
    "final": 8.3,
-   "stock": null,
+   "stock": [
+    2.9,
+    3.15
+   ],
    "base": "相对其父提交（AMDVLK 驱动）",
-   "note": "这台设备的 campaign 跑在 AMDVLK 驱动上（RX 7600 跑在 Mesa RADV 上）。融合注意力内核在该驱动下慢 13.79 %，被拒绝，所以收益只来自 softmax、线性内核按形状选择和分开的注意力内核变体。分支里没有相对未修改 ExecuTorch 的同场次数字，这里不列。"
+   "note": "这台设备的 campaign 跑在 AMDVLK 驱动上（RX 7600 跑在 Mesa RADV 上）。融合注意力内核在该驱动下慢 13.79 %，被拒绝，所以收益只来自 softmax、线性内核按形状选择和分开的注意力内核变体。分支里没有相对未修改 ExecuTorch 的同场次数字，这里不列。",
+   "stock_note": "stock 取自 2026-09-28 的评测场次（同一驱动），与本次调优场次不是同一场次"
   },
   {
    "id": "m51",
@@ -1623,12 +1631,12 @@
    "id": "7900xtx",
    "name": "RX 7900 XTX",
    "vendorName": null,
-   "note": "AMDVLK 驱动；SARC 两列为父提交在同一场次的值；未测 stock 与 llama.cpp",
+   "note": "AMDVLK 驱动；SARC 两列为父提交在同一场次的值；未测 stock 与 llama.cpp stock 一列取自 2026-09-28 的评测场次（同一驱动），与调优后的数不是同一场次。",
    "cells": [
     {
      "model": "1B",
-     "stock4w": null,
-     "stock8": null,
+     "stock4w": 6564,
+     "stock8": 10343,
      "sarc4w": 20480.0,
      "sarc8": 22021.5,
      "tuned4w": 23011.2,
@@ -1640,8 +1648,8 @@
     },
     {
      "model": "3B",
-     "stock4w": null,
-     "stock8": null,
+     "stock4w": 2516,
+     "stock8": 4008,
      "sarc4w": 10138.6,
      "sarc8": 10502.6,
      "tuned4w": 10666.7,
@@ -1653,8 +1661,8 @@
     },
     {
      "model": "8B",
-     "stock4w": null,
-     "stock8": null,
+     "stock4w": 1246,
+     "stock8": 2207,
      "sarc4w": 4762.79,
      "sarc8": 5019.61,
      "tuned4w": 4899.52,
@@ -2602,19 +2610,25 @@
   // ---------- 设备与最终收益 ----------
   const devices = DATA.devices;
   const tiles = $('#tiles');
-  const maxFinal = 80;
-  // 不公布数字的设备：final 不是数字（null）。卡片显示文字，图 1 不画条，图 2 表头不带百分比。
+  // 头条数字：相对未修改的 ExecuTorch（Vulkan 后端，不用协作矩阵）的加速比，d.stock = [9 月发布版, 调优后]。
+  // 相对 9 月发布版的增益 d.final 放在副行。不公布数字的设备：final 不是数字（null）。
+  const maxStock = 8;
   const NO_FIG = '不公布数字';
   const hasNum = (d) => typeof d.final === 'number';
   const fin = (d) => '+' + d.final.toFixed(1) + ' %';
-  devices.forEach((d) => {
+  const sx = (v) => v.toFixed(2) + '×';
+  const tileOrder = devices.slice().sort((p, q) => ((q.stock ? q.stock[1] : -1) - (p.stock ? p.stock[1] : -1)));
+  tileOrder.forEach((d) => {
     const t = document.createElement('div'); t.className = 'tile';
     if (!hasNum(d)) {
       t.innerHTML = `<div class="label">${d.name}</div><div class="value text">${NO_FIG}</div><div class="sub">${d.base}</div>`;
       attach(t, `<b>${d.name}</b><br>${d.note || d.base}`);
+    } else if (d.stock) {
+      t.innerHTML = `<div class="label">${d.name}</div><div class="value">${sx(d.stock[1])}</div><div class="sub">相对原版 ExecuTorch</div><div class="sub">9 月发布版 ${sx(d.stock[0])} · 本轮 ${fin(d)}</div><div class="meter" aria-hidden="true"><span style="width:${Math.min(100, Math.max(0, d.stock[1] / maxStock * 100)).toFixed(1)}%"></span></div>`;
+      attach(t, `<b>${d.name}</b><br>相对未修改的 ExecuTorch 1.5（Vulkan 后端，不用协作矩阵）：${sx(d.stock[1])}，六格几何平均<br>其中 9 月发布版已到 ${sx(d.stock[0])}，本轮调优再 ${fin(d)}（${d.base}）${d.stock_note ? '<br>' + d.stock_note : ''}${d.note ? '<br>' + d.note : ''}`);
     } else {
-      t.innerHTML = `<div class="label">${d.name}</div><div class="value">${fin(d)}</div><div class="sub">${d.stock ? `相对 stock ${d.stock[0]}x → ${d.stock[1]}x` : d.base}</div><div class="meter" aria-hidden="true"><span style="width:${Math.min(100, Math.max(0, d.final / maxFinal * 100)).toFixed(1)}%"></span></div>`;
-      attach(t, `<b>${d.name}</b><br>最终几何平均 ${fin(d)}，${d.base}${d.stock ? `<br>相对未修改的 ExecuTorch 1.5：${d.stock[0]}x → ${d.stock[1]}x` : ''}${d.note ? '<br>' + d.note : ''}`);
+      t.innerHTML = `<div class="label">${d.name}</div><div class="value">${fin(d)}</div><div class="sub">${d.base}</div>`;
+      attach(t, `<b>${d.name}</b><br>最终几何平均 ${fin(d)}，${d.base}${d.note ? '<br>' + d.note : ''}`);
     }
     tiles.appendChild(t);
   });
