@@ -163,10 +163,14 @@ Where the gain comes from (warm ETDump of `s5-c1`, ms per 2048-token prefill, pa
 | 8B 4w | 783.2 | 561.8 + 13.0 | 783.2 -> 574.7 (-27 %) | 6916.6 -> 6686.1 |
 | 8B 8da4w | 783.3 | 561.1 + 12.9 | 783.3 -> 573.9 | 7588.6 -> 7363.1 |
 
-Everything else is unchanged within 0.3 % (linear GEMM 655.3 -> 654.5 ms on 1B 4w, 5304.2 -> 5297.0 on 8B 8da4w).
+Attention is 89 to 95 % of the reduction of the dispatch total (95 and 93 % on 1B, 89 % on 3B, 90 and 93 % on 8B). The rest of it, from the raw sums of the same
+traces (parent -> final, six cells): linear GEMM -0.1 to -0.5 % (655.2 -> 654.5 ms on 1B 4w, 5304.2 -> 5297.0 on
+8B 8da4w); copy / view / other -0.2 to -0.7 % (154.3 -> 153.3 ms on 1B 8da4w); everything that is none of the
+three (elementwise, RMSNorm, RoPE, quantize, ...) -0.8 to -4.6 %, that is 4 to 13 ms per prefill (135.4 -> 129.9 ms
+on 1B 4w, 277.3 -> 264.6 on 3B 4w). I have not located which kernels of that remainder got faster.
 
 Against the freshly measured roofs (igpu-roofline `fast`, 2026-10-09, driver 595.78, clocks as found;
-`results/orin/roofline/2026-10-09-fast/`: matrix fp16 9.720 TFLOP/s, fp16 -> fp32 9.735, int8 19.517 TOP/s): 4w
+`results/orin/roofline/2026-10-09-fast/`: matrix fp16 9.719 TFLOP/s, fp16 -> fp32 9.735, int8 19.517 TOP/s): 4w
 linear 62.7 / 63.8 / 63.2 % (1B / 3B / 8B), 8da4w linear 26.4 / 27.3 / 27.7 %, both as the parent; the fused
 attention kernel 1.60 / 1.95 / 1.96 TFLOP/s = 16.4 / 20.0 / 20.1 % of the fp16 -> fp32 roof.
 

@@ -90,7 +90,7 @@ percentage below uses.
 
 | roof | 2026-10-09 | first campaign, 2026-10-05 |
 |---|---:|---:|
-| matrix fp16 16 x 16 x 16 | 9.720 TFLOP/s | 9.716 |
+| matrix fp16 16 x 16 x 16 | 9.719 TFLOP/s | 9.716 |
 | matrix fp16 -> fp32 | 9.735 TFLOP/s | 9.722 |
 | matrix int8 16 x 16 x 32 | 19.517 TOP/s | 19.482 |
 | the same fed from shared memory (fp16 / fp16 -> fp32 / int8) | 9.516 / 8.962 / 17.853 | 9.511 / 8.771 / 17.818 |
@@ -110,14 +110,15 @@ parent's and sit where the first campaign left them.
 
 ## Where the time goes now, and what limits further progress
 
-Final stack, warm ETDump, ms per 2048-token prefill (`s5-c1`, candidate arm):
+Final stack, warm ETDump, ms per 2048-token prefill (`s5-c1`, candidate arm; each row rounded from the raw sum
+of `attention.csv`, the last one being total - GEMM - attention - copy):
 
 | | 1B 4w | 1B 8da4w | 3B 4w | 3B 8da4w | 8B 4w | 8B 8da4w |
 |---|---:|---:|---:|---:|---:|---:|
 | linear GEMM | 655 | 774 | 1860 | 2165 | 4652 | 5297 |
 | attention (fused kernel + K / V copy) | 175 | 175 | 382 | 382 | 575 | 574 |
 | copy / view / other | 266 | 153 | 579 | 350 | 983 | 572 |
-| elementwise, RMSNorm, RoPE, rest | 129 | 232 | 265 | 523 | 477 | 920 |
+| everything else (elementwise, RMSNorm, RoPE, quantize, ...) | 130 | 231 | 265 | 523 | 477 | 920 |
 | total | 1225 | 1334 | 3087 | 3420 | 6686 | 7363 |
 | attention share | 14.3 % | 13.1 % | 12.4 % | 11.2 % | 8.6 % | 7.8 % |
 | gain if attention cost nothing | +16.7 % | +15.1 % | +14.1 % | +12.6 % | +9.4 % | +8.5 % |
@@ -253,8 +254,12 @@ Where the gain comes from (warm ETDump of both arms of `s5-c1`, ms per 2048-toke
 | 8B 4w | 301.2 -> 0 | 265.9 -> 0 | 216.1 -> 0 | 561.8 | 13.0 | 783.2 -> 574.7 | 4661.6 -> 4651.6 | 6916.6 -> 6686.1 |
 | 8B 8da4w | 301.0 -> 0 | 266.0 -> 0 | 216.3 -> 0 | 561.1 | 12.9 | 783.3 -> 573.9 | 5304.2 -> 5297.0 | 7588.6 -> 7363.1 |
 
-The same as on `topic1` within 0.5 ms: the kernel's new check costs nothing measurable. All of the gain is
-attention: -42 % on 1B, -26 % on 3B, -27 % on 8B.
+The same as on `topic1` within 0.5 ms: the kernel's new check costs nothing measurable. Attention falls by 42 %
+on 1B, 26 % on 3B and 27 % on 8B and is 89 to 95 % of the reduction of the dispatch total. The remainder, from
+the raw sums (parent -> candidate): linear GEMM -0.1 to -0.5 %, copy / view / other -0.2 to -0.7 %, everything
+else (elementwise, RMSNorm, RoPE, quantize) -0.8 to -4.6 % = 4 to 13 ms per prefill (135.4 -> 129.9 ms on 1B 4w,
+235.6 -> 231.2 on 1B 8da4w, 277.3 -> 264.6 on 3B 4w, 532.4 -> 522.5, 486.7 -> 476.7, 926.9 -> 919.8). Which kernels of
+that remainder got faster is not located.
 
 ## On `topic4`: A/A re-check `s4-aa2` (05:05 to 05:41 UTC) and reference error `sdpa-error2`
 
@@ -432,7 +437,7 @@ Where the gain comes from (warm ETDump of both arms of `s3-c1`, ms per 2048-toke
 | 8B 4w | 301.3 -> 0 | 266.0 -> 0 | 216.3 -> 0 | 561.6 | 13.0 | 783.5 -> 574.6 | 4657.4 -> 4656.6 | 6914.1 -> 6690.8 |
 | 8B 8da4w | 301.2 -> 0 | 266.0 -> 0 | 216.1 -> 0 | 561.0 | 12.9 | 783.3 -> 573.9 | 5305.1 -> 5302.1 | 7591.0 -> 7368.3 |
 
-All of the gain is attention: -42 % on 1B, -26 % on 3B, -27 % on 8B (the RX 7600 saw -76 %, the 4070 Ti -66 %
+Nearly all of the gain is attention (89 to 95 % of the reduction; see the `s5-c1` section for the remainder): -42 % on 1B, -26 % on 3B, -27 % on 8B (the RX 7600 saw -76 %, the 4070 Ti -66 %
 and -47 to -49 %). The copy pass is small: 3 to 13 ms per prefill, 0.19 ms a layer on 1B and 0.41 ms on 3B / 8B.
 Per layer the fused kernel takes 10.8 / 13.3 / 17.5 ms. The same 17.2 GFLOP of a 1B layer would take 1.8 ms at
 this device's fp16 -> fp32 matrix roof (9.7 TFLOP/s): the kernel runs at 16 % of it, where the 780M ran at 71 %

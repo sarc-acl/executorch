@@ -38,13 +38,16 @@ else echo "tree-sha256 $TAG: $(cd $T && find . -type f -not -name '*.pyc' -print
 echo "image $(podman image inspect --format '{{.Id}}' localhost/et-jetson-cross:jp7.2.1 2>&1)" >> $P
 echo "recipe $(cd $TOOLS/jetson-cross && sha256sum build.sh container.sh aarch64.cmake | sha256sum | cut -d' ' -f1)" >> $P
 rc=0; hold_wait
-flock ~/.cache/gpu-lab/lock-desktop-build env JETSON_CROSS_WORK=$W $TOOLS/jetson-cross/container.sh > $A/build/$TAG.log 2>&1 || rc=$?
+# GLSLC_DIR=<dir with bin/glslc and MANIFEST.sha256>: the shaders are compiled with that glslc (the golden's), not the cross image's.
+if [[ -n ${GLSLC_DIR:-} ]]; then need $GLSLC_DIR/bin/glslc $GLSLC_DIR/MANIFEST.sha256; (cd $GLSLC_DIR && sha256sum -c --quiet MANIFEST.sha256) || { echo "glslc directory does not match its manifest" >&2; exit 3; }
+  echo "glslc $GLSLC_DIR manifest sha256 $(sha256sum < $GLSLC_DIR/MANIFEST.sha256 | cut -d' ' -f1); $(cat $GLSLC_DIR/SOURCE.txt 2>/dev/null | cut -c1-200)" >> $P; fi
+flock ~/.cache/gpu-lab/lock-desktop-build env JETSON_CROSS_WORK=$W JETSON_CROSS_GLSLC=${GLSLC_DIR:-} $TOOLS/jetson-cross/container.sh > $A/build/$TAG.log 2>&1 || rc=$?
 echo "rc=$rc cross build" >> $P
 if [[ $rc == 0 ]]; then
   sha256sum $W/bundle/* >> $P || rc=4
   SPV=$(dirname "$(find $W/build -path '*vulkan_compute_shaders*' -name '*.spv' | head -1)")
   ( cd "$SPV" && sha256sum *.spv ) > $A/build/$TAG.spv.sha256
   python3 $ET/sarc/tools/spirv_golden.py "$SPV" $ET/sarc/golden/spirv.json > $A/build/$TAG.golden.txt 2>&1; g=$?
-  echo "spirv_golden rc=$g: $(tail -1 $A/build/$TAG.golden.txt) ($(grep -c '^DIFF' $A/build/$TAG.golden.txt) DIFF lines; cross glslc $(grep -h -m1 -o 'shaderc[^"]*' $A/build/$TAG.log | head -1))" >> $P
+  echo "spirv_golden rc=$g: $(tail -1 $A/build/$TAG.golden.txt) ($(grep -c '^DIFF' $A/build/$TAG.golden.txt) DIFF lines; glslc $(grep -h -m1 -o 'shaderc[^"]*' $A/build/$TAG.log | head -1))" >> $P
 fi
 date -u >> $P; echo "BUILD_ORIN_DONE rc=$rc" >> $P; tail -4 $P; exit $rc
