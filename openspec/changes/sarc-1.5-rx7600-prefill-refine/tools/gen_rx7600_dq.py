@@ -56,6 +56,8 @@ row(B48 + "pa6csha", pa=6, csha=True)
 row(B48 + "pa6pb6csha", pa=6, pb=6, csha=True)
 row(B48 + "pa6pad4csha", pa=6, pad=4, csha=True)
 row(B48 + "pa6pb6pad4csha", pa=6, pb=6, pad=4, csha=True)
+for a in (7, 23, 32, 39, 48, 55):          # measurement only (see the body header): 7 = no staging, 16 = no barrier, 32 = fragments of slab 0 reused
+    row(f"{B48}abl{a}", abl=a)
 row(B48 + "pa6pb6p", pa=6, pb=6, csha=True, prof=True)
 row(B48 + "pa6pb6pad4cshap", pa=6, pb=6, pad=4, csha=True, prof=True)
 y = HEAD

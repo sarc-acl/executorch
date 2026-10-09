@@ -488,5 +488,41 @@ rep("//   RX_UV4: the shared staging arrays", """//   A_PITCH_U32 / B_PITCH_U32 
 //     memory in uint (default 4 = 16 bytes); 6 = 24 bytes.
 //   RX_UV4: the shared staging arrays""")
 
+
+# ---- fifth pass (round 2): ablation bit 32, MEASUREMENT ONLY: the A / B fragments are loaded from shared memory only for K slab 0 and
+# reused by the MMAs of the other slabs (the WMMA count is unchanged, the fragment loads drop to a quarter) ----
+rep("""      [[unroll]] for (uint k = 0; k < NUM_K_SLABS; ++k) {
+        const uint slab_a_base_u32 = cur_a + k * A_SLAB_PITCH_U32;""", """#if (RX_ABL & 32) != 0
+      coopmat<int8_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA> matA[MMAS_PER_SG_M];
+      coopmat<int8_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> matB;
+#endif
+      [[unroll]] for (uint k = 0; k < NUM_K_SLABS; ++k) {
+        const uint slab_a_base_u32 = cur_a + k * A_SLAB_PITCH_U32;""")
+rep("""        coopmat<int8_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA> matA[MMAS_PER_SG_M];
+        [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+          const uint row_a = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
+          coopMatLoad(""", """#if (RX_ABL & 32) == 0
+        coopmat<int8_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA> matA[MMAS_PER_SG_M];
+#endif
+        [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+          const uint row_a = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
+#if (RX_ABL & 32) != 0
+          if (k == 0)
+#endif
+          coopMatLoad(""")
+rep("""        coopmat<int8_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> matB;
+        [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+          const uint col_b = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
+          coopMatLoad(""", """#if (RX_ABL & 32) == 0
+        coopmat<int8_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> matB;
+#endif
+        [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+          const uint col_b = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
+#if (RX_ABL & 32) != 0
+          if (k == 0)
+#endif
+          coopMatLoad(""")
+rep("4 LDS stores of the next chunk, 8 MMA, 16 the barrier of the chunk loop.", "4 LDS stores of the next chunk, 8 MMA, 16 the barrier of the chunk loop, 32 the fragment loads of K slabs 1 to 3.")
+
 open(dst, "w").write(t)
 print("ok", len(t.splitlines()), "lines")

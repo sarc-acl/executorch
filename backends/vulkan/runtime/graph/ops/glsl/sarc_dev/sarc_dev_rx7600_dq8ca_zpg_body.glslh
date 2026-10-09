@@ -21,7 +21,7 @@
 //   RX_UV4: the shared staging arrays are uvec4 (aligned 128-bit fragment loads; component-wise 32-bit stores).
 //   RX_PROF: shader-clock phase timing, MEASUREMENT ONLY (wrong results by design: the counters overwrite the output tile).
 //   RX_ABL: bit mask of removed work, MEASUREMENT ONLY (wrong results by design): 1 A global fetch, 2 B global fetch,
-//     4 LDS stores of the next chunk, 8 MMA, 16 the barrier of the chunk loop.
+//     4 LDS stores of the next chunk, 8 MMA, 16 the barrier of the chunk loop, 32 the fragment loads of K slabs 1 to 3.
 // Included by sarc_dev_rx7600_dq8ca_zpg.glsl, which defines bindings, spec constants and tile constants.
 // Must not contain template syntax.
 
@@ -500,13 +500,22 @@ void main() {
 
       // --- 3. int8 MMA on the cur slice ---
 #if (RX_ABL & 8) == 0
+#if (RX_ABL & 32) != 0
+      coopmat<int8_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA> matA[MMAS_PER_SG_M];
+      coopmat<int8_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> matB;
+#endif
       [[unroll]] for (uint k = 0; k < NUM_K_SLABS; ++k) {
         const uint slab_a_base_u32 = cur_a + k * A_SLAB_PITCH_U32;
         const uint slab_b_base_u32 = cur_b + k * B_SLAB_U32;
 
+#if (RX_ABL & 32) == 0
         coopmat<int8_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA> matA[MMAS_PER_SG_M];
+#endif
         [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
           const uint row_a = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
+#if (RX_ABL & 32) != 0
+          if (k == 0)
+#endif
           coopMatLoad(
               matA[i], Ash_int8,
               RX_LDO(slab_a_base_u32 + row_a * A_STRIDE_U32),
@@ -514,9 +523,14 @@ void main() {
               gl_CooperativeMatrixLayoutRowMajor);
         }
 
+#if (RX_ABL & 32) == 0
         coopmat<int8_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> matB;
+#endif
         [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
           const uint col_b = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
+#if (RX_ABL & 32) != 0
+          if (k == 0)
+#endif
           coopMatLoad(
               matB, Bsh_int8,
               RX_LDO(slab_b_base_u32 + col_b * B_STRIDE_U32),
