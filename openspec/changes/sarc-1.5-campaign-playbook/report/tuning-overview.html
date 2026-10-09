@@ -105,6 +105,20 @@
   :root { --accent: #0f7f8c; --run: #b9700a; --run-bg: #fbf1df; --ok: #2a7d4f; --ok-bg: #e2f2e8; --ext: #6b5ca5; --ext-bg: #ece8f7; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --accent: #4fc0cc; --run: #e6a94a; --run-bg: #3a2d14; --ok: #5cc98a; --ok-bg: #16331f; --ext: #a99ae0; --ext-bg: #2a2440; } }
   :root[data-theme="dark"] { --accent: #4fc0cc; --run: #e6a94a; --run-bg: #3a2d14; --ok: #5cc98a; --ok-bg: #16331f; --ext: #a99ae0; --ext-bg: #2a2440; }
+  .primer { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px 20px; margin: 0 0 16px; padding: 0; }
+  .primer div { min-width: 0; font-size: 0.86rem; color: var(--fg2); border-top: 1px solid var(--grid); padding-top: 6px; }
+  .primer dt { color: var(--fg); font-weight: 500; }
+  .primer dd { margin: 0; }
+  .explain { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+  .ex { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; min-width: 0; background: var(--bg); }
+  .ex h3 { margin: 0 0 6px; font-size: 0.98rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 8px; }
+  .ex h3 b { font-family: var(--mono); color: var(--fg3); font-weight: 400; font-size: 0.78rem; }
+  .ex h3 em { font-style: normal; font-weight: 400; font-size: 0.72rem; color: var(--fg2); border: 1px solid var(--line); border-radius: 9px; padding: 0 7px; }
+  .ex p { margin: 0 0 6px; font-size: 0.88rem; color: var(--fg2); }
+  .ex p:last-child { margin-bottom: 0; }
+  .ex p strong { color: var(--fg); font-weight: 500; }
+  .ex p.like { color: var(--fg3); border-left: 2px solid var(--line); padding-left: 8px; }
+  h4.sub { margin: 0 0 8px; font-size: 0.85rem; font-weight: 500; color: var(--fg3); letter-spacing: 0.04em; }
 </style>
 
 <main>
@@ -137,6 +151,16 @@
     </div>
     <div class="scroll"><div class="matrix" id="matrix" role="table" aria-label="技术与设备矩阵"></div></div>
     <figcaption>第 1 行四台设备的数字含移植时一并带上的 softmax（4070 Ti、Orin），因为那两台的候选 1 带 stock softmax 时被门禁拒绝，无法单独计量。</figcaption>
+  </figure>
+
+  <figure id="fig-explain">
+    <h2>读图 2 之前 · 十项技术各是什么</h2>
+    <p class="claim">给不熟悉这套内核的读者。先是八个贯穿全文的词，然后图 2 的每一行一张卡片：它做了什么、为什么会快、一个类比、结果如何。编号与图 2 的行号一致。</p>
+    <h4 class="sub">先认识几个词</h4>
+    <dl class="primer" id="primer"></dl>
+    <h4 class="sub">十项技术</h4>
+    <div class="explain" id="explain"></div>
+    <figcaption>十项里真正带来大幅收益的是第 1 行和第 4 行，两者都是“换一种算法结构”；第 2、7、10 行是调参数，回报小得多；第 5、9 行不为提速，是为了正确和可维护。</figcaption>
   </figure>
 
   <figure id="fig-time">
@@ -462,6 +486,13 @@
      "v": "继承",
      "t": "分支从 780M 的候选 11 拉出，注意力内核随之带来"
     }
+   },
+   "ex": {
+    "kind": "新内核",
+    "what": "注意力里有两次大的矩阵乘（QK^T 和 attn·V）。这项技术把它们改用 Vulkan 的“协作矩阵”扩展来写：一组 GPU 线程合作，一次算完一小块（例如 16×16）矩阵乘，而不是每个线程各算一个数。",
+    "why": "驱动能把这种“按块乘”直接交给硬件里专门做矩阵乘的部件或最合适的向量指令，数据用半精度，读写次数也少得多。原版 ExecuTorch 的注意力是整个预填充里最慢的一段，所以换掉它的收益最大。",
+    "like": "一个人逐格填一张 2048×2048 的表，换成一个小组按块填。",
+    "res": "四台原本跑原版注意力的设备各 +46 % 到 +58 %。Intel 上注意力耗时从 341 ms 降到 42 ms（图 3）。"
    }
   },
   {
@@ -494,6 +525,13 @@
      "v": "无更优",
      "t": "融合内核的参数变体筛了三轮，没有一个每轮都快 3 %"
     }
+   },
+   "ex": {
+    "kind": "调参数",
+    "what": "内核的写法不变，只调它的几个旋钮：每个工作组一次处理多大的块（瓦片）、工作组里有多少线程、一次读多少数据。",
+    "why": "同一段程序在不同 GPU 上的最佳块大小不同，取决于缓存、寄存器数量和线程分组方式。",
+    "like": "同一台发动机，换一组更合适的档位。",
+    "res": "收益小：780M 上 +3.6 %，其余设备都落在 ±2 % 的噪声带里，没有采纳。"
    }
   },
   {
@@ -528,6 +566,13 @@
      "g": 1.48,
      "n": "r3"
     }
+   },
+   "ex": {
+    "kind": "新内核",
+    "what": "softmax 是注意力的中间一步：把每个 token 对其他 token 的打分变成加起来等于 1 的权重。这个变体做了两处改动：一行的求和与除法用 32 位浮点算，最后只舍入一次（fp32）；被掩码遮住、后面根本不会读到的尾部不再逐个清零（无零尾）。",
+    "why": "少写了没人读的数据，所以更快；用 32 位累加减少了舍入误差，所以更准。第二点很关键：4070 Ti 和 Orin 的协作矩阵内核配原版 softmax 时误差超标，被门禁拒绝，换成这个变体才通过。",
+    "like": "算一长列数的平均值时先用高精度加完再四舍五入，而不是每加一次就四舍五入一次。",
+    "res": "单独计量时 +1.5 % 到 +4.8 %；在 4070 Ti 和 Orin 上它是第 1 行能通过门禁的前提。"
    }
   },
   {
@@ -555,6 +600,13 @@
      "k": "ok",
      "g": 18.22
     }
+   },
+   "ex": {
+    "kind": "新内核",
+    "what": "把注意力的三步（QK^T 打分、softmax、attn·V 混合）合成一个内核。一行分数算出来以后不写回显存，直接留在这组线程的共享内存里做 softmax，再乘上 V。",
+    "why": "分开做时，2048×2048 的分数表要整张写进显存、再整张读出来两次，还要多发两次 GPU 任务。合在一起后这张中间表不再落地。",
+    "like": "三道工序原来各在一个车间，半成品要来回搬运；现在一条流水线做完。",
+    "res": "780M +16.8 %，RX 7600 +18.2 %。向 B580、4070 Ti、Orin 的移植是第二轮，正在进行。"
    }
   },
   {
@@ -583,6 +635,13 @@
      "g": 0,
      "n": "逐字节一致"
     }
+   },
+   "ex": {
+    "kind": "正确性修复",
+    "what": "融合内核里，一组线程通过共享内存交换数据，必须保证“别人写完了我才读”。原来的 fused3 只声明了“写入对别人可见”，没有让线程真正停下来等齐。fused3sb 在每个交换点加了一条让整组线程对齐的屏障指令。",
+    "why": "它不提速。AMD 这一代显卡上一组线程恰好齐步执行，所以原写法没出错；按 Vulkan 的规定这是数据竞争，换一种硬件就可能读到没写完的数据（M51 上确实如此，需要更强的屏障）。",
+    "like": "接力赛里规定必须交接完才能起跑，而不是指望两个人碰巧同步。",
+    "res": "RX 7600 上速度不变，21 个测试用例输出逐字节一致。移植到其他设备时一律用带屏障的版本。"
    }
   },
   {
@@ -613,6 +672,13 @@
      "v": "-0.15",
      "t": "候选 4 在全部形状上套用整纹素取权重，-0.15 %，8B 8da4w -1.51 %，未采纳"
     }
+   },
+   "ex": {
+    "kind": "新内核",
+    "what": "8da4w 是一种量化方式（权重 4 位、激活 8 位）。权重存在纹理里，一个纹素有 4 个通道。这个变体一次取出整个纹素并暂存，供后面几步共用，而不是每用一个通道就重新读一次纹理。",
+    "why": "线性层是预填充里占时间最多的部分，读权重是它的主要开销之一；纹理读取次数减少，耗时随之下降。",
+    "like": "每次去仓库把一整箱搬回来，而不是用一件跑一趟。",
+    "res": "Intel 两张卡约 +7 %，Orin +2.8 %，780M +2.0 %；RX 7600 上略慢，没有采纳。只影响 8da4w 的模型。"
    }
   },
   {
@@ -648,6 +714,13 @@
      "k": "ok",
      "g": 5.49
     }
+   },
+   "ex": {
+    "kind": "按形状选择",
+    "what": "模型里的线性层（矩阵乘）有好几种形状，例如输入 2048 宽、输出 8192 宽。这项技术为每一种形状单独挑最快的内核写法和块大小，记成一张表，运行时按形状查表。",
+    "why": "没有一种配置对所有形状都最快：宽矩阵和窄矩阵对缓存与线程分组的要求不一样。",
+    "like": "不同尺寸的货物配不同尺寸的箱子，而不是全用一种。",
+    "res": "AMD 两台 +4.7 % 和 +5.5 %；B70、Orin 约 +1 %；B580、4070 Ti 上扫过瓦片后没有更快的，未采纳。"
    }
   },
   {
@@ -674,6 +747,13 @@
     "rx7600": {
      "k": "none"
     }
+   },
+   "ex": {
+    "kind": "新内核",
+    "what": "softmax 要对一整行求最大值和求和。这个变体用“子组”指令来做：子组是硬件上真正同时执行的一小批线程，一条指令就能把它们各自手里的数加起来或取最大。",
+    "why": "比通过共享内存一轮一轮合并少了几次读写和等待。",
+    "like": "一桌人同时报数，直接得到总和，不用挨个传纸条。",
+    "res": "只在 Orin 上做了，+0.34 %，在噪声带内；门禁通过，保留在最终配置里。"
    }
   },
   {
@@ -711,6 +791,13 @@
      "v": "继承",
      "t": "随 780M 分支带来两个挂钩"
     }
+   },
+   "ex": {
+    "kind": "工程约束",
+    "what": "这一行不是优化。代码分两个区：发布区是已发布、原则上不许改的内核；开发区放实验内核。有时一个新内核必须在发布区留一个很小的入口才能被选中，这个入口就叫挂钩。",
+    "why": "把实验代码与已发布代码隔开，保证关掉开关后行为与发布版完全一致。每个挂钩要所有者批准，并单独提交。",
+    "like": "在承重墙上开一个经过审批的小检修口，而不是随手打洞。",
+    "res": "780M 用了 2 个，4070 Ti 和 Orin 各 1 个，Intel 两张卡不需要。"
    }
   },
   {
@@ -739,6 +826,13 @@
     "rx7600": {
      "k": "none"
     }
+   },
+   "ex": {
+    "kind": "自动搜索",
+    "what": "让程序自动枚举或抽样成百上千种参数组合，逐个在设备上计时，找出最快的。它是第 2、7 行的自动化版本。",
+    "why": "理论上能找到人想不到的配置。实际上单个内核确实能快 8 % 到 30 %，但那个内核只占预填充时间的百分之几，或者根本不在最终走的路径上，所以端到端几乎看不出来。",
+    "like": "花很多时间把一段只占全程 3 % 的路修到最平。",
+    "res": "B70 花了 33 小时换来 +1.1 %；780M 枚举 1796 项，端到端为 0（图 4）。结论：先看时间花在哪，再决定搜不搜。"
    }
   }
  ],
@@ -1501,7 +1595,41 @@
     "基线分支"
    ]
   ]
- }
+ },
+ "primer": [
+  {
+   "term": "预填充",
+   "def": "模型在吐出第一个字之前，把整段提示（这里是 2048 个 token）读一遍。本报告里的 tok/s 都是这一步的速度。"
+  },
+  {
+   "term": "内核",
+   "def": "在 GPU 上运行的一小段着色器程序，完成一种计算，例如一次矩阵乘或一次 softmax。调优就是把某个内核换成更快的写法。"
+  },
+  {
+   "term": "线性层（GEMM）",
+   "def": "矩阵乘。模型的权重绝大部分在这里，它占预填充时间的大头。"
+  },
+  {
+   "term": "注意力的三步",
+   "def": "QK^T：每个 token 给其他每个 token 打分，得到一张 2048×2048 的分数表。softmax：把每一行分数变成加起来为 1 的权重。attn·V：按权重把信息混合起来。"
+  },
+  {
+   "term": "工作组与子组",
+   "def": "GPU 把线程成组启动。工作组里的线程可以共享一小块内存；子组是其中硬件真正齐步执行的一小批（16 到 64 个）。"
+  },
+  {
+   "term": "4w 与 8da4w",
+   "def": "两种把模型压小的量化方式。4w：权重压到 4 位，计算用浮点。8da4w：权重 4 位，中间结果再压到 8 位。"
+  },
+  {
+   "term": "门禁",
+   "def": "每个候选在计时之前必须先证明算得对：输出与参考实现的误差在限内，预测的下一个 token 不变。没过门禁的候选再快也不算。"
+  },
+  {
+   "term": "噪声带",
+   "def": "同一个程序重复测，结果也会有约 ±2 % 的波动。增益落在这个范围内就不能说它更快，矩阵里写作“带内”。"
+  }
+ ]
 }
 </script>
 <script>
@@ -1691,6 +1819,17 @@
       if (d.cells.some((c) => c.etcuda)) parts.push(`<div style="font-size:0.78rem;color:var(--fg3);margin-top:4px">ExecuTorch CUDA 后端（上游，4w，仅去掉导出守卫）：${d.cells.map((c) => c.model + ' ' + fmt(c.etcuda)).join(' · ')} tok/s，远低于 Vulkan 后端。</div>`);
     });
     $('#table-tokps').innerHTML = parts.join('');
+  })();
+
+  // --- technique explanations ---
+  (function () {
+    const esc = (x) => String(x).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    const pr = document.getElementById('primer');
+    if (pr && DATA.primer) pr.innerHTML = DATA.primer.map((p) => `<div><dt>${esc(p.term)}</dt><dd>${esc(p.def)}</dd></div>`).join('');
+    const el = document.getElementById('explain');
+    if (el) el.innerHTML = DATA.techs.filter((t) => t.ex).map((t) => `<article class="ex"><h3><b>${esc(t.n)}</b>${esc(t.name)}<em>${esc(t.ex.kind)}</em></h3>` +
+      `<p><strong>做了什么</strong>　${esc(t.ex.what)}</p><p><strong>为什么</strong>　${esc(t.ex.why)}</p>` +
+      `<p class="like">${esc(t.ex.like)}</p><p><strong>结果</strong>　${esc(t.ex.res)}</p></article>`).join('');
   })();
 
 })();

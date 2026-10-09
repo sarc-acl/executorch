@@ -20,6 +20,7 @@ One HTML file, two parts, deliberately separated:
    | `chains` | per device, the accepted candidates in order: `c` (category key), `g` (geomean gain over its parent, %), `n` (label) | each campaign's `proposal.md` candidate table, accepted rows only |
    | `reported` | per device, the final stack measured directly against the pristine parent, % | each campaign's final session |
    | `techs` | the ten rows of the matrix; per device a cell `{k, g, v, n, t}`: `k` is `ok`, `tried`, `inherit`, `pending` or `none`; `g` the gain when adopted; `v` a short value when there is no gain to show; `n` a sub-label; `t` the tooltip | `proposal.md` of every campaign |
+   | `techs[].ex`, `primer` | the plain-language section before figure 3: per technique `kind`, `what`, `why`, `like` (an analogy), `res` (result in one sentence); `primer` is the list of background terms. Update `res` when a technique lands on a new device | this file; `proposal.md` of the campaign that introduced the technique |
    | `fams`, `timeRows` | kernel families and the before/after dispatch time of 8B cells, ms | `trace-families.csv` / `STATUS.md` traces |
    | `waste` | the searches: hours of device time and end-to-end gain | `LESSONS.md` L6, the campaign's `STATUS.md` |
    | `llama` | tuned 4w tok/s divided by llama.cpp at its best setting, per model, Vulkan and vendor backend | `sarc-1.5-llamacpp-compare/results/cells.csv` |
