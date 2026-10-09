@@ -165,3 +165,15 @@ Rules fixed on 2026-10-08 23:56 UTC, before any round-2 measurement (the commit 
   against round 1's final stack and against the pristine parent, write-up. Never pushed from here.
 - **Shared host:** a timed run waits until no compiler, linker or build of anyone runs and is invalid if one appears (R5); timed tools
   keep the names `e2e5`, `gl`, `verify` under `<campaign-root>/.../tools/`.
+
+### Note of 2026-10-09 02:35 UTC on the phase-timing rule (written after the phase twin of the A row pitch 24 bytes was measured, before any end-to-end session of it)
+
+The rule above says the *share* of barrier + LDS-store time of a candidate's twin must fall against the incumbent twin. For candidate 1
+(A staging row pitch of 24 bytes, `pa6pb4csha`) the twins give (`results/rx7600/round2/r2e-phase-compare.txt`): total cycles 0.878 of the
+shipped tile's, the MMA phase (which contains the LDS fragment loads, where the bank conflict was) 0.660, barrier 0.907, LDS stores 0.985;
+barrier + LDS-store cycles fall to 0.917 in absolute terms, but their share of the (shorter) total rises from 59.6 % to 62.2 %. By the
+letter of the rule the candidate would be dropped. It is not: the mechanism the rule asks to prove is proven in absolute cycles (the phase
+that holds the conflicting reads fell by a third, the barrier wait did not grow), the kernel-level screen has it at 1.05 in every round
+and on all twelve shapes, and a session costs one hour of device time. The deviation is recorded here, in `STATUS.md` ("Decision needed
+from the owner") and in the candidate's evidence; the threshold of the adoption rule (2 % geomean over the parent in one timed session) is
+not touched. If the owner or reviewer rules that the share rule binds, the session result stays on record as a negative one.

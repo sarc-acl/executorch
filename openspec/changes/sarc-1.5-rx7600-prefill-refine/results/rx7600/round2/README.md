@@ -44,3 +44,13 @@ shipped 16 bytes) with the drain tile aliased onto the A buffer (`csha`, needed 
   1.090; reuse, no staging, no barrier (`abl55`): 28085 us, i.e. the WMMA loop cannot get much past about 78 % of the cited int8 roof in this
   structure (per-shape times in the CSV). The LDS fragment loads are therefore worth at most about 5 % of the kernel, and the staging plus
   barrier about 10 %; the shipped kernel is at about 62 % of the roof.
+
+## Round 2, build `r2e` (micro build; two screen rounds; pitch grid)
+
+`r2e-screen-8da4w.csv` / `-summary.txt`, `r2e-phase-compare.txt`, `phases/r2e-pa6pb4csha.csv`. Pitch in uint (4 = 16 bytes), `csha` = drain tile
+in the A buffer:
+- `pa6pb4csha` (A 24 bytes, B 16 bytes): 1.052 / 1.048, 11 of 12 shapes at least 1.03 in both rounds (the twelfth passes in one round);
+  `pa4pb4csha` (csha alone) 1.000 / 0.997: the aliasing itself is neutral. Phase twins: total cycles 0.878, MMA phase 0.660, barrier 0.907,
+  LDS stores 0.985 of the shipped tile's (`r2e-phase-compare.txt`).
+- Any B pitch other than 16 bytes is slower (24 bytes 0.96, 32 bytes 0.94); odd pitches (20 / 28 bytes: rows not 8-byte aligned) are 0.26 to
+  0.58 (the fragment loads leave the aligned path). `bf` on top of `pa6pb4csha`: 1.031 / 1.027, not additive: dropped.
