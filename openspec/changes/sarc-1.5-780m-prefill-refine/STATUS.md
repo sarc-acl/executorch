@@ -2,14 +2,38 @@
 
 ## Round 3 (2026-10-08): `fused3sb` and `780m-final` (closing task, not a tuning round)
 
-Updated 2026-10-09 02:36 UTC. **Not closed: one owner decision is open ("Decision needed from the owner (open,
-2026-10-09)" below the table).** Round 3 is measured on the replacement build `head4` as the owner decided
-(option (a), 2026-10-08 22:55 UTC), and the reported numbers were recomputed by the review of 2026-10-09; but two
-predicates of the R6 validity rule are not evidenced for any timed run, and the owner's decision kept the
-validity rule as it is. Nothing is running and nothing is queued; no measurement is started until the owner
-answers. Chains `chain27.sh` (23:03 to 23:27 UTC) and `chain28.sh` (23:27 to 02:08 UTC) ended with `DONE`
-(`results/780m/round3/chain27.status`, `chain28.status`). Only the hold watcher is alive (and the `nvtop` of
-the ssh session described below, which is not the campaign's).
+Updated 2026-10-09 03:35 UTC. **Not closed: the replacement timed sessions the owner ordered are running.**
+The owner answered the question below on 2026-10-09 02:50 UTC with option (b) (task file, last section): items A
+and B are timed again on `head4`, the same binaries, with `tools/e2e5.sh` recording the two missing R6
+predicates; the gate, the tiers and the byte comparison are not repeated. The numbers of round 3 will be those
+of the replacement sessions; the tables below are the earlier sessions ("R6 predicates as recorded by the
+earlier tool; item B with an idle `nvtop` attached") until this file is updated.
+
+**Running now (started 03:36 UTC, detached): `chain29.sh`** (copy in `results/780m/round3/`; status file
+`<artifacts 10-08>/logs/chain29.status`): session A into `stage/r3a-fused3sb-head4/raw-r6`, then session B into
+`stage/r3b-final-dev15-head4/raw-r6`, each from a cool start, `--no-check` (timed runs only), about 35 minutes
+each plus cooling. Nothing else runs; the hold watcher is alive. PID 245296 (`nvtop`) is gone (checked 03:18
+UTC), no `nvtop` is running.
+
+What `tools/e2e5.sh` does now, and nothing else (smoke-tested 03:21 UTC on 1B 4w, 4 runs, `stage/
+r3a-fused3sb-head4/smoke-r6`: 3828 to 3842 tok/s, `throttle_status` 0 in every sample, the runner's own DRM
+client seen with 1.0 s of engine time, no foreign process or client; synthetic monitor files check each reason):
+
+- the 0.1 s sampler also writes `throttle_status` (u32 at offset 108) and `temperature_gfx` of `gpu_metrics`
+  (format 2.1); a run with a non-zero status among the samples of its measured window is invalid (`throttle`);
+  fewer than 5 status samples there: `throttle_unsampled`. The OR over the window (`thr_or`) and over the whole
+  process (`thr_run_or`) are recorded raw; the bits are not interpreted;
+- a monitor samples every 0.25 s, while the runner executes, the processes the guard's pattern matches and the
+  DRM clients in the `fdinfo` this user can read (`logs/<run>.mon`). A matching process that does not descend
+  from the session script makes the run invalid (`other_gpu_process_during`); so does a foreign client whose
+  summed `drm-engine-*` time grows during the run (`foreign_gpu_client`), and a run without a monitor sample
+  (`monitor_unsampled`). The runner's own engine time is recorded (`own_engine_ms`), which shows per run that
+  the monitor could read a client;
+- the clock-sample minimum is 5 (`clock_unsampled` below it); `nvtop` is in the guard's pattern.
+
+Limits, accepted by the owner's decision: the `fdinfo` of other users' processes (the gdm greeter, which holds
+the display on this GPU) cannot be read without sudo, so for them only the device-wide `gpu_busy_percent` is
+recorded; the bits of `throttle_status` are raw values.
 
 **Which build each number comes from:** the part "Replacement build `head4`" directly below is `head4`
 (`c639d4760`, recursive export from object stores) and is what closes the round. Everything from "State before
@@ -27,7 +51,7 @@ part below.
 | C | `proposal.md` section "Round 3" says which build each number comes from; `check.sh --no-build` PASS (02:10 UTC, output below; run by the actor only, it compiles the two selector tests); committed and pushed. **Round not closed: R6 validity, see the decision below** |
 | **recommended configuration** | **`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final`** |
 
-### Decision needed from the owner (open, 2026-10-09)
+### Decision needed from the owner (asked 2026-10-09 02:15 UTC; answered 02:50 UTC: option (b))
 
 **R6 validity is not fully evidenced for the timed runs of round 3, on `head4` or on `head3`.** R6: "A run is
 valid only with rc 0, 2048 prompt tokens, 0 generated tokens, no other GPU workload before, during or after,
