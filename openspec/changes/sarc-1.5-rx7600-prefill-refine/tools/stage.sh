@@ -7,7 +7,8 @@
 set -euo pipefail
 source "$(dirname "$(readlink -f "$0")")/env.sh"
 S=$A/stage/$1; PB=$2; PE=$3; CB=$4; CE=$5; NOTE=${6:-}
-[[ -e $S ]] && { echo "stage $1 exists" >&2; exit 2; }
+[[ -e $S || -L $S ]] && { echo "stage $1 exists" >&2; exit 2; }
+[[ -n ${SARC_BIG:-} ]] && { mkdir -p $SARC_BIG/stage/$1; ln -s $SARC_BIG/stage/$1 $S; }   # stage dirs live on the scratch disk (the root filesystem filled up twice)
 mkdir -p $S/{parent,cand,parent-traced,cand-traced}
 put() { # put <build tag> <dest> <env>
   local L=$A/build/rx7600/$1/llama/examples/models/llama

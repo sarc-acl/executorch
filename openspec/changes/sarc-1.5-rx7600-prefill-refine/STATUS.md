@@ -1,29 +1,28 @@
 # STATUS: RX 7600 prefill campaign
 
-Updated 2026-10-09 02:05 UTC (round 2 in progress; round 1 below is unchanged and closed).
+Updated 2026-10-09 12:40 UTC (round 2 finished; round 1 below is unchanged and closed).
 
 ## Running now
 
-- Round 2, candidate 1 (8da4w A staging row pitch 24 bytes, profile `rx7600-refine4`, build `c6` = commit `36c7d1cc0`) against round 1's final stack
-  (build `final`): the gate (`tools/chain8.sh`, session `r2-c6-pitch`: timed session, `verify.sh` against `s0`, warm traces, byte comparison of the linear outputs),
-  started 2026-10-09 03:57 UTC, detached, status in `<artifacts>/logs/chain8-r2-c6-pitch.status`.
-- Candidate 2 (4w, profile `rx7600-refine5`, commit `d6d67ba78`) is committed; its build `c7` starts when the timed part of candidate 1's session is done (R5).
+- Nothing of the timed work. The real-text logits probe of the final build (`tools/chain10.sh`, session `r2-final`) may still be running; its status is in `<artifacts>/logs/chain10.status`
+  and its result goes to `results/rx7600/round2/final-probe/` when done.
 - Never pushed from here (owner decision 2026-10-07 23:15 UTC): the coordinator publishes.
 
-## Round 2: where it stands (details in `results/rx7600/round2/README.md`, rules in `proposal.md` "Round 2")
+## Round 2 (owner decision 2026-10-08 23:38 UTC: push the linear kernels further): DONE, stop rule = all three candidates done
 
-Parent of round 2: round 1's final stack (build `final`, commit `18cc0d53a`, environment in `proposal.md`). Candidate 1 (8da4w kernel):
-- The shipped kernel (`afmb1`, 256 x 64 tile, K step 64, 32 waves) is already double-buffered with one barrier per chunk, so the first
-  idea of the owner decision (double buffering, one barrier per step) is in place. Ablations (kernels that remove work, measurement
-  only): the staging (global fetch + LDS stores) is about 7 % of the kernel, the barrier about 5 %, the MMA loop (LDS fragment loads +
-  WMMA) about 93 %; the MMA loop alone reaches about 67 % of the cited int8 roof, the best case with almost nothing else (`abl55`) about 78 %.
-  RADV gives the kernel 64 VGPRs (a 1024-invocation workgroup caps the register budget), 3 spills outside the loop, and two `ds_read_b64`
-  per fragment.
-- Negative so far (kernel level, 1 to 3 rounds): padding between the K slabs of A (0.996 to 1.003), the 256 x 128 tile (0.73), a
-  branch-free loop (1.014, to repeat), stores interleaved with the MMAs (0.99 to 1.00), uvec4-typed staging (0.89), smaller workgroups
-  (0.88 to 0.94, 128 VGPRs, no spills), B row pitch 24 bytes (0.96).
-- Positive so far: A staging row pitch of 24 bytes instead of 16 (`pa6csha`: the LDS fragment reads of 16 lanes at a 16-byte pitch collide
-  on banks) **+5.0 to +5.5 % at kernel level, all twelve shapes at least 1.03 in both rounds**. Not yet gated or timed end to end.
+Parent of round 2: round 1's final stack (build `final`, commit `18cc0d53a`). Full account: `proposal.md` "Round 2 results"; evidence: `results/rx7600/round2/`, `results/rx7600/sessions/r2-*`.
+
+| step | state |
+|---|---|
+| diagnosis of the shipped 8da4w kernel | done: already double-buffered with one barrier per chunk; staging about 7 % and barrier about 5 % of the kernel, the MMA loop (LDS fragment loads + WMMA) about 93 % at about 67 % of the cited int8 roof; 64 VGPRs, 3 spills outside the loop, two `ds_read_b64` per fragment (`round2/README.md`, `r2a-*`) |
+| candidate 1: 8da4w A staging row pitch 24 bytes (`rx7600-refine4`, build `c6`) | gated and timed against round 1's final: 8da4w +3.65 / +4.01 / +4.25 %, 4w -0.19 to +0.17 %, **geomean +1.96 % (under 2 %)**; adopted under rule (b) of the clarification in `proposal.md`; outputs byte-identical in 24 of 24 linear shapes; `sessions/r2-c6-pitch` |
+| candidate 2: 4w 256 x 128 tile, A staging uvec2 with 72-byte rows, B staging 88-byte rows (`rx7600-refine5`, build `c7`) | gated and timed against candidate 1: 4w +5.38 / +7.52 / +7.46 %, 8da4w unchanged, **geomean +3.33 %**; adopted under rule (a); outputs byte-identical in 24 of 24; `sessions/r2-c7-q4` |
+| candidate 3: attention kernels | not applicable: attention is 4.2 to 7.8 % of every cell (condition: above 10 %); `round2/candidate3-condition.txt` |
+| final verification on the build of the committed head (`f2` = commit `73648f5bd`) | done: pristine parent against the final stack **+33.59 % geomean** (1B / 3B / 8B 4w +41.08 / +29.58 / +24.31 %, 8da4w +45.31 / +33.07 / +29.32 %); round 1's final against the final stack **+5.44 %** (4w +5.98 / +7.08 / +7.93 %, 8da4w +3.65 / +3.81 / +4.25 %); 60 / 60 timed runs valid in the second session, 60 counted of 62 in the first (1 `host_build` replaced); next token SAME in all cells; `sessions/r2-final`, `sessions/r2-final-r1` |
+| gate of the final stack | `verify.sh` unmodified = snapshot except the two dispatched-kernel lines; SDPA tiers 12 passes each + control, 0 mismatches, `pairing=ok`; golden PASS against `golden-ref-parent.json` (PENDING against `sarc/golden/spirv.json`: native glslc, the parent's own 14 differences); 24 of 24 linear outputs byte-identical to the pristine parent's; attention reference error 16 of 17 rows `yes` (`NO`: `peaked_tiny_gqa_s256`, S = 256), same as round 1; nothing outside the dev zone changed; `check.sh --no-build` PASS |
+| incidents | the root filesystem of the host filled up twice (03:07 and 09:25 UTC; cause not looked for); the traced half of build `c5` and the linear byte comparison / SDPA evidence of the final verification failed with ENOSPC and were redone (`c6`, `r2-final`); everything large now lives on `<scratch-disk>` (`SARC_BIG` in `tools/env.sh`); details in `proposal.md` |
+
+Percent of the cited roofs (not re-measured, owner answer 1): linear GEMM at 70.3 to 72.0 % in every cell (8B 4w 72.0 %, 8B 8da4w 70.4 %). The roof values are the 2026-09-28 ones.
 
 ## State
 
@@ -159,14 +158,19 @@ timed, the real-text and the unaligned prompt. The 1B prefill takes 261 to 262 m
 
 ## Next
 
-Done. The coordinator publishes the branch (scrubbed forward commit); a reviewer round follows (R12).
+Done. A reviewer round follows (R12); the coordinator publishes the branch (scrubbed forward commit). Nothing of this run is pushed.
 
 ## Decision needed from the owner
 
-1. **Percent of the roofs.** R6 asks for the freshly measured roofs; igpu-roofline is not on this host except in another workspace that this campaign does not read. The 2026-09-28 roofs (43.42 TFLOP/s fp16, 43.90 TOP/s int8, same card and driver build) are cited, not re-measured. A re-run needs the tool or permission to use the workspace copy.
-2. **Fused attention node (D4.3 hook).** The fused kernel `fused3` (and `fused3sb`) runs through the D4.3 entry point already on the starting branch; it stays subject to the owner's review before any promotion (`proposal.md`).
-3. **Name of the `fused3sb` kernel family (R3).** The files are `glsl/sarc_dev/sarc_dev_780m_sdpa_fused3sb.{glsl,yaml}`: a new kernel family in the 780M's namespace, not under the device-tag prefix R3 asks for (`rx7600`). Reason, from the shader header: `impl/sarc_dev/780m/Sdpa780mFused.cpp` builds the shader name as `sarc_dev_780m_sdpa_` + the variant token of `ET_VK_SARC_780M_SDPA_FUSED`, so a differently prefixed file is not reachable without editing that 780M file or adding an rx7600 selector. Not renamed. **Default unless the owner rules otherwise:** keep the name (the content is separable: two new files, nothing of the 780M's edited). Renaming needs a new build and a new gate (tiers, `verify.sh`, a timed session, the evidence of M2a).
-4. **Branch history.** The branch was rewritten and force-pushed over the coordinator's scrubbed copy by the earlier actor, against the owner decisions of 2026-10-06 16:19 and 19:40 UTC (do not rewrite or amend, do not push, never force). Reflog (local time): 20:35 pull of `origin/topic/rx7600-prefill-refine`, then that rebase aborted; 20:38 rebase onto `origin/topic/780m-prefill-refine`, which re-picked all 16 rx7600 commits (old `d51142e38` became `724469b1c`, old `797f6c0a4` became `bb3cfcd22`, ...); 20:40 remote ref updated by push from `364954ed2` (the published scrubbed head, coordinator's copy) to `5febfe4f3` (on the remote now). The branch sits on `90fe4d013`, not directly on the parent `f5f1bf10c`, and carries 10 extra 780M commits (+12.3k lines under `openspec/changes/sarc-1.5-780m-prefill-refine`) that no measured build contained. Owner decision 2026-10-07 23:15 UTC: the coordinator handles the public branch (a forward commit that replaces host names and home paths); this run never pushed (push URL `DISABLED`) and did not rewrite or amend any commit.
-5. **Host builds of another campaign during timed sessions.** Rule R5 says no build runs during a timed session on the same host, by anyone. Another campaign builds on this host's CPU (Android NDK). Every timed run of this campaign waited until no compiler, linker or build driver of anyone ran, and a run during which one appeared was invalid and replaced (one such run in the c4 session, two in `aa2`). **Default unless the owner rules otherwise:** keep this rule.
+Answered by the owner decision of 2026-10-08 23:38 UTC and therefore removed: the percent of the roofs (cited roofs accepted), the fused attention node (stays subject to the D4.3 review before promotion),
+the name `fused3sb` in the 780M's namespace (stays until the merge), the branch history (noted), host builds during timed sessions (R5 stands).
 
-Resolved: the order of port items 1 and 2 (the default was followed: candidate 1 softmax first, then the fused kernel).
+1. **Phase-timing rule of round 2 (`proposal.md`, "Note of 2026-10-09 02:35 UTC").** The rule fixed before round 2 asked that the *share* of barrier + LDS-store time of a candidate's phase twin fall
+   against the incumbent's before the candidate is timed end to end. For candidate 1 the share rose from 59.6 % to 62.2 % while the absolute cycles of those phases fell to 0.917 and the MMA phase (which holds
+   the conflicting fragment loads) to 0.660; the candidate was timed anyway and the deviation recorded before the session. **Default unless the owner rules otherwise:** keep it as recorded. If the owner rules
+   that the share rule binds, candidate 1's session stays on record as a negative result and candidate 2's parent would have been round 1's final stack instead of build `c6`.
+2. **Adoption of candidate 1 under rule (b)** (`proposal.md`, clarification of 2026-10-09 03:50 UTC, written before any end-to-end number of round 2): a candidate that moves three of six cells is adopted when each
+   of those cells gains at least 2 %, although its geomean (+1.96 %) is under 2 %; it counts as one candidate under 2 % for the stop rule. **Default:** keep.
+3. **Host disk.** The root filesystem of this workstation was full twice during round 2 (188 KB to 1.2 MB free at 03:07 and 09:25 UTC) and stands at 92 to 98 % in between; it is a hazard to every campaign here.
+   This run moved its large artifacts to `<scratch>` (the builds alone are 33 GB, measured; exports and stage directories come on top; the parent directory also holds other data of this user that is not this run's).
+   Nothing was deleted except one untracked 20-line stub script of this run.

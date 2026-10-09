@@ -212,3 +212,73 @@ release body made by `tools/gen_rx7600_dq_body.py`; the options not used by this
   row, the ninth (pad) is never written; distinct (row, col) give distinct pairs; each thread writes its own pairs (the release thread map).
 - B staging (`BshT`, uvec2): row pitch 11 uvec2 (88 bytes), `store_bt_item` writes `BshT[base + (n_local + j) * 11 + k_local / 4]` with `k_local / 4 < 8 < 11`: one writer per slot.
 - The drain (`CSH_IN_ASH`) stores into `Ash` as uvec2 units (`offset / 4`, `WG_TILE_N / 4`) and reads one uvec2 per texel after the barrier pair; same barrier structure as the release body.
+
+## Round 2 results (2026-10-09; all evidence under `results/rx7600/round2/` and `results/rx7600/sessions/r2-*`)
+
+Round 2 ran the three candidates of the owner decision of 2026-10-08 23:38 UTC on top of round 1's final stack (build `final`, commit `18cc0d53a`).
+Stop rule (round 2): **all three candidates done** (candidate 3 is not applicable: attention is 4.2 to 7.8 % of every cell, under the 10 % the decision asks for,
+`results/rx7600/round2/candidate3-condition.txt`); the first candidate was under 2 % geomean, the second was not.
+
+| # | candidate | parent | geomean | cells it touches | state | evidence |
+|---|---|---|---:|---|---|---|
+| 1 | 8da4w kernel: A staging rows 24 instead of 16 bytes apart in shared memory (`rx7600-refine4`, build `c6`) | round 1 final | **+1.96 %** (under 2 %) | 8da4w +3.65 / +4.01 / +4.25 % | gated; adopted under rule (b) of the clarification | `sessions/r2-c6-pitch` |
+| 2 | 4w kernel: A staging typed uvec2 with 72-byte rows, B staging rows 88 bytes (`rx7600-refine5`, build `c7`) | candidate 1 | **+3.33 %** | 4w +5.38 / +7.52 / +7.46 % | gated; adopted under rule (a) | `sessions/r2-c7-q4` |
+| 3 | per-head-dimension attention kernels where the fused node does not serve the call | -- | -- | -- | not applicable (condition not met) | `round2/candidate3-condition.txt` |
+
+Both candidates leave the arithmetic unchanged: the outputs of all 24 prefill linear shapes (4w and 8da4w, the real model shapes) are byte-identical to the parent's (24 of 24 in each
+gate and in the final one), so D3 does not apply to them; no candidate touches the attention kernels. Same tile, K step and thread maps as the kernels they replace.
+
+**Final stack, final verification on the build of the committed head (`f2` = commit `73648f5bd`, no local patch)** (`sessions/r2-final`, `sessions/r2-final-r1`):
+
+| cell | pristine parent | round 1 final | round 2 final | vs pristine parent | vs round 1 final | published 2026-09-28 |
+|---|---:|---:|---:|---:|---:|---:|
+| 1B 4w | 7846.74 | 10502.60 | 11070.30 / 11130.40 | +41.08 % | +5.98 % | 7787 |
+| 1B 8da4w | 7340.50 | 10291.50 | 10666.70 | +45.31 % | +3.65 % | 7340 |
+| 3B 4w | 3292.60 | 3984.44 | 4266.67 | +29.58 % | +7.08 % | 3287 |
+| 3B 8da4w | 3084.34 | 3953.67 | 4104.21 | +33.07 % | +3.81 % | 3080 |
+| 8B 4w | 1517.04 | 1748.93 | 1885.82 / 1887.56 | +24.31 % | +7.93 % | 1517 |
+| 8B 8da4w | 1402.74 | 1740.02 | 1813.99 | +29.32 % | +4.25 % | 1403 |
+
+(Two numbers where the two sessions measured the same build separately: the first is the session against the pristine parent, the second the session against round 1's final;
+the gains are each session's own medians.) Geomean **+33.59 % over the pristine parent** (round 1: +26.90 %) and **+5.44 % over round 1's final stack**; the expected range of N1 was
++20 to +30 %. Recommended configuration, all committed code, selected by environment: `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_780M_PROFILE=c7
+ET_VK_SARC_780M_SDPA_FUSED=fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko ET_VK_SARC_RX7600_PROFILE=rx7600-refine5` and `VK_ICD_FILENAMES` of the user-space RADV (Mesa 26.2.3).
+Nothing outside the dev zone changed since the parent (`sessions/r2-final/files-outside-dev-zone.txt`); `sarc/tools/check.sh --no-build` PASS (`sessions/r2-final/check-no-build.txt`: the release
+tables alone unchanged, 1240 checks, 0 candidates); shipped SPIR-V byte-identical to the native parent build (golden PASS against `golden-ref-parent.json`, PENDING against `sarc/golden/spirv.json`
+for the native glslc, the parent's own 14 differences); `verify.sh` unmodified equals the snapshot except the two dispatched-kernel lines; SDPA tiers 36 passes plus 3 control passes, 0 mismatches,
+`pairing=ok`; reference error of the attention arithmetic 16 of 17 rows `yes` (the `NO` row is `peaked_tiny_gqa_s256`, S = 256), the same rows and values as round 1.
+
+**What the round found (the structure of the shipped 8da4w kernel; `results/rx7600/round2/README.md`)**
+- The owner's first idea, double-buffered shared staging with one barrier per K step, was already in the shipped kernels (8da4w and 4w: ping-pong slices, one barrier pair per chunk, the next chunk's
+  global loads issued before the MMAs and stored after them).
+- Kernels that remove work (measurement only): over the twelve 8da4w shapes the staging (global fetch plus LDS stores) is about 7 % of the kernel time and the barrier about 5 %; the MMA loop
+  (LDS fragment loads plus WMMA) about 93 %; the loop alone runs at about 67 % of the cited int8 roof, and the best case with almost nothing else (`abl55`) at about 78 %. In-kernel phase timing
+  (barrier 52 to 55 % of a wave's time, MMA 27 to 29 %) is a wait-at-the-barrier picture of the same thing. RADV gives the 1024-invocation kernel 64 VGPRs and three spills outside the loop, and
+  splits every fragment load into two `ds_read_b64`.
+- The gain is an **LDS bank-conflict** fix: the 16 lanes of a `ds_read_b64` fragment load read 8 bytes at a row pitch of 16 bytes (8da4w A staging) or 80 bytes (4w staging), which puts lane `l` and
+  lane `l + 8` on the same bank. A pitch of 24 bytes (8da4w A) and 72 / 88 bytes (4w A / B) removes it; the instruction mix of the kernels is unchanged (`r2d-isa.txt`). In the 8da4w phase twins the phase that
+  holds the fragment loads falls to 0.66 of its cycles. Pitches that are not a multiple of 8 bytes leave the aligned load path (0.26 to 0.58 of the shipped speed); not every pitch change helps (8da4w B at 24
+  bytes 0.96, 4w with both staging pitches at 72 bytes 1.006).
+
+**Negative results of round 2 (kernel level, numbers in `results/rx7600/round2/`)**: padding between the K slabs of A (0.996 to 1.003); the 256 x 128 8da4w tile (0.73, 4 accumulator sets at the
+64-VGPR cap); a branch-free chunk loop (1.014 alone; on top of the pitch 1.03 against 1.05 without it); the next chunk's stores interleaved with the MMAs (0.99 to 1.00); staging arrays typed uvec4 (0.89: RADV
+still emits two `ds_read_b64`); smaller workgroups with 128 VGPRs and no spill, with or without the pitch (0.88 to 0.94: occupancy, not registers, decides); a B pitch other than 16 bytes in 8da4w (0.94 to 0.96);
+the `g24` 4w tile with any padding (3 of 12 shapes); fragment reuse and the other ablations are measurements, not candidates.
+
+**What limits further progress.** The linear GEMMs are 83 to 85 % of the 8B final stack's dispatch time (925.1 of 1115.4 ms 8da4w, 914.0 of 1071.3 ms 4w) and run at 70 to 72 % of the cited roofs; the
+shared-memory staging and the barrier that remain cost about 10 % of the 8da4w kernel (`abl23`, measured before the pitch fix) and the prologue, group epilogue and drain about 5 % more (phase twins), and the WMMA loop itself cannot be pushed much past about 78 % of the roof in the one-workgroup-per-CU, 32-wave
+structure (64 VGPRs, two accumulator chains per wave). A larger per-wave tile needs more registers and so fewer waves, which measured slower on this card. Attention is 4.4 to 7.8 % of a cell, the 8-bit
+activation quantize 3 %, elementwise 7 %. Untried and possibly worth a round: the epilogue (group scale accumulation, the texture drain) at about 5 % of the 8da4w kernel, a producer / consumer split of the 32 waves,
+and a conflict-free layout for the B fragments of the 8da4w kernel (the 24-byte B pitch lost 4 %: unexplained).
+
+**Tools added in round 2** (`tools/`; the round-1 tools are unchanged): `gen_rx7600_dq.py`, `gen_rx7600_dq_body.py` (8da4w family and body from the release body, every edit asserted), `gen_rx7600_q4.py`,
+`gen_rx7600_q4_body.py` (4w family), `build-micro.sh` (backend and microbench only), `phases2.sh`, `prof_decode2.py`, `isa_stats.py` (RADV statistics of a `RADV_DEBUG=shaders` dump: VGPRs, spills,
+instruction mix per loop block), `screen_ratio.py`, `screen_from_logs.py`, `q4_pick_compare.py`, `chain8.sh` (gate of a linear-kernel candidate), `chain9.sh` / `chain9c.sh` (final verification),
+`chain10.sh` (real-text probe), `collect_session.sh`. `env.sh`, `export_commit.sh`, `build-both.sh`, `stage.sh` now put exports, builds and stage directories on the local scratch disk
+(`SARC_BIG`), with symlinks at the old paths.
+
+**Incidents**: the root filesystem of the host filled up twice (at 03:07 and 09:25 UTC; free space was 188 KB to 1.2 MB each time and came back to 75 to 80 GB without this run deleting anything, so a transient
+use by something else is likely: UNVERIFIED, the cause was not looked for; this run's own builds had used about 20 GB of the 35 GB free at the start) while round 2 built and measured; the traced half of build `c5` and the linear byte comparison
+and SDPA evidence of the final verification failed with ENOSPC, were kept under `<artifacts>/superseded/` and redone (`c6`, `r2-final`); the artifacts of round 2 were moved to `<scratch-disk>`. No run counted in a
+timed table was affected (the sessions' runs were complete and valid before either event). The first event overlapped the last ten minutes of the no-profile 4w kernel screen of build `r2g` (03:07 to 03:16 UTC);
+its rows are complete, and the later screen of build `r2h` (clean disk) reproduced its ratios (`ap4bp12` was added there, `bp12` passes 11 of 12 shapes in both). One untracked stub script of mine (`chain9b.sh`, 20 lines, content reproduced in `chain9c.sh`) was deleted.
