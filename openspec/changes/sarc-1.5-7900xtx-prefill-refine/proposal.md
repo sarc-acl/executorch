@@ -130,6 +130,8 @@ Stop rule counter: candidate 1 (+1.56 %) and candidate 2 (-13.79 %) were two con
 
 | 3 | linear kernel per layer shape (`7900xtx-refine2`, build `c3` = commit 773e306d8; the screen's picks by the 3 % rule, texel-wise family held out) | 1 | **+2.64 %** | gated: `verify.sh` as the snapshot except the two dispatched-kernel-name lines (30 of 32 identical), outputs byte-identical in 24 of 24 prefill linear shapes (no arithmetic change), next token SAME on the timed, real-text and unaligned prompts in all six cells, golden DIFF set equal to the parent build's | `sessions/c3-linear/`, `screens/` |
 
+| 4 | whole-texel 8da4w staging (the texel-wise `zpg_bt` family on the 8da4w shapes where the screen has it best; `7900xtx-refine3`, same build `c3`) | 3 | -0.42 % | gated (verify.sh as the snapshot except the two kernel-name lines, outputs byte-identical to candidate 3 in 24 of 24 shapes, next token SAME), **not adopted** | `sessions/c4-texel/` |
+
 Candidate 1, per cell (median of 7 valid runs, `sessions/c1-softmax/raw/summary.csv`): 1B 4w 20078.40 -> 20686.90 (+3.03 %), 1B 8da4w 22260.90 -> 22755.60 (+2.22 %),
 3B 4w 10138.60 -> 10240.00 (+1.00 %), 3B 8da4w 10449.00 -> 10502.60 (+0.51 %), 8B 4w 4762.79 -> 4841.61 (+1.65 %), 8B 8da4w 4982.97 -> 5031.94 (+0.98 %); geomean +1.56 %.
 Where it came from (warm ETDump, ms per 2048-token prefill, parent -> candidate 1, `sessions/c1-softmax/trace/families.csv`): softmax 10.2 -> 8.2 (1B 4w),
@@ -150,6 +152,11 @@ Where it came from (warm ETDump, GEMM family, ms per prefill, candidate 1 -> can
 Dispatched kernels per shape: `sessions/c3-linear/linear-bitwise/kernels.txt` (8da4w: the 256 x 64 sweep tile on 6 shapes, the 128 x 64 sweep tile on the 8B wk_wv / wq_wo, the 780M's `afmb1` on 1B w2, the 64 x 64 tile on 1B wk_wv;
 8B w2 and 3B wk_wv keep the table kernel; 4w: the 128 x 128 `cbt` sweep tile on the three 1B shapes).
 
+Candidate 4, per cell against candidate 3 (median of 7 valid runs, 0 invalid, `sessions/c4-texel/raw/summary.csv`): 1B 4w 21787.20 -> 21333.30 (-2.08 %), 1B 8da4w 23540.20 -> 23540.20 (+0.00 %), 3B 4w 10088.70 -> 10088.70 (+0.00 %),
+3B 8da4w 11070.30 -> 11070.30 (+0.00 %), 8B 4w 4818.82 -> 4785.05 (-0.70 %), 8B 8da4w 5278.35 -> 5291.99 (+0.26 %); geomean -0.42 %. The 4w picks of `refine2` and `refine3` are the same kernels, so the 4w cells are the same configuration in both arms:
+their -2.08 % / -0.70 % / +0.00 % are the run-to-run noise of this session (repeat spread up to 7.4 % in the 1B 4w parent arm). The kernel-level edge of the texel-wise family over the other picks (0.1 to 3.5 % in the worst round, 1B
+wk_wv the other way) does not show end to end: whole-texel staging is not adopted, as the phase timing (weight fetch 11 % of the wave) predicted.
+
 **Phase timing (work-order step 3), 8da4w table kernel `t128x64k32g42s32`** (PROF twin `sarc_dev_prof_dq8ca_zpg_t128x64k32g42s32p`, shader clock, twelve prefill shapes, `results/7900xtx/phases/parent-8da4w.csv`),
 share of the wave's cycles, median over the shapes (range over the shapes): barrier wait 31.4 % (18.0 to 33.7), LDS store 25.6 % (24.8 to 37.3), MMA 21.8 % (21.0 to 22.7), global weight fetch 10.9 % (10.4 to 14.5),
 prologue 3.5 %, group epilogue 4.2 %, drain 0.9 %, write 0.6 %. The MMA is a fifth of the wave's time; staging into LDS and the barriers around it are over half; the weight fetch itself is 11 %: the kernel is not bound
@@ -157,7 +164,7 @@ on weight loads (the precondition the work order sets for whole-texel staging, c
 
 **Stop rule, reading.** Candidates 1 (+1.56 %) and 2 (-13.79 %) are two consecutive candidates under 2 %, so the rule of R11 is met by its letter. The port list of the work order still has two items that nothing has tried
 (the linear kernel per layer shape, and the whole-texel 8da4w staging), and the complete linear screens already show kernel-level gains of 4 to 40 % on single shapes. This campaign therefore continues with
-item 3 (candidate 3) as a further gated candidate and reports the reading to the owner (`STATUS.md`); if candidate 3 gains under 2 % as well, the campaign stops there.
+item 3 (candidate 3) as a further gated candidate and reports the reading to the owner (`STATUS.md`); if candidate 3 gains under 2 % as well, the campaign stops there (it gained +2.64 %; the count restarted, candidate 4 is the first of a new pair).
 Candidate 4 (whole-texel 8da4w staging, the texel-wise `zpg_bt` family): its precondition (weight-load bound) is not met by the phase timing above, but the 8da4w screen has the family at 1.05 to 1.07 against the table kernel
 in the worst round on 11 of 12 shapes, so it is measured once as `7900xtx-refine3` against candidate 3 (`7900xtx-refine2`, the same picks with the texel-wise family held out) and adopted only by the rule of the thresholds table.
 
