@@ -1,9 +1,11 @@
 # sarc-1.5-b70-fused-port: status
 
-**2026-10-09 08:45 UTC (host clock) — candidate 1 (`b70-fused1`, the B580's fused attention kernel, unchanged)
-is accepted as a plain pass: `GATE_PASS`, next token SAME in all six cells on the three prompts, **+8.34 %
-geomean** over the parent `xe2-refine5` (the B580 measured +9.18 % over its parent). There is no candidate 2: the
-B580 campaign did not adopt its own (-0.13 %). The closing chain is running on the build of the committed head.**
+**2026-10-09 10:45 UTC (host clock) — finished; nothing is running or queued. `b70-fused1` (the B580's fused
+attention kernel, unchanged, on top of `xe2-refine5`): `GATE_PASS` as a plain pass on the build of the committed
+head, **+8.26 % geomean over the tuned parent** (+8.34 % on the first gate; the B580 measured +9.18 %) and
+**+72.87 % geomean over the first campaign's pristine parent**. One candidate, as a confirmation closes (the B580's
+candidate 2 was not adopted there, so none here). One negative finding: decode is 0 to 2.5 % slower. Summary and
+tables: `proposal.md`.**
 
 Branch `topic/b70-fused-port` (from `origin/topic/xe2-prefill-refine` at `5617714b0`). Parent of every comparison:
 `5617714b0` with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=xe2-refine5`. Host `fedora-gpu-eval`, card `b70-0`
@@ -21,15 +23,66 @@ cell, both arms alike, resident share recorded per run in `runs.csv`, column `ca
 
 ## Running now
 
-Detached (`nohup setsid`), one unit at a time: `tools/chain3.sh b70-fused1 6ac44c483`, started 08:39 UTC, status
-in `.artifacts/logs/chain3.status` (and `chain2-s3-final.status` for its first part): build `topic2` from an export
-of `6ac44c483` (the committed head; no local patch), SPIR-V identity, the full gate of the final stack as session
-`s3-final` (as for candidate 1, 7 repeats), extra tiers, reference error `final-ref`, probe, decision, decode;
-then the hook condition on `topic2` (`test_sarc_select` executables kept in `.artifacts/raw/final-select/`,
-`verify.sh` with no environment), session `s4-pristine` (the first campaign's pristine parent build, no profile,
-against `topic2` with `b70-fused1`, 7 repeats) with traces of 1B 4w and 8B 4w, `check.sh --no-build`, collection.
-Ends `CHAIN3_DONE`; expected about 2 h 20 min. If the host reboots: move half-run `stage/s3-final` or
-`stage/s4-pristine` to `superseded/` and start the same command again (finished builds are skipped).
+Nothing. `tools/chain3.sh b70-fused1 6ac44c483` ended `CHAIN3_DONE` at 10:32 UTC. No `HOLD` was set and no
+foreign GPU process was seen during the campaign (`.artifacts/logs/foreign.log` does not exist; the one wait
+recorded anywhere was a tool self-test waiting on this campaign's own build container at 05:47 UTC, see
+`proposal.md`).
+
+## Closing (chain 3, 08:39 to 10:32 UTC), on the build of the committed head
+
+Build `topic2` = an export of `6ac44c483` (the branch head when the closing started; no local patch; the commits
+after it touch only `openspec/`): shipped-SPIR-V golden PASS (53 variants), `SPV_IDENTITY_OK` (1525 parent
+shaders unchanged, 47 fused and copy-pass shaders identical to the B580 build `topic6`).
+
+**Full gate of the final stack, session `s3-final`** (build `parent` with the parent environment against `topic2`
+with `b70-fused1`; 09:23 to 09:30 UTC for the timed part): `GATE_PASS`, 35 PASS lines, no FAIL line; SDPA tiers
+`all` / `extended` / `full` 12 passes each, rc 0, 0 mismatches, `pairing=ok`, 192 of 192 case runs served by the
+fused kernel; `verify.sh` against `s0-parent-verify`: `VERIFY_SAME` (34 lines); next token SAME in all six cells
+on the three prompts; probe `PROBE_CHECK_OK`; `decide.py` `GATE_PASS`. Extra tiers as in `s2-c1` (`peaked` 60 of
+60, `fused` 24 of 60 served, 0 mismatches). Reference error `final-ref`: identical to `c1-ref` in every digit.
+Tok/s, median of 7 valid runs per arm (recomputed from `runs.csv`; 84 timed runs, all valid, foreign engine time
+0.00 %, lowest median clock 2533 MHz):
+
+| cell | parent | `b70-fused1` | gain | gain in `s2-c1` (build `topic1`) | spread parent / cand |
+|---|---:|---:|---:|---:|---|
+| 1B 4w | 17964.90 | 20686.90 | **+15.15 %** | +15.15 % | 1.75 / 3.00 % |
+| 1B 8da4w | 20480.00 | 24381.00 | **+19.05 %** | +17.86 % | 1.01 / 5.75 % |
+| 3B 4w | 7529.41 | 7968.87 | **+5.84 %** | +6.25 % | 0.73 / 2.32 % |
+| 3B 8da4w | 9570.09 | 9990.24 | **+4.39 %** | +4.39 % | 2.75 / 3.30 % |
+| 8B 4w | 3379.54 | 3482.99 | **+3.06 %** | +4.12 % | 0.82 / 1.20 % |
+| 8B 8da4w | 4481.40 | 4623.02 | **+3.16 %** | +3.16 % | 1.09 / 1.34 % |
+
+Geomean **+8.26 %** (`s2-c1`: +8.34 %). Decode in this session: 1B -2.2 / 0.0 %, 3B -2.3 / -1.1 %, 8B -1.1 /
+-0.9 % (4w / 8da4w).
+
+**Hook condition on the final build:** `test_sarc_select` release tables identical for the parent and `topic2`
+exports (1240 checks, 31 rows; dev zone 1559 / 35 against 1561 / 37); the four executables are kept in
+`.artifacts/raw/final-select/` for the reviewer (`test_sarc_select-{rel,dev}-{parent,topic2}`; run them from the
+matching `.artifacts/src/<tag>/executorch` with the yaml list of `tools/select_check.sh`). `verify.sh` with no
+environment on `topic2` (`s0-topic2-noenv`) against `s0-parent-noenv`: `VERIFY_SAME` (34 lines).
+
+**Against the first campaign's pristine parent, session `s4-pristine`** (10:23 to 10:31 UTC; build `pristine` = the
+binaries of its `s12-final5`, no profile, no `ET_VK_SARC_UNVERIFIED`, against `topic2` with `b70-fused1`; 7 valid
+runs per arm, 84 timed runs, all valid):
+
+| cell | pristine parent | `b70-fused1` | total gain |
+|---|---:|---:|---:|
+| 1B 4w | 11702.90 | 20686.90 | +76.77 % |
+| 1B 8da4w | 12337.30 | 24381.00 | +97.62 % |
+| 3B 4w | 4864.61 | 8000.00 | +64.45 % |
+| 3B 8da4w | 5251.28 | 9990.24 | +90.24 % |
+| 8B 4w | 2435.20 | 3512.86 | +44.25 % |
+| 8B 8da4w | 2730.67 | 4623.02 | +69.30 % |
+
+Geomean **+72.87 %**. The session's status is `E2E5_INCOMPLETE` for one reason: next token of 8B 8da4w against
+the pristine parent DIFFERs on `prompt_2048.txt` and `prompt_check.txt` (SAME on `r1304.txt`; SAME everywhere in
+the other five cells). Those are the two items the first campaign's candidate 1 was accepted with under the
+reference-error rule; against the tuned parent, which is this campaign's gate, every item is SAME. This session
+is a timing comparison, not a gate. Traces of 1B 4w and 8B 4w (attention, ms per prefill): pristine 80.8 / 284.3,
+tuned parent 23.7 / 56.5, `b70-fused1` 7.5 / 32.1 (`stage/s4-pristine/trace/attention.csv`, `s3-final` likewise).
+
+`sarc/tools/check.sh --no-build`: `check.sh: PASS` (output in `results/b70/d4/check-no-build.txt`, and again at
+the pushed head, below).
 
 ## Candidate 1, `b70-fused1`: GATE_PASS, +8.34 % geomean (session `s2-c1`, 07:10 to 08:39 UTC)
 
@@ -263,13 +316,22 @@ Specification sentences relied on, each found again on this host through the `vu
 The remaining sentences of the B580's list (atomics, the data-race definition, uniform control flow) were read in
 its `STATUS.md` at `cea76c634` and not searched again here.
 
-## Next
+## Not done, and why
 
-Read chain 3; write `proposal.md`; `check.sh --no-build`; push `topic/b70-fused-port`.
+- Roofs not re-measured (igpu-roofline is not set up in this campaign's artifacts; no linear kernel changed):
+  no percent-of-roof is claimed.
+- The decode slowdown was measured, not located.
+- `tools/test_nexttoken.sh` was not run to completion on the adapted tools (stopped by hand, see `proposal.md`).
+- No llama.cpp comparison (N9) and no pull request: outside this task.
 
 ## Decision needed from the owner
 
-Nothing.
+Not blocking; the campaign is closed on what the task asked.
+
+1. **Decode is 0 to 2.5 % slower with the fused node present** (both sessions; see candidate 1). If that matters
+   for a promotion, locating it needs a decode trace and possibly a change in the node file that came from the
+   B580 unchanged; neither is in the scope of a confirmation.
+2. The B580 campaign's finding F1 (full-subgroups flag) applies here unchanged.
 
 ## Blocking
 
