@@ -1,0 +1,37 @@
+PASS verify: completed : rc=0
+PASS verify: no foreign GPU process
+PASS verify: correctness : rc=1; 28 of 28 cases and 4 of 4 rank-3 cases PASSED, equal to the parent control (not rc=0)
+PASS verify: correctness, every numeric case : 28 of 28 cases and 4 of 4 rank-3 cases PASSED
+PASS verify: production-diff 12 cases : 12 of 12 passed
+PASS verify: prefill ran, default, six cells : 6 of 6
+PASS verify: prefill ran, tiled, six cells : 6 of 6
+PASS verify: default vs tiled, check prompt, 4w : SAME
+PASS verify: default vs tiled, unaligned prompt, 4w : SAME
+PASS verify: decode 4w : rc=0 tokens=31
+PASS verify: linear 4w dispatch report present : rc=1
+PASS verify: default vs tiled, check prompt, 8da4w : SAME
+PASS verify: default vs tiled, unaligned prompt, 8da4w : SAME
+PASS verify: decode 8da4w : rc=0 tokens=31
+PASS verify: linear 8da4w dispatch report present : rc=1
+PASS verify: same status as the parent control
+PASS one candidate environment in verify, timing and traces : cand/env ['ET_VK_SARC_UNVERIFIED=1', 'ET_VK_SARC_DEV_PROFILE=b580-fused2'] verify ['ET_VK_SARC_DEV_PROFILE=b580-fused2', 'ET_VK_SARC_UNVERIFIED=1'] timing ['ET_VK_SARC_UNVERIFIED=1', 'ET_VK_SARC_DEV_PROFILE=b580-fused2']
+PASS timing: 1b 4w 7 valid runs per build : parent 7 cand 7
+PASS timing: 1b 8da4w 7 valid runs per build : parent 7 cand 7
+PASS timing: 3b 4w 7 valid runs per build : parent 7 cand 7
+PASS timing: 3b 8da4w 7 valid runs per build : parent 7 cand 7
+PASS timing: 8b 4w 7 valid runs per build : parent 7 cand 7
+PASS timing: 8b 8da4w 7 valid runs per build : parent 7 cand 8
+PASS timing: session complete : E2E5_OK
+PASS timing: clock threshold in force : clkmin=2635
+PASS timing: foreign-busy threshold in force (desktop) : busymax=5.0
+PASS next token parent vs cand: 1b 4w on prompt_2048.txt, prompt_check.txt, r1304.txt : prompt_2048.txt:SAME,prompt_check.txt:SAME,r1304.txt:SAME
+PASS next token parent vs cand: 1b 8da4w on prompt_2048.txt, prompt_check.txt, r1304.txt : prompt_2048.txt:SAME,prompt_check.txt:SAME,r1304.txt:SAME
+PASS next token parent vs cand: 3b 4w on prompt_2048.txt, prompt_check.txt, r1304.txt : prompt_2048.txt:SAME,prompt_check.txt:SAME,r1304.txt:SAME
+PASS next token parent vs cand: 3b 8da4w on prompt_2048.txt, prompt_check.txt, r1304.txt : prompt_2048.txt:SAME,prompt_check.txt:SAME,r1304.txt:SAME
+PASS next token parent vs cand: 8b 4w on prompt_2048.txt, prompt_check.txt, r1304.txt : prompt_2048.txt:SAME,prompt_check.txt:SAME,r1304.txt:SAME
+PASS next token parent vs cand: 8b 8da4w on prompt_2048.txt, prompt_check.txt, r1304.txt : prompt_2048.txt:SAME,prompt_check.txt:SAME,r1304.txt:SAME
+PASS trace: warm ETDump analysed for six cells x two arms : 12 of 12
+PASS sdpa: tier all, 12 pass(es) x 4 cases, 0 mismatches, pairing=ok (cand)
+PASS sdpa: tier extended, 12 pass(es) x 8 cases, 0 mismatches, pairing=ok (cand)
+PASS sdpa: tier full, 12 pass(es) x 4 cases, 0 mismatches, pairing=ok (cand)
+GATE_PASS

@@ -1,41 +1,118 @@
 # sarc-1.5-b580-fused-port: status
 
-**2026-10-09 06:20 UTC — both candidates are gated; the campaign stops by its rule (after candidate 2) and the
-closing runs. Candidate 1 (`b580-fused1`, the fused attention kernel in a multi-subgroup form): plain pass,
-**+9.18 % geomean** over the parent `b580-refine3`. Candidate 2 (`b580-fused2`, candidate 1 + the fp32 no-tail
-softmax for the calls the fused kernel does not take): `GATE_PASS` on the committed head (session `s3b-c2`),
-**-0.13 % geomean** over candidate 1, every cell inside the +-2 % band: no gain, not adopted (`final_stack` rule).
-**Final stack: `b580-fused1`.** Running: the rest of candidate 2's evidence (chain 12), then the closing (chain
-11): full gate of `b580-fused1` on the build of the committed head against the parent, the timed session
-against the pristine parent, roofs.**
+**2026-10-09 09:25 UTC — closed. Final stack `b580-fused1` (the fused attention kernel in a multi-subgroup form)
+on the build of the committed head: `GATE_PASS`, a plain pass, **+8.82 % geomean** over the parent
+`b580-refine3` (1B +14.6 / +19.6 %, 3B +4.8 / +6.7 %, 8B +3.2 / +4.9 %; 4w / 8da4w) and **+71.77 %** over the
+first campaign's pristine parent. Candidate 2 (`b580-fused2`): `GATE_PASS`, -0.13 %, not adopted. Nothing is
+running. Two items are open for the owner (below), neither blocking.**
 
 Branch `topic/b580-fused-port`, parent `51d9d757f` with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine3`.
+Final configuration: the branch head with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-fused1`.
 Host `fedora` (the owner's desktop), Arc B580 = PCI `0000:03:00.0`, Vulkan device 0, `ETVK_DEVICE_INDEX=0`, lock
 `86800be2-0000-0000-0300-000000000000`. Artifacts `/mnt/linux-share/hmz-campaigns/b580-fused/.artifacts/`.
-As found: ANV Mesa 26.2.3 (the first campaign's version), kernel 7.2.8-200.fc44; GT frequency policy
-`min_freq` 1200, `max_freq` 2850, `rp0` 2850 MHz, `power_profile` `[base] power_saving`, nothing changed; the
-desktop session idle and locked at 20:00 UTC.
+ANV Mesa 26.2.3 throughout; kernel 7.2.8-200.fc44 until the reboot of 2026-10-09 01:17 UTC, 7.2.9-200.fc44 after
+it; GT frequency policy as found and unchanged (`min_freq` 1200, `max_freq` 2850, `rp0` 2850 MHz,
+`power_profile` `[base] power_saving`).
 
 ## Running now
 
-Detached, one GPU job at a time:
+Nothing. Last chain: `tools/chain11.sh b580-fused1 e1e450530`, `CHAIN11_DONE` at 09:15 UTC.
 
-- `tools/chain12.sh e1e450530` (`.artifacts/logs/chain12.status`): builds and gate done; remaining: reference
-  error of `b580-fused2` and `b580-refine3-nzf` on `topic7`, logits probe of `s3b-c2`, `decide.py`, decode
-  comparison, collection. Ends `CHAIN12_DONE`.
-- `tools/chain11.sh b580-fused1 e1e450530` (`.artifacts/logs/chain11.status`), waiting for chain 12: stage
-  `s4-final` (`parent2` with the parent environment against `topic7` with `b580-fused1`), `gate_sdpa.sh` with 7
-  repeats behind `busy_wait`, 12 passes of tiers `peaked` and `fused`, reference error `final-ref`, session
-  `s5-pristine` (build `pristine` = `6a7cc8cc6`, no environment, against `topic7` with `b580-fused1`, timed
-  only), roofs (`roof.sh final`), decode comparison, collection. Ends `CHAIN11_DONE`.
+## Final result (sessions `s4-final` and `s5-pristine`, 2026-10-09 07:28 to 08:49 UTC, build `topic7` = `e1e450530`)
 
-If the machine reboots, both are gone: look at the status files and restart the chain whose `DONE` line is
-missing (a half-run session directory goes to `superseded/` first).
+Build `topic7` is the export of the committed head `e1e450530`, no local patch (later commits change files
+under `openspec/` only; its sources outside `openspec/` are also those of `topic6` = `247d08851`, the build
+candidate 1 was first gated on). Tok/s, median of 7 valid runs per arm, arms interleaved, recomputed from
+`stage/<session>/raw/runs.csv`. Both sessions: 84 timed runs, 84 valid; foreign engine time 0.31 to 0.33 % per
+cell (median), 0.44 % at most; the desktop was idle (the owner had left it), arm spreads 0.1 to 0.9 % against
+the parent and 0.1 to 1.8 % against the pristine parent.
 
-Builds for the closing (chain 12, 04:25 to 04:49 UTC): `pristine` = `6a7cc8cc6` and `topic7` = `e1e450530` (the
-committed head at that time; later commits change files under `openspec/` only), both with shipped SPIR-V
-golden PASS (53 variants). Hook condition on `topic7`: unmodified `verify.sh` with no environment
-(`s0-topic7-noenv`) against `s0-parent-noenv`: `VERIFY_SAME` (34 lines).
+| cell | parent `b580-refine3` | final `b580-fused1` | gain | pristine `6a7cc8cc6`, no profile | final (that session) | total gain | published (`cells.csv`) | final vs published |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1B 4w | 13044.60 | 14948.90 | **+14.60 %** | 8677.97 | 14948.90 | **+72.26 %** | 8605.04 | +73.7 % |
+| 1B 8da4w | 15283.60 | 18285.70 | **+19.64 %** | 8865.80 | 18285.70 | **+106.25 %** | 8789.70 | +108.0 % |
+| 3B 4w | 5197.97 | 5446.81 | **+4.79 %** | 3442.02 | 5461.33 | **+58.67 %** | 3419.03 | +59.3 % |
+| 3B 8da4w | 6420.06 | 6849.50 | **+6.69 %** | 3524.96 | 6826.67 | **+93.67 %** | 3506.85 | +95.3 % |
+| 8B 4w | 2298.54 | 2373.12 | **+3.24 %** | 1726.81 | 2384.17 | **+38.07 %** | 1693.96 | +40.1 % |
+| 8B 8da4w | 2998.54 | 3145.93 | **+4.92 %** | 1843.38 | 3141.10 | **+70.40 %** | 1680.07 | +87.2 % (the published run of this cell was disturbed: first campaign, baseline note) |
+
+Geomean **+8.82 %** over the parent, every cell outside the +-2 % band; **+71.77 %** over the pristine parent;
++75.8 % over the published numbers. The parent reads +0.27 % (geomean; -0.34 to +0.75 % per cell) against the
+first campaign's `s6-final`, on the new kernel 7.2.9, so the reboot did not move the baseline. The session of
+candidate 1 on the desktop in use (`s2-c1`, build `topic6`) had read +9.18 % (per cell +17.1 / +19.0 / +5.4 /
++6.8 / +3.5 / +4.3 %): the two sessions agree within 2.5 points in 1B 4w and within 0.7 points elsewhere; the
+closing session is the quiet one and is the number to quote.
+
+Final verification, all on `topic7` with `b580-fused1` (`stage/s4-final/gate.txt`: `GATE_PASS`, 36 PASS lines, no
+FAIL line):
+
+- SDPA correctness, 12 passes each: tiers `all` / `extended` / `full` (gate items) and `peaked` / `fused`
+  (reported): 0 mismatches in every case run, `pairing=ok`, the fused kernel the only attention kernel.
+- Unmodified `verify.sh` with the final environment against the parent snapshot `s0-parent-verify`, line by
+  line with the rates removed: the same. Next token parent vs final: SAME in all six cells on the three
+  prompts, so the result is a plain pass; no item needs decision D1 or D3.
+- Error against the fp32 reference (`raw/final-ref`, `results/b580/sdpa-error/final-ref-*.csv`): not larger than
+  the parent's in all 4 `full` and all 8 `extended` cases (rms 2.02e-5 to 2.05e-5 against 2.76e-5 to 2.79e-5 at
+  S = 2048); in 1 of 5 synthetic `peaked` cases the maximum error is larger (2.50e-3 against 2.32e-3) with a
+  smaller rms; the same values as on `topic6`.
+- Shipped SPIR-V golden: PASS, 53 variants, on `topic7`, `pristine` and `parent2`.
+- Hook condition (D4): `verify.sh` with no environment on `topic7` against the parent's: `VERIFY_SAME`, 34
+  lines; `sarc/tools/check.sh --no-build`: `check.sh: PASS` (`test_sarc_select` 1240 checks / 31 rows without
+  the dev zone, 1562 checks / 37 rows / 213 candidates with it), `.artifacts/logs/check-final.out`.
+- Against the pristine parent the next token differs in 8B 8da4w on the 2048-token and the real-text prompt
+  (SAME in the other 16 comparisons): that is the item the first campaign recorded for `b580-refine3` itself and
+  accepted under the reference-error rule; this campaign's stack does not move any token against its parent.
+  `e2e5.sh` therefore ends `s5-pristine` with `E2E5_INCOMPLETE 8b-8da4w:nexttoken_DIFFER_DIFFER_SAME`; the
+  session is a timing statement, not a gate.
+- Decode (`s4-final`, 32 tokens, medians of 5): final / parent 0.985 / 0.992 / 0.992 / 0.990 / 0.998 / 0.996:
+  inside the band, but below 1 in all six cells, here and in `s2-c1` (0.992 to 0.999). Decode does not run the
+  fused kernel; the cost was not located.
+
+Where the gain comes from (warm ETDump, ms per 2048-token prefill, attention kernels by name,
+`stage/s4-final/trace/attention.csv`):
+
+| cell | arm | dispatch total | QK^T | softmax | attn*V | fused kernel | K/V copy pass | attention |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| 1B 4w | parent | 156.4 | 7.0 | 17.3 | 8.0 | | | 32.3 |
+| 1B 4w | final | 135.3 | | | | 10.8 | 0.3 | 11.0 |
+| 1B 8da4w | parent | 134.1 | 6.9 | 17.2 | 7.9 | | | 32.1 |
+| 1B 8da4w | final | 112.6 | | | | 10.7 | 0.3 | 10.9 |
+| 3B 4w | parent | 391.8 | 13.3 | 22.8 | 14.6 | | | 50.7 |
+| 3B 4w | final | 373.9 | | | | 30.5 | 0.9 | 31.4 |
+| 3B 8da4w | parent | 319.1 | 13.0 | 22.7 | 14.5 | | | 50.2 |
+| 3B 8da4w | final | 299.8 | | | | 29.9 | 0.8 | 30.8 |
+| 8B 4w | parent | 883.3 | 20.0 | 34.8 | 21.7 | | | 76.5 |
+| 8B 4w | final | 857.1 | | | | 46.6 | 0.9 | 47.5 |
+| 8B 8da4w | parent | 680.7 | 19.4 | 34.4 | 21.1 | | | 74.8 |
+| 8B 8da4w | final | 651.3 | | | | 44.4 | 0.9 | 45.2 |
+
+Attention falls by 66 % on 1B and by 38 to 40 % on 3B and 8B; everything else moves by -0.3 to +2.8 ms. The
+whole gain is the attention family, and most of what was removed is the softmax's traffic over the S x S
+matrix.
+
+Roofs, re-measured (igpu-roofline plan `fast`, `roofline/final`, 2026-10-09 08:49 to 09:12 UTC, Mesa 26.2.3,
+runner `810e098c8abb`, clocks not pinned; `results/b580/roofline/final/REPORT.md`; the report step was run with
+the first campaign's Python environment, which has matplotlib): fp16 matrix 112.86 TFLOP/s, fp16 -> fp32 matrix
+115.68 TFLOP/s, int8 matrix 231.36 TOP/s, global read 465 GB/s (first campaign: 112.9 / 231.4). Linear kernels
+in the final stack, time-weighted over the prefill GEMMs of the warm ETDump (`tools/roof_util.py`): 4w 45.0 /
+44.2 / 42.8 TFLOP/s = **39.9 / 39.2 / 38.0 %** of the fp16 matrix roof (1B / 3B / 8B); 8da4w 69.3 / 69.1 / 65.9
+TOP/s = **30.0 / 29.9 / 28.5 %** of the int8 matrix roof; unchanged from the parent, as expected. The fused
+kernel, counted as if every one of the S x S scores were computed (2 x 2 x S^2 x head_dim x heads per layer over
+the kernel time of screen 5): 47 / 45 / 47 TFLOP/s = 41 / 39 / 41 % of the fp16 -> fp32 roof; about half the
+blocks are behind the causal mask and are skipped, so the rate on the work actually done is roughly half of
+that. This attention figure is an estimate from the kernel times, not a measured FLOP count.
+
+What limits further progress: after this port attention is 8 to 10 % of the prefill's dispatch time on 1B and 3B and
+5.5 to 7 % on 8B; the linear kernels are 51 % (1B 8da4w) to 78 % (8B 4w) of it, at 38 to 40 % (4w) and 28 to
+30 % (8da4w) of their roofs. The fused kernel itself is bounded on this card by the register file (4096 bytes of 16-lane values per
+thread), which is why a workgroup had to be split into 4 or 8 subgroups that exchange a block's scores through
+shared memory; a wider register file or a 16 x 16 x 16 matrix shape would allow the 780M's single-subgroup
+form. The next gain is in the linear kernels, not in attention.
+
+Negative results, kept with their numbers below: the straight port of the 780M's shapes (0.14x to 0.35x of the
+parent's three kernels); accumulators in shared memory (slower in every case); one column of score tiles live
+(no effect); candidate 2, the fp32 no-tail softmax for the calls the fused kernel does not take (-0.13 %);
+candidate 2's first session without a single valid run on the desktop in use.
 
 ## Candidate 2, `b580-fused2`: GATE_PASS, -0.13 % geomean, not adopted (session `s3b-c2`, 05:04 to 06:15 UTC)
 
@@ -130,7 +207,7 @@ needed for acceptance, because no next token moved. The `peaked` tier is synthet
 rescale of the one-pass form) and is reported, not a gate item (`chain8.sh`, fixed before the run): in one of
 its five cases the candidate's maximum error is 8 % above the parent's while its rms error is 7 % below.
 
-## Result so far: candidate 1, `b580-fused1`: GATE_PASS, +9.18 % geomean
+## Candidate 1, `b580-fused1`, first gate: GATE_PASS, +9.18 % geomean on the desktop in use (session `s2-c1`, build `topic6`)
 
 Session `s2-c1` (2026-10-09 00:34 to 00:50 UTC): parent = build `parent2` (`51d9d757f`) with
 `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine3`; candidate = build `topic6` (`247d08851`) with
@@ -506,11 +583,12 @@ instance of Vulkan 1.3; neither was done. ANV launches full subgroups for these 
 
 ## Next
 
-Read chain 11 (final gate, both closing sessions, roofs); then `proposal.md`, `check.sh --no-build`, push.
+Nothing in this campaign. For the B70 (same driver, same matrix shapes, same register file): start from
+`b580-fused1` as candidate 0 and expect the same two variants (kernel-level factors 2.75x / 1.55x / 1.57x).
 
 ## Decision needed from the owner
 
-Not blocking; the campaign continues on the reading described above.
+Not blocking; the campaign is closed on the reading described above.
 
 1. **The desktop's own load.** With Discord (or anything else) holding a third of the card, no timed run passes
    `BUSYMAX` and a session cannot be measured. The campaign now waits up to 3 hours per session for the share

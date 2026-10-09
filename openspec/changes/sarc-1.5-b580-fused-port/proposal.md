@@ -48,9 +48,15 @@ the copy (`host.sh` derives the artifact directory from it).
 | `sdpa_ref.sh` | the parent arm runs with the parent environment (`b580-refine3`) instead of no environment; tier `peaked` is run and tabulated too, reported only | the parent of this campaign already has attention kernels; the fused kernel's rescale path is only exercised by sharp rows |
 | `screen_sdpa_summary.py` | optional reference profile (default still `base`), and the smallest per-round ratio | the screen compares fused variants with `b580-refine3`, and the rule is "in every round" |
 | `verify_diff.py` (new) | two `verify.sh` outputs line by line, rates removed | hook condition D4 |
-| `chain1.sh` to `chain8.sh` (new) | the detached chains, as run | R8 |
+| `chain1.sh` to `chain8.sh` (new) | the detached chains up to candidate 1, as run | R8 |
 | `host.sh`, `e2e5.sh`, `session.sh`, `trace.sh`, `screen_sdpa.sh` | `idle_wait`: a timed run, a trace run and a screen run start only while the desktop session of seat0 reports `IdleHint=yes` | the first A/A ran into the owner's desktop use (4 to 10 % foreign engine time, 6 to 9 % lower tok/s); a start condition, not a validity rule |
 | `host.sh` | an inherited `B580_TOP` that is not an ancestor of the shell is dropped | a chain launched from a shell that had sourced `host.sh` was stopped by its own guard |
+| `host.sh` (`idle_wait`) | returns at once and records the desktop state | owner decision 2026-10-09 00:22 UTC |
+| `session.sh` | `--extra 12`: up to 12 replacement pairs a cell instead of 3 | with the idle wait lifted the desktop disturbs more runs; validity rules unchanged |
+| `e2e5.sh` | a foreign engine share outside 0 to 100 % makes a run invalid (`busy_unreadable`) | session `s3-c2`: one run with -5274 % (a client's counter went backwards) had counted as valid |
+| `host.sh` (`busy_now`, `busy_wait`), `session.sh` | a timed session starts when the desktop's share of the engine time over 5 s is at or below `BUSYMAX`, checked once a minute for at most 3 hours, then starts anyway | session `s3-c2`: one desktop client held 33 to 45 % of the card and all 216 timed runs were rejected. The actor's reading of the owner decision, reported in `STATUS.md`; a start condition, not a validity rule |
+| `chain9.sh` to `chain12.sh` (new) | the detached chains of candidate 2, the resume after the reboot, and the closing | R8 |
+| `trace_attention.py` (new) | attention kernels of a trace by kernel name | the fused kernel is not one of the analyzer's families |
 
 ## The port: what changed from the 780M / RX 7600 kernel
 
@@ -282,3 +288,61 @@ index 93a9b8e96..166eba3e0 100644
 
 The evidence that with nothing selected nothing changed (`test_sarc_select`, `spirv_golden.py`, `verify.sh` with no
 environment against the parent's, line by line) is in `STATUS.md`.
+
+## Result
+
+Final stack: the branch head with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-fused1`. Measured on the
+build of the committed head (`topic7` = `e1e450530`, no local patch), 7 valid runs per arm, tok/s
+(`STATUS.md`, section "Final result", has the validity counts, the traces and the verification):
+
+| cell | parent `b580-refine3` | `b580-fused1` | gain | pristine `6a7cc8cc6` | total gain |
+|---|---:|---:|---:|---:|---:|
+| 1B 4w | 13044.60 | 14948.90 | +14.60 % | 8677.97 | +72.26 % |
+| 1B 8da4w | 15283.60 | 18285.70 | +19.64 % | 8865.80 | +106.25 % |
+| 3B 4w | 5197.97 | 5446.81 | +4.79 % | 3442.02 | +58.67 % |
+| 3B 8da4w | 6420.06 | 6849.50 | +6.69 % | 3524.96 | +93.67 % |
+| 8B 4w | 2298.54 | 2373.12 | +3.24 % | 1726.81 | +38.07 % |
+| 8B 8da4w | 2998.54 | 3145.93 | +4.92 % | 1843.38 | +70.40 % |
+
+Geomean +8.82 % over the parent (expected ceiling +5 to +8 %), +71.77 % over the pristine parent. A plain pass:
+the next token is the parent's in all six cells on the three prompts, and the error against the fp32 reference
+is smaller than the parent's on every production shape. Candidate 2 (`b580-fused2`, the fp32 no-tail softmax
+`4070ti_nzf` through the D4.1 hook for the calls the fused kernel does not take) passed its gate at -0.13 % and
+is not part of the final stack; the profile stays selectable.
+
+Kernel level (us per layer at S = 2048, idle desktop, screen 5), for predicting the B70: the parent's three
+kernels 1989 (1B) / 1771 (3B) / 2297 (8B); the fused kernel with its copy pass 724 / 1139 / 1464: 2.75x / 1.55x /
+1.57x. Variants: `d64_t16x64s16m8g4roj` (head_dim 64) and `d128_t16x128s16m8g8oj` (head_dim 128).
+
+## Specification basis of the shared-memory exchange
+
+The sentences of the Vulkan and GLSL specifications that the multi-subgroup form relies on are quoted in
+`STATUS.md` (section "Specification quotes"), from the `vulkan-docs` MCP server as the owner asked. Two results
+of that reading matter beyond this kernel:
+
+- Full subgroups are guaranteed by the specification only with the full-subgroups pipeline flag or SPIR-V 1.6.
+  The shaders of this branch are SPIR-V 1.3 and the release-zone pipeline code sets only the required subgroup
+  size, so the kernel checks `gl_NumSubgroups` and `gl_SubgroupSize` itself and writes NaN rows otherwise.
+- The same specification requires that flag (or SPIR-V 1.6) for every pipeline that uses cooperative matrices
+  (VUID-RuntimeSpirv-OpTypeCooperativeMatrixKHR-10770). No cooperative-matrix pipeline of this branch has it,
+  the shipped ones included. Reported to the owner as finding F1; not changed here (release zone).
+
+## What the same port needs on NVIDIA (RTX 4070 Ti SUPER, Jetson Orin)
+
+From what this card taught, not measured on NVIDIA. With a 16 x 16 x 16 fp16 shape and subgroups of 32 the
+780M's tile arithmetic applies unchanged (`MMA = 16`, `SEGS = 32 / WG_TILE_M`), so the matrix-shape half of this
+port is not needed. What is needed: (1) the `fused3sb` form with every barrier, because there is no lockstep
+guarantee; with one subgroup per workgroup `subgroupBarrier()` is enough, with several it must be `barrier()`
+as here. (2) A required subgroup size and a check of what the driver delivers: either the full-subgroups flag
+in the pipeline (a release-zone change, and what the specification asks of cooperative-matrix pipelines
+anyway) or the run-time check of this kernel. (3) Before choosing shapes, look at whether the tiles of one
+subgroup stay in registers: on the B580 the single-subgroup form was 3 to 7 times slower than three separate
+kernels until the work was split so that no thread held more than about 4 KiB of matrix values; the compiler
+statistics showed it (spills), the timings alone did not say why. If the NVIDIA compiler keeps 16 accumulator
+tiles of head_dim 128 live without spilling, the 780M's shapes are the candidate 0; if not, the multi-subgroup
+form here (`MULTI_SG`, `QK_J_OUTER`) is written with `MMA_M`, `MMA_N`, `MMA_K` and the subgroup size as
+parameters and can be generated for 16 x 16 x 16 and 32 lanes. (4) The one-pass form's rescale decision must be
+taken for the workgroup (the atomic flag) as soon as there is more than one subgroup. (5) Shared memory was not
+a cheap extension of the register file here (accumulators in shared memory were slower in every case); do not
+assume it is on NVIDIA either, measure it. Expect the gain to scale with the softmax's share of the attention
+time, as here (the softmax was more than half of it), and to be largest on the small model.
