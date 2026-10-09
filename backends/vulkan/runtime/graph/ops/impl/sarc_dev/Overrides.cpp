@@ -1139,10 +1139,15 @@ std::optional<Choice> select_rx7600(
 const Row kRx7600Space[] = {
 #include "SpaceRx7600Dq.inc"
 };
+// The 4w variants of glsl/sarc_dev/sarc_dev_rx7600_x_linear_q4gsw_coopmat.yaml (generated table), reachable by exact name (ET_VK_SARC_780M_Q4).
+const Row kRx7600SpaceQ4[] = {
+#include "SpaceRx7600Q4.inc"
+};
 
 struct RegistrarRx7600 {
   RegistrarRx7600() {
     register_candidates(kRx7600Space, sizeof(kRx7600Space) / sizeof(kRx7600Space[0]));
+    register_candidates(kRx7600SpaceQ4, sizeof(kRx7600SpaceQ4) / sizeof(kRx7600SpaceQ4[0]));
     Override o = get_override();
     select_before_rx7600 = o.select;
     o.select = select_rx7600;
