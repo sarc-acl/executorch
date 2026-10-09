@@ -57,6 +57,9 @@ for pa in (4, 5, 6):
         if 8192 * pa + 2048 * pb + 2816 <= 65536:
             row(f"{B48}pa{pa}pb{pb}csha", pa=pa, pb=pb, csha=True)
 row(B48 + "pa6pb4cshabf", pa=6, csha=True, bf=True)
+# the same pitch on the smaller workgroups (A_BLOCKS = 1024 / workgroup size): more MMAs per wave and 128 VGPRs
+for gx, gy in ((4, 4), (2, 8), (2, 4), (4, 2)):
+    row(f"t256x64k64g{gx}{gy}s32pa6pb4csha", gx, gy, 1024 // (gx * gy * 32), pa=6, csha=True)
 row(B48 + "pa6pb4cshap", pa=6, csha=True, prof=True)
 for a in (7, 23, 32, 39, 48, 55):          # measurement only (see the body header): 7 = no staging, 16 = no barrier, 32 = fragments of slab 0 reused
     row(f"{B48}abl{a}", abl=a)
