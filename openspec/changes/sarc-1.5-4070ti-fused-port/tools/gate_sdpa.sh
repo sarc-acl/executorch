@@ -1,7 +1,7 @@
 #!/bin/bash
 # gate_sdpa.sh <session> ["<cand env>"]: gate.sh for a candidate that changes an SDPA kernel. The same steps,
 # preceded by what sarc/tools/verify.sh does not run:
-#   0a. test_llama_microbench --sdpa-correctness-only, tiers extended and full, 12 passes each with the candidate
+#   0a. test_llama_microbench --sdpa-correctness-only, tiers all, extended and full, 12 passes each with the candidate
 #       env; accepted only with the full case count per pass, 0 mismatches and pairing=ok on every case
 #       (gate_check.py sdpa);
 #   0b. the SDPA perf suite (--sdpa) with and without the candidate env, for the dispatched kernels and times.
@@ -11,7 +11,7 @@
 source "$(dirname "$0")/common.sh"; source $TOOLS/gatelib.sh; S=$1; D=$A/stage/$S; B=$D/test_llama_microbench
 [[ -e $D/gate.done ]] && { echo "session $S already gated: $(cat $D/gate.done)" >&2; exit 2; }
 near_tie_arg; need $D/STAGE.md $B $PARENT_CTL/verify.out $CLKFILE; cand_env "${@:2}"; grep -q GATE_ACCEPTED $PARENT_CTL/gate.done || { echo "no accepted parent control" >&2; exit 77; }
-O=$D/sdpa-correctness; mkdir -p $O
+O=$D/sdpa-correctness; mkdir -p $O; { sha256sum $B $D/libllama_runner.so; echo "env [$ENVS]"; } > $O/IDENTITY.txt
 if [[ -n ${SDPA_FROM:-} ]]; then
   F=$A/stage/$SDPA_FROM; need $F/sdpa-check.txt $F/test_llama_microbench $F/cand/env
   grep -q '^sdpa: ACCEPT' $F/sdpa-check.txt || { echo "session $SDPA_FROM has no accepted SDPA step" >&2; exit 77; }
@@ -20,8 +20,8 @@ if [[ -n ${SDPA_FROM:-} ]]; then
   echo "SDPA steps taken from session $SDPA_FROM (aborted after them); same test binary $(sha256sum < $B | cut -c1-16) and environment" | tee $O/FROM.txt
   step sdpa-check python3 $TOOLS/gate_check.py sdpa $O $D/cand/env > $D/sdpa-check.txt 2>&1
 else
-sdpa_pass() { cool_start 60 300; env $ENVS $TOOLS/gl.sh $B --sdpa-correctness-only --sdpa-tier=$1 > $O/cand-$1-r$2.log 2>&1; }
-for tier in extended full; do for i in $(seq 1 12); do
+sdpa_pass() { cool_start 60 300; env $ENVS $TOOLS/gl.sh $B --sdpa-correctness-only --sdpa-tier=$1 > $O/cand-$1-r$2.log 2>&1; local rc=$?; echo "cand $1 r$2 exit status $rc $(date -u +%FT%TZ)" >> $O/exit-status.txt; return $rc; }
+for tier in all extended full; do for i in $(seq 1 12); do
   step "sdpa $tier r$i" sdpa_pass $tier $i; echo "cand $tier r$i rc=0" >> $O/summary.txt
 done; done
 step sdpa-check python3 $TOOLS/gate_check.py sdpa $O $D/cand/env > $D/sdpa-check.txt 2>&1

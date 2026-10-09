@@ -2,7 +2,7 @@
 """gate_check.py: decide a gate step from the contents of its result files, not from exit statuses.
 
   gate_check.py verify  <cand stage dir> <parent control stage dir>   (verify.out, verify/, verify-runs.jsonl)
-  gate_check.py sdpa    <sdpa-correctness dir> [<cand env file>]   (cand-{extended,full}-r1..12.log)
+  gate_check.py sdpa    <sdpa-correctness dir> [<cand env file>]   (cand-{all,extended,full}-r1..12.log)
   gate_check.py session <stage/<session>/raw> (--clkmin <clkmin.json> | --calibration) [--require-logs]
   gate_check.py env     <stage/<session>>                          (one candidate environment everywhere)
 
@@ -23,7 +23,8 @@ is a difference. The same holds per case of correctness.log (coopmat kernel or n
 `linear <scheme> rc` are not required to be 0 (on this device the shipped state has had rc=1 for a rank-3 case that does not
 dispatch coopmat): they must fit their logs and equal the parent control's, as must the case counts, the set
 of cases without coopmat and the decode token counts.
-sdpa: per tier 12 passes, each with the tier's case count (extended 8, full 4), every case PASSED with
+sdpa: per tier (all, extended, full: the three the task names) 12 passes, each with the tier's case count (all 4,
+extended 8, full 4), every case PASSED with
 mismatches=0 and a [sdpa-kernels] line with pairing=ok per case. A case is served either by the three coopmat
 kernels (qk_coopmat=yes, av_coopmat=yes, no fused kernel) or by the fused attention kernel (fused=<a
 sarc_dev_4070ti_sdpa_fused kernel> with qk=? softmax=? av=?: the three kernels did not run), never by anything
@@ -32,8 +33,9 @@ and 8B head configurations) must be served by the fused kernel in every pass. Wi
 profile, every pass must carry that profile's banner.
 session: six cells with at least REPS timed runs per arm (`reps` of thresholds.txt; 5 for a --calibration session) that are valid on their own fields (the `valid` column is
 not trusted): a unique log and model/scheme/build/repeat identity, rc 0, a positive finite rate, 2048 prompt
-tokens, 0 generated tokens, no foreign GPU process, at least 2 clock samples and a median clock at or above the
-threshold; with the logs present each of them is recomputed from its log and clock samples (runrow.py) and must
+tokens, 0 generated tokens, no foreign GPU process, at least 2 clock samples, a median clock at or above the
+threshold, and throttle reasons sampled with no thermal one active (a --calibration session may predate that
+record: s1-aa does); with the logs present each of them is recomputed from its log and clock samples (runrow.py) and must
 equal its row; every timed run is judged against the calibrated
 clock threshold of its cell (--clkmin; a record-only session is rejected unless --calibration says it is the
 baseline or A/A session, which can never accept a candidate); and, per cell, the next token of parent vs
@@ -267,7 +269,7 @@ PROD_CASES = ("1b_head_config_s2048", "3b_head_config_s2048", "8b_head_config_s2
 def do_sdpa(d, envfile=None):
     names = set(); fused_profile = bool(envfile) and (profile_of(env_lines(envfile)) or "").startswith("4070ti-fused")
     if envfile: banner_check(sorted(glob.glob(os.path.join(d, "cand-*.log"))), env_lines(envfile), "sdpa")
-    for tier, ncase in (("extended", 8), ("full", 4)):
+    for tier, ncase in (("all", 4), ("extended", 8), ("full", 4)):
         logs = sorted(glob.glob(os.path.join(d, f"cand-{tier}-r*.log")))
         if len(logs) != 12: fail(f"{tier}: {len(logs)} pass logs, required 12")
         for f in logs:
@@ -340,10 +342,17 @@ def do_session(d, *opts):
         except ValueError: n, cm = 0, float("nan")
         if n < 2: why.append(f'clock samples {r["clk_n"]!r}')
         elif want is None or not cm >= int(want): why.append(f'clock {r["clk_med_mhz"]} MHz below {want}')
+        # Throttle reasons: sampled, and no thermal one active in any sample of the run. Only the calibration
+        # session may lack the record (s1-aa was run before the sampler read it); a recorded thermal reason
+        # rejects there too.
+        thn, tht = r.get("thr_n"), r.get("thr_thermal_n")
+        if tht not in (None, "", "0"): why.append(f"thermal throttle reason in {tht} samples")
+        elif not calibration and not ((thn or "").isdigit() and int(thn) >= 2 and tht == "0"): why.append(f"throttle reasons not sampled (thr_n {thn!r})")
         if have_logs and want is not None:
-            rec = runrow.evaluate(os.path.join(d, log), os.path.join(d, log[:-4] + ".clk"), "2048", want, r["rc"], r["others"], "prefill")
-            diff = [k for k in runrow.FIELDS if rec[k] != r[k]]
-            if diff: why.append("recomputed from the log and clock samples differs in " + ", ".join(f"{k} ({r[k]!r} -> {rec[k]!r})" for k in diff))
+            rec = runrow.evaluate(os.path.join(d, log), os.path.join(d, log[:-4] + ".clk"), "2048", want, r["rc"], r["others"], "prefill", require_thr=not calibration)
+            diff = [k for k in runrow.FIELDS if rec[k] != r.get(k, "" if calibration and k.startswith("thr_") and rec["thr_n"] == "0" else None)]
+            diff = [k for k in diff if not (calibration and k.startswith("thr_") and k not in r and rec["thr_n"] == "0")]
+            if diff: why.append("recomputed from the log and clock samples differs in " + ", ".join(f"{k} ({r.get(k)!r} -> {rec[k]!r})" for k in diff))
         if why and r["valid"] == "1": fail(f"{log}: marked valid but " + "; ".join(why))
         elif not why and r["valid"] != "1": fail(f'{log}: marked invalid ({r["reason"]}) but every field is in order')
         elif not why: good[(*cell, r["build"])] += 1

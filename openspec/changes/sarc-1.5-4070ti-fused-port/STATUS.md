@@ -1,17 +1,28 @@
 # STATUS: sarc-1.5-4070ti-fused-port
 
-**2026-10-09 00:05 UTC. FINISHED; nothing of this campaign is running, the GPU is idle. The fused attention
-kernel of the Radeon 780M is ported to the RTX 4070 Ti SUPER as profile `4070ti-fused1` and is the only gated
-candidate, as task section 6.4 provides for a one-pass kernel: gate `s2-c1` GATE_ACCEPTED (plain pass),
-**+11.64 % geomean over the parent** (the first campaign's stack `4070ti-refine1`), and the closing session
-`s3-pristine` gives **+63.53 % geomean over the pristine `dev/1.5` state** (the first campaign ended at
-+46.35 %). Final configuration: `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=4070ti-fused1` on this branch,
-build `topic2` = `6217da0a9`, no local patch; the head differs from that commit only under `openspec/`.
-`proposal.md` has the full account.**
+**2026-10-09 00:14 UTC. REOPENED after review; not finished. The performance numbers of the first gate reproduce, but
+three things were wrong and are being put right: (1) the gate `s2-c1` ran 12 passes of the tiers `extended` and
+`full` and none of `all` (one `all` pass exists, from before the gate), where the task asks for 12 of each;
+(2) no timed run recorded the driver's thermal-throttle reasons, so the R6 criterion "no thermal throttle
+reason" was never evaluated: the sessions `s1-aa`, `s2-c1` and `s3-pristine` are kept as evidence WITH THAT
+LIMITATION and are not the reported result (no record of throttle reasons exists for them; its absence is not
+inferred from temperature or clock); (3) the shared test `test_llama_microbench.cpp` was edited in place, against
+R3. The test's fused support is now insert-only delimited blocks, the gate runs the three tiers, the sampler
+records throttle reasons and a run without that record is invalid. Because test source changed, everything is
+rebuilt (`topic3`), gated (`s4-c1`) and timed again (`s4-aa`, `s5-pristine`) under new tags.**
 
-Next step: none in this campaign. Blocking: nothing. No decision is needed from the owner; for the owner's
-review before any promotion: the release-zone entry point of the fused node (hook D4.3, commit `35e3728c9`,
-49 lines, larger than a switch).
+Running now, detached (`<artifact-dir>/queue/q06-regate.sh`): build `topic3`; the two hook controls on it; an
+A/A re-check `s4-aa` (parent against `topic3`, both `4070ti-refine1`, with throttle reasons, thresholds
+unchanged); the reference-error evidence with `topic3`'s binaries; the gate `s4-c1` (36 SDPA passes, `verify.sh`,
+timed session, traces); the closing session `s5-pristine`. About five hours.
+
+Thresholds are not re-calibrated: `clkmin` 2517 MHz and 7 repeats stay as committed before the first candidate.
+
+Blocking: nothing. No decision is needed from the owner (the R3 point is resolved by complying, not by an
+exception).
+
+**Everything below this line describes the state before the review (build `topic2`) and is kept as the record
+until the new sessions replace it.**
 
 ## Closing numbers
 

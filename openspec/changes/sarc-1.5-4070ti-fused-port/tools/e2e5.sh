@@ -9,7 +9,9 @@
 #     every 0.5 s while the run executes (logs/<run>.others) and once after it; the abort uses what was captured,
 #     without asking again, and a run it overlapped is kept in runs.csv as invalid. The card not answering nvidia-smi ends it with exit 70;
 #   - a run is VALID only if rc = 0, tok/s present, prompt_tokens = <expected>, generated_tokens = 0, no other GPU
-#     process, and the median clock in the measured window >= CLKMIN MHz (0 = record only; set it from the
+#     process, the driver's throttle reasons sampled with no thermal one active at any sample of the run
+#     (clocks_event_reasons sw_thermal_slowdown / hw_thermal_slowdown; hw_slowdown and the raw mask are recorded),
+#     and the median clock in the measured window >= CLKMIN MHz (0 = record only; set it from the
 #     baseline session, the idle clock is 210 MHz and the maximum 3120 MHz). The threshold is per cell and
 #     comes from --clkmin-file (calibrate_clock.py); --calibrate runs record-only (clkmin 0 in runs.csv) and is
 #     only for the baseline and A/A sessions: gate_check.py rejects such a session as a candidate gate. 1B prefill is about 100 ms, so its
@@ -51,9 +53,10 @@ if [[ -n $CLKFILE ]]; then need "$CLKFILE"
 for k, v in json.load(open(sys.argv[1]))["cells"].items(): print(k, v["clkmin_mhz"])' "$CLKFILE")
 fi
 clkmin() { if [[ $CALIBRATE == 1 ]]; then echo 0; else local v=${CLK[$1-$2]:-}; [[ $v =~ ^[1-9][0-9]*$ ]] || { echo "no clock threshold for cell $1 $2 in $CLKFILE" >&2; exit 77; }; echo $v; fi; }
-sampler_start() {  # sampler_start <file>: epoch_us clock_MHz busy% power_W temp_C every 20 ms; stop with kill $SP
-  stdbuf -oL nvidia-smi --query-gpu=clocks.gr,utilization.gpu,power.draw,temperature.gpu --format=csv,noheader,nounits -lms 20 \
-    > >(while IFS= read -r l; do echo "${EPOCHREALTIME/./} ${l//,/}"; done > "$1") 2>/dev/null 9>&- & SP=$!
+sampler_start() {  # sampler_start <file>: epoch_us clock_MHz busy% power_W temp_C sw_thermal hw_thermal hw_slowdown reasons_mask every 20 ms; stop with kill $SP
+  # the three clocks_event_reasons flags as 0/1 (the driver prints "Not Active" / "Active"), then the raw mask
+  stdbuf -oL nvidia-smi --query-gpu=clocks.gr,utilization.gpu,power.draw,temperature.gpu,clocks_event_reasons.sw_thermal_slowdown,clocks_event_reasons.hw_thermal_slowdown,clocks_event_reasons.hw_slowdown,clocks_event_reasons.active --format=csv,noheader,nounits -lms 20 \
+    > >(while IFS= read -r l; do l=${l//Not Active/0}; l=${l//Active/1}; echo "${EPOCHREALTIME/./} ${l//,/}"; done > "$1") 2>/dev/null 9>&- & SP=$!
 }
 {
   date -u; hostname; uname -r; echo "lock=$LOCK reps=$REPS extra=$EXTRA prompt=$PROMPT tokens=$TOKENS calibrate=$CALIBRATE clkmin_file=$CLKFILE $([[ -n $CLKFILE ]] && sha256sum < "$CLKFILE" | cut -c1-16)"
@@ -72,7 +75,7 @@ for m in "${MS[@]}"; do for q in "${QS[@]}"; do
 sleep 60; IDLE=$(gtemp) || gpu_gone idle; echo "idle_temp=$IDLE" >> "$O/env.txt"
 cool() { local t0=$SECONDS t; while :; do t=$(gtemp) || gpu_gone cool; [[ $t -le $((IDLE + 5)) || $((SECONDS - t0)) -ge $COOLMAX ]] && break; sleep 5; done; }
 CSV=$O/runs.csv
-[[ -f $CSV ]] || echo "gpu,host,model,scheme,build,rep,slot,tok_s,rc,temp_pre,temp_post,cool_s,clocks,others,utc,log,prompt_tokens,generated_tokens,prefill_ms,clk_n,clk_med_mhz,clk_min_mhz,busy_med,power_med_w,temp_max,valid,reason,clkmin" > "$CSV"
+[[ -f $CSV ]] || echo "gpu,host,model,scheme,build,rep,slot,tok_s,rc,temp_pre,temp_post,cool_s,clocks,others,utc,log,prompt_tokens,generated_tokens,prefill_ms,clk_n,clk_med_mhz,clk_min_mhz,busy_med,power_med_w,temp_max,valid,reason,clkmin,thr_n,thr_thermal_n,thr_hw_slowdown_n,thr_masks" > "$CSV"
 run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected tokens>
   local m=$1 q=$2 b=$3 r=$4 s=$5 p=$6 tag=$7 want=$8 log t0 tp tq rc oth cs sp cmin_cell=0
   [[ $tag == prefill ]] && { cmin_cell=$(clkmin $m $q) || exit 77; }
@@ -86,9 +89,9 @@ run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected 
     $([[ $tag == prefill ]] && echo --warmup) < /dev/null > "$O/$log" 2>&1 9>&-
   rc=$?; oth=$(others_watch_stop "$O/${log%.log}.others" | tr ',' ';'); kill $SP 2>/dev/null; wait $SP 2>/dev/null; sleep 0.1; tq=$(gtemp) || gpu_gone "after $log rc=$rc"
   python3 $TOOLS/runrow.py "$O/$log" "$O/${log%.log}.clk" "$want" "$cmin_cell" "$rc" "$oth" "$tag" > "$O/.row"
-  IFS=, read -r tok pt gt ms n cm cmin bm pw tmax valid reason < "$O/.row"
-  echo "4070ti,$(hostname),$m,$q,$b,$r,$s,$tok,$rc,$tp,$tq,$cs,gr_med=${cm}MHz,$oth,$(date -u +%FT%TZ),$log,$pt,$gt,$ms,$n,$cm,$cmin,$bm,$pw,$tmax,$valid,$reason,$cmin_cell" >> "$CSV"
-  echo "$tag $m $q $b r$r slot$s tok_s=$tok ms=$ms rc=$rc T=$tp->$tq cool=${cs}s clk=$cm/$cmin MHz n=$n busy=$bm valid=$valid $reason"
+  IFS=, read -r tok pt gt ms n cm cmin bm pw tmax valid reason thn tht thh thm < "$O/.row"
+  echo "4070ti,$(hostname),$m,$q,$b,$r,$s,$tok,$rc,$tp,$tq,$cs,gr_med=${cm}MHz,$oth,$(date -u +%FT%TZ),$log,$pt,$gt,$ms,$n,$cm,$cmin,$bm,$pw,$tmax,$valid,$reason,$cmin_cell,$thn,$tht,$thh,$thm" >> "$CSV"
+  echo "$tag $m $q $b r$r slot$s tok_s=$tok ms=$ms rc=$rc T=$tp->$tq cool=${cs}s clk=$cm/$cmin MHz n=$n busy=$bm thr=$tht/$thn valid=$valid $reason"
   [[ -n $oth ]] && abort_others "during $log (the run is kept in runs.csv as invalid)" "$oth"
   LAST_RC=$rc; return 0
 }

@@ -46,11 +46,23 @@ Copied from `sarc-1.5-4070ti-prefill-refine/tools/` (same host, same card). What
 | `collect.sh` | paths | |
 | `thresholds.txt` | new | task section 6.1 |
 
+Changed after the copy, for this campaign's candidate and rules (each change has regression tests in
+`tools/test_gate_check.py`, 48 tests; the sibling's file had 40):
+
+| file | change | why |
+|---|---|---|
+| `gate_check.py sdpa` | a case may be served by the fused kernel instead of the three (then `qk=? softmax=? av=?` and `qk_coopmat=NO av_coopmat=NO` are required, a fused kernel beside one of the three is a finding); under a `4070ti-fused` profile the three production cases must be served by the fused kernel; the tier `all` is required beside `extended` and `full`, 12 passes each | the sibling's check demanded `qk_coopmat=yes av_coopmat=yes` on every case, which a fused kernel can never print; the task names three tiers (the first gate, `s2-c1`, ran only two: found in review) |
+| `gate_check.py session`, `summarize.py`, `gatelib.sh` | the number of valid timed runs per arm is `reps` of `thresholds.txt` (7), not a fixed 5 | the repeat rule fixed before the A/A session |
+| `gate_check.py session`, `runrow.py`, `e2e5.sh` | the sampler also reads the driver's throttle reasons every 20 ms (`clocks_event_reasons.sw_thermal_slowdown`, `.hw_thermal_slowdown`, `.hw_slowdown`, the raw mask); a timed run is valid only with at least 2 such samples and no thermal reason in any sample of the run; four columns appended to `runs.csv` | R6 requires "no thermal throttle reason"; the sibling's tools and the first three sessions of this campaign did not record it (found in review) |
+| `gate_sdpa.sh` | tiers `all extended full`; the test binary's and runner library's hashes and the environment in `sdpa-correctness/IDENTITY.txt`, every pass's exit status in `exit-status.txt` | as above |
+| `quick_e2e.sh`, `sdpa_screen.sh` | `hold_point`, D5 warming | D6, D5 |
+| `attention_families.py` | new: the fused kernel and its copy pass as families of their own | the kit's analysis files both under copy/view/other |
+
 Not carried over: the generators (`gen_4070ti_*.py`, `devzone.py`), the linear screens and phase-timing tools
 (`screen.sh`, `prof.sh`, ...), the runner probes (`exit_probe.sh`, `first_use_probe.sh`), the local hook patches.
-This campaign generates nothing and sweeps nothing. `gate_check.py`, `runrow.py`, `nexttoken.py`, `summarize.py`,
-`llama_main_rc.sh`, `warm_file.py`, `stage.sh`, `gate*.sh`, `session.sh`, `gl.sh`, `mktree.sh` are unchanged
-(`tools/test_gate_check.py`: 40 tests pass).
+This campaign generates nothing and sweeps nothing. Unchanged from the sibling: `nexttoken.py`,
+`llama_main_rc.sh`, `warm_file.py`, `stage.sh`, `gate.sh`, `gate_rest.sh`, `session.sh`, `gl.sh`, `mktree.sh`,
+`ref_error_rule.py`, the probe tools.
 
 Builds: `tools/build-both.sh <tag> <commit>` exports the commit and its pinned submodules from the git object
 stores, runs the tree's own `sarc/tools/build.sh --llama` (and `--traced`) in `localhost/et-vk-build:rocky10`
@@ -137,12 +149,20 @@ parent's kernels; the score is rounded to fp16 once (store to `Psh`), e is compu
 maximum and rounded to fp16 for the matrix multiply, the row sum and the final division are fp32. The summation
 order differs from the three-kernel path, so the candidate is judged by the reference-error rule (D3).
 
-Not append-only: `backends/vulkan/test/sarc_dev/test_llama_microbench.cpp` is a shared dev-zone file and nine
-places in it are edited in place (each marked `4070ti-fused`): the verdict of a correctness case, the pairing
-rule, the `[sdpa-kernels]` line and the time buckets of the perf suite have to know a case served by a fused
-kernel. They follow the 780M campaign's edits of the same lines, with kernel-name tests that match either
-prefix (`_sdpa_fused`, `sdpa_kvt`), so the two versions can be merged by taking either. The `peaked` and `fused`
-tiers are the 780M's cases, added.
+The shared dev-zone test `backends/vulkan/test/sarc_dev/test_llama_microbench.cpp` changes by insertion only:
+eight blocks delimited by `// >>> 4070ti-fused <id>` and `// <<< 4070ti-fused <id>`, 99 added lines, no line of
+the parent's file removed or modified (`git diff 6050b1287 HEAD` of the file has no `-` line). A case that
+dispatched a fused kernel is judged in the block `verdict`, placed before the existing verdict: none of the
+three kernels may have run, the numeric comparison and its tolerances are the existing ones, and the two report
+lines have the existing form with `fused=<kernel>` added. A case without a fused kernel never enters a block
+and prints exactly what the parent's test prints. The other blocks add the fused kernel and its copy pass to
+the perf suite's total, print the timed runs, confirm a perf case served by a fused kernel, and add the 780M's
+`peaked` and `fused` tiers (a per-case Q scale, applied after the existing generation loop).
+
+The first version of this candidate (commit `6217da0a9`, build `topic2`) edited nine places of that file in
+place. That broke R3 (append only, in delimited blocks) and was found in review; the insert-only form replaces
+it (build `topic3`) and everything was rebuilt, gated and timed again. The sessions on `topic2` are kept as
+evidence and are not the reported result.
 
 ## Hook control (D4 conditions)
 

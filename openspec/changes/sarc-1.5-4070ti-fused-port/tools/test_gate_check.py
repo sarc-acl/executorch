@@ -8,14 +8,14 @@ import csv, hashlib, json, os, subprocess, sys, tempfile, unittest
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
 import nexttoken, gate_check_paths  # noqa: E402  (prompt table shared with gate_check.py)
 CELLS = [(m, q) for m in ("1b", "3b", "8b") for q in ("4w", "8da4w")]
-HEADER = "gpu,host,model,scheme,build,rep,slot,tok_s,rc,temp_pre,temp_post,cool_s,clocks,others,utc,log,prompt_tokens,generated_tokens,prefill_ms,clk_n,clk_med_mhz,clk_min_mhz,busy_med,power_med_w,temp_max,valid,reason,clkmin".split(",")
+HEADER = "gpu,host,model,scheme,build,rep,slot,tok_s,rc,temp_pre,temp_post,cool_s,clocks,others,utc,log,prompt_tokens,generated_tokens,prefill_ms,clk_n,clk_med_mhz,clk_min_mhz,busy_med,power_med_w,temp_max,valid,reason,clkmin,thr_n,thr_thermal_n,thr_hw_slowdown_n,thr_masks".split(",")
 PROMPTS = gate_check_paths.PROMPTS
 REPS = int(next(l.strip()[5:] for l in open(os.path.join(HERE, "thresholds.txt")) if l.startswith("reps=")) or 5)  # timed repeats a gate requires
 
 T0 = 1790000000000  # ms; every synthetic run measures from T0 to T0 + 100 ms
 def log_text(prompt, token, want):
     return open(prompt, "rb").read() + token + b"\n" + ('PyTorchObserver {"prompt_tokens":%s,"generated_tokens":0,"prefill_token_per_sec":1000.0,"inference_start_ms":%d,"prompt_eval_end_ms":%d}\n' % (want, T0, T0 + 100)).encode()
-def clk_text(mhz=3000): return "".join(f"{(T0 + 20 * i) * 1000} {mhz} 97 250.0 55\n" for i in range(5))
+def clk_text(mhz=3000, thermal=0): return "".join(f"{(T0 + 20 * i) * 1000} {mhz} 97 250.0 55 {thermal} 0 0 0x0000000000000004\n" for i in range(5))
 def rewrite(d, fn):
     """Apply fn(row) to every row of runs.csv (fn may return a list of rows to replace it)."""
     p = os.path.join(d, "runs.csv"); out = []
@@ -37,7 +37,8 @@ def make(d, clkmin="2900", check_rc="0", token=b" tok", cand_token=None, write_l
                  prompt_tokens=want if ok else "", generated_tokens="0" if ok else "", prefill_ms="100" if ok else "",
                  clk_n="5" if ok else "0", clk_med_mhz="3000.0" if ok else "", clk_min_mhz="3000.0" if ok else "",
                  busy_med="97.0" if ok else "", power_med_w="250.0" if ok else "", temp_max="55" if ok else "",
-                 valid="1" if ok else "0", reason="" if ok else "rc+no_tok_s+prompt_tokens", clkmin=clkmin if timed else "0")
+                 valid="1" if ok else "0", reason="" if ok else "rc+no_tok_s+prompt_tokens", clkmin=clkmin if timed else "0",
+                 thr_n="5" if ok else "0", thr_thermal_n="0", thr_hw_slowdown_n="0", thr_masks="0x0000000000000004" if ok else "")
         rows.append(r); return log
     for m, q in CELLS:
         for rep in range(1, REPS + 1):
@@ -116,6 +117,19 @@ class Session(unittest.TestCase):
         make(self.d); rewrite(self.d, lambda r: r.update(tok_s="1200.0") if r["log"] == "logs/prefill-8b-4w-cand-r3.log" else None)
         rc, out = self.gate("--require-logs"); self.assertNotEqual(rc, 0, out); self.assertIn("recomputed from the log and clock samples differs in tok_s", out)
 
+    def test_thermal_throttle_reason_and_missing_throttle_record(self):
+        # One timed run sampled a thermal reason but is marked valid; another has clock samples without the reasons.
+        make(self.d)
+        def thermal(r):
+            if r["log"] == "logs/prefill-3b-4w-cand-r2.log":
+                open(os.path.join(self.d, r["log"][:-4] + ".clk"), "w").write(clk_text(thermal=1)); r.update(thr_thermal_n="5")
+            if r["log"] == "logs/prefill-8b-4w-parent-r3.log":
+                open(os.path.join(self.d, r["log"][:-4] + ".clk"), "w").write("".join(f"{(T0 + 20 * i) * 1000} 3000 97 250.0 55\n" for i in range(5)))
+                r.update(thr_n="0", thr_thermal_n="", thr_masks="")
+        rewrite(self.d, thermal)
+        rc, out = self.gate("--require-logs"); self.assertNotEqual(rc, 0, out)
+        self.assertIn("prefill-3b-4w-cand-r2.log: marked valid but thermal throttle reason in 5 samples", out)
+        self.assertIn("prefill-8b-4w-parent-r3.log: marked valid but throttle reasons not sampled", out)
     def test_low_clock_and_wrong_identity(self):
         make(self.d)
         def brk(r):
@@ -401,7 +415,7 @@ class Verify(unittest.TestCase):
         self.p = os.path.join(self.t.name, "parent"); rc, out = self.check(); self.assertNotEqual(rc, 0)
         self.assertIn("differs from the parent control: correctness rc", out)
 
-TIER_CASES = {"extended": ["e%d" % i for i in range(8)], "full": ["1b_head_config_s2048", "3b_head_config_s2048", "8b_head_config_s2048", "8b_head_config_s1024_pos1024"]}
+TIER_CASES = {"all": ["a%d" % i for i in range(4)], "extended": ["e%d" % i for i in range(8)], "full": ["1b_head_config_s2048", "3b_head_config_s2048", "8b_head_config_s2048", "8b_head_config_s1024_pos1024"]}
 def make_sdpa(d, fused=(), profile="4070ti-refine1", edit=None):
     """24 pass logs; the cases named in `fused` are served by the fused kernel, the others by the three kernels.
     edit(tier, rep, case, kernels_line, correctness_line) may return replacements for the two lines."""
@@ -412,7 +426,7 @@ def make_sdpa(d, fused=(), profile="4070ti-refine1", edit=None):
             for c in cases:
                 fu = c in fused
                 k = (f"[sdpa-kernels] {c} qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok\n" if fu else
-                     f"[sdpa-kernels] {c} qk=sarc_sdpa_qk_coopmat_4070ti_df_t64x64k32g11s32nf softmax=sarc_sdpa_attn_weights_softmax_4070ti_nzf av=sarc_sdpa_av_coopmat_4070ti_ml_t32x64k32g42s32 fused=- no_mask_fill=yes pairing=ok\n")
+                     f"[sdpa-kernels] {c} qk=sarc_sdpa_qk_coopmat_4070ti_df_t64x64k32g11s32nf softmax=sarc_sdpa_attn_weights_softmax_4070ti_nzf av=sarc_sdpa_av_coopmat_4070ti_ml_t32x64k32g42s32 no_mask_fill=yes pairing=ok\n")
                 yn = "NO" if fu else "yes"
                 l = f"[sdpa-correctness] {c} S=2048 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat={yn} av_coopmat={yn} mismatches=0/100 PASSED\n"
                 if edit: k, l = edit(tier, r, c, k, l) or (k, l)
@@ -422,7 +436,7 @@ def make_sdpa(d, fused=(), profile="4070ti-refine1", edit=None):
     envf = os.path.join(d, "env"); open(envf, "w").write(f"ET_VK_SARC_UNVERIFIED=1\nET_VK_SARC_DEV_PROFILE={profile}\n"); return envf
 
 class Sdpa(unittest.TestCase):
-    ALL = TIER_CASES["extended"] + TIER_CASES["full"]
+    ALL = TIER_CASES["all"] + TIER_CASES["extended"] + TIER_CASES["full"]
     def setUp(self): self.t = tempfile.TemporaryDirectory(); self.d = os.path.join(self.t.name, "sdpa-correctness")
     def tearDown(self): self.t.cleanup()
     def gate(self, envf):
@@ -441,10 +455,14 @@ class Sdpa(unittest.TestCase):
         rc, out = self.gate(make_sdpa(self.d, fused=self.ALL, profile="4070ti-fused1", edit=both)); self.assertEqual(rc, 1, out)
     def test_a_case_nothing_served_and_a_mismatch_are_rejected(self):
         def nothing(tier, r, c, k, l):
-            if (tier, r, c) == ("full", 2, "8b_head_config_s2048"): return k.replace("fused=sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half", "fused=-"), l
+            if (tier, r, c) == ("full", 2, "8b_head_config_s2048"): return k.replace(" fused=sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half", ""), l
             if (tier, r, c) == ("extended", 1, "e0"): return k, l.replace("mismatches=0/100 PASSED", "mismatches=3/100 FAILED")
         rc, out = self.gate(make_sdpa(self.d, fused=self.ALL, profile="4070ti-fused1", edit=nothing)); self.assertEqual(rc, 1, out)
         self.assertEqual(out.count("FAIL:"), 3, out)   # the unserved case twice (itself, and as a production case), the mismatch once
+    def test_the_all_tier_is_required(self):
+        envf = make_sdpa(self.d, fused=self.ALL, profile="4070ti-fused1")
+        for r in range(1, 13): os.remove(os.path.join(self.d, f"cand-all-r{r}.log"))
+        rc, out = self.gate(envf); self.assertEqual(rc, 1, out); self.assertIn("all: 0 pass logs, required 12", out)
     def test_broken_pairing_and_a_missing_pass(self):
         def broken(tier, r, c, k, l):
             if (tier, r, c) == ("extended", 12, "e5"): return k.replace("pairing=ok", "pairing=BROKEN"), l
