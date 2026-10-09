@@ -5,7 +5,7 @@ under four constraints that the first five campaigns did not have. This file say
 them, and what does not. It is an addendum to `COORDINATOR.md` and `PLAYBOOK.md`, which remain the authority
 for everything it does not mention. Written 2026-10-07 from the five finished campaigns and from the first day
 of the RX 7600 campaign, which already ran under these constraints and is the worked example throughout;
-section 6 updated 2026-10-08 after the RX 7600 campaign closed; section 6 again and section 9 added 2026-10-10
+section 6 updated 2026-10-08 after the RX 7600 campaign closed; section 6 again and section 9 added 2026-10-09; section 10 (the llama.cpp request) added 2026-10-10
 after the second round on our side (the fused kernel ported to four more devices, 780M round 3).
 
 The four constraints:
@@ -423,3 +423,91 @@ metered model this is the first thing to prevent:
   the task file from the first day.
 - **Every device, later**: one gate and one timed session under the F1 repair (9.3), when our side announces it.
 
+
+## 10. Request to the company side, 2026-10-10: the llama.cpp comparison on your devices
+
+Our five devices have a llama.cpp comparison (`topic/llamacpp-compare`,
+`openspec/changes/sarc-1.5-llamacpp-compare/`: the kit, the rules, `results/cells.csv`). Yours are incomplete,
+and a mock conference review of the tuning overview singled that out. What is missing:
+
+| device | what exists | what is asked |
+|---|---|---|
+| RX 7900 XTX | nothing: no llama.cpp number at all, and its stock ExecuTorch baseline is from the session of 2026-09-28, not from the tuning session | the full comparison (10.1), then the HIP backend (10.2) |
+| RX 7600 | llama.cpp Vulkan against the round 1 configuration (your push of 2026-10-08) | the comparison again with the round 2 final configuration as the tuned arm (10.1), then the HIP backend (10.2) |
+| M51 | nothing | only if the device owner allows a statement of the form "ahead of / level with / behind llama.cpp" (10.3) |
+
+### 10.1 The comparison, with the kit (both AMD cards)
+
+Follow `kit/README.md` on `topic/llamacpp-compare` exactly; `kit/hosts/rx7600` is your own adapter from
+2026-10-08 and the model for `kit/hosts/7900xtx` (one adapter file per device, nothing else). In one interleaved
+session per device, all of these arms:
+
+- `stock` (the kit's `build-stock.sh`: `release/1.5` plus the compile-only backport), 4w and 8da4w;
+- `sarc` (for your devices: the campaign's parent commit, no profile), 4w and 8da4w;
+- `tuned` (the campaign's final configuration: RX 7600 round 2 final; RX 7900 XTX final stack), 4w and 8da4w;
+- llama.cpp at the pinned commit `b11430`, Vulkan backend, Q4_0 and Q4_K_M (`kit/make-q4km.sh`), each at its
+  screened best setting and at the default setting, with BOTH timers (`lc` = `llama-completion` in a fresh
+  process, `lb` = `llama-bench`).
+
+Why all arms in one session: the reviewers recomputed the RX 7900 XTX's "3.15x over stock" and found that its
+numerator and denominator come from sessions eleven days apart. One session with stock, parent and tuned
+interleaved removes that objection, and gives the llama.cpp ratio under the same conditions.
+
+Rules that the review made non-negotiable:
+
+1. The driver is stated per arm. The RX 7900 XTX campaign ran on AMDVLK; run llama.cpp Vulkan on the SAME driver.
+   If you also run under RADV, that is a second, separately labelled set, never mixed into the first.
+2. Screening is recorded: for each backend the settings tried (flash attention on and off at least; the kit's
+   list), the number for each, and which one is "best". "Best setting" without the list is not accepted.
+3. Both timers are reported for every llama.cpp arm, not the higher of the two. If `llama-bench` takes a slow
+   path above 1024 prompt tokens on a card (it did on the RX 7600 at 8B), report both numbers and say so.
+4. Q4_0 and Q4_K_M are separate rows. Our report now says "ahead of llama.cpp Vulkan Q4_0" and gives the Q4_K_M
+   ratio beside it; on one of our devices the Q4_K_M ratio is below 1.0.
+5. Every run in `runs.csv` with its validity and reason (the kit's `row.py`); nothing is dropped silently.
+6. `results/<device>/ARMS.md` (arms and commits) is committed BEFORE the timed session.
+7. Leak check before every push, as section 5. Placeholders for host and user names.
+
+Push to `topic/llamacpp-compare`: `results/7900xtx/` (new) and `results/rx7600/` (updated), and the aggregated
+rows in `results/cells.csv`. Our side then adds the RX 7900 XTX to figures 5 and 7 of the report and replaces
+its cross-session stock number.
+
+### 10.2 The AMD vendor backend: llama.cpp HIP (ROCm), both AMD cards
+
+On Intel and NVIDIA the vendor backend (SYCL, CUDA) is faster than llama.cpp's Vulkan backend and faster than
+our tuned kernels by 3 to 25 %. For AMD discrete cards that comparison does not exist. It needs ROCm.
+
+Constraints: user-space install only (`amdgpu-install --usecase=rocm --no-dkms`); no kernel-driver, Mesa or
+AMDVLK change; no reboot; a Vulkan baseline cell measured before and after the install and required to agree
+within 2 % (the host is a measurement environment). If the host's distribution release is not one ROCm supports
+(the RX 7900 XTX host was on a non-LTS release), do not force it: use a ROCm container image with the host
+untouched, or report and wait. The RX 7600 (`gfx1102`) is not on AMD's supported list: build for `gfx1100` and
+run with `HSA_OVERRIDE_GFX_VERSION=11.0.0`, and say in the results that the override was used.
+
+Build: llama.cpp `b11430`, `-DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1100`, with
+`HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)"`. Measure it as one more llama.cpp backend inside the
+kit's session (arms `hip-q4_0` and `hip-q4km`, same screening, same two timers, same validity rules), so that its
+rows land in `cells.csv` with `kind` = `hip` beside the Vulkan rows. Record the ROCm version in
+`kit/VERSIONS.md`.
+
+The step-by-step instruction for the agent (checks, stop conditions, what to save) was handed to the owner on
+2026-10-09; ask him for it if it has not reached you. Its stop conditions hold: unsupported release, a reboot
+request, the installer touching a kernel module, `rocminfo` not listing the card, llama.cpp falling back to the
+CPU, or the Vulkan baseline moving.
+
+### 10.3 M51
+
+Only with the device owner's agreement, and then only relative: run llama.cpp's Vulkan backend (and OpenCL if
+it runs on that driver) with the kit's protocol, keep every number local, and report one line per model:
+"tuned ExecuTorch 4w is ahead of / within the noise band of / behind llama.cpp Vulkan Q4_0", plus whether
+llama.cpp runs correctly at all on that driver. If the owner does not agree, say so in the proposal and nothing
+else is needed. No figure, no driver or device identifier in anything pushed, as before.
+
+### 10.4 Order and size
+
+RX 7900 XTX 10.1 first (it removes the weakest number in the report), then RX 7600 10.1, then 10.2 on whichever
+card's host can take ROCm without an OS change, then 10.3. 10.1 is about two hours of device time per card with
+the kit; 10.2 is mostly the install. None of this is a tuning campaign: no kernel changes, no candidates.
+
+Two things the same review asked of every campaign, which you can fold into the same sessions at no extra cost
+(section 9.4 already asks for the first): decode tok/s with and without the final configuration, and the timed
+prompt's real-text variant beside the synthetic one.
