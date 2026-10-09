@@ -12,6 +12,11 @@
 //   A_PAD_U32 (constant from the wrapper): padding in uint between the K slabs of the A staging buffer in shared memory, to
 //     spread the A staging stores over the LDS banks.
 //   RX_CSH_IN_ASH: the texture drain stages its fp16 tile in the A staging buffer (no separate Csh_out).
+//   RX_BF: branch-free chunk loop: the prefetch and the stores of the next chunk run on every iteration (the last one re-reads the
+//     last chunk and stores it into the unused buffer), so that no branch separates the MMAs from the stores.
+//   RX_ST_A / RX_ST_B (need RX_BF): issue the shared-memory stores of the next chunk's A / B staging right after K slab RX_ST_A /
+//     RX_ST_B of the current chunk's MMAs instead of after the last slab, so that the stores of one wave overlap the MMAs of others.
+//   RX_UV4: the shared staging arrays are uvec4 (aligned 128-bit fragment loads; component-wise 32-bit stores).
 //   RX_PROF: shader-clock phase timing, MEASUREMENT ONLY (wrong results by design: the counters overwrite the output tile).
 //   RX_ABL: bit mask of removed work, MEASUREMENT ONLY (wrong results by design): 1 A global fetch, 2 B global fetch,
 //     4 LDS stores of the next chunk, 8 MMA, 16 the barrier of the chunk loop.
@@ -49,8 +54,26 @@ const uint ASH_SLICE_U32 = NUM_K_SLABS * A_SLAB_PITCH_U32;
 const uint BSH_SLICE_U32 = NUM_K_SLABS * B_SLAB_U32;
 
 // Double-buffered MMA operand staging.
+#ifdef RX_UV4
+// uvec4 arrays: the compiler then knows that every fragment load is 16-byte aligned (one ds_read_b128 instead of two ds_read_b64);
+// the 32-bit stores of the staging write one component of an element. coopMatLoad offsets and strides count elements (uvec4).
+#ifdef RX_CSH_IN_ASH
+#error "RX_UV4 is not combined with RX_CSH_IN_ASH"
+#endif
+shared uvec4 Ash_int8[2u * ASH_SLICE_U32 / 4u];
+shared uvec4 Bsh_int8[2u * BSH_SLICE_U32 / 4u];
+#define ASH_ST(idx, v) Ash_int8[(idx) >> 2u][(idx) & 3u] = (v)
+#define BSH_ST(idx, v) Bsh_int8[(idx) >> 2u][(idx) & 3u] = (v)
+#define RX_LDO(o) ((o) >> 2u)
+#define RX_LDS(s) ((s) >> 2u)
+#else
 shared uint Ash_int8[2u * ASH_SLICE_U32];
 shared uint Bsh_int8[2u * BSH_SLICE_U32];
+#define ASH_ST(idx, v) Ash_int8[idx] = (v)
+#define BSH_ST(idx, v) Bsh_int8[idx] = (v)
+#define RX_LDO(o) (o)
+#define RX_LDS(s) (s)
+#endif
 
 // Per-WG-tile-row activation params (loaded ONCE at WG start; constant
 // across groups).
@@ -343,19 +366,18 @@ void main() {
 #ifdef A_MULTI_BLOCK
       [[unroll]] for (uint ai = 0; ai < A_BLOCKS; ++ai) {
         [[unroll]] for (uint m4i = 0; m4i < 4u; ++m4i) {
-          Ash_int8[a_lds_off[ai] + m4i * A_STRIDE_U32] = uint(temp_A[ai][m4i]);
+          ASH_ST(a_lds_off[ai] + m4i * A_STRIDE_U32, uint(temp_A[ai][m4i]));
         }
       }
 #else
       [[unroll]] for (uint m4i = 0; m4i < 4u; ++m4i) {
-        Ash_int8[a_lds_off0 + m4i * A_STRIDE_U32] = uint(temp_A[m4i]);
+        ASH_ST(a_lds_off0 + m4i * A_STRIDE_U32, uint(temp_A[m4i]));
       }
 #endif
     }
 #ifdef WEIGHT_INT4
     [[unroll]] for (uint si = 0; si < B_SLOTS_PER_THREAD; ++si) {
-      Bsh_int8[b_lds_off[si]] =
-          widen_nibbles(uint(temp_B[si][b_comp[si]]), b_par[si]);
+      BSH_ST(b_lds_off[si], widen_nibbles(uint(temp_B[si][b_comp[si]]), b_par[si]));
     }
 #else
     if (b_active) {
@@ -363,8 +385,7 @@ void main() {
       const uint k4_in_slab = b_k4_in_chunk % (MMA_K >> 2u);
       const uint n_col_base = b_n_uint_col * 4u;
       [[unroll]] for (uint n_in_blk = 0u; n_in_blk < 4u; ++n_in_blk) {
-        Bsh_int8[slab_idx * B_SLAB_U32 + (n_col_base + n_in_blk) * B_STRIDE_U32 + k4_in_slab] =
-            uint(temp_B[n_in_blk]);
+        BSH_ST(slab_idx * B_SLAB_U32 + (n_col_base + n_in_blk) * B_STRIDE_U32 + k4_in_slab, uint(temp_B[n_in_blk]));
       }
     }
 #endif
@@ -409,8 +430,13 @@ void main() {
       PTICK(p_bar)
 
       // --- 2. prefetch chunk+1 -> temp ---
+#ifdef RX_BF
+      {
+        const uint chunkK_nxt = min(chunk + 1u, num_chunks - 1u) * WG_TILE_K;
+#else
       if (has_next) {
         const uint chunkK_nxt = (chunk + 1u) * WG_TILE_K;
+#endif
 #if (RX_ABL & 1) == 0
 #ifndef A_ALWAYS_ACTIVE
         if (a_active)
@@ -466,8 +492,8 @@ void main() {
           const uint row_a = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
           coopMatLoad(
               matA[i], Ash_int8,
-              slab_a_base_u32 + row_a * A_STRIDE_U32,
-              A_STRIDE_U32,
+              RX_LDO(slab_a_base_u32 + row_a * A_STRIDE_U32),
+              RX_LDS(A_STRIDE_U32),
               gl_CooperativeMatrixLayoutRowMajor);
         }
 
@@ -476,20 +502,54 @@ void main() {
           const uint col_b = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
           coopMatLoad(
               matB, Bsh_int8,
-              slab_b_base_u32 + col_b * B_STRIDE_U32,
-              B_STRIDE_U32,
+              RX_LDO(slab_b_base_u32 + col_b * B_STRIDE_U32),
+              RX_LDS(B_STRIDE_U32),
               gl_CooperativeMatrixLayoutColumnMajor);
           [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
             accum_int32[i][j] = coopMatMulAdd(matA[i], matB, accum_int32[i][j]);
           }
         }
+#if (RX_ABL & 4) == 0
+#if defined(RX_ST_A) || defined(RX_ST_B)
+#if !defined(RX_BF) || !defined(WEIGHT_INT4) || !defined(A_ALWAYS_ACTIVE)
+#error "RX_ST_A / RX_ST_B need RX_BF, WEIGHT_INT4 and A_ALWAYS_ACTIVE"
+#endif
+#endif
+#ifdef RX_ST_A
+        if (k == RX_ST_A) {
+#ifdef A_MULTI_BLOCK
+          [[unroll]] for (uint ai = 0; ai < A_BLOCKS; ++ai) {
+            [[unroll]] for (uint m4i = 0; m4i < 4u; ++m4i) {
+              ASH_ST(nxt_a + a_lds_off[ai] + m4i * A_STRIDE_U32, uint(temp_A[ai][m4i]));
+            }
+          }
+#else
+          [[unroll]] for (uint m4i = 0; m4i < 4u; ++m4i) {
+            ASH_ST(nxt_a + a_lds_off0 + m4i * A_STRIDE_U32, uint(temp_A[m4i]));
+          }
+#endif
+        }
+#endif
+#ifdef RX_ST_B
+        if (k == RX_ST_B) {
+          [[unroll]] for (uint si = 0; si < B_SLOTS_PER_THREAD; ++si) {
+            BSH_ST(nxt_b + b_lds_off[si], widen_nibbles(uint(temp_B[si][b_comp[si]]), b_par[si]));
+          }
+        }
+#endif
+#endif // RX_ABL & 4
       }
 #endif // RX_ABL & 8
       PTICK(p_mma)
 
       // --- 4. store temp (chunk+1) -> nxt slice ---
 #if (RX_ABL & 4) == 0
+#ifdef RX_BF
+      {
+#else
       if (has_next) {
+#endif
+#ifndef RX_ST_A
 #ifndef A_ALWAYS_ACTIVE
         if (a_active)
 #endif
@@ -497,20 +557,22 @@ void main() {
 #ifdef A_MULTI_BLOCK
           [[unroll]] for (uint ai = 0; ai < A_BLOCKS; ++ai) {
             [[unroll]] for (uint m4i = 0; m4i < 4u; ++m4i) {
-              Ash_int8[nxt_a + a_lds_off[ai] + m4i * A_STRIDE_U32] = uint(temp_A[ai][m4i]);
+              ASH_ST(nxt_a + a_lds_off[ai] + m4i * A_STRIDE_U32, uint(temp_A[ai][m4i]));
             }
           }
 #else
           [[unroll]] for (uint m4i = 0; m4i < 4u; ++m4i) {
-            Ash_int8[nxt_a + a_lds_off0 + m4i * A_STRIDE_U32] = uint(temp_A[m4i]);
+            ASH_ST(nxt_a + a_lds_off0 + m4i * A_STRIDE_U32, uint(temp_A[m4i]));
           }
 #endif
         }
+#endif // RX_ST_A
 #ifdef WEIGHT_INT4
+#ifndef RX_ST_B
         [[unroll]] for (uint si = 0; si < B_SLOTS_PER_THREAD; ++si) {
-          Bsh_int8[nxt_b + b_lds_off[si]] =
-              widen_nibbles(uint(temp_B[si][b_comp[si]]), b_par[si]);
+          BSH_ST(nxt_b + b_lds_off[si], widen_nibbles(uint(temp_B[si][b_comp[si]]), b_par[si]));
         }
+#endif // RX_ST_B
         if (group_crossing && gl_LocalInvocationID.x < WG_TILE_N) {
           const uint wbase_nxt = ((group_i + 1u) % 2u) * WG_TILE_N;
           wsc_sh[wbase_nxt + gl_LocalInvocationID.x] = temp_wsc;
@@ -521,8 +583,7 @@ void main() {
           const uint k4_in_slab = b_k4_in_chunk % (MMA_K >> 2u);
           const uint n_col_base = b_n_uint_col * 4u;
           [[unroll]] for (uint n_in_blk = 0u; n_in_blk < 4u; ++n_in_blk) {
-            Bsh_int8[nxt_b + slab_idx * B_SLAB_U32 + (n_col_base + n_in_blk) * B_STRIDE_U32 + k4_in_slab] =
-                uint(temp_B[n_in_blk]);
+            BSH_ST(nxt_b + slab_idx * B_SLAB_U32 + (n_col_base + n_in_blk) * B_STRIDE_U32 + k4_in_slab, uint(temp_B[n_in_blk]));
           }
         }
 #endif

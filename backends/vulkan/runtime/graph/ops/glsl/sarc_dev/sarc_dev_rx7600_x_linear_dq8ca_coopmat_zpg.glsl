@@ -8,8 +8,8 @@
 
 /*
  * SARC development zone, RX 7600 campaign round 2 (openspec/changes/sarc-1.5-rx7600-prefill-refine): the shipped 8da4w zpg kernel
- * with the options of sarc_dev_rx7600_dq8ca_zpg_body.glslh (A staging pad, drain tile in the A staging buffer; measurement-only
- * phase timing and ablations). The wrapper is the zpg sweep wrapper with a different body. All options default off.
+ * with the options of sarc_dev_rx7600_dq8ca_zpg_body.glslh (A staging pad, drain tile in the A staging buffer, branch-free loop, stores
+ * interleaved with the MMAs; measurement-only phase timing and ablations). The wrapper is the zpg sweep wrapper with a different body. All options default off.
  */
 
 #version 450 core
@@ -46,6 +46,18 @@ $if PROF:
 
 $if CSH_IN_ASH:
   #define RX_CSH_IN_ASH
+
+$if BF:
+  #define RX_BF
+
+$if UV4:
+  #define RX_UV4
+
+$if ST_A >= 0:
+  #define RX_ST_A ${ST_A}
+
+$if ST_B >= 0:
+  #define RX_ST_B ${ST_B}
 
 $if ABL > 0:
   #define RX_ABL ${ABL}

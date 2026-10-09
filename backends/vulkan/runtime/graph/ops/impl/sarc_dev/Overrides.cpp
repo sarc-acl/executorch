@@ -1134,7 +1134,7 @@ std::optional<Choice> select_rx7600(
   return before;
 }
 
-// Round 2 (2026-10-08): the 8da4w variants of glsl/sarc_dev/sarc_dev_rx7600_dq8ca_zpg.yaml (generated table). Reachable by exact
+// Round 2 (2026-10-08): the 8da4w variants of glsl/sarc_dev/sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg.yaml (generated table). Reachable by exact
 // name (ET_VK_SARC_780M_DQ) and by the rx7600-refine4 profile of round 2; no earlier profile picks them.
 const Row kRx7600Space[] = {
 #include "SpaceRx7600Dq.inc"
