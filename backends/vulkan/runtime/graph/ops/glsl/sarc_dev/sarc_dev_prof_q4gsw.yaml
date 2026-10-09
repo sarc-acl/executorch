@@ -49,3 +49,15 @@ sarc_dev_prof_q4gsw:
       SG_GRID_Y: 2
       ACC_FP32: true
       CSH_IN_ASH: true
+    # --- 7900xtx begin: phase-timing twin of the release 4w table kernel t256x128k32g24s32f32cbt (openspec/changes/sarc-1.5-7900xtx-prefill-refine); MEASUREMENT ONLY ---
+    - NAME: sarc_dev_prof_q4gsw_t256x128k32g24s32f32cbtp_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 256
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      ACC_FP32: true
+      CSH_IN_ASH: true
+      B_COLMAJOR: true
+    # --- 7900xtx end ---

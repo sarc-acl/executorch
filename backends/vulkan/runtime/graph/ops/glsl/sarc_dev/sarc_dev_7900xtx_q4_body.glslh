@@ -1,0 +1,968 @@
+/*
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+// SARC development zone, 7900 XTX campaign round 2 (openspec/changes/sarc-1.5-7900xtx-prefill-refine): a copy of
+// glsl/sarc/sarc_linear_q4gsw_coopmat_body.glslh (the release body is untouched) with the options below, all default off (a variant
+// with none of them computes exactly what the release body computes):
+//   BT_PAD_H (constant from the wrapper; default 8): padding in fp16 of one row (one N column) of the column-major B staging
+//     (B_COLMAJOR), so that the row pitch is WG_TILE_K + BT_PAD_H fp16 (80 bytes for the default; 72 or 88 spread the 16 lanes of a
+//     ds_read_b64 fragment load over the LDS banks).
+//   RX_A_V2 (with A_PAD_H, constant from the wrapper): the A staging array is uvec2 (not uvec4) with a row pitch of WG_TILE_K + A_PAD_H fp16;
+//     A_PAD_H = 4 or 12 gives 72 or 88 bytes. Needs B_COLMAJOR and CSH_IN_ASH and none of SH_F16V4, CSH_POOL, CSH_FULL, CSH_BAND, FRAG_LAYOUT.
+//   RX_PROF: shader-clock phase timing, MEASUREMENT ONLY (wrong results by design).
+// Body of the SARC q4gsw coopmat linear. Included by a template header
+// (sarc_linear_q4gsw_coopmat.glsl, or its sweep twin in sarc_dev/) that defines
+// the bindings, the spec constants, ACC_T, the optional IO_TEXTURE /
+// WEIGHT_BUFFER / ACC_FP32 / ACC_GROUP_FP32 / ACC_GROUP_FP32_REG / CSH_IN_ASH /
+// FRAG_LAYOUT / IMG_A / IMG_W / B_COLMAJOR / CSH_FULL / CSH_POOL / HAS_BIAS macros
+// and the tile
+// constants MMA_{M,N,K}, WG_TILE_{M,N,K}, SG_GRID_{X,Y}, SUBGROUP_SIZE.
+// Must not contain template syntax: .glslh files are not expanded per variant.
+
+#ifndef SARC_DEV_X7900XTX_Q4GSW_BODY_GLSLH
+#define SARC_DEV_X7900XTX_Q4GSW_BODY_GLSLH
+
+const uint NUM_SUBGROUPS = SG_GRID_X * SG_GRID_Y;
+const uint WG_SIZE = NUM_SUBGROUPS * SUBGROUP_SIZE;
+
+const uint SG_TILE_M = WG_TILE_M / SG_GRID_Y;
+const uint SG_TILE_N = WG_TILE_N / SG_GRID_X;
+const uint MMAS_PER_SG_M = SG_TILE_M / MMA_M;
+const uint MMAS_PER_SG_N = SG_TILE_N / MMA_N;
+
+// fp16: 8 elements per uvec4 (128-bit)
+const uint FP16_PER_VEC4 = 8;
+#ifdef FRAG_LAYOUT
+// Fragment-contiguous LDS (Intel Xe2): A as [k16 block][m][16 fp16] and B as
+// [n16 block][k][16 fp16], so every MMA_M x 16 A fragment and 16 x MMA_N B
+// fragment is one contiguous run with a 32-byte row stride. The row-padded
+// layout below scatters a fragment across strided 32-byte rows, which the Xe2
+// compiler lowers to many narrow SLM messages; SLM bank conflicts are zero on
+// BMG, so the padding buys nothing there. Requires MMA_K == MMA_N == 16.
+const uint FRAG_ROW_VEC4 = 16u / FP16_PER_VEC4;
+const uint A_STRIDE_VEC4 = FRAG_ROW_VEC4;
+const uint B_STRIDE_VEC4 = FRAG_ROW_VEC4;
+const uint ASH_SLICE = WG_TILE_M * (WG_TILE_K / FP16_PER_VEC4);
+const uint BSH_SLICE = WG_TILE_K * (WG_TILE_N / FP16_PER_VEC4);
+// (row, uvec4 column) -> slice-relative index.
+#define A_SH_IDX(m, c) ((((c) / FRAG_ROW_VEC4) * WG_TILE_M + (m)) * FRAG_ROW_VEC4 + ((c) % FRAG_ROW_VEC4))
+#define B_SH_IDX(k, c) ((((c) / FRAG_ROW_VEC4) * WG_TILE_K + (k)) * FRAG_ROW_VEC4 + ((c) % FRAG_ROW_VEC4))
+#else
+#ifdef RX_A_V2
+#if !defined(B_COLMAJOR) || !defined(CSH_IN_ASH) || defined(SH_F16V4) || defined(CSH_POOL) || defined(CSH_FULL) || defined(CSH_BAND)
+#error "RX_A_V2 needs B_COLMAJOR and CSH_IN_ASH, and excludes SH_F16V4, CSH_POOL, CSH_FULL and CSH_BAND"
+#endif
+// uvec2 elements: the A row pitch in elements of the staging array (uvec2)
+const uint A_STRIDE_VEC4 = (WG_TILE_K + A_PAD_H) / 4u;
+#else
+const uint A_STRIDE_VEC4 = (WG_TILE_K + FP16_PER_VEC4) / FP16_PER_VEC4;
+#endif
+const uint B_STRIDE_VEC4 = (WG_TILE_N + FP16_PER_VEC4) / FP16_PER_VEC4;
+
+// One ping-pong slice of each shared-memory buffer (in uvec4 units).
+const uint ASH_SLICE = WG_TILE_M * A_STRIDE_VEC4;
+const uint BSH_SLICE = WG_TILE_K * B_STRIDE_VEC4;
+// No outer parentheses: every use is `base + X_SH_IDX(...)` or a subscript,
+// and this keeps `base + row * STRIDE + col` associated exactly as before
+// FRAG_LAYOUT existed, so the non-Xe2 SPIR-V is unchanged (sarc/golden).
+#ifdef RX_A_V2
+#define A_SH_IDX(m, c) (m) * A_STRIDE_VEC4 + 2u * (c)
+#else
+#define A_SH_IDX(m, c) (m) * A_STRIDE_VEC4 + (c)
+#endif
+#define B_SH_IDX(k, c) (k) * B_STRIDE_VEC4 + (c)
+#endif
+
+// Double-buffered shared memory.
+#ifdef SH_F16V4
+// Adreno/Mali: coopMatLoad from an LDS array whose element type differs from
+// the matrix element type returns garbage there, so stage fp16 as f16vec4
+// (2 per uvec4) and scale coopMatLoad offsets/strides by 2.
+#if defined(CSH_IN_ASH) || defined(FRAG_LAYOUT)
+#error "SH_F16V4 is not combined with CSH_IN_ASH or FRAG_LAYOUT"
+#endif
+#ifdef B_COLMAJOR
+#error "SH_F16V4 is not combined with B_COLMAJOR"
+#endif
+shared f16vec4 Ash[2 * ASH_SLICE * 2];
+shared f16vec4 Bsh[2 * BSH_SLICE * 2];
+void sh_store_Ash(const uint idx, const uvec4 v) {
+  Ash[2u * idx] = f16vec4(unpackFloat2x16(v.x), unpackFloat2x16(v.y));
+  Ash[2u * idx + 1u] = f16vec4(unpackFloat2x16(v.z), unpackFloat2x16(v.w));
+}
+void sh_store_Bsh(const uint idx, const uvec4 v) {
+  Bsh[2u * idx] = f16vec4(unpackFloat2x16(v.x), unpackFloat2x16(v.y));
+  Bsh[2u * idx + 1u] = f16vec4(unpackFloat2x16(v.z), unpackFloat2x16(v.w));
+}
+#define ASH_STORE(idx, v) sh_store_Ash(idx, v)
+#define BSH_STORE(idx, v) sh_store_Bsh(idx, v)
+#else
+#ifdef CSH_POOL
+// CSH_POOL (with CSH_FULL; Xclipse/M51, 2026-09-28): Ash, Bsh and the
+// full-tile drain share one shared-memory pool, which the drain reuses after
+// the last MMA. The pool is max(Ash + Bsh, the full tile) instead of their
+// sum, so the workgroup's shared-memory footprint stays small.
+#if !defined(CSH_FULL) || defined(CSH_IN_ASH) || defined(B_COLMAJOR) || defined(FRAG_LAYOUT)
+#error "CSH_POOL needs CSH_FULL and excludes CSH_IN_ASH, B_COLMAJOR and FRAG_LAYOUT"
+#endif
+const uint BSH_BASE = 2u * ASH_SLICE;
+const uint POOL_A_B = 2u * ASH_SLICE + 2u * BSH_SLICE;
+const uint POOL_C = WG_TILE_M * WG_TILE_N / FP16_PER_VEC4;
+shared uvec4 Ash[POOL_A_B > POOL_C ? POOL_A_B : POOL_C];
+#define Bsh Ash
+#else
+#ifdef RX_A_V2
+shared uvec2 Ash[2 * ASH_SLICE];
+#else
+shared uvec4 Ash[2 * ASH_SLICE];
+#endif
+#endif
+#ifdef B_COLMAJOR
+// B_COLMAJOR (RX 7900 XTX / RDNA3, 2026-09-27): the WMMA B operand is one N
+// column of MMA_K consecutive K values per lane, so coopMatLoad from the
+// row-major Bsh compiles to per-element ds_load_u16 gathers. Stage B N-major
+// (BshT[n][k], K contiguous, padded like Ash) and load it ColumnMajor instead.
+// Units: uvec2 = 4 fp16.
+#if defined(FRAG_LAYOUT)
+#error "B_COLMAJOR is not combined with FRAG_LAYOUT"
+#endif
+const uint BT_STRIDE_H = WG_TILE_K + BT_PAD_H;
+const uint BT_STRIDE_V2 = BT_STRIDE_H / 4u;
+const uint BT_SLICE = WG_TILE_N * BT_STRIDE_V2;
+shared uvec2 BshT[2 * BT_SLICE];
+#elif !defined(CSH_POOL)
+shared uvec4 Bsh[2 * BSH_SLICE];
+#endif
+// Expands to exactly the plain stores (keeps the non-SH_F16V4 SPIR-V).
+#ifdef RX_A_V2
+#define ASH_STORE(idx, v) { const uint ash_i = (idx); Ash[ash_i] = (v).xy; Ash[ash_i + 1u] = (v).zw; }
+#else
+#define ASH_STORE(idx, v) Ash[idx] = v
+#endif
+#define BSH_STORE(idx, v) Bsh[idx] = v
+#endif
+#ifdef HAS_BIAS
+shared float16_t bias_sh[WG_TILE_N];
+#endif
+
+#ifdef IO_TEXTURE
+// Result staging for the imageStore epilogue: SG_GRID_Y bands of MMA_M rows,
+// each WG_TILE_N wide, row-major. A full WG_TILE_M x WG_TILE_N buffer would
+// cost SG_GRID_Y/MMAS_PER_SG_M x more LDS and wreck occupancy. Not aliased
+// with Ash/Bsh: GLSL has no shared unions and coopMatStore needs a
+// float16_t-typed array.
+#if defined(CSH_FULL) && defined(CSH_BAND)
+#error "CSH_FULL and CSH_BAND are exclusive texture3d drains"
+#endif
+#ifdef CSH_FULL
+// CSH_FULL (Xclipse/M51, 2026-09-28): stage the whole WG_TILE_M x WG_TILE_N
+// result tile and drain it in one pass. The banded drain below (SG_GRID_Y
+// bands per pass, one pass per accumulator row block) did not give correct
+// results on that device; the root cause is not determined.
+#if defined(CSH_IN_ASH) || defined(HAS_BIAS)
+#error "CSH_FULL is not combined with CSH_IN_ASH or HAS_BIAS"
+#endif
+const uint CSH_ROWS = WG_TILE_M;
+#elif defined(CSH_BAND)
+// CSH_BAND (Mali-G1, 2026-09-28): drain one SG_GRID_Y band at a time, so Csh is
+// MMA_M rows x WG_TILE_N; the 256-thread 64x128 / 128x64 tiles then fit 32 KiB.
+#ifdef CSH_IN_ASH
+#error "CSH_BAND stages its band in Csh; not combined with CSH_IN_ASH"
+#endif
+#ifdef HAS_BIAS
+#error "CSH_BAND drains without the bias epilogue"
+#endif
+#ifdef ACC_GROUP_FP32_REG
+#error "CSH_BAND is not combined with ACC_GROUP_FP32_REG (its Fsh aliases a full Csh)"
+#endif
+const uint CSH_ROWS = MMA_M;
+#else
+const uint CSH_ROWS = SG_GRID_Y * MMA_M;
+#endif
+#if !defined(CSH_IN_ASH) && !defined(CSH_POOL)
+// (CSH_IN_ASH, 780M 2026-09-26: stage the drain band in Ash instead -- Ash is
+// dead after the last MMA and every drain iteration starts with a barrier. It
+// drops 8 KiB of LDS per workgroup, and on the 780M VGPRs 192 -> 160, so a
+// SIMD holds 6 waves instead of 4: +19% texture3d.)
+shared float16_t Csh[CSH_ROWS * WG_TILE_N];
+#endif
+#endif
+
+// Staging thread maps: each thread covers one uvec4 (8 fp16) per pass.
+const uint INVS_PER_ROW_A = WG_TILE_K / FP16_PER_VEC4;
+const uint A_ROWS_PER_PASS = WG_SIZE / INVS_PER_ROW_A;
+const uint A_PASSES = WG_TILE_M / A_ROWS_PER_PASS;
+const uint INVS_PER_ROW_B = WG_TILE_N / FP16_PER_VEC4;
+const uint B_ROWS_PER_PASS = WG_SIZE / INVS_PER_ROW_B;
+const uint B_PASSES = WG_TILE_K / B_ROWS_PER_PASS;
+#ifdef B_COLMAJOR
+// One item = half of one packed-weight texel (4 K x 8 N nibbles): 4 K x 4 N,
+// half 0 = N 0..3 (even nibbles), half 1 = N 4..7 (odd nibbles). K varies
+// fastest across lanes: each (n8, half) group of BT_KQ lanes writes one
+// contiguous run per column, and the groups land on disjoint LDS banks. (N
+// fastest put a wave's uvec2 stores on 4 bank groups and measured 1.27x slower.)
+const uint BT_KQ = WG_TILE_K / 4u;
+const uint BT_N8 = WG_TILE_N / 8u;
+const uint BT_ITEMS = BT_KQ * BT_N8 * 2u;
+const uint BT_PASSES = (BT_ITEMS + WG_SIZE - 1u) / WG_SIZE;
+#endif
+
+// FP16 accumulator coopmats (MMAS_PER_SG_M x MMAS_PER_SG_N per thread).
+coopmat<ACC_T, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>
+    result[MMAS_PER_SG_M][MMAS_PER_SG_N];
+#ifdef ACC_GROUP_FP32
+// fp32 running total; converted into `result` before the epilogue.
+coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>
+    total[MMAS_PER_SG_M][MMAS_PER_SG_N];
+#endif
+#ifdef ACC_GROUP_FP32_REG
+// Same idea with the fp32 total in plain registers (Adreno 840 exposes no fp32
+// accumulator coopmat type, and its compiler crashes on per-element coopmat
+// access): at each group end the subgroup stores its fp16 group sum to a
+// private LDS region, and each invocation adds its ACC_ELEMS elements
+// (interleaved, element e of lane l at e * SUBGROUP_SIZE + l) into total_r.
+// The region is Csh on texture3d (dead until the epilogue).
+#if defined(CSH_IN_ASH) || defined(B_COLMAJOR) || defined(FRAG_LAYOUT)
+#error "ACC_GROUP_FP32_REG is not combined with CSH_IN_ASH, B_COLMAJOR or FRAG_LAYOUT"
+#endif
+const uint ACC_ELEMS = (MMA_M * MMA_N) / SUBGROUP_SIZE;
+const uint FSH_REGION = MMA_M * MMA_N;
+#ifdef IO_TEXTURE
+#define Fsh Csh
+#else
+shared float16_t Fsh[NUM_SUBGROUPS * FSH_REGION];
+#endif
+float total_r[MMAS_PER_SG_M][MMAS_PER_SG_N][ACC_ELEMS];
+
+// Fold the fp16 group sums into total_r and restart them at zero.
+void flush_group_reg() {
+  const uint base = gl_SubgroupID * FSH_REGION;
+  [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+    [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+      coopMatStore(
+          result[i][j], Fsh, base, MMA_N, gl_CooperativeMatrixLayoutRowMajor);
+      subgroupMemoryBarrierShared();
+      subgroupBarrier();
+      [[unroll]] for (uint e = 0; e < ACC_ELEMS; ++e) {
+        total_r[i][j][e] +=
+            float(Fsh[base + e * SUBGROUP_SIZE + gl_SubgroupInvocationID]);
+      }
+      subgroupBarrier();
+      result[i][j] = coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0.0);
+    }
+  }
+}
+#endif
+
+// Dequant one packed INT4 block column-pair into 8 scaled fp16 weights
+// (one Bsh uvec4). col_lo/col_hi select the K row within the block.
+#ifdef IMG_W
+// Storage-image load (Xe2): typed LSC load instead of a sampler message.
+#define WFETCH(coord) imageLoad(t_packed_weight, coord)
+#else
+#define WFETCH(coord) texelFetch(t_packed_weight, coord, 0)
+#endif
+
+uvec4 dequant_block(
+    const ivec4 wb,
+    const uint col_lo,
+    const uint col_hi,
+    const f16vec4 s0,
+    const f16vec4 s1) {
+  const f16vec4 v0 = f16vec4(((wb >> int(4u * col_lo)) & 0xF) - 8) * s0;
+  const f16vec4 v1 = f16vec4(((wb >> int(4u * col_hi)) & 0xF) - 8) * s1;
+  return uvec4(
+      packFloat2x16(v0.xy), packFloat2x16(v0.zw),
+      packFloat2x16(v1.xy), packFloat2x16(v1.zw));
+}
+
+#ifdef B_COLMAJOR
+// Store one item: 4 N columns (x..w of wb, nibble parity hf) x 4 K rows
+// (nibbles 2*kk + hf), each column's 4 K values as one uvec2.
+void store_bt_item(
+    const uint base,
+    const ivec4 wb,
+    const uint n_local,
+    const uint k_local,
+    const uint hf,
+    const f16vec4 sc) {
+  [[unroll]] for (uint j = 0; j < 4u; ++j) {
+    const int w = wb[j];
+    const f16vec4 v = f16vec4(
+        ((w >> int(4u * (0u + hf))) & 0xF) - 8,
+        ((w >> int(4u * (2u + hf))) & 0xF) - 8,
+        ((w >> int(4u * (4u + hf))) & 0xF) - 8,
+        ((w >> int(4u * (6u + hf))) & 0xF) - 8) * sc[j];
+    BshT[base + (n_local + j) * BT_STRIDE_V2 + k_local / 4u] =
+        uvec2(packFloat2x16(v.xy), packFloat2x16(v.zw));
+  }
+}
+#define BT_ACTIVE(p) (BT_ITEMS % WG_SIZE == 0u || (p) * WG_SIZE + gl_LocalInvocationID.x < BT_ITEMS)
+#endif
+
+// Fetch 8 consecutive fp16 activations of `row` starting at half-vec4 index
+// `k_hv4`, packed into one uvec4. Both spellings address the same bytes: a
+// width-packed texture3d holds elements [4x, 4x+3] of row m at texel (x, m, 0),
+// so buffer index (row * K4 + x) and texel coord (x, row, 0) are one address in
+// two notations.
+uvec4 load_a_vec4(const uint row, const uint k_hv4, const uint K4) {
+#ifdef IO_TEXTURE
+  // Narrow to f16vec4 AT the fetch: a half sampler is typed to return vec4
+  // (fp32), and consuming the fp32 costs an image_load into 4 VGPRs plus a
+  // v_cvt_pk_rtz per pair. Taking it as f16vec4 immediately lets the compiler
+  // fold the narrowing into `image_load ... d16` (2 VGPRs, no conversion).
+  // Lossless -- the source is rgba16f.
+#ifdef IMG_A
+  // Storage-image load (Xe2): typed LSC load instead of a sampler message.
+  const f16vec4 v0 = f16vec4(imageLoad(t_input, ivec3(k_hv4, row, 0)));
+  const f16vec4 v1 = f16vec4(imageLoad(t_input, ivec3(k_hv4 + 1u, row, 0)));
+#else
+  const f16vec4 v0 = f16vec4(texelFetch(t_input, ivec3(k_hv4, row, 0), 0));
+  const f16vec4 v1 = f16vec4(texelFetch(t_input, ivec3(k_hv4 + 1u, row, 0), 0));
+#endif
+  return uvec4(
+      packFloat2x16(v0.xy), packFloat2x16(v0.zw),
+      packFloat2x16(v1.xy), packFloat2x16(v1.zw));
+#else
+  const f16vec4 v0 = t_input[row * K4 + k_hv4];
+  const f16vec4 v1 = t_input[row * K4 + k_hv4 + 1u];
+  return uvec4(
+      packFloat2x16(v0.xy), packFloat2x16(v0.zw),
+      packFloat2x16(v1.xy), packFloat2x16(v1.zw));
+#endif
+}
+
+void main() {
+  const uvec2 tileID = uvec2(gl_WorkGroupID.xy);
+  const uvec2 warpInTile = uvec2(
+      gl_SubgroupID % SG_GRID_X,
+      gl_SubgroupID / SG_GRID_X);
+
+  const uint K = uint(input_sizes.x);
+  const uint K4 = (K + 3u) / 4u;
+  const uint N4 = (uint(output_sizes.x) + 3u) / 4u;
+
+  const uint CHUNKS_PER_GROUP = uint(K4_per_group) * 4u / WG_TILE_K;
+  const uint num_chunks = uint(num_groups_arg) * CHUNKS_PER_GROUP;
+
+  const uint tile_m_start = WG_TILE_M * tileID.y;
+  const uint tile_n_start = WG_TILE_N * tileID.x;
+
+  [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+    [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+      result[i][j] = coopmat<ACC_T, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0.0);
+#ifdef ACC_GROUP_FP32
+      total[i][j] = coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0.0);
+#endif
+#ifdef ACC_GROUP_FP32_REG
+      [[unroll]] for (uint e = 0; e < ACC_ELEMS; ++e) {
+        total_r[i][j][e] = 0.0;
+      }
+#endif
+    }
+  }
+
+  const uint a_col = gl_LocalInvocationID.x % INVS_PER_ROW_A;
+  const uint a_row_offset = gl_LocalInvocationID.x / INVS_PER_ROW_A;
+  const uint b_col = gl_LocalInvocationID.x % INVS_PER_ROW_B;
+  const uint b_row_offset = gl_LocalInvocationID.x / INVS_PER_ROW_B;
+
+  const uint n8_blk = (tile_n_start + b_col * 8u) >> 3u;
+  const uint col_lo = 2u * (b_row_offset & 3u);
+  const uint col_hi = col_lo + 1u;
+
+  const uint sc_n4 = (tile_n_start + b_col * 8u) >> 2u;
+  uint cached_group = 0xFFFFFFFFu;
+  f16vec4 sc0;
+  f16vec4 sc1;
+
+  uvec4 temp_A[A_PASSES];
+#ifdef B_COLMAJOR
+  ivec4 temp_B[BT_PASSES];
+  f16vec4 sc_bt[BT_PASSES];
+  uint bt_kq[BT_PASSES], bt_n8[BT_PASSES], bt_hf[BT_PASSES];
+  [[unroll]] for (uint p = 0; p < BT_PASSES; ++p) {
+    const uint item = p * WG_SIZE + gl_LocalInvocationID.x;
+    bt_kq[p] = item % BT_KQ;
+    bt_hf[p] = (item / BT_KQ) & 1u;
+    bt_n8[p] = (item / BT_KQ) >> 1u;
+  }
+#else
+  ivec4 temp_B[B_PASSES];
+#endif
+
+  // =========================================================
+  // PROLOGUE (dbuf4): prefetch chunk 0 into temp registers, then store to
+  // slice 0. No barrier here -- the main loop's first iteration barriers
+  // before reading slice 0.
+  // =========================================================
+  {
+    [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
+      const uint row = tile_m_start + p * A_ROWS_PER_PASS + a_row_offset;
+      const uint k_hv4 = (a_col * FP16_PER_VEC4) / 4u;
+      temp_A[p] = load_a_vec4(row, k_hv4, K4);
+    }
+    cached_group = 0u;
+#ifdef B_COLMAJOR
+    [[unroll]] for (uint p = 0; p < BT_PASSES; ++p) {
+      if (BT_ACTIVE(p)) {
+        const uint n8g = (tile_n_start >> 3u) + bt_n8[p];
+        sc_bt[p] = t_weight_scales[n8g * 2u + bt_hf[p]];
+#ifdef WEIGHT_BUFFER
+        temp_B[p] = t_packed_weight[n8g * K4 + bt_kq[p]];
+#else
+        temp_B[p] = WFETCH(ivec2(bt_kq[p], n8g));
+#endif
+      }
+    }
+#else
+    sc0 = t_weight_scales[sc_n4];
+    sc1 = t_weight_scales[sc_n4 + 1u];
+    [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
+      const uint k_row = p * B_ROWS_PER_PASS + b_row_offset;
+      ivec4 wblock;
+#ifdef WEIGHT_BUFFER
+      wblock = t_packed_weight[n8_blk * K4 + (k_row >> 2u)];
+#else
+      wblock = WFETCH(ivec2(k_row >> 2u, n8_blk));
+#endif
+      temp_B[p] = wblock;
+    }
+#endif
+  }
+  {
+    [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
+      ASH_STORE(A_SH_IDX(p * A_ROWS_PER_PASS + a_row_offset, a_col), temp_A[p]);
+    }
+#ifdef B_COLMAJOR
+    [[unroll]] for (uint p = 0; p < BT_PASSES; ++p) {
+      if (BT_ACTIVE(p)) {
+        store_bt_item(0u, temp_B[p], bt_n8[p] * 8u + 4u * bt_hf[p], bt_kq[p] * 4u, bt_hf[p], sc_bt[p]);
+      }
+    }
+#else
+    [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
+#ifdef CSH_POOL
+      BSH_STORE(BSH_BASE + B_SH_IDX(p * B_ROWS_PER_PASS + b_row_offset, b_col),
+          dequant_block(temp_B[p], col_lo, col_hi, sc0, sc1));
+#else
+      BSH_STORE(B_SH_IDX(p * B_ROWS_PER_PASS + b_row_offset, b_col),
+          dequant_block(temp_B[p], col_lo, col_hi, sc0, sc1));
+#endif
+    }
+#endif
+  }
+
+  // =========================================================
+  // MAIN LOOP (dbuf4) — one barrier per iteration, unconditional body, loop
+  // peeled (bound excludes the last chunk). Iteration `chunk` does:
+  //   1. barrier      — slice (chunk%2) fully written
+  //   2. prefetch     — chunk+1 from global into temp (in flight during math)
+  //   3. MMA math     — on slice (chunk%2)
+  //   4. store        — temp (chunk+1, dequantized) into slice ((chunk+1)%2)
+  // =========================================================
+  uint chunk;
+  for (chunk = 0; chunk + 1u < num_chunks; ++chunk) {
+    const uint cur_base_A = (chunk % 2u) * ASH_SLICE;
+#ifdef B_COLMAJOR
+    const uint cur_base_B = (chunk % 2u) * BT_SLICE;
+    const uint nxt_base_B = ((chunk + 1u) % 2u) * BT_SLICE;
+#elif defined(CSH_POOL)
+    const uint cur_base_B = BSH_BASE + (chunk % 2u) * BSH_SLICE;
+#else
+    const uint cur_base_B = (chunk % 2u) * BSH_SLICE;
+#endif
+    const uint nxt_base_A = ((chunk + 1u) % 2u) * ASH_SLICE;
+#if defined(CSH_POOL)
+    const uint nxt_base_B = BSH_BASE + ((chunk + 1u) % 2u) * BSH_SLICE;
+#elif !defined(B_COLMAJOR)
+    const uint nxt_base_B = ((chunk + 1u) % 2u) * BSH_SLICE;
+#endif
+
+    // coopmat-lds-fence: barrier() alone does NOT order shared stores against a
+    // subsequent coopMatLoad on one tested driver -- symptom is one
+    // stale MMA_M-row band of A, all columns, ~2.5% of runs, no crash (observed
+    // 2026-09-02 in sdpa_compute_out_coopmat.glsl). Measured cost of the fence:
+    // none (see this change's results). See memory
+    // `coopmat-lds-needs-explicit-memorybarriershared`.
+    memoryBarrierShared();
+    barrier();
+
+    // --- prefetch chunk+1 -> temp ---
+    {
+      const uint chunkK_nxt = (chunk + 1u) * WG_TILE_K;
+
+      [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
+        const uint row = tile_m_start + p * A_ROWS_PER_PASS + a_row_offset;
+        const uint k_hv4 = (chunkK_nxt + a_col * FP16_PER_VEC4) / 4u;
+        temp_A[p] = load_a_vec4(row, k_hv4, K4);
+      }
+#ifdef B_COLMAJOR
+      const uint group_nxt = (chunk + 1u) / CHUNKS_PER_GROUP;
+      const bool new_group = group_nxt != cached_group;
+      cached_group = group_nxt;
+      [[unroll]] for (uint p = 0; p < BT_PASSES; ++p) {
+        if (BT_ACTIVE(p)) {
+          const uint n8g = (tile_n_start >> 3u) + bt_n8[p];
+#ifdef WEIGHT_BUFFER
+          temp_B[p] = t_packed_weight[n8g * K4 + chunkK_nxt / 4u + bt_kq[p]];
+#else
+          temp_B[p] = WFETCH(ivec2(chunkK_nxt / 4u + bt_kq[p], n8g));
+#endif
+          if (new_group) {
+            sc_bt[p] = t_weight_scales[group_nxt * N4 + n8g * 2u + bt_hf[p]];
+          }
+        }
+      }
+#else
+      [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
+        const uint k_row = chunkK_nxt + p * B_ROWS_PER_PASS + b_row_offset;
+#ifdef WEIGHT_BUFFER
+        temp_B[p] = t_packed_weight[n8_blk * K4 + (k_row >> 2u)];
+#else
+        temp_B[p] = WFETCH(ivec2(k_row >> 2u, n8_blk));
+#endif
+      }
+      const uint group_nxt = (chunk + 1u) / CHUNKS_PER_GROUP;
+      if (group_nxt != cached_group) {
+        cached_group = group_nxt;
+        sc0 = t_weight_scales[group_nxt * N4 + sc_n4];
+        sc1 = t_weight_scales[group_nxt * N4 + sc_n4 + 1u];
+      }
+#endif
+    }
+
+    // --- MMA math on the cur slice ---
+    [[unroll]] for (uint k = 0; k < WG_TILE_K / MMA_K; ++k) {
+      const uint k_start = MMA_K * k;
+
+      coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA> matA[MMAS_PER_SG_M];
+      [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+        const uint row_a = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
+#ifdef SH_F16V4
+        coopMatLoad(
+            matA[i], Ash,
+            2u * (cur_base_A + row_a * A_STRIDE_VEC4) +
+                (2u * k_start) / FP16_PER_VEC4,
+            2u * A_STRIDE_VEC4,
+            gl_CooperativeMatrixLayoutRowMajor);
+#else
+        coopMatLoad(
+            matA[i], Ash,
+            cur_base_A + A_SH_IDX(row_a, k_start / FP16_PER_VEC4),
+            A_STRIDE_VEC4,
+            gl_CooperativeMatrixLayoutRowMajor);
+#endif
+      }
+
+      coopmat<float16_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> matB;
+      [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+#ifdef B_COLMAJOR
+        const uint n_b = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
+        coopMatLoad(
+            matB, BshT,
+            cur_base_B + n_b * BT_STRIDE_V2 + k_start / 4u,
+            BT_STRIDE_V2,
+            gl_CooperativeMatrixLayoutColumnMajor);
+#else
+        const uint col_b = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j) / FP16_PER_VEC4;
+#ifdef SH_F16V4
+        coopMatLoad(
+            matB, Bsh,
+            2u * (cur_base_B + k_start * B_STRIDE_VEC4 + col_b),
+            2u * B_STRIDE_VEC4,
+            gl_CooperativeMatrixLayoutRowMajor);
+#else
+        coopMatLoad(
+            matB, Bsh,
+            cur_base_B + B_SH_IDX(k_start, col_b),
+            B_STRIDE_VEC4,
+            gl_CooperativeMatrixLayoutRowMajor);
+#endif
+#endif // B_COLMAJOR
+
+        [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+          result[i][j] = coopMatMulAdd(matA[i], matB, result[i][j]);
+        }
+      }
+    }
+
+#ifdef ACC_GROUP_FP32
+    // Last chunk of a quantization group: fold the fp16 group sum into total.
+    if ((chunk + 1u) % CHUNKS_PER_GROUP == 0u) {
+      [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+        [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+          total[i][j] += coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]);
+          result[i][j] = coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(0.0);
+        }
+      }
+    }
+#endif
+#ifdef ACC_GROUP_FP32_REG
+    if ((chunk + 1u) % CHUNKS_PER_GROUP == 0u) {
+      flush_group_reg();
+    }
+#endif
+
+    // --- store temp (chunk+1) -> nxt slice, dequantizing B ---
+    {
+      [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
+        ASH_STORE(nxt_base_A + A_SH_IDX(p * A_ROWS_PER_PASS + a_row_offset, a_col),
+            temp_A[p]);
+      }
+#ifdef B_COLMAJOR
+      [[unroll]] for (uint p = 0; p < BT_PASSES; ++p) {
+        if (BT_ACTIVE(p)) {
+          store_bt_item(nxt_base_B, temp_B[p], bt_n8[p] * 8u + 4u * bt_hf[p], bt_kq[p] * 4u, bt_hf[p], sc_bt[p]);
+        }
+      }
+#else
+      [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
+        BSH_STORE(nxt_base_B + B_SH_IDX(p * B_ROWS_PER_PASS + b_row_offset, b_col),
+            dequant_block(temp_B[p], col_lo, col_hi, sc0, sc1));
+      }
+#endif
+    }
+  }
+
+  // --- epilogue: barrier, then MMA on the last chunk (loop peeled) ---
+  {
+    const uint cur_base_A = (chunk % 2u) * ASH_SLICE;
+#ifdef B_COLMAJOR
+    const uint cur_base_B = (chunk % 2u) * BT_SLICE;
+#elif defined(CSH_POOL)
+    const uint cur_base_B = BSH_BASE + (chunk % 2u) * BSH_SLICE;
+#else
+    const uint cur_base_B = (chunk % 2u) * BSH_SLICE;
+#endif
+
+    // coopmat-lds-fence: barrier() alone does NOT order shared stores against a
+    // subsequent coopMatLoad on one tested driver -- symptom is one
+    // stale MMA_M-row band of A, all columns, ~2.5% of runs, no crash (observed
+    // 2026-09-02 in sdpa_compute_out_coopmat.glsl). Measured cost of the fence:
+    // none (see this change's results). See memory
+    // `coopmat-lds-needs-explicit-memorybarriershared`.
+    memoryBarrierShared();
+    barrier();
+
+    [[unroll]] for (uint k = 0; k < WG_TILE_K / MMA_K; ++k) {
+      const uint k_start = MMA_K * k;
+
+      coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA> matA[MMAS_PER_SG_M];
+      [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+        const uint row_a = MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
+#ifdef SH_F16V4
+        coopMatLoad(
+            matA[i], Ash,
+            2u * (cur_base_A + row_a * A_STRIDE_VEC4) +
+                (2u * k_start) / FP16_PER_VEC4,
+            2u * A_STRIDE_VEC4,
+            gl_CooperativeMatrixLayoutRowMajor);
+#else
+        coopMatLoad(
+            matA[i], Ash,
+            cur_base_A + A_SH_IDX(row_a, k_start / FP16_PER_VEC4),
+            A_STRIDE_VEC4,
+            gl_CooperativeMatrixLayoutRowMajor);
+#endif
+      }
+
+      coopmat<float16_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> matB;
+      [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+#ifdef B_COLMAJOR
+        const uint n_b = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
+        coopMatLoad(
+            matB, BshT,
+            cur_base_B + n_b * BT_STRIDE_V2 + k_start / 4u,
+            BT_STRIDE_V2,
+            gl_CooperativeMatrixLayoutColumnMajor);
+#else
+        const uint col_b = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j) / FP16_PER_VEC4;
+#ifdef SH_F16V4
+        coopMatLoad(
+            matB, Bsh,
+            2u * (cur_base_B + k_start * B_STRIDE_VEC4 + col_b),
+            2u * B_STRIDE_VEC4,
+            gl_CooperativeMatrixLayoutRowMajor);
+#else
+        coopMatLoad(
+            matB, Bsh,
+            cur_base_B + B_SH_IDX(k_start, col_b),
+            B_STRIDE_VEC4,
+            gl_CooperativeMatrixLayoutRowMajor);
+#endif
+#endif // B_COLMAJOR
+
+        [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+          result[i][j] = coopMatMulAdd(matA[i], matB, result[i][j]);
+        }
+      }
+    }
+  }
+
+#ifdef ACC_GROUP_FP32
+  // The last chunk always ends a group (K % group_size == 0).
+  [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+    [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+      total[i][j] += coopmat<float, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]);
+      result[i][j] = coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(total[i][j]);
+    }
+  }
+#endif
+#ifdef ACC_GROUP_FP32_REG
+  // The last chunk always ends a group (K % group_size == 0): fold it, then
+  // load the fp32 totals (rounded to fp16) back into the accumulators.
+  flush_group_reg();
+  {
+    const uint base = gl_SubgroupID * FSH_REGION;
+    [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+      [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+        [[unroll]] for (uint e = 0; e < ACC_ELEMS; ++e) {
+          Fsh[base + e * SUBGROUP_SIZE + gl_SubgroupInvocationID] =
+              float16_t(total_r[i][j][e]);
+        }
+        subgroupMemoryBarrierShared();
+        subgroupBarrier();
+        coopMatLoad(
+            result[i][j], Fsh, base, MMA_N, gl_CooperativeMatrixLayoutRowMajor);
+        subgroupBarrier();
+      }
+    }
+  }
+#endif
+
+  // --- Bias staging (if any) ---
+#ifdef HAS_BIAS
+  if (apply_bias > 0) {
+    for (uint t = gl_LocalInvocationID.x; t < WG_TILE_N; t += WG_SIZE) {
+      bias_sh[t] = float16_t(t_bias[tile_n_start + t]);
+    }
+    memoryBarrierShared();
+    barrier();
+  }
+#endif
+
+  // --- Store result tile ---
+#ifdef IO_TEXTURE
+  // Epilogue iteration i drains accumulator row-block i from EVERY subgroup
+  // into Csh at once, so the SG_GRID_Y bands it holds are disjoint global row
+  // ranges; the whole workgroup then imageStores them. The band-to-global-row
+  // map below reproduces the buffer path's gi exactly:
+  //   buffer: gi = tile_m_start + MMA_M * (MMAS_PER_SG_M * warpInTile.y + i)
+  //              = tile_m_start + warpInTile.y * SG_TILE_M + i * MMA_M
+  // and lr / MMA_M is the writing subgroup's warpInTile.y.
+  //
+  // PORTABILITY NOTE: [[unroll]] is only a hint and glslc does not honor it
+  // here -- the barrier() in the loop body keeps the loop rolled, so
+  // result[i][j] IS dynamically indexed. Coopmat arrays are opaque per-lane
+  // storage and dynamic indexing is exactly the construct one tested
+  // compiler has broken before, so check this first if the texture variants
+  // miscompile on a new device. Fully unrolling would need the drain hand-expanded so
+  // each i gets its own barrier.
+  const uint CSH_TEXELS_PER_ROW = WG_TILE_N / 4u;
+  const uint CSH_TEXELS = CSH_ROWS * CSH_TEXELS_PER_ROW;
+#ifdef CSH_FULL
+  // One barrier, every accumulator into the full-tile staging, one drain.
+  memoryBarrierShared();
+  barrier();
+  [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+    [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+      const uint c_off = (warpInTile.y * SG_TILE_M + i * MMA_M) * WG_TILE_N +
+          MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
+#ifdef CSH_POOL
+      coopMatStore(
+          coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]), Ash,
+          c_off / FP16_PER_VEC4, WG_TILE_N / FP16_PER_VEC4,
+          gl_CooperativeMatrixLayoutRowMajor);
+#else
+      coopMatStore(
+          coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]), Csh,
+          c_off, WG_TILE_N,
+          gl_CooperativeMatrixLayoutRowMajor);
+#endif
+    }
+  }
+  memoryBarrierShared();
+  barrier();
+  for (uint t = gl_LocalInvocationID.x; t < CSH_TEXELS; t += WG_SIZE) {
+    const uint lr = t / CSH_TEXELS_PER_ROW;
+    const uint lc4 = t % CSH_TEXELS_PER_ROW;
+    const uint base = lr * WG_TILE_N + lc4 * 4u;
+#ifdef CSH_POOL
+    // base is a multiple of 4 halves: the texel is one half of a uvec4.
+    const uvec4 q = Ash[base / FP16_PER_VEC4];
+    const bool hi = (base % FP16_PER_VEC4) != 0u;
+    imageStore(
+        t_output,
+        ivec3(tile_n_start / 4u + lc4, tile_m_start + lr, 0),
+        vec4(unpackHalf2x16(hi ? q.z : q.x), unpackHalf2x16(hi ? q.w : q.y)));
+#else
+    imageStore(
+        t_output,
+        ivec3(tile_n_start / 4u + lc4, tile_m_start + lr, 0),
+        vec4(
+            float(Csh[base]),
+            float(Csh[base + 1u]),
+            float(Csh[base + 2u]),
+            float(Csh[base + 3u])));
+#endif
+  }
+#elif defined(CSH_BAND)
+  // Band b = the subgroups with warpInTile.y == b; per (i, b): barrier, that
+  // band's subgroups store accumulator row-block i into Csh, barrier, the
+  // whole workgroup imageStores the MMA_M rows. Same global row map as below.
+  [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+    for (uint b = 0; b < SG_GRID_Y; ++b) {
+      memoryBarrierShared();
+      barrier();
+      if (warpInTile.y == b) {
+        [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+          coopMatStore(
+              coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]), Csh,
+              MMA_N * (MMAS_PER_SG_N * warpInTile.x + j),
+              WG_TILE_N,
+              gl_CooperativeMatrixLayoutRowMajor);
+        }
+      }
+      memoryBarrierShared();
+      barrier();
+      for (uint t = gl_LocalInvocationID.x; t < CSH_TEXELS; t += WG_SIZE) {
+        const uint lr = t / CSH_TEXELS_PER_ROW;
+        const uint lc4 = t % CSH_TEXELS_PER_ROW;
+        const uint m = tile_m_start + b * SG_TILE_M + i * MMA_M + lr;
+        const uint base = lr * WG_TILE_N + lc4 * 4u;
+        imageStore(
+            t_output,
+            ivec3(tile_n_start / 4u + lc4, m, 0),
+            vec4(
+                float(Csh[base]),
+                float(Csh[base + 1u]),
+                float(Csh[base + 2u]),
+                float(Csh[base + 3u])));
+      }
+    }
+  }
+#else
+  [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+    // Guards Csh against the previous iteration's readers. Inert on i == 0 but
+    // must stay unconditional to remain workgroup-uniform.
+    // coopmat-lds-fence: barrier() alone does NOT order shared stores against a
+    // subsequent coopMatLoad on one tested driver -- symptom is one
+    // stale MMA_M-row band of A, all columns, ~2.5% of runs, no crash (observed
+    // 2026-09-02 in sdpa_compute_out_coopmat.glsl). Measured cost of the fence:
+    // none (see this change's results). See memory
+    // `coopmat-lds-needs-explicit-memorybarriershared`.
+    memoryBarrierShared();
+    barrier();
+    [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+#ifdef HAS_BIAS
+      if (apply_bias > 0) {
+        const uint local_n = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
+        coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> bias_tile;
+        coopMatLoad(
+            bias_tile, bias_sh,
+            local_n, /*stride=*/0u,
+            gl_CooperativeMatrixLayoutRowMajor);
+        result[i][j] += coopmat<ACC_T, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(bias_tile);
+      }
+#endif
+#ifdef CSH_IN_ASH
+#ifdef RX_A_V2
+      coopMatStore(
+          coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]), Ash,
+          (warpInTile.y * MMA_M * WG_TILE_N +
+              MMA_N * (MMAS_PER_SG_N * warpInTile.x + j)) / 4u,
+          WG_TILE_N / 4u,
+          gl_CooperativeMatrixLayoutRowMajor);
+#else
+      coopMatStore(
+          coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]), Ash,
+          (warpInTile.y * MMA_M * WG_TILE_N +
+              MMA_N * (MMAS_PER_SG_N * warpInTile.x + j)) / FP16_PER_VEC4,
+          WG_TILE_N / FP16_PER_VEC4,
+          gl_CooperativeMatrixLayoutRowMajor);
+#endif
+#else
+      coopMatStore(
+          coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]), Csh,
+          warpInTile.y * MMA_M * WG_TILE_N +
+              MMA_N * (MMAS_PER_SG_N * warpInTile.x + j),
+          WG_TILE_N,
+          gl_CooperativeMatrixLayoutRowMajor);
+#endif
+    }
+    memoryBarrierShared();
+    barrier();
+
+    for (uint t = gl_LocalInvocationID.x; t < CSH_TEXELS; t += WG_SIZE) {
+      const uint lr = t / CSH_TEXELS_PER_ROW;
+      const uint lc4 = t % CSH_TEXELS_PER_ROW;
+      const uint m =
+          tile_m_start + (lr / MMA_M) * SG_TILE_M + i * MMA_M + (lr % MMA_M);
+      const uint base = lr * WG_TILE_N + lc4 * 4u;
+#ifdef CSH_IN_ASH
+#ifdef RX_A_V2
+      // base is a multiple of 4 halves: the texel is one uvec2.
+      const uvec2 q = Ash[base / 4u];
+      imageStore(
+          t_output,
+          ivec3(tile_n_start / 4u + lc4, m, 0),
+          vec4(unpackHalf2x16(q.x), unpackHalf2x16(q.y)));
+#else
+      // base is a multiple of 4 halves: the texel is one half of a uvec4.
+      const uvec4 q = Ash[base / FP16_PER_VEC4];
+      const bool hi = (base % FP16_PER_VEC4) != 0u;
+      imageStore(
+          t_output,
+          ivec3(tile_n_start / 4u + lc4, m, 0),
+          vec4(unpackHalf2x16(hi ? q.z : q.x), unpackHalf2x16(hi ? q.w : q.y)));
+#endif
+#else
+      imageStore(
+          t_output,
+          ivec3(tile_n_start / 4u + lc4, m, 0),
+          vec4(
+              float(Csh[base]),
+              float(Csh[base + 1u]),
+              float(Csh[base + 2u]),
+              float(Csh[base + 3u])));
+#endif
+    }
+  }
+#endif // CSH_FULL / CSH_BAND
+#else
+  const uint N_out = uint(out_N_arg);
+  [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+    [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+      const uint gi = tile_m_start + MMA_M * (MMAS_PER_SG_M * warpInTile.y + i);
+      const uint gj = tile_n_start + MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
+
+#ifdef HAS_BIAS
+      if (apply_bias > 0) {
+        const uint local_n = MMA_N * (MMAS_PER_SG_N * warpInTile.x + j);
+        coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> bias_tile;
+        coopMatLoad(
+            bias_tile, bias_sh,
+            local_n, /*stride=*/0u,
+            gl_CooperativeMatrixLayoutRowMajor);
+        result[i][j] += coopmat<ACC_T, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(bias_tile);
+      }
+#endif
+
+      coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator> out_tile =
+          coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>(result[i][j]);
+      coopMatStore(
+          out_tile, t_output,
+          gi * N_out + gj, N_out,
+          gl_CooperativeMatrixLayoutRowMajor);
+    }
+  }
+#endif // IO_TEXTURE
+}
+
+#endif // SARC_DEV_X7900XTX_Q4GSW_BODY_GLSLH
