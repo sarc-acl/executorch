@@ -125,8 +125,8 @@
 <main>
   <header>
     <h1>SARC 1.5 调优全景</h1>
-    <p>八台 GPU 上 2048 token 预填充的内核调优（七台公布数字；M51 按设备所有者的要求只列定性结论）：每台的收益、收益来自哪一步、哪些技术用在了哪里、时间省在了哪、哪些工作没有回报。全部数字取自各 campaign 分支的 proposal.md 与门禁场次，几何平均跨 1B、3B、8B 三个模型。</p>
-    <div class="meta">数据截至 2026-10-09 17:30 UTC · 基线为 9 月 SARC 发布版（RX 7600 与 RX 7900 XTX 为各自的父提交）· 悬停任何数据标记可看明细</div>
+    <p>八台 GPU 上 2048 token 预填充的内核调优（七台公布数字；M51 按设备所有者的要求只列定性结论）：每台的收益、收益来自哪一步、哪些技术用在了哪里、时间省在了哪、哪些工作没有回报。全部数字取自各 campaign 分支的 proposal.md 与门禁场次，几何平均跨 1B、3B、8B 三个模型。图 8 另列其中五台设备的调优后内核离硬件上限有多远，数字取自 igpu-roofline 的上限研究。</p>
+    <div class="meta">数据截至 2026-10-09 20:00 UTC · 共八张图 · 基线为 9 月 SARC 发布版（RX 7600 与 RX 7900 XTX 为各自的父提交）· 悬停任何数据标记可看明细</div>
   </header>
 
   <section class="tiles" id="tiles" aria-label="每台设备的最终收益"></section>
@@ -217,12 +217,28 @@
     <figcaption>标 * 的格按设备 README 的说明计入了低于时钟下限的运行（负载本身把时钟压低，不是干扰）。RX 7600 的 8B llama.cpp 取 llama-completion 计时（llama-bench 在该卡 1024 token 以上走慢路径）。780M 与 RX 7600 无厂商后端数据（HIP 未测）。RTX 4070 Ti SUPER、Arc Pro B70、Arc B580、Jetson Orin Nano 的调优后两列取自各自融合移植分支的收尾场次（s5-pristine、s4-pristine、s7-pristine 为 7 次有效运行的中位数，Orin 的 s8-pristine 为 5 次），不在 cells.csv 中。RX 7600 的调优后两列取自其第二轮收尾场次 r2-final（5 次有效运行的中位数），也不在 cells.csv 中。RX 7900 XTX 的 SARC 两列和调优后两列是其父提交与最终配置在同一个收尾场次（final3，7 次有效运行的中位数，AMDVLK 驱动）里测得的；父提交各格与 2026-09-28 公布的数相差在 2 % 以内；这台设备没有同场次的 stock 数字，也没有测 llama.cpp，相应的格为“—”。M51 的设备所有者不允许公布数字，不在表中。</figcaption>
   </figure>
 
+  <figure id="fig-roofs">
+    <h2>图 8 · 内核离硬件上限有多远</h2>
+    <p class="claim">每条横轨是一台设备的一种量化方案，右端（100 %）是矩阵指令在操作数全留在寄存器里时的速率上限，蓝条是调优后线性内核的实测速率。780M 的两个内核在上限的 78 % 到 82 %；NVIDIA 两台的 4w 在 63 % 到 67 %，8da4w 在 RTX 4070 Ti SUPER 上约 41 %，在 Orin 上约 27 %；Intel 两张卡的 4w 约 40 %，8da4w 约 30 %。在 Intel 两张卡和 Orin 的 8da4w 上，剩下的距离大部分不在内核写得好不好，而在“复用”：内核每装入一份操作数只做很少几次矩阵乘加，按这个复用量供数时，硬件本身就只有寄存器上限的三成到五成（菱形）。B580 上这一项占整段距离的 81 %，内核自己只占 4 %。RTX 4070 Ti SUPER 不是这样：那里从共享内存供数几乎不花钱，差距全在最后一步，也就是矩阵单元空等取数和屏障的时间。</p>
+    <div class="legend">
+      <span><i style="background:var(--seq5)"></i>内核实测速率（三个模型的平均）</span>
+      <span><i style="background:var(--neutral-fill);border:1px solid var(--neutral)"></i>到寄存器上限（100 %）的余量</span>
+      <span><i style="width:0;height:14px;border-left:2px solid var(--ref);border-radius:0"></i>共享内存供数上限</span>
+      <span><i style="width:9px;height:9px;border:2px solid var(--ref);background:var(--surface);border-radius:0;transform:rotate(45deg);margin-inline:2px"></i>按内核的复用量供数的上限</span>
+    </div>
+    <div class="scroll"><div id="chart-roofs"></div></div>
+    <details open><summary>算例：从寄存器上限到内核的四步</summary><div id="table-roofchain"></div></details>
+    <details><summary>数据表</summary><div id="table-roofs"></div></details>
+    <figcaption>三种上限都由 igpu-roofline 工具的矩阵着色器测得，输入类型、累加类型和矩阵形状与内核相同。寄存器上限：操作数一直留在寄存器里，着色器只做矩阵乘加。共享内存供数上限：每一步的操作数从工作组共享内存装入，取工具里复用最高的一档。按内核的复用量供数的上限：同样从共享内存装入，但每份操作数只做与内核相同或最接近的乘加次数。测量日期 2026-10-09，每台设备的上限和内核速率在同一次上机里测得；内核速率来自微基准（预填充 M = 2048，texture3d 存储），等于 2·M·N·K 除以内核时间。780M 和 B580 的每模型数字按一层七次线性调用的时间加权，B70、RTX 4070 Ti SUPER 和 Orin 的研究记录只给逐形状数值，这里取四个形状的算术平均；蓝条是三个模型的平均，各模型的数值在悬停提示和数据表里。Orin 的全部数字属于 15 W 功耗模式（GPU 时钟 612 MHz）。Intel 两张卡（dpas）和 780M 的矩阵指令已在驱动生成的代码里逐条核对，没有寄存器溢出；NVIDIA 两台的驱动不给反汇编，未经 ISA 验证，依据是间接的。上限着色器和内核的子组宽度并不都相同：Intel 上限是 SIMD32，内核是 SIMD16；780M 上限是子组 64，内核是子组 32。没有菱形的行：B580、B70 和 Orin 的 4w 没有匹配的上限（工具里 fp16 累加的低复用档没过质量门）；780M 的两行不画，因为工具的对应档低于内核（内核是它的 111 % 到 294 %），不能当上限。画了菱形的行里，B70 的 8da4w 和 RTX 4070 Ti SUPER 的 8da4w 是单次运行，未经重复确认；B580 和 B70 各有几个形状的内核读数略高于菱形（到 103 %），所以它是一把尺子，不是严格的上限；Orin 的菱形取 32 ops/B 一档，内核自己的复用是 42.7，下一档为 15.8 TOP/s。融合注意力内核只列在数据表里，它的计时含拷贝，口径各设备不同。RX 7600、RX 7900 XTX 和 M51 三台公司侧设备不在这次研究里。</figcaption>
+  </figure>
+
   <section class="notes">
     <div class="note"><h3>还没合并</h3><p>十二条 campaign 分支（八条第一轮、四条融合移植）都在 origin 上，没有一条进了 dev/1.5。780M 已在 round 3 换用 fused3sb，最终配置定名为 780m-final。合并前还要做：补上管线的全子组标志（见“已知缺陷”）、清理结果文件里的路径。</p></div>
-    <div class="note"><h3>剩余空间在哪</h3><p>融合内核已在六台设备上采纳，M51 用的是两遍形式；RX 7900 XTX 上的融合内核结果是在 AMDVLK 驱动下测的，应在 RADV 下重测一次再下结论。在 B580、B70 和 Orin 上注意力只剩预填充派发时间的 5 % 到 14 %，下一步的空间在线性内核。Orin 上融合内核只到矩阵上限的 16 % 到 20 %，要再快需要一个经共享内存暂存 K、V 的新内核。AMD 独显上 llama.cpp 的 HIP 后端还没测，领先结论只对 Vulkan 成立。</p></div>
+    <div class="note"><h3>剩余空间在哪</h3><p>融合内核已在六台设备上采纳，M51 用的是两遍形式；RX 7900 XTX 上的融合内核结果是在 AMDVLK 驱动下测的，子组宽度未验证；所有者 2026-10-09 决定不在 RADV 下重测，结果按现状保留。在 B580、B70 和 Orin 上注意力只剩预填充派发时间的 5 % 到 14 %，空间在线性内核。2026-10-09 的上限研究（图 8）表明，Intel 两张卡的 8da4w 内核在现有结构里只剩几个百分点（B580 估计 4 % 到 9 %）；Orin 的 8da4w 内核乘加阶段已到按其复用量供数的上限，余下的是暂存时间。要有更大的收益，内核得在每装入一份操作数之后多做几次矩阵乘加，这受寄存器数量限制（Orin 的 8da4w 内核每线程已用 209 个寄存器，4w 用 128 个）。所有者 2026-10-09 决定现在不启动第三轮。Orin 上融合内核只到矩阵上限的 16 % 到 20 %，要再快需要一个经共享内存暂存 K、V 的新内核。AMD 独显上 llama.cpp 的 HIP 后端还没测，领先结论只对 Vulkan 成立。</p></div>
     <div class="note"><h3>流程产物</h3><p>A/A 校准与时钟下限、每候选过门禁、参考误差规则、两连候选低于 2 % 的停止规则、协调者 hold、独立审阅。这些是手册的一部分，不在图里。</p></div>
     <div class="note"><h3>已知缺陷：管线缺全子组标志</h3><p>Vulkan 规范要求这类依赖满子组的计算管线在创建时带上“全子组”标志。分支上所有协作矩阵管线都没有带，包括已发布的和各融合内核的。所有者 2026-10-09 决定记为已知缺陷，在任何合并之前于发布区统一修一次。本页的测量结果不受影响。RX 7900 XTX 的 campaign 另外发现，有内核声明的工作组共享内存超过了 AMDVLK 报告的上限，其中包括一个已发布的 4w 内核；驱动接受这些管线，门禁全部通过。这一项在合并前与全子组标志（F1）一并处理。</p></div>
-    <div class="note"><h3>解码略慢，原因未查</h3><p>B70 上带融合节点时，解码（预填充之后逐个生成 token）比父配置慢 0 到 2.5 %；B580 上六格也都略低于父配置（0.985 到 0.998）。融合内核不处理解码调用，变慢的位置还没有定位。解码不是门禁项，记在这里以免晋升时漏掉。</p></div>
+    <div class="note"><h3>解码略慢，原因未查</h3><p>B70 上带融合节点时，解码（预填充之后逐个生成 token）比父配置慢 0 到 2.5 %；B580 上六格也都略低于父配置（0.985 到 0.998）。融合内核不处理解码调用，变慢的位置还没有定位。解码不是门禁项，记在这里以免晋升时漏掉。所有者 2026-10-09 决定：排查安排在晋升之前做，现在不做。</p></div>
+    <div class="note"><h3>Orin 的时钟</h3><p>Orin 早先有两套上限数字（矩阵 fp16 约 16.0 和 9.7 TFLOP/s），差别来自 GPU 时钟：2026-09-26 那一套是把时钟锁在 1020 MHz 时测的，之后设备重启，15 W 功耗模式下时钟上限是 612 MHz。本页所有 Orin 数字（tok/s、内核速率、图 8 的上限）都属于 15 W 状态。更高的功耗模式没有测；所有者 2026-10-09 决定不测。</p></div>
   </section>
 </main>
 <div class="tip" id="tip" role="tooltip"></div>
@@ -1324,7 +1340,7 @@
  ],
  "meta": {
   "updated": "2026-10-09",
-  "note": "All figures from the campaign branches proposal.md / STATUS.md and topic/llamacpp-compare cells.csv. Edit this block only; the rendering code below reads it."
+  "note": "All figures from the campaign branches proposal.md / STATUS.md and topic/llamacpp-compare cells.csv; roofs from the igpu-roofline study branches (see roofs.study). Edit this block only; the rendering code below reads it."
  },
  "tokps": [
   {
@@ -2008,7 +2024,505 @@
    "term": "噪声带",
    "def": "同一个程序重复测，结果也会有约 ±2 % 的波动。增益落在这个范围内就不能说它更快，矩阵里写作“带内”。"
   }
- ]
+ ],
+ "roofs": {
+  "study": {
+   "campaign": "et-study-20261010",
+   "date": "2026-10-09",
+   "repo": "igpu-roofline",
+   "branches": {
+    "780m": {
+     "name": "study/et-20261010-780m",
+     "head": "69b51b7"
+    },
+    "b580": {
+     "name": "study/et-20261010-b580",
+     "head": "3a47213"
+    },
+    "b70": {
+     "name": "study/et-20261010-b70",
+     "head": "6ddf491"
+    },
+    "4070ti": {
+     "name": "study/et-20261010-4070ti",
+     "head": "1da5b82"
+    },
+    "orin": {
+     "name": "study/et-20261010-orin",
+     "head": "653f971"
+    }
+   },
+   "note": "Source: efficiency.csv and STUDY.md of each study branch. Kernel rates are per model (1B, 3B, 8B), prefill M = 2048, texture3d storage; reg / fed / reuse are the register roof, the fed-from-shared-memory roof at best reuse, and the fed roof at the kernel own reuse (null when no usable row exists; reuse_note says why)."
+  },
+  "order": [
+   "780m",
+   "4070ti",
+   "orin",
+   "b580",
+   "b70"
+  ],
+  "models": [
+   "1B",
+   "3B",
+   "8B"
+  ],
+  "schemes": [
+   {
+    "key": "4w",
+    "name": "4w",
+    "plot": true
+   },
+   {
+    "key": "8da4w",
+    "name": "8da4w",
+    "plot": true
+   },
+   {
+    "key": "attn",
+    "name": "融合注意力",
+    "plot": false
+   }
+  ],
+  "example": "b580",
+  "devices": {
+   "780m": {
+    "isa": true,
+    "isa_note": "驱动（RADV，ACO）反汇编：4w 只生成 v_wmma_f32_16x16x16_f16，8da4w 只生成 v_wmma_i32_16x16x16_iu8，条数与瓦片算术一致，无寄存器溢出",
+    "state": "RADV，Mesa 25.2.7，时钟未锁定",
+    "width": "上限着色器在子组 64（wave64）下测得，内核运行在子组 32（wave32）",
+    "weight": "按一层七次线性调用的时间加权（STUDY 所述）",
+    "src": "STUDY.md Part A, Part B, Part D",
+    "rows": {
+     "4w": {
+      "unit": "TFLOP/s",
+      "reg": 14.764,
+      "fed": 14.452,
+      "reuse": null,
+      "reuse_note": "工具的对应档（9 个形状为 9.62 TFLOP/s，3 次重复；其余 3 个为 4.81，单次）低于内核，内核是它的 111 % 到 242 %，不能当上限",
+      "kernel": [11.496, 11.589, 11.774],
+      "mma": "16x16x16",
+      "acc": "fp32",
+      "sg": 32,
+      "name": "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g18s32f32cbt",
+      "also": [
+       "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x128k32g24s32f32cbt",
+       "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt",
+       "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt",
+       "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x256k32g42s32f32cbt"
+      ],
+      "note": "按形状派发五个瓦片",
+      "in": "fp16"
+     },
+     "8da4w": {
+      "unit": "TOP/s",
+      "reg": 14.364,
+      "fed": 14.121,
+      "reuse": null,
+      "reuse_note": "工具的对应档（4.04 与 8.03 TOP/s，均为单次扫描行，未经重复确认）低于内核，内核是它的 133 % 到 294 %，不能当上限",
+      "kernel": [11.577, 11.717, 11.618],
+      "mma": "16x16x16",
+      "acc": "int32",
+      "sg": 32,
+      "name": "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1",
+      "also": [
+       "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32"
+      ],
+      "in": "int8"
+     },
+     "attn": {
+      "unit": "TFLOP/s",
+      "reg": 14.764,
+      "fed": 14.452,
+      "reuse": null,
+      "reuse_note": "K、V 直接来自存储缓冲；缓存供数的对应档为 7.93 TFLOP/s（单次），内核是它的 97 % 到 110 %",
+      "kernel": [7.698, 8.274, 8.739],
+      "mma": "16x16x16",
+      "acc": "fp32",
+      "sg": 32,
+      "name": "sarc_dev_780m_sdpa_fused3sb_d128_t16x64g11s32rko",
+      "also": [
+       "sarc_dev_780m_sdpa_fused3sb_d64_t32x32g11s32rko"
+      ],
+      "note": "时间是整个融合节点（拷贝一遍加融合内核），按实际执行的乘加计",
+      "in": "fp16"
+     }
+    },
+    "chain": {
+     "scheme": "4w",
+     "basis": "8B wq_wo（t256x128k32g18）",
+     "unit": "TFLOP/s",
+     "loss_basis": "prev",
+     "steps": [
+      {
+       "label": "寄存器上限",
+       "rate": 14.764,
+       "loss": null
+      },
+      {
+       "label": "共享内存供数（CHAINS 8）",
+       "rate": 14.452,
+       "loss": 2.1
+      },
+      {
+       "label": "最接近内核复用的一档（CHAINS 4）",
+       "rate": 9.623,
+       "loss": 33.4
+      },
+      {
+       "label": "内核",
+       "rate": 11.705,
+       "loss": -21.6
+      }
+     ],
+     "note": "第三步不是内核付出的损失：内核高于这一档。按装入指令数计，供数约占 2 个百分点，其余约 19 个百分点不在任何上限行里，campaign 的阶段计时把它们归到暂存与等待"
+    }
+   },
+   "b580": {
+    "isa": true,
+    "isa_note": "驱动（ANV）列出的指令：两个线性内核和融合注意力内核都生成 dpas，每次乘加一条，条数与瓦片算术一致，溢出与回填 0 : 0",
+    "state": "ANV，Mesa 26.2.3，时钟未锁定",
+    "width": "上限着色器为 SIMD32，内核为 SIMD16",
+    "weight": "按一层七次线性调用的时间加权（STUDY 所述）",
+    "src": "STUDY.md A, B, D",
+    "rows": {
+     "4w": {
+      "unit": "TFLOP/s",
+      "reg": 111.72,
+      "fed": 109.76,
+      "reuse": null,
+      "reuse_note": "无匹配上限：fp16 到 fp16 的低复用档两次都没过工具的质量门",
+      "kernel": [45.13, 44.59, 44.14],
+      "mma": "8x16x16",
+      "acc": "fp16",
+      "sg": 16,
+      "name": "sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli",
+      "in": "fp16"
+     },
+     "8da4w": {
+      "unit": "TOP/s",
+      "reg": 231.37,
+      "fed": 206.36,
+      "reuse": 72.81,
+      "reuse_note": "CHAINS 2，3 次重复；有两个形状的内核读数高于这一档（103.4 % 与 101.8 %），它不是严格的上限",
+      "kernel": [69.88, 69.64, 66.07],
+      "mma": "8x16x32",
+      "acc": "int32",
+      "sg": 16,
+      "name": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8",
+      "in": "int8"
+     },
+     "attn": {
+      "unit": "TFLOP/s",
+      "reg": 115.68,
+      "fed": null,
+      "reuse": null,
+      "reuse_note": "无匹配的供数上限：操作数来自存储缓冲和共享内存",
+      "kernel": [24.42, 24.18, 24.96],
+      "mma": "8x16x16",
+      "acc": "fp32",
+      "sg": 16,
+      "name": "sarc_dev_b580_sdpa_fused_d128_t16x128s16m8g8oj",
+      "also": [
+       "sarc_dev_b580_sdpa_fused_d64_t16x64s16m8g4roj"
+      ],
+      "note": "时间是整个注意力算子；只计实际执行的因果块",
+      "in": "fp16"
+     }
+    },
+    "chain": {
+     "scheme": "8da4w",
+     "basis": "8B 加权",
+     "unit": "TOP/s",
+     "loss_basis": "prev",
+     "steps": [
+      {
+       "label": "寄存器上限",
+       "rate": 231.37,
+       "loss": null,
+       "share": null
+      },
+      {
+       "label": "共享内存供数（CHAINS 8）",
+       "rate": 206.36,
+       "loss": 10.8,
+       "share": 15.1
+      },
+      {
+       "label": "按内核的复用供数（CHAINS 2）",
+       "rate": 72.81,
+       "loss": 64.7,
+       "share": 80.8
+      },
+      {
+       "label": "内核",
+       "rate": 66.07,
+       "loss": 9.3,
+       "share": 4.1
+      }
+     ],
+     "note": "“损失”是相对上一步；“占整段距离”是这一步占寄存器上限到内核的全部差距（165.31 TOP/s）的份额。3B、1B 的最后一步为 4.3 % 与 4.0 %"
+    }
+   },
+   "b70": {
+    "isa": true,
+    "isa_note": "驱动（ANV）列出的指令：每次乘加一条 dpas，与瓦片算术一致，无溢出，SIMD16，128 个寄存器",
+    "state": "ANV，Mesa 26.2.3，时钟未锁定",
+    "width": "上限着色器为 SIMD32，内核为 SIMD16",
+    "weight": "四个形状的算术平均（STUDY 只给逐形状数值与 12 个形状的几何平均：4w 39.3 %，8da4w 29.6 %）",
+    "src": "STUDY.md Part A, Part B, Part D",
+    "rows": {
+     "4w": {
+      "unit": "TFLOP/s",
+      "reg": 173.3,
+      "fed": 168.4,
+      "reuse": null,
+      "reuse_note": "无匹配上限：工具把 fp16 到 fp16 的这一档判为样本过短",
+      "kernel": [65.84, 69.75, 69.1],
+      "mma": "8x16x16",
+      "acc": "fp16",
+      "sg": 16,
+      "name": "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib",
+      "also": [
+       "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g84s16m8flw"
+      ],
+      "in": "fp16"
+     },
+     "8da4w": {
+      "unit": "TOP/s",
+      "reg": 359.9,
+      "fed": 323.3,
+      "reuse": 113.9,
+      "reuse_note": "每装入一对做 2 次乘加的一档，单次运行，未经重复确认；有四个形状的内核读数在它的 100 % 到 103 %，它不是严格的上限",
+      "kernel": [105.16, 111.2, 104.28],
+      "mma": "8x16x32",
+      "acc": "int32",
+      "sg": 16,
+      "name": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8",
+      "in": "int8"
+     },
+     "attn": {
+      "unit": "TFLOP/s",
+      "reg": 179.9,
+      "fed": 166.6,
+      "reuse": 54.03,
+      "reuse_note": "缓存供数的一档，单次运行，未经重复确认",
+      "kernel": [36.63, 36.69, 37.75],
+      "mma": "8x16x16",
+      "acc": "fp32",
+      "sg": 16,
+      "name": "sarc_dev_b580_sdpa_fused_d128_t16x128s16m8g8oj",
+      "also": [
+       "sarc_dev_b580_sdpa_fused_d64_t16x64s16m8g4roj"
+      ],
+      "note": "时间是整个注意力调用；只计实际执行的因果一半",
+      "in": "fp16"
+     }
+    },
+    "chain": {
+     "scheme": "8da4w",
+     "basis": "12 个形状的几何平均",
+     "unit": "TOP/s",
+     "loss_basis": "points",
+     "steps": [
+      {
+       "label": "寄存器上限",
+       "rate": 359.9,
+       "loss": null
+      },
+      {
+       "label": "共享内存供数（每对 8 次乘加）",
+       "rate": 323.3,
+       "loss": 10.2
+      },
+      {
+       "label": "按内核的复用供数（每对 2 次，单次运行）",
+       "rate": 113.9,
+       "loss": 58.2
+      },
+      {
+       "label": "内核",
+       "rate": 106.6,
+       "loss": 2.0
+      }
+     ],
+     "note": "这一条的“损失”按寄存器上限的百分点计（10.2 + 58.2 + 2.0 = 70.4）"
+    }
+   },
+   "4070ti": {
+    "isa": false,
+    "isa_note": "未经 ISA 验证：这个驱动只返回五项管线统计，不给反汇编。间接依据：与上限着色器同一条 SPIR-V 指令、同类型同形状，内核的乘加阶段速率与上限一致",
+    "state": "专有驱动 615.71.09，时钟未锁定，功耗上限 285 W",
+    "width": "上限着色器与内核同为子组 32",
+    "weight": "四个形状的算术平均（STUDY 只给逐形状数值与中位数：4w 66.2 %，8da4w 41.6 %）",
+    "src": "STUDY.md Part A, Part B, Part D",
+    "rows": {
+     "4w": {
+      "unit": "TFLOP/s",
+      "reg": 182.95,
+      "fed": 177.94,
+      "reuse": 173.55,
+      "reuse_note": "32 flop/B 一档，3 次确认重复里工具采用了 2 次；内核的复用是 25.6（1B wk_wv 的瓦片 21.3），这是最近的可用档",
+      "kernel": [115.27, 120.78, 121.88],
+      "mma": "16x16x16",
+      "acc": "fp16",
+      "sg": 32,
+      "name": "sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga",
+      "also": [
+       "sarc_linear_q4gsw_coopmat_t128x128k16g24s32ga"
+      ],
+      "note": "每 128-K 量化组结束时把 fp16 累加器加进 fp32 总和，在矩阵指令之外",
+      "in": "fp16"
+     },
+     "8da4w": {
+      "unit": "TOP/s",
+      "reg": 369.24,
+      "fed": 367.69,
+      "reuse": 367.06,
+      "reuse_note": "32 op/B 一档，单次扫描行，未经重复确认；相邻已确认的一档（64 op/B）相差 0.2 %",
+      "kernel": [145.09, 153.98, 153.36],
+      "mma": "16x16x32",
+      "acc": "int32",
+      "sg": 32,
+      "name": "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra",
+      "in": "int8"
+     },
+     "attn": {
+      "unit": "TFLOP/s",
+      "reg": 92.8,
+      "fed": 92.19,
+      "reuse": null,
+      "reuse_note": "K、V 来自全局缓冲，共享内存供数的各档（92.15 单次、92.65）只作参照",
+      "kernel": [45.61, 52.39, 54.84],
+      "mma": "16x16x16",
+      "acc": "fp32",
+      "sg": 32,
+      "name": "sarc_dev_4070ti_sdpa_fused3sb_d128_t16x64g11s32rko",
+      "also": [
+       "sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko"
+      ],
+      "note": "时间是微基准里一层的整个注意力（融合内核加 K/V 拷贝）",
+      "in": "fp16"
+     }
+    },
+    "chain": {
+     "scheme": "8da4w",
+     "basis": "3B wq_wo",
+     "unit": "TOP/s",
+     "loss_basis": "prev",
+     "steps": [
+      {
+       "label": "寄存器上限",
+       "rate": 369.24,
+       "loss": null
+      },
+      {
+       "label": "共享内存供数（最高复用）",
+       "rate": 367.69,
+       "loss": 0.4
+      },
+      {
+       "label": "按内核的复用供数（32 op/B，单次）",
+       "rate": 367.06,
+       "loss": 0.2
+      },
+      {
+       "label": "内核",
+       "rate": 155.34,
+       "loss": 57.7
+      }
+     ],
+     "note": "整段差距都在最后一步：这张卡上从共享内存装入操作数在任何复用下都不花钱（365.9 到 367.8 TOP/s），内核损失的是矩阵单元等待的时间。12 个形状最后一步为 57.7 % 到 63.1 %"
+    }
+   },
+   "orin": {
+    "isa": false,
+    "isa_note": "未经 ISA 验证：这个驱动只返回管线统计。间接依据：4w 的速率是标量 fp16 上限的 3.3 到 3.6 倍，8da4w 是 int8 点积上限的 2.4 到 2.7 倍，标量代码达不到",
+    "state": "功耗模式 15 W，GPU 时钟 306 到 612 MHz（负载下 612 MHz），nvgpu 595.78",
+    "width": "上限着色器与内核同为子组 32",
+    "weight": "四个形状的算术平均（STUDY 只给逐形状数值与 12 个形状的几何平均：4w 63.2 %，8da4w 27.3 %）",
+    "src": "STUDY.md Part A, Part B, Part D",
+    "rows": {
+     "4w": {
+      "unit": "TFLOP/s",
+      "reg": 9.684,
+      "fed": 9.517,
+      "reuse": null,
+      "reuse_note": "无匹配上限：fp16 到 fp16 在 64 ops/B 以下没有过质量门的档，内核的复用是 25.6",
+      "kernel": [6.051, 6.188, 6.125],
+      "mma": "16x16x16",
+      "acc": "fp16",
+      "sg": 32,
+      "name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt",
+      "also": [
+       "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32c"
+      ],
+      "note": "8B w2 派发的是 fp32 累加的瓦片，它对应的上限是 9.731 与 8.829；寄存器 128 个每线程",
+      "in": "fp16"
+     },
+     "8da4w": {
+      "unit": "TOP/s",
+      "reg": 19.51,
+      "fed": 17.41,
+      "reuse": 9.138,
+      "reuse_note": "32 ops/B 一档，3 次重复；内核的复用是 42.7，下一档（64 ops/B）为 15.8，内核自己的位置在两者之间",
+      "kernel": [5.199, 5.377, 5.432],
+      "mma": "16x16x32",
+      "acc": "int32",
+      "sg": 32,
+      "name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra",
+      "note": "寄存器 208 到 209 个每线程",
+      "in": "int8"
+     },
+     "attn": {
+      "unit": "TFLOP/s",
+      "reg": 9.731,
+      "fed": 8.829,
+      "reuse": null,
+      "reuse_note": "K、V 直接来自存储缓冲；缓存供数的对应档为 3.99（1B）与 2.22（3B、8B）TFLOP/s",
+      "kernel": [1.487, 1.855, 1.884],
+      "mma": "16x16x16",
+      "acc": "fp32",
+      "sg": 32,
+      "name": "sarc_dev_orin_sdpa_fused3sb_d128_t16x64g11s32rko",
+      "also": [
+       "sarc_dev_orin_sdpa_fused3sb_d64_t32x32g11s32rko"
+      ],
+      "note": "时间是微基准里整个注意力算子",
+      "in": "fp16"
+     }
+    },
+    "chain": {
+     "scheme": "8da4w",
+     "basis": "12 个形状的几何平均",
+     "unit": "TOP/s",
+     "loss_basis": "prev",
+     "steps": [
+      {
+       "label": "寄存器上限",
+       "rate": 19.51,
+       "loss": null
+      },
+      {
+       "label": "共享内存供数（最高复用，128 ops/B）",
+       "rate": 17.41,
+       "loss": 10.8
+      },
+      {
+       "label": "按内核的复用供数（32 ops/B 一档）",
+       "rate": 9.14,
+       "loss": 47.5
+      },
+      {
+       "label": "内核",
+       "rate": 5.33,
+       "loss": 41.6
+      }
+     ],
+     "note": "乘加阶段本身已在复用处的上限（内核速率除以乘加阶段占比得 9.0 到 11.1 TOP/s）；最后一步是它周围的暂存时间"
+    }
+   }
+  }
+ }
 }
 </script>
 <script>
@@ -2211,6 +2725,84 @@
       if (d.cells.some((c) => c.etcuda)) parts.push(`<div style="font-size:0.78rem;color:var(--fg3);margin-top:4px">ExecuTorch CUDA 后端（上游，4w，仅去掉导出守卫）：${d.cells.map((c) => c.model + ' ' + fmt(c.etcuda)).join(' · ')} tok/s，远低于 Vulkan 后端。</div>`);
     });
     $('#table-tokps').innerHTML = parts.join('');
+  })();
+
+  // ---------- 图 8：内核离硬件上限 ----------
+  // 全部数值来自 DATA.roofs；没有条目的设备不出现。reuse 为 null 的行不画菱形。
+  (function drawRoofs() {
+    const R = DATA.roofs; if (!R || !$('#chart-roofs')) return;
+    const models = R.models; const plotted = R.schemes.filter((sc) => sc.plot);
+    const devs = R.order.filter((id) => R.devices[id]).map((id) => ({ id, r: R.devices[id], name: (devices.find((v) => v.id === id) || { name: id }).name }));
+    const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+    const rate = (v) => v >= 100 ? v.toFixed(1) : v >= 10 ? v.toFixed(2) : v.toFixed(3);
+    const share = (v, row) => (v / row.reg * 100).toFixed(1) + ' %';
+    const types = (row) => `${row.mma} · ${row.in} → ${row.acc} · 子组 ${row.sg}`;
+    const W = 1040, left = 200, right = 230, rowH = 34, groupGap = 16, top = 26, barH = 16;
+    const nRows = devs.length * plotted.length;
+    const H = top + nRows * rowH + (devs.length - 1) * groupGap + 34;
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '五台设备两种量化方案的内核速率占寄存器上限的份额，以及两种供数上限的位置' });
+    svg.setAttribute('style', 'min-width:720px');
+    const x = (p) => left + (p / 100) * (W - left - right);
+    [0, 20, 40, 60, 80, 100].forEach((p) => { const xx = x(p); el('line', { x1: xx, x2: xx, y1: top - 6, y2: H - 30, class: 'grid' }, svg); text(svg, xx, H - 12, p + ' %' + (p === 100 ? ' = 寄存器上限' : ''), 'mono', p === 100 ? 'start' : 'middle'); });
+    let y = top;
+    devs.forEach((dv, di) => {
+      if (di) y += groupGap;
+      plotted.forEach((sc, si) => {
+        const row = dv.r.rows[sc.key]; if (!row) { y += rowH; return; }
+        if (si === 0) text(svg, 8, y + 12, dv.name, 'strong');
+        else text(svg, 8, y + 12, dv.r.isa ? '指令已核对' : '未经 ISA 验证', 'tiny');
+        text(svg, left - 12, y + 12, sc.name, 'mono', 'end');
+        const k = avg(row.kernel); const pk = k / row.reg * 100;
+        const head = `<b>${dv.name} · ${sc.name}</b><br>`;
+        const track = el('rect', { x: x(0), y, width: x(100) - x(0), height: barH, fill: 'var(--neutral-fill)', stroke: 'var(--neutral)', 'stroke-width': 1 }, svg);
+        attach(track, `${head}寄存器上限 <b>${rate(row.reg)} ${row.unit}</b>（100 %）<br>${types(row)}<br>${dv.r.width}<br>${dv.r.state}`);
+        const bar = el('rect', { x: x(0), y, width: Math.max(2, x(pk) - x(0)), height: barH, fill: 'var(--seq5)' }, svg);
+        attach(bar, `${head}内核 <b>${row.name}</b><br>${models.map((m, mi) => `${m} <b>${rate(row.kernel[mi])}</b>（${share(row.kernel[mi], row)}）`).join(' · ')} ${row.unit}<br>${dv.r.weight}${row.note ? '<br>' + row.note : ''}<br>${dv.r.isa_note}`);
+        el('line', { x1: x(100), x2: x(100), y1: y - 3, y2: y + barH + 3, stroke: 'var(--ref)', 'stroke-width': 2 }, svg);
+        if (row.fed != null) {
+          const xf = x(row.fed / row.reg * 100);
+          el('line', { x1: xf, x2: xf, y1: y - 3, y2: y + barH + 3, stroke: 'var(--ref)', 'stroke-width': 2 }, svg);
+          const hit = el('rect', { x: xf - 6, y: y - 5, width: 12, height: barH + 10, class: 'hit' }, svg);
+          attach(hit, `${head}共享内存供数上限 <b>${rate(row.fed)} ${row.unit}</b><br>寄存器上限的 ${share(row.fed, row)}；内核是它的 ${(k / row.fed * 100).toFixed(1)} %`);
+        }
+        if (row.reuse != null) {
+          const xr = x(row.reuse / row.reg * 100), cy = y + barH / 2, s = 7;
+          const dm = el('path', { d: `M${xr},${cy - s} L${xr + s},${cy} L${xr},${cy + s} L${xr - s},${cy} Z`, fill: 'var(--surface)', stroke: 'var(--ref)', 'stroke-width': 2 }, svg);
+          attach(dm, `${head}按内核的复用量供数的上限 <b>${rate(row.reuse)} ${row.unit}</b><br>寄存器上限的 ${share(row.reuse, row)}；内核是它的 ${(k / row.reuse * 100).toFixed(1)} %${row.reuse_note ? '<br>' + row.reuse_note : ''}`);
+        }
+        text(svg, x(100) + 12, y + 12, `内核 ${pk.toFixed(1)} %`, 'mono strong');
+        text(svg, x(100) + 112, y + 12, row.reuse != null ? `复用处 ${share(row.reuse, row)}` : '复用处无可用上限', 'tiny');
+        y += rowH;
+      });
+    });
+    $('#chart-roofs').appendChild(svg);
+
+    // 数据表：含融合注意力内核
+    const num = (v) => v == null ? '—' : rate(v);
+    const tb = ['<div class="scroll"><table><thead><tr><th>设备</th><th>方案</th><th>派发的内核</th><th>矩阵 · 类型 · 内核子组</th><th>单位</th><th class="num">寄存器上限</th><th class="num">共享内存供数</th><th class="num">按内核复用供数</th>' + models.map((m) => `<th class="num">内核 ${m}</th>`).join('') + `<th class="num">占寄存器上限（${models.join(' / ')}）</th><th>指令</th></tr></thead><tbody>`];
+    const notes = [];
+    devs.forEach((dv) => R.schemes.forEach((sc, si) => {
+      const row = dv.r.rows[sc.key]; if (!row) return;
+      tb.push(`<tr><td>${si ? '' : dv.name}</td><td>${sc.name}</td><td style="font-family:var(--mono);font-size:0.74rem">${row.name}</td><td>${types(row)}</td><td>${row.unit}</td><td class="num">${num(row.reg)}</td><td class="num">${num(row.fed)}</td><td class="num">${num(row.reuse)}</td>${row.kernel.map((v) => `<td class="num">${rate(v)}</td>`).join('')}<td class="num">${row.kernel.map((v) => (v / row.reg * 100).toFixed(1)).join(' / ')} %</td><td>${si ? '' : (dv.r.isa ? '已核对' : '未经 ISA 验证')}</td></tr>`);
+      const parts = [row.reuse_note, row.note, row.also ? '另有按形状派发的内核：' + row.also.join('、') : ''].filter(Boolean);
+      if (parts.length) notes.push(`<tr><td>${dv.name}</td><td>${sc.name}</td><td>${parts.join('；')}</td></tr>`);
+    }));
+    tb.push('</tbody></table></div>');
+    tb.push('<div class="scroll"><table><thead><tr><th>设备</th><th>方案</th><th>这一行的说明</th></tr></thead><tbody>' + notes.join('') + '</tbody></table></div>');
+    tb.push('<div class="scroll"><table><thead><tr><th>设备</th><th>测量状态</th><th>每模型数字的取法</th><th>指令核对</th><th>来源分支（' + R.study.repo + '）</th></tr></thead><tbody>' + devs.map((dv) => { const b = R.study.branches[dv.id]; return `<tr><td>${dv.name}</td><td>${dv.r.state}；${dv.r.width}</td><td>${dv.r.weight}</td><td>${dv.r.isa_note}</td><td style="font-family:var(--mono);font-size:0.74rem">${b ? b.name + ' @ ' + b.head : '—'}</td></tr>`; }).join('') + '</tbody></table></div>');
+    tb.push(`<div style="font-size:0.78rem;color:var(--fg3);margin-top:6px">研究编号 ${R.study.campaign}，测量日期 ${R.study.date}。</div>`);
+    $('#table-roofs').innerHTML = tb.join('');
+
+    // 算例：R.example 指定的设备的 part D 链
+    const ex = devs.find((dv) => dv.id === R.example); const ch = ex && ex.r.chain;
+    if (ch) {
+      const sn = (R.schemes.find((sc) => sc.key === ch.scheme) || { name: ch.scheme }).name;
+      const pc = (v) => v == null ? '—' : v.toFixed(1) + ' %';
+      const first = ch.steps[0].rate;
+      $('#table-roofchain').innerHTML = `<div class="scroll"><table><thead><tr><th>${ex.name} · ${sn}（${ch.basis}）</th><th class="num">速率，${ch.unit}</th><th class="num">占寄存器上限</th><th class="num">相对上一步的损失</th><th class="num">占整段距离</th></tr></thead><tbody>` +
+        ch.steps.map((st) => `<tr><td>${st.label}</td><td class="num">${rate(st.rate)}</td><td class="num">${pc(st.rate / first * 100)}</td><td class="num">${pc(st.loss)}</td><td class="num">${pc(st.share)}</td></tr>`).join('') +
+        `</tbody></table></div><div style="font-size:0.78rem;color:var(--fg3);margin-top:6px">${ch.note}</div>`;
+    }
   })();
 
   // --- technique explanations ---

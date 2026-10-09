@@ -27,6 +27,7 @@ One HTML file, two parts, deliberately separated:
    | `meta.updated` | the date of the last data change | |
    | `tokps` | per device, per model: `stock4w`, `stock8`, `sarc4w`, `sarc8`, `tuned4w`, `tuned8`, `vk` (best llama.cpp Vulkan Q4_0), `vkk` (best Vulkan Q4_K_M), `vendor` (best SYCL / CUDA Q4_0), `etcuda` (ExecuTorch CUDA 4w, 4070 Ti only), tok/s medians | `sarc-1.5-llamacpp-compare/results/cells.csv`: the max over that backend's `best` and `default` arms per model |
    | `branches` | the lane diagram of figure 6: one entry per branch with its lane geometry (`x0`, `x1`, `fork`, `nodes`), head hash, date, state (`ok`, `run`, `ext`, `base`) and chip text | `git ls-remote origin` and the campaign STATUS files; update heads and chips when a branch moves or a run ends |
+   | `roofs` | figure 8, kernel rate against the hardware roofs, for the five devices of the roofline study (780m, b580, b70, 4070ti, orin; a device that was not studied has no entry and is absent from the figure). `study`: campaign id, date, and per device the igpu-roofline branch name and short head. `order`: row order of the figure. `schemes`: `4w`, `8da4w`, `attn` (`plot: false` keeps the fused attention kernel in the data table only). `example`: the device whose chain is shown as the worked example. `devices.<id>`: `isa` (true when the driver's generated instructions were inspected) with `isa_note`, `state` (driver, power and clock state), `width` (subgroup width of roof shaders against kernels), `weight` (how the per-model kernel figure was formed), and `rows.<scheme>`: `unit`, `reg` (register roof), `fed` (fed from shared memory, best reuse), `reuse` (fed at the kernel's own reuse; `null` when no usable row exists, with the reason in `reuse_note`), `kernel` (rate per model, in the order of `models`), `mma` / `in` / `acc` / `sg` (matrix shape, input and accumulator type, kernel subgroup), `name` (dispatched kernel, storage suffix dropped) and `also` (other tiles dispatched by shape). `devices.<id>.chain`: part D of that device's study for its lowest scheme: `steps` with `rate`, `loss` (relative to the previous step unless `loss_basis` is `points`, then points of the register roof) and, where the study states it, `share` of the whole distance | `efficiency.csv` and `STUDY.md` on the igpu-roofline branches `study/et-20261010-<device>` |
 
 2. **The rendering code**: the second `<script>`. It reads the block, draws inline SVG, builds the tooltips
    and the data tables. It has no numbers in it. Change it only for a new figure or a layout fix.
@@ -82,6 +83,28 @@ with a message that names the campaign and the numbers that moved, and republish
 artifact URL from this file (the Artifact tool with `url` set; a publish without `url` makes a new page and loses
 the link). Push on the owner's word.
 
+## Updating the roofs of figure 8
+
+`roofs` is filled from the roofline study, not from the campaign branches. For each studied device read, on the
+igpu-roofline branch `study/et-20261010-<device>` (or the branch of a later study), the device's `STUDY.md` and
+`efficiency.csv` under its results root (27 rows: 24 linear rows = 3 models x 4 shapes x 2 schemes, plus 3
+attention rows).
+
+- `reg`, `fed`, `reuse`: columns `roof_register`, `roof_fed_shared`, `roof_fed_reuse` of the scheme's rows, checked
+  against the roof table of `STUDY.md`. Set `reuse` to `null` and write the reason in `reuse_note` when the study
+  says there is no matching roof, when the nearest row is far from the kernel's reuse, or when the row reads
+  below the kernel (the study then says it is not a ceiling). Say in `reuse_note` when a row is a single run.
+- `kernel`: one rate per model. Where `STUDY.md` states a weighting (780M and B580: time-weighted over a layer's
+  seven linear calls, i.e. the sum of `rate x kernel_ms` over the sum of `kernel_ms` with `wq_wo`, `wk_wv`,
+  `w1_w3` counted twice and `w2` once), use it; where it gives per-shape rows only (B70, 4070 Ti, Orin), take
+  the plain mean of the model's four shapes and say so in `weight`. Attention: the one row per model.
+- `chain`: copy part D as written, including its basis (which model or mean) and its own loss convention.
+- Update `study` (campaign id, date, branch heads) and the date in the header line and in the caption of
+  figure 8. The claim sentence and the caption of figure 8 quote a few of these numbers in prose; reread them.
+- Never copy a results path into the report: the directory names of the study contain host names.
+- A new studied device is a new entry under `roofs.devices` and in `roofs.order`; the rendering code needs no
+  change. Do not add a device whose owner forbids publishing figures.
+
 ## What the page must keep saying
 
 - Every gain is a geometric mean over 1B, 3B and 8B unless a cell says otherwise, and the figure 1 segments are
@@ -91,4 +114,10 @@ the link). Push on the owner's word.
 - A technique that was tried and not adopted stays on the page as hatched, with its number. Negative results
   are results.
 - The Radeon 780M adopted `fused3sb` in round 3 (2026-10-09); its cell is "ok" with no gain (speed unchanged).
+- Every Jetson Orin Nano number is for the 15 W power mode (GPU clock 612 MHz). The higher mode was not measured
+  (owner decision 2026-10-09); do not present the expected gain of that mode as a result.
+- Figure 8: the NVIDIA devices are not ISA-verified; the fed-at-reuse mark is a yardstick, not a strict ceiling
+  (some shapes on B580 and B70 read slightly above it); the three company-side devices were not studied.
+- The RX 7900 XTX fused-kernel result stands as measured under AMDVLK, subgroup width unverified; it will not
+  be re-measured under RADV (owner decision 2026-10-09).
 - The Jetson Orin Nano's second-round numbers come from a cross build whose `glslc` differs from the pinned one; the owner accepted them as measured (2026-10-09). Keep that note in the Orin tooltips.
