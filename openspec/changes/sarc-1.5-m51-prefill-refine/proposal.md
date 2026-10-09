@@ -84,14 +84,19 @@ the noise band.
 3. **`c2`: the linear kernel per shape for 8da4w, which is the 780M's texel-wise weight staging
    (`sarc_dev_linear_dq8ca_coopmat_zpg_bt`) on every 8da4w shape.** A kernel screen chose it on every shape (R8
    margin in every round); its production-diff errors equal the parent's on every shape.
-4. **`c3`: `c2` plus the 4w tile `t128x128k32g42s32f32xp` on the 4w shapes with K = 4096** (only the 8B model has
-   them). The other 4w tiles with the xclipse flags were not selected on any 1B or 3B shape.
+4. **`c3`: `c2` plus the 4w pick for the shapes with K = 4096** (only the 8B model has them): the texel-wise B staging twin of
+   the 4w tile `t128x128k32g42s32f32xp` (`sarc_dev_linear_q4gsw_coopmat_bx`, the xclipse drain flags). The other 4w tiles with the
+   xclipse flags were not selected on any 1B or 3B shape. It was gated and timed in the 8B round, as part of `c5` (below).
 5. **`c4`: `c2` plus the head_dim 64 fused attention variant that the ETDump screen of the fused variants selected** (the 16 x 64
    tile on a 64-wide subgroup; no head_dim 128 variant passed the screen, so the 780M's choice stays there). It acts on the 1B
    model only. Until `c4` existed as a profile it was selected through `ET_VK_SARC_M51_SDPA_FUSED` on top of `c2`, and the
    evidence of its gate was taken in that form.
 6. Screened: texel-wise 4w weight staging (`sarc_dev_linear_q4gsw_coopmat_bx` on the xclipse flags), because
-   the 4w kernel's phase timing shows about a third of each wave in shared-memory stores.
+   the 4w kernel's phase timing shows about a third of each wave in shared-memory stores. It passed the screen on the
+   K = 4096 shapes of the 8B model only (item 4).
+7. **`c5`: `c4` plus the `c3` pick, one name for the final stack** (added in the 8B round; a profile-table entry in
+   `impl/sarc_dev/Overrides.cpp` only). It is the stack that the 8B gate and the final sessions use. On the 1B and 3B models `c5`
+   selects exactly what `c4` selects (K = 4096 does not occur there).
 
 Test option added in the dev zone: `ET_VK_MB_SKIP_8B=1` leaves out the SDPA correctness cases named after the 8B head
 configuration (no tolerance, tier or other case changes; the count of cases run shows it). `push_models.sh` takes
@@ -106,14 +111,44 @@ drain flags, the phase-timing twin of the xclipse 4w row.
   (fused attention; whole-texel 8da4w staging; a fused-attention variant for one head dimension). The first two were
   faster outside the noise band; the third was inside it, so one sub-threshold candidate exists, not two. No further
   candidate passes a screen for the 1B and 3B models, and the owner closed the campaign on that basis. No new kernel
-  was written for this and the 8B model was not opened.
-- **What the final profile (`c4`) is:** the three candidates together. Its final timed session against the pristine
-  parent was faster in every cell; the figures are in the local `STATUS.md` only.
-- **Not covered: the 8B model end to end, the tiled 8B path and 8B timing.** By the owner's decision of 2026-10-06 no 8B model
-  was loaded on the board of this campaign, so every gate is partial (1B and 3B). `c3` (a 4w tile that acts on 8B shapes only)
-  is therefore neither gated nor part of the final stack. Since the owner's decision of 2026-10-08 the microbenchmark
-  steps of `verify.sh` and the SDPA cases of the 8B head configuration (synthetic tensors only) may run; they ran on the
-  final board in the final verification (below) without the test option that leaves them out.
+  was written for this. The campaign was reopened for the 8B model on 2026-10-08 (22:37 UTC, playbook decision N10): see the
+  8B round below.
+- **What the final profile (`c5`) is:** the three candidates and the 8B pick of `c3` together (`c4` is the same stack without
+  the `c3` pick; on the 1B and 3B models the two are identical). The final timed sessions against the pristine parent were
+  faster in every cell, the 8B cells included; the figures are in the local `STATUS.md` only.
+- **The 8B round (owner decision 2026-10-08, 22:37 UTC; playbook decision N10).** The 8B model is required for the campaign to
+  be complete, and the earlier partial gates (1B and 3B) are now complemented for 8B. What was done, in the order of the decision:
+  both 8B model files were pushed to the board and checked against the manifest's digests; the pristine parent's
+  `verify.sh --models 8b` was stored as the snapshot (`s0-parent-verify-8b`); an A/A session of the 8B cells (pristine parent
+  against the unmodified topic build, no profile) stayed inside the noise band, and the parent's 8B baseline agreed with the
+  published 8B cells within the tolerance; the final stack was gated for 8B (below) and timed against the pristine parent; the
+  4w pick `c3` was screened again on this board (it beat the incumbent by the margin in every round on the three K = 4096
+  shapes and on no other shape), timed against `c4` in an interleaved A/B, adopted, gated as part of `c5` and timed against
+  the pristine parent. **The setting for every 8B run, in both arms: `ET_VK_EXECUTE_NODE_THRESHOLD=32`** (a command-buffer
+  submission every 32 graph nodes instead of 128; without it a 2048-token 8B prefill can trip the GPU's job watchdog, which
+  crashed a board during an earlier campaign's 8B verification). The 1B and 3B runs never carry it. It is read by an opt-in
+  block in an upstream file (the hook below).
+- **Release-zone hook of the 8B round (owner decision 2026-10-08, 22:37 UTC: one additional hook beside those of owner decision
+  D4), its own commit, with its line in `sarc/HOOKS`:** `backends/vulkan/runtime/graph/ComputeGraph.cpp`, in the constructor after
+  the default thresholds are set. With the variable unset nothing changes.
+  ```
+  if (const char* thr = std::getenv("ET_VK_EXECUTE_NODE_THRESHOLD")) {
+    const int n = std::atoi(thr);
+    if (n > 0) {
+      config_.execute_threshold_node_count = static_cast<size_t>(n);
+      config_.execute_initial_threshold_node_count = static_cast<size_t>(n);
+    }
+  }
+  ```
+  (the commit also carries the owner's explanatory comment, unchanged). Shown: the hook commit on top of the parent changes no
+  shipped or other SPIR-V (`tools/spv_compare.py`: every compiled shader identical); the dispatched kernels and their counts
+  in an ETDump of every 1B and 3B cell are the same with the hook as without it; the 8B A/A session of the build with the hook
+  against the parent with the hook agrees within the band. The 8B parent arm of every 8B comparison is the parent commit plus
+  exactly this commit (a build tag `parent8b`); the candidate arms are builds of this branch (which contains it).
+- **Not covered by the 8B round:** the 8B decode path (no item of the gate runs it for 8B), the pinned container's golden check
+  (pending, as before), the roofs (not re-measured), and the group size and context length of the 8B files as read through the
+  runtime (taken from the manifest of the model share). The 1B and 3B part of the final stack was re-checked on the build of
+  the head (below).
 - **Gate state of the final stack (profile `c4`, build of the head's sources, 1B and 3B only: PARTIAL):**
   recorded as `ACCEPTED (reference-error rule, owner decision 2026-10-04), PARTIAL: 1B and 3B end to end; 8B shapes by
   microbenchmark and SDPA cases only`. On the final board: the unmodified `verify.sh --models 1b,3b` of the pristine parent
@@ -126,6 +161,21 @@ drain flags, the phase-timing twin of the xclipse 4w row.
   build's, and the golden check against `sarc/golden/spirv.json` stays pending (the pinned container is not available here;
   the native compiler gives the same set of differing variants for the parent build and for the final build).
   `sarc/tools/check.sh --no-build` passes.
+- **Gate state of the final stack for 8B (profile `c5`, build of the head's sources, setting `ET_VK_EXECUTE_NODE_THRESHOLD=32`
+  in both arms):** the unmodified `verify.sh --models 8b` of the pristine parent and of the final stack agree line by line
+  except for the two lines that name the dispatched linear kernels (the intended changes of candidate 2 and of the `c3` pick);
+  the 8B tiled and default prefill runs ran to the end; the production-diff of the 8B shapes (both schemes, both storages)
+  passes and the final stack's errors are not larger than the parent's on every shape (the 4w kernel of the `c3` pick is
+  bit-identical to `c4`'s output on the 32 real-text prompts of the probe); the SDPA tiers `extended` and `full`, 12 passes
+  each, include the 8B-head cases and have 0 mismatches and `pairing=ok`; the attention reference error is smaller than the
+  parent's in every case including the 8B heads; the real-text probe (32 prompts, 8B) passes the gross-divergence check. The
+  next token of the three prompts equals the parent's in all 8B items but one: **the 8B 8da4w timed prompt differs
+  (`ACCEPTED (reference-error rule, owner decision 2026-10-04), near-tie`)**. That prompt is the degenerate repetition of one
+  word; the two top tokens are separated by a very small margin already in the parent (in both the parent's tiled and default
+  arms), the final stack's tiled and default arms agree with each other and rank the other token first, and the real-text
+  comparison, the reference error and the gross-divergence check hold; the logits of the four arms at that position are in the
+  local evidence. The 1B and 3B side of the final stack was re-gated on the same build: `verify.sh --models 1b,3b` against its
+  snapshot and the timed session (local figures).
 - **Known property of the final stack at other prompt lengths (diagnosed from an ETDump of the unaligned prompt; the
   campaign's target is the 2048-token prefill, owner decision 2026-10-08, and the speed at other lengths is not a criterion;
   those prompts are in the gate for correctness only):** candidate 2 picks `zpg_bt`, a
@@ -144,7 +194,7 @@ drain flags, the phase-timing twin of the xclipse 4w row.
   read of the new shader (the fused attention kernel) for unsynchronised shared writes: every exchange between lanes of the
   workgroup, which is one subgroup, is separated by a shared-memory barrier, and no two lanes write one location.
 - **Directions left for later work:** a new 4w or 8da4w GEMM kernel (the linear kernels are most of the prefill and the
-  screens found no tile that beats the incumbents), a fused SwiGLU (the elementwise operators are stock kernels), the 8B cells.
+  screens found no tile that beats the incumbents, apart from the 4w pick of `c3` on the 8B shapes), a fused SwiGLU (the elementwise operators are stock kernels), an 8B decode check, and a driver-side fix for the job watchdog that makes the 8B setting unnecessary.
 - **Builds:** the golden check is pending; the compiler launches of a build wait while a timed session runs
   (`tools/gate_launcher.sh`; a stop signal to the build had no effect in the agent's environment). That gate was shown
   with a fake session on the build host only: the one build made with it (`f2`, the head that added it) was interrupted
