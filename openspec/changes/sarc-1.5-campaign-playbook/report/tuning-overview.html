@@ -125,7 +125,7 @@
   <header>
     <h1>SARC 1.5 调优全景</h1>
     <p>六台 GPU 上 2048 token 预填充的内核调优：每台的收益、收益来自哪一步、哪些技术用在了哪里、时间省在了哪、哪些工作没有回报。全部数字取自各 campaign 分支的 proposal.md 与门禁场次，几何平均跨 1B、3B、8B 三个模型。</p>
-    <div class="meta">数据截至 2026-10-08 21:00 UTC · 基线为 9 月 SARC 发布版（RX 7600 为其父提交）· 悬停任何数据标记可看明细</div>
+    <div class="meta">数据截至 2026-10-09 03:48 UTC · 基线为 9 月 SARC 发布版（RX 7600 为其父提交）· 悬停任何数据标记可看明细</div>
   </header>
 
   <section class="tiles" id="tiles" aria-label="每台设备的最终收益"></section>
@@ -141,7 +141,7 @@
 
   <figure id="fig-matrix">
     <h2>图 2 · 技术 × 设备</h2>
-    <p class="claim">深色为采纳并计入最终配置，数字是相对父配置的几何平均增益；斜纹为试过但未采纳或被门禁拒绝；虚线为没做。Intel 两张卡没碰 softmax 和融合内核，AMD 两张卡是融合内核唯一生效的地方。</p>
+    <p class="claim">深色为采纳并计入最终配置，数字是相对父配置的几何平均增益；斜纹为试过但未采纳或被门禁拒绝；虚线为没做。Intel 两张卡没碰 softmax 和融合内核；融合内核在 AMD 两张卡和 RTX 4070 Ti SUPER 上生效。</p>
     <div class="legend">
       <span><i style="background:var(--seq5)"></i>采纳，颜色深浅按增益</span>
       <span><i class="hatch"></i>试过，未采纳</span>
@@ -168,7 +168,7 @@
     <p class="claim">8B 模型一次 2048 token 预填充的 GPU 派发时间（毫秒，热态 ETDump）。Intel 上注意力三个内核从 341 ms 压到 42 ms，线性 GEMM 几乎不动；RX 7600 上融合内核把注意力压到四分之一，线性内核再省 139 ms。</p>
     <div class="legend" id="legend-time"></div>
     <div class="scroll"><div id="chart-time"></div></div>
-    <figcaption>RX 7600 的注意力三项未在其 trace-families 中拆开，按合计绘制。"其他"含激活量化、嵌入、输出投影等。</figcaption>
+    <figcaption>RX 7600 的注意力三项未在其 trace-families 中拆开，按合计绘制。"其他"含激活量化、嵌入、输出投影等。RTX 4070 Ti SUPER 的父配置是其第一轮最终配置（已含协作矩阵注意力内核）；调优后的融合内核与 K/V 拷贝合计 20.7 ms，按未拆分绘制。</figcaption>
     <details><summary>数据表</summary><div id="table-time"></div></details>
   </figure>
 
@@ -181,32 +181,32 @@
 
   <figure id="fig-llama">
     <h2>图 5 · 调优后相对 llama.cpp 的位置</h2>
-    <p class="claim">调优后的 ExecuTorch 4w 预填充速度除以 llama.cpp Q4_0 最佳设置的速度，每台设备三个点对应 1B、3B、8B。对 llama.cpp 的 Vulkan 后端，我们在六台中的五台领先（RTX 4070 Ti SUPER 和 Jetson Orin Nano 在 1B 上略低于 1.0）；对厂商后端（SYCL、CUDA），仍落后两到三成，Orin 除外。</p>
+    <p class="claim">调优后的 ExecuTorch 4w 预填充速度除以 llama.cpp Q4_0 最佳设置的速度，每台设备三个点对应 1B、3B、8B。对 llama.cpp 的 Vulkan 后端，我们在六台中的五台领先（Jetson Orin Nano 在 1B 上略低于 1.0）；对厂商后端（SYCL、CUDA），仍落后一到三成，Orin 除外。</p>
     <div class="legend"><span><i style="background:var(--s1)"></i>相对 llama.cpp Vulkan</span><span><i style="background:var(--s2)"></i>相对厂商后端（Intel SYCL，NVIDIA CUDA）</span><span><i style="border-top:2px dashed var(--ref);width:16px;height:0;border-radius:0"></i>1.0 持平</span></div>
     <div class="scroll"><div id="chart-llama"></div></div>
-    <figcaption>来源：topic/llamacpp-compare 的 cells.csv，llama.cpp b11430，各设备筛选过的最佳设置，5 次中位数。780M 没有可用的厂商后端（ROCm 不支持该集成显卡，未测）。RX 7600 由公司侧于 2026-10-08 测得，仅 Vulkan；其 8B 的 llama-bench 数字因该卡在 1024 个提示 token 以上走了一条慢的 GPU 路径而弃用，该处取 llama-completion 计时。</figcaption>
+    <figcaption>来源：topic/llamacpp-compare 的 cells.csv，llama.cpp b11430，各设备筛选过的最佳设置，5 次中位数。780M 没有可用的厂商后端（ROCm 不支持该集成显卡，未测）。RX 7600 由公司侧于 2026-10-08 测得，仅 Vulkan；其 8B 的 llama-bench 数字因该卡在 1024 个提示 token 以上走了一条慢的 GPU 路径而弃用，该处取 llama-completion 计时。RTX 4070 Ti SUPER 的调优后速度取自其融合移植分支的收尾场次 s5-pristine（7 次中位数）。</figcaption>
     <details><summary>数据表</summary><div id="table-llama"></div></details>
   </figure>
 
 
   <figure id="fig-branches">
     <h2>图 6 · 分支关系与状态</h2>
-    <p class="claim">每条水平线是 sarc-acl/executorch 上的一个分支，时间从左到右，不按比例。所有 campaign 分支都从 780M 分支派生，所以融合注意力内核和开发区覆盖文件在每一条里都有；合并 PR 因此只能一条一条进。右侧三条短线是今天新开的融合内核移植分支，从各自第一轮的头部拉出。</p>
+    <p class="claim">每条水平线是 sarc-acl/executorch 上的一个分支，时间从左到右，不按比例。所有 campaign 分支都从 780M 分支派生，所以融合注意力内核和开发区覆盖文件在每一条里都有；合并 PR 因此只能一条一条进。右侧三条短线是 10-08 新开的融合内核移植分支，从各自第一轮的头部拉出；其中 4070 Ti 的一条已于 10-09 关闭，另两条仍在运行。</p>
     <div class="legend" id="legend-branches"></div>
     <div class="scroll"><div id="chart-branches"></div></div>
-    <figcaption>"+N" 为领先 dev/1.5 的提交数；箭头表示分支从该提交创建。头部状态截至 2026-10-08 21:00 UTC。</figcaption>
+    <figcaption>"+N" 为领先 dev/1.5 的提交数；箭头表示分支从该提交创建。头部状态截至 2026-10-08 21:00 UTC；topic/4070ti-fused-port 截至 2026-10-09 03:48 UTC。</figcaption>
   </figure>
 
   <figure id="fig-tokps">
     <h2>图 7 · 全部 tok/s</h2>
     <p class="claim">六台设备、三个模型、每格的 2048 token 预填充速度（tok/s，5 次有效运行的中位数，单一来源：llama.cpp 对比分支的 cells.csv）。stock 是未修改的 ExecuTorch 1.5，SARC 是 9 月发布版，调优后是各 campaign 的最终配置；llama.cpp 取各后端筛选过的最佳设置、两种计时器里较高者。</p>
     <div class="scroll"><div id="table-tokps"></div></div>
-    <figcaption>标 * 的格按设备 README 的说明计入了低于时钟下限的运行（负载本身把时钟压低，不是干扰）。RX 7600 的 8B llama.cpp 取 llama-completion 计时（llama-bench 在该卡 1024 token 以上走慢路径）。780M 与 RX 7600 无厂商后端数据（HIP 未测）。</figcaption>
+    <figcaption>标 * 的格按设备 README 的说明计入了低于时钟下限的运行（负载本身把时钟压低，不是干扰）。RX 7600 的 8B llama.cpp 取 llama-completion 计时（llama-bench 在该卡 1024 token 以上走慢路径）。780M 与 RX 7600 无厂商后端数据（HIP 未测）。RTX 4070 Ti SUPER 的调优后两列取自其融合移植分支的收尾场次 s5-pristine（7 次有效运行的中位数），不在 cells.csv 中。</figcaption>
   </figure>
 
   <section class="notes">
     <div class="note"><h3>还没合并</h3><p>六条分支都在 origin 上，没有一条进了 dev/1.5。合并前要做：独立复核、融合内核采用 fused3sb、给最终配置一个单一名字、清理结果文件里的路径。</p></div>
-    <div class="note"><h3>剩余空间在哪</h3><p>Intel 两张卡还没有试 fp32 softmax 和融合内核；AMD 独显上 llama.cpp 的 HIP 后端还没测，领先结论只对 Vulkan 成立。</p></div>
+    <div class="note"><h3>剩余空间在哪</h3><p>Intel 两张卡的 fp32 softmax 和融合内核正在 B580 上移植，B70 待其结果；AMD 独显上 llama.cpp 的 HIP 后端还没测，领先结论只对 Vulkan 成立。</p></div>
     <div class="note"><h3>流程产物</h3><p>A/A 校准与时钟下限、每候选过门禁、参考误差规则、两连候选低于 2 % 的停止规则、协调者 hold、独立审阅。这些是手册的一部分，不在图里。</p></div>
   </section>
 </main>
@@ -223,6 +223,17 @@
    "stock": [
     4.46,
     7.43
+   ],
+   "base": "相对 9 月基线"
+  },
+  {
+   "id": "4070ti",
+   "name": "RTX 4070 Ti SUPER",
+   "vendor": "NVIDIA",
+   "final": 64.3,
+   "stock": [
+    3.57,
+    5.87
    ],
    "base": "相对 9 月基线"
   },
@@ -245,17 +256,6 @@
    "stock": [
     2.17,
     3.46
-   ],
-   "base": "相对 9 月基线"
-  },
-  {
-   "id": "4070ti",
-   "name": "RTX 4070 Ti SUPER",
-   "vendor": "NVIDIA",
-   "final": 46.2,
-   "stock": [
-    3.57,
-    5.22
    ],
    "base": "相对 9 月基线"
   },
@@ -373,6 +373,11 @@
     "c": "attn",
     "g": 46.74,
     "n": "候选 4：注意力内核 + fp32 softmax（nzf）。候选 1 带 stock softmax 时 +42 % 但精度被拒"
+   },
+   {
+    "c": "fused",
+    "g": 11.49,
+    "n": "第二轮候选 1：融合注意力内核 fused3sb（4070ti-fused1），叠在 4070ti-refine1 之上，门禁 s4-c1 接受"
    }
   ],
   "780m": [
@@ -449,7 +454,7 @@
   "orin": 66.65,
   "b580": 57.65,
   "b70": 59.23,
-  "4070ti": 46.74,
+  "4070ti": 63.28,
   "780m": 33.82,
   "rx7600": 26.9
  },
@@ -591,7 +596,10 @@
      "k": "none"
     },
     "4070ti": {
-     "k": "none"
+     "k": "ok",
+     "g": 11.49,
+     "n": "第二轮移植，fused3sb",
+     "t": "第二轮候选 4070ti-fused1，相对第一轮最终配置 4070ti-refine1 的几何平均 +11.49 %（门禁 s4-c1 接受）；1B 两格 +19 % 和 +21 %，3B、8B 各格 +6 % 到 +9 %"
     },
     "orin": {
      "k": "none"
@@ -606,7 +614,7 @@
     "what": "把注意力的三步（QK^T 打分、softmax、attn·V 混合）合成一个内核。一行分数算出来以后不写回显存，直接留在这组线程的共享内存里做 softmax，再乘上 V。",
     "why": "分开做时，2048×2048 的分数表要整张写进显存、再整张读出来两次，还要多发两次 GPU 任务。合在一起后这张中间表不再落地。",
     "like": "三道工序原来各在一个车间，半成品要来回搬运；现在一条流水线做完。",
-    "res": "780M +16.8 %，RX 7600 +18.2 %。向 B580、4070 Ti、Orin 的移植是第二轮，正在进行。"
+    "res": "780M +16.8 %，RX 7600 +18.2 %；RTX 4070 Ti SUPER 的移植已完成，在第一轮配置之上再 +11.5 %。向 B580、Orin 的移植仍在进行。"
    }
   },
   {
@@ -625,7 +633,10 @@
      "k": "none"
     },
     "4070ti": {
-     "k": "none"
+     "k": "ok",
+     "v": "随第 4 行",
+     "n": "带屏障",
+     "t": "移植用的就是带子组屏障的 fused3sb（RX 7600 的形式），没有构建不带屏障的 fused3，所以没有单独的增益可量，计在第 4 行内。另加了一处检查：工作组不是恰好一个 32 线程的子组时内核直接返回"
     },
     "orin": {
      "k": "none"
@@ -778,8 +789,9 @@
     },
     "4070ti": {
      "k": "ok",
-     "v": "1 个",
-     "n": "softmax 名；注意力行走开发区注册"
+     "v": "2 个",
+     "n": "softmax 名、融合入口",
+     "t": "融合入口是第二轮从 780M 分支原样拣选的挂钩（35e3728c9，49 行），晋升前仍需所有者审阅"
     },
     "orin": {
      "k": "ok",
@@ -797,7 +809,7 @@
     "what": "这一行不是优化。代码分两个区：发布区是已发布、原则上不许改的内核；开发区放实验内核。有时一个新内核必须在发布区留一个很小的入口才能被选中，这个入口就叫挂钩。",
     "why": "把实验代码与已发布代码隔开，保证关掉开关后行为与发布版完全一致。每个挂钩要所有者批准，并单独提交。",
     "like": "在承重墙上开一个经过审批的小检修口，而不是随手打洞。",
-    "res": "780M 用了 2 个，4070 Ti 和 Orin 各 1 个，Intel 两张卡不需要。"
+    "res": "780M 和 4070 Ti 各 2 个，Orin 1 个，Intel 两张卡不需要。"
    }
   },
   {
@@ -930,6 +942,26 @@
     "attn": 46.7,
     "other": 143.3
    }
+  },
+  {
+   "dev": "RTX 4070 Ti SUPER · 8B 4w",
+   "arm": "父配置",
+   "v": {
+    "linear": 239.58,
+    "qk": 13.01,
+    "av": 11.63,
+    "softmax": 14.92,
+    "other": 60.96
+   }
+  },
+  {
+   "dev": "RTX 4070 Ti SUPER · 8B 4w",
+   "arm": "调优后",
+   "v": {
+    "linear": 238.7,
+    "attn": 20.73,
+    "other": 60.79
+   }
   }
  ],
  "waste": [
@@ -1008,14 +1040,14 @@
   {
    "name": "RTX 4070 Ti SUPER",
    "vk": [
-    0.93,
-    1.03,
-    1.08
+    1.13,
+    1.12,
+    1.16
    ],
    "vendor": [
-    0.73,
-    0.81,
-    0.81
+    0.88,
+    0.89,
+    0.86
    ],
    "vn": "CUDA"
   },
@@ -1031,7 +1063,7 @@
   }
  ],
  "meta": {
-  "updated": "2026-10-08",
+  "updated": "2026-10-09",
   "note": "All figures from the campaign branches proposal.md / STATUS.md and topic/llamacpp-compare cells.csv. Edit this block only; the rendering code below reads it."
  },
  "tokps": [
@@ -1184,8 +1216,8 @@
      "stock8": 6872.48,
      "sarc4w": 19692.3,
      "sarc8": 21113.4,
-     "tuned4w": 29681.2,
-     "tuned8": 33032.3,
+     "tuned4w": 35929.8,
+     "tuned8": 39384.6,
      "vk": 31892.6,
      "vkk": 34239.2,
      "vendor": 40860.5,
@@ -1197,8 +1229,8 @@
      "stock8": 2560.0,
      "sarc4w": 8714.89,
      "sarc8": 9660.38,
-     "tuned4w": 12880.5,
-     "tuned8": 14948.9,
+     "tuned4w": 14027.4,
+     "tuned8": 16254.0,
      "vk": 12471.4,
      "vkk": 12765.1,
      "vendor": 15837.2,
@@ -1210,8 +1242,8 @@
      "stock8": 1104.04,
      "sarc4w": 4471.62,
      "sarc8": 5007.33,
-     "tuned4w": 5988.3,
-     "tuned8": 6954.18,
+     "tuned4w": 6400.0,
+     "tuned8": 7501.83,
      "vk": 5539.1,
      "vkk": 6234.8,
      "vendor": 7417.6,
@@ -1530,12 +1562,12 @@
      "lane": "4070ti",
      "x": 960
     },
-    "label": "融合内核移植，fused3sb 语义",
+    "label": "+59 · 4070ti-fused1 · +64.3 %",
     "head": {
-     "h": "运行中",
-     "d": "10-08 19:37 起",
-     "state": "run",
-     "chip": "A/A 完成，候选 1 构建中"
+     "h": "8f8c44e22",
+     "d": "10-09",
+     "state": "ok",
+     "chip": "done"
     }
    },
    {
