@@ -30,6 +30,8 @@ candidate).
 | kernel screen | a kernel replaces the incumbent for a shape only if at least 3 % faster in every round; a tie keeps the incumbent | R8 |
 | stop rule | two consecutive gated candidates each under 2 % geometric mean over their parent | R11 |
 | cooling | to idle + 5 C, or until the temperature (max of edge, junction, memory) has not fallen for 30 s, at most 300 s, before every run | R6, L20 |
+| cool start | the wait before a gate / timed session (`gate.sh`: at most 48 C, at most 1800 s) and the waits before screen, tier and trace jobs (55 / 60 C, at most 300 s) use the **core temperatures only: the maximum of edge and junction, not memory** (`gtemp_core` in `env.sh`; owner decision 2026-10-08 22:13 UTC, repeated 2026-10-09 00:56 UTC). The memory sensor reads 46 to 50 C at idle on this card and made every 48 C wait run to its cap. Committed on its own (`9a61374ed`), synced to the GPU host 2026-10-09 before the next gate. It changes only when a session starts, not which runs are valid; sessions measured before it (candidates 1 to 6, the final session) stand. The per-run cooling above is unchanged | owner |
+| foreign GPU user, monitors | the rule above stays (owner decision 2026-10-09 00:56 UTC): no run is taken while another process holds the card; the queue waits and logs the wait (`foreign_wait_s`); finished runs are not invalidated by a monitor that appears later | owner |
 | page cache | the GPU host has 123 GB RAM, the six models (14 GB) stay in the page cache; the model file is read once before each cell all the same (D5, both arms alike); the load time of every run is recorded | D5 |
 | next-token items | D1 / D3 as written (near-tie evidence; reference-error rule for arithmetic changes) | owner |
 | tok/s | `prefill_token_per_sec` of the runner (1 ms timer: one step is about 1 % for the 1B cells); ETDump dispatch time is reported beside it | L19 |
@@ -48,7 +50,7 @@ Values written into `tools/thresholds.txt` once, by the rules above (`tools/cali
 | foreign-busy ceiling | 5 % | highest pre-run `gpu_busy_percent` of the valid timed runs was 0 |
 | thermal mask | `0xffef` (bit 36 masked) | **amended, see below** |
 
-**Amendment of the thermal-mask rule (2026-10-08, after the A/A and before any candidate was measured; for the owner to ratify).**
+**Amendment of the thermal-mask rule (2026-10-08, after the A/A and before any candidate was measured; **ratified by the owner 2026-10-08 19:30 UTC and again 2026-10-09 00:56 UTC**).**
 The rule as fixed above, applied by `calibrate.py`, gives `thermal_mask=0xffff`: bit 36 of `indep_throttle_status` is in the window of all 120 timed
 runs, there are no runs without it to compare with, and the fallback comparison (cell median clock against the other cells', all of which
 carry the bit too) shows +2.19 % and -1.20 % on the two 1B cells, which is the workload dependence of the clock and not an effect of
@@ -58,7 +60,7 @@ highest clock the card reaches); the 79 samples without it are window-edge ramp 
 card is loaded (it also shows in about 31 % of all samples including idle ones, and at 44 C in the smoke test) and does not limit the clock. It
 is therefore masked (recorded, not rejected); every other temperature bit (32 to 35, 37 to 47) still rejects, and real throttling is caught by the
 clock floor. Nothing is lost: the `throttle` field of every run keeps the full word, so any session can be re-judged under the literal rule.
-Every result of this campaign stands under this amendment until the owner decides (question in `STATUS.md`).
+Owner decision 2026-10-08 19:30 UTC: bit 36 is masked (recorded per run, not rejecting); every other temperature bit still rejects; the clock floor (2670 MHz) stays; the raw status words stay in the raw files; the measurements made under the amended rule are valid.
 
 Baseline (parent arm of the A/A, median of the first 7 valid runs; published values from `contrib/7900xtx/NOTES.md`, 2026-09-28) and the A/A itself
 (same binary in both arms):

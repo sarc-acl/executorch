@@ -1,6 +1,6 @@
 # STATUS: sarc-1.5-7900xtx-prefill-refine
 
-Updated 2026-10-09 07:40 UTC (`date -u`). Branch `topic/7900xtx-prefill-refine`, parent `90fe4d013`. **Nothing pushed.** Round finished; nothing is running on either machine; the GPU host is idle (no `HOLD` file).
+Updated 2026-10-09 07:40 UTC (`date -u`). Branch `topic/7900xtx-prefill-refine`, parent `90fe4d013`. **Nothing pushed.** **The round is NOT finished**: second-set items 2 and 3 (8da4w and 4w linear kernels, per-K-step synchronisation) come before the final verification and are in progress; the result below is the interim stack (candidates 1, 3, 5, 6).
 
 ## Result
 Final stack against the pristine parent, one timed session, 7 valid runs per arm and cell, build of commit `a8dd09570` (no local patch; later commits are evidence and documents only):
@@ -31,20 +31,17 @@ SDPA output byte-identical to the pristine parent (21 of 21), real-text probe KL
 `check.sh --no-build` PASS, `git diff --name-status 90fe4d013 HEAD` outside the change directory = the five dev-zone files named in `proposal.md`, nothing under `sarc/tools` or `sarc/golden`.
 Roofs re-measured (igpu-roofline quick + fast, this driver): matrix fp16 / fp32-acc 140.83 TFLOP/s, int8 141.60 TOP/s; the GEMMs run at 49 to 69 % of them.
 
-## Decision needed from the owner
-1. **Thermal-mask rule (ratification).** The rule fixed before the A/A gave `thermal_mask=0xffff` on this card: bit 36 of `indep_throttle_status` is present in every run, so every later run would be invalid. Evidence: set in 98.4 % of the
-   in-window samples at the card's highest clock (2824 MHz median); the samples without it are ramp samples. I masked bit 36 only (recorded, not rejected), kept every other temperature bit rejecting and the clock floor (2670 MHz); done after the A/A
-   and before any candidate was measured; the full throttle word of every run is kept. Rejecting it makes every measurement of this campaign invalid under the rule as written.
-2. **Stop rule.** By the letter it was met early (candidates 1 and 2), but candidate 2 was not fully gated and the port list still had untried items, so the campaign went on; at the end the last gated candidates are 4 (-0.42 %), 5 (+4.09 %), 6 (+0.67 %):
-   not two consecutive under 2 %. It ends because every screen of the dev zone's named kernels is complete and passes nothing more by the 3 % rule. If you want the strict reading, the next step is a new GEMM kernel (the 8da4w phase timing points at its
-   barriers and LDS stores), which N1 leaves out of this port; say if you want it.
-3. **A passive monitor during timed runs.** An `amdgpu_top` of an interactive session of this account blocked the queue for about 65 minutes (21:00 to 22:05 UTC on 2026-10-08), an `nvtop` made `gl.sh` refuse jobs earlier. By rule no run is taken while another
-   process holds the card; the tools now wait instead of refusing. If a passive monitor may stay open during timed runs, say so (a change of R6 / `others.sh`; its effect on the timing is UNVERIFIED).
+## Decisions recorded (all answered by the owner; nothing is open)
+- **Thermal mask: ratified** (owner 2026-10-08 19:30 UTC, again 2026-10-09 00:56 UTC). Bit 36 is masked (recorded per run, not rejecting); every other temperature bit rejects; clock floor 2670 MHz; raw status words kept.
+- **Passive monitor: the rule stays** (owner 2026-10-09 00:56 UTC). No run is taken while another process holds the card; the queue waits and logs the wait; if a monitor appears again, keep waiting and note it here.
+- **Cool-start check on the core temperatures only** (owner 2026-10-08 22:13 UTC, repeated 2026-10-09 00:56 UTC): `gtemp_core` (edge and junction, not memory) in `tools/env.sh`, used by `gate.sh` and by every screen / tier / trace wait; own commit `9a61374ed`, synced to the GPU host 2026-10-09 (core 27 C against max 46 C at idle). Affects when a session starts, not which runs are valid.
+- **The stop rule does not end the campaign after the port list** (owner 2026-10-08 23:38 UTC; coordinator 2026-10-09 04:26 UTC): items 2 (8da4w linear) and 3 (4w linear) of the second set come before the final verification. The final verification recorded below (stack of candidates 1, 3, 5, 6) was run too early; it is superseded
+  by the redo on the new head after items 2 and 3. Builds on this workstation may run during GPU measurements (owner 2026-10-09 02:33 UTC).
 
 ## For the reviewer: not checked by me, or open
 - Whether AMDVLK runs the 32-lane fused kernels as wave32 (UNVERIFIED; they were correct, 18 tier passes, but 2.6x slower than the unfused path, cause not investigated; the candidate was rejected on its timed session).
 - The very large 4w tile `t128x256 ... cbt` takes about 14 minutes to run its 12-shape microbench job (probably driver compile time; UNVERIFIED); it is not in the final stack.
 - The golden against `sarc/golden/spirv.json` is pending (no container image); the DIFF set equals the parent build's in every build measured (`c2`, `c3`, `c5`, `c6b`, `final`).
-- New shaders: only `fused3sb` (read for shared writes, not in the final stack); the kernels of candidates 3, 5 and 6 are existing dev-zone shaders with unchanged sources, selected by name; the only new C++ is the `7900xtx` block of `Overrides.cpp`.
+- New shaders: only `fused3sb` (read for shared writes, not in the final stack); the kernels of candidates 3 and 5 are existing dev-zone shaders with unchanged sources, selected by name; candidate 6's `sarc_sdpa_av_coopmat_sweep_t32x32k32g22s32` is a new yaml variant (commit 1976f2c9e, parameters of an existing template; the reviewer read it and found it race-free); the only new C++ is the `7900xtx` block of `Overrides.cpp`.
 - The shell tools were written for a two-machine workflow; their first versions had bugs that cost time (a guard pattern, a refusing guard, an invalid attention variant, one failed build): each is recorded where it happened, the superseded outputs are in the artifact directory.
 - Submodules of the working copy were fetched from their public GitHub URLs (read-only download) so that R5 exports can pin them.
