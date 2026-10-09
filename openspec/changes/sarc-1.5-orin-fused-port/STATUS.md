@@ -1,6 +1,6 @@
 # STATUS: sarc-1.5-orin-fused-port
 
-**2026-10-09 01:27 UTC. Candidate 1 (fused attention kernel, profile `orin-fused1`) passed its gate `s3-c1` on
+**2026-10-09 01:37 UTC. Candidate 1 (fused attention kernel, profile `orin-fused1`) passed its gate `s3-c1` on
 build `topic1`: +6.01 % geomean over the tuned parent (1B +10.9 / +10.0 %, 3B +4.8 / +4.4 %, 8B +3.3 / +3.0 %), no
 next-token item differs, reference-error criterion 1 met. NOT CLOSED, and `s3-c1` is not the result that will be
 reported: three things taken from the 4070 Ti fused port are put right first (thermal-throttle record in the
@@ -32,8 +32,8 @@ All times are UTC from `date -u`.
     igpu-roofline `fast`, 41 minutes in the first campaign).
   - Ended before they started a job: `chain5` (candidate 2 on `topic2`, 00:41), `chain6` and `chain7` (the same
     steps as `chain8` and `chain9`, fixed on `topic3`; 01:26).
-- Workstation: `build-topic4` (`0bed38090`, since 01:25), then `build-extra4` (its `logits_dump`); then deploy.
-  `topic4` must be on the device before `chain4` ends, or `chain8` takes `topic3`.
+- Workstation: nothing. `topic4` (`0bed38090`) was built 01:25 to 01:36 and is deployed with its `logits_dump`
+  (01:36, before `chain4` ended).
 - Coordinator hold: `tools/HOLD.md` (device: `~/hmz-sarc-orin-fused/HOLD`; builds: `.artifacts/HOLD`). None seen.
 
 ## Final stack: the rule, fixed 01:22 UTC before `s5-c1` and `s6-c2` have a number
@@ -303,7 +303,7 @@ provenance `.artifacts/build/<tag>.src.txt`.
 | `topic1` | `0f14f2a1a` | hard links to `parent` + 77 changed paths, each verified by blob hash | 1620 shaders: the parent's 1610 byte-identical + the 10 new `sarc_dev_orin_sdpa_*`; `tools/shipped.py`: all 53 shipped variants byte-identical to `parent`: **UNCHANGED** |
 | `topic2` | `c6be297f1` (profile `orin-fused2` added) | hard links to `topic1` + changed paths | 1620 shaders, all byte-identical to `topic1`; shipped: **UNCHANGED**. Deployed, used for nothing (superseded by `topic3` before any job ran on it) |
 | `topic3` | `ca62778e6` (test support as insert-only blocks) | hard links to `topic2` + 104 changed paths | 1620 shaders; shipped: **UNCHANGED** (53 of 53 equal to `parent`; `build/topic3.shipped.txt`); `llama_main` `d37d44dd...`, `test_llama_microbench` `c1cfe15b...` |
-| `topic4` | `0bed38090` (the one-full-subgroup check in the fused kernel; the last commit that changes code) | hard links to `topic3` + changed paths | building |
+| `topic4` | `0bed38090` (the one-full-subgroup check in the fused kernel; the last commit that changes code) | hard links to `topic3` + 7 changed paths | 1620 shaders: the 8 `fused3sb` variants differ from `topic3`, the other 1612 are byte-identical; shipped: **UNCHANGED** (53 of 53 equal to `parent`; `build/topic4.shipped.txt`); `llama_main` `d33b5330...`, `test_llama_microbench` `72535d0f...` |
 
 `spirv_golden.py` reads FAIL with 14 DIFF lines on both builds, as on every build of the first campaign: the
 cross image's glslc is not the one the goldens were made with; none of the 14 is a kernel the Orin rows
