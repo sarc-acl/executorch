@@ -316,6 +316,9 @@ Specification sentences relied on, each found again on this host through the `vu
 The remaining sentences of the B580's list (atomics, the data-race definition, uniform control flow) were read in
 its `STATUS.md` at `cea76c634` and not searched again here.
 
+Pushed: `topic/b70-fused-port` to `origin` at 10:50 UTC (first push at `f53618d9c`; an ordinary push, no force, no
+pull request). `check.sh --no-build` at that head: `check.sh: PASS`.
+
 ## Not done, and why
 
 - Roofs not re-measured (igpu-roofline is not set up in this campaign's artifacts; no linear kernel changed):
