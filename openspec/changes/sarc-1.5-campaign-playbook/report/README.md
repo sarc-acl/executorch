@@ -15,7 +15,7 @@ One HTML file, two parts, deliberately separated:
 
    | key | what it holds | source of truth |
    |---|---|---|
-   | `devices` | one row per device: name, vendor, `final` (geomean gain over the September table, in %), `stock` (speed-up over unmodified ExecuTorch, before and after), `base` | `results.md` section 1 |
+   | `devices` | one row per device: name, vendor, `final` (geomean gain over the September table, in %; `null` for a device without published figures), `stock` (speed-up over unmodified ExecuTorch, before and after; `null` when not measured), `base`, optional `note` | `results.md` section 1 |
    | `cats` | the six technique categories of figure 1 with their fixed colors (`--s1` to `--s6`; never reorder, never add a seventh) | this file |
    | `chains` | per device, the accepted candidates in order: `c` (category key), `g` (geomean gain over its parent, %), `n` (label) | each campaign's `proposal.md` candidate table, accepted rows only |
    | `reported` | per device, the final stack measured directly against the pristine parent, % | each campaign's final session |
@@ -30,6 +30,19 @@ One HTML file, two parts, deliberately separated:
 
 2. **The rendering code**: the second `<script>`. It reads the block, draws inline SVG, builds the tooltips
    and the data tables. It has no numbers in it. Change it only for a new figure or a layout fix.
+
+**Devices without published figures, and the column count.** A device whose owner forbids publishing figures
+(M51) is a `devices` entry with `"final": null`, a `base` text that says so and a `note` for the tooltip. It has
+no entry in `chains`, `reported`, `timeRows`, `llama` or `tokps`, and its `techs` cells carry only `k`, a short
+text `v` (for example "已采纳", "不适用"), an optional `n` and a qualitative tooltip `t`: no percentage, speed,
+time, driver or board identifier anywhere, in the data block or in the prose. The rendering code shows the text
+"不公布数字" on its tile and in the matrix header and draws no bar for it in figure 1. A device that has figures
+but no llama.cpp or stock measurement (RX 7900 XTX) keeps those `tokps` fields `null`, which the table prints as
+a dash, and has no `llama` entry; an optional `note` on a `devices` or `tokps` entry is shown in the tile tooltip
+or beside the device name in figure 7. The matrix of figure 2 takes its column count from the data: the six
+original devices in their fixed order, then any further `devices` entries in the order they appear; the script
+sets the CSS variable `--ncol` on the matrix and the grid and its `min-width` follow it, so a new device needs
+no style change.
 
 Colors, type and theme tokens are in the `<style>` block and follow the validated default palette of the
 data-viz method (six categorical slots in fixed order, one sequential blue ramp for the matrix, neutral gray for

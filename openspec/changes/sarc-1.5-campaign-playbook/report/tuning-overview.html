@@ -1,7 +1,7 @@
 <title>SARC 1.5 调优全景</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-  /* 布局：先六张收益卡，再五张图自上而下，每张图一个结论。冷灰底，数据色来自验证过的默认调色板，状态色与系列色分开。 */
+  /* 布局：先每台设备一张收益卡，再五张图自上而下，每张图一个结论。冷灰底，数据色来自验证过的默认调色板，状态色与系列色分开。 */
   :root {
     --bg: #f4f5f7; --surface: #fcfcfb; --fg: #0b0b0b; --fg2: #52514e; --fg3: #7d7c78; --line: #dcdbd6; --grid: #e8e7e3;
     --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #4a3aa7;
@@ -33,6 +33,7 @@
   .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; min-width: 0; }
   .tile .label { font-size: 0.8rem; color: var(--fg2); }
   .tile .value { font-size: 1.7rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; margin-top: 2px; }
+  .tile .value.text { font-size: 1.05rem; line-height: 1.95; color: var(--fg2); }
   .tile .sub { font-size: 0.78rem; color: var(--fg3); font-family: var(--mono); margin-top: 4px; }
   .tile .meter { height: 6px; background: var(--seq1); border-radius: 3px; margin-top: 10px; overflow: hidden; }
   .tile .meter > span { display: block; height: 100%; background: var(--seq5); border-radius: 3px; }
@@ -63,7 +64,7 @@
   th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
   td.num, th.num { text-align: right; font-family: var(--mono); }
   th { color: var(--fg3); font-weight: 500; font-size: 0.75rem; letter-spacing: 0.04em; }
-  .matrix { display: grid; grid-template-columns: minmax(170px, 1.3fr) repeat(6, minmax(92px, 1fr)); gap: 3px; min-width: 760px; font-size: 0.82rem; }
+  .matrix { display: grid; grid-template-columns: minmax(170px, 1.3fr) repeat(var(--ncol, 6), minmax(92px, 1fr)); gap: 3px; min-width: calc(190px + var(--ncol, 6) * 95px); font-size: 0.82rem; }
   .matrix .h { color: var(--fg2); font-weight: 500; padding: 6px 8px; align-self: end; }
   .matrix .h.dev { text-align: center; }
   .matrix .h.dev small { display: block; font-family: var(--mono); font-size: 0.72rem; color: var(--fg3); font-weight: 400; }
@@ -124,24 +125,24 @@
 <main>
   <header>
     <h1>SARC 1.5 调优全景</h1>
-    <p>六台 GPU 上 2048 token 预填充的内核调优：每台的收益、收益来自哪一步、哪些技术用在了哪里、时间省在了哪、哪些工作没有回报。全部数字取自各 campaign 分支的 proposal.md 与门禁场次，几何平均跨 1B、3B、8B 三个模型。</p>
-    <div class="meta">数据截至 2026-10-09 15:30 UTC · 基线为 9 月 SARC 发布版（RX 7600 为其父提交）· 悬停任何数据标记可看明细</div>
+    <p>八台 GPU 上 2048 token 预填充的内核调优（七台公布数字；M51 按设备所有者的要求只列定性结论）：每台的收益、收益来自哪一步、哪些技术用在了哪里、时间省在了哪、哪些工作没有回报。全部数字取自各 campaign 分支的 proposal.md 与门禁场次，几何平均跨 1B、3B、8B 三个模型。</p>
+    <div class="meta">数据截至 2026-10-09 17:30 UTC · 基线为 9 月 SARC 发布版（RX 7600 与 RX 7900 XTX 为各自的父提交）· 悬停任何数据标记可看明细</div>
   </header>
 
   <section class="tiles" id="tiles" aria-label="每台设备的最终收益"></section>
 
   <figure id="fig-chain">
     <h2>图 1 · 收益是一步步叠出来的</h2>
-    <p class="claim">每个水平条是一台设备；每一段是一个被采纳的候选，长度为其相对父配置的几何平均增益（对数叠加，所以段长可以相加）。四台原本跑 stock 注意力的设备靠第一段就拿到了大部分；780M 和 RX 7600 已经有注意力内核，收益来自融合内核。第二轮把融合内核移植到这四台，各再加 +6 % 到 +11 %。</p>
+    <p class="claim">每个水平条是一台设备；每一段是一个被采纳的候选，长度为其相对父配置的几何平均增益（对数叠加，所以段长可以相加）。四台原本跑 stock 注意力的设备靠第一段就拿到了大部分；780M 和 RX 7600 已经有注意力内核，收益来自融合内核。第二轮把融合内核移植到这四台，各再加 +6 % 到 +11 %；RX 7600 的第二轮改线性内核的暂存行距，再加 +5.4 %。RX 7900 XTX 没有采纳融合内核，四段合计不到 +10 %。M51 不公布数字，不画条。</p>
     <div class="legend" id="legend-chain"></div>
     <div class="scroll"><div id="chart-chain"></div></div>
-    <figcaption>段的宽度按 ln(1+增益) 比例，横轴刻度换算回累计百分比。叠乘结果与各 campaign 最终场次直接测得的数字相差在 3 个百分点以内（不同场次、不同基线）。Jetson Orin Nano 第二轮的数字（+6.13 %、+76.70 % 以及由它们导出的各值）测自着色器编译器（glslc）与规定版本不同的交叉构建。所有者 10-09 裁定按现状接受，不重测，编译器差异记为已知局限。</figcaption>
+    <figcaption>段的宽度按 ln(1+增益) 比例，横轴刻度换算回累计百分比。叠乘结果与各 campaign 最终场次直接测得的数字相差在 3 个百分点以内（不同场次、不同基线）。Jetson Orin Nano 第二轮的数字（+6.13 %、+76.70 % 以及由它们导出的各值）测自着色器编译器（glslc）与规定版本不同的交叉构建。所有者 10-09 裁定按现状接受，不重测，编译器差异记为已知局限。M51 的设备所有者不允许公布这台设备的任何数字，所以本页各图都没有它的数值，只在图 2 里列出各项技术采纳与否。</figcaption>
     <details><summary>数据表</summary><div id="table-chain"></div></details>
   </figure>
 
   <figure id="fig-matrix">
     <h2>图 2 · 技术 × 设备</h2>
-    <p class="claim">深色为采纳并计入最终配置，数字是相对父配置的几何平均增益；斜纹为试过但未采纳或被门禁拒绝；虚线为没做。融合内核现在六台设备都已采纳。fp32 softmax 在 B580 上试过，落在噪声带内，未采纳，B70 因此没做。</p>
+    <p class="claim">深色为采纳并计入最终配置，数字是相对父配置的几何平均增益；斜纹为试过但未采纳或被门禁拒绝；虚线为没做。融合内核在六台设备上采纳；RX 7900 XTX 在 AMDVLK 驱动下试过，慢 13.79 %，被拒绝；M51 采纳的是两遍形式。M51 一列不写数字，只标采纳与否，颜色不表示增益大小。fp32 softmax 在 B580 上试过，落在噪声带内，未采纳，B70 因此没做。</p>
     <div class="legend">
       <span><i style="background:var(--seq5)"></i>采纳，颜色深浅按增益</span>
       <span><i class="hatch"></i>试过，未采纳</span>
@@ -157,10 +158,12 @@
         <tr><td>RTX 4070 Ti SUPER · 8da4w 按纹素取权重</td><td>试过，未采纳</td><td>候选 5 是这项技术的一个变体：每个暂存槽保留纹素的两个字，取权重次数减半。内核级只快 1.1 %，过完整门禁后 −0.13 %，在噪声带内。取权重阶段占这个内核 34 % 到 43 % 的时间，但读取次数减半没有让它变短，说明这张卡上瓶颈不是读取次数，和 Intel 上 +7 % 的情况不同。</td></tr>
         <tr><td>Arc Pro B70 · fp32 无零尾 softmax</td><td>有意不做</td><td>Intel 上原版 softmax 就能过门禁（4070 Ti 和 Orin 需要它是因为误差超标）。B580 把它作为第二轮候选 2 试过，两场分别 −0.13 % 和 +0.08 %，未采纳；B70 的确认任务只搬 B580 采纳了的东西。</td></tr>
         <tr><td>softmax 子组归约 · Orin 以外的设备</td><td>没做</td><td>这是 Orin 第一轮自己的候选，在 Orin 上只有 +0.34 %，在噪声带内，没有理由搬到别处。融合内核把 softmax 包进去之后，独立 softmax 只处理不对齐的提示和解码，占比更小。</td></tr>
+        <tr><td>RX 7900 XTX · 融合注意力内核</td><td>试过，被拒绝</td><td>fused3sb 相对候选 1 为 −13.79 %（1B 持平，3B、8B 各格 −15 % 到 −24 %）。在 AMDVLK 驱动上，原有的三个分开的协作矩阵注意力内核在 3B、8B 上比最好的融合变体快约 2.6 倍。同一个内核在跑 Mesa RADV 的 RX 7600 上是 +18.22 %。因此第 5 行（屏障）在这台设备上不适用。</td></tr>
+        <tr><td>M51 · fp32 无零尾 softmax</td><td>不适用</td><td>采纳融合内核之后，计时预填充里的注意力调用全部由融合节点处理，不再派发独立的 softmax。</td></tr>
         <tr><td>第二个注意力候选（B580 的 softmax、Orin 的两遍形式）</td><td>试过，未采纳</td><td>融合内核之后注意力只占预填充的百分之几，两个候选分别是 −0.13 % 和 +0.54 %，都在噪声带内。</td></tr>
       </table>
     </details>
-    <figcaption>第 1 行四台设备的数字含移植时一并带上的 softmax（4070 Ti、Orin），因为那两台的候选 1 带 stock softmax 时被门禁拒绝，无法单独计量。</figcaption>
+    <figcaption>第 1 行四台设备的数字含移植时一并带上的 softmax（4070 Ti、Orin），因为那两台的候选 1 带 stock softmax 时被门禁拒绝，无法单独计量。RX 7900 XTX 的 campaign 跑在 AMDVLK 驱动上，RX 7600 跑在 Mesa RADV 上；AMDVLK 是否把 32 线程的融合内核按 32 宽的子组执行，记录为未验证，所以“融合内核被拒绝”只对该驱动成立。</figcaption>
   </figure>
 
   <figure id="fig-explain">
@@ -175,10 +178,10 @@
 
   <figure id="fig-time">
     <h2>图 3 · 时间省在了哪</h2>
-    <p class="claim">8B 模型一次 2048 token 预填充的 GPU 派发时间（毫秒，热态 ETDump）。Intel 上注意力三个内核从 341 ms 压到 42 ms，线性 GEMM 几乎不动；RX 7600 上融合内核把注意力压到四分之一，线性内核再省 139 ms。第二轮的融合内核把注意力在 B580 上从 77 ms 再压到 48 ms，在 B70 上从 57 ms 压到 32 ms。</p>
+    <p class="claim">8B 模型一次 2048 token 预填充的 GPU 派发时间（毫秒，热态 ETDump）。Intel 上注意力三个内核从 341 ms 压到 42 ms，线性 GEMM 几乎不动；RX 7600 上融合内核把注意力压到四分之一，线性内核再省 139 ms，第二轮改暂存行距后又省 47 ms。第二轮的融合内核把注意力在 B580 上从 77 ms 再压到 48 ms，在 B70 上从 57 ms 压到 32 ms。</p>
     <div class="legend" id="legend-time"></div>
     <div class="scroll"><div id="chart-time"></div></div>
-    <figcaption>RX 7600 的注意力三项未在其 trace-families 中拆开，按合计绘制。"其他"含激活量化、嵌入、输出投影等。RTX 4070 Ti SUPER 的父配置是其第一轮最终配置（已含协作矩阵注意力内核）；调优后的融合内核与 K/V 拷贝合计 20.7 ms，按未拆分绘制。Arc B580 的“融合后”一行（s4-final）和 Arc Pro B70 的两行（s3-final）来自各自融合移植分支的 trace，画法相同；B70 的父配置是其第一轮最终配置。Jetson Orin Nano 的 8B 预填充是数秒量级，超出本图的刻度，没有画。</figcaption>
+    <figcaption>RX 7600 的注意力三项未在其 trace-families 中拆开，按合计绘制。"其他"含激活量化、嵌入、输出投影等。RTX 4070 Ti SUPER 的父配置是其第一轮最终配置（已含协作矩阵注意力内核）；调优后的融合内核与 K/V 拷贝合计 20.7 ms，按未拆分绘制。Arc B580 的“融合后”一行（s4-final）和 Arc Pro B70 的两行（s3-final）来自各自融合移植分支的 trace，画法相同；B70 的父配置是其第一轮最终配置。Jetson Orin Nano 的 8B 预填充是数秒量级，超出本图的刻度，没有画。RX 7600 的“第二轮后”一行来自其第二轮收尾场次（r2-final）的 trace。RX 7900 XTX 没有入图；M51 不公布数字。</figcaption>
     <details><summary>数据表</summary><div id="table-time"></div></details>
   </figure>
 
@@ -191,34 +194,34 @@
 
   <figure id="fig-llama">
     <h2>图 5 · 调优后相对 llama.cpp 的位置</h2>
-    <p class="claim">调优后的 ExecuTorch 4w 预填充速度除以 llama.cpp Q4_0 最佳设置的速度，每台设备三个点对应 1B、3B、8B。对 llama.cpp 的 Vulkan 后端，六台设备的三个模型全部领先；对厂商后端（SYCL、CUDA），Intel 两张卡和 RTX 4070 Ti SUPER 仍落后 3 % 到 25 %，Orin 大致持平（0.98 到 1.07）。</p>
+    <p class="claim">调优后的 ExecuTorch 4w 预填充速度除以 llama.cpp Q4_0 最佳设置的速度，每台设备三个点对应 1B、3B、8B。对 llama.cpp 的 Vulkan 后端，六台设备的三个模型全部领先；对厂商后端（SYCL、CUDA），Intel 两张卡和 RTX 4070 Ti SUPER 仍落后 3 % 到 25 %，Orin 大致持平（0.98 到 1.07）。RX 7900 XTX 和 M51 没有 llama.cpp 对比数据，不在图中。</p>
     <div class="legend"><span><i style="background:var(--s1)"></i>相对 llama.cpp Vulkan</span><span><i style="background:var(--s2)"></i>相对厂商后端（Intel SYCL，NVIDIA CUDA）</span><span><i style="border-top:2px dashed var(--ref);width:16px;height:0;border-radius:0"></i>1.0 持平</span></div>
     <div class="scroll"><div id="chart-llama"></div></div>
-    <figcaption>来源：topic/llamacpp-compare 的 cells.csv，llama.cpp b11430，各设备筛选过的最佳设置，5 次中位数。780M 没有可用的厂商后端（ROCm 不支持该集成显卡，未测）。RX 7600 由公司侧于 2026-10-08 测得，仅 Vulkan；其 8B 的 llama-bench 数字因该卡在 1024 个提示 token 以上走了一条慢的 GPU 路径而弃用，该处取 llama-completion 计时。RTX 4070 Ti SUPER、Arc Pro B70、Arc B580 的调优后速度取自各自融合移植分支的收尾场次（s5-pristine、s4-pristine、s7-pristine，7 次中位数），Jetson Orin Nano 的取自 s8-pristine（5 次中位数，交叉构建）。</figcaption>
+    <figcaption>来源：topic/llamacpp-compare 的 cells.csv，llama.cpp b11430，各设备筛选过的最佳设置，5 次中位数。780M 没有可用的厂商后端（ROCm 不支持该集成显卡，未测）。RX 7600 由公司侧于 2026-10-08 测得，仅 Vulkan；其 8B 的 llama-bench 数字因该卡在 1024 个提示 token 以上走了一条慢的 GPU 路径而弃用，该处取 llama-completion 计时。RTX 4070 Ti SUPER、Arc Pro B70、Arc B580 的调优后速度取自各自融合移植分支的收尾场次（s5-pristine、s4-pristine、s7-pristine，7 次中位数），Jetson Orin Nano 的取自 s8-pristine（5 次中位数，交叉构建）。RX 7600 的调优后速度取自其第二轮收尾场次 r2-final（5 次中位数），llama.cpp 一侧仍是 10-08 的数字。</figcaption>
     <details><summary>数据表</summary><div id="table-llama"></div></details>
   </figure>
 
 
   <figure id="fig-branches">
     <h2>图 6 · 分支关系与状态</h2>
-    <p class="claim">每条水平线是 sarc-acl/executorch 上的一个分支，时间从左到右，不按比例。所有 campaign 分支都从 780M 分支派生，所以融合注意力内核和开发区覆盖文件在每一条里都有；合并 PR 因此只能一条一条进。右侧四条短线是融合内核移植分支（三条 10-08 开，B70 的一条 10-09 开），从各自第一轮的头部拉出；4070 Ti 和 B70 的两条已关闭，B580 和 Orin 的两条已由所有者宣布结束（最后一轮审阅未完成）。</p>
+    <p class="claim">每条水平线是 sarc-acl/executorch 上的一个分支，时间从左到右，不按比例。所有 campaign 分支都从 780M 分支派生，所以融合注意力内核和开发区覆盖文件在每一条里都有；合并 PR 因此只能一条一条进。右侧四条短线是融合内核移植分支（三条 10-08 开，B70 的一条 10-09 开），从各自第一轮的头部拉出；4070 Ti 和 B70 的两条已关闭，B580 和 Orin 的两条已由所有者宣布结束（最后一轮审阅未完成）。RX 7900 XTX 的分支从 780M 分支较晚的一个提交拉出，10-09 结束，所以也画到右侧。</p>
     <div class="legend" id="legend-branches"></div>
     <div class="scroll"><div id="chart-branches"></div></div>
-    <figcaption>"+N" 为领先 dev/1.5 的提交数；箭头表示分支从该提交创建。头部状态截至 2026-10-09 15:30 UTC。</figcaption>
+    <figcaption>"+N" 为领先 dev/1.5 的提交数；箭头表示分支从该提交创建。头部状态截至 2026-10-09 17:30 UTC。M51 的分支（topic/m51-prefill-refine，同样从 780M 分支拉出）没有画。</figcaption>
   </figure>
 
   <figure id="fig-tokps">
     <h2>图 7 · 全部 tok/s</h2>
-    <p class="claim">六台设备、三个模型、每格的 2048 token 预填充速度（tok/s，5 次有效运行的中位数，来源是 llama.cpp 对比分支的 cells.csv，图注列出的调优后两列除外）。stock 是未修改的 ExecuTorch 1.5，SARC 是 9 月发布版，调优后是各 campaign 的最终配置；llama.cpp 取各后端筛选过的最佳设置、两种计时器里较高者。</p>
+    <p class="claim">七台设备、三个模型、每格的 2048 token 预填充速度（tok/s，5 次有效运行的中位数，来源是 llama.cpp 对比分支的 cells.csv，图注列出的调优后两列除外）。stock 是未修改的 ExecuTorch 1.5，SARC 是 9 月发布版，调优后是各 campaign 的最终配置；llama.cpp 取各后端筛选过的最佳设置、两种计时器里较高者。</p>
     <div class="scroll"><div id="table-tokps"></div></div>
-    <figcaption>标 * 的格按设备 README 的说明计入了低于时钟下限的运行（负载本身把时钟压低，不是干扰）。RX 7600 的 8B llama.cpp 取 llama-completion 计时（llama-bench 在该卡 1024 token 以上走慢路径）。780M 与 RX 7600 无厂商后端数据（HIP 未测）。RTX 4070 Ti SUPER、Arc Pro B70、Arc B580、Jetson Orin Nano 的调优后两列取自各自融合移植分支的收尾场次（s5-pristine、s4-pristine、s7-pristine 为 7 次有效运行的中位数，Orin 的 s8-pristine 为 5 次），不在 cells.csv 中。</figcaption>
+    <figcaption>标 * 的格按设备 README 的说明计入了低于时钟下限的运行（负载本身把时钟压低，不是干扰）。RX 7600 的 8B llama.cpp 取 llama-completion 计时（llama-bench 在该卡 1024 token 以上走慢路径）。780M 与 RX 7600 无厂商后端数据（HIP 未测）。RTX 4070 Ti SUPER、Arc Pro B70、Arc B580、Jetson Orin Nano 的调优后两列取自各自融合移植分支的收尾场次（s5-pristine、s4-pristine、s7-pristine 为 7 次有效运行的中位数，Orin 的 s8-pristine 为 5 次），不在 cells.csv 中。RX 7600 的调优后两列取自其第二轮收尾场次 r2-final（5 次有效运行的中位数），也不在 cells.csv 中。RX 7900 XTX 的 SARC 两列和调优后两列是其父提交与最终配置在同一个收尾场次（final3，7 次有效运行的中位数，AMDVLK 驱动）里测得的；父提交各格与 2026-09-28 公布的数相差在 2 % 以内；这台设备没有同场次的 stock 数字，也没有测 llama.cpp，相应的格为“—”。M51 的设备所有者不允许公布数字，不在表中。</figcaption>
   </figure>
 
   <section class="notes">
-    <div class="note"><h3>还没合并</h3><p>十条 campaign 分支（六条第一轮、四条融合移植）都在 origin 上，没有一条进了 dev/1.5。780M 已在 round 3 换用 fused3sb，最终配置定名为 780m-final。合并前还要做：补上管线的全子组标志（见“已知缺陷”）、清理结果文件里的路径。</p></div>
-    <div class="note"><h3>剩余空间在哪</h3><p>融合内核已到全部六台；在 B580、B70 和 Orin 上注意力只剩预填充派发时间的 5 % 到 14 %，下一步的空间在线性内核。Orin 上融合内核只到矩阵上限的 16 % 到 20 %，要再快需要一个经共享内存暂存 K、V 的新内核。AMD 独显上 llama.cpp 的 HIP 后端还没测，领先结论只对 Vulkan 成立。</p></div>
+    <div class="note"><h3>还没合并</h3><p>十二条 campaign 分支（八条第一轮、四条融合移植）都在 origin 上，没有一条进了 dev/1.5。780M 已在 round 3 换用 fused3sb，最终配置定名为 780m-final。合并前还要做：补上管线的全子组标志（见“已知缺陷”）、清理结果文件里的路径。</p></div>
+    <div class="note"><h3>剩余空间在哪</h3><p>融合内核已在六台设备上采纳，M51 用的是两遍形式；RX 7900 XTX 上的融合内核结果是在 AMDVLK 驱动下测的，应在 RADV 下重测一次再下结论。在 B580、B70 和 Orin 上注意力只剩预填充派发时间的 5 % 到 14 %，下一步的空间在线性内核。Orin 上融合内核只到矩阵上限的 16 % 到 20 %，要再快需要一个经共享内存暂存 K、V 的新内核。AMD 独显上 llama.cpp 的 HIP 后端还没测，领先结论只对 Vulkan 成立。</p></div>
     <div class="note"><h3>流程产物</h3><p>A/A 校准与时钟下限、每候选过门禁、参考误差规则、两连候选低于 2 % 的停止规则、协调者 hold、独立审阅。这些是手册的一部分，不在图里。</p></div>
-    <div class="note"><h3>已知缺陷：管线缺全子组标志</h3><p>Vulkan 规范要求这类依赖满子组的计算管线在创建时带上“全子组”标志。分支上所有协作矩阵管线都没有带，包括已发布的和各融合内核的。所有者 2026-10-09 决定记为已知缺陷，在任何合并之前于发布区统一修一次。本页的测量结果不受影响。</p></div>
+    <div class="note"><h3>已知缺陷：管线缺全子组标志</h3><p>Vulkan 规范要求这类依赖满子组的计算管线在创建时带上“全子组”标志。分支上所有协作矩阵管线都没有带，包括已发布的和各融合内核的。所有者 2026-10-09 决定记为已知缺陷，在任何合并之前于发布区统一修一次。本页的测量结果不受影响。RX 7900 XTX 的 campaign 另外发现，有内核声明的工作组共享内存超过了 AMDVLK 报告的上限，其中包括一个已发布的 4w 内核；驱动接受这些管线，门禁全部通过。这一项在合并前与全子组标志（F1）一并处理。</p></div>
     <div class="note"><h3>解码略慢，原因未查</h3><p>B70 上带融合节点时，解码（预填充之后逐个生成 token）比父配置慢 0 到 2.5 %；B580 上六格也都略低于父配置（0.985 到 0.998）。融合内核不处理解码调用，变慢的位置还没有定位。解码不是门禁项，记在这里以免晋升时漏掉。</p></div>
   </section>
 </main>
@@ -272,6 +275,14 @@
    "base": "相对 9 月基线"
   },
   {
+   "id": "rx7600",
+   "name": "RX 7600",
+   "vendor": "AMD",
+   "final": 33.6,
+   "stock": null,
+   "base": "相对父提交（公司侧）"
+  },
+  {
    "id": "780m",
    "name": "Radeon 780M",
    "vendor": "AMD",
@@ -283,12 +294,22 @@
    "base": "相对 9 月基线"
   },
   {
-   "id": "rx7600",
-   "name": "RX 7600",
+   "id": "7900xtx",
+   "name": "RX 7900 XTX",
    "vendor": "AMD",
-   "final": 26.9,
+   "final": 8.3,
    "stock": null,
-   "base": "相对父提交（公司侧）"
+   "base": "相对其父提交（AMDVLK 驱动）",
+   "note": "这台设备的 campaign 跑在 AMDVLK 驱动上（RX 7600 跑在 Mesa RADV 上）。融合注意力内核在该驱动下慢 13.79 %，被拒绝，所以收益只来自 softmax、线性内核按形状选择和分开的注意力内核变体。分支里没有相对未修改 ExecuTorch 的同场次数字，这里不列。"
+  },
+  {
+   "id": "m51",
+   "name": "M51",
+   "vendor": "Samsung",
+   "final": null,
+   "stock": null,
+   "base": "设备所有者不允许公布数字",
+   "note": "设备所有者不允许公布这台设备的任何数字，本页只列定性结论。最终配置在 1B、3B、8B 的每一格都比父提交快，具体数字只保存在本地。8B 模型是在重开的一轮里补上的，8B 的运行带一个图执行阈值设置。线性内核第二轮产出了新的配置，它在已提交头部上的最终验证和最终场次还没有做：排队期间板子的驱动被另一位使用者换掉了。"
   }
  ],
  "cats": [
@@ -474,6 +495,38 @@
     "c": "fused",
     "g": 0,
     "n": "M2a：fused3sb 子组屏障，+0.00 %，逐字节一致"
+   },
+   {
+    "c": "linear",
+    "g": 1.96,
+    "n": "第二轮候选 1：8da4w 内核的 A 暂存行距从 16 字节改为 24 字节（rx7600-refine4），消除共享内存读取的 bank 冲突。8da4w 三格 +3.65 / +4.01 / +4.25 %，六格几何平均低于 2 %，按“只改一种量化方式的候选看它改动的格”的规则采纳"
+   },
+   {
+    "c": "linear",
+    "g": 3.33,
+    "n": "第二轮候选 2：4w 内核的暂存行距（A 72 字节、B 88 字节，rx7600-refine5）。4w 三格 +5.38 / +7.52 / +7.46 %。计时早于它的阶段计时证据，所有者裁定按测得的结果保留"
+   }
+  ],
+  "7900xtx": [
+   {
+    "c": "softmax",
+    "g": 1.56,
+    "n": "候选 1：softmax r3（780M 的变体）"
+   },
+   {
+    "c": "linear",
+    "g": 2.64,
+    "n": "候选 3：线性内核按形状 7900xtx-refine2"
+   },
+   {
+    "c": "param",
+    "g": 4.09,
+    "n": "候选 5：分开的协作矩阵注意力内核换变体（QK^T 不填掩码、打包暂存，128×128 瓦片；attn·V 64×64 瓦片），7900xtx-refine4"
+   },
+   {
+    "c": "param",
+    "g": 0.67,
+    "n": "候选 6：head_dim 64 的 attn·V 瓦片（7900xtx-refine5），带内，按事先写下的规则采纳，不算作增益"
    }
   ]
  },
@@ -483,7 +536,8 @@
   "b70": 72.87,
   "4070ti": 63.28,
   "780m": 33.9,
-  "rx7600": 26.9
+  "rx7600": 33.59,
+  "7900xtx": 8.33
  },
  "techs": [
   {
@@ -517,6 +571,16 @@
      "k": "inherit",
      "v": "继承",
      "t": "分支从 780M 的候选 11 拉出，注意力内核随之带来"
+    },
+    "7900xtx": {
+     "k": "inherit",
+     "v": "继承",
+     "t": "分支从 780M 分支拉出，发布版的表里已有这张卡的协作矩阵注意力内核行（未验证标记）。最终配置仍用分开的三个注意力内核，见第 2 行"
+    },
+    "m51": {
+     "k": "inherit",
+     "v": "已有",
+     "t": "发布版的表里已有这台设备的注意力内核行（未验证标记），预填充本来就跑在这些内核上"
     }
    },
    "ex": {
@@ -559,6 +623,18 @@
      "k": "tried",
      "v": "无更优",
      "t": "融合内核的参数变体筛了三轮，没有一个每轮都快 3 %"
+    },
+    "7900xtx": {
+     "k": "ok",
+     "g": 4.79,
+     "n": "候选 5 +4.09，候选 6 +0.67",
+     "t": "这张卡没有采纳融合内核，分开的注意力内核仍在用，所以换变体有回报。候选 5：QK^T 不填掩码、打包暂存的 128×128 瓦片，attn·V 的 64×64 瓦片，+4.09 %（六格全部在噪声带外），输出逐位一致。候选 6：head_dim 64 的 attn·V 瓦片，+0.67 %，带内，按事先写下的规则采纳，不算作增益。之后的更宽 QK^T 网格和更大的 attn·V 瓦片都没有更快"
+    },
+    "m51": {
+     "k": "ok",
+     "v": "已采纳",
+     "n": "带内",
+     "t": "融合内核变体的筛选为只在 1B 模型上出现的那个 head 维度选出了一个变体，另一个 head 维度没有变体通过筛选，沿用 780M 的选择。它过了门禁，增益落在噪声带内，保留在最终配置里。数字不公布"
     }
    },
    "ex": {
@@ -566,7 +642,7 @@
     "what": "内核的写法不变，只调它的几个旋钮：每个工作组一次处理多大的块（瓦片）、工作组里有多少线程、一次读多少数据。",
     "why": "同一段程序在不同 GPU 上的最佳块大小不同，取决于缓存、寄存器数量和线程分组方式。",
     "like": "同一台发动机，换一组更合适的档位。",
-    "res": "收益小：780M 上 +3.6 %，其余设备都落在 ±2 % 的噪声带里，没有采纳。"
+    "res": "收益小：780M 上 +3.6 %，RX 7900 XTX 上 +4.8 %（那里没有采纳融合内核，分开的注意力内核仍在用）；其余设备都落在 ±2 % 的噪声带里。"
    }
   },
   {
@@ -603,6 +679,17 @@
      "k": "ok",
      "g": 1.48,
      "n": "r3"
+    },
+    "7900xtx": {
+     "k": "ok",
+     "g": 1.56,
+     "n": "r3",
+     "t": "候选 1：780M 的 softmax r3，相对父提交 +1.56 %（低于 2 %），与发布版 softmax 在 21 个测试用例上逐位一致"
+    },
+    "m51": {
+     "k": "none",
+     "v": "不适用",
+     "t": "不适用：采纳融合内核之后，计时预填充里的每一次注意力调用都由融合节点处理，不再派发独立的 softmax"
     }
    },
    "ex": {
@@ -649,6 +736,17 @@
     "rx7600": {
      "k": "ok",
      "g": 18.22
+    },
+    "7900xtx": {
+     "k": "tried",
+     "v": "-13.79",
+     "t": "候选 2：fused3sb，相对候选 1 为 -13.79 %（1B 持平，3B、8B 各格 -15 % 到 -24 %），因性能被拒绝，门禁没有跑完。在这个驱动上，原有的三个分开的协作矩阵注意力内核在 3B、8B 上比最好的融合变体快约 2.6 倍。驱动说明：这台设备跑在 AMDVLK 上，RX 7600（融合内核 +18.22 %）跑在 Mesa RADV 上；AMDVLK 是否把 32 线程的融合内核按 32 宽的子组执行，记录为未验证。这个结论只对该驱动成立，应在 RADV 下重测"
+    },
+    "m51": {
+     "k": "ok",
+     "v": "已采纳",
+     "n": "两遍形式",
+     "t": "移植 780M 的融合内核时有两个发现。一遍形式（边算边维护行最大值）在这个驱动上、完整长度的预填充里会随机算错若干行，换哪种屏障都一样；两遍形式每一轮筛选都通过，所以移植用的是两遍的打包形式。屏障见第 5 行。数字不公布"
     }
    },
    "ex": {
@@ -656,7 +754,7 @@
     "what": "把注意力的三步（QK^T 打分、softmax、attn·V 混合）合成一个内核。一行分数算出来以后不写回显存，直接留在这组线程的共享内存里做 softmax，再乘上 V。",
     "why": "分开做时，2048×2048 的分数表要整张写进显存、再整张读出来两次，还要多发两次 GPU 任务。合在一起后这张中间表不再落地。",
     "like": "三道工序原来各在一个车间，半成品要来回搬运；现在一条流水线做完。",
-    "res": "780M +16.8 %，RX 7600 +18.2 %（公司侧）。第二轮移植到其余四台，各自在第一轮配置之上：RTX 4070 Ti SUPER +11.5 %，Arc B580 +9.1 %，Arc Pro B70 +8.3 %，Jetson Orin Nano +6.1 %。移植的计时都已做完，没有还在跑的移植。"
+    "res": "780M +16.8 %，RX 7600 +18.2 %（公司侧）。第二轮移植到其余四台，各自在第一轮配置之上：RTX 4070 Ti SUPER +11.5 %，Arc B580 +9.1 %，Arc Pro B70 +8.3 %，Jetson Orin Nano +6.1 %。移植的计时都已做完，没有还在跑的移植。RX 7900 XTX 在 AMDVLK 驱动下试过，慢 13.8 %，被拒绝。M51 采纳的是两遍形式，数字不公布。"
    }
   },
   {
@@ -697,6 +795,17 @@
      "k": "ok",
      "g": 0,
      "n": "逐字节一致"
+    },
+    "7900xtx": {
+     "k": "none",
+     "v": "不适用",
+     "t": "不适用：融合内核在这台设备上被拒绝，最终配置里没有融合内核。被试的候选 2 本身就是带子组屏障的 fused3sb，它在 AMDVLK 上跑过的正确性测试没有不一致"
+    },
+    "m51": {
+     "k": "ok",
+     "v": "已采纳",
+     "n": "工作组屏障",
+     "t": "原内核在交换点只有 memoryBarrierShared()，它只约束一个线程自己的访问顺序。这台设备上需要更强的屏障：移植版在每个交换点用 memoryBarrierShared() 加整个工作组的 barrier()（工作组就是一个子组）。着色器内读回的子组大小没有在设备上验证过"
     }
    },
    "ex": {
@@ -736,6 +845,16 @@
      "k": "tried",
      "v": "-0.15",
      "t": "候选 4 在全部形状上套用整纹素取权重，-0.15 %，8B 8da4w -1.51 %，未采纳"
+    },
+    "7900xtx": {
+     "k": "tried",
+     "v": "-0.42",
+     "t": "候选 4：在筛选中最快的那些 8da4w 形状上用整纹素取权重，相对候选 3 为 -0.42 %，带内，未采纳。阶段计时里取权重只占一个波的 11 % 左右，瓶颈不在这里"
+    },
+    "m51": {
+     "k": "ok",
+     "v": "已采纳",
+     "t": "内核筛选在每一个 8da4w 形状上都选了 780M 的整纹素取权重内核，每一轮都过了筛选的门槛；它的生产对比误差与父配置相同，端到端快出噪声带。已知性质：长度不对齐的提示上 8da4w 比父配置慢（那里落回原版内核），所有者决定保持不变，计时用的预填充长度是对齐的。数字不公布"
     }
    },
    "ex": {
@@ -743,7 +862,7 @@
     "what": "8da4w 是一种量化方式（权重 4 位、激活 8 位）。权重存在纹理里，一个纹素有 4 个通道。这个变体一次取出整个纹素并暂存，供后面几步共用，而不是每用一个通道就重新读一次纹理。",
     "why": "线性层是预填充里占时间最多的部分，读权重是它的主要开销之一；纹理读取次数减少，耗时随之下降。",
     "like": "每次去仓库把一整箱搬回来，而不是用一件跑一趟。",
-    "res": "Intel 两张卡约 +7 %，Orin +2.8 %，780M +2.0 %；RX 7600 上略慢，没有采纳。只影响 8da4w 的模型。"
+    "res": "Intel 两张卡约 +7 %，Orin +2.8 %，780M +2.0 %；RX 7600 和 RX 7900 XTX 上略慢，没有采纳；M51 采纳。只影响 8da4w 的模型。"
    }
   },
   {
@@ -777,7 +896,21 @@
     },
     "rx7600": {
      "k": "ok",
-     "g": 5.49
+     "g": 11.14,
+     "n": "c3 +5.49，第二轮 +1.96、+3.33",
+     "t": "第一轮候选 3：线性内核按形状选择，+5.49 %。第二轮两个候选改的是内核里共享内存暂存的行距，不是形状选择：8da4w 的 A 暂存行距 24 字节 +1.96 %，4w 的暂存行距 72 / 88 字节 +3.33 %，两者合计相对第一轮最终配置直接测得 +5.44 %。三段叠乘 +11.14 %。输出在 24 个线性形状上逐字节一致"
+    },
+    "7900xtx": {
+     "k": "ok",
+     "g": 2.64,
+     "n": "候选 7 未采纳",
+     "t": "候选 3（7900xtx-refine2）：按筛选结果为每个形状选内核，+2.64 %，24 个线性形状的输出逐字节一致；收益在 1B 4w 和三格 8da4w 上，3B、8B 的 4w 没有比表里更快的内核。候选 7：给 8B 的一个形状换瓦片，六格几何平均 +1.16 %，它实际改动的那一格只有 +0.79 %，未采纳。RX 7600 第二轮的暂存行距做法在这张卡上筛了一遍，12 个形状没有一个更快"
+    },
+    "m51": {
+     "k": "ok",
+     "v": "已采纳",
+     "n": "第二轮待最终验证",
+     "t": "第一步：4w 的按形状选择只在 8B 模型才有的那几个形状上选出了更快的内核，在 8B 轮里过门禁并采纳；1B、3B 的形状上没有更快的。第二轮：一个新的 4w 内核（把 B 操作数按另一种主序放进共享内存池）在三个模型的全部形状上都过了筛选，组成新的配置，相对上一版配置过了门禁，4w 各格快出噪声带。它在已提交头部上的最终验证和相对父提交的最终场次还没有做：排队期间板子的驱动被另一位使用者换掉了。数字不公布"
     }
    },
    "ex": {
@@ -785,7 +918,7 @@
     "what": "模型里的线性层（矩阵乘）有好几种形状，例如输入 2048 宽、输出 8192 宽。这项技术为每一种形状单独挑最快的内核写法和块大小，记成一张表，运行时按形状查表。",
     "why": "没有一种配置对所有形状都最快：宽矩阵和窄矩阵对缓存与线程分组的要求不一样。",
     "like": "不同尺寸的货物配不同尺寸的箱子，而不是全用一种。",
-    "res": "AMD 两台 +4.7 % 和 +5.5 %；B70、Orin 约 +1 %；B580、4070 Ti 上扫过瓦片后没有更快的，未采纳。"
+    "res": "780M +4.7 %，RX 7600 +5.5 %，RX 7900 XTX +2.6 %；RX 7600 第二轮改线性内核的暂存行距，再 +5.4 %；B70、Orin 约 +1 %；B580、4070 Ti 上扫过瓦片后没有更快的，未采纳。"
    }
   },
   {
@@ -816,6 +949,14 @@
     "rx7600": {
      "k": "none",
      "t": "没做：这是 Orin 第一轮自己的候选，在 Orin 上只有 +0.34 %（带内），没有理由搬到别的设备。融合内核把 softmax 包进去之后，独立 softmax 只处理不对齐的提示和解码，占比更小"
+    },
+    "7900xtx": {
+     "k": "none",
+     "t": "没做：这是 Orin 第一轮自己的候选，在 Orin 上只有 +0.34 %（带内），没有理由搬到别的设备。这张卡上分开的 softmax 仍在用，但没有把它列为候选"
+    },
+    "m51": {
+     "k": "none",
+     "t": "没做：这是 Orin 第一轮自己的候选，在 Orin 上落在噪声带内，没有理由搬到别的设备。这台设备上融合内核已经接手计时预填充的全部注意力调用"
     }
    },
    "ex": {
@@ -864,6 +1005,17 @@
      "k": "inherit",
      "v": "继承",
      "t": "随 780M 分支带来两个挂钩"
+    },
+    "7900xtx": {
+     "k": "inherit",
+     "v": "继承",
+     "t": "两个挂钩随 780M 分支带来；这次 campaign 没有改动发布区的任何文件"
+    },
+    "m51": {
+     "k": "ok",
+     "v": "多一个",
+     "n": "图执行阈值",
+     "t": "除了随 780M 分支带来的两个挂钩，8B 轮经所有者批准多加了一个：从环境变量读取图执行阈值（每隔多少个图节点提交一次命令缓冲）。8B 的运行两臂都带这个设置，不带时长预填充可能触发 GPU 的任务看门狗；1B、3B 不带。变量不设时行为不变。阈值的取值不在本页公布"
     }
    },
    "ex": {
@@ -899,6 +1051,14 @@
     },
     "rx7600": {
      "k": "none"
+    },
+    "7900xtx": {
+     "k": "none",
+     "t": "没做：这次 campaign 按决定不做瓦片扫描在先，也不做抽样搜索；只做了内核筛选"
+    },
+    "m51": {
+     "k": "none",
+     "t": "没做：这次 campaign 按决定不做抽样参数搜索"
     }
    },
    "ex": {
@@ -1012,6 +1172,15 @@
     "linear": 972.1,
     "attn": 46.7,
     "other": 143.3
+   }
+  },
+  {
+   "dev": "RX 7600 · 8B 8da4w",
+   "arm": "第二轮后",
+   "v": {
+    "linear": 925.1,
+    "attn": 46.8,
+    "other": 143.5
    }
   },
   {
@@ -1145,9 +1314,9 @@
   {
    "name": "RX 7600",
    "vk": [
-    1.79,
-    1.63,
-    1.52
+    1.88,
+    1.74,
+    1.64
    ],
    "vendor": null,
    "vn": "无（HIP 未测：ROCm 未安装）"
@@ -1399,8 +1568,8 @@
      "stock8": 3799.63,
      "sarc4w": 7846.74,
      "sarc8": 7314.29,
-     "tuned4w": 10502.6,
-     "tuned8": 10291.5,
+     "tuned4w": 11070.3,
+     "tuned8": 10666.7,
      "vk": 5882.0,
      "vkk": 5006.4,
      "vendor": null,
@@ -1412,8 +1581,8 @@
      "stock8": 1386.59,
      "sarc4w": 3297.91,
      "sarc8": 3084.34,
-     "tuned4w": 3992.2,
-     "tuned8": 3961.32,
+     "tuned4w": 4266.67,
+     "tuned8": 4104.21,
      "vk": 2448.9,
      "vkk": 2038.6,
      "vendor": null,
@@ -1425,10 +1594,57 @@
      "stock8": 729.61,
      "sarc4w": 1518.16,
      "sarc8": 1403.7,
-     "tuned4w": 1750.43,
-     "tuned8": 1741.5,
+     "tuned4w": 1885.82,
+     "tuned8": 1813.99,
      "vk": 1150.27,
      "vkk": 940.58,
+     "vendor": null,
+     "etcuda": null
+    }
+   ]
+  },
+  {
+   "id": "7900xtx",
+   "name": "RX 7900 XTX",
+   "vendorName": null,
+   "note": "AMDVLK 驱动；SARC 两列为父提交在同一场次的值；未测 stock 与 llama.cpp",
+   "cells": [
+    {
+     "model": "1B",
+     "stock4w": null,
+     "stock8": null,
+     "sarc4w": 20480.0,
+     "sarc8": 22021.5,
+     "tuned4w": 23011.2,
+     "tuned8": 24381.0,
+     "vk": null,
+     "vkk": null,
+     "vendor": null,
+     "etcuda": null
+    },
+    {
+     "model": "3B",
+     "stock4w": null,
+     "stock8": null,
+     "sarc4w": 10138.6,
+     "sarc8": 10502.6,
+     "tuned4w": 10666.7,
+     "tuned8": 11770.1,
+     "vk": null,
+     "vkk": null,
+     "vendor": null,
+     "etcuda": null
+    },
+    {
+     "model": "8B",
+     "stock4w": null,
+     "stock8": null,
+     "sarc4w": 4762.79,
+     "sarc8": 5019.61,
+     "tuned4w": 4899.52,
+     "tuned8": 5375.33,
+     "vk": null,
+     "vkk": null,
      "vendor": null,
      "etcuda": null
     }
@@ -1506,7 +1722,7 @@
     },
     "label": "规则、教训、合并计划、COMPANY-SIDE.md、本报告",
     "head": {
-     "h": "ce4d35866",
+     "h": "45d6b0bc5",
      "d": "10-09",
      "state": "ok",
      "chip": "已推送，与 origin 一致"
@@ -1597,12 +1813,29 @@
      "lane": "780m",
      "x": 720
     },
-    "label": "+55 · RX 7600，公司侧 · +26.9 %，含 fused3sb",
+    "label": "+121 · RX 7600，公司侧 · +33.6 %",
     "head": {
-     "h": "c0be2c6c2",
-     "d": "10-08",
+     "h": "c4d7451c5",
+     "d": "10-09",
      "state": "ok",
-     "chip": "done，历史被重写过"
+     "chip": "done，第二轮；历史被重写过"
+    }
+   },
+   {
+    "id": "7900xtx",
+    "name": "topic/7900xtx-prefill-refine",
+    "x0": 880,
+    "x1": 1160,
+    "fork": {
+     "lane": "780m",
+     "x": 840
+    },
+    "label": "+111 · RX 7900 XTX，AMDVLK · +8.3 %",
+    "head": {
+     "h": "82aaec998",
+     "d": "10-09",
+     "state": "ok",
+     "chip": "done，融合内核被拒绝"
     }
    },
    {
@@ -1627,6 +1860,12 @@
       "h": "f5f1bf10c",
       "d": "10-05",
       "n": "候选 11 最终配置；rx7600 从此分叉"
+     },
+     {
+      "x": 840,
+      "h": "90fe4d013",
+      "d": "10-06",
+      "n": "7900xtx 从此分叉；rx7600 重写后的历史也接在这个提交上（它的父配置仍是 f5f1bf10c）"
      }
     ],
     "head": {
@@ -1790,10 +2029,19 @@
   const devices = DATA.devices;
   const tiles = $('#tiles');
   const maxFinal = 80;
+  // 不公布数字的设备：final 不是数字（null）。卡片显示文字，图 1 不画条，图 2 表头不带百分比。
+  const NO_FIG = '不公布数字';
+  const hasNum = (d) => typeof d.final === 'number';
+  const fin = (d) => '+' + d.final.toFixed(1) + ' %';
   devices.forEach((d) => {
     const t = document.createElement('div'); t.className = 'tile';
-    t.innerHTML = `<div class="label">${d.name}</div><div class="value">+${d.final.toFixed(1)} %</div><div class="sub">${d.stock ? `相对 stock ${d.stock[0]}x → ${d.stock[1]}x` : d.base}</div><div class="meter" aria-hidden="true"><span style="width:${(d.final / maxFinal * 100).toFixed(1)}%"></span></div>`;
-    attach(t, `<b>${d.name}</b><br>最终几何平均 +${d.final.toFixed(1)} %，${d.base}${d.stock ? `<br>相对未修改的 ExecuTorch 1.5：${d.stock[0]}x → ${d.stock[1]}x` : ''}`);
+    if (!hasNum(d)) {
+      t.innerHTML = `<div class="label">${d.name}</div><div class="value text">${NO_FIG}</div><div class="sub">${d.base}</div>`;
+      attach(t, `<b>${d.name}</b><br>${d.note || d.base}`);
+    } else {
+      t.innerHTML = `<div class="label">${d.name}</div><div class="value">${fin(d)}</div><div class="sub">${d.stock ? `相对 stock ${d.stock[0]}x → ${d.stock[1]}x` : d.base}</div><div class="meter" aria-hidden="true"><span style="width:${Math.min(100, Math.max(0, d.final / maxFinal * 100)).toFixed(1)}%"></span></div>`;
+      attach(t, `<b>${d.name}</b><br>最终几何平均 ${fin(d)}，${d.base}${d.stock ? `<br>相对未修改的 ExecuTorch 1.5：${d.stock[0]}x → ${d.stock[1]}x` : ''}${d.note ? '<br>' + d.note : ''}`);
+    }
     tiles.appendChild(t);
   });
 
@@ -1816,6 +2064,7 @@
       const d = devices.find((v) => v.id === id); const y = top + i * rowH;
       text(svg, left - 12, y + 16, d.name, 'strong', 'end');
       let acc = 0; const barH = 22;
+      if (!chains[id] || !chains[id].length) { text(svg, left + 6, y + 16, `${d.base}，各项技术采纳与否见图 2`, 'tiny'); return; }
       chains[id].forEach((seg) => {
         const w = Math.log(1 + seg.g / 100); const x0 = x(acc), x1 = x(acc + w); acc += w;
         const r = el('rect', { x: x0 + 1, y, width: Math.max(0, x1 - x0 - 2), height: barH, fill: catBy[seg.c].color, rx: 0 }, svg);
@@ -1825,32 +2074,35 @@
       });
       const total = (Math.exp(acc) - 1) * 100;
       text(svg, x(acc) + 8, y + 16, pct(total).replace('.00', ''), 'mono strong');
-      text(svg, left - 12, y + 32, `最终场次直接测得 ${pct(reported[id]).replace(' %', '%')}`, 'tiny', 'end');
+      if (typeof reported[id] === 'number') text(svg, left - 12, y + 32, `最终场次直接测得 ${pct(reported[id]).replace(' %', '%')}`, 'tiny', 'end');
     });
     $('#chart-chain').appendChild(svg);
     const tb = ['<table><thead><tr><th>设备</th><th>候选</th><th>技术</th><th class="num">增益</th></tr></thead><tbody>'];
-    rows.forEach((id) => chains[id].forEach((s) => tb.push(`<tr><td>${devices.find((v) => v.id === id).name}</td><td>${s.n}</td><td>${catBy[s.c].name}</td><td class="num">${pct(s.g)}</td></tr>`)));
+    rows.forEach((id) => (chains[id] || []).forEach((s) => tb.push(`<tr><td>${devices.find((v) => v.id === id).name}</td><td>${s.n}</td><td>${catBy[s.c].name}</td><td class="num">${pct(s.g)}</td></tr>`)));
     tb.push('</tbody></table>'); $('#table-chain').innerHTML = tb.join('');
   })();
 
   // ---------- 图 2：矩阵 ----------
-  const devOrder = ['780m', 'b580', 'b70', '4070ti', 'orin', 'rx7600'];
+  // 列顺序：先是固定的六台，其后是 devices 里新增的设备，按其在 devices 中的顺序。列数写进 --ncol，样式据此排版。
+  const baseOrder = ['780m', 'b580', 'b70', '4070ti', 'orin', 'rx7600'];
+  const devOrder = baseOrder.filter((id) => devices.some((v) => v.id === id)).concat(devices.map((v) => v.id).filter((id) => !baseOrder.includes(id)));
   const techs = DATA.techs;
   (function drawMatrix() {
     const m = $('#matrix');
+    m.style.setProperty('--ncol', devOrder.length);
     const h0 = document.createElement('div'); h0.className = 'h'; h0.textContent = '技术'; m.appendChild(h0);
-    devOrder.forEach((id) => { const d = devices.find((v) => v.id === id); const h = document.createElement('div'); h.className = 'h dev'; h.innerHTML = `${d.name}<small>${d.vendor} · +${d.final.toFixed(1)} %</small>`; m.appendChild(h); });
+    devOrder.forEach((id) => { const d = devices.find((v) => v.id === id); const h = document.createElement('div'); h.className = 'h dev'; h.innerHTML = `${d.name}<small>${d.vendor} · ${hasNum(d) ? fin(d) : NO_FIG}</small>`; m.appendChild(h); });
     const q = (g) => g >= 40 ? 'q6' : g >= 15 ? 'q5' : g >= 6 ? 'q4' : g >= 3 ? 'q3' : g >= 1 ? 'q2' : 'q1';
     techs.forEach((t) => {
       const th = document.createElement('div'); th.className = 't'; th.innerHTML = `<b>${t.n}</b>${t.name}`; m.appendChild(th);
       devOrder.forEach((id) => {
-        const c = t.cells[id]; const d = devices.find((v) => v.id === id); const cell = document.createElement('div'); cell.setAttribute('role', 'cell');
+        const c = t.cells[id] || { k: 'none' }; const d = devices.find((v) => v.id === id); const cell = document.createElement('div'); cell.setAttribute('role', 'cell');
         let html = '', tipHtml = `<b>${d.name}</b> · ${t.name}<br>`;
-        if (c.k === 'ok') { cell.className = 'c ' + (c.g !== undefined ? q(c.g) : 'q4'); html = `<span class="v">${c.g !== undefined ? pct(c.g).replace(' %', '%') : c.v}</span>${c.n ? `<span class="n">${c.n}</span>` : ''}`; tipHtml += c.t || (c.g !== undefined ? `采纳，相对父配置 ${pct(c.g)}${c.n ? '（' + c.n + '）' : ''}` : c.v); }
-        else if (c.k === 'tried') { cell.className = 'c tried'; html = `<span class="v">${c.v}</span><span class="n">未采纳</span>`; tipHtml += c.t; }
-        else if (c.k === 'inherit') { cell.className = 'c inherit'; html = `<span class="n">${c.v}</span>`; tipHtml += c.t; }
-        else if (c.k === 'pending') { cell.className = 'c pending'; html = `<span class="n">${c.v}</span>`; tipHtml += c.t; }
-        else { cell.className = 'c none'; html = '<span class="n">—</span>'; tipHtml += (c.t || '没做'); }
+        if (c.k === 'ok') { cell.className = 'c ' + (c.g !== undefined ? q(c.g) : 'q4'); html = `<span class="v">${c.g !== undefined ? pct(c.g).replace(' %', '%') : (c.v || '已采纳')}</span>${c.n ? `<span class="n">${c.n}</span>` : ''}`; tipHtml += c.t || (c.g !== undefined ? `采纳，相对父配置 ${pct(c.g)}${c.n ? '（' + c.n + '）' : ''}` : (c.v || '已采纳')); }
+        else if (c.k === 'tried') { cell.className = 'c tried'; html = `<span class="v">${c.v || '试过'}</span><span class="n">未采纳</span>`; tipHtml += (c.t || '试过，未采纳'); }
+        else if (c.k === 'inherit') { cell.className = 'c inherit'; html = `<span class="n">${c.v || '继承'}</span>`; tipHtml += (c.t || c.v || '继承'); }
+        else if (c.k === 'pending') { cell.className = 'c pending'; html = `<span class="n">${c.v || '待定'}</span>`; tipHtml += (c.t || c.v || '待定'); }
+        else { cell.className = 'c none'; html = `<span class="n">${c.v || '—'}</span>`; tipHtml += (c.t || c.v || '没做'); }
         cell.innerHTML = html; attach(cell, tipHtml); m.appendChild(cell);
       });
     });
@@ -1917,7 +2169,7 @@
     });
     $('#chart-llama').appendChild(svg);
     const tb = ['<table><thead><tr><th>设备</th><th>对比</th><th class="num">1B</th><th class="num">3B</th><th class="num">8B</th></tr></thead><tbody>'];
-    rows.forEach((r) => { tb.push(`<tr><td>${r.name}</td><td>相对 llama.cpp Vulkan</td>${r.vk.map((v) => `<td class="num">${v.toFixed(2)}x</td>`).join('')}</tr>`); if (r.vendor) tb.push(`<tr><td></td><td>相对 ${r.vn}</td>${r.vendor.map((v) => `<td class="num">${v.toFixed(2)}x</td>`).join('')}</tr>`); });
+    rows.forEach((r) => { tb.push(`<tr><td>${r.name}</td><td>相对 llama.cpp Vulkan</td>${(r.vk || [null, null, null]).map((v) => `<td class="num">${v == null ? '—' : v.toFixed(2) + 'x'}</td>`).join('')}</tr>`); if (r.vendor) tb.push(`<tr><td></td><td>相对 ${r.vn}</td>${r.vendor.map((v) => `<td class="num">${v.toFixed(2)}x</td>`).join('')}</tr>`); });
     tb.push('</tbody></table>'); $('#table-llama').innerHTML = tb.join('');
   })();
   // ---------- 图 6：分支关系 ----------
@@ -1949,7 +2201,7 @@
     const star = { '780m': { '8B': ['stock4w', 'stock8', 'sarc4w', 'vk'] }, 'rx7600': { '8B': ['stock4w'] } };
     const parts = [];
     DATA.tokps.forEach((d) => {
-      parts.push(`<h3 style="margin:14px 0 4px;font-size:0.95rem">${d.name}${d.vendorName ? ` <span style="color:var(--fg3);font-weight:400;font-size:0.8rem">厂商后端：llama.cpp ${d.vendorName}</span>` : ' <span style="color:var(--fg3);font-weight:400;font-size:0.8rem">无厂商后端数据</span>'}</h3>`);
+      parts.push(`<h3 style="margin:14px 0 4px;font-size:0.95rem">${d.name}${d.note ? ` <span style="color:var(--fg3);font-weight:400;font-size:0.8rem">${d.note}</span>` : d.vendorName ? ` <span style="color:var(--fg3);font-weight:400;font-size:0.8rem">厂商后端：llama.cpp ${d.vendorName}</span>` : ' <span style="color:var(--fg3);font-weight:400;font-size:0.8rem">无厂商后端数据</span>'}</h3>`);
       parts.push('<table><thead><tr><th>模型</th><th class="num">stock 4w</th><th class="num">stock 8da4w</th><th class="num">SARC 4w</th><th class="num">SARC 8da4w</th><th class="num">调优后 4w</th><th class="num">调优后 8da4w</th><th class="num">llama.cpp Vulkan Q4_0</th><th class="num">Vulkan Q4_K_M</th><th class="num">厂商后端 Q4_0</th><th class="num">调优 4w / Vulkan</th><th class="num">调优 4w / 厂商</th><th class="num">调优 4w / stock</th></tr></thead><tbody>');
       d.cells.forEach((c) => {
         const st = (star[d.id] || {})[c.model] || []; const s = (k, v) => fmt(v) + (st.includes(k) ? '*' : '');
