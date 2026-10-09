@@ -1,12 +1,13 @@
 # STATUS: sarc-1.5-orin-fused-port
 
-**2026-10-09 01:23 UTC. Candidate 1 (fused attention kernel, profile `orin-fused1`) passed its gate `s3-c1` on
+**2026-10-09 01:27 UTC. Candidate 1 (fused attention kernel, profile `orin-fused1`) passed its gate `s3-c1` on
 build `topic1`: +6.01 % geomean over the tuned parent (1B +10.9 / +10.0 %, 3B +4.8 / +4.4 %, 8B +3.3 / +3.0 %), no
-next-token item differs, reference-error criterion 1 met. NOT CLOSED: reading the 4070 Ti fused port's review
-showed two things my first sessions lack (no thermal-throttle record in the timed runs; the shared test file
-edited in place), so both are put right and candidate 1 is gated again on build `topic3` before anything is
-reported as final. Candidate 2 (the faster form of the kernel per head_dim, `orin-fused2`) follows, with the
-owner's agreement of 01:00 UTC; the closing chain is queued behind it. Nothing measured on `topic3` exists yet.**
+next-token item differs, reference-error criterion 1 met. NOT CLOSED, and `s3-c1` is not the result that will be
+reported: three things taken from the 4070 Ti fused port are put right first (thermal-throttle record in the
+timed runs; the shared test file as insert-only blocks; the kernel's own check that its workgroup is one full
+subgroup), and candidate 1 is gated again on the build that has all three (`topic4`). Candidate 2 (the faster
+form of the kernel per head_dim, `orin-fused2`) follows, with the owner's agreement of 01:00 UTC; the closing
+chain is queued behind it. Nothing measured on `topic3` or `topic4` exists yet.**
 
 All times are UTC from `date -u`.
 
@@ -17,18 +18,22 @@ All times are UTC from `date -u`.
     candidate 1 x default / tiled, builds `parent` and `topic1`), then the logits at the gate's unaligned position,
     the comparison and `ref_error_rule.py` (`probe/c1-fused/`), and the peaked-tier error of both arms. One arm
     takes 42 minutes (parent-default 00:35 to 01:17), so it ends about 03:30, not 02:10 as written before.
-  - `chain6` (queued 00:55 behind `chain4`), about 8.5 hours, until about 12:00: `s4-aa2` (A/A re-check, parent
-    build against `topic3`, both with the parent environment, committed clock floor, with the throttle record);
-    `sdpa-error2` (stock / parent / candidate 1 / candidate 2, `topic3`'s test binary); `s5-c1` (candidate 1 gated
-    again: parent build against `topic3` with `orin-fused1`); `c2-pre` and `s6-c2` (candidate 2, `orin-fused2`,
-    against candidate 1, both on `topic3`).
-  - `chain7` (queued behind `chain6`), the closing chain, 4.5 to 7.5 hours: `s7n-noenv` (hook control on `topic3`);
-    `s7-final` (only if the final stack is `orin-fused2`: its full gate against the tuned parent); `s8-pristine`
-    (final stack against the pristine state); the real-text probe of the final stack on `topic3`
-    (`probe/final-fused/`); `mem1` (memory probe of the K / V copies); `roof-final` (fresh roofs, igpu-roofline
-    `fast`, 41 minutes in the first campaign).
-  - `chain5` (the first form of the candidate-2 chain, on `topic2`) was ended at 00:41 before it started a job.
-- Workstation: nothing. `topic3` (`ca62778e6`) was built 00:42 to 00:55 and is deployed with its `logits_dump`.
+  - `chain8` (queued 01:26 behind `chain4`), about 9 hours, until about 12:30: `g-pre` (candidate 1 on `topic4`,
+    one correctness pass per tier; all PASSED: everything below is on `topic4`; otherwise on `topic3`, and the
+    failure is a finding; the choice is written to `BUILD.txt` on the device); `s4-aa2` (A/A re-check, parent
+    build against that build, both with the parent environment, committed clock floor, with the throttle
+    record); `sdpa-error2` (stock / parent / candidate 1 / candidate 2, that build's test binary); `s5-c1`
+    (candidate 1 gated again: parent build against that build with `orin-fused1`); `c2-pre` and `s6-c2`
+    (candidate 2, `orin-fused2`, against candidate 1, both on that build).
+  - `chain9` (queued behind `chain8`), the closing chain, 4.5 to 7.5 hours: `s7n-noenv` (hook control on the
+    final build); `s7-final` (only if the final stack is `orin-fused2`: its full gate against the tuned parent);
+    `s8-pristine` (final stack against the pristine state); the real-text probe of the final stack on the final
+    build (`probe/final-fused/`); `mem1` (memory probe of the K / V copies); `roof-final` (fresh roofs,
+    igpu-roofline `fast`, 41 minutes in the first campaign).
+  - Ended before they started a job: `chain5` (candidate 2 on `topic2`, 00:41), `chain6` and `chain7` (the same
+    steps as `chain8` and `chain9`, fixed on `topic3`; 01:26).
+- Workstation: `build-topic4` (`0bed38090`, since 01:25), then `build-extra4` (its `logits_dump`); then deploy.
+  `topic4` must be on the device before `chain4` ends, or `chain8` takes `topic3`.
 - Coordinator hold: `tools/HOLD.md` (device: `~/hmz-sarc-orin-fused/HOLD`; builds: `.artifacts/HOLD`). None seen.
 
 ## Final stack: the rule, fixed 01:22 UTC before `s5-c1` and `s6-c2` have a number
@@ -41,9 +46,10 @@ quantity R11 stops on. If the two 1B cells alone come out above 2 % while the ge
 is still not adopted and the cells are reported as measured. Either way the campaign stops after candidate 2
 (`thresholds.txt`, "stop").
 
-The build that is measured as final is `topic3` = `ca62778e6`. Later commits change only this change directory
-(tools, evidence, text): `git diff ca62778e6 HEAD` outside `openspec/changes/sarc-1.5-orin-fused-port/` is empty
-and is checked again at closing, so `topic3` is the build of the branch head's code.
+The build that is measured as final is the one `chain8` chooses (`topic4` = `0bed38090`, the last commit that
+changes code; `topic3` = `ca62778e6` only if the check below fails its pre-check). Later commits change only this
+change directory (tools, evidence, text): `git diff <that commit> HEAD` outside
+`openspec/changes/sarc-1.5-orin-fused-port/` is empty and is checked again at closing.
 
 ## Decision needed from the owner
 
@@ -166,6 +172,8 @@ Its campaign closed at +11.64 % and was reopened by its review for three things.
 | the gate ran no 12 passes of tier `all` | not affected: `gate_sdpa.sh` here runs 12 of `all`, `extended` and `full` since the first gate | nothing |
 | no timed run recorded a thermal-throttle reason, so R6's "no thermal throttle reason" was never evaluated | **affected**: the sampler recorded clock, load, power and the GPU temperature, no throttle state. `s1-aa` and `s3-c1` are kept as measured WITH THAT LIMITATION (GPU temperature at most 66 C against trip points of 70 C (alert) and 99 C (throttle), and a 612 MHz clock in every run; that is context, not a record) | every clock sample now carries the state of the 12 thermal cooling devices of the module (`cpufreq-cpu0/4`, `devfreq-17000000.gpu`, the `*-throttle-alert` devices, `hot-surface-alert`; the fan is left out); a timed run with a nonzero state or without the record is invalid (`runrow.py`, 6 new unit tests, 54 in all). A/A re-check `s4-aa2` and the gate again (`s5-c1`) under it; thresholds unchanged |
 | the shared test `test_llama_microbench.cpp` was edited in place (R3) | **affected**: my first form changed 9 existing lines | rewritten as seven insert-only blocks delimited by `// >>> orin-fused <id>` (`ca62778e6`; `git diff 8973ced76 -- backends`: 0 deleted lines in all 13 files); same cases, same seeded inputs. New build `topic3`; everything reported as final is gated on it |
+
+| (not a review finding; its kernel has it, mine did not) its `fused3sb` returns unless `gl_NumSubgroups == 1` and `gl_SubgroupSize == SUBGROUP_SIZE` | **affected**: this port's kernel was the RX 7600's text unchanged and only assumed that a workgroup of 32 is one full subgroup. The pipeline asks for subgroup size 32 (`REQUIRED_SUBGROUP_SIZE`, `vk_api/Pipeline.cpp`) but does not set `VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT`, which is what the specification names for it ("specifies that the subgroup sizes must be launched with all invocations active in the task, mesh, or compute stage", refpage `VkPipelineShaderStageCreateFlagBits`, `vulkan-docs`); that code is release zone. With two subgroups in a workgroup `Psh`, `Rsh` and `Dsh` would be shared between them and `subgroupBarrier()` would order nothing across them. 222 of 222 correct cases on `topic1` say it does not happen on this driver; nothing guarantees it | the same five lines (commit `0bed38090`, read 01:24 UTC): the kernel writes nothing unless the workgroup is one subgroup of 32, so a driver that splits it fails the correctness tiers instead of racing. Both conditions depend on the workgroup only (`gl_NumSubgroups` "is guaranteed to be uniform across a shader execution", GL_KHR_shader_subgroup), so the return is uniform and precedes every barrier. New build `topic4`; `chain8` checks it first (`g-pre`) |
 
 Also taken: its numbers for comparison. Same kernel, same architecture family: +11.64 % there (1B +19 / +21 %,
 3B +8 / +10 %, 8B +6 / +7 %) against +6.0 % here; its fused kernel removes 66 % / 47 to 49 % of attention time,
@@ -294,7 +302,8 @@ provenance `.artifacts/build/<tag>.src.txt`.
 | `parent` | `8973ced76` | `git archive` + 30 pinned submodules, tree sha256 `3bbbd4cb...` | 1610 shaders, **all byte-identical to the first campaign's final build `topic14`** (`diff` of the two `spv.sha256` lists: 0 lines); `libllama_runner.so` has `topic14`'s hash |
 | `topic1` | `0f14f2a1a` | hard links to `parent` + 77 changed paths, each verified by blob hash | 1620 shaders: the parent's 1610 byte-identical + the 10 new `sarc_dev_orin_sdpa_*`; `tools/shipped.py`: all 53 shipped variants byte-identical to `parent`: **UNCHANGED** |
 | `topic2` | `c6be297f1` (profile `orin-fused2` added) | hard links to `topic1` + changed paths | 1620 shaders, all byte-identical to `topic1`; shipped: **UNCHANGED**. Deployed, used for nothing (superseded by `topic3` before any job ran on it) |
-| `topic3` | `ca62778e6` (test support as insert-only blocks; the last commit that changes code) | hard links to `topic2` + 104 changed paths | 1620 shaders; shipped: **UNCHANGED** (53 of 53 equal to `parent`; `build/topic3.shipped.txt`); `llama_main` `d37d44dd...`, `test_llama_microbench` `c1cfe15b...` |
+| `topic3` | `ca62778e6` (test support as insert-only blocks) | hard links to `topic2` + 104 changed paths | 1620 shaders; shipped: **UNCHANGED** (53 of 53 equal to `parent`; `build/topic3.shipped.txt`); `llama_main` `d37d44dd...`, `test_llama_microbench` `c1cfe15b...` |
+| `topic4` | `0bed38090` (the one-full-subgroup check in the fused kernel; the last commit that changes code) | hard links to `topic3` + changed paths | building |
 
 `spirv_golden.py` reads FAIL with 14 DIFF lines on both builds, as on every build of the first campaign: the
 cross image's glslc is not the one the goldens were made with; none of the 14 is a kernel the Orin rows
