@@ -214,7 +214,7 @@ clock median 2724 to 2920 MHz, start temperature 44 to 50 C, no foreign GPU user
 | 8B 8da4w | 4982.97 | 5333.33 | +7.03 % | 4971 | +0.24 % |
 
 Geometric mean **+7.91 %** (min +2.87 %, max +11.30 %). The expected range of N1 was +20 to +30 %; this device lands below it (what limits it: below). The stages measured one by one multiply to +9.2 % (1.56 x 2.64 x 4.09 x 0.67 %
-gains of candidates 1, 3, 5, 6, each against its own parent in its own session); the single final session is the figure of record, the difference is session noise (repeat spreads of 2 to 11 % on the 1B and 3B cells).
+gains of candidates 1, 3, 5, 6, each against its own parent in its own session); the single final session is the figure of record, the difference is session noise (repeat spreads of 1 to 11 % in the final session).
 
 **Recommended configuration** (all committed code): `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_7900XTX_PROFILE=7900xtx-refine5` with the AMDVLK ICD (`VK_ICD_FILENAMES=/etc/vulkan/icd.d/amd_icd64.json`). The profile selects the softmax variant `780m_r3`
 (candidate 1), the linear kernel per layer shape of the screens (candidate 3), QK^T `pk_t128x128k32g42s32nf` and attn*V `sweep_t64x64k32g42s32` (candidate 5) and attn*V `sweep_t32x32k32g22s32` for head dimension 64 (candidate 6).
@@ -245,9 +245,9 @@ prompt or threshold file. With no profile and no exact-name variable set, the ne
 | 8B 4w | 20.9 -> 13.9 | 18.8 -> 15.1 | 19.8 -> 17.3 | 333.3 -> 333.8 | 32.5 -> 32.3 | 425.3 -> 412.4 |
 | 8B 8da4w | 21.0 -> 13.8 | 18.9 -> 15.0 | 19.9 -> 17.4 | 306.3 -> 294.4 | 41.4 -> 41.1 | 407.5 -> 381.6 |
 
-Softmax `r3` (candidate 1) takes 2.5 to 3.7 ms off; QK^T without the never-read mask fill and with packed staging (candidate 5) 1.6 to 7.9 ms; attn*V 2.5 to 3.7 ms (candidate 5 on all cells, candidate 6 on 1B);
-the linear kernels per shape (candidate 3) 2 to 12 ms on the 1B, 3B and 8B 8da4w cells and on 1B 4w, nothing on 3B and 8B 4w. (The dispatch totals of the 1B and 3B 4w cells fall by 11 % and 4.5 %, the measured gains are +9.8 % and +5.8 %;
-the runner's tok/s is the prefill window, the trace sums the dispatches.)
+Softmax `r3` (candidate 1) takes 2.5 to 3.7 ms off; QK^T without the never-read mask fill and with packed staging (candidate 5) 1.6 to 7.9 ms; attn*V 1.9 to 3.7 ms (candidate 5 on all cells, candidate 6 on 1B);
+the linear kernels per shape (candidate 3) 2.0 to 11.9 ms on the 1B 4w cell and the three 8da4w cells, and nothing on 3B and 8B 4w (their GEMM family reads +3.0 and +0.5 ms, within the +-3 ms
+by which the family time varies between traces of the same configuration). The ETDump sums are single warm executions; the tok/s medians of the timed session are the figures of record.
 
 **Percent of the freshly measured roofs** (igpu-roofline, `results/7900xtx/roofline/`, 2026-10-09, AMDVLK 2025.Q2.1, DVFS: matrix fp16 with fp32 accumulate 140.83 TFLOP/s, matrix int8 141.60 TOP/s; the 4w kernels accumulate
 in fp32 on fp16 operands, the 8da4w kernels run int8 MMA; the achieved rate is the linear-layer FLOPs of the prefill, 2 x 2048 x sum(N x K), divided by the traced GEMM family time):
@@ -266,11 +266,11 @@ on AMDVLK: 12 + 6 tier passes, 0 mismatches before the gate was stopped); whole-
 (none 3 % faster than the table kernel in every round); the wider QK^T grids and the large attn*V tiles of the second attention screen (0.62 to 1.02x); the online-softmax fused variants (`rko`, 1.3 to 2.6x slower than the two-pass ones).
 Process notes: the first fused-kernel guard stopped its queue on a wrong grep pattern (a tool bug, corrected); two jobs were lost to foreign GPU users and re-run; one attention variant (`t32x32k32g41s32`) did not compile and was removed.
 
-**What limits further progress.** The linear GEMMs are 56 to 78 % of the final prefill (57.6 of 85.2 ms on 1B 4w up to 333.8 of 412.4 ms on 8B 4w) and run at 49 to 69 % of the matrix roofs; on 4w nothing in the dev zone is 3 % faster
+**What limits further progress.** The linear GEMMs are 60 to 81 % of the final prefill (57.6 of 85.2 ms on 1B 4w up to 333.8 of 412.4 ms on 8B 4w) and run at 49 to 69 % of the matrix roofs; on 4w nothing in the dev zone is 3 % faster
 than the table kernel on 3B and 8B. The phase timing of the 8da4w kernel says why more is possible but needs new shader work: the MMA is 22 % of a wave's time, barrier waits 31 % and LDS stores 26 % (weight fetch 11 %), so
 the kernel is limited by its staging pipeline, not by the memory system or the MMA. A GEMM kernel with a deeper pipeline (double-buffered LDS, fewer barriers) is the next step; it is a new kernel, which the owner decisions
-(N1) leave out of a port campaign, and it would have to pass the same gates. After the attention picks, attention is 13 to 25 % of the prefill and every named kernel of the dev zone has been screened. A decode-side or graph-level
-change (the `mul` and copy kernels are 3 to 5 % of the 8B prefill) is outside the dev zone's kernels.
+(N1) leave out of a port campaign, and it would have to pass the same gates. After the attention picks, attention is 11 to 25 % of the prefill and every named kernel of the dev zone has been screened. A decode-side or graph-level
+change (the elementwise and copy kernels are about 7 % of the 8B prefill) is outside the dev zone's kernels.
 
 **Stop rule.** Candidates 1 and 2 were two consecutive ones under 2 % (the second not fully gated: rejected on performance after its timed session); candidate 3 (+2.64 %) restarted the count; candidates 4 (-0.42 %) and 5 (+4.09 %) are not both
 under 2 %; candidate 6 (+0.67 %) is the first of a new pair. No second candidate follows: every screen of the named kernels is complete and the screens' own rule (3 % in every round) leaves nothing to test, so the campaign ends
