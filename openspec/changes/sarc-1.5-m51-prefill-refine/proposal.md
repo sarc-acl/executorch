@@ -113,7 +113,7 @@ drain flags, the phase-timing twin of the xclipse 4w row.
   candidate passes a screen for the 1B and 3B models, and the owner closed the campaign on that basis. No new kernel
   was written for this. The campaign was reopened for the 8B model on 2026-10-08 (22:37 UTC, playbook decision N10): see the
   8B round below.
-- **What the final profile (`c5`) is:** the three candidates and the 8B pick of `c3` together (`c4` is the same stack without
+- **What the final profile (`c5`, superseded by `c8` below, pending its final verification) is:** the three candidates and the 8B pick of `c3` together (`c4` is the same stack without
   the `c3` pick; on the 1B and 3B models the two are identical). The final timed sessions against the pristine parent were
   faster in every cell, the 8B cells included; the figures are in the local `STATUS.md` only.
 - **The 8B round (owner decision 2026-10-08, 22:37 UTC; playbook decision N10).** The 8B model is required for the campaign to
@@ -193,17 +193,27 @@ drain flags, the phase-timing twin of the xclipse 4w row.
   to the parent's, logits probes with the gross-divergence check passed, ETDump showing the dispatched kernels, and a
   read of the new shader (the fused attention kernel) for unsynchronised shared writes: every exchange between lanes of the
   workgroup, which is one subgroup, is separated by a shared-memory barrier, and no two lanes write one location.
-- **Second round of linear kernels (owner decision 2026-10-08, 23:38 UTC), state: measured, no new kernel written.** In-kernel phase timing
-  of the final stack's two linear kernels (the 8da4w kernel and the 4w incumbent row, on the shapes of all three models) shows per
-  wave: the cooperative-matrix math about half of the 4w wave and a little over a third of the 8da4w wave; the staging of the
-  operands (global fetch plus shared-memory stores) about as much as the math or more; the workgroup barrier roughly a tenth;
-  and, for 8da4w only, the per-quantization-group epilogue about a tenth. Both kernels already use double-buffered staging with one
-  barrier per K step. The test of "fewer barriers per K" that needs no new kernel, the existing 8da4w tiles with twice the K per
-  barrier, changed the kernel time by less than the screen margin on every shape (no shape selected), as did the earlier 4w
-  screens of a larger K per barrier except on the K = 4096 shapes (the pick of `c5`). So per-step synchronisation is not the
-  lever; the staging stores and fetch, and for 8da4w the group epilogue, are. A kernel that attacks those (for example operands
-  fed to the matrix unit without a shared-memory round trip) is a new kernel design, not started; see the local `STATUS.md`
-  for the question put to the owner.
+- **Second round of linear kernels (owner decision 2026-10-08, 23:38 UTC).** In-kernel phase timing and the driver's
+  pipeline statistics and ISA of the two linear kernels, on the shapes of all three models, located the cost: the 8da4w
+  kernel spends about as much wave time staging the operands as multiplying and about a tenth in its per-quantization-group
+  epilogue; the 4w kernels load their B operand from shared memory with hundreds of 16-bit gathers per loop. Both kernels
+  already use double-buffered staging with one barrier per K step, so the order's "cut per-step synchronisation" had nothing
+  to cut: twice the K per barrier changed the 8da4w kernel's time by less than the screen margin, and so did loading every
+  fragment of a chunk before its MMAs (the compiler already schedules it so). Candidates, each default off, `m51` prefix, in
+  the dev zone: (1) `zpgd`, 8da4w with the A operand loaded by `coopMatLoad` straight from the row-major activations: correct,
+  slower than the incumbent on every shape (more vector registers, no occupancy gain); (2) smaller subgroup tiles of the
+  8da4w kernel: slower on every shape; (3) `zpgf` (all fragments first): no effect; (4) **`bz`, the 4w texel-wise-staging kernel
+  with the B operand stored N-major inside the shared pool** (the stock body refuses `B_COLMAJOR` together with the pool; this
+  variant combines them, so the matrix unit's B loads are wide): correct (production-diff passes on both storages for all three
+  models, with errors not larger than the parent's; its output is bit-identical to the previous stack's on the 32 real-text
+  prompts of every cell), faster than the incumbent 4w kernel by the screen margin in every round on all twelve shapes of the
+  three models, and faster than the K = 4096 pick of `c3` on those shapes; (5) `bw`, `bz` with packed fp16 dequantisation: about
+  half the margin, so not selected. **Profile `c8` = `c4` plus `bz` on every 4w shape** (it replaces the `c3` pick): gated
+  against `c5` (the unmodified `verify.sh` agrees with the parent snapshots except for the two intended kernel-name lines;
+  SDPA tiers and reference error as before; next token equal in all items) and timed against `c5` (the 4w cells of all three
+  models faster outside the noise band, the 8da4w cells, which it does not touch, unchanged). The final verification of `c8`
+  on a build of the committed head, and its final session against the pristine parent, were queued and could not run: the board's
+  driver was replaced by another user while the queue was idle (recorded in the local `STATUS.md`).
 - **Directions left for later work:** a new 4w or 8da4w GEMM kernel (the linear kernels are most of the prefill and the
   screens found no tile that beats the incumbents, apart from the 4w pick of `c3` on the 8B shapes), a fused SwiGLU (the elementwise operators are stock kernels), an 8B decode check, and a driver-side fix for the job watchdog that makes the 8B setting unnecessary.
 - **Builds:** the golden check is pending; the compiler launches of a build wait while a timed session runs
