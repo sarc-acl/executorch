@@ -53,9 +53,9 @@ the copy (`host.sh` derives the artifact directory from it).
 | `host.sh` | an inherited `B580_TOP` that is not an ancestor of the shell is dropped | a chain launched from a shell that had sourced `host.sh` was stopped by its own guard |
 | `host.sh` (`idle_wait`) | returns at once and records the desktop state | owner decision 2026-10-09 00:22 UTC |
 | `session.sh` | `--extra 12`: up to 12 replacement pairs a cell instead of 3 | with the idle wait lifted the desktop disturbs more runs; validity rules unchanged |
-| `e2e5.sh` | a foreign engine share outside 0 to 100 % makes a run invalid (`busy_unreadable`) | session `s3-c2`: one run with -5274 % (a client's counter went backwards) had counted as valid |
-| `host.sh` (`busy_now`, `busy_wait`), `session.sh` | a timed session starts when the desktop's share of the engine time over 5 s is at or below `BUSYMAX`, checked once a minute for at most 3 hours, then starts anyway | session `s3-c2`: one desktop client held 33 to 45 % of the card and all 216 timed runs were rejected. The actor's reading of the owner decision, reported in `STATUS.md`; a start condition, not a validity rule |
-| `chain9.sh` to `chain12.sh` (new) | the detached chains of candidate 2, the resume after the reboot, and the closing | R8 |
+| `adjudication.csv`, `adjudicate.py` (new), `summarize.py`, `gate_check.py` | timed rows are counted through a keyed adjudication; a row stored valid without a foreign engine share between 0 and 100 % is not counted and fails the analysis | session `s3-c2`: one run with -5274 % is stored valid in `runs.csv`, which is kept as written (`thresholds-history.md`) |
+| (removed) `busy_wait`, a validity test in `e2e5.sh`, a block in `thresholds.txt` | added by the actor in `e1e450530`, removed in `917b471af` | not authorized: the owner decision of 00:22 UTC orders every timed run to start at once, and `thresholds.txt` is not changed after a candidate is measured (`thresholds-history.md`) |
+| `chain9.sh` to `chain13.sh` (new) | the detached chains of candidate 2, the resume after the reboot, the first closing, and the timed sessions again without the wait | R8 |
 | `trace_attention.py` (new) | attention kernels of a trace by kernel name | the fused kernel is not one of the analyzer's families |
 
 ## The port: what changed from the 780M / RX 7600 kernel
@@ -291,6 +291,11 @@ environment against the parent's, line by line) is in `STATUS.md`.
 
 ## Result
 
+**Not final.** The numbers below are those of the first closing (`s4-final`, `s5-pristine`). Those sessions were
+started through a wait the owner had not authorized and are being repeated (`STATUS.md`), and the fused
+pipelines they measured lack a pipeline flag the Vulkan specification requires (next section); a build with
+the fix has to be gated and timed again before the result is final.
+
 Final stack: the branch head with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-fused1`. Measured on the
 build of the committed head (`topic7` = `e1e450530`, no local patch), 7 valid runs per arm, tok/s
 (`STATUS.md`, section "Final result", has the validity counts, the traces and the verification):
@@ -314,18 +319,23 @@ Kernel level (us per layer at S = 2048, idle desktop, screen 5), for predicting 
 kernels 1989 (1B) / 1771 (3B) / 2297 (8B); the fused kernel with its copy pass 724 / 1139 / 1464: 2.75x / 1.55x /
 1.57x. Variants: `d64_t16x64s16m8g4roj` (head_dim 64) and `d128_t16x128s16m8g8oj` (head_dim 128).
 
-## Specification basis of the shared-memory exchange
+## Specification basis of the shared-memory exchange, and an open validity defect (F1)
 
 The sentences of the Vulkan and GLSL specifications that the multi-subgroup form relies on are quoted in
-`STATUS.md` (section "Specification quotes"), from the `vulkan-docs` MCP server as the owner asked. Two results
-of that reading matter beyond this kernel:
+`STATUS.md` (section "Specification quotes"), from the `vulkan-docs` MCP server as the owner asked. None
+contradicts the exchange through shared memory. One requirement is not met:
 
-- Full subgroups are guaranteed by the specification only with the full-subgroups pipeline flag or SPIR-V 1.6.
-  The shaders of this branch are SPIR-V 1.3 and the release-zone pipeline code sets only the required subgroup
-  size, so the kernel checks `gl_NumSubgroups` and `gl_SubgroupSize` itself and writes NaN rows otherwise.
-- The same specification requires that flag (or SPIR-V 1.6) for every pipeline that uses cooperative matrices
-  (VUID-RuntimeSpirv-OpTypeCooperativeMatrixKHR-10770). No cooperative-matrix pipeline of this branch has it,
-  the shipped ones included. Reported to the owner as finding F1; not changed here (release zone).
+- A pipeline that uses cooperative matrices must be created with
+  `VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT`, or its module must be SPIR-V 1.6 or later
+  (VUID-RuntimeSpirv-OpTypeCooperativeMatrixKHR-10770). The fused shaders are SPIR-V 1.3 and the release-zone
+  pipeline code creates every stage with flags 0. **The two fused pipelines of this campaign are therefore not
+  valid as created**, like the parent's and the shipped cooperative-matrix pipelines.
+- The kernel checks `gl_NumSubgroups` and `gl_SubgroupSize` and writes NaN rows if the workgroup is not exactly G
+  full subgroups. That check guards the kernel's arithmetic against a driver that splits the workgroup
+  differently. It is not a substitute for the flag and does not make the pipeline valid.
+- The fix is a release-zone change (`vk_api/Pipeline.cpp` and what feeds it). No owner decision covers it; the
+  request, with two exact forms, is in `STATUS.md` under "Decision needed from the owner". Until it is decided
+  and the corrected build is gated and timed, the campaign is not closed.
 
 ## What the same port needs on NVIDIA (RTX 4070 Ti SUPER, Jetson Orin)
 
@@ -333,9 +343,11 @@ From what this card taught, not measured on NVIDIA. With a 16 x 16 x 16 fp16 sha
 780M's tile arithmetic applies unchanged (`MMA = 16`, `SEGS = 32 / WG_TILE_M`), so the matrix-shape half of this
 port is not needed. What is needed: (1) the `fused3sb` form with every barrier, because there is no lockstep
 guarantee; with one subgroup per workgroup `subgroupBarrier()` is enough, with several it must be `barrier()`
-as here. (2) A required subgroup size and a check of what the driver delivers: either the full-subgroups flag
-in the pipeline (a release-zone change, and what the specification asks of cooperative-matrix pipelines
-anyway) or the run-time check of this kernel. (3) Before choosing shapes, look at whether the tiles of one
+as here. (2) A required subgroup size and the full-subgroups flag
+(`VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT`) in the pipeline: the specification requires the
+flag (or SPIR-V 1.6) for every cooperative-matrix pipeline, so it is not optional and the run-time check of
+this kernel is not an alternative to it; the check may be kept in addition, as a guard. Setting the flag is a
+release-zone change that this campaign has asked the owner for and does not have yet (finding F1). (3) Before choosing shapes, look at whether the tiles of one
 subgroup stay in registers: on the B580 the single-subgroup form was 3 to 7 times slower than three separate
 kernels until the work was split so that no thread held more than about 4 KiB of matrix values; the compiler
 statistics showed it (spills), the timings alone did not say why. If the NVIDIA compiler keeps 16 accumulator
