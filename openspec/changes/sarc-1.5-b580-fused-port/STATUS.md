@@ -129,7 +129,8 @@ FAIL line):
 - Unmodified `verify.sh` with the final environment against the parent snapshot `s0-parent-verify`, line by
   line with the rates removed: the same. Next token parent vs final: SAME in all six cells on the three
   prompts, so the result is a plain pass; no item needs decision D1 or D3.
-- Error against the fp32 reference (`raw/final-ref`, `results/b580/sdpa-error/final-ref-*.csv`): not larger than
+- Error against the fp32 reference (`.artifacts/raw/final-ref/{full,extended,peaked}.csv` and its logs; not yet copied into `results/`:
+  `collect.sh` copies only `c?-ref*`, to be extended with the next authorized work): not larger than
   the parent's in all 4 `full` and all 8 `extended` cases (rms 2.02e-5 to 2.05e-5 against 2.76e-5 to 2.79e-5 at
   S = 2048); in 1 of 5 synthetic `peaked` cases the maximum error is larger (2.50e-3 against 2.32e-3) with a
   smaller rms; the same values as on `topic6`.
@@ -142,7 +143,7 @@ FAIL line):
   accepted under the reference-error rule; this campaign's stack does not move any token against its parent.
   `e2e5.sh` therefore ends `s5-pristine` with `E2E5_INCOMPLETE 8b-8da4w:nexttoken_DIFFER_DIFFER_SAME`; the
   session is a timing statement, not a gate.
-- Decode (`s4-final`, 32 tokens, medians of 5): final / parent 0.985 / 0.992 / 0.992 / 0.990 / 0.998 / 0.996:
+- Decode (`s4-final`, 32 tokens, medians of 5): final / parent 0.985 / 0.991 / 0.992 / 0.990 / 0.998 / 0.996:
   inside the band, but below 1 in all six cells, here and in `s2-c1` (0.992 to 0.999). Decode does not run the
   fused kernel; the cost was not located.
 
@@ -668,7 +669,8 @@ instance of Vulkan 1.3; neither was done. ANV launches full subgroups for these 
 
 ## Next
 
-Read chain 13. Then wait for the owner's decision on F1; with it: commit the change exactly as authorized, build
+Wait for the owner's decision on F1 (nothing is recomputed or re-run meanwhile); with it: extend `collect.sh`
+to copy `raw/final-ref*`, and commit the change exactly as authorized, build
 a new tag from the exported commit, and through the queue: the full gate, the reference error, the golden
 check, and the timed sessions against both parents.
 
