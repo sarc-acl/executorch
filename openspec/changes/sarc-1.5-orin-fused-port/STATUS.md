@@ -1,6 +1,6 @@
 # STATUS: sarc-1.5-orin-fused-port
 
-**2026-10-09 01:45 UTC. Candidate 1 (fused attention kernel, profile `orin-fused1`) passed its gate `s3-c1` on
+**2026-10-09 01:23 UTC. Candidate 1 (fused attention kernel, profile `orin-fused1`) passed its gate `s3-c1` on
 build `topic1`: +6.01 % geomean over the tuned parent (1B +10.9 / +10.0 %, 3B +4.8 / +4.4 %, 8B +3.3 / +3.0 %), no
 next-token item differs, reference-error criterion 1 met. NOT CLOSED: reading the 4070 Ti fused port's review
 showed two things my first sessions lack (no thermal-throttle record in the timed runs; the shared test file
@@ -31,7 +31,7 @@ All times are UTC from `date -u`.
 - Workstation: nothing. `topic3` (`ca62778e6`) was built 00:42 to 00:55 and is deployed with its `logits_dump`.
 - Coordinator hold: `tools/HOLD.md` (device: `~/hmz-sarc-orin-fused/HOLD`; builds: `.artifacts/HOLD`). None seen.
 
-## Final stack: the rule, fixed 01:40 UTC before `s5-c1` and `s6-c2` have a number
+## Final stack: the rule, fixed 01:22 UTC before `s5-c1` and `s6-c2` have a number
 
 `chain7.sh` applies it without me: the final stack is `orin-fused2` only if `s6-c2` is `GATE_ACCEPTED` and its
 geomean gain over candidate 1 is at least 2 % (outside the noise band); in every other case it is `orin-fused1`,

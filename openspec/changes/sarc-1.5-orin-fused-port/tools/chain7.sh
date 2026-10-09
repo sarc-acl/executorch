@@ -1,6 +1,6 @@
 #!/bin/bash
 # chain7.sh [job to wait for]: device side. The closing chain, on build topic3 (the last commit that changes code).
-# The final stack is fixed by a rule written before s6-c2 has a number (STATUS.md, 2026-10-09 01:40 UTC; owner
+# The final stack is fixed by a rule written before s6-c2 has a number (STATUS.md, 2026-10-09 01:22 UTC; owner
 # decision 2026-10-09 01:00 UTC): orin-fused2 only if s6-c2 is GATE_ACCEPTED and its geomean gain over candidate 1
 # is at least 2 % (outside the noise band); in every other case orin-fused1, whose gate on topic3 against the
 # parent is s5-c1. Without an accepted s5-c1 nothing here runs.
