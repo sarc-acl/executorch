@@ -1,8 +1,9 @@
 # sarc-1.5-b70-fused-port: status
 
-**2026-10-09 07:15 UTC (host clock) — chain 1 is done: hook condition met, SPIR-V identical, baseline within
-0.22 % of `s12-final5`, A/A -0.06 % geomean, and the one kernel screen keeps the B580's pair for `b70-fused1`. The
-gate of candidate 1 (`tools/chain2.sh`, session `s2-c1`, 7 repeats) is running. No candidate number yet.**
+**2026-10-09 08:45 UTC (host clock) — candidate 1 (`b70-fused1`, the B580's fused attention kernel, unchanged)
+is accepted as a plain pass: `GATE_PASS`, next token SAME in all six cells on the three prompts, **+8.34 %
+geomean** over the parent `xe2-refine5` (the B580 measured +9.18 % over its parent). There is no candidate 2: the
+B580 campaign did not adopt its own (-0.13 %). The closing chain is running on the build of the committed head.**
 
 Branch `topic/b70-fused-port` (from `origin/topic/xe2-prefill-refine` at `5617714b0`). Parent of every comparison:
 `5617714b0` with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=xe2-refine5`. Host `fedora-gpu-eval`, card `b70-0`
@@ -20,14 +21,102 @@ cell, both arms alike, resident share recorded per run in `runs.csv`, column `ca
 
 ## Running now
 
-Detached (`nohup setsid`), one unit at a time: `tools/chain2.sh topic1 s2-c1 b70-fused1 c1-ref`, started 07:10
-UTC, status in `.artifacts/logs/chain2-s2-c1.status`: stage `s2-c1` (build `parent` with the parent environment
-against build `topic1` with `b70-fused1`), `gate_sdpa.sh` (12 passes x tiers `all` / `extended` / `full` with the
-hashes of the test binary and the runner library and every pass's status, unmodified `verify.sh` compared line by
-line with `s0-parent-verify`, the timed session with 7 repeats, warm traces, `gate_check.py`), 12 passes each of
-tiers `peaked` and `fused` (reported), reference error (`sdpa_ref.sh`), logits probe, `decide.py`, attention
-table of the traces, decode comparison, collection. Ends `CHAIN2_DONE s2-c1`; expected about two hours. If the
-host reboots: move a half-run `stage/s2-c1` to `superseded/` and start the same command again.
+Detached (`nohup setsid`), one unit at a time: `tools/chain3.sh b70-fused1 6ac44c483`, started 08:39 UTC, status
+in `.artifacts/logs/chain3.status` (and `chain2-s3-final.status` for its first part): build `topic2` from an export
+of `6ac44c483` (the committed head; no local patch), SPIR-V identity, the full gate of the final stack as session
+`s3-final` (as for candidate 1, 7 repeats), extra tiers, reference error `final-ref`, probe, decision, decode;
+then the hook condition on `topic2` (`test_sarc_select` executables kept in `.artifacts/raw/final-select/`,
+`verify.sh` with no environment), session `s4-pristine` (the first campaign's pristine parent build, no profile,
+against `topic2` with `b70-fused1`, 7 repeats) with traces of 1B 4w and 8B 4w, `check.sh --no-build`, collection.
+Ends `CHAIN3_DONE`; expected about 2 h 20 min. If the host reboots: move half-run `stage/s3-final` or
+`stage/s4-pristine` to `superseded/` and start the same command again (finished builds are skipped).
+
+## Candidate 1, `b70-fused1`: GATE_PASS, +8.34 % geomean (session `s2-c1`, 07:10 to 08:39 UTC)
+
+Parent = build `parent` (`5617714b0`) with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=xe2-refine5`; candidate
+= build `topic1` (`8ba3607be`) with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b70-fused1`. Tok/s, median of
+the first 7 valid runs per arm, arms interleaved; recomputed from `stage/s2-c1/raw/runs.csv`:
+
+| cell | parent | candidate 1 | gain | spread parent / cand | next token (2048 / real-text / 1792-token prompt) |
+|---|---:|---:|---:|---|---|
+| 1B 4w | 17964.90 | 20686.90 | **+15.15 %** | 1.75 / 5.83 % | SAME / SAME / SAME |
+| 1B 8da4w | 20686.90 | 24381.00 | **+17.86 %** | 1.00 / 1.20 % | SAME / SAME / SAME |
+| 3B 4w | 7529.41 | 8000.00 | **+6.25 %** | 0.37 / 0.39 % | SAME / SAME / SAME |
+| 3B 8da4w | 9570.09 | 9990.24 | **+4.39 %** | 1.40 / 0.49 % | SAME / SAME / SAME |
+| 8B 4w | 3379.54 | 3518.90 | **+4.12 %** | 1.31 / 1.38 % | SAME / SAME / SAME |
+| 8B 8da4w | 4481.40 | 4623.02 | **+3.16 %** | 0.66 / 0.68 % | SAME / SAME / SAME |
+
+Geomean **+8.34 %**, every cell outside the +-2 % band (A/A -0.06 %). 84 timed runs, all valid: foreign engine
+time 0.00 % in every run, at least one guard poll and 8 or more clock samples per run, lowest median clock 2533
+MHz (`CLKMIN` 2457), no thermal throttle reason. Of the 24 untimed next-token runs two (8B 4w on
+`prompt_check.txt`, both arms, 2450 and 2433 MHz) carry the reason `clock_low`; they are token comparisons, for
+which the clock does not matter (`e2e5.sh toklog`), and are not in any median.
+
+Gate (`gate_sdpa.sh`, `stage/s2-c1/gate.txt`): `GATE_PASS`, 35 PASS lines, no FAIL line. SDPA correctness 12
+passes x tiers `all` / `extended` / `full` (4 / 8 / 4 cases): every pass rc 0, 0 mismatches and `pairing=ok` in all
+192 case runs, all 192 served by the fused kernel alone; hashes of the test binary, runner library and runner in
+`sdpa-correctness/hashes.txt`, statuses in `rc.csv`. Unmodified `verify.sh` with the candidate environment:
+identical to `s0-parent-verify` line by line with the rates removed (`verify_diff.txt`: `VERIFY_SAME`, 34 lines).
+Logits probe `PROBE_CHECK_OK`; `decide.py`: `GATE_PASS` (plain pass: no next-token item differs, so neither the
+near-tie nor the reference-error decision is used).
+
+Reference error (the candidate changes the arithmetic; `results/b70/sdpa-error/c1-ref/`, both arms on the staged
+build, 0 mismatches everywhere); rms / maximum absolute error against the fp32 CPU reference:
+
+| tier | case | parent's three kernels | `b70-fused1` | not larger (rms / max) |
+|---|---|---|---|---|
+| `full` | 1B heads, S = 2048 | 2.76e-5 / 1.19e-3 | 2.05e-5 / 7.2e-4 | yes / yes |
+| `full` | 3B heads, S = 2048 | 2.79e-5 / 1.15e-3 | 2.05e-5 / 7.1e-4 | yes / yes |
+| `full` | 8B heads, S = 2048 | 2.76e-5 / 1.06e-3 | 2.02e-5 / 7.9e-4 | yes / yes |
+| `full` | 8B heads, S = 1024 at input_pos 1024 | 1.29e-5 / 1.24e-4 | 8.96e-6 / 6.9e-5 | yes / yes |
+| `extended` | 8 cases | | | yes / yes in all 8 |
+| `peaked` | `peaked_tiny_gqa_s256` | 4.06e-4 / 2.32e-3 | 3.77e-4 / **2.50e-3** | yes / **no** |
+| `peaked` | the other 4 cases | | | yes / yes |
+
+The same numbers as on the B580 (same kernel, same inputs), including the one synthetic `peaked` case whose
+maximum error is 8 % above the parent's while its rms is 7 % below; `peaked` is reported, not a gate item
+(`thresholds.txt`, fixed before the run). Extra tiers, 12 passes each: `peaked` 60 of 60 case runs served by the
+fused kernel with 0 mismatches; `fused` 60 case runs with 0 mismatches, 24 of them served by the fused kernel
+(`fused_s64`, `fused_s192_pos64`; the other three cases have S or head_dim the chosen blocks do not fit and
+fail by the tier's design, as they would on the B580).
+
+Where the gain comes from (warm ETDump of both arms, ms per 2048-token prefill, attention kernels by name,
+`stage/s2-c1/trace/attention.csv`):
+
+| cell | arm | dispatch total | QK^T | softmax | attn*V | fused kernel | K/V copy pass | attention |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| 1B 4w | parent | 105.9 | 4.8 | 12.7 | 6.1 | | | 23.7 |
+| 1B 4w | candidate 1 | 89.8 | | | | 7.3 | 0.25 | 7.5 |
+| 1B 8da4w | parent | 91.7 | 4.8 | 12.6 | 6.1 | | | 23.5 |
+| 1B 8da4w | candidate 1 | 75.6 | | | | 7.1 | 0.22 | 7.3 |
+| 3B 4w | parent | 261.7 | 9.3 | 17.0 | 10.9 | | | 37.2 |
+| 3B 4w | candidate 1 | 246.6 | | | | 20.8 | 0.67 | 21.4 |
+| 3B 8da4w | parent | 206.4 | 8.9 | 16.6 | 10.6 | | | 36.2 |
+| 3B 8da4w | candidate 1 | 190.3 | | | | 19.5 | 0.64 | 20.1 |
+| 8B 4w | parent | 595.6 | 14.4 | 25.9 | 16.2 | | | 56.5 |
+| 8B 4w | candidate 1 | 571.7 | | | | 31.5 | 0.68 | 32.2 |
+| 8B 8da4w | parent | 448.5 | 13.4 | 25.0 | 15.3 | | | 53.8 |
+| 8B 8da4w | candidate 1 | 424.2 | | | | 28.9 | 0.66 | 29.6 |
+
+Attention goes from 23.7 to 7.5 ms on 1B (-68 %), 37.2 to 21.4 ms on 3B (-42 %), 56.5 to 32.2 ms on 8B (-43 %);
+the dispatch total falls by the same 16 / 15 / 24 ms, so nothing else moved.
+
+**Negative finding, decode** (`stage/s2-c1/decode/summary.csv`, 5 runs per arm, 32 new tokens after the
+2048-token prompt): the candidate decodes 0.8 to 2.5 % slower than the parent in every cell (1B 4w 100.65 ->
+98.10 tok/s, -2.5 %; 1B 8da4w -1.2 %, 3B -1.3 / -1.5 %, 8B -0.8 / -1.0 %). The fused kernel does not serve a
+decode call (S = 1); the three kernels of `xe2-refine5` run there as before. Not located in this campaign (no
+decode trace was taken); the likely place is the per-step cost of the two extra graph nodes per layer that
+dispatch nothing in decode, which is an inference, not a measurement. Decode is not a gate item and not this
+campaign's target; it is reported so that a promotion does not overlook it.
+
+## Candidate 2: none
+
+Task section 6.4: read the B580 campaign's `STATUS.md` when candidate 1 here is gated. Read at 08:00 UTC (its
+working copy, head `f613e3ed4`): "Candidate 2 (`b580-fused2` ...): `GATE_PASS` on the committed head (session
+`s3b-c2`), -0.13 % geomean over candidate 1, every cell inside the +-2 % band: no gain, not adopted". Inside the
+band, so there is no candidate 2 here and the campaign closes with candidate 1. (That is a citation of another
+campaign, branch `topic/b580-fused-port` at `f613e3ed4`, not a number of this one. The pin for sources stays
+`cea76c634`.)
 
 ## Chain 1 (05:46 to 07:09 UTC): results
 
@@ -176,8 +265,7 @@ its `STATUS.md` at `cea76c634` and not searched again here.
 
 ## Next
 
-Read chain 2 (gate, reference error, probe, decision). Then read the B580 campaign's `STATUS.md` for its
-candidate 2 (task section 6.4), then the closing on the build of the committed head.
+Read chain 3; write `proposal.md`; `check.sh --no-build`; push `topic/b70-fused-port`.
 
 ## Decision needed from the owner
 
