@@ -67,3 +67,20 @@ adjudication can only invalidate), and any other timed row stored valid without 
 not counted and fails the analysis until a person adds a keyed row. Recomputed for `s3-c2`: 0 countable runs in
 all six cells (stored: 1 in 3B 8da4w parent). Its gate stays `GATE_FAIL`; `stage/s3-c2/gate.txt` is not
 rewritten (the recheck has 7 FAIL lines as before, the 3B 8da4w line now "parent 0 cand 0").
+
+## Owner decision, 2026-10-09 (09:55 UTC): items 2 and 3 of "Decision needed from the owner"
+
+Appended to the task file by the coordinator under the owner's standing authorisation.
+
+- **Item 2.** A foreign engine share outside 0 to 100 % is not a reading: the runner rejects the run with reason
+  `busy_unreadable` and replaces it inside the session like any other rejected run ("a validity predicate made
+  complete, not a threshold change"). Applied to `tools/e2e5.sh` at 10:08 UTC, while chain 13 was in the
+  correctness part of the gate of `s6-final` and before that session's timed runs began; `s7-pristine` and
+  `s3c-c2` ran before it with the calibrated runner and have no share outside 0 to 100 % (lowest 0.3 %), so the
+  predicate would not have changed them. `thresholds.txt` is not edited. The keyed adjudication and
+  `tools/adjudicate.py` stay: they cover the row of `s3-c2`, written before the predicate.
+- **Item 3.** No wait before a session. A session of chain 13 that ends with a cell short of its valid runs,
+  every rejection in that cell being the foreign share, is repeated once, started at least 30 minutes after the
+  first ended; if the repeat ends the same way it is reported and not repeated again. Nothing is kept from a
+  session that did not complete.
+- **Item 1 (F1)** is with the owner.
