@@ -1128,7 +1128,6 @@ const Row k7900xtxSdpaSpace[] = {
     {"", nullptr, Op::kSdpaAv, "sarc_sdpa_av_coopmat_sweep_t128x128k32g82s32", {128, 128, 32, 8, 2, 32, 16, false}, kBufBuf, nullptr, Status::kUnverified},
     {"", nullptr, Op::kSdpaAv, "sarc_sdpa_av_coopmat_sweep_t128x128k32g42s64", {128, 128, 32, 4, 2, 64, 16, false}, kBufBuf, nullptr, Status::kUnverified},
     {"", nullptr, Op::kSdpaAv, "sarc_sdpa_av_coopmat_sweep_t32x32k32g22s32", {32, 32, 32, 2, 2, 32, 16, false}, kBufBuf, nullptr, Status::kUnverified},
-    {"", nullptr, Op::kSdpaAv, "sarc_sdpa_av_coopmat_sweep_t32x32k32g41s32", {32, 32, 32, 4, 1, 32, 16, false}, kBufBuf, nullptr, Status::kUnverified},
 };
 const char* exact_name_7900xtx(Op op) {
   static const char* const qk = std::getenv("ET_VK_SARC_7900XTX_QK");
