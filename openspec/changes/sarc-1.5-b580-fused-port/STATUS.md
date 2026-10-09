@@ -66,7 +66,7 @@ reference makes it non-finite (`max_abs_err` alone would not: `std::max` drops a
   with finite `rms_err`, `max_abs_err` and `ref_rms`; a non-finite or missing record fails the gate. No
   tolerance, threshold or file under `sarc/tools` changed; the requirement can only turn a pass into a fail.
 - Regression test `tools/test_gate_finite.sh` (`results/b580/gate-recheck/test_gate_finite.out`,
-  `TEST_GATE_FINITE_OK`; run again end to end after the second review round, 2026-10-09 15:55 UTC, with
+  `TEST_GATE_FINITE_OK`; run again end to end after the second review round, 2026-10-09 15:47 UTC, with
   `.artifacts/tmp` writable: rc 0, output identical to the recorded file): on a copy of the `s6-final` gate files the gate passes; with `rms_err` set to `nan`,
   `-nan` or `inf`, with `ref_rms=nan`, or with one record removed, in one log whose four cases still read
   `mismatches=0 ... PASSED`, it fails on that pass.
