@@ -282,3 +282,10 @@ use by something else is likely: UNVERIFIED, the cause was not looked for; this 
 and SDPA evidence of the final verification failed with ENOSPC, were kept under `<artifacts>/superseded/` and redone (`c6`, `r2-final`); the artifacts of round 2 were moved to `<scratch-disk>`. No run counted in a
 timed table was affected (the sessions' runs were complete and valid before either event). The first event overlapped the last ten minutes of the no-profile 4w kernel screen of build `r2g` (03:07 to 03:16 UTC);
 its rows are complete, and the later screen of build `r2h` (clean disk) reproduced its ratios (`ap4bp12` was added there, `bp12` passes 11 of 12 shapes in both). One untracked stub script of mine (`chain9b.sh`, 20 lines, content reproduced in `chain9c.sh`) was deleted.
+
+**Owner decisions of 2026-10-09 that appeared in `CAMPAIGN.md` while round 2 ran (read after the fact: the file was re-read at the end, not after every candidate as asked).** (1) The coordinator's note of 02:26 UTC
+(screen `r2e-diag` started during a foreign 7900 XTX build; runs with a non-empty `build=` invalid, redo them) was replaced at 02:33 UTC by the owner decision that builds on this workstation may run during GPU
+measurements and timed sessions: a run is not invalid because `others.sh` shows a host build (the field is still recorded), foreign GPU users still invalidate. The `r2e-diag` rows stand and were used as they are
+(`results/rx7600/round2/r2e-screen-8da4w.csv`). (2) This run kept its stricter handling of host builds after that time: a timed run that overlapped a build was marked `host_build` and replaced by a further valid run
+(one such run in `r2-final`, none counted in any other timed table; every cell still has its 5 valid runs per arm from the same protocol), so no number depends on the relaxed rule, and the sessions are
+conservative with respect to the new one. The proposal's text above ("a timed run waits until no compiler ... runs and is invalid if one appears (R5)") is therefore superseded for builds by that decision.
