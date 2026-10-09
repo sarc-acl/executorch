@@ -55,6 +55,12 @@ index `e2e5.sh` uses (the sorted 60 valid timed shares of `s1-aa2`, element `int
 file `busymax_pct` written by `e2e5.sh` holds 5.0. The line stays as written because the file is not changed
 after a candidate's numbers exist; this erratum is the correction.
 
+Recomputed again at closing (2026-10-09, second review round) from `stage/s1-aa2/raw/runs.csv`: 60 valid timed
+rows; the ten largest shares, sorted, are 0.75, 0.78, 0.85, 0.92, **0.94**, 1.03, 1.31, 1.31, 1.63, 1.74 %
+(indices 50 to 59), so `sorted_shares[int(0.9 * 60)]` = index 54 = 0.94 %. `BUSYMAX` stays max(5, 2 x 0.94) =
+5.0 %; no run's validity depends on the misquoted 1.03 %, and `thresholds.txt` and its effective values are
+unchanged.
+
 ## Adjudication of the invalid run of `s3-c2`
 
 `stage/s3-c2/raw/runs.csv` (and its byte-identical copy `results/b580/sessions/s3-c2/runs.csv`) is kept as

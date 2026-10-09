@@ -356,9 +356,10 @@ cooperative-matrix pipeline of every device, the shipped ones included:
 - **The ruling.** F1 is repaired once, in the release zone, in a change of its own before any promotion pull
   request, with every device gated and timed again under it. Nothing is rebuilt, re-gated or re-timed for it
   here; the numbers above stand as measured.
-- **Decode with the fused node present** (not investigated): final / parent 0.985 / 0.991 / 0.991 / 0.990 / 0.998
-  / 0.996 (`s4-final`, 32 tokens, medians of 5; 1B 4w, 1B 8da4w, 3B 4w, 3B 8da4w, 8B 4w, 8B 8da4w) and 0.994 /
-  0.995 / 0.992 / 0.996 / 0.999 / 0.995 (`s2-c1`): 0.1 to 1.5 % slower, inside the +-2 % band, below 1 in all
+- **Decode with the fused node present** (not investigated): final / parent 0.98462 / 0.99148 / 0.99150 /
+  0.98960 / 0.99830 / 0.99603 (`s4-final`, 32 tokens, medians of 5; 1B 4w, 1B 8da4w, 3B 4w, 3B 8da4w, 8B 4w, 8B
+  8da4w) and 0.99396 / 0.99448 / 0.99177 / 0.99621 / 0.99918 / 0.99533 (`s2-c1`), from `decode/decode.csv`:
+  0.1 to 1.5 % slower, inside the +-2 % band, below 1 in all
   twelve readings. Decode does not run the fused kernel.
 
 ## What the same port needs on NVIDIA (RTX 4070 Ti SUPER, Jetson Orin)

@@ -774,12 +774,16 @@ stands as measured and is a number of pipelines created without the full-subgrou
 
   | cell | parent | final | ratio | `s2-c1` ratio (`topic6`, desktop in use) |
   |---|---:|---:|---:|---:|
-  | 1B 4w | 96.88 | 95.38 | 0.985 | 0.994 |
-  | 1B 8da4w | 88.83 | 88.07 | 0.991 | 0.995 |
-  | 3B 4w | 44.29 | 43.91 | 0.991 | 0.992 |
-  | 3B 8da4w | 40.74 | 40.31 | 0.990 | 0.996 |
-  | 8B 4w | 26.47 | 26.43 | 0.998 | 0.999 |
-  | 8B 8da4w | 24.74 | 24.64 | 0.996 | 0.995 |
+  | 1B 4w | 96.8750 | 95.3846 | 0.98462 | 0.99396 |
+  | 1B 8da4w | 88.8252 | 88.0682 | 0.99148 | 0.99448 |
+  | 3B 4w | 44.2857 | 43.9093 | 0.99150 | 0.99177 |
+  | 3B 8da4w | 40.7359 | 40.3121 | 0.98960 | 0.99621 |
+  | 8B 4w | 26.4731 | 26.4280 | 0.99830 | 0.99918 |
+  | 8B 8da4w | 24.7406 | 24.6423 | 0.99603 | 0.99533 |
+
+  Recomputed from `stage/{s4-final,s2-c1}/decode/decode.csv` (medians of the five per-run rates, ratios of the
+  unrounded medians). An earlier version of this table gave three decimals taken from the rounded summary and
+  had 0.991 for `s4-final` 3B 4w (0.99150, i.e. 0.992) and 0.995 for `s2-c1` 1B 8da4w (0.99448, i.e. 0.994).
 
   0.2 to 1.5 % slower in `s4-final` and 0.1 to 0.8 % in `s2-c1`: inside the +-2 % band in every cell, and below 1
   in all twelve readings (the B70 confirmation measured 0 to 2.5 %).
