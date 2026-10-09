@@ -1,11 +1,11 @@
 # STATUS: RX 7600 prefill campaign
 
-Updated 2026-10-09 15:57 UTC (round 2 finished; owner decision of 2026-10-09 12:56 UTC recorded; round 1 below is unchanged and closed).
+Updated 2026-10-09 16:07 UTC (round 2 finished; owner decision of 2026-10-09 12:56 UTC recorded; round 1 below is unchanged and closed).
 
 ## Running now
 
 - Nothing. The real-text logits probe of the final build finished 2026-10-09 11:59 UTC (`results/rx7600/round2/final-probe/`: gross-divergence check ok in all six cells, table identical to round 1's).
-- Never pushed from here (owner decision 2026-10-07 23:15 UTC): the coordinator publishes.
+- Never pushed from here (owner decision 2026-10-07 23:08 UTC): the coordinator publishes.
 
 ## Round 2 (owner decision 2026-10-08 23:38 UTC: push the linear kernels further): DONE, stop rule = all three candidates done
 
@@ -74,7 +74,7 @@ lanes of the same subgroup wrote, ordered only by `memoryBarrierShared()`, witho
 workgroup is one subgroup and the code relies on it executing in lockstep. Under the Vulkan memory model that is
 formally unsynchronised; on RDNA3 (one wave, no divergent branch between the write and the read) it is benign, and
 every correctness pass agrees. The 780M uses the same kernel. Adding `subgroupBarrier()` after each
-`memoryBarrierShared()` would make it formally correct; per the owner decision of 2026-10-07 23:15 UTC it is done as its
+`memoryBarrierShared()` would make it formally correct; per the owner decision of 2026-10-07 23:08 UTC it is done as its
 own gated candidate (M2a) in a copy of the kernel, `sarc_dev_780m_sdpa_fused3sb`, after candidates 3 and 4, not by editing the 780M's file. The copy keeps the 780M's name prefix (it does not carry the device tag R3 asks for) because `Sdpa780mFused.cpp` builds the shader name as `sarc_dev_780m_sdpa_` + variant; see "Decision needed from the owner", item 3.
 The wave size RADV picks for a 32-invocation workgroup (the yaml sets no required subgroup size) is UNVERIFIED.
 
@@ -159,7 +159,7 @@ timed, the real-text and the unaligned prompt. The 1B prefill takes 261 to 262 m
 
 ## Next
 
-Done. Nothing is running. A reviewer round follows (R12); the coordinator publishes the branch (scrubbed forward commit). Nothing of this run is pushed (owner decision 2026-10-07 23:15 UTC).
+Done. Nothing is running. A reviewer round follows (R12); the coordinator publishes the branch (scrubbed forward commit). Nothing of this run is pushed (owner decision 2026-10-07 23:08 UTC).
 
 `sarc/tools/check.sh --no-build` on the committed head, run 2026-10-09 15:46 UTC (`results/rx7600/round2/check-no-build-head.txt`, unedited): `check.sh: PASS`; release tables alone 1240 checks, 0 candidates;
 dev zone linked 1475 checks, 164 candidates (161 in the earlier run in `sessions/r2-final`: the three added rows are the 4w phase twins, measurement only, default off).

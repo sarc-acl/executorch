@@ -37,7 +37,7 @@ The two release-zone hooks of owner decision D4 (softmax variant name `b969e8f1c
   geomean gain over candidate 3 is at least 2 % and its gate passes; otherwise candidate 3's kernel stays and the number is
   reported as a negative result.
 - **M2a** (`fused3sb`: `subgroupBarrier()` after every `memoryBarrierShared()` in the fused kernel; its own gated candidate by
-  the owner decision of 2026-10-07 23:15 UTC, reported either way): it is a correctness-hygiene change (an execution
+  the owner decision of 2026-10-07 23:08 UTC, reported either way): it is a correctness-hygiene change (an execution
   barrier where the 780M kernel relies on lockstep), not a speed-up. It enters the final stack if (a) the gate passes (SDPA tiers
   all / extended / full, 12 passes each, 0 mismatches, `pairing=ok`; `verify.sh` as the snapshot; next token SAME) and its
   output is byte-identical to `fused3` in the SDPA evidence (else D3, error against the fp32 reference not larger) and (b)

@@ -1,6 +1,6 @@
 # M2a: `fused3sb`, subgroupBarrier() after every memoryBarrierShared() in the fused attention kernel; session `m2a-sgbarrier`, 2026-10-08 04:36 to 07:50 UTC
 
-Owner decision 2026-10-07 23:15 UTC: its own gated candidate, reported either way. The kernel is a copy of
+Owner decision 2026-10-07 23:08 UTC: its own gated candidate, reported either way. The kernel is a copy of
 `sarc_dev_780m_sdpa_fused3.glsl` with 13 `subgroupBarrier();` lines added (`glsl/sarc_dev/sarc_dev_780m_sdpa_fused3sb.glsl`; diff
 it against the 780M file), variants `fused3sb_d64_t32x32g11s32rko` and `fused3sb_d128_t16x64g11s32rko`. Parent arm = candidate 3
 (build `c3`, `rx7600-refine2`, `fused3` variants). Candidate arm = build `c4` (commit `129cea7ac`) with the same profile and
