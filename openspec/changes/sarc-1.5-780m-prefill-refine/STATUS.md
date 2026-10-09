@@ -2,7 +2,166 @@
 
 ## Round 3 (2026-10-08): `fused3sb` and `780m-final` (closing task, not a tuning round)
 
-Updated 2026-10-08 23:03 UTC. **Not closed: the owner decided option (a) at 22:55 UTC (task file, last section); the replacement build `head4` and its validation are running.**
+Updated 2026-10-09 02:12 UTC. **Round 3 is measured as decided by the owner (option (a), 2026-10-08 22:55 UTC, task
+file, last section) on the replacement build `head4`. Nothing is running and nothing is queued; no owner decision
+is open.** Chains `chain27.sh` (23:03 to 23:27 UTC) and `chain28.sh` (23:27 to 02:08 UTC) ended with `DONE`
+(`results/780m/round3/chain27.status`, `chain28.status`). Only the hold watcher is alive.
+
+**Which build each number comes from:** the part "Replacement build `head4`" directly below is `head4`
+(`c639d4760`, recursive export from object stores) and is what closes the round. Everything from "State before
+the decision" downwards was measured on `head3` (submodules copied from the working copy), is kept as written,
+and is evidence for `head3` only; its item table and its "Decision needed from the owner" are superseded by the
+part below.
+
+| item | state on `head4` |
+|---|---|
+| A.3 build of the branch head | `head4` = `c639d4760`, exported from object stores only, no local patch; `spirv_golden.py` PASS (53 shipped variants); 1,469 of 1,469 SPIR-V files of `head2` (candidate 11's gate) byte-identical, 2 new (the `fused3sb` pair); 1,471 of 1,471 identical to `head3` |
+| A.4 gate with `fused3sb` | `verify.sh` rc = 0, equal to candidate 11's gate apart from the tok/s figures; tiers `all` / `extended` / `full` 12 passes each: 192 cases, 0 failed, 0 mismatches, `pairing=ok`; next token SAME in 18 of 18 items (six cells, three prompts); SDPA output byte-identical to `fused3` in 21 of 21 cases (and the 5 of tier `fused`) |
+| A.5 session `c11` with `fused3` against `c11` with `fused3sb` | **-0.12 % geomean** (cells -0.41 to 0.00 %), 60 of 60 timed runs valid on the recorded predicates: inside the band |
+| B.1 dispatch of `780m-final` alone | equals candidate 11's gate: `verify.out` identical line for line (tok/s set aside); the tiers dispatch the `fused3sb` pair; three-kernel path as `c11` |
+| B.2 session `780m-final` against `dev/1.5` | **+33.92 % geomean** (+23.62 to +48.43 %), 60 of 60 timed runs valid on the recorded predicates; round 2 measured +33.82 %: inside the band |
+| C | `proposal.md` section "Round 3" says which build each number comes from; `check.sh --no-build` PASS (02:10 UTC, output below); committed and pushed |
+| **recommended configuration** | **`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final`** |
+
+### Replacement build `head4` (2026-10-08 23:00 UTC to 2026-10-09 02:08 UTC)
+
+Evidence: `results/780m/round3/head4/`, `results/780m/sessions/{r3a-fused3sb-head4,r3b-final-dev15-head4}/`,
+`results/780m/fused/kernel-time-steady-r3-fused3sb-head4.csv`; raw data `<artifacts 10-08>/{src,build}/head4`,
+`raw/head4/`, `stage/*-head4/`. Scripts as run: `round3/chain27.sh`, `chain28.sh`, `tools/export_recursive.sh`.
+
+**Export (R5).** `tools/export_recursive.sh c639d4760`: `git archive` of the commit from this clone's object
+store; the 23 submodules and their 7 nested ones each fetched at exactly the commit its parent tree pins (URL
+from the `.gitmodules` of that parent commit, `fetch --depth 1 <url> <sha>`, `fsck`) into bare repositories under
+`<artifacts 10-08>/submodules/`, and written from there with `read-tree` + `checkout-index`. Nothing is read from
+a working tree. Manifest: `round3/head4/build-head4.EXPORT-MANIFEST` (31 lines: path, pinned commit, store, URL,
+tree, file count, content hash). Checked twice: by the chain (`export-check.txt`, 30 of 30 trees
+`MATCHES-COMMIT`), and again after the build by walking the tree of `c639d4760` through the gitlinks into the
+stores and hashing every exported file as a git blob: 45,204 blobs expected, 45,204 equal, 0 different, 0
+missing; the 30 pins of the manifest equal the gitlinks. The 17 files in the export directory that no tree
+names are what the build wrote there afterwards (14 `.pyc`, `third-party/flatcc/{bin/flatcc,lib/*.a}`).
+
+**Did `head3` differ?** (`round3/head4/submodules-head4-vs-head3.txt`, `diff -r` per submodule, nested ones
+included):
+
+| submodule | `head4` export against the directory `head3` was built from |
+|---|---|
+| 21 of 23 (`FACTO`, `mlx`, `Vulkan-Headers`, `VulkanMemoryAllocator`, `volk`, `FP16`, `FXdiv`, `XNNPACK`, `cpuinfo`, `pthreadpool`, `eigen`, `shim`, `ao`, `flatbuffers`, `gflags`, `googletest`, `ios-cmake`, `json`, `pocketfft`, `prelude`, `pybind11`) | identical, file for file |
+| `extension/llm/tokenizers` | no file differs; `head3` has two untracked directories more (`build`, `pytorch_tokenizers.egg-info`) |
+| `third-party/flatcc` | no file differs; `head3` has two untracked directories more (`bin`, `lib`) |
+
+Outside the submodules `head3` has four `__pycache__` directories under `codegen/` more. So every tracked file
+`head3` was built from equals the pinned commits; it carried leftover untracked directories that `head4` does
+not. The binaries of the two builds are not byte-identical (`llama_main` sha256 `578935be...` on `head4`,
+`705ac48f...` on `head3`; `round3/head4/binaries-sha256.txt`); all 1,471 SPIR-V files are.
+
+**Build.** `sarc/tools/build.sh --llama` and `--llama --traced --no-tests` of the export, in the campaign's
+container, rc = 0 both (23:03 to 23:11 UTC; nothing else ran). `spirv_golden.py`: `spirv golden: PASS (53
+shipped variants)` for `llama/` and `backend/`. Against `head2`: 1,469 files, identical 1,469, different 0,
+missing 0, new 2 (`round3/head4/spirv/`). The stage directories of both sessions, both arms and `verify.sh`
+hold the `head4` binaries (same sha256).
+
+**Kernel names** (`round3/head4/dispatch.txt`): as the table "Kernel names" below, with `head4` for `head3`, in
+every row. `verify.out` under `780m-refine3` + `c11` and under `780m-final` alone: 0 differing lines against
+candidate 11's gate and against the same stage on `head3` (tok/s set aside); against the parent snapshot
+`s0-parent-verify` lines 2 and 3 differ (the linear kernel names), as for candidate 11. Smoke, tier `all`: no
+environment -> release QK^T / softmax / attn*V, `fused=-`; `c10` and `780m-final` + `c10` -> the `fused3` pair;
+`c11`, `780m-final` with and without `ET_VK_SARC_UNVERIFIED=1` -> the `fused3sb` pair; fused node off under
+`c11` and under `780m-final` -> `sweep_t128x64k32g22s64nf`, softmax `..._780m_r3`, `sweep_t64x64k32g42s32`.
+
+**Item A, `r3a-fused3sb-head4`** (session 23:35 to 00:08 UTC; start 43 C after a 430 s wait). Same binary in
+both arms; parent `c11` with `ET_VK_SARC_780M_SDPA_FUSED` naming the `fused3` pair, candidate `c11` as committed.
+Recomputed from `runs.csv`, the per-run logs and the clock files:
+
+| cell | `c11` with `fused3` | `c11` with `fused3sb` | difference | repeat spread parent / candidate | next token (`prompt_2048` / `prompt_check` / `r1304`) |
+|---|---:|---:|---:|---|---|
+| 1B 4w | 3842.40 | 3835.21 | -0.19 % | 0.19 / 0.19 % | SAME / SAME / SAME |
+| 1B 8da4w | 3764.71 | 3764.71 | 0.00 % | 0.18 / 0.18 % | SAME / SAME / SAME |
+| 3B 4w | 1458.69 | 1458.69 | 0.00 % | 0.07 / 0.14 % | SAME / SAME / SAME |
+| 3B 8da4w | 1422.22 | 1416.32 | -0.41 % | 0.48 / 0.49 % | SAME / SAME / SAME |
+| 8B 4w | 640.60 | 640.60 | 0.00 % | 0.53 / 0.44 % | SAME / SAME / SAME |
+| 8B 8da4w | 628.99 | 628.22 | -0.12 % | 0.21 / 0.25 % | SAME / SAME / SAME |
+| geomean | | | **-0.12 %** | | |
+
+Inside the +-2 % band in every cell (`head3`: -0.01 %). Gate, candidate environment, the timed binary:
+`verify.sh` unmodified, one invocation, rc = 0 (00:49 to 00:54 UTC; correctness rc = 0, 12 of 12
+production-diff ALL PASSED, default vs tiled SAME on both prompts, decode 31 tokens); tiers `all` / `extended` /
+`full`, 12 passes each: 48 / 96 / 48 passed, 0 failed, `mismatches=0` in 192 of 192, `pairing=ok` in 192 of 192
+kernel lines, only the `fused3sb` pair dispatched; control with the table kernels 1 pass per tier, 16 of 16.
+SDPA output `fused3` against `fused3sb`, byte for byte: **identical in 26 of 26 dumps** (the 21 cases of
+`all`, `extended`, `peaked`, `full` and the 5 of `fused`), and each of the 52 dumps identical to its `head3`
+dump; the 26 `[sdpa-error]` lines equal between the arms and equal to `head3`'s (8B head configuration, S =
+2048: rms 1.033182e-05, max 3.693156e-04). Fused kernel time at a steady clock (median of 3 runs):
+2266 -> 2268 us a layer (1B, +0.07 %), 3221 -> 3214 (3B, -0.21 %), 4051 -> 4062 (8B, +0.25 %). Warm traces, one
+run per arm, candidate second without cooling: copy / view / other -1.2 to +2.2 %, linear GEMM (same kernels)
++1.2 to +2.0 %.
+
+**Item B, `r3b-final-dev15-head4`** (session 01:26 to 01:59 UTC). Same binary in both arms; parent with no
+environment, candidate `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final`. The wait for 43 C ended at
+its 1,800 s limit with the device at 44 C (it had just run the traces); the runs start at 44 to 51 C, as in
+item A (44 to 50 C).
+
+| cell | `dev/1.5` dispatch | `780m-final` | gain | `head3` | round 2 (`s9-final-dev15`) | published `dev/1.5` | repeat spread parent / candidate | next token (`prompt_2048` / `prompt_check` / `r1304`) |
+|---|---:|---:|---:|---:|---:|---:|---|---|
+| 1B 4w | 2694.74 | 3835.21 | **+42.32 %** | +42.32 % | +42.51 % | 2698.29 | 0.26 / 0.37 % | SAME / SAME / SAME |
+| 1B 8da4w | 2540.94 | 3771.64 | **+48.43 %** | +48.16 % | +48.35 % | 2544.10 | 0.25 / 0.18 % | SAME / SAME / SAME |
+| 3B 4w | 1140.95 | 1458.69 | **+27.85 %** | +27.71 % | +27.85 % | 1151.21 | 0.06 / 0.14 % | SAME / SAME / SAME |
+| 3B 8da4w | 1049.18 | 1405.63 | **+33.97 %** | +34.04 % | +33.72 % | 1051.33 | 0.10 / 0.07 % | SAME / SAME / SAME |
+| 8B 4w | 517.56 | 639.80 | **+23.62 %** | +23.09 % | +23.42 % | 525.80 | 0.40 / 0.28 % | SAME / SAME / SAME |
+| 8B 8da4w | 487.39 | 628.41 | **+28.94 %** | +28.94 % | +28.73 % | 489.13 | 0.26 / 0.15 % | **DIFFER** / SAME / SAME |
+| geomean | | | **+33.92 %** | +33.77 % | +33.82 % | | | |
+
+Against round 2: +0.10 points in the geomean, cells within 0.26 points; parent arm within 0.14 % and candidate
+arm within 0.19 % of round 2's. The parent arm is within 1.57 % of the published numbers (8B 4w; the others
+within 0.9 %). The one differing item, 8B 8da4w on `prompt_2048.txt`, is candidate 8's: **ACCEPTED
+(reference-error rule, owner decision 2026-10-04)**, evidence `results/780m/probe/`, `results/780m/sdpa-error/`;
+the output of each arm in this cell is byte-identical to the same arm of `s9-final-dev15` and of `head3`. No new
+differing item. `verify.sh` with the `780m-final` environment (01:59 to 02:04 UTC): rc = 0, the lines of
+candidate 11's gate. One pass of each tier: 4 / 8 / 4 passed, 0 failed, 0 mismatches, `pairing=ok`.
+
+**Validity, and what it does and does not show.** Each session has 60 timed rows, 5 per arm per cell, parent
+first on odd repeats; 60 of 60 are valid in both on the predicates `e2e5.sh` records: rc 0, 2,048 prompt tokens,
+0 generated, no other GPU process found before the run and none after it (`others`, `others_post`: empty in all
+168 rows), at least 5 clock samples in the prefill window, median clock at or above 2700 MHz (item A 2749.5 to
+2800, peak 92 C; item B 2730 to 2800, peak 94 C). **Not recorded, as in rounds 1 and 2:** GPU processes during a
+run (the list is taken before and after, not sampled), and a thermal throttle reason (the sampler has clock,
+busy, power and temperature; this device exposes no reason flag that the tools read). Invalid rows, all kept:
+none timed; of the 24 untimed next-token runs per session (no `--warmup`, compared by output only) 4 in item A
+and 6 in item B carry `clock_low` (2608 to 2684 MHz).
+
+**Page cache (D5, as decided).** `e2e5.sh` and `trace.sh` read the model file before the first process of each
+cell and record `fincore` residency per run; `verify.sh` is run once with the six files read first
+(`verify-residency.txt`: all six fully resident before and after it, in both items; before the read of item A
+the 1B 4w file was 67 % resident). Residency just before each process: 100.00 % in 159 of 168 session rows;
+99.86 to 99.90 % in 9 rows of item A, all 8B 4w (about 4 to 6 MB of 4.17 GB not resident), whose load times
+(2,922 to 3,090 ms) are inside that cell's range. Model load times, all 168 rows: 1B 345 to 383 ms, 3B 734 to
+899 ms, 8B 2,922 to 3,268 ms; **no slow load and no abort** (rc 0 in all 168; the 12 trace runs completed, each at 100.00 % residency). For
+comparison, on `head3`, where the file was not re-read per cell: item A 350 to 11,940 ms with one slow load
+(`prefill-8b-8da4w-parent-r1`, 11,940 ms, the first process of its cell; the other runs of the cell 3,100 to
+3,300 ms; rc 0), item B 345 to 3,265 ms.
+
+**Checks (02:10 UTC).** `sarc/tools/check.sh --no-build`, unedited, with the `head4` evidence files in the tree:
+
+```
+== 1 zone rule vs origin/release/1.5
+== 2 twin wrappers
+== 3 test_sarc_select
+test_sarc_select: PASS (1240 checks, 31 rows, 0 candidates, dev zone absent, unverified off)
+[sarc_dev] overrides active: unverified=1 variant= dq8ca_variant=
+test_sarc_select: PASS (1433 checks, 31 rows, 122 candidates, dev zone linked, unverified on)
+check.sh: PASS
+```
+
+Since `c639d4760` (the commit that was built) the branch changed only files of this change directory
+(`STATUS.md`, `proposal.md`, `tools/`, `results/`): `git diff --name-only c639d4760 HEAD` lists nothing outside
+it, so the head builds the same sources. `tools/rgp_chunks.py` is untracked and in `.git/info/exclude`.
+
+**Owner note of 2026-10-09 00:20 UTC (`vulkan-docs` MCP server).** No shader was written or changed after the
+note (the `fused3sb` files are the RX 7600 campaign's blobs, taken unchanged in `8d909b3fb`). The server did not
+connect in the session that wrote this (`CONNECTION_CLOSED`), so the barrier reasoning in `proposal.md` is not
+yet backed by a quoted specification sentence; it stands as written on 2026-10-08, from reading, not from the
+server.
+
+### Record: the start of the replacement, as written 2026-10-08 23:03 UTC
 
 **Running now (started 23:03 UTC, detached, one after the other): `chain27.sh`, then `chain28.sh`** (copies in
 `results/780m/round3/`; status files `<artifacts 10-08>/logs/chain27.status`, `chain28.status`).
@@ -215,6 +374,10 @@ and the path is now in this clone's `.git/info/exclude` so that a directory-wide
 file is in the trees of `b3ec12057` and `aead6ed25` only.)
 
 ### Decision needed from the owner
+
+**Answered: the owner decided option (a) on 2026-10-08 22:55 UTC (task file, last section); points 1 to 3 were
+carried out on `head4` (top of this file) and point 4 is stated there. Nothing is open. The text below is the
+question as it was put.**
 
 **Round 3 is not closed. Two findings of the review of 2026-10-08 block it; nothing further is queued until the
 owner answers** (task file, "If something takes a different turn ... stop"). Nothing is running; no build and no

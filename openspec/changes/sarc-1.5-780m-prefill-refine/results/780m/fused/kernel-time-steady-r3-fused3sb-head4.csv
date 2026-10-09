@@ -1,0 +1,19 @@
+arm,model,rep,op_mean_us_per_layer,op_stdev_us  # test binary of stage r3a-fused3sb-head4 (build head4, c639d4760), --sdpa, ET_VK_SDPA_PERF_RUNS=40,10; RESULT rows prefill,total of the coopmat path = copy pass + fused kernel; fused3 = c11 with ET_VK_SARC_780M_SDPA_FUSED naming the fused3 pair, fused3sb = c11 as committed
+fused3,llama-3.1-8b,1,4050.7,20.5
+fused3,llama-3.2-3b,1,3213.1,46.1
+fused3,llama-3.2-1b,1,2263.5,7.1
+fused3,llama-3.1-8b,2,4051.4,28.0
+fused3,llama-3.2-3b,2,3222.4,20.3
+fused3,llama-3.2-1b,2,2266.1,7.9
+fused3,llama-3.1-8b,3,4076.5,27.3
+fused3,llama-3.2-3b,3,3220.8,32.6
+fused3,llama-3.2-1b,3,2267.7,8.3
+fused3sb,llama-3.1-8b,1,4061.6,39.7
+fused3sb,llama-3.2-3b,1,3214.0,15.2
+fused3sb,llama-3.2-1b,1,2267.6,8.6
+fused3sb,llama-3.1-8b,2,4052.5,36.6
+fused3sb,llama-3.2-3b,2,3227.9,18.3
+fused3sb,llama-3.2-1b,2,2264.6,8.8
+fused3sb,llama-3.1-8b,3,4074.9,18.8
+fused3sb,llama-3.2-3b,3,3206.1,38.5
+fused3sb,llama-3.2-1b,3,2268.4,5.5

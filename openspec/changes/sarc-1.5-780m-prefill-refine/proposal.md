@@ -680,10 +680,19 @@ A closing task, not a tuning round (`~/hmz-sarc/CAMPAIGN-round3.md`; merge plan 
 the fused attention kernel of the final configuration gets its subgroup barriers, and the final configuration
 gets one name. Dev zone only; no release-zone file is touched in this round. Raw data in
 `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-08/`, evidence in `results/780m/round3/` and
-`results/780m/sessions/{r3a-fused3sb,r3b-final-dev15}/`.
+`results/780m/sessions/{r3a-fused3sb,r3b-final-dev15}{,-head4}/`.
 
-**Status 2026-10-08, after review: not closed.** The build this section measured does not satisfy R5 (below, "What
-was not done, and what is open"); the numbers stand for that build only.
+**Status 2026-10-09: measured on the replacement build `head4`.** The round was measured twice, on two builds of
+the same commit `c639d4760`. `head3` (2026-10-08 19:44 UTC) took its submodules from the working copy and so did
+not satisfy R5; the review found it, and the owner decided a replacement (2026-10-08 22:55 UTC, task file).
+`head4` is a recursive export from git object stores only. **The numbers that close the round are `head4`'s**:
+subsection "Replacement build `head4`" directly below. The subsections after it that carry "(build `head3`)" in
+their heading are kept as measured and are evidence for `head3` only.
+
+| | `head3` | `head4` |
+|---|---:|---:|
+| item A, `c11` with `fused3` against `c11` with `fused3sb`, geomean | -0.01 % | **-0.12 %** |
+| item B, `dev/1.5` dispatch against `780m-final`, geomean (round 2: +33.82 %) | +33.77 % | **+33.92 %** |
 
 **The recommended configuration is now `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final`.** It
 dispatches what candidate 11 dispatched, with the `fused3sb` pair in place of the `fused3` pair.
@@ -782,7 +791,88 @@ every line is listed in `STATUS.md`). The task file and the commit message speak
 the fourteenth match of a text search is the sentence in the new header. The yaml lists the two variants of the
 final pair with the parameters of their `fused3` twins.
 
-### Build and what it dispatches
+### Replacement build `head4` (owner decision 2026-10-08 22:55 UTC)
+
+Source: `tools/export_recursive.sh c639d4760` (new in this round): `git archive` of the commit, and each of the 23
+submodules and their 7 nested ones fetched at the commit its parent tree pins into a bare repository under
+`<artifacts 10-08>/submodules/` and written from there; nothing from a working tree. Manifest and checks in
+`results/780m/round3/head4/`: 30 of 30 submodule trees match their commits; hashed again as git blobs after the
+build, 45,204 of 45,204 exported files equal the trees of `c639d4760` and its pinned submodules. Against the
+directories `head3` was built from: 21 of 23 submodules identical file for file; `extension/llm/tokenizers` and
+`third-party/flatcc` identical in every tracked file, with two untracked directories each on the `head3` side
+(`build`, `pytorch_tokenizers.egg-info`; `bin`, `lib`). `head3` therefore was built from the pinned sources plus
+leftover untracked directories; that is now shown, not assumed.
+
+Tools changed for the replacement, as the owner decided (campaign-local `tools/`, nothing under `sarc/tools`, no
+threshold, tolerance, prompt or run count):
+
+| file | change |
+|---|---|
+| `tools/export_recursive.sh` | new: the export described above |
+| `tools/e2e5.sh` | reads the model file before the first process of each cell (one read for both arms); records per run the file's `fincore` residency, the runner's model load time and the GPU processes found after the run (any makes the run invalid, as before it); compares the next token also on `r1304.txt` (1,792 tokens) |
+| `tools/trace.sh` | reads the model file before each cell and records its residency per run |
+| `tools/summarize.py` | prints the third next-token column |
+
+`sarc/tools/verify.sh` is not edited: one invocation per item, the six model files read first, their residency
+recorded before and after (`sessions/*-head4/verify-residency.txt`).
+
+Build and dispatch on `head4`: `spirv_golden.py` PASS (53 shipped variants); the 1,469 SPIR-V files of `head2`
+(candidate 11's gate) byte-identical, 2 new (the `fused3sb` pair); all 1,471 identical to `head3`. `verify.out`
+under `780m-refine3` + `c11` and under `780m-final` alone: no line differs from candidate 11's gate once the
+tok/s figures are set aside. SDPA kernels by environment as in the table of the next subsection, row for row
+(`round3/head4/dispatch.txt`). `sarc/tools/check.sh --no-build`: PASS (output in `STATUS.md`).
+
+Item A on `head4` (`r3a-fused3sb-head4`, started 2026-10-08 23:35 UTC at 43 C), same binary in both arms:
+
+| cell | `c11` with `fused3` | `c11` with `fused3sb` | difference | repeat spread parent / candidate | next token (`prompt_2048` / `prompt_check` / `r1304`) |
+|---|---:|---:|---:|---|---|
+| 1B 4w | 3842.40 | 3835.21 | -0.19 % | 0.19 / 0.19 % | SAME / SAME / SAME |
+| 1B 8da4w | 3764.71 | 3764.71 | 0.00 % | 0.18 / 0.18 % | SAME / SAME / SAME |
+| 3B 4w | 1458.69 | 1458.69 | 0.00 % | 0.07 / 0.14 % | SAME / SAME / SAME |
+| 3B 8da4w | 1422.22 | 1416.32 | -0.41 % | 0.48 / 0.49 % | SAME / SAME / SAME |
+| 8B 4w | 640.60 | 640.60 | 0.00 % | 0.53 / 0.44 % | SAME / SAME / SAME |
+| 8B 8da4w | 628.99 | 628.22 | -0.12 % | 0.21 / 0.25 % | SAME / SAME / SAME |
+| geomean | | | **-0.12 %** | | |
+
+Inside the band: no gain and no cost that this measurement resolves. Gate with the candidate's environment on
+the timed binary: unmodified `verify.sh` rc = 0 (12 of 12 production-diff ALL PASSED, default vs tiled SAME,
+decode 31 tokens; against the parent snapshot only the two linear kernel-name lines differ, as for candidate
+11); tiers `all` / `extended` / `full` at 12 passes: 192 cases, 0 failed, 0 mismatches, `pairing=ok` in every
+line, only the `fused3sb` pair dispatched; SDPA output byte-identical to `fused3` in 21 of 21 cases and in the 5
+of tier `fused`, and identical to the dumps of `head3`; error against the fp64 reference equal in both arms.
+Fused kernel time at a steady clock: 2.266 -> 2.268 ms a layer (1B), 3.221 -> 3.214 (3B), 4.051 -> 4.062 (8B);
++0.07 / -0.21 / +0.25 %. Warm traces (candidate second, no cooling between): copy / view / other -1.2 to
++2.2 %, linear GEMM +1.2 to +2.0 %.
+
+Item B on `head4` (`r3b-final-dev15-head4`, started 2026-10-09 01:26 UTC at 44 C, the cooling wait having ended
+at its 1,800 s limit), same binary in both arms:
+
+| cell | `dev/1.5` dispatch | `780m-final` | gain | `head3` | round 2 (`s9-final-dev15`, candidate 11) | published `dev/1.5` (`cells.csv`) | repeat spread parent / candidate | next token (`prompt_2048` / `prompt_check` / `r1304`) |
+|---|---:|---:|---:|---:|---:|---:|---|---|
+| 1B 4w | 2694.74 | 3835.21 | **+42.32 %** | +42.32 % | +42.51 % | 2698.29 | 0.26 / 0.37 % | SAME / SAME / SAME |
+| 1B 8da4w | 2540.94 | 3771.64 | **+48.43 %** | +48.16 % | +48.35 % | 2544.10 | 0.25 / 0.18 % | SAME / SAME / SAME |
+| 3B 4w | 1140.95 | 1458.69 | **+27.85 %** | +27.71 % | +27.85 % | 1151.21 | 0.06 / 0.14 % | SAME / SAME / SAME |
+| 3B 8da4w | 1049.18 | 1405.63 | **+33.97 %** | +34.04 % | +33.72 % | 1051.33 | 0.10 / 0.07 % | SAME / SAME / SAME |
+| 8B 4w | 517.56 | 639.80 | **+23.62 %** | +23.09 % | +23.42 % | 525.80 | 0.40 / 0.28 % | SAME / SAME / SAME |
+| 8B 8da4w | 487.39 | 628.41 | **+28.94 %** | +28.94 % | +28.73 % | 489.13 | 0.26 / 0.15 % | **DIFFER** / SAME / SAME |
+| geomean | | | **+33.92 %** | +33.77 % | +33.82 % | | | |
+
+The campaign's +33.82 % is reproduced within the band: +0.10 points in the geomean, cells within 0.26 points;
+the parent arm is within 0.14 % of round 2's pristine `dev/1.5` build and within 1.57 % of the published numbers
+(8B 4w; the other cells within 0.9 %). The differing item is candidate 8's (8B 8da4w on `prompt_2048.txt`,
+**ACCEPTED (reference-error rule, owner decision 2026-10-04)**, evidence `results/780m/probe/`,
+`results/780m/sdpa-error/`); both arms' output in that cell is byte-identical to `s9-final-dev15`. `verify.sh`
+with the `780m-final` environment: rc = 0, the lines of candidate 11's gate; one pass of each tier, 16 of 16, 0
+mismatches, `pairing=ok`.
+
+Validity in both sessions: 60 of 60 timed runs valid on the recorded predicates (rc 0, token counts, no other
+GPU process before or after the run, at least 5 clock samples, median clock 2730 to 2800 MHz against the floor
+of 2700). Not recorded, as in rounds 1 and 2: GPU processes during a run, and a thermal throttle reason. Model
+residency before each process 100.00 % in 159 of 168 rows and 99.86 to 99.90 % in 9 (8B 4w, item A); load times
+345 to 3,268 ms, no slow load, no abort. On `head3`, without the per-cell read, one slow load is on record
+(11,940 ms, item A, 8B 8da4w, first process of the cell; rc 0).
+
+### Build and what it dispatches (build `head3`)
 
 Build `head3`: an export of commit `c639d4760` (`git archive`; the submodule directories copied from the working
 copy, because this clone has no submodule object stores; manifest in `results/780m/round3/`), built with
@@ -808,7 +898,7 @@ copy, because this clone has no submodule object stores; manifest in `results/78
   activates nothing on this device. `780m-final` with `ET_VK_SARC_780M_PROFILE=c10` gives `c10` (the explicit
   variable wins).
 
-### Item A: gate and session with `fused3sb` (`r3a-fused3sb`)
+### Item A: gate and session with `fused3sb` (`r3a-fused3sb`, build `head3`)
 
 Both arms are the same binary (`head3`) on `ET_VK_SARC_DEV_PROFILE=780m-refine3 ET_VK_SARC_780M_PROFILE=c11`; the
 parent arm names the `fused3` pair with `ET_VK_SARC_780M_SDPA_FUSED`, the candidate arm is `c11` as committed.
@@ -849,7 +939,7 @@ Invalid runs: none of the 60 timed runs. 3 of the 12 untimed next-token runs on 
 `clock_low` (median clock 2641 to 2698 MHz against the floor of 2700): they run without `--warmup` from an
 idling clock, as in every session of round 2 (4 to 6 such rows each); they are compared by output only.
 
-### Item B: `780m-final` against `dev/1.5` (`r3b-final-dev15`)
+### Item B: `780m-final` against `dev/1.5` (`r3b-final-dev15`, build `head3`)
 
 Both arms are the same binary (`head3`): the parent arm has no environment (no profile, `ET_VK_SARC_UNVERIFIED`
 unset; it dispatches the release table kernels, as `dev/1.5` does), the candidate arm has
@@ -884,15 +974,15 @@ of `s9-final-dev15`, and the fused kernel's output is byte-identical to the kern
 
 - No driver-level capture, no sweep, no new candidate. Percent of roof, the sources of the gain and the negative
   results are those of round 2 (above); the kernels are the same but for the barriers.
-- **Blocking, found in review (2026-10-08): `head3` does not satisfy R5.** Its 23 submodules were copied from
-  the working copy's directories, not exported from git object stores at the pinned commits (this clone has
-  none). Every number of this section is evidence for `head3` only. The round stays open until a recursive
-  export from object stores is built under a new tag and the golden check, the gate and both sessions are
-  repeated on it, or the owner grants a dated exception (`STATUS.md`, "Decision needed from the owner").
-- **Protocol deviation (R6, owner decision 2026-10-06):** the six model files were read into the page cache once
-  before the gate of item A and once before the session of item B, not again at each model change inside
-  `e2e5.sh`, `verify.sh` and `trace.sh`. No runner abort occurred (rc = 0 in all 144 runs of the two sessions)
-  and all six files were fully resident afterwards, but residency was not recorded per run.
+- **Found in review (2026-10-08), resolved by the replacement build:** `head3` did not satisfy R5 (submodules
+  copied from the working copy), and on it the six model files were read into the page cache once per gate or
+  session, not at each model change. The owner decided a replacement (2026-10-08 22:55 UTC); `head4` and its
+  validation are above. The `head3` numbers stay on record for `head3` only.
+- **Not evidenced on either build, as in rounds 1 and 2:** GPU processes during a run (checked before and after
+  each), and a thermal throttle reason; "valid" means the predicates `e2e5.sh` records.
+- The barrier reasoning above was written from reading on 2026-10-08. The owner's note of 2026-10-09 00:20 UTC
+  asks for the specification sentence from the `vulkan-docs` server; the server did not connect in the closing
+  session, so that quotation is still to be added. No shader was written or changed after the note.
 - `fused3` and its 33 variants stay in the tree as the record of round 2 (`c8` to `c10`). Whether the other
   `fused3` variants get barriers too, and whether `fused3` is removed at promotion, is the promotion's decision.
 - The fused attention entry point (`1c8861aa7`) is still subject to the owner's review before any promotion.
