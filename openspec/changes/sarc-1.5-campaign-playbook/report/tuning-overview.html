@@ -2762,13 +2762,13 @@
   })();
   // ---------- Figure 6: branch relationships ----------
   (function drawBranches() {
-    const B = DATA.branches; const lanes = B.lanes; const W = 1400, top = 40, rowH = 46; const H = top + lanes.length * rowH + 40;
+    const B = DATA.branches; const lanes = B.lanes; const top = 40, rowH = 56; const est = (t) => [...t].reduce((a, c) => a + (c.charCodeAt(0) > 255 ? 11 : 6.6), 0) + 16; const W = Math.max(1400, ...lanes.map((l) => l.head ? l.x1 + 14 + Math.max(est(l.head.chip), est(`${l.head.h} · ${l.head.d}`)) + 8 : l.x1 + 12)); const H = top + lanes.length * rowH + 40;
     const y = {}; lanes.forEach((l, i) => { y[l.id] = top + i * rowH + 20; });
     const stateCls = { ok: 'head-ok', run: 'head-run', ext: 'head-ext', base: 'head-base' };
     const chipCls = { ok: 'chip-ok', run: 'chip-run', ext: 'chip-ext', base: 'chip-ext' };
-    const lg = $('#legend-branches'); B.legend.forEach(([k, n]) => { const sp = document.createElement('span'); const col = k === 'fork' ? 'var(--accent)' : k === 'ok' ? 'var(--ok)' : k === 'run' ? 'var(--run)' : k === 'ext' ? 'var(--ext)' : 'var(--base)'; sp.innerHTML = `<i style="background:${col};border-radius:50%"></i>${n}`; lg.appendChild(sp); });
+    const lg = $('#legend-branches'); B.legend.forEach(([k, n]) => { const sp = document.createElement('span'); const col = k === 'fork' ? 'var(--accent)' : k === 'ok' ? 'var(--ok)' : k === 'run' ? 'var(--run)' : k === 'ext' ? 'var(--ext)' : 'var(--fg3)'; sp.innerHTML = `<i style="background:${col};border-radius:50%"></i>${n}`; lg.appendChild(sp); });
     const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Branch relationships: all campaign branches derive from the 780M branch, and the four fused-kernel port branches are created from the heads of their first rounds' }, null);
-    svg.setAttribute('style', 'min-width:1180px');
+    svg.setAttribute('style', `min-width:${Math.round(W * 0.85)}px`);
     const defs = el('defs', {}, svg); const mk = el('marker', { id: 'arr-b', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 8, markerHeight: 8, orient: 'auto-start-reverse' }, defs); el('path', { d: 'M0,0 L10,5 L0,10 z', fill: 'currentColor' }, mk);
     const cjk = (t) => [...t].reduce((a, c) => a + (c.charCodeAt(0) > 255 ? 11 : 6.6), 0) + 16;
     lanes.forEach((l) => {
