@@ -1,0 +1,82 @@
+[sarc_dev] profile active: xe2-refine5
+[sarc_dev] overrides active: unverified=1 variant= dq8ca_variant=
+
+=== Compute Shader Performance Benchmark ===
+Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; prefill 2048 / decode 1 @ ctx3072; linear group_size=128; 3 warmup + 5 timed runs per case)
+DEVICE,intel(r) graphics (bmg g31),timestamp_period_ns=52.0833,subgroup_size=32,coopmat=yes,max_shared_mem_bytes=49152
+----------------------------------------------------------------------
+[sdpa-regions] 1b_head_config_s2048 S=2048 context_len=2048 tile=128x64 num_tiles_m=16 num_tiles_n=32 tiles=512 all_masked=240 all_visible=240 diagonal=32 overlap=0
+[sdpa-boundary] 1b_head_config_s2048 m=0 last_visible=-1 first_diagonal=0 last_diagonal=1 first_masked=2
+[sdpa-boundary] 1b_head_config_s2048 m=1 last_visible=1 first_diagonal=2 last_diagonal=3 first_masked=4
+[sdpa-boundary] 1b_head_config_s2048 m=2 last_visible=3 first_diagonal=4 last_diagonal=5 first_masked=6
+[sdpa-boundary] 1b_head_config_s2048 m=3 last_visible=5 first_diagonal=6 last_diagonal=7 first_masked=8
+[sdpa-boundary] 1b_head_config_s2048 m=4 last_visible=7 first_diagonal=8 last_diagonal=9 first_masked=10
+[sdpa-boundary] 1b_head_config_s2048 m=5 last_visible=9 first_diagonal=10 last_diagonal=11 first_masked=12
+[sdpa-boundary] 1b_head_config_s2048 m=6 last_visible=11 first_diagonal=12 last_diagonal=13 first_masked=14
+[sdpa-boundary] 1b_head_config_s2048 m=7 last_visible=13 first_diagonal=14 last_diagonal=15 first_masked=16
+[sdpa-boundary] 1b_head_config_s2048 m=8 last_visible=15 first_diagonal=16 last_diagonal=17 first_masked=18
+[sdpa-boundary] 1b_head_config_s2048 m=9 last_visible=17 first_diagonal=18 last_diagonal=19 first_masked=20
+[sdpa-boundary] 1b_head_config_s2048 m=10 last_visible=19 first_diagonal=20 last_diagonal=21 first_masked=22
+[sdpa-boundary] 1b_head_config_s2048 m=11 last_visible=21 first_diagonal=22 last_diagonal=23 first_masked=24
+[sdpa-boundary] 1b_head_config_s2048 m=12 last_visible=23 first_diagonal=24 last_diagonal=25 first_masked=26
+[sdpa-boundary] 1b_head_config_s2048 m=13 last_visible=25 first_diagonal=26 last_diagonal=27 first_masked=28
+[sdpa-boundary] 1b_head_config_s2048 m=14 last_visible=27 first_diagonal=28 last_diagonal=29 first_masked=30
+[sdpa-boundary] 1b_head_config_s2048 m=15 last_visible=29 first_diagonal=30 last_diagonal=31 first_masked=-1
+[sdpa-regions] 3b_head_config_s2048 S=2048 context_len=2048 tile=128x64 num_tiles_m=16 num_tiles_n=32 tiles=512 all_masked=240 all_visible=240 diagonal=32 overlap=0
+[sdpa-boundary] 3b_head_config_s2048 m=0 last_visible=-1 first_diagonal=0 last_diagonal=1 first_masked=2
+[sdpa-boundary] 3b_head_config_s2048 m=1 last_visible=1 first_diagonal=2 last_diagonal=3 first_masked=4
+[sdpa-boundary] 3b_head_config_s2048 m=2 last_visible=3 first_diagonal=4 last_diagonal=5 first_masked=6
+[sdpa-boundary] 3b_head_config_s2048 m=3 last_visible=5 first_diagonal=6 last_diagonal=7 first_masked=8
+[sdpa-boundary] 3b_head_config_s2048 m=4 last_visible=7 first_diagonal=8 last_diagonal=9 first_masked=10
+[sdpa-boundary] 3b_head_config_s2048 m=5 last_visible=9 first_diagonal=10 last_diagonal=11 first_masked=12
+[sdpa-boundary] 3b_head_config_s2048 m=6 last_visible=11 first_diagonal=12 last_diagonal=13 first_masked=14
+[sdpa-boundary] 3b_head_config_s2048 m=7 last_visible=13 first_diagonal=14 last_diagonal=15 first_masked=16
+[sdpa-boundary] 3b_head_config_s2048 m=8 last_visible=15 first_diagonal=16 last_diagonal=17 first_masked=18
+[sdpa-boundary] 3b_head_config_s2048 m=9 last_visible=17 first_diagonal=18 last_diagonal=19 first_masked=20
+[sdpa-boundary] 3b_head_config_s2048 m=10 last_visible=19 first_diagonal=20 last_diagonal=21 first_masked=22
+[sdpa-boundary] 3b_head_config_s2048 m=11 last_visible=21 first_diagonal=22 last_diagonal=23 first_masked=24
+[sdpa-boundary] 3b_head_config_s2048 m=12 last_visible=23 first_diagonal=24 last_diagonal=25 first_masked=26
+[sdpa-boundary] 3b_head_config_s2048 m=13 last_visible=25 first_diagonal=26 last_diagonal=27 first_masked=28
+[sdpa-boundary] 3b_head_config_s2048 m=14 last_visible=27 first_diagonal=28 last_diagonal=29 first_masked=30
+[sdpa-boundary] 3b_head_config_s2048 m=15 last_visible=29 first_diagonal=30 last_diagonal=31 first_masked=-1
+[sdpa-regions] 8b_head_config_s2048 S=2048 context_len=2048 tile=128x64 num_tiles_m=16 num_tiles_n=32 tiles=512 all_masked=240 all_visible=240 diagonal=32 overlap=0
+[sdpa-boundary] 8b_head_config_s2048 m=0 last_visible=-1 first_diagonal=0 last_diagonal=1 first_masked=2
+[sdpa-boundary] 8b_head_config_s2048 m=1 last_visible=1 first_diagonal=2 last_diagonal=3 first_masked=4
+[sdpa-boundary] 8b_head_config_s2048 m=2 last_visible=3 first_diagonal=4 last_diagonal=5 first_masked=6
+[sdpa-boundary] 8b_head_config_s2048 m=3 last_visible=5 first_diagonal=6 last_diagonal=7 first_masked=8
+[sdpa-boundary] 8b_head_config_s2048 m=4 last_visible=7 first_diagonal=8 last_diagonal=9 first_masked=10
+[sdpa-boundary] 8b_head_config_s2048 m=5 last_visible=9 first_diagonal=10 last_diagonal=11 first_masked=12
+[sdpa-boundary] 8b_head_config_s2048 m=6 last_visible=11 first_diagonal=12 last_diagonal=13 first_masked=14
+[sdpa-boundary] 8b_head_config_s2048 m=7 last_visible=13 first_diagonal=14 last_diagonal=15 first_masked=16
+[sdpa-boundary] 8b_head_config_s2048 m=8 last_visible=15 first_diagonal=16 last_diagonal=17 first_masked=18
+[sdpa-boundary] 8b_head_config_s2048 m=9 last_visible=17 first_diagonal=18 last_diagonal=19 first_masked=20
+[sdpa-boundary] 8b_head_config_s2048 m=10 last_visible=19 first_diagonal=20 last_diagonal=21 first_masked=22
+[sdpa-boundary] 8b_head_config_s2048 m=11 last_visible=21 first_diagonal=22 last_diagonal=23 first_masked=24
+[sdpa-boundary] 8b_head_config_s2048 m=12 last_visible=23 first_diagonal=24 last_diagonal=25 first_masked=26
+[sdpa-boundary] 8b_head_config_s2048 m=13 last_visible=25 first_diagonal=26 last_diagonal=27 first_masked=28
+[sdpa-boundary] 8b_head_config_s2048 m=14 last_visible=27 first_diagonal=28 last_diagonal=29 first_masked=30
+[sdpa-boundary] 8b_head_config_s2048 m=15 last_visible=29 first_diagonal=30 last_diagonal=31 first_masked=-1
+[sdpa-regions] 8b_head_config_s1024_pos1024 S=1024 context_len=2048 tile=128x64 num_tiles_m=8 num_tiles_n=32 tiles=256 all_masked=56 all_visible=184 diagonal=16 overlap=0
+[sdpa-boundary] 8b_head_config_s1024_pos1024 m=0 last_visible=15 first_diagonal=16 last_diagonal=17 first_masked=18
+[sdpa-boundary] 8b_head_config_s1024_pos1024 m=1 last_visible=17 first_diagonal=18 last_diagonal=19 first_masked=20
+[sdpa-boundary] 8b_head_config_s1024_pos1024 m=2 last_visible=19 first_diagonal=20 last_diagonal=21 first_masked=22
+[sdpa-boundary] 8b_head_config_s1024_pos1024 m=3 last_visible=21 first_diagonal=22 last_diagonal=23 first_masked=24
+[sdpa-boundary] 8b_head_config_s1024_pos1024 m=4 last_visible=23 first_diagonal=24 last_diagonal=25 first_masked=26
+[sdpa-boundary] 8b_head_config_s1024_pos1024 m=5 last_visible=25 first_diagonal=26 last_diagonal=27 first_masked=28
+[sdpa-boundary] 8b_head_config_s1024_pos1024 m=6 last_visible=27 first_diagonal=28 last_diagonal=29 first_masked=30
+[sdpa-boundary] 8b_head_config_s1024_pos1024 m=7 last_visible=29 first_diagonal=30 last_diagonal=31 first_masked=-1
+[sdpa-regions] TOTAL tiles=1792 all_masked=776 all_visible=904 diagonal=112 overlap=0 exhaustive=yes all_three_covered=yes
+[sdpa-regions] boundaries_ok=yes
+[sdpa-error] 1b_head_config_s2048 elements=4194304 rms_err=2.7614e-05 max_abs_err=1.1882e-03 ref_rms=3.7698e-02
+[sdpa-kernels] 1b_head_config_s2048 qk=sarc_sdpa_qk_coopmat_pk_t128x64k32g44s16m8nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g44s16m8_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] 1b_head_config_s2048 S=2048 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/4194304 PASSED
+[sdpa-error] 3b_head_config_s2048 elements=6291456 rms_err=2.7875e-05 max_abs_err=1.1512e-03 ref_rms=3.8110e-02
+[sdpa-kernels] 3b_head_config_s2048 qk=sarc_sdpa_qk_coopmat_pk_t128x64k32g44s16m8nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half av=sarc_sdpa_av_coopmat_xe2_t128x64k32g44s16m8_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] 3b_head_config_s2048 S=2048 input_pos=0 D=128 Q_H=24 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/6291456 PASSED
+[sdpa-error] 8b_head_config_s2048 elements=8388608 rms_err=2.7625e-05 max_abs_err=1.0567e-03 ref_rms=3.7942e-02
+[sdpa-kernels] 8b_head_config_s2048 qk=sarc_sdpa_qk_coopmat_pk_t128x64k32g44s16m8nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half av=sarc_sdpa_av_coopmat_xe2_t128x64k32g44s16m8_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] 8b_head_config_s2048 S=2048 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/8388608 PASSED
+[sdpa-error] 8b_head_config_s1024_pos1024 elements=4194304 rms_err=1.2864e-05 max_abs_err=1.2424e-04 ref_rms=1.5654e-02
+[sdpa-kernels] 8b_head_config_s1024_pos1024 qk=sarc_sdpa_qk_coopmat_pk_t128x64k32g44s16m8nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half av=sarc_sdpa_av_coopmat_xe2_t128x64k32g44s16m8_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] 8b_head_config_s1024_pos1024 S=1024 input_pos=1024 D=128 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/4194304 PASSED
+[sdpa-correctness] tier=full cases_run=4

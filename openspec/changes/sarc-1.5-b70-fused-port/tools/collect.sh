@@ -30,3 +30,9 @@ for d in $A/superseded/*/; do n=$(basename $d); mkdir -p $R/superseded/$n; cp -f
 find $C -type f | wc -l; du -sh $C
 # roofs: the report of the igpu-roofline run used for percent-of-roof (tools/roof.sh)
 for d in $A/roofline/*/b70-0; do n=$(basename $(dirname $d)); mkdir -p $R/roofline/$n; cp -f $d/report/REPORT.md $d/report/summary.json $d/report/sustained-runs.csv $d/fleet-metadata.json $R/roofline/$n/ 2>/dev/null; done
+# this campaign: SPIR-V identity, the test_sarc_select outputs of the hook condition, chain status files, reference error
+mkdir -p $R/identity $R/d4 $R/chains
+cp -f $A/logs/spv-identity-*.txt $R/identity/ 2>/dev/null; cp -f $A/logs/select-d4.txt $A/raw/d4/select-*.txt $A/raw/d4/hashes.txt $R/d4/ 2>/dev/null
+cp -f $A/logs/chain*.status $A/logs/foreign.log $A/reps $R/chains/ 2>/dev/null
+for d in $A/raw/*-ref*/; do n=$(basename $d); [[ -f $d/full.csv ]] && { mkdir -p $R/sdpa-error/$n; cp -f $d/*.csv $d/env.txt $R/sdpa-error/$n/; }; done
+exit 0

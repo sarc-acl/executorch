@@ -1,7 +1,8 @@
 # sarc-1.5-b70-fused-port: status
 
-**2026-10-09 06:00 UTC (host clock) — preparation done, first detached chain running (builds, parent snapshots,
-baseline + A/A, the one kernel screen). No timed number yet.**
+**2026-10-09 07:15 UTC (host clock) — chain 1 is done: hook condition met, SPIR-V identical, baseline within
+0.22 % of `s12-final5`, A/A -0.06 % geomean, and the one kernel screen keeps the B580's pair for `b70-fused1`. The
+gate of candidate 1 (`tools/chain2.sh`, session `s2-c1`, 7 repeats) is running. No candidate number yet.**
 
 Branch `topic/b70-fused-port` (from `origin/topic/xe2-prefill-refine` at `5617714b0`). Parent of every comparison:
 `5617714b0` with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=xe2-refine5`. Host `fedora-gpu-eval`, card `b70-0`
@@ -19,14 +20,80 @@ cell, both arms alike, resident share recorded per run in `runs.csv`, column `ca
 
 ## Running now
 
-Detached (`nohup setsid`), one unit at a time: `tools/chain1.sh 8ba3607be`, status in
-`.artifacts/logs/chain1.status`, started 05:46 UTC. Units: builds `parent` (`5617714b0`) and `topic1`
-(`8ba3607be`) from exports, logits probes; `pristine` = a copy of the first campaign's build `parent` (the binaries
-its `s12-final5` timed); SPIR-V identity; `test_sarc_select` for the hook condition; snapshots `s0-parent-verify`
-(parent environment), `s0-parent-noenv`, `s0-topic1-noenv`; session `s1-aa` (parent against `topic1`, both with the
-parent environment, `--calibrate`); screen `screen1-select` (3 rounds). Ends `CHAIN1_DONE`. If the host reboots:
-read the status file and start the chain again with the same commit; finished builds and snapshots are skipped, a
-half-run `stage/s1-aa` goes to `superseded/` first.
+Detached (`nohup setsid`), one unit at a time: `tools/chain2.sh topic1 s2-c1 b70-fused1 c1-ref`, started 07:10
+UTC, status in `.artifacts/logs/chain2-s2-c1.status`: stage `s2-c1` (build `parent` with the parent environment
+against build `topic1` with `b70-fused1`), `gate_sdpa.sh` (12 passes x tiers `all` / `extended` / `full` with the
+hashes of the test binary and the runner library and every pass's status, unmodified `verify.sh` compared line by
+line with `s0-parent-verify`, the timed session with 7 repeats, warm traces, `gate_check.py`), 12 passes each of
+tiers `peaked` and `fused` (reported), reference error (`sdpa_ref.sh`), logits probe, `decide.py`, attention
+table of the traces, decode comparison, collection. Ends `CHAIN2_DONE s2-c1`; expected about two hours. If the
+host reboots: move a half-run `stage/s2-c1` to `superseded/` and start the same command again.
+
+## Chain 1 (05:46 to 07:09 UTC): results
+
+Builds, each from an export of one commit with its submodules (31 trees), shipped SPIR-V golden PASS (53 variants):
+`parent` = `5617714b0`, `topic1` = `8ba3607be` (hooks, test blocks, kernel files, `b70-fused` profiles).
+`pristine` is a copy of the first campaign's build `parent` (`6a7cc8cc6`; `llama_main` sha256 `45e3242e3881...`,
+the binary its `s12-final5` timed), not rebuilt.
+
+**SPIR-V identity** (`tools/spv_identity.sh`, `results/b70/identity/`): `SPV_IDENTITY_OK`. All 1525 shaders of the
+parent build are byte-identical in `topic1` (which has 1572); all 47 `sarc_dev_b580_sdpa_fused*` / `..._kvt*`
+shaders of `topic1` are byte-identical to the B580 campaign's build `topic6` (`247d08851`, the build its
+candidate 1 was gated on).
+
+**Hook condition D4 (nothing selected, nothing changed): met.**
+1. `test_sarc_select` built from the parent export and from the `topic1` export: release tables identical output
+   (1240 checks, 31 rows, both); with the dev zone and `ET_VK_SARC_UNVERIFIED=1` 1559 checks / 35 rows (parent) and
+   1561 / 37 (topic: the two `b70-*` base rows), 215 candidates both. Executables and outputs kept in
+   `.artifacts/raw/d4/` (outputs and hashes in `results/b70/d4/`).
+2. `spirv_golden.py` PASS, 53 shipped variants, on `parent` and on `topic1`.
+3. Unmodified `verify.sh` with no environment on `topic1` (`s0-topic1-noenv`) against the parent's
+   (`s0-parent-noenv`): `VERIFY_SAME`, 34 lines, rates removed, kernel names included
+   (`stage/s0-topic1-noenv/verify_diff.txt`).
+
+**Parent snapshot `s0-parent-verify`** (parent environment `xe2-refine5`): `CONTROL_RECORDED`, one device-status
+item (`correctness rc=1` with 28 of 28 numeric and 4 of 4 rank-3 cases PASSED); SDPA tiers 4 / 8 / 4 cases with 0
+mismatches on the parent's three kernels. The two no-environment snapshots show the five status items the first
+campaign recorded for pristine `dev/1.5` on this card.
+
+**Baseline and A/A, session `s1-aa`** (06:44 to 06:56 UTC): build `parent` against build `topic1`, both with the
+parent environment; median of the first 5 valid runs per arm, arms interleaved; 60 timed runs, none rejected;
+tok/s (recomputed from `runs.csv`):
+
+| cell | parent | topic, same environment | A/A | expected (`s12-final5`) | parent vs expected | spread parent / topic |
+|---|---:|---:|---:|---:|---:|---|
+| 1B 4w | 17964.90 | 17964.90 | 0.00 % | 17964.90 | 0.00 % | 0.87 / 1.75 % |
+| 1B 8da4w | 20686.90 | 20686.90 | 0.00 % | 20686.90 | 0.00 % | 7.48 / 1.00 % |
+| 3B 4w | 7529.41 | 7529.41 | 0.00 % | 7529.41 | 0.00 % | 0.00 / 0.37 % |
+| 3B 8da4w | 9570.09 | 9570.09 | 0.00 % | 9570.09 | 0.00 % | 2.75 / 2.30 % |
+| 8B 4w | 3385.12 | 3379.54 | -0.16 % | 3379.54 | +0.17 % | 1.49 / 0.82 % |
+| 8B 8da4w | 4491.23 | 4481.40 | -0.22 % | 4481.40 | +0.22 % | 0.87 / 0.44 % |
+
+A/A geomean -0.06 %; baseline within 0.22 % (limit 3 %); next token SAME in all six cells on the three prompts.
+Equal medians are equal millisecond counts: the runner's timer has a 1 ms step (114 ms for 1B 4w, 0.9 % a step).
+Per run: foreign engine time 0.00 % in all 60, at least one guard poll while the runner executed, 9 to 45 clock
+samples in the prefill window, model file 100 % resident before every run, throttle reasons in the samples `none`
+and `pl2` only. Calibration (`tools/thresholds.txt`, dated block, committed `4172bc183` before candidate 1 was
+timed): `CLKMIN` 2457 MHz, idle 58 C, **7 repeats** (the parent arm of 1B 8da4w spread 7.48 %: one run of five
+read 19140 tok/s, 107 ms against 99 ms).
+
+**The one kernel screen, `screen1-select`** (06:56 to 07:09 UTC, build `topic1`, 3 rounds, cooled before every
+run; kernel time per layer at S = 2048 in us, fused kernel + copy pass, for the parent QK^T + softmax + attn*V;
+each round's value; `results/b70/screens/screen1-select{,-runs}.csv`):
+
+| head_dim | profile | 1B | 3B | 8B | vs the parent's three kernels |
+|---|---|---|---|---|---|
+| | parent `xe2-refine5` | 1485 / 1481 / 1481 | 1284 / 1286 / 1285 | 1685 / 1697 / 1691 | 1.00x |
+| 64 | `d64_t32x32s32m8ro` (the 780M's) | 4255 / 4281 / 4142 | | | 0.35x |
+| 64 | **`d64_t16x64s16m8g4roj`** (incumbent, the B580's) | **486 / 483 / 487** | | | **3.05x** |
+| 64 | `d64_t16x64s16m8g4oj` | 553 / 551 / 550 | | | 2.69x |
+| 128 | `d128_t16x64s32m8ro` (the 780M's) | | 9569 / 9606 / 9528 | 12577 / 12565 / 12604 | 0.13x |
+| 128 | **`d128_t16x128s16m8g8oj`** (incumbent, the B580's) | | **750 / 749 / 748** | **969 / 966 / 967** | **1.72x / 1.75x** |
+| 128 | `d128_t16x64s16m8g4oj` | | 824 / 813 / 819 | 1047 / 1047 / 1043 | 1.57x / 1.61x |
+
+No screened variant is faster than the incumbent of its head_dim in any round (the nearest is 8 to 14 % slower),
+so by the `kernel_screen` rule **`b70-fused1` is the B580's pair**, as committed. Same ranking as the B580's
+screen 5 in every row.
 
 ## What was brought from the B580, pinned
 
@@ -87,7 +154,7 @@ memory. This agrees with the B580's table; its reading applies here because the 
 range 16 to 32).
 
 Specification sentences relied on, each found again on this host through the `vulkan-docs` server (exact-phrase
-`search_docs`, 06:00 UTC):
+`search_docs`, 05:47 UTC):
 
 - "... all compute shader invocations for a single workgroup must enter it before any will continue beyond it."
   (`glsl/latest/builtinfunctions.md`, https://docs.vulkan.org/glsl/latest/chapters/builtinfunctions.html)
@@ -109,8 +176,8 @@ its `STATUS.md` at `cea76c634` and not searched again here.
 
 ## Next
 
-Read chain 1: SPIR-V identity, hook condition, baseline against `s12-final5` (3 %), A/A; append the calibration to
-`tools/thresholds.txt`; read the screen by the `kernel_screen` rule; then the gate of candidate 1 (`b70-fused1`).
+Read chain 2 (gate, reference error, probe, decision). Then read the B580 campaign's `STATUS.md` for its
+candidate 2 (task section 6.4), then the closing on the build of the committed head.
 
 ## Decision needed from the owner
 
