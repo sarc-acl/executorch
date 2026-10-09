@@ -115,6 +115,93 @@ parent's kernels; the score is rounded to fp16 once (store to `Psh`), e is compu
 maximum and rounded to fp16 for the matrix multiply, the row sum and the final division are fp32. The summation
 order differs from the three-kernel path, so both candidates are judged by the reference-error rule (D3).
 
-## Result, hook control, final verification
+## Hook control (D4 conditions)
 
-Written at closing. Until then the measured state is in `STATUS.md`.
+| condition | evidence |
+|---|---|
+| with nothing selected every dispatch is as before | `s7n-noenv`: unmodified `verify.sh` on `topic4` (`0bed38090`: the hook and the whole dev zone of this campaign) with no environment equals `s0n-noenv` (the parent build, no environment) line by line, rates aside (34 lines, 0 differing; `gate_check.py verify` ACCEPT, 0 findings; no `[sarc_dev]` banner). The same on `topic1` (`s2n-noenv`) |
+| the same under the parent's own environment | A/A `s4-aa2` (parent build against `topic4`, both `orin-refine5` + `orin_g64`): geomean +0.07 %, next token SAME in 24 of 24 rows |
+| `test_sarc_select` unchanged | release tables: `PASS (1240 checks, 31 rows, 0 candidates, dev zone absent, unverified off)`, the parent's line; with the dev zone: 1593 checks, 33 rows |
+| shipped SPIR-V unchanged | 53 of 53 shipped variants byte-identical between the parent build and `topic4` (`tools/shipped.py`). `spirv_golden.py` itself reads FAIL with 14 DIFF lines on every cross build including the parent's and the first campaign's: the cross image's glslc (shaderc v2026.1) is not the one the goldens were made with; none of the 14 is a kernel the Orin rows dispatch. Of the 1620 SPIR-V files of `topic4`, 1610 are byte-identical to the parent build's 1610 (the 8da4w kernel shared with the 4070 Ti among them) and 10 are new |
+| reproducible from the committed branch, no local patch | `topic4` is an export of commit `0bed38090` of this branch; the gate `s5-c1` and both final timed sessions are on that build; the branch head differs from it only under this change directory |
+| `sarc/tools/check.sh --no-build` | PASS (output in `STATUS.md`). It does not report the hook: `impl/sarc/` is inside the zones it checks and `impl/SDPA.cpp` is listed in `sarc/HOOKS`; the four files are named here under the owner decision of 2026-10-05 |
+
+## Result
+
+Final stack: `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-fused1` on build `topic4`. Tok/s, 2048-token
+prefill, median of 5 valid interleaved runs per arm:
+
+| cell | published `dev/1.5` | pristine (`s8-pristine`) | tuned parent (`s5-c1`) | final stack (`s5-c1`) | over the parent | over pristine (`s8-pristine`) |
+|---|---:|---:|---:|---:|---:|---:|
+| 1B 4w | 890.82 | 891.60 | 1490.54 | 1656.96 | +11.17 % | +85.24 % |
+| 1B 8da4w | 822.82 | 823.81 | 1379.12 | 1520.42 | +10.25 % | +84.70 % |
+| 3B 4w | 360.37 | 360.50 | 629.19 | 659.58 | +4.83 % | +82.96 % |
+| 3B 8da4w | 320.30 | 320.35 | 570.32 | 595.35 | +4.39 % | +85.79 % |
+| 8B 4w | 189.74 | 189.84 | 295.44 | 305.49 | +3.40 % | +60.94 % |
+| 8B 8da4w | 170.43 | 170.48 | 269.05 | 277.24 | +3.05 % | +62.60 % |
+| geomean | | | | | **+6.13 %** | **+76.70 %** |
+
+Both sessions: 60 of 60 timed runs valid, GPU clock 612 MHz in every run, thermal throttle state 0 in every
+clock sample, repeat spread at most 0.54 %, next token the same as the other arm on all four prompts in every
+cell. A/A under the same rules (`s4-aa2`): +0.07 %.
+
+| candidate | profile | gate | gain over its parent | outcome |
+|---|---|---|---:|---|
+| 1: fused attention kernel, one pass, packed K / V | `orin-fused1` | `s5-c1` on `topic4` (first: `s3-c1` on `topic1`, +6.01 %) | +6.13 % | GATE_ACCEPTED, no next-token item differs; arithmetic change, so the reference-error evidence is recorded beside it (criterion 1 met on the five S = 2048 cases; 41-prompt probe: no gross divergence) |
+| 2: two-pass form for head_dim 64 | `orin-fused2` | `s6-c2` on `topic4`, against candidate 1 | +0.54 % (1B +1.72 / +1.59 %) | GATE_ACCEPTED on correctness; every cell inside the +-2 % band: not adopted. Gated as candidate 2 by the owner's decision of 2026-10-09 01:00 UTC; the pre-registered clause of `thresholds.txt` (an unpacked form) stays unedited and by its letter there was no candidate 2 |
+
+Stop: two candidates at most (task), candidate 2 sub-threshold; closed by N3 with candidate 1 as the result.
+
+Where the gain comes from (warm ETDump of `s5-c1`, ms per 2048-token prefill, parent -> final):
+
+| cell | QK^T + softmax + attn*V | fused kernel + K / V copy | attention | dispatch total |
+|---|---:|---:|---|---|
+| 1B 4w | 302.1 | 172.2 + 3.1 | 302.1 -> 175.3 (-42 %) | 1359.2 -> 1225.2 |
+| 1B 8da4w | 302.1 | 171.9 + 3.1 | 302.1 -> 175.0 | 1469.9 -> 1333.9 |
+| 3B 4w | 516.0 | 371.0 + 11.5 | 516.0 -> 382.5 (-26 %) | 3236.6 -> 3086.8 |
+| 3B 8da4w | 516.6 | 371.2 + 11.3 | 516.6 -> 382.4 | 3571.0 -> 3420.0 |
+| 8B 4w | 783.2 | 561.8 + 13.0 | 783.2 -> 574.7 (-27 %) | 6916.6 -> 6686.1 |
+| 8B 8da4w | 783.3 | 561.1 + 12.9 | 783.3 -> 573.9 | 7588.6 -> 7363.1 |
+
+Everything else is unchanged within 0.3 % (linear GEMM 655.3 -> 654.5 ms on 1B 4w, 5304.2 -> 5297.0 on 8B 8da4w).
+
+Against the freshly measured roofs (igpu-roofline `fast`, 2026-10-09, driver 595.78, clocks as found;
+`results/orin/roofline/2026-10-09-fast/`: matrix fp16 9.720 TFLOP/s, fp16 -> fp32 9.735, int8 19.517 TOP/s): 4w
+linear 62.7 / 63.8 / 63.2 % (1B / 3B / 8B), 8da4w linear 26.4 / 27.3 / 27.7 %, both as the parent; the fused
+attention kernel 1.60 / 1.95 / 1.96 TFLOP/s = 16.4 / 20.0 / 20.1 % of the fp16 -> fp32 roof.
+
+Comparison with the 4070 Ti port of the same kernel (`origin/topic/4070ti-fused-port`):
+
+| | RTX 4070 Ti SUPER | Jetson Orin Nano |
+|---|---|---|
+| geomean over the tuned parent | +11.64 % | +6.13 % |
+| per cell (1B / 3B / 8B, 4w and 8da4w) | +19 / +21, +8 / +10, +6 / +7 % | +11.2 / +10.2, +4.8 / +4.4, +3.4 / +3.0 % |
+| attention time removed | 66 % (1B), 47 to 49 % (3B, 8B) | 42 % (1B), 26 to 27 % (3B, 8B) |
+| fused kernel, share of the matrix roof | 53 to 63 % | 16 to 20 % |
+| K / V copy pass per prefill | 0.1 to 0.4 ms | 3 to 13 ms |
+| error against the fp32 reference, 1B S = 2048 (rms, maximum) | 2.049e-5, 7.23e-4 | 2.049e-05, 7.227e-04 |
+| faster form for head_dim 64 | one pass (the only one built) | two passes (-12.5 % kernel time, +1.7 % end to end, not adopted) |
+
+Same kernel, same arithmetic (the reference errors agree to the printed digits), half the gain: this device
+feeds its matrix unit from DRAM far slower than from shared memory, and the kernel loads K and V tiles straight
+from DRAM.
+
+Memory of the K / V copies (`results/orin/mem1/rows.csv`): two fp16 buffers of 8 x head_dim x 2560 elements,
+5.2 MB a pair for 1B and 10.5 MB for 3B and 8B. Largest drop of available memory during a prefill run, parent
+against final stack: 935 / 965 MB (1B 4w), 885 / 881 (1B 8da4w), 1976 / 1974 and 1982 / 1984 (3B), 4327 / 4344 and
+4577 / 4579 (8B): no measurable cost. The 8B runs swap out a few MB in both arms alike.
+
+Negative results: the unpacked forms are 1.5 (head_dim 64) and 3.4 times (128) slower per layer; the two-pass
+form is 38 % slower for head_dim 128; candidate 2 is inside the band (`STATUS.md`, "Negative results").
+
+What limits further progress: the fused kernel's 16 to 20 % of the roof (a kernel that stages K and V tiles
+through shared memory is what this device would need: a new kernel, not a port); linear GEMM is 53 to 72 % of the
+prefill and where the first campaign left it; copy / view / other is 8 to 22 %.
+
+## Final verification
+
+`STATUS.md`, "Final verification (R11)": every item on build `topic4`, whose commit is the last that changes code.
+What was taken from the 4070 Ti port's review and changed the course of this campaign: the thermal-throttle
+record in every timed run, the test change as insert-only blocks, the 12 passes of tier `all` (already present)
+and the kernel's own one-full-subgroup check; the sessions measured before them (`s1-aa`, `s3-c1` on `topic1`)
+are kept as evidence and are not the reported result.

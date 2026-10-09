@@ -20,7 +20,7 @@ done
 for d in $D/raw/*screen*/; do n=$(basename $d); [[ -f $d/rows.csv ]] && { cp -f $d/rows.csv $R/screens/$n-rows.csv; python3 "$TOOLS/sdpa_screen_summary.py" $d > $R/screens/$n.csv; }; done
 for d in $D/raw/c*-pre/; do [[ -d $d ]] || continue; n=$(basename $d); mkdir -p $R/$n; cp -f $d/summary.txt $R/$n/ 2>/dev/null
   for f in $d/*.log; do grep -h '^\[sdpa-correctness\]\|^\[sdpa-error\]\|^\[sdpa-kernels\]\|^\[sarc_dev\]' $f | cut -c1-400 > $R/$n/$(basename $f .log).txt; done; done
-for d in $D/probe/c*-fused*/; do [[ -d $d ]] || continue; n=$(basename $d); mkdir -p $R/probe/$n/position; cp -f $d/*.txt $d/*.csv $d/*.json $d/cand.env $R/probe/$n/ 2>/dev/null; cp -f $d/position/* $R/probe/$n/position/ 2>/dev/null; done
+for d in $D/probe/*-fused*/; do [[ -d $d ]] || continue; n=$(basename $d); mkdir -p $R/probe/$n/position; cp -f $d/*.txt $d/*.csv $d/*.json $d/cand.env $R/probe/$n/ 2>/dev/null; cp -f $d/position/* $R/probe/$n/position/ 2>/dev/null; done
 for d in $D/raw/prof*/; do n=$(basename $d); for q in 4w 8da4w; do [[ -f $d/$q/phases.csv ]] && cp -f $d/$q/phases.csv $R/phases/$n-$q.csv; done; done
 for d in $D/raw/sdpa-error*/; do [[ -d $d ]] || continue; n=$(basename $d); mkdir -p $R/$n; cp -f $d/*.txt $R/$n/ 2>/dev/null; done
 find $CHANGE -type f | wc -l; du -sh $CHANGE
