@@ -152,6 +152,7 @@ if n < 5: reason.append("clock_unsampled")
 elif cm < float(clkmin): reason.append("clock_low")
 elif thermal: reason.append("thermal_throttled")
 if tag == "prefill" and fb == "": reason.append("busy_unsampled")
+elif tag == "prefill" and not 0 <= fb <= 100: reason.append("busy_unreadable")   # s3-c2: -5274 % once (a client's counter went backwards) had passed as valid
 elif tag == "prefill" and busymax and fb > float(busymax): reason.append("foreign_busy")
 valid = 0 if reason else 1
 print(",".join(str(x) for x in [tok, pt, gt, ms, n, cm, cmin, thr, pw, round(max(r[4] for r in rows) / 1000) if rows else "", valid, "+".join(reason), fb, fn, ft]))

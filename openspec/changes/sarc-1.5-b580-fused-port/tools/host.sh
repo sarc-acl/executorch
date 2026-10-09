@@ -41,6 +41,21 @@ desktop_idle() { [[ $(loginctl show-session "$(loginctl list-sessions --no-legen
 # once; it only records the desktop state of the unit that is about to start (logs/idle_wait.log). BUSYMAX and
 # every validity rule are unchanged, so a run the desktop disturbed is still rejected and replaced.
 idle_wait() { echo "$(date -u +%FT%TZ) $(desktop_idle && echo idle || echo in-use): ${1:-timed unit}" >> $A/logs/idle_wait.log; return 0; }
+# busy_now: the share of the card's engine time that the desktop's clients used over the last 5 s, percent (the
+# quantity BUSYMAX limits per run; tools/sampler.py, sysfs and procfs only, no GPU job).
+busy_now() { local f=$TMPDIR/busy_now.$$; timeout -s INT 5 python3 $TOOLS/sampler.py $f 0.05 $B580_TOP > /dev/null 2>&1
+  awk '$1 == "D" { if (!n++) { t0 = $3; f0 = $4 } t1 = $3; f1 = $4 } END { if (n > 1 && t1 > t0) printf "%.1f\n", (f1 - f0) / (t1 - t0) * 100; else print "nan" }' $f; rm -f $f; }
+# busy_wait <what>: added 2026-10-09 03:20 UTC after session s3-c2, in which one desktop client (a Discord
+# renderer) held 33 to 45 % of the engine time for the whole session and 216 of 216 timed runs were rejected by
+# BUSYMAX. A timed session therefore starts only when busy_now is at or below BUSYMAX, checked once a minute,
+# for at most B580_BUSY_WAIT_S (3 h); after that it starts anyway. This is a start condition on the quantity the
+# owner decision of 00:22 UTC keeps as the validity limit, not the idle wait it lifted (IdleHint is not read),
+# and not a validity rule: BUSYMAX, the repeats and the replacement of rejected runs are unchanged.
+busy_wait() { local t0=$SECONDS b lim; lim=$(<$BUSYMAX_FILE)
+  while :; do b=$(busy_now); echo "$(date -u +%FT%TZ) busy=$b% limit=$lim%: ${1:-timed session}" >> $A/logs/busy_wait.log
+    awk -v b=$b -v l=$lim 'BEGIN { exit !(b == b + 0 && b <= l) }' && return 0
+    (( SECONDS - t0 >= ${B580_BUSY_WAIT_S:-10800} )) && { echo "$(date -u +%FT%TZ) busy wait over, starting anyway: ${1:-}" >> $A/logs/busy_wait.log; return 0; }
+    sleep 60; done; }
 # gpu_shared / build_exclusive: the desktop-build lock shared with the Jetson Orin campaign, which cross-builds
 # on this machine. Every GPU job of this campaign holds it shared (fd 8, inherited by its children), every
 # build holds it exclusive, so a build never runs during a measurement.

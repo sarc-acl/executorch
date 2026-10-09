@@ -1,0 +1,17 @@
+tag=topic3
+commit=0ac2250f5746e785c9b7d15dbc951286a34e4dd0
+tree=4bd7965f06e2d9433ad58a024ae364e811af7890
+subject=[SARC][dev] B580 fused port: register-saving variants of the fused kernel (score tiles one column at a time, accumulators in shared memory) after screen 1 showed head_dim 128 slower than the three kernels; chain 4
+requested=0ac2250f5746e785c9b7d15dbc951286a34e4dd0 parent_commit=51d9d757f
+export_manifest=31 trees sha256=897c3e0ad5d52248de5f00390880b362dfc9909ee79511bd271245d976c81f08
+image=localhost/et-vk-build:rocky10 9d912c7c4cedab746a9b795b0beb26932369d5f6da287a514f8d18483dee2fe4
+glslc=shaderc v2023.8 2024-01-03spirv-tools v2025.4 2025-09-22glslang 73743588fe9c39f2f1c780a087d94afac691a189 Target: SPIR-V 1.0 
+start=2026-10-08T21:54:09Z
+main_rc=0
+traced_rc=0
+golden_rc=0 (spirv golden: PASS (53 shipped variants))
+60cb28872c645ef17b2acbd04ac90054d1b6bf1867887507791813c92657bf28  /mnt/linux-share/hmz-campaigns/b580-fused/.artifacts/build/topic3/llama/examples/models/llama/llama_main
+eee836388b85adb75cc0b388e2530ca4530ff065e747803aca4aca4b34ac6371  /mnt/linux-share/hmz-campaigns/b580-fused/.artifacts/build/topic3/tests/test_llama_microbench
+51b5093ae4a7a836bf46c7d3ae50c9891d4ce957ede7e7b9765d81c9833751d0  /mnt/linux-share/hmz-campaigns/b580-fused/.artifacts/build/topic3-traced/llama/examples/models/llama/llama_main
+end=2026-10-08T22:04:01Z
+BUILD_BOTH_OK
