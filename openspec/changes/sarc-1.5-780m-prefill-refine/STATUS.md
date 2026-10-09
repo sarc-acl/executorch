@@ -2,10 +2,14 @@
 
 ## Round 3 (2026-10-08): `fused3sb` and `780m-final` (closing task, not a tuning round)
 
-Updated 2026-10-09 02:12 UTC. **Round 3 is measured as decided by the owner (option (a), 2026-10-08 22:55 UTC, task
-file, last section) on the replacement build `head4`. Nothing is running and nothing is queued; no owner decision
-is open.** Chains `chain27.sh` (23:03 to 23:27 UTC) and `chain28.sh` (23:27 to 02:08 UTC) ended with `DONE`
-(`results/780m/round3/chain27.status`, `chain28.status`). Only the hold watcher is alive.
+Updated 2026-10-09 02:23 UTC. **Not closed: one owner decision is open ("Decision needed from the owner (open,
+2026-10-09)" below the table).** Round 3 is measured on the replacement build `head4` as the owner decided
+(option (a), 2026-10-08 22:55 UTC), and the reported numbers were recomputed by the review of 2026-10-09; but two
+predicates of the R6 validity rule are not evidenced for any timed run, and the owner's decision kept the
+validity rule as it is. Nothing is running and nothing is queued; no measurement is started until the owner
+answers. Chains `chain27.sh` (23:03 to 23:27 UTC) and `chain28.sh` (23:27 to 02:08 UTC) ended with `DONE`
+(`results/780m/round3/chain27.status`, `chain28.status`). Only the hold watcher is alive (and the `nvtop` of
+the ssh session described below, which is not the campaign's).
 
 **Which build each number comes from:** the part "Replacement build `head4`" directly below is `head4`
 (`c639d4760`, recursive export from object stores) and is what closes the round. Everything from "State before
@@ -20,8 +24,77 @@ part below.
 | A.5 session `c11` with `fused3` against `c11` with `fused3sb` | **-0.12 % geomean** (cells -0.41 to 0.00 %), 60 of 60 timed runs valid on the recorded predicates: inside the band |
 | B.1 dispatch of `780m-final` alone | equals candidate 11's gate: `verify.out` identical line for line (tok/s set aside); the tiers dispatch the `fused3sb` pair; three-kernel path as `c11` |
 | B.2 session `780m-final` against `dev/1.5` | **+33.92 % geomean** (+23.62 to +48.43 %), 60 of 60 timed runs valid on the recorded predicates; round 2 measured +33.82 %: inside the band |
-| C | `proposal.md` section "Round 3" says which build each number comes from; `check.sh --no-build` PASS (02:10 UTC, output below); committed and pushed |
+| C | `proposal.md` section "Round 3" says which build each number comes from; `check.sh --no-build` PASS (02:10 UTC, output below; run by the actor only, it compiles the two selector tests); committed and pushed. **Round not closed: R6 validity, see the decision below** |
 | **recommended configuration** | **`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final`** |
+
+### Decision needed from the owner (open, 2026-10-09)
+
+**R6 validity is not fully evidenced for the timed runs of round 3, on `head4` or on `head3`.** R6: "A run is
+valid only with rc 0, 2048 prompt tokens, 0 generated tokens, no other GPU workload before, during or after,
+enough clock samples inside the prefill window (5 ...), a median clock at or above the calibrated floor, and no
+thermal throttle reason." The decision of 2026-10-08 22:55 UTC says "Nothing else changes: thresholds,
+tolerances, prompts, the gate, the number of runs"; it does not waive a predicate. "60 of 60 valid" in this file
+means the predicates `tools/e2e5.sh` records. Missing:
+
+1. **No other GPU workload *during* a run.** `e2e5.sh` lists processes matching its pattern once before and
+   once after each run (empty in all 168 rows of the two `head4` sessions); nothing is sampled while the runner
+   executes.
+2. **No thermal throttle reason.** The sampler writes clock, busy, power and temperature every 0.1 s; no
+   throttle status is read.
+3. A defect of the tool, without effect on these counts: `e2e5.sh` rejects a run for too few clock samples only
+   below 2 (`clock_unsampled`), where R6 asks for 5. Every timed row of the four sessions has at least 5
+   (recomputed from the `.clk` files), so no row was accepted that the rule's 5 would reject.
+
+What the saved data and the host do show (read 2026-10-09 02:20 to 02:35 UTC, nothing started on the GPU):
+
+- Clock: per-run median 2749.5 to 2800 MHz (item A) and 2730 to 2800 MHz (item B) against the top level of
+  2799 MHz and the floor of 2700; lowest single sample inside a timed prefill window 2636 MHz (A), 2643 MHz (B).
+  Peak temperature 92 C (A), 94 C (B). `hwmon` exposes no critical-temperature threshold for this device
+  (`temp1_crit` absent).
+- The device does expose a throttle status that the tools never read: `gpu_metrics` (format 2.1, 120 bytes),
+  field `throttle_status` (u32 at offset 108); it reads `0x00000000` now, idle at 44 C. It is a current value,
+  not a history: it says nothing about the runs after the fact.
+- `thermal_throttling_logging` of the device reads "enabled, with interval 60 seconds". The kernel log of this
+  boot has no throttling or thermal line after boot; its last line is of 2026-10-08 23:12:39 UTC (`hrtimer:
+  interrupt took 1974 ns`), before the first `head4` session. I have not established that the driver emits such
+  a line for this APU, so the silence is an indication, not evidence of absence.
+- Processes on the host during the sessions (journal 23:27 to 02:09 UTC): hourly cron, `dnf-makecache` at
+  00:14:45 UTC (2 s, 455 ms CPU; during the tiers of item A, not during a timed session), ssh logins. The
+  gdm greeter (`gnome-shell`, since boot) holds the display on this GPU as in every session of the campaign.
+- **Found now, not reported before: an `nvtop` (3.3.2) was started in an interactive ssh session (pts/0, from
+  100.77.177.104) at 01:18:45 UTC and is still running.** It was alive during the whole of item B on `head4`
+  (timed session 01:26 to 01:59, `verify.sh`, the tier passes); item A and its gate (23:35 to 00:56) ended
+  before it started. I did not start it and have not touched it. It is a monitor: it holds `/dev/dri/renderD128`
+  open (DRM client 1041, 2 MiB GTT, 12 KiB VRAM) and its `fdinfo` shows no `drm-engine-*` line, i.e. no engine
+  time; 34 s of CPU time in 64 minutes. The guard's pattern does not name `nvtop`, so `others` / `others_post`
+  are empty with it running. Whether an idle monitor counts as "other GPU workload" is the owner's to say
+  (lesson L25 speaks of recording one, not of aborting). Item B's numbers with it running: +33.92 %, parent arm
+  within 0.14 % of round 2's.
+
+**The owner's choice:**
+
+- **(a) a ruling on the missing predicates:** accept the timed runs of `head4` on the recorded predicates plus
+  the indications above (as the sessions of rounds 1 and 2 were accepted, which have the same two gaps), and say
+  whether item B stands with `nvtop` running; or
+- **(b) authorisation for replacement timed sessions with monitoring** (recommended if the rule is to hold as
+  written): items A and B again on `head4` (same binaries, about 35 minutes each plus cooling; the gate, tiers
+  and byte comparison do not depend on these predicates and would not be repeated unless the owner asks), with
+  `tools/e2e5.sh` changed, campaign-local, as follows and nothing else: the 0.1 s sampler also writes
+  `throttle_status` (and the temperature) from `gpu_metrics`; a run with any non-zero status in its window is
+  invalid with reason `throttle`; the process list of the guard and the DRM clients readable to this user
+  (`/proc/*/fdinfo`, engine time per client) are sampled during the run and a foreign client with engine time
+  makes the run invalid; the clock-sample minimum becomes the rule's 5. Thresholds, floor, band, prompts and run
+  counts unchanged; the existing sessions stay on record as they are. Limits to state now: the greeter's
+  `fdinfo` belongs to another user and cannot be read without sudo, so "no foreign engine time" would cover
+  this user's processes plus the device-wide `gpu_busy_percent`; and the meaning of the bits of
+  `throttle_status` on this APU would be recorded as raw values, not interpreted. The owner would also need to
+  say whether `nvtop` may keep running.
+
+Also still open, not blocking by itself: the specification sentence the owner's note of 2026-10-09 00:20 UTC
+asks for (the `vulkan-docs` server failed to connect again at 02:22 UTC, `CONNECTION_CLOSED`); and the review's
+not-checked list (the fp64 reference figures are the harness's own lines, not regenerated in the last review;
+`check.sh --no-build` was run by the actor only; the RX 7600's numbers quoted in `proposal.md` are that
+campaign's, not checked here).
 
 ### Replacement build `head4` (2026-10-08 23:00 UTC to 2026-10-09 02:08 UTC)
 
@@ -124,7 +197,8 @@ first on odd repeats; 60 of 60 are valid in both on the predicates `e2e5.sh` rec
 168 rows), at least 5 clock samples in the prefill window, median clock at or above 2700 MHz (item A 2749.5 to
 2800, peak 92 C; item B 2730 to 2800, peak 94 C). **Not recorded, as in rounds 1 and 2:** GPU processes during a
 run (the list is taken before and after, not sampled), and a thermal throttle reason (the sampler has clock,
-busy, power and temperature; this device exposes no reason flag that the tools read). Invalid rows, all kept:
+busy, power and temperature; the device's `gpu_metrics` has a `throttle_status` field, which the tools do not
+read). This is the open decision above; the count is not a statement of full R6 validity. Invalid rows, all kept:
 none timed; of the 24 untimed next-token runs per session (no `--warmup`, compared by output only) 4 in item A
 and 6 in item B carry `clock_low` (2608 to 2684 MHz).
 

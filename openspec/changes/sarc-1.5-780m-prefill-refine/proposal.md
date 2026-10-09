@@ -682,7 +682,9 @@ gets one name. Dev zone only; no release-zone file is touched in this round. Raw
 `rocky-ryzen:~/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-08/`, evidence in `results/780m/round3/` and
 `results/780m/sessions/{r3a-fused3sb,r3b-final-dev15}{,-head4}/`.
 
-**Status 2026-10-09: measured on the replacement build `head4`.** The round was measured twice, on two builds of
+**Status 2026-10-09: measured on the replacement build `head4`; not closed, one owner decision is open** (R6
+validity: no evidence of GPU workload during a run or of a throttle reason, and a monitor (`nvtop`) started by an
+ssh session ran during item B; `STATUS.md`, "Decision needed from the owner (open, 2026-10-09)"). The round was measured twice, on two builds of
 the same commit `c639d4760`. `head3` (2026-10-08 19:44 UTC) took its submodules from the working copy and so did
 not satisfy R5; the review found it, and the owner decided a replacement (2026-10-08 22:55 UTC, task file).
 `head4` is a recursive export from git object stores only. **The numbers that close the round are `head4`'s**:
@@ -978,8 +980,10 @@ of `s9-final-dev15`, and the fused kernel's output is byte-identical to the kern
   copied from the working copy), and on it the six model files were read into the page cache once per gate or
   session, not at each model change. The owner decided a replacement (2026-10-08 22:55 UTC); `head4` and its
   validation are above. The `head3` numbers stay on record for `head3` only.
-- **Not evidenced on either build, as in rounds 1 and 2:** GPU processes during a run (checked before and after
-  each), and a thermal throttle reason; "valid" means the predicates `e2e5.sh` records.
+- **Open, owner decision needed (`STATUS.md`):** not evidenced on either build, as in rounds 1 and 2: GPU
+  processes during a run (checked before and after each), and a thermal throttle reason; "valid" means the
+  predicates `e2e5.sh` records, not full R6 validity. An `nvtop` monitor (no engine time in its `fdinfo`) ran
+  on the host from 2026-10-09 01:18 UTC, through item B on `head4`.
 - The barrier reasoning above was written from reading on 2026-10-08. The owner's note of 2026-10-09 00:20 UTC
   asks for the specification sentence from the `vulkan-docs` server; the server did not connect in the closing
   session, so that quotation is still to be added. No shader was written or changed after the note.
