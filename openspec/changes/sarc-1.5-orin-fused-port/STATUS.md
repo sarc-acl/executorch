@@ -1,18 +1,95 @@
 # STATUS: sarc-1.5-orin-fused-port
 
-**2026-10-09 15:00 UTC. CLOSED. Final stack: `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=orin-fused1` on the
-branch head's code (build `topic4` = `0bed38090`): the fused attention kernel on top of the first campaign's
-stack. **+6.13 % geomean over the tuned parent** (`s5-c1`: 1B +11.2 / +10.2 %, 3B +4.8 / +4.4 %, 8B +3.4 / +3.0 %)
-and **+76.70 % over the pristine `dev/1.5` state** (`s8-pristine`). Two candidates were gated, as the task allows:
-candidate 1 is the result; candidate 2 (`orin-fused2`) passed its gate but gained +0.54 %, inside the noise band,
-and is not adopted. Nothing is running. Nothing is asked of the owner.**
+**2026-10-09 15:35 UTC. REOPENED by the review of 15:00 UTC; not closed. The measurements below stand and were
+reproduced by the reviewer from the raw files, but the builds they were taken on (`parent`, `topic4`) fail the
+unmodified `sarc/tools/spirv_golden.py`: 14 shipped variants of other devices compile to other bytes with the
+cross image's glslc (shaderc v2026.1) than with the compiler the goldens were made with (shaderc v2023.8). R5
+says such a build is not usable, and no owner decision waives it. What I found on top: 348 of the 1620 shaders
+differ between the two compilers, **among them the attention kernels this campaign compares** (the parent's QK^T
+and attention x V, the stock attention kernel and both fused kernels), so this is not only a formality of
+other devices' shaders. I rebuilt the same two commits with the golden's glslc inside the same cross recipe
+(`parentg`, `topic4p`: golden PASS) and everything is being gated and timed again on them (`chain10`, about 10.5
+hours). Until that is done the result is: +6.13 % over the tuned parent and +76.70 % over pristine, measured
+on builds that fail the golden. Separately, finding F1 (full-subgroups flag) is an owner-accepted known defect
+(section below) and does not keep the campaign open.**
 
 All times are UTC from `date -u`.
 
 ## Running now
 
-Nothing, on the device or on the workstation. Last device job: `chain9`, `DONE rc=0 2026-10-09T14:41:07Z`. No
-`ABORTED`, `GPU_GONE` or `HOLD` file was ever present on the device in this campaign.
+- Workstation: nothing. `topic4p` (`0bed38090` with the golden's glslc) was built 15:27 to 15:34: `spirv golden: PASS`, its 1620 shaders equal the pinned image's output byte for byte.
+  `parentg` (`8973ced76`, same compiler) is built: `spirv golden: PASS (53 shipped variants)`.
+- Device: `chain10` (since 15:35, until about 02:00 UTC on 2026-10-10). It repeats on `parentg` / `topic4p`:
+  the two parent controls (`s0g-parent-verify`, `s0gn-noenv`), the A/A (`s9-aa2g`), the reference error
+  (`sdpa-error3`), candidate 1's gate (`s10-c1g`), candidate 2's pre-check and gate (`s11-c2g`), the final-stack
+  rule of 01:22 UTC applied to it, the hook control (`s12n-noenv`), the pristine session (`s13-pristineg`) and
+  the 41-prompt probe of all four arms (`probe/finalg-fused/`). Thresholds, clock floor and tools are unchanged.
+  Not repeated: the memory probe and the roofs (neither depends on how the shaders were compiled).
+- No `ABORTED`, `GPU_GONE` or `HOLD` file on the device.
+
+## Review of 15:00 UTC: what it found and what I did
+
+| finding | what I did |
+|---|---|
+| `spirv_golden.py` FAILS on `topic4` and on `parent` (14 DIFF lines, the same set); `shipped.py`'s parent comparison cannot replace it | Agreed. Checks made first, no device time: (1) `check.sh` with its build steps (release export, host build in `localhost/et-vk-build:rocky10`): `host build OK`, `spirv golden: PASS (53 shipped variants)`. (2) All 1620 shaders of `topic4`'s source compiled with each compiler by the tree's `gen_vulkan_spv.py`: the cross image's output equals the measured build's in all 1620 (the method is right), the pinned one passes the golden, and 348 differ between the two (239 `sarc_*`, the stock `sdpa_compute_*`, 4 `sarc_dev_orin_*` among them). (3) The golden's `glslc` with its two SPIRV-Tools libraries runs inside the cross image and gives all 1620 shaders byte-identical to the pinned image's. So the recipe copy got an option (`GLSLC_DIR`, off by default; `tools/jetson-cross/{container,build}.sh`, `tools/build-orin.sh`; the compiler is kept under `.artifacts/pinned-glslc/` with a manifest) and the two commits were built again with it. No golden, shipped shader, tolerance or `sarc/tools` file is touched |
+| `proposal.md`: "everything else is unchanged within 0.3 %" is false | Corrected from the raw sums: attention is 89 to 95 % of the reduction; linear GEMM -0.1 to -0.5 %, copy / view / other -0.2 to -0.7 %, everything else -0.8 to -4.6 % (4 to 13 ms per prefill), not located |
+| the residual row of "Where the time goes now" used rounded subtraction | Recomputed from the raw sums (1B: 130 / 231 ms) |
+| fp16 roof 9.7195 rounded to 9.720 | 9.719 |
+| `check.sh` not re-run by the reviewer | Re-run with and without the build steps (end of this file). **It now prints FAIL at step 1** for one untracked file that is not mine and that I have not touched: `.agents/skills/review-notes/SKILL.md` (dated 2026-10-04, in the working copy since about 14:46 UTC; a review-instruction file of the review tooling). Every other step passes. It is not committed and not part of this branch; whoever placed it should move it out of the working copy or the check keeps failing on it |
+
+Build tag `topic4g` failed (rc 141: a `glslc --version | head -1` line I had added to the recipe, killed by
+`pipefail`; `parentg` got through the same line by timing) and is not used; `topic4p` is the same commit with
+that line fixed. The recipe hash of `parentg` and `topic4p` therefore differs in that one logging line.
+
+## Known defect: F1 (owner decision 2026-10-09 15:25 UTC: option C, no release-zone change in this campaign)
+
+**Every number of this campaign is measured on pipelines created without the full-subgroups flag (F1).** By the
+owner's decision the numbers stand as measured, nothing is rebuilt, re-gated or re-timed for F1, and F1 does not
+keep this campaign open. It is a known defect of the release zone, shared with every cooperative-matrix pipeline
+of every device, the shipped ones and this campaign's parent included; it will be repaired once, in the release
+zone, in a change of its own before any promotion pull request, with every device gated and timed again under it.
+
+- The requirement (`vulkan-docs`, `refpages/latest/RuntimeSpirv.md`): "VUID-RuntimeSpirv-OpTypeCooperativeMatrixKHR-10770
+  Any pipeline containing a shader with OpTypeCooperativeMatrixKHR or OpCooperativeMatrix*KHR instructions must be
+  created with the VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT flag or the shader module must be
+  version 1.6 or greater". The flag (`refpages/latest/VkPipelineShaderStageCreateFlagBits.md`) "specifies that the
+  subgroup sizes must be launched with all invocations active in the task, mesh, or compute stage".
+- SPIR-V version: the two fused kernels of `orin-fused1`, the two-pass kernel of `orin-fused2` and the parent's
+  attention kernels are SPIR-V 1.3 (second header word `0x00010300`, read from the `.spv` files of both shader
+  compilers). SPIR-V 1.6 is not available from the dev zone: the instance is created for Vulkan 1.1
+  (`vk_api/Runtime.cpp:91`, `VK_API_VERSION_1_1`).
+- The pipeline code: `vk_api/Pipeline.cpp` creates every compute stage with `flags` `0u` (line 305 in the single
+  pipeline path, line 540 in the batch path). It does chain the required subgroup size
+  (`VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT`, lines 291 to 299 and 527 to 534), which is why these
+  kernels get subgroups of 32; it never asks for full subgroups. The runtime already reads the device feature
+  (`vk_api/Device.cpp:317`, `computeFullSubgroups`); whether this device reports it is not recorded by this
+  campaign (`vk-caps` prints sizes and stages, not the feature).
+- What the kernel's run-time check does: `sarc_dev_orin_sdpa_fused3sb` returns before any shared-memory access
+  unless `gl_NumSubgroups == 1` and `gl_SubgroupSize == 32`, so with a driver that splits a workgroup of 32
+  into several subgroups the kernel writes nothing and the correctness tiers fail instead of two subgroups
+  exchanging through one `Psh` / `Rsh` / `Dsh`. On this driver it never fired: 222 of 222 cases per gate are
+  served by the fused kernel and correct.
+- What it does not do: it does not make the pipeline valid as created; it does not guarantee that all 32
+  invocations of the one subgroup are active (that is what the flag specifies); and it covers the fused kernel
+  only: the parent's QK^T, softmax and attention x V kernels, which still serve decode and unaligned prompts in
+  the final stack, and the shipped cooperative-matrix linear kernels have no such check.
+- The two forms of the repair, as they were put to the owner (the B580 campaign's wording; input to the later
+  release-zone change, neither is authorised here). **Form A**, per shader, inert unless a shader asks for it: a
+  yaml parameter that `gen_vulkan_spv.py` passes into `ShaderInfo` beside the required subgroup size, a field in
+  the pipeline descriptor and its hash / equality, and in `Pipeline.cpp` the stage flag when the field is set, a
+  required subgroup size is in force and the device reports `computeFullSubgroups`; files `gen_vulkan_spv.py`,
+  `vk_api/Shader.{h,cpp}`, `vk_api/Pipeline.{h,cpp}` and where the descriptor is filled, an estimated 30 to 40
+  lines; it leaves the parent's and the shipped pipelines with the defect. **Form B**, for every pipeline with a
+  required subgroup size: in `Pipeline.cpp` at both places, set the flag whenever a required subgroup size is in
+  force and the device reports `computeFullSubgroups`, about 10 lines; it repairs the shipped and the parent's
+  pipelines too and therefore changes how every such pipeline of every device is created (with the flag the
+  local size in X must be a multiple of the required subgroup size for each of them), so every device's results
+  need gating and timing again.
+- Decode with the fused node present (the owner's item 5; one 31-token decode run per `verify.sh`, 1B only, not
+  a timed session and not investigated): parent environment 19.08 / 10.89 tok/s (4w / 8da4w, `s0-parent-verify`);
+  `orin-fused1` 18.91 / 10.84 (`s3-c1`) and 18.89 / 10.86 (`s5-c1`), that is 0.9 to 1.0 % and 0.3 to 0.5 % lower;
+  `orin-fused2` 18.98 / 10.83 (`s6-c2`). With nothing selected: 19.15 / 10.95 on the parent build, 19.18 / 10.94 on
+  `topic4`. Single runs; the differences are of the size the B70 confirmation saw (0 to 2.5 %).
 
 ## Result
 
@@ -32,14 +109,14 @@ The "over pristine" column is the ratio measured inside `s8-pristine` (its final
 1521.55, 659.58, 595.18, 305.54, 277.21, within 0.3 % of the `s5-c1` ones). The task expected +5 to +12 %: the
 result is inside the band, at its lower end; the 4070 Ti port of the same kernel closed at +11.64 %.
 
-## Final verification (R11), all on build `topic4`, no local patch
+## Final verification (R11) as it stood at 15:00 UTC, all on build `topic4` (which fails the golden: see the top)
 
 | item | session | result |
 |---|---|---|
 | the build is the branch head's code | | `topic4` is an export of `0bed38090`; `git diff --name-only 0bed38090 HEAD` lists nothing outside `openspec/changes/sarc-1.5-orin-fused-port/` |
 | unmodified `verify.sh`, final environment, on the timed binaries | `s5-c1` | 34 lines equal to `s0-parent-verify` with the rates removed (0 differing); 22 of 22 runner calls rc 0; `gate_check.py verify` ACCEPT |
 | attention tiers | `s5-c1` | `all`, `extended`, `full` x 12 and `peaked`, `fused` x 3: 222 of 222 cases PASSED, 0 mismatches, fused kernel alone, `pairing=ok` |
-| shipped SPIR-V | build | 53 of 53 shipped variants byte-identical to the parent build; the 14 that differ from the golden do so in the parent build too (cross image's glslc), none an Orin kernel |
+| shipped SPIR-V | build | **`spirv_golden.py`: FAIL, 14 DIFF lines** (the same 14 on the parent build; cross image's glslc). 53 of 53 shipped variants byte-identical to the parent build; none of the 14 is a shipped Orin kernel. This item is not passed |
 | reference error, criterion 1 | `sdpa-error2` | rms and maximum not larger than the parent's on all five S = 2048 cases |
 | real-text evidence | `probe/final-fused/` | no differing next-token item; gross-divergence check not met in any cell; `ref_error_rule.py` MET |
 | timed session against the tuned parent | `s5-c1` | +6.13 % geomean, 60 of 60 valid, throttle state 0 |

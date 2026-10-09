@@ -4,7 +4,7 @@ cd /work/source/executorch
 export PYTHONPATH=/work/source
 common=(-DCMAKE_TOOLCHAIN_FILE=/recipe/aarch64.cmake -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=/opt/venv/bin/python)
 # orin-fused: an explicit shader compiler (container.sh, JETSON_CROSS_GLSLC); otherwise cmake finds the image's.
-if [[ -n ${GLSLC:-} ]]; then "$GLSLC" --version | head -1; common+=(-DGLSLC_PATH="$GLSLC"); fi
+if [[ -n ${GLSLC:-} ]]; then "$GLSLC" --version | sed -n 1p; common+=(-DGLSLC_PATH="$GLSLC"); fi
 mkdir -p /work/bundle
 # Headers are architecture-neutral; do not add the host's /usr/include to ARM search paths.
 aarch64-linux-gnu-g++ -O2 -std=c++17 /recipe/smoke.cpp \

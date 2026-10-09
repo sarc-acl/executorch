@@ -115,6 +115,56 @@ parent's kernels; the score is rounded to fp16 once (store to `Psh`), e is compu
 maximum and rounded to fp16 for the matrix multiply, the row sum and the final division are fp32. The summation
 order differs from the three-kernel path, so both candidates are judged by the reference-error rule (D3).
 
+## Known defect: F1 (owner decision 2026-10-09 15:25 UTC: option C, no release-zone change in this campaign)
+
+**Every number of this campaign is measured on pipelines created without the full-subgroups flag (F1).** By the
+owner's decision the numbers stand as measured, nothing is rebuilt, re-gated or re-timed for F1, and F1 does not
+keep this campaign open. It is a known defect of the release zone, shared with every cooperative-matrix pipeline
+of every device, the shipped ones and this campaign's parent included; it will be repaired once, in the release
+zone, in a change of its own before any promotion pull request, with every device gated and timed again under it.
+
+- The requirement (`vulkan-docs`, `refpages/latest/RuntimeSpirv.md`): "VUID-RuntimeSpirv-OpTypeCooperativeMatrixKHR-10770
+  Any pipeline containing a shader with OpTypeCooperativeMatrixKHR or OpCooperativeMatrix*KHR instructions must be
+  created with the VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT flag or the shader module must be
+  version 1.6 or greater". The flag (`refpages/latest/VkPipelineShaderStageCreateFlagBits.md`) "specifies that the
+  subgroup sizes must be launched with all invocations active in the task, mesh, or compute stage".
+- SPIR-V version: the two fused kernels of `orin-fused1`, the two-pass kernel of `orin-fused2` and the parent's
+  attention kernels are SPIR-V 1.3 (second header word `0x00010300`, read from the `.spv` files of both shader
+  compilers). SPIR-V 1.6 is not available from the dev zone: the instance is created for Vulkan 1.1
+  (`vk_api/Runtime.cpp:91`, `VK_API_VERSION_1_1`).
+- The pipeline code: `vk_api/Pipeline.cpp` creates every compute stage with `flags` `0u` (line 305 in the single
+  pipeline path, line 540 in the batch path). It does chain the required subgroup size
+  (`VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT`, lines 291 to 299 and 527 to 534), which is why these
+  kernels get subgroups of 32; it never asks for full subgroups. The runtime already reads the device feature
+  (`vk_api/Device.cpp:317`, `computeFullSubgroups`); whether this device reports it is not recorded by this
+  campaign (`vk-caps` prints sizes and stages, not the feature).
+- What the kernel's run-time check does: `sarc_dev_orin_sdpa_fused3sb` returns before any shared-memory access
+  unless `gl_NumSubgroups == 1` and `gl_SubgroupSize == 32`, so with a driver that splits a workgroup of 32
+  into several subgroups the kernel writes nothing and the correctness tiers fail instead of two subgroups
+  exchanging through one `Psh` / `Rsh` / `Dsh`. On this driver it never fired: 222 of 222 cases per gate are
+  served by the fused kernel and correct.
+- What it does not do: it does not make the pipeline valid as created; it does not guarantee that all 32
+  invocations of the one subgroup are active (that is what the flag specifies); and it covers the fused kernel
+  only: the parent's QK^T, softmax and attention x V kernels, which still serve decode and unaligned prompts in
+  the final stack, and the shipped cooperative-matrix linear kernels have no such check.
+- The two forms of the repair, as they were put to the owner (the B580 campaign's wording; input to the later
+  release-zone change, neither is authorised here). **Form A**, per shader, inert unless a shader asks for it: a
+  yaml parameter that `gen_vulkan_spv.py` passes into `ShaderInfo` beside the required subgroup size, a field in
+  the pipeline descriptor and its hash / equality, and in `Pipeline.cpp` the stage flag when the field is set, a
+  required subgroup size is in force and the device reports `computeFullSubgroups`; files `gen_vulkan_spv.py`,
+  `vk_api/Shader.{h,cpp}`, `vk_api/Pipeline.{h,cpp}` and where the descriptor is filled, an estimated 30 to 40
+  lines; it leaves the parent's and the shipped pipelines with the defect. **Form B**, for every pipeline with a
+  required subgroup size: in `Pipeline.cpp` at both places, set the flag whenever a required subgroup size is in
+  force and the device reports `computeFullSubgroups`, about 10 lines; it repairs the shipped and the parent's
+  pipelines too and therefore changes how every such pipeline of every device is created (with the flag the
+  local size in X must be a multiple of the required subgroup size for each of them), so every device's results
+  need gating and timing again.
+- Decode with the fused node present (the owner's item 5; one 31-token decode run per `verify.sh`, 1B only, not
+  a timed session and not investigated): parent environment 19.08 / 10.89 tok/s (4w / 8da4w, `s0-parent-verify`);
+  `orin-fused1` 18.91 / 10.84 (`s3-c1`) and 18.89 / 10.86 (`s5-c1`), that is 0.9 to 1.0 % and 0.3 to 0.5 % lower;
+  `orin-fused2` 18.98 / 10.83 (`s6-c2`). With nothing selected: 19.15 / 10.95 on the parent build, 19.18 / 10.94 on
+  `topic4`. Single runs; the differences are of the size the B70 confirmation saw (0 to 2.5 %).
+
 ## Hook control (D4 conditions)
 
 | condition | evidence |
