@@ -291,10 +291,12 @@ environment against the parent's, line by line) is in `STATUS.md`.
 
 ## Result
 
-**Not final.** The numbers below are those of the first closing (`s4-final`, `s5-pristine`). Those sessions were
-started through a wait the owner had not authorized and are being repeated (`STATUS.md`), and the fused
-pipelines they measured lack a pipeline flag the Vulkan specification requires (next section); a build with
-the fix has to be gated and timed again before the result is final.
+**Not final.** The table below is the first closing (`s4-final`, `s5-pristine`), whose sessions were started
+through a wait the owner had not authorized. Repeated with every run started at once (`s6-final`, `s7-pristine`,
+`STATUS.md`): +15.44 / +20.54 / +5.07 / +6.69 / +3.14 / +4.92 % over the parent, geomean **+9.12 %**, `GATE_PASS`;
+**+72.05 %** over the pristine parent. Both measure fused pipelines that lack a pipeline flag the Vulkan
+specification requires (next section); a build with the fix has to be gated and timed again before the result
+is final.
 
 Final stack: the branch head with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-fused1`. Measured on the
 build of the committed head (`topic7` = `e1e450530`, no local patch), 7 valid runs per arm, tok/s

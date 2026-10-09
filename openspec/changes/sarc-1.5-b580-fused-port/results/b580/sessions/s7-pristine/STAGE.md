@@ -1,0 +1,11 @@
+session s7-pristine staged 2026-10-09T09:37:07Z
+parent = build/pristine env [] commit 6a7cc8cc643a8c973d42ba6946839723df18078b
+cand   = build/topic7 env [ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-fused1] commit e1e450530f088a576c03d5e7b4af91a2647218a0
+final stack b580-fused1 on the committed head against the pristine parent of the first campaign (no profile); repeats s5-pristine without busy_wait
+c25d95ae3d7a9da92d3eab091182e4fc51af8f3b2aea399e6e170f5fe75c3762  /mnt/linux-share/hmz-campaigns/b580-fused/.artifacts/stage/s7-pristine/parent/llama_main
+00c1d48dea0a500c463be240d13f8b8cc562b47d5513c43481a7d2b2544cb6fe  /mnt/linux-share/hmz-campaigns/b580-fused/.artifacts/stage/s7-pristine/cand/llama_main
+f7f7b5bd5ad094cac21d55d80815de702a5af61f395eb4b325be0dbf4a2a2e4d  /mnt/linux-share/hmz-campaigns/b580-fused/.artifacts/stage/s7-pristine/test_llama_microbench
+bfce65eb12a496801e29f6e8329773c20da1485d41f9fc504ce31549008b46e3  /mnt/linux-share/hmz-campaigns/b580-fused/.artifacts/stage/s7-pristine/prompt_2048.txt
+b5499448f07a40725ce9b96bb5094cb7bfa7ed749e8937213077b24b292445ba  /mnt/linux-share/hmz-campaigns/b580-fused/.artifacts/stage/s7-pristine/prompt_check.txt
+30ec73a22ec50d71c7e3f3255d9ae800f79b634d162839323585ca51bfc1c366  /mnt/linux-share/hmz-campaigns/b580-fused/.artifacts/stage/s7-pristine/prompt_real_2048.txt
+881de104b6b04bba7a40070283a1a27d9c5e5b3988af8ae14704ce388b5f139a  /mnt/linux-share/hmz-campaigns/b580-fused/.artifacts/stage/s7-pristine/r1304.txt

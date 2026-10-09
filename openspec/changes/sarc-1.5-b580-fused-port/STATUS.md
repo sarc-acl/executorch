@@ -1,12 +1,14 @@
 # sarc-1.5-b580-fused-port: status
 
-**2026-10-09 09:45 UTC — NOT closed; reopened by the reviewer. The performance result reproduces (+8.82 % geomean
-over the parent, +71.77 % over the pristine parent), but (1) the actor had added a desktop-load wait before
-timed sessions that the owner decision of 00:22 UTC does not allow: it is removed, and the three sessions that
-ran behind it are being repeated without it (`tools/chain13.sh`); (2) rules added to `thresholds.txt` after
-candidate 1 was measured are removed (`thresholds-history.md`); (3) the new fused pipelines do not meet a
-requirement of the Vulkan specification (finding F1), and the fix is a release-zone change that needs an exact
-owner decision: **see "Decision needed from the owner"; the campaign cannot close before it.**
+**2026-10-09 11:10 UTC — NOT closed; waiting for the owner's decision on finding F1. The reviewer's protocol
+corrections are done: the unauthorized desktop-load wait and the late additions to `thresholds.txt` are removed
+(`thresholds-history.md`), the invalid run of `s3-c2` is adjudicated by key, and the three timed sessions were
+repeated with every run started at once: final stack `b580-fused1` on the committed head **+9.12 % geomean**
+over the parent (`s6-final`, `GATE_PASS`), **+72.05 %** over the pristine parent (`s7-pristine`), candidate 2
++0.08 % (`s3c-c2`, not a gain). Open: the two new fused pipelines are created without the full-subgroups flag
+the Vulkan specification requires (F1); the fix is a release-zone change that needs an exact owner decision:
+**see "Decision needed from the owner". The campaign cannot close before the corrected build is gated and
+timed.**
 
 Branch `topic/b580-fused-port`, parent `51d9d757f` with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-refine3`.
 Final configuration: the branch head with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-fused1`.
@@ -18,16 +20,11 @@ it; GT frequency policy as found and unchanged (`min_freq` 1200, `max_freq` 2850
 
 ## Running now
 
-- `tools/chain13.sh` (started 09:37 UTC; `.artifacts/logs/chain13.status`), one GPU job at a time, every timed
-  run started at once: `s7-pristine` (pristine against `topic7` with `b580-fused1`, timed only), `s3c-c2`
-  (`topic7` `b580-fused1` against `b580-fused2`, timed only), `s6-final` (`parent2` against `topic7` with
-  `b580-fused1`, the full gate), collection. Ends `CHAIN13_DONE`. If the desktop is in use the runs above
-  `BUSYMAX` are rejected and replaced as the protocol says, and a session may end incomplete.
-
-If the machine reboots it is gone: restart `chain13.sh` after moving a half-run session to `superseded/`.
+Nothing. `tools/chain13.sh` ended `CHAIN13_DONE` at 11:06 UTC.
 
 Waiting for the owner: finding F1 (below). After that decision: a new build from an exported commit, the full
-gate, the reference error, the golden check and both timed sessions again.
+gate, the reference error, the golden check and both timed sessions again. By the instruction of 09:55 UTC
+nothing else is recomputed or re-run while waiting.
 
 ## Sessions under the authorized protocol (chain 13, from 09:37 UTC; build `topic7` = `e1e450530`; no wait)
 
@@ -69,9 +66,33 @@ Geomean **+0.08 %**, every cell inside +-2 % (`s3b-c2`, behind the wait: -0.13 %
 the `noise_band` rule; the final stack stays `b580-fused1`. Its gate items that do not depend on the start time
 are those of `s3b-c2` (36 PASS lines).
 
-`s6-final` (the full gate of `b580-fused1` against the parent): running; its result goes here.
+`s6-final` (10:06 to 11:06 UTC; timed runs 10:46 to 11:04): `parent2` with the parent environment against
+`topic7` with `b580-fused1`, the full gate (`gate_sdpa.sh`). The runner had the `busy_unreadable` predicate of
+the owner decision of 09:55 UTC from before its timed runs. 84 timed runs, 84 valid; foreign engine time 0.26 to
+0.46 %:
 
-## Result of the first closing (sessions `s4-final` and `s5-pristine`, 07:28 to 08:49 UTC, build `topic7` = `e1e450530`); being repeated
+| cell | parent `b580-refine3` | final `b580-fused1` | gain | spread parent / final | next token (2048 / real-text / 1792-token prompt) |
+|---|---:|---:|---:|---|---|
+| 1B 4w | 13044.60 | 15058.80 | **+15.44 %** | 0.6 / 0.7 % | SAME / SAME / SAME |
+| 1B 8da4w | 15170.40 | 18285.70 | **+20.54 %** | 0.7 / 0.9 % | SAME / SAME / SAME |
+| 3B 4w | 5197.97 | 5461.33 | **+5.07 %** | 0.5 / 0.3 % | SAME / SAME / SAME |
+| 3B 8da4w | 6420.06 | 6849.50 | **+6.69 %** | 0.3 / 0.3 % | SAME / SAME / SAME |
+| 8B 4w | 2308.91 | 2381.40 | **+3.14 %** | 0.3 / 0.1 % | SAME / SAME / SAME |
+| 8B 8da4w | 2998.54 | 3145.93 | **+4.92 %** | 0.1 / 0.2 % | SAME / SAME / SAME |
+
+Geomean **+9.12 %**, every cell outside the +-2 % band (`s4-final`, behind the wait: +8.82 %; `s2-c1`, desktop in
+use: +9.18 %). `stage/s6-final/gate.txt`: `GATE_PASS`, 37 PASS lines (the 36 of the earlier gates and the new
+line "no run stored valid without a readable foreign engine share"), no FAIL line: SDPA tiers `all` /
+`extended` / `full` 12 passes each with 0 mismatches and `pairing=ok`, unmodified `verify.sh` with the final
+environment the same as the parent snapshot, next token SAME in all 18 comparisons. A plain pass on the timing
+and correctness items. **It is a gate of pipelines that lack the full-subgroups flag (F1), so it does not close
+the campaign.** Reference error, the extra tiers, the golden check and the roofs do not depend on the start time
+and are those of the first closing on the same build (below).
+
+Chain 13 ended `CHAIN13_DONE` at 11:06 UTC. Nothing is running.
+
+
+## Result of the first closing (sessions `s4-final` and `s5-pristine`, 07:28 to 08:49 UTC, build `topic7` = `e1e450530`); superseded as evidence by chain 13
 
 **These two sessions were started through `busy_wait` (it read 0.3 to 0.4 % and let them start at once; the
 delay was the 5 s reading). They are kept as measured and are no longer the evidence of the close: `s6-final`
