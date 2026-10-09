@@ -4,7 +4,7 @@ What this directory is for: `tuning-overview.html` is the owner's one-page view 
 the final gain per device, the chain of accepted candidates that produced it, the technique-by-device matrix,
 where the GPU time went, what did not pay, and where the tuned kernels stand against llama.cpp. It is kept here
 so that it stays current as campaigns close, and it is published as a private page from this file (the owner
-holds the link). The page's text is Chinese, for the owner; this file and the data keys are English.
+holds the link). The page's text is English, like this file and the data keys; write new strings in English.
 
 ## How the file is built
 
@@ -35,9 +35,9 @@ One HTML file, two parts, deliberately separated:
 **Devices without published figures, and the column count.** A device whose owner forbids publishing figures
 (M51) is a `devices` entry with `"final": null`, a `base` text that says so and a `note` for the tooltip. It has
 no entry in `chains`, `reported`, `timeRows`, `llama` or `tokps`, and its `techs` cells carry only `k`, a short
-text `v` (for example "已采纳", "不适用"), an optional `n` and a qualitative tooltip `t`: no percentage, speed,
+text `v` (for example "adopted", "n/a"), an optional `n` and a qualitative tooltip `t`: no percentage, speed,
 time, driver or board identifier anywhere, in the data block or in the prose. The rendering code shows the text
-"不公布数字" on its tile and in the matrix header and draws no bar for it in figure 1. A device that has figures
+"figures not published" on its tile and in the matrix header and draws no bar for it in figure 1. A device that has figures
 but no llama.cpp or stock measurement (RX 7900 XTX) keeps those `tokps` fields `null`, which the table prints as
 a dash, and has no `llama` entry; an optional `note` on a `devices` or `tokps` entry is shown in the tile tooltip
 or beside the device name in figure 7. The matrix of figure 2 takes its column count from the data: the six

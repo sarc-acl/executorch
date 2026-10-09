@@ -1,13 +1,13 @@
-<title>SARC 1.5 调优全景</title>
+<title>SARC 1.5 tuning overview</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-  /* 布局：先每台设备一张收益卡，再五张图自上而下，每张图一个结论。冷灰底，数据色来自验证过的默认调色板，状态色与系列色分开。 */
+  /* Layout: one gain card per device first, then five figures from top to bottom, one conclusion per figure. Cool gray background; the data colors come from the validated default palette; status colors are kept apart from series colors. */
   :root {
     --bg: #f4f5f7; --surface: #fcfcfb; --fg: #0b0b0b; --fg2: #52514e; --fg3: #7d7c78; --line: #dcdbd6; --grid: #e8e7e3;
     --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #4a3aa7;
     --seq1: #cde2fb; --seq2: #9ec5f4; --seq3: #6da7ec; --seq4: #3987e5; --seq5: #256abf; --seq6: #184f95;
     --neutral: #c9c8c2; --neutral-fill: #efeeea; --ref: #52514e;
-    --sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
     --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
   }
   @media (prefers-color-scheme: dark) {
@@ -29,12 +29,12 @@
   header h1 { font-size: 1.7rem; font-weight: 700; margin: 0 0 6px; text-wrap: balance; letter-spacing: 0.01em; }
   header p { margin: 0; color: var(--fg2); max-width: 64ch; }
   .meta { font-family: var(--mono); font-size: 0.78rem; color: var(--fg3); margin-top: 8px; }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); gap: 12px; }
   .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; min-width: 0; }
   .tile .label { font-size: 0.8rem; color: var(--fg2); }
   .tile .value { font-size: 1.7rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; margin-top: 2px; }
   .tile .value.text { font-size: 1.05rem; line-height: 1.95; color: var(--fg2); }
-  .tile .sub { font-size: 0.78rem; color: var(--fg3); font-family: var(--mono); margin-top: 4px; }
+  .tile .sub { font-size: 0.78rem; color: var(--fg3); font-family: var(--mono); margin-top: 4px; text-wrap: balance; }
   .tile .meter { height: 6px; background: var(--seq1); border-radius: 3px; margin-top: 10px; overflow: hidden; }
   .tile .meter > span { display: block; height: 100%; background: var(--seq5); border-radius: 3px; }
   figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 18px 18px 14px; min-width: 0; }
@@ -58,7 +58,7 @@
   svg .hover-target { cursor: default; }
   svg .hover-target:hover { filter: brightness(0.92); }
   figcaption { margin-top: 10px; color: var(--fg3); font-size: 0.82rem; }
-  details { margin-top: 8px; font-size: 0.85rem; }
+  details { margin-top: 8px; font-size: 0.85rem; overflow-x: auto; }
   details summary { cursor: pointer; color: var(--fg2); }
   table { border-collapse: collapse; width: 100%; font-size: 0.82rem; margin-top: 8px; }
   th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
@@ -124,121 +124,121 @@
 
 <main>
   <header>
-    <h1>SARC 1.5 调优全景</h1>
-    <p><strong>相对未修改的 ExecuTorch 1.5（Vulkan 后端，不用协作矩阵指令），2048 token 预填充在七台公布数字的 GPU 上快 2.8 到 7.9 倍</strong>（六格几何平均：1B、3B、8B 三个模型，4w 与 8da4w 两种量化）。下面每张卡片的大数字就是这个加速比；卡片第二行把它拆成两段：9 月 SARC 发布版已经做到的，和本轮调优在它之上再加的百分比。图 1 到图 4 讲的是第二段，即相对 9 月发布版的增益来自哪一步、哪些技术用在了哪里、时间省在了哪、哪些工作没有回报。M51 按设备所有者的要求只列定性结论。图 8 另列其中五台设备的调优后内核离硬件上限有多远，数字取自 igpu-roofline 的上限研究。</p>
-    <div class="meta">数据截至 2026-10-09 20:00 UTC · 共八张图 · 头条基线为原版 ExecuTorch 1.5；图 1 到图 4 的增益相对 9 月 SARC 发布版（RX 7600 与 RX 7900 XTX 为各自的父提交）· 悬停任何数据标记可看明细</div>
+    <h1>SARC 1.5 tuning overview</h1>
+    <p><strong>Compared with unmodified ExecuTorch 1.5 (Vulkan backend, no cooperative matrix instructions), 2048-token prefill is 2.8 to 7.9 times faster on the seven GPUs with published figures</strong> (geometric mean of six cells: the three models 1B, 3B and 8B, and the two quantization schemes 4w and 8da4w). The large number on each card below is this speed-up; the card's second line splits it into two parts: what the September SARC release had already achieved, and the percentage that this round of tuning added on top of it. Figures 1 to 4 are about the second part: which step the gain over the September release came from, which techniques were used where, where the time was saved, and which work did not pay. For the M51, at the device owner's request, only qualitative conclusions are listed. Figure 8 separately shows how far the tuned kernels of five of the devices are from the hardware roof; its numbers come from the roof study of igpu-roofline.</p>
+    <div class="meta">Data as of 2026-10-09 20:00 UTC · eight figures in total · the headline baseline is unmodified ExecuTorch 1.5; the gains in figures 1 to 4 are relative to the September SARC release (for the RX 7600 and the RX 7900 XTX, their own parent commits) · hover over any data mark for details</div>
   </header>
 
-  <section class="tiles" id="tiles" aria-label="每台设备相对原版 ExecuTorch 的加速比"></section>
+  <section class="tiles" id="tiles" aria-label="Speed-up of each device over unmodified ExecuTorch"></section>
 
   <figure id="fig-chain">
-    <h2>图 1 · 收益是一步步叠出来的</h2>
-    <p class="claim">每个水平条是一台设备；每一段是一个被采纳的候选，长度为其相对父配置的几何平均增益（对数叠加，所以段长可以相加）。四台原本跑 stock 注意力的设备靠第一段就拿到了大部分；780M 和 RX 7600 已经有注意力内核，收益来自融合内核。第二轮把融合内核移植到这四台，各再加 +6 % 到 +11 %；RX 7600 的第二轮改线性内核的暂存行距，再加 +5.4 %。RX 7900 XTX 没有采纳融合内核，四段合计不到 +10 %。M51 不公布数字，不画条。</p>
+    <h2>Figure 1 · The gain was stacked up step by step</h2>
+    <p class="claim">Each horizontal bar is one device; each segment is one adopted candidate, and its length is that candidate's geometric mean gain over its parent configuration (stacked logarithmically, so segment lengths add). The four devices that previously ran the stock attention got most of their gain from the first segment; the 780M and the RX 7600 already had attention kernels, and their gain comes from the fused kernel. The second round ported the fused kernel to those four devices, adding a further +6 % to +11 % each; the RX 7600's second round changed the staging row stride of the linear kernels, adding a further +5.4 %. The RX 7900 XTX did not adopt the fused kernel, and its four segments total less than +10 %. No figures are published for the M51, so no bar is drawn for it.</p>
     <div class="legend" id="legend-chain"></div>
     <div class="scroll"><div id="chart-chain"></div></div>
-    <figcaption>段的宽度按 ln(1+增益) 比例，横轴刻度换算回累计百分比。叠乘结果与各 campaign 最终场次直接测得的数字相差在 3 个百分点以内（不同场次、不同基线）。Jetson Orin Nano 第二轮的数字（+6.13 %、+76.70 % 以及由它们导出的各值）测自着色器编译器（glslc）与规定版本不同的交叉构建。所有者 10-09 裁定按现状接受，不重测，编译器差异记为已知局限。M51 的设备所有者不允许公布这台设备的任何数字，所以本页各图都没有它的数值，只在图 2 里列出各项技术采纳与否。</figcaption>
-    <details><summary>数据表</summary><div id="table-chain"></div></details>
+    <figcaption>Segment width is proportional to ln(1+gain); the ticks of the horizontal axis are converted back to cumulative percent. The product of the segments is within 3 percentage points of the figure measured directly in each campaign's final session (different sessions, different baselines). The Jetson Orin Nano's second-round figures (+6.13 %, +76.70 % and the values derived from them) were measured on a cross build whose shader compiler (glslc) differs from the pinned version. On 10-09 the owner ruled to accept them as they are, without re-measuring, and the compiler difference is recorded as a known limitation. The M51's device owner does not allow any figure for this device to be published, so no figure on this page carries a value for it; figure 2 only lists which techniques were adopted.</figcaption>
+    <details><summary>Data table</summary><div id="table-chain"></div></details>
   </figure>
 
   <figure id="fig-matrix">
-    <h2>图 2 · 技术 × 设备</h2>
-    <p class="claim">深色为采纳并计入最终配置，数字是相对父配置的几何平均增益；斜纹为试过但未采纳或被门禁拒绝；虚线为没做。融合内核在六台设备上采纳；RX 7900 XTX 在 AMDVLK 驱动下试过，慢 13.79 %，被拒绝；M51 采纳的是两遍形式。M51 一列不写数字，只标采纳与否，颜色不表示增益大小。fp32 softmax 在 B580 上试过，落在噪声带内，未采纳，B70 因此没做。</p>
+    <h2>Figure 2 · Technique × device</h2>
+    <p class="claim">Dark cells are adopted and counted in the final configuration, and the number is the geometric mean gain over the parent configuration; hatched cells were tried but not adopted, or rejected by the gate; dashed cells were not done. The fused kernel is adopted on six devices; on the RX 7900 XTX it was tried under the AMDVLK driver, was 13.79 % slower and was rejected; the M51 adopted the two-pass form. The M51 column carries no numbers and only marks adopted or not; its color does not indicate the size of a gain. The fp32 softmax was tried on the B580, fell inside the noise band and was not adopted, so it was not done on the B70.</p>
     <div class="legend">
-      <span><i style="background:var(--seq5)"></i>采纳，颜色深浅按增益</span>
-      <span><i class="hatch"></i>试过，未采纳</span>
-      <span><i style="background:var(--neutral-fill);border:1px solid var(--line)"></i>已有或继承</span>
-      <span><i style="border:1px solid var(--s2)"></i>待定</span>
-      <span><i class="empty"></i>没做</span>
+      <span><i style="background:var(--seq5)"></i>Adopted, shade by gain</span>
+      <span><i class="hatch"></i>Tried, not adopted</span>
+      <span><i style="background:var(--neutral-fill);border:1px solid var(--line)"></i>Existing or inherited</span>
+      <span><i style="border:1px solid var(--s2)"></i>Pending</span>
+      <span><i class="empty"></i>Not done</span>
     </div>
-    <div class="scroll"><div class="matrix" id="matrix" role="table" aria-label="技术与设备矩阵"></div></div>
-    <details><summary>空格和“未采纳”的原因</summary>
+    <div class="scroll"><div class="matrix" id="matrix" role="table" aria-label="Technique by device matrix"></div></div>
+    <details><summary>Reasons for empty cells and for "not adopted"</summary>
       <table>
-        <tr><th>格子</th><th>性质</th><th>原因</th></tr>
-        <tr><td>RTX 4070 Ti SUPER · 注意力参数细化</td><td>没有单独做</td><td>移植协作矩阵注意力内核时（第 1 行）已按形状从一批变体里各选了最快的，参数选择并进了第 1 行。之后候选 5、6 连续低于 2 %，停止规则生效，没有再为注意力单独开一轮。其他设备上这一行的回报是 780M +3.6 %，其余都在噪声带内；融合内核现已取代那两个注意力内核，补做价值很小。</td></tr>
-        <tr><td>RTX 4070 Ti SUPER · 8da4w 按纹素取权重</td><td>试过，未采纳</td><td>候选 5 是这项技术的一个变体：每个暂存槽保留纹素的两个字，取权重次数减半。内核级只快 1.1 %，过完整门禁后 −0.13 %，在噪声带内。取权重阶段占这个内核 34 % 到 43 % 的时间，但读取次数减半没有让它变短，说明这张卡上瓶颈不是读取次数，和 Intel 上 +7 % 的情况不同。</td></tr>
-        <tr><td>Arc Pro B70 · fp32 无零尾 softmax</td><td>有意不做</td><td>Intel 上原版 softmax 就能过门禁（4070 Ti 和 Orin 需要它是因为误差超标）。B580 把它作为第二轮候选 2 试过，两场分别 −0.13 % 和 +0.08 %，未采纳；B70 的确认任务只搬 B580 采纳了的东西。</td></tr>
-        <tr><td>softmax 子组归约 · Orin 以外的设备</td><td>没做</td><td>这是 Orin 第一轮自己的候选，在 Orin 上只有 +0.34 %，在噪声带内，没有理由搬到别处。融合内核把 softmax 包进去之后，独立 softmax 只处理不对齐的提示和解码，占比更小。</td></tr>
-        <tr><td>RX 7900 XTX · 融合注意力内核</td><td>试过，被拒绝</td><td>fused3sb 相对候选 1 为 −13.79 %（1B 持平，3B、8B 各格 −15 % 到 −24 %）。在 AMDVLK 驱动上，原有的三个分开的协作矩阵注意力内核在 3B、8B 上比最好的融合变体快约 2.6 倍。同一个内核在跑 Mesa RADV 的 RX 7600 上是 +18.22 %。因此第 5 行（屏障）在这台设备上不适用。</td></tr>
-        <tr><td>M51 · fp32 无零尾 softmax</td><td>不适用</td><td>采纳融合内核之后，计时预填充里的注意力调用全部由融合节点处理，不再派发独立的 softmax。</td></tr>
-        <tr><td>第二个注意力候选（B580 的 softmax、Orin 的两遍形式）</td><td>试过，未采纳</td><td>融合内核之后注意力只占预填充的百分之几，两个候选分别是 −0.13 % 和 +0.54 %，都在噪声带内。</td></tr>
+        <tr><th>Cell</th><th>Status</th><th>Reason</th></tr>
+        <tr><td>RTX 4070 Ti SUPER · attention parameter refinement</td><td>Not done separately</td><td>When the cooperative matrix attention kernels were ported (row 1), the fastest variant for each shape had already been chosen from a batch of variants, so parameter selection was folded into row 1. Candidates 5 and 6 then came in below 2 % in a row, the stop rule took effect, and no separate round was opened for attention. On the other devices this row returned +3.6 % on the 780M and stayed inside the noise band elsewhere; the fused kernel has since replaced those two attention kernels, so doing it now would be of very little value.</td></tr>
+        <tr><td>RTX 4070 Ti SUPER · 8da4w whole-texel weight staging</td><td>Tried, not adopted</td><td>Candidate 5 is a variant of this technique: each staging slot keeps two words of the texel, which halves the number of weight fetches. It is only 1.1 % faster at kernel level and −0.13 % after the full gate, inside the noise band. The weight-fetch stage takes 34 % to 43 % of this kernel's time, but halving the number of reads did not shorten it, which indicates that the bottleneck on this card is not the number of reads, unlike the +7 % case on Intel.</td></tr>
+        <tr><td>Arc Pro B70 · no-tail softmax (fp32)</td><td>Deliberately not done</td><td>On Intel the stock softmax already passes the gate (the 4070 Ti and the Orin need the variant because their error exceeded the limit). The B580 tried it as second-round candidate 2; the two sessions gave −0.13 % and +0.08 %, and it was not adopted. The B70's confirmation task carries over only what the B580 adopted.</td></tr>
+        <tr><td>Softmax subgroup reduction · devices other than the Orin</td><td>Not done</td><td>This is a candidate of the Orin's own first round; on the Orin it gave only +0.34 %, inside the noise band, so there is no reason to carry it elsewhere. Once the fused kernel absorbs the softmax, the standalone softmax handles only unaligned prompts and decode, an even smaller share.</td></tr>
+        <tr><td>RX 7900 XTX · fused attention kernel</td><td>Tried, rejected</td><td>fused3sb is −13.79 % against candidate 1 (1B unchanged, the 3B and 8B cells −15 % to −24 %). On the AMDVLK driver the three original separate cooperative matrix attention kernels are about 2.6 times faster than the best fused variant on 3B and 8B. The same kernel is +18.22 % on the RX 7600, which runs Mesa RADV. Row 5 (the barrier) therefore does not apply on this device.</td></tr>
+        <tr><td>M51 · no-tail softmax (fp32)</td><td>n/a</td><td>Once the fused kernel is adopted, all attention calls in the timed prefill are handled by the fused node, and no separate softmax is dispatched.</td></tr>
+        <tr><td>The second attention candidate (the softmax on the B580, the two-pass form on the Orin)</td><td>Tried, not adopted</td><td>After the fused kernel, attention is only a few percent of prefill; the two candidates gave −0.13 % and +0.54 %, both inside the noise band.</td></tr>
       </table>
     </details>
-    <figcaption>第 1 行四台设备的数字含移植时一并带上的 softmax（4070 Ti、Orin），因为那两台的候选 1 带 stock softmax 时被门禁拒绝，无法单独计量。RX 7900 XTX 的 campaign 跑在 AMDVLK 驱动上，RX 7600 跑在 Mesa RADV 上；AMDVLK 是否把 32 线程的融合内核按 32 宽的子组执行，记录为未验证，所以“融合内核被拒绝”只对该驱动成立。</figcaption>
+    <figcaption>The numbers of the four devices in row 1 include the softmax that was brought along with the port (4070 Ti, Orin), because on those two devices candidate 1 with the stock softmax was rejected by the gate and cannot be measured separately. The RX 7900 XTX's campaign ran on the AMDVLK driver and the RX 7600's on Mesa RADV; whether AMDVLK executes the 32-thread fused kernel as a 32-wide subgroup is recorded as unverified, so "fused kernel rejected" holds for that driver only.</figcaption>
   </figure>
 
   <figure id="fig-explain">
-    <h2>读图 2 之前 · 十项技术各是什么</h2>
-    <p class="claim">给不熟悉这套内核的读者。先是八个贯穿全文的词，然后图 2 的每一行一张卡片：它做了什么、为什么会快、一个类比、结果如何。编号与图 2 的行号一致。</p>
-    <h4 class="sub">先认识几个词</h4>
+    <h2>Before reading figure 2 · What each of the ten techniques is</h2>
+    <p class="claim">For readers who are not familiar with these kernels. First eight terms that run through the whole page, then one card for each row of figure 2: what it does, why it is faster, an analogy, and the result. The numbering matches the row numbers of figure 2.</p>
+    <h4 class="sub">A few terms first</h4>
     <dl class="primer" id="primer"></dl>
-    <h4 class="sub">十项技术</h4>
+    <h4 class="sub">The ten techniques</h4>
     <div class="explain" id="explain"></div>
-    <figcaption>十项里真正带来大幅收益的是第 1 行和第 4 行，两者都是“换一种算法结构”；第 2、7、10 行是调参数，回报小得多；第 5、9 行不为提速，是为了正确和可维护。</figcaption>
+    <figcaption>Of the ten, the ones that bring large gains are rows 1 and 4, and both "change the structure of the algorithm"; rows 2, 7 and 10 tune parameters and return much less; rows 5 and 9 are not for speed, they are for correctness and maintainability.</figcaption>
   </figure>
 
   <figure id="fig-time">
-    <h2>图 3 · 时间省在了哪</h2>
-    <p class="claim">8B 模型一次 2048 token 预填充的 GPU 派发时间（毫秒，热态 ETDump）。Intel 上注意力三个内核从 341 ms 压到 42 ms，线性 GEMM 几乎不动；RX 7600 上融合内核把注意力压到四分之一，线性内核再省 139 ms，第二轮改暂存行距后又省 47 ms。第二轮的融合内核把注意力在 B580 上从 77 ms 再压到 48 ms，在 B70 上从 57 ms 压到 32 ms。</p>
+    <h2>Figure 3 · Where the time was saved</h2>
+    <p class="claim">GPU dispatch time of one 2048-token prefill of the 8B model (milliseconds, warm ETDump). On Intel the three attention kernels drop from 341 ms to 42 ms, and the linear GEMM hardly moves; on the RX 7600 the fused kernel cuts attention to a quarter, the linear kernels save a further 139 ms, and the second-round change of the staging row stride saves another 47 ms. The second-round fused kernel cuts attention further, from 77 ms to 48 ms on the B580 and from 57 ms to 32 ms on the B70.</p>
     <div class="legend" id="legend-time"></div>
     <div class="scroll"><div id="chart-time"></div></div>
-    <figcaption>RX 7600 的注意力三项未在其 trace-families 中拆开，按合计绘制。"其他"含激活量化、嵌入、输出投影等。RTX 4070 Ti SUPER 的父配置是其第一轮最终配置（已含协作矩阵注意力内核）；调优后的融合内核与 K/V 拷贝合计 20.7 ms，按未拆分绘制。Arc B580 的“融合后”一行（s4-final）和 Arc Pro B70 的两行（s3-final）来自各自融合移植分支的 trace，画法相同；B70 的父配置是其第一轮最终配置。Jetson Orin Nano 的 8B 预填充是数秒量级，超出本图的刻度，没有画。RX 7600 的“第二轮后”一行来自其第二轮收尾场次（r2-final）的 trace。RX 7900 XTX 没有入图；M51 不公布数字。</figcaption>
-    <details><summary>数据表</summary><div id="table-time"></div></details>
+    <figcaption>The RX 7600's three attention items are not split in its trace-families and are drawn as a total. "Other" includes activation quantization, embedding, output projection and so on. The parent configuration of the RTX 4070 Ti SUPER is its first-round final configuration (which already contains the cooperative matrix attention kernels); the tuned fused kernel and the K/V copy total 20.7 ms and are drawn unsplit. The Arc B580's "after fusion" row (s4-final) and the Arc Pro B70's two rows (s3-final) come from the traces of their fused-port branches and are drawn the same way; the B70's parent configuration is its first-round final configuration. The Jetson Orin Nano's 8B prefill takes on the order of seconds, which is beyond the scale of this figure, so it is not drawn. The RX 7600's "after second round" row comes from the trace of its second-round closing session (r2-final). The RX 7900 XTX is not in the figure; no figures are published for the M51.</figcaption>
+    <details><summary>Data table</summary><div id="table-time"></div></details>
   </figure>
 
   <figure id="fig-waste">
-    <h2>图 4 · 没有回报的工作</h2>
-    <p class="claim">参数搜索在内核层面找到了更快的配置，但一个只占预填充百分之几的内核，内核级的提升到不了端到端。B70 的 33 小时换来 +1.1 %，780M 的枚举换来 0。</p>
+    <h2>Figure 4 · Work that did not pay</h2>
+    <p class="claim">Parameter search found faster configurations at kernel level, but for a kernel that takes only a few percent of prefill, a kernel-level improvement does not reach end to end. The B70's 33 hours bought +1.1 %, and the 780M's enumeration bought 0.</p>
     <div class="scroll"><div id="chart-waste"></div></div>
-    <figcaption>横轴为设备机时（小时），条尾标注端到端几何平均增益。瓦片扫描在三台设备上各花了数小时且无一更快，机时未精确记录，不入图。</figcaption>
+    <figcaption>The horizontal axis is device time (hours), and the end of each bar is labeled with the end-to-end geometric mean gain. The tile sweeps took several hours on each of three devices and none was faster; their device time was not recorded precisely, so they are not in the figure.</figcaption>
   </figure>
 
   <figure id="fig-llama">
-    <h2>图 5 · 调优后相对 llama.cpp 的位置</h2>
-    <p class="claim">调优后的 ExecuTorch 4w 预填充速度除以 llama.cpp Q4_0 最佳设置的速度，每台设备三个点对应 1B、3B、8B。对 llama.cpp 的 Vulkan 后端，六台设备的三个模型全部领先；对厂商后端（SYCL、CUDA），Intel 两张卡和 RTX 4070 Ti SUPER 仍落后 3 % 到 25 %，Orin 大致持平（0.98 到 1.07）。RX 7900 XTX 和 M51 没有 llama.cpp 对比数据，不在图中。</p>
-    <div class="legend"><span><i style="background:var(--s1)"></i>相对 llama.cpp Vulkan</span><span><i style="background:var(--s2)"></i>相对厂商后端（Intel SYCL，NVIDIA CUDA）</span><span><i style="border-top:2px dashed var(--ref);width:16px;height:0;border-radius:0"></i>1.0 持平</span></div>
+    <h2>Figure 5 · Where the tuned build stands against llama.cpp</h2>
+    <p class="claim">The tuned ExecuTorch 4w prefill speed divided by the speed of llama.cpp Q4_0 at its best setting; the three points per device are 1B, 3B and 8B. Against llama.cpp's Vulkan backend, all three models lead on all six devices; against the vendor backends (SYCL, CUDA), the two Intel cards and the RTX 4070 Ti SUPER still trail by 3 % to 25 %, and the Orin is roughly at parity (0.98 to 1.07). The RX 7900 XTX and the M51 have no llama.cpp comparison data and are not in the figure.</p>
+    <div class="legend"><span><i style="background:var(--s1)"></i>vs llama.cpp Vulkan</span><span><i style="background:var(--s2)"></i>vs vendor backend (Intel SYCL, NVIDIA CUDA)</span><span><i style="border-top:2px dashed var(--ref);width:16px;height:0;border-radius:0"></i>1.0 parity</span></div>
     <div class="scroll"><div id="chart-llama"></div></div>
-    <figcaption>来源：topic/llamacpp-compare 的 cells.csv，llama.cpp b11430，各设备筛选过的最佳设置，5 次中位数。780M 没有可用的厂商后端（ROCm 不支持该集成显卡，未测）。RX 7600 由公司侧于 2026-10-08 测得，仅 Vulkan；其 8B 的 llama-bench 数字因该卡在 1024 个提示 token 以上走了一条慢的 GPU 路径而弃用，该处取 llama-completion 计时。RTX 4070 Ti SUPER、Arc Pro B70、Arc B580 的调优后速度取自各自融合移植分支的收尾场次（s5-pristine、s4-pristine、s7-pristine，7 次中位数），Jetson Orin Nano 的取自 s8-pristine（5 次中位数，交叉构建）。RX 7600 的调优后速度取自其第二轮收尾场次 r2-final（5 次中位数），llama.cpp 一侧仍是 10-08 的数字。</figcaption>
-    <details><summary>数据表</summary><div id="table-llama"></div></details>
+    <figcaption>Source: cells.csv of topic/llamacpp-compare, llama.cpp b11430, the screened best setting of each device, median of 5 runs. The 780M has no usable vendor backend (ROCm does not support this integrated GPU; not measured). The RX 7600 was measured by the company side on 2026-10-08, Vulkan only; its 8B llama-bench figure is discarded because above 1024 prompt tokens the card took a slow GPU path, and the llama-completion timing is used there. The tuned speeds of the RTX 4070 Ti SUPER, Arc Pro B70 and Arc B580 come from the closing sessions of their fused-port branches (s5-pristine, s4-pristine, s7-pristine, median of 7 runs), and the Jetson Orin Nano's from s8-pristine (median of 5 runs, cross build). The RX 7600's tuned speed comes from its second-round closing session r2-final (median of 5 runs); the llama.cpp side is still the figure of 10-08.</figcaption>
+    <details><summary>Data table</summary><div id="table-llama"></div></details>
   </figure>
 
 
   <figure id="fig-branches">
-    <h2>图 6 · 分支关系与状态</h2>
-    <p class="claim">每条水平线是 sarc-acl/executorch 上的一个分支，时间从左到右，不按比例。所有 campaign 分支都从 780M 分支派生，所以融合注意力内核和开发区覆盖文件在每一条里都有；合并 PR 因此只能一条一条进。右侧四条短线是融合内核移植分支（三条 10-08 开，B70 的一条 10-09 开），从各自第一轮的头部拉出；4070 Ti 和 B70 的两条已关闭，B580 和 Orin 的两条已由所有者宣布结束（最后一轮审阅未完成）。RX 7900 XTX 的分支从 780M 分支较晚的一个提交拉出，10-09 结束，所以也画到右侧。</p>
+    <h2>Figure 6 · Branch relationships and status</h2>
+    <p class="claim">Each horizontal line is a branch on sarc-acl/executorch; time runs from left to right, not to scale. All campaign branches derive from the 780M branch, so the fused attention kernel and the development-zone overlay files are in every one of them; merge PRs can therefore only go in one at a time. The four short lines on the right are the fused-kernel port branches (three opened on 10-08, the B70's on 10-09), created from the heads of their respective first rounds; the 4070 Ti's and the B70's are closed, and the B580's and the Orin's have been declared ended by the owner (the last review round was not completed). The RX 7900 XTX's branch was created from a later commit of the 780M branch and ended on 10-09, so it is also drawn on the right.</p>
     <div class="legend" id="legend-branches"></div>
     <div class="scroll"><div id="chart-branches"></div></div>
-    <figcaption>"+N" 为领先 dev/1.5 的提交数；箭头表示分支从该提交创建。头部状态截至 2026-10-09 17:30 UTC。M51 的分支（topic/m51-prefill-refine，同样从 780M 分支拉出）没有画。</figcaption>
+    <figcaption>"+N" is the number of commits ahead of dev/1.5; an arrow means the branch was created from that commit. Head status as of 2026-10-09 17:30 UTC. The M51's branch (topic/m51-prefill-refine, also created from the 780M branch) is not drawn.</figcaption>
   </figure>
 
   <figure id="fig-tokps">
-    <h2>图 7 · 全部 tok/s</h2>
-    <p class="claim">七台设备、三个模型、每格的 2048 token 预填充速度（tok/s，5 次有效运行的中位数，来源是 llama.cpp 对比分支的 cells.csv，图注列出的调优后两列除外）。stock 是未修改的 ExecuTorch 1.5，SARC 是 9 月发布版，调优后是各 campaign 的最终配置；llama.cpp 取各后端筛选过的最佳设置、两种计时器里较高者。</p>
+    <h2>Figure 7 · All tok/s</h2>
+    <p class="claim">Seven devices, three models, and the 2048-token prefill speed of each cell (tok/s, median of 5 valid runs; the source is cells.csv of the llama.cpp comparison branch, except for the two tuned columns listed in the caption). stock is unmodified ExecuTorch 1.5, SARC is the September release, and tuned is each campaign's final configuration; llama.cpp uses the screened best setting of each backend and the higher of the two timers.</p>
     <div class="scroll"><div id="table-tokps"></div></div>
-    <figcaption>标 * 的格按设备 README 的说明计入了低于时钟下限的运行（负载本身把时钟压低，不是干扰）。RX 7600 的 8B llama.cpp 取 llama-completion 计时（llama-bench 在该卡 1024 token 以上走慢路径）。780M 与 RX 7600 无厂商后端数据（HIP 未测）。RTX 4070 Ti SUPER、Arc Pro B70、Arc B580、Jetson Orin Nano 的调优后两列取自各自融合移植分支的收尾场次（s5-pristine、s4-pristine、s7-pristine 为 7 次有效运行的中位数，Orin 的 s8-pristine 为 5 次），不在 cells.csv 中。RX 7600 的调优后两列取自其第二轮收尾场次 r2-final（5 次有效运行的中位数），也不在 cells.csv 中。RX 7900 XTX 的 SARC 两列和调优后两列是其父提交与最终配置在同一个收尾场次（final3，7 次有效运行的中位数，AMDVLK 驱动）里测得的；父提交各格与 2026-09-28 公布的数相差在 2 % 以内；这台设备没有同场次的 stock 数字，也没有测 llama.cpp，相应的格为“—”。M51 的设备所有者不允许公布数字，不在表中。</figcaption>
+    <figcaption>Cells marked * include runs below the clock floor, as the device README explains (the load itself pulls the clock down; this is not interference). The RX 7600's 8B llama.cpp figure uses the llama-completion timing (llama-bench takes a slow path above 1024 tokens on that card). The 780M and the RX 7600 have no vendor backend data (HIP not measured). The two tuned columns of the RTX 4070 Ti SUPER, Arc Pro B70, Arc B580 and Jetson Orin Nano come from the closing sessions of their fused-port branches (s5-pristine, s4-pristine and s7-pristine are medians of 7 valid runs, the Orin's s8-pristine of 5) and are not in cells.csv. The RX 7600's two tuned columns come from its second-round closing session r2-final (median of 5 valid runs) and are not in cells.csv either. The RX 7900 XTX's two SARC columns and two tuned columns are its parent commit and its final configuration measured in the same closing session (final3, median of 7 valid runs, AMDVLK driver); each parent-commit cell is within 2 % of the number published on 2026-09-28; this device has no same-session stock figure and llama.cpp was not measured on it, so the corresponding cells show "—". The M51's device owner does not allow figures to be published, so it is not in the table.</figcaption>
   </figure>
 
   <figure id="fig-roofs">
-    <h2>图 8 · 内核离硬件上限有多远</h2>
-    <p class="claim">每条横轨是一台设备的一种量化方案，右端（100 %）是矩阵指令在操作数全留在寄存器里时的速率上限，蓝条是调优后线性内核的实测速率。780M 的两个内核在上限的 78 % 到 82 %；NVIDIA 两台的 4w 在 63 % 到 67 %，8da4w 在 RTX 4070 Ti SUPER 上约 41 %，在 Orin 上约 27 %；Intel 两张卡的 4w 约 40 %，8da4w 约 30 %。在 Intel 两张卡和 Orin 的 8da4w 上，剩下的距离大部分不在内核写得好不好，而在“复用”：内核每装入一份操作数只做很少几次矩阵乘加，按这个复用量供数时，硬件本身就只有寄存器上限的三成到五成（菱形）。B580 上这一项占整段距离的 81 %，内核自己只占 4 %。RTX 4070 Ti SUPER 不是这样：那里从共享内存供数几乎不花钱，差距全在最后一步，也就是矩阵单元空等取数和屏障的时间。</p>
+    <h2>Figure 8 · How far the kernels are from the hardware roof</h2>
+    <p class="claim">Each horizontal track is one quantization scheme on one device. The right end (100 %) is the rate roof of the matrix instruction when the operands stay entirely in registers, and the blue bar is the measured rate of the tuned linear kernel. The two 780M kernels are at 78 % to 82 % of the roof; on the two NVIDIA devices 4w is at 63 % to 67 %, and 8da4w is about 41 % on the RTX 4070 Ti SUPER and about 27 % on the Orin; on the two Intel cards 4w is about 40 % and 8da4w about 30 %. For 8da4w on the two Intel cards and the Orin, most of the remaining distance lies in "reuse" and not in how well the kernel is written: the kernel performs only a few matrix multiply-adds for each operand it loads, and when fed at that reuse the hardware itself reaches only thirty to fifty percent of the register roof (the diamond). On the B580 this item accounts for 81 % of the whole distance, and the kernel itself for only 4 %. The RTX 4070 Ti SUPER is different: there, feeding from shared memory costs almost nothing, and the whole gap is in the last step, which is the time the matrix unit spends idle waiting for fetches and for barriers.</p>
     <div class="legend">
-      <span><i style="background:var(--seq5)"></i>内核实测速率（三个模型的平均）</span>
-      <span><i style="background:var(--neutral-fill);border:1px solid var(--neutral)"></i>到寄存器上限（100 %）的余量</span>
-      <span><i style="width:0;height:14px;border-left:2px solid var(--ref);border-radius:0"></i>共享内存供数上限</span>
-      <span><i style="width:9px;height:9px;border:2px solid var(--ref);background:var(--surface);border-radius:0;transform:rotate(45deg);margin-inline:2px"></i>按内核的复用量供数的上限</span>
+      <span><i style="background:var(--seq5)"></i>Measured kernel rate (mean of three models)</span>
+      <span><i style="background:var(--neutral-fill);border:1px solid var(--neutral)"></i>Headroom to the register roof (100 %)</span>
+      <span><i style="width:0;height:14px;border-left:2px solid var(--ref);border-radius:0"></i>Fed roof (from shared memory)</span>
+      <span><i style="width:9px;height:9px;border:2px solid var(--ref);background:var(--surface);border-radius:0;transform:rotate(45deg);margin-inline:2px"></i>Fed roof at the kernel's reuse</span>
     </div>
     <div class="scroll"><div id="chart-roofs"></div></div>
-    <details open><summary>算例：从寄存器上限到内核的四步</summary><div id="table-roofchain"></div></details>
-    <details><summary>数据表</summary><div id="table-roofs"></div></details>
-    <figcaption>三种上限都由 igpu-roofline 工具的矩阵着色器测得，输入类型、累加类型和矩阵形状与内核相同。寄存器上限：操作数一直留在寄存器里，着色器只做矩阵乘加。共享内存供数上限：每一步的操作数从工作组共享内存装入，取工具里复用最高的一档。按内核的复用量供数的上限：同样从共享内存装入，但每份操作数只做与内核相同或最接近的乘加次数。测量日期 2026-10-09，每台设备的上限和内核速率在同一次上机里测得；内核速率来自微基准（预填充 M = 2048，texture3d 存储），等于 2·M·N·K 除以内核时间。780M 和 B580 的每模型数字按一层七次线性调用的时间加权，B70、RTX 4070 Ti SUPER 和 Orin 的研究记录只给逐形状数值，这里取四个形状的算术平均；蓝条是三个模型的平均，各模型的数值在悬停提示和数据表里。Orin 的全部数字属于 15 W 功耗模式（GPU 时钟 612 MHz）。Intel 两张卡（dpas）和 780M 的矩阵指令已在驱动生成的代码里逐条核对，没有寄存器溢出；NVIDIA 两台的驱动不给反汇编，未经 ISA 验证，依据是间接的。上限着色器和内核的子组宽度并不都相同：Intel 上限是 SIMD32，内核是 SIMD16；780M 上限是子组 64，内核是子组 32。没有菱形的行：B580、B70 和 Orin 的 4w 没有匹配的上限（工具里 fp16 累加的低复用档没过质量门）；780M 的两行不画，因为工具的对应档低于内核（内核是它的 111 % 到 294 %），不能当上限。画了菱形的行里，B70 的 8da4w 和 RTX 4070 Ti SUPER 的 8da4w 是单次运行，未经重复确认；B580 和 B70 各有几个形状的内核读数略高于菱形（到 103 %），所以它是一把尺子，不是严格的上限；Orin 的菱形取 32 ops/B 一档，内核自己的复用是 42.7，下一档为 15.8 TOP/s。融合注意力内核只列在数据表里，它的计时含拷贝，口径各设备不同。RX 7600、RX 7900 XTX 和 M51 三台公司侧设备不在这次研究里。</figcaption>
+    <details open><summary>Worked example: the four steps from the register roof to the kernel</summary><div id="table-roofchain"></div></details>
+    <details><summary>Data table</summary><div id="table-roofs"></div></details>
+    <figcaption>All three roofs are measured with the matrix shaders of the igpu-roofline tool, with the same input type, accumulator type and matrix shape as the kernel. Register roof: the operands stay in registers throughout, and the shader only performs matrix multiply-adds. Fed roof (from shared memory): the operands of every step are loaded from workgroup shared memory, and the tool's highest-reuse row is used. Fed roof at the kernel's reuse: also loaded from shared memory, but each operand is used for the same number of multiply-adds as in the kernel, or the nearest available number. Measurement date 2026-10-09; each device's roofs and kernel rates were measured in the same session on the device; the kernel rates come from a microbenchmark (prefill M = 2048, texture3d storage) and equal 2·M·N·K divided by the kernel time. The per-model figures of the 780M and the B580 are time-weighted over a layer's seven linear calls; the study records of the B70, the RTX 4070 Ti SUPER and the Orin give only per-shape values, and the arithmetic mean of the four shapes is used here; the blue bar is the mean of the three models, and the per-model values are in the hover tooltips and the data table. All Orin figures are for the 15 W power mode (GPU clock 612 MHz). The matrix instructions of the two Intel cards (dpas) and of the 780M have been checked one by one in the driver-generated code, with no register spills; the drivers of the two NVIDIA devices give no disassembly, so these are not ISA-verified and the evidence is indirect. The subgroup widths of the roof shaders and the kernels are not always the same: on Intel the roof is SIMD32 and the kernel is SIMD16; on the 780M the roof is subgroup 64 and the kernel is subgroup 32. Rows without a diamond: 4w on the B580, the B70 and the Orin has no matching roof (the tool's low-reuse rows with fp16 accumulation did not pass the quality gate); the two 780M rows are not drawn because the tool's corresponding row is below the kernel (the kernel is 111 % to 294 % of it) and cannot serve as a roof. Among the rows with a diamond, 8da4w on the B70 and 8da4w on the RTX 4070 Ti SUPER are single runs, not confirmed by repetition; on the B580 and the B70 the kernel reads slightly above the diamond on a few shapes (up to 103 %), so it is a yardstick, not a strict roof; the Orin's diamond uses the 32 ops/B row, the kernel's own reuse is 42.7, and the next row is 15.8 TOP/s. The fused attention kernel is listed in the data table only; its timing includes copies, and the basis differs from device to device. The three company-side devices RX 7600, RX 7900 XTX and M51 are not in this study.</figcaption>
   </figure>
 
   <section class="notes">
-    <div class="note"><h3>还没合并</h3><p>十二条 campaign 分支（八条第一轮、四条融合移植）都在 origin 上，没有一条进了 dev/1.5。780M 已在 round 3 换用 fused3sb，最终配置定名为 780m-final。合并前还要做：补上管线的全子组标志（见“已知缺陷”）、清理结果文件里的路径。</p></div>
-    <div class="note"><h3>剩余空间在哪</h3><p>融合内核已在六台设备上采纳，M51 用的是两遍形式；RX 7900 XTX 上的融合内核结果是在 AMDVLK 驱动下测的，子组宽度未验证；所有者 2026-10-09 决定不在 RADV 下重测，结果按现状保留。在 B580、B70 和 Orin 上注意力只剩预填充派发时间的 5 % 到 14 %，空间在线性内核。2026-10-09 的上限研究（图 8）表明，Intel 两张卡的 8da4w 内核在现有结构里只剩几个百分点（B580 估计 4 % 到 9 %）；Orin 的 8da4w 内核乘加阶段已到按其复用量供数的上限，余下的是暂存时间。要有更大的收益，内核得在每装入一份操作数之后多做几次矩阵乘加，这受寄存器数量限制（Orin 的 8da4w 内核每线程已用 209 个寄存器，4w 用 128 个）。所有者 2026-10-09 决定现在不启动第三轮。Orin 上融合内核只到矩阵上限的 16 % 到 20 %，要再快需要一个经共享内存暂存 K、V 的新内核。AMD 独显上 llama.cpp 的 HIP 后端还没测，领先结论只对 Vulkan 成立。</p></div>
-    <div class="note"><h3>流程产物</h3><p>A/A 校准与时钟下限、每候选过门禁、参考误差规则、两连候选低于 2 % 的停止规则、协调者 hold、独立审阅。这些是手册的一部分，不在图里。</p></div>
-    <div class="note"><h3>已知缺陷：管线缺全子组标志</h3><p>Vulkan 规范要求这类依赖满子组的计算管线在创建时带上“全子组”标志。分支上所有协作矩阵管线都没有带，包括已发布的和各融合内核的。所有者 2026-10-09 决定记为已知缺陷，在任何合并之前于发布区统一修一次。本页的测量结果不受影响。RX 7900 XTX 的 campaign 另外发现，有内核声明的工作组共享内存超过了 AMDVLK 报告的上限，其中包括一个已发布的 4w 内核；驱动接受这些管线，门禁全部通过。这一项在合并前与全子组标志（F1）一并处理。</p></div>
-    <div class="note"><h3>解码略慢，原因未查</h3><p>B70 上带融合节点时，解码（预填充之后逐个生成 token）比父配置慢 0 到 2.5 %；B580 上六格也都略低于父配置（0.985 到 0.998）。融合内核不处理解码调用，变慢的位置还没有定位。解码不是门禁项，记在这里以免晋升时漏掉。所有者 2026-10-09 决定：排查安排在晋升之前做，现在不做。</p></div>
-    <div class="note"><h3>Orin 的时钟</h3><p>Orin 早先有两套上限数字（矩阵 fp16 约 16.0 和 9.7 TFLOP/s），差别来自 GPU 时钟：2026-09-26 那一套是把时钟锁在 1020 MHz 时测的，之后设备重启，15 W 功耗模式下时钟上限是 612 MHz。本页所有 Orin 数字（tok/s、内核速率、图 8 的上限）都属于 15 W 状态。更高的功耗模式没有测；所有者 2026-10-09 决定不测。</p></div>
+    <div class="note"><h3>Not merged yet</h3><p>The twelve campaign branches (eight first-round, four fused-port) are all on origin, and none has gone into dev/1.5. The 780M switched to fused3sb in round 3, and its final configuration is named 780m-final. Still to do before merging: add the full-subgroups flag to the pipelines (see "Known defect") and clean the paths out of the result files.</p></div>
+    <div class="note"><h3>Where the remaining headroom is</h3><p>The fused kernel is adopted on six devices, and the M51 uses the two-pass form; the fused-kernel result on the RX 7900 XTX was measured under the AMDVLK driver, with the subgroup width unverified; on 2026-10-09 the owner decided not to re-measure under RADV, and the result is kept as it is. On the B580, the B70 and the Orin attention is down to 5 % to 14 % of prefill dispatch time, and the headroom is in the linear kernels. The roof study of 2026-10-09 (figure 8) shows that the 8da4w kernels of the two Intel cards have only a few percent left within the current structure (an estimated 4 % to 9 % on the B580); the multiply-add stage of the Orin's 8da4w kernel is already at the fed roof at its reuse, and what remains is staging time. For a larger gain the kernel has to perform more matrix multiply-adds for each operand it loads, which is limited by the number of registers (the Orin's 8da4w kernel already uses 209 registers per thread, and 4w uses 128). On 2026-10-09 the owner decided not to start a third round now. On the Orin the fused kernel reaches only 16 % to 20 % of the matrix roof; going faster needs a new kernel that stages K and V through shared memory. On AMD discrete GPUs the HIP backend of llama.cpp has not been measured yet, so the lead holds for Vulkan only.</p></div>
+    <div class="note"><h3>Process artifacts</h3><p>A/A calibration and the clock floor, a gate for every candidate, the reference-error rule, the stop rule of two consecutive candidates below 2 %, coordinator holds, independent review. These are part of the playbook and are not in the figures.</p></div>
+    <div class="note"><h3>Known defect: pipelines lack the full-subgroups flag</h3><p>The Vulkan specification requires compute pipelines of this kind, which depend on full subgroups, to be created with the "full subgroups" flag. None of the cooperative matrix pipelines on the branches carries it, including the released ones and those of the fused kernels. On 2026-10-09 the owner decided to record this as a known defect and to fix it once, in the release zone, before any merge. The measurements on this page are not affected. The RX 7900 XTX's campaign additionally found that some kernels declare more workgroup shared memory than the limit AMDVLK reports, among them one released 4w kernel; the driver accepts these pipelines and all gates pass. This item will be handled before merging, together with the full-subgroups flag (F1).</p></div>
+    <div class="note"><h3>Decode slightly slower, cause not investigated</h3><p>On the B70, with the fused node, decode (generating tokens one by one after prefill) is 0 to 2.5 % slower than the parent configuration; on the B580 all six cells are also slightly below the parent configuration (0.985 to 0.998). The fused kernel does not handle decode calls, and where the slowdown occurs has not been located yet. Decode is not a gate item; it is recorded here so that it is not missed at promotion. The owner decided on 2026-10-09 that the investigation is scheduled before promotion and is not done now.</p></div>
+    <div class="note"><h3>The Orin's clock</h3><p>The Orin earlier had two sets of roof figures (matrix fp16 about 16.0 and 9.7 TFLOP/s). The difference comes from the GPU clock: the set of 2026-09-26 was measured with the clock locked at 1020 MHz; the device was rebooted afterwards, and in the 15 W power mode the clock limit is 612 MHz. All Orin figures on this page (tok/s, kernel rates, the roofs of figure 8) are for the 15 W state. The higher power mode was not measured; on 2026-10-09 the owner decided not to measure it.</p></div>
   </section>
 </main>
 <div class="tip" id="tip" role="tooltip"></div>
@@ -255,7 +255,7 @@
     4.46,
     7.88
    ],
-   "base": "相对 9 月基线（交叉构建的着色器编译器与规定版本不同，已记为局限）"
+   "base": "over the September baseline (the cross build's shader compiler differs from the pinned version; recorded as a limitation)"
   },
   {
    "id": "b580",
@@ -266,7 +266,7 @@
     2.22,
     3.83
    ],
-   "base": "相对 9 月基线"
+   "base": "over the September baseline"
   },
   {
    "id": "b70",
@@ -277,7 +277,7 @@
     2.17,
     3.76
    ],
-   "base": "相对 9 月基线"
+   "base": "over the September baseline"
   },
   {
    "id": "4070ti",
@@ -288,7 +288,7 @@
     3.58,
     5.88
    ],
-   "base": "相对 9 月基线"
+   "base": "over the September baseline"
   },
   {
    "id": "rx7600",
@@ -299,8 +299,8 @@
     2.53,
     3.37
    ],
-   "base": "相对父提交（公司侧）",
-   "stock_note": "stock 与调优后的数取自对比分支的同一张表"
+   "base": "over the parent commit (company side)",
+   "stock_note": "the stock and tuned figures come from the same table on the comparison branch"
   },
   {
    "id": "780m",
@@ -311,7 +311,7 @@
     2.12,
     2.81
    ],
-   "base": "相对 9 月基线"
+   "base": "over the September baseline"
   },
   {
    "id": "7900xtx",
@@ -322,9 +322,9 @@
     2.9,
     3.15
    ],
-   "base": "相对其父提交（AMDVLK 驱动）",
-   "note": "这台设备的 campaign 跑在 AMDVLK 驱动上（RX 7600 跑在 Mesa RADV 上）。融合注意力内核在该驱动下慢 13.79 %，被拒绝，所以收益只来自 softmax、线性内核按形状选择和分开的注意力内核变体。分支里没有相对未修改 ExecuTorch 的同场次数字，这里不列。",
-   "stock_note": "stock 取自 2026-09-28 的评测场次（同一驱动），与本次调优场次不是同一场次"
+   "base": "over its parent commit (AMDVLK driver)",
+   "note": "This device's campaign ran on the AMDVLK driver (the RX 7600 ran on Mesa RADV). The fused attention kernel is 13.79 % slower on that driver and was rejected, so the gain comes only from the softmax, per-shape selection of linear kernels and variants of the separate attention kernels. The branch has no same-session figure against unmodified ExecuTorch, so none is listed here.",
+   "stock_note": "stock comes from the benchmark session of 2026-09-28 (same driver), which is not the same session as this tuning session"
   },
   {
    "id": "m51",
@@ -332,39 +332,39 @@
    "vendor": "Samsung",
    "final": null,
    "stock": null,
-   "base": "设备所有者不允许公布数字",
-   "note": "设备所有者不允许公布这台设备的任何数字，本页只列定性结论。最终配置（第一轮的三个候选加第二轮的新 4w 内核）已在已提交头部的构建上做完最终验证：正确性检查通过，误差不大于父配置；相对父提交的最终场次里 1B、3B、8B 的每一格都更快，超出噪声带。具体数字只保存在本地。8B 模型是在重开的一轮里补上的，8B 的运行带一个图执行阈值设置。"
+   "base": "the device owner does not allow figures to be published",
+   "note": "The device owner does not allow any figure for this device to be published; this page lists qualitative conclusions only. The final configuration (the three candidates of the first round plus the new 4w kernel of the second round) has completed final validation on a build of the committed head: the correctness checks pass and the error is no larger than the parent configuration's; in the final session against the parent commit, every cell of 1B, 3B and 8B is faster, outside the noise band. The exact figures are kept locally only. The 8B model was added in a reopened round, and the 8B runs carry a graph execution threshold setting."
   }
  ],
  "cats": [
   {
    "key": "attn",
-   "name": "协作矩阵注意力内核",
+   "name": "Cooperative matrix attention kernels",
    "color": "var(--s1)"
   },
   {
    "key": "fused",
-   "name": "融合注意力内核",
+   "name": "Fused attention kernel",
    "color": "var(--s2)"
   },
   {
    "key": "softmax",
-   "name": "fp32 无零尾 softmax",
+   "name": "No-tail softmax (fp32)",
    "color": "var(--s3)"
   },
   {
    "key": "texel",
-   "name": "8da4w 按纹素取权重",
+   "name": "8da4w whole-texel weight staging",
    "color": "var(--s4)"
   },
   {
    "key": "linear",
-   "name": "线性内核按形状选择",
+   "name": "Linear kernel per-shape selection",
    "color": "var(--s5)"
   },
   {
    "key": "param",
-   "name": "注意力参数细化",
+   "name": "Attention parameter refinement",
    "color": "var(--s6)"
   }
  ],
@@ -373,184 +373,184 @@
    {
     "c": "attn",
     "g": 57.81,
-    "n": "候选 1h：注意力内核 + fp32 softmax（nzf）"
+    "n": "Candidate 1h: attention kernels + fp32 softmax (nzf)"
    },
    {
     "c": "texel",
     "g": 2.84,
-    "n": "候选 2：8da4w 整纹素取权重"
+    "n": "Candidate 2: 8da4w whole-texel weight staging"
    },
    {
     "c": "linear",
     "g": 0.82,
-    "n": "候选 3：4w 瓦片 orin-refine5"
+    "n": "Candidate 3: 4w tile orin-refine5"
    },
    {
     "c": "softmax",
     "g": 0.34,
-    "n": "候选 4：softmax 子组归约 orin_g64（带内，门禁接受）"
+    "n": "Candidate 4: softmax subgroup reduction orin_g64 (inside the band, accepted by the gate)"
    },
    {
     "c": "fused",
     "g": 6.13,
-    "n": "第二轮候选 1：融合注意力内核 fused3sb（orin-fused1），叠在第一轮最终配置之上，门禁 s5-c1 接受"
+    "n": "Round 2 candidate 1: fused attention kernel fused3sb (orin-fused1), stacked on the first-round final configuration, accepted by gate s5-c1"
    }
   ],
   "b580": [
    {
     "c": "attn",
     "g": 45.95,
-    "n": "候选 0：B70 的注意力内核 b580-refine0"
+    "n": "Candidate 0: the B70's attention kernels, b580-refine0"
    },
    {
     "c": "texel",
     "g": 7.67,
-    "n": "候选 1：8da4w 瓦片 xe2bt_t128x128k64"
+    "n": "Candidate 1: 8da4w tile xe2bt_t128x128k64"
    },
    {
     "c": "param",
     "g": 0.16,
-    "n": "候选 3：QK^T xe2c（head_dim 128），带内"
+    "n": "Candidate 3: QK^T xe2c (head_dim 128), inside the band"
    },
    {
     "c": "fused",
     "g": 9.12,
-    "n": "第二轮候选 1：融合注意力内核 b580-fused1（多子组形式，Intel 8×16×16 矩阵形状），叠在 b580-refine3 之上，门禁 s6-final 通过"
+    "n": "Round 2 candidate 1: fused attention kernel b580-fused1 (multi-subgroup form, Intel 8×16×16 matrix shape), stacked on b580-refine3, passed gate s6-final"
    }
   ],
   "b70": [
    {
     "c": "attn",
     "g": 46.86,
-    "n": "候选 1：注意力内核 xe2-refine1"
+    "n": "Candidate 1: attention kernels xe2-refine1"
    },
    {
     "c": "texel",
     "g": 6.88,
-    "n": "候选 2：8da4w 按纹素取权重，128×128 K=64 瓦片"
+    "n": "Candidate 2: 8da4w whole-texel weight staging, 128×128 K=64 tile"
    },
    {
     "c": "linear",
     "g": 1.1,
-    "n": "候选 5：抽样搜索得到的 4w 瓦片（33 小时）"
+    "n": "Candidate 5: 4w tile found by the sampled search (33 hours)"
    },
    {
     "c": "fused",
     "g": 8.26,
-    "n": "第二轮候选 1：融合注意力内核 b70-fused1（B580 的内核原样带入），叠在 xe2-refine5 之上，已提交头部的门禁 s3-final 接受（首次门禁 s2-c1 为 +8.34 %）"
+    "n": "Round 2 candidate 1: fused attention kernel b70-fused1 (the B580 kernel carried over unchanged), stacked on xe2-refine5, accepted by gate s3-final on the committed head (the first gate, s2-c1, gave +8.34 %)"
    }
   ],
   "4070ti": [
    {
     "c": "attn",
     "g": 46.74,
-    "n": "候选 4：注意力内核 + fp32 softmax（nzf）。候选 1 带 stock softmax 时 +42 % 但精度被拒"
+    "n": "Candidate 4: attention kernels + fp32 softmax (nzf). Candidate 1, with the stock softmax, gave +42 % but was rejected on accuracy"
    },
    {
     "c": "fused",
     "g": 11.49,
-    "n": "第二轮候选 1：融合注意力内核 fused3sb（4070ti-fused1），叠在 4070ti-refine1 之上，门禁 s4-c1 接受"
+    "n": "Round 2 candidate 1: fused attention kernel fused3sb (4070ti-fused1), stacked on 4070ti-refine1, accepted by gate s4-c1"
    }
   ],
   "780m": [
    {
     "c": "linear",
     "g": 2.95,
-    "n": "候选 1：初始瓦片细化（8da4w t128x64，4w t128x256）"
+    "n": "Candidate 1: initial tile refinement (8da4w t128x64, 4w t128x256)"
    },
    {
     "c": "texel",
     "g": 1.97,
-    "n": "候选 2：8da4w 按纹素取权重"
+    "n": "Candidate 2: 8da4w whole-texel weight staging"
    },
    {
     "c": "param",
     "g": 2.86,
-    "n": "候选 3：QK^T NO_MASK_FILL，attn·V 子组 32"
+    "n": "Candidate 3: QK^T NO_MASK_FILL, attn·V subgroup 32"
    },
    {
     "c": "param",
     "g": 0.72,
-    "n": "候选 5：QK^T packed staging"
+    "n": "Candidate 5: QK^T packed staging"
    },
    {
     "c": "softmax",
     "g": 4.1,
-    "n": "候选 7：softmax r3"
+    "n": "Candidate 7: softmax r3"
    },
    {
     "c": "fused",
     "g": 13.16,
-    "n": "候选 8：融合注意力内核 fused3（参考误差规则接受）；round 3 起最终配置改用带屏障的 fused3sb，速度不变"
+    "n": "Candidate 8: fused attention kernel fused3 (accepted under the reference-error rule); from round 3 on, the final configuration uses fused3sb, which has the barrier, at unchanged speed"
    },
    {
     "c": "fused",
     "g": 3.19,
-    "n": "候选 9：one-pass 融合 + 4w 按形状"
+    "n": "Candidate 9: one-pass fusion + 4w per shape"
    },
    {
     "c": "linear",
     "g": 0.47,
-    "n": "候选 10：refine10 4w 表（带内）"
+    "n": "Candidate 10: refine10 4w table (inside the band)"
    },
    {
     "c": "linear",
     "g": 1.2,
-    "n": "候选 11：8da4w 按形状，触发停止规则"
+    "n": "Candidate 11: 8da4w per shape, triggered the stop rule"
    }
   ],
   "rx7600": [
    {
     "c": "softmax",
     "g": 1.48,
-    "n": "候选 1：softmax r3"
+    "n": "Candidate 1: softmax r3"
    },
    {
     "c": "fused",
     "g": 18.22,
-    "n": "候选 2：融合注意力内核 fused3"
+    "n": "Candidate 2: fused attention kernel fused3"
    },
    {
     "c": "linear",
     "g": 5.49,
-    "n": "候选 3：线性内核按形状 rx7600-refine2"
+    "n": "Candidate 3: linear kernels per shape, rx7600-refine2"
    },
    {
     "c": "fused",
     "g": 0,
-    "n": "M2a：fused3sb 子组屏障，+0.00 %，逐字节一致"
+    "n": "M2a: fused3sb subgroup barrier, +0.00 %, byte-identical"
    },
    {
     "c": "linear",
     "g": 1.96,
-    "n": "第二轮候选 1：8da4w 内核的 A 暂存行距从 16 字节改为 24 字节（rx7600-refine4），消除共享内存读取的 bank 冲突。8da4w 三格 +3.65 / +4.01 / +4.25 %，六格几何平均低于 2 %，按“只改一种量化方式的候选看它改动的格”的规则采纳"
+    "n": "Round 2 candidate 1: the A staging row stride of the 8da4w kernel changed from 16 bytes to 24 bytes (rx7600-refine4), which removes bank conflicts in shared-memory reads. The three 8da4w cells gain +3.65 / +4.01 / +4.25 %; the six-cell geometric mean is below 2 %; adopted under the rule \"a candidate that changes only one quantization scheme is judged on the cells it changes\""
    },
    {
     "c": "linear",
     "g": 3.33,
-    "n": "第二轮候选 2：4w 内核的暂存行距（A 72 字节、B 88 字节，rx7600-refine5）。4w 三格 +5.38 / +7.52 / +7.46 %。计时早于它的阶段计时证据，所有者裁定按测得的结果保留"
+    "n": "Round 2 candidate 2: staging row strides of the 4w kernel (A 72 bytes, B 88 bytes, rx7600-refine5). The three 4w cells gain +5.38 / +7.52 / +7.46 %. Its timing predates its stage-timing evidence; the owner ruled to keep it as measured"
    }
   ],
   "7900xtx": [
    {
     "c": "softmax",
     "g": 1.56,
-    "n": "候选 1：softmax r3（780M 的变体）"
+    "n": "Candidate 1: softmax r3 (the 780M's variant)"
    },
    {
     "c": "linear",
     "g": 2.64,
-    "n": "候选 3：线性内核按形状 7900xtx-refine2"
+    "n": "Candidate 3: linear kernels per shape, 7900xtx-refine2"
    },
    {
     "c": "param",
     "g": 4.09,
-    "n": "候选 5：分开的协作矩阵注意力内核换变体（QK^T 不填掩码、打包暂存，128×128 瓦片；attn·V 64×64 瓦片），7900xtx-refine4"
+    "n": "Candidate 5: different variants for the separate cooperative matrix attention kernels (QK^T without mask fill, packed staging, 128×128 tile; attn·V 64×64 tile), 7900xtx-refine4"
    },
    {
     "c": "param",
     "g": 0.67,
-    "n": "候选 6：head_dim 64 的 attn·V 瓦片（7900xtx-refine5），带内，按事先写下的规则采纳，不算作增益"
+    "n": "Candidate 6: attn·V tile for head_dim 64 (7900xtx-refine5), inside the band, adopted under the rule written down in advance, not counted as a gain"
    }
   ]
  },
@@ -566,12 +566,12 @@
  "techs": [
   {
    "n": "1",
-   "name": "协作矩阵注意力内核",
+   "name": "Cooperative matrix attention kernels",
    "cells": {
     "780m": {
      "k": "inherit",
-     "v": "9 月已有",
-     "t": "2026 年 9 月发布版就带着 780M 的注意力内核；其余设备从它移植"
+     "v": "since September",
+     "t": "The September 2026 release already carried the 780M's attention kernels; the other devices ported them from it"
     },
     "b580": {
      "k": "ok",
@@ -584,94 +584,94 @@
     "4070ti": {
      "k": "ok",
      "g": 46.74,
-     "n": "含 nzf softmax"
+     "n": "incl. nzf softmax"
     },
     "orin": {
      "k": "ok",
      "g": 57.81,
-     "n": "含 nzf softmax"
+     "n": "incl. nzf softmax"
     },
     "rx7600": {
      "k": "inherit",
-     "v": "继承",
-     "t": "分支从 780M 的候选 11 拉出，注意力内核随之带来"
+     "v": "inherited",
+     "t": "The branch was created from the 780M's candidate 11, and the attention kernels came with it"
     },
     "7900xtx": {
      "k": "inherit",
-     "v": "继承",
-     "t": "分支从 780M 分支拉出，发布版的表里已有这张卡的协作矩阵注意力内核行（未验证标记）。最终配置仍用分开的三个注意力内核，见第 2 行"
+     "v": "inherited",
+     "t": "The branch was created from the 780M branch, and the release table already has a cooperative matrix attention kernel row for this card (marked unverified). The final configuration still uses the three separate attention kernels, see row 2"
     },
     "m51": {
      "k": "inherit",
-     "v": "已有",
-     "t": "发布版的表里已有这台设备的注意力内核行（未验证标记），预填充本来就跑在这些内核上"
+     "v": "existing",
+     "t": "The release table already has attention kernel rows for this device (marked unverified); prefill already ran on these kernels"
     }
    },
    "ex": {
-    "kind": "新内核",
-    "what": "注意力里有两次大的矩阵乘（QK^T 和 attn·V）。这项技术把它们改用 Vulkan 的“协作矩阵”扩展来写：一组 GPU 线程合作，一次算完一小块（例如 16×16）矩阵乘，而不是每个线程各算一个数。",
-    "why": "驱动能把这种“按块乘”直接交给硬件里专门做矩阵乘的部件或最合适的向量指令，数据用半精度，读写次数也少得多。原版 ExecuTorch 的注意力是整个预填充里最慢的一段，所以换掉它的收益最大。",
-    "like": "一个人逐格填一张 2048×2048 的表，换成一个小组按块填。",
-    "res": "四台原本跑原版注意力的设备各 +46 % 到 +58 %。Intel 上注意力耗时从 341 ms 降到 42 ms（图 3）。"
+    "kind": "new kernel",
+    "what": "Attention contains two large matrix multiplications (QK^T and attn·V). This technique rewrites them with Vulkan's \"cooperative matrix\" extension: a group of GPU threads works together and computes one small block of the matrix product (for example 16×16) at a time, instead of each thread computing one number.",
+    "why": "The driver can hand this block-wise multiplication directly to the hardware unit dedicated to matrix multiplication, or to the best-suited vector instructions; the data is half precision, and there are far fewer reads and writes. Attention in unmodified ExecuTorch is the slowest part of the whole prefill, so replacing it gives the largest gain.",
+    "like": "One person filling in a 2048×2048 table cell by cell, replaced by a team filling it in block by block.",
+    "res": "The four devices that previously ran the stock attention gain +46 % to +58 % each. On Intel, attention time drops from 341 ms to 42 ms (figure 3)."
    }
   },
   {
    "n": "2",
-   "name": "注意力参数细化",
+   "name": "Attention parameter refinement",
    "cells": {
     "780m": {
      "k": "ok",
      "g": 3.6,
-     "n": "候选 3 +2.86，候选 5 +0.72"
+     "n": "c3 +2.86, c5 +0.72"
     },
     "b580": {
      "k": "tried",
      "v": "+0.16",
-     "t": "候选 3 QK^T xe2c，通过门禁，带内，算作停止规则的一个计数"
+     "t": "Candidate 3, QK^T xe2c: passed the gate, inside the band, counted once toward the stop rule"
     },
     "b70": {
      "k": "tried",
      "v": "+0.32 / +0.59",
-     "t": "候选 3 和候选 6，通过门禁，带内，未采纳"
+     "t": "Candidates 3 and 6: passed the gate, inside the band, not adopted"
     },
     "4070ti": {
      "k": "none",
-     "t": "没有单独做：移植协作矩阵注意力内核时（第 1 行）已按形状从一批变体里各选了最快的，参数选择并进了第 1 行。之后候选 5、6 连续低于 2 %，停止规则生效。融合内核现已取代那两个注意力内核，补做价值很小"
+     "t": "Not done separately: when the cooperative matrix attention kernels were ported (row 1), the fastest variant for each shape had already been chosen from a batch of variants, so parameter selection was folded into row 1. Candidates 5 and 6 then came in below 2 % in a row and the stop rule took effect. The fused kernel has since replaced those two attention kernels, so doing it now would be of very little value"
     },
     "orin": {
      "k": "tried",
      "v": "+0.54",
-     "t": "第二轮候选 orin-fused2：head_dim 64（1B）的融合内核改用两遍形式。门禁 s6-c2 接受，几何平均 +0.54 %（1B 两格 +1.72 % 和 +1.59 %，3B、8B 持平），带内，未采纳"
+     "t": "Round 2 candidate orin-fused2: the fused kernel for head_dim 64 (1B) switched to the two-pass form. Accepted by gate s6-c2, geometric mean +0.54 % (the two 1B cells +1.72 % and +1.59 %, 3B and 8B unchanged), inside the band, not adopted"
     },
     "rx7600": {
      "k": "tried",
-     "v": "无更优",
-     "t": "融合内核的参数变体筛了三轮，没有一个每轮都快 3 %"
+     "v": "none better",
+     "t": "Parameter variants of the fused kernel were screened for three rounds; none was 3 % faster in every round"
     },
     "7900xtx": {
      "k": "ok",
      "g": 4.79,
-     "n": "候选 5 +4.09，候选 6 +0.67",
-     "t": "这张卡没有采纳融合内核，分开的注意力内核仍在用，所以换变体有回报。候选 5：QK^T 不填掩码、打包暂存的 128×128 瓦片，attn·V 的 64×64 瓦片，+4.09 %（六格全部在噪声带外），输出逐位一致。候选 6：head_dim 64 的 attn·V 瓦片，+0.67 %，带内，按事先写下的规则采纳，不算作增益。之后的更宽 QK^T 网格和更大的 attn·V 瓦片都没有更快"
+     "n": "c5 +4.09, c6 +0.67",
+     "t": "This card did not adopt the fused kernel and the separate attention kernels are still in use, so changing variants pays. Candidate 5: QK^T 128×128 tile without mask fill and with packed staging, attn·V 64×64 tile, +4.09 % (all six cells outside the noise band), output bit-identical. Candidate 6: attn·V tile for head_dim 64, +0.67 %, inside the band, adopted under the rule written down in advance, not counted as a gain. The wider QK^T grid and the larger attn·V tiles tried afterwards were not faster"
     },
     "m51": {
      "k": "ok",
-     "v": "已采纳",
-     "n": "带内",
-     "t": "融合内核变体的筛选为只在 1B 模型上出现的那个 head 维度选出了一个变体，另一个 head 维度没有变体通过筛选，沿用 780M 的选择。它过了门禁，增益落在噪声带内，保留在最终配置里。数字不公布"
+     "v": "adopted",
+     "n": "inside the band",
+     "t": "Screening of fused-kernel variants selected a variant for the head dimension that occurs only in the 1B model; for the other head dimension no variant passed the screening, so the 780M's choice is kept. It passed the gate, its gain falls inside the noise band, and it stays in the final configuration. Figures not published"
     }
    },
    "ex": {
-    "kind": "调参数",
-    "what": "内核的写法不变，只调它的几个旋钮：每个工作组一次处理多大的块（瓦片）、工作组里有多少线程、一次读多少数据。",
-    "why": "同一段程序在不同 GPU 上的最佳块大小不同，取决于缓存、寄存器数量和线程分组方式。",
-    "like": "同一台发动机，换一组更合适的档位。",
-    "res": "收益小：780M 上 +3.6 %，RX 7900 XTX 上 +4.8 %（那里没有采纳融合内核，分开的注意力内核仍在用）；其余设备都落在 ±2 % 的噪声带里。"
+    "kind": "parameter tuning",
+    "what": "The kernel's code stays the same; only a few of its knobs are adjusted: how large a block (tile) each workgroup processes at a time, how many threads a workgroup has, and how much data is read at a time.",
+    "why": "The best block size for the same program differs from GPU to GPU; it depends on the cache, the number of registers and how threads are grouped.",
+    "like": "The same engine with a better-suited set of gear ratios.",
+    "res": "Small gains: +3.6 % on the 780M and +4.8 % on the RX 7900 XTX (which did not adopt the fused kernel, so the separate attention kernels are still in use); all other devices fall inside the ±2 % noise band."
    }
   },
   {
    "n": "3",
-   "name": "fp32 无零尾 softmax",
+   "name": "No-tail softmax (fp32)",
    "cells": {
     "780m": {
      "k": "ok",
@@ -681,23 +681,23 @@
     "b580": {
      "k": "tried",
      "v": "-0.13 / +0.08",
-     "t": "第二轮候选 b580-fused2：给融合内核不接手的调用（1972 token 的提示、解码）换上 fp32 无零尾 softmax。门禁场次 s3b-c2 通过，-0.13 %；按授权流程重测的计时场次 s3c-c2 为 +0.08 %。两次都在噪声带内，未采纳。它带来的是这些调用上更小的误差，不是速度"
+     "t": "Round 2 candidate b580-fused2: gives the calls that the fused kernel does not take (the 1972-token prompt, decode) the fp32 no-tail softmax. Gate session s3b-c2 passed at -0.13 %; timing session s3c-c2, re-measured under the authorized procedure, gave +0.08 %. Both are inside the noise band; not adopted. What it brings is a smaller error on those calls, not speed"
     },
     "b70": {
      "k": "none",
-     "t": "没做：B580 的同一个候选（b580-fused2）落在噪声带内未被采纳，B70 的确认性 campaign 因此只有一个候选"
+     "t": "Not done: the same candidate on the B580 (b580-fused2) fell inside the noise band and was not adopted, so the B70's confirmation campaign has only one candidate"
     },
     "4070ti": {
      "k": "ok",
-     "v": "在第 1 行内",
+     "v": "within row 1",
      "n": "nzf",
-     "t": "nzf 是候选 4 与候选 1 的唯一差别；候选 1 +42 % 被拒，候选 4 +46.74 % 通过。单独贡献约 +1.8 到 +4.8 %"
+     "t": "nzf is the only difference between candidate 4 and candidate 1; candidate 1, at +42 %, was rejected and candidate 4, at +46.74 %, passed. Its own contribution is about +1.8 to +4.8 %"
     },
     "orin": {
      "k": "ok",
-     "v": "在第 1 行内",
+     "v": "within row 1",
      "n": "nzf",
-     "t": "同 4070 Ti：候选 1 带 stock softmax 被拒，1h 加 nzf 通过"
+     "t": "Same as the 4070 Ti: candidate 1 with the stock softmax was rejected, 1h with nzf added passed"
     },
     "rx7600": {
      "k": "ok",
@@ -708,54 +708,54 @@
      "k": "ok",
      "g": 1.56,
      "n": "r3",
-     "t": "候选 1：780M 的 softmax r3，相对父提交 +1.56 %（低于 2 %），与发布版 softmax 在 21 个测试用例上逐位一致"
+     "t": "Candidate 1: the 780M's softmax r3, +1.56 % over the parent commit (below 2 %), bit-identical to the release softmax on 21 test cases"
     },
     "m51": {
      "k": "none",
-     "v": "不适用",
-     "t": "不适用：采纳融合内核之后，计时预填充里的每一次注意力调用都由融合节点处理，不再派发独立的 softmax"
+     "v": "n/a",
+     "t": "n/a: once the fused kernel is adopted, every attention call in the timed prefill is handled by the fused node and no separate softmax is dispatched"
     }
    },
    "ex": {
-    "kind": "新内核",
-    "what": "softmax 是注意力的中间一步：把每个 token 对其他 token 的打分变成加起来等于 1 的权重。这个变体做了两处改动：一行的求和与除法用 32 位浮点算，最后只舍入一次（fp32）；被掩码遮住、后面根本不会读到的尾部不再逐个清零（无零尾）。",
-    "why": "少写了没人读的数据，所以更快；用 32 位累加减少了舍入误差，所以更准。第二点很关键：4070 Ti 和 Orin 的协作矩阵内核配原版 softmax 时误差超标，被门禁拒绝，换成这个变体才通过。",
-    "like": "算一长列数的平均值时先用高精度加完再四舍五入，而不是每加一次就四舍五入一次。",
-    "res": "单独计量时 +1.5 % 到 +4.8 %；在 4070 Ti 和 Orin 上它是第 1 行能通过门禁的前提。"
+    "kind": "new kernel",
+    "what": "Softmax is the middle step of attention: it turns each token's scores for the other tokens into weights that sum to 1. This variant makes two changes: a row's sum and division are computed in 32-bit floating point and rounded only once at the end (fp32); and the tail that is hidden by the mask and never read afterwards is no longer zeroed element by element (no-tail).",
+    "why": "It is faster because it writes less data that nobody reads; it is more accurate because 32-bit accumulation reduces rounding error. The second point is essential: on the 4070 Ti and the Orin, the cooperative matrix kernels with the stock softmax exceeded the error limit and were rejected by the gate; they passed only with this variant.",
+    "like": "When averaging a long column of numbers, add them all at high precision and round once, instead of rounding after every addition.",
+    "res": "+1.5 % to +4.8 % where it was measured on its own; on the 4070 Ti and the Orin it is the precondition for row 1 passing the gate."
    }
   },
   {
    "n": "4",
-   "name": "融合注意力内核",
+   "name": "Fused attention kernel",
    "cells": {
     "780m": {
      "k": "ok",
      "g": 16.77,
-     "n": "c8 +13.16，c9 +3.19"
+     "n": "c8 +13.16, c9 +3.19"
     },
     "b580": {
      "k": "ok",
      "g": 9.12,
-     "n": "第二轮移植，多子组形式",
-     "t": "第二轮候选 b580-fused1：一个工作组拆成 4 或 8 个子组，用 Intel 的 8×16×16 矩阵形状。相对第一轮最终配置 b580-refine3 的几何平均 +9.12 %（门禁 s6-final 通过；此前两个场次为 +8.82 % 和 +9.18 %）；1B 两格 +15 % 和 +21 %，3B、8B 各格 +3 % 到 +7 %"
+     "n": "round 2 port, multi-subgroup",
+     "t": "Round 2 candidate b580-fused1: one workgroup is split into 4 or 8 subgroups and uses Intel's 8×16×16 matrix shape. Geometric mean +9.12 % over the first-round final configuration b580-refine3 (passed gate s6-final; the two earlier sessions gave +8.82 % and +9.18 %); the two 1B cells +15 % and +21 %, the 3B and 8B cells +3 % to +7 %"
     },
     "b70": {
      "k": "ok",
      "g": 8.26,
-     "n": "B580 内核原样带入",
-     "t": "确认性 campaign，只有一个候选：b70-fused1 就是 B580 的融合内核，着色器逐字节相同。相对第一轮最终配置 xe2-refine5 的几何平均 +8.26 %（已提交头部的构建，门禁 s3-final；首次门禁 s2-c1 为 +8.34 %）；1B 两格 +15 % 和 +19 %，3B、8B 各格 +3 % 到 +6 %"
+     "n": "B580 kernel, unchanged",
+     "t": "Confirmation campaign with a single candidate: b70-fused1 is the B580's fused kernel, with byte-identical shaders. Geometric mean +8.26 % over the first-round final configuration xe2-refine5 (build of the committed head, gate s3-final; the first gate, s2-c1, gave +8.34 %); the two 1B cells +15 % and +19 %, the 3B and 8B cells +3 % to +6 %"
     },
     "4070ti": {
      "k": "ok",
      "g": 11.49,
-     "n": "第二轮移植，fused3sb",
-     "t": "第二轮候选 4070ti-fused1，相对第一轮最终配置 4070ti-refine1 的几何平均 +11.49 %（门禁 s4-c1 接受）；1B 两格 +19 % 和 +21 %，3B、8B 各格 +6 % 到 +9 %"
+     "n": "round 2 port, fused3sb",
+     "t": "Round 2 candidate 4070ti-fused1, geometric mean +11.49 % over the first-round final configuration 4070ti-refine1 (accepted by gate s4-c1); the two 1B cells +19 % and +21 %, the 3B and 8B cells +6 % to +9 %"
     },
     "orin": {
      "k": "ok",
      "g": 6.13,
      "n": "fused3sb",
-     "t": "第二轮候选 orin-fused1，相对第一轮最终配置的几何平均 +6.13 %（门禁 s5-c1）；1B 两格 +11 % 和 +10 %，3B、8B 各格 +3 % 到 +5 %。这些数字测自着色器编译器（glslc）与规定版本不同的交叉构建，所有者裁定按现状接受"
+     "t": "Round 2 candidate orin-fused1, geometric mean +6.13 % over the first-round final configuration (gate s5-c1); the two 1B cells +11 % and +10 %, the 3B and 8B cells +3 % to +5 %. These figures were measured on a cross build whose shader compiler (glslc) differs from the pinned version; the owner ruled to accept them as they are"
     },
     "rx7600": {
      "k": "ok",
@@ -764,85 +764,85 @@
     "7900xtx": {
      "k": "tried",
      "v": "-13.79",
-     "t": "候选 2：fused3sb，相对候选 1 为 -13.79 %（1B 持平，3B、8B 各格 -15 % 到 -24 %），因性能被拒绝，门禁没有跑完。在这个驱动上，原有的三个分开的协作矩阵注意力内核在 3B、8B 上比最好的融合变体快约 2.6 倍。驱动说明：这台设备跑在 AMDVLK 上，RX 7600（融合内核 +18.22 %）跑在 Mesa RADV 上；AMDVLK 是否把 32 线程的融合内核按 32 宽的子组执行，记录为未验证。这个结论只对该驱动成立，应在 RADV 下重测"
+     "t": "Candidate 2: fused3sb, -13.79 % against candidate 1 (1B unchanged, the 3B and 8B cells -15 % to -24 %), rejected on performance; the gate was not run to completion. On this driver the three original separate cooperative matrix attention kernels are about 2.6 times faster than the best fused variant on 3B and 8B. Driver note: this device runs on AMDVLK, and the RX 7600 (fused kernel +18.22 %) runs on Mesa RADV; whether AMDVLK executes the 32-thread fused kernel as a 32-wide subgroup is recorded as unverified. This conclusion holds for that driver only and should be re-measured under RADV"
     },
     "m51": {
      "k": "ok",
-     "v": "已采纳",
-     "n": "两遍形式",
-     "t": "移植 780M 的融合内核时有两个发现。一遍形式（边算边维护行最大值）在这个驱动上、完整长度的预填充里会随机算错若干行，换哪种屏障都一样；两遍形式每一轮筛选都通过，所以移植用的是两遍的打包形式。屏障见第 5 行。数字不公布"
+     "v": "adopted",
+     "n": "two-pass form",
+     "t": "Porting the 780M's fused kernel produced two findings. The one-pass form (which maintains the row maximum while computing) randomly miscomputes some rows on this driver in a full-length prefill, whichever barrier is used; the two-pass form passed every screening round, so the port uses the packed two-pass form. For the barrier see row 5. Figures not published"
     }
    },
    "ex": {
-    "kind": "新内核",
-    "what": "把注意力的三步（QK^T 打分、softmax、attn·V 混合）合成一个内核。一行分数算出来以后不写回显存，直接留在这组线程的共享内存里做 softmax，再乘上 V。",
-    "why": "分开做时，2048×2048 的分数表要整张写进显存、再整张读出来两次，还要多发两次 GPU 任务。合在一起后这张中间表不再落地。",
-    "like": "三道工序原来各在一个车间，半成品要来回搬运；现在一条流水线做完。",
-    "res": "780M +16.8 %，RX 7600 +18.2 %（公司侧）。第二轮移植到其余四台，各自在第一轮配置之上：RTX 4070 Ti SUPER +11.5 %，Arc B580 +9.1 %，Arc Pro B70 +8.3 %，Jetson Orin Nano +6.1 %。移植的计时都已做完，没有还在跑的移植。RX 7900 XTX 在 AMDVLK 驱动下试过，慢 13.8 %，被拒绝。M51 采纳的是两遍形式，数字不公布。"
+    "kind": "new kernel",
+    "what": "Merges the three steps of attention (QK^T scoring, softmax, attn·V mixing) into one kernel. Once a row of scores is computed it is not written back to GPU memory; it stays in the thread group's shared memory for the softmax and is then multiplied by V.",
+    "why": "Done separately, the 2048×2048 score table has to be written to GPU memory in full and read back in full twice, and two more GPU jobs have to be dispatched. Merged, this intermediate table is never stored.",
+    "like": "Three processing steps used to sit in three separate workshops, with half-finished parts carried back and forth; now one assembly line does them all.",
+    "res": "780M +16.8 %, RX 7600 +18.2 % (company side). Ported in round 2 to the other four, each on top of its first-round configuration: RTX 4070 Ti SUPER +11.5 %, Arc B580 +9.1 %, Arc Pro B70 +8.3 %, Jetson Orin Nano +6.1 %. The timing of all ports is complete; no port is still running. On the RX 7900 XTX it was tried under the AMDVLK driver, was 13.8 % slower and was rejected. The M51 adopted the two-pass form; figures not published."
    }
   },
   {
    "n": "5",
-   "name": "融合内核子组屏障（fused3sb）",
+   "name": "Fused-kernel subgroup barrier (fused3sb)",
    "cells": {
     "780m": {
      "k": "ok",
-     "v": "速度不变",
-     "n": "round 3 采用",
-     "t": "round 3（2026-10-08，收尾任务，不是调优轮）把最终配置里的 fused3 换成带子组屏障的 fused3sb：几何平均 -0.14 %（各格 -0.96 % 到 +0.16 %），在噪声带内。最终配置现在只有一个名字 780m-final，相对 dev/1.5 +33.90 %（round 2 测得 +33.82 %）"
+     "v": "speed unchanged",
+     "n": "adopted in round 3",
+     "t": "Round 3 (2026-10-08, a wrap-up task, not a tuning round) replaced fused3 in the final configuration with fused3sb, which has the subgroup barrier: geometric mean -0.14 % (cells from -0.96 % to +0.16 %), inside the noise band. The final configuration now has a single name, 780m-final, at +33.90 % over dev/1.5 (round 2 measured +33.82 %)"
     },
     "b580": {
      "k": "ok",
-     "v": "随第 4 行",
-     "n": "工作组屏障",
-     "t": "内核按 fused3sb 的语义写，每个交换点都有屏障。共享内存的槽位在多个子组之间交换，所以屏障是整个工作组的 barrier()，不是 subgroupBarrier()。没有不带屏障的版本可比，计在第 4 行内"
+     "v": "with row 4",
+     "n": "workgroup barrier",
+     "t": "The kernel is written to fused3sb semantics, with a barrier at every exchange point. Shared-memory slots are exchanged between several subgroups, so the barrier is the whole-workgroup barrier(), not subgroupBarrier(). There is no barrier-free version to compare against; counted within row 4"
     },
     "b70": {
      "k": "ok",
-     "v": "随第 4 行",
-     "n": "工作组屏障",
-     "t": "与 B580 是同一个内核：每个交换点都是整个工作组的 barrier()。没有不带屏障的版本可比，计在第 4 行内"
+     "v": "with row 4",
+     "n": "workgroup barrier",
+     "t": "The same kernel as on the B580: every exchange point is a whole-workgroup barrier(). There is no barrier-free version to compare against; counted within row 4"
     },
     "4070ti": {
      "k": "ok",
-     "v": "随第 4 行",
-     "n": "带屏障",
-     "t": "移植用的就是带子组屏障的 fused3sb（RX 7600 的形式），没有构建不带屏障的 fused3，所以没有单独的增益可量，计在第 4 行内。另加了一处检查：工作组不是恰好一个 32 线程的子组时内核直接返回"
+     "v": "with row 4",
+     "n": "with barrier",
+     "t": "The port uses fused3sb, which has the subgroup barrier (the RX 7600's form); no barrier-free fused3 was built, so there is no separate gain to measure; counted within row 4. One check was added: the kernel returns immediately when the workgroup is not exactly one 32-thread subgroup"
     },
     "orin": {
      "k": "ok",
-     "v": "随第 4 行",
-     "n": "带屏障",
-     "t": "移植用的是 RX 7600 的 fused3sb 原文，每个 memoryBarrierShared() 之后都有 subgroupBarrier()；另加了与 4070 Ti 相同的检查：工作组不是恰好一个 32 线程的满子组时内核直接返回。没有不带屏障的版本可比，计在第 4 行内"
+     "v": "with row 4",
+     "n": "with barrier",
+     "t": "The port uses the RX 7600's fused3sb source as is, with a subgroupBarrier() after every memoryBarrierShared(); the same check as on the 4070 Ti was added: the kernel returns immediately when the workgroup is not exactly one full 32-thread subgroup. There is no barrier-free version to compare against; counted within row 4"
     },
     "rx7600": {
      "k": "ok",
      "g": 0,
-     "n": "逐字节一致"
+     "n": "byte-identical"
     },
     "7900xtx": {
      "k": "none",
-     "v": "不适用",
-     "t": "不适用：融合内核在这台设备上被拒绝，最终配置里没有融合内核。被试的候选 2 本身就是带子组屏障的 fused3sb，它在 AMDVLK 上跑过的正确性测试没有不一致"
+     "v": "n/a",
+     "t": "n/a: the fused kernel was rejected on this device and the final configuration has no fused kernel. Candidate 2, which was tried, is itself fused3sb with the subgroup barrier; the correctness tests it ran on AMDVLK showed no mismatch"
     },
     "m51": {
      "k": "ok",
-     "v": "已采纳",
-     "n": "工作组屏障",
-     "t": "原内核在交换点只有 memoryBarrierShared()，它只约束一个线程自己的访问顺序。这台设备上需要更强的屏障：移植版在每个交换点用 memoryBarrierShared() 加整个工作组的 barrier()（工作组就是一个子组）。着色器内读回的子组大小没有在设备上验证过"
+     "v": "adopted",
+     "n": "workgroup barrier",
+     "t": "The original kernel has only memoryBarrierShared() at the exchange points, which constrains only the order of a single thread's own accesses. This device needs a stronger barrier: the ported version uses memoryBarrierShared() plus a whole-workgroup barrier() at every exchange point (the workgroup is one subgroup). The subgroup size read back inside the shader has not been verified on the device"
     }
    },
    "ex": {
-    "kind": "正确性修复",
-    "what": "融合内核里，一组线程通过共享内存交换数据，必须保证“别人写完了我才读”。原来的 fused3 只声明了“写入对别人可见”，没有让线程真正停下来等齐。fused3sb 在每个交换点加了一条让整组线程对齐的屏障指令。",
-    "why": "它不提速。AMD 这一代显卡上一组线程恰好齐步执行，所以原写法没出错；按 Vulkan 的规定这是数据竞争，换一种硬件就可能读到没写完的数据（M51 上确实如此，需要更强的屏障）。",
-    "like": "接力赛里规定必须交接完才能起跑，而不是指望两个人碰巧同步。",
-    "res": "RX 7600 上速度不变，21 个测试用例输出逐字节一致；780M 在 round 3 换成 fused3sb，差 -0.14 %，在噪声带内。移植到其他设备时一律用带屏障的版本。"
+    "kind": "correctness fix",
+    "what": "In the fused kernel a group of threads exchanges data through shared memory and must guarantee \"I read only after the others have finished writing\". The original fused3 only declared \"writes are visible to others\" and did not make the threads actually stop and wait for each other. fused3sb adds, at every exchange point, a barrier instruction that brings the whole group of threads into step.",
+    "why": "It adds no speed. On this generation of AMD cards a group of threads happens to execute in lockstep, so the original code did not fail; under the Vulkan rules it is a data race, and on different hardware it may read data that has not been fully written (this does happen on the M51, which needs a stronger barrier).",
+    "like": "A relay race rule that the baton must be handed over before the next runner starts, instead of counting on the two runners happening to be in sync.",
+    "res": "On the RX 7600 the speed is unchanged and the output is byte-identical on 21 test cases; the 780M switched to fused3sb in round 3 with a difference of -0.14 %, inside the noise band. Ports to other devices always use the version with the barrier."
    }
   },
   {
    "n": "6",
-   "name": "8da4w 按纹素取权重",
+   "name": "8da4w whole-texel weight staging",
    "cells": {
     "780m": {
      "k": "ok",
@@ -859,7 +859,7 @@
     "4070ti": {
      "k": "tried",
      "v": "-0.13",
-     "t": "候选 5：半纹素权重暂存（每个暂存槽保留纹素的两个字，取权重次数减半）。内核级 1.011x，过门禁后 -0.13 %，带内，未采纳。取权重阶段占内核 34 % 到 43 % 的时间，但读取次数减半没有让它变短"
+     "t": "Candidate 5: half-texel weight staging (each staging slot keeps two words of the texel, halving the number of weight fetches). 1.011x at kernel level, -0.13 % after the gate, inside the band, not adopted. The weight-fetch stage takes 34 % to 43 % of the kernel's time, but halving the number of reads did not shorten it"
     },
     "orin": {
      "k": "ok",
@@ -868,204 +868,204 @@
     "rx7600": {
      "k": "tried",
      "v": "-0.15",
-     "t": "候选 4 在全部形状上套用整纹素取权重，-0.15 %，8B 8da4w -1.51 %，未采纳"
+     "t": "Candidate 4 applied whole-texel weight staging to all shapes: -0.15 %, 8B 8da4w -1.51 %, not adopted"
     },
     "7900xtx": {
      "k": "tried",
      "v": "-0.42",
-     "t": "候选 4：在筛选中最快的那些 8da4w 形状上用整纹素取权重，相对候选 3 为 -0.42 %，带内，未采纳。阶段计时里取权重只占一个波的 11 % 左右，瓶颈不在这里"
+     "t": "Candidate 4: whole-texel weight staging on the 8da4w shapes that were fastest in screening, -0.42 % against candidate 3, inside the band, not adopted. In the stage timing, weight fetch is only about 11 % of a wave, so the bottleneck is elsewhere"
     },
     "m51": {
      "k": "ok",
-     "v": "已采纳",
-     "t": "内核筛选在每一个 8da4w 形状上都选了 780M 的整纹素取权重内核，每一轮都过了筛选的门槛；它的生产对比误差与父配置相同，端到端快出噪声带。已知性质：长度不对齐的提示上 8da4w 比父配置慢（那里落回原版内核），所有者决定保持不变，计时用的预填充长度是对齐的。数字不公布"
+     "v": "adopted",
+     "t": "Kernel screening chose the 780M's whole-texel weight staging kernel on every 8da4w shape, and it cleared the screening threshold in every round; its production comparison error equals the parent configuration's, and end to end it is faster by more than the noise band. Known property: on prompts whose length is not aligned, 8da4w is slower than the parent configuration (those fall back to the stock kernel); the owner decided to leave this as it is, and the prefill length used for timing is aligned. Figures not published"
     }
    },
    "ex": {
-    "kind": "新内核",
-    "what": "8da4w 是一种量化方式（权重 4 位、激活 8 位）。权重存在纹理里，一个纹素有 4 个通道。这个变体一次取出整个纹素并暂存，供后面几步共用，而不是每用一个通道就重新读一次纹理。",
-    "why": "线性层是预填充里占时间最多的部分，读权重是它的主要开销之一；纹理读取次数减少，耗时随之下降。",
-    "like": "每次去仓库把一整箱搬回来，而不是用一件跑一趟。",
-    "res": "Intel 两张卡约 +7 %，Orin +2.8 %，780M +2.0 %；RX 7600 和 RX 7900 XTX 上略慢，没有采纳；M51 采纳。只影响 8da4w 的模型。"
+    "kind": "new kernel",
+    "what": "8da4w is a quantization scheme (4-bit weights, 8-bit activations). The weights are stored in a texture, and a texel has 4 channels. This variant fetches the whole texel once and stages it for the following steps to share, instead of reading the texture again for each channel it uses.",
+    "why": "The linear layers take the most time in prefill, and reading weights is one of their main costs; with fewer texture reads the time drops accordingly.",
+    "like": "Bringing back a whole box from the warehouse on each trip, instead of making one trip per item.",
+    "res": "About +7 % on the two Intel cards, +2.8 % on the Orin, +2.0 % on the 780M; slightly slower on the RX 7600 and the RX 7900 XTX, where it was not adopted; adopted on the M51. It affects 8da4w models only."
    }
   },
   {
    "n": "7",
-   "name": "线性内核按形状选择 / 瓦片表",
+   "name": "Linear kernel per-shape selection / tile table",
    "cells": {
     "780m": {
      "k": "ok",
      "g": 4.65,
-     "n": "c1 +2.95，c10 +0.47，c11 +1.20"
+     "n": "c1 +2.95, c10 +0.47, c11 +1.20"
     },
     "b580": {
      "k": "tried",
      "v": "-0.07",
-     "t": "候选 2 的 4w band-drain 瓦片，-0.07 %，未采纳"
+     "t": "Candidate 2, a 4w band-drain tile: -0.07 %, not adopted"
     },
     "b70": {
      "k": "ok",
      "g": 1.1,
-     "n": "4w 瓦片"
+     "n": "4w tile"
     },
     "4070ti": {
      "k": "tried",
      "v": "+0.40",
-     "t": "扫了 27 个瓦片，最好 0.995x；候选 6（4w 宽瓦片）过门禁 +0.40 %，带内，未采纳"
+     "t": "27 tiles swept, best 0.995x; candidate 6 (wide 4w tile) passed the gate at +0.40 %, inside the band, not adopted"
     },
     "orin": {
      "k": "ok",
      "g": 0.82,
-     "n": "4w 瓦片"
+     "n": "4w tile"
     },
     "rx7600": {
      "k": "ok",
      "g": 11.14,
-     "n": "c3 +5.49，第二轮 +1.96、+3.33",
-     "t": "第一轮候选 3：线性内核按形状选择，+5.49 %。第二轮两个候选改的是内核里共享内存暂存的行距，不是形状选择：8da4w 的 A 暂存行距 24 字节 +1.96 %，4w 的暂存行距 72 / 88 字节 +3.33 %，两者合计相对第一轮最终配置直接测得 +5.44 %。三段叠乘 +11.14 %。输出在 24 个线性形状上逐字节一致"
+     "n": "c3 +5.49, round 2 +1.96, +3.33",
+     "t": "Round 1 candidate 3: per-shape selection of linear kernels, +5.49 %. The two round 2 candidates change the row stride of shared-memory staging inside the kernels, not the shape selection: 8da4w A staging row stride of 24 bytes, +1.96 %; 4w staging row strides of 72 / 88 bytes, +3.33 %; together they measure +5.44 % directly against the first-round final configuration. The three segments multiply to +11.14 %. The output is byte-identical on 24 linear shapes"
     },
     "7900xtx": {
      "k": "ok",
      "g": 2.64,
-     "n": "候选 7 未采纳",
-     "t": "候选 3（7900xtx-refine2）：按筛选结果为每个形状选内核，+2.64 %，24 个线性形状的输出逐字节一致；收益在 1B 4w 和三格 8da4w 上，3B、8B 的 4w 没有比表里更快的内核。候选 7：给 8B 的一个形状换瓦片，六格几何平均 +1.16 %，它实际改动的那一格只有 +0.79 %，未采纳。RX 7600 第二轮的暂存行距做法在这张卡上筛了一遍，12 个形状没有一个更快"
+     "n": "candidate 7 not adopted",
+     "t": "Candidate 3 (7900xtx-refine2): a kernel chosen for each shape from the screening results, +2.64 %, output byte-identical on 24 linear shapes; the gain is in 1B 4w and the three 8da4w cells, and for 3B and 8B 4w no kernel is faster than the one in the table. Candidate 7: a different tile for one 8B shape, six-cell geometric mean +1.16 %, while the one cell it actually changes gains only +0.79 %; not adopted. The staging row stride approach of the RX 7600's second round was screened once on this card, and none of the 12 shapes was faster"
     },
     "m51": {
      "k": "ok",
-     "v": "已采纳",
-     "n": "两轮，已验证",
-     "t": "第一步：4w 的按形状选择只在 8B 模型才有的那几个形状上选出了更快的内核，在 8B 轮里过门禁并采纳；1B、3B 的形状上没有更快的。第二轮：一个新的 4w 内核（把 B 操作数按另一种主序放进共享内存池）在三个模型的全部形状上都过了筛选，组成最终配置。板子的驱动恢复后，它在已提交头部的构建上做完了最终验证和相对父提交的最终场次：每一格都更快，超出噪声带，输出与上一版配置逐位一致。一处保留：这个内核对共享内存的写入是否无竞争取决于编译器生成分量写入，用本机编译器构建时核对过，用规定的容器编译器构建时尚未核对。数字不公布"
+     "v": "adopted",
+     "n": "two rounds, verified",
+     "t": "First step: per-shape selection for 4w found faster kernels only on the shapes that occur only in the 8B model; it passed the gate in the 8B round and was adopted; nothing faster was found for the 1B and 3B shapes. Second round: a new 4w kernel (which places the B operand in the shared-memory pool in the other major order) passed screening on all shapes of the three models and makes up the final configuration. After the board's driver was restored, it completed final validation on a build of the committed head and the final session against the parent commit: every cell is faster, outside the noise band, and the output is bit-identical to the previous configuration. One reservation: whether this kernel's writes to shared memory are race-free depends on the compiler generating component writes; this was checked for a build with the local compiler and has not yet been checked for a build with the pinned container compiler. Figures not published"
     }
    },
    "ex": {
-    "kind": "按形状选择",
-    "what": "模型里的线性层（矩阵乘）有好几种形状，例如输入 2048 宽、输出 8192 宽。这项技术为每一种形状单独挑最快的内核写法和块大小，记成一张表，运行时按形状查表。",
-    "why": "没有一种配置对所有形状都最快：宽矩阵和窄矩阵对缓存与线程分组的要求不一样。",
-    "like": "不同尺寸的货物配不同尺寸的箱子，而不是全用一种。",
-    "res": "780M +4.7 %，RX 7600 +5.5 %，RX 7900 XTX +2.6 %；RX 7600 第二轮改线性内核的暂存行距，再 +5.4 %；B70、Orin 约 +1 %；B580、4070 Ti 上扫过瓦片后没有更快的，未采纳。"
+    "kind": "per-shape selection",
+    "what": "The linear layers (matrix multiplications) in the model come in several shapes, for example 2048 wide in and 8192 wide out. This technique picks the fastest kernel code and block size for each shape separately, records them in a table, and looks the table up by shape at run time.",
+    "why": "No single configuration is fastest for every shape: wide and narrow matrices place different demands on the cache and on thread grouping.",
+    "like": "Goods of different sizes go into boxes of different sizes, instead of one box size for everything.",
+    "res": "780M +4.7 %, RX 7600 +5.5 %, RX 7900 XTX +2.6 %; the RX 7600's second round changed the staging row stride of the linear kernels for a further +5.4 %; B70 and Orin about +1 %; on the B580 and the 4070 Ti a tile sweep found nothing faster, so nothing was adopted."
    }
   },
   {
    "n": "8",
-   "name": "softmax 子组归约（orin_g64）",
+   "name": "Softmax subgroup reduction (orin_g64)",
    "cells": {
     "780m": {
      "k": "none",
-     "t": "没做：这是 Orin 第一轮自己的候选，在 Orin 上只有 +0.34 %（带内），没有理由搬到别的设备。融合内核把 softmax 包进去之后，独立 softmax 只处理不对齐的提示和解码，占比更小"
+     "t": "Not done: this is a candidate of the Orin's own first round; on the Orin it gave only +0.34 % (inside the band), so there is no reason to carry it to other devices. Once the fused kernel absorbs the softmax, the standalone softmax handles only unaligned prompts and decode, an even smaller share"
     },
     "b580": {
      "k": "none",
-     "t": "没做：这是 Orin 第一轮自己的候选，在 Orin 上只有 +0.34 %（带内），没有理由搬到别的设备。融合内核把 softmax 包进去之后，独立 softmax 只处理不对齐的提示和解码，占比更小"
+     "t": "Not done: this is a candidate of the Orin's own first round; on the Orin it gave only +0.34 % (inside the band), so there is no reason to carry it to other devices. Once the fused kernel absorbs the softmax, the standalone softmax handles only unaligned prompts and decode, an even smaller share"
     },
     "b70": {
      "k": "none",
-     "t": "没做：这是 Orin 第一轮自己的候选，在 Orin 上只有 +0.34 %（带内），没有理由搬到别的设备。融合内核把 softmax 包进去之后，独立 softmax 只处理不对齐的提示和解码，占比更小"
+     "t": "Not done: this is a candidate of the Orin's own first round; on the Orin it gave only +0.34 % (inside the band), so there is no reason to carry it to other devices. Once the fused kernel absorbs the softmax, the standalone softmax handles only unaligned prompts and decode, an even smaller share"
     },
     "4070ti": {
      "k": "none",
-     "t": "没做：这是 Orin 第一轮自己的候选，在 Orin 上只有 +0.34 %（带内），没有理由搬到别的设备。融合内核把 softmax 包进去之后，独立 softmax 只处理不对齐的提示和解码，占比更小"
+     "t": "Not done: this is a candidate of the Orin's own first round; on the Orin it gave only +0.34 % (inside the band), so there is no reason to carry it to other devices. Once the fused kernel absorbs the softmax, the standalone softmax handles only unaligned prompts and decode, an even smaller share"
     },
     "orin": {
      "k": "ok",
      "g": 0.34,
-     "n": "带内，门禁接受"
+     "n": "inside the band, accepted by gate"
     },
     "rx7600": {
      "k": "none",
-     "t": "没做：这是 Orin 第一轮自己的候选，在 Orin 上只有 +0.34 %（带内），没有理由搬到别的设备。融合内核把 softmax 包进去之后，独立 softmax 只处理不对齐的提示和解码，占比更小"
+     "t": "Not done: this is a candidate of the Orin's own first round; on the Orin it gave only +0.34 % (inside the band), so there is no reason to carry it to other devices. Once the fused kernel absorbs the softmax, the standalone softmax handles only unaligned prompts and decode, an even smaller share"
     },
     "7900xtx": {
      "k": "none",
-     "t": "没做：这是 Orin 第一轮自己的候选，在 Orin 上只有 +0.34 %（带内），没有理由搬到别的设备。这张卡上分开的 softmax 仍在用，但没有把它列为候选"
+     "t": "Not done: this is a candidate of the Orin's own first round; on the Orin it gave only +0.34 % (inside the band), so there is no reason to carry it to other devices. On this card the separate softmax is still in use, but it was not listed as a candidate"
     },
     "m51": {
      "k": "none",
-     "t": "没做：这是 Orin 第一轮自己的候选，在 Orin 上落在噪声带内，没有理由搬到别的设备。这台设备上融合内核已经接手计时预填充的全部注意力调用"
+     "t": "Not done: this is a candidate of the Orin's own first round; on the Orin it fell inside the noise band, so there is no reason to carry it to other devices. On this device the fused kernel already takes all attention calls of the timed prefill"
     }
    },
    "ex": {
-    "kind": "新内核",
-    "what": "softmax 要对一整行求最大值和求和。这个变体用“子组”指令来做：子组是硬件上真正同时执行的一小批线程，一条指令就能把它们各自手里的数加起来或取最大。",
-    "why": "比通过共享内存一轮一轮合并少了几次读写和等待。",
-    "like": "一桌人同时报数，直接得到总和，不用挨个传纸条。",
-    "res": "只在 Orin 上做了，+0.34 %，在噪声带内；门禁通过，保留在最终配置里。"
+    "kind": "new kernel",
+    "what": "Softmax needs the maximum and the sum of a whole row. This variant computes them with \"subgroup\" instructions: a subgroup is a small batch of threads that the hardware really executes at the same time, and a single instruction can add up the numbers each of them holds or take their maximum.",
+    "why": "It saves a few reads, writes and waits compared with merging round by round through shared memory.",
+    "like": "A table of people calling out their numbers at once and getting the total directly, instead of passing notes one by one.",
+    "res": "Done on the Orin only, +0.34 %, inside the noise band; it passed the gate and stays in the final configuration."
    }
   },
   {
    "n": "9",
-   "name": "发布区挂钩（入口点）",
+   "name": "Release-zone hooks (entry points)",
    "cells": {
     "780m": {
      "k": "ok",
-     "v": "2 个",
-     "n": "softmax 名、融合入口",
-     "t": "所有者决定 2026-10-05 允许的小入口点，各自单独提交"
+     "v": "2 hooks",
+     "n": "softmax name, fused entry",
+     "t": "Small entry points allowed by the owner's decision of 2026-10-05, each committed separately"
     },
     "b580": {
      "k": "ok",
-     "v": "2 个",
-     "n": "softmax 名、融合入口",
-     "t": "第二轮带入的两个挂钩，各自一个提交，原样拣选（softmax 名来自 Orin 分支，融合入口来自 780M 分支）。最终配置 b580-fused1 只用融合入口；softmax 名只有未采纳的候选 2 用到。晋升前仍需所有者审阅"
+     "v": "2 hooks",
+     "n": "softmax name, fused entry",
+     "t": "The two hooks brought in during round 2, one commit each, cherry-picked unchanged (the softmax name from the Orin branch, the fused entry from the 780M branch). The final configuration b580-fused1 uses only the fused entry; the softmax name is used only by candidate 2, which was not adopted. Owner review is still required before promotion"
     },
     "b70": {
      "k": "ok",
-     "v": "2 个",
-     "n": "softmax 名、融合入口",
-     "t": "第二轮按 B580 分支的样子带入两个挂钩，各自一个提交，发布区相对父配置多出同样的 57 行。最终配置 b70-fused1 只用融合入口，这里没有任何配置设置 softmax 名。晋升前仍需所有者审阅"
+     "v": "2 hooks",
+     "n": "softmax name, fused entry",
+     "t": "Round 2 brought in the two hooks as they are on the B580 branch, one commit each; the release zone has the same 57 extra lines relative to the parent configuration. The final configuration b70-fused1 uses only the fused entry, and no configuration here sets the softmax name. Owner review is still required before promotion"
     },
     "4070ti": {
      "k": "ok",
-     "v": "2 个",
-     "n": "softmax 名、融合入口",
-     "t": "融合入口是第二轮从 780M 分支原样拣选的挂钩（35e3728c9，49 行），晋升前仍需所有者审阅"
+     "v": "2 hooks",
+     "n": "softmax name, fused entry",
+     "t": "The fused entry is a hook cherry-picked unchanged from the 780M branch in round 2 (35e3728c9, 49 lines); owner review is still required before promotion"
     },
     "orin": {
      "k": "ok",
-     "v": "2 个",
-     "n": "softmax 名、融合入口",
-     "t": "融合入口是第二轮从 780M 分支原样拣选的挂钩（9d91480b2，49 行），晋升前仍需所有者审阅"
+     "v": "2 hooks",
+     "n": "softmax name, fused entry",
+     "t": "The fused entry is a hook cherry-picked unchanged from the 780M branch in round 2 (9d91480b2, 49 lines); owner review is still required before promotion"
     },
     "rx7600": {
      "k": "inherit",
-     "v": "继承",
-     "t": "随 780M 分支带来两个挂钩"
+     "v": "inherited",
+     "t": "The two hooks came with the 780M branch"
     },
     "7900xtx": {
      "k": "inherit",
-     "v": "继承",
-     "t": "两个挂钩随 780M 分支带来；这次 campaign 没有改动发布区的任何文件"
+     "v": "inherited",
+     "t": "The two hooks came with the 780M branch; this campaign changed no file in the release zone"
     },
     "m51": {
      "k": "ok",
-     "v": "多一个",
-     "n": "图执行阈值",
-     "t": "除了随 780M 分支带来的两个挂钩，8B 轮经所有者批准多加了一个：从环境变量读取图执行阈值（每隔多少个图节点提交一次命令缓冲）。8B 的运行两臂都带这个设置，不带时长预填充可能触发 GPU 的任务看门狗；1B、3B 不带。变量不设时行为不变。阈值的取值不在本页公布"
+     "v": "one more",
+     "n": "graph execution threshold",
+     "t": "Besides the two hooks that came with the 780M branch, the 8B round added one more with the owner's approval: it reads the graph execution threshold from an environment variable (how many graph nodes pass between command buffer submissions). Both arms of the 8B runs carry this setting, because without it a long prefill can trigger the GPU's job watchdog; 1B and 3B run without it. With the variable unset the behavior is unchanged. The threshold value is not published on this page"
     }
    },
    "ex": {
-    "kind": "工程约束",
-    "what": "这一行不是优化。代码分两个区：发布区是已发布、原则上不许改的内核；开发区放实验内核。有时一个新内核必须在发布区留一个很小的入口才能被选中，这个入口就叫挂钩。",
-    "why": "把实验代码与已发布代码隔开，保证关掉开关后行为与发布版完全一致。每个挂钩要所有者批准，并单独提交。",
-    "like": "在承重墙上开一个经过审批的小检修口，而不是随手打洞。",
-    "res": "780M、4070 Ti、Orin 各 2 个。Intel 两张卡第一轮不需要，第二轮移植融合内核时也带入了这 2 个。"
+    "kind": "engineering constraint",
+    "what": "This row is not an optimization. The code has two zones: the release zone holds the released kernels, which in principle must not be changed; the development zone holds experimental kernels. Sometimes a new kernel needs a very small entry point in the release zone before it can be selected; that entry point is called a hook.",
+    "why": "It keeps experimental code apart from released code and guarantees that, with the switch off, the behavior is exactly that of the release. Each hook needs the owner's approval and its own commit.",
+    "like": "Cutting one small, approved inspection hatch into a load-bearing wall, instead of drilling holes at will.",
+    "res": "2 each on the 780M, the 4070 Ti and the Orin. The two Intel cards did not need them in the first round; the fused-kernel port in the second round brought in the same 2."
    }
   },
   {
    "n": "10",
-   "name": "参数空间搜索",
+   "name": "Parameter search",
    "cells": {
     "780m": {
      "k": "tried",
-     "v": "1796 项，0",
-     "t": "QK^T / attn·V 全枚举，内核级快 8 到 30 %，但在融合内核不走的路径上；未过门禁"
+     "v": "1796 items, 0",
+     "t": "Full enumeration of QK^T / attn·V, 8 to 30 % faster at kernel level, but on a path the fused kernel does not take; did not pass the gate"
     },
     "b580": {
      "k": "none"
     },
     "b70": {
      "k": "tried",
-     "v": "33 h，+1.1",
-     "t": "四个内核族抽样搜索与枚举，33 小时，产出第 7 行的 4w 瓦片 +1.10 %；注意力枚举 +0.6 / +0.95 %，带内未采纳"
+     "v": "33 h, +1.1",
+     "t": "Sampled search and enumeration over four kernel families, 33 hours, produced the 4w tile of row 7 at +1.10 %; attention enumeration +0.6 / +0.95 %, inside the band, not adopted"
     },
     "4070ti": {
      "k": "none"
@@ -1078,26 +1078,26 @@
     },
     "7900xtx": {
      "k": "none",
-     "t": "没做：这次 campaign 按决定不做瓦片扫描在先，也不做抽样搜索；只做了内核筛选"
+     "t": "Not done: by decision, this campaign did not run a tile sweep first and did no sampled search; only kernel screening was done"
     },
     "m51": {
      "k": "none",
-     "t": "没做：这次 campaign 按决定不做抽样参数搜索"
+     "t": "Not done: by decision, this campaign did no sampled parameter search"
     }
    },
    "ex": {
-    "kind": "自动搜索",
-    "what": "让程序自动枚举或抽样成百上千种参数组合，逐个在设备上计时，找出最快的。它是第 2、7 行的自动化版本。",
-    "why": "理论上能找到人想不到的配置。实际上单个内核确实能快 8 % 到 30 %，但那个内核只占预填充时间的百分之几，或者根本不在最终走的路径上，所以端到端几乎看不出来。",
-    "like": "花很多时间把一段只占全程 3 % 的路修到最平。",
-    "res": "B70 花了 33 小时换来 +1.1 %；780M 枚举 1796 项，端到端为 0（图 4）。结论：先看时间花在哪，再决定搜不搜。"
+    "kind": "automated search",
+    "what": "A program enumerates or samples hundreds or thousands of parameter combinations, times each one on the device and finds the fastest. It is the automated version of rows 2 and 7.",
+    "why": "In theory it can find configurations a person would not think of. In practice a single kernel does get 8 % to 30 % faster, but that kernel takes only a few percent of prefill time, or is not on the path finally taken at all, so end to end the effect is barely visible.",
+    "like": "Spending a lot of time making a stretch of road as smooth as possible when it is only 3 % of the route.",
+    "res": "The B70 spent 33 hours for +1.1 %; the 780M enumerated 1796 items for 0 end to end (figure 4). Conclusion: look at where the time goes first, then decide whether to search."
    }
   }
  ],
  "fams": [
   {
    "key": "linear",
-   "name": "线性 GEMM",
+   "name": "Linear GEMM",
    "color": "var(--s5)"
   },
   {
@@ -1117,19 +1117,19 @@
   },
   {
    "key": "attn",
-   "name": "注意力（未拆分）",
+   "name": "Attention (not split)",
    "color": "var(--s2)"
   },
   {
    "key": "other",
-   "name": "其他",
+   "name": "Other",
    "color": "var(--neutral)"
   }
  ],
  "timeRows": [
   {
    "dev": "Arc B580 · 8B 4w",
-   "arm": "父配置",
+   "arm": "parent configuration",
    "v": {
     "linear": 651.8,
     "qk": 153.7,
@@ -1140,7 +1140,7 @@
   },
   {
    "dev": "Arc B580 · 8B 4w",
-   "arm": "调优后",
+   "arm": "tuned",
    "v": {
     "linear": 665.5,
     "qk": 20.1,
@@ -1151,7 +1151,7 @@
   },
   {
    "dev": "Arc B580 · 8B 4w",
-   "arm": "融合后",
+   "arm": "after fusion",
    "v": {
     "linear": 667.2,
     "attn": 47.5,
@@ -1160,7 +1160,7 @@
   },
   {
    "dev": "Arc B580 · 8B 8da4w",
-   "arm": "父配置",
+   "arm": "parent configuration",
    "v": {
     "linear": 554.5,
     "qk": 150,
@@ -1171,7 +1171,7 @@
   },
   {
    "dev": "Arc B580 · 8B 8da4w",
-   "arm": "调优后",
+   "arm": "tuned",
    "v": {
     "linear": 433.2,
     "qk": 19.4,
@@ -1182,7 +1182,7 @@
   },
   {
    "dev": "RX 7600 · 8B 8da4w",
-   "arm": "父配置",
+   "arm": "parent configuration",
    "v": {
     "linear": 1110.9,
     "attn": 192.2,
@@ -1191,7 +1191,7 @@
   },
   {
    "dev": "RX 7600 · 8B 8da4w",
-   "arm": "调优后",
+   "arm": "tuned",
    "v": {
     "linear": 972.1,
     "attn": 46.7,
@@ -1200,7 +1200,7 @@
   },
   {
    "dev": "RX 7600 · 8B 8da4w",
-   "arm": "第二轮后",
+   "arm": "after second round",
    "v": {
     "linear": 925.1,
     "attn": 46.8,
@@ -1209,7 +1209,7 @@
   },
   {
    "dev": "RTX 4070 Ti SUPER · 8B 4w",
-   "arm": "父配置",
+   "arm": "parent configuration",
    "v": {
     "linear": 239.58,
     "qk": 13.01,
@@ -1220,7 +1220,7 @@
   },
   {
    "dev": "RTX 4070 Ti SUPER · 8B 4w",
-   "arm": "调优后",
+   "arm": "tuned",
    "v": {
     "linear": 238.7,
     "attn": 20.73,
@@ -1229,7 +1229,7 @@
   },
   {
    "dev": "Arc Pro B70 · 8B 4w",
-   "arm": "父配置",
+   "arm": "parent configuration",
    "v": {
     "linear": 436.9,
     "qk": 14.4,
@@ -1240,7 +1240,7 @@
   },
   {
    "dev": "Arc Pro B70 · 8B 4w",
-   "arm": "调优后",
+   "arm": "tuned",
    "v": {
     "linear": 436.5,
     "attn": 32.1,
@@ -1250,22 +1250,22 @@
  ],
  "waste": [
   {
-   "name": "B70 · 四个内核族的抽样搜索与枚举",
+   "name": "B70 · sampling and enumeration, four kernel families",
    "hours": 33,
    "gain": "+1.1 %",
-   "note": "4w 瓦片每形状快 2 到 6 %，端到端 +1.1 %；注意力枚举内核级快 3 到 22 %，端到端 +0.6 / +0.95 %，带内未采纳"
+   "note": "4w tiles 2 to 6 % faster per shape, +1.1 % end to end; attention enumeration 3 to 22 % faster at kernel level, +0.6 / +0.95 % end to end, inside the band, not adopted"
   },
   {
-   "name": "780M · QK^T 与 attn·V 全枚举（1796 项）",
+   "name": "780M · full QK^T and attn·V enumeration (1796 items)",
    "hours": 11,
    "gain": "0",
-   "note": "内核级快 8 到 30 %，但在融合内核不走的三内核路径上；未过门禁，最终配置不变"
+   "note": "8 to 30 % faster at kernel level, but on the three-kernel path that the fused kernel does not take; did not pass the gate, final configuration unchanged"
   },
   {
-   "name": "Orin · 读行一次的 softmax",
+   "name": "Orin · softmax that reads each row once",
    "hours": 1,
-   "gain": "更慢",
-   "note": "一个候选，负结果"
+   "gain": "slower",
+   "note": "one candidate, negative result"
   }
  ],
  "llama": [
@@ -1305,7 +1305,7 @@
     1.4
    ],
    "vendor": null,
-   "vn": "无（ROCm 不支持）"
+   "vn": "none (not in ROCm)"
   },
   {
    "name": "Jetson Orin Nano",
@@ -1343,7 +1343,7 @@
     1.64
    ],
    "vendor": null,
-   "vn": "无（HIP 未测：ROCm 未安装）"
+   "vn": "none (HIP not run)"
   }
  ],
  "meta": {
@@ -1631,7 +1631,7 @@
    "id": "7900xtx",
    "name": "RX 7900 XTX",
    "vendorName": null,
-   "note": "AMDVLK 驱动；SARC 两列为父提交在同一场次的值；未测 stock 与 llama.cpp stock 一列取自 2026-09-28 的评测场次（同一驱动），与调优后的数不是同一场次。",
+   "note": "AMDVLK driver; the two SARC columns are the parent commit's values in the same session; llama.cpp not measured. The stock column comes from the benchmark session of 2026-09-28 (same driver), which is not the same session as the tuned figures.",
    "cells": [
     {
      "model": "1B",
@@ -1688,7 +1688,7 @@
       "x": 140,
       "h": "985c1cecc",
       "d": "09-22",
-      "n": "上游 1.5 发布"
+      "n": "upstream 1.5 release"
      }
     ],
     "label": ""
@@ -1708,14 +1708,14 @@
       "x": 300,
       "h": "ef079ac41",
       "d": "09-28",
-      "n": "所有 topic 分支的分叉基点"
+      "n": "fork base of all topic branches"
      }
     ],
     "head": {
      "h": "44e22be60",
      "d": "09-30",
      "state": "base",
-     "chip": "合并目标，尚无 campaign PR 合入"
+     "chip": "merge target, no campaign PR merged yet"
     }
    },
    {
@@ -1727,12 +1727,12 @@
      "lane": "dev",
      "x": 300
     },
-    "label": "+18 · 六台设备对 llama.cpp 的对比，结果全部公开",
+    "label": "+18 · comparison with llama.cpp on six devices, all results public",
     "head": {
      "h": "618e33692",
      "d": "10-08",
      "state": "ok",
-     "chip": "公司侧推了 RX 7600 对比"
+     "chip": "company side pushed the RX 7600 comparison"
     }
    },
    {
@@ -1744,12 +1744,12 @@
      "lane": "dev",
      "x": 300
     },
-    "label": "规则、教训、合并计划、COMPANY-SIDE.md、本报告",
+    "label": "rules, lessons, merge plan, COMPANY-SIDE.md, this report",
     "head": {
      "h": "45d6b0bc5",
      "d": "10-09",
      "state": "ok",
-     "chip": "已推送，与 origin 一致"
+     "chip": "pushed, matches origin"
     }
    },
    {
@@ -1766,7 +1766,7 @@
      "h": "a434a4962",
      "d": "10-09",
      "state": "ok",
-     "chip": "所有者宣布结束"
+     "chip": "declared ended by the owner"
     }
    },
    {
@@ -1801,7 +1801,7 @@
       "x": 560,
       "h": "8666b6531",
       "d": "10-05",
-      "n": "b580 从此分叉"
+      "n": "b580 forks here"
      }
     ],
     "head": {
@@ -1837,12 +1837,12 @@
      "lane": "780m",
      "x": 720
     },
-    "label": "+121 · RX 7600，公司侧 · +33.6 %",
+    "label": "+121 · RX 7600, company · +33.6 %",
     "head": {
      "h": "c4d7451c5",
      "d": "10-09",
      "state": "ok",
-     "chip": "done，第二轮；历史被重写过"
+     "chip": "done, round 2; history rewritten"
     }
    },
    {
@@ -1854,12 +1854,12 @@
      "lane": "780m",
      "x": 840
     },
-    "label": "+111 · RX 7900 XTX，AMDVLK · +8.3 %",
+    "label": "+111 · RX 7900 XTX, AMDVLK · +8.3 %",
     "head": {
      "h": "82aaec998",
      "d": "10-09",
      "state": "ok",
-     "chip": "done，融合内核被拒绝"
+     "chip": "done, fused kernel rejected"
     }
    },
    {
@@ -1871,32 +1871,32 @@
      "lane": "dev",
      "x": 300
     },
-    "label": "+69 · Radeon 780M · 家族的主干 · +33.1 %",
+    "label": "+69 · Radeon 780M · trunk of the family · +33.1 %",
     "nodes": [
      {
       "x": 480,
       "h": "6a7cc8cc6",
       "d": "10-04",
-      "n": "xe2、4070ti 从此分叉；后续门禁的原始父配置"
+      "n": "xe2 and 4070ti fork here; the original parent configuration of the later gates"
      },
      {
       "x": 720,
       "h": "f5f1bf10c",
       "d": "10-05",
-      "n": "候选 11 最终配置；rx7600 从此分叉"
+      "n": "candidate 11 final configuration; rx7600 forks here"
      },
      {
       "x": 840,
       "h": "90fe4d013",
       "d": "10-06",
-      "n": "7900xtx 从此分叉；rx7600 重写后的历史也接在这个提交上（它的父配置仍是 f5f1bf10c）"
+      "n": "7900xtx forks here; the rewritten history of rx7600 also attaches to this commit (its parent configuration is still f5f1bf10c)"
      }
     ],
     "head": {
      "h": "71b43d903",
      "d": "10-09",
      "state": "ok",
-     "chip": "done，round 3：fused3sb、780m-final"
+     "chip": "done, round 3: fused3sb, 780m-final"
     }
    },
    {
@@ -1914,7 +1914,7 @@
       "x": 600,
       "h": "42e001462",
       "d": "10-05",
-      "n": "orin 从此分叉"
+      "n": "orin forks here"
      }
     ],
     "head": {
@@ -1972,65 +1972,65 @@
      "h": "da92b4b3c",
      "d": "10-09",
      "state": "ok",
-     "chip": "所有者宣布结束"
+     "chip": "declared ended by the owner"
     }
    }
   ],
   "legend": [
    [
     "fork",
-    "分叉点"
+    "fork point"
    ],
    [
     "ok",
-    "campaign 已关闭"
+    "campaign closed"
    ],
    [
     "run",
-    "进行中"
+    "in progress"
    ],
    [
     "ext",
-    "本地 / 非本机运行"
+    "local / run on another machine"
    ],
    [
     "base",
-    "基线分支"
+    "baseline branch"
    ]
   ]
  },
  "primer": [
   {
-   "term": "预填充",
-   "def": "模型在吐出第一个字之前，把整段提示（这里是 2048 个 token）读一遍。本报告里的 tok/s 都是这一步的速度。"
+   "term": "Prefill",
+   "def": "Before the model emits its first word, it reads the whole prompt once (2048 tokens here). Every tok/s in this report is the speed of this step."
   },
   {
-   "term": "内核",
-   "def": "在 GPU 上运行的一小段着色器程序，完成一种计算，例如一次矩阵乘或一次 softmax。调优就是把某个内核换成更快的写法。"
+   "term": "Kernel",
+   "def": "A small shader program that runs on the GPU and performs one kind of computation, for example one matrix multiplication or one softmax. Tuning means replacing a kernel with a faster implementation."
   },
   {
-   "term": "线性层（GEMM）",
-   "def": "矩阵乘。模型的权重绝大部分在这里，它占预填充时间的大头。"
+   "term": "Linear layer (GEMM)",
+   "def": "Matrix multiplication. Most of the model's weights are here, and it takes the largest share of prefill time."
   },
   {
-   "term": "注意力的三步",
-   "def": "QK^T：每个 token 给其他每个 token 打分，得到一张 2048×2048 的分数表。softmax：把每一行分数变成加起来为 1 的权重。attn·V：按权重把信息混合起来。"
+   "term": "The three steps of attention",
+   "def": "QK^T: each token scores every other token, which gives a 2048×2048 score table. softmax: turns each row of scores into weights that sum to 1. attn·V: mixes the information according to the weights."
   },
   {
-   "term": "工作组与子组",
-   "def": "GPU 把线程成组启动。工作组里的线程可以共享一小块内存；子组是其中硬件真正齐步执行的一小批（16 到 64 个）。"
+   "term": "Workgroup and subgroup",
+   "def": "The GPU launches threads in groups. Threads in a workgroup can share a small block of memory; a subgroup is a small batch of them (16 to 64) that the hardware really executes in lockstep."
   },
   {
-   "term": "4w 与 8da4w",
-   "def": "两种把模型压小的量化方式。4w：权重压到 4 位，计算用浮点。8da4w：权重 4 位，中间结果再压到 8 位。"
+   "term": "4w and 8da4w",
+   "def": "Two quantization schemes that shrink the model. 4w: weights compressed to 4 bits, computation in floating point. 8da4w: 4-bit weights, with intermediate results also compressed to 8 bits."
   },
   {
-   "term": "门禁",
-   "def": "每个候选在计时之前必须先证明算得对：输出与参考实现的误差在限内，预测的下一个 token 不变。没过门禁的候选再快也不算。"
+   "term": "Gate",
+   "def": "Before it is timed, every candidate must first prove that it computes correctly: the output error against the reference implementation is within the limit and the predicted next token is unchanged. A candidate that fails the gate does not count, however fast it is."
   },
   {
-   "term": "噪声带",
-   "def": "同一个程序重复测，结果也会有约 ±2 % 的波动。增益落在这个范围内就不能说它更快，矩阵里写作“带内”。"
+   "term": "Noise band",
+   "def": "Repeated measurements of the same program still vary by about ±2 %. A gain inside this range cannot be called faster; the matrix marks it \"inside the band\"."
   }
  ],
  "roofs": {
@@ -2087,7 +2087,7 @@
    },
    {
     "key": "attn",
-    "name": "融合注意力",
+    "name": "fused attention",
     "plot": false
    }
   ],
@@ -2095,10 +2095,10 @@
   "devices": {
    "780m": {
     "isa": true,
-    "isa_note": "驱动（RADV，ACO）反汇编：4w 只生成 v_wmma_f32_16x16x16_f16，8da4w 只生成 v_wmma_i32_16x16x16_iu8，条数与瓦片算术一致，无寄存器溢出",
-    "state": "RADV，Mesa 25.2.7，时钟未锁定",
-    "width": "上限着色器在子组 64（wave64）下测得，内核运行在子组 32（wave32）",
-    "weight": "按一层七次线性调用的时间加权（STUDY 所述）",
+    "isa_note": "Driver (RADV, ACO) disassembly: 4w generates only v_wmma_f32_16x16x16_f16 and 8da4w only v_wmma_i32_16x16x16_iu8; the instruction counts match the tile arithmetic, with no register spills",
+    "state": "RADV, Mesa 25.2.7, clock not locked",
+    "width": "The roof shaders were measured at subgroup 64 (wave64); the kernels run at subgroup 32 (wave32)",
+    "weight": "Time-weighted over a layer's seven linear calls (as stated in STUDY)",
     "src": "STUDY.md Part A, Part B, Part D",
     "rows": {
      "4w": {
@@ -2106,7 +2106,7 @@
       "reg": 14.764,
       "fed": 14.452,
       "reuse": null,
-      "reuse_note": "工具的对应档（9 个形状为 9.62 TFLOP/s，3 次重复；其余 3 个为 4.81，单次）低于内核，内核是它的 111 % 到 242 %，不能当上限",
+      "reuse_note": "The tool's corresponding row (9.62 TFLOP/s for 9 shapes, 3 repeats; 4.81 for the other 3, single run) is below the kernel; the kernel is 111 % to 242 % of it, so it cannot serve as a roof",
       "kernel": [
        11.496,
        11.589,
@@ -2122,7 +2122,7 @@
        "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt",
        "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x256k32g42s32f32cbt"
       ],
-      "note": "按形状派发五个瓦片",
+      "note": "Five tiles dispatched by shape",
       "in": "fp16"
      },
      "8da4w": {
@@ -2130,7 +2130,7 @@
       "reg": 14.364,
       "fed": 14.121,
       "reuse": null,
-      "reuse_note": "工具的对应档（4.04 与 8.03 TOP/s，均为单次扫描行，未经重复确认）低于内核，内核是它的 133 % 到 294 %，不能当上限",
+      "reuse_note": "The tool's corresponding rows (4.04 and 8.03 TOP/s, both single sweep rows, not confirmed by repetition) are below the kernel; the kernel is 133 % to 294 % of them, so they cannot serve as a roof",
       "kernel": [
        11.577,
        11.717,
@@ -2150,7 +2150,7 @@
       "reg": 14.764,
       "fed": 14.452,
       "reuse": null,
-      "reuse_note": "K、V 直接来自存储缓冲；缓存供数的对应档为 7.93 TFLOP/s（单次），内核是它的 97 % 到 110 %",
+      "reuse_note": "K and V come directly from storage buffers; the corresponding cache-fed row is 7.93 TFLOP/s (single run), and the kernel is 97 % to 110 % of it",
       "kernel": [
        7.698,
        8.274,
@@ -2163,46 +2163,46 @@
       "also": [
        "sarc_dev_780m_sdpa_fused3sb_d64_t32x32g11s32rko"
       ],
-      "note": "时间是整个融合节点（拷贝一遍加融合内核），按实际执行的乘加计",
+      "note": "The time is the whole fused node (one copy pass plus the fused kernel), counted on the multiply-adds actually executed",
       "in": "fp16"
      }
     },
     "chain": {
      "scheme": "4w",
-     "basis": "8B wq_wo（t256x128k32g18）",
+     "basis": "8B wq_wo (t256x128k32g18)",
      "unit": "TFLOP/s",
      "loss_basis": "prev",
      "steps": [
       {
-       "label": "寄存器上限",
+       "label": "Register roof",
        "rate": 14.764,
        "loss": null
       },
       {
-       "label": "共享内存供数（CHAINS 8）",
+       "label": "Fed from shared memory (CHAINS 8)",
        "rate": 14.452,
        "loss": 2.1
       },
       {
-       "label": "最接近内核复用的一档（CHAINS 4）",
+       "label": "Row closest to the kernel's reuse (CHAINS 4)",
        "rate": 9.623,
        "loss": 33.4
       },
       {
-       "label": "内核",
+       "label": "Kernel",
        "rate": 11.705,
        "loss": -21.6
       }
      ],
-     "note": "第三步不是内核付出的损失：内核高于这一档。按装入指令数计，供数约占 2 个百分点，其余约 19 个百分点不在任何上限行里，campaign 的阶段计时把它们归到暂存与等待"
+     "note": "The third step is not a loss the kernel pays: the kernel is above this row. Counted by the number of load instructions, feeding accounts for about 2 percentage points; the remaining 19 or so percentage points are in no roof row, and the campaign's stage timing attributes them to staging and waiting"
     }
    },
    "b580": {
     "isa": true,
-    "isa_note": "驱动（ANV）列出的指令：两个线性内核和融合注意力内核都生成 dpas，每次乘加一条，条数与瓦片算术一致，溢出与回填 0 : 0",
-    "state": "ANV，Mesa 26.2.3，时钟未锁定",
-    "width": "上限着色器为 SIMD32，内核为 SIMD16",
-    "weight": "按一层七次线性调用的时间加权（STUDY 所述）",
+    "isa_note": "Instructions listed by the driver (ANV): both linear kernels and the fused attention kernel generate dpas, one per multiply-add; the counts match the tile arithmetic; spills and fills 0 : 0",
+    "state": "ANV, Mesa 26.2.3, clock not locked",
+    "width": "Roof shaders are SIMD32, kernels are SIMD16",
+    "weight": "Time-weighted over a layer's seven linear calls (as stated in STUDY)",
     "src": "STUDY.md A, B, D",
     "rows": {
      "4w": {
@@ -2210,7 +2210,7 @@
       "reg": 111.72,
       "fed": 109.76,
       "reuse": null,
-      "reuse_note": "无匹配上限：fp16 到 fp16 的低复用档两次都没过工具的质量门",
+      "reuse_note": "No matching roof: the low-reuse fp16-to-fp16 row failed the tool's quality gate both times",
       "kernel": [
        45.13,
        44.59,
@@ -2227,7 +2227,7 @@
       "reg": 231.37,
       "fed": 206.36,
       "reuse": 72.81,
-      "reuse_note": "CHAINS 2，3 次重复；有两个形状的内核读数高于这一档（103.4 % 与 101.8 %），它不是严格的上限",
+      "reuse_note": "CHAINS 2, 3 repeats; the kernel reads above this row on two shapes (103.4 % and 101.8 %), so it is not a strict roof",
       "kernel": [
        69.88,
        69.64,
@@ -2244,7 +2244,7 @@
       "reg": 115.68,
       "fed": null,
       "reuse": null,
-      "reuse_note": "无匹配的供数上限：操作数来自存储缓冲和共享内存",
+      "reuse_note": "No matching fed roof: the operands come from storage buffers and shared memory",
       "kernel": [
        24.42,
        24.18,
@@ -2257,50 +2257,50 @@
       "also": [
        "sarc_dev_b580_sdpa_fused_d64_t16x64s16m8g4roj"
       ],
-      "note": "时间是整个注意力算子；只计实际执行的因果块",
+      "note": "The time is the whole attention operator; only the causal blocks actually executed are counted",
       "in": "fp16"
      }
     },
     "chain": {
      "scheme": "8da4w",
-     "basis": "8B 加权",
+     "basis": "8B, weighted",
      "unit": "TOP/s",
      "loss_basis": "prev",
      "steps": [
       {
-       "label": "寄存器上限",
+       "label": "Register roof",
        "rate": 231.37,
        "loss": null,
        "share": null
       },
       {
-       "label": "共享内存供数（CHAINS 8）",
+       "label": "Fed from shared memory (CHAINS 8)",
        "rate": 206.36,
        "loss": 10.8,
        "share": 15.1
       },
       {
-       "label": "按内核的复用供数（CHAINS 2）",
+       "label": "Fed at the kernel's reuse (CHAINS 2)",
        "rate": 72.81,
        "loss": 64.7,
        "share": 80.8
       },
       {
-       "label": "内核",
+       "label": "Kernel",
        "rate": 66.07,
        "loss": 9.3,
        "share": 4.1
       }
      ],
-     "note": "“损失”是相对上一步；“占整段距离”是这一步占寄存器上限到内核的全部差距（165.31 TOP/s）的份额。3B、1B 的最后一步为 4.3 % 与 4.0 %"
+     "note": "\"Loss\" is relative to the previous step; \"share of the whole distance\" is this step's share of the full gap from the register roof to the kernel (165.31 TOP/s). The last step for 3B and 1B is 4.3 % and 4.0 %"
     }
    },
    "b70": {
     "isa": true,
-    "isa_note": "驱动（ANV）列出的指令：每次乘加一条 dpas，与瓦片算术一致，无溢出，SIMD16，128 个寄存器",
-    "state": "ANV，Mesa 26.2.3，时钟未锁定",
-    "width": "上限着色器为 SIMD32，内核为 SIMD16",
-    "weight": "四个形状的算术平均（STUDY 只给逐形状数值与 12 个形状的几何平均：4w 39.3 %，8da4w 29.6 %）",
+    "isa_note": "Instructions listed by the driver (ANV): one dpas per multiply-add, consistent with the tile arithmetic, no spills, SIMD16, 128 registers",
+    "state": "ANV, Mesa 26.2.3, clock not locked",
+    "width": "Roof shaders are SIMD32, kernels are SIMD16",
+    "weight": "Arithmetic mean of four shapes (STUDY gives only per-shape values and the geometric mean of 12 shapes: 4w 39.3 %, 8da4w 29.6 %)",
     "src": "STUDY.md Part A, Part B, Part D",
     "rows": {
      "4w": {
@@ -2308,7 +2308,7 @@
       "reg": 173.3,
       "fed": 168.4,
       "reuse": null,
-      "reuse_note": "无匹配上限：工具把 fp16 到 fp16 的这一档判为样本过短",
+      "reuse_note": "No matching roof: the tool judged this fp16-to-fp16 row to be too short a sample",
       "kernel": [
        65.84,
        69.75,
@@ -2328,7 +2328,7 @@
       "reg": 359.9,
       "fed": 323.3,
       "reuse": 113.9,
-      "reuse_note": "每装入一对做 2 次乘加的一档，单次运行，未经重复确认；有四个形状的内核读数在它的 100 % 到 103 %，它不是严格的上限",
+      "reuse_note": "The row with 2 multiply-adds per loaded pair, single run, not confirmed by repetition; the kernel reads at 100 % to 103 % of it on four shapes, so it is not a strict roof",
       "kernel": [
        105.16,
        111.2,
@@ -2345,7 +2345,7 @@
       "reg": 179.9,
       "fed": 166.6,
       "reuse": 54.03,
-      "reuse_note": "缓存供数的一档，单次运行，未经重复确认",
+      "reuse_note": "A cache-fed row, single run, not confirmed by repetition",
       "kernel": [
        36.63,
        36.69,
@@ -2358,46 +2358,46 @@
       "also": [
        "sarc_dev_b580_sdpa_fused_d64_t16x64s16m8g4roj"
       ],
-      "note": "时间是整个注意力调用；只计实际执行的因果一半",
+      "note": "The time is the whole attention call; only the causal half actually executed is counted",
       "in": "fp16"
      }
     },
     "chain": {
      "scheme": "8da4w",
-     "basis": "12 个形状的几何平均",
+     "basis": "geometric mean of 12 shapes",
      "unit": "TOP/s",
      "loss_basis": "points",
      "steps": [
       {
-       "label": "寄存器上限",
+       "label": "Register roof",
        "rate": 359.9,
        "loss": null
       },
       {
-       "label": "共享内存供数（每对 8 次乘加）",
+       "label": "Fed from shared memory (8 multiply-adds per pair)",
        "rate": 323.3,
        "loss": 10.2
       },
       {
-       "label": "按内核的复用供数（每对 2 次，单次运行）",
+       "label": "Fed at the kernel's reuse (2 per pair, single run)",
        "rate": 113.9,
        "loss": 58.2
       },
       {
-       "label": "内核",
+       "label": "Kernel",
        "rate": 106.6,
        "loss": 2.0
       }
      ],
-     "note": "这一条的“损失”按寄存器上限的百分点计（10.2 + 58.2 + 2.0 = 70.4）"
+     "note": "For this chain, \"loss\" is in percentage points of the register roof (10.2 + 58.2 + 2.0 = 70.4)"
     }
    },
    "4070ti": {
     "isa": false,
-    "isa_note": "未经 ISA 验证：这个驱动只返回五项管线统计，不给反汇编。间接依据：与上限着色器同一条 SPIR-V 指令、同类型同形状，内核的乘加阶段速率与上限一致",
-    "state": "专有驱动 615.71.09，时钟未锁定，功耗上限 285 W",
-    "width": "上限着色器与内核同为子组 32",
-    "weight": "四个形状的算术平均（STUDY 只给逐形状数值与中位数：4w 66.2 %，8da4w 41.6 %）",
+    "isa_note": "Not ISA-verified: this driver returns only five pipeline statistics and no disassembly. Indirect evidence: the same SPIR-V instruction, the same types and the same shape as the roof shader, and the rate of the kernel's multiply-add stage matches the roof",
+    "state": "Proprietary driver 615.71.09, clock not locked, power limit 285 W",
+    "width": "Roof shaders and kernels are both at subgroup 32",
+    "weight": "Arithmetic mean of four shapes (STUDY gives only per-shape values and the median: 4w 66.2 %, 8da4w 41.6 %)",
     "src": "STUDY.md Part A, Part B, Part D",
     "rows": {
      "4w": {
@@ -2405,7 +2405,7 @@
       "reg": 182.95,
       "fed": 177.94,
       "reuse": 173.55,
-      "reuse_note": "32 flop/B 一档，3 次确认重复里工具采用了 2 次；内核的复用是 25.6（1B wk_wv 的瓦片 21.3），这是最近的可用档",
+      "reuse_note": "The 32 flop/B row; the tool used 2 of the 3 confirmation repeats; the kernel's reuse is 25.6 (21.3 for the 1B wk_wv tile), and this is the nearest usable row",
       "kernel": [
        115.27,
        120.78,
@@ -2418,7 +2418,7 @@
       "also": [
        "sarc_linear_q4gsw_coopmat_t128x128k16g24s32ga"
       ],
-      "note": "每 128-K 量化组结束时把 fp16 累加器加进 fp32 总和，在矩阵指令之外",
+      "note": "At the end of each 128-K quantization group the fp16 accumulator is added into an fp32 sum, outside the matrix instruction",
       "in": "fp16"
      },
      "8da4w": {
@@ -2426,7 +2426,7 @@
       "reg": 369.24,
       "fed": 367.69,
       "reuse": 367.06,
-      "reuse_note": "32 op/B 一档，单次扫描行，未经重复确认；相邻已确认的一档（64 op/B）相差 0.2 %",
+      "reuse_note": "The 32 op/B row, a single sweep row, not confirmed by repetition; the adjacent confirmed row (64 op/B) differs by 0.2 %",
       "kernel": [
        145.09,
        153.98,
@@ -2443,7 +2443,7 @@
       "reg": 92.8,
       "fed": 92.19,
       "reuse": null,
-      "reuse_note": "K、V 来自全局缓冲，共享内存供数的各档（92.15 单次、92.65）只作参照",
+      "reuse_note": "K and V come from global buffers; the shared-memory-fed rows (92.15 single run, 92.65) are for reference only",
       "kernel": [
        45.61,
        52.39,
@@ -2456,7 +2456,7 @@
       "also": [
        "sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko"
       ],
-      "note": "时间是微基准里一层的整个注意力（融合内核加 K/V 拷贝）",
+      "note": "The time is the whole attention of one layer in the microbenchmark (fused kernel plus K/V copy)",
       "in": "fp16"
      }
     },
@@ -2467,35 +2467,35 @@
      "loss_basis": "prev",
      "steps": [
       {
-       "label": "寄存器上限",
+       "label": "Register roof",
        "rate": 369.24,
        "loss": null
       },
       {
-       "label": "共享内存供数（最高复用）",
+       "label": "Fed from shared memory (highest reuse)",
        "rate": 367.69,
        "loss": 0.4
       },
       {
-       "label": "按内核的复用供数（32 op/B，单次）",
+       "label": "Fed at the kernel's reuse (32 op/B, single run)",
        "rate": 367.06,
        "loss": 0.2
       },
       {
-       "label": "内核",
+       "label": "Kernel",
        "rate": 155.34,
        "loss": 57.7
       }
      ],
-     "note": "整段差距都在最后一步：这张卡上从共享内存装入操作数在任何复用下都不花钱（365.9 到 367.8 TOP/s），内核损失的是矩阵单元等待的时间。12 个形状最后一步为 57.7 % 到 63.1 %"
+     "note": "The whole gap is in the last step: on this card loading operands from shared memory costs nothing at any reuse (365.9 to 367.8 TOP/s), and what the kernel loses is the time the matrix unit spends waiting. Across the 12 shapes the last step is 57.7 % to 63.1 %"
     }
    },
    "orin": {
     "isa": false,
-    "isa_note": "未经 ISA 验证：这个驱动只返回管线统计。间接依据：4w 的速率是标量 fp16 上限的 3.3 到 3.6 倍，8da4w 是 int8 点积上限的 2.4 到 2.7 倍，标量代码达不到",
-    "state": "功耗模式 15 W，GPU 时钟 306 到 612 MHz（负载下 612 MHz），nvgpu 595.78",
-    "width": "上限着色器与内核同为子组 32",
-    "weight": "四个形状的算术平均（STUDY 只给逐形状数值与 12 个形状的几何平均：4w 63.2 %，8da4w 27.3 %）",
+    "isa_note": "Not ISA-verified: this driver returns only pipeline statistics. Indirect evidence: the 4w rate is 3.3 to 3.6 times the scalar fp16 roof and the 8da4w rate is 2.4 to 2.7 times the int8 dot-product roof, which scalar code cannot reach",
+    "state": "Power mode 15 W, GPU clock 306 to 612 MHz (612 MHz under load), nvgpu 595.78",
+    "width": "Roof shaders and kernels are both at subgroup 32",
+    "weight": "Arithmetic mean of four shapes (STUDY gives only per-shape values and the geometric mean of 12 shapes: 4w 63.2 %, 8da4w 27.3 %)",
     "src": "STUDY.md Part A, Part B, Part D",
     "rows": {
      "4w": {
@@ -2503,7 +2503,7 @@
       "reg": 9.684,
       "fed": 9.517,
       "reuse": null,
-      "reuse_note": "无匹配上限：fp16 到 fp16 在 64 ops/B 以下没有过质量门的档，内核的复用是 25.6",
+      "reuse_note": "No matching roof: fp16 to fp16 has no row below 64 ops/B that passed the quality gate; the kernel's reuse is 25.6",
       "kernel": [
        6.051,
        6.188,
@@ -2516,7 +2516,7 @@
       "also": [
        "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32c"
       ],
-      "note": "8B w2 派发的是 fp32 累加的瓦片，它对应的上限是 9.731 与 8.829；寄存器 128 个每线程",
+      "note": "8B w2 dispatches a tile with fp32 accumulation, whose roofs are 9.731 and 8.829; 128 registers per thread",
       "in": "fp16"
      },
      "8da4w": {
@@ -2524,7 +2524,7 @@
       "reg": 19.51,
       "fed": 17.41,
       "reuse": 9.138,
-      "reuse_note": "32 ops/B 一档，3 次重复；内核的复用是 42.7，下一档（64 ops/B）为 15.8，内核自己的位置在两者之间",
+      "reuse_note": "The 32 ops/B row, 3 repeats; the kernel's reuse is 42.7 and the next row (64 ops/B) is 15.8, so the kernel's own position lies between the two",
       "kernel": [
        5.199,
        5.377,
@@ -2534,7 +2534,7 @@
       "acc": "int32",
       "sg": 32,
       "name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra",
-      "note": "寄存器 208 到 209 个每线程",
+      "note": "208 to 209 registers per thread",
       "in": "int8"
      },
      "attn": {
@@ -2542,7 +2542,7 @@
       "reg": 9.731,
       "fed": 8.829,
       "reuse": null,
-      "reuse_note": "K、V 直接来自存储缓冲；缓存供数的对应档为 3.99（1B）与 2.22（3B、8B）TFLOP/s",
+      "reuse_note": "K and V come directly from storage buffers; the corresponding cache-fed rows are 3.99 (1B) and 2.22 (3B, 8B) TFLOP/s",
       "kernel": [
        1.487,
        1.855,
@@ -2555,38 +2555,38 @@
       "also": [
        "sarc_dev_orin_sdpa_fused3sb_d64_t32x32g11s32rko"
       ],
-      "note": "时间是微基准里整个注意力算子",
+      "note": "The time is the whole attention operator in the microbenchmark",
       "in": "fp16"
      }
     },
     "chain": {
      "scheme": "8da4w",
-     "basis": "12 个形状的几何平均",
+     "basis": "geometric mean of 12 shapes",
      "unit": "TOP/s",
      "loss_basis": "prev",
      "steps": [
       {
-       "label": "寄存器上限",
+       "label": "Register roof",
        "rate": 19.51,
        "loss": null
       },
       {
-       "label": "共享内存供数（最高复用，128 ops/B）",
+       "label": "Fed from shared memory (highest reuse, 128 ops/B)",
        "rate": 17.41,
        "loss": 10.8
       },
       {
-       "label": "按内核的复用供数（32 ops/B 一档）",
+       "label": "Fed at the kernel's reuse (the 32 ops/B row)",
        "rate": 9.14,
        "loss": 47.5
       },
       {
-       "label": "内核",
+       "label": "Kernel",
        "rate": 5.33,
        "loss": 41.6
       }
      ],
-     "note": "乘加阶段本身已在复用处的上限（内核速率除以乘加阶段占比得 9.0 到 11.1 TOP/s）；最后一步是它周围的暂存时间"
+     "note": "The multiply-add stage itself is already at the roof at reuse (the kernel rate divided by the multiply-add stage's share gives 9.0 to 11.1 TOP/s); the last step is the staging time around it"
     }
    }
   }
@@ -2607,13 +2607,13 @@
   function text(parent, x, y, s, cls, anchor) { const t = el('text', { x, y, 'text-anchor': anchor || 'start', class: cls || '' }, parent); t.textContent = s; return t; }
   const pct = (g) => (g >= 0 ? '+' : '') + g.toFixed(2) + ' %';
 
-  // ---------- 设备与最终收益 ----------
+  // ---------- Devices and final gain ----------
   const devices = DATA.devices;
   const tiles = $('#tiles');
-  // 头条数字：相对未修改的 ExecuTorch（Vulkan 后端，不用协作矩阵）的加速比，d.stock = [9 月发布版, 调优后]。
-  // 相对 9 月发布版的增益 d.final 放在副行。不公布数字的设备：final 不是数字（null）。
+  // Headline number: the speed-up over unmodified ExecuTorch (Vulkan backend, no cooperative matrix), d.stock = [September release, tuned].
+  // The gain over the September release, d.final, goes on the sub-line. Devices without published figures: final is not a number (null).
   const maxStock = 8;
-  const NO_FIG = '不公布数字';
+  const NO_FIG = 'figures not published';
   const hasNum = (d) => typeof d.final === 'number';
   const fin = (d) => '+' + d.final.toFixed(1) + ' %';
   const sx = (v) => v.toFixed(2) + '×';
@@ -2624,16 +2624,16 @@
       t.innerHTML = `<div class="label">${d.name}</div><div class="value text">${NO_FIG}</div><div class="sub">${d.base}</div>`;
       attach(t, `<b>${d.name}</b><br>${d.note || d.base}`);
     } else if (d.stock) {
-      t.innerHTML = `<div class="label">${d.name}</div><div class="value">${sx(d.stock[1])}</div><div class="sub">相对原版 ExecuTorch</div><div class="sub">9 月发布版 ${sx(d.stock[0])} · 本轮 ${fin(d)}</div><div class="meter" aria-hidden="true"><span style="width:${Math.min(100, Math.max(0, d.stock[1] / maxStock * 100)).toFixed(1)}%"></span></div>`;
-      attach(t, `<b>${d.name}</b><br>相对未修改的 ExecuTorch 1.5（Vulkan 后端，不用协作矩阵）：${sx(d.stock[1])}，六格几何平均<br>其中 9 月发布版已到 ${sx(d.stock[0])}，本轮调优再 ${fin(d)}（${d.base}）${d.stock_note ? '<br>' + d.stock_note : ''}${d.note ? '<br>' + d.note : ''}`);
+      t.innerHTML = `<div class="label">${d.name}</div><div class="value">${sx(d.stock[1])}</div><div class="sub">over stock ExecuTorch</div><div class="sub">September release ${sx(d.stock[0])} · this round ${fin(d)}</div><div class="meter" aria-hidden="true"><span style="width:${Math.min(100, Math.max(0, d.stock[1] / maxStock * 100)).toFixed(1)}%"></span></div>`;
+      attach(t, `<b>${d.name}</b><br>Over unmodified ExecuTorch 1.5 (Vulkan backend, no cooperative matrix): ${sx(d.stock[1])}, geometric mean of six cells<br>Of this, the September release had already reached ${sx(d.stock[0])}, and this round of tuning adds ${fin(d)} (${d.base})${d.stock_note ? '<br>' + d.stock_note : ''}${d.note ? '<br>' + d.note : ''}`);
     } else {
       t.innerHTML = `<div class="label">${d.name}</div><div class="value">${fin(d)}</div><div class="sub">${d.base}</div>`;
-      attach(t, `<b>${d.name}</b><br>最终几何平均 ${fin(d)}，${d.base}${d.note ? '<br>' + d.note : ''}`);
+      attach(t, `<b>${d.name}</b><br>Final geometric mean ${fin(d)}, ${d.base}${d.note ? '<br>' + d.note : ''}`);
     }
     tiles.appendChild(t);
   });
 
-  // ---------- 图 1：候选链 ----------
+  // ---------- Figure 1: candidate chain ----------
   const cats = DATA.cats;
   const catBy = Object.fromEntries(cats.map((c) => [c.key, c]));
   const chains = DATA.chains;
@@ -2644,7 +2644,7 @@
     const W = 1040, left = 170, right = 70, rowH = 40, top = 30;
     const rows = devices.map((d) => d.id);
     const H = top + rows.length * rowH + 30;
-    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '每台设备被采纳候选的累计增益堆叠图' });
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Stacked chart of the cumulative gain of the adopted candidates of each device' });
     const maxLn = Math.log(1.82);
     const x = (ln) => left + (ln / maxLn) * (W - left - right);
     [0, 10, 20, 30, 40, 50, 60, 70, 80].forEach((p) => { const xx = x(Math.log(1 + p / 100)); el('line', { x1: xx, x2: xx, y1: top - 6, y2: H - 28, class: 'grid' }, svg); text(svg, xx, H - 12, (p ? '+' : '') + p + ' %', 'mono', 'middle'); });
@@ -2652,33 +2652,33 @@
       const d = devices.find((v) => v.id === id); const y = top + i * rowH;
       text(svg, left - 12, y + 16, d.name, 'strong', 'end');
       let acc = 0; const barH = 22;
-      if (!chains[id] || !chains[id].length) { text(svg, left + 6, y + 16, `${d.base}，各项技术采纳与否见图 2`, 'tiny'); return; }
+      if (!chains[id] || !chains[id].length) { text(svg, left + 6, y + 16, `${d.base}; see figure 2 for which techniques were adopted`, 'tiny'); return; }
       chains[id].forEach((seg) => {
         const w = Math.log(1 + seg.g / 100); const x0 = x(acc), x1 = x(acc + w); acc += w;
         const r = el('rect', { x: x0 + 1, y, width: Math.max(0, x1 - x0 - 2), height: barH, fill: catBy[seg.c].color, rx: 0 }, svg);
         if (seg.g <= 0) { r.setAttribute('width', 2); r.setAttribute('x', x0 - 1); }
         const hit = el('rect', { x: x0 - 2, y: y - 4, width: Math.max(8, x1 - x0 + 4), height: barH + 8, class: 'hit' }, svg);
-        attach(hit, `<b>${d.name}</b><br>${seg.n}<br>相对父配置 <b>${pct(seg.g)}</b> · ${catBy[seg.c].name}`);
+        attach(hit, `<b>${d.name}</b><br>${seg.n}<br><b>${pct(seg.g)}</b> over parent configuration · ${catBy[seg.c].name}`);
       });
       const total = (Math.exp(acc) - 1) * 100;
       text(svg, x(acc) + 8, y + 16, pct(total).replace('.00', ''), 'mono strong');
-      if (typeof reported[id] === 'number') text(svg, left - 12, y + 32, `最终场次直接测得 ${pct(reported[id]).replace(' %', '%')}`, 'tiny', 'end');
+      if (typeof reported[id] === 'number') text(svg, left - 12, y + 32, `final session: ${pct(reported[id]).replace(' %', '%')}`, 'tiny', 'end');
     });
     $('#chart-chain').appendChild(svg);
-    const tb = ['<table><thead><tr><th>设备</th><th>候选</th><th>技术</th><th class="num">增益</th></tr></thead><tbody>'];
+    const tb = ['<table><thead><tr><th>Device</th><th>Candidate</th><th>Technique</th><th class="num">Gain</th></tr></thead><tbody>'];
     rows.forEach((id) => (chains[id] || []).forEach((s) => tb.push(`<tr><td>${devices.find((v) => v.id === id).name}</td><td>${s.n}</td><td>${catBy[s.c].name}</td><td class="num">${pct(s.g)}</td></tr>`)));
     tb.push('</tbody></table>'); $('#table-chain').innerHTML = tb.join('');
   })();
 
-  // ---------- 图 2：矩阵 ----------
-  // 列顺序：先是固定的六台，其后是 devices 里新增的设备，按其在 devices 中的顺序。列数写进 --ncol，样式据此排版。
+  // ---------- Figure 2: matrix ----------
+  // Column order: the six fixed devices first, then any device added to devices, in its order there. The column count is written to --ncol and the styles lay out from it.
   const baseOrder = ['780m', 'b580', 'b70', '4070ti', 'orin', 'rx7600'];
   const devOrder = baseOrder.filter((id) => devices.some((v) => v.id === id)).concat(devices.map((v) => v.id).filter((id) => !baseOrder.includes(id)));
   const techs = DATA.techs;
   (function drawMatrix() {
     const m = $('#matrix');
     m.style.setProperty('--ncol', devOrder.length);
-    const h0 = document.createElement('div'); h0.className = 'h'; h0.textContent = '技术'; m.appendChild(h0);
+    const h0 = document.createElement('div'); h0.className = 'h'; h0.textContent = 'Technique'; m.appendChild(h0);
     devOrder.forEach((id) => { const d = devices.find((v) => v.id === id); const h = document.createElement('div'); h.className = 'h dev'; h.innerHTML = `${d.name}<small>${d.vendor} · ${hasNum(d) ? fin(d) : NO_FIG}</small>`; m.appendChild(h); });
     const q = (g) => g >= 40 ? 'q6' : g >= 15 ? 'q5' : g >= 6 ? 'q4' : g >= 3 ? 'q3' : g >= 1 ? 'q2' : 'q1';
     techs.forEach((t) => {
@@ -2686,17 +2686,17 @@
       devOrder.forEach((id) => {
         const c = t.cells[id] || { k: 'none' }; const d = devices.find((v) => v.id === id); const cell = document.createElement('div'); cell.setAttribute('role', 'cell');
         let html = '', tipHtml = `<b>${d.name}</b> · ${t.name}<br>`;
-        if (c.k === 'ok') { cell.className = 'c ' + (c.g !== undefined ? q(c.g) : 'q4'); html = `<span class="v">${c.g !== undefined ? pct(c.g).replace(' %', '%') : (c.v || '已采纳')}</span>${c.n ? `<span class="n">${c.n}</span>` : ''}`; tipHtml += c.t || (c.g !== undefined ? `采纳，相对父配置 ${pct(c.g)}${c.n ? '（' + c.n + '）' : ''}` : (c.v || '已采纳')); }
-        else if (c.k === 'tried') { cell.className = 'c tried'; html = `<span class="v">${c.v || '试过'}</span><span class="n">未采纳</span>`; tipHtml += (c.t || '试过，未采纳'); }
-        else if (c.k === 'inherit') { cell.className = 'c inherit'; html = `<span class="n">${c.v || '继承'}</span>`; tipHtml += (c.t || c.v || '继承'); }
-        else if (c.k === 'pending') { cell.className = 'c pending'; html = `<span class="n">${c.v || '待定'}</span>`; tipHtml += (c.t || c.v || '待定'); }
-        else { cell.className = 'c none'; html = `<span class="n">${c.v || '—'}</span>`; tipHtml += (c.t || c.v || '没做'); }
+        if (c.k === 'ok') { cell.className = 'c ' + (c.g !== undefined ? q(c.g) : 'q4'); html = `<span class="v">${c.g !== undefined ? pct(c.g).replace(' %', '%') : (c.v || 'adopted')}</span>${c.n ? `<span class="n">${c.n}</span>` : ''}`; tipHtml += c.t || (c.g !== undefined ? `adopted, ${pct(c.g)} over parent configuration${c.n ? ' (' + c.n + ')' : ''}` : (c.v || 'adopted')); }
+        else if (c.k === 'tried') { cell.className = 'c tried'; html = `<span class="v">${c.v || 'tried'}</span><span class="n">not adopted</span>`; tipHtml += (c.t || 'tried, not adopted'); }
+        else if (c.k === 'inherit') { cell.className = 'c inherit'; html = `<span class="n">${c.v || 'inherited'}</span>`; tipHtml += (c.t || c.v || 'inherited'); }
+        else if (c.k === 'pending') { cell.className = 'c pending'; html = `<span class="n">${c.v || 'pending'}</span>`; tipHtml += (c.t || c.v || 'pending'); }
+        else { cell.className = 'c none'; html = `<span class="n">${c.v || '—'}</span>`; tipHtml += (c.t || c.v || 'not done'); }
         cell.innerHTML = html; attach(cell, tipHtml); m.appendChild(cell);
       });
     });
   })();
 
-  // ---------- 图 3：时间去向 ----------
+  // ---------- Figure 3: where the time goes ----------
   const fams = DATA.fams;
   const timeRows = DATA.timeRows;
   const lt = $('#legend-time');
@@ -2705,69 +2705,69 @@
     const W = 1040, left = 190, right = 80, rowH = 30, groupGap = 18, top = 24;
     const groups = [...new Set(timeRows.map((r) => r.dev))];
     const H = top + timeRows.length * rowH + (groups.length - 1) * groupGap + 34;
-    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '调优前后 8B 预填充各内核族的派发时间堆叠条' });
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Stacked bars of the dispatch time of each kernel family in 8B prefill, before and after tuning' });
     const maxMs = 1500; const x = (ms) => left + (ms / maxMs) * (W - left - right);
     [0, 250, 500, 750, 1000, 1250, 1500].forEach((ms) => { const xx = x(ms); el('line', { x1: xx, x2: xx, y1: top - 6, y2: H - 30, class: 'grid' }, svg); text(svg, xx, H - 12, ms.toLocaleString() + (ms === 1500 ? ' ms' : ''), 'mono', 'middle'); });
     let y = top, lastDev = null;
     timeRows.forEach((r) => {
       if (lastDev && r.dev !== lastDev) y += groupGap; lastDev = r.dev;
-      if (r.arm === '父配置') text(svg, left - 12, y + 14, r.dev, 'strong', 'end');
-      text(svg, left - 12, y + 14 + (r.arm === '父配置' ? 14 : 0), r.arm, 'tiny', 'end');
+      if (r.arm === 'parent configuration') text(svg, left - 12, y + 14, r.dev, 'strong', 'end');
+      text(svg, left - 12, y + 14 + (r.arm === 'parent configuration' ? 14 : 0), r.arm, 'tiny', 'end');
       let acc = 0; const total = Object.values(r.v).reduce((a, b) => a + b, 0);
-      fams.forEach((f) => { if (!(f.key in r.v)) return; const ms = r.v[f.key]; const x0 = x(acc), x1 = x(acc + ms); acc += ms; const rect = el('rect', { x: x0 + 1, y, width: Math.max(0, x1 - x0 - 2), height: 20, fill: f.color }, svg); attach(rect, `<b>${r.dev} · ${r.arm}</b><br>${f.name}：<b>${ms.toFixed(1)} ms</b>，占 ${(ms / total * 100).toFixed(0)} %`); });
+      fams.forEach((f) => { if (!(f.key in r.v)) return; const ms = r.v[f.key]; const x0 = x(acc), x1 = x(acc + ms); acc += ms; const rect = el('rect', { x: x0 + 1, y, width: Math.max(0, x1 - x0 - 2), height: 20, fill: f.color }, svg); attach(rect, `<b>${r.dev} · ${r.arm}</b><br>${f.name}: <b>${ms.toFixed(1)} ms</b>, ${(ms / total * 100).toFixed(0)} % of the total`); });
       text(svg, x(total) + 8, y + 15, total.toFixed(0) + ' ms', 'mono strong');
       y += rowH;
     });
     $('#chart-time').appendChild(svg);
-    const tb = ['<table><thead><tr><th>格</th><th>臂</th>' + fams.map((f) => `<th class="num">${f.name}</th>`).join('') + '<th class="num">合计</th></tr></thead><tbody>'];
+    const tb = ['<table><thead><tr><th>Cell</th><th>Arm</th>' + fams.map((f) => `<th class="num">${f.name}</th>`).join('') + '<th class="num">Total</th></tr></thead><tbody>'];
     timeRows.forEach((r) => { const total = Object.values(r.v).reduce((a, b) => a + b, 0); tb.push(`<tr><td>${r.dev}</td><td>${r.arm}</td>${fams.map((f) => `<td class="num">${f.key in r.v ? r.v[f.key].toFixed(1) : ''}</td>`).join('')}<td class="num">${total.toFixed(1)}</td></tr>`); });
     tb.push('</tbody></table>'); $('#table-time').innerHTML = tb.join('');
   })();
 
-  // ---------- 图 4：无回报 ----------
+  // ---------- Figure 4: no return ----------
   (function drawWaste() {
     const rows = DATA.waste;
     const W = 1040, left = 330, right = 120, rowH = 40, top = 24; const H = top + rows.length * rowH + 30;
-    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '参数搜索的机时与端到端收益' });
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Device time and end-to-end gain of the parameter searches' });
     const maxH = 36; const x = (h) => left + (h / maxH) * (W - left - right);
-    [0, 6, 12, 18, 24, 30, 36].forEach((h) => { const xx = x(h); el('line', { x1: xx, x2: xx, y1: top - 6, y2: H - 28, class: 'grid' }, svg); text(svg, xx, H - 12, h + (h === 36 ? ' 小时' : ''), 'mono', 'middle'); });
-    rows.forEach((r, i) => { const y = top + i * rowH; text(svg, left - 12, y + 16, r.name, 'strong', 'end'); const rect = el('rect', { x: x(0), y, width: Math.max(2, x(r.hours) - x(0)), height: 22, fill: 'var(--neutral)' }, svg); attach(rect, `<b>${r.name}</b><br>机时约 ${r.hours} 小时，端到端 <b>${r.gain}</b><br>${r.note}`); text(svg, x(r.hours) + 8, y + 16, `${r.hours} h → ${r.gain}`, 'mono strong'); });
+    [0, 6, 12, 18, 24, 30, 36].forEach((h) => { const xx = x(h); el('line', { x1: xx, x2: xx, y1: top - 6, y2: H - 28, class: 'grid' }, svg); text(svg, xx, H - 12, h + (h === 36 ? ' hours' : ''), 'mono', 'middle'); });
+    rows.forEach((r, i) => { const y = top + i * rowH; text(svg, left - 12, y + 16, r.name, 'strong', 'end'); const rect = el('rect', { x: x(0), y, width: Math.max(2, x(r.hours) - x(0)), height: 22, fill: 'var(--neutral)' }, svg); attach(rect, `<b>${r.name}</b><br>About ${r.hours} hours of device time, end to end <b>${r.gain}</b><br>${r.note}`); text(svg, x(r.hours) + 8, y + 16, `${r.hours} h → ${r.gain}`, 'mono strong'); });
     $('#chart-waste').appendChild(svg);
   })();
 
-  // ---------- 图 5：llama.cpp ----------
+  // ---------- Figure 5: llama.cpp ----------
   (function drawLlama() {
     const rows = DATA.llama;
     const models = ['1B', '3B', '8B'];
     const W = 1040, left = 170, right = 30, rowH = 44, top = 30; const H = top + rows.length * rowH + 34;
-    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '调优后相对 llama.cpp 两种后端的速度比' });
-    const minR = 0.6, maxR = 2.2; const x = (r) => left + ((r - minR) / (maxR - minR)) * (W - left - right);
-    [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2].forEach((r) => { const xx = x(r); el('line', { x1: xx, x2: xx, y1: top - 8, y2: H - 30, class: r === 1 ? 'ref' : 'grid' }, svg); text(svg, xx, H - 12, r.toFixed(1) + 'x', 'mono', 'middle'); });
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Speed ratio of the tuned build against the two llama.cpp backends' });
+    const minR = 0.6, maxR = 2.4; const x = (r) => left + ((r - minR) / (maxR - minR)) * (W - left - right);
+    [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4].forEach((r) => { const xx = x(r); el('line', { x1: xx, x2: xx, y1: top - 8, y2: H - 30, class: r === 1 ? 'ref' : 'grid' }, svg); text(svg, xx, H - 12, r.toFixed(1) + 'x', 'mono', 'middle'); });
     rows.forEach((r, i) => {
       const y = top + i * rowH + 10;
       text(svg, left - 12, y + 4, r.name, 'strong', 'end');
-      text(svg, left - 12, y + 19, `厂商后端：${r.vn}`, 'tiny', 'end');
+      text(svg, left - 12, y + 19, `vendor: ${r.vn}`, 'tiny', 'end');
       const lineY = y;
-      [['vk', 'var(--s1)', 'llama.cpp Vulkan'], ['vendor', 'var(--s2)', '厂商后端 ' + r.vn]].forEach(([k, color, label], j) => {
+      [['vk', 'var(--s1)', 'llama.cpp Vulkan'], ['vendor', 'var(--s2)', 'vendor backend ' + r.vn]].forEach(([k, color, label], j) => {
         const vals = r[k]; if (!vals) return; const yy = lineY + j * 14;
         el('line', { x1: x(Math.min(...vals)), x2: x(Math.max(...vals)), y1: yy, y2: yy, stroke: color, 'stroke-width': 2, 'stroke-linecap': 'round' }, svg);
-        vals.forEach((v, mi) => { el('circle', { cx: x(v), cy: yy, r: 6, fill: 'var(--surface)' }, svg); const c = el('circle', { cx: x(v), cy: yy, r: 4.5, fill: color }, svg); attach(c, `<b>${r.name}</b> · ${models[mi]}<br>调优后 4w / ${label}：<b>${v.toFixed(2)}x</b>`); });
+        vals.forEach((v, mi) => { el('circle', { cx: x(v), cy: yy, r: 6, fill: 'var(--surface)' }, svg); const c = el('circle', { cx: x(v), cy: yy, r: 4.5, fill: color }, svg); attach(c, `<b>${r.name}</b> · ${models[mi]}<br>tuned 4w / ${label}: <b>${v.toFixed(2)}x</b>`); });
         text(svg, x(Math.max(...vals)) + 10, yy + 4, models.map((m, mi) => `${m} ${vals[mi].toFixed(2)}`).join(' · '), 'tiny');
       });
     });
     $('#chart-llama').appendChild(svg);
-    const tb = ['<table><thead><tr><th>设备</th><th>对比</th><th class="num">1B</th><th class="num">3B</th><th class="num">8B</th></tr></thead><tbody>'];
-    rows.forEach((r) => { tb.push(`<tr><td>${r.name}</td><td>相对 llama.cpp Vulkan</td>${(r.vk || [null, null, null]).map((v) => `<td class="num">${v == null ? '—' : v.toFixed(2) + 'x'}</td>`).join('')}</tr>`); if (r.vendor) tb.push(`<tr><td></td><td>相对 ${r.vn}</td>${r.vendor.map((v) => `<td class="num">${v.toFixed(2)}x</td>`).join('')}</tr>`); });
+    const tb = ['<table><thead><tr><th>Device</th><th>Comparison</th><th class="num">1B</th><th class="num">3B</th><th class="num">8B</th></tr></thead><tbody>'];
+    rows.forEach((r) => { tb.push(`<tr><td>${r.name}</td><td>vs llama.cpp Vulkan</td>${(r.vk || [null, null, null]).map((v) => `<td class="num">${v == null ? '—' : v.toFixed(2) + 'x'}</td>`).join('')}</tr>`); if (r.vendor) tb.push(`<tr><td></td><td>vs ${r.vn}</td>${r.vendor.map((v) => `<td class="num">${v.toFixed(2)}x</td>`).join('')}</tr>`); });
     tb.push('</tbody></table>'); $('#table-llama').innerHTML = tb.join('');
   })();
-  // ---------- 图 6：分支关系 ----------
+  // ---------- Figure 6: branch relationships ----------
   (function drawBranches() {
     const B = DATA.branches; const lanes = B.lanes; const W = 1400, top = 40, rowH = 46; const H = top + lanes.length * rowH + 40;
     const y = {}; lanes.forEach((l, i) => { y[l.id] = top + i * rowH + 20; });
     const stateCls = { ok: 'head-ok', run: 'head-run', ext: 'head-ext', base: 'head-base' };
     const chipCls = { ok: 'chip-ok', run: 'chip-run', ext: 'chip-ext', base: 'chip-ext' };
     const lg = $('#legend-branches'); B.legend.forEach(([k, n]) => { const sp = document.createElement('span'); const col = k === 'fork' ? 'var(--accent)' : k === 'ok' ? 'var(--ok)' : k === 'run' ? 'var(--run)' : k === 'ext' ? 'var(--ext)' : 'var(--base)'; sp.innerHTML = `<i style="background:${col};border-radius:50%"></i>${n}`; lg.appendChild(sp); });
-    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '分支关系：所有 campaign 分支派生于 780M 分支，四条融合内核移植分支从各自第一轮的头部拉出' }, null);
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Branch relationships: all campaign branches derive from the 780M branch, and the four fused-kernel port branches are created from the heads of their first rounds' }, null);
     svg.setAttribute('style', 'min-width:1180px');
     const defs = el('defs', {}, svg); const mk = el('marker', { id: 'arr-b', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 8, markerHeight: 8, orient: 'auto-start-reverse' }, defs); el('path', { d: 'M0,0 L10,5 L0,10 z', fill: 'currentColor' }, mk);
     const cjk = (t) => [...t].reduce((a, c) => a + (c.charCodeAt(0) > 255 ? 11 : 6.6), 0) + 16;
@@ -2782,27 +2782,27 @@
     $('#chart-branches').appendChild(svg);
   })();
 
-  // ---------- 图 7：全部 tok/s ----------
+  // ---------- Figure 7: all tok/s ----------
   (function drawTokps() {
     const fmt = (v) => v == null ? '—' : Math.round(v).toLocaleString();
     const ratio = (a, b) => (a && b) ? (a / b).toFixed(2) + 'x' : '—';
     const star = { '780m': { '8B': ['stock4w', 'stock8', 'sarc4w', 'vk'] }, 'rx7600': { '8B': ['stock4w'] } };
     const parts = [];
     DATA.tokps.forEach((d) => {
-      parts.push(`<h3 style="margin:14px 0 4px;font-size:0.95rem">${d.name}${d.note ? ` <span style="color:var(--fg3);font-weight:400;font-size:0.8rem">${d.note}</span>` : d.vendorName ? ` <span style="color:var(--fg3);font-weight:400;font-size:0.8rem">厂商后端：llama.cpp ${d.vendorName}</span>` : ' <span style="color:var(--fg3);font-weight:400;font-size:0.8rem">无厂商后端数据</span>'}</h3>`);
-      parts.push('<table><thead><tr><th>模型</th><th class="num">stock 4w</th><th class="num">stock 8da4w</th><th class="num">SARC 4w</th><th class="num">SARC 8da4w</th><th class="num">调优后 4w</th><th class="num">调优后 8da4w</th><th class="num">llama.cpp Vulkan Q4_0</th><th class="num">Vulkan Q4_K_M</th><th class="num">厂商后端 Q4_0</th><th class="num">调优 4w / Vulkan</th><th class="num">调优 4w / 厂商</th><th class="num">调优 4w / stock</th></tr></thead><tbody>');
+      parts.push(`<h3 style="margin:14px 0 4px;font-size:0.95rem">${d.name}${d.note ? ` <span style="color:var(--fg3);font-weight:400;font-size:0.8rem">${d.note}</span>` : d.vendorName ? ` <span style="color:var(--fg3);font-weight:400;font-size:0.8rem">vendor backend: llama.cpp ${d.vendorName}</span>` : ' <span style="color:var(--fg3);font-weight:400;font-size:0.8rem">no vendor backend data</span>'}</h3>`);
+      parts.push('<table><thead><tr><th>Model</th><th class="num">stock 4w</th><th class="num">stock 8da4w</th><th class="num">SARC 4w</th><th class="num">SARC 8da4w</th><th class="num">tuned 4w</th><th class="num">tuned 8da4w</th><th class="num">llama.cpp Vulkan Q4_0</th><th class="num">Vulkan Q4_K_M</th><th class="num">vendor backend Q4_0</th><th class="num">tuned 4w / Vulkan</th><th class="num">tuned 4w / vendor</th><th class="num">tuned 4w / stock</th></tr></thead><tbody>');
       d.cells.forEach((c) => {
         const st = (star[d.id] || {})[c.model] || []; const s = (k, v) => fmt(v) + (st.includes(k) ? '*' : '');
         parts.push(`<tr><td>${c.model}</td><td class="num">${s('stock4w', c.stock4w)}</td><td class="num">${s('stock8', c.stock8)}</td><td class="num">${s('sarc4w', c.sarc4w)}</td><td class="num">${s('sarc8', c.sarc8)}</td><td class="num"><b>${fmt(c.tuned4w)}</b></td><td class="num"><b>${fmt(c.tuned8)}</b></td><td class="num">${s('vk', c.vk)}</td><td class="num">${fmt(c.vkk)}</td><td class="num">${fmt(c.vendor)}</td><td class="num">${ratio(c.tuned4w, c.vk)}</td><td class="num">${ratio(c.tuned4w, c.vendor)}</td><td class="num">${ratio(c.tuned4w, c.stock4w)}</td></tr>`);
       });
       parts.push('</tbody></table>');
-      if (d.cells.some((c) => c.etcuda)) parts.push(`<div style="font-size:0.78rem;color:var(--fg3);margin-top:4px">ExecuTorch CUDA 后端（上游，4w，仅去掉导出守卫）：${d.cells.map((c) => c.model + ' ' + fmt(c.etcuda)).join(' · ')} tok/s，远低于 Vulkan 后端。</div>`);
+      if (d.cells.some((c) => c.etcuda)) parts.push(`<div style="font-size:0.78rem;color:var(--fg3);margin-top:4px">ExecuTorch CUDA backend (upstream, 4w, only the export guard removed): ${d.cells.map((c) => c.model + ' ' + fmt(c.etcuda)).join(' · ')} tok/s, far below the Vulkan backend.</div>`);
     });
     $('#table-tokps').innerHTML = parts.join('');
   })();
 
-  // ---------- 图 8：内核离硬件上限 ----------
-  // 全部数值来自 DATA.roofs；没有条目的设备不出现。reuse 为 null 的行不画菱形。
+  // ---------- Figure 8: kernels against the hardware roof ----------
+  // All values come from DATA.roofs; a device without an entry does not appear. Rows whose reuse is null get no diamond.
   (function drawRoofs() {
     const R = DATA.roofs; if (!R || !$('#chart-roofs')) return;
     const models = R.models; const plotted = R.schemes.filter((sc) => sc.plot);
@@ -2810,70 +2810,70 @@
     const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
     const rate = (v) => v >= 100 ? v.toFixed(1) : v >= 10 ? v.toFixed(2) : v.toFixed(3);
     const share = (v, row) => (v / row.reg * 100).toFixed(1) + ' %';
-    const types = (row) => `${row.mma} · ${row.in} → ${row.acc} · 子组 ${row.sg}`;
+    const types = (row) => `${row.mma} · ${row.in} → ${row.acc} · subgroup ${row.sg}`;
     const W = 1040, left = 200, right = 230, rowH = 34, groupGap = 16, top = 26, barH = 16;
     const nRows = devs.length * plotted.length;
     const H = top + nRows * rowH + (devs.length - 1) * groupGap + 34;
-    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '五台设备两种量化方案的内核速率占寄存器上限的份额，以及两种供数上限的位置' });
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Kernel rate as a share of the register roof for two quantization schemes on five devices, with the positions of the two fed roofs' });
     svg.setAttribute('style', 'min-width:720px');
     const x = (p) => left + (p / 100) * (W - left - right);
-    [0, 20, 40, 60, 80, 100].forEach((p) => { const xx = x(p); el('line', { x1: xx, x2: xx, y1: top - 6, y2: H - 30, class: 'grid' }, svg); text(svg, xx, H - 12, p + ' %' + (p === 100 ? ' = 寄存器上限' : ''), 'mono', p === 100 ? 'start' : 'middle'); });
+    [0, 20, 40, 60, 80, 100].forEach((p) => { const xx = x(p); el('line', { x1: xx, x2: xx, y1: top - 6, y2: H - 30, class: 'grid' }, svg); text(svg, xx, H - 12, p + ' %' + (p === 100 ? ' = register roof' : ''), 'mono', p === 100 ? 'start' : 'middle'); });
     let y = top;
     devs.forEach((dv, di) => {
       if (di) y += groupGap;
       plotted.forEach((sc, si) => {
         const row = dv.r.rows[sc.key]; if (!row) { y += rowH; return; }
         if (si === 0) text(svg, 8, y + 12, dv.name, 'strong');
-        else text(svg, 8, y + 12, dv.r.isa ? '指令已核对' : '未经 ISA 验证', 'tiny');
+        else text(svg, 8, y + 12, dv.r.isa ? 'instructions checked' : 'not ISA-verified', 'tiny');
         text(svg, left - 12, y + 12, sc.name, 'mono', 'end');
         const k = avg(row.kernel); const pk = k / row.reg * 100;
         const head = `<b>${dv.name} · ${sc.name}</b><br>`;
         const track = el('rect', { x: x(0), y, width: x(100) - x(0), height: barH, fill: 'var(--neutral-fill)', stroke: 'var(--neutral)', 'stroke-width': 1 }, svg);
-        attach(track, `${head}寄存器上限 <b>${rate(row.reg)} ${row.unit}</b>（100 %）<br>${types(row)}<br>${dv.r.width}<br>${dv.r.state}`);
+        attach(track, `${head}Register roof <b>${rate(row.reg)} ${row.unit}</b> (100 %)<br>${types(row)}<br>${dv.r.width}<br>${dv.r.state}`);
         const bar = el('rect', { x: x(0), y, width: Math.max(2, x(pk) - x(0)), height: barH, fill: 'var(--seq5)' }, svg);
-        attach(bar, `${head}内核 <b>${row.name}</b><br>${models.map((m, mi) => `${m} <b>${rate(row.kernel[mi])}</b>（${share(row.kernel[mi], row)}）`).join(' · ')} ${row.unit}<br>${dv.r.weight}${row.note ? '<br>' + row.note : ''}<br>${dv.r.isa_note}`);
+        attach(bar, `${head}Kernel <b>${row.name}</b><br>${models.map((m, mi) => `${m} <b>${rate(row.kernel[mi])}</b> (${share(row.kernel[mi], row)})`).join(' · ')} ${row.unit}<br>${dv.r.weight}${row.note ? '<br>' + row.note : ''}<br>${dv.r.isa_note}`);
         el('line', { x1: x(100), x2: x(100), y1: y - 3, y2: y + barH + 3, stroke: 'var(--ref)', 'stroke-width': 2 }, svg);
         if (row.fed != null) {
           const xf = x(row.fed / row.reg * 100);
           el('line', { x1: xf, x2: xf, y1: y - 3, y2: y + barH + 3, stroke: 'var(--ref)', 'stroke-width': 2 }, svg);
           const hit = el('rect', { x: xf - 6, y: y - 5, width: 12, height: barH + 10, class: 'hit' }, svg);
-          attach(hit, `${head}共享内存供数上限 <b>${rate(row.fed)} ${row.unit}</b><br>寄存器上限的 ${share(row.fed, row)}；内核是它的 ${(k / row.fed * 100).toFixed(1)} %`);
+          attach(hit, `${head}Fed roof (from shared memory) <b>${rate(row.fed)} ${row.unit}</b><br>${share(row.fed, row)} of the register roof; the kernel is at ${(k / row.fed * 100).toFixed(1)} % of it`);
         }
         if (row.reuse != null) {
           const xr = x(row.reuse / row.reg * 100), cy = y + barH / 2, s = 7;
           const dm = el('path', { d: `M${xr},${cy - s} L${xr + s},${cy} L${xr},${cy + s} L${xr - s},${cy} Z`, fill: 'var(--surface)', stroke: 'var(--ref)', 'stroke-width': 2 }, svg);
-          attach(dm, `${head}按内核的复用量供数的上限 <b>${rate(row.reuse)} ${row.unit}</b><br>寄存器上限的 ${share(row.reuse, row)}；内核是它的 ${(k / row.reuse * 100).toFixed(1)} %${row.reuse_note ? '<br>' + row.reuse_note : ''}`);
+          attach(dm, `${head}Fed roof at the kernel's reuse <b>${rate(row.reuse)} ${row.unit}</b><br>${share(row.reuse, row)} of the register roof; the kernel is at ${(k / row.reuse * 100).toFixed(1)} % of it${row.reuse_note ? '<br>' + row.reuse_note : ''}`);
         }
-        text(svg, x(100) + 12, y + 12, `内核 ${pk.toFixed(1)} %`, 'mono strong');
-        text(svg, x(100) + 112, y + 12, row.reuse != null ? `复用处 ${share(row.reuse, row)}` : '复用处无可用上限', 'tiny');
+        text(svg, x(100) + 12, y + 12, `kernel ${pk.toFixed(1)} %`, 'mono strong');
+        text(svg, x(100) + 112, y + 12, row.reuse != null ? `reuse roof ${share(row.reuse, row)}` : 'no usable reuse roof', 'tiny');
         y += rowH;
       });
     });
     $('#chart-roofs').appendChild(svg);
 
-    // 数据表：含融合注意力内核
+    // Data table: includes the fused attention kernel
     const num = (v) => v == null ? '—' : rate(v);
-    const tb = ['<div class="scroll"><table><thead><tr><th>设备</th><th>方案</th><th>派发的内核</th><th>矩阵 · 类型 · 内核子组</th><th>单位</th><th class="num">寄存器上限</th><th class="num">共享内存供数</th><th class="num">按内核复用供数</th>' + models.map((m) => `<th class="num">内核 ${m}</th>`).join('') + `<th class="num">占寄存器上限（${models.join(' / ')}）</th><th>指令</th></tr></thead><tbody>`];
+    const tb = ['<div class="scroll"><table><thead><tr><th>Device</th><th>Scheme</th><th>Dispatched kernel</th><th>Matrix · types · kernel subgroup</th><th>Unit</th><th class="num">Register roof</th><th class="num">Fed from shared memory</th><th class="num">Fed at kernel reuse</th>' + models.map((m) => `<th class="num">Kernel ${m}</th>`).join('') + `<th class="num">Share of register roof (${models.join(' / ')})</th><th>Instructions</th></tr></thead><tbody>`];
     const notes = [];
     devs.forEach((dv) => R.schemes.forEach((sc, si) => {
       const row = dv.r.rows[sc.key]; if (!row) return;
-      tb.push(`<tr><td>${si ? '' : dv.name}</td><td>${sc.name}</td><td style="font-family:var(--mono);font-size:0.74rem">${row.name}</td><td>${types(row)}</td><td>${row.unit}</td><td class="num">${num(row.reg)}</td><td class="num">${num(row.fed)}</td><td class="num">${num(row.reuse)}</td>${row.kernel.map((v) => `<td class="num">${rate(v)}</td>`).join('')}<td class="num">${row.kernel.map((v) => (v / row.reg * 100).toFixed(1)).join(' / ')} %</td><td>${si ? '' : (dv.r.isa ? '已核对' : '未经 ISA 验证')}</td></tr>`);
-      const parts = [row.reuse_note, row.note, row.also ? '另有按形状派发的内核：' + row.also.join('、') : ''].filter(Boolean);
-      if (parts.length) notes.push(`<tr><td>${dv.name}</td><td>${sc.name}</td><td>${parts.join('；')}</td></tr>`);
+      tb.push(`<tr><td>${si ? '' : dv.name}</td><td>${sc.name}</td><td style="font-family:var(--mono);font-size:0.74rem">${row.name}</td><td>${types(row)}</td><td>${row.unit}</td><td class="num">${num(row.reg)}</td><td class="num">${num(row.fed)}</td><td class="num">${num(row.reuse)}</td>${row.kernel.map((v) => `<td class="num">${rate(v)}</td>`).join('')}<td class="num">${row.kernel.map((v) => (v / row.reg * 100).toFixed(1)).join(' / ')} %</td><td>${si ? '' : (dv.r.isa ? 'checked' : 'not ISA-verified')}</td></tr>`);
+      const parts = [row.reuse_note, row.note, row.also ? 'Other kernels dispatched by shape: ' + row.also.join(', ') : ''].filter(Boolean);
+      if (parts.length) notes.push(`<tr><td>${dv.name}</td><td>${sc.name}</td><td>${parts.join('. ')}</td></tr>`);
     }));
     tb.push('</tbody></table></div>');
-    tb.push('<div class="scroll"><table><thead><tr><th>设备</th><th>方案</th><th>这一行的说明</th></tr></thead><tbody>' + notes.join('') + '</tbody></table></div>');
-    tb.push('<div class="scroll"><table><thead><tr><th>设备</th><th>测量状态</th><th>每模型数字的取法</th><th>指令核对</th><th>来源分支（' + R.study.repo + '）</th></tr></thead><tbody>' + devs.map((dv) => { const b = R.study.branches[dv.id]; return `<tr><td>${dv.name}</td><td>${dv.r.state}；${dv.r.width}</td><td>${dv.r.weight}</td><td>${dv.r.isa_note}</td><td style="font-family:var(--mono);font-size:0.74rem">${b ? b.name + ' @ ' + b.head : '—'}</td></tr>`; }).join('') + '</tbody></table></div>');
-    tb.push(`<div style="font-size:0.78rem;color:var(--fg3);margin-top:6px">研究编号 ${R.study.campaign}，测量日期 ${R.study.date}。</div>`);
+    tb.push('<div class="scroll"><table><thead><tr><th>Device</th><th>Scheme</th><th>Note for this row</th></tr></thead><tbody>' + notes.join('') + '</tbody></table></div>');
+    tb.push('<div class="scroll"><table><thead><tr><th>Device</th><th>Measurement state</th><th>How the per-model figure is formed</th><th>Instruction check</th><th>Source branch (' + R.study.repo + ')</th></tr></thead><tbody>' + devs.map((dv) => { const b = R.study.branches[dv.id]; return `<tr><td>${dv.name}</td><td>${dv.r.state}. ${dv.r.width}</td><td>${dv.r.weight}</td><td>${dv.r.isa_note}</td><td style="font-family:var(--mono);font-size:0.74rem">${b ? b.name + ' @ ' + b.head : '—'}</td></tr>`; }).join('') + '</tbody></table></div>');
+    tb.push(`<div style="font-size:0.78rem;color:var(--fg3);margin-top:6px">Study id ${R.study.campaign}, measurement date ${R.study.date}.</div>`);
     $('#table-roofs').innerHTML = tb.join('');
 
-    // 算例：R.example 指定的设备的 part D 链
+    // Worked example: the part D chain of the device named by R.example
     const ex = devs.find((dv) => dv.id === R.example); const ch = ex && ex.r.chain;
     if (ch) {
       const sn = (R.schemes.find((sc) => sc.key === ch.scheme) || { name: ch.scheme }).name;
       const pc = (v) => v == null ? '—' : v.toFixed(1) + ' %';
       const first = ch.steps[0].rate;
-      $('#table-roofchain').innerHTML = `<div class="scroll"><table><thead><tr><th>${ex.name} · ${sn}（${ch.basis}）</th><th class="num">速率，${ch.unit}</th><th class="num">占寄存器上限</th><th class="num">相对上一步的损失</th><th class="num">占整段距离</th></tr></thead><tbody>` +
+      $('#table-roofchain').innerHTML = `<div class="scroll"><table><thead><tr><th>${ex.name} · ${sn} (${ch.basis})</th><th class="num">Rate, ${ch.unit}</th><th class="num">Share of register roof</th><th class="num">Loss vs. previous step</th><th class="num">Share of the whole distance</th></tr></thead><tbody>` +
         ch.steps.map((st) => `<tr><td>${st.label}</td><td class="num">${rate(st.rate)}</td><td class="num">${pc(st.rate / first * 100)}</td><td class="num">${pc(st.loss)}</td><td class="num">${pc(st.share)}</td></tr>`).join('') +
         `</tbody></table></div><div style="font-size:0.78rem;color:var(--fg3);margin-top:6px">${ch.note}</div>`;
     }
@@ -2886,8 +2886,8 @@
     if (pr && DATA.primer) pr.innerHTML = DATA.primer.map((p) => `<div><dt>${esc(p.term)}</dt><dd>${esc(p.def)}</dd></div>`).join('');
     const el = document.getElementById('explain');
     if (el) el.innerHTML = DATA.techs.filter((t) => t.ex).map((t) => `<article class="ex"><h3><b>${esc(t.n)}</b>${esc(t.name)}<em>${esc(t.ex.kind)}</em></h3>` +
-      `<p><strong>做了什么</strong>　${esc(t.ex.what)}</p><p><strong>为什么</strong>　${esc(t.ex.why)}</p>` +
-      `<p class="like">${esc(t.ex.like)}</p><p><strong>结果</strong>　${esc(t.ex.res)}</p></article>`).join('');
+      `<p><strong>What it does:</strong> ${esc(t.ex.what)}</p><p><strong>Why:</strong> ${esc(t.ex.why)}</p>` +
+      `<p class="like">${esc(t.ex.like)}</p><p><strong>Result:</strong> ${esc(t.ex.res)}</p></article>`).join('');
   })();
 
 })();
