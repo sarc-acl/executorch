@@ -54,3 +54,9 @@ in the A buffer:
   LDS stores 0.985 of the shipped tile's (`r2e-phase-compare.txt`).
 - Any B pitch other than 16 bytes is slower (24 bytes 0.96, 32 bytes 0.94); odd pitches (20 / 28 bytes: rows not 8-byte aligned) are 0.26 to
   0.58 (the fragment loads leave the aligned path). `bf` on top of `pa6pb4csha`: 1.031 / 1.027, not additive: dropped.
+
+## Round 2, build `r2g` (micro build; two rounds): the pitch on the smaller workgroups, and the 4w family
+
+`r2g-screen-8da4w.csv` / `-summary.txt`: `t256x64k64g48s32pa6pb4csha` (the candidate kernel) 1.051 / 1.051, all twelve shapes at least 1.03 in
+both rounds, 33709 us against 35488 us for the shipped kernel over the twelve shapes; the pitch-6 variants of the smaller workgroups
+(`g44` 0.932, `g28` 0.933, `g24` 0.900, `g42` 0.895) do not move: occupancy, not the pitch, decides there.

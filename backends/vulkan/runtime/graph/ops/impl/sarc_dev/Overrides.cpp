@@ -1076,6 +1076,21 @@ const PickRx7600 kRx7600Refine3[] = {
      "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k64g42s32",
      dq_prefill_shape},
 };
+// rx7600-refine4 (round 2, candidate 1): refine2 with the 8da4w kernel of glsl/sarc_dev/sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg.yaml
+// whose A staging rows are 24 bytes apart in shared memory (pa6) instead of 16, on every 8da4w prefill shape of refine2; the 4w picks are
+// refine2's. Same arithmetic, same tile, K step and thread maps as the refine2 kernel (afmb1); the screen (results/rx7600/round2/) has it
+// at least 3 % faster on all twelve shapes in every round.
+const PickRx7600 kRx7600Refine4[] = {
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt",
+     q4_cbt_shape},
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32bbt",
+     q4_bbt_shape},
+    {Op::kDq8caLinear,
+     "sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32pa6pb4csha",
+     dq_prefill_shape},
+};
 const ProfileRx7600 kRx7600Profiles[] = {
     {"rx7600-refine1", nullptr, 0, "780m_r3"},
     {"rx7600-refine2",
@@ -1085,6 +1100,10 @@ const ProfileRx7600 kRx7600Profiles[] = {
     {"rx7600-refine3",
      kRx7600Refine3,
      sizeof(kRx7600Refine3) / sizeof(PickRx7600),
+     "780m_r3"},
+    {"rx7600-refine4",
+     kRx7600Refine4,
+     sizeof(kRx7600Refine4) / sizeof(PickRx7600),
      "780m_r3"},
 };
 const ProfileRx7600* active_profile_rx7600() {
