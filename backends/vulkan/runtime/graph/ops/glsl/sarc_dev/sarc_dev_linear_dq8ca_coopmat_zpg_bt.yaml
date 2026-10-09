@@ -99,7 +99,7 @@ sarc_dev_linear_dq8ca_coopmat_zpg_bt:
       A_BLOCKS: 4
     # --- m51 begin (openspec/changes/sarc-1.5-m51-prefill-refine, second round, 2026-10-09) ---
     # M51: smaller subgroup tiles (32 x 32 and 32 x 64 per subgroup instead of 64 x 32) for the screen: the final
-    # stack's kernel allocates 216 vector registers, mostly accumulators. Slots per thread: t64x64k32g22s32
+    # stack's kernel keeps many vector registers, mostly accumulators. Slots per thread: t64x64k32g22s32
     # 2*8*8/128 = 1 and t64x128k32g22s32 2*8*16/128 = 2; A threads (64/4)*8 = 128 = WG_SIZE in both.
     - NAME: sarc_dev_linear_dq8ca_coopmat_zpg_bt_t64x64k32g22s32_texture3d_texture2d_half
       IO_STORAGE: texture3d
