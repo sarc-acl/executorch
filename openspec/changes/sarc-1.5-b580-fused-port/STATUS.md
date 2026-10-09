@@ -253,7 +253,7 @@ every correctness tier would report. The copy pass `sarc_dev_b580_sdpa_kvt` has 
 
 The owner note asks that Vulkan / GLSL semantics be answered from the `vulkan-docs` MCP server and that the
 sentence relied on be quoted here. The server's tools were not present in the actor session that wrote the
-multi-subgroup kernel (two tool searches at 00:25 UTC found none; the note says they appear after the next
+multi-subgroup kernel (two tool searches at 00:09 UTC by this host's clock found none; the note says they appear after the next
 resume), so **the reading above rests on the actor's understanding of the specification, not on quoted text,
 and no quote has been checked yet.** The points to look up and quote, each of which the kernel relies on:
 
