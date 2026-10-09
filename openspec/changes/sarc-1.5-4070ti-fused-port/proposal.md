@@ -1,8 +1,9 @@
 # sarc-1.5-4070ti-fused-port: the fused attention kernel on the RTX 4070 Ti SUPER
 
 Second campaign on this card. The first (`sarc-1.5-4070ti-prefill-refine`) ended with the cooperative-matrix
-attention kernels and the fp32 no-tail softmax (`4070ti-refine1`), +46.35 % geomean over `dev/1.5` from the
-committed branch. This one ports one more thing on top: the fused attention kernel of the Radeon 780M
+attention kernels and the fp32 no-tail softmax (`4070ti-refine1`): +46.74 % geomean over `dev/1.5` in its
+gate session (`s5-c4`, measured through the then-local hook patch) and +46.35 % in the session on the committed
+build (`s8-c4e`). This one ports one more thing on top: the fused attention kernel of the Radeon 780M
 (`fused3`, in the RX 7600's `fused3sb` form with subgroup barriers), one-pass variants. It is a port: no sampled
 search, no enumeration, no tile sweep; two candidates at most.
 
@@ -178,8 +179,8 @@ evidence and are not the reported result.
 ## Result
 
 One candidate, accepted: **+11.49 % geomean over the parent** (the first campaign's stack), inside the band the
-task predicted (+8 to +12 %), **+63.28 % over the pristine `dev/1.5` state** (the first campaign ended at
-+46.35 %). The numbers are those of build `topic3` (`ed8b5af91`), gate `s4-c1` and closing session
+task predicted (+8 to +12 %), **+63.28 % over the pristine `dev/1.5` state** (the first campaign's
+stack alone: +46.74 % in its gate session `s5-c4`, +46.35 % in its committed-build session `s8-c4e`). The numbers are those of build `topic3` (`ed8b5af91`), gate `s4-c1` and closing session
 `s5-pristine`, the sessions that record the driver's throttle reasons per run. tok/s, median of 7 valid
 interleaved runs per arm:
 
@@ -190,8 +191,10 @@ interleaved runs per arm:
 | 3B 4w | 8752.1 | 8752.1 | 12962.0 | 14027.4 / 14027.4 | +8.22 % | +60.27 % | +60.27 % |
 | 3B 8da4w | 9752.4 | 9660.4 | 14948.9 | 16254.0 / 16254.0 | +8.73 % | +66.67 % | +68.25 % |
 | 8B 4w | 4511.0 | 4491.2 | 6023.5 | 6380.1 / 6400.0 | +5.92 % | +41.88 % | +42.50 % |
-| 8B 8da4w | 5056.8 | 5031.9 | 6989.8 | 7474.5 / 7501.8 | +6.93 % | +48.35 % | +49.09 % |
+| 8B 8da4w | 5056.8 | 5031.9 | 6989.8 | 7474.5 / 7501.8 | +6.93 % | +48.35 % | +49.08 % |
 | geomean | | | | | **+11.49 %** | **+63.28 %** | +64.34 % |
+
+The gains over the published numbers use the unrounded medians of `cells.csv`.
 
 - `s4-c1` (the gate, 2026-10-09 01:09 to 02:38 UTC): GATE_ACCEPTED, plain pass: 36 of 36 SDPA passes (12 each of
   `all`, `extended`, `full`; 192 cases) with 0 mismatches and `pairing=ok`, `verify.out` equal to the parent
@@ -244,8 +247,10 @@ Negative results and things that did not go as written:
 - No candidate was rejected and no gate failed, but the first gate was incomplete and the campaign was reopened
   once after review (see History above). No runner abort occurred in the 920 `llama_main` calls of this
   campaign (176 in eight `verify.sh` runs, 696 in six sessions, 24 traced, 24 in the quick look): all rc 0, with the model file warmed before every call (D5).
-  One slow load was recorded among the 696 session runs: `prefill-8b-8da4w-parent-r1` of `s4-c1` (3.0 s before
-  the first loaded clock sample, `results/4070ti/sessions/s4-c1/loads.csv`); it ended rc 0, is valid under the
+  One slow load was recorded among the 696 session runs: `prefill-8b-8da4w-parent-r1` of `s4-c1` (a gap of
+  3.005 s with the clock below 1500 MHz between two loaded intervals, `load_report.py`'s definition of a slow
+  load; the clock fell 3.97 s after sampling began and returned at 6.98 s; model load 6.32 s by the runner's
+  own timestamps; `results/4070ti/sessions/s4-c1/loads.csv`); it ended rc 0, is valid under the
   fixed criteria (clock, samples, no thermal reason) and is kept. The other five sessions record none.
 - Outside the production shapes the candidate's error against the reference is larger than the parent's in one
   metric on 3 of 9 test shapes, by 0.2 to 5 %. Criterion 1 of D3 names the production shapes, where it is not

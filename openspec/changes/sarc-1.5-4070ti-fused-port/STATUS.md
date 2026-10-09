@@ -39,9 +39,10 @@ samples with separate code: the same):
 | 3B 4w | 8752.1 | 8752.1 | 12962.0 | 14027.4 / 14027.4 | +8.22 % | +60.27 % | +60.27 % |
 | 3B 8da4w | 9752.4 | 9660.4 | 14948.9 | 16254.0 / 16254.0 | +8.73 % | +66.67 % | +68.25 % |
 | 8B 4w | 4511.0 | 4491.2 | 6023.5 | 6380.1 / 6400.0 | +5.92 % | +41.88 % | +42.50 % |
-| 8B 8da4w | 5056.8 | 5031.9 | 6989.8 | 7474.5 / 7501.8 | +6.93 % | +48.35 % | +49.09 % |
+| 8B 8da4w | 5056.8 | 5031.9 | 6989.8 | 7474.5 / 7501.8 | +6.93 % | +48.35 % | +49.08 % |
 | geomean | | | | | **+11.49 %** | **+63.28 %** | +64.34 % |
 
+The gains over the published numbers use the unrounded medians of `sarc-1.5-e2e-benchmark/results/cells.csv`.
 Every gain is outside the +-2 % noise band. The parent arm is within 1.59 % of the task's expected numbers in
 every cell (limit 3 %), the pristine arm within 1.03 % of the published ones. The first gate on `topic2`
 (`s2-c1`, without throttle reasons) read +11.64 %; five cells have the same medians and 3B 8da4w is one timer
@@ -73,8 +74,12 @@ Parent `6050b1287` with `4070ti-refine1` against `topic3` with `4070ti-fused1`.
 - Timed session (01:54 to 02:30 UTC): 84 timed and 36 next-token runs, all rc 0, all valid, none replaced;
   arms alternate parent-first on odd repeats; lowest per-run median clock 2595 MHz against the floor 2517; at
   least 2 clock samples per window; start temperatures 45 to 50 C, maximum 67 C. **1 slow load of 120**
-  (`loads.csv`: `prefill-8b-8da4w-parent-r1`, the first process of the cell, 3.0 s between process start and
-  the first loaded clock sample, 7.5 s in all, model file 93 % cached before the warming pass). The run ended
+  (`loads.csv`, by `load_report.py`'s definition: the time the clock was below 1500 MHz between the first and
+  the last sample at or above 2000 MHz, slow at 1.0 s or more): `prefill-8b-8da4w-parent-r1`, the first process
+  of the cell, has a low-clock gap of 3.005 s in the middle of the process. Its clock first reached 2000 MHz
+  0.47 s after sampling began, fell below 2000 MHz at 3.97 s and returned at 6.98 s; the samples span 7.47 s and
+  the runner's own model load took 6.32 s. The model file was 93 % cached before the warming pass and 100 %
+  after it. The run ended
   rc 0 with 15 clock samples in its window at a median of 2760 MHz and no thermal reason; it is valid under the
   fixed criteria and is kept, classified slow as recorded.
   **Throttle reasons: at least 48 samples per timed run, a thermal reason (`sw_thermal_slowdown`,
