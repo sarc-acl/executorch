@@ -33,12 +33,16 @@ One HTML file, two parts, deliberately separated:
    and the data tables. It has no numbers in it (layout constants only). Change it only for a new figure, a new
    state or a layout fix.
 
-**Devices without published figures, and the column count.** A device whose owner forbids publishing figures
-(M51) is a `devices` entry with `"final": null`, a `base` text that says so and a `note` for the tooltip. It has
-no entry in `chains`, `reported`, `timeRows`, `llama` or `tokps`, and its `techs` cells carry only `k`, a short
-text `v` (for example "adopted", "retained", "n/a"), an optional `n` and a qualitative tooltip `t`: no percentage, speed,
-time, driver or board identifier anywhere, in the data block or in the prose. The rendering code shows the text
-"figures not published" on its tile and in the matrix header and draws no bar for it in figure 1. A device that has figures
+**The M51 (relative figures only), and the column count.** The M51's device owner allows relative figures
+only: ratios of one configuration to another, as the company side publishes them in `results/m51/ratios.csv` on
+`topic/llamacpp-compare`. Its `devices` entry therefore has `stock` and `final` (geometric means of the six
+published per-cell ratios tuned / stock and tuned / parent; `stock[0]` is their quotient) and it has a `llama`
+entry (tuned 4w over llama.cpp Vulkan Q4_0 by the llama-bench timer). It has no entry in `chains`, `reported`,
+`timeRows` or `tokps`, and its `techs` cells carry only `k`, a short text `v` (for example "adopted",
+"retained", "n/a"), an optional `n` and a qualitative tooltip `t`. No absolute speed or time, no per-candidate
+gain and no driver or board identifier for it anywhere, in the data block or in the prose. A device with
+`"final": null` is still supported by the rendering code (tile text "figures not published", no bar in
+figure 1); no device is in that state at present. A device that has figures
 but lacks a llama.cpp or stock measurement keeps those `tokps` fields `null`, which the table prints as
 a dash, and has no `llama` entry (none at present); an optional `note` on a `devices` or `tokps` entry is shown in the tile tooltip
 or beside the device name in figure 7. The matrix of figure 2 takes its column count from the data: the six

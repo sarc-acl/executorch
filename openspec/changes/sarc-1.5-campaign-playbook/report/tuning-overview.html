@@ -129,7 +129,7 @@
 <main>
   <header>
     <h1>SARC 1.5 tuning overview</h1>
-    <p><strong>Compared with unmodified ExecuTorch 1.5 (Vulkan backend, no cooperative matrix instructions), 2048-token prefill is 2.8 to 7.9 times faster on the seven GPUs with published figures</strong> (geometric mean of six cells: the three models 1B, 3B and 8B, and the two quantization schemes 4w and 8da4w). The large number on each card below is this speed-up; the card's second line splits it into two parts: what the earlier configuration had already achieved (the September SARC release; for the RX 7600 and the RX 7900 XTX the device's own parent commit, and the card says so), and the percentage that this round of tuning added on top of it. Figures 1 to 4 are about the second part: which step the gain over the earlier configuration came from, which techniques were used where, where the time was saved, and which work did not pay. For the M51, at the device owner's request, only qualitative conclusions are listed. Figure 8 separately compares the tuned kernels of five of the devices with reference shaders that only perform the matrix multiply-add; its numbers come from the roof study of igpu-roofline.</p>
+    <p><strong>Compared with unmodified ExecuTorch 1.5 (Vulkan backend, no cooperative matrix instructions), 2048-token prefill is 2.8 to 7.9 times faster on the eight GPUs</strong> (geometric mean of six cells: the three models 1B, 3B and 8B, and the two quantization schemes 4w and 8da4w). The large number on each card below is this speed-up; the card's second line splits it into two parts: what the earlier configuration had already achieved (the September SARC release; for the RX 7600 and the RX 7900 XTX the device's own parent commit, and the card says so), and the percentage that this round of tuning added on top of it. Figures 1 to 4 are about the second part: which step the gain over the earlier configuration came from, which techniques were used where, where the time was saved, and which work did not pay. For the M51, at the device owner's request, only relative figures (ratios between configurations) are published; it has a card and a row in figure 5, and is absent from the figures that need absolute speeds or times. Figure 8 separately compares the tuned kernels of five of the devices with reference shaders that only perform the matrix multiply-add; its numbers come from the roof study of igpu-roofline.</p>
     <div class="meta">Data as of 2026-10-10 · campaign measurements as of 2026-10-09 20:00 UTC; added on 2026-10-10: the llama.cpp comparison sessions of the two AMD discrete cards and the re-measurement of the B580 with the full-subgroups flag · eight figures in total · the headline baseline is unmodified ExecuTorch 1.5; the gains in figures 1 to 4 are relative to the September SARC release (for the RX 7600 and the RX 7900 XTX, their own parent commits) · hover over any data mark for details</div>
   </header>
 
@@ -137,10 +137,10 @@
 
   <figure id="fig-chain">
     <h2>Figure 1 · What went into each final configuration, step by step</h2>
-    <p class="claim">Each horizontal bar is one device; each segment is one candidate that was put into the device's final configuration, and its length is that candidate's geometric mean change over its parent configuration (stacked logarithmically, so segment lengths add). The chain is the history of what was put into the configuration, in order; it is not a set of independent ablations, and the size of a segment depends on what was already in place. Solid segments are demonstrated gains. Hatched segments are retained inside the ±2 % noise band: they are in the final configuration and passed the gate, but they are not demonstrated gains, although the total at the end of each bar includes them. The four devices that previously ran the stock attention got most of their gain from the first segment; the 780M and the RX 7600 already had attention kernels, and their largest segment is the fused kernel. The second round ported the fused kernel to those four devices, adding a further +6 % to +11 % each; the RX 7600's second round changed the staging row stride of the linear kernels, adding a further +5.4 %. The RX 7900 XTX did not adopt the fused kernel; its two demonstrated segments are +2.64 % and +4.09 %, and its four segments multiply to less than +10 %. No figures are published for the M51, so no bar is drawn for it.</p>
+    <p class="claim">Each horizontal bar is one device; each segment is one candidate that was put into the device's final configuration, and its length is that candidate's geometric mean change over its parent configuration (stacked logarithmically, so segment lengths add). The chain is the history of what was put into the configuration, in order; it is not a set of independent ablations, and the size of a segment depends on what was already in place. Solid segments are demonstrated gains. Hatched segments are retained inside the ±2 % noise band: they are in the final configuration and passed the gate, but they are not demonstrated gains, although the total at the end of each bar includes them. The four devices that previously ran the stock attention got most of their gain from the first segment; the 780M and the RX 7600 already had attention kernels, and their largest segment is the fused kernel. The second round ported the fused kernel to those four devices, adding a further +6 % to +11 % each; the RX 7600's second round changed the staging row stride of the linear kernels, adding a further +5.4 %. The RX 7900 XTX did not adopt the fused kernel; its two demonstrated segments are +2.64 % and +4.09 %, and its four segments multiply to less than +10 %. The M51's per-candidate figures are not published, so no bar is drawn for it.</p>
     <div class="legend" id="legend-chain"></div>
     <div class="scroll"><div id="chart-chain"></div></div>
-    <figcaption>Segment width is proportional to ln(1+gain); the ticks of the horizontal axis are converted back to cumulative percent. The product of the segments is within 3 percentage points of the figure measured directly in each campaign's final session (different sessions, different baselines). Three percentages per device should not be confused. The percentage on each card at the top of the page and in the column headers of figure 2 follows one rule for every device: the geometric mean, over the six cells of figure 7, of the tuned speed divided by the speed of the earlier configuration. The "final session" figure under each device name here is the final configuration measured directly against its parent in one session; it differs from the card's percentage by a fraction of a point on five devices (Arc B580: +72.2 % on the card, +72.05 % in the final session) and by up to 1.1 points on the RTX 4070 Ti SUPER and the 780M. The number at the end of each bar is the product of the segments. A split segment is one candidate that bundles two techniques, whose gain is not split between them. The Jetson Orin Nano's second-round figures (+6.13 %, +76.70 % and the values derived from them) were measured on a cross build whose shader compiler (glslc) differs from the pinned version. On 10-09 the owner ruled to accept them as they are, without re-measuring, and the compiler difference is recorded as a known limitation. The M51's device owner does not allow any figure for this device to be published, so no figure on this page carries a value for it; figure 2 only lists which techniques were adopted.</figcaption>
+    <figcaption>Segment width is proportional to ln(1+gain); the ticks of the horizontal axis are converted back to cumulative percent. The product of the segments is within 3 percentage points of the figure measured directly in each campaign's final session (different sessions, different baselines). Three percentages per device should not be confused. The percentage on each card at the top of the page and in the column headers of figure 2 follows one rule for every device: the geometric mean, over the six cells of figure 7, of the tuned speed divided by the speed of the earlier configuration. The "final session" figure under each device name here is the final configuration measured directly against its parent in one session; it differs from the card's percentage by a fraction of a point on five devices (Arc B580: +72.2 % on the card, +72.05 % in the final session) and by up to 1.1 points on the RTX 4070 Ti SUPER and the 780M. The number at the end of each bar is the product of the segments. A split segment is one candidate that bundles two techniques, whose gain is not split between them. The Jetson Orin Nano's second-round figures (+6.13 %, +76.70 % and the values derived from them) were measured on a cross build whose shader compiler (glslc) differs from the pinned version. On 10-09 the owner ruled to accept them as they are, without re-measuring, and the compiler difference is recorded as a known limitation. The M51's device owner allows relative figures only, and its per-candidate gains are not published; figure 2 only lists which techniques were adopted.</figcaption>
     <details><summary>Data table</summary><div id="table-chain"></div></details>
   </figure>
 
@@ -203,10 +203,10 @@
 
   <figure id="fig-llama">
     <h2>Figure 5 · Where the tuned build stands against llama.cpp</h2>
-    <p class="claim">The tuned ExecuTorch 4w prefill speed divided by the speed of llama.cpp Q4_0 at its best setting; the three points per device are 1B, 3B and 8B. Against llama.cpp Vulkan Q4_0, all three models lead on all seven devices; against the vendor backends (SYCL, CUDA, also Q4_0), the two Intel cards and the RTX 4070 Ti SUPER still trail by 3 % to 25 %, and the Orin is roughly at parity (0.98 to 1.07). The lead is stated for Q4_0 only. Against the llama.cpp Vulkan Q4_K_M column of figure 7 the same ratio runs from 0.97 (Jetson Orin Nano 1B, the one cell below 1.0) to 2.21 (RX 7600 1B): it is smaller than the Q4_0 ratio on the Orin and the RTX 4070 Ti SUPER, where Q4_K_M is the faster llama.cpp setting for every model, and larger on the 780M, the two AMD discrete cards and the B70, where it is the slower one (RX 7900 XTX: 1.36 / 1.56 / 1.51 against Q4_0 and 1.73 / 1.95 / 1.90 against Q4_K_M). These ratios use the synthetic 2048-token prompt. On a real-text prompt, measured on the two AMD discrete cards only, the tuned kernels are 0 to 8 % slower and llama.cpp is within 2 %, so the lead shrinks: against llama-completion Q4_0 it is 1.47 / 1.62 / 1.48 on the RX 7900 XTX (1.48 / 1.68 / 1.54 on the synthetic prompt) and 1.99 / 1.73 / 1.55 on the RX 7600 (2.07 / 1.81 / 1.63). The M51's comparison is in progress on the company side and will be stated in relative terms only; it is not in the figure.</p>
+    <p class="claim">The tuned ExecuTorch 4w prefill speed divided by the speed of llama.cpp Q4_0 at its best setting; the three points per device are 1B, 3B and 8B. Against llama.cpp Vulkan Q4_0, all three models lead on all eight devices; against the vendor backends (SYCL, CUDA, also Q4_0), the two Intel cards and the RTX 4070 Ti SUPER still trail by 3 % to 25 %, and the Orin is roughly at parity (0.98 to 1.07). The lead is stated for Q4_0 only. Against the llama.cpp Vulkan Q4_K_M column of figure 7 the same ratio runs from 0.97 (Jetson Orin Nano 1B, the one cell below 1.0) to 2.21 (RX 7600 1B): it is smaller than the Q4_0 ratio on the Orin and the RTX 4070 Ti SUPER, where Q4_K_M is the faster llama.cpp setting for every model, and larger on the 780M, the two AMD discrete cards and the B70, where it is the slower one (RX 7900 XTX: 1.36 / 1.56 / 1.51 against Q4_0 and 1.73 / 1.95 / 1.90 against Q4_K_M). These ratios use the synthetic 2048-token prompt. On a real-text prompt, measured on the two AMD discrete cards only, the tuned kernels are 0 to 8 % slower and llama.cpp is within 2 %, so the lead shrinks: against llama-completion Q4_0 it is 1.47 / 1.62 / 1.48 on the RX 7900 XTX (1.48 / 1.68 / 1.54 on the synthetic prompt) and 1.99 / 1.73 / 1.55 on the RX 7600 (2.06 / 1.81 / 1.63). On the M51 the ratio is 2.18 / 2.54 / 2.43 against Q4_0 and 2.55 / 2.95 / 2.88 against Q4_K_M, but the reference there is a restricted llama.cpp configuration: with its default settings llama.cpp aborts at start-up on that device's driver, and with flash attention off its cooperative-matrix path produces wrong output, so the ratios are against the one configuration whose output matches llama.cpp's own CPU backend (cooperative-matrix path disabled).</p>
     <div class="legend"><span><i style="background:var(--s1)"></i>vs llama.cpp Vulkan Q4_0</span><span><i style="background:var(--s2)"></i>vs vendor backend Q4_0 (Intel SYCL, NVIDIA CUDA)</span><span><i style="border-top:2px dashed var(--ref);width:16px;height:0;border-radius:0"></i>1.0 parity</span></div>
     <div class="scroll"><div id="chart-llama"></div></div>
-    <figcaption>Source: cells.csv of topic/llamacpp-compare, llama.cpp b11430, the screened best setting of each device, median of 5 runs. The 780M has no usable vendor backend (ROCm does not support this integrated GPU; not measured). The RX 7600 (Mesa RADV) and the RX 7900 XTX (AMDVLK) were measured by the company side on 2026-10-10, Vulkan only, each in one interleaved session that also holds unmodified ExecuTorch, the parent commit and the final configuration. The RX 7600's 8B llama-bench figure is discarded because the prompt-only test at 2048 tokens took a slow GPU path on that card (about 96 tok/s; cause not established), and the llama-completion timing is used there. On the RX 7900 XTX, 82 of 195 timed runs were below the clock floor and are counted, as on the 780M; the ratios shown use llama-bench, which has no such cells. On both cards llama.cpp was built without host-native CPU flags (AVX2 instead); the Vulkan backend is the same. The tuned speeds of the RTX 4070 Ti SUPER, Arc Pro B70 and Arc B580 come from the closing sessions of their fused-port branches (s5-pristine, s4-pristine, s7-pristine, median of 7 runs), and the Jetson Orin Nano's from s8-pristine (median of 5 runs, cross build).</figcaption>
+    <figcaption>Source: cells.csv of topic/llamacpp-compare, llama.cpp b11430, the screened best setting of each device, median of 5 runs. The 780M has no usable vendor backend (ROCm does not support this integrated GPU; not measured). The M51's ratios are the published relative figures of its comparison sessions of 2026-10-10 (llama-bench timer, which is the higher llama.cpp timer there; by llama-completion the ratios are larger, 2.53 to 2.92 against Q4_0); llama.cpp's OpenCL backend rejects that GPU, so there is no vendor row. The RX 7600 (Mesa RADV) and the RX 7900 XTX (AMDVLK) were measured by the company side on 2026-10-10, Vulkan only, each in one interleaved session that also holds unmodified ExecuTorch, the parent commit and the final configuration. The RX 7600's 8B llama-bench figure is discarded because the prompt-only test at 2048 tokens took a slow GPU path on that card (about 96 tok/s; cause not established), and the llama-completion timing is used there. On the RX 7900 XTX, 82 of 195 timed runs were below the clock floor and are counted, as on the 780M; the ratios shown use llama-bench, which has no such cells. On both cards llama.cpp was built without host-native CPU flags (AVX2 instead); the Vulkan backend is the same. The tuned speeds of the RTX 4070 Ti SUPER, Arc Pro B70 and Arc B580 come from the closing sessions of their fused-port branches (s5-pristine, s4-pristine, s7-pristine, median of 7 runs), and the Jetson Orin Nano's from s8-pristine (median of 5 runs, cross build).</figcaption>
     <details><summary>Data table</summary><div id="table-llama"></div></details>
   </figure>
 
@@ -223,7 +223,7 @@
     <h2>Figure 7 · All tok/s</h2>
     <p class="claim">Seven devices, three models, and the 2048-token prefill speed of each cell (tok/s, median of 5 valid runs; the source is cells.csv of the llama.cpp comparison branch, except for the tuned columns listed in the caption). stock is unmodified ExecuTorch 1.5, SARC is the September release (for the RX 7600 and the RX 7900 XTX, the device's parent commit), and tuned is each campaign's final configuration; llama.cpp uses the screened best setting of each backend and the higher of the two timers.</p>
     <div class="scroll"><div id="table-tokps"></div></div>
-    <figcaption>Cells marked * include runs below the clock floor, as the device README explains (the load itself pulls the clock down; this is not interference). The RX 7600's 8B llama.cpp figure uses the llama-completion timing (llama-bench takes a slow path above 1024 tokens on that card). The 780M, the RX 7600 and the RX 7900 XTX have no vendor backend data (HIP not measured). The two tuned columns of the RTX 4070 Ti SUPER, Arc Pro B70, Arc B580 and Jetson Orin Nano come from the closing sessions of their fused-port branches (s5-pristine, s4-pristine and s7-pristine are medians of 7 valid runs, the Orin's s8-pristine of 5) and are not in cells.csv. Every column of the RX 7600 and of the RX 7900 XTX is from that card's interleaved comparison session of 2026-10-10 (rx7600-r2 and rx7900xtx-1; SARC is the parent commit, tuned the campaign's final configuration). On the RX 7900 XTX the three stock 4w cells are counted below the clock floor (all eight runs at 3B and 8B), and its tuned and parent cells are within 1.2 % of the campaign's closing session at 3B and 8B and within 3.3 % at 1B, where one millisecond of the timer is 1 %. The M51's device owner does not allow figures to be published, so it is not in the table.</figcaption>
+    <figcaption>Cells marked * include runs below the clock floor, as the device README explains (the load itself pulls the clock down; this is not interference). The RX 7600's 8B llama.cpp figure uses the llama-completion timing (llama-bench takes a slow path above 1024 tokens on that card). The 780M, the RX 7600 and the RX 7900 XTX have no vendor backend data (HIP not measured). The two tuned columns of the RTX 4070 Ti SUPER, Arc Pro B70, Arc B580 and Jetson Orin Nano come from the closing sessions of their fused-port branches (s5-pristine, s4-pristine and s7-pristine are medians of 7 valid runs, the Orin's s8-pristine of 5) and are not in cells.csv. Every column of the RX 7600 and of the RX 7900 XTX is from that card's interleaved comparison session of 2026-10-10 (rx7600-r2 and rx7900xtx-1; SARC is the parent commit, tuned the campaign's final configuration). On the RX 7900 XTX the three stock 4w cells are counted below the clock floor (all eight runs at 3B and 8B), and its tuned and parent cells are within 1.2 % of the campaign's closing session at 3B and 8B and within 3.3 % at 1B, where one millisecond of the timer is 1 %. The M51's device owner does not allow absolute figures to be published, so it is not in the table.</figcaption>
   </figure>
 
   <figure id="fig-roofs">
@@ -329,6 +329,20 @@
    "base": "over the September baseline"
   },
   {
+   "id": "m51",
+   "name": "M51",
+   "vendor": "Samsung",
+   "final": 21.5,
+   "stock": [
+    2.42,
+    2.94
+   ],
+   "base": "over its parent commit (company side; relative figures only)",
+   "note": "The device owner allows relative figures only: ratios of one configuration to another. No absolute speed or time and no identifier of the board or its driver is published, so this device is absent from figures 1, 3 and 7 and its column in figure 2 marks states only. Stock, parent commit and the final configuration were measured together in the comparison sessions of 2026-10-10; every timed run was valid under the device campaign's rules. The final configuration (the three candidates of the first round plus the new 4w kernel of the second round) has completed final validation on a build of the committed head. The 8B runs carry a graph execution threshold setting in every ExecuTorch arm.",
+   "prev_label": "parent commit",
+   "stock_note": "computed from the ratios the company side published (m51/ratios.csv on the comparison branch, two-decimal ratios per cell); this device is not in figure 7"
+  },
+  {
    "id": "7900xtx",
    "name": "RX 7900 XTX",
    "vendor": "AMD",
@@ -341,15 +355,6 @@
    "base": "over its parent commit (AMDVLK driver)",
    "note": "This device's campaign ran on the AMDVLK driver (the RX 7600 ran on Mesa RADV). The fused attention kernel is 13.79 % slower on that driver and was rejected, so the final configuration differs from the parent commit in the softmax (retained inside the noise band), the per-shape selection of linear kernels and variants of the separate attention kernels. The figures on this card come from the comparison session of 2026-10-10, in which unmodified ExecuTorch, the parent commit and the final configuration were measured together: +7.7 % over the parent commit there; the campaign's own closing session measured +8.33 %.",
    "stock_note": "stock, parent commit and tuned were measured in one session (comparison branch, 2026-10-10, AMDVLK)"
-  },
-  {
-   "id": "m51",
-   "name": "M51",
-   "vendor": "Samsung",
-   "final": null,
-   "stock": null,
-   "base": "the device owner does not allow figures to be published",
-   "note": "The device owner does not allow any figure for this device to be published; this page lists qualitative conclusions only. The final configuration (the three candidates of the first round plus the new 4w kernel of the second round) has completed final validation on a build of the committed head: the correctness checks pass and the error is no larger than the parent configuration's; in the final session against the parent commit, every cell of 1B, 3B and 8B is faster, outside the noise band. The exact figures are kept locally only. The 8B model was added in a reopened round, and the 8B runs carry a graph execution threshold setting."
   }
  ],
  "cats": [
@@ -1391,11 +1396,21 @@
    ],
    "vendor": null,
    "vn": "none (HIP not run)"
+  },
+  {
+   "name": "M51",
+   "vk": [
+    2.18,
+    2.54,
+    2.43
+   ],
+   "vendor": null,
+   "vn": "none (OpenCL rejects the GPU)"
   }
  ],
  "meta": {
   "updated": "2026-10-10",
-  "note": "All figures from the campaign branches proposal.md / STATUS.md and topic/llamacpp-compare cells.csv; roofs from the igpu-roofline study branches (see roofs.study). Edit this block only; the rendering code below reads it. 2026-10-10: corrections after review; no new measurements. devices[].final is recomputed from tokps (see README). 2026-10-10 (second update): the RX 7600 and RX 7900 XTX rows of tokps are replaced by the company side's interleaved comparison sessions (results/rx7600 and results/7900xtx on topic/llamacpp-compare, head daee443b4); the F1 and decode notes carry the new measurements."
+  "note": "All figures from the campaign branches proposal.md / STATUS.md and topic/llamacpp-compare cells.csv; roofs from the igpu-roofline study branches (see roofs.study). Edit this block only; the rendering code below reads it. 2026-10-10: corrections after review; no new measurements. devices[].final is recomputed from tokps (see README). 2026-10-10 (second update): the RX 7600 and RX 7900 XTX rows of tokps are replaced by the company side's interleaved comparison sessions (results/rx7600 and results/7900xtx on topic/llamacpp-compare, head daee443b4); the F1 and decode notes carry the new measurements. 2026-10-10 (third update): the M51 carries relative figures (devices[].stock, final and a llama entry) from m51/ratios.csv, head 94a6de3e5; it still has no tokps, chains, reported or timeRows entry."
  },
  "tokps": [
   {
@@ -1777,10 +1792,10 @@
     },
     "label": "+18 · comparison with llama.cpp on six devices, all results public",
     "head": {
-     "h": "daee443b4",
+     "h": "94a6de3e5",
      "d": "10-10",
      "state": "ok",
-     "chip": "company side pushed the RX 7600 and RX 7900 XTX comparisons"
+     "chip": "company side pushed the RX 7600, RX 7900 XTX and M51 comparisons"
     }
    },
    {
@@ -2674,7 +2689,7 @@
       attach(t, `<b>${d.name}</b><br>${d.note || d.base}`);
     } else if (d.stock) {
       t.innerHTML = `<div class="label">${d.name}</div><div class="value">${sx(d.stock[1])}</div><div class="sub">over stock ExecuTorch</div><div class="sub">${prev(d)} ${sx(d.stock[0])} · this round ${fin(d)}</div><div class="meter" aria-hidden="true"><span style="width:${Math.min(100, Math.max(0, d.stock[1] / maxStock * 100)).toFixed(1)}%"></span></div>`;
-      attach(t, `<b>${d.name}</b><br>Over unmodified ExecuTorch 1.5 (Vulkan backend, no cooperative matrix): ${sx(d.stock[1])}, geometric mean of six cells<br>Of this, the ${prev(d)} had already reached ${sx(d.stock[0])}, and this round of tuning adds ${fin(d)} (${d.base}; geometric mean over the six cells of figure 7 of tuned divided by ${prev(d)})${d.stock_note ? '<br>' + d.stock_note : ''}${d.note ? '<br>' + d.note : ''}`);
+      attach(t, `<b>${d.name}</b><br>Over unmodified ExecuTorch 1.5 (Vulkan backend, no cooperative matrix): ${sx(d.stock[1])}, geometric mean of six cells<br>Of this, the ${prev(d)} had already reached ${sx(d.stock[0])}, and this round of tuning adds ${fin(d)} (${d.base}; geometric mean over six cells of tuned divided by ${prev(d)})${d.stock_note ? '<br>' + d.stock_note : ''}${d.note ? '<br>' + d.note : ''}`);
     } else {
       t.innerHTML = `<div class="label">${d.name}</div><div class="value">${fin(d)}</div><div class="sub">${d.base}</div>`;
       attach(t, `<b>${d.name}</b><br>Final geometric mean ${fin(d)}, ${d.base}${d.note ? '<br>' + d.note : ''}`);
@@ -2801,8 +2816,8 @@
     const models = ['1B', '3B', '8B'];
     const W = 1040, left = 170, right = 30, rowH = 44, top = 30; const H = top + rows.length * rowH + 34;
     const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Speed ratio of the tuned build against the two llama.cpp backends, both at Q4_0' });
-    const minR = 0.6, maxR = 2.4; const x = (r) => left + ((r - minR) / (maxR - minR)) * (W - left - right);
-    [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4].forEach((r) => { const xx = x(r); el('line', { x1: xx, x2: xx, y1: top - 8, y2: H - 30, class: r === 1 ? 'ref' : 'grid' }, svg); text(svg, xx, H - 12, r.toFixed(1) + 'x', 'mono', 'middle'); });
+    const minR = 0.6, maxR = 2.8; const x = (r) => left + ((r - minR) / (maxR - minR)) * (W - left - right);
+    [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8].forEach((r) => { const xx = x(r); el('line', { x1: xx, x2: xx, y1: top - 8, y2: H - 30, class: r === 1 ? 'ref' : 'grid' }, svg); text(svg, xx, H - 12, r.toFixed(1) + 'x', 'mono', 'middle'); });
     rows.forEach((r, i) => {
       const y = top + i * rowH + 10;
       text(svg, left - 12, y + 4, r.name, 'strong', 'end');
