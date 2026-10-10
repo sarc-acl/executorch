@@ -7,8 +7,12 @@ found), measured over ssh from the workstation `fedora`, cross-built there. Arti
 
 ## State
 
-(2026-10-10 15:50 UTC) Step 1 done (`0f038a736`, `git am` of the patch, applied cleanly). Pre-registration below
-written; no timed run exists. Next: cross build `f1`, static check, device chain.
+(2026-10-10 18:45 UTC) **Running on the device: job `chain1` (`tools/f1-chain.sh`, started 16:27 UTC with
+`<artifacts>/tools/drun.sh chain1 f1-chain.sh`; status `~/hmz-f1-orin/chain.status`, output
+`~/hmz-f1-orin/jobs/chain1.out`).** Done so far: step 1 (`0f038a736`), builds `f1` and `f1dbg` (16:00 / 16:12 UTC),
+static check (0 violators), SPIR-V identity (0 differences), flag proof (step 2 of the chain), session A
+(`sA-fused1`: `GATE_ACCEPTED` 18:36 UTC, geomean -0.05 %). Still to run in the chain: session B, kernel level,
+logits. Then `tools/collect.sh` and `RESULT.md`. Nothing runs on the workstation.
 
 ## Decision needed from the owner
 
