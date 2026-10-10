@@ -258,7 +258,12 @@ void main() {
 #endif
 #ifdef WEIGHT_INT4
   ivec4 temp_B[B_SLOTS_PER_THREAD];
+#ifdef EXP_PARAM_MULTI
+  const uint PARAM_SLOTS = WG_TILE_N / WG_SIZE;  // the generator emits the switch only when this divides exactly
+  float temp_wsc_m[PARAM_SLOTS];
+#else
   float temp_wsc;
+#endif
 #else
   ivec4 temp_B;
 #endif
@@ -280,6 +285,20 @@ void main() {
   // SUM_g wsc[g][n]*wsum[g][n] accumulated across ALL groups. The loop is
   // prologue-only (the prologue is ~1.4% of the dynamic instruction stream),
   // and it replaces per-group wsum work inside the loop body.
+#ifdef EXP_PARAM_MULTI
+  for (uint pt = gl_LocalInvocationID.x; pt < WG_TILE_N; pt += WG_SIZE) {
+    const uint n_idx = tile_n_start + pt;
+    f16vec4 sv0 = t_weight_scales[n_idx >> 2u];
+    wsc_sh[pt] = float(sv0[n_idx & 3u]);
+
+    float corr = 0.0;
+    for (uint g = 0; g < num_groups; ++g) {
+      f16vec4 sv = t_weight_scales[g * N4 + (n_idx >> 2u)];
+      corr += float(sv[n_idx & 3u]) * float(t_weight_sums[g * N + n_idx]);
+    }
+    wcorr_sh[pt] = corr;
+  }
+#else
   if (gl_LocalInvocationID.x < WG_TILE_N) {
     const uint n_idx = tile_n_start + gl_LocalInvocationID.x;
     f16vec4 sv0 = t_weight_scales[n_idx >> 2u];
@@ -292,6 +311,7 @@ void main() {
     }
     wcorr_sh[gl_LocalInvocationID.x] = corr;
   }
+#endif
   memoryBarrierShared();
   barrier();
 
@@ -426,11 +446,21 @@ void main() {
           temp_B[si] = texelFetch(t_packed_weight, ivec2(k4_blk, b_n8blk[si]), 0);
 #endif
         }
+#ifdef EXP_PARAM_MULTI
+        if (group_crossing) {
+          [[unroll]] for (uint ps = 0; ps < PARAM_SLOTS; ++ps) {
+            const uint n_idx = tile_n_start + gl_LocalInvocationID.x + ps * WG_SIZE;
+            f16vec4 sv = t_weight_scales[(group_i + 1u) * N4 + (n_idx >> 2u)];
+            temp_wsc_m[ps] = float(sv[n_idx & 3u]);
+          }
+        }
+#else
         if (group_crossing && gl_LocalInvocationID.x < WG_TILE_N) {
           const uint n_idx = tile_n_start + gl_LocalInvocationID.x;
           f16vec4 sv = t_weight_scales[(group_i + 1u) * N4 + (n_idx >> 2u)];
           temp_wsc = float(sv[n_idx & 3u]);
         }
+#endif
 #else
         if (b_active) {
           const uint block_y_w = (chunkK_nxt >> 2u) + b_k4_in_chunk;
@@ -498,10 +528,19 @@ void main() {
             Bsh_int8[nxt_b + b_lds_off[si] + c * B_STRIDE_U32] = bw[c];
           }
         }
+#ifdef EXP_PARAM_MULTI
+        if (group_crossing) {
+          const uint wbase_nxt = ((group_i + 1u) % 2u) * WG_TILE_N;
+          [[unroll]] for (uint ps = 0; ps < PARAM_SLOTS; ++ps) {
+            wsc_sh[wbase_nxt + gl_LocalInvocationID.x + ps * WG_SIZE] = temp_wsc_m[ps];
+          }
+        }
+#else
         if (group_crossing && gl_LocalInvocationID.x < WG_TILE_N) {
           const uint wbase_nxt = ((group_i + 1u) % 2u) * WG_TILE_N;
           wsc_sh[wbase_nxt + gl_LocalInvocationID.x] = temp_wsc;
         }
+#endif
 #else
         if (b_active) {
           const uint slab_idx   = b_k4_in_chunk / (MMA_K >> 2u);

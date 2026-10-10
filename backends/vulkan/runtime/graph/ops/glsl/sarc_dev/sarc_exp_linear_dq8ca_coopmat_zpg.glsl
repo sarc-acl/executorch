@@ -100,6 +100,8 @@ const uint SG_GRID_Y = ${SG_GRID_Y};
 const uint SUBGROUP_SIZE = ${SUBGROUP_SIZE};
 $if A_MULTI_BLOCK:
   #define A_MULTI_BLOCK
+$if PARAM_MULTI:
+  #define EXP_PARAM_MULTI
 const uint A_BLOCKS = ${A_BLOCKS};
 
 #include "sarc_exp_linear_dq8ca_coopmat_zpg_body.glslh"

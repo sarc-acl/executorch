@@ -20,6 +20,7 @@ sarc_exp_linear_dq8ca_coopmat_zpg:
     SG_GRID_Y: 2
     SUBGROUP_SIZE: 16
     EXP_MODE: sh
+    PARAM_MULTI: false
   shader_variants:
     - NAME: sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8_texture3d_texture2d_half
       IO_STORAGE: texture3d
@@ -49,7 +50,7 @@ sarc_exp_linear_dq8ca_coopmat_zpg:
       A_MULTI_BLOCK: true
       A_BLOCKS: 1
       EXP_MODE: sh
-    - NAME: sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g22s16m8_texture3d_texture2d_half
+    - NAME: sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g22s16m8pm_texture3d_texture2d_half
       IO_STORAGE: texture3d
       WG_TILE_M: 64
       WG_TILE_N: 128
@@ -63,7 +64,8 @@ sarc_exp_linear_dq8ca_coopmat_zpg:
       A_MULTI_BLOCK: true
       A_BLOCKS: 2
       EXP_MODE: sh
-    - NAME: sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g21s16m8_texture3d_texture2d_half
+      PARAM_MULTI: true
+    - NAME: sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g21s16m8pm_texture3d_texture2d_half
       IO_STORAGE: texture3d
       WG_TILE_M: 64
       WG_TILE_N: 128
@@ -77,7 +79,8 @@ sarc_exp_linear_dq8ca_coopmat_zpg:
       A_MULTI_BLOCK: true
       A_BLOCKS: 4
       EXP_MODE: sh
-    - NAME: sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g11s16m8_texture3d_texture2d_half
+      PARAM_MULTI: true
+    - NAME: sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g11s16m8pm_texture3d_texture2d_half
       IO_STORAGE: texture3d
       WG_TILE_M: 64
       WG_TILE_N: 128
@@ -91,6 +94,7 @@ sarc_exp_linear_dq8ca_coopmat_zpg:
       A_MULTI_BLOCK: true
       A_BLOCKS: 8
       EXP_MODE: sh
+      PARAM_MULTI: true
     - NAME: sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8_texture3d_texture2d_half
       IO_STORAGE: texture3d
       WG_TILE_M: 128
@@ -133,7 +137,7 @@ sarc_exp_linear_dq8ca_coopmat_zpg:
       A_MULTI_BLOCK: true
       A_BLOCKS: 4
       EXP_MODE: i32
-    - NAME: sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g22s16m8_texture3d_texture2d_half
+    - NAME: sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g22s16m8pm_texture3d_texture2d_half
       IO_STORAGE: texture3d
       WG_TILE_M: 128
       WG_TILE_N: 128
@@ -147,7 +151,8 @@ sarc_exp_linear_dq8ca_coopmat_zpg:
       A_MULTI_BLOCK: true
       A_BLOCKS: 8
       EXP_MODE: i32
-    - NAME: sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g12s16m8_texture3d_texture2d_half
+      PARAM_MULTI: true
+    - NAME: sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g12s16m8pm_texture3d_texture2d_half
       IO_STORAGE: texture3d
       WG_TILE_M: 128
       WG_TILE_N: 128
@@ -161,3 +166,4 @@ sarc_exp_linear_dq8ca_coopmat_zpg:
       A_MULTI_BLOCK: true
       A_BLOCKS: 16
       EXP_MODE: i32
+      PARAM_MULTI: true
