@@ -1,0 +1,16 @@
+diff -ru /mnt/linux-share/hmz-campaigns/f1-orin/executorch/openspec/changes/sarc-1.5-orin-fused-port/tools/common.sh /mnt/linux-share/hmz-campaigns/f1-orin/.artifacts/tools/common.sh
+--- /mnt/linux-share/hmz-campaigns/f1-orin/executorch/openspec/changes/sarc-1.5-orin-fused-port/tools/common.sh	2026-10-10 08:40:21.250116809 -0700
++++ /mnt/linux-share/hmz-campaigns/f1-orin/.artifacts/tools/common.sh	2026-10-10 08:50:59.520479583 -0700
+@@ -12,10 +12,10 @@
+ # marker file blocks every later tool until a person removes it), 75 = gpu-lab lock busy, 76 = a GPU process this
+ # campaign did not start, 77 = a required input is missing.
+ TOOLS=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+-DEVICE=doremy@duck-naughty; DEVROOT=hmz-sarc-orin-fused   # relative to the device's $HOME
++DEVICE=doremy@duck-naughty; DEVROOT=hmz-f1-orin   # relative to the device's $HOME
+ CHANGE_REL=openspec/changes/sarc-1.5-orin-fused-port
+ if [[ $(uname -m) == aarch64 ]]; then SIDE=device; R=$HOME/$DEVROOT; A=$R
+-else SIDE=ws; R=/mnt/linux-share/hmz-campaigns/jetson-fused; A=$R/.artifacts; fi
++else SIDE=ws; R=/mnt/linux-share/hmz-campaigns/f1-orin; A=$R/.artifacts; fi
+ ET=$R/executorch; CHANGE=$ET/$CHANGE_REL
+ LOCK=b49259c9-868c-5b7c-b6f1-65a2bf4b63be                               # duck-naughty
+ KIT=$ET/openspec/changes/sarc-1.5-e2e-benchmark/kit

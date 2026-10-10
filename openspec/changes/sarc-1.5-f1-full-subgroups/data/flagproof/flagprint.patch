@@ -1,0 +1,31 @@
+--- a/backends/vulkan/runtime/vk_api/Pipeline.cpp	2026-10-10 08:48:06.326758135 -0700
++++ b/backends/vulkan/runtime/vk_api/Pipeline.cpp	2026-10-10 08:48:06.342758294 -0700
+@@ -8,6 +8,7 @@
+ 
+ #include <executorch/backends/vulkan/runtime/vk_api/Pipeline.h>
+ 
++#include <cstdio>
+ #include <fstream>
+ 
+ namespace vkcompute {
+@@ -278,10 +279,19 @@
+ #ifdef VK_EXT_subgroup_size_control
+   const SpecVarList& spec_vars = descriptor.specialization_constants;
+   const uint32_t subgroup_size = descriptor.required_subgroup_size;
++  VkPipelineShaderStageCreateFlags f1_flags = 0u;
+   if (full_subgroups && subgroup_size > 0u && spec_vars.size() > 0u &&
+       spec_vars.at(0).value.as_uint32 % subgroup_size == 0u) {
+-    return VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT;
++    f1_flags = VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT;
+   }
++  std::fprintf(
++      stderr,
++      "[f1-flagprint] required_subgroup_size=%u local_size_x=%u computeFullSubgroups=%d stage_flags=0x%x\n",
++      subgroup_size,
++      spec_vars.size() > 0u ? spec_vars.at(0).value.as_uint32 : 0u,
++      full_subgroups ? 1 : 0,
++      static_cast<unsigned>(f1_flags));
++  return f1_flags;
+ #endif /* VK_EXT_subgroup_size_control */
+   return 0u;
+ }
