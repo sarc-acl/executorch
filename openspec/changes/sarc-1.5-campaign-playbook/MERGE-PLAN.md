@@ -137,6 +137,16 @@ variant). Then every device: `spirv_golden.py`, the full gate, one timed session
 its own closing session. The B580 campaign's `STATUS.md` ("Decision needed from the owner", forms A and B) is
 the worked description.
 
+Status 2026-10-10: the change exists as one release-zone commit (about 50 lines in `vk_api/Adapter.cpp`,
+`Pipeline.cpp`, `Pipeline.h`, `sarc/HOOKS`) and was applied unchanged and re-measured, old build against new in
+one session with the verdict rule written first, on the five devices on our side. No effect on the Arc B580
+(-0.04 %), Arc Pro B70 (+0.11 %), Radeon 780M (+0.02 %) and RTX 4070 Ti SUPER (-0.13 %); logits byte-identical,
+SPIR-V unchanged, the validation message gone where the layer is installed; no variant on any device violates
+the local-size rule. Jetson Orin Nano: both timed sessions inside the band (-0.05 %, +0.00 %), its kernel-level
+step unfinished at the time of writing. The branches are local and not pushed (the owner decides). Still to do
+here: the three company-side devices, and the other validation messages (a memory-model feature that is not
+enabled, among others), which were recorded and not repaired.
+
 ### M2f. Decode with the fused attention node present **[owner]**
 
 The B70 confirmation measured decode 0 to 2.5 % slower with the fused node present, and the B580 record shows
