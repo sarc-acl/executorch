@@ -39,8 +39,8 @@ no entry in `chains`, `reported`, `timeRows`, `llama` or `tokps`, and its `techs
 text `v` (for example "adopted", "retained", "n/a"), an optional `n` and a qualitative tooltip `t`: no percentage, speed,
 time, driver or board identifier anywhere, in the data block or in the prose. The rendering code shows the text
 "figures not published" on its tile and in the matrix header and draws no bar for it in figure 1. A device that has figures
-but no llama.cpp or stock measurement (RX 7900 XTX) keeps those `tokps` fields `null`, which the table prints as
-a dash, and has no `llama` entry; an optional `note` on a `devices` or `tokps` entry is shown in the tile tooltip
+but lacks a llama.cpp or stock measurement keeps those `tokps` fields `null`, which the table prints as
+a dash, and has no `llama` entry (none at present); an optional `note` on a `devices` or `tokps` entry is shown in the tile tooltip
 or beside the device name in figure 7. The matrix of figure 2 takes its column count from the data: the six
 original devices in their fixed order, then any further `devices` entries in the order they appear; the script
 sets the CSS variable `--ncol` on the matrix and the grid and its `min-width` follow it, so a new device needs
@@ -89,8 +89,10 @@ Everything that is in a final configuration or was tried is in one of three stat
 A matrix cell and the chain segment of the same candidate must be in the same state. A candidate whose geomean is
 in the band but which the campaign adopted on a single cell (B70 candidate 5, Orin candidate 3) is "retained, in
 band" on this page; the label says what the campaign recorded.
-The RX 7900 XTX's stock column comes from the benchmark session of 2026-09-28 (same driver), not from the tuning
-session; `stock_note` says so.
+The RX 7600 and RX 7900 XTX rows of `tokps` (every column) come from the company side's interleaved comparison
+sessions of 2026-10-10 (`results/rx7600`, `results/7900xtx` on `topic/llamacpp-compare`), so stock, parent and tuned
+are same-session there; the RX 7900 XTX's `final` is therefore that session's +7.7 %, while `reported` keeps the
+campaign's closing session (+8.33 %). The RX 7600's 8B llama.cpp cells take the `lc` timer only (llama-bench slow path).
 
 ## Updating after a campaign closes or a branch changes
 
