@@ -1,0 +1,16 @@
+{
+  "schema": "test_llama_microbench.v1",
+  "device": "intel(r) arc(tm) b580 graphics (bmg g21)",
+  "subgroup_size": 32,
+  "timestamp_period_ns": 52.0833,
+  "cooperative_matrix": true,
+  "warmup_runs": 3,
+  "timed_runs": 5,
+  "group_size": 128,
+  "cases": [
+    {"suite": "linear", "model": "llama-3.2-1b", "scheme": "8da4w", "regime": "prefill", "op": "wq_wo", "storage": "texture3d", "variant": "tiled", "kernel": "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8", "M": 2048, "K": 2048, "N": 2048, "kv_heads": 0, "op_mean_us": 814.112, "op_stdev_us": 25.4512, "kernel_mean_us": 767.073, "kernel_median_us": 726.492, "kernel_cov": 0.195178, "gflops": 21102.6, "dispatch": "not_applicable", "correctness": "SKIPPED", "detail": "", "ok": true},
+    {"suite": "linear", "model": "llama-3.2-1b", "scheme": "8da4w", "regime": "prefill", "op": "wk_wv", "storage": "texture3d", "variant": "tiled", "kernel": "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8", "M": 2048, "K": 2048, "N": 512, "kv_heads": 0, "op_mean_us": 262.264, "op_stdev_us": 13.7755, "kernel_mean_us": 234.166, "kernel_median_us": 217.828, "kernel_cov": 0.393203, "gflops": 16376.5, "dispatch": "not_applicable", "correctness": "SKIPPED", "detail": "", "ok": true},
+    {"suite": "linear", "model": "llama-3.2-1b", "scheme": "8da4w", "regime": "prefill", "op": "w1_w3", "storage": "texture3d", "variant": "tiled", "kernel": "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8", "M": 2048, "K": 2048, "N": 8192, "kv_heads": 0, "op_mean_us": 3113.37, "op_stdev_us": 110.192, "kernel_mean_us": 3061.81, "kernel_median_us": 2871.93, "kernel_cov": 0.142357, "gflops": 22072.4, "dispatch": "not_applicable", "correctness": "SKIPPED", "detail": "", "ok": true},
+    {"suite": "linear", "model": "llama-3.2-1b", "scheme": "8da4w", "regime": "prefill", "op": "w2", "storage": "texture3d", "variant": "tiled", "kernel": "linear_dq8ca_q4gsw_tiled_texture3d_texture2d_half_zpint8", "M": 2048, "K": 8192, "N": 2048, "kv_heads": 0, "op_mean_us": 3646.84, "op_stdev_us": 224.819, "kernel_mean_us": 3483.1, "kernel_median_us": 3068.99, "kernel_cov": 0.173258, "gflops": 18843.6, "dispatch": "not_applicable", "correctness": "SKIPPED", "detail": "", "ok": true}
+  ]
+}

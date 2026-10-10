@@ -1,0 +1,16 @@
+{
+  "schema": "test_llama_microbench.v1",
+  "device": "intel(r) arc(tm) b580 graphics (bmg g21)",
+  "subgroup_size": 32,
+  "timestamp_period_ns": 52.0833,
+  "cooperative_matrix": true,
+  "warmup_runs": 3,
+  "timed_runs": 5,
+  "group_size": 128,
+  "cases": [
+    {"suite": "linear", "model": "llama-3.2-1b", "scheme": "8da4w", "regime": "prefill", "op": "wq_wo", "storage": "texture3d", "variant": "coopmat", "kernel": "sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g21s16m8_texture3d_texture2d_half", "M": 2048, "K": 2048, "N": 2048, "kv_heads": 0, "op_mean_us": 9959.71, "op_stdev_us": 120.382, "kernel_mean_us": 9913.07, "kernel_median_us": 9794.54, "kernel_cov": 0.0340438, "gflops": 1724.94, "dispatch": "unexpected_coopmat", "correctness": "SKIPPED", "detail": "", "ok": true},
+    {"suite": "linear", "model": "llama-3.2-1b", "scheme": "8da4w", "regime": "prefill", "op": "wk_wv", "storage": "texture3d", "variant": "coopmat", "kernel": "sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g21s16m8_texture3d_texture2d_half", "M": 2048, "K": 2048, "N": 512, "kv_heads": 0, "op_mean_us": 3117.6, "op_stdev_us": 45.3167, "kernel_mean_us": 3076.47, "kernel_median_us": 2953.24, "kernel_cov": 0.0745333, "gflops": 1377.65, "dispatch": "unexpected_coopmat", "correctness": "SKIPPED", "detail": "", "ok": true},
+    {"suite": "linear", "model": "llama-3.2-1b", "scheme": "8da4w", "regime": "prefill", "op": "w1_w3", "storage": "texture3d", "variant": "coopmat", "kernel": "sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g21s16m8_texture3d_texture2d_half", "M": 2048, "K": 2048, "N": 8192, "kv_heads": 0, "op_mean_us": 39551.8, "op_stdev_us": 1117.59, "kernel_mean_us": 39514.6, "kernel_median_us": 38793.3, "kernel_cov": 0.0323695, "gflops": 1737.46, "dispatch": "unexpected_coopmat", "correctness": "SKIPPED", "detail": "", "ok": true},
+    {"suite": "linear", "model": "llama-3.2-1b", "scheme": "8da4w", "regime": "prefill", "op": "w2", "storage": "texture3d", "variant": "coopmat", "kernel": "sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g21s16m8_texture3d_texture2d_half", "M": 2048, "K": 8192, "N": 2048, "kv_heads": 0, "op_mean_us": 39078.2, "op_stdev_us": 121.719, "kernel_mean_us": 38920.6, "kernel_median_us": 38810.7, "kernel_cov": 0.00407389, "gflops": 1758.51, "dispatch": "unexpected_coopmat", "correctness": "SKIPPED", "detail": "", "ok": true}
+  ]
+}
