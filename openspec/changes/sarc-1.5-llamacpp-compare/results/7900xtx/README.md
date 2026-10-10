@@ -124,3 +124,45 @@ gives a different, equally plausible continuation; its tokenizer splits the chec
   `build-stock.sh` was not used); the same binary as the RX 7600 session. It ran on AMDVLK for the first time here.
 - **Counting rule** for `clock_low`: above.
 - **HIP not done:** not part of this task.
+
+## Extras of the request (10.4): the real-text prompt and decode
+
+**Real-text prompt** (`real-text/`, session `real1`, 2026-10-10 02:08 to 02:58 UTC, same host, binaries and settings; the 2048-token
+prompt is the GNU licence text `prompt_real_2048.txt` of the campaign, 2048 tokens under both tokenizers; the ExecuTorch arms, and
+`lc` at its best setting for both quantizations; `lb` always uses synthetic tokens). Median tok/s, synthetic prompt of the table
+above against real text (`*` = counted `clock_low`-only runs, as above):
+
+| arm | 1B synthetic | 1B real | 3B synthetic | 3B real | 8B synthetic | 8B real |
+|---|---:|---:|---:|---:|---:|---:|
+| `stock-4w` | 6781* | 6726* (-0.8 %) | 2614* | 2611* (-0.1 %) | 1259* | 1256* (-0.2 %) |
+| `stock-8da4w` | 10240 | 9894 (-3.4 %) | 4104 | 4008 (-2.3 %) | 2248 | 2188 (-2.7 %) |
+| `sarc-4w` | 19884 | 19884 (+0.0 %) | 10240 | 9894 (-3.4 %) | 4763 | 4531* (-4.9 %) |
+| `sarc-8da4w` | 22506 | 21558* (-4.2 %) | 10557 | 10064* (-4.7 %) | 4983 | 4587* (-8.0 %) |
+| `tuned-4w` | 22261 | 21790* (-2.1 %) | 10779 | 10343 (-4.0 %) | 4900 | 4665* (-4.8 %) |
+| `tuned-8da4w` | 24675 | 23273* (-5.7 %) | 11636 | 11011 (-5.4 %) | 5319 | 4888* (-8.1 %) |
+| `lc-q4_0-best` | 14995* | 14838* (-1.0 %) | 6406* | 6398* (-0.1 %) | 3171* | 3159* (-0.4 %) |
+| `lc-q4_k_m-best` | 12465* | 12330* (-1.1 %) | 5264* | 5239* (-0.5 %) | 2499 | 2489 (-0.4 %) |
+
+The ExecuTorch SARC and tuned kernels are 0 to 8 % slower on real text than on the synthetic prompt (one cell unchanged, most 2 to
+8 %; the per-cell median clock of these arms is 2545 to 2791 MHz on real text against 2765 to 2891 on the synthetic prompt), stock `8da4w`
+2 to 3.5 %, stock `4w` within 1 %, llama.cpp within 1.1 %.
+Tuned `4w` / `lc` (best) Q4_0 on real text: 1.47 / 1.62 / 1.48 (1B / 3B / 8B) against 1.48 / 1.68 / 1.54 on the synthetic prompt. Most real-text
+ExecuTorch cells fall under the 2670 MHz floor by a few MHz and are counted; the strict counts are in `real-text/cells-strict.csv`.
+
+**Decode** (`decode.csv`, `decode-cells.csv`; ExecuTorch arms only): decode tok/s after the 2048-token prompt, 128 generated tokens,
+greedy, `--warmup`, three runs per cell interleaved stock / SARC / tuned, five seconds apart, under the same lock; rate = generated
+tokens minus one over the time from the first token to the end. Not clock-sampled and not judged: decode is short (0.5 to 1.7 s) and
+memory-bound, so read it as indicative. Median tok/s:
+
+| model | scheme | stock | SARC (without the final configuration) | tuned (with it) | tuned / SARC |
+|---|---|---:|---:|---:|---:|
+| 1B | `4w` | 177.6 | 215.6 | 185.1 | 0.86 |
+| 1B | `8da4w` | 255.5 | 192.1 | 171.6 | 0.89 |
+| 3B | `4w` | 81.2 | 130.8 | 118.8 | 0.91 |
+| 3B | `8da4w` | 127.4 | 117.0 | 112.6 | 0.96 |
+| 8B | `4w` | 54.3 | 85.3 | 83.5 | 0.98 |
+| 8B | `8da4w` | 84.7 | 79.5 | 77.2 | 0.97 |
+
+The final configuration, tuned for prefill, decodes 2 to 14 % slower than the parent on this card (the largest drop is 1B `4w`, 215.6 to 185.1 tok/s,
+spread 2.3 and 1.3 %); stock `8da4w` decodes faster than both dev/1.5 arms (1B: 255.5 against 192.1 and 171.6). llama.cpp decode was not measured
+(its decode benchmark runs at an empty context, not after the 2048-token prompt, so it would not be comparable).
