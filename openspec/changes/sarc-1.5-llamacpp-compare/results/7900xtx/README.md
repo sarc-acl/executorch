@@ -64,8 +64,8 @@ Same-session ratios over the stock arm (the cross-session objection of the revie
 `8da4w` 2.20 / 2.57 / 2.22; tuned / SARC `4w` 1.12 / 1.05 / 1.03, `8da4w` 1.10 / 1.10 / 1.07 (the campaign's final session:
 1.12 / 1.05 / 1.03 and 1.11 / 1.12 / 1.07). Stock `4w` is counted under the clock note (3B and 8B: all eight runs).
 
-Both timers, both quantizations: tuned `4w` is ahead of llama.cpp Vulkan Q4_0 by 1.36 to 1.56 at its better setting (1.40 to 1.64 at
-the default; 1.48 to 1.68 by `lc` alone) and ahead of Q4_K_M by 1.73 to 1.95 (1.80 to 2.09 at the default). Q4_K_M is slower than Q4_0 by 18 to 22 % by `lb`
+Both timers, both quantizations: tuned `4w` is ahead of llama.cpp Vulkan Q4_0 by 1.36 to 1.56 by `lb` at `best` (`lb` default 1.40 to 1.64; `lc` best 1.48 to 1.68;
+`lc` default 1.51 to 1.75) and ahead of Q4_K_M by 1.73 to 1.95 by `lb` at `best` (`lb` default 1.80 to 2.00; `lc` best 1.79 to 2.05; `lc` default 1.84 to 2.09). Q4_K_M is slower than Q4_0 by 18 to 22 % by `lb`
 and 16 to 21 % by `lc` (both settings, all three models). `best` (`-b 2048 -ub 1024 -fa on`) is 1 to 5 % above `default` (1.1 to 5.3 %). `lb` is 1 to 9 % above `lc` (1.3 to 9.4 %) for the same setting, the
 `lc` number being the one that pays the clock ramp of a fresh process (below); no llama-bench slow path above 1024 prompt tokens
 was seen on this card (8B `lb` and `lc` within 3.5 %).

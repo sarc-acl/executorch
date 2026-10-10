@@ -12,7 +12,7 @@ Updated 2026-10-10 06:35 UTC. Nothing is pushed. The three devices run in parall
 
 ## RX 7900 XTX in one paragraph
 
-Tuned `4w` is ahead of llama.cpp Vulkan Q4_0 (1.36 to 1.56) and Q4_K_M (1.73 to 1.95) at every model size, by either timer and at both settings; `lc`
+Tuned `4w` is ahead of llama.cpp Vulkan Q4_0 (1.36 to 1.75 over all eight arms; 1.36 to 1.56 by `lb` at `best`) and Q4_K_M (1.73 to 2.09; 1.73 to 1.95 by `lb` at `best`) at every model size, by either timer and at both settings; `lc`
 pays the card's clock ramp (its `clock_low` runs are counted and shown); stock, parent and tuned were measured in the same session, so the review's
 cross-session objection no longer applies (tuned / stock `4w` 3.28 / 4.12 / 3.89; the 3B and 8B stock `4w` values rest on `clock_low` runs only, all eight under the 2670 MHz floor, so they have no strict value; 1B has five valid runs of seven).
 
