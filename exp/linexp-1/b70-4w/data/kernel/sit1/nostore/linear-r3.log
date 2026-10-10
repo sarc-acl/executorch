@@ -1,0 +1,110 @@
+
+=== Compute Shader Performance Benchmark ===
+Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; prefill 2048 / decode 1 @ ctx3072; linear group_size=128; 3 warmup + 5 timed runs per case)
+DEVICE,intel(r) graphics (bmg g31),timestamp_period_ns=52.0833,subgroup_size=32,coopmat=yes,max_shared_mem_bytes=49152
+----------------------------------------------------------------------
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_exp_linear_q4gsw_coopmat_nostore_t128x1..     (8192,16,1)     (256,1,1)   llama-3.1-8b_prefill_wq_wo_linear_q4gsw_M2048_K4096_N4096_rank3batch1_Texture3D         [1x2048x4096]         510.292 μs     134666.953 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,prefill,coopmat,4096,4096,510.292,0.068,134666.953,unexpected_coopmat,SKIPPED,texture3d,2048,510.293,sarc_exp_linear_q4gsw_coopmat_nostore_t128x128k16g82s16m8flib_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_exp_linear_q4gsw_coopmat_nostore_t128x1..     (2048,16,1)     (256,1,1)   llama-3.1-8b_prefill_wk_wv_linear_q4gsw_M2048_K4096_N1024_rank3batch1_Texture3D         [1x2048x4096]         139.006 μs     123590.797 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,prefill,coopmat,4096,1024,139.006,0.013,123590.805,unexpected_coopmat,SKIPPED,texture3d,2048,139.006,sarc_exp_linear_q4gsw_coopmat_nostore_t128x128k16g82s16m8flib_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_exp_linear_q4gsw_coopmat_nostore_t128x1..     (28672,16,1)    (256,1,1)   llama-3.1-8b_prefill_w1_w3_linear_q4gsw_M2048_K4096_N14336_rank3batch1_Texture3D        [1x2048x4096]        1717.390 μs     140048.672 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,prefill,coopmat,4096,14336,1717.390,1.804,140048.672,unexpected_coopmat,SKIPPED,texture3d,2048,1717.390,sarc_exp_linear_q4gsw_coopmat_nostore_t128x128k16g82s16m8flib_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_exp_linear_q4gsw_coopmat_nostore_t128x1..     (8192,16,1)     (256,1,1)   llama-3.1-8b_prefill_w2_linear_q4gsw_M2048_K14336_N4096_rank3batch1_Texture3D          [1x2048x14336]        1731.863 μs     138878.297 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,prefill,coopmat,14336,4096,1731.863,0.306,138878.281,unexpected_coopmat,SKIPPED,texture3d,2048,1731.863,sarc_exp_linear_q4gsw_coopmat_nostore_t128x128k16g82s16m8flib_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_exp_linear_q4gsw_coopmat_nostore_t128x1..     (6144,16,1)     (256,1,1)   llama-3.2-3b_prefill_wq_wo_linear_q4gsw_M2048_K3072_N3072_rank3batch1_Texture3D         [1x2048x3072]         293.641 μs     131639.453 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,prefill,coopmat,3072,3072,293.641,0.082,131639.453,unexpected_coopmat,SKIPPED,texture3d,2048,293.641,sarc_exp_linear_q4gsw_coopmat_nostore_t128x128k16g82s16m8flib_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_exp_linear_q4gsw_coopmat_nostore_t128x1..     (2048,16,1)     (256,1,1)   llama-3.2-3b_prefill_wk_wv_linear_q4gsw_M2048_K3072_N1024_rank3batch1_Texture3D         [1x2048x3072]         107.148 μs     120253.453 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,prefill,coopmat,3072,1024,107.148,0.029,120253.453,unexpected_coopmat,SKIPPED,texture3d,2048,107.148,sarc_exp_linear_q4gsw_coopmat_nostore_t128x128k16g82s16m8flib_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_exp_linear_q4gsw_coopmat_nostore_t128x1..     (16384,16,1)    (256,1,1)   llama-3.2-3b_prefill_w1_w3_linear_q4gsw_M2048_K3072_N8192_rank3batch1_Texture3D         [1x2048x3072]         753.493 μs     136801.859 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,prefill,coopmat,3072,8192,753.493,0.295,136801.859,unexpected_coopmat,SKIPPED,texture3d,2048,753.493,sarc_exp_linear_q4gsw_coopmat_nostore_t128x128k16g82s16m8flib_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_exp_linear_q4gsw_coopmat_nostore_t128x1..     (6144,16,1)     (256,1,1)   llama-3.2-3b_prefill_w2_linear_q4gsw_M2048_K8192_N3072_rank3batch1_Texture3D            [1x2048x8192]         758.581 μs     135884.281 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,prefill,coopmat,8192,3072,758.581,0.135,135884.281,unexpected_coopmat,SKIPPED,texture3d,2048,758.581,sarc_exp_linear_q4gsw_coopmat_nostore_t128x128k16g82s16m8flib_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_exp_linear_q4gsw_coopmat_nostore_t128x1..     (4096,16,1)     (256,1,1)   llama-3.2-1b_prefill_wq_wo_linear_q4gsw_M2048_K2048_N2048_rank3batch1_Texture3D         [1x2048x2048]         138.697 μs     123866.000 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,prefill,coopmat,2048,2048,138.697,0.040,123866.000,unexpected_coopmat,SKIPPED,texture3d,2048,138.697,sarc_exp_linear_q4gsw_coopmat_nostore_t128x128k16g82s16m8flib_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_exp_linear_q4gsw_coopmat_nostore_t128x1..     (1024,16,1)     (256,1,1)   llama-3.2-1b_prefill_wk_wv_linear_q4gsw_M2048_K2048_N512_rank3batch1_Texture3D          [1x2048x2048]          49.772 μs      86292.375 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,prefill,coopmat,2048,512,49.772,0.022,86292.375,unexpected_coopmat,SKIPPED,texture3d,2048,49.772,sarc_exp_linear_q4gsw_coopmat_nostore_t128x128k16g82s16m8flib_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_exp_linear_q4gsw_coopmat_nostore_t128x1..     (16384,16,1)    (256,1,1)   llama-3.2-1b_prefill_w1_w3_linear_q4gsw_M2048_K2048_N8192_rank3batch1_Texture3D         [1x2048x2048]         512.914 μs     133978.672 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,prefill,coopmat,2048,8192,512.914,0.052,133978.688,unexpected_coopmat,SKIPPED,texture3d,2048,512.914,sarc_exp_linear_q4gsw_coopmat_nostore_t128x128k16g82s16m8flib_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_exp_linear_q4gsw_coopmat_nostore_t128x1..     (4096,16,1)     (256,1,1)   llama-3.2-1b_prefill_w2_linear_q4gsw_M2048_K8192_N2048_rank3batch1_Texture3D            [1x2048x8192]         515.923 μs     133197.094 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,prefill,coopmat,8192,2048,515.923,0.124,133197.078,unexpected_coopmat,SKIPPED,texture3d,2048,515.924,sarc_exp_linear_q4gsw_coopmat_nostore_t128x128k16g82s16m8flib_texture3d_texture2d_half
+----------------------------------------------------------------------
+==================== RAW RESULTS ====================
+suite     model         scheme regime   op     storage    variant  (M,K,N)                   mean_us     stdev   kern_us   GFLOP/s  dispatch
+linear    llama-3.1-8b  4w     prefill  wq_wo  texture3d  coopmat  (2048,4096,4096)            510.3       0.1     510.3  134667.0  unexpected_coopmat
+linear    llama-3.1-8b  4w     prefill  wk_wv  texture3d  coopmat  (2048,4096,1024)            139.0       0.0     139.0  123590.8  unexpected_coopmat
+linear    llama-3.1-8b  4w     prefill  w1_w3  texture3d  coopmat  (2048,4096,14336)          1717.4       1.8    1717.4  140048.7  unexpected_coopmat
+linear    llama-3.1-8b  4w     prefill  w2     texture3d  coopmat  (2048,14336,4096)          1731.9       0.3    1731.9  138878.3  unexpected_coopmat
+linear    llama-3.2-3b  4w     prefill  wq_wo  texture3d  coopmat  (2048,3072,3072)            293.6       0.1     293.6  131639.5  unexpected_coopmat
+linear    llama-3.2-3b  4w     prefill  wk_wv  texture3d  coopmat  (2048,3072,1024)            107.1       0.0     107.1  120253.5  unexpected_coopmat
+linear    llama-3.2-3b  4w     prefill  w1_w3  texture3d  coopmat  (2048,3072,8192)            753.5       0.3     753.5  136801.9  unexpected_coopmat
+linear    llama-3.2-3b  4w     prefill  w2     texture3d  coopmat  (2048,8192,3072)            758.6       0.1     758.6  135884.3  unexpected_coopmat
+linear    llama-3.2-1b  4w     prefill  wq_wo  texture3d  coopmat  (2048,2048,2048)            138.7       0.0     138.7  123866.0  unexpected_coopmat
+linear    llama-3.2-1b  4w     prefill  wk_wv  texture3d  coopmat  (2048,2048,512)              49.8       0.0      49.8   86292.4  unexpected_coopmat
+linear    llama-3.2-1b  4w     prefill  w1_w3  texture3d  coopmat  (2048,2048,8192)            512.9       0.1     512.9  133978.7  unexpected_coopmat
+linear    llama-3.2-1b  4w     prefill  w2     texture3d  coopmat  (2048,8192,2048)            515.9       0.1     515.9  133197.1  unexpected_coopmat
+
+========== LINEAR: coopmat (WMMA) vs tiled, prefill M=2048 ==========
+scheme model         op     (K,N)             tiled_tex     coopmat     op_x   kern_x  (us; op_x = whole op incl. 8da4w act-quant, kern_x = linear shader only)
+4w     llama-3.1-8b  wq_wo  (4096,4096)           510.3           -        -        -
+4w     llama-3.1-8b  wk_wv  (4096,1024)           139.0           -        -        -
+4w     llama-3.1-8b  w1_w3  (4096,14336)         1717.4           -        -        -
+4w     llama-3.1-8b  w2     (14336,4096)         1731.9           -        -        -
+4w     llama-3.2-3b  wq_wo  (3072,3072)           293.6           -        -        -
+4w     llama-3.2-3b  wk_wv  (3072,1024)           107.1           -        -        -
+4w     llama-3.2-3b  w1_w3  (3072,8192)           753.5           -        -        -
+4w     llama-3.2-3b  w2     (8192,3072)           758.6           -        -        -
+4w     llama-3.2-1b  wq_wo  (2048,2048)           138.7           -        -        -
+4w     llama-3.2-1b  wk_wv  (2048,512)             49.8           -        -        -
+4w     llama-3.2-1b  w1_w3  (2048,8192)           512.9           -        -        -
+4w     llama-3.2-1b  w2     (8192,2048)           515.9           -        -        -
+(! = buffer case did NOT dispatch a coopmat shader; shown for reference, excluded from speedups/geomeans)
+
+One or more cases crashed or did not dispatch the expected kernel (see dispatch column) -- do not trust their speedup numbers.

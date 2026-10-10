@@ -1,0 +1,28 @@
+Nothing-selected check, runtime half: the parent build (tuning campaign's final build topic2, binary 42c40e60...) and the experiment build exp2 (8f65c081...),
+each with no SARC variable at all (`release`) and with the campaign's final configuration (ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b70-fused1, `fused1`).
+Per case: dispatched kernel in both builds, and the median of 3 process medians (us). Kernel names must be equal in all 24 cases.
+release llama-3.1-8b w1_w3 SAME sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli parent 3622.9 exp2 3627.6 ratio 0.9987
+release llama-3.1-8b w2 SAME sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli parent 3682.6 exp2 3696.8 ratio 0.9962
+release llama-3.1-8b wk_wv SAME sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli parent 262.6 exp2 262.6 ratio 1.0000
+release llama-3.1-8b wq_wo SAME sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli parent 990.2 exp2 991.0 ratio 0.9992
+release llama-3.2-1b w1_w3 SAME sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli parent 990.2 exp2 989.6 ratio 1.0006
+release llama-3.2-1b w2 SAME sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli parent 1033.6 exp2 1033.2 ratio 1.0003
+release llama-3.2-1b wk_wv SAME sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli parent 93.8 exp2 93.8 ratio 1.0000
+release llama-3.2-1b wq_wo SAME sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli parent 255.7 exp2 255.8 ratio 0.9998
+release llama-3.2-3b w1_w3 SAME sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli parent 1492.9 exp2 1494.1 ratio 0.9992
+release llama-3.2-3b w2 SAME sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli parent 1527.8 exp2 1526.8 ratio 1.0006
+release llama-3.2-3b wk_wv SAME sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli parent 199.0 exp2 198.8 ratio 1.0005
+release llama-3.2-3b wq_wo SAME sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli parent 570.9 exp2 571.0 ratio 0.9999
+fused1 llama-3.1-8b w1_w3 SAME sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib parent 3559.7 exp2 3564.9 ratio 0.9986
+fused1 llama-3.1-8b w2 SAME sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib parent 3525.9 exp2 3514.9 ratio 1.0031
+fused1 llama-3.1-8b wk_wv SAME sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib parent 247.1 exp2 247.0 ratio 1.0004
+fused1 llama-3.1-8b wq_wo SAME sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib parent 970.1 exp2 969.7 ratio 1.0004
+fused1 llama-3.2-1b w1_w3 SAME sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib parent 971.4 exp2 970.3 ratio 1.0011
+fused1 llama-3.2-1b w2 SAME sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib parent 990.0 exp2 990.9 ratio 0.9991
+fused1 llama-3.2-1b wk_wv SAME sarc_linear_q4gsw_coopmat_sweep_t128x128k32g84s16m8flw parent 80.2 exp2 80.2 ratio 1.0000
+fused1 llama-3.2-1b wq_wo SAME sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib parent 247.0 exp2 247.0 ratio 0.9999
+fused1 llama-3.2-3b w1_w3 SAME sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib parent 1459.6 exp2 1462.8 ratio 0.9978
+fused1 llama-3.2-3b w2 SAME sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib parent 1478.4 exp2 1477.7 ratio 1.0004
+fused1 llama-3.2-3b wk_wv SAME sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib parent 187.6 exp2 187.5 ratio 1.0006
+fused1 llama-3.2-3b wq_wo SAME sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib parent 554.4 exp2 554.3 ratio 1.0002
+cases 24, kernel differences 0

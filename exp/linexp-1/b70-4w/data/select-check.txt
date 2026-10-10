@@ -1,0 +1,11 @@
+test_sarc_select as sarc/tools/check.sh step 3 runs it (working copy at a20a0df10), plus a third form with the experiment rows linked in and no ET_VK_SARC_EXP
+test_sarc_select: PASS (1240 checks, 31 rows, 0 candidates, dev zone absent, unverified off)
+release tables rc=0
+[sarc_dev] overrides active: unverified=1 variant= dq8ca_variant=
+test_sarc_select: PASS (1561 checks, 37 rows, 215 candidates, dev zone linked, unverified on)
+dev zone rc=0
+[sarc_dev] overrides active: unverified=1 variant= dq8ca_variant=
+test_sarc_select: PASS (1571 checks, 37 rows, 225 candidates, dev zone linked, unverified on)
+dev zone + experiment rows, nothing selected rc=0
+/tmp/tmp.6CkitpYO1y/a.txt /tmp/tmp.6CkitpYO1y/b.txt differ: byte 93, line 2
+(the two dev-zone outputs differ only in their count line: 215 against 225 candidates, 1561 against 1571 checks: the 10 experiment rows are registered and none is chosen)
