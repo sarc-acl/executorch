@@ -14,7 +14,9 @@ Updated 2026-10-10 07:10 UTC. Nothing is pushed. The three devices run in parall
 
 Tuned `4w` is ahead of llama.cpp Vulkan Q4_0 (1.36 to 1.56) and Q4_K_M (1.73 to 1.95) at every model size, by either timer and at both settings; `lc`
 pays the card's clock ramp (its `clock_low` runs are counted and shown); stock, parent and tuned were measured in the same session, so the review's
-cross-session objection no longer applies (tuned / stock `4w` 3.28 / 4.12 / 3.89). Details, deviations and audit: `7900xtx/README.md`.
+cross-session objection no longer applies (tuned / stock `4w` 3.28 / 4.12 / 3.89; the 3B and 8B stock `4w` values rest on `clock_low` runs only, all eight under the 2670 MHz floor, so they have no strict value; 1B has five valid runs of seven).
+
+**Owner decision needed:** `aggregate.py --accept clock_low` was written for the 780M; this task counts `clock_low`-only runs on the 7900 XTX (stock `4w` at 3B and 8B, `lc` Q4_0 and 1B Q4_K_M) and on the RX 7600 (8B stock `4w`) as the 780M and the pushed 2026-10-08 RX 7600 result did. No owner decision extends it to these cards; `cells-strict.csv` holds the rule as it stands. Please confirm or reject the counting rule before the figures are used. Details, deviations and audit: `7900xtx/README.md`.
 
 ## RX 7600 in one paragraph
 

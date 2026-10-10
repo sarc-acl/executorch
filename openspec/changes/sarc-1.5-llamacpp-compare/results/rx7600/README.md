@@ -60,7 +60,7 @@ Valid runs per cell under the rule as it stands / counted (`*` = counted with `c
 \* 8B stock `4w` counted under the clock note. † `llama-bench` at 8B, see the slow path below; the 8B llama.cpp number is the `lc` timer, and
 no `lb` ratio is given. Five valid runs in every other ExecuTorch and `lc` cell; `lb` = one process of five repetitions.
 
-Same-session ratios over the stock arm: tuned `4w` / stock `4w` 4.10 / 4.38 / 4.01 (1B / 3B / 8B), tuned `8da4w` / stock `8da4w` 2.80 / 2.96 / 2.49;
+Same-session ratios over the stock arm: tuned `4w` / stock `4w` 4.10 / 4.38 / 4.01 (1B / 3B / 8B; the 8B stock `4w` value rests on eight `clock_low` runs, no strict value), tuned `8da4w` / stock `8da4w` 2.80 / 2.96 / 2.49;
 tuned / SARC `4w` 1.42 / 1.30 / 1.24, `8da4w` 1.45 / 1.33 / 1.29 (the campaign's round 2 final session: 1.41 / 1.30 / 1.24 and 1.45 / 1.33 / 1.29).
 
 Both timers, both quantizations: tuned `4w` is ahead of llama.cpp Vulkan Q4_0 by 1.89 / 1.74 / 1.63 (1B / 3B / 8B; against `lc` at its better setting 2.07 /

@@ -66,7 +66,7 @@ Same-session ratios over the stock arm (the cross-session objection of the revie
 
 Both timers, both quantizations: tuned `4w` is ahead of llama.cpp Vulkan Q4_0 by 1.36 to 1.56 at its better setting (1.40 to 1.64 at
 the default; 1.48 to 1.68 by `lc` alone) and ahead of Q4_K_M by 1.73 to 1.95 (1.80 to 2.09 at the default). Q4_K_M is 20 to 22 %
-slower than Q4_0. `best` (`-b 2048 -ub 1024 -fa on`) is 2 to 5 % above `default`. `lb` is 2 to 9 % above `lc` for the same setting, the
+slower than Q4_0. `best` (`-b 2048 -ub 1024 -fa on`) is 1 to 5 % above `default` (1.1 to 5.3 %). `lb` is 1 to 9 % above `lc` (1.3 to 9.4 %) for the same setting, the
 `lc` number being the one that pays the clock ramp of a fresh process (below); no llama-bench slow path above 1024 prompt tokens
 was seen on this card (8B `lb` and `lc` within 3.5 %).
 
@@ -76,7 +76,7 @@ was seen on this card (8B `lb` and `lc` within 3.5 %).
   wait before each run, ramps its shader clock up inside the prompt window (one 1B run: 23 samples, median 2534 MHz, minimum 1169 MHz).
   The median over the window is 2450 to 2670 MHz for Q4_0 and 1B Q4_K_M, below the campaign's 2670 MHz floor,
   so `row.py` marks every such run `clock_low`, replaces it (three extra rounds) and the cell ends with no valid run
-  (`cells-strict.csv` leaves it empty). The runs are as steady as the valid ones (spread 0.3 to 2.6 %, 2 to 9 % under their `lb`
+  (`cells-strict.csv` leaves it empty). The runs are as steady as the valid ones (spread 0.3 to 2.6 %, 1 to 9 % under their `lb`
   counterpart). 3B and 8B Q4_K_M `lc` reach the floor (their prompt windows are longer) and are valid. ExecuTorch runs and `lb`
   have a warm-up inside the process. This is a property of the timer, not a disturbance.
 - **Stock `4w` on 3B and 8B** runs at a median of 2523 to 2662 MHz (all eight runs under the floor, at the same speed: spread 0.4 to
@@ -120,7 +120,7 @@ gives a different, equally plausible continuation; its tokenizer splits the chec
   `-c 2560` as fixed.
 - **GGUF files regenerated** from the HuggingFace revisions of `MODELS.md` exactly as for the RX 7600 (see its history README): Q4_0
   with `b10229` and the August options, Q4_K_M with `kit/make-q4km.sh`; 256 bytes smaller than `MODELS.md`, same parameter counts.
-- **Stock arm** built natively from an export of `985c1ceccc` plus the backport (podman does not run on the build workstation, so
+- **Stock arm** has no `COMMIT` file in the host's stage (`env.txt` prints an empty commit for it): its binary is byte-identical (sha256 `5869094d…`) to the RX 7600 session's stock arm, whose `COMMIT` is `985c1ceccc` plus the backport. Built natively from an export of `985c1ceccc` plus the backport (podman does not run on the build workstation, so
   `build-stock.sh` was not used); the same binary as the RX 7600 session. It ran on AMDVLK for the first time here.
 - **Counting rule** for `clock_low`: above.
 - **HIP not done:** not part of this task.
