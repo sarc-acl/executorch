@@ -1,0 +1,6 @@
+token,mode,wg_m,wg_n,wg_k,sgx,sgy,threads,a_tiles,b_tiles,mma_per_sg_kslab,fragments,ops_per_loaded_byte,chains_equiv,acc_int32_grf,a_blocks_per_thread,b_slots_per_thread,lds_bytes,correct
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g22s16m8pm,sh,64,128,32,2,2,64,4,4,16,8,42.67,4.0,128,2,4,47104,by design; validated only where data/pdiff* says so,2
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g21s16m8pm,sh,64,128,32,2,1,32,8,4,32,12,64.0,6.0,256,4,8,47104,by design; validated only where data/pdiff* says so,4
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g11s16m8pm,sh,64,128,32,1,1,16,8,8,64,16,85.33,8.0,512,8,16,47104,by design; validated only where data/pdiff* says so,8
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g22s16m8pm,i32,128,128,64,2,2,64,8,4,32,12,64.0,6.0,256,8,8,39424,NO (ablation),2
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g12s16m8pm,i32,128,128,64,1,2,32,8,8,64,16,85.33,8.0,512,16,16,39424,NO (ablation),4
