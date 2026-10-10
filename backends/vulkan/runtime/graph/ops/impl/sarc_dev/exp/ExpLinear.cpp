@@ -57,9 +57,6 @@ const Row kExpLinearCandidates[] = {
     {"", nullptr, Op::kQ4gswLinear,
      "sarc_exp_linear_q4gsw_coopmat_s32_t128x128k16g42s32m8flib",
      {128, 128, 16, 4, 2, 32, 8, false}, kTex3dTex2d, exp_requested, Status::kUnverified},
-    {"", nullptr, Op::kQ4gswLinear,
-     "sarc_exp_linear_q4gsw_coopmat_s32_t128x128k16g82s32m8flib",
-     {128, 128, 16, 8, 2, 32, 8, false}, kTex3dTex2d, exp_requested, Status::kUnverified},
 };
 
 struct Registrar {
