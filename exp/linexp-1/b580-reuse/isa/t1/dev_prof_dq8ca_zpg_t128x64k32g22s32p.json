@@ -1,0 +1,16 @@
+{
+  "schema": "test_llama_microbench.v1",
+  "device": "intel(r) arc(tm) b580 graphics (bmg g21)",
+  "subgroup_size": 32,
+  "timestamp_period_ns": 52.0833,
+  "cooperative_matrix": true,
+  "warmup_runs": 3,
+  "timed_runs": 5,
+  "group_size": 128,
+  "cases": [
+    {"suite": "linear", "model": "llama-3.2-1b", "scheme": "8da4w", "regime": "prefill", "op": "wq_wo", "storage": "texture3d", "variant": "tiled", "kernel": "llama-3.2-1b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K2048_N2048_rank3batch1_Texture3D", "M": 2048, "K": 2048, "N": 2048, "kv_heads": 0, "op_mean_us": 3921.28, "op_stdev_us": 24.5304, "kernel_mean_us": null, "kernel_median_us": null, "kernel_cov": null, "gflops": 4381.19, "dispatch": "not_applicable", "correctness": "SKIPPED", "detail": "", "ok": true},
+    {"suite": "linear", "model": "llama-3.2-1b", "scheme": "8da4w", "regime": "prefill", "op": "wk_wv", "storage": "texture3d", "variant": "tiled", "kernel": "llama-3.2-1b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K2048_N512_rank3batch1_Texture3D", "M": 2048, "K": 2048, "N": 512, "kv_heads": 0, "op_mean_us": 1203.82, "op_stdev_us": 16.328, "kernel_mean_us": null, "kernel_median_us": null, "kernel_cov": null, "gflops": 3567.77, "dispatch": "not_applicable", "correctness": "SKIPPED", "detail": "", "ok": true},
+    {"suite": "linear", "model": "llama-3.2-1b", "scheme": "8da4w", "regime": "prefill", "op": "w1_w3", "storage": "texture3d", "variant": "tiled", "kernel": "llama-3.2-1b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K2048_N8192_rank3batch1_Texture3D", "M": 2048, "K": 2048, "N": 8192, "kv_heads": 0, "op_mean_us": 14797.2, "op_stdev_us": 118.184, "kernel_mean_us": null, "kernel_median_us": null, "kernel_cov": null, "gflops": 4644.09, "dispatch": "not_applicable", "correctness": "SKIPPED", "detail": "", "ok": true},
+    {"suite": "linear", "model": "llama-3.2-1b", "scheme": "8da4w", "regime": "prefill", "op": "w2", "storage": "texture3d", "variant": "tiled", "kernel": "llama-3.2-1b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N2048_rank3batch1_Texture3D", "M": 2048, "K": 8192, "N": 2048, "kv_heads": 0, "op_mean_us": 15749, "op_stdev_us": 114.574, "kernel_mean_us": null, "kernel_median_us": null, "kernel_cov": null, "gflops": 4363.41, "dispatch": "not_applicable", "correctness": "SKIPPED", "detail": "", "ok": true}
+  ]
+}

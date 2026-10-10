@@ -7,7 +7,7 @@ import csv, json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from isa_counts import loops, count, fmt
 rows = list(csv.DictReader(open(sys.argv[1]))); D = sys.argv[2]
-out = [["token", "a_tiles", "b_tiles", "chains_equiv", "rc", "dispatched_as_itself", "dispatched", "shader", "simd", "grf", "instructions", "spills", "fills",
+out = [["token", "a_tiles", "b_tiles", "chains_equiv", "rc", "dispatched_as_itself", "dispatched", "shader", "simd", "grf", "instructions", "spills", "fills", "shader_dpas",
         "kloop_instructions", "kloop_dpas", "kloop_slm_loads", "kloop_slm_stores", "kloop_barriers", "note"]]
 for r in rows:
     t = r["token"]; base = [t, r.get("a_tiles", ""), r.get("b_tiles", ""), r.get("chains_equiv", "")]
@@ -29,10 +29,10 @@ for r in rows:
         seen.add(key); n += 1
         best = max(((count(body, a, b)) for a, b in loops(body)), key=lambda c: c["dpas"], default=None)
         f = fmt(best) if best else [""] * 11
-        out.append(base + [rc, itself, ";".join(kern), key[0], m[1], m[6], m[2], m[4], m[5], f[0], f[1], f[2], f[3], f[8], ""])
+        out.append(base + [rc, itself, ";".join(kern), key[0], m[1], m[6], m[2], m[4], m[5], sum("dpas" in l for l in body), f[0], f[1], f[2], f[3], f[8], ""])
     if n == 0:
         note = "no dpas shader compiled (not dispatched as a cooperative-matrix kernel)" if txt else "no dump"
         fail = next((l.strip()[:160] for l in txt if re.search(r"error|abort|Assert|what\(\)|threw|failed", l, re.I)), "")
-        out.append(base + [rc, itself, ";".join(kern), "", "", "", "", "", "", "", "", "", "", "", (note + ("; " + fail if fail else ""))])
+        out.append(base + [rc, itself, ";".join(kern), "", "", "", "", "", "", "", "", "", "", "", "", (note + ("; " + fail if fail else ""))])
 csv.writer(open(sys.argv[3], "w", newline="")).writerows(out)
 print(f"{len(rows)} tokens, {sum(1 for o in out[1:] if o[7])} dpas shaders")
