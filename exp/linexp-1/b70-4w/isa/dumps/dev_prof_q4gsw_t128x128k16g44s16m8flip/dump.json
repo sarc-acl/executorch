@@ -1,0 +1,16 @@
+{
+  "schema": "test_llama_microbench.v1",
+  "device": "intel(r) graphics (bmg g31)",
+  "subgroup_size": 32,
+  "timestamp_period_ns": 52.0833,
+  "cooperative_matrix": true,
+  "warmup_runs": 3,
+  "timed_runs": 5,
+  "group_size": 128,
+  "cases": [
+    {"suite": "linear", "model": "llama-3.1-8b", "scheme": "4w", "regime": "prefill", "op": "wq_wo", "storage": "texture3d", "variant": "tiled", "kernel": "llama-3.1-8b_prefill_wq_wo_linear_q4gsw_M2048_K4096_N4096_rank3batch1_Texture3D", "M": 2048, "K": 4096, "N": 4096, "kv_heads": 0, "op_mean_us": 1105.47, "op_stdev_us": 0.339873, "kernel_mean_us": null, "kernel_median_us": null, "kernel_cov": null, "gflops": 62163.2, "dispatch": "not_applicable", "correctness": "SKIPPED", "detail": "", "ok": true},
+    {"suite": "linear", "model": "llama-3.1-8b", "scheme": "4w", "regime": "prefill", "op": "wk_wv", "storage": "texture3d", "variant": "tiled", "kernel": "llama-3.1-8b_prefill_wk_wv_linear_q4gsw_M2048_K4096_N1024_rank3batch1_Texture3D", "M": 2048, "K": 4096, "N": 1024, "kv_heads": 0, "op_mean_us": 295.755, "op_stdev_us": 0.142654, "kernel_mean_us": null, "kernel_median_us": null, "kernel_cov": null, "gflops": 58088.2, "dispatch": "not_applicable", "correctness": "SKIPPED", "detail": "", "ok": true},
+    {"suite": "linear", "model": "llama-3.1-8b", "scheme": "4w", "regime": "prefill", "op": "w1_w3", "storage": "texture3d", "variant": "tiled", "kernel": "llama-3.1-8b_prefill_w1_w3_linear_q4gsw_M2048_K4096_N14336_rank3batch1_Texture3D", "M": 2048, "K": 4096, "N": 14336, "kv_heads": 0, "op_mean_us": 3985.05, "op_stdev_us": 1.41607, "kernel_mean_us": null, "kernel_median_us": null, "kernel_cov": null, "gflops": 60355, "dispatch": "not_applicable", "correctness": "SKIPPED", "detail": "", "ok": true},
+    {"suite": "linear", "model": "llama-3.1-8b", "scheme": "4w", "regime": "prefill", "op": "w2", "storage": "texture3d", "variant": "tiled", "kernel": "llama-3.1-8b_prefill_w2_linear_q4gsw_M2048_K14336_N4096_rank3batch1_Texture3D", "M": 2048, "K": 14336, "N": 4096, "kv_heads": 0, "op_mean_us": 4032.81, "op_stdev_us": 5.54953, "kernel_mean_us": null, "kernel_median_us": null, "kernel_cov": null, "gflops": 59640.4, "dispatch": "not_applicable", "correctness": "SKIPPED", "detail": "", "ok": true}
+  ]
+}

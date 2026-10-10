@@ -1,0 +1,16 @@
+{
+  "schema": "test_llama_microbench.v1",
+  "device": "intel(r) graphics (bmg g31)",
+  "subgroup_size": 32,
+  "timestamp_period_ns": 52.0833,
+  "cooperative_matrix": true,
+  "warmup_runs": 3,
+  "timed_runs": 5,
+  "group_size": 128,
+  "cases": [
+    {"suite": "linear", "model": "llama-3.1-8b", "scheme": "4w", "regime": "prefill", "op": "wq_wo", "storage": "texture3d", "variant": "coopmat", "kernel": "sarc_exp_linear_q4gsw_coopmat_nobarnostore_t128x128k16g82s16m8flib_texture3d_texture2d_half", "M": 2048, "K": 4096, "N": 4096, "kv_heads": 0, "op_mean_us": 459.055, "op_stdev_us": 0.143655, "kernel_mean_us": 459.055, "kernel_median_us": 456.768, "kernel_cov": 0.0267359, "gflops": 149698, "dispatch": "unexpected_coopmat", "correctness": "SKIPPED", "detail": "", "ok": true},
+    {"suite": "linear", "model": "llama-3.1-8b", "scheme": "4w", "regime": "prefill", "op": "wk_wv", "storage": "texture3d", "variant": "coopmat", "kernel": "sarc_exp_linear_q4gsw_coopmat_nobarnostore_t128x128k16g82s16m8flib_texture3d_texture2d_half", "M": 2048, "K": 4096, "N": 1024, "kv_heads": 0, "op_mean_us": 125.245, "op_stdev_us": 0.0466573, "kernel_mean_us": 125.245, "kernel_median_us": 125.164, "kernel_cov": 0.00590866, "gflops": 137170, "dispatch": "unexpected_coopmat", "correctness": "SKIPPED", "detail": "", "ok": true},
+    {"suite": "linear", "model": "llama-3.1-8b", "scheme": "4w", "regime": "prefill", "op": "w1_w3", "storage": "texture3d", "variant": "coopmat", "kernel": "sarc_exp_linear_q4gsw_coopmat_nobarnostore_t128x128k16g82s16m8flib_texture3d_texture2d_half", "M": 2048, "K": 4096, "N": 14336, "kv_heads": 0, "op_mean_us": 1535.16, "op_stdev_us": 0.22742, "kernel_mean_us": 1535.16, "kernel_median_us": 1537.85, "kernel_cov": 0.031473, "gflops": 156673, "dispatch": "unexpected_coopmat", "correctness": "SKIPPED", "detail": "", "ok": true},
+    {"suite": "linear", "model": "llama-3.1-8b", "scheme": "4w", "regime": "prefill", "op": "w2", "storage": "texture3d", "variant": "coopmat", "kernel": "sarc_exp_linear_q4gsw_coopmat_nobarnostore_t128x128k16g82s16m8flib_texture3d_texture2d_half", "M": 2048, "K": 14336, "N": 4096, "kv_heads": 0, "op_mean_us": 1548.33, "op_stdev_us": 0.89577, "kernel_mean_us": 1548.33, "kernel_median_us": 1549.47, "kernel_cov": 0.0261777, "gflops": 155341, "dispatch": "unexpected_coopmat", "correctness": "SKIPPED", "detail": "", "ok": true}
+  ]
+}

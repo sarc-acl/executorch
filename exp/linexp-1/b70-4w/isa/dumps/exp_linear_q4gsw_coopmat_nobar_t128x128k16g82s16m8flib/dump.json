@@ -1,0 +1,16 @@
+{
+  "schema": "test_llama_microbench.v1",
+  "device": "intel(r) graphics (bmg g31)",
+  "subgroup_size": 32,
+  "timestamp_period_ns": 52.0833,
+  "cooperative_matrix": true,
+  "warmup_runs": 3,
+  "timed_runs": 5,
+  "group_size": 128,
+  "cases": [
+    {"suite": "linear", "model": "llama-3.1-8b", "scheme": "4w", "regime": "prefill", "op": "wq_wo", "storage": "texture3d", "variant": "coopmat", "kernel": "sarc_exp_linear_q4gsw_coopmat_nobar_t128x128k16g82s16m8flib_texture3d_texture2d_half", "M": 2048, "K": 4096, "N": 4096, "kv_heads": 0, "op_mean_us": 905.175, "op_stdev_us": 0.0533738, "kernel_mean_us": 905.175, "kernel_median_us": 907.972, "kernel_cov": 0.039728, "gflops": 75918.4, "dispatch": "unexpected_coopmat", "correctness": "SKIPPED", "detail": "", "ok": true},
+    {"suite": "linear", "model": "llama-3.1-8b", "scheme": "4w", "regime": "prefill", "op": "wk_wv", "storage": "texture3d", "variant": "coopmat", "kernel": "sarc_exp_linear_q4gsw_coopmat_nobar_t128x128k16g82s16m8flib_texture3d_texture2d_half", "M": 2048, "K": 4096, "N": 1024, "kv_heads": 0, "op_mean_us": 235.03, "op_stdev_us": 0.0479369, "kernel_mean_us": 235.03, "kernel_median_us": 233.428, "kernel_cov": 0.0277576, "gflops": 73096.4, "dispatch": "unexpected_coopmat", "correctness": "SKIPPED", "detail": "", "ok": true},
+    {"suite": "linear", "model": "llama-3.1-8b", "scheme": "4w", "regime": "prefill", "op": "w1_w3", "storage": "texture3d", "variant": "coopmat", "kernel": "sarc_exp_linear_q4gsw_coopmat_nobar_t128x128k16g82s16m8flib_texture3d_texture2d_half", "M": 2048, "K": 4096, "N": 14336, "kv_heads": 0, "op_mean_us": 3197.49, "op_stdev_us": 1.57599, "kernel_mean_us": 3197.5, "kernel_median_us": 3210.74, "kernel_cov": 0.042109, "gflops": 75220.8, "dispatch": "unexpected_coopmat", "correctness": "SKIPPED", "detail": "", "ok": true},
+    {"suite": "linear", "model": "llama-3.1-8b", "scheme": "4w", "regime": "prefill", "op": "w2", "storage": "texture3d", "variant": "coopmat", "kernel": "sarc_exp_linear_q4gsw_coopmat_nobar_t128x128k16g82s16m8flib_texture3d_texture2d_half", "M": 2048, "K": 14336, "N": 4096, "kv_heads": 0, "op_mean_us": 3291.79, "op_stdev_us": 5.77028, "kernel_mean_us": 3291.79, "kernel_median_us": 3297.4, "kernel_cov": 0.0376646, "gflops": 73066, "dispatch": "unexpected_coopmat", "correctness": "SKIPPED", "detail": "", "ok": true}
+  ]
+}
