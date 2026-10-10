@@ -32,8 +32,9 @@ gpu_job() { local n=$1 o j rc s; shift
 # tuning campaign's ceiling); the caller moves the output to superseded/busy/ and repeats once.
 BUSYMAX=5.0
 share_mean() { python3 -c 'import json,sys
-v=[json.loads(l).get("foreign_pct") for l in open(sys.argv[1])]; v=[x for x in v if x is not None]
+v=[json.loads(l).get("foreign_pct") for l in open(sys.argv[1])]; v=[x for x in v if x is not None and 0 <= x <= 100]  # a share outside 0..100 is an unreadable sample
 print("%.2f" % (sum(v)/len(v)) if v else "nan")' $LOGS/$1.share.jsonl 2>/dev/null || echo nan; }
 gpu_job_busy() { local n=$1 rc m; gpu_job "$@"; rc=$?; m=$(share_mean $n); echo "$(date -u +%FT%TZ) $n rc=$rc foreign_mean_pct=$m" >> $LOGS/jobs.txt
   [[ $rc == 76 || $rc == 75 ]] && return $rc
-  python3 -c "import sys; sys.exit(0 if '$m'=='nan' or float('$m')<=$BUSYMAX else 1)" || return 77; return $rc; }
+  [[ $m == nan ]] && return 77   # no readable share sample: cannot be accepted
+  python3 -c "import sys; sys.exit(0 if float('$m')<=$BUSYMAX else 1)" || return 77; return $rc; }
