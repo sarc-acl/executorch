@@ -78,5 +78,10 @@ campaign's value in every ExecuTorch arm; 1B and 3B use the unpatched build and 
   the validity of every M51 run was judged by that local variant, with the M51 campaign's rules (not by `row.py`).
 - llama.cpp `b11430`, built with the NDK r29 (Android 34, arm64-v8a, `-DGGML_VULKAN=ON -DGGML_NATIVE=OFF`, static libraries, the NDK's OpenMP runtime pushed beside the
   binaries). GGUF files as on the other devices. The same prompt, context (`-c 2560`) and `--override-kv tokenizer.ggml.add_bos_token=bool:false` as the kit.
+- **Board activity during a timed run.** While the fourth session was running, the patched stock binary for the 8B session was copied to the board with `adb push` (a file
+  copy to flash storage, no GPU job; the session's guards stayed ok). The copy overlapped one timed run, the second repetition of the 1B stock `4w` cell, which is the
+  lowest of that cell's five runs, and ended just before the second repetition of the 1B Q4_K_M `lc` cell, whose window has one clock sample off the pin; its value is
+  in the same mode as repetitions 3 and 4 (that cell is bimodal in the earlier session too). Both runs passed the validity rules and are kept. Dropping the stock run would move
+  the 1B tuned / stock `4w` ratio by 0.01 (the second decimal) and nothing else; the statement does not depend on it.
 - Earlier local sessions (the first with the cooperative-matrix path, the second and third with the correct-output llama.cpp configuration but without a stock arm) agree with the
   fourth and fifth within their noise (one noisy `lc` cell excepted) and are kept locally; the ratios here come from the fourth and fifth only, except the labelled side note.
