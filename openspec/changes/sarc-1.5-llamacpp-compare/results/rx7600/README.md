@@ -63,10 +63,10 @@ no `lb` ratio is given. Five valid runs in every other ExecuTorch and `lc` cell;
 Same-session ratios over the stock arm: tuned `4w` / stock `4w` 4.10 / 4.38 / 4.01 (1B / 3B / 8B; the 8B stock `4w` value rests on eight `clock_low` runs, no strict value), tuned `8da4w` / stock `8da4w` 2.80 / 2.96 / 2.49;
 tuned / SARC `4w` 1.42 / 1.30 / 1.24, `8da4w` 1.45 / 1.33 / 1.29 (the campaign's round 2 final session: 1.41 / 1.30 / 1.24 and 1.45 / 1.33 / 1.29).
 
-Both timers, both quantizations: tuned `4w` is ahead of llama.cpp Vulkan Q4_0 by 1.89 / 1.74 / 1.63 (1B / 3B / 8B; against `lc` at its better setting 2.07 /
+Both timers, both quantizations: tuned `4w` is ahead of llama.cpp Vulkan Q4_0 by 1.89 / 1.74 / 1.63 (1B / 3B / 8B; against `lc` at its better setting 2.06 /
 1.81 / 1.63) and ahead of Q4_K_M by 2.21 / 2.09 / 2.01. Q4_K_M is 12 to 19 % slower than Q4_0 (`lc`, best setting). `lc` is 1 to 9 % below `lb` where
 `lb` is not slow (1B and 3B). Against the 2026-10-08 session the tuned `4w` arm gained 5.4 / 6.9 / 7.8 % (round 2 against round 1), the SARC and stock arms and
-the `default` llama.cpp arms did not move (0.4 % for the ExecuTorch arms, 1.6 % at most for llama.cpp `lc` default, `lb` 0.1 %).
+the `default` llama.cpp arms did not move (0.4 % for the ExecuTorch arms, 1.6 % at most for llama.cpp `lc` default, `lb` 0.2 % at most on 1B and 3B).
 
 ## The `llama-bench` slow path at 8B (named and shown)
 
