@@ -8,7 +8,7 @@ round 2 had finished. **This replaces the result of 2026-10-08** (round 1 as the
 (`kit/hosts/rx7600/host.sh`, unchanged since 2026-10-08); no foreign-busy ceiling (no per-client engine accounting on this card).
 The session started from a cool card (core temperature 40 C, waited 441 s) under the campaign's gpu-lab lock; a first start of the same
 session at 01:37 UTC was stopped by the actor after three minutes because the card had not cooled (idle reference 50 C); its files
-are not used.
+are not used (its 16 run rows are kept in `aborted-warm-runs.csv`).
 
 Files: `runs.csv` (every run, with its reason: 157 timed runs valid, 8 not, 12 discarded `lc` repetitions 0, 30 text checks), `cells.csv`
 (the table's source, counts `clock_low`-only runs as the 780M and the 2026-10-08 RX 7600 result do, see below), `cells-strict.csv`

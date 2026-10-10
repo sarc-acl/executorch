@@ -41,7 +41,7 @@ same sessions and are ahead of llama.cpp too.
 
 - No `stock` ExecuTorch arm on M51: an Android build of the stock release was not made (the statement above does not need it).
 - The kit's `session.sh` runs binaries on the machine it runs on; the board session script is a local-only variant of it with the board rules of the
-  M51 campaign's `e2e_m51.sh` (not committed, because it names the board). `row.py`, `session.sh` and `aggregate.py` are unchanged.
+  M51 campaign's `e2e_m51.sh` (not committed, because it names the board). `row.py`, `session.sh` and `aggregate.py` are unchanged, but they did not judge the M51 runs: the validity of every M51 run was judged by that local variant, with the M51 campaign's rules (not by `row.py`).
 - llama.cpp `b11430`, built with the NDK r29 (Android 34, arm64-v8a, `-DGGML_VULKAN=ON -DGGML_NATIVE=OFF`, static libraries, the NDK's OpenMP runtime pushed beside the
   binaries). GGUF files as on the other devices. The same prompt, context (`-c 2560`) and `--override-kv tokenizer.ggml.add_bos_token=bool:false` as the kit.
 - A first timed session (coopmat path, flash attention off) is kept locally as the record of the wrong-output path; the sessions behind the statement are the

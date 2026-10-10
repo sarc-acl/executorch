@@ -1,6 +1,6 @@
 # Status of the llama.cpp comparison on the company side's devices (COMPANY-SIDE.md section 10)
 
-Updated 2026-10-10 07:10 UTC. Nothing is pushed. The three devices run in parallel (owner decision 2026-10-10 01:10 UTC).
+Updated 2026-10-10 06:35 UTC. Nothing is pushed. The three devices run in parallel (owner decision 2026-10-10 01:10 UTC).
 
 | device | 10.1 state | where |
 |---|---|---|
