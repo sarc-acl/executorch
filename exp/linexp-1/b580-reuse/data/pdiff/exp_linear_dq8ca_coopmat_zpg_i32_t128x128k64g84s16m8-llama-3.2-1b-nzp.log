@@ -1,0 +1,111 @@
+[sarc_dev] overrides active: unverified=1 variant= dq8ca_variant=exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8
+
+=== Compute Shader Performance Benchmark ===
+Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; prefill 2048 / decode 1 @ ctx3072; linear group_size=128; 3 warmup + 5 timed runs per case)
+DEVICE,intel(r) arc(tm) b580 graphics (bmg g21),timestamp_period_ns=52.0833,subgroup_size=32,coopmat=yes,max_shared_mem_bytes=49152
+----------------------------------------------------------------------
+[production-diff] llama-3.2-1b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K2048_N2048_rank3batch1_Texture3D (M=2048, K=2048, N=2048, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8161 of 4194304 elements
+Mismatch at element 0: computed=-18.5625, reference=11.3835, diff=29.946, abs_tolerance=0.5, rel_tolerance=0.05, rel_threshold=0.569175
+[sampled reference] max abs diff 67.0927 (tol 0.5), max rel diff 78.2218 (tol 0.05, |ref| > abs tol)
+  total mismatched: 7715 / 4194304 (first at 0)
+  Correctness validation FAILED for test llama-3.2-1b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K2048_N2048_rank3batch1_Texture3D
+
+vulkan output Data:
+  Type: ValueSpec(type=Tensor, sizes=[1, 2048, 2048], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 4194304
+  Data (first 20 elements): [-18.562500, -6.132812, 17.296875, -21.484375, -23.031250, -9.117188, 19.265625, -30.625000, 17.703125, 59.125000, 61.281250, 54.312500, -8.601562, 4.062500, 10.218750, 22.578125, 1.552734, -46.437500, 48.812500, -46.750000, ... (4194284 more)]
+  Statistics: min=-102.750000, max=102.875000, mean=-0.357339, sum=-1498787.875000
+
+ref output Data:
+  Type: ValueSpec(type=Tensor, sizes=[1, 2048, 2048], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 4194304
+  Data (first 20 elements): [11.383503, 8.958219, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, ... (4194284 more)]
+  Statistics: min=-102.750000, max=102.875000, mean=-0.357339, sum=-1498787.875000
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,512,1)      (2,1,32)                                                                                                                   41.626 μs                                 
+sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x1..     (8192,16,1)     (512,1,1)                                                                                                                 217.245 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-1b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K2048_N2048_rank3batch1_Texture3D        [1x2048x2048]         258.871 μs      66364.523 GFLOP/s   FAILED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.2-1b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K2048_N2048_rank3batch1_Texture3D threw: Correctness validation failed
+[production-diff] llama-3.2-1b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K2048_N512_rank3batch1_Texture3D (M=2048, K=2048, N=512, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 7772 of 1048576 elements
+Mismatch at element 0: computed=-7.379, reference=34.229, diff=41.608, abs_tolerance=0.500, rel_tolerance=0.050, rel_threshold=1.711
+[sampled reference] max abs diff 64.617 (tol 0.500), max rel diff 47.078 (tol 0.050, |ref| > abs tol)
+  total mismatched: 7316 / 1048576 (first at 0)
+  Correctness validation FAILED for test llama-3.2-1b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K2048_N512_rank3batch1_Texture3D
+
+vulkan output Data:
+  Type: ValueSpec(type=Tensor, sizes=[1, 2048, 512], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 1048576
+  Data (first 20 elements): [-7.378906, 26.203125, -12.703125, 29.906250, 7.023438, 29.078125, 84.812500, 3.843750, 11.609375, 30.296875, 17.468750, -22.187500, 76.000000, -23.421875, -30.984375, -4.390625, -19.921875, 20.031250, 25.828125, 67.000000, ... (1048556 more)]
+  Statistics: min=-105.687500, max=101.312500, mean=-0.156845, sum=-164463.875000
+
+ref output Data:
+  Type: ValueSpec(type=Tensor, sizes=[1, 2048, 512], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 1048576
+  Data (first 20 elements): [34.228634, 22.994289, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, ... (1048556 more)]
+  Statistics: min=-105.687500, max=101.312500, mean=-0.156845, sum=-164463.875000
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,512,1)      (2,1,32)                                                                                                                   29.063 μs                                 
+sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x1..     (2048,16,1)     (512,1,1)                                                                                                                  71.602 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-1b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K2048_N512_rank3batch1_Texture3D        [1x2048x2048]         100.665 μs      42666.090 GFLOP/s   FAILED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.2-1b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K2048_N512_rank3batch1_Texture3D threw: Correctness validation failed
+[production-diff] llama-3.2-1b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K2048_N8192_rank3batch1_Texture3D (M=2048, K=2048, N=8192, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8242 of 16777216 elements
+Mismatch at element 0: computed=-21.906, reference=16.340, diff=38.246, abs_tolerance=0.500, rel_tolerance=0.050, rel_threshold=0.817
+[sampled reference] max abs diff 61.644 (tol 0.500), max rel diff 65.604 (tol 0.050, |ref| > abs tol)
+  total mismatched: 7761 / 16777216 (first at 0)
+  Correctness validation FAILED for test llama-3.2-1b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K2048_N8192_rank3batch1_Texture3D
+
+vulkan output Data:
+  Type: ValueSpec(type=Tensor, sizes=[1, 2048, 8192], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 16777216
+  Data (first 20 elements): [-21.906250, -3.355469, 24.125000, 37.843750, 66.437500, -8.976562, 15.359375, 41.531250, 42.281250, 17.062500, 12.515625, 51.062500, 41.125000, 42.875000, 21.609375, -25.296875, 4.816406, 14.835938, 18.031250, -18.984375, ... (16777196 more)]
+  Statistics: min=-115.500000, max=108.312500, mean=-0.519885, sum=-8722226.000000
+
+ref output Data:
+  Type: ValueSpec(type=Tensor, sizes=[1, 2048, 8192], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 16777216
+  Data (first 20 elements): [16.339535, 22.821117, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, ... (16777196 more)]
+  Statistics: min=-115.500000, max=108.312500, mean=-0.519885, sum=-8722226.000000
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,512,1)      (2,1,32)                                                                                                                   50.208 μs                                 
+sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x1..     (32768,16,1)    (512,1,1)                                                                                                                 860.791 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-1b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K2048_N8192_rank3batch1_Texture3D        [1x2048x2048]         910.999 μs      75433.078 GFLOP/s   FAILED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.2-1b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K2048_N8192_rank3batch1_Texture3D threw: Correctness validation failed
+[production-diff] llama-3.2-1b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N2048_rank3batch1_Texture3D (M=2048, K=8192, N=2048, group_size=128)
+Executing 1 test cases for LlamaMicrobenchProductionDiff
+----------------------------------------------------------------------
+[sampled reference] checking 8133 of 4194304 elements
+Mismatch at element 0: computed=117.062, reference=143.745, diff=26.682, abs_tolerance=0.500, rel_tolerance=0.050, rel_threshold=7.187
+[sampled reference] max abs diff 209.615 (tol 0.500), max rel diff 86.650 (tol 0.050, |ref| > abs tol)
+  total mismatched: 7795 / 4194304 (first at 0)
+  Correctness validation FAILED for test llama-3.2-1b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N2048_rank3batch1_Texture3D
+
+vulkan output Data:
+  Type: ValueSpec(type=Tensor, sizes=[1, 2048, 2048], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 4194304
+  Data (first 20 elements): [117.062500, 119.125000, 171.000000, 253.125000, 134.750000, 174.500000, 220.625000, 261.750000, 193.375000, 194.000000, 4.167969, 150.500000, 272.000000, 203.750000, 23.109375, 220.125000, 137.500000, 131.750000, 72.375000, 40.093750, ... (4194284 more)]
+  Statistics: min=-355.500000, max=356.250000, mean=-1.663738, sum=-6978222.000000
+
+ref output Data:
+  Type: ValueSpec(type=Tensor, sizes=[1, 2048, 2048], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=ZEROS)
+  Total elements: 4194304
+  Data (first 20 elements): [143.744781, 137.197754, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, ... (4194284 more)]
+  Statistics: min=-355.500000, max=356.250000, mean=-1.663738, sum=-6978222.000000
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (64,512,1)      (2,1,32)                                                                                                                  138.836 μs                                 
+sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x1..     (8192,16,1)     (512,1,1)                                                                                                                1099.099 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               llama-3.2-1b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N2048_rank3batch1_Texture3D        [1x2048x8192]        1237.935 μs      55511.367 GFLOP/s   FAILED
+----------------------------------------------------------------------
+Completed 1 test cases
+[production-diff] llama-3.2-1b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N2048_rank3batch1_Texture3D threw: Correctness validation failed
+[production-diff] FAILED (llama-3.2-1b, 4 shapes, M=2048, linear_dq8ca_q4gsw, texture3d)
