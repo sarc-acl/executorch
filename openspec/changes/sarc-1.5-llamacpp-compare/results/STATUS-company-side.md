@@ -6,7 +6,7 @@ Updated 2026-10-10 06:35 UTC. Nothing is pushed. The three devices run in parall
 |---|---|---|
 | RX 7900 XTX | done: session `rx7900xtx-1` (AMDVLK 2025.Q2.1, all 14 arms, three models, both timers, both quantizations); ARMS.md committed before it; rows in `cells.csv`; extras (real-text prompt variant, decode with and without the final configuration) done | `7900xtx/` |
 | RX 7600 | done: round 2 final as tuned arm, session `rx7600-r2` (RADV Mesa 26.2.3, all 14 arms, three models); ARMS.md committed before it; rows replaced in `cells.csv`; the 2026-10-08 files are kept in `rx7600/history-2026-10-08/` | `rx7600/` |
-| M51 | done as far as the request goes (10.3): the relative statement for 1B, 3B and 8B against llama.cpp Vulkan Q4_0 and Q4_K_M, and the finding that llama.cpp does not run correctly on that driver as shipped (default: aborts; cooperative-matrix path: wrong output; correct only with that path disabled; OpenCL rejects the GPU). No stock arm. Every number is local | `m51/README.md` (statement only) |
+| M51 | done (10.3, with the owner decision of 2026-10-10 06:39 UTC): stock Android arm built and measured; sessions m51-4 (1B, 3B) and m51-5 (8B) with stock, SARC, tuned (`4w`, `8da4w`) and the correct-output llama.cpp arm, all timed runs valid; relative speedups committed in `m51/ratios.csv` (tuned / llama.cpp Q4_0 and Q4_K_M by `lc` and `lb`, tuned / SARC, tuned / stock); llama.cpp does not run correctly on that driver as shipped. No absolute figure committed; nothing in `cells.csv` | `m51/README.md`, `m51/ratios.csv` |
 
 10.2 (HIP) is not part of this task (owner decision 2026-10-09). Extras of 10.4 (real-text prompt variant, decode with and without the final configuration) are in `7900xtx/` and `rx7600/`; not done for M51.
 
@@ -25,4 +25,4 @@ With the round 2 final as the tuned arm, tuned `4w` is ahead of llama.cpp Vulkan
 
 ## M51 in one paragraph
 
-Tuned ExecuTorch `4w` is ahead of llama.cpp Vulkan Q4_0 and Q4_K_M at 1B, 3B and 8B, by both timers. llama.cpp's own defaults abort on that driver and its cooperative-matrix path computes wrong output; the comparison uses the one configuration that matches llama.cpp's CPU backend. No figure is committed. Details: `m51/README.md`.
+Tuned ExecuTorch `4w` is ahead of llama.cpp Vulkan Q4_0 by 2.2 to 2.9 (by `lb` 2.2 / 2.5 / 2.4 at 1B / 3B / 8B) and of Q4_K_M by 2.5 to 3.3, ahead of SARC by 1.12 to 1.30 and of stock by 2.5 to 2.8. llama.cpp's own defaults abort on that driver and its cooperative-matrix path computes wrong output; the reference is the one configuration that matches llama.cpp's CPU backend. Method and intervals: `m51/README.md`, `m51/ratios.csv`.
