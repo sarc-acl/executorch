@@ -1,0 +1,76 @@
+token,model,op,M,N,K,kernel,processes,process_medians_us,spread_pct,kernel_ms,rate_TOPs,pct_register_roof,speed_vs_base
+base,llama-3.1-8b,w1_w3,2048,14336,4096,sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8,3,3546.9 3548.1 3549.0,0.1,3.5481,67.79,29.3,1.000
+base,llama-3.1-8b,w2,2048,4096,14336,sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8,3,4037.6 4047.8 4065.7,0.7,4.0478,59.42,25.7,1.000
+base,llama-3.1-8b,wk_wv,2048,1024,4096,sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8,3,274.2 279.0 283.4,3.3,0.2790,61.58,26.6,1.000
+base,llama-3.1-8b,wq_wo,2048,4096,4096,sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8,3,905.4 906.4 927.8,2.5,0.9064,75.81,32.8,1.000
+base,llama-3.2-1b,w1_w3,2048,8192,2048,sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8,3,913.8 921.5 922.3,0.9,0.9215,74.57,32.2,1.000
+base,llama-3.2-1b,w2,2048,2048,8192,sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8,3,1063.9 1068.7 1073.3,0.9,1.0687,64.30,27.8,1.000
+base,llama-3.2-1b,wk_wv,2048,512,2048,sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8,3,74.9 77.1 78.8,5.0,0.0771,55.73,24.1,1.000
+base,llama-3.2-1b,wq_wo,2048,2048,2048,sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8,3,234.7 235.6 239.7,2.1,0.2356,72.93,31.5,1.000
+base,llama-3.2-3b,w1_w3,2048,8192,3072,sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8,3,1442.7 1451.5 1464.5,1.5,1.4515,71.02,30.7,1.000
+base,llama-3.2-3b,w2,2048,3072,8192,sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8,3,1564.9 1569.4 1574.5,0.6,1.5694,65.68,28.4,1.000
+base,llama-3.2-3b,wk_wv,2048,1024,3072,sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8,3,200.4 204.1 211.3,5.4,0.2041,63.13,27.3,1.000
+base,llama-3.2-3b,wq_wo,2048,3072,3072,sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8,3,508.5 511.1 520.6,2.4,0.5111,75.64,32.7,1.000
+base,llama-3.1-8b,"WEIGHTED(2,2,2,1)",,,,,,,,13.5147,66.10,28.6,1.000
+base,llama-3.2-1b,"WEIGHTED(2,2,2,1)",,,,,,,,3.5369,70.43,30.4,1.000
+base,llama-3.2-3b,"WEIGHTED(2,2,2,1)",,,,,,,,5.9026,69.85,30.2,1.000
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,llama-3.1-8b,w1_w3,2048,14336,4096,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,3,11773.1 11773.2 11782.6,0.1,11.7732,20.43,8.8,0.301
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,llama-3.1-8b,w2,2048,4096,14336,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,3,13020.6 13020.9 13095.1,0.6,13.0209,18.47,8.0,0.311
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,llama-3.1-8b,wk_wv,2048,1024,4096,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,3,910.5 913.8 921.9,1.3,0.9138,18.80,8.1,0.305
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,llama-3.1-8b,wq_wo,2048,4096,4096,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,3,3383.3 3384.6 3385.6,0.1,3.3846,20.30,8.8,0.268
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,llama-3.2-1b,w1_w3,2048,8192,2048,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,3,3292.4 3293.4 3297.1,0.1,3.2934,20.87,9.0,0.280
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,llama-3.2-1b,w2,2048,2048,8192,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,3,3907.4 3916.0 3916.9,0.2,3.9160,17.55,7.6,0.273
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,llama-3.2-1b,wk_wv,2048,512,2048,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,3,252.0 252.1 252.5,0.2,0.2521,17.03,7.4,0.306
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,llama-3.2-1b,wq_wo,2048,2048,2048,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,3,841.7 849.5 851.7,1.2,0.8495,20.22,8.7,0.277
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,llama-3.2-3b,w1_w3,2048,8192,3072,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,3,5251.1 5252.9 5274.1,0.4,5.2529,19.62,8.5,0.276
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,llama-3.2-3b,w2,2048,3072,8192,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,3,5610.1 5619.4 5620.5,0.2,5.6194,18.34,7.9,0.279
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,llama-3.2-3b,wk_wv,2048,1024,3072,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,3,697.0 700.6 701.8,0.7,0.7006,18.39,7.9,0.291
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,llama-3.2-3b,wq_wo,2048,3072,3072,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,3,1924.2 1930.4 1955.3,1.6,1.9304,20.02,8.7,0.265
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,llama-3.1-8b,"WEIGHTED(2,2,2,1)",,,,,,,,45.1642,19.78,8.5,0.299
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,llama-3.2-1b,"WEIGHTED(2,2,2,1)",,,,,,,,12.7060,19.61,8.5,0.278
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g44s16m8,llama-3.2-3b,"WEIGHTED(2,2,2,1)",,,,,,,,21.3872,19.28,8.3,0.276
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,llama-3.1-8b,w1_w3,2048,14336,4096,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,3,3247.1 3274.0 3274.0,0.8,3.2740,73.46,31.8,1.084
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,llama-3.1-8b,w2,2048,4096,14336,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,3,4417.6 4418.4 4423.4,0.1,4.4184,54.44,23.5,0.916
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,llama-3.1-8b,wk_wv,2048,1024,4096,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,3,252.5 258.5 260.3,3.0,0.2585,66.45,28.7,1.079
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,llama-3.1-8b,wq_wo,2048,4096,4096,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,3,830.0 830.9 847.7,2.1,0.8309,82.71,35.7,1.091
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,llama-3.2-1b,w1_w3,2048,8192,2048,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,3,857.4 858.1 864.9,0.9,0.8581,80.09,34.6,1.074
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,llama-3.2-1b,w2,2048,2048,8192,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,3,1101.9 1103.9 1114.3,1.1,1.1039,62.25,26.9,0.968
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,llama-3.2-1b,wk_wv,2048,512,2048,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,3,70.7 74.0 74.4,4.9,0.0740,58.04,25.1,1.041
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,llama-3.2-1b,wq_wo,2048,2048,2048,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,3,219.0 219.3 222.4,1.6,0.2193,78.35,33.9,1.074
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,llama-3.2-3b,w1_w3,2048,8192,3072,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,3,1384.5 1385.8 1391.8,0.5,1.3858,74.38,32.1,1.047
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,llama-3.2-3b,w2,2048,3072,8192,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,3,1651.5 1655.9 1685.6,2.1,1.6559,62.25,26.9,0.948
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,llama-3.2-3b,wk_wv,2048,1024,3072,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,3,185.5 191.5 191.5,3.1,0.1915,67.30,29.1,1.066
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,llama-3.2-3b,wq_wo,2048,3072,3072,sarc_exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,3,478.7 483.7 485.1,1.3,0.4837,79.91,34.5,1.057
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,llama-3.1-8b,"WEIGHTED(2,2,2,1)",,,,,,,,13.1452,67.96,29.4,1.028
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,llama-3.2-1b,"WEIGHTED(2,2,2,1)",,,,,,,,3.4065,73.13,31.6,1.038
+exp_linear_dq8ca_coopmat_zpg_i32_t128x128k64g84s16m8,llama-3.2-3b,"WEIGHTED(2,2,2,1)",,,,,,,,5.7779,71.36,30.8,1.022
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,llama-3.1-8b,w1_w3,2048,14336,4096,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,3,12532.4 12546.4 12563.2,0.2,12.5464,19.17,8.3,0.283
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,llama-3.1-8b,w2,2048,4096,14336,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,3,16786.8 16819.6 16820.0,0.2,16.8196,14.30,6.2,0.241
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,llama-3.1-8b,wk_wv,2048,1024,4096,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,3,873.3 873.4 877.0,0.4,0.8734,19.67,8.5,0.319
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,llama-3.1-8b,wq_wo,2048,4096,4096,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,3,3190.2 3194.3 3234.1,1.4,3.1943,21.51,9.3,0.284
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,llama-3.2-1b,w1_w3,2048,8192,2048,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,3,3739.8 3761.2 3761.6,0.6,3.7612,18.27,7.9,0.245
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,llama-3.2-1b,w2,2048,2048,8192,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,3,4111.1 4112.8 4115.1,0.1,4.1128,16.71,7.2,0.260
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,llama-3.2-1b,wk_wv,2048,512,2048,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,3,290.0 292.3 293.7,1.3,0.2923,14.69,6.4,0.264
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,llama-3.2-1b,wq_wo,2048,2048,2048,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,3,971.7 972.3 982.0,1.1,0.9723,17.67,7.6,0.242
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,llama-3.2-3b,w1_w3,2048,8192,3072,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,3,5198.7 5199.5 5306.0,2.1,5.1995,19.82,8.6,0.279
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,llama-3.2-3b,w2,2048,3072,8192,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,3,6308.9 6319.8 6527.8,3.5,6.3198,16.31,7.0,0.248
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,llama-3.2-3b,wk_wv,2048,1024,3072,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,3,646.3 650.5 658.5,1.9,0.6505,19.81,8.6,0.314
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,llama-3.2-3b,wq_wo,2048,3072,3072,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,3,1834.6 1835.7 1842.5,0.4,1.8357,21.06,9.1,0.278
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,llama-3.1-8b,"WEIGHTED(2,2,2,1)",,,,,,,,50.0478,17.85,7.7,0.270
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,llama-3.2-1b,"WEIGHTED(2,2,2,1)",,,,,,,,14.1644,17.59,7.6,0.250
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g42s16m8,llama-3.2-3b,"WEIGHTED(2,2,2,1)",,,,,,,,21.6911,19.01,8.2,0.272
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,llama-3.1-8b,w1_w3,2048,14336,4096,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,3,10144.1 10144.2 10146.1,0.0,10.1442,23.71,10.2,0.350
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,llama-3.1-8b,w2,2048,4096,14336,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,3,10927.4 10929.0 10943.8,0.2,10.9290,22.01,9.5,0.370
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,llama-3.1-8b,wk_wv,2048,1024,4096,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,3,677.4 678.4 678.9,0.2,0.6784,25.32,10.9,0.411
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,llama-3.1-8b,wq_wo,2048,4096,4096,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,3,2545.7 2546.9 2553.2,0.3,2.5469,26.98,11.7,0.356
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,llama-3.2-1b,w1_w3,2048,8192,2048,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,3,2586.7 2591.9 2593.8,0.3,2.5919,26.51,11.5,0.356
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,llama-3.2-1b,w2,2048,2048,8192,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,3,2592.9 2594.4 2596.4,0.1,2.5944,26.49,11.4,0.412
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,llama-3.2-1b,wk_wv,2048,512,2048,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,3,194.2 199.1 199.2,2.5,0.1991,21.58,9.3,0.387
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,llama-3.2-1b,wq_wo,2048,2048,2048,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,3,650.6 651.4 653.5,0.4,0.6514,26.38,11.4,0.362
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,llama-3.2-3b,w1_w3,2048,8192,3072,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,3,4013.8 4020.5 4055.3,1.0,4.0205,25.64,11.1,0.361
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,llama-3.2-3b,w2,2048,3072,8192,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,3,4092.3 4094.7 4095.2,0.1,4.0947,25.17,10.9,0.383
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,llama-3.2-3b,wk_wv,2048,1024,3072,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,3,505.1 505.4 505.6,0.1,0.5054,25.49,11.0,0.404
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,llama-3.2-3b,wq_wo,2048,3072,3072,sarc_exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,3,1445.5 1446.5 1451.6,0.4,1.4465,26.72,11.5,0.353
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,llama-3.1-8b,"WEIGHTED(2,2,2,1)",,,,,,,,37.6680,23.72,10.3,0.359
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,llama-3.2-1b,"WEIGHTED(2,2,2,1)",,,,,,,,9.4790,26.28,11.4,0.373
+exp_linear_dq8ca_coopmat_zpg_sh_t64x128k32g82s16m8,llama-3.2-3b,"WEIGHTED(2,2,2,1)",,,,,,,,16.0396,25.71,11.1,0.368
