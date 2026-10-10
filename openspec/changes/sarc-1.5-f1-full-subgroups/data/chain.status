@@ -1,0 +1,18 @@
+2026-10-09T23:26:47Z chain start, tools 1f49c5a34, kernel 7.2.9-200.fc44.x86_64, steps all
+2026-10-09T23:29:30Z step 0 copies done; calibration clkmin=2635 busymax=5.0 idle=42000; probe f1: PROBE_BUILD_OK
+2026-10-09T23:29:42Z step 1 differences (diff of the two sorted sha256 lists): 0
+2026-10-09T23:30:26Z step 2 validation topic7 linear rc=1 sdpa rc=0 VUID-10770 lines: 28 any VUID lines: 152
+2026-10-09T23:31:09Z step 2 validation f1 linear rc=1 sdpa rc=0 VUID-10770 lines: 0 any VUID lines: 124
+2026-10-10T00:44:15Z step 3 gate sA-fused1 rc=1 GATE_FAIL (3 requirement(s)) | geomean over 4 cells: 1.0021 (+0.21 %), min 0.9928, max 1.0135
+2026-10-10T00:51:17Z step 3 sdpa old/new single passes: old,all,1,0 new,all,1,0 old,extended,1,0 new,extended,1,0 old,full,1,0 new,full,1,0 old,peaked,1,0 new,peaked,1,0 
+2026-10-10T01:23:35Z step 4 sdpa passes rc=1
+2026-10-10T01:34:51Z step 4 verify rc=0
+2026-10-10T01:46:36Z step 4 session rc=0 E2E5_OK 
+2026-10-10T01:47:27Z step 4 trace rc=0
+2026-10-10T01:47:27Z step 4 gate sB-noenv rc=0 GATE_PASS | control: CONTROL_RECORDED (5 device-status item(s)) | geomean over 6 cells: 1.0000 (+0.00 %), min 1.0000, max 1.0000
+2026-10-10T02:13:03Z repeat sA2-fused1 rc=0 E2E5_OK 
+2026-10-10T02:15:23Z step 4 sdpa old/new single passes: old,all,1,1 new,all,1,1 old,extended,1,1 new,extended,1,1 old,full,1,1 new,full,1,1 old,peaked,1,1 new,peaked,1,1 
+2026-10-10T02:45:51Z step 5 kernel runs: 36, nonzero rc: 30
+2026-10-10T03:00:45Z step 6 probe sA-fused1 rc=0: 222 vectors, 0 differ
+2026-10-10T03:17:32Z step 6 probe sB-noenv rc=0: 222 vectors, 0 differ
+2026-10-10T03:17:32Z CHAIN_DONE

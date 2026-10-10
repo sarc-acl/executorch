@@ -6,10 +6,13 @@ pushed. Host `fedora`, Arc B580 = Vulkan device 0 (`ETVK_DEVICE_INDEX=0`), ANV M
 
 ## State
 
-(2026-10-09 23:50 UTC) Step 1 committed (`bf9ae6ba3`); step 2 done (0 violators); build `f1` of `bf9ae6ba3`
-running; nothing has been run on the GPU yet. Next: the pre-registration below is committed, then the chain
-(`tools/chain.sh`): SPIR-V identity, validation layer old / new, session A and its gate, session B and its
-gate, kernel level, logits.
+(2026-10-10 03:30 UTC) **Done; nothing is running.** Steps 1 to 7 exist with their evidence (`RESULT.md`, `data/`).
+Verdict by the rule below: **no effect** in both configurations (`b580-fused1`: geomean -0.04 %, largest cell
+-0.88 %, from the one permitted repeat `sA2-fused1`; no environment: +0.00 % in every cell); correctness the
+same as the old build in every item, 444 logits vectors and the SDPA records identical; VUID 10770 reported on
+the old build (28 messages) and not on the new one. Open points a reader must know: the first `b580-fused1`
+session was incomplete (desktop in use), so its gate file reads GATE_FAIL on timing completeness only; seven
+other VUIDs are reported on both builds and were not touched. The branch is committed and not pushed.
 
 ## Decision needed from the owner
 
@@ -73,3 +76,23 @@ them with the generated shaders of build `topic7`. Result: 401 lines (33 release
 subgroup size equals its shader's. 6 development-zone sweep variants are named by no row (cannot be
 dispatched); their own grid constants give a multiple too. Host and driver as found: Mesa 26.2.3, the B580
 reports `subgroupSizeControl` and `computeFullSubgroups` true, subgroup sizes 16 to 32.
+
+### Steps 3 to 6: the chain (`tools/chain.sh`, 2026-10-09 23:26 to 2026-10-10 03:17 UTC; `data/chain.status`)
+
+- Build `f1` = `bf9ae6ba3`, export of the commit with the campaign's `build-both.sh` (23:14 to 23:26 UTC),
+  `BUILD_BOTH_OK`, golden PASS (53 variants). Old build `topic7` copied unchanged (binaries compared with `cmp`).
+- SPIR-V: 6304 files per build, 0 differences.
+- Validation layer 1.4.341 installed: VUID 10770 28 messages on `topic7`, 0 on `f1`; seven other VUIDs with
+  equal counts on both builds (`data/validation/summary.txt`), reported in `RESULT.md` section 3, not touched.
+- Session A `sA-fused1` (gate 23:31 to 00:44 UTC): 34 PASS; 3 FAIL, all timing completeness: the desktop was in
+  use (foreign share up to 35 %), 166 timed runs, 78 valid, 3B 4w and 3B 8da4w short of 7 valid runs after 12
+  extra pairs. Repeated once as the task rules, at least 30 minutes later: `sA2-fused1`, timed session only,
+  started 01:49 UTC (the first ended 00:40), desktop idle, `E2E5_OK`, 84 of 84 valid, geomean -0.04 %. It was
+  started while the chain was between its steps 4 and 5; the GPU lock serialises them, no run overlapped.
+- Session B `sB-noenv` (01:23 to 01:47 UTC): GATE_PASS, 84 of 84 valid, +0.00 % in every cell. Its SDPA passes
+  run the stock kernels (no released SDPA row for this card) and return 1 as on the old build; recorded with
+  `gate_check.py --control` (`gate-control.txt`, 5 device-status items, the same as `s0-topic7-noenv`).
+- Kernel level: 36 processes, every case inside +-0.7 %, geomeans -0.06 to +0.01 %.
+- Logits: 222 vectors per configuration, 0 differ. SDPA records identical in all tiers.
+- No pipeline failed to be created; nothing was tuned; no tile, shader or table changed; no wait added (the
+  repeat's 30 minutes are the task's); no `sudo`; not pushed.

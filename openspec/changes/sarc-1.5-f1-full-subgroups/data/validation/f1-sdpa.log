@@ -1,0 +1,152 @@
+[sarc_dev] profile active: b580-fused1
+[sarc_dev] overrides active: unverified=1 variant= dq8ca_variant=
+
+=== Compute Shader Performance Benchmark ===
+Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; prefill 2048 / decode 1 @ ctx3072; linear group_size=128; 3 warmup + 5 timed runs per case)
+DEVICE,intel(r) arc(tm) b580 graphics (bmg g21),timestamp_period_ns=52.0833,subgroup_size=32,coopmat=yes,max_shared_mem_bytes=49152
+----------------------------------------------------------------------
+[sdpa-regions] tiny_gqa S=128 context_len=128 tile=128x64 num_tiles_m=1 num_tiles_n=2 tiles=2 all_masked=0 all_visible=0 diagonal=2 overlap=0
+[sdpa-boundary] tiny_gqa m=0 last_visible=-1 first_diagonal=0 last_diagonal=1 first_masked=-1
+[sdpa-regions] 1b_head_config S=128 context_len=128 tile=128x64 num_tiles_m=1 num_tiles_n=2 tiles=2 all_masked=0 all_visible=0 diagonal=2 overlap=0
+[sdpa-boundary] 1b_head_config m=0 last_visible=-1 first_diagonal=0 last_diagonal=1 first_masked=-1
+[sdpa-regions] tiny_gqa_s256 S=256 context_len=256 tile=128x64 num_tiles_m=2 num_tiles_n=4 tiles=8 all_masked=2 all_visible=2 diagonal=4 overlap=0
+[sdpa-boundary] tiny_gqa_s256 m=0 last_visible=-1 first_diagonal=0 last_diagonal=1 first_masked=2
+[sdpa-boundary] tiny_gqa_s256 m=1 last_visible=1 first_diagonal=2 last_diagonal=3 first_masked=-1
+[sdpa-regions] 1b_head_config_s256 S=256 context_len=256 tile=128x64 num_tiles_m=2 num_tiles_n=4 tiles=8 all_masked=2 all_visible=2 diagonal=4 overlap=0
+[sdpa-boundary] 1b_head_config_s256 m=0 last_visible=-1 first_diagonal=0 last_diagonal=1 first_masked=2
+[sdpa-boundary] 1b_head_config_s256 m=1 last_visible=1 first_diagonal=2 last_diagonal=3 first_masked=-1
+[sdpa-regions] TOTAL tiles=20 all_masked=4 all_visible=4 diagonal=12 overlap=0 exhaustive=yes all_three_covered=yes
+[sdpa-regions] boundaries_ok=yes
+Validation Error: [ VUID-VkShaderModuleCreateInfo-pCode-08740 ] | MessageID = 0x6e224e9
+vkCreateShaderModule(): SPIR-V Capability VulkanMemoryModel was declared, but one of the following requirements is required (VkPhysicalDeviceVulkan12Features::vulkanMemoryModel).
+The Vulkan spec states: If pCode is a pointer to SPIR-V code, and pCode declares any of the capabilities listed in the SPIR-V Environment appendix, one of the corresponding requirements must be satisfied (https://docs.vulkan.org/spec/latest/chapters/shaders.html#VUID-VkShaderModuleCreateInfo-pCode-08740)
+
+Validation Error: [ VUID-VkShaderModuleCreateInfo-pCode-08742 ] | MessageID = 0xfc68be96
+vkCreateShaderModule(): SPIR-V Extension SPV_KHR_vulkan_memory_model was declared, but one of the following requirements is required (1.2.0 (0x00402000) or VK_KHR_vulkan_memory_model).
+The Vulkan spec states: If pCode is a pointer to SPIR-V code, and pCode declares any of the SPIR-V extensions listed in the SPIR-V Environment appendix, one of the corresponding requirements must be satisfied (https://docs.vulkan.org/spec/latest/chapters/shaders.html#VUID-VkShaderModuleCreateInfo-pCode-08742)
+
+Validation Error: [ VUID-RuntimeSpirv-vulkanMemoryModel-06266 ] | MessageID = 0x4d698519
+vkCreateShaderModule(): SPIR-V uses QueueFamily memory scope, but the vulkanMemoryModel feature was not enabled.
+OpMemoryBarrier %534 %535
+The Vulkan spec states: If the vulkanMemoryModel feature is not enabled, QueueFamily memory scope must not be used (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-vulkanMemoryModel-06266)
+
+Validation Error: [ VUID-RuntimeSpirv-vulkanMemoryModel-06266 ] | MessageID = 0x4d698519
+vkCreateShaderModule(): SPIR-V uses QueueFamily memory scope, but the vulkanMemoryModel feature was not enabled.
+OpMemoryBarrier %534 %535
+The Vulkan spec states: If the vulkanMemoryModel feature is not enabled, QueueFamily memory scope must not be used (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-vulkanMemoryModel-06266)
+
+Validation Error: [ VUID-RuntimeSpirv-vulkanMemoryModel-06266 ] | MessageID = 0x4d698519
+vkCreateShaderModule(): SPIR-V uses QueueFamily memory scope, but the vulkanMemoryModel feature was not enabled.
+OpMemoryBarrier %534 %535
+The Vulkan spec states: If the vulkanMemoryModel feature is not enabled, QueueFamily memory scope must not be used (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-vulkanMemoryModel-06266)
+
+Validation Error: [ VUID-RuntimeSpirv-vulkanMemoryModel-06266 ] | MessageID = 0x4d698519
+vkCreateShaderModule(): SPIR-V uses QueueFamily memory scope, but the vulkanMemoryModel feature was not enabled.
+OpMemoryBarrier %534 %535
+The Vulkan spec states: If the vulkanMemoryModel feature is not enabled, QueueFamily memory scope must not be used (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-vulkanMemoryModel-06266)
+
+Validation Error: [ VUID-RuntimeSpirv-vulkanMemoryModel-06266 ] | MessageID = 0x4d698519
+vkCreateShaderModule(): SPIR-V uses QueueFamily memory scope, but the vulkanMemoryModel feature was not enabled.
+%695 = OpAtomicOr %8 %533 %534 %38 %45
+The Vulkan spec states: If the vulkanMemoryModel feature is not enabled, QueueFamily memory scope must not be used (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-vulkanMemoryModel-06266)
+
+Validation Error: [ VUID-RuntimeSpirv-vulkanMemoryModel-06266 ] | MessageID = 0x4d698519
+vkCreateShaderModule(): SPIR-V uses QueueFamily memory scope, but the vulkanMemoryModel feature was not enabled.
+OpMemoryBarrier %534 %535
+The Vulkan spec states: If the vulkanMemoryModel feature is not enabled, QueueFamily memory scope must not be used (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-vulkanMemoryModel-06266)
+
+Validation Error: [ VUID-RuntimeSpirv-vulkanMemoryModel-06266 ] | MessageID = 0x4d698519
+vkCreateShaderModule(): SPIR-V uses QueueFamily memory scope, but the vulkanMemoryModel feature was not enabled.
+OpMemoryBarrier %534 %535
+The Vulkan spec states: If the vulkanMemoryModel feature is not enabled, QueueFamily memory scope must not be used (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-vulkanMemoryModel-06266)
+
+Validation Error: [ VUID-RuntimeSpirv-vulkanMemoryModel-06266 ] | MessageID = 0x4d698519
+vkCreateShaderModule(): SPIR-V uses QueueFamily memory scope, but the vulkanMemoryModel feature was not enabled.
+OpMemoryBarrier %534 %535
+The Vulkan spec states: If the vulkanMemoryModel feature is not enabled, QueueFamily memory scope must not be used (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-vulkanMemoryModel-06266)
+
+Validation Error: [ VUID-RuntimeSpirv-vulkanMemoryModel-06266 ] | MessageID = 0x4d698519
+vkCreateShaderModule(): SPIR-V uses QueueFamily memory scope, but the vulkanMemoryModel feature was not enabled.
+OpMemoryBarrier %534 %535
+The Vulkan spec states: If the vulkanMemoryModel feature is not enabled, QueueFamily memory scope must not be used (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-vulkanMemoryModel-06266)
+
+Validation Error: [ VUID-RuntimeSpirv-vulkanMemoryModel-06266 ] | MessageID = 0x4d698519
+(Warning - This VUID has now been reported 10 times, which is the duplicate_message_limit value, this will be the last time reporting it).
+vkCreateShaderModule(): SPIR-V uses QueueFamily memory scope, but the vulkanMemoryModel feature was not enabled.
+OpMemoryBarrier %534 %535
+The Vulkan spec states: If the vulkanMemoryModel feature is not enabled, QueueFamily memory scope must not be used (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-vulkanMemoryModel-06266)
+
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%69 = OpTypeCooperativeMatrixKHR %65 %66 %67 %68 %63 (rows: 8, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT32_KHR, use: 2)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%90 = OpTypeCooperativeMatrixKHR %6 %66 %68 %68 %45 (rows: 16, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT16_KHR, use: 1)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%123 = OpTypeCooperativeMatrixKHR %6 %66 %67 %68 %38 (rows: 8, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT16_KHR, use: 0)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%161 = OpTypeCooperativeMatrixKHR %6 %66 %67 %68 %63 (rows: 8, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT16_KHR, use: 2)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+[sdpa-error] tiny_gqa elements=16384 rms_err=6.3677e-05 max_abs_err=5.5295e-04 ref_rms=1.2228e-01
+[sdpa-kernels] tiny_gqa qk=? softmax=? av=? fused=sarc_dev_b580_sdpa_fused_d64_t16x64s16m8g4roj_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] tiny_gqa S=128 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/16384 PASSED
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%69 = OpTypeCooperativeMatrixKHR %65 %66 %67 %68 %63 (rows: 8, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT32_KHR, use: 2)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%90 = OpTypeCooperativeMatrixKHR %6 %66 %68 %68 %45 (rows: 16, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT16_KHR, use: 1)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%123 = OpTypeCooperativeMatrixKHR %6 %66 %67 %68 %38 (rows: 8, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT16_KHR, use: 0)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%161 = OpTypeCooperativeMatrixKHR %6 %66 %67 %68 %63 (rows: 8, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT16_KHR, use: 2)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+[sdpa-error] 1b_head_config elements=262144 rms_err=6.3504e-05 max_abs_err=7.0566e-04 ref_rms=1.2317e-01
+[sdpa-kernels] 1b_head_config qk=? softmax=? av=? fused=sarc_dev_b580_sdpa_fused_d64_t16x64s16m8g4roj_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] 1b_head_config S=128 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/262144 PASSED
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%69 = OpTypeCooperativeMatrixKHR %65 %66 %67 %68 %63 (rows: 8, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT32_KHR, use: 2)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+(Warning - This VUID has now been reported 10 times, which is the duplicate_message_limit value, this will be the last time reporting it).
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%90 = OpTypeCooperativeMatrixKHR %6 %66 %68 %68 %45 (rows: 16, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT16_KHR, use: 1)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+[sdpa-error] tiny_gqa_s256 elements=32768 rms_err=4.9324e-05 max_abs_err=4.9835e-04 ref_rms=9.5903e-02
+[sdpa-kernels] tiny_gqa_s256 qk=? softmax=? av=? fused=sarc_dev_b580_sdpa_fused_d64_t16x64s16m8g4roj_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] tiny_gqa_s256 S=256 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/32768 PASSED
+[sdpa-error] 1b_head_config_s256 elements=524288 rms_err=4.9102e-05 max_abs_err=7.3195e-04 ref_rms=9.4877e-02
+[sdpa-kernels] 1b_head_config_s256 qk=? softmax=? av=? fused=sarc_dev_b580_sdpa_fused_d64_t16x64s16m8g4roj_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] 1b_head_config_s256 S=256 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/524288 PASSED
+[sdpa-correctness] tier=all cases_run=4

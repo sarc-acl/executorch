@@ -1,0 +1,379 @@
+[sarc_dev] profile active: b580-fused1
+[sarc_dev] overrides active: unverified=1 variant= dq8ca_variant=
+
+=== Compute Shader Performance Benchmark ===
+Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; prefill 2048 / decode 1 @ ctx3072; linear group_size=128; 3 warmup + 5 timed runs per case)
+DEVICE,intel(r) arc(tm) b580 graphics (bmg g21),timestamp_period_ns=52.0833,subgroup_size=32,coopmat=yes,max_shared_mem_bytes=49152
+----------------------------------------------------------------------
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+Validation Error: [ VUID-VkShaderModuleCreateInfo-pCode-08740 ] | MessageID = 0x6e224e9
+vkCreateShaderModule(): SPIR-V Capability VulkanMemoryModel was declared, but one of the following requirements is required (VkPhysicalDeviceVulkan12Features::vulkanMemoryModel).
+The Vulkan spec states: If pCode is a pointer to SPIR-V code, and pCode declares any of the capabilities listed in the SPIR-V Environment appendix, one of the corresponding requirements must be satisfied (https://docs.vulkan.org/spec/latest/chapters/shaders.html#VUID-VkShaderModuleCreateInfo-pCode-08740)
+
+Validation Error: [ VUID-VkShaderModuleCreateInfo-pCode-08742 ] | MessageID = 0xfc68be96
+vkCreateShaderModule(): SPIR-V Extension SPV_KHR_vulkan_memory_model was declared, but one of the following requirements is required (1.2.0 (0x00402000) or VK_KHR_vulkan_memory_model).
+The Vulkan spec states: If pCode is a pointer to SPIR-V code, and pCode declares any of the SPIR-V extensions listed in the SPIR-V Environment appendix, one of the corresponding requirements must be satisfied (https://docs.vulkan.org/spec/latest/chapters/shaders.html#VUID-VkShaderModuleCreateInfo-pCode-08742)
+
+Validation Error: [ VUID-RuntimeSpirv-vulkanMemoryModel-06266 ] | MessageID = 0x4d698519
+vkCreateShaderModule(): SPIR-V uses QueueFamily memory scope, but the vulkanMemoryModel feature was not enabled.
+OpMemoryBarrier %409 %410
+The Vulkan spec states: If the vulkanMemoryModel feature is not enabled, QueueFamily memory scope must not be used (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-vulkanMemoryModel-06266)
+
+Validation Error: [ VUID-RuntimeSpirv-vulkanMemoryModel-06266 ] | MessageID = 0x4d698519
+vkCreateShaderModule(): SPIR-V uses QueueFamily memory scope, but the vulkanMemoryModel feature was not enabled.
+OpMemoryBarrier %409 %410
+The Vulkan spec states: If the vulkanMemoryModel feature is not enabled, QueueFamily memory scope must not be used (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-vulkanMemoryModel-06266)
+
+Validation Error: [ VUID-RuntimeSpirv-vulkanMemoryModel-06266 ] | MessageID = 0x4d698519
+vkCreateShaderModule(): SPIR-V uses QueueFamily memory scope, but the vulkanMemoryModel feature was not enabled.
+OpMemoryBarrier %409 %410
+The Vulkan spec states: If the vulkanMemoryModel feature is not enabled, QueueFamily memory scope must not be used (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-vulkanMemoryModel-06266)
+
+Validation Error: [ VUID-RuntimeSpirv-vulkanMemoryModel-06266 ] | MessageID = 0x4d698519
+vkCreateShaderModule(): SPIR-V uses QueueFamily memory scope, but the vulkanMemoryModel feature was not enabled.
+OpMemoryBarrier %409 %410
+The Vulkan spec states: If the vulkanMemoryModel feature is not enabled, QueueFamily memory scope must not be used (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-vulkanMemoryModel-06266)
+
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%175 = OpTypeCooperativeMatrixKHR %9 %134 %173 %174 %171 (rows: 8, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT16_KHR, use: 2)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%523 = OpTypeCooperativeMatrixKHR %9 %134 %173 %174 %127 (rows: 8, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT16_KHR, use: 0)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%576 = OpTypeCooperativeMatrixKHR %9 %134 %174 %174 %84 (rows: 16, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT16_KHR, use: 1)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+Validation Error: [ VUID-vkCmdDispatch-imageLayout-00344 ] | MessageID = 0xf2489da8
+vkCmdDispatch(): Cannot use VkImage 0x70000000007 (layer 0, mip 0) with specific layout VK_IMAGE_LAYOUT_GENERAL (specified by storage image descriptor [VkDescriptorSet 0x370000000037, Set 0, Binding 1, Index 0]) that doesn't match the previous known layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If an image descriptor is accessed by a shader, the VkImageLayout must match the subresource accessible from the VkImageView as defined by the image layout matching rules (https://docs.vulkan.org/spec/latest/chapters/dispatch.html#VUID-vkCmdDispatch-imageLayout-00344)
+Objects: 4
+    [0] VkPipeline 0x360000000036
+    [1] VkDescriptorSet 0x370000000037
+    [2] VkImage 0x70000000007
+    [3] VkImageView 0x2b000000002b
+
+Validation Error: [ VUID-vkCmdDispatch-imageLayout-00344 ] | MessageID = 0xf2489da8
+vkCmdDispatch(): Cannot use VkImage 0x3e000000003e (layer 0, mip 0) with specific layout VK_IMAGE_LAYOUT_GENERAL (specified by storage image descriptor [VkDescriptorSet 0x1bb00000001bb, Set 0, Binding 1, Index 0]) that doesn't match the previous known layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If an image descriptor is accessed by a shader, the VkImageLayout must match the subresource accessible from the VkImageView as defined by the image layout matching rules (https://docs.vulkan.org/spec/latest/chapters/dispatch.html#VUID-vkCmdDispatch-imageLayout-00344)
+Objects: 4
+    [0] VkPipeline 0x360000000036
+    [1] VkDescriptorSet 0x1bb00000001bb
+    [2] VkImage 0x3e000000003e
+    [3] VkImageView 0x1b700000001b7
+
+Validation Error: [ VUID-vkCmdDispatch-imageLayout-00344 ] | MessageID = 0xf2489da8
+vkCmdDispatch(): Cannot use VkImage 0x3e000000003e (layer 0, mip 0) with specific layout VK_IMAGE_LAYOUT_GENERAL (specified by storage image descriptor [VkDescriptorSet 0x1bc00000001bc, Set 0, Binding 1, Index 0]) that doesn't match the previous known layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If an image descriptor is accessed by a shader, the VkImageLayout must match the subresource accessible from the VkImageView as defined by the image layout matching rules (https://docs.vulkan.org/spec/latest/chapters/dispatch.html#VUID-vkCmdDispatch-imageLayout-00344)
+Objects: 4
+    [0] VkPipeline 0x360000000036
+    [1] VkDescriptorSet 0x1bc00000001bc
+    [2] VkImage 0x3e000000003e
+    [3] VkImageView 0x1b700000001b7
+
+Validation Error: [ VUID-vkCmdDispatch-imageLayout-00344 ] | MessageID = 0xf2489da8
+vkCmdDispatch(): Cannot use VkImage 0x3e000000003e (layer 0, mip 0) with specific layout VK_IMAGE_LAYOUT_GENERAL (specified by storage image descriptor [VkDescriptorSet 0x1bd00000001bd, Set 0, Binding 1, Index 0]) that doesn't match the previous known layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If an image descriptor is accessed by a shader, the VkImageLayout must match the subresource accessible from the VkImageView as defined by the image layout matching rules (https://docs.vulkan.org/spec/latest/chapters/dispatch.html#VUID-vkCmdDispatch-imageLayout-00344)
+Objects: 4
+    [0] VkPipeline 0x360000000036
+    [1] VkDescriptorSet 0x1bd00000001bd
+    [2] VkImage 0x3e000000003e
+    [3] VkImageView 0x1b700000001b7
+
+Validation Error: [ VUID-vkCmdDispatch-imageLayout-00344 ] | MessageID = 0xf2489da8
+vkCmdDispatch(): Cannot use VkImage 0x3e000000003e (layer 0, mip 0) with specific layout VK_IMAGE_LAYOUT_GENERAL (specified by storage image descriptor [VkDescriptorSet 0x1be00000001be, Set 0, Binding 1, Index 0]) that doesn't match the previous known layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If an image descriptor is accessed by a shader, the VkImageLayout must match the subresource accessible from the VkImageView as defined by the image layout matching rules (https://docs.vulkan.org/spec/latest/chapters/dispatch.html#VUID-vkCmdDispatch-imageLayout-00344)
+Objects: 4
+    [0] VkPipeline 0x360000000036
+    [1] VkDescriptorSet 0x1be00000001be
+    [2] VkImage 0x3e000000003e
+    [3] VkImageView 0x1b700000001b7
+
+Validation Error: [ VUID-vkCmdDispatch-imageLayout-00344 ] | MessageID = 0xf2489da8
+vkCmdDispatch(): Cannot use VkImage 0x3e000000003e (layer 0, mip 0) with specific layout VK_IMAGE_LAYOUT_GENERAL (specified by storage image descriptor [VkDescriptorSet 0x1bf00000001bf, Set 0, Binding 1, Index 0]) that doesn't match the previous known layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If an image descriptor is accessed by a shader, the VkImageLayout must match the subresource accessible from the VkImageView as defined by the image layout matching rules (https://docs.vulkan.org/spec/latest/chapters/dispatch.html#VUID-vkCmdDispatch-imageLayout-00344)
+Objects: 4
+    [0] VkPipeline 0x360000000036
+    [1] VkDescriptorSet 0x1bf00000001bf
+    [2] VkImage 0x3e000000003e
+    [3] VkImageView 0x1b700000001b7
+
+Validation Error: [ VUID-vkCmdDispatch-imageLayout-00344 ] | MessageID = 0xf2489da8
+vkCmdDispatch(): Cannot use VkImage 0x3e000000003e (layer 0, mip 0) with specific layout VK_IMAGE_LAYOUT_GENERAL (specified by storage image descriptor [VkDescriptorSet 0x1c000000001c0, Set 0, Binding 1, Index 0]) that doesn't match the previous known layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If an image descriptor is accessed by a shader, the VkImageLayout must match the subresource accessible from the VkImageView as defined by the image layout matching rules (https://docs.vulkan.org/spec/latest/chapters/dispatch.html#VUID-vkCmdDispatch-imageLayout-00344)
+Objects: 4
+    [0] VkPipeline 0x360000000036
+    [1] VkDescriptorSet 0x1c000000001c0
+    [2] VkImage 0x3e000000003e
+    [3] VkImageView 0x1b700000001b7
+
+Validation Error: [ VUID-vkCmdDispatch-imageLayout-00344 ] | MessageID = 0xf2489da8
+vkCmdDispatch(): Cannot use VkImage 0x3e000000003e (layer 0, mip 0) with specific layout VK_IMAGE_LAYOUT_GENERAL (specified by storage image descriptor [VkDescriptorSet 0x1c100000001c1, Set 0, Binding 1, Index 0]) that doesn't match the previous known layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If an image descriptor is accessed by a shader, the VkImageLayout must match the subresource accessible from the VkImageView as defined by the image layout matching rules (https://docs.vulkan.org/spec/latest/chapters/dispatch.html#VUID-vkCmdDispatch-imageLayout-00344)
+Objects: 4
+    [0] VkPipeline 0x360000000036
+    [1] VkDescriptorSet 0x1c100000001c1
+    [2] VkImage 0x3e000000003e
+    [3] VkImageView 0x1b700000001b7
+
+Validation Error: [ VUID-vkCmdDispatch-imageLayout-00344 ] | MessageID = 0xf2489da8
+vkCmdDispatch(): Cannot use VkImage 0x3e000000003e (layer 0, mip 0) with specific layout VK_IMAGE_LAYOUT_GENERAL (specified by storage image descriptor [VkDescriptorSet 0x1c200000001c2, Set 0, Binding 1, Index 0]) that doesn't match the previous known layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If an image descriptor is accessed by a shader, the VkImageLayout must match the subresource accessible from the VkImageView as defined by the image layout matching rules (https://docs.vulkan.org/spec/latest/chapters/dispatch.html#VUID-vkCmdDispatch-imageLayout-00344)
+Objects: 4
+    [0] VkPipeline 0x360000000036
+    [1] VkDescriptorSet 0x1c200000001c2
+    [2] VkImage 0x3e000000003e
+    [3] VkImageView 0x1b700000001b7
+
+Validation Error: [ VUID-vkCmdDispatch-imageLayout-00344 ] | MessageID = 0xf2489da8
+(Warning - This VUID has now been reported 10 times, which is the duplicate_message_limit value, this will be the last time reporting it).
+vkCmdDispatch(): Cannot use VkImage 0x3e000000003e (layer 0, mip 0) with specific layout VK_IMAGE_LAYOUT_GENERAL (specified by storage image descriptor [VkDescriptorSet 0x1c300000001c3, Set 0, Binding 1, Index 0]) that doesn't match the previous known layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If an image descriptor is accessed by a shader, the VkImageLayout must match the subresource accessible from the VkImageView as defined by the image layout matching rules (https://docs.vulkan.org/spec/latest/chapters/dispatch.html#VUID-vkCmdDispatch-imageLayout-00344)
+Objects: 4
+    [0] VkPipeline 0x360000000036
+    [1] VkDescriptorSet 0x1c300000001c3
+    [2] VkImage 0x3e000000003e
+    [3] VkImageView 0x1b700000001b7
+
+Validation Error: [ VUID-vkCmdDraw-None-09600 ] | MessageID = 0x46582f7b
+vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0xfadd9a0 expects VkImage 0x3e000000003e (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+Objects: 2
+    [0] VkCommandBuffer 0xfadd9a0
+    [1] VkImage 0x3e000000003e
+
+Validation Error: [ VUID-vkCmdDraw-None-09600 ] | MessageID = 0x46582f7b
+vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0xfadd9a0 expects VkImage 0x3e000000003e (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+Objects: 2
+    [0] VkCommandBuffer 0xfadd9a0
+    [1] VkImage 0x3e000000003e
+
+Validation Error: [ VUID-vkCmdDraw-None-09600 ] | MessageID = 0x46582f7b
+vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0xfadd9a0 expects VkImage 0x3e000000003e (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+Objects: 2
+    [0] VkCommandBuffer 0xfadd9a0
+    [1] VkImage 0x3e000000003e
+
+Validation Error: [ VUID-vkCmdDraw-None-09600 ] | MessageID = 0x46582f7b
+vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0xfadd9a0 expects VkImage 0x3e000000003e (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+Objects: 2
+    [0] VkCommandBuffer 0xfadd9a0
+    [1] VkImage 0x3e000000003e
+
+Validation Error: [ VUID-vkCmdDraw-None-09600 ] | MessageID = 0x46582f7b
+vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0xfadd9a0 expects VkImage 0x3e000000003e (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+Objects: 2
+    [0] VkCommandBuffer 0xfadd9a0
+    [1] VkImage 0x3e000000003e
+
+Validation Error: [ VUID-vkCmdDraw-None-09600 ] | MessageID = 0x46582f7b
+vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0xfadd9a0 expects VkImage 0x3e000000003e (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+Objects: 2
+    [0] VkCommandBuffer 0xfadd9a0
+    [1] VkImage 0x3e000000003e
+
+Validation Error: [ VUID-vkCmdDraw-None-09600 ] | MessageID = 0x46582f7b
+vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0xfadd9a0 expects VkImage 0x3e000000003e (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+Objects: 2
+    [0] VkCommandBuffer 0xfadd9a0
+    [1] VkImage 0x3e000000003e
+
+Validation Error: [ VUID-vkCmdDraw-None-09600 ] | MessageID = 0x46582f7b
+vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0xfadd9a0 expects VkImage 0x3e000000003e (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+Objects: 2
+    [0] VkCommandBuffer 0xfadd9a0
+    [1] VkImage 0x3e000000003e
+
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (8192,16,1)     (256,1,1)   llama-3.1-8b_prefill_wq_wo_linear_q4gsw_M2048_K4096_N4096_rank3batch1_Texture3D         [1x2048x4096]        1472.461 μs      46669.805 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,prefill,coopmat,4096,4096,1472.461,1.232,46669.809,unexpected_coopmat,SKIPPED,texture3d,2048,1472.461,sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%175 = OpTypeCooperativeMatrixKHR %9 %134 %173 %174 %171 (rows: 8, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT16_KHR, use: 2)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%523 = OpTypeCooperativeMatrixKHR %9 %134 %173 %174 %127 (rows: 8, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT16_KHR, use: 0)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%576 = OpTypeCooperativeMatrixKHR %9 %134 %174 %174 %84 (rows: 16, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT16_KHR, use: 1)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+Validation Error: [ VUID-vkCmdDraw-None-09600 ] | MessageID = 0x46582f7b
+vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0xf4dfb90 expects VkImage 0x2230000000223 (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+Objects: 2
+    [0] VkCommandBuffer 0xf4dfb90
+    [1] VkImage 0x2230000000223
+
+Validation Error: [ VUID-vkCmdDraw-None-09600 ] | MessageID = 0x46582f7b
+(Warning - This VUID has now been reported 10 times, which is the duplicate_message_limit value, this will be the last time reporting it).
+vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0xfb4a6d0 expects VkImage 0x2230000000223 (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_GENERAL--instead, current layout is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+Objects: 2
+    [0] VkCommandBuffer 0xfb4a6d0
+    [1] VkImage 0x2230000000223
+
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (2048,16,1)     (256,1,1)   llama-3.1-8b_prefill_wk_wv_linear_q4gsw_M2048_K4096_N1024_rank3batch1_Texture3D         [1x2048x4096]         421.751 μs      40734.629 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,prefill,coopmat,4096,1024,421.751,0.096,40734.629,unexpected_coopmat,SKIPPED,texture3d,2048,421.751,sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+Validation Error: [ VUID-VkImageCreateInfo-extent-02252 ] | MessageID = 0x49991c2f
+vkCreateImage(): pCreateInfo->extent.width (3584) exceeds allowable maximum image extent width 2048 for format VK_FORMAT_R16G16B16A16_SFLOAT.
+The Vulkan spec states: extent.width must be less than or equal to imageCreateMaxExtent.width (as defined in Image Creation Limits) (https://docs.vulkan.org/spec/latest/chapters/resources.html#VUID-VkImageCreateInfo-extent-02252)
+
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%175 = OpTypeCooperativeMatrixKHR %9 %134 %173 %174 %171 (rows: 8, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT16_KHR, use: 2)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%523 = OpTypeCooperativeMatrixKHR %9 %134 %173 %174 %127 (rows: 8, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT16_KHR, use: 0)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%576 = OpTypeCooperativeMatrixKHR %9 %134 %174 %174 %84 (rows: 16, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT16_KHR, use: 1)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+Validation Error: [ VUID-VkImageCreateInfo-extent-02252 ] | MessageID = 0x49991c2f
+vkCreateImage(): pCreateInfo->extent.width (3584) exceeds allowable maximum image extent width 2048 for format VK_FORMAT_R16G16B16A16_SFLOAT.
+The Vulkan spec states: extent.width must be less than or equal to imageCreateMaxExtent.width (as defined in Image Creation Limits) (https://docs.vulkan.org/spec/latest/chapters/resources.html#VUID-VkImageCreateInfo-extent-02252)
+
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (28672,16,1)    (256,1,1)   llama-3.1-8b_prefill_w1_w3_linear_q4gsw_M2048_K4096_N14336_rank3batch1_Texture3D        [1x2048x4096]        5427.928 μs      44311.230 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,prefill,coopmat,4096,14336,5427.928,4.904,44311.230,unexpected_coopmat,SKIPPED,texture3d,2048,5427.929,sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+Validation Error: [ VUID-VkImageCreateInfo-extent-02252 ] | MessageID = 0x49991c2f
+vkCreateImage(): pCreateInfo->extent.width (3584) exceeds allowable maximum image extent width 2048 for format VK_FORMAT_R16G16B16A16_SFLOAT.
+The Vulkan spec states: extent.width must be less than or equal to imageCreateMaxExtent.width (as defined in Image Creation Limits) (https://docs.vulkan.org/spec/latest/chapters/resources.html#VUID-VkImageCreateInfo-extent-02252)
+
+Validation Error: [ VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167 ] | MessageID = 0xc8fe5348
+(Warning - This VUID has now been reported 10 times, which is the duplicate_message_limit value, this will be the last time reporting it).
+vkCreateComputePipelines(): pCreateInfos[0].stage SPIR-V (VK_SHADER_STAGE_COMPUTE_BIT) has
+%175 = OpTypeCooperativeMatrixKHR %9 %134 %173 %174 %171 (rows: 8, cols: 16, scope: VK_SCOPE_SUBGROUP_KHR, type: VK_COMPONENT_TYPE_FLOAT16_KHR, use: 2)
+but number of rows or columns is greater than cooperativeMatrixFlexibleDimensionsMaxDimension (0).
+The Vulkan spec states: All OpTypeCooperativeMatrixKHR dimensions must be less than or equal to cooperativeMatrixFlexibleDimensionsMaxDimension (https://docs.vulkan.org/spec/latest/appendices/spirvenv.html#VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167)
+
+Validation Error: [ VUID-VkImageCreateInfo-extent-02252 ] | MessageID = 0x49991c2f
+vkCreateImage(): pCreateInfo->extent.width (3584) exceeds allowable maximum image extent width 2048 for format VK_FORMAT_R16G16B16A16_SFLOAT.
+The Vulkan spec states: extent.width must be less than or equal to imageCreateMaxExtent.width (as defined in Image Creation Limits) (https://docs.vulkan.org/spec/latest/chapters/resources.html#VUID-VkImageCreateInfo-extent-02252)
+
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (8192,16,1)     (256,1,1)   llama-3.1-8b_prefill_w2_linear_q4gsw_M2048_K14336_N4096_rank3batch1_Texture3D          [1x2048x14336]        5594.265 μs      42993.703 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.1-8b,4w,prefill,coopmat,14336,4096,5594.265,9.814,42993.703,unexpected_coopmat,SKIPPED,texture3d,2048,5594.266,sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (6144,16,1)     (256,1,1)   llama-3.2-3b_prefill_wq_wo_linear_q4gsw_M2048_K3072_N3072_rank3batch1_Texture3D         [1x2048x3072]         856.272 μs      45143.043 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,prefill,coopmat,3072,3072,856.272,0.507,45143.043,unexpected_coopmat,SKIPPED,texture3d,2048,856.272,sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (2048,16,1)     (256,1,1)   llama-3.2-3b_prefill_wk_wv_linear_q4gsw_M2048_K3072_N1024_rank3batch1_Texture3D         [1x2048x3072]         315.783 μs      40803.035 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,prefill,coopmat,3072,1024,315.783,0.063,40803.035,unexpected_coopmat,SKIPPED,texture3d,2048,315.783,sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (16384,16,1)    (256,1,1)   llama-3.2-3b_prefill_w1_w3_linear_q4gsw_M2048_K3072_N8192_rank3batch1_Texture3D         [1x2048x3072]        2254.399 μs      45723.590 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,prefill,coopmat,3072,8192,2254.399,0.827,45723.590,unexpected_coopmat,SKIPPED,texture3d,2048,2254.398,sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (6144,16,1)     (256,1,1)   llama-3.2-3b_prefill_w2_linear_q4gsw_M2048_K8192_N3072_rank3batch1_Texture3D            [1x2048x8192]        2359.340 μs      43689.855 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-3b,4w,prefill,coopmat,8192,3072,2359.340,1.069,43689.855,unexpected_coopmat,SKIPPED,texture3d,2048,2359.341,sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (4096,16,1)     (256,1,1)   llama-3.2-1b_prefill_wq_wo_linear_q4gsw_M2048_K2048_N2048_rank3batch1_Texture3D         [1x2048x2048]         390.414 μs      44004.250 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,prefill,coopmat,2048,2048,390.414,0.164,44004.254,unexpected_coopmat,SKIPPED,texture3d,2048,390.414,sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (1024,16,1)     (256,1,1)   llama-3.2-1b_prefill_wk_wv_linear_q4gsw_M2048_K2048_N512_rank3batch1_Texture3D          [1x2048x2048]         127.061 μs      33802.367 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,prefill,coopmat,2048,512,127.061,0.177,33802.367,unexpected_coopmat,SKIPPED,texture3d,2048,127.061,sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (16384,16,1)    (256,1,1)   llama-3.2-1b_prefill_w1_w3_linear_q4gsw_M2048_K2048_N8192_rank3batch1_Texture3D         [1x2048x2048]        1459.894 μs      47071.566 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,prefill,coopmat,2048,8192,1459.894,0.890,47071.570,unexpected_coopmat,SKIPPED,texture3d,2048,1459.894,sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half
+Executing 1 test cases for LlamaMicrobench
+----------------------------------------------------------------------
+sarc_linear_q4gsw_coopmat_t128x128k16g44s16m..     (4096,16,1)     (256,1,1)   llama-3.2-1b_prefill_w2_linear_q4gsw_M2048_K8192_N2048_rank3batch1_Texture3D            [1x2048x8192]        1585.611 μs      43339.414 GFLOP/s  SKIPPED
+----------------------------------------------------------------------
+Completed 1 test cases
+RESULT,linear,llama-3.2-1b,4w,prefill,coopmat,8192,2048,1585.611,2.674,43339.418,unexpected_coopmat,SKIPPED,texture3d,2048,1585.612,sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half
+----------------------------------------------------------------------
+==================== RAW RESULTS ====================
+suite     model         scheme regime   op     storage    variant  (M,K,N)                   mean_us     stdev   kern_us   GFLOP/s  dispatch
+linear    llama-3.1-8b  4w     prefill  wq_wo  texture3d  coopmat  (2048,4096,4096)           1472.5       1.2    1472.5   46669.8  unexpected_coopmat
+linear    llama-3.1-8b  4w     prefill  wk_wv  texture3d  coopmat  (2048,4096,1024)            421.8       0.1     421.8   40734.6  unexpected_coopmat
+linear    llama-3.1-8b  4w     prefill  w1_w3  texture3d  coopmat  (2048,4096,14336)          5427.9       4.9    5427.9   44311.2  unexpected_coopmat
+linear    llama-3.1-8b  4w     prefill  w2     texture3d  coopmat  (2048,14336,4096)          5594.3       9.8    5594.3   42993.7  unexpected_coopmat
+linear    llama-3.2-3b  4w     prefill  wq_wo  texture3d  coopmat  (2048,3072,3072)            856.3       0.5     856.3   45143.0  unexpected_coopmat
+linear    llama-3.2-3b  4w     prefill  wk_wv  texture3d  coopmat  (2048,3072,1024)            315.8       0.1     315.8   40803.0  unexpected_coopmat
+linear    llama-3.2-3b  4w     prefill  w1_w3  texture3d  coopmat  (2048,3072,8192)           2254.4       0.8    2254.4   45723.6  unexpected_coopmat
+linear    llama-3.2-3b  4w     prefill  w2     texture3d  coopmat  (2048,8192,3072)           2359.3       1.1    2359.3   43689.9  unexpected_coopmat
+linear    llama-3.2-1b  4w     prefill  wq_wo  texture3d  coopmat  (2048,2048,2048)            390.4       0.2     390.4   44004.3  unexpected_coopmat
+linear    llama-3.2-1b  4w     prefill  wk_wv  texture3d  coopmat  (2048,2048,512)             127.1       0.2     127.1   33802.4  unexpected_coopmat
+linear    llama-3.2-1b  4w     prefill  w1_w3  texture3d  coopmat  (2048,2048,8192)           1459.9       0.9    1459.9   47071.6  unexpected_coopmat
+linear    llama-3.2-1b  4w     prefill  w2     texture3d  coopmat  (2048,8192,2048)           1585.6       2.7    1585.6   43339.4  unexpected_coopmat
+
+========== LINEAR: coopmat (WMMA) vs tiled, prefill M=2048 ==========
+scheme model         op     (K,N)             tiled_tex     coopmat     op_x   kern_x  (us; op_x = whole op incl. 8da4w act-quant, kern_x = linear shader only)
+4w     llama-3.1-8b  wq_wo  (4096,4096)          1472.5           -        -        -
+4w     llama-3.1-8b  wk_wv  (4096,1024)           421.8           -        -        -
+4w     llama-3.1-8b  w1_w3  (4096,14336)         5427.9           -        -        -
+4w     llama-3.1-8b  w2     (14336,4096)         5594.3           -        -        -
+4w     llama-3.2-3b  wq_wo  (3072,3072)           856.3           -        -        -
+4w     llama-3.2-3b  wk_wv  (3072,1024)           315.8           -        -        -
+4w     llama-3.2-3b  w1_w3  (3072,8192)          2254.4           -        -        -
+4w     llama-3.2-3b  w2     (8192,3072)          2359.3           -        -        -
+4w     llama-3.2-1b  wq_wo  (2048,2048)           390.4           -        -        -
+4w     llama-3.2-1b  wk_wv  (2048,512)            127.1           -        -        -
+4w     llama-3.2-1b  w1_w3  (2048,8192)          1459.9           -        -        -
+4w     llama-3.2-1b  w2     (8192,2048)          1585.6           -        -        -
+(! = buffer case did NOT dispatch a coopmat shader; shown for reference, excluded from speedups/geomeans)
+
+One or more cases crashed or did not dispatch the expected kernel (see dispatch column) -- do not trust their speedup numbers.
