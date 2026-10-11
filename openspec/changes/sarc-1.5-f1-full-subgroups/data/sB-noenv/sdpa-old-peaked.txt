@@ -1,0 +1,16 @@
+[sdpa-error] peaked_tiny_gqa_s256 max_abs=0.00989617 rms=0.00105265 max_abs_ref=0.988095
+[sdpa-kernels] peaked_tiny_gqa_s256 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 no_mask_fill=no pairing=ok
+[sdpa-correctness] peaked_tiny_gqa_s256 S=256 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/32768 FAILED
+[sdpa-error] peaked_1b_head_config_s256_pos256 max_abs=0.0119483 rms=0.00112168 max_abs_ref=0.985859
+[sdpa-kernels] peaked_1b_head_config_s256_pos256 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 no_mask_fill=no pairing=ok
+[sdpa-correctness] peaked_1b_head_config_s256_pos256 S=256 input_pos=256 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/524288 FAILED
+[sdpa-error] peaked_8b_head_config_s256 max_abs=0.0158426 rms=0.00146345 max_abs_ref=0.999783
+[sdpa-kernels] peaked_8b_head_config_s256 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 no_mask_fill=no pairing=ok
+[sdpa-correctness] peaked_8b_head_config_s256 S=256 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/1048576 FAILED
+[sdpa-error] peaked_tiny_gqa_s2048 max_abs=0.0103602 rms=0.00108527 max_abs_ref=0.981968
+[sdpa-kernels] peaked_tiny_gqa_s2048 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 no_mask_fill=no pairing=ok
+[sdpa-correctness] peaked_tiny_gqa_s2048 S=2048 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/262144 FAILED
+[sdpa-error] peaked_tiny_d128_s2048 max_abs=0.0126011 rms=0.00141338 max_abs_ref=0.998644
+[sdpa-kernels] peaked_tiny_d128_s2048 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 no_mask_fill=no pairing=ok
+[sdpa-correctness] peaked_tiny_d128_s2048 S=2048 input_pos=0 D=128 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/524288 FAILED
+[sdpa-correctness] tier=peaked cases_run=5

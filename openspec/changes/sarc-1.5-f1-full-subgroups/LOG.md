@@ -7,12 +7,16 @@ found), measured over ssh from the workstation `fedora`, cross-built there. Arti
 
 ## State
 
-(2026-10-10 18:45 UTC) **Running on the device: job `chain1` (`tools/f1-chain.sh`, started 16:27 UTC with
-`<artifacts>/tools/drun.sh chain1 f1-chain.sh`; status `~/hmz-f1-orin/chain.status`, output
-`~/hmz-f1-orin/jobs/chain1.out`).** Done so far: step 1 (`0f038a736`), builds `f1` and `f1dbg` (16:00 / 16:12 UTC),
-static check (0 violators), SPIR-V identity (0 differences), flag proof (step 2 of the chain), session A
-(`sA-fused1`: `GATE_ACCEPTED` 18:36 UTC, geomean -0.05 %). Still to run in the chain: session B, kernel level,
-logits. Then `tools/collect.sh` and `RESULT.md`. Nothing runs on the workstation.
+(2026-10-11 01:55 UTC) **Done; nothing is running** (device and workstation checked). Steps 1 to 7 exist with
+their evidence (`RESULT.md`, `data/`). Verdict by the rule below: **no effect** in both sessions (`orin-fused1`:
+geomean -0.05 %, largest cell -0.22 %; no environment: +0.00 %, largest cell +0.05 %; 60 of 60 runs valid in
+each, neither repeated). Correctness as the old build in every item; 492 logits vectors and the SDPA records
+identical; SPIR-V 0 differences. Open points a reader must know: the validation layer is not installed on the
+device (flag proven by a debug print in an uncommitted build, no VUID count); at kernel level 8 decode-size
+cases of the stock SDPA kernels read 17 to 25 % slower in the pre-registered 3-process table, which a check made
+afterwards (not pre-registered) shows as level-to-level variation present in both arms, cause not measured; two
+gate items fail as on the old build (buffer production-diff, SDPA status with no environment). The branch is
+committed and not pushed.
 
 ## Decision needed from the owner
 
@@ -56,3 +60,43 @@ new / old.
   no validation package in `dpkg -l`). Step 3 uses the fallback (a debug print in a build that is never committed).
 - `vulkaninfo`: `subgroupSizeControl = true`, `computeFullSubgroups = true`, `minSubgroupSize = maxSubgroupSize = 32`.
 - No GPU process, GPU load 0, power mode 15 W, no `HOLD` / `ABORTED` / `GPU_GONE` of the campaign.
+
+### Builds (workstation, 15:52 to 16:15 UTC, campaign's `build-orin.sh` from the tools copy, under `lock-desktop-build`)
+
+- The campaign's tools hard-code its own roots; they run from `<artifacts>/tools`, a copy with two constants of
+  `common.sh` changed (`tools/mk-tools.sh`, `data/tools.diff`). Device root of this task: `~/hmz-f1-orin`. The
+  gpu-lab lock of the device is the campaign's.
+- `topic4`: source tree and bundle copied from the campaign's artifacts (`cmp` equal; device copy has the same
+  hashes as the campaign's device copy). `f1` = `0f038a736` on `topic4`'s tree (266 changed paths, 4 outside
+  `openspec/`), rc 0, `spirv_golden.py` FAIL with `topic4`'s 14 DIFF lines (as the parent). `f1dbg` = `f1` +
+  `data/flagproof/flagprint.patch` (not committed). `logits_dump` for `f1` (`build-extra.sh`) waited 15 minutes
+  for the build lock, which another task's measurement held shared.
+- Recipe hash of `f1.src.txt` differs from `topic4`'s: the campaign added the optional `GLSLC_DIR` switch after
+  `topic4`; unset here. SPIR-V: 3240 files per build, 0 differences.
+- Static check: 398 lines, 0 violators (`data/local-size.csv`).
+
+### Device chain `chain1` (`tools/f1-chain.sh`, 16:27 UTC to 01:08 UTC; `data/chain.status`)
+
+- Step 2, flag proof (`f1dbg`): 28 pipelines with a required subgroup size, all with stage flags 0x2; 40 without,
+  all 0x0.
+- Step 3, `sA-fused1` (`gate_sdpa.sh`, 16:33 to 18:36 UTC): `GATE_ACCEPTED`, all steps passed; session 60 of 60
+  valid, geomean -0.05 %.
+- Step 4, no environment (18:47 to 21:08 UTC): `sBn-noenv` `GATE_ACCEPTED` (0 findings, 0 differing lines);
+  36 SDPA passes, each rc 1 with 0 mismatches (stock kernels; old build and parent control the same);
+  `sB-noenv` `SESSION_ACCEPTED`, 60 of 60 valid, geomean +0.00 %.
+- Step 5, kernel level (21:08 to 22:13 UTC): 36 processes; linear suites inside +-0.6 %; SDPA suite: 8
+  decode-size cases outside the band (`RESULT.md` section 7).
+- Step 6, logits (22:17 to 01:08 UTC): 246 vectors per configuration, 0 differ.
+- No job was aborted; no `ABORTED` / `GPU_GONE`; no foreign GPU process seen.
+
+### After the chain (01:09 to 01:46 UTC), not pre-registered
+
+`decode1` (`tools/f1-decode.sh 10`): 40 processes of `--sdpa --regime=decode`, written after the kernel table
+was seen, to tell an effect from variation in the 8 cases. It replaces nothing. Result in `RESULT.md` section 7.
+
+### Rules
+
+No `sudo`, no installation, no clock / power-mode / governor change, no service touched, the second Orin not
+contacted. Nothing written to the campaign's working copy or artifacts (read and copied; on the device two
+control sessions copied from `~/hmz-sarc-orin-fused/stage/` to `~/hmz-f1-orin/stage/`). One 10-second trial of
+the decode filter wrote two small files to the device's `/dev/shm` and removed them. Not pushed.

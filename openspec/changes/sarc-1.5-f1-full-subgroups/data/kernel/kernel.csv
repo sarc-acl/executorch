@@ -1,0 +1,169 @@
+env,suite,model,scheme,op,variant,M,K,N,kv_heads,kernel,old_median_us,new_median_us,speed_new_over_old,difference_pct,outside_2pct,processes_old,processes_new
+fused1,linear-4w,llama-3.1-8b,4w,wq_wo,coopmat,2048,4096,4096,0,"kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0,10991.70,10994.50,0.99975,-0.03,no,3,3
+fused1,linear-4w,llama-3.1-8b,4w,wq_wo,tiled,2048,4096,4096,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,119465.00,119544.00,0.99934,-0.07,no,3,3
+fused1,linear-4w,llama-3.1-8b,4w,wk_wv,coopmat,2048,4096,1024,0,"kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0,2795.38,2796.26,0.99969,-0.03,no,3,3
+fused1,linear-4w,llama-3.1-8b,4w,wk_wv,tiled,2048,4096,1024,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,30700.90,30678.10,1.00074,+0.07,no,3,3
+fused1,linear-4w,llama-3.1-8b,4w,w1_w3,coopmat,2048,4096,14336,0,"kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0,38292.40,38320.20,0.99927,-0.07,no,3,3
+fused1,linear-4w,llama-3.1-8b,4w,w1_w3,tiled,2048,4096,14336,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,415736.00,415562.00,1.00042,+0.04,no,3,3
+fused1,linear-4w,llama-3.1-8b,4w,w2,coopmat,2048,14336,4096,0,"kernel_name": "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32c_texture3d_texture2d_half", "operator_id": 0,41177.40,41179.20,0.99996,-0.00,no,3,3
+fused1,linear-4w,llama-3.1-8b,4w,w2,tiled,2048,14336,4096,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,418831.00,418847.00,0.99996,-0.00,no,3,3
+fused1,linear-4w,llama-3.2-3b,4w,wq_wo,coopmat,2048,3072,3072,0,"kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0,6291.49,6292.42,0.99985,-0.01,no,3,3
+fused1,linear-4w,llama-3.2-3b,4w,wq_wo,tiled,2048,3072,3072,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,67503.60,67471.40,1.00048,+0.05,no,3,3
+fused1,linear-4w,llama-3.2-3b,4w,wk_wv,coopmat,2048,3072,1024,0,"kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0,2125.70,2122.59,1.00147,+0.15,no,3,3
+fused1,linear-4w,llama-3.2-3b,4w,wk_wv,tiled,2048,3072,1024,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,23040.10,23040.90,0.99997,-0.00,no,3,3
+fused1,linear-4w,llama-3.2-3b,4w,w1_w3,coopmat,2048,3072,8192,0,"kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0,16659.70,16659.20,1.00003,+0.00,no,3,3
+fused1,linear-4w,llama-3.2-3b,4w,w1_w3,tiled,2048,3072,8192,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,178556.00,178628.00,0.99960,-0.04,no,3,3
+fused1,linear-4w,llama-3.2-3b,4w,w2,coopmat,2048,8192,3072,0,"kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0,16221.30,16219.80,1.00009,+0.01,no,3,3
+fused1,linear-4w,llama-3.2-3b,4w,w2,tiled,2048,8192,3072,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,180034.00,180034.00,1.00000,+0.00,no,3,3
+fused1,linear-4w,llama-3.2-1b,4w,wq_wo,coopmat,2048,2048,2048,0,"kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0,2865.57,2864.35,1.00043,+0.04,no,3,3
+fused1,linear-4w,llama-3.2-1b,4w,wq_wo,tiled,2048,2048,2048,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,30189.30,30197.20,0.99974,-0.03,no,3,3
+fused1,linear-4w,llama-3.2-1b,4w,wk_wv,coopmat,2048,2048,512,0,"kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0,735.33,735.23,1.00013,+0.01,no,3,3
+fused1,linear-4w,llama-3.2-1b,4w,wk_wv,tiled,2048,2048,512,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,8080.06,8080.06,1.00000,+0.00,no,3,3
+fused1,linear-4w,llama-3.2-1b,4w,w1_w3,coopmat,2048,2048,8192,0,"kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0,11357.50,11360.30,0.99975,-0.02,no,3,3
+fused1,linear-4w,llama-3.2-1b,4w,w1_w3,tiled,2048,2048,8192,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,119128.00,119132.00,0.99997,-0.00,no,3,3
+fused1,linear-4w,llama-3.2-1b,4w,w2,coopmat,2048,8192,2048,0,"kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0,10867.30,10860.90,1.00059,+0.06,no,3,3
+fused1,linear-4w,llama-3.2-1b,4w,w2,tiled,2048,8192,2048,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,120741.00,120727.00,1.00012,+0.01,no,3,3
+fused1,linear-8da4w,llama-3.1-8b,8da4w,wq_wo,coopmat,2048,4096,4096,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0,12747.50,12736.80,1.00084,+0.08,no,3,3
+fused1,linear-8da4w,llama-3.1-8b,8da4w,wq_wo,tiled,2048,4096,4096,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,133948.00,133884.00,1.00048,+0.05,no,3,3
+fused1,linear-8da4w,llama-3.1-8b,8da4w,wk_wv,coopmat,2048,4096,1024,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0,3191.74,3190.18,1.00049,+0.05,no,3,3
+fused1,linear-8da4w,llama-3.1-8b,8da4w,wk_wv,tiled,2048,4096,1024,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,33766.00,33752.80,1.00039,+0.04,no,3,3
+fused1,linear-8da4w,llama-3.1-8b,8da4w,w1_w3,coopmat,2048,4096,14336,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0,44511.70,44529.00,0.99961,-0.04,no,3,3
+fused1,linear-8da4w,llama-3.1-8b,8da4w,w1_w3,tiled,2048,4096,14336,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,467985.00,468060.00,0.99984,-0.02,no,3,3
+fused1,linear-8da4w,llama-3.1-8b,8da4w,w2,coopmat,2048,14336,4096,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0,43339.70,43344.20,0.99990,-0.01,no,3,3
+fused1,linear-8da4w,llama-3.1-8b,8da4w,w2,tiled,2048,14336,4096,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,468981.00,468903.00,1.00017,+0.02,no,3,3
+fused1,linear-8da4w,llama-3.2-3b,8da4w,wq_wo,coopmat,2048,3072,3072,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0,7226.74,7224.90,1.00025,+0.03,no,3,3
+fused1,linear-8da4w,llama-3.2-3b,8da4w,wq_wo,tiled,2048,3072,3072,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,75380.80,75419.40,0.99949,-0.05,no,3,3
+fused1,linear-8da4w,llama-3.2-3b,8da4w,wk_wv,coopmat,2048,3072,1024,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0,2410.74,2409.78,1.00040,+0.04,no,3,3
+fused1,linear-8da4w,llama-3.2-3b,8da4w,wk_wv,tiled,2048,3072,1024,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,25305.80,25310.00,0.99983,-0.02,no,3,3
+fused1,linear-8da4w,llama-3.2-3b,8da4w,w1_w3,coopmat,2048,3072,8192,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0,19252.60,19245.90,1.00035,+0.03,no,3,3
+fused1,linear-8da4w,llama-3.2-3b,8da4w,w1_w3,tiled,2048,3072,8192,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,200719.00,200618.00,1.00050,+0.05,no,3,3
+fused1,linear-8da4w,llama-3.2-3b,8da4w,w2,coopmat,2048,8192,3072,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0,18891.70,18885.90,1.00031,+0.03,no,3,3
+fused1,linear-8da4w,llama-3.2-3b,8da4w,w2,tiled,2048,8192,3072,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,201178.00,201079.00,1.00049,+0.05,no,3,3
+fused1,linear-8da4w,llama-3.2-1b,8da4w,wq_wo,coopmat,2048,2048,2048,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0,3390.46,3388.80,1.00049,+0.05,no,3,3
+fused1,linear-8da4w,llama-3.2-1b,8da4w,wq_wo,tiled,2048,2048,2048,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,33544.10,33522.60,1.00064,+0.06,no,3,3
+fused1,linear-8da4w,llama-3.2-1b,8da4w,wk_wv,coopmat,2048,2048,512,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0,828.26,827.78,1.00058,+0.06,no,3,3
+fused1,linear-8da4w,llama-3.2-1b,8da4w,wk_wv,tiled,2048,2048,512,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,8519.97,8520.03,0.99999,-0.00,no,3,3
+fused1,linear-8da4w,llama-3.2-1b,8da4w,w1_w3,coopmat,2048,2048,8192,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0,13500.40,13492.20,1.00061,+0.06,no,3,3
+fused1,linear-8da4w,llama-3.2-1b,8da4w,w1_w3,tiled,2048,2048,8192,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,133841.00,133860.00,0.99986,-0.01,no,3,3
+fused1,linear-8da4w,llama-3.2-1b,8da4w,w2,coopmat,2048,8192,2048,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0,12584.90,12591.30,0.99949,-0.05,no,3,3
+fused1,linear-8da4w,llama-3.2-1b,8da4w,w2,tiled,2048,8192,2048,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,134302.00,134286.00,1.00012,+0.01,no,3,3
+fused1,sdpa,llama-3.1-8b,,qk,tiled,2048,128,32,8,,70835.00,70856.40,0.99970,-0.03,no,3,3
+fused1,sdpa,llama-3.1-8b,,softmax,tiled,2048,128,32,8,,8308.27,8308.39,0.99999,-0.00,no,3,3
+fused1,sdpa,llama-3.1-8b,,av,tiled,2048,128,32,8,,56788.80,56784.80,1.00007,+0.01,no,3,3
+fused1,sdpa,llama-3.1-8b,,total,tiled,2048,128,32,8,,135924.00,135945.00,0.99985,-0.02,no,3,3
+fused1,sdpa,llama-3.1-8b,,qk,coopmat,2048,128,32,8,,,,,NOT_COUNTED,,3,3
+fused1,sdpa,llama-3.1-8b,,softmax,coopmat,2048,128,32,8,,,,,NOT_COUNTED,,3,3
+fused1,sdpa,llama-3.1-8b,,av,coopmat,2048,128,32,8,,,,,NOT_COUNTED,,3,3
+fused1,sdpa,llama-3.1-8b,,total,coopmat,2048,128,32,8,,18250.50,18248.20,1.00013,+0.01,no,3,3
+fused1,sdpa,llama-3.1-8b,,qk,tiled,1,128,32,8,,1975.16,1975.28,0.99994,-0.01,no,3,3
+fused1,sdpa,llama-3.1-8b,,softmax,tiled,1,128,32,8,,50.77,50.87,0.99799,-0.20,no,3,3
+fused1,sdpa,llama-3.1-8b,,av,tiled,1,128,32,8,,488.56,490.87,0.99528,-0.47,no,3,3
+fused1,sdpa,llama-3.1-8b,,total,tiled,1,128,32,8,,2514.26,2517.05,0.99889,-0.11,no,3,3
+fused1,sdpa,llama-3.2-3b,,qk,tiled,2048,128,24,8,,53138.80,53126.10,1.00024,+0.02,no,3,3
+fused1,sdpa,llama-3.2-3b,,softmax,tiled,2048,128,24,8,,6217.71,6213.04,1.00075,+0.08,no,3,3
+fused1,sdpa,llama-3.2-3b,,av,tiled,2048,128,24,8,,42626.60,42612.20,1.00034,+0.03,no,3,3
+fused1,sdpa,llama-3.2-3b,,total,tiled,2048,128,24,8,,101976.00,101957.00,1.00019,+0.02,no,3,3
+fused1,sdpa,llama-3.2-3b,,qk,coopmat,2048,128,24,8,,,,,NOT_COUNTED,,3,3
+fused1,sdpa,llama-3.2-3b,,softmax,coopmat,2048,128,24,8,,,,,NOT_COUNTED,,3,3
+fused1,sdpa,llama-3.2-3b,,av,coopmat,2048,128,24,8,,,,,NOT_COUNTED,,3,3
+fused1,sdpa,llama-3.2-3b,,total,coopmat,2048,128,24,8,,13893.10,13886.00,1.00051,+0.05,no,3,3
+fused1,sdpa,llama-3.2-3b,,qk,tiled,1,128,24,8,,1122.44,1490.21,0.75321,-24.68,yes,3,3
+fused1,sdpa,llama-3.2-3b,,softmax,tiled,1,128,24,8,,39.41,49.60,0.79458,-20.54,yes,3,3
+fused1,sdpa,llama-3.2-3b,,av,tiled,1,128,24,8,,351.17,459.52,0.76422,-23.58,yes,3,3
+fused1,sdpa,llama-3.2-3b,,total,tiled,1,128,24,8,,1513.00,1999.53,0.75668,-24.33,yes,3,3
+fused1,sdpa,llama-3.2-1b,,qk,tiled,2048,64,32,8,,36306.90,36315.70,0.99976,-0.02,no,3,3
+fused1,sdpa,llama-3.2-1b,,softmax,tiled,2048,64,32,8,,8301.40,8307.63,0.99925,-0.07,no,3,3
+fused1,sdpa,llama-3.2-1b,,av,tiled,2048,64,32,8,,28578.70,28595.00,0.99943,-0.06,no,3,3
+fused1,sdpa,llama-3.2-1b,,total,tiled,2048,64,32,8,,73186.90,73242.90,0.99924,-0.08,no,3,3
+fused1,sdpa,llama-3.2-1b,,qk,coopmat,2048,64,32,8,,,,,NOT_COUNTED,,3,3
+fused1,sdpa,llama-3.2-1b,,softmax,coopmat,2048,64,32,8,,,,,NOT_COUNTED,,3,3
+fused1,sdpa,llama-3.2-1b,,av,coopmat,2048,64,32,8,,,,,NOT_COUNTED,,3,3
+fused1,sdpa,llama-3.2-1b,,total,coopmat,2048,64,32,8,,11514.40,11526.80,0.99892,-0.11,no,3,3
+fused1,sdpa,llama-3.2-1b,,qk,tiled,1,64,32,8,,1981.32,1981.55,0.99988,-0.01,no,3,3
+fused1,sdpa,llama-3.2-1b,,softmax,tiled,1,64,32,8,,50.40,50.59,0.99633,-0.37,no,3,3
+fused1,sdpa,llama-3.2-1b,,av,tiled,1,64,32,8,,257.49,256.96,1.00207,+0.21,no,3,3
+fused1,sdpa,llama-3.2-1b,,total,tiled,1,64,32,8,,2289.22,2289.13,1.00004,+0.00,no,3,3
+noenv,linear-4w,llama-3.1-8b,4w,wq_wo,coopmat,2048,4096,4096,0,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0,11156.20,11154.70,1.00013,+0.01,no,3,3
+noenv,linear-4w,llama-3.1-8b,4w,wq_wo,tiled,2048,4096,4096,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,119503.00,119457.00,1.00039,+0.04,no,3,3
+noenv,linear-4w,llama-3.1-8b,4w,wk_wv,coopmat,2048,4096,1024,0,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0,2843.97,2843.65,1.00011,+0.01,no,3,3
+noenv,linear-4w,llama-3.1-8b,4w,wk_wv,tiled,2048,4096,1024,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,30683.50,30641.70,1.00136,+0.14,no,3,3
+noenv,linear-4w,llama-3.1-8b,4w,w1_w3,coopmat,2048,4096,14336,0,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0,38846.70,38868.10,0.99945,-0.06,no,3,3
+noenv,linear-4w,llama-3.1-8b,4w,w1_w3,tiled,2048,4096,14336,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,415568.00,415710.00,0.99966,-0.03,no,3,3
+noenv,linear-4w,llama-3.1-8b,4w,w2,coopmat,2048,14336,4096,0,"kernel_name": "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32_texture3d_texture2d_half", "operator_id": 0,45833.50,45830.60,1.00006,+0.01,no,3,3
+noenv,linear-4w,llama-3.1-8b,4w,w2,tiled,2048,14336,4096,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,418830.00,418864.00,0.99992,-0.01,no,3,3
+noenv,linear-4w,llama-3.2-3b,4w,wq_wo,coopmat,2048,3072,3072,0,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0,6367.33,6366.78,1.00009,+0.01,no,3,3
+noenv,linear-4w,llama-3.2-3b,4w,wq_wo,tiled,2048,3072,3072,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,67417.10,67426.30,0.99986,-0.01,no,3,3
+noenv,linear-4w,llama-3.2-3b,4w,wk_wv,coopmat,2048,3072,1024,0,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0,2152.83,2153.79,0.99955,-0.04,no,3,3
+noenv,linear-4w,llama-3.2-3b,4w,wk_wv,tiled,2048,3072,1024,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,23072.20,23067.70,1.00020,+0.02,no,3,3
+noenv,linear-4w,llama-3.2-3b,4w,w1_w3,coopmat,2048,3072,8192,0,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0,16852.70,16867.70,0.99911,-0.09,no,3,3
+noenv,linear-4w,llama-3.2-3b,4w,w1_w3,tiled,2048,3072,8192,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,178557.00,178452.00,1.00059,+0.06,no,3,3
+noenv,linear-4w,llama-3.2-3b,4w,w2,coopmat,2048,8192,3072,0,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0,16482.80,16484.10,0.99992,-0.01,no,3,3
+noenv,linear-4w,llama-3.2-3b,4w,w2,tiled,2048,8192,3072,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,179995.00,179936.00,1.00033,+0.03,no,3,3
+noenv,linear-4w,llama-3.2-1b,4w,wq_wo,coopmat,2048,2048,2048,0,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0,2908.03,2908.51,0.99983,-0.02,no,3,3
+noenv,linear-4w,llama-3.2-1b,4w,wq_wo,tiled,2048,2048,2048,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,30180.40,30203.10,0.99925,-0.08,no,3,3
+noenv,linear-4w,llama-3.2-1b,4w,wk_wv,coopmat,2048,2048,512,0,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0,746.34,746.88,0.99927,-0.07,no,3,3
+noenv,linear-4w,llama-3.2-1b,4w,wk_wv,tiled,2048,2048,512,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,8076.22,8077.12,0.99989,-0.01,no,3,3
+noenv,linear-4w,llama-3.2-1b,4w,w1_w3,coopmat,2048,2048,8192,0,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0,11503.90,11500.10,1.00033,+0.03,no,3,3
+noenv,linear-4w,llama-3.2-1b,4w,w1_w3,tiled,2048,2048,8192,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,119109.00,119137.00,0.99976,-0.02,no,3,3
+noenv,linear-4w,llama-3.2-1b,4w,w2,coopmat,2048,8192,2048,0,"kernel_name": "sarc_linear_q4gsw_coopmat_t256x128k16g22s32_texture3d_texture2d_half", "operator_id": 0,11023.90,11019.90,1.00036,+0.04,no,3,3
+noenv,linear-4w,llama-3.2-1b,4w,w2,tiled,2048,8192,2048,0,"kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0,120755.00,120730.00,1.00021,+0.02,no,3,3
+noenv,linear-8da4w,llama-3.1-8b,8da4w,wq_wo,coopmat,2048,4096,4096,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half", "operator_id": 0,14604.70,14609.30,0.99969,-0.03,no,3,3
+noenv,linear-8da4w,llama-3.1-8b,8da4w,wq_wo,tiled,2048,4096,4096,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,133921.00,133810.00,1.00083,+0.08,no,3,3
+noenv,linear-8da4w,llama-3.1-8b,8da4w,wk_wv,coopmat,2048,4096,1024,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half", "operator_id": 0,3654.03,3647.46,1.00180,+0.18,no,3,3
+noenv,linear-8da4w,llama-3.1-8b,8da4w,wk_wv,tiled,2048,4096,1024,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,33745.20,33739.10,1.00018,+0.02,no,3,3
+noenv,linear-8da4w,llama-3.1-8b,8da4w,w1_w3,coopmat,2048,4096,14336,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half", "operator_id": 0,51241.00,51216.80,1.00047,+0.05,no,3,3
+noenv,linear-8da4w,llama-3.1-8b,8da4w,w1_w3,tiled,2048,4096,14336,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,467883.00,467911.00,0.99994,-0.01,no,3,3
+noenv,linear-8da4w,llama-3.1-8b,8da4w,w2,coopmat,2048,14336,4096,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half", "operator_id": 0,49480.00,49510.80,0.99938,-0.06,no,3,3
+noenv,linear-8da4w,llama-3.1-8b,8da4w,w2,tiled,2048,14336,4096,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,468842.00,468726.00,1.00025,+0.02,no,3,3
+noenv,linear-8da4w,llama-3.2-3b,8da4w,wq_wo,coopmat,2048,3072,3072,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half", "operator_id": 0,8780.98,8759.01,1.00251,+0.25,no,3,3
+noenv,linear-8da4w,llama-3.2-3b,8da4w,wq_wo,tiled,2048,3072,3072,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,75419.70,75400.30,1.00026,+0.03,no,3,3
+noenv,linear-8da4w,llama-3.2-3b,8da4w,wk_wv,coopmat,2048,3072,1024,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half", "operator_id": 0,2917.82,2925.23,0.99747,-0.25,no,3,3
+noenv,linear-8da4w,llama-3.2-3b,8da4w,wk_wv,tiled,2048,3072,1024,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,25309.20,25309.20,1.00000,+0.00,no,3,3
+noenv,linear-8da4w,llama-3.2-3b,8da4w,w1_w3,coopmat,2048,3072,8192,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half", "operator_id": 0,23427.20,23411.20,1.00068,+0.07,no,3,3
+noenv,linear-8da4w,llama-3.2-3b,8da4w,w1_w3,tiled,2048,3072,8192,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,200681.00,200633.00,1.00024,+0.02,no,3,3
+noenv,linear-8da4w,llama-3.2-3b,8da4w,w2,coopmat,2048,8192,3072,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half", "operator_id": 0,21429.40,21430.70,0.99994,-0.01,no,3,3
+noenv,linear-8da4w,llama-3.2-3b,8da4w,w2,tiled,2048,8192,3072,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,201075.00,201071.00,1.00002,+0.00,no,3,3
+noenv,linear-8da4w,llama-3.2-1b,8da4w,wq_wo,coopmat,2048,2048,2048,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half", "operator_id": 0,3822.40,3817.71,1.00123,+0.12,no,3,3
+noenv,linear-8da4w,llama-3.2-1b,8da4w,wq_wo,tiled,2048,2048,2048,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,33541.10,33536.90,1.00013,+0.01,no,3,3
+noenv,linear-8da4w,llama-3.2-1b,8da4w,wk_wv,coopmat,2048,2048,512,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half", "operator_id": 0,967.33,966.22,1.00114,+0.11,no,3,3
+noenv,linear-8da4w,llama-3.2-1b,8da4w,wk_wv,tiled,2048,2048,512,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,8517.60,8517.92,0.99996,-0.00,no,3,3
+noenv,linear-8da4w,llama-3.2-1b,8da4w,w1_w3,coopmat,2048,2048,8192,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half", "operator_id": 0,15103.80,15025.50,1.00521,+0.52,no,3,3
+noenv,linear-8da4w,llama-3.2-1b,8da4w,w1_w3,tiled,2048,2048,8192,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,133826.00,133847.00,0.99984,-0.02,no,3,3
+noenv,linear-8da4w,llama-3.2-1b,8da4w,w2,coopmat,2048,8192,2048,0,"kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half", "operator_id": 0,14292.40,14293.50,0.99992,-0.01,no,3,3
+noenv,linear-8da4w,llama-3.2-1b,8da4w,w2,tiled,2048,8192,2048,0,"kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0,134250.00,134273.00,0.99983,-0.02,no,3,3
+noenv,sdpa,llama-3.1-8b,,qk,tiled,2048,128,32,8,,70852.70,70801.30,1.00073,+0.07,no,3,3
+noenv,sdpa,llama-3.1-8b,,softmax,tiled,2048,128,32,8,,10983.00,10975.90,1.00065,+0.06,no,3,3
+noenv,sdpa,llama-3.1-8b,,av,tiled,2048,128,32,8,,56797.20,56743.60,1.00094,+0.09,no,3,3
+noenv,sdpa,llama-3.1-8b,,total,tiled,2048,128,32,8,,138647.00,138521.00,1.00091,+0.09,no,3,3
+noenv,sdpa,llama-3.1-8b,,qk,coopmat,2048,128,32,8,,70877.70,70866.40,1.00016,+0.02,no,3,3
+noenv,sdpa,llama-3.1-8b,,softmax,coopmat,2048,128,32,8,,10967.30,10977.60,0.99906,-0.09,no,3,3
+noenv,sdpa,llama-3.1-8b,,av,coopmat,2048,128,32,8,,56761.00,56740.70,1.00036,+0.04,no,3,3
+noenv,sdpa,llama-3.1-8b,,total,coopmat,2048,128,32,8,,138608.00,138587.00,1.00015,+0.02,no,3,3
+noenv,sdpa,llama-3.1-8b,,qk,tiled,1,128,32,8,,1975.22,1975.15,1.00004,+0.00,no,3,3
+noenv,sdpa,llama-3.1-8b,,softmax,tiled,1,128,32,8,,37.61,37.28,1.00876,+0.88,no,3,3
+noenv,sdpa,llama-3.1-8b,,av,tiled,1,128,32,8,,492.33,498.42,0.98779,-1.22,no,3,3
+noenv,sdpa,llama-3.1-8b,,total,tiled,1,128,32,8,,2505.16,2510.85,0.99773,-0.23,no,3,3
+noenv,sdpa,llama-3.2-3b,,qk,tiled,2048,128,24,8,,53132.70,53148.50,0.99970,-0.03,no,3,3
+noenv,sdpa,llama-3.2-3b,,softmax,tiled,2048,128,24,8,,8232.83,8237.09,0.99948,-0.05,no,3,3
+noenv,sdpa,llama-3.2-3b,,av,tiled,2048,128,24,8,,42637.40,42625.40,1.00028,+0.03,no,3,3
+noenv,sdpa,llama-3.2-3b,,total,tiled,2048,128,24,8,,104017.00,104019.00,0.99998,-0.00,no,3,3
+noenv,sdpa,llama-3.2-3b,,qk,coopmat,2048,128,24,8,,53157.50,53136.50,1.00040,+0.04,no,3,3
+noenv,sdpa,llama-3.2-3b,,softmax,coopmat,2048,128,24,8,,8232.22,8233.98,0.99979,-0.02,no,3,3
+noenv,sdpa,llama-3.2-3b,,av,coopmat,2048,128,24,8,,42614.70,42644.70,0.99930,-0.07,no,3,3
+noenv,sdpa,llama-3.2-3b,,total,coopmat,2048,128,24,8,,104012.00,104025.00,0.99988,-0.01,no,3,3
+noenv,sdpa,llama-3.2-3b,,qk,tiled,1,128,24,8,,902.82,897.77,1.00562,+0.56,no,3,3
+noenv,sdpa,llama-3.2-3b,,softmax,tiled,1,128,24,8,,23.17,23.14,1.00166,+0.17,no,3,3
+noenv,sdpa,llama-3.2-3b,,av,tiled,1,128,24,8,,288.52,283.15,1.01894,+1.89,no,3,3
+noenv,sdpa,llama-3.2-3b,,total,tiled,1,128,24,8,,1214.51,1204.06,1.00868,+0.87,no,3,3
+noenv,sdpa,llama-3.2-1b,,qk,tiled,2048,64,32,8,,36329.40,36296.20,1.00091,+0.09,no,3,3
+noenv,sdpa,llama-3.2-1b,,softmax,tiled,2048,64,32,8,,10977.30,10977.10,1.00002,+0.00,no,3,3
+noenv,sdpa,llama-3.2-1b,,av,tiled,2048,64,32,8,,28615.20,28563.80,1.00180,+0.18,no,3,3
+noenv,sdpa,llama-3.2-1b,,total,tiled,2048,64,32,8,,75912.30,75828.20,1.00111,+0.11,no,3,3
+noenv,sdpa,llama-3.2-1b,,qk,coopmat,2048,64,32,8,,36326.90,36328.70,0.99995,-0.00,no,3,3
+noenv,sdpa,llama-3.2-1b,,softmax,coopmat,2048,64,32,8,,10979.50,10975.50,1.00036,+0.04,no,3,3
+noenv,sdpa,llama-3.2-1b,,av,coopmat,2048,64,32,8,,28588.00,28603.20,0.99947,-0.05,no,3,3
+noenv,sdpa,llama-3.2-1b,,total,coopmat,2048,64,32,8,,75890.00,75907.40,0.99977,-0.02,no,3,3
+noenv,sdpa,llama-3.2-1b,,qk,tiled,1,64,32,8,,1196.40,1490.28,0.80280,-19.72,yes,3,3
+noenv,sdpa,llama-3.2-1b,,softmax,tiled,1,64,32,8,,23.92,28.98,0.82553,-17.45,yes,3,3
+noenv,sdpa,llama-3.2-1b,,av,tiled,1,64,32,8,,156.99,196.74,0.79793,-20.21,yes,3,3
+noenv,sdpa,llama-3.2-1b,,total,tiled,1,64,32,8,,1377.26,1716.00,0.80260,-19.74,yes,3,3

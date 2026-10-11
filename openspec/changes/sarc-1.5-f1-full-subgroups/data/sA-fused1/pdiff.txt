@@ -1,0 +1,113 @@
+[production-diff] llama-3.1-8b_prefill_wq_wo_linear_q4gsw_M2048_K4096_N4096_rank3batch1_Buffer (M=2048, K=4096, N=4096, group_size=128)
+  total mismatched: 1 / 8388608 (first at 4649303)
+[production-diff] llama-3.1-8b_prefill_wq_wo_linear_q4gsw_M2048_K4096_N4096_rank3batch1_Buffer threw: Correctness validation failed
+[production-diff] llama-3.1-8b_prefill_wk_wv_linear_q4gsw_M2048_K4096_N1024_rank3batch1_Buffer (M=2048, K=4096, N=1024, group_size=128)
+  total mismatched: 3 / 2097152 (first at 158379)
+[production-diff] llama-3.1-8b_prefill_wk_wv_linear_q4gsw_M2048_K4096_N1024_rank3batch1_Buffer threw: Correctness validation failed
+[production-diff] llama-3.1-8b_prefill_w1_w3_linear_q4gsw_M2048_K4096_N14336_rank3batch1_Buffer (M=2048, K=4096, N=14336, group_size=128)
+[production-diff] llama-3.1-8b_prefill_w1_w3_linear_q4gsw_M2048_K4096_N14336_rank3batch1_Buffer -> "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.1-8b_prefill_w2_linear_q4gsw_M2048_K14336_N4096_rank3batch1_Buffer (M=2048, K=14336, N=4096, group_size=128)
+  total mismatched: 247 / 8388608 (first at 45787)
+[production-diff] llama-3.1-8b_prefill_w2_linear_q4gsw_M2048_K14336_N4096_rank3batch1_Buffer threw: Correctness validation failed
+[production-diff] FAILED (llama-3.1-8b, 4 shapes, M=2048, linear_q4gsw, buffer)
+[production-diff] llama-3.1-8b_prefill_wq_wo_linear_q4gsw_M2048_K4096_N4096_rank3batch1_Texture3D (M=2048, K=4096, N=4096, group_size=128)
+[production-diff] llama-3.1-8b_prefill_wq_wo_linear_q4gsw_M2048_K4096_N4096_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.1-8b_prefill_wk_wv_linear_q4gsw_M2048_K4096_N1024_rank3batch1_Texture3D (M=2048, K=4096, N=1024, group_size=128)
+[production-diff] llama-3.1-8b_prefill_wk_wv_linear_q4gsw_M2048_K4096_N1024_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.1-8b_prefill_w1_w3_linear_q4gsw_M2048_K4096_N14336_rank3batch1_Texture3D (M=2048, K=4096, N=14336, group_size=128)
+[production-diff] llama-3.1-8b_prefill_w1_w3_linear_q4gsw_M2048_K4096_N14336_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.1-8b_prefill_w2_linear_q4gsw_M2048_K14336_N4096_rank3batch1_Texture3D (M=2048, K=14336, N=4096, group_size=128)
+[production-diff] llama-3.1-8b_prefill_w2_linear_q4gsw_M2048_K14336_N4096_rank3batch1_Texture3D -> "kernel_name": "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32c_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] ALL PASSED (llama-3.1-8b, 4 shapes, M=2048, linear_q4gsw, texture3d)
+[production-diff] llama-3.1-8b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K4096_N4096_rank3batch1_Buffer (M=2048, K=4096, N=4096, group_size=128)
+[production-diff] llama-3.1-8b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K4096_N4096_rank3batch1_Buffer -> "kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.1-8b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K4096_N1024_rank3batch1_Buffer (M=2048, K=4096, N=1024, group_size=128)
+[production-diff] llama-3.1-8b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K4096_N1024_rank3batch1_Buffer -> "kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.1-8b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K4096_N14336_rank3batch1_Buffer (M=2048, K=4096, N=14336, group_size=128)
+[production-diff] llama-3.1-8b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K4096_N14336_rank3batch1_Buffer -> "kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.1-8b_prefill_w2_linear_dq8ca_q4gsw_M2048_K14336_N4096_rank3batch1_Buffer (M=2048, K=14336, N=4096, group_size=128)
+[production-diff] llama-3.1-8b_prefill_w2_linear_dq8ca_q4gsw_M2048_K14336_N4096_rank3batch1_Buffer -> "kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] FAILED (llama-3.1-8b, 4 shapes, M=2048, linear_dq8ca_q4gsw, buffer)
+[production-diff] llama-3.1-8b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K4096_N4096_rank3batch1_Texture3D (M=2048, K=4096, N=4096, group_size=128)
+[production-diff] llama-3.1-8b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K4096_N4096_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.1-8b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K4096_N1024_rank3batch1_Texture3D (M=2048, K=4096, N=1024, group_size=128)
+[production-diff] llama-3.1-8b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K4096_N1024_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.1-8b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K4096_N14336_rank3batch1_Texture3D (M=2048, K=4096, N=14336, group_size=128)
+[production-diff] llama-3.1-8b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K4096_N14336_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.1-8b_prefill_w2_linear_dq8ca_q4gsw_M2048_K14336_N4096_rank3batch1_Texture3D (M=2048, K=14336, N=4096, group_size=128)
+[production-diff] llama-3.1-8b_prefill_w2_linear_dq8ca_q4gsw_M2048_K14336_N4096_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] ALL PASSED (llama-3.1-8b, 4 shapes, M=2048, linear_dq8ca_q4gsw, texture3d)
+[production-diff] llama-3.2-1b_prefill_wq_wo_linear_q4gsw_M2048_K2048_N2048_rank3batch1_Buffer (M=2048, K=2048, N=2048, group_size=128)
+[production-diff] llama-3.2-1b_prefill_wq_wo_linear_q4gsw_M2048_K2048_N2048_rank3batch1_Buffer -> "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.2-1b_prefill_wk_wv_linear_q4gsw_M2048_K2048_N512_rank3batch1_Buffer (M=2048, K=2048, N=512, group_size=128)
+[production-diff] llama-3.2-1b_prefill_wk_wv_linear_q4gsw_M2048_K2048_N512_rank3batch1_Buffer -> "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.2-1b_prefill_w1_w3_linear_q4gsw_M2048_K2048_N8192_rank3batch1_Buffer (M=2048, K=2048, N=8192, group_size=128)
+[production-diff] llama-3.2-1b_prefill_w1_w3_linear_q4gsw_M2048_K2048_N8192_rank3batch1_Buffer -> "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.2-1b_prefill_w2_linear_q4gsw_M2048_K8192_N2048_rank3batch1_Buffer (M=2048, K=8192, N=2048, group_size=128)
+  total mismatched: 41 / 4194304 (first at 7459)
+[production-diff] llama-3.2-1b_prefill_w2_linear_q4gsw_M2048_K8192_N2048_rank3batch1_Buffer threw: Correctness validation failed
+[production-diff] FAILED (llama-3.2-1b, 4 shapes, M=2048, linear_q4gsw, buffer)
+[production-diff] llama-3.2-1b_prefill_wq_wo_linear_q4gsw_M2048_K2048_N2048_rank3batch1_Texture3D (M=2048, K=2048, N=2048, group_size=128)
+[production-diff] llama-3.2-1b_prefill_wq_wo_linear_q4gsw_M2048_K2048_N2048_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.2-1b_prefill_wk_wv_linear_q4gsw_M2048_K2048_N512_rank3batch1_Texture3D (M=2048, K=2048, N=512, group_size=128)
+[production-diff] llama-3.2-1b_prefill_wk_wv_linear_q4gsw_M2048_K2048_N512_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.2-1b_prefill_w1_w3_linear_q4gsw_M2048_K2048_N8192_rank3batch1_Texture3D (M=2048, K=2048, N=8192, group_size=128)
+[production-diff] llama-3.2-1b_prefill_w1_w3_linear_q4gsw_M2048_K2048_N8192_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.2-1b_prefill_w2_linear_q4gsw_M2048_K8192_N2048_rank3batch1_Texture3D (M=2048, K=8192, N=2048, group_size=128)
+[production-diff] llama-3.2-1b_prefill_w2_linear_q4gsw_M2048_K8192_N2048_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] ALL PASSED (llama-3.2-1b, 4 shapes, M=2048, linear_q4gsw, texture3d)
+[production-diff] llama-3.2-1b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K2048_N2048_rank3batch1_Buffer (M=2048, K=2048, N=2048, group_size=128)
+[production-diff] llama-3.2-1b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K2048_N2048_rank3batch1_Buffer -> "kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.2-1b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K2048_N512_rank3batch1_Buffer (M=2048, K=2048, N=512, group_size=128)
+[production-diff] llama-3.2-1b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K2048_N512_rank3batch1_Buffer -> "kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.2-1b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K2048_N8192_rank3batch1_Buffer (M=2048, K=2048, N=8192, group_size=128)
+[production-diff] llama-3.2-1b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K2048_N8192_rank3batch1_Buffer -> "kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.2-1b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N2048_rank3batch1_Buffer (M=2048, K=8192, N=2048, group_size=128)
+[production-diff] llama-3.2-1b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N2048_rank3batch1_Buffer -> "kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] FAILED (llama-3.2-1b, 4 shapes, M=2048, linear_dq8ca_q4gsw, buffer)
+[production-diff] llama-3.2-1b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K2048_N2048_rank3batch1_Texture3D (M=2048, K=2048, N=2048, group_size=128)
+[production-diff] llama-3.2-1b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K2048_N2048_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.2-1b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K2048_N512_rank3batch1_Texture3D (M=2048, K=2048, N=512, group_size=128)
+[production-diff] llama-3.2-1b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K2048_N512_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.2-1b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K2048_N8192_rank3batch1_Texture3D (M=2048, K=2048, N=8192, group_size=128)
+[production-diff] llama-3.2-1b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K2048_N8192_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.2-1b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N2048_rank3batch1_Texture3D (M=2048, K=8192, N=2048, group_size=128)
+[production-diff] llama-3.2-1b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N2048_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] ALL PASSED (llama-3.2-1b, 4 shapes, M=2048, linear_dq8ca_q4gsw, texture3d)
+[production-diff] llama-3.2-3b_prefill_wq_wo_linear_q4gsw_M2048_K3072_N3072_rank3batch1_Buffer (M=2048, K=3072, N=3072, group_size=128)
+[production-diff] llama-3.2-3b_prefill_wq_wo_linear_q4gsw_M2048_K3072_N3072_rank3batch1_Buffer -> "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.2-3b_prefill_wk_wv_linear_q4gsw_M2048_K3072_N1024_rank3batch1_Buffer (M=2048, K=3072, N=1024, group_size=128)
+[production-diff] llama-3.2-3b_prefill_wk_wv_linear_q4gsw_M2048_K3072_N1024_rank3batch1_Buffer -> "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.2-3b_prefill_w1_w3_linear_q4gsw_M2048_K3072_N8192_rank3batch1_Buffer (M=2048, K=3072, N=8192, group_size=128)
+[production-diff] llama-3.2-3b_prefill_w1_w3_linear_q4gsw_M2048_K3072_N8192_rank3batch1_Buffer -> "kernel_name": "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.2-3b_prefill_w2_linear_q4gsw_M2048_K8192_N3072_rank3batch1_Buffer (M=2048, K=8192, N=3072, group_size=128)
+  total mismatched: 39 / 6291456 (first at 107314)
+[production-diff] llama-3.2-3b_prefill_w2_linear_q4gsw_M2048_K8192_N3072_rank3batch1_Buffer threw: Correctness validation failed
+[production-diff] FAILED (llama-3.2-3b, 4 shapes, M=2048, linear_q4gsw, buffer)
+[production-diff] llama-3.2-3b_prefill_wq_wo_linear_q4gsw_M2048_K3072_N3072_rank3batch1_Texture3D (M=2048, K=3072, N=3072, group_size=128)
+[production-diff] llama-3.2-3b_prefill_wq_wo_linear_q4gsw_M2048_K3072_N3072_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.2-3b_prefill_wk_wv_linear_q4gsw_M2048_K3072_N1024_rank3batch1_Texture3D (M=2048, K=3072, N=1024, group_size=128)
+[production-diff] llama-3.2-3b_prefill_wk_wv_linear_q4gsw_M2048_K3072_N1024_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.2-3b_prefill_w1_w3_linear_q4gsw_M2048_K3072_N8192_rank3batch1_Texture3D (M=2048, K=3072, N=8192, group_size=128)
+[production-diff] llama-3.2-3b_prefill_w1_w3_linear_q4gsw_M2048_K3072_N8192_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.2-3b_prefill_w2_linear_q4gsw_M2048_K8192_N3072_rank3batch1_Texture3D (M=2048, K=8192, N=3072, group_size=128)
+[production-diff] llama-3.2-3b_prefill_w2_linear_q4gsw_M2048_K8192_N3072_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] ALL PASSED (llama-3.2-3b, 4 shapes, M=2048, linear_q4gsw, texture3d)
+[production-diff] llama-3.2-3b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K3072_N3072_rank3batch1_Buffer (M=2048, K=3072, N=3072, group_size=128)
+[production-diff] llama-3.2-3b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K3072_N3072_rank3batch1_Buffer -> "kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.2-3b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K3072_N1024_rank3batch1_Buffer (M=2048, K=3072, N=1024, group_size=128)
+[production-diff] llama-3.2-3b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K3072_N1024_rank3batch1_Buffer -> "kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.2-3b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K3072_N8192_rank3batch1_Buffer (M=2048, K=3072, N=8192, group_size=128)
+[production-diff] llama-3.2-3b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K3072_N8192_rank3batch1_Buffer -> "kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] llama-3.2-3b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N3072_rank3batch1_Buffer (M=2048, K=8192, N=3072, group_size=128)
+[production-diff] llama-3.2-3b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N3072_rank3batch1_Buffer -> "kernel_name": "linear_dq8ca_q4gsw_tiled_buffer_texture2d_half_zpint8", "operator_id": 0 (NOT coopmat -- fallback, cannot validate the shader under test), correctness=PASSED
+[production-diff] FAILED (llama-3.2-3b, 4 shapes, M=2048, linear_dq8ca_q4gsw, buffer)
+[production-diff] llama-3.2-3b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K3072_N3072_rank3batch1_Texture3D (M=2048, K=3072, N=3072, group_size=128)
+[production-diff] llama-3.2-3b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K3072_N3072_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.2-3b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K3072_N1024_rank3batch1_Texture3D (M=2048, K=3072, N=1024, group_size=128)
+[production-diff] llama-3.2-3b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K3072_N1024_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.2-3b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K3072_N8192_rank3batch1_Texture3D (M=2048, K=3072, N=8192, group_size=128)
+[production-diff] llama-3.2-3b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K3072_N8192_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] llama-3.2-3b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N3072_rank3batch1_Texture3D (M=2048, K=8192, N=3072, group_size=128)
+[production-diff] llama-3.2-3b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N3072_rank3batch1_Texture3D -> "kernel_name": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half", "operator_id": 0 (coopmat dispatched), correctness=PASSED
+[production-diff] ALL PASSED (llama-3.2-3b, 4 shapes, M=2048, linear_dq8ca_q4gsw, texture3d)
