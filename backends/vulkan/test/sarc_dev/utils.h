@@ -900,6 +900,15 @@ int64_t default_flop_calculator(const TestCase& test_case);
 
 using ReferenceComputeFunc = std::function<void(TestCase&)>;
 
+// prof-1/b580 (profiling task, harness only). With ET_VK_MB_ONE_DISPATCH_PER_SUBMIT=1
+// in the environment, execute_graph() encodes every execute node of the graph into
+// its own command buffer, submits it and waits for its fence before the next one, so
+// that a counter recorder sees one dispatch per submit. Graph, shaders, chained
+// factor and the number of executes are unchanged. Without the variable it is
+// exactly graph.execute().
+bool one_dispatch_per_submit();
+void execute_graph(vkcompute::ComputeGraph& graph);
+
 // Runs a measurement at the given chained_dispatches factor (how many times
 // the op is stacked inside one graph.execute()). This is a primitive; the
 // probe-then-scale orchestration lives in execute_test_cases().

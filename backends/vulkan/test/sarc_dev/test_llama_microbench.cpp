@@ -1335,7 +1335,7 @@ SdpaRunResult sdpa_run_case(
   // the cache's shape (context_len), not its contents.
 
   for (int i = 0; i < kWarmupRuns; ++i) {
-    graph.execute();
+    execute_graph(graph);
   }
 
   std::vector<float> total_timings_us;
@@ -1344,7 +1344,7 @@ SdpaRunResult sdpa_run_case(
   std::vector<float> softmax_timings_us;
   std::vector<std::string> last_dispatched;
   for (int i = 0; i < kTimedRuns; ++i) {
-    graph.execute();
+    execute_graph(graph);
     graph.context()->querypool().extract_results();
     const auto shader_results =
         graph.context()->querypool().get_shader_timestamp_data();

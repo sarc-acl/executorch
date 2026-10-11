@@ -1538,6 +1538,46 @@ ComputeGraph setup_compute_graph(
   return graph;
 }
 
+// prof-1/b580 (profiling task, harness only): see utils.h.
+bool one_dispatch_per_submit() {
+  static const bool enabled = [] {
+    const char* e = std::getenv("ET_VK_MB_ONE_DISPATCH_PER_SUBMIT");
+    const bool on = e != nullptr && e[0] != '\0' && e[0] != '0';
+    if (on) {
+      std::cout << "[harness] ET_VK_MB_ONE_DISPATCH_PER_SUBMIT: one execute node "
+                   "per command buffer, submit and wait per node"
+                << std::endl;
+    }
+    return on;
+  }();
+  return enabled;
+}
+
+void execute_graph(ComputeGraph& graph) {
+  if (!one_dispatch_per_submit()) {
+    graph.execute();
+    return;
+  }
+  api::Context* const context = graph.context();
+  // As the first-encode path of ComputeGraph::execute(): drain the queue and
+  // recycle command buffers and descriptor sets, then reset the query pool in
+  // the first command buffer.
+  context->flush();
+  bool first = true;
+  for (std::unique_ptr<ExecuteNode>& node : graph.execute_nodes()) {
+    context->set_cmd();
+    if (first) {
+      context->cmd_reset_querypool();
+      first = false;
+    }
+    node->encode(&graph);
+    vkapi::VulkanFence fence = context->fences().get_fence();
+    context->submit_cmd_to_gpu(fence.get_submit_handle(), /*final_use=*/true);
+    fence.wait();
+    context->fences().return_fence(fence);
+  }
+}
+
 // Test execution utilities
 BenchmarkResult execute_test_case(
     TestCase& test_case,
@@ -1611,7 +1651,7 @@ BenchmarkResult execute_test_case(
 
   // Warmup runs
   for (int run = 0; run < warmup_runs; ++run) {
-    graph.execute();
+    execute_graph(graph);
   }
 
   // Benchmark runs - collect individual iteration timings
@@ -1623,7 +1663,7 @@ BenchmarkResult execute_test_case(
   for (int run = 0; run < benchmark_runs; ++run) {
     // Measure CPU time for each execute() call
     auto cpu_start = std::chrono::high_resolution_clock::now();
-    graph.execute();
+    execute_graph(graph);
     auto cpu_end = std::chrono::high_resolution_clock::now();
 
     auto cpu_duration = std::chrono::duration_cast<std::chrono::microseconds>(

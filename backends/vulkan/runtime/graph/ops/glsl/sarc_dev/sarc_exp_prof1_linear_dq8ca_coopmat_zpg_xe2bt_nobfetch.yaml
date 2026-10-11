@@ -1,0 +1,36 @@
+# EXPERIMENT prof-1/b580: timing-only ablation (no in-loop weight texel fetch), INCORRECT BY CONSTRUCTION. Not shipped,
+# never selected by default. Parameters are those of the incumbent sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_t128x128k64g84s16m8.
+
+sarc_exp_prof1_linear_dq8ca_coopmat_zpg_xe2bt_nobfetch:
+  parameter_names_with_default_values:
+    PRECISION: highp
+    HAS_BIAS: false
+    IO_STORAGE: buffer
+    WEIGHT_NBITS: 4
+    WEIGHT_STORAGE: texture2d
+    A_MAP_FULL: false
+    A_MULTI_BLOCK: false
+    A_BLOCKS: 1
+    MMA_M: 16
+    MMA_N: 16
+    MMA_K: 16
+    WG_TILE_M: 128
+    WG_TILE_N: 64
+    WG_TILE_K: 32
+    SG_GRID_X: 4
+    SG_GRID_Y: 2
+    SUBGROUP_SIZE: 32
+  shader_variants:
+    - NAME: sarc_exp_prof1_linear_dq8ca_coopmat_zpg_xe2bt_nobfetch_t128x128k64g84s16m8_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 64
+      SG_GRID_X: 8
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      MMA_K: 32
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 1
