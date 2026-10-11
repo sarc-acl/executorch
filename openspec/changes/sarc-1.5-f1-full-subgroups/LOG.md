@@ -100,3 +100,9 @@ No `sudo`, no installation, no clock / power-mode / governor change, no service 
 contacted. Nothing written to the campaign's working copy or artifacts (read and copied; on the device two
 control sessions copied from `~/hmz-sarc-orin-fused/stage/` to `~/hmz-f1-orin/stage/`). One 10-second trial of
 the decode filter wrote two small files to the device's `/dev/shm` and removed them. Not pushed.
+
+### Owner decision 2026-10-10 16:25 UTC (`nvtop` is not a foreign GPU process)
+
+Read at the end of the task file after the chain had run. The guard of the tools copy (`others()`) has no
+`nvtop` in its pattern (0 occurrences in the copy), so the decision needed no change and no run was affected.
+Recorded in `RESULT.md` section 9.

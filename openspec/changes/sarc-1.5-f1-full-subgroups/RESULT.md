@@ -186,3 +186,10 @@ the linear suites; the SDPA suite is outside the band on decode-size stock-kerne
   02252, 08740 / 08742) are neither confirmed nor excluded for this driver.
 - The old build was not run with a flag print; its flags are read from the source.
 - Stock ExecuTorch was not re-measured (task). Nothing was tuned; no tile, shader or table changed.
+
+## 9. Owner decision of 2026-10-10 (16:25 UTC): `nvtop` is not a foreign GPU process
+
+Applied as written, with nothing to change: the foreign-process guard of this task's copy of the tools
+(`common.sh` `others()`) matches known GPU programs by name and has never contained `nvtop`, so a running
+`nvtop` could not invalidate a run here. No run of this task was rejected for it or for any other foreign
+process (120 of 120 timed runs valid); every other validity rule is as in the campaign.
