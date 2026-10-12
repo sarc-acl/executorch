@@ -77,7 +77,7 @@ Flash attention off is 16 to 41 % slower than on at the same `-ub`. `-ub 1024` w
 four rows; in the fourth (3B Q4_0) `-ub 2048` is 0.15 % higher, inside the spread of the repetitions, so one `best` is used for
 both quantizations and all models: `-b 2048 -ub 1024 -fa on` (the same string as the Vulkan `best` of this card), 1.5 to 6.9 %
 above the default of the same row (1B Q4_0 3.5 %, 3B Q4_0 6.9 %, 1B Q4_K_M 1.5 %, 3B Q4_K_M 6.0 %). The kit's list was tried in full;
-no other llama.cpp option was screened. The `lc` default runs of the screen (three per row) are all `clock_low` and are listed in `screen-runs.csv`.
+no other llama.cpp option was screened. The `lc` default runs of the screen (five per row: three planned plus two replacements, after one discarded repetition 0; the first version of this file said three, corrected 2026-10-12) are all `clock_low` and are listed in `screen-runs.csv`.
 
 ## Baseline before the HIP work
 

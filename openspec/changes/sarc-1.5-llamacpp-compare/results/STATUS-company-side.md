@@ -1,6 +1,6 @@
 # Status of the llama.cpp comparison on the company side's devices (COMPANY-SIDE.md section 10)
 
-Updated 2026-10-12 20:30 UTC (10.2, HIP, added). Nothing is pushed. 10.1 and 10.3 are as published (`94a6de3e5`).
+Updated 2026-10-12 20:13 UTC (10.2, HIP, added). Nothing is pushed. 10.1 and 10.3 are as published (`94a6de3e5`).
 
 | device | 10.1 state | where |
 |---|---|---|
