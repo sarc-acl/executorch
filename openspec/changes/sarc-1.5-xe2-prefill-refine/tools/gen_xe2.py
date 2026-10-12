@@ -756,6 +756,12 @@ ORDER_PROFILES = [
     ("b70-fused1-order", REFINE["xe2-refine5"][:2], "b70", REFINE["xe2-refine5"][3:]),
 ]
 assert REFINE["xe2-refine5"][2] == ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", "nullptr")
+# order-2/b70 (owner decision 2026-10-12 18:20 UTC): mixed profiles = part `i` on every 8da4w shape and a blocked
+# part where the weight tensor (K x N 4-bit weights) is at least <MiB> x 2^20 bytes. (name suffix, blocked
+# nb_max, MiB); generated for the "b70" entries of ORDER_PROFILES when both parts are in ORDER.
+# B70: n26 is faster than `i` beyond the noise band on the two 29.4 MB shapes of Llama 3.1 8B and slower or equal
+# on every shape of 12.6 MB or less except 1B w1 / w3 (exp/order-2/b70 in the roofline box, A2).
+ORDER_MIXED = [("i-n26-w16m", 26, 16)]
 ORDER_NAMES = [f"sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_{tok(m, n, k, sx, sy, order_sfx(x))}" for m, n, k, sx, sy in ORDER_TILES for x in ORDER]
 if "golden" in OPTS:
     gp = pathlib.Path(__file__).resolve().parent.parent / "golden/order-spirv.json"
@@ -1075,7 +1081,19 @@ if ORDER:
                 op += f"const Preference {ident}[] = {{\n" + "".join(f'    {{Op::{o_}, "{t_}", {pr}}},\n' for o_, t_, pr in before + [("kDq8caLinear", "xe2bto_" + tok(m, n, k, sx, sy, order_sfx(x)), "nullptr")] + after) + "};\n"
                 ol += f'    {{"{prefix}-{order_sfx(x)}", {ident}, sizeof({ident}) / sizeof(Preference)}},\n'
         if fz is True: fused.append(prefix)
-        if fz == "b70": fused_b70.append(prefix)
+        if fz == "b70":
+            fused_b70.append(prefix)
+            for sfx, nb, mib in ORDER_MIXED:
+                if "i" not in ORDER or nb not in ORDER: continue
+                pred = f"xe2_order_weights_{mib}m"
+                if pred + "(" not in op:
+                    op += f"// 8da4w linear: a weight tensor (K x N 4-bit weights) of at least {mib} MiB.\nbool {pred}(const ShapeInfo& s) {{\n  return s.K * s.N >= 2 * (int64_t({mib}) << 20);\n}}\n"
+                for m, n, k, sx, sy in ORDER_TILES:
+                    ident = "k" + prefix.title().replace("-", "") + "_" + sfx.replace("-", "_")
+                    op += f"const Preference {ident}[] = {{\n" + "".join(f'    {{Op::{o_}, "{t_}", {pr}}},\n' for o_, t_, pr in before + [
+                        ("kDq8caLinear", "xe2bto_" + tok(m, n, k, sx, sy, order_sfx(nb)), pred),
+                        ("kDq8caLinear", "xe2bto_" + tok(m, n, k, sx, sy, order_sfx("i")), "nullptr")] + after) + "};\n"
+                    ol += f'    {{"{prefix}-{sfx}", {ident}, sizeof({ident}) / sizeof(Preference)}},\n'
     t = block(t, "// xe2-order begin: workgroup-order profiles (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)\n", "// xe2-order end\n", op, "struct Profile {\n")
     t = block(t, "    // xe2-order begin: workgroup-order profiles (tools/gen_xe2.py)\n", "    // xe2-order end\n", ol, "};\nconst Profile* requested_profile() {")
     if fused: t = block(t, "  // xe2-order begin: the workgroup-order twins of b580-fused1 keep its fused attention pair (tools/gen_xe2.py)\n", "  // xe2-order end\n",

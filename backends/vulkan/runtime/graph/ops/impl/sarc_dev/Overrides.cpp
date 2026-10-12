@@ -814,6 +814,18 @@ const Preference kB70Fused1Order_n26[] = {
     {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
     {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
 };
+// 8da4w linear: a weight tensor (K x N 4-bit weights) of at least 16 MiB.
+bool xe2_order_weights_16m(const ShapeInfo& s) {
+  return s.K * s.N >= 2 * (int64_t(16) << 20);
+}
+const Preference kB70Fused1Order_i_n26_w16m[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n26", xe2_order_weights_16m},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
 // xe2-order end
 struct Profile {
   const char* name;
@@ -938,6 +950,7 @@ const Profile kProfiles[] = {
     {"b70-fused1-order-n16", kB70Fused1Order_n16, sizeof(kB70Fused1Order_n16) / sizeof(Preference)},
     {"b70-fused1-order-n21", kB70Fused1Order_n21, sizeof(kB70Fused1Order_n21) / sizeof(Preference)},
     {"b70-fused1-order-n26", kB70Fused1Order_n26, sizeof(kB70Fused1Order_n26) / sizeof(Preference)},
+    {"b70-fused1-order-i-n26-w16m", kB70Fused1Order_i_n26_w16m, sizeof(kB70Fused1Order_i_n26_w16m) / sizeof(Preference)},
     // xe2-order end
 };
 const Profile* requested_profile() {
