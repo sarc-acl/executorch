@@ -1,7 +1,7 @@
 # order-2 / b580: the blocked workgroup order as a production candidate (8da4w) and on 4w
 
-Arc B580 (BMG G21), `xe`, kernel 7.2.9-200.fc44, Mesa ANV 26.2.4; 2026-10-12 16:31 to 20:12 UTC (measurements 16:52
-to 20:09). ExecuTorch `exp/order2-b580` `953307426`; candidate branch `exp/order2-b580-candidate` `b3af4a985` on the
+Arc B580 (BMG G21), `xe`, kernel 7.2.9-200.fc44, Mesa ANV 26.2.4; 2026-10-12 16:31 to 21:19 UTC (measurements 16:52
+to 20:09; SDPA tiers 20:49 to 21:17). ExecuTorch `exp/order2-b580` `953307426`; candidate branch `exp/order2-b580-candidate` `b3af4a985` on the
 campaign's final head `a434a4962`. Not a campaign result. Record with every pre-registration: `LOG.md`; tables:
 `tables/`. VERIFIED = in the file named; INFERRED = a reading. Kernels: `inc` = the incumbent
 `..._zpg_xe2bt_t128x128k64g84s16m8`; `i` = the remap prologue alone (`ident`); `n<w>` = prologue + block rule,
@@ -47,7 +47,11 @@ kernel the candidate dispatches for that shape (VERIFIED per shape: `tables/c3-*
   lines: unmodified `verify.sh` rc 0 (correctness "rc=1 ... 28 of 28 and 4 of 4 rank-3 cases PASSED, equal to the
   parent control", the device's known status), production-diff 12 of 12 for 1B, 3B, 8B, default against tiled
   SAME, decode ok, same status as the parent control, 7 valid runs per arm and cell, next token SAME in 18 of 18,
-  traces 12 of 12. Without `--sdpa` (no attention kernel changes): the SDPA tiers were not run on the candidate.
+  traces 12 of 12. Without `--sdpa` (no attention kernel changes): so the SDPA tiers were first not run on the
+  candidate; the review counted that as a failed check. **Run afterwards by owner decision, once, on the same
+  binaries with the candidate profile (20:49 to 21:17): tiers all / extended / full, 12 passes each, 36 of 36 rc 0,
+  192 cases with 0 mismatches, `pairing=ok`, finite error; `gate_check.py --sdpa`: 37 PASS lines, GATE_PASS**
+  (VERIFIED `tables/model/g2/gate-sdpa.txt`, `sdpa-rc.csv`).
 - **Model level** (VERIFIED `tables/summary/a5.md`; campaign session script, 7 valid runs per arm and cell,
   interleaved, all runs valid; F = final configuration, I = with `i`, P = the candidate; tok/s, spread in %):
 
@@ -76,9 +80,9 @@ INFERRED); the 12.6 MB pair 3.9 and 7.7 times; everything smaller is cached.
 | 8B shape | best width | time / `ident` | time / `inc` | band % | verdict |
 |---|---|---|---|---:|---|
 | w1_w3 K4096 x N14336 | `n27` | 0.9235..0.9245 | 0.9534..0.9542 | 0.24 | **GAIN** (7.6 %) |
-| w2 K14336 x N4096 | `n13` | 0.9696..0.9710 | 0.9942..0.9970 | 0.34 | **PARTLY** (2.9 to 3.04 %; below 3 % in two of three sittings) |
+| w2 K14336 x N4096 | `n13` | 0.9696..0.9710 | 0.9942..0.9970 | 0.34 | **PARTLY** (2.9 to 3.04 %; below 3 % in two of three sittings; against the incumbent one sitting is inside the band) |
 
-- VERIFIED `tables/summary/b2.md`: `ident` is **3.0 to 3.3 % slower than the incumbent** on all four shapes (its
+- VERIFIED `tables/summary/b2.md`: `ident` is **3.0 to 3.3 % slower than the incumbent** on three shapes and 2.4 to 2.8 % on w2 (its
   loop has four `mov` and four `sync` more, Mesa's estimate + 3.4 %: `tables/static/dump-compare-4w.txt`), so on
   wq_wo and wk_wv every variant is 3 to 4.5 % slower than the incumbent. One 8B layer: `n27` 0.953 of `ident`,
   0.982 of the incumbent; widths 13, 20, 27 within 0.3 point on w1_w3, 40 worse.
@@ -94,7 +98,7 @@ INFERRED); the 12.6 MB pair 3.9 and 7.7 times; everything smaller is cached.
   No dump of `i` / `n13` was taken, so the cost is not located.
 - Whether 12 MB and nb_max 13 are the best split: only 10, 13, 16 were run; the threshold was set from this
   table, not swept. On 8B w2 two blocks of 16 lose here (1.033) and win on the B70.
-- The profile at kernel level as one run; the SDPA tiers on the candidate; `check.sh` zone step (no ref here).
+- The profile at kernel level as one run; the gate's SDPA performance suite; `check.sh` zone step (no ref here).
 - 4w: counters of the variants (whether the bytes fell); why the hit counter stays at 76 to 80 %; a 4w prologue
   that does not slow the loop; the model-level effect.
 - The cause of the 1.8 % of `i`; whether it survives another compiler version (order-1: 3 % with another prologue).
@@ -102,4 +106,4 @@ INFERRED); the 12.6 MB pair 3.9 and 7.7 times; everything smaller is cached.
 
 Rules: `dev.xe.observation_paranoid` 0 throughout; no `xe` / `drm` kernel line; no foreign GPU workload in any
 pass; one measuring process at a time under gpu-lab's locks; no `sudo`, no setting changed; nothing pushed.
-Three owner questions, each written once, all answered (`LOG.md`, State).
+Four owner questions, each written once, all answered (`LOG.md`, State).

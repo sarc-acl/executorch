@@ -29,8 +29,9 @@ Merged by the owner's decision of 2026-10-12. Final configuration from this comm
   the loop): part `i` keeps the order, part `n13` runs all M tiles of a block of at most 13 N tiles before the
   next block. The profile selects `n13` where the weight tensor is 12 MB or more and `i` elsewhere, because the
   block computation itself costs 1 to 5.5 % on shapes that are cached anyway.
-- **Gate** `g2` (the campaign's `gate.sh`, without the SDPA tiers: no attention kernel changed): `GATE_PASS`
-  (`results/b580/order2/gate-g2.txt`).
+- **Gate** `g2` (the campaign's `gate.sh`): `GATE_PASS` (`results/b580/order2/gate-g2.txt`). The SDPA tiers were
+  run afterwards on the same binaries with the profile (all, extended, full, 12 passes each): 36 of 36 rc 0, 192
+  cases with 0 mismatches; `gate_check.py --sdpa`: `GATE_PASS` (`results/b580/order2/gate-g2-sdpa.txt`).
 - **Model level** (gate session `g2`, 7 valid runs per arm and cell, profile against `b580-fused1`,
   `results/b580/order2/a5.md`): 8da4w prefill 1B +0.89 %, 3B **+3.10 %**, 8B **+4.83 %**; 4w cells +0.00 / +0.00 /
   -0.12 % (same kernels); six-cell geomean **+1.43 %**; decode unchanged (0.997 to 1.003). By the +- 2 % band the
@@ -40,7 +41,7 @@ Merged by the owner's decision of 2026-10-12. Final configuration from this comm
 - **Build**: every one of the 1576 pre-existing SPIR-V files is byte-identical; the candidates' hashes are in
   `openspec/changes/sarc-1.5-xe2-prefill-refine/golden/order-spirv.json`, checked by the generator
   (`sarc/golden/spirv.json` and its checker are untouched).
-- **Not done**: the SDPA tiers on this build; a sweep of the 12 MB threshold and of the block width (10, 13 and
+- **Not done**: a sweep of the 12 MB threshold and of the block width (10, 13 and
   16 were run); a block computation cheap enough for one kernel on every shape. The same change on the 4w
   kernel was measured at kernel level and is not adopted (the prologue slows that kernel's loop by 3.0 to 3.3 %;
   `results/b580/order2/b2.md`). Full record: `results/b580/order2/RESULTS.md`.
