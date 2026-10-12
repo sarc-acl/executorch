@@ -1,7 +1,15 @@
 #!/usr/bin/env python3
 """Xe2 (Arc B580 / Arc Pro B70) dev-zone content of sarc-1.5-xe2-prefill-refine, generated.
 
-usage: gen_xe2.py <executorch tree>
+usage: gen_xe2.py <executorch tree> [--order=<parts>]
+       gen_xe2.py <executorch tree> --golden=<vulkan_compute_shaders dir> [--update --owner=<device>]
+
+--order selects the optional workgroup-order parts of the 8da4w xe2bt kernel (family ..._zpg_xe2bto, see
+"workgroup order" below): a comma list of i (the remap prologue alone, the incumbent's order) and block widths
+nb_max (the prologue with the block rule). Default: ORDER below. With an empty list (--order=) nothing of the
+family is written and the output is byte-identical to the generator without it.
+--golden compares (or, with --update, rewrites) the SHA-256 of the family's SPIR-V files in golden/order-spirv.json
+beside this change (same format as sarc/golden/spirv.json, which lists shipped kernels only); it writes nothing else.
 
 Writes, and rewrites idempotently:
   - the xe2 blocks appended to the shared dev-zone sweep yamls (SDPA QK^T sweep / pk, attn*V sweep / ml):
@@ -20,8 +28,10 @@ Static pruning: a variant is emitted only if its shared memory fits the device l
 B580 was not queried here) with margin, its workgroup has at most 1024 invocations, the subgroup tile is a whole number of 8x16 MMA tiles
 and (single-pass attn*V) WG_SIZE == 4 * WG_TILE_M == WG_TILE_K * WG_TILE_N / 8.
 """
-import pathlib, re, sys
+import hashlib, json, pathlib, re, sys
 root = pathlib.Path(sys.argv[1]) / "backends/vulkan"
+OPTS = dict(a[2:].split("=", 1) if "=" in a else (a[2:], "") for a in sys.argv[2:])
+assert all(a.startswith("--") for a in sys.argv[2:]) and set(OPTS) <= {"order", "golden", "update", "owner"}, sys.argv[2:]
 g = root / "runtime/graph/ops/glsl/sarc_dev"
 impl = root / "runtime/graph/ops/impl/sarc_dev"
 LDS_MAX = 46000      # bytes; maxComputeSharedMemorySize is 49152 on BMG G31 (B70)
@@ -670,6 +680,100 @@ for m, n, k, sx, sy in XB:
                f"      SUBGROUP_SIZE: {SG}\n      MMA_M: {MMA_M}\n      MMA_K: 32\n      A_MAP_FULL: {'true' if full else 'false'}\n      A_MULTI_BLOCK: true\n      A_BLOCKS: {ab}\n")
 (g / "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt.yaml").write_text(xy)
 
+# ---- 8da4w, workgroup order (order-2, 2026-10-12; family sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto): the xe2bt
+# kernel with a remap of gl_WorkGroupID at the top of main(), in two optional parts. The dispatch grid is
+# (N tiles, M tiles) and the hardware launches workgroups x-fastest, so in xe2bt a weight strip (one N tile) is
+# read again, by the next M tile, only after every other strip of the tensor; tensors that do not fit the L3
+# are then fetched from memory once per M tile (order-1, both cards).
+#   part 1, token suffix "i": the prologue alone. The tile is decoded from the launch index
+#     lin = y * NX + x in the incumbent's order. (order-1: its presence alone moved the kernel by about 3 %.)
+#   part 2, token suffix "n<nb_max>": the prologue with the block rule. The N tiles are cut into
+#     blocks = ceil(NX / nb_max) blocks of nb = ceil(NX / blocks) tiles (the last may be narrower), and all M
+#     tiles of a block run before the next block; inside a block the order is still N-fastest. NX <= nb_max is
+#     one block = the incumbent's order. nb_max is a per-variant constant (proposal of order-1: a third of the
+#     workgroups in flight, 13 on the B580, 21 on the B70).
+# The remap is a bijection of the tiles for every grid and every nb_max, uses gl_NumWorkGroups only (no K, no
+# specialization constant, no dispatcher change) and adds nothing inside the loop.
+ORDER_TILES = [(128, 128, 64, 8, 4)]            # the tiles that get the parts: the 8da4w tile both cards run
+ORDER = ["i", 13]                            # parts generated: "i" and nb_max values. Candidate of order-2 / b580: i and n13 (see ORDER_MIX)
+if "order" in OPTS: ORDER = [x if x == "i" else int(x) for x in OPTS["order"].split(",") if x]
+assert all(x == "i" or (isinstance(x, int) and x >= 1) for x in ORDER), ORDER
+# Per-shape profiles "<prefix>-p<nb_max>": the blocked kernel n<nb_max> for the shapes whose weight tensor
+# (K x N x 4 bit) has at least <MB> x 10^6 bytes, the prologue alone (i) for every other shape. (order-2 / b580,
+# A2: the block computation costs 1 to 5.5 % on cached and one-block shapes; n13 gains 1.6 to 9 % on the 12.6 MB
+# and 29.4 MB tensors.) Generated only if both parts are in ORDER. (nb_max, MB)
+ORDER_MIX = [(13, 12)]
+ORDER_MIX = [(nb, mb) for nb, mb in ORDER_MIX if "i" in ORDER and nb in ORDER]
+def order_sfx(x): return "i" if x == "i" else f"n{x}"
+# (profile prefix, preferences before the 8da4w kernel, fused attention pair of b580-fused1)
+ORDER_PROFILES = [
+    ("xe2-order", [], False),                    # the kernel alone on the Xe2 base rows (as xe2-dq-k64)
+    ("b580-fused1-order", [("kSdpaQk", "xe2c_t128x64k32g44s16m8nf", "b580_qk_head_dim_128"), ("kSdpaQk", "pk_t128x64k32g44s16m8nf", "nullptr"),
+                           ("kSdpaAv", "xe2_t128x64k32g44s16m8", "b580_head_dim_128")], True),   # b580-fused1 (= b580-refine3 + fused pair)
+]
+ORDER_NAMES = [f"sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_{tok(m, n, k, sx, sy, order_sfx(x))}" for m, n, k, sx, sy in ORDER_TILES for x in ORDER]
+if "golden" in OPTS:
+    gp = pathlib.Path(__file__).resolve().parent.parent / "golden/order-spirv.json"
+    gold = json.loads(gp.read_text()) if gp.exists() else {"variants": {}}
+    names = [f"{kb}_{io}_texture2d_half" for kb in ORDER_NAMES for io in ("texture3d", "buffer")]; bad = 0
+    for nm in names:
+        f = pathlib.Path(OPTS["golden"]) / f"{nm}.spv"
+        if not f.exists(): print(f"MISSING spv {nm}"); bad += 1; continue
+        h = hashlib.sha256(f.read_bytes()).hexdigest(); e = gold["variants"].get(nm)
+        if "update" in OPTS: gold["variants"][nm] = {"sha256": h, "owner": (e or {}).get("owner") or OPTS.get("owner", "")}
+        elif e is None: print(f"NEW   {nm} (no golden entry)"); bad += 1
+        elif e["sha256"] != h: print(f"DIFF  {nm} (owner {e['owner']})"); bad += 1
+    for nm in list(gold["variants"]):
+        if nm not in names:
+            if "update" in OPTS: del gold["variants"][nm]
+            else: print(f"GONE  {nm} (in golden, not generated)"); bad += 1
+    if "update" in OPTS:
+        gp.parent.mkdir(exist_ok=True); gp.write_text(json.dumps({"variants": dict(sorted(gold["variants"].items()))}, indent=2) + "\n")
+        print(f"order golden: {len(names)} variants written to {gp}")
+    else: print(f"order golden: {'PASS' if bad == 0 else 'FAIL'} ({len(names)} variants)")
+    sys.exit(1 if bad else 0)
+order_rows = ""
+if ORDER:
+    ob = xb.replace("SARC_DEV_LINEAR_DQ8CA_COOPMAT_ZPG_XE2BT_BODY_GLSLH", "SARC_DEV_LINEAR_DQ8CA_COOPMAT_ZPG_XE2BTO_BODY_GLSLH")
+    ob = sub(ob, "  const uvec2 tileID = uvec2(gl_WorkGroupID.xy);\n", """  // xe2bto (generated by sarc-1.5-xe2-prefill-refine/tools/gen_xe2.py from the xe2bt body): the tile this
+  // workgroup computes is a remap of its launch index (the grid is (N tiles, M tiles), launched x-fastest).
+  // ORDER_NB_MAX == 0: the incumbent's order through the prologue. ORDER_NB_MAX > 0: blocks of at most
+  // ORDER_NB_MAX N tiles, evened out; all M tiles of a block run before the next block (N-fastest inside a
+  // block; the last block may be narrower). A bijection of the tiles; one block is the incumbent's order.
+  const uint ord_nx = gl_NumWorkGroups.x;
+  const uint ord_lin = gl_WorkGroupID.y * ord_nx + gl_WorkGroupID.x;
+#if ORDER_NB_MAX > 0
+  const uint ord_ny = gl_NumWorkGroups.y;
+  const uint ord_nblk = (ord_nx + uint(ORDER_NB_MAX) - 1u) / uint(ORDER_NB_MAX);
+  const uint ord_nb = (ord_nx + ord_nblk - 1u) / ord_nblk;
+  const uint ord_full = ord_nb * ord_ny;
+  const uint ord_b = ord_lin / ord_full;
+  const uint ord_n0 = ord_b * ord_nb;
+  const uint ord_w = min(ord_nb, ord_nx - ord_n0);
+  const uint ord_r = ord_lin - ord_b * ord_full;
+  const uvec2 tileID = uvec2(ord_n0 + ord_r % ord_w, ord_r / ord_w);
+#else
+  const uvec2 tileID = uvec2(ord_lin % ord_nx, ord_lin / ord_nx);
+#endif
+""")
+    (g / "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_body.glslh").write_text(ob)
+    ow = sub(xw, '#include "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt_body.glslh"',
+             '// xe2bto: 0 = the remap prologue alone, > 0 = the block rule with this many N tiles per block at most.\n'
+             '#define ORDER_NB_MAX ${ORDER_NB_MAX}\n\n#include "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_body.glslh"')
+    (g / "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto.glsl").write_text(HDR % ("sarc_dev_linear_dq8ca_coopmat_zpg_bt", "sarc_linear_dq8ca_coopmat_zpg",
+        "8da4w zpg, the xe2bt kernel with a remapped workgroup order (prologue alone, or blocked over the N tiles).") + ow)
+    oy = ("# SARC development zone, Intel Xe2: 8da4w zpg, the xe2bt kernel with a remapped workgroup order (generated by sarc-1.5-xe2-prefill-refine/tools/gen_xe2.py). Not shipped.\n\n"
+          "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto:\n" + ydef + "    ORDER_NB_MAX: 0\n  shader_variants:\n")
+    for m, n, k, sx, sy in ORDER_TILES:
+        wg = sx * sy * SG; blocks = (m // 4) * (k // 4); assert (m, n, k, sx, sy) in XB and blocks % wg == 0, (m, n, k, sx, sy)
+        for x in ORDER:
+            kb = f"sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_{tok(m, n, k, sx, sy, order_sfx(x))}"
+            order_rows += f'    {{"", nullptr, Op::kDq8caLinear,\n     "{kb}",\n     {{{m}, {n}, {k}, {sx}, {sy}, {SG}, {MMA_M}, false}}, kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified}},\n'
+            for io in ("texture3d", "buffer"):
+                oy += (f"    - NAME: {kb}_{io}_texture2d_half\n      IO_STORAGE: {io}\n      WG_TILE_M: {m}\n      WG_TILE_N: {n}\n      WG_TILE_K: {k}\n      SG_GRID_X: {sx}\n      SG_GRID_Y: {sy}\n"
+                       f"      SUBGROUP_SIZE: {SG}\n      MMA_M: {MMA_M}\n      MMA_K: 32\n      A_MAP_FULL: true\n      A_MULTI_BLOCK: true\n      A_BLOCKS: {blocks // wg}\n      ORDER_NB_MAX: {0 if x == 'i' else x}\n")
+    (g / "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto.yaml").write_text(oy)
+
 # ---- 4w, batch 2 (after screen 4): texel-wise weight staging (family sarc_dev_linear_q4gsw_coopmat_xe2bx).
 # Screen 4: every other tile shape lost (0.14 to 0.90x), so the shipped geometry stays. In the release body a
 # thread stages one K row x 8 N per pass and fetches the packed-weight texel (4 K rows x 8 N) for it, so every
@@ -877,7 +981,7 @@ namespace sarc {{
 namespace {{
 
 const Row kXe2LinearCandidates[] = {{
-{lin_rows}}};
+{lin_rows}{order_rows}}};
 
 struct Registrar {{
   Registrar() {{
@@ -899,6 +1003,32 @@ t = block(t, CB, CE, "// Single-kernel screening profiles and the xe2-refineN ca
           "// SDPA base rows are active (impl/sarc_dev/Xe2Sdpa.cpp, ET_VK_SARC_UNVERIFIED=1).\n" + PREDS + prefs, "struct Profile {\n")
 PB = "    // xe2 begin: Intel Xe2 profiles (tools/gen_xe2.py)\n"; PE = "    // xe2 end\n"
 t = block(t, PB, PE, profs, "};\nconst Profile* requested_profile() {")
+if ORDER:
+    # workgroup-order profiles: <prefix>-<part> = the prefix's base profile with the xe2bto kernel of that part
+    # for every 8da4w shape. Own blocks, after the b580 blocks (they use the b580 predicates and the fused pair).
+    op = "// Workgroup-order profiles (tools/gen_xe2.py, ORDER_PROFILES): the base profile with the 8da4w kernel\n// replaced by its xe2bto twin (part i: remap prologue alone; n<nb_max>: blocked order;\n// p<nb_max>: n<nb_max> for the large weight tensors, i for every other shape).\n"; ol = ""; fused = []
+    for mb in sorted({mb for _, mb in ORDER_MIX}):
+        op += (f"// 8da4w linear: a weight tensor (K x N x 4 bit) of at least {mb} x 10^6 bytes.\n"
+               f"bool xe2_order_w{mb}(const ShapeInfo& s) {{\n  return s.K * s.N >= {mb * 2000000};\n}}\n")
+    for prefix, before, fz in ORDER_PROFILES:
+        if fz and "kFusedB580Pair" not in t: continue   # a tree without the B580 fused-port blocks (the B70 campaign's): no b580 twin
+        for m, n, k, sx, sy in ORDER_TILES:
+            for x in ORDER:
+                ident = "k" + prefix.title().replace("-", "") + "_" + order_sfx(x)
+                op += f"const Preference {ident}[] = {{\n" + "".join(f'    {{Op::{o_}, "{t_}", {pr}}},\n' for o_, t_, pr in before + [("kDq8caLinear", "xe2bto_" + tok(m, n, k, sx, sy, order_sfx(x)), "nullptr")]) + "};\n"
+                ol += f'    {{"{prefix}-{order_sfx(x)}", {ident}, sizeof({ident}) / sizeof(Preference)}},\n'
+        for m, n, k, sx, sy in ORDER_TILES:
+            for nb, mb in ORDER_MIX:
+                ident = "k" + prefix.title().replace("-", "") + f"_p{nb}"
+                op += f"const Preference {ident}[] = {{\n" + "".join(f'    {{Op::{o_}, "{t_}", {pr}}},\n' for o_, t_, pr in before + [
+                    ("kDq8caLinear", "xe2bto_" + tok(m, n, k, sx, sy, f"n{nb}"), f"xe2_order_w{mb}"), ("kDq8caLinear", "xe2bto_" + tok(m, n, k, sx, sy, "i"), "nullptr")]) + "};\n"
+                ol += f'    {{"{prefix}-p{nb}", {ident}, sizeof({ident}) / sizeof(Preference)}},\n'
+        if fz: fused.append(prefix)
+    t = block(t, "// xe2-order begin: workgroup-order profiles (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)\n", "// xe2-order end\n", op, "struct Profile {\n")
+    t = block(t, "    // xe2-order begin: workgroup-order profiles (tools/gen_xe2.py)\n", "    // xe2-order end\n", ol, "};\nconst Profile* requested_profile() {")
+    if fused: t = block(t, "  // xe2-order begin: the workgroup-order twins of b580-fused1 keep its fused attention pair (tools/gen_xe2.py)\n", "  // xe2-order end\n",
+              "".join(f'  if (p != nullptr && std::strncmp(p->name, "{pf}-", {len(pf) + 1}) == 0) {{\n    return kFusedB580Pair;\n  }}\n' for pf in fused),
+              '  return "";\n}\nconst char* softmax_variant_b580() {')
 o.write_text(t)
 
 c = root / "test/sarc_dev/test_llama_microbench.cpp"; t = c.read_text()

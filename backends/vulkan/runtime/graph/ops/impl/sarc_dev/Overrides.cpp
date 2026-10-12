@@ -878,6 +878,44 @@ Override& fused_b580() {
   return fused;
 }
 // b580-fused end
+// xe2-order begin: workgroup-order profiles (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)
+// Workgroup-order profiles (tools/gen_xe2.py, ORDER_PROFILES): the base profile with the 8da4w kernel
+// replaced by its xe2bto twin (part i: remap prologue alone; n<nb_max>: blocked order;
+// p<nb_max>: n<nb_max> for the large weight tensors, i for every other shape).
+// 8da4w linear: a weight tensor (K x N x 4 bit) of at least 12 x 10^6 bytes.
+bool xe2_order_w12(const ShapeInfo& s) {
+  return s.K * s.N >= 24000000;
+}
+const Preference kXe2Order_i[] = {
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+};
+const Preference kXe2Order_n13[] = {
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n13", nullptr},
+};
+const Preference kXe2Order_p13[] = {
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n13", xe2_order_w12},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+};
+const Preference kB580Fused1Order_i[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+};
+const Preference kB580Fused1Order_n13[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n13", nullptr},
+};
+const Preference kB580Fused1Order_p13[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n13", xe2_order_w12},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+};
+// xe2-order end
 struct Profile {
   const char* name;
   const Preference* prefs;
@@ -1093,6 +1131,14 @@ const Profile kProfiles[] = {
     {"b580-fused-d64_t16x128s16m8g4roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     {"b580-fused-d64_t8x64s16m8g4roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
     // b580-fused end
+    // xe2-order begin: workgroup-order profiles (tools/gen_xe2.py)
+    {"xe2-order-i", kXe2Order_i, sizeof(kXe2Order_i) / sizeof(Preference)},
+    {"xe2-order-n13", kXe2Order_n13, sizeof(kXe2Order_n13) / sizeof(Preference)},
+    {"xe2-order-p13", kXe2Order_p13, sizeof(kXe2Order_p13) / sizeof(Preference)},
+    {"b580-fused1-order-i", kB580Fused1Order_i, sizeof(kB580Fused1Order_i) / sizeof(Preference)},
+    {"b580-fused1-order-n13", kB580Fused1Order_n13, sizeof(kB580Fused1Order_n13) / sizeof(Preference)},
+    {"b580-fused1-order-p13", kB580Fused1Order_p13, sizeof(kB580Fused1Order_p13) / sizeof(Preference)},
+    // xe2-order end
 };
 const Profile* requested_profile() {
   static const Profile* p = []() -> const Profile* {
@@ -1119,6 +1165,11 @@ const char* fused_variants_b580() {
       return f.variants;
     }
   }
+  // xe2-order begin: the workgroup-order twins of b580-fused1 keep its fused attention pair (tools/gen_xe2.py)
+  if (p != nullptr && std::strncmp(p->name, "b580-fused1-order-", 18) == 0) {
+    return kFusedB580Pair;
+  }
+  // xe2-order end
   return "";
 }
 const char* softmax_variant_b580() {

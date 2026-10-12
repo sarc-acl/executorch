@@ -151,6 +151,12 @@ const Row kXe2LinearCandidates[] = {
     {"", nullptr, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g44s16m8flib",
      {128, 128, 16, 4, 4, 16, 8, false}, kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i",
+     {128, 128, 64, 8, 4, 16, 8, false}, kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n13",
+     {128, 128, 64, 8, 4, 16, 8, false}, kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
 };
 
 struct Registrar {
