@@ -214,5 +214,5 @@ attention rows).
 `sarc-1.5-llamacpp-compare/results/7900xtx/hip/cells.csv` on `topic/llamacpp-compare` (`7b45c5e98`): arm
 `hip-lb-q4_0-best`, and the ratio uses that session's own tuned `4w` cells. The session's Vulkan baseline check
 moved 2.20 % on one cell against its 2 % bound; the owner accepted the rows on 2026-10-12 and they were appended to
-`results/cells.csv` (`7b45c5e98`, source `7900xtx/hip/cells.csv`), with the check recorded as not met. Figure 7's caption says so.
+`results/cells.csv` (`7b45c5e98`, source `7900xtx/hip/cells.csv`), with the check recorded as not met. Figure 7's caption says so. The `clock_low` counting rule (cells marked `*`) was confirmed by the owner for the RX 7900 XTX and the RX 7600 on the same day (`f63e4505f`).
 The RX 7600's HIP build exists and has not run.
