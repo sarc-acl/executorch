@@ -751,6 +751,28 @@ Override& fused_b70() {
   return fused;
 }
 // b70-fused end
+// xe2-order begin: workgroup-order profiles (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)
+// Workgroup-order profiles (tools/gen_xe2.py, ORDER_PROFILES): the base profile with the 8da4w kernel
+// replaced by its xe2bto twin (part i: remap prologue alone; n<nb_max>: blocked order).
+const Preference kXe2Order_i[] = {
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+};
+const Preference kXe2Order_n10[] = {
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n10", nullptr},
+};
+const Preference kXe2Order_n13[] = {
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n13", nullptr},
+};
+const Preference kXe2Order_n16[] = {
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n16", nullptr},
+};
+const Preference kXe2Order_n21[] = {
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n21", nullptr},
+};
+const Preference kXe2Order_n26[] = {
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n26", nullptr},
+};
+// xe2-order end
 struct Profile {
   const char* name;
   const Preference* prefs;
@@ -861,6 +883,14 @@ const Profile kProfiles[] = {
     {"b70-fused-d128_t16x128s16m8g8oj", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
     {"b70-fused-d128_t16x64s16m8g4oj", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
     // b70-fused end
+    // xe2-order begin: workgroup-order profiles (tools/gen_xe2.py)
+    {"xe2-order-i", kXe2Order_i, sizeof(kXe2Order_i) / sizeof(Preference)},
+    {"xe2-order-n10", kXe2Order_n10, sizeof(kXe2Order_n10) / sizeof(Preference)},
+    {"xe2-order-n13", kXe2Order_n13, sizeof(kXe2Order_n13) / sizeof(Preference)},
+    {"xe2-order-n16", kXe2Order_n16, sizeof(kXe2Order_n16) / sizeof(Preference)},
+    {"xe2-order-n21", kXe2Order_n21, sizeof(kXe2Order_n21) / sizeof(Preference)},
+    {"xe2-order-n26", kXe2Order_n26, sizeof(kXe2Order_n26) / sizeof(Preference)},
+    // xe2-order end
 };
 const Profile* requested_profile() {
   static const Profile* p = []() -> const Profile* {
