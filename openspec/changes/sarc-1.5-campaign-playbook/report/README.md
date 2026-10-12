@@ -142,7 +142,7 @@ The workgroup launch order of the 8da4w linear kernel (row 11 of `techs`, the la
 - Arc Pro B70: `openspec/changes/sarc-1.5-b70-fused-port/STATUS.md`, section "Round 3", and `results/b70/order2/`
   on `topic/b70-fused-port` (profile `b70-fused1-order-i-n26-w16m`).
 
-On 2026-10-12 both heads were local and not on origin; update the two chips in `branches` when they are pushed.
+Both heads were pushed on 2026-10-12 (`a52fb00f4`, `4275735c5`).
 What was not remeasured for the round 3 profiles and still describes the round 2 configurations: `reported` (the
 caption of figure 1 says so), `timeRows` (caption of figure 3), `roofs` (caption of figure 8 and the headroom
 note), and the full-subgroups re-measurement in the known-defect note. `tuned4w` is unchanged, so `tuned4w` and
