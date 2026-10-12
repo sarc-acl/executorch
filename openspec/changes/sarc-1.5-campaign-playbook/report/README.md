@@ -211,9 +211,8 @@ attention rows).
 ## llama.cpp HIP on the RX 7900 XTX (2026-10-12)
 
 `llama[RX 7900 XTX].vendor` and the `vendor` column of its `tokps` entry come from
-`sarc-1.5-llamacpp-compare/results/7900xtx/hip/cells.csv` on `topic/llamacpp-compare` (`8eec16cf2`): arm
+`sarc-1.5-llamacpp-compare/results/7900xtx/hip/cells.csv` on `topic/llamacpp-compare` (`7b45c5e98`): arm
 `hip-lb-q4_0-best`, and the ratio uses that session's own tuned `4w` cells. The session's Vulkan baseline check
-moved 2.20 % on one cell against its 2 % bound, so the company side did not append its rows to
-`results/cells.csv`; the owner had the figures added to the report on 2026-10-12 with that reservation stated in
-figure 7's caption. If the rows are appended or the session is repeated, update both places and the caption.
+moved 2.20 % on one cell against its 2 % bound; the owner accepted the rows on 2026-10-12 and they were appended to
+`results/cells.csv` (`7b45c5e98`, source `7900xtx/hip/cells.csv`), with the check recorded as not met. Figure 7's caption says so.
 The RX 7600's HIP build exists and has not run.
