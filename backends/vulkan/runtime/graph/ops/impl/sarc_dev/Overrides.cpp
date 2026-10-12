@@ -772,6 +772,48 @@ const Preference kXe2Order_n21[] = {
 const Preference kXe2Order_n26[] = {
     {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n26", nullptr},
 };
+const Preference kB70Fused1Order_i[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+const Preference kB70Fused1Order_n10[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n10", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+const Preference kB70Fused1Order_n13[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n13", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+const Preference kB70Fused1Order_n16[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n16", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+const Preference kB70Fused1Order_n21[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n21", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+const Preference kB70Fused1Order_n26[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n26", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
 // xe2-order end
 struct Profile {
   const char* name;
@@ -890,6 +932,12 @@ const Profile kProfiles[] = {
     {"xe2-order-n16", kXe2Order_n16, sizeof(kXe2Order_n16) / sizeof(Preference)},
     {"xe2-order-n21", kXe2Order_n21, sizeof(kXe2Order_n21) / sizeof(Preference)},
     {"xe2-order-n26", kXe2Order_n26, sizeof(kXe2Order_n26) / sizeof(Preference)},
+    {"b70-fused1-order-i", kB70Fused1Order_i, sizeof(kB70Fused1Order_i) / sizeof(Preference)},
+    {"b70-fused1-order-n10", kB70Fused1Order_n10, sizeof(kB70Fused1Order_n10) / sizeof(Preference)},
+    {"b70-fused1-order-n13", kB70Fused1Order_n13, sizeof(kB70Fused1Order_n13) / sizeof(Preference)},
+    {"b70-fused1-order-n16", kB70Fused1Order_n16, sizeof(kB70Fused1Order_n16) / sizeof(Preference)},
+    {"b70-fused1-order-n21", kB70Fused1Order_n21, sizeof(kB70Fused1Order_n21) / sizeof(Preference)},
+    {"b70-fused1-order-n26", kB70Fused1Order_n26, sizeof(kB70Fused1Order_n26) / sizeof(Preference)},
     // xe2-order end
 };
 const Profile* requested_profile() {
@@ -916,6 +964,15 @@ const char* fused_variants_b70() {
       return f.variants;
     }
   }
+  // xe2-order begin: the workgroup-order twins of b70-fused1 keep its fused attention variants (tools/gen_xe2.py)
+  if (p != nullptr && std::strncmp(p->name, "b70-fused1-order-", 17) == 0) {
+    for (const FusedB70& f : kFusedB70) {
+      if (std::strcmp(f.profile, "b70-fused1") == 0) {
+        return f.variants;
+      }
+    }
+  }
+  // xe2-order end
   return "";
 }
 // b70-fused end

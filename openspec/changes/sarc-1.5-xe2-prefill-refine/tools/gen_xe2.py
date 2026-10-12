@@ -750,7 +750,12 @@ ORDER_PROFILES = [
     ("xe2-order", [], False),                    # the kernel alone on the Xe2 base rows (as xe2-dq-k64)
     ("b580-fused1-order", [("kSdpaQk", "xe2c_t128x64k32g44s16m8nf", "b580_qk_head_dim_128"), ("kSdpaQk", "pk_t128x64k32g44s16m8nf", "nullptr"),
                            ("kSdpaAv", "xe2_t128x64k32g44s16m8", "b580_head_dim_128")], True),   # b580-fused1 (= b580-refine3 + fused pair)
+    # order-2/b70: the B70's final configuration b70-fused1 (= xe2-refine5 + its fused attention variants): the
+    # preferences of xe2-refine5 before and after its 8da4w entry; "b70" = keeps b70-fused1's fused variants.
+    # Generated only on a tree that has the B70 fused-port blocks (kFusedB70).
+    ("b70-fused1-order", REFINE["xe2-refine5"][:2], "b70", REFINE["xe2-refine5"][3:]),
 ]
+assert REFINE["xe2-refine5"][2] == ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", "nullptr")
 ORDER_NAMES = [f"sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_{tok(m, n, k, sx, sy, order_sfx(x))}" for m, n, k, sx, sy in ORDER_TILES for x in ORDER]
 if "golden" in OPTS:
     gp = pathlib.Path(__file__).resolve().parent.parent / "golden/order-spirv.json"
@@ -1059,19 +1064,26 @@ if ORDER:
     # workgroup-order profiles: <prefix>-<part> = the prefix's base profile with the xe2bto kernel of that part
     # for every 8da4w shape. Own blocks, after the b580 blocks (they use the b580 predicates and the fused pair).
     op = "// Workgroup-order profiles (tools/gen_xe2.py, ORDER_PROFILES): the base profile with the 8da4w kernel\n// replaced by its xe2bto twin (part i: remap prologue alone; n<nb_max>: blocked order).\n"; ol = ""; fused = []
-    for prefix, before, fz in ORDER_PROFILES:
-        if fz and "kFusedB580Pair" not in t: continue   # a tree without the B580 fused-port blocks (the B70 campaign's): no b580 twin
+    fused_b70 = []
+    for prefix, before, fz, *after in ORDER_PROFILES:
+        after = after[0] if after else []
+        if fz is True and "kFusedB580Pair" not in t: continue   # a tree without the B580 fused-port blocks (the B70 campaign's): no b580 twin
+        if fz == "b70" and "kFusedB70" not in t: continue       # a tree without the B70 fused-port blocks (the B580 campaign's): no b70 twin
         for m, n, k, sx, sy in ORDER_TILES:
             for x in ORDER:
                 ident = "k" + prefix.title().replace("-", "") + "_" + order_sfx(x)
-                op += f"const Preference {ident}[] = {{\n" + "".join(f'    {{Op::{o_}, "{t_}", {pr}}},\n' for o_, t_, pr in before + [("kDq8caLinear", "xe2bto_" + tok(m, n, k, sx, sy, order_sfx(x)), "nullptr")]) + "};\n"
+                op += f"const Preference {ident}[] = {{\n" + "".join(f'    {{Op::{o_}, "{t_}", {pr}}},\n' for o_, t_, pr in before + [("kDq8caLinear", "xe2bto_" + tok(m, n, k, sx, sy, order_sfx(x)), "nullptr")] + after) + "};\n"
                 ol += f'    {{"{prefix}-{order_sfx(x)}", {ident}, sizeof({ident}) / sizeof(Preference)}},\n'
-        if fz: fused.append(prefix)
+        if fz is True: fused.append(prefix)
+        if fz == "b70": fused_b70.append(prefix)
     t = block(t, "// xe2-order begin: workgroup-order profiles (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)\n", "// xe2-order end\n", op, "struct Profile {\n")
     t = block(t, "    // xe2-order begin: workgroup-order profiles (tools/gen_xe2.py)\n", "    // xe2-order end\n", ol, "};\nconst Profile* requested_profile() {")
     if fused: t = block(t, "  // xe2-order begin: the workgroup-order twins of b580-fused1 keep its fused attention pair (tools/gen_xe2.py)\n", "  // xe2-order end\n",
               "".join(f'  if (p != nullptr && std::strncmp(p->name, "{pf}-", {len(pf) + 1}) == 0) {{\n    return kFusedB580Pair;\n  }}\n' for pf in fused),
               '  return "";\n}\nconst char* softmax_variant_b580() {')
+    if fused_b70: t = block(t, "  // xe2-order begin: the workgroup-order twins of b70-fused1 keep its fused attention variants (tools/gen_xe2.py)\n", "  // xe2-order end\n",
+              "".join(f'  if (p != nullptr && std::strncmp(p->name, "{pf}-", {len(pf) + 1}) == 0) {{\n    for (const FusedB70& f : kFusedB70) {{\n      if (std::strcmp(f.profile, "{pf[:-6]}") == 0) {{\n        return f.variants;\n      }}\n    }}\n  }}\n' for pf in fused_b70),
+              '  return "";\n}\n// b70-fused end\n')
 o.write_text(t)
 
 c = root / "test/sarc_dev/test_llama_microbench.cpp"; t = c.read_text()
