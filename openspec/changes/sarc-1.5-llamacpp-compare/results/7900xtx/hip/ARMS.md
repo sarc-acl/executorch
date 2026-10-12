@@ -82,5 +82,5 @@ no other llama.cpp option was screened. The `lc` default runs of the screen (thr
 ## Baseline before the HIP work
 
 Vulkan cells measured at 18:38 UTC (`hipbase-pre`, 1B, five repetitions, same arms and rules as the session): tuned `4w`
-23273 / 23011 / 22022 / 22756 / 24094 tok/s (median 22756; 2026-10-10 session 22261), `lb` Q4_0 `best` 16294 (2026-10-10 session
+23273 / 23011 / 22022 / 22756 / 24094 tok/s (median 23011; the first version of this file said 22756, which was misread: 22756 is the fourth value, not the median of the five; 2026-10-10 session 22261), `lb` Q4_0 `best` 16294 (2026-10-10 session
 16409). The same two cells are measured again after the timed session (`hipbase-post`); the request asks for agreement within 2 %.

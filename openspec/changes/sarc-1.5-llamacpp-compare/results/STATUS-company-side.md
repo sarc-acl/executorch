@@ -1,6 +1,6 @@
 # Status of the llama.cpp comparison on the company side's devices (COMPANY-SIDE.md section 10)
 
-Updated 2026-10-10 10:14 UTC. Nothing is pushed. The three devices run in parallel (owner decision 2026-10-10 01:10 UTC).
+Updated 2026-10-12 20:30 UTC (10.2, HIP, added). Nothing is pushed. 10.1 and 10.3 are as published (`94a6de3e5`).
 
 | device | 10.1 state | where |
 |---|---|---|
@@ -8,7 +8,16 @@ Updated 2026-10-10 10:14 UTC. Nothing is pushed. The three devices run in parall
 | RX 7600 | done: round 2 final as tuned arm, session `rx7600-r2` (RADV Mesa 26.2.3, all 14 arms, three models); ARMS.md committed before it; rows replaced in `cells.csv`; the 2026-10-08 files are kept in `rx7600/history-2026-10-08/` | `rx7600/` |
 | M51 | done (10.3, with the owner decision of 2026-10-10 06:39 UTC): stock Android arm built and measured; sessions m51-4 (1B, 3B) and m51-5 (8B) with stock, SARC, tuned (`4w`, `8da4w`) and the correct-output llama.cpp arm, all timed runs valid; relative speedups committed in `m51/ratios.csv` (tuned / llama.cpp Q4_0 and Q4_K_M by `lc` and `lb`, tuned / SARC, tuned / stock); llama.cpp does not run correctly on that driver as shipped. No absolute figure committed; nothing in `cells.csv` | `m51/README.md`, `m51/ratios.csv` |
 
-10.2 (HIP) is not part of this task (owner decision 2026-10-09). Extras of 10.4 (real-text prompt variant, decode with and without the final configuration) are in `7900xtx/` and `rx7600/`; not done for M51.
+Extras of 10.4 (real-text prompt variant, decode with and without the final configuration) are in `7900xtx/` and `rx7600/`; not done for M51.
+
+## 10.2, llama.cpp HIP (ROCm), owner decisions 2026-10-12 18:03 and 18:16 UTC
+
+| device | state | where |
+|---|---|---|
+| RX 7900 XTX | **measured, one gate not met:** HIP (ROCm 7.2.1, built in a container image, host untouched) screened (flash attention on/off x `-ub` {512,1024,2048}, both quantizations) and timed in one interleaved session `hip1` with stock, SARC and tuned ExecuTorch and the Vulkan reference arms (all three models, both timers, default and best, both quantizations; text and GPU-use checks passed). The Vulkan baseline before / after: 1B Vulkan `lb` Q4_0 `best` -1.65 %, 1B tuned `4w` **-2.20 %** against the 2 % bound, so by the request's rule the check is not met; stopped and recorded, no repeat to obtain a pass, **rows not yet appended to `results/cells.csv`** (owner decision) | `7900xtx/hip/` |
+| RX 7600 | **built, not run; blocked:** ROCm 7.2.4 is installed and the native `gfx1102` target builds, but the session that did this work has no group `render` (`/dev/kfd` `Permission denied`) and `sg render` fails because the tool harness runs the process with `no_new_privs`; no workaround tried. Needs a process that has the group; everything else is ready (see its README) | `rx7600/README.md` (HIP section) |
+
+HIP on the 7900 XTX in one paragraph: HIP is faster than llama.cpp's Vulkan backend at every size (Q4_0 `lb` best 1.47 / 1.32 / 1.27, Q4_K_M 1.69 / 1.55 / 1.51 for 1B / 3B / 8B). **Tuned ExecuTorch `4w` is no longer ahead of every llama.cpp arm:** at 1B HIP Q4_0 by `lb` is ahead of tuned (tuned / HIP 0.93 at best) and HIP Q4_K_M by `lb` is level (1.00); at 3B and 8B tuned is ahead of HIP by `lb` by 1.19 to 1.26 (best), and by `lc` (fresh process) in every cell (1.20 to 2.01). The report's sentence "ahead of llama.cpp at every size" needs this qualification for the 7900 XTX, subject to the baseline gate above. Details, deviations, clock notes: `7900xtx/hip/README.md`.
 
 ## RX 7900 XTX in one paragraph
 

@@ -111,7 +111,7 @@ splits the check prompt into 1980 tokens, ExecuTorch's into 1972).
   `kit/make-q4km.sh`; every file 256 bytes smaller than `MODELS.md`, same parameter counts. The same files as on 2026-10-08.
 - **Stock arm** built natively from an export of `985c1ceccc` plus the backport (podman does not run on this host, so `build-stock.sh` was not used); the same binary as on 2026-10-08.
 - **Counting rule** for `clock_low`: above.
-- **HIP not done:** not part of this task.
+- **HIP (request 10.2): built, not run; blocked in the session that did the work, 2026-10-12 (see the section below).**
 
 ## Extras of the request (10.4): the real-text prompt and decode
 
@@ -149,3 +149,22 @@ and not judged: decode is short and memory-bound, so read it as indicative. Medi
 
 The final configuration, tuned for prefill, decodes 8 to 28 % slower than the parent on this card (the largest drop is 1B `8da4w`, 105.2 to 75.8 tok/s; spreads 0.1 to 2.1 %). llama.cpp
 decode was not measured (its decode benchmark runs at an empty context, not after the 2048-token prompt, so it would not be comparable).
+
+## HIP (ROCm), request 10.2: built for this card, not measured (blocked)
+
+Owner decision 2026-10-12 18:16 UTC: ROCm 7.2.4 is installed on the workstation in user space (`/opt/rocm` -> a directory on the local scratch disk; the user is a member of
+group `render` in `/etc/group`), so the card can run HIP; build with `-DAMDGPU_TARGETS=gfx1102` first and fall back to `gfx1100` with `HSA_OVERRIDE_GFX_VERSION=11.0.0` only if the build or the runtime rejects it.
+What was done, 2026-10-12: llama.cpp `b11430` built with `HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGGML_HIP=ON
+-DAMDGPU_TARGETS=gfx1102 -DGGML_NATIVE=ON -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF -DLLAMA_CURL=OFF` (`llama-completion`, `llama-bench`; the ROCm 7.2.4 `rocblas` and
+`hipblaslt` libraries have `gfx1102` kernel libraries): **the native `gfx1102` target builds without error, so the override and the `gfx1100` fallback were not needed or used** (not yet tested at run time, see below).
+The binaries carry an `RPATH` (`patchelf --force-rpath`) to the ROCm libraries and to their own directory, so that they can run beside the Vulkan arms in one session, as for the 7900 XTX.
+
+**What stopped it:** no HIP run was possible from the session that did this work. The process carries neither group `render` nor `video` (its `id` lacks them: it was started before the group
+change), `/dev/kfd` is `root:render 0660`, and `rocminfo` stops with `Unable to open /dev/kfd read-write: Permission denied` although it prints that the user is a member of the group. The owner decision
+names `sg render -c '<command>'` as the way; in that session `sg` fails with `setgroups: Operation not permitted` and `setgid: Operation not permitted`, because the process runs with `no_new_privs` (set by the tool
+harness that runs the session's commands, `NoNewPrivs: 1` in `/proc/self/status`), which disables the set-user-id `sg`. No other route was tried (a login through `ssh` to this host would carry the group but would leave the
+session's restrictions, and changing groups, device permissions or udev rules is excluded by the same decision). So, as the decision demands, the session stopped there: no GPU run, no screen, no Vulkan baseline cell, no `ARMS.md` for HIP.
+
+**What is needed** (no administrator): the HIP session started from a process that has group `render` (a fresh login shell, or `sg render -c` from a shell without `no_new_privs`). Everything else is ready: the build
+(local scratch disk, `build/bin` patched copy in `bin/`), `kit/hosts/rx7600/host.sh` unchanged, and the 2026-10-10 Vulkan values to compare the new baseline cell against (1B tuned `4w` 11070, `lb` Q4_0 `best` 5833; within 2 %, else stop). The procedure is that of
+`../7900xtx/hip/` (screen with the kit's list, `hip-{lc,lb}-{q4_0,q4_k_m}-{default,best}`, both timers, GPU-use check with `-v`, text check), with `HSA_OVERRIDE_GFX_VERSION=11.0.0` only if the `gfx1102` build is rejected by the runtime.
