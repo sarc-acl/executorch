@@ -21,6 +21,41 @@ Device limits read with `vulkaninfo`: `maxComputeSharedMemorySize` 49152, subgro
 model files were not in the page cache after the reboot, so decision D5 is applied (each model read before its
 cell, both arms alike, resident share recorded per run in `runs.csv`, column `cached_pct`).
 
+## Round 3 (2026-10-12): per-shape workgroup order for the 8da4w linear kernel, profile `b70-fused1-order-i-n26-w16m`
+
+Merged by the owner's decision of 2026-10-12. Final configuration from this commit on: the branch head with
+`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b70-fused1-order-i-n26-w16m`. Everything above this section
+describes `b70-fused1`, which stays selectable and is the parent of this round.
+
+- **What changed.** The 8da4w kernel `..._zpg_xe2bt_t128x128k64g84s16m8` launches its workgroups N-tile-fastest,
+  so each of the 16 M tiles reads the whole weight tensor again and tensors above the L3 are fetched from memory
+  every time (hardware counters: sampler L3 hit 22 to 26 % on the two 29.4 MB shapes of Llama 3.1 8B). The
+  generated family `..._zpg_xe2bto` (brought from the B580 task) remaps `gl_WorkGroupID` at the top of `main()`
+  (a bijection; nothing added to the loop): part `i` keeps the order, part `n26` runs all M tiles of a block of at
+  most 26 N tiles before the next block. The profile selects `n26` where the weight tensor is 16 MiB or more
+  (the two 29.4 MB shapes of 8B) and `i` elsewhere, because the block computation itself costs up to 4 % on
+  shapes that are cached anyway.
+- **Gate** `g1` (the campaign's `gate.sh --sdpa`, profile against the campaign's parent): `GATE_PASS`
+  (`results/b70/order2/gate-g1.txt`); +9.45 % geomean over that parent in the gate session (`b70-fused1`: +8.26 %
+  in `s3-final`, another session).
+- **Model level** (`results/b70/order2/model.md`; three pairwise interleaved sessions, 7 valid runs per arm;
+  profile against `b70-fused1`, session `m2`): 8da4w prefill 1B +0.00 %, 3B +0.49 %, 8B **+4.98 %** (4623.0 to
+  4853.1 tok/s); the 4w cells use the same kernels as before and were not timed against `b70-fused1`; taking
+  them as unchanged the six-cell geomean is +0.90 %. Decode unchanged (0.994 to 1.006). By the +- 2 % band the
+  change is a demonstrated gain on the 8B 8da4w cell only; it changes only 8da4w kernels.
+- **Kernel level** (`results/b70/order2/a2-a3.md`): 8B K4096 x N14336 0.908 of the incumbent, 8B K14336 x N4096
+  0.926, every other shape 0.981 to 0.996 (`i` alone).
+- **Build**: every one of the 1572 pre-existing SPIR-V files is byte-identical; the candidates' hashes are in
+  `openspec/changes/sarc-1.5-xe2-prefill-refine/golden/order-spirv.json`, checked by the generator
+  (`sarc/golden/spirv.json` and its checker are untouched). The gate's `verify_diff` differs from the parent
+  control in one line, the 8da4w kernel list, which is the change itself.
+- **Not done**: a sweep of the threshold and of the block width (13, 21 and 26 were run); a block computation
+  cheap enough for one kernel on every shape. The same change on the 4w kernel was measured at kernel level and
+  is not adopted (the prologue slows that kernel's loop by 5.6 to 7.3 %; `results/b70/order2/b2.md`). Full
+  record: `results/b70/order2/RESULTS.md`.
+- The generator mechanism for the per-shape profile differs from the B580's (`topic/b580-fused-port`), written
+  separately on the same day; the generated kernels are the same. To be unified when the branches merge.
+
 ## Running now
 
 Nothing. `tools/chain3.sh b70-fused1 6ac44c483` ended `CHAIN3_DONE` at 10:32 UTC. No `HOLD` was set and no
