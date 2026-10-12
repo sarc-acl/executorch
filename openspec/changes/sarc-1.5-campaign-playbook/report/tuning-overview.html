@@ -214,7 +214,7 @@
 
   <figure id="fig-branches">
     <h2>Figure 6 · Branch relationships and status</h2>
-    <p class="claim">Each horizontal line is a branch on sarc-acl/executorch; time runs from left to right, not to scale. All campaign branches derive from the 780M branch, so the fused attention kernel and the development-zone overlay files are in every one of them; merge PRs can therefore only go in one at a time. The four short lines on the right are the fused-kernel port branches (three opened on 10-08, the B70's on 10-09), created from the heads of their respective first rounds; the 4070 Ti's and the B70's are closed, and the B580's and the Orin's have been declared ended by the owner (the last review round was not completed). On 10-12 round 3 (the workgroup launch order of the 8da4w linear kernel) was merged into the B580's and the B70's port branches, 2 and 4 commits, and pushed. The RX 7900 XTX's branch was created from a later commit of the 780M branch and ended on 10-09, so it is also drawn on the right.</p>
+    <p class="claim">Each horizontal line is a branch on sarc-acl/executorch; time runs from left to right, not to scale. All campaign branches derive from the 780M branch, so the fused attention kernel and the development-zone overlay files are in every one of them; merge PRs can therefore only go in one at a time. The four short lines on the right are the fused-kernel port branches (three opened on 10-08, the B70's on 10-09), created from the heads of their respective first rounds; the 4070 Ti's and the B70's are closed, and the B580's and the Orin's have been declared ended by the owner (the last review round was not completed). On 10-12 round 3 (the workgroup launch order of the 8da4w linear kernel) was merged into the B580's and the B70's port branches, 3 and 4 commits, and pushed. The RX 7900 XTX's branch was created from a later commit of the 780M branch and ended on 10-09, so it is also drawn on the right.</p>
     <div class="legend" id="legend-branches"></div>
     <div class="scroll"><div id="chart-branches"></div></div>
     <figcaption>"+N" is the number of commits ahead of dev/1.5; an arrow means the branch was created from that commit. Head status as of 2026-10-09 17:30 UTC, except the two Intel fused-port branches, whose heads are those of 2026-10-12. The M51's branch (topic/m51-prefill-refine, also created from the 780M branch) is not drawn.</figcaption>
@@ -1482,7 +1482,7 @@
  ],
  "meta": {
   "updated": "2026-10-12",
-  "note": "All figures from the campaign branches proposal.md / STATUS.md and topic/llamacpp-compare cells.csv; roofs from the igpu-roofline study branches (see roofs.study). Edit this block only; the rendering code below reads it. 2026-10-10: corrections after review; no new measurements. devices[].final is recomputed from tokps (see README). 2026-10-10 (second update): the RX 7600 and RX 7900 XTX rows of tokps are replaced by the company side's interleaved comparison sessions (results/rx7600 and results/7900xtx on topic/llamacpp-compare, head daee443b4); the F1 and decode notes carry the new measurements. 2026-10-10 (third update): the M51 carries relative figures (devices[].stock, final and a llama entry) from m51/ratios.csv, head 94a6de3e5; it still has no tokps, chains, reported or timeRows entry. 2026-10-10 (fourth update): the known-defect note carries the full-subgroups re-measurement on five devices (four closed, Orin sessions done); no figure of the page changed. 2026-10-12: round 3 on the two Intel cards (workgroup launch order of the 8da4w linear kernel): tuned8 of b580 and b70 in tokps, their devices[].final and stock[1], one chain segment each, row 11 of techs, the two fused-port lanes of branches. reported, timeRows and roofs were not remeasured and predate round 3. Sources: STATUS.md \"Round 3\" and results/b580/order2 on topic/b580-fused-port (local head a52fb00f4), STATUS.md \"Round 3\" and results/b70/order2 on topic/b70-fused-port (local head 4275735c5); neither head is on origin yet."
+  "note": "All figures from the campaign branches proposal.md / STATUS.md and topic/llamacpp-compare cells.csv; roofs from the igpu-roofline study branches (see roofs.study). Edit this block only; the rendering code below reads it. 2026-10-10: corrections after review; no new measurements. devices[].final is recomputed from tokps (see README). 2026-10-10 (second update): the RX 7600 and RX 7900 XTX rows of tokps are replaced by the company side's interleaved comparison sessions (results/rx7600 and results/7900xtx on topic/llamacpp-compare, head daee443b4); the F1 and decode notes carry the new measurements. 2026-10-10 (third update): the M51 carries relative figures (devices[].stock, final and a llama entry) from m51/ratios.csv, head 94a6de3e5; it still has no tokps, chains, reported or timeRows entry. 2026-10-10 (fourth update): the known-defect note carries the full-subgroups re-measurement on five devices (four closed, Orin sessions done); no figure of the page changed. 2026-10-12: round 3 on the two Intel cards (workgroup launch order of the 8da4w linear kernel): tuned8 of b580 and b70 in tokps, their devices[].final and stock[1], one chain segment each, row 11 of techs, the two fused-port lanes of branches. reported, timeRows and roofs were not remeasured and predate round 3. Sources: STATUS.md \"Round 3\" and results/b580/order2 on topic/b580-fused-port (local head af93a30c5), STATUS.md \"Round 3\" and results/b70/order2 on topic/b70-fused-port (local head 4275735c5); neither head is on origin yet."
  },
  "tokps": [
   {
@@ -1896,9 +1896,9 @@
      "lane": "b580",
      "x": 960
     },
-    "label": "+100 · b580-fused1-order-p13 · +74.5 %",
+    "label": "+101 · b580-fused1-order-p13 · +74.5 %",
     "head": {
-     "h": "a52fb00f4",
+     "h": "af93a30c5",
      "d": "10-12",
      "state": "ok",
      "chip": "round 3 merged and pushed"
