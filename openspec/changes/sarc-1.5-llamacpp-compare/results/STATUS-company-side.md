@@ -12,6 +12,8 @@ Extras of 10.4 (real-text prompt variant, decode with and without the final conf
 
 ## 10.2, llama.cpp HIP (ROCm), owner decisions 2026-10-12 18:03 and 18:16 UTC
 
+**Owner decision 2026-10-12 (owner side): the RX 7900 XTX HIP session's rows are accepted and appended to `results/cells.csv` (48 rows, source `7900xtx/hip/cells.csv`), with the baseline check recorded as not met on one cell (2.20 % against 2 %). The table below is as the company side wrote it before that decision.**
+
 | device | state | where |
 |---|---|---|
 | RX 7900 XTX | **measured, one gate not met:** HIP (ROCm 7.2.1, built in a container image, host untouched) screened (flash attention on/off x `-ub` {512,1024,2048}, both quantizations) and timed in one interleaved session `hip1` with stock, SARC and tuned ExecuTorch and the Vulkan reference arms (all three models, both timers, default and best, both quantizations; text and GPU-use checks passed). The Vulkan baseline before / after: 1B Vulkan `lb` Q4_0 `best` -1.65 %, 1B tuned `4w` **-2.20 %** against the 2 % bound, so by the request's rule the check is not met; stopped and recorded, no repeat to obtain a pass, **rows not yet appended to `results/cells.csv`** (owner decision) | `7900xtx/hip/` |

@@ -11,6 +11,10 @@ both cells files recomputed from `runs.csv` independently of `aggregate.py`: 48 
 
 ## The Vulkan baseline check did not pass on one of its two cells: read this first
 
+**Owner decision 2026-10-12 (after this file was written): the rows are accepted.** The 48 lines of `cells.csv` here were appended to
+`results/cells.csv` with the source `7900xtx/hip/cells.csv`; the baseline check stays recorded below as not met (2.20 % against the 2 % bound on one
+cell), and nothing was re-measured. What follows is the record as written before that decision.
+
 The request requires the Vulkan baseline (1B tuned `4w`, `lb` Q4_0 `best`, both AMDVLK) measured before and after the HIP work and
 agreeing within 2 %, and says to stop and record when it moves more. Measured with the same adapter, five repetitions each, 18:38 UTC
 ("before", `hipbase-pre`, started 18:38:49 UTC) and 19:56 UTC (after the timed session). "Before" means before the timed session, not before any HIP work: the container builds had run on the host from 18:12 to 18:38 UTC and a HIP smoke run on the card ended about 47 s before it started, so it is not a clean pre-install reference. Against the 2026-10-10 session the "after" values are +1.10 % (tuned `4w`) and -2.34 % (`lb` Q4_0 `best`):
