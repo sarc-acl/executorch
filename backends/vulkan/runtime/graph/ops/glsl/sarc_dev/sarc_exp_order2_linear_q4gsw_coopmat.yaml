@@ -142,3 +142,116 @@ sarc_exp_order2_linear_q4gsw_coopmat:
       ACC_FP32: false
       ACC_GROUP_FP32: false
       ORDER2_NB_MAX: 11
+    # order-2/b580 (owner decision 2026-10-12 17:20 UTC): the same body for the Arc B580's incumbent 4w tile, the release row
+    # sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli (4 x 4 subgroups of 16, FRAG_LAYOUT, IMG_A, no band); widths for
+    # F = 80 workgroups in flight: 13 (F / 6), 20 (F / 4), 27 (F / 3), 40 (F / 2).
+    - NAME: sarc_exp_order2_linear_q4gsw_coopmat_ident_t128x128k16g44s16m8fli_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      FRAG_LAYOUT: true
+      B_COLMAJOR: false
+      SH_F16V4: false
+      IMG_A: true
+      IMG_W: false
+      CSH_BAND: false
+      CSH_FULL: false
+      CSH_POOL: false
+      CSH_IN_ASH: false
+      ACC_FP32: false
+      ACC_GROUP_FP32: false
+      ORDER2_NB_MAX: 4194303
+    - NAME: sarc_exp_order2_linear_q4gsw_coopmat_n13_t128x128k16g44s16m8fli_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      FRAG_LAYOUT: true
+      B_COLMAJOR: false
+      SH_F16V4: false
+      IMG_A: true
+      IMG_W: false
+      CSH_BAND: false
+      CSH_FULL: false
+      CSH_POOL: false
+      CSH_IN_ASH: false
+      ACC_FP32: false
+      ACC_GROUP_FP32: false
+      ORDER2_NB_MAX: 13
+    - NAME: sarc_exp_order2_linear_q4gsw_coopmat_n20_t128x128k16g44s16m8fli_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      FRAG_LAYOUT: true
+      B_COLMAJOR: false
+      SH_F16V4: false
+      IMG_A: true
+      IMG_W: false
+      CSH_BAND: false
+      CSH_FULL: false
+      CSH_POOL: false
+      CSH_IN_ASH: false
+      ACC_FP32: false
+      ACC_GROUP_FP32: false
+      ORDER2_NB_MAX: 20
+    - NAME: sarc_exp_order2_linear_q4gsw_coopmat_n27_t128x128k16g44s16m8fli_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      FRAG_LAYOUT: true
+      B_COLMAJOR: false
+      SH_F16V4: false
+      IMG_A: true
+      IMG_W: false
+      CSH_BAND: false
+      CSH_FULL: false
+      CSH_POOL: false
+      CSH_IN_ASH: false
+      ACC_FP32: false
+      ACC_GROUP_FP32: false
+      ORDER2_NB_MAX: 27
+    - NAME: sarc_exp_order2_linear_q4gsw_coopmat_n40_t128x128k16g44s16m8fli_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      FRAG_LAYOUT: true
+      B_COLMAJOR: false
+      SH_F16V4: false
+      IMG_A: true
+      IMG_W: false
+      CSH_BAND: false
+      CSH_FULL: false
+      CSH_POOL: false
+      CSH_IN_ASH: false
+      ACC_FP32: false
+      ACC_GROUP_FP32: false
+      ORDER2_NB_MAX: 40

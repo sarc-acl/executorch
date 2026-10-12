@@ -42,6 +42,22 @@ const Row kExpOrder2LinearCandidates[] = {
     {"", nullptr, Op::kQ4gswLinear,
      "sarc_exp_order2_linear_q4gsw_coopmat_n11_t128x128k16g82s16m8flib",
      {128, 128, 16, 8, 2, 16, 8, false}, kTex3dTex2d, exp_order2_requested, Status::kUnverified},
+    // order-2/b580: the Arc B580's incumbent 4w tile (release row t128x128k16g44s16m8fli, kXe2Dims).
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_exp_order2_linear_q4gsw_coopmat_ident_t128x128k16g44s16m8fli",
+     {128, 128, 16, 4, 4, 16, 8, false}, kTex3dTex2d, exp_order2_requested, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_exp_order2_linear_q4gsw_coopmat_n13_t128x128k16g44s16m8fli",
+     {128, 128, 16, 4, 4, 16, 8, false}, kTex3dTex2d, exp_order2_requested, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_exp_order2_linear_q4gsw_coopmat_n20_t128x128k16g44s16m8fli",
+     {128, 128, 16, 4, 4, 16, 8, false}, kTex3dTex2d, exp_order2_requested, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_exp_order2_linear_q4gsw_coopmat_n27_t128x128k16g44s16m8fli",
+     {128, 128, 16, 4, 4, 16, 8, false}, kTex3dTex2d, exp_order2_requested, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_exp_order2_linear_q4gsw_coopmat_n40_t128x128k16g44s16m8fli",
+     {128, 128, 16, 4, 4, 16, 8, false}, kTex3dTex2d, exp_order2_requested, Status::kUnverified},
 };
 
 struct Registrar {
