@@ -16,6 +16,37 @@ ANV Mesa 26.2.3 throughout; kernel 7.2.8-200.fc44 until the reboot of 2026-10-09
 it; GT frequency policy as found and unchanged (`min_freq` 1200, `max_freq` 2850, `rp0` 2850 MHz,
 `power_profile` `[base] power_saving`).
 
+## Round 3 (2026-10-12): per-shape workgroup order for the 8da4w linear kernel, profile `b580-fused1-order-p13`
+
+Merged by the owner's decision of 2026-10-12. Final configuration from this commit on: the branch head with
+`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-fused1-order-p13`. Everything above this section describes
+`b580-fused1`, which stays selectable and is the parent of this round.
+
+- **What changed.** The 8da4w kernel `..._zpg_xe2bt_t128x128k64g84s16m8` launches its workgroups N-tile-fastest,
+  so each of the 16 M tiles reads the whole weight tensor again and tensors above the L3 are fetched from memory
+  every time (hardware counters: sampler L3 hit 3 to 12 % on the two 29.4 MB shapes of Llama 3.1 8B). The
+  generated family `..._zpg_xe2bto` remaps `gl_WorkGroupID` at the top of `main()` (a bijection; nothing added to
+  the loop): part `i` keeps the order, part `n13` runs all M tiles of a block of at most 13 N tiles before the
+  next block. The profile selects `n13` where the weight tensor is 12 MB or more and `i` elsewhere, because the
+  block computation itself costs 1 to 5.5 % on shapes that are cached anyway.
+- **Gate** `g2` (the campaign's `gate.sh`, without the SDPA tiers: no attention kernel changed): `GATE_PASS`
+  (`results/b580/order2/gate-g2.txt`).
+- **Model level** (gate session `g2`, 7 valid runs per arm and cell, profile against `b580-fused1`,
+  `results/b580/order2/a5.md`): 8da4w prefill 1B +0.89 %, 3B **+3.10 %**, 8B **+4.83 %**; 4w cells +0.00 / +0.00 /
+  -0.12 % (same kernels); six-cell geomean **+1.43 %**; decode unchanged (0.997 to 1.003). By the +- 2 % band the
+  change is a demonstrated gain on the 3B and 8B 8da4w cells; it changes only 8da4w kernels.
+- **Kernel level** (`results/b580/order2/a2.md`): 8B K4096 x N14336 0.892 of the incumbent, 8B K14336 x N4096
+  0.970 to 0.972, the 3B pair 0.927 to 0.944, every other shape 0.977 to 0.998 (`i` alone; 3B wk_wv inside its band).
+- **Build**: every one of the 1576 pre-existing SPIR-V files is byte-identical; the candidates' hashes are in
+  `openspec/changes/sarc-1.5-xe2-prefill-refine/golden/order-spirv.json`, checked by the generator
+  (`sarc/golden/spirv.json` and its checker are untouched).
+- **Not done**: the SDPA tiers on this build; a sweep of the 12 MB threshold and of the block width (10, 13 and
+  16 were run); a block computation cheap enough for one kernel on every shape. The same change on the 4w
+  kernel was measured at kernel level and is not adopted (the prologue slows that kernel's loop by 3.0 to 3.3 %;
+  `results/b580/order2/b2.md`). Full record: `results/b580/order2/RESULTS.md`.
+- The Arc Pro B70 carries the same family with its own profile (`topic/b70-fused-port`); its generator mechanism
+  for the per-shape profile was written separately and is to be unified with this one when the branches merge.
+
 ## Running now
 
 Nothing. No GPU job and no build was started after `tools/chain13.sh` ended `CHAIN13_DONE` at 11:06 UTC; the
