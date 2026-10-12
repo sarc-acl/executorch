@@ -98,7 +98,7 @@ both are plausible text. GPU use: `gpu-check.txt` (all 17 layers offloaded to `R
 - **Arm names** `hip-{lc,lb}-{q4_0,q4_k_m}-{default,best}` instead of the request's `hip-q4_0`, `hip-q4km`, and `kind` stays the timer (`lc` / `lb`) because `aggregate.py` is unchanged; the HIP rows are those whose
   arm starts with `hip-` (the precedent is the `sy-` rows of the SYCL devices).
 - **Baseline check** not met on one cell: above. **`results/cells.csv` not appended** for that reason.
-- **Counting rule** for `clock_low` as in `../README.md` (still awaiting the owner's confirmation there): it applies to all 96 `lc` runs of the HIP arms (strict count 0, `cells-strict.csv`) and to stock `4w` at 3B and 8B (8 counted runs each, as on 2026-10-10).
+- **Counting rule** for `clock_low` as in `../README.md` (confirmed by the owner on 2026-10-12 for this card and the RX 7600, after this file was written): it applies to all 96 `lc` runs of the HIP arms (strict count 0, `cells-strict.csv`) and to stock `4w` at 3B and 8B (8 counted runs each, as on 2026-10-10).
   The headline ratios here use `lb`, which has no counted run, for HIP and Vulkan.
 - **Not repeated:** the extras of the request's 10.4 (decode and the real-text prompt, `../README.md`); no HIP number exists for them.
 - **Not tested:** the 2 % bound applied to the HIP cells themselves (no repeat session); the session's HIP `lb` cells have no second process.
