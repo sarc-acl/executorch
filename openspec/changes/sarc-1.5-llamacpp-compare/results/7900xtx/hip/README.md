@@ -3,7 +3,7 @@
 Session `hip1`, 2026-10-12 18:57 to 19:54 UTC, on `<gpu-host>` (the card is the host's display adapter, idle), 16 arms (`arms.tsv`, `ARMS.md`,
 committed before the session) on 1B, 3B and 8B. Same card, host, binaries, `.pte` files, validity rule and counting rule as the
 2026-10-10 session in `../README.md` (read that first). **Drivers: ExecuTorch and the Vulkan reference arms on AMDVLK 2025.Q2.1;
-llama.cpp HIP arms on ROCm 7.2.1** (kernel driver `amdgpu` 6.16.13, `gfx1100`, device `ROCm0`). Files: `runs.csv` (every run: 98 timed runs
+llama.cpp HIP arms on ROCm 7.2.1** (kernel driver `amdgpu` 6.16.13, `gfx1100`, device `ROCm0`). Session status `SESSION_INCOMPLETE` (`done.txt`; 14 cells with fewer than five valid runs: the 12 HIP `lc` cells and stock `4w` at 3B and 8B, all `clock_low`-only, as in the 2026-10-10 session). Files: `runs.csv` (every run: 98 timed runs
 valid, 112 not, 12 discarded `lc` repetitions 0, 30 text checks; every invalid run has `clock_low` as its only reason), `cells.csv`
 (counts `clock_low`-only runs, as `../cells.csv`), `cells-strict.csv` (the rule as it stands), `checks.csv`, `recompute.txt` (the medians of
 both cells files recomputed from `runs.csv` independently of `aggregate.py`: 48 cells, no difference), `screen.csv` and `screen-runs.csv`
@@ -13,7 +13,7 @@ both cells files recomputed from `runs.csv` independently of `aggregate.py`: 48 
 
 The request requires the Vulkan baseline (1B tuned `4w`, `lb` Q4_0 `best`, both AMDVLK) measured before and after the HIP work and
 agreeing within 2 %, and says to stop and record when it moves more. Measured with the same adapter, five repetitions each, 18:38 UTC
-(before) and 19:56 UTC (after the timed session):
+("before", `hipbase-pre`, started 18:38:49 UTC) and 19:56 UTC (after the timed session). "Before" means before the timed session, not before any HIP work: the container builds had run on the host from 18:12 to 18:38 UTC and a HIP smoke run on the card ended about 47 s before it started, so it is not a clean pre-install reference. Against the 2026-10-10 session the "after" values are +1.10 % (tuned `4w`) and -2.34 % (`lb` Q4_0 `best`):
 
 | cell | 2026-10-10 session | before | timed session | after | after / before |
 |---|---:|---:|---:|---:|---:|
@@ -69,7 +69,7 @@ Q4_0, 13157 / 5554 / 2582 against 12877 / 5529 / 2581 for Q4_K_M).
   0.97 at default) and HIP Q4_K_M by `lb` is level with it (1.00 at `best`, 1.02 at default, inside the 2 % to 3 % between-session movement of the tuned 1B cell).
   At 3B and 8B tuned `4w` is ahead of HIP by 19 to 27 % (Q4_0) and 25 to 33 % (Q4_K_M) by `lb`. By `lc`, the fresh-process timer, tuned `4w` is ahead in every cell (1.20 to 1.42 Q4_0,
   1.45 to 2.01 Q4_K_M). Tuned `8da4w` is ahead of tuned `4w` by 6 to 10 % and has no llama.cpp counterpart.
-- **`best` is 2.0 to 7.2 % above `default`** for HIP by `lb` (Q4_0 4.3 / 7.2 / 5.7 %, Q4_K_M 2.0 / 6.1 / 5.5 %), as the screen said.
+- **`best` is 2.0 to 7.3 % above `default`** for HIP by `lb` (Q4_0 4.3 / 7.3 / 5.7 %, Q4_K_M 2.0 / 6.1 / 5.6 %), as the screen said.
 - **The two timers differ more on HIP than on Vulkan.** `lc` is 0.77 to 0.97 of `lb` for Q4_0 and 0.51 to 0.87 for Q4_K_M (smaller models lose more: 1B Q4_K_M `lc` is half of `lb`).
   `lc` is the fresh process of the kit and pays the card's clock ramp (median clock inside the 1B windows 970 to 1340 MHz against the 2670 MHz floor, so
   all 96 `lc` runs are `clock_low`, counted and shown) and whatever a process pays on its first evaluation; that the first evaluation of the HIP backend (loading of its
