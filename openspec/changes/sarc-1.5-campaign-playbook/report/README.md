@@ -19,13 +19,13 @@ One HTML file, two parts, deliberately separated:
    | `cats` | the six technique categories of figure 1 with their fixed colors (`--s1` to `--s6`; never reorder, never add a seventh) | this file |
    | `chains` | per device, the candidates that are in the final configuration, in order: `c` (category key), `g` (geomean change over its parent, %), `n` (label), and the state fields: `band: true` when the candidate is retained inside the noise band (drawn hatched), `why` (required on a segment with `g` under 2 that is not flagged `band`: the recorded reason it counts as a demonstrated gain), `c2` (second category key when one candidate bundles two techniques; drawn as a split segment) | each campaign's `proposal.md` candidate table; only candidates in the final configuration (a candidate that passed the gate and was later dropped, like the 780M's candidate 5, is not a segment) |
    | `reported` | per device, the final stack measured directly against the pristine parent, % | each campaign's final session |
-   | `techs` | the ten rows of the matrix; per device a cell `{k, g, v, n, t}`: `k` is `ok` (adopted with a demonstrated gain), `band` (retained, in band), `tried`, `inherit`, `pending` or `none`; `g` the gain when adopted or the in-band change when retained; `v` a short value when there is no gain to show; `n` a sub-label; `t` the tooltip | `proposal.md` of every campaign |
+   | `techs` | the eleven rows of the matrix; per device a cell `{k, g, v, n, t}`: `k` is `ok` (adopted with a demonstrated gain), `band` (retained, in band), `tried`, `inherit`, `pending` or `none`; `g` the gain when adopted or the in-band change when retained; `v` a short value when there is no gain to show; `n` a sub-label; `t` the tooltip | `proposal.md` of every campaign; row 11 from the "Round 3" sections named under "Round 3 on the two Intel cards" |
    | `techs[].ex`, `primer` | the plain-language section before figure 3: per technique `kind`, `what`, `why`, `like` (an analogy), `res` (result in one sentence); `primer` is the list of background terms. Update `res` when a technique lands on a new device | this file; `proposal.md` of the campaign that introduced the technique |
    | `fams`, `timeRows` | kernel families and the before/after dispatch time of 8B cells, ms | `trace-families.csv` / `STATUS.md` traces |
    | `waste` | the searches: hours of device time and end-to-end result (`gain` is a text, for example "no change adopted") | `LESSONS.md` L6, the campaign's `STATUS.md` |
    | `llama` | tuned 4w tok/s divided by llama.cpp at its best setting, per model, Vulkan and vendor backend | `sarc-1.5-llamacpp-compare/results/cells.csv` |
    | `meta.updated` | the date of the last data change | |
-   | `tokps` | per device, per model: `stock4w`, `stock8`, `sarc4w`, `sarc8`, `tuned4w`, `tuned8`, `vk` (best llama.cpp Vulkan Q4_0), `vkk` (best Vulkan Q4_K_M), `vendor` (best SYCL / CUDA Q4_0), `etcuda` (ExecuTorch CUDA 4w, 4070 Ti only), tok/s medians | `sarc-1.5-llamacpp-compare/results/cells.csv`: the max over that backend's `best` and `default` arms per model |
+   | `tokps` | per device, per model: `stock4w`, `stock8`, `sarc4w`, `sarc8`, `tuned4w`, `tuned8`, `vk` (best llama.cpp Vulkan Q4_0), `vkk` (best Vulkan Q4_K_M), `vendor` (best SYCL / CUDA Q4_0), `etcuda` (ExecuTorch CUDA 4w, 4070 Ti only), tok/s medians | `sarc-1.5-llamacpp-compare/results/cells.csv`: the max over that backend's `best` and `default` arms per model; `tuned8` of `b580` and `b70` from round 3 (see "Round 3 on the two Intel cards") |
    | `branches` | the lane diagram of figure 6: one entry per branch with its lane geometry (`x0`, `x1`, `fork`, `nodes`), head hash, date, state (`ok`, `run`, `ext`, `base`) and chip text | `git ls-remote origin` and the campaign STATUS files; update heads and chips when a branch moves or a run ends |
    | `roofs` | figure 8, kernel rate against the hardware roofs, for the five devices of the roofline study (780m, b580, b70, 4070ti, orin; a device that was not studied has no entry and is absent from the figure). `study`: campaign id, date, and per device the igpu-roofline branch name and short head. `order`: row order of the figure. `schemes`: `4w`, `8da4w`, `attn` (`plot: false` keeps the fused attention kernel in the data table only). `example`: the device whose chain is shown as the worked example. `devices.<id>`: `isa` (true when the driver's generated instructions were inspected) with `isa_note`, `state` (driver, power and clock state), `width` (subgroup width of roof shaders against kernels), `weight` (how the per-model kernel figure was formed), and `rows.<scheme>`: `unit`, `reg` (register roof), `fed` (fed from shared memory, best reuse), `reuse` (fed at the kernel's own reuse; `null` when no usable row exists, with the reason in `reuse_note`), `kernel` (rate per model, in the order of `models`), `mma` / `in` / `acc` / `sg` (matrix shape, input and accumulator type, kernel subgroup), `name` (dispatched kernel, storage suffix dropped) and `also` (other tiles dispatched by shape). `devices.<id>.chain`: part D of that device's study for its lowest scheme: `steps` with `rate`, `loss` (relative to the previous step unless `loss_basis` is `points`, then points of the register roof) and, where the study states it, `share` of the whole distance | `efficiency.csv` and `STUDY.md` on the igpu-roofline branches `study/et-20261010-<device>` |
 
@@ -69,7 +69,8 @@ this rule `stock[0] x (1 + final/100) = stock[1]` holds on every tile within the
 check it after every data edit. Do not copy `final` from a proposal ("over the published numbers") or from
 `reported`: `reported` is the final configuration measured directly against its parent in the final session, is
 printed under the device name in figure 1 as "final session", and may differ from `final` (by a fraction of a point
-on five devices, about 1.1 points on the RTX 4070 Ti SUPER and the 780M). The branch-lane labels of the final
+on three devices, about 1.1 points on the RTX 4070 Ti SUPER and the 780M, and by 2.1 to 2.5 points on the Arc B580 and
+the Arc Pro B70, whose `reported` predates round 3; the caption of figure 1 says so). The branch-lane labels of the final
 branches in `branches` quote `final`; the labels of the first-round branches quote first-round figures and are a
 different quantity. When `tokps` changes for a device, recompute its `stock` pair and its `final`, re-sort
 `devices`, and update the lane label.
@@ -130,6 +131,25 @@ After the subagent reports: read its diff (`git diff` of the one file), commit i
 with a message that names the campaign and the numbers that moved, and republish the page to its existing
 artifact URL from this file (the Artifact tool with `url` set; a publish without `url` makes a new page and loses
 the link). Push on the owner's word.
+
+## Round 3 on the two Intel cards (2026-10-12)
+
+The workgroup launch order of the 8da4w linear kernel (row 11 of `techs`, the last `chains` segment of `b580` and
+`b70`, their `tuned8` in `tokps`, the lanes `b580f` and `b70f`). Sources:
+
+- Arc B580: `openspec/changes/sarc-1.5-b580-fused-port/STATUS.md`, section "Round 3", and `results/b580/order2/`
+  on `topic/b580-fused-port` (profile `b580-fused1-order-p13`).
+- Arc Pro B70: `openspec/changes/sarc-1.5-b70-fused-port/STATUS.md`, section "Round 3", and `results/b70/order2/`
+  on `topic/b70-fused-port` (profile `b70-fused1-order-i-n26-w16m`).
+
+On 2026-10-12 both heads were local and not on origin; update the two chips in `branches` when they are pushed.
+What was not remeasured for the round 3 profiles and still describes the round 2 configurations: `reported` (the
+caption of figure 1 says so), `timeRows` (caption of figure 3), `roofs` (caption of figure 8 and the headroom
+note), and the full-subgroups re-measurement in the known-defect note. `tuned4w` is unchanged, so `tuned4w` and
+`tuned8` of these two devices come from different sessions (caption of figure 7). The two segments have `g` under
+2 and carry `why`: on the B580 the 3B and 8B 8da4w cells are outside the band and 1B is inside it; on the B70 only
+the 8B cell is outside it, and the 4w cells were taken as unchanged, not timed. Keep those statements with the
+numbers.
 
 ## Updating the roofs of figure 8
 
