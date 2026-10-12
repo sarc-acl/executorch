@@ -880,7 +880,12 @@ Override& fused_b580() {
 // b580-fused end
 // xe2-order begin: workgroup-order profiles (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)
 // Workgroup-order profiles (tools/gen_xe2.py, ORDER_PROFILES): the base profile with the 8da4w kernel
-// replaced by its xe2bto twin (part i: remap prologue alone; n<nb_max>: blocked order).
+// replaced by its xe2bto twin (part i: remap prologue alone; n<nb_max>: blocked order;
+// p<nb_max>: n<nb_max> for the large weight tensors, i for every other shape).
+// 8da4w linear: a weight tensor (K x N x 4 bit) of at least 12 x 10^6 bytes.
+bool xe2_order_w12(const ShapeInfo& s) {
+  return s.K * s.N >= 24000000;
+}
 const Preference kXe2Order_i[] = {
     {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
 };
@@ -898,6 +903,10 @@ const Preference kXe2Order_n21[] = {
 };
 const Preference kXe2Order_n26[] = {
     {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n26", nullptr},
+};
+const Preference kXe2Order_p13[] = {
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n13", xe2_order_w12},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
 };
 const Preference kB580Fused1Order_i[] = {
     {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
@@ -934,6 +943,13 @@ const Preference kB580Fused1Order_n26[] = {
     {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
     {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
     {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n26", nullptr},
+};
+const Preference kB580Fused1Order_p13[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n13", xe2_order_w12},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
 };
 // xe2-order end
 struct Profile {
@@ -1158,12 +1174,14 @@ const Profile kProfiles[] = {
     {"xe2-order-n16", kXe2Order_n16, sizeof(kXe2Order_n16) / sizeof(Preference)},
     {"xe2-order-n21", kXe2Order_n21, sizeof(kXe2Order_n21) / sizeof(Preference)},
     {"xe2-order-n26", kXe2Order_n26, sizeof(kXe2Order_n26) / sizeof(Preference)},
+    {"xe2-order-p13", kXe2Order_p13, sizeof(kXe2Order_p13) / sizeof(Preference)},
     {"b580-fused1-order-i", kB580Fused1Order_i, sizeof(kB580Fused1Order_i) / sizeof(Preference)},
     {"b580-fused1-order-n10", kB580Fused1Order_n10, sizeof(kB580Fused1Order_n10) / sizeof(Preference)},
     {"b580-fused1-order-n13", kB580Fused1Order_n13, sizeof(kB580Fused1Order_n13) / sizeof(Preference)},
     {"b580-fused1-order-n16", kB580Fused1Order_n16, sizeof(kB580Fused1Order_n16) / sizeof(Preference)},
     {"b580-fused1-order-n21", kB580Fused1Order_n21, sizeof(kB580Fused1Order_n21) / sizeof(Preference)},
     {"b580-fused1-order-n26", kB580Fused1Order_n26, sizeof(kB580Fused1Order_n26) / sizeof(Preference)},
+    {"b580-fused1-order-p13", kB580Fused1Order_p13, sizeof(kB580Fused1Order_p13) / sizeof(Preference)},
     // xe2-order end
 };
 const Profile* requested_profile() {
