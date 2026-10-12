@@ -207,3 +207,13 @@ attention rows).
 - The RX 7900 XTX fused-kernel result stands as measured under AMDVLK, subgroup width unverified; it will not
   be re-measured under RADV (owner decision 2026-10-09).
 - The Jetson Orin Nano's second-round numbers come from a cross build whose `glslc` differs from the pinned one; the owner accepted them as measured (2026-10-09). Keep that note in the Orin tooltips.
+
+## llama.cpp HIP on the RX 7900 XTX (2026-10-12)
+
+`llama[RX 7900 XTX].vendor` and the `vendor` column of its `tokps` entry come from
+`sarc-1.5-llamacpp-compare/results/7900xtx/hip/cells.csv` on `topic/llamacpp-compare` (`8eec16cf2`): arm
+`hip-lb-q4_0-best`, and the ratio uses that session's own tuned `4w` cells. The session's Vulkan baseline check
+moved 2.20 % on one cell against its 2 % bound, so the company side did not append its rows to
+`results/cells.csv`; the owner had the figures added to the report on 2026-10-12 with that reservation stated in
+figure 7's caption. If the rows are appended or the session is repeated, update both places and the caption.
+The RX 7600's HIP build exists and has not run.
