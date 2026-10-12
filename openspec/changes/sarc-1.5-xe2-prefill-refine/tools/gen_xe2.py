@@ -1002,6 +1002,7 @@ if ORDER:
     # for every 8da4w shape. Own blocks, after the b580 blocks (they use the b580 predicates and the fused pair).
     op = "// Workgroup-order profiles (tools/gen_xe2.py, ORDER_PROFILES): the base profile with the 8da4w kernel\n// replaced by its xe2bto twin (part i: remap prologue alone; n<nb_max>: blocked order).\n"; ol = ""; fused = []
     for prefix, before, fz in ORDER_PROFILES:
+        if fz and "kFusedB580Pair" not in t: continue   # a tree without the B580 fused-port blocks (the B70 campaign's): no b580 twin
         for m, n, k, sx, sy in ORDER_TILES:
             for x in ORDER:
                 ident = "k" + prefix.title().replace("-", "") + "_" + order_sfx(x)
@@ -1010,7 +1011,7 @@ if ORDER:
         if fz: fused.append(prefix)
     t = block(t, "// xe2-order begin: workgroup-order profiles (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)\n", "// xe2-order end\n", op, "struct Profile {\n")
     t = block(t, "    // xe2-order begin: workgroup-order profiles (tools/gen_xe2.py)\n", "    // xe2-order end\n", ol, "};\nconst Profile* requested_profile() {")
-    t = block(t, "  // xe2-order begin: the workgroup-order twins of b580-fused1 keep its fused attention pair (tools/gen_xe2.py)\n", "  // xe2-order end\n",
+    if fused: t = block(t, "  // xe2-order begin: the workgroup-order twins of b580-fused1 keep its fused attention pair (tools/gen_xe2.py)\n", "  // xe2-order end\n",
               "".join(f'  if (p != nullptr && std::strncmp(p->name, "{pf}-", {len(pf) + 1}) == 0) {{\n    return kFusedB580Pair;\n  }}\n' for pf in fused),
               '  return "";\n}\nconst char* softmax_variant_b580() {')
 o.write_text(t)
