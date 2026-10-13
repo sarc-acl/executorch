@@ -111,7 +111,7 @@ splits the check prompt into 1980 tokens, ExecuTorch's into 1972).
   `kit/make-q4km.sh`; every file 256 bytes smaller than `MODELS.md`, same parameter counts. The same files as on 2026-10-08.
 - **Stock arm** built natively from an export of `985c1ceccc` plus the backport (podman does not run on this host, so `build-stock.sh` was not used); the same binary as on 2026-10-08.
 - **Counting rule** for `clock_low`: above.
-- **HIP (request 10.2): built and runs on the card (native `gfx1102`); stopped at the Vulkan baseline check on 2026-10-12, not measured (see the section below).**
+- **HIP (request 10.2):** measured on 2026-10-12 in session `rx7600-hip2` with every arm of the device (native `gfx1102`, ROCm 7.2.4; deviations in `hip/README.md`, summary in the section below).
 
 ## Extras of the request (10.4): the real-text prompt and decode
 
@@ -150,34 +150,18 @@ and not judged: decode is short and memory-bound, so read it as indicative. Medi
 The final configuration, tuned for prefill, decodes 8 to 28 % slower than the parent on this card (the largest drop is 1B `8da4w`, 105.2 to 75.8 tok/s; spreads 0.1 to 2.1 %). llama.cpp
 decode was not measured (its decode benchmark runs at an empty context, not after the 2048-token prompt, so it would not be comparable).
 
-## HIP (ROCm), request 10.2: built and runs, stopped at the Vulkan baseline check (not measured)
+## HIP (ROCm), request 10.2: measured in one session with every arm (`hip/`)
 
-**State: blocked by the Vulkan baseline stop condition; no HIP screen, no timed session, no `ARMS.md` for HIP, no rows in `cells.csv`.** Files: `hip/` (`baseline-before-runs.csv`, `gpu-check.txt`).
+Full text, tables, deviations: `hip/README.md`; arms, build and settings screen: `hip/ARMS.md` (committed before the session). Summary:
 
-Owner decisions 2026-10-12 18:16 and 20:21 UTC: ROCm 7.2.4 is installed on the workstation in user space (`/opt/rocm` -> a directory on the local scratch disk; this is not a change of mine), and the HIP run
-starts from a fresh login shell that carries group `render`. Round of 2026-10-12 (after 21:20 UTC): `id` listed group `render`, `/opt/rocm/bin/rocminfo` listed `gfx1102` "AMD Radeon RX 7600"; no `sg` was used.
-
-**Build.** llama.cpp `b11430` with `HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1102 -DGGML_NATIVE=ON -DLLAMA_BUILD_TESTS=OFF
--DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF -DLLAMA_CURL=OFF` (`llama-completion`, `llama-bench`), built on this workstation with the installed ROCm 7.2.4 (`hipconfig` 7.2.53211, AMD clang 22.0.0 `roc-7.2.4`), no container; the binaries
-carry an `RPATH` to the ROCm libraries (`patchelf --force-rpath`). sha256 `llama-bench` `9fbc80c0…`, `llama-completion` `ff549476…`, `libggml-hip.so` `1e50cc5f…`.
-**The native `gfx1102` target builds and runs: `HSA_OVERRIDE_GFX_VERSION` and the `gfx1100` fallback were not needed and not used.**
-
-**GPU use, checked (`hip/gpu-check.txt`).** `llama-bench` reports `backends: ROCm`, device `ROCm0`, `gfx1102`; a verbose `llama-completion` run lists `offloaded 17/17 layers to GPU` on `ROCm0`, the card's `gpu_busy_percent` reached
-100 % and its VRAM use grew from 33 to 5393 MiB (llama.cpp's default context); no CPU fallback. The 16 generated tokens on the check prompt are fluent English. This was a smoke run, not a measurement.
-
-**What stopped it.** The request (10.2, as the owner's 18:16 UTC decision restates it) requires a new Vulkan baseline cell (1B tuned `4w` and `lb` Q4_0 `best`, RADV) to agree within 2 % with the 2026-10-10 session
-(ROCm was already installed before that session), "or stop and record". Measured 2026-10-12 21:27 to 21:29 UTC (`hipbase-pre`, `kit/session.sh` with `--models 1b --no-check`, the same adapter, binaries, `.pte`, ICD (RADV Mesa 26.2.3) and validity rule as
-`rx7600-r2`; five repetitions of the ExecuTorch arm, one `lb` process; card idle at 35 C before, no foreign GPU user, no host build in any run, all runs valid):
-
-| cell | 2026-10-10 session (`rx7600-r2`) | 2026-10-12 | change |
-|---|---:|---:|---:|
-| 1B tuned `4w` (tok/s) | 11070 | 12118 (five runs 12047 to 12118; 169 to 170 ms) | **+9.5 %** |
-| 1B Vulkan `lb` Q4_0 `best` (tok/s) | 5833 | 6346 | **+8.8 %** |
-
-Both cells moved up by about 9 %, far outside 2 %, and in the same direction on two unrelated runtimes (ExecuTorch Vulkan and llama.cpp Vulkan), with the card's median clock unchanged (2520 MHz against 2516 for tuned `4w`;
-2444 against 2446 for `lb`). A 9 % shift of both says that the measurement environment of 2026-10-12 is not the one of 2026-10-10; **the cause is unknown (UNVERIFIED)**: same kernel `6.8.0-107`, same Mesa 26.2.3 (`31e9a6b2e9`) and ICD file of 2026-09-28, and the installed ROCm predates the 2026-10-10 session, but the workstation had been up for only about 19 minutes when this was measured (`uptime`, 21:32 UTC), so it was restarted
-after the 2026-10-10 sessions (not by this task); a restart is a candidate cause (UNVERIFIED: no run separated it from other possibilities) and the machine was not examined further. By the rule as written the run stops here: the actor did not repeat the measurement to obtain an
-agreeing value, did not start the settings screen or the timed session, and did not append rows. The earlier RX 7600 numbers in this file (the Vulkan session `rx7600-r2` and its ratios) are unchanged and are not called into question by this note beyond the environment shift it records.
-
-**Decision needed from the owner:** accept a changed baseline (then the HIP session would compare the HIP arms with Vulkan arms measured in the same session, so the ratios do not depend on the 2026-10-10 absolute values), or ask for a repeat of the
-baseline first. Everything else is ready: the HIP build and `gfx1102` run, `hip-screen.tsv` (kit list, `-dev ROCm0`) and `hip-base.tsv` in the stage directory, the procedure of `../7900xtx/hip/`.
+- **Session `rx7600-hip2`** (2026-10-12 22:46 to 2026-10-13 00:56 UTC; owner decision 2026-10-12 21:44 UTC: one interleaved session with all 22 arms): ExecuTorch stock, SARC, tuned (`4w`, `8da4w`), llama.cpp Vulkan (RADV Mesa 26.2.3) and llama.cpp HIP
+  (ROCm 7.2.4 user space, **native `gfx1102`, no `HSA_OVERRIDE_GFX_VERSION`**), `lc` and `lb`, Q4_0 and Q4_K_M, `default` and `best` (HIP `best`: `-ub 512 -fa on` for Q4_0, `-ub 1024 -fa on` for Q4_K_M, from the screen), 1B / 3B / 8B.
+  GPU use checked (17/17 layers on `ROCm0`, card busy, no CPU fallback), check text fluent and identical to the Vulkan arm of the same quantization.
+- **Result:** tuned ExecuTorch `4w` is ahead of llama.cpp HIP in every cell: by `lb` at `best` Q4_0 1.75 / 1.68 / 1.55 and Q4_K_M 1.87 / 1.76 / 1.59 (1B / 3B / 8B), by `lc` 1.56 to 2.24. HIP is 4 to 9 % (Q4_0) and 19 % (Q4_K_M) faster than the
+  Vulkan arm by `lb` at 1B and 3B (by `lc` 5 to 12 % and 5 to 22 %, 8B included, where the Vulkan `lb` is the slow path above). HIP `llama-bench` does not take that slow path at 8B.
+- **The +9 % of 2026-10-12 21:28 UTC:** a Vulkan baseline cell (1B tuned `4w` 12118 against 11070 tok/s, `lb` Q4_0 `best` 6346 against 5833) read +9.5 % / +8.8 % against the 2026-10-10 session, 15 minutes after the workstation's restart
+  (`last -x`: down 2026-10-12 21:05:48 UTC, up **21:12:52 UTC**; the previous boot was 2026-09-18 21:28:39 UTC, the 2026-10-10 session's), with the card's clock unchanged. **The session does not show it:** from 22:20 UTC (the screen's tuned anchor) and in the timed session the
+  ExecuTorch arms and the Vulkan `lb` arms equal the 2026-10-10 session within 0.7 % in every cell, the Vulkan `lc` arms within 2.8 %. The cause of the higher reading at 21:28 UTC is UNVERIFIED (a restart shortly before is a candidate, no run separated it from other possibilities).
+  **The 2026-10-10 session's ratios stand** (its arms shared one session) and its absolute numbers agree with this session; no figure of this file or of `../cells.csv` rows of `rx7600-r2` is changed by the finding. The new session's 66 rows (Vulkan, ExecuTorch and HIP) are appended to
+  `../../cells.csv` under session `rx7600-hip2`, beside the `rx7600-r2` rows.
+- Files: `hip/{ARMS.md, arms.tsv, screen.csv, screen-runs.csv, runs.csv, cells.csv, cells-strict.csv, checks.csv, recompute.txt, gpu-check.txt, baseline-before-runs.csv, README.md}`.
