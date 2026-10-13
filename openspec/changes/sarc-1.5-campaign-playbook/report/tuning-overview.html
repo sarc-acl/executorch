@@ -207,7 +207,7 @@
     <p class="claim">The tuned ExecuTorch 4w prefill speed divided by the speed of llama.cpp Q4_0 at its best setting; the three points per device are 1B, 3B and 8B. Against llama.cpp Vulkan Q4_0, all three models lead on all eight devices; against the vendor backends (SYCL, CUDA, HIP, also Q4_0), the two Intel cards and the RTX 4070 Ti SUPER still trail by 3 % to 25 %, the Orin is roughly at parity (0.98 to 1.07), and the RX 7900 XTX trails HIP by 7 % at 1B and leads it by 19 % at 3B and 8B (0.93 / 1.19 / 1.19; company side, session of 2026-10-12, llama-bench timer; see the caption). The RX 7600 leads HIP in every cell, by 55 % to 75 % (1.75 / 1.68 / 1.55; company side, session rx7600-hip2 of 2026-10-12, llama-bench timer); on that card HIP is only 4 % to 9 % faster than llama.cpp Vulkan for Q4_0. The lead is stated for Q4_0 only. Against the llama.cpp Vulkan Q4_K_M column of figure 7 the same ratio runs from 0.97 (Jetson Orin Nano 1B, the one cell below 1.0) to 2.21 (RX 7600 1B): it is smaller than the Q4_0 ratio on the Orin and the RTX 4070 Ti SUPER, where Q4_K_M is the faster llama.cpp setting for every model, and larger on the 780M, the two AMD discrete cards and the B70, where it is the slower one (RX 7900 XTX: 1.36 / 1.56 / 1.51 against Q4_0 and 1.73 / 1.95 / 1.90 against Q4_K_M). These ratios use the synthetic 2048-token prompt. On a real-text prompt, measured on the two AMD discrete cards only, the tuned kernels are 0 to 8 % slower and llama.cpp is within 2 %, so the lead shrinks: against llama-completion Q4_0 it is 1.47 / 1.62 / 1.48 on the RX 7900 XTX (1.48 / 1.68 / 1.54 on the synthetic prompt) and 1.99 / 1.73 / 1.55 on the RX 7600 (2.06 / 1.81 / 1.63). On the M51 the ratio is 2.18 / 2.54 / 2.43 against Q4_0 and 2.55 / 2.95 / 2.88 against Q4_K_M, but the reference there is a restricted llama.cpp configuration: with its default settings llama.cpp aborts at start-up on that device's driver, and with flash attention off its cooperative-matrix path produces wrong output, so the ratios are against the one configuration whose output matches llama.cpp's own CPU backend (cooperative-matrix path disabled).</p>
     <div class="legend"><span><i style="background:var(--s1)"></i>vs llama.cpp Vulkan Q4_0</span><span><i style="background:var(--s2)"></i>vs vendor backend Q4_0 (Intel SYCL, NVIDIA CUDA, AMD HIP)</span><span><i style="border-top:2px dashed var(--ref);width:16px;height:0;border-radius:0"></i>1.0 parity</span></div>
     <div class="scroll"><div id="chart-llama"></div></div>
-    <figcaption>Source: cells.csv of topic/llamacpp-compare, llama.cpp b11430, the screened best setting of each device, median of 5 runs. The 780M has no usable vendor backend (ROCm does not support this integrated GPU; not measured). The M51's ratios are the published relative figures of its comparison sessions of 2026-10-10 (llama-bench timer, which is the higher llama.cpp timer there; by llama-completion the ratios are larger, 2.53 to 2.92 against Q4_0); llama.cpp's OpenCL backend rejects that GPU, so there is no vendor row. The RX 7600 (Mesa RADV) and the RX 7900 XTX (AMDVLK) were measured by the company side on 2026-10-10, Vulkan only, each in one interleaved session that also holds unmodified ExecuTorch, the parent commit and the final configuration. The RX 7600's 8B llama-bench figure is discarded because the prompt-only test at 2048 tokens took a slow GPU path on that card (about 96 tok/s; cause not established), and the llama-completion timing is used there. On the RX 7900 XTX, 82 of 195 timed runs were below the clock floor and are counted, as on the 780M; the ratios shown use llama-bench, which has no such cells. On both cards llama.cpp was built without host-native CPU flags (AVX2 instead); the Vulkan backend is the same. The RX 7600's HIP row (ROCm 7.2.4, native gfx1102, no version override) is from a second session, rx7600-hip2 of 2026-10-12, which measured all 22 arms together; the ratio shown is tuned 4w over HIP Q4_0 by llama-bench at its best setting, both from that session (by llama-completion it is 1.81 / 1.70 / 1.56, the 8B cell with runs below the clock floor counted). The tuned speeds of the RTX 4070 Ti SUPER, Arc Pro B70 and Arc B580 come from the closing sessions of their fused-port branches (s5-pristine, s4-pristine, s7-pristine, median of 7 runs), and the Jetson Orin Nano's from s8-pristine (median of 5 runs, cross build).</figcaption>
+    <figcaption>Source: cells.csv of topic/llamacpp-compare, llama.cpp b11430, the screened best setting of each device, median of 5 runs. The 780M has no usable vendor backend (ROCm does not support this integrated GPU; not measured). The M51's ratios are the published relative figures of its comparison sessions of 2026-10-10 (llama-bench timer, which is the higher llama.cpp timer there; by llama-completion the ratios are larger, 2.53 to 2.92 against Q4_0); llama.cpp's OpenCL backend rejects that GPU, so there is no vendor row. The RX 7600 (Mesa RADV) and the RX 7900 XTX (AMDVLK) were measured by the company side on 2026-10-10 against llama.cpp Vulkan, each in one interleaved session that also holds unmodified ExecuTorch, the parent commit and the final configuration. The RX 7600's 8B llama-bench figure is discarded because the prompt-only test at 2048 tokens took a slow GPU path on that card (about 96 tok/s; cause not established), and the llama-completion timing is used there. On the RX 7900 XTX, 82 of 195 timed runs were below the clock floor and are counted, as on the 780M; the ratios shown use llama-bench, which has no such cells. On both cards llama.cpp was built without host-native CPU flags (AVX2 instead); the Vulkan backend is the same. The RX 7600's HIP row (ROCm 7.2.4, native gfx1102, no version override) is from a second session, rx7600-hip2 of 2026-10-12, which measured all 22 arms together; the ratio shown is tuned 4w over HIP Q4_0 by llama-bench at its best setting, both from that session (by llama-completion it is 1.81 / 1.70 / 1.56, the 8B cell with runs below the clock floor counted). The tuned speeds of the RTX 4070 Ti SUPER, Arc Pro B70 and Arc B580 come from the closing sessions of their fused-port branches (s5-pristine, s4-pristine, s7-pristine, median of 7 runs), and the Jetson Orin Nano's from s8-pristine (median of 5 runs, cross build).</figcaption>
     <details><summary>Data table</summary><div id="table-llama"></div></details>
   </figure>
 
@@ -217,7 +217,7 @@
     <p class="claim">Each horizontal line is a branch on sarc-acl/executorch; time runs from left to right, not to scale. All campaign branches derive from the 780M branch, so the fused attention kernel and the development-zone overlay files are in every one of them; merge PRs can therefore only go in one at a time. The four short lines on the right are the fused-kernel port branches (three opened on 10-08, the B70's on 10-09), created from the heads of their respective first rounds; the 4070 Ti's and the B70's are closed, and the B580's and the Orin's have been declared ended by the owner (the last review round was not completed). On 10-12 round 3 (the workgroup launch order of the 8da4w linear kernel) was merged into the B580's and the B70's port branches, 3 and 4 commits, and pushed. The RX 7900 XTX's branch was created from a later commit of the 780M branch and ended on 10-09, so it is also drawn on the right.</p>
     <div class="legend" id="legend-branches"></div>
     <div class="scroll"><div id="chart-branches"></div></div>
-    <figcaption>"+N" is the number of commits ahead of dev/1.5; an arrow means the branch was created from that commit. Head status as of 2026-10-09 17:30 UTC, except the two Intel fused-port branches and the comparison branch, whose heads are those of 2026-10-12. The M51's branch (topic/m51-prefill-refine, also created from the 780M branch) is not drawn.</figcaption>
+    <figcaption>"+N" is the number of commits ahead of dev/1.5; an arrow means the branch was created from that commit. Heads and commit counts checked against origin on 2026-10-13 01:40 UTC. The M51's branch (topic/m51-prefill-refine, also created from the 780M branch) is not drawn.</figcaption>
   </figure>
 
   <figure id="fig-tokps">
@@ -1486,7 +1486,7 @@
  ],
  "meta": {
   "updated": "2026-10-12",
-  "note": "All figures from the campaign branches proposal.md / STATUS.md and topic/llamacpp-compare cells.csv; roofs from the igpu-roofline study branches (see roofs.study). Edit this block only; the rendering code below reads it. 2026-10-10: corrections after review; no new measurements. devices[].final is recomputed from tokps (see README). 2026-10-10 (second update): the RX 7600 and RX 7900 XTX rows of tokps are replaced by the company side's interleaved comparison sessions (results/rx7600 and results/7900xtx on topic/llamacpp-compare, head daee443b4); the F1 and decode notes carry the new measurements. 2026-10-10 (third update): the M51 carries relative figures (devices[].stock, final and a llama entry) from m51/ratios.csv, head 94a6de3e5; it still has no tokps, chains, reported or timeRows entry. 2026-10-10 (fourth update): the known-defect note carries the full-subgroups re-measurement on five devices (four closed, Orin sessions done); no figure of the page changed. 2026-10-12: round 3 on the two Intel cards (workgroup launch order of the 8da4w linear kernel): tuned8 of b580 and b70 in tokps, their devices[].final and stock[1], one chain segment each, row 11 of techs, the two fused-port lanes of branches. reported, timeRows and roofs were not remeasured and predate round 3. Sources: STATUS.md \"Round 3\" and results/b580/order2 on topic/b580-fused-port (local head af93a30c5), STATUS.md \"Round 3\" and results/b70/order2 on topic/b70-fused-port (local head 4275735c5); both heads are on origin. 2026-10-12 (second update): llama.cpp HIP on the RX 7600 from session rx7600-hip2 (results/rx7600/hip on topic/llamacpp-compare, head 972116847): the vendor column of its tokps rows, its llama entry, the head of the comparison lane of branches. The other RX 7600 columns stay those of rx7600-r2."
+  "note": "All figures from the campaign branches proposal.md / STATUS.md and topic/llamacpp-compare cells.csv; roofs from the igpu-roofline study branches (see roofs.study). Edit this block only; the rendering code below reads it. 2026-10-10: corrections after review; no new measurements. devices[].final is recomputed from tokps (see README). 2026-10-10 (second update): the RX 7600 and RX 7900 XTX rows of tokps are replaced by the company side's interleaved comparison sessions (results/rx7600 and results/7900xtx on topic/llamacpp-compare, head daee443b4); the F1 and decode notes carry the new measurements. 2026-10-10 (third update): the M51 carries relative figures (devices[].stock, final and a llama entry) from m51/ratios.csv, head 94a6de3e5; it still has no tokps, chains, reported or timeRows entry. 2026-10-10 (fourth update): the known-defect note carries the full-subgroups re-measurement on five devices (four closed, Orin sessions done); no figure of the page changed. 2026-10-12: round 3 on the two Intel cards (workgroup launch order of the 8da4w linear kernel): tuned8 of b580 and b70 in tokps, their devices[].final and stock[1], one chain segment each, row 11 of techs, the two fused-port lanes of branches. reported, timeRows and roofs were not remeasured and predate round 3. Sources: STATUS.md \"Round 3\" and results/b580/order2 on topic/b580-fused-port (local head af93a30c5), STATUS.md \"Round 3\" and results/b70/order2 on topic/b70-fused-port (local head 4275735c5); both heads are on origin. 2026-10-12 (second update): llama.cpp HIP on the RX 7600 from session rx7600-hip2 (results/rx7600/hip on topic/llamacpp-compare, head 972116847): the vendor column of its tokps rows, its llama entry, the head of the comparison lane of branches. The other RX 7600 columns stay those of rx7600-r2. 2026-10-12 (third update): consistency pass, no new measurement: every lane head and commit count of branches checked against origin (b580-fused-port +105, orin-fused-port +126, playbook head), comparison lane label."
  },
  "tokps": [
   {
@@ -1866,7 +1866,7 @@
      "lane": "dev",
      "x": 300
     },
-    "label": "+41 · comparison with llama.cpp on six devices, all results public",
+    "label": "+41 · comparison with llama.cpp on eight devices (M51: ratios only)",
     "head": {
      "h": "972116847",
      "d": "10-12",
@@ -1885,10 +1885,10 @@
     },
     "label": "rules, lessons, merge plan, COMPANY-SIDE.md, this report",
     "head": {
-     "h": "45d6b0bc5",
-     "d": "10-09",
+     "h": "16118f06e",
+     "d": "10-12",
      "state": "ok",
-     "chip": "pushed, matches origin"
+     "chip": "on origin; the last report update follows it"
     }
    },
    {
@@ -1900,7 +1900,7 @@
      "lane": "b580",
      "x": 960
     },
-    "label": "+101 · b580-fused1-order-p13 · +74.5 %",
+    "label": "+105 · b580-fused1-order-p13 · +74.5 %",
     "head": {
      "h": "af93a30c5",
      "d": "10-12",
@@ -2106,7 +2106,7 @@
      "lane": "orin",
      "x": 960
     },
-    "label": "+122 · orin-fused1 · +76.8 %",
+    "label": "+126 · orin-fused1 · +76.8 %",
     "head": {
      "h": "da92b4b3c",
      "d": "10-09",
