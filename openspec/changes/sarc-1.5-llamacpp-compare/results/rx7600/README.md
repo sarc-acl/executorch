@@ -111,7 +111,7 @@ splits the check prompt into 1980 tokens, ExecuTorch's into 1972).
   `kit/make-q4km.sh`; every file 256 bytes smaller than `MODELS.md`, same parameter counts. The same files as on 2026-10-08.
 - **Stock arm** built natively from an export of `985c1ceccc` plus the backport (podman does not run on this host, so `build-stock.sh` was not used); the same binary as on 2026-10-08.
 - **Counting rule** for `clock_low`: above.
-- **HIP (request 10.2): built, not run; blocked in the session that did the work, 2026-10-12 (see the section below).**
+- **HIP (request 10.2): built and runs on the card (native `gfx1102`); stopped at the Vulkan baseline check on 2026-10-12, not measured (see the section below).**
 
 ## Extras of the request (10.4): the real-text prompt and decode
 
@@ -150,21 +150,34 @@ and not judged: decode is short and memory-bound, so read it as indicative. Medi
 The final configuration, tuned for prefill, decodes 8 to 28 % slower than the parent on this card (the largest drop is 1B `8da4w`, 105.2 to 75.8 tok/s; spreads 0.1 to 2.1 %). llama.cpp
 decode was not measured (its decode benchmark runs at an empty context, not after the 2048-token prompt, so it would not be comparable).
 
-## HIP (ROCm), request 10.2: built for this card, not measured (blocked)
+## HIP (ROCm), request 10.2: built and runs, stopped at the Vulkan baseline check (not measured)
 
-Owner decision 2026-10-12 18:16 UTC: ROCm 7.2.4 is installed on the workstation in user space (`/opt/rocm` -> a directory on the local scratch disk; the user is a member of
-group `render` in `/etc/group`), so the card can run HIP; build with `-DAMDGPU_TARGETS=gfx1102` first and fall back to `gfx1100` with `HSA_OVERRIDE_GFX_VERSION=11.0.0` only if the build or the runtime rejects it.
-What was done, 2026-10-12: llama.cpp `b11430` built with `HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGGML_HIP=ON
--DAMDGPU_TARGETS=gfx1102 -DGGML_NATIVE=ON -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF -DLLAMA_CURL=OFF` (`llama-completion`, `llama-bench`; the ROCm 7.2.4 `rocblas` and
-`hipblaslt` libraries have `gfx1102` kernel libraries): **the native `gfx1102` target builds without error, so the override and the `gfx1100` fallback were not needed or used** (not yet tested at run time, see below).
-The binaries carry an `RPATH` (`patchelf --force-rpath`) to the ROCm libraries and to their own directory, so that they can run beside the Vulkan arms in one session, as for the 7900 XTX.
+**State: blocked by the Vulkan baseline stop condition; no HIP screen, no timed session, no `ARMS.md` for HIP, no rows in `cells.csv`.** Files: `hip/` (`baseline-before-runs.csv`, `gpu-check.txt`).
 
-**What stopped it:** no HIP run was possible from the session that did this work. The process carries neither group `render` nor `video` (its `id` lacks them: it was started before the group
-change), `/dev/kfd` is `root:render 0660`, and `rocminfo` stops with `Unable to open /dev/kfd read-write: Permission denied` although it prints that the user is a member of the group. The owner decision
-names `sg render -c '<command>'` as the way; in that session `sg` fails with `setgroups: Operation not permitted` and `setgid: Operation not permitted`, because the process runs with `no_new_privs` (set by the tool
-harness that runs the session's commands, `NoNewPrivs: 1` in `/proc/self/status`), which disables the set-user-id `sg`. No other route was tried (a login through `ssh` to this host would carry the group but would leave the
-session's restrictions, and changing groups, device permissions or udev rules is excluded by the same decision). So, as the decision demands, the session stopped there: no GPU run, no screen, no Vulkan baseline cell, no `ARMS.md` for HIP.
+Owner decisions 2026-10-12 18:16 and 20:21 UTC: ROCm 7.2.4 is installed on the workstation in user space (`/opt/rocm` -> a directory on the local scratch disk; this is not a change of mine), and the HIP run
+starts from a fresh login shell that carries group `render`. Round of 2026-10-12 (after 21:20 UTC): `id` listed group `render`, `/opt/rocm/bin/rocminfo` listed `gfx1102` "AMD Radeon RX 7600"; no `sg` was used.
 
-**What is needed** (no administrator): the HIP session started from a process that has group `render` (a fresh login shell, or `sg render -c` from a shell without `no_new_privs`). Everything else is ready: the build
-(local scratch disk, `build/bin` patched copy in `bin/`), `kit/hosts/rx7600/host.sh` unchanged, and the 2026-10-10 Vulkan values to compare the new baseline cell against (1B tuned `4w` 11070, `lb` Q4_0 `best` 5833; within 2 %, else stop). The procedure is that of
-`../7900xtx/hip/` (screen with the kit's list, `hip-{lc,lb}-{q4_0,q4_k_m}-{default,best}`, both timers, GPU-use check with `-v`, text check), with `HSA_OVERRIDE_GFX_VERSION=11.0.0` only if the `gfx1102` build is rejected by the runtime.
+**Build.** llama.cpp `b11430` with `HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1102 -DGGML_NATIVE=ON -DLLAMA_BUILD_TESTS=OFF
+-DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF -DLLAMA_CURL=OFF` (`llama-completion`, `llama-bench`), built on this workstation with the installed ROCm 7.2.4 (`hipconfig` 7.2.53211, AMD clang 22.0.0 `roc-7.2.4`), no container; the binaries
+carry an `RPATH` to the ROCm libraries (`patchelf --force-rpath`). sha256 `llama-bench` `9fbc80c0…`, `llama-completion` `ff549476…`, `libggml-hip.so` `1e50cc5f…`.
+**The native `gfx1102` target builds and runs: `HSA_OVERRIDE_GFX_VERSION` and the `gfx1100` fallback were not needed and not used.**
+
+**GPU use, checked (`hip/gpu-check.txt`).** `llama-bench` reports `backends: ROCm`, device `ROCm0`, `gfx1102`; a verbose `llama-completion` run lists `offloaded 17/17 layers to GPU` on `ROCm0`, the card's `gpu_busy_percent` reached
+100 % and its VRAM use grew from 33 to 5393 MiB (llama.cpp's default context); no CPU fallback. The 16 generated tokens on the check prompt are fluent English. This was a smoke run, not a measurement.
+
+**What stopped it.** The request (10.2, as the owner's 18:16 UTC decision restates it) requires a new Vulkan baseline cell (1B tuned `4w` and `lb` Q4_0 `best`, RADV) to agree within 2 % with the 2026-10-10 session
+(ROCm was already installed before that session), "or stop and record". Measured 2026-10-12 21:27 to 21:29 UTC (`hipbase-pre`, `kit/session.sh` with `--models 1b --no-check`, the same adapter, binaries, `.pte`, ICD (RADV Mesa 26.2.3) and validity rule as
+`rx7600-r2`; five repetitions of the ExecuTorch arm, one `lb` process; card idle at 35 C before, no foreign GPU user, no host build in any run, all runs valid):
+
+| cell | 2026-10-10 session (`rx7600-r2`) | 2026-10-12 | change |
+|---|---:|---:|---:|
+| 1B tuned `4w` (tok/s) | 11070 | 12118 (five runs 12047 to 12118; 169 to 170 ms) | **+9.5 %** |
+| 1B Vulkan `lb` Q4_0 `best` (tok/s) | 5833 | 6346 | **+8.8 %** |
+
+Both cells moved up by about 9 %, far outside 2 %, and in the same direction on two unrelated runtimes (ExecuTorch Vulkan and llama.cpp Vulkan), with the card's median clock unchanged (2520 MHz against 2516 for tuned `4w`;
+2444 against 2446 for `lb`). A 9 % shift of both says that the measurement environment of 2026-10-12 is not the one of 2026-10-10; **the cause is unknown (UNVERIFIED)**: same kernel `6.8.0-107`, same Mesa 26.2.3 (`31e9a6b2e9`) and ICD file of 2026-09-28, and the installed ROCm predates the 2026-10-10 session, but the workstation had been up for only about 19 minutes when this was measured (`uptime`, 21:32 UTC), so it was restarted
+after the 2026-10-10 sessions (not by this task); a restart is a candidate cause (UNVERIFIED: no run separated it from other possibilities) and the machine was not examined further. By the rule as written the run stops here: the actor did not repeat the measurement to obtain an
+agreeing value, did not start the settings screen or the timed session, and did not append rows. The earlier RX 7600 numbers in this file (the Vulkan session `rx7600-r2` and its ratios) are unchanged and are not called into question by this note beyond the environment shift it records.
+
+**Decision needed from the owner:** accept a changed baseline (then the HIP session would compare the HIP arms with Vulkan arms measured in the same session, so the ratios do not depend on the 2026-10-10 absolute values), or ask for a repeat of the
+baseline first. Everything else is ready: the HIP build and `gfx1102` run, `hip-screen.tsv` (kit list, `-dev ROCm0`) and `hip-base.tsv` in the stage directory, the procedure of `../7900xtx/hip/`.
