@@ -215,4 +215,13 @@ attention rows).
 `hip-lb-q4_0-best`, and the ratio uses that session's own tuned `4w` cells. The session's Vulkan baseline check
 moved 2.20 % on one cell against its 2 % bound; the owner accepted the rows on 2026-10-12 and they were appended to
 `results/cells.csv` (`7b45c5e98`, source `7900xtx/hip/cells.csv`), with the check recorded as not met. Figure 7's caption says so. The `clock_low` counting rule (cells marked `*`) was confirmed by the owner for the RX 7900 XTX and the RX 7600 on the same day (`f63e4505f`).
-The RX 7600's HIP build exists and has not run.
+
+## llama.cpp HIP on the RX 7600 (2026-10-12)
+
+`llama[RX 7600].vendor` and the `vendor` column of its `tokps` entry come from
+`sarc-1.5-llamacpp-compare/results/rx7600/hip/cells.csv` on `topic/llamacpp-compare` (`972116847`), session
+`rx7600-hip2` (ROCm 7.2.4, native `gfx1102`): arm `hip-lb-q4_0-best`, and the ratio uses that session's own tuned
+`4w` cells (1.75 / 1.68 / 1.55). The session measured all 22 arms together and agrees with `rx7600-r2` within 0.7 % on
+the ExecuTorch and Vulkan `lb` cells, so the other RX 7600 columns of `tokps` stay those of `rx7600-r2`. A Vulkan
+baseline cell read 9 % high fifteen minutes after a restart of the workstation, before the session; it was not
+reproduced in the session and is used in no ratio. Figure 7's caption says so.
