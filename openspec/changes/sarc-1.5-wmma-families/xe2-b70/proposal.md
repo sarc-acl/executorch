@@ -122,3 +122,27 @@ reports BUILD_BOTH_OK. New matrix_verify.sh calls the unchanged six-cell gate
 without historical SDPA tier extras, after filling all six supplied models
 (which fit in RAM) and recording residency. Device-loss output blocks later jobs.
 The metadata helper executes constant methods only and links no Vulkan backend.
+
+Slowdown is preregistered explicitly as control tok/s divided by candidate tok/s
+minus one (elapsed-time ratio), including the six-cell geometric mean. This is
+a conservative reading of the 3%/8% limits. Uncertainty uses 20,000 independent-arm
+bootstrap resamples of valid selected runs, seed7321, with 2.5/97.5 percentiles.
+No data has been measured before this clarification.
+
+The standalone dispatch collector fills the model cache at every model/cell change,
+uses the exact exported schema/flatc and traced binaries, and extracts every shader
+name with standard-library JSON parsing. The inherited Inspector/venv trace path
+is not used. The standalone linear identity tool reuses the exact exported
+microbenchmark's deterministic production inputs, uses nonzero activation zero
+points, and compares every fp16 output bit for both registered storage modes on
+all twelve production NK shapes. It changes no gate, tolerance or shader.
+The finite queue requires an actor-recorded BASELINE_READY marker, the calibrated
+repeat count and the exact manifest hash; it records every raw run with per-row
+unit/driver/commit/binary/profile/session/sensor provenance. Incomplete sessions
+stop and require an explicit owner resume; no interrupted session is overwritten.
+
+The first diagnostic metadata helper was compiled from live helper source against
+the parent SDK. Its preliminary output is retained but will not serve as final
+runtime-metadata evidence: the helper is rebuilt from an immutable topic export
+against that export's SDK before timing. No GPU measurement used the preliminary
+helper. The normal candidate build and its shaders have always used exact exports.
