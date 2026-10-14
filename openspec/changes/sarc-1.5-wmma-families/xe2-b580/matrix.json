@@ -1,0 +1,353 @@
+{
+  "inventory_commit": "f393c3ff7ff4fc41e4651a5109a8509097c501f6",
+  "inventory_manifest_sha256": "5904caa4c1977f256d58b4c1c111e7fdcb2e54bc312676b40c90da6bcf048306",
+  "control": "b580-fused1-order-p13",
+  "profile_prefix": "b580-fused1-order-wmma-",
+  "candidate_profiles": [
+    "q4-narrow",
+    "q4-band",
+    "dq-table",
+    "dq-i",
+    "dq-n26",
+    "b70-linear"
+  ],
+  "identity_profiles": [
+    "q4-table",
+    "dq-n13"
+  ],
+  "candidates": [
+    {
+      "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n13_texture3d_texture2d_half",
+      "source_fingerprint": "0f190876e8ef87cf3ef87650479498a31579950d648ac334189283acae86e6c4",
+      "kernel_base": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n13",
+      "scheme": "8da4w",
+      "io_storage": "texture3d",
+      "profile": "control",
+      "declared_shared_bytes": 43520,
+      "workgroup_invocations": 512,
+      "platform_check": "PASS_QUERIED_LIMITS_AND_MMA",
+      "compiled_module": "PENDING_BUILD",
+      "model_prefill_applicability": "texture3d projections",
+      "origins": [
+        {
+          "device": "b580",
+          "route": "R20",
+          "layer": "profile",
+          "predicate": "K*N>=24000000",
+          "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n13_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Xe2Linear.cpp:167@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:1835@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ]
+    },
+    {
+      "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n13_buffer_texture2d_half",
+      "source_fingerprint": "e80817f80be2263ab5f6f9b4a6ba18f9f15c48d32d6fd86813d0a5a696437cbf",
+      "kernel_base": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n13",
+      "scheme": "8da4w",
+      "io_storage": "buffer",
+      "profile": "control",
+      "declared_shared_bytes": 35328,
+      "workgroup_invocations": 512,
+      "platform_check": "PASS_QUERIED_LIMITS_AND_MMA",
+      "compiled_module": "PENDING_BUILD",
+      "model_prefill_applicability": "production-diff only; serialized buffer projection is M=1",
+      "origins": [
+        {
+          "device": "b580",
+          "route": "R20",
+          "layer": "profile",
+          "predicate": "K*N>=24000000",
+          "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n13_buffer_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Xe2Linear.cpp:167@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:1835@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ]
+    },
+    {
+      "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i_texture3d_texture2d_half",
+      "source_fingerprint": "f3366043c3f91afa6d1352d9e202d9cf30c7e70613849831e753785257f8040e",
+      "kernel_base": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i",
+      "scheme": "8da4w",
+      "io_storage": "texture3d",
+      "profile": "control",
+      "declared_shared_bytes": 43520,
+      "workgroup_invocations": 512,
+      "platform_check": "PASS_QUERIED_LIMITS_AND_MMA",
+      "compiled_module": "PENDING_BUILD",
+      "model_prefill_applicability": "texture3d projections",
+      "origins": [
+        {
+          "device": "b580",
+          "route": "R21",
+          "layer": "profile",
+          "predicate": "all; next fitting preference",
+          "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Xe2Linear.cpp:161@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:1835@617897184529ff180af491ee0d5d7de778cbb6c6"
+        },
+        {
+          "device": "b70",
+          "route": "R27",
+          "layer": "profile",
+          "predicate": "all; next fitting preference",
+          "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Xe2Linear.cpp:161@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:1888@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ]
+    },
+    {
+      "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i_buffer_texture2d_half",
+      "source_fingerprint": "8a660490611926a43428b4e24efcfb931430e6cf52c1fdbaffb5899f22d46feb",
+      "kernel_base": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i",
+      "scheme": "8da4w",
+      "io_storage": "buffer",
+      "profile": "control",
+      "declared_shared_bytes": 35328,
+      "workgroup_invocations": 512,
+      "platform_check": "PASS_QUERIED_LIMITS_AND_MMA",
+      "compiled_module": "PENDING_BUILD",
+      "model_prefill_applicability": "production-diff only; serialized buffer projection is M=1",
+      "origins": [
+        {
+          "device": "b580",
+          "route": "R21",
+          "layer": "profile",
+          "predicate": "all; next fitting preference",
+          "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i_buffer_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Xe2Linear.cpp:161@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:1835@617897184529ff180af491ee0d5d7de778cbb6c6"
+        },
+        {
+          "device": "b70",
+          "route": "R27",
+          "layer": "profile",
+          "predicate": "all; next fitting preference",
+          "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i_buffer_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Xe2Linear.cpp:161@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:1888@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ]
+    },
+    {
+      "shader": "sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half",
+      "source_fingerprint": "e5e50c2d316f45128e6a305d5b917035e6e254d69b18a270dc2f375114f23ba5",
+      "kernel_base": "sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli",
+      "scheme": "4w",
+      "io_storage": "texture3d",
+      "profile": "control",
+      "declared_shared_bytes": 24576,
+      "workgroup_invocations": 256,
+      "platform_check": "PASS_QUERIED_LIMITS_AND_MMA",
+      "compiled_module": "PENDING_BUILD",
+      "model_prefill_applicability": "texture3d projections",
+      "origins": [
+        {
+          "device": "b580",
+          "route": "R22",
+          "layer": "table",
+          "predicate": "all; no linear 4w preference",
+          "shader": "sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_intel.cpp:31@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_intel.cpp:28@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ]
+    },
+    {
+      "shader": "sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_buffer_texture2d_half",
+      "source_fingerprint": "1b8c46fbfc2716fd80475db4ccff1d1d5d42659cce34dab4e2f2acc2e9e60e12",
+      "kernel_base": "sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli",
+      "scheme": "4w",
+      "io_storage": "buffer",
+      "profile": "control",
+      "declared_shared_bytes": 16384,
+      "workgroup_invocations": 256,
+      "platform_check": "PASS_QUERIED_LIMITS_AND_MMA",
+      "compiled_module": "PENDING_BUILD",
+      "model_prefill_applicability": "production-diff only; serialized buffer projection is M=1",
+      "origins": [
+        {
+          "device": "b580",
+          "route": "R22",
+          "layer": "table",
+          "predicate": "all; no linear 4w preference",
+          "shader": "sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_buffer_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_intel.cpp:31@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_intel.cpp:28@617897184529ff180af491ee0d5d7de778cbb6c6"
+        },
+        {
+          "device": "b70",
+          "route": "R28",
+          "layer": "table",
+          "predicate": "all; buffer only; texture3d covered by k16g82 preference",
+          "shader": "sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_buffer_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_intel.cpp:39@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_intel.cpp:36@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ]
+    },
+    {
+      "shader": "sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_texture3d_texture2d_half",
+      "source_fingerprint": "c4ccf9c8ee090831beac3abc040d70ff65a9ea894f4da9c995a6d0da5d8263f5",
+      "kernel_base": "sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8",
+      "scheme": "8da4w",
+      "io_storage": "texture3d",
+      "profile": "dq-table",
+      "declared_shared_bytes": 31488,
+      "workgroup_invocations": 512,
+      "platform_check": "PASS_QUERIED_LIMITS_AND_MMA",
+      "compiled_module": "PENDING_BUILD",
+      "model_prefill_applicability": "texture3d projections",
+      "origins": [
+        {
+          "device": "b580",
+          "route": "R23",
+          "layer": "table",
+          "predicate": "all; retained when order kernels fail fit, e.g. N%128!=0 or group_size%64!=0",
+          "shader": "sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_intel.cpp:50@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_intel.cpp:28@617897184529ff180af491ee0d5d7de778cbb6c6"
+        },
+        {
+          "device": "b70",
+          "route": "R29",
+          "layer": "table",
+          "predicate": "all; retained when order kernels fail fit, e.g. N%128!=0 or group_size%64!=0",
+          "shader": "sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_intel.cpp:58@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_intel.cpp:36@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ]
+    },
+    {
+      "shader": "sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_buffer_texture2d_half",
+      "source_fingerprint": "fd7b6fb62b4cb747b77a0561d77d551ca00b27dbe0bc83498f795ce3941a30c9",
+      "kernel_base": "sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8",
+      "scheme": "8da4w",
+      "io_storage": "buffer",
+      "profile": "dq-table",
+      "declared_shared_bytes": 23296,
+      "workgroup_invocations": 512,
+      "platform_check": "PASS_QUERIED_LIMITS_AND_MMA",
+      "compiled_module": "PENDING_BUILD",
+      "model_prefill_applicability": "production-diff only; serialized buffer projection is M=1",
+      "origins": [
+        {
+          "device": "b580",
+          "route": "R23",
+          "layer": "table",
+          "predicate": "all; retained when order kernels fail fit, e.g. N%128!=0 or group_size%64!=0",
+          "shader": "sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_buffer_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_intel.cpp:50@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_intel.cpp:28@617897184529ff180af491ee0d5d7de778cbb6c6"
+        },
+        {
+          "device": "b70",
+          "route": "R29",
+          "layer": "table",
+          "predicate": "all; retained when order kernels fail fit, e.g. N%128!=0 or group_size%64!=0",
+          "shader": "sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_buffer_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_intel.cpp:58@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_intel.cpp:36@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ]
+    },
+    {
+      "shader": "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g84s16m8flw_texture3d_texture2d_half",
+      "source_fingerprint": "c3804a1eb51568cdb44c1b1ff5e5161c852349965b0e9e6d918031c83c50688f",
+      "kernel_base": "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g84s16m8flw",
+      "scheme": "4w",
+      "io_storage": "texture3d",
+      "profile": "q4-narrow",
+      "declared_shared_bytes": 40960,
+      "workgroup_invocations": 512,
+      "platform_check": "PASS_QUERIED_LIMITS_AND_MMA",
+      "compiled_module": "PENDING_BUILD",
+      "model_prefill_applicability": "texture3d projections",
+      "origins": [
+        {
+          "device": "b70",
+          "route": "R24",
+          "layer": "profile",
+          "predicate": "N<=512",
+          "shader": "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g84s16m8flw_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Xe2Linear.cpp:158@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:1888@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ]
+    },
+    {
+      "shader": "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib_texture3d_texture2d_half",
+      "source_fingerprint": "becd6c4880fb1960379eba94ba666a73093281c82c7baad93ab99a1df716295e",
+      "kernel_base": "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib",
+      "scheme": "4w",
+      "io_storage": "texture3d",
+      "profile": "q4-band",
+      "declared_shared_bytes": 18432,
+      "workgroup_invocations": 256,
+      "platform_check": "PASS_QUERIED_LIMITS_AND_MMA",
+      "compiled_module": "PENDING_BUILD",
+      "model_prefill_applicability": "texture3d projections",
+      "origins": [
+        {
+          "device": "b70",
+          "route": "R25",
+          "layer": "profile",
+          "predicate": "all; next fitting preference",
+          "shader": "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Xe2Linear.cpp:155@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:1888@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ]
+    },
+    {
+      "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n26_texture3d_texture2d_half",
+      "source_fingerprint": "93426de9bcd7ab4fe776e3b2f2592a542fa628c7186593407ba902306a04a12c",
+      "kernel_base": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n26",
+      "scheme": "8da4w",
+      "io_storage": "texture3d",
+      "profile": "dq-n26",
+      "declared_shared_bytes": 43520,
+      "workgroup_invocations": 512,
+      "platform_check": "PASS_QUERIED_LIMITS_AND_MMA",
+      "compiled_module": "PENDING_BUILD",
+      "model_prefill_applicability": "texture3d projections",
+      "origins": [
+        {
+          "device": "b70",
+          "route": "R26",
+          "layer": "profile",
+          "predicate": "K*N>=33554432",
+          "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n26_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Xe2Linear.cpp:176@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:1888@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ]
+    },
+    {
+      "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n26_buffer_texture2d_half",
+      "source_fingerprint": "e852837b37de600b5f573591f92bb7e1e99be73fcc5ba7b4ca31b16247a22a43",
+      "kernel_base": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n26",
+      "scheme": "8da4w",
+      "io_storage": "buffer",
+      "profile": "dq-n26",
+      "declared_shared_bytes": 35328,
+      "workgroup_invocations": 512,
+      "platform_check": "PASS_QUERIED_LIMITS_AND_MMA",
+      "compiled_module": "PENDING_BUILD",
+      "model_prefill_applicability": "production-diff only; serialized buffer projection is M=1",
+      "origins": [
+        {
+          "device": "b70",
+          "route": "R26",
+          "layer": "profile",
+          "predicate": "K*N>=33554432",
+          "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n26_buffer_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Xe2Linear.cpp:176@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:1888@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ]
+    }
+  ]
+}

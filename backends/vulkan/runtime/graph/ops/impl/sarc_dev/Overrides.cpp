@@ -1894,6 +1894,66 @@ const Preference kB70Fused1Order_i_n26_w16m[] = {
     {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
 };
 // xe2-order end
+// b580-wmma begin: finite reviewed Xe2 linear matrix; B580 attention controls
+const Preference kB580WmmaQ4Table[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n13", xe2_order_w12},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+};
+const Preference kB580WmmaQ4Narrow[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n13", xe2_order_w12},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+};
+const Preference kB580WmmaQ4Band[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n13", xe2_order_w12},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+const Preference kB580WmmaDqTable[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "t256x64k32g48s16m8", nullptr},
+};
+const Preference kB580WmmaDqIdent[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+};
+const Preference kB580WmmaDqN13[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n13", xe2_order_w12},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+};
+const Preference kB580WmmaDqN26[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n26", xe2_order_weights_16m},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+};
+const Preference kB580WmmaB70Linear[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n26", xe2_order_weights_16m},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+// b580-wmma end
 struct Profile {
   const char* name;
   const Preference* prefs;
@@ -2309,6 +2369,16 @@ const Profile kProfiles[] = {
     {"b70-fused1-order-n26", kB70Fused1Order_n26, sizeof(kB70Fused1Order_n26) / sizeof(Preference)},
     {"b70-fused1-order-i-n26-w16m", kB70Fused1Order_i_n26_w16m, sizeof(kB70Fused1Order_i_n26_w16m) / sizeof(Preference)},
     // xe2-order end
+    // b580-wmma begin
+    {"b580-fused1-order-wmma-q4-table", kB580WmmaQ4Table, sizeof(kB580WmmaQ4Table) / sizeof(Preference)},
+    {"b580-fused1-order-wmma-q4-narrow", kB580WmmaQ4Narrow, sizeof(kB580WmmaQ4Narrow) / sizeof(Preference)},
+    {"b580-fused1-order-wmma-q4-band", kB580WmmaQ4Band, sizeof(kB580WmmaQ4Band) / sizeof(Preference)},
+    {"b580-fused1-order-wmma-dq-table", kB580WmmaDqTable, sizeof(kB580WmmaDqTable) / sizeof(Preference)},
+    {"b580-fused1-order-wmma-dq-i", kB580WmmaDqIdent, sizeof(kB580WmmaDqIdent) / sizeof(Preference)},
+    {"b580-fused1-order-wmma-dq-n13", kB580WmmaDqN13, sizeof(kB580WmmaDqN13) / sizeof(Preference)},
+    {"b580-fused1-order-wmma-dq-n26", kB580WmmaDqN26, sizeof(kB580WmmaDqN26) / sizeof(Preference)},
+    {"b580-fused1-order-wmma-b70-linear", kB580WmmaB70Linear, sizeof(kB580WmmaB70Linear) / sizeof(Preference)},
+    // b580-wmma end
 };
 const Profile* requested_profile() {
   static const Profile* p = []() -> const Profile* {
