@@ -1,0 +1,20 @@
+diff --git a/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp b/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
+--- a/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
++++ b/backends/vulkan/runtime/graph/ops/impl/sarc/SdpaCoopmat.cpp
+@@ -13,2 +13,4 @@
+ 
++#include <cstdlib>
++
+ namespace vkcompute {
+@@ -203,3 +205,10 @@ std::string sdpa_softmax_shader_name(
+   }
+-  return "sarc_" + upstream_name;
++  // LOCAL HOOK of openspec/changes/sarc-1.5-orin-prefill-refine, NOT
++  // committed: a dev-zone softmax variant, named by suffix.
++  std::string name = "sarc_" + upstream_name;
++  if (const char* v = std::getenv("ET_VK_SARC_SOFTMAX_VARIANT")) {
++    name += "_";
++    name += v;
++  }
++  return name;
+ }

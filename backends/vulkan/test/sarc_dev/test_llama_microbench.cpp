@@ -1407,6 +1407,10 @@ SdpaRunResult sdpa_run_case(
     // The fused prefill kernel and the copy pass that feeds it are counted in
     // the total through fused_time_us above (the 780M campaign's bucket).
     // <<< 4070ti-fused perf-total
+    // >>> orin-fused perf-total
+    // As above: fused_time_us counts the fused kernel and its copy passes
+    // (*_sdpa_fused*, *_sdpa_kvt*, *_sdpa_vt*).
+    // <<< orin-fused perf-total
   }
 
   // >>> 4070ti-fused perf-runs
@@ -1515,7 +1519,7 @@ bool run_sdpa_suite(const std::string& model_filter) {
             ? "confirmed"
             : "fallback_tiled";
         all_confirmed = all_confirmed && dispatch == "confirmed";
-        // >>> 4070ti-fused perf-dispatch
+        // >>> 4070ti-fused perf-dispatch (orin-fused: the same block)
         // A fused kernel replaces all three and confirms the case as well.
         if (tiled_is_tiled &&
             has_kernel_containing(coopmat.dispatched_kernels, "_sdpa_fused")) {
@@ -1575,12 +1579,12 @@ struct SdpaCorrectnessCase {
   // Tokens already in the KV cache. context_len = input_pos + seq_len; the
   // cache rows below input_pos are filled by the host with random history.
   int64_t input_pos = 0;
-  // >>> 4070ti-fused case-field
+  // >>> 4070ti-fused, orin-fused case-field
   // Q is uniform in [-q_scale, q_scale] (as on the 780M). 1 gives near-uniform
   // attention (scores within about +-1); the "peaked" tier uses 8, where a few
   // context positions carry most of a row's weight.
   float q_scale = 1.0f;
-  // <<< 4070ti-fused case-field
+  // <<< 4070ti-fused, orin-fused case-field
 };
 // "all" keeps its original meaning (fast + regions) so existing gates run the
 // same cases as before; the later tiers are opt-in by name.
@@ -1650,7 +1654,7 @@ const std::vector<SdpaCorrectnessCase> kSdpaCorrectnessCases = {
     {"3b_head_config_s2048", 2048, 128, 24, 8, "full"},
     {"8b_head_config_s2048", 2048, 128, 32, 8, "full"},
     {"8b_head_config_s1024_pos1024", 1024, 128, 32, 8, "full", 1024},
-    // >>> 4070ti-fused cases
+    // >>> 4070ti-fused, orin-fused cases
     // ---- peaked tier (the 780M's cases; --sdpa-tier=peaked) ---------------
     // Same shapes as above with sharp attention rows; not part of "all".
     {"peaked_tiny_gqa_s256", 256, 64, 2, 1, "peaked", 0, 8.0f},
@@ -1667,7 +1671,7 @@ const std::vector<SdpaCorrectnessCase> kSdpaCorrectnessCases = {
     {"fused_s64_d128", 64, 128, 32, 8, "fused"},
     {"fused_s192_pos64", 192, 64, 32, 8, "fused", 64},
     {"fused_s320_d128_pos192", 320, 128, 24, 8, "fused", 192, 8.0f},
-    // <<< 4070ti-fused cases
+    // <<< 4070ti-fused, orin-fused cases
 };
 
 // ---------------- QK^T mask-region enumeration (host-side) ----------------
@@ -2190,8 +2194,10 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
   }
   const bool qk_no_mask_fill = qk_name.find("s32nf") != std::string::npos ||
       qk_name.find("s64nf") != std::string::npos;
+  // Substring, not prefix: a build with the event tracer reports kernel names
+  // as `"kernel_name": "<name>", "operator_id": N` (the Orin cross build).
   const bool softmax_truncated =
-      softmax_name.rfind("sarc_sdpa_attn_weights_softmax", 0) == 0;
+      softmax_name.find("sarc_sdpa_attn_weights_softmax") != std::string::npos;
   // 780m: the softmax variant r3 bounds its zero fill to the K-chunks the SARC
   // attn*V kernels stage, so it is only correct in front of one of them.
   const bool softmax_bounded_fill =
@@ -2305,7 +2311,7 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
   }
 
   const bool numeric_ok = mismatches == 0;
-  // >>> 4070ti-fused verdict
+  // >>> 4070ti-fused verdict (orin-fused: the same block)
   // A case served by a fused prefill kernel, which computes QK^T, softmax and
   // attn*V itself: then none of the three kernels may have run (their names
   // above stay "?"; the fused kernel and its copy pass match none of them).

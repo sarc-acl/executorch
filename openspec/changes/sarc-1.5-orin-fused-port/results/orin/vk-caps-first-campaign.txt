@@ -1,0 +1,27 @@
+device NVIDIA Tegra Orin (nvgpu) driver 0x94d38000 api 1.4.329
+subgroupSize 32 min 32 max 32 maxComputeWorkgroupSubgroups 32 requiredSubgroupSizeStages 0x3fff supportedStages 0x3fff
+maxComputeSharedMemorySize 49152 maxComputeWorkGroupInvocations 1024 maxComputeWorkGroupSize 1024 1024 64 maxComputeWorkGroupCount 2147483647 65535 65535
+maxStorageBufferRange 4294967295 maxImageDimension2D 32768 maxImageDimension3D 16384
+extension VK_KHR_16bit_storage 1
+extension VK_KHR_8bit_storage 1
+extension VK_KHR_cooperative_matrix 2
+extension VK_KHR_pipeline_executable_properties 1
+extension VK_KHR_shader_float16_int8 1
+extension VK_KHR_shader_float_controls2 1
+extension VK_KHR_shader_integer_dot_product 1
+extension VK_EXT_subgroup_size_control 2
+extension VK_NV_cooperative_matrix 1
+extension VK_NV_cooperative_matrix2 1
+cooperativeMatrix 1 robustBufferAccess 0 supportedStages 0x20
+coopmat M 16 N 16 K 16 A f16 B f16 C f16 R f16 saturating 0 scope 3
+coopmat M 16 N 8 K 16 A f16 B f16 C f16 R f16 saturating 0 scope 3
+coopmat M 16 N 8 K 8 A f16 B f16 C f16 R f16 saturating 0 scope 3
+coopmat M 16 N 16 K 16 A f16 B f16 C f32 R f32 saturating 0 scope 3
+coopmat M 16 N 8 K 16 A f16 B f16 C f32 R f32 saturating 0 scope 3
+coopmat M 16 N 8 K 8 A f16 B f16 C f32 R f32 saturating 0 scope 3
+coopmat M 16 N 16 K 32 A u8 B u8 C u32 R u32 saturating 0 scope 3
+coopmat M 16 N 16 K 32 A s8 B s8 C s32 R s32 saturating 0 scope 3
+coopmat M 16 N 8 K 32 A u8 B u8 C u32 R u32 saturating 0 scope 3
+coopmat M 16 N 8 K 32 A s8 B s8 C s32 R s32 saturating 0 scope 3
+coopmat M 16 N 16 K 16 A other B other C f32 R f32 saturating 0 scope 3
+4

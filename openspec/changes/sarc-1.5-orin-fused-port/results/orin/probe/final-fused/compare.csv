@@ -1,0 +1,20 @@
+cell,comparison,prompts,top1_diff,kl_mean,kl_max,max_abs_logit_diff,ppl_reference,ppl_other,abs_ln_ppl_ratio,prompts_with_different_top1,within_2x_floor
+1b-4w,floor: parent tiled vs parent default,41,0,0.000544033,0.0137339,0.6456,8.9766,8.8646,0.0125549,,
+1b-4w,candidate default vs parent default,41,0,0.000904559,0.0144162,0.7803,8.9766,8.8432,0.0149632,,yes
+1b-4w,candidate tiled vs parent tiled (reported only),41,0,0.00020424,0.00349512,0.4163,8.8646,8.8507,0.00156824,,
+1b-8da4w,floor: parent tiled vs parent default,41,1,0.0729308,0.808075,5.3184,9.7062,9.6282,0.00806822,36,
+1b-8da4w,candidate default vs parent default,41,2,0.0410108,0.291372,4.7500,9.7062,9.4577,0.0259435,10;16,NO: dppl
+1b-8da4w,candidate tiled vs parent tiled (reported only),41,2,0.0312565,0.317935,4.3379,9.6282,9.4485,0.0188447,10;11,
+3b-4w,floor: parent tiled vs parent default,41,0,0.000161399,0.00261737,0.3398,3.7279,3.7300,0.000546829,,
+3b-4w,candidate default vs parent default,41,0,0.000497719,0.0130999,0.5156,3.7279,3.7424,0.00387325,,NO: kl_mean+kl_max+dppl
+3b-4w,candidate tiled vs parent tiled (reported only),41,0,6.61738e-05,0.00081811,0.2773,3.7300,3.7321,0.00058015,,
+3b-8da4w,floor: parent tiled vs parent default,41,1,0.015847,0.103073,2.8828,3.8349,3.6695,0.0440629,39,
+3b-8da4w,candidate default vs parent default,41,0,0.0190142,0.291891,3.5518,3.8349,3.8329,0.000516429,,NO: kl_max
+3b-8da4w,candidate tiled vs parent tiled (reported only),41,1,0.019808,0.370387,3.0049,3.6695,3.6010,0.0188478,4,
+8b-4w,floor: parent tiled vs parent default,41,0,0.000154839,0.00251042,0.4922,2.7189,2.7131,0.00211294,,
+8b-4w,candidate default vs parent default,41,0,0.000502537,0.0151514,0.4219,2.7189,2.7264,0.00275511,,NO: kl_mean+kl_max
+8b-4w,candidate tiled vs parent tiled (reported only),41,0,4.00829e-05,0.000821075,0.2500,2.7131,2.7154,0.000848666,,
+8b-8da4w,floor: parent tiled vs parent default,41,1,0.0218663,0.365605,3.8535,2.8254,2.8637,0.0134654,3,
+8b-8da4w,candidate default vs parent default,41,2,0.017044,0.117641,4.1094,2.8254,2.8555,0.010595,3;21,yes
+8b-8da4w,candidate tiled vs parent tiled (reported only),41,0,0.0131473,0.0984808,3.6562,2.8637,2.8839,0.007051,,
+verdict: OUTSIDE twice the noise floor (see the NO rows)

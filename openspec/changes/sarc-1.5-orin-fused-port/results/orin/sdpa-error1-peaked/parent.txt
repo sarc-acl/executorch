@@ -1,0 +1,19 @@
+[sarc_dev] softmax variant: orin_g64
+[sarc_dev] profile active: orin-refine5
+[sarc_dev] overrides active: unverified=1 variant= dq8ca_variant=
+[sdpa-error] peaked_tiny_gqa_s256 max_abs=0.00225818 rms=0.000378089 max_abs_ref=0.988095
+[sdpa-kernels] peaked_tiny_gqa_s256 qk="kernel_name": "sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k64g42s32nf_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sarc_sdpa_attn_weights_softmax_buffer_half_orin_g64", "operator_id": 0 av="kernel_name": "sarc_sdpa_av_coopmat_4070ti_t64x64k32g42s32_buffer_buffer_half", "operator_id": 0 fused=- no_mask_fill=yes pairing=ok
+[sdpa-correctness] peaked_tiny_gqa_s256 S=256 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/32768 PASSED
+[sdpa-error] peaked_1b_head_config_s256_pos256 max_abs=0.00302011 rms=0.000376733 max_abs_ref=0.985859
+[sdpa-kernels] peaked_1b_head_config_s256_pos256 qk="kernel_name": "sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k64g42s32nf_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sarc_sdpa_attn_weights_softmax_buffer_half_orin_g64", "operator_id": 0 av="kernel_name": "sarc_sdpa_av_coopmat_4070ti_t64x64k32g42s32_buffer_buffer_half", "operator_id": 0 fused=- no_mask_fill=yes pairing=ok
+[sdpa-correctness] peaked_1b_head_config_s256_pos256 S=256 input_pos=256 D=64 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/524288 PASSED
+[sdpa-error] peaked_8b_head_config_s256 max_abs=0.00288782 rms=0.000374241 max_abs_ref=0.999783
+[sdpa-kernels] peaked_8b_head_config_s256 qk="kernel_name": "sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k64g42s32nf_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sarc_sdpa_attn_weights_softmax_buffer_half_orin_g64", "operator_id": 0 av="kernel_name": "sarc_sdpa_av_coopmat_4070ti_ml_t64x128k32g42s32_buffer_buffer_half", "operator_id": 0 fused=- no_mask_fill=yes pairing=ok
+[sdpa-correctness] peaked_8b_head_config_s256 S=256 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/1048576 PASSED
+[sdpa-error] peaked_tiny_gqa_s2048 max_abs=0.0027566 rms=0.000364564 max_abs_ref=0.981968
+[sdpa-kernels] peaked_tiny_gqa_s2048 qk="kernel_name": "sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k64g42s32nf_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sarc_sdpa_attn_weights_softmax_buffer_half_orin_g64", "operator_id": 0 av="kernel_name": "sarc_sdpa_av_coopmat_4070ti_t64x64k32g42s32_buffer_buffer_half", "operator_id": 0 fused=- no_mask_fill=yes pairing=ok
+[sdpa-correctness] peaked_tiny_gqa_s2048 S=2048 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/262144 PASSED
+[sdpa-error] peaked_tiny_d128_s2048 max_abs=0.00252268 rms=0.000365846 max_abs_ref=0.998644
+[sdpa-kernels] peaked_tiny_d128_s2048 qk="kernel_name": "sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k64g42s32nf_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sarc_sdpa_attn_weights_softmax_buffer_half_orin_g64", "operator_id": 0 av="kernel_name": "sarc_sdpa_av_coopmat_4070ti_ml_t64x128k32g42s32_buffer_buffer_half", "operator_id": 0 fused=- no_mask_fill=yes pairing=ok
+[sdpa-correctness] peaked_tiny_d128_s2048 S=2048 input_pos=0 D=128 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/524288 PASSED
+[sdpa-correctness] tier=peaked cases_run=5

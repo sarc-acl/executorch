@@ -1,0 +1,13 @@
+[sdpa-error] tiny_gqa max_abs=0.00104123 rms=0.000134969 max_abs_ref=0.98152
+[sdpa-kernels] tiny_gqa qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 no_mask_fill=no pairing=ok
+[sdpa-correctness] tiny_gqa S=128 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/16384 FAILED
+[sdpa-error] 1b_head_config max_abs=0.00168443 rms=0.000137813 max_abs_ref=0.998901
+[sdpa-kernels] 1b_head_config qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 no_mask_fill=no pairing=ok
+[sdpa-correctness] 1b_head_config S=128 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/262144 FAILED
+[sdpa-error] tiny_gqa_s256 max_abs=0.00123668 rms=0.000117539 max_abs_ref=0.993831
+[sdpa-kernels] tiny_gqa_s256 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 no_mask_fill=no pairing=ok
+[sdpa-correctness] tiny_gqa_s256 S=256 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/32768 FAILED
+[sdpa-error] 1b_head_config_s256 max_abs=0.00173557 rms=0.000119344 max_abs_ref=0.998859
+[sdpa-kernels] 1b_head_config_s256 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 no_mask_fill=no pairing=ok
+[sdpa-correctness] 1b_head_config_s256 S=256 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/524288 FAILED
+[sdpa-correctness] tier=all cases_run=4

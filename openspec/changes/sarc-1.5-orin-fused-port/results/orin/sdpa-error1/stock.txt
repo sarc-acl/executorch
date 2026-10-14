@@ -1,0 +1,39 @@
+# arm stock env []
+[sdpa-error] tiny_gqa_pos64 max_abs=0.000689417 rms=9.73765e-05 max_abs_ref=0.205344
+[sdpa-kernels] tiny_gqa_pos64 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 fused=- no_mask_fill=no pairing=ok
+[sdpa-correctness] tiny_gqa_pos64 S=128 input_pos=64 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/16384 FAILED
+[sdpa-error] tiny_gqa_s256_pos128 max_abs=0.00088235 rms=9.67958e-05 max_abs_ref=0.161491
+[sdpa-kernels] tiny_gqa_s256_pos128 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 fused=- no_mask_fill=no pairing=ok
+[sdpa-correctness] tiny_gqa_s256_pos128 S=256 input_pos=128 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/32768 FAILED
+[sdpa-error] 1b_head_config_s256_pos256 max_abs=0.000718169 rms=8.29997e-05 max_abs_ref=0.142912
+[sdpa-kernels] 1b_head_config_s256_pos256 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 fused=- no_mask_fill=no pairing=ok
+[sdpa-correctness] 1b_head_config_s256_pos256 S=256 input_pos=256 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/524288 FAILED
+[sdpa-error] 3b_head_config_s256 max_abs=0.00166237 rms=0.000122078 max_abs_ref=0.998598
+[sdpa-kernels] 3b_head_config_s256 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 fused=- no_mask_fill=no pairing=ok
+[sdpa-correctness] 3b_head_config_s256 S=256 input_pos=0 D=128 Q_H=24 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/786432 FAILED
+[sdpa-error] 8b_head_config_s256 max_abs=0.00181824 rms=0.000123011 max_abs_ref=0.999106
+[sdpa-kernels] 8b_head_config_s256 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 fused=- no_mask_fill=no pairing=ok
+[sdpa-correctness] 8b_head_config_s256 S=256 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/1048576 FAILED
+[sdpa-error] 3b_head_config_pos128 max_abs=0.00118469 rms=9.49144e-05 max_abs_ref=0.249578
+[sdpa-kernels] 3b_head_config_pos128 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 fused=- no_mask_fill=no pairing=ok
+[sdpa-correctness] 3b_head_config_pos128 S=128 input_pos=128 D=128 Q_H=24 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/393216 FAILED
+[sdpa-error] tiny_gqa_s2048 max_abs=0.00149816 rms=8.35745e-05 max_abs_ref=0.98697
+[sdpa-kernels] tiny_gqa_s2048 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 fused=- no_mask_fill=no pairing=ok
+[sdpa-correctness] tiny_gqa_s2048 S=2048 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/262144 FAILED
+[sdpa-error] tiny_d128_s2048 max_abs=0.00146663 rms=8.384e-05 max_abs_ref=0.997051
+[sdpa-kernels] tiny_d128_s2048 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 fused=- no_mask_fill=no pairing=ok
+[sdpa-correctness] tiny_d128_s2048 S=2048 input_pos=0 D=128 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/524288 FAILED
+[sdpa-correctness] tier=extended cases_run=8
+[sdpa-error] 1b_head_config_s2048 max_abs=0.0017128 rms=8.54687e-05 max_abs_ref=0.998757
+[sdpa-kernels] 1b_head_config_s2048 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 fused=- no_mask_fill=no pairing=ok
+[sdpa-correctness] 1b_head_config_s2048 S=2048 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/4194304 FAILED
+[sdpa-error] 3b_head_config_s2048 max_abs=0.00140828 rms=8.68625e-05 max_abs_ref=0.999094
+[sdpa-kernels] 3b_head_config_s2048 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 fused=- no_mask_fill=no pairing=ok
+[sdpa-correctness] 3b_head_config_s2048 S=2048 input_pos=0 D=128 Q_H=24 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/6291456 FAILED
+[sdpa-error] 8b_head_config_s2048 max_abs=0.00158703 rms=8.69643e-05 max_abs_ref=0.994699
+[sdpa-kernels] 8b_head_config_s2048 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 fused=- no_mask_fill=no pairing=ok
+[sdpa-correctness] 8b_head_config_s2048 S=2048 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/8388608 FAILED
+[sdpa-error] 8b_head_config_s1024_pos1024 max_abs=0.00102516 rms=7.92873e-05 max_abs_ref=0.0880162
+[sdpa-kernels] 8b_head_config_s1024_pos1024 qk="kernel_name": "sdpa_compute_attn_weights_tiled_buffer_buffer_half", "operator_id": 0 softmax="kernel_name": "sdpa_attn_weights_softmax_buffer_half", "operator_id": 0 av="kernel_name": "sdpa_compute_out_tiled_buffer_buffer_half", "operator_id": 0 fused=- no_mask_fill=no pairing=ok
+[sdpa-correctness] 8b_head_config_s1024_pos1024 S=1024 input_pos=1024 D=128 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/4194304 FAILED
+[sdpa-correctness] tier=full cases_run=4

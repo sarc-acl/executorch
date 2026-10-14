@@ -1,0 +1,41 @@
+PARENT-STATUS: correctness cases not PASSED: ['linear_q4gsw_M128_K4096_N128_Buffer:FAILED', 'linear_q4gsw_M128_K4096_N128_Texture3D:FAILED', 'linear_q4gsw_M128_K4096_N128_rank3batch1_Buffer:FAILED', 'rank3 [rank3 batch=1] linear_dq8ca_q4gsw_M128_K128_N128_rank3batch1_Buffer -> "kernel_:unparsed', 'rank3 [rank3 batch=1] linear_dq8ca_q4gsw_M128_K4096_N128_rank3batch1_Buffer -> "kernel:unparsed', 'rank3 [rank3 batch=1] linear_q4gsw_M128_K128_N128_rank3batch1_Buffer -> "kernel_name"::unparsed']
+PARENT-STATUS: pdiff llama-3.1-8b 4w buffer rc: 1
+PARENT-STATUS: pdiff llama-3.1-8b 4w buffer shape llama-3.1-8b_prefill_w1_w3_linear_q4gsw_M2048_K4096_N14336_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.1-8b 4w buffer shape llama-3.1-8b_prefill_w2_linear_q4gsw_M2048_K14336_N4096_rank3batch1_Buffer: threw
+PARENT-STATUS: pdiff llama-3.1-8b 4w buffer shape llama-3.1-8b_prefill_wk_wv_linear_q4gsw_M2048_K4096_N1024_rank3batch1_Buffer: threw
+PARENT-STATUS: pdiff llama-3.1-8b 4w buffer shape llama-3.1-8b_prefill_wq_wo_linear_q4gsw_M2048_K4096_N4096_rank3batch1_Buffer: threw
+PARENT-STATUS: pdiff llama-3.1-8b 4w buffer verdict: FAILED
+PARENT-STATUS: pdiff llama-3.1-8b 8da4w buffer rc: 1
+PARENT-STATUS: pdiff llama-3.1-8b 8da4w buffer shape llama-3.1-8b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K4096_N14336_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.1-8b 8da4w buffer shape llama-3.1-8b_prefill_w2_linear_dq8ca_q4gsw_M2048_K14336_N4096_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.1-8b 8da4w buffer shape llama-3.1-8b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K4096_N1024_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.1-8b 8da4w buffer shape llama-3.1-8b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K4096_N4096_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.1-8b 8da4w buffer verdict: FAILED
+PARENT-STATUS: pdiff llama-3.2-1b 4w buffer rc: 1
+PARENT-STATUS: pdiff llama-3.2-1b 4w buffer shape llama-3.2-1b_prefill_w1_w3_linear_q4gsw_M2048_K2048_N8192_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.2-1b 4w buffer shape llama-3.2-1b_prefill_w2_linear_q4gsw_M2048_K8192_N2048_rank3batch1_Buffer: threw
+PARENT-STATUS: pdiff llama-3.2-1b 4w buffer shape llama-3.2-1b_prefill_wk_wv_linear_q4gsw_M2048_K2048_N512_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.2-1b 4w buffer shape llama-3.2-1b_prefill_wq_wo_linear_q4gsw_M2048_K2048_N2048_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.2-1b 4w buffer verdict: FAILED
+PARENT-STATUS: pdiff llama-3.2-1b 8da4w buffer rc: 1
+PARENT-STATUS: pdiff llama-3.2-1b 8da4w buffer shape llama-3.2-1b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K2048_N8192_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.2-1b 8da4w buffer shape llama-3.2-1b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N2048_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.2-1b 8da4w buffer shape llama-3.2-1b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K2048_N512_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.2-1b 8da4w buffer shape llama-3.2-1b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K2048_N2048_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.2-1b 8da4w buffer verdict: FAILED
+PARENT-STATUS: pdiff llama-3.2-3b 4w buffer rc: 1
+PARENT-STATUS: pdiff llama-3.2-3b 4w buffer shape llama-3.2-3b_prefill_w1_w3_linear_q4gsw_M2048_K3072_N8192_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.2-3b 4w buffer shape llama-3.2-3b_prefill_w2_linear_q4gsw_M2048_K8192_N3072_rank3batch1_Buffer: threw
+PARENT-STATUS: pdiff llama-3.2-3b 4w buffer shape llama-3.2-3b_prefill_wk_wv_linear_q4gsw_M2048_K3072_N1024_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.2-3b 4w buffer shape llama-3.2-3b_prefill_wq_wo_linear_q4gsw_M2048_K3072_N3072_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.2-3b 4w buffer verdict: FAILED
+PARENT-STATUS: pdiff llama-3.2-3b 8da4w buffer rc: 1
+PARENT-STATUS: pdiff llama-3.2-3b 8da4w buffer shape llama-3.2-3b_prefill_w1_w3_linear_dq8ca_q4gsw_M2048_K3072_N8192_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.2-3b 8da4w buffer shape llama-3.2-3b_prefill_w2_linear_dq8ca_q4gsw_M2048_K8192_N3072_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.2-3b 8da4w buffer shape llama-3.2-3b_prefill_wk_wv_linear_dq8ca_q4gsw_M2048_K3072_N1024_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.2-3b 8da4w buffer shape llama-3.2-3b_prefill_wq_wo_linear_dq8ca_q4gsw_M2048_K3072_N3072_rank3batch1_Buffer: fallback:PASSED
+PARENT-STATUS: pdiff llama-3.2-3b 8da4w buffer verdict: FAILED
+verify status (candidate / parent): correctness rc 1/1; linear 4w rc 1/1; linear 8da4w rc 1/1; pdiff llama-3.1-8b 4w buffer rc 1/1; pdiff llama-3.1-8b 4w texture3d rc 0/0; pdiff llama-3.1-8b 8da4w buffer rc 1/1; pdiff llama-3.1-8b 8da4w texture3d rc 0/0; pdiff llama-3.2-1b 4w buffer rc 1/1; pdiff llama-3.2-1b 4w texture3d rc 0/0; pdiff llama-3.2-1b 8da4w buffer rc 1/1; pdiff llama-3.2-1b 8da4w texture3d rc 0/0; pdiff llama-3.2-3b 4w buffer rc 1/1; pdiff llama-3.2-3b 4w texture3d rc 0/0; pdiff llama-3.2-3b 8da4w buffer rc 1/1; pdiff llama-3.2-3b 8da4w texture3d rc 0/0
+candidate linear dispatch states: unexpected_coopmat=24, fallback_tiled=24
+parent linear dispatch states: unexpected_coopmat=24, fallback_tiled=24
+verify: ACCEPT (0 findings)

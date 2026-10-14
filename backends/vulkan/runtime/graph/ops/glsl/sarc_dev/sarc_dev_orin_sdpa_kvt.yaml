@@ -1,0 +1,16 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# SARC development zone, Jetson Orin (sarc-1.5-orin-fused-port): tile-packed copies of the K and V caches for the
+# PACKED variants of sarc_dev_orin_sdpa_fused3sb. Not shipped; reached only through impl/sarc_dev/orin/SdpaOrinFused.cpp.
+
+sarc_dev_orin_sdpa_kvt:
+  parameter_names_with_default_values:
+    DTYPE: half
+    PRECISION: highp
+    STORAGE: buffer
+  shader_variants:
+    - NAME: sarc_dev_orin_sdpa_kvt_buffer_half

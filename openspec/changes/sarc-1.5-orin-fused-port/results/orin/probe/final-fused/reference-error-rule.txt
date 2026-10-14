@@ -1,0 +1,21 @@
+case,parent_rms,candidate_rms,parent_max,candidate_max,rms_not_larger,max_not_larger
+1b_head_config_s2048 (production shape),2.101e-05,2.04856e-05,0.000913501,0.000722706,yes,yes
+3b_head_config_s2048 (production shape),2.06763e-05,2.0532e-05,0.000782847,0.000706136,yes,yes
+8b_head_config_s2048 (production shape),2.0566e-05,2.0223e-05,0.000891089,0.000791132,yes,yes
+1b_head_config_s256_pos256,1.79961e-05,1.79174e-05,0.000113532,0.000113532,yes,yes
+3b_head_config_pos128,2.60317e-05,2.58869e-05,0.000175104,0.000160053,yes,yes
+3b_head_config_s256,4.95622e-05,4.87529e-05,0.000778675,0.000820339,yes,NO
+8b_head_config_s1024_pos1024,9.01809e-06,8.97996e-06,6.94245e-05,7.22557e-05,yes,NO
+8b_head_config_s256,4.98951e-05,4.92015e-05,0.00086993,0.000817329,yes,yes
+tiny_d128_s2048,2.0707e-05,2.03423e-05,0.000779569,0.000559509,yes,yes
+tiny_gqa_pos64,3.23192e-05,3.23779e-05,0.000173852,0.000146136,NO,yes
+tiny_gqa_s2048,2.08004e-05,2.04967e-05,0.000694275,0.000607848,yes,yes
+tiny_gqa_s256_pos128,2.37706e-05,2.35809e-05,0.000142887,0.000138387,yes,yes
+cell,prompts,top1_diff,mean_kl,gross_divergence
+1b-4w,41,0,0.000904559,no
+1b-8da4w,41,2,0.0410108,no
+3b-4w,41,0,0.000497719,no
+3b-8da4w,41,0,0.0190142,no
+8b-4w,41,0,0.000502537,no
+8b-8da4w,41,2,0.017044,no
+verdict: MET (reference-error rule, owner decision 2026-10-04); written /home/doremy/hmz-sarc-orin-fused/probe/final-fused/REFERENCE_ERROR.json
