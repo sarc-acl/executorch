@@ -1,0 +1,12 @@
+sarc-4w et sarc 4w
+tuned-4w et tuned 4w
+tuned-8da4w et tuned 8da4w
+lb-q4_0-best lb llama-bench q4_0 -ngl 99 -dev Vulkan0 -b 2048 -ub 1024 -fa off
+lb-q4_0-ub512-fa-off lb llama-bench q4_0 -ngl 99 -dev Vulkan0 -b 2048 -ub 512 -fa off
+lb-q4_0-ub2048-fa-off lb llama-bench q4_0 -ngl 99 -dev Vulkan0 -b 2048 -ub 2048 -fa off
+lb-q4_0-ub1024-fa-on lb llama-bench q4_0 -ngl 99 -dev Vulkan0 -b 2048 -ub 1024 -fa on
+lb-q4_0-ub256-fa-off lb llama-bench q4_0 -ngl 99 -dev Vulkan0 -b 2048 -ub 256 -fa off
+sy-lb-q4_0-best lb llama-bench q4_0 -ngl 99 -dev SYCL0 -b 2048 -ub 2048 -fa on
+sy-lb-q4_0-ub1024 lb llama-bench q4_0 -ngl 99 -dev SYCL0 -b 2048 -ub 1024 -fa on
+sy-lb-q4_k_m-best lb llama-bench q4_k_m -ngl 99 -dev SYCL0 -b 2048 -ub 2048 -fa on
+sy-lb-q4_k_m-default lb llama-bench q4_k_m -ngl 99 -dev SYCL0

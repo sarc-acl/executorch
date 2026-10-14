@@ -1,0 +1,16 @@
+stock-4w et stock 4w
+stock-8da4w et stock 8da4w
+sarc-4w et sarc 4w
+sarc-8da4w et sarc 8da4w
+tuned-4w et tuned 4w
+tuned-8da4w et tuned 8da4w
+vk-lb-q4_0-default lb vk-llama-bench q4_0 -ngl 99 -dev Vulkan0
+vk-lb-q4_0-best lb vk-llama-bench q4_0 -ngl 99 -dev Vulkan0 -b 2048 -ub 1024 -fa on
+vk-lb-q4_0-aligned lb vk-llama-bench q4_0 -ngl 99 -dev Vulkan0 -b 2048 -ub 2048 -fa on
+vk-lb-q4_k_m-best lb vk-llama-bench q4_k_m -ngl 99 -dev Vulkan0 -b 2048 -ub 1024 -fa on
+vk-lc-q4_0-best lc vk-llama-completion q4_0 -ngl 99 -dev Vulkan0 -b 2048 -ub 1024 -fa on
+cu-lb-q4_0-default lb build-cuda/bin/llama-bench q4_0 -ngl 99 -dev CUDA0
+cu-lb-q4_0-ub1024 lb build-cuda/bin/llama-bench q4_0 -ngl 99 -dev CUDA0 -b 2048 -ub 1024 -fa on
+cu-lb-q4_0-aligned lb build-cuda/bin/llama-bench q4_0 -ngl 99 -dev CUDA0 -b 2048 -ub 2048 -fa on
+cu-lb-q4_k_m-default lb build-cuda/bin/llama-bench q4_k_m -ngl 99 -dev CUDA0
+cu-lc-q4_0-default lc build-cuda/bin/llama-completion q4_0 -ngl 99 -dev CUDA0

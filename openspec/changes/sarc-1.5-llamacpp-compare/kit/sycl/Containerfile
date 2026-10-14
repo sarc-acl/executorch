@@ -1,0 +1,24 @@
+# SYCL build and run environment for llama.cpp on Intel Arc.
+# oneAPI DPC++ compiler 2026.1.1 (the newest in Intel's apt repository on 2026-10-05), oneMKL 2026.1.0,
+# oneDNN 2026.0.2, plus the Intel GPU runtime: compute runtime 26.35.39758.10 (Level Zero + OpenCL), IGC 2.41.5,
+# Level Zero loader 1.32.0. The host kernel driver is the host's; its own compute runtime is 26.35.39758.11.
+FROM docker.io/library/ubuntu:24.04
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends curl gpg ca-certificates cmake ninja-build git build-essential pkg-config clinfo ocl-icd-libopencl1 \
+ && curl -fsSL https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor > /usr/share/keyrings/oneapi.gpg \
+ && echo "deb [signed-by=/usr/share/keyrings/oneapi.gpg] https://apt.repos.intel.com/oneapi all main" > /etc/apt/sources.list.d/oneapi.list \
+ && apt-get update && apt-get install -y --no-install-recommends \
+    intel-oneapi-compiler-dpcpp-cpp-2026.1=2026.1.1-325 intel-oneapi-mkl-sycl-devel-2026.1=2026.1.0-236 intel-oneapi-mkl-devel-2026.1=2026.1.0-236 intel-oneapi-dnnl-devel=2026.0.2-40 \
+ && rm -rf /var/lib/apt/lists/*
+RUN mkdir /tmp/d && cd /tmp/d && for u in \
+  https://github.com/intel/intel-graphics-compiler/releases/download/v2.41.5/intel-igc-core-2_2.41.5%2B22716_amd64.deb \
+  https://github.com/intel/intel-graphics-compiler/releases/download/v2.41.5/intel-igc-opencl-2_2.41.5%2B22716_amd64.deb \
+  https://github.com/intel/compute-runtime/releases/download/26.35.39758.10/libigdgmm12_22.10.0_amd64.deb \
+  https://github.com/intel/compute-runtime/releases/download/26.35.39758.10/intel-opencl-icd_26.35.39758.10-0_amd64.deb \
+  https://github.com/intel/compute-runtime/releases/download/26.35.39758.10/libze-intel-gpu1_26.35.39758.10-0_amd64.deb \
+  https://github.com/oneapi-src/level-zero/releases/download/v1.32.0/libze1_1.32.0%2Bu24.04_amd64.deb ; do curl -fsSLO "$u"; done \
+  && apt-get update && apt-get install -y --no-install-recommends ./*.deb && rm -rf /var/lib/apt/lists/* /tmp/d
+# Level Zero headers: with them llama.cpp's SYCL backend enables its direct Level Zero paths
+# (GGML_SYCL_SUPPORT_LEVEL_ZERO_API), as in the owner's production build.
+RUN cd /tmp && curl -fsSLO https://github.com/oneapi-src/level-zero/releases/download/v1.32.0/libze-dev_1.32.0%2Bu24.04_amd64.deb \
+ && apt-get update && apt-get install -y --no-install-recommends ./libze-dev_*.deb libhwloc15 && rm -rf /var/lib/apt/lists/* /tmp/*.deb

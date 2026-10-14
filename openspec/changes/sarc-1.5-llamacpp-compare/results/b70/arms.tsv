@@ -1,0 +1,14 @@
+stock-4w et stock 4w
+stock-8da4w et stock 8da4w
+sarc-4w et sarc 4w
+sarc-8da4w et sarc 8da4w
+tuned-4w et tuned 4w
+tuned-8da4w et tuned 8da4w
+vk-lb-q4_0-default lb vk-llama-bench q4_0 -ngl 99 -dev Vulkan0
+vk-lb-q4_0-best lb vk-llama-bench q4_0 -ngl 99 -dev Vulkan0 -b 2048 -ub 1024 -fa off
+vk-lb-q4_k_m-best lb vk-llama-bench q4_k_m -ngl 99 -dev Vulkan0 -b 2048 -ub 1024 -fa off
+vk-lc-q4_0-best lc vk-llama-completion q4_0 -ngl 99 -dev Vulkan0 -b 2048 -ub 1024 -fa off
+sy-lb-q4_0-default lb sy-llama-bench q4_0 -ngl 99 -dev SYCL0
+sy-lb-q4_0-best lb sy-llama-bench q4_0 -ngl 99 -dev SYCL0 -b 2048 -ub 2048 -fa on
+sy-lb-q4_k_m-best lb sy-llama-bench q4_k_m -ngl 99 -dev SYCL0 -b 2048 -ub 2048 -fa on
+sy-lc-q4_0-best lc sy-llama-completion q4_0 -ngl 99 -dev SYCL0 -b 2048 -ub 2048 -fa on

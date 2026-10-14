@@ -1,0 +1,11 @@
+# llama-bench, 8B Q4_0, RX 7600, RADV, -ngl 99, one repetition each (2026-10-10, after the session; not timed under the session's rules)
+# columns: model | size | params | backend | ngl | fa | device | test | t/s
+| llama 8B Q4_0                  |   4.21 GiB |     8.03 B | Vulkan     |  99 |   1 | Vulkan0      |           pp512 |       1251.87 ± 0.00 |
+| llama 8B Q4_0                  |   4.21 GiB |     8.03 B | Vulkan     |  99 |   1 | Vulkan0      |          pp1024 |       1227.83 ± 0.00 |
+| llama 8B Q4_0                  |   4.21 GiB |     8.03 B | Vulkan     |  99 |   1 | Vulkan0      |          pp1536 |       1197.37 ± 0.00 |
+| llama 8B Q4_0                  |   4.21 GiB |     8.03 B | Vulkan     |  99 |   1 | Vulkan0      |          pp2048 |         96.08 ± 0.00 |
+| llama 8B Q4_0                  |   4.21 GiB |     8.03 B | Vulkan     |  99 |   0 | Vulkan0      |           pp512 |       1177.81 ± 0.00 |
+| llama 8B Q4_0                  |   4.21 GiB |     8.03 B | Vulkan     |  99 |   0 | Vulkan0      |          pp1024 |       1110.96 ± 0.00 |
+| llama 8B Q4_0                  |   4.21 GiB |     8.03 B | Vulkan     |  99 |   0 | Vulkan0      |          pp1536 |       1092.54 ± 0.00 |
+| llama 8B Q4_0                  |   4.21 GiB |     8.03 B | Vulkan     |  99 |   0 | Vulkan0      |          pp2048 |        516.70 ± 0.00 |
+| llama 8B Q4_0                  |   4.21 GiB |     8.03 B | Vulkan     |  99 |   1 | Vulkan0      |      pp2048+tg1 |       1139.36 ± 0.00 |

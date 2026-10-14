@@ -1,0 +1,9 @@
+# llama.cpp HIP, GPU-use check (1B Q4_0, llama-completion -v -ngl 99 -dev ROCm0, 16 new tokens on the check prompt, before the timed session)
+I llama_prepare_model_devices: using device ROCm0 (Radeon RX 7900 XTX) - 24524 MiB free
+I load_tensors: offloading output layer to GPU
+I load_tensors: offloading 15 repeating layers to GPU
+I load_tensors: offloaded 17/17 layers to GPU
+llama-bench JSON of every HIP screen arm: backends=ROCm devices=ROCm0
+token_embd (q4_0) stays on the CPU as llama.cpp always does for the embedding table (log line 'cannot be used with preferred buffer type ROCm_Host, using CPU instead')
+card during the run (sysfs, 50 ms): gpu_busy_percent max 100 %, VRAM used 113 MiB before to 1477 MiB during
+generated text (16 tokens, greedy):  bullying of any person, including:         1. Any other form of discrimination  

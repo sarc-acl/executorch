@@ -1,0 +1,167 @@
+# Radeon RX 7600: llama.cpp comparison, round 2 final as the tuned arm
+
+Session `rx7600-r2`, 2026-10-10 01:47 to 03:23 UTC, on the workstation's own card (idle: no process holding the card, no build seen
+by the one-second watcher), 14 arms (`arms.tsv`, `ARMS.md`, committed before the session) on 1B, 3B and 8B, after the tuning campaign's
+round 2 had finished. **This replaces the result of 2026-10-08** (round 1 as the tuned arm), whose files are kept in
+`history-2026-10-08/` with its README. **Driver for every arm, ExecuTorch and llama.cpp alike: user-space RADV Mesa 26.2.3**
+(`VK_ICD_FILENAMES`), Vulkan only. Validity: the campaign's rule as `row.py` applies it, clock floor 2420 MHz, sampled every 10 ms
+(`kit/hosts/rx7600/host.sh`, unchanged since 2026-10-08); no foreign-busy ceiling (no per-client engine accounting on this card).
+The session started from a cool card (core temperature 40 C, waited 441 s) under the campaign's gpu-lab lock; a first start of the same
+session at 01:37 UTC was stopped by the actor after three minutes because the card had not cooled (idle reference 50 C); its files
+are not used (its 16 run rows are kept in `aborted-warm-runs.csv`).
+
+Files: `runs.csv` (every run, with its reason: 157 timed runs valid, 8 not, 12 discarded `lc` repetitions 0, 30 text checks), `cells.csv`
+(the table's source, counts `clock_low`-only runs as the 780M and the 2026-10-08 RX 7600 result do, see below), `cells-strict.csv`
+(the rule as it stands), `checks.csv`, `screen.csv`, `recompute.txt` (medians of both cells files recomputed from `runs.csv`
+independently of `aggregate.py`: 42 cells, no difference), `lb-slowpath-8b.txt`.
+
+## Result (tok/s, median; llama.cpp = the higher of its two timers at its better setting)
+
+| model | stock 4w | stock 8da4w | SARC 4w | SARC 8da4w | tuned 4w | tuned 8da4w | llama.cpp Q4_0 | llama.cpp Q4_K_M | tuned 4w / Q4_0 | tuned 4w / Q4_K_M |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1B | 2702 | 3793 | 7817 | 7314 | 11070 | 10611 | 5849 | 5016 | 1.89 | 2.21 |
+| 3B | 974 | 1386 | 3287 | 3080 | 4267 | 4096 | 2451 | 2042 | 1.74 | 2.09 |
+| 8B | 471* | 730 | 1519 | 1404 | 1888 | 1814 | 1157 | 941 | 1.63 | 2.01 |
+
+llama.cpp, all eight arms (tok/s):
+
+| model | lc Q4_0 default | lc Q4_0 best | lb Q4_0 default | lb Q4_0 best | lc Q4_K_M default | lc Q4_K_M best | lb Q4_K_M default | lb Q4_K_M best |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1B | 5366 | 5338 | 5849 | 5833 | 4695 | 4678 | 5010 | 5016 |
+| 3B | 2363 | 2360 | 2451 | 2448 | 2024 | 1982 | 2042 | 2042 |
+| 8B | 1157 | 1157 | 96† | 96† | 941 | 940 | 94† | 94† |
+
+Ratios tuned 4w / llama.cpp, by timer and setting:
+
+| model | Q4_0 lc default | Q4_0 lc best | Q4_0 lb default | Q4_0 lb best | Q4_K_M lc default | Q4_K_M lc best | Q4_K_M lb default | Q4_K_M lb best |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1B | 2.06 | 2.07 | 1.89 | 1.90 | 2.36 | 2.37 | 2.21 | 2.21 |
+| 3B | 1.81 | 1.81 | 1.74 | 1.74 | 2.11 | 2.15 | 2.09 | 2.09 |
+| 8B | 1.63 | 1.63 | n/a† | n/a† | 2.01 | 2.01 | n/a† | n/a† |
+
+Valid runs per cell under the rule as it stands / counted (`*` = counted with `clock_low` as the only reason):
+
+| arm | 1B | 3B | 8B |
+|---|---:|---:|---:|
+| `stock-4w` | 5 / 5 | 5 / 5 | 0 / 8 |
+| `stock-8da4w` | 5 / 5 | 5 / 5 | 5 / 5 |
+| `sarc-4w` | 5 / 5 | 5 / 5 | 5 / 5 |
+| `sarc-8da4w` | 5 / 5 | 5 / 5 | 5 / 5 |
+| `tuned-4w` | 5 / 5 | 5 / 5 | 5 / 5 |
+| `tuned-8da4w` | 5 / 5 | 5 / 5 | 5 / 5 |
+| `lc-q4_0-default` | 5 / 5 | 5 / 5 | 5 / 5 |
+| `lc-q4_0-best` | 5 / 5 | 5 / 5 | 5 / 5 |
+| `lc-q4_k_m-default` | 5 / 5 | 5 / 5 | 5 / 5 |
+| `lc-q4_k_m-best` | 5 / 5 | 5 / 5 | 5 / 5 |
+| `lb-q4_0-default` | 5 / 5 | 5 / 5 | 5 / 5 |
+| `lb-q4_0-best` | 5 / 5 | 5 / 5 | 5 / 5 |
+| `lb-q4_k_m-default` | 5 / 5 | 5 / 5 | 5 / 5 |
+| `lb-q4_k_m-best` | 5 / 5 | 5 / 5 | 5 / 5 |
+\* 8B stock `4w` counted under the clock note. † `llama-bench` at 8B, see the slow path below; the 8B llama.cpp number is the `lc` timer, and
+no `lb` ratio is given. Five valid runs in every other ExecuTorch and `lc` cell; `lb` = one process of five repetitions.
+
+Same-session ratios over the stock arm: tuned `4w` / stock `4w` 4.10 / 4.38 / 4.01 (1B / 3B / 8B; the 8B stock `4w` value rests on eight `clock_low` runs, no strict value), tuned `8da4w` / stock `8da4w` 2.80 / 2.96 / 2.49;
+tuned / SARC `4w` 1.42 / 1.30 / 1.24, `8da4w` 1.45 / 1.33 / 1.29 (the campaign's round 2 final session: 1.41 / 1.30 / 1.24 and 1.45 / 1.33 / 1.29).
+
+Both timers, both quantizations: tuned `4w` is ahead of llama.cpp Vulkan Q4_0 by 1.89 / 1.74 / 1.63 (1B / 3B / 8B; against `lc` at its better setting 2.06 /
+1.81 / 1.63) and ahead of Q4_K_M by 2.21 / 2.09 / 2.01. Q4_K_M is 12 to 19 % slower than Q4_0 (`lc`, best setting). `lc` is 1 to 9 % below `lb` where
+`lb` is not slow (1B and 3B). Against the 2026-10-08 session the tuned `4w` arm gained 5.4 / 6.9 / 7.8 % (round 2 against round 1), the SARC and stock arms and
+the `default` llama.cpp arms did not move (0.4 % for the ExecuTorch arms, 1.6 % at most for llama.cpp `lc` default, `lb` 0.2 % at most on 1B and 3B).
+
+## The `llama-bench` slow path at 8B (named and shown)
+
+At 8B every `llama-bench` arm reads 94 to 96 tok/s (Q4_0 and Q4_K_M, default and `best`) against 941 to 1157 by `llama-completion` on the same files and flags.
+Diagnostic after the session (`lb-slowpath-8b.txt`, one repetition each, Q4_0): `-p 512` / `1024` / `1536` read 1252 / 1228 / 1197 tok/s with flash attention on
+(1178 / 1111 / 1093 off), `-p 2048` reads **96** (on) and **517** (off), while `-pg 2048,1` (the same prompt followed by one generated token) reads 1139. So it is
+the prompt-only test at 2048 tokens that hits a slow GPU path on this card at 8B; the GPU is busy at full power during it. The cause is UNVERIFIED (on
+2026-10-08 the slow readings started at 1536 tokens: the path moves with the compute-buffer sizes, not with a fixed length). 1B and 3B `lb` agree with `lc` within 1 to 9 %
+(`lb` higher). The ratios of `lc` at 8B stand; the `lb` column of the table for 8B is not a measure of llama.cpp.
+
+## Clock note: stock `4w` at 8B
+
+All eight runs of stock `4w` on 8B ran at a median of 2323 to 2329 MHz, under the 2420 MHz floor, at the same speed (spread 0.9 %), so `row.py` rejects all of them
+(`clock_low`) and the session ends `SESSION_INCOMPLETE` for this one cell. It is the longest prefill of the session (4.3 s) and the same pattern as on 2026-10-08
+and on the 780M: the clock is a property of that workload. `cells.csv` counts those runs (`n_accepted` = 8, `clk_med_mhz` = 2328, the median over eight
+runs), `cells-strict.csv` leaves the cell empty. Every other arm reached the floor in every run.
+
+## Text check
+
+`checks.csv`: every arm continues the real-text prompt fluently. The ExecuTorch arms agree with each other on 1B and 3B; on 8B the two `8da4w` SARC arms (`sarc`, `tuned`)
+give a different later word from the `4w` arms and stock, as on 2026-10-08 and on the 7900 XTX. llama.cpp gives a different, equally plausible continuation (its tokenizer
+splits the check prompt into 1980 tokens, ExecuTorch's into 1972).
+
+## Audit notes
+
+- Thermal: the adapter keeps the campaign's `indep_throttle_status` beside each run (`<run>.clk.full`, not committed); `row.py` does not judge it on this card. Temperature bits
+  (32 to 47) appear in the prefill windows of ExecuTorch runs only for stock `4w`: two samples of 58 and 60 in two valid 1B runs (junction 72 to 78 C) and 1 to 7 samples of
+  about 340 in five of the eight counted 8B runs (up to 84 C); over the whole `lc` and `lb` processes bits appear in every run (72 runs), a few samples of 250 to 420 each, around model load and the end.
+  Not judged, as on 2026-10-08. The thermal bit of the 8B stock cell does not change its median measurably (the runs are within 0.9 %).
+- Against the campaign's final session (same binaries, environment and `.pte`): tuned `4w` 11070 / 4267 / 1888 against 11070 / 4267 / 1886, SARC `4w` 7817 / 3287 / 1519 against
+  7847 / 3293 / 1517, tuned `8da4w` 10611 / 4096 / 1814 against 10667 / 4104 / 1814, SARC `8da4w` 7314 / 3080 / 1404 against 7341 / 3084 / 1403: within 0.5 %.
+- Medians of `cells.csv` and `cells-strict.csv` were recomputed from `runs.csv` independently of `aggregate.py` (`recompute.txt`): no difference.
+- Other GPU users: none in any run; desktop idle. Builds and other jobs on the workstation: none seen by the watcher during the session (the Android build of the M51 work,
+  01:40 to 01:43 UTC, ended before the session started; the M51 session and file copies ran as processes beside it, no compilers).
+
+## Deviations from the kit
+
+- **Settings screen and `best`:** `best` is `-b 2048 -ub 512 -fa on` (not the 2026-10-08 `-ub 1024`), from the new screen of `ARMS.md`: no setting beats the default beyond noise
+  on this card, so `best` is the highest-ranked non-default setting.
+- **`.pte` files:** the campaign's exports at context 3072, not the 2560-context shared exports of `MODELS.md`; llama.cpp runs with `-c 2560` as fixed.
+- **GGUF files regenerated** from the HuggingFace revisions of `MODELS.md` (see `history-2026-10-08/README.md`): Q4_0 with `b10229` and the August options, Q4_K_M with
+  `kit/make-q4km.sh`; every file 256 bytes smaller than `MODELS.md`, same parameter counts. The same files as on 2026-10-08.
+- **Stock arm** built natively from an export of `985c1ceccc` plus the backport (podman does not run on this host, so `build-stock.sh` was not used); the same binary as on 2026-10-08.
+- **Counting rule** for `clock_low`: above.
+- **HIP (request 10.2):** measured on 2026-10-12 in session `rx7600-hip2` with every arm of the device (native `gfx1102`, ROCm 7.2.4; deviations in `hip/README.md`, summary in the section below).
+
+## Extras of the request (10.4): the real-text prompt and decode
+
+**Real-text prompt** (`real-text/`, session `real1`, 2026-10-10 03:42 to 04:57 UTC, same card, binaries, driver and settings; the 2048-token prompt is the
+GNU licence text `prompt_real_2048.txt` of the campaign, 2048 tokens under both tokenizers; the ExecuTorch arms, and `lc` at its best setting for both
+quantizations; `lb` always uses synthetic tokens). Median tok/s, synthetic prompt of the table above against real text (`*` = counted `clock_low`-only runs):
+
+| arm | 1B synthetic | 1B real | 3B synthetic | 3B real | 8B synthetic | 8B real |
+|---|---:|---:|---:|---:|---:|---:|
+| `stock-4w` | 2702 | 2702 (+0.0 %) | 974 | 973* (-0.1 %) | 471* | 471* (+0.0 %) |
+| `stock-8da4w` | 3793 | 3758 (-0.9 %) | 1386 | 1372 (-1.0 %) | 730 | 717* (-1.8 %) |
+| `sarc-4w` | 7817 | 7728 (-1.1 %) | 3287 | 3235 (-1.6 %) | 1519 | 1487 (-2.1 %) |
+| `sarc-8da4w` | 7314 | 7161 (-2.1 %) | 3080 | 2981 (-3.2 %) | 1404 | 1355 (-3.4 %) |
+| `tuned-4w` | 11070 | 10667* (-3.6 %) | 4267 | 4088* (-4.2 %) | 1888 | 1793* (-5.0 %) |
+| `tuned-8da4w` | 10611 | 10240* (-3.5 %) | 4096 | 3916* (-4.4 %) | 1814 | 1722* (-5.0 %) |
+| `lc-q4_0-best` | 5338 | 5362 (+0.4 %) | 2360 | 2359 (-0.1 %) | 1157 | 1154 (-0.3 %) |
+| `lc-q4_k_m-best` | 4678 | 4659 (-0.4 %) | 1982 | 1977 (-0.3 %) | 940 | 932* (-0.8 %) |
+
+The tuned arms are 3.5 to 5 % slower on real text (all their runs fall under the 2420 MHz floor, at a median clock of 2352 to 2400 MHz against 2490 to 2525 on the
+synthetic prompt: real data draws more power), SARC 1 to 3.5 %, stock and llama.cpp within 2 %. Tuned `4w` / `lc` (best) Q4_0 on real text: 1.99 / 1.73 / 1.55 (1B / 3B / 8B)
+against 2.07 / 1.81 / 1.63 on the synthetic prompt. The counted cells and the strict counts are in `real-text/cells.csv` and `real-text/cells-strict.csv`.
+
+**Decode** (`decode.csv`, `decode-cells.csv`; ExecuTorch arms only): decode tok/s after the 2048-token prompt, 128 generated tokens, greedy, `--warmup`, three runs per cell
+interleaved stock / SARC / tuned, five seconds apart, under the same lock; rate = generated tokens minus one over the time from the first token to the end. Not clock-sampled
+and not judged: decode is short and memory-bound, so read it as indicative. Median tok/s:
+
+| model | scheme | stock | SARC (without the final configuration) | tuned (with it) | tuned / SARC |
+|---|---|---:|---:|---:|---:|
+| 1B | `4w` | 114.9 | 107.7 | 81.6 | 0.76 |
+| 1B | `8da4w` | 119.5 | 105.2 | 75.8 | 0.72 |
+| 3B | `4w` | 49.6 | 50.0 | 44.4 | 0.89 |
+| 3B | `8da4w` | 51.9 | 47.6 | 42.7 | 0.90 |
+| 8B | `4w` | 31.9 | 31.9 | 29.4 | 0.92 |
+| 8B | `8da4w` | 32.6 | 30.7 | 28.4 | 0.92 |
+
+The final configuration, tuned for prefill, decodes 8 to 28 % slower than the parent on this card (the largest drop is 1B `8da4w`, 105.2 to 75.8 tok/s; spreads 0.1 to 2.1 %). llama.cpp
+decode was not measured (its decode benchmark runs at an empty context, not after the 2048-token prompt, so it would not be comparable).
+
+## HIP (ROCm), request 10.2: measured in one session with every arm (`hip/`)
+
+Full text, tables, deviations: `hip/README.md`; arms, build and settings screen: `hip/ARMS.md` (committed before the session). Summary:
+
+- **Session `rx7600-hip2`** (2026-10-12 22:46 to 2026-10-13 00:56 UTC; owner decision 2026-10-12 21:44 UTC: one interleaved session with all 22 arms): ExecuTorch stock, SARC, tuned (`4w`, `8da4w`), llama.cpp Vulkan (RADV Mesa 26.2.3) and llama.cpp HIP
+  (ROCm 7.2.4 user space, **native `gfx1102`, no `HSA_OVERRIDE_GFX_VERSION`**), `lc` and `lb`, Q4_0 and Q4_K_M, `default` and `best` (HIP `best`: `-ub 512 -fa on` for Q4_0, `-ub 1024 -fa on` for Q4_K_M, from the screen), 1B / 3B / 8B.
+  GPU use checked (17/17 layers on `ROCm0`, card busy, no CPU fallback), check text fluent and identical to the Vulkan arm of the same quantization.
+- **Result:** tuned ExecuTorch `4w` is ahead of llama.cpp HIP in every cell: by `lb` at `best` Q4_0 1.75 / 1.68 / 1.55 and Q4_K_M 1.87 / 1.76 / 1.59 (1B / 3B / 8B), by `lc` 1.56 to 2.24. HIP is 4 to 9 % (Q4_0) and 19 % (Q4_K_M) faster than the
+  Vulkan arm by `lb` at 1B and 3B (by `lc` 5 to 12 % and 5 to 22 %, 8B included, where the Vulkan `lb` is the slow path above). HIP `llama-bench` does not take that slow path at 8B.
+- **The +9 % of 2026-10-12 21:28 UTC:** a Vulkan baseline cell (1B tuned `4w` 12118 against 11070 tok/s, `lb` Q4_0 `best` 6346 against 5833) read +9.5 % / +8.8 % against the 2026-10-10 session, 15 minutes after the workstation's restart
+  (`last -x`: down 2026-10-12 21:05:48 UTC, up **21:12:52 UTC**; the previous boot was 2026-09-18 21:28:39 UTC, the 2026-10-10 session's), with the card's clock unchanged. **The session does not show it:** from 22:20 UTC (the screen's tuned anchor) and in the timed session the
+  ExecuTorch arms and the Vulkan `lb` arms equal the 2026-10-10 session within 0.7 % in every cell, the Vulkan `lc` arms within 2.8 %. The cause of the higher reading at 21:28 UTC is UNVERIFIED (a restart shortly before is a candidate, no run separated it from other possibilities).
+  **The 2026-10-10 session's ratios stand** (its arms shared one session) and its absolute numbers agree with this session; no figure of this file or of `../cells.csv` rows of `rx7600-r2` is changed by the finding. The new session's 66 rows (Vulkan, ExecuTorch and HIP) are appended to
+  `../../cells.csv` under session `rx7600-hip2`, beside the `rx7600-r2` rows.
+- Files: `hip/{ARMS.md, arms.tsv, screen.csv, screen-runs.csv, runs.csv, cells.csv, cells-strict.csv, checks.csv, recompute.txt, gpu-check.txt, baseline-before-runs.csv, README.md}`.

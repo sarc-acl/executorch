@@ -1,0 +1,16 @@
+stock-4w et stock 4w
+stock-8da4w et stock 8da4w
+sarc-4w et sarc 4w
+sarc-8da4w et sarc 8da4w
+tuned-4w et tuned 4w
+tuned-8da4w et tuned 8da4w
+lc-q4_0-default lc llama-completion q4_0 -ngl 99 --device Vulkan0
+lc-q4_0-aligned lc llama-completion q4_0 -ngl 99 --device Vulkan0 -b 2048 -ub 2048
+lc-q4_0-best lc llama-completion q4_0 -ngl 99 --device Vulkan0 -b 2048 -ub 1024 -fa off
+lb-q4_0-default lb llama-bench q4_0 -ngl 99 -dev Vulkan0
+lb-q4_0-best lb llama-bench q4_0 -ngl 99 -dev Vulkan0 -b 2048 -ub 1024 -fa off
+lc-q4_k_m-default lc llama-completion q4_k_m -ngl 99 --device Vulkan0
+lc-q4_k_m-aligned lc llama-completion q4_k_m -ngl 99 --device Vulkan0 -b 2048 -ub 2048
+lc-q4_k_m-best lc llama-completion q4_k_m -ngl 99 --device Vulkan0 -b 2048 -ub 1024 -fa off
+lb-q4_k_m-default lb llama-bench q4_k_m -ngl 99 -dev Vulkan0
+lb-q4_k_m-best lb llama-bench q4_k_m -ngl 99 -dev Vulkan0 -b 2048 -ub 1024 -fa off

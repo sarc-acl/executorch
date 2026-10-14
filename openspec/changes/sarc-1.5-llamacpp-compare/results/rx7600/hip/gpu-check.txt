@@ -1,0 +1,10 @@
+# llama.cpp HIP on the RX 7600, GPU-use check (1B Q4_0, llama-completion -v -ngl 99 -dev ROCm0, 16 new tokens on the check prompt), 2026-10-12, no HSA_OVERRIDE_GFX_VERSION
+ggml_cuda_init: found 1 ROCm devices (Total VRAM: 8176 MiB):
+  Device 0: AMD Radeon RX 7600, gfx1102 (0x1102), VMM: no, Wave Size: 32, VRAM: 8176 MiB
+I llama_prepare_model_devices: using device ROCm0 (AMD Radeon RX 7600) - 8134 MiB free
+I load_tensors: offloading output layer to GPU
+I load_tensors: offloading 15 repeating layers to GPU
+I load_tensors: offloaded 17/17 layers to GPU
+llama-bench JSON: backends=ROCm devices=ROCm0 gpu_info=AMD Radeon RX 7600 (256-token prompt, 3635 tok/s, one repetition, a smoke run only)
+card (sysfs, 50 ms): vram_before_MiB 33 card (sysfs, 50 ms): busy_max 100 card (sysfs, 50 ms): vram_max_MiB 5393 
+generated text (16 tokens, greedy):  physical assault of any person, including the dissemination of any such content.       
