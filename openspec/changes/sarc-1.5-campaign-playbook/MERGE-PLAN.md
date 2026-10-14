@@ -1,9 +1,33 @@
-# Merge plan (draft for the owner)
+# Merge plan
 
-What it takes to bring the five campaign branches into `dev/1.5`. Nothing here has been started; nothing is
-merged. This is a list of the work and its order, written on 2026-10-06 and updated on 2026-10-07, when all five
-campaigns had closed.
+What it takes to bring the campaign branches into `dev/1.5`. Written as a draft on 2026-10-06 for five
+branches; all campaigns have since closed.
 Items marked **[owner]** need a decision before they can be done.
+
+## Status 2026-10-13
+
+The dev-zone merge (M3) is done on the integration branch `topic/merge-campaigns`, which starts at `dev/1.5`
+(`44e22be60f`). `dev/1.5` itself is fast-forwarded to it on the owner's word. Owner decisions of 2026-10-13
+(`OWNER-DECISIONS.md` N11): merge only, nothing promoted; integration branch; the full-subgroups patch (M2e)
+goes in with the merge; `topic/sarc-pinned-glslc` is left out for now.
+
+| task | state |
+|---|---|
+| M1 near-tie stage of the gate | not started; before promotion |
+| M2 review of the release-zone hooks | hooks merged, inert; the review itself is before promotion. A fourth hook came with the M51 branch (`ET_VK_EXECUTE_NODE_THRESHOLD` in `graph/ComputeGraph.cpp`, owner decision 2026-10-08) |
+| M2a subgroup barriers | done on the campaign branches (`fused3sb`; RX 7600 +0.00 %, 780M -0.14 %, in band) and merged |
+| M2b pinned-container rebuild | not started; now tied to the compiler switch of `topic/sarc-pinned-glslc`. Native builds: RX 7600, RX 7900 XTX, M51; the Orin used the cross image's glslc |
+| M2c home-directory paths | not done; result files merged as they are |
+| M2d M51 | open; the final profile is now `c8`, 8B was run under N10 with the node-threshold hook |
+| M2e full-subgroups flag | merged (one commit after the branch merges). No effect on the five devices on our side (2026-10-10 / 11); the three company-side devices measure it on the merged branch |
+| M2f decode with the fused node | not started; before promotion |
+| M3 dev-zone merge | done, see below |
+| M4 promotion | not started |
+| M5 independent review | not started |
+| M6 stale documents | `sarc/README.md` and the `sarc-1.5-7900xtx-4w` proposal updated with the merge |
+
+Also open before promotion: the RX 7900 XTX workgroup memory above the AMDVLK limit (its `STATUS.md`, "Decision
+needed from the owner").
 
 ## What is to be merged
 
@@ -155,15 +179,45 @@ decode trace per device family with and without the fused profile, and, if the l
 must leave the decode path untouched. Owner decision 2026-10-09: not investigated now; it is done here, before
 promotion, with M2e.
 
-### M3. Merge the dev zone, one branch at a time
+### M3. Merge the dev zone (done 2026-10-13, `topic/merge-campaigns`)
 
-Order: 780M first (the others forked from it), then B70, B580, RTX 4070 Ti SUPER, Orin. Each as its own fork PR
-into `dev/1.5`. Expected conflicts are in `Overrides.cpp` and the sweep yaml and are mechanical if the
-per-device blocks were kept. After each merge: `sarc/tools/check.sh`, `test_sarc_select` (the release tables
-must select exactly what they selected before), and the shipped SPIR-V golden unchanged.
+Ten heads carry every campaign: each fused-port branch contains its first-round branch, the RX 7600, RX 7900 XTX
+and M51 branches fork from inside the 780M branch, and `topic/m51-dq8ca-decode-fix` already is `dev/1.5`. Each
+was merged as a two-parent commit `[SARC] Merge topic/<name>` whose message records the conflicts and their
+resolution. Order:
 
-Before M3 starts, confirm that the Orin branch carries the corrected softmax kernel (only the elected lane
-stores the subgroup's reduced value) and not the first form.
+| # | branch | head | conflicts |
+|---|---|---|---|
+| 1 | `topic/campaign-playbook` | `78614e0add` | none |
+| 2 | `topic/llamacpp-compare` | `9721168473` | none |
+| 3 | `topic/780m-prefill-refine` | `71b43d903d` | none |
+| 4 | `topic/rx7600-prefill-refine` | `c4d7451c5d` | none |
+| 5 | `topic/m51-prefill-refine` | `0b42e141b0` | `Overrides.cpp` (device sections) |
+| 6 | `topic/7900xtx-prefill-refine` | `82aaec9983` | `Overrides.cpp`, `fused3sb` yaml, 4w profile yaml |
+| 7 | `topic/4070ti-fused-port` | `8f8c44e22e` | `Overrides.cpp`, `test_llama_microbench.cpp` |
+| 8 | `topic/orin-fused-port` | `da92b4b3ce` | same two |
+| 9 | `topic/b70-fused-port` | `4275735c50` | same two, five yamls |
+| 10 | `topic/b580-fused-port` | `af93a30c55` | same two, `gen_xe2.py` and its generated files |
+
+Then the full-subgroups commit (M2e) and this document update.
+
+What was not a mechanical union:
+
+- `test_llama_microbench.cpp`: four implementations of the fused-kernel support met (780M family unmarked,
+  4070ti-fused and orin-fused as marked blocks, B580 as its own port). One of each piece is kept. The 780M
+  family's kernels take that family's verdict path, every other fused kernel the 4070ti-fused block. One merge
+  was textually clean and wrong: Q was scaled by `q_scale` twice (found by reading, fixed in merge 7).
+- Registrar of `Overrides.cpp`: the 4070ti and B580 blocks both assigned the softmax variant unconditionally and
+  the Orin block overwrote the fused entry points; the later blocks now assign only when their profile asks.
+- `sdpa_fused_variants_b580()` / `register_sdpa_fused_b580()` existed on both Intel branches (the B70 uses the
+  B580's node); one definition serves both.
+- `gen_xe2.py`: the B70 version plus the B580's per-shape order profiles. Both generators are no-ops on the
+  merged tree.
+- The M51 branch seeds every SDPA correctness case from its name instead of `srand(0)` at start-up. After the
+  merge this holds for every device, so the test inputs differ from those of the other campaigns' recorded runs.
+
+Checked after every merge: `sarc/tools/check.sh --no-build` (release selection 1240 checks, 31 rows, 0
+candidates, as on `dev/1.5`). Container builds at merges 9 and 10.
 
 ### M4. Decide what is promoted, and promote it **[owner]**
 

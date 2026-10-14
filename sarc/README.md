@@ -89,6 +89,24 @@ re-verify first.
 | Radeon RX 7900 XTX | unverified (t256x128k32g24s32f32cbt) | unverified (780M zpg) | unverified (780M SDPA) | `openspec/changes/sarc-1.5-7900xtx-4w`, e2e `contrib/7900xtx` (2.79× vs stock, pre-release); golden added; needs re-verify with container-built binaries |
 | Radeon RX 7600 | unverified (7900 XTX tile `t256x128k32g24s32f32cbt`) | unverified (780M zpg) | unverified (780M SDPA) | rows in `table_amd.cpp`; need re-verification with pinned-glslc binaries. e2e `contrib/rx7600` (2.48× vs stock, pre-release). Coopmat needs a newer RADV: Mesa 26.2.3 used; the system 23.2.1 has none |
 
+### Campaign profiles in the dev zone (2026-10-13, not shipped)
+
+The prefill campaigns of October 2026 are merged as dev-zone content. Nothing below is promoted: every row is
+`kUnverified`, and a profile takes effect only with `ET_VK_SARC_UNVERIFIED=1` and its variable set. Each change
+directory's `STATUS.md` has the full environment and the measurements;
+`openspec/changes/sarc-1.5-campaign-playbook/MERGE-PLAN.md` has what promotion still needs.
+
+| Device | Final profile | Change directory (`openspec/changes/`) |
+|---|---|---|
+| Radeon 780M | `ET_VK_SARC_DEV_PROFILE=780m-final` | `sarc-1.5-780m-prefill-refine` |
+| Radeon RX 7600 | `ET_VK_SARC_RX7600_PROFILE=rx7600-refine5` with the 780M variables its `STATUS.md` lists | `sarc-1.5-rx7600-prefill-refine` |
+| Radeon RX 7900 XTX | `ET_VK_SARC_7900XTX_PROFILE=7900xtx-refine5` | `sarc-1.5-7900xtx-prefill-refine` |
+| Samsung Xclipse (M51) | `ET_VK_SARC_M51_PROFILE=c8` (verified 1B and 3B; 8B with `ET_VK_EXECUTE_NODE_THRESHOLD=32`) | `sarc-1.5-m51-prefill-refine` |
+| Arc B580 | `ET_VK_SARC_DEV_PROFILE=b580-fused1-order-p13` | `sarc-1.5-b580-prefill-refine`, `sarc-1.5-b580-fused-port` |
+| Arc Pro B70 | `ET_VK_SARC_DEV_PROFILE=b70-fused1-order-i-n26-w16m` | `sarc-1.5-xe2-prefill-refine`, `sarc-1.5-b70-fused-port` |
+| RTX 4070 Ti SUPER | `ET_VK_SARC_DEV_PROFILE=4070ti-fused1` | `sarc-1.5-4070ti-prefill-refine`, `sarc-1.5-4070ti-fused-port` |
+| Jetson Orin Nano | `ET_VK_SARC_DEV_PROFILE=orin-fused1` | `sarc-1.5-orin-prefill-refine`, `sarc-1.5-orin-fused-port` |
+
 Unverified rows are inert in a release. Their SPIR-V is still pinned in `sarc/golden/spirv.json`
 (owner `UNVERIFIED:<device>`), so accidental changes are caught.
 

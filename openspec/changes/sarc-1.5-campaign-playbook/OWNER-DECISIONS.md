@@ -280,3 +280,15 @@ Do, in this order, each as a unit of the coordinator hold:
 Numbers stay local, as the device owner's rule says. Stop and report under "Decision needed from the owner" if
 the board swaps, resets, or an 8B run aborts in the same place twice.
 
+### N11. Merging the campaigns into `dev/1.5` (owner decisions 2026-10-13)
+
+All campaigns are closed. Decided for the merge (`MERGE-PLAN.md`, M3):
+
+1. Merge only. Every new kernel stays `kUnverified` and the hooks stay inert; promotion is the next stage, with
+   its prerequisites (M1, the D4.3 review, M2d, M2f, M5).
+2. The merges are made on an integration branch (`topic/merge-campaigns`), as two-parent merge commits with the
+   conflict notes in the message. `dev/1.5` is fast-forwarded to it after the checks pass, on the owner's word.
+3. The full-subgroups change (F1, form B, authorised for the B580 branch on 2026-10-10 and measured on the five
+   devices on our side) goes in with the merge as one release-zone commit.
+4. `topic/sarc-pinned-glslc` is left out for now: with it `check.sh` lists every shipped shader whose SPIR-V
+   differs as DIFF until each device owner re-verifies.

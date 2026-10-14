@@ -2,6 +2,10 @@
 
 ## Why
 
+(Update 2026-10-13: the rows of this change are on `dev/1.5` since 2026-09-28 as `kUnverified` rows, and the
+card has since had its prefill campaign, `sarc-1.5-7900xtx-prefill-refine`. The text below is the state when
+this change was proposed.)
+
 The RX 7900 XTX (RDNA3 Navi31, AMDVLK 2025.Q2.1, `host-7900xtx`) has no SARC row: the README lists it as
 "no promoted 1.4 default". This change carries the 2026-09-27 roofline-guided 4w study (1.4 study branch,
 tag `archive/yanwen/release14-quant-shaders-7900xtx`) onto dev/1.5 as sweep candidates plus one new
