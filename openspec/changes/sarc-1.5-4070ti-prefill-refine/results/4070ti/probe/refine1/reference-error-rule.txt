@@ -1,0 +1,21 @@
+case,parent_rms,candidate_rms,parent_max,candidate_max,rms_not_larger,max_not_larger
+1b_head_config_s2048 (production shape),8.54687e-05,3.48533e-05,0.0017128,0.00128818,yes,yes
+3b_head_config_s2048 (production shape),8.68625e-05,3.53554e-05,0.00140834,0.00157005,yes,NO
+8b_head_config_s2048 (production shape),8.69643e-05,3.4792e-05,0.00158703,0.00149834,yes,yes
+1b_head_config_s256_pos256,8.29996e-05,3.16007e-05,0.000718169,0.00022538,yes,yes
+3b_head_config_pos128,9.49144e-05,4.53996e-05,0.00118472,0.000356644,yes,yes
+3b_head_config_s256,0.000122078,8.04446e-05,0.00166237,0.00134528,yes,yes
+8b_head_config_s1024_pos1024,7.92873e-05,1.62089e-05,0.00102516,0.000157401,yes,yes
+8b_head_config_s256,0.000123011,8.38049e-05,0.00181824,0.00151831,yes,yes
+tiny_d128_s2048,8.384e-05,3.44992e-05,0.00146663,0.000999451,yes,yes
+tiny_gqa_pos64,9.73764e-05,5.57627e-05,0.000689417,0.000325754,yes,yes
+tiny_gqa_s2048,8.35744e-05,3.48808e-05,0.00149816,0.00106984,yes,yes
+tiny_gqa_s256_pos128,9.67958e-05,4.28929e-05,0.000882342,0.000277489,yes,yes
+cell,prompts,top1_diff,mean_kl,gross_divergence
+1b-4w,41,0,0.00082253,no
+1b-8da4w,41,6,0.0678309,no
+3b-4w,41,0,0.000235871,no
+3b-8da4w,41,1,0.0245505,no
+8b-4w,41,0,0.000287668,no
+8b-8da4w,41,1,0.0226742,no
+verdict: NOT MET (reference-error rule, owner decision 2026-10-04): criterion 1: 3b_head_config_s2048: maximum error larger than the parent's

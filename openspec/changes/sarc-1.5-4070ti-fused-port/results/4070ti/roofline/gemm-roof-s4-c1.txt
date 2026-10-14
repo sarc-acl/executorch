@@ -1,0 +1,14 @@
+# openspec/changes/sarc-1.5-4070ti-fused-port/results/4070ti/sessions/s4-c1/trace/gemm.csv
+model,scheme,arm,gemm_ms,rate_T_per_s,pct_of_matrix_roof,kernels
+1b,4w,cand,34.2,116.499,63.7,q4gsw_coopmat_t128x128k16g24s32ga+q4gsw_coopmat_t256x128k16g42s32ga
+1b,4w,parent,34.3,116.222,63.6,q4gsw_coopmat_t128x128k16g24s32ga+q4gsw_coopmat_t256x128k16g42s32ga
+1b,8da4w,cand,27.7,144.038,39.0,dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra
+1b,8da4w,parent,27.7,144.107,39.0,dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra
+3b,4w,cand,95.7,120.590,66.0,q4gsw_coopmat_t256x128k16g42s32ga
+3b,4w,parent,96.6,119.533,65.4,q4gsw_coopmat_t256x128k16g42s32ga
+3b,8da4w,cand,74.4,155.224,42.0,dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra
+3b,8da4w,parent,74.8,154.426,41.8,dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra
+8b,4w,cand,238.7,119.764,65.5,q4gsw_coopmat_t256x128k16g42s32ga
+8b,4w,parent,239.6,119.324,65.3,q4gsw_coopmat_t256x128k16g42s32ga
+8b,8da4w,cand,181.3,157.706,42.7,dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra
+8b,8da4w,parent,181.2,157.800,42.7,dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra

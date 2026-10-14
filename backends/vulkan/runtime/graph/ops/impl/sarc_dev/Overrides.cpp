@@ -288,6 +288,67 @@ const Row kQ4gswCandidates[] = {
     {"", nullptr, Op::kQ4gswLinear,
      "sarc_dev_prof_q4gsw_t128x128k32g42s32f32cp", tile(4, 2, true),
      kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
+    // >>> 4070ti lin-q4gsw-rows
+    // RTX 4070 Ti SUPER 4w sweep tiles (glsl/sarc_dev/sarc_linear_q4gsw_coopmat_4070ti.yaml), texture3d.
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_4070ti_t256x128k16g42s32gac", {256, 128, 16, 4, 2, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_4070ti_t256x128k16g24s32gac", {256, 128, 16, 2, 4, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_4070ti_t256x256k16g44s32gac", {256, 256, 16, 4, 4, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_4070ti_t128x256k16g42s32ga", {128, 256, 16, 4, 2, 32, 16, false},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_4070ti_t128x256k16g42s32gac", {128, 256, 16, 4, 2, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_4070ti_t128x128k32g42s32ga", {128, 128, 32, 4, 2, 32, 16, false},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_4070ti_t128x128k32g42s32gac", {128, 128, 32, 4, 2, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_4070ti_t128x128k32g44s32gac", {128, 128, 32, 4, 4, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_4070ti_t128x128k32g24s32gac", {128, 128, 32, 2, 4, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_4070ti_t128x128k16g42s32ga", {128, 128, 16, 4, 2, 32, 16, false},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_4070ti_t128x128k16g42s32gac", {128, 128, 16, 4, 2, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_4070ti_t256x128k16g42s32gabt", {256, 128, 16, 4, 2, 32, 16, false},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_4070ti_t256x128k16g42s32gacbt", {256, 128, 16, 4, 2, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_4070ti_t128x128k32g42s32gacbt", {128, 128, 32, 4, 2, 32, 16, true},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    // <<< 4070ti lin-q4gsw-rows
+    // >>> 4070ti prof-q4gsw-rows
+    // RTX 4070 Ti SUPER phase timing, MEASUREMENT ONLY (glsl/sarc_dev/sarc_dev_prof_4070ti_q4gsw.yaml):
+    // the shipped `ga` tiles with shader-clock phase counters written over their output.
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_prof_4070ti_q4gsw_t256x128k16g42s32gap", {256, 128, 16, 4, 2, 32, 16, false},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_prof_4070ti_q4gsw_t128x128k16g24s32gap", {128, 128, 16, 2, 4, 32, 16, false},
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_prof_4070ti_q4gsw_t128x256k16g42s32gap", {128, 256, 16, 4, 2, 32, 16, false},
+     kBufTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_prof_4070ti_q4gsw_t128x128k16g42s32gap", {128, 128, 16, 4, 2, 32, 16, false},
+     kBufTex2d | kBufBuf, nullptr, Status::kUnverified},
+    // <<< 4070ti prof-q4gsw-rows
 };
 
 // dq8ca (8da4w) sweep candidates, selected with ET_VK_SARC_DQ8CA_VARIANT.
@@ -512,6 +573,330 @@ const Row kDq8caCandidates[] = {
      "sarc_sdpa_qk_coopmat_pk_t256x64k32g42s32nf",
      {256, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
      Status::kUnverified},
+    // >>> 4070ti lin-dq8ca-rows
+    // RTX 4070 Ti SUPER 8da4w zpgtr sweep tiles (glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpgtr_4070ti.yaml).
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_t128x128k64g42s32mk32ra", {128, 128, 64, 4, 2, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_t128x128k64g24s32mk32ra", {128, 128, 64, 2, 4, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_t256x128k32g44s32mk32ra", {256, 128, 32, 4, 4, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_t256x128k32g42s32mk32ra", {256, 128, 32, 4, 2, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_t128x256k32g81s32mk32ra", {128, 256, 32, 8, 1, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_t128x128k32g42s32mk32ra", {128, 128, 32, 4, 2, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_t128x64k64g44s32mk32ra", {128, 64, 64, 4, 4, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_t128x64k64g42s32mk32ra", {128, 64, 64, 4, 2, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_t64x128k64g42s32mk32ra", {64, 128, 64, 4, 2, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_t256x64k64g44s32mk32ra", {256, 64, 64, 4, 4, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_t256x64k64g42s32mk32ra", {256, 64, 64, 4, 2, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_t256x128k32g24s32mk32ra", {256, 128, 32, 2, 4, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_t128x128k64g22s32mk32ra", {128, 128, 64, 2, 2, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    // <<< 4070ti lin-dq8ca-rows
+    // >>> 4070ti bh-dq8ca-rows
+    // RTX 4070 Ti SUPER zpgtr with half-texel weight staging (glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpgtr_4070ti_bh.yaml).
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_bh_t128x128k64g44s32mk32ra", {128, 128, 64, 4, 4, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_bh_t128x128k64g42s32mk32ra", {128, 128, 64, 4, 2, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_bh_t128x128k64g24s32mk32ra", {128, 128, 64, 2, 4, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpgtr_4070ti_bh_t256x128k32g42s32mk32ra", {256, 128, 32, 4, 2, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    // <<< 4070ti bh-dq8ca-rows
+    // >>> 4070ti prof-dq8ca-rows
+    // RTX 4070 Ti SUPER phase timing, MEASUREMENT ONLY (glsl/sarc_dev/sarc_dev_prof_4070ti_dq8ca_zpgtr.yaml).
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_prof_4070ti_dq8ca_zpgtr_t128x128k64g44s32mk32rap", {128, 128, 64, 4, 4, 32, 16, true},
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified,
+     /*rowmajor_a=*/true},
+    // <<< 4070ti prof-dq8ca-rows
+    // >>> 4070ti sdpa-rows
+    // RTX 4070 Ti SUPER prefill refine: glsl/sarc_dev/sarc_sdpa_{qk,av}_coopmat_4070ti*.yaml.
+    // Selected only through ET_VK_SARC_DEV_PROFILE=4070ti-*.
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_t128x64k32g42s32nf",
+     {128, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_t128x64k32g42s32",
+     {128, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_t128x64k32g24s32nf",
+     {128, 64, 32, 2, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_t128x64k32g22s32nf",
+     {128, 64, 32, 2, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k32g42s32nf",
+     {128, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k64g42s32nf",
+     {128, 64, 64, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k32g24s32nf",
+     {128, 64, 32, 2, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_pk_t64x64k32g22s32nf",
+     {64, 64, 32, 2, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_pk_t64x64k32g42s32nf",
+     {64, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_pk_t64x128k32g42s32nf",
+     {64, 128, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_pk_t128x64k32g44s32nf",
+     {128, 64, 32, 4, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_pk_t64x64k32g44s32nf",
+     {64, 64, 32, 4, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_pk_t64x64k32g21s32nf",
+     {64, 64, 32, 2, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_pk_t32x64k32g42s32nf",
+     {32, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_t64x64k32g42s32",
+     {64, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_t64x64k32g24s32",
+     {64, 64, 32, 2, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_ml_t64x128k32g42s32",
+     {64, 128, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_ml_t128x128k32g42s32",
+     {128, 128, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_ml_t128x64k32g42s32",
+     {128, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_ml_t128x64k32g44s32",
+     {128, 64, 32, 4, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_ml_t256x64k32g42s32",
+     {256, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_ml_t128x64k32g24s32",
+     {128, 64, 32, 2, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_ml_t64x128k32g44s32",
+     {64, 128, 32, 4, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_ml_t128x128k32g44s32",
+     {128, 128, 32, 4, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_ml_t32x64k32g42s32",
+     {32, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_ml_t256x64k32g44s32",
+     {256, 64, 32, 4, 4, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    // <<< 4070ti sdpa-rows
+    // >>> 4070ti df-rows
+    // RTX 4070 Ti SUPER direct-feed SDPA kernels: glsl/sarc_dev/sarc_sdpa_{qk,av}_coopmat_4070ti_df.yaml.
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_df_t64x64k32g11s32nf",
+     {64, 64, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_df_t32x64k32g11s32nf",
+     {32, 64, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_df_t64x32k32g11s32nf",
+     {64, 32, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_df_t32x32k32g11s32nf",
+     {32, 32, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_df_t16x64k32g11s32nf",
+     {16, 64, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_df_t128x64k32g22s32nf",
+     {128, 64, 32, 2, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_df_t128x64k32g42s32nf",
+     {128, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_df_t64x64k32g22s32nf",
+     {64, 64, 32, 2, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_df_t128x128k32g22s32nf",
+     {128, 128, 32, 2, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_dfg_t64x64k32g11s32nf",
+     {64, 64, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_dfg_t32x64k32g11s32nf",
+     {32, 64, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_dfh_t64x64k32g11s32nf",
+     {64, 64, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_dfh_t32x64k32g11s32nf",
+     {32, 64, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_dfg_t64x64k32g22s32nf",
+     {64, 64, 32, 2, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk,
+     "sarc_sdpa_qk_coopmat_4070ti_dfh_t64x64k32g22s32nf",
+     {64, 64, 32, 2, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_df_t16x64k32g11s32",
+     {16, 64, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_df_t32x64k32g11s32",
+     {32, 64, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_df_t64x64k32g11s32",
+     {64, 64, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_df_t64x64k32g12s32",
+     {64, 64, 32, 1, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_df_t32x64k32g21s32",
+     {32, 64, 32, 2, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_df_t16x128k32g11s32",
+     {16, 128, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_df_t32x128k32g11s32",
+     {32, 128, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_df_t32x128k32g21s32",
+     {32, 128, 32, 2, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_df_t64x128k32g21s32",
+     {64, 128, 32, 2, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_df_t64x128k32g22s32",
+     {64, 128, 32, 2, 2, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_dfg_t32x64k32g11s32",
+     {32, 64, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_dfg_t32x128k32g11s32",
+     {32, 128, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_dfg_t32x128k32g21s32",
+     {32, 128, 32, 2, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_dfh_t32x64k32g11s32",
+     {32, 64, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_dfh_t32x128k32g11s32",
+     {32, 128, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_dfh_t32x128k32g21s32",
+     {32, 128, 32, 2, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_dfg_t64x64k32g11s32",
+     {64, 64, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_4070ti_dfh_t64x64k32g11s32",
+     {64, 64, 32, 1, 1, 32, 16, false}, kBufBuf, nullptr,
+     Status::kUnverified},
+    // <<< 4070ti df-rows
 };
 
 std::string& requested_variant() {
@@ -611,6 +996,112 @@ const Preference kQkPk_t128x128k32g42s32nf[] = {{Op::kSdpaQk, "pk_t128x128k32g42
 const Preference kQkPk_t64x64k32g22s32nf[] = {{Op::kSdpaQk, "pk_t64x64k32g22s32nf", nullptr}};
 const Preference kQkPk_t128x64k32g24s32nf[] = {{Op::kSdpaQk, "pk_t128x64k32g24s32nf", nullptr}};
 const Preference kQkPk_t256x64k32g42s32nf[] = {{Op::kSdpaQk, "pk_t256x64k32g42s32nf", nullptr}};
+// >>> 4070ti sdpa-preferences
+// RTX 4070 Ti SUPER: single-kernel SDPA screening profiles and 4070ti-refine1.
+const Preference k4070ti_qk_t128x64k32g42s32nf[] = {{Op::kSdpaQk, "4070ti_t128x64k32g42s32nf", nullptr}};
+const Preference k4070ti_qk_t128x64k32g42s32[] = {{Op::kSdpaQk, "4070ti_t128x64k32g42s32", nullptr}};
+const Preference k4070ti_qk_t128x64k32g24s32nf[] = {{Op::kSdpaQk, "4070ti_t128x64k32g24s32nf", nullptr}};
+const Preference k4070ti_qk_t128x64k32g22s32nf[] = {{Op::kSdpaQk, "4070ti_t128x64k32g22s32nf", nullptr}};
+const Preference k4070ti_qk_pk_t128x64k32g42s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t128x64k32g42s32nf", nullptr}};
+const Preference k4070ti_qk_pk_t128x64k64g42s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t128x64k64g42s32nf", nullptr}};
+const Preference k4070ti_qk_pk_t128x64k32g24s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t128x64k32g24s32nf", nullptr}};
+const Preference k4070ti_qk_pk_t64x64k32g22s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t64x64k32g22s32nf", nullptr}};
+const Preference k4070ti_qk_pk_t64x64k32g42s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t64x64k32g42s32nf", nullptr}};
+const Preference k4070ti_qk_pk_t64x128k32g42s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t64x128k32g42s32nf", nullptr}};
+const Preference k4070ti_qk_pk_t128x64k32g44s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t128x64k32g44s32nf", nullptr}};
+const Preference k4070ti_qk_pk_t64x64k32g44s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t64x64k32g44s32nf", nullptr}};
+const Preference k4070ti_qk_pk_t64x64k32g21s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t64x64k32g21s32nf", nullptr}};
+const Preference k4070ti_qk_pk_t32x64k32g42s32nf[] = {{Op::kSdpaQk, "4070ti_pk_t32x64k32g42s32nf", nullptr}};
+const Preference k4070ti_av_t64x64k32g42s32[] = {{Op::kSdpaAv, "4070ti_t64x64k32g42s32", nullptr}};
+const Preference k4070ti_av_t64x64k32g24s32[] = {{Op::kSdpaAv, "4070ti_t64x64k32g24s32", nullptr}};
+const Preference k4070ti_av_ml_t64x128k32g42s32[] = {{Op::kSdpaAv, "4070ti_ml_t64x128k32g42s32", nullptr}};
+const Preference k4070ti_av_ml_t128x128k32g42s32[] = {{Op::kSdpaAv, "4070ti_ml_t128x128k32g42s32", nullptr}};
+const Preference k4070ti_av_ml_t128x64k32g42s32[] = {{Op::kSdpaAv, "4070ti_ml_t128x64k32g42s32", nullptr}};
+const Preference k4070ti_av_ml_t128x64k32g44s32[] = {{Op::kSdpaAv, "4070ti_ml_t128x64k32g44s32", nullptr}};
+const Preference k4070ti_av_ml_t256x64k32g42s32[] = {{Op::kSdpaAv, "4070ti_ml_t256x64k32g42s32", nullptr}};
+const Preference k4070ti_av_ml_t128x64k32g24s32[] = {{Op::kSdpaAv, "4070ti_ml_t128x64k32g24s32", nullptr}};
+const Preference k4070ti_av_ml_t64x128k32g44s32[] = {{Op::kSdpaAv, "4070ti_ml_t64x128k32g44s32", nullptr}};
+const Preference k4070ti_av_ml_t128x128k32g44s32[] = {{Op::kSdpaAv, "4070ti_ml_t128x128k32g44s32", nullptr}};
+const Preference k4070ti_av_ml_t32x64k32g42s32[] = {{Op::kSdpaAv, "4070ti_ml_t32x64k32g42s32", nullptr}};
+const Preference k4070ti_av_ml_t256x64k32g44s32[] = {{Op::kSdpaAv, "4070ti_ml_t256x64k32g44s32", nullptr}};
+// Candidate 1 (SDPA prefill kernels for this device), the best tile per head_dim of screen 2
+// (results/4070ti/screens/sdpa-screen2.csv), accumulation unchanged (fp32):
+//   QK^T    head_dim 64: direct feed t64x64 (one subgroup per workgroup); 128: packed staging t64x128
+//   attn*V  head_dim 64: multi-pass staging t32x64; 128: t64x128 (does not fit head_dim 64)
+bool head_dim_64_4070ti(const ShapeInfo& s) {
+  return (s.op == Op::kSdpaQk ? s.K : s.N) == 64;
+}
+const Preference k4070tiRefine1[] = {
+    {Op::kSdpaQk, "4070ti_df_t64x64k32g11s32nf", head_dim_64_4070ti},
+    {Op::kSdpaQk, "4070ti_pk_t64x128k32g42s32nf", nullptr},
+    {Op::kSdpaAv, "4070ti_ml_t32x64k32g42s32", head_dim_64_4070ti},
+    {Op::kSdpaAv, "4070ti_ml_t64x128k32g42s32", nullptr},
+};
+// <<< 4070ti sdpa-preferences
+// >>> 4070ti df-preferences
+// RTX 4070 Ti SUPER: single-kernel screening profiles of the direct-feed SDPA kernels.
+const Preference k4070ti_qk_df_t64x64k32g11s32nf[] = {{Op::kSdpaQk, "4070ti_df_t64x64k32g11s32nf", nullptr}};
+const Preference k4070ti_qk_df_t32x64k32g11s32nf[] = {{Op::kSdpaQk, "4070ti_df_t32x64k32g11s32nf", nullptr}};
+const Preference k4070ti_qk_df_t64x32k32g11s32nf[] = {{Op::kSdpaQk, "4070ti_df_t64x32k32g11s32nf", nullptr}};
+const Preference k4070ti_qk_df_t32x32k32g11s32nf[] = {{Op::kSdpaQk, "4070ti_df_t32x32k32g11s32nf", nullptr}};
+const Preference k4070ti_qk_df_t16x64k32g11s32nf[] = {{Op::kSdpaQk, "4070ti_df_t16x64k32g11s32nf", nullptr}};
+const Preference k4070ti_qk_df_t128x64k32g22s32nf[] = {{Op::kSdpaQk, "4070ti_df_t128x64k32g22s32nf", nullptr}};
+const Preference k4070ti_qk_df_t128x64k32g42s32nf[] = {{Op::kSdpaQk, "4070ti_df_t128x64k32g42s32nf", nullptr}};
+const Preference k4070ti_qk_df_t64x64k32g22s32nf[] = {{Op::kSdpaQk, "4070ti_df_t64x64k32g22s32nf", nullptr}};
+const Preference k4070ti_qk_df_t128x128k32g22s32nf[] = {{Op::kSdpaQk, "4070ti_df_t128x128k32g22s32nf", nullptr}};
+const Preference k4070ti_qk_dfg_t64x64k32g11s32nf[] = {{Op::kSdpaQk, "4070ti_dfg_t64x64k32g11s32nf", nullptr}};
+const Preference k4070ti_qk_dfg_t32x64k32g11s32nf[] = {{Op::kSdpaQk, "4070ti_dfg_t32x64k32g11s32nf", nullptr}};
+const Preference k4070ti_qk_dfh_t64x64k32g11s32nf[] = {{Op::kSdpaQk, "4070ti_dfh_t64x64k32g11s32nf", nullptr}};
+const Preference k4070ti_qk_dfh_t32x64k32g11s32nf[] = {{Op::kSdpaQk, "4070ti_dfh_t32x64k32g11s32nf", nullptr}};
+const Preference k4070ti_qk_dfg_t64x64k32g22s32nf[] = {{Op::kSdpaQk, "4070ti_dfg_t64x64k32g22s32nf", nullptr}};
+const Preference k4070ti_qk_dfh_t64x64k32g22s32nf[] = {{Op::kSdpaQk, "4070ti_dfh_t64x64k32g22s32nf", nullptr}};
+const Preference k4070ti_av_df_t16x64k32g11s32[] = {{Op::kSdpaAv, "4070ti_df_t16x64k32g11s32", nullptr}};
+const Preference k4070ti_av_df_t32x64k32g11s32[] = {{Op::kSdpaAv, "4070ti_df_t32x64k32g11s32", nullptr}};
+const Preference k4070ti_av_df_t64x64k32g11s32[] = {{Op::kSdpaAv, "4070ti_df_t64x64k32g11s32", nullptr}};
+const Preference k4070ti_av_df_t64x64k32g12s32[] = {{Op::kSdpaAv, "4070ti_df_t64x64k32g12s32", nullptr}};
+const Preference k4070ti_av_df_t32x64k32g21s32[] = {{Op::kSdpaAv, "4070ti_df_t32x64k32g21s32", nullptr}};
+const Preference k4070ti_av_df_t16x128k32g11s32[] = {{Op::kSdpaAv, "4070ti_df_t16x128k32g11s32", nullptr}};
+const Preference k4070ti_av_df_t32x128k32g11s32[] = {{Op::kSdpaAv, "4070ti_df_t32x128k32g11s32", nullptr}};
+const Preference k4070ti_av_df_t32x128k32g21s32[] = {{Op::kSdpaAv, "4070ti_df_t32x128k32g21s32", nullptr}};
+const Preference k4070ti_av_df_t64x128k32g21s32[] = {{Op::kSdpaAv, "4070ti_df_t64x128k32g21s32", nullptr}};
+const Preference k4070ti_av_df_t64x128k32g22s32[] = {{Op::kSdpaAv, "4070ti_df_t64x128k32g22s32", nullptr}};
+const Preference k4070ti_av_dfg_t32x64k32g11s32[] = {{Op::kSdpaAv, "4070ti_dfg_t32x64k32g11s32", nullptr}};
+const Preference k4070ti_av_dfg_t32x128k32g11s32[] = {{Op::kSdpaAv, "4070ti_dfg_t32x128k32g11s32", nullptr}};
+const Preference k4070ti_av_dfg_t32x128k32g21s32[] = {{Op::kSdpaAv, "4070ti_dfg_t32x128k32g21s32", nullptr}};
+const Preference k4070ti_av_dfh_t32x64k32g11s32[] = {{Op::kSdpaAv, "4070ti_dfh_t32x64k32g11s32", nullptr}};
+const Preference k4070ti_av_dfh_t32x128k32g11s32[] = {{Op::kSdpaAv, "4070ti_dfh_t32x128k32g11s32", nullptr}};
+const Preference k4070ti_av_dfh_t32x128k32g21s32[] = {{Op::kSdpaAv, "4070ti_dfh_t32x128k32g21s32", nullptr}};
+const Preference k4070ti_av_dfg_t64x64k32g11s32[] = {{Op::kSdpaAv, "4070ti_dfg_t64x64k32g11s32", nullptr}};
+const Preference k4070ti_av_dfh_t64x64k32g11s32[] = {{Op::kSdpaAv, "4070ti_dfh_t64x64k32g11s32", nullptr}};
+// <<< 4070ti df-preferences
+// >>> 4070ti lin-preferences
+// RTX 4070 Ti SUPER linear profiles (tools/gen_4070ti_profiles.py).
+bool n_above_512_4070ti(const ShapeInfo& s) {
+  return s.N > 512;
+}
+const Preference k4070tiRefine2[] = {
+    {Op::kDq8caLinear, "bh_t128x128k64g44s32mk32ra", nullptr},
+};
+const Preference k4070tiRefine3[] = {
+    {Op::kDq8caLinear, "bh_t128x128k64g44s32mk32ra", nullptr},
+    {Op::kQ4gswLinear, "4070ti_t256x128k16g42s32gac", n_above_512_4070ti},
+};
+const Preference k4070tiRefine4[] = {
+    {Op::kSdpaQk, "4070ti_df_t64x64k32g11s32nf", head_dim_64_4070ti},
+    {Op::kSdpaQk, "4070ti_pk_t64x128k32g42s32nf", nullptr},
+    {Op::kSdpaAv, "4070ti_ml_t32x64k32g42s32", head_dim_64_4070ti},
+    {Op::kSdpaAv, "4070ti_ml_t64x128k32g42s32", nullptr},
+    {Op::kDq8caLinear, "bh_t128x128k64g44s32mk32ra", nullptr},
+};
+const Preference k4070tiRefine5[] = {
+    {Op::kSdpaQk, "4070ti_df_t64x64k32g11s32nf", head_dim_64_4070ti},
+    {Op::kSdpaQk, "4070ti_pk_t64x128k32g42s32nf", nullptr},
+    {Op::kSdpaAv, "4070ti_ml_t32x64k32g42s32", head_dim_64_4070ti},
+    {Op::kSdpaAv, "4070ti_ml_t64x128k32g42s32", nullptr},
+    {Op::kDq8caLinear, "bh_t128x128k64g44s32mk32ra", nullptr},
+    {Op::kQ4gswLinear, "4070ti_t256x128k16g42s32gac", n_above_512_4070ti},
+};
+// <<< 4070ti lin-preferences
 struct Profile {
   const char* name;
   const Preference* prefs;
@@ -647,6 +1138,82 @@ const Profile kProfiles[] = {
     // 780M final configuration: these preferences plus what profile c11 of the
     // 780m block below adds (active_profile_780m).
     {"780m-final", k780mRefine3, sizeof(k780mRefine3) / sizeof(Preference)},
+    // >>> 4070ti sdpa-profiles
+    {"4070ti-qk-t128x64k32g42s32nf", k4070ti_qk_t128x64k32g42s32nf, 1},
+    {"4070ti-qk-t128x64k32g42s32", k4070ti_qk_t128x64k32g42s32, 1},
+    {"4070ti-qk-t128x64k32g24s32nf", k4070ti_qk_t128x64k32g24s32nf, 1},
+    {"4070ti-qk-t128x64k32g22s32nf", k4070ti_qk_t128x64k32g22s32nf, 1},
+    {"4070ti-qk-pk_t128x64k32g42s32nf", k4070ti_qk_pk_t128x64k32g42s32nf, 1},
+    {"4070ti-qk-pk_t128x64k64g42s32nf", k4070ti_qk_pk_t128x64k64g42s32nf, 1},
+    {"4070ti-qk-pk_t128x64k32g24s32nf", k4070ti_qk_pk_t128x64k32g24s32nf, 1},
+    {"4070ti-qk-pk_t64x64k32g22s32nf", k4070ti_qk_pk_t64x64k32g22s32nf, 1},
+    {"4070ti-qk-pk_t64x64k32g42s32nf", k4070ti_qk_pk_t64x64k32g42s32nf, 1},
+    {"4070ti-qk-pk_t64x128k32g42s32nf", k4070ti_qk_pk_t64x128k32g42s32nf, 1},
+    {"4070ti-qk-pk_t128x64k32g44s32nf", k4070ti_qk_pk_t128x64k32g44s32nf, 1},
+    {"4070ti-qk-pk_t64x64k32g44s32nf", k4070ti_qk_pk_t64x64k32g44s32nf, 1},
+    {"4070ti-qk-pk_t64x64k32g21s32nf", k4070ti_qk_pk_t64x64k32g21s32nf, 1},
+    {"4070ti-qk-pk_t32x64k32g42s32nf", k4070ti_qk_pk_t32x64k32g42s32nf, 1},
+    {"4070ti-av-t64x64k32g42s32", k4070ti_av_t64x64k32g42s32, 1},
+    {"4070ti-av-t64x64k32g24s32", k4070ti_av_t64x64k32g24s32, 1},
+    {"4070ti-av-ml_t64x128k32g42s32", k4070ti_av_ml_t64x128k32g42s32, 1},
+    {"4070ti-av-ml_t128x128k32g42s32", k4070ti_av_ml_t128x128k32g42s32, 1},
+    {"4070ti-av-ml_t128x64k32g42s32", k4070ti_av_ml_t128x64k32g42s32, 1},
+    {"4070ti-av-ml_t128x64k32g44s32", k4070ti_av_ml_t128x64k32g44s32, 1},
+    {"4070ti-av-ml_t256x64k32g42s32", k4070ti_av_ml_t256x64k32g42s32, 1},
+    {"4070ti-av-ml_t128x64k32g24s32", k4070ti_av_ml_t128x64k32g24s32, 1},
+    {"4070ti-av-ml_t64x128k32g44s32", k4070ti_av_ml_t64x128k32g44s32, 1},
+    {"4070ti-av-ml_t128x128k32g44s32", k4070ti_av_ml_t128x128k32g44s32, 1},
+    {"4070ti-av-ml_t32x64k32g42s32", k4070ti_av_ml_t32x64k32g42s32, 1},
+    {"4070ti-av-ml_t256x64k32g44s32", k4070ti_av_ml_t256x64k32g44s32, 1},
+    {"4070ti-refine1", k4070tiRefine1, sizeof(k4070tiRefine1) / sizeof(Preference)},
+    // <<< 4070ti sdpa-profiles
+    // >>> 4070ti df-profiles
+    {"4070ti-qk-df_t64x64k32g11s32nf", k4070ti_qk_df_t64x64k32g11s32nf, 1},
+    {"4070ti-qk-df_t32x64k32g11s32nf", k4070ti_qk_df_t32x64k32g11s32nf, 1},
+    {"4070ti-qk-df_t64x32k32g11s32nf", k4070ti_qk_df_t64x32k32g11s32nf, 1},
+    {"4070ti-qk-df_t32x32k32g11s32nf", k4070ti_qk_df_t32x32k32g11s32nf, 1},
+    {"4070ti-qk-df_t16x64k32g11s32nf", k4070ti_qk_df_t16x64k32g11s32nf, 1},
+    {"4070ti-qk-df_t128x64k32g22s32nf", k4070ti_qk_df_t128x64k32g22s32nf, 1},
+    {"4070ti-qk-df_t128x64k32g42s32nf", k4070ti_qk_df_t128x64k32g42s32nf, 1},
+    {"4070ti-qk-df_t64x64k32g22s32nf", k4070ti_qk_df_t64x64k32g22s32nf, 1},
+    {"4070ti-qk-df_t128x128k32g22s32nf", k4070ti_qk_df_t128x128k32g22s32nf, 1},
+    {"4070ti-qk-dfg_t64x64k32g11s32nf", k4070ti_qk_dfg_t64x64k32g11s32nf, 1},
+    {"4070ti-qk-dfg_t32x64k32g11s32nf", k4070ti_qk_dfg_t32x64k32g11s32nf, 1},
+    {"4070ti-qk-dfh_t64x64k32g11s32nf", k4070ti_qk_dfh_t64x64k32g11s32nf, 1},
+    {"4070ti-qk-dfh_t32x64k32g11s32nf", k4070ti_qk_dfh_t32x64k32g11s32nf, 1},
+    {"4070ti-qk-dfg_t64x64k32g22s32nf", k4070ti_qk_dfg_t64x64k32g22s32nf, 1},
+    {"4070ti-qk-dfh_t64x64k32g22s32nf", k4070ti_qk_dfh_t64x64k32g22s32nf, 1},
+    {"4070ti-av-df_t16x64k32g11s32", k4070ti_av_df_t16x64k32g11s32, 1},
+    {"4070ti-av-df_t32x64k32g11s32", k4070ti_av_df_t32x64k32g11s32, 1},
+    {"4070ti-av-df_t64x64k32g11s32", k4070ti_av_df_t64x64k32g11s32, 1},
+    {"4070ti-av-df_t64x64k32g12s32", k4070ti_av_df_t64x64k32g12s32, 1},
+    {"4070ti-av-df_t32x64k32g21s32", k4070ti_av_df_t32x64k32g21s32, 1},
+    {"4070ti-av-df_t16x128k32g11s32", k4070ti_av_df_t16x128k32g11s32, 1},
+    {"4070ti-av-df_t32x128k32g11s32", k4070ti_av_df_t32x128k32g11s32, 1},
+    {"4070ti-av-df_t32x128k32g21s32", k4070ti_av_df_t32x128k32g21s32, 1},
+    {"4070ti-av-df_t64x128k32g21s32", k4070ti_av_df_t64x128k32g21s32, 1},
+    {"4070ti-av-df_t64x128k32g22s32", k4070ti_av_df_t64x128k32g22s32, 1},
+    {"4070ti-av-dfg_t32x64k32g11s32", k4070ti_av_dfg_t32x64k32g11s32, 1},
+    {"4070ti-av-dfg_t32x128k32g11s32", k4070ti_av_dfg_t32x128k32g11s32, 1},
+    {"4070ti-av-dfg_t32x128k32g21s32", k4070ti_av_dfg_t32x128k32g21s32, 1},
+    {"4070ti-av-dfh_t32x64k32g11s32", k4070ti_av_dfh_t32x64k32g11s32, 1},
+    {"4070ti-av-dfh_t32x128k32g11s32", k4070ti_av_dfh_t32x128k32g11s32, 1},
+    {"4070ti-av-dfh_t32x128k32g21s32", k4070ti_av_dfh_t32x128k32g21s32, 1},
+    {"4070ti-av-dfg_t64x64k32g11s32", k4070ti_av_dfg_t64x64k32g11s32, 1},
+    {"4070ti-av-dfh_t64x64k32g11s32", k4070ti_av_dfh_t64x64k32g11s32, 1},
+    // <<< 4070ti df-profiles
+    // >>> 4070ti lin-profiles
+    {"4070ti-refine2", k4070tiRefine2, sizeof(k4070tiRefine2) / sizeof(Preference)},
+    {"4070ti-refine3", k4070tiRefine3, sizeof(k4070tiRefine3) / sizeof(Preference)},
+    {"4070ti-refine4", k4070tiRefine4, sizeof(k4070tiRefine4) / sizeof(Preference)},
+    {"4070ti-refine5", k4070tiRefine5, sizeof(k4070tiRefine5) / sizeof(Preference)},
+    // <<< 4070ti lin-profiles
+    // >>> 4070ti-fused profiles
+    // RTX 4070 Ti SUPER fused attention port
+    // (openspec/changes/sarc-1.5-4070ti-fused-port): the kernels of
+    // 4070ti-refine1 for every call the fused node does not serve.
+    {"4070ti-fused1", k4070tiRefine1, sizeof(k4070tiRefine1) / sizeof(Preference)},
+    // <<< 4070ti-fused profiles
 };
 const Profile* requested_profile() {
   static const Profile* p = []() -> const Profile* {
@@ -664,6 +1231,46 @@ const Profile* requested_profile() {
   }();
   return p;
 }
+// >>> 4070ti softmax-variant
+// RTX 4070 Ti SUPER: the refine profiles that carry the SDPA kernels run the
+// fp32 softmax without the full zero tail
+// (glsl/sarc_dev/sarc_sdpa_attn_weights_softmax_4070ti.yaml), as candidates 4
+// to 6 were measured. 4070ti-refine1 is candidate 4.
+const char* softmax_variant_4070ti() {
+  const Profile* p = requested_profile();
+  if (p == nullptr) {
+    return nullptr;
+  }
+  for (const char* name :
+       {"4070ti-refine1", "4070ti-refine4", "4070ti-refine5"}) {
+    if (std::strcmp(p->name, name) == 0) {
+      return "4070ti_nzf";
+    }
+  }
+  return nullptr;
+}
+// <<< 4070ti softmax-variant
+// >>> 4070ti-fused variants
+// RTX 4070 Ti SUPER fused attention port: the fused kernels of the requested
+// profile, one per head_dim (the shader name after sarc_dev_4070ti_sdpa_), or
+// null. The node lives in 4070ti/Sdpa4070tiFused.cpp, which needs the graph
+// headers this file (GPU-free, test_sarc_select) must not include; it hands its
+// Override::sdpa_fused_* functions over from its own static initializer
+// (register_sdpa_fused_4070ti, below). The order of the two files'
+// initializers is not defined: the pair is kept here and applied by whichever
+// runs last, and only while a fused profile is requested.
+const char* fused_variants_4070ti() {
+  const Profile* p = requested_profile();
+  if (p != nullptr && std::strcmp(p->name, "4070ti-fused1") == 0) {
+    return "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko";
+  }
+  return nullptr;
+}
+Override& fused_4070ti() {
+  static Override fused;
+  return fused;
+}
+// <<< 4070ti-fused variants
 
 std::optional<Choice> dev_select(
     const DeviceInfo& device,
@@ -732,6 +1339,16 @@ struct Registrar {
     // the 8da4w variable needs active dq8ca rows (see dev_select).
     o.force_path = !requested_variant().empty();
     o.select = dev_select;
+    // >>> 4070ti softmax-override
+    o.softmax_variant = softmax_variant_4070ti();
+    // <<< 4070ti softmax-override
+    // >>> 4070ti-fused override
+    if (fused_variants_4070ti() != nullptr) {
+      o.softmax_variant = "4070ti_nzf";
+      o.sdpa_fused_add = fused_4070ti().sdpa_fused_add;
+      o.sdpa_fused_serves = fused_4070ti().sdpa_fused_serves;
+    }
+    // <<< 4070ti-fused override
     set_override(o);
     if (requested_profile() != nullptr) {
       std::cerr << "[sarc_dev] profile active: " << requested_profile()->name
@@ -747,6 +1364,24 @@ struct Registrar {
 } registrar;
 
 } // namespace
+// >>> 4070ti-fused entry
+const char* sdpa_fused_variants_4070ti() {
+  const char* v = fused_variants_4070ti();
+  return v != nullptr ? v : "";
+}
+void register_sdpa_fused_4070ti(
+    void (*add)(ComputeGraph&, const std::vector<int32_t>&),
+    bool (*serves)(ComputeGraph*, const std::vector<int32_t>&)) {
+  fused_4070ti().sdpa_fused_add = add;
+  fused_4070ti().sdpa_fused_serves = serves;
+  if (fused_variants_4070ti() != nullptr) {
+    Override o = get_override();
+    o.sdpa_fused_add = add;
+    o.sdpa_fused_serves = serves;
+    set_override(o);
+  }
+}
+// <<< 4070ti-fused entry
 } // namespace sarc
 } // namespace vkcompute
 

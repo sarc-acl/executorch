@@ -1,0 +1,94 @@
+
+=== Compute Shader Performance Benchmark ===
+Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; prefill 2048 / decode 1 @ ctx3072; linear group_size=128; 3 warmup + 5 timed runs per case)
+DEVICE,nvidia geforce rtx 4070 ti super,timestamp_period_ns=1,subgroup_size=32,coopmat=yes,max_shared_mem_bytes=49152
+----------------------------------------------------------------------
+RESULT,sdpa,llama-3.1-8b,,prefill,qk,128,32,2001.72,0.856736,-1,fallback_tiled,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.1-8b,,prefill,softmax,128,32,850.125,0.457941,-1,fallback_tiled,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.1-8b,,prefill,av,128,32,1891.33,6.71479,-1,fallback_tiled,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.1-8b,,prefill,total,128,32,4743.17,7.168,-1,fallback_tiled,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.1-8b,,prefill,qk,128,32,2005.4,0.560894,-1,fallback_tiled,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.1-8b,,prefill,softmax,128,32,850.944,0.72409,-1,fallback_tiled,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.1-8b,,prefill,av,128,32,1865.52,3.99228,-1,fallback_tiled,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.1-8b,,prefill,total,128,32,4721.87,4.42802,-1,fallback_tiled,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.1-8b,,decode,qk,128,32,27.0336,0.560868,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.1-8b,,decode,softmax,128,32,3.4816,0.560868,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.1-8b,,decode,av,128,32,15.36,1.06624e-06,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.1-8b,,decode,total,128,32,45.8752,0.85674,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-3b,,prefill,qk,128,24,1509.58,2.44477,-1,fallback_tiled,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-3b,,prefill,softmax,128,24,636.314,0.560861,-1,fallback_tiled,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-3b,,prefill,av,128,24,1418.44,4.77016,-1,fallback_tiled,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-3b,,prefill,total,128,24,3564.34,4.6589,-1,fallback_tiled,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-3b,,prefill,qk,128,24,1506.3,0.724068,-1,fallback_tiled,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.2-3b,,prefill,softmax,128,24,636.723,0.856751,-1,fallback_tiled,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.2-3b,,prefill,av,128,24,1418.65,9.99649,-1,fallback_tiled,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.2-3b,,prefill,total,128,24,3561.68,10.4277,-1,fallback_tiled,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.2-3b,,decode,qk,128,24,20.8896,0.560868,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-3b,,decode,softmax,128,24,3.2768,0.457947,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-3b,,decode,av,128,24,15.7696,0.560869,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-3b,,decode,total,128,24,39.936,1.024,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-1b,,prefill,qk,64,32,1030.55,0.915882,-1,fallback_tiled,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-1b,,prefill,softmax,64,32,850.33,0.915882,-1,fallback_tiled,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-1b,,prefill,av,64,32,1353.93,10.8949,-1,fallback_tiled,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-1b,,prefill,total,64,32,3234.82,11.264,-1,fallback_tiled,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-1b,,prefill,qk,64,32,1030.76,1.86018,-1,fallback_tiled,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.2-1b,,prefill,softmax,64,32,850.125,0.457941,-1,fallback_tiled,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.2-1b,,prefill,av,64,32,1357.62,30.9529,-1,fallback_tiled,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.2-1b,,prefill,total,64,32,3238.5,30.9122,-1,fallback_tiled,SKIPPED,8,coopmat
+RESULT,sdpa,llama-3.2-1b,,decode,qk,64,32,27.0336,0.560868,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-1b,,decode,softmax,64,32,3.4816,0.560868,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-1b,,decode,av,64,32,11.264,0,-1,not_applicable,SKIPPED,8,tiled
+RESULT,sdpa,llama-3.2-1b,,decode,total,64,32,41.7792,0.457948,-1,not_applicable,SKIPPED,8,tiled
+----------------------------------------------------------------------
+==================== RAW RESULTS ====================
+suite     model         scheme regime   op     storage    variant  (M,K,N)                   mean_us     stdev   kern_us   GFLOP/s  dispatch
+sdpa      llama-3.1-8b  -      prefill  qk     -          tiled    (2048,128,32)              2001.7       0.9         -         -  fallback_tiled
+sdpa      llama-3.1-8b  -      prefill  softmax-          tiled    (2048,128,32)               850.1       0.5         -         -  fallback_tiled
+sdpa      llama-3.1-8b  -      prefill  av     -          tiled    (2048,128,32)              1891.3       6.7         -         -  fallback_tiled
+sdpa      llama-3.1-8b  -      prefill  total  -          tiled    (2048,128,32)              4743.2       7.2         -         -  fallback_tiled
+sdpa      llama-3.1-8b  -      prefill  qk     -          coopmat  (2048,128,32)              2005.4       0.6         -         -  fallback_tiled
+sdpa      llama-3.1-8b  -      prefill  softmax-          coopmat  (2048,128,32)               850.9       0.7         -         -  fallback_tiled
+sdpa      llama-3.1-8b  -      prefill  av     -          coopmat  (2048,128,32)              1865.5       4.0         -         -  fallback_tiled
+sdpa      llama-3.1-8b  -      prefill  total  -          coopmat  (2048,128,32)              4721.9       4.4         -         -  fallback_tiled
+sdpa      llama-3.1-8b  -      decode   qk     -          tiled    (1,128,32)                   27.0       0.6         -         -  not_applicable
+sdpa      llama-3.1-8b  -      decode   softmax-          tiled    (1,128,32)                    3.5       0.6         -         -  not_applicable
+sdpa      llama-3.1-8b  -      decode   av     -          tiled    (1,128,32)                   15.4       0.0         -         -  not_applicable
+sdpa      llama-3.1-8b  -      decode   total  -          tiled    (1,128,32)                   45.9       0.9         -         -  not_applicable
+sdpa      llama-3.2-3b  -      prefill  qk     -          tiled    (2048,128,24)              1509.6       2.4         -         -  fallback_tiled
+sdpa      llama-3.2-3b  -      prefill  softmax-          tiled    (2048,128,24)               636.3       0.6         -         -  fallback_tiled
+sdpa      llama-3.2-3b  -      prefill  av     -          tiled    (2048,128,24)              1418.4       4.8         -         -  fallback_tiled
+sdpa      llama-3.2-3b  -      prefill  total  -          tiled    (2048,128,24)              3564.3       4.7         -         -  fallback_tiled
+sdpa      llama-3.2-3b  -      prefill  qk     -          coopmat  (2048,128,24)              1506.3       0.7         -         -  fallback_tiled
+sdpa      llama-3.2-3b  -      prefill  softmax-          coopmat  (2048,128,24)               636.7       0.9         -         -  fallback_tiled
+sdpa      llama-3.2-3b  -      prefill  av     -          coopmat  (2048,128,24)              1418.6      10.0         -         -  fallback_tiled
+sdpa      llama-3.2-3b  -      prefill  total  -          coopmat  (2048,128,24)              3561.7      10.4         -         -  fallback_tiled
+sdpa      llama-3.2-3b  -      decode   qk     -          tiled    (1,128,24)                   20.9       0.6         -         -  not_applicable
+sdpa      llama-3.2-3b  -      decode   softmax-          tiled    (1,128,24)                    3.3       0.5         -         -  not_applicable
+sdpa      llama-3.2-3b  -      decode   av     -          tiled    (1,128,24)                   15.8       0.6         -         -  not_applicable
+sdpa      llama-3.2-3b  -      decode   total  -          tiled    (1,128,24)                   39.9       1.0         -         -  not_applicable
+sdpa      llama-3.2-1b  -      prefill  qk     -          tiled    (2048,64,32)               1030.6       0.9         -         -  fallback_tiled
+sdpa      llama-3.2-1b  -      prefill  softmax-          tiled    (2048,64,32)                850.3       0.9         -         -  fallback_tiled
+sdpa      llama-3.2-1b  -      prefill  av     -          tiled    (2048,64,32)               1353.9      10.9         -         -  fallback_tiled
+sdpa      llama-3.2-1b  -      prefill  total  -          tiled    (2048,64,32)               3234.8      11.3         -         -  fallback_tiled
+sdpa      llama-3.2-1b  -      prefill  qk     -          coopmat  (2048,64,32)               1030.8       1.9         -         -  fallback_tiled
+sdpa      llama-3.2-1b  -      prefill  softmax-          coopmat  (2048,64,32)                850.1       0.5         -         -  fallback_tiled
+sdpa      llama-3.2-1b  -      prefill  av     -          coopmat  (2048,64,32)               1357.6      31.0         -         -  fallback_tiled
+sdpa      llama-3.2-1b  -      prefill  total  -          coopmat  (2048,64,32)               3238.5      30.9         -         -  fallback_tiled
+sdpa      llama-3.2-1b  -      decode   qk     -          tiled    (1,64,32)                    27.0       0.6         -         -  not_applicable
+sdpa      llama-3.2-1b  -      decode   softmax-          tiled    (1,64,32)                     3.5       0.6         -         -  not_applicable
+sdpa      llama-3.2-1b  -      decode   av     -          tiled    (1,64,32)                    11.3       0.0         -         -  not_applicable
+sdpa      llama-3.2-1b  -      decode   total  -          tiled    (1,64,32)                    41.8       0.5         -         -  not_applicable
+
+========== SDPA: coopmat (WMMA) vs tiled, prefill S=2048 ==========
+model         sub        tiled_us  coopmat_us  speedup  dispatch
+llama-3.1-8b  qk           2001.7      2005.4    1.00x  fallback_tiled
+llama-3.1-8b  av           1891.3      1865.5    1.01x  fallback_tiled
+llama-3.1-8b  total        4743.2      4721.9    1.00x  fallback_tiled
+llama-3.2-3b  qk           1509.6      1506.3    1.00x  fallback_tiled
+llama-3.2-3b  av           1418.4      1418.6    1.00x  fallback_tiled
+llama-3.2-3b  total        3564.3      3561.7    1.00x  fallback_tiled
+llama-3.2-1b  qk           1030.6      1030.8    1.00x  fallback_tiled
+llama-3.2-1b  av           1353.9      1357.6    1.00x  fallback_tiled
+llama-3.2-1b  total        3234.8      3238.5    1.00x  fallback_tiled
+
+One or more cases crashed or did not dispatch the expected kernel (see dispatch column) -- do not trust their speedup numbers.

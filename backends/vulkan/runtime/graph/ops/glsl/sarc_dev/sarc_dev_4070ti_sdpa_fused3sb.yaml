@@ -1,0 +1,51 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# SARC development zone, RTX 4070 Ti SUPER (openspec/changes/sarc-1.5-4070ti-fused-port): the 780M's fused
+# LLM-mode prefill SDPA kernel in its subgroup-barrier form (not shipped; reached through
+# impl/sarc_dev/4070ti/Sdpa4070tiFused.cpp while ET_VK_SARC_DEV_PROFILE names a 4070ti-fused profile).
+# Name: d<HEAD_DIM>_t<WG_TILE_M>x<WG_TILE_N>g11s<SUBGROUP_SIZE>rko; r = AQ_REG (Q tiles kept in registers),
+# k = PACKED (tile-packed K and V copies), o = ONLINE (one pass, running row maximum).
+# The two variants are the ones the Radeon 780M and the RX 7600 run.
+
+sarc_dev_4070ti_sdpa_fused3sb:
+  parameter_names_with_default_values:
+    DTYPE: half
+    PRECISION: highp
+    IO_STORAGE: buffer
+    K_CACHE_STORAGE: buffer
+    HEAD_DIM: 64
+    WG_TILE_M: 32
+    WG_TILE_N: 32
+    SUBGROUP_SIZE: 32
+    AQ_REG: false
+    PACKED: false
+    ONLINE: false
+    ONE_PASS_WRONG: false
+  generate_variant_forall:
+    combination:
+      parameter_names: [IO_STORAGE, K_CACHE_STORAGE]
+      combos:
+        - parameter_values: [buffer, buffer]
+    DTYPE:
+      - VALUE: half
+  shader_variants:
+    - NAME: sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko
+      HEAD_DIM: 64
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      SUBGROUP_SIZE: 32
+      AQ_REG: true
+      PACKED: true
+      ONLINE: true
+    - NAME: sarc_dev_4070ti_sdpa_fused3sb_d128_t16x64g11s32rko
+      HEAD_DIM: 128
+      WG_TILE_M: 16
+      WG_TILE_N: 64
+      SUBGROUP_SIZE: 32
+      AQ_REG: true
+      PACKED: true
+      ONLINE: true

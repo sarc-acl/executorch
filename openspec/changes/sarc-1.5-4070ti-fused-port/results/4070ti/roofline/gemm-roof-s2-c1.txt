@@ -1,0 +1,14 @@
+# /home/doremy/hmz-sarc-4070ti-fused/.artifacts/stage/s2-c1/trace/report/evidence/trace/gemm.csv
+model,scheme,arm,gemm_ms,rate_T_per_s,pct_of_matrix_roof,kernels
+1b,4w,cand,34.2,116.422,63.7,q4gsw_coopmat_t128x128k16g24s32ga+q4gsw_coopmat_t256x128k16g42s32ga
+1b,4w,parent,34.3,116.290,63.6,q4gsw_coopmat_t128x128k16g24s32ga+q4gsw_coopmat_t256x128k16g42s32ga
+1b,8da4w,cand,27.8,143.585,38.9,dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra
+1b,8da4w,parent,27.7,144.145,39.0,dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra
+3b,4w,cand,96.6,119.529,65.4,q4gsw_coopmat_t256x128k16g42s32ga
+3b,4w,parent,96.9,119.138,65.2,q4gsw_coopmat_t256x128k16g42s32ga
+3b,8da4w,cand,75.0,153.931,41.7,dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra
+3b,8da4w,parent,73.2,157.668,42.7,dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra
+8b,4w,cand,239.1,119.543,65.4,q4gsw_coopmat_t256x128k16g42s32ga
+8b,4w,parent,239.4,119.411,65.3,q4gsw_coopmat_t256x128k16g42s32ga
+8b,8da4w,cand,181.0,157.983,42.8,dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra
+8b,8da4w,parent,181.1,157.833,42.8,dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra

@@ -1,0 +1,46 @@
+{
+ "decision": "owner decision 2026-10-04 (second decision): reference-error rule",
+ "candidate": "4070ti-refine1 + softmax 4070ti_nzf",
+ "cand_env": [
+  "ET_VK_SARC_UNVERIFIED=1",
+  "ET_VK_SARC_DEV_PROFILE=4070ti-refine1",
+  "ET_VK_SARC_SOFTMAX_VARIANT=4070ti_nzf"
+ ],
+ "cand_env_sha256": "d9b81aa03ec20b6f2c3cb0897d3104e48dafe9e123df9c3aabd74f6171813e3f",
+ "differing_items": [
+  ""
+ ],
+ "verdict": "MET",
+ "rule": "per production-shape case: candidate rms and maximum error against the fp32 reference <= parent's; 0 mismatches in both tiers; no cell with mean KL > 0.5 nat or top-1 differing on more than 1/3 of the prompts",
+ "files": {
+  "sdpa-error-parent.txt": "912a6b96e046a6481e276064f1a70ba9ec290a1c6b32d1ff4ae09dd673f10427",
+  "sdpa-error-candidate.txt": "4fccf71c6cc233cfe36e169a6eac301f3ee066319e82f81a6eeb95aa32cd2c6f",
+  "compare.csv": "f62506c2980823c7d685d1b519222729dca8893d1151c917c4d414a8e43ba51d"
+ },
+ "position_logits": [
+  "position/1b-4w-cand-default.json",
+  "position/1b-4w-cand-tiled.json",
+  "position/1b-4w-parent-default.json",
+  "position/1b-4w-parent-tiled.json",
+  "position/1b-8da4w-cand-default.json",
+  "position/1b-8da4w-cand-tiled.json",
+  "position/1b-8da4w-parent-default.json",
+  "position/1b-8da4w-parent-tiled.json",
+  "position/3b-4w-cand-default.json",
+  "position/3b-4w-cand-tiled.json",
+  "position/3b-4w-parent-default.json",
+  "position/3b-4w-parent-tiled.json",
+  "position/3b-8da4w-cand-default.json",
+  "position/3b-8da4w-cand-tiled.json",
+  "position/3b-8da4w-parent-default.json",
+  "position/3b-8da4w-parent-tiled.json",
+  "position/8b-4w-cand-default.json",
+  "position/8b-4w-cand-tiled.json",
+  "position/8b-4w-parent-default.json",
+  "position/8b-4w-parent-tiled.json",
+  "position/8b-8da4w-cand-default.json",
+  "position/8b-8da4w-cand-tiled.json",
+  "position/8b-8da4w-parent-default.json",
+  "position/8b-8da4w-parent-tiled.json"
+ ]
+}

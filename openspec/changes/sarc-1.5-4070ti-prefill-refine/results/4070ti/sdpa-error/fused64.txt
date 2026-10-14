@@ -1,0 +1,26 @@
+[sdpa-error] tiny_gqa_pos64 max_abs=0.000159234 rms=3.2206e-05 max_abs_ref=0.205344
+[sdpa-correctness] tiny_gqa_pos64 S=128 input_pos=64 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/16384 FAILED
+[sdpa-error] tiny_gqa_s256_pos128 max_abs=0.000142887 rms=2.36684e-05 max_abs_ref=0.161491
+[sdpa-correctness] tiny_gqa_s256_pos128 S=256 input_pos=128 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/32768 FAILED
+[sdpa-error] 1b_head_config_s256_pos256 max_abs=0.000113517 rms=1.79706e-05 max_abs_ref=0.142912
+[sdpa-correctness] 1b_head_config_s256_pos256 S=256 input_pos=256 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/524288 FAILED
+[sdpa-error] 3b_head_config_s256 max_abs=0.000820339 rms=4.87581e-05 max_abs_ref=0.998598
+[sdpa-correctness] 3b_head_config_s256 S=256 input_pos=0 D=128 Q_H=24 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/786432 FAILED
+[sdpa-error] 8b_head_config_s256 max_abs=0.000817358 rms=4.92175e-05 max_abs_ref=0.999106
+[sdpa-correctness] 8b_head_config_s256 S=256 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/1048576 FAILED
+[sdpa-error] 3b_head_config_pos128 max_abs=0.000160053 rms=2.5935e-05 max_abs_ref=0.249579
+[sdpa-correctness] 3b_head_config_pos128 S=128 input_pos=128 D=128 Q_H=24 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/393216 FAILED
+[sdpa-error] tiny_gqa_s2048 max_abs=0.000607848 rms=2.04674e-05 max_abs_ref=0.98697
+[sdpa-correctness] tiny_gqa_s2048 S=2048 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/262144 FAILED
+[sdpa-error] tiny_d128_s2048 max_abs=0.000559509 rms=2.03489e-05 max_abs_ref=0.997051
+[sdpa-correctness] tiny_d128_s2048 S=2048 input_pos=0 D=128 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/524288 FAILED
+[sdpa-correctness] tier=extended cases_run=8
+[sdpa-error] 1b_head_config_s2048 max_abs=0.000722766 rms=2.05024e-05 max_abs_ref=0.998757
+[sdpa-correctness] 1b_head_config_s2048 S=2048 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/4194304 FAILED
+[sdpa-error] 3b_head_config_s2048 max_abs=0.000706196 rms=2.05383e-05 max_abs_ref=0.999094
+[sdpa-correctness] 3b_head_config_s2048 S=2048 input_pos=0 D=128 Q_H=24 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/6291456 FAILED
+[sdpa-error] 8b_head_config_s2048 max_abs=0.000791192 rms=2.02264e-05 max_abs_ref=0.994699
+[sdpa-correctness] 8b_head_config_s2048 S=2048 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/8388608 FAILED
+[sdpa-error] 8b_head_config_s1024_pos1024 max_abs=7.27028e-05 rms=8.98228e-06 max_abs_ref=0.0880162
+[sdpa-correctness] 8b_head_config_s1024_pos1024 S=1024 input_pos=1024 D=128 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/4194304 FAILED
+[sdpa-correctness] tier=full cases_run=4

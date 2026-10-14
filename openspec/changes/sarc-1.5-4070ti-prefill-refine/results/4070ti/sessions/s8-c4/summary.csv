@@ -1,0 +1,8 @@
+model,scheme,parent_med_tok_s,cand_med_tok_s,ratio,gain_pct,outside_2pct_band,parent_spread_pct,cand_spread_pct,valid_parent,valid_cand,invalid,clk_med_mhz_range,temp_pre_range,clkmin,next_token
+1b,4w,19692.30,29681.20,1.5072,+50.72,yes,0.97,1.43,5,5,-,2640-2790,44-49,2502,prompt_real_2048:SAME;prompt_check:SAME;r1304:SAME;prompt_2048:SAME
+1b,8da4w,21113.40,32507.90,1.5397,+53.97,yes,2.06,3.28,5,5,-,2640-2640,48-49,2502,prompt_real_2048:SAME;prompt_check:SAME;r1304:SAME;prompt_2048:SAME
+3b,4w,8714.89,12880.50,1.4780,+47.80,yes,0.43,0.00,5,5,-,2580-2640,49-49,2502,prompt_real_2048:SAME;prompt_check:SAME;r1304:SAME;prompt_2048:SAME
+3b,8da4w,9660.38,14840.60,1.5362,+53.62,yes,0.00,2.16,5,5,-,2640-2655,49-49,2502,prompt_real_2048:SAME;prompt_check:SAME;r1304:SAME;prompt_2048:SAME
+8b,4w,4481.40,5988.30,1.3363,+33.63,yes,0.22,0.29,5,5,cand:r1:rc+no_tok_s+prompt_tokens+generated_tokens+clock_unsampled,2565-2640,49-49,2502,prompt_real_2048:SAME;prompt_check:SAME;r1304:SAME;prompt_2048:INVALID:cand:rc+cand:no_stats
+8b,8da4w,4995.12,6942.37,1.3898,+38.98,yes,0.24,0.68,5,5,-,2640-2745,47-50,2502,prompt_real_2048:SAME;prompt_check:SAME;r1304:SAME;prompt_2048:SAME
+geomean over 6 cells: 1.4625 (+46.25 %), min 1.3363, max 1.5397

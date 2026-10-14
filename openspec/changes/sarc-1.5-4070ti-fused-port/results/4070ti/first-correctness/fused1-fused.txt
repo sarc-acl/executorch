@@ -1,0 +1,16 @@
+[sdpa-error] fused_s32 max_abs=0.000600576 rms=0.000111737 max_abs_ref=0.986127
+[sdpa-kernels] fused_s32 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] fused_s32 S=32 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/4096 PASSED
+[sdpa-error] fused_s64 max_abs=0.000727057 rms=8.07374e-05 max_abs_ref=0.99571
+[sdpa-kernels] fused_s64 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] fused_s64 S=64 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/131072 PASSED
+[sdpa-error] fused_s64_d128 max_abs=0.00075376 rms=8.23399e-05 max_abs_ref=0.997956
+[sdpa-kernels] fused_s64_d128 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d128_t16x64g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] fused_s64_d128 S=64 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/262144 PASSED
+[sdpa-error] fused_s192_pos64 max_abs=0.000239611 rms=2.91285e-05 max_abs_ref=0.252681
+[sdpa-kernels] fused_s192_pos64 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d64_t32x32g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] fused_s192_pos64 S=192 input_pos=64 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/393216 PASSED
+[sdpa-error] fused_s320_d128_pos192 max_abs=0.00288858 rms=0.000382622 max_abs_ref=0.980778
+[sdpa-kernels] fused_s320_d128_pos192 qk=? softmax=? av=? fused=sarc_dev_4070ti_sdpa_fused3sb_d128_t16x64g11s32rko_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] fused_s320_d128_pos192 S=320 input_pos=192 D=128 Q_H=24 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/983040 PASSED
+[sdpa-correctness] tier=fused cases_run=5

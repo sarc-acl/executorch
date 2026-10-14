@@ -1,0 +1,20 @@
+diff --git a/backends/vulkan/runtime/graph/ops/impl/sarc/table_nvidia.cpp b/backends/vulkan/runtime/graph/ops/impl/sarc/table_nvidia.cpp
+index a13cb77e8..8eb907870 100644
+--- a/backends/vulkan/runtime/graph/ops/impl/sarc/table_nvidia.cpp
++++ b/backends/vulkan/runtime/graph/ops/impl/sarc/table_nvidia.cpp
+@@ -98,2 +98,15 @@ const Row kNvidiaRows[] = {
+      /*rowmajor_a=*/true},
++
++    // LOCAL HOOK of openspec/changes/sarc-1.5-4070ti-prefill-refine, NOT
++    // committed: SDPA rows for the RTX 4070 Ti SUPER, so that the SARC SDPA
++    // path (spec constants, truncated softmax, dev profiles) can be measured.
++    // Inert without ET_VK_SARC_UNVERIFIED=1. The kernels are dev-zone variants.
++    {"4070 ti super", nullptr, Op::kSdpaQk,
++     "sarc_sdpa_qk_coopmat_4070ti_t128x64k32g42s32",
++     {128, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
++     Status::kUnverified},
++    {"4070 ti super", nullptr, Op::kSdpaAv,
++     "sarc_sdpa_av_coopmat_4070ti_t64x64k32g42s32",
++     {64, 64, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr,
++     Status::kUnverified},
+ };
