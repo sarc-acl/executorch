@@ -1564,7 +1564,13 @@ struct SdpaCorrectnessCase {
 };
 // "all" keeps its original meaning (fast + regions) so existing gates run the
 // same cases as before; the later tiers are opt-in by name.
+// ET_VK_MB_SKIP_8B=1 (m51 campaign: no 8B shape on that board) leaves out the cases named after the 8B head
+// configuration; every other case, tolerance and tier is as before. The count of cases run shows it.
 bool sdpa_tier_selected(const char* tier, const SdpaCorrectnessCase& c) {
+  static const bool skip_8b = std::getenv("ET_VK_MB_SKIP_8B") != nullptr;
+  if (skip_8b && std::string(c.name).find("8b_") != std::string::npos) {
+    return false;
+  }
   const std::string want(tier), have(c.tier);
   if (want == "all") {
     return have == "fast" || have == "regions";
@@ -2050,6 +2056,15 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
   const int64_t q_numel = c.seq_len * c.num_heads * c.head_dim;
   const int64_t kv_numel = c.seq_len * c.num_kv_heads * c.head_dim;
 
+  // m51: seed each case from its name, so that two kernel configurations see
+  // the same inputs (the reference-error comparison needs that); a single
+  // srand(0) at start-up left the inputs of later cases depending on what else
+  // drew from rand() before them.
+  uint32_t seed = 2166136261u;
+  for (const char* p = c.name; *p != 0; ++p) {
+    seed = (seed ^ static_cast<uint8_t>(*p)) * 16777619u;
+  }
+  std::srand(seed);
   std::vector<float> qf(q_numel), kf(kv_numel), vf(kv_numel);
   std::vector<uint16_t> qh(q_numel), kh(kv_numel), vh(kv_numel);
   for (int64_t i = 0; i < q_numel; ++i) {
@@ -2119,8 +2134,10 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
        has_kernel_containing(dispatched, "sarc_sdpa_av_coopmat"));
   // 780m: the fused prefill kernel computes QK^T, softmax and attn*V itself;
   // the three kernels must then not have run.
+  // m51: the same kernel with barriers at its shared-memory exchanges.
   const bool fused_fired =
-      has_kernel_containing(dispatched, "sarc_dev_780m_sdpa_fused");
+      has_kernel_containing(dispatched, "sarc_dev_780m_sdpa_fused") ||
+      has_kernel_containing(dispatched, "sarc_dev_m51_sdpa_fused");
 
   // Kernel pairing. A QK^T kernel built with NO_MASK_FILL (tile token ending
   // in "nf") leaves every attn_weights element above the causal diagonal

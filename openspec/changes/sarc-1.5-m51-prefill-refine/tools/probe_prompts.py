@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+"""probe_prompts.py <out dir>: the real-text prompt set of the logits probe (owner decisions 2026-10-04).
+
+32 prompts of different lengths (multiples of 128 tokens, 128 to 1920, so the coopmat and the fused SDPA kernels
+serve them), cut as token windows from six real texts: the two real-text kit prompts and four documents of this
+repository. The recipe is fixed here, not tuned: prompt i takes source i % 6, length 128 * (1 + (7 * i) % 15) and
+start (131 * i) % (tokens - length); the token after the window is recorded as the true next token.
+Writes prompts-<model>.txt (one prompt per line, token ids, for logits_probe) and prompts-<model>.json.
+Adapted from the 780M campaign: the Llama 3 tokenizer file (one for all three models) is read with tiktoken and the
+Llama 3 split pattern (env TOKENIZER, default the M51 asset). Read-only on everything else."""
+import json, os, sys
+import tiktoken
+from tiktoken.load import load_tiktoken_bpe
+
+PAT = (r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+"
+       r"|\s+(?!\S)|\s+")
+TOKENIZER = os.environ.get("TOKENIZER", "<tokenizer>")
+
+ET = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.."))
+KIT = os.path.join(ET, "openspec/changes/sarc-1.5-e2e-benchmark/kit/prompts")
+SOURCES = [os.path.join(KIT, "prompt_real_2048.txt"), os.path.join(KIT, "prompt_check.txt"),
+           os.path.join(ET, "README.md"), os.path.join(ET, "CONTRIBUTING.md"),
+           os.path.join(ET, "CODE_OF_CONDUCT.md"), os.path.join(ET, "docs/source/using-executorch-building-from-source.md")]
+MODELS = {"1b": "llama-3.2-1b", "3b": "llama-3.2-3b", "8b": "llama-3.1-8b"}
+out = sys.argv[1]; os.makedirs(out, exist_ok=True)
+tok = tiktoken.Encoding("llama3", pat_str=PAT, mergeable_ranks=load_tiktoken_bpe(TOKENIZER), special_tokens={})
+for m, d in MODELS.items():
+    ids = [tok.encode_ordinary(open(s, encoding="utf-8").read()) for s in SOURCES]
+    rows = []
+    for i in range(32):
+        src = i % len(SOURCES); n = 128 * (1 + (7 * i) % 15)
+        n = min(n, (len(ids[src]) - 1) // 128 * 128)
+        start = (131 * i) % (len(ids[src]) - n)
+        rows.append({"prompt": i, "source": os.path.relpath(SOURCES[src], ET), "source_tokens": len(ids[src]),
+                     "start": start, "tokens": n, "next_token": ids[src][start + n],
+                     "ids": ids[src][start:start + n]})
+    assert len({(r["source"], r["start"], r["tokens"]) for r in rows}) == 32
+    with open(os.path.join(out, f"prompts-{m}.txt"), "w") as f:
+        for r in rows: f.write(" ".join(map(str, r["ids"])) + "\n")
+    json.dump([{k: v for k, v in r.items() if k != "ids"} for r in rows], open(os.path.join(out, f"prompts-{m}.json"), "w"), indent=1)
+    print(m, "lengths", sorted({r["tokens"] for r in rows}), "sources", [len(x) for x in ids])

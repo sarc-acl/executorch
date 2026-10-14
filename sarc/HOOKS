@@ -17,3 +17,4 @@ backends/vulkan/runtime/graph/ops/impl/SDPA.cpp            hook      sarc:: SDPA
 backends/vulkan/runtime/api/Context.cpp                     hook      ETVK_INSPECT_PIPELINES only: ET_VK_DUMP_PIPELINE_STATS dump + get_shader_executable_irs pData fix
 backends/vulkan/runtime/vk_api/Pipeline.cpp                 hook      ETVK_INSPECT_PIPELINES only: capture flags on the batched create_pipelines() path
 backends/vulkan/runtime/vk_api/Adapter.cpp                 hook      ETVK_INSPECT_PIPELINES only: enable the pipelineExecutableInfo feature (Adreno)
+backends/vulkan/runtime/graph/ComputeGraph.cpp                   hook      ET_VK_EXECUTE_NODE_THRESHOLD opt-in: submit every N nodes (8B watchdog on M51); unset = unchanged

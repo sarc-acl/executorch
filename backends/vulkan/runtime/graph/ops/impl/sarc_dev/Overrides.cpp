@@ -1216,3 +1216,335 @@ struct RegistrarRx7600 {
 } // namespace sarc
 } // namespace vkcompute
 // --- rx7600 end ---
+
+// --- m51 begin (openspec/changes/sarc-1.5-m51-prefill-refine, 2026-10-06) ---
+// ET_VK_SARC_M51_PROFILE=<name>: the M51 candidates, on top of
+// ET_VK_SARC_UNVERIFIED=1 (the xclipse rows). A profile names the fused
+// attention kernels per head_dim (m51/SdpaM51Fused.cpp) and linear kernels per
+// shape; shapes and calls they do not cover keep what the selection above
+// returns. Not meant together with
+// ET_VK_SARC_780M_PROFILE: for the fused node the M51 profile wins.
+namespace vkcompute {
+namespace sarc {
+namespace {
+
+// 4w per-shape screen (glsl/sarc_dev/sarc_linear_q4gsw_coopmat_sweep.yaml, m51
+// block): the xclipse row's fp32 accumulation and one-pass texture3d drain on
+// other tiles; and the phase-timing twin of the row (MEASUREMENT ONLY,
+// glsl/sarc_dev/sarc_dev_prof_q4gsw.yaml). Selected with ET_VK_SARC_Q4GSW_VARIANT.
+constexpr TileDims xp_tile(
+    uint32_t m, uint32_t n, uint32_t k, uint32_t sgx, uint32_t sgy, uint32_t sg) {
+  return {m, n, k, sgx, sgy, sg, 16, false, /*csh_full=*/true, /*csh_pool=*/true};
+}
+const Row kM51Q4[] = {
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g22s32f32xp", xp_tile(128, 128, 32, 2, 2, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g42s32f32xp", xp_tile(128, 128, 16, 4, 2, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32xp", xp_tile(128, 128, 32, 4, 2, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g24s32f32xp", xp_tile(128, 128, 16, 2, 4, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x64k16g22s32f32xp", xp_tile(128, 64, 16, 2, 2, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t64x128k16g22s32f32xp", xp_tile(64, 128, 16, 2, 2, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g21s64f32xp", xp_tile(128, 128, 16, 2, 1, 64),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g21s64f32xp", xp_tile(128, 128, 32, 2, 1, 64),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g22s64f32xp", xp_tile(128, 128, 16, 2, 2, 64),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g12s64f32xp", xp_tile(128, 128, 16, 1, 2, 64),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_prof_q4gsw_t128x128k16g22s32f32xpp", xp_tile(128, 128, 16, 2, 2, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    // Texel-wise B staging (glsl/sarc_dev/sarc_dev_linear_q4gsw_coopmat_bx.yaml, m51 block).
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k16g22s32f32xp", xp_tile(128, 128, 16, 2, 2, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g22s32f32xp", xp_tile(128, 128, 32, 2, 2, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32xp", xp_tile(128, 128, 32, 4, 2, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+};
+
+// 8da4w, second round (glsl/sarc_dev/sarc_dev_m51_linear_dq8ca_coopmat_zpgd.yaml): zpg_bt's texel-wise B
+// staging with the A operand loaded by coopMatLoad straight from the row-major activations (rowmajor_a, so the
+// graph quantizes row-major and an unaligned prompt keeps the table's zpgtr coopmat kernel). Selected with
+// ET_VK_SARC_DQ8CA_VARIANT=zpgd_<tile> or by profile c6.
+const Row kM51Dq[] = {
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_m51_linear_dq8ca_coopmat_zpgd_t128x64k32g22s32",
+     {128, 64, 32, 2, 2, 32, 16, false}, kTex3dTex2d | kBufTex2d, nullptr,
+     Status::kUnverified, true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_m51_linear_dq8ca_coopmat_zpgd_t128x64k64g22s32",
+     {128, 64, 64, 2, 2, 32, 16, false}, kTex3dTex2d | kBufTex2d, nullptr,
+     Status::kUnverified, true},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_m51_linear_dq8ca_coopmat_zpgd_t128x128k32g42s32",
+     {128, 128, 32, 4, 2, 32, 16, false}, kTex3dTex2d | kBufTex2d, nullptr,
+     Status::kUnverified, true},
+};
+
+// 8da4w, second round: smaller subgroup tiles of zpg_bt (glsl/sarc_dev/sarc_dev_linear_dq8ca_coopmat_zpg_bt.yaml, m51
+// block), for the screen. Selected with ET_VK_SARC_DQ8CA_VARIANT=bt_<tile>.
+const Row kM51DqBt[] = {
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t64x64k32g22s32",
+     {64, 64, 32, 2, 2, 32, 16, false}, kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t64x128k32g22s32",
+     {64, 128, 32, 2, 2, 32, 16, false}, kTex3dTex2d, nullptr, Status::kUnverified},
+};
+
+// 8da4w, second round (glsl/sarc_dev/sarc_dev_m51_linear_dq8ca_coopmat_zpgf.yaml): zpg_bt with every fragment of a
+// chunk loaded before its MMAs. Selected with ET_VK_SARC_DQ8CA_VARIANT=zpgf_<tile> or by profile c7.
+const Row kM51DqF[] = {
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_m51_linear_dq8ca_coopmat_zpgf_t128x64k32g22s32",
+     {128, 64, 32, 2, 2, 32, 16, false}, kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kDq8caLinear,
+     "sarc_dev_m51_linear_dq8ca_coopmat_zpgf_t128x64k64g22s32",
+     {128, 64, 64, 2, 2, 32, 16, false}, kTex3dTex2d, nullptr, Status::kUnverified},
+};
+
+// 4w, second round (glsl/sarc_dev/sarc_dev_m51_linear_q4gsw_coopmat_bz.yaml): the texel-wise bx staging with the B operand
+// staged N-major inside the shared pool (B_COLMAJOR + CSH_POOL), so the matrix unit's B loads are wide. Selected with
+// ET_VK_SARC_Q4GSW_VARIANT=bz_<tile> or by profile c8.
+const Row kM51Bz[] = {
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k16g22s32f32xp", xp_tile(128, 128, 16, 2, 2, 32),
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g22s32f32xp", xp_tile(128, 128, 32, 2, 2, 32),
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g42s32f32xp", xp_tile(128, 128, 32, 4, 2, 32),
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k16g42s32f32xp", xp_tile(128, 128, 16, 4, 2, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g24s32f32xp", xp_tile(128, 128, 32, 2, 4, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k16g24s32f32xp", xp_tile(128, 128, 16, 2, 4, 32),
+     kTex3dTex2d, nullptr, Status::kUnverified},
+};
+
+// 4w, second round (glsl/sarc_dev/sarc_dev_m51_linear_q4gsw_coopmat_bw.yaml): bz with packed fp16 dequantisation of the
+// weights (bit-identical result). Selected with ET_VK_SARC_Q4GSW_VARIANT=bw_<tile> or by profile c9.
+const Row kM51Bw[] = {
+    {"", nullptr, Op::kQ4gswLinear,
+     "sarc_dev_m51_linear_q4gsw_coopmat_bw_t128x128k32g42s32f32xp", xp_tile(128, 128, 32, 4, 2, 32),
+     kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified},
+};
+
+// A pick sends the shapes its predicate accepts to one candidate kernel (exact
+// name) when the kernel fits; every other shape keeps the selection above.
+struct PickM51 {
+  Op op;
+  const char* kernel_base;
+  bool (*shape_ok)(const ShapeInfo&);
+};
+struct ProfileM51 {
+  const char* name;
+  const char* fused;
+  const PickM51* picks;
+  size_t count;
+};
+// Screen of 2026-10-06 (texture3d, 1B/3B/8B shapes, 3 rounds; selected = beats
+// the xclipse row by the RULES R8 margin in every round): the 780M's texel-wise
+// 8da4w staging (zpg_bt) on every 8da4w shape; on the 4w shapes with K = 4096
+// (8B w1_w3, wk_wv, wq_wo) t128x128k32g42s32f32xp and, slightly faster, the
+// same tile with texel-wise B staging (bx); no other tile on any shape.
+bool any_shape(const ShapeInfo&) {
+  return true;
+}
+bool k_is_4096(const ShapeInfo& s) {
+  return s.K == 4096;
+}
+const PickM51 kM51PicksC2[] = {
+    {Op::kDq8caLinear, "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32", any_shape},
+};
+const PickM51 kM51PicksC3[] = {
+    {Op::kDq8caLinear, "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32", any_shape},
+    {Op::kQ4gswLinear, "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32xp", k_is_4096},
+};
+// c6: c5 with the 8da4w pick replaced by the direct-A kernel (second round). Default off.
+const PickM51 kM51PicksC6[] = {
+    {Op::kDq8caLinear, "sarc_dev_m51_linear_dq8ca_coopmat_zpgd_t128x64k32g22s32", any_shape},
+    {Op::kQ4gswLinear, "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32xp", k_is_4096},
+};
+// c7: c5 with the fragments-first 8da4w kernel (second round). Default off.
+const PickM51 kM51PicksC7[] = {
+    {Op::kDq8caLinear, "sarc_dev_m51_linear_dq8ca_coopmat_zpgf_t128x64k32g22s32", any_shape},
+    {Op::kQ4gswLinear, "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32xp", k_is_4096},
+};
+// c8: c5 with the 4w kernel bz_t128x128k32g42s32f32xp on every 4w shape (second round; the K = 4096 pick of c3 is replaced by it).
+const PickM51 kM51PicksC8[] = {
+    {Op::kDq8caLinear, "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32", any_shape},
+    {Op::kQ4gswLinear, "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g42s32f32xp", any_shape},
+};
+// c9: c8 with the packed-dequantisation 4w kernel (second round).
+const PickM51 kM51PicksC9[] = {
+    {Op::kDq8caLinear, "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32", any_shape},
+    {Op::kQ4gswLinear, "sarc_dev_m51_linear_q4gsw_coopmat_bw_t128x128k32g42s32f32xp", any_shape},
+};
+const char kFusedM51[] = "fused3_d64_t32x32g11s32rk,fused3_d128_t16x64g11s32rk";
+// Fused-variant screen (ETDump of the fused kernel, 3 rounds, RULES R8 margin): for head_dim 64 the
+// 16 x 64 tile on a 64-wide subgroup beat the 780M's choice in every round; for head_dim 128 no variant did.
+const char kFusedM51B[] = "fused3_d64_t16x64g11s64rk,fused3_d128_t16x64g11s32rk";
+const ProfileM51 kM51Profiles[] = {
+    {"c1", kFusedM51, nullptr, 0},
+    {"c2", kFusedM51, kM51PicksC2, sizeof(kM51PicksC2) / sizeof(PickM51)},
+    {"c3", kFusedM51, kM51PicksC3, sizeof(kM51PicksC3) / sizeof(PickM51)},
+    // c4: c2 plus the head_dim 64 fused variant above (c3, the 4w pick for K = 4096, acts on the 8B model only).
+    {"c4", kFusedM51B, kM51PicksC2, sizeof(kM51PicksC2) / sizeof(PickM51)},
+    // c5: c4 plus the 4w pick of c3 (K = 4096, 8B model only), one name for the stack that the 8B round gates.
+    {"c5", kFusedM51B, kM51PicksC3, sizeof(kM51PicksC3) / sizeof(PickM51)},
+    // c6: c5 with the direct-A 8da4w kernel (second round of the M51 campaign).
+    {"c6", kFusedM51B, kM51PicksC6, sizeof(kM51PicksC6) / sizeof(PickM51)},
+    // c7: c5 with the fragments-first 8da4w kernel (second round).
+    {"c7", kFusedM51B, kM51PicksC7, sizeof(kM51PicksC7) / sizeof(PickM51)},
+    // c8: c5 with the N-major-B 4w kernel on every 4w shape (second round of the M51 campaign).
+    {"c8", kFusedM51B, kM51PicksC8, sizeof(kM51PicksC8) / sizeof(PickM51)},
+    // c9: c8 with the packed-dequantisation 4w kernel (second round).
+    {"c9", kFusedM51B, kM51PicksC9, sizeof(kM51PicksC9) / sizeof(PickM51)},
+};
+const ProfileM51* active_profile_m51() {
+  static const ProfileM51* const active = []() -> const ProfileM51* {
+    const char* e = std::getenv("ET_VK_SARC_M51_PROFILE");
+    if (e == nullptr || *e == 0) {
+      return nullptr;
+    }
+    for (const ProfileM51& p : kM51Profiles) {
+      if (std::strcmp(p.name, e) == 0) {
+        return &p;
+      }
+    }
+    std::cerr << "[sarc_dev] unknown ET_VK_SARC_M51_PROFILE=" << e << std::endl;
+    std::abort();
+  }();
+  return active;
+}
+
+Override& fused_m51() {
+  static Override fused;
+  return fused;
+}
+
+std::optional<Choice> (*select_before_m51)(
+    const DeviceInfo&,
+    const ShapeInfo&,
+    const std::optional<Choice>&) = nullptr;
+
+// The fused node registers from another file, and the 780M's node does too, in
+// an order the linker decides. So the M51 node is installed into the override
+// on the first selection, which every SDPA node makes before its launch geometry
+// asks whether the fused node serves its call.
+void install_fused_m51() {
+  static const bool installed = [] {
+    if (fused_m51().sdpa_fused_add == nullptr ||
+        (active_profile_m51() == nullptr &&
+         std::getenv("ET_VK_SARC_M51_SDPA_FUSED") == nullptr)) {
+      return false;
+    }
+    Override o = get_override();
+    o.sdpa_fused_add = fused_m51().sdpa_fused_add;
+    o.sdpa_fused_serves = fused_m51().sdpa_fused_serves;
+    set_override(o);
+    return true;
+  }();
+  (void)installed;
+}
+
+std::optional<Choice> select_m51(
+    const DeviceInfo& device,
+    const ShapeInfo& shape,
+    const std::optional<Choice>& table_choice) {
+  install_fused_m51();
+  const std::optional<Choice> before =
+      select_before_m51(device, shape, table_choice);
+  const ProfileM51* active = active_profile_m51();
+  if (active == nullptr) {
+    return before;
+  }
+  std::optional<Choice> served = before;
+  if (!served.has_value() && shape.op == Op::kDq8caLinear &&
+      shape.int8_layout != Int8Layout::kAny) {
+    // The activation layout was fixed by the kernel chosen for the build-time
+    // shape, which may be a pick of the other layout than the table row's:
+    // ask again with the layout open. The fit check below keeps the layout.
+    ShapeInfo any_layout = shape;
+    any_layout.int8_layout = Int8Layout::kAny;
+    served = select_before_m51(device, any_layout, select_table(device, any_layout));
+  }
+  if (!served.has_value()) {
+    return before;
+  }
+  for (size_t i = 0; i < active->count; ++i) {
+    const PickM51& pick = active->picks[i];
+    if (pick.op != shape.op || !pick.shape_ok(shape)) {
+      continue;
+    }
+    for (const Row& row : candidates()) {
+      if (row.op == shape.op && row.kernel_base == std::string(pick.kernel_base) &&
+          q4gsw_coopmat_fits(device, shape, row)) {
+        return Choice{row.kernel_base, row.dims, row.rowmajor_a};
+      }
+    }
+  }
+  return before;
+}
+
+struct RegistrarM51 {
+  RegistrarM51() {
+    register_candidates(kM51Q4, sizeof(kM51Q4) / sizeof(kM51Q4[0]));
+    register_candidates(kM51Dq, sizeof(kM51Dq) / sizeof(kM51Dq[0]));
+    register_candidates(kM51DqBt, sizeof(kM51DqBt) / sizeof(kM51DqBt[0]));
+    register_candidates(kM51DqF, sizeof(kM51DqF) / sizeof(kM51DqF[0]));
+    register_candidates(kM51Bz, sizeof(kM51Bz) / sizeof(kM51Bz[0]));
+    register_candidates(kM51Bw, sizeof(kM51Bw) / sizeof(kM51Bw[0]));
+    Override o = get_override();
+    select_before_m51 = o.select;
+    o.select = select_m51;
+    set_override(o);
+    if (active_profile_m51() != nullptr) {
+      std::cerr << "[sarc_dev] m51 profile active: " << active_profile_m51()->name
+                << std::endl;
+    }
+  }
+} registrar_m51;
+
+} // namespace
+
+void register_sdpa_fused_m51(
+    void (*add)(ComputeGraph&, const std::vector<int32_t>&),
+    bool (*serves)(ComputeGraph*, const std::vector<int32_t>&)) {
+  fused_m51().sdpa_fused_add = add;
+  fused_m51().sdpa_fused_serves = serves;
+}
+
+const char* sdpa_fused_variants_m51() {
+  const ProfileM51* active = active_profile_m51();
+  return active != nullptr ? active->fused : "";
+}
+} // namespace sarc
+} // namespace vkcompute
+// --- m51 end ---
