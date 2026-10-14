@@ -1,0 +1,18 @@
+tag=hook2
+hook_patch=/home/doremy/hmz-sarc-xe2/executorch/openspec/changes/sarc-1.5-xe2-prefill-refine/tools/hook-sdpa-softmax.patch sha256=370b5abd2c9e29471101421273cea2f7dafaa58ecc0c42b3819f1202813e4c79 (LOCAL, UNCOMMITTED: hook measurement, not a candidate build)
+commit=aed39c7389e40210baeb4ad554b2b2fa412bda01
+tree=de5c6f5c4a866304fb90cd35d366e63c53c04bca
+subject=[SARC][dev] Xe2 prefill refine: status wording (parent extended-tier rms range is 1.0e-4 to 1.3e-4)
+requested=HEAD parent_commit=6a7cc8cc6
+export_manifest=31 trees sha256=e2619215ee2adecf9422effa448db0d8854a0c3a5440a0d48ea2a8974c67ffd6
+image=localhost/et-vk-build:rocky10 b2debb3c815fc7b8df79b9ec32f6261bb55d75ece39c93b9caa8316a8edfcca7
+glslc=shaderc v2023.8 2024-01-03spirv-tools v2025.4 2025-09-22glslang 73743588fe9c39f2f1c780a087d94afac691a189 Target: SPIR-V 1.0 
+start=2026-10-05T01:30:00Z
+main_rc=0
+traced_rc=0
+golden_rc=0 (spirv golden: PASS (53 shipped variants))
+3a2e27e6f84c165f1a399f496cf5388adc9b07d0136741055d125cfc9d4d30e7  /home/doremy/hmz-sarc-xe2/.artifacts/build/hook2/llama/examples/models/llama/llama_main
+f2926ae86c0f73b5bc0d2a79f6843a0e7882bcabca627af0f5275cc8c7675f65  /home/doremy/hmz-sarc-xe2/.artifacts/build/hook2/tests/test_llama_microbench
+0262f68cf559cd02e943fdb04c5120b38e27feeecdb8ca375c38bea4ff154907  /home/doremy/hmz-sarc-xe2/.artifacts/build/hook2-traced/llama/examples/models/llama/llama_main
+end=2026-10-05T01:36:08Z
+BUILD_BOTH_OK

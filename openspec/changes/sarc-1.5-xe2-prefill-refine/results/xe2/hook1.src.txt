@@ -1,0 +1,18 @@
+tag=hook1
+hook_patch=/home/doremy/hmz-sarc-xe2/executorch/openspec/changes/sarc-1.5-xe2-prefill-refine/tools/hook-sdpa-softmax.patch sha256=00ab362838d7973d28d907af2634fd2e152aa230a3d3874381eea416aeab3da2 (LOCAL, UNCOMMITTED: hook measurement, not a candidate build)
+commit=32dde40906cb5b429577d0cf78720c8fc550d7c4
+tree=3db298f413c98954ea598957be7e27541290fb92
+subject=[SARC][dev] Xe2 prefill refine: candidate 1 measured (+46.9 % geomean), acceptance pending the reference-error evidence
+requested=HEAD parent_commit=6a7cc8cc6
+export_manifest=31 trees sha256=52324a8170c66d76d75f98ebf58da290c2b9ee3eec0e2d1df47d1370b9b6da50
+image=localhost/et-vk-build:rocky10 b2debb3c815fc7b8df79b9ec32f6261bb55d75ece39c93b9caa8316a8edfcca7
+glslc=shaderc v2023.8 2024-01-03spirv-tools v2025.4 2025-09-22glslang 73743588fe9c39f2f1c780a087d94afac691a189 Target: SPIR-V 1.0 
+start=2026-10-05T00:22:55Z
+main_rc=0
+traced_rc=0
+golden_rc=0 (spirv golden: PASS (53 shipped variants))
+28c3b23b5112925c451e27f7c9abb6034a2646bb012b6cdcf396416ad2799d05  /home/doremy/hmz-sarc-xe2/.artifacts/build/hook1/llama/examples/models/llama/llama_main
+76d7f3a073c514510ec74bc115b65ae2c69d8ba48b18062f83bc789464e0f95b  /home/doremy/hmz-sarc-xe2/.artifacts/build/hook1/tests/test_llama_microbench
+1dbec3331d52955e4a19372fd075debbeb9cdbdb2ba4a42e66dc360ea29fab77  /home/doremy/hmz-sarc-xe2/.artifacts/build/hook1-traced/llama/examples/models/llama/llama_main
+end=2026-10-05T00:29:05Z
+BUILD_BOTH_OK

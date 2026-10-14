@@ -1,0 +1,13 @@
+[sdpa-error] 1b_head_config_s2048 elements=4194304 rms_err=2.7614e-05 max_abs_err=1.1882e-03 ref_rms=3.7698e-02
+[sdpa-kernels] 1b_head_config_s2048 qk=sarc_sdpa_qk_coopmat_pk_t128x64k32g44s16m8nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g44s16m8_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] 1b_head_config_s2048 S=2048 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/4194304 PASSED
+[sdpa-error] 3b_head_config_s2048 elements=6291456 rms_err=2.7875e-05 max_abs_err=1.1512e-03 ref_rms=3.8110e-02
+[sdpa-kernels] 3b_head_config_s2048 qk=sarc_sdpa_qk_coopmat_pk_t128x64k32g44s16m8nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half av=sarc_sdpa_av_coopmat_xe2_t128x64k32g44s16m8_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] 3b_head_config_s2048 S=2048 input_pos=0 D=128 Q_H=24 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/6291456 PASSED
+[sdpa-error] 8b_head_config_s2048 elements=8388608 rms_err=2.7625e-05 max_abs_err=1.0567e-03 ref_rms=3.7942e-02
+[sdpa-kernels] 8b_head_config_s2048 qk=sarc_sdpa_qk_coopmat_pk_t128x64k32g44s16m8nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half av=sarc_sdpa_av_coopmat_xe2_t128x64k32g44s16m8_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] 8b_head_config_s2048 S=2048 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/8388608 PASSED
+[sdpa-error] 8b_head_config_s1024_pos1024 elements=4194304 rms_err=1.2864e-05 max_abs_err=1.2424e-04 ref_rms=1.5654e-02
+[sdpa-kernels] 8b_head_config_s1024_pos1024 qk=sarc_sdpa_qk_coopmat_pk_t128x64k32g44s16m8nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half av=sarc_sdpa_av_coopmat_xe2_t128x64k32g44s16m8_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] 8b_head_config_s1024_pos1024 S=1024 input_pos=1024 D=128 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/4194304 PASSED
+[sdpa-correctness] tier=full cases_run=4

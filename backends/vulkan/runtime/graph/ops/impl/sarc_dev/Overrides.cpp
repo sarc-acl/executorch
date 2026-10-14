@@ -1450,6 +1450,222 @@ const Preference kOrinRefine5[] = {
     {Op::kQ4gswLinear, "orin_t256x128k16g42s32bt", orin_256_shape},
 };
 // <<< orin sdpa-preferences
+// xe2 begin: Intel Xe2 profiles (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)
+// Single-kernel screening profiles and the xe2-refineN candidates. They take effect on a device whose
+// SDPA base rows are active (impl/sarc_dev/Xe2Sdpa.cpp, ET_VK_SARC_UNVERIFIED=1).
+// attn*V: ShapeInfo::N is head_dim.
+bool xe2_head_dim_128(const ShapeInfo& s) {
+  return s.N >= 128;
+}
+// 8da4w linear: an output at least four times as wide as the input (1B w1 / w3).
+bool xe2_wide_output(const ShapeInfo& s) {
+  return s.N >= 4 * s.K;
+}
+// 4w linear: an output of at most 512 columns (1B wk / wv).
+bool xe2_narrow_output(const ShapeInfo& s) {
+  return s.N <= 512;
+}
+const Preference kXe2_qk_t128x64k32g44s16m8nf[] = {{Op::kSdpaQk, "sweep_t128x64k32g44s16m8nf", nullptr}};
+const Preference kXe2_qk_t128x64k32g44s16m8[] = {{Op::kSdpaQk, "sweep_t128x64k32g44s16m8", nullptr}};
+const Preference kXe2_qk_t128x64k32g48s16m8nf[] = {{Op::kSdpaQk, "sweep_t128x64k32g48s16m8nf", nullptr}};
+const Preference kXe2_qk_t128x64k32g24s16m8nf[] = {{Op::kSdpaQk, "sweep_t128x64k32g24s16m8nf", nullptr}};
+const Preference kXe2_qk_t64x64k32g44s16m8nf[] = {{Op::kSdpaQk, "sweep_t64x64k32g44s16m8nf", nullptr}};
+const Preference kXe2_qk_t64x64k32g24s16m8nf[] = {{Op::kSdpaQk, "sweep_t64x64k32g24s16m8nf", nullptr}};
+const Preference kXe2_qk_t64x128k32g44s16m8nf[] = {{Op::kSdpaQk, "sweep_t64x128k32g44s16m8nf", nullptr}};
+const Preference kXe2_qk_t64x128k32g84s16m8nf[] = {{Op::kSdpaQk, "sweep_t64x128k32g84s16m8nf", nullptr}};
+const Preference kXe2_qkpk_t128x64k32g44s16m8nf[] = {{Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr}};
+const Preference kXe2_qkpk_t128x64k64g44s16m8nf[] = {{Op::kSdpaQk, "pk_t128x64k64g44s16m8nf", nullptr}};
+const Preference kXe2_qkpk_t128x64k32g48s16m8nf[] = {{Op::kSdpaQk, "pk_t128x64k32g48s16m8nf", nullptr}};
+const Preference kXe2_qkpk_t128x64k32g24s16m8nf[] = {{Op::kSdpaQk, "pk_t128x64k32g24s16m8nf", nullptr}};
+const Preference kXe2_qkpk_t64x64k32g44s16m8nf[] = {{Op::kSdpaQk, "pk_t64x64k32g44s16m8nf", nullptr}};
+const Preference kXe2_qkpk_t64x64k64g44s16m8nf[] = {{Op::kSdpaQk, "pk_t64x64k64g44s16m8nf", nullptr}};
+const Preference kXe2_qkpk_t64x128k32g44s16m8nf[] = {{Op::kSdpaQk, "pk_t64x128k32g44s16m8nf", nullptr}};
+const Preference kXe2_qkpk_t64x128k32g84s16m8nf[] = {{Op::kSdpaQk, "pk_t64x128k32g84s16m8nf", nullptr}};
+const Preference kXe2_av_t64x64k32g44s16m8[] = {{Op::kSdpaAv, "sweep_t64x64k32g44s16m8", nullptr}};
+const Preference kXe2_avml_t64x64k32g44s16m8[] = {{Op::kSdpaAv, "ml_t64x64k32g44s16m8", nullptr}};
+const Preference kXe2_avml_t64x64k32g24s16m8[] = {{Op::kSdpaAv, "ml_t64x64k32g24s16m8", nullptr}};
+const Preference kXe2_avml_t64x64k32g48s16m8[] = {{Op::kSdpaAv, "ml_t64x64k32g48s16m8", nullptr}};
+const Preference kXe2_avml_t128x64k32g44s16m8[] = {{Op::kSdpaAv, "ml_t128x64k32g44s16m8", nullptr}};
+const Preference kXe2_avml_t128x64k32g48s16m8[] = {{Op::kSdpaAv, "ml_t128x64k32g48s16m8", nullptr}};
+const Preference kXe2_avml_t64x128k32g44s16m8[] = {{Op::kSdpaAv, "ml_t64x128k32g44s16m8", nullptr}};
+const Preference kXe2_avml_t64x128k32g84s16m8[] = {{Op::kSdpaAv, "ml_t64x128k32g84s16m8", nullptr}};
+const Preference kXe2_avml_t128x128k32g48s16m8[] = {{Op::kSdpaAv, "ml_t128x128k32g48s16m8", nullptr}};
+const Preference kXe2_avml_t128x128k32g88s16m8[] = {{Op::kSdpaAv, "ml_t128x128k32g88s16m8", nullptr}};
+const Preference kXe2_avml_t32x64k32g42s16m8[] = {{Op::kSdpaAv, "ml_t32x64k32g42s16m8", nullptr}};
+const Preference kXe2_qkfr_t128x64k32g44s16m8nf[] = {{Op::kSdpaQk, "xe2_t128x64k32g44s16m8nf", nullptr}};
+const Preference kXe2_qkfr_t128x64k32g48s16m8nf[] = {{Op::kSdpaQk, "xe2_t128x64k32g48s16m8nf", nullptr}};
+const Preference kXe2_qkfr_t128x64k32g24s16m8nf[] = {{Op::kSdpaQk, "xe2_t128x64k32g24s16m8nf", nullptr}};
+const Preference kXe2_qkfr_t128x64k64g44s16m8nf[] = {{Op::kSdpaQk, "xe2_t128x64k64g44s16m8nf", nullptr}};
+const Preference kXe2_qkfr_t64x64k32g44s16m8nf[] = {{Op::kSdpaQk, "xe2_t64x64k32g44s16m8nf", nullptr}};
+const Preference kXe2_qkfr_t64x64k32g24s16m8nf[] = {{Op::kSdpaQk, "xe2_t64x64k32g24s16m8nf", nullptr}};
+const Preference kXe2_qkfr_t64x64k64g44s16m8nf[] = {{Op::kSdpaQk, "xe2_t64x64k64g44s16m8nf", nullptr}};
+const Preference kXe2_qkfr_t64x128k32g44s16m8nf[] = {{Op::kSdpaQk, "xe2_t64x128k32g44s16m8nf", nullptr}};
+const Preference kXe2_qkfr_t64x128k32g84s16m8nf[] = {{Op::kSdpaQk, "xe2_t64x128k32g84s16m8nf", nullptr}};
+const Preference kXe2_avfr_t64x64k32g44s16m8[] = {{Op::kSdpaAv, "xe2_t64x64k32g44s16m8", nullptr}};
+const Preference kXe2_avfr_t64x64k32g24s16m8[] = {{Op::kSdpaAv, "xe2_t64x64k32g24s16m8", nullptr}};
+const Preference kXe2_avfr_t64x64k32g48s16m8[] = {{Op::kSdpaAv, "xe2_t64x64k32g48s16m8", nullptr}};
+const Preference kXe2_avfr_t128x64k32g44s16m8[] = {{Op::kSdpaAv, "xe2_t128x64k32g44s16m8", nullptr}};
+const Preference kXe2_avfr_t128x64k32g48s16m8[] = {{Op::kSdpaAv, "xe2_t128x64k32g48s16m8", nullptr}};
+const Preference kXe2_avfr_t64x128k32g44s16m8[] = {{Op::kSdpaAv, "xe2_t64x128k32g44s16m8", nullptr}};
+const Preference kXe2_avfr_t64x128k32g84s16m8[] = {{Op::kSdpaAv, "xe2_t64x128k32g84s16m8", nullptr}};
+const Preference kXe2_avfr_t128x128k32g48s16m8[] = {{Op::kSdpaAv, "xe2_t128x128k32g48s16m8", nullptr}};
+const Preference kXe2_avfr_t128x128k32g88s16m8[] = {{Op::kSdpaAv, "xe2_t128x128k32g88s16m8", nullptr}};
+const Preference kXe2_avfr_t32x64k32g42s16m8[] = {{Op::kSdpaAv, "xe2_t32x64k32g42s16m8", nullptr}};
+const Preference kXe2_avfr_t128x64k32g24s16m8[] = {{Op::kSdpaAv, "xe2_t128x64k32g24s16m8", nullptr}};
+const Preference kXe2_avfr_t256x64k32g48s16m8[] = {{Op::kSdpaAv, "xe2_t256x64k32g48s16m8", nullptr}};
+const Preference kXe2_avfr_t256x64k32g44s16m8[] = {{Op::kSdpaAv, "xe2_t256x64k32g44s16m8", nullptr}};
+const Preference kXe2_avfr_t128x128k32g44s16m8[] = {{Op::kSdpaAv, "xe2_t128x128k32g44s16m8", nullptr}};
+const Preference kXe2_avfr_t256x128k32g48s16m8[] = {{Op::kSdpaAv, "xe2_t256x128k32g48s16m8", nullptr}};
+const Preference kXe2_qkc_t128x64k32g44s16m8nf[] = {{Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", nullptr}};
+const Preference kXe2_qkc_t128x64k32g24s16m8nf[] = {{Op::kSdpaQk, "xe2c_t128x64k32g24s16m8nf", nullptr}};
+const Preference kXe2_qkc_t64x128k32g44s16m8nf[] = {{Op::kSdpaQk, "xe2c_t64x128k32g44s16m8nf", nullptr}};
+const Preference kXe2_qkc_t64x64k32g44s16m8nf[] = {{Op::kSdpaQk, "xe2c_t64x64k32g44s16m8nf", nullptr}};
+const Preference kXe2_qkc_t128x64k64g44s16m8nf[] = {{Op::kSdpaQk, "xe2c_t128x64k64g44s16m8nf", nullptr}};
+const Preference kXe2_qkc_t64x128k32g42s16m8nf[] = {{Op::kSdpaQk, "xe2c_t64x128k32g42s16m8nf", nullptr}};
+const Preference kXe2_refine1[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+};
+const Preference kXe2_refine2[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+};
+const Preference kXe2_refine3[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+};
+const Preference kXe2_refine4[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "bt_t128x64k64g44s16m8", xe2_wide_output},
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+};
+const Preference kXe2_refine5[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+const Preference kXe2_refine6[] = {
+    {Op::kSdpaQk, "xe2c_t64x128k32g82s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k64g44s32m8", xe2_head_dim_128},
+    {Op::kSdpaAv, "xe2_t64x64k64g44s32m8", nullptr},
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+const Preference kXe2_q4_g82[] = {
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+const Preference kXe2_dq_k64[] = {
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+};
+// xe2 end
+// b70-fused begin: fused attention on the Arc Pro B70 (openspec/changes/sarc-1.5-b70-fused-port)
+// A b70-fused profile is xe2-refine5 for every call the fused kernel does not take, plus the B580's fused
+// kernel variants below, one per head_dim (shader name after sarc_dev_b580_sdpa_fused_; "" = none).
+// b70-fused1 is the pair the B580 campaign selected (b580-fused1 at cea76c634): 16 rows per workgroup;
+// head_dim 64 in 4 subgroups with 64-column blocks, head_dim 128 in 8 subgroups with 128-column blocks.
+// b70-fused-<variant> are the single-variant profiles of the one kernel screen (the B580's screen5-select).
+struct FusedB70 {
+  const char* profile;
+  const char* variants;
+};
+const FusedB70 kFusedB70[] = {
+    {"b70-fused1", "d64_t16x64s16m8g4roj,d128_t16x128s16m8g8oj"},
+    {"b70-fused-d64_t32x32s32m8ro", "d64_t32x32s32m8ro"},
+    {"b70-fused-d64_t16x64s16m8g4roj", "d64_t16x64s16m8g4roj"},
+    {"b70-fused-d64_t16x64s16m8g4oj", "d64_t16x64s16m8g4oj"},
+    {"b70-fused-d128_t16x64s32m8ro", "d128_t16x64s32m8ro"},
+    {"b70-fused-d128_t16x128s16m8g8oj", "d128_t16x128s16m8g8oj"},
+    {"b70-fused-d128_t16x64s16m8g4oj", "d128_t16x64s16m8g4oj"},
+};
+// The function pointers of impl/sarc_dev/b580/SdpaB580Fused.cpp, whichever static initializer runs first.
+Override& fused_b70() {
+  static Override fused;
+  return fused;
+}
+// b70-fused end
+// xe2-order begin: workgroup-order profiles (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)
+// Workgroup-order profiles (tools/gen_xe2.py, ORDER_PROFILES): the base profile with the 8da4w kernel
+// replaced by its xe2bto twin (part i: remap prologue alone; n<nb_max>: blocked order).
+const Preference kXe2Order_i[] = {
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+};
+const Preference kXe2Order_n10[] = {
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n10", nullptr},
+};
+const Preference kXe2Order_n13[] = {
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n13", nullptr},
+};
+const Preference kXe2Order_n16[] = {
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n16", nullptr},
+};
+const Preference kXe2Order_n21[] = {
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n21", nullptr},
+};
+const Preference kXe2Order_n26[] = {
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n26", nullptr},
+};
+const Preference kB70Fused1Order_i[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+const Preference kB70Fused1Order_n10[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n10", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+const Preference kB70Fused1Order_n13[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n13", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+const Preference kB70Fused1Order_n16[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n16", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+const Preference kB70Fused1Order_n21[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n21", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+const Preference kB70Fused1Order_n26[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n26", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+// 8da4w linear: a weight tensor (K x N 4-bit weights) of at least 16 MiB.
+bool xe2_order_weights_16m(const ShapeInfo& s) {
+  return s.K * s.N >= 2 * (int64_t(16) << 20);
+}
+const Preference kB70Fused1Order_i_n26_w16m[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", xe2_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n26", xe2_order_weights_16m},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+// xe2-order end
 struct Profile {
   const char* name;
   const Preference* prefs;
@@ -1647,6 +1863,98 @@ const Profile kProfiles[] = {
     {"orin-fused1", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
     {"orin-fused2", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
     // <<< orin-fused profiles
+    // xe2 begin: Intel Xe2 profiles (tools/gen_xe2.py)
+    {"xe2-qk-t128x64k32g44s16m8nf", kXe2_qk_t128x64k32g44s16m8nf, 1},
+    {"xe2-qk-t128x64k32g44s16m8", kXe2_qk_t128x64k32g44s16m8, 1},
+    {"xe2-qk-t128x64k32g48s16m8nf", kXe2_qk_t128x64k32g48s16m8nf, 1},
+    {"xe2-qk-t128x64k32g24s16m8nf", kXe2_qk_t128x64k32g24s16m8nf, 1},
+    {"xe2-qk-t64x64k32g44s16m8nf", kXe2_qk_t64x64k32g44s16m8nf, 1},
+    {"xe2-qk-t64x64k32g24s16m8nf", kXe2_qk_t64x64k32g24s16m8nf, 1},
+    {"xe2-qk-t64x128k32g44s16m8nf", kXe2_qk_t64x128k32g44s16m8nf, 1},
+    {"xe2-qk-t64x128k32g84s16m8nf", kXe2_qk_t64x128k32g84s16m8nf, 1},
+    {"xe2-qkpk-t128x64k32g44s16m8nf", kXe2_qkpk_t128x64k32g44s16m8nf, 1},
+    {"xe2-qkpk-t128x64k64g44s16m8nf", kXe2_qkpk_t128x64k64g44s16m8nf, 1},
+    {"xe2-qkpk-t128x64k32g48s16m8nf", kXe2_qkpk_t128x64k32g48s16m8nf, 1},
+    {"xe2-qkpk-t128x64k32g24s16m8nf", kXe2_qkpk_t128x64k32g24s16m8nf, 1},
+    {"xe2-qkpk-t64x64k32g44s16m8nf", kXe2_qkpk_t64x64k32g44s16m8nf, 1},
+    {"xe2-qkpk-t64x64k64g44s16m8nf", kXe2_qkpk_t64x64k64g44s16m8nf, 1},
+    {"xe2-qkpk-t64x128k32g44s16m8nf", kXe2_qkpk_t64x128k32g44s16m8nf, 1},
+    {"xe2-qkpk-t64x128k32g84s16m8nf", kXe2_qkpk_t64x128k32g84s16m8nf, 1},
+    {"xe2-av-t64x64k32g44s16m8", kXe2_av_t64x64k32g44s16m8, 1},
+    {"xe2-avml-t64x64k32g44s16m8", kXe2_avml_t64x64k32g44s16m8, 1},
+    {"xe2-avml-t64x64k32g24s16m8", kXe2_avml_t64x64k32g24s16m8, 1},
+    {"xe2-avml-t64x64k32g48s16m8", kXe2_avml_t64x64k32g48s16m8, 1},
+    {"xe2-avml-t128x64k32g44s16m8", kXe2_avml_t128x64k32g44s16m8, 1},
+    {"xe2-avml-t128x64k32g48s16m8", kXe2_avml_t128x64k32g48s16m8, 1},
+    {"xe2-avml-t64x128k32g44s16m8", kXe2_avml_t64x128k32g44s16m8, 1},
+    {"xe2-avml-t64x128k32g84s16m8", kXe2_avml_t64x128k32g84s16m8, 1},
+    {"xe2-avml-t128x128k32g48s16m8", kXe2_avml_t128x128k32g48s16m8, 1},
+    {"xe2-avml-t128x128k32g88s16m8", kXe2_avml_t128x128k32g88s16m8, 1},
+    {"xe2-avml-t32x64k32g42s16m8", kXe2_avml_t32x64k32g42s16m8, 1},
+    {"xe2-qkfr-t128x64k32g44s16m8nf", kXe2_qkfr_t128x64k32g44s16m8nf, 1},
+    {"xe2-qkfr-t128x64k32g48s16m8nf", kXe2_qkfr_t128x64k32g48s16m8nf, 1},
+    {"xe2-qkfr-t128x64k32g24s16m8nf", kXe2_qkfr_t128x64k32g24s16m8nf, 1},
+    {"xe2-qkfr-t128x64k64g44s16m8nf", kXe2_qkfr_t128x64k64g44s16m8nf, 1},
+    {"xe2-qkfr-t64x64k32g44s16m8nf", kXe2_qkfr_t64x64k32g44s16m8nf, 1},
+    {"xe2-qkfr-t64x64k32g24s16m8nf", kXe2_qkfr_t64x64k32g24s16m8nf, 1},
+    {"xe2-qkfr-t64x64k64g44s16m8nf", kXe2_qkfr_t64x64k64g44s16m8nf, 1},
+    {"xe2-qkfr-t64x128k32g44s16m8nf", kXe2_qkfr_t64x128k32g44s16m8nf, 1},
+    {"xe2-qkfr-t64x128k32g84s16m8nf", kXe2_qkfr_t64x128k32g84s16m8nf, 1},
+    {"xe2-avfr-t64x64k32g44s16m8", kXe2_avfr_t64x64k32g44s16m8, 1},
+    {"xe2-avfr-t64x64k32g24s16m8", kXe2_avfr_t64x64k32g24s16m8, 1},
+    {"xe2-avfr-t64x64k32g48s16m8", kXe2_avfr_t64x64k32g48s16m8, 1},
+    {"xe2-avfr-t128x64k32g44s16m8", kXe2_avfr_t128x64k32g44s16m8, 1},
+    {"xe2-avfr-t128x64k32g48s16m8", kXe2_avfr_t128x64k32g48s16m8, 1},
+    {"xe2-avfr-t64x128k32g44s16m8", kXe2_avfr_t64x128k32g44s16m8, 1},
+    {"xe2-avfr-t64x128k32g84s16m8", kXe2_avfr_t64x128k32g84s16m8, 1},
+    {"xe2-avfr-t128x128k32g48s16m8", kXe2_avfr_t128x128k32g48s16m8, 1},
+    {"xe2-avfr-t128x128k32g88s16m8", kXe2_avfr_t128x128k32g88s16m8, 1},
+    {"xe2-avfr-t32x64k32g42s16m8", kXe2_avfr_t32x64k32g42s16m8, 1},
+    {"xe2-avfr-t128x64k32g24s16m8", kXe2_avfr_t128x64k32g24s16m8, 1},
+    {"xe2-avfr-t256x64k32g48s16m8", kXe2_avfr_t256x64k32g48s16m8, 1},
+    {"xe2-avfr-t256x64k32g44s16m8", kXe2_avfr_t256x64k32g44s16m8, 1},
+    {"xe2-avfr-t128x128k32g44s16m8", kXe2_avfr_t128x128k32g44s16m8, 1},
+    {"xe2-avfr-t256x128k32g48s16m8", kXe2_avfr_t256x128k32g48s16m8, 1},
+    {"xe2-qkc-t128x64k32g44s16m8nf", kXe2_qkc_t128x64k32g44s16m8nf, 1},
+    {"xe2-qkc-t128x64k32g24s16m8nf", kXe2_qkc_t128x64k32g24s16m8nf, 1},
+    {"xe2-qkc-t64x128k32g44s16m8nf", kXe2_qkc_t64x128k32g44s16m8nf, 1},
+    {"xe2-qkc-t64x64k32g44s16m8nf", kXe2_qkc_t64x64k32g44s16m8nf, 1},
+    {"xe2-qkc-t128x64k64g44s16m8nf", kXe2_qkc_t128x64k64g44s16m8nf, 1},
+    {"xe2-qkc-t64x128k32g42s16m8nf", kXe2_qkc_t64x128k32g42s16m8nf, 1},
+    {"xe2-sdpa0", nullptr, 0},
+    {"xe2-refine1", kXe2_refine1, sizeof(kXe2_refine1) / sizeof(Preference)},
+    {"xe2-refine2", kXe2_refine2, sizeof(kXe2_refine2) / sizeof(Preference)},
+    {"xe2-refine3", kXe2_refine3, sizeof(kXe2_refine3) / sizeof(Preference)},
+    {"xe2-refine4", kXe2_refine4, sizeof(kXe2_refine4) / sizeof(Preference)},
+    {"xe2-refine5", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
+    {"xe2-refine6", kXe2_refine6, sizeof(kXe2_refine6) / sizeof(Preference)},
+    {"xe2-q4-g82", kXe2_q4_g82, sizeof(kXe2_q4_g82) / sizeof(Preference)},
+    {"xe2-dq-k64", kXe2_dq_k64, sizeof(kXe2_dq_k64) / sizeof(Preference)},
+    // xe2 end
+    // b70-fused begin
+    {"b70-fused1", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
+    {"b70-fused-d64_t32x32s32m8ro", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
+    {"b70-fused-d64_t16x64s16m8g4roj", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
+    {"b70-fused-d64_t16x64s16m8g4oj", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
+    {"b70-fused-d128_t16x64s32m8ro", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
+    {"b70-fused-d128_t16x128s16m8g8oj", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
+    {"b70-fused-d128_t16x64s16m8g4oj", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
+    // b70-fused end
+    // xe2-order begin: workgroup-order profiles (tools/gen_xe2.py)
+    {"xe2-order-i", kXe2Order_i, sizeof(kXe2Order_i) / sizeof(Preference)},
+    {"xe2-order-n10", kXe2Order_n10, sizeof(kXe2Order_n10) / sizeof(Preference)},
+    {"xe2-order-n13", kXe2Order_n13, sizeof(kXe2Order_n13) / sizeof(Preference)},
+    {"xe2-order-n16", kXe2Order_n16, sizeof(kXe2Order_n16) / sizeof(Preference)},
+    {"xe2-order-n21", kXe2Order_n21, sizeof(kXe2Order_n21) / sizeof(Preference)},
+    {"xe2-order-n26", kXe2Order_n26, sizeof(kXe2Order_n26) / sizeof(Preference)},
+    {"b70-fused1-order-i", kB70Fused1Order_i, sizeof(kB70Fused1Order_i) / sizeof(Preference)},
+    {"b70-fused1-order-n10", kB70Fused1Order_n10, sizeof(kB70Fused1Order_n10) / sizeof(Preference)},
+    {"b70-fused1-order-n13", kB70Fused1Order_n13, sizeof(kB70Fused1Order_n13) / sizeof(Preference)},
+    {"b70-fused1-order-n16", kB70Fused1Order_n16, sizeof(kB70Fused1Order_n16) / sizeof(Preference)},
+    {"b70-fused1-order-n21", kB70Fused1Order_n21, sizeof(kB70Fused1Order_n21) / sizeof(Preference)},
+    {"b70-fused1-order-n26", kB70Fused1Order_n26, sizeof(kB70Fused1Order_n26) / sizeof(Preference)},
+    {"b70-fused1-order-i-n26-w16m", kB70Fused1Order_i_n26_w16m, sizeof(kB70Fused1Order_i_n26_w16m) / sizeof(Preference)},
+    // xe2-order end
 };
 const Profile* requested_profile() {
   static const Profile* p = []() -> const Profile* {
@@ -1664,6 +1972,26 @@ const Profile* requested_profile() {
   }();
   return p;
 }
+// b70-fused begin
+const char* fused_variants_b70() {
+  const Profile* p = requested_profile();
+  for (const FusedB70& f : kFusedB70) {
+    if (p != nullptr && std::strcmp(p->name, f.profile) == 0) {
+      return f.variants;
+    }
+  }
+  // xe2-order begin: the workgroup-order twins of b70-fused1 keep its fused attention variants (tools/gen_xe2.py)
+  if (p != nullptr && std::strncmp(p->name, "b70-fused1-order-", 17) == 0) {
+    for (const FusedB70& f : kFusedB70) {
+      if (std::strcmp(f.profile, "b70-fused1") == 0) {
+        return f.variants;
+      }
+    }
+  }
+  // xe2-order end
+  return "";
+}
+// b70-fused end
 // >>> 4070ti softmax-variant
 // RTX 4070 Ti SUPER: the refine profiles that carry the SDPA kernels run the
 // fp32 softmax without the full zero tail
@@ -1772,6 +2100,12 @@ struct Registrar {
     // the 8da4w variable needs active dq8ca rows (see dev_select).
     o.force_path = !requested_variant().empty();
     o.select = dev_select;
+    // b70-fused begin
+    if (*fused_variants_b70() != 0) {
+      o.sdpa_fused_add = fused_b70().sdpa_fused_add;
+      o.sdpa_fused_serves = fused_b70().sdpa_fused_serves;
+    }
+    // b70-fused end
     // >>> 4070ti softmax-override
     o.softmax_variant = softmax_variant_4070ti();
     // <<< 4070ti softmax-override
@@ -1823,6 +2157,24 @@ struct Registrar {
 } registrar;
 
 } // namespace
+
+// b70-fused begin: called by impl/sarc_dev/b580/SdpaB580Fused.cpp (the B580's node, used unchanged)
+const char* sdpa_fused_variants_b580() {
+  return fused_variants_b70();
+}
+void register_sdpa_fused_b580(
+    void (*add)(ComputeGraph&, const std::vector<int32_t>&),
+    bool (*serves)(ComputeGraph*, const std::vector<int32_t>&)) {
+  fused_b70().sdpa_fused_add = add;
+  fused_b70().sdpa_fused_serves = serves;
+  if (*fused_variants_b70() != 0) {
+    Override o = get_override();
+    o.sdpa_fused_add = add;
+    o.sdpa_fused_serves = serves;
+    set_override(o);
+  }
+}
+// b70-fused end
 // >>> 4070ti-fused entry
 const char* sdpa_fused_variants_4070ti() {
   const char* v = fused_variants_4070ti();

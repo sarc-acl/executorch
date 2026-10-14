@@ -1670,3 +1670,130 @@ sarc_linear_q4gsw_coopmat_sweep:
       CSH_FULL: true
       CSH_POOL: true
     # --- m51 end ---
+# xe2 begin: Intel Xe2 variants (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)
+    - NAME: sarc_linear_q4gsw_coopmat_sweep_t128x128k32g44s16m8fli_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      FRAG_LAYOUT: true
+      IMG_A: true
+    - NAME: sarc_linear_q4gsw_coopmat_sweep_t128x256k16g44s16m8fli_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 256
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      FRAG_LAYOUT: true
+      IMG_A: true
+    - NAME: sarc_linear_q4gsw_coopmat_sweep_t64x128k16g42s16m8fli_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 8
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      FRAG_LAYOUT: true
+      IMG_A: true
+    - NAME: sarc_linear_q4gsw_coopmat_sweep_t128x64k16g24s16m8fli_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      FRAG_LAYOUT: true
+      IMG_A: true
+    - NAME: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g24s16m8fli_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      FRAG_LAYOUT: true
+      IMG_A: true
+    - NAME: sarc_linear_q4gsw_coopmat_sweep_t128x128k32g24s16m8fli_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      FRAG_LAYOUT: true
+      IMG_A: true
+    - NAME: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g44s16m8flib_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 8
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      FRAG_LAYOUT: true
+      IMG_A: true
+      CSH_BAND: true
+    - NAME: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 8
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      FRAG_LAYOUT: true
+      B_COLMAJOR: false
+      SH_F16V4: false
+      IMG_A: true
+      IMG_W: false
+      CSH_BAND: true
+      CSH_FULL: false
+      CSH_POOL: false
+      CSH_IN_ASH: false
+      ACC_FP32: false
+      ACC_GROUP_FP32: false
+    - NAME: sarc_linear_q4gsw_coopmat_sweep_t128x128k32g84s16m8flw_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 8
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      MMA_M: 8
+      FRAG_LAYOUT: true
+      B_COLMAJOR: false
+      SH_F16V4: false
+      IMG_A: false
+      IMG_W: true
+      CSH_BAND: false
+      CSH_FULL: false
+      CSH_POOL: false
+      CSH_IN_ASH: false
+      ACC_FP32: false
+      ACC_GROUP_FP32: false
+# xe2 end

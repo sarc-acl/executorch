@@ -2193,7 +2193,11 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
     }
   }
   const bool qk_no_mask_fill = qk_name.find("s32nf") != std::string::npos ||
-      qk_name.find("s64nf") != std::string::npos;
+      qk_name.find("s64nf") != std::string::npos
+      // xe2 begin: Xe2 tile tokens end in s16m8nf (openspec/changes/sarc-1.5-xe2-prefill-refine)
+      || qk_name.find("m8nf") != std::string::npos
+      // xe2 end
+      ;
   // Substring, not prefix: a build with the event tracer reports kernel names
   // as `"kernel_name": "<name>", "operator_id": N` (the Orin cross build).
   const bool softmax_truncated =
@@ -2310,6 +2314,23 @@ bool sdpa_correctness_case(const SdpaCorrectnessCase& c) {
     std::cout << "}\n";
   }
 
+  // xe2 begin: error against the fp32 CPU reference (openspec/changes/sarc-1.5-xe2-prefill-refine)
+  {
+    double se = 0.0, sr = 0.0, emax = 0.0;
+    for (int64_t i = 0; i < q_numel; ++i) {
+      const double d = static_cast<double>(outf[i]) - static_cast<double>(ref[i]);
+      se += d * d;
+      sr += static_cast<double>(ref[i]) * static_cast<double>(ref[i]);
+      emax = std::max(emax, std::fabs(d));
+    }
+    std::cout << "[sdpa-error] " << c.name << " elements=" << q_numel
+              << std::scientific << std::setprecision(4)
+              << " rms_err=" << std::sqrt(se / static_cast<double>(q_numel))
+              << " max_abs_err=" << emax
+              << " ref_rms=" << std::sqrt(sr / static_cast<double>(q_numel))
+              << std::defaultfloat << std::setprecision(6) << "\n";
+  }
+  // xe2 end
   const bool numeric_ok = mismatches == 0;
   // >>> 4070ti-fused verdict (orin-fused: the same block)
   // A case served by a fused prefill kernel, which computes QK^T, softmax and
