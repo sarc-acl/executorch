@@ -1,0 +1,63 @@
+# thresholds.txt: comparison thresholds of sarc-1.5-b580-fused-port. The rules were committed before the first
+# measurement; the calibrated values are appended (dated) after the A/A session s1-aa and before candidate 1.
+# Nobody changes a line of this file after a candidate's numbers exist.
+
+valid_run          rc 0; 2048 prompt tokens; 0 generated tokens; no foreign GPU workload (host.sh gpu_others);
+                   >= 5 clock samples in the prefill window (sampler period 10 ms); no sample with a thermal
+                   throttle reason (thermal, prochot, ratl); median GT clock >= CLKMIN; foreign engine share in
+                   the prefill window <= BUSYMAX. Power-limit flags (pl1, pl2, pl4) are counted, not rejected.
+CLKMIN             97 % of the lowest per-run median clock of the valid runs of s1-aa (one device-wide value)
+BUSYMAX            max(5 %, 2 x the 90th percentile of the per-run foreign engine share over the valid runs of s1-aa)
+repeats            5 valid runs per arm and cell; 7 if in s1-aa any cell's A/A ratio is further than 1.0 % from 1
+                   or any arm's spread (max - min over its valid runs, relative to its median) exceeds 3.0 %
+noise_band         a difference inside +-2 % is noise, not a gain. If the A/A geomean is further than 1 % from 1
+                   or any A/A cell is outside +-2 %, nothing is optimised until the cause is found
+baseline           each cell of the re-measured parent (51d9d757f, b580-refine3) within 3 % of the first
+                   campaign's s6-final: 1B 12962.00 / 15170.40, 3B 5184.81 / 6400.00, 8B 2306.31 / 2998.54 tok/s
+                   (4w / 8da4w); a cell outside 3 % is explained before any candidate
+kernel_screen      a fused variant replaces another only when it is at least 3 % faster at kernel level in every
+                   round (3 rounds, cooled before every run); a tie keeps the 780M / RX 7600 tile shape
+arithmetic (D3)    the fused kernel changes summation order: candidate rms and max error against the fp32 CPU
+                   reference not larger than the parent's (b580-refine3) on every S = 2048 head configuration;
+                   tiers all / extended / full 12 passes each, 0 mismatches, pairing=ok; gross-divergence limits
+                   0.5 nat mean KL and one third of the real-text windows (tools/decide.py, unchanged)
+stop               two consecutive gated candidates under 2 % geomean, or after candidate 2 whatever its result,
+                   or 24 hours of device time without a correct candidate 1, or the end of the budget
+
+# 2026-10-08 21:02 UTC, appended before any kernel-screen timing was read and before any candidate was timed.
+s1-aa (20:49 to 20:59 UTC) is not the calibration session: the owner returned to the desktop when it started
+                   (seat0 IdleHint=no from 20:50 UTC), foreign engine time was 3.6 to 9.7 % in every timed run, one
+                   A/A cell read +2.96 % (outside +-2 %) and every parent cell read 5.9 to 9.2 % below the first
+                   campaign's s6-final (outside 3 %). By the noise_band rule nothing is optimised until the cause is
+                   found; the cause is the desktop in use. The session, the three calibration files it wrote
+                   (BUSYMAX 15.62 %, CLKMIN 2651 MHz, idle 47 C) and the three screen runs made in that period are
+                   kept under superseded/desktop-in-use-20261008T2050Z/ and are not used. The calibration session is
+                   s1-aa2, the same two arms, run behind an idle wait; the rules above apply to it unchanged.
+idle_wait          a timed run, a trace run and a kernel-screen run start only while the graphical session of seat0
+                   reports IdleHint=yes (host.sh idle_wait). This adds a start condition, not a validity rule: the
+                   validity rules above are unchanged, and a run the owner's return disturbs is rejected by BUSYMAX.
+kernel_screen, reading of "the 780M / RX 7600 tile shape" (the incumbents of the rule): the literal 780M variants,
+                   d64_t32x32s32m8ro (head_dim 64) and d128_t16x64s32m8ro (head_dim 128), 32 lanes. If one of them
+                   does not run on this driver, the incumbent for that head_dim is its 16-lane twin with the same
+                   block width (d64_t16x32s16m8ro, d128_t16x64s16m8ro). A challenger is selected only if its
+                   kernel time (fused kernel + copy pass, per model of that head_dim) is at least 3 % below the
+                   incumbent's in every one of the 3 rounds, for every model of that head_dim; among several such
+                   challengers the one with the lowest median. Two-pass variants (no "o") are screened for the
+                   record and are not challengers.
+
+# 2026-10-08 21:40 UTC, calibrated from s1-aa2 (21:27 to 21:37 UTC, idle desktop; 60 timed runs, all valid), before
+# candidate 1 was timed.
+CLKMIN             2635 MHz (97 % of 2717 MHz, the lowest per-run median clock: 8B 4w)
+BUSYMAX            5.0 % (the floor: the 90th percentile of the per-run foreign engine share is 1.03 %)
+idle temperature   42 C
+repeats            7: the A/A ratio of 1B 4w is 1.0191, further than 1.0 % from 1 (three of its five parent runs had
+                   0.7 to 1.6 % foreign engine time and read 1.3 to 2.5 % lower). Largest arm spread 2.90 %.
+noise_band         A/A geomean +0.26 %, every cell inside +-2 % (largest +1.91 %): the session stands.
+baseline           parent vs s6-final: 1B -1.25 % / +0.75 %, 3B -1.00 % / -0.62 %, 8B -0.78 % / -0.73 % (4w / 8da4w):
+                   every cell within 3 %.
+
+# 2026-10-09 00:32 UTC. Owner decision, 2026-10-09 (00:22 UTC): do not wait for an idle desktop; measure now.
+idle_wait          lifted: a timed run, a trace run and a screen run start at once whatever the desktop reports;
+                   the desktop state of every such unit is recorded (logs/idle_wait.log) beside the per-run
+                   foreign engine share of runs.csv. Nothing else in this file changes: CLKMIN, BUSYMAX 5.0 %,
+                   7 repeats, the noise band, and a run above BUSYMAX is invalid and replaced.

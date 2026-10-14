@@ -1,0 +1,1 @@
+tool smoke test (1B, one repeat). Its 1b 4w check=DIFFER is false: host.sh gpu_others wrote 'tr: /proc/<pid>/cmdline: No such file' into the parent's run log (a process that exited while it was examined), and the log text is what is compared. Three repeats of both arms by hand printed the same token. Fixed in host.sh (stderr of the examination discarded).

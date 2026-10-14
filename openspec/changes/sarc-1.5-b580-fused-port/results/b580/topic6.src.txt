@@ -1,0 +1,17 @@
+tag=topic6
+commit=247d088515cf4b393a386952762ce2b1fad7b87f
+tree=890ff623dd600cc54b670eb7dd0f93a835226e47
+subject=[SARC][dev] B580 fused port: b580-fused1 is the pair the 3-round selection screen picked (head_dim 64: 16 rows, 4 subgroups, 0.72 ms against 1.99 ms for the three kernels; head_dim 128: 16 rows, 8 subgroups, 1.46 / 1.14 ms against 2.30 / 1.77 ms); invalid variant removed; gate chain
+requested=247d088515cf4b393a386952762ce2b1fad7b87f parent_commit=51d9d757f
+export_manifest=31 trees sha256=059d6072ba429010958c1eb7998650f42075f96f37c0f2deb9c0839d2ca88994
+image=localhost/et-vk-build:rocky10 9d912c7c4cedab746a9b795b0beb26932369d5f6da287a514f8d18483dee2fe4
+glslc=shaderc v2023.8 2024-01-03spirv-tools v2025.4 2025-09-22glslang 73743588fe9c39f2f1c780a087d94afac691a189 Target: SPIR-V 1.0 
+start=2026-10-08T23:30:31Z
+main_rc=0
+traced_rc=0
+golden_rc=0 (spirv golden: PASS (53 shipped variants))
+0bc4811bda028e429c7f4065237e9c2292b900d5fdf46dfdb99145a3d39bf8e1  /mnt/linux-share/hmz-campaigns/b580-fused/.artifacts/build/topic6/llama/examples/models/llama/llama_main
+cbe5ef2916efb021e04dab8d26a13e1af55ef9b7599f404a54c09f581801ce20  /mnt/linux-share/hmz-campaigns/b580-fused/.artifacts/build/topic6/tests/test_llama_microbench
+f66267311f7871d7476cb002edb96d9f966db4610c1882f2a50c71e84fb5c79b  /mnt/linux-share/hmz-campaigns/b580-fused/.artifacts/build/topic6-traced/llama/examples/models/llama/llama_main
+end=2026-10-08T23:40:13Z
+BUILD_BOTH_OK

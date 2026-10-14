@@ -1,0 +1,12 @@
+case,elements,ref_rms,arm,rms_err,max_abs_err,mismatches,rms_not_larger_than_first_arm,max_not_larger_than_first_arm,qk,softmax,av
+peaked_tiny_gqa_s256,32768,2.9014e-01,parent,4.0591e-04,2.3192e-03,0,-,-,sarc_sdpa_qk_coopmat_pk_t128x64k32g44s16m8nf_buffer_buffer_half,sarc_sdpa_attn_weights_softmax_buffer_half,sarc_sdpa_av_coopmat_sweep_t64x64k32g44s16m8_buffer_buffer_half
+peaked_tiny_gqa_s256,32768,2.9014e-01,b580-fused1,3.7677e-04,2.5023e-03,0,yes,NO,?,?,?
+peaked_1b_head_config_s256_pos256,524288,2.1055e-01,parent,4.1777e-04,3.9371e-03,0,-,-,sarc_sdpa_qk_coopmat_pk_t128x64k32g44s16m8nf_buffer_buffer_half,sarc_sdpa_attn_weights_softmax_buffer_half,sarc_sdpa_av_coopmat_sweep_t64x64k32g44s16m8_buffer_buffer_half
+peaked_1b_head_config_s256_pos256,524288,2.1055e-01,b580-fused1,3.7610e-04,2.6134e-03,0,yes,yes,?,?,?
+peaked_8b_head_config_s256,1048576,2.8452e-01,parent,4.1106e-04,3.0099e-03,0,-,-,sarc_sdpa_qk_coopmat_xe2c_t128x64k32g44s16m8nf_buffer_buffer_half,sarc_sdpa_attn_weights_softmax_buffer_half,sarc_sdpa_av_coopmat_xe2_t128x64k32g44s16m8_buffer_buffer_half
+peaked_8b_head_config_s256,1048576,2.8452e-01,b580-fused1,3.7088e-04,2.8878e-03,0,yes,yes,?,?,?
+peaked_tiny_gqa_s2048,262144,1.8803e-01,parent,6.0087e-04,7.8310e-03,0,-,-,sarc_sdpa_qk_coopmat_pk_t128x64k32g44s16m8nf_buffer_buffer_half,sarc_sdpa_attn_weights_softmax_buffer_half,sarc_sdpa_av_coopmat_sweep_t64x64k32g44s16m8_buffer_buffer_half
+peaked_tiny_gqa_s2048,262144,1.8803e-01,b580-fused1,3.6514e-04,2.8772e-03,0,yes,yes,?,?,?
+peaked_tiny_d128_s2048,524288,1.9077e-01,parent,6.1762e-04,8.9272e-03,0,-,-,sarc_sdpa_qk_coopmat_xe2c_t128x64k32g44s16m8nf_buffer_buffer_half,sarc_sdpa_attn_weights_softmax_buffer_half,sarc_sdpa_av_coopmat_xe2_t128x64k32g44s16m8_buffer_buffer_half
+peaked_tiny_d128_s2048,524288,1.9077e-01,b580-fused1,3.6704e-04,2.5820e-03,0,yes,yes,?,?,?
+SDPA_ERROR_LARGER (1)

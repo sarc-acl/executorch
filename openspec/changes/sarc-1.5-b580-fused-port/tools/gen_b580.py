@@ -1,0 +1,200 @@
+#!/usr/bin/env python3
+"""Arc B580 dev-zone content of sarc-1.5-b580-prefill-refine, generated.
+
+usage: gen_b580.py <executorch tree>
+
+Writes, and rewrites idempotently:
+  - impl/sarc_dev/B580Sdpa.cpp: the B580 SDPA base rows (device string `bmg g21` only, kUnverified, active only
+    while ET_VK_SARC_DEV_PROFILE names a b580-* profile), so every other configuration of a dev build selects
+    exactly what the release tables select. Same mechanism as impl/sarc_dev/Xe2Sdpa.cpp of the B70 campaign.
+  - glsl/sarc_dev/sarc_dev_linear_dq8ca_coopmat_zpg_b580bt.{glsl,yaml} and impl/sarc_dev/B580Linear.cpp: 8da4w
+    tiles of the texel-wise family that the B70 campaign did not build (its body, included unchanged);
+  - the b580 blocks of impl/sarc_dev/Overrides.cpp: one single-kernel screening profile per SDPA candidate row
+    that exists in the dev zone (b580-qk-<family>-<tile>, b580-av-<family>-<tile>; the candidate rows themselves
+    are the B70 campaign's, registered by name for any device) and the b580-refineN candidates (REFINE below).
+Never writes a release-zone file. Blocks are delimited by "b580 begin" / "b580 end" comments."""
+import pathlib, re, sys
+root = pathlib.Path(sys.argv[1]) / "backends/vulkan"
+impl = root / "runtime/graph/ops/impl/sarc_dev"
+
+# (profile, [(op, token, shape predicate or None)], comment)
+REFINE = [
+    ("b580-sdpa0", [], "base rows only: the straight port"),
+    ("b580-refine0", [("kSdpaQk", "pk_t128x64k32g44s16m8nf", None), ("kSdpaAv", "xe2_t128x64k32g44s16m8", "b580_head_dim_128")],
+     "candidate 0 = the B70's accepted xe2-refine1 kernels, selected for this card"),
+    ("b580-refine1", [("kSdpaQk", "pk_t128x64k32g44s16m8nf", None), ("kSdpaAv", "xe2_t128x64k32g44s16m8", "b580_head_dim_128"),
+                      ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", None)],
+     "candidate 1 = refine0 + the balanced K = 64 8da4w tile with texel-wise weight staging (B580 screen 2: 1.31x at kernel level)"),
+    ("b580-dq-k64", [("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", None)], "the 8da4w tile of refine1 alone, on the release SDPA path"),
+    ("b580-refine2", [("kSdpaQk", "pk_t128x64k32g44s16m8nf", None), ("kSdpaAv", "xe2_t128x64k32g44s16m8", "b580_head_dim_128"),
+                      ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", None),
+                      ("kQ4gswLinear", "sweep_t128x128k16g44s16m8flib", None)],
+     "candidate 2 = refine1 + the shipped 4w tile with the texture3d drain staged one band at a time (release body, CSH_BAND)"),
+    ("b580-refine2x", [("kSdpaQk", "pk_t128x64k32g44s16m8nf", None), ("kSdpaAv", "xe2_t128x64k32g44s16m8", "b580_head_dim_128"),
+                      ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", None),
+                       ("kQ4gswLinear", "xe2s_t128x128k16g44s16m8flib", None)],
+     "refine2 with the split-staging twin of the same tile (B580 screen 3, round 1: 1.17 to 1.22x per shape at kernel level)"),
+    ("b580-refine3", [("kSdpaQk", "xe2c_t128x64k32g44s16m8nf", "b580_qk_head_dim_128"), ("kSdpaQk", "pk_t128x64k32g44s16m8nf", None),
+                      ("kSdpaAv", "xe2_t128x64k32g44s16m8", "b580_head_dim_128"), ("kDq8caLinear", "xe2bt_t128x128k64g84s16m8", None)],
+     "candidate 3 = refine1 with the column-major fragment-layout QK^T for head_dim 128 (B580 screen 1: 7 to 8 % faster than pk on 3B / 8B, under 3 % on 1B)"),
+]
+BASE = [("kSdpaQk", "sarc_sdpa_qk_coopmat_sweep_t128x64k32g44s16m8nf", "128, 64, 32, 4, 4"),
+        ("kSdpaAv", "sarc_sdpa_av_coopmat_sweep_t64x64k32g44s16m8", "64, 64, 32, 4, 4")]
+
+def block(text, begin, end, body, anchor):
+    if begin in text:
+        a = text.index(begin); b = text.index(end, a) + len(end)
+        return text[:a] + begin + body + end + text[b:]
+    assert text.count(anchor) == 1, f"anchor occurs {text.count(anchor)} times: {anchor[:60]!r}"
+    return text.replace(anchor, begin + body + end + anchor)
+
+cands = []   # (op, family, tile) of every SDPA candidate row in the dev zone
+for f in sorted(impl.glob("*.cpp")):
+    for op, name in re.findall(r'Op::(kSdpaQk|kSdpaAv),\s*"(sarc_sdpa_(?:qk|av)_coopmat_[a-z0-9_]+)"', f.read_text()):
+        m = re.fullmatch(r"sarc_sdpa_(?:qk|av)_coopmat_([a-z0-9]+)_(t\d+x\d+k\d+g\d+s16m8(?:nf)?)", name)
+        if m and (op, m[1], m[2]) not in cands: cands.append((op, m[1], m[2]))
+
+rows = "".join(f'    {{"bmg g21", b580_profile_requested, Op::{op},\n     "{name}",\n     {{{dims}, 16, 8, false}}, kBufBuf, nullptr,\n     Status::kUnverified}},\n' for op, name, dims in BASE)
+(impl / "B580Sdpa.cpp").write_text(f"""/*
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+// SARC development zone, Intel Arc B580 (device tag b580): SDPA prefill base
+// rows for the device string "bmg g21" only (openspec/changes/
+// sarc-1.5-b580-prefill-refine; generated by its tools/gen_b580.py). Not part
+// of a release.
+//
+// Same mechanism as Xe2Sdpa.cpp: kUnverified rows (ET_VK_SARC_UNVERIFIED=1)
+// that match only while ET_VK_SARC_DEV_PROFILE names a b580-* profile, so
+// every other configuration selects exactly what the release tables select.
+// The b580-* profiles (Overrides.cpp) then pick this card's kernels by name.
+
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h>
+
+#include <cstdlib>
+#include <cstring>
+
+namespace vkcompute {{
+namespace sarc {{
+namespace {{
+
+bool b580_profile_requested(const DeviceInfo&) {{
+  const char* e = std::getenv("ET_VK_SARC_DEV_PROFILE");
+  return e != nullptr && std::strncmp(e, "b580-", 5) == 0;
+}}
+
+const Row kB580SdpaRows[] = {{
+{rows}}};
+
+struct Registrar {{
+  Registrar() {{
+    register_rows(
+        kB580SdpaRows, sizeof(kB580SdpaRows) / sizeof(kB580SdpaRows[0]));
+  }}
+}} registrar;
+
+}} // namespace
+}} // namespace sarc
+}} // namespace vkcompute
+""")
+
+ident = lambda s: re.sub(r"[^A-Za-z0-9]", "_", s)
+prefs = ("// Single-kernel screening profiles and the b580-refineN candidates. They take effect on the Arc B580 only\n"
+         "// (SDPA base rows of impl/sarc_dev/B580Sdpa.cpp, ET_VK_SARC_UNVERIFIED=1).\n"
+         "// attn*V: ShapeInfo::N is head_dim.\nbool b580_head_dim_128(const ShapeInfo& s) {\n  return s.N >= 128;\n}\n"
+         "// QK^T: ShapeInfo::K is head_dim.\nbool b580_qk_head_dim_128(const ShapeInfo& s) {\n  return s.K >= 128;\n}\n")
+profs = ""
+for op, fam, tile in cands:
+    kind = "qk" if op == "kSdpaQk" else "av"; name = f"b580-{kind}-{fam}-{tile}"
+    prefs += f'const Preference kB580_{ident(name[5:])}[] = {{{{Op::{op}, "{fam}_{tile}", nullptr}}}};\n'
+    profs += f'    {{"{name}", kB580_{ident(name[5:])}, 1}},\n'
+for name, ps, why in REFINE:
+    if ps:
+        prefs += f"// {why}\nconst Preference kB580_{ident(name[5:])}[] = {{\n" + "".join(
+            f'    {{Op::{op}, "{t}", {p or "nullptr"}}},\n' for op, t, p in ps) + "};\n"
+        profs += f'    {{"{name}", kB580_{ident(name[5:])}, sizeof(kB580_{ident(name[5:])}) / sizeof(Preference)}},\n'
+    else:
+        profs += f'    {{"{name}", nullptr, 0}},\n'
+# ---- 8da4w linear, B580 batch 1: the three tiles of the texel-wise family (the B70 campaign's xe2bt body, used
+# unchanged through an include) that fit the static rules and were not built there. Rules as in its generator:
+# subgroup tile N = 16 and at most 4 x 1 MMA tiles (8 x 16 x 32) per subgroup, K a multiple of 32 that divides
+# every model K, shared memory <= 46000 bytes of the 49152 this card reports, at most 1024 invocations, and the
+# A blocks per chunk either a multiple of the workgroup size or fewer than it.
+g = root / "runtime/graph/ops/glsl/sarc_dev"
+def dq_lds(m, n, k, sy): return 2 * (k // 32) * (m * 32 + n * 32) + m * 8 + n * 12 + sy * 8 * n * 2
+DQ = [(64, 128, 64, 8, 4), (64, 128, 64, 8, 8), (128, 128, 32, 8, 4)]
+w = (g / "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt.glsl").read_text(); w = w[w.index("#version 450 core"):]
+(g / "sarc_dev_linear_dq8ca_coopmat_zpg_b580bt.glsl").write_text("""/*
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+/*
+ * SARC development zone, Arc B580 (openspec/changes/sarc-1.5-b580-prefill-refine, generated by its
+ * tools/gen_b580.py): the wrapper of glsl/sarc_dev/sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt.glsl with its own
+ * yaml, so that B580 tiles live in their own file. Same body (included), same arithmetic.
+ */
+
+""" + w)
+ys = (g / "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bt.yaml").read_text()
+ydef = ys[ys.index("  parameter_names_with_default_values:"):ys.index("  shader_variants:")]
+y = "# SARC development zone, Arc B580: 8da4w zpg, texel-wise weight staging, B580 tiles (generated by sarc-1.5-b580-prefill-refine/tools/gen_b580.py). Not shipped.\n\nsarc_dev_linear_dq8ca_coopmat_zpg_b580bt:\n" + ydef + "  shader_variants:\n"
+lin = ""
+for m, n, k, sx, sy in DQ:
+    wg = sx * sy * 16; blocks = (m // 4) * (k // 4)
+    assert wg <= 1024 and n // sx == 16 and m % sy == 0 and (m // sy) % 8 == 0 and (m // sy) // 8 <= 4 and k % 32 == 0, (m, n, k, sx, sy)
+    assert dq_lds(m, n, k, sy) <= 46000, (m, n, k, dq_lds(m, n, k, sy))
+    full = blocks % wg == 0; assert full or blocks < wg
+    kb = f"sarc_dev_linear_dq8ca_coopmat_zpg_b580bt_t{m}x{n}k{k}g{sx}{sy}s16m8"
+    lin += f'    {{"", nullptr, Op::kDq8caLinear,\n     "{kb}",\n     {{{m}, {n}, {k}, {sx}, {sy}, 16, 8, false}}, kTex3dTex2d | kBufTex2d, nullptr, Status::kUnverified}},\n'
+    for io in ("texture3d", "buffer"):
+        y += (f"    - NAME: {kb}_{io}_texture2d_half\n      IO_STORAGE: {io}\n      WG_TILE_M: {m}\n      WG_TILE_N: {n}\n      WG_TILE_K: {k}\n      SG_GRID_X: {sx}\n      SG_GRID_Y: {sy}\n"
+              f"      SUBGROUP_SIZE: 16\n      MMA_M: 8\n      MMA_K: 32\n      A_MAP_FULL: {'true' if full else 'false'}\n      A_MULTI_BLOCK: true\n      A_BLOCKS: {max(blocks // wg, 1)}\n")
+(g / "sarc_dev_linear_dq8ca_coopmat_zpg_b580bt.yaml").write_text(y)
+(impl / "B580Linear.cpp").write_text(f"""/*
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+// SARC development zone, Intel Arc B580 (device tag b580): linear candidate
+// rows of openspec/changes/sarc-1.5-b580-prefill-refine (generated by its
+// tools/gen_b580.py). Selected only by name: ET_VK_SARC_DQ8CA_VARIANT or a
+// b580-* profile.
+
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h>
+
+namespace vkcompute {{
+namespace sarc {{
+namespace {{
+
+const Row kB580LinearCandidates[] = {{
+{lin}}};
+
+struct Registrar {{
+  Registrar() {{
+    register_candidates(
+        kB580LinearCandidates,
+        sizeof(kB580LinearCandidates) / sizeof(kB580LinearCandidates[0]));
+  }}
+}} registrar;
+
+}} // namespace
+}} // namespace sarc
+}} // namespace vkcompute
+""")
+
+o = impl / "Overrides.cpp"; t = o.read_text()
+t = block(t, "// b580 begin: Arc B580 profiles (openspec/changes/sarc-1.5-b580-prefill-refine, tools/gen_b580.py)\n", "// b580 end\n", prefs, "struct Profile {\n")
+t = block(t, "    // b580 begin: Arc B580 profiles (tools/gen_b580.py)\n", "    // b580 end\n", profs, "};\nconst Profile* requested_profile() {")
+o.write_text(t)
+print(f"{len(cands)} screening profiles, {len(REFINE)} named profiles")

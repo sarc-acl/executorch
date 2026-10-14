@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "campaign": "fleet-fast-20260926",
+  "source_commit": "c898a5aeba70c1cf4f3138f176c109b5f7609ff8",
+  "plan": "fast",
+  "clock_mode": "automatic (not pinned)",
+  "registry_device": {
+    "id": "b580",
+    "name": "Intel Arc B580 12 GB",
+    "kind": "dgpu",
+    "vendor": "intel",
+    "host": "fedora",
+    "uuid": "86800be2-0000-0000-0300-000000000000",
+    "tags": [
+      "intel",
+      "battlemage"
+    ],
+    "status": "active",
+    "busy_threshold": 50,
+    "notes": "Drives the Odyssey G9: gnome-shell alone keeps the render engine about 20% busy, so the threshold is raised.",
+    "pci": "0000:03:00.0"
+  },
+  "started_utc": "2026-10-09T08:48:58.487830+00:00",
+  "status": "finished",
+  "preflight": {
+    "name": "Intel(R) Arc(tm) B580 Graphics (BMG G21)",
+    "uuid": "86800be2-0000-0000-0300-000000000000",
+    "type": "dgpu",
+    "vendor_id": 32902,
+    "api": "1.4.354",
+    "driver": "Intel open-source Mesa driver",
+    "driver_info": "Mesa 26.2.3",
+    "pci": "0000:03:00.0",
+    "subgroup_size": 32,
+    "max_wg_invocations": 1024,
+    "max_shared_bytes": 49152,
+    "max_push_bytes": 256,
+    "busy_pct": 0.300841,
+    "busy_method": "drm-fdinfo(partial)"
+  },
+  "ended_utc": "2026-10-09T09:12:19.719889+00:00",
+  "elapsed_seconds": 1401.2320731670006
+}

@@ -1,0 +1,1 @@
+chain6 was launched from a shell that had sourced host.sh, so it inherited that shell's B580_TOP and the guard took the chain's own test processes for foreign ones (rc 76 in every run, nothing measured). Relaunched with B580_TOP unset.

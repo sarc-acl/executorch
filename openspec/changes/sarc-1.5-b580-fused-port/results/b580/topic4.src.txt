@@ -1,0 +1,17 @@
+tag=topic4
+commit=1fdab2f8cba100aaedc44da586f1aae90b1d8bb9
+tree=a8bdc3bb7675a139cb680c8bcaf4edd2e7d1e41b
+subject=[SARC][dev] B580 fused port: multi-subgroup variants of the fused kernel (each subgroup owns part of the score columns and of the accumulator's head_dim; workgroup barriers), after the compiler statistics showed spills in every variant and shared-memory accumulators proved slower; chain 5
+requested=1fdab2f8cba100aaedc44da586f1aae90b1d8bb9 parent_commit=51d9d757f
+export_manifest=31 trees sha256=7602361559b2f7a28b3a91c568f9aaf3e6b83d4b2e3e4ad500a50fbb3a27ae47
+image=localhost/et-vk-build:rocky10 9d912c7c4cedab746a9b795b0beb26932369d5f6da287a514f8d18483dee2fe4
+glslc=shaderc v2023.8 2024-01-03spirv-tools v2025.4 2025-09-22glslang 73743588fe9c39f2f1c780a087d94afac691a189 Target: SPIR-V 1.0 
+start=2026-10-08T22:30:30Z
+main_rc=0
+traced_rc=0
+golden_rc=0 (spirv golden: PASS (53 shipped variants))
+f9a813916197362d6cc61fee00db2caf79b25acbd00f840f190d82e9ee046009  /mnt/linux-share/hmz-campaigns/b580-fused/.artifacts/build/topic4/llama/examples/models/llama/llama_main
+829d4e33ef0a079d6bc4a1463758e471b59a53d059f51772671c9133428c9dba  /mnt/linux-share/hmz-campaigns/b580-fused/.artifacts/build/topic4/tests/test_llama_microbench
+71bd69d77fb411867d72416041af61bb3ba47ee5baa710ad6b9e069f0b8921d9  /mnt/linux-share/hmz-campaigns/b580-fused/.artifacts/build/topic4-traced/llama/examples/models/llama/llama_main
+end=2026-10-08T22:40:25Z
+BUILD_BOTH_OK

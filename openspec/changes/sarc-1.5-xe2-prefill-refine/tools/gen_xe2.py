@@ -744,6 +744,12 @@ ORDER_TILES = [(128, 128, 64, 8, 4)]            # the tiles that get the parts: 
 ORDER = ["i", 10, 13, 16, 21, 26]               # parts: "i" and nb_max values (B580: 13 +- ; B70: 21 +-)
 if "order" in OPTS: ORDER = [x if x == "i" else int(x) for x in OPTS["order"].split(",") if x]
 assert all(x == "i" or (isinstance(x, int) and x >= 1) for x in ORDER), ORDER
+# Per-shape profiles "<prefix>-p<nb_max>": the blocked kernel n<nb_max> for the shapes whose weight tensor
+# (K x N x 4 bit) has at least <MB> x 10^6 bytes, the prologue alone (i) for every other shape. (order-2 / b580,
+# A2: the block computation costs 1 to 5.5 % on cached and one-block shapes; n13 gains 1.6 to 9 % on the 12.6 MB
+# and 29.4 MB tensors.) Generated only if both parts are in ORDER. (nb_max, MB)
+ORDER_MIX = [(13, 12)]
+ORDER_MIX = [(nb, mb) for nb, mb in ORDER_MIX if "i" in ORDER and nb in ORDER]
 def order_sfx(x): return "i" if x == "i" else f"n{x}"
 # (profile prefix, preferences before the 8da4w kernel, fused attention pair of b580-fused1)
 ORDER_PROFILES = [
@@ -1069,8 +1075,11 @@ t = block(t, PB, PE, profs, "};\nconst Profile* requested_profile() {")
 if ORDER:
     # workgroup-order profiles: <prefix>-<part> = the prefix's base profile with the xe2bto kernel of that part
     # for every 8da4w shape. Own blocks, after the b580 blocks (they use the b580 predicates and the fused pair).
-    op = "// Workgroup-order profiles (tools/gen_xe2.py, ORDER_PROFILES): the base profile with the 8da4w kernel\n// replaced by its xe2bto twin (part i: remap prologue alone; n<nb_max>: blocked order).\n"; ol = ""; fused = []
+    op = "// Workgroup-order profiles (tools/gen_xe2.py, ORDER_PROFILES): the base profile with the 8da4w kernel\n// replaced by its xe2bto twin (part i: remap prologue alone; n<nb_max>: blocked order;\n// p<nb_max>: n<nb_max> for the large weight tensors, i for every other shape).\n"; ol = ""; fused = []
     fused_b70 = []
+    for mb in sorted({mb for _, mb in ORDER_MIX}):
+        op += (f"// 8da4w linear: a weight tensor (K x N x 4 bit) of at least {mb} x 10^6 bytes.\n"
+               f"bool xe2_order_w{mb}(const ShapeInfo& s) {{\n  return s.K * s.N >= {mb * 2000000};\n}}\n")
     for prefix, before, fz, *after in ORDER_PROFILES:
         after = after[0] if after else []
         if fz is True and "kFusedB580Pair" not in t: continue   # a tree without the B580 fused-port blocks (the B70 campaign's): no b580 twin
@@ -1080,6 +1089,12 @@ if ORDER:
                 ident = "k" + prefix.title().replace("-", "") + "_" + order_sfx(x)
                 op += f"const Preference {ident}[] = {{\n" + "".join(f'    {{Op::{o_}, "{t_}", {pr}}},\n' for o_, t_, pr in before + [("kDq8caLinear", "xe2bto_" + tok(m, n, k, sx, sy, order_sfx(x)), "nullptr")] + after) + "};\n"
                 ol += f'    {{"{prefix}-{order_sfx(x)}", {ident}, sizeof({ident}) / sizeof(Preference)}},\n'
+        for m, n, k, sx, sy in ORDER_TILES:
+            for nb, mb in (ORDER_MIX if fz != "b70" else []):
+                ident = "k" + prefix.title().replace("-", "") + f"_p{nb}"
+                op += f"const Preference {ident}[] = {{\n" + "".join(f'    {{Op::{o_}, "{t_}", {pr}}},\n' for o_, t_, pr in before + [
+                    ("kDq8caLinear", "xe2bto_" + tok(m, n, k, sx, sy, f"n{nb}"), f"xe2_order_w{mb}"), ("kDq8caLinear", "xe2bto_" + tok(m, n, k, sx, sy, "i"), "nullptr")]) + "};\n"
+                ol += f'    {{"{prefix}-p{nb}", {ident}, sizeof({ident}) / sizeof(Preference)}},\n'
         if fz is True: fused.append(prefix)
         if fz == "b70":
             fused_b70.append(prefix)

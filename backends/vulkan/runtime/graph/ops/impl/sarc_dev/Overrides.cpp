@@ -1590,9 +1590,190 @@ Override& fused_b70() {
   return fused;
 }
 // b70-fused end
+// b580 begin: Arc B580 profiles (openspec/changes/sarc-1.5-b580-prefill-refine, tools/gen_b580.py)
+// Single-kernel screening profiles and the b580-refineN candidates. They take effect on the Arc B580 only
+// (SDPA base rows of impl/sarc_dev/B580Sdpa.cpp, ET_VK_SARC_UNVERIFIED=1).
+// attn*V: ShapeInfo::N is head_dim.
+bool b580_head_dim_128(const ShapeInfo& s) {
+  return s.N >= 128;
+}
+// QK^T: ShapeInfo::K is head_dim.
+bool b580_qk_head_dim_128(const ShapeInfo& s) {
+  return s.K >= 128;
+}
+const Preference kB580_qk_sweep_t128x64k32g44s16m8nf[] = {{Op::kSdpaQk, "sweep_t128x64k32g44s16m8nf", nullptr}};
+const Preference kB580_av_sweep_t64x64k32g44s16m8[] = {{Op::kSdpaAv, "sweep_t64x64k32g44s16m8", nullptr}};
+const Preference kB580_qk_sweep_t128x64k32g44s16m8[] = {{Op::kSdpaQk, "sweep_t128x64k32g44s16m8", nullptr}};
+const Preference kB580_qk_sweep_t128x64k32g48s16m8nf[] = {{Op::kSdpaQk, "sweep_t128x64k32g48s16m8nf", nullptr}};
+const Preference kB580_qk_sweep_t128x64k32g24s16m8nf[] = {{Op::kSdpaQk, "sweep_t128x64k32g24s16m8nf", nullptr}};
+const Preference kB580_qk_sweep_t64x64k32g44s16m8nf[] = {{Op::kSdpaQk, "sweep_t64x64k32g44s16m8nf", nullptr}};
+const Preference kB580_qk_sweep_t64x64k32g24s16m8nf[] = {{Op::kSdpaQk, "sweep_t64x64k32g24s16m8nf", nullptr}};
+const Preference kB580_qk_sweep_t64x128k32g44s16m8nf[] = {{Op::kSdpaQk, "sweep_t64x128k32g44s16m8nf", nullptr}};
+const Preference kB580_qk_sweep_t64x128k32g84s16m8nf[] = {{Op::kSdpaQk, "sweep_t64x128k32g84s16m8nf", nullptr}};
+const Preference kB580_qk_pk_t128x64k32g44s16m8nf[] = {{Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr}};
+const Preference kB580_qk_pk_t128x64k64g44s16m8nf[] = {{Op::kSdpaQk, "pk_t128x64k64g44s16m8nf", nullptr}};
+const Preference kB580_qk_pk_t128x64k32g48s16m8nf[] = {{Op::kSdpaQk, "pk_t128x64k32g48s16m8nf", nullptr}};
+const Preference kB580_qk_pk_t128x64k32g24s16m8nf[] = {{Op::kSdpaQk, "pk_t128x64k32g24s16m8nf", nullptr}};
+const Preference kB580_qk_pk_t64x64k32g44s16m8nf[] = {{Op::kSdpaQk, "pk_t64x64k32g44s16m8nf", nullptr}};
+const Preference kB580_qk_pk_t64x64k64g44s16m8nf[] = {{Op::kSdpaQk, "pk_t64x64k64g44s16m8nf", nullptr}};
+const Preference kB580_qk_pk_t64x128k32g44s16m8nf[] = {{Op::kSdpaQk, "pk_t64x128k32g44s16m8nf", nullptr}};
+const Preference kB580_qk_pk_t64x128k32g84s16m8nf[] = {{Op::kSdpaQk, "pk_t64x128k32g84s16m8nf", nullptr}};
+const Preference kB580_av_ml_t64x64k32g44s16m8[] = {{Op::kSdpaAv, "ml_t64x64k32g44s16m8", nullptr}};
+const Preference kB580_av_ml_t64x64k32g24s16m8[] = {{Op::kSdpaAv, "ml_t64x64k32g24s16m8", nullptr}};
+const Preference kB580_av_ml_t64x64k32g48s16m8[] = {{Op::kSdpaAv, "ml_t64x64k32g48s16m8", nullptr}};
+const Preference kB580_av_ml_t128x64k32g44s16m8[] = {{Op::kSdpaAv, "ml_t128x64k32g44s16m8", nullptr}};
+const Preference kB580_av_ml_t128x64k32g48s16m8[] = {{Op::kSdpaAv, "ml_t128x64k32g48s16m8", nullptr}};
+const Preference kB580_av_ml_t64x128k32g44s16m8[] = {{Op::kSdpaAv, "ml_t64x128k32g44s16m8", nullptr}};
+const Preference kB580_av_ml_t64x128k32g84s16m8[] = {{Op::kSdpaAv, "ml_t64x128k32g84s16m8", nullptr}};
+const Preference kB580_av_ml_t128x128k32g48s16m8[] = {{Op::kSdpaAv, "ml_t128x128k32g48s16m8", nullptr}};
+const Preference kB580_av_ml_t128x128k32g88s16m8[] = {{Op::kSdpaAv, "ml_t128x128k32g88s16m8", nullptr}};
+const Preference kB580_av_ml_t32x64k32g42s16m8[] = {{Op::kSdpaAv, "ml_t32x64k32g42s16m8", nullptr}};
+const Preference kB580_qk_xe2_t128x64k32g44s16m8nf[] = {{Op::kSdpaQk, "xe2_t128x64k32g44s16m8nf", nullptr}};
+const Preference kB580_qk_xe2_t128x64k32g48s16m8nf[] = {{Op::kSdpaQk, "xe2_t128x64k32g48s16m8nf", nullptr}};
+const Preference kB580_qk_xe2_t128x64k32g24s16m8nf[] = {{Op::kSdpaQk, "xe2_t128x64k32g24s16m8nf", nullptr}};
+const Preference kB580_qk_xe2_t128x64k64g44s16m8nf[] = {{Op::kSdpaQk, "xe2_t128x64k64g44s16m8nf", nullptr}};
+const Preference kB580_qk_xe2_t64x64k32g44s16m8nf[] = {{Op::kSdpaQk, "xe2_t64x64k32g44s16m8nf", nullptr}};
+const Preference kB580_qk_xe2_t64x64k32g24s16m8nf[] = {{Op::kSdpaQk, "xe2_t64x64k32g24s16m8nf", nullptr}};
+const Preference kB580_qk_xe2_t64x64k64g44s16m8nf[] = {{Op::kSdpaQk, "xe2_t64x64k64g44s16m8nf", nullptr}};
+const Preference kB580_qk_xe2_t64x128k32g44s16m8nf[] = {{Op::kSdpaQk, "xe2_t64x128k32g44s16m8nf", nullptr}};
+const Preference kB580_qk_xe2_t64x128k32g84s16m8nf[] = {{Op::kSdpaQk, "xe2_t64x128k32g84s16m8nf", nullptr}};
+const Preference kB580_av_xe2_t64x64k32g44s16m8[] = {{Op::kSdpaAv, "xe2_t64x64k32g44s16m8", nullptr}};
+const Preference kB580_av_xe2_t64x64k32g24s16m8[] = {{Op::kSdpaAv, "xe2_t64x64k32g24s16m8", nullptr}};
+const Preference kB580_av_xe2_t64x64k32g48s16m8[] = {{Op::kSdpaAv, "xe2_t64x64k32g48s16m8", nullptr}};
+const Preference kB580_av_xe2_t128x64k32g44s16m8[] = {{Op::kSdpaAv, "xe2_t128x64k32g44s16m8", nullptr}};
+const Preference kB580_av_xe2_t128x64k32g48s16m8[] = {{Op::kSdpaAv, "xe2_t128x64k32g48s16m8", nullptr}};
+const Preference kB580_av_xe2_t64x128k32g44s16m8[] = {{Op::kSdpaAv, "xe2_t64x128k32g44s16m8", nullptr}};
+const Preference kB580_av_xe2_t64x128k32g84s16m8[] = {{Op::kSdpaAv, "xe2_t64x128k32g84s16m8", nullptr}};
+const Preference kB580_av_xe2_t128x128k32g48s16m8[] = {{Op::kSdpaAv, "xe2_t128x128k32g48s16m8", nullptr}};
+const Preference kB580_av_xe2_t128x128k32g88s16m8[] = {{Op::kSdpaAv, "xe2_t128x128k32g88s16m8", nullptr}};
+const Preference kB580_av_xe2_t32x64k32g42s16m8[] = {{Op::kSdpaAv, "xe2_t32x64k32g42s16m8", nullptr}};
+const Preference kB580_av_xe2_t128x64k32g24s16m8[] = {{Op::kSdpaAv, "xe2_t128x64k32g24s16m8", nullptr}};
+const Preference kB580_av_xe2_t256x64k32g48s16m8[] = {{Op::kSdpaAv, "xe2_t256x64k32g48s16m8", nullptr}};
+const Preference kB580_av_xe2_t256x64k32g44s16m8[] = {{Op::kSdpaAv, "xe2_t256x64k32g44s16m8", nullptr}};
+const Preference kB580_av_xe2_t128x128k32g44s16m8[] = {{Op::kSdpaAv, "xe2_t128x128k32g44s16m8", nullptr}};
+const Preference kB580_av_xe2_t256x128k32g48s16m8[] = {{Op::kSdpaAv, "xe2_t256x128k32g48s16m8", nullptr}};
+const Preference kB580_qk_xe2c_t128x64k32g44s16m8nf[] = {{Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", nullptr}};
+const Preference kB580_qk_xe2c_t128x64k32g24s16m8nf[] = {{Op::kSdpaQk, "xe2c_t128x64k32g24s16m8nf", nullptr}};
+const Preference kB580_qk_xe2c_t64x128k32g44s16m8nf[] = {{Op::kSdpaQk, "xe2c_t64x128k32g44s16m8nf", nullptr}};
+const Preference kB580_qk_xe2c_t64x64k32g44s16m8nf[] = {{Op::kSdpaQk, "xe2c_t64x64k32g44s16m8nf", nullptr}};
+const Preference kB580_qk_xe2c_t128x64k64g44s16m8nf[] = {{Op::kSdpaQk, "xe2c_t128x64k64g44s16m8nf", nullptr}};
+const Preference kB580_qk_xe2c_t64x128k32g42s16m8nf[] = {{Op::kSdpaQk, "xe2c_t64x128k32g42s16m8nf", nullptr}};
+const Preference kB580_qk_xe2c_t64x128k32g82s16m8nf[] = {{Op::kSdpaQk, "xe2c_t64x128k32g82s16m8nf", nullptr}};
+// candidate 0 = the B70's accepted xe2-refine1 kernels, selected for this card
+const Preference kB580_refine0[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+};
+// candidate 1 = refine0 + the balanced K = 64 8da4w tile with texel-wise weight staging (B580 screen 2: 1.31x at kernel level)
+const Preference kB580_refine1[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+};
+// the 8da4w tile of refine1 alone, on the release SDPA path
+const Preference kB580_dq_k64[] = {
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+};
+// candidate 2 = refine1 + the shipped 4w tile with the texture3d drain staged one band at a time (release body, CSH_BAND)
+const Preference kB580_refine2[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g44s16m8flib", nullptr},
+};
+// refine2 with the split-staging twin of the same tile (B580 screen 3, round 1: 1.17 to 1.22x per shape at kernel level)
+const Preference kB580_refine2x[] = {
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+    {Op::kQ4gswLinear, "xe2s_t128x128k16g44s16m8flib", nullptr},
+};
+// candidate 3 = refine1 with the column-major fragment-layout QK^T for head_dim 128 (B580 screen 1: 7 to 8 % faster than pk on 3B / 8B, under 3 % on 1B)
+const Preference kB580_refine3[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bt_t128x128k64g84s16m8", nullptr},
+};
+// b580 end
+// b580-fused begin: fused attention on the Arc B580 (openspec/changes/sarc-1.5-b580-fused-port)
+// A b580-fused profile is b580-refine3 for every call the fused kernel does not take, plus the fused
+// kernel variants below, one per head_dim (shader name after sarc_dev_b580_sdpa_fused_; "" = none).
+// b580-fused-<variant> are single-variant screening profiles.
+struct FusedB580 {
+  const char* profile;
+  const char* variants;
+};
+// b580-fused2 = b580-fused1 with the fp32 no-tail softmax of the RTX 4070 Ti SUPER campaign
+// (glsl/sarc_dev/sarc_sdpa_attn_weights_softmax_4070ti, variant 4070ti_nzf, through Override::softmax_variant)
+// for the calls the fused kernel does not take; b580-refine3-nzf is that softmax without the fused kernel.
+// Selected by screen5-select (3 rounds): 16 rows per workgroup; head_dim 64 in 4 subgroups with 64-column
+// blocks and the Q tiles in registers, head_dim 128 in 8 subgroups with 128-column blocks.
+const char kFusedB580Pair[] = "d64_t16x64s16m8g4roj,d128_t16x128s16m8g8oj";
+const FusedB580 kFusedB580[] = {
+    {"b580-fused1", kFusedB580Pair},
+    {"b580-fused2", kFusedB580Pair},
+    {"b580-fused-d64_t16x32s16m8ro", "d64_t16x32s16m8ro"},
+    {"b580-fused-d64_t16x32s16m8o", "d64_t16x32s16m8o"},
+    {"b580-fused-d64_t8x32s16m8ro", "d64_t8x32s16m8ro"},
+    {"b580-fused-d64_t16x64s16m8ro", "d64_t16x64s16m8ro"},
+    {"b580-fused-d64_t8x64s16m8ro", "d64_t8x64s16m8ro"},
+    {"b580-fused-d64_t16x32s16m8r", "d64_t16x32s16m8r"},
+    {"b580-fused-d64_t32x32s32m8ro", "d64_t32x32s32m8ro"},
+    {"b580-fused-d128_t16x64s16m8ro", "d128_t16x64s16m8ro"},
+    {"b580-fused-d128_t16x64s16m8o", "d128_t16x64s16m8o"},
+    {"b580-fused-d128_t8x64s16m8ro", "d128_t8x64s16m8ro"},
+    {"b580-fused-d128_t8x64s16m8o", "d128_t8x64s16m8o"},
+    {"b580-fused-d128_t16x32s16m8ro", "d128_t16x32s16m8ro"},
+    {"b580-fused-d128_t8x32s16m8ro", "d128_t8x32s16m8ro"},
+    {"b580-fused-d128_t16x64s16m8r", "d128_t16x64s16m8r"},
+    {"b580-fused-d128_t8x64s16m8r", "d128_t8x64s16m8r"},
+    {"b580-fused-d128_t16x64s32m8ro", "d128_t16x64s32m8ro"},
+    {"b580-fused-d64_t8x32s16m8roj", "d64_t8x32s16m8roj"},
+    {"b580-fused-d64_t16x32s16m8roj", "d64_t16x32s16m8roj"},
+    {"b580-fused-d64_t8x32s16m8roja", "d64_t8x32s16m8roja"},
+    {"b580-fused-d64_t16x32s16m8roja", "d64_t16x32s16m8roja"},
+    {"b580-fused-d64_t16x64s16m8roja", "d64_t16x64s16m8roja"},
+    {"b580-fused-d64_t16x32s16m8oa", "d64_t16x32s16m8oa"},
+    {"b580-fused-d128_t8x64s16m8roj", "d128_t8x64s16m8roj"},
+    {"b580-fused-d128_t8x64s16m8roja", "d128_t8x64s16m8roja"},
+    {"b580-fused-d128_t16x64s16m8roja", "d128_t16x64s16m8roja"},
+    {"b580-fused-d128_t8x64s16m8oa", "d128_t8x64s16m8oa"},
+    {"b580-fused-d128_t16x64s16m8oa", "d128_t16x64s16m8oa"},
+    {"b580-fused-d128_t8x32s16m8roja", "d128_t8x32s16m8roja"},
+    {"b580-fused-d128_t16x32s16m8roja", "d128_t16x32s16m8roja"},
+    {"b580-fused-d128_t8x64s16m8rja", "d128_t8x64s16m8rja"},
+    {"b580-fused-d128_t8x64s16m8g2oj", "d128_t8x64s16m8g2oj"},
+    {"b580-fused-d128_t8x64s16m8g2j", "d128_t8x64s16m8g2j"},
+    {"b580-fused-d128_t8x64s16m8g4roj", "d128_t8x64s16m8g4roj"},
+    {"b580-fused-d128_t8x64s16m8g4oj", "d128_t8x64s16m8g4oj"},
+    {"b580-fused-d128_t8x32s16m8g2oj", "d128_t8x32s16m8g2oj"},
+    {"b580-fused-d128_t16x64s16m8g4oj", "d128_t16x64s16m8g4oj"},
+    {"b580-fused-d64_t8x32s16m8g2roj", "d64_t8x32s16m8g2roj"},
+    {"b580-fused-d64_t16x32s16m8g2oj", "d64_t16x32s16m8g2oj"},
+    {"b580-fused-d64_t16x32s16m8g2roj", "d64_t16x32s16m8g2roj"},
+    {"b580-fused-d64_t16x64s16m8g4roj", "d64_t16x64s16m8g4roj"},
+    {"b580-fused-d64_t8x32s16m8oj", "d64_t8x32s16m8oj"},
+    {"b580-fused-d128_t16x128s16m8g8oj", "d128_t16x128s16m8g8oj"},
+    {"b580-fused-d128_t8x128s16m8g8roj", "d128_t8x128s16m8g8roj"},
+    {"b580-fused-d64_t16x64s16m8g4oj", "d64_t16x64s16m8g4oj"},
+    {"b580-fused-d64_t16x128s16m8g4roj", "d64_t16x128s16m8g4roj"},
+    {"b580-fused-d64_t8x64s16m8g4roj", "d64_t8x64s16m8g4roj"},
+};
+// The function pointers of impl/sarc_dev/b580/SdpaB580Fused.cpp, whichever static initializer runs first.
+Override& fused_b580() {
+  static Override fused;
+  return fused;
+}
+// b580-fused end
 // xe2-order begin: workgroup-order profiles (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)
 // Workgroup-order profiles (tools/gen_xe2.py, ORDER_PROFILES): the base profile with the 8da4w kernel
-// replaced by its xe2bto twin (part i: remap prologue alone; n<nb_max>: blocked order).
+// replaced by its xe2bto twin (part i: remap prologue alone; n<nb_max>: blocked order;
+// p<nb_max>: n<nb_max> for the large weight tensors, i for every other shape).
+// 8da4w linear: a weight tensor (K x N x 4 bit) of at least 12 x 10^6 bytes.
+bool xe2_order_w12(const ShapeInfo& s) {
+  return s.K * s.N >= 24000000;
+}
 const Preference kXe2Order_i[] = {
     {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
 };
@@ -1610,6 +1791,53 @@ const Preference kXe2Order_n21[] = {
 };
 const Preference kXe2Order_n26[] = {
     {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n26", nullptr},
+};
+const Preference kXe2Order_p13[] = {
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n13", xe2_order_w12},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+};
+const Preference kB580Fused1Order_i[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+};
+const Preference kB580Fused1Order_n10[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n10", nullptr},
+};
+const Preference kB580Fused1Order_n13[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n13", nullptr},
+};
+const Preference kB580Fused1Order_n16[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n16", nullptr},
+};
+const Preference kB580Fused1Order_n21[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n21", nullptr},
+};
+const Preference kB580Fused1Order_n26[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n26", nullptr},
+};
+const Preference kB580Fused1Order_p13[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n13", xe2_order_w12},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
 };
 const Preference kB70Fused1Order_i[] = {
     {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
@@ -1940,6 +2168,124 @@ const Profile kProfiles[] = {
     {"b70-fused-d128_t16x128s16m8g8oj", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
     {"b70-fused-d128_t16x64s16m8g4oj", kXe2_refine5, sizeof(kXe2_refine5) / sizeof(Preference)},
     // b70-fused end
+    // b580 begin: Arc B580 profiles (tools/gen_b580.py)
+    {"b580-qk-sweep-t128x64k32g44s16m8nf", kB580_qk_sweep_t128x64k32g44s16m8nf, 1},
+    {"b580-av-sweep-t64x64k32g44s16m8", kB580_av_sweep_t64x64k32g44s16m8, 1},
+    {"b580-qk-sweep-t128x64k32g44s16m8", kB580_qk_sweep_t128x64k32g44s16m8, 1},
+    {"b580-qk-sweep-t128x64k32g48s16m8nf", kB580_qk_sweep_t128x64k32g48s16m8nf, 1},
+    {"b580-qk-sweep-t128x64k32g24s16m8nf", kB580_qk_sweep_t128x64k32g24s16m8nf, 1},
+    {"b580-qk-sweep-t64x64k32g44s16m8nf", kB580_qk_sweep_t64x64k32g44s16m8nf, 1},
+    {"b580-qk-sweep-t64x64k32g24s16m8nf", kB580_qk_sweep_t64x64k32g24s16m8nf, 1},
+    {"b580-qk-sweep-t64x128k32g44s16m8nf", kB580_qk_sweep_t64x128k32g44s16m8nf, 1},
+    {"b580-qk-sweep-t64x128k32g84s16m8nf", kB580_qk_sweep_t64x128k32g84s16m8nf, 1},
+    {"b580-qk-pk-t128x64k32g44s16m8nf", kB580_qk_pk_t128x64k32g44s16m8nf, 1},
+    {"b580-qk-pk-t128x64k64g44s16m8nf", kB580_qk_pk_t128x64k64g44s16m8nf, 1},
+    {"b580-qk-pk-t128x64k32g48s16m8nf", kB580_qk_pk_t128x64k32g48s16m8nf, 1},
+    {"b580-qk-pk-t128x64k32g24s16m8nf", kB580_qk_pk_t128x64k32g24s16m8nf, 1},
+    {"b580-qk-pk-t64x64k32g44s16m8nf", kB580_qk_pk_t64x64k32g44s16m8nf, 1},
+    {"b580-qk-pk-t64x64k64g44s16m8nf", kB580_qk_pk_t64x64k64g44s16m8nf, 1},
+    {"b580-qk-pk-t64x128k32g44s16m8nf", kB580_qk_pk_t64x128k32g44s16m8nf, 1},
+    {"b580-qk-pk-t64x128k32g84s16m8nf", kB580_qk_pk_t64x128k32g84s16m8nf, 1},
+    {"b580-av-ml-t64x64k32g44s16m8", kB580_av_ml_t64x64k32g44s16m8, 1},
+    {"b580-av-ml-t64x64k32g24s16m8", kB580_av_ml_t64x64k32g24s16m8, 1},
+    {"b580-av-ml-t64x64k32g48s16m8", kB580_av_ml_t64x64k32g48s16m8, 1},
+    {"b580-av-ml-t128x64k32g44s16m8", kB580_av_ml_t128x64k32g44s16m8, 1},
+    {"b580-av-ml-t128x64k32g48s16m8", kB580_av_ml_t128x64k32g48s16m8, 1},
+    {"b580-av-ml-t64x128k32g44s16m8", kB580_av_ml_t64x128k32g44s16m8, 1},
+    {"b580-av-ml-t64x128k32g84s16m8", kB580_av_ml_t64x128k32g84s16m8, 1},
+    {"b580-av-ml-t128x128k32g48s16m8", kB580_av_ml_t128x128k32g48s16m8, 1},
+    {"b580-av-ml-t128x128k32g88s16m8", kB580_av_ml_t128x128k32g88s16m8, 1},
+    {"b580-av-ml-t32x64k32g42s16m8", kB580_av_ml_t32x64k32g42s16m8, 1},
+    {"b580-qk-xe2-t128x64k32g44s16m8nf", kB580_qk_xe2_t128x64k32g44s16m8nf, 1},
+    {"b580-qk-xe2-t128x64k32g48s16m8nf", kB580_qk_xe2_t128x64k32g48s16m8nf, 1},
+    {"b580-qk-xe2-t128x64k32g24s16m8nf", kB580_qk_xe2_t128x64k32g24s16m8nf, 1},
+    {"b580-qk-xe2-t128x64k64g44s16m8nf", kB580_qk_xe2_t128x64k64g44s16m8nf, 1},
+    {"b580-qk-xe2-t64x64k32g44s16m8nf", kB580_qk_xe2_t64x64k32g44s16m8nf, 1},
+    {"b580-qk-xe2-t64x64k32g24s16m8nf", kB580_qk_xe2_t64x64k32g24s16m8nf, 1},
+    {"b580-qk-xe2-t64x64k64g44s16m8nf", kB580_qk_xe2_t64x64k64g44s16m8nf, 1},
+    {"b580-qk-xe2-t64x128k32g44s16m8nf", kB580_qk_xe2_t64x128k32g44s16m8nf, 1},
+    {"b580-qk-xe2-t64x128k32g84s16m8nf", kB580_qk_xe2_t64x128k32g84s16m8nf, 1},
+    {"b580-av-xe2-t64x64k32g44s16m8", kB580_av_xe2_t64x64k32g44s16m8, 1},
+    {"b580-av-xe2-t64x64k32g24s16m8", kB580_av_xe2_t64x64k32g24s16m8, 1},
+    {"b580-av-xe2-t64x64k32g48s16m8", kB580_av_xe2_t64x64k32g48s16m8, 1},
+    {"b580-av-xe2-t128x64k32g44s16m8", kB580_av_xe2_t128x64k32g44s16m8, 1},
+    {"b580-av-xe2-t128x64k32g48s16m8", kB580_av_xe2_t128x64k32g48s16m8, 1},
+    {"b580-av-xe2-t64x128k32g44s16m8", kB580_av_xe2_t64x128k32g44s16m8, 1},
+    {"b580-av-xe2-t64x128k32g84s16m8", kB580_av_xe2_t64x128k32g84s16m8, 1},
+    {"b580-av-xe2-t128x128k32g48s16m8", kB580_av_xe2_t128x128k32g48s16m8, 1},
+    {"b580-av-xe2-t128x128k32g88s16m8", kB580_av_xe2_t128x128k32g88s16m8, 1},
+    {"b580-av-xe2-t32x64k32g42s16m8", kB580_av_xe2_t32x64k32g42s16m8, 1},
+    {"b580-av-xe2-t128x64k32g24s16m8", kB580_av_xe2_t128x64k32g24s16m8, 1},
+    {"b580-av-xe2-t256x64k32g48s16m8", kB580_av_xe2_t256x64k32g48s16m8, 1},
+    {"b580-av-xe2-t256x64k32g44s16m8", kB580_av_xe2_t256x64k32g44s16m8, 1},
+    {"b580-av-xe2-t128x128k32g44s16m8", kB580_av_xe2_t128x128k32g44s16m8, 1},
+    {"b580-av-xe2-t256x128k32g48s16m8", kB580_av_xe2_t256x128k32g48s16m8, 1},
+    {"b580-qk-xe2c-t128x64k32g44s16m8nf", kB580_qk_xe2c_t128x64k32g44s16m8nf, 1},
+    {"b580-qk-xe2c-t128x64k32g24s16m8nf", kB580_qk_xe2c_t128x64k32g24s16m8nf, 1},
+    {"b580-qk-xe2c-t64x128k32g44s16m8nf", kB580_qk_xe2c_t64x128k32g44s16m8nf, 1},
+    {"b580-qk-xe2c-t64x64k32g44s16m8nf", kB580_qk_xe2c_t64x64k32g44s16m8nf, 1},
+    {"b580-qk-xe2c-t128x64k64g44s16m8nf", kB580_qk_xe2c_t128x64k64g44s16m8nf, 1},
+    {"b580-qk-xe2c-t64x128k32g42s16m8nf", kB580_qk_xe2c_t64x128k32g42s16m8nf, 1},
+    {"b580-qk-xe2c-t64x128k32g82s16m8nf", kB580_qk_xe2c_t64x128k32g82s16m8nf, 1},
+    {"b580-sdpa0", nullptr, 0},
+    {"b580-refine0", kB580_refine0, sizeof(kB580_refine0) / sizeof(Preference)},
+    {"b580-refine1", kB580_refine1, sizeof(kB580_refine1) / sizeof(Preference)},
+    {"b580-dq-k64", kB580_dq_k64, sizeof(kB580_dq_k64) / sizeof(Preference)},
+    {"b580-refine2", kB580_refine2, sizeof(kB580_refine2) / sizeof(Preference)},
+    {"b580-refine2x", kB580_refine2x, sizeof(kB580_refine2x) / sizeof(Preference)},
+    {"b580-refine3", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    // b580 end
+    // b580-fused begin
+    {"b580-fused1", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused2", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-refine3-nzf", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x32s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x32s16m8o", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t8x32s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x64s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t8x64s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x32s16m8r", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t32x32s32m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x64s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x64s16m8o", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x64s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x64s16m8o", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x32s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x32s16m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x64s16m8r", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x64s16m8r", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x64s32m8ro", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t8x32s16m8roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x32s16m8roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t8x32s16m8roja", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x32s16m8roja", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x64s16m8roja", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x32s16m8oa", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x64s16m8roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x64s16m8roja", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x64s16m8roja", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x64s16m8oa", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x64s16m8oa", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x32s16m8roja", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x32s16m8roja", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x64s16m8rja", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x64s16m8g2oj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x64s16m8g2j", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x64s16m8g4roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x64s16m8g4oj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x32s16m8g2oj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x64s16m8g4oj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t8x32s16m8g2roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x32s16m8g2oj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x32s16m8g2roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x64s16m8g4roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t8x32s16m8oj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t16x128s16m8g8oj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d128_t8x128s16m8g8roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x64s16m8g4oj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t16x128s16m8g4roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    {"b580-fused-d64_t8x64s16m8g4roj", kB580_refine3, sizeof(kB580_refine3) / sizeof(Preference)},
+    // b580-fused end
     // xe2-order begin: workgroup-order profiles (tools/gen_xe2.py)
     {"xe2-order-i", kXe2Order_i, sizeof(kXe2Order_i) / sizeof(Preference)},
     {"xe2-order-n10", kXe2Order_n10, sizeof(kXe2Order_n10) / sizeof(Preference)},
@@ -1947,6 +2293,14 @@ const Profile kProfiles[] = {
     {"xe2-order-n16", kXe2Order_n16, sizeof(kXe2Order_n16) / sizeof(Preference)},
     {"xe2-order-n21", kXe2Order_n21, sizeof(kXe2Order_n21) / sizeof(Preference)},
     {"xe2-order-n26", kXe2Order_n26, sizeof(kXe2Order_n26) / sizeof(Preference)},
+    {"xe2-order-p13", kXe2Order_p13, sizeof(kXe2Order_p13) / sizeof(Preference)},
+    {"b580-fused1-order-i", kB580Fused1Order_i, sizeof(kB580Fused1Order_i) / sizeof(Preference)},
+    {"b580-fused1-order-n10", kB580Fused1Order_n10, sizeof(kB580Fused1Order_n10) / sizeof(Preference)},
+    {"b580-fused1-order-n13", kB580Fused1Order_n13, sizeof(kB580Fused1Order_n13) / sizeof(Preference)},
+    {"b580-fused1-order-n16", kB580Fused1Order_n16, sizeof(kB580Fused1Order_n16) / sizeof(Preference)},
+    {"b580-fused1-order-n21", kB580Fused1Order_n21, sizeof(kB580Fused1Order_n21) / sizeof(Preference)},
+    {"b580-fused1-order-n26", kB580Fused1Order_n26, sizeof(kB580Fused1Order_n26) / sizeof(Preference)},
+    {"b580-fused1-order-p13", kB580Fused1Order_p13, sizeof(kB580Fused1Order_p13) / sizeof(Preference)},
     {"b70-fused1-order-i", kB70Fused1Order_i, sizeof(kB70Fused1Order_i) / sizeof(Preference)},
     {"b70-fused1-order-n10", kB70Fused1Order_n10, sizeof(kB70Fused1Order_n10) / sizeof(Preference)},
     {"b70-fused1-order-n13", kB70Fused1Order_n13, sizeof(kB70Fused1Order_n13) / sizeof(Preference)},
@@ -1992,6 +2346,30 @@ const char* fused_variants_b70() {
   return "";
 }
 // b70-fused end
+// b580-fused begin
+const char* fused_variants_b580() {
+  const Profile* p = requested_profile();
+  for (const FusedB580& f : kFusedB580) {
+    if (p != nullptr && std::strcmp(p->name, f.profile) == 0) {
+      return f.variants;
+    }
+  }
+  // xe2-order begin: the workgroup-order twins of b580-fused1 keep its fused attention pair (tools/gen_xe2.py)
+  if (p != nullptr && std::strncmp(p->name, "b580-fused1-order-", 18) == 0) {
+    return kFusedB580Pair;
+  }
+  // xe2-order end
+  return "";
+}
+const char* softmax_variant_b580() {
+  const Profile* p = requested_profile();
+  if (p != nullptr && (std::strcmp(p->name, "b580-fused2") == 0 ||
+                       std::strcmp(p->name, "b580-refine3-nzf") == 0)) {
+    return "4070ti_nzf";
+  }
+  return nullptr;
+}
+// b580-fused end
 // >>> 4070ti softmax-variant
 // RTX 4070 Ti SUPER: the refine profiles that carry the SDPA kernels run the
 // fp32 softmax without the full zero tail
@@ -2116,6 +2494,16 @@ struct Registrar {
       o.sdpa_fused_serves = fused_4070ti().sdpa_fused_serves;
     }
     // <<< 4070ti-fused override
+    // b580-fused begin
+    // (Merge: assigned only when a B580 profile names one; the 4070ti block above assigns unconditionally.)
+    if (softmax_variant_b580() != nullptr) {
+      o.softmax_variant = softmax_variant_b580();
+    }
+    if (*fused_variants_b580() != 0) {
+      o.sdpa_fused_add = fused_b580().sdpa_fused_add;
+      o.sdpa_fused_serves = fused_b580().sdpa_fused_serves;
+    }
+    // b580-fused end
     // >>> orin softmax-variant
     // ET_VK_SARC_SOFTMAX_VARIANT=<suffix>: a dev-zone variant of the SARC softmax, e.g. 4070ti_nzf
     // (fp32 reduction, no zero tail). Through Override::softmax_variant, the release hook of the owner
@@ -2158,23 +2546,27 @@ struct Registrar {
 
 } // namespace
 
-// b70-fused begin: called by impl/sarc_dev/b580/SdpaB580Fused.cpp (the B580's node, used unchanged)
+// b580-fused, b70-fused begin: called by impl/sarc_dev/b580/SdpaB580Fused.cpp, the node both cards use.
+// (Merge of the two branches' definitions: a profile is of one card, so at most one list is non-empty.)
 const char* sdpa_fused_variants_b580() {
-  return fused_variants_b70();
+  const char* v = fused_variants_b580();
+  return *v != 0 ? v : fused_variants_b70();
 }
 void register_sdpa_fused_b580(
     void (*add)(ComputeGraph&, const std::vector<int32_t>&),
     bool (*serves)(ComputeGraph*, const std::vector<int32_t>&)) {
+  fused_b580().sdpa_fused_add = add;
+  fused_b580().sdpa_fused_serves = serves;
   fused_b70().sdpa_fused_add = add;
   fused_b70().sdpa_fused_serves = serves;
-  if (*fused_variants_b70() != 0) {
+  if (*sdpa_fused_variants_b580() != 0) {
     Override o = get_override();
     o.sdpa_fused_add = add;
     o.sdpa_fused_serves = serves;
     set_override(o);
   }
 }
-// b70-fused end
+// b580-fused, b70-fused end
 // >>> 4070ti-fused entry
 const char* sdpa_fused_variants_4070ti() {
   const char* v = fused_variants_4070ti();

@@ -1,0 +1,6 @@
+# Build env for ExecuTorch Vulkan microbench binaries that run on glibc >= 2.39 hosts
+# (rocky-ryzen is Rocky 10.2 / glibc 2.39; fedora hosts are glibc 2.43). One glslc for all targets.
+FROM docker.io/rockylinux/rockylinux:10
+RUN dnf -y install epel-release && dnf -y --enablerepo=crb install gcc-c++ cmake git python3 python3-pyyaml glslc vulkan-headers vulkan-loader-devel which findutils && dnf clean all
+# torchgen (from torch) + codegen deps for portable_ops_lib; `executorch` itself comes from PYTHONPATH (source tree).
+RUN dnf -y install python3-pip && python3 -m pip install --no-cache-dir "torch==2.13.0" --index-url https://download.pytorch.org/whl/cpu && python3 -m pip install --no-cache-dir pyyaml ruamel.yaml typing_extensions
