@@ -21,7 +21,7 @@ goes in with the merge; `topic/sarc-pinned-glslc` is left out for now.
 | M2d M51 | open; the final profile is now `c8`, 8B was run under N10 with the node-threshold hook |
 | M2e full-subgroups flag | merged (one commit after the branch merges). No effect on the five devices on our side (2026-10-10 / 11); the three company-side devices measure it on the merged branch |
 | M2f decode with the fused node | not started; before promotion |
-| M3 dev-zone merge | done, see below |
+| M3 dev-zone merge | done and checked on the five devices on our side, see below |
 | M4 promotion | not started |
 | M5 independent review | not started |
 | M6 stale documents | `sarc/README.md` and the `sarc-1.5-7900xtx-4w` proposal updated with the merge |
@@ -218,6 +218,32 @@ What was not a mechanical union:
 
 Checked after every merge: `sarc/tools/check.sh --no-build` (release selection 1240 checks, 31 rows, 0
 candidates, as on `dev/1.5`). Container builds at merges 9 and 10.
+
+**Defect found after the merge and fixed (`744429583d`).** The 780M family's registrar installed its fused node
+into the override unconditionally, which on the merged tree replaced another device's node depending on the order
+of the static initializers. On the RTX 4070 Ti SUPER `4070ti-fused1` then ran the split SDPA path, 5.6 to 16 %
+slower. The 780M node is now installed only when a 780m profile or `ET_VK_SARC_780M_SDPA_FUSED` asks for it.
+
+**Device check of the merged head (`744429583d`), 2026-10-14.** On each device on our side, the merged build
+against the campaign's own final build (the F1 build where one existed), the device's final profile in both
+arms. Rule fixed before timing: every cell within +-2 %, geometric mean within +-1 %, every next token the same.
+Kernel identity first (dispatched kernel per linear case, SDPA kernels, SDPA correctness verdicts), then the
+campaign's own session tool (`e2e5.sh`, its lock and clock floor, 5 reps, six cells).
+
+| device | old arm | kernels and verdicts | geometric mean | cells | next token |
+|---|---|---|---|---|---|
+| Arc B580 | round-3 gate build (no F1) | identical (48 linear cases, SDPA) | +0.04 % | -0.46 to +0.71 % | same (simple A/B, see note) |
+| Arc Pro B70 | round-3 gate build `e8c0cb1ccf` (no F1) | identical | +0.04 % | -0.24 to +0.49 % | 18/18 same |
+| Radeon 780M | F1 build `433b072c13` | identical (92 linear, 36 SDPA) | -0.07 % | -0.34 to +0.09 % | 18/18 same |
+| RTX 4070 Ti SUPER | F1 build `4a3c33d727` | identical | +0.18 % | -2.00 to +2.44 % | 24/24 same |
+| Jetson Orin Nano | F1 build `0f038a736` (cross) | identical; SPIR-V of all 1620 old files byte-identical | +0.02 % | 0.00 to +0.07 % | 24/24 same |
+
+Notes: the B580 was measured with a plain interleaved llama_main A/B (5 runs per arm and cell, no clock or
+foreign-load validity checks) on the build before the fix, which does not change the B580's path; a repeat on the
+fixed build was discarded because the workstation was under heavy unrelated load. On the RTX 4070 Ti SUPER the
+3B 8da4w cell reads +2.44 %, outside the band on the fast side; prefill times there are whole milliseconds and the
+new arm's median equals the old build's median in two earlier sessions, so the old arm read low in this one.
+The company-side devices (RX 7600, RX 7900 XTX, M51) have not run the check.
 
 ### M4. Decide what is promoted, and promote it **[owner]**
 
