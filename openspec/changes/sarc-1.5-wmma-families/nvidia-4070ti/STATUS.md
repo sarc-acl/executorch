@@ -1,6 +1,6 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-14 19:52 UTC
+Updated: 2026-10-14 20:01 UTC
 
 Stage: WAITING FOR OWNER. Preflight independently reviewed; no build or model GPU workload started.
 Running: nothing. Detached pinned submodule preparation finished rc=0;
@@ -60,8 +60,9 @@ Pre-build metadata prerequisite: the task requires model-fact validation before 
 first build, and N7 specifies the ExecuTorch runtime constant method. The fresh
 checkout has no built runtime or Python ExecuTorch/torch bindings. Source-schema
 inspection confirms all six files have zero-instruction constant methods returning
-context/sequence length 2560, linear group size 128 and 4-bit/group-32 embeddings;
-this is static file evidence, not execution by the runtime.
+context/sequence length 2560. Linear group size 128 and 4-bit/group-32 embedding
+facts come from the serialized delegate graph, not those constant-method returns.
+This is static file evidence, not execution by the runtime.
 
 May the initial pinned, exported-commit build proceed using that static preflight
 validation, with a CPU runtime-method check required before any model GPU work?
