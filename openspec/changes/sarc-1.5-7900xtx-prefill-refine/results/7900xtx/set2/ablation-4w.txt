@@ -1,0 +1,8 @@
+4w ablation twins of the table kernel (build c9): worst-round ratio = incumbent time / twin time per shape (incumbent: the table kernel, the 1B shapes w2 / wk_wv / wq_wo: the refine5 pick); min / median / max over twelve shapes
+ablN (MEASUREMENT ONLY, wrong results by design): 4 = the shared stores of the next chunk, 16 = the barrier of the chunk loop, 20 = both; bp8 = the control copy
+X_t256x128k32g24s32f32cbtbp8abl20                  0.712 1.090 1.170
+X_t256x128k32g24s32f32cbtbp8abl16                  0.774 1.069 1.143
+X_t256x128k32g24s32f32cbtbp8abl4                   0.640 1.025 1.080
+X_t256x128k32g24s32f32cbtbp8                       0.689 0.986 0.997
+table                                              0.689 0.868 0.957
+sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32cbt 0.836 0.866 0.908

@@ -1,0 +1,15 @@
+#!/bin/bash
+# screen.sh <out name> <build tag> <scheme> <reps> <token...>: kernel-level screen with test_llama_microbench
+# (--linear --regime=prefill, texture3d = the model path, all three models). Token "base" = no override (the
+# release 780M row). Each token is run <reps> times, tokens interleaved; JSON per run in raw/<out name>/.
+# This is a screen, not a gate: no correctness check here.
+A=$HOME/hmz-sarc/.artifacts/780m-prefill-refine-2026-10-03; O=$A/raw/$1; B=$A/build/$2/tests/test_llama_microbench; Q=$3; R=$4; shift 4
+mkdir -p $O; VAR=ET_VK_SARC_Q4GSW_VARIANT; [[ $Q == 8da4w ]] && VAR=ET_VK_SARC_DQ8CA_VARIANT
+sha256sum $B > $O/env.txt; date -u >> $O/env.txt
+for ((r = 1; r <= R; r++)); do for t in "$@"; do
+  E=(); [[ $t != base ]] && E=("$VAR=$t")
+  env "${E[@]}" $A/tools/gl.sh $B --linear --regime=prefill --scheme=$Q --storage=texture3d --skip-correctness \
+    --json-out=$O/$Q-$t-r$r.json > $O/$Q-$t-r$r.log 2>&1
+  echo "$Q $t r$r rc=$? temp=$(( $(cat /sys/class/hwmon/hwmon2/temp1_input) / 1000 )) $(grep -o 'sarc_[a-z0-9_]*\|linear_[a-z0-9_]*tiled[a-z0-9_]*' $O/$Q-$t-r$r.log | sort | uniq -c | sort -rn | head -2 | tr '\n' ' ')"
+done; done
+date -u >> $O/env.txt; echo SCREEN_DONE >> $O/env.txt

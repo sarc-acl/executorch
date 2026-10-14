@@ -1548,3 +1548,314 @@ const char* sdpa_fused_variants_m51() {
 } // namespace sarc
 } // namespace vkcompute
 // --- m51 end ---
+
+// --- 7900xtx begin (openspec/changes/sarc-1.5-7900xtx-prefill-refine, 2026-10-08) ---
+// ET_VK_SARC_7900XTX_PROFILE=<name>: the RX 7900 XTX campaign's candidates, on top of the selection above: a linear
+// kernel per layer shape among the registered candidates, and the softmax variant. A shape whose entry does not apply
+// or whose kernel does not fit keeps the earlier selection. The shapes are the twelve real prefill shapes (M = 2048);
+// N and K identify a layer of one model. The picks are the complete 3-round kernel screens of 2026-10-08
+// (results/7900xtx/screens/): a kernel replaces the table kernel of a shape only if at least 3 % faster in every round.
+//   7900xtx-refine1: the softmax variant only (the 780m_r3 of ET_VK_SARC_780M_PROFILE=c7)
+//   7900xtx-refine2: refine1 and the screen's picks, texel-wise (zpg_bt) family excluded (candidate 3); 4w only on 1B
+//   7900xtx-refine3: refine2 with the screen's picks over all kernels on the 8da4w shapes, i.e. the texel-wise
+//                    weight staging family where it is the best (candidate 4)
+//   7900xtx-refine5: refine4 and, for head dimension 64 only (1B), the attn*V sweep tile t32x32k32g22s32 (second attention screen of
+//                    2026-10-09, results/7900xtx/sdpa-screen2/: 1.16x in every round on that op; every other tile of the screen was slower)
+//   7900xtx-refine6: refine5 and, for 8B w2 (N = 4096, K = 14336), the sweep 128 x 64 tile t128x64k32g22s32 instead of the release row: the one pick of the
+//                    first second-set screen (1.034 in the worst round; the same pair read 1.026 and 1.024 in two other screens, so it is gated as candidate 7)
+//   ET_VK_SARC_7900XTX_QK / ET_VK_SARC_7900XTX_AV=<kernel_base>: a registered attention candidate by exact name (screening), whatever the profile
+//   7900xtx-refine4: refine2 and the unfused attention kernels of the screen of 2026-10-09 (results/7900xtx/sdpa-screen/):
+//                    QK^T with packed K staging and no mask fill (pk_t128x128k32g42s32nf, valid with the truncated SARC
+//                    softmax only) and the sweep attn*V tile t64x64k32g42s32, on every prefill call that fits (candidate 5)
+namespace vkcompute {
+namespace sarc {
+namespace {
+
+struct NK7900xtx {
+  int64_t N, K;
+};
+struct Pick7900xtx {
+  Op op;
+  const char* kernel_base;
+  const NK7900xtx* shapes;
+  size_t count;
+};
+struct Profile7900xtx {
+  const char* name;
+  const Pick7900xtx* picks;
+  size_t count;
+  const char* softmax_variant;
+};
+#define SARC_7900XTX_N(a) (sizeof(a) / sizeof(a[0]))
+
+// 4w (fp32 accumulate, column-major B staging, 128 x 128 tile): the 1B shapes wq_wo, wk_wv and w2.
+const NK7900xtx kQ4Sweep128[] = {{2048, 2048}, {512, 2048}, {2048, 8192}};
+// 8da4w, zpg sweep 256 x 64 tile (K step 32): 1B w1_w3 / wq_wo, 3B w1_w3 / w2 / wq_wo, 8B w1_w3.
+const NK7900xtx kDqSweep256x64[] = {
+    {8192, 2048}, {2048, 2048}, {8192, 3072}, {3072, 8192}, {3072, 3072}, {14336, 4096}};
+// 8da4w, zpg sweep 128 x 64 tile (K step 32): 8B wk_wv and wq_wo.
+const NK7900xtx kDqSweep128x64[] = {{1024, 4096}, {4096, 4096}};
+// 8da4w, the 780M's 256 x 64 tile with K step 64: 1B w2.
+const NK7900xtx kDqAfmb1[] = {{2048, 8192}};
+// 8da4w, zpg sweep 64 x 64 tile: 1B wk_wv.
+const NK7900xtx kDqSweep64x64[] = {{512, 2048}};
+// refine3: the texel-wise family (zpg_bt) where it is the best kernel of the screen.
+const NK7900xtx kDqBtK32[] = {{14336, 4096}, {4096, 14336}, {8192, 2048}, {8192, 3072}};
+const NK7900xtx kDqBtK64[] = {{1024, 4096}, {4096, 4096}, {2048, 8192}, {2048, 2048}, {3072, 8192}, {3072, 3072}};
+const NK7900xtx kDqBtAfmb2[] = {{1024, 3072}};
+// refine5: attn*V of head dimension 64 (N = head_dim, any context length: K < 0 matches every K).
+const NK7900xtx kAvHeadDim64[] = {{64, -1}};
+// refine6: the two 8B shapes that refine2 already gives this tile, and 8B w2.
+const NK7900xtx kDqSweep128x64W2[] = {{1024, 4096}, {4096, 4096}, {4096, 14336}};
+
+const Pick7900xtx kRefine2[] = {
+    {Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32cbt",
+     kQ4Sweep128,
+     SARC_7900XTX_N(kQ4Sweep128)},
+    {Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t256x64k32g24s32",
+     kDqSweep256x64,
+     SARC_7900XTX_N(kDqSweep256x64)},
+    {Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g22s32",
+     kDqSweep128x64,
+     SARC_7900XTX_N(kDqSweep128x64)},
+    {Op::kDq8caLinear,
+     "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1",
+     kDqAfmb1,
+     SARC_7900XTX_N(kDqAfmb1)},
+    {Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t64x64k32g22s32",
+     kDqSweep64x64,
+     SARC_7900XTX_N(kDqSweep64x64)},
+};
+const Pick7900xtx kRefine3[] = {
+    {Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32cbt",
+     kQ4Sweep128,
+     SARC_7900XTX_N(kQ4Sweep128)},
+    {Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32",
+     kDqBtK32,
+     SARC_7900XTX_N(kDqBtK32)},
+    {Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k64g22s32",
+     kDqBtK64,
+     SARC_7900XTX_N(kDqBtK64)},
+    {Op::kDq8caLinear,
+     "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32afmb2",
+     kDqBtAfmb2,
+     SARC_7900XTX_N(kDqBtAfmb2)},
+    {Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t64x64k32g22s32",
+     kDqSweep64x64,
+     SARC_7900XTX_N(kDqSweep64x64)},
+};
+// refine4: refine2 and the two attention kernels; a pick without a shape list applies to every prefill call of its op.
+const Pick7900xtx kRefine4[] = {
+    {Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32cbt",
+     kQ4Sweep128,
+     SARC_7900XTX_N(kQ4Sweep128)},
+    {Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t256x64k32g24s32",
+     kDqSweep256x64,
+     SARC_7900XTX_N(kDqSweep256x64)},
+    {Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g22s32",
+     kDqSweep128x64,
+     SARC_7900XTX_N(kDqSweep128x64)},
+    {Op::kDq8caLinear,
+     "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1",
+     kDqAfmb1,
+     SARC_7900XTX_N(kDqAfmb1)},
+    {Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t64x64k32g22s32",
+     kDqSweep64x64,
+     SARC_7900XTX_N(kDqSweep64x64)},
+    {Op::kSdpaQk, "sarc_sdpa_qk_coopmat_pk_t128x128k32g42s32nf", nullptr, 0},
+    {Op::kSdpaAv, "sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32", nullptr, 0},
+};
+// Attention kernel variants of the 7900 XTX screen (glsl/sarc_dev/sarc_sdpa_{qk_coopmat_pk,av_coopmat_sweep}.yaml, 7900xtx blocks); selected
+// only by name: ET_VK_SARC_7900XTX_QK / ET_VK_SARC_7900XTX_AV = <kernel_base> (screening), or by a profile pick.
+const Row k7900xtxSdpaSpace[] = {
+    {"", nullptr, Op::kSdpaQk, "sarc_sdpa_qk_coopmat_pk_t128x128k32g24s32nf", {128, 128, 32, 2, 4, 32, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk, "sarc_sdpa_qk_coopmat_pk_t128x128k32g22s64nf", {128, 128, 32, 2, 2, 64, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk, "sarc_sdpa_qk_coopmat_pk_t128x128k32g44s32nf", {128, 128, 32, 4, 4, 32, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk, "sarc_sdpa_qk_coopmat_pk_t128x128k32g22s32nf", {128, 128, 32, 2, 2, 32, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kSdpaQk, "sarc_sdpa_qk_coopmat_pk_t64x128k32g42s32nf", {64, 128, 32, 4, 2, 32, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv, "sarc_sdpa_av_coopmat_sweep_t128x128k32g44s32", {128, 128, 32, 4, 4, 32, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv, "sarc_sdpa_av_coopmat_sweep_t128x128k32g82s32", {128, 128, 32, 8, 2, 32, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv, "sarc_sdpa_av_coopmat_sweep_t128x128k32g42s64", {128, 128, 32, 4, 2, 64, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+    {"", nullptr, Op::kSdpaAv, "sarc_sdpa_av_coopmat_sweep_t32x32k32g22s32", {32, 32, 32, 2, 2, 32, 16, false}, kBufBuf, nullptr, Status::kUnverified},
+};
+// Second set (items 2 and 3, glsl/sarc_dev/sarc_dev_7900xtx_x_linear_{dq8ca_coopmat_zpg,q4gsw_coopmat}.yaml, generated by tools/gen_7900xtx_{dq,q4}.py):
+// the release linear bodies with staging row pitches, selected by name (screens) or by a profile pick. The last row is the phase-timing twin of the 4w table kernel
+// (MEASUREMENT ONLY, glsl/sarc_dev/sarc_dev_prof_q4gsw.yaml, 7900xtx block).
+const Row k7900xtxLinearSpace[] = {
+#include "Space7900xtxDq.inc"
+#include "Space7900xtxQ4.inc"
+    {"", nullptr, Op::kQ4gswLinear, "sarc_dev_prof_q4gsw_t256x128k32g24s32f32cbtp", {256, 128, 32, 2, 4, 32, 16, true, false, false}, kTex3dTex2d, nullptr, Status::kUnverified},
+};
+const char* exact_name_7900xtx(Op op) {
+  static const char* const qk = std::getenv("ET_VK_SARC_7900XTX_QK");
+  static const char* const av = std::getenv("ET_VK_SARC_7900XTX_AV");
+  return op == Op::kSdpaQk ? qk : (op == Op::kSdpaAv ? av : nullptr);
+}
+const Pick7900xtx kRefine5[] = {
+    {Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32cbt",
+     kQ4Sweep128,
+     SARC_7900XTX_N(kQ4Sweep128)},
+    {Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t256x64k32g24s32",
+     kDqSweep256x64,
+     SARC_7900XTX_N(kDqSweep256x64)},
+    {Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g22s32",
+     kDqSweep128x64,
+     SARC_7900XTX_N(kDqSweep128x64)},
+    {Op::kDq8caLinear,
+     "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1",
+     kDqAfmb1,
+     SARC_7900XTX_N(kDqAfmb1)},
+    {Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t64x64k32g22s32",
+     kDqSweep64x64,
+     SARC_7900XTX_N(kDqSweep64x64)},
+    {Op::kSdpaQk, "sarc_sdpa_qk_coopmat_pk_t128x128k32g42s32nf", nullptr, 0},
+    {Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_sweep_t32x32k32g22s32",
+     kAvHeadDim64,
+     SARC_7900XTX_N(kAvHeadDim64)},
+    {Op::kSdpaAv, "sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32", nullptr, 0},
+};
+const Pick7900xtx kRefine6[] = {
+    {Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32cbt",
+     kQ4Sweep128,
+     SARC_7900XTX_N(kQ4Sweep128)},
+    {Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t256x64k32g24s32",
+     kDqSweep256x64,
+     SARC_7900XTX_N(kDqSweep256x64)},
+    {Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g22s32",
+     kDqSweep128x64W2,
+     SARC_7900XTX_N(kDqSweep128x64W2)},
+    {Op::kDq8caLinear,
+     "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1",
+     kDqAfmb1,
+     SARC_7900XTX_N(kDqAfmb1)},
+    {Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_sweep_t64x64k32g22s32",
+     kDqSweep64x64,
+     SARC_7900XTX_N(kDqSweep64x64)},
+    {Op::kSdpaQk, "sarc_sdpa_qk_coopmat_pk_t128x128k32g42s32nf", nullptr, 0},
+    {Op::kSdpaAv,
+     "sarc_sdpa_av_coopmat_sweep_t32x32k32g22s32",
+     kAvHeadDim64,
+     SARC_7900XTX_N(kAvHeadDim64)},
+    {Op::kSdpaAv, "sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32", nullptr, 0},
+};
+const Profile7900xtx k7900xtxProfiles[] = {
+    {"7900xtx-refine1", nullptr, 0, "780m_r3"},
+    {"7900xtx-refine2", kRefine2, SARC_7900XTX_N(kRefine2), "780m_r3"},
+    {"7900xtx-refine3", kRefine3, SARC_7900XTX_N(kRefine3), "780m_r3"},
+    {"7900xtx-refine4", kRefine4, SARC_7900XTX_N(kRefine4), "780m_r3"},
+    {"7900xtx-refine5", kRefine5, SARC_7900XTX_N(kRefine5), "780m_r3"},
+    {"7900xtx-refine6", kRefine6, SARC_7900XTX_N(kRefine6), "780m_r3"},
+};
+const Profile7900xtx* active_profile_7900xtx() {
+  static const Profile7900xtx* const active = []() -> const Profile7900xtx* {
+    const char* e = std::getenv("ET_VK_SARC_7900XTX_PROFILE");
+    if (e == nullptr || *e == 0) {
+      return nullptr;
+    }
+    for (const Profile7900xtx& p : k7900xtxProfiles) {
+      if (std::strcmp(p.name, e) == 0) {
+        return &p;
+      }
+    }
+    std::cerr << "[sarc_dev] unknown ET_VK_SARC_7900XTX_PROFILE=" << e << std::endl;
+    std::abort();
+  }();
+  return active;
+}
+
+std::optional<Choice> (*select_before_7900xtx)(
+    const DeviceInfo&,
+    const ShapeInfo&,
+    const std::optional<Choice>&) = nullptr;
+
+std::optional<Choice> select_7900xtx(
+    const DeviceInfo& device,
+    const ShapeInfo& shape,
+    const std::optional<Choice>& table_choice) {
+  const std::optional<Choice> before =
+      select_before_7900xtx(device, shape, table_choice);
+  const Profile7900xtx* active = active_profile_7900xtx();
+  if (!before.has_value() || shape.gemv) {
+    return before;
+  }
+  if (const char* want = exact_name_7900xtx(shape.op)) {
+    if (*want != 0) {
+      for (const Row& row : candidates()) {
+        if (row.op == shape.op && row.kernel_base == std::string(want) &&
+            q4gsw_coopmat_fits(device, shape, row)) {
+          return Choice{row.kernel_base, row.dims, row.rowmajor_a};
+        }
+      }
+      return before;
+    }
+  }
+  if (active == nullptr) {
+    return before;
+  }
+  for (size_t i = 0; i < active->count; ++i) {
+    const Pick7900xtx& pick = active->picks[i];
+    if (pick.op != shape.op) {
+      continue;
+    }
+    bool listed = pick.shapes == nullptr;
+    for (size_t j = 0; j < pick.count; ++j) {
+      listed = listed ||
+          (shape.N == pick.shapes[j].N && (pick.shapes[j].K < 0 || shape.K == pick.shapes[j].K));
+    }
+    if (!listed) {
+      continue;
+    }
+    for (const Row& row : candidates()) {
+      if (row.op == shape.op && row.kernel_base == std::string(pick.kernel_base) &&
+          q4gsw_coopmat_fits(device, shape, row)) {
+        return Choice{row.kernel_base, row.dims, row.rowmajor_a};
+      }
+    }
+  }
+  return before;
+}
+
+struct Registrar7900xtx {
+  Registrar7900xtx() {
+    Override o = get_override();
+    register_candidates(k7900xtxSdpaSpace, sizeof(k7900xtxSdpaSpace) / sizeof(k7900xtxSdpaSpace[0]));
+    register_candidates(k7900xtxLinearSpace, sizeof(k7900xtxLinearSpace) / sizeof(k7900xtxLinearSpace[0]));
+    select_before_7900xtx = o.select;
+    o.select = select_7900xtx;
+    const Profile7900xtx* active = active_profile_7900xtx();
+    if (active != nullptr && active->softmax_variant != nullptr &&
+        !env_true("ET_VK_DISABLE_COOPMAT")) {
+      o.softmax_variant = active->softmax_variant;
+    }
+    set_override(o);
+    if (active != nullptr) {
+      std::cerr << "[sarc_dev] 7900xtx profile active: " << active->name << std::endl;
+    }
+  }
+} registrar_7900xtx;
+
+} // namespace
+} // namespace sarc
+} // namespace vkcompute
+// --- 7900xtx end ---

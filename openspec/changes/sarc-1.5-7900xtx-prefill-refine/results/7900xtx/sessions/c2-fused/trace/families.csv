@@ -1,0 +1,64 @@
+model,scheme,build,family,ms,share
+1b,4w,cand,prefill GEMM (linear layers),61.952,0.642
+1b,4w,cand,attention: fused (incl. K/V copy pass),28.337,0.2937
+1b,4w,cand,elementwise,2.68,0.0278
+1b,4w,cand,copy/view/other,2.431,0.0252
+1b,4w,cand,RMSNorm,0.437,0.0045
+1b,4w,cand,LM head (1 token),0.198,0.002
+1b,4w,cand,RoPE,0.162,0.0017
+1b,4w,cand,attention: KV update,0.149,0.0015
+1b,4w,cand,staging,0.098,0.001
+1b,4w,cand,embedding,0.054,0.0006
+1b,8da4w,cand,prefill GEMM (linear layers),49.118,0.5635
+1b,8da4w,cand,attention: fused (incl. K/V copy pass),28.714,0.3294
+1b,8da4w,cand,8-bit activation quantize,3.07,0.0352
+1b,8da4w,cand,elementwise,2.731,0.0313
+1b,8da4w,cand,copy/view/other,2.418,0.0277
+1b,8da4w,cand,RMSNorm,0.469,0.0054
+1b,8da4w,cand,LM head (1 token),0.192,0.0022
+1b,8da4w,cand,RoPE,0.154,0.0018
+1b,8da4w,cand,attention: KV update,0.152,0.0017
+1b,8da4w,cand,staging,0.097,0.0011
+1b,8da4w,cand,embedding,0.054,0.0006
+3b,4w,cand,prefill GEMM (linear layers),131.967,0.5159
+3b,4w,cand,attention: fused (incl. K/V copy pass),109.494,0.4281
+3b,4w,cand,copy/view/other,5.993,0.0234
+3b,4w,cand,elementwise,5.563,0.0218
+3b,4w,cand,RMSNorm,1.23,0.0048
+3b,4w,cand,attention: KV update,0.672,0.0026
+3b,4w,cand,RoPE,0.405,0.0016
+3b,4w,cand,LM head (1 token),0.286,0.0011
+3b,4w,cand,staging,0.097,0.0004
+3b,4w,cand,embedding,0.074,0.0003
+3b,8da4w,cand,prefill GEMM (linear layers),121.304,0.4777
+3b,8da4w,cand,attention: fused (incl. K/V copy pass),112.132,0.4416
+3b,8da4w,cand,copy/view/other,6.084,0.024
+3b,8da4w,cand,8-bit activation quantize,5.986,0.0236
+3b,8da4w,cand,elementwise,5.571,0.0219
+3b,8da4w,cand,RMSNorm,1.218,0.0048
+3b,8da4w,cand,attention: KV update,0.767,0.003
+3b,8da4w,cand,RoPE,0.4,0.0016
+3b,8da4w,cand,LM head (1 token),0.284,0.0011
+3b,8da4w,cand,staging,0.098,0.0004
+3b,8da4w,cand,embedding,0.078,0.0003
+8b,4w,cand,prefill GEMM (linear layers),317.057,0.6329
+8b,4w,cand,attention: fused (incl. K/V copy pass),152.228,0.3039
+8b,4w,cand,elementwise,19.905,0.0397
+8b,4w,cand,copy/view/other,8.366,0.0167
+8b,4w,cand,RMSNorm,1.601,0.0032
+8b,4w,cand,attention: KV update,0.762,0.0015
+8b,4w,cand,RoPE,0.57,0.0011
+8b,4w,cand,LM head (1 token),0.366,0.0007
+8b,4w,cand,embedding,0.1,0.0002
+8b,4w,cand,staging,0.018,0.0
+8b,8da4w,cand,prefill GEMM (linear layers),295.756,0.5997
+8b,8da4w,cand,attention: fused (incl. K/V copy pass),155.996,0.3163
+8b,8da4w,cand,elementwise,19.584,0.0397
+8b,8da4w,cand,8-bit activation quantize,9.693,0.0197
+8b,8da4w,cand,copy/view/other,8.439,0.0171
+8b,8da4w,cand,RMSNorm,1.634,0.0033
+8b,8da4w,cand,attention: KV update,0.859,0.0017
+8b,8da4w,cand,RoPE,0.66,0.0013
+8b,8da4w,cand,LM head (1 token),0.343,0.0007
+8b,8da4w,cand,embedding,0.102,0.0002
+8b,8da4w,cand,staging,0.098,0.0002
