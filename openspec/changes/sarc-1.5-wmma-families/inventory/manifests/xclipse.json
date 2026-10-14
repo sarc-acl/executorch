@@ -1,0 +1,469 @@
+{
+  "source_commit": "617897184529ff180af491ee0d5d7de778cbb6c6",
+  "family": "xclipse",
+  "members": [
+    "m51"
+  ],
+  "status": "SOURCE_INVENTORY_ONLY; conditional candidates, no legality confirmation or performance selection",
+  "deduplication_key": "full shader name within family (body + compile-time parameters + storage); shared origins retained",
+  "candidates": [
+    {
+      "shader": "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g42s32f32xp_texture3d_texture2d_half",
+      "scheme": "4w",
+      "kernel_base": "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g42s32f32xp",
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_STORAGE": "texture2d",
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 128,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 4,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32,
+        "ACC_FP32": true,
+        "CSH_IN_ASH": false,
+        "ACC_GROUP_FP32": false,
+        "ACC_GROUP_FP32_REG": false,
+        "FRAG_LAYOUT": false,
+        "IMG_A": false,
+        "IMG_W": false,
+        "SH_F16V4": false,
+        "CSH_BAND": false,
+        "B_COLMAJOR": true,
+        "CSH_FULL": true,
+        "CSH_POOL": true
+      },
+      "declared_shared_bytes": 40960,
+      "shared_formula": "max(AB=40960, C=32768)",
+      "activation_layout": "fp16",
+      "mma": "16x16x16",
+      "accumulation": "fp32",
+      "origins": [
+        {
+          "device": "m51",
+          "route": "R41",
+          "layer": "profile",
+          "predicate": "all; preceding selector must serve shape",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:3189@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:3252@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:3189@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_m51_linear_q4gsw_coopmat_bz.yaml:69@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_m51_linear_q4gsw_coopmat_bz.glsl:15@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "body_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_m51_linear_q4gsw_coopmat_bz_body.glslh:22@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "member_legality": {
+        "m51": "PENDING_QUERY: exact MMA types/scope, subgroup control, shared memory, workgroup limits, features, storage and shape; no target queried"
+      }
+    },
+    {
+      "shader": "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g42s32f32xp_buffer_texture2d_half",
+      "scheme": "4w",
+      "kernel_base": "sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g42s32f32xp",
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "buffer",
+        "WEIGHT_STORAGE": "texture2d",
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 128,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 4,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32,
+        "ACC_FP32": true,
+        "CSH_IN_ASH": false,
+        "ACC_GROUP_FP32": false,
+        "ACC_GROUP_FP32_REG": false,
+        "FRAG_LAYOUT": false,
+        "IMG_A": false,
+        "IMG_W": false,
+        "SH_F16V4": false,
+        "CSH_BAND": false,
+        "B_COLMAJOR": true,
+        "CSH_FULL": true,
+        "CSH_POOL": true
+      },
+      "declared_shared_bytes": 40960,
+      "shared_formula": "AB=40960 + C=0",
+      "activation_layout": "fp16",
+      "mma": "16x16x16",
+      "accumulation": "fp32",
+      "origins": [
+        {
+          "device": "m51",
+          "route": "R41",
+          "layer": "profile",
+          "predicate": "all; preceding selector must serve shape",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:3189@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:3252@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:3189@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_m51_linear_q4gsw_coopmat_bz.yaml:78@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_m51_linear_q4gsw_coopmat_bz.glsl:15@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "body_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_m51_linear_q4gsw_coopmat_bz_body.glslh:22@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "member_legality": {
+        "m51": "PENDING_QUERY: exact MMA types/scope, subgroup control, shared memory, workgroup limits, features, storage and shape; no target queried"
+      }
+    },
+    {
+      "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32_texture3d_texture2d_half",
+      "scheme": "8da4w",
+      "kernel_base": "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32",
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_NBITS": 4,
+        "WEIGHT_STORAGE": "texture2d",
+        "A_MAP_FULL": true,
+        "A_MULTI_BLOCK": true,
+        "A_BLOCKS": 2,
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 64,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 2,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32
+      },
+      "declared_shared_bytes": 18176,
+      "shared_formula": "AB=12288 + params=1792 + C=4096",
+      "activation_layout": "4h4w",
+      "mma": "16x16x16",
+      "accumulation": "int32-group/fp32-total",
+      "origins": [
+        {
+          "device": "m51",
+          "route": "R42",
+          "layer": "profile",
+          "predicate": "all; served with layout reopened if needed; final layout must match",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:524@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:3252@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:524@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_linear_dq8ca_coopmat_zpg_bt.yaml:24@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_linear_dq8ca_coopmat_zpg_bt.glsl:15@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "body_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_linear_dq8ca_coopmat_zpg_bt_body.glslh:16@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "member_legality": {
+        "m51": "PENDING_QUERY: exact MMA types/scope, subgroup control, shared memory, workgroup limits, features, storage and shape; no target queried"
+      }
+    },
+    {
+      "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32_buffer_texture2d_half",
+      "scheme": "8da4w",
+      "kernel_base": "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32",
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "buffer",
+        "WEIGHT_NBITS": 4,
+        "WEIGHT_STORAGE": "texture2d",
+        "A_MAP_FULL": true,
+        "A_MULTI_BLOCK": true,
+        "A_BLOCKS": 2,
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 64,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 2,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32
+      },
+      "declared_shared_bytes": 14080,
+      "shared_formula": "AB=12288 + params=1792 + C=0",
+      "activation_layout": "4h4w",
+      "mma": "16x16x16",
+      "accumulation": "int32-group/fp32-total",
+      "origins": [
+        {
+          "device": "m51",
+          "route": "R42",
+          "layer": "profile",
+          "predicate": "all; served with layout reopened if needed; final layout must match",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:524@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:3252@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:524@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_linear_dq8ca_coopmat_zpg_bt.yaml:34@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_linear_dq8ca_coopmat_zpg_bt.glsl:15@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "body_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_linear_dq8ca_coopmat_zpg_bt_body.glslh:16@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "member_legality": {
+        "m51": "PENDING_QUERY: exact MMA types/scope, subgroup control, shared memory, workgroup limits, features, storage and shape; no target queried"
+      }
+    },
+    {
+      "shader": "sarc_linear_q4gsw_coopmat_t128x128k16g22s32f32xp_texture3d_texture2d_half",
+      "scheme": "4w",
+      "kernel_base": "sarc_linear_q4gsw_coopmat_t128x128k16g22s32f32xp",
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_STORAGE": "texture2d",
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 128,
+        "WG_TILE_K": 16,
+        "SG_GRID_X": 2,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32,
+        "ACC_FP32": true,
+        "CSH_IN_ASH": false,
+        "ACC_GROUP_FP32": false,
+        "ACC_GROUP_FP32_REG": false,
+        "FRAG_LAYOUT": false,
+        "IMG_A": false,
+        "IMG_W": false,
+        "SH_F16V4": false,
+        "CSH_BAND": false,
+        "B_COLMAJOR": false,
+        "CSH_FULL": true,
+        "CSH_POOL": true
+      },
+      "declared_shared_bytes": 32768,
+      "shared_formula": "max(AB=20992, C=32768)",
+      "activation_layout": "fp16",
+      "mma": "16x16x16",
+      "accumulation": "fp32",
+      "origins": [
+        {
+          "device": "m51",
+          "route": "R43",
+          "layer": "table",
+          "predicate": "all; retained when bz cannot fit (e.g. group_size=16 or buffer weight)",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:63@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:63@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:63@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat.yaml:139@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat.glsl:43@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "body_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat_body.glslh:21@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "member_legality": {
+        "m51": "PENDING_QUERY: exact MMA types/scope, subgroup control, shared memory, workgroup limits, features, storage and shape; no target queried"
+      }
+    },
+    {
+      "shader": "sarc_linear_q4gsw_coopmat_t128x128k16g22s32f32xp_buffer_texture2d_half",
+      "scheme": "4w",
+      "kernel_base": "sarc_linear_q4gsw_coopmat_t128x128k16g22s32f32xp",
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "buffer",
+        "WEIGHT_STORAGE": "texture2d",
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 128,
+        "WG_TILE_K": 16,
+        "SG_GRID_X": 2,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32,
+        "ACC_FP32": true,
+        "CSH_IN_ASH": false,
+        "ACC_GROUP_FP32": false,
+        "ACC_GROUP_FP32_REG": false,
+        "FRAG_LAYOUT": false,
+        "IMG_A": false,
+        "IMG_W": false,
+        "SH_F16V4": false,
+        "CSH_BAND": false,
+        "B_COLMAJOR": false,
+        "CSH_FULL": true,
+        "CSH_POOL": true
+      },
+      "declared_shared_bytes": 20992,
+      "shared_formula": "AB=20992 + C=0",
+      "activation_layout": "fp16",
+      "mma": "16x16x16",
+      "accumulation": "fp32",
+      "origins": [
+        {
+          "device": "m51",
+          "route": "R43",
+          "layer": "table",
+          "predicate": "all; retained when bz cannot fit (e.g. group_size=16 or buffer weight)",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:63@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:63@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:63@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat.yaml:148@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat.glsl:43@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "body_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat_body.glslh:21@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "member_legality": {
+        "m51": "PENDING_QUERY: exact MMA types/scope, subgroup control, shared memory, workgroup limits, features, storage and shape; no target queried"
+      }
+    },
+    {
+      "shader": "sarc_linear_q4gsw_coopmat_t128x128k16g22s32f32xp_buffer_buffer_half",
+      "scheme": "4w",
+      "kernel_base": "sarc_linear_q4gsw_coopmat_t128x128k16g22s32f32xp",
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "buffer",
+        "WEIGHT_STORAGE": "buffer",
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 128,
+        "WG_TILE_K": 16,
+        "SG_GRID_X": 2,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32,
+        "ACC_FP32": true,
+        "CSH_IN_ASH": false,
+        "ACC_GROUP_FP32": false,
+        "ACC_GROUP_FP32_REG": false,
+        "FRAG_LAYOUT": false,
+        "IMG_A": false,
+        "IMG_W": false,
+        "SH_F16V4": false,
+        "CSH_BAND": false,
+        "B_COLMAJOR": false,
+        "CSH_FULL": true,
+        "CSH_POOL": true
+      },
+      "declared_shared_bytes": 20992,
+      "shared_formula": "AB=20992 + C=0",
+      "activation_layout": "fp16",
+      "mma": "16x16x16",
+      "accumulation": "fp32",
+      "origins": [
+        {
+          "device": "m51",
+          "route": "R43",
+          "layer": "table",
+          "predicate": "all; retained when bz cannot fit (e.g. group_size=16 or buffer weight)",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:63@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:63@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:63@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat.yaml:156@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat.glsl:43@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "body_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat_body.glslh:21@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "member_legality": {
+        "m51": "PENDING_QUERY: exact MMA types/scope, subgroup control, shared memory, workgroup limits, features, storage and shape; no target queried"
+      }
+    },
+    {
+      "shader": "sarc_linear_dq8ca_coopmat_zpgtr_t128x64k32g42s32_texture3d_texture2d_half",
+      "scheme": "8da4w",
+      "kernel_base": "sarc_linear_dq8ca_coopmat_zpgtr_t128x64k32g42s32",
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_NBITS": 4,
+        "WEIGHT_STORAGE": "texture2d",
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 64,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 4,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32,
+        "A_RAW": false,
+        "B_PAIR": false,
+        "CSH_IN_ASH": false,
+        "DRAIN_UNROLL": false,
+        "B_SEL_EARLY_N": 0
+      },
+      "declared_shared_bytes": 18176,
+      "shared_formula": "AB=12288 + params=1792 + C=4096",
+      "activation_layout": "row-major",
+      "mma": "16x16x16",
+      "accumulation": "int32-group/fp32-total",
+      "origins": [
+        {
+          "device": "m51",
+          "route": "R44",
+          "layer": "table",
+          "predicate": "all; retained when zpg_bt cannot fit or fixed row-major layout excludes it",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:71@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:71@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:71@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_dq8ca_coopmat_zpgtr.yaml:54@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_dq8ca_coopmat_zpgtr.glsl:24@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "body_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_dq8ca_coopmat_zpgtr_body.glslh:16@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "member_legality": {
+        "m51": "PENDING_QUERY: exact MMA types/scope, subgroup control, shared memory, workgroup limits, features, storage and shape; no target queried"
+      }
+    },
+    {
+      "shader": "sarc_linear_dq8ca_coopmat_zpgtr_t128x64k32g42s32_buffer_texture2d_half",
+      "scheme": "8da4w",
+      "kernel_base": "sarc_linear_dq8ca_coopmat_zpgtr_t128x64k32g42s32",
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "buffer",
+        "WEIGHT_NBITS": 4,
+        "WEIGHT_STORAGE": "texture2d",
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 64,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 4,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32,
+        "A_RAW": false,
+        "B_PAIR": false,
+        "CSH_IN_ASH": false,
+        "DRAIN_UNROLL": false,
+        "B_SEL_EARLY_N": 0
+      },
+      "declared_shared_bytes": 14080,
+      "shared_formula": "AB=12288 + params=1792 + C=0",
+      "activation_layout": "row-major",
+      "mma": "16x16x16",
+      "accumulation": "int32-group/fp32-total",
+      "origins": [
+        {
+          "device": "m51",
+          "route": "R44",
+          "layer": "table",
+          "predicate": "all; retained when zpg_bt cannot fit or fixed row-major layout excludes it",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:71@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:71@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:71@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_dq8ca_coopmat_zpgtr.yaml:53@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_dq8ca_coopmat_zpgtr.glsl:24@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "body_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_dq8ca_coopmat_zpgtr_body.glslh:16@617897184529ff180af491ee0d5d7de778cbb6c6",
+      "member_legality": {
+        "m51": "PENDING_QUERY: exact MMA types/scope, subgroup control, shared memory, workgroup limits, features, storage and shape; no target queried"
+      }
+    }
+  ]
+}
