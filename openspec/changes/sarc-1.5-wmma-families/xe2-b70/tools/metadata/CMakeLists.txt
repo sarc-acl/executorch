@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.24)
+project(wmma_metadata CXX)
+set(CMAKE_CXX_STANDARD 17)
+find_package(executorch CONFIG REQUIRED)
+add_executable(wmma_metadata main.cpp)
+target_link_libraries(wmma_metadata PRIVATE extension_module extension_data_loader extension_tensor executorch)

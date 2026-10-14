@@ -93,11 +93,12 @@ model paths/headers/serialized metadata and compiler/image facts are in the own
 artifact preflight record. Unit identity and driver agree with the supplied task;
 no readable primary DRM client was present at initial inspection.
 The complete subgroup-scope matrix type/shape query covers the manifest requirements.
-Declared shared memory and workgroup geometry fit the queried limits, but exact
-compiled-module allocation/features/formats remain a launch prerequisite.
+Declared shared memory and workgroup geometry fit the queried limits, and all twelve parent compiled-module capacities equal the source declarations.
+Capabilities and image formats are supported in the recorded query; exact topic
+module identity and correctness remain launch prerequisites.
 Six file sizes and serialized context/cache constants agree with kit/MODELS.md.
 Serialized Vulkan graph operators identify 4-bit embeddings at group 32 and
-linear group 128; runtime constant-method verification is still required before timing.
+linear group 128; runtime constant-method execution has now confirmed the six metadata values for all files.
 Pinned submodule objects were initialized recursively in this clone only.
 
 `check.sh --no-build` passed (1240 release checks; 1921 dev checks). No shader,
@@ -114,3 +115,10 @@ Bounded orchestration must call the unchanged verify.sh, preserve its full decod
 checks, and prepare models before every cell/model change. No historical exception
 or gate acceptance is inferred from a copied wrapper.
 No build, gate or timing evidence is claimed by this document yet.
+
+The parent normal/tests/traced build completed in 6m18s. Its llama shader
+golden passes all 53 shipped variants, and the standard build wrapper also
+reports BUILD_BOTH_OK. New matrix_verify.sh calls the unchanged six-cell gate
+without historical SDPA tier extras, after filling all six supplied models
+(which fit in RAM) and recording residency. Device-loss output blocks later jobs.
+The metadata helper executes constant methods only and links no Vulkan backend.
