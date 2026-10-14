@@ -3711,3 +3711,87 @@ struct Registrar7900xtx {
 } // namespace sarc
 } // namespace vkcompute
 // --- 7900xtx end ---
+
+// --- b70-wmma begin ---
+namespace vkcompute {
+namespace sarc {
+namespace {
+
+struct B70WmmaProfile {
+  const char* name;
+  Op op;
+  const char* kernel;
+  bool (*shape_ok)(const ShapeInfo&);
+};
+
+const B70WmmaProfile kB70WmmaProfiles[] = {
+    {"b70-wmma-dq-n13", Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n13",
+     xe2_order_w12},
+    {"b70-wmma-dq-i", Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i",
+     nullptr},
+    {"b70-wmma-q4-table", Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli", nullptr},
+    {"b70-wmma-dq-table", Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8", nullptr},
+    {"b70-wmma-q4-k32", Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g84s16m8flw",
+     xe2_narrow_output},
+    {"b70-wmma-q4-k16", Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib", nullptr},
+    {"b70-wmma-dq-n26", Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n26",
+     xe2_order_weights_16m},
+};
+
+std::optional<Choice> (*select_before_b70_wmma)(
+    const DeviceInfo&,
+    const ShapeInfo&,
+    const std::optional<Choice>&) = nullptr;
+
+std::optional<Choice> select_b70_wmma(
+    const DeviceInfo& device,
+    const ShapeInfo& shape,
+    const std::optional<Choice>& table_choice) {
+  const auto before = select_before_b70_wmma(device, shape, table_choice);
+  const char* base = std::getenv("ET_VK_SARC_DEV_PROFILE");
+  const char* name = std::getenv("ET_VK_SARC_B70_WMMA_PROFILE");
+  if (!before.has_value() || !get_override().allow_unverified ||
+      shape.gemv || device.name.find("bmg g31") == std::string::npos ||
+      base == nullptr ||
+      std::strcmp(base, "b70-fused1-order-i-n26-w16m") != 0 ||
+      name == nullptr) {
+    return before;
+  }
+  for (const auto& profile : kB70WmmaProfiles) {
+    if (std::strcmp(name, profile.name) != 0 || shape.op != profile.op ||
+        (profile.shape_ok != nullptr && !profile.shape_ok(shape))) {
+      continue;
+    }
+    for (const auto* store : {&candidates(), &rows()}) {
+      for (const Row& row : *store) {
+        if (row.op == shape.op &&
+            std::strcmp(row.kernel_base, profile.kernel) == 0 &&
+            q4gsw_coopmat_fits(device, shape, row)) {
+          return Choice{row.kernel_base, row.dims, row.rowmajor_a};
+        }
+      }
+    }
+  }
+  return before;
+}
+
+struct RegistrarB70Wmma {
+  RegistrarB70Wmma() {
+    Override o = get_override();
+    select_before_b70_wmma = o.select;
+    o.select = select_b70_wmma;
+    set_override(o);
+  }
+} registrar_b70_wmma;
+
+} // namespace
+} // namespace sarc
+} // namespace vkcompute
+// --- b70-wmma end ---
