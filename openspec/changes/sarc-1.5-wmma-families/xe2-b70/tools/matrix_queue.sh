@@ -12,12 +12,14 @@ INVENTORY=${XE2_INVENTORY:?reviewed manifest}
 [[ $(sha256sum "$INVENTORY" | cut -d' ' -f1) == 5904caa4c1977f256d58b4c1c111e7fdcb2e54bc312676b40c90da6bcf048306 ]]
 status() { echo "$(date -u +%FT%TZ) $*" | tee "$A/queue.status"; }
 block() {
+  [[ ! -e $A/QUEUE_BLOCKED ]] || return 0
+  echo "$*" > "$A/QUEUE_BLOCKED"
   status "BLOCKED $*"
   python3 - "$C/STATUS.md" "$*" <<'PY'
 import pathlib, sys
 p = pathlib.Path(sys.argv[1])
 s = p.read_text()
-s += '\nFinite matrix stopped with an explicit blocker: ' + sys.argv[2] + '.\nRaw evidence remains in the own artifact root; no automatic restart.\n'
+s += '\n## Decision needed from the owner\n\nFinite matrix stopped: ' + sys.argv[2] + '.\nInspect the recorded failure and decide whether to authorize a resume. Raw evidence is preserved; no automatic restart.\n'
 p.write_text(s)
 PY
 }
@@ -60,6 +62,8 @@ for row in result['cells']:
 s += f"\nSix-cell geometric-mean slowdown {result['geomean_slowdown']:.2%}; point estimates within member limits: {result['point_estimates_within_member_margin']}. No family-wide acceptance.\n"
 path.write_text(s)
 PY
+  git -C "$ET" add "$C/STATUS.md"
+  git -C "$ET" commit -m "[SARC][docs] B70 finite matrix result $name"
   status "COMPLETE $name"
 done < <(python3 - "$C/profiles.json" <<'PY'
 import json, sys
