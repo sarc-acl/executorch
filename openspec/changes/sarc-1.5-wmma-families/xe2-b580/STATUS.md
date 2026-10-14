@@ -1,7 +1,7 @@
 # Xe2 B580 bounded matrix status
 
 Updated 2026-10-14T19:25:31.057829+00:00.
-Actor: Codex. Stage: preflight; no timed or gate GPU job launched. Read-only Vulkan queries complete.
+Actor: Codex. Stage: exact parent build; no timed or gate GPU job launched. Read-only Vulkan queries complete.
 Recursive submodule preparation completed. Unmodified `check.sh --no-build` PASS
 (release 1240 checks, dev 1921); initial partial-submodule check retained.
 Launcher cache/environment, positive raw foreign delta/device-loss rows and named
@@ -42,3 +42,19 @@ desktop builds additionally take the existing desktop-build lock exclusively.
 GPU units take it shared and use the inherited device UUID lock. Named HOLD dry-run
 passed; real HOLD was neither created nor removed. Longest unit duration not measured
 yet; snapshot/A/A durations will set the projection before the finite candidate queue.
+
+Build launch 2026-10-14T19:42:38.945102+00:00: parent-v1 at approved pristine base,
+pinned image, recursive git export, eight jobs, exclusive desktop-build lock, detached
+with own build log/status. Source profiles/thresholds committed at `680446bb30`.
+No GPU timing or gate launched; no owner question pending.
+
+Parent-v1 launcher PID exited before export/build creation. No compilation ran.
+Empty launcher log retained; startup mechanism and inner HOLD deadlock are being
+corrected and dry-run tested. No matrix restart or GPU retry occurred.
+
+2026-10-14T19:49:33.129869+00:00: setsid dry-run survived tool-session exit.
+Second fresh source review recorded six orchestration findings. Actor corrected outer
+HOLD-only checks, timed clean_exec, all sensor-source checks/durable sampler failures,
+refusal to overwrite existing session evidence, full runner/library/build hash checks
+and stage hash manifest; removed unused historical adjudication tools. CPU timed
+environment test clears ambient force-tiled. No build tag or measurement exists yet.

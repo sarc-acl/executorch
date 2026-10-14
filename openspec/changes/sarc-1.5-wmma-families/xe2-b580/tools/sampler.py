@@ -14,9 +14,15 @@ side thread, so the clock samples keep their period.
 Reads sysfs and procfs only; no counter or debug facility of the card is enabled.
 A 2048-token prefill of the 1B model lasts about 0.24 s on this card: about 24 clock samples, 5 D lines."""
 import glob, os, sys, threading, time
+from pathlib import Path
 PDEV = "0000:03:00.0"
 P = "/sys/bus/pci/devices/" + PDEV; F = P + "/tile0/gt0/freq0"; H = glob.glob(P + "/hwmon/hwmon*")[0]
-files = [open(x) for x in (F + "/act_freq", F + "/throttle/status", H + "/energy1_input", H + "/temp2_input", F + "/throttle/reasons")]
+sensor_paths = (F + "/act_freq", F + "/throttle/status", H + "/energy1_input", H + "/temp2_input", F + "/throttle/reasons")
+try:
+    files = [open(x) for x in sensor_paths]
+except OSError as error:
+    (Path(os.environ["B580_ARTIFACTS"]) / "DEVICE_LOST").write_text(f"{time.time_ns()} sampler startup: {error}\n")
+    raise
 period = float(sys.argv[2]) if len(sys.argv) > 2 else 0.01
 top = int(sys.argv[3]) if len(sys.argv) > 3 else 0
 ENG = ("rcs", "ccs", "bcs", "vcs", "vecs")
@@ -79,7 +85,15 @@ with open(sys.argv[1], "w", buffering=1) as out:
     threading.Thread(target=desktop, args=(out,), daemon=True).start()
     while True:
         v = []
-        for f in files:
-            f.seek(0); v.append(f.read().strip().replace(" ", "+") or "-")
+        try:
+            for f in files:
+                f.seek(0); v.append(f.read().strip().replace(" ", "+"))
+            for value in v[:4]:
+                int(value)
+            if not v[4]:
+                raise ValueError("empty throttle reasons")
+        except (OSError, ValueError) as error:
+            (Path(os.environ["B580_ARTIFACTS"]) / "DEVICE_LOST").write_text(f"{time.time_ns()} sampler sensor failure: {error}\n")
+            raise
         out.write(f"{time.time_ns() // 1000} {' '.join(v)}\n")
         time.sleep(period)

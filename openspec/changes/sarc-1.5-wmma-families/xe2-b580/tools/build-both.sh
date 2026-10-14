@@ -15,7 +15,7 @@ if [[ ${WMMA_UNIT:-} != "$0" ]]; then
   exec "$TOOLS/hold.sh" run "build-both.sh ${1:-}" env WMMA_UNIT="$0" "$0" "$@"
 fi
 
-hold_wait "build ${1:-}" || exit $?; build_exclusive || exit 75   # desktop: never during a GPU job of this campaign or a build of the Orin campaign
+build_exclusive || exit 75   # desktop: never during a GPU job of this campaign or a build of the Orin campaign
 export TMPDIR=$A/tmp
 TAG=${1:?tag}; REV=${2:-}; [[ -z $REV && $TAG == parent ]] && REV=$PARENT_COMMIT; REV=${REV:-HEAD}
 IMAGE=${SARC_BUILD_IMAGE:-localhost/et-vk-build:rocky10}
@@ -38,6 +38,7 @@ grep -q SARC_BUILD_OK $A/build/$TAG-traced.log || rc=${rc/#0/1}; echo "traced_rc
 if [[ $ok == 1 ]]; then
   python3 $ET/sarc/tools/spirv_golden.py $A/build/$TAG/backend/vulkan_compute_shaders $ET/sarc/golden/spirv.json > $A/build/$TAG.golden.txt 2>&1
   rc=$?; echo "golden_rc=$rc ($(tail -1 $A/build/$TAG.golden.txt))" >> $P; [[ $rc == 0 ]] || ok=0
+  find "$A/build/$TAG/llama" "$A/build/$TAG-traced/llama" -name libllama_runner.so -type f -exec sha256sum {} + >> "$P" || ok=0
   sha256sum $A/build/$TAG/llama/examples/models/llama/llama_main $A/build/$TAG/tests/test_llama_microbench \
     $A/build/$TAG-traced/llama/examples/models/llama/llama_main >> $P 2>&1 || ok=0
 fi

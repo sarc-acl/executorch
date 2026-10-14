@@ -67,7 +67,7 @@ Selected adapters copied from `sarc-1.5-b580-fused-port/tools/` in this clone.
 | sampler.py | Rescan foreign clients at each 50ms poll; include initial cycles of newly discovered clients; no child poller processes |
 | stage.sh, launch_runner.py, clean_exec.py | Stage recorded binaries plus identical cache/environment launcher, prime model before every process, clear unrelated ET/Vulkan overrides |
 | gate_linear.sh | Wrap unmodified verify with explicit controls, sampler/guard, loss propagation, preserved outputs and strict foreign-activity check |
-| summarize.py, gate_check.py | Copied references; no historical attention gate or acceptance exception authorized |
+| summarize.py, gate_check.py | Removed unused historical adjudication references; no historical acceptance code is reused |
 
 Raw paths, infrastructure facts, manifests and hashes stay under this run's artifact
 root. Stage records include commit, binary, profile, session/candidate, device/driver,
@@ -91,3 +91,8 @@ precision and retain exit 77 as invalid. No benchmark result is inferred from th
 Fresh Codex preflight source review passes pinned inputs/profile attention/manifest matching
 and identifies orchestration fixes. Exact compiled module, formats and measured evidence
 remain prerequisites; the review does not close the matrix.
+
+The first nohup launcher was reaped with its tool session before a source/build tag
+was created. Its empty log is retained. A setsid subprocess dry-run is checked before
+using that detachment mechanism. HOLD is checked atomically by the outer unit wrapper;
+inner scripts do not wait for HOLD while holding the busy lock.

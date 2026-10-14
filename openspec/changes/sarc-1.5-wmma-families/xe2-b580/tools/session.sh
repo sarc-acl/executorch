@@ -8,6 +8,6 @@ if [[ ${WMMA_UNIT:-} != "$0" ]]; then
 fi
 
 S=$1; shift
-hold_wait "session $S" || exit $?; idle_wait "session $S" || exit $?   # before the build lock: a build may run while the session waits for an idle desktop
+idle_wait "session $S" || exit $?   # before the build lock: a build may run while the session waits for an idle desktop
 gpu_shared || exit 75; cool_start
 $TOOLS/e2e5.sh --stage $A/stage/$S --out raw --lock $LOCK "$@"; exit $?

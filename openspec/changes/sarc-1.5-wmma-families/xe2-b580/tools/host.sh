@@ -131,7 +131,7 @@ guarded() { local f=$1 o j rc; shift
  device_check() {
   [[ ! -e $A/DEVICE_LOST ]] || return 77
   if [[ ! -r $PCI/vendor || ! -r $FREQ/act_freq || ! -r $HW/temp2_input ]] ||
-      ! cat "$FREQ/act_freq" "$HW/temp2_input" > /dev/null 2>&1; then
+      ! cat "$FREQ/act_freq" "$FREQ/throttle/status" "$FREQ/throttle/reasons" "$HW/energy1_input" "$HW/temp2_input" > /dev/null 2>&1; then
     echo "$(date -u +%FT%TZ) device or sensors unavailable; owner action required" > "$A/DEVICE_LOST"
     return 77
   fi

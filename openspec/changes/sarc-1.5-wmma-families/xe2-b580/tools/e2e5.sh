@@ -49,7 +49,9 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -n $STAGE && -n $LOCK ]] || { sed -n '2,29p' "$0"; exit 2; }
 D=$(cd "$STAGE" && pwd); cd "$D" || exit 2
-O=$D/$OUTN; mkdir -p "$O/logs"
+O=$D/$OUTN
+[[ ! -e $O/runs.csv && ! -e $O/done.txt ]] || { echo "session output exists; preserve it and use a new staged session" >&2; exit 2; }
+mkdir -p "$O/logs"
 exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK"; flock -w 900 9 || { echo "gpu-lab lock busy"; exit 75; }
 . "$(dirname "$(readlink -f "$0")")/host.sh"
 gpu_shared || exit 75
@@ -102,7 +104,7 @@ run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected 
   [[ -n $oth ]] && finish E2E5_ABORTED "other GPU process before $tag $m $q $b r$r: $oth"
   local benv=(); [[ -f $D/$b/env ]] && mapfile -t benv < "$D/$b/env"
   sampler "$O/${log%.log}.clk" 9>&- & sp=$!
-  guarded "$O/${log%.log}.others" env "${benv[@]}" LD_LIBRARY_PATH=$D/$b timeout 1800 "$D/$b/llama_main" --model_path "$(pte $m $q)" \
+  guarded "$O/${log%.log}.others" env LD_LIBRARY_PATH=$D/$b python3 "$TOOLS/clean_exec.py" "$D/$b/env" timeout 1800 "$D/$b/llama_main" --model_path "$(pte $m $q)" \
     --tokenizer_path "$(tokz $m)" --prompt_file "$p" --max_new_tokens 1 --temperature 0 \
     $([[ $tag == prefill ]] && echo --warmup) < /dev/null > "$O/$log" 2>&1 9>&-
   rc=$?; kill $sp 2>/dev/null; wait $sp 2>/dev/null; if device_check; then tq=$(gtemp); else rc=77; tq=; fi
