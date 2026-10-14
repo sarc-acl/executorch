@@ -26,7 +26,7 @@ its pre-build metadata question is pending in STATUS.md.
 | Historical reference tolerance | Same linear/attention control within 3% per cell of the final committed campaign's closing-session values; explain any difference before candidates |
 | Family margin reporting | Ratio of valid-run median candidate tok/s to same-session control; geomean ratio >=0.97 and each cell ratio >=0.92, on all six cells; one member cannot establish family acceptance |
 | Kernel screen | Incumbent changes only with >=3% improvement in every round, if a screen is used; no parameter search |
-| Uncertainty | Fixed-seed paired bootstrap of interleaved repeats plus raw spread and 1 ms timer step; confidence intervals do not relax margins |
+| Uncertainty | Paired bootstrap of interleaved repeats, seed 407014, 20,000 draws, percentile 95% interval, ratio of arm medians; report raw spread and 1 ms timer step; confidence intervals do not relax margins |
 | Arithmetic gate | Unmodified verify.sh and parent-output comparison, next-token checks on timed/real/unaligned prompts; any differing arithmetic item follows D3, or D1 for claimed identical arithmetic; never weaken tolerances |
 | Stop | Finish the finite reviewed legal list within the approved cap, or report an explicit blocker; device loss stops with no retry/reset |
 
@@ -85,7 +85,7 @@ checkout; no historical checkout or artifact was executed, modified or measured.
 
 | File | Adaptation |
 |---|---|
-| common.sh | Root, inherited lock and device index supplied through required WMMA environment variables so private launch constants stay in artifacts; assigned change/artifact roots; approved parent commit; final control profile; unique process tag. Policy probes unchanged |
+| common.sh | Root, inherited lock and device index supplied through required WMMA environment variables so private launch constants stay in artifacts; assigned change/artifact roots; approved parent commit; final control profile; unique process tag. Policy probes unchanged; loss-report template keeps private details only in the artifact marker and appends a generic notice to source STATUS.md |
 | mktree.sh | Byte-identical recursive git-object export; rejects missing pinned objects and existing destination |
 | podman-shim.sh | Byte-identical artifact-local Docker adapter for the unmodified build.sh; not installed globally |
 | warm_file.py | Byte-identical D5 read-only model page-cache helper |

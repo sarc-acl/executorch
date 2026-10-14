@@ -1,8 +1,8 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-14 19:39 UTC
+Updated: 2026-10-14 19:45 UTC
 
-Stage: preflight. No build or model GPU workload started.
+Stage: WAITING FOR OWNER. Preflight independently reviewed; no build or model GPU workload started.
 Running: nothing. Detached pinned submodule preparation finished rc=0;
 its recursive status/log/PID are under artifact source-prep/. No model
 GPU/build queue exists. All preparation stayed inside this clone.
@@ -36,8 +36,22 @@ No poller remains. Thresholds pre-registered in proposal.md; no clock calibratio
 or inherited sample-count exception. Four buffer IO entries are alternate
 correctness coverage, seven texture3d IO entries have native prefill coverage.
 
-Next: finish independent source preparation and one fresh preflight review, then
-wait for the owner question below. No build, gate or model GPU run while pending.
+Independent preflight review: PASS, fresh Codex context; see REVIEW.md.
+Input/source hashes, all 11 numeric candidate checks, six static model inspections,
+sensor latency and source boundaries independently verified. Review corrections:
+private loss details stay in artifacts; parent comment describes invariant final
+controls; trailing whitespace fixed. Shell syntax and base diff whitespace pass.
+No release, shader, golden, tolerance, prompt or sarc/tools edit.
+
+Next: await the existing owner question below. Independent preflight and source
+preparation are finished; no further recomputation or review while waiting.
+No owner-answer polling sooner than 20 minutes; asynchronous answers can steer.
+No build, gate or model GPU run while pending. No timing rows or candidate-profile
+code exist, and this is not a complete legal matrix or family acceptance.
+check.sh --no-build was not run because it compiles selector binaries; the
+pre-build prerequisite also blocks that compilation. Runtime metadata execution,
+format/exact-module checks, parent snapshot, A/A, gates, sessions, profiles and
+complete reviewed matrix remain pending launch evidence.
 Independent reviewer must read the full task before review; no reviewer build/GPU jobs.
 
 ## Decision needed from the owner
@@ -56,3 +70,11 @@ check. No initial build or model GPU workload starts while this question is pend
 The question is recorded once; independent source/preflight work can finish, then
 wait without recomputation or another review. No sample-count exception requested.
 
+## Coordinator hold
+
+Core adapter dry run passed with separate HOLD-TEST/HELD-TEST markers: it
+acknowledged the hold, released the inherited device lock, reacquired it after
+release and removed test markers. Evidence: artifact preflight/hold-dry-run.txt.
+The actual coordinator HOLD was neither created nor removed. Future launch units
+are one build, gate or resumable session; longest-unit projection remains pending
+launch-driver preparation. No build or model GPU queue exists.

@@ -11,8 +11,8 @@ A=$R/.artifacts; ET=$R/executorch
 CHANGE=$ET/openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti
 LOCK=${WMMA_DEVICE_LOCK:?set the inherited device lock}
 KIT=$ET/openspec/changes/sarc-1.5-e2e-benchmark/kit
-# The parent of every comparison is this commit WITH this environment (the first campaign's accepted stack);
-# the pristine arm of the closing session is the same build with no environment.
+# Both arms start from the approved base with the final campaign's invariant attention controls.
+# This stage has no pristine/no-environment timed comparison.
 PARENT_COMMIT=617897184529ff180af491ee0d5d7de778cbb6c6
 PARENT_ENV="ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=4070ti-fused1"
 export TMPDIR=$A/tmp; mkdir -p $TMPDIR
@@ -29,7 +29,7 @@ gpu_alive() { gtemp > /dev/null; }
 gpu_gone() {
   local msg="GPU_GONE $(date -u +%FT%TZ) $(hostname): nvidia-smi failed ($1). Run ended; nothing retried. Recovery needs a person; remove $GONE afterwards."
   echo "$msg" >&2; mkdir -p $A; echo "$msg" >> $GONE
-  printf '\n## DEVICE LOST\n\n%s\n' "$msg" >> $CHANGE/STATUS.md
+  printf '\n## DEVICE LOST\n\nGPU property/sensor query failed; all later jobs are blocked. Detailed evidence: artifact GPU_GONE marker. Owner recovery required; nothing retried.\n' >> $CHANGE/STATUS.md
   exit 70
 }
 # gone_check: call after every child; a child that hit gpu_gone ends the caller too.
