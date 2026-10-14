@@ -89,7 +89,7 @@ checkout; no historical checkout or artifact was executed, modified or measured.
 | mktree.sh | Byte-identical recursive git-object export; rejects missing pinned objects and existing destination |
 | podman-shim.sh | Byte-identical artifact-local Docker adapter for the unmodified build.sh; not installed globally |
 | warm_file.py | Byte-identical D5 read-only model page-cache helper |
-| r1304.txt | Byte-identical historical unaligned prompt, hash retained |
+| [Historical r1304.txt](../../sarc-1.5-4070ti-fused-port/tools/r1304.txt) | Reference the existing unchanged prompt; no prompt copy is added in this run |
 | query_coop.py | New CPU-only ctypes Vulkan property enumeration; never creates a device, queue, shader or command buffer |
 | inspect_models.py | New read-only mmap/schema inspection of static methods and delegate graph; no inference execution, export or Python package install |
 

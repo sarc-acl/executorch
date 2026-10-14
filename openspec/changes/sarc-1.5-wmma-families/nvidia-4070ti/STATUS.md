@@ -1,6 +1,6 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-14 19:45 UTC
+Updated: 2026-10-14 19:52 UTC
 
 Stage: WAITING FOR OWNER. Preflight independently reviewed; no build or model GPU workload started.
 Running: nothing. Detached pinned submodule preparation finished rc=0;
@@ -78,3 +78,11 @@ release and removed test markers. Evidence: artifact preflight/hold-dry-run.txt.
 The actual coordinator HOLD was neither created nor removed. Future launch units
 are one build, gate or resumable session; longest-unit projection remains pending
 launch-driver preparation. No build or model GPU queue exists.
+
+## Prompt boundary correction
+
+The strict review of 069d8d910 found a redundant prompt-path addition despite its
+byte-identical contents. Removed tools/r1304.txt and changed the proposal's adapter
+table to reference the existing unchanged historical prompt. Fixed thresholds and
+the existing owner question are unchanged. No build or GPU workload started;
+the device matrix remains unlaunched and waiting for the metadata decision.
