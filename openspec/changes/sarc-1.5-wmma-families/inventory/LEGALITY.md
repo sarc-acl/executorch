@@ -21,10 +21,10 @@ model storage first; retain supported alternate storage combinations for correct
 | Static geometry | tile_M divisible by SG_GRID_Y*MMA_M; tile_N by SG_GRID_X*MMA_N; tile_K by MMA_K. FRAG_LAYOUT needs MMA_K=MMA_N=16. A-map checks below must hold |
 | Runtime exception | `Dq8caCoopmat.cpp:94-108` reselects a row-major table row with `ignore_alignment=true` after ordinary selection fails. This is a guarded runtime fallback for an already sized row-major graph, not authorization to launch arbitrary unaligned candidates or to change the build-time layout |
 
-Implementation references: `backends/vulkan/runtime/graph/ops/impl/sarc/Select.cpp:72` (fit),
-`:141` (table), `Select.h:79` (layout/ignore_alignment),
+Implementation references: `backends/vulkan/runtime/graph/ops/impl/sarc/Select.cpp:70` (fit),
+`:145` (table), `Select.h:79` (layout/ignore_alignment),
 `Dq8caCoopmat.cpp:195` (build shape) and `:238` (fixed activation layout).
-`backends/vulkan/runtime/api/Shader.h` / pipeline construction use the wrapper's required subgroup size;
+`backends/vulkan/runtime/vk_api/Shader.h:77` / `backends/vulkan/runtime/vk_api/Pipeline.cpp:273` use the wrapper's required subgroup size;
 the F1 release commit `99989d9a3a` is already in the pinned base. No pipeline code was edited here.
 The exact source memory and wrapper references for every candidate are in the manifests and hash list.
 

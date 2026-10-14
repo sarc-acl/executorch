@@ -14,8 +14,10 @@ RX 7600 and XTX results may be public; M51 numbers and raw evidence remain priva
    its target legality status with evidence. Illegal variants are pruned before GPU launches; record why.
    Current manifest target statuses are all pending, including their originating device.
 3. Validate all six models: 1B/3B/8B x 4w/8da4w, context length 2560, quantization group size and embedding
-   configuration against `openspec/changes/sarc-1.5-llamacpp-compare/kit/MODELS.md`. Read metadata through the
-   runtime, not just the share manifest. Record local digests/sizes and tokenizer/prompt identity. Do not
+   configuration against `openspec/changes/sarc-1.5-llamacpp-compare/kit/MODELS.md`. Read context length through the runtime, not just the share manifest.
+   MODELS.md labels group size 128 and embeddings (-E 4,32) as inferred, not runtime
+   metadata; substantiate them using export provenance or direct program/tensor inspection,
+   and retain an explicit unknown if unavailable. Do not turn an inference into verification. Record local digests/sizes and tokenizer/prompt identity. Do not
    re-export or copy model files to public source. Export differences stop dependent work for the owner.
 4. Before measurement pre-register repeat count, clock-floor rule, thermal-reason mask, cooldown/plateau
    rule, sampling cadence/minimum samples, busy ceiling and baseline comparison tolerance. Use parent

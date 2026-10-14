@@ -9,7 +9,7 @@ this source-only stage. Local commits and independent source review are required
 | Deliverable | Meaning |
 |---|---|
 | `inventory.csv` | One row per device, ordered selection route and registered storage combination; exact shader, geometry, MMA, accumulation, declared shared bytes and source references |
-| `manifests/*.json` | Deduplicated candidates within each family, keyed by full shader name; defaults merged with variant parameters, origins preserved |
+| `manifests/*.json` | Deduplicated candidates within each family, keyed by exact wrapper/body/parameter fingerprint; dispatch aliases and origins preserved |
 | `legality-matrix.csv` | Every candidate against every member of its family, with explicit numeric requirements and `PENDING_QUERY` status |
 | `PROFILES.md` | Final profile provenance, inherited paths, shadowed rows and fallback boundaries |
 | `LEGALITY.md` | Static requirements, memory derivation and facts that must be queried later |
@@ -23,8 +23,9 @@ C++ selector. Source changes require a new inventory review, not blindly reusing
 All file/line references in the CSVs and manifests end in the full source commit. Line numbers refer to
 that commit. The generator reads the checkout; `source-hashes.csv` must agree with the pinned objects.
 
-The initial closure has 44 routes and 63 storage-specific origin rows. Family manifests contain 21 RDNA3,
-12 Xe2, 11 NVIDIA and 9 Xclipse candidates (17, 7, 9 and 4 kernel bases respectively). Counts include
+The reviewed closure has 42 routes and 60 storage-specific origin rows. Family manifests contain 19 RDNA3,
+12 Xe2, 11 NVIDIA and 7 Xclipse source-distinct candidates. These cover 50 exact dispatch names; one RDNA3
+source alias pair is merged, with both dispatch names and all route provenance retained. Counts include
 inherited fallback variants, not just the kernels reached by the twelve aligned production shapes.
 A candidate's presence does not assert legality or correctness on another member. Every target needs the
 queries in `LEGALITY.md`; no target was queried here. There are no measured results or winners.

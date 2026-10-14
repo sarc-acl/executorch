@@ -57,7 +57,6 @@ for token, pred in [
     ('t128x256k32g42s32f32cbt', 'N>=1024')]:
     add('780m', XQ + token, pred, 'const Pick780m k780mRefine11[]')
 add('780m', XD+'t256x64k64g48s32afmb1', 'N>=2048 && K<=4096', 'const Pick780m k780mRefine11[]')
-add('780m', Q+'sweep_t128x256k32g42s32f32c', 'N>=1024; retained if c11 has no fitting pick', 'const Preference k780mRefine3[]', 'inherited-profile')
 add('780m', BT+'t128x64k32g22s32', 'all; retained if c11 has no fitting pick', 'const Preference k780mRefine3[]', 'inherited-profile')
 add('780m', Q+'t128x128k32g42s32f32c', 'all; retained if neither profile layer fits', '"sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c"', 'table')
 
@@ -104,7 +103,6 @@ add('orin', D+'zpgtr_t128x128k64g44s32mk32ra', 'orin_measured; runtime row-major
 add('m51', 'sarc_dev_m51_linear_q4gsw_coopmat_bz_t128x128k32g42s32f32xp', 'all; preceding selector must serve shape', 'const PickM51 kM51PicksC8[]')
 add('m51', BT+'t128x64k32g22s32', 'all; served with layout reopened if needed; final layout must match', 'const PickM51 kM51PicksC8[]')
 add('m51', Q+'t128x128k16g22s32f32xp', 'all; retained when bz cannot fit (e.g. group_size=16 or buffer weight)', '"'+Q+'t128x128k16g22s32f32xp"', 'table')
-add('m51', D+'zpgtr_t128x64k32g42s32', 'all; retained when zpg_bt cannot fit or fixed row-major layout excludes it', '"'+D+'zpgtr_t128x64k32g42s32"', 'table')
 
 # Parse shader YAML, including inherited defaults and explicit iteration lists.
 variants = {}
@@ -214,28 +212,47 @@ for index,r in enumerate(routes,1):
                 activation_layout=layout,mma=mma,accumulation=acc,origins=[],row_ref=rr,yaml_ref=record['yaml_ref'],
                 wrapper_ref=record['wrapper_ref'],body_ref=record['body_ref'],
                 member_legality={d:'PENDING_QUERY: exact MMA types/scope, subgroup control, shared memory, workgroup limits, features, storage and shape; no target queried' for d in FAMILIES[family]})
-        manifest[family][name]['origins'].append(dict(device=r['device'],route=rid,layer=r['layer'],predicate=r['predicate'],row_ref=rr,selection_ref=r['selection_ref']))
+        manifest[family][name]['origins'].append(dict(device=r['device'],route=rid,layer=r['layer'],predicate=r['predicate'],shader=name,row_ref=rr,selection_ref=r['selection_ref']))
+
+# Merge exact source aliases without claiming compiler/binary identity.
+for family, entries in manifest.items():
+    dedup = {}
+    for c in entries.values():
+        wrapper_path = c['wrapper_ref'].split('@')[0].rsplit(':',1)[0]
+        body_path = c['body_ref'].split('@')[0].rsplit(':',1)[0]
+        wrapper_text = (ROOT/wrapper_path).read_text()
+        payload = [wrapper_text[wrapper_text.index('#version'):], (ROOT/body_path).read_text(), c['parameters']]
+        fingerprint = hashlib.sha256(json.dumps(payload,sort_keys=True).encode()).hexdigest()
+        alias = {k:c[k] for k in ['shader','kernel_base','yaml_ref','wrapper_ref','row_ref']}
+        if fingerprint in dedup:
+            dedup[fingerprint]['dispatch_aliases'].append(alias)
+            dedup[fingerprint]['origins'].extend(c['origins'])
+        else:
+            c['source_fingerprint'] = fingerprint
+            c['dispatch_aliases'] = [alias]
+            dedup[fingerprint] = c
+    manifest[family] = dedup
 
 with (OUT/'inventory.csv').open('w') as f:
-    w=csv.DictWriter(f,fieldnames=inventory[0]);w.writeheader();w.writerows(inventory)
+    w=csv.DictWriter(f,fieldnames=inventory[0],lineterminator="\n");w.writeheader();w.writerows(inventory)
 (OUT/'manifests').mkdir(exist_ok=True)
 for family,entries in manifest.items():
     (OUT/'manifests'/f'{family}.json').write_text(json.dumps(dict(source_commit=BASE,family=family,members=FAMILIES[family],
         status='SOURCE_INVENTORY_ONLY; conditional candidates, no legality confirmation or performance selection',
-        deduplication_key='full shader name within family (body + compile-time parameters + storage); shared origins retained',
+        deduplication_key='SHA-256 of exact wrapper text from version directive, exact body text and complete merged parameter map; dispatch aliases and origins retained; no compiled identity claimed',
         candidates=list(entries.values())),indent=2)+'\n')
 # Hash only inputs used by the inventory, with stable repository-relative names.
 refs={x.split('@')[0].rsplit(':',1)[0] for r in inventory for k,x in r.items() if k.endswith('_ref')}
 refs.update([OV,IMPL+'sarc/Select.cpp',IMPL+'sarc/Select.h',IMPL+'sarc/Dq8caCoopmat.cpp',IMPL+'sarc/Q4gswCoopmat.cpp','sarc/README.md'])
 (OUT/'source-hashes.csv').write_text('commit,path,sha256\n'+''.join(f'{BASE},{p},{hashlib.sha256((ROOT/p).read_bytes()).hexdigest()}\n' for p in sorted(refs)))
 with (OUT/'legality-matrix.csv').open('w') as f:
-    fields=['family','shader','target','status','required_shared_bytes','required_subgroup','required_wg_invocations','required_subgroups','mma','mma_types','shape_requirements','source_ref','commit']
-    w=csv.DictWriter(f,fieldnames=fields);w.writeheader()
+    fields=['family','shader','dispatch_aliases','target','status','required_shared_bytes','required_subgroup','required_wg_invocations','required_subgroups','mma','mma_types','shape_requirements','source_ref','commit']
+    w=csv.DictWriter(f,fieldnames=fields,lineterminator="\n");w.writeheader()
     for family,entries in manifest.items():
         for c in entries.values():
             p=c['parameters']
             for target in FAMILIES[family]:
-                w.writerow(dict(family=family,shader=c['shader'],target=target,status='PENDING_QUERY',
+                w.writerow(dict(family=family,shader=c['shader'],dispatch_aliases=';'.join(a['shader'] for a in c['dispatch_aliases']),target=target,status='PENDING_QUERY',
                     required_shared_bytes=c['declared_shared_bytes'],required_subgroup=p['SUBGROUP_SIZE'],
                     required_wg_invocations=p['SG_GRID_X']*p['SG_GRID_Y']*p['SUBGROUP_SIZE'],
                     required_subgroups=p['SG_GRID_X']*p['SG_GRID_Y'],mma=c['mma'],
@@ -245,4 +262,4 @@ with (OUT/'legality-matrix.csv').open('w') as f:
 
 print(f'{len(routes)} routes; {len(inventory)} inventory rows')
 for family,entries in manifest.items():
-    print(f'{family}: {len(entries)} storage-specific candidates; {len({x["kernel_base"] for x in entries.values()})} kernel bases')
+    print(f'{family}: {len(entries)} source-distinct storage candidates; {sum(len(x["dispatch_aliases"]) for x in entries.values())} dispatch names')

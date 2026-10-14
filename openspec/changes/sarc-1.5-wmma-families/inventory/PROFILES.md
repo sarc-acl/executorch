@@ -7,14 +7,14 @@ variant, force-tiled and disable variables before reconstructing an environment.
 
 | Device / family | Final profile and evidence | Linear closure |
 |---|---|---|
-| 780M / RDNA3 RADV | `ET_VK_SARC_DEV_PROFILE=780m-final`; `sarc-1.5-780m-prefill-refine/STATUS.md:3`; `sarc/README.md:125` (profile table follows) | `Overrides.cpp:1932` chooses `k780mRefine3` (`:1180`), and `:2742` / `:2754` resolves the final name to c11 / `k780mRefine11` (`:2693`); outer five ordered 4w picks and one 8da4w pick, then refine3, then AMD table |
+| 780M / RDNA3 RADV | `ET_VK_SARC_DEV_PROFILE=780m-final`; `sarc-1.5-780m-prefill-refine/STATUS.md:3`; `sarc/README.md:101` | `Overrides.cpp:1932` chooses `k780mRefine3` (`:1180`), and `:2742` / `:2754` resolves the final name to c11 / `k780mRefine11` (`:2693`); outer five ordered 4w picks and one 8da4w pick, then refine3, then AMD table |
 | RX 7600 / RDNA3 RADV | `ET_VK_SARC_RX7600_PROFILE=rx7600-refine5`; `sarc-1.5-rx7600-prefill-refine/STATUS.md:9`; `sarc/README.md` final-profile table | `Overrides.cpp:2964` / `:2986`: two exact production-NK picks, otherwise prior table; 780M softmax/fused controls below do not add linear preferences |
 | RX 7900 XTX / RDNA3 RADV prerequisite | `ET_VK_SARC_7900XTX_PROFILE=7900xtx-refine5`; `sarc-1.5-7900xtx-prefill-refine/STATUS.md:18` | `Overrides.cpp:3558` / `:3619`: one 4w pick and four 8da4w picks, then AMD table. This profile was measured under AMDVLK historically; no RADV evidence is inferred |
 | B580 / Xe2 | `ET_VK_SARC_DEV_PROFILE=b580-fused1-order-p13`; `sarc-1.5-b580-fused-port/STATUS.md:20` | `Overrides.cpp:2303` -> `kB580Fused1Order_p13` (`:1835`); no 4w preference; 8da4w n13 for N*K >= 24,000,000, i otherwise, then Intel table |
 | B70 / Xe2 | `ET_VK_SARC_DEV_PROFILE=b70-fused1-order-i-n26-w16m`; `sarc-1.5-b70-fused-port/STATUS.md:27` | `Overrides.cpp:2310` -> `kB70Fused1Order_i_n26_w16m` (`:1888`); 4w N<=512 k32 preference, then k16; 8da4w n26 for N*K >= 33,554,432, i otherwise, then table |
 | RTX 4070 Ti SUPER / NVIDIA Ampere-Ada | `ET_VK_SARC_DEV_PROFILE=4070ti-fused1`; `sarc-1.5-4070ti-fused-port/STATUS.md:3` | `Overrides.cpp:2007` -> `k4070tiRefine1` (`:1264`) has attention preferences only: all linear choices are `table_nvidia.cpp:57-95` |
 | Orin Nano / NVIDIA Ampere-Ada | `ET_VK_SARC_DEV_PROFILE=orin-fused1`; `sarc-1.5-orin-fused-port/STATUS.md:3` | `Overrides.cpp:2091` -> `kOrinRefine5` (`:1444`): 8da4w bf, 4w bx for K>8192 and bt for remaining 256-row shapes, otherwise NVIDIA table |
-| M51 / Xclipse | `ET_VK_SARC_M51_PROFILE=c8`; `sarc/README.md` final-profile table; `sarc-1.5-m51-prefill-refine/proposal.md` Results / second round | `Overrides.cpp:3278` -> `kM51PicksC8` (`:3252`): bz 4w and zpg_bt 8da4w, then Xclipse rows in `table_amd.cpp`. The public proposal is number-free; private status/raw rows are unavailable here |
+| M51 / Xclipse | `ET_VK_SARC_M51_PROFILE=c8`; `sarc/README.md` final-profile table; `sarc-1.5-m51-prefill-refine/proposal.md` Results / second round | `Overrides.cpp:3278` -> `kM51PicksC8` (`:3252`): bz 4w and zpg_bt 8da4w, then the reachable 4w Xclipse row in `table_amd.cpp`. The public proposal is number-free; private status/raw rows are unavailable here |
 
 The change-directory shorthand in the evidence column is under `openspec/changes/`.
 The executable registration, preference and predicate references for every individual route are in
@@ -23,13 +23,16 @@ The executable registration, preference and predicate references for every indiv
 The override chain is `table -> dev_select -> select_780m -> select_rx7600 -> select_m51 -> select_7900xtx`
 within `impl/sarc_dev/Overrides.cpp`. `dev_select:2414` searches candidates before table rows by suffix,
 requiring a table choice. Exact names used by outer layers refer to registered candidates. Their row storage
-masks matter even when the YAML contains more storage variants. Rows with unchanged names are not renamed
-or collapsed across different bodies/accumulation/storage.
+masks matter even when the YAML contains more storage variants. Rows are not renamed or collapsed across different bodies/accumulation/storage. One exact source alias
+pair is deduplicated in the RDNA3 manifest: the release and 780M dev `t256x128k32g24s32f32cbt`
+texture3d variants have identical wrapper text from #version, identical body and merged parameters.
+The manifest preserves both dispatch aliases and origins; binary identity is not claimed without a build.
 
 `780m-final` includes all five c11 4w picks even where another pick shadows them on the twelve production
 shapes: the later entries can serve other aligned shapes. For example, the fifth pick serves N>=1024,
-3072<=K<4096 with N<2048. The inherited wide row can still serve M=128 where a preceding 256-row pick
-fails. Its buffer-weight table fallback remains. The 780M table 8da4w row is always replaced by zpg_bt
+3072<=K<4096 with N<2048. The inherited row-major-B wide preference is fully shadowed by c11's fifth column-major-B
+preference: identical alignment, storage and subgroup fit, both CSH_IN_ASH, and the same N>=1024
+predicate. It is an ancestor control, not a reachable final candidate. Its table buffer-weight fallback remains. The 780M table 8da4w row is always replaced by zpg_bt
 when the table serves: same alignment and storage, smaller subgroup grid with the same C drain rows.
 It therefore is not an extra 780M origin, though the same kernel is a candidate via RX 7600 / XTX.
 
@@ -62,16 +65,18 @@ M51 c8 supersedes the old c3/c5 K=4096 bx pick. The original k16 4w table row re
 bz k32 cannot fit, including group_size=16 and buffer weights. c8 switches aligned 8da4w graphs from
 row-major to 4h4w. Once built, the activation layout is fixed: `select_m51:3329` reopens the layout only
 to check service availability, then enforces the actual layout on the pick. This is not conversion at
-runtime. For unaligned M with a 4h4w graph it falls back to stock tiled; a graph built row-major can
-retain the table zpgtr kernel. Private evidence and compiler dependence are in the packet.
+runtime. For unaligned M with a 4h4w graph it falls back to stock tiled; the old table zpgtr row cannot be reached by a graph built under c8. Build-time layout starts as
+kAny, and every table zpgtr fit implies a zpg_bt fit (same alignment, storage, subgroup and C drain
+rows), so c8 always fixes it to 4h4w. The old row is therefore excluded from final-profile candidates.
+Private evidence and compiler dependence are in the packet.
 
 ## Non-cooperative fallback boundary
 
 `Q4gswCoopmat.cpp:69-111` chooses `linear_q4gsw_tiled` for M>1 if no SARC choice fits; its cooperative
 single-token fallback is decode and outside this inventory. `Dq8caCoopmat.cpp:94-137` retains a row-major
 table choice when needed; otherwise it uses `linear_dq8ca_q4gsw_tiled` for prefill. A graph for which
-`builds_on_sarc` is false stays on the pre-existing op path entirely (`Select.cpp:167`,
-`Q4gswCoopmat.cpp:137`, `Dq8caCoopmat.cpp:211`). Those upstream paths are controls, not additional
+`builds_on_sarc` is false stays on the pre-existing op path entirely (`Select.cpp:169`,
+`Q4gswCoopmat.cpp:163`, `Dq8caCoopmat.cpp:231`). Those upstream paths are controls, not additional
 WMMA candidates. Bias, fp32, batch!=1, unsupported storage and unaligned cases must continue to be
 handled correctly; this stage changes none of them. Decode gate requirements of future measured runs
 remain in force; no decode tuning is proposed.

@@ -9,12 +9,14 @@ relay. Do not copy private paths into public source.
 
 Final profile is `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_M51_PROFILE=c8`, not c4/c5 and not c9.
 c8 chooses bz 4w on fitting shapes (replacing c3's K=4096 bx pick) and zpg_bt 8da4w.
-Original Xclipse rows remain as described in `PROFILES.md`. This family has one member; it still requires
+The reachable original Xclipse 4w row remains as described in `PROFILES.md`. This family has one member; it still requires
 all six cells and complete legality/gate evidence. No cross-family transfer is implied.
 
-8B is required (owner decision N10), both 4w and 8da4w. Record runtime-read context length, group size,
-embedding quantization, model size/digest against the model specification; historical share-manifest
-metadata alone was not a runtime check. Use **`ET_VK_EXECUTE_NODE_THRESHOLD=32` for every 8B arm**,
+8B is required (owner decision N10), both 4w and 8da4w. Read context length through the runtime; record model size/digest and group-size/embedding
+configuration evidence against the model specification. MODELS.md labels group size 128 and embeddings
+(-E 4,32) as inferred, not readable program metadata. Use export provenance or direct program/tensor
+inspection where possible, retain unknowns otherwise, and do not claim runtime verification of an inference.
+Historical share-manifest metadata alone was not a runtime context check. Use **`ET_VK_EXECUTE_NODE_THRESHOLD=32` for every 8B arm**,
 including parent/control, A/A and candidate. Keep the variable absent for 1B/3B. The hook already exists in
 the pinned base; this is the concrete setting historically called "thread hold = 32". It limits command
 submission node count; it is not a new host-policy adjustment. Check source and record the actual environment.
