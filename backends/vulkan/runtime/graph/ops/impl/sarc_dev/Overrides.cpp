@@ -2811,6 +2811,16 @@ Override& fused_780m() {
   return fused;
 }
 
+// The 780M family's node (780m/Sdpa780mFused.cpp, also used by the RX 7600 and
+// RX 7900 XTX) is installed only when it has variants to run: a 780m profile with
+// a fused entry or ET_VK_SARC_780M_SDPA_FUSED. Otherwise the override keeps the
+// node another device's profile installed. (Merge of the campaigns: installed
+// unconditionally, it replaced the RTX 4070 Ti SUPER's node whenever its static
+// initializer ran later, so 4070ti-fused1 ran the split SDPA path.)
+bool fused_780m_wanted() {
+  return std::getenv("ET_VK_SARC_780M_SDPA_FUSED") != nullptr ||
+      *sdpa_fused_variants_780m() != 0;
+}
 struct Registrar780m {
   Registrar780m() {
     register_candidates(k780mSpace, sizeof(k780mSpace) / sizeof(k780mSpace[0]));
@@ -2821,8 +2831,10 @@ struct Registrar780m {
     if (active != nullptr && std::getenv("ET_VK_DISABLE_COOPMAT") == nullptr) {
       o.softmax_variant = active->softmax_variant;
     }
-    o.sdpa_fused_add = fused_780m().sdpa_fused_add;
-    o.sdpa_fused_serves = fused_780m().sdpa_fused_serves;
+    if (fused_780m_wanted()) {
+      o.sdpa_fused_add = fused_780m().sdpa_fused_add;
+      o.sdpa_fused_serves = fused_780m().sdpa_fused_serves;
+    }
     set_override(o);
   }
 } registrar_780m;
@@ -2834,10 +2846,12 @@ void register_sdpa_fused_780m(
     bool (*serves)(ComputeGraph*, const std::vector<int32_t>&)) {
   fused_780m().sdpa_fused_add = add;
   fused_780m().sdpa_fused_serves = serves;
-  Override o = get_override();
-  o.sdpa_fused_add = add;
-  o.sdpa_fused_serves = serves;
-  set_override(o);
+  if (fused_780m_wanted()) {
+    Override o = get_override();
+    o.sdpa_fused_add = add;
+    o.sdpa_fused_serves = serves;
+    set_override(o);
+  }
 }
 
 const char* sdpa_fused_variants_780m() {
