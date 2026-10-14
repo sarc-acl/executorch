@@ -1,0 +1,21 @@
+golden check of build/rx7600/final (commit 18cc0d53a91e42f1100cc08c7f2c8327c1c77770) 2026-10-08T08:11:39Z
+-- against golden-ref-parent.json (the native-glslc reference of the pristine parent build)
+spirv golden: PASS (53 shipped variants)
+-- against sarc/golden/spirv.json (container glslc: PENDING for native builds)
+DIFF  sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_buffer_texture2d_half (owner radeon-780m: re-verify on that device, then --update)
+DIFF  sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_texture3d_texture2d_half (owner radeon-780m: re-verify on that device, then --update)
+DIFF  sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_buffer_texture2d_half (owner arc-b580+arc-pro-b70: re-verify on that device, then --update)
+DIFF  sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8_texture3d_texture2d_half (owner arc-b580+arc-pro-b70: re-verify on that device, then --update)
+DIFF  sarc_linear_dq8ca_coopmat_zpgtr_t128x64k32g42s32_buffer_texture2d_half (owner UNVERIFIED:xclipse-m51: re-verify on that device, then --update)
+DIFF  sarc_linear_dq8ca_coopmat_zpgtr_t128x64k32g42s32_texture3d_texture2d_half (owner UNVERIFIED:xclipse-m51: re-verify on that device, then --update)
+DIFF  sarc_linear_q4gsw_coopmat_t64x64k32g21s64m64x32x16_buffer_texture2d_half (owner UNVERIFIED:adreno-840: re-verify on that device, then --update)
+DIFF  sarc_linear_q4gsw_coopmat_t64x64k32g21s64m64x32x16_texture3d_texture2d_half (owner UNVERIFIED:adreno-840: re-verify on that device, then --update)
+DIFF  sarc_linear_q4gsw_coopmat_t64x64k32g21s64m64x32x16_buffer_buffer_half (owner UNVERIFIED:adreno-840: re-verify on that device, then --update)
+DIFF  sarc_linear_q4gsw_coopmat_t64x128k32g44s16m16x32x32gahb_buffer_texture2d_half (owner UNVERIFIED:mali-g1: re-verify on that device, then --update)
+DIFF  sarc_linear_q4gsw_coopmat_t64x128k32g44s16m16x32x32gahb_texture3d_texture2d_half (owner UNVERIFIED:mali-g1: re-verify on that device, then --update)
+DIFF  sarc_linear_q4gsw_coopmat_t64x128k32g44s16m16x32x32gahb_buffer_buffer_half (owner UNVERIFIED:mali-g1: re-verify on that device, then --update)
+DIFF  sarc_sdpa_av_coopmat_t64x64k32g22s64_buffer_buffer_half (owner radeon-780m: re-verify on that device, then --update)
+DIFF  sarc_sdpa_qk_coopmat_t128x64k32g22s64_buffer_buffer_half (owner radeon-780m: re-verify on that device, then --update)
+spirv golden: FAIL (53 shipped variants)
+-- same against the pristine parent build:
+14

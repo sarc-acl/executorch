@@ -1009,3 +1009,210 @@ const char* sdpa_fused_variants_780m() {
 } // namespace sarc
 } // namespace vkcompute
 // --- 780m end ---
+
+// --- rx7600 begin (openspec/changes/sarc-1.5-rx7600-prefill-refine, 2026-10-06) ---
+// ET_VK_SARC_RX7600_PROFILE=<name>: the RX 7600 campaign's candidates, on top of
+// the selection above: a linear kernel per layer shape among the registered
+// candidates, and the softmax variant. A shape whose entry does not apply or
+// whose kernel does not fit keeps the earlier selection. The fused attention
+// kernels are chosen with ET_VK_SARC_780M_SDPA_FUSED (780m/Sdpa780mFused.cpp).
+namespace vkcompute {
+namespace sarc {
+namespace {
+
+struct PickRx7600 {
+  Op op;
+  const char* kernel_base;
+  bool (*shape_ok)(const ShapeInfo&);
+};
+struct ProfileRx7600 {
+  const char* name;
+  const PickRx7600* picks;
+  size_t count;
+  const char* softmax_variant;
+};
+// rx7600-refine2 (candidate 3): a linear kernel per layer shape, from the complete
+// 3-round kernel screens of 2026-10-07 (results/rx7600/screens/): a kernel
+// replaces the table kernel of a shape only if at least 3 % faster in every
+// round. The shapes are the twelve real prefill shapes (M = 2048); N and K
+// identify a layer of one model. 4w: the 256 x 128 tile with column-major B
+// (cbt) on the w2 shapes and 8B w1_w3, the same tile with row-major B staging
+// (bbt) on 1B wk_wv and 3B w1_w3; the other 4w shapes keep the table kernel.
+// 8da4w: the 780M's 256 x 64 tile (K step 64) on all twelve shapes. The
+// texel-wise family (zpg_bt) is candidate 4's, screened against these picks.
+bool q4_cbt_shape(const ShapeInfo& s) {
+  return !s.gemv &&
+      ((s.N == 14336 && s.K == 4096) || (s.N == 4096 && s.K == 14336) ||
+       (s.N == 2048 && s.K == 8192) || (s.N == 3072 && s.K == 8192));
+}
+bool q4_bbt_shape(const ShapeInfo& s) {
+  return !s.gemv &&
+      ((s.N == 512 && s.K == 2048) || (s.N == 8192 && s.K == 3072));
+}
+bool dq_prefill_shape(const ShapeInfo& s) {
+  static const int64_t nk[][2] = {
+      {4096, 4096}, {1024, 4096}, {14336, 4096}, {4096, 14336},
+      {2048, 2048}, {512, 2048},  {8192, 2048},  {2048, 8192},
+      {3072, 3072}, {1024, 3072}, {8192, 3072},  {3072, 8192}};
+  if (s.gemv) {
+    return false;
+  }
+  for (const auto& e : nk) {
+    if (s.N == e[0] && s.K == e[1]) {
+      return true;
+    }
+  }
+  return false;
+}
+const PickRx7600 kRx7600Refine2[] = {
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt",
+     q4_cbt_shape},
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32bbt",
+     q4_bbt_shape},
+    {Op::kDq8caLinear,
+     "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1",
+     dq_prefill_shape},
+};
+// rx7600-refine3 (candidate 4): refine2 with the whole-texel weight staging
+// family (zpg_bt) on every 8da4w shape instead of the 256 x 64 tile; the 4w
+// picks are refine2's. The screen has it within 1.5 % of refine2's kernel on
+// every shape (not the 3 % that replaces it), so this is measured as a whole.
+const PickRx7600 kRx7600Refine3[] = {
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt",
+     q4_cbt_shape},
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32bbt",
+     q4_bbt_shape},
+    {Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k64g42s32",
+     dq_prefill_shape},
+};
+// rx7600-refine4 (round 2, candidate 1): refine2 with the 8da4w kernel of glsl/sarc_dev/sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg.yaml
+// whose A staging rows are 24 bytes apart in shared memory (pa6) instead of 16, on every 8da4w prefill shape of refine2; the 4w picks are
+// refine2's. Same arithmetic, same tile, K step and thread maps as the refine2 kernel (afmb1); the screen (results/rx7600/round2/) has it
+// at least 3 % faster on all twelve shapes in every round.
+const PickRx7600 kRx7600Refine4[] = {
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt",
+     q4_cbt_shape},
+    {Op::kQ4gswLinear,
+     "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32bbt",
+     q4_bbt_shape},
+    {Op::kDq8caLinear,
+     "sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32pa6pb4csha",
+     dq_prefill_shape},
+};
+// rx7600-refine5 (round 2, candidate 2): refine4 plus the 4w kernel of glsl/sarc_dev/sarc_dev_rx7600_x_linear_q4gsw_coopmat.yaml with the
+// 256 x 128 tile (16 waves), the A staging typed uvec2 with a row pitch of 72 bytes and the column-major B staging with 88 bytes (ap4bp12), on
+// every 4w prefill shape: 12 of 12 shapes at least 3 % faster than the round-1 pick in both rounds of the kernel screen
+// (results/rx7600/round2/). Same arithmetic, tile and K step as the refine2 / refine4 picks of the shapes it replaces.
+const PickRx7600 kRx7600Refine5[] = {
+    {Op::kQ4gswLinear,
+     "sarc_dev_rx7600_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbtap4bp12",
+     dq_prefill_shape},
+    {Op::kDq8caLinear,
+     "sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32pa6pb4csha",
+     dq_prefill_shape},
+};
+const ProfileRx7600 kRx7600Profiles[] = {
+    {"rx7600-refine1", nullptr, 0, "780m_r3"},
+    {"rx7600-refine2",
+     kRx7600Refine2,
+     sizeof(kRx7600Refine2) / sizeof(PickRx7600),
+     "780m_r3"},
+    {"rx7600-refine3",
+     kRx7600Refine3,
+     sizeof(kRx7600Refine3) / sizeof(PickRx7600),
+     "780m_r3"},
+    {"rx7600-refine4",
+     kRx7600Refine4,
+     sizeof(kRx7600Refine4) / sizeof(PickRx7600),
+     "780m_r3"},
+    {"rx7600-refine5",
+     kRx7600Refine5,
+     sizeof(kRx7600Refine5) / sizeof(PickRx7600),
+     "780m_r3"},
+};
+const ProfileRx7600* active_profile_rx7600() {
+  static const ProfileRx7600* const active = []() -> const ProfileRx7600* {
+    const char* e = std::getenv("ET_VK_SARC_RX7600_PROFILE");
+    if (e == nullptr || *e == 0) {
+      return nullptr;
+    }
+    for (const ProfileRx7600& p : kRx7600Profiles) {
+      if (std::strcmp(p.name, e) == 0) {
+        return &p;
+      }
+    }
+    std::cerr << "[sarc_dev] unknown ET_VK_SARC_RX7600_PROFILE=" << e << std::endl;
+    std::abort();
+  }();
+  return active;
+}
+
+std::optional<Choice> (*select_before_rx7600)(
+    const DeviceInfo&,
+    const ShapeInfo&,
+    const std::optional<Choice>&) = nullptr;
+
+std::optional<Choice> select_rx7600(
+    const DeviceInfo& device,
+    const ShapeInfo& shape,
+    const std::optional<Choice>& table_choice) {
+  const std::optional<Choice> before =
+      select_before_rx7600(device, shape, table_choice);
+  const ProfileRx7600* active = active_profile_rx7600();
+  if (active == nullptr || !before.has_value()) {
+    return before;
+  }
+  for (size_t i = 0; i < active->count; ++i) {
+    const PickRx7600& pick = active->picks[i];
+    if (pick.op != shape.op || !pick.shape_ok(shape)) {
+      continue;
+    }
+    for (const Row& row : candidates()) {
+      if (row.op == shape.op && row.kernel_base == std::string(pick.kernel_base) &&
+          q4gsw_coopmat_fits(device, shape, row)) {
+        return Choice{row.kernel_base, row.dims, row.rowmajor_a};
+      }
+    }
+  }
+  return before;
+}
+
+// Round 2 (2026-10-08): the 8da4w variants of glsl/sarc_dev/sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg.yaml (generated table). Reachable by exact
+// name (ET_VK_SARC_780M_DQ) and by the rx7600-refine4 profile of round 2; no earlier profile picks them.
+const Row kRx7600Space[] = {
+#include "SpaceRx7600Dq.inc"
+};
+// The 4w variants of glsl/sarc_dev/sarc_dev_rx7600_x_linear_q4gsw_coopmat.yaml (generated table), reachable by exact name (ET_VK_SARC_780M_Q4).
+const Row kRx7600SpaceQ4[] = {
+#include "SpaceRx7600Q4.inc"
+};
+
+struct RegistrarRx7600 {
+  RegistrarRx7600() {
+    register_candidates(kRx7600Space, sizeof(kRx7600Space) / sizeof(kRx7600Space[0]));
+    register_candidates(kRx7600SpaceQ4, sizeof(kRx7600SpaceQ4) / sizeof(kRx7600SpaceQ4[0]));
+    Override o = get_override();
+    select_before_rx7600 = o.select;
+    o.select = select_rx7600;
+    const ProfileRx7600* active = active_profile_rx7600();
+    if (active != nullptr && active->softmax_variant != nullptr &&
+        !env_true("ET_VK_DISABLE_COOPMAT")) {
+      o.softmax_variant = active->softmax_variant;
+    }
+    set_override(o);
+    if (active != nullptr) {
+      std::cerr << "[sarc_dev] rx7600 profile active: " << active->name << std::endl;
+    }
+  }
+} registrar_rx7600;
+
+} // namespace
+} // namespace sarc
+} // namespace vkcompute
+// --- rx7600 end ---

@@ -1,0 +1,7 @@
+line 2:
+  snapshot : linear 4w rc=1 kernels:  12 "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half"; 12 "sarc_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt_texture3d_texture2d_half";
+  candidate: linear 4w rc=1 kernels:  12 "q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half"; 2 "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32bbt_texture3d_texture2d_half"; 4 "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt_texture3d_texture2d_half"; 6 "sarc_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt_texture3d_texture2d_half";
+line 3:
+  snapshot : linear 8da4w rc=1 kernels:  12 "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_buffer_texture2d_half"; 12 "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_texture3d_texture2d_half";
+  candidate: linear 8da4w rc=1 kernels:  12 "sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32pa6pb4csha_texture3d_texture2d_half"; 12 "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_buffer_texture2d_half";
+VERIFY_COMPARE: DIFFERS (32 / 32 lines, 2 differ)

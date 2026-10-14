@@ -1,0 +1,6 @@
+# RADV (user-space Mesa 26.2.3, RADV_DEBUG=shaders, one microbench run of the 1B 8da4w prefill shapes), the shipped 8da4w kernel
+# sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1 (shape wk_wv 1B is the largest dump of the kernel). Raw dump: <artifacts>/raw/isa-r2a/afmb1.err
+workgroup_size 1024 x 1 x 1, api_subgroup_size 32, shared_size 60160 bytes
+VGPRs used (highest register index + 1, after register allocation): 64
+spills: 3 scratch_store_dword in the loop pre-header block, 3 scratch_load_dword after the loop; none inside the loop
+main loop (chunk loop unrolled by 2): per half 8 v_wmma_i32_16x16x16_iu8 and 24 ds_read_b64 (every A / B fragment load is two ds_read_b64, none is ds_read_b128)

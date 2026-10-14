@@ -1,0 +1,22 @@
+worst-round ratio incumbent / candidate per shape (>= 1.03 passes)
+shape                       incumbent                     g24s32f32cbt g24s32f32cbtbp12 g24s32f32cbtbp4 g28s32f32cbt g28s32f32cbtbp12 g28s32f32cbtbp4
+1b w1_w3  N8192   K2048     table                                1.002       1.047       1.047       1.005       1.068       1.061
+1b w2     N2048   K8192     780m_t256x128k32g28s32f32cbt         0.963       0.997       0.999       0.998       1.045       1.051
+1b wk_wv  N512    K2048     780m_t256x128k32g28s32f32bbt         0.943       0.967       0.974       1.004       1.004       1.005
+1b wq_wo  N2048   K2048     table                                0.984       1.020       1.012       0.996       1.069       1.026
+3b w1_w3  N8192   K3072     780m_t256x128k32g28s32f32bbt         0.968       1.016       1.013       1.004       1.041       1.042
+3b w2     N3072   K8192     780m_t256x128k32g28s32f32cbt         0.965       1.008       1.009       1.004       1.045       1.055
+3b wk_wv  N1024   K3072     table                                0.983       1.004       1.002       1.013       1.063       1.059
+3b wq_wo  N3072   K3072     table                                0.992       1.034       1.036       1.016       1.067       1.078
+8b w1_w3  N14336  K4096     780m_t256x128k32g28s32f32cbt         0.966       1.002       1.001       1.002       1.048       1.048
+8b w2     N4096   K14336    780m_t256x128k32g28s32f32cbt         0.960       1.002       1.003       1.000       1.040       1.047
+8b wk_wv  N1024   K4096     table                                0.997       1.010       1.011       1.019       1.057       1.061
+8b wq_wo  N4096   K4096     table                                0.999       1.059       1.060       1.013       1.103       1.081
+
+kernel                                                     shapes passing   geomean of worst-round ratios
+t256x128k32g24s32f32cbt                                      0 / 12        0.977
+t256x128k32g24s32f32cbtbp12                                  3 / 12        1.014
+t256x128k32g24s32f32cbtbp4                                   3 / 12        1.014
+t256x128k32g28s32f32cbt                                      0 / 12        1.006
+t256x128k32g28s32f32cbtbp12                                 11 / 12        1.054
+t256x128k32g28s32f32cbtbp4                                  10 / 12        1.051

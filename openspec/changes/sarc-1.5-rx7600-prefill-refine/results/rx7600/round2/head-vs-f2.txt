@@ -1,0 +1,37 @@
+# The head against build f2 (final verification build)
+
+Written 2026-10-09 15:57 UTC (after reviewer finding; later commits change no source file outside `openspec/`). Build `f2` = exported commit `73648f5bd` (the build that was gated and timed in `sessions/r2-final`). The branch head
+`a2f820691` is NOT that commit: the owner ruled no new build, so no binary was built from the head. What differs, and why it cannot change the final stack:
+
+## 1. Source files outside `openspec/` that differ (`git diff --name-status 73648f5bd a2f820691 -- . ':!openspec'`)
+
+M	backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_rx7600_q4_body.glslh
+M	backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_rx7600_x_linear_q4gsw_coopmat.glsl
+M	backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_rx7600_x_linear_q4gsw_coopmat.yaml
+M	backends/vulkan/runtime/graph/ops/impl/sarc_dev/SpaceRx7600Q4.inc
+
+ 4 files changed, 57 insertions(+), 1 deletion(-)
+
+Commits `9dab4ef78` and `e96fa9ed3`: measurement-only phase-timing twins (`RX_PROF`) of the 4w kernel, default off, added after candidate 2's session. `git diff --shortstat e96fa9ed3 HEAD -- . ':!openspec'` is empty:
+the micro build `r2j` (export of `e96fa9ed3`, backend + tests only) has the head's source.
+
+## 2. SPIR-V of f2 against r2j (sha256 of every `*.spv` in `backend/vulkan_compute_shaders`)
+
+- f2: 1510 files; r2j: 1513 files.
+- Files present in both: 1510; byte-identical: 1510; different: 0. Files only in f2: 0.
+- Files only in r2j (the three twins):
+  - sarc_dev_rx7600_x_linear_q4gsw_coopmat_t256x128k32g24s32f32cbtp_texture3d_texture2d_half.spv
+  - sarc_dev_rx7600_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbtap4bp12p_texture3d_texture2d_half.spv
+  - sarc_dev_rx7600_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbtp_texture3d_texture2d_half.spv
+
+So the shipped variants and every kernel of the final stack (`...cbtap4bp12`, `...pa6pb4csha`, fused3sb, softmax r3) have identical SPIR-V in f2 and in a build of the head's source.
+
+## 3. The three new rows cannot be selected by the final stack
+
+The final stack selects with `ET_VK_SARC_RX7600_PROFILE=rx7600-refine5` through `select_rx7600` (`impl/sarc_dev/Overrides.cpp`): it compares `row.kernel_base == std::string(pick.kernel_base)` (exact name) and the picks are
+`..._t256x128k32g28s32f32cbtap4bp12` and `..._zpg_t256x64k64g48s32pa6pb4csha`; the new rows end in an extra `p` (`...cbtp`, `...cbtap4bp12p`), so they do not match. The suffix-token matching of the 780M env switches
+(`ends_with(kernel_base, "_" + token)`) is not used by the final stack's environment. The rows are reachable only by their exact name through `ET_VK_SARC_780M_Q4`.
+
+## Not done
+
+No binary of the head was built or run; `check.sh --no-build` was run on the head (`check-no-build-head.txt`), which compiles only `test_sarc_select`.

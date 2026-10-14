@@ -1,0 +1,17 @@
+# 4w phase twins (build r2j, measurement only), written AFTER candidate 2's end-to-end session; sum over the twelve prefill shapes of (workgroups x cycles of subgroup 0), 1e9 cycles;
+# cases: {'g28 pick': 12, 'g24 table twin': 12, 'cand 2 ap4bp12': 12} (g28 pick = the 780m cbt tile at the shipped 80 / 80 byte pitches, the round-1 pick on 6 shapes; g24 = the release table kernel's tile, the round-1 pick on 4 shapes)
+phase                       g28 pick    g24 table twin    cand 2 ap4bp12
+barrier_cyc                    1.259             0.975             0.572
+fetch_cyc                      0.102             0.114             1.047
+mma_cyc                        0.987             1.102             0.880
+lds_store_cyc                  0.450             0.600             0.340
+prologue_cyc                   0.008             0.010             0.012
+group_epilog_cyc               0.015             0.014             0.009
+drain_cyc                      0.020             0.020             0.023
+write_cyc                      0.006             0.010             0.002
+total_cyc                      2.846             2.844             2.885
+g28 pick: barrier + LDS-store cycles 1.709 = 60.1 % of the total; MMA phase 34.7 %; fetch 3.6 %
+g24 table twin: barrier + LDS-store cycles 1.575 = 55.4 % of the total; MMA phase 38.7 %; fetch 4.0 %
+cand 2 ap4bp12: barrier + LDS-store cycles 0.912 = 31.6 % of the total; MMA phase 30.5 %; fetch 36.3 %
+cand 2 / g28 pick: total 1.014, barrier 0.454, mma 0.892, lds_store 0.756, fetch 10.303, barrier+lds 0.533
+cand 2 / g24 table twin: total 1.014, barrier 0.586, mma 0.799, lds_store 0.567, fetch 9.214, barrier+lds 0.579

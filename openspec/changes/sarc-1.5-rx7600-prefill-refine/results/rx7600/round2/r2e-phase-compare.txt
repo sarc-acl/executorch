@@ -1,0 +1,13 @@
+# phase twins of the shipped tile (r2a-base: ..._t256x64k64g48s32p) and of the A row pitch 24 bytes (r2e-pa6: ..._pa6pb4cshap)
+# per phase: sum over the twelve prefill shapes of (workgroups x cycles of subgroup 0), in 1e9 cycles
+phase                   base       pa6  pa6/base
+barrier_cyc            1.559     1.415     0.907
+fetch_cyc              0.249     0.309     1.243
+mma_cyc                0.814     0.537     0.660
+lds_store_cyc          0.211     0.208     0.985
+prologue_cyc           0.032     0.029     0.918
+group_epilog_cyc       0.061     0.068     1.109
+drain_cyc              0.038     0.035     0.928
+write_cyc              0.005     0.006     1.162
+total_cyc              2.969     2.608     0.878
+barrier + LDS-store cycles: 1.770 -> 1.622 (0.917); share of the total: 59.6 % -> 62.2 %
