@@ -1,0 +1,27 @@
+variant,model,rep,median_us_per_layer,min_us,max_us  # test_llama_microbench --sdpa --regime=prefill, ET_VK_SDPA_PERF_RUNS=40,10 (steady GPU clock), kernel time of QK^T + softmax + attn*V or of the copy pass + fused kernel, per layer at S=2048; build fused5; '-' = candidate 7 kernels
+-,llama-3.1-8b,1,13520,13463,13648
+-,llama-3.1-8b,2,13526,13479,13562
+fused3_d128_t16x16g11s32rk,llama-3.1-8b,1,5665,5635,5743
+fused3_d128_t16x16g11s32rk,llama-3.1-8b,2,5661,5602,5711
+fused3_d128_t16x32g11s32rk,llama-3.1-8b,1,5702,5602,5732
+fused3_d128_t16x32g11s32rk,llama-3.1-8b,2,5721,5690,5745
+fused3_d128_t16x64g11s32rk,llama-3.1-8b,1,5577,5526,5632
+fused3_d128_t16x64g11s32rk,llama-3.1-8b,2,5561,5416,5606
+fused3_d128_t32x32g11s32rk,llama-3.1-8b,1,5785,5739,5834
+fused3_d128_t32x32g11s32rk,llama-3.1-8b,2,5771,5716,5826
+-,llama-3.2-1b,1,9972,9840,10026
+-,llama-3.2-1b,2,9962,9914,9980
+fused3_d64_t16x32g11s32rk,llama-3.2-1b,1,2768,2749,2787
+fused3_d64_t16x32g11s32rk,llama-3.2-1b,2,2788,2759,2802
+fused3_d64_t32x32g11s32rk,llama-3.2-1b,1,2800,2789,2830
+fused3_d64_t32x32g11s32rk,llama-3.2-1b,2,2824,2792,2830
+-,llama-3.2-3b,1,10240,10182,10481
+-,llama-3.2-3b,2,10235,10174,10333
+fused3_d128_t16x16g11s32rk,llama-3.2-3b,1,4398,4367,4419
+fused3_d128_t16x16g11s32rk,llama-3.2-3b,2,4425,4359,4438
+fused3_d128_t16x32g11s32rk,llama-3.2-3b,1,4436,4375,4467
+fused3_d128_t16x32g11s32rk,llama-3.2-3b,2,4442,4392,4480
+fused3_d128_t16x64g11s32rk,llama-3.2-3b,1,4322,4300,4355
+fused3_d128_t16x64g11s32rk,llama-3.2-3b,2,4325,4237,4374
+fused3_d128_t32x32g11s32rk,llama-3.2-3b,1,4498,4376,4583
+fused3_d128_t32x32g11s32rk,llama-3.2-3b,2,4523,4492,4575

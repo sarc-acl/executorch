@@ -1,0 +1,27 @@
+[sarc_dev] profile active: 780m-refine3
+
+=== Compute Shader Performance Benchmark ===
+Llama microbench (3.1 8B / 3.2 3B / 3.2 1B real e2e shapes; prefill 2048 / decode 1 @ ctx3072; linear group_size=128; 3 warmup + 5 timed runs per case)
+DEVICE,amd radeon 780m graphics (radv phoenix),timestamp_period_ns=10,subgroup_size=64,coopmat=yes,max_shared_mem_bytes=65536
+----------------------------------------------------------------------
+[sdpa-regions] tiny_gqa S=128 context_len=128 tile=128x64 num_tiles_m=1 num_tiles_n=2 tiles=2 all_masked=0 all_visible=0 diagonal=2 overlap=0
+[sdpa-boundary] tiny_gqa m=0 last_visible=-1 first_diagonal=0 last_diagonal=1 first_masked=-1
+[sdpa-regions] 1b_head_config S=128 context_len=128 tile=128x64 num_tiles_m=1 num_tiles_n=2 tiles=2 all_masked=0 all_visible=0 diagonal=2 overlap=0
+[sdpa-boundary] 1b_head_config m=0 last_visible=-1 first_diagonal=0 last_diagonal=1 first_masked=-1
+[sdpa-regions] tiny_gqa_s256 S=256 context_len=256 tile=128x64 num_tiles_m=2 num_tiles_n=4 tiles=8 all_masked=2 all_visible=2 diagonal=4 overlap=0
+[sdpa-boundary] tiny_gqa_s256 m=0 last_visible=-1 first_diagonal=0 last_diagonal=1 first_masked=2
+[sdpa-boundary] tiny_gqa_s256 m=1 last_visible=1 first_diagonal=2 last_diagonal=3 first_masked=-1
+[sdpa-regions] 1b_head_config_s256 S=256 context_len=256 tile=128x64 num_tiles_m=2 num_tiles_n=4 tiles=8 all_masked=2 all_visible=2 diagonal=4 overlap=0
+[sdpa-boundary] 1b_head_config_s256 m=0 last_visible=-1 first_diagonal=0 last_diagonal=1 first_masked=2
+[sdpa-boundary] 1b_head_config_s256 m=1 last_visible=1 first_diagonal=2 last_diagonal=3 first_masked=-1
+[sdpa-regions] TOTAL tiles=20 all_masked=4 all_visible=4 diagonal=12 overlap=0 exhaustive=yes all_three_covered=yes
+[sdpa-regions] boundaries_ok=yes
+[sdpa-kernels] tiny_gqa qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] tiny_gqa S=128 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/16384 PASSED
+[sdpa-kernels] 1b_head_config qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] 1b_head_config S=128 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/262144 PASSED
+[sdpa-kernels] tiny_gqa_s256 qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] tiny_gqa_s256 S=256 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/32768 PASSED
+[sdpa-kernels] 1b_head_config_s256 qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half no_mask_fill=yes pairing=ok
+[sdpa-correctness] 1b_head_config_s256 S=256 input_pos=0 D=64 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/524288 PASSED
+[sdpa-correctness] tier=all cases_run=4

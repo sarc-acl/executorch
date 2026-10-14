@@ -71,3 +71,191 @@ sarc_linear_dq8ca_coopmat_zpg_sweep:
       A_MAP_FULL: true
       A_MULTI_BLOCK: true
       A_BLOCKS: 2
+    # 780M prefill refine 2026-10-03, batch 1: per-wave tile shape / workgroup size / chunk depth around the
+    # release t128x64k32g42s32 (phase timing: staging 40 %, barrier 13 %, MMA 38 % of a wave).
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k64g22s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 4
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k64g42s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 64
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 2
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t64x64k32g21s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 2
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t128x128k32g22s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 2
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t64x64k32g22s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      A_MAP_FULL: true
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t64x128k32g22s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      A_MAP_FULL: true
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g24s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      A_MAP_FULL: true
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t128x32k32g22s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 128
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 2
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t256x64k32g42s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 256
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 2
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g21s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 4
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g12s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 4
+    # 780M prefill refine 2026-10-03, batch 2: wave64 tiles (a 16x16 accumulator takes 4 VGPRs instead of 8).
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g22s64_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64
+      A_MAP_FULL: true
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g21s64_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 64
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 2
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g12s64_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 2
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t128x128k32g22s64_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64
+      A_MAP_FULL: true
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t256x64k32g22s64_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 256
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 2
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k64g22s64_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 64
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 64
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 2
+    # 780M prefill refine 2026-10-03, batch 3: 4-wave workgroups with the 64x32 per-wave tile in the other two arrangements.
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t64x128k32g41s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 1
+      A_MAP_FULL: true
+    - NAME: sarc_linear_dq8ca_coopmat_zpg_sweep_t256x32k32g14s32_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WG_TILE_M: 256
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 4
+      A_MAP_FULL: true
+      A_MULTI_BLOCK: true
+      A_BLOCKS: 4

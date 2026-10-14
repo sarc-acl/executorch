@@ -1,0 +1,25 @@
+[sdpa-error] tiny_gqa_pos64 n=16384 rms=3.265400e-05 max=2.413443e-04 ref_rms=5.642405e-02
+[sdpa-kernels] tiny_gqa_pos64 qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_780m_r3_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half fused=- no_mask_fill=yes pairing=ok
+[sdpa-correctness] tiny_gqa_pos64 S=128 input_pos=64 D=64 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/16384 PASSED
+[sdpa-error] tiny_gqa_s256_pos128 n=32768 rms=2.471919e-05 max=1.911408e-04 ref_rms=4.433582e-02
+[sdpa-kernels] tiny_gqa_s256_pos128 qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_780m_r3_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half fused=- no_mask_fill=yes pairing=ok
+[sdpa-correctness] tiny_gqa_s256_pos128 S=256 input_pos=128 D=64 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/32768 PASSED
+[sdpa-error] 1b_head_config_s256_pos256 n=524288 rms=1.855850e-05 max=1.939402e-04 ref_rms=3.095191e-02
+[sdpa-kernels] 1b_head_config_s256_pos256 qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_780m_r3_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half fused=- no_mask_fill=yes pairing=ok
+[sdpa-correctness] 1b_head_config_s256_pos256 S=256 input_pos=256 D=64 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/524288 PASSED
+[sdpa-error] 3b_head_config_s256 n=786432 rms=4.629684e-05 max=7.416730e-04 ref_rms=9.331682e-02
+[sdpa-kernels] 3b_head_config_s256 qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_780m_r3_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half fused=- no_mask_fill=yes pairing=ok
+[sdpa-correctness] 3b_head_config_s256 S=256 input_pos=0 D=128 Q_H=24 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/786432 PASSED
+[sdpa-error] 8b_head_config_s256 n=1048576 rms=4.609748e-05 max=8.977749e-04 ref_rms=9.303082e-02
+[sdpa-kernels] 8b_head_config_s256 qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_780m_r3_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half fused=- no_mask_fill=yes pairing=ok
+[sdpa-correctness] 8b_head_config_s256 S=256 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/1048576 PASSED
+[sdpa-error] 3b_head_config_pos128 n=393216 rms=2.638370e-05 max=2.505959e-04 ref_rms=4.557518e-02
+[sdpa-kernels] 3b_head_config_pos128 qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_780m_r3_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half fused=- no_mask_fill=yes pairing=ok
+[sdpa-correctness] 3b_head_config_pos128 S=128 input_pos=128 D=128 Q_H=24 KV_H=8 qk_coopmat=yes av_coopmat=yes mismatches=0/393216 PASSED
+[sdpa-error] tiny_gqa_s2048 n=262144 rms=1.963330e-05 max=4.740712e-04 ref_rms=3.833513e-02
+[sdpa-kernels] tiny_gqa_s2048 qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_780m_r3_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half fused=- no_mask_fill=yes pairing=ok
+[sdpa-correctness] tiny_gqa_s2048 S=2048 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/262144 PASSED
+[sdpa-error] tiny_d128_s2048 n=524288 rms=1.980031e-05 max=8.557327e-04 ref_rms=3.736805e-02
+[sdpa-kernels] tiny_d128_s2048 qk=sarc_sdpa_qk_coopmat_sweep_t128x64k32g22s64nf_buffer_buffer_half softmax=sarc_sdpa_attn_weights_softmax_780m_r3_buffer_half av=sarc_sdpa_av_coopmat_sweep_t64x64k32g42s32_buffer_buffer_half fused=- no_mask_fill=yes pairing=ok
+[sdpa-correctness] tiny_d128_s2048 S=2048 input_pos=0 D=128 Q_H=2 KV_H=1 qk_coopmat=yes av_coopmat=yes mismatches=0/524288 PASSED
+[sdpa-correctness] tier=extended cases_run=8

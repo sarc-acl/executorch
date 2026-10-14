@@ -1,0 +1,16 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# SARC development zone, 780M: transposed copy of the V cache for sarc_dev_780m_sdpa_fused3 (not shipped, not
+# reachable without the hook described in openspec/changes/sarc-1.5-780m-prefill-refine/hooks/).
+
+sarc_dev_780m_sdpa_vt:
+  parameter_names_with_default_values:
+    DTYPE: half
+    PRECISION: highp
+    STORAGE: buffer
+  shader_variants:
+    - NAME: sarc_dev_780m_sdpa_vt_buffer_half

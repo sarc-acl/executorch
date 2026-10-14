@@ -1,0 +1,19 @@
+arm,model,rep,median_us_per_layer,min_us,max_us  # test_llama_microbench --sdpa --regime=prefill, ET_VK_SDPA_PERF_RUNS=40,10, staged binary of c9-online-q4 (build fused7), after the gate; parent = candidate 8 (copy pass + two-pass fused kernel), cand = copy pass + one-pass fused kernel
+parent,llama-3.1-8b,1,5524,5491,5543
+parent,llama-3.2-3b,1,4314,4268,4357
+parent,llama-3.2-1b,1,2817,2795,2850
+parent,llama-3.1-8b,2,5540,5515,5554
+parent,llama-3.2-3b,2,4294,4222,4348
+parent,llama-3.2-1b,2,2817,2811,2839
+parent,llama-3.1-8b,3,5557,5537,5592
+parent,llama-3.2-3b,3,4331,4211,4379
+parent,llama-3.2-1b,3,2825,2808,2849
+cand,llama-3.1-8b,1,4042,4029,4073
+cand,llama-3.2-3b,1,3209,3172,3231
+cand,llama-3.2-1b,1,2263,2249,2288
+cand,llama-3.1-8b,2,4048,3953,4126
+cand,llama-3.2-3b,2,3220,3067,3242
+cand,llama-3.2-1b,2,2263,2254,2294
+cand,llama-3.1-8b,3,4063,3920,4091
+cand,llama-3.2-3b,3,3218,3189,3258
+cand,llama-3.2-1b,3,2263,2255,2273

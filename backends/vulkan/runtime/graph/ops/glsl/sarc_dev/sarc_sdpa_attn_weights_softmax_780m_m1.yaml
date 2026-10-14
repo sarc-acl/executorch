@@ -1,0 +1,32 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# SARC development zone, 780M: MEASUREMENT ONLY (no exp, wrong results) variant of sarc_sdpa_attn_weights_softmax (not shipped;
+# selected by Override::softmax_variant = "780m_m1", see openspec/changes/sarc-1.5-780m-prefill-refine/hooks/).
+
+sarc_sdpa_attn_weights_softmax_780m_m1:
+  parameter_names_with_default_values:
+    IN_DTYPE: float
+    OUT_DTYPE: float
+    STORAGE: texture3d
+    MODE: llm
+  shader_variants:
+    - NAME: sarc_sdpa_attn_weights_softmax_texture3d_float_780m_m1
+      STORAGE: texture3d
+      IN_DTYPE: float
+      OUT_DTYPE: float
+    - NAME: sarc_sdpa_attn_weights_softmax_texture3d_half_780m_m1
+      STORAGE: texture3d
+      IN_DTYPE: half
+      OUT_DTYPE: half
+    - NAME: sarc_sdpa_attn_weights_softmax_buffer_float_780m_m1
+      STORAGE: buffer
+      IN_DTYPE: float
+      OUT_DTYPE: float
+    - NAME: sarc_sdpa_attn_weights_softmax_buffer_half_780m_m1
+      STORAGE: buffer
+      IN_DTYPE: half
+      OUT_DTYPE: half

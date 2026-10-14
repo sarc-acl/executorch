@@ -1,0 +1,28 @@
+rows 92, recomputed from logs/.clk/.mon and equal to runs.csv in every field checked: 92; interleave violations: 0
+as recorded by the tool at the time (any non-zero status rejected): {'valid': 32, 'throttle': 60}
+under the decision of 2026-10-09 04:55 UTC (mask 0xFFFFE670): {'valid': 92}
+throttle_status per window sample: {'0x00000000': 1240, '0x00000002': 536}
+clk_n 5 to 40 ; clk_med 2718.0 to 2800.0 ; lowest sample 2595.0 ; peak temp1 94 C, gpu_metrics 94.12 C; temp_pre 44 to 49 ; mon_n 6 to 46 ; own_engine_ms 949.2 to 8677.1 ; load_ms 332 to 3240 ; resident_pct 100.0 to 100.0
+clock of samples with status != 0: n=536 median 2752 min 2595 max 2800; with status 0: n=1240 median 2800 min 2628 max 2800
+## medians of the first 5 valid rows per arm per cell
+cell,parent_med,cand_med,gain_pct,parent_spread_pct,cand_spread_pct,valid/rows parent,valid/rows cand,rows used with a recorded bit parent,cand,window samples with bit 1 parent,cand
+1b 4w,2694.74,3835.21,+42.322079,0.13,0.19,8/8,8/8,4/5,1/5,19/56,2/40
+1b 8da4w,2537.79,3757.8,+48.073718,0.12,0.37,6/6,6/6,0/5,1/5,0/47,1/30
+3b 4w,1141.58,1457.65,+27.687065,0.11,0.00,8/8,8/8,5/5,2/5,78/136,6/107
+3b 8da4w,1047.57,1414.36,+35.013412,0.93,0.55,8/8,8/8,0/5,4/5,0/147,6/109
+8b 4w,519.533,639.002,+22.995459,0.23,0.31,8/8,8/8,5/5,5/5,214/296,113/241
+8b 8da4w,487.155,628.414,+28.996726,0.26,0.21,8/8,8/8,4/5,5/5,17/319,80/248
+geomean over 6 cells: +33.903000 %
+## tok/s of rows with and without a recorded bit in the window, per cell and arm (median, n; all rows)
+1b 4w parent: with 2691.2 (n=7), without 2691.2 (n=1)
+1b 4w cand: with 3838.8050000000003 (n=2), without 3835.21 (n=6)
+1b 8da4w parent: with - (n=0), without 2537.79 (n=6)
+1b 8da4w cand: with 3757.8 (n=1), without 3764.71 (n=5)
+3b 4w parent: with 1141.2649999999999 (n=8), without - (n=0)
+3b 4w cand: with 1457.65 (n=5), without 1457.65 (n=3)
+3b 8da4w parent: with - (n=0), without 1052.165 (n=8)
+3b 8da4w cand: with 1415.34 (n=6), without 1408.53 (n=2)
+8b 4w parent: with 519.3354999999999 (n=8), without - (n=0)
+8b 4w cand: with 639.9000000000001 (n=8), without - (n=0)
+8b 8da4w parent: with 487.155 (n=7), without 486.923 (n=1)
+8b 8da4w cand: with 628.5105 (n=8), without - (n=0)

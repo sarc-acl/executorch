@@ -1,0 +1,70 @@
+configurations timed: 2444 of 2500 sampled; shapes per configuration: 3; sd of log time: 1.172
+R^2 additive (main effects only): 0.6311 (29 terms)
+R^2 + geometry x geometry pairs: 0.7753 (112 terms), gain +0.1442
+R^2 + option x option pairs: 0.6429 (85 terms), gain +0.0118
+R^2 + geometry x option pairs: 0.7542 (224 terms), gain +0.1231
+R^2 + all pairs: 0.8792 (363 terms), gain +0.2480
+
+best level of each option within each level of each geometry parameter (strata with at least 8 per level):
+  ACC: best overall fp32; different best level in 0 of 21 strata
+  CSH: best overall full; different best level in 10 of 21 strata
+      WG_TILE_M=32: full_pool (14.7 % faster than full)
+      WG_TILE_M=64: in_ash (20.9 % faster than full)
+      WG_TILE_M=256: full_pool (28.9 % faster than full)
+      WG_TILE_N=64: full_pool (16.3 % faster than full)
+      WG_TILE_N=128: full_pool (42.6 % faster than full)
+      WG_TILE_K=32: full_pool (0.6 % faster than full)
+      WG_TILE_K=64: full_pool (16.2 % faster than full)
+      SG_GRID_X=1: full_pool (7.9 % faster than full)
+      SG_GRID_Y=2: full_pool (25.3 % faster than full)
+      SG_GRID_Y=8: default (3.7 % faster than full)
+  FRAG_LAYOUT: best overall 0; different best level in 5 of 21 strata
+      WG_TILE_M=128: 1 (10.3 % faster than 0)
+      WG_TILE_N=256: 1 (35.3 % faster than 0)
+      WG_TILE_K=16: 1 (15.4 % faster than 0)
+      SG_GRID_X=4: 1 (10.4 % faster than 0)
+      SG_GRID_Y=1: 1 (1.2 % faster than 0)
+  IMG_A: best overall 0; different best level in 5 of 21 strata
+      WG_TILE_M=32: 1 (1.5 % faster than 0)
+      WG_TILE_M=64: 1 (1.1 % faster than 0)
+      WG_TILE_N=256: 1 (6.3 % faster than 0)
+      SG_GRID_Y=1: 1 (2.7 % faster than 0)
+      SUBGROUP_SIZE=64: 1 (2.8 % faster than 0)
+  IMG_W: best overall 0; different best level in 8 of 21 strata
+      WG_TILE_M=32: 1 (2.5 % faster than 0)
+      WG_TILE_M=64: 1 (5.0 % faster than 0)
+      WG_TILE_N=128: 1 (2.0 % faster than 0)
+      WG_TILE_K=32: 1 (1.4 % faster than 0)
+      WG_TILE_K=64: 1 (2.5 % faster than 0)
+      SG_GRID_X=1: 1 (5.6 % faster than 0)
+      SG_GRID_X=8: 1 (5.3 % faster than 0)
+      SG_GRID_Y=2: 1 (8.7 % faster than 0)
+  B_COLMAJOR: best overall 1; different best level in 6 of 21 strata
+      WG_TILE_M=32: 0 (0.1 % faster than 1)
+      WG_TILE_M=64: 0 (6.9 % faster than 1)
+      WG_TILE_M=128: 0 (4.7 % faster than 1)
+      WG_TILE_N=256: 0 (87.2 % faster than 1)
+      SG_GRID_Y=1: 0 (2.9 % faster than 1)
+      SUBGROUP_SIZE=32: 0 (0.0 % faster than 1)
+  SH_F16V4: best overall 1; different best level in 10 of 21 strata
+      WG_TILE_M=64: 0 (6.1 % faster than 1)
+      WG_TILE_M=256: 0 (54.5 % faster than 1)
+      WG_TILE_N=32: 0 (1.7 % faster than 1)
+      WG_TILE_N=64: 0 (8.8 % faster than 1)
+      WG_TILE_K=16: 0 (19.3 % faster than 1)
+      WG_TILE_K=64: 0 (1.0 % faster than 1)
+      SG_GRID_X=1: 0 (2.8 % faster than 1)
+      SG_GRID_Y=2: 0 (12.4 % faster than 1)
+      SG_GRID_Y=8: 0 (3.3 % faster than 1)
+      SUBGROUP_SIZE=64: 0 (6.1 % faster than 1)
+  TEXEL_STAGING: best overall 1; different best level in 10 of 21 strata
+      WG_TILE_M=256: 0 (38.3 % faster than 1)
+      WG_TILE_N=32: 0 (8.3 % faster than 1)
+      WG_TILE_N=64: 0 (10.0 % faster than 1)
+      WG_TILE_K=16: 0 (24.4 % faster than 1)
+      SG_GRID_X=4: 0 (20.8 % faster than 1)
+      SG_GRID_X=8: 0 (4.9 % faster than 1)
+      SG_GRID_Y=1: 0 (2.6 % faster than 1)
+      SG_GRID_Y=4: 0 (1.0 % faster than 1)
+      SG_GRID_Y=8: 0 (13.4 % faster than 1)
+      SUBGROUP_SIZE=64: 0 (5.4 % faster than 1)

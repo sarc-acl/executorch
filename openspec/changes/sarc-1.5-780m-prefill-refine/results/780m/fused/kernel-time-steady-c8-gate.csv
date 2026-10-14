@@ -1,0 +1,19 @@
+arm,model,rep,median_us_per_layer,min_us,max_us  # test_llama_microbench --sdpa --regime=prefill, ET_VK_SDPA_PERF_RUNS=40,10, staged binary of c8-fused3 (build fused5), after the gate; parent = candidate 7 kernels (QK^T + softmax r3 + attn*V), cand = copy pass + fused kernel
+parent,llama-3.1-8b,1,13505,13461,13579
+parent,llama-3.2-3b,1,10230,10194,10276
+parent,llama-3.2-1b,1,9965,9939,10043
+parent,llama-3.1-8b,2,13516,13434,13568
+parent,llama-3.2-3b,2,10248,10163,10356
+parent,llama-3.2-1b,2,9963,9939,9977
+parent,llama-3.1-8b,3,13507,13451,13599
+parent,llama-3.2-3b,3,10244,10213,10262
+parent,llama-3.2-1b,3,9931,9828,10122
+cand,llama-3.1-8b,1,5541,5493,5596
+cand,llama-3.2-3b,1,4320,4270,4366
+cand,llama-3.2-1b,1,2821,2799,2833
+cand,llama-3.1-8b,2,5572,5486,5624
+cand,llama-3.2-3b,2,4308,4215,4361
+cand,llama-3.2-1b,2,2820,2800,2846
+cand,llama-3.1-8b,3,5657,5615,5729
+cand,llama-3.2-3b,3,4364,4340,4415
+cand,llama-3.2-1b,3,2831,2808,2843

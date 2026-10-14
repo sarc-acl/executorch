@@ -1,0 +1,16 @@
+[sdpa-error] peaked_tiny_gqa_s256 n=32768 rms=2.213165e-04 max=1.981899e-03 ref_rms=2.899003e-01
+[sdpa-kernels] peaked_tiny_gqa_s256 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d64_t32x32g11s32rk_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] peaked_tiny_gqa_s256 S=256 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/32768 PASSED
+[sdpa-error] peaked_1b_head_config_s256_pos256 n=524288 rms=2.421913e-04 max=2.145382e-03 ref_rms=2.102996e-01
+[sdpa-kernels] peaked_1b_head_config_s256_pos256 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d64_t32x32g11s32rk_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] peaked_1b_head_config_s256_pos256 S=256 input_pos=256 D=64 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/524288 PASSED
+[sdpa-error] peaked_8b_head_config_s256 n=1048576 rms=2.214009e-04 max=2.721278e-03 ref_rms=2.842842e-01
+[sdpa-kernels] peaked_8b_head_config_s256 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d128_t16x64g11s32rk_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] peaked_8b_head_config_s256 S=256 input_pos=0 D=128 Q_H=32 KV_H=8 qk_coopmat=NO av_coopmat=NO mismatches=0/1048576 PASSED
+[sdpa-error] peaked_tiny_gqa_s2048 n=262144 rms=2.393409e-04 max=2.341794e-03 ref_rms=1.878001e-01
+[sdpa-kernels] peaked_tiny_gqa_s2048 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d64_t32x32g11s32rk_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] peaked_tiny_gqa_s2048 S=2048 input_pos=0 D=64 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/262144 PASSED
+[sdpa-error] peaked_tiny_d128_s2048 n=524288 rms=2.380968e-04 max=2.045874e-03 ref_rms=1.905355e-01
+[sdpa-kernels] peaked_tiny_d128_s2048 qk=? softmax=? av=? fused=sarc_dev_780m_sdpa_fused3_d128_t16x64g11s32rk_buffer_buffer_half no_mask_fill=no pairing=ok
+[sdpa-correctness] peaked_tiny_d128_s2048 S=2048 input_pos=0 D=128 Q_H=2 KV_H=1 qk_coopmat=NO av_coopmat=NO mismatches=0/524288 PASSED
+[sdpa-correctness] tier=peaked cases_run=5

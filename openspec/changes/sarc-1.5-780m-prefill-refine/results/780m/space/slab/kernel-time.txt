@@ -1,0 +1,19 @@
+# 4w slab layout (tools/gen_sl.py: A as FRAG_LAYOUT, B column-major in [k16 slab][n][16 k], no padding) against the padded column-major kernels of the same tile; kernel median (us), full linear measurement (texture3d, 3 + 5 runs), build fused8, 2026-10-05 11:29 to 11:39 UTC. bt-* = parameter-space kernels (..bbt / ..cbt), sl-* = slab twin. Result: 8 to 25 % slower on every shape; not pursued.
+shape        bt-g18   bt-g24   bt-g28   bt-w42   sl-c42   sl-g18   sl-g24   sl-g28   sl-w24   sl-w42  (n={'bt-g18': 2, 'bt-g24': 1, 'bt-g28': 1, 'bt-w42': 1, 'sl-c42': 1, 'sl-g18': 1, 'sl-g24': 1, 'sl-g28': 1, 'sl-w24': 1, 'sl-w42': 1})
+1b wq_wo      1675     1637     1595     1586     2025     1821     1777     1919     1766     1825
+1b wk_wv       481      481      462      461      538      510      507      545      500      521
+1b w1_w3      6552     6375     6008     6203     7968     7124     6831     7527     6824     7100
+1b w2         5887     6253     6223     6202     7941     6493     6872     7192     6844     7085
+3b wq_wo      3482     3411     3497     3456     4460     3821     3761     4090     3798     3959
+3b wk_wv      1302     1260     1248     1203     1559     1422     1362     1524     1323     1376
+3b w1_w3      9312     9134     9512     9265    11864    10245    10346    10840    10200    10732
+3b w2         8601     8876     8844     8953    11775     9413     9756    10468     9925    10238
+8b wq_wo      5984     6046     6233     6048     7977     6730     6727     7154     6750     7023
+8b wk_wv      1614     1623     1643     1592     2072     1839     1776     1893     1745     1815
+8b w1_w3     20812    21053    21666    21140    27531    23014    23212    24748    23458    24455
+8b w2        20423    20846    20568    20879    27587    22168    22830    24626    23156    23780
+kernel on 8b wq_wo: {'bt-g18': 'sw_coopmat_t256x128k32g18s32f32bbt', 'bt-g24': 'sw_coopmat_t256x128k32g24s32f32bbt', 'bt-g28': 'sw_coopmat_t256x128k32g28s32f32bbt', 'bt-w42': 'sw_coopmat_t128x256k32g42s32f32cbt', 'sl-c42': 'w_coopmat_sl_t128x128k32g42s32f32b', 'sl-g18': 'w_coopmat_sl_t256x128k32g18s32f32b', 'sl-g24': 'w_coopmat_sl_t256x128k32g24s32f32b', 'sl-g28': 'w_coopmat_sl_t256x128k32g28s32f32b', 'sl-w24': 'w_coopmat_sl_t128x256k32g24s32f32b', 'sl-w42': 'w_coopmat_sl_t128x256k32g42s32f32b'}
+bt-g18 -> sl-g18 1bwqwo:+8.8% 1bwkwv:+6.2% 1bw1w3:+8.7% 1bw2w2:+10.3% 3bwqwo:+9.7% 3bwkwv:+9.3% 3bw1w3:+10.0% 3bw2w2:+9.4% 8bwqwo:+12.5% 8bwkwv:+14.0% 8bw1w3:+10.6% 8bw2w2:+8.5%
+bt-g28 -> sl-g28 1bwqwo:+20.4% 1bwkwv:+18.1% 1bw1w3:+25.3% 1bw2w2:+15.6% 3bwqwo:+17.0% 3bwkwv:+22.1% 3bw1w3:+14.0% 3bw2w2:+18.4% 8bwqwo:+14.8% 8bwkwv:+15.3% 8bw1w3:+14.2% 8bw2w2:+19.7%
+bt-g24 -> sl-g24 1bwqwo:+8.5% 1bwkwv:+5.3% 1bw1w3:+7.1% 1bw2w2:+9.9% 3bwqwo:+10.2% 3bwkwv:+8.1% 3bw1w3:+13.3% 3bw2w2:+9.9% 8bwqwo:+11.3% 8bwkwv:+9.4% 8bw1w3:+10.3% 8bw2w2:+9.5%
+bt-w42 -> sl-w42 1bwqwo:+15.1% 1bwkwv:+13.0% 1bw1w3:+14.5% 1bw2w2:+14.2% 3bwqwo:+14.6% 3bwkwv:+14.4% 3bw1w3:+15.8% 3bw2w2:+14.3% 8bwqwo:+16.1% 8bwkwv:+14.0% 8bw1w3:+15.7% 8bw2w2:+13.9%

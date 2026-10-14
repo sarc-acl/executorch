@@ -1,0 +1,53 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# SARC development zone, RX 7600 (M2a, copy of fused3 with a subgroupBarrier() after every memoryBarrierShared()); based on 780M: fused LLM-mode prefill SDPA, third structure: one subgroup per workgroup, no
+# shared staging (not shipped, not reachable without the hook described in
+# openspec/changes/sarc-1.5-780m-prefill-refine/hooks/).
+# Name: d<HEAD_DIM>_t<WG_TILE_M>x<WG_TILE_N>g11s<SUBGROUP_SIZE>[r][k][o][m1]; r = AQ_REG (Q tiles kept in registers),
+# k = PACKED (tile-packed K and V copies), o = ONLINE (one pass, running row maximum), m1 = MEASUREMENT ONLY
+# (no pass A, wrong results).
+# Each variant needs: WG_TILE_M 16 or 32 (two or one invocations per row of a 32-wide subgroup) and
+# WG_TILE_N / (32 / WG_TILE_M) a multiple of 8.
+
+sarc_dev_780m_sdpa_fused3sb:
+  parameter_names_with_default_values:
+    DTYPE: half
+    PRECISION: highp
+    IO_STORAGE: buffer
+    K_CACHE_STORAGE: buffer
+    HEAD_DIM: 64
+    WG_TILE_M: 32
+    WG_TILE_N: 32
+    SUBGROUP_SIZE: 32
+    AQ_REG: false
+    PACKED: false
+    ONLINE: false
+    ONE_PASS_WRONG: false
+  generate_variant_forall:
+    combination:
+      parameter_names: [IO_STORAGE, K_CACHE_STORAGE]
+      combos:
+        - parameter_values: [buffer, buffer]
+    DTYPE:
+      - VALUE: half
+  shader_variants:
+    - NAME: sarc_dev_780m_sdpa_fused3sb_d64_t32x32g11s32rko
+      HEAD_DIM: 64
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      SUBGROUP_SIZE: 32
+      AQ_REG: true
+      PACKED: true
+      ONLINE: true
+    - NAME: sarc_dev_780m_sdpa_fused3sb_d128_t16x64g11s32rko
+      HEAD_DIM: 128
+      WG_TILE_M: 16
+      WG_TILE_N: 64
+      SUBGROUP_SIZE: 32
+      AQ_REG: true
+      PACKED: true
+      ONLINE: true

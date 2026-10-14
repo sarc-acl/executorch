@@ -1,0 +1,141 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# SARC development zone, 780M: fused LLM-mode prefill SDPA, second structure (not shipped, not reachable
+# without the hook described in openspec/changes/sarc-1.5-780m-prefill-refine/hooks/).
+# Name: d<HEAD_DIM>_t<WG_TILE_M>x<WG_TILE_N>g1<SG_GRID_Y>s<SUBGROUP_SIZE>[p0][m1]; p0 = no row padding in
+# shared memory, m1 = MEASUREMENT ONLY (no pass A, wrong results).
+# Each variant needs: SG_TILE_M = WG_TILE_M / SG_GRID_Y equal to 16 or 32 (one or two invocations per row of a
+# 32-wide subgroup), WG_TILE_N / (32 / SG_TILE_M) a multiple of 8, and the shared memory in the comment of the
+# variant at most 65536 bytes.
+
+sarc_dev_780m_sdpa_fused2:
+  parameter_names_with_default_values:
+    DTYPE: half
+    PRECISION: highp
+    IO_STORAGE: buffer
+    K_CACHE_STORAGE: buffer
+    HEAD_DIM: 64
+    WG_TILE_M: 128
+    WG_TILE_N: 32
+    SG_GRID_Y: 8
+    SUBGROUP_SIZE: 32
+    PAD: 1
+    ONE_PASS_WRONG: false
+  generate_variant_forall:
+    combination:
+      parameter_names: [IO_STORAGE, K_CACHE_STORAGE]
+      combos:
+        - parameter_values: [buffer, buffer]
+    DTYPE:
+      - VALUE: half
+  shader_variants:
+    # shared memory 49152 bytes
+    - NAME: sarc_dev_780m_sdpa_fused2_d64_t128x32g18s32
+      HEAD_DIM: 64
+      WG_TILE_M: 128
+      WG_TILE_N: 32
+      SG_GRID_Y: 8
+      SUBGROUP_SIZE: 32
+      PAD: 1
+    # shared memory 48640 bytes
+    - NAME: sarc_dev_780m_sdpa_fused2_d64_t128x32g14s32
+      HEAD_DIM: 64
+      WG_TILE_M: 128
+      WG_TILE_N: 32
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+      PAD: 1
+    # shared memory 34304 bytes
+    - NAME: sarc_dev_780m_sdpa_fused2_d64_t64x32g14s32
+      HEAD_DIM: 64
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+      PAD: 1
+    # shared memory 55808 bytes
+    - NAME: sarc_dev_780m_sdpa_fused2_d64_t64x64g14s32
+      HEAD_DIM: 64
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+      PAD: 1
+    # shared memory 41984 bytes
+    - NAME: sarc_dev_780m_sdpa_fused2_d64_t128x32g18s32p0
+      HEAD_DIM: 64
+      WG_TILE_M: 128
+      WG_TILE_N: 32
+      SG_GRID_Y: 8
+      SUBGROUP_SIZE: 32
+      PAD: 0
+    # shared memory 38400 bytes
+    - NAME: sarc_dev_780m_sdpa_fused2_d64_t128x16g18s32
+      HEAD_DIM: 64
+      WG_TILE_M: 128
+      WG_TILE_N: 16
+      SG_GRID_Y: 8
+      SUBGROUP_SIZE: 32
+      PAD: 1
+    # shared memory 60928 bytes
+    - NAME: sarc_dev_780m_sdpa_fused2_d128_t64x32g14s32
+      HEAD_DIM: 128
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+      PAD: 1
+    # shared memory 43008 bytes
+    - NAME: sarc_dev_780m_sdpa_fused2_d128_t64x16g14s32
+      HEAD_DIM: 128
+      WG_TILE_M: 64
+      WG_TILE_N: 16
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+      PAD: 1
+    # shared memory 58368 bytes
+    - NAME: sarc_dev_780m_sdpa_fused2_d128_t128x16g18s32p0
+      HEAD_DIM: 128
+      WG_TILE_M: 128
+      WG_TILE_N: 16
+      SG_GRID_Y: 8
+      SUBGROUP_SIZE: 32
+      PAD: 0
+    # shared memory 49408 bytes
+    - NAME: sarc_dev_780m_sdpa_fused2_d128_t32x32g12s32
+      HEAD_DIM: 128
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      PAD: 1
+    # shared memory 60672 bytes
+    - NAME: sarc_dev_780m_sdpa_fused2_d128_t64x32g12s32
+      HEAD_DIM: 128
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      PAD: 1
+    # shared memory 49152 bytes
+    - NAME: sarc_dev_780m_sdpa_fused2_d64_t128x32g18s32m1
+      HEAD_DIM: 64
+      WG_TILE_M: 128
+      WG_TILE_N: 32
+      SG_GRID_Y: 8
+      SUBGROUP_SIZE: 32
+      PAD: 1
+      ONE_PASS_WRONG: true
+    # shared memory 60928 bytes
+    - NAME: sarc_dev_780m_sdpa_fused2_d128_t64x32g14s32m1
+      HEAD_DIM: 128
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+      PAD: 1
+      ONE_PASS_WRONG: true
