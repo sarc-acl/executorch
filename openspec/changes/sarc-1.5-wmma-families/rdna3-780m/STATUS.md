@@ -1,7 +1,7 @@
 # rdna3-780m status
 
-Updated 2026-10-14 19:41 UTC. Actor: Codex.
-Stage: bounded RDNA3 RADV matrix; launch blocked on the owner monitoring decision. Nothing built, measuring or queued.
+Updated 2026-10-15 00:36 UTC. Actor: Codex.
+Stage: bounded RDNA3 RADV matrix; waiting for an owner-provided observable environment. Nothing built, measuring or queued.
 Full assembled campaign including final owner decision read before other inspection.
 Initial branch clean on topic/wmma-rdna3-780m; no existing campaign job or device lock holder found.
 
@@ -25,22 +25,43 @@ match the kit; runtime constant-method execution is pending. No per-cell measure
 profiles, builds or gate outputs exist. Limits are registered in proposal.md.
 
 Independent preflight/blocker review completed; see REVIEW.md.
-Next: wait for the owner monitoring ruling. This matrix remains unstarted.
+Recovery instruction of 2026-10-15 00:32 UTC read in full. Reused committed
+preparation without repeating the completed property/model/source review. Archive,
+all 18 inventory files and all 53 pinned source hashes reconfirmed unchanged.
+Process, artifact and lock inspection found no existing campaign job, queue,
+sampler, build or device-lock holder; no export/build is available to reuse.
+
+One read-only recovery assessment checked existing process/client/device counter
+paths. Display-user fdinfo remains inaccessible. Device busy percent and metrics
+are readable, but do not identify foreign work overlapping the runner; the
+inspected DRM sysfs directories expose no per-client activity counters. Debug DRM
+client/fence paths and tracing data are inaccessible. Readable own-user fdinfo and
+process identities cannot fill the other users' engine-accounting gap. No interval
+with inaccessible activity is classified clean. No GPU workload was launched.
+Private evidence: `<artifact-root>/preflight/recovery-monitoring-20261015.json`,
+SHA256 `2f56d3859d276e28242b96c6deeccc89d943e80f55cbefb9898ba48e6cd99f9c`.
+
+Next: park for the environment requested below. This matrix remains unstarted and
+incomplete; the prior review covers preparation only. No further preflight review
+is requested for this waiting checkpoint.
 No repeated recomputation/review while waiting; check for an answer at most every 20 minutes.
 No pushes, PRs, services, host policy changes or work outside this stage.
 
 ## Decision needed from the owner
 
-Current foreign-workload monitoring cannot read the display users' DRM fdinfo
-(PermissionError for the active greeter and Xwayland). The historical campaign accepted
-own-user engine sampling plus device-wide busy percent for other users, but this task
-explicitly says historical exceptions do not become new exceptions. R6 requires absence
-of foreign GPU work before/during/after each run. May this run use that limited monitoring,
-with the coverage limitation attached to every result, or must an owner-provided fully
-observable idle environment be available first? No sudo, service or policy changes will
-be performed by this campaign. No build or measurement queue will launch while this
-question is pending. Independent source/property/model-readiness work and the single review are complete.
-The preflight record is supported; measured-stage completion is not claimed.
+The existing monitoring question remains unresolved after the authorized recovery
+assessment. Per the recovery instruction, limited historical monitoring is not an
+exception for this run. Please provide an observable environment: readable,
+device-bound engine accounting for every potential GPU client (including display
+users), with stable client/process identity and coverage before, throughout and
+after each runner, or an owner-provided isolated environment whose complete client
+set is observable to this user. An existing owner-provided read-only counter feed
+may supply equivalent coverage; unreadable or missing intervals must invalidate a
+run. Aggregate busy/metrics samples alone cannot supply that coverage during load.
+Which conforming environment will the owner provide? The campaign will not change
+permissions, services or host policy. No build or measurement queue will launch
+while this question remains pending. Independent preparation and the single prior
+review are complete; measured-stage completion is not claimed.
 
 ## Coordinator hold
 

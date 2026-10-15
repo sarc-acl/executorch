@@ -124,6 +124,21 @@ Current inspection confirms that DRM counters of active display users cannot be 
 Own-user engine counters plus device-wide busy percent do not prove the absence of
 other users' GPU engine activity during the runner. The historical owner permitted
 that limitation, but this run explicitly does not inherit historical exceptions.
-The single question is recorded in STATUS.md. Finish independent preflight/review,
-then wait for the owner; do not start a build or measurement queue and do not repeatedly
-recompute or re-review while waiting. Services and host policy stay as found.
+The single question is recorded in STATUS.md. Independent preparation and its review
+are complete. The 2026-10-15 recovery instruction authorized one assessment of existing
+readable counter alternatives, without inheriting the historical exception.
+
+That assessment found the display users' fdinfo still inaccessible, no per-client
+activity counters in the inspected DRM sysfs directories, and inaccessible debug DRM
+client/fence paths and tracing data. Device busy percent and metrics remain readable,
+but combining them with own-user engine time and process names cannot distinguish
+overlapping foreign work during runner load. No inaccessible interval is certified
+clean. Private evidence is `preflight/recovery-monitoring-20261015.json` under the
+artifact root; its hash is recorded in STATUS.md. No build or GPU workload was started.
+
+The owner must provide readable accounting for all potential clients, bound to the
+device and stable client/process identities throughout each run, or an isolated
+environment with a completely observable client set. An existing read-only feed with
+equivalent coverage is sufficient; missing coverage invalidates the affected run.
+Park for this environment without another preflight review, recomputation or queue.
+Services, permissions and host policy stay as found. The matrix remains incomplete.
