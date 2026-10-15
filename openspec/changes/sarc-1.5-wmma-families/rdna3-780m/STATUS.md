@@ -1,8 +1,9 @@
 # rdna3-780m status
 
-Updated 2026-10-15 04:42 UTC. Actor: Codex.
+Updated 2026-10-15 04:52 UTC. Actor: Codex.
 Stage: bounded RDNA3 RADV matrix; monitoring wait released by owner decision
-2026-10-15 03:57 UTC. Parent build and CPU metadata complete; preparing selector build.
+2026-10-15 03:57 UTC. Selector build and CPU checks complete; preparing kernel-source
+confirmation before monitored GPU work.
 The complete assembled campaign and all final decisions were read on resume.
 Own branch and working tree were clean; no existing campaign job, queue, sampler,
 build or device-lock holder was found at that resume. The completed build below
@@ -26,7 +27,7 @@ Six serialized model sizes/context/group/embedding records match the kit; runtim
 constant-method execution now passes as recorded below. Full property,
 host/compiler/sensor/model records remain privately under the artifact root.
 Nineteen candidate profiles are committed for the next build; GPU gates, A/A and
-per-cell results remain pending. CPU selector tests have not yet run.
+per-cell results remain pending. CPU selector tests pass as recorded below.
 Attention control remains 780m-final across arms; actual dispatch is pending.
 No member or family acceptance is claimed. The matrix remains incomplete.
 
@@ -94,17 +95,33 @@ evidence is results/runtime-metadata.json; raw evidence and helper provenance
 remain in helpers/rdna3-780m-metadata-20261015b/. No forward or GPU model method
 was executed. The failed attempt a remains preserved.
 
-Next job: `<artifact-root>/jobs/rdna3-780m-matrix-20261015a/state.json`.
+Selector build job completed rc 0 at 2026-10-15 04:48:33 UTC:
+`<artifact-root>/jobs/rdna3-780m-matrix-20261015a/state.json`.
+Source commit 4f9aba6b426b18765224dceecb800af1214117ef. CPU comparisons pass
+96,360 checks across 1,460 fixture rows and all 19 profiles; the inactive control,
+other-device behavior, attention/decode and original origin boundaries match the
+parent oracle. Counts in raw selector summaries are fixture counts, not distinct
+NK pairs or GPU runs. Exact export audit: 50,489 files, 31 trees, zero mismatches.
+Both 53-variant goldens pass; all 40 candidate modules pass the same payload/MMA
+checks. Binary hashes were rechecked. Unmodified check.sh --no-build passes:
+release selector 1,240 checks; dev selector 1,921 checks. Small evidence is
+results/selector-build.json; all raw evidence stays under build/ and jobs/ for
+this tag. No model GPU job has run.
+
+Next job: `<artifact-root>/jobs/rdna3-780m-kernel-source-20261015a/state.json`.
 The queue writes queued/running/completed/failed atomically, retains logs on failure
 and checks coordinator HOLD before each unit. The build takes the existing device
 lock to exclude a concurrent timed job. No HOLD is created or removed by the actor.
 Return waiting_job as soon as it starts; do not poll inside the actor turn.
 
-The next queue exports the committed selector build and first runs CPU comparison
-tests against the untouched parent selector sources. Only after those pass does
-it build the runner/backend/tests and compare both shipped-SPIR-V goldens, then
-audit the new exact export and candidate modules. An unmodified check.sh --no-build
-is a subsequent CPU-only unit. No GPU model work or timing is queued.
+The next queue retrieves the source RPM matching the installed running kernel
+from the distribution's source repository, verifies its signature/digests with
+existing keys, and extracts source data under the artifact root. No installation,
+spec execution, service/policy change or GPU job is involved. Packaged patches
+are retained; extracting a header alone does not establish the final patched
+driver's bit interpretation. That interpretation remains pending before timing.
+The existing thermal mask and all thresholds stay unchanged. Source retrieval
+has a 30-minute timeout; no matrix or work above 48 hours is queued.
 
 Profiles 780m-wmma-rdna3-01 through -19 are generated only from the pinned reviewed
 manifest. Their versioned environments and origin references are recorded in
@@ -115,9 +132,11 @@ normal alignment. Original final-profile ordered picks and earlier table service
 are replayed using target properties, including inherited/table fallbacks. Source
 device names are predicate fixtures, not external hardware queries or acceptance.
 Rows with no timed production coverage must be labeled accordingly. Static C++
-syntax passes; behavioral selector comparisons and the new build remain pending.
+syntax, behavioral selector comparisons and the new build now pass. GPU gates,
+actual dispatch/storage and acceptance remain pending.
 
-After the selector build: monitored parent snapshot, runtime dispatch/storage confirmation and A/A,
+After source confirmation and monitoring-adapter validation: monitored parent
+snapshot, runtime dispatch/storage confirmation and A/A,
 then the legal matrix and full gates with invariant attention. Record and explain
 baseline differences before candidates. No further preflight review is requested.
 No pushes, PRs, services, privilege, driver or host-policy changes are authorized.

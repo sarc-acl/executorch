@@ -11,8 +11,10 @@ new shader bodies, parameter search, pushes or PRs belong to this stage.
 Inventory commit `f393c3ff7ff4fc41e4651a5109a8509097c501f6`, source base as above.
 Archive SHA256 `65d1e3ca0eb7e9dffa8e9fbbb1a100bf2cf609868720b9053de67ff8bf5247d8`.
 RDNA3 manifest SHA256 `edcfa39ea7d8fac9c907a6a901754b96aa2d2894302b9c8ad623b90c2780d923`.
-All 18 supplied file hashes match. All 53 source hashes match the pinned git objects
-and this checkout. Inputs remain outside the checkout and read-only.
+All 18 supplied file hashes match. At the original preflight all 53 source hashes
+matched the pinned git objects and checkout. The later dev-only append to Overrides.cpp
+is separately committed; the original source prefix/references remain intact.
+Inputs remain outside the checkout and read-only.
 `tools/verify_input.py` checks the supplied provenance record without regenerating it.
 
 ## Controls and limits registered before measurements
@@ -176,11 +178,24 @@ The original parent implementation supplies independent source-profile choices;
 tests compare all 19 generated profiles with that oracle across production and
 fallback shapes, several M/group/storage cases, decode, unsupported cases and
 attention. They also compare the inactive path and other-device behavior with the
-parent. These tests and the unchanged test_sarc_select/check.sh are pending in the
-next detached queue, followed by the exact-commit runner build and both goldens.
+parent. The completed queue passes 96,360 comparisons across 1,460 fixture rows
+and all 19 profiles. Unmodified check.sh --no-build passes its 1,240 release and
+1,921 dev selector checks. The exact-commit runner build and both 53-variant
+goldens pass; the new export has zero mismatches across 50,489 files and 31 trees.
+All 40 exact candidate modules again pass the payload/MMA checks. Small evidence
+is results/selector-build.json. These are CPU/build checks, not GPU runs or gates.
 tools/build_commit.sh generalizes the former parent builder to descendants of the
 approved base and runs those selector checks before compiling the full backend.
 No GPU timing or gate is started by this build queue; the four-hour cap remains.
+
+The downstream throttle interpretation remains a prerequisite before timing.
+tools/fetch_kernel_source.py retrieves the source RPM named by the installed
+running kernel, checks its signature/digests using existing keys, and extracts
+source data under the artifact root without installing packages or executing the
+spec. Packaged patches remain available for subsequent interpretation; an
+unpatched extracted header alone is not recorded as the exact running source.
+This source-only queue has a 30-minute timeout and changes no registered mask,
+threshold, host setting or service.
 
 ## Copied adapters
 
