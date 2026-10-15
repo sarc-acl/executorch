@@ -452,3 +452,38 @@ UNASSESSED, with validity decisions in runs.csv and the raw-data recomputation.
 This checkpoint requests independent review of actual new observations, not a
 repeat source-only preflight. All eleven candidate gates/coverage rows and the
 finite matrix remain pending. No candidate GPU work was launched.
+
+
+## Finite correctness-gate queue after calibration review
+
+The independent checkpoint review supports the feature-enabled control/A/A
+results, without candidate or family acceptance. No completed preparation is
+repeated. New tools/candidate_gates.py captures all eleven fixed profiles in
+manifest order, taking the profile schedule from committed preflight evidence
+and checking its exact shader-set match to the immutable reviewed manifest.
+The unmodified matrix-mm-r1 verify.sh runs for each profile with its unchanged
+attention controls and all six cells. parent_snapshot.py distinguishes these
+candidate captures from parent snapshots; capture completion is not acceptance.
+
+Each assessment preserves command status, all 48 linear-benchmark rows, the
+48 production-diff dispatch/correctness rows where produced, numeric-detail
+lines, normalized control diffs and exact matching shader coverage counts.
+Changed kernel names are allowed in the dispatch-line comparison only; all
+other control differences remain explicit findings. A numerical failure is
+recorded and not retried. Any observer/model/device failure stops the queue.
+No candidate is accepted by this helper, even when its capture passes; broader
+next-token/session/alternative-storage evidence remains required.
+
+The production weight prepacker uses texture2d when the real shapes fit its
+limits. The existing buffer-IO pdiff cases therefore reach texture-weight c03,
+c04 and c07, while c05's buffer-weight entry requires separate coverage. The
+queue must not count an inherited fallback as c05 dispatch. Its no-dispatch
+status is kept pending and does not block independent gates for other entries.
+
+The eleven-gate projection is <=90 minutes using the completed 4–8 minute
+controls, with 2h per-gate caps and a 24h outer timeout (no >48h launch).
+Every GPU unit obeys HOLD and the inherited lock, and uses frozen committed
+orchestration with the existing exact exported binaries. Raw assessments stay
+in artifact stage/s2-gate-cNN/ and matrix/gates-r1/; source results and STATUS
+update after each profile. Native timed sessions retain the reviewed seven
+repeats and 2531 MHz floor. This gate queue schedules no timings or new bodies.

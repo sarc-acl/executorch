@@ -1,12 +1,52 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-15 05:16 UTC
+Updated: 2026-10-15 05:25 UTC
 
-Stage: REPLACEMENT SNAPSHOTS AND A/A COMPLETE — INDEPENDENT REVIEW CHECKPOINT.
-Running: none. feature-control-aa-r1 completed rc=0 at 05:12:32 UTC. No build,
-runner, poller, sampler or campaign lock holder remains. No owner question is
-pending. No candidate gate or session has started. The finite matrix remains
-INCOMPLETE; this checkpoint is feature enablement, control behavior and calibration.
+Stage: CALIBRATION REVIEWED / FINITE CANDIDATE GATES PREPARED.
+Running next: detached candidate-gates-r1. Controller state is artifact
+jobs/candidate-gates-r1/state.json. No build/runner/sampler or campaign lock
+holder was active before preparation. No owner question is pending.
+The finite device matrix remains INCOMPLETE; no candidate is accepted or timed.
+
+The fresh independent reviewer supported the feature/snapshot/calibration
+checkpoint, checking the raw 84 rows and every referenced log/sample/record,
+all reported medians/spreads/paired intervals, historical runs.csv medians,
+all four golden checks, exact recursive exports (30 submodules per build),
+compiled module audits and raw feature/snapshot outputs. Its reported exclusions
+remain exclusions: no candidate evidence existed; selector binaries were not
+recompiled; earlier full device/model/resource audits were not repeated; old
+historical logs were unavailable; probes and CPU metadata were not re-executed.
+The supplied review is evidence for this checkpoint, not family acceptance.
+Completed preparation will not be repeated.
+
+The next finite queue captures unmodified verify.sh gates for all eleven
+committed 4070ti-wmma-c01 through c11 profiles on matrix-mm-r1, with unchanged
+4070ti-fused1 attention controls. Each gate retains 37 observations, all command
+return codes and dispatched linear names, a line-by-line rates-removed diff
+against the reviewed control and a separate assessment. rc1 numerical failures,
+next-token differences, unexpected dispatch and zero candidate coverage are
+reported explicitly; no failed gate is retried or relabeled. Model/observer/
+device failures stop the queue for diagnosis. Completed keys are saved atomically;
+partial unassessed stages stop for diagnosis instead of being overwritten.
+STATUS and a small candidate-gates.json update after each profile.
+
+Seven native texture3d candidates have potential fixed-model dispatch. Four
+buffer entries remain alternate correctness coverage. Existing microbench
+buffer IO reaches c03/c04/c07 with texture weights. c05's buffer-weight shader
+cannot be inferred from that: production shapes choose texture weights in
+prepack_quantized_linear_weight, so c05 needs separate honest coverage. A gate
+with no exact matching shader dispatch remains uncovered, even if its fallback
+passes. Gate outputs record every actual kernel with shape/model/storage.
+
+Projection: eleven fixed gates × roughly 4–8 minutes from the two completed
+control captures, conservatively <=90 minutes plus staging/audit. Each gate has
+a two-hour timeout; the detached queue has a 24-hour outer cap, below the 48h
+reporting boundary. Estimated staging and sensor evidence fit available disk;
+no rebuild, parameter search or new shader is included. HOLD is checked before
+each gate; verify.sh holds the inherited lock. No timing, extra next-token
+probe or acceptance occurs automatically after these gates. After inspecting
+them, finish applicable native six-cell sessions (seven repeats / 2531 MHz),
+all-six-cell timed/real/unaligned token checks, alternate correctness and margins.
 
 ## New measured evidence
 
@@ -122,8 +162,8 @@ Both arms retain 4070ti-fused1: k4070tiRefine1 fallback, 4070ti_nzf softmax,
 fused3sb_d64_t32x32g11s32rko / fused3sb_d128_t16x64g11s32rko and existing K/V
 copy. The full gate still checks decode; no attention/decode/fp-linear tuning.
 
-Next: independent review of these NEW feature/snapshot/calibration observations,
-then complete the finite candidate gates, native six-cell sessions with same-
+Next after the prepared gate queue: inspect every assessment, then complete
+applicable native six-cell sessions with same-
 session controls, all-six-cell next-token checks on timed/real/unaligned prompts,
 alternate-storage correctness, dispatch evidence, uncertainty and margins. A
 D1/D3 difference needs its stated evidence; no candidate has been accepted.

@@ -76,6 +76,8 @@ manifest = {"orchestration_commit": os.environ.get("WMMA_ORCHESTRATION_COMMIT") 
             "attention_control": {"fallback": "k4070tiRefine1", "softmax": "4070ti_nzf",
                                   "fused": ["fused3sb_d64_t32x32g11s32rko", "fused3sb_d128_t16x64g11s32rko"]},
             "purpose": "snapshot only; no starting-row acceptance or timed-session validity"}
+if os.environ.get("WMMA_MATRIX_PROFILE"):
+    manifest["purpose"] = "candidate gate capture; dispatch and correctness assessment saved separately"
 manifest["hashes"] = {str(path.relative_to(stage)): hashlib.sha256(path.read_bytes()).hexdigest()
                       for path in stage.rglob("*") if path.is_file()}
 manifest["verify_sha256"] = hashlib.sha256((tree / "sarc/tools/verify.sh").read_bytes()).hexdigest()
@@ -105,6 +107,8 @@ records = [json.loads(path.read_text()) for path in sorted((stage / "observation
 summary = {"verify_returncode": result.returncode, "observations": len(records),
            "runner_observations": sum("model" in record for record in records),
            "aborted": (stage / "ABORTED").exists(), "purpose": "parent snapshot; not a candidate pass"}
+if os.environ.get("WMMA_MATRIX_PROFILE"):
+    summary["purpose"] = "candidate gate capture; not an acceptance verdict"
 (stage / "snapshot-summary.json").write_text(json.dumps(summary, indent=2) + "\n")
 print(json.dumps(summary))
 assert result.returncode == 0 and not summary["aborted"] and len(records) == 37 and summary["runner_observations"] == 22
