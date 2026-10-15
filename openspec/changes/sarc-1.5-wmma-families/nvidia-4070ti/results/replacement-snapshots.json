@@ -1,0 +1,199 @@
+{
+  "snapshots": [
+    {
+      "stage": "s0-parent-mm-verify",
+      "build": "parent-mm-r1",
+      "commit": "5f02679b9a20d0b43ed44ea42cb1d779e1f269ac",
+      "observations": 37,
+      "runner_rc0": 22,
+      "foreign_observations": 0,
+      "thermal_observations": 0,
+      "slow_load_possible": 0,
+      "linear_benchmarks": {
+        "4w": {
+          "cases": 24,
+          "dispatch": {
+            "unexpected_coopmat": 12,
+            "confirmed": 12
+          },
+          "correctness": [
+            "SKIPPED"
+          ],
+          "kernels": [
+            "sarc_linear_q4gsw_coopmat_t128x128k16g24s32ga_texture3d_texture2d_half",
+            "sarc_linear_q4gsw_coopmat_t128x128k16g42s32ga_buffer_texture2d_half",
+            "sarc_linear_q4gsw_coopmat_t128x256k16g42s32ga_buffer_texture2d_half",
+            "sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga_texture3d_texture2d_half"
+          ]
+        },
+        "8da4w": {
+          "cases": 24,
+          "dispatch": {
+            "unexpected_coopmat": 12,
+            "confirmed": 12
+          },
+          "correctness": [
+            "SKIPPED"
+          ],
+          "kernels": [
+            "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half",
+            "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half"
+          ]
+        }
+      },
+      "production_diff_commands": 12,
+      "production_diff_passed": 12,
+      "default_tiled_same_lines": 4,
+      "decode_rc0": 2,
+      "minimum_observation_samples": 121,
+      "attention_control": {
+        "fallback": "k4070tiRefine1",
+        "softmax": "4070ti_nzf",
+        "fused": [
+          "fused3sb_d64_t32x32g11s32rko",
+          "fused3sb_d128_t16x64g11s32rko"
+        ]
+      },
+      "verify_sha256": "3ad9748806125182511b5cc293f8866bf5c8ee90df6d7c27053ab9194b5b145a"
+    },
+    {
+      "stage": "s0-topic-mm-control",
+      "build": "matrix-mm-r1",
+      "commit": "dd57ce0e4fda4d7a5c72f9ce3c13b075428eec9e",
+      "observations": 37,
+      "runner_rc0": 22,
+      "foreign_observations": 0,
+      "thermal_observations": 0,
+      "slow_load_possible": 0,
+      "linear_benchmarks": {
+        "4w": {
+          "cases": 24,
+          "dispatch": {
+            "unexpected_coopmat": 12,
+            "confirmed": 12
+          },
+          "correctness": [
+            "SKIPPED"
+          ],
+          "kernels": [
+            "sarc_linear_q4gsw_coopmat_t128x128k16g24s32ga_texture3d_texture2d_half",
+            "sarc_linear_q4gsw_coopmat_t128x128k16g42s32ga_buffer_texture2d_half",
+            "sarc_linear_q4gsw_coopmat_t128x256k16g42s32ga_buffer_texture2d_half",
+            "sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga_texture3d_texture2d_half"
+          ]
+        },
+        "8da4w": {
+          "cases": 24,
+          "dispatch": {
+            "unexpected_coopmat": 12,
+            "confirmed": 12
+          },
+          "correctness": [
+            "SKIPPED"
+          ],
+          "kernels": [
+            "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half",
+            "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half"
+          ]
+        }
+      },
+      "production_diff_commands": 12,
+      "production_diff_passed": 12,
+      "default_tiled_same_lines": 4,
+      "decode_rc0": 2,
+      "minimum_observation_samples": 122,
+      "attention_control": {
+        "fallback": "k4070tiRefine1",
+        "softmax": "4070ti_nzf",
+        "fused": [
+          "fused3sb_d64_t32x32g11s32rko",
+          "fused3sb_d128_t16x64g11s32rko"
+        ]
+      },
+      "verify_sha256": "3ad9748806125182511b5cc293f8866bf5c8ee90df6d7c27053ab9194b5b145a"
+    }
+  ],
+  "output_comparison": "identical with rates removed",
+  "feature_probes": {
+    "probes": [
+      {
+        "tag": "parent-mm-r1",
+        "component": "llama",
+        "commit": "5f02679b9a20d0b43ed44ea42cb1d779e1f269ac",
+        "helper_binary_sha256": "912f345adce5888a11e7bbbe471428375f4d8fd41b9edb5e293d9574440ebb73",
+        "helper_source_sha256": "a4aa228012e37677df9741ecb747247097e5cb0755fbacda9db70669a10459f3",
+        "library_sha256": {
+          "llama/lib64/libvulkan_backend.a": "433c97775d1466ef5de40c5d303e86e82553dc5b05e5e4aa03ffc417d5f83003",
+          "llama/lib64/libexecutorch_core.a": "3ad7ba3f6093ebd8d31c66ccdde8234dc0750be4953cf4920384f909b1120ab3"
+        },
+        "enabled_features": {
+          "extension_enabled": true,
+          "vulkanMemoryModel": 1,
+          "vulkanMemoryModelDeviceScope": 0,
+          "vulkanMemoryModelAvailabilityVisibilityChains": 0,
+          "vkCreateDevice_result": 0
+        },
+        "probe_returncode": 0
+      },
+      {
+        "tag": "parent-mm-r1",
+        "component": "backend",
+        "commit": "5f02679b9a20d0b43ed44ea42cb1d779e1f269ac",
+        "helper_binary_sha256": "a2d003205897b8417449dc9977d2f42cfab870ed8ee71bdd65f9b61e0aa9a5c9",
+        "helper_source_sha256": "a4aa228012e37677df9741ecb747247097e5cb0755fbacda9db70669a10459f3",
+        "library_sha256": {
+          "backend/lib64/libvulkan_backend.a": "7fb68b7bad27b00a94bfdcc28bf574f269be04bb5eeb5d1d95cc8568276ce1bf",
+          "backend/lib64/libexecutorch_core.a": "4757dfbcd6d3a2989924892c45714e3dd41ff5da86a5802ad3d51e50b37d5468"
+        },
+        "enabled_features": {
+          "extension_enabled": true,
+          "vulkanMemoryModel": 1,
+          "vulkanMemoryModelDeviceScope": 0,
+          "vulkanMemoryModelAvailabilityVisibilityChains": 0,
+          "vkCreateDevice_result": 0
+        },
+        "probe_returncode": 0
+      },
+      {
+        "tag": "matrix-mm-r1",
+        "component": "llama",
+        "commit": "dd57ce0e4fda4d7a5c72f9ce3c13b075428eec9e",
+        "helper_binary_sha256": "8a95ee2f55caefa8de547e51ec13ec679008c49322f35f545f7d9908b91f2202",
+        "helper_source_sha256": "a4aa228012e37677df9741ecb747247097e5cb0755fbacda9db70669a10459f3",
+        "library_sha256": {
+          "llama/lib64/libvulkan_backend.a": "e7223ed96d992558c091d81100f3b3cb88a81b5da6f59e91d88471c58b291c76",
+          "llama/lib64/libexecutorch_core.a": "4d5cfcb90b4f451b86cecf27cdb0d3561ec26ad7946345211c424139aa3cee1c"
+        },
+        "enabled_features": {
+          "extension_enabled": true,
+          "vulkanMemoryModel": 1,
+          "vulkanMemoryModelDeviceScope": 0,
+          "vulkanMemoryModelAvailabilityVisibilityChains": 0,
+          "vkCreateDevice_result": 0
+        },
+        "probe_returncode": 0
+      },
+      {
+        "tag": "matrix-mm-r1",
+        "component": "backend",
+        "commit": "dd57ce0e4fda4d7a5c72f9ce3c13b075428eec9e",
+        "helper_binary_sha256": "f293c5e3d707c132e403cff74f96dc69e3e348c17f544776b9de58bde4e0cfe8",
+        "helper_source_sha256": "a4aa228012e37677df9741ecb747247097e5cb0755fbacda9db70669a10459f3",
+        "library_sha256": {
+          "backend/lib64/libvulkan_backend.a": "2d360c6a0bc5733f4184d606e0b8973052e21e0ea3a9ff4c287b458ca8caa2b7",
+          "backend/lib64/libexecutorch_core.a": "4d8d976395df3793100993c01f7f7c04c59b8c2b6ae26fa4acaea4a36ea1c211"
+        },
+        "enabled_features": {
+          "extension_enabled": true,
+          "vulkanMemoryModel": 1,
+          "vulkanMemoryModelDeviceScope": 0,
+          "vulkanMemoryModelAvailabilityVisibilityChains": 0,
+          "vkCreateDevice_result": 0
+        },
+        "probe_returncode": 0
+      }
+    ],
+    "scope": "exact static runtime libraries; no model, shader, dispatch or timed-run instrumentation"
+  },
+  "scope": "replacement control snapshots only; linear benchmark rc1/SKIPPED statuses preserved; candidate matrix not started"
+}

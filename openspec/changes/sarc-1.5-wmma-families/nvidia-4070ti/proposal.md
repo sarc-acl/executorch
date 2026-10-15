@@ -415,3 +415,40 @@ The queue is limited to four 120-second feature probes, two two-hour gate caps
 and the existing four-hour A/A cap, under a nine-hour outer timeout. No candidate
 is scheduled until baseline/calibration evidence is inspected and explained.
 This is a finite precondition queue below the 48-hour reporting boundary.
+
+
+## Replacement control and A/A results
+
+The feature/control/calibration queue completed. All four exact-library probes
+record the approved enabled feature and vkCreateDevice rc0. Both replacement
+snapshots retain all 37 observations, with rc0 model/correctness/production-diff
+commands, identical normalized outputs and the parent's unchanged rc1 linear
+dispatch-expectation behavior. The 24-case linear benchmark rows per scheme
+have correctness SKIPPED as requested by verify.sh; production-diff correctness
+is separate. See results/replacement-snapshots.json and its raw artifact audit.
+
+The completed A/A has 84 valid rows, zero invalids, seven repeats globally and
+no changed threshold. Actor recomputation from every runner/sample/record matches
+the queue: floor 2531 MHz from the lowest 2610 MHz run median, geomean
+0.995829116934, all six cell ratios within 2%, all historical controls within 3%.
+No new gain is claimed. Results/calibration.json retains medians, spreads and
+paired 95% intervals; the raw calibration and runs.csv remain in s1-aa-mm-r1.
+
+| Cell | Parent tok/s | Topic tok/s | Topic / parent | Paired 95% interval | Parent vs historical |
+|---|---:|---:|---:|---:|---:|
+| 1b-4w | 35310.30 | 35929.80 | 1.017544 | 1.000000–1.017544 | -1.72% |
+| 1b-8da4w | 40156.90 | 39384.60 | 0.980768 | 0.961538–1.040000 | +1.96% |
+| 3b-4w | 14222.20 | 14124.10 | 0.993102 | 0.993102–1.000000 | +1.39% |
+| 3b-8da4w | 16650.40 | 16384.00 | 0.984000 | 0.976193–1.000000 | +2.44% |
+| 8b-4w | 6420.06 | 6420.06 | 1.000000 | 0.996865–1.003145 | +0.31% |
+| 8b-8da4w | 7501.83 | 7501.83 | 1.000000 | 1.000000–1.003676 | +0.00% |
+
+
+The 1B median differences are one 1 ms timer step; the 8da4w interval extends
+beyond the 2% noise band. Report that uncertainty with later matrix comparisons;
+keep the fixed margins. The initial five-run ratio/spread conditions require
+seven valid runs for every candidate arm/cell. Raw observation records remain
+UNASSESSED, with validity decisions in runs.csv and the raw-data recomputation.
+This checkpoint requests independent review of actual new observations, not a
+repeat source-only preflight. All eleven candidate gates/coverage rows and the
+finite matrix remain pending. No candidate GPU work was launched.
