@@ -73,6 +73,51 @@ The independent reviewer distinguishes supplemental orchestration: separate A/A
 analysis, a sampler with explicit child cleanup, bash-s deployment commands and a
 deterministic provenance join can implement task requirements without modifying
 copied routines. The task does not expressly forbid that route. Do not describe
-such new logic as constant adaptation. The existing owner question is pending;
-launch remains held while that question is outstanding. Original historical tools,
-gates, prompts, goldens and fixed thresholds remain untouched.
+such new logic as constant adaptation. The owner recovery instruction of
+2026-10-15 00:32 UTC resolves this question: necessary run-local orchestration
+corrections are authorized. Original historical tools, gates,
+prompts, goldens and fixed thresholds remain untouched.
+
+
+## Recovery build checkpoint
+
+The adapter-scope question was resolved by the recovery instruction at the end of
+CAMPAIGN.md. Preparation already reviewed is reused. Inventory archive, all 18
+snapshot hashes and 53 pinned source-object hashes were reconfirmed on recovery.
+No existing local build or GPU queue was found; no known target workload or held
+GPU lock was observed. Deployment has not occurred.
+
+The first detached queue exports the exact unmodified base recursively from this
+clone's object stores and cross-builds it under the shared desktop build lock.
+It uses the approved cross image and extracts the golden's compiler and its two
+SPIRV-Tools libraries from the existing workstation build image into this run's
+artifacts. The copied recipe already supports an explicit compiler. No historical
+compiler exemption is used: a nonzero unmodified golden check fails this queue.
+Compiler/image IDs, compiler bytes/version, recursive source hashes, submodule
+pins, recipe hashes, binary hashes and all compiled shader hashes are persisted
+in the private build manifest. The build tag is immutable. There is no local
+patch, target build, deployment or GPU execution in this queue.
+
+| Run-local file | Adaptation and purpose |
+|---|---|
+| `tools/mktree.sh` | Byte-identical copy of the historical recursive commit exporter |
+| `tools/common.sh` | Source-repository constant comes from private queue configuration; build-only layer |
+| `tools/jetson-cross/{build.sh,aarch64.cmake,smoke.cpp,vk-caps.cpp}` | Byte-identical copies of the existing cross recipe and property/smoke helpers |
+| `tools/parent_build.py` | Detached status/error handling, HOLD checks, shared desktop lock, exact export, pinned compiler, provenance and mandatory golden result; replaces historical informative-only build orchestration |
+| `tools/jetson-cross/runtime_constants/` | CPU-only helper linked to the exported parent runtime; executes only listed constant methods and never loads `forward` or links the Vulkan backend |
+| `tools/HOLD.md` | Describes the build job boundary and pending target-queue requirement |
+
+Private paths and host constants are supplied in artifact configuration, outside
+the source tree. The queue's JSON status is queued/running/completed/failed,
+including failure before build and interruption. Syntax checks pass. A deliberately
+invalid commit produced terminal `failed`, nonzero exit and zero GPU jobs; copied
+export/recipe files compare byte-identically with their originals.
+
+Still required after a successful parent build: execute the helper on all six
+models and compare constants with static metadata/kit; inspect exact compiled
+module capabilities and allocations; implement the authorized sampler cleanup,
+bash-s deployment, complete timed-row provenance and per-run A/A calibration;
+commit reproducible candidate selectors; parent snapshot, baseline/A/A, full gates,
+finite legal matrix, dispatched names, medians/margins and independent review.
+No parent/candidate gate, golden PASS, timing result or stage completion is claimed
+before the queue produces that evidence. Attention remains `orin-fused1`.
