@@ -156,7 +156,9 @@ if SDPA or CONTROL:
             if any(not re.search(r"mismatches=0/\d+", l) for l in res): why.append("mismatches")
             if "FAILED" in t: why.append("FAILED line")
             if len(ker) != cases or any("pairing=ok" not in l for l in ker): why.append(f'pairing ok in {sum("pairing=ok" in l for l in ker)}/{len(ker)} kernel lines, want {cases}')
-            err = [l.split()[3:] for l in t.splitlines() if l.startswith("[sdpa-error] ")]
+            # its own record format only: a merged dev/1.5 binary also prints the 4070ti's and the 780M's
+            # [sdpa-error] lines (test_llama_microbench.cpp lists the three; M5 review, 2026-10-15)
+            err = [l.split()[3:] for l in t.splitlines() if l.startswith("[sdpa-error] ") and " elements=" in l]
             nonfinite = len(err) != cases or any(len(e) != 3 or not all(finite(x.split("=")[-1]) for x in e) for e in err)
             if nonfinite: why.append(f"{len(err)} error records, want {cases} with finite rms_err, max_abs_err, ref_rms")
             if why: bad.append(f"r{i}: " + "; ".join(why))
