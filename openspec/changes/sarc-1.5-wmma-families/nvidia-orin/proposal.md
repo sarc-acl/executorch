@@ -219,3 +219,15 @@ zone failures are disclosed under that explicit decision. No gate, shader,
 compiler, golden or threshold relaxation is used. Both arms will use the new
 exact exported source commit, preserving the original base/build provenance.
 No GPU correctness or timing evidence exists yet; the matrix remains incomplete.
+
+
+## Feature-enabled exact build completed
+
+Build `orin-wmma-mm-20261015-1` from `cbb7df9b6a` completed, with the
+unmodified golden PASS for all 53 shipped variants. Post-build recorded-file
+hashes match, and all 2,091 canonical shader modules equal the preserved
+original build byte for byte. The prior 11 module requirement records are
+reused by exact hash. `results/feature-enabled-build.json` records the small
+summary and private evidence locations. Source/runtime review remains required.
+No physical-target feature execution, GPU gate, A/A or timing has run; the
+matrix remains incomplete. The original failed job/build records are unchanged.

@@ -43,6 +43,7 @@ selector suites pass: release 1,240 checks / 31 rows; dev 1,921 checks / 43 rows
 533 candidates with no matrix profile. Raw output is in
 `.artifacts/memory-model-tests/check.txt`. `git diff --check` passes.
 
-Independent review, a new exact exported-commit cross-build, its golden check,
-and normal GPU gates remain required. CPU mocks are not physical-device,
-correctness, dispatch, A/A or timing evidence. The finite matrix is incomplete.
+The new exact exported-commit cross-build and golden check now pass; see
+`feature-enabled-build.json`. Independent review and normal GPU gates remain
+required. CPU mocks are not physical-device, correctness, dispatch, A/A or
+timing evidence. The finite matrix is incomplete.
