@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.24)
+project(wmma_metadata LANGUAGES CXX)
+find_package(executorch CONFIG REQUIRED)
+add_executable(wmma_metadata metadata.cpp)
+target_compile_features(wmma_metadata PRIVATE cxx_std_17)
+target_link_libraries(wmma_metadata PRIVATE extension_module_static)

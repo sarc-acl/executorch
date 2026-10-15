@@ -108,6 +108,27 @@ gate, A/A or timed run had started. No profiles are claimed runnable yet. No tim
 without measured job durations; report any projection above 48 hours before queueing.
 The full unmodified gate and golden checks remain required on exact measured binaries.
 
+The first parent build completed from the exact unmodified base. Both backend and
+runner shader directories pass the unchanged 53-variant golden. An after-build
+git-blob audit covers 50,464 files across 31 root/submodule trees with zero
+mismatches. tools/inspect_modules.py checks all 40 exact modules for 19 manifest
+candidates and their aliases across both builds: compiled Workgroup payloads equal
+the source declarations and fit the queried limit, and actual matrix multiply-add
+operands/results match the required types/scope/shapes. Unsupported payload types
+or unresolved lengths stop the check. This does not establish driver LDS allocation,
+runtime storage, origin reachability or GPU correctness. Raw audit paths and the
+small results/parent-build.json record are indexed in STATUS.md.
+
+The next CPU-only metadata helper links the preserved build's extension_module_static
+and its CPU dependencies, without the Vulkan backend. It accepts only the nine named
+constant methods, each with zero inputs/backends/instructions, and never loads forward.
+tools/check_metadata.sh exports the helper sources from the committed git object,
+records the helper and runtime commits/manifest, and checks the ELF for Vulkan
+dependencies/symbols. tools/validate_metadata.py rechecks model hashes, executes
+the constants and compares them to the saved serialized metadata. Group size and
+embedding metadata remain graph/tensor evidence tied to identical bytes rather
+than invented runtime constant fields. This adds no patch to the parent build.
+
 ## Copied adapters
 
 | Adapter | Source | Changes |
