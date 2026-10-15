@@ -39,6 +39,16 @@ Cand/control > 1 means the candidate is faster. Limits: six-cell geomean slowdow
 `results/matrix-dispatch.csv`; raw rows: `.artifacts/runs.csv` and `.artifacts/stage/<session>/raw/runs.csv`.
 
 <!-- matrix begin -->
+| Session | Candidate linear kernels (dispatched, cand arm) | Correctness | Cand/control tok/s, cells 1B 4w, 1B 8da4w, 3B 4w, 3B 8da4w, 8B 4w, 8B 8da4w | Six-cell geomean cand/control | Within 3 %/8 % |
+|---|---|---|---|---:|---|
+| s1-aa | - | CONTROL_OK | 1.000 / 1.000 / 1.004 / 0.995 / 1.000 / 1.000 | 0.9998 | True |
+| b70-wmma-dq-n13 | - | NOT_STARTED | - | - | - |
+| b70-wmma-q4-table | - | NOT_STARTED | - | - | - |
+| b70-wmma-dq-i | - | NOT_STARTED | - | - | - |
+| b70-wmma-dq-table | - | NOT_STARTED | - | - | - |
+| b70-wmma-q4-k16 | - | NOT_STARTED | - | - | - |
+| b70-wmma-q4-k32 | - | NOT_STARTED | - | - | - |
+| b70-wmma-dq-n26 | - | NOT_STARTED | - | - | - |
 <!-- matrix end -->
 
 No family-wide acceptance is claimed from this member's results.
