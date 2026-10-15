@@ -155,3 +155,50 @@ command/image, input runtime-library hashes and raw per-model outputs remain
 in the private metadata artifact directory. No forward method, GPU inference,
 parent snapshot or A/A has run. This resolves bootstrap only; remaining legality,
 gates, dispatched-name coverage and the measured matrix are still pending.
+
+
+## Format/module prerequisites and parent snapshot driver
+
+The new tools/query_formats.py performs read-only physical-device queries for
+the three formats selected in vk_api/Types.h: fp16, signed int8 and signed int32
+vectors, in 2D/3D with sampled/storage and transfer usage. All six combinations
+are supported. The prepacking rule in QuantizedLinear.cpp:332-414 maps 4-bit
+weights to K/4 by N/8 texels; every production NK pair fits the queried limits.
+Width-packed activations/outputs also fit at full context length 2560.
+
+New tools/module_shared.py reflects the exact eleven manifest SPIR-V modules.
+Their fixed shared arrays and natural alignment match the inventoried byte
+counts, and fit the queried shared-memory limit. This is compiled declaration
+evidence, not driver-private allocation statistics. All eleven modules are
+byte-identical in the llama and microbench backend outputs. Source fingerprints
+and shape/storage restrictions still apply; no candidate is accepted by these
+checks. The small evidence is results/compiled-prerequisites.json.
+
+New tools/nvml_observer.py samples read-only clock/temperature/power/utilization,
+raw event reasons and compute AND graphics clients through the installed NVML
+API. Definitions were checked against the installed CUDA nvml.h. It does not
+start polling children. Ownership follows the observer's process ancestry and
+records starttime with cached PIDs. Foreign/unattributed clients or an NVML error
+block later GPU commands; device loss writes the artifact marker. Thermal masks
+0x20/0x40 implement the already fixed rules. No calibration threshold changes.
+
+New tools/observe.py wraps exact staged binaries for the unmodified gate,
+records original status/arguments/environment/binary/source and samples, applies
+D5 when models change or pages are uncached, forwards signals to its own runner
+and reaps it. It preserves ordinary stdout/stderr for verify.sh. Wrapper/raw
+binary hashes are separate in the stage manifest. Snapshot records explicitly
+state NOT_A_TIMED_SESSION. rc=0/rc=1 and ancestry/cleanup checks passed; idle NVML
+query median was 37 microseconds, with no loaded freshness claim yet.
+
+New tools/parent_snapshot.py stages the preserved parent-r1 binaries and existing
+unchanged prompts, freezes the observer tool copies, clears unrelated Vulkan
+environment controls and selects 4070ti-fused1. It records invariant attention,
+takes no new build, checks HOLD before the gate unit, and runs the unmodified
+exported verify.sh --models 1b,3b,8b --schemes 4w,8da4w --pdiff, which owns the
+inherited device lock. The unit has a two-hour timeout. Expected observation
+count is 15 microbench and 22 runner invocations. Snapshot completion requires
+all observations and no observer abort; it is a record of parent behavior, not
+acceptance of unverified starting rows. No attention tiers are added because
+this stage changes no attention kernel. A/A and candidate GPU jobs are separate
+future units, after the captured evidence is inspected. No >48-hour queue is
+launched or projected here.

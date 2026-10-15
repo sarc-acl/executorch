@@ -1,9 +1,21 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-15 00:47 UTC
+Updated: 2026-10-15 00:56 UTC
 
-Stage: INITIAL PARENT BUILD AND CPU RUNTIME METADATA COMPLETE.
-Running: nothing. The parent-r1 detached queue failed rc=3 at postprocessing,
+Stage: COMPILED PREREQUISITES COMPLETE / PARENT SNAPSHOT PREPARED.
+Running: next launch is the detached s0-parent-verify snapshot only, using the
+preserved parent-r1 binaries and unmodified verify.sh from its base export.
+Queue status is artifact jobs/s0-parent-verify/state.json; stage evidence is
+stage/s0-parent-verify/. No A/A or candidate GPU work is queued.
+
+The snapshot is one HOLD-aware job unit under verify.sh's inherited device lock,
+limited to two hours. It retains unmodified output plus 37 command observations
+(22 model runners), recording exit status, exact binary/profile/source, sensors
+and during-run compute/graphics clients. Page-cache warming applies to both
+linear modes; runner failures block subsequent GPU commands for diagnosis.
+This captures a parent reference; it does not accept starting rows or timing.
+
+ The parent-r1 detached queue failed rc=3 at postprocessing,
 after sarc/tools/build.sh printed SARC_BUILD_OK. The adapter counted canonical
 vulkan_compute_shaders/ and its shader_cache/ as two shader output directories.
 The local adapter now selects the canonical directory explicitly. No build was
@@ -42,8 +54,9 @@ Archive SHA256: 65d1e3ca0eb7e9dffa8e9fbbb1a100bf2cf609868720b9053de67ff8bf5247d8
 NVIDIA manifest SHA256: ef5d13471421898c8515e9a8356caff64a20aa97432175cbcab7bf3a5cd748b1.
 Confirmed archive and all 18 per-file hashes from the reviewed provenance record.
 Read REVIEW.md, VALIDATION.md, README.md, PROFILES.md, LEGALITY.md and inventory STATUS.md.
-Exactly this immutable input will be used; 11 NVIDIA candidates remain pending
-queried hardware/model legality and exact-module checks.
+Exactly this immutable input is used. All 11 candidates now meet the checked
+matrix/type/subgroup/workgroup/shared-memory and format/feature prerequisites
+for matching storage and aligned shapes. Dispatch/correctness remain pending.
 
 Scope: finite linear matrix only, with unchanged 4070ti-fused1 attention controls.
 The final launch decision supersedes the historical two-small-gains stop rule.
@@ -53,8 +66,12 @@ hardware-policy change. Private host/model facts stay in artifact evidence.
 No measured cells, accepted candidates or family-wide conclusion exists.
 Independent preflight: queried all 15 cooperative-matrix type/shape records and
 subgroup/full-subgroup/shared/workgroup numeric limits. All 11 manifest candidates
-meet these numeric prerequisites; complete legality still awaits feature/format
-and exact-module evidence. CPU runtime constants are now checked as above. Static graph inspection verifies all
+meet these numeric prerequisites. All three required image formats support
+optimal sampled/storage usage and transfer in both 2D and 3D. All 12 production
+NK pairs fit packed-weight and activation image bounds at full model context.
+All 11 exact SPIR-V modules match inventoried shared-array byte totals, including
+natural type alignment, and are byte-identical in llama/backend outputs.
+This reflects compiled declarations, not driver-private allocation statistics. CPU runtime constants are now checked as above. Static graph inspection verifies all
 six context lengths, groups, packed embeddings and 12 production NK pairs.
 All model sizes match the kit; all six model and three tokenizer hashes recorded
 privately in artifacts. Sensor latency measured at requested 5 ms: median 5.133 ms.
@@ -71,15 +88,26 @@ evidence is retained under artifact queue-checks/.
 
 Latest per-cell numbers: none. No timing rows, candidate acceptance or family-wide
 conclusion exists. The complete legal matrix is incomplete. The seven native
-texture3d and four alternate buffer entries still require exact-module/format
-checks, committed selectors and gates; static checks are not measured passes.
+texture3d and four alternate buffer entries still require committed selectors
+and gates; prerequisite checks are not measured passes.
 
-Next: complete feature/descriptor-format and exact-module allocation checks,
-prepare committed finite candidate profiles and run-local gate/session drivers,
-then capture the unmodified parent snapshot and A/A. The initial metadata
-bootstrap is complete and must not be repeated as a new preflight review.
-Parent snapshot, A/A calibration, candidate gates, timing rows and full matrix
-remain pending; no timing rate or margin is reported. No model GPU job is queued.
+Next after snapshot: inspect raw command statuses, dispatches and sensor
+coverage; then calibrate A/A and compare the historical tuned reference before
+candidate GPU work. Finite candidate profiles and session/gate orchestration
+remain to finish. No runtime or format preflight is repeated as a new review.
+No candidate acceptance, timing rate or matrix margin exists yet.
+
+Observer checks passed for rc=0/rc=1 commands and own/child/foreign ancestry,
+with the test child reaped. There is no sampler subprocess: each invocation
+samples NVML directly every requested 5 ms and stops with its runner. Cached
+ownership includes /proc starttime to reject PID reuse. Idle NVML query median
+was 37 microseconds across ten snapshots; loaded freshness/coverage remains
+to inspect from actual logs. Thermal bits are 0x20/0x40, matching the existing
+fixed sw/hw thermal rules; power-cap alone does not reject. No policy changes.
+Artifacts: preflight/formats.json, launch-checks.json, nvml-observer-idle.json;
+build/parent-r1/module-shared.json; observer-checks/. Small source evidence is
+results/compiled-prerequisites.json and updated candidate-preflight.csv.
+Python parse and base diff whitespace checks pass. No shader/release/tool edit.
 
 ## Resolved owner question
 
@@ -94,6 +122,7 @@ and is not asked again.
 The existing HOLD dry run remains valid: separate test markers acknowledged,
 lock released and reacquired, markers cleaned. Evidence remains artifact
 preflight/hold-dry-run.txt. Actual HOLD was neither created nor removed.
-Every future detached unit checks it. The parent build unit has ended; no
-new detached unit is queued at this checkpoint.
+The parent build unit has ended. The next unit is the unmodified parent
+verify.sh snapshot, with a two-hour overall timeout. It checks HOLD before
+starting; the unmodified verify.sh itself owns the inherited device lock.
 No reviewer builds/GPU jobs and no repeated preflight review are requested.
