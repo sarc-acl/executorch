@@ -317,8 +317,10 @@ GlobalWorkGrid pick_sdpa_softmax_gwg(
     const std::vector<ArgGroup>& args,
     const std::vector<ValueRef>& resize_args) {
   (void)shader;
-  if (auto skip = sarc::sdpa_fused_skip(graph, resize_args)) { // SARC
-    return *skip;
+  if (mode_of(resize_args) == SDPAMode::LLM) { // SARC: fused node
+    if (auto skip = sarc::sdpa_fused_skip(graph, resize_args)) {
+      return *skip;
+    }
   }
   const SDPAMode mode = mode_of(resize_args);
   const ValueRef q = resize_args.at(0);

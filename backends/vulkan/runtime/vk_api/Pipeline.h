@@ -173,7 +173,7 @@ class ComputePipeline final {
       VkDevice device,
       const Descriptor& descriptor,
       VkPipelineCache pipeline_cache,
-      const bool full_subgroups);
+      const bool full_subgroups = false);
 
   ComputePipeline(const ComputePipeline&) = delete;
   ComputePipeline& operator=(const ComputePipeline&) = delete;
@@ -246,7 +246,7 @@ class ComputePipelineCache final {
   explicit ComputePipelineCache(
       VkDevice device,
       const std::string& cache_data_path,
-      const bool full_subgroups);
+      const bool full_subgroups = false);
 
   ComputePipelineCache(const ComputePipelineCache&) = delete;
   ComputePipelineCache& operator=(const ComputePipelineCache&) = delete;

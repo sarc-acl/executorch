@@ -17,6 +17,8 @@
 #include <cstdlib>
 #include <fstream>
 #include <mutex>
+#include <string>
+#include <unordered_map>
 #include <unordered_set>
 #endif // ETVK_INSPECT_PIPELINES
 
@@ -174,14 +176,18 @@ vkapi::DescriptorSet Context::get_descriptor_set(
     defined(ETVK_INSPECT_PIPELINES)
   // Inspection builds only: ET_VK_DUMP_PIPELINE_STATS=<dir> writes the driver's
   // statistics and internal representations (ISA) of every dispatched pipeline
-  // to <dir>/<kernel_name>.txt, once per pipeline.
+  // to <dir>/<kernel_name>.txt, once per pipeline; further pipelines of the
+  // same kernel (other spec constants) to <kernel_name>.<n>.txt.
   if (const char* dump_dir = std::getenv("ET_VK_DUMP_PIPELINE_STATS")) {
     static std::mutex dumped_mutex;
     static std::unordered_set<VkPipeline> dumped;
+    static std::unordered_map<std::string, int> per_kernel;
     std::lock_guard<std::mutex> lock(dumped_mutex);
     if (dumped.insert(pipeline).second) {
+      const int n = per_kernel[shader_descriptor.kernel_name]++;
       std::ofstream out(
-          std::string(dump_dir) + "/" + shader_descriptor.kernel_name + ".txt");
+          std::string(dump_dir) + "/" + shader_descriptor.kernel_name +
+          (n == 0 ? std::string() : "." + std::to_string(n)) + ".txt");
       out << "kernel: " << shader_descriptor.kernel_name << "\n"
           << "local_wg: " << lwg[0u] << "x" << lwg[1u] << "x" << lwg[2u]
           << "\n";

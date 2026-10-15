@@ -74,7 +74,7 @@ void quantize_and_pack(
 // t_packed_int8_input is an ivec4-typed (block-packed) resource, which would
 // fail to compile against a scalar int array even if never called. Define
 // SKIP_BLOCK_WRITE_HELPERS before including this file to suppress it -- see
-// quantize_and_pack_4w_with_group_sums.glsl, which writes the row-major
+// sarc/sarc_quantize_and_pack_4w_with_group_sums.glsl, which writes the row-major
 // kPackedInt8_4W layout instead.
 #ifndef SKIP_BLOCK_WRITE_HELPERS
 void write_block(

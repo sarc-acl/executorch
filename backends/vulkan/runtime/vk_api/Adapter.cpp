@@ -10,9 +10,13 @@
 
 #include <executorch/backends/vulkan/runtime/vk_api/Adapter.h>
 
-#include <cstring>
 #include <iomanip>
 #include <sstream>
+
+#if defined(VK_KHR_pipeline_executable_properties) && \
+    defined(ETVK_INSPECT_PIPELINES)
+#include <cstring>
+#endif
 
 namespace vkcompute {
 namespace vkapi {
@@ -322,7 +326,9 @@ Adapter::Adapter(
       compute_pipeline_cache_(
           device_.handle,
           cache_data_path,
-          supports_compute_full_subgroups()),
+          // F1: what create_logical_device enabled
+          supports_subgroup_size_control() &&
+              supports_compute_full_subgroups()),
       sampler_cache_(device_.handle),
       vma_(instance_, physical_device_.handle, device_.handle),
       linear_tiling_3d_enabled_{test_linear_tiling_3d_image_support(
@@ -346,10 +352,7 @@ Adapter::Adapter(
       shader_layout_cache_(device_.handle),
       shader_cache_(device_.handle),
       pipeline_layout_cache_(device_.handle),
-      compute_pipeline_cache_(
-          device_.handle,
-          cache_data_path,
-          supports_compute_full_subgroups()),
+      compute_pipeline_cache_(device_.handle, cache_data_path),
       sampler_cache_(device_.handle),
       vma_(instance_, physical_device_.handle, device_.handle),
       linear_tiling_3d_enabled_{test_linear_tiling_3d_image_support(
