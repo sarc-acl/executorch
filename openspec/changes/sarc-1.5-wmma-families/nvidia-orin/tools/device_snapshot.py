@@ -108,7 +108,7 @@ def invoke(config, program, arguments):
     record = {'id': identity, 'program': program, 'args': arguments,
               'commit': config['source_commit'], 'build_manifest_sha256': config['build_manifest_sha256'],
               'binary_sha256': config['binary_sha256'][program],
-              'profile': os.environ['ET_VK_SARC_DEV_PROFILE'], 'candidate': 'control',
+              'profile': os.environ['ET_VK_SARC_DEV_PROFILE'], 'candidate': config.get('candidate', 'control'),
               'device': config['device'], 'unit': config['unit'], 'driver': config['driver'],
               'session': config['session'], 'sensor_path': str(sensor),
               'environment': {k: v for k, v in os.environ.items() if k.startswith(('ET_VK', 'ETVK'))},

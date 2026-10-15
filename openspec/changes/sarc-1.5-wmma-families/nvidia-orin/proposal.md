@@ -231,3 +231,40 @@ reused by exact hash. `results/feature-enabled-build.json` records the small
 summary and private evidence locations. Source/runtime review remains required.
 No physical-target feature execution, GPU gate, A/A or timing has run; the
 matrix remains incomplete. The original failed job/build records are unchanged.
+
+
+## Lean matrix protocol (owner decision 2026-10-15 23:30 UTC), registered before any candidate data
+
+Actor from here: Claude (claude-opus-5-5). The owner's lean protocol replaces the conflicting preparation and
+legality sections above. Thresholds fixed now, before the first control or candidate result exists:
+
+- Snapshot fix: `/proc/<pid>/task/<pid>/children` does not exist on the Orin kernel, so every wrapped call in
+  `orin-wmma-s0-20261015-1` exited 1 and the post-check raised `KeyError 'sampler_children'`. The wrapper now
+  finds the sampler's children by a `/proc/*/stat` PPid scan (commit `aff996d876`). That job's outputs are not
+  evidence; its control verify is rerun as the first step of the matrix queue.
+- One queue, one binary (`orin-wmma-mm-20261015-1`, source `cbb7df9b6a`, golden PASS) for every arm: control
+  `verify.sh --pdiff`, a six-cell A/A, the clock floor, then per candidate `verify.sh --pdiff` -> screen -> timed
+  session. Order: the seven entries from the 4070 Ti final profile (`-01` to `-07`), then Orin's own (`-08` to
+  `-11`).
+- Repeats: 7 valid runs per arm and cell (owner), up to 3 extra pairs, arms interleaved, valid-run medians of
+  the first 7 valid runs by repeat. This supersedes the 5 runs registered above.
+- Clock floor: 0.97 x the lowest valid per-run median clock of the A/A session, device-wide. The historical
+  `e2e5.sh` accepts whole MHz only, so the exact floor is rounded up, never down; both values are recorded.
+- Production-diff screen (`tools/screen.py`): in each of the 12 pdiff logs every shape is complete and either
+  `coopmat:PASSED`, or equal to the control's status for that shape with the same dispatched kernel for that
+  (model, projection, storage) in `linear-<scheme>.json`. Anything else rejects the candidate; it is not timed.
+- Next tokens: default-mode logs against the control's on the timed prompt (6 cells), `prompt_check.txt` and
+  `r1304.txt` (1B, both schemes), and in the timed session parent vs candidate on the real, check and r1304
+  prompts per cell. A difference makes the candidate CORRECTNESS_PENDING; it is still timed. Decode text is
+  recorded, not judged. SDPA tiers are not run (attention identical in both arms).
+- Timing applies to the seven texture3d entries. The four buffer/texture2d and buffer/buffer entries (`-03`,
+  `-04`, `-05`, `-07`) cannot be reached in a timed cell, because all six models use texture3d projection IO and
+  no re-export is allowed. They get the full verify/pdiff screen and their dispatched names only.
+- Margins: per cell, elapsed-time ratio = control median tok/s / candidate median tok/s; family limits are
+  geomean <= 1.03 over six cells and every cell <= 1.08, from same-session valid-run medians.
+
+Run-local tools added for this (historical files untouched): `tools/e2e/e2e5.sh` (byte copy of the Orin
+campaign's session tool), `tools/e2e/common.sh` (copy with deployment root `wmma-orin`, the queue's own tag, and
+a TERM trap so that the sampler and the watcher end their `sleep` child), `tools/screen.py`,
+`tools/matrix_device.py` (device queue) and `tools/matrix_queue.py` (deploy over `bash -s`, detach, rsync the
+evidence to the NAS, JSON state).
