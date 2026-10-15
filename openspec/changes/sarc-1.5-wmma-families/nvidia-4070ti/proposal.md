@@ -3,7 +3,8 @@
 Source base is `617897184529ff180af491ee0d5d7de778cbb6c6`. The only inventory
 input is the reviewed snapshot `f393c3ff7ff4fc41e4651a5109a8509097c501f6`.
 Archive and all per-file hashes match; all 53 inventory source hashes match
-both pinned git objects and this checkout. `results/input-hashes.json` preserves
+the pinned git objects and the preflight checkout. The current selector changes
+append a separate dev-only profile block; the inventoried kernel sources are unchanged. `results/input-hashes.json` preserves
 the source provenance. No historical timing accepts a candidate in this stage.
 
 This finite stage tests the legal union of Orin and Ada linear candidates on this
@@ -202,3 +203,63 @@ acceptance of unverified starting rows. No attention tiers are added because
 this stage changes no attention kernel. A/A and candidate GPU jobs are separate
 future units, after the captured evidence is inspected. No >48-hour queue is
 launched or projected here.
+
+
+## Parent snapshot, complete resource audit and finite selectors
+
+The unmodified parent snapshot completed with all 37 observed commands. All
+22 model invocations returned 0, correctness and twelve production-diff commands
+returned 0, comparison lines are SAME and decode returned 0. The two linear
+benchmarks returned 1 because twelve texture cases per scheme carry the parent's
+unexpected_coopmat dispatch-expectation label; all 24 cases per scheme have
+ok=true. This is preserved as parent behavior, not relabeled as a plain pass.
+The normalized rate-free output is the future line-comparison reference.
+Default prefill windows contain 9--58 NVML samples, with no foreign client or
+thermal observation. No sampler subprocess remains. No snapshot rate is a
+five/seven-repeat interleaved baseline or candidate gain.
+
+The earlier twelve-projection resource check omitted whole-model resources.
+Following the coordinator's reminder, tools/inspect_resources.py extends the
+same schema reader to all graph tensors and operator calls; tools/audit_resources.py
+checks every serialized allocation and source-derived generated-resource bound.
+All original models include RoPE image height 5120, and 8B includes linear image
+width 3584. These fit this device's matching queries; B580's limit is not applied
+to this device. The source rules cover explicit prepack, RMSNorm/embedding/linear
+weights and parameters, KV caches, attention intermediates and fused-copy/int8
+buffers. Constant consumers are exhaustively classified and unknown ones fail.
+Per-resource format/type/usage/extent/resource-size and buffer-range limits pass;
+aggregate peak VRAM is not inferred. Raw graphs, every resource check and matching
+queries stay in artifacts; results/whole-model-resources.json is the small summary.
+No model re-export, release resource change or exception is needed.
+
+NvidiaWmmaMatrix.cpp defines exactly the eleven manifest candidates under
+ET_VK_SARC_WMMA_PROFILE=4070ti-wmma-cNN, alongside the unchanged
+ET_VK_SARC_DEV_PROFILE=4070ti-fused1. The appended registrar is last in
+Overrides.cpp, so it wraps all inherited selectors. With no matrix variable
+(or without unverified mode), it installs nothing. With one selected, it
+registers just its kUnverified candidate and changes only matching linear ops
+when the prior table/profile serves and tile/storage/layout/shape/shared limits
+fit. Imported Orin routes keep the twelve projection/group/M service condition
+and their large-K or 256-tile predicates. Selection of an isolated legal kernel
+can supersede a formerly earlier kernel; this is the bounded cross-device
+comparison, with inherited fallback recorded wherever the selected row cannot
+serve. Decode, unaligned runtime exceptions, attention and other devices keep
+the prior choice. The four buffer entries still need honest alternate coverage;
+fixed texture models cannot establish their dispatch. No new kernel body exists.
+
+CPU fixture checks passed each profile's intended storage and exact kernel,
+row-major layout, unchanged softmax control and decode exclusion. Existing
+selector tests were left unchanged; check.sh --no-build passes. The fixture
+binary and logs are in artifacts/checks. Source only changes are dev registration
+and run-local tools/evidence, with no shader, release, golden, prompt, tolerance
+or sarc/tools change. Source correctness is not a measured candidate gate.
+
+The existing immutable build driver accepts a matrix tag and optional exact
+commit, retaining the pinned export/image/compiler/binary/golden protocol.
+Parent CMake object directories were retired, with their flags/link provenance
+archived and measured binaries/libraries/SPIR-V/source/logs kept and rehashed.
+The next matrix-r1 build supplies both the inert control for A/A and all finite
+candidate selectors. No candidate GPU session starts before A/A calibration
+and historical-baseline comparison. Displayed cache fractions now cap at one
+and retain raw resident/model byte counts to account for fincore page rounding;
+this changes reporting, not warming or validity criteria.

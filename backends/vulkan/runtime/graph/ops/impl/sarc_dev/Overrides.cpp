@@ -3711,3 +3711,18 @@ struct Registrar7900xtx {
 } // namespace sarc
 } // namespace vkcompute
 // --- 7900xtx end ---
+
+// --- 4070ti WMMA matrix begin ---
+namespace vkcompute {
+namespace sarc {
+void install_4070ti_wmma();
+namespace {
+struct Registrar4070tiWmma {
+  Registrar4070tiWmma() {
+    install_4070ti_wmma();
+  }
+} registrar_4070ti_wmma;
+} // namespace
+} // namespace sarc
+} // namespace vkcompute
+// --- 4070ti WMMA matrix end ---

@@ -2,15 +2,16 @@
 set -euo pipefail
 source "$(dirname "$0")/common.sh"
 TAG=$1
-[[ $TAG =~ ^parent-[a-zA-Z0-9-]+$ ]] || exit 2
+C=$(git -C "$ET" rev-parse --verify "${2:-$PARENT_COMMIT}^{commit}")
+[[ $TAG =~ ^(parent|matrix)-[a-zA-Z0-9-]+$ ]] || exit 2
 P=$A/build/$TAG
 T=$A/src/$TAG/executorch
 [[ ! -e $P && ! -e $A/src/$TAG ]] || { echo "immutable build tag already exists" >&2; exit 2; }
 mkdir -p "$A/build" "$A/src" "$A/bin" "$A/docker-config"
 take_lock
-hold_point "parent build $TAG"
-no_others "before parent build"
-gone_check "before parent build"
+hold_point "immutable build $TAG"
+no_others "before immutable build"
+gone_check "before immutable build"
 python3 - "$A" <<'PY'
 import shutil, sys
 free = shutil.disk_usage(sys.argv[1]).free
@@ -20,10 +21,10 @@ if free < 32 * 1024**3:
 PY
 mkdir "$P"
 exec > >(tee "$P/provenance.txt") 2>&1
-printf 'tag %s\nparent %s\nstarted %s\n' "$TAG" "$PARENT_COMMIT" "$(date -u +%FT%TZ)"
+printf 'tag %s\ncommit %s\nstarted %s\n' "$TAG" "$C" "$(date -u +%FT%TZ)"
 git -C "$ET" rev-parse HEAD > "$P/orchestration-commit.txt"
 sha256sum "$TOOLS/build-parent.sh" "$TOOLS/mktree.sh" "$TOOLS/common.sh" "$TOOLS/podman-shim.sh"
-"$TOOLS/mktree.sh" "$PARENT_COMMIT" "$T"
+"$TOOLS/mktree.sh" "$C" "$T"
 cp "$A/src/$TAG/COMMIT" "$A/src/$TAG/SUBMODULES" "$P/"
 find "$T" -type d -exec chmod u+w {} +
 (
@@ -56,7 +57,7 @@ for b in llama backend; do
   [[ -d $SPV ]] || { echo "missing canonical SPIR-V directory in $b"; exit 3; }
   python3 "$ET/sarc/tools/spirv_golden.py" "$SPV" "$T/sarc/golden/spirv.json" > "$P/golden-$b.txt" 2>&1
 done
-no_others "after parent build"
-gone_check "after parent build"
+no_others "after immutable build"
+gone_check "after immutable build"
 df -B1 "$A" > "$P/disk-after.txt"
 printf 'PARENT_BUILD_COMPLETE %s\n' "$(date -u +%FT%TZ)"

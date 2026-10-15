@@ -52,7 +52,7 @@ try:
         changed = not last.exists() or last.read_text() != str(model)
         cache = subprocess.check_output(["fincore", "-n", "-b", "-o", "RES,SIZE", str(model)], text=True)
         resident, size = map(int, cache.split())
-        record["cache_before"] = resident / size
+        record.update(cache_before=min(1.0, resident / size), resident_before=resident, model_bytes=size)
         passes = 0
         while passes < 3 and (changed or resident < size):
             subprocess.run(["python3", str(Path(__file__).with_name("warm_file.py")), str(model)], check=True)
@@ -60,7 +60,7 @@ try:
             changed = False
             resident, size = map(int, subprocess.check_output(["fincore", "-n", "-b", "-o", "RES,SIZE", str(model)], text=True).split())
         last.write_text(str(model))
-        record.update(cache_after=resident / size, warm_passes=passes, slow_load_possible=resident < size)
+        record.update(cache_after=min(1.0, resident / size), resident_after=resident, warm_passes=passes, slow_load_possible=resident < size)
     observer = Observer(int(os.environ["WMMA_DEVICE_INDEX"]), os.getpid())
     record.update(observer.identity)
     with (record_dir / "samples.jsonl").open("w") as samples:
