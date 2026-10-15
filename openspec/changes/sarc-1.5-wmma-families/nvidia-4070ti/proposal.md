@@ -213,7 +213,8 @@ returned 0, comparison lines are SAME and decode returned 0. The two linear
 benchmarks returned 1 because twelve texture cases per scheme carry the parent's
 unexpected_coopmat dispatch-expectation label; all 24 cases per scheme have
 ok=true. This is preserved as parent behavior, not relabeled as a plain pass.
-The normalized rate-free output is the future line-comparison reference.
+The source text summary removes rates and trailing whitespace; exact future
+line comparison uses the raw artifact reference, with rates removed.
 Default prefill windows contain 9--58 NVML samples, with no foreign client or
 thermal observation. No sampler subprocess remains. No snapshot rate is a
 five/seven-repeat interleaved baseline or candidate gain.
