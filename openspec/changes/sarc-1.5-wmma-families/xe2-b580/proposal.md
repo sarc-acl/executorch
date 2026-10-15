@@ -11,7 +11,9 @@ The finite manifest contains 12 storage-specific candidates, seven kernel bases.
 Five valid fresh-process runs per arm/cell, alternating control first on odd repeats,
 candidate first on even repeats; up to three replacement pairs. All six cells in each
 session. Rates are valid-run medians, with spreads and paired bootstrap uncertainty
-reported. Noise band ±2%; baseline discrepancy above 3% per cell requires explanation
+reported (10,000 unpaired bootstrap resamples, seed 58020261014, 95% interval).
+Use the first five valid runs per arm in CSV order; preserve every extra valid/invalid
+row. Noise band ±2%; baseline discrepancy above 3% per cell requires explanation
 before candidates. Kernel-screen margin 3% in every round; no screening or search queued.
 Family bounds remain geomean throughput ratio >=0.97 and each cell >=0.92 against the
 same-session remeasured tuned control. No family-wide acceptance from this member alone.
@@ -96,3 +98,9 @@ The first nohup launcher was reaped with its tool session before a source/build 
 was created. Its empty log is retained. A setsid subprocess dry-run is checked before
 using that detachment mechanism. HOLD is checked atomically by the outer unit wrapper;
 inner scripts do not wait for HOLD while holding the busy lock.
+
+Static follow-up found the table 8da4w token collides with an existing dev xe2bt
+candidate in candidate-before-row suffix lookup. `dq-table` now has attention
+preferences only, so its linear choice is the original table choice. No new exact-name
+selection API or kernel body is introduced. A CPU dispatch-name audit will verify every
+profile against the pinned manifest before GPU candidates.

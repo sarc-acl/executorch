@@ -1922,7 +1922,6 @@ const Preference kB580WmmaDqTable[] = {
     {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
     {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
     {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
-    {Op::kDq8caLinear, "t256x64k32g48s16m8", nullptr},
 };
 const Preference kB580WmmaDqIdent[] = {
     {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},

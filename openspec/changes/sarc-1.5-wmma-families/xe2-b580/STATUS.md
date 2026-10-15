@@ -58,3 +58,35 @@ HOLD-only checks, timed clean_exec, all sensor-source checks/durable sampler fai
 refusal to overwrite existing session evidence, full runner/library/build hash checks
 and stage hash manifest; removed unused historical adjudication tools. CPU timed
 environment test clears ambient force-tiled. No build tag or measurement exists yet.
+
+2026-10-14T19:50:42.797866+00:00: parent-v2 launcher PID 3507162 survives detached
+under init. Unit .hold-busy READ and desktop-build WRITE locks verified. Recursive
+pristine-base export in progress; source/threshold/orchestration commit `14a76d3c88`.
+Model SHA-256 records for all six PTE and three tokenizers complete.
+Next: parent build and unchanged shipped-SPIR-V check, compiled-module/format checks,
+selector build, parent snapshot and A/A. No candidate queue until projected runtime
+and baseline are checked. No owner question pending.
+
+2026-10-14T20:09:53.088113+00:00: pristine parent-v2 completed BUILD_BOTH_OK;
+unmodified shipped-SPIR-V check PASS (53), exact binary/library hashes and recursive
+31-tree export manifest recorded. All 12 compiled candidate storage declarations
+match the pinned inventory and fit the shared limit. Read-only format/tiling queries
+identify the 8B image-extent blocker described in BLOCKER.md. No GPU model or timed
+job has been launched. No queue/build currently running.
+
+## Decision needed from the owner
+
+Required 8B PTEs derive texture3d extents [3584,2048,1], above the matching queried
+maxExtent [2048,2048,2048] in the pinned runtime's selected linear tiling. The source
+check is debug-only, and historical success is not a current legality exception.
+How should this required six-cell stage proceed under that allocation-limit conflict?
+Please supply the owner's explicit resolution or approved conforming inputs; re-export,
+release fixes and assuming an old exception are outside this stage. See BLOCKER.md
+and the artifact storage/model/source evidence. This question is recorded once.
+
+## Waiting boundary
+
+Finish the CPU exact dispatch audit and one independent review of this explicit
+blocker, commit the evidence, then wait. No model GPU job or new full build queued.
+No repeated owner polling/recomputation/review; check for an answer at most every
+20 minutes. All six measured cells, parent snapshot and A/A remain unstarted.
