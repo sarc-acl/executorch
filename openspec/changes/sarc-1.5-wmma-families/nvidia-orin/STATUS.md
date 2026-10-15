@@ -2,9 +2,10 @@
 
 Updated: 2026-10-15T04:01:14.656407+00:00
 
-Stage: authorized runtime feature fix prepared; new exact build pending.
+Stage: authorized runtime feature fix committed; exact cross-build prepared.
 The owner ruling of 2026-10-15 03:57 UTC resolves the feature blocker.
-Independent selector/resource/helper preparation is preserved. No queue is running.
+Independent selector/resource/helper preparation is preserved. The next queue is
+build-only; its state file is named below.
 The legal matrix is incomplete. No model GPU job, gate or timed session has run.
 Base: `617897184529ff180af491ee0d5d7de778cbb6c6`.
 Own branch: `topic/wmma-nvidia-orin`.
@@ -166,3 +167,19 @@ Both future arms use that exact changed source/binary; the original parent build
 remains distinct evidence. Independent review and full normal correctness gates
 remain required. Final legality, allocation audit, measurement orchestration,
 real A/A/control snapshot and the finite legal matrix are still incomplete.
+
+
+## Fixed-build queue
+
+Prepared 2026-10-15T04:02:09.486844+00:00. Source commit `cbb7df9b6a7a605d28192fbc2a8b62c6f3611d9c`
+is the changed base for both future arms, not the pristine original base.
+Immutable tag `orin-wmma-mm-20261015-1` exports that commit and every pinned submodule.
+Reuses the original compiler image by immutable image ID and the same cross
+image; no patch is applied. The shared desktop lock, HOLD, eight-job cap, raw
+provenance and mandatory unmodified golden check remain enforced.
+
+Queue state: `.artifacts/jobs/orin-wmma-mm-20261015-1/state.json`. The queue writes queued,
+running, completed or failed even on error. This queue builds only; it never
+deploys or executes on the GPU. Original failed and recovered build records
+remain unchanged. Pending after build: independent runtime review, final
+legality/allocation joins, compliant measurement queue, snapshot/A/A and matrix.
