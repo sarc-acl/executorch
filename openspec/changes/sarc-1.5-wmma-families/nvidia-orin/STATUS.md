@@ -1,9 +1,9 @@
 # NVIDIA Orin WMMA matrix status
 
-Updated: 2026-10-15T04:15:05.534338+00:00
+Updated: 2026-10-15T04:27:52.355873+00:00
 
-Stage: feature-enabled exact build ready for independent review.
-No queue is running. No owner question is pending. The legal matrix is incomplete;
+Stage: runtime/build review accepted; static joins complete; snapshot queue preparation committed.
+No queue is running. No owner question is pending. The snapshot queue has not launched. The legal matrix is incomplete;
 no model GPU job, correctness gate, A/A or timed session has run.
 
 ## Changed base and completed build
@@ -109,3 +109,44 @@ Adapter scope was resolved at 2026-10-15 00:32 UTC. Runtime feature enablement w
 resolved at 03:57 UTC. The earlier feature question is preserved in
 `results/runtime-feature-blocker.md` and git history. No further ruling or waiver
 is requested at this checkpoint.
+
+
+## Continuation checkpoint after runtime review
+
+The 04:19 UTC independent review accepted the runtime/build checkpoint and
+authorized continuing without another preflight review or owner question.
+Current read-only target inspection found no campaign workload or held device
+lock; governor remains unchanged. Fresh full properties are preserved in
+`.artifacts/legality/current-vulkaninfo.txt`; unit/vendor/driver identity matches
+the original query. `tools/join_legality.py` joins all 11 exact modules to
+physical MMA, features, subgroup and workgroup limits and checks six models'
+static resource bounds. Result: PASS for these static checks, recorded in
+`.artifacts/legality/join.json`. Default scalar extents and runtime linear-weight
+packing are covered; actual allocations/correctness remain GPU gate evidence.
+The first join attempt reversed serialized 2D/3D enum mapping; checked
+StorageUtils.h, corrected the local checker and reran successfully before launch.
+
+New run-local `device_snapshot.py` and `snapshot_queue.py` are preparation,
+not completed protocol validation. They preserve the unmodified verify.sh,
+wrap its actual binaries to fill page cache and record rc/provenance, sample
+sensors/foreign ancestry without children, capture memory, stop owned sampler
+children, retain failures and mirror raw target evidence back to NAS.
+The bridge checks NAS HOLD before the full gate boundary; device checks its
+HOLD and inherited lock. No timed adoption or matrix candidate queue is included.
+The copied historical parent content checker and next-token/run-row helpers
+are byte-identical; its prompt-path adapter only redirects to staged prompts.
+The checker is intended for parent snapshot content, not candidate acceptance.
+
+Remaining before snapshot launch: exercise instrumentation with synthetic runner
+processes (success, failure and signal cleanup), fix any findings, verify payload
+provenance/paths and configure a unique detached snapshot job. Required detached
+state must be written on all failures. No gate/timing evidence exists yet.
+Remaining after snapshot: diagnose its results, six-cell A/A/control medians and
+registered clock qualification, baseline explanation, candidate orchestration,
+next-token/reference-error evidence and the legal finite matrix with full gates.
+
+Coordinator reminder at 04:27 UTC reports about $20 of the resumed non-graceful
+$25 cap spent. This commit preserves preparation and exact remaining work before
+the cap can stop the run. It does not claim a queue has started or the stage is
+complete. Preserve the reviewed cbb7df9b6a build; no rebuild is needed for these
+orchestration-only changes.
