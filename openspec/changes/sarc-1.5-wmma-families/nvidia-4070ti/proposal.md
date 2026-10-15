@@ -487,3 +487,44 @@ orchestration with the existing exact exported binaries. Raw assessments stay
 in artifact stage/s2-gate-cNN/ and matrix/gates-r1/; source results and STATUS
 update after each profile. Native timed sessions retain the reviewed seven
 repeats and 2531 MHz floor. This gate queue schedules no timings or new bodies.
+
+
+## Native matrix sessions after eleven gate captures
+
+All eleven gate captures completed, preserving the parent's rc1 benchmark
+expectations. Every profile's 48 production-diff cases pass; exact candidate
+case counts are recorded in results/candidate-gates.json. c05 still dispatches
+only inherited kernels and remains uncovered. No gate is rerun by the next unit.
+
+New candidate_session.py adapts the reviewed A/A row/cooling/lock/resume and
+child-cleanup machinery for a fixed calibrated comparison. Both arms use exact
+matrix-mm-r1 binaries; only the candidate's WMMA variable differs. The reviewed
+A/A established equivalence with the feature-enabled parent, so this preserves
+the tuned control and identical attention while avoiding unrelated binary
+variation. Each profile first checks all six cells on unchanged timed, real-text
+and unaligned prompts, with both arms in fresh warmed processes. All 36 raw
+outputs are retained. A token difference leaves that profile pending D1/D3 and
+skips its timing, without rejecting it solely for that difference.
+
+For token-equal profiles, all six cells use seven valid interleaved repeats per
+arm and the frozen 2531 MHz floor. No extension or calibration rule runs on
+candidate data. Invalid/interrupted rows remain visible with bounded replacement;
+runner/observer failures stop. Per-cell median ratios, spreads and paired
+bootstrap intervals use seed 407014 and 20,000 draws. The saved numeric family
+margin check is explicitly member-only and pending audit/review, not acceptance.
+observe.py labels these timed records UNASSESSED; decisions remain in runs.csv,
+just as the reviewed calibration retained its original raw records.
+
+The seven-profile native_matrix.py queue has no search or new body. Its 840
+projected fresh processes (252 token / 588 timed) take about 3–5h at the observed
+A/A pace; the fixed caps are four hours per profile and 30 hours overall. HOLD
+and the inherited lock apply at each run boundary. Both CSVs fsync each row;
+completed profiles update source summaries/STATUS. c03/c04/c07 buffer-IO pdiff
+coverage stays separate, and c05's missing buffer-weight correctness is resolved
+separately after this GPU queue, with no compilation during timed sessions.
+
+The session records actual gate microbench dispatch names for each production
+shape and both schemes, plus honest inherited fallbacks. It explicitly does
+not claim an instrumented whole-model dispatch trace: event tracing is disabled
+in the retained measured binaries. No build is repeated merely to change that
+label. This provenance limit remains visible for final review.

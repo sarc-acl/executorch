@@ -1,11 +1,80 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-15 06:16 UTC
+Updated: 2026-10-15 23:40 UTC
 
-Stage: ALL ELEVEN GATE CAPTURES COMPLETE / NATIVE SESSIONS NEXT.
-Running: none. candidate-gates-r1 completed rc=0 at 06:13:44 UTC. No campaign
-job or lock holder is active. No owner question is pending. No candidate is yet
-accepted or timed; the finite device matrix remains INCOMPLETE.
+Stage: NATIVE TIMED MATRIX RUNNING under the owner's lean-finish decision
+(2026-10-15 23:30 UTC). Job state: artifact jobs/native-matrix-r1/state.json.
+Both arms: matrix-mm-r1 binary (commit dd57ce0e4), control 4070ti-fused1,
+candidate adds only ET_VK_SARC_WMMA_PROFILE. Seven valid interleaved runs per
+arm and cell, clock floor 2531 MHz, A/A s1-aa-mm-r1 reused (no new A/A).
+
+Changes for the new protocol: a next-token difference on the timed, real or
+unaligned prompt no longer stops a profile; it is recorded as
+CORRECTNESS_PENDING (top-2 logits unavailable from llama_main) and the profile
+is still timed. Timed-pair text differences are recorded, not aborted on.
+Order: Orin-origin candidates first (c08, c09, c10, c11, c06), then c01, c02.
+
+| Candidate | Linear kernel | Correctness | 1b-4w | 1b-8da4w | 3b-4w | 3b-8da4w | 8b-4w | 8b-8da4w | Geomean |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|
+| c08 | sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32c (4w, K>8192) | pdiff PASS; tokens pending | | | | | | | queued |
+| c09 | sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt (4w) | pdiff PASS; tokens pending | | | | | | | queued |
+| c10 | sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra (8da4w) | pdiff PASS; tokens pending | | | | | | | queued |
+| c11 | sarc_linear_q4gsw_coopmat_t128x128k16g22s32 (4w, K<=8192) | pdiff PASS; tokens pending | | | | | | | queued |
+| c06 | sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra tex3d (8da4w) | pdiff PASS; tokens pending | | | | | | | queued |
+| c01 | sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga tex3d (4w, N>512) | pdiff PASS; tokens pending | | | | | | | queued |
+| c02 | sarc_linear_q4gsw_coopmat_t128x128k16g24s32ga tex3d (4w) | pdiff PASS; tokens pending | | | | | | | queued |
+| c03, c04, c07 | buffer-IO variants | pdiff PASS (buffer microbench) | not timeable: the fixed models run texture3d IO, no dispatch | | | | | | n/a |
+| c05 | buffer-weight variant | NO COVERAGE (0 dispatched cases) | not timeable, no dispatch | | | | | | n/a |
+
+## Question for the coordinator
+
+(none)
+
+## Earlier record (before the lean-finish decision)
+
+
+
+Stage: ELEVEN GATES CAPTURED / SEVEN NATIVE SESSIONS PREPARED.
+Running next: detached native-matrix-r1. Controller state is artifact
+jobs/native-matrix-r1/state.json. No build or GPU job was active at preparation.
+No owner question is pending. No candidate is yet accepted or timed; the finite
+device matrix remains INCOMPLETE. Gate captures were committed as c77c47416.
+
+The native queue uses only c01,c02,c06,c08,c09,c10,c11. Both arms use the same
+retained matrix-mm-r1 runner/library and exact commit dd57ce0e4; the control
+keeps the final tuned profile, while the candidate adds only its WMMA profile.
+Attention dictionaries match the reviewed control and exact candidate gate.
+Each native profile first obtains 36 fresh-process token runs: six cells ×
+timed/real/unaligned prompts × two arms. The original unchanged prompt files
+and D5 warming apply. A difference is preserved as pending D1/D3 evidence and
+that profile is not timed; independent native profiles continue.
+
+Only token-equal profiles run the six-cell interleaved session: control first
+on odd repeats, candidate first on even, seven valid rows per arm/cell, clock
+floor 2531 MHz, >=5 in-window samples, no thermal or foreign observations.
+Invalid rows remain and have at most four attempts per logical arm/repeat.
+Observer/model failures and timed output differences stop for diagnosis.
+The first three token jobs and first three timed jobs record child cleanup.
+Cooling/HOLD/lock/resume rules are copied from the reviewed A/A driver, with
+no threshold recalibration. No new build or shader is involved.
+
+Stage manifests record actual same-op production-shape microbench kernel names
+for both schemes from the candidate gate, including inherited fallbacks.
+Those names are not represented as an instrumented whole-model trace; the
+retained runners have event tracing disabled. tokens.csv and runs.csv retain
+identity/driver/commit/binary/profile/candidate, validity and raw evidence paths.
+Per-cell medians, spreads and paired 95% intervals (seed 407014, 20,000 draws),
+member-only numeric margins and six-cell geomean are saved per completed profile.
+No helper makes a family acceptance or selection claim.
+
+Projection: seven profiles × 120 processes (36 token + 84 timed), roughly
+3–5 hours using the observed A/A pace, plus bounded replacements/cooling. Each
+profile has a four-hour cap and the detached queue a 30-hour outer cap; this
+is below the >48h reporting boundary. No parameter search or automatic retry
+of a failed gate is queued. c03/c04/c07 alternative-IO correctness is retained;
+c05 buffer-weight correctness remains independent work after this GPU queue.
+No compilation will run alongside timing. Raw results remain under stage/s3-*;
+results/native-sessions.json and STATUS update after each completed profile.
 
 All eleven captures retained 407 observations, including 242 model runners rc0,
 132 production-diff commands with all 528 cases PASSED, and the parent's unchanged

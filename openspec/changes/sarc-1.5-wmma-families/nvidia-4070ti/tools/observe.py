@@ -27,7 +27,7 @@ record = {"purpose": os.environ.get("WMMA_PURPOSE", "parent_snapshot"), "binary"
           "candidate": os.environ.get("WMMA_CANDIDATE", "control"), "session": os.environ.get("WMMA_SESSION", stage.name),
           "environment": {k: v for k, v in os.environ.items() if k.startswith(("ET_VK", "ETVK"))},
           "started_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-          "timing_validity": "UNASSESSED" if os.environ.get("WMMA_PURPOSE") == "calibration" else "NOT_A_TIMED_SESSION", "reasons": [],
+          "timing_validity": "UNASSESSED" if os.environ.get("WMMA_PURPOSE") in ["calibration", "measurement"] else "NOT_A_TIMED_SESSION", "reasons": [],
           "sensor_evidence": str(record_dir / "samples.jsonl")}
 child, observer = None, None
 returncode = 77
