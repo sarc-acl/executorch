@@ -9,7 +9,8 @@ it is computed once per (model, prompt) and kept.
 
   cpu_ref_logits.py --model-dir <dir with consolidated.00.pth, params.json, tokenizer.model>
                     (--prompt <file> | --ids <file>) --out <prefix> [--write-ids <file>]
-  -> <prefix>.json {"compute": "fp32", "n_tokens", "ids_sha256", "top10": [[id, logit], ...]} and <prefix>.f32
+  -> <prefix>.json {"compute": "fp32", "n_tokens", "ids_joined_sha256", "ids_file_sha256", "top10": [[id, logit], ...]}
+     and <prefix>.f32
 Tokens: as llama_main feeds them (C++ tiktoken, no BOS). --write-ids stores them (whitespace-separated) for
 logits_probe. verify.sh expects <ref dir>/<model>-<prompt stem>.json, e.g. 8b-prompt_check.json.
 Needs a Python environment with torch, executorch (examples.models.llama) and pytorch_tokenizers."""
@@ -82,7 +83,12 @@ with torch.no_grad():
 logits = out.float().reshape(-1, out.shape[-1])[-1].contiguous()
 top = torch.topk(logits, 10)
 res = {"compute": "fp32", "weights": "bf16 checkpoint up-cast to fp32", "model_dir": R, "tokens": "runner, no BOS",
-       "n_tokens": len(ids), "ids_sha256": hashlib.sha256(" ".join(map(str, ids)).encode()).hexdigest(),
+       "n_tokens": len(ids),
+       # ids_joined_sha256: sha256 of the ids joined by single spaces, no trailing newline. ids_file_sha256: sha256
+       # of the --write-ids / logits_probe id file format (the same text plus one newline), comparable with the
+       # campaigns' recorded *_ids.txt hashes.
+       "ids_joined_sha256": hashlib.sha256(" ".join(map(str, ids)).encode()).hexdigest(),
+       "ids_file_sha256": hashlib.sha256((" ".join(map(str, ids)) + "\n").encode()).hexdigest(),
        "vocab": int(logits.numel()), "top10": [[int(i), float(v)] for v, i in zip(top.values.tolist(), top.indices.tolist())]}
 json.dump(res, open(a.out + ".json", "w"), indent=1)
 logits.numpy().astype("<f4").tofile(a.out + ".f32")

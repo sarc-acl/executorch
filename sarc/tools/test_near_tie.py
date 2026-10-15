@@ -8,9 +8,10 @@ logits_probe-style JSON files in a temporary directory and the CLI is run on the
   REJECT      the Orin's orin-refine1 (3B maximum error larger than the parent's), with its own error tables,
               also when given near-tie logits; a synthetic wrong kernel; synthetic not-a-near-tie and
               flip-not-reproduced cases.
-  ACCEPT      780M candidate 8, and the B580 and B70 candidates, 8B 8da4w on prompt_2048.txt, against the fp32 CPU
-              reference measured 2026-10-15 (sarc/golden/ref-logits/8b-prompt_2048.json, top-2 margin 0.4776). The
-              same 780M case without a reference file must fail closed.
+  REJECT      780M candidate 8, and the B580 and B70 candidates, 8B 8da4w on prompt_2048.txt, against the fp32 CPU
+              reference measured 2026-10-15 (sarc/golden/ref-logits/8b-prompt_2048.json): top-2 margin 0.4776, but
+              the builds' tokens are outside the reference's top 5 (N12.1 amended 2026-10-15). The same 780M case
+              without a reference file must fail closed.
   Merged-binary shape: SDPA error logs written in the output shape of a microbench built from 6178971845 (two fp32
               [sdpa-error] lines per case, a third fp64 one with ET_VK_SDPA_ERROR_REPORT=1 except for fused cases).
 Exit 0 when every case comes out as expected."""
@@ -82,14 +83,17 @@ def case(label, expect, item, ref, old, new, olde, newe, must=()):
 B580_ERR, B70_ERR = f"{B580}/sdpa-error/c0-full.csv", f"{B70}/sdpa-error"
 NOREF = os.path.join(T, "no-reference-recorded.json")  # deliberately absent
 REF_2048_8B = os.path.join(os.path.dirname(HERE), "golden", "ref-logits", "8b-prompt_2048.json")
-EXPECT_2048 = "ACCEPT"  # the outcome measured 2026-10-15 (margin 0.4776); the three builds' tokens rank 56646 to 128101 in that reference
+# Measured 2026-10-15: margin 0.4776 (< 0.5), but the builds' tokens 247, 118 and 53 rank 128101, 126363 and 56646 in
+# that reference (full vector), outside its top 5: rejected under N12.1 as amended 2026-10-15.
+EXPECT_2048 = "REJECT"
 
 # --- the real flips, 8B 8da4w, prompt_check.txt (gate-check1972): parent default -> candidate default ---------------
 md = f"{B580}/probe/s2-c0/differing.md"
 case("B580 b580-refine0 (s2-c0), 8B 8da4w prompt_check.txt", "ACCEPT", "b580 s2-c0 8b 8da4w prompt_check: parent vs candidate",
      CPU_REF_CHECK_8B, write_json("b580-check-P", differing_md(md, "8b-8da4w gate-check1972", "P")),
      write_json("b580-check-C", differing_md(md, "8b-8da4w gate-check1972", "C")),
-     B580_ERR + "#parent", B580_ERR + "#b580-refine0", must=[r"margin 0\.3900", r"old top-1 id 45647", r"new top-1 id 70159"])
+     B580_ERR + "#parent", B580_ERR + "#b580-refine0", must=[r"margin 0\.3900", r"old top-1 id 45647", r"new top-1 id 70159", r"old top-1 id 45647 .* rank 3, logit 16\.3756",
+           r"new top-1 id 70159 .* rank 2, logit 16\.8249"])
 md = f"{B70}/probe/s2-c1/differing.md"
 case("B70 xe2-refine1 (s2-c1), 8B 8da4w prompt_check.txt", "ACCEPT", "b70 s2-c1 8b 8da4w prompt_check: parent vs candidate",
      CPU_REF_CHECK_8B, write_json("b70-check-P", differing_md(md, "8b-8da4w gate-check1972", "P")),
@@ -103,14 +107,16 @@ case("780M candidate 8 (c8-fused3), 8B 8da4w prompt_2048.txt", EXPECT_2048,
      "780m c8 8b 8da4w prompt_2048: parent vs candidate", REF_2048_8B,
      write_json("780m-2048-P", csv_780m(c, "parent-default")), write_json("780m-2048-C", csv_780m(c, "cand-default")),
      f"{M780}/sdpa-error/c8-fused3.csv#parent", f"{M780}/sdpa-error/c8-fused3.csv#cand",
-     must=[r"margin 0\.4776", r"old top-1 id 118", r"new top-1 id 53"])
+     must=[r"margin 0\.4776", r"old top-1 id 118", r"new top-1 id 53", r"reason: token outside reference top-5: old top-1 id 118",
+           r"reason: token outside reference top-5: new top-1 id 53"])
 for dev, md, olde, newe in (("B580 b580-refine0", f"{B580}/probe/s2-c0/differing.md", B580_ERR + "#parent", B580_ERR + "#b580-refine0"),
                             ("B70 xe2-refine1", f"{B70}/probe/s2-c1/differing.md", f"{B70_ERR}/parent-full.txt", f"{B70_ERR}/refine1-full.txt")):
     tag = dev.split()[0].lower()
     case(f"{dev}, 8B 8da4w prompt_2048.txt", EXPECT_2048, f"{tag} 8b 8da4w prompt_2048: parent vs candidate",
          REF_2048_8B, write_json(f"{tag}-2048-P", differing_md(md, "8b-8da4w gate-the2048", "P")),
          write_json(f"{tag}-2048-C", differing_md(md, "8b-8da4w gate-the2048", "C")), olde, newe,
-         must=[r"margin 0\.4776", r"old top-1 id 247", r"new top-1 id 53"])
+         must=[r"margin 0\.4776", r"old top-1 id 247", r"new top-1 id 53", r"reason: token outside reference top-5: old top-1 id 247",
+               r"reason: token outside reference top-5: new top-1 id 53"])
 case("780M c8 without any reference file: fails closed", "REJECT", "780m c8, reference absent", NOREF,
      os.path.join(T, "780m-2048-P.json"), os.path.join(T, "780m-2048-C.json"),
      f"{M780}/sdpa-error/c8-fused3.csv#parent", f"{M780}/sdpa-error/c8-fused3.csv#cand", must=[r"reason: no fp32 CPU reference"])
@@ -209,6 +215,20 @@ case("synthetic: margin exactly at the threshold (0.5) is not below it", "REJECT
 case("synthetic: near tie, errors equal (not larger), full-vector .f32 logits", "ACCEPT", "synthetic accepted",
      os.path.join(T, "ref-tie.f32"), os.path.join(T, "old-b.f32"), os.path.join(T, "new-b.f32"), good, good,
      must=[r"margin 0\.2000"])
+
+# reference top-5 condition (N12.1 amended 2026-10-15): near tie in a full reference vector, errors equal
+ladder = [10.2, 10.0, 9.9, 9.8, 9.7, 9.6, 9.5, 1.0]  # id k has reference rank k + 1
+ref_ladder = f32("ref-ladder", ladder)
+case("synthetic: new top-1 at reference rank 5 (exactly the limit)", "ACCEPT", "synthetic rank 5",
+     ref_ladder, f32("old-r1", [9.0, 8.0, 0, 0, 7.0, 0, 0, 0]), f32("new-r5", [8.0, 0, 0, 0, 9.0, 0, 0, 0]), good, good,
+     must=[r"new top-1 id 4 .* rank 5, logit 9\.7000"])
+case("synthetic: new top-1 at reference rank 6", "REJECT", "synthetic rank 6",
+     ref_ladder, os.path.join(T, "old-r1.f32"), f32("new-r6", [8.0, 0, 0, 0, 0, 9.0, 0, 0]), good, good,
+     must=[r"reason: token outside reference top-5: new top-1 id 5 is at rank 6"])
+p3 = write_json("ref-top3", [(0, 10.2), (1, 10.0), (2, 9.9)])
+case("synthetic: reference records only 3 ranks and the new token is not among them: fails closed", "REJECT",
+     "synthetic short reference", p3, os.path.join(T, "old-r1.f32"), os.path.join(T, "new-r5.f32"), good, good,
+     must=[r"reason: new top-1 id 4: reference not in the recorded top-3, too few ranks to decide"])
 
 if not fails:
     shutil.rmtree(T)

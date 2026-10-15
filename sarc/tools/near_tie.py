@@ -3,9 +3,10 @@
 2026-10-15, OWNER-DECISIONS.md N12). Pure Python, no GPU, no numpy.
 
 When two arms (the old build and the new build, or verify.sh's tiled and default arms) print a different next
-token, the flip is accepted only if BOTH hold:
+token, the flip is accepted only if ALL hold:
   1. near tie: in the fp32 CPU reference, the top-2 logit margin at that position is below
-     NEAR_TIE_MARGIN_LOGIT;
+     NEAR_TIE_MARGIN_LOGIT, and the old arm's and the new arm's top-1 tokens both rank within the reference's
+     top NEAR_TIE_REF_TOPK (a reference that records too few ranks to decide this fails closed);
   2. error rule: on every production head configuration (PRODUCTION_CASES) the new arm's rms AND maximum error
      against the fp32 reference are not larger than the old arm's, with 0 mismatches wherever recorded.
 Also required: the logits of the two arms reproduce the flip (different top-1). Anything missing fails.
@@ -31,6 +32,8 @@ import argparse, array, csv, hashlib, heapq, json, os, re, sys
 # ---- Thresholds. Owner decision 2026-10-15 (OWNER-DECISIONS.md N12, MERGE-PLAN.md M1). Fixed; not options. ----
 # Near tie: top-2 logit margin of the fp32 CPU reference at the differing position below this (strictly).
 NEAR_TIE_MARGIN_LOGIT = 0.5
+# Both arms' top-1 tokens must rank within the reference's top NEAR_TIE_REF_TOPK (N12.1 amended 2026-10-15).
+NEAR_TIE_REF_TOPK = 5
 # Error criterion: the rule applied so far (D3 item 1): new rms <= old rms AND new max <= old max against the fp32
 # reference, on each of the production head configurations (S = 2048, the 1B, 3B and 8B models).
 PRODUCTION_CASES = ("1b_head_config_s2048", "3b_head_config_s2048", "8b_head_config_s2048")
@@ -62,6 +65,20 @@ def load_logits(path):
 
 def top(vals, n):
     return heapq.nlargest(n, vals.items(), key=lambda kv: (kv[1], -kv[0]))
+
+
+def ref_rank(ref, tok):
+    """Rank of tok in the reference (1 = largest; ties share the better rank) -> (rank or None, text).
+    None when the reference does not record enough ranks to place it within or outside NEAR_TIE_REF_TOPK."""
+    vals, complete = ref
+    if tok in vals:
+        r = 1 + sum(1 for v in vals.values() if v > vals[tok])
+        return r, f"rank {r}"
+    if complete:
+        raise SystemExit(f"token {tok} outside a complete reference vocabulary")
+    if len(vals) >= NEAR_TIE_REF_TOPK:
+        return len(vals) + 1, f"rank > {len(vals)} (outside the recorded top-{len(vals)})"
+    return None, f"not in the recorded top-{len(vals)}, too few ranks to decide"
 
 
 # ---------------------------------------------------------------- errors against the fp32 reference
@@ -131,6 +148,7 @@ def load_errors(spec):
 # ---------------------------------------------------------------- decide
 def decide(item, ref_p, old_p, new_p, old_e, new_e):
     why, out = [], {"item": item, "decision": DECISION, "near_tie_margin_logit": NEAR_TIE_MARGIN_LOGIT,
+                    "near_tie_ref_topk": NEAR_TIE_REF_TOPK,
                     "production_cases": list(PRODUCTION_CASES)}
     ref, old, new = load_logits(ref_p), load_logits(old_p), load_logits(new_p)
     # 1. near tie in the fp32 CPU reference
@@ -151,7 +169,12 @@ def decide(item, ref_p, old_p, new_p, old_e, new_e):
             (a, la), (b, lb) = top(x[0], 2)
             out[name] = {"file": p, "top1": [a, la], "top2": [b, lb], "margin": la - lb}
             if ref is not None:
-                out[name]["top1_in_reference"] = ref[0].get(a)
+                rank, text = ref_rank(ref, a)
+                out[name].update(top1_in_reference=ref[0].get(a), top1_reference_rank=rank, top1_reference_rank_text=text)
+                if rank is None:
+                    why.append(f"{name} top-1 id {a}: reference {text} (top-{NEAR_TIE_REF_TOPK} required)")
+                elif rank > NEAR_TIE_REF_TOPK:
+                    why.append(f"token outside reference top-{NEAR_TIE_REF_TOPK}: {name} top-1 id {a} is at {text}")
     if old is not None and new is not None:
         if out["old"]["top1"][0] == out["new"]["top1"][0]:
             why.append(f"the logits do not reproduce the flip (both arms' top-1 is {out['old']['top1'][0]})")
@@ -201,7 +224,8 @@ def render(d):
         if x:
             ir = x.get("top1_in_reference")
             s.append(f"  {n} top-1 id {x['top1'][0]} {x['top1'][1]:.4f}, margin {x['margin']:.4f} over id {x['top2'][0]}; "
-                     f"in the reference {'%.4f' % ir if ir is not None else 'outside the recorded top-k'}")
+                     f"in the reference {x.get('top1_reference_rank_text', 'not available')}"
+                     f"{', logit %.4f' % ir if ir is not None else ''}")
     if d.get("max_abs_logit_diff_on_common_ids") is not None:
         s.append(f"  largest |logit difference| old vs new on the recorded ids: {d['max_abs_logit_diff_on_common_ids']:.4f}")
     for n, (p, f) in d.get("error_sources", {}).items():

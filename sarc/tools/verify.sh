@@ -31,7 +31,8 @@
 # at that position (DIR/logits_probe on DIR/<prompt stem>.ids) and the error of
 # both arms' SDPA against the fp32 reference (test_llama_microbench
 # --sdpa-correctness-only --sdpa-tier=full) go to sarc/tools/near_tie.py with
-# the reference logits. Near tie and error not larger: the item reads
+# the reference logits. Near tie (margin < 0.5, both tokens in the reference top 5)
+# and error not larger: the item reads
 # TIE_FLIP_ACCEPTED and the numbers follow; otherwise, or when an input is
 # missing, it stays DIFFER. Every accepted flip is listed again at the end
 # (near-tie summary) and in OUT/tie/accepted.txt.
@@ -57,7 +58,7 @@ while [[ $# -gt 0 ]]; do
   esac
   shift
 done
-[[ -n $DIR && -n $LOCK ]] || { sed -n '2,37p' "$0"; exit 2; }
+[[ -n $DIR && -n $LOCK ]] || { sed -n '2,38p' "$0"; exit 2; }
 cd "$DIR" || exit 2
 O=$DIR/$OUTN; mkdir -p "$O"
 exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK"; flock -w 900 9 || { echo "gpu-lab lock busy"; exit 75; }
