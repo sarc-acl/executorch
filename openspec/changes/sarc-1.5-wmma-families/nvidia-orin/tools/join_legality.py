@@ -87,6 +87,7 @@ def main():
             for t in delegate['tensors']:
                 # A conservative four-byte bound covers these serialized dtypes,
                 # packed activations, norm intermediates and staging buffers.
+                assert t['dtype'] in (1, 2, 3, 4), t
                 bound = math.prod(t['dims']) * 4
                 assert bound < buffers_limit, t
                 max_buffer_bound = max(bound, max_buffer_bound)

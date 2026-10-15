@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """Run the unchanged parent snapshot with per-invocation evidence; no timing adoption."""
 import argparse
-import fcntl
 import hashlib
 import json
 import os
 from pathlib import Path
 import signal
-import statistics
 import subprocess
 import sys
 import time
@@ -186,7 +184,11 @@ def main():
         command = ['bash', str(stage / 'verify.sh'), '--dir', str(stage), '--lock', config['lock_uuid'],
                    '--models', '1b,3b,8b', '--schemes', '4w,8da4w', '--pdiff', '--flat-models', config['models']]
         with (stage / 'verify.out').open('x') as file:
-            result = subprocess.run(command, stdout=file, stderr=subprocess.STDOUT, timeout=6 * 3600)
+            result = subprocess.Popen(command, stdout=file, stderr=subprocess.STDOUT, start_new_session=True)
+            try:
+                result.wait(timeout=6 * 3600)
+            finally:
+                stop(result)
             file.write(f'VERIFY_DONE rc={result.returncode}\n')
         check(config)
         records = [json.loads(line) for line in (stage / 'invocations.jsonl').read_text().splitlines()]

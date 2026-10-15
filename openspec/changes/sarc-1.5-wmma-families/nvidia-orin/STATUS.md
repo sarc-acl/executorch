@@ -150,3 +150,27 @@ $25 cap spent. This commit preserves preparation and exact remaining work before
 the cap can stop the run. It does not claim a queue has started or the stage is
 complete. Preserve the reviewed cbb7df9b6a build; no rebuild is needed for these
 orchestration-only changes.
+
+
+## Snapshot launch checkpoint
+
+Instrumentation synthetic tests now PASS for success, rc=7 failure retention,
+SIGTERM propagation, sampler rc=0/no children, raw sensor/provenance records and
+gate exit records. Evidence: `.artifacts/snapshot-tests/first/`. This executes a
+fake CPU runner only and certifies no GPU result. Syntax and whitespace checks
+pass. Gate termination now signals its owned process group and waits for cleanup.
+
+Prepared unique snapshot-only job `orin-wmma-s0-20261015-1`, state
+`.artifacts/jobs/orin-wmma-s0-20261015-1/state.json`. It reuses the reviewed exact
+build and preserves unmodified verify.sh and prompts. The queue enforces HOLD at
+the full-gate boundary on the workstation and target, with the inherited device
+lock acquired by verify.sh; per-invocation wrappers enforce target HOLD, foreign
+ancestry, sensors, cooling and memory safeguards. Both task copies include the
+owner decisions. Target rc/sensor/memory/environment records and all raw outputs
+are copied back on terminal completion/failure. Maximum queue projection is six
+hours, below 48 hours; no candidate matrix or A/A is included.
+
+Next action is launch, then controller parking on its JSON state. A completed
+snapshot still needs content/telemetry diagnosis before A/A. If this continuation
+hits its cap, preserve this job and inspect both target/NAS states before any
+resume; do not start another snapshot or recompute reviewed preparation.
