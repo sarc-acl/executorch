@@ -44,6 +44,7 @@ idle_wait() {
     sleep 60
     [[ -e $A/DEVICE_LOST ]] && return 77
   done
+  return 0   # the loop's status is its last test (no DEVICE_LOST = 1) after any wait
 }
 mkdir -p "$A/logs"
 export SARC_HOLD_DIR=$A SARC_JOBS=8

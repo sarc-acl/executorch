@@ -1,6 +1,6 @@
 # Xe2 B580 finite linear matrix: status
 
-Updated 2026-10-15T23:30Z. Actor: Claude (claude-opus-5-5), under the owner's lean-finish decision of
+Updated 2026-10-16T00:05Z. Actor: Claude (claude-opus-5-5), under the owner's lean-finish decision of
 2026-10-15 23:30 UTC (deadline 2026-10-17 18:00 UTC). Earlier recovery history: git log of this file.
 
 ## Inputs
@@ -43,9 +43,22 @@ Queue `tools/queue.sh`, state `.artifacts/queue/wmma-v1/job-state.json`.
 
 `q4-table` and `dq-n13` are identity aliases of the control (CPU selector audit), covered by s1-aa.
 
+## Control check (s1-aa gate, 2026-10-15 23:41-23:52Z)
+
+`wmma-v1` built from `921e8cb355` (BUILD_BOTH_OK, shipped SPIR-V golden PASS, 53 variants). Unmodified
+`verify.sh --pdiff` with the control on `wmma-v1`: VERIFY_DONE rc=0, production diff 12/12 ALL PASSED,
+default vs tiled SAME on check and unaligned prompts, decode rc=0 31 tokens. With rates removed it equals
+b580-fused s6-final line by line except the 8da4w dispatch list, which is expected: s6-final ran `b580-fused1`
+(xe2bt), the control `b580-fused1-order-p13` dispatches xe2bto `i` (8 per storage) and `n13` (4 per storage), as
+in the manifest. `correctness rc=1` and `linear rc=1` are the same pre-existing statuses as s6-final.
+The gate wrapper recorded foreign desktop engine time during the 11-minute gate (`GATE_RECORDED rc=1`);
+this does not affect correctness results and the gate timings are not used.
+
 ## Now
 
-Building `wmma-v1`, then the queue runs unattended (timed units wait for an idle desktop).
+First queue run stopped before the A/A session: `idle_wait` (run-local host.sh) returned the status of its
+last loop test (1) after any wait, so session.sh exited. Fixed with an explicit `return 0` (tested);
+no data lost, no rows existed. Queue relaunched; it resumes at the s1-aa session.
 
 ## Question for the coordinator
 
