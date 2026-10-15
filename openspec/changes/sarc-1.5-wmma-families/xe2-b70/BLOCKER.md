@@ -53,3 +53,14 @@ prevents run-local GPU/build launches. The prepared baseline queue has not start
 Preserved builds, metadata, module checks and all source input evidence remain
 available; changing hardware policy, model export or release code is not authorized.
 The owner question appears once in STATUS.md. Work is parked pending that answer.
+
+
+## Owner resolution and remaining dependency, 2026-10-15 03:57 UTC
+
+The owner authorized conforming versions of all six fixed inputs and assigned
+the common recipe/evidence bundle to B580. The original inputs and this resource
+finding are preserved. No limit exception or runtime release-zone edit was
+approved. This record's original authorization question is resolved; STATUS.md
+now records the single pending bundle dependency. REVISED-INPUTS.md describes
+B70 admission and the separate synthetic-gate resource check. No real revised
+input has been accepted and no model GPU job has run.

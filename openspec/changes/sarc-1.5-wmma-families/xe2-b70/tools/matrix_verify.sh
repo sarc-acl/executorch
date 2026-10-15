@@ -26,6 +26,11 @@ else
   cp "${XE2_UNALIGNED:-$HOME/.cache/et-e2e/sarc15-r4/r1304.txt}" "$D/"
 fi
 cp "$ENVFILE" "$D/env"
+if [[ -e $D/INPUTS.json ]]; then
+  cmp "$A/preflight/revised-input-admission.json" "$D/INPUTS.json"
+else
+  cp "$A/preflight/revised-input-admission.json" "$D/INPUTS.json"
+fi
 mapfile -t ENVS < "$D/env"
 {
   echo "build=$TAG"

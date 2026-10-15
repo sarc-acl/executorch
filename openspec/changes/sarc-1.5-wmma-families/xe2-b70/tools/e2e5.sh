@@ -58,6 +58,7 @@ O=$D/$OUTN; mkdir -p "$O/logs"
 # session started outside gate.sh printed "gpu_begin: command not found" and ran without the pair lock and the
 # coordinator hold: s10-final5, s11-final6. tools/test_e2e5_guard.sh now runs this entry point.)
 ARG_LOCK=$LOCK; . "$(dirname "$(readlink -f "$0")")/host.sh" || { echo "host.sh not loaded" >&2; exit 75; }; LOCK=$ARG_LOCK
+python3 "$TOOLS/input_provenance.py" "$D/INPUTS.json" "$MROOT" || exit 78
 gpu_begin excl "$0 --stage $STAGE" || { echo "guard not acquired (pair lock / coordinator hold): nothing was run" >&2; exit 75; }
 exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK"; flock -w 900 9 || { echo "gpu-lab lock busy"; exit 75; }
 [[ -z $CLKMIN && $CALIB == 0 && -s $CLKMIN_FILE ]] && CLKMIN=$(<$CLKMIN_FILE)

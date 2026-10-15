@@ -1,31 +1,41 @@
 # Xe2 B70 finite matrix status
 
-2026-10-15 00:48 UTC. Actor: Codex. **WAITING_OWNER: resource-limit blocker.**
-No detached baseline queue, GPU gate or model timing job has started. The
-six-cell legal matrix is incomplete. No measured medians or margins exist.
+2026-10-15 04:02 UTC. Actor: Codex. **WAITING_OWNER: common revised-input bundle.**
+Read the full updated 1043-line CAMPAIGN.md including the 03:57 owner decision.
+The owner has resolved the previous authorization question: conforming versions
+of all six inputs are authorized, with original weights/quantization/context2560,
+tokenizer and prompts preserved and identical revised inputs in both arms.
+The B580 actor owns the common recipe/evidence bundle; no duplicate export
+investigation was performed here. No bundle or revised models were present in
+this run's input directory at recovery inspection. No GPU/build/queue job or
+device lock was active. No baseline gate or timing job has ever started.
 
-Current matching image-format queries on the assigned primary B70 confirm a
-maximum 3D image width of 2048. Both supplied 8B schemes contain fp16,
-texture3d, width-packed linear outputs with shape [1,2048,14336], requiring
-image extent [3584,2048,1]. This exceeds the matching width limit. Linear and
-optimal tiling both report 2048; the current runtime chooses linear tiling.
-Source/feature support and historical success do not establish allocation legality.
-Full evidence and derivation: BLOCKER.md and artifact preflight/resource-limit-blocker.json.
-RESOURCE_LIMIT_BLOCKED prevents launches through the run-local adapters.
+Independent preparation is complete. Reviewed inventory archive and all 18 file
+hashes match. Existing selector/profile review and build/module/metadata evidence
+are reused; no unchanged source was rebuilt and no old device query was repeated.
+RESOURCE_LIMIT_BLOCKED remains in force until actual revised inputs and synthetic
+gate resources satisfy the required legality checks. The old allocation finding
+remains evidence, rather than an unresolved request for an exception.
 
-Recovery preparation is complete independently of this blocker. Preserved parent
-`wmma-b70-parent-01` and topic `wmma-b70-topic-02` builds, exported helpers,
-recorded binary hashes and recursive provenance were verified. Topic source is
-`2fcc1c7e96a7774d80b66095aadb79700d3b48e3`. Shipped SPIR-V PASS (53 variants),
-12 compiled module capacities agree with declarations, and exported CPU metadata
-checks are complete. No rebuild is needed. The archive and all 18 reviewed input
-hashes match INPUT.md's pinned snapshot. Previous preparation/review is reused.
+New queue preparation requires a local revised-input admission record, pins
+six models and three tokenizers by hash, preserves a receipt with every stage,
+and annotates every aggregated run with revised dataset, receipt and model hashes.
+Both arms use the same configured model root. CPU synthetic fixtures passed
+admission rejection checks and all 61 fixture rows retained revised-input identity;
+these are tool tests, never model correctness or measured performance evidence.
 
-Baseline/A/A orchestration and durable JSON status reporting are committed and
-CPU success/failure status tests passed. The queue is prepared but **not launched**.
-The seven-profile finite matrix remains preregistered. No candidate is accepted
-and no family-wide claim, service/policy change, push or PR has occurred.
-Independent preparation is finished; park until CAMPAIGN.md resolves the question.
+Independent source inspection also found over-limit synthetic 8B image resources
+in the unchanged full gate and identity helper. Revised PTEs alone do not address
+those constructors. See REVISED-INPUTS.md and artifact
+preflight/gate-resource-audit.json for exact-export source references. No gate,
+shape, storage requirement, tolerance, golden or shader body was changed.
+
+Next: receive the common bundle through the owner, validate it on B70, resolve
+synthetic gate resource legality without weakening the gate, then run correctness
+before timing. No admission record has been created for real models. The six-cell
+matrix remains incomplete; no medians, margins or family-wide acceptance exist.
+No push, PR, service, driver or hardware-policy change was performed.
+Park once for the dependency below; no repeated export investigation or review.
 
 Read the complete assembled campaign and final launch decision. Own branch starts at
 `617897184529ff180af491ee0d5d7de778cbb6c6`; clean checkout at initial inspection.
@@ -41,23 +51,25 @@ Source review establishes readiness of 12 candidates, not current device legalit
 No measured medians or margins exist yet. Read-only unit/property/sensor and serialized-model inspection completed.
 Pinned submodule initialization and check.sh --no-build passed. Seven dev-only
 profiles map the 12 input entries; buffer variants receive correctness coverage
-because supplied model prefill IO is texture3d. Independent source/preflight review and focused CPU profile checks passed.
+because the original supplied model prefill IO is texture3d; revised-input
+route coverage is pending the common bundle. Independent source/preflight review and focused CPU profile checks passed.
 Isolated HOLD dry test passed; historical outer gate/control/trace wrappers are
-inactive because their extra paths do not meet this bounded task. Next: run the parent snapshot and A/A using the preserved exact builds,
-then assess baseline and calibration before candidates. No candidate is declared launch-ready yet.
+inactive because their extra paths do not meet this bounded task. Next, after revised-input admission and full-gate resource legality: run
+the parent snapshot and A/A, then assess baseline/calibration before candidates. No candidate is declared launch-ready yet.
 The finite matrix supersedes the historical two-small-gains stop rule under the
 2026-10-14 launch decision. Attention remains the final campaign configuration in
 both arms. No family acceptance is inferred from this member.
 
 ## Decision needed from the owner
 
-The required six-cell gate and matrix cannot legally launch with these supplied
-8B resource layouts. Should this run close as explicitly blocked/incomplete, or
-will the owner authorize a separate compliant model/resource-layout task and
-provide revised inputs before resuming? No model re-export, runtime layout edit,
-allocation-limit exception or reduced six-cell requirement is currently authorized.
-This question is recorded once; no further recomputation or review is requested
-while waiting for the task file to change.
+Please relay the B580 actor's common conforming-input recipe/evidence bundle and
+its approved handling of the unmodified gate's independently constructed 8B
+texture3d fixtures. The inputs and B70 validation reports are still absent; no
+hardware-limit waiver or gate relaxation is authorized. Independent B70
+preparation is finished, so this dependency is recorded once and the run is
+parked until the task file changes or the owner relays the bundle with a resume.
+The earlier request to authorize conforming inputs was resolved by the
+2026-10-15 03:57 UTC decision and is not being asked again.
 
 ## Coordinator hold
 
@@ -66,7 +78,8 @@ Real HOLD and HELD remain coordinator-owned at the artifact root. A build is a
 job boundary; no queue starts before a checked build and launch prerequisites.
 Longest build/job duration remains to be measured before the matrix queue.
 
-Parent runtime metadata check completed successfully for all six model files.
+Original-input parent runtime metadata check completed successfully for all six
+original model files; revised-input runtime metadata remains pending.
 Linear group128 and 4-bit embedding group32 were read from serialized Vulkan
 operator arguments. All 12 parent module capacities equal the reviewed declarations;
 required format features agree with the unit query, but the matching image

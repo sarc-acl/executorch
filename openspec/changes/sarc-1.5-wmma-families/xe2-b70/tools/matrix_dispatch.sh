@@ -3,6 +3,7 @@
 set -euo pipefail
 . "$(dirname "$(readlink -f "$0")")/host.sh"
 S=$A/stage/${1:?session}; TAG=${2:?build tag}
+python3 "$TOOLS/input_provenance.py" "$S/INPUTS.json" "$XE2_MODEL_ROOT"
 gpu_begin excl "dispatch $1"
 exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK"
 flock -w 900 9 || exit 75

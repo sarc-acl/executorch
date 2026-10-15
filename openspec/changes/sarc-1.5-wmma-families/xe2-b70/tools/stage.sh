@@ -13,6 +13,7 @@ for b in $PB $CB; do grep -qx BUILD_BOTH_OK $A/build/$b.src.txt || { echo "build
 [[ -f $UNALIGNED ]] || { echo "missing unaligned prompt $UNALIGNED" >&2; exit 2; }
 [[ -e $S ]] && { echo "session $S already exists" >&2; exit 2; }
 mkdir -p $S/{parent,cand,parent-traced,cand-traced}
+cp "$A/preflight/revised-input-admission.json" "$S/INPUTS.json"
 put() { # put <build tag> <dest> <env>
   local L=$A/build/$1/llama/examples/models/llama
   cp -f $L/llama_main $2/; cp -f $(find $A/build/$1/llama -name libllama_runner.so | head -1) $2/

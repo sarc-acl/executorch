@@ -22,6 +22,10 @@ stage = root / 'stage' / args.session
 cells = [(m, q) for m in ('1b', '3b', '8b') for q in ('4w', '8da4w')]
 issues = []
 result = {'session': args.session, 'candidate': args.candidate, 'issues': issues}
+input_record = json.loads((stage / 'INPUTS.json').read_text())
+input_hash = hashlib.sha256((stage / 'INPUTS.json').read_bytes()).hexdigest()
+result['input_dataset'] = input_record['dataset_id']
+result['input_receipt_sha256'] = input_hash
 
 if (stage / 'verify.out').exists():
     verify = (stage / 'verify.out').read_text()
@@ -100,7 +104,7 @@ if (raw / 'runs.csv').exists():
             raise ValueError('Unterminated central CSV record; preserve and diagnose')
         with target.open() as handle:
             old_keys = {row['run_id'] for row in csv.DictReader(handle)}
-    extra = ['run_id', 'session', 'candidate', 'device_unit', 'device_uuid', 'driver', 'commit', 'binary', 'binary_sha256', 'profile', 'sensor_evidence']
+    extra = ['run_id', 'session', 'candidate', 'device_unit', 'device_uuid', 'driver', 'commit', 'binary', 'binary_sha256', 'profile', 'sensor_evidence', 'input_dataset', 'input_receipt_sha256', 'model_sha256']
     new_file = not target.exists() or target.stat().st_size == 0
     with target.open('a', newline='') as handle:
         writer = csv.DictWriter(handle, fieldnames=extra + list(rows[0]))
@@ -111,10 +115,15 @@ if (raw / 'runs.csv').exists():
             if key in old_keys:
                 continue
             arm = manifests[row['build']]
+            model, stem = {'1b': ('llama-3.2-1b', 'llama3_2-1b'), '3b': ('llama-3.2-3b', 'llama3_2-3b'), '8b': ('llama-3.1-8b', 'llama3_1-8b')}[row['model']]
+            model_entry = input_record['files'][f"{model}/exported/{stem}_vulkan_{row['scheme']}.pte"]
             writer.writerow({**row, **arm, 'run_id': key, 'session': args.session,
                              'candidate': args.candidate, 'device_unit': 'primary:0',
                              'device_uuid': bytes(identity['deviceUUID']).hex(),
                              'driver': driver['driverInfo'],
+                             'input_dataset': input_record['dataset_id'],
+                             'input_receipt_sha256': input_hash,
+                             'model_sha256': model_entry['sha256'],
                              'sensor_evidence': str(raw / pathlib.Path(row['log']).with_suffix('.clk'))})
     timed = [row for row in rows if row['log'].startswith('logs/prefill')]
     result['invalid_runs'] = [row for row in timed if row['valid'] != '1']

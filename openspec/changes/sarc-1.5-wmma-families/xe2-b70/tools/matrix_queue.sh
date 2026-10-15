@@ -4,6 +4,7 @@ set -euo pipefail
 . "$(dirname "$(readlink -f "$0")")/host.sh"
 TAG=${1:?build tag}
 [[ -s $A/BASELINE_READY && -s $A/reps && -s $CLKMIN_FILE && ! -e $A/DEVICE_LOST && ! -e $A/QUEUE_BLOCKED && ! -e $A/RESOURCE_LIMIT_BLOCKED ]]
+python3 "$TOOLS/input_provenance.py" "$A/preflight/revised-input-admission.json" "$XE2_MODEL_ROOT"
 [[ -x $A/build/$TAG/identity/wmma_linear_identity ]]
 grep -qx BUILD_BOTH_OK "$A/build/$TAG.src.txt"
 PV=$A/stage/s0-parent-verify/verify.out

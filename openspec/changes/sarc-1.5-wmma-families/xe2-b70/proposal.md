@@ -176,3 +176,21 @@ hashes. Earlier format-feature checks did not establish resource-extent legality
 The prepared parent/A/A queue was never launched. RESOURCE_LIMIT_BLOCKED is now
 checked before adapter GPU/build entry and by both queues. The six-cell stage
 remains incomplete; no historical successful run grants a limit exception.
+
+
+The 2026-10-15 03:57 UTC owner decision authorizes conforming inputs for all six
+cells, with common recipe/evidence supplied by B580. Original artifacts are
+preserved and historical-original numbers will remain separately labelled.
+Input provenance is now required before either prepared queue, every timing
+session and dispatch collection. Each stage keeps its admission receipt and
+central rows record revised dataset, receipt and model hashes. Hash validation
+is an integrity check, not an automatic acceptance of semantic equivalence or
+correctness. Those reports must be evaluated before creating a real admission.
+Existing builds/selectors are reused pending revised-input route coverage.
+
+Independent source-only legality preparation found that the unmodified production-
+diff/linear microbench and local identity helper generate texture3d width-packed
+8B cases independently of models; they include width 3584 input/output images.
+The common unblock must satisfy these resources as well as revised model layouts.
+The full gate, dimensions, storage requirements and tolerances are unchanged.
+B70 is parked once awaiting the common bundle, without a duplicate export effort.
