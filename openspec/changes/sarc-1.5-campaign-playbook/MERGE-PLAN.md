@@ -13,7 +13,7 @@ goes in with the merge; `topic/sarc-pinned-glslc` is left out for now.
 
 | task | state |
 |---|---|
-| M1 near-tie stage of the gate | not started; before promotion |
+| M1 near-tie stage of the gate | done 2026-10-15 (N12.1, amended): `sarc/tools/near_tie.py` called from `verify.sh`; margin < 0.5 logit, both tokens in the fp32 reference top 5, rms and max error not larger than the old build. Replay 19/19: the real-text flip (B580/B70) accepted, the `prompt_2048` flips and the Orin 3B case rejected. Not yet run on a GPU; no session tool yet calls it for old-vs-new builds |
 | M2 review of the release-zone hooks | reviewed 2026-10-15; owner approved P1-P6 and P8 (not P7, nothing goes upstream), done on `topic/pre-promotion`, not pushed: the fused attention node is installed through one order-independent slot (`impl/sarc_dev/FusedSlot.h`, two requested nodes abort, tested in `test_sarc_select`); the 780M softmax variant no longer erases another; the softmax-grid skip only in LLM mode; `ET_VK_EXECUTE_NODE_THRESHOLD` validated and only for the default config; F1 passes only what the device enabled; `sarc/HOOKS` text. Device re-measurement of the behaviour changes is the owner's call (the change's report lists them) |
 | M2a subgroup barriers | done on the campaign branches (`fused3sb`; RX 7600 +0.00 %, 780M -0.14 %, in band) and merged. The unbarriered `fused2` and `fused3` are retired on `topic/pre-promotion` (owner decision 2026-10-15): kept as files, selecting them (780M c8 to c10, `ET_VK_SARC_780M_SDPA_FUSED`) aborts at start-up |
 | M2b pinned-container rebuild | not started; now tied to the compiler switch of `topic/sarc-pinned-glslc`. Native builds: RX 7600, RX 7900 XTX, M51; the Orin used the cross image's glslc |
