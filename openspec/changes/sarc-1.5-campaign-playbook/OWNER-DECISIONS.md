@@ -305,6 +305,11 @@ M51, M2b, M2d) is out of this round.
 2. M1, error rule: a near-tie flip is accepted (`TIE_FLIP_ACCEPTED`, always reported) when the new build's rms
    and maximum error against the fp32 reference, over the production head configurations, are not larger than
    the old build's (the D3 rule as applied so far). Otherwise the gate fails. `verify.sh` may be edited for this.
+   Amended 2026-10-15, after the fp32 reference for `prompt_2048.txt` was computed: in addition, the old
+   and the new build's top-1 tokens must both be within the reference's top 5. Without it the rule accepted
+   the three `prompt_2048.txt` flips (780M c8, B580, B70), where the reference margin is 0.4776 between two
+   tokens neither build picks and the builds' tokens rank 56,646th to 128,101st in the reference; those
+   flips now need the D1 evidence as before.
 3. M2c: home-directory paths in committed result, evidence and prose files are replaced by `<home>/` in one
    forward commit on top of `dev/1.5`; no history is rewritten. Tool scripts keep their paths, and so do two
    Orin probe files whose SHA-256 is recorded in their `REFERENCE_ERROR.json`.
