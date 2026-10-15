@@ -1,12 +1,29 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-15 05:25 UTC
+Updated: 2026-10-15 06:16 UTC
 
-Stage: CALIBRATION REVIEWED / FINITE CANDIDATE GATES PREPARED.
-Running next: detached candidate-gates-r1. Controller state is artifact
-jobs/candidate-gates-r1/state.json. No build/runner/sampler or campaign lock
-holder was active before preparation. No owner question is pending.
-The finite device matrix remains INCOMPLETE; no candidate is accepted or timed.
+Stage: ALL ELEVEN GATE CAPTURES COMPLETE / NATIVE SESSIONS NEXT.
+Running: none. candidate-gates-r1 completed rc=0 at 06:13:44 UTC. No campaign
+job or lock holder is active. No owner question is pending. No candidate is yet
+accepted or timed; the finite device matrix remains INCOMPLETE.
+
+All eleven captures retained 407 observations, including 242 model runners rc0,
+132 production-diff commands with all 528 cases PASSED, and the parent's unchanged
+rc1 linear-benchmark dispatch-expectation behavior. No new normalized control
+finding, default/tiled difference, thermal/foreign sample or observer abort.
+The new assessment audit checks command return codes, all parsed cases and exact
+shader coverage against raw candidate-assessment.json files. Its private evidence
+is checks/candidate-gates-audit.json. Results/candidate-gates.json retains each
+verdict and its exact stage path. Exact matching production-diff case counts are
+c01=11, c02=12, c03=11, c04=12, c05=0, c06=12, c07=12, c08=1, c09=11,
+c10=12, c11=11. The c05 zero count is an explicit coverage gap, not a pass.
+
+Next: native c01,c02,c06,c08,c09,c10,c11 token checks and same-session six-cell
+measurements at the reviewed seven repeats / 2531 MHz floor. Buffer-IO c03,c04,
+c07 already have exact production-diff correctness dispatch; buffer-weight c05
+still needs separate coverage. Fixed-model timing would not establish buffer
+candidate performance, so it is not queued as such. All-six-cell token evidence
+and numeric margins remain pending; no family-wide acceptance is inferred.
 
 The fresh independent reviewer supported the feature/snapshot/calibration
 checkpoint, checking the raw 84 rows and every referenced log/sample/record,
@@ -175,3 +192,25 @@ release edits. No new/changed shader exists for a synchronization diff audit.
 No source-only review is requested and no existing owner blocker is re-reviewed.
 HOLD remains untouched; all future jobs use the inherited lock and yield at
 boundaries. No pushes, PRs, services, policy changes, new bodies or search.
+
+2026-10-15T05:31:24.234845+00:00 Candidate 4070ti-wmma-c01: CAPTURE_COMPLETE; NEXT_TOKEN_AND_SESSION_EVIDENCE_PENDING. Coverage {"linear_benchmark_cases": 11, "production_diff_cases": 11}; assessment artifact stage/s2-gate-c01/candidate-assessment.json. No acceptance/timing.
+
+2026-10-15T05:35:38.570071+00:00 Candidate 4070ti-wmma-c02: CAPTURE_COMPLETE; NEXT_TOKEN_AND_SESSION_EVIDENCE_PENDING. Coverage {"linear_benchmark_cases": 12, "production_diff_cases": 12}; assessment artifact stage/s2-gate-c02/candidate-assessment.json. No acceptance/timing.
+
+2026-10-15T05:39:54.290903+00:00 Candidate 4070ti-wmma-c03: CAPTURE_COMPLETE; NEXT_TOKEN_AND_SESSION_EVIDENCE_PENDING. Coverage {"linear_benchmark_cases": 11, "production_diff_cases": 11}; assessment artifact stage/s2-gate-c03/candidate-assessment.json. No acceptance/timing.
+
+2026-10-15T05:43:58.416637+00:00 Candidate 4070ti-wmma-c04: CAPTURE_COMPLETE; NEXT_TOKEN_AND_SESSION_EVIDENCE_PENDING. Coverage {"linear_benchmark_cases": 12, "production_diff_cases": 12}; assessment artifact stage/s2-gate-c04/candidate-assessment.json. No acceptance/timing.
+
+2026-10-15T05:47:58.944596+00:00 Candidate 4070ti-wmma-c05: NO_PRODUCTION_DIFF_CANDIDATE_DISPATCH; ALTERNATE_COVERAGE_PENDING. Coverage {"linear_benchmark_cases": 0, "production_diff_cases": 0}; assessment artifact stage/s2-gate-c05/candidate-assessment.json. No acceptance/timing.
+
+2026-10-15T05:52:08.066930+00:00 Candidate 4070ti-wmma-c06: CAPTURE_COMPLETE; NEXT_TOKEN_AND_SESSION_EVIDENCE_PENDING. Coverage {"linear_benchmark_cases": 12, "production_diff_cases": 12}; assessment artifact stage/s2-gate-c06/candidate-assessment.json. No acceptance/timing.
+
+2026-10-15T05:56:18.584249+00:00 Candidate 4070ti-wmma-c07: CAPTURE_COMPLETE; NEXT_TOKEN_AND_SESSION_EVIDENCE_PENDING. Coverage {"linear_benchmark_cases": 12, "production_diff_cases": 12}; assessment artifact stage/s2-gate-c07/candidate-assessment.json. No acceptance/timing.
+
+2026-10-15T06:00:28.905608+00:00 Candidate 4070ti-wmma-c08: CAPTURE_COMPLETE; NEXT_TOKEN_AND_SESSION_EVIDENCE_PENDING. Coverage {"linear_benchmark_cases": 1, "production_diff_cases": 1}; assessment artifact stage/s2-gate-c08/candidate-assessment.json. No acceptance/timing.
+
+2026-10-15T06:04:38.254814+00:00 Candidate 4070ti-wmma-c09: CAPTURE_COMPLETE; NEXT_TOKEN_AND_SESSION_EVIDENCE_PENDING. Coverage {"linear_benchmark_cases": 11, "production_diff_cases": 11}; assessment artifact stage/s2-gate-c09/candidate-assessment.json. No acceptance/timing.
+
+2026-10-15T06:09:20.534118+00:00 Candidate 4070ti-wmma-c10: CAPTURE_COMPLETE; NEXT_TOKEN_AND_SESSION_EVIDENCE_PENDING. Coverage {"linear_benchmark_cases": 12, "production_diff_cases": 12}; assessment artifact stage/s2-gate-c10/candidate-assessment.json. No acceptance/timing.
+
+2026-10-15T06:13:44.047469+00:00 Candidate 4070ti-wmma-c11: CAPTURE_COMPLETE; NEXT_TOKEN_AND_SESSION_EVIDENCE_PENDING. Coverage {"linear_benchmark_cases": 11, "production_diff_cases": 11}; assessment artifact stage/s2-gate-c11/candidate-assessment.json. No acceptance/timing.
