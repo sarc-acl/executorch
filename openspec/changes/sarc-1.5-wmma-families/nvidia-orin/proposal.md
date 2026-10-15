@@ -207,3 +207,15 @@ STATUS.md records the owner question once. No release-zone fix, compiler or limi
 waiver is inferred. Independent source/helper/resource work above is recorded;
 park without another preflight review, new build or GPU measurement until the
 owner supplies a dated resolution. The matrix remains incomplete.
+
+
+## Authorized runtime prerequisite, 2026-10-15
+
+The owner's 03:57 UTC instruction resolves the feature question above and
+authorizes only the necessary release-zone query/device-create change. See
+`results/runtime-feature-enablement.md` for the exact three files, specification
+references and 16-case CPU test evidence. The unmodified no-build check's two
+zone failures are disclosed under that explicit decision. No gate, shader,
+compiler, golden or threshold relaxation is used. Both arms will use the new
+exact exported source commit, preserving the original base/build provenance.
+No GPU correctness or timing evidence exists yet; the matrix remains incomplete.

@@ -1,9 +1,10 @@
 # NVIDIA Orin WMMA matrix status
 
-Updated: 2026-10-15T01:13:43.450772+00:00
+Updated: 2026-10-15T04:01:14.656407+00:00
 
-Stage: waiting for one owner ruling on missing logical-device feature enablement.
-Independent selector/resource/helper preparation is recorded. No queue is running.
+Stage: authorized runtime feature fix prepared; new exact build pending.
+The owner ruling of 2026-10-15 03:57 UTC resolves the feature blocker.
+Independent selector/resource/helper preparation is preserved. No queue is running.
 The legal matrix is incomplete. No model GPU job, gate or timed session has run.
 Base: `617897184529ff180af491ee0d5d7de778cbb6c6`.
 Own branch: `topic/wmma-nvidia-orin`.
@@ -17,8 +18,8 @@ had all completed. The postprocessing guard falsely treated `shader_cache/` as
 a second output. The local guard now checks the canonical
 `build/vulkan_compute_shaders/` and `spv.cpp` directly; no rebuild was performed.
 The completed export, compiler, binaries and original logs/manifests are reused.
-No source, tool, shader, golden, threshold or historical adapter was changed
-outside this run directory.
+That recovery changed no source, tool, shader, golden, threshold or historical
+adapter outside this run directory. The newly authorized runtime fix is below.
 
 Recovery evidence under `.artifacts/recovery/parent-20261015-pinned1/`:
 `manifest.json`, `golden.txt`, `runtime-constants.txt`, `validation.json`, and
@@ -82,9 +83,9 @@ PASS is claimed. No input was changed and no limit waived.
 
 The exact compiled-module feature join found the prerequisite below: supported
 physical `vulkanMemoryModel` is absent from logical-device enablement in the
-pinned base. This blocks both parent GPU snapshot and candidate measurements.
-No new full review or queue will start while waiting; previous failed/build
-records remain preserved. Resume on a dated CAMPAIGN.md ruling.
+pinned base. The owner now authorizes the minimum runtime fix. Previous failed/build records
+remain preserved. New GPU work still requires the fixed exact build and legality
+checks; no previous binary is treated as fixed.
 
 ## Reviewed input
 
@@ -115,11 +116,11 @@ Parent golden and runtime constant-method validation pass on the recovered exact
 build. No gate, A/A calibration, baseline or candidate timing has run. Static
 group-128 linears and q4/group-32 embedding evidence remains unchanged and is
 paired with successful runtime metadata validation. Candidate profiles are CPU-validated; measurement orchestration and GPU evidence
-remain pending on the owner ruling. Both future arms preserve `orin-fused1`
+remain pending on the new build, final legality and orchestration. Both future arms preserve `orin-fused1`
 attention. The matrix remains incomplete; no family-wide acceptance is claimed.
 
 
-## Decision needed from the owner
+## Resolved owner question (historical record)
 
 Recorded once at 2026-10-15T01:08:03.652473+00:00.
 
@@ -141,3 +142,27 @@ no runtime feature change or model GPU job will proceed without a dated ruling.
 Evidence: `results/runtime-feature-blocker.md`, exact module requirements under
 the recovery artifacts, and the unchanged base source cited there. Independent selector/resource/helper checks are recorded above. Park without
 repeat review or recomputation of this question. The earlier adapter-scope question stays resolved.
+
+
+## Runtime recovery, 2026-10-15
+
+No owner decision is pending. The 03:57 UTC decision explicitly permits the
+minimum feature-query/device-creation edit. `results/runtime-feature-enablement.md`
+describes the three release-zone files and extension/core-version dependencies.
+Only supported `vulkanMemoryModel` is enabled; optional bits remain disabled.
+Sixteen CPU mock cases exercise actual query and create paths on supported and
+unsupported configurations. Both selector suites and twins pass. Unmodified
+`check.sh --no-build` returns FAIL only for the two newly authorized Device files;
+Adapter.cpp is already a hook. No zone rule was relaxed.
+
+Input hashes reconfirmed: archive, all 18 snapshot files and all 53 referenced
+base source objects match INPUT.md. Target read-only process/lock inspection
+found no model/sampler job or held device lock. The original failed job remains
+unchanged. No GPU workload has launched.
+
+Next: commit this runtime fix and cross-build a new immutable tag under the
+shared desktop lock, with the same pinned compiler and mandatory golden check.
+Both future arms use that exact changed source/binary; the original parent build
+remains distinct evidence. Independent review and full normal correctness gates
+remain required. Final legality, allocation audit, measurement orchestration,
+real A/A/control snapshot and the finite legal matrix are still incomplete.

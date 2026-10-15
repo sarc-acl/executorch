@@ -135,6 +135,13 @@ VkDevice create_logical_device(
 #endif /* VK_EXT_subgroup_size_control */
   };
 
+#ifdef VK_KHR_vulkan_memory_model
+  if (physical_device.vulkan_memory_model_features.vulkanMemoryModel) {
+    requested_device_extensions.push_back(
+        VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME);
+  }
+#endif /* VK_KHR_vulkan_memory_model */
+
   std::vector<const char*> enabled_device_extensions;
   find_requested_device_extensions(
       physical_device.handle,
@@ -170,6 +177,20 @@ VkDevice create_logical_device(
   };
 
   void* extension_list_top = nullptr;
+
+#ifdef VK_KHR_vulkan_memory_model
+  VkPhysicalDeviceVulkanMemoryModelFeaturesKHR vulkan_memory_model_features{
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR};
+  for (const char* extension : enabled_device_extensions) {
+    if (std::strcmp(extension, VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME) ==
+        0) {
+      vulkan_memory_model_features.vulkanMemoryModel = VK_TRUE;
+      vulkan_memory_model_features.pNext = extension_list_top;
+      extension_list_top = &vulkan_memory_model_features;
+      break;
+    }
+  }
+#endif /* VK_KHR_vulkan_memory_model */
 
 #ifdef VK_KHR_16bit_storage
   VkPhysicalDevice16BitStorageFeatures shader_16bit_storage{

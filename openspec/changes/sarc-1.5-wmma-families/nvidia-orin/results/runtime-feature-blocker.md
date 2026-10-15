@@ -1,3 +1,6 @@
+Resolved by the owner decision of 2026-10-15 03:57 UTC.
+See `runtime-feature-enablement.md`; the finding below is preserved as history.
+
 # Logical-device feature prerequisite
 
 Pinned runtime: `617897184529ff180af491ee0d5d7de778cbb6c6`.
