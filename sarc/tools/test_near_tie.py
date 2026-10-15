@@ -8,9 +8,11 @@ logits_probe-style JSON files in a temporary directory and the CLI is run on the
   REJECT      the Orin's orin-refine1 (3B maximum error larger than the parent's), with its own error tables,
               also when given near-tie logits; a synthetic wrong kernel; synthetic not-a-near-tie and
               flip-not-reproduced cases.
-  NO-REF      flips whose position has no recorded fp32 CPU reference (prompt_2048.txt, 2048 x " the": the 780M's
-              candidate 8 and the second item of the B580 and B70 candidates). The stage must fail closed;
-              the error half is replayed and must hold. These are NOT replays of an acceptance.
+  ACCEPT      780M candidate 8, and the B580 and B70 candidates, 8B 8da4w on prompt_2048.txt, against the fp32 CPU
+              reference measured 2026-10-15 (sarc/golden/ref-logits/8b-prompt_2048.json, top-2 margin 0.4776). The
+              same 780M case without a reference file must fail closed.
+  Merged-binary shape: SDPA error logs written in the output shape of a microbench built from 6178971845 (two fp32
+              [sdpa-error] lines per case, a third fp64 one with ET_VK_SDPA_ERROR_REPORT=1 except for fused cases).
 Exit 0 when every case comes out as expected."""
 import json, os, re, shutil, struct, subprocess, sys, tempfile
 
@@ -79,6 +81,8 @@ def case(label, expect, item, ref, old, new, olde, newe, must=()):
 
 B580_ERR, B70_ERR = f"{B580}/sdpa-error/c0-full.csv", f"{B70}/sdpa-error"
 NOREF = os.path.join(T, "no-reference-recorded.json")  # deliberately absent
+REF_2048_8B = os.path.join(os.path.dirname(HERE), "golden", "ref-logits", "8b-prompt_2048.json")
+EXPECT_2048 = "ACCEPT"  # the outcome measured 2026-10-15 (margin 0.4776); the three builds' tokens rank 56646 to 128101 in that reference
 
 # --- the real flips, 8B 8da4w, prompt_check.txt (gate-check1972): parent default -> candidate default ---------------
 md = f"{B580}/probe/s2-c0/differing.md"
@@ -92,20 +96,24 @@ case("B70 xe2-refine1 (s2-c1), 8B 8da4w prompt_check.txt", "ACCEPT", "b70 s2-c1 
      write_json("b70-check-C", differing_md(md, "8b-8da4w gate-check1972", "C")),
      f"{B70_ERR}/parent-full.txt", f"{B70_ERR}/refine1-full.txt", must=[r"margin 0\.3900", r"new mismatches 0"])
 
-# --- the real flips without a recorded fp32 CPU reference (prompt_2048.txt): must fail closed --------------------------
+# --- the real flips on prompt_2048.txt (2048 x " the", ids 2048 x 279), against the fp32 CPU reference measured
+#     2026-10-15 with cpu_ref_logits.py (sarc/golden/ref-logits/8b-prompt_2048.json) -------------------------------------
 c = f"{M780}/probe/c8-differ-8b-8da4w-prompt_2048.csv"
-case("780M candidate 8 (c8-fused3), 8B 8da4w prompt_2048.txt: no fp32 CPU reference recorded", "NO-REF",
-     "780m c8 8b 8da4w prompt_2048: parent vs candidate", NOREF,
+case("780M candidate 8 (c8-fused3), 8B 8da4w prompt_2048.txt", EXPECT_2048,
+     "780m c8 8b 8da4w prompt_2048: parent vs candidate", REF_2048_8B,
      write_json("780m-2048-P", csv_780m(c, "parent-default")), write_json("780m-2048-C", csv_780m(c, "cand-default")),
      f"{M780}/sdpa-error/c8-fused3.csv#parent", f"{M780}/sdpa-error/c8-fused3.csv#cand",
-     must=[r"reason: no fp32 CPU reference", r"old top-1 id 118", r"new top-1 id 53"])
+     must=[r"margin 0\.4776", r"old top-1 id 118", r"new top-1 id 53"])
 for dev, md, olde, newe in (("B580 b580-refine0", f"{B580}/probe/s2-c0/differing.md", B580_ERR + "#parent", B580_ERR + "#b580-refine0"),
                             ("B70 xe2-refine1", f"{B70}/probe/s2-c1/differing.md", f"{B70_ERR}/parent-full.txt", f"{B70_ERR}/refine1-full.txt")):
     tag = dev.split()[0].lower()
-    case(f"{dev}, 8B 8da4w prompt_2048.txt: no fp32 CPU reference recorded", "NO-REF", f"{tag} 8b 8da4w prompt_2048: parent vs candidate",
-         NOREF, write_json(f"{tag}-2048-P", differing_md(md, "8b-8da4w gate-the2048", "P")),
+    case(f"{dev}, 8B 8da4w prompt_2048.txt", EXPECT_2048, f"{tag} 8b 8da4w prompt_2048: parent vs candidate",
+         REF_2048_8B, write_json(f"{tag}-2048-P", differing_md(md, "8b-8da4w gate-the2048", "P")),
          write_json(f"{tag}-2048-C", differing_md(md, "8b-8da4w gate-the2048", "C")), olde, newe,
-         must=[r"reason: no fp32 CPU reference", r"old top-1 id 247", r"new top-1 id 53"])
+         must=[r"margin 0\.4776", r"old top-1 id 247", r"new top-1 id 53"])
+case("780M c8 without any reference file: fails closed", "REJECT", "780m c8, reference absent", NOREF,
+     os.path.join(T, "780m-2048-P.json"), os.path.join(T, "780m-2048-C.json"),
+     f"{M780}/sdpa-error/c8-fused3.csv#parent", f"{M780}/sdpa-error/c8-fused3.csv#cand", must=[r"reason: no fp32 CPU reference"])
 
 # --- the Orin candidate rejected for a larger maximum error on 3B --------------------------------------------------
 oe, ne = f"{ORIN}/sdpa-error1/stock.txt", f"{ORIN}/sdpa-error1/refine1.txt"
