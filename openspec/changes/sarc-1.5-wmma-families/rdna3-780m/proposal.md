@@ -32,7 +32,15 @@ arms before each cell and whenever the model changes. Interleave control first o
 odd repeats and candidate first on even repeats. Retain every invalid/rejected row.
 Require rc 0, 2048 prompt tokens, zero generated tokens, at least five clock samples
 inside the measured window, no thermal throttle and no observed foreign GPU work
-before, during or after. Missing sensor/monitor coverage is not a valid run.
+before, during or after, subject to the specific monitoring exception below.
+Missing required sensor/own-user monitor samples are not a valid run.
+
+Owner decision 2026-10-15 03:57 UTC permits own-user GPU-client accounting plus
+device-wide busy sampling despite incomplete other-user client visibility. Every
+result records `monitoring_visibility=own_user_plus_device_busy_other_users_unobservable`
+and that decision date; the final assessment repeats the limitation. This replaces
+the full-visibility launch blocker, leaving every other validity and acceptance
+requirement unchanged. Observed foreign activity still invalidates the run.
 
 Start with five valid repeats per arm/cell. In A/A only, if any arm/cell's rate
 spread `(max-min)/median` exceeds 3%, use seven repeats for the subsequent matrix
@@ -95,8 +103,8 @@ origin predicates and preceding service conditions must be bound before launch.
 All reported fit counts check alignment/storage only, not route reachability.
 
 The existing pinned container is present; its compiler version is recorded privately.
-No source export, shader compilation, build, model execution, gate, A/A or timed run
-has started. No profiles are claimed runnable yet. No timing projection is claimed
+At the original preflight, no source export, shader compilation, build, model execution,
+gate, A/A or timed run had started. No profiles are claimed runnable yet. No timing projection is claimed
 without measured job durations; report any projection above 48 hours before queueing.
 The full unmodified gate and golden checks remain required on exact measured binaries.
 
@@ -108,23 +116,35 @@ The full unmodified gate and golden checks remain required on exact measured bin
 | `tools/hold.sh` | final 780M campaign tool | Infer this run's artifact root beside the checkout, retaining `SARC_HOLD_DIR` override; remove historical root from comments; hold logic unchanged |
 
 Other historical measurement adapters were read but are not installed as runnable
-queues while monitoring coverage is unresolved. They require this run's calibrated
-floor, richer provenance rows, child cleanup and current owner ruling before use.
+queues at the original preflight. They require this run's calibrated floor, richer
+provenance rows, child cleanup and the current owner ruling before use.
 Never run their historical chains or tune/search scripts in this matrix stage.
+
+After the monitoring decision, tools/queue.py adds a finite detached command queue
+with atomic terminal-state reporting and failure preservation. Every step uses the
+copied hold adapter. tools/build_parent.sh adds the initial pinned recursive export,
+existing-container build and unmodified golden comparisons for backend and runner.
+The image, compiler, manifest, orchestration commit and binary hashes remain under
+the artifact root. A fresh tag is required after any failed build. No source or
+shader patch is applied to the exported base. The first queue performs no model GPU
+work and has a four-hour timeout. Foreground success, command-failure and missing-
+executable checks establish status reporting and fail-stop behavior; their private
+logs are retained under queue-tests-20261015/.
 
 Coordinator hold: `<artifact-root>/HOLD` and `<artifact-root>/HELD`, shared busy lock
 `<artifact-root>/.hold-busy`. A separately named dry-run hold blocked a `true` job,
 then released it and removed its acknowledgement; the real HOLD was untouched.
 Future smallest units are one build, gate or interleaved session; their maximum
-durations are pending current-build calibration. No detached queue exists.
+durations are pending current-build calibration. The initial build queue is bounded
+by a four-hour timeout; its status file is indexed in STATUS.md.
 
-## Launch blocker
+## Historical monitoring blocker and resolution
 
 Current inspection confirms that DRM counters of active display users cannot be read.
 Own-user engine counters plus device-wide busy percent do not prove the absence of
 other users' GPU engine activity during the runner. The historical owner permitted
 that limitation, but this run explicitly does not inherit historical exceptions.
-The single question is recorded in STATUS.md. Independent preparation and its review
+The original question was recorded in STATUS.md. Independent preparation and its review
 are complete. The 2026-10-15 recovery instruction authorized one assessment of existing
 readable counter alternatives, without inheriting the historical exception.
 
@@ -136,9 +156,9 @@ overlapping foreign work during runner load. No inaccessible interval is certifi
 clean. Private evidence is `preflight/recovery-monitoring-20261015.json` under the
 artifact root; its hash is recorded in STATUS.md. No build or GPU workload was started.
 
-The owner must provide readable accounting for all potential clients, bound to the
-device and stable client/process identities throughout each run, or an isolated
-environment with a completely observable client set. An existing read-only feed with
-equivalent coverage is sufficient; missing coverage invalidates the affected run.
-Park for this environment without another preflight review, recomputation or queue.
-Services, permissions and host policy stay as found. The matrix remains incomplete.
+Owner decision 2026-10-15 03:57 UTC resolves this blocker by explicitly accepting the
+limited monitoring described above. Resume preparation and the finite device matrix;
+do not request a duplicate preflight review. Fully observable other-user accounting
+is no longer a launch prerequisite. Preserve the raw assessment and disclose the
+limitation on every result. Services, permissions and host policy stay as found.
+The matrix remains incomplete until the required measured evidence exists.
