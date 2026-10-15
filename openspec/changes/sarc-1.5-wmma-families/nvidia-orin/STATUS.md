@@ -1,8 +1,9 @@
 # NVIDIA Orin WMMA matrix status
 
-Updated: 2026-10-15T00:38:29.077965+00:00
+Updated: 2026-10-15T00:55:23.007261+00:00
 
-Stage: recovery preparation complete; detached exact-parent cross-build queued.
+Stage: successful parent build recovered after a postprocessing failure; runtime
+constant-method validation complete. No build/measurement queue is running.
 The legal matrix is incomplete. No model GPU job, gate or timed session has run.
 Base: `617897184529ff180af491ee0d5d7de778cbb6c6`.
 Own branch: `topic/wmma-nvidia-orin`.
@@ -10,21 +11,42 @@ Actor: Codex. Independent review is provided by the controller's fresh reviewer.
 
 ## Running and next step
 
-Build queue: `.artifacts/jobs/parent-20261015-pinned1/state.json`, relative to the
-private campaign root. Build: `.artifacts/build/parent-20261015-pinned1/`.
-The queue honors HOLD and the shared desktop build lock, uses at most eight jobs,
-and records terminal success/failure in JSON. It performs no deployment or GPU
-execution. Export and build are conservatively expected within three hours;
-there is no >48-hour projection or unbounded matrix queue at this checkpoint.
-No build tag/export existed on recovery; prepared own-clone submodule objects
-and verified model/property records are reused. No known target measurement job
-or device lock holder was observed. Target deployment root is absent; the current
-governor is unchanged. No services, host policies or other workloads were changed.
+The original queue `.artifacts/jobs/parent-20261015-pinned1/state.json` remains
+`failed`, unchanged. Compilation, runner/microbench linking and the CPU helper
+had all completed. The postprocessing guard falsely treated `shader_cache/` as
+a second output. The local guard now checks the canonical
+`build/vulkan_compute_shaders/` and `spv.cpp` directly; no rebuild was performed.
+The completed export, compiler, binaries and original logs/manifests are reused.
+No source, tool, shader, golden, threshold or historical adapter was changed
+outside this run directory.
 
-After successful build: check parent golden/compiler evidence, execute CPU-only
-constant methods on six models, resolve compiled-module legality, complete the
-run-local measurement orchestration and committed selectors before GPU launch.
-A failing golden result remains a blocker; no old exemption carries over.
+Recovery evidence under `.artifacts/recovery/parent-20261015-pinned1/`:
+`manifest.json`, `golden.txt`, `runtime-constants.txt`, `validation.json`, and
+`module-requirements/requirements.json` with exact-module disassemblies.
+The recovery manifest hashes the original manifest/failed state and all six
+bundle files and 2091 canonical modules. The original provenance records source
+base, 30 recursive submodule pins, 50,423 export file hashes, copied recipe,
+pinned compiler bytes/version and both image IDs. All recipe/compiler hashes
+checked against the recorded build input. The unmodified golden check passes
+all 53 shipped variants; no historical compiler exemption is used.
+
+The CPU-only helper's target hash equals the built hash, its ELF dependencies
+and link line exclude Vulkan, and nine constant methods execute successfully
+on all six models. Results equal the previously validated serialized metadata
+exactly; all contexts/sequence lengths are 2560. The target task copy hash also
+matches, including the owner decisions. Execution was sequential, under the
+inherited lock, with HOLD and foreign-worker checks; no model GPU job ran.
+
+Every one of the 11 reviewed manifest modules passes `spirv-val --target-env
+vulkan1.1`. Workgroup variable type sizes match inventory shared-memory totals
+and fit the queried 49,152-byte limit. These are module requirement checks,
+not GPU correctness or a final hardware/shape legality claim. Capability/type
+and storage-format requirements are captured for the remaining joined checks.
+
+Next: finish device-feature/format/shape matching, committed finite selectors
+that preserve `orin-fused1` attention, compliant sampling/cleanup/provenance and
+per-run A/A computation; then parent snapshot, baseline/A/A and legal matrix.
+No new review was requested for the old adapter question or preflight.
 
 ## Reviewed input
 
@@ -37,7 +59,8 @@ against pinned base git objects. Only this reviewed snapshot is used.
 Seven texture3d and four buffer entries remain; alternate storage is correctness
 coverage, not a silent substitution for the models' texture3d projections.
 Numeric property checks and static model metadata were reviewed previously.
-Exact compiled allocations/features and runtime constant execution remain pending.
+Exact module shared-type sizes are now checked. Final feature/format/shape
+matching remains pending; runtime constant execution is complete.
 
 ## Owner question resolved
 
@@ -50,8 +73,9 @@ only; no repeat preflight review has been requested.
 
 ## Evidence limits
 
-No golden, gate, A/A calibration, baseline or candidate timing has passed yet.
-All six static contexts are 2560; group 128 and q4/group-32 embeddings match the
-serialized delegate nodes. Runtime constant-method validation remains mandatory
-before any model GPU job. Both future arms preserve `orin-fused1` attention.
-No family-wide acceptance or matrix-completion claim is made.
+Parent golden and runtime constant-method validation pass on the recovered exact
+build. No gate, A/A calibration, baseline or candidate timing has run. Static
+group-128 linears and q4/group-32 embedding evidence remains unchanged and is
+paired with successful runtime metadata validation. Candidate profiles and
+measurement adapters are still pending. Both future arms preserve `orin-fused1`
+attention. The matrix remains incomplete; no family-wide acceptance is claimed.

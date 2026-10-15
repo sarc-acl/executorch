@@ -178,11 +178,9 @@ def main():
                     "cmake --build /work/metadata-helper -j8; "
                     "cp /work/metadata-helper/runtime_constants /work/bundle/"], env=env)
                 manifest["binary_sha256"] = hashes(build / "bundle")
-                modules = list((build / "build").rglob("*.spv"))
-                directories = {p.parent for p in modules}
-                if len(directories) != 1:
-                    raise RuntimeError(f"expected one compiled shader directory, found {directories}")
-                spv_directory = directories.pop()
+                spv_directory = build / "build/vulkan_compute_shaders"
+                if not (spv_directory / "spv.cpp").is_file() or not any(spv_directory.glob("*.spv")):
+                    raise RuntimeError(f"missing canonical shader output in {spv_directory}")
                 manifest["spirv_directory"] = str(spv_directory)
                 manifest["spirv_sha256"] = hashes(spv_directory)
                 (build / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")

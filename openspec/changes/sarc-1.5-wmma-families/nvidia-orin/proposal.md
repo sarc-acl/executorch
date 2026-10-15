@@ -121,3 +121,34 @@ commit reproducible candidate selectors; parent snapshot, baseline/A/A, full gat
 finite legal matrix, dispatched names, medians/margins and independent review.
 No parent/candidate gate, golden PASS, timing result or stage completion is claimed
 before the queue produces that evidence. Attention remains `orin-fused1`.
+
+
+## Successful-build recovery, 2026-10-15
+
+The first queue completed compilation and linking, then failed its own
+postprocessing guard: `rglob("*.spv")` included the canonical output and its
+`shader_cache` directory. The original failed JSON state, raw log, exported
+source, compiler and manifest remain preserved. Recovered the completed build
+without rebuilding. Future queues locate `build/vulkan_compute_shaders/spv.cpp`
+and top-level modules directly. Separate recovery provenance binds the original
+manifest/failed-state hashes, six bundle hashes and 2091 top-level module hashes.
+
+The unmodified shipped golden comparison passes all 53 variants with the
+recorded pinned compiler. The CPU-only helper's compiled target hash and copied
+task hash match; its linker line/ELF dependencies exclude Vulkan. All nine
+constant methods equal serialized metadata on all six models, including context
+and sequence length 2560. The already verified tensor metadata establishes
+linear group 128 and embedding q4/group 32. No model GPU execution occurred.
+
+`tools/module_requirements.py` disassembles every exact manifest module, records
+capabilities, image/matrix types and workgroup variable capacities, and runs
+`spirv-val --target-env vulkan1.1`. All 11 validators return zero. All shared-type
+capacities equal source inventory totals and fit the queried limit. Unsupported
+shared types fail rather than receiving guessed sizes. Raw disassemblies and
+validation are private artifacts. Final capability/format/shape matching,
+reproducible candidate selectors and conforming measurement adapters remain
+pending; no gate/timing/matrix-completion claim follows from these checks.
+
+The successful-build recovery is a new evidence checkpoint. It does not reopen
+or repeat the already completed source-only preflight review, request another
+adapter-scope decision, or extend a historical compiler exemption.
