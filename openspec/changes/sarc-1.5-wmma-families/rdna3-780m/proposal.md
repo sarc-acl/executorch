@@ -129,6 +129,15 @@ the constants and compares them to the saved serialized metadata. Group size and
 embedding metadata remain graph/tensor evidence tied to identical bytes rather
 than invented runtime constant fields. This adds no patch to the parent build.
 
+The first metadata-helper build failed before model execution: its imported CPU
+targets did not propagate C10_USING_CUSTOM_GENERATED_MACROS, and a C10 header tried
+to include an absent generated header. The pinned root CMakeLists.txt and the
+parent runner's saved flags both supply that definition. The run-local helper now
+adds it explicitly and uses the parent's C++20 standard. The failed tag, source
+and logs remain preserved; a fresh tag runs the corrected committed helper against
+the same unchanged parent libraries. This is a helper build correction, not a
+runtime-metadata pass or a gate change.
+
 ## Copied adapters
 
 | Adapter | Source | Changes |

@@ -1,6 +1,6 @@
 # rdna3-780m status
 
-Updated 2026-10-15 04:31 UTC. Actor: Codex.
+Updated 2026-10-15 04:33 UTC. Actor: Codex.
 Stage: bounded RDNA3 RADV matrix; monitoring wait released by owner decision
 2026-10-15 03:57 UTC. Parent build complete; preparing CPU metadata validation.
 The complete assembled campaign and all final decisions were read on resume.
@@ -72,7 +72,18 @@ missing executable; each produced the expected terminal JSON state, and failures
 prevented later steps. Logs are private under queue-tests-20261015/. Shell syntax
 and whitespace checks pass. These are orchestration checks, not GPU evidence.
 
-Next job: `<artifact-root>/jobs/rdna3-780m-metadata-20261015a/state.json`.
+The first CPU metadata job failed with rc 2 at 2026-10-15 04:32:12 UTC during
+helper compilation, before any model execution. Its immutable state/logs and
+exported helper source remain under jobs/rdna3-780m-metadata-20261015a/ and
+helpers/rdna3-780m-metadata-20261015a/. Diagnosis: the installed imported targets
+omit C10_USING_CUSTOM_GENERATED_MACROS, so the helper header attempted to include
+the absent torch/headeronly/macros/cmake_macros.h. The parent runner's saved
+flags and the pinned root CMakeLists.txt explicitly define that macro. Added the
+same definition to this helper target and matched the parent's C++20 standard;
+no parent source, installed header, gate or threshold was changed. Runtime metadata
+validation remains pending. No old build or failed job is overwritten.
+
+Next job: `<artifact-root>/jobs/rdna3-780m-metadata-20261015b/state.json`.
 The queue writes queued/running/completed/failed atomically, retains logs on failure
 and checks coordinator HOLD before each unit. The build takes the existing device
 lock to exclude a concurrent timed job. No HOLD is created or removed by the actor.
