@@ -337,4 +337,9 @@ campaign's run tasks; the proposal cited them as N12 before N12 was used for the
 6. 2026-10-15: the memory-model fix goes onto `topic/wmma-families` with the merged campaigns. The owner put
    the coordinator (Claude) in charge of the openspec changes and of driving the hmz runs to completion;
    money beyond an approved ceiling, pushes, PRs, services and company-side relays remain owner decisions.
+7. 2026-10-15 23:30 UTC: the device matrices are finished lean: no cost ceiling, a hard time limit (device runs end
+   by 2026-10-17 18:00 UTC), Claude as actor and reviewer, screening by production diff, next token and a
+   six-cell timed session; the full gate only for each family's finalists. On the Intel cards the texture3d
+   images over ANV's reported 2048 extent (RoPE tables, 8B activations) are a pre-existing, documented caveat,
+   identical in both arms, as in every earlier Intel campaign; the original model files are used.
 
