@@ -23,7 +23,7 @@ goes in with the merge; `topic/sarc-pinned-glslc` is left out for now.
 | M2f decode with the fused node | not started; before promotion |
 | M3 dev-zone merge | done and checked on the five devices on our side, see below |
 | M4 promotion | not started |
-| M5 independent review | not started |
+| M5 independent review | done 2026-10-15: all eleven campaign headline numbers recompute from the committed run tables; two defects fixed on `topic/pre-promotion` (780M fused2/fused3 race: retired; microbench `[sdpa-error]` formats vs the B580 gate tool); stale playbook/README figures corrected. Open: B70 round-3 +9.45 %, Intel round-3 order results, M51 and Orin clock samples have no raw data in the repo; the QK NO_MASK_FILL / shortened softmax tail vs attn x V read range is not proven for every variant |
 | M6 stale documents | `sarc/README.md` and the `sarc-1.5-7900xtx-4w` proposal updated with the merge |
 
 Also open before promotion: the RX 7900 XTX workgroup memory above the AMDVLK limit (its `STATUS.md`, "Decision

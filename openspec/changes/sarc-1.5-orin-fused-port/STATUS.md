@@ -150,7 +150,7 @@ Tok/s, 2048-token prefill, median of 5 valid interleaved runs per arm; every num
 
 The "over pristine" column is the ratio measured inside `s8-pristine` (its final-stack medians are 1651.61,
 1521.55, 659.58, 595.18, 305.54, 277.21, within 0.3 % of the `s5-c1` ones). The task expected +5 to +12 %: the
-result is inside the band, at its lower end; the 4070 Ti port of the same kernel closed at +11.64 %.
+result is inside the band, at its lower end; the 4070 Ti port of the same kernel closed at +11.64 % [a superseded session; its final is +11.49 %, note of 2026-10-15].
 
 ## Final verification (R11), all on build `topic4` (cross image's `glslc`: "Known limitation" above)
 
@@ -600,7 +600,7 @@ attn*V), 3 rounds interleaved, every round listed (`results/orin/screens/sdpa-sc
 
 ## What I took from the 4070 Ti fused port (`origin/topic/4070ti-fused-port`, read 00:38 UTC at `ed8b5af91`)
 
-Its campaign closed at +11.64 % and was reopened by its review for three things. Checked against this campaign:
+Its campaign closed at +11.64 % [a superseded session; its final is +11.49 %, note of 2026-10-15] and was reopened by its review for three things. Checked against this campaign:
 
 | its finding | here | what I did |
 |---|---|---|

@@ -300,7 +300,7 @@ public remote; read with `git show origin/<branch>:<path>`.
 | device | what was ported | over its tuned parent | over pristine `dev/1.5` | branch (change directory `sarc-1.5-<tag>-fused-port`) |
 |---|---|---:|---:|---|
 | RTX 4070 Ti SUPER | `fused3sb` unchanged, plus a guard: the kernel returns unless the workgroup is exactly one 32-wide subgroup | +11.49 % | +63.28 % | `topic/4070ti-fused-port` |
-| Arc B580 | a multi-subgroup form: 8 x 16 x 16 matrix shape, a workgroup of 4 or 8 subgroups of 16 lanes, each subgroup owning part of the score columns | +8.82 % | about +72 % | `topic/b580-fused-port` |
+| Arc B580 | a multi-subgroup form: 8 x 16 x 16 matrix shape, a workgroup of 4 or 8 subgroups of 16 lanes, each subgroup owning part of the score columns | +9.12 % | +72.05 % | `topic/b580-fused-port` |
 | Arc Pro B70 | the B580's kernel, brought over unchanged and confirmed (5 hours, one candidate) | +8.26 % | +72.87 % | `topic/b70-fused-port` |
 | Jetson Orin Nano | `fused3sb` with the same guard as the 4070 Ti | +6.13 % (cross build, item 7 of 9.2) | +76.70 % | `topic/orin-fused-port` |
 | Radeon 780M | `fused3` replaced by `fused3sb`, profile `780m-final` | -0.14 % (no change) | +33.90 % | `topic/780m-prefill-refine`, "Round 3" |

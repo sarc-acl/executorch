@@ -21,8 +21,10 @@ final sessions.
 | Jetson Orin Nano | +65.7 % | +67.8 % | +66.7 % | 4.46 -> 7.43 | finished and pushed on the corrected build (reopened once by review, `LESSONS.md` L8) | `topic/orin-prefill-refine` |
 | Arc B580 | +46.0 % | +77.8 % | +61.1 % | 2.19 -> 3.53 | finished, pushed | `topic/b580-prefill-refine` |
 | Arc Pro B70 | +48.8 % | +70.7 % | +59.4 % | 2.17 -> 3.46 | finished, pushed | `topic/xe2-prefill-refine` |
-| RTX 4070 Ti SUPER | +43.2 % | +49.2 % | +46.2 % | 3.57 -> 5.22 | finished, pushed | `topic/4070ti-prefill-refine` |
+| RTX 4070 Ti SUPER | +43.4 % | +49.2 % | +46.3 % | 3.57 -> 5.23 | finished, pushed | `topic/4070ti-prefill-refine` |
 | Radeon 780M | +29.8 % | +36.4 % | +33.1 % | 2.08 -> 2.76 | finished, pushed | `topic/780m-prefill-refine` |
+
+Correction and addendum, 2026-10-15 (independent review M5): the RTX 4070 Ti SUPER row was taken from the patched-build session `s5-c4`; the committed-build final session `s8-c4e` gives the values now shown. The table is the first round as of 2026-10-07. With the fused-port finals (second round, and round 3 on the two Intel cards), over the same September cells, both schemes: RTX 4070 Ti SUPER +64.3 % (x stock 5.87), Jetson Orin Nano +76.8 % (7.88), Arc B580 +76.2 % (3.86), Arc Pro B70 +72.2 % (3.74); Radeon 780M unchanged (+33.90 % over its parent). The Intel round-3 profiles were never measured against the campaign parent in one session; chained across sessions they are about +10.7 % (B580) and +9.2 % (B70) over the first-round finals.
 
 All five rows are final: every campaign ended by the stop rule, was signed off by the independent reviewer and
 is pushed (the last one, the Radeon 780M, on 2026-10-07 01:16 UTC). Measured against the parent re-measured in
