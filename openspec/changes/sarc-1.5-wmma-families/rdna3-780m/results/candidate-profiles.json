@@ -1,0 +1,1278 @@
+{
+  "inventory_commit": "f393c3ff7ff4fc41e4651a5109a8509097c501f6",
+  "manifest_sha256": "edcfa39ea7d8fac9c907a6a901754b96aa2d2894302b9c8ad623b90c2780d923",
+  "profiles": [
+    {
+      "candidate": "rdna3-01",
+      "profile": "780m-wmma-rdna3-01",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-01"
+      },
+      "shader": "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g18s32f32cbt_texture3d_texture2d_half",
+      "aliases": [
+        {
+          "shader": "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g18s32f32cbt_texture3d_texture2d_half",
+          "kernel_base": "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g18s32f32cbt",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_780m_x_linear_q4gsw_coopmat.yaml:151@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_780m_x_linear_q4gsw_coopmat.glsl:18@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Space780m.inc:7@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "780m"
+      ],
+      "origins": [
+        {
+          "device": "780m",
+          "route": "R01",
+          "layer": "profile",
+          "predicate": "N>=1024 && K>=4096",
+          "shader": "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g18s32f32cbt_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Space780m.inc:7@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:2693@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "4w",
+      "io": "texture3d",
+      "weight": "texture2d",
+      "declared_shared_bytes": 61440,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_STORAGE": "texture2d",
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 256,
+        "WG_TILE_N": 128,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 1,
+        "SG_GRID_Y": 8,
+        "SUBGROUP_SIZE": 32,
+        "ACC_FP32": true,
+        "CSH_IN_ASH": true,
+        "ACC_GROUP_FP32": false,
+        "ACC_GROUP_FP32_REG": false,
+        "FRAG_LAYOUT": false,
+        "IMG_A": false,
+        "IMG_W": false,
+        "SH_F16V4": false,
+        "CSH_BAND": false,
+        "B_COLMAJOR": true,
+        "CSH_FULL": false,
+        "CSH_POOL": false
+      },
+      "fingerprint": "15439c9bc02836c71b0dc2247bb7afa2cc85bf9348fd9109104512bf1cc9f538",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    },
+    {
+      "candidate": "rdna3-02",
+      "profile": "780m-wmma-rdna3-02",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-02"
+      },
+      "shader": "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt_texture3d_texture2d_half",
+      "aliases": [
+        {
+          "shader": "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt_texture3d_texture2d_half",
+          "kernel_base": "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_780m_x_linear_q4gsw_coopmat.yaml:175@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_780m_x_linear_q4gsw_coopmat.glsl:18@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Space780m.inc:8@617897184529ff180af491ee0d5d7de778cbb6c6"
+        },
+        {
+          "shader": "sarc_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt_texture3d_texture2d_half",
+          "kernel_base": "sarc_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat.yaml:198@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat.glsl:43@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:160@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "780m",
+        "7900xtx",
+        "rx7600"
+      ],
+      "origins": [
+        {
+          "device": "780m",
+          "route": "R02",
+          "layer": "profile",
+          "predicate": "N>=2048 && 3072<=K<4096",
+          "shader": "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Space780m.inc:8@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:2693@617897184529ff180af491ee0d5d7de778cbb6c6"
+        },
+        {
+          "device": "rx7600",
+          "route": "R11",
+          "layer": "table",
+          "predicate": "all; retained outside production NK set or when pick fails fit",
+          "shader": "sarc_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:160@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:157@617897184529ff180af491ee0d5d7de778cbb6c6"
+        },
+        {
+          "device": "7900xtx",
+          "route": "R18",
+          "layer": "table",
+          "predicate": "all; retained when no fitting profile pick (includes 3B wk_wv and 8B w2 for 8da4w)",
+          "shader": "sarc_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:122@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:119@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "4w",
+      "io": "texture3d",
+      "weight": "texture2d",
+      "declared_shared_bytes": 61440,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_STORAGE": "texture2d",
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 256,
+        "WG_TILE_N": 128,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 2,
+        "SG_GRID_Y": 4,
+        "SUBGROUP_SIZE": 32,
+        "ACC_FP32": true,
+        "CSH_IN_ASH": true,
+        "ACC_GROUP_FP32": false,
+        "ACC_GROUP_FP32_REG": false,
+        "FRAG_LAYOUT": false,
+        "IMG_A": false,
+        "IMG_W": false,
+        "SH_F16V4": false,
+        "CSH_BAND": false,
+        "B_COLMAJOR": true,
+        "CSH_FULL": false,
+        "CSH_POOL": false
+      },
+      "fingerprint": "338594b56c03573c0356df825bcf8dfbc688608cb4acad37d1d5916dcafea231",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    },
+    {
+      "candidate": "rdna3-03",
+      "profile": "780m-wmma-rdna3-03",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-03"
+      },
+      "shader": "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt_texture3d_texture2d_half",
+      "aliases": [
+        {
+          "shader": "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt_texture3d_texture2d_half",
+          "kernel_base": "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_780m_x_linear_q4gsw_coopmat.yaml:199@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_780m_x_linear_q4gsw_coopmat.glsl:18@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Space780m.inc:9@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "780m"
+      ],
+      "origins": [
+        {
+          "device": "780m",
+          "route": "R03",
+          "layer": "profile",
+          "predicate": "N>=8192 && K<3072",
+          "shader": "sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Space780m.inc:9@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:2693@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "4w",
+      "io": "texture3d",
+      "weight": "texture2d",
+      "declared_shared_bytes": 61440,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_STORAGE": "texture2d",
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 256,
+        "WG_TILE_N": 128,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 2,
+        "SG_GRID_Y": 8,
+        "SUBGROUP_SIZE": 32,
+        "ACC_FP32": true,
+        "CSH_IN_ASH": true,
+        "ACC_GROUP_FP32": false,
+        "ACC_GROUP_FP32_REG": false,
+        "FRAG_LAYOUT": false,
+        "IMG_A": false,
+        "IMG_W": false,
+        "SH_F16V4": false,
+        "CSH_BAND": false,
+        "B_COLMAJOR": true,
+        "CSH_FULL": false,
+        "CSH_POOL": false
+      },
+      "fingerprint": "9a4684cb4f82b4a5221dd63ebc15443ab072805186827b9985feccfdb1a0635e",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    },
+    {
+      "candidate": "rdna3-04",
+      "profile": "780m-wmma-rdna3-04",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-04"
+      },
+      "shader": "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x128k32g24s32f32cbt_texture3d_texture2d_half",
+      "aliases": [
+        {
+          "shader": "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x128k32g24s32f32cbt_texture3d_texture2d_half",
+          "kernel_base": "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x128k32g24s32f32cbt",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_780m_x_linear_q4gsw_coopmat.yaml:223@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_780m_x_linear_q4gsw_coopmat.glsl:18@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Space780m.inc:10@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "780m"
+      ],
+      "origins": [
+        {
+          "device": "780m",
+          "route": "R04",
+          "layer": "profile",
+          "predicate": "K<3072",
+          "shader": "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x128k32g24s32f32cbt_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Space780m.inc:10@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:2693@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "4w",
+      "io": "texture3d",
+      "weight": "texture2d",
+      "declared_shared_bytes": 40960,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_STORAGE": "texture2d",
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 128,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 2,
+        "SG_GRID_Y": 4,
+        "SUBGROUP_SIZE": 32,
+        "ACC_FP32": true,
+        "CSH_IN_ASH": true,
+        "ACC_GROUP_FP32": false,
+        "ACC_GROUP_FP32_REG": false,
+        "FRAG_LAYOUT": false,
+        "IMG_A": false,
+        "IMG_W": false,
+        "SH_F16V4": false,
+        "CSH_BAND": false,
+        "B_COLMAJOR": true,
+        "CSH_FULL": false,
+        "CSH_POOL": false
+      },
+      "fingerprint": "3c628ef287bc83d3e93ce91175248c2569a378d1d8b12d3a74c9be6744d88730",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    },
+    {
+      "candidate": "rdna3-05",
+      "profile": "780m-wmma-rdna3-05",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-05"
+      },
+      "shader": "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x256k32g42s32f32cbt_texture3d_texture2d_half",
+      "aliases": [
+        {
+          "shader": "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x256k32g42s32f32cbt_texture3d_texture2d_half",
+          "kernel_base": "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x256k32g42s32f32cbt",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_780m_x_linear_q4gsw_coopmat.yaml:55@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_780m_x_linear_q4gsw_coopmat.glsl:18@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Space780m.inc:3@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "780m"
+      ],
+      "origins": [
+        {
+          "device": "780m",
+          "route": "R05",
+          "layer": "profile",
+          "predicate": "N>=1024",
+          "shader": "sarc_dev_780m_x_linear_q4gsw_coopmat_t128x256k32g42s32f32cbt_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Space780m.inc:3@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:2693@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "4w",
+      "io": "texture3d",
+      "weight": "texture2d",
+      "declared_shared_bytes": 61440,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_STORAGE": "texture2d",
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 256,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 4,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32,
+        "ACC_FP32": true,
+        "CSH_IN_ASH": true,
+        "ACC_GROUP_FP32": false,
+        "ACC_GROUP_FP32_REG": false,
+        "FRAG_LAYOUT": false,
+        "IMG_A": false,
+        "IMG_W": false,
+        "SH_F16V4": false,
+        "CSH_BAND": false,
+        "B_COLMAJOR": true,
+        "CSH_FULL": false,
+        "CSH_POOL": false
+      },
+      "fingerprint": "cbe8dd81bbcc0660e865ec193010ecdba9f3b25462f630557bc4e7e6da5b9752",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    },
+    {
+      "candidate": "rdna3-06",
+      "profile": "780m-wmma-rdna3-06",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-06"
+      },
+      "shader": "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1_texture3d_texture2d_half",
+      "aliases": [
+        {
+          "shader": "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1_texture3d_texture2d_half",
+          "kernel_base": "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_780m_x_linear_dq8ca_coopmat_zpg.yaml:23@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_780m_x_linear_dq8ca_coopmat_zpg.glsl:18@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Space780m.inc:11@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "780m",
+        "7900xtx"
+      ],
+      "origins": [
+        {
+          "device": "780m",
+          "route": "R06",
+          "layer": "profile",
+          "predicate": "N>=2048 && K<=4096",
+          "shader": "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Space780m.inc:11@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:2693@617897184529ff180af491ee0d5d7de778cbb6c6"
+        },
+        {
+          "device": "7900xtx",
+          "route": "R16",
+          "layer": "profile",
+          "predicate": "NK in {(2048,8192)} && !gemv",
+          "shader": "sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Space780m.inc:11@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:3558@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "8da4w",
+      "io": "texture3d",
+      "weight": "texture2d",
+      "declared_shared_bytes": 60160,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_NBITS": 4,
+        "WEIGHT_STORAGE": "texture2d",
+        "A_MAP_FULL": true,
+        "A_MULTI_BLOCK": true,
+        "A_BLOCKS": 1,
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 256,
+        "WG_TILE_N": 64,
+        "WG_TILE_K": 64,
+        "SG_GRID_X": 4,
+        "SG_GRID_Y": 8,
+        "SUBGROUP_SIZE": 32
+      },
+      "fingerprint": "65b22f247972eb7ed63df64848c611fb82d5ca345fde00e3d3d56280782d7d3c",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    },
+    {
+      "candidate": "rdna3-07",
+      "profile": "780m-wmma-rdna3-07",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-07"
+      },
+      "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32_texture3d_texture2d_half",
+      "aliases": [
+        {
+          "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32_texture3d_texture2d_half",
+          "kernel_base": "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_linear_dq8ca_coopmat_zpg_bt.yaml:24@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_linear_dq8ca_coopmat_zpg_bt.glsl:15@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:524@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "780m"
+      ],
+      "origins": [
+        {
+          "device": "780m",
+          "route": "R07",
+          "layer": "inherited-profile",
+          "predicate": "all; retained if c11 has no fitting pick",
+          "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:524@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:1180@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "8da4w",
+      "io": "texture3d",
+      "weight": "texture2d",
+      "declared_shared_bytes": 18176,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_NBITS": 4,
+        "WEIGHT_STORAGE": "texture2d",
+        "A_MAP_FULL": true,
+        "A_MULTI_BLOCK": true,
+        "A_BLOCKS": 2,
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 64,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 2,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32
+      },
+      "fingerprint": "12a87fb951f47c27aedaa616604d3bcefa8e46d8d96df9c34e9eda13a69b5430",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    },
+    {
+      "candidate": "rdna3-08",
+      "profile": "780m-wmma-rdna3-08",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-08"
+      },
+      "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32_buffer_texture2d_half",
+      "aliases": [
+        {
+          "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32_buffer_texture2d_half",
+          "kernel_base": "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_linear_dq8ca_coopmat_zpg_bt.yaml:34@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_linear_dq8ca_coopmat_zpg_bt.glsl:15@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:524@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "780m"
+      ],
+      "origins": [
+        {
+          "device": "780m",
+          "route": "R07",
+          "layer": "inherited-profile",
+          "predicate": "all; retained if c11 has no fitting pick",
+          "shader": "sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32_buffer_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:524@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:1180@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "8da4w",
+      "io": "buffer",
+      "weight": "texture2d",
+      "declared_shared_bytes": 14080,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "buffer",
+        "WEIGHT_NBITS": 4,
+        "WEIGHT_STORAGE": "texture2d",
+        "A_MAP_FULL": true,
+        "A_MULTI_BLOCK": true,
+        "A_BLOCKS": 2,
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 64,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 2,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32
+      },
+      "fingerprint": "7746ad884648f39de418d9882ecf7f4171a194f5e0c7f61a034ae38b9a4f76c9",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    },
+    {
+      "candidate": "rdna3-09",
+      "profile": "780m-wmma-rdna3-09",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-09"
+      },
+      "shader": "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_texture3d_texture2d_half",
+      "aliases": [
+        {
+          "shader": "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_texture3d_texture2d_half",
+          "kernel_base": "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat.yaml:43@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat.glsl:43@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:37@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "780m"
+      ],
+      "origins": [
+        {
+          "device": "780m",
+          "route": "R08",
+          "layer": "table",
+          "predicate": "all; retained if neither profile layer fits",
+          "shader": "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:37@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:37@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "4w",
+      "io": "texture3d",
+      "weight": "texture2d",
+      "declared_shared_bytes": 37888,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_STORAGE": "texture2d",
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 128,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 4,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32,
+        "ACC_FP32": true,
+        "CSH_IN_ASH": true,
+        "ACC_GROUP_FP32": false,
+        "ACC_GROUP_FP32_REG": false,
+        "FRAG_LAYOUT": false,
+        "IMG_A": false,
+        "IMG_W": false,
+        "SH_F16V4": false,
+        "CSH_BAND": false,
+        "B_COLMAJOR": false,
+        "CSH_FULL": false,
+        "CSH_POOL": false
+      },
+      "fingerprint": "ffb0146381ae36700371c49d0a8e08a7100817225daea41023127b8d200953fb",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    },
+    {
+      "candidate": "rdna3-10",
+      "profile": "780m-wmma-rdna3-10",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-10"
+      },
+      "shader": "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_buffer_texture2d_half",
+      "aliases": [
+        {
+          "shader": "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_buffer_texture2d_half",
+          "kernel_base": "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat.yaml:48@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat.glsl:43@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:37@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "780m"
+      ],
+      "origins": [
+        {
+          "device": "780m",
+          "route": "R08",
+          "layer": "table",
+          "predicate": "all; retained if neither profile layer fits",
+          "shader": "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_buffer_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:37@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:37@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "4w",
+      "io": "buffer",
+      "weight": "texture2d",
+      "declared_shared_bytes": 37888,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "buffer",
+        "WEIGHT_STORAGE": "texture2d",
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 128,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 4,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32,
+        "ACC_FP32": true,
+        "CSH_IN_ASH": true,
+        "ACC_GROUP_FP32": false,
+        "ACC_GROUP_FP32_REG": false,
+        "FRAG_LAYOUT": false,
+        "IMG_A": false,
+        "IMG_W": false,
+        "SH_F16V4": false,
+        "CSH_BAND": false,
+        "B_COLMAJOR": false,
+        "CSH_FULL": false,
+        "CSH_POOL": false
+      },
+      "fingerprint": "1a58fcc2894444e18df16dac78728c255991dc87de3a9d1754416d2995416b44",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    },
+    {
+      "candidate": "rdna3-11",
+      "profile": "780m-wmma-rdna3-11",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-11"
+      },
+      "shader": "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_buffer_buffer_half",
+      "aliases": [
+        {
+          "shader": "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_buffer_buffer_half",
+          "kernel_base": "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat.yaml:52@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat.glsl:43@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:37@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "780m"
+      ],
+      "origins": [
+        {
+          "device": "780m",
+          "route": "R08",
+          "layer": "table",
+          "predicate": "all; retained if neither profile layer fits",
+          "shader": "sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_buffer_buffer_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:37@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:37@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "4w",
+      "io": "buffer",
+      "weight": "buffer",
+      "declared_shared_bytes": 37888,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "buffer",
+        "WEIGHT_STORAGE": "buffer",
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 128,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 4,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32,
+        "ACC_FP32": true,
+        "CSH_IN_ASH": true,
+        "ACC_GROUP_FP32": false,
+        "ACC_GROUP_FP32_REG": false,
+        "FRAG_LAYOUT": false,
+        "IMG_A": false,
+        "IMG_W": false,
+        "SH_F16V4": false,
+        "CSH_BAND": false,
+        "B_COLMAJOR": false,
+        "CSH_FULL": false,
+        "CSH_POOL": false
+      },
+      "fingerprint": "ac38fda14af691a8cd945764f1f5e97ee634738eabe2f6d414be6655cf8d19cc",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    },
+    {
+      "candidate": "rdna3-12",
+      "profile": "780m-wmma-rdna3-12",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-12"
+      },
+      "shader": "sarc_dev_rx7600_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbtap4bp12_texture3d_texture2d_half",
+      "aliases": [
+        {
+          "shader": "sarc_dev_rx7600_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbtap4bp12_texture3d_texture2d_half",
+          "kernel_base": "sarc_dev_rx7600_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbtap4bp12",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_rx7600_x_linear_q4gsw_coopmat.yaml:62@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_rx7600_x_linear_q4gsw_coopmat.glsl:15@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/SpaceRx7600Q4.inc:11@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "rx7600"
+      ],
+      "origins": [
+        {
+          "device": "rx7600",
+          "route": "R09",
+          "layer": "profile",
+          "predicate": "NK in {(2048,2048),(512,2048),(8192,2048),(2048,8192),(3072,3072),(1024,3072),(8192,3072),(3072,8192),(4096,4096),(1024,4096),(14336,4096),(4096,14336)} && !gemv",
+          "shader": "sarc_dev_rx7600_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbtap4bp12_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/SpaceRx7600Q4.inc:11@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:2964@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "4w",
+      "io": "texture3d",
+      "weight": "texture2d",
+      "declared_shared_bytes": 59392,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_STORAGE": "texture2d",
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 256,
+        "WG_TILE_N": 128,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 2,
+        "SG_GRID_Y": 8,
+        "SUBGROUP_SIZE": 32,
+        "ACC_FP32": true,
+        "CSH_IN_ASH": true,
+        "ACC_GROUP_FP32": false,
+        "ACC_GROUP_FP32_REG": false,
+        "FRAG_LAYOUT": false,
+        "IMG_A": false,
+        "IMG_W": false,
+        "SH_F16V4": false,
+        "CSH_BAND": false,
+        "B_COLMAJOR": true,
+        "CSH_FULL": false,
+        "CSH_POOL": false,
+        "BT_PAD_H": 12,
+        "A_V2": true,
+        "A_PAD_H": 4,
+        "PROF": false
+      },
+      "fingerprint": "42c749fb01d26874b7b8fcf5301801f4b9f09eb8e7b95b9ba08b05de45303ca8",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    },
+    {
+      "candidate": "rdna3-13",
+      "profile": "780m-wmma-rdna3-13",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-13"
+      },
+      "shader": "sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32pa6pb4csha_texture3d_texture2d_half",
+      "aliases": [
+        {
+          "shader": "sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32pa6pb4csha_texture3d_texture2d_half",
+          "kernel_base": "sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32pa6pb4csha",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg.yaml:72@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg.glsl:15@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/SpaceRx7600Dq.inc:14@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "rx7600"
+      ],
+      "origins": [
+        {
+          "device": "rx7600",
+          "route": "R10",
+          "layer": "profile",
+          "predicate": "NK in {(2048,2048),(512,2048),(8192,2048),(2048,8192),(3072,3072),(1024,3072),(8192,3072),(3072,8192),(4096,4096),(1024,4096),(14336,4096),(4096,14336)} && !gemv",
+          "shader": "sarc_dev_rx7600_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32pa6pb4csha_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/SpaceRx7600Dq.inc:14@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:2964@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "8da4w",
+      "io": "texture3d",
+      "weight": "texture2d",
+      "declared_shared_bytes": 60160,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_NBITS": 4,
+        "WEIGHT_STORAGE": "texture2d",
+        "A_MAP_FULL": true,
+        "A_MULTI_BLOCK": true,
+        "A_BLOCKS": 1,
+        "A_PAD": 0,
+        "CSH_IN_ASH": true,
+        "BF": false,
+        "UV4": false,
+        "A_PITCH": 6,
+        "B_PITCH": 4,
+        "ST_A": -1,
+        "ST_B": -1,
+        "PROF": false,
+        "ABL": 0,
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 256,
+        "WG_TILE_N": 64,
+        "WG_TILE_K": 64,
+        "SG_GRID_X": 4,
+        "SG_GRID_Y": 8,
+        "SUBGROUP_SIZE": 32
+      },
+      "fingerprint": "7208589cc1a452d5a22d507a2a0f984893fd08148114ba6e7deeaca841a71f19",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    },
+    {
+      "candidate": "rdna3-14",
+      "profile": "780m-wmma-rdna3-14",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-14"
+      },
+      "shader": "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_texture3d_texture2d_half",
+      "aliases": [
+        {
+          "shader": "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_texture3d_texture2d_half",
+          "kernel_base": "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_dq8ca_coopmat_zpg.yaml:33@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_dq8ca_coopmat_zpg.glsl:23@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:185@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "7900xtx",
+        "rx7600"
+      ],
+      "origins": [
+        {
+          "device": "rx7600",
+          "route": "R12",
+          "layer": "table",
+          "predicate": "all; retained outside production NK set or when pick fails fit",
+          "shader": "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:185@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:157@617897184529ff180af491ee0d5d7de778cbb6c6"
+        },
+        {
+          "device": "7900xtx",
+          "route": "R19",
+          "layer": "table",
+          "predicate": "all; retained when no fitting profile pick (includes 3B wk_wv and 8B w2 for 8da4w)",
+          "shader": "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:148@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:119@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "8da4w",
+      "io": "texture3d",
+      "weight": "texture2d",
+      "declared_shared_bytes": 18176,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_NBITS": 4,
+        "WEIGHT_STORAGE": "texture2d",
+        "A_MAP_FULL": true,
+        "A_MULTI_BLOCK": false,
+        "A_BLOCKS": 1,
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 64,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 4,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32
+      },
+      "fingerprint": "4b5ad3065cab79c9bd289bf061e91471a3691b2b53be3d125a255a30a9a656d7",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    },
+    {
+      "candidate": "rdna3-15",
+      "profile": "780m-wmma-rdna3-15",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-15"
+      },
+      "shader": "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_buffer_texture2d_half",
+      "aliases": [
+        {
+          "shader": "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_buffer_texture2d_half",
+          "kernel_base": "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_dq8ca_coopmat_zpg.yaml:31@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_dq8ca_coopmat_zpg.glsl:23@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:185@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "7900xtx",
+        "rx7600"
+      ],
+      "origins": [
+        {
+          "device": "rx7600",
+          "route": "R12",
+          "layer": "table",
+          "predicate": "all; retained outside production NK set or when pick fails fit",
+          "shader": "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_buffer_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:185@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:157@617897184529ff180af491ee0d5d7de778cbb6c6"
+        },
+        {
+          "device": "7900xtx",
+          "route": "R19",
+          "layer": "table",
+          "predicate": "all; retained when no fitting profile pick (includes 3B wk_wv and 8B w2 for 8da4w)",
+          "shader": "sarc_linear_dq8ca_coopmat_zpg_t128x64k32g42s32_buffer_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:148@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc/table_amd.cpp:119@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "8da4w",
+      "io": "buffer",
+      "weight": "texture2d",
+      "declared_shared_bytes": 14080,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "buffer",
+        "WEIGHT_NBITS": 4,
+        "WEIGHT_STORAGE": "texture2d",
+        "A_MAP_FULL": true,
+        "A_MULTI_BLOCK": false,
+        "A_BLOCKS": 1,
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 64,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 4,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32
+      },
+      "fingerprint": "076a38077e24d36dfa03e90d4573729b99481e5c8522cace5f7ae012d2f8a846",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    },
+    {
+      "candidate": "rdna3-16",
+      "profile": "780m-wmma-rdna3-16",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-16"
+      },
+      "shader": "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32cbt_texture3d_texture2d_half",
+      "aliases": [
+        {
+          "shader": "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32cbt_texture3d_texture2d_half",
+          "kernel_base": "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32cbt",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_linear_q4gsw_coopmat_sweep.yaml:151@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_linear_q4gsw_coopmat_sweep.glsl:16@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:89@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "7900xtx"
+      ],
+      "origins": [
+        {
+          "device": "7900xtx",
+          "route": "R13",
+          "layer": "profile",
+          "predicate": "NK in {(2048,2048),(512,2048),(2048,8192)} && !gemv",
+          "shader": "sarc_linear_q4gsw_coopmat_sweep_t128x128k32g42s32f32cbt_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:89@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:3558@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "4w",
+      "io": "texture3d",
+      "weight": "texture2d",
+      "declared_shared_bytes": 40960,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_STORAGE": "texture2d",
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 128,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 4,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32,
+        "ACC_FP32": true,
+        "CSH_IN_ASH": true,
+        "ACC_GROUP_FP32": false,
+        "ACC_GROUP_FP32_REG": false,
+        "FRAG_LAYOUT": false,
+        "IMG_A": false,
+        "IMG_W": false,
+        "SH_F16V4": false,
+        "CSH_BAND": false,
+        "B_COLMAJOR": true,
+        "CSH_FULL": false,
+        "CSH_POOL": false
+      },
+      "fingerprint": "31ee921cce958d803a2867403f98595c1a85347ee830694a3251f1195ec27905",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    },
+    {
+      "candidate": "rdna3-17",
+      "profile": "780m-wmma-rdna3-17",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-17"
+      },
+      "shader": "sarc_linear_dq8ca_coopmat_zpg_sweep_t256x64k32g24s32_texture3d_texture2d_half",
+      "aliases": [
+        {
+          "shader": "sarc_linear_dq8ca_coopmat_zpg_sweep_t256x64k32g24s32_texture3d_texture2d_half",
+          "kernel_base": "sarc_linear_dq8ca_coopmat_zpg_sweep_t256x64k32g24s32",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpg_sweep.yaml:59@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpg_sweep.glsl:16@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:420@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "7900xtx"
+      ],
+      "origins": [
+        {
+          "device": "7900xtx",
+          "route": "R14",
+          "layer": "profile",
+          "predicate": "NK in {(8192,2048),(2048,2048),(8192,3072),(3072,8192),(3072,3072),(14336,4096)} && !gemv",
+          "shader": "sarc_linear_dq8ca_coopmat_zpg_sweep_t256x64k32g24s32_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:420@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:3558@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "8da4w",
+      "io": "texture3d",
+      "weight": "texture2d",
+      "declared_shared_bytes": 31488,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_NBITS": 4,
+        "WEIGHT_STORAGE": "texture2d",
+        "A_MAP_FULL": true,
+        "A_MULTI_BLOCK": true,
+        "A_BLOCKS": 2,
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 256,
+        "WG_TILE_N": 64,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 2,
+        "SG_GRID_Y": 4,
+        "SUBGROUP_SIZE": 32
+      },
+      "fingerprint": "f224621799f580fe120b2e1cab125aaf449d85a370422f8d373d6e3b0d3583f8",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    },
+    {
+      "candidate": "rdna3-18",
+      "profile": "780m-wmma-rdna3-18",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-18"
+      },
+      "shader": "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g22s32_texture3d_texture2d_half",
+      "aliases": [
+        {
+          "shader": "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g22s32_texture3d_texture2d_half",
+          "kernel_base": "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g22s32",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpg_sweep.yaml:67@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpg_sweep.glsl:16@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:423@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "7900xtx"
+      ],
+      "origins": [
+        {
+          "device": "7900xtx",
+          "route": "R15",
+          "layer": "profile",
+          "predicate": "NK in {(1024,4096),(4096,4096)} && !gemv",
+          "shader": "sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g22s32_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:423@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:3558@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "8da4w",
+      "io": "texture3d",
+      "weight": "texture2d",
+      "declared_shared_bytes": 18176,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_NBITS": 4,
+        "WEIGHT_STORAGE": "texture2d",
+        "A_MAP_FULL": true,
+        "A_MULTI_BLOCK": true,
+        "A_BLOCKS": 2,
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 128,
+        "WG_TILE_N": 64,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 2,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32
+      },
+      "fingerprint": "756e0a3ce9103af98d220fe0f018d2740526497d1eba5aa73a07cd0a10031d60",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    },
+    {
+      "candidate": "rdna3-19",
+      "profile": "780m-wmma-rdna3-19",
+      "environment": {
+        "ET_VK_SARC_UNVERIFIED": "1",
+        "ET_VK_SARC_DEV_PROFILE": "780m-final",
+        "ET_VK_SARC_780M_WMMA_PROFILE": "780m-wmma-rdna3-19"
+      },
+      "shader": "sarc_linear_dq8ca_coopmat_zpg_sweep_t64x64k32g22s32_texture3d_texture2d_half",
+      "aliases": [
+        {
+          "shader": "sarc_linear_dq8ca_coopmat_zpg_sweep_t64x64k32g22s32_texture3d_texture2d_half",
+          "kernel_base": "sarc_linear_dq8ca_coopmat_zpg_sweep_t64x64k32g22s32",
+          "yaml_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpg_sweep.yaml:116@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "wrapper_ref": "backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpg_sweep.glsl:16@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:457@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "sources": [
+        "7900xtx"
+      ],
+      "origins": [
+        {
+          "device": "7900xtx",
+          "route": "R17",
+          "layer": "profile",
+          "predicate": "NK in {(512,2048)} && !gemv",
+          "shader": "sarc_linear_dq8ca_coopmat_zpg_sweep_t64x64k32g22s32_texture3d_texture2d_half",
+          "row_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:457@617897184529ff180af491ee0d5d7de778cbb6c6",
+          "selection_ref": "backends/vulkan/runtime/graph/ops/impl/sarc_dev/Overrides.cpp:3558@617897184529ff180af491ee0d5d7de778cbb6c6"
+        }
+      ],
+      "scheme": "8da4w",
+      "io": "texture3d",
+      "weight": "texture2d",
+      "declared_shared_bytes": 13568,
+      "parameters": {
+        "PRECISION": "highp",
+        "HAS_BIAS": false,
+        "IO_STORAGE": "texture3d",
+        "WEIGHT_NBITS": 4,
+        "WEIGHT_STORAGE": "texture2d",
+        "A_MAP_FULL": true,
+        "A_MULTI_BLOCK": false,
+        "A_BLOCKS": 1,
+        "MMA_M": 16,
+        "MMA_N": 16,
+        "MMA_K": 16,
+        "WG_TILE_M": 64,
+        "WG_TILE_N": 64,
+        "WG_TILE_K": 32,
+        "SG_GRID_X": 2,
+        "SG_GRID_Y": 2,
+        "SUBGROUP_SIZE": 32
+      },
+      "fingerprint": "c008c98ca4c7925091840cb02d6167cd428c8b09c6b9d4e11cc010da42218b4d",
+      "origin_binding": "Original final-profile selection replay, with target property limits; earlier table/profile service and ordered picks retained",
+      "acceptance": "PENDING_GPU_GATE_AND_MATRIX"
+    }
+  ]
+}

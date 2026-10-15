@@ -138,6 +138,50 @@ and logs remain preserved; a fresh tag runs the corrected committed helper again
 the same unchanged parent libraries. This is a helper build correction, not a
 runtime-metadata pass or a gate change.
 
+The corrected helper completed all six model hash checks and executed all nine
+constant methods per file successfully. Context and sequence length are 2560,
+and the complete outputs match the saved static records. ELF dependencies are
+limited to standard C/C++ runtimes; no Vulkan backend symbols are linked. Small
+evidence is results/runtime-metadata.json, with exact helper/runtime commits and
+the helper hash. The failed first attempt remains preserved. This is metadata
+evidence only, not forward execution, runtime Vulkan storage or GPU correctness.
+
+## Finite candidate profiles
+
+tools/make_profiles.py consumes only the reviewed RDNA3 manifest, verifies its
+pinned hash, and generates Wmma780mProfiles.inc plus results/candidate-profiles.json.
+The 19 profiles retain every source fingerprint, dispatch alias, storage combination
+and origin reference. Both arms keep ET_VK_SARC_DEV_PROFILE=780m-final; candidate
+arms additionally set ET_VK_SARC_780M_WMMA_PROFILE=780m-wmma-rdna3-NN.
+
+The new selector is an appended rdna3-780m block in the dev Overrides.cpp. It wraps
+the prior selector and changes only a fitting linear choice on the target device
+with unverified rows enabled and the final control profile selected. It rejects
+decode, nonpositive dimensions/groups, ignore-alignment exceptions, mismatched
+storage and declared shared bytes above the queried limit. Attention fields and
+all earlier fallback choices are preserved. No shader or release file changes.
+
+Origin binding replays the existing final linear picks and preceding table
+service: the 780M control, RX 7600 refine5 and XTX refine5. Each replay uses queried
+target properties and the original source predicates/ordered picks; source names
+identify predicates only and imply no measurements or legality on external devices.
+A candidate may replace the control only where one of its recorded origins would
+serve that exact shape/storage. This retains inherited/table fallbacks instead of
+widening every kernel over all aligned production shapes. A profile with no timed
+production coverage remains explicit, and its control timings cannot establish
+performance for an undispatched kernel.
+
+tools/test_selectors.py builds CPU probes from the exact parent and topic exports.
+The original parent implementation supplies independent source-profile choices;
+tests compare all 19 generated profiles with that oracle across production and
+fallback shapes, several M/group/storage cases, decode, unsupported cases and
+attention. They also compare the inactive path and other-device behavior with the
+parent. These tests and the unchanged test_sarc_select/check.sh are pending in the
+next detached queue, followed by the exact-commit runner build and both goldens.
+tools/build_commit.sh generalizes the former parent builder to descendants of the
+approved base and runs those selector checks before compiling the full backend.
+No GPU timing or gate is started by this build queue; the four-hour cap remains.
+
 ## Copied adapters
 
 | Adapter | Source | Changes |
