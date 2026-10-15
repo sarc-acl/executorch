@@ -264,3 +264,82 @@ candidate selectors. No candidate GPU session starts before A/A calibration
 and historical-baseline comparison. Displayed cache fractions now cap at one
 and retain raw resident/model byte counts to account for fincore page rounding;
 this changes reporting, not warming or validity criteria.
+
+
+## Control gate and A/A launch
+
+matrix-r1 is an immutable export of d30add8be93f5fe814a2a6eaa4210f00d3f05a9c.
+Both component golden checks pass; all 2091 SPIR-V modules per component match
+the parent byte for byte. The new build's unchanged-profile verify output must
+match the raw parent reference with rates removed before A/A starts. The source
+and raw binary hashes of both arms are separate from orchestration provenance.
+No WMMA candidate is selected in either A/A arm.
+
+New tools/control_and_aa.py sequences that control gate and tools/aa_session.py,
+which implements the pre-registered rules without inherited exceptions: all six
+cells, fresh warmed processes, odd/even interleaving, five valid logical pairs,
+seven for all cells if any ratio differs from one by >1% or either arm spread
+exceeds 3%, and floor(0.97 times the lowest median clock of valid A/A runs).
+A/A acceptance remains geomean within 1% and each cell within 2%. The historical
+reference is the earlier closing session's candidate-arm median per cell, read
+from its committed summary.csv. Differences over 3% need explanation before
+candidate work. The queue does not schedule candidates regardless of its result.
+
+Before the first A/A timed row, cooling is fixed as initial <=50C/300s and then
+that recorded idle temperature plus 5C/120s between runs; three 5-second probes
+that stop falling also end the wait. Invalid attempts are preserved and replaced,
+with at most four attempts per logical repeat/arm before reporting a blocker.
+Observed runner failures and foreign/device faults stop instead of blind retry.
+CSV is appended and fsynced after each decision. Resume skips only completed valid
+row keys, keeps invalid rows and records interrupted raw artifacts under
+superseded/. Truncated CSV tails are preserved and not treated as complete rows.
+Calibration rows label their purpose and unset floor explicitly; the final JSON
+contains the derived single floor and globally fixed repeat count.
+
+New tools/evaluate_run.py computes validity from exact runner and NVML logs with
+five window samples, 2048/0 token counts, finite positive rate, no foreign or
+thermal observations and the supplied clock floor when calibrated. New
+session_control.py releases the device lock while held and reacquires it after
+release. The evaluator's nine checks include rejection of missing/failed/thermal/
+foreign/low-clock evidence and acceptance of a power-cap flag alone. A separate
+HOLD-AA-TEST dry run passed acknowledgement, unlock/relock and cleanup without
+touching the coordinator's HOLD. There is no sampler child to leave running.
+The gate is capped at two hours and A/A at four hours (bounded <=6h queue).
+The job uses frozen git-object copies of the committed orchestration sources;
+all observations and measured binary manifests remain separate.
+
+
+## Enabled-feature prerequisite correction (recovery)
+
+The coordinator's 03:58 reminder exposed a missing enabled-feature check. All
+11 exact inventory modules in both retained builds and both components (44
+checks) declare capability 5345, VulkanMemoryModel, and OpMemoryModel Logical
+Vulkan. None declares VulkanMemoryModelDeviceScope. Pinned Adapter.cpp and
+Device.cpp match the exported git objects and have no memory-model feature
+query/enable chain. Runtime.cpp requests Vulkan 1.1. A new read-only
+query_memory_model.py confirms physical support; it creates no logical device.
+This does not enable the feature or validate a pipeline.
+
+[Vulkan's feature documentation](https://docs.vulkan.org/refpages/latest/refpages/source/VkPhysicalDeviceVulkanMemoryModelFeatures.html)
+requires the feature in the device-create chain; shader-module valid usage
+[08740](https://docs.vulkan.org/refpages/latest/refpages/source/VkShaderModuleCreateInfo.html)
+requires capability prerequisites. Earlier successful parent execution, golden
+identity and declared shared-memory checks cannot replace this evidence.
+results/memory-model-prerequisite.json records the exact source/build scope.
+The parent snapshot is retained as execution observations, not a conformant gate.
+
+The artifact checks/memory-model/ directory contains the raw 44-module audit
+and a draft patch restricted to Adapter.cpp. It requests the memory-model
+extension (the runtime uses Vulkan 1.1), queries support and enables only
+vulkanMemoryModel, with DeviceScope and availability/visibility-chain features
+false. git apply --check passes; no release edit or compilation was performed.
+The owner question in STATUS.md requests that explicit exception and matching
+fresh exported control/selector builds before new snapshots or timing. No
+orchestration queue was started. Neither Orin's exception nor the older D4
+attention hooks authorizes this separate change.
+
+The prepared A/A driver now records and checks remaining descendant processes
+after each of its first three runs, preserving a failed cleanup as an invalid
+CSV row before stopping. No sampler child was observed or manufactured here;
+this is a future cleanup guard. Its thresholds are unchanged. Prepared tools
+remain blocked pending the owner decision, with no automatic build or launch.

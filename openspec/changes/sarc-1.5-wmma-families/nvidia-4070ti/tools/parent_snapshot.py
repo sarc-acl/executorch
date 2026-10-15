@@ -18,13 +18,15 @@ artifacts = root / ".artifacts"
 tools = Path(__file__).resolve().parent
 build = artifacts / "build" / sys.argv[1]
 tree = artifacts / "src" / sys.argv[1] / "executorch"
-stage = artifacts / "stage" / "s0-parent-verify"
+stage = artifacts / "stage" / (sys.argv[2] if len(sys.argv) > 2 else "s0-parent-verify")
 assert not stage.exists(), "snapshot exists; preserve it and diagnose rather than overwrite"
 assert not (artifacts / "GPU_GONE").exists()
-assert (build / "COMMIT").read_text().strip() == "617897184529ff180af491ee0d5d7de778cbb6c6"
+source_commit = (build / "COMMIT").read_text().strip()
+subprocess.run(["git", "-C", str(root / "executorch"), "merge-base", "--is-ancestor",
+                "617897184529ff180af491ee0d5d7de778cbb6c6", source_commit], check=True)
 for name in ["golden-llama.txt", "golden-backend.txt"]:
     assert (build / name).read_text().strip() == "spirv golden: PASS (53 shipped variants)"
-metadata = json.loads((artifacts / "metadata" / sys.argv[1] / "runtime-results.json").read_text())
+metadata = json.loads((artifacts / "metadata/parent-r1/runtime-results.json").read_text())
 assert len(metadata) == 6 and all(row["matches_static"] for row in metadata)
 modules = json.loads((build / "module-shared.json").read_text())
 assert len(modules["modules"]) == 11 and all(row["matches_source_declarations"] for row in modules["modules"])
@@ -63,7 +65,9 @@ env = {key: value for key, value in os.environ.items() if not key.startswith(("E
 env.update(ET_VK_SARC_UNVERIFIED="1", ET_VK_SARC_DEV_PROFILE="4070ti-fused1",
            WMMA_STAGE=str(stage), TMPDIR=str(artifacts / "tmp"),
            SARC_CAMPAIGN_TAG="wmma-nvidia-4070ti-20261015-s0-r1")
-manifest = {"orchestration_commit": subprocess.check_output(["git", "-C", str(root / "executorch"), "rev-parse", "HEAD"], text=True).strip(),
+if os.environ.get("WMMA_MATRIX_PROFILE"):
+    env["ET_VK_SARC_WMMA_PROFILE"] = os.environ["WMMA_MATRIX_PROFILE"]
+manifest = {"orchestration_commit": os.environ.get("WMMA_ORCHESTRATION_COMMIT") or subprocess.check_output(["git", "-C", str(root / "executorch"), "rev-parse", "HEAD"], text=True).strip(),
             "source_commit": (build / "COMMIT").read_text().strip(), "build": sys.argv[1],
             "environment": {k: v for k, v in env.items() if k.startswith(("ET_VK", "ETVK"))},
             "attention_control": {"fallback": "k4070tiRefine1", "softmax": "4070ti_nzf",
@@ -76,6 +80,7 @@ manifest["verify_sha256"] = hashlib.sha256((tree / "sarc/tools/verify.sh").read_
 
 observer = Observer(int(os.environ["WMMA_DEVICE_INDEX"]), os.getpid())
 try:
+    assert observer.identity["unit"] == "GPU-" + os.environ["WMMA_DEVICE_LOCK"]
     sample = observer.sample()
     assert not sample["clients"], "foreign GPU clients before snapshot"
     temperatures = []

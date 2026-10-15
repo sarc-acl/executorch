@@ -18,16 +18,16 @@ stage = Path(os.environ["WMMA_STAGE"])
 artifacts = Path(os.environ["WMMA_CAMPAIGN_ROOT"]) / ".artifacts"
 binary = Path(sys.argv[1])
 arguments = sys.argv[2:]
-record_dir = stage / "observations" / str(time.time_ns())
+record_dir = Path(os.environ["WMMA_RECORD_DIR"]) if "WMMA_RECORD_DIR" in os.environ else stage / "observations" / str(time.time_ns())
 record_dir.mkdir(parents=True)
-record = {"purpose": "parent_snapshot", "binary": str(binary), "argv": arguments,
+record = {"purpose": os.environ.get("WMMA_PURPOSE", "parent_snapshot"), "binary": str(binary), "argv": arguments,
           "binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
           "commit": (stage / "COMMIT").read_text().strip(),
           "profile": os.environ.get("ET_VK_SARC_DEV_PROFILE"),
-          "candidate": "control", "session": stage.name,
+          "candidate": os.environ.get("WMMA_CANDIDATE", "control"), "session": os.environ.get("WMMA_SESSION", stage.name),
           "environment": {k: v for k, v in os.environ.items() if k.startswith(("ET_VK", "ETVK"))},
           "started_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-          "timing_validity": "NOT_A_TIMED_SESSION", "reasons": [],
+          "timing_validity": "UNASSESSED" if os.environ.get("WMMA_PURPOSE") == "calibration" else "NOT_A_TIMED_SESSION", "reasons": [],
           "sensor_evidence": str(record_dir / "samples.jsonl")}
 child, observer = None, None
 returncode = 77

@@ -1,12 +1,89 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-15 01:13 UTC
+Updated: 2026-10-15 04:01 UTC
 
-Stage: PARENT SNAPSHOT COMPLETE / MATRIX SOURCE BUILD PREPARED.
-Running: next launch is the single detached matrix-r1 build from the committed
-branch head. It contains the eleven finite dev-only selectors, with no changed
-shader or release code. Queue JSON is artifact jobs/matrix-r1/state.json.
-No A/A or candidate GPU job is queued with this build.
+Stage: WAITING OWNER — REQUIRED LOGICAL-DEVICE FEATURE ABSENT.
+Running: none. No control/A/A or candidate queue was launched. Existing build
+and snapshot jobs are finished; the inherited device lock has no campaign holder.
+The 03:57 recovery instruction was read in full. Archive and all 18 reviewed
+input hashes were reconfirmed; retained parent-r1/matrix-r1 binary hashes match.
+The unfinished control/A/A orchestration is preserved and committed, but blocked.
+
+At the coordinator's 03:58 reminder, exact module inspection confirmed all eleven
+NVIDIA inventory modules declare VulkanMemoryModel (capability 5345) and use
+OpMemoryModel Logical Vulkan. This holds for all 44 combinations of parent-r1 /
+matrix-r1 and llama / backend. None declares VulkanMemoryModelDeviceScope.
+Pinned Adapter.cpp never enables the memory-model feature in VkDeviceCreateInfo;
+Device.cpp does not query it. Both exported files match their git objects.
+A fresh read-only physical-device query reports support for all three memory-model
+features. Support and successful execution do not establish enabled-feature proof.
+The runtime requests Vulkan 1.1, so a narrow fix must request the supported
+VK_KHR_vulkan_memory_model extension and explicitly enable vulkanMemoryModel.
+
+Evidence: results/memory-model-prerequisite.json; private artifacts
+checks/memory-model/audit.json, audit.py, proposed-adapter.patch, and
+preflight/memory-model-supported.json. The draft one-file Adapter.cpp patch
+passes git apply --check; it is NOT applied, compiled or accepted. It requests
+the extension, queries support and appends only the required enabled feature;
+DeviceScope and availability/visibility-chain features stay disabled.
+
+The previous parent snapshot remains raw execution evidence, with its original
+statuses preserved. It is NOT a conformant correctness gate or proof of this
+prerequisite. Earlier module/shared-memory and physical-feature evidence was
+incomplete on enabled features. No performance medians or margins exist.
+
+## Decision needed from the owner
+
+Approve the concrete narrow release-zone exception in
+checks/memory-model/proposed-adapter.patch (Adapter.cpp only), and fresh exact
+exported builds of BOTH control and selector arms with that same feature fix,
+followed by replacement parent/control snapshots, A/A and the finite matrix?
+The stage currently confines changes to dev/run paths and the 03:57 decision
+explicitly grants no release-code scope change; Orin's approval is not extended
+by analogy. Existing binaries/logs/failed jobs remain preserved. No gate, shader,
+golden, tolerance, host policy or measurement threshold change is proposed.
+This is one recorded question. Independent recovery work is finished; parked
+until CAMPAIGN.md changes, with no further builds, GPU jobs or repeated review.
+
+## Retained preparation and historical observations
+
+matrix-r1 completed rc=0 from exact exported commit
+ d30add8be93f5fe814a2a6eaa4210f00d3f05a9c, with 30 pinned submodules and the
+pinned image/compiler. Both unmodified golden checks pass for 53 shipped
+variants. All 2091 SPIR-V files per llama/backend component are byte-identical
+to the retained parent. Exact binary and library hashes are recorded in
+build/matrix-r1/binaries.sha256. Source summary: results/matrix-build.json.
+No source patch or new body was used, and no build is active now.
+
+The previously prepared, unlaunched control/A/A driver names the retained
+binaries; it will need fresh approved build tags after the feature fix.
+Its unchanged-profile gate compares the raw outputs with rates removed. Both
+A/A arms use
+ET_VK_SARC_UNVERIFIED=1 and ET_VK_SARC_DEV_PROFILE=4070ti-fused1 and with no
+WMMA profile. Each logical repeat interleaves arms, parent first on odd repeats
+and topic first on even ones. It obtains five valid repeats per arm/cell, then
+extends ALL six cells to seven if the pre-registered ratio/spread condition asks.
+The one device-wide floor is floor(0.97*lowest valid A/A run median clock).
+Limits are not widened. Raw calibration rows explicitly identify their purpose
+and an unset clock floor; the final calibration file derives that floor.
+
+A/A resumes from complete CSV row keys; invalid and interrupted attempts remain
+recorded, with incomplete artifacts moved under superseded/. Replacement is
+bounded to four attempts per logical arm/repeat; observer failures stop for
+diagnosis. HOLD releases the inherited lock before acknowledgement and checks
+before each resumable run. No candidate runs alongside the gate or calibration.
+Cooling before the first timed row: initial <=50C/300s, then recorded idle+5C
+between runs/120s; three 5-second probes with no further fall also end cooling.
+The control gate has a two-hour cap, A/A a four-hour cap, total <=6h rather than
+an unbounded queue. Actual data determines completion within those caps.
+
+The new timed-run evaluator rejects fewer than five samples, failed runners,
+missing stats, thermal flags, foreign clients and clocks below a supplied floor.
+Nine raw-log/synthetic-invalid checks pass; power-cap alone remains allowed.
+The A/A HOLD path was tested with separate HOLD-AA-TEST markers: acknowledged,
+released/reacquired the lock and cleaned test files. Actual HOLD was untouched.
+Evidence: artifacts checks/evaluate-run/ and checks/hold-aa.json. These checks
+are protocol tests, not A/A or candidate performance results.
 
 Parent snapshot s0-parent-verify completed rc=0 with all 37 observations:
 22 model runners returned 0; correctness returned 0; all twelve production-diff
@@ -59,7 +136,7 @@ six models match static evidence, including context/sequence length 2560.
 Group-128 linear and packed 4-bit/group-32 embedding facts come from the actual
 serialized graph; those fields have no runtime constant methods in these PTEs.
 The owner resolved the initial metadata bootstrap question on 2026-10-15 00:32.
-No unresolved owner question remains; no repeat preflight review is requested.
+The former metadata question is resolved; the enabled-feature question above is now pending. No repeat preflight review is requested.
 
 New selectors: impl/sarc_dev/NvidiaWmmaMatrix.cpp plus one appended 4070ti block
 in Overrides.cpp. ET_VK_SARC_WMMA_PROFILE=4070ti-wmma-c01 through c11 requires
@@ -72,22 +149,18 @@ softmax control and decode exclusion. The original test_sarc_select is unchanged
 check.sh --no-build PASS (1240 release checks, 1921 dev checks). Evidence and the
 CPU fixture binary are retained under artifact checks/.
 
-The immutable build adapter now accepts an optional exact commit and a matrix
-build tag. The same pinned image/export/manifest/binary/golden protocol applies.
-Only one new intermediate build tree is created. Parent object directories were
-retired after preserving CMake flags/link provenance; installed libraries/headers,
-exact measured binaries, all SPIR-V modules, raw logs and source export remain.
-Binary hashes rechecked after cleanup. Evidence: build/parent-r1/
-retired-intermediates.json and retired-cmake-provenance.tar.gz. About 40 GiB is
-free. Original failed parent queue remains failed; recovered build is reused.
+Parent object directories were retired after preserving CMake flags/link
+provenance. Installed libraries/headers, exact measured binaries, all SPIR-V,
+raw logs and source export remain, and parent hashes rechecked after cleanup.
+Original failed parent queue remains failed; its recovered build is reused.
+About 36 GiB is free after the new build. No rebuild or deletion of measured
+binaries is planned.
 
-Next after build: inspect exact binaries, golden and compiled-module identity;
-then run interleaved control A/A on parent versus new build, both selecting the
-unchanged final control profile. Fix the device-wide clock floor/repeat count
-from that data and explain historical-reference differences before candidates.
-Finite candidate gates, six-cell matrix sessions, alternate-storage coverage,
+Next after control/A/A: inspect every raw validity decision and recompute the
+calibration. Explain any historical tuned-reference cell outside 3% before
+candidate GPU work. Finite candidate gates/sessions, alternate-storage coverage,
 uncertainty, margins and independent matrix review remain incomplete. No family-
-wide acceptance or measured candidate pass exists.
+wide acceptance or candidate pass exists. The enabled-feature question above is pending.
 
 Scope remains finite linear matrix only. No attention/decode/fp tuning, search,
 new bodies, release selection, promotion, push, PR, service or policy changes.
@@ -96,7 +169,6 @@ Private infrastructure/model paths and hardware policy stay in artifacts.
 ## Coordinator hold
 
 The prior HOLD dry run remains valid; actual HOLD was not created or removed.
-The next unit is one build, with the inherited lock, HOLD and foreign-client
-checks, and a two-hour build timeout. No timing runs concurrently. No >48-hour
-queue is launched. All later gates and resumable sessions check HOLD at unit
-boundaries. Reviewer performs no build/GPU work.
+Prepared units are control verify.sh (<=2h), then individual resumable A/A
+runs under the inherited lock; launch is blocked by the question above. The controller observes a JSON
+state file. No >48-hour queue is launched, and reviewer performs no build/GPU work.
