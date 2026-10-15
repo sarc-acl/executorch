@@ -36,6 +36,9 @@ struct PhysicalDevice final {
   VkPhysicalDeviceMemoryProperties memory_properties;
 
   // Additional features available from extensions
+#ifdef VK_KHR_vulkan_memory_model
+  VkPhysicalDeviceVulkanMemoryModelFeaturesKHR vulkan_memory_model_features;
+#endif /* VK_KHR_vulkan_memory_model */
 #ifdef VK_KHR_16bit_storage
   VkPhysicalDevice16BitStorageFeatures shader_16bit_storage;
 #endif /* VK_KHR_16bit_storage */
