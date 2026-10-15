@@ -1,6 +1,6 @@
 # Xe2 B70 finite matrix status
 
-2026-10-15 23:50 UTC. Actor: Claude (claude-opus-5-5). Protocol: owner decision 2026-10-15 23:30 UTC
+2026-10-15 23:30 UTC. Actor: Claude (claude-opus-5-5). Protocol: owner decision 2026-10-15 23:30 UTC
 (lean finish; deadline 2026-10-17 18:00 UTC). Earlier preparation and the earlier owner question about
 revised inputs are superseded by that decision; their records stay below in git history and under the
 artifact root.
