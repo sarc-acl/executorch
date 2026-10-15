@@ -48,10 +48,17 @@ stage() {  # stage <session> "<cand env>"
 verify() {  # verify <session> "<env>"
   local S=$A/stage/$1
   [[ -f $S/verify.done ]] && return 0
-  rm -rf "$S/verify"
-  env $2 bash "$T/hold.sh" run "verify.sh $1" bash "$ET/sarc/tools/verify.sh" --dir "$S" --lock $LOCK \
-    --models 1b,3b,8b --schemes 4w,8da4w --pdiff --out verify > "$S/verify.out" 2>&1
-  echo "VERIFY_DONE rc=$?" >> "$S/verify.out"; touch "$S/verify.done"
+  local rc i
+  for i in 1 2 3 4 5 6 7 8; do  # verify.sh exits 75 when the gpu-lab lock stays busy for 15 min
+    rm -rf "$S/verify"
+    env $2 bash "$T/hold.sh" run "verify.sh $1" bash "$ET/sarc/tools/verify.sh" --dir "$S" --lock $LOCK \
+      --models 1b,3b,8b --schemes 4w,8da4w --pdiff --out verify > "$S/verify.out" 2>&1
+    rc=$?; [[ $rc == 75 ]] || break
+    mv "$S/verify.out" "$S/verify.out.lockbusy-$i"
+  done
+  echo "VERIFY_DONE rc=$rc" >> "$S/verify.out"
+  [[ $rc == 0 && -f $S/verify/done.txt ]] || { UNIT="$1 verify rc=$rc"; exit 1; }
+  touch "$S/verify.done"
 }
 session() {  # session <session> <clkmin> <candidate label>
   local S=$A/stage/$1 t0=$SECONDS
@@ -102,6 +109,7 @@ for c in "${CANDS[@]}"; do
     echo "REJECTED (production diff failed; not timed)" > "$S/verdict.txt"
   else
     session "$c" "$FLOOR" "$c"
+    [[ -f $S/session.done ]] || { UNIT="$c session incomplete"; exit 1; }
     python3 "$T/summarize.py" "$S/raw" "$S/verify.out" "$A/stage/ctrl-verify/verify.out" "$S/summary.json" > "$S/summary.txt" 2>&1
     python3 - "$S/summary.json" > "$S/verdict.txt" <<'PY'
 import json, sys
