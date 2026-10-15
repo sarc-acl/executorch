@@ -116,6 +116,58 @@ case("Orin orin-refine1 error tables with near-tie logits borrowed from the B580
      "orin refine1 errors + near-tie logits", CPU_REF_CHECK_8B, os.path.join(T, "b580-check-P.json"), os.path.join(T, "b580-check-C.json"),
      oe, ne, must=[r"reason: 3b_head_config_s2048: maximum error larger than the old arm's \(0\.00157 > 0\.001408\)"])
 
+# --- the output shape of a test_llama_microbench built from dev/1.5 6178971845 ---------------------------------------
+# Every case prints two fp32 [sdpa-error] lines (l. 2271 `max_abs=`, %g; l. 2326 `elements=`, %.4e), with
+# ET_VK_SDPA_ERROR_REPORT=1 a third (l. 2395 `n=`, fp64 reference) except for 4070 Ti-style fused cases, whose
+# verdict block (l. 2341) returns first; then [sdpa-kernels] and one [sdpa-correctness] line. No such log is
+# committed (it needs a GPU), so the logs below are written in that shape from the Orin's recorded numbers
+# (sdpa-error1/stock.txt and refine1.txt): the reader must pick one format, not count lines.
+def orin_vals(path):
+    v = {}
+    for l in open(path):
+        m = re.match(r"\[sdpa-error\] (\S+) max_abs=(\S+) rms=(\S+)", l)
+        if m:
+            v[m[1]] = (float(m[3]), float(m[2]))
+    return v
+
+
+def merged_log(name, vals, fused=False, report=False, passes=1, skew_b=1.0):
+    q = {"1b": (32, 8, 64), "3b": (24, 8, 128), "8b": (32, 8, 128)}
+    out = ["DEVICE,stub (shape of a 6178971845 binary)"]
+    for _ in range(passes):
+        for c, (rms, mx) in vals.items():
+            qh, kvh, d = q.get(c[:2], (2, 1, 64))
+            n = 2048 * qh * d
+            out.append(f"[sdpa-error] {c} max_abs={mx:g} rms={rms:g} max_abs_ref=0.998757")
+            out.append(f"[sdpa-error] {c} elements={n} rms_err={rms * skew_b:.4e} max_abs_err={mx:.4e} ref_rms=3.7698e-02")
+            corr = f"[sdpa-correctness] {c} S=2048 input_pos=0 D={d} Q_H={qh} KV_H={kvh} qk_coopmat=yes av_coopmat=yes mismatches=0/{n} PASSED"
+            if fused:
+                out.append(f"[sdpa-kernels] {c} qk=? softmax=? av=? fused=sarc_sdpa_fused_x no_mask_fill=no pairing=ok")
+                out.append(corr.replace("qk_coopmat=yes av_coopmat=yes", "qk_coopmat=NO av_coopmat=NO"))
+            else:
+                if report:  # fp64 reference line: deliberately different values, it must not be read
+                    out.append(f"[sdpa-error] {c} n={n} rms={rms / 2:.6e} max={mx / 2:.6e} ref_rms=3.769800e-02")
+                out.append(f"[sdpa-kernels] {c} qk=sarc_sdpa_qk_x softmax=sarc_sdpa_attn_weights_softmax av=sarc_sdpa_av_x fused=? no_mask_fill=yes pairing=ok")
+                out.append(corr)
+        out.append("[sdpa-correctness] tier=full cases_run=4")
+    p = os.path.join(T, name + ".log")
+    open(p, "w").write("\n".join(out) + "\n")
+    return p
+
+
+ov, nv = orin_vals(oe), orin_vals(ne)
+case("merged-binary shape: Orin numbers, old with ET_VK_SDPA_ERROR_REPORT=1 (3 lines), new fused (2 lines), 3 passes",
+     "REJECT", "merged shape, orin refine1 numbers", CPU_REF_CHECK_8B, os.path.join(T, "b580-check-P.json"),
+     os.path.join(T, "b580-check-C.json"), merged_log("m-old", ov, report=True), merged_log("m-new", nv, fused=True, passes=3),
+     must=[r"format A", r"reason: 3b_head_config_s2048: maximum error larger than the old arm's \(0\.00157 > 0\.001408\)",
+           r"1b_head_config_s2048 \(fp32 ref\): rms 8\.547e-05 -> 3\.485e-05"])
+case("merged-binary shape: same numbers in both arms (not larger), new fused", "ACCEPT", "merged shape, equal errors",
+     CPU_REF_CHECK_8B, os.path.join(T, "b580-check-P.json"), os.path.join(T, "b580-check-C.json"),
+     merged_log("m-eq-old", ov, report=True), merged_log("m-eq-new", ov, fused=True), must=[r"format A"])
+case("merged-binary shape: the two fp32 lines of one log disagree", "REJECT", "merged shape, A/B disagree",
+     CPU_REF_CHECK_8B, os.path.join(T, "b580-check-P.json"), os.path.join(T, "b580-check-C.json"),
+     merged_log("m-dis-old", ov), merged_log("m-dis-new", ov, skew_b=1.5), must=[r"two fp32 \[sdpa-error\] lines disagree on rms"])
+
 # --- synthetic -----------------------------------------------------------------------------------------------------
 def f32(name, vals):
     p = os.path.join(T, name + ".f32")

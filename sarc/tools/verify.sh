@@ -90,7 +90,7 @@ tok() { grep -o '"prefill_token_per_sec":[0-9.]*' "$O/$1" | head -1 | cut -d: -f
 # Compare generated text only: drop runtime logs, stats and the [sarc_dev] banner.
 same() { cmp -s <(grep -v 'PyTorchObserver\|^[IWE] \|^\[sarc_dev\]' "$O/$1") <(grep -v 'PyTorchObserver\|^[IWE] \|^\[sarc_dev\]' "$O/$2"); }
 UNALIGNED=$(ls r*.txt 2>/dev/null | head -1)
-mkdir -p "$O/tie"; : > "$O/tie/accepted.txt"
+mkdir -p "$O/tie"; : > "$O/tie/accepted.txt"; rm -f "$O"/tie/sdpa-*.log  # never reuse an older binary's errors
 # tie_stage <model> <scheme> <check|unaligned> <pte>: the near-tie stage for one
 # DIFFER item, old arm = tiled, new arm = default. 0 = TIE_FLIP_ACCEPTED.
 tie_stage() {

@@ -65,47 +65,67 @@ def top(vals, n):
 
 
 # ---------------------------------------------------------------- errors against the fp32 reference
-# Raw log line formats of test_llama_microbench, in order of preference. A and B are the same fp32 reference
-# (A at full printed precision); C is the 780M's fp64 reference from the fp16 inputs (ET_VK_SDPA_ERROR_REPORT=1).
-RAW = (
-    ("fp32", re.compile(r"\[sdpa-error\] (\S+) max_abs=(\S+) rms=(\S+) max_abs_ref="), lambda m: (m[3], m[2])),
-    ("fp32", re.compile(r"\[sdpa-error\] (\S+) elements=\d+ rms_err=(\S+) max_abs_err=(\S+)"), lambda m: (m[2], m[3])),
-    ("fp64-of-fp16-inputs", re.compile(r"\[sdpa-error\] (\S+) n=\d+ rms=(\S+) max=(\S+)"), lambda m: (m[2], m[3])),
-)
+# Raw [sdpa-error] line formats of test_llama_microbench. A binary built from dev/1.5 6178971845 prints, for EVERY
+# case (fused or not), both A (4070 Ti block, full printed precision) and B (Intel block, 5 significant digits);
+# both are the same numbers against the same fp32 CPU reference (sdpa_reference). C is the 780M's fp64 reference
+# computed from the fp16 inputs, printed only with ET_VK_SDPA_ERROR_REPORT=1 and never for the 4070 Ti-style fused
+# cases (their verdict block returns first). One format is chosen per log, explicitly: A if the log has any A line,
+# else B (logs of the Intel campaigns, older binaries), else C (780M logs). Lines are matched by format, never
+# counted; several passes of one case keep the largest value.
+RAW = {
+    "A": ("fp32", re.compile(r"\[sdpa-error\] (\S+) max_abs=(\S+) rms=(\S+) max_abs_ref="), lambda m: (m[3], m[2])),
+    "B": ("fp32", re.compile(r"\[sdpa-error\] (\S+) elements=\d+ rms_err=(\S+) max_abs_err=(\S+)"), lambda m: (m[2], m[3])),
+    "C": ("fp64-of-fp16-inputs", re.compile(r"\[sdpa-error\] (\S+) n=\d+ rms=(\S+) max=(\S+)"), lambda m: (m[2], m[3])),
+}
+RAW_ORDER = ("A", "B", "C")
+AB_REL_TOL = 1e-3  # A and B print the same values (B rounded to 5 significant digits)
 MISMATCH = re.compile(r"\[sdpa-correctness\] (\S+) S=.*mismatches=(\d+)/(\d+)")
 
 
 def load_errors(spec):
-    """-> {case: {format index: (rms, max)}}, {case: mismatches}; None when the file does not exist."""
+    """-> dict(format=<A|B|C|table name>, reference=<fp32|fp64-of-fp16-inputs>, err={case: (rms, max)},
+    mis={case: mismatches}, problems=[...]); None when the file does not exist."""
     path, _, arm = spec.partition("#")
     if not os.path.exists(path):
         return None
     text = open(path, errors="replace").read()
-    err, mis = {}, {}
     head = text.split("\n", 1)[0]
+    d = dict(err={}, mis={}, problems=[])
     if head.startswith("case,elements,ref_rms,arm,"):  # Intel sdpa_error.py table
+        d.update(format="sdpa_error.py table", reference="fp32")
         for r in csv.DictReader(l for l in text.splitlines() if "," in l):
             if r.get("arm") == arm and r.get("rms_err") not in (None, "", "missing"):
-                err.setdefault(r["case"], {})[1] = (float(r["rms_err"]), float(r["max_abs_err"]))
+                d["err"][r["case"]] = (float(r["rms_err"]), float(r["max_abs_err"]))
                 if r.get("mismatches", "").isdigit():
-                    mis[r["case"]] = int(r["mismatches"])
+                    d["mis"][r["case"]] = int(r["mismatches"])
     elif head.startswith("tier,case,elements,ref_rms,parent_rms,cand_rms"):  # 780M sdpa_error_table.py
         if arm not in ("parent", "cand"):
             raise SystemExit(f"{spec}: arm must be parent or cand")
+        d.update(format="780M sdpa_error_table.py table", reference="fp64-of-fp16-inputs")
         for r in csv.DictReader(text.splitlines()):
-            err.setdefault(r["case"], {})[2] = (float(r[arm + "_rms"]), float(r[arm + "_max"]))
+            d["err"][r["case"]] = (float(r[arm + "_rms"]), float(r[arm + "_max"]))
     elif re.fullmatch(r"[a-z_0-9]+(,[a-z_0-9-]+)+", head.strip()):
         raise SystemExit(f"{spec}: unknown table format")
     else:
+        per = {k: {} for k in RAW}
         for line in text.splitlines():
-            for k, (_, rx, get) in enumerate(RAW):
+            for k, (_, rx, get) in RAW.items():
                 m = rx.match(line)
                 if m:
-                    err.setdefault(m[1], {})[k] = tuple(float(x) for x in get(m))
+                    r, x = (float(v) for v in get(m))
+                    o = per[k].get(m[1], (r, x))
+                    per[k][m[1]] = (max(o[0], r), max(o[1], x))
             m = MISMATCH.match(line)
-            if m:  # a log may hold several passes: keep the largest count
-                mis[m[1]] = max(mis.get(m[1], 0), int(m[2]))
-    return err, mis
+            if m:  # one line per case and pass: keep the largest count
+                d["mis"][m[1]] = max(d["mis"].get(m[1], 0), int(m[2]))
+        k = next((k for k in RAW_ORDER if per[k]), None)
+        d.update(format=f"raw log, [sdpa-error] format {k}" if k else "raw log without [sdpa-error] lines",
+                 reference=RAW[k][0] if k else None, err=per[k] if k else {})
+        for c in sorted(set(per["A"]) & set(per["B"])):  # the two fp32 lines of one binary must agree
+            for a, b, what in zip(per["A"][c], per["B"][c], ("rms", "max")):
+                if abs(a - b) > AB_REL_TOL * max(abs(a), abs(b), 1e-30):
+                    d["problems"].append(f"{c}: the two fp32 [sdpa-error] lines disagree on {what} ({a:.6g} vs {b:.6g}) in {path}")
+    return d
 
 
 # ---------------------------------------------------------------- decide
@@ -144,17 +164,19 @@ def decide(item, ref_p, old_p, new_p, old_e, new_e):
     if en is None:
         why.append(f"no error table for the new arm ({new_e})")
     if eo is not None and en is not None:
+        out["error_sources"] = {"old": [old_e, eo["format"]], "new": [new_e, en["format"]]}
+        why += eo["problems"] + en["problems"]
+        if eo["reference"] != en["reference"] or eo["reference"] is None:
+            why.append(f"the two arms' errors are not against the same reference ({eo['format']} / {en['format']})")
         rows = []
         for c in PRODUCTION_CASES:
-            fo, fn = eo[0].get(c, {}), en[0].get(c, {})
-            k = next((k for k in range(len(RAW)) if k in fo and k in fn), None)
-            if k is None:
+            if c not in eo["err"] or c not in en["err"]:
                 why.append(f"{c}: not measured in both arms")
                 continue
-            (ro, mo), (rn, mn) = fo[k], fn[k]
+            (ro, mo), (rn, mn) = eo["err"][c], en["err"][c]
             rok, mok = rn <= ro, mn <= mo
-            mis = en[1].get(c)
-            rows.append({"case": c, "reference": RAW[k][0], "old_rms": ro, "new_rms": rn, "old_max": mo, "new_max": mn,
+            mis = en["mis"].get(c)
+            rows.append({"case": c, "reference": en["reference"], "old_rms": ro, "new_rms": rn, "old_max": mo, "new_max": mn,
                          "rms_not_larger": rok, "max_not_larger": mok, "new_mismatches": mis})
             if not rok:
                 why.append(f"{c}: rms error larger than the old arm's ({rn:.4g} > {ro:.4g})")
@@ -182,6 +204,8 @@ def render(d):
                      f"in the reference {'%.4f' % ir if ir is not None else 'outside the recorded top-k'}")
     if d.get("max_abs_logit_diff_on_common_ids") is not None:
         s.append(f"  largest |logit difference| old vs new on the recorded ids: {d['max_abs_logit_diff_on_common_ids']:.4f}")
+    for n, (p, f) in d.get("error_sources", {}).items():
+        s.append(f"  {n} errors: {f} ({p})")
     for e in d.get("errors", []):
         s.append(f"  {e['case']} ({e['reference']} ref): rms {e['old_rms']:.4g} -> {e['new_rms']:.4g} "
                  f"[{'ok' if e['rms_not_larger'] else 'LARGER'}], max {e['old_max']:.4g} -> {e['new_max']:.4g} "
