@@ -4,6 +4,10 @@
 
 using namespace vkcompute::sarc;
 
+namespace vkcompute::sarc {
+const char* sdpa_fused_variants_b580();
+}
+
 int main() {
   DeviceInfo device;
   device.name = "intel(r) arc(tm) b580 graphics (bmg g21)";
@@ -44,4 +48,31 @@ int main() {
       }
     }
   }
+  for (int64_t head : {64, 128}) {
+    for (Op op : {Op::kSdpaQk, Op::kSdpaAv}) {
+      ShapeInfo shape;
+      shape.op = op;
+      shape.M = 2048;
+      shape.N = op == Op::kSdpaQk ? 2048 : head;
+      shape.K = op == Op::kSdpaQk ? head : 2048;
+      shape.group_size = 128;
+      shape.half = true;
+      shape.input = Storage::kBuffer;
+      shape.output = Storage::kBuffer;
+      shape.weight = Storage::kBuffer;
+      const auto choice = select(device, shape);
+      if (!choice) {
+        return 2;
+      }
+      std::cout << (op == Op::kSdpaQk ? "qk" : "av") << ",buffer,"
+                << shape.M << ',' << shape.K << ',' << shape.N << ','
+                << choice->kernel_base << '\n';
+    }
+  }
+  std::cerr << "softmax="
+            << (get_override().softmax_variant == nullptr
+                    ? "default"
+                    : get_override().softmax_variant)
+            << '\n';
+  std::cerr << "fused=" << sdpa_fused_variants_b580() << '\n';
 }

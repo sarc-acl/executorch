@@ -10,7 +10,7 @@ The finite manifest contains 12 storage-specific candidates, seven kernel bases.
 
 Five valid fresh-process runs per arm/cell, alternating control first on odd repeats,
 candidate first on even repeats; up to three replacement pairs. All six cells in each
-session. Rates are valid-run medians, with spreads and paired bootstrap uncertainty
+session. Rates are valid-run medians, with spreads and bootstrap uncertainty
 reported (10,000 unpaired bootstrap resamples, seed 58020261014, 95% interval).
 Use the first five valid runs per arm in CSV order; preserve every extra valid/invalid
 row. Noise band ±2%; baseline discrepancy above 3% per cell requires explanation
@@ -31,7 +31,8 @@ Context is 2560 in all six serialized constant methods. Serialized linear argume
 confirm group 128; q4 embedding op and group 32 are present. Prefill projection IO is
 texture3d, width packed. The buffer output projection is M=1, outside this matrix.
 Buffer candidate variants remain in production-diff coverage, never represented as
-measured prefill candidates. Exact compiled allocation and actual dispatch remain pending.
+measured prefill candidates. Parent SPIR-V declarations have now been checked;
+whole-model allocation legality is BLOCKED and runtime dispatch remains unobserved.
 
 ## Profiles and attention control
 
@@ -104,3 +105,36 @@ candidate in candidate-before-row suffix lookup. `dq-table` now has attention
 preferences only, so its linear choice is the original table choice. No new exact-name
 selection API or kernel body is introduced. A CPU dispatch-name audit will verify every
 profile against the pinned manifest before GPU candidates.
+
+## Recovery allocation and CPU evidence, 2026-10-15
+
+The preserved parent build was reused. Its five recorded binary/library hashes and
+53 shipped SPIR-V variants still match. Twelve candidate modules have declarations
+equal to their inventory totals and within the queried shared limit; these are
+module declaration bounds, not a driver allocation measurement.
+
+The actual image creation path confirms the old 8B width conflict and also exposes
+a height conflict in the RoPE prepack outputs of every model. Pure extent functions
+linked from the existing parent archive reproduce the violating extents. All six
+whole-model cells are therefore BLOCKED; no partial legal model subset exists with
+these inputs. BLOCKER.md gives exact source references, query matching, counts and
+the conforming-resolution dependency. No model GPU work or parent rebuild occurred.
+
+The CPU constant-method helper executed nine methods per model, with all 60 outputs
+matching static metadata. Context 2560 is runtime-verified; group/embedding metadata
+is validated from serialized graph arguments because no such constant methods exist.
+
+The CPU selector audit contains 432 linear rows and 36 fallback attention rows across
+control, six candidates and two identities. It reaches every one of the 12 pinned
+inventory shader names in the intended storage. Identity profiles equal control;
+single-scheme candidates leave the other scheme unchanged. Every arm has default
+softmax and fused variants `d64_t16x64s16m8g4roj,d128_t16x128s16m8g8oj`.
+`results/selector-dispatch.csv` records source selection, not observed GPU dispatch.
+`results/cell-coverage.csv` records zero executed runs for every blocked cell.
+
+Small CPU helpers use the host compiler and existing parent archives; command arrays,
+source/archive/binary hashes, compiler identity and outputs are private artifacts.
+They neither rebuild kernels nor construct model resources. Failed helper compilation
+diagnostics are retained. There are no timing rows, calibration, gates, margins,
+accepted candidates or family acceptance. Existing GPU orchestration still requires
+exact-run validation if a separately authorized conforming resolution enables launch.
