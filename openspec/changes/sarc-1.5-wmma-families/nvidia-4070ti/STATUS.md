@@ -1,49 +1,58 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-15 04:01 UTC
+Updated: 2026-10-15 04:23 UTC
 
-Stage: WAITING OWNER — REQUIRED LOGICAL-DEVICE FEATURE ABSENT.
-Running: none. No control/A/A or candidate queue was launched. Existing build
-and snapshot jobs are finished; the inherited device lock has no campaign holder.
-The 03:57 recovery instruction was read in full. Archive and all 18 reviewed
-input hashes were reconfirmed; retained parent-r1/matrix-r1 binary hashes match.
-The unfinished control/A/A orchestration is preserved and committed, but blocked.
+Stage: FEATURE FIX APPROVED / REPLACEMENT BUILDS PREPARED.
+Running next: detached feature-builds-r1, two sequential builds only, bounded to
+four hours of build commands plus export/check overhead. Controller state is
+artifact jobs/feature-builds-r1/state.json. No model or GPU execution is queued.
+The prior build/snapshot jobs are finished. No campaign lock holder or GPU job
+was active at recovery. Actual HOLD was not created or removed.
 
-At the coordinator's 03:58 reminder, exact module inspection confirmed all eleven
-NVIDIA inventory modules declare VulkanMemoryModel (capability 5345) and use
-OpMemoryModel Logical Vulkan. This holds for all 44 combinations of parent-r1 /
-matrix-r1 and llama / backend. None declares VulkanMemoryModelDeviceScope.
-Pinned Adapter.cpp never enables the memory-model feature in VkDeviceCreateInfo;
-Device.cpp does not query it. Both exported files match their git objects.
-A fresh read-only physical-device query reports support for all three memory-model
-features. Support and successful execution do not establish enabled-feature proof.
-The runtime requests Vulkan 1.1, so a narrow fix must request the supported
-VK_KHR_vulkan_memory_model extension and explicitly enable vulkanMemoryModel.
+The owner decision of 2026-10-15 04:08 UTC resolves the memory-model scope
+question. Supplied patch SHA256
+5434b8e5c94ba8b18fb11e502577054bc3dea3af4e94263e6470113e316938a9
+matches. Applied exactly the three-file Orin change from
+cbb7df9b6a7a605d28192fbc2a8b62c6f3611d9c, after reviewing extension/feature
+query and device-chain handling. No selector or shader was imported from Orin.
+Release-zone files are Adapter.cpp, Device.cpp and Device.h only. The fix queries
+the advertised VK_KHR_vulkan_memory_model extension, requests it only with
+supported vulkanMemoryModel, and enables only that feature. Unsupported paths
+keep the feature false/absent; DeviceScope and visibility-chain flags are zero.
+Source feature enablement is committed as 8ebe66c2b. Runtime enabled-chain proof
+and all replacement correctness/performance evidence remain pending.
 
-Evidence: results/memory-model-prerequisite.json; private artifacts
-checks/memory-model/audit.json, audit.py, proposed-adapter.patch, and
-preflight/memory-model-supported.json. The draft one-file Adapter.cpp patch
-passes git apply --check; it is NOT applied, compiled or accepted. It requests
-the extension, queries support and appends only the required enabled feature;
-DeviceScope and availability/visibility-chain features stay disabled.
+Control source is 5f02679b9a20d0b43ed44ea42cb1d779e1f269ac: original base plus
+exactly the approved three files, retained by a private local git ref. Candidate
+source is this branch's next committed orchestration state, with the same runtime
+source bytes plus the existing dev-only selectors. Planned immutable tags are
+parent-mm-r1 and matrix-mm-r1. results/memory-model-fix.json records provenance.
+Inventory archive and all 18 file hashes reconfirmed unchanged before work.
 
-The previous parent snapshot remains raw execution evidence, with its original
-statuses preserved. It is NOT a conformant correctness gate or proof of this
-prerequisite. Earlier module/shared-memory and physical-feature evidence was
-incomplete on enabled features. No performance medians or margins exist.
+One intermediate build tree at a time: the queue preserves configuration/link
+provenance and object hashes, then retires only superseded CMakeFiles directories
+from matrix-r1. After the new control build it does the same before building the
+selector arm. Binaries, installed libraries/headers, SPIR-V, source exports,
+logs and failed job records stay retained; exact binaries are rehashed before
+and after retirement. Initial free space is about 36 GiB; the existing 32 GiB
+pre-build check remains. No threshold or tool/golden edit is used to make space.
+Each new build gets its recursive export, pinned image/compiler and binary hashes,
+both unmodified golden checks, eleven-module shared-declaration audit and
+byte comparison of every SPIR-V module against the retained parent.
 
-## Decision needed from the owner
+Unmodified check.sh --no-build reports its expected zone failures for Device.cpp
+and Device.h, which are covered exactly by the new owner decision; no tool or
+HOOKS change masks them. Selector results and raw check output are retained
+in artifact checks/check-memory-model-no-build.txt. This is not a plain PASS.
 
-Approve the concrete narrow release-zone exception in
-checks/memory-model/proposed-adapter.patch (Adapter.cpp only), and fresh exact
-exported builds of BOTH control and selector arms with that same feature fix,
-followed by replacement parent/control snapshots, A/A and the finite matrix?
-The stage currently confines changes to dev/run paths and the 03:57 decision
-explicitly grants no release-code scope change; Orin's approval is not extended
-by analogy. Existing binaries/logs/failed jobs remain preserved. No gate, shader,
-golden, tolerance, host policy or measurement threshold change is proposed.
-This is one recorded question. Independent recovery work is finished; parked
-until CAMPAIGN.md changes, with no further builds, GPU jobs or repeated review.
+The old parent snapshot remains raw execution observations and is NOT a
+conformant gate or enabled-feature proof. results/memory-model-prerequisite.json
+records that old-build finding; results/memory-model-fix.json records its source
+remedy. Following successful builds, execute the CPU metadata helper against the
+new control runtime, obtain exact enabled-feature evidence, replacement snapshots
+and A/A, then explain historical-baseline differences before candidate work.
+There are no timing medians, calibrated floor, candidate passes or margins yet.
+No owner question is pending. No push, PR, new shader, service or policy change.
 
 ## Retained preparation and historical observations
 
@@ -136,7 +145,7 @@ six models match static evidence, including context/sequence length 2560.
 Group-128 linear and packed 4-bit/group-32 embedding facts come from the actual
 serialized graph; those fields have no runtime constant methods in these PTEs.
 The owner resolved the initial metadata bootstrap question on 2026-10-15 00:32.
-The former metadata question is resolved; the enabled-feature question above is now pending. No repeat preflight review is requested.
+Both metadata and feature-scope questions are resolved. Replacement builds/gates remain pending; no repeat preflight review is requested.
 
 New selectors: impl/sarc_dev/NvidiaWmmaMatrix.cpp plus one appended 4070ti block
 in Overrides.cpp. ET_VK_SARC_WMMA_PROFILE=4070ti-wmma-c01 through c11 requires
@@ -153,14 +162,14 @@ Parent object directories were retired after preserving CMake flags/link
 provenance. Installed libraries/headers, exact measured binaries, all SPIR-V,
 raw logs and source export remain, and parent hashes rechecked after cleanup.
 Original failed parent queue remains failed; its recovered build is reused.
-About 36 GiB is free after the new build. No rebuild or deletion of measured
-binaries is planned.
+The original builds remain preserved. The owner-approved replacement builds
+are described above; no measured binary is deleted.
 
 Next after control/A/A: inspect every raw validity decision and recompute the
 calibration. Explain any historical tuned-reference cell outside 3% before
 candidate GPU work. Finite candidate gates/sessions, alternate-storage coverage,
 uncertainty, margins and independent matrix review remain incomplete. No family-
-wide acceptance or candidate pass exists. The enabled-feature question above is pending.
+wide acceptance or candidate pass exists. Replacement evidence is pending; no owner question remains.
 
 Scope remains finite linear matrix only. No attention/decode/fp tuning, search,
 new bodies, release selection, promotion, push, PR, service or policy changes.
@@ -170,5 +179,5 @@ Private infrastructure/model paths and hardware policy stay in artifacts.
 
 The prior HOLD dry run remains valid; actual HOLD was not created or removed.
 Prepared units are control verify.sh (<=2h), then individual resumable A/A
-runs under the inherited lock; launch is blocked by the question above. The controller observes a JSON
+runs under the inherited lock after the feature-enabled replacement builds. The controller observes a JSON
 state file. No >48-hour queue is launched, and reviewer performs no build/GPU work.

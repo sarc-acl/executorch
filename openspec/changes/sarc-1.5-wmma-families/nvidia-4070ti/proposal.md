@@ -343,3 +343,41 @@ after each of its first three runs, preserving a failed cleanup as an invalid
 CSV row before stopping. No sampler child was observed or manufactured here;
 this is a future cleanup guard. Its thresholds are unchanged. Prepared tools
 remain blocked pending the owner decision, with no automatic build or launch.
+
+
+## Owner-approved shared memory-model fix (2026-10-15 04:08 UTC)
+
+The owner approved reusing the three-file Orin fix, source
+cbb7df9b6a7a605d28192fbc2a8b62c6f3611d9c. Supplied patch SHA256 is
+5434b8e5c94ba8b18fb11e502577054bc3dea3af4e94263e6470113e316938a9;
+its 41 added lines apply unchanged to Adapter.cpp, Device.cpp and Device.h.
+This supersedes the unapplied one-file draft. The extension is queried before
+adding the memory-model feature to physical-device queries, requested only when
+the feature is supported, and only vulkanMemoryModel is enabled in the logical
+chain. Aggregate initialization leaves the other two feature booleans false.
+On missing-extension or unsupported-feature paths it remains absent/false.
+The pre-1.1 fallback also leaves the new initialized field false; the current
+runtime requests Vulkan 1.1. No shader or dispatch rule changes.
+
+Feature commit 8ebe66c2b applies the exact supplied patch to this branch.
+The separate control commit 5f02679b9a20d0b43ed44ea42cb1d779e1f269ac is the
+original base plus only those three files; it is preserved under the local
+refs/wmma/nvidia-4070ti/control-memory-model ref. All three source bytes match
+between control and selectors. Both replacement builds use the same pinned
+container/compiler and immutable recursive export protocol. Neither old
+snapshot behavior nor the new source inspection claims a completed gate.
+
+The unmodified check.sh --no-build flags Device.cpp and Device.h outside its
+existing hook list. Report those owner-authorized exceptions as raw check
+failures; do not alter sarc/tools, HOOKS, goldens or tolerances to suppress them.
+Selector checks remain applicable. Build/golden/metadata/actual enabled-feature
+and replacement snapshot evidence precede calibration and candidate sessions.
+
+New tools/rebuild_memory_model.py queues two sequential fixed builds,
+parent-mm-r1 and matrix-mm-r1, with no model/GPU execution. It retires only
+superseded CMakeFiles after preserving non-object configuration and all removed
+file hashes, and rechecks retained binary hashes before/after removal. It keeps
+one active intermediate tree and the existing disk guard. Each build gets a
+compiled shared-array audit plus full SPIR-V identity against the old parent,
+as well as unmodified golden checks. No threshold changes or source patch in
+an export is permitted. Existing raw evidence and failure records are retained.
