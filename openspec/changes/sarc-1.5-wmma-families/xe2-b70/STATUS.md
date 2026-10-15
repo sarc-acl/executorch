@@ -1,10 +1,30 @@
 # Xe2 B70 finite matrix status
 
-2026-10-14 19:51 UTC. Actor: Codex. Stage: prerequisite validation. Exported parent build wmma-b70-parent-01
-completed (normal and traced), shipped golden PASS. No GPU gate or timing job
-has started. Exported topic build wmma-b70-topic-01 is running detached from 841db81df,
-before any GPU session. Parent build and runtime metadata are complete.
-Preregistration/selectors committed locally at b6bce5616; no push or PR.
+2026-10-15 00:40 UTC. Actor: Codex. Recovery stage: preserved-build validation
+complete; parent snapshot and A/A queue prepared. No GPU gate or timing job has
+started. Parent `wmma-b70-parent-01` and topic `wmma-b70-topic-02` are complete,
+including the topic identity and CPU metadata helpers. Topic source is committed
+`2fcc1c7e96a7774d80b66095aadb79700d3b48e3`; no rebuild is needed.
+Recorded binary hashes and the topic recursive export-manifest hash match.
+Topic shipped-SPIR-V PASS (53 variants); all 12 compiled module capacities agree
+with the reviewed declarations. Exported CPU helper runtime metadata is complete.
+No campaign processes, held device locks, HOLD or stop markers were present on
+recovery. No readable foreign client was found. Hardware policy is unchanged.
+
+The archive and all 18 input hashes were rechecked against INPUT.md's exact
+snapshot. Previous preparation and source review are reused. Recovery changes
+add atomic detached JSON status, baseline-only orchestration, sampler process
+counts after each run, the pending dispatch lock fix and stricter resume evidence.
+No candidate is declared passed; no measured medians or margins exist yet.
+
+Prepared detached queue: `baseline-01` (parent snapshot, topic gate, five-repeat
+six-cell A/A with both arms on the final profile). Its artifact-local JSON state
+will be `jobs/baseline-01.json`; the queue updates running/completed/failed even
+on a command failure. It stops for actor assessment before any candidate timing.
+A/A may require seven repeats by the preregistered rule. The actor must explain
+baseline deviations and A/A inconsistency before writing BASELINE_READY.
+The finite seven-profile matrix remains preregistered in proposal.md/profiles.json.
+There are no family-wide acceptance claims, pushes or PRs.
 
 Read the complete assembled campaign and final launch decision. Own branch starts at
 `617897184529ff180af491ee0d5d7de778cbb6c6`; clean checkout at initial inspection.
@@ -22,9 +42,8 @@ Pinned submodule initialization and check.sh --no-build passed. Seven dev-only
 profiles map the 12 input entries; buffer variants receive correctness coverage
 because supplied model prefill IO is texture3d. Independent source/preflight review and focused CPU profile checks passed.
 Isolated HOLD dry test passed; historical outer gate/control/trace wrappers are
-inactive because their extra paths do not meet this bounded task. Next: commit
-preregistration, export and build parent/topic, check exact modules and
-runtime metadata before any measurement. No candidate is declared launch-ready yet.
+inactive because their extra paths do not meet this bounded task. Next: run the parent snapshot and A/A using the preserved exact builds,
+then assess baseline and calibration before candidates. No candidate is declared launch-ready yet.
 The finite matrix supersedes the historical two-small-gains stop rule under the
 2026-10-14 launch decision. Attention remains the final campaign configuration in
 both arms. No family acceptance is inferred from this member.

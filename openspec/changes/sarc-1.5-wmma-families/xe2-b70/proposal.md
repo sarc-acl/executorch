@@ -146,3 +146,23 @@ the parent SDK. Its preliminary output is retained but will not serve as final
 runtime-metadata evidence: the helper is rebuilt from an immutable topic export
 against that export's SDK before timing. No GPU measurement used the preliminary
 helper. The normal candidate build and its shaders have always used exact exports.
+
+
+Recovery on 2026-10-15 reuses the completed parent and topic-02 exact exports,
+normal/traced builds and exported helper binaries. No unchanged source is rebuilt.
+The run-local baseline_queue.sh prepares the parent snapshot, topic gate and
+five-repeat A/A only; an actor must assess its evidence before candidate launch.
+The detached job_runner.py publishes atomic queued/running/completed/failed JSON,
+records orchestration provenance separately from binary source commits, clears
+inherited ET_VK/ETVK controls and tags all descendants by ancestry. A signal stops
+only its own process group. e2e5.sh records the sampler process count after every
+run and stops on a leftover. The pending dispatch collector fix adds the inherited
+device lock, and the finite queue checks complete raw rows rather than a marker
+alone before skipping a prior result. Historical adapters and sarc/tools remain
+unchanged. These are protocol repairs under the 2026-10-15 recovery instruction.
+
+The parent/A/A queue is projected below 48 hours from the historical adapter
+workload and completed six-minute builds; it makes no candidate launch decision.
+Actual gate and session durations will set the finite-matrix projection before
+that queue is launched. No new timing threshold or historical acceptance exception
+is imported by the recovery.

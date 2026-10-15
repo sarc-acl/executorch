@@ -4,6 +4,8 @@ set -euo pipefail
 . "$(dirname "$(readlink -f "$0")")/host.sh"
 S=$A/stage/${1:?session}; TAG=${2:?build tag}
 gpu_begin excl "dispatch $1"
+exec 9>>"$HOME/.cache/gpu-lab/lock-$LOCK"
+flock -w 900 9 || exit 75
 [[ ! -e $A/DEVICE_LOST ]]
 FLATC=$A/build/$TAG/llama/third-party/flatc_ep/bin/flatc
 SCHEMA=$A/src/$TAG/executorch/devtools/etdump/etdump_schema_flatcc.fbs
@@ -23,7 +25,7 @@ for model in 1b 3b 8b; do
       guarded "$F.others" env "${ENVS[@]}" LD_LIBRARY_PATH=$B timeout 1800 "$B/llama_main" \
         --model_path "$PTE" --tokenizer_path "$XE2_MODEL_ROOT/$MD/original/tokenizer.model" \
         --prompt_file "$S/prompt_2048.txt" --max_new_tokens 1 --temperature 0 --warmup \
-        --etdump_path "$F.etdp" > "$F.log" 2>&1
+        --etdump_path "$F.etdp" > "$F.log" 2>&1 9>&-
       rc=$?
       set -e
       echo "$model,$scheme,$arm,$rc" >> "$D/rc.csv"

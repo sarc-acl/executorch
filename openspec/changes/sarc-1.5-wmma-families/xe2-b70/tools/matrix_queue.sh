@@ -3,7 +3,7 @@
 set -euo pipefail
 . "$(dirname "$(readlink -f "$0")")/host.sh"
 TAG=${1:?build tag}
-[[ -s $A/BASELINE_READY && -s $A/reps && -s $CLKMIN_FILE && ! -e $A/DEVICE_LOST ]]
+[[ -s $A/BASELINE_READY && -s $A/reps && -s $CLKMIN_FILE && ! -e $A/DEVICE_LOST && ! -e $A/QUEUE_BLOCKED ]]
 [[ -x $A/build/$TAG/identity/wmma_linear_identity ]]
 grep -qx BUILD_BOTH_OK "$A/build/$TAG.src.txt"
 PV=$A/stage/s0-parent-verify/verify.out
@@ -29,8 +29,25 @@ while IFS='|' read -r name scheme; do
   coordinator_hold "finite matrix $name"
   S=$A/stage/$name
   if [[ -f $S/matrix.done ]]; then
-    grep -qx 'COMPLETE' "$S/matrix.done"
-    [[ -s $S/evidence.json && -s $S/raw/runs.csv && -s $S/dispatch/dispatch.done ]]
+    python3 - "$S" "$(cat "$A/reps")" <<'PY_CHECK'
+import collections, csv, json, pathlib, sys
+s = pathlib.Path(sys.argv[1]); repeats = int(sys.argv[2])
+assert (s/'raw/done.txt').read_text().splitlines()[-1].strip() == 'E2E5_OK'
+text = (s/'raw/runs.csv').read_text(); assert text.endswith('\n')
+rows = list(csv.DictReader(text.splitlines()))
+assert all(None not in r and all(v is not None for v in r.values()) for r in rows)
+counts = collections.Counter((r['model'],r['scheme'],r['build']) for r in rows if r['log'].startswith('logs/prefill') and r['valid']=='1')
+assert all(counts[(m,q,b)]>=repeats for m in ('1b','3b','8b') for q in ('4w','8da4w') for b in ('parent','cand'))
+assert not json.loads((s/'evidence.json').read_text())['issues']
+assert (s/'verify.out').read_text().rstrip().endswith('VERIFY_DONE rc=0')
+assert (s/'identity.log').read_text().rstrip().endswith('LINEAR_IDENTITY_PASS')
+assert len(list(csv.reader((s/'identity.csv').open()))) == 24
+for m in ('1b','3b','8b'):
+    for q in ('4w','8da4w'):
+        for b in ('parent','cand'):
+            assert (s/f'dispatch/{m}-{q}-{b}.json').is_file()
+assert (s/'dispatch/dispatch.done').stat().st_size
+PY_CHECK
     status "SKIP_COMPLETE $name"
     continue
   fi

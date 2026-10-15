@@ -101,7 +101,7 @@ echo "unaligned prompt: ${UNAL:-MISSING} expected tokens $UNALTOK" >> "$O/env.tx
 CSV=$O/runs.csv
 [[ -f $CSV ]] || echo "gpu,host,model,scheme,build,rep,slot,tok_s,rc,temp_pre,temp_post,cool_s,clocks,others,utc,log,prompt_tokens,generated_tokens,prefill_ms,clk_n,clk_med_mhz,clk_min_mhz,throttled_n,power_avg_w,temp_max,valid,reason,fbusy_pct,fclients,ftop,gpolls,cached_pct,drm_after" > "$CSV"
 run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected tokens>
-  local m=$1 q=$2 b=$3 r=$4 s=$5 p=$6 tag=$7 want=$8 log t0 tp tq rc oth cs sp gp pc da
+  local m=$1 q=$2 b=$3 r=$4 s=$5 p=$6 tag=$7 want=$8 log t0 tp tq rc oth cs sp gp pc da sampler_count
   log="logs/$tag-$m-$q-$b-r$r.log"
   t0=$SECONDS; cool; cs=$((SECONDS - t0)); tp=$(gtemp); oth=$(others | tr ',' ';')
   if [[ -n $oth ]]; then foreign_wait "$tag $m $q $b r$r" || finish E2E5_ABORTED "other GPU process for 30 minutes before $tag $m $q $b r$r: $oth"; cool; tp=$(gtemp); fi
@@ -172,6 +172,9 @@ PY
   IFS=, read -r tok pt gt ms n cm cmin bm pw tmax valid reason fb fn ft < "$O/.row"
   echo "b70,$(hostname),$m,$q,$b,$r,$s,$tok,$rc,$tp,$tq,$cs,act_med=${cm}MHz,$oth,$(date -u +%FT%TZ),$log,$pt,$gt,$ms,$n,$cm,$cmin,$bm,$pw,$tmax,$valid,$reason,$fb,$fn,$ft,${gp:-0},$pc,$da" >> "$CSV"
   echo "$tag $m $q $b r$r slot$s tok_s=$tok ms=$ms rc=$rc T=$tp->$tq cool=${cs}s clk=$cm/$cmin MHz n=$n power_limited=$bm foreign_busy=${fb}% polls=${gp:-0} cached=${pc}% valid=$valid $reason"
+  sampler_count=$(ps -eo pid,ppid,args | awk -v script="$TOOLS/sampler.py" '$4 == script {n++} END {print n+0}')
+  echo "sampler_processes_after=$sampler_count" >> "$O/env.txt"
+  [[ $sampler_count == 0 ]] || finish E2E5_ABORTED 'sampler process remained after kill/wait; inspect before further launch'
 }
 # toklog <tag> <model> <scheme> <build>: log of the first run that completed on the expected prompt (clock and
 # throttle do not matter for a token comparison); empty if there is none.
