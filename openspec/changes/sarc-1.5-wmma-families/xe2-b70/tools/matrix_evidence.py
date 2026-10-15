@@ -31,11 +31,6 @@ if (stage / 'verify.out').exists():
     verify = (stage / 'verify.out').read_text()
     if not verify.rstrip().endswith('VERIFY_DONE rc=0'):
         issues.append('verify did not complete with rc0')
-    correctness = (stage / 'verify/correctness.log').read_text()
-    numeric = re.findall(r'^et_vk\.\S+\s+\S+.*\s(PASSED|FAILED)\s*$', correctness, re.M)
-    rank3 = re.findall(r'^\[rank3 batch=1\] .*correctness=(\w+)', correctness, re.M)
-    if not numeric or not rank3 or set(numeric + rank3) != {'PASSED'}:
-        issues.append('verify numeric/rank3 correctness is incomplete or failing')
     pdiff = re.findall(r'^pdiff .* rc=0 .*ALL PASSED', verify, re.M)
     if len(pdiff) != 12:
         issues.append('verify requires twelve passed production-diff cases')

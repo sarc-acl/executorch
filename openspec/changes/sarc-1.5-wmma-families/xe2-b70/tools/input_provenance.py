@@ -1,14 +1,31 @@
 #!/usr/bin/env python3
-"""Check the B70 admission record after the common revised-input bundle arrives."""
+"""Check the B70 input record: the original exported inputs (owner decision 2026-10-15 23:30 UTC) or an
+admitted revised-input bundle."""
 import argparse
 import hashlib
 import json
 from pathlib import Path
 
 
+def validate_files(record, model_root):
+    if Path(record['model_root']).resolve(strict=True) != model_root:
+        raise ValueError('Configured model root differs from recorded inputs')
+    for name, entry in record['files'].items():
+        path = model_root / name
+        if path.stat().st_size != entry['size_bytes']:
+            raise ValueError(f'Input size changed: {name}')
+        with path.open('rb') as handle:
+            digest = hashlib.file_digest(handle, 'sha256').hexdigest()
+        if digest != entry['sha256']:
+            raise ValueError(f'Input hash changed: {name}')
+    return record
+
+
 def validate(receipt, model_root):
     record = json.loads(receipt.read_text())
     model_root = model_root.resolve(strict=True)
+    if record['dataset_id'] == 'original-exported':
+        return validate_files(record, model_root)
     if record['status'] != 'READY_FOR_CORRECTNESS' or not record['dataset_id'].startswith('revised-'):
         raise ValueError('Revised inputs have not been admitted for correctness work')
     if Path(record['model_root']).resolve(strict=True) != model_root:
@@ -23,14 +40,9 @@ def validate(receipt, model_root):
             expected.add(f'{model}/exported/{stem}_vulkan_{scheme}.pte')
     if set(record['files']) != expected:
         raise ValueError('Admission must identify all six models and three tokenizers')
-    for name, entry in record['files'].items():
+    validate_files(record, model_root)
+    for name in record['files']:
         path = model_root / name
-        if path.stat().st_size != entry['size_bytes']:
-            raise ValueError(f'Input size changed: {name}')
-        with path.open('rb') as handle:
-            digest = hashlib.file_digest(handle, 'sha256').hexdigest()
-        if digest != entry['sha256']:
-            raise ValueError(f'Input hash changed: {name}')
         if name.endswith('.pte') and path.resolve() == (original_root / name).resolve():
             raise ValueError(f'Revised model aliases an original model: {name}')
     for name in ('recipe', 'logical_constant_equivalence', 'runtime_metadata', 'resource_legality', 'selector_coverage', 'gate_resource_legality'):

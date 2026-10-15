@@ -21,6 +21,7 @@ PARENT_ENV="ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b70-fused1-order-i-n2
 PRISTINE_COMMIT=$PARENT_COMMIT
 PCI=/sys/bus/pci/devices/$PDEV
 HW=$(echo $PCI/hwmon/hwmon*); FREQ=$PCI/tile0/gt0/freq0
+INPUT_RECEIPT=$A/preflight/original-input-admission.json
 IDLE_FILE=$A/idle_temp_mc
 CLKMIN_FILE=$A/clkmin_mhz
 export ETVK_DEVICE_INDEX=$XE2_CARD SARC_MOUNT_ROOT=$XE2_ROOT XE2_TOP=${XE2_TOP:-$$}

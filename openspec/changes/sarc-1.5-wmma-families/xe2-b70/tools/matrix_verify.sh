@@ -27,9 +27,9 @@ else
 fi
 cp "$ENVFILE" "$D/env"
 if [[ -e $D/INPUTS.json ]]; then
-  cmp "$A/preflight/revised-input-admission.json" "$D/INPUTS.json"
+  cmp "$INPUT_RECEIPT" "$D/INPUTS.json"
 else
-  cp "$A/preflight/revised-input-admission.json" "$D/INPUTS.json"
+  cp "$INPUT_RECEIPT" "$D/INPUTS.json"
 fi
 mapfile -t ENVS < "$D/env"
 {

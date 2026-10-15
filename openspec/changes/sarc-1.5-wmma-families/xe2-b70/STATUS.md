@@ -1,75 +1,51 @@
 # Xe2 B70 finite matrix status
 
-2026-10-15 04:49 UTC. Actor: Codex. **WAITING_OWNER: remaining conforming-input/gate scope.**
-CPU-only rope-audit-01 completed with exit code 0 at 2026-10-15T04:47:58.312599+00:00.
-All six local original hashes, six virtual revised hashes and 3,313 serialized
-Vulkan constant records agree with the delivered partial RoPE bundle. Two layout
-bytes per model are the sole virtual changes. Serialized constant-method values
-match the bundle's reported runtime observations, including context2560.
-New small evidence: results/partial-rope-audit.md and partial-rope-audit.csv.
-Raw artifact evidence: input-preparation/b70-rope-audit-01/evidence.json;
-terminal job record jobs/rope-audit-01.json and log logs/rope-audit-01.log.
+2026-10-15 23:50 UTC. Actor: Claude (claude-opus-5-5). Protocol: owner decision 2026-10-15 23:30 UTC
+(lean finish; deadline 2026-10-17 18:00 UTC). Earlier preparation and the earlier owner question about
+revised inputs are superseded by that decision; their records stay below in git history and under the
+artifact root.
 
-No PTE was created, model method executed, GPU work performed or input admitted.
-Local runtime checks on revised files were not run. CPU applicability does not
-establish whole-model legality or correctness. The 8B width, operator-temporary
-and independent synthetic-gate resource requirements remain unresolved.
-RESOURCE_LIMIT_BLOCKED, originals and valid builds are preserved. No GPU/build
-job or device lock remains active. Independent validation/preparation is finished.
-The existing owner question below remains pending; park without another audit,
-recomputation or review of the same blocker. No six-cell medians, margins,
-family-wide acceptance, push, PR, service, driver or policy change is claimed.
+**Running:** detached job `lean-01` (`tools/lean_queue.sh wmma-b70-topic-02`), status file
+`/home/doremy/wmma-b70/.artifacts/jobs/lean-01.json`, progress in `.artifacts/queue.status`.
 
-Read the complete assembled campaign and final launch decision. Own branch starts at
-`617897184529ff180af491ee0d5d7de778cbb6c6`; clean checkout at initial inspection.
-No prior run status, detached queue, artifact job or held GPU lock was found.
+## Configuration
 
-Reviewed input is inventory commit `f393c3ff7ff4fc41e4651a5109a8509097c501f6`,
-source base `617897184529ff180af491ee0d5d7de778cbb6c6`.
-Archive SHA256 `65d1e3ca0eb7e9dffa8e9fbbb1a100bf2cf609868720b9053de67ff8bf5247d8`.
-Xe2 manifest SHA256 `5904caa4c1977f256d58b4c1c111e7fdcb2e54bc312676b40c90da6bcf048306`.
-Archive and all 18 per-file provenance hashes verified; inputs remain read-only.
-Source review establishes readiness of 12 candidates, not current device legality.
+- One binary for both arms and every profile: exported-commit build `wmma-b70-topic-02` (commit `2fcc1c7e9`,
+  base `6178971845` + the dev-only `b70-wmma` selector in `impl/sarc_dev/Overrides.cpp`; spirv golden PASS,
+  53 shipped variants). No rebuild.
+- Control = the device's final profile `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b70-fused1-order-i-n26-w16m`.
+  Candidates add only `ET_VK_SARC_B70_WMMA_PROFILE=<name>`; attention (fused node, softmax, QK/AV), decode and
+  fp linear are the control's in both arms.
+- Inputs: the ORIGINAL exported models and tokenizers, hashes in `.artifacts/preflight/original-input-admission.json`
+  (8B hashes equal the RoPE audit's source hashes). Revised RoPE inputs are kept, not used.
+- **Caveat (stated once, owner decision 2026-10-15 23:30 UTC):** ANV reports a 2048 image extent; the RoPE tables
+  of all six models, the 8B activations and verify.sh's 8B production-diff fixtures use texture3d images over that
+  extent. Pre-existing, documented, identical in both arms; every earlier Intel campaign ran these files and passed
+  the gate (b70-fused-port GATE_PASS, xe2-prefill-refine pdiff 12/12). Not a blocker. The marker
+  `RESOURCE_LIMIT_BLOCKED` was moved to `.artifacts/superseded/owner-2026-10-15T2330-original-inputs/`.
+- Protocol: control `verify.sh --pdiff` once, compared line by line (rates removed) with the historical final gate
+  of the final profile (`order-2/b70` stage `g1`); one seven-repeat A/A session (topic-02 vs topic-02, control in
+  both) that calibrates the clock floor. Per candidate: `verify.sh --pdiff` (production-diff failure rejects
+  without timing), seven valid interleaved runs per arm and cell against the same-session control, next tokens on
+  the timed, real-text and unaligned prompts, dispatched names from ETDump. SDPA tiers not run (attention
+  identical in both arms). Thresholds as preregistered in `proposal.md`, repeats fixed at 7 by the owner.
+- Order: profiles that appear in B580's final profile first (dq-n13, q4-table, dq-i, dq-table), then B70's own
+  picks (q4-k16, q4-k32, dq-n26).
 
-No measured medians or margins exist yet. Read-only unit/property/sensor and serialized-model inspection completed.
-Pinned submodule initialization and check.sh --no-build passed. Seven dev-only
-profiles map the 12 input entries; buffer variants receive correctness coverage
-because the original supplied model prefill IO is texture3d; revised-input
-route coverage is pending the common bundle. Independent source/preflight review and focused CPU profile checks passed.
-Isolated HOLD dry test passed; historical outer gate/control/trace wrappers are
-inactive because their extra paths do not meet this bounded task. Next, after revised-input admission and full-gate resource legality: run
-the parent snapshot and A/A, then assess baseline/calibration before candidates. No candidate is declared launch-ready yet.
-The finite matrix supersedes the historical two-small-gains stop rule under the
-2026-10-14 launch decision. Attention remains the final campaign configuration in
-both arms. No family acceptance is inferred from this member.
+## Matrix
 
-## Decision needed from the owner
+Cand/control > 1 means the candidate is faster. Limits: six-cell geomean slowdown <= 3 %, no cell > 8 % slower
+(slowdown = control tok/s / candidate tok/s - 1). Small evidence: `results/matrix-summary.csv`,
+`results/matrix-dispatch.csv`; raw rows: `.artifacts/runs.csv` and `.artifacts/stage/<session>/raw/runs.csv`.
 
-The partial RoPE bundle has arrived and its provenance and local CPU
-applicability audit are complete. Please relay the
-remaining conforming 8B/operator-temporary recipe and resolve how the full
-unmodified gate's independent 8B texture3d fixtures can satisfy the image limits.
-The supplied bundle explicitly leaves those needs unresolved. No reduced coverage,
-illegal allocation, runtime release-zone edit or gate relaxation is authorized.
-The independent CPU audit is finished. The existing dependency is recorded
-once; park without recomputing or requesting another review of this scope.
+<!-- matrix begin -->
+<!-- matrix end -->
 
-## Coordinator hold
+No family-wide acceptance is claimed from this member's results.
 
-Isolated HOLD.test/HELD.test dry check passed via the inherited hold function.
-Real HOLD and HELD remain coordinator-owned at the artifact root. A build is a
-job boundary; no queue starts before a checked build and launch prerequisites.
-The completed CPU audit took 112.5s queued-to-terminal. The preserved
-parent build took 6m18s. Gate/session duration still must be recorded before
-projecting the finite matrix.
+## Question for the coordinator
 
-Original-input parent runtime metadata check completed successfully for all six
-original model files; revised-input runtime metadata remains pending.
-Linear group128 and 4-bit embedding group32 were read from serialized Vulkan
-operator arguments. All 12 parent module capacities equal the reviewed declarations;
-required format features agree with the unit query, but the matching image
-extent limit now blocks 8B model launch. Exact private output and binary
-hashes remain in the artifact preflight/build records.
+(none)
 
 ## Per-file reviewed input hashes
 

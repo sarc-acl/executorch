@@ -211,3 +211,21 @@ and private raw evidence hashes are in results/partial-rope-audit.md. It made no
 PTE, runtime/model execution, GPU correctness or legality claim. Independent
 preparation is complete; the existing conforming-input/synthetic-gate scope
 question remains pending and the run is parked once for the owner.
+
+## Lean finish (owner decision 2026-10-15 23:30 UTC)
+
+The owner's lean protocol replaces the conflicting preparation and legality steps above. The original
+exported models are used. The image-extent caveat is recorded once in STATUS.md, and the revised inputs are
+kept but not used. Repeats are fixed at seven. The control check compares verify.sh with the historical final
+gate. Candidates are screened with `verify.sh --pdiff` and next-token checks, without SDPA tiers or the
+bit-identity helper. Thresholds above are unchanged.
+
+| Run-local change | Why |
+|---|---|
+| `original_inputs.py`, `input_provenance.py` accepts the `original-exported` record | inputs chosen by the owner, still hash-checked before every stage and session |
+| `host.sh` `INPUT_RECEIPT`; `stage.sh`, `matrix_verify.sh` use it | one place names the input record |
+| `matrix_evidence.py` drops its absolute correctness-log check | Intel's control already prints `correctness rc=1` (L15); the line-by-line comparison with the control's own verify output covers it |
+| `lean_queue.sh` | control gate and A/A, then the seven profiles; production-diff failure rejects, next-token difference is CORRECTNESS_PENDING and still timed |
+| `lean_record.py` | small evidence CSVs and the STATUS.md matrix table |
+
+`baseline_queue.sh` and `matrix_queue.sh` are inactive.
