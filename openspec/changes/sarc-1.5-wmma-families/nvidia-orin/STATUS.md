@@ -1,9 +1,10 @@
 # NVIDIA Orin WMMA matrix status
 
-Updated: 2026-10-15T04:27:52.355873+00:00
+Updated: 2026-10-15T04:29:47.449144+00:00
 
-Stage: runtime/build review accepted; static joins complete; snapshot queue preparation committed.
-No queue is running. No owner question is pending. The snapshot queue has not launched. The legal matrix is incomplete;
+Stage: launching the parent snapshot only; static joins and instrumentation checks complete.
+Snapshot-only queue: `orin-wmma-s0-20261015-1`; its JSON state below is authoritative.
+No owner question is pending. No A/A or candidate queue is included. The legal matrix is incomplete;
 no model GPU job, correctness gate, A/A or timed session has run.
 
 ## Changed base and completed build
