@@ -381,3 +381,37 @@ one active intermediate tree and the existing disk guard. Each build gets a
 compiled shared-array audit plus full SPIR-V identity against the old parent,
 as well as unmodified golden checks. No threshold changes or source patch in
 an export is permitted. Existing raw evidence and failure records are retained.
+
+
+## Replacement builds and fixed-protocol launch
+
+Both feature-enabled builds completed with the exact commits in
+results/feature-builds.json. All four golden checks pass and all 2,091 modules
+per component match the retained old parent. The new parent CPU metadata helper
+matches all nine scalar methods for each original model; see
+results/runtime-metadata-memory-model.json. No additional full build is needed.
+
+New enabled_features.cpp constructs the compiled runtime directly after
+initializing Volk. A transparent function-pointer wrapper records the exact
+VkDeviceCreateInfo passed to vkCreateDevice and forwards it unchanged. Each
+of the four helpers links the exact static runtime/backend and core libraries
+from its arm/component; source, image, command, library and helper hashes stay
+in artifacts. It records extension and feature booleans plus driver return code,
+then destroys the runtime. It loads no model or shader and submits no commands.
+The initial missing-VMA-include compile failure is retained; correcting that
+helper include list required no runtime rebuild.
+
+New feature_probes.py runs those helpers under the inherited lock and observer,
+checking HOLD at each boundary, and stops on failed/missing enabled-feature proof.
+Measured binaries/environments have no injected wrapper. The parent_snapshot.py
+prerequisites now require this exact-commit enabled-chain evidence and the new
+CPU metadata. The unchanged snapshot behavior is captured in new stage names;
+control_and_aa.py obtains both replacement snapshots before comparing normalized
+outputs and starting A/A. The latter now names parent-mm-r1/matrix-mm-r1 and
+s1-aa-mm-r1, with every numeric threshold unchanged. The old parent comparison
+is diagnostic evidence and does not substitute for the replacement snapshot.
+
+The queue is limited to four 120-second feature probes, two two-hour gate caps
+and the existing four-hour A/A cap, under a nine-hour outer timeout. No candidate
+is scheduled until baseline/calibration evidence is inspected and explained.
+This is a finite precondition queue below the 48-hour reporting boundary.

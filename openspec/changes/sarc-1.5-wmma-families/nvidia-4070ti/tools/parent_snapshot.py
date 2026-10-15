@@ -18,7 +18,7 @@ artifacts = root / ".artifacts"
 tools = Path(__file__).resolve().parent
 build = artifacts / "build" / sys.argv[1]
 tree = artifacts / "src" / sys.argv[1] / "executorch"
-stage = artifacts / "stage" / (sys.argv[2] if len(sys.argv) > 2 else "s0-parent-verify")
+stage = artifacts / "stage" / (sys.argv[2] if len(sys.argv) > 2 else "s0-parent-mm-verify")
 assert not stage.exists(), "snapshot exists; preserve it and diagnose rather than overwrite"
 assert not (artifacts / "GPU_GONE").exists()
 source_commit = (build / "COMMIT").read_text().strip()
@@ -26,8 +26,11 @@ subprocess.run(["git", "-C", str(root / "executorch"), "merge-base", "--is-ances
                 "617897184529ff180af491ee0d5d7de778cbb6c6", source_commit], check=True)
 for name in ["golden-llama.txt", "golden-backend.txt"]:
     assert (build / name).read_text().strip() == "spirv golden: PASS (53 shipped variants)"
-metadata = json.loads((artifacts / "metadata/parent-r1/runtime-results.json").read_text())
+metadata = json.loads((artifacts / "metadata/parent-mm-r1/runtime-results.json").read_text())
 assert len(metadata) == 6 and all(row["matches_static"] for row in metadata)
+probes = json.loads((artifacts / "checks/enabled-features/summary.json").read_text())["probes"]
+matching = [row for row in probes if row["tag"] == sys.argv[1] and row["commit"] == source_commit]
+assert len(matching) == 2 and all(row["enabled_features"]["vulkanMemoryModel"] == 1 for row in matching)
 modules = json.loads((build / "module-shared.json").read_text())
 assert len(modules["modules"]) == 11 and all(row["matches_source_declarations"] for row in modules["modules"])
 formats = json.loads((artifacts / "preflight/formats.json").read_text())
@@ -64,7 +67,7 @@ shutil.copy2(tree / "openspec/changes/sarc-1.5-4070ti-fused-port/tools/r1304.txt
 env = {key: value for key, value in os.environ.items() if not key.startswith(("ET_VK", "ETVK"))}
 env.update(ET_VK_SARC_UNVERIFIED="1", ET_VK_SARC_DEV_PROFILE="4070ti-fused1",
            WMMA_STAGE=str(stage), TMPDIR=str(artifacts / "tmp"),
-           SARC_CAMPAIGN_TAG="wmma-nvidia-4070ti-20261015-s0-r1")
+           SARC_CAMPAIGN_TAG="wmma-nvidia-4070ti-20261015-" + stage.name)
 if os.environ.get("WMMA_MATRIX_PROFILE"):
     env["ET_VK_SARC_WMMA_PROFILE"] = os.environ["WMMA_MATRIX_PROFILE"]
 manifest = {"orchestration_commit": os.environ.get("WMMA_ORCHESTRATION_COMMIT") or subprocess.check_output(["git", "-C", str(root / "executorch"), "rev-parse", "HEAD"], text=True).strip(),

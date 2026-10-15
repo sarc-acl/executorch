@@ -24,20 +24,20 @@ from session_control import hold_point
 root = Path(os.environ["WMMA_CAMPAIGN_ROOT"])
 artifacts = root / ".artifacts"
 tools = Path(__file__).resolve().parent
-stage = artifacts / "stage/s1-aa"
+stage = artifacts / "stage/s1-aa-mm-r1"
 stage.mkdir(parents=True, exist_ok=True)
 session_lock = (stage / "session.lock").open("a")
 fcntl.flock(session_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
 models = json.loads((artifacts / "preflight/models-static.json").read_text())
-builds = {"parent": "parent-r1", "topic": "matrix-r1"}
+builds = {"parent": "parent-mm-r1", "topic": "matrix-mm-r1"}
 env = {k: v for k, v in os.environ.items() if not k.startswith(("ET_VK", "ETVK"))}
 env.update(ET_VK_SARC_UNVERIFIED="1", ET_VK_SARC_DEV_PROFILE="4070ti-fused1",
            ETVK_DEVICE_INDEX=os.environ["WMMA_DEVICE_INDEX"], WMMA_PURPOSE="calibration",
-           WMMA_SESSION="s1-aa", WMMA_CANDIDATE="control", PYTHONDONTWRITEBYTECODE="1",
-           SARC_CAMPAIGN_TAG="wmma-nvidia-4070ti-20261015-aa", TMPDIR=str(artifacts / "tmp"))
+           WMMA_SESSION="s1-aa-mm-r1", WMMA_CANDIDATE="control", PYTHONDONTWRITEBYTECODE="1",
+           SARC_CAMPAIGN_TAG="wmma-nvidia-4070ti-20261015-aa-mm-r1", TMPDIR=str(artifacts / "tmp"))
 assert not (artifacts / "GPU_GONE").exists()
-assert not (artifacts / "stage/s0-topic-control/ABORTED").exists()
-control_gate = json.loads((artifacts / "stage/s0-topic-control/snapshot-summary.json").read_text())
+assert not (artifacts / "stage/s0-topic-mm-control/ABORTED").exists()
+control_gate = json.loads((artifacts / "stage/s0-topic-mm-control/snapshot-summary.json").read_text())
 assert control_gate["observations"] == 37 and not control_gate["aborted"]
 envs, binaries = {}, {}
 for arm, tag in builds.items():
@@ -141,7 +141,7 @@ def run_rounds(first, last, target):
                             shutil.move(str(run_dir), superseded / "raw")
                         if log.exists():
                             shutil.move(str(log), superseded / "runner.log")
-                        save_row(dict(observer.identity, session="s1-aa", cell=cell, arm=arm, candidate="control",
+                        save_row(dict(observer.identity, session="s1-aa-mm-r1", cell=cell, arm=arm, candidate="control",
                                       profile="4070ti-fused1", commit=binaries[arm]["commit"], binary_sha256=binaries[arm]["sha256"],
                                       rep=rep, attempt=attempt, valid=0, reason="interrupted_before_csv_append",
                                       validity_mode="A/A_CALIBRATION", log=str((superseded / "runner.log").relative_to(stage)),
@@ -154,7 +154,7 @@ def run_rounds(first, last, target):
                     command = ["timeout", "--signal=TERM", "--kill-after=30", "1200", "python3",
                                str(stage / arm / "observer-tools/observe.py"), str(stage / arm / "llama_main"),
                                "--model_path", str(path), "--tokenizer_path", str(tokenizer),
-                               "--prompt_file", str(artifacts / "stage/s0-parent-verify/prompt_2048.txt"),
+                               "--prompt_file", str(artifacts / "stage/s0-parent-mm-verify/prompt_2048.txt"),
                                "--max_new_tokens", "1", "--temperature", "0", "--warmup"]
                     with log.open("w") as output:
                         result = subprocess.run(command, env=child_env, stdin=subprocess.DEVNULL,
@@ -185,7 +185,7 @@ def run_rounds(first, last, target):
                         metrics = {"valid": 0, "reason": "evaluation_failed:" + str(error)}
                     if descendants:
                         metrics.update(valid=0, reason="sampling_or_runner_child_remains")
-                    row = dict(observer.identity, session="s1-aa", cell=cell, arm=arm, candidate="control",
+                    row = dict(observer.identity, session="s1-aa-mm-r1", cell=cell, arm=arm, candidate="control",
                                profile="4070ti-fused1", commit=binaries[arm]["commit"], binary_sha256=binaries[arm]["sha256"],
                                rep=rep, attempt=attempt, rc=result.returncode, validity_mode="A/A_CALIBRATION",
                                log=str(log.relative_to(stage)), record=str((run_dir / "record.json").relative_to(stage)),
