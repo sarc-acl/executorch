@@ -167,6 +167,7 @@ coordinator_hold() { local said=0 line
   done
   [[ $said == 1 ]] && { rm -f $HELD; echo "$line; released $(date -u +%FT%TZ)" >> $A/hold.log; }; return 0; }
 gpu_begin() { local mode=$1; shift
+  [[ ! -e $A/RESOURCE_LIMIT_BLOCKED ]] || { cat "$A/RESOURCE_LIMIT_BLOCKED" >&2; return 78; }
   while :; do pair_lock $mode || return 1; [[ -e $HOLD ]] || return 0
     [[ -n ${XE2_PAIR_OWN:-} ]] && { exec 7>&-; unset XE2_PAIR_HELD XE2_PAIR_OWN; }
     coordinator_hold "$@"; done; }

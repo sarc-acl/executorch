@@ -5,7 +5,7 @@ set -euo pipefail
 PB=wmma-b70-parent-01
 CB=wmma-b70-topic-02
 NAME=s1-aa-01
-[[ ! -e $A/DEVICE_LOST && ! -e $A/FOREIGN_STOP && ! -e $A/QUEUE_BLOCKED ]]
+[[ ! -e $A/DEVICE_LOST && ! -e $A/FOREIGN_STOP && ! -e $A/QUEUE_BLOCKED && ! -e $A/RESOURCE_LIMIT_BLOCKED ]]
 [[ ! -e $A/stage/s0-parent-verify && ! -e $A/stage/$NAME ]]
 mkdir -p "$A/preflight" "$A/logs"
 for item in $PARENT_ENV; do echo "$item"; done > "$A/preflight/control.env"

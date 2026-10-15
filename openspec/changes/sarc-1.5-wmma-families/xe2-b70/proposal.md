@@ -166,3 +166,13 @@ workload and completed six-minute builds; it makes no candidate launch decision.
 Actual gate and session durations will set the finite-matrix projection before
 that queue is launched. No new timing threshold or historical acceptance exception
 is imported by the recovery.
+
+
+Before launching the recovery queue, a coordinator reminder prompted the missing
+matching image-format extent check. Current primary-unit evidence shows required
+8B fp16 width-packed image width 3584 exceeds the matching format/type/tiling/usage
+limit of 2048. BLOCKER.md records the exact source derivation and private artifact
+hashes. Earlier format-feature checks did not establish resource-extent legality.
+The prepared parent/A/A queue was never launched. RESOURCE_LIMIT_BLOCKED is now
+checked before adapter GPU/build entry and by both queues. The six-cell stage
+remains incomplete; no historical successful run grants a limit exception.

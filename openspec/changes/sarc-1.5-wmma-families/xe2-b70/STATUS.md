@@ -1,30 +1,31 @@
 # Xe2 B70 finite matrix status
 
-2026-10-15 00:40 UTC. Actor: Codex. Recovery stage: preserved-build validation
-complete; parent snapshot and A/A queue prepared. No GPU gate or timing job has
-started. Parent `wmma-b70-parent-01` and topic `wmma-b70-topic-02` are complete,
-including the topic identity and CPU metadata helpers. Topic source is committed
-`2fcc1c7e96a7774d80b66095aadb79700d3b48e3`; no rebuild is needed.
-Recorded binary hashes and the topic recursive export-manifest hash match.
-Topic shipped-SPIR-V PASS (53 variants); all 12 compiled module capacities agree
-with the reviewed declarations. Exported CPU helper runtime metadata is complete.
-No campaign processes, held device locks, HOLD or stop markers were present on
-recovery. No readable foreign client was found. Hardware policy is unchanged.
+2026-10-15 00:48 UTC. Actor: Codex. **WAITING_OWNER: resource-limit blocker.**
+No detached baseline queue, GPU gate or model timing job has started. The
+six-cell legal matrix is incomplete. No measured medians or margins exist.
 
-The archive and all 18 input hashes were rechecked against INPUT.md's exact
-snapshot. Previous preparation and source review are reused. Recovery changes
-add atomic detached JSON status, baseline-only orchestration, sampler process
-counts after each run, the pending dispatch lock fix and stricter resume evidence.
-No candidate is declared passed; no measured medians or margins exist yet.
+Current matching image-format queries on the assigned primary B70 confirm a
+maximum 3D image width of 2048. Both supplied 8B schemes contain fp16,
+texture3d, width-packed linear outputs with shape [1,2048,14336], requiring
+image extent [3584,2048,1]. This exceeds the matching width limit. Linear and
+optimal tiling both report 2048; the current runtime chooses linear tiling.
+Source/feature support and historical success do not establish allocation legality.
+Full evidence and derivation: BLOCKER.md and artifact preflight/resource-limit-blocker.json.
+RESOURCE_LIMIT_BLOCKED prevents launches through the run-local adapters.
 
-Prepared detached queue: `baseline-01` (parent snapshot, topic gate, five-repeat
-six-cell A/A with both arms on the final profile). Its artifact-local JSON state
-will be `jobs/baseline-01.json`; the queue updates running/completed/failed even
-on a command failure. It stops for actor assessment before any candidate timing.
-A/A may require seven repeats by the preregistered rule. The actor must explain
-baseline deviations and A/A inconsistency before writing BASELINE_READY.
-The finite seven-profile matrix remains preregistered in proposal.md/profiles.json.
-There are no family-wide acceptance claims, pushes or PRs.
+Recovery preparation is complete independently of this blocker. Preserved parent
+`wmma-b70-parent-01` and topic `wmma-b70-topic-02` builds, exported helpers,
+recorded binary hashes and recursive provenance were verified. Topic source is
+`2fcc1c7e96a7774d80b66095aadb79700d3b48e3`. Shipped SPIR-V PASS (53 variants),
+12 compiled module capacities agree with declarations, and exported CPU metadata
+checks are complete. No rebuild is needed. The archive and all 18 reviewed input
+hashes match INPUT.md's pinned snapshot. Previous preparation/review is reused.
+
+Baseline/A/A orchestration and durable JSON status reporting are committed and
+CPU success/failure status tests passed. The queue is prepared but **not launched**.
+The seven-profile finite matrix remains preregistered. No candidate is accepted
+and no family-wide claim, service/policy change, push or PR has occurred.
+Independent preparation is finished; park until CAMPAIGN.md resolves the question.
 
 Read the complete assembled campaign and final launch decision. Own branch starts at
 `617897184529ff180af491ee0d5d7de778cbb6c6`; clean checkout at initial inspection.
@@ -50,7 +51,13 @@ both arms. No family acceptance is inferred from this member.
 
 ## Decision needed from the owner
 
-None recorded at this milestone.
+The required six-cell gate and matrix cannot legally launch with these supplied
+8B resource layouts. Should this run close as explicitly blocked/incomplete, or
+will the owner authorize a separate compliant model/resource-layout task and
+provide revised inputs before resuming? No model re-export, runtime layout edit,
+allocation-limit exception or reduced six-cell requirement is currently authorized.
+This question is recorded once; no further recomputation or review is requested
+while waiting for the task file to change.
 
 ## Coordinator hold
 
@@ -62,7 +69,8 @@ Longest build/job duration remains to be measured before the matrix queue.
 Parent runtime metadata check completed successfully for all six model files.
 Linear group128 and 4-bit embedding group32 were read from serialized Vulkan
 operator arguments. All 12 parent module capacities equal the reviewed declarations;
-required format/features agree with the unit query. Exact private output and binary
+required format features agree with the unit query, but the matching image
+extent limit now blocks 8B model launch. Exact private output and binary
 hashes remain in the artifact preflight/build records.
 
 ## Per-file reviewed input hashes
