@@ -9,6 +9,7 @@ import statistics
 import sys
 
 root = Path(sys.argv[1])
+REPS = 7  # owner decision 2026-10-15 23:30 UTC: 7 valid runs per arm
 rows = list(csv.DictReader((root / "runs.csv").open()))
 assert rows
 required = {"device_uuid", "driver", "commit", "binary_sha256", "profile", "candidate", "session", "sensor_log", "valid", "reason"}
@@ -24,8 +25,8 @@ for model in ("1b", "3b", "8b"):
             selected = [r for r in rows if r["model"] == model and r["scheme"] == scheme
                         and r["build"] == arm and r["log"].startswith("logs/prefill")]
             valid = [r for r in selected if r["valid"] == "1"]
-            assert len(valid) >= 5, (model, scheme, arm, "incomplete")
-            used = valid[:5]
+            assert len(valid) >= REPS, (model, scheme, arm, "incomplete")
+            used = valid[:REPS]
             values = []
             for row in used:
                 log = (root / row["log"]).read_text(errors="replace")
@@ -40,13 +41,13 @@ for model in ("1b", "3b", "8b"):
                 values.append(rate)
             arms[arm] = values
             median = statistics.median(values)
-            cell[arm] = {"median_tok_s": median, "used": 5, "valid_saved": len(valid),
+            cell[arm] = {"median_tok_s": median, "used": REPS, "valid_saved": len(valid),
                          "invalid_saved": len(selected) - len(valid), "first_valid_repeats": [r["rep"] for r in used],
                          "spread_pct": 100 * (max(values) / min(values) - 1),
                          "median_clock_mhz": statistics.median(float(r["clk_med_mhz"]) for r in used)}
         ratio = cell["cand"]["median_tok_s"] / cell["parent"]["median_tok_s"]
-        bootstrap = sorted(statistics.median(rng.choices(arms["cand"], k=5)) /
-                           statistics.median(rng.choices(arms["parent"], k=5)) for _ in range(10000))
+        bootstrap = sorted(statistics.median(rng.choices(arms["cand"], k=REPS)) /
+                           statistics.median(rng.choices(arms["parent"], k=REPS)) for _ in range(10000))
         cell["throughput_ratio"] = ratio
         cell["slowdown_pct"] = 100 * (1 - ratio)
         cell["unpaired_bootstrap_95pct"] = [bootstrap[249], bootstrap[9749]]
