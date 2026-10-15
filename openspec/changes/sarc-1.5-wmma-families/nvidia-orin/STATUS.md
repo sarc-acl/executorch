@@ -1,9 +1,9 @@
 # NVIDIA Orin WMMA matrix status
 
-Updated: 2026-10-15T00:55:23.007261+00:00
+Updated: 2026-10-15T01:13:43.450772+00:00
 
-Stage: successful parent build recovered after a postprocessing failure; runtime
-constant-method validation complete. No build/measurement queue is running.
+Stage: waiting for one owner ruling on missing logical-device feature enablement.
+Independent selector/resource/helper preparation is recorded. No queue is running.
 The legal matrix is incomplete. No model GPU job, gate or timed session has run.
 Base: `617897184529ff180af491ee0d5d7de778cbb6c6`.
 Own branch: `topic/wmma-nvidia-orin`.
@@ -43,10 +43,48 @@ and fit the queried 49,152-byte limit. These are module requirement checks,
 not GPU correctness or a final hardware/shape legality claim. Capability/type
 and storage-format requirements are captured for the remaining joined checks.
 
-Next: finish device-feature/format/shape matching, committed finite selectors
-that preserve `orin-fused1` attention, compliant sampling/cleanup/provenance and
-per-run A/A computation; then parent snapshot, baseline/A/A and legal matrix.
-No new review was requested for the old adapter question or preflight.
+Independent checkpoint: all 11 manifest entries now have reproducible own dev
+profiles (`results/candidate-profiles.json`). Register only the selected row,
+`kUnverified`, on an explicit `orin-fused-wmma-NN` profile. Existing shape-service
+and route predicates are preserved; storage-specific buffer entries do not
+replace the models' texture IO. Both arms use the exact existing fused pair via
+`ET_VK_SARC_ORIN_SDPA_FUSED`; softmax stays `orin_g64`. No attention implementation
+or shader changed. The new selection layer preserves all unrelated choices.
+
+CPU validation: 9,548 checks over 11 profiles, storage combinations, decode,
+short/unaligned/max-context dimensions, and attention cases. Unaffected choices
+and attention/softmax equal the `orin-fused1` control. The unmodified
+`check.sh --no-build` passes (release 1240 checks/31 rows; dev 1921 checks/43 rows,
+533 candidates with no matrix profile). Compilation took the desktop build lock.
+Raw CPU dumps/check log are in `.artifacts/selector-tests/`; small summaries are
+in `results/selector-validation.json`. No matrix candidate is GPU-gated.
+
+Run-local helpers implement fully valid per-run A/A calibration without rounding
+the floor, reject missing row provenance, sample sensors/process ancestry in one
+childless process, preserve GPU_GONE, and quote bash-s transport arguments.
+Synthetic tests reject nine invalid cases, exclude an invalid low-clock row,
+preserve a fractional floor, confirm zero sampler children/SIGTERM exit, and
+preserve literal shell metacharacters across transport. These are helper tests,
+not real A/A data. Artifacts: `.artifacts/protocol-tests-v2/`. Full detached
+measurement orchestration, exact row/log/time-window joining and real A/A/gates
+remain pending after the owner ruling; the helpers are not claimed as a complete
+measurement pipeline.
+
+The coordinator's B580 extent finding was investigated for this unit, not copied
+as an Orin verdict. Read-only image-format queries use the actual sampled/storage/
+transfer usage (15), type and tiling. Optimal 3D formats report 16,384 per axis.
+The serialized explicit images and prepack outputs of all six models fit their
+matching queried limits; RoPE height 5,120 and 8B packed width 3,584 fit here.
+Raw model/format records and allocation precheck are under
+`.artifacts/resource-checks/`. Six default scalar tensor records and runtime-
+created weight resources remain audit items; no full whole-runtime allocation
+PASS is claimed. No input was changed and no limit waived.
+
+The exact compiled-module feature join found the prerequisite below: supported
+physical `vulkanMemoryModel` is absent from logical-device enablement in the
+pinned base. This blocks both parent GPU snapshot and candidate measurements.
+No new full review or queue will start while waiting; previous failed/build
+records remain preserved. Resume on a dated CAMPAIGN.md ruling.
 
 ## Reviewed input
 
@@ -76,6 +114,30 @@ only; no repeat preflight review has been requested.
 Parent golden and runtime constant-method validation pass on the recovered exact
 build. No gate, A/A calibration, baseline or candidate timing has run. Static
 group-128 linears and q4/group-32 embedding evidence remains unchanged and is
-paired with successful runtime metadata validation. Candidate profiles and
-measurement adapters are still pending. Both future arms preserve `orin-fused1`
+paired with successful runtime metadata validation. Candidate profiles are CPU-validated; measurement orchestration and GPU evidence
+remain pending on the owner ruling. Both future arms preserve `orin-fused1`
 attention. The matrix remains incomplete; no family-wide acceptance is claimed.
+
+
+## Decision needed from the owner
+
+Recorded once at 2026-10-15T01:08:03.652473+00:00.
+
+All 11 exact manifest modules declare `OpCapability VulkanMemoryModel` and
+`OpMemoryModel Logical Vulkan`. The physical-device query reports the feature
+supported, but pinned `Adapter.cpp:100-251` never requests its extension or
+chains `VkPhysicalDeviceVulkanMemoryModelFeatures` / Vulkan12 features at
+`vkCreateDevice`; `Device.cpp` never queries that feature. This is an enabled-
+feature prerequisite, independent of the successful golden and standalone
+`spirv-val` checks. Vulkan's feature description explicitly requires enabling
+it on the logical device; shader-module VUID `pCode-08740` applies.
+
+May the coordinator supply a revised pinned base with the required memory-model
+feature enabled, or may this stage make a narrowly specified runtime feature-
+enablement change? No feature, allocation-limit or shader-compiler waiver is
+requested. The existing task permits only dev-zone/run-directory changes, so
+no runtime feature change or model GPU job will proceed without a dated ruling.
+
+Evidence: `results/runtime-feature-blocker.md`, exact module requirements under
+the recovery artifacts, and the unchanged base source cited there. Independent selector/resource/helper checks are recorded above. Park without
+repeat review or recomputation of this question. The earlier adapter-scope question stays resolved.

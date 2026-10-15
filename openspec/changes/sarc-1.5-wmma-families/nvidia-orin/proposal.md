@@ -152,3 +152,58 @@ pending; no gate/timing/matrix-completion claim follows from these checks.
 The successful-build recovery is a new evidence checkpoint. It does not reopen
 or repeat the already completed source-only preflight review, request another
 adapter-scope decision, or extend a historical compiler exemption.
+
+
+## Finite selectors and enabled-feature prerequisite
+
+The 11 reviewed entries map one-to-one to `orin-fused-wmma-01` through `-11` in
+`results/candidate-profiles.json`. A single elected row registers only under its
+own profile and with unverified rows enabled. The outer selection callback
+changes only that entry's scheme/storage when its original shape rule, alignment,
+parent projection boundary and complete shared-memory requirement fit. Buffer
+entries support correctness coverage and do not masquerade as texture timings.
+The profiles inherit `kOrinRefine5` for all unaffected choices. Both arms set
+`ET_VK_SARC_ORIN_SDPA_FUSED` to the exact pair selected by `orin-fused1`; the
+existing prefix behavior retains `orin_g64`. No attention shader, arithmetic,
+fused-node implementation, release file or shared shader YAML changed.
+
+New logic lives in `impl/sarc_dev/OrinWmmaLinear.cpp`. `Overrides.cpp` adds only
+labelled `orin-wmma` blocks for profile aliases and a final chain installer;
+existing lines are unchanged. Install order is explicit within the existing
+selector translation unit. New rows are unverified and inert outside the own
+profiles. CPU fixtures cover 9,548 cases across all profiles, three storage
+combinations, decode and short/unaligned/maximum-context dimensions, and SDPA.
+Unchanged choices and attention/softmax equal control. The unmodified no-build
+check passes its zone, twin, release-selection and default dev-selection checks.
+These checks do not replace exact new-build gates/dispatch evidence.
+
+`calibrate_aa.py` implements the registered fully valid per-run minimum rule,
+with exact five-row arm/cell coverage and fractional floor preserved. Its row
+validator requires complete device/unit/driver/build/profile/candidate/session/
+cell/log/sensor provenance and rejects missing validity records. `sampler.py`
+reads sysfs and process ancestry directly, starts no children, checks all thermal
+cap records, samples known foreign workloads, preserves device-loss markers and
+exits cleanly on SIGTERM. `bash_s.py` sends scripts through bash-s with shlex-quoted
+arguments. Synthetic tests and literal-argument target transport pass. No sampled
+GPU workload or real calibration data is asserted. The first test assertion
+incorrectly expected only rc rejection for a row also below the resulting floor;
+corrected the assertion to expect both reasons, retaining the initial test path.
+The production formula/thresholds did not change.
+
+Read-only exact image-format queries and newly expanded serialized-resource
+inspection check the B580 concern independently for Orin. Here optimal sampled/
+storage/transfer 3D limits are 16,384 on every axis. All explicitly serialized
+nonconstant image extents and prepack outputs fit, including RoPE height 5,120
+and 8B packed width 3,584. Runtime-created resources/default scalar records remain
+explicit audit items; no full model-allocation or measured correctness claim is
+made. Original models remain read-only.
+
+The enabled-feature join found a real prerequisite before any model GPU job:
+all exact manifest shaders require `VulkanMemoryModel`, and the pinned runtime
+never enables it at logical-device creation. Physical support, standalone
+validation and golden byte identity do not establish enabled-feature legality.
+`results/runtime-feature-blocker.md` gives source/specification references;
+STATUS.md records the owner question once. No release-zone fix, compiler or limit
+waiver is inferred. Independent source/helper/resource work above is recorded;
+park without another preflight review, new build or GPU measurement until the
+owner supplies a dated resolution. The matrix remains incomplete.

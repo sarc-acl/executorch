@@ -2309,6 +2309,19 @@ const Profile kProfiles[] = {
     {"b70-fused1-order-n26", kB70Fused1Order_n26, sizeof(kB70Fused1Order_n26) / sizeof(Preference)},
     {"b70-fused1-order-i-n26-w16m", kB70Fused1Order_i_n26_w16m, sizeof(kB70Fused1Order_i_n26_w16m) / sizeof(Preference)},
     // xe2-order end
+    // >>> orin-wmma profiles
+    {"orin-fused-wmma-01", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-02", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-03", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-04", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-05", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-06", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-07", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-08", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-09", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-10", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-11", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    // <<< orin-wmma profiles
 };
 const Profile* requested_profile() {
   static const Profile* p = []() -> const Profile* {
@@ -3711,3 +3724,18 @@ struct Registrar7900xtx {
 } // namespace sarc
 } // namespace vkcompute
 // --- 7900xtx end ---
+
+// >>> orin-wmma selector
+namespace vkcompute {
+namespace sarc {
+void install_orin_wmma_linear();
+namespace {
+struct OrinWmmaRegistrar {
+  OrinWmmaRegistrar() {
+    install_orin_wmma_linear();
+  }
+} orin_wmma_registrar;
+} // namespace
+} // namespace sarc
+} // namespace vkcompute
+// <<< orin-wmma selector
