@@ -52,9 +52,9 @@ with (p / "binaries.sha256").open("w") as out:
         out.write(f"{hashlib.sha256(binary.read_bytes()).hexdigest()}  {binary}\n")
 PY
 for b in llama backend; do
-  mapfile -t SPVS < <(find "$P/$b" -path '*vulkan_compute_shaders*' -name '*.spv' -printf '%h\n' | sort -u)
-  [[ ${#SPVS[@]} == 1 ]] || { echo "expected one SPIR-V directory in $b"; exit 3; }
-  python3 "$ET/sarc/tools/spirv_golden.py" "${SPVS[0]}" "$T/sarc/golden/spirv.json" > "$P/golden-$b.txt" 2>&1
+  SPV=$P/$b/vulkan_compute_shaders
+  [[ -d $SPV ]] || { echo "missing canonical SPIR-V directory in $b"; exit 3; }
+  python3 "$ET/sarc/tools/spirv_golden.py" "$SPV" "$T/sarc/golden/spirv.json" > "$P/golden-$b.txt" 2>&1
 done
 no_others "after parent build"
 gone_check "after parent build"

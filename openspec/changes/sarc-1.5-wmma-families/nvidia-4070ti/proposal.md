@@ -70,10 +70,10 @@ context and sequence length 2560, cache/dynamic-shape flags true, BOS 128000;
 all six file sizes match kit/MODELS.md. The Vulkan graph contains embedding_q4gsw
 with group 32 and a packed 4-bit weight, and linear operators with group 128.
 This exceeds the kit's old inferred group/embedding evidence, but is explicitly
-static inspection rather than runtime execution. The required runtime constant
-method check remains pending. The recovery decision of 2026-10-15 00:32 UTC
-authorizes the initial build to supply a CPU-only runtime helper before model
-GPU work.
+static inspection rather than runtime execution. The runtime constant
+method check was pending at preflight. It is now complete using the initial
+build's CPU-only helper, following the recovery decision of 2026-10-15 00:32 UTC;
+see the recovery evidence below.
 
 No Khronos validation layer exists in the current layer list. The unmodified
 verify.sh does not enable or require one, so no exemption is inferred or asked
@@ -130,3 +130,28 @@ performance acceptance. Exact binaries remain available for later review.
 The first build unit is limited to two hours and does not launch inference;
 CPU runtime metadata execution is the next prerequisite. No >48-hour matrix
 projection or candidate launch is asserted before those facts exist.
+
+
+## Parent build recovery and runtime metadata
+
+The first parent-r1 queue failed at the new adapter's directory-count check,
+after the unmodified build command completed successfully. The shader cache
+contains duplicate SPIR-V paths beneath the canonical output directory; it is
+not a second independent compilation. The adapter now selects the canonical
+vulkan_compute_shaders directory explicitly. The failed queue/log/export/build
+are preserved, and no main build was repeated. Both the llama and backend
+canonical outputs pass the unmodified golden comparison: 53 shipped variants.
+The original binary hashes also recheck successfully.
+
+New tools/runtime_metadata.cpp uses only the parent build's core runtime and
+mmap data loader, with no Vulkan/backend link. It refuses nonconstant methods
+and executes the nine named scalar metadata methods on all six input models.
+Every result matches the saved static metadata; context/sequence length are
+2560 in each. Group size and packed embedding metadata remain facts of the
+previously inspected serialized Vulkan graph, as these models expose no runtime
+constant methods for them. results/runtime-metadata.json records the scalar
+results, parent source and helper hashes without private paths. Exact compile
+command/image, input runtime-library hashes and raw per-model outputs remain
+in the private metadata artifact directory. No forward method, GPU inference,
+parent snapshot or A/A has run. This resolves bootstrap only; remaining legality,
+gates, dispatched-name coverage and the measured matrix are still pending.

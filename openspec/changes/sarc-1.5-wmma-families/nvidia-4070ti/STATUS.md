@@ -1,28 +1,41 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-15 00:36 UTC
+Updated: 2026-10-15 00:47 UTC
 
-Stage: RECOVERY / INITIAL PARENT BUILD PREPARED. The owner decision of
-2026-10-15 00:32 UTC resolves the earlier metadata bootstrap question.
-The initial pinned build is authorized; runtime constant methods must execute
-using a CPU-only helper from that build before any model GPU workload.
-No unresolved owner question remains. No model GPU workload has started.
+Stage: INITIAL PARENT BUILD AND CPU RUNTIME METADATA COMPLETE.
+Running: nothing. The parent-r1 detached queue failed rc=3 at postprocessing,
+after sarc/tools/build.sh printed SARC_BUILD_OK. The adapter counted canonical
+vulkan_compute_shaders/ and its shader_cache/ as two shader output directories.
+The local adapter now selects the canonical directory explicitly. No build was
+repeated and no failed queue status was rewritten. Diagnosis and recovery are
+preserved privately in build/parent-r1/recovery.json and jobs/parent-r1/.
 
-Recovery inspection found no active build, measurement queue, sampler or device
-lock holder. Existing source preparation finished rc=0; its 30 pinned recursive
-submodules are reused. No exports or builds existed to reuse. Available disk
-was 43 GiB; there will be one parent build root, no traced build at this step.
-The pinned image and current read-only device/driver facts still match launch.
-Confirmed the archive and all 18 per-file input hashes again on recovery.
+The existing exact export and binaries are retained. Source commit is the
+approved base; recursive manifest contains 30 pinned submodules. The original
+binary hashes recheck successfully. Shipped-SPIR-V golden comparison passes
+for all 53 variants in BOTH llama and backend canonical output directories.
+Evidence: build/parent-r1/golden-llama.txt and golden-backend.txt. These checks
+establish the golden result; no model correctness/timing pass is inferred.
 
-Running: the next launch is the single detached parent-r1 build, using the
-unmodified exported base and sarc/tools/build.sh --llama. The queue's atomic
-JSON state is under artifact jobs/parent-r1/state.json, with its own launch log.
-No correctness gate, calibration or candidate session is queued with it.
-The build takes the inherited device lock, checks HOLD and foreign activity,
-and has a two-hour timeout (not a >48-hour projection). The HOLD unit is one
-build; no timing runs concurrently. A conservative 32 GiB free-space check
-precedes export. No intermediate or measured binary is deleted.
+CPU-only runtime helper compiled against the installed parent runtime and data
+loader in the same pinned image. It links neither Vulkan nor a GPU backend,
+refuses methods with inputs/backends/instructions or nonzero planned tensor
+memory, and executes only the nine named scalar constant methods. All nine
+methods on all six models match the saved static values, including context and
+sequence length 2560. Static delegate-graph evidence supplies group-128 linear
+and packed 4-bit/group-32 embedding facts, which have no corresponding runtime
+constant methods in these models. No forward method or model GPU job ran.
+
+Helper source, exact compile command/image, binary/library/source hashes, ldd,
+per-model stdout/stderr and combined results are in metadata/parent-r1/.
+The small nonprivate summary is results/runtime-metadata.json. The helper source
+in tools/runtime_metadata.cpp matches the compiled source bytes. Remaining
+launch facts are not replaced by these metadata checks.
+
+Recovery inspection found no active jobs, samplers or device lock holder; 40 GiB
+free after build. The owner decision of 2026-10-15 00:32 UTC resolved the original
+metadata bootstrap question. No unresolved owner question remains. The same
+archive and all 18 reviewed inventory hashes were confirmed before this build.
 
 Reviewed inventory: f393c3ff7ff4fc41e4651a5109a8509097c501f6.
 Archive SHA256: 65d1e3ca0eb7e9dffa8e9fbbb1a100bf2cf609868720b9053de67ff8bf5247d8.
@@ -40,8 +53,8 @@ hardware-policy change. Private host/model facts stay in artifact evidence.
 No measured cells, accepted candidates or family-wide conclusion exists.
 Independent preflight: queried all 15 cooperative-matrix type/shape records and
 subgroup/full-subgroup/shared/workgroup numeric limits. All 11 manifest candidates
-meet these numeric prerequisites; complete legality still awaits feature/format,
-model runtime and exact-module evidence. Static graph inspection verifies all
+meet these numeric prerequisites; complete legality still awaits feature/format
+and exact-module evidence. CPU runtime constants are now checked as above. Static graph inspection verifies all
 six context lengths, groups, packed embeddings and 12 production NK pairs.
 All model sizes match the kit; all six model and three tokenizer hashes recorded
 privately in artifacts. Sensor latency measured at requested 5 ms: median 5.133 ms.
@@ -61,12 +74,12 @@ conclusion exists. The complete legal matrix is incomplete. The seven native
 texture3d and four alternate buffer entries still require exact-module/format
 checks, committed selectors and gates; static checks are not measured passes.
 
-Next after build: inspect exact build/provenance and shipped-SPIR-V results,
-compile/run a CPU-only runtime metadata helper against its installed runtime,
-then finish legality/profile and measurement orchestration before the parent
-snapshot and A/A. Runtime execution, parent snapshot, calibration, candidate gates,
-all timing sessions and matrix margins remain pending. Do not launch model GPU
-work until metadata and all prerequisites pass. No attention change is planned.
+Next: complete feature/descriptor-format and exact-module allocation checks,
+prepare committed finite candidate profiles and run-local gate/session drivers,
+then capture the unmodified parent snapshot and A/A. The initial metadata
+bootstrap is complete and must not be repeated as a new preflight review.
+Parent snapshot, A/A calibration, candidate gates, timing rows and full matrix
+remain pending; no timing rate or margin is reported. No model GPU job is queued.
 
 ## Resolved owner question
 
@@ -81,5 +94,6 @@ and is not asked again.
 The existing HOLD dry run remains valid: separate test markers acknowledged,
 lock released and reacquired, markers cleaned. Evidence remains artifact
 preflight/hold-dry-run.txt. Actual HOLD was neither created nor removed.
-Every future detached unit checks it; parent build is the only queued unit.
+Every future detached unit checks it. The parent build unit has ended; no
+new detached unit is queued at this checkpoint.
 No reviewer builds/GPU jobs and no repeated preflight review are requested.
