@@ -2,7 +2,8 @@
 
 The owner decision of 2026-10-15 03:57 UTC authorizes conforming versions of all
 six fixed inputs. B580 owns the common recipe/evidence bundle. This run performs
-no duplicate export investigation. The bundle is absent at this checkpoint.
+no duplicate export investigation. A partial RoPE recipe was delivered at 04:30 UTC;
+it is not the complete conforming-input bundle.
 All original artifacts and the resource blocker are preserved.
 
 Before admitting revised inputs for any model GPU job, the B70 actor will check:
@@ -81,3 +82,25 @@ These tests contain no real models and are not device or correctness evidence.
 They are saved under preflight/revised-input-fixture in the artifact root.
 
 Gate source audit SHA256: `acf1bd491065caded39f363d32cc93f2783fa7cc5b0ea440c76058fd0fb585a6`.
+
+
+## Partial delivery, 2026-10-15 04:30 UTC
+
+Archive SHA256 `ba113d7778555427639cea0da7444bdfa018791428fd1e218e8ebdc3f343005b`
+binds the delivered actor recipe at commit
+`8c6c59c0ff922bd437d78fea7ec7c08dba1815fb`. All 26 extracted members and five
+recipe hashes match; twelve referenced runtime sources match the approved base
+and preserved topic export. The private receipt is
+input-preparation/b580-rope-bundle-receipt.json under the artifact root.
+
+The recipe changes two RoPE prepack output descriptors per original from width
+packing to height packing, preserving their dimensions and all payload bytes.
+A CPU-only local audit is prepared to verify original/full virtual output hashes,
+patch locations and constant payload/metadata records against the delivery.
+It streams a virtual revision, leaving originals unchanged and creating no PTE
+or model-runtime execution. This reuses the common recipe without an export
+investigation or another helper build. The audit is not an input admission.
+
+The delivery retains 8B width, operator-temporary and GPU correctness blockers.
+Its completed CPU preparation does not establish whole-model resource legality,
+synthetic-gate legality or any gate/timing pass. RESOURCE_LIMIT_BLOCKED remains.

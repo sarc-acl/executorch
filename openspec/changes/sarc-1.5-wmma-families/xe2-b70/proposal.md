@@ -194,3 +194,12 @@ diff/linear microbench and local identity helper generate texture3d width-packed
 The common unblock must satisfy these resources as well as revised model layouts.
 The full gate, dimensions, storage requirements and tolerances are unchanged.
 B70 is parked once awaiting the common bundle, without a duplicate export effort.
+
+
+The 04:30 partial RoPE delivery has verified archive/recipe/runtime-source
+provenance. The prepared rope-audit-01 job streams the existing recipe over local
+original files to compare their hashes, virtual revised hashes and all serialized
+constant records with the delivery. It creates no PTE and runs no GPU/model method.
+This bounded reuse adds no export investigation or rebuild. Complete conforming
+models, generated temporary resources, synthetic-gate legality and GPU correctness
+remain unresolved; CPU preparation is never recorded as a model or gate pass.

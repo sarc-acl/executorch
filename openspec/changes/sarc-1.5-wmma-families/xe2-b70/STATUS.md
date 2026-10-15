@@ -1,41 +1,33 @@
 # Xe2 B70 finite matrix status
 
-2026-10-15 04:02 UTC. Actor: Codex. **WAITING_OWNER: common revised-input bundle.**
-Read the full updated 1043-line CAMPAIGN.md including the 03:57 owner decision.
-The owner has resolved the previous authorization question: conforming versions
-of all six inputs are authorized, with original weights/quantization/context2560,
-tokenizer and prompts preserved and identical revised inputs in both arms.
-The B580 actor owns the common recipe/evidence bundle; no duplicate export
-investigation was performed here. No bundle or revised models were present in
-this run's input directory at recovery inspection. No GPU/build/queue job or
-device lock was active. No baseline gate or timing job has ever started.
+2026-10-15 04:45 UTC. Actor: Codex. **CPU partial-recipe audit prepared; GPU blocked.**
+Read the complete updated 1064-line CAMPAIGN.md, including the 04:30 delivery note.
+The shared partial RoPE recipe is now present. Archive SHA256 matches the task:
+`ba113d7778555427639cea0da7444bdfa018791428fd1e218e8ebdc3f343005b`.
+All 26 extracted files match the archive, all five recipe hashes match provenance,
+and twelve pinned runtime source hashes agree with the approved base and preserved
+topic export. Source recipe commit is `8c6c59c0ff922bd437d78fea7ec7c08dba1815fb`.
+Private receipt: input-preparation/b580-rope-bundle-receipt.json.
 
-Independent preparation is complete. Reviewed inventory archive and all 18 file
-hashes match. Existing selector/profile review and build/module/metadata evidence
-are reused; no unchanged source was rebuilt and no old device query was repeated.
-RESOURCE_LIMIT_BLOCKED remains in force until actual revised inputs and synthetic
-gate resources satisfy the required legality checks. The old allocation finding
-remains evidence, rather than an unresolved request for an exception.
+No prior queue, GPU/build job or held device lock was found on recovery. Reviewed
+inventory archive and all 18 input hashes match the pinned INPUT.md snapshot.
+No duplicate export investigation, new build or repeated device query was done.
 
-New queue preparation requires a local revised-input admission record, pins
-six models and three tokenizers by hash, preserves a receipt with every stage,
-and annotates every aggregated run with revised dataset, receipt and model hashes.
-Both arms use the same configured model root. CPU synthetic fixtures passed
-admission rejection checks and all 61 fixture rows retained revised-input identity;
-these are tool tests, never model correctness or measured performance evidence.
+Prepared CPU-only detached job: rope-audit-01, state jobs/rope-audit-01.json.
+It reuses the supplied recipe to compare local original hashes, virtual revised
+file hashes, all serialized Vulkan constant records and constant-method metadata
+against delivered evidence for all six originals. It writes no PTE, executes no
+model method and creates no Vulkan device/resource. Its work is serialized under
+the inherited host pair lock and obeys HOLD. Queue status is updated on failure.
+The original files and RESOURCE_LIMIT_BLOCKED marker stay unchanged.
 
-Independent source inspection also found over-limit synthetic 8B image resources
-in the unchanged full gate and identity helper. Revised PTEs alone do not address
-those constructors. See REVISED-INPUTS.md and artifact
-preflight/gate-resource-audit.json for exact-export source references. No gate,
-shape, storage requirement, tolerance, golden or shader body was changed.
-
-Next: receive the common bundle through the owner, validate it on B70, resolve
-synthetic gate resource legality without weakening the gate, then run correctness
-before timing. No admission record has been created for real models. The six-cell
-matrix remains incomplete; no medians, margins or family-wide acceptance exist.
-No push, PR, service, driver or hardware-policy change was performed.
-Park once for the dependency below; no repeated export investigation or review.
+The bundle's complete=true is CPU preparation only. It does not resolve 8B
+width, operator temporary resources, synthetic-gate legality or GPU correctness.
+The queue makes no input-admission or correctness decision. On completion, inspect
+its new evidence once and park for the remaining scope dependency below.
+Six-cell matrix, gate and timing evidence remain absent; no measured margin or
+family-wide acceptance is claimed. Independent prior selector/queue preparation
+is reused. No push, PR, service, driver, policy, shader or gate change occurred.
 
 Read the complete assembled campaign and final launch decision. Own branch starts at
 `617897184529ff180af491ee0d5d7de778cbb6c6`; clean checkout at initial inspection.
@@ -62,14 +54,14 @@ both arms. No family acceptance is inferred from this member.
 
 ## Decision needed from the owner
 
-Please relay the B580 actor's common conforming-input recipe/evidence bundle and
-its approved handling of the unmodified gate's independently constructed 8B
-texture3d fixtures. The inputs and B70 validation reports are still absent; no
-hardware-limit waiver or gate relaxation is authorized. Independent B70
-preparation is finished, so this dependency is recorded once and the run is
-parked until the task file changes or the owner relays the bundle with a resume.
-The earlier request to authorize conforming inputs was resolved by the
-2026-10-15 03:57 UTC decision and is not being asked again.
+The partial RoPE bundle has arrived and its provenance is verified; local CPU
+applicability validation is the remaining independent job. Please relay the
+remaining conforming 8B/operator-temporary recipe and resolve how the full
+unmodified gate's independent 8B texture3d fixtures can satisfy the image limits.
+The supplied bundle explicitly leaves those needs unresolved. No reduced coverage,
+illegal allocation, runtime release-zone edit or gate relaxation is authorized.
+This updates the existing dependency once; after the CPU audit, park without
+recomputing or requesting another review of the same unresolved scope.
 
 ## Coordinator hold
 
