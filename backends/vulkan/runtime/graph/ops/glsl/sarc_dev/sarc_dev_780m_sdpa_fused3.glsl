@@ -7,6 +7,18 @@
  */
 
 /*
+ * RETIRED (owner decision 2026-10-15, M5 review): kept for the record, cannot
+ * be selected. Lanes read shared-memory slots that other lanes of their
+ * subgroup wrote, ordered only by memoryBarrierShared() (13 of them here) with
+ * no subgroupBarrier(): under the Vulkan memory model the reads are not
+ * synchronised, and the kernel relies on the subgroup running in lockstep
+ * (LESSONS.md L8, MERGE-PLAN M2a). sarc_dev_780m_sdpa_fused3sb is fused3 with
+ * the barriers. impl/sarc_dev/FusedSlot.cpp (kRetired) aborts at start-up
+ * when a profile (780M c8 to c10) or ET_VK_SARC_780M_SDPA_FUSED names a
+ * fused3_ variant.
+ */
+
+/*
  * SARC development zone, 780M (openspec/changes/sarc-1.5-780m-prefill-refine):
  * third structure of the fused prefill SDPA kernel. Same arithmetic as
  * sarc_dev_780m_sdpa_fused (two passes over the context per block of query

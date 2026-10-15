@@ -2665,7 +2665,9 @@ const char kFused780mOnePass[] =
     "fused3_d64_t32x32g11s32rko,fused3_d128_t16x64g11s32rko";
 // fused3sb: fused3 with subgroupBarrier() after every memoryBarrierShared()
 // (round 3, 2026-10-08). c8 to c10 stay on the fused3 names they were measured
-// with.
+// with, for the record: fused2 and fused3 are retired (owner decision
+// 2026-10-15, FusedSlot.cpp kRetired), so selecting c8, c9 or c10 aborts at
+// start-up with a message naming fused3sb.
 const char kFused780mOnePassSb[] =
     "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko";
 const Profile780m k780mProfiles[] = {

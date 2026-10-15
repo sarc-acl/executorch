@@ -9,7 +9,8 @@
 // 780m (openspec/changes/sarc-1.5-780m-prefill-refine): the node of the fused
 // prefill SDPA kernels, glsl/sarc_dev/sarc_dev_780m_sdpa_fused{,2}.
 //   ET_VK_SARC_780M_SDPA_FUSED=<variant>[,<variant>]
-//   e.g. fused2_d64_t128x32g18s32,fused2_d128_t64x32g14s32
+//   e.g. fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko
+// (fused2_* and fused3_* are retired, 2026-10-15: FusedSlot.cpp aborts on them)
 // one variant (the shader name after sarc_dev_780m_sdpa_) per head_dim; without
 // the variable, the variants of ET_VK_SARC_780M_PROFILE (Overrides.cpp). The
 // fused3 family reads V from a transposed scratch copy that a second node

@@ -73,9 +73,13 @@ SARC_DEV_DECL FusedSlots& fused_slots();
 SARC_DEV_DECL void
 register_fused_node(FusedNode node, FusedAdd add, FusedServes serves);
 // The node whose variant list (one per FusedNode; null or "" = not requested)
-// is non-empty, or -1. More than one: prints them and aborts.
+// is non-empty, or -1. More than one, or a retired variant in the requested
+// list (retired_fused_variant): prints why and aborts.
 SARC_DEV_DECL int resolve_fused_node(const char* const (&lists)[kFusedNodes]);
 SARC_DEV_DECL const char* fused_node_name(int node);
+// The prefix of the first variant in `list` that is retired for `node`, or
+// null. Retired kernels stay in the tree for the record but cannot be selected.
+SARC_DEV_DECL const char* retired_fused_variant(int node, const char* list);
 // Installed into the Override by Overrides.cpp when a node is requested:
 // forward to fused_slots().active() at call time.
 SARC_DEV_DECL void fused_dispatch_add(

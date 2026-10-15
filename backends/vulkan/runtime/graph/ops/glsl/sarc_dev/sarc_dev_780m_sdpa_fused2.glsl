@@ -7,6 +7,18 @@
  */
 
 /*
+ * RETIRED (owner decision 2026-10-15, M5 review): kept for the record, cannot
+ * be selected. Lanes read shared-memory slots that other lanes of their
+ * subgroup wrote, ordered only by memoryBarrierShared() (7 of them here) with
+ * no subgroupBarrier(): under the Vulkan memory model the reads are not
+ * synchronised, and the kernel relies on the subgroup running in lockstep
+ * (LESSONS.md L8, MERGE-PLAN M2a). sarc_dev_780m_sdpa_fused3sb is fused3 with
+ * the barriers. impl/sarc_dev/FusedSlot.cpp (kRetired) aborts at start-up
+ * when a profile (780M c8 to c10) or ET_VK_SARC_780M_SDPA_FUSED names a
+ * fused2_ variant.
+ */
+
+/*
  * SARC development zone, 780M (openspec/changes/sarc-1.5-780m-prefill-refine):
  * second structure of the fused prefill SDPA kernel. Same arithmetic as
  * sarc_dev_780m_sdpa_fused (two passes over the context per block of query
@@ -193,7 +205,9 @@ void av_block(const uint slice, const uint row0) {
 
 // Shared stores are ordered against coopMatLoad only with the explicit memory
 // barrier (see the coopmat-lds-fence notes in sarc_sdpa_qk_coopmat.glsl).
-// SYNC orders the workgroup; within a subgroup the memory barrier is enough.
+// SYNC orders the workgroup. (Wrong, and the reason this kernel is retired:
+// within a subgroup the memory barrier alone does not synchronise one lane's
+// shared store with another lane's load; that needs subgroupBarrier().)
 #define SYNC memoryBarrierShared(); barrier()
 
 void main() {

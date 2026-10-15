@@ -223,6 +223,30 @@ static void check_fused_slot() {
     one[i] = "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko";
     EXPECT(resolve_fused_node(one) == i, "fused slot: node %d not resolved", i);
   }
+  // Retired kernels (the 780M's fused2 and fused3, owner decision 2026-10-15):
+  // requesting one aborts, wherever it stands in the list; fused3sb does not.
+  // c8 to c10 and 780m-final are checked against the real profiles below.
+  for (const char* retired :
+       {"fused3_d64_t32x32g11s32rko,fused3_d128_t16x64g11s32rko",
+        "fused3sb_d64_t32x32g11s32rko,fused3_d128_t16x64g11s32rk",
+        "fused2_d64_t128x32g18s32,fused2_d128_t64x32g14s32"}) {
+    const char* l780m[kFusedNodes] = {retired, nullptr, nullptr, nullptr, nullptr};
+    EXPECT(resolve_aborts(l780m), "fused slot: retired 780m list %s accepted", retired);
+    EXPECT(
+        retired_fused_variant(static_cast<int>(FusedNode::k780m), retired) != nullptr,
+        "fused slot: %s not retired",
+        retired);
+  }
+  EXPECT(
+      retired_fused_variant(
+          static_cast<int>(FusedNode::k780m),
+          "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko") == nullptr,
+      "fused slot: fused3sb retired");
+  EXPECT(
+      retired_fused_variant(
+          static_cast<int>(FusedNode::kM51),
+          "fused3_d64_t16x64g11s64rk,fused3_d128_t16x64g11s32rk") == nullptr,
+      "fused slot: the M51's own fused3 kernels retired with the 780M's");
   const char* const two[kFusedNodes] = {"fused3_d64_t32x32g11s32rk", "",
                                         "d64_t16x64s16m8g4roj", nullptr, nullptr};
   EXPECT(resolve_aborts(two), "fused slot: two requested nodes do not abort");
@@ -245,7 +269,8 @@ static void check_fused_slot() {
             fused_slots().requested == -1,
         "fused slot: a node is installed without a fused variable");
   }
-  // The real profiles. The finals that run a fused node resolve to it.
+  // The real profiles. The finals that run a fused node resolve to it; the
+  // 780M profiles c8 to c10 and a retired ET_VK_SARC_780M_SDPA_FUSED abort.
   const int k780m = static_cast<int>(FusedNode::k780m);
   EXPECT(probe_fused_node({}) == -1, "fused slot: a node without variables");
   EXPECT(
@@ -273,6 +298,12 @@ static void check_fused_slot() {
       probe_fused_node({"ET_VK_SARC_M51_PROFILE=c8"}) ==
           static_cast<int>(FusedNode::kM51),
       "fused slot: M51 c8");
+  for (const char* retired :
+       {"ET_VK_SARC_780M_PROFILE=c8", "ET_VK_SARC_780M_PROFILE=c9",
+        "ET_VK_SARC_780M_PROFILE=c10",
+        "ET_VK_SARC_780M_SDPA_FUSED=fused2_d64_t128x32g18s32"}) {
+    EXPECT(probe_fused_node({retired}) == -2, "fused slot: %s does not abort", retired);
+  }
   EXPECT(
       probe_fused_node(
           {"ET_VK_SARC_DEV_PROFILE=4070ti-fused1",
