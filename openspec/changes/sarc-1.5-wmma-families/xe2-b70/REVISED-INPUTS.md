@@ -104,3 +104,11 @@ investigation or another helper build. The audit is not an input admission.
 The delivery retains 8B width, operator-temporary and GPU correctness blockers.
 Its completed CPU preparation does not establish whole-model resource legality,
 synthetic-gate legality or any gate/timing pass. RESOURCE_LIMIT_BLOCKED remains.
+
+
+The local virtual-revision audit is now complete: six original hashes, six virtual
+revised hashes and 3,313 serialized constant records match the delivery. See
+results/partial-rope-audit.md and partial-rope-audit.csv. This establishes only
+partial recipe applicability. No PTE was created or executed; revised-input
+runtime, full resource legality, correctness and all matrix measurements remain
+pending. Independent work is finished; the run is parked for the recorded scope.

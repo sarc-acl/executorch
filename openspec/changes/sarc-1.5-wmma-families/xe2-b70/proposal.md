@@ -203,3 +203,11 @@ constant records with the delivery. It creates no PTE and runs no GPU/model meth
 This bounded reuse adds no export investigation or rebuild. Complete conforming
 models, generated temporary resources, synthetic-gate legality and GPU correctness
 remain unresolved; CPU preparation is never recorded as a model or gate pass.
+
+
+The completed rope-audit-01 CPU job matched all six local source hashes, virtual
+revised hashes and 3,313 constant records to the delivered bundle. Small results
+and private raw evidence hashes are in results/partial-rope-audit.md. It made no
+PTE, runtime/model execution, GPU correctness or legality claim. Independent
+preparation is complete; the existing conforming-input/synthetic-gate scope
+question remains pending and the run is parked once for the owner.

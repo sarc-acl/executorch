@@ -1,33 +1,24 @@
 # Xe2 B70 finite matrix status
 
-2026-10-15 04:45 UTC. Actor: Codex. **CPU partial-recipe audit prepared; GPU blocked.**
-Read the complete updated 1064-line CAMPAIGN.md, including the 04:30 delivery note.
-The shared partial RoPE recipe is now present. Archive SHA256 matches the task:
-`ba113d7778555427639cea0da7444bdfa018791428fd1e218e8ebdc3f343005b`.
-All 26 extracted files match the archive, all five recipe hashes match provenance,
-and twelve pinned runtime source hashes agree with the approved base and preserved
-topic export. Source recipe commit is `8c6c59c0ff922bd437d78fea7ec7c08dba1815fb`.
-Private receipt: input-preparation/b580-rope-bundle-receipt.json.
+2026-10-15 04:49 UTC. Actor: Codex. **WAITING_OWNER: remaining conforming-input/gate scope.**
+CPU-only rope-audit-01 completed with exit code 0 at 2026-10-15T04:47:58.312599+00:00.
+All six local original hashes, six virtual revised hashes and 3,313 serialized
+Vulkan constant records agree with the delivered partial RoPE bundle. Two layout
+bytes per model are the sole virtual changes. Serialized constant-method values
+match the bundle's reported runtime observations, including context2560.
+New small evidence: results/partial-rope-audit.md and partial-rope-audit.csv.
+Raw artifact evidence: input-preparation/b70-rope-audit-01/evidence.json;
+terminal job record jobs/rope-audit-01.json and log logs/rope-audit-01.log.
 
-No prior queue, GPU/build job or held device lock was found on recovery. Reviewed
-inventory archive and all 18 input hashes match the pinned INPUT.md snapshot.
-No duplicate export investigation, new build or repeated device query was done.
-
-Prepared CPU-only detached job: rope-audit-01, state jobs/rope-audit-01.json.
-It reuses the supplied recipe to compare local original hashes, virtual revised
-file hashes, all serialized Vulkan constant records and constant-method metadata
-against delivered evidence for all six originals. It writes no PTE, executes no
-model method and creates no Vulkan device/resource. Its work is serialized under
-the inherited host pair lock and obeys HOLD. Queue status is updated on failure.
-The original files and RESOURCE_LIMIT_BLOCKED marker stay unchanged.
-
-The bundle's complete=true is CPU preparation only. It does not resolve 8B
-width, operator temporary resources, synthetic-gate legality or GPU correctness.
-The queue makes no input-admission or correctness decision. On completion, inspect
-its new evidence once and park for the remaining scope dependency below.
-Six-cell matrix, gate and timing evidence remain absent; no measured margin or
-family-wide acceptance is claimed. Independent prior selector/queue preparation
-is reused. No push, PR, service, driver, policy, shader or gate change occurred.
+No PTE was created, model method executed, GPU work performed or input admitted.
+Local runtime checks on revised files were not run. CPU applicability does not
+establish whole-model legality or correctness. The 8B width, operator-temporary
+and independent synthetic-gate resource requirements remain unresolved.
+RESOURCE_LIMIT_BLOCKED, originals and valid builds are preserved. No GPU/build
+job or device lock remains active. Independent validation/preparation is finished.
+The existing owner question below remains pending; park without another audit,
+recomputation or review of the same blocker. No six-cell medians, margins,
+family-wide acceptance, push, PR, service, driver or policy change is claimed.
 
 Read the complete assembled campaign and final launch decision. Own branch starts at
 `617897184529ff180af491ee0d5d7de778cbb6c6`; clean checkout at initial inspection.
@@ -54,21 +45,23 @@ both arms. No family acceptance is inferred from this member.
 
 ## Decision needed from the owner
 
-The partial RoPE bundle has arrived and its provenance is verified; local CPU
-applicability validation is the remaining independent job. Please relay the
+The partial RoPE bundle has arrived and its provenance and local CPU
+applicability audit are complete. Please relay the
 remaining conforming 8B/operator-temporary recipe and resolve how the full
 unmodified gate's independent 8B texture3d fixtures can satisfy the image limits.
 The supplied bundle explicitly leaves those needs unresolved. No reduced coverage,
 illegal allocation, runtime release-zone edit or gate relaxation is authorized.
-This updates the existing dependency once; after the CPU audit, park without
-recomputing or requesting another review of the same unresolved scope.
+The independent CPU audit is finished. The existing dependency is recorded
+once; park without recomputing or requesting another review of this scope.
 
 ## Coordinator hold
 
 Isolated HOLD.test/HELD.test dry check passed via the inherited hold function.
 Real HOLD and HELD remain coordinator-owned at the artifact root. A build is a
 job boundary; no queue starts before a checked build and launch prerequisites.
-Longest build/job duration remains to be measured before the matrix queue.
+The completed CPU audit took 112.5s queued-to-terminal. The preserved
+parent build took 6m18s. Gate/session duration still must be recorded before
+projecting the finite matrix.
 
 Original-input parent runtime metadata check completed successfully for all six
 original model files; revised-input runtime metadata remains pending.
