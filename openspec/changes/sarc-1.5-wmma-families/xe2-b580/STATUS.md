@@ -1,5 +1,36 @@
 # Xe2 B580 bounded matrix status
 
+Recovery update 2026-10-15T04:21Z. Actor: Codex.
+The complete current campaign (including 03:57 owner approval and 04:14 allocation)
+was read. No surviving B580 build, model runner or sampler was found; neither GPU
+nor desktop-build lock was held at inspection. Previous evidence/builds are reused;
+no allocator requery, rebuild or repeated blocker review was performed.
+
+INPUT.md's exact inventory snapshot remains pinned. This turn reconfirmed the
+archive SHA-256 `65d1e3ca0eb7e9dffa8e9fbbb1a100bf2cf609868720b9053de67ff8bf5247d8`
+and all 18 file hashes, including Xe2 manifest
+`5904caa4c1977f256d58b4c1c111e7fdcb2e54bc312676b40c90da6bcf048306`.
+
+Independent new work: a source-derived partial RoPE input recipe is in
+prepare_rope_inputs.py and INPUT-PREPARATION.md. It changes two layout bytes per
+model, preserving every other byte, and uses the existing CPU-only runtime helper
+for revised-input constants. Metadata discovery found exactly two intended targets
+in each of the six models. This is NOT a conforming all-six input bundle: 8B width,
+operator-temporary legality and GPU correctness remain unresolved. No margin,
+gate, baseline or A/A result is claimed.
+
+A detached CPU-only preparation job is being queued with state file
+`/mnt/linux-share/hmz-campaigns/wmma-b580/.artifacts/input-preparation/rope-height-v1/job-state.json`.
+It takes the desktop-build lock exclusively to avoid interfering with timing,
+obeys HOLD, preserves originals and failed partial files, and writes hashes,
+byte-equivalence evidence and revised-input runtime-constant outputs. It performs
+no build, Vulkan forward, GPU query or timing. After completion, inspect its new
+evidence and finish the independent 8B resource-route investigation before parking
+on the synthetic-gate question below. No new independent review is requested yet.
+
+The following prior reviewed evidence remains historical context.
+
+
 Updated 2026-10-15T00:43:18Z. Actor: Codex.
 **BLOCKED before model GPU launch; matrix incomplete.** No active build, queue,
 benchmark or sampler. No GPU model forward method, parent snapshot, A/A, gate or
@@ -79,23 +110,24 @@ park for the owner; do not requery or recompute the unchanged blocker.
 
 ## Decision needed from the owner
 
-This updates the single question originally recorded at 2026-10-14T20:09Z; it is
-not a repeat request for an allocation-limit exception. The recovery instruction
-permits legal cells only, and the expanded evidence finds none among these six.
-Please supply a separately authorized and reviewed conforming model/runtime path
-covering BOTH the common RoPE height and 8B linear width, or an owner-provided
-environment whose exact matching image queries support those extents. New source
-or inputs need provenance and revalidation before any GPU baseline or gate.
-Re-exporting models, changing runtime allocation/storage, changing drivers or
-waiving a queried limit is not authorized within this stage. Required 8B cells
-remain BLOCKED along with the 1B/3B cells; the finite matrix is not complete.
+The old original-input question is superseded by the explicit 2026-10-15 03:57
+approval. New question, recorded once on 2026-10-15: the unmodified gate constructs
+8B synthetic texture3d production tensors independently of the model files. Their
+3584-wide fp16 images exceed the matching 2048 limit. The --linear prefill suite
+also includes those shapes. Input repair cannot make this coverage legal.
+Please provide an environment supporting those exact resources, or separately
+approve a concrete replacement correctness-coverage plan for these unsupported
+synthetic cases. The current input-only approval grants no gate relaxation.
+No synthetic GPU test has been attempted. See INPUT-PREPARATION.md for source
+references. Finish independent input preparation before parking on this question.
 
 ## Next step
 
-Independent review of EVIDENCE.md/BLOCKER.md and raw artifacts, then waiting_owner.
-No detached job is queued. HOLD was neither created nor removed; host policy,
-services, models, historical checkouts, release code, prompts, thresholds and
-sarc/tools/goldens were left unchanged.
+Finish the detached partial-input preparation, inspect its new outputs, then
+finish independent 8B buffer/storage-route work within the retained allocation.
+The synthetic-gate question above remains pending; no gate, measurement or new
+review is queued. HOLD remains coordinator-controlled. The source recipe makes
+no runtime release edit, new shader, threshold or tolerance change.
 
 Recovery budget: coordinator reports $10.75 spent of the $25 recovery cap at
 00:42 UTC. This is not a renewed device-run allowance. No further job is queued.
