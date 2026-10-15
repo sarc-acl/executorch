@@ -49,7 +49,7 @@ def main():
             assert process.wait(timeout=15) == expected, name
     records = [json.loads(line) for line in (stage / 'invocations.jsonl').read_text().splitlines()]
     assert [x['rc'] for x in records] == [0, 7, 143]
-    assert all(x['sampler_children'] == '' and x['sampler_rc'] == 0 and not x['sensor_error'] for x in records)
+    assert all(x['sampler_children'] == [] and x['sampler_rc'] == 0 and not x['sensor_error'] for x in records)
     assert all(not x['foreign_before'] and not x['foreign_during'] and not x['foreign_after'] for x in records)
     assert min(x['sensor_samples'] for x in records[:2]) >= 5
     assert len((stage / 'verify-runs.jsonl').read_text().splitlines()) == 3

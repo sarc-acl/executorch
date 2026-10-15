@@ -71,6 +71,24 @@ def cool(config, paths):
         time.sleep(5)
 
 
+def direct_children(parent):
+    # CONFIG_PROC_CHILDREN is optional; PPid is available in ordinary proc stat.
+    parent_stat = Path(f'/proc/{parent}/stat').read_text()
+    if not parent_stat:
+        raise RuntimeError('sampler vanished before child audit')
+    children = []
+    for entry in Path('/proc').iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            fields = (entry / 'stat').read_text().rsplit(') ', 1)[1].split()
+        except (FileNotFoundError, ProcessLookupError):
+            continue
+        if int(fields[1]) == parent:
+            children.append(int(entry.name))
+    return sorted(children)
+
+
 def invoke(config, program, arguments):
     stage = Path(config['stage'])
     paths = json.loads((stage / 'sensor-paths.json').read_text())
@@ -123,9 +141,13 @@ def invoke(config, program, arguments):
         if interrupted:
             record['rc'] = 128 + interrupted[0]
         record['process_end_epoch_us'] = time.time_ns() // 1000
-        record['sampler_children'] = Path(f'/proc/{sampler.pid}/task/{sampler.pid}/children').read_text().strip()
+        record['sampler_children'] = direct_children(sampler.pid)
+        record['sampler_child_check'] = 'proc_stat_ppid_scan'
         if record['sampler_children']:
             raise RuntimeError('sampler unexpectedly has children')
+    except BaseException as error:
+        record['instrumentation_error'] = str(error)
+        raise
     finally:
         stop(child)
         stop(sampler)
@@ -193,7 +215,7 @@ def main():
         check(config)
         records = [json.loads(line) for line in (stage / 'invocations.jsonl').read_text().splitlines()]
         assert len(records) == 37, f'expected 37 gate invocations, got {len(records)}'
-        assert all(not x['sensor_error'] and x['sampler_children'] == '' and x['sampler_rc'] == 0 for x in records)
+        assert all(not x.get('instrumentation_error') and not x['sensor_error'] and x.get('sampler_children') == [] and x['sampler_rc'] == 0 for x in records)
         assert sum(x['program'] == 'llama_main' for x in records) == 22
         with (stage / 'content-check.txt').open('x') as file:
             content = subprocess.run([sys.executable, str(stage / 'tools/parent_gate_check.py'), 'verify', str(stage), str(stage)],
