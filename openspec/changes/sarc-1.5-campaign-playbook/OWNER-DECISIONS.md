@@ -315,3 +315,26 @@ M51, M2b, M2d) is out of this round.
    Orin probe files whose SHA-256 is recorded in their `REFERENCE_ERROR.json`.
 4. M2: the hooks are reviewed first; proposed final forms are approved by the owner before any release-zone
    code changes.
+
+### N13. Architecture families for the upstream WMMA port (owner decisions 2026-10-14 and 2026-10-15)
+
+Recorded 2026-10-15 from the change `sarc-1.5-wmma-families` (`proposal.md`) and the approvals kept in the hmz
+campaign's run tasks; the proposal cited them as N12 before N12 was used for the pre-promotion decisions.
+
+1. Goal: the 4w and 8da4w linear speedups go upstream in one PR as one kernel set per architecture family
+   (Xe2; RDNA3 on RADV; NVIDIA Ampere/Ada; Xclipse). Devices are keyed by vendor ID, driver ID and a property
+   signature, never by name. A device that matches no family keeps upstream's current path; no new generic
+   fallback kernel. Fused attention is a later, separate PR.
+2. Margin: a family's set is accepted when on every member its six-cell geomean is within 3 % of the member's
+   tuned best (final campaign profile, linear kernels only) and no cell is more than 8 % worse. Per-device
+   overrides that beat the family by more stay internal and never go upstream.
+3. Promotion on `dev/1.5` is one family per PR (exception to one device per PR). Xclipse numbers stay local.
+4. 2026-10-14 19:09 UTC: the run split was approved ("go"): inventory, five device runs, family selection;
+   no promotion, upstream port, new bodies, push or PR from those runs.
+5. 2026-10-15 03:57 and 04:08 UTC: approved revised Intel model inputs (originals preserved, results kept apart
+   from historical numbers), the narrow Vulkan memory-model enablement for the Orin and then the 4070 Ti, and
+   a monitoring caveat for the 780M (stated on every result). Aggregate ceiling $435.
+6. 2026-10-15: the memory-model fix goes onto `topic/wmma-families` with the merged campaigns. The owner put
+   the coordinator (Claude) in charge of the openspec changes and of driving the hmz runs to completion;
+   money beyond an approved ceiling, pushes, PRs, services and company-side relays remain owner decisions.
+
