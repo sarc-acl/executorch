@@ -17,8 +17,8 @@
 // first. For the calls it fits (below) the three SDPA kernels dispatch nothing
 // and this node writes the output; every other call (decode, unaligned
 // prompt, a head_dim without a variant) is untouched.
-// Entry point: Override::sdpa_fused_{serves,add} (impl/sarc/Select.h), handed
-// to Overrides.cpp at the end of this file. In a subdirectory because
+// Entry point: Override::sdpa_fused_{serves,add} (impl/sarc/Select.h), stored
+// in impl/sarc_dev/FusedSlot.h at the end of this file. In a subdirectory because
 // impl/sarc_dev/*.cpp must stay GPU-free (sarc/tools/check.sh compiles those
 // into test_sarc_select).
 
@@ -26,6 +26,7 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Common.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/SDPA.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/GraphInfo.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc_dev/FusedSlot.h>
 
 #include <cmath>
 #include <cstdio>
@@ -37,9 +38,6 @@ namespace sarc {
 
 // Overrides.cpp, 4070ti-fused blocks.
 const char* sdpa_fused_variants_4070ti();
-void register_sdpa_fused_4070ti(
-    void (*add)(ComputeGraph&, const std::vector<ValueRef>&),
-    bool (*serves)(ComputeGraph*, const std::vector<ValueRef>&));
 
 namespace {
 
@@ -255,7 +253,7 @@ void sdpa_fused_add_4070ti(
 
 struct Registrar4070tiFused {
   Registrar4070tiFused() {
-    register_sdpa_fused_4070ti(sdpa_fused_add_4070ti, sdpa_fused_serves_4070ti);
+    register_fused_node(FusedNode::k4070ti, sdpa_fused_add_4070ti, sdpa_fused_serves_4070ti);
   }
 } registrar_4070ti_fused;
 

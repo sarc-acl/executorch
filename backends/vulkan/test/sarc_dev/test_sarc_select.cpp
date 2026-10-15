@@ -14,15 +14,27 @@
 //
 // Build (see sarc/tools/check.sh): c++ -std=c++17 -I<parent of repo root>
 //   test_sarc_select.cpp impl/sarc/Select.cpp impl/sarc/table_*.cpp
-//   [impl/sarc_dev/Overrides.cpp]; args: the sarc yaml files.
+//   [impl/sarc_dev/*.cpp]; args: the sarc yaml files.
+//
+// With the development zone linked it also checks the fused attention node's
+// slot (impl/sarc_dev/FusedSlot.h): the node that runs does not depend on the
+// order of the static initializers, and two requested nodes abort. Its
+// functions are declared weak, so that the release-only build links too.
 
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h>
+#define SARC_DEV_DECL __attribute__((weak))
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc_dev/FusedSlot.h>
 
+#include <algorithm>
+#include <csignal>
 #include <cstdio>
 #include <fstream>
 #include <functional>
 #include <sstream>
 #include <string>
+
+#include <sys/wait.h>
+#include <unistd.h>
 
 using namespace vkcompute::sarc;
 
@@ -111,7 +123,179 @@ static bool active(const DeviceInfo& d, Op op) {
   return false;
 }
 
+// Fake fused nodes: node N's serves() records N.
+static int last_served = -1;
+template <int N>
+bool fake_serves(vkcompute::ComputeGraph*, const std::vector<int32_t>&) {
+  last_served = N;
+  return true;
+}
+template <int N>
+void fake_add(vkcompute::ComputeGraph&, const std::vector<int32_t>&) {}
+static const FusedEntry kFakes[kFusedNodes] = {
+    {fake_add<0>, fake_serves<0>},
+    {fake_add<1>, fake_serves<1>},
+    {fake_add<2>, fake_serves<2>},
+    {fake_add<3>, fake_serves<3>},
+    {fake_add<4>, fake_serves<4>},
+};
+
+// True if resolve_fused_node(lists) kills the process with SIGABRT.
+static bool resolve_aborts(const char* const (&lists)[kFusedNodes]) {
+  std::fflush(stdout);
+  const pid_t pid = fork();
+  if (pid == 0) {
+    std::freopen("/dev/null", "w", stderr);
+    resolve_fused_node(lists);
+    _exit(0);
+  }
+  int status = 0;
+  waitpid(pid, &status, 0);
+  return WIFSIGNALED(status) && WTERMSIG(status) == SIGABRT;
+}
+
+// Runs this binary again with `env` (NAME=value pairs) added; its static
+// initializers resolve the fused node from the real profiles. Returns the node
+// it requested, or -2 if it aborted, -3 on another failure.
+static int probe_fused_node(std::initializer_list<const char*> env) {
+  std::fflush(stdout);
+  const pid_t pid = fork();
+  if (pid == 0) {
+    std::freopen("/dev/null", "w", stderr);
+    for (const char* e : env) {
+      putenv(const_cast<char*>(e));
+    }
+    execl("/proc/self/exe", "test_sarc_select", "--probe-fused", (char*)nullptr);
+    _exit(99);
+  }
+  int status = 0;
+  waitpid(pid, &status, 0);
+  if (WIFSIGNALED(status) && WTERMSIG(status) == SIGABRT) {
+    return -2;
+  }
+  if (WIFEXITED(status) && WEXITSTATUS(status) >= 10 &&
+      WEXITSTATUS(status) < 10 + 1 + kFusedNodes) {
+    return WEXITSTATUS(status) - 11;
+  }
+  return -3;
+}
+
+static void check_fused_slot() {
+  // Every order of the five registrations and the request gives the requested
+  // node, or nothing when the requested node is not linked.
+  for (int want = -1; want < kFusedNodes; ++want) {
+    for (int linked_mask : {0x1f, 0x1f & ~(want >= 0 ? 1 << want : 0)}) {
+      std::vector<int> events = {0, 1, 2, 3, 4, kFusedNodes}; // kFusedNodes = request
+      std::sort(events.begin(), events.end());
+      int orders = 0;
+      bool all_ok = true;
+      do {
+        FusedSlots s;
+        for (int e : events) {
+          if (e == kFusedNodes) {
+            s.request(want);
+          } else if (linked_mask & (1 << e)) {
+            s.put(static_cast<FusedNode>(e), kFakes[e].add, kFakes[e].serves);
+          }
+        }
+        const FusedEntry a = s.active();
+        const bool linked = want >= 0 && (linked_mask & (1 << want));
+        last_served = -1;
+        const bool served = a.serves != nullptr && a.serves(nullptr, {});
+        all_ok = all_ok &&
+            (linked ? a.add == kFakes[want].add && served && last_served == want
+                    : a.add == nullptr && a.serves == nullptr);
+        ++orders;
+      } while (std::next_permutation(events.begin(), events.end()));
+      EXPECT(
+          all_ok && orders == 720,
+          "fused slot: request %d, linked 0x%x: order-dependent result",
+          want,
+          linked_mask);
+    }
+  }
+
+  // Resolution from the variant lists.
+  const char* const none[kFusedNodes] = {nullptr, "", nullptr, "", nullptr};
+  EXPECT(resolve_fused_node(none) == -1, "fused slot: empty lists request a node");
+  for (int i = 0; i < kFusedNodes; ++i) {
+    const char* one[kFusedNodes] = {nullptr, "", nullptr, "", nullptr};
+    one[i] = "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko";
+    EXPECT(resolve_fused_node(one) == i, "fused slot: node %d not resolved", i);
+  }
+  const char* const two[kFusedNodes] = {"fused3_d64_t32x32g11s32rk", "",
+                                        "d64_t16x64s16m8g4roj", nullptr, nullptr};
+  EXPECT(resolve_aborts(two), "fused slot: two requested nodes do not abort");
+  const char* const three[kFusedNodes] = {nullptr, "a", nullptr, "b", "c"};
+  EXPECT(resolve_aborts(three), "fused slot: three requested nodes do not abort");
+
+  // The process: without fused variables nothing is installed or served
+  // (check.sh runs this binary with ET_VK_SARC_UNVERIFIED=1 only).
+  const bool fused_env =
+      std::getenv("ET_VK_SARC_780M_SDPA_FUSED") != nullptr ||
+      std::getenv("ET_VK_SARC_ORIN_SDPA_FUSED") != nullptr ||
+      std::getenv("ET_VK_SARC_M51_SDPA_FUSED") != nullptr ||
+      std::getenv("ET_VK_SARC_780M_PROFILE") != nullptr ||
+      std::getenv("ET_VK_SARC_M51_PROFILE") != nullptr ||
+      std::getenv("ET_VK_SARC_DEV_PROFILE") != nullptr;
+  if (!fused_env) {
+    EXPECT(
+        get_override().sdpa_fused_add == nullptr &&
+            get_override().sdpa_fused_serves == nullptr &&
+            fused_slots().requested == -1,
+        "fused slot: a node is installed without a fused variable");
+  }
+  // The real profiles. The finals that run a fused node resolve to it.
+  const int k780m = static_cast<int>(FusedNode::k780m);
+  EXPECT(probe_fused_node({}) == -1, "fused slot: a node without variables");
+  EXPECT(
+      probe_fused_node({"ET_VK_SARC_DEV_PROFILE=780m-final"}) == k780m,
+      "fused slot: 780m-final");
+  EXPECT(
+      probe_fused_node(
+          {"ET_VK_SARC_780M_PROFILE=c7",
+           "ET_VK_SARC_780M_SDPA_FUSED=fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko",
+           "ET_VK_SARC_RX7600_PROFILE=rx7600-refine5"}) == k780m,
+      "fused slot: the RX 7600 final");
+  EXPECT(
+      probe_fused_node({"ET_VK_SARC_DEV_PROFILE=4070ti-fused1"}) ==
+          static_cast<int>(FusedNode::k4070ti),
+      "fused slot: 4070ti-fused1");
+  EXPECT(
+      probe_fused_node({"ET_VK_SARC_DEV_PROFILE=b70-fused1-order-i-n26-w16m"}) ==
+          static_cast<int>(FusedNode::kXe2),
+      "fused slot: b70 final");
+  EXPECT(
+      probe_fused_node({"ET_VK_SARC_DEV_PROFILE=orin-fused1"}) ==
+          static_cast<int>(FusedNode::kOrin),
+      "fused slot: orin-fused1");
+  EXPECT(
+      probe_fused_node({"ET_VK_SARC_M51_PROFILE=c8"}) ==
+          static_cast<int>(FusedNode::kM51),
+      "fused slot: M51 c8");
+  EXPECT(
+      probe_fused_node(
+          {"ET_VK_SARC_DEV_PROFILE=4070ti-fused1",
+           "ET_VK_SARC_780M_SDPA_FUSED=fused3sb_d64_t32x32g11s32rko"}) == -2,
+      "fused slot: two devices' variables do not abort");
+
+  // A node registered after the request is still the one dispatched.
+  const int saved = fused_slots().requested;
+  const FusedEntry saved_m51 = fused_slots().entries[4];
+  fused_slots().request(static_cast<int>(FusedNode::kM51));
+  register_fused_node(FusedNode::kM51, kFakes[4].add, kFakes[4].serves);
+  last_served = -1;
+  EXPECT(
+      fused_dispatch_serves(nullptr, {}) && last_served == 4,
+      "fused slot: dispatcher does not reach a node registered late");
+  fused_slots().entries[4] = saved_m51;
+  fused_slots().request(saved);
+}
+
 int main(int argc, char** argv) {
+  if (argc == 2 && std::string(argv[1]) == "--probe-fused") {
+    return 11 + fused_slots().requested; // probe_fused_node
+  }
   const Fixture fixtures[] = {
       {"780M",
        device("amd radeon 780m graphics (radv phoenix)", true, 64, 32, 64),
@@ -323,6 +507,12 @@ int main(int argc, char** argv) {
     }
   }
 
+  bool fused_slot_checked = false;
+  if (&resolve_fused_node != nullptr) { // development zone linked
+    check_fused_slot();
+    fused_slot_checked = true;
+  }
+
   // Every kernel name the tables can produce must exist in a yaml.
   if (argc > 1) {
     std::string yamls;
@@ -357,12 +547,13 @@ int main(int argc, char** argv) {
 
   std::printf(
       "test_sarc_select: %s (%d checks, %zu rows, %zu candidates, dev zone "
-      "%s, unverified %s)\n",
+      "%s, unverified %s%s)\n",
       failures == 0 ? "PASS" : "FAIL",
       checked,
       rows().size(),
       candidates().size(),
       get_override().select != nullptr ? "linked" : "absent",
-      get_override().allow_unverified ? "on" : "off");
+      get_override().allow_unverified ? "on" : "off",
+      fused_slot_checked ? ", fused slot checked" : "");
   return failures == 0 ? 0 : 1;
 }

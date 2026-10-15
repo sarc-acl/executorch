@@ -20,8 +20,8 @@
 // For the calls it fits (below) the three SDPA kernels dispatch nothing and
 // this node writes the output; every other call (decode, unaligned prompt, a
 // head_dim without a variant) is untouched. Entry point:
-// Override::sdpa_fused_{serves,add} (impl/sarc/Select.h), set at the end of
-// this file only when a variant is named; Overrides.cpp keeps them. In a
+// Override::sdpa_fused_{serves,add} (impl/sarc/Select.h), stored in
+// impl/sarc_dev/FusedSlot.h at the end of this file. In a
 // subdirectory because impl/sarc_dev/*.cpp must stay GPU-free
 // (sarc/tools/check.sh compiles those into test_sarc_select).
 
@@ -29,6 +29,7 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Common.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/SDPA.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/GraphInfo.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc_dev/FusedSlot.h>
 
 #include <cmath>
 #include <cstdio>
@@ -40,6 +41,9 @@
 namespace vkcompute {
 namespace sarc {
 
+// Overrides.cpp, fused attention node block: the orin-fused profiles' kernels.
+const char* sdpa_fused_variants_orin();
+
 namespace {
 
 struct Variant {
@@ -49,25 +53,11 @@ struct Variant {
   bool packed;
 };
 
-// The fused kernels of a profile, one per head_dim ("" = none).
-const char* profile_variants() {
-  const char* e = std::getenv("ET_VK_SARC_DEV_PROFILE");
-  if (e != nullptr && std::strcmp(e, "orin-fused1") == 0) {
-    return "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko";
-  }
-  // The faster form per head_dim at kernel level on this device: two passes
-  // for head_dim 64, one pass for 128.
-  if (e != nullptr && std::strcmp(e, "orin-fused2") == 0) {
-    return "fused3sb_d64_t32x32g11s32rk,fused3sb_d128_t16x64g11s32rko";
-  }
-  return "";
-}
-
 const std::vector<Variant>& variants() {
   static const std::vector<Variant> parsed = [] {
     std::vector<Variant> out;
     const char* e = std::getenv("ET_VK_SARC_ORIN_SDPA_FUSED");
-    std::string list = e != nullptr ? e : profile_variants();
+    std::string list = e != nullptr ? e : sdpa_fused_variants_orin();
     while (!list.empty()) {
       const size_t comma = list.find(',');
       const std::string token = list.substr(0, comma);
@@ -298,13 +288,11 @@ void sdpa_fused_add_orin(
 
 struct RegistrarOrinFused {
   RegistrarOrinFused() {
+    register_fused_node(
+        FusedNode::kOrin, sdpa_fused_add_orin, sdpa_fused_serves_orin);
     if (variants().empty()) {
       return;
     }
-    Override o = get_override();
-    o.sdpa_fused_add = sdpa_fused_add_orin;
-    o.sdpa_fused_serves = sdpa_fused_serves_orin;
-    set_override(o);
     std::cerr << "[sarc_dev] orin fused attention:";
     for (const Variant& v : variants()) {
       std::cerr << " " << v.name;

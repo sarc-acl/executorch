@@ -30,6 +30,7 @@
 //                                     needs a device with active dq8ca rows
 
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc_dev/FusedSlot.h>
 
 #include <cstdlib>
 #include <cstring>
@@ -1584,11 +1585,6 @@ const FusedB70 kFusedB70[] = {
     {"b70-fused-d128_t16x128s16m8g8oj", "d128_t16x128s16m8g8oj"},
     {"b70-fused-d128_t16x64s16m8g4oj", "d128_t16x64s16m8g4oj"},
 };
-// The function pointers of impl/sarc_dev/b580/SdpaB580Fused.cpp, whichever static initializer runs first.
-Override& fused_b70() {
-  static Override fused;
-  return fused;
-}
 // b70-fused end
 // b580 begin: Arc B580 profiles (openspec/changes/sarc-1.5-b580-prefill-refine, tools/gen_b580.py)
 // Single-kernel screening profiles and the b580-refineN candidates. They take effect on the Arc B580 only
@@ -1760,11 +1756,6 @@ const FusedB580 kFusedB580[] = {
     {"b580-fused-d64_t16x128s16m8g4roj", "d64_t16x128s16m8g4roj"},
     {"b580-fused-d64_t8x64s16m8g4roj", "d64_t8x64s16m8g4roj"},
 };
-// The function pointers of impl/sarc_dev/b580/SdpaB580Fused.cpp, whichever static initializer runs first.
-Override& fused_b580() {
-  static Override fused;
-  return fused;
-}
 // b580-fused end
 // xe2-order begin: workgroup-order profiles (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)
 // Workgroup-order profiles (tools/gen_xe2.py, ORDER_PROFILES): the base profile with the 8da4w kernel
@@ -2393,21 +2384,15 @@ const char* softmax_variant_4070ti() {
 // RTX 4070 Ti SUPER fused attention port: the fused kernels of the requested
 // profile, one per head_dim (the shader name after sarc_dev_4070ti_sdpa_), or
 // null. The node lives in 4070ti/Sdpa4070tiFused.cpp, which needs the graph
-// headers this file (GPU-free, test_sarc_select) must not include; it hands its
-// Override::sdpa_fused_* functions over from its own static initializer
-// (register_sdpa_fused_4070ti, below). The order of the two files'
-// initializers is not defined: the pair is kept here and applied by whichever
-// runs last, and only while a fused profile is requested.
+// headers this file (GPU-free, test_sarc_select) must not include; it stores
+// its entry points in FusedSlot.h, and RegistrarFusedNode (end of this file)
+// installs the dispatchers while a fused profile is requested.
 const char* fused_variants_4070ti() {
   const Profile* p = requested_profile();
   if (p != nullptr && std::strcmp(p->name, "4070ti-fused1") == 0) {
     return "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko";
   }
   return nullptr;
-}
-Override& fused_4070ti() {
-  static Override fused;
-  return fused;
 }
 // <<< 4070ti-fused variants
 
@@ -2478,30 +2463,19 @@ struct Registrar {
     // the 8da4w variable needs active dq8ca rows (see dev_select).
     o.force_path = !requested_variant().empty();
     o.select = dev_select;
-    // b70-fused begin
-    if (*fused_variants_b70() != 0) {
-      o.sdpa_fused_add = fused_b70().sdpa_fused_add;
-      o.sdpa_fused_serves = fused_b70().sdpa_fused_serves;
-    }
-    // b70-fused end
+    // The fused attention node (all devices): RegistrarFusedNode, end of file.
     // >>> 4070ti softmax-override
     o.softmax_variant = softmax_variant_4070ti();
     // <<< 4070ti softmax-override
     // >>> 4070ti-fused override
     if (fused_variants_4070ti() != nullptr) {
       o.softmax_variant = "4070ti_nzf";
-      o.sdpa_fused_add = fused_4070ti().sdpa_fused_add;
-      o.sdpa_fused_serves = fused_4070ti().sdpa_fused_serves;
     }
     // <<< 4070ti-fused override
     // b580-fused begin
     // (Merge: assigned only when a B580 profile names one; the 4070ti block above assigns unconditionally.)
     if (softmax_variant_b580() != nullptr) {
       o.softmax_variant = softmax_variant_b580();
-    }
-    if (*fused_variants_b580() != 0) {
-      o.sdpa_fused_add = fused_b580().sdpa_fused_add;
-      o.sdpa_fused_serves = fused_b580().sdpa_fused_serves;
     }
     // b580-fused end
     // >>> orin softmax-variant
@@ -2517,17 +2491,12 @@ struct Registrar {
     // <<< orin softmax-variant
     // >>> orin-fused override
     // An orin-fused* profile is the whole stack: the calls its fused node does not serve use the softmax orin_g64
-    // unless the variable above names another. The fused node (impl/sarc_dev/orin/SdpaOrinFused.cpp) sets its
-    // entry points from its own static initializer, which may have run already: keep them.
+    // unless the variable above names another. The fused node (impl/sarc_dev/orin/SdpaOrinFused.cpp) stores its
+    // entry points in FusedSlot.h; RegistrarFusedNode (end of this file) installs them.
     if (o.softmax_variant == nullptr && requested_profile() != nullptr &&
         std::strncmp(requested_profile()->name, "orin-fused", 10) == 0) {
       o.softmax_variant = "orin_g64";
       std::cerr << "[sarc_dev] softmax variant: " << o.softmax_variant << std::endl;
-    }
-    // (Merge: unless a profile above set them, as the 4070ti-fused block does.)
-    if (o.sdpa_fused_add == nullptr) {
-      o.sdpa_fused_add = get_override().sdpa_fused_add;
-      o.sdpa_fused_serves = get_override().sdpa_fused_serves;
     }
     // <<< orin-fused override
     set_override(o);
@@ -2552,37 +2521,11 @@ const char* sdpa_fused_variants_b580() {
   const char* v = fused_variants_b580();
   return *v != 0 ? v : fused_variants_b70();
 }
-void register_sdpa_fused_b580(
-    void (*add)(ComputeGraph&, const std::vector<int32_t>&),
-    bool (*serves)(ComputeGraph*, const std::vector<int32_t>&)) {
-  fused_b580().sdpa_fused_add = add;
-  fused_b580().sdpa_fused_serves = serves;
-  fused_b70().sdpa_fused_add = add;
-  fused_b70().sdpa_fused_serves = serves;
-  if (*sdpa_fused_variants_b580() != 0) {
-    Override o = get_override();
-    o.sdpa_fused_add = add;
-    o.sdpa_fused_serves = serves;
-    set_override(o);
-  }
-}
 // b580-fused, b70-fused end
 // >>> 4070ti-fused entry
 const char* sdpa_fused_variants_4070ti() {
   const char* v = fused_variants_4070ti();
   return v != nullptr ? v : "";
-}
-void register_sdpa_fused_4070ti(
-    void (*add)(ComputeGraph&, const std::vector<int32_t>&),
-    bool (*serves)(ComputeGraph*, const std::vector<int32_t>&)) {
-  fused_4070ti().sdpa_fused_add = add;
-  fused_4070ti().sdpa_fused_serves = serves;
-  if (fused_variants_4070ti() != nullptr) {
-    Override o = get_override();
-    o.sdpa_fused_add = add;
-    o.sdpa_fused_serves = serves;
-    set_override(o);
-  }
 }
 // <<< 4070ti-fused entry
 } // namespace sarc
@@ -2602,15 +2545,9 @@ namespace sarc {
 
 // The profile's fused attention kernels, one per head_dim ("" = none), for
 // 780m/Sdpa780mFused.cpp. That file needs the graph headers, which this file
-// (GPU-free, test_sarc_select) must not include, so it hands its
-// Override::sdpa_fused_* functions over from its own static initializer. The
-// first Registrar above starts from an empty Override and the order of the two
-// files' initializers is not defined: the pair is kept here and applied by
-// whichever of the two runs last.
+// (GPU-free, test_sarc_select) must not include; it stores its entry points in
+// FusedSlot.h, and RegistrarFusedNode (end of this file) installs them.
 const char* sdpa_fused_variants_780m();
-void register_sdpa_fused_780m(
-    void (*add)(ComputeGraph&, const std::vector<int32_t>&),
-    bool (*serves)(ComputeGraph*, const std::vector<int32_t>&));
 
 namespace {
 
@@ -2806,21 +2743,9 @@ std::optional<Choice> select_780m(
   return before;
 }
 
-Override& fused_780m() {
-  static Override fused;
-  return fused;
-}
-
 // The 780M family's node (780m/Sdpa780mFused.cpp, also used by the RX 7600 and
-// RX 7900 XTX) is installed only when it has variants to run: a 780m profile with
-// a fused entry or ET_VK_SARC_780M_SDPA_FUSED. Otherwise the override keeps the
-// node another device's profile installed. (Merge of the campaigns: installed
-// unconditionally, it replaced the RTX 4070 Ti SUPER's node whenever its static
-// initializer ran later, so 4070ti-fused1 ran the split SDPA path.)
-bool fused_780m_wanted() {
-  return std::getenv("ET_VK_SARC_780M_SDPA_FUSED") != nullptr ||
-      *sdpa_fused_variants_780m() != 0;
-}
+// RX 7900 XTX) is installed by RegistrarFusedNode (end of this file) when it has
+// variants to run: a 780m profile with a fused entry or ET_VK_SARC_780M_SDPA_FUSED.
 struct Registrar780m {
   Registrar780m() {
     register_candidates(k780mSpace, sizeof(k780mSpace) / sizeof(k780mSpace[0]));
@@ -2828,31 +2753,17 @@ struct Registrar780m {
     select_before_780m = o.select;
     o.select = select_780m;
     const Profile780m* active = active_profile_780m();
-    if (active != nullptr && std::getenv("ET_VK_DISABLE_COOPMAT") == nullptr) {
+    // Only a profile that names a variant replaces the one set above (a null
+    // here would erase ET_VK_SARC_SOFTMAX_VARIANT or another profile's).
+    if (active != nullptr && active->softmax_variant != nullptr &&
+        std::getenv("ET_VK_DISABLE_COOPMAT") == nullptr) {
       o.softmax_variant = active->softmax_variant;
-    }
-    if (fused_780m_wanted()) {
-      o.sdpa_fused_add = fused_780m().sdpa_fused_add;
-      o.sdpa_fused_serves = fused_780m().sdpa_fused_serves;
     }
     set_override(o);
   }
 } registrar_780m;
 
 } // namespace
-
-void register_sdpa_fused_780m(
-    void (*add)(ComputeGraph&, const std::vector<int32_t>&),
-    bool (*serves)(ComputeGraph*, const std::vector<int32_t>&)) {
-  fused_780m().sdpa_fused_add = add;
-  fused_780m().sdpa_fused_serves = serves;
-  if (fused_780m_wanted()) {
-    Override o = get_override();
-    o.sdpa_fused_add = add;
-    o.sdpa_fused_serves = serves;
-    set_override(o);
-  }
-}
 
 const char* sdpa_fused_variants_780m() {
   const Profile780m* active = active_profile_780m();
@@ -3296,41 +3207,16 @@ const ProfileM51* active_profile_m51() {
   return active;
 }
 
-Override& fused_m51() {
-  static Override fused;
-  return fused;
-}
 
 std::optional<Choice> (*select_before_m51)(
     const DeviceInfo&,
     const ShapeInfo&,
     const std::optional<Choice>&) = nullptr;
 
-// The fused node registers from another file, and the 780M's node does too, in
-// an order the linker decides. So the M51 node is installed into the override
-// on the first selection, which every SDPA node makes before its launch geometry
-// asks whether the fused node serves its call.
-void install_fused_m51() {
-  static const bool installed = [] {
-    if (fused_m51().sdpa_fused_add == nullptr ||
-        (active_profile_m51() == nullptr &&
-         std::getenv("ET_VK_SARC_M51_SDPA_FUSED") == nullptr)) {
-      return false;
-    }
-    Override o = get_override();
-    o.sdpa_fused_add = fused_m51().sdpa_fused_add;
-    o.sdpa_fused_serves = fused_m51().sdpa_fused_serves;
-    set_override(o);
-    return true;
-  }();
-  (void)installed;
-}
-
 std::optional<Choice> select_m51(
     const DeviceInfo& device,
     const ShapeInfo& shape,
     const std::optional<Choice>& table_choice) {
-  install_fused_m51();
   const std::optional<Choice> before =
       select_before_m51(device, shape, table_choice);
   const ProfileM51* active = active_profile_m51();
@@ -3385,13 +3271,6 @@ struct RegistrarM51 {
 } registrar_m51;
 
 } // namespace
-
-void register_sdpa_fused_m51(
-    void (*add)(ComputeGraph&, const std::vector<int32_t>&),
-    bool (*serves)(ComputeGraph*, const std::vector<int32_t>&)) {
-  fused_m51().sdpa_fused_add = add;
-  fused_m51().sdpa_fused_serves = serves;
-}
 
 const char* sdpa_fused_variants_m51() {
   const ProfileM51* active = active_profile_m51();
@@ -3711,3 +3590,62 @@ struct Registrar7900xtx {
 } // namespace sarc
 } // namespace vkcompute
 // --- 7900xtx end ---
+
+// --- fused attention node (M2 review, 2026-10-15) ---
+// The one fused attention node of a dev build. Its variant list per node, as
+// the node's own file reads it (the variable first, then the profile); the node
+// whose list is non-empty is requested, two abort (FusedSlot.h). The node files
+// store their entry points from their own static initializers, in any order;
+// the dispatchers installed here look the node up when they are called. This
+// registrar is the last one of this file, so it sees every profile above.
+namespace vkcompute {
+namespace sarc {
+
+// The orin-fused profiles' kernels, one per head_dim ("" = none), for
+// orin/SdpaOrinFused.cpp (without ET_VK_SARC_ORIN_SDPA_FUSED).
+const char* sdpa_fused_variants_orin() {
+  const char* e = std::getenv("ET_VK_SARC_DEV_PROFILE");
+  if (e != nullptr && std::strcmp(e, "orin-fused1") == 0) {
+    return "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko";
+  }
+  // The faster form per head_dim at kernel level on this device: two passes
+  // for head_dim 64, one pass for 128.
+  if (e != nullptr && std::strcmp(e, "orin-fused2") == 0) {
+    return "fused3sb_d64_t32x32g11s32rk,fused3sb_d128_t16x64g11s32rko";
+  }
+  return "";
+}
+
+namespace {
+
+const char* env_or(const char* name, const char* fallback) {
+  const char* e = std::getenv(name);
+  return e != nullptr ? e : fallback;
+}
+
+struct RegistrarFusedNode {
+  RegistrarFusedNode() {
+    const char* const lists[kFusedNodes] = {
+        env_or("ET_VK_SARC_780M_SDPA_FUSED", sdpa_fused_variants_780m()),
+        sdpa_fused_variants_4070ti(),
+        sdpa_fused_variants_b580(),
+        env_or("ET_VK_SARC_ORIN_SDPA_FUSED", sdpa_fused_variants_orin()),
+        env_or("ET_VK_SARC_M51_SDPA_FUSED", sdpa_fused_variants_m51()),
+    };
+    const int node = resolve_fused_node(lists);
+    fused_slots().request(node);
+    Override o = get_override();
+    o.sdpa_fused_add = node >= 0 ? fused_dispatch_add : nullptr;
+    o.sdpa_fused_serves = node >= 0 ? fused_dispatch_serves : nullptr;
+    set_override(o);
+    if (node >= 0) {
+      std::cerr << "[sarc_dev] fused attention node: " << fused_node_name(node)
+                << std::endl;
+    }
+  }
+} registrar_fused_node;
+
+} // namespace
+} // namespace sarc
+} // namespace vkcompute
+// --- fused attention node end ---

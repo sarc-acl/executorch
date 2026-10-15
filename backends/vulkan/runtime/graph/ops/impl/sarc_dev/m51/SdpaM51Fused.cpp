@@ -18,13 +18,14 @@
 // writes tile-packed copies of K and V. For the calls the kernel fits the
 // three SDPA kernels dispatch nothing and this node writes the output; every
 // other call (decode, unaligned prompt, a head_dim without a variant) is
-// untouched. Entry point: Override::sdpa_fused_{serves,add}, installed by the
-// m51 block of Overrides.cpp.
+// untouched. Entry point: Override::sdpa_fused_{serves,add}, stored in
+// impl/sarc_dev/FusedSlot.h at the end of this file.
 
 #include <executorch/backends/vulkan/runtime/graph/ops/DynamicDispatchNode.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Common.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/SDPA.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/GraphInfo.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc_dev/FusedSlot.h>
 
 #include <cmath>
 #include <cstdio>
@@ -35,9 +36,6 @@ namespace sarc {
 
 // Overrides.cpp, m51 block.
 const char* sdpa_fused_variants_m51();
-void register_sdpa_fused_m51(
-    void (*add)(ComputeGraph&, const std::vector<ValueRef>&),
-    bool (*serves)(ComputeGraph*, const std::vector<ValueRef>&));
 
 namespace {
 
@@ -253,7 +251,7 @@ void sdpa_fused_add_m51(
 
 struct RegistrarM51Fused {
   RegistrarM51Fused() {
-    register_sdpa_fused_m51(sdpa_fused_add_m51, sdpa_fused_serves_m51);
+    register_fused_node(FusedNode::kM51, sdpa_fused_add_m51, sdpa_fused_serves_m51);
   }
 } registrar_m51_fused;
 
