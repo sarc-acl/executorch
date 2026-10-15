@@ -10,8 +10,8 @@ This finite stage tests the legal union of Orin and Ada linear candidates on thi
 member. It does not choose or split the NVIDIA family. No release selection,
 new shader body, parameter search, attention work, decode tuning, promotion,
 upstream port, push or PR is part of the stage. The final launch approval overrides
-the historical two-small-gains stop rule. The stage remains incomplete while
-its pre-build metadata question is pending in STATUS.md.
+the historical two-small-gains stop rule. The stage remains incomplete until the legal matrix and its review finish.
+The recovery owner decision resolves the former metadata bootstrap question.
 
 ## Thresholds fixed before measurement
 
@@ -71,8 +71,9 @@ all six file sizes match kit/MODELS.md. The Vulkan graph contains embedding_q4gs
 with group 32 and a packed 4-bit weight, and linear operators with group 128.
 This exceeds the kit's old inferred group/embedding evidence, but is explicitly
 static inspection rather than runtime execution. The required runtime constant
-method check remains pending; the owner question in STATUS.md resolves whether
-an initial build can supply that runtime.
+method check remains pending. The recovery decision of 2026-10-15 00:32 UTC
+authorizes the initial build to supply a CPU-only runtime helper before model
+GPU work.
 
 No Khronos validation layer exists in the current layer list. The unmodified
 verify.sh does not enable or require one, so no exemption is inferred or asked
@@ -107,3 +108,25 @@ the assigned artifact root's preflight/ directory. No private infrastructure
 identifier or absolute private path is put into source evidence. No candidate
 launch projection is asserted before the missing launch driver/build facts exist;
 a projection over 48 hours must be reported before queueing.
+
+
+## Recovery build and detached queue
+
+The recovery instruction permits run-local orchestration corrections implementing
+the existing fixed protocol. No historical adapter, sarc/tools, golden, prompt,
+tolerance or post-data threshold changes. Existing preflight is reused.
+
+| File | Purpose and adaptation |
+|---|---|
+| tools/build-parent.sh | New single-parent driver derived from the historical build-both sequence: exact pinned base export and recursive manifest, no patch path, one build root, no traced build at this step, image pinned by digest, four build workers for available RAM, inherited lock/HOLD/foreign guard, two-hour timeout, source/toolchain/binary hashes, golden comparison on both llama and backend outputs |
+| tools/job.py | New detached command wrapper writes queued/running/completed/failed JSON atomically, records command/PIDs/return code or exception, and records failed children instead of leaving a stale running state |
+
+The initial parent-r1 uses unmodified sarc/tools/build.sh --llama from the base
+export. A conservative 32 GiB free-space check precedes export; the recovery
+inspection had 43 GiB free. Source files/recursive manifest, image inspection,
+compiler identity/hash, binaries and both shipped golden outputs are retained
+under its private build root. This is build preparation, not correctness or
+performance acceptance. Exact binaries remain available for later review.
+The first build unit is limited to two hours and does not launch inference;
+CPU runtime metadata execution is the next prerequisite. No >48-hour matrix
+projection or candidate launch is asserted before those facts exist.
