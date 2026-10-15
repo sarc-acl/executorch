@@ -5,12 +5,12 @@ Supporting files written here: `roofline-orin-gemm.csv` and `roofline-orin-trace
 
 Path prefixes used below:
 
-- `FF` = `/home/doremy/Desktop/igpu-roofline/results/fleet-fast-20260926`
-- `JR` = `/home/doremy/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty`
-- `D` = `/home/doremy/Desktop/igpu-roofline/docs`
-- `E` = `/home/doremy/Desktop/sarc-acl/.artifacts/e2e-1.5-2026-09-28`
-- `ET` = `/home/doremy/Desktop/sarc-acl/dev/1.5/executorch/backends/vulkan/runtime/graph/ops/glsl`
-- `S` = `/home/doremy/Desktop/sarc-acl/.artifacts/roofline-et-study`
+- `FF` = `<home>/Desktop/igpu-roofline/results/fleet-fast-20260926`
+- `JR` = `<home>/Desktop/igpu-roofline/out/jetson-study/roofline-results/orin-naughty`
+- `D` = `<home>/Desktop/igpu-roofline/docs`
+- `E` = `<home>/Desktop/sarc-acl/.artifacts/e2e-1.5-2026-09-28`
+- `ET` = `<home>/Desktop/sarc-acl/dev/1.5/executorch/backends/vulkan/runtime/graph/ops/glsl`
+- `S` = `<home>/Desktop/sarc-acl/.artifacts/roofline-et-study`
 
 ## 1. Status and provenance of the roof numbers
 
@@ -97,7 +97,7 @@ cache-fed value (3.967) is far below its sweep maximum (5.375), so treat it as a
 | 4070 Ti | **44.967** L59 (fp16 FMA ≈ fp32 FMA on this GPU) | **44.418** L60 | **78.050** L62 |
 | Orin | **1.766** L61 | **1.202** L62 | **2.091** L64 |
 
-The dot roof kernel is `/home/doremy/Desktop/igpu-roofline/shaders/dot8.comp:24`. It computes `dotPacked4x8EXT`
+The dot roof kernel is `<home>/Desktop/igpu-roofline/shaders/dot8.comp:24`. It computes `dotPacked4x8EXT`
 on **uint** operands, which is unsigned and non-saturating, followed by a separate add. The stock 8da4w kernel
 instead uses the signed saturating `dotPacked4x8AccSatEXT` (§7). Nobody checked whether the two forms lower to the
 same native instruction.
@@ -135,7 +135,7 @@ Anomalies to handle carefully:
 | Orin | 32 (`JR/capabilities.json:398`) | 32 | 16×16×16, 16×8×16, 16×8×8 | 16×16×32, 16×8×32 | bf16 16×16×16 → f32 |
 
 The shape lists start at the `matrix_shapes` line of each file: 780M line 224, B580/B70 line 218, 4070 Ti line 298,
-Orin line 255. The subgroup ranges come from `/home/doremy/Desktop/gpu-lab/docs/compute-capabilities.md:43-51`.
+Orin line 255. The subgroup ranges come from `<home>/Desktop/gpu-lab/docs/compute-capabilities.md:43-51`.
 
 Subgroup sizes the SARC kernels use (the `s16`/`s32` suffix and `SUBGROUP_SIZE` in the yaml):
 

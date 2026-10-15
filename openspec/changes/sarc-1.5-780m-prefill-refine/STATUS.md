@@ -863,8 +863,8 @@ at the end): candidate 8 is about +27 % geomean over `dev/1.5` (1B 4w 2698 -> 36
 
 ## Coordinator hold (owner decision 2026-10-06 00:35 UTC): in place since 2026-10-05 17:50 PDT
 
-- The coordinator creates and removes **`/home/doremy/hmz-sarc/.artifacts/HOLD`** (on `rocky-ryzen`).
-- The queue answers with **`/home/doremy/hmz-sarc/.artifacts/HELD`**: one line
+- The coordinator creates and removes **`<home>/hmz-sarc/.artifacts/HOLD`** (on `rocky-ryzen`).
+- The queue answers with **`<home>/hmz-sarc/.artifacts/HELD`**: one line
   `HELD <UTC time> <what it would start next>` per waiting queue, written only when nothing of the campaign is
   running; removed when `HOLD` is gone. While `HOLD` exists nothing new starts; the poll is once a minute; a unit
   that is running when `HOLD` appears finishes normally; afterwards the queue continues where it was (every step

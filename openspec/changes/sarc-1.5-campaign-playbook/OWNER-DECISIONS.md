@@ -292,3 +292,21 @@ All campaigns are closed. Decided for the merge (`MERGE-PLAN.md`, M3):
    devices on our side) goes in with the merge as one release-zone commit.
 4. `topic/sarc-pinned-glslc` is left out for now: with it `check.sh` lists every shipped shader whose SPIR-V
    differs as DIFF until each device owner re-verifies.
+
+### N12. Before promotion (owner decisions 2026-10-15)
+
+State at the decision: `dev/1.5` is at `6178971845` (the integration branch, fast-forwarded and pushed on
+2026-10-14). The merged topic branches are tagged `archive/<name>` on origin (16 tags, 2026-10-15); their
+deletion is done by the owner. Company-side work (the merged-head device check of the RX 7600, RX 7900 XTX and
+M51, M2b, M2d) is out of this round.
+
+1. M1, near tie: a next-token flip is a near tie when the top-2 logit margin at that position in the fp32 CPU
+   reference is below 0.5 logit (the recorded real flips had 0.07 to 0.336).
+2. M1, error rule: a near-tie flip is accepted (`TIE_FLIP_ACCEPTED`, always reported) when the new build's rms
+   and maximum error against the fp32 reference, over the production head configurations, are not larger than
+   the old build's (the D3 rule as applied so far). Otherwise the gate fails. `verify.sh` may be edited for this.
+3. M2c: home-directory paths in committed result, evidence and prose files are replaced by `<home>/` in one
+   forward commit on top of `dev/1.5`; no history is rewritten. Tool scripts keep their paths, and so do two
+   Orin probe files whose SHA-256 is recorded in their `REFERENCE_ERROR.json`.
+4. M2: the hooks are reviewed first; proposed final forms are approved by the owner before any release-zone
+   code changes.

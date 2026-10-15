@@ -161,7 +161,7 @@ Bar types:
 
 ### Step values and sources
 
-`docs/` = `/home/doremy/Desktop/igpu-roofline/docs/`.
+`docs/` = `<home>/Desktop/igpu-roofline/docs/`.
 
 **Radeon 780M**
 

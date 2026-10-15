@@ -4,7 +4,7 @@ Device tag `b70`. Branch `topic/b70-fused-port`, forked from the first B70 campa
 (`topic/xe2-prefill-refine` at `5617714b0`). **Parent of every comparison: `5617714b0` with
 `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=xe2-refine5`.** Host `fedora-gpu-eval`, card `b70-0` only (guest
 PCI `0000:01:00.0`, `ETVK_DEVICE_INDEX=0`); the second card was not used. ANV, Mesa 26.2.3, kernel
-7.2.9-200.fc44. Artifacts `/home/doremy/hmz-sarc-b70-fused/.artifacts/`. All of 2026-10-09, host clock, UTC.
+7.2.9-200.fc44. Artifacts `<home>/hmz-sarc-b70-fused/.artifacts/`. All of 2026-10-09, host clock, UTC.
 Day detail and every table: `STATUS.md`.
 
 ## What this is

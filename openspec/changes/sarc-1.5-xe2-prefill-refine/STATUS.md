@@ -123,8 +123,8 @@ softmax variant is ever adopted, use `softmax-variant-hook.patch` beside `CAMPAI
 In place since 2026-10-06 01:40 UTC (owner decision 2026-10-06 00:35 UTC), on both cards, without a queue
 restart and without losing a running job (every unit sources `tools/host.sh` afresh).
 
-- Files: **`/home/doremy/hmz-sarc-xe2/.artifacts/HOLD`** (created and removed by the coordinator only; this
-  campaign never creates or removes it) and **`/home/doremy/hmz-sarc-xe2/.artifacts/HELD`** (written by this
+- Files: **`<home>/hmz-sarc-xe2/.artifacts/HOLD`** (created and removed by the coordinator only; this
+  campaign never creates or removes it) and **`<home>/hmz-sarc-xe2/.artifacts/HELD`** (written by this
   campaign).
 - While `HOLD` exists nothing of this campaign starts on either card: no GPU process, no session, no gate, no
   build. What is running is finished normally, not killed. Each unit that would start next appends one line

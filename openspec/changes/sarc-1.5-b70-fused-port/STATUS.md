@@ -10,7 +10,7 @@ tables: `proposal.md`.**
 Branch `topic/b70-fused-port` (from `origin/topic/xe2-prefill-refine` at `5617714b0`). Parent of every comparison:
 `5617714b0` with `ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=xe2-refine5`. Host `fedora-gpu-eval`, card `b70-0`
 only (guest PCI `0000:01:00.0`, `ETVK_DEVICE_INDEX=0`, lock `868023e2-0000-0000-0100-000000000000`); the second card
-is not used. Artifacts `/home/doremy/hmz-sarc-b70-fused/.artifacts/`.
+is not used. Artifacts `<home>/hmz-sarc-b70-fused/.artifacts/`.
 
 As found: ANV Mesa 26.2.3 (the first campaign's version), kernel 7.2.9-200.fc44 (host up since 2026-10-08 17:06
 UTC; the first campaign's journal did not record its kernel version in `STATUS.md`, so a kernel change since its
