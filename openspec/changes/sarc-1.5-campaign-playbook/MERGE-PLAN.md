@@ -14,7 +14,7 @@ goes in with the merge; `topic/sarc-pinned-glslc` is left out for now.
 | task | state |
 |---|---|
 | M1 near-tie stage of the gate | not started; before promotion |
-| M2 review of the release-zone hooks | hooks merged, inert; the review itself is before promotion. A fourth hook came with the M51 branch (`ET_VK_EXECUTE_NODE_THRESHOLD` in `graph/ComputeGraph.cpp`, owner decision 2026-10-08) |
+| M2 review of the release-zone hooks | reviewed 2026-10-15; owner approved P1-P6 and P8 (not P7, nothing goes upstream), done on `topic/pre-promotion`, not pushed: the fused attention node is installed through one order-independent slot (`impl/sarc_dev/FusedSlot.h`, two requested nodes abort, tested in `test_sarc_select`); the 780M softmax variant no longer erases another; the softmax-grid skip only in LLM mode; `ET_VK_EXECUTE_NODE_THRESHOLD` validated and only for the default config; F1 passes only what the device enabled; `sarc/HOOKS` text. Device re-measurement of the behaviour changes is the owner's call (the change's report lists them) |
 | M2a subgroup barriers | done on the campaign branches (`fused3sb`; RX 7600 +0.00 %, 780M -0.14 %, in band) and merged |
 | M2b pinned-container rebuild | not started; now tied to the compiler switch of `topic/sarc-pinned-glslc`. Native builds: RX 7600, RX 7900 XTX, M51; the Orin used the cross image's glslc |
 | M2c home-directory paths | done 2026-10-15 (N12.3): `<home>/` placeholder in 330 result, evidence and prose files; tool scripts and two hash-pinned Orin probe files keep theirs |
