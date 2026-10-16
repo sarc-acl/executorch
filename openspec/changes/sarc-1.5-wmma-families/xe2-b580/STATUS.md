@@ -1,6 +1,6 @@
 # Xe2 B580 finite linear matrix: status
 
-Updated 2026-10-16T01:20Z. Actor: Claude (claude-opus-5-5), under the owner's lean-finish decision of
+Updated 2026-10-16T02:20Z. Actor: Claude (claude-opus-5-5), under the owner's lean-finish decision of
 2026-10-15 23:30 UTC (deadline 2026-10-17 18:00 UTC). Earlier recovery history: git log of this file.
 
 ## Inputs
@@ -33,8 +33,8 @@ Queue `tools/queue.sh`, state `.artifacts/queue/wmma-v1/job-state.json`.
 
 | session | candidate | linear change vs control | correctness | 1B 4w | 1B 8da4w | 3B 4w | 3B 8da4w | 8B 4w | 8B 8da4w | geomean |
 |---|---|---|---|---|---|---|---|---|---|---|
-| s1-aa | A/A (control vs pristine) | none | pending | | | | | | | |
-| s2 | b70-linear | B70 final linear rules (n26 8da4w; flw N<=512, flib 4w) | pending | | | | | | | |
+| s1c-aa | A/A (control vs pristine) | none | gate s1-aa PASS-equivalent; next token SAME 18/18 | 1.0000 | 1.0088 | 0.9974 | 1.0000 | 1.0000 | 1.0000 | 1.0010 |
+| s2 | b70-linear | B70 final linear rules (n26 8da4w; flw N<=512, flib 4w) | verify: pdiff 12/12, default vs tiled SAME, decode OK; timing pending | | | | | | | |
 | s3 | dq-n26 | 8da4w n26 at N*K>=33554432, else i | pending | | | | | | | |
 | s4 | q4-narrow | 4w flw at N<=512 | pending | | | | | | | |
 | s5 | q4-band | 4w flib where it fits | pending | | | | | | | |
@@ -63,15 +63,25 @@ IdleHint=yes. Clocks 2850 MHz, no thermal reason, rc 0. Next token parent vs wmm
 all three prompts (check/unaligned runs are not subject to the busy rule). No calibration was written; these
 rows are not timing evidence. Raw: `.artifacts/stage/s1-aa/raw/`.
 
+## A/A s1c-aa (E2E5_OK, finished 01:31Z)
+
+Calibration: idle 40.0 C, clock floor 2651 MHz, BUSYMAX 2.97 % (min(5, 2 x p90)). 7/7 valid runs per arm and
+cell, no invalid rows; per-cell spreads 1.3 to 3.5 %; bootstrap 95 % intervals all contain 1.0. Analysis:
+`.artifacts/stage/s1c-aa/analysis.json`. Noise band stays the pre-registered +-2 %.
+
+## Gates re-recorded (coordinator note 2026-10-16 02:15 UTC)
+
+Foreign activity is recorded, not asserted, in correctness gates. s1-aa: 0.00 % foreign cycles during the
+gate; s2-b70-linear: 2.25 %. Both VERIFY_DONE rc=0 with 12/12 production diff -> GATE_RECORDED rc=0; previous
+files kept as `gate.done.foreign-assert`, evidence in `gate.reeval.txt`.
+
 ## Now
 
-Coordinator ruling 2026-10-16 01:15 UTC applied: the foreign-busy ceiling is the historical b580-fused e2e5.sh
-calibration (the calibrating A/A applies no busy limit; BUSYMAX = 2 x the 90th percentile of fbusy_pct over
-its otherwise-valid prefill runs), capped at 5 % (read as min(5, 2 x p90)). Every row keeps fbusy_pct; rows
-above BUSYMAX are invalid (foreign_busy) and kept; analyze_session.py applies BUSYMAX to the A/A rows as well.
-The quiet wait was removed (the s1b-aa attempt with it had no rows; moved to stage/superseded/quiet-wait-no-rows/).
-Firefox is not touched. Queue restarted with the A/A `s1c-aa`, then the six candidates.
+Desktop-idle waits replaced by `busy_wait` before each timed session: foreign share over 60 s at or below
+BUSYMAX (`tools/foreign_share.py`, same accounting as fbusy_pct). Gates no longer wait. Rows above BUSYMAX stay
+invalid. runs.csv gains `load1` per row (workstation load ~19 from other builds; same for both interleaved arms;
+s1c-aa rows predate the column). Queue relaunched at s2-b70-linear's session.
 
 ## Question for the coordinator
 
-None (Firefox question answered by the 01:15 UTC ruling).
+None.

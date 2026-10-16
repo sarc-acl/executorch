@@ -96,13 +96,12 @@ cool() { local t0=$SECONDS t prev=999 flat=0
 UNAL=$(ls r*.txt 2>/dev/null | head -1)   # the separate unaligned prompt, the same file verify.sh picks up
 echo "unaligned prompt: ${UNAL:-MISSING} expected tokens $UNALTOK" >> "$O/env.txt"
 CSV=$O/runs.csv
-[[ -f $CSV ]] || echo "gpu,host,model,scheme,build,rep,slot,tok_s,rc,temp_pre,temp_post,cool_s,clocks,others,utc,log,prompt_tokens,generated_tokens,prefill_ms,clk_n,clk_med_mhz,clk_min_mhz,throttled_n,power_avg_w,temp_max,valid,reason,fbusy_pct,fclients,ftop,device_uuid,driver,commit,binary_sha256,profile,candidate,session,sensor_log,page_cache_primed" > "$CSV"
+[[ -f $CSV ]] || echo "gpu,host,model,scheme,build,rep,slot,tok_s,rc,temp_pre,temp_post,cool_s,clocks,others,utc,log,prompt_tokens,generated_tokens,prefill_ms,clk_n,clk_med_mhz,clk_min_mhz,throttled_n,power_avg_w,temp_max,valid,reason,fbusy_pct,fclients,ftop,device_uuid,driver,commit,binary_sha256,profile,candidate,session,sensor_log,page_cache_primed,load1" > "$CSV"
 run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected tokens>
   local m=$1 q=$2 b=$3 r=$4 s=$5 p=$6 tag=$7 want=$8 log t0 tp tq rc oth cs sp
   log="logs/$tag-$m-$q-$b-r$r.log"
   device_check || finish E2E5_ABORTED device_lost
-  [[ $tag == prefill ]] && { idle_wait "$tag $m $q $b r$r" || finish E2E5_ABORTED device_lost; }   # desktop: a timed run starts only on an idle desktop (host.sh)
-  t0=$SECONDS; cool; cs=$((SECONDS - t0))
+  t0=$SECONDS; cool; cs=$((SECONDS - t0)); local load1; read -r load1 _ < /proc/loadavg
   tp=$(gtemp); oth=$(others | tr ',' ';')
   [[ -n $oth ]] && finish E2E5_ABORTED "other GPU process before $tag $m $q $b r$r: $oth"
   local benv=(); [[ -f $D/$b/env ]] && mapfile -t benv < "$D/$b/env"
@@ -165,7 +164,7 @@ valid = 0 if reason else 1
 print(",".join(str(x) for x in [tok, pt, gt, ms, n, cm, cmin, thr, pw, round(max(r[4] for r in rows) / 1000) if rows else "", valid, "+".join(reason), fb, fn, ft]))
 PY
   IFS=, read -r tok pt gt ms n cm cmin bm pw tmax valid reason fb fn ft < "$O/.row"
-  echo "b580,$(hostname),$m,$q,$b,$r,$s,$tok,$rc,$tp,$tq,$cs,act_med=${cm}MHz,$oth,$(date -u +%FT%TZ),$log,$pt,$gt,$ms,$n,$cm,$cmin,$bm,$pw,$tmax,$valid,$reason,$fb,$fn,$ft,$LOCK,Mesa26.2.4-ANV,$(cat "$D/$b/COMMIT"),$(sha256sum "$D/$b/llama_main.bin" | cut -d" " -f1),$(sed -n "s/^ET_VK_SARC_DEV_PROFILE=//p" "$D/$b/env"),${B580_CANDIDATE:?},$(basename "$D"),${log%.log}.clk,1" >> "$CSV"
+  echo "b580,$(hostname),$m,$q,$b,$r,$s,$tok,$rc,$tp,$tq,$cs,act_med=${cm}MHz,$oth,$(date -u +%FT%TZ),$log,$pt,$gt,$ms,$n,$cm,$cmin,$bm,$pw,$tmax,$valid,$reason,$fb,$fn,$ft,$LOCK,Mesa26.2.4-ANV,$(cat "$D/$b/COMMIT"),$(sha256sum "$D/$b/llama_main.bin" | cut -d" " -f1),$(sed -n "s/^ET_VK_SARC_DEV_PROFILE=//p" "$D/$b/env"),${B580_CANDIDATE:?},$(basename "$D"),${log%.log}.clk,1,$load1" >> "$CSV"
   echo "$tag $m $q $b r$r slot$s tok_s=$tok ms=$ms rc=$rc T=$tp->$tq cool=${cs}s clk=$cm/$cmin MHz n=$n power_limited=$bm foreign_busy=${fb}% valid=$valid $reason"
   [[ $rc == 77 ]] && finish E2E5_ABORTED device_lost
   [[ -n $oth ]] && finish E2E5_ABORTED "other GPU process during $tag $m $q $b r$r: $oth"

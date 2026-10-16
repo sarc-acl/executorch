@@ -46,6 +46,19 @@ idle_wait() {
   done
   return 0   # the loop's status is its last test (no DEVICE_LOST = 1) after any wait
 }
+# busy_wait: before a timed session, wait until the foreign engine share over 60 s is at or below the calibrated
+# BUSYMAX (coordinator note 2026-10-16 02:15 UTC; replaces the desktop-idle wait). Rows above BUSYMAX stay invalid.
+busy_wait() { local max=5 share
+  [[ -s $BUSYMAX_FILE ]] && max=$(<"$BUSYMAX_FILE")
+  while :; do
+    share=$(python3 "$TOOLS/foreign_share.py" "$B580_TOP" "${BUSY_WINDOW:-60}") &&
+      python3 -c 'import sys; sys.exit(not float(sys.argv[1]) <= float(sys.argv[2]))' "$share" "$max" && break
+    echo "$(date -u +%FT%TZ) foreign share ${share:-unreadable} % > $max %: ${1:-timed session}" >> "$A/logs/busy_wait.log"
+    [[ -e $A/DEVICE_LOST ]] && return 77
+  done
+  echo "$(date -u +%FT%TZ) foreign share $share % <= $max %: ${1:-timed session}" >> "$A/logs/busy_wait.log"
+  return 0
+}
 mkdir -p "$A/logs"
 export SARC_HOLD_DIR=$A SARC_JOBS=8
 export B580_ARTIFACTS=$A WMMA_B580_TAG=wmma-xe2-b580-v1
