@@ -1,0 +1,81 @@
+{
+  "verdict": "BLOCKED_FEATURE_NOT_ENABLED",
+  "manifest_sha256": "ef5d13471421898c8515e9a8356caff64a20aa97432175cbcab7bf3a5cd748b1",
+  "builds": {
+    "parent-r1": "617897184529ff180af491ee0d5d7de778cbb6c6",
+    "matrix-r1": "d30add8be93f5fe814a2a6eaa4210f00d3f05a9c"
+  },
+  "modules_checked": 44,
+  "manifest_modules": 11,
+  "components": [
+    "llama",
+    "backend"
+  ],
+  "required_capability": {
+    "name": "VulkanMemoryModel",
+    "value": 5345
+  },
+  "device_scope_capability_count": 0,
+  "memory_models": [
+    [
+      0,
+      3
+    ]
+  ],
+  "physical_device_supported": {
+    "vulkanMemoryModel": true,
+    "vulkanMemoryModelDeviceScope": true,
+    "vulkanMemoryModelAvailabilityVisibilityChains": true
+  },
+  "logical_device_enabled": false,
+  "source_evidence": [
+    {
+      "build": "parent-r1",
+      "commit": "617897184529ff180af491ee0d5d7de778cbb6c6",
+      "path": "backends/vulkan/runtime/vk_api/Adapter.cpp",
+      "sha256": "f004c41e6e4ab25d0aae3af223cc8b6a41ae5867b37230400ce7a9ec0e675110",
+      "mentions_memory_model": false
+    },
+    {
+      "build": "parent-r1",
+      "commit": "617897184529ff180af491ee0d5d7de778cbb6c6",
+      "path": "backends/vulkan/runtime/vk_api/Device.cpp",
+      "sha256": "d711d58a8f9c741a985f51ba7f8e6bcd040eb82fd2c552cac9266e8a7bf4f845",
+      "mentions_memory_model": false
+    },
+    {
+      "build": "parent-r1",
+      "commit": "617897184529ff180af491ee0d5d7de778cbb6c6",
+      "path": "backends/vulkan/runtime/vk_api/Runtime.cpp",
+      "sha256": "c756d7a4ac98b5999bdecc86cc6eeb9ece3f90cf5e9dca232ec6298eb4e2f3e0",
+      "mentions_memory_model": false
+    },
+    {
+      "build": "matrix-r1",
+      "commit": "d30add8be93f5fe814a2a6eaa4210f00d3f05a9c",
+      "path": "backends/vulkan/runtime/vk_api/Adapter.cpp",
+      "sha256": "f004c41e6e4ab25d0aae3af223cc8b6a41ae5867b37230400ce7a9ec0e675110",
+      "mentions_memory_model": false
+    },
+    {
+      "build": "matrix-r1",
+      "commit": "d30add8be93f5fe814a2a6eaa4210f00d3f05a9c",
+      "path": "backends/vulkan/runtime/vk_api/Device.cpp",
+      "sha256": "d711d58a8f9c741a985f51ba7f8e6bcd040eb82fd2c552cac9266e8a7bf4f845",
+      "mentions_memory_model": false
+    },
+    {
+      "build": "matrix-r1",
+      "commit": "d30add8be93f5fe814a2a6eaa4210f00d3f05a9c",
+      "path": "backends/vulkan/runtime/vk_api/Runtime.cpp",
+      "sha256": "c756d7a4ac98b5999bdecc86cc6eeb9ece3f90cf5e9dca232ec6298eb4e2f3e0",
+      "mentions_memory_model": false
+    }
+  ],
+  "spec": "https://docs.vulkan.org/refpages/latest/refpages/source/VkPhysicalDeviceVulkanMemoryModelFeatures.html",
+  "valid_usage": "VUID-VkShaderModuleCreateInfo-pCode-08740",
+  "previous_snapshot": "retained historical execution observations; not enabled-feature or conformant-gate evidence",
+  "control_aa_launched": false,
+  "performance_evidence": "none",
+  "owner_approval_needed": "narrow Adapter.cpp feature enablement and fresh exact exported builds for both arms"
+}

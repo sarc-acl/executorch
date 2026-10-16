@@ -1,0 +1,251 @@
+{
+  "build": {
+    "tag": "matrix-fam-r1",
+    "commit": "f82cc2c17d44cb5c38c0e0563a7f3b4383ff80aa",
+    "binaries": [
+      "3939e1bdc75bb7e07ed568ce6716d814c6ac990f186d01ed202542c9d97bb6c2  /home/doremy/wmma-4070ti/.artifacts/build/matrix-fam-r1/llama/examples/models/llama/llama_main",
+      "f7c959667dd7a35da1e4184981a365aaab68801a4d3586d342fb176f98e7744d  /home/doremy/wmma-4070ti/.artifacts/build/matrix-fam-r1/tests/test_llama_microbench",
+      "687c6a809755c2ae1a58b516f55a3c6d440224617a10d7aeefb3a5530aa7d047  /home/doremy/wmma-4070ti/.artifacts/build/matrix-fam-r1/llama/examples/models/llama/runner/libllama_runner.so"
+    ],
+    "golden": "PASS (53 shipped variants), llama and backend",
+    "spirv_unchanged_vs": "matrix-mm-r1",
+    "spirv": [
+      {
+        "component": "llama",
+        "unchanged_spirv_count": 2091
+      },
+      {
+        "component": "backend",
+        "unchanged_spirv_count": 2091
+      }
+    ],
+    "source_changed_vs_reference": [
+      "./backends/vulkan/runtime/graph/ops/impl/sarc_dev/NvidiaWmmaMatrix.cpp",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/STATUS.md",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/proposal.md",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/calibration.json",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/candidate-gates.json",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/candidate-preflight.csv",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/family-select.txt",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/feature-builds.json",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/native-matrix-recompute.json",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/native-sessions.json",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/property-signature.json",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/replacement-snapshots.json",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/runtime-metadata-memory-model.json",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/aa_session.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/candidate_gates.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/candidate_session.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/control_and_aa.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/enabled_features.cpp",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/evaluate_run.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/family_finalists.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/feature_probes.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/native_matrix.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/nvml_observer.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/observe.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/parent_snapshot.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/recompute_calibration.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/test_family_select.cpp"
+    ],
+    "memory_model_probe": "matrix-mm-r1 (runtime source identical except the dev-zone selector)"
+  },
+  "updated_utc": "2026-10-16T10:36:51.427537+00:00",
+  "control": {
+    "stage": "stage/s0-topic-fam-control",
+    "identical_to_matrix_control": true
+  },
+  "gates": {
+    "4070ti-nv-family-a": {
+      "stage": "stage/s2-gate-nv-family-a",
+      "commit": "f82cc2c17d44cb5c38c0e0563a7f3b4383ff80aa",
+      "verdict": "CORRECTNESS_GATE_FAILED; NO_RETRY_OR_ACCEPTANCE",
+      "coverage": {
+        "production_diff_cases": 23,
+        "per_shader": {
+          "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half": {
+            "linear_benchmark_cases": 12,
+            "production_diff_cases": 11
+          },
+          "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half": {
+            "linear_benchmark_cases": 12,
+            "production_diff_cases": 12
+          }
+        }
+      },
+      "numeric_failures": [
+        "verify/pdiff-llama-3.1-8b-4w-texture3d.log"
+      ],
+      "non_dispatch_differences": [
+        {
+          "control": "pdiff llama-3.1-8b 4w texture3d rc=0 [production-diff] ALL PASSED (llama-3.1-8b, 4 shapes, M=2048, linear_q4gsw, texture3d)",
+          "candidate": "pdiff llama-3.1-8b 4w texture3d rc=1 [production-diff] FAILED (llama-3.1-8b, 4 shapes, M=2048, linear_q4gsw, texture3d)"
+        }
+      ],
+      "default_tiled_differences": 0,
+      "sdpa": {
+        "passes": 26,
+        "failures": 0,
+        "attention_identical_to_control": true
+      }
+    },
+    "4070ti-nv-family-b": {
+      "stage": "stage/s2-gate-nv-family-b",
+      "commit": "f82cc2c17d44cb5c38c0e0563a7f3b4383ff80aa",
+      "verdict": "GATE_CAPTURE_COMPLETE; TOKENS_AND_SESSION_PENDING",
+      "coverage": {
+        "production_diff_cases": 24,
+        "per_shader": {
+          "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32c_texture3d_texture2d_half": {
+            "linear_benchmark_cases": 1,
+            "production_diff_cases": 1
+          },
+          "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half": {
+            "linear_benchmark_cases": 11,
+            "production_diff_cases": 11
+          },
+          "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half": {
+            "linear_benchmark_cases": 12,
+            "production_diff_cases": 12
+          }
+        }
+      },
+      "numeric_failures": [],
+      "non_dispatch_differences": [],
+      "default_tiled_differences": 0,
+      "sdpa": {
+        "passes": 26,
+        "failures": 0,
+        "attention_identical_to_control": true
+      }
+    }
+  },
+  "sessions": {
+    "4070ti-nv-family-a": {
+      "status": "NOT_TIMED; gate CORRECTNESS_GATE_FAILED; NO_RETRY_OR_ACCEPTANCE",
+      "stage": null
+    },
+    "4070ti-nv-family-b": {
+      "profile": "4070ti-nv-family-b",
+      "repeats": 7,
+      "status": "SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING",
+      "not_measured_cells": [],
+      "not_measured_tokens": [],
+      "not_measured_reason": null,
+      "correctness": "NEXT_TOKEN_EQUAL",
+      "timed_text_differences": [],
+      "clock_floor_mhz": 2531,
+      "geomean_ratio": 1.012713189818401,
+      "geomean_measured_cells": 1.012713189818401,
+      "cells": {
+        "1b-4w": {
+          "arms": {
+            "control": {
+              "median_tok_s": 35310.3,
+              "spread_fraction": 0.016946896514614757
+            },
+            "candidate": {
+              "median_tok_s": 35929.8,
+              "spread_fraction": 0.01785704345696326
+            }
+          },
+          "ratio": 1.017544455866985,
+          "ratio_interval95": [
+            1.017544455866985,
+            1.0357147914347937
+          ]
+        },
+        "1b-8da4w": {
+          "arms": {
+            "control": {
+              "median_tok_s": 39384.6,
+              "spread_fraction": 0.038476968155065724
+            },
+            "candidate": {
+              "median_tok_s": 40960.0,
+              "spread_fraction": 0.0
+            }
+          },
+          "ratio": 1.0400004062501587,
+          "ratio_interval95": [
+            1.0400004062501587,
+            1.0400004062501587
+          ]
+        },
+        "3b-4w": {
+          "arms": {
+            "control": {
+              "median_tok_s": 14124.1,
+              "spread_fraction": 0.0
+            },
+            "candidate": {
+              "median_tok_s": 14628.6,
+              "spread_fraction": 0.007095689266231976
+            }
+          },
+          "ratio": 1.0357190900659157,
+          "ratio_interval95": [
+            1.0357190900659157,
+            1.0357190900659157
+          ]
+        },
+        "3b-8da4w": {
+          "arms": {
+            "control": {
+              "median_tok_s": 16650.4,
+              "spread_fraction": 0.023807235862201594
+            },
+            "candidate": {
+              "median_tok_s": 16516.1,
+              "spread_fraction": 0.042019605112587115
+            }
+          },
+          "ratio": 0.9919341277086434,
+          "ratio_interval95": [
+            0.9919341277086434,
+            1.0333371679754908
+          ]
+        },
+        "8b-4w": {
+          "arms": {
+            "control": {
+              "median_tok_s": 6420.06,
+              "spread_fraction": 0.006269411812350663
+            },
+            "candidate": {
+              "median_tok_s": 6113.43,
+              "spread_fraction": 0.0059704617538763015
+            }
+          },
+          "ratio": 0.9522387641236998,
+          "ratio_interval95": [
+            0.9494054572698697,
+            0.9522387641236998
+          ]
+        },
+        "8b-8da4w": {
+          "arms": {
+            "control": {
+              "median_tok_s": 7501.83,
+              "spread_fraction": 0.0
+            },
+            "candidate": {
+              "median_tok_s": 7816.79,
+              "spread_fraction": 0.003802072206110213
+            }
+          },
+          "ratio": 1.0419844224675845,
+          "ratio_interval95": [
+            1.0380227224557208,
+            1.0419844224675845
+          ]
+        }
+      },
+      "valid_rows": 84,
+      "invalid_rows": 0,
+      "within_member_numeric_margins": true,
+      "acceptance": "NONE; ONE_MEMBER_ONLY",
+      "stage": "stage/s3-4070ti-nv-family-b"
+    }
+  }
+}
