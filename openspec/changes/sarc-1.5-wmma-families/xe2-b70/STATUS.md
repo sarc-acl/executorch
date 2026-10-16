@@ -42,13 +42,13 @@ Cand/control > 1 means the candidate is faster. Limits: six-cell geomean slowdow
 | Session | Candidate linear kernels (dispatched, cand arm) | Correctness | Cand/control tok/s, cells 1B 4w, 1B 8da4w, 3B 4w, 3B 8da4w, 8B 4w, 8B 8da4w | Six-cell geomean cand/control | Within 3 %/8 % |
 |---|---|---|---|---:|---|
 | s1-aa | - | CONTROL_OK | 1.000 / 1.000 / 1.004 / 0.995 / 1.000 / 1.000 | 0.9998 | True |
-| b70-wmma-dq-n13 | - | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.000 / 1.000 / 1.000 / 0.995 / 1.002 / 0.998 | 0.9991 | True |
-| b70-wmma-q4-table | - | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 0.980 / 1.000 / 0.977 / 1.000 / 0.977 / 1.005 | 0.9897 | True |
-| b70-wmma-dq-i | - | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.000 / 1.000 / 1.000 / 0.995 / 1.003 / 0.959 | 0.9928 | True |
-| b70-wmma-dq-table | - | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.010 / 0.883 / 1.000 / 0.839 / 1.000 / 0.804 | 0.9188 | False |
-| b70-wmma-q4-k16 | - | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.000 / 1.000 / 1.000 / 1.000 / 1.002 / 1.000 | 1.0003 | True |
-| b70-wmma-q4-k32 | - | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.000 / 1.000 / 1.000 / 1.000 / 1.002 / 1.000 | 1.0003 | True |
-| b70-wmma-dq-n26 | - | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.010 / 1.000 / 1.008 / 0.990 / 1.000 / 1.005 | 1.0021 | True |
+| b70-wmma-dq-n13 | 4w: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib, sarc_linear_q4gsw_coopmat_sweep_t128x128k32g84s16m8flw; 8da4w: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i, sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n13 | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.000 / 1.000 / 1.000 / 0.995 / 1.002 / 0.998 | 0.9991 | True |
+| b70-wmma-q4-table | 4w: sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli; 8da4w: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i, sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n26 | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 0.980 / 1.000 / 0.977 / 1.000 / 0.977 / 1.005 | 0.9897 | True |
+| b70-wmma-dq-i | 4w: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib, sarc_linear_q4gsw_coopmat_sweep_t128x128k32g84s16m8flw; 8da4w: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.000 / 1.000 / 1.000 / 0.995 / 1.003 / 0.959 | 0.9928 | True |
+| b70-wmma-dq-table | 4w: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib, sarc_linear_q4gsw_coopmat_sweep_t128x128k32g84s16m8flw; 8da4w: sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8 | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.010 / 0.883 / 1.000 / 0.839 / 1.000 / 0.804 | 0.9188 | False |
+| b70-wmma-q4-k16 | 4w: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib; 8da4w: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i, sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n26 | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.000 / 1.000 / 1.000 / 1.000 / 1.002 / 1.000 | 1.0003 | True |
+| b70-wmma-q4-k32 | 4w: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib, sarc_linear_q4gsw_coopmat_sweep_t128x128k32g84s16m8flw; 8da4w: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i, sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n26 | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.000 / 1.000 / 1.000 / 1.000 / 1.002 / 1.000 | 1.0003 | True |
+| b70-wmma-dq-n26 | 4w: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib, sarc_linear_q4gsw_coopmat_sweep_t128x128k32g84s16m8flw; 8da4w: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i, sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n26 | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.010 / 1.000 / 1.008 / 0.990 / 1.000 / 1.005 | 1.0021 | True |
 <!-- matrix end -->
 
 No family-wide acceptance is claimed from this member's results.
