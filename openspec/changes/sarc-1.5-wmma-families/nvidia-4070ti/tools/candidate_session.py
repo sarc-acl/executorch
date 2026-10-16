@@ -158,10 +158,11 @@ def cool(target, maximum):
         time.sleep(5)
 
 
-def slow_load_abort(record_dir, arm, key):
-    """L9/D5: a runner abort after a slow model load is an invalid run to replace; any other abort stops."""
+def slow_load_abort(record_dir, arm, key, returncode):
+    """L9/D5: a runner abort or timeout after a slow model load is an invalid run to replace; any other abort stops."""
     record = json.loads((record_dir / "record.json").read_text()) if (record_dir / "record.json").exists() else {}
-    if not record.get("slow_load_possible") or record.get("returncode") in (None, 0, 70, 76, 77):
+    timed_out = returncode == 124 and record.get("reasons") == ["received signal 15"]
+    if not record.get("slow_load_possible") or (record.get("returncode") in (None, 0, 70, 76, 77) and not timed_out):
         return False
     archive = stage / "superseded/slow-load-abort" / key
     archive.mkdir(parents=True)
@@ -258,7 +259,7 @@ def run_rounds(first, last, target):
                         metrics = {"valid": 0, "reason": "evaluation_failed:" + str(error)}
                     if descendants:
                         metrics.update(valid=0, reason="sampling_or_runner_child_remains")
-                    slow_abort = result.returncode not in (0, 76) and slow_load_abort(run_dir, arm, key)
+                    slow_abort = result.returncode not in (0, 76) and slow_load_abort(run_dir, arm, key, result.returncode)
                     if slow_abort:
                         metrics.update(valid=0, reason=metrics["reason"] + ";runner_abort_after_slow_load")
                     row = dict(observer.identity, session=stage.name, cell=cell, arm=arm, candidate=profile, wmma_profile=profile if arm == "candidate" else "",
@@ -347,7 +348,7 @@ def check_tokens(target):
                 samples = [json.loads(line) for line in (raw / "samples.jsonl").read_text().splitlines()] if (raw / "samples.jsonl").exists() else []
                 valid = result.returncode == 0 and len(stats) == 1 and stats[0]["generated_tokens"] == 0 and len(samples) >= 2
                 foreign = any(Observer.unexpected(s["clients"], idle_clients) for s in samples) or result.returncode == 76
-                slow_abort = result.returncode not in (0, 76) and slow_load_abort(raw, arm, key)
+                slow_abort = result.returncode not in (0, 76) and slow_load_abort(raw, arm, key, result.returncode)
                 valid = valid and not foreign and all(not (s["event_reasons"] & 0x60) for s in samples)
                 generated = "\n".join(line for line in text.splitlines() if "PyTorchObserver" not in line and not re.match(r"^[IWE] |^\[sarc_dev\]", line))
                 row = dict(observer.identity, session=stage.name, cell=cell, prompt=prompt, arm=arm, candidate=profile,

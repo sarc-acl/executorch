@@ -1,9 +1,9 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-16 01:58 UTC
+Updated: 2026-10-16 02:30 UTC
 
 Stage: NATIVE TIMED MATRIX RUNNING under the owner's lean-finish decision
-(2026-10-15 23:30 UTC). Job state: artifact jobs/native-matrix-r4/state.json (r1, r2 failed on a foreign client; r3 on a slow-load runner abort).
+(2026-10-15 23:30 UTC). Job state: artifact jobs/native-matrix-r5/state.json (r1, r2 failed on a foreign client; r3 on a slow-load runner abort; r4 on a slow-load runner hang).
 Both arms: matrix-mm-r1 binary (commit dd57ce0e4), control 4070ti-fused1,
 candidate adds only ET_VK_SARC_WMMA_PROFILE. Seven valid interleaved runs per
 arm and cell, clock floor 2531 MHz, A/A s1-aa-mm-r1 reused (no new A/A).
@@ -32,7 +32,7 @@ and binary; c08 had 84/84 valid rows, 0 invalid. c08 dispatches only for K>8192
 
 ## Question for the coordinator
 
-(none open)
+- 2026-10-16 02:30 UTC: the foreign ComfyUI (PID 336840) keeps 8086 MiB VRAM and about 12 GiB host RAM (3.7 GiB available, no swap). The 8B model no longer stays cached, and 8B runs now abort (rc -6/-11) or hang until the 1200 s timeout after slow loads. Valid 8B runs keep the same prefill rate. The queue replaces these runs (L9/D5) and continues; it would run faster if that workload released host memory.
 
 ## Runner abort after slow load (c01, 2026-10-16 01:47 UTC)
 
@@ -41,7 +41,8 @@ RAM (3 GiB available, no swap), so the 8B model no longer fits in the page cache
 0.96). The c01 8b-4w candidate r4 a1 runner segfaulted (rc -11) after that slow load. By L9/D5
 this is an invalid run that gets replaced, not a gate failure: the row is kept, the ABORTED marker
 is archived in stage/s3-4070ti-wmma-c01/superseded/slow-load-abort/, and from r4 such aborts are
-replaced automatically (slow-load-aborts.jsonl). An abort without a slow load still stops the
+replaced automatically (slow-load-aborts.jsonl); from r5 also a runner timeout after a slow load
+(c01 8b-8da4w control r5 a1 hung 1200 s; marker archived the same way). An abort without a slow load still stops the
 queue. Four failed attempts at one position also stop it.
 
 ## Foreign GPU client (answered by the coordinator, 2026-10-16 00:20 UTC)
