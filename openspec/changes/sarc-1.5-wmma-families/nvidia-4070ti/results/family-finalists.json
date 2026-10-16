@@ -1,0 +1,93 @@
+{
+  "build": {
+    "tag": "matrix-fam-r1",
+    "commit": "f82cc2c17d44cb5c38c0e0563a7f3b4383ff80aa",
+    "binaries": [
+      "3939e1bdc75bb7e07ed568ce6716d814c6ac990f186d01ed202542c9d97bb6c2  /home/doremy/wmma-4070ti/.artifacts/build/matrix-fam-r1/llama/examples/models/llama/llama_main",
+      "f7c959667dd7a35da1e4184981a365aaab68801a4d3586d342fb176f98e7744d  /home/doremy/wmma-4070ti/.artifacts/build/matrix-fam-r1/tests/test_llama_microbench",
+      "687c6a809755c2ae1a58b516f55a3c6d440224617a10d7aeefb3a5530aa7d047  /home/doremy/wmma-4070ti/.artifacts/build/matrix-fam-r1/llama/examples/models/llama/runner/libllama_runner.so"
+    ],
+    "golden": "PASS (53 shipped variants), llama and backend",
+    "spirv_unchanged_vs": "matrix-mm-r1",
+    "spirv": [
+      {
+        "component": "llama",
+        "unchanged_spirv_count": 2091
+      },
+      {
+        "component": "backend",
+        "unchanged_spirv_count": 2091
+      }
+    ],
+    "source_changed_vs_reference": [
+      "./backends/vulkan/runtime/graph/ops/impl/sarc_dev/NvidiaWmmaMatrix.cpp",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/STATUS.md",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/proposal.md",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/calibration.json",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/candidate-gates.json",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/candidate-preflight.csv",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/family-select.txt",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/feature-builds.json",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/native-matrix-recompute.json",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/native-sessions.json",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/property-signature.json",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/replacement-snapshots.json",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/results/runtime-metadata-memory-model.json",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/aa_session.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/candidate_gates.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/candidate_session.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/control_and_aa.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/enabled_features.cpp",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/evaluate_run.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/family_finalists.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/feature_probes.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/native_matrix.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/nvml_observer.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/observe.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/parent_snapshot.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/recompute_calibration.py",
+      "./openspec/changes/sarc-1.5-wmma-families/nvidia-4070ti/tools/test_family_select.cpp"
+    ],
+    "memory_model_probe": "matrix-mm-r1 (runtime source identical except the dev-zone selector)"
+  },
+  "updated_utc": "2026-10-16T09:17:04.109583+00:00",
+  "control": {
+    "stage": "stage/s0-topic-fam-control",
+    "identical_to_matrix_control": true
+  },
+  "gates": {
+    "4070ti-nv-family-a": {
+      "stage": "stage/s2-gate-nv-family-a",
+      "commit": "f82cc2c17d44cb5c38c0e0563a7f3b4383ff80aa",
+      "verdict": "CORRECTNESS_GATE_FAILED; NO_RETRY_OR_ACCEPTANCE",
+      "coverage": {
+        "production_diff_cases": 23,
+        "per_shader": {
+          "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half": {
+            "linear_benchmark_cases": 12,
+            "production_diff_cases": 11
+          },
+          "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half": {
+            "linear_benchmark_cases": 12,
+            "production_diff_cases": 12
+          }
+        }
+      },
+      "numeric_failures": [
+        "verify/pdiff-llama-3.1-8b-4w-texture3d.log"
+      ],
+      "non_dispatch_differences": [
+        {
+          "control": "pdiff llama-3.1-8b 4w texture3d rc=0 [production-diff] ALL PASSED (llama-3.1-8b, 4 shapes, M=2048, linear_q4gsw, texture3d)",
+          "candidate": "pdiff llama-3.1-8b 4w texture3d rc=1 [production-diff] FAILED (llama-3.1-8b, 4 shapes, M=2048, linear_q4gsw, texture3d)"
+        }
+      ],
+      "default_tiled_differences": 0,
+      "sdpa": {
+        "passes": 26,
+        "failures": 0,
+        "attention_identical_to_control": true
+      }
+    }
+  }
+}

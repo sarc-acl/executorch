@@ -4,17 +4,25 @@ Updated: 2026-10-16 08:40 UTC
 
 ## Family finalists (coordinator decision 2026-10-16 08:20 UTC)
 
-Running: detached queue artifact jobs/family-finalists-r2 (state.json there). r1 failed before the
-build (rc 76, kept): the build guard counted another user's shell whose command line waits on a
-ComfyUI model download (no GPU device open; never touched). The guard's name match now also
-requires an open NVIDIA device node (tools/common.sh gpu_fds); NVML clients are checked as before. Steps, each recorded below as it finishes and in results/family-finalists.json:
-one rebuild matrix-fam-r1 of f82cc2c17 (golden check, SPIR-V identical to matrix-mm-r1, runtime
-source identical except the dev-zone selector, so the matrix-mm-r1 memory-model probe applies);
-control verify on the rebuild compared with s0-topic-mm-control; per finalist the full gate
-(unmodified verify.sh --pdiff, SDPA --sdpa-correctness-only extended and full, 12 passes each,
-plus one control pass per tier for attention identity) and then 36 next-token runs (three prompts)
-and one six-cell interleaved session against 4070ti-fused1 in the same binary, 7 valid runs per
-arm, 2531 MHz floor and the unchanged validity rules of the matrix.
+Running: detached queue artifact jobs/family-finalists-r3 (state.json there): the nv-family-b gate,
+then its tokens and session. Done so far (jobs/family-finalists-r2, stopped by its own
+gate assertion, kept):
+- Build matrix-fam-r1 of f82cc2c17: golden PASS (53 shipped variants, llama and backend), all SPIR-V
+  identical to matrix-mm-r1, runtime source identical except NvidiaWmmaMatrix.cpp
+  (build/matrix-fam-r1/source-diff.json).
+- Control verify on matrix-fam-r1 (stage s0-topic-fam-control): identical line by line to
+  s0-topic-mm-control with rates removed, including the linear kernel lists.
+- **4070ti-nv-family-a: REJECTED (production diff), not timed.** In stage s2-gate-nv-family-a,
+  pdiff llama-3.1-8b 4w texture3d fails at the w2 shape M=2048 K=14336 N=4096, where family-a
+  dispatches bt: 4 of 8388608 elements outside tolerance, sampled max abs diff 1.489 (tol 0.5).
+  At the same shape the control's ga gives 0.083 and c08's bx 0.041. The other 22 bt/bf cases pass;
+  bt's other 4w shapes reach 0.35-0.77. Diagnosis: bt keeps its whole accumulation in fp16
+  (inventory: ACC_FP32 false, ACC_GROUP_FP32 false), so its error grows with K. ga accumulates
+  groups in fp32 and bx fully in fp32. The Orin's own rule also never runs bt at K>8192. This is a
+  property of the kernel, not a transient, so the gate is not retried. SDPA extended/full: 24 of 24
+  candidate passes with 0 mismatches and pairing=ok; attention kernels identical to the control
+  passes. Next tokens and the timing session were not run, as the lean-finish rule requires for a
+  production-diff failure.
 
 Profiles (dev zone, backends/.../sarc_dev/NvidiaWmmaMatrix.cpp; selection table
 results/family-select.txt, GPU-free):
@@ -402,3 +410,9 @@ boundaries. No pushes, PRs, services, policy changes, new bodies or search.
 2026-10-16T07:19:08.056361+00:00 4070ti-wmma-c01: SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING; correctness=NEXT_TOKEN_EQUAL; acceptance=NONE; ONE_MEMBER_ONLY. Ratios {"1b-4w": 1.0, "1b-8da4w": 1.0, "3b-4w": 1.0, "3b-8da4w": 1.0079374922485427, "8b-4w": 1.0031253624574064, "8b-8da4w": 1.0036496595396702}; geomean=1.0024479347156887. Evidence artifact stage/s3-4070ti-wmma-c01.
 
 2026-10-16T07:31:05.806197+00:00 4070ti-wmma-c02: SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING; correctness=NEXT_TOKEN_EQUAL; acceptance=NONE; ONE_MEMBER_ONLY. Ratios {"1b-4w": 0.9206350554937227, "1b-8da4w": 1.0, "3b-4w": 0.9068323424155581, "3b-8da4w": 1.0, "8b-4w": 0.9039546875000001, "8b-8da4w": 1.0}; geomean=0.9541724251792371. Evidence artifact stage/s3-4070ti-wmma-c02.
+
+2026-10-16T08:28:47.903225+00:00 family finalists: build matrix-fam-r1 of f82cc2c17d44cb5c38c0e0563a7f3b4383ff80aa complete; golden PASS, SPIR-V identical to matrix-mm-r1.
+
+2026-10-16T08:33:19.159024+00:00 family finalists: control verify on matrix-fam-r1: identical to s0-topic-mm-control (rates removed)
+
+2026-10-16T09:17:04.109583+00:00 family finalists: 4070ti-nv-family-a gate: CORRECTNESS_GATE_FAILED; NO_RETRY_OR_ACCEPTANCE; coverage {"sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt": 11, "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra": 12}; SDPA extended/full 12 passes each, failures 0. Assessment stage/s2-gate-nv-family-a/candidate-assessment.json.

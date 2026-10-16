@@ -203,12 +203,16 @@ for profile, shaders in finalists.items():
     gates[profile]["sdpa"] = {"passes": len(passes), "failures": len(sdpa_failures), "attention_identical_to_control": attention_identical}
     save(profile + " gate: " + verdict + "; coverage " + json.dumps({s.removesuffix(suffix): c["production_diff_cases"] for s, c in coverage.items()}) +
          "; SDPA extended/full 12 passes each, failures " + str(len(sdpa_failures)) + ". Assessment " + str((stage / "candidate-assessment.json").relative_to(artifacts)) + ".")
-    assert verdict.startswith("GATE_CAPTURE_COMPLETE"), "finalist gate needs diagnosis before timing"
 device_lock.close()
 
 sessions = summary.setdefault("sessions", {})
 for profile in finalists:
     if profile in sessions:
+        continue
+    # Lean-finish protocol: a production-diff failure rejects the finalist; it is not timed.
+    if not gates[profile]["verdict"].startswith("GATE_CAPTURE_COMPLETE"):
+        sessions[profile] = {"status": "NOT_TIMED; gate " + gates[profile]["verdict"], "stage": None}
+        save(profile + " not timed: gate " + gates[profile]["verdict"] + ".")
         continue
     stage = artifacts / "stage" / ("s3-" + profile)
     if not (stage / "summary.json").exists():
