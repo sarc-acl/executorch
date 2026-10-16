@@ -22,7 +22,7 @@ for session in sessions:
         for row in csv.DictReader((stage / 'dispatch/dispatch.csv').open()):
             if 'linear' in row['kernel']:
                 dispatch.append({'session': session, **{k: row[k] for k in ('model', 'scheme', 'arm', 'kernel', 'M', 'N', 'K', 'events')}})
-                if row['arm'] == 'cand':
+                if row['arm'] == 'cand' and 'coopmat' in row['kernel']:
                     names.setdefault(row['scheme'], set()).add(re.sub(r'_(texture3d|buffer)_texture2d_half$', '', row['kernel']))
     ratios = []
     for cell in evidence.get('cells', []):

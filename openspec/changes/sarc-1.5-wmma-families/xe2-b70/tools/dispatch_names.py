@@ -19,7 +19,7 @@ with (root / "dispatch.csv").open("w", newline="") as output:
                 for run in data["run_data"]:
                     for event in run.get("events", []):
                         profile = event.get("profile_event") or {}
-                        name = profile.get("name", "")
+                        name = profile.get("delegate_debug_id_str") or profile.get("name", "")
                         if not name.startswith("{"):
                             continue
                         item = json.loads(name)

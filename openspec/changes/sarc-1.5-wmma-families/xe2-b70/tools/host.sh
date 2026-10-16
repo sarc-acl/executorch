@@ -36,7 +36,7 @@ cool_start() { local t0=$SECONDS a b
     while (( $(gtemp_mc) > $(<$IDLE_FILE) + 3000 && SECONDS - t0 < 300 )); do a=$(gtemp_mc); sleep 30; (( $(gtemp_mc) >= a )) && break; done
   else
     while (( SECONDS - t0 < 300 )); do a=$(gtemp_mc); sleep 60; b=$(gtemp_mc); (( a - b <= 1000 && b - a <= 1000 )) && break; done
-  fi; }
+    fi; return 0; }
 # export_commit <git work tree> <commit> <dest>: write the files of exactly that commit into <dest>, then every
 # submodule at the commit the tree pins, recursively. Everything comes from the git object stores (read-tree +
 # checkout-index into a scratch index), so modified, untracked or differently checked-out files in the live
