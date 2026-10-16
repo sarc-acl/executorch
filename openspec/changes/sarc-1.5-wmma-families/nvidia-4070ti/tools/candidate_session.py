@@ -42,6 +42,14 @@ stage.mkdir(parents=True, exist_ok=True)
 session_lock = (stage / "session.lock").open("a")
 fcntl.flock(session_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
 models = json.loads((artifacts / "preflight/models-static.json").read_text())
+sizes = os.environ.get("WMMA_SIZES", "1b,3b,8b").split(",")
+models = [m for m in models if any("-" + size in Path(m["path"]).stem for size in sizes)]
+# Coordinator answer 2026-10-16 03:15 UTC: 8B cells still blocked by foreign memory pressure at this time are NOT_MEASURED.
+memory_deadline = datetime.datetime.fromisoformat(os.environ.get("WMMA_MEMORY_DEADLINE", "2026-10-17T12:00:00+00:00"))
+
+
+class MemoryDeadline(Exception):
+    pass
 builds = {"control": "matrix-mm-r1", "candidate": "matrix-mm-r1"}
 env = {k: v for k, v in os.environ.items() if not k.startswith(("ET_VK", "ETVK"))}
 env.update(ET_VK_SARC_UNVERIFIED="1", ET_VK_SARC_DEV_PROFILE="4070ti-fused1",
@@ -162,6 +170,8 @@ def cool(target, maximum, model_bytes=0):
             len(temperatures) >= 3 and temperatures[-1] >= temperatures[-3])
         available = memory_available()
         memory_ok = available >= model_bytes + 2**30
+        if not memory_ok and datetime.datetime.now(datetime.timezone.utc) >= memory_deadline:
+            raise MemoryDeadline(f"MemAvailable {available} < model {model_bytes} + 1 GiB at the memory deadline")
         if not memory_ok and now - memory_logged >= 300:
             memory_logged = now
             with (stage / "memory-waits.jsonl").open("a") as file:
@@ -300,11 +310,15 @@ def run_rounds(first, last, target):
 
 timed_text_differences = []
 cells = [model + "-" + scheme for model in ["1b", "3b", "8b"] for scheme in ["4w", "8da4w"]]
+not_measured = []
 
 
 def medians(count):
     result = {}
     for cell in cells:
+        if any(len(valid_rows(cell, arm, count)) < count for arm in builds):
+            not_measured.append(cell)
+            continue
         arms = {}
         for arm in builds:
             rates = [float(r["tok_s"]) for r in valid_rows(cell, arm, count)]
@@ -402,17 +416,28 @@ def check_tokens(target):
                     continue
                 assert valid, "token run failed; retain and diagnose"
                 print("token", cell, prompt, arm, row["text_sha256"], flush=True)
+
+
+def compare_tokens():
+    path = stage / "tokens.csv"
+    with path.open() as file:
+        tokens = list(csv.DictReader(file, strict=True))
     comparisons = []
     for cell in cells:
-        for prompt in prompts:
+        for prompt in ["timed", "real", "unaligned"]:
             pair = [r for r in tokens if r["cell"] == cell and r["prompt"] == prompt and int(r["valid"])]
+            if len(pair) < 2:
+                comparisons.append({"cell": cell, "prompt": prompt, "same": None, "status": "NOT_MEASURED"})
+                continue
             assert len(pair) == 2 and {r["arm"] for r in pair} == set(builds)
             assert all(int(r["valid"]) == 1 for r in pair)
             same = pair[0]["text_sha256"] == pair[1]["text_sha256"] and int(pair[0]["prompt_tokens"]) == int(pair[1]["prompt_tokens"])
             comparisons.append({"cell": cell, "prompt": prompt, "same": same, "records": [r["record"] for r in pair]})
-    summary = {"profile": profile, "runs": len(tokens), "comparisons": comparisons, "all_same": all(r["same"] for r in comparisons)}
+    summary = {"profile": profile, "runs": len(tokens), "comparisons": comparisons,
+               "all_same": all(r["same"] for r in comparisons if r["same"] is not None),
+               "not_measured": [r["cell"] + "/" + r["prompt"] for r in comparisons if r["same"] is None]}
     (stage / "token-summary.json").write_text(json.dumps(summary, indent=2) + "\n")
-    return summary["all_same"]
+    return summary
 
 
 try:
@@ -436,9 +461,19 @@ try:
                     "attention_control": attention_control,
                     "orchestration_commit": os.environ["WMMA_ORCHESTRATION_COMMIT"]}
         (stage / "STAGE.json").write_text(json.dumps(manifest, indent=2) + "\n")
-    tokens_same = check_tokens(target)
-    run_rounds(1, repeats, target)
+    deadline_error = None
+    try:
+        check_tokens(target)
+        run_rounds(1, repeats, target)
+    except MemoryDeadline as error:
+        deadline_error = str(error)
+    if sizes != ["1b", "3b", "8b"]:
+        print("PARTIAL_SIZES_DONE", sizes, flush=True)
+        sys.exit(0)
+    token_summary = compare_tokens()
+    tokens_same = token_summary["all_same"]
     final = medians(repeats)
+    assert not not_measured or deadline_error, not_measured
     random_source = random.Random(407014)
     for cell, result in final.items():
         control = sorted(valid_rows(cell, "control", repeats), key=lambda r: int(r["rep"]))
@@ -456,12 +491,16 @@ try:
             bounds.append(intervals[left] + (intervals[right] - intervals[left]) * (position - left))
         result["ratio_interval95"] = bounds
     geomean = math.exp(statistics.mean(math.log(c["ratio"]) for c in final.values()))
-    summary = {"profile": profile, "status": "SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING", "repeats": repeats,
+    summary = {"profile": profile, "repeats": repeats,
+               "status": "PARTIAL; NOT_MEASURED " + ",".join(not_measured) if not_measured else "SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING",
+               "not_measured_cells": not_measured, "not_measured_tokens": token_summary["not_measured"],
+               "not_measured_reason": deadline_error and "foreign memory pressure: " + deadline_error,
                "correctness": "NEXT_TOKEN_EQUAL" if tokens_same else "CORRECTNESS_PENDING; top-2 logits unavailable from llama_main",
                "timed_text_differences": timed_text_differences,
-               "clock_floor_mhz": clock_floor, "geomean_ratio": geomean, "cells": final,
+               "clock_floor_mhz": clock_floor, "geomean_ratio": None if not_measured else geomean,
+               "geomean_measured_cells": geomean, "cells": final,
                "valid_rows": sum(int(r["valid"]) for r in rows), "invalid_rows": sum(not int(r["valid"]) for r in rows),
-               "within_member_numeric_margins": geomean >= 0.97 and all(c["ratio"] >= 0.92 for c in final.values()),
+               "within_member_numeric_margins": None if not_measured else geomean >= 0.97 and all(c["ratio"] >= 0.92 for c in final.values()),
                "acceptance": "NONE; ONE_MEMBER_ONLY"}
     (stage / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(json.dumps(summary), flush=True)

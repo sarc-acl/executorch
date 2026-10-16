@@ -16,13 +16,20 @@ results = artifacts / "matrix/native-r1"
 results.mkdir(parents=True, exist_ok=True)
 summary_path = results / "summary.json"
 summaries = json.loads(summary_path.read_text()) if summary_path.exists() else []
+# 1B/3B of every pending profile first: 8B processes wait for host memory held by a foreign workload.
+pending = [p for p in profiles if not any(r["profile"] == p for r in summaries)
+           and not (artifacts / "stage" / ("s3-" + p) / "summary.json").exists()]
+for profile in pending:
+    assert not (artifacts / "GPU_GONE").exists()
+    subprocess.run(["timeout", "--signal=TERM", "--kill-after=60", "4h", "python3", str(tools / "candidate_session.py"), profile],
+                   env=dict(os.environ, WMMA_SIZES="1b,3b"), check=True)
 for profile in profiles:
     if any(r["profile"] == profile for r in summaries):
         continue
     assert not (artifacts / "GPU_GONE").exists()
     stage = artifacts / "stage" / ("s3-" + profile)
     if not (stage / "summary.json").exists():
-        subprocess.run(["timeout", "--signal=TERM", "--kill-after=60", "4h", "python3", str(tools / "candidate_session.py"), profile], check=True)
+        subprocess.run(["timeout", "--signal=TERM", "--kill-after=60", "40h", "python3", str(tools / "candidate_session.py"), profile], check=True)
     summary = json.loads((stage / "summary.json").read_text())
     assert summary["profile"] == profile
     summaries.append(dict(summary, stage=str(stage.relative_to(artifacts)), updated_utc=datetime.datetime.now(datetime.timezone.utc).isoformat()))
