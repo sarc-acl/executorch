@@ -49,8 +49,8 @@ Cand/control > 1 means the candidate is faster. Limits: six-cell geomean slowdow
 | b70-wmma-q4-k16 | 4w: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib; 8da4w: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i, sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n26 | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.000 / 1.000 / 1.000 / 1.000 / 1.002 / 1.000 | 1.0003 | True |
 | b70-wmma-q4-k32 | 4w: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib, sarc_linear_q4gsw_coopmat_sweep_t128x128k32g84s16m8flw; 8da4w: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i, sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n26 | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.000 / 1.000 / 1.000 / 1.000 / 1.002 / 1.000 | 1.0003 | True |
 | b70-wmma-dq-n26 | 4w: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib, sarc_linear_q4gsw_coopmat_sweep_t128x128k32g84s16m8flw; 8da4w: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i, sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n26 | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.010 / 1.000 / 1.008 / 0.990 / 1.000 / 1.005 | 1.0021 | True |
-| xe2-family-a | 4w: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib; 8da4w: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i | GATE_FAIL (1 requirement(s)); 1 FAIL line(s), see gate.txt | 1.000 / 1.000 / 1.000 / 1.000 / 1.000 / 0.963 | 0.9938 | True |
-| xe2-family-b | 4w: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib; 8da4w: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i, sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n13 | GATE_FAIL (1 requirement(s)); 1 FAIL line(s), see gate.txt | 1.000 / 1.000 / 1.000 / 0.981 / 1.000 / 0.998 | 0.9964 | True |
+| xe2-family-a | 4w: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib; 8da4w: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i | GATE: coordinator items PASS (verify pdiff 12/12 and same status as control, SDPA all/extended/full 12 passes 0 mismatches pairing=ok, next tokens SAME x3 prompts x6 cells); gate_check warm-trace item NOT RUN (missing, outside the coordinator gate) | 1.000 / 1.000 / 1.000 / 1.000 / 1.000 / 0.963 | 0.9938 | True |
+| xe2-family-b | 4w: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib; 8da4w: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i, sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n13 | GATE: coordinator items PASS (verify pdiff 12/12 and same status as control, SDPA all/extended/full 12 passes 0 mismatches pairing=ok, next tokens SAME x3 prompts x6 cells); gate_check warm-trace item NOT RUN (missing, outside the coordinator gate) | 1.000 / 1.000 / 1.000 / 0.981 / 1.000 / 0.998 | 0.9964 | True |
 <!-- matrix end -->
 
 No family-wide acceptance is claimed from this member's results.
@@ -103,13 +103,28 @@ Registered as dev-zone profiles in the `b70-wmma` block of `impl/sarc_dev/Overri
 - Shapes a kernel cannot serve (for example buffer IO for k16g82, which has only a texture3d variant) keep the
   control's choice, as in the matrix. The CPU selection fixture (`tools/test_profiles.cpp`, built with host g++)
   passes all 9 profiles, 12 storage variants and 7 family cases.
-- Running: detached job `final-01` (`tools/final_queue.sh wmma-b70-topic-03`), status file
-  `/home/doremy/wmma-b70/.artifacts/jobs/final-01.json`. It does one build of HEAD with the golden check, then for
-  each finalist: unmodified `verify.sh --pdiff`, 12 passes each of the SDPA tiers all, extended and full, a
-  seven-repeat interleaved session against the matrix control with next tokens on the three prompts, dispatched
-  names, and `gate_check.py --sdpa` against the control's verify output. The warm-trace item of `gate_check.py`
-  is not part of the coordinator's gate and is not run, so `gate.txt` reports it as FAIL (missing); that item is
-  missing evidence, not a pass.
+- Job `final-01` (`tools/final_queue.sh wmma-b70-topic-03`, 05:22 to 07:18 UTC) completed with exit code 0.
+  The build `wmma-b70-topic-03` (commit 53292c362) passed the spirv golden check (53 shipped variants). Both arms
+  of each finalist session ran that binary; the control arm used the matrix control environment.
+
+| Finalist | verify --pdiff | SDPA all / extended / full | Next tokens | Cand/control: 1B 4w, 1B 8da4w, 3B 4w, 3B 8da4w, 8B 4w, 8B 8da4w | Geomean | Geomean slowdown, 95 % CI |
+|---|---|---|---|---|---:|---|
+| xe2-family-a | 12/12; same status as control | 12 passes each, 0 mismatches, pairing=ok | SAME, 3 prompts x 6 cells | 1.000 / 1.000 / 1.000 / 1.000 / 1.000 / 0.963 | 0.9938 | 0.62 % [0.46, 0.99] |
+| xe2-family-b | 12/12; same status as control | 12 passes each, 0 mismatches, pairing=ok | SAME, 3 prompts x 6 cells | 1.000 / 1.000 / 1.000 / 0.981 / 1.000 / 0.998 | 0.9964 | 0.37 % [-0.26, 0.68] |
+
+- Both finalists are within the 3 % geomean / 8 % per-cell limits on B70.
+  - xe2-family-a: its one cell outside the +-2 % noise band is 8B 8da4w at 3.6 % slower (CI [3.3, 4.5] %). The
+    matrix's dq-i measured the same cell at 4.3 %.
+  - xe2-family-b: every cell is inside the noise band.
+- The verify output differs from the control's only in the two linear kernel-name lines.
+- All 168 timed runs are valid. 7 of 48 check-prompt runs are below the clock floor (`clock_low`); they are kept
+  and not used.
+- No near-tie flip occurred, so no D3 evidence was needed.
+- Not run: the warm-trace item of `gate_check.py`. `gate.txt` therefore ends `GATE_FAIL (1 requirement)` for that
+  missing item alone. It is outside the coordinator's gate list and is missing evidence, not a pass. Dispatched
+  names come from the ETDump collection instead (`results/matrix-dispatch.csv`).
+- Evidence: `.artifacts/stage/xe2-family-{a,b}/` (`gate.txt`, `verify.out`, `verify-vs-control.txt`,
+  `sdpa-correctness/`, `raw/`, `evidence.json`, `dispatch/`).
 
 ## Question for the coordinator
 
