@@ -138,3 +138,18 @@ They neither rebuild kernels nor construct model resources. Failed helper compil
 diagnostics are retained. There are no timing rows, calibration, gates, margins,
 accepted candidates or family acceptance. Existing GPU orchestration still requires
 exact-run validation if a separately authorized conforming resolution enables launch.
+
+## Superseded by owner/coordinator decisions (2026-10-16)
+
+The pre-registration above is kept as written. These decisions replaced parts of it before the data they govern
+existed:
+
+- 7 valid runs per arm with up to 5 extra pairs; the first 7 valid rows in CSV order are used (owner decision
+  2026-10-15 23:30 UTC; no session had run).
+- Foreign-busy ceiling BUSYMAX = 2.97 %: the historical b580-fused e2e5.sh calibration (2 x p90 of the A/A's
+  fbusy_pct) capped at 5 % (coordinator ruling 2026-10-16 01:15 UTC), fixed from the A/A s1c-aa before any
+  candidate session ran. The zero ceiling applied only to the superseded A/A s1-aa.
+- Correctness gates record foreign engine activity instead of asserting on it; timed sessions wait for a foreign
+  share <= BUSYMAX over 60 s instead of an idle desktop (coordinator note 2026-10-16 02:15 UTC).
+- The texture3d image-extent caveat is not a blocker; original model files are used (owner decision 2026-10-15
+  23:30 UTC). "Whole-model allocation legality is BLOCKED" above is the pre-decision record.

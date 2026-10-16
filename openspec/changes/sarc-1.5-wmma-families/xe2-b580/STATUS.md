@@ -1,6 +1,6 @@
 # Xe2 B580 finite linear matrix: status
 
-Updated 2026-10-16T04:35Z. Actor: Claude (claude-opus-5-5), under the owner's lean-finish decision of
+Updated 2026-10-16T05:00Z. Actor: Claude (claude-opus-5-5), under the owner's lean-finish decision of
 2026-10-15 23:30 UTC (deadline 2026-10-17 18:00 UTC). Earlier recovery history: git log of this file.
 
 ## Inputs
@@ -25,8 +25,11 @@ calibrates clock floor (97 % of the lowest valid per-run median) and idle temper
 `verify.sh --pdiff` on `wmma-v1` + control, compared with b580-fused s6-final / order2 g2. Per candidate:
 unmodified `verify.sh --pdiff` first (production-diff failure rejects, untimed); then six cells interleaved,
 7 valid runs per arm (up to 5 extra pairs), next token on three prompts (a DIFFER alone = CORRECTNESS_PENDING,
-still timed). Validity rules unchanged: rc 0, 2048/0 tokens, >= 5 clock samples, clock floor, no thermal
-reason, zero foreign engine time in the prefill window, no foreign GPU process, desktop idle. SDPA tiers not
+still timed). Validity rules applied: rc 0, 2048/0 tokens, >= 5 clock samples, median clock >= 2651 MHz, no
+thermal reason, no foreign GPU process, and a foreign engine share in the prefill window at or below
+BUSYMAX = 2.97 % (e2e5.sh calibration capped at 5 %, coordinator ruling 2026-10-16 01:15 UTC); a row above it is
+invalid (foreign_busy) and kept. Timed sessions wait until the foreign share is <= BUSYMAX over 60 s
+(coordinator note 02:15 UTC); load average is recorded per row (`load1`). SDPA tiers not
 run (attention identical in both arms). Order: B70-final-profile candidates first.
 
 Queue `tools/queue.sh`, state `.artifacts/queue/wmma-v1/job-state.json`.
@@ -105,7 +108,17 @@ files kept as `gate.done.foreign-assert`, evidence in `gate.reeval.txt`.
 
 s2-b70-linear 8B 4w: desktop activity of 6 to 24 % between 02:38 and 02:48Z left 1 valid run per arm after 5
 extra pairs (rows kept, foreign_busy); the queue re-timed only that cell in s2b-b70-linear (same binary and
-environments, E2E5_OK, next token SAME). Other sessions: 0 to 3 invalid rows per cell, all kept.
+environments, E2E5_OK, next token SAME). Other timed prefill rows: s3 to s7 have none invalid; s2 outside
+8B 4w has 1B 4w parent 1 (busy_unsampled), 3B 8da4w cand 1, 8B 8da4w parent 1 and cand 2 (foreign_busy); all
+kept, each cell still reached 7 valid runs per arm. The 32 `clock_low` rows are check/unaligned next-token runs,
+not timed prefill rows; the clock floor does not apply to token comparisons, which used them.
+
+## Baseline against the historical campaign
+
+A/A control arm (wmma-v1, `b580-fused1-order-p13`, s1c-aa) against b580-fused order2 g2 P (the same profile,
+2026-10-12, `results/b580/order2/a5.md` of that campaign): 1B 4w -1.45 %, 1B 8da4w -1.75 %, 3B 4w -0.79 %,
+3B 8da4w -2.03 %, 8B 4w -0.92 %, 8B 8da4w -1.74 %; all within the 3 % baseline tolerance. The s2 control on 8B
+8da4w (3170.3) is -3.9 % under desktop activity and load ~19, explained above; ratios use same-session controls.
 
 ## Now
 
