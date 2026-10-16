@@ -1,6 +1,6 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-16 07:40 UTC
+Updated: 2026-10-16 08:10 UTC (review corrections, documentation only)
 
 Stage: FINITE NATIVE MATRIX COMPLETE (2026-10-16 07:31 UTC); ready for the one matrix review.
 Final queue: artifact jobs/native-matrix-r7 (completed, rc 0). r1–r6 are kept as failed or
@@ -33,11 +33,44 @@ logs, raw sensor records, foreign-waits.jsonl, memory-waits.jsonl, slow-load-abo
 | c01 | sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga tex3d (4w, N>512) | pdiff PASS; next token equal (36/36) | 1.000 | 1.000 | 1.000 | 1.008 | 1.003 | 1.004 | 1.0024 (84 valid, 18 invalid; many 8B rows after slow loads) |
 | c02 | sarc_linear_q4gsw_coopmat_t128x128k16g24s32ga tex3d (4w) | pdiff PASS; next token equal (36/36) | 0.921 | 1.000 | 0.907 | 1.000 | 0.904 | 1.000 | 0.9542 (84 valid, 0 invalid; outside both limits) |
 | c03, c04, c07 | buffer-IO variants | pdiff PASS (buffer microbench) | not timeable: the fixed models run texture3d IO, no dispatch | | | | | | n/a |
-| c05 | buffer-weight variant | NO COVERAGE (0 dispatched cases) | not timeable, no dispatch | | | | | | n/a |
+| c05 | buffer-weight variant | BLOCKER: no production-diff dispatch (0 cases) | not timeable, no dispatch | | | | | | n/a |
 
 Ratios are candidate/control valid-run medians, 7 valid runs per arm, same session
 and binary; c08 had 84/84 valid rows, 0 invalid. c08 dispatches only for K>8192
 (8B 4w down projection); the other cells are unchanged within one timer step.
+
+Noise band: the task's band is +-2 %. The c09 (+1.67 %) and c11 (+1.44 %) geomeans and the
+c06/c01 geomeans are inside it, so they are not gains. Several 1B cell ratios (for example
+1.018, 1.036, 1.040) are one or two steps of the runner's 1 ms timer (about 1.7–2.0 % per
+step in 1B). Only c10 (+2.29 %) lies just outside the band; c08 (-1.56 %) is inside it on the
+geomean but its 8b-4w cell (0.917) is outside the 8 % cell limit.
+
+c05 blocker: the buffer-weight shader sarc_linear_q4gsw_coopmat_t128x128k16g42s32ga_buffer_buffer_half
+was never dispatched in its gate (0 production-diff and 0 linear-benchmark cases; production
+shapes choose texture weights in prepack_quantized_linear_weight). It is not timeable on the
+fixed texture3d models. Its correctness and timing stay NOT MEASURED in this stage; no
+separate coverage run is planned in this stage (it would need a different weight-storage
+path, which is outside the approved finite matrix). The earlier STATUS lines that promised
+c05 coverage "after this GPU queue" are superseded by this entry.
+
+Replacement bound change (disclosed): the sessions were pre-registered with at most four
+attempts per arm and repetition (STAGE.json "replacement_attempts": 4 for c01 and earlier
+sessions). Commit eb67e1330 raised it to eight while the matrix was running, after c01
+8b-8da4w r5 had used four attempts under foreign memory pressure. Validity criteria did not
+change. The c01 8b-8da4w r5 pair straddles the end of that pressure: control valid at
+attempt 4 (02:49:15 UTC), candidate valid at attempt 5 (07:18:35 UTC). The cell result is
+inside noise: control median 7447.27, candidate 7474.45, ratio 1.0036.
+
+## Property signature (RTX 4070 Ti SUPER, device 0)
+
+Vendor 4318 (0x10de); driver ID DRIVER_ID_NVIDIA_PROPRIETARY, driver 615.71.09. Subgroup
+size 32 (min = max = 32, subgroupSizeControl true). maxComputeSharedMemorySize 49152 bytes.
+Cooperative-matrix (KHR) properties, all subgroup scope, no saturating accumulation:
+fp16 x fp16 -> fp16 and -> fp32 at 16x16x16, 16x8x16 and 16x8x8; int8/uint8 -> int32/uint32 at
+16x16x32 and 16x8x32; bf16 x bf16 -> fp32 at 16x16x16; fp8 E4M3 and E5M2 -> fp16/fp32 at
+16x16x32. Every candidate uses 16x16x16 fp16 with subgroup 32 and declares at most 45056
+bytes of shared memory. Sources: artifact preflight/coop-matrices.json and
+preflight/vulkaninfo.txt; summary in results/property-signature.json.
 
 ## Question for the coordinator
 
@@ -55,7 +88,8 @@ this is an invalid run that gets replaced, not a gate failure: the row is kept, 
 is archived in stage/s3-4070ti-wmma-c01/superseded/slow-load-abort/, and from r4 such aborts are
 replaced automatically (slow-load-aborts.jsonl); from r5 also a runner timeout after a slow load
 (c01 8b-8da4w control r5 a1 hung 1200 s; marker archived the same way). An abort without a slow load still stops the
-queue. Four failed attempts at one position also stop it.
+queue. Repeated failed attempts at one position also stop it: four until r5, eight from r6
+(see "Replacement bound change" above).
 
 ## Foreign GPU client (answered by the coordinator, 2026-10-16 00:20 UTC)
 
@@ -67,8 +101,10 @@ From native-matrix-r3: a run starts only after every foreign client has kept the
 with 0 % device utilization, for 60 s (foreign-waits.jsonl). The run gets that client set; any
 new foreign PID or memory change during the run makes the row invalid (kept, replaced).
 Device utilization during our own run cannot be attributed per process, so it is not
-checked for the foreign client. Each row records foreign_idle_client=<pid,MiB>. The c08 and
-earlier c09 CSVs got the new column empty (originals in superseded/schema-upgrade).
+checked for the foreign client. Each row records foreign_idle_client=<pid,MiB>. Only the c09
+runs.csv and tokens.csv were upgraded, with the new column empty for earlier rows (originals in
+stage/s3-4070ti-wmma-c09/superseded/schema-upgrade). c08 had finished before r3, so its CSVs
+keep the original schema without that column.
 
 ## Earlier record (before the lean-finish decision)
 
@@ -112,7 +148,8 @@ Projection: seven profiles × 120 processes (36 token + 84 timed), roughly
 profile has a four-hour cap and the detached queue a 30-hour outer cap; this
 is below the >48h reporting boundary. No parameter search or automatic retry
 of a failed gate is queued. c03/c04/c07 alternative-IO correctness is retained;
-c05 buffer-weight correctness remains independent work after this GPU queue.
+c05 buffer-weight correctness remains independent work after this GPU queue
+[superseded 2026-10-16: c05 is recorded as a blocker, see the table above].
 No compilation will run alongside timing. Raw results remain under stage/s3-*;
 results/native-sessions.json and STATUS update after each completed profile.
 
@@ -130,7 +167,7 @@ c10=12, c11=11. The c05 zero count is an explicit coverage gap, not a pass.
 Next: native c01,c02,c06,c08,c09,c10,c11 token checks and same-session six-cell
 measurements at the reviewed seven repeats / 2531 MHz floor. Buffer-IO c03,c04,
 c07 already have exact production-diff correctness dispatch; buffer-weight c05
-still needs separate coverage. Fixed-model timing would not establish buffer
+still needs separate coverage [superseded 2026-10-16: blocker, see the table above]. Fixed-model timing would not establish buffer
 candidate performance, so it is not queued as such. All-six-cell token evidence
 and numeric margins remain pending; no family-wide acceptance is inferred.
 
