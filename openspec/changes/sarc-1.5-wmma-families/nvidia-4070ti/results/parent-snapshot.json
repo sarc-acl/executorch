@@ -1,0 +1,50 @@
+{
+  "source_commit": "617897184529ff180af491ee0d5d7de778cbb6c6",
+  "snapshot": "s0-parent-verify",
+  "observations": 37,
+  "model_invocations": 22,
+  "model_rc0": 22,
+  "foreign_observations": 0,
+  "thermal_samples": 0,
+  "snapshot_only": true,
+  "default_prefill_samples": {
+    "1b-4w": 11,
+    "1b-8da4w": 9,
+    "3b-4w": 27,
+    "3b-8da4w": 23,
+    "8b-4w": 58,
+    "8b-8da4w": 50
+  },
+  "linear": {
+    "4w": {
+      "returncode": 1,
+      "case_count": 24,
+      "all_ok_true": true,
+      "dispatch_counts": {
+        "unexpected_coopmat": 12,
+        "confirmed": 12
+      },
+      "diagnosis": "parent dispatch-expectation mismatch; not a plain verification pass",
+      "kernels": [
+        "sarc_linear_q4gsw_coopmat_t128x128k16g24s32ga_texture3d_texture2d_half",
+        "sarc_linear_q4gsw_coopmat_t128x128k16g42s32ga_buffer_texture2d_half",
+        "sarc_linear_q4gsw_coopmat_t128x256k16g42s32ga_buffer_texture2d_half",
+        "sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga_texture3d_texture2d_half"
+      ]
+    },
+    "8da4w": {
+      "returncode": 1,
+      "case_count": 24,
+      "all_ok_true": true,
+      "dispatch_counts": {
+        "unexpected_coopmat": 12,
+        "confirmed": 12
+      },
+      "diagnosis": "parent dispatch-expectation mismatch; not a plain verification pass",
+      "kernels": [
+        "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half",
+        "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half"
+      ]
+    }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "builds": [
+    {
+      "tag": "parent-mm-r1",
+      "commit": "5f02679b9a20d0b43ed44ea42cb1d779e1f269ac",
+      "goldens": {
+        "golden-llama.txt": "spirv golden: PASS (53 shipped variants)",
+        "golden-backend.txt": "spirv golden: PASS (53 shipped variants)"
+      },
+      "spirv": [
+        {
+          "component": "llama",
+          "unchanged_spirv_count": 2091
+        },
+        {
+          "component": "backend",
+          "unchanged_spirv_count": 2091
+        }
+      ],
+      "compiled_modules": 11
+    },
+    {
+      "tag": "matrix-mm-r1",
+      "commit": "dd57ce0e4fda4d7a5c72f9ce3c13b075428eec9e",
+      "goldens": {
+        "golden-llama.txt": "spirv golden: PASS (53 shipped variants)",
+        "golden-backend.txt": "spirv golden: PASS (53 shipped variants)"
+      },
+      "spirv": [
+        {
+          "component": "llama",
+          "unchanged_spirv_count": 2091
+        },
+        {
+          "component": "backend",
+          "unchanged_spirv_count": 2091
+        }
+      ],
+      "compiled_modules": 11
+    }
+  ],
+  "old_binaries_retained": true,
+  "runtime_metadata": "runtime-metadata-memory-model.json",
+  "feature_probes": "compiled; not yet executed",
+  "candidate_gate_and_timing": "pending"
+}

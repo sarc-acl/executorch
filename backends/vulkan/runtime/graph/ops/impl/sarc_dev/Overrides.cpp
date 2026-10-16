@@ -3925,6 +3925,21 @@ struct RegistrarWmma780m {
 } // namespace vkcompute
 // --- rdna3-780m WMMA matrix end ---
 
+// --- 4070ti WMMA matrix begin ---
+namespace vkcompute {
+namespace sarc {
+void install_4070ti_wmma();
+namespace {
+struct Registrar4070tiWmma {
+  Registrar4070tiWmma() {
+    install_4070ti_wmma();
+  }
+} registrar_4070ti_wmma;
+} // namespace
+} // namespace sarc
+} // namespace vkcompute
+// --- 4070ti WMMA matrix end ---
+
 // --- fused attention node (M2 review, 2026-10-15) ---
 // The one fused attention node of a dev build. Its variant list per node, as
 // the node's own file reads it (the variable first, then the profile); the node
