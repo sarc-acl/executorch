@@ -17,7 +17,9 @@
 #     env.txt, and the share of engine time they used inside the timed prefill window is measured per run
 #     (sampler.py D lines: xe fdinfo drm-cycles of every client that is not ours) and written to runs.csv
 #     (fbusy_pct, fclients, ftop). A run with fbusy_pct above BUSYMAX is invalid (foreign_busy). BUSYMAX comes
-#     from the calibration session like CLKMIN: zero: this run permits no active foreign engine workload, including during A/A.
+#     from the calibration session like CLKMIN: 2 x the 90th percentile of fbusy_pct over its valid runs, capped at
+#     5 % (coordinator ruling 2026-10-16 01:15 UTC; the calibration session itself applies no busy limit, as in
+#     sarc-1.5-b580-fused-port/tools/e2e5.sh).
 #   - desktop: the whole session holds the desktop-build lock shared (host.sh gpu_shared), so no build of this
 #     or of the Jetson Orin campaign runs during it.
 #   - a GPU workload this campaign did not start (host.sh gpu_others: a known compute program) aborts the
@@ -101,7 +103,6 @@ run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected 
   device_check || finish E2E5_ABORTED device_lost
   [[ $tag == prefill ]] && { idle_wait "$tag $m $q $b r$r" || finish E2E5_ABORTED device_lost; }   # desktop: a timed run starts only on an idle desktop (host.sh)
   t0=$SECONDS; cool; cs=$((SECONDS - t0))
-  [[ $tag == prefill ]] && { quiet_wait "$tag $m $q $b r$r" || finish E2E5_ABORTED device_lost; }
   tp=$(gtemp); oth=$(others | tr ',' ';')
   [[ -n $oth ]] && finish E2E5_ABORTED "other GPU process before $tag $m $q $b r$r: $oth"
   local benv=(); [[ -f $D/$b/env ]] && mapfile -t benv < "$D/$b/env"
@@ -159,7 +160,7 @@ elif cm < float(clkmin): reason.append("clock_low")
 elif thermal: reason.append("thermal_throttled")
 if tag == "prefill" and fb == "": reason.append("busy_unsampled")
 elif tag == "prefill" and not 0 <= fb <= 100: reason.append("busy_unreadable")   # counters must be within their physical range
-elif tag == "prefill" and fb > 0: reason.append("foreign_busy")
+elif tag == "prefill" and busymax and fb > float(busymax): reason.append("foreign_busy")
 valid = 0 if reason else 1
 print(",".join(str(x) for x in [tok, pt, gt, ms, n, cm, cmin, thr, pw, round(max(r[4] for r in rows) / 1000) if rows else "", valid, "+".join(reason), fb, fn, ft]))
 PY
@@ -212,7 +213,7 @@ if [[ $CALIB == 1 && ${#FAILS[@]} == 0 ]]; then
   python3 - "$CSV" > "$BUSYMAX_FILE" <<'PY'
 import csv, sys
 v = sorted(float(r["fbusy_pct"]) for r in csv.DictReader(open(sys.argv[1])) if r["log"].startswith("logs/prefill") and r["valid"] == "1" and r["fbusy_pct"] != "")
-print(0 if v and max(v) == 0 else "")
+print(round(min(5.0, 2 * v[min(len(v) - 1, int(0.9 * len(v)))]), 2) if v else "")
 PY
   echo "calibration: idle_temp_mc=$(<$IDLE_FILE) clkmin_mhz=$(<$CLKMIN_FILE) busymax_pct=$(<$BUSYMAX_FILE)" | tee -a "$O/env.txt"
   [[ -s $BUSYMAX_FILE && -n $(<$BUSYMAX_FILE) ]] || { FAILS+=("calibration:foreign_busy_not_readable"); rm -f "$BUSYMAX_FILE"; }

@@ -9,6 +9,7 @@ import statistics
 import sys
 
 root = Path(sys.argv[1])
+busymax = float(sys.argv[2])  # calibrated foreign-busy ceiling (artifacts busymax_pct), also applied to A/A rows
 REPS = 7  # owner decision 2026-10-15 23:30 UTC: 7 valid runs per arm
 rows = list(csv.DictReader((root / "runs.csv").open()))
 assert rows
@@ -24,7 +25,7 @@ for model in ("1b", "3b", "8b"):
         for arm in ("parent", "cand"):
             selected = [r for r in rows if r["model"] == model and r["scheme"] == scheme
                         and r["build"] == arm and r["log"].startswith("logs/prefill")]
-            valid = [r for r in selected if r["valid"] == "1"]
+            valid = [r for r in selected if r["valid"] == "1" and float(r["fbusy_pct"]) <= busymax]
             assert len(valid) >= REPS, (model, scheme, arm, "incomplete")
             used = valid[:REPS]
             values = []
@@ -36,7 +37,7 @@ for model in ("1b", "3b", "8b"):
                 assert observation["prompt_tokens"] == 2048 and observation["generated_tokens"] == 0
                 rate = float(observation["prefill_token_per_sec"])
                 assert rate == float(row["tok_s"]) and row["rc"] == "0" and row["reason"] == ""
-                assert int(row["clk_n"]) >= 5 and float(row["fbusy_pct"]) == 0
+                assert int(row["clk_n"]) >= 5 and float(row["fbusy_pct"]) <= busymax
                 assert (root / row["sensor_log"]).is_file()
                 values.append(rate)
             arms[arm] = values
@@ -55,7 +56,7 @@ for model in ("1b", "3b", "8b"):
         cells.append(cell)
         ratios.append(ratio)
 geomean = math.exp(statistics.mean(math.log(ratio) for ratio in ratios))
-print(json.dumps({"cells": cells, "geomean_throughput_ratio": geomean,
+print(json.dumps({"busymax_pct": busymax, "cells": cells, "geomean_throughput_ratio": geomean,
                   "geomean_slowdown_pct": 100 * (1 - geomean),
                   "within_member_bounds": geomean >= 0.97 and all(cell["within_cell_bound"] for cell in cells),
                   "bootstrap_seed": 58020261014, "bootstrap_samples": 10000,

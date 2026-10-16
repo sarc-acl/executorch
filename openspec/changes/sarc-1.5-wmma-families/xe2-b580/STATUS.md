@@ -1,6 +1,6 @@
 # Xe2 B580 finite linear matrix: status
 
-Updated 2026-10-16T00:50Z. Actor: Claude (claude-opus-5-5), under the owner's lean-finish decision of
+Updated 2026-10-16T01:20Z. Actor: Claude (claude-opus-5-5), under the owner's lean-finish decision of
 2026-10-15 23:30 UTC (deadline 2026-10-17 18:00 UTC). Earlier recovery history: git log of this file.
 
 ## Inputs
@@ -65,15 +65,13 @@ rows are not timing evidence. Raw: `.artifacts/stage/s1-aa/raw/`.
 
 ## Now
 
-Run-local fix within the existing protocol: before each timed prefill, `quiet_wait` (host.sh,
-`tools/foreign_quiet.py`) waits for a 3 s window with zero foreign engine cycles on the card; the in-window
-zero ceiling is unchanged and no foreign process is touched. Queue relaunched with A/A repeat `s1b-aa`
-(s1-aa's gate on the same binary stays the control check). While Firefox keeps rendering, timed runs wait;
-waits are logged in `.artifacts/logs/quiet_wait.log`.
+Coordinator ruling 2026-10-16 01:15 UTC applied: the foreign-busy ceiling is the historical b580-fused e2e5.sh
+calibration (the calibrating A/A applies no busy limit; BUSYMAX = 2 x the 90th percentile of fbusy_pct over
+its otherwise-valid prefill runs), capped at 5 % (read as min(5, 2 x p90)). Every row keeps fbusy_pct; rows
+above BUSYMAX are invalid (foreign_busy) and kept; analyze_session.py applies BUSYMAX to the A/A rows as well.
+The quiet wait was removed (the s1b-aa attempt with it had no rows; moved to stage/superseded/quiet-wait-no-rows/).
+Firefox is not touched. Queue restarted with the A/A `s1c-aa`, then the six candidates.
 
 ## Question for the coordinator
 
-Firefox (pid 1699641) on the B580 desktop uses about 1 % of the card continuously even with the desktop idle,
-which makes every run invalid under this run's zero foreign-engine ceiling; the queue waits for a quiet card.
-Please have the desktop user close or minimise the rendering Firefox tab, or give an owner ruling on a
-non-zero ceiling (the historical B580 campaign used 5 %); I will not widen the limit myself.
+None (Firefox question answered by the 01:15 UTC ruling).
