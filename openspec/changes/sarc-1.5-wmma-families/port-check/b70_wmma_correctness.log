@@ -1,0 +1,106 @@
+
+=== Compute Shader Performance Benchmark ===
+q4gsw_linear:wmma_correctness
+----------------------------------------------------------------------
+Executing 24 test cases for q4gsw_linear:wmma_correctness
+----------------------------------------------------------------------
+[probe] linear_q4gsw_M256_K256_N384_Texture3D: probe_us=40.352, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_wmma_t128x128k16g82s16m8flib_te..     (768,2,1)       (256,1,1)   linear_q4gsw_M256_K256_N384_Texture3D                                                       [256x256]          29.009 μs       1735.011 GFLOP/s   PASSED
+[probe] linear_q4gsw_M256_K256_N384_Buffer: probe_us=14.560, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_wmma_t128x128k16g44s16m8fli_buf..     (768,2,1)       (256,1,1)   linear_q4gsw_M256_K256_N384_Buffer                                                          [256x256]          12.653 μs       3977.851 GFLOP/s   PASSED
+[probe] linear_q4gsw_M2048_K2048_N512_Texture3D: probe_us=94.952, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_wmma_t128x128k16g82s16m8flib_te..     (1024,16,1)     (256,1,1)   linear_q4gsw_M2048_K2048_N512_Texture3D                                                   [2048x2048]          94.086 μs      45649.449 GFLOP/s   PASSED
+[probe] linear_q4gsw_M2048_K2048_N512_Buffer: probe_us=76.804, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_wmma_t128x128k16g44s16m8fli_buf..     (1024,16,1)     (256,1,1)   linear_q4gsw_M2048_K2048_N512_Buffer                                                      [2048x2048]          75.624 μs      56793.805 GFLOP/s   PASSED
+[probe] linear_q4gsw_M256_K3072_N1024_Texture3D: probe_us=133.016, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_wmma_t128x128k16g82s16m8flib_te..     (2048,2,1)      (256,1,1)   linear_q4gsw_M256_K3072_N1024_Texture3D                                                    [256x3072]         132.456 μs      12159.651 GFLOP/s   PASSED
+[probe] linear_q4gsw_M256_K3072_N1024_Buffer: probe_us=105.352, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_wmma_t128x128k16g44s16m8fli_buf..     (2048,2,1)      (256,1,1)   linear_q4gsw_M256_K3072_N1024_Buffer                                                       [256x3072]         104.670 μs      15387.587 GFLOP/s   PASSED
+[probe] linear_q4gsw_M256_K2048_N8192_Texture3D: probe_us=161.356, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_wmma_t128x128k16g82s16m8flib_te..     (16384,2,1)     (256,1,1)   linear_q4gsw_M256_K2048_N8192_Texture3D                                                    [256x2048]         124.504 μs      68993.117 GFLOP/s   PASSED
+[probe] linear_q4gsw_M256_K2048_N8192_Buffer: probe_us=118.352, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_wmma_t128x128k16g44s16m8fli_buf..     (16384,2,1)     (256,1,1)   linear_q4gsw_M256_K2048_N8192_Buffer                                                       [256x2048]         116.652 μs      73637.438 GFLOP/s   PASSED
+[probe] linear_q4gsw_M256_K4096_N8192_Texture3D: probe_us=252.876, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_wmma_t128x128k16g82s16m8flib_te..     (16384,2,1)     (256,1,1)   linear_q4gsw_M256_K4096_N8192_Texture3D                                                    [256x4096]         249.119 μs      68962.516 GFLOP/s   PASSED
+[probe] linear_q4gsw_M256_K4096_N8192_Buffer: probe_us=227.448, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_wmma_t128x128k16g44s16m8fli_buf..     (16384,2,1)     (256,1,1)   linear_q4gsw_M256_K4096_N8192_Buffer                                                       [256x4096]         227.053 μs      75664.484 GFLOP/s   PASSED
+[probe] linear_q4gsw_M256_K14336_N4096_Texture3D: probe_us=829.296, chained_dispatches=120
+Correctness validation PASSED
+linear_q4gsw_wmma_t128x128k16g82s16m8flib_te..     (8192,2,1)      (256,1,1)   linear_q4gsw_M256_K14336_N4096_Texture3D                                                  [256x14336]         646.790 μs      46483.023 GFLOP/s   PASSED
+[probe] linear_q4gsw_M256_K14336_N4096_Buffer: probe_us=521.664, chained_dispatches=191
+Correctness validation PASSED
+linear_q4gsw_wmma_t128x128k16g44s16m8fli_buf..     (8192,2,1)      (256,1,1)   linear_q4gsw_M256_K14336_N4096_Buffer                                                     [256x14336]         531.125 μs      56605.812 GFLOP/s   PASSED
+[probe] linear_dq8ca_q4gsw_M256_K256_N384_Texture3D: probe_us=20.956, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (2,64,1)        (2,1,32)                                                                                                                   10.808 μs                                 
+linear_dq8ca_q4gsw_wmma_t128x128k64g84s16m8i..     (1536,2,1)      (512,1,1)                                                                                                                  10.720 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K256_N384_Texture3D                                                 [256x256]          21.529 μs       2337.878 GFLOP/s   PASSED
+[probe] linear_dq8ca_q4gsw_M256_K256_N384_Buffer: probe_us=15.340, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (2,64,1)        (2,1,32)                                                                                                                    9.823 μs                                 
+linear_dq8ca_q4gsw_wmma_t128x128k64g84s16m8i..     (1536,2,1)      (512,1,1)                                                                                                                   8.863 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K256_N384_Buffer                                                    [256x256]          18.685 μs       2693.665 GFLOP/s   PASSED
+[probe] linear_dq8ca_q4gsw_M2048_K2048_N512_Texture3D: probe_us=63.804, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,512,1)      (2,1,32)                                                                                                                   21.969 μs                                 
+linear_dq8ca_q4gsw_wmma_t128x128k64g84s16m8i..     (2048,16,1)     (512,1,1)                                                                                                                  43.461 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K2048_N512_Texture3D                                             [2048x2048]          65.430 μs      65642.195 GFLOP/s   PASSED
+[probe] linear_dq8ca_q4gsw_M2048_K2048_N512_Buffer: probe_us=64.948, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,512,1)      (2,1,32)                                                                                                                   18.281 μs                                 
+linear_dq8ca_q4gsw_wmma_t128x128k64g84s16m8i..     (2048,16,1)     (512,1,1)                                                                                                                  42.721 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M2048_K2048_N512_Buffer                                                [2048x2048]          61.002 μs      70407.477 GFLOP/s   PASSED
+[probe] linear_dq8ca_q4gsw_M256_K3072_N1024_Texture3D: probe_us=65.780, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (24,64,1)       (2,1,32)                                                                                                                   12.388 μs                                 
+linear_dq8ca_q4gsw_wmma_t128x128k64g84s16m8i..     (4096,2,1)      (512,1,1)                                                                                                                  46.064 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K3072_N1024_Texture3D                                              [256x3072]          58.452 μs      27554.367 GFLOP/s   PASSED
+[probe] linear_dq8ca_q4gsw_M256_K3072_N1024_Buffer: probe_us=54.756, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (24,64,1)       (2,1,32)                                                                                                                   11.223 μs                                 
+linear_dq8ca_q4gsw_wmma_t128x128k64g84s16m8i..     (4096,2,1)      (512,1,1)                                                                                                                  46.729 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K3072_N1024_Buffer                                                 [256x3072]          57.952 μs      27791.945 GFLOP/s   PASSED
+[probe] linear_dq8ca_q4gsw_M256_K2048_N8192_Texture3D: probe_us=83.512, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,64,1)       (2,1,32)                                                                                                                   11.681 μs                                 
+linear_dq8ca_q4gsw_wmma_t128x128k64g84s16m8i..     (32768,2,1)     (512,1,1)                                                                                                                  72.726 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K2048_N8192_Texture3D                                              [256x2048]          84.408 μs     101767.375 GFLOP/s   PASSED
+[probe] linear_dq8ca_q4gsw_M256_K2048_N8192_Buffer: probe_us=83.096, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (16,64,1)       (2,1,32)                                                                                                                   10.302 μs                                 
+linear_dq8ca_q4gsw_wmma_t128x128k64g84s16m8i..     (32768,2,1)     (512,1,1)                                                                                                                  74.435 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K2048_N8192_Buffer                                                 [256x2048]          84.737 μs     101371.859 GFLOP/s   PASSED
+[probe] linear_dq8ca_q4gsw_M256_K4096_N8192_Texture3D: probe_us=181.428, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,64,1)       (2,1,32)                                                                                                                   15.900 μs                                 
+linear_dq8ca_q4gsw_wmma_t128x128k64g84s16m8n..     (32768,2,1)     (512,1,1)                                                                                                                 161.925 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K4096_N8192_Texture3D                                              [256x4096]         177.825 μs      96611.203 GFLOP/s   PASSED
+[probe] linear_dq8ca_q4gsw_M256_K4096_N8192_Buffer: probe_us=171.288, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (32,64,1)       (2,1,32)                                                                                                                   12.565 μs                                 
+linear_dq8ca_q4gsw_wmma_t128x128k64g84s16m8n..     (32768,2,1)     (512,1,1)                                                                                                                 159.935 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K4096_N8192_Buffer                                                 [256x4096]         172.500 μs      99593.266 GFLOP/s   PASSED
+[probe] linear_dq8ca_q4gsw_M256_K14336_N4096_Texture3D: probe_us=424.112, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (112,64,1)      (2,1,32)                                                                                                                   29.785 μs                                 
+linear_dq8ca_q4gsw_wmma_t128x128k64g84s16m8n..     (16384,2,1)     (512,1,1)                                                                                                                 321.490 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K14336_N4096_Texture3D                                            [256x14336]         351.274 μs      85587.703 GFLOP/s   PASSED
+[probe] linear_dq8ca_q4gsw_M256_K14336_N4096_Buffer: probe_us=385.632, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (112,64,1)      (2,1,32)                                                                                                                   26.228 μs                                 
+linear_dq8ca_q4gsw_wmma_t128x128k64g84s16m8n..     (16384,2,1)     (512,1,1)                                                                                                                 329.744 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               linear_dq8ca_q4gsw_M256_K14336_N4096_Buffer                                               [256x14336]         355.972 μs      84458.250 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 24 test cases
+----------------------------------------------------------------------
+Ran 1 test case sets, all passed

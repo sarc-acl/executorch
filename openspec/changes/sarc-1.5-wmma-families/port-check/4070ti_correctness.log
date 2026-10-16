@@ -1,0 +1,2060 @@
+
+=== Compute Shader Performance Benchmark ===
+q4gsw_linear:correctness
+----------------------------------------------------------------------
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 64], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 256
+  Data (first 20 elements): [-3.000000, 6.000000, 9.000000, -7.000000, 5.000000, 6.000000, 2.000000, 2.000000, -7.000000, -1.000000, -7.000000, -8.000000, -9.000000, -1.000000, 8.000000, -3.000000, 2.000000, -7.000000, 4.000000, 3.000000, ... (236 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.375000, sum=-96.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [1, 7, 9, 1, 2, 2, 3, 2, 5, 12, 13, 1, 10, 0, 8, 9, 0, 9, 11, 4, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=129.333008, sum=132437.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 64], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 256
+  Data (first 20 elements): [7.000000, -1.000000, -8.000000, -10.000000, 5.000000, 3.000000, -3.000000, -7.000000, -3.000000, -4.000000, 2.000000, -5.000000, -2.000000, 4.000000, -2.000000, -5.000000, 0.000000, 9.000000, 4.000000, -6.000000, ... (236 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.320312, sum=-82.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [15, 4, 8, 10, 4, 6, 1, 15, 7, 14, 7, 7, 0, 11, 2, 5, 1, 0, 10, 3, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.295898, sum=129327.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 64], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 256
+  Data (first 20 elements): [6.000000, -5.000000, 3.000000, 4.000000, -5.000000, 9.000000, 5.000000, -6.000000, -4.000000, 10.000000, 9.000000, 5.000000, -10.000000, -9.000000, -1.000000, -2.000000, 9.000000, -9.000000, -1.000000, -6.000000, ... (236 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.730469, sum=-187.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [1, 13, 15, 14, 11, 13, 5, 5, 11, 15, 12, 14, 10, 6, 6, 4, 11, 3, 3, 10, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=130.442383, sum=133573.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 64], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 256
+  Data (first 20 elements): [-10.000000, -2.000000, 8.000000, -5.000000, -5.000000, 4.000000, -4.000000, -8.000000, 6.000000, 10.000000, -4.000000, -2.000000, 8.000000, 0.000000, -1.000000, 5.000000, 1.000000, -1.000000, -3.000000, 3.000000, ... (236 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.511719, sum=-131.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [4, 7, 3, 12, 14, 3, 14, 12, 10, 5, 9, 0, 8, 11, 3, 2, 12, 13, 14, 14, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=123.657227, sum=126625.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 64], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 256
+  Data (first 20 elements): [0.000000, -8.000000, -6.000000, -9.000000, -5.000000, 2.000000, -2.000000, -10.000000, -3.000000, -7.000000, 10.000000, 10.000000, -2.000000, 6.000000, 6.000000, -5.000000, 5.000000, -4.000000, -4.000000, -1.000000, ... (236 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.023438, sum=6.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [10, 5, 0, 8, 5, 15, 10, 8, 4, 15, 15, 8, 2, 13, 6, 8, 9, 12, 7, 13, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.388672, sum=129422.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 64], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 256
+  Data (first 20 elements): [7.000000, 7.000000, -10.000000, -7.000000, -6.000000, -2.000000, 2.000000, 7.000000, -8.000000, 3.000000, 3.000000, -1.000000, -9.000000, 7.000000, 10.000000, -10.000000, 10.000000, -9.000000, 0.000000, -6.000000, ... (236 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.312500, sum=80.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [13, 10, 8, 13, 7, 0, 5, 12, 9, 11, 8, 7, 13, 7, 4, 13, 7, 11, 5, 9, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=125.253906, sum=128260.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 64], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 256
+  Data (first 20 elements): [-2.000000, -6.000000, -3.000000, -10.000000, -7.000000, 10.000000, 0.000000, -6.000000, -10.000000, -6.000000, 10.000000, -5.000000, 6.000000, -1.000000, 5.000000, 0.000000, 4.000000, -3.000000, -10.000000, -3.000000, ... (236 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.152344, sum=-39.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [1, 11, 15, 15, 7, 3, 3, 15, 8, 11, 4, 8, 13, 4, 0, 3, 1, 10, 12, 4, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=129.108398, sum=132207.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 64], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 256
+  Data (first 20 elements): [10.000000, -8.000000, -3.000000, 7.000000, 4.000000, -2.000000, -6.000000, 2.000000, -3.000000, -7.000000, 7.000000, -5.000000, -5.000000, 10.000000, -1.000000, -8.000000, 8.000000, 1.000000, -2.000000, 7.000000, ... (236 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.003906, sum=1.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [1, 9, 3, 10, 6, 15, 4, 11, 9, 12, 8, 14, 12, 7, 14, 7, 8, 10, 6, 5, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=129.047852, sum=132145.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 128], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 512
+  Data (first 20 elements): [-3.000000, 7.000000, -1.000000, 8.000000, 0.000000, 10.000000, -9.000000, 10.000000, 2.000000, 1.000000, -4.000000, -6.000000, -4.000000, 7.000000, -3.000000, -3.000000, 7.000000, -6.000000, 10.000000, -2.000000, ... (492 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.230469, sum=-118.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [14, 12, 2, 10, 13, 15, 1, 6, 9, 11, 4, 15, 4, 3, 9, 8, 3, 13, 10, 0, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.861328, sum=523720.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 128], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 512
+  Data (first 20 elements): [-4.000000, 6.000000, -7.000000, 5.000000, -4.000000, 3.000000, 3.000000, 5.000000, 1.000000, 5.000000, -2.000000, 1.000000, -3.000000, 9.000000, -10.000000, 4.000000, -7.000000, 8.000000, -8.000000, 8.000000, ... (492 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.078125, sum=-40.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [13, 13, 2, 1, 14, 8, 7, 7, 15, 8, 0, 3, 14, 10, 10, 15, 4, 7, 5, 14, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.995850, sum=520175.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 512
+  Data (first 20 elements): [-10.000000, 1.000000, 0.000000, -1.000000, 7.000000, -1.000000, -2.000000, 4.000000, 3.000000, 8.000000, -4.000000, -5.000000, 1.000000, 1.000000, -6.000000, -2.000000, -5.000000, -10.000000, 10.000000, -10.000000, ... (492 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.064453, sum=33.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [8, 7, 6, 0, 0, 1, 8, 13, 2, 11, 8, 12, 4, 11, 8, 11, 8, 14, 3, 2, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.908447, sum=523913.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 512
+  Data (first 20 elements): [-3.000000, 6.000000, 1.000000, 1.000000, 2.000000, 8.000000, -1.000000, -4.000000, -1.000000, 2.000000, -4.000000, 8.000000, -4.000000, 5.000000, -4.000000, 9.000000, 1.000000, 7.000000, -2.000000, 0.000000, ... (492 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.328125, sum=-168.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [3, 13, 0, 10, 4, 6, 2, 6, 4, 9, 2, 10, 11, 1, 12, 15, 8, 7, 3, 12, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.718262, sum=519038.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 128], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 512
+  Data (first 20 elements): [-7.000000, -6.000000, -8.000000, -5.000000, -3.000000, -5.000000, 4.000000, -4.000000, -6.000000, 9.000000, -5.000000, 9.000000, 5.000000, 9.000000, 1.000000, -7.000000, 0.000000, -10.000000, -1.000000, 4.000000, ... (492 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.123047, sum=-63.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [8, 12, 13, 15, 10, 9, 5, 13, 0, 12, 6, 2, 3, 12, 14, 14, 11, 13, 0, 8, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.519287, sum=518223.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 128], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 512
+  Data (first 20 elements): [-5.000000, -2.000000, -10.000000, 6.000000, 2.000000, -7.000000, -8.000000, 1.000000, 2.000000, -9.000000, -4.000000, -3.000000, 6.000000, -4.000000, -9.000000, -4.000000, 4.000000, 1.000000, 9.000000, 4.000000, ... (492 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.388672, sum=-199.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [4, 6, 12, 9, 5, 2, 12, 13, 8, 2, 4, 4, 1, 10, 0, 4, 10, 10, 11, 1, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.506836, sum=518172.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 128], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 512
+  Data (first 20 elements): [9.000000, 3.000000, 8.000000, -9.000000, 2.000000, -8.000000, 9.000000, -7.000000, -4.000000, 8.000000, -7.000000, -10.000000, 8.000000, -3.000000, -1.000000, -2.000000, 0.000000, -8.000000, -1.000000, -6.000000, ... (492 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.343750, sum=-176.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [2, 12, 6, 1, 13, 11, 3, 2, 14, 12, 12, 3, 11, 4, 15, 5, 13, 4, 3, 14, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.379639, sum=517651.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 128], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 512
+  Data (first 20 elements): [-8.000000, 10.000000, 4.000000, -2.000000, 1.000000, -9.000000, -3.000000, 3.000000, -2.000000, -10.000000, 2.000000, 3.000000, 5.000000, 9.000000, -7.000000, 8.000000, -9.000000, 10.000000, 0.000000, 5.000000, ... (492 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.101562, sum=52.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [10, 4, 8, 9, 8, 2, 9, 8, 7, 4, 3, 1, 3, 13, 9, 7, 12, 13, 4, 15, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.744141, sum=523240.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 256], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 1024
+  Data (first 20 elements): [-6.000000, -2.000000, 6.000000, 9.000000, 8.000000, -8.000000, -4.000000, 1.000000, -5.000000, 4.000000, 7.000000, 7.000000, 4.000000, 0.000000, 3.000000, -8.000000, 4.000000, -5.000000, -8.000000, 10.000000, ... (1004 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.090820, sum=93.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [9, 11, 1, 12, 14, 5, 14, 5, 10, 8, 8, 7, 3, 14, 9, 3, 5, 0, 14, 8, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.596069, sum=2074150.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 256], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 1024
+  Data (first 20 elements): [-4.000000, 0.000000, 7.000000, -10.000000, -3.000000, 4.000000, -6.000000, -3.000000, -8.000000, 7.000000, 10.000000, 1.000000, 8.000000, 5.000000, 7.000000, -1.000000, -9.000000, -9.000000, 5.000000, -7.000000, ... (1004 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.208984, sum=-214.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [14, 0, 10, 5, 12, 0, 2, 12, 1, 5, 12, 14, 5, 12, 8, 11, 3, 7, 8, 13, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.969116, sum=2080262.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 256], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 1024
+  Data (first 20 elements): [-9.000000, 8.000000, 4.000000, 2.000000, 6.000000, 2.000000, 6.000000, -4.000000, 10.000000, 5.000000, -1.000000, 10.000000, 7.000000, 1.000000, -5.000000, 5.000000, -9.000000, 1.000000, 0.000000, -1.000000, ... (1004 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.266602, sum=273.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [8, 6, 7, 7, 8, 13, 2, 6, 13, 13, 5, 2, 12, 9, 13, 0, 0, 0, 3, 1, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.290649, sum=2085530.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 256], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 1024
+  Data (first 20 elements): [0.000000, 4.000000, 4.000000, 1.000000, -5.000000, -7.000000, 4.000000, 6.000000, 9.000000, 8.000000, 4.000000, 5.000000, -6.000000, 10.000000, -4.000000, 3.000000, -5.000000, 7.000000, -8.000000, -4.000000, ... (1004 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.228516, sum=234.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [5, 7, 5, 13, 14, 10, 14, 14, 13, 1, 0, 0, 3, 7, 8, 1, 1, 14, 12, 3, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.203369, sum=2084100.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 256], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 1024
+  Data (first 20 elements): [-5.000000, -9.000000, 3.000000, -2.000000, 3.000000, 6.000000, 6.000000, 6.000000, 0.000000, 3.000000, 10.000000, 10.000000, 10.000000, -9.000000, 7.000000, 0.000000, -6.000000, 5.000000, -8.000000, 3.000000, ... (1004 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.207031, sum=-212.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [4, 9, 10, 13, 10, 14, 12, 4, 13, 1, 5, 6, 6, 3, 11, 9, 4, 0, 4, 0, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.278320, sum=2068944.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 256], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 1024
+  Data (first 20 elements): [-10.000000, 1.000000, -3.000000, 0.000000, -5.000000, -4.000000, 3.000000, -3.000000, 10.000000, 5.000000, -8.000000, -5.000000, -7.000000, -8.000000, -5.000000, 9.000000, -2.000000, 4.000000, -8.000000, -7.000000, ... (1004 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.084961, sum=-87.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [9, 14, 8, 8, 4, 0, 10, 11, 4, 10, 8, 11, 5, 5, 5, 13, 11, 15, 10, 2, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.311523, sum=2085872.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 256], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 1024
+  Data (first 20 elements): [-6.000000, 10.000000, -6.000000, 9.000000, -7.000000, -8.000000, 5.000000, 5.000000, -6.000000, 6.000000, 3.000000, -2.000000, 2.000000, 5.000000, -2.000000, 10.000000, 7.000000, 6.000000, 0.000000, -5.000000, ... (1004 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.076172, sum=-78.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [10, 14, 15, 4, 15, 9, 1, 9, 3, 9, 13, 14, 8, 0, 11, 11, 14, 7, 9, 4, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.900757, sum=2095526.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 256], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 1024
+  Data (first 20 elements): [3.000000, 2.000000, 0.000000, 9.000000, 1.000000, 3.000000, 8.000000, 5.000000, 4.000000, -6.000000, 5.000000, -8.000000, 5.000000, 7.000000, -6.000000, 10.000000, -7.000000, -7.000000, -1.000000, 3.000000, ... (1004 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.183594, sum=-188.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [7, 6, 4, 10, 4, 4, 1, 10, 9, 3, 0, 5, 2, 14, 7, 4, 1, 14, 6, 4, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.689941, sum=2092072.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 64], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 2048
+  Data (first 20 elements): [-7.000000, 7.000000, -7.000000, -7.000000, 10.000000, -4.000000, 8.000000, -2.000000, -7.000000, 3.000000, -5.000000, 6.000000, -3.000000, -2.000000, 3.000000, -2.000000, -5.000000, 3.000000, 3.000000, -8.000000, ... (2028 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.040039, sum=-82.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [3, 15, 5, 7, 4, 9, 1, 14, 5, 7, 11, 8, 10, 5, 8, 11, 15, 4, 10, 6, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.391602, sum=130449.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 64], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 2048
+  Data (first 20 elements): [8.000000, 9.000000, 6.000000, -5.000000, -2.000000, 7.000000, 0.000000, -10.000000, -10.000000, -9.000000, 7.000000, -5.000000, -3.000000, 9.000000, 0.000000, -10.000000, -1.000000, 5.000000, 9.000000, -4.000000, ... (2028 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.077637, sum=159.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [9, 9, 10, 13, 4, 3, 15, 1, 8, 2, 10, 8, 15, 1, 12, 6, 8, 10, 11, 2, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=124.333984, sum=127318.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 64], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 2048
+  Data (first 20 elements): [5.000000, 6.000000, 2.000000, 2.000000, 4.000000, 1.000000, -2.000000, -2.000000, -1.000000, -6.000000, -2.000000, -8.000000, 0.000000, -3.000000, -8.000000, 6.000000, 10.000000, -1.000000, 0.000000, 7.000000, ... (2028 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.165039, sum=-338.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [3, 4, 3, 9, 14, 3, 11, 4, 8, 12, 13, 10, 11, 7, 7, 10, 12, 8, 15, 7, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=130.612305, sum=133747.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 64], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 2048
+  Data (first 20 elements): [-6.000000, -1.000000, 9.000000, 8.000000, 7.000000, -10.000000, 8.000000, 4.000000, 4.000000, 2.000000, -8.000000, -1.000000, -9.000000, -1.000000, 1.000000, -5.000000, 1.000000, 5.000000, -10.000000, -5.000000, ... (2028 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.133789, sum=274.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [13, 13, 15, 10, 7, 1, 4, 7, 12, 3, 4, 1, 15, 8, 14, 1, 3, 1, 5, 11, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.558594, sum=130620.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 64], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 2048
+  Data (first 20 elements): [5.000000, -4.000000, 1.000000, -10.000000, -4.000000, -8.000000, 6.000000, 6.000000, 0.000000, -2.000000, -8.000000, -9.000000, -2.000000, -3.000000, -2.000000, 5.000000, -3.000000, -5.000000, -9.000000, 8.000000, ... (2028 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.022461, sum=46.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [10, 11, 7, 13, 13, 11, 0, 11, 12, 3, 9, 15, 4, 9, 0, 8, 15, 13, 0, 6, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.512695, sum=130573.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 64], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 2048
+  Data (first 20 elements): [1.000000, 4.000000, -5.000000, -2.000000, -2.000000, 1.000000, 7.000000, -7.000000, -10.000000, -7.000000, -8.000000, -7.000000, 4.000000, -6.000000, 7.000000, -1.000000, -8.000000, 8.000000, 2.000000, -9.000000, ... (2028 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.071777, sum=-147.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [8, 8, 9, 15, 0, 15, 2, 0, 10, 8, 13, 4, 4, 9, 14, 4, 11, 12, 3, 14, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=129.778320, sum=132893.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 64], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 2048
+  Data (first 20 elements): [2.000000, -2.000000, 4.000000, -1.000000, -4.000000, -4.000000, 5.000000, 0.000000, 2.000000, -7.000000, 6.000000, 1.000000, -7.000000, -5.000000, -4.000000, 0.000000, -3.000000, 10.000000, 0.000000, -6.000000, ... (2028 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.224121, sum=459.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [6, 4, 2, 12, 2, 0, 13, 14, 9, 7, 7, 1, 13, 1, 13, 14, 4, 6, 3, 10, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=128.937500, sum=132032.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 64], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 2048
+  Data (first 20 elements): [-7.000000, -8.000000, -6.000000, 6.000000, 6.000000, -1.000000, -4.000000, -2.000000, -7.000000, 10.000000, 6.000000, -9.000000, -2.000000, 2.000000, 10.000000, -2.000000, 0.000000, 7.000000, 3.000000, -6.000000, ... (2028 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.281250, sum=-576.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [1, 5, 5, 13, 13, 10, 1, 14, 8, 11, 1, 5, 4, 11, 0, 9, 7, 6, 14, 15, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=131.033203, sum=134178.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 128], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [-10.000000, 4.000000, 10.000000, 0.000000, -1.000000, 0.000000, 2.000000, -8.000000, 7.000000, 7.000000, 5.000000, 10.000000, 10.000000, -10.000000, 8.000000, 3.000000, 7.000000, -7.000000, 8.000000, 4.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.144043, sum=590.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [2, 15, 12, 8, 9, 1, 3, 14, 5, 6, 2, 0, 5, 11, 0, 5, 3, 11, 9, 8, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=128.168457, sum=524978.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 128], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [-6.000000, 9.000000, -10.000000, 0.000000, 2.000000, 2.000000, -8.000000, -6.000000, 4.000000, -4.000000, 4.000000, -5.000000, 8.000000, -10.000000, -8.000000, 7.000000, 2.000000, 8.000000, -9.000000, -5.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.024414, sum=100.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [9, 10, 7, 7, 11, 8, 3, 6, 12, 1, 11, 5, 5, 15, 15, 2, 1, 4, 6, 8, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.407471, sum=521861.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [-8.000000, 7.000000, 3.000000, -4.000000, -3.000000, 10.000000, 2.000000, 7.000000, 4.000000, -7.000000, 4.000000, 3.000000, 10.000000, 8.000000, 3.000000, -7.000000, 0.000000, 3.000000, -9.000000, -9.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.003174, sum=13.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [9, 1, 2, 4, 6, 13, 12, 4, 4, 6, 2, 3, 0, 10, 6, 9, 3, 11, 5, 14, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.191162, sum=520975.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [-3.000000, 4.000000, 3.000000, -4.000000, 9.000000, 7.000000, -9.000000, 0.000000, 6.000000, 2.000000, 7.000000, -5.000000, -9.000000, 9.000000, 7.000000, -1.000000, 8.000000, -7.000000, 5.000000, 0.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.153076, sum=-627.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [13, 1, 1, 2, 14, 14, 6, 3, 2, 6, 9, 8, 13, 4, 6, 12, 11, 4, 10, 13, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.563477, sum=522500.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 128], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [-7.000000, -8.000000, 8.000000, 6.000000, 9.000000, -9.000000, 0.000000, -10.000000, 6.000000, -10.000000, -3.000000, -3.000000, -8.000000, -6.000000, 0.000000, 2.000000, 5.000000, 3.000000, -6.000000, 1.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.068359, sum=-280.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [3, 4, 11, 5, 6, 8, 9, 0, 11, 7, 3, 0, 9, 7, 9, 14, 8, 2, 12, 5, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.437012, sum=517886.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 128], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [-3.000000, 2.000000, -3.000000, 10.000000, 9.000000, 0.000000, -10.000000, -2.000000, -10.000000, -2.000000, 6.000000, 3.000000, -10.000000, -9.000000, 0.000000, -8.000000, -3.000000, 6.000000, 10.000000, 5.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.022461, sum=-92.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [7, 12, 4, 0, 3, 2, 14, 0, 2, 15, 14, 9, 0, 7, 12, 11, 1, 15, 2, 10, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.445068, sum=522015.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 128], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [9.000000, -8.000000, 2.000000, -6.000000, -9.000000, -4.000000, 9.000000, -3.000000, 3.000000, 10.000000, 9.000000, 4.000000, -8.000000, 5.000000, 2.000000, -10.000000, 8.000000, 2.000000, 10.000000, -4.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.103760, sum=-425.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [13, 2, 7, 14, 3, 0, 12, 15, 10, 1, 0, 5, 0, 4, 6, 6, 15, 3, 1, 4, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.604980, sum=522670.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 128], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [4.000000, -3.000000, 0.000000, 10.000000, 3.000000, 1.000000, 0.000000, 2.000000, -1.000000, 1.000000, 9.000000, 10.000000, 10.000000, 10.000000, 7.000000, 8.000000, 2.000000, -7.000000, -6.000000, 0.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.152832, sum=626.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [1, 12, 3, 15, 3, 12, 2, 4, 13, 8, 6, 1, 8, 8, 11, 11, 3, 9, 15, 12, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.547363, sum=522434.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 256], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 8192
+  Data (first 20 elements): [-7.000000, 6.000000, 4.000000, 0.000000, -5.000000, 7.000000, -1.000000, -6.000000, -2.000000, 5.000000, 2.000000, 9.000000, 2.000000, 9.000000, -6.000000, -5.000000, -7.000000, 2.000000, 4.000000, 8.000000, ... (8172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.023682, sum=194.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [11, 11, 4, 6, 3, 11, 8, 11, 11, 7, 6, 12, 15, 6, 10, 9, 7, 2, 6, 6, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=128.019592, sum=2097473.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 256], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 8192
+  Data (first 20 elements): [-8.000000, 4.000000, 5.000000, 10.000000, 2.000000, 2.000000, -1.000000, 1.000000, -2.000000, -5.000000, -5.000000, -7.000000, 4.000000, 10.000000, -2.000000, -2.000000, -5.000000, -8.000000, 6.000000, 8.000000, ... (8172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.085815, sum=703.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [8, 15, 0, 3, 10, 13, 2, 0, 2, 15, 12, 0, 8, 9, 6, 0, 9, 1, 7, 2, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.078979, sum=2082062.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 256], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 8192
+  Data (first 20 elements): [-8.000000, 10.000000, -8.000000, -6.000000, -9.000000, -8.000000, -8.000000, -4.000000, 5.000000, -4.000000, -2.000000, -5.000000, 2.000000, -2.000000, -9.000000, -1.000000, -1.000000, 2.000000, 0.000000, 8.000000, ... (8172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.008179, sum=67.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [8, 0, 0, 9, 2, 11, 12, 15, 8, 0, 1, 5, 7, 7, 11, 6, 10, 11, 7, 10, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.682922, sum=2075573.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 256], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 8192
+  Data (first 20 elements): [8.000000, 8.000000, -5.000000, 7.000000, -8.000000, -3.000000, -10.000000, 0.000000, -5.000000, -3.000000, 3.000000, -3.000000, 6.000000, 6.000000, 2.000000, 2.000000, -3.000000, -8.000000, -8.000000, 6.000000, ... (8172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.128052, sum=1049.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [9, 7, 4, 9, 9, 9, 1, 3, 15, 15, 8, 4, 14, 0, 1, 8, 1, 5, 0, 0, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.307068, sum=2085799.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 256], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 8192
+  Data (first 20 elements): [-8.000000, 9.000000, -4.000000, -4.000000, 1.000000, 8.000000, -8.000000, 6.000000, 0.000000, 7.000000, 9.000000, 8.000000, -3.000000, -1.000000, -8.000000, 9.000000, 10.000000, 6.000000, 6.000000, -2.000000, ... (8172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.037720, sum=309.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [10, 12, 15, 2, 6, 9, 10, 5, 11, 1, 2, 10, 3, 9, 4, 1, 6, 13, 13, 10, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.897583, sum=2079090.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 256], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 8192
+  Data (first 20 elements): [6.000000, -9.000000, -2.000000, -1.000000, 7.000000, 2.000000, 6.000000, -4.000000, 6.000000, 10.000000, -3.000000, -4.000000, 10.000000, -10.000000, -3.000000, 9.000000, 7.000000, -9.000000, 9.000000, -6.000000, ... (8172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.056519, sum=463.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [6, 5, 2, 15, 1, 14, 2, 6, 7, 15, 11, 10, 3, 10, 4, 3, 8, 1, 14, 13, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.319824, sum=2086008.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 256], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 8192
+  Data (first 20 elements): [7.000000, -6.000000, -1.000000, 3.000000, 3.000000, 5.000000, 8.000000, -6.000000, 3.000000, 0.000000, 8.000000, 5.000000, 4.000000, 8.000000, 3.000000, 2.000000, -8.000000, -9.000000, -10.000000, -6.000000, ... (8172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.012573, sum=103.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [10, 1, 5, 2, 3, 2, 13, 6, 12, 0, 2, 4, 8, 2, 15, 8, 0, 1, 14, 12, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.836182, sum=2094468.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 256], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 8192
+  Data (first 20 elements): [-7.000000, 9.000000, -7.000000, -4.000000, -6.000000, -8.000000, -7.000000, 4.000000, -5.000000, 10.000000, -3.000000, -7.000000, -3.000000, 10.000000, 0.000000, -10.000000, 5.000000, -3.000000, -8.000000, 0.000000, ... (8172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.110474, sum=-905.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [15, 8, 1, 4, 11, 6, 11, 12, 7, 3, 8, 7, 14, 3, 1, 6, 13, 7, 5, 14, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.886475, sum=2078908.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 128], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 32768
+  Data (first 20 elements): [5.000000, 6.000000, 4.000000, -5.000000, -4.000000, 2.000000, 9.000000, 8.000000, 7.000000, -10.000000, -9.000000, -2.000000, -2.000000, -1.000000, -6.000000, 9.000000, 9.000000, -5.000000, 1.000000, 2.000000, ... (32748 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.003143, sum=103.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 8192
+  Data (first 20 elements): [7, 2, 12, 2, 14, 6, 15, 8, 2, 3, 2, 3, 4, 3, 4, 4, 3, 14, 1, 0, ... (8172 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.355835, sum=1035107.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 128], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 32768
+  Data (first 20 elements): [5.000000, -7.000000, -8.000000, 9.000000, -10.000000, -1.000000, -4.000000, 0.000000, -10.000000, 9.000000, -4.000000, -6.000000, -9.000000, -4.000000, 2.000000, 0.000000, -6.000000, 0.000000, 9.000000, -8.000000, ... (32748 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.047363, sum=-1552.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 8192
+  Data (first 20 elements): [14, 5, 8, 4, 0, 7, 6, 13, 11, 8, 2, 12, 0, 6, 11, 13, 14, 13, 2, 9, ... (8172 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.687256, sum=1037822.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 32768
+  Data (first 20 elements): [8.000000, -3.000000, 1.000000, -8.000000, 3.000000, 6.000000, 7.000000, 3.000000, -6.000000, 0.000000, -8.000000, -4.000000, 6.000000, -5.000000, -1.000000, -4.000000, -2.000000, 4.000000, 6.000000, 4.000000, ... (32748 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.005280, sum=-173.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 8192
+  Data (first 20 elements): [11, 12, 5, 14, 7, 13, 6, 4, 9, 5, 14, 8, 0, 7, 0, 10, 3, 1, 2, 11, ... (8172 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.567139, sum=1045030.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 32768
+  Data (first 20 elements): [-9.000000, -2.000000, 8.000000, -10.000000, 0.000000, -9.000000, -7.000000, 9.000000, 4.000000, 3.000000, 0.000000, -4.000000, -1.000000, -2.000000, 6.000000, 1.000000, 4.000000, -1.000000, -4.000000, 4.000000, ... (32748 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.012482, sum=-409.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 8192
+  Data (first 20 elements): [4, 2, 0, 1, 8, 12, 1, 6, 10, 14, 12, 6, 9, 5, 5, 7, 11, 5, 7, 1, ... (8172 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.523926, sum=1044676.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 128], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 32768
+  Data (first 20 elements): [0.000000, 4.000000, 2.000000, 5.000000, -4.000000, 3.000000, -5.000000, 1.000000, -3.000000, 1.000000, 8.000000, 10.000000, -3.000000, -9.000000, -10.000000, 7.000000, 9.000000, -2.000000, 5.000000, -3.000000, ... (32748 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.030640, sum=-1004.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 8192
+  Data (first 20 elements): [5, 3, 10, 15, 0, 10, 11, 12, 15, 3, 15, 7, 6, 0, 1, 2, 7, 9, 9, 11, ... (8172 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.985840, sum=1048460.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 128], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 32768
+  Data (first 20 elements): [2.000000, -7.000000, -8.000000, 3.000000, -7.000000, -6.000000, -9.000000, 9.000000, 2.000000, 10.000000, 2.000000, 9.000000, -6.000000, -3.000000, 9.000000, 9.000000, 9.000000, -3.000000, 8.000000, -2.000000, ... (32748 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.023346, sum=-765.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 8192
+  Data (first 20 elements): [14, 2, 15, 12, 13, 11, 13, 15, 14, 12, 13, 0, 7, 15, 7, 0, 9, 5, 1, 4, ... (8172 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.232544, sum=1042289.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 128], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 32768
+  Data (first 20 elements): [9.000000, 9.000000, -5.000000, 2.000000, 8.000000, -1.000000, 5.000000, -3.000000, 4.000000, 1.000000, 0.000000, 3.000000, 9.000000, -4.000000, 9.000000, 3.000000, -9.000000, 8.000000, 6.000000, 9.000000, ... (32748 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.021881, sum=-717.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 8192
+  Data (first 20 elements): [12, 2, 2, 15, 4, 3, 12, 4, 9, 13, 12, 11, 15, 15, 12, 0, 7, 2, 8, 11, ... (8172 more)]
+  Statistics: min=0.000000, max=255.000000, mean=128.174561, sum=1050006.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[256, 128], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 32768
+  Data (first 20 elements): [9.000000, -4.000000, 5.000000, -3.000000, -10.000000, -8.000000, -4.000000, 4.000000, -4.000000, -10.000000, -2.000000, 1.000000, -9.000000, -9.000000, -4.000000, 6.000000, 6.000000, -2.000000, -7.000000, 5.000000, ... (32748 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.036804, sum=-1206.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 8192
+  Data (first 20 elements): [2, 10, 8, 2, 7, 9, 0, 15, 7, 10, 12, 12, 3, 3, 7, 14, 8, 2, 4, 7, ... (8172 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.866211, sum=1047480.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [0.000000, 3.000000, 3.000000, 9.000000, 4.000000, 8.000000, 10.000000, -4.000000, 8.000000, -8.000000, 7.000000, 3.000000, 5.000000, -5.000000, 2.000000, -7.000000, 7.000000, -5.000000, 2.000000, -3.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.021484, sum=-88.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 2048
+  Data (first 20 elements): [10, 5, 14, 8, 2, 4, 9, 4, 1, 2, 2, 13, 3, 14, 7, 0, 2, 11, 13, 10, ... (2028 more)]
+  Statistics: min=0.000000, max=255.000000, mean=125.442871, sum=256907.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [-4.000000, 8.000000, 1.000000, -2.000000, -5.000000, -8.000000, -7.000000, 1.000000, 0.000000, 2.000000, 7.000000, -3.000000, 7.000000, 4.000000, 6.000000, -5.000000, -5.000000, -2.000000, -3.000000, -9.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.140869, sum=-577.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 2048
+  Data (first 20 elements): [12, 6, 9, 9, 4, 1, 4, 14, 11, 2, 10, 0, 3, 9, 7, 7, 7, 6, 2, 11, ... (2028 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.337402, sum=258739.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [-8.000000, -6.000000, -7.000000, 6.000000, 2.000000, -8.000000, 1.000000, 1.000000, 5.000000, 0.000000, 7.000000, 8.000000, 3.000000, -3.000000, 5.000000, 8.000000, -10.000000, 1.000000, -3.000000, -2.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.062500, sum=-256.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 2048
+  Data (first 20 elements): [12, 3, 3, 3, 2, 2, 7, 13, 4, 0, 10, 10, 2, 13, 14, 9, 12, 13, 13, 0, ... (2028 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.592285, sum=261309.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [7.000000, 0.000000, -4.000000, 6.000000, -3.000000, 4.000000, -4.000000, 0.000000, 1.000000, -10.000000, 4.000000, -7.000000, -7.000000, -5.000000, -2.000000, 10.000000, -4.000000, -4.000000, 5.000000, -5.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.028564, sum=117.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 2048
+  Data (first 20 elements): [15, 2, 5, 0, 6, 8, 1, 0, 3, 13, 9, 9, 14, 10, 15, 3, 11, 11, 3, 10, ... (2028 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.615723, sum=259309.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [-4.000000, 6.000000, 5.000000, -4.000000, 8.000000, 6.000000, 4.000000, -8.000000, 6.000000, 1.000000, 9.000000, 8.000000, 5.000000, 7.000000, -4.000000, -4.000000, -5.000000, -4.000000, 4.000000, -2.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.164551, sum=674.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 2048
+  Data (first 20 elements): [11, 4, 7, 2, 7, 0, 4, 13, 12, 4, 0, 10, 12, 10, 9, 1, 2, 5, 7, 0, ... (2028 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.875977, sum=259842.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [-3.000000, -6.000000, -4.000000, -9.000000, -5.000000, 9.000000, 7.000000, 5.000000, 0.000000, -3.000000, 4.000000, -3.000000, -9.000000, 8.000000, 6.000000, -8.000000, 1.000000, 2.000000, -7.000000, -3.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.031738, sum=-130.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 2048
+  Data (first 20 elements): [13, 15, 9, 0, 14, 4, 15, 1, 15, 9, 12, 5, 2, 11, 0, 3, 14, 11, 4, 7, ... (2028 more)]
+  Statistics: min=0.000000, max=255.000000, mean=129.356934, sum=264923.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [-4.000000, -7.000000, 7.000000, -4.000000, 6.000000, -6.000000, -10.000000, -7.000000, 6.000000, -5.000000, 2.000000, 9.000000, 2.000000, -1.000000, 4.000000, 6.000000, 10.000000, -4.000000, 8.000000, -2.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.047607, sum=195.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 2048
+  Data (first 20 elements): [14, 12, 2, 1, 5, 6, 4, 15, 15, 9, 15, 15, 8, 6, 13, 6, 13, 3, 10, 12, ... (2028 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.200684, sum=260507.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [2.000000, -9.000000, 0.000000, -9.000000, -5.000000, 3.000000, -3.000000, -7.000000, 7.000000, -7.000000, 3.000000, -4.000000, 5.000000, 9.000000, 0.000000, -2.000000, 8.000000, 7.000000, 10.000000, 0.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.142334, sum=583.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 2048
+  Data (first 20 elements): [10, 1, 14, 11, 10, 8, 1, 13, 7, 14, 14, 6, 2, 2, 0, 5, 3, 13, 1, 10, ... (2028 more)]
+  Statistics: min=0.000000, max=255.000000, mean=130.788086, sum=267854.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 128], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 8192
+  Data (first 20 elements): [-9.000000, -3.000000, -6.000000, -10.000000, -5.000000, 6.000000, 0.000000, -6.000000, 2.000000, -10.000000, 1.000000, -7.000000, 5.000000, 0.000000, -10.000000, -5.000000, 9.000000, 8.000000, -1.000000, 10.000000, ... (8172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.010376, sum=85.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [10, 10, 14, 7, 9, 6, 13, 12, 3, 6, 2, 7, 9, 2, 10, 1, 9, 3, 11, 12, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=125.817627, sum=515349.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 128], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 8192
+  Data (first 20 elements): [-7.000000, -8.000000, -8.000000, 3.000000, -4.000000, -7.000000, 4.000000, 6.000000, 2.000000, 3.000000, 8.000000, -4.000000, -4.000000, 10.000000, -4.000000, 3.000000, -5.000000, 10.000000, -1.000000, -7.000000, ... (8172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.082764, sum=-678.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [1, 0, 11, 6, 8, 7, 9, 11, 9, 9, 12, 4, 6, 15, 10, 1, 1, 0, 7, 6, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.426514, sum=521939.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 8192
+  Data (first 20 elements): [-1.000000, 3.000000, 8.000000, 8.000000, -7.000000, -3.000000, -6.000000, -5.000000, 0.000000, -2.000000, -9.000000, -5.000000, 5.000000, 8.000000, 6.000000, -10.000000, 8.000000, -4.000000, -9.000000, -7.000000, ... (8172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.038818, sum=-318.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [12, 6, 4, 10, 8, 15, 10, 9, 0, 4, 15, 11, 7, 2, 4, 11, 14, 1, 0, 12, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.799072, sum=523465.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 8192
+  Data (first 20 elements): [-3.000000, 9.000000, -6.000000, 5.000000, -3.000000, 3.000000, 6.000000, 9.000000, 8.000000, 8.000000, 8.000000, 5.000000, -2.000000, 8.000000, 2.000000, 10.000000, -3.000000, -3.000000, -6.000000, -10.000000, ... (8172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.082886, sum=679.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [8, 12, 12, 2, 7, 8, 2, 10, 4, 9, 10, 8, 8, 0, 4, 14, 11, 0, 6, 8, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.685059, sum=518902.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 128], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 8192
+  Data (first 20 elements): [1.000000, -7.000000, -10.000000, -5.000000, 5.000000, -1.000000, 5.000000, 0.000000, 8.000000, 8.000000, 10.000000, 1.000000, 1.000000, 9.000000, 8.000000, -9.000000, 8.000000, 3.000000, -10.000000, 6.000000, ... (8172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.007812, sum=-64.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [15, 14, 4, 6, 13, 5, 12, 6, 5, 0, 6, 2, 13, 13, 10, 9, 13, 12, 11, 11, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.073486, sum=516397.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 128], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 8192
+  Data (first 20 elements): [1.000000, 10.000000, -8.000000, -10.000000, 4.000000, 2.000000, -5.000000, 6.000000, 9.000000, 9.000000, 0.000000, 3.000000, -2.000000, -10.000000, -9.000000, 9.000000, 6.000000, 10.000000, 3.000000, 0.000000, ... (8172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.070312, sum=576.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [8, 2, 1, 14, 9, 8, 6, 2, 2, 0, 2, 10, 5, 0, 5, 11, 11, 15, 11, 0, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=129.895996, sum=532054.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 128], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 8192
+  Data (first 20 elements): [8.000000, -1.000000, -9.000000, 4.000000, -8.000000, -1.000000, 6.000000, -1.000000, 10.000000, -8.000000, -5.000000, -1.000000, 8.000000, 2.000000, -1.000000, 10.000000, 3.000000, -9.000000, 6.000000, -1.000000, ... (8172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.146851, sum=1203.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [13, 11, 14, 4, 14, 2, 7, 9, 2, 9, 9, 0, 3, 13, 10, 3, 3, 1, 12, 6, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.683350, sum=522991.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 128], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 8192
+  Data (first 20 elements): [-9.000000, -5.000000, 0.000000, -5.000000, 10.000000, 0.000000, -6.000000, -1.000000, -2.000000, 6.000000, -9.000000, 1.000000, 1.000000, -8.000000, 1.000000, 7.000000, 7.000000, -9.000000, -3.000000, 0.000000, ... (8172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.056030, sum=459.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [2, 12, 8, 13, 6, 12, 10, 10, 4, 11, 3, 11, 10, 14, 14, 7, 12, 15, 11, 0, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=128.845215, sum=527750.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 256], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 16384
+  Data (first 20 elements): [1.000000, -9.000000, 4.000000, -6.000000, 0.000000, -6.000000, 8.000000, -10.000000, 4.000000, -6.000000, 3.000000, -2.000000, -7.000000, -8.000000, -5.000000, -1.000000, 4.000000, -3.000000, 10.000000, 0.000000, ... (16364 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.036804, sum=-603.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [6, 9, 8, 13, 1, 0, 11, 8, 11, 8, 12, 15, 6, 0, 1, 11, 7, 5, 11, 11, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.582642, sum=2090314.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 256], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 16384
+  Data (first 20 elements): [0.000000, 2.000000, 6.000000, -5.000000, 1.000000, 6.000000, -4.000000, -2.000000, 6.000000, -1.000000, -4.000000, 9.000000, -5.000000, 0.000000, -3.000000, -1.000000, -9.000000, -8.000000, 9.000000, 7.000000, ... (16364 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.028076, sum=-460.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [6, 3, 6, 10, 13, 14, 7, 14, 8, 0, 11, 0, 3, 6, 1, 9, 5, 11, 14, 4, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.256042, sum=2084963.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 256], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 16384
+  Data (first 20 elements): [5.000000, 5.000000, 3.000000, 9.000000, 3.000000, 4.000000, 4.000000, 5.000000, 7.000000, 2.000000, 7.000000, 0.000000, 0.000000, -6.000000, 9.000000, 9.000000, 0.000000, 4.000000, 9.000000, 10.000000, ... (16364 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.007019, sum=115.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [8, 13, 4, 9, 2, 4, 3, 5, 5, 7, 13, 1, 3, 2, 15, 12, 14, 8, 1, 5, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.162842, sum=2083436.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 256], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 16384
+  Data (first 20 elements): [5.000000, -8.000000, -3.000000, 0.000000, -2.000000, 9.000000, 9.000000, -10.000000, -9.000000, -1.000000, -1.000000, 3.000000, -4.000000, 3.000000, -7.000000, -10.000000, 3.000000, 5.000000, -8.000000, -9.000000, ... (16364 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.161438, sum=-2645.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [6, 4, 10, 5, 6, 9, 1, 11, 13, 13, 8, 10, 9, 14, 4, 3, 4, 14, 4, 8, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.313904, sum=2085911.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 256], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 16384
+  Data (first 20 elements): [10.000000, -2.000000, 5.000000, 7.000000, 2.000000, 0.000000, 1.000000, -2.000000, 4.000000, -8.000000, 5.000000, -5.000000, -7.000000, 8.000000, 1.000000, 5.000000, 4.000000, -1.000000, 3.000000, 6.000000, ... (16364 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.036316, sum=595.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [14, 11, 1, 2, 5, 8, 9, 6, 9, 14, 3, 2, 6, 1, 15, 10, 0, 6, 2, 4, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.161560, sum=2083415.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 256], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 16384
+  Data (first 20 elements): [4.000000, -2.000000, 2.000000, 6.000000, -9.000000, 9.000000, -7.000000, -10.000000, 0.000000, -5.000000, -2.000000, -2.000000, 5.000000, -4.000000, 0.000000, -8.000000, 10.000000, -8.000000, 10.000000, 1.000000, ... (16364 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.045837, sum=751.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [13, 10, 12, 11, 15, 11, 12, 14, 11, 10, 4, 1, 11, 13, 11, 7, 4, 5, 9, 8, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.946716, sum=2079895.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 256], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 16384
+  Data (first 20 elements): [2.000000, 3.000000, 10.000000, -6.000000, -4.000000, -6.000000, -9.000000, 6.000000, -1.000000, -1.000000, 0.000000, 0.000000, 10.000000, -8.000000, 5.000000, -9.000000, -2.000000, 2.000000, 2.000000, -3.000000, ... (16364 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.070312, sum=-1152.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [10, 9, 15, 9, 6, 15, 13, 4, 7, 6, 8, 8, 9, 7, 5, 13, 15, 8, 4, 10, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.840149, sum=2094533.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 256], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 16384
+  Data (first 20 elements): [9.000000, 0.000000, -6.000000, -7.000000, 2.000000, -5.000000, -2.000000, 2.000000, 6.000000, 7.000000, -10.000000, -8.000000, -3.000000, -1.000000, 9.000000, 5.000000, -1.000000, 3.000000, 10.000000, 10.000000, ... (16364 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.018188, sum=298.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[128, 128], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 16384
+  Data (first 20 elements): [1, 8, 11, 13, 9, 11, 12, 3, 11, 13, 2, 15, 4, 0, 2, 4, 3, 11, 3, 13, ... (16364 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.908875, sum=2095659.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 64], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 256
+  Data (first 20 elements): [-6.000000, -9.000000, -5.000000, 4.000000, 10.000000, -3.000000, 10.000000, -2.000000, 10.000000, -4.000000, 2.000000, -4.000000, 2.000000, -8.000000, -8.000000, -2.000000, 7.000000, 9.000000, -6.000000, -2.000000, ... (236 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.000000, sum=0.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [13, 10, 3, 11, 7, 1, 10, 15, 15, 13, 3, 11, 9, 3, 14, 8, 3, 12, 12, 14, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=128.845703, sum=131938.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 64], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 256
+  Data (first 20 elements): [9.000000, 3.000000, -2.000000, 6.000000, 3.000000, 2.000000, 10.000000, 9.000000, 8.000000, -4.000000, 6.000000, 3.000000, -2.000000, -8.000000, 2.000000, -2.000000, -5.000000, -8.000000, 0.000000, 0.000000, ... (236 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.363281, sum=93.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [15, 2, 8, 5, 15, 1, 13, 15, 14, 9, 6, 11, 4, 6, 10, 11, 14, 4, 4, 6, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=129.075195, sum=132173.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 64], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 256
+  Data (first 20 elements): [-2.000000, 10.000000, 0.000000, 10.000000, -10.000000, 9.000000, 2.000000, -8.000000, 8.000000, 6.000000, 3.000000, -3.000000, -7.000000, 5.000000, 4.000000, -2.000000, -1.000000, 7.000000, -5.000000, -1.000000, ... (236 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.183594, sum=47.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [8, 13, 5, 13, 7, 14, 5, 8, 10, 10, 8, 5, 5, 9, 0, 3, 8, 8, 0, 8, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=129.640625, sum=132752.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 64], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 256
+  Data (first 20 elements): [-8.000000, 4.000000, 6.000000, -10.000000, -9.000000, 8.000000, 10.000000, -8.000000, 10.000000, -9.000000, -3.000000, -2.000000, -6.000000, 7.000000, -8.000000, -4.000000, -6.000000, 0.000000, 2.000000, -10.000000, ... (236 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.039062, sum=-10.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [13, 13, 5, 5, 13, 14, 10, 14, 5, 6, 11, 12, 4, 10, 1, 1, 13, 11, 5, 5, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=125.038086, sum=128039.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 64], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 256
+  Data (first 20 elements): [-8.000000, -1.000000, -4.000000, 8.000000, 6.000000, -1.000000, 0.000000, -9.000000, -8.000000, 0.000000, -8.000000, 2.000000, 8.000000, 7.000000, 8.000000, 1.000000, -2.000000, -8.000000, 5.000000, -3.000000, ... (236 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.558594, sum=-143.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [12, 2, 11, 9, 15, 14, 0, 14, 15, 9, 4, 15, 15, 11, 12, 2, 11, 0, 7, 4, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=128.589844, sum=131676.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 64], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 256
+  Data (first 20 elements): [-6.000000, -7.000000, 9.000000, -5.000000, -9.000000, -8.000000, -10.000000, 1.000000, -4.000000, 5.000000, -4.000000, -5.000000, -8.000000, 4.000000, -3.000000, -3.000000, -5.000000, 10.000000, 10.000000, 6.000000, ... (236 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.488281, sum=125.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [3, 9, 14, 8, 15, 2, 9, 4, 12, 14, 11, 7, 5, 13, 2, 7, 5, 13, 0, 13, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.815430, sum=129859.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 64], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 256
+  Data (first 20 elements): [-9.000000, 8.000000, -3.000000, 7.000000, 9.000000, -5.000000, -2.000000, 4.000000, -5.000000, 2.000000, -8.000000, -1.000000, -2.000000, -1.000000, -10.000000, -3.000000, 0.000000, 5.000000, 7.000000, 9.000000, ... (236 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.136719, sum=-35.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [2, 1, 7, 9, 2, 0, 3, 11, 3, 4, 1, 10, 14, 15, 9, 11, 4, 12, 11, 15, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=130.217773, sum=133343.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 64], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 256
+  Data (first 20 elements): [-10.000000, -2.000000, 6.000000, 10.000000, 4.000000, 10.000000, -6.000000, -10.000000, -5.000000, -5.000000, 9.000000, -3.000000, -2.000000, 5.000000, 5.000000, 7.000000, -8.000000, 10.000000, -2.000000, -8.000000, ... (236 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.519531, sum=133.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [1, 0, 12, 4, 4, 6, 9, 1, 8, 11, 10, 15, 7, 3, 9, 8, 4, 9, 6, 9, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=125.375000, sum=128384.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 128], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 512
+  Data (first 20 elements): [-3.000000, 9.000000, -7.000000, 2.000000, 3.000000, -6.000000, 6.000000, 8.000000, 8.000000, -3.000000, -4.000000, -6.000000, 2.000000, 2.000000, -2.000000, -2.000000, -10.000000, -7.000000, -6.000000, 3.000000, ... (492 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.578125, sum=-296.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [0, 1, 4, 6, 2, 0, 4, 11, 14, 11, 11, 12, 6, 14, 13, 9, 8, 8, 12, 4, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.572510, sum=518441.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 128], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 512
+  Data (first 20 elements): [-3.000000, -1.000000, -3.000000, 6.000000, 3.000000, -4.000000, -6.000000, 7.000000, -4.000000, 2.000000, 4.000000, -1.000000, -4.000000, -2.000000, 9.000000, 3.000000, 2.000000, 3.000000, -2.000000, -9.000000, ... (492 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.623047, sum=319.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [8, 2, 15, 6, 1, 10, 6, 14, 15, 11, 1, 5, 10, 11, 11, 8, 9, 2, 1, 2, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=128.519775, sum=526417.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 512
+  Data (first 20 elements): [1.000000, -6.000000, 4.000000, 1.000000, 7.000000, 8.000000, 3.000000, 5.000000, -10.000000, 4.000000, -7.000000, 6.000000, 5.000000, -3.000000, -6.000000, -8.000000, 5.000000, -6.000000, -4.000000, 2.000000, ... (492 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.166016, sum=-85.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [13, 11, 12, 10, 14, 11, 11, 8, 0, 3, 13, 8, 11, 3, 14, 8, 15, 7, 14, 10, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.701172, sum=523064.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 512
+  Data (first 20 elements): [0.000000, -1.000000, -1.000000, -2.000000, -10.000000, -1.000000, -3.000000, -9.000000, 4.000000, -4.000000, -4.000000, 2.000000, 4.000000, -6.000000, -4.000000, -2.000000, 1.000000, -8.000000, -3.000000, -5.000000, ... (492 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.093750, sum=48.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [4, 10, 8, 0, 3, 9, 5, 10, 9, 14, 14, 2, 9, 6, 6, 8, 1, 4, 15, 5, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=129.353271, sum=529831.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 128], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 512
+  Data (first 20 elements): [8.000000, -5.000000, -3.000000, -9.000000, 4.000000, 6.000000, 4.000000, 5.000000, -4.000000, -10.000000, 9.000000, -3.000000, -1.000000, 5.000000, -2.000000, -9.000000, -4.000000, 7.000000, -7.000000, 6.000000, ... (492 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.074219, sum=-38.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [2, 1, 9, 3, 10, 2, 7, 5, 1, 9, 13, 13, 10, 13, 11, 14, 3, 9, 13, 3, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.487305, sum=522188.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 128], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 512
+  Data (first 20 elements): [-2.000000, -6.000000, 1.000000, -3.000000, 4.000000, 10.000000, -3.000000, -3.000000, -1.000000, -1.000000, 2.000000, -4.000000, 3.000000, 5.000000, -8.000000, 9.000000, -7.000000, 4.000000, 8.000000, 4.000000, ... (492 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.242188, sum=-124.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [1, 15, 11, 5, 10, 4, 3, 5, 12, 13, 7, 3, 5, 14, 10, 7, 5, 11, 15, 7, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=128.427490, sum=526039.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 128], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 512
+  Data (first 20 elements): [3.000000, -10.000000, 8.000000, -6.000000, -5.000000, -1.000000, -4.000000, -7.000000, 9.000000, 2.000000, 5.000000, 6.000000, -10.000000, 10.000000, -10.000000, 8.000000, 4.000000, 3.000000, 10.000000, -4.000000, ... (492 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.087891, sum=45.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [12, 9, 9, 3, 6, 2, 5, 7, 13, 11, 14, 12, 0, 0, 14, 8, 0, 14, 2, 6, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=128.653076, sum=526963.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[4, 128], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 512
+  Data (first 20 elements): [-4.000000, 6.000000, -3.000000, 3.000000, -7.000000, -3.000000, 3.000000, -1.000000, -4.000000, 1.000000, -5.000000, 0.000000, 7.000000, -10.000000, 1.000000, -10.000000, -9.000000, 1.000000, 2.000000, 3.000000, ... (492 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.130859, sum=67.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [2, 7, 14, 8, 9, 8, 14, 2, 5, 4, 2, 15, 1, 11, 6, 12, 11, 10, 15, 15, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=128.541748, sum=526507.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 128], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [-10.000000, 0.000000, -5.000000, -8.000000, 9.000000, 1.000000, 10.000000, 2.000000, -5.000000, 10.000000, 4.000000, -1.000000, 8.000000, 4.000000, 3.000000, -4.000000, -1.000000, 1.000000, 0.000000, -3.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.008545, sum=35.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [14, 14, 8, 3, 1, 10, 14, 11, 5, 4, 10, 14, 13, 10, 1, 12, 1, 15, 15, 10, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=128.117188, sum=524768.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 128], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [-9.000000, 6.000000, 7.000000, -1.000000, -8.000000, 4.000000, 7.000000, 5.000000, -3.000000, 3.000000, 7.000000, 10.000000, 10.000000, -8.000000, 4.000000, 5.000000, 4.000000, 7.000000, 6.000000, 8.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.139404, sum=-571.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [15, 10, 3, 10, 0, 6, 13, 10, 2, 11, 15, 0, 9, 11, 8, 0, 6, 2, 9, 4, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.460449, sum=517982.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [-9.000000, -1.000000, -5.000000, -10.000000, 4.000000, -8.000000, 9.000000, -4.000000, 9.000000, -5.000000, 10.000000, 9.000000, -9.000000, -7.000000, -9.000000, 5.000000, 5.000000, -10.000000, 7.000000, 8.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.070312, sum=288.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [4, 8, 2, 0, 5, 0, 12, 3, 9, 4, 8, 7, 8, 0, 7, 12, 2, 6, 9, 7, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.180908, sum=520933.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 128], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [-4.000000, 10.000000, -1.000000, -8.000000, 6.000000, -8.000000, -5.000000, 6.000000, -4.000000, -6.000000, 6.000000, -4.000000, 5.000000, 7.000000, 10.000000, -2.000000, -6.000000, 8.000000, -9.000000, 9.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.037109, sum=152.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [9, 15, 9, 0, 2, 15, 0, 13, 11, 11, 13, 2, 0, 11, 10, 2, 4, 0, 3, 1, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.485107, sum=518083.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 128], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [4.000000, -6.000000, -9.000000, -2.000000, 3.000000, 0.000000, 2.000000, -8.000000, -3.000000, -4.000000, -8.000000, 5.000000, 3.000000, 3.000000, 7.000000, -8.000000, -7.000000, 1.000000, -9.000000, -7.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.004395, sum=-18.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [3, 8, 12, 14, 9, 11, 5, 8, 6, 1, 7, 0, 11, 5, 5, 3, 2, 3, 13, 7, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.440430, sum=521996.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 128], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [-4.000000, 3.000000, -8.000000, -6.000000, -5.000000, -9.000000, -2.000000, 10.000000, -9.000000, 4.000000, -6.000000, -7.000000, 10.000000, 5.000000, 3.000000, -4.000000, 3.000000, 2.000000, 0.000000, 7.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.261963, sum=-1073.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [14, 9, 1, 8, 1, 12, 1, 11, 15, 13, 13, 14, 15, 3, 2, 6, 14, 7, 6, 8, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=129.406250, sum=530048.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 128], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [0.000000, 5.000000, 9.000000, 5.000000, 4.000000, -5.000000, 2.000000, 9.000000, -10.000000, 9.000000, -2.000000, 1.000000, 2.000000, -1.000000, -1.000000, 3.000000, -9.000000, 1.000000, -4.000000, -2.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.230469, sum=944.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [5, 3, 14, 6, 13, 8, 1, 10, 10, 15, 6, 11, 13, 8, 8, 8, 12, 5, 5, 5, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.107422, sum=516536.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 128], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 4096
+  Data (first 20 elements): [4.000000, 6.000000, 0.000000, 0.000000, -10.000000, 6.000000, 1.000000, 6.000000, 7.000000, 0.000000, 10.000000, 7.000000, -6.000000, -9.000000, 0.000000, -5.000000, -9.000000, 5.000000, -7.000000, 5.000000, ... (4076 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.042725, sum=-175.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[64, 64], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 4096
+  Data (first 20 elements): [8, 0, 12, 4, 14, 10, 10, 2, 11, 12, 6, 8, 3, 11, 0, 9, 14, 0, 6, 2, ... (4076 more)]
+  Statistics: min=0.000000, max=255.000000, mean=124.668457, sum=510642.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[2, 64], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 128
+  Data (first 20 elements): [-6.000000, -2.000000, -5.000000, -3.000000, -3.000000, -2.000000, 2.000000, -7.000000, 3.000000, 9.000000, 4.000000, -6.000000, 2.000000, 2.000000, -3.000000, -10.000000, 6.000000, 4.000000, 3.000000, -6.000000, ... (108 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.039062, sum=5.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [10, 8, 1, 2, 4, 3, 1, 6, 5, 10, 14, 5, 8, 6, 5, 2, 2, 0, 7, 13, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=125.086914, sum=128089.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[2, 64], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 128
+  Data (first 20 elements): [-10.000000, 7.000000, -1.000000, 10.000000, -5.000000, 4.000000, 0.000000, 5.000000, 5.000000, -3.000000, -3.000000, -10.000000, -5.000000, 9.000000, 8.000000, 2.000000, 4.000000, 8.000000, 8.000000, -2.000000, ... (108 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.000000, sum=0.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [4, 8, 10, 12, 8, 11, 8, 2, 0, 1, 9, 2, 1, 8, 4, 11, 3, 1, 6, 10, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=130.261719, sum=133388.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[2, 64], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 128
+  Data (first 20 elements): [0.000000, 2.000000, 3.000000, 4.000000, -7.000000, -5.000000, 0.000000, -7.000000, -2.000000, 10.000000, 4.000000, -9.000000, 5.000000, -4.000000, -6.000000, -5.000000, -5.000000, -5.000000, 7.000000, 2.000000, ... (108 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.000000, sum=0.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [7, 5, 3, 7, 5, 15, 0, 15, 12, 7, 4, 5, 6, 6, 2, 14, 8, 1, 2, 9, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=130.423828, sum=133554.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[2, 64], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 128
+  Data (first 20 elements): [-10.000000, 7.000000, 2.000000, 1.000000, -6.000000, 0.000000, -9.000000, 4.000000, -10.000000, 10.000000, -2.000000, -3.000000, -3.000000, 8.000000, -9.000000, 2.000000, 6.000000, -9.000000, -3.000000, 6.000000, ... (108 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.523438, sum=-67.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [14, 1, 12, 11, 10, 8, 11, 3, 12, 8, 2, 6, 5, 6, 3, 4, 8, 10, 7, 12, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=124.798828, sum=127794.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[2, 64], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 128
+  Data (first 20 elements): [-9.000000, -10.000000, 3.000000, -6.000000, -2.000000, 10.000000, 4.000000, 3.000000, -10.000000, 2.000000, 7.000000, -7.000000, 8.000000, 3.000000, -2.000000, 9.000000, 0.000000, -5.000000, 2.000000, 3.000000, ... (108 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.851562, sum=-109.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [11, 13, 1, 14, 4, 10, 14, 12, 11, 4, 13, 0, 12, 7, 9, 11, 14, 7, 4, 8, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=128.581055, sum=131667.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[2, 64], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 128
+  Data (first 20 elements): [-8.000000, -9.000000, -6.000000, -9.000000, -5.000000, -6.000000, 6.000000, -7.000000, 3.000000, 4.000000, -7.000000, 7.000000, -2.000000, 8.000000, 7.000000, -8.000000, 0.000000, -1.000000, 1.000000, -8.000000, ... (108 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-1.023438, sum=-131.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [12, 15, 7, 9, 13, 13, 9, 7, 1, 14, 11, 11, 15, 15, 2, 1, 6, 13, 9, 15, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=129.804688, sum=132920.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[2, 64], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 128
+  Data (first 20 elements): [-2.000000, -9.000000, 5.000000, 10.000000, 1.000000, 0.000000, 6.000000, 5.000000, 9.000000, 3.000000, -6.000000, -8.000000, -9.000000, -2.000000, -6.000000, 7.000000, 6.000000, -3.000000, -7.000000, 4.000000, ... (108 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.773438, sum=99.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [9, 3, 12, 15, 9, 9, 8, 10, 14, 3, 3, 0, 15, 5, 6, 2, 15, 15, 3, 3, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=129.943359, sum=133062.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[2, 64], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 128
+  Data (first 20 elements): [6.000000, -1.000000, -4.000000, -2.000000, 2.000000, -3.000000, -10.000000, -7.000000, 3.000000, 2.000000, -8.000000, 9.000000, 1.000000, 7.000000, 0.000000, 8.000000, 5.000000, -1.000000, 4.000000, 6.000000, ... (108 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.039062, sum=-5.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [8, 1, 11, 13, 1, 10, 0, 3, 12, 2, 8, 3, 2, 0, 10, 1, 0, 2, 12, 7, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=125.829102, sum=128849.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[3, 64], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 192
+  Data (first 20 elements): [-9.000000, 5.000000, -10.000000, 5.000000, -5.000000, 8.000000, -2.000000, 1.000000, 5.000000, 5.000000, 8.000000, 5.000000, 10.000000, -6.000000, -8.000000, -5.000000, 0.000000, 10.000000, 8.000000, 1.000000, ... (172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.432292, sum=83.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [2, 15, 9, 10, 10, 9, 14, 4, 15, 8, 13, 1, 5, 0, 14, 15, 8, 5, 14, 3, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.047852, sum=130097.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[3, 64], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 192
+  Data (first 20 elements): [-7.000000, -1.000000, 4.000000, -6.000000, 10.000000, 4.000000, -7.000000, -3.000000, 3.000000, -1.000000, 3.000000, -3.000000, -10.000000, -6.000000, -10.000000, 6.000000, 5.000000, -7.000000, -5.000000, 6.000000, ... (172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.369792, sum=71.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [4, 6, 2, 14, 7, 6, 13, 4, 1, 7, 5, 7, 13, 13, 13, 0, 9, 4, 13, 0, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=125.459961, sum=128471.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[3, 64], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 192
+  Data (first 20 elements): [4.000000, 5.000000, 6.000000, 10.000000, -9.000000, 4.000000, 8.000000, -10.000000, -8.000000, 9.000000, -7.000000, -9.000000, -6.000000, -4.000000, -4.000000, -9.000000, -3.000000, 2.000000, -5.000000, 8.000000, ... (172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.223958, sum=-43.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [10, 4, 5, 12, 1, 5, 10, 0, 7, 1, 10, 15, 4, 13, 8, 8, 2, 15, 7, 8, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=128.100586, sum=131175.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[3, 64], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 192
+  Data (first 20 elements): [-5.000000, -2.000000, 8.000000, 8.000000, 9.000000, -5.000000, -4.000000, -5.000000, -1.000000, -10.000000, -7.000000, -5.000000, -6.000000, 8.000000, -5.000000, 9.000000, 2.000000, 9.000000, -6.000000, -7.000000, ... (172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.343750, sum=-66.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [1, 5, 1, 10, 1, 13, 0, 6, 8, 9, 14, 0, 12, 10, 11, 4, 15, 13, 7, 3, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=123.812500, sum=126784.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[3, 64], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 192
+  Data (first 20 elements): [-5.000000, 8.000000, 2.000000, -2.000000, -7.000000, -3.000000, -9.000000, 10.000000, 1.000000, -2.000000, -10.000000, -4.000000, 10.000000, 6.000000, -8.000000, 6.000000, 9.000000, -8.000000, -10.000000, 0.000000, ... (172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.546875, sum=-105.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [6, 8, 12, 10, 15, 9, 14, 14, 1, 15, 3, 11, 1, 15, 13, 8, 14, 3, 15, 15, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=130.499023, sum=133631.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[3, 64], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 192
+  Data (first 20 elements): [10.000000, -4.000000, 10.000000, -3.000000, -6.000000, 0.000000, -10.000000, -8.000000, 10.000000, 0.000000, 8.000000, -6.000000, 10.000000, 6.000000, 0.000000, 0.000000, -8.000000, 1.000000, 1.000000, 5.000000, ... (172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.229167, sum=44.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [7, 0, 5, 1, 0, 12, 10, 9, 3, 9, 11, 1, 12, 3, 10, 5, 10, 10, 7, 12, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=128.273438, sum=131352.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[3, 64], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 192
+  Data (first 20 elements): [-6.000000, 0.000000, 9.000000, -5.000000, 0.000000, 7.000000, 5.000000, -6.000000, 2.000000, 6.000000, -5.000000, 6.000000, 7.000000, 2.000000, 1.000000, 6.000000, -5.000000, -5.000000, -3.000000, -3.000000, ... (172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.708333, sum=136.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [9, 1, 7, 6, 13, 8, 11, 3, 4, 2, 0, 9, 15, 13, 10, 14, 3, 9, 9, 9, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=129.828125, sum=132944.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[3, 64], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 192
+  Data (first 20 elements): [-8.000000, 1.000000, -5.000000, -7.000000, 0.000000, 1.000000, -4.000000, 3.000000, -5.000000, 10.000000, -1.000000, 9.000000, 0.000000, -8.000000, -8.000000, 6.000000, 8.000000, -4.000000, 6.000000, 10.000000, ... (172 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.109375, sum=-21.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [7, 4, 1, 11, 1, 2, 4, 5, 10, 10, 9, 9, 5, 14, 4, 11, 12, 12, 3, 1, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.996094, sum=130044.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[5, 64], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 320
+  Data (first 20 elements): [-3.000000, -8.000000, -2.000000, -10.000000, -8.000000, 7.000000, -4.000000, -10.000000, 9.000000, -8.000000, 10.000000, -8.000000, -2.000000, 1.000000, -10.000000, -7.000000, 1.000000, 5.000000, -7.000000, -6.000000, ... (300 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.143750, sum=46.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [9, 13, 5, 13, 10, 11, 2, 2, 12, 12, 14, 10, 2, 3, 10, 7, 12, 3, 9, 8, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=125.200195, sum=128205.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[5, 64], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 320
+  Data (first 20 elements): [7.000000, -2.000000, -8.000000, -7.000000, -10.000000, -8.000000, 8.000000, 4.000000, -8.000000, -2.000000, 2.000000, -5.000000, -8.000000, 7.000000, 6.000000, 6.000000, -9.000000, -10.000000, 1.000000, 3.000000, ... (300 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.243750, sum=-78.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [4, 4, 0, 1, 9, 11, 9, 8, 9, 0, 2, 8, 11, 14, 4, 9, 8, 15, 4, 7, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=128.717773, sum=131807.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[5, 64], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 320
+  Data (first 20 elements): [-7.000000, 8.000000, -6.000000, 7.000000, -2.000000, -4.000000, -4.000000, 7.000000, 8.000000, -3.000000, -2.000000, -5.000000, -7.000000, 10.000000, -10.000000, -6.000000, 9.000000, -4.000000, -10.000000, -1.000000, ... (300 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.112500, sum=-36.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [2, 7, 11, 15, 14, 15, 12, 9, 3, 5, 0, 7, 15, 7, 0, 15, 13, 7, 12, 14, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=122.419922, sum=125358.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[5, 64], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 320
+  Data (first 20 elements): [1.000000, -3.000000, 5.000000, -7.000000, 7.000000, -5.000000, -10.000000, -10.000000, 7.000000, -10.000000, 4.000000, 0.000000, -6.000000, -8.000000, 2.000000, 1.000000, 6.000000, 5.000000, -1.000000, 6.000000, ... (300 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.071875, sum=-23.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [11, 0, 8, 11, 2, 3, 11, 1, 14, 13, 7, 11, 6, 8, 6, 12, 2, 5, 8, 6, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=129.744141, sum=132858.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[5, 64], dtype=float, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 320
+  Data (first 20 elements): [-5.000000, 6.000000, -5.000000, 1.000000, 5.000000, 0.000000, -10.000000, -2.000000, -4.000000, -1.000000, -9.000000, 0.000000, 10.000000, -1.000000, 2.000000, 2.000000, -10.000000, -5.000000, 5.000000, 9.000000, ... (300 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.359375, sum=-115.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [1, 6, 10, 6, 10, 9, 6, 6, 12, 6, 5, 4, 10, 0, 15, 5, 15, 1, 5, 7, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=126.460938, sum=129496.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[5, 64], dtype=half, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT)
+  Total elements: 320
+  Data (first 20 elements): [-5.000000, 3.000000, -3.000000, 6.000000, 2.000000, 2.000000, 0.000000, 1.000000, -3.000000, -3.000000, 6.000000, 3.000000, 2.000000, -1.000000, -2.000000, -3.000000, -10.000000, 7.000000, 8.000000, 4.000000, ... (300 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.700000, sum=-224.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Texture3D, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [13, 11, 11, 6, 10, 4, 5, 6, 10, 15, 13, 15, 0, 2, 2, 3, 4, 2, 3, 14, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=127.404297, sum=130462.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[5, 64], dtype=float, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 320
+  Data (first 20 elements): [4.000000, -3.000000, -8.000000, 7.000000, 2.000000, 7.000000, -9.000000, -6.000000, 4.000000, -6.000000, -2.000000, -1.000000, -3.000000, -10.000000, 7.000000, -3.000000, -7.000000, -9.000000, -7.000000, 7.000000, ... (300 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=-0.031250, sum=-10.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [9, 6, 5, 15, 11, 2, 7, 14, 11, 6, 10, 10, 13, 4, 13, 11, 7, 7, 6, 14, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=130.919922, sum=134062.000000
+
+input_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[5, 64], dtype=half, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT)
+  Total elements: 320
+  Data (first 20 elements): [-4.000000, 7.000000, 5.000000, -9.000000, 9.000000, -5.000000, -8.000000, -2.000000, 1.000000, 3.000000, -10.000000, -9.000000, 1.000000, 3.000000, 2.000000, 3.000000, 4.000000, -5.000000, 0.000000, -1.000000, ... (300 more)]
+  Statistics: min=-10.000000, max=10.000000, mean=0.415625, sum=133.000000
+
+weight_tensor Data:
+  Type: ValueSpec(type=Tensor, sizes=[32, 32], dtype=uint8, memory_layout=WidthPacked, storage_type=Buffer, data_gen=RANDINT4)
+  Total elements: 1024
+  Data (first 20 elements): [15, 7, 0, 12, 1, 8, 0, 0, 6, 15, 15, 11, 11, 8, 1, 12, 13, 0, 2, 3, ... (1004 more)]
+  Statistics: min=0.000000, max=255.000000, mean=128.838867, sum=131931.000000
+Executing 128 test cases for q4gsw_linear:correctness
+----------------------------------------------------------------------
+[probe] ACCU  f32  [4,64]x[32,64] g16  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=6.144000, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    3.156 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (4,1,1)         (4,1,1)                                                                                                                     4.360 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [4,64]x[32,64] g16  Tex(WP) [linear_dq8ca_q4gsw] no_bias                            [4x64]           7.515 μs          3.287 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,64]x[32,64] g16  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=6.144, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    3.358 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_fl..     (4,1,1)         (4,1,1)                                                                                                                     4.675 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [4,64]x[32,64] g16  Buf(WP) [linear_dq8ca_q4gsw] no_bias                            [4x64]           8.033 μs          3.075 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,64]x[32,64] g16  Tex(WP) [linear_q4gsw] no_bias: probe_us=6.144, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_texture3d_float        (4,1,1)         (8,8,1)     ACCU  f32  [4,64]x[32,64] g16  Tex(WP) [linear_q4gsw] no_bias                                  [4x64]           4.869 μs          5.074 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,64]x[32,64] g16  Buf(WP) [linear_q4gsw] no_bias: probe_us=6.144, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_buffer_float           (4,1,1)         (8,8,1)     ACCU  f32  [4,64]x[32,64] g16  Buf(WP) [linear_q4gsw] no_bias                                  [4x64]           4.541 μs          5.440 GFLOP/s   PASSED
+[probe] ACCU  f16  [4,64]x[32,64] g16  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=6.144, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    3.281 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (4,1,1)         (4,1,1)                                                                                                                     4.286 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [4,64]x[32,64] g16  Tex(WP) [linear_dq8ca_q4gsw] no_bias                            [4x64]           7.568 μs          3.264 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [4,64]x[32,64] g16  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=6.144, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    3.368 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (4,1,1)         (4,1,1)                                                                                                                     4.790 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [4,64]x[32,64] g16  Buf(WP) [linear_dq8ca_q4gsw] no_bias                            [4x64]           8.158 μs          3.028 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [4,64]x[32,64] g16  Tex(WP) [linear_q4gsw] no_bias: probe_us=7.168, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_4x4_half..     (16,1,1)        (2,16,1)                                                                                                                    3.304 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_h..     (1,8,1)         (1,128,1)                                                                                                                   6.404 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [4,64]x[32,64] g16  Tex(WP) [linear_q4gsw] no_bias                                  [4x64]           9.708 μs          2.545 GFLOP/s   PASSED
+[probe] ACCU  f16  [4,64]x[32,64] g16  Buf(WP) [linear_q4gsw] no_bias: probe_us=6.144, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_half_buf..     (64,1,1)        (8,8,1)                                                                                                                     3.129 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half       (1,8,1)         (1,128,1)                                                                                                                   6.023 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [4,64]x[32,64] g16  Buf(WP) [linear_q4gsw] no_bias                                  [4x64]           9.152 μs          2.699 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,128]x[64,128] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=8.192, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    3.591 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (8,1,1)         (8,1,1)                                                                                                                     5.757 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [4,128]x[64,128] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias                         [4x128]           9.348 μs         10.543 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,128]x[64,128] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=8.192, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    3.441 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_fl..     (8,1,1)         (8,1,1)                                                                                                                     6.013 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [4,128]x[64,128] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias                         [4x128]           9.454 μs         10.425 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,128]x[64,128] g32  Tex(WP) [linear_q4gsw] no_bias: probe_us=11.264, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_texture3d_float        (8,1,1)         (8,8,1)     ACCU  f32  [4,128]x[64,128] g32  Tex(WP) [linear_q4gsw] no_bias                               [4x128]           8.607 μs         11.452 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,128]x[64,128] g32  Buf(WP) [linear_q4gsw] no_bias: probe_us=10.240, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_buffer_float           (8,1,1)         (8,8,1)     ACCU  f32  [4,128]x[64,128] g32  Buf(WP) [linear_q4gsw] no_bias                               [4x128]           7.844 μs         12.565 GFLOP/s   PASSED
+[probe] ACCU  f16  [4,128]x[64,128] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=8.192, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    3.549 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (8,1,1)         (8,1,1)                                                                                                                     5.816 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [4,128]x[64,128] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias                         [4x128]           9.364 μs         10.525 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [4,128]x[64,128] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=8.192, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    3.445 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (8,1,1)         (8,1,1)                                                                                                                     6.593 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [4,128]x[64,128] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias                         [4x128]          10.038 μs          9.819 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [4,128]x[64,128] g32  Tex(WP) [linear_q4gsw] no_bias: probe_us=13.312, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_4x4_half..     (32,1,1)        (2,16,1)                                                                                                                    3.099 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_h..     (1,16,1)        (1,128,1)                                                                                                                  11.712 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [4,128]x[64,128] g32  Tex(WP) [linear_q4gsw] no_bias                               [4x128]          14.811 μs          6.654 GFLOP/s   PASSED
+[probe] ACCU  f16  [4,128]x[64,128] g32  Buf(WP) [linear_q4gsw] no_bias: probe_us=12.288, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_half_buf..     (128,1,1)       (8,8,1)                                                                                                                     2.972 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half       (1,16,1)        (1,128,1)                                                                                                                  11.161 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [4,128]x[64,128] g32  Buf(WP) [linear_q4gsw] no_bias                               [4x128]          14.133 μs          6.974 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,256]x[128,256] g64  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=14.336, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    3.450 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,1,1)        (16,1,1)                                                                                                                   12.267 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [4,256]x[128,256] g64  Tex(WP) [linear_dq8ca_q4gsw] no_bias                        [4x256]          15.717 μs         25.051 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,256]x[128,256] g64  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=14.336, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    3.413 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_fl..     (16,1,1)        (16,1,1)                                                                                                                   12.283 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [4,256]x[128,256] g64  Buf(WP) [linear_dq8ca_q4gsw] no_bias                        [4x256]          15.696 μs         25.084 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,256]x[128,256] g64  Tex(WP) [linear_q4gsw] no_bias: probe_us=21.504, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_texture3d_float        (16,1,1)        (8,8,1)     ACCU  f32  [4,256]x[128,256] g64  Tex(WP) [linear_q4gsw] no_bias                              [4x256]          16.082 μs         24.483 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,256]x[128,256] g64  Buf(WP) [linear_q4gsw] no_bias: probe_us=20.480, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_buffer_float           (16,1,1)        (8,8,1)     ACCU  f32  [4,256]x[128,256] g64  Buf(WP) [linear_q4gsw] no_bias                              [4x256]          14.505 μs         27.144 GFLOP/s   PASSED
+[probe] ACCU  f16  [4,256]x[128,256] g64  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=13.312, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    3.416 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,1,1)        (16,1,1)                                                                                                                   12.310 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [4,256]x[128,256] g64  Tex(WP) [linear_dq8ca_q4gsw] no_bias                        [4x256]          15.726 μs         25.037 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [4,256]x[128,256] g64  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=14.336, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    3.428 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (16,1,1)        (16,1,1)                                                                                                                   12.798 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [4,256]x[128,256] g64  Buf(WP) [linear_dq8ca_q4gsw] no_bias                        [4x256]          16.227 μs         24.264 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [4,256]x[128,256] g64  Tex(WP) [linear_q4gsw] no_bias: probe_us=23.552, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_4x4_half..     (64,1,1)        (2,16,1)                                                                                                                    3.110 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_h..     (1,32,1)        (1,128,1)                                                                                                                  22.607 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [4,256]x[128,256] g64  Tex(WP) [linear_q4gsw] no_bias                              [4x256]          25.717 μs         15.310 GFLOP/s   PASSED
+[probe] ACCU  f16  [4,256]x[128,256] g64  Buf(WP) [linear_q4gsw] no_bias: probe_us=22.528, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_half_buf..     (256,1,1)       (8,8,1)                                                                                                                     2.896 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half       (1,32,1)        (1,128,1)                                                                                                                  21.579 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [4,256]x[128,256] g64  Buf(WP) [linear_q4gsw] no_bias                              [4x256]          24.476 μs         16.087 GFLOP/s   PASSED
+[probe] ACCU  f32  [32,64]x[32,64] g16  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=5.120, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,8,1)         (4,1,16)                                                                                                                    3.450 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (4,8,1)         (4,8,1)                                                                                                                     4.084 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [32,64]x[32,64] g16  Tex(WP) [linear_dq8ca_q4gsw] no_bias                          [32x64]           7.534 μs         26.233 GFLOP/s   PASSED
+[probe] ACCU  f32  [32,64]x[32,64] g16  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=6.144, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,8,1)         (4,1,16)                                                                                                                    3.385 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_fl..     (4,8,1)         (4,8,1)                                                                                                                     4.121 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [32,64]x[32,64] g16  Buf(WP) [linear_dq8ca_q4gsw] no_bias                          [32x64]           7.506 μs         26.329 GFLOP/s   PASSED
+[probe] ACCU  f32  [32,64]x[32,64] g16  Tex(WP) [linear_q4gsw] no_bias: probe_us=6.144, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_texture3d_float        (4,8,1)         (8,8,1)     ACCU  f32  [32,64]x[32,64] g16  Tex(WP) [linear_q4gsw] no_bias                                [32x64]           5.074 μs         38.951 GFLOP/s   PASSED
+[probe] ACCU  f32  [32,64]x[32,64] g16  Buf(WP) [linear_q4gsw] no_bias: probe_us=6.144, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_buffer_float           (4,8,1)         (8,8,1)     ACCU  f32  [32,64]x[32,64] g16  Buf(WP) [linear_q4gsw] no_bias                                [32x64]           4.618 μs         42.794 GFLOP/s   PASSED
+[probe] ACCU  f16  [32,64]x[32,64] g16  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=5.120, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,8,1)         (4,1,16)                                                                                                                    3.430 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (4,8,1)         (4,8,1)                                                                                                                     3.755 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [32,64]x[32,64] g16  Tex(WP) [linear_dq8ca_q4gsw] no_bias                          [32x64]           7.185 μs         27.506 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [32,64]x[32,64] g16  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=6.144, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,8,1)         (4,1,16)                                                                                                                    3.410 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (4,8,1)         (4,8,1)                                                                                                                     4.472 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [32,64]x[32,64] g16  Buf(WP) [linear_dq8ca_q4gsw] no_bias                          [32x64]           7.881 μs         25.076 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [32,64]x[32,64] g16  Tex(WP) [linear_q4gsw] no_bias: probe_us=8.192, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_4x4_half..     (16,8,1)        (2,16,1)                                                                                                                    3.073 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_h..     (4,8,1)         (1,128,1)                                                                                                                   6.982 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [32,64]x[32,64] g16  Tex(WP) [linear_q4gsw] no_bias                                [32x64]          10.054 μs         19.656 GFLOP/s   PASSED
+[probe] ACCU  f16  [32,64]x[32,64] g16  Buf(WP) [linear_q4gsw] no_bias: probe_us=6.144, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_half_buf..     (64,8,1)        (8,8,1)                                                                                                                     3.175 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half       (4,8,1)         (1,128,1)                                                                                                                   6.612 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [32,64]x[32,64] g16  Buf(WP) [linear_q4gsw] no_bias                                [32x64]           9.787 μs         20.193 GFLOP/s   PASSED
+[probe] ACCU  f32  [32,128]x[64,128] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=9.216, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,8,1)         (4,1,16)                                                                                                                    3.553 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (8,8,1)         (8,8,1)                                                                                                                     6.326 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [32,128]x[64,128] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias                       [32x128]           9.879 μs         79.816 GFLOP/s   PASSED
+[probe] ACCU  f32  [32,128]x[64,128] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=8.192, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,8,1)         (4,1,16)                                                                                                                    3.585 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_fl..     (8,8,1)         (8,8,1)                                                                                                                     6.257 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [32,128]x[64,128] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias                       [32x128]           9.841 μs         80.118 GFLOP/s   PASSED
+[probe] ACCU  f32  [32,128]x[64,128] g32  Tex(WP) [linear_q4gsw] no_bias: probe_us=12.288, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_texture3d_float        (8,8,1)         (8,8,1)     ACCU  f32  [32,128]x[64,128] g32  Tex(WP) [linear_q4gsw] no_bias                             [32x128]           9.446 μs         83.469 GFLOP/s   PASSED
+[probe] ACCU  f32  [32,128]x[64,128] g32  Buf(WP) [linear_q4gsw] no_bias: probe_us=11.264, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_buffer_float           (8,8,1)         (8,8,1)     ACCU  f32  [32,128]x[64,128] g32  Buf(WP) [linear_q4gsw] no_bias                             [32x128]           8.049 μs         97.964 GFLOP/s   PASSED
+[probe] ACCU  f16  [32,128]x[64,128] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=8.192, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,8,1)         (4,1,16)                                                                                                                    3.548 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (8,8,1)         (8,8,1)                                                                                                                     6.056 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [32,128]x[64,128] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias                       [32x128]           9.604 μs         82.098 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [32,128]x[64,128] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=8.192, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,8,1)         (4,1,16)                                                                                                                    3.416 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (8,8,1)         (8,8,1)                                                                                                                     6.094 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [32,128]x[64,128] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias                       [32x128]           9.511 μs         82.906 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [32,128]x[64,128] g32  Tex(WP) [linear_q4gsw] no_bias: probe_us=14.336, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_4x4_half..     (32,8,1)        (2,16,1)                                                                                                                    3.031 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_h..     (4,16,1)        (1,128,1)                                                                                                                  12.606 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [32,128]x[64,128] g32  Tex(WP) [linear_q4gsw] no_bias                             [32x128]          15.637 μs         50.425 GFLOP/s   PASSED
+[probe] ACCU  f16  [32,128]x[64,128] g32  Buf(WP) [linear_q4gsw] no_bias: probe_us=12.288, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_half_buf..     (128,8,1)       (8,8,1)                                                                                                                     2.925 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half       (4,16,1)        (1,128,1)                                                                                                                  12.016 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [32,128]x[64,128] g32  Buf(WP) [linear_q4gsw] no_bias                             [32x128]          14.942 μs         52.770 GFLOP/s   PASSED
+[probe] ACCU  f32  [32,256]x[128,256] g64  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=15.360, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,8,1)         (4,1,16)                                                                                                                    3.565 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,8,1)        (8,8,1)                                                                                                                    13.503 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [32,256]x[128,256] g64  Tex(WP) [linear_dq8ca_q4gsw] no_bias                      [32x256]          17.068 μs        184.547 GFLOP/s   PASSED
+[probe] ACCU  f32  [32,256]x[128,256] g64  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=16.384, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,8,1)         (4,1,16)                                                                                                                    3.500 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_fl..     (16,8,1)        (8,8,1)                                                                                                                    14.036 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [32,256]x[128,256] g64  Buf(WP) [linear_dq8ca_q4gsw] no_bias                      [32x256]          17.536 μs        179.620 GFLOP/s   PASSED
+[probe] ACCU  f32  [32,256]x[128,256] g64  Tex(WP) [linear_q4gsw] no_bias: probe_us=24.576, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_texture3d_float        (16,8,1)        (8,8,1)     ACCU  f32  [32,256]x[128,256] g64  Tex(WP) [linear_q4gsw] no_bias                            [32x256]          18.335 μs        171.796 GFLOP/s   PASSED
+[probe] ACCU  f32  [32,256]x[128,256] g64  Buf(WP) [linear_q4gsw] no_bias: probe_us=22.528, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_buffer_float           (16,8,1)        (8,8,1)     ACCU  f32  [32,256]x[128,256] g64  Buf(WP) [linear_q4gsw] no_bias                            [32x256]          15.585 μs        202.102 GFLOP/s   PASSED
+[probe] ACCU  f16  [32,256]x[128,256] g64  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=16.384, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,8,1)         (4,1,16)                                                                                                                    3.622 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,8,1)        (8,8,1)                                                                                                                    13.846 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [32,256]x[128,256] g64  Tex(WP) [linear_dq8ca_q4gsw] no_bias                      [32x256]          17.469 μs        180.313 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [32,256]x[128,256] g64  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=15.360, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,8,1)         (4,1,16)                                                                                                                    3.596 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (16,8,1)        (8,8,1)                                                                                                                    13.746 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [32,256]x[128,256] g64  Buf(WP) [linear_dq8ca_q4gsw] no_bias                      [32x256]          17.343 μs        181.622 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [32,256]x[128,256] g64  Tex(WP) [linear_q4gsw] no_bias: probe_us=26.624, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_4x4_half..     (64,8,1)        (2,16,1)                                                                                                                    3.188 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_h..     (4,32,1)        (1,128,1)                                                                                                                  25.362 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [32,256]x[128,256] g64  Tex(WP) [linear_q4gsw] no_bias                            [32x256]          28.550 μs        110.326 GFLOP/s   PASSED
+[probe] ACCU  f16  [32,256]x[128,256] g64  Buf(WP) [linear_q4gsw] no_bias: probe_us=25.600, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_half_buf..     (256,8,1)       (8,8,1)                                                                                                                     3.033 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half       (4,32,1)        (1,128,1)                                                                                                                  24.250 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [32,256]x[128,256] g64  Buf(WP) [linear_q4gsw] no_bias                            [32x256]          27.283 μs        115.451 GFLOP/s   PASSED
+[probe] ACCU  f32  [256,128]x[128,128] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=9.216, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,64,1)        (4,1,16)                                                                                                                    3.822 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,64,1)       (8,8,1)                                                                                                                     6.731 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [256,128]x[128,128] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias                    [256x128]          10.552 μs       1195.553 GFLOP/s   PASSED
+[probe] ACCU  f32  [256,128]x[128,128] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=9.216, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,64,1)        (4,1,16)                                                                                                                    3.745 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_fl..     (16,64,1)       (8,8,1)                                                                                                                     6.678 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [256,128]x[128,128] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias                    [256x128]          10.423 μs       1210.381 GFLOP/s   PASSED
+[probe] ACCU  f32  [256,128]x[128,128] g32  Tex(WP) [linear_q4gsw] no_bias: probe_us=13.312, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_texture3d_float        (16,64,1)       (8,8,1)     ACCU  f32  [256,128]x[128,128] g32  Tex(WP) [linear_q4gsw] no_bias                          [256x128]          10.051 μs       1255.223 GFLOP/s   PASSED
+[probe] ACCU  f32  [256,128]x[128,128] g32  Buf(WP) [linear_q4gsw] no_bias: probe_us=12.288, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_buffer_float           (16,64,1)       (8,8,1)     ACCU  f32  [256,128]x[128,128] g32  Buf(WP) [linear_q4gsw] no_bias                          [256x128]           8.530 μs       1478.991 GFLOP/s   PASSED
+[probe] ACCU  f16  [256,128]x[128,128] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=8.192, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,64,1)        (4,1,16)                                                                                                                    3.819 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,64,1)       (8,8,1)                                                                                                                     6.541 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [256,128]x[128,128] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias                    [256x128]          10.359 μs       1217.822 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [256,128]x[128,128] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=8.192, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,64,1)        (4,1,16)                                                                                                                    3.642 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (16,64,1)       (8,8,1)                                                                                                                     6.594 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [256,128]x[128,128] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias                    [256x128]          10.236 μs       1232.498 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [256,128]x[128,128] g32  Tex(WP) [linear_q4gsw] no_bias: probe_us=15.360, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_4x4_half..     (32,64,1)       (2,16,1)                                                                                                                    3.148 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_h..     (32,32,1)       (1,128,1)                                                                                                                  13.355 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [256,128]x[128,128] g32  Tex(WP) [linear_q4gsw] no_bias                          [256x128]          16.503 μs        764.459 GFLOP/s   PASSED
+[probe] ACCU  f16  [256,128]x[128,128] g32  Buf(WP) [linear_q4gsw] no_bias: probe_us=14.336, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_half_buf..     (128,64,1)      (8,8,1)                                                                                                                     3.095 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half       (32,32,1)       (1,128,1)                                                                                                                  12.738 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [256,128]x[128,128] g32  Buf(WP) [linear_q4gsw] no_bias                          [256x128]          15.833 μs        796.805 GFLOP/s   PASSED
+[probe] ACCU  f32  [64,64]x[64,64] g64  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=7.168, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (1,16,1)        (4,1,16)                                                                                                                    3.675 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (8,16,1)        (8,8,1)                                                                                                                     4.951 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [64,64]x[64,64] g64  Tex(WP) [linear_dq8ca_q4gsw] no_bias                          [64x64]           8.627 μs         91.639 GFLOP/s   PASSED
+[probe] ACCU  f32  [64,64]x[64,64] g64  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=6.144, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (1,16,1)        (4,1,16)                                                                                                                    3.517 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_fl..     (8,16,1)        (8,8,1)                                                                                                                     4.770 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [64,64]x[64,64] g64  Buf(WP) [linear_dq8ca_q4gsw] no_bias                          [64x64]           8.288 μs         95.388 GFLOP/s   PASSED
+[probe] ACCU  f32  [64,64]x[64,64] g64  Tex(WP) [linear_q4gsw] no_bias: probe_us=8.192, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_texture3d_float        (8,16,1)        (8,8,1)     ACCU  f32  [64,64]x[64,64] g64  Tex(WP) [linear_q4gsw] no_bias                                [64x64]           5.693 μs        138.849 GFLOP/s   PASSED
+[probe] ACCU  f32  [64,64]x[64,64] g64  Buf(WP) [linear_q4gsw] no_bias: probe_us=7.168, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_buffer_float           (8,16,1)        (8,8,1)     ACCU  f32  [64,64]x[64,64] g64  Buf(WP) [linear_q4gsw] no_bias                                [64x64]           4.844 μs        163.214 GFLOP/s   PASSED
+[probe] ACCU  f16  [64,64]x[64,64] g64  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=5.120, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (1,16,1)        (4,1,16)                                                                                                                    3.538 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (8,16,1)        (8,8,1)                                                                                                                     4.757 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [64,64]x[64,64] g64  Tex(WP) [linear_dq8ca_q4gsw] no_bias                          [64x64]           8.296 μs         95.294 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [64,64]x[64,64] g64  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=7.168, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (1,16,1)        (4,1,16)                                                                                                                    3.462 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (8,16,1)        (8,8,1)                                                                                                                     4.690 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [64,64]x[64,64] g64  Buf(WP) [linear_dq8ca_q4gsw] no_bias                          [64x64]           8.153 μs         96.964 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [64,64]x[64,64] g64  Tex(WP) [linear_q4gsw] no_bias: probe_us=8.192, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_4x4_half..     (16,16,1)       (2,16,1)                                                                                                                    3.286 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_h..     (8,16,1)        (1,128,1)                                                                                                                   7.221 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [64,64]x[64,64] g64  Tex(WP) [linear_q4gsw] no_bias                                [64x64]          10.506 μs         75.243 GFLOP/s   PASSED
+[probe] ACCU  f16  [64,64]x[64,64] g64  Buf(WP) [linear_q4gsw] no_bias: probe_us=8.192, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_half_buf..     (64,16,1)       (8,8,1)                                                                                                                     3.027 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half       (8,16,1)        (1,128,1)                                                                                                                   6.940 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [64,64]x[64,64] g64  Buf(WP) [linear_q4gsw] no_bias                                [64x64]           9.967 μs         79.314 GFLOP/s   PASSED
+[probe] ACCU  f32  [64,128]x[64,128] g64  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=10.240, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,16,1)        (4,1,16)                                                                                                                    3.568 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (8,16,1)        (8,8,1)                                                                                                                     7.992 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [64,128]x[64,128] g64  Tex(WP) [linear_dq8ca_q4gsw] no_bias                       [64x128]          11.559 μs        136.423 GFLOP/s   PASSED
+[probe] ACCU  f32  [64,128]x[64,128] g64  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=9.216, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,16,1)        (4,1,16)                                                                                                                    3.520 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_fl..     (8,16,1)        (8,8,1)                                                                                                                     7.762 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [64,128]x[64,128] g64  Buf(WP) [linear_dq8ca_q4gsw] no_bias                       [64x128]          11.282 μs        139.778 GFLOP/s   PASSED
+[probe] ACCU  f32  [64,128]x[64,128] g64  Tex(WP) [linear_q4gsw] no_bias: probe_us=13.312, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_texture3d_float        (8,16,1)        (8,8,1)     ACCU  f32  [64,128]x[64,128] g64  Tex(WP) [linear_q4gsw] no_bias                             [64x128]           9.897 μs        159.338 GFLOP/s   PASSED
+[probe] ACCU  f32  [64,128]x[64,128] g64  Buf(WP) [linear_q4gsw] no_bias: probe_us=11.264, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_buffer_float           (8,16,1)        (8,8,1)     ACCU  f32  [64,128]x[64,128] g64  Buf(WP) [linear_q4gsw] no_bias                             [64x128]           8.407 μs        187.576 GFLOP/s   PASSED
+[probe] ACCU  f16  [64,128]x[64,128] g64  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=9.216, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,16,1)        (4,1,16)                                                                                                                    3.568 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (8,16,1)        (8,8,1)                                                                                                                     7.714 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [64,128]x[64,128] g64  Tex(WP) [linear_dq8ca_q4gsw] no_bias                       [64x128]          11.282 μs        139.780 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [64,128]x[64,128] g64  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=10.240, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (2,16,1)        (4,1,16)                                                                                                                    3.586 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (8,16,1)        (8,8,1)                                                                                                                     7.611 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [64,128]x[64,128] g64  Buf(WP) [linear_dq8ca_q4gsw] no_bias                       [64x128]          11.197 μs        140.838 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [64,128]x[64,128] g64  Tex(WP) [linear_q4gsw] no_bias: probe_us=15.360, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_4x4_half..     (32,16,1)       (2,16,1)                                                                                                                    3.269 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_h..     (8,16,1)        (1,128,1)                                                                                                                  13.328 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [64,128]x[64,128] g64  Tex(WP) [linear_q4gsw] no_bias                             [64x128]          16.597 μs         95.015 GFLOP/s   PASSED
+[probe] ACCU  f16  [64,128]x[64,128] g64  Buf(WP) [linear_q4gsw] no_bias: probe_us=13.312, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_half_buf..     (128,16,1)      (8,8,1)                                                                                                                     3.052 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half       (8,16,1)        (1,128,1)                                                                                                                  12.812 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [64,128]x[64,128] g64  Buf(WP) [linear_q4gsw] no_bias                             [64x128]          15.864 μs         99.407 GFLOP/s   PASSED
+[probe] ACCU  f32  [64,256]x[128,256] g128  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=16.384, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (2,16,1)        (2,1,32)                                                                                                                    3.587 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,16,1)       (8,8,1)                                                                                                                    13.811 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [64,256]x[128,256] g128  Tex(WP) [linear_dq8ca_q4gsw] no_bias                     [64x256]          17.398 μs        362.098 GFLOP/s   PASSED
+[probe] ACCU  f32  [64,256]x[128,256] g128  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=15.360, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (2,16,1)        (2,1,32)                                                                                                                    3.547 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_fl..     (16,16,1)       (8,8,1)                                                                                                                    13.485 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [64,256]x[128,256] g128  Buf(WP) [linear_dq8ca_q4gsw] no_bias                     [64x256]          17.032 μs        369.867 GFLOP/s   PASSED
+[probe] ACCU  f32  [64,256]x[128,256] g128  Tex(WP) [linear_q4gsw] no_bias: probe_us=24.576, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_texture3d_float        (16,16,1)       (8,8,1)     ACCU  f32  [64,256]x[128,256] g128  Tex(WP) [linear_q4gsw] no_bias                           [64x256]          18.401 μs        342.349 GFLOP/s   PASSED
+[probe] ACCU  f32  [64,256]x[128,256] g128  Buf(WP) [linear_q4gsw] no_bias: probe_us=22.528, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_buffer_float           (16,16,1)       (8,8,1)     ACCU  f32  [64,256]x[128,256] g128  Buf(WP) [linear_q4gsw] no_bias                           [64x256]          15.555 μs        405.003 GFLOP/s   PASSED
+[probe] ACCU  f16  [64,256]x[128,256] g128  Tex(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=15.360, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (2,16,1)        (2,1,32)                                                                                                                    3.453 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (16,16,1)       (8,8,1)                                                                                                                    13.313 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [64,256]x[128,256] g128  Tex(WP) [linear_dq8ca_q4gsw] no_bias                     [64x256]          16.766 μs        375.737 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [64,256]x[128,256] g128  Buf(WP) [linear_dq8ca_q4gsw] no_bias: probe_us=15.360, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o2w32..     (2,16,1)        (2,1,32)                                                                                                                    3.467 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (16,16,1)       (8,8,1)                                                                                                                    13.338 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [64,256]x[128,256] g128  Buf(WP) [linear_dq8ca_q4gsw] no_bias                     [64x256]          16.805 μs        374.875 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [64,256]x[128,256] g128  Tex(WP) [linear_q4gsw] no_bias: probe_us=26.624, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_4x4_half..     (64,16,1)       (2,16,1)                                                                                                                    3.165 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_h..     (8,32,1)        (1,128,1)                                                                                                                  25.475 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [64,256]x[128,256] g128  Tex(WP) [linear_q4gsw] no_bias                           [64x256]          28.640 μs        219.957 GFLOP/s   PASSED
+[probe] ACCU  f16  [64,256]x[128,256] g128  Buf(WP) [linear_q4gsw] no_bias: probe_us=24.576, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_half_buf..     (256,16,1)      (8,8,1)                                                                                                                     3.139 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half       (8,32,1)        (1,128,1)                                                                                                                  24.329 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [64,256]x[128,256] g128  Buf(WP) [linear_q4gsw] no_bias                           [64x256]          27.468 μs        229.347 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,64]x[32,64] g16  Tex(WP) [linear_dq8ca_q4gsw]: probe_us=5.120, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    3.375 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (4,1,1)         (4,1,1)                                                                                                                     4.732 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [4,64]x[32,64] g16  Tex(WP) [linear_dq8ca_q4gsw]                                    [4x64]           8.107 μs          3.047 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,64]x[32,64] g16  Buf(WP) [linear_dq8ca_q4gsw]: probe_us=7.168, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    3.333 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_fl..     (4,1,1)         (4,1,1)                                                                                                                     4.741 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [4,64]x[32,64] g16  Buf(WP) [linear_dq8ca_q4gsw]                                    [4x64]           8.074 μs          3.060 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,64]x[32,64] g16  Tex(WP) [linear_q4gsw]: probe_us=7.168, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_texture3d_float        (4,1,1)         (8,8,1)     ACCU  f32  [4,64]x[32,64] g16  Tex(WP) [linear_q4gsw]                                          [4x64]           4.966 μs          4.974 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,64]x[32,64] g16  Buf(WP) [linear_q4gsw]: probe_us=7.168, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_buffer_float           (4,1,1)         (8,8,1)     ACCU  f32  [4,64]x[32,64] g16  Buf(WP) [linear_q4gsw]                                          [4x64]           5.007 μs          4.934 GFLOP/s   PASSED
+[probe] ACCU  f16  [4,64]x[32,64] g16  Tex(WP) [linear_dq8ca_q4gsw]: probe_us=7.168, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    3.257 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (4,1,1)         (4,1,1)                                                                                                                     4.666 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [4,64]x[32,64] g16  Tex(WP) [linear_dq8ca_q4gsw]                                    [4x64]           7.923 μs          3.118 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [4,64]x[32,64] g16  Buf(WP) [linear_dq8ca_q4gsw]: probe_us=9.216, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    4.514 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (4,1,1)         (4,1,1)                                                                                                                     6.793 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [4,64]x[32,64] g16  Buf(WP) [linear_dq8ca_q4gsw]                                    [4x64]          11.308 μs          2.185 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [4,64]x[32,64] g16  Tex(WP) [linear_q4gsw]: probe_us=11.264, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_4x4_half..     (16,1,1)        (2,16,1)                                                                                                                    3.984 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_h..     (1,8,1)         (1,128,1)                                                                                                                   9.271 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [4,64]x[32,64] g16  Tex(WP) [linear_q4gsw]                                          [4x64]          13.256 μs          1.864 GFLOP/s   PASSED
+[probe] ACCU  f16  [4,64]x[32,64] g16  Buf(WP) [linear_q4gsw]: probe_us=9.216, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_half_buf..     (64,1,1)        (8,8,1)                                                                                                                     3.720 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half       (1,8,1)         (1,128,1)                                                                                                                   9.114 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [4,64]x[32,64] g16  Buf(WP) [linear_q4gsw]                                          [4x64]          12.834 μs          1.925 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,128]x[64,128] g32  Tex(WP) [linear_dq8ca_q4gsw]: probe_us=13.312, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    4.584 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (8,1,1)         (8,1,1)                                                                                                                     9.070 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [4,128]x[64,128] g32  Tex(WP) [linear_dq8ca_q4gsw]                                 [4x128]          13.654 μs          7.218 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,128]x[64,128] g32  Buf(WP) [linear_dq8ca_q4gsw]: probe_us=12.288, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    4.489 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_fl..     (8,1,1)         (8,1,1)                                                                                                                     9.484 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [4,128]x[64,128] g32  Buf(WP) [linear_dq8ca_q4gsw]                                 [4x128]          13.974 μs          7.053 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,128]x[64,128] g32  Tex(WP) [linear_q4gsw]: probe_us=17.408, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_texture3d_float        (8,1,1)         (8,8,1)     ACCU  f32  [4,128]x[64,128] g32  Tex(WP) [linear_q4gsw]                                       [4x128]          13.286 μs          7.418 GFLOP/s   PASSED
+[probe] ACCU  f32  [4,128]x[64,128] g32  Buf(WP) [linear_q4gsw]: probe_us=18.432, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_buffer_float           (8,1,1)         (8,8,1)     ACCU  f32  [4,128]x[64,128] g32  Buf(WP) [linear_q4gsw]                                       [4x128]          13.998 μs          7.041 GFLOP/s   PASSED
+[probe] ACCU  f16  [4,128]x[64,128] g32  Tex(WP) [linear_dq8ca_q4gsw]: probe_us=13.312, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    4.702 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (8,1,1)         (8,1,1)                                                                                                                     9.906 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [4,128]x[64,128] g32  Tex(WP) [linear_dq8ca_q4gsw]                                 [4x128]          14.608 μs          6.747 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [4,128]x[64,128] g32  Buf(WP) [linear_dq8ca_q4gsw]: probe_us=14.336, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,1,1)         (4,1,16)                                                                                                                    4.623 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (8,1,1)         (8,1,1)                                                                                                                    10.772 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [4,128]x[64,128] g32  Buf(WP) [linear_dq8ca_q4gsw]                                 [4x128]          15.395 μs          6.402 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [4,128]x[64,128] g32  Tex(WP) [linear_q4gsw]: probe_us=18.432, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_4x4_half..     (32,1,1)        (2,16,1)                                                                                                                    4.097 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_h..     (1,16,1)        (1,128,1)                                                                                                                  17.922 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [4,128]x[64,128] g32  Tex(WP) [linear_q4gsw]                                       [4x128]          22.018 μs          4.476 GFLOP/s   PASSED
+[probe] ACCU  f16  [4,128]x[64,128] g32  Buf(WP) [linear_q4gsw]: probe_us=19.456, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_half_buf..     (128,1,1)       (8,8,1)                                                                                                                     3.861 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half       (1,16,1)        (1,128,1)                                                                                                                  17.640 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [4,128]x[64,128] g32  Buf(WP) [linear_q4gsw]                                       [4x128]          21.501 μs          4.584 GFLOP/s   PASSED
+[probe] ACCU  f32  [32,128]x[64,128] g32  Tex(WP) [linear_dq8ca_q4gsw]: probe_us=15.360, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,8,1)         (4,1,16)                                                                                                                    4.902 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (8,8,1)         (8,8,1)                                                                                                                    11.247 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [32,128]x[64,128] g32  Tex(WP) [linear_dq8ca_q4gsw]                               [32x128]          16.149 μs         48.825 GFLOP/s   PASSED
+[probe] ACCU  f32  [32,128]x[64,128] g32  Buf(WP) [linear_dq8ca_q4gsw]: probe_us=14.336, chained_dispatches=200
+Correctness validation PASSED
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,8,1)         (4,1,16)                                                                                                                    4.879 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_fl..     (8,8,1)         (8,8,1)                                                                                                                    10.699 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f32  [32,128]x[64,128] g32  Buf(WP) [linear_dq8ca_q4gsw]                               [32x128]          15.578 μs         50.616 GFLOP/s   PASSED
+[probe] ACCU  f32  [32,128]x[64,128] g32  Tex(WP) [linear_q4gsw]: probe_us=21.504, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_texture3d_float        (8,8,1)         (8,8,1)     ACCU  f32  [32,128]x[64,128] g32  Tex(WP) [linear_q4gsw]                                     [32x128]          16.492 μs         47.811 GFLOP/s   PASSED
+[probe] ACCU  f32  [32,128]x[64,128] g32  Buf(WP) [linear_q4gsw]: probe_us=20.480, chained_dispatches=200
+Correctness validation PASSED
+q4gsw_linear_gemm__w_4x8_nc_buffer_float           (8,8,1)         (8,8,1)     ACCU  f32  [32,128]x[64,128] g32  Buf(WP) [linear_q4gsw]                                     [32x128]          15.119 μs         52.150 GFLOP/s   PASSED
+[probe] ACCU  f16  [32,128]x[64,128] g32  Tex(WP) [linear_dq8ca_q4gsw]: probe_us=15.360, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,8,1)         (4,1,16)                                                                                                                    4.914 μs                                 
+linear_dq8ca_q4gsw_tiled_texture3d_texture2d..     (8,8,1)         (8,8,1)                                                                                                                    11.349 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [32,128]x[64,128] g32  Tex(WP) [linear_dq8ca_q4gsw]                               [32x128]          16.263 μs         48.484 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [32,128]x[64,128] g32  Buf(WP) [linear_dq8ca_q4gsw]: probe_us=15.360, chained_dispatches=200
+quantize_and_pack_4h4w_with_group_sums_o4w16..     (4,8,1)         (4,1,16)                                                                                                                    4.753 μs                                 
+linear_dq8ca_q4gsw_tiled_buffer_texture2d_ha..     (8,8,1)         (8,8,1)                                                                                                                    11.345 μs                                 
+et_vk.linear_dq8ca_q4gsw.default                                               ACCU  f16  [32,128]x[64,128] g32  Buf(WP) [linear_dq8ca_q4gsw]                               [32x128]          16.098 μs         48.980 GFLOP/s  SKIPPED
+[probe] ACCU  f16  [32,128]x[64,128] g32  Tex(WP) [linear_q4gsw]: probe_us=22.528, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_4x4_half..     (32,8,1)        (2,16,1)                                                                                                                    4.263 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_texture3d_h..     (4,16,1)        (1,128,1)                                                                                                                  20.810 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [32,128]x[64,128] g32  Tex(WP) [linear_q4gsw]                                     [32x128]          25.073 μs         31.447 GFLOP/s   PASSED
+[probe] ACCU  f16  [32,128]x[64,128] g32  Buf(WP) [linear_q4gsw]: probe_us=22.528, chained_dispatches=200
+Correctness validation PASSED
+transpose_cast_contig_to_vectorized_half_buf..     (128,8,1)       (8,8,1)                                                                                                                     4.057 μs                                 
+q4gsw_linear_gemm__tin__w_4x8_nc_buffer_half       (4,16,1)        (1,128,1)                                                                                                                  20.428 μs                                 
+et_vk.linear_q4gsw.default                                                     ACCU  f16  [32,128]x[64,128] g32  Buf(WP) [linear_q4gsw]                                     [32x128]          24.485 μs         32.203 GFLOP/s   PASSED
+[probe] ACCU  f32  [2,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] [tiledm2]: probe_us=9.216, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_texture3d_texture2d_float     (4,1,1)         (4,1,1)     ACCU  f32  [2,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] [tiledm2]                          [2x64]           6.354 μs          1.944 GFLOP/s   PASSED
+[probe] ACCU  f32  [2,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] [tiledm2]: probe_us=9.216, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_buffer_texture2d_float        (4,1,1)         (4,1,1)     ACCU  f32  [2,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] [tiledm2]                          [2x64]           6.354 μs          1.944 GFLOP/s   PASSED
+[probe] ACCU  f16  [2,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] [tiledm2]: probe_us=9.216, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_texture3d_texture2d_half      (4,1,1)         (4,1,1)     ACCU  f16  [2,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] [tiledm2]                          [2x64]           6.467 μs          1.910 GFLOP/s   PASSED
+[probe] ACCU  f16  [2,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] [tiledm2]: probe_us=10.240, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_buffer_texture2d_half         (4,1,1)         (4,1,1)     ACCU  f16  [2,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] [tiledm2]                          [2x64]           7.270 μs          1.699 GFLOP/s   PASSED
+[probe] ACCU  f32  [2,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]: probe_us=9.216, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_texture3d_texture2d_float     (4,1,1)         (4,1,1)     ACCU  f32  [2,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]                  [2x64]           6.523 μs          1.894 GFLOP/s   PASSED
+[probe] ACCU  f32  [2,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]: probe_us=9.216, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_buffer_texture2d_float        (4,1,1)         (4,1,1)     ACCU  f32  [2,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]                  [2x64]           6.600 μs          1.872 GFLOP/s   PASSED
+[probe] ACCU  f16  [2,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]: probe_us=10.240, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_texture3d_texture2d_half      (4,1,1)         (4,1,1)     ACCU  f16  [2,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]                  [2x64]           6.513 μs          1.897 GFLOP/s   PASSED
+[probe] ACCU  f16  [2,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]: probe_us=10.240, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_buffer_texture2d_half         (4,1,1)         (4,1,1)     ACCU  f16  [2,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]                  [2x64]           7.107 μs          1.738 GFLOP/s   PASSED
+[probe] ACCU  f32  [3,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] [tiledm2]: probe_us=9.216, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_texture3d_texture2d_float     (4,2,1)         (4,4,1)     ACCU  f32  [3,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] [tiledm2]                          [3x64]           6.671 μs          2.777 GFLOP/s   PASSED
+[probe] ACCU  f32  [3,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] [tiledm2]: probe_us=9.216, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_buffer_texture2d_float        (4,2,1)         (4,4,1)     ACCU  f32  [3,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] [tiledm2]                          [3x64]           6.630 μs          2.794 GFLOP/s   PASSED
+[probe] ACCU  f16  [3,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] [tiledm2]: probe_us=9.216, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_texture3d_texture2d_half      (4,2,1)         (4,4,1)     ACCU  f16  [3,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] [tiledm2]                          [3x64]           6.723 μs          2.756 GFLOP/s   PASSED
+[probe] ACCU  f16  [3,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] [tiledm2]: probe_us=10.240, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_buffer_texture2d_half         (4,2,1)         (4,4,1)     ACCU  f16  [3,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] [tiledm2]                          [3x64]           7.281 μs          2.545 GFLOP/s   PASSED
+[probe] ACCU  f32  [3,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]: probe_us=9.216, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_texture3d_texture2d_float     (4,2,1)         (4,4,1)     ACCU  f32  [3,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]                  [3x64]           6.554 μs          2.827 GFLOP/s   PASSED
+[probe] ACCU  f32  [3,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]: probe_us=9.216, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_buffer_texture2d_float        (4,2,1)         (4,4,1)     ACCU  f32  [3,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]                  [3x64]           6.605 μs          2.805 GFLOP/s   PASSED
+[probe] ACCU  f16  [3,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]: probe_us=9.216, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_texture3d_texture2d_half      (4,2,1)         (4,4,1)     ACCU  f16  [3,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]                  [3x64]           6.584 μs          2.814 GFLOP/s   PASSED
+[probe] ACCU  f16  [3,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]: probe_us=10.240, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_buffer_texture2d_half         (4,2,1)         (4,4,1)     ACCU  f16  [3,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]                  [3x64]           7.547 μs          2.455 GFLOP/s   PASSED
+[probe] ACCU  f32  [5,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] [tiledm2]: probe_us=10.240, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_texture3d_texture2d_float     (4,3,1)         (4,4,1)     ACCU  f32  [5,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] [tiledm2]                          [5x64]           7.066 μs          4.370 GFLOP/s   PASSED
+[probe] ACCU  f32  [5,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] [tiledm2]: probe_us=10.240, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_buffer_texture2d_float        (4,3,1)         (4,4,1)     ACCU  f32  [5,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] [tiledm2]                          [5x64]           7.076 μs          4.364 GFLOP/s   PASSED
+[probe] ACCU  f16  [5,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] [tiledm2]: probe_us=10.240, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_texture3d_texture2d_half      (4,3,1)         (4,4,1)     ACCU  f16  [5,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] [tiledm2]                          [5x64]           7.122 μs          4.336 GFLOP/s   PASSED
+[probe] ACCU  f16  [5,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] [tiledm2]: probe_us=11.264, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_buffer_texture2d_half         (4,3,1)         (4,4,1)     ACCU  f16  [5,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] [tiledm2]                          [5x64]           7.793 μs          3.963 GFLOP/s   PASSED
+[probe] ACCU  f32  [5,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]: probe_us=10.240, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_texture3d_texture2d_float     (4,3,1)         (4,4,1)     ACCU  f32  [5,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]                  [5x64]           7.117 μs          4.339 GFLOP/s   PASSED
+[probe] ACCU  f32  [5,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]: probe_us=9.216, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_buffer_texture2d_float        (4,3,1)         (4,4,1)     ACCU  f32  [5,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]                  [5x64]           7.035 μs          4.390 GFLOP/s   PASSED
+[probe] ACCU  f16  [5,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]: probe_us=10.240, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_texture3d_texture2d_half      (4,3,1)         (4,4,1)     ACCU  f16  [5,64]x[32,64] g32  Tex(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]                  [5x64]           6.958 μs          4.438 GFLOP/s   PASSED
+[probe] ACCU  f16  [5,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]: probe_us=10.240, chained_dispatches=200
+Correctness validation PASSED
+linear_q4gsw_tiledm2_buffer_texture2d_half         (4,3,1)         (4,4,1)     ACCU  f16  [5,64]x[32,64] g32  Buf(WP) [linear_dq8ca_q4gsw] no_bias [tiledm2]                  [5x64]           7.608 μs          4.059 GFLOP/s   PASSED
+----------------------------------------------------------------------
+Completed 128 test cases
+----------------------------------------------------------------------
+Ran 1 test case sets, all passed

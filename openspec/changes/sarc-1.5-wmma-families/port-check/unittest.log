@@ -1,0 +1,57 @@
++ cd /w/executorch
++ export PYTHONPATH=/w
++ PYTHONPATH=/w
+++ which glslc
++ GL=/usr/bin/glslc
++ B=/home/doremy/Desktop/sarc-acl/.artifacts/wmma-port/backend
++ for st in $STAGES
++ case $st in
++ cmake backends/vulkan/test/custom_ops -B/home/doremy/Desktop/sarc-acl/.artifacts/wmma-port/unittest
+CMake Deprecation Warning at /w/executorch/third-party/googletest/CMakeLists.txt:4 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+CMake Deprecation Warning at /w/executorch/third-party/googletest/googlemock/CMakeLists.txt:45 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+CMake Deprecation Warning at /w/executorch/third-party/googletest/googletest/CMakeLists.txt:56 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- Configuring done (0.1s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/doremy/Desktop/sarc-acl/.artifacts/wmma-port/unittest
++ cmake --build /home/doremy/Desktop/sarc-acl/.artifacts/wmma-port/unittest -j10
+[ 28%] Built target gtest
+[ 57%] Built target gtest_main
+[ 71%] Building CXX object CMakeFiles/vulkan_coopmat_family_test.dir/coopmat_family_test.cpp.o
+[ 85%] Building CXX object CMakeFiles/vulkan_coopmat_family_test.dir/w/executorch/backends/vulkan/runtime/graph/ops/impl/gemm/linear/qw/CoopmatFamily.cpp.o
+[100%] Linking CXX executable vulkan_coopmat_family_test
+[100%] Built target vulkan_coopmat_family_test
++ ctest --test-dir /home/doremy/Desktop/sarc-acl/.artifacts/wmma-port/unittest --output-on-failure
+Internal ctest changing into directory: /home/doremy/Desktop/sarc-acl/.artifacts/wmma-port/unittest
+Test project /home/doremy/Desktop/sarc-acl/.artifacts/wmma-port/unittest
+    Start 1: vulkan_coopmat_family_test
+1/1 Test #1: vulkan_coopmat_family_test .......   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.00 sec
++ echo PORT_BUILD_OK
+PORT_BUILD_OK
