@@ -26,8 +26,9 @@ root = Path(os.environ["WMMA_CAMPAIGN_ROOT"])
 artifacts = root / ".artifacts"
 tools = Path(__file__).resolve().parent
 profile = sys.argv[1]
-assert profile in ["4070ti-wmma-c08", "4070ti-wmma-c09", "4070ti-wmma-c10", "4070ti-wmma-c11", "4070ti-wmma-c06", "4070ti-wmma-c01", "4070ti-wmma-c02"]
-assessment_path = artifacts / "stage" / ("s2-gate-" + profile.rsplit("-", 1)[-1]) / "candidate-assessment.json"
+assert profile in ["4070ti-wmma-c08", "4070ti-wmma-c09", "4070ti-wmma-c10", "4070ti-wmma-c11", "4070ti-wmma-c06", "4070ti-wmma-c01", "4070ti-wmma-c02",
+                   "4070ti-nv-family-a", "4070ti-nv-family-b"]
+assessment_path = artifacts / "stage" / ("s2-gate-" + profile.removeprefix("4070ti-wmma-").removeprefix("4070ti-")) / "candidate-assessment.json"
 assessment = json.loads(assessment_path.read_text())
 assert not assessment["numeric_failures"] and not assessment["command_failures"] and not assessment["non_dispatch_differences"]
 assert not assessment["linear_not_ok"] and assessment["default_tiled_differences"] == 0
@@ -50,7 +51,9 @@ memory_deadline = datetime.datetime.fromisoformat(os.environ.get("WMMA_MEMORY_DE
 
 class MemoryDeadline(Exception):
     pass
-builds = {"control": "matrix-mm-r1", "candidate": "matrix-mm-r1"}
+# Both arms always run one binary; the family finalists use the rebuild that adds their profiles.
+build_tag = os.environ.get("WMMA_BUILD", "matrix-mm-r1")
+builds = {"control": build_tag, "candidate": build_tag}
 env = {k: v for k, v in os.environ.items() if not k.startswith(("ET_VK", "ETVK"))}
 env.update(ET_VK_SARC_UNVERIFIED="1", ET_VK_SARC_DEV_PROFILE="4070ti-fused1",
            ETVK_DEVICE_INDEX=os.environ["WMMA_DEVICE_INDEX"], WMMA_PURPOSE="measurement",

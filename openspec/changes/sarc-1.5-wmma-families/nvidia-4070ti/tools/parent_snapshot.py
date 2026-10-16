@@ -29,7 +29,10 @@ for name in ["golden-llama.txt", "golden-backend.txt"]:
 metadata = json.loads((artifacts / "metadata/parent-mm-r1/runtime-results.json").read_text())
 assert len(metadata) == 6 and all(row["matches_static"] for row in metadata)
 probes = json.loads((artifacts / "checks/enabled-features/summary.json").read_text())["probes"]
-matching = [row for row in probes if row["tag"] == sys.argv[1] and row["commit"] == source_commit]
+# A rebuild that changes only dev-zone selectors reuses the probe of its runtime-identical build (WMMA_PROBE_TAG).
+probe_tag = os.environ.get("WMMA_PROBE_TAG", sys.argv[1])
+probe_commit = (artifacts / "build" / probe_tag / "COMMIT").read_text().strip()
+matching = [row for row in probes if row["tag"] == probe_tag and row["commit"] == probe_commit]
 assert len(matching) == 2 and all(row["enabled_features"]["vulkanMemoryModel"] == 1 for row in matching)
 modules = json.loads((build / "module-shared.json").read_text())
 assert len(modules["modules"]) == 11 and all(row["matches_source_declarations"] for row in modules["modules"])

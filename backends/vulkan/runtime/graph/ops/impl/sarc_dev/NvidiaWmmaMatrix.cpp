@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <iterator>
 #include <iostream>
 
 namespace vkcompute {
@@ -97,9 +98,37 @@ const Candidate4070tiWmma kCandidates4070tiWmma[] = {
       "sarc_linear_q4gsw_coopmat_t128x128k16g22s32",
       {128, 128, 16, 2, 2, 32, 16, false}, kTex3dTex2d, small_k_4070ti_wmma,
       Status::kUnverified, false}, 29184},
+    // NVIDIA Ampere/Ada family finalists (coordinator decision 2026-10-16 08:20 UTC).
+    {"4070ti-nv-family-a",
+     {"4070 ti super", nullptr, Op::kQ4gswLinear,
+      "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt",
+      {256, 128, 16, 4, 2, 32, 16, false}, kTex3dTex2d, measured_4070ti_wmma,
+      Status::kUnverified, false}, 45056},
+    {"4070ti-nv-family-a",
+     {"4070 ti super", nullptr, Op::kDq8caLinear,
+      "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra",
+      {128, 128, 64, 2, 4, 32, 16, true}, kTex3dTex2d, measured_4070ti_wmma,
+      Status::kUnverified, true}, 35328},
+    {"4070ti-nv-family-b",
+     {"4070 ti super", nullptr, Op::kQ4gswLinear,
+      "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32c",
+      {128, 128, 32, 4, 2, 32, 16, true}, kTex3dTex2d, large_k_4070ti_wmma,
+      Status::kUnverified, false}, 37888},
+    {"4070ti-nv-family-b",
+     {"4070 ti super", nullptr, Op::kQ4gswLinear,
+      "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt",
+      {256, 128, 16, 4, 2, 32, 16, false}, kTex3dTex2d, tile256_4070ti_wmma,
+      Status::kUnverified, false}, 45056},
+    {"4070ti-nv-family-b",
+     {"4070 ti super", nullptr, Op::kDq8caLinear,
+      "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra",
+      {128, 128, 64, 2, 4, 32, 16, true}, kTex3dTex2d, measured_4070ti_wmma,
+      Status::kUnverified, true}, 35328},
 };
 
-const Candidate4070tiWmma* active_4070ti_wmma = nullptr;
+// Filled from another file's static initializer, so it must be constant-initialized.
+const Candidate4070tiWmma* active_4070ti_wmma[3] = {};
+size_t active_count_4070ti_wmma = 0;
 std::optional<Choice> (*select_before_4070ti_wmma)(
     const DeviceInfo&, const ShapeInfo&, const std::optional<Choice>&) = nullptr;
 
@@ -108,16 +137,20 @@ std::optional<Choice> select_4070ti_wmma(
     const ShapeInfo& shape,
     const std::optional<Choice>& table_choice) {
   const auto before = select_before_4070ti_wmma(device, shape, table_choice);
-  const auto& candidate = *active_4070ti_wmma;
   if (!before.has_value() || shape.gemv || shape.ignore_alignment ||
-      device.name.find("4070 ti super") == std::string::npos ||
-      shape.op != candidate.row.op ||
-      device.max_shared_bytes < candidate.shared_bytes ||
-      !q4gsw_coopmat_fits(device, shape, candidate.row)) {
+      device.name.find("4070 ti super") == std::string::npos) {
     return before;
   }
-  return Choice{candidate.row.kernel_base, candidate.row.dims,
-                candidate.row.rowmajor_a};
+  for (size_t i = 0; i < active_count_4070ti_wmma; ++i) {
+    const Candidate4070tiWmma* candidate = active_4070ti_wmma[i];
+    if (shape.op == candidate->row.op &&
+        device.max_shared_bytes >= candidate->shared_bytes &&
+        q4gsw_coopmat_fits(device, shape, candidate->row)) {
+      return Choice{candidate->row.kernel_base, candidate->row.dims,
+                    candidate->row.rowmajor_a};
+    }
+  }
+  return before;
 }
 
 } // namespace
@@ -129,15 +162,18 @@ void install_4070ti_wmma() {
   }
   for (const auto& candidate : kCandidates4070tiWmma) {
     if (std::strcmp(name, candidate.profile) == 0) {
-      active_4070ti_wmma = &candidate;
-      break;
+      if (active_count_4070ti_wmma == std::size(active_4070ti_wmma)) {
+        std::cerr << "[sarc_dev] too many WMMA profile rows: " << name << std::endl;
+        std::abort();
+      }
+      active_4070ti_wmma[active_count_4070ti_wmma++] = &candidate;
+      register_candidates(&candidate.row, 1);
     }
   }
-  if (active_4070ti_wmma == nullptr) {
+  if (active_count_4070ti_wmma == 0) {
     std::cerr << "[sarc_dev] unknown WMMA profile: " << name << std::endl;
     std::abort();
   }
-  register_candidates(&active_4070ti_wmma->row, 1);
   Override o = get_override();
   select_before_4070ti_wmma = o.select;
   o.select = select_4070ti_wmma;
