@@ -64,6 +64,7 @@ One member's result is not a family acceptance.
 | rdna3-17 | sarc_linear_dq8ca_coopmat_zpg_sweep_t256x64k32g24s32 | pdiff PASS; next token SAME | 1.0019 | 0.9283 | 1.0007 | 0.9060 | 0.9991 | 0.9324 | 0.9606 (0.9585-0.9611) | FAIL |
 | rdna3-18 | sarc_linear_dq8ca_coopmat_zpg_sweep_t128x64k32g22s32 | pdiff PASS; next token SAME | 1.0000 | 1.0000 | 1.0007 | 1.0090 | 0.9997 | 0.9861 | 0.9992 (0.9956-0.9998) | PASS |
 | rdna3-19 | sarc_linear_dq8ca_coopmat_zpg_sweep_t64x64k32g22s32 | pdiff PASS; next token SAME | 0.9981 | 0.9963 | 1.0007 | 1.0042 | 0.9994 | 0.9997 | 0.9997 (0.9979-1.0007) | PASS |
+| rdna3-02 | sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g24s32f32cbt | pdiff PASS; next token SAME | 0.9871 | 1.0000 | 0.9915 | 1.0104 | 0.9762 | 0.9997 | 0.9941 (0.9901-0.9947) | PASS |
 <!-- matrix table end -->
 
 ## Earlier preparation (reused, not repeated)
