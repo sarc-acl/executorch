@@ -61,8 +61,14 @@ No family-wide acceptance is claimed from this member's results.
 - Baseline: the A/A control medians against the published final-profile references (`proposal.md`) are 1B 4w +0.00 %,
   3B 4w +0.39 %, 8B 4w +0.86 %, 1B 8da4w +0.00 %, 3B 8da4w +0.49 %, 8B 8da4w -0.00 %. All eight same-session
   controls lie between -0.47 % and +1.02 % of the published values, inside the 3 % rule.
-- Validity: 864 rows in `.artifacts/runs.csv` (8 sessions x 108 runs). Every run is valid: 0 invalid runs, no
-  extra pairs, no foreign GPU process, no thermal reason.
+- Validity: `.artifacts/runs.csv` has 864 rows: 672 timed prefill runs (8 sessions x 84) and 192 next-token check
+  runs. All 672 timed runs are valid, with no extra pairs, no foreign GPU process and no thermal reason. 24 check
+  runs (14 on `prompt_check.txt`, 10 on `r1304.txt`; dq-n13 3, q4-table 6, dq-i 2, dq-table 6, q4-k16 2, q4-k32 3,
+  dq-n26 2, s1-aa 0) are below the 2457 MHz floor (`clock_low`). They are kept and are not used for timing; the
+  token comparison ignores the clock by design (`e2e5.sh` `toklog`).
+- `results/candidate-coverage.csv` is the pre-run manifest mapping; its `readiness` column predates the matrix.
+  The screened outcome is the table above. The `a_a_consistent` key in `evidence.json` is meaningful only for
+  `s1-aa`.
 - Correctness: every profile passes production diff 12/12 with next tokens SAME. The only line of each candidate's
   verify output that differs from the control's is the linear kernel-name line, with reviewed manifest kernels.
   dq-n26 and q4-k32 are line-identical to the control and dispatch the control's kernels: they are the final
