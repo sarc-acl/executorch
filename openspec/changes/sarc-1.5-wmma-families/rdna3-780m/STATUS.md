@@ -1,35 +1,57 @@
 # rdna3-780m status
 
-Updated 2026-10-15 23:55 UTC. Actor: Claude (owner decision 2026-10-15 23:30 UTC, lean finish).
+Updated 2026-10-16 11:10 UTC. Actor: Claude (owner decision 2026-10-15 23:30 UTC, lean finish).
 Stage: finite RDNA3 RADV linear matrix on the Radeon 780M. Hard limit 2026-10-17 18:00 UTC.
+**The matrix is complete: all 19 legal candidates gated and timed. Nothing is running. Ready for the one
+review of the finished matrix.** No family acceptance is claimed from this member alone; RX 7600 and
+RX 7900 XTX evidence is external and still missing.
 
 Every result here carries the monitoring caveat: own-user GPU-client accounting plus device-wide busy
 sampling; other users' DRM clients are not readable
 (`own_user_plus_device_busy_other_users_unobservable`, owner decision 2026-10-15 03:57 UTC).
 
-## Running now
+## Result
 
-Detached chain `tools/matrix.sh`, tag `rdna3-780m-screen-20261015a`, state file
-`<artifact-root>/jobs/rdna3-780m-screen-20261015a/state.json`. One binary for every arm: build
-`rdna3-780m-matrix-20261015a` (commit `4f9aba6b4`, `llama_main` sha256 `e155b975...`, 53-variant golden PASS),
-which contains the control and all 19 candidate profiles.
+Chain `tools/matrix.sh`, tag `rdna3-780m-screen-20261015a`, ran 2026-10-15 23:50 to 2026-10-16 10:52 UTC,
+state `completed` (`<artifact-root>/jobs/rdna3-780m-screen-20261015a/state.json`). Every arm used one
+binary: build `rdna3-780m-matrix-20261015a` (commit `4f9aba6b4`, `llama_main` `e155b975...`,
+`libllama_runner.so` `f8b35251...`, `test_llama_microbench` `a36237ea...`; 53-variant golden PASS); the
+control and candidate arms differ only in `ET_VK_SARC_780M_WMMA_PROFILE` (`results/matrix/*/STAGE.md`).
+Attention setup is identical in both arms (`ET_VK_SARC_DEV_PROFILE=780m-final`; the WMMA selector returns
+the control's choice for every op other than the profile's linear op).
 
-1. `ctrl-verify`: unmodified `verify.sh --models 1b,3b,8b --schemes 4w,8da4w --pdiff` on the control
-   (`ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=780m-final`), compared line by line (rates removed) with
-   the campaign's final gate (`r3b-final-dev15-head4/verify.out`, same environment).
-2. `aa`: control vs control, six cells, 7 valid runs per arm; clock floor = 97 % of the lowest per-run median
-   clock of its valid runs (rule registered in `proposal.md` before the data).
-3. Per candidate, in the order below: `verify.sh --pdiff` with the candidate environment (a production-diff
-   failure rejects it untimed), then control vs candidate, six cells, interleaved, 7 valid runs per arm,
-   next token on `prompt_2048`, `prompt_check` and `r1304`; summary, this table, a local commit.
+- Control gate: unmodified `verify.sh --pdiff` on `780m-final` is **identical line by line (rates removed)**
+  to the campaign's final gate (`results/matrix/ctrl-verify/`), including its known `linear <scheme> rc=1`.
+- Control against the published final profile (round 3, session B, `780m-final` arm): 1B 4w 3835.21 vs
+  3835.21, 1B 8da4w 3764.71 vs 3757.80 (+0.18 %), 3B 4w 1458.69 vs 1457.65 (+0.07 %), 3B 8da4w 1409.50 vs
+  1414.36 (-0.34 %), 8B 4w 639.20 vs 639.00, 8B 8da4w 628.61 vs 628.41: all within 3 %.
+- A/A (control vs control): geomean 1.0008 (95 % CI 0.9980 to 1.0015), cells 0.9993 to 1.0062, spread at most
+  0.83 %, 0 invalid rows. Clock floor 2716 MHz (97 % of 2800, `results/matrix/floor.txt`).
+- Every candidate passed the production diff (12 of 12) and every next token equals the control's on
+  `prompt_2048`, `prompt_check` and `r1304` in all six cells; no `verify.sh` line other than the linear
+  kernel lists differs from the control's. No candidate is CORRECTNESS_PENDING or rejected for correctness.
+- Margin on this member (every r >= 0.92, geomean >= 0.97): **FAIL for rdna3-12** (RX 7600 4w tile,
+  4w cells 0.30 to 0.34), **rdna3-13** (RX 7600 8da4w tile, 8da4w cells 0.36 to 0.41) and **rdna3-17**
+  (7900 XTX 8da4w sweep tile, 8da4w cells 0.906 to 0.932, geomean 0.9606). PASS for the other 16.
+- Dispatch changed against the control (microbench linear lists in `verify.out`) for 06, 12, 13, 16, 17, 18,
+  19, 02, 14 and, for buffer IO only, 15. Of the passing ones, three cells fall outside the +-2 % band, all
+  slower: rdna3-16 1B 4w 0.9727, rdna3-02 8B 4w 0.9762, rdna3-14 8B 8da4w 0.9696. No candidate is faster
+  than the control outside the noise band on any cell.
+- 01, 03, 04, 05, 07, 08, 09, 10, 11 (780M rows) dispatch exactly the control's linear kernels, and 15
+  dispatches them on the texture3d production path: these ten sessions are control vs control in effect;
+  their geomeans lie between 0.9971 and 1.0008.
 
-Order (owner rule 4): candidates in another member's final profile first (06, 12, 13, 16, 17, 18, 19), then
-those from other members' table layers (02, 14, 15), then the 780M-only rows (01, 03, 04, 05, 07, 08, 09, 10,
-11). The 780M-only rows reselect the kernel the control already dispatches wherever their source route
-applies, so on this device they are expected to time as control vs control.
+Validity: every session has 7 valid timed runs per arm and cell (rdna3-07 needed one extra pair: an 8B 4w
+control run at 2308 MHz, `clock_low`). The 9 to 14 invalid rows per candidate session are next-token check
+runs (`prompt_check`, `r1304`: no `--warmup`, short windows) marked `clock_low` against the floor
+calibrated on timed runs, or with fewer than 5 clock samples; they are kept, are not used for any median, and
+their output text is what the next-token comparison reads. One `foreign_gpu_client` row (rdna3-06, a check
+run) and freewait waits up to 195 s (rdna3-06, -07, -08) show the other session's GPU use being caught and
+waited out. `own_procs_after` = 1 (the watcher) on every row: no sampler left behind.
 
-Projection: about 50 min per candidate (5 min `verify.sh`, about 45 min session), about 17 h in all; finishes
-before the hard limit. Nothing above 48 h is queued.
+Not recorded: end-to-end dispatched kernel names of the llama_main runs (no ETDump trace in this lean
+protocol); the linear names come from the microbench production shapes of `verify.sh`. Top-2 logits were
+not needed (no next-token difference).
 
 ## Session tool changes (run-local, `tools/session.sh`, copied from the 780M campaign's `e2e5.sh`)
 
