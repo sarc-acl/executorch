@@ -1,0 +1,65 @@
+{
+  "updated_utc": "2026-10-15T04:15:05.534338+00:00",
+  "scope": "Feature-enabled exact build; no GPU execution or matrix acceptance",
+  "source_commit": "cbb7df9b6a7a605d28192fbc2a8b62c6f3611d9c",
+  "original_base": "617897184529ff180af491ee0d5d7de778cbb6c6",
+  "build_tag": "orin-wmma-mm-20261015-1",
+  "build_status": "completed",
+  "patches": [],
+  "recursive_submodule_pins": 30,
+  "verified_recorded_hash_counts": {
+    "export_sha256": 50448,
+    "binary_sha256": 6,
+    "compiler_sha256": 4,
+    "spirv_sha256": 8565
+  },
+  "exported_runtime_and_selector_files_match_git_objects": true,
+  "compiler_same_as_original": true,
+  "compiler_version": "shaderc v2023.8 2024-01-03spirv-tools v2025.4 2025-09-22glslang 73743588fe9c39f2f1c780a087d94afac691a189\nTarget: SPIR-V 1.0\n",
+  "golden": {
+    "rc": 0,
+    "shipped_variants": 53
+  },
+  "canonical_spirv_modules_byte_identical_to_original": 2091,
+  "manifest_requirement_records_reused_by_exact_module_hash": 11,
+  "binary_sha256": {
+    "libllama_runner.so": "ab18f0a89b025cd802c35c36639af84326de1b8b1829c21efdd8f82cce01a9ff",
+    "llama_main": "3015a22c159c279fb82ef7f96cba8f5fda3af2bcd3d012acf8bc187f9af8528b",
+    "runtime_constants": "e4f9b83aaa8b2339bc26fd326968902c01ace116bde78460c776d3da99dbc867",
+    "test_llama_microbench": "4602166973fbfa73c5860879faaac258f3fd6387624d1f9e3a7a7c4d42576e25",
+    "vk-caps": "a63c6a7f52c5203109270a66aa871d3bb7495c57d97e760d9fd36cee55eaf27a",
+    "vulkan-smoke": "e4e94375e79faf05816bd1796851052bef14330b8e19db20d6be497c5719c343"
+  },
+  "build_manifest_sha256": "31650cf84ad9f6d87126b7d03a59e1890ea180d35b0458cb394a023ff656ab8b",
+  "cpu_mock_cases_passed": 16,
+  "check_no_build": {
+    "rc": 1,
+    "zone_failures": [
+      "backends/vulkan/runtime/vk_api/Device.cpp",
+      "backends/vulkan/runtime/vk_api/Device.h"
+    ],
+    "authorization": "Owner decision 2026-10-15 03:57 UTC",
+    "release_selector_checks": 1240,
+    "release_rows": 31,
+    "dev_selector_checks": 1921,
+    "dev_rows": 43,
+    "default_dev_candidates": 533,
+    "twin_checks": "PASS"
+  },
+  "gpu_jobs": 0,
+  "gpu_correctness": "NOT_RUN",
+  "logical_device_on_target": "NOT_YET_EXERCISED",
+  "final_legality": "PENDING_JOIN",
+  "aa": "NOT_RUN",
+  "timed_matrix": "INCOMPLETE",
+  "private_evidence": [
+    ".artifacts/jobs/orin-wmma-mm-20261015-1/state.json",
+    ".artifacts/jobs/orin-wmma-mm-20261015-1/queue.log",
+    ".artifacts/build/orin-wmma-mm-20261015-1/manifest.json",
+    ".artifacts/build/orin-wmma-mm-20261015-1/golden.txt",
+    ".artifacts/memory-model-tests/fixed-build-audit.json",
+    ".artifacts/memory-model-tests/compiled-inputs.json",
+    ".artifacts/memory-model-tests/final/result.txt",
+    ".artifacts/memory-model-tests/check.txt"
+  ]
+}

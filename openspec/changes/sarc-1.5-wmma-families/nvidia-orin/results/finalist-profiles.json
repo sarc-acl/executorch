@@ -1,0 +1,29 @@
+{
+  "decision": "coordinator decision 2026-10-16 08:20 UTC, NVIDIA Ampere/Ada family finalists",
+  "control_profile": "orin-fused1",
+  "attention_fused_variable": "ET_VK_SARC_ORIN_SDPA_FUSED",
+  "candidates": [
+    {
+      "profile": "orin-fused-nv-family-a",
+      "finalist": "nv-family-a",
+      "linear": {
+        "4w": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt on every 4w texture3d prefill shape it fits (K > 8192 included); the table's choice where it does not fit",
+        "8da4w": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra on every 8da4w texture3d prefill shape"
+      },
+      "preferences": "kOrinWmmaFamilyA in impl/sarc_dev/Overrides.cpp",
+      "timed_projection_io": true,
+      "attention_fused_variants": "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko"
+    },
+    {
+      "profile": "orin-fused-nv-family-b",
+      "finalist": "nv-family-b",
+      "linear": {
+        "4w": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt for K <= 8192 (not M = 256 with N % 2048 != 0, which keeps the table's tile); sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32c for K > 8192",
+        "8da4w": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra on every 8da4w texture3d prefill shape"
+      },
+      "preferences": "kOrinRefine5 (the Orin final rule, the control's own list)",
+      "timed_projection_io": true,
+      "attention_fused_variants": "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko"
+    }
+  ]
+}

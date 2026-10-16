@@ -1,0 +1,1698 @@
+{
+ "tag": "orin-wmma-m1-20261015",
+ "queue_status": "completed",
+ "floor": {
+  "rule": "0.97 x lowest valid per-run median clock of the A/A session, device-wide; e2e5.sh takes whole MHz, so the exact floor is rounded up (never down)",
+  "lowest_valid_run_median_mhz": 612.0,
+  "floor_mhz_exact": 593.64,
+  "valid_runs": 84,
+  "cells": {
+   "1b-4w": {
+    "clkmin_mhz": 594
+   },
+   "1b-8da4w": {
+    "clkmin_mhz": 594
+   },
+   "3b-4w": {
+    "clkmin_mhz": 594
+   },
+   "3b-8da4w": {
+    "clkmin_mhz": 594
+   },
+   "8b-4w": {
+    "clkmin_mhz": 594
+   },
+   "8b-8da4w": {
+    "clkmin_mhz": 594
+   }
+  }
+ },
+ "sessions": {
+  "session-aa": {
+   "cells": {
+    "1b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1650.28,
+     "candidate_median": 1651.61,
+     "ratio": 0.9991947251469778,
+     "throughput_ratio": 1.0008059238432265,
+     "control_spread": 0.002423831107448433,
+     "candidate_spread": 0.0016105497060443172,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "1b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1522.68,
+     "candidate_median": 1521.55,
+     "ratio": 1.0007426637310637,
+     "throughput_ratio": 0.9992578874090419,
+     "control_spread": 0.002226337772874059,
+     "candidate_spread": 0.0007426637310637897,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 658.945,
+     "candidate_median": 659.157,
+     "ratio": 0.999678377078602,
+     "throughput_ratio": 1.0003217263959814,
+     "control_spread": 0.0009651791879444884,
+     "candidate_spread": 0.002574500460436592,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 594.83,
+     "candidate_median": 594.83,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.0017450363969537697,
+     "candidate_spread": 0.0005816787989845899,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 305.08,
+     "candidate_median": 304.898,
+     "ratio": 1.0005969209374936,
+     "throughput_ratio": 0.9994034351645471,
+     "control_spread": 0.0023829815130458646,
+     "candidate_spread": 0.0016398926854226659,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 277.094,
+     "candidate_median": 277.169,
+     "ratio": 0.9997294069683118,
+     "throughput_ratio": 1.0002706662720953,
+     "control_spread": 0.0009491363941479558,
+     "candidate_spread": 0.0006746786256760743,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    }
+   },
+   "complete": true,
+   "geomean_ratio": 0.9999902046115012,
+   "max_cell_ratio": 1.0007426637310637,
+   "nexttoken_not_same": [],
+   "nexttoken_rows": 24
+  },
+  "session-orin-fused-wmma-01": {
+   "cells": {
+    "1b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1652.95,
+     "candidate_median": 1380.05,
+     "ratio": 1.19774645846165,
+     "throughput_ratio": 0.8349012371820079,
+     "control_spread": 0.003230587737076087,
+     "candidate_spread": 0.0013550233687186105,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "1b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1521.55,
+     "candidate_median": 1520.42,
+     "ratio": 1.0007432156904013,
+     "throughput_ratio": 0.9992573362689363,
+     "control_spread": 0.0022279911931910703,
+     "candidate_spread": 0.002229647071204075,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 658.945,
+     "candidate_median": 535.145,
+     "ratio": 1.2313391697577294,
+     "throughput_ratio": 0.8121239253655463,
+     "control_spread": 0.001286905583925927,
+     "candidate_spread": 0.0010445767035102058,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 594.657,
+     "candidate_median": 594.657,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.00087109039328559,
+     "candidate_spread": 0.0017438624282570196,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 305.171,
+     "candidate_median": 244.683,
+     "ratio": 1.2472096549412914,
+     "throughput_ratio": 0.8017898162014084,
+     "control_spread": 0.0017858839798015405,
+     "candidate_spread": 0.0007152111098849653,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 277.131,
+     "candidate_median": 277.131,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.0006783795389185801,
+     "candidate_spread": 0.0005412602704137542,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    }
+   },
+   "complete": true,
+   "geomean_ratio": 1.1070505486705662,
+   "max_cell_ratio": 1.2472096549412914,
+   "within_family_limits": false,
+   "nexttoken_not_same": [],
+   "nexttoken_rows": 24
+  },
+  "session-orin-fused-wmma-02": {
+   "cells": {
+    "1b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1652.95,
+     "candidate_median": 1095.77,
+     "ratio": 1.5084826195278207,
+     "throughput_ratio": 0.6629178136059771,
+     "control_spread": 0.004041259566230112,
+     "candidate_spread": 0.003212352957281165,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "1b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1521.55,
+     "candidate_median": 1521.55,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.00297065492425486,
+     "candidate_spread": 0.0022279911931912194,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 659.369,
+     "candidate_median": 411.41,
+     "ratio": 1.6027053304489438,
+     "throughput_ratio": 0.6239450140968108,
+     "control_spread": 0.0006430390267058023,
+     "candidate_spread": 0.002615395833839775,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 594.83,
+     "candidate_median": 594.83,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.0005816787989845899,
+     "candidate_spread": 0.0008708370458787032,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 304.989,
+     "candidate_median": 182.401,
+     "ratio": 1.6720796486861365,
+     "throughput_ratio": 0.5980576348655198,
+     "control_spread": 0.0011934856666962835,
+     "candidate_spread": 0.0032181841108326658,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 277.281,
+     "candidate_median": 277.206,
+     "ratio": 1.0002705569143524,
+     "throughput_ratio": 0.9997295162668918,
+     "control_spread": 0.00027048373310824985,
+     "candidate_spread": 0.0008116707430575916,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    }
+   },
+   "complete": true,
+   "geomean_ratio": 1.262199701364155,
+   "max_cell_ratio": 1.6720796486861365,
+   "within_family_limits": false,
+   "nexttoken_not_same": [],
+   "nexttoken_rows": 24
+  },
+  "session-orin-fused-wmma-06": {
+   "cells": {
+    "1b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1652.95,
+     "candidate_median": 1652.95,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.004041259566230112,
+     "candidate_spread": 0.0016152938685381124,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "1b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1520.42,
+     "candidate_median": 1426.18,
+     "ratio": 1.0660786156025186,
+     "throughput_ratio": 0.9380171268465293,
+     "control_spread": 0.0014864313808026668,
+     "candidate_spread": 0.006282516933346447,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 659.794,
+     "candidate_median": 658.945,
+     "ratio": 1.0012884231612653,
+     "throughput_ratio": 0.9987132347369029,
+     "control_spread": 0.0012867652630971678,
+     "candidate_spread": 0.0032233342691727284,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 594.83,
+     "candidate_median": 532.225,
+     "ratio": 1.117628822396543,
+     "throughput_ratio": 0.894751441588353,
+     "control_spread": 0.0017450363969537697,
+     "candidate_spread": 0.0013002019822443652,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 304.943,
+     "candidate_median": 305.125,
+     "ratio": 0.9994035231462515,
+     "throughput_ratio": 1.0005968328507295,
+     "control_spread": 0.0019380671141820216,
+     "candidate_spread": 0.002084391642769436,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 277.169,
+     "candidate_median": 251.721,
+     "ratio": 1.1010960547590387,
+     "throughput_ratio": 0.9081859803946329,
+     "control_spread": 0.000811779095064826,
+     "candidate_spread": 0.0008620655408169542,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    }
+   },
+   "complete": true,
+   "geomean_ratio": 1.046410327193084,
+   "max_cell_ratio": 1.117628822396543,
+   "within_family_limits": false,
+   "nexttoken_not_same": [],
+   "nexttoken_rows": 24
+  },
+  "session-orin-fused-wmma-08": {
+   "cells": {
+    "1b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1655.62,
+     "candidate_median": 1651.61,
+     "ratio": 1.0024279339553526,
+     "throughput_ratio": 0.9975779466302654,
+     "control_spread": 0.004034742271777379,
+     "candidate_spread": 0.004044538359540124,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "1b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1520.42,
+     "candidate_median": 1520.42,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.0029728627616053336,
+     "candidate_spread": 0.002229647071204075,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 659.794,
+     "candidate_median": 659.581,
+     "ratio": 1.0003229322857996,
+     "throughput_ratio": 0.9996771719657954,
+     "control_spread": 0.002253733741137334,
+     "candidate_spread": 0.001930013144708572,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 595.003,
+     "candidate_median": 595.003,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.001163019346120956,
+     "candidate_spread": 0.000290754836530239,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 305.398,
+     "candidate_median": 305.444,
+     "ratio": 0.999849399562604,
+     "throughput_ratio": 1.000150623121304,
+     "control_spread": 0.0019351796671882309,
+     "candidate_spread": 0.0019348882282839122,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 277.206,
+     "candidate_median": 277.244,
+     "ratio": 0.999862936619007,
+     "throughput_ratio": 1.0001370821699387,
+     "control_spread": 0.0005411138287051293,
+     "candidate_spread": 0.000811559492721295,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    }
+   },
+   "complete": true,
+   "geomean_ratio": 1.0004101152219935,
+   "max_cell_ratio": 1.0024279339553526,
+   "within_family_limits": true,
+   "nexttoken_not_same": [],
+   "nexttoken_rows": 24
+  },
+  "session-orin-fused-wmma-09": {
+   "cells": {
+    "1b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1651.61,
+     "candidate_median": 1651.61,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.003233208808374809,
+     "candidate_spread": 0.004038483661396967,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "1b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1521.55,
+     "candidate_median": 1521.55,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.00297065492425486,
+     "candidate_spread": 0.0022279911931912194,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 659.157,
+     "candidate_median": 659.157,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.0012880087748441307,
+     "candidate_spread": 0.0012880087748441307,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 594.83,
+     "candidate_median": 594.83,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.002035875796446065,
+     "candidate_spread": 0.0005816787989845899,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 305.398,
+     "candidate_median": 305.398,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.0008939154807823486,
+     "candidate_spread": 0.0023837746154199064,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 277.244,
+     "candidate_median": 277.206,
+     "ratio": 1.0001370821699387,
+     "throughput_ratio": 0.999862936619007,
+     "control_spread": 0.0006781030428072203,
+     "candidate_spread": 0.0009487529129962325,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    }
+   },
+   "complete": true,
+   "geomean_ratio": 1.0000228457234657,
+   "max_cell_ratio": 1.0001370821699387,
+   "within_family_limits": true,
+   "nexttoken_not_same": [],
+   "nexttoken_rows": 24
+  },
+  "session-orin-fused-wmma-10": {
+   "cells": {
+    "1b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1651.61,
+     "candidate_median": 1651.61,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.002421879257209632,
+     "candidate_spread": 0.004849813212562283,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "1b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1522.68,
+     "candidate_median": 1521.55,
+     "ratio": 1.0007426637310637,
+     "throughput_ratio": 0.9992578874090419,
+     "control_spread": 0.0014842251819160892,
+     "candidate_spread": 0.0022279911931910703,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 659.369,
+     "candidate_median": 659.369,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.0025782225127355574,
+     "candidate_spread": 0.0016106307697207661,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 595.003,
+     "candidate_median": 595.003,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.000581509673060478,
+     "candidate_spread": 0.001453774182651195,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 305.398,
+     "candidate_median": 305.398,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.0019384540828688613,
+     "candidate_spread": 0.00029797182692751156,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 277.206,
+     "candidate_median": 277.169,
+     "ratio": 1.0001334925622996,
+     "throughput_ratio": 0.999866525255586,
+     "control_spread": 0.0012157024018238749,
+     "candidate_spread": 0.00135296515844124,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    }
+   },
+   "complete": true,
+   "geomean_ratio": 1.0001459892796942,
+   "max_cell_ratio": 1.0007426637310637,
+   "within_family_limits": true,
+   "nexttoken_not_same": [],
+   "nexttoken_rows": 24
+  },
+  "session-orin-fused-wmma-11": {
+   "cells": {
+    "1b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1654.28,
+     "candidate_median": 1587.6,
+     "ratio": 1.0420005039052658,
+     "throughput_ratio": 0.959692434170757,
+     "control_spread": 0.003227990424837342,
+     "candidate_spread": 0.003105316200554336,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "1b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1521.55,
+     "candidate_median": 1521.55,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.00671026256120406,
+     "candidate_spread": 0.00148532746212743,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 659.369,
+     "candidate_median": 629.766,
+     "ratio": 1.0470063483897194,
+     "throughput_ratio": 0.9551040464444036,
+     "control_spread": 0.0025782225127355574,
+     "candidate_spread": 0.0015386667428855336,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 595.176,
+     "candidate_median": 595.176,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.0011626812909122802,
+     "candidate_spread": 0.0017457021116442652,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 305.262,
+     "candidate_median": 293.578,
+     "ratio": 1.0397986225125861,
+     "throughput_ratio": 0.9617246824039677,
+     "control_spread": 0.0010450039638081937,
+     "candidate_spread": 0.0010048436871971302,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 277.356,
+     "candidate_median": 277.356,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.0010852478403206988,
+     "candidate_spread": 0.0006778292158813517,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    }
+   },
+   "complete": true,
+   "geomean_ratio": 1.0212398354228889,
+   "max_cell_ratio": 1.0470063483897194,
+   "within_family_limits": true,
+   "nexttoken_not_same": [],
+   "nexttoken_rows": 24
+  }
+ },
+ "candidates": {
+  "orin-fused-wmma-01": {
+   "screen": "PASS",
+   "pdiff_pass": true,
+   "pdiff_reasons": [],
+   "verify_nexttoken_not_same": [],
+   "decode_text": {
+    "decode 1b 4w": "SAME",
+    "decode 1b 8da4w": "SAME"
+   },
+   "changed_cases": [
+    "4w llama-3.1-8b w1_w3 texture3d",
+    "4w llama-3.1-8b w2 texture3d",
+    "4w llama-3.1-8b wk_wv texture3d",
+    "4w llama-3.1-8b wq_wo texture3d",
+    "4w llama-3.2-1b w1_w3 texture3d",
+    "4w llama-3.2-1b w2 texture3d",
+    "4w llama-3.2-1b wq_wo texture3d",
+    "4w llama-3.2-3b w1_w3 texture3d",
+    "4w llama-3.2-3b w2 texture3d",
+    "4w llama-3.2-3b wk_wv texture3d",
+    "4w llama-3.2-3b wq_wo texture3d"
+   ],
+   "content_check_rc": 0,
+   "timing": "timed"
+  },
+  "orin-fused-wmma-02": {
+   "screen": "PASS",
+   "pdiff_pass": true,
+   "pdiff_reasons": [],
+   "verify_nexttoken_not_same": [],
+   "decode_text": {
+    "decode 1b 4w": "SAME",
+    "decode 1b 8da4w": "SAME"
+   },
+   "changed_cases": [
+    "4w llama-3.1-8b w1_w3 texture3d",
+    "4w llama-3.1-8b w2 texture3d",
+    "4w llama-3.1-8b wk_wv texture3d",
+    "4w llama-3.1-8b wq_wo texture3d",
+    "4w llama-3.2-1b w1_w3 texture3d",
+    "4w llama-3.2-1b w2 texture3d",
+    "4w llama-3.2-1b wk_wv texture3d",
+    "4w llama-3.2-1b wq_wo texture3d",
+    "4w llama-3.2-3b w1_w3 texture3d",
+    "4w llama-3.2-3b w2 texture3d",
+    "4w llama-3.2-3b wk_wv texture3d",
+    "4w llama-3.2-3b wq_wo texture3d"
+   ],
+   "content_check_rc": 0,
+   "timing": "timed"
+  },
+  "orin-fused-wmma-03": {
+   "screen": "PASS",
+   "pdiff_pass": true,
+   "pdiff_reasons": [],
+   "verify_nexttoken_not_same": [],
+   "decode_text": {
+    "decode 1b 4w": "SAME",
+    "decode 1b 8da4w": "SAME"
+   },
+   "changed_cases": [
+    "4w llama-3.1-8b w1_w3 buffer",
+    "4w llama-3.1-8b w2 buffer",
+    "4w llama-3.1-8b wk_wv buffer",
+    "4w llama-3.1-8b wq_wo buffer",
+    "4w llama-3.2-1b w1_w3 buffer",
+    "4w llama-3.2-1b w2 buffer",
+    "4w llama-3.2-1b wq_wo buffer",
+    "4w llama-3.2-3b w1_w3 buffer",
+    "4w llama-3.2-3b w2 buffer",
+    "4w llama-3.2-3b wk_wv buffer",
+    "4w llama-3.2-3b wq_wo buffer"
+   ],
+   "content_check_rc": 1,
+   "timing": "not timed: storage is not the models' texture3d projection IO"
+  },
+  "orin-fused-wmma-04": {
+   "screen": "PASS",
+   "pdiff_pass": true,
+   "pdiff_reasons": [],
+   "verify_nexttoken_not_same": [],
+   "decode_text": {
+    "decode 1b 4w": "SAME",
+    "decode 1b 8da4w": "SAME"
+   },
+   "changed_cases": [
+    "4w llama-3.1-8b w1_w3 buffer",
+    "4w llama-3.1-8b w2 buffer",
+    "4w llama-3.1-8b wk_wv buffer",
+    "4w llama-3.1-8b wq_wo buffer",
+    "4w llama-3.2-1b w1_w3 buffer",
+    "4w llama-3.2-1b w2 buffer",
+    "4w llama-3.2-1b wk_wv buffer",
+    "4w llama-3.2-1b wq_wo buffer",
+    "4w llama-3.2-3b w1_w3 buffer",
+    "4w llama-3.2-3b w2 buffer",
+    "4w llama-3.2-3b wk_wv buffer",
+    "4w llama-3.2-3b wq_wo buffer"
+   ],
+   "content_check_rc": 1,
+   "timing": "not timed: storage is not the models' texture3d projection IO"
+  },
+  "orin-fused-wmma-05": {
+   "screen": "PASS",
+   "pdiff_pass": true,
+   "pdiff_reasons": [],
+   "verify_nexttoken_not_same": [],
+   "decode_text": {
+    "decode 1b 4w": "SAME",
+    "decode 1b 8da4w": "SAME"
+   },
+   "changed_cases": [],
+   "content_check_rc": 0,
+   "timing": "not timed: storage is not the models' texture3d projection IO"
+  },
+  "orin-fused-wmma-06": {
+   "screen": "PASS",
+   "pdiff_pass": true,
+   "pdiff_reasons": [],
+   "verify_nexttoken_not_same": [],
+   "decode_text": {
+    "decode 1b 4w": "SAME",
+    "decode 1b 8da4w": "SAME"
+   },
+   "changed_cases": [
+    "8da4w llama-3.1-8b w1_w3 texture3d",
+    "8da4w llama-3.1-8b w2 texture3d",
+    "8da4w llama-3.1-8b wk_wv texture3d",
+    "8da4w llama-3.1-8b wq_wo texture3d",
+    "8da4w llama-3.2-1b w1_w3 texture3d",
+    "8da4w llama-3.2-1b w2 texture3d",
+    "8da4w llama-3.2-1b wk_wv texture3d",
+    "8da4w llama-3.2-1b wq_wo texture3d",
+    "8da4w llama-3.2-3b w1_w3 texture3d",
+    "8da4w llama-3.2-3b w2 texture3d",
+    "8da4w llama-3.2-3b wk_wv texture3d",
+    "8da4w llama-3.2-3b wq_wo texture3d"
+   ],
+   "content_check_rc": 0,
+   "timing": "timed"
+  },
+  "orin-fused-wmma-07": {
+   "screen": "PASS",
+   "pdiff_pass": true,
+   "pdiff_reasons": [],
+   "verify_nexttoken_not_same": [],
+   "decode_text": {
+    "decode 1b 4w": "SAME",
+    "decode 1b 8da4w": "SAME"
+   },
+   "changed_cases": [
+    "8da4w llama-3.1-8b w1_w3 buffer",
+    "8da4w llama-3.1-8b w2 buffer",
+    "8da4w llama-3.1-8b wk_wv buffer",
+    "8da4w llama-3.1-8b wq_wo buffer",
+    "8da4w llama-3.2-1b w1_w3 buffer",
+    "8da4w llama-3.2-1b w2 buffer",
+    "8da4w llama-3.2-1b wk_wv buffer",
+    "8da4w llama-3.2-1b wq_wo buffer",
+    "8da4w llama-3.2-3b w1_w3 buffer",
+    "8da4w llama-3.2-3b w2 buffer",
+    "8da4w llama-3.2-3b wk_wv buffer",
+    "8da4w llama-3.2-3b wq_wo buffer"
+   ],
+   "content_check_rc": 1,
+   "timing": "not timed: storage is not the models' texture3d projection IO"
+  },
+  "orin-fused-wmma-08": {
+   "screen": "PASS",
+   "pdiff_pass": true,
+   "pdiff_reasons": [],
+   "verify_nexttoken_not_same": [],
+   "decode_text": {
+    "decode 1b 4w": "SAME",
+    "decode 1b 8da4w": "SAME"
+   },
+   "changed_cases": [],
+   "content_check_rc": 0,
+   "timing": "timed"
+  },
+  "orin-fused-wmma-09": {
+   "screen": "PASS",
+   "pdiff_pass": true,
+   "pdiff_reasons": [],
+   "verify_nexttoken_not_same": [],
+   "decode_text": {
+    "decode 1b 4w": "SAME",
+    "decode 1b 8da4w": "SAME"
+   },
+   "changed_cases": [],
+   "content_check_rc": 0,
+   "timing": "timed"
+  },
+  "orin-fused-wmma-10": {
+   "screen": "PASS",
+   "pdiff_pass": true,
+   "pdiff_reasons": [],
+   "verify_nexttoken_not_same": [],
+   "decode_text": {
+    "decode 1b 4w": "SAME",
+    "decode 1b 8da4w": "SAME"
+   },
+   "changed_cases": [],
+   "content_check_rc": 0,
+   "timing": "timed"
+  },
+  "orin-fused-wmma-11": {
+   "screen": "PASS",
+   "pdiff_pass": true,
+   "pdiff_reasons": [],
+   "verify_nexttoken_not_same": [],
+   "decode_text": {
+    "decode 1b 4w": "SAME",
+    "decode 1b 8da4w": "SAME"
+   },
+   "changed_cases": [
+    "4w llama-3.1-8b w1_w3 texture3d",
+    "4w llama-3.1-8b wk_wv texture3d",
+    "4w llama-3.1-8b wq_wo texture3d",
+    "4w llama-3.2-1b w1_w3 texture3d",
+    "4w llama-3.2-1b w2 texture3d",
+    "4w llama-3.2-1b wk_wv texture3d",
+    "4w llama-3.2-1b wq_wo texture3d",
+    "4w llama-3.2-3b w1_w3 texture3d",
+    "4w llama-3.2-3b w2 texture3d",
+    "4w llama-3.2-3b wk_wv texture3d",
+    "4w llama-3.2-3b wq_wo texture3d"
+   ],
+   "content_check_rc": 0,
+   "timing": "timed"
+  }
+ },
+ "recompute_mismatches": [],
+ "control_verify_vs_s5_c1_differing": [],
+ "control_verify_default_prefill_tok_s": {
+  "1b-4w": 1648.95,
+  "1b-8da4w": 1517.04,
+  "3b-4w": 658.098,
+  "3b-8da4w": 594.657,
+  "8b-4w": 304.943,
+  "8b-8da4w": 277.056
+ }
+}
