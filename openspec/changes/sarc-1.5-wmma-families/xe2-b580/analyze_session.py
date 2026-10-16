@@ -8,19 +8,23 @@ import random
 import statistics
 import sys
 
-root = Path(sys.argv[1])
-busymax = float(sys.argv[2])  # calibrated foreign-busy ceiling (artifacts busymax_pct), also applied to A/A rows
+# analyze_session.py <busymax> <session raw dir>...: a cell is taken from the last directory that has rows for it
+busymax = float(sys.argv[1])  # calibrated foreign-busy ceiling (artifacts busymax_pct), also applied to A/A rows
+roots = [Path(p) for p in sys.argv[2:]]
 REPS = 7  # owner decision 2026-10-15 23:30 UTC: 7 valid runs per arm
-rows = list(csv.DictReader((root / "runs.csv").open()))
-assert rows
 required = {"device_uuid", "driver", "commit", "binary_sha256", "profile", "candidate", "session", "sensor_log", "valid", "reason"}
-assert required <= rows[0].keys()
+tables = []
+for root in roots:
+    table = list(csv.DictReader((root / "runs.csv").open()))
+    assert table and required <= table[0].keys()
+    tables.append((root, table))
 cells = []
 ratios = []
 rng = random.Random(58020261014)
 for model in ("1b", "3b", "8b"):
     for scheme in ("4w", "8da4w"):
-        cell = {"model": model, "scheme": scheme}
+        root, rows = [(r, t) for r, t in tables if any(x["model"] == model and x["scheme"] == scheme for x in t)][-1]
+        cell = {"model": model, "scheme": scheme, "source": str(root)}
         arms = {}
         for arm in ("parent", "cand"):
             selected = [r for r in rows if r["model"] == model and r["scheme"] == scheme

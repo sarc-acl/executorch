@@ -1,6 +1,6 @@
 # Xe2 B580 finite linear matrix: status
 
-Updated 2026-10-16T02:20Z. Actor: Claude (claude-opus-5-5), under the owner's lean-finish decision of
+Updated 2026-10-16T04:35Z. Actor: Claude (claude-opus-5-5), under the owner's lean-finish decision of
 2026-10-15 23:30 UTC (deadline 2026-10-17 18:00 UTC). Earlier recovery history: git log of this file.
 
 ## Inputs
@@ -31,15 +31,41 @@ run (attention identical in both arms). Order: B70-final-profile candidates firs
 
 Queue `tools/queue.sh`, state `.artifacts/queue/wmma-v1/job-state.json`.
 
-| session | candidate | linear change vs control | correctness | 1B 4w | 1B 8da4w | 3B 4w | 3B 8da4w | 8B 4w | 8B 8da4w | geomean |
-|---|---|---|---|---|---|---|---|---|---|---|
-| s1c-aa | A/A (control vs pristine) | none | gate s1-aa PASS-equivalent; next token SAME 18/18 | 1.0000 | 1.0088 | 0.9974 | 1.0000 | 1.0000 | 1.0000 | 1.0010 |
-| s2 | b70-linear | B70 final linear rules (n26 8da4w; flw N<=512, flib 4w) | verify: pdiff 12/12, default vs tiled SAME, decode OK; timing pending | | | | | | | |
-| s3 | dq-n26 | 8da4w n26 at N*K>=33554432, else i | pending | | | | | | | |
-| s4 | q4-narrow | 4w flw at N<=512 | pending | | | | | | | |
-| s5 | q4-band | 4w flib where it fits | pending | | | | | | | |
-| s6 | dq-table | 8da4w table choice | pending | | | | | | | |
-| s7 | dq-i | 8da4w ident base everywhere | pending | | | | | | | |
+**Matrix complete: all six legal candidates measured in all six cells.** Ratios are candidate / same-session
+control throughput (valid-run medians, 7 valid runs per arm and cell, BUSYMAX 2.97 %). Bounds: geomean >= 0.97
+and every cell >= 0.92. Noise band +-2 %.
+
+| session | candidate | linear names dispatched (verify linear suites; texture3d unless noted) | correctness | 1B 4w | 1B 8da4w | 3B 4w | 3B 8da4w | 8B 4w | 8B 8da4w | geomean | bounds |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| s1c-aa | A/A: pristine parent-v2 vs wmma-v1, control both | control (below) | gate s1-aa: pdiff 12/12, = s6-final; next token SAME 18/18 | 1.0000 | 1.0088 | 0.9974 | 1.0000 | 1.0000 | 1.0000 | 1.0010 | in |
+| s2 (+s2b 8B 4w) | b70-linear | 4w flib x11 + flw x1; 8da4w xe2bto i x10 + n26 x2 | pdiff 12/12; next token SAME 18/18 | 1.0000 | 0.9914 | 1.0107 | 0.9768 | 1.0201 | 0.9954 | 0.9990 | in |
+| s3 | dq-n26 | 4w fli; 8da4w i x10 + n26 x2 | pdiff 12/12; SAME 18/18 | 1.0000 | 1.0000 | 1.0000 | 0.9764 | 1.0012 | 0.9952 | 0.9954 | in |
+| s4 | q4-narrow | 4w flw x1 + fli x11; 8da4w control | pdiff 12/12; SAME 18/18 | 1.0000 | 1.0000 | 1.0000 | 0.9966 | 1.0023 | 1.0000 | 0.9998 | in |
+| s5 | q4-band | 4w flib x12; 8da4w control | pdiff 12/12; SAME 18/18 | 1.0000 | 1.0000 | 1.0135 | 1.0000 | 1.0201 | 1.0000 | 1.0056 | in |
+| s6 | dq-table | 4w fli; 8da4w table t256x64k32g48s16m8 x12 | pdiff 12/12; SAME 18/18 | 1.0000 | 0.8692 | 1.0000 | 0.8151 | 1.0000 | 0.8013 | 0.9100 | **out** (three cells < 0.92) |
+| s7 | dq-i | 4w fli; 8da4w xe2bto i x12 | pdiff 12/12; SAME 18/18 | 1.0073 | 1.0000 | 1.0000 | 0.9798 | 1.0012 | 0.9628 | 0.9917 | in |
+
+Control `b580-fused1-order-p13`: 4w `t128x128k16g44s16m8fli` (buffer and texture3d); 8da4w xe2bto `i` x8 and
+`n13` x4 per storage. The 4w buffer variant stays `fli` in every arm (buffer projections are M=1, outside the
+prefill matrix). Correctness: unmodified `verify.sh --pdiff` per candidate on wmma-v1; with rates and linear
+lines removed every candidate's verify.out equals the control's (correctness rc=1 / linear rc=1 are the
+pre-existing statuses of s6-final); next token parent vs candidate SAME on prompt_2048, prompt_check and r1304
+in all six cells of every session. No candidate is CORRECTNESS_PENDING.
+
+Reading (this member only; no family-wide claim): nothing beats the B580 control outside the noise band except
+8B 4w with `flib` (+2.0 % in s2b and s5, bootstrap 95 % [1.017, 1.021]); q4-band is the only candidate whose
+geomean exceeds 1 (1.0056). B70's n26 rule costs 3B 8da4w 2.3 to 2.4 % (s2, s3); `i` without n13 costs 8B 8da4w
+3.7 %; the release-table 8da4w kernel is 13 to 20 % slower and fails the cell bound. Every other candidate is
+within the member bounds. The 1 ms runner timer quantises 1B rates (one step about 1 %), hence many 1.0000.
+Absolute control medians differ between sessions by up to 4 % (8B 8da4w 3170 in s2, under desktop activity and
+load ~19, vs 3298 in s4-s6); ratios use only same-session controls.
+
+Evidence: `results/matrix-summary.csv` (medians, bootstrap, spreads, valid/invalid counts), `results/runs.csv`
+(960 rows of every session incl. superseded s1-aa, `used` marks the 588 analysed rows, `notes` carries the caveat
+and BUSYMAX; host/device identity only in `.artifacts/results/runs.csv`), `results/cell-coverage.csv`, per-stage
+`analysis.json`, `verify.out`, `gate.done`, `raw/nexttoken.csv` under `.artifacts/stage/`. Recompute with
+`analyze_session.py 2.97 <raw dirs>` (s2: `s2-b70-linear/raw s2b-b70-linear/raw-8b-4w`) and `combine_runs.py`.
+`matrix.json`'s `whole_model_measurement: BLOCKED_*` fields are the pre-decision record and are superseded here.
 
 `q4-table` and `dq-n13` are identity aliases of the control (CPU selector audit), covered by s1-aa.
 
@@ -75,12 +101,15 @@ Foreign activity is recorded, not asserted, in correctness gates. s1-aa: 0.00 % 
 gate; s2-b70-linear: 2.25 %. Both VERIFY_DONE rc=0 with 12/12 production diff -> GATE_RECORDED rc=0; previous
 files kept as `gate.done.foreign-assert`, evidence in `gate.reeval.txt`.
 
+## Invalid and repaired runs
+
+s2-b70-linear 8B 4w: desktop activity of 6 to 24 % between 02:38 and 02:48Z left 1 valid run per arm after 5
+extra pairs (rows kept, foreign_busy); the queue re-timed only that cell in s2b-b70-linear (same binary and
+environments, E2E5_OK, next token SAME). Other sessions: 0 to 3 invalid rows per cell, all kept.
+
 ## Now
 
-Desktop-idle waits replaced by `busy_wait` before each timed session: foreign share over 60 s at or below
-BUSYMAX (`tools/foreign_share.py`, same accounting as fbusy_pct). Gates no longer wait. Rows above BUSYMAX stay
-invalid. runs.csv gains `load1` per row (workstation load ~19 from other builds; same for both interleaved arms;
-s1c-aa rows predate the column). Queue relaunched at s2-b70-linear's session.
+Queue completed 04:24:53Z. No job running. Matrix ready for the single review.
 
 ## Question for the coordinator
 
