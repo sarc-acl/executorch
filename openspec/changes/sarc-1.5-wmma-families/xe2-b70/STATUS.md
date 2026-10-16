@@ -128,6 +128,10 @@ Registered as dev-zone profiles in the `b70-wmma` block of `impl/sarc_dev/Overri
 - Evidence: `.artifacts/stage/xe2-family-{a,b}/` (`gate.txt`, `verify.out`, `verify-vs-control.txt`,
   `sdpa-correctness/`, `raw/`, `evidence.json`, `dispatch/`).
 
+Coordinator note 2026-10-16 07:50 UTC: finalist results accepted. The warm-trace item of `gate_check.py` is
+not required for these linear-only finalists and is recorded as not run. The B70 stage is complete; no further
+GPU work.
+
 ## Question for the coordinator
 
 B70 matrix complete and reviewed (2026-10-16); which family finalists should get the full gate (verify, SDPA tiers, D3 evidence) on this device?
