@@ -1,6 +1,6 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-15 23:40 UTC
+Updated: 2026-10-16 00:20 UTC
 
 Stage: NATIVE TIMED MATRIX RUNNING under the owner's lean-finish decision
 (2026-10-15 23:30 UTC). Job state: artifact jobs/native-matrix-r1/state.json.
@@ -16,7 +16,7 @@ Order: Orin-origin candidates first (c08, c09, c10, c11, c06), then c01, c02.
 
 | Candidate | Linear kernel | Correctness | 1b-4w | 1b-8da4w | 3b-4w | 3b-8da4w | 8b-4w | 8b-8da4w | Geomean |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|
-| c08 | sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32c (4w, K>8192) | pdiff PASS; tokens pending | | | | | | | queued |
+| c08 | sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32c (4w, K>8192) | pdiff PASS; next token equal (36/36) | 1.000 | 1.000 | 1.000 | 0.992 | 0.917 | 1.000 | 0.9844 (8b-4w outside 8 % cell limit) |
 | c09 | sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt (4w) | pdiff PASS; tokens pending | | | | | | | queued |
 | c10 | sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra (8da4w) | pdiff PASS; tokens pending | | | | | | | queued |
 | c11 | sarc_linear_q4gsw_coopmat_t128x128k16g22s32 (4w, K<=8192) | pdiff PASS; tokens pending | | | | | | | queued |
@@ -26,9 +26,17 @@ Order: Orin-origin candidates first (c08, c09, c10, c11, c06), then c01, c02.
 | c03, c04, c07 | buffer-IO variants | pdiff PASS (buffer microbench) | not timeable: the fixed models run texture3d IO, no dispatch | | | | | | n/a |
 | c05 | buffer-weight variant | NO COVERAGE (0 dispatched cases) | not timeable, no dispatch | | | | | | n/a |
 
+Ratios are candidate/control valid-run medians, 7 valid runs per arm, same session
+and binary; c08 had 84/84 valid rows, 0 invalid. c08 dispatches only for K>8192
+(8B 4w down projection); the other cells are unchanged within one timer step.
+
 ## Question for the coordinator
 
-(none)
+2026-10-16 00:08 UTC: a foreign GPU client appeared (ComfyUI, `grand-omega/zun-flux-pipeline`,
+PID 335097, 210 MiB, idle), not started by this campaign. native-matrix-r1 stopped in the
+c09 cooling check before launching a run (c09: 75/75 rows valid, none touched). Not killed.
+native-matrix-r2 resumes and waits at each run boundary while any foreign client is present
+(logged to stage/s3-*/foreign-waits.jsonl). The matrix stays paused while that server holds the GPU.
 
 ## Earlier record (before the lean-finish decision)
 
@@ -283,3 +291,5 @@ boundaries. No pushes, PRs, services, policy changes, new bodies or search.
 2026-10-15T06:09:20.534118+00:00 Candidate 4070ti-wmma-c10: CAPTURE_COMPLETE; NEXT_TOKEN_AND_SESSION_EVIDENCE_PENDING. Coverage {"linear_benchmark_cases": 12, "production_diff_cases": 12}; assessment artifact stage/s2-gate-c10/candidate-assessment.json. No acceptance/timing.
 
 2026-10-15T06:13:44.047469+00:00 Candidate 4070ti-wmma-c11: CAPTURE_COMPLETE; NEXT_TOKEN_AND_SESSION_EVIDENCE_PENDING. Coverage {"linear_benchmark_cases": 11, "production_diff_cases": 11}; assessment artifact stage/s2-gate-c11/candidate-assessment.json. No acceptance/timing.
+
+2026-10-15T23:57:53.952127+00:00 4070ti-wmma-c08: SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING; correctness=NEXT_TOKEN_EQUAL; acceptance=NONE; ONE_MEMBER_ONLY. Ratios {"1b-4w": 1.0, "1b-8da4w": 1.0, "3b-4w": 1.0, "3b-8da4w": 0.9920017437530653, "8b-4w": 0.917143412444397, "8b-8da4w": 1.0}; geomean=0.9843697995673315. Evidence artifact stage/s3-4070ti-wmma-c08.

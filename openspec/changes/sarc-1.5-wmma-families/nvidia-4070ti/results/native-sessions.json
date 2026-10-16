@@ -1,0 +1,121 @@
+[
+  {
+    "profile": "4070ti-wmma-c08",
+    "status": "SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING",
+    "repeats": 7,
+    "correctness": "NEXT_TOKEN_EQUAL",
+    "timed_text_differences": [],
+    "clock_floor_mhz": 2531,
+    "geomean_ratio": 0.9843697995673315,
+    "cells": {
+      "1b-4w": {
+        "arms": {
+          "control": {
+            "median_tok_s": 35310.3,
+            "spread_fraction": 0.016946896514614757
+          },
+          "candidate": {
+            "median_tok_s": 35310.3,
+            "spread_fraction": 0.016946896514614757
+          }
+        },
+        "ratio": 1.0,
+        "ratio_interval95": [
+          1.0,
+          1.0172390448232451
+        ]
+      },
+      "1b-8da4w": {
+        "arms": {
+          "control": {
+            "median_tok_s": 39384.6,
+            "spread_fraction": 0.019609187347338883
+          },
+          "candidate": {
+            "median_tok_s": 39384.6,
+            "spread_fraction": 0.019609187347338883
+          }
+        },
+        "ratio": 1.0,
+        "ratio_interval95": [
+          1.0,
+          1.019609187347339
+        ]
+      },
+      "3b-4w": {
+        "arms": {
+          "control": {
+            "median_tok_s": 14124.1,
+            "spread_fraction": 0.006846453933348017
+          },
+          "candidate": {
+            "median_tok_s": 14124.1,
+            "spread_fraction": 0.0
+          }
+        },
+        "ratio": 1.0,
+        "ratio_interval95": [
+          1.0,
+          1.0
+        ]
+      },
+      "3b-8da4w": {
+        "arms": {
+          "control": {
+            "median_tok_s": 16516.1,
+            "spread_fraction": 0.0393797567222287
+          },
+          "candidate": {
+            "median_tok_s": 16384.0,
+            "spread_fraction": 0.03969726562500009
+          }
+        },
+        "ratio": 0.9920017437530653,
+        "ratio_interval95": [
+          0.9761927641377984,
+          1.0241907478605976
+        ]
+      },
+      "8b-4w": {
+        "arms": {
+          "control": {
+            "median_tok_s": 6380.06,
+            "spread_fraction": 0.009374519988840292
+          },
+          "candidate": {
+            "median_tok_s": 5851.43,
+            "spread_fraction": 0.005713133370816942
+          }
+        },
+        "ratio": 0.917143412444397,
+        "ratio_interval95": [
+          0.91168125,
+          0.917143412444397
+        ]
+      },
+      "8b-8da4w": {
+        "arms": {
+          "control": {
+            "median_tok_s": 7447.27,
+            "spread_fraction": 0.0036496595396701584
+          },
+          "candidate": {
+            "median_tok_s": 7447.27,
+            "spread_fraction": 0.0036496595396701584
+          }
+        },
+        "ratio": 1.0,
+        "ratio_interval95": [
+          1.0,
+          1.0036496595396702
+        ]
+      }
+    },
+    "valid_rows": 84,
+    "invalid_rows": 0,
+    "within_member_numeric_margins": false,
+    "acceptance": "NONE; ONE_MEMBER_ONLY",
+    "stage": "stage/s3-4070ti-wmma-c08",
+    "updated_utc": "2026-10-15T23:57:53.952127+00:00"
+  }
+]

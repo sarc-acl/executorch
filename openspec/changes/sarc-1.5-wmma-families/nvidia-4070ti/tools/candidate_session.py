@@ -110,8 +110,14 @@ def cool(target, maximum):
     deadline = time.monotonic() + maximum
     while True:
         sample = observer.sample()
-        if any(c["own"] is not True for c in sample["clients"]):
-            raise RuntimeError("foreign GPU client while cooling; no job launched")
+        foreign = [c for c in sample["clients"] if c["own"] is not True]
+        if foreign:
+            with (stage / "foreign-waits.jsonl").open("a") as file:
+                file.write(json.dumps({"utc": datetime.datetime.now(datetime.timezone.utc).isoformat(), "clients": foreign}) + "\n")
+            time.sleep(60)
+            deadline = time.monotonic() + maximum
+            temperatures = []
+            continue
         temperatures.append(sample["temperature_c"])
         if temperatures[-1] <= target or time.monotonic() >= deadline or (
                 len(temperatures) >= 3 and temperatures[-1] >= temperatures[-3]):
