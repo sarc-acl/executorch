@@ -12,7 +12,7 @@ kept as the false-guard record. Evidence summary: results/family-finalists.json.
 | Finalist | Linear kernels (texture3d) | Gate | Next token | 1b-4w | 1b-8da4w | 3b-4w | 3b-8da4w | 8b-4w | 8b-8da4w | Geomean |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|
 | 4070ti-nv-family-a | 4w bt (all shapes), 8da4w bf | REJECTED: pdiff 8B 4w w2 (K=14336) | not run | not timed | | | | | | n/a |
-| 4070ti-nv-family-b | 4w bx (K>8192), bt (Orin rule), 8da4w bf | PASS: pdiff 132 commands, SDPA 24/24, verify identical to control except dispatch lines | equal 36/36 | 1.0175 | 1.0400 | 1.0357 | 0.9919 | 0.9522 | 1.0420 | 1.0127 |
+| 4070ti-nv-family-b | 4w bx (K>8192), bt (Orin rule), 8da4w bf | PASS: pdiff 12/12 ALL PASSED (finalist dispatch bx 1, bt 11, bf 12 cases), SDPA 24/24, verify equal to control except dispatch lines | equal 36/36 | 1.0175 | 1.0400 | 1.0357 | 0.9919 | 0.9522 | 1.0420 | 1.0127 |
 
 nv-family-b session s3-4070ti-nv-family-b: 84 of 84 rows valid, 7 per arm and cell, one llama_main
 (sha256 3939e1bdc75b..., commit f82cc2c17) for both arms, control 4070ti-fused1, attention control
