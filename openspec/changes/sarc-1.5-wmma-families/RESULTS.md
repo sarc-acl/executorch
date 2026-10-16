@@ -60,7 +60,11 @@ First campaign (inventory and five device runs, 2026-10-14 to 15): $426.54, no t
 
 ## Next
 
-1. Family key in `impl/sarc/Select.{h,cpp}` (vendor ID, driver ID, property signature) with the Xe2 and NVIDIA
-   sets as family rows; the old per-device rows become internal overrides.
+1. Done 2026-10-16 (`fae9e53e76`): family key in `impl/sarc/Select.{h,cpp}` (vendor ID, driver ID,
+   cooperative-matrix shapes, subgroup size) with the Xe2 and NVIDIA sets as family rows; the 4070 Ti's
+   ga at K > 8192 is its per-device override. Device check on all four members: `select-check/`.
+   Open: the NVIDIA key cannot tell Ampere/Ada from other NVIDIA generations with the same shapes
+   (Turing, Hopper, Blackwell would match; none measured); the NVIDIA rows cover the measured Llama
+   projections only.
 2. RDNA3 and Xclipse member evidence through the company side.
 3. Port to `pr/wmma-families` off upstream `main` (gap list: the change's upstream-gap notes).

@@ -1,0 +1,36 @@
+correctness rc=0 
+linear 4w rc=1 kernels:  12 "sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli_buffer_texture2d_half"; 12 "sarc_linear_q4gsw_coopmat_t128x128k16g82s16m8flib_texture3d_texture2d_half";
+linear 8da4w rc=1 kernels:  8 "sarc_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i_buffer_texture2d_half"; 8 "sarc_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i_texture3d_texture2d_half"; 4 "sarc_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n13_buffer_texture2d_half"; 4 "sarc_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n13_texture3d_texture2d_half";
+1b 4w tiled prefill_tok_s=3670.25
+1b 4w default prefill_tok_s=11770.1
+1b 4w check: default vs tiled output SAME
+1b 4w unaligned: default vs tiled output SAME
+1b 4w decode rc=0 "generated_tokens":31 decode_tok_s=95.9752
+1b 8da4w tiled prefill_tok_s=8325.2
+1b 8da4w default prefill_tok_s=13212.9
+1b 8da4w check: default vs tiled output SAME
+1b 8da4w unaligned: default vs tiled output DIFFER
+  near-tie stage not run, missing: logits_probe r1304.ids reference 1b-r1304.json (--ref-logits)
+1b 8da4w decode rc=0 "generated_tokens":31 decode_tok_s=70.615
+3b 4w tiled prefill_tok_s=1145.41
+3b 4w default prefill_tok_s=4887.83
+3b 8da4w tiled prefill_tok_s=3261.15
+3b 8da4w default prefill_tok_s=5769.01
+8b 4w tiled prefill_tok_s=501.224
+8b 4w default prefill_tok_s=2458.58
+8b 8da4w tiled prefill_tok_s=1375.42
+8b 8da4w default prefill_tok_s=3126.72
+pdiff llama-3.2-1b 4w buffer rc=0 [production-diff] ALL PASSED (llama-3.2-1b, 4 shapes, M=2048, linear_q4gsw, buffer)
+pdiff llama-3.2-1b 4w texture3d rc=0 [production-diff] ALL PASSED (llama-3.2-1b, 4 shapes, M=2048, linear_q4gsw, texture3d)
+pdiff llama-3.2-1b 8da4w buffer rc=0 [production-diff] ALL PASSED (llama-3.2-1b, 4 shapes, M=2048, linear_dq8ca_q4gsw, buffer)
+pdiff llama-3.2-1b 8da4w texture3d rc=0 [production-diff] ALL PASSED (llama-3.2-1b, 4 shapes, M=2048, linear_dq8ca_q4gsw, texture3d)
+pdiff llama-3.2-3b 4w buffer rc=0 [production-diff] ALL PASSED (llama-3.2-3b, 4 shapes, M=2048, linear_q4gsw, buffer)
+pdiff llama-3.2-3b 4w texture3d rc=0 [production-diff] ALL PASSED (llama-3.2-3b, 4 shapes, M=2048, linear_q4gsw, texture3d)
+pdiff llama-3.2-3b 8da4w buffer rc=0 [production-diff] ALL PASSED (llama-3.2-3b, 4 shapes, M=2048, linear_dq8ca_q4gsw, buffer)
+pdiff llama-3.2-3b 8da4w texture3d rc=0 [production-diff] ALL PASSED (llama-3.2-3b, 4 shapes, M=2048, linear_dq8ca_q4gsw, texture3d)
+pdiff llama-3.1-8b 4w buffer rc=0 [production-diff] ALL PASSED (llama-3.1-8b, 4 shapes, M=2048, linear_q4gsw, buffer)
+pdiff llama-3.1-8b 4w texture3d rc=0 [production-diff] ALL PASSED (llama-3.1-8b, 4 shapes, M=2048, linear_q4gsw, texture3d)
+pdiff llama-3.1-8b 8da4w buffer rc=0 [production-diff] ALL PASSED (llama-3.1-8b, 4 shapes, M=2048, linear_dq8ca_q4gsw, buffer)
+pdiff llama-3.1-8b 8da4w texture3d rc=0 [production-diff] ALL PASSED (llama-3.1-8b, 4 shapes, M=2048, linear_dq8ca_q4gsw, texture3d)
+near-tie summary: 0 flip(s) accepted under owner decision 2026-10-15 (TIE_FLIP_ACCEPTED, not SAME)
+VERIFY_DONE rc=0
