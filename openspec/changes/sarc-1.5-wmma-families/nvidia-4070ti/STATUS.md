@@ -1,9 +1,9 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-16 02:30 UTC
+Updated: 2026-10-16 03:00 UTC
 
 Stage: NATIVE TIMED MATRIX RUNNING under the owner's lean-finish decision
-(2026-10-15 23:30 UTC). Job state: artifact jobs/native-matrix-r5/state.json (r1, r2 failed on a foreign client; r3 on a slow-load runner abort; r4 on a slow-load runner hang).
+(2026-10-15 23:30 UTC). Job state: artifact jobs/native-matrix-r6/state.json (r1, r2 failed on a foreign client; r3 on a slow-load runner abort; r4 on a slow-load runner hang; r5 on four invalid attempts at c01 8b-8da4w r5). From r6 the replacement bound is 8 attempts per arm/repetition (was 4; c01 STAGE.json still records 4). It bounds retries only; validity criteria are unchanged.
 Both arms: matrix-mm-r1 binary (commit dd57ce0e4), control 4070ti-fused1,
 candidate adds only ET_VK_SARC_WMMA_PROFILE. Seven valid interleaved runs per
 arm and cell, clock floor 2531 MHz, A/A s1-aa-mm-r1 reused (no new A/A).
@@ -32,7 +32,8 @@ and binary; c08 had 84/84 valid rows, 0 invalid. c08 dispatches only for K>8192
 
 ## Question for the coordinator
 
-- 2026-10-16 02:30 UTC: the foreign ComfyUI (PID 336840) keeps 8086 MiB VRAM and about 12 GiB host RAM (3.7 GiB available, no swap). The 8B model no longer stays cached, and 8B runs now abort (rc -6/-11) or hang until the 1200 s timeout after slow loads. Valid 8B runs keep the same prefill rate. The queue replaces these runs (L9/D5) and continues; it would run faster if that workload released host memory.
+- 2026-10-16 02:30 UTC: the foreign ComfyUI (PID 336840) keeps 8086 MiB VRAM and about 12 GiB host RAM (3.7 GiB available, no swap). The 8B model no longer stays cached, and 8B runs now abort (rc -6/-11) or hang until the 1200 s timeout after slow loads. Valid 8B runs keep the same prefill rate. The queue replaces these runs (L9/D5).
+- 2026-10-16 03:00 UTC: the slow loads also leave NVML's clock reading stale. 8B runs show a median clock of 270–600 MHz at an unchanged prefill rate (274 ms), so they fail the fixed 2531 MHz floor. c01 8b-8da4w r5 used all four attempts (r5 failed). From r6 every 8B process (both arms) waits until host MemAvailable >= model size + 1 GiB (memory-waits.jsonl). At 3.8 GiB available that wait lasts as long as ComfyUI holds its memory. c01 needs 8b-8da4w r5–r7 and c02 needs its 8B cells; the rest of the matrix is done. Can that workload release host memory before 2026-10-17 18:00 UTC?
 
 ## Runner abort after slow load (c01, 2026-10-16 01:47 UTC)
 

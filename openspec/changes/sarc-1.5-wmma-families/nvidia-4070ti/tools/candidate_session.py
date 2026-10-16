@@ -133,8 +133,16 @@ foreign_state = {"clients": None, "since": 0.0}
 idle_clients = {}
 
 
-def cool(target, maximum):
+def memory_available():
+    for line in Path("/proc/meminfo").read_text().splitlines():
+        if line.startswith("MemAvailable:"):
+            return int(line.split()[1]) * 1024
+    raise RuntimeError("MemAvailable missing")
+
+
+def cool(target, maximum, model_bytes=0):
     global idle_clients
+    memory_logged = 0.0
     temperatures = []
     start = time.monotonic()
     deadline = start + maximum
@@ -152,7 +160,14 @@ def cool(target, maximum):
         temperatures.append(sample["temperature_c"])
         cooled = temperatures[-1] <= target or now >= deadline or (
             len(temperatures) >= 3 and temperatures[-1] >= temperatures[-3])
-        if cooled and (not clients or now - foreign_state["since"] >= 60):
+        available = memory_available()
+        memory_ok = available >= model_bytes + 2**30
+        if not memory_ok and now - memory_logged >= 300:
+            memory_logged = now
+            with (stage / "memory-waits.jsonl").open("a") as file:
+                file.write(json.dumps({"utc": datetime.datetime.now(datetime.timezone.utc).isoformat(), "mem_available": available,
+                                       "model_bytes": model_bytes, "foreign_clients": clients}) + "\n")
+        if cooled and memory_ok and (not clients or now - foreign_state["since"] >= 60):
             idle_clients = clients
             return temperatures[-1]
         time.sleep(5)
@@ -195,7 +210,7 @@ def run_rounds(first, last, target):
         tokenizer = path.parent.parent / "original/tokenizer.model"
         for rep in range(first, last + 1):
             order = ["control", "candidate"] if rep % 2 else ["candidate", "control"]
-            for attempt in range(1, 5):
+            for attempt in range(1, 9):
                 for arm in order:
                     if any(r["cell"] == cell and r["arm"] == arm and int(r["rep"]) == rep and int(r["valid"]) for r in rows):
                         continue
@@ -223,7 +238,7 @@ def run_rounds(first, last, target):
                                       samples=str((superseded / "raw/samples.jsonl").relative_to(stage)),
                                       utc=datetime.datetime.now(datetime.timezone.utc).isoformat()))
                         continue
-                    cool(target, 120)
+                    cool(target, 120, path.stat().st_size)
                     child_env = dict(envs[arm], WMMA_RECORD_DIR=str(run_dir), WMMA_FOREIGN_IDLE=json.dumps(idle_clients))
                     command = ["timeout", "--signal=TERM", "--kill-after=30", "1200", "python3",
                                str(stage / arm / "observer-tools/observe.py"), str(stage / arm / "llama_main"),
@@ -280,7 +295,7 @@ def run_rounds(first, last, target):
                         timed_text_differences.append({"cell": cell, "rep": rep})
                     break
             else:
-                raise RuntimeError(f"four attempts without valid candidate pair: {cell} r{rep}")
+                raise RuntimeError(f"eight attempts without valid candidate pair: {cell} r{rep}")
 
 
 timed_text_differences = []
@@ -319,7 +334,7 @@ def check_tokens(target):
         model_path = Path(model["path"])
         cell = ("1b" if "-1b" in model_path.stem else "3b" if "-3b" in model_path.stem else "8b") + ("-8da4w" if "8da4w" in model_path.stem else "-4w")
         for prompt, filename in prompts.items():
-            for arm, attempt in [(arm, attempt) for arm in builds for attempt in range(1, 5)]:
+            for arm, attempt in [(arm, attempt) for arm in builds for attempt in range(1, 9)]:
                 if any(r["cell"] == cell and r["prompt"] == prompt and r["arm"] == arm and int(r["valid"]) for r in tokens):
                     continue
                 hold_point(device_lock, artifacts)
@@ -331,7 +346,7 @@ def check_tokens(target):
                 if raw.exists() or log.exists():
                     assert any(r["log"] == str(log.relative_to(stage)) for r in tokens), "existing interrupted token attempt; diagnose before retry"
                     continue
-                cool(target, 120)
+                cool(target, 120, model_path.stat().st_size)
                 command = ["timeout", "--signal=TERM", "--kill-after=30", "1200", "python3",
                            str(stage / arm / "observer-tools/observe.py"), str(stage / arm / "llama_main"),
                            "--model_path", str(model_path), "--tokenizer_path", str(model_path.parent.parent / "original/tokenizer.model"),
@@ -413,7 +428,7 @@ try:
         manifest = {"purpose": "native candidate session against same-session tuned control", "candidate": profile,
                     "binaries": binaries, "device": observer.identity, "cool_target_c": target,
                     "cool_rule": "initial <=50C/300s; then idle+5C/120s; stop after three 5s probes stop falling",
-                    "protocol": {"repeats": repeats, "minimum_samples": 5, "clock_floor_mhz": clock_floor, "replacement_attempts": 4},
+                    "protocol": {"repeats": repeats, "minimum_samples": 5, "clock_floor_mhz": clock_floor, "replacement_attempts": 8},
                     "calibration_sha256": hashlib.sha256(calibration_path.read_bytes()).hexdigest(),
                     "gate_assessment_sha256": hashlib.sha256(assessment_path.read_bytes()).hexdigest(),
                     "linear_dispatch_evidence": dispatch,
