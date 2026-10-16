@@ -50,7 +50,7 @@ Cand/control > 1 means the candidate is faster. Limits: six-cell geomean slowdow
 | b70-wmma-q4-k32 | 4w: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib, sarc_linear_q4gsw_coopmat_sweep_t128x128k32g84s16m8flw; 8da4w: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i, sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n26 | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.000 / 1.000 / 1.000 / 1.000 / 1.002 / 1.000 | 1.0003 | True |
 | b70-wmma-dq-n26 | 4w: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib, sarc_linear_q4gsw_coopmat_sweep_t128x128k32g84s16m8flw; 8da4w: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i, sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n26 | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.010 / 1.000 / 1.008 / 0.990 / 1.000 / 1.005 | 1.0021 | True |
 | xe2-family-a | 4w: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib; 8da4w: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i | GATE_FAIL (1 requirement(s)); 1 FAIL line(s), see gate.txt | 1.000 / 1.000 / 1.000 / 1.000 / 1.000 / 0.963 | 0.9938 | True |
-| xe2-family-b | - | NOT_STARTED | - | - | - |
+| xe2-family-b | 4w: sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib; 8da4w: sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i, sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n13 | GATE_FAIL (1 requirement(s)); 1 FAIL line(s), see gate.txt | 1.000 / 1.000 / 1.000 / 0.981 / 1.000 / 0.998 | 0.9964 | True |
 <!-- matrix end -->
 
 No family-wide acceptance is claimed from this member's results.
