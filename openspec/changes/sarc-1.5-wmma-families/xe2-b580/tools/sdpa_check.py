@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """sdpa_check.py <sdpa-correctness dir>: the SDPA criteria of sarc-1.5-b580-fused-port/tools/gate_check.py --sdpa:
 12 passes each of tiers all, extended and full: rc 0, 4 / 8 / 4 cases PASSED, no FAILED, mismatches=0,
-pairing=ok, one [sdpa-error] record per case with finite rms_err, max_abs_err and ref_rms."""
+pairing=ok, one [sdpa-error] record per case with finite rms_err, max_abs_err and ref_rms. The base test also
+prints a second [sdpa-error] line per case (max_abs= rms= max_abs_ref=); only the rms_err records are counted."""
 import math, os, re, sys
 S = sys.argv[1]
 def read(name):
@@ -26,7 +27,7 @@ for tier, cases in (("all", 4), ("extended", 8), ("full", 4)):
         if "FAILED" in t: why.append("FAILED line")
         if len(ker) != cases or any("pairing=ok" not in l for l in ker):
             why.append(f'pairing ok in {sum("pairing=ok" in l for l in ker)}/{len(ker)} kernel lines, want {cases}')
-        err = [l.split()[3:] for l in t.splitlines() if l.startswith("[sdpa-error] ")]
+        err = [l.split()[3:] for l in t.splitlines() if l.startswith("[sdpa-error] ") and " rms_err=" in l]
         if len(err) != cases or any(len(e) != 3 or not all(finite(x.split("=")[-1]) for x in e) for e in err):
             why.append(f"{len(err)} error records, want {cases} finite")
         if why: bad.append(f"r{i}: " + "; ".join(why))

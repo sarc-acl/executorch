@@ -19,9 +19,12 @@ SESSIONS = [
     ("s2-b70-linear", "raw", ""), ("s2b-b70-linear", "raw-8b-4w", "re-time of s2-b70-linear 8b-4w"),
     ("s3-dq-n26", "raw", ""), ("s4-q4-narrow", "raw", ""), ("s5-q4-band", "raw", ""),
     ("s6-dq-table", "raw", ""), ("s7-dq-i", "raw", ""),
+    ("s8-xe2-family-a", "raw", "finalist confirmation on wmma-v2 (coordinator decision 2026-10-16 05:20 UTC)"),
+    ("s9-xe2-family-b", "raw", "finalist confirmation on wmma-v2 (coordinator decision 2026-10-16 05:20 UTC)"),
 ]
 ANALYSES = {"aa": "s1c-aa", "b70-linear": "s2-b70-linear", "dq-n26": "s3-dq-n26", "q4-narrow": "s4-q4-narrow",
-            "q4-band": "s5-q4-band", "dq-table": "s6-dq-table", "dq-i": "s7-dq-i"}
+            "q4-band": "s5-q4-band", "dq-table": "s6-dq-table", "dq-i": "s7-dq-i",
+            "xe2-family-a": "s8-xe2-family-a", "xe2-family-b": "s9-xe2-family-b"}
 analyses = {c: json.loads((A / "stage" / s / "analysis.json").read_text()) for c, s in ANALYSES.items()}
 sources = {(Path(cell["source"]).parent.name, Path(cell["source"]).name, cell["model"], cell["scheme"])
            for a in analyses.values() for cell in a["cells"]}
