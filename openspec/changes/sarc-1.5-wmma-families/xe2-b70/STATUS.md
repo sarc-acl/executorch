@@ -44,7 +44,7 @@ Cand/control > 1 means the candidate is faster. Limits: six-cell geomean slowdow
 | s1-aa | - | CONTROL_OK | 1.000 / 1.000 / 1.004 / 0.995 / 1.000 / 1.000 | 0.9998 | True |
 | b70-wmma-dq-n13 | - | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.000 / 1.000 / 1.000 / 0.995 / 1.002 / 0.998 | 0.9991 | True |
 | b70-wmma-q4-table | - | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 0.980 / 1.000 / 0.977 / 1.000 / 0.977 / 1.005 | 0.9897 | True |
-| b70-wmma-dq-i | - | NOT_STARTED | - | - | - |
+| b70-wmma-dq-i | - | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.000 / 1.000 / 1.000 / 0.995 / 1.003 / 0.959 | 0.9928 | True |
 | b70-wmma-dq-table | - | NOT_STARTED | - | - | - |
 | b70-wmma-q4-k16 | - | NOT_STARTED | - | - | - |
 | b70-wmma-q4-k32 | - | NOT_STARTED | - | - | - |
