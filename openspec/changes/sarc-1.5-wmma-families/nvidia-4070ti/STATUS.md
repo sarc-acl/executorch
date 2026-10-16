@@ -1,9 +1,9 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-16 00:35 UTC
+Updated: 2026-10-16 01:58 UTC
 
 Stage: NATIVE TIMED MATRIX RUNNING under the owner's lean-finish decision
-(2026-10-15 23:30 UTC). Job state: artifact jobs/native-matrix-r3/state.json (r1, r2 failed on a foreign client).
+(2026-10-15 23:30 UTC). Job state: artifact jobs/native-matrix-r4/state.json (r1, r2 failed on a foreign client; r3 on a slow-load runner abort).
 Both arms: matrix-mm-r1 binary (commit dd57ce0e4), control 4070ti-fused1,
 candidate adds only ET_VK_SARC_WMMA_PROFILE. Seven valid interleaved runs per
 arm and cell, clock floor 2531 MHz, A/A s1-aa-mm-r1 reused (no new A/A).
@@ -17,10 +17,10 @@ Order: Orin-origin candidates first (c08, c09, c10, c11, c06), then c01, c02.
 | Candidate | Linear kernel | Correctness | 1b-4w | 1b-8da4w | 3b-4w | 3b-8da4w | 8b-4w | 8b-8da4w | Geomean |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|
 | c08 | sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32c (4w, K>8192) | pdiff PASS; next token equal (36/36) | 1.000 | 1.000 | 1.000 | 0.992 | 0.917 | 1.000 | 0.9844 (8b-4w outside 8 % cell limit) |
-| c09 | sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt (4w) | pdiff PASS; tokens pending | | | | | | | queued |
-| c10 | sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra (8da4w) | pdiff PASS; tokens pending | | | | | | | queued |
-| c11 | sarc_linear_q4gsw_coopmat_t128x128k16g22s32 (4w, K<=8192) | pdiff PASS; tokens pending | | | | | | | queued |
-| c06 | sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra tex3d (8da4w) | pdiff PASS; tokens pending | | | | | | | queued |
+| c09 | sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt (4w) | pdiff PASS; next token equal (36/36) | 1.036 | 1.000 | 1.028 | 0.992 | 1.046 | 1.000 | 1.0167 (84 valid, 1 invalid) |
+| c10 | sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra (8da4w) | pdiff PASS; next token equal (36/36) | 1.000 | 1.040 | 1.000 | 1.058 | 1.003 | 1.038 | 1.0229 (84 valid, 0 invalid) |
+| c11 | sarc_linear_q4gsw_coopmat_t128x128k16g22s32 (4w, K<=8192) | pdiff PASS; next token equal (36/36) | 1.018 | 1.000 | 1.021 | 1.016 | 1.032 | 1.000 | 1.0144 (84 valid, 2 invalid) |
+| c06 | sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra tex3d (8da4w) | pdiff PASS; next token equal (36/36) | 1.000 | 1.000 | 1.000 | 1.008 | 1.003 | 1.000 | 1.0018 (84 valid, 0 invalid) |
 | c01 | sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga tex3d (4w, N>512) | pdiff PASS; tokens pending | | | | | | | queued |
 | c02 | sarc_linear_q4gsw_coopmat_t128x128k16g24s32ga tex3d (4w) | pdiff PASS; tokens pending | | | | | | | queued |
 | c03, c04, c07 | buffer-IO variants | pdiff PASS (buffer microbench) | not timeable: the fixed models run texture3d IO, no dispatch | | | | | | n/a |
@@ -33,6 +33,16 @@ and binary; c08 had 84/84 valid rows, 0 invalid. c08 dispatches only for K>8192
 ## Question for the coordinator
 
 (none open)
+
+## Runner abort after slow load (c01, 2026-10-16 01:47 UTC)
+
+At about 01:40 the foreign ComfyUI ran a generation. Since then it holds 8086 MiB VRAM and most host
+RAM (3 GiB available, no swap), so the 8B model no longer fits in the page cache (cache_after
+0.96). The c01 8b-4w candidate r4 a1 runner segfaulted (rc -11) after that slow load. By L9/D5
+this is an invalid run that gets replaced, not a gate failure: the row is kept, the ABORTED marker
+is archived in stage/s3-4070ti-wmma-c01/superseded/slow-load-abort/, and from r4 such aborts are
+replaced automatically (slow-load-aborts.jsonl). An abort without a slow load still stops the
+queue. Four failed attempts at one position also stop it.
 
 ## Foreign GPU client (answered by the coordinator, 2026-10-16 00:20 UTC)
 
@@ -302,3 +312,11 @@ boundaries. No pushes, PRs, services, policy changes, new bodies or search.
 2026-10-15T06:13:44.047469+00:00 Candidate 4070ti-wmma-c11: CAPTURE_COMPLETE; NEXT_TOKEN_AND_SESSION_EVIDENCE_PENDING. Coverage {"linear_benchmark_cases": 11, "production_diff_cases": 11}; assessment artifact stage/s2-gate-c11/candidate-assessment.json. No acceptance/timing.
 
 2026-10-15T23:57:53.952127+00:00 4070ti-wmma-c08: SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING; correctness=NEXT_TOKEN_EQUAL; acceptance=NONE; ONE_MEMBER_ONLY. Ratios {"1b-4w": 1.0, "1b-8da4w": 1.0, "3b-4w": 1.0, "3b-8da4w": 0.9920017437530653, "8b-4w": 0.917143412444397, "8b-8da4w": 1.0}; geomean=0.9843697995673315. Evidence artifact stage/s3-4070ti-wmma-c08.
+
+2026-10-16T00:17:35.444930+00:00 4070ti-wmma-c09: SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING; correctness=NEXT_TOKEN_EQUAL; acceptance=NONE; ONE_MEMBER_ONLY. Ratios {"1b-4w": 1.0357147914347937, "1b-8da4w": 1.0, "3b-4w": 1.028166303092519, "3b-8da4w": 0.9919341277086434, "8b-4w": 1.0457515625, "8b-8da4w": 1.0}; geomean=1.0167226139885728. Evidence artifact stage/s3-4070ti-wmma-c09.
+
+2026-10-16T00:37:55.470664+00:00 4070ti-wmma-c10: SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING; correctness=NEXT_TOKEN_EQUAL; acceptance=NONE; ONE_MEMBER_ONLY. Ratios {"1b-4w": 1.0, "1b-8da4w": 1.0400004062501587, "3b-4w": 1.0, "3b-8da4w": 1.05785, "8b-4w": 1.0031253624574064, "8b-8da4w": 1.0380227224557208}; geomean=1.0229080862476725. Evidence artifact stage/s3-4070ti-wmma-c10.
+
+2026-10-16T01:01:20.250355+00:00 4070ti-wmma-c11: SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING; correctness=NEXT_TOKEN_EQUAL; acceptance=NONE; ONE_MEMBER_ONLY. Ratios {"1b-4w": 1.017544455866985, "1b-8da4w": 1.0, "3b-4w": 1.0209803669960222, "3b-8da4w": 1.0159990078134689, "8b-4w": 1.032362625894462, "8b-8da4w": 1.0}; geomean=1.0144159211102695. Evidence artifact stage/s3-4070ti-wmma-c11.
+
+2026-10-16T01:22:48.859298+00:00 4070ti-wmma-c06: SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING; correctness=NEXT_TOKEN_EQUAL; acceptance=NONE; ONE_MEMBER_ONLY. Ratios {"1b-4w": 1.0, "1b-8da4w": 1.0, "3b-4w": 1.0, "3b-8da4w": 1.0079374922485427, "8b-4w": 1.0031253624574064, "8b-8da4w": 1.0}; geomean=1.0018394638639274. Evidence artifact stage/s3-4070ti-wmma-c06.

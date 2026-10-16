@@ -158,6 +158,19 @@ def cool(target, maximum):
         time.sleep(5)
 
 
+def slow_load_abort(record_dir, arm, key):
+    """L9/D5: a runner abort after a slow model load is an invalid run to replace; any other abort stops."""
+    record = json.loads((record_dir / "record.json").read_text()) if (record_dir / "record.json").exists() else {}
+    if not record.get("slow_load_possible") or record.get("returncode") in (None, 0, 70, 76, 77):
+        return False
+    archive = stage / "superseded/slow-load-abort" / key
+    archive.mkdir(parents=True)
+    shutil.move(str(stage / arm / "ABORTED"), archive / "ABORTED")
+    with (stage / "slow-load-aborts.jsonl").open("a") as file:
+        file.write(json.dumps({"run": key, "returncode": record["returncode"], "cache_after": record.get("cache_after")}) + "\n")
+    return True
+
+
 def idle_label():
     return ";".join(f"{pid},{round(size / 2**20)}MiB" for pid, size in sorted(idle_clients.items()))
 
@@ -245,6 +258,9 @@ def run_rounds(first, last, target):
                         metrics = {"valid": 0, "reason": "evaluation_failed:" + str(error)}
                     if descendants:
                         metrics.update(valid=0, reason="sampling_or_runner_child_remains")
+                    slow_abort = result.returncode not in (0, 76) and slow_load_abort(run_dir, arm, key)
+                    if slow_abort:
+                        metrics.update(valid=0, reason=metrics["reason"] + ";runner_abort_after_slow_load")
                     row = dict(observer.identity, session=stage.name, cell=cell, arm=arm, candidate=profile, wmma_profile=profile if arm == "candidate" else "",
                                profile="4070ti-fused1", commit=binaries[arm]["commit"], binary_sha256=binaries[arm]["sha256"],
                                rep=rep, attempt=attempt, rc=result.returncode, validity_mode="FIXED_CANDIDATE_SESSION",
@@ -255,7 +271,7 @@ def run_rounds(first, last, target):
                     save_row(row)
                     print(cell, arm, rep, attempt, metrics, flush=True)
                     assert not descendants, "sampling/runner child remains after the run"
-                    if result.returncode not in (0, 76) or (stage / arm / "ABORTED").exists():
+                    if (result.returncode not in (0, 76) and not slow_abort) or (stage / arm / "ABORTED").exists():
                         raise RuntimeError("observed command failed; diagnose the retained row before retry")
                 if all(any(r["cell"] == cell and r["arm"] == arm and int(r["rep"]) == rep and int(r["valid"]) for r in rows) for arm in order):
                     pair = [next(r for r in rows if r["cell"] == cell and r["arm"] == arm and int(r["rep"]) == rep and int(r["valid"])) for arm in order]
@@ -331,6 +347,7 @@ def check_tokens(target):
                 samples = [json.loads(line) for line in (raw / "samples.jsonl").read_text().splitlines()] if (raw / "samples.jsonl").exists() else []
                 valid = result.returncode == 0 and len(stats) == 1 and stats[0]["generated_tokens"] == 0 and len(samples) >= 2
                 foreign = any(Observer.unexpected(s["clients"], idle_clients) for s in samples) or result.returncode == 76
+                slow_abort = result.returncode not in (0, 76) and slow_load_abort(raw, arm, key)
                 valid = valid and not foreign and all(not (s["event_reasons"] & 0x60) for s in samples)
                 generated = "\n".join(line for line in text.splitlines() if "PyTorchObserver" not in line and not re.match(r"^[IWE] |^\[sarc_dev\]", line))
                 row = dict(observer.identity, session=stage.name, cell=cell, prompt=prompt, arm=arm, candidate=profile,
@@ -340,7 +357,8 @@ def check_tokens(target):
                            prompt_tokens=stats[0]["prompt_tokens"] if stats else None,
                            generated_tokens=stats[0]["generated_tokens"] if stats else None,
                            rc=result.returncode, valid=int(valid),
-                           reason="" if valid else "foreign_gpu_client" if foreign else "token_run_failed_validity",
+                           reason="" if valid else "foreign_gpu_client" if foreign else
+                           "runner_abort_after_slow_load" if slow_abort else "token_run_failed_validity",
                            foreign_idle_client=idle_label(),
                            log=str(log.relative_to(stage)), record=str((raw / "record.json").relative_to(stage)),
                            samples=str((raw / "samples.jsonl").relative_to(stage)), utc=datetime.datetime.now(datetime.timezone.utc).isoformat())
@@ -364,7 +382,7 @@ def check_tokens(target):
                         file.write(json.dumps({"run": key, "remaining_children": children}) + "\n")
                     assert not children, "child remains after token run; diagnose before continuing"
                 assert not (stage / arm / "ABORTED").exists(), "token run failed; retain and diagnose"
-                if foreign:
+                if foreign or slow_abort:
                     continue
                 assert valid, "token run failed; retain and diagnose"
                 print("token", cell, prompt, arm, row["text_sha256"], flush=True)
