@@ -92,7 +92,7 @@ No family-wide acceptance is claimed from this member's results.
 
 ## Question for the coordinator
 
-(none)
+B70 matrix complete and reviewed (2026-10-16); which family finalists should get the full gate (verify, SDPA tiers, D3 evidence) on this device?
 
 ## Per-file reviewed input hashes
 
