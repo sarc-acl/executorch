@@ -68,8 +68,9 @@ size 32 (min = max = 32, subgroupSizeControl true). maxComputeSharedMemorySize 4
 Cooperative-matrix (KHR) properties, all subgroup scope, no saturating accumulation:
 fp16 x fp16 -> fp16 and -> fp32 at 16x16x16, 16x8x16 and 16x8x8; int8/uint8 -> int32/uint32 at
 16x16x32 and 16x8x32; bf16 x bf16 -> fp32 at 16x16x16; fp8 E4M3 and E5M2 -> fp16/fp32 at
-16x16x32. Every candidate uses 16x16x16 fp16 with subgroup 32 and declares at most 45056
-bytes of shared memory. Sources: artifact preflight/coop-matrices.json and
+16x16x32. 4w candidates (c01–c05, c08, c09, c11) use fp16
+16x16x16 and 8da4w candidates (c06, c07, c10) use int8 16x16x32, all at subgroup 32, with at
+most 45056 bytes of declared shared memory. Sources: artifact preflight/coop-matrices.json and
 preflight/vulkaninfo.txt; summary in results/property-signature.json.
 
 ## Question for the coordinator
