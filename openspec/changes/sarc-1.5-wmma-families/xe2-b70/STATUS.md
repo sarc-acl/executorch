@@ -48,7 +48,7 @@ Cand/control > 1 means the candidate is faster. Limits: six-cell geomean slowdow
 | b70-wmma-dq-table | - | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.010 / 0.883 / 1.000 / 0.839 / 1.000 / 0.804 | 0.9188 | False |
 | b70-wmma-q4-k16 | - | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.000 / 1.000 / 1.000 / 1.000 / 1.002 / 1.000 | 1.0003 | True |
 | b70-wmma-q4-k32 | - | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.000 / 1.000 / 1.000 / 1.000 / 1.002 / 1.000 | 1.0003 | True |
-| b70-wmma-dq-n26 | - | NOT_STARTED | - | - | - |
+| b70-wmma-dq-n26 | - | PASS_SCREEN (pdiff 12/12, next tokens SAME) | 1.010 / 1.000 / 1.008 / 0.990 / 1.000 / 1.005 | 1.0021 | True |
 <!-- matrix end -->
 
 No family-wide acceptance is claimed from this member's results.
