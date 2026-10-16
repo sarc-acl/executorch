@@ -1,11 +1,32 @@
 # NVIDIA Orin WMMA matrix status
 
-Updated: 2026-10-16 07:47 UTC. Actor: Claude (claude-opus-5-5), lean protocol of the owner decision of
+Updated: 2026-10-16 08:22 UTC. Actor: Claude (claude-opus-5-5), lean protocol of the owner decision of
 2026-10-15 23:30 UTC. Deadline 2026-10-17 18:00 UTC.
 
-## State
+## Now running: family finalists (coordinator decision 2026-10-16 08:20 UTC)
 
-The finite legal matrix is complete on this member and ready for its single review. Nothing is running.
+Detached chain `orin-wmma-fin-20261016-1`, state `.artifacts/jobs/orin-wmma-fin-20261016-1/state.json`, launched
+08:20 UTC. It runs these steps in order:
+1. Cross-build `orin-wmma-fin-20261016-1` of `b28066718b` under the desktop-build lock, with the golden check.
+2. On the Orin, on that one binary:
+   - control `verify.sh --pdiff` and a six-cell A/A with a fresh clock floor (new binary);
+   - then for each finalist: `verify.sh --pdiff`, then screen, then the SDPA tiers (all, extended, full x12;
+     peaked, fused x3; `tools/sdpa_check.py`), then a six-cell interleaved session against `orin-fused1`;
+   - a production-diff rejection is not timed (lean rule 3).
+- Profiles: `orin-fused-nv-family-a` (`kOrinWmmaFamilyA`) and `orin-fused-nv-family-b` (`kOrinRefine5`)
+  (`results/finalist-profiles.json`).
+  - CPU selector dump (`.artifacts/selector-tests/finalists/`): nv-family-b is byte-identical to the control. So I
+    am running its session as well, for the next-token evidence on all three prompts, although the decision lets
+    me skip it.
+  - nv-family-a differs only in 4w: bt at K = 14336 (M = 256, 1972 unaligned, 2048) and at the M = 256,
+    N % 2048 != 0 shapes. At unaligned M = 128, K = 14336, bt does not fit and the table's fp32 tile is used.
+- Known risk for nv-family-a: the Orin campaign recorded that a forced fp16 4w tile at K = 14336 fails the
+  production diff (`sarc-1.5-orin-prefill-refine/STATUS.md`, 4w screen 2). That
+  is the reason for the bx rule. If the screen rejects it, it is recorded as rejected and not timed.
+
+## Matrix state
+
+The finite legal matrix is complete on this member and ready for its single review.
 Queue `orin-wmma-m1-20261015` ran from 2026-10-15 23:31 to 2026-10-16 07:44 UTC with status `completed`.
 All steps returned rc 0, all with complete instrumentation (37 wrapped calls per verify, childless samplers).
 No HOLD, GPU_GONE, ABORTED or foreign process occurred.
