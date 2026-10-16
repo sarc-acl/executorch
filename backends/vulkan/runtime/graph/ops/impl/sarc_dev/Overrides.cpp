@@ -1451,6 +1451,17 @@ const Preference kOrinRefine5[] = {
     {Op::kQ4gswLinear, "orin_t256x128k16g42s32bt", orin_256_shape},
 };
 // <<< orin sdpa-preferences
+// >>> orin-wmma family finalists (coordinator decision 2026-10-16 08:20 UTC)
+// nv-family-a: the Orin 4w tile on every 4w shape (K > 8192 included) and the Orin 8da4w tile; attention as
+// kOrinRefine5. nv-family-b is the Orin final linear rule, kOrinRefine5 itself.
+const Preference kOrinWmmaFamilyA[] = {
+    {Op::kSdpaQk, "4070ti_pk_t128x64k64g42s32nf", nullptr},
+    {Op::kSdpaAv, "4070ti_ml_t64x128k32g42s32", nullptr},
+    {Op::kSdpaAv, "4070ti_t64x64k32g42s32", nullptr},
+    {Op::kDq8caLinear, "orin_bf_t128x128k64g24s32mk32ra", nullptr},
+    {Op::kQ4gswLinear, "orin_t256x128k16g42s32bt", nullptr},
+};
+// <<< orin-wmma family finalists
 // xe2 begin: Intel Xe2 profiles (openspec/changes/sarc-1.5-xe2-prefill-refine, tools/gen_xe2.py)
 // Single-kernel screening profiles and the xe2-refineN candidates. They take effect on a device whose
 // SDPA base rows are active (impl/sarc_dev/Xe2Sdpa.cpp, ET_VK_SARC_UNVERIFIED=1).
@@ -2387,6 +2398,21 @@ const Profile kProfiles[] = {
     {"b580-fused1-order-wmma-xe2-family-a", kB580WmmaXe2FamilyA, sizeof(kB580WmmaXe2FamilyA) / sizeof(Preference)},
     {"b580-fused1-order-wmma-xe2-family-b", kB580WmmaXe2FamilyB, sizeof(kB580WmmaXe2FamilyB) / sizeof(Preference)},
     // b580-wmma end
+    // >>> orin-wmma profiles
+    {"orin-fused-wmma-01", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-02", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-03", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-04", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-05", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-06", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-07", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-08", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-09", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-10", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-wmma-11", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    {"orin-fused-nv-family-a", kOrinWmmaFamilyA, sizeof(kOrinWmmaFamilyA) / sizeof(Preference)},
+    {"orin-fused-nv-family-b", kOrinRefine5, sizeof(kOrinRefine5) / sizeof(Preference)},
+    // <<< orin-wmma profiles
 };
 const Profile* requested_profile() {
   static const Profile* p = []() -> const Profile* {
@@ -3939,6 +3965,21 @@ struct Registrar4070tiWmma {
 } // namespace sarc
 } // namespace vkcompute
 // --- 4070ti WMMA matrix end ---
+
+// >>> orin-wmma selector
+namespace vkcompute {
+namespace sarc {
+void install_orin_wmma_linear();
+namespace {
+struct OrinWmmaRegistrar {
+  OrinWmmaRegistrar() {
+    install_orin_wmma_linear();
+  }
+} orin_wmma_registrar;
+} // namespace
+} // namespace sarc
+} // namespace vkcompute
+// <<< orin-wmma selector
 
 // --- fused attention node (M2 review, 2026-10-15) ---
 // The one fused attention node of a dev build. Its variant list per node, as

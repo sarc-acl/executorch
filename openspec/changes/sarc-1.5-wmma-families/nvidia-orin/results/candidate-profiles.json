@@ -1,0 +1,129 @@
+{
+  "inventory_commit": "f393c3ff7ff4fc41e4651a5109a8509097c501f6",
+  "manifest_sha256": "ef5d13471421898c8515e9a8356caff64a20aa97432175cbcab7bf3a5cd748b1",
+  "control_profile": "orin-fused1",
+  "attention_fused_variable": "ET_VK_SARC_ORIN_SDPA_FUSED",
+  "candidates": [
+    {
+      "profile": "orin-fused-wmma-01",
+      "shader": "sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga_texture3d_texture2d_half",
+      "kernel_base": "sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga",
+      "scheme": "4w",
+      "storage": "kTex3dTex2d",
+      "shape_rule": "wide_projection",
+      "source_fingerprint": "8c226dbafd541149a45223f03b72cde2765bad38ab81462919f1682bb6e7a9cc",
+      "timed_projection_io": true,
+      "attention_fused_variants": "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko"
+    },
+    {
+      "profile": "orin-fused-wmma-02",
+      "shader": "sarc_linear_q4gsw_coopmat_t128x128k16g24s32ga_texture3d_texture2d_half",
+      "kernel_base": "sarc_linear_q4gsw_coopmat_t128x128k16g24s32ga",
+      "scheme": "4w",
+      "storage": "kTex3dTex2d",
+      "shape_rule": "projection",
+      "source_fingerprint": "60559a26709111beebf6a9b01012da9943481ccdb7dc0443d69effdc4a4c5f54",
+      "timed_projection_io": true,
+      "attention_fused_variants": "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko"
+    },
+    {
+      "profile": "orin-fused-wmma-03",
+      "shader": "sarc_linear_q4gsw_coopmat_t128x256k16g42s32ga_buffer_texture2d_half",
+      "kernel_base": "sarc_linear_q4gsw_coopmat_t128x256k16g42s32ga",
+      "scheme": "4w",
+      "storage": "kBufTex2d",
+      "shape_rule": "wide_projection",
+      "source_fingerprint": "08d90cd3943abc48dd191630782dc8fb6ca8b568cfbeccf0a9ea77116f88de8c",
+      "timed_projection_io": false,
+      "attention_fused_variants": "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko"
+    },
+    {
+      "profile": "orin-fused-wmma-04",
+      "shader": "sarc_linear_q4gsw_coopmat_t128x128k16g42s32ga_buffer_texture2d_half",
+      "kernel_base": "sarc_linear_q4gsw_coopmat_t128x128k16g42s32ga",
+      "scheme": "4w",
+      "storage": "kBufTex2d",
+      "shape_rule": "projection",
+      "source_fingerprint": "f1966ffe70513bbcf2d35676ef810aa63d05c370df4f9ea819efdb5ad322abfa",
+      "timed_projection_io": false,
+      "attention_fused_variants": "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko"
+    },
+    {
+      "profile": "orin-fused-wmma-05",
+      "shader": "sarc_linear_q4gsw_coopmat_t128x128k16g42s32ga_buffer_buffer_half",
+      "kernel_base": "sarc_linear_q4gsw_coopmat_t128x128k16g42s32ga",
+      "scheme": "4w",
+      "storage": "kBufBuf",
+      "shape_rule": "projection",
+      "source_fingerprint": "fc0c005787f876fd06cff532d8c1fba6b5025fb30cbad540d4f9f2ec61a5fa8b",
+      "timed_projection_io": false,
+      "attention_fused_variants": "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko"
+    },
+    {
+      "profile": "orin-fused-wmma-06",
+      "shader": "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_texture3d_texture2d_half",
+      "kernel_base": "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra",
+      "scheme": "8da4w",
+      "storage": "kTex3dTex2d",
+      "shape_rule": "projection",
+      "source_fingerprint": "00b70a827f6d23f8e35e714638e85ce8654f9886c5337d1441a213bf1d6b5af7",
+      "timed_projection_io": true,
+      "attention_fused_variants": "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko"
+    },
+    {
+      "profile": "orin-fused-wmma-07",
+      "shader": "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra_buffer_texture2d_half",
+      "kernel_base": "sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra",
+      "scheme": "8da4w",
+      "storage": "kBufTex2d",
+      "shape_rule": "projection",
+      "source_fingerprint": "78617fb02bf66915864e7722c9dc533fc98ee0083851336becb97b02339d8a2a",
+      "timed_projection_io": false,
+      "attention_fused_variants": "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko"
+    },
+    {
+      "profile": "orin-fused-wmma-08",
+      "shader": "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32c_texture3d_texture2d_half",
+      "kernel_base": "sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32c",
+      "scheme": "4w",
+      "storage": "kTex3dTex2d",
+      "shape_rule": "large_k_projection",
+      "source_fingerprint": "f8a77130669b5a1b32dee3c30a3a1f37c46045d61e51786a3fd14df14c7dd988",
+      "timed_projection_io": true,
+      "attention_fused_variants": "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko"
+    },
+    {
+      "profile": "orin-fused-wmma-09",
+      "shader": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt_texture3d_texture2d_half",
+      "kernel_base": "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt",
+      "scheme": "4w",
+      "storage": "kTex3dTex2d",
+      "shape_rule": "short_k_256_projection",
+      "source_fingerprint": "e998dd7cb70a18ded8e7feb2a7ffaeed39a7980d761a9b1a9328f1253c79e69f",
+      "timed_projection_io": true,
+      "attention_fused_variants": "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko"
+    },
+    {
+      "profile": "orin-fused-wmma-10",
+      "shader": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra_texture3d_texture2d_half",
+      "kernel_base": "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra",
+      "scheme": "8da4w",
+      "storage": "kTex3dTex2d",
+      "shape_rule": "projection",
+      "source_fingerprint": "dd55ccbaabc313697b9dd0dbdf4d8fb93f403f772057ae209c8536c7373f8f03",
+      "timed_projection_io": true,
+      "attention_fused_variants": "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko"
+    },
+    {
+      "profile": "orin-fused-wmma-11",
+      "shader": "sarc_linear_q4gsw_coopmat_t128x128k16g22s32_texture3d_texture2d_half",
+      "kernel_base": "sarc_linear_q4gsw_coopmat_t128x128k16g22s32",
+      "scheme": "4w",
+      "storage": "kTex3dTex2d",
+      "shape_rule": "short_k_projection",
+      "source_fingerprint": "68576e72d65df9090c505d7a6afb7f9656eda13ec560b565b1421c5b71302d83",
+      "timed_projection_io": true,
+      "attention_fused_variants": "fused3sb_d64_t32x32g11s32rko,fused3sb_d128_t16x64g11s32rko"
+    }
+  ]
+}

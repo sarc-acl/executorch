@@ -1,0 +1,429 @@
+{
+ "tag": "orin-wmma-fin-20261016-1",
+ "queue_status": "completed",
+ "floor": {
+  "rule": "0.97 x lowest valid per-run median clock of the A/A session, device-wide; e2e5.sh takes whole MHz, so the exact floor is rounded up (never down)",
+  "lowest_valid_run_median_mhz": 612.0,
+  "floor_mhz_exact": 593.64,
+  "valid_runs": 84,
+  "cells": {
+   "1b-4w": {
+    "clkmin_mhz": 594
+   },
+   "1b-8da4w": {
+    "clkmin_mhz": 594
+   },
+   "3b-4w": {
+    "clkmin_mhz": 594
+   },
+   "3b-8da4w": {
+    "clkmin_mhz": 594
+   },
+   "8b-4w": {
+    "clkmin_mhz": 594
+   },
+   "8b-8da4w": {
+    "clkmin_mhz": 594
+   }
+  }
+ },
+ "sessions": {
+  "session-aa": {
+   "cells": {
+    "1b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1652.95,
+     "candidate_median": 1651.61,
+     "ratio": 1.0008113295511654,
+     "throughput_ratio": 0.9991893281708459,
+     "control_spread": 0.0024199159079221996,
+     "candidate_spread": 0.004044538359540124,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "1b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1521.55,
+     "candidate_median": 1522.68,
+     "ratio": 0.9992578874090419,
+     "throughput_ratio": 1.0007426637310637,
+     "control_spread": 0.0007426637310637897,
+     "candidate_spread": 0.0014842251819160892,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 659.794,
+     "candidate_median": 659.369,
+     "ratio": 1.0006445556281838,
+     "throughput_ratio": 0.9993558595561646,
+     "control_spread": 0.0019339369560801608,
+     "candidate_spread": 0.0019306336815956232,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 595.349,
+     "candidate_median": 595.176,
+     "ratio": 1.0002906703227281,
+     "throughput_ratio": 0.999709414141957,
+     "control_spread": 0.0017451948352982657,
+     "candidate_spread": 0.0008720109681842101,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 305.125,
+     "candidate_median": 304.989,
+     "ratio": 1.0004459177216227,
+     "throughput_ratio": 0.9995542810323637,
+     "control_spread": 0.0019401884473577758,
+     "candidate_spread": 0.0014918570833703543,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 277.281,
+     "candidate_median": 277.281,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.000944889840991631,
+     "candidate_spread": 0.0008114511993249546,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    }
+   },
+   "complete": true,
+   "geomean_ratio": 1.0002415969991916,
+   "max_cell_ratio": 1.0008113295511654,
+   "nexttoken_not_same": [],
+   "nexttoken_rows": 24
+  },
+  "session-orin-fused-nv-family-b": {
+   "cells": {
+    "1b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1651.61,
+     "candidate_median": 1652.95,
+     "ratio": 0.9991893281708459,
+     "throughput_ratio": 1.0008113295511654,
+     "control_spread": 0.002421879257209632,
+     "candidate_spread": 0.003230587737076087,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "1b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 1522.68,
+     "candidate_median": 1522.68,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.0014842251819160892,
+     "candidate_spread": 0.004472377649932977,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 659.369,
+     "candidate_median": 659.794,
+     "ratio": 0.9993558595561646,
+     "throughput_ratio": 1.0006445556281838,
+     "control_spread": 0.001286078053411777,
+     "candidate_spread": 0.0016111089218755978,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "3b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 595.003,
+     "candidate_median": 595.003,
+     "ratio": 1.0,
+     "throughput_ratio": 1.0,
+     "control_spread": 0.0020369645195066058,
+     "candidate_spread": 0.0020369645195066058,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 305.125,
+     "candidate_median": 305.398,
+     "ratio": 0.9991060845192175,
+     "throughput_ratio": 1.0008947152806227,
+     "control_spread": 0.001789430561245366,
+     "candidate_spread": 0.002085802788492395,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    "8b-8da4w": {
+     "parent_valid": 7,
+     "cand_valid": 7,
+     "control_median": 277.319,
+     "candidate_median": 277.356,
+     "ratio": 0.9998665974415554,
+     "throughput_ratio": 1.0001334203570615,
+     "control_spread": 0.0006779196520973614,
+     "candidate_spread": 0.0013556584317629082,
+     "control_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "candidate_reps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ]
+    }
+   },
+   "complete": true,
+   "geomean_ratio": 0.9995862397371418,
+   "max_cell_ratio": 1.0,
+   "within_family_limits": true,
+   "nexttoken_not_same": [],
+   "nexttoken_rows": 24
+  }
+ },
+ "candidates": {
+  "orin-fused-nv-family-a": {
+   "screen": "REJECTED_PDIFF",
+   "pdiff_pass": false,
+   "pdiff_reasons": [
+    "llama-3.1-8b 4w texture3d llama-3.1-8b_prefill_w2_linear_q4gsw_M2048_K14336_N4096_rank3batch1_Texture3D: threw (control coopmat:PASSED, same kernel False)"
+   ],
+   "verify_nexttoken_not_same": [],
+   "decode_text": {
+    "decode 1b 4w": "SAME",
+    "decode 1b 8da4w": "SAME"
+   },
+   "changed_cases": [
+    "4w llama-3.1-8b w2 texture3d"
+   ],
+   "content_check_rc": 1,
+   "timing": "not timed: REJECTED_PDIFF"
+  },
+  "orin-fused-nv-family-b": {
+   "screen": "PASS",
+   "pdiff_pass": true,
+   "pdiff_reasons": [],
+   "verify_nexttoken_not_same": [],
+   "decode_text": {
+    "decode 1b 4w": "SAME",
+    "decode 1b 8da4w": "SAME"
+   },
+   "changed_cases": [],
+   "content_check_rc": 0,
+   "timing": "timed"
+  }
+ },
+ "recompute_mismatches": [],
+ "control_verify_vs_s5_c1_differing": [],
+ "control_verify_default_prefill_tok_s": {
+  "1b-4w": 1651.61,
+  "1b-8da4w": 1517.04,
+  "3b-4w": 658.733,
+  "3b-8da4w": 594.312,
+  "8b-4w": 305.489,
+  "8b-8da4w": 277.169
+ }
+}
