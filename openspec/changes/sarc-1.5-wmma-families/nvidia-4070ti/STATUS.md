@@ -1,8 +1,33 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-16 08:10 UTC (review corrections, documentation only)
+Updated: 2026-10-16 08:40 UTC
 
-Stage: FINITE NATIVE MATRIX COMPLETE (2026-10-16 07:31 UTC); ready for the one matrix review.
+## Family finalists (coordinator decision 2026-10-16 08:20 UTC)
+
+Running: detached queue artifact jobs/family-finalists-r1 (state.json there; tools copied from
+f82cc2c17). Steps, each recorded below as it finishes and in results/family-finalists.json:
+one rebuild matrix-fam-r1 of f82cc2c17 (golden check, SPIR-V identical to matrix-mm-r1, runtime
+source identical except the dev-zone selector, so the matrix-mm-r1 memory-model probe applies);
+control verify on the rebuild compared with s0-topic-mm-control; per finalist the full gate
+(unmodified verify.sh --pdiff, SDPA --sdpa-correctness-only extended and full, 12 passes each,
+plus one control pass per tier for attention identity) and then 36 next-token runs (three prompts)
+and one six-cell interleaved session against 4070ti-fused1 in the same binary, 7 valid runs per
+arm, 2531 MHz floor and the unchanged validity rules of the matrix.
+
+Profiles (dev zone, backends/.../sarc_dev/NvidiaWmmaMatrix.cpp; selection table
+results/family-select.txt, GPU-free):
+- 4070ti-nv-family-a: 4w sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt on every fitting
+  texture3d production shape including K>8192; 8da4w
+  sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra.
+- 4070ti-nv-family-b: 4w sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32c for K>8192,
+  bt where the Orin rule takes it (K<=8192 and (M!=256 or N%2048==0)), 8da4w bf.
+Where neither fits (M not a multiple of 256 for bt, buffer IO, the M=256 shapes the Orin rule
+leaves out), both fall back to the 4070 Ti control choice (ga tiles), not to the Orin's g22
+fallback; buffer-IO shapes keep the control choice and are not timeable on the fixed models.
+
+## Native matrix
+
+Stage: FINITE NATIVE MATRIX COMPLETE (2026-10-16 07:31 UTC); matrix review done (corrections 56f225cc4, 63e4cd537).
 Final queue: artifact jobs/native-matrix-r7 (completed, rc 0). r1–r6 are kept as failed or
 stopped records; their causes are listed below. Both arms of all seven sessions use the same
 matrix-mm-r1 binary (commit dd57ce0e4, one llama_main hash per session). The control is
