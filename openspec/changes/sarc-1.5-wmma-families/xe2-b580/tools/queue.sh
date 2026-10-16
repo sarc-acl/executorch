@@ -65,4 +65,20 @@ for c in "${CANDS[@]}"; do
   fi
   session $s $c
 done
+# Repair: a candidate session whose only failures are cells short of valid runs gets those cells re-timed in a
+# new session s<N>b-<cand> (same binary and environments; the candidate's gate stays its correctness record).
+i=2
+for c in "${CANDS[@]}"; do
+  s=s$i-$c; r=s${i}b-$c; i=$((i + 1)); f=$(tail -1 "$A/stage/$s/raw/done.txt" 2>/dev/null)
+  [[ $f == E2E5_INCOMPLETE* ]] || continue
+  cells=(${f#E2E5_INCOMPLETE}); [[ ${#cells[@]} -gt 0 ]] || continue
+  printf '%s\n' "${cells[@]}" | grep -qv ':incomplete$' && { note "$s: not repairable ($f)"; continue; }
+  step "$r"
+  stage $r $BUILD "$PARENT_ENV" $BUILD "ET_VK_SARC_UNVERIFIED=1 ET_VK_SARC_DEV_PROFILE=b580-fused1-order-wmma-$c" "re-time of $s cells: ${cells[*]}" \
+    || { note "stage $r failed"; continue; }
+  for cell in "${cells[@]}"; do cell=${cell%:incomplete}
+    [[ -s $A/stage/$r/raw-$cell/done.txt ]] || B580_CANDIDATE=$c "$TOOLS/session.sh" "$r" --out raw-$cell --models ${cell%-*} --schemes ${cell#*-} --reps $REPS --extra $EXTRA
+    note "session $r $cell: $(tail -1 "$A/stage/$r/raw-$cell/done.txt" 2>/dev/null)"; lost
+  done
+done
 DONE=1; state completed "done" $$ "$(date -u +%FT%TZ) queue completed"
