@@ -268,3 +268,22 @@ campaign's session tool), `tools/e2e/common.sh` (copy with deployment root `wmma
 a TERM trap so that the sampler and the watcher end their `sleep` child), `tools/screen.py`,
 `tools/matrix_device.py` (device queue) and `tools/matrix_queue.py` (deploy over `bash -s`, detach, rsync the
 evidence to the NAS, JSON state).
+
+## Family finalists (coordinator decision 2026-10-16 08:20 UTC)
+
+Two dev-zone profiles were added in the orin-wmma block of `impl/sarc_dev/Overrides.cpp` (commit `b28066718b`):
+- `orin-fused-nv-family-a` = `kOrinWmmaFamilyA`: bt on every 4w shape it fits, bf on every 8da4w shape.
+- `orin-fused-nv-family-b` = `kOrinRefine5`: the Orin final rule, the control's own list.
+
+Both names start with `orin-fused`, so the softmax stays `orin_g64`. The arms set the fused attention pair through
+`ET_VK_SARC_ORIN_SDPA_FUSED`, as in the matrix.
+
+The rules of the lean protocol above are unchanged. For each finalist, the SDPA tiers of the Orin campaign's gate
+run after a passing screen: all, extended and full 12 passes each, peaked and fused 3 passes each.
+
+Run-local tools (historical files untouched):
+- `tools/sdpa_check.py`: the criteria of `sarc-1.5-orin-fused-port/tools/gate_check.py sdpa`, unchanged. The fused
+  pair is read from `ET_VK_SARC_ORIN_SDPA_FUSED` instead of the profile name. On the historical `s5-c1` logs it
+  gives ACCEPT and the same dispatched kernels.
+- `tools/chain.py`: build, then device queue, as one detached job.
+- `matrix_device.py` and `matrix_queue.py`: the SDPA step (`sdpa_tiers` in the queue config).

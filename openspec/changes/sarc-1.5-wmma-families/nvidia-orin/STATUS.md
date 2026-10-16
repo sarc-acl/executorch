@@ -1,28 +1,41 @@
 # NVIDIA Orin WMMA matrix status
 
-Updated: 2026-10-16 08:22 UTC. Actor: Claude (claude-opus-5-5), lean protocol of the owner decision of
+Updated: 2026-10-16 11:25 UTC. Actor: Claude (claude-opus-5-5), lean protocol of the owner decision of
 2026-10-15 23:30 UTC. Deadline 2026-10-17 18:00 UTC.
 
-## Now running: family finalists (coordinator decision 2026-10-16 08:20 UTC)
+## Family finalists (coordinator decision 2026-10-16 08:20 UTC): done, ready for the single review
 
-Detached chain `orin-wmma-fin-20261016-1`, state `.artifacts/jobs/orin-wmma-fin-20261016-1/state.json`, launched
-08:20 UTC. It runs these steps in order:
-1. Cross-build `orin-wmma-fin-20261016-1` of `b28066718b` under the desktop-build lock, with the golden check.
-2. On the Orin, on that one binary:
-   - control `verify.sh --pdiff` and a six-cell A/A with a fresh clock floor (new binary);
-   - then for each finalist: `verify.sh --pdiff`, then screen, then the SDPA tiers (all, extended, full x12;
-     peaked, fused x3; `tools/sdpa_check.py`), then a six-cell interleaved session against `orin-fused1`;
-   - a production-diff rejection is not timed (lean rule 3).
-- Profiles: `orin-fused-nv-family-a` (`kOrinWmmaFamilyA`) and `orin-fused-nv-family-b` (`kOrinRefine5`)
-  (`results/finalist-profiles.json`).
-  - CPU selector dump (`.artifacts/selector-tests/finalists/`): nv-family-b is byte-identical to the control. So I
-    am running its session as well, for the next-token evidence on all three prompts, although the decision lets
-    me skip it.
-  - nv-family-a differs only in 4w: bt at K = 14336 (M = 256, 1972 unaligned, 2048) and at the M = 256,
-    N % 2048 != 0 shapes. At unaligned M = 128, K = 14336, bt does not fit and the table's fp32 tile is used.
-- Known risk for nv-family-a: the Orin campaign recorded that a forced fp16 4w tile at K = 14336 fails the
-  production diff (`sarc-1.5-orin-prefill-refine/STATUS.md`, 4w screen 2). That
-  is the reason for the bx rule. If the screen rejects it, it is recorded as rejected and not timed.
+Nothing is running. The chain `orin-wmma-fin-20261016-1` ran from 08:20 to 11:14 UTC with status `completed`
+(`.artifacts/jobs/orin-wmma-fin-20261016-1/state.json`, all steps rc 0, instrumentation complete). There was no
+HOLD, GPU_GONE or foreign process.
+
+Build `orin-wmma-fin-20261016-1`, source `b28066718b`, golden PASS on 53 shipped variants. Both arms of every
+session ran on this one binary, with the attention setup of the matrix. Raw evidence is in
+`.artifacts/target-evidence/orin-wmma-fin-20261016-1/`. Results recomputed by `tools/analyze_matrix.py` are in
+`results/finalists-f1/`, with 0 recompute mismatches.
+
+| finalist | linear rule | production diff / content check | SDPA tiers | next tokens | 1B 4w | 1B 8da4w | 3B 4w | 3B 8da4w | 8B 4w | 8B 8da4w | geomean | limits |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| A/A (new binary) | control | | | 24/24 SAME | 1.0008 | 0.9993 | 1.0006 | 1.0003 | 1.0004 | 1.0000 | 1.0002 | |
+| nv-family-a | bt every 4w shape incl. K > 8192; bf | REJECTED: 8B w2 4w texture3d (M 2048, K 14336, N 4096) fails correctness, 4/8388608 elements over tolerance, max abs diff 1.489 (tol 0.5); `content-check` REJECT (3 findings, all that shape) | not run (rejected) | verify items SAME | not timed (production-diff rejection, lean rule 3) | | | | | | | REJECTED |
+| nv-family-b | Orin final rule: bt K <= 8192, bx K > 8192; bf | PASS; content check ACCEPT, 0 findings | ACCEPT, 42/42 passes, 0 findings, fused pair dispatched | verify items SAME; session 24/24 SAME | 0.9992 | 1.0000 | 0.9994 | 1.0000 | 0.9991 | 0.9999 | 0.9996 | within |
+
+- Ratios are control median tok/s over candidate median tok/s, from the first 7 valid runs per arm. A value
+  above 1 means the candidate is slower.
+- 168 timed runs, all valid and all at 612 MHz.
+- Floor 593.64 MHz exact, 594 as applied (A/A of this binary, 84 valid runs).
+- Largest 7-run spread 0.45 % (nv-family-b session, 1B 8da4w, candidate arm).
+- nv-family-a's bt at the failing shape runs 37.53 ms against the control's bx 41.20 ms at kernel level. It is
+  9 % faster but numerically invalid there, as the Orin campaign found for fp16 4w tiles at K = 14336.
+- nv-family-b dispatches exactly the control's kernels (0 changed of the 48 microbench cases; CPU selector dump
+  byte-identical). Its session reads like the A/A.
+- The new control verify equals the m1 control verify line by line with rates removed. Both equal the Orin
+  campaign's final gate `s5-c1` (34 lines, 0 differing). The control medians are within -0.32 % to +0.15 % of the published `s5-c1` medians.
+
+Reading for this member (no family-wide claim):
+- nv-family-a fails on the Orin on correctness. A family set without bx (or another fp32 4w tile) at K > 8192
+  does not hold for the Orin.
+- nv-family-b holds on the Orin: full gate passed, timing equal to the tuned control.
 
 ## Matrix state
 
