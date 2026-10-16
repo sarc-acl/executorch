@@ -10,13 +10,9 @@
 
 #include <executorch/backends/vulkan/runtime/vk_api/Adapter.h>
 
+#include <cstring>
 #include <iomanip>
 #include <sstream>
-
-#if defined(VK_KHR_pipeline_executable_properties) && \
-    defined(ETVK_INSPECT_PIPELINES)
-#include <cstring>
-#endif
 
 namespace vkcompute {
 namespace vkapi {
