@@ -5,8 +5,10 @@
 revised inputs are superseded by that decision; their records stay below in git history and under the
 artifact root.
 
-**Matrix complete** (2026-10-16 02:52 UTC); nothing is running. Jobs `lean-01` (matrix, 23:29 to 02:31 UTC) and
-`redispatch-01` (dispatch names, 02:33 to 02:52 UTC) both completed with exit code 0. Waiting for the single review of the finished matrix.
+**Stage complete; nothing is running.** Matrix: jobs `lean-01` (23:29 to 02:31 UTC) and `redispatch-01`
+(02:33 to 02:52 UTC) completed with exit code 0; its single review is done. Finalists: job `final-01` completed
+with exit code 0 (`FINALISTS_COMPLETE` 2026-10-16T07:18:36Z in `.artifacts/queue.status`); its single review is
+done.
 
 ## Configuration
 
@@ -113,7 +115,7 @@ Registered as dev-zone profiles in the `b70-wmma` block of `impl/sarc_dev/Overri
 | xe2-family-b | 12/12; same status as control | 12 passes each, 0 mismatches, pairing=ok | SAME, 3 prompts x 6 cells | 1.000 / 1.000 / 1.000 / 0.981 / 1.000 / 0.998 | 0.9964 | 0.37 % [-0.26, 0.68] |
 
 - Both finalists are within the 3 % geomean / 8 % per-cell limits on B70.
-  - xe2-family-a: its one cell outside the +-2 % noise band is 8B 8da4w at 3.6 % slower (CI [3.3, 4.5] %). The
+  - xe2-family-a: its one cell outside the +-2 % noise band is 8B 8da4w at 3.8 % slower (CI [3.3, 4.5] %). The
     matrix's dq-i measured the same cell at 4.3 %.
   - xe2-family-b: every cell is inside the noise band.
 - The verify output differs from the control's only in the two linear kernel-name lines.
@@ -130,7 +132,8 @@ Registered as dev-zone profiles in the `b70-wmma` block of `impl/sarc_dev/Overri
 
 B70 matrix complete and reviewed (2026-10-16); which family finalists should get the full gate (verify, SDPA tiers, D3 evidence) on this device?
 
-Answered 2026-10-16 03:15 UTC: matrix accepted as the B70 member evidence; Xe2 finalists are named after the B580 matrix completes. Parked; no GPU work on this device until the finalist list is appended to the task file.
+Answered 2026-10-16 03:15 UTC: matrix accepted as the B70 member evidence; Xe2 finalists are named after the B580 matrix completes. Answered by the coordinator decision of 2026-10-16 05:20 UTC (finalists xe2-family-a/b); results below in
+"Xe2 family finalists".
 
 ## Per-file reviewed input hashes
 
