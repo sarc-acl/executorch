@@ -105,6 +105,14 @@ device owner's rule says. RX 7600 and RX 7900 XTX numbers may be published.
 Executed by a humanize campaign under the playbook (`../sarc-1.5-campaign-playbook/`). Coordination with upstream
 happens offline through the owner; no RFC issue.
 
+## Scope as closed (owner decision N13.8, 2026-10-16)
+
+Families delivered: **Xe2** and **NVIDIA** (family key and rows `fae9e53e76`, device check `select-check/`,
+port `pr/wmma-families` with its check `port-check/`). RDNA3 on RADV and Xclipse are out of this campaign
+(no company-side data); their devices keep their per-device rows in the fork and upstream's path in the port.
+The step-9 device check covers the five in-house devices and llvmpipe. Fused attention is not part of this
+campaign. The criteria below apply to the delivered families.
+
 ## Done when
 
 - Every family's set meets the margin on all its members, from recomputed `runs.csv` medians.

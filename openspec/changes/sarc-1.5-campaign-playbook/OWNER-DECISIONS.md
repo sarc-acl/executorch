@@ -343,3 +343,9 @@ campaign's run tasks; the proposal cited them as N12 before N12 was used for the
    images over ANV's reported 2048 extent (RoPE tables, 8B activations) are a pre-existing, documented caveat,
    identical in both arms, as in every earlier Intel campaign; the original model files are used.
 
+8. 2026-10-16: scope of this campaign closed by the owner. The company-side kit (RX 7600, RX 7900 XTX, M51)
+   is not relayed, so RDNA3 on RADV and Xclipse get no family in this campaign: in the fork they keep their
+   per-device rows, in the port they run upstream's path. The device check of the port covers the five
+   in-house devices (B580, B70, 4070 Ti, Orin, 780M) plus llvmpipe instead of all eight. Fused attention is
+   not part of this campaign. `topic/wmma-families-select` and `pr/wmma-families` are pushed to the fork; no
+   upstream PR.
