@@ -1,12 +1,36 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-16 08:40 UTC
+Updated: 2026-10-16 10:45 UTC
 
 ## Family finalists (coordinator decision 2026-10-16 08:20 UTC)
 
-Running: detached queue artifact jobs/family-finalists-r3 (state.json there): the nv-family-b gate,
-then its tokens and session. Done so far (jobs/family-finalists-r2, stopped by its own
-gate assertion, kept):
+Stage: FAMILY FINALISTS COMPLETE (2026-10-16 10:36 UTC); ready for the one finalist review.
+Queues: jobs/family-finalists-r3 (completed, rc 0) reused the build, control check and nv-family-a
+gate of jobs/family-finalists-r2 (stopped by its own assertion after that gate failed, kept); r1 is
+kept as the false-guard record. Evidence summary: results/family-finalists.json.
+
+| Finalist | Linear kernels (texture3d) | Gate | Next token | 1b-4w | 1b-8da4w | 3b-4w | 3b-8da4w | 8b-4w | 8b-8da4w | Geomean |
+|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|
+| 4070ti-nv-family-a | 4w bt (all shapes), 8da4w bf | REJECTED: pdiff 8B 4w w2 (K=14336) | not run | not timed | | | | | | n/a |
+| 4070ti-nv-family-b | 4w bx (K>8192), bt (Orin rule), 8da4w bf | PASS: pdiff 132 commands, SDPA 24/24, verify identical to control except dispatch lines | equal 36/36 | 1.0175 | 1.0400 | 1.0357 | 0.9919 | 0.9522 | 1.0420 | 1.0127 |
+
+nv-family-b session s3-4070ti-nv-family-b: 84 of 84 rows valid, 7 per arm and cell, one llama_main
+(sha256 3939e1bdc75b..., commit f82cc2c17) for both arms, control 4070ti-fused1, attention control
+unchanged. Valid-run medians in tok/s (control -> candidate): 1b-4w 35310.3 -> 35929.8,
+1b-8da4w 39384.6 -> 40960.0, 3b-4w 14124.1 -> 14628.6, 3b-8da4w 16650.4 -> 16516.1,
+8b-4w 6420.06 -> 6113.43, 8b-8da4w 7501.83 -> 7816.79. The lowest per-run median clock is
+2610 MHz, above the 2531 MHz floor. Actor recomputation from runs.csv matches the queue's summary.
+Within this member's numeric margins (geomean >= 0.97 and every cell >= 0.92), but the +1.27 %
+geomean is inside the +-2 % noise band. The 8b-4w cell (0.952, paired 95 % interval 0.949-0.952)
+combines the effects already measured singly: bt on K<=8192 (c09 8b-4w 1.046) and bx at K>8192
+(c08 8b-4w 0.917), and 1.046 x 0.917 = 0.959. On this device the bx part of the Orin rule costs about
+8 % at the 8B down projection relative to the control's ga. The 8da4w cells reproduce c10
+(1.040/0.992-1.058/1.038-1.042). No family acceptance or selection claim is made from one member.
+
+Question for the coordinator (informational, not blocking): bt for K<=8192 with each device's own
+K>8192 kernel (c09 + c10 combined) would avoid both the bt K=14336 failure and the bx cost here, but
+it is not a named finalist and was not gated or timed.
+
 - Build matrix-fam-r1 of f82cc2c17: golden PASS (53 shipped variants, llama and backend), all SPIR-V
   identical to matrix-mm-r1, runtime source identical except NvidiaWmmaMatrix.cpp
   (build/matrix-fam-r1/source-diff.json).
@@ -416,3 +440,9 @@ boundaries. No pushes, PRs, services, policy changes, new bodies or search.
 2026-10-16T08:33:19.159024+00:00 family finalists: control verify on matrix-fam-r1: identical to s0-topic-mm-control (rates removed)
 
 2026-10-16T09:17:04.109583+00:00 family finalists: 4070ti-nv-family-a gate: CORRECTNESS_GATE_FAILED; NO_RETRY_OR_ACCEPTANCE; coverage {"sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt": 11, "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra": 12}; SDPA extended/full 12 passes each, failures 0. Assessment stage/s2-gate-nv-family-a/candidate-assessment.json.
+
+2026-10-16T10:02:08.431099+00:00 family finalists: 4070ti-nv-family-b gate: GATE_CAPTURE_COMPLETE; TOKENS_AND_SESSION_PENDING; coverage {"sarc_dev_linear_q4gsw_coopmat_bx_t128x128k32g42s32f32c": 1, "sarc_linear_q4gsw_coopmat_orin_t256x128k16g42s32bt": 11, "sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra": 12}; SDPA extended/full 12 passes each, failures 0. Assessment stage/s2-gate-nv-family-b/candidate-assessment.json.
+
+2026-10-16T10:02:08.431309+00:00 family finalists: 4070ti-nv-family-a not timed: gate CORRECTNESS_GATE_FAILED; NO_RETRY_OR_ACCEPTANCE.
+
+2026-10-16T10:36:51.427537+00:00 family finalists: 4070ti-nv-family-b session: SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING; correctness=NEXT_TOKEN_EQUAL; ratios {"1b-4w": 1.0175, "1b-8da4w": 1.04, "3b-4w": 1.0357, "3b-8da4w": 0.9919, "8b-4w": 0.9522, "8b-8da4w": 1.042}; geomean=1.012713189818401.
