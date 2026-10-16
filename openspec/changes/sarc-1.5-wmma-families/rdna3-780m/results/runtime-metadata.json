@@ -1,0 +1,217 @@
+{
+  "status": "PASS_RUNTIME_CONSTANTS",
+  "models": [
+    {
+      "model": "llama3_2-1b_vulkan_4w.pte",
+      "bytes": 788490112,
+      "constants": {
+        "get_max_seq_len": [
+          2560
+        ],
+        "get_max_context_len": [
+          2560
+        ],
+        "get_n_layers": [
+          16
+        ],
+        "get_vocab_size": [
+          128256
+        ],
+        "use_kv_cache": [
+          true
+        ],
+        "use_sdpa_with_kv_cache": [
+          true
+        ],
+        "enable_dynamic_shape": [
+          true
+        ],
+        "get_bos_id": [
+          128000
+        ],
+        "get_eos_ids": [
+          128009,
+          128001
+        ]
+      }
+    },
+    {
+      "model": "llama3_2-1b_vulkan_8da4w.pte",
+      "bytes": 827179392,
+      "constants": {
+        "get_max_seq_len": [
+          2560
+        ],
+        "get_max_context_len": [
+          2560
+        ],
+        "get_n_layers": [
+          16
+        ],
+        "get_vocab_size": [
+          128256
+        ],
+        "use_kv_cache": [
+          true
+        ],
+        "use_sdpa_with_kv_cache": [
+          true
+        ],
+        "enable_dynamic_shape": [
+          true
+        ],
+        "get_bos_id": [
+          128000
+        ],
+        "get_eos_ids": [
+          128009,
+          128001
+        ]
+      }
+    },
+    {
+      "model": "llama3_2-3b_vulkan_4w.pte",
+      "bytes": 1885262208,
+      "constants": {
+        "get_max_seq_len": [
+          2560
+        ],
+        "get_max_context_len": [
+          2560
+        ],
+        "get_n_layers": [
+          28
+        ],
+        "get_vocab_size": [
+          128256
+        ],
+        "use_kv_cache": [
+          true
+        ],
+        "use_sdpa_with_kv_cache": [
+          true
+        ],
+        "enable_dynamic_shape": [
+          true
+        ],
+        "get_bos_id": [
+          128000
+        ],
+        "get_eos_ids": [
+          128009,
+          128001
+        ]
+      }
+    },
+    {
+      "model": "llama3_2-3b_vulkan_8da4w.pte",
+      "bytes": 1985780864,
+      "constants": {
+        "get_max_seq_len": [
+          2560
+        ],
+        "get_max_context_len": [
+          2560
+        ],
+        "get_n_layers": [
+          28
+        ],
+        "get_vocab_size": [
+          128256
+        ],
+        "use_kv_cache": [
+          true
+        ],
+        "use_sdpa_with_kv_cache": [
+          true
+        ],
+        "enable_dynamic_shape": [
+          true
+        ],
+        "get_bos_id": [
+          128000
+        ],
+        "get_eos_ids": [
+          128009,
+          128001
+        ]
+      }
+    },
+    {
+      "model": "llama3_1-8b_vulkan_4w.pte",
+      "bytes": 4172459904,
+      "constants": {
+        "get_max_seq_len": [
+          2560
+        ],
+        "get_max_context_len": [
+          2560
+        ],
+        "get_n_layers": [
+          32
+        ],
+        "get_vocab_size": [
+          128256
+        ],
+        "use_kv_cache": [
+          true
+        ],
+        "use_sdpa_with_kv_cache": [
+          true
+        ],
+        "enable_dynamic_shape": [
+          true
+        ],
+        "get_bos_id": [
+          128000
+        ],
+        "get_eos_ids": [
+          128009,
+          128001
+        ]
+      }
+    },
+    {
+      "model": "llama3_1-8b_vulkan_8da4w.pte",
+      "bytes": 4407123968,
+      "constants": {
+        "get_max_seq_len": [
+          2560
+        ],
+        "get_max_context_len": [
+          2560
+        ],
+        "get_n_layers": [
+          32
+        ],
+        "get_vocab_size": [
+          128256
+        ],
+        "use_kv_cache": [
+          true
+        ],
+        "use_sdpa_with_kv_cache": [
+          true
+        ],
+        "enable_dynamic_shape": [
+          true
+        ],
+        "get_bos_id": [
+          128000
+        ],
+        "get_eos_ids": [
+          128009,
+          128001
+        ]
+      }
+    }
+  ],
+  "helper_sha256": "7ccac5c6bedd54dcb6fcd7f714ac87d3deff4552a165a93e870b51e4daf536f1",
+  "helper_commit": "f5410fbeaeba85db0e643280ffa935d37a0b873e",
+  "runtime_commit": "617897184529ff180af491ee0d5d7de778cbb6c6",
+  "model_hashes_match_preserved_records": true,
+  "gpu_model_execution": false,
+  "group_embedding_evidence": "Preserved serialized graph/tensor records, bound to rechecked identical model hashes; not runtime constant fields",
+  "monitoring_visibility": "own_user_plus_device_busy_other_users_unobservable",
+  "monitoring_owner_decision": "2026-10-15 03:57 UTC"
+}

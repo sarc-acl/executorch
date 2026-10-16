@@ -3777,6 +3777,154 @@ struct RegistrarB70Wmma {
 } // namespace vkcompute
 // --- b70-wmma end ---
 
+// --- rdna3-780m WMMA matrix begin ---
+namespace vkcompute {
+namespace sarc {
+namespace {
+
+struct Wmma780mProfile {
+  const char* name;
+  const char* kernel_base;
+  const char* alias;
+  Op op;
+  Storage io;
+  Storage weight;
+  unsigned sources;
+  uint32_t shared_bytes;
+};
+const Wmma780mProfile kWmma780mProfiles[] = {
+#include "Wmma780mProfiles.inc"
+};
+
+std::optional<Choice> registered_wmma780m_choice(
+    const DeviceInfo& device,
+    const ShapeInfo& shape,
+    const char* name) {
+  for (const auto* store : {&candidates(), &rows()}) {
+    for (const Row& row : *store) {
+      if (row.op == shape.op && std::strcmp(row.kernel_base, name) == 0 &&
+          q4gsw_coopmat_fits(device, shape, row)) {
+        return Choice{row.kernel_base, row.dims, row.rowmajor_a};
+      }
+    }
+  }
+  return std::nullopt;
+}
+
+// Replay source predicates with the queried target limits, not historical device limits.
+std::optional<Choice> source_wmma780m_choice(
+    const DeviceInfo& device,
+    const ShapeInfo& shape,
+    unsigned source) {
+  DeviceInfo origin = device;
+  origin.name = source == 2 ? "radeon rx 7600" : "radeon rx 7900 xtx";
+  const auto table = select_table(origin, shape);
+  if (!table.has_value()) {
+    return table;
+  }
+  if (source == 2) {
+    for (const PickRx7600& pick : kRx7600Refine5) {
+      if (pick.op == shape.op && pick.shape_ok(shape)) {
+        auto choice = registered_wmma780m_choice(origin, shape, pick.kernel_base);
+        if (choice.has_value()) {
+          return choice;
+        }
+      }
+    }
+  } else {
+    for (const Pick7900xtx& pick : kRefine5) {
+      if (pick.op != shape.op) {
+        continue;
+      }
+      bool listed = pick.shapes == nullptr;
+      for (size_t i = 0; i < pick.count; ++i) {
+        listed = listed ||
+            (shape.N == pick.shapes[i].N &&
+             (pick.shapes[i].K < 0 || shape.K == pick.shapes[i].K));
+      }
+      if (listed) {
+        auto choice = registered_wmma780m_choice(origin, shape, pick.kernel_base);
+        if (choice.has_value()) {
+          return choice;
+        }
+      }
+    }
+  }
+  return table;
+}
+
+const Wmma780mProfile* active_wmma780m_profile() {
+  static const Wmma780mProfile* const active = []() -> const Wmma780mProfile* {
+    const char* name = std::getenv("ET_VK_SARC_780M_WMMA_PROFILE");
+    if (name == nullptr || *name == 0 || !env_true("ET_VK_SARC_UNVERIFIED")) {
+      return nullptr;
+    }
+    const char* control = std::getenv("ET_VK_SARC_DEV_PROFILE");
+    if (control != nullptr && std::strcmp(control, "780m-final") == 0) {
+      for (const Wmma780mProfile& profile : kWmma780mProfiles) {
+        if (std::strcmp(profile.name, name) == 0) {
+          return &profile;
+        }
+      }
+    }
+    std::cerr << "[sarc_dev] invalid 780M WMMA profile/control: " << name << std::endl;
+    std::abort();
+  }();
+  return active;
+}
+
+std::optional<Choice> (*select_before_wmma780m)(
+    const DeviceInfo&, const ShapeInfo&, const std::optional<Choice>&) = nullptr;
+
+std::optional<Choice> select_wmma780m(
+    const DeviceInfo& device,
+    const ShapeInfo& shape,
+    const std::optional<Choice>& table_choice) {
+  const auto before = select_before_wmma780m(device, shape, table_choice);
+  const Wmma780mProfile* profile = active_wmma780m_profile();
+  if (profile == nullptr || !before.has_value() || !device.is_amd ||
+      device.name.find("780m") == std::string::npos ||
+      profile->op != shape.op || shape.M <= 1 || shape.N <= 0 || shape.K <= 0 ||
+      shape.group_size <= 0 || shape.ignore_alignment ||
+      shape.input != profile->io || shape.output != profile->io ||
+      shape.weight != profile->weight || profile->shared_bytes > device.max_shared_bytes) {
+    return before;
+  }
+  bool eligible = (profile->sources & 1) &&
+      (before->kernel_base == profile->kernel_base ||
+       (profile->alias != nullptr && before->kernel_base == profile->alias));
+  for (unsigned source : {2u, 4u}) {
+    if (!(profile->sources & source)) {
+      continue;
+    }
+    const auto choice = source_wmma780m_choice(device, shape, source);
+    eligible = eligible || (choice.has_value() &&
+        (choice->kernel_base == profile->kernel_base ||
+         (profile->alias != nullptr && choice->kernel_base == profile->alias)));
+  }
+  if (eligible) {
+    const auto choice = registered_wmma780m_choice(device, shape, profile->kernel_base);
+    if (choice.has_value()) {
+      return choice;
+    }
+  }
+  return before;
+}
+
+struct RegistrarWmma780m {
+  RegistrarWmma780m() {
+    Override o = get_override();
+    select_before_wmma780m = o.select;
+    o.select = select_wmma780m;
+    set_override(o);
+  }
+} registrar_wmma780m;
+
+} // namespace
+} // namespace sarc
+} // namespace vkcompute
+// --- rdna3-780m WMMA matrix end ---
+
 // --- fused attention node (M2 review, 2026-10-15) ---
 // The one fused attention node of a dev build. Its variant list per node, as
 // the node's own file reads it (the variable first, then the profile); the node
