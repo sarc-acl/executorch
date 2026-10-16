@@ -1,10 +1,23 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-16 10:45 UTC
+Updated: 2026-10-16 10:50 UTC
 
 ## Family finalists (coordinator decision 2026-10-16 08:20 UTC)
 
-Stage: FAMILY FINALISTS COMPLETE (2026-10-16 10:36 UTC); ready for the one finalist review.
+Stage: FAMILY FINALISTS COMPLETE (2026-10-16 10:36 UTC); finalist review done, its three GPU-free
+corrections applied (below). Coordinator answer 10:50 UTC: nv-family-b is the upstream family set;
+keeping the 4070 Ti's ga at K>8192 is a fork-internal per-device override, not gated here. Stage finished.
+
+Review corrections (2026-10-16 10:50 UTC):
+- check.sh: the unmodified `sarc/tools/check.sh --no-build` was run again on HEAD ba47f0b13, after the
+  selector change of f82cc2c17 (artifact checks/check-finalists-no-build.txt). It reports the same
+  two zone FAILs for the owner-authorized Device.cpp/Device.h memory-model edit (owner instruction
+  2026-10-15 04:08) and test_sarc_select PASS twice (1240 release checks; 1921 dev-zone checks).
+  Overall rc 1 ("check.sh: FAIL"), so this is NOT a plain PASS.
+- The artifact-root ABORTED marker of 2026-10-16 08:19:48 (the r1 false-guard abort on another
+  user's shell) was moved unchanged to jobs/family-finalists-r1/ABORTED (sha256 80c51ab3...). It
+  was never a device-loss marker, and no tool reads it.
+- Next-token evidence: 36 runs form 18 control/candidate pairs (6 cells x 3 prompts), 0 differences.
 Queues: jobs/family-finalists-r3 (completed, rc 0) reused the build, control check and nv-family-a
 gate of jobs/family-finalists-r2 (stopped by its own assertion after that gate failed, kept); r1 is
 kept as the false-guard record. Evidence summary: results/family-finalists.json.
@@ -12,7 +25,7 @@ kept as the false-guard record. Evidence summary: results/family-finalists.json.
 | Finalist | Linear kernels (texture3d) | Gate | Next token | 1b-4w | 1b-8da4w | 3b-4w | 3b-8da4w | 8b-4w | 8b-8da4w | Geomean |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|
 | 4070ti-nv-family-a | 4w bt (all shapes), 8da4w bf | REJECTED: pdiff 8B 4w w2 (K=14336) | not run | not timed | | | | | | n/a |
-| 4070ti-nv-family-b | 4w bx (K>8192), bt (Orin rule), 8da4w bf | PASS: pdiff 12/12 ALL PASSED (finalist dispatch bx 1, bt 11, bf 12 cases), SDPA 24/24, verify equal to control except dispatch lines | equal 36/36 | 1.0175 | 1.0400 | 1.0357 | 0.9919 | 0.9522 | 1.0420 | 1.0127 |
+| 4070ti-nv-family-b | 4w bx (K>8192), bt (Orin rule), 8da4w bf | PASS: pdiff 12/12 ALL PASSED (finalist dispatch bx 1, bt 11, bf 12 cases), SDPA 24/24, verify equal to control except dispatch lines | equal, 18/18 pairs (36 runs) | 1.0175 | 1.0400 | 1.0357 | 0.9919 | 0.9522 | 1.0420 | 1.0127 |
 
 nv-family-b session s3-4070ti-nv-family-b: 84 of 84 rows valid, 7 per arm and cell, one llama_main
 (sha256 3939e1bdc75b..., commit f82cc2c17) for both arms, control 4070ti-fused1, attention control
@@ -38,7 +51,8 @@ it is not a named finalist and was not gated or timed.
   s0-topic-mm-control with rates removed, including the linear kernel lists.
 - **4070ti-nv-family-a: REJECTED (production diff), not timed.** In stage s2-gate-nv-family-a,
   pdiff llama-3.1-8b 4w texture3d fails at the w2 shape M=2048 K=14336 N=4096, where family-a
-  dispatches bt: 4 of 8388608 elements outside tolerance, sampled max abs diff 1.489 (tol 0.5).
+  dispatches bt: 4 of 8209 sampled elements (of 8388608) outside tolerance, sampled max abs diff
+  1.489 (tol 0.5).
   At the same shape the control's ga gives 0.083 and c08's bx 0.041. The other 22 bt/bf cases pass;
   bt's other 4w shapes reach 0.35-0.77. Diagnosis: bt keeps its whole accumulation in fp16
   (inventory: ACC_FP32 false, ACC_GROUP_FP32 false), so its error grows with K. ga accumulates
