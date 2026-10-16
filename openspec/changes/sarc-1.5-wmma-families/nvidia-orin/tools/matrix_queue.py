@@ -21,7 +21,7 @@ import traceback
 from device_snapshot import state
 
 TOOLS = ('device_snapshot.py', 'sampler.py', 'parent_gate_check.py', 'nexttoken.py', 'runrow.py', 'gate_check_paths.py',
-         'screen.py', 'matrix_device.py')
+         'screen.py', 'matrix_device.py', 'sdpa_check.py')
 E2E = ('e2e5.sh', 'common.sh')
 
 
@@ -99,6 +99,7 @@ def main():
                       build=build.name)
         plan = {'tag': config['tag'], 'deployment_root': device['deployment_root'], 'lock_uuid': device['lock_uuid'],
                 'models': device['models'], 'reps': config['reps'], 'extra': config['extra'],
+                'sdpa_tiers': config.get('sdpa_tiers'),
                 'control_env': device['environment'], 'device': device,
                 'candidates': [by_profile[p] for p in config['order']]}
         assert sorted(config['order']) == sorted(by_profile), 'order must list every manifest candidate once'

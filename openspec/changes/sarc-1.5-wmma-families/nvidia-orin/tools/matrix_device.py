@@ -5,6 +5,7 @@ the clock floor, then per candidate verify.sh -> screen.py -> e2e5.sh session ag
 All steps run on the one build in bin/. Every GPU step takes the device lock (verify.sh, e2e5.sh), every step
 boundary waits for HOLD, and a device-loss, foreign-workload or memory abort stops the queue. state.json is
 queued/running/completed/failed and lists every step with its outcome."""
+import fcntl
 import json
 import math
 import os
@@ -154,6 +155,58 @@ def main():
         step['complete'] = rc == 0
         return step
 
+    def sdpa(name, candidate, env):
+        # Finalists only (coordinator decision 2026-10-16 08:20): the SDPA tiers of R7 under the device lock.
+        directory = stage / 'steps' / f'sdpa-{name}'
+        step = {'name': f'sdpa-{name}', 'kind': 'sdpa', 'candidate': candidate, 'dir': str(directory),
+                'start_utc': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}
+        steps.append(step)
+        boundary(step['name'])
+        directory.mkdir(parents=True)
+        (directory / 'invocations').mkdir()
+        (directory / 'bin').symlink_to(stage / 'bin')
+        shutil.copy(stage / 'sensor-paths.json', directory / 'sensor-paths.json')
+        paths = json.loads((stage / 'sensor-paths.json').read_text())
+        local = dict(config['device'], stage=str(directory), candidate=candidate, environment=env,
+                     session=f'{config["tag"]}-sdpa-{name}', tag=config['tag'], owner_pid=os.getpid(),
+                     idle_temperature_milli=int(Path(paths['temperature']).read_text()))
+        (directory / 'config.json').write_text(json.dumps(local, indent=1) + '\n')
+        (directory / 'env').write_text(''.join(f'{k}={v}\n' for k, v in env.items()))
+        run_env = environment(dict(env, LD_LIBRARY_PATH=str(stage / 'bin')))
+        rc = 0
+        with open(Path.home() / '.cache/gpu-lab' / f'lock-{config["lock_uuid"]}', 'a') as lock:
+            deadline = time.monotonic() + 900
+            while True:
+                try:
+                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError:
+                    if time.monotonic() > deadline:
+                        finish_step(step, 75)
+                    time.sleep(5)
+            for tier, passes in config['sdpa_tiers']:
+                for i in range(1, passes + 1):
+                    with (directory / f'cand-{tier}-r{i}.log').open('x') as output:
+                        rc = subprocess.run([sys.executable, str(stage / 'tools' / 'device_snapshot.py'), str(directory / 'config.json'),
+                                             '--invoke', 'test_llama_microbench', '--sdpa-correctness-only', f'--sdpa-tier={tier}'],
+                                            stdout=output, stderr=subprocess.STDOUT, env=run_env, timeout=3600).returncode
+                    if rc or (directory / 'FOREIGN').exists():
+                        break
+                if rc or (directory / 'FOREIGN').exists():
+                    break
+        if (directory / 'FOREIGN').exists():
+            raise Stop(f'{step["name"]}: foreign workload recorded during the SDPA tiers')
+        records = [json.loads(l) for l in (directory / 'invocations.jsonl').read_text().splitlines()]
+        step['invocations'] = len(records)
+        step['instrumentation_ok'] = len(records) == sum(n for _, n in config['sdpa_tiers']) and all(
+            not r.get('instrumentation_error') and not r['sensor_error'] and r.get('sampler_children') == [] and r['sampler_rc'] == 0
+            for r in records)
+        with (directory / 'sdpa-check.txt').open('x') as output:
+            step['sdpa_check_rc'] = subprocess.run([sys.executable, str(stage / 'tools' / 'sdpa_check.py'), str(directory),
+                                                    str(directory / 'env')], stdout=output, stderr=subprocess.STDOUT).returncode
+        step['verdict'] = 'ACCEPT' if step['sdpa_check_rc'] == 0 and step['instrumentation_ok'] else 'REJECT'
+        finish_step(step, rc)
+
     def interrupted(signum, frame):
         raise Stop(f'interrupted by signal {signum}')
     signal.signal(signal.SIGTERM, interrupted)
@@ -189,10 +242,13 @@ def main():
             step['verdict'] = verdict
             if verdict in ('REJECTED_PDIFF', 'SCREEN_ERROR'):
                 step['timing'] = 'not timed: ' + verdict
-            elif not candidate['timed_projection_io']:
-                step['timing'] = 'not timed: storage is not the models\' texture3d projection IO'
             else:
-                session(profile, profile, env, calibrate=False)
+                if config.get('sdpa_tiers'):
+                    sdpa(profile, profile, env)
+                if not candidate['timed_projection_io']:
+                    step['timing'] = 'not timed: storage is not the models\' texture3d projection IO'
+                else:
+                    session(profile, profile, env, calibrate=False)
             state(status='running', phase='after ' + profile)
         state(status='completed', phase='done')
     except BaseException as error:
