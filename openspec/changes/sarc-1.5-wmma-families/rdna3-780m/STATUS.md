@@ -75,6 +75,7 @@ One member's result is not a family acceptance.
 | rdna3-08 | sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32_buffer_texture2d_half | pdiff PASS; next token SAME | 1.0000 | 1.0000 | 0.9993 | 0.9993 | 0.9997 | 0.9997 | 0.9997 (0.9925-1.0044) | PASS |
 | rdna3-09 | sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c | pdiff PASS; next token SAME | 0.9981 | 1.0000 | 1.0000 | 0.9898 | 1.0006 | 0.9997 | 0.9980 (0.9975-1.0022) | PASS |
 | rdna3-10 | sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_buffer_texture2d_half | pdiff PASS; next token SAME | 1.0000 | 1.0000 | 1.0007 | 0.9823 | 1.0006 | 0.9994 | 0.9971 (0.9964-1.0037) | PASS |
+| rdna3-11 | sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_buffer_buffer_half | pdiff PASS; next token SAME | 1.0000 | 1.0018 | 1.0000 | 1.0014 | 1.0003 | 1.0003 | 1.0006 (0.9995-1.0013) | PASS |
 <!-- matrix table end -->
 
 ## Earlier preparation (reused, not repeated)
