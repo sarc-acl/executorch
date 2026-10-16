@@ -1,18 +1,27 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-16 07:25 UTC
+Updated: 2026-10-16 07:40 UTC
 
-Stage: NATIVE TIMED MATRIX RUNNING under the owner's lean-finish decision
-(2026-10-15 23:30 UTC). Job state: artifact jobs/native-matrix-r7/state.json (r6 stopped to reorder) (r1, r2 failed on a foreign client; r3 on a slow-load runner abort; r4 on a slow-load runner hang; r5 on four invalid attempts at c01 8b-8da4w r5). From r6 the replacement bound is 8 attempts per arm/repetition (was 4; c01 STAGE.json still records 4). It bounds retries only; validity criteria are unchanged.
-Both arms: matrix-mm-r1 binary (commit dd57ce0e4), control 4070ti-fused1,
-candidate adds only ET_VK_SARC_WMMA_PROFILE. Seven valid interleaved runs per
-arm and cell, clock floor 2531 MHz, A/A s1-aa-mm-r1 reused (no new A/A).
+Stage: FINITE NATIVE MATRIX COMPLETE (2026-10-16 07:31 UTC); ready for the one matrix review.
+Final queue: artifact jobs/native-matrix-r7 (completed, rc 0). r1–r6 are kept as failed or
+stopped records; their causes are listed below. Both arms of all seven sessions use the same
+matrix-mm-r1 binary (commit dd57ce0e4, one llama_main hash per session). The control is
+4070ti-fused1; the candidate adds only ET_VK_SARC_WMMA_PROFILE. The attention control equals the
+reviewed control gate in every STAGE.json. Seven valid interleaved runs per arm and cell, 2531 MHz
+floor, A/A s1-aa-mm-r1 reused. Ratios are candidate/control valid-run medians from the same session.
 
-Changes for the new protocol: a next-token difference on the timed, real or
-unaligned prompt no longer stops a profile; it is recorded as
-CORRECTNESS_PENDING (top-2 logits unavailable from llama_main) and the profile
-is still timed. Timed-pair text differences are recorded, not aborted on.
-Order: Orin-origin candidates first (c08, c09, c10, c11, c06), then c01, c02.
+Member-only numeric margins against this device's tuned final linear configuration (same-session
+control): geomean >= 0.97 and every cell >= 0.92. c09, c10, c11, c06 and c01 are within both
+limits; c08 (8b-4w 0.917) and c02 (0.954, 4w cells 0.904–0.921) are not. c01 and c06 are the
+4070 Ti's own table rows, which the control already dispatches, so ~1.00 is expected.
+c09 (+1.7 %), c10 (+2.3 %) and c11 (+1.4 %) are the Orin-origin kernels; single cells reach
++3.6 to +5.8 %. No family acceptance, selection or minimality claim is made from one member.
+
+Actor recomputation from raw runs.csv/tokens.csv (every median, ratio, geomean, validity
+field, binary/commit/profile/attention identity): results/native-matrix-recompute.json.
+Per-profile summaries with paired 95 % intervals (seed 407014, 20,000 draws):
+results/native-sessions.json. Raw rows: artifact stage/s3-4070ti-wmma-cNN/{runs,tokens}.csv,
+logs, raw sensor records, foreign-waits.jsonl, memory-waits.jsonl, slow-load-aborts.jsonl.
 
 | Candidate | Linear kernel | Correctness | 1b-4w | 1b-8da4w | 3b-4w | 3b-8da4w | 8b-4w | 8b-8da4w | Geomean |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|
@@ -21,8 +30,8 @@ Order: Orin-origin candidates first (c08, c09, c10, c11, c06), then c01, c02.
 | c10 | sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra (8da4w) | pdiff PASS; next token equal (36/36) | 1.000 | 1.040 | 1.000 | 1.058 | 1.003 | 1.038 | 1.0229 (84 valid, 0 invalid) |
 | c11 | sarc_linear_q4gsw_coopmat_t128x128k16g22s32 (4w, K<=8192) | pdiff PASS; next token equal (36/36) | 1.018 | 1.000 | 1.021 | 1.016 | 1.032 | 1.000 | 1.0144 (84 valid, 2 invalid) |
 | c06 | sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra tex3d (8da4w) | pdiff PASS; next token equal (36/36) | 1.000 | 1.000 | 1.000 | 1.008 | 1.003 | 1.000 | 1.0018 (84 valid, 0 invalid) |
-| c01 | sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga tex3d (4w, N>512) | pdiff PASS; next token equal (36/36) | 1.000 | 1.000 | 1.000 | 1.008 | 1.003 | 1.004 | 1.0024 (84 valid, 18 invalid; 8B rows mostly after slow loads) |
-| c02 | sarc_linear_q4gsw_coopmat_t128x128k16g24s32ga tex3d (4w) | pdiff PASS; tokens pending | | | | | | | queued |
+| c01 | sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga tex3d (4w, N>512) | pdiff PASS; next token equal (36/36) | 1.000 | 1.000 | 1.000 | 1.008 | 1.003 | 1.004 | 1.0024 (84 valid, 18 invalid; many 8B rows after slow loads) |
+| c02 | sarc_linear_q4gsw_coopmat_t128x128k16g24s32ga tex3d (4w) | pdiff PASS; next token equal (36/36) | 0.921 | 1.000 | 0.907 | 1.000 | 0.904 | 1.000 | 0.9542 (84 valid, 0 invalid; outside both limits) |
 | c03, c04, c07 | buffer-IO variants | pdiff PASS (buffer microbench) | not timeable: the fixed models run texture3d IO, no dispatch | | | | | | n/a |
 | c05 | buffer-weight variant | NO COVERAGE (0 dispatched cases) | not timeable, no dispatch | | | | | | n/a |
 
@@ -326,3 +335,5 @@ boundaries. No pushes, PRs, services, policy changes, new bodies or search.
 2026-10-16T01:22:48.859298+00:00 4070ti-wmma-c06: SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING; correctness=NEXT_TOKEN_EQUAL; acceptance=NONE; ONE_MEMBER_ONLY. Ratios {"1b-4w": 1.0, "1b-8da4w": 1.0, "3b-4w": 1.0, "3b-8da4w": 1.0079374922485427, "8b-4w": 1.0031253624574064, "8b-8da4w": 1.0}; geomean=1.0018394638639274. Evidence artifact stage/s3-4070ti-wmma-c06.
 
 2026-10-16T07:19:08.056361+00:00 4070ti-wmma-c01: SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING; correctness=NEXT_TOKEN_EQUAL; acceptance=NONE; ONE_MEMBER_ONLY. Ratios {"1b-4w": 1.0, "1b-8da4w": 1.0, "3b-4w": 1.0, "3b-8da4w": 1.0079374922485427, "8b-4w": 1.0031253624574064, "8b-8da4w": 1.0036496595396702}; geomean=1.0024479347156887. Evidence artifact stage/s3-4070ti-wmma-c01.
+
+2026-10-16T07:31:05.806197+00:00 4070ti-wmma-c02: SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING; correctness=NEXT_TOKEN_EQUAL; acceptance=NONE; ONE_MEMBER_ONLY. Ratios {"1b-4w": 0.9206350554937227, "1b-8da4w": 1.0, "3b-4w": 0.9068323424155581, "3b-8da4w": 1.0, "8b-4w": 0.9039546875000001, "8b-8da4w": 1.0}; geomean=0.9541724251792371. Evidence artifact stage/s3-4070ti-wmma-c02.
