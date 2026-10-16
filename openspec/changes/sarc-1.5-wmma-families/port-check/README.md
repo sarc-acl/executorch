@@ -21,11 +21,11 @@ No `sarc` in the diff or file names. All 18 ported variants compile to SPIR-V by
 | Arc B580 | 24/24 | 102 passed, 26 skipped (upstream's dq8ca fp16 skips) | all four Xe2 rows |
 | Arc Pro B70 | 24/24 | all passed | flib, g44fli buffer, xe2bto i and n13 |
 | RTX 4070 Ti SUPER | 24/24 | all passed | bt, bx, t128x128k16g22s32, rowmajor bf |
+| Jetson Orin | 24/24 | all passed (26 skipped, as upstream) | bt, bx, t128x128k16g22s32, rowmajor bf |
 | llvmpipe | 24/24 | identical to the upstream baseline, same kernel lists | none (no family) |
 
-Jetson Orin: not run on the port (needs the aarch64 cross recipe adapted to the upstream tree); its
-kernels are the 4070 Ti's NVIDIA family kernels, SPIR-V identical to the fork variants checked on the Orin in
-`../select-check/`.
+Jetson Orin: `etvk_bench` cross-built from the pr-port tree with the Orin campaign's image
+(`et-jetson-cross:jp7.2.1`, `nvidia-orin/tools/jetson-cross/aarch64.cmake`, the pinned glslc).
 
 B580 end to end, Llama 3.2 1B prefill tok/s (median of 3, port / upstream): 512 tokens 4w 10449 / 3241,
 8da4w 13474 / 6737; 511 tokens 4w 2762 / 3297, 8da4w 6636 / 6636; 5 tokens 4w 135 / 74, 8da4w 250 / 238.
