@@ -22,10 +22,14 @@ No `sarc` in the diff or file names. All 18 ported variants compile to SPIR-V by
 | Arc Pro B70 | 24/24 | all passed | flib, g44fli buffer, xe2bto i and n13 |
 | RTX 4070 Ti SUPER | 24/24 | all passed | bt, bx, t128x128k16g22s32, rowmajor bf |
 | Jetson Orin | 24/24 | all passed (26 skipped, as upstream) | bt, bx, t128x128k16g22s32, rowmajor bf |
+| Radeon 780M (RADV, no family) | 24/24 | 204 passed / 26 skipped, coopmat_correctness 64/64; equal to the upstream baseline binary run on the same device | none (no family kernel name in any log) |
 | llvmpipe | 24/24 | identical to the upstream baseline, same kernel lists | none (no family) |
 
 Jetson Orin: `etvk_bench` cross-built from the pr-port tree with the Orin campaign's image
 (`et-jetson-cross:jp7.2.1`, `nvidia-orin/tools/jetson-cross/aarch64.cmake`, the pinned glslc).
+
+The other members of the proposal's eight devices (RX 7600, RX 7900 XTX, Xclipse M51) are company-side and
+not checked; they have no family in this port, so they run upstream's path.
 
 B580 end to end, Llama 3.2 1B prefill tok/s (median of 3, port / upstream): 512 tokens 4w 10449 / 3241,
 8da4w 13474 / 6737; 511 tokens 4w 2762 / 3297, 8da4w 6636 / 6636; 5 tokens 4w 135 / 74, 8da4w 250 / 238.
