@@ -29,6 +29,8 @@ record = {"purpose": os.environ.get("WMMA_PURPOSE", "parent_snapshot"), "binary"
           "started_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
           "timing_validity": "UNASSESSED" if os.environ.get("WMMA_PURPOSE") in ["calibration", "measurement"] else "NOT_A_TIMED_SESSION", "reasons": [],
           "sensor_evidence": str(record_dir / "samples.jsonl")}
+idle = json.loads(os.environ.get("WMMA_FOREIGN_IDLE", "{}"))
+record["foreign_idle_clients"] = idle
 child, observer = None, None
 returncode = 77
 
@@ -67,7 +69,7 @@ try:
         def sample():
             row = observer.sample()
             samples.write(json.dumps(row) + "\n")
-            if any(client["own"] is not True for client in row["clients"]):
+            if Observer.unexpected(row["clients"], idle):
                 raise RuntimeError("foreign or unattributed GPU client observed")
 
         sample()
@@ -83,7 +85,7 @@ try:
 except BaseException as error:
     returncode = 77
     record["reasons"].append(str(error))
-    if not (stage / "ABORTED").exists():
+    if not (stage / "ABORTED").exists() and not ("WMMA_FOREIGN_IDLE" in os.environ and "GPU client" in str(error)):
         (stage / "ABORTED").write_text(str(error) + "\n")
     if "NVML returned" in str(error):
         (artifacts / "GPU_GONE").write_text(str(error) + "\n")

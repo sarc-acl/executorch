@@ -1,9 +1,9 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-16 00:20 UTC
+Updated: 2026-10-16 00:35 UTC
 
 Stage: NATIVE TIMED MATRIX RUNNING under the owner's lean-finish decision
-(2026-10-15 23:30 UTC). Job state: artifact jobs/native-matrix-r1/state.json.
+(2026-10-15 23:30 UTC). Job state: artifact jobs/native-matrix-r3/state.json (r1, r2 failed on a foreign client).
 Both arms: matrix-mm-r1 binary (commit dd57ce0e4), control 4070ti-fused1,
 candidate adds only ET_VK_SARC_WMMA_PROFILE. Seven valid interleaved runs per
 arm and cell, clock floor 2531 MHz, A/A s1-aa-mm-r1 reused (no new A/A).
@@ -32,11 +32,20 @@ and binary; c08 had 84/84 valid rows, 0 invalid. c08 dispatches only for K>8192
 
 ## Question for the coordinator
 
-2026-10-16 00:08 UTC: a foreign GPU client appeared (ComfyUI, `grand-omega/zun-flux-pipeline`,
-PID 335097, 210 MiB, idle), not started by this campaign. native-matrix-r1 stopped in the
-c09 cooling check before launching a run (c09: 75/75 rows valid, none touched). Not killed.
-native-matrix-r2 resumes and waits at each run boundary while any foreign client is present
-(logged to stage/s3-*/foreign-waits.jsonl). The matrix stays paused while that server holds the GPU.
+(none open)
+
+## Foreign GPU client (answered by the coordinator, 2026-10-16 00:20 UTC)
+
+A ComfyUI server of another workload (`grand-omega/zun-flux-pipeline`, PID 335097, later
+restarted as 336840) holds about 10–210 MiB on the GPU. It is never stopped. r1 stopped in
+the c09 cooling check. r2 waited, then launched after the server restarted under a new PID;
+observe.py refused that run (`8b-8da4w` candidate r3 a1, kept invalid, runner never started).
+From native-matrix-r3: a run starts only after every foreign client has kept the same memory,
+with 0 % device utilization, for 60 s (foreign-waits.jsonl). The run gets that client set; any
+new foreign PID or memory change during the run makes the row invalid (kept, replaced).
+Device utilization during our own run cannot be attributed per process, so it is not
+checked for the foreign client. Each row records foreign_idle_client=<pid,MiB>. The c08 and
+earlier c09 CSVs got the new column empty (originals in superseded/schema-upgrade).
 
 ## Earlier record (before the lean-finish decision)
 

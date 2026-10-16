@@ -71,9 +71,11 @@ for arm, tag in builds.items():
     arm_tools.mkdir(exist_ok=True)
     for name in ["observe.py", "nvml_observer.py", "warm_file.py"]:
         target = arm_tools / name
-        if target.exists():
-            assert target.read_bytes() == (tools / name).read_bytes(), target
-        else:
+        if target.exists() and target.read_bytes() != (tools / name).read_bytes():
+            archive = stage / "superseded/observer-tools" / (arm + "-" + str(time.time_ns()))
+            archive.mkdir(parents=True)
+            shutil.move(str(target), archive / name)
+        if not target.exists():
             shutil.copy2(tools / name, target)
     envs[arm] = dict(env, WMMA_STAGE=str(arm_stage), LD_LIBRARY_PATH=str(arm_stage))
     if arm == "candidate":
@@ -88,7 +90,26 @@ rows_path = stage / "runs.csv"
 fields = ["unit", "device_index", "driver", "session", "cell", "arm", "candidate", "profile", "commit", "binary_sha256", "wmma_profile",
           "rep", "attempt", "tok_s", "prompt_tokens", "generated_tokens", "prefill_ms", "clock_samples", "clock_median_mhz",
           "clock_floor_mhz", "sample_count", "thermal_samples", "foreign_samples", "valid", "reason", "text_sha256",
-          "rc", "validity_mode", "log", "record", "samples", "utc"]
+          "rc", "validity_mode", "log", "record", "samples", "utc", "foreign_idle_client"]
+
+
+def upgrade_header(path, names):
+    with path.open() as file:
+        header = next(csv.reader(file))
+    if header == names:
+        return
+    assert names[:len(header)] == header, path
+    archive = stage / "superseded/schema-upgrade"
+    archive.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(path, archive / (path.name + "." + str(time.time_ns())))
+    with path.open() as file:
+        old = list(csv.DictReader(file, strict=True))
+    with path.open("w", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=names, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(old)
+
+
 if rows_path.exists():
     raw = rows_path.read_bytes()
     if raw and not raw.endswith(b"\n"):
@@ -97,6 +118,7 @@ if rows_path.exists():
         superseded.mkdir(parents=True, exist_ok=True)
         (superseded / str(time.time_ns())).write_bytes(raw[cutoff:])
         rows_path.write_bytes(raw[:cutoff])
+    upgrade_header(rows_path, fields)
     with rows_path.open() as file:
         rows = list(csv.DictReader(file, strict=True))
 else:
@@ -105,24 +127,39 @@ else:
         csv.DictWriter(file, fieldnames=fields, lineterminator="\n").writeheader()
 
 
+# Coordinator rule 2026-10-16 00:20 UTC: a run starts only when every foreign client has kept the same
+# memory, with 0 % device utilization, for the last 60 s; that client set is passed to the run.
+foreign_state = {"clients": None, "since": 0.0}
+idle_clients = {}
+
+
 def cool(target, maximum):
+    global idle_clients
     temperatures = []
-    deadline = time.monotonic() + maximum
+    start = time.monotonic()
+    deadline = start + maximum
     while True:
         sample = observer.sample()
-        foreign = [c for c in sample["clients"] if c["own"] is not True]
-        if foreign:
-            with (stage / "foreign-waits.jsonl").open("a") as file:
-                file.write(json.dumps({"utc": datetime.datetime.now(datetime.timezone.utc).isoformat(), "clients": foreign}) + "\n")
-            time.sleep(60)
-            deadline = time.monotonic() + maximum
-            temperatures = []
-            continue
+        now = time.monotonic()
+        clients = {str(c["pid"]): c["gpu_memory_bytes"] for c in sample["clients"] if c["own"] is not True}
+        busy = bool(clients) and sample["gpu_utilization"] > 0 and now - start > 3
+        if clients != foreign_state["clients"] or busy:
+            if clients or foreign_state["clients"]:
+                with (stage / "foreign-waits.jsonl").open("a") as file:
+                    file.write(json.dumps({"utc": datetime.datetime.now(datetime.timezone.utc).isoformat(), "clients": clients,
+                                           "gpu_utilization": sample["gpu_utilization"], "busy": busy}) + "\n")
+            foreign_state.update(clients=clients, since=now)
         temperatures.append(sample["temperature_c"])
-        if temperatures[-1] <= target or time.monotonic() >= deadline or (
-                len(temperatures) >= 3 and temperatures[-1] >= temperatures[-3]):
+        cooled = temperatures[-1] <= target or now >= deadline or (
+            len(temperatures) >= 3 and temperatures[-1] >= temperatures[-3])
+        if cooled and (not clients or now - foreign_state["since"] >= 60):
+            idle_clients = clients
             return temperatures[-1]
         time.sleep(5)
+
+
+def idle_label():
+    return ";".join(f"{pid},{round(size / 2**20)}MiB" for pid, size in sorted(idle_clients.items()))
 
 
 def valid_rows(cell, arm, count):
@@ -173,7 +210,7 @@ def run_rounds(first, last, target):
                                       utc=datetime.datetime.now(datetime.timezone.utc).isoformat()))
                         continue
                     cool(target, 120)
-                    child_env = dict(envs[arm], WMMA_RECORD_DIR=str(run_dir))
+                    child_env = dict(envs[arm], WMMA_RECORD_DIR=str(run_dir), WMMA_FOREIGN_IDLE=json.dumps(idle_clients))
                     command = ["timeout", "--signal=TERM", "--kill-after=30", "1200", "python3",
                                str(stage / arm / "observer-tools/observe.py"), str(stage / arm / "llama_main"),
                                "--model_path", str(path), "--tokenizer_path", str(tokenizer),
@@ -203,7 +240,7 @@ def run_rounds(first, last, target):
                         with (stage / "child-cleanup.jsonl").open("a") as output:
                             output.write(json.dumps({"run": key, "remaining_descendants": sorted(descendants)}) + "\n")
                     try:
-                        metrics = evaluate(log, run_dir / "samples.jsonl", result.returncode, clock_floor=clock_floor)
+                        metrics = evaluate(log, run_dir / "samples.jsonl", result.returncode, clock_floor=clock_floor, idle=idle_clients)
                     except Exception as error:
                         metrics = {"valid": 0, "reason": "evaluation_failed:" + str(error)}
                     if descendants:
@@ -213,11 +250,12 @@ def run_rounds(first, last, target):
                                rep=rep, attempt=attempt, rc=result.returncode, validity_mode="FIXED_CANDIDATE_SESSION",
                                log=str(log.relative_to(stage)), record=str((run_dir / "record.json").relative_to(stage)),
                                samples=str((run_dir / "samples.jsonl").relative_to(stage)),
-                               utc=datetime.datetime.now(datetime.timezone.utc).isoformat(), **metrics)
+                               utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                               foreign_idle_client=idle_label(), **metrics)
                     save_row(row)
                     print(cell, arm, rep, attempt, metrics, flush=True)
                     assert not descendants, "sampling/runner child remains after the run"
-                    if result.returncode != 0 or (stage / arm / "ABORTED").exists():
+                    if result.returncode not in (0, 76) or (stage / arm / "ABORTED").exists():
                         raise RuntimeError("observed command failed; diagnose the retained row before retry")
                 if all(any(r["cell"] == cell and r["arm"] == arm and int(r["rep"]) == rep and int(r["valid"]) for r in rows) for arm in order):
                     pair = [next(r for r in rows if r["cell"] == cell and r["arm"] == arm and int(r["rep"]) == rep and int(r["valid"])) for arm in order]
@@ -249,9 +287,10 @@ def check_tokens(target):
     path = stage / "tokens.csv"
     token_fields = ["unit", "device_index", "driver", "session", "cell", "prompt", "arm", "candidate",
                     "profile", "wmma_profile", "commit", "binary_sha256", "text_sha256", "prompt_tokens",
-                    "generated_tokens", "rc", "valid", "reason", "log", "record", "samples", "utc"]
+                    "generated_tokens", "rc", "valid", "reason", "log", "record", "samples", "utc", "foreign_idle_client"]
     if path.exists():
         assert path.read_bytes().endswith(b"\n"), "partial token CSV; preserve and diagnose"
+        upgrade_header(path, token_fields)
         with path.open() as file:
             tokens = list(csv.DictReader(file, strict=True))
     else:
@@ -263,16 +302,18 @@ def check_tokens(target):
         model_path = Path(model["path"])
         cell = ("1b" if "-1b" in model_path.stem else "3b" if "-3b" in model_path.stem else "8b") + ("-8da4w" if "8da4w" in model_path.stem else "-4w")
         for prompt, filename in prompts.items():
-            for arm in builds:
+            for arm, attempt in [(arm, attempt) for arm in builds for attempt in range(1, 5)]:
                 if any(r["cell"] == cell and r["prompt"] == prompt and r["arm"] == arm and int(r["valid"]) for r in tokens):
                     continue
                 hold_point(device_lock, artifacts)
                 assert not (artifacts / "GPU_GONE").exists() and not (stage / arm / "ABORTED").exists()
-                key = cell + "-" + prompt + "-" + arm
+                key = cell + "-" + prompt + "-" + arm + ("" if attempt == 1 else f"-a{attempt}")
                 raw = stage / "token-raw" / key
                 log = stage / "token-logs" / (key + ".log")
                 log.parent.mkdir(exist_ok=True)
-                assert not raw.exists() and not log.exists(), "existing interrupted token attempt; diagnose before retry"
+                if raw.exists() or log.exists():
+                    assert any(r["log"] == str(log.relative_to(stage)) for r in tokens), "existing interrupted token attempt; diagnose before retry"
+                    continue
                 cool(target, 120)
                 command = ["timeout", "--signal=TERM", "--kill-after=30", "1200", "python3",
                            str(stage / arm / "observer-tools/observe.py"), str(stage / arm / "llama_main"),
@@ -282,13 +323,15 @@ def check_tokens(target):
                 if prompt == "timed":
                     command.append("--warmup")
                 with log.open("w") as output:
-                    result = subprocess.run(command, env=dict(envs[arm], WMMA_PURPOSE="next_token", WMMA_RECORD_DIR=str(raw)),
+                    result = subprocess.run(command, env=dict(envs[arm], WMMA_PURPOSE="next_token", WMMA_RECORD_DIR=str(raw),
+                                                          WMMA_FOREIGN_IDLE=json.dumps(idle_clients)),
                                             stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT)
                 text = log.read_text(errors="replace")
                 stats = [json.loads(line[line.index("{"):]) for line in text.splitlines() if "PyTorchObserver" in line]
                 samples = [json.loads(line) for line in (raw / "samples.jsonl").read_text().splitlines()] if (raw / "samples.jsonl").exists() else []
                 valid = result.returncode == 0 and len(stats) == 1 and stats[0]["generated_tokens"] == 0 and len(samples) >= 2
-                valid = valid and all(not (s["event_reasons"] & 0x60) and all(c["own"] is True for c in s["clients"]) for s in samples)
+                foreign = any(Observer.unexpected(s["clients"], idle_clients) for s in samples) or result.returncode == 76
+                valid = valid and not foreign and all(not (s["event_reasons"] & 0x60) for s in samples)
                 generated = "\n".join(line for line in text.splitlines() if "PyTorchObserver" not in line and not re.match(r"^[IWE] |^\[sarc_dev\]", line))
                 row = dict(observer.identity, session=stage.name, cell=cell, prompt=prompt, arm=arm, candidate=profile,
                            profile="4070ti-fused1", wmma_profile=profile if arm == "candidate" else "",
@@ -296,7 +339,9 @@ def check_tokens(target):
                            text_sha256=hashlib.sha256(generated.encode()).hexdigest(),
                            prompt_tokens=stats[0]["prompt_tokens"] if stats else None,
                            generated_tokens=stats[0]["generated_tokens"] if stats else None,
-                           rc=result.returncode, valid=int(valid), reason="" if valid else "token_run_failed_validity",
+                           rc=result.returncode, valid=int(valid),
+                           reason="" if valid else "foreign_gpu_client" if foreign else "token_run_failed_validity",
+                           foreign_idle_client=idle_label(),
                            log=str(log.relative_to(stage)), record=str((raw / "record.json").relative_to(stage)),
                            samples=str((raw / "samples.jsonl").relative_to(stage)), utc=datetime.datetime.now(datetime.timezone.utc).isoformat())
                 with path.open("a", newline="") as file:
@@ -318,12 +363,15 @@ def check_tokens(target):
                     with (stage / "token-child-cleanup.jsonl").open("a") as file:
                         file.write(json.dumps({"run": key, "remaining_children": children}) + "\n")
                     assert not children, "child remains after token run; diagnose before continuing"
-                assert valid and not (stage / arm / "ABORTED").exists(), "token run failed; retain and diagnose"
+                assert not (stage / arm / "ABORTED").exists(), "token run failed; retain and diagnose"
+                if foreign:
+                    continue
+                assert valid, "token run failed; retain and diagnose"
                 print("token", cell, prompt, arm, row["text_sha256"], flush=True)
     comparisons = []
     for cell in cells:
         for prompt in prompts:
-            pair = [r for r in tokens if r["cell"] == cell and r["prompt"] == prompt]
+            pair = [r for r in tokens if r["cell"] == cell and r["prompt"] == prompt and int(r["valid"])]
             assert len(pair) == 2 and {r["arm"] for r in pair} == set(builds)
             assert all(int(r["valid"]) == 1 for r in pair)
             same = pair[0]["text_sha256"] == pair[1]["text_sha256"] and int(pair[0]["prompt_tokens"]) == int(pair[1]["prompt_tokens"])

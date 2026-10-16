@@ -82,5 +82,10 @@ class Observer:
                 "event_reasons": reasons.value, "thermal": bool(reasons.value & 0x60),
                 "hw_slowdown": bool(reasons.value & 8), "clients": clients}
 
+    @staticmethod
+    def unexpected(clients, idle):
+        """Clients that are neither ours nor a pre-approved idle foreign client with unchanged memory."""
+        return [c for c in clients if c["own"] is not True and idle.get(str(c["pid"])) != c["gpu_memory_bytes"]]
+
     def close(self):
         self.check(self.lib.nvmlShutdown())

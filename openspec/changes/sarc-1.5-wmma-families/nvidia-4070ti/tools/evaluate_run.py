@@ -8,7 +8,7 @@ import re
 import statistics
 
 
-def evaluate(log_path, samples_path, returncode, clock_floor=None):
+def evaluate(log_path, samples_path, returncode, clock_floor=None, idle=None):
     text = Path(log_path).read_text(errors="replace")
     stats = None
     for line in text.splitlines():
@@ -40,7 +40,8 @@ def evaluate(log_path, samples_path, returncode, clock_floor=None):
     if clock_floor is not None and clock < clock_floor:
         reasons.append("clock_below_floor")
     thermal = sum(bool(s["event_reasons"] & 0x60) for s in samples)
-    foreign = sum(any(c["own"] is not True for c in s["clients"]) for s in samples)
+    foreign = sum(any(c["own"] is not True and (idle or {}).get(str(c["pid"])) != c["gpu_memory_bytes"]
+                      for c in s["clients"]) for s in samples)
     if thermal:
         reasons.append("thermal_throttle")
     if foreign:
