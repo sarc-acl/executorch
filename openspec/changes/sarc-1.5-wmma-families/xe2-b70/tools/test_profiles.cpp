@@ -93,5 +93,28 @@ int main() {
     setenv("ET_VK_SARC_B70_WMMA_PROFILE", name, 1);
     assert(same(small, select(device, shape)));
   }
-  std::cout << "B70_WMMA_PROFILES_PASS 7 profiles, 12 storage variants\n";
+  shape.input = shape.output = Storage::kTexture3D;
+  struct FamilyCase {
+    const char* profile;
+    Op op;
+    int64_t n;
+    const char* kernel;
+  };
+  const FamilyCase family[] = {
+      {"xe2-family-a", Op::kQ4gswLinear, 512, "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib"},
+      {"xe2-family-a", Op::kQ4gswLinear, 14336, "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib"},
+      {"xe2-family-a", Op::kDq8caLinear, 14336, "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i"},
+      {"xe2-family-a", Op::kDq8caLinear, 1024, "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i"},
+      {"xe2-family-b", Op::kQ4gswLinear, 512, "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib"},
+      {"xe2-family-b", Op::kDq8caLinear, 14336, "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n13"},
+      {"xe2-family-b", Op::kDq8caLinear, 1024, "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i"},
+  };
+  for (const auto& c : family) {
+    shape.op = c.op;
+    shape.N = c.n;
+    setenv("ET_VK_SARC_B70_WMMA_PROFILE", c.profile, 1);
+    const auto picked = select(device, shape);
+    assert(picked && picked->kernel_base == c.kernel);
+  }
+  std::cout << "B70_WMMA_PROFILES_PASS 9 profiles, 12 storage variants, 7 family cases\n";
 }

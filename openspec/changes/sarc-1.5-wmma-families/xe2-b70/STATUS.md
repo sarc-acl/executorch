@@ -90,6 +90,25 @@ No family-wide acceptance is claimed from this member's results.
 - Property signature: the queried cooperative-matrix shapes, subgroup and shared-memory limits are in
   `.artifacts/preflight/cooperative-matrices.json` and `vulkan-device0.json`, recorded before the matrix.
 
+## Xe2 family finalists (coordinator decision 2026-10-16 05:20 UTC)
+
+Registered as dev-zone profiles in the `b70-wmma` block of `impl/sarc_dev/Overrides.cpp`, selected with
+`ET_VK_SARC_B70_WMMA_PROFILE` on top of the unchanged control:
+
+- `xe2-family-a`: 4w `sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib` for every 4w prefill shape;
+  8da4w `sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i` for every 8da4w prefill shape.
+- `xe2-family-b`: the same 4w; 8da4w n13 where K*N >= 24,000,000 (the B580 final rule), i otherwise.
+- Shapes a kernel cannot serve (for example buffer IO for k16g82, which has only a texture3d variant) keep the
+  control's choice, as in the matrix. The CPU selection fixture (`tools/test_profiles.cpp`, built with host g++)
+  passes all 9 profiles, 12 storage variants and 7 family cases.
+- Running: detached job `final-01` (`tools/final_queue.sh wmma-b70-topic-03`), status file
+  `/home/doremy/wmma-b70/.artifacts/jobs/final-01.json`. It does one build of HEAD with the golden check, then for
+  each finalist: unmodified `verify.sh --pdiff`, 12 passes each of the SDPA tiers all, extended and full, a
+  seven-repeat interleaved session against the matrix control with next tokens on the three prompts, dispatched
+  names, and `gate_check.py --sdpa` against the control's verify output. The warm-trace item of `gate_check.py`
+  is not part of the coordinator's gate and is not run, so `gate.txt` reports it as FAIL (missing); that item is
+  missing evidence, not a pass.
+
 ## Question for the coordinator
 
 B70 matrix complete and reviewed (2026-10-16); which family finalists should get the full gate (verify, SDPA tiers, D3 evidence) on this device?

@@ -3743,6 +3743,19 @@ const B70WmmaProfile kB70WmmaProfiles[] = {
     {"b70-wmma-dq-n26", Op::kDq8caLinear,
      "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n26",
      xe2_order_weights_16m},
+    {"xe2-family-a", Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib", nullptr},
+    {"xe2-family-a", Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i",
+     nullptr},
+    {"xe2-family-b", Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_sweep_t128x128k16g82s16m8flib", nullptr},
+    {"xe2-family-b", Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n13",
+     xe2_order_w12},
+    {"xe2-family-b", Op::kDq8caLinear,
+     "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i",
+     nullptr},
 };
 
 std::optional<Choice> (*select_before_b70_wmma)(
