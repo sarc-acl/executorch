@@ -4,8 +4,10 @@ Updated: 2026-10-16 08:40 UTC
 
 ## Family finalists (coordinator decision 2026-10-16 08:20 UTC)
 
-Running: detached queue artifact jobs/family-finalists-r1 (state.json there; tools copied from
-f82cc2c17). Steps, each recorded below as it finishes and in results/family-finalists.json:
+Running: detached queue artifact jobs/family-finalists-r2 (state.json there). r1 failed before the
+build (rc 76, kept): the build guard counted another user's shell whose command line waits on a
+ComfyUI model download (no GPU device open; never touched). The guard's name match now also
+requires an open NVIDIA device node (tools/common.sh gpu_fds); NVML clients are checked as before. Steps, each recorded below as it finishes and in results/family-finalists.json:
 one rebuild matrix-fam-r1 of f82cc2c17 (golden check, SPIR-V identical to matrix-mm-r1, runtime
 source identical except the dev-zone selector, so the matrix-mm-r1 memory-model probe applies);
 control verify on the rebuild compared with s0-topic-mm-control; per finalist the full gate

@@ -49,6 +49,9 @@ own_pid() { local p=$1 st n=0
     { tr '\0' '\n' < /proc/$p/environ; } 2>/dev/null | grep -qx "SARC_CAMPAIGN_TAG=$SARC_CAMPAIGN_TAG" && return 0
     set -- $st; p=$2; n=$((n + 1))
   done; return 1; }
+# gpu_fds <pid>: the process holds an NVIDIA device node, or its descriptors cannot be read. A command-line match
+# alone is not a GPU process: another user's shell that waits on a ComfyUI model download aborted a build.
+gpu_fds() { local l; l=$(ls -l /proc/$1/fd 2>/dev/null) || return 0; [[ -z $l ]] || grep -q /dev/nvidia <<< "$l"; }
 # others: GPU clients (compute apps and graphics/Vulkan clients from pmon) and known GPU programs by name that
 # were NOT started by this campaign (no campaign tag in their environment, or environment unreadable).
 others() {
@@ -56,7 +59,7 @@ others() {
   for p in $( { nvidia-smi --query-compute-apps=pid --format=csv,noheader 2>/dev/null
                 nvidia-smi pmon -c 1 2>/dev/null | awk '$1 != "#" && $2 ~ /^[0-9]+$/ {print $2}'
                 pgrep -x 'llama_main|test_llama_micr|llama-server|ollama|vllm'
-                pgrep -f 'ComfyUI|comfyui|Runner\.Worker'; } | sort -un ); do
+                pgrep -f 'ComfyUI|comfyui|Runner\.Worker' | while read -r q; do gpu_fds $q && echo $q; done; } | sort -un ); do
     [[ -d /proc/$p ]] || continue
     own_pid $p || echo "$p:$(cat /proc/$p/comm 2>/dev/null):$(stat -c %U /proc/$p 2>/dev/null)"
   done | tr '\n' ';'
