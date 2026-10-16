@@ -57,6 +57,7 @@ One member's result is not a family acceptance.
 | candidate | linear kernel | correctness | 1b-4w | 1b-8da4w | 3b-4w | 3b-8da4w | 8b-4w | 8b-8da4w | geomean (95 % CI) | margin |
 |---|---|---|---|---|---|---|---|---|---|---|
 | aa | control vs control |  | 1.0000 | 1.0000 | 0.9993 | 1.0062 | 0.9994 | 1.0000 | 1.0008 (0.9980-1.0015) | PASS |
+| rdna3-06 | sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1 | pdiff PASS; next token SAME | 1.0000 | 0.9963 | 1.0000 | 1.0076 | 0.9997 | 1.0000 | 1.0006 (0.9974-1.0014) | PASS |
 <!-- matrix table end -->
 
 ## Earlier preparation (reused, not repeated)
