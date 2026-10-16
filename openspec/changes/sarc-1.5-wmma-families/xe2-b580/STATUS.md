@@ -1,6 +1,6 @@
 # Xe2 B580 finite linear matrix: status
 
-Updated 2026-10-16T00:05Z. Actor: Claude (claude-opus-5-5), under the owner's lean-finish decision of
+Updated 2026-10-16T00:50Z. Actor: Claude (claude-opus-5-5), under the owner's lean-finish decision of
 2026-10-15 23:30 UTC (deadline 2026-10-17 18:00 UTC). Earlier recovery history: git log of this file.
 
 ## Inputs
@@ -54,12 +54,26 @@ in the manifest. `correctness rc=1` and `linear rc=1` are the same pre-existing 
 The gate wrapper recorded foreign desktop engine time during the 11-minute gate (`GATE_RECORDED rc=1`);
 this does not affect correctness results and the gate timings are not used.
 
+## A/A s1-aa (2026-10-16 00:05-00:41Z): INVALID, preserved
+
+168 rows, 144 timed prefill runs (12 per arm and cell, 7 + 5 extra pairs), 0 valid: 140 `foreign_busy`,
+4 `busy_unsampled`. Foreign engine share in the prefill window 0.52 to 2.84 % (median 0.87 %), never zero;
+the busiest foreign client in 130 runs was Firefox (pid 1699641), 10 runs ghostty, while the desktop reported
+IdleHint=yes. Clocks 2850 MHz, no thermal reason, rc 0. Next token parent vs wmma-v1 SAME in all six cells on
+all three prompts (check/unaligned runs are not subject to the busy rule). No calibration was written; these
+rows are not timing evidence. Raw: `.artifacts/stage/s1-aa/raw/`.
+
 ## Now
 
-First queue run stopped before the A/A session: `idle_wait` (run-local host.sh) returned the status of its
-last loop test (1) after any wait, so session.sh exited. Fixed with an explicit `return 0` (tested);
-no data lost, no rows existed. Queue relaunched; it resumes at the s1-aa session.
+Run-local fix within the existing protocol: before each timed prefill, `quiet_wait` (host.sh,
+`tools/foreign_quiet.py`) waits for a 3 s window with zero foreign engine cycles on the card; the in-window
+zero ceiling is unchanged and no foreign process is touched. Queue relaunched with A/A repeat `s1b-aa`
+(s1-aa's gate on the same binary stays the control check). While Firefox keeps rendering, timed runs wait;
+waits are logged in `.artifacts/logs/quiet_wait.log`.
 
 ## Question for the coordinator
 
-None.
+Firefox (pid 1699641) on the B580 desktop uses about 1 % of the card continuously even with the desktop idle,
+which makes every run invalid under this run's zero foreign-engine ceiling; the queue waits for a quiet card.
+Please have the desktop user close or minimise the rendering Firefox tab, or give an owner ruling on a
+non-zero ceiling (the historical B580 campaign used 5 %); I will not widen the limit myself.

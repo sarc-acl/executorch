@@ -46,6 +46,16 @@ idle_wait() {
   done
   return 0   # the loop's status is its last test (no DEVICE_LOST = 1) after any wait
 }
+# quiet_wait: a timed run starts only after a 3 s window in which no foreign DRM client used the card
+# (tools/foreign_quiet.py); the in-window zero foreign-engine rule of e2e5.sh is unchanged.
+quiet_wait() { local out
+  until out=$(python3 "$TOOLS/foreign_quiet.py" "$B580_TOP" 3); do
+    echo "$(date -u +%FT%TZ) waiting for foreign-quiet card: ${1:-timed unit}: $out" >> "$A/logs/quiet_wait.log"
+    [[ -e $A/DEVICE_LOST ]] && return 77
+    sleep 27
+  done
+  return 0
+}
 mkdir -p "$A/logs"
 export SARC_HOLD_DIR=$A SARC_JOBS=8
 export B580_BUSYMAX=0 B580_ARTIFACTS=$A WMMA_B580_TAG=wmma-xe2-b580-v1

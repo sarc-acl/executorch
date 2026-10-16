@@ -43,7 +43,9 @@ session() { local s=$1 c=$2; shift 2
 step "s1-aa"
 stage s1-aa parent-v2 "$PARENT_ENV" $BUILD "$PARENT_ENV" "A/A: pristine base vs wmma-v1, control profile both arms" || { note "stage s1-aa failed"; exit 1; }
 gate s1-aa
-session s1-aa aa --calibrate
+# s1-aa's session (2026-10-16 00:05-00:41Z) is preserved: every prefill invalid (foreign_busy, Firefox).
+stage s1b-aa parent-v2 "$PARENT_ENV" $BUILD "$PARENT_ENV" "A/A repeat with foreign-quiet wait; control check is s1-aa's gate on the same binary" || { note "stage s1b-aa failed"; exit 1; }
+session s1b-aa aa --calibrate
 [[ -s $CLKMIN_FILE && -s $BUSYMAX_FILE ]] || { note "calibration missing; candidates not started"; exit 1; }
 
 i=2

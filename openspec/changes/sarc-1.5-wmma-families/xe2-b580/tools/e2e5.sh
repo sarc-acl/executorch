@@ -100,7 +100,9 @@ run1() {  # run1 <model> <scheme> <build> <rep> <slot> <prompt> <tag> <expected 
   log="logs/$tag-$m-$q-$b-r$r.log"
   device_check || finish E2E5_ABORTED device_lost
   [[ $tag == prefill ]] && { idle_wait "$tag $m $q $b r$r" || finish E2E5_ABORTED device_lost; }   # desktop: a timed run starts only on an idle desktop (host.sh)
-  t0=$SECONDS; cool; cs=$((SECONDS - t0)); tp=$(gtemp); oth=$(others | tr ',' ';')
+  t0=$SECONDS; cool; cs=$((SECONDS - t0))
+  [[ $tag == prefill ]] && { quiet_wait "$tag $m $q $b r$r" || finish E2E5_ABORTED device_lost; }
+  tp=$(gtemp); oth=$(others | tr ',' ';')
   [[ -n $oth ]] && finish E2E5_ABORTED "other GPU process before $tag $m $q $b r$r: $oth"
   local benv=(); [[ -f $D/$b/env ]] && mapfile -t benv < "$D/$b/env"
   sampler "$O/${log%.log}.clk" 9>&- & sp=$!
