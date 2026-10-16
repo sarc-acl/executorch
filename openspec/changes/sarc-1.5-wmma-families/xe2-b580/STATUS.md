@@ -122,7 +122,15 @@ A/A control arm (wmma-v1, `b580-fused1-order-p13`, s1c-aa) against b580-fused or
 
 ## Now
 
-Queue completed 04:24:53Z. No job running. Matrix ready for the single review.
+Matrix queue completed 04:24:53Z. Coordinator decision 2026-10-16 05:20 UTC names the Xe2 finalists; registered
+in the dev zone (`Overrides.cpp`, b580-wmma block): `b580-fused1-order-wmma-xe2-family-a` (4w `flib` and 8da4w
+xe2bto `i` on every prefill shape) and `b580-fused1-order-wmma-xe2-family-b` (4w `flib`; 8da4w the B580 final rule,
+`n13` on `xe2_order_w12`, else `i`; the same rows as q4-band). Queue `tools/finalists.sh` (state
+`.artifacts/queue/wmma-v2/job-state.json`): build `wmma-v2` once (control, matrix candidates and finalists), then
+per finalist (s8 family-a, s9 family-b) the full gate on wmma-v2: unmodified `verify.sh --pdiff`, SDPA tiers all /
+extended / full x 12 (`tools/sdpa_tiers.sh`, criteria of b580-fused `gate_check.py --sdpa` in `tools/sdpa_check.py`,
+checked against s6-final's logs: SDPA_PASS), next tokens on three prompts in the confirming six-cell interleaved
+session against the control `b580-fused1-order-p13` on the same binary, same validity rules as the matrix.
 
 ## Question for the coordinator
 

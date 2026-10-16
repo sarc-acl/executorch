@@ -1952,6 +1952,22 @@ const Preference kB580WmmaB70Linear[] = {
     {Op::kQ4gswLinear, "sweep_t128x128k32g84s16m8flw", xe2_narrow_output},
     {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
 };
+// Xe2 family finalists (coordinator decision 2026-10-16 05:20 UTC)
+const Preference kB580WmmaXe2FamilyA[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
+const Preference kB580WmmaXe2FamilyB[] = {
+    {Op::kSdpaQk, "xe2c_t128x64k32g44s16m8nf", b580_qk_head_dim_128},
+    {Op::kSdpaQk, "pk_t128x64k32g44s16m8nf", nullptr},
+    {Op::kSdpaAv, "xe2_t128x64k32g44s16m8", b580_head_dim_128},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8n13", xe2_order_w12},
+    {Op::kDq8caLinear, "xe2bto_t128x128k64g84s16m8i", nullptr},
+    {Op::kQ4gswLinear, "sweep_t128x128k16g82s16m8flib", nullptr},
+};
 // b580-wmma end
 struct Profile {
   const char* name;
@@ -2377,6 +2393,8 @@ const Profile kProfiles[] = {
     {"b580-fused1-order-wmma-dq-n13", kB580WmmaDqN13, sizeof(kB580WmmaDqN13) / sizeof(Preference)},
     {"b580-fused1-order-wmma-dq-n26", kB580WmmaDqN26, sizeof(kB580WmmaDqN26) / sizeof(Preference)},
     {"b580-fused1-order-wmma-b70-linear", kB580WmmaB70Linear, sizeof(kB580WmmaB70Linear) / sizeof(Preference)},
+    {"b580-fused1-order-wmma-xe2-family-a", kB580WmmaXe2FamilyA, sizeof(kB580WmmaXe2FamilyA) / sizeof(Preference)},
+    {"b580-fused1-order-wmma-xe2-family-b", kB580WmmaXe2FamilyB, sizeof(kB580WmmaXe2FamilyB) / sizeof(Preference)},
     // b580-wmma end
 };
 const Profile* requested_profile() {
