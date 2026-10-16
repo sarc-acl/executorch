@@ -5,8 +5,8 @@
 revised inputs are superseded by that decision; their records stay below in git history and under the
 artifact root.
 
-**Running:** detached job `lean-01` (`tools/lean_queue.sh wmma-b70-topic-02`), status file
-`/home/doremy/wmma-b70/.artifacts/jobs/lean-01.json`, progress in `.artifacts/queue.status`.
+**Matrix complete** (2026-10-16 02:52 UTC); nothing is running. Jobs `lean-01` (matrix, 23:29 to 02:31 UTC) and
+`redispatch-01` (dispatch names, 02:33 to 02:52 UTC) both completed with exit code 0. Waiting for the single review of the finished matrix.
 
 ## Configuration
 
@@ -52,6 +52,37 @@ Cand/control > 1 means the candidate is faster. Limits: six-cell geomean slowdow
 <!-- matrix end -->
 
 No family-wide acceptance is claimed from this member's results.
+
+## Results summary (B70 member only)
+
+- Control check: control `verify.sh --pdiff` on topic-02 is line-identical to the historical final gate `g1`, rates
+  removed (`.artifacts/stage/s1-aa/verify-vs-historical.txt`, VERIFY_SAME, 34 lines). The A/A next tokens are SAME in
+  all six cells on all three prompts. The calibrated clock floor is 2457 MHz (the historical B70 value was also 2457).
+- Baseline: the A/A control medians against the published final-profile references (`proposal.md`) are 1B 4w +0.00 %,
+  3B 4w +0.39 %, 8B 4w +0.86 %, 1B 8da4w +0.00 %, 3B 8da4w +0.49 %, 8B 8da4w -0.00 %. All eight same-session
+  controls lie between -0.47 % and +1.02 % of the published values, inside the 3 % rule.
+- Validity: 864 rows in `.artifacts/runs.csv` (8 sessions x 108 runs). Every run is valid: 0 invalid runs, no
+  extra pairs, no foreign GPU process, no thermal reason.
+- Correctness: every profile passes production diff 12/12 with next tokens SAME. The only line of each candidate's
+  verify output that differs from the control's is the linear kernel-name line, with reviewed manifest kernels.
+  dq-n26 and q4-k32 are line-identical to the control and dispatch the control's kernels: they are the final
+  profile's own picks.
+- Member margins (point estimates): six of seven profiles are within 3 % geomean and 8 % per cell of the
+  same-session tuned control. dq-table fails, with slowdowns of 13.3 % (1B 8da4w), 19.2 % (3B 8da4w) and 24.4 %
+  (8B 8da4w); its geomean slowdown is 8.8 %. q4-table costs 2.0 to 2.4 % on the three 4w cells (geomean 1.0 %).
+  dq-i costs 4.3 % on 8B 8da4w (geomean 0.7 %). dq-n13, q4-k16, q4-k32 and dq-n26 are inside the +-2 % noise band
+  everywhere.
+- Uncertainty: 20,000 bootstrap resamples per arm (seed 7321), 95 % intervals in each session's `evidence.json`.
+  Two intervals reach a limit. dq-table's geomean slowdown is [8.5 %, 9.3 %], over the 3 % limit. dq-i's 8B 8da4w
+  slowdown is [3.8 %, 4.8 %], under the 8 % limit. The 1B intervals are coarse, because the runner's 1 ms timer
+  quantises a roughly 0.1 s prefill (L19).
+- Dispatch evidence: `results/matrix-dispatch.csv`. The first collection stopped early in 5 sessions: `cool_start`
+  returned status 1 under `set -e`, which is now fixed in `host.sh`. Those partial collections are preserved in
+  `.artifacts/superseded/dispatch-cool-start-status/` and were collected again in full. In q4-table and q4-k32 all
+  12 traced runs had completed; only the name extractor was wrong (it read `name` instead of
+  `delegate_debug_id_str`). Both were re-extracted on the CPU, and their `dispatch.done` was written by the actor.
+- Property signature: the queried cooperative-matrix shapes, subgroup and shared-memory limits are in
+  `.artifacts/preflight/cooperative-matrices.json` and `vulkan-device0.json`, recorded before the matrix.
 
 ## Question for the coordinator
 
