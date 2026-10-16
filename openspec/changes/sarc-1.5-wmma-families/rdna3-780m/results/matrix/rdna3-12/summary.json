@@ -1,0 +1,135 @@
+{
+ "cells": {
+  "1b-4w": {
+   "valid_control": 7,
+   "valid_cand": 7,
+   "invalid": [],
+   "next_token": {
+    "prompt_2048.txt": "SAME",
+    "prompt_check.txt": "SAME",
+    "r1304.txt": "SAME"
+   },
+   "control_med": 3835.21,
+   "cand_med": 1290.49,
+   "r": 0.33648,
+   "spread_control_pct": 0.37,
+   "spread_cand_pct": 0.25,
+   "r_ci95": [
+    0.33627,
+    0.33733
+   ]
+  },
+  "1b-8da4w": {
+   "valid_control": 7,
+   "valid_cand": 7,
+   "invalid": [],
+   "next_token": {
+    "prompt_2048.txt": "SAME",
+    "prompt_check.txt": "SAME",
+    "r1304.txt": "SAME"
+   },
+   "control_med": 3764.71,
+   "cand_med": 3764.71,
+   "r": 1.0,
+   "spread_control_pct": 0.37,
+   "spread_cand_pct": 0.18,
+   "r_ci95": [
+    0.99633,
+    1.0
+   ]
+  },
+  "3b-4w": {
+   "valid_control": 7,
+   "valid_cand": 7,
+   "invalid": [],
+   "next_token": {
+    "prompt_2048.txt": "SAME",
+    "prompt_check.txt": "SAME",
+    "r1304.txt": "SAME"
+   },
+   "control_med": 1457.65,
+   "cand_med": 459.708,
+   "r": 0.31538,
+   "spread_control_pct": 0.28,
+   "spread_cand_pct": 0.31,
+   "r_ci95": [
+    0.31531,
+    0.31597
+   ]
+  },
+  "3b-8da4w": {
+   "valid_control": 7,
+   "valid_cand": 7,
+   "invalid": [],
+   "next_token": {
+    "prompt_2048.txt": "SAME",
+    "prompt_check.txt": "SAME",
+    "r1304.txt": "SAME"
+   },
+   "control_med": 1408.53,
+   "cand_med": 1410.47,
+   "r": 1.00138,
+   "spread_control_pct": 0.34,
+   "spread_cand_pct": 0.34,
+   "r_ci95": [
+    0.99794,
+    1.00276
+   ]
+  },
+  "8b-4w": {
+   "valid_control": 7,
+   "valid_cand": 7,
+   "invalid": [],
+   "next_token": {
+    "prompt_2048.txt": "SAME",
+    "prompt_check.txt": "SAME",
+    "r1304.txt": "SAME"
+   },
+   "control_med": 639.201,
+   "cand_med": 191.027,
+   "r": 0.29885,
+   "spread_control_pct": 0.47,
+   "spread_cand_pct": 0.15,
+   "r_ci95": [
+    0.29834,
+    0.29961
+   ]
+  },
+  "8b-8da4w": {
+   "valid_control": 7,
+   "valid_cand": 7,
+   "invalid": [],
+   "next_token": {
+    "prompt_2048.txt": "SAME",
+    "prompt_check.txt": "SAME",
+    "r1304.txt": "SAME"
+   },
+   "control_med": 628.028,
+   "cand_med": 627.836,
+   "r": 0.99969,
+   "spread_control_pct": 0.18,
+   "spread_cand_pct": 0.34,
+   "r_ci95": [
+    0.99877,
+    1.00092
+   ]
+  }
+ },
+ "complete": true,
+ "geomean": 0.56271,
+ "min_r": 0.29885,
+ "margin_cells": false,
+ "margin_geomean": false,
+ "geomean_ci95": [
+  0.56215,
+  0.56315
+ ],
+ "pdiff_pass": true,
+ "linear_kernels": {
+  "4w": "12 \"sarc_dev_rx7600_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbtap4bp12_texture3d_texture2d_half\"; 12 \"sarc_linear_q4gsw_coopmat_t128x128k32g42s32f32c_buffer_texture2d_half\";",
+  "8da4w": "6 \"sarc_dev_780m_x_linear_dq8ca_coopmat_zpg_t256x64k64g48s32afmb1_texture3d_texture2d_half\"; 12 \"sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32_buffer_texture2d_half\"; 6 \"sarc_dev_linear_dq8ca_coopmat_zpg_bt_t128x64k32g22s32_texture3d_texture2d_half\";"
+ },
+ "verify_lines_differing_from_control": [],
+ "next_token_all_same": true,
+ "monitoring_visibility": "own_user_plus_device_busy_other_users_unobservable (owner decision 2026-10-15 03:57 UTC)"
+}
