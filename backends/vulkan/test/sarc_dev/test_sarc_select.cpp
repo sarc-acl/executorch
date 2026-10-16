@@ -71,6 +71,31 @@ static DeviceInfo device(
   return d;
 }
 
+// Family keys as the measured members report them (vulkaninfo /
+// vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR, sarc-1.5-wmma-families).
+static DeviceInfo xe2(DeviceInfo d, uint32_t driver = kDriverIntelMesa) {
+  d.vendor_id = kVendorIntel;
+  d.driver_id = driver;
+  d.coopmat_shapes = {
+      {8, 16, 16, CoopmatType::kFp16, CoopmatType::kFp16},
+      {8, 16, 16, CoopmatType::kFp16, CoopmatType::kFp32},
+      {8, 16, 32, CoopmatType::kSint8, CoopmatType::kSint32}};
+  return d;
+}
+
+static DeviceInfo nvidia(
+    DeviceInfo d,
+    uint32_t driver = kDriverNvidiaProprietary) {
+  d.vendor_id = kVendorNvidia;
+  d.driver_id = driver;
+  d.coopmat_shapes = {
+      {16, 16, 16, CoopmatType::kFp16, CoopmatType::kFp16},
+      {16, 8, 16, CoopmatType::kFp16, CoopmatType::kFp16},
+      {16, 16, 16, CoopmatType::kFp16, CoopmatType::kFp32},
+      {16, 16, 32, CoopmatType::kSint8, CoopmatType::kSint32}};
+  return d;
+}
+
 static ShapeInfo prefill(int64_t M, int64_t K, int64_t N, Storage io) {
   ShapeInfo s;
   s.op = Op::kQ4gswLinear;
@@ -109,6 +134,33 @@ struct Fixture {
 static const std::string kD = "sarc_linear_dq8ca_coopmat_";
 static std::string none(const ShapeInfo&) {
   return "";
+}
+
+// Xe2 family (B580 and B70 alike).
+static std::string xe2_rule(const ShapeInfo& s) {
+  return kQ +
+      (s.output == Storage::kTexture3D ? "t128x128k16g82s16m8flib"
+                                       : "t128x128k16g44s16m8fli");
+}
+static std::string xe2_rule8(const ShapeInfo& s) {
+  return kD +
+      (s.K * s.N >= 24000000 ? "zpg_xe2bto_t128x128k64g84s16m8n13"
+                             : "zpg_xe2bto_t128x128k64g84s16m8i");
+}
+
+// NVIDIA family on a device without per-device rows (texture3d only; the
+// measured Llama projections at M = 2048).
+static std::string nv_family_rule(const ShapeInfo& s) {
+  if (s.output != Storage::kTexture3D) {
+    return "";
+  }
+  return kQ +
+      (s.K > 8192 ? "bx_t128x128k32g42s32f32c" : "t256x128k16g42s32bt");
+}
+static std::string nv_family_rule8(const ShapeInfo& s) {
+  return s.output == Storage::kTexture3D
+      ? kD + "zpgtr_bf_t128x128k64g24s32mk32ra"
+      : "";
 }
 
 static bool active(const DeviceInfo& d, Op op) {
@@ -333,48 +385,56 @@ int main(int argc, char** argv) {
        [](const ShapeInfo&) { return kQ + "t128x128k32g42s32f32c"; },
        [](const ShapeInfo&) { return kD + "zpg_t128x64k32g42s32"; }},
       {"B580",
-       device("intel(r) arc(tm) b580 graphics (bmg g21)", false, 32, 8, 32),
-       [](const ShapeInfo&) { return kQ + "t128x128k16g44s16m8fli"; },
-       [](const ShapeInfo&) { return kD + "zpg_t256x64k32g48s16m8"; }},
+       xe2(device("intel(r) arc(tm) b580 graphics (bmg g21)", false, 32, 8, 32)),
+       xe2_rule,
+       xe2_rule8},
       {"B70",
-       device("intel(r) graphics (bmg g31)", false, 32, 8, 32),
-       [](const ShapeInfo&) { return kQ + "t128x128k16g44s16m8fli"; },
-       [](const ShapeInfo&) { return kD + "zpg_t256x64k32g48s16m8"; }},
+       xe2(device("intel(r) graphics (bmg g31)", false, 32, 8, 32)),
+       xe2_rule,
+       xe2_rule8},
+      // Not a measured member: the family key, not the name, selects.
+      {"Xe2Unlisted",
+       xe2(device("intel(r) graphics (lnl)", false, 32, 8, 32)),
+       xe2_rule,
+       xe2_rule8},
+      // Same silicon, other driver (Windows proprietary, VK_DRIVER_ID 5).
+      {"B580OtherDriver",
+       xe2(device("intel(r) arc(tm) b580 graphics (bmg g21)", false, 32, 8, 32), 5),
+       none,
+       none},
       {"4070TiS",
-       device("nvidia geforce rtx 4070 ti super", false, 32, 32, 32),
+       nvidia(device("nvidia geforce rtx 4070 ti super", false, 32, 32, 32)),
        [](const ShapeInfo& s) {
          if (s.output == Storage::kTexture3D) {
-           return kQ +
-               (s.M % 256 == 0 && s.N % 128 == 0 && s.N > 512
-                    ? "t256x128k16g42s32ga"
-                    : "t128x128k16g24s32ga");
+           if (s.K > 8192) { // per-device override of the family's bx
+             return kQ + "t256x128k16g42s32ga";
+           }
+           return kQ + "t256x128k16g42s32bt";
          }
          return kQ +
              (s.M % 128 == 0 && s.N % 256 == 0 && s.N > 512
                   ? "t128x256k16g42s32ga"
                   : "t128x128k16g42s32ga");
        },
-       [](const ShapeInfo&) { return kD + "zpgtr_t128x128k64g44s32mk32ra"; }},
-      {"Orin",
-       device("nvidia tegra orin (nvgpu)", false, 32, 32, 32),
-       [](const ShapeInfo& s) -> std::string {
-         if (s.output != Storage::kTexture3D) {
-           return "";
-         }
-         if (s.K > 8192) {
-           return kQ + "t128x128k32g42s32f32";
-         }
-         if (s.M % 256 == 0 && s.N % 128 == 0 &&
-             (s.M != 256 || s.N % 2048 == 0)) {
-           return kQ + "t256x128k16g22s32";
-         }
-         return kQ + "t128x128k16g22s32";
-       },
-       [](const ShapeInfo& s) -> std::string {
+       [](const ShapeInfo& s) {
          return s.output == Storage::kTexture3D
-             ? kD + "zpgtr_t128x128k64g44s32mk32ra"
-             : "";
+             ? kD + "zpgtr_bf_t128x128k64g24s32mk32ra"
+             : kD + "zpgtr_t128x128k64g44s32mk32ra";
        }},
+      {"Orin",
+       nvidia(device("nvidia tegra orin (nvgpu)", false, 32, 32, 32)),
+       nv_family_rule,
+       nv_family_rule8},
+      // Not a measured member: same key, no per-device rows.
+      {"NvidiaUnlisted",
+       nvidia(device("nvidia geforce rtx 3080", false, 32, 32, 32)),
+       nv_family_rule,
+       nv_family_rule8},
+      // Same silicon under NVK (VK_DRIVER_ID_MESA_NVK 24): no family.
+      {"OrinNvk",
+       nvidia(device("nvidia tegra orin (nvgpu)", false, 32, 32, 32), 24),
+       none,
+       none},
       {"M51",
        device("samsung xclipse 940", true, 64, 32, 64),
        [](const ShapeInfo&) { return kQ + "t128x128k16g22s32f32xp"; },
@@ -503,6 +563,57 @@ int main(int argc, char** argv) {
       EXPECT(!select(f.dev, *x).has_value(), "%s: must fall back", f.label);
     }
     set_override(saved);
+  }
+
+  // NVIDIA family edges: shapes the 256-row tile leaves out, an unmeasured
+  // shape, and the family key on its own.
+  {
+    const DeviceInfo ti =
+        nvidia(device("nvidia geforce rtx 4070 ti super", false, 32, 32, 32));
+    const DeviceInfo orin =
+        nvidia(device("nvidia tegra orin (nvgpu)", false, 32, 32, 32));
+    struct Edge {
+      int64_t M, K, N;
+      const char* ti;
+      const char* orin;
+    };
+    const Edge edges[] = {
+        // M not a multiple of 256: the 128-row tiles.
+        {384, 2048, 2048, "t128x128k16g24s32ga", "t128x128k16g22s32"},
+        // M = 256 at N % 2048 != 0: the Orin rule leaves bt out.
+        {256, 3072, 1024, "t256x128k16g42s32ga", "t128x128k16g22s32"},
+        {256, 2048, 8192, "t256x128k16g42s32bt", "t256x128k16g42s32bt"},
+        // K > 8192 with M not a multiple of 256: bx on both.
+        {384, 14336, 4096, "bx_t128x128k32g42s32f32c", "bx_t128x128k32g42s32f32c"},
+        // Unmeasured (vocabulary projection): device rows or stock.
+        {2048, 2048, 128256, "t256x128k16g42s32ga", nullptr},
+    };
+    for (const Edge& e : edges) {
+      ShapeInfo s = prefill(e.M, e.K, e.N, Storage::kTexture3D);
+      const auto ct = select(ti, s);
+      const auto co = select(orin, s);
+      EXPECT(
+          ct.has_value() && ct->kernel_base == kQ + e.ti,
+          "4070TiS edge M=%lld K=%lld N=%lld: got '%s'",
+          (long long)e.M, (long long)e.K, (long long)e.N,
+          ct.has_value() ? ct->kernel_base.c_str() : "");
+      EXPECT(
+          e.orin == nullptr ? !co.has_value()
+                            : co.has_value() && co->kernel_base == kQ + e.orin,
+          "Orin edge M=%lld K=%lld N=%lld: got '%s'",
+          (long long)e.M, (long long)e.K, (long long)e.N,
+          co.has_value() ? co->kernel_base.c_str() : "");
+    }
+    EXPECT(device_family(ti) == Family::kNvidia, "4070TiS family");
+    EXPECT(device_family(orin) == Family::kNvidia, "Orin family");
+    DeviceInfo no_int8 = orin;
+    no_int8.int8_coopmat = false;
+    EXPECT(device_family(no_int8) == Family::kNone, "family needs int8 coopmat");
+    DeviceInfo amd = device("amd radeon 780m graphics (radv phoenix)", true, 64, 32, 64);
+    EXPECT(device_family(amd) == Family::kNone, "780M has no family key yet");
+    DeviceInfo xe2_sg8 = xe2(device("intel(r) graphics (lnl)", false, 8, 8, 8));
+    xe2_sg8.subgroup_size_control = false;
+    EXPECT(device_family(xe2_sg8) == Family::kNone, "Xe2 key needs subgroup 16");
   }
 
   // SDPA prefill rows: only the AMD wave64 devices (780M, M51); the QK^T

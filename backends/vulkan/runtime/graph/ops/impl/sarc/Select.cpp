@@ -41,7 +41,58 @@ bool row_active(const Row& row) {
   return row.status == Status::kVerified || get_override().allow_unverified;
 }
 
+bool has_shape(
+    const DeviceInfo& device,
+    uint32_t m,
+    uint32_t n,
+    uint32_t k,
+    CoopmatType a,
+    CoopmatType result) {
+  for (const CoopmatShape& s : device.coopmat_shapes) {
+    if (s.m == m && s.n == n && s.k == k && s.a == a && s.result == result) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool subgroup_size_available(const DeviceInfo& device, uint32_t size) {
+  return device.subgroup_size == size ||
+      (device.subgroup_size_control && size >= device.min_subgroup_size &&
+       size <= device.max_subgroup_size);
+}
+
 } // namespace
+
+Family device_family(const DeviceInfo& device) {
+  if (!device.coopmat || !device.int8_coopmat) {
+    return Family::kNone;
+  }
+  if (device.vendor_id == kVendorIntel &&
+      device.driver_id == kDriverIntelMesa &&
+      has_shape(device, 8, 16, 16, CoopmatType::kFp16, CoopmatType::kFp16) &&
+      has_shape(device, 8, 16, 32, CoopmatType::kSint8, CoopmatType::kSint32) &&
+      subgroup_size_available(device, 16)) {
+    return Family::kXe2;
+  }
+  if (device.vendor_id == kVendorNvidia &&
+      device.driver_id == kDriverNvidiaProprietary &&
+      has_shape(device, 16, 16, 16, CoopmatType::kFp16, CoopmatType::kFp16) &&
+      has_shape(device, 16, 16, 16, CoopmatType::kFp16, CoopmatType::kFp32) &&
+      has_shape(device, 16, 16, 32, CoopmatType::kSint8, CoopmatType::kSint32) &&
+      subgroup_size_available(device, 32)) {
+    return Family::kNvidia;
+  }
+  return Family::kNone;
+}
+
+bool in_xe2_family(const DeviceInfo& device) {
+  return device_family(device) == Family::kXe2;
+}
+
+bool in_nvidia_family(const DeviceInfo& device) {
+  return device_family(device) == Family::kNvidia;
+}
 
 void register_rows(const Row* rows, size_t count) {
   row_store().insert(row_store().end(), rows, rows + count);

@@ -76,6 +76,20 @@ sarc_linear_q4gsw_coopmat:
       SUBGROUP_SIZE: 16
       FRAG_LAYOUT: true
       IMG_A: true
+    # Intel Xe2 family (2026-10-16, sarc-1.5-wmma-families): banded drain
+    # ('b'), 8 x 2 subgroups. Sweep origin: sarc_dev
+    # sweep_t128x128k16g82s16m8flib.
+    - NAME: sarc_linear_q4gsw_coopmat_t128x128k16g82s16m8flib_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      MMA_M: 8
+      WG_TILE_K: 16
+      SG_GRID_X: 8
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      FRAG_LAYOUT: true
+      IMG_A: true
+      CSH_BAND: true
     # NVIDIA RTX 4070 Ti SUPER. fp16 MMA per quantization group with an fp32
     # total ('ga'); per-shape tiles. 1.4 study: docs/4070TI-WMMA-LESSONS.md.
     - NAME: sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga_texture3d_texture2d_half
@@ -131,6 +145,16 @@ sarc_linear_q4gsw_coopmat:
       WG_TILE_K: 16
       SG_GRID_X: 2
       SG_GRID_Y: 2
+    # NVIDIA family (2026-10-16, sarc-1.5-wmma-families), K <= 8192: N-major
+    # B in LDS ('bt'). Origin: sarc_dev orin_t256x128k16g42s32bt.
+    - NAME: sarc_linear_q4gsw_coopmat_t256x128k16g42s32bt_texture3d_texture2d_half
+      IO_STORAGE: texture3d
+      WEIGHT_STORAGE: texture2d
+      WG_TILE_M: 256
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      B_COLMAJOR: true
     # Samsung Xclipse (M51), 2026-09-28: the 1.4 tile with fp32 accumulate
     # ('f32'; fp16 accumulate fails the long-K production diff) and, for
     # texture3d, the whole tile drained in one pass from a shared LDS pool

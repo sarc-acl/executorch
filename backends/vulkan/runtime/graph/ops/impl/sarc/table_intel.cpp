@@ -7,7 +7,7 @@
  */
 
 // SARC selection rows for Intel GPUs. First matching row wins. Status
-// kVerified requires sarc/tools/verify.sh evidence on that device.
+// kVerified requires sarc/tools/verify.sh evidence on every member device.
 
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/sarc/Select.h>
 
@@ -15,50 +15,39 @@ namespace vkcompute {
 namespace sarc {
 namespace {
 
-// t128x128k16g44s16, MMA 8x16x16 (the only fp16 coopmat shape Xe2 exposes;
-// a 16x16x16 pipeline is created without error and then miscomputes),
-// fragment-contiguous LDS, imageLoad A.
-constexpr TileDims kXe2Dims = {128, 128, 16, 4, 4, 16, 8, false};
+bool xe2_weight_heavy(const ShapeInfo& s) {
+  return s.K * s.N >= 24000000;
+}
 
-// Battlemage (Xe2), verified on release 1.5 (openspec/changes/
-// sarc-1.5-4w-port): 2048-token prefill 1B/3B/8B vs stock 1.5
-// B580 8498/3352/1672 vs 3185/1149/524, B70 11636/4842/2421 vs
-// 4592/1708/780 tok/s; kernel times 1.004x / 0.999x of the 1.4 study.
+// Intel Xe2 family (Family::kXe2), openspec/changes/sarc-1.5-wmma-families:
+// one kernel set for every member, accepted on the Arc B580 (BMG G21) and the
+// Arc Pro B70 (BMG G31). Six-cell prefill geomean vs each card's tuned profile
+// (linear kernels only): B580 1.0068, B70 0.9964, every cell in the noise band.
+// MMA 8x16x16 / 8x16x32 (the only fp16 / int8 coopmat shapes Xe2 exposes; a
+// 16x16x16 pipeline is created without error and then miscomputes),
+// subgroup 16, fragment-contiguous LDS, imageLoad A.
 const Row kIntelRows[] = {
-    {"bmg g21", // Arc B580
-     nullptr,
-     Op::kQ4gswLinear,
+    // 4w, texture3d: banded drain ('b'), 8 x 2 subgroups.
+    {"", in_xe2_family, Op::kQ4gswLinear,
+     "sarc_linear_q4gsw_coopmat_t128x128k16g82s16m8flib",
+     {128, 128, 16, 8, 2, 16, 8, false}, kTex3dTex2d, nullptr,
+     Status::kVerified},
+    // 4w, buffer IO: the release-1.5 Xe2 tile (sarc-1.5-4w-port).
+    {"", in_xe2_family, Op::kQ4gswLinear,
      "sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli",
-     kXe2Dims,
-     kTex3dTex2d | kBufTex2d,
-     nullptr,
+     {128, 128, 16, 4, 4, 16, 8, false}, kBufTex2d, nullptr,
      Status::kVerified},
-    {"bmg g31", // Arc Pro B70
-     nullptr,
-     Op::kQ4gswLinear,
-     "sarc_linear_q4gsw_coopmat_t128x128k16g44s16m8fli",
-     kXe2Dims,
-     kTex3dTex2d | kBufTex2d,
-     nullptr,
-     Status::kVerified},
-    // 8da4w: zpg (4h4w activations), MMA 8x16x32, subgroup 16, multi-block
-    // A staging. 1.4 branches -b580/-b70: 1B prefill vs tiled B580
-    // 5988 -> 8533, B70 8292 -> 12264 tok/s.
-    {"bmg g21",
-     nullptr,
-     Op::kDq8caLinear,
-     "sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8",
-     {256, 64, 32, 4, 8, 16, 8, false},
-     kTex3dTex2d | kBufTex2d,
-     nullptr,
-     Status::kVerified},
-    {"bmg g31",
-     nullptr,
-     Op::kDq8caLinear,
-     "sarc_linear_dq8ca_coopmat_zpg_t256x64k32g48s16m8",
-     {256, 64, 32, 4, 8, 16, 8, false},
-     kTex3dTex2d | kBufTex2d,
-     nullptr,
+    // 8da4w: zpg with texel-wise B staging and a full A thread map. On the
+    // weight-heavy projections (K * N >= 24e6) workgroups run in blocks of at
+    // most 13 N tiles, all M tiles of a block first ('n13'); elsewhere in
+    // dispatch order ('i').
+    {"", in_xe2_family, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8n13",
+     {128, 128, 64, 8, 4, 16, 8, false}, kTex3dTex2d | kBufTex2d,
+     xe2_weight_heavy, Status::kVerified},
+    {"", in_xe2_family, Op::kDq8caLinear,
+     "sarc_linear_dq8ca_coopmat_zpg_xe2bto_t128x128k64g84s16m8i",
+     {128, 128, 64, 8, 4, 16, 8, false}, kTex3dTex2d | kBufTex2d, nullptr,
      Status::kVerified},
 };
 

@@ -15,8 +15,8 @@
 // or the sweep twin), which defines bindings, spec constants and tile
 // constants. Must not contain template syntax.
 
-#ifndef SARC_LINEAR_DQ8CA_COOPMAT_ZPGTR_ORIN_BF_BODY_GLSLH
-#define SARC_LINEAR_DQ8CA_COOPMAT_ZPGTR_ORIN_BF_BODY_GLSLH
+#ifndef SARC_LINEAR_DQ8CA_COOPMAT_ZPGTR_BF_BODY_GLSLH
+#define SARC_LINEAR_DQ8CA_COOPMAT_ZPGTR_BF_BODY_GLSLH
 
 const uint NUM_SUBGROUPS = SG_GRID_X * SG_GRID_Y;
 const uint WG_SIZE = NUM_SUBGROUPS * SUBGROUP_SIZE;
@@ -881,4 +881,4 @@ void main() {
 #endif // IO_TEXTURE
 }
 
-#endif // SARC_LINEAR_DQ8CA_COOPMAT_ZPGTR_ORIN_BF_BODY_GLSLH
+#endif // SARC_LINEAR_DQ8CA_COOPMAT_ZPGTR_BF_BODY_GLSLH

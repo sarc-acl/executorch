@@ -48,6 +48,26 @@ enum class Storage { kBuffer, kTexture2D, kTexture3D, kOther };
 
 enum class Status { kVerified, kUnverified };
 
+// Component types of a cooperative-matrix shape (VkComponentTypeKHR, reduced
+// to the types the family keys test).
+enum class CoopmatType { kOther, kFp16, kFp32, kSint8, kSint32 };
+
+// One subgroup-scope VkCooperativeMatrixPropertiesKHR entry.
+struct CoopmatShape {
+  uint32_t m;
+  uint32_t n;
+  uint32_t k;
+  CoopmatType a; // A and B
+  CoopmatType result; // C and Result
+};
+
+// VkPhysicalDeviceProperties::vendorID and VkDriverId values used by the
+// family keys.
+constexpr uint32_t kVendorIntel = 0x8086;
+constexpr uint32_t kVendorNvidia = 0x10de;
+constexpr uint32_t kDriverNvidiaProprietary = 4; // VK_DRIVER_ID_NVIDIA_PROPRIETARY
+constexpr uint32_t kDriverIntelMesa = 6; // VK_DRIVER_ID_INTEL_OPEN_SOURCE_MESA
+
 struct DeviceInfo {
   std::string name; // lower-case
   bool is_amd = false;
@@ -58,7 +78,31 @@ struct DeviceInfo {
   bool coopmat = false;
   bool int8_coopmat = false; // an int8 cooperative-matrix shape is enumerated
   uint32_t max_shared_bytes = 0;
+  // Family key inputs (see device_family()).
+  uint32_t vendor_id = 0;
+  uint32_t driver_id = 0; // VkDriverId, 0 when not reported
+  std::vector<CoopmatShape> coopmat_shapes; // subgroup scope only
 };
+
+// Architecture families with a shared kernel set (openspec/changes/
+// sarc-1.5-wmma-families). A device belongs to a family by vendor ID, driver
+// ID and a property signature, never by its name; a device that matches no
+// family keeps its per-device rows or the upstream path.
+enum class Family {
+  kNone,
+  // Intel Xe2 on ANV: fp16 coopmat 8x16x16 (fp16 result), int8 8x16x32,
+  // subgroup size 16 available. Members measured: Arc B580, Arc Pro B70.
+  kXe2,
+  // NVIDIA proprietary driver: fp16 coopmat 16x16x16 (fp16 and fp32 result),
+  // int8 16x16x32, subgroup size 32. Members measured: RTX 4070 Ti SUPER (Ada),
+  // Jetson Orin (Ampere). The key cannot tell Ampere/Ada from other NVIDIA
+  // generations with the same shapes.
+  kNvidia,
+};
+
+Family device_family(const DeviceInfo& device);
+bool in_xe2_family(const DeviceInfo& device);
+bool in_nvidia_family(const DeviceInfo& device);
 
 struct ShapeInfo {
   Op op = Op::kQ4gswLinear;
@@ -105,7 +149,9 @@ enum StorageSet : uint8_t {
 };
 
 struct Row {
-  const char* device_substr; // matched against DeviceInfo::name
+  // Matched against DeviceInfo::name. A family row has "" (any name) and its
+  // family test (in_<family>_family) as device_ok.
+  const char* device_substr;
   bool (*device_ok)(const DeviceInfo&); // extra device requirements, or null
   Op op;
   const char* kernel_base; // shader name without _<io>_<weight>_<dtype>

@@ -97,4 +97,4 @@ const uint A_BLOCKS = ${A_BLOCKS};
 // xe2bto: 0 = the remap prologue alone, > 0 = the block rule with this many N tiles per block at most.
 #define ORDER_NB_MAX ${ORDER_NB_MAX}
 
-#include "sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto_body.glslh"
+#include "sarc_linear_dq8ca_coopmat_zpg_xe2bto_body.glslh"

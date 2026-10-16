@@ -17,6 +17,9 @@ SARC_TWINS=(
   "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat.glsl backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_linear_q4gsw_coopmat_sweep.glsl"
   "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_dq8ca_coopmat_zpg.glsl backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpg_sweep.glsl"
   "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_dq8ca_coopmat_zpgtr.glsl backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpgtr_sweep.glsl"
+  "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_q4gsw_coopmat_bx.glsl backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_linear_q4gsw_coopmat_bx.glsl"
+  "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_dq8ca_coopmat_zpg_xe2bto.glsl backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_dev_linear_dq8ca_coopmat_zpg_xe2bto.glsl"
+  "backends/vulkan/runtime/graph/ops/glsl/sarc/sarc_linear_dq8ca_coopmat_zpgtr_bf.glsl backends/vulkan/runtime/graph/ops/glsl/sarc_dev/sarc_linear_dq8ca_coopmat_zpgtr_orin_bf.glsl"
 )
 sarc_in_zone() { # sarc_in_zone <path> <zone...>
   local p=$1; shift

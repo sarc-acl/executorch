@@ -134,4 +134,4 @@ const uint SG_GRID_X = ${SG_GRID_X};
 const uint SG_GRID_Y = ${SG_GRID_Y};
 const uint SUBGROUP_SIZE = ${SUBGROUP_SIZE};
 
-#include "sarc_dev_linear_q4gsw_coopmat_bx_body.glslh"
+#include "sarc_linear_q4gsw_coopmat_bx_body.glslh"
