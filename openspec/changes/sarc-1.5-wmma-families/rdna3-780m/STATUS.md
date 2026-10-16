@@ -54,7 +54,9 @@ r = candidate / same-session control, medians of 7 valid runs; margin: every r >
 One member's result is not a family acceptance.
 
 <!-- matrix table begin -->
-(no session finished yet)
+| candidate | linear kernel | correctness | 1b-4w | 1b-8da4w | 3b-4w | 3b-8da4w | 8b-4w | 8b-8da4w | geomean (95 % CI) | margin |
+|---|---|---|---|---|---|---|---|---|---|---|
+| aa | control vs control |  | 1.0000 | 1.0000 | 0.9993 | 1.0062 | 0.9994 | 1.0000 | 1.0008 (0.9980-1.0015) | PASS |
 <!-- matrix table end -->
 
 ## Earlier preparation (reused, not repeated)
