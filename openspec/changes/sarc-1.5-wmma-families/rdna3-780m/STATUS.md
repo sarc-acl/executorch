@@ -70,6 +70,7 @@ One member's result is not a family acceptance.
 | rdna3-01 | sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g18s32f32cbt | pdiff PASS; next token SAME | 1.0000 | 1.0000 | 0.9993 | 0.9911 | 1.0000 | 1.0000 | 0.9984 (0.9980-1.0018) | PASS |
 | rdna3-03 | sarc_dev_780m_x_linear_q4gsw_coopmat_t256x128k32g28s32f32cbt | pdiff PASS; next token SAME | 1.0000 | 1.0000 | 1.0000 | 0.9979 | 1.0000 | 1.0003 | 0.9997 (0.9990-1.0011) | PASS |
 | rdna3-04 | sarc_dev_780m_x_linear_q4gsw_coopmat_t128x128k32g24s32f32cbt | pdiff PASS; next token SAME | 1.0000 | 1.0018 | 1.0000 | 0.9945 | 0.9984 | 1.0006 | 0.9992 (0.9984-1.0017) | PASS |
+| rdna3-05 | sarc_dev_780m_x_linear_q4gsw_coopmat_t128x256k32g42s32f32cbt | pdiff PASS; next token SAME | 1.0019 | 1.0000 | 1.0000 | 0.9993 | 0.9997 | 0.9997 | 1.0001 (0.9992-1.0006) | PASS |
 <!-- matrix table end -->
 
 ## Earlier preparation (reused, not repeated)
