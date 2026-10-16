@@ -94,6 +94,8 @@ No family-wide acceptance is claimed from this member's results.
 
 B70 matrix complete and reviewed (2026-10-16); which family finalists should get the full gate (verify, SDPA tiers, D3 evidence) on this device?
 
+Answered 2026-10-16 03:15 UTC: matrix accepted as the B70 member evidence; Xe2 finalists are named after the B580 matrix completes. Parked; no GPU work on this device until the finalist list is appended to the task file.
+
 ## Per-file reviewed input hashes
 
 | Input file | SHA256 |
