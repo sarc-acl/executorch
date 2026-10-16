@@ -593,5 +593,128 @@
     "acceptance": "NONE; ONE_MEMBER_ONLY",
     "stage": "stage/s3-4070ti-wmma-c06",
     "updated_utc": "2026-10-16T01:22:48.859298+00:00"
+  },
+  {
+    "profile": "4070ti-wmma-c01",
+    "repeats": 7,
+    "status": "SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING",
+    "not_measured_cells": [],
+    "not_measured_tokens": [],
+    "not_measured_reason": null,
+    "correctness": "NEXT_TOKEN_EQUAL",
+    "timed_text_differences": [],
+    "clock_floor_mhz": 2531,
+    "geomean_ratio": 1.0024479347156887,
+    "geomean_measured_cells": 1.0024479347156887,
+    "cells": {
+      "1b-4w": {
+        "arms": {
+          "control": {
+            "median_tok_s": 35310.3,
+            "spread_fraction": 0.016946896514614757
+          },
+          "candidate": {
+            "median_tok_s": 35310.3,
+            "spread_fraction": 0.0
+          }
+        },
+        "ratio": 1.0,
+        "ratio_interval95": [
+          1.0,
+          1.0172390448232451
+        ]
+      },
+      "1b-8da4w": {
+        "arms": {
+          "control": {
+            "median_tok_s": 39384.6,
+            "spread_fraction": 0.019609187347338883
+          },
+          "candidate": {
+            "median_tok_s": 39384.6,
+            "spread_fraction": 0.038476968155065724
+          }
+        },
+        "ratio": 1.0,
+        "ratio_interval95": [
+          1.0,
+          1.0
+        ]
+      },
+      "3b-4w": {
+        "arms": {
+          "control": {
+            "median_tok_s": 13932.0,
+            "spread_fraction": 0.0068475452196382165
+          },
+          "candidate": {
+            "median_tok_s": 13932.0,
+            "spread_fraction": 0.0068475452196382165
+          }
+        },
+        "ratio": 1.0,
+        "ratio_interval95": [
+          1.0,
+          1.0
+        ]
+      },
+      "3b-8da4w": {
+        "arms": {
+          "control": {
+            "median_tok_s": 16126.0,
+            "spread_fraction": 0.015999007813468934
+          },
+          "candidate": {
+            "median_tok_s": 16254.0,
+            "spread_fraction": 0.023624953857511996
+          }
+        },
+        "ratio": 1.0079374922485427,
+        "ratio_interval95": [
+          0.9842529296875,
+          1.0159990078134689
+        ]
+      },
+      "8b-4w": {
+        "arms": {
+          "control": {
+            "median_tok_s": 6380.06,
+            "spread_fraction": 0.015432456748055665
+          },
+          "candidate": {
+            "median_tok_s": 6400.0,
+            "spread_fraction": 0.00625
+          }
+        },
+        "ratio": 1.0031253624574064,
+        "ratio_interval95": [
+          0.996884375,
+          1.0031253624574064
+        ]
+      },
+      "8b-8da4w": {
+        "arms": {
+          "control": {
+            "median_tok_s": 7447.27,
+            "spread_fraction": 0.014761113804118741
+          },
+          "candidate": {
+            "median_tok_s": 7474.45,
+            "spread_fraction": 0.025458729404839148
+          }
+        },
+        "ratio": 1.0036496595396702,
+        "ratio_interval95": [
+          1.0,
+          1.0036764362828803
+        ]
+      }
+    },
+    "valid_rows": 84,
+    "invalid_rows": 18,
+    "within_member_numeric_margins": true,
+    "acceptance": "NONE; ONE_MEMBER_ONLY",
+    "stage": "stage/s3-4070ti-wmma-c01",
+    "updated_utc": "2026-10-16T07:19:08.056361+00:00"
   }
 ]

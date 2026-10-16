@@ -1,6 +1,6 @@
 # NVIDIA WMMA matrix status
 
-Updated: 2026-10-16 03:30 UTC
+Updated: 2026-10-16 07:25 UTC
 
 Stage: NATIVE TIMED MATRIX RUNNING under the owner's lean-finish decision
 (2026-10-15 23:30 UTC). Job state: artifact jobs/native-matrix-r7/state.json (r6 stopped to reorder) (r1, r2 failed on a foreign client; r3 on a slow-load runner abort; r4 on a slow-load runner hang; r5 on four invalid attempts at c01 8b-8da4w r5). From r6 the replacement bound is 8 attempts per arm/repetition (was 4; c01 STAGE.json still records 4). It bounds retries only; validity criteria are unchanged.
@@ -21,7 +21,7 @@ Order: Orin-origin candidates first (c08, c09, c10, c11, c06), then c01, c02.
 | c10 | sarc_linear_dq8ca_coopmat_zpgtr_orin_bf_t128x128k64g24s32mk32ra (8da4w) | pdiff PASS; next token equal (36/36) | 1.000 | 1.040 | 1.000 | 1.058 | 1.003 | 1.038 | 1.0229 (84 valid, 0 invalid) |
 | c11 | sarc_linear_q4gsw_coopmat_t128x128k16g22s32 (4w, K<=8192) | pdiff PASS; next token equal (36/36) | 1.018 | 1.000 | 1.021 | 1.016 | 1.032 | 1.000 | 1.0144 (84 valid, 2 invalid) |
 | c06 | sarc_linear_dq8ca_coopmat_zpgtr_t128x128k64g44s32mk32ra tex3d (8da4w) | pdiff PASS; next token equal (36/36) | 1.000 | 1.000 | 1.000 | 1.008 | 1.003 | 1.000 | 1.0018 (84 valid, 0 invalid) |
-| c01 | sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga tex3d (4w, N>512) | pdiff PASS; tokens pending | | | | | | | queued |
+| c01 | sarc_linear_q4gsw_coopmat_t256x128k16g42s32ga tex3d (4w, N>512) | pdiff PASS; next token equal (36/36) | 1.000 | 1.000 | 1.000 | 1.008 | 1.003 | 1.004 | 1.0024 (84 valid, 18 invalid; 8B rows mostly after slow loads) |
 | c02 | sarc_linear_q4gsw_coopmat_t128x128k16g24s32ga tex3d (4w) | pdiff PASS; tokens pending | | | | | | | queued |
 | c03, c04, c07 | buffer-IO variants | pdiff PASS (buffer microbench) | not timeable: the fixed models run texture3d IO, no dispatch | | | | | | n/a |
 | c05 | buffer-weight variant | NO COVERAGE (0 dispatched cases) | not timeable, no dispatch | | | | | | n/a |
@@ -35,6 +35,7 @@ and binary; c08 had 84/84 valid rows, 0 invalid. c08 dispatches only for K>8192
 - 2026-10-16 02:30 UTC: the foreign ComfyUI (PID 336840) keeps 8086 MiB VRAM and about 12 GiB host RAM (3.7 GiB available, no swap). The 8B model no longer stays cached, and 8B runs now abort (rc -6/-11) or hang until the 1200 s timeout after slow loads. Valid 8B runs keep the same prefill rate. The queue replaces these runs (L9/D5).
 - 2026-10-16 03:00 UTC: the slow loads also leave NVML's clock reading stale. 8B runs show a median clock of 270–600 MHz at an unchanged prefill rate (274 ms), so they fail the fixed 2531 MHz floor. c01 8b-8da4w r5 used all four attempts (r5 failed). From r6 every 8B process (both arms) waits until host MemAvailable >= model size + 1 GiB (memory-waits.jsonl). At 3.8 GiB available that wait lasts as long as ComfyUI holds its memory. c01 needs 8b-8da4w r5–r7 and c02 needs its 8B cells; the rest of the matrix is done. Can that workload release host memory before 2026-10-17 18:00 UTC?
 - 2026-10-16 03:30 UTC, applying the coordinator answer (03:15): the memory wait and clock floor stay. From r7 the queue measures c02's 1B/3B cells first. The 8B remainder (c01 8b-8da4w r5–r7, c02 8B) then waits for memory until 2026-10-17 12:00 UTC; cells still missing then are recorded as NOT_MEASURED (foreign memory pressure). r6 was stopped by me while idle in the memory wait (no run in flight); the inner session needed a separate TERM because `timeout` runs in its own process group.
+- 2026-10-16 07:25 UTC: the owner stopped zun-flux-pipeline.service (coordinator note); MemAvailable 14.1 GiB, no foreign GPU client. The r7 memory wait released by itself; c01 finished its 8b-8da4w r5–r7 and c02 8B cells are running. Validity rules unchanged; nothing restarted.
 
 ## Runner abort after slow load (c01, 2026-10-16 01:47 UTC)
 
@@ -323,3 +324,5 @@ boundaries. No pushes, PRs, services, policy changes, new bodies or search.
 2026-10-16T01:01:20.250355+00:00 4070ti-wmma-c11: SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING; correctness=NEXT_TOKEN_EQUAL; acceptance=NONE; ONE_MEMBER_ONLY. Ratios {"1b-4w": 1.017544455866985, "1b-8da4w": 1.0, "3b-4w": 1.0209803669960222, "3b-8da4w": 1.0159990078134689, "8b-4w": 1.032362625894462, "8b-8da4w": 1.0}; geomean=1.0144159211102695. Evidence artifact stage/s3-4070ti-wmma-c11.
 
 2026-10-16T01:22:48.859298+00:00 4070ti-wmma-c06: SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING; correctness=NEXT_TOKEN_EQUAL; acceptance=NONE; ONE_MEMBER_ONLY. Ratios {"1b-4w": 1.0, "1b-8da4w": 1.0, "3b-4w": 1.0, "3b-8da4w": 1.0079374922485427, "8b-4w": 1.0031253624574064, "8b-8da4w": 1.0}; geomean=1.0018394638639274. Evidence artifact stage/s3-4070ti-wmma-c06.
+
+2026-10-16T07:19:08.056361+00:00 4070ti-wmma-c01: SESSION_COMPLETE; ACTOR_AUDIT_AND_REVIEW_PENDING; correctness=NEXT_TOKEN_EQUAL; acceptance=NONE; ONE_MEMBER_ONLY. Ratios {"1b-4w": 1.0, "1b-8da4w": 1.0, "3b-4w": 1.0, "3b-8da4w": 1.0079374922485427, "8b-4w": 1.0031253624574064, "8b-8da4w": 1.0036496595396702}; geomean=1.0024479347156887. Evidence artifact stage/s3-4070ti-wmma-c01.
