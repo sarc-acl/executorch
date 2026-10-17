@@ -1,0 +1,98 @@
++ cd /w/executorch
++ export PYTHONPATH=/w
++ PYTHONPATH=/w
+++ which glslc
++ GL=/usr/bin/glslc
++ B=/home/doremy/Desktop/sarc-acl/.artifacts/wmma-port-fix/backend
++ for st in $STAGES
++ case $st in
++ cmake backends/vulkan/test/custom_ops -B/home/doremy/Desktop/sarc-acl/.artifacts/wmma-port-fix/unittest
+-- The CXX compiler identification is GNU 14.3.1
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMake Deprecation Warning at /w/executorch/third-party/googletest/CMakeLists.txt:4 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- The C compiler identification is GNU 14.3.1
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+CMake Deprecation Warning at /w/executorch/third-party/googletest/googlemock/CMakeLists.txt:45 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+CMake Deprecation Warning at /w/executorch/third-party/googletest/googletest/CMakeLists.txt:56 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- Found Python: /usr/bin/python3.12 (found version "3.12.14") found components: Interpreter
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Configuring done (0.4s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/doremy/Desktop/sarc-acl/.artifacts/wmma-port-fix/unittest
++ cmake --build /home/doremy/Desktop/sarc-acl/.artifacts/wmma-port-fix/unittest -j10 --target vulkan_coopmat_family_test
+[ 14%] Building CXX object googletest/googletest/CMakeFiles/gtest.dir/src/gtest-all.cc.o
+[ 28%] Linking CXX static library ../../lib/libgtest.a
+[ 28%] Built target gtest
+[ 42%] Building CXX object googletest/googletest/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o
+[ 57%] Linking CXX static library ../../lib/libgtest_main.a
+[ 57%] Built target gtest_main
+[ 85%] Building CXX object CMakeFiles/vulkan_coopmat_family_test.dir/coopmat_family_test.cpp.o
+[ 85%] Building CXX object CMakeFiles/vulkan_coopmat_family_test.dir/w/executorch/backends/vulkan/runtime/graph/ops/impl/gemm/linear/qw/CoopmatFamily.cpp.o
+[100%] Linking CXX executable vulkan_coopmat_family_test
+[100%] Built target vulkan_coopmat_family_test
++ /home/doremy/Desktop/sarc-acl/.artifacts/wmma-port-fix/unittest/vulkan_coopmat_family_test
+Running main() from /w/executorch/third-party/googletest/googletest/src/gtest_main.cc
+[==========] Running 11 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 11 tests from CoopmatFamilyTest
+[ RUN      ] CoopmatFamilyTest.FamilyKey
+[       OK ] CoopmatFamilyTest.FamilyKey (0 ms)
+[ RUN      ] CoopmatFamilyTest.LlvmpipeHasNoFamily
+[       OK ] CoopmatFamilyTest.LlvmpipeHasNoFamily (0 ms)
+[ RUN      ] CoopmatFamilyTest.UnmatchedKeysSelectNothing
+[       OK ] CoopmatFamilyTest.UnmatchedKeysSelectNothing (0 ms)
+[ RUN      ] CoopmatFamilyTest.Xe2Rows
+[       OK ] CoopmatFamilyTest.Xe2Rows (0 ms)
+[ RUN      ] CoopmatFamilyTest.NvidiaRows
+[       OK ] CoopmatFamilyTest.NvidiaRows (0 ms)
+[ RUN      ] CoopmatFamilyTest.ShapesThatKeepTheExistingKernels
+[       OK ] CoopmatFamilyTest.ShapesThatKeepTheExistingKernels (0 ms)
+[ RUN      ] CoopmatFamilyTest.PartialMTile
+[       OK ] CoopmatFamilyTest.PartialMTile (0 ms)
+[ RUN      ] CoopmatFamilyTest.Int8Layout
+[       OK ] CoopmatFamilyTest.Int8Layout (0 ms)
+[ RUN      ] CoopmatFamilyTest.SharedMemoryLimit
+[       OK ] CoopmatFamilyTest.SharedMemoryLimit (0 ms)
+[ RUN      ] CoopmatFamilyTest.TileForKernel
+[       OK ] CoopmatFamilyTest.TileForKernel (0 ms)
+[ RUN      ] CoopmatFamilyTest.EveryRowHasShaderVariants
+[       OK ] CoopmatFamilyTest.EveryRowHasShaderVariants (0 ms)
+[----------] 11 tests from CoopmatFamilyTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 11 tests from 1 test suite ran. (0 ms total)
+[  PASSED  ] 11 tests.
