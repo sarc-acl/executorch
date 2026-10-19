@@ -1,0 +1,176 @@
+diff --git a/backends/vulkan/runtime/graph/ops/impl/gemm/linear/qw/CoopmatFamily.cpp b/backends/vulkan/runtime/graph/ops/impl/gemm/linear/qw/CoopmatFamily.cpp
+index 1976b22504..45236276a7 100644
+--- a/backends/vulkan/runtime/graph/ops/impl/gemm/linear/qw/CoopmatFamily.cpp
++++ b/backends/vulkan/runtime/graph/ops/impl/gemm/linear/qw/CoopmatFamily.cpp
+@@ -8,10 +8,18 @@
+ 
+ #include <executorch/backends/vulkan/runtime/graph/ops/impl/gemm/linear/qw/CoopmatFamily.h>
+ 
++#include <cstdlib> // SWEEP-EXP
++
+ namespace vkcompute {
+ 
+ namespace {
+ 
++// SWEEP-EXP: experiment switches, not for commit.
++int sweep_env(const char* name) {
++  const char* v = std::getenv(name);
++  return v == nullptr ? -1 : std::atoi(v);
++}
++
+ bool has_shape(
+     const CoopmatDeviceKey& device,
+     const uint32_t m,
+@@ -42,6 +50,9 @@ bool subgroup_size_available(
+ 
+ // Weight-heavy projections run their workgroups in blocks of N tiles.
+ bool xe2_weight_heavy(const WmmaShape& s) {
++  if (sweep_env("ETVK_WMMA_XE2_HEAVY") >= 0) {
++    return sweep_env("ETVK_WMMA_XE2_HEAVY") == 1;
++  }
+   return s.K * s.N >= 24000000;
+ }
+ 
+@@ -90,7 +101,11 @@ bool nv_measured(const WmmaShape& s) {
+       (K == 3072 && (N == 1024 || N == 3072 || N == 8192)) ||
+       (K == 4096 && (N == 1024 || N == 4096 || N == 14336)) ||
+       (K == 8192 && (N == 2048 || N == 3072)) || (K == 14336 && N == 4096);
+-  return projection && s.group_size == 128 && s.M <= 2048;
++  if (sweep_env("ETVK_WMMA_NV_ANY") == 2) {
++    return true;
++  }
++  return (projection || sweep_env("ETVK_WMMA_NV_ANY") == 1) &&
++      s.group_size == 128 && s.M <= 2048;
+ }
+ // fp16 accumulation loses accuracy beyond K = 8192: fp32 accumulation there.
+ bool nv_large_k(const WmmaShape& s) {
+@@ -258,6 +273,9 @@ bool wmma_row_fits(
+ std::optional<WmmaChoice> select_wmma_kernel(
+     const CoopmatDeviceKey& device,
+     const WmmaShape& shape) {
++  if (sweep_env("ETVK_WMMA_OFF") == 1) {
++    return std::nullopt;
++  }
+   for (const WmmaRow& row : coopmat_family_rows(coopmat_family(device))) {
+     if (wmma_row_fits(device, shape, row)) {
+       return WmmaChoice{row.kernel_base, row.tile, row.rowmajor_a};
+diff --git a/backends/vulkan/test/ops/benchmark/cases/q4gsw_linear/test_sets/wmma_sets.cpp b/backends/vulkan/test/ops/benchmark/cases/q4gsw_linear/test_sets/wmma_sets.cpp
+index ba82e6a681..80299260a3 100644
+--- a/backends/vulkan/test/ops/benchmark/cases/q4gsw_linear/test_sets/wmma_sets.cpp
++++ b/backends/vulkan/test/ops/benchmark/cases/q4gsw_linear/test_sets/wmma_sets.cpp
+@@ -183,6 +183,115 @@ REGISTER_TEST_CASE_SET("q4gsw_linear", "wmma_correctness") {
+       /*benchmark_runs=*/3};
+ }
+ 
++
++// SWEEP-EXP: projection shapes beyond the Llama table, not for commit.
++// {K, N} of Qwen2.5 0.5B / 1.5B, Gemma 2 2B, Qwen3 4B / 8B, Phi-3 mini and
++// the Llama controls.
++const std::vector<std::pair<int64_t, int64_t>>& sweep_kn() {
++  static const std::vector<std::pair<int64_t, int64_t>> kn = {
++      {896, 896},     {896, 128},     {896, 4864},   {4864, 896},
++      {1536, 1536},   {1536, 256},    {1536, 8960},  {8960, 1536},
++      {2304, 2048},   {2304, 1024},   {2048, 2304},  {2304, 9216},
++      {9216, 2304},   {2560, 4096},   {2560, 1024},  {4096, 2560},
++      {2560, 9728},   {9728, 2560},   {3072, 9216},  {3072, 16384},
++      {4096, 12288},  {12288, 4096},  {2048, 2048},  {2048, 8192},
++      {3072, 8192},   {8192, 3072},   {4096, 4096},  {4096, 14336},
++      {14336, 4096},  {4096, 1024},
++  };
++  return kn;
++}
++
++REGISTER_TEST_CASE_SET("q4gsw_linear", "wmma_sweep_correctness") {
++  std::vector<TestCase> cases;
++  for (const std::string op : {"linear_q4gsw", "linear_dq8ca_q4gsw"}) {
++    for (const int64_t M : {256, 300}) {
++      for (const auto& kn : sweep_kn()) {
++        const CoopmatLinearConfig cfg{M, kn.first, kn.second, 128, op};
++        TestCase t = make_case(cfg, utils::kTexture3D);
++        set_family_data(t, cfg);
++        cases.push_back(std::move(t));
++      }
++    }
++  }
++  return {
++      std::move(cases),
++      family_reference,
++      flop_calc,
++      /*warmup_runs=*/1,
++      /*benchmark_runs=*/1};
++}
++
++REGISTER_TEST_CASE_SET("q4gsw_linear", "wmma_sweep_perf") {
++  std::vector<TestCase> cases;
++  for (const std::string op : {"linear_q4gsw", "linear_dq8ca_q4gsw"}) {
++    for (const int64_t M : {512, 2048}) {
++      for (const auto& kn : sweep_kn()) {
++        const CoopmatLinearConfig cfg{M, kn.first, kn.second, 128, op};
++        TestCase t = make_case(cfg, utils::kTexture3D);
++        set_family_data(t, cfg);
++        cases.push_back(std::move(t));
++      }
++    }
++  }
++  return {
++      std::move(cases),
++      nullptr,
++      flop_calc,
++      /*warmup_runs=*/3,
++      /*benchmark_runs=*/10};
++}
++
++
++// SWEEP-EXP: group sizes other than 128 and M above 2048.
++std::vector<CoopmatLinearConfig> sweep_gs_shapes() {
++  std::vector<CoopmatLinearConfig> v;
++  const std::vector<std::pair<int64_t, int64_t>> kn = {
++      {2048, 2048}, {896, 4864}, {2304, 9216}, {4096, 14336}, {14336, 4096}};
++  for (const std::string op : {"linear_q4gsw", "linear_dq8ca_q4gsw"}) {
++    for (const int64_t gs : {32, 64, 256}) {
++      for (const auto& p : kn) {
++        v.push_back({512, p.first, p.second, gs, op});
++      }
++    }
++    for (const int64_t M : {3072, 4096}) {
++      for (const auto& p : kn) {
++        if (p.first <= 4096) {
++          v.push_back({M, p.first, p.second, 128, op});
++        }
++      }
++    }
++  }
++  return v;
++}
++
++REGISTER_TEST_CASE_SET("q4gsw_linear", "wmma_sweep_gs_correctness") {
++  std::vector<TestCase> cases;
++  for (const auto& cfg : sweep_gs_shapes()) {
++    TestCase t = make_case(cfg, utils::kTexture3D);
++    t.set_name(
++        cfg.op_name + "_M" + std::to_string(cfg.M) + "_K" +
++        std::to_string(cfg.K) + "_N" + std::to_string(cfg.N) + "_g" +
++        std::to_string(cfg.group_size) + "_Texture3D");
++    set_family_data(t, cfg);
++    cases.push_back(std::move(t));
++  }
++  return {std::move(cases), family_reference, flop_calc, 1, 1};
++}
++
++REGISTER_TEST_CASE_SET("q4gsw_linear", "wmma_sweep_gs_perf") {
++  std::vector<TestCase> cases;
++  for (const auto& cfg : sweep_gs_shapes()) {
++    TestCase t = make_case(cfg, utils::kTexture3D);
++    t.set_name(
++        cfg.op_name + "_M" + std::to_string(cfg.M) + "_K" +
++        std::to_string(cfg.K) + "_N" + std::to_string(cfg.N) + "_g" +
++        std::to_string(cfg.group_size) + "_Texture3D");
++    set_family_data(t, cfg);
++    cases.push_back(std::move(t));
++  }
++  return {std::move(cases), nullptr, flop_calc, 3, 10};
++}
++
+ } // namespace q4gsw_linear
+ } // namespace prototyping
+ } // namespace vulkan

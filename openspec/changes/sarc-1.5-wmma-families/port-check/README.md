@@ -36,17 +36,21 @@ B580 end to end, Llama 3.2 1B prefill tok/s (median of 3, port / upstream): 512 
 
 ## Open review questions (before any upstream PR)
 
-1. NVIDIA rows fire only on the measured Llama 1B/3B/8B projections (a model-specific shape table).
-2. The Xe2 8da4w K*N >= 24e6 threshold comes from one device.
+1. ~~NVIDIA rows fire only on the measured Llama 1B/3B/8B projections (a model-specific shape table).~~
+   Fixed 2026-10-18 (`16a43404e9`): any aligned shape, any group size, any M, see below.
+2. ~~The Xe2 8da4w K*N >= 24e6 threshold comes from one device.~~ Checked on the B580 and the B70
+   2026-10-18; threshold now 20e6 (`16a43404e9`), see below.
 3. Key reach: Xe2 requires ANV (Intel Windows driver excluded); the NVIDIA key matches other NVIDIA
-   generations with the same shapes (unmeasured).
+   generations with the same shapes. 2026-10-18: Ampere (Orin) and Ada (4070 Ti) measured on 30 non-Llama
+   shapes; Turing, Hopper and Blackwell still unmeasured (no device). Key kept; stated in the header comment.
 4. ~~Unaligned 4w prompts on a family device get slower (511 tokens: -16 % vs upstream), because a family-built
    op falls back to `linear_q4gsw_tiled`/`coop` instead of upstream's current 4w kernels (the fork's
    behaviour too).~~ Fixed 2026-10-17 (`fc3adb58c6`), see below.
 5. ~~The row-major 8da4w kernel reads activations in whole 128-row tiles past an M-row buffer for unaligned M
    (inherited); pad the temporary buffer to a multiple of 128 rows.~~ Fixed 2026-10-17 (`f5ed8a271d`) in the
    kernel instead of padding, see below.
-6. K = 14336 texture3d images exceed ANV's reported 2048 extent (known caveat, N13.7).
+6. ~~K = 14336 texture3d images exceed ANV's reported 2048 extent (known caveat, N13.7).~~ Checked
+   2026-10-18: pre-existing, not introduced by the port, see below.
 7. Whether to add `wmma_correctness` to the A10G line of `.github/workflows/vulkan.yml`.
 
 Deviations from the fork: dq8ca family path also requires `can_use_int8_dot_product()`; unused shader
@@ -54,7 +58,7 @@ features, `kBufBuf` and `csh_full`/`csh_pool` dropped; the packer keeps only tex
 `test/op_tests` gtests (libtorch not in the container); bench tolerance abs 0.25 (1.0 for K > 8192) on
 zero-mean data.
 
-## Fix of review questions 4 and 5 (2026-10-17, local, not pushed)
+## Fix of review questions 4 and 5 (2026-10-17)
 
 `pr/wmma-families` now `f5ed8a271d` (two commits on `dd36029886`):
 
@@ -108,3 +112,68 @@ Kernel cost at aligned shapes (etvk_bench GPU timestamps, before vs after, inter
 - B580 (8 runs, workstation load about 12 from other sessions, spread up to 4 %): 4w texture mixed
   -5.5 to +4.3 % (K = 14336 +4.3 %); buffer and the unchanged 8da4w kernels within +-2 %. End to end 8B 4w
   at 512 tokens unchanged (2124 tok/s). Repeat on an idle workstation before quoting B580 kernel numbers.
+
+## Review questions 1, 2, 3 and 6 (2026-10-18, local, not pushed)
+
+`pr/wmma-families` now `16a43404e9` (one commit on `f5ed8a271d`). Tables and logs in `sweep-2026-10-18/`;
+the experiment switches used for the arms (family off, NVIDIA table off, Xe2 order forced) are in
+`sweep-exp.diff` and are not in the branch.
+
+**1. NVIDIA shape table.** Sweep of 30 projection shapes (K, N) of Qwen2.5 0.5B / 1.5B, Gemma 2 2B,
+Qwen3 4B / 8B, Phi-3 mini and Llama controls, M = 512 and 2048, texture3d, both ops; then group sizes 32 / 64 /
+256 and M = 3072 / 4096 on five of them. Family with the table removed vs the existing kernels (median of 3
+interleaved runs, GPU timestamps):
+
+| Device | correctness (CPU reference) | 4w speedup | 8da4w speedup |
+|---|---|---|---|
+| RTX 4070 Ti SUPER | 120/120 shapes, 44/44 gs and large M | 2.2x to 7.5x | 2.4x to 9.9x |
+| Jetson Orin | 120/120, 44/44 | 3.0x to 13.5x (all cases) | |
+
+No case is slower. 8da4w at group size 32 keeps the existing kernels (group size below the row-major
+kernel's K tile of 64, by the alignment rule). The two failing gs cases on every device (K = 896 at group
+size 256) are invalid inputs (K not a multiple of the group size; the reference itself is garbage).
+The rows now keep only the tile alignment, K > 8192 for fp32 accumulation and the M = 256 rule;
+`nv_measured` is removed. No Llama projection changes row.
+
+**2. Xe2 8da4w threshold.** Blocked (`n13`) vs dispatch order (`i`) on all 60 8da4w sweep cases. B70 runs
+are quiet (spread <= 0.4 % on almost all cases); B580 noisy (workstation load about 4). Blocked mostly loses
+(up to 5 %) at K*N <= 16.8e6 and wins 2 to 9 % from 28e6 on the B70; 21 to 25e6 is mixed within +-5 %. Geometric-mean
+loss against the per-case best (`xe2_8da4w_threshold.txt`):
+
+| Threshold | B70 | B580 |
+|---|---|---|
+| always blocked | 1.11 % | 2.08 % |
+| 17e6 to 20e6 | 0.46 % | 0.93 % |
+| 24e6 (old) | 0.52 % | 1.27 % |
+| 28e6 | 0.54 % | 1.83 % |
+| never blocked | 1.59 % | 3.17 % |
+
+New threshold 20e6: lowest on both cards, and no Llama shape (16.8e6, 25.2e6, 58.7e6) moves. The B70
+confirms the B580 rule; the band between 17e6 and 25e6 is device-dependent within a few percent.
+
+**3. Key reach.** NVIDIA: measured on Ampere (Orin, nvgpu) and Ada (4070 Ti); no Turing, Hopper or
+Blackwell device is available. The key stays shape-based (no device-name table); the header comment now names
+the measured generations. Xe2: ANV only; the Intel Windows driver has no family and keeps the existing
+kernels (unit test `FamilyKey`).
+
+**6. Image extent over ANV's 2048.** Pre-existing, not from the port. The over-limit images are graph tensors
+fixed at export: the 8B activations `[1, 2048, 14336]` (width 3584 texels) and the RoPE tables (height 5120).
+Upstream exports with `DEFAULT_TEXTURE_LIMITS = (16384, 16384, 2048)` and checks `maxImageDimension3D` only
+in `VULKAN_DEBUG` builds (TODO in `api/containers/Tensor.cpp`). The port creates no new images: its new
+tensors (packed int8 input, input sums) are buffers; weight packing and input scale prepack are upstream's
+`prepack_quantized_linear_weight` and `prepack_standard`. The spec-conforming route is an export with
+`small_texture_limits` (2048); then the 8B MLP tensors move to buffer, and an op with buffer on one side and
+texture on the other has no family row (mixed IO keeps the existing kernels). Not measured: no executorch
+Python export environment on the workstation.
+
+Checks of `16a43404e9` (`sweep-2026-10-18/`):
+
+| Device | unit test | wmma_correctness (+12 cases) | correctness | coopmat_correctness |
+|---|---|---|---|---|
+| host | 11/11 | | | |
+| Arc B580 | | 44/44 | 102 passed, 26 skipped | 32/32 |
+| Arc Pro B70 | | 44/44 | 102 / 26 | 32/32 |
+| RTX 4070 Ti SUPER | | 44/44 | 102 / 26 | 32/32 |
+| Jetson Orin | | 44/44 | 102 / 26 | 32/32 |
+
+Not run: end-to-end models (only Llama PTEs are available, and no Llama shape changes kernel).
