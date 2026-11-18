@@ -50,6 +50,14 @@ PhysicalDevice::PhysicalDevice(
       properties{},
       shader_features{},
       memory_properties{},
+#ifdef VK_KHR_vulkan_memory_model
+      vulkan_memory_model_features{
+          VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR,
+          nullptr,
+          VK_FALSE,
+          VK_FALSE,
+          VK_FALSE},
+#endif /* VK_KHR_vulkan_memory_model */
 #ifdef VK_KHR_16bit_storage
       shader_16bit_storage{
           VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES,
@@ -266,6 +274,19 @@ void PhysicalDevice::query_extensions_vk_1_1() {
 
   // Create linked list to query availability of extensions
   void* extension_list_top = nullptr;
+
+#ifdef VK_KHR_vulkan_memory_model
+  // The runtime requests Vulkan 1.1, so use the extension even on 1.2+.
+  std::vector<const char*> memory_model_extensions;
+  find_requested_device_extensions(
+      handle,
+      memory_model_extensions,
+      {VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME});
+  if (!memory_model_extensions.empty()) {
+    vulkan_memory_model_features.pNext = extension_list_top;
+    extension_list_top = &vulkan_memory_model_features;
+  }
+#endif /* VK_KHR_vulkan_memory_model */
 
 #ifdef VK_KHR_16bit_storage
   shader_16bit_storage.pNext = extension_list_top;

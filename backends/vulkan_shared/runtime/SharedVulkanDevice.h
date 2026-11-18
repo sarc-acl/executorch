@@ -67,6 +67,8 @@ struct SharedVulkanDeviceFeatures final {
   bool cooperative_matrix2_workgroup_scope = false;
   bool cooperative_matrix2_flexible_dimensions = false;
   bool cooperative_matrix2_tensor_addressing = false;
+  bool vulkan_memory_model = false;
+  bool vulkan_memory_model_device_scope = false;
   bool subgroup_size_control = false;
   bool compute_full_subgroups = false;
 };

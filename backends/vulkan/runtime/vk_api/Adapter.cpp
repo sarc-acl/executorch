@@ -12,6 +12,7 @@
 
 #include <executorch/backends/vulkan/runtime/vk_api/Adapter.h>
 
+#include <cstring>
 #include <iomanip>
 #include <sstream>
 #include <utility>
@@ -140,6 +141,16 @@ VkDevice create_logical_device(
 #endif /* VK_EXT_subgroup_size_control */
   };
 
+#ifdef VK_KHR_vulkan_memory_model
+  // Cooperative matrix shaders compiled by glslang declare the
+  // VulkanMemoryModel capability.
+  if (physical_device.vulkan_memory_model_features.vulkanMemoryModel ==
+      VK_TRUE) {
+    requested_device_extensions.push_back(
+        VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME);
+  }
+#endif /* VK_KHR_vulkan_memory_model */
+
   std::vector<const char*> enabled_device_extensions;
   find_requested_device_extensions(
       physical_device.handle,
@@ -200,6 +211,30 @@ VkDevice create_logical_device(
   };
 
   void* extension_list_top = nullptr;
+
+#ifdef VK_KHR_vulkan_memory_model
+  VkPhysicalDeviceVulkanMemoryModelFeaturesKHR vulkan_memory_model_features{
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR,
+      nullptr,
+      VK_FALSE,
+      VK_FALSE,
+      VK_FALSE};
+  for (const char* extension : enabled_device_extensions) {
+    if (std::strcmp(extension, VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME) ==
+        0) {
+      vulkan_memory_model_features.vulkanMemoryModel = VK_TRUE;
+      // Existing shaders use Device memory scope, which needs
+      // vulkanMemoryModelDeviceScope once the memory model is enabled
+      // (VUID-RuntimeSpirv-vulkanMemoryModel-06265).
+      vulkan_memory_model_features.vulkanMemoryModelDeviceScope =
+          physical_device.vulkan_memory_model_features
+              .vulkanMemoryModelDeviceScope;
+      vulkan_memory_model_features.pNext = extension_list_top;
+      extension_list_top = &vulkan_memory_model_features;
+      break;
+    }
+  }
+#endif /* VK_KHR_vulkan_memory_model */
 
 #ifdef VK_KHR_16bit_storage
   VkPhysicalDevice16BitStorageFeatures shader_16bit_storage{
@@ -311,6 +346,12 @@ VkDevice create_logical_device(
   f.cooperative_matrix2_tensor_addressing =
       cooperative_matrix2_features.cooperativeMatrixTensorAddressing == VK_TRUE;
 #endif
+#ifdef VK_KHR_vulkan_memory_model
+  f.vulkan_memory_model =
+      vulkan_memory_model_features.vulkanMemoryModel == VK_TRUE;
+  f.vulkan_memory_model_device_scope =
+      vulkan_memory_model_features.vulkanMemoryModelDeviceScope == VK_TRUE;
+#endif
 #ifdef VK_EXT_subgroup_size_control
   f.subgroup_size_control =
       subgroup_size_control_features.subgroupSizeControl == VK_TRUE &&
@@ -417,6 +458,15 @@ PhysicalDevice shared_physical_device(
   physical.cooperative_matrix_features.cooperativeMatrix &=
       f.cooperative_matrix ? VK_TRUE : VK_FALSE;
   physical.supports_int8_coopmat &= f.cooperative_matrix;
+  if (!f.cooperative_matrix) {
+    physical.cooperative_matrix_properties.clear();
+  }
+#endif
+#ifdef VK_KHR_vulkan_memory_model
+  physical.vulkan_memory_model_features.vulkanMemoryModel &=
+      f.vulkan_memory_model ? VK_TRUE : VK_FALSE;
+  physical.vulkan_memory_model_features.vulkanMemoryModelDeviceScope &=
+      f.vulkan_memory_model_device_scope ? VK_TRUE : VK_FALSE;
 #endif
 #ifdef VK_NV_cooperative_matrix2
   physical.cooperative_matrix2_features.cooperativeMatrixWorkgroupScope &=
@@ -1033,6 +1083,14 @@ bool Adapter::supports_spirv_capability(const uint32_t value) {
       return supports_int8_dot_product();
     case SpirvCapability::COOPERATIVE_MATRIX_KHR:
       return supports_cooperative_matrix();
+#if defined(VK_KHR_vulkan_memory_model) && !defined(ETVK_FORCE_NO_EXTENSIONS)
+    case SpirvCapability::VULKAN_MEMORY_MODEL:
+      return physical_device_.vulkan_memory_model_features.vulkanMemoryModel ==
+          VK_TRUE;
+    case SpirvCapability::VULKAN_MEMORY_MODEL_DEVICE_SCOPE:
+      return physical_device_.vulkan_memory_model_features
+                 .vulkanMemoryModelDeviceScope == VK_TRUE;
+#endif
 #if defined(VK_NV_cooperative_matrix2) && !defined(ETVK_FORCE_NO_EXTENSIONS)
     case SpirvCapability::COOPERATIVE_MATRIX_REDUCTIONS_NV:
       return physical_device_.cooperative_matrix2_features
