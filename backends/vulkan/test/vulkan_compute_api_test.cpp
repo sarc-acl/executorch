@@ -126,6 +126,63 @@ TEST_F(VulkanComputeAPITest, print_adapter) {
   std::cout << *(context()->adapter_ptr()) << std::endl;
 }
 
+#ifdef VK_KHR_cooperative_matrix
+TEST_F(VulkanComputeAPITest, cooperative_matrix_shape_query) {
+  const vkapi::Adapter& adapter = *context()->adapter_ptr();
+  const auto& props = adapter.cooperative_matrix_properties();
+  constexpr VkComponentTypeKHR kF16 = VK_COMPONENT_TYPE_FLOAT16_KHR;
+  constexpr VkComponentTypeKHR kF32 = VK_COMPONENT_TYPE_FLOAT32_KHR;
+#ifdef ETVK_FORCE_NO_EXTENSIONS
+  EXPECT_TRUE(props.empty());
+  const VkComponentTypeKHR types[] = {
+      kF16,
+      kF32,
+      VK_COMPONENT_TYPE_BFLOAT16_KHR,
+      VK_COMPONENT_TYPE_SINT8_KHR,
+      VK_COMPONENT_TYPE_SINT32_KHR,
+      VK_COMPONENT_TYPE_UINT8_KHR,
+      VK_COMPONENT_TYPE_UINT32_KHR};
+  for (const uint32_t m : {8u, 16u, 32u}) {
+    for (const uint32_t n : {8u, 16u, 32u}) {
+      for (const uint32_t k : {8u, 16u, 32u}) {
+        for (const VkComponentTypeKHR ab : types) {
+          for (const VkComponentTypeKHR cr : types) {
+            EXPECT_FALSE(adapter.supports_cooperative_matrix_shape(
+                m, n, k, ab, ab, cr, cr));
+          }
+        }
+      }
+    }
+  }
+#else
+  for (const VkCooperativeMatrixPropertiesKHR& p : props) {
+    EXPECT_TRUE(adapter.supports_cooperative_matrix_shape(
+        p.MSize,
+        p.NSize,
+        p.KSize,
+        p.AType,
+        p.BType,
+        p.CType,
+        p.ResultType,
+        p.scope));
+  }
+  EXPECT_FALSE(adapter.supports_cooperative_matrix_shape(
+      1, 1, 1, kF16, kF16, kF16, kF16));
+  // The Intel Xe2 fp16 shape recorded for the Arc B580 and Arc Pro B70.
+  if (adapter.device_name().find("bmg g") != std::string::npos) {
+    EXPECT_TRUE(adapter.supports_cooperative_matrix_shape(
+        8, 16, 16, kF16, kF16, kF16, kF16));
+    EXPECT_TRUE(adapter.supports_cooperative_matrix_shape(
+        8, 16, 16, kF16, kF16, kF32, kF32));
+    EXPECT_FALSE(adapter.supports_cooperative_matrix_shape(
+        16, 16, 16, kF16, kF16, kF16, kF16));
+    EXPECT_FALSE(adapter.supports_cooperative_matrix_shape(
+        8, 16, 16, kF16, kF16, kF16, kF16, VK_SCOPE_WORKGROUP_KHR));
+  }
+#endif /* ETVK_FORCE_NO_EXTENSIONS */
+}
+#endif /* VK_KHR_cooperative_matrix */
+
 TEST_F(VulkanComputeAPITest, device_to_host_staging_prefers_cached_memory) {
   vkapi::VulkanBuffer staging_buffer =
       context()->adapter_ptr()->vma().create_staging_buffer(

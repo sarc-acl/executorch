@@ -367,6 +367,31 @@ class Adapter final {
 #endif /* VK_KHR_cooperative_matrix */
   }
 
+#ifdef VK_KHR_cooperative_matrix
+  // The VkCooperativeMatrixPropertiesKHR entries the device enumerates.
+  inline const std::vector<VkCooperativeMatrixPropertiesKHR>&
+  cooperative_matrix_properties() const {
+#if defined(ETVK_FORCE_NO_EXTENSIONS)
+    static const std::vector<VkCooperativeMatrixPropertiesKHR> kNone;
+    return kNone;
+#else
+    return physical_device_.cooperative_matrix_properties;
+#endif /* ETVK_FORCE_NO_EXTENSIONS */
+  }
+
+  // True when the device enumerates a cooperative matrix property with exactly
+  // these sizes, component types and scope.
+  bool supports_cooperative_matrix_shape(
+      uint32_t m,
+      uint32_t n,
+      uint32_t k,
+      VkComponentTypeKHR a_type,
+      VkComponentTypeKHR b_type,
+      VkComponentTypeKHR c_type,
+      VkComponentTypeKHR result_type,
+      VkScopeKHR scope = VK_SCOPE_SUBGROUP_KHR) const;
+#endif /* VK_KHR_cooperative_matrix */
+
   inline bool supports_int16_shader_types() {
 #ifdef ETVK_FORCE_NO_EXTENSIONS
     return false;

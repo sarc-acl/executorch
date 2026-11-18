@@ -897,6 +897,28 @@ std::ostream& operator<<(std::ostream& os, const Adapter& adapter) {
   return os;
 }
 
+#ifdef VK_KHR_cooperative_matrix
+bool Adapter::supports_cooperative_matrix_shape(
+    const uint32_t m,
+    const uint32_t n,
+    const uint32_t k,
+    const VkComponentTypeKHR a_type,
+    const VkComponentTypeKHR b_type,
+    const VkComponentTypeKHR c_type,
+    const VkComponentTypeKHR result_type,
+    const VkScopeKHR scope) const {
+  for (const VkCooperativeMatrixPropertiesKHR& p :
+       cooperative_matrix_properties()) {
+    if (p.MSize == m && p.NSize == n && p.KSize == k && p.AType == a_type &&
+        p.BType == b_type && p.CType == c_type && p.ResultType == result_type &&
+        p.scope == scope) {
+      return true;
+    }
+  }
+  return false;
+}
+#endif /* VK_KHR_cooperative_matrix */
+
 uint32_t resolve_required_subgroup_size(
     const ShaderInfo& shader,
     Adapter* adapter) {

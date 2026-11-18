@@ -4,12 +4,10 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include <executorch/backends/vulkan/runtime/vk_api/Runtime.h>
 #include <executorch/backends/vulkan/test/ops/benchmark_v2/framework/CaseCheckRegistry.h>
 
 #include <cstdio>
 #include <string>
-#include <vector>
 
 namespace vkcompute::shader_profiling {
 namespace {
@@ -75,26 +73,7 @@ std::string version_string(const uint32_t v) {
 Json enumerated_coopmat_properties(const vkapi::Adapter& adapter) {
   Json list = Json::array();
 #ifdef VK_KHR_cooperative_matrix
-  if (!adapter.supports_cooperative_matrix()) {
-    return list;
-  }
-  const auto fn =
-      reinterpret_cast<PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR>(
-          vkGetInstanceProcAddr(
-              vkapi::runtime()->instance(),
-              "vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR"));
-  if (fn == nullptr) {
-    return list;
-  }
-  uint32_t count = 0;
-  fn(adapter.physical_handle(), &count, nullptr);
-  std::vector<VkCooperativeMatrixPropertiesKHR> props(count);
-  for (auto& p : props) {
-    p.sType = VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR;
-    p.pNext = nullptr;
-  }
-  fn(adapter.physical_handle(), &count, props.data());
-  for (const auto& p : props) {
+  for (const auto& p : adapter.cooperative_matrix_properties()) {
     list.push_back(
         {{"M", p.MSize},
          {"N", p.NSize},
