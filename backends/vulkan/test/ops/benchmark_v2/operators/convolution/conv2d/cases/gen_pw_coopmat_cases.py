@@ -197,10 +197,26 @@ def performance(label, shapes):
 # (M, N, K) = (H_out * W_out, C_out, C_in), batch 1.
 # MobileNetV2 and V3 Small FP16 trace shapes.
 MOBILENET = [(49, 160, 960), (196, 64, 384), (196, 96, 576), (49, 96, 576)]
+# The stride-1 1x1 layers of ResNet-50 at 224 x 224 input.
+RESNET50 = [
+    (3136, 64, 64),
+    (3136, 256, 64),
+    (3136, 64, 256),
+    (3136, 128, 256),
+    (784, 512, 128),
+    (784, 128, 512),
+    (784, 256, 512),
+    (196, 1024, 256),
+    (196, 256, 1024),
+    (196, 512, 1024),
+    (49, 2048, 512),
+    (49, 512, 2048),
+]
 
 FILES = {
     "pw_coopmat_correctness.json": correctness,
     "pw_coopmat_mobilenet.json": performance("mobilenet", MOBILENET),
+    "pw_coopmat_resnet50.json": performance("resnet50", RESNET50),
 }
 
 
