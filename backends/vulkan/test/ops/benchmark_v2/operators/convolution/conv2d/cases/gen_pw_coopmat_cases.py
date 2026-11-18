@@ -20,6 +20,7 @@ Usage: python3 gen_pw_coopmat_cases.py [--check]
 """
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -194,6 +195,20 @@ def performance(label, shapes):
     return build
 
 
+def upstream_fp16_shapes():
+    """The FP16 1x1 shapes of pw_performance.json, in file order."""
+    shapes = []
+    for case in json.loads((HERE / "pw_performance.json").read_text()):
+        for args in case["args_sweep"]:
+            x, w, out = args[0]["tensor"], args[1]["tensor"], args[-1]["tensor"]
+            if x["dtype"] != "float16":
+                continue
+            assert w["sizes"][2:] == [1, 1] and args[3]["int_list"] == [1, 1]
+            M = out["sizes"][2] * out["sizes"][3]
+            shapes.append((M, out["sizes"][1], x["sizes"][1]))
+    return shapes
+
+
 # (M, N, K) = (H_out * W_out, C_out, C_in), batch 1.
 # MobileNetV2 and V3 Small FP16 trace shapes.
 MOBILENET = [(49, 160, 960), (196, 64, 384), (196, 96, 576), (49, 96, 576)]
@@ -217,6 +232,7 @@ FILES = {
     "pw_coopmat_correctness.json": correctness,
     "pw_coopmat_mobilenet.json": performance("mobilenet", MOBILENET),
     "pw_coopmat_resnet50.json": performance("resnet50", RESNET50),
+    "pw_coopmat_large.json": performance("large", upstream_fp16_shapes()),
 }
 
 
