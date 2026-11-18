@@ -29,6 +29,7 @@
 
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Common.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Staging.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2d.h>
 
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/StagingUtils.h>
 
@@ -5823,3 +5824,269 @@ INSTANTIATE_TEST_SUITE_P(
         ::testing::Values(utils::kWidthPacked),
         ::testing::Values(int64_t(3072)),
         ::testing::Bool()));
+
+namespace {
+
+// A 1x1 convolution graph built through conv2d_pw_impl with a kernel request.
+// Weights are uniform in [-1/sqrt(K), 1/sqrt(K)], inputs and bias in [-1, 1].
+class PointwiseConvGraph final {
+ public:
+  PointwiseConvGraph(
+      const vkapi::ScalarType dtype,
+      const int64_t K,
+      const int64_t N,
+      const int64_t H,
+      const int64_t W,
+      const int64_t stride,
+      const Conv2dPwRequest& request)
+      : dtype_(dtype), K_(K), N_(N), stride_(stride), graph_(make_config()) {
+    std::mt19937 rng(1531);
+    std::uniform_real_distribution<float> unit(-1.0f, 1.0f);
+    weight_.resize(N * K);
+    for (float& v : weight_) {
+      v = unit(rng) / std::sqrt(float(K));
+    }
+    bias_.resize(N);
+    for (float& v : bias_) {
+      v = unit(rng);
+    }
+    // Constants are rounded to the graph dtype first, so the reference uses
+    // the values the GPU sees.
+    round_to_dtype(weight_);
+    round_to_dtype(bias_);
+    weight_half_.assign(weight_.begin(), weight_.end());
+    bias_half_.assign(bias_.begin(), bias_.end());
+    const bool half = dtype == vkapi::kHalf;
+    input_ = graph_.add_input_tensor(
+        {1, K, H, W}, dtype, utils::kTexture3D, utils::kChannelsPacked);
+    out_ = graph_.add_tensor(
+        {1, N, out_size(H), out_size(W)},
+        dtype,
+        utils::kTexture3D,
+        utils::kChannelsPacked);
+    conv2d_pw_impl(
+        graph_,
+        input_.value,
+        half ? graph_.add_tensorref({N, K, 1, 1}, dtype, weight_half_.data())
+             : graph_.add_tensorref({N, K, 1, 1}, dtype, weight_.data()),
+        half ? graph_.add_tensorref({N}, dtype, bias_half_.data())
+             : graph_.add_tensorref({N}, dtype, bias_.data()),
+        graph_.add_scalar_list<int64_t>({stride, stride}),
+        graph_.add_scalar_list<int64_t>({0, 0}),
+        out_,
+        /*transposed_val=*/false,
+        Conv2dEpilogue{},
+        request);
+    out_staging_ = graph_.set_output_tensor(out_);
+    graph_.prepare();
+    graph_.prepack();
+  }
+
+  ComputeGraph& graph() {
+    return graph_;
+  }
+
+  void resize(const int64_t H, const int64_t W) {
+    graph_.resize_input(0, {1, K_, H, W});
+    graph_.propagate_resize();
+  }
+
+  // Executes on random inputs, checks the output against a CPU reference at
+  // the FP16 convolution tolerance of benchmark_v2 (atol 0.1, rtol 0.01), and
+  // returns the dispatched kernel names.
+  std::vector<std::string> execute_and_check() {
+    const std::vector<int64_t> in_sizes = graph_.sizes_of(input_.value);
+    const std::vector<int64_t> out_sizes = graph_.sizes_of(out_);
+    const int64_t H = in_sizes[2], W = in_sizes[3];
+    const int64_t Ho = out_sizes[2], Wo = out_sizes[3];
+    EXPECT_EQ(Ho, out_size(H));
+    EXPECT_EQ(Wo, out_size(W));
+    std::mt19937 rng(7 + H * 131 + W);
+    std::uniform_real_distribution<float> unit(-1.0f, 1.0f);
+    std::vector<float> x(K_ * H * W);
+    for (float& v : x) {
+      v = unit(rng);
+    }
+    round_to_dtype(x);
+    std::vector<float> y(N_ * Ho * Wo);
+    if (dtype_ == vkapi::kHalf) {
+      std::vector<executorch::aten::Half> xh(x.begin(), x.end());
+      graph_.maybe_cast_and_copy_into_staging(
+          input_.staging, xh.data(), xh.size(), dtype_);
+      graph_.execute();
+      std::vector<executorch::aten::Half> yh(y.size());
+      graph_.maybe_cast_and_copy_from_staging(
+          out_staging_, yh.data(), yh.size(), dtype_);
+      y.assign(yh.begin(), yh.end());
+    } else {
+      graph_.maybe_cast_and_copy_into_staging(
+          input_.staging, x.data(), x.size(), dtype_);
+      graph_.execute();
+      graph_.maybe_cast_and_copy_from_staging(
+          out_staging_, y.data(), y.size(), dtype_);
+    }
+    size_t mismatches = 0;
+    for (int64_t n = 0; n < N_; ++n) {
+      for (int64_t oy = 0; oy < Ho; ++oy) {
+        for (int64_t ox = 0; ox < Wo; ++ox) {
+          double expected = bias_[n];
+          for (int64_t k = 0; k < K_; ++k) {
+            expected += double(weight_[n * K_ + k]) *
+                x[(k * H + oy * stride_) * W + ox * stride_];
+          }
+          const double actual = y[(n * Ho + oy) * Wo + ox];
+          mismatches +=
+              std::abs(actual - expected) > 0.1 + 0.01 * std::abs(expected);
+        }
+      }
+    }
+    EXPECT_EQ(mismatches, 0u);
+    std::vector<std::string> kernels;
+    graph_.context()->querypool().extract_results();
+    for (const auto& result :
+         graph_.context()->querypool().get_shader_timestamp_data()) {
+      kernels.push_back(result.kernel_name);
+    }
+    return kernels;
+  }
+
+ private:
+  static GraphConfig make_config() {
+    GraphConfig config;
+    config.expect_dynamic_shapes = true;
+    config.enable_querypool = true;
+    return config;
+  }
+
+  int64_t out_size(const int64_t in) const {
+    return (in - 1) / stride_ + 1;
+  }
+
+  void round_to_dtype(std::vector<float>& values) const {
+    if (dtype_ == vkapi::kHalf) {
+      for (float& v : values) {
+        v = float(executorch::aten::Half(v));
+      }
+    }
+  }
+
+  const vkapi::ScalarType dtype_;
+  const int64_t K_;
+  const int64_t N_;
+  const int64_t stride_;
+  std::vector<float> weight_;
+  std::vector<float> bias_;
+  std::vector<executorch::aten::Half> weight_half_;
+  std::vector<executorch::aten::Half> bias_half_;
+  ComputeGraph graph_;
+  IOValueRef input_;
+  ValueRef out_;
+  ValueRef out_staging_;
+};
+
+bool dispatched(
+    const std::vector<std::string>& kernels,
+    const std::string& name) {
+  return std::find(kernels.begin(), kernels.end(), name) != kernels.end();
+}
+
+bool dispatched_prefix(
+    const std::vector<std::string>& kernels,
+    const std::string& prefix) {
+  return std::any_of(kernels.begin(), kernels.end(), [&](const auto& k) {
+    return k.rfind(prefix, 0) == 0;
+  });
+}
+
+// A variant the device can run, preferring the Xe2 32x64 tile.
+const Conv2dPwCoopmatVariant* runnable_pw_coopmat_variant() {
+  ComputeGraph graph{GraphConfig()};
+  if (!graph.float16_buffers_enabled()) {
+    return nullptr;
+  }
+  const Conv2dPwCoopmatVariant* preferred =
+      find_conv2d_pw_coopmat_variant("conv2d_pw_coopmat_xe2_t32x64_f16_half");
+  if (conv2d_pw_coopmat_device_supports(graph, *preferred)) {
+    return preferred;
+  }
+  for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    if (conv2d_pw_coopmat_device_supports(graph, v)) {
+      return &v;
+    }
+  }
+  return nullptr;
+}
+
+} // namespace
+
+TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_variants_are_registered) {
+  for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    SCOPED_TRACE(v.name);
+    EXPECT_TRUE(api::shader_registry().has_shader(v.name));
+    EXPECT_EQ(
+        VK_KERNEL_FROM_STR(v.name).required_subgroup_size, v.subgroup_size);
+  }
+}
+
+TEST(VulkanComputeGraphTest, conv2d_pw_request_dispatch) {
+  const Conv2dPwCoopmatVariant* const variant = runnable_pw_coopmat_variant();
+  if (variant == nullptr) {
+    GTEST_SKIP() << "no conv2d_pw_coopmat variant runs on this device";
+  }
+  const Conv2dPwRequest coopmat{Conv2dPwRequest::Kind::kCoopmat, variant};
+  {
+    SCOPED_TRACE("(196, 96, 576) with the variant requested");
+    PointwiseConvGraph g(vkapi::kHalf, 576, 96, 14, 14, 1, coopmat);
+    EXPECT_TRUE(dispatched(g.execute_and_check(), variant->name));
+  }
+  {
+    SCOPED_TRACE("FP32 with the variant requested");
+    PointwiseConvGraph g(vkapi::kFloat, 576, 96, 14, 14, 1, coopmat);
+    const auto kernels = g.execute_and_check();
+    EXPECT_TRUE(dispatched_prefix(kernels, "conv2d_pw_tiled"));
+    EXPECT_FALSE(dispatched_prefix(kernels, "conv2d_pw_coopmat"));
+  }
+  {
+    SCOPED_TRACE("stride 2 with the variant requested");
+    PointwiseConvGraph g(vkapi::kHalf, 576, 96, 28, 28, 2, coopmat);
+    const auto kernels = g.execute_and_check();
+    EXPECT_TRUE(dispatched_prefix(kernels, "conv2d_pw_tiled"));
+    EXPECT_FALSE(dispatched_prefix(kernels, "conv2d_pw_coopmat"));
+  }
+  {
+    SCOPED_TRACE("(49, 96, 576) automatic and forced wide");
+    PointwiseConvGraph automatic(vkapi::kHalf, 576, 96, 7, 7, 1, {});
+    EXPECT_TRUE(
+        dispatched(automatic.execute_and_check(), "conv2d_pw_tiled_bufw_half"));
+    PointwiseConvGraph wide(
+        vkapi::kHalf, 576, 96, 7, 7, 1, {Conv2dPwRequest::Kind::kTiledWide});
+    EXPECT_TRUE(
+        dispatched(wide.execute_and_check(), "conv2d_pw_tiled_4x8_bufw_half"));
+  }
+}
+
+TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_resize_to_one_pixel) {
+  const Conv2dPwCoopmatVariant* const variant = runnable_pw_coopmat_variant();
+  if (variant == nullptr) {
+    GTEST_SKIP() << "no conv2d_pw_coopmat variant runs on this device";
+  }
+  PointwiseConvGraph g(
+      vkapi::kHalf,
+      40,
+      24,
+      14,
+      14,
+      1,
+      {Conv2dPwRequest::Kind::kCoopmat, variant});
+  for (const int64_t size : {14, 1, 14, 7, 1, 2}) {
+    SCOPED_TRACE(size);
+    g.resize(size, size);
+    const auto kernels = g.execute_and_check();
+    if (size == 1) {
+      EXPECT_TRUE(dispatched_prefix(kernels, "conv2d_pw_tiled"));
+      EXPECT_FALSE(dispatched(kernels, variant->name));
+    } else {
+      EXPECT_TRUE(dispatched(kernels, variant->name));
+    }
+  }
+}
