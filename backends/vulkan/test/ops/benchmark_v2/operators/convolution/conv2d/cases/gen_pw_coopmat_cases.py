@@ -173,8 +173,34 @@ def correctness(variants):
     return cases
 
 
+PERFORMANCE_TIMING = {"target_ms": 50, "warmup_runs": 3, "benchmark_runs": 5}
+
+
+def plane_of(M):
+    side = round(M**0.5)
+    assert side * side == M
+    return (side, side)
+
+
+def performance(label, shapes):
+    def build(variants):
+        cases = []
+        for M, N, K in shapes:
+            cases += shape_cases(
+                label, M, N, K, plane_of(M), variants, PERFORMANCE_TIMING
+            )
+        return cases
+
+    return build
+
+
+# (M, N, K) = (H_out * W_out, C_out, C_in), batch 1.
+# MobileNetV2 and V3 Small FP16 trace shapes.
+MOBILENET = [(49, 160, 960), (196, 64, 384), (196, 96, 576), (49, 96, 576)]
+
 FILES = {
     "pw_coopmat_correctness.json": correctness,
+    "pw_coopmat_mobilenet.json": performance("mobilenet", MOBILENET),
 }
 
 
