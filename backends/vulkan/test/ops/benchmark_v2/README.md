@@ -309,12 +309,22 @@ Registered convolution routes:
 | Operator | Routes and options |
 | --- | --- |
 | `aten.convolution.default`, `et_vk.conv_with_clamp.default`, `et_vk.conv2d.with_epilogue` | `auto`, `direct`, `im2col`, `winograd`. `direct` accepts `masked: true`, which disables the border-specialized shader variants. `im2col` accepts `intermediate_storage`: `buffer`, `texture2d`, or `texture3d`; omission uses the production choice. `winograd` accepts `chunk_rows`, a positive number of output tile rows per chunk, and `weight_storage`: `buffer` or `texture2d`; omission uses the production choice. For batch-1 depthwise convolutions, `aten.convolution.default` and `et_vk.conv2d.with_epilogue` also accept `b1x1` and `b4x2`, which force the 1x1 output tile or the default tile. |
+| `aten.convolution.default`, `et_vk.conv_with_clamp.default`, `et_vk.conv2d.with_epilogue` (1x1) | `pw_coopmat` with the required option `variant`, a `conv2d_pw_coopmat` shader name such as `conv2d_pw_coopmat_xe2_t32x64_f16_half`; `pw_tiled_4x8`, which forces the `conv2d_pw_tiled_4x8` shader that automatic routing takes only above a size threshold. No options for `pw_tiled_4x8`. |
 | `et_vk.q8ta_conv2d.default` | `auto`, `direct` (general convolution), `im2col`. No route options. |
 
 The floating-point forced routes currently support forward 2D convolution with
 batch 1 and channels-packed texture3d input/output. im2col requires groups 1.
 winograd requires groups 1, Half tensors, and a 3x3 kernel with stride 1,
 dilation 1, and padding 1.
+The pointwise routes require a forward, ungrouped, batch-1 1x1 convolution with
+channels-packed texture3d input and output. `pw_coopmat` also requires FP16
+tensors, 16-bit storage buffers, stride 1, padding 0, dilation 1 and more than
+one output pixel, and a device that enumerates the variant's cooperative-matrix
+shape and accumulator type at subgroup scope and can require its subgroup size;
+otherwise the case reports `SKIP` with the unmet condition. The variants of each
+GPU family (`xe2`, `amd`, `nvidia`) are listed in
+`backends/vulkan/runtime/graph/ops/glsl/convolution/conv2d/conv2d_pw_coopmat.yaml`. Automatic
+routing never selects them.
 The Q8TA routes use packed int8 buffers and the production streaming feasibility
 checks. Route eligibility is separate from automatic performance heuristics:
 for example, forcing floating-point im2col can test dilated convolutions even
@@ -1052,6 +1062,35 @@ latency and are not run in CI. Correctness cases that fail because of known
 operator bugs live in separate collections named after the bug, such as
 `convolution/q8ta/cases/legacy_4w4c_padding.json`, so CI stays green while the
 cases remain available for a fix.
+
+### Pointwise cooperative-matrix cases
+
+`operators/convolution/conv2d/device_coopmat_properties.json` runs the
+`device_coopmat_properties` check, which reports the device name, UUID and
+driver, the subgroup size range, and every enumerated cooperative-matrix
+property (sizes, component types, scope). It always passes; on a device without
+cooperative-matrix support it says that no properties are enumerated.
+
+`operators/convolution/conv2d/cases/gen_pw_coopmat_cases.py` writes the
+`pw_coopmat_*.json` collections from the variant list of `conv2d_pw_coopmat.yaml`; run it after
+changing the variants (it needs PyYAML), or with `--check` to test that the files
+are current. Every shape has a baseline definition with routes `auto` and
+`pw_tiled_4x8` and a `pw_coopmat` definition swept over all variants with
+`sweep_variables`, so a device runs its own family and skips the others.
+
+| Collection | Shapes (M = output pixels, N = output channels, K = input channels) |
+| --- | --- |
+| `pw_coopmat_correctness.json` | Aligned, 7x7 and 14x14 planes, N = 24, K = 40, no bias, clamp, and residual epilogues. |
+| `pw_coopmat_mobilenet.json` | MobileNetV2 and V3 Small: (49, 160, 960), (196, 64, 384), (196, 96, 576), (49, 96, 576). |
+| `pw_coopmat_resnet50.json` | The twelve stride-1 1x1 layers of ResNet-50 at 224 x 224 input. |
+| `pw_coopmat_large.json` | The FP16 shapes of `pw_performance.json`. |
+
+```sh
+etvk_ops_bench --config=operators/convolution/conv2d/device_coopmat_properties.json
+etvk_ops_bench --config=operators/convolution/conv2d/cases/pw_coopmat_correctness.json --validation_only
+etvk_ops_bench --config=operators/convolution/conv2d/cases/pw_coopmat_mobilenet.json --output_format=json_full
+python3 operators/convolution/conv2d/cases/gen_pw_coopmat_cases.py --check
+```
 
 ## Schema audits and validation-only runs
 
