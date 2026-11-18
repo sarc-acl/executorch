@@ -171,3 +171,231 @@ conv2d_pw_coopmat:
       SUBGROUP_SIZE: 16
       ACC_TYPE: f32
       FRAG_LAYOUT: true
+    # AMD (Radeon 780M, RDNA3, RADV): MMA 16x16x16, subgroup 32 (forced; the
+    # default is 64), K step 32, padded row-major shared memory.
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f32_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+    - NAME: conv2d_pw_coopmat_amd_t16x64_f16_half
+      WG_TILE_M: 16
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+    - NAME: conv2d_pw_coopmat_amd_t16x64_f32_half
+      WG_TILE_M: 16
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+    - NAME: conv2d_pw_coopmat_amd_t32x32_f16_half
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+    - NAME: conv2d_pw_coopmat_amd_t32x32_f32_half
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+    - NAME: conv2d_pw_coopmat_amd_t32x64_f16_half
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+    - NAME: conv2d_pw_coopmat_amd_t32x64_f32_half
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+    - NAME: conv2d_pw_coopmat_amd_t64x32_f16_half
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+    - NAME: conv2d_pw_coopmat_amd_t64x32_f32_half
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+    - NAME: conv2d_pw_coopmat_amd_t64x64_f16_half
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+    - NAME: conv2d_pw_coopmat_amd_t64x64_f32_half
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f16_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+    # NVIDIA (RTX 4070 Ti SUPER): MMA 16x16x16, subgroup 32, K step 16, padded
+    # row-major shared memory.
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f16_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f32_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+    - NAME: conv2d_pw_coopmat_nvidia_t16x64_f16_half
+      WG_TILE_M: 16
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+    - NAME: conv2d_pw_coopmat_nvidia_t16x64_f32_half
+      WG_TILE_M: 16
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+    - NAME: conv2d_pw_coopmat_nvidia_t32x32_f16_half
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+    - NAME: conv2d_pw_coopmat_nvidia_t32x32_f32_half
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+    - NAME: conv2d_pw_coopmat_nvidia_t32x64_f16_half
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+    - NAME: conv2d_pw_coopmat_nvidia_t32x64_f32_half
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+    - NAME: conv2d_pw_coopmat_nvidia_t64x32_f16_half
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+    - NAME: conv2d_pw_coopmat_nvidia_t64x32_f32_half
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+    - NAME: conv2d_pw_coopmat_nvidia_t64x64_f16_half
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+    - NAME: conv2d_pw_coopmat_nvidia_t64x64_f32_half
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f16_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f32_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
