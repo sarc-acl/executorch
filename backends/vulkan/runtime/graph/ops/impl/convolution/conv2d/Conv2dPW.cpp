@@ -103,7 +103,158 @@ uint32_t pick_row_divisor(const uint32_t row_tiles, const uint32_t max_x) {
   return x * 2u >= max_x ? x : max_x;
 }
 
+bool is_wide_tile_shader(const vkapi::ShaderInfo& shader) {
+  return shader.kernel_name.find("_4x8") != std::string::npos;
+}
+
 } // namespace
+
+//
+// Cooperative matrix variants
+//
+
+const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
+  // {name, mma_m, mma_n, mma_k, tile_m, tile_n, sg_grid_x, sg_grid_y,
+  //  subgroup_size, fp32_accumulation}; must match conv2d_pw_coopmat.yaml.
+  // clang-format off
+  static const std::vector<Conv2dPwCoopmatVariant> variants = {
+      // Intel Xe2
+      {"conv2d_pw_coopmat_xe2_t16x32_f16_half", 8, 16, 16, 16, 32, 1, 1, 16, false},
+      {"conv2d_pw_coopmat_xe2_t16x32_f32_half", 8, 16, 16, 16, 32, 1, 1, 16, true},
+      {"conv2d_pw_coopmat_xe2_t16x64_f16_half", 8, 16, 16, 16, 64, 1, 1, 16, false},
+      {"conv2d_pw_coopmat_xe2_t16x64_f32_half", 8, 16, 16, 16, 64, 1, 1, 16, true},
+      {"conv2d_pw_coopmat_xe2_t32x32_f16_half", 8, 16, 16, 32, 32, 1, 1, 16, false},
+      {"conv2d_pw_coopmat_xe2_t32x32_f32_half", 8, 16, 16, 32, 32, 1, 1, 16, true},
+      {"conv2d_pw_coopmat_xe2_t32x64_f16_half", 8, 16, 16, 32, 64, 2, 1, 16, false},
+      {"conv2d_pw_coopmat_xe2_t32x64_f32_half", 8, 16, 16, 32, 64, 2, 1, 16, true},
+      {"conv2d_pw_coopmat_xe2_t64x32_f16_half", 8, 16, 16, 64, 32, 1, 2, 16, false},
+      {"conv2d_pw_coopmat_xe2_t64x32_f32_half", 8, 16, 16, 64, 32, 1, 2, 16, true},
+      {"conv2d_pw_coopmat_xe2_t64x64_f16_half", 8, 16, 16, 64, 64, 2, 2, 16, false},
+      {"conv2d_pw_coopmat_xe2_t64x64_f32_half", 8, 16, 16, 64, 64, 2, 2, 16, true},
+      {"conv2d_pw_coopmat_xe2_t128x128_f16_half", 8, 16, 16, 128, 128, 4, 4, 16, false},
+      {"conv2d_pw_coopmat_xe2_t128x128_f32_half", 8, 16, 16, 128, 128, 4, 4, 16, true},
+      // AMD
+      {"conv2d_pw_coopmat_amd_t16x32_f16_half", 16, 16, 16, 16, 32, 1, 1, 32, false},
+      {"conv2d_pw_coopmat_amd_t16x32_f32_half", 16, 16, 16, 16, 32, 1, 1, 32, true},
+      {"conv2d_pw_coopmat_amd_t16x64_f16_half", 16, 16, 16, 16, 64, 1, 1, 32, false},
+      {"conv2d_pw_coopmat_amd_t16x64_f32_half", 16, 16, 16, 16, 64, 1, 1, 32, true},
+      {"conv2d_pw_coopmat_amd_t32x32_f16_half", 16, 16, 16, 32, 32, 1, 1, 32, false},
+      {"conv2d_pw_coopmat_amd_t32x32_f32_half", 16, 16, 16, 32, 32, 1, 1, 32, true},
+      {"conv2d_pw_coopmat_amd_t32x64_f16_half", 16, 16, 16, 32, 64, 1, 1, 32, false},
+      {"conv2d_pw_coopmat_amd_t32x64_f32_half", 16, 16, 16, 32, 64, 1, 1, 32, true},
+      {"conv2d_pw_coopmat_amd_t64x32_f16_half", 16, 16, 16, 64, 32, 1, 1, 32, false},
+      {"conv2d_pw_coopmat_amd_t64x32_f32_half", 16, 16, 16, 64, 32, 1, 1, 32, true},
+      {"conv2d_pw_coopmat_amd_t64x64_f16_half", 16, 16, 16, 64, 64, 2, 1, 32, false},
+      {"conv2d_pw_coopmat_amd_t64x64_f32_half", 16, 16, 16, 64, 64, 2, 1, 32, true},
+      {"conv2d_pw_coopmat_amd_t128x128_f16_half", 16, 16, 16, 128, 128, 4, 2, 32, false},
+      {"conv2d_pw_coopmat_amd_t128x128_f32_half", 16, 16, 16, 128, 128, 4, 2, 32, true},
+      // NVIDIA
+      {"conv2d_pw_coopmat_nvidia_t16x32_f16_half", 16, 16, 16, 16, 32, 1, 1, 32, false},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f32_half", 16, 16, 16, 16, 32, 1, 1, 32, true},
+      {"conv2d_pw_coopmat_nvidia_t16x64_f16_half", 16, 16, 16, 16, 64, 1, 1, 32, false},
+      {"conv2d_pw_coopmat_nvidia_t16x64_f32_half", 16, 16, 16, 16, 64, 1, 1, 32, true},
+      {"conv2d_pw_coopmat_nvidia_t32x32_f16_half", 16, 16, 16, 32, 32, 1, 1, 32, false},
+      {"conv2d_pw_coopmat_nvidia_t32x32_f32_half", 16, 16, 16, 32, 32, 1, 1, 32, true},
+      {"conv2d_pw_coopmat_nvidia_t32x64_f16_half", 16, 16, 16, 32, 64, 1, 1, 32, false},
+      {"conv2d_pw_coopmat_nvidia_t32x64_f32_half", 16, 16, 16, 32, 64, 1, 1, 32, true},
+      {"conv2d_pw_coopmat_nvidia_t64x32_f16_half", 16, 16, 16, 64, 32, 1, 1, 32, false},
+      {"conv2d_pw_coopmat_nvidia_t64x32_f32_half", 16, 16, 16, 64, 32, 1, 1, 32, true},
+      {"conv2d_pw_coopmat_nvidia_t64x64_f16_half", 16, 16, 16, 64, 64, 2, 1, 32, false},
+      {"conv2d_pw_coopmat_nvidia_t64x64_f32_half", 16, 16, 16, 64, 64, 2, 1, 32, true},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f16_half", 16, 16, 16, 128, 128, 4, 2, 32, false},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f32_half", 16, 16, 16, 128, 128, 4, 2, 32, true},
+  };
+  // clang-format on
+  return variants;
+}
+
+const Conv2dPwCoopmatVariant* find_conv2d_pw_coopmat_variant(
+    const std::string& name) {
+  for (const Conv2dPwCoopmatVariant& variant : conv2d_pw_coopmat_variants()) {
+    if (name == variant.name) {
+      return &variant;
+    }
+  }
+  return nullptr;
+}
+
+bool conv2d_pw_coopmat_device_supports(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant) {
+#ifdef VK_KHR_cooperative_matrix
+  vkapi::Adapter* const adapter = graph.context()->adapter_ptr();
+  const VkComponentTypeKHR acc = variant.fp32_accumulation
+      ? VK_COMPONENT_TYPE_FLOAT32_KHR
+      : VK_COMPONENT_TYPE_FLOAT16_KHR;
+  if (!adapter->supports_cooperative_matrix() ||
+      !adapter->supports_cooperative_matrix_shape(
+          variant.mma_m,
+          variant.mma_n,
+          variant.mma_k,
+          VK_COMPONENT_TYPE_FLOAT16_KHR,
+          VK_COMPONENT_TYPE_FLOAT16_KHR,
+          acc,
+          acc) ||
+      !adapter->supports_required_subgroup_size_for_compute() ||
+      variant.subgroup_size < adapter->min_subgroup_size() ||
+      variant.subgroup_size > adapter->max_subgroup_size()) {
+    return false;
+  }
+  for (const uint32_t capability :
+       VK_KERNEL_FROM_STR(variant.name).required_capabilities) {
+    if (!adapter->supports_spirv_capability(capability)) {
+      return false;
+    }
+  }
+  return true;
+#else
+  (void)graph;
+  (void)variant;
+  return false;
+#endif /* VK_KHR_cooperative_matrix */
+}
+
+bool conv2d_pw_coopmat_eligible(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant,
+    const ValueRef in,
+    const ValueRef weight_data,
+    const ValueRef packed_weight,
+    const ValueRef stride,
+    const ValueRef padding,
+    const ValueRef out,
+    const bool transposed) {
+  if (transposed || graph.dtype_of(in) != vkapi::kHalf ||
+      graph.dtype_of(out) != vkapi::kHalf || !graph.float16_buffers_enabled() ||
+      !graph.is_buffer_storage(packed_weight) ||
+      !graph.is_texture_storage(in) || !graph.is_texture_storage(out) ||
+      graph.packed_dim_of(in) != WHCN::kChannelsDim ||
+      graph.packed_dim_of(out) != WHCN::kChannelsDim) {
+    return false;
+  }
+  const std::vector<int64_t> in_sizes = graph.sizes_of(in);
+  const std::vector<int64_t> weight_sizes = graph.sizes_of(weight_data);
+  if (in_sizes.size() == 4 && in_sizes.at(0) != 1) {
+    return false;
+  }
+  if (weight_sizes.size() != 4 ||
+      weight_sizes.at(1) != graph.size_at<int64_t>(-3, in) ||
+      weight_sizes.at(2) != 1 || weight_sizes.at(3) != 1) {
+    return false;
+  }
+  const auto stride_list = graph.get_int_list(stride);
+  const auto padding_list = graph.get_int_list(padding);
+  if (stride_list->at(0) != 1 || stride_list->at(1) != 1 ||
+      padding_list->at(0) != 0 || padding_list->at(1) != 0) {
+    return false;
+  }
+  if (int64_t(graph.size_at<int32_t>(-1, out)) *
+          graph.size_at<int32_t>(-2, out) <=
+      1) {
+    return false;
+  }
+  return conv2d_pw_coopmat_device_supports(graph, variant);
+}
 
 void resize_conv2d_pw_tiled_node(
     ComputeGraph* graph,
@@ -143,14 +294,31 @@ void resize_conv2d_pw_tiled_node(
 vkapi::ShaderInfo pick_conv2d_pw_tiled_shader(
     ComputeGraph* graph,
     const std::vector<ArgGroup>& args,
-    const std::vector<ValueRef>& resize_args) {
-  (void)resize_args;
+    const std::vector<ValueRef>& resize_args,
+    const Conv2dPwRequest& request,
+    const bool transposed) {
   const ValueRef out = args.at(0).refs.at(0);
+  const ValueRef in = args.at(1).refs.at(0);
   const ValueRef packed_weight = args.at(1).refs.at(1);
+
+  if (request.kind == Conv2dPwRequest::Kind::kCoopmat &&
+      conv2d_pw_coopmat_eligible(
+          *graph,
+          *request.coopmat_variant,
+          in,
+          resize_args.at(0),
+          packed_weight,
+          resize_args.at(1),
+          resize_args.at(2),
+          out,
+          transposed)) {
+    return VK_KERNEL_FROM_STR(request.coopmat_variant->name);
+  }
 
   std::string kernel_name = "conv2d_pw_tiled";
   kernel_name.reserve(kShaderNameReserve);
-  if (use_wide_pw_tile(graph, out)) {
+  if (request.kind == Conv2dPwRequest::Kind::kTiledWide ||
+      use_wide_pw_tile(graph, out)) {
     kernel_name += "_4x8";
   }
   if (graph->is_buffer_storage(packed_weight)) {
@@ -165,15 +333,23 @@ GlobalWorkGrid pick_conv2d_pw_tiled_gwg(
     const vkapi::ShaderInfo& shader,
     const std::vector<ArgGroup>& args,
     const std::vector<ValueRef>& resize_args) {
-  (void)shader;
   (void)resize_args;
   const ValueRef out = args.at(0).refs.at(0);
   uint32_t W = graph->size_at<uint32_t>(-1, out);
   uint32_t H = graph->size_at<uint32_t>(-2, out);
   uint32_t C_out = graph->size_at<uint32_t>(-3, out);
+  // One work group per output tile, channel tiles on x.
+  if (const Conv2dPwCoopmatVariant* const variant =
+          find_conv2d_pw_coopmat_variant(shader.kernel_name)) {
+    return GlobalWorkGrid(
+        {utils::div_up(C_out, variant->tile_n) * variant->wg_size(),
+         utils::div_up(W * H, variant->tile_m),
+         1u},
+        kExplicitWorkGrid);
+  }
   uint32_t N4 = utils::div_up_4(C_out);
   // Tile sizes must match conv2d_pw_tiled.yaml.
-  const bool wide = use_wide_pw_tile(graph, out);
+  const bool wide = is_wide_tile_shader(shader);
   const uint32_t tile_n4 = wide ? 2u : 1u;
   const uint32_t tile_h = wide ? 2u : 1u;
   const uint32_t n_tiles = utils::div_up(N4, tile_n4);
@@ -210,7 +386,11 @@ LocalWorkGroup pick_conv2d_pw_tiled_lwg(
     const std::vector<ArgGroup>& args,
     const std::vector<ValueRef>& resize_args) {
   const ValueRef out = args.at(0).refs.at(0);
-  if (use_wide_pw_tile(graph, out)) {
+  if (const Conv2dPwCoopmatVariant* const variant =
+          find_conv2d_pw_coopmat_variant(shader.kernel_name)) {
+    return LocalWorkGroup(variant->wg_size(), 1u, 1u);
+  }
+  if (is_wide_tile_shader(shader)) {
     const vkapi::Adapter* const adapter = graph->context()->adapter_ptr();
     const auto fit_threads = [adapter](uint32_t nthreads) {
       while (nthreads > adapter->max_compute_workgroup_invocations() ||
@@ -338,7 +518,9 @@ void add_conv2d_pw_tiled_node(
     const ValueRef out,
     const ValueRef weight_data,
     const Conv2dEpilogue& epilogue,
-    const Conv2dEpilogueArgs& epilogue_args) {
+    const Conv2dEpilogueArgs& epilogue_args,
+    const Conv2dPwRequest& request,
+    const bool transposed) {
   int32_t stride_h, stride_w, padding_h, padding_w;
   {
     const auto stride_list = graph.get_int_list(stride);
@@ -366,7 +548,13 @@ void add_conv2d_pw_tiled_node(
 
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
       graph,
-      pick_conv2d_pw_tiled_shader,
+      [request, transposed](
+          ComputeGraph* graph,
+          const std::vector<ArgGroup>& args,
+          const std::vector<ValueRef>& resize_args) {
+        return pick_conv2d_pw_tiled_shader(
+            graph, args, resize_args, request, transposed);
+      },
       pick_conv2d_pw_tiled_gwg,
       pick_conv2d_pw_tiled_lwg,
       // Inputs and Outputs
@@ -403,7 +591,12 @@ void conv2d_pw_impl(
     const ValueRef padding,
     const ValueRef out,
     const bool transposed_val,
-    const Conv2dEpilogue& epilogue) {
+    const Conv2dEpilogue& epilogue,
+    const Conv2dPwRequest& request) {
+  VK_CHECK_COND(
+      (request.kind == Conv2dPwRequest::Kind::kCoopmat) ==
+          (request.coopmat_variant != nullptr),
+      "conv2d_pw: a coopmat request names exactly one variant");
   ValueRef packed_weight = prepack_conv2d_pw_weight(graph, weight_data, out);
 
   ValueRef packed_bias = prepack_biases(
@@ -433,7 +626,9 @@ void conv2d_pw_impl(
       out,
       weight_data,
       epilogue,
-      Conv2dEpilogueArgs(epilogue, in, packed_bias, packed_scale));
+      Conv2dEpilogueArgs(epilogue, in, packed_bias, packed_scale),
+      request,
+      transposed_val);
 }
 
 } // namespace vkcompute

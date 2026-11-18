@@ -14,6 +14,8 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/unary/UnaryOp.h>
 
 #include <optional>
+#include <string>
+#include <vector>
 
 namespace vkcompute {
 
@@ -108,6 +110,69 @@ void append_conv2d_epilogue_spec_vars(
     vkapi::SpecVarList& spec_vars,
     const Conv2dEpilogue& epilogue);
 
+// A variant of the conv2d_pw_coopmat shader (conv2d_pw_coopmat.yaml): its
+// cooperative matrix shape, accumulator type, output tile (pixels x channels),
+// subgroup grid and required subgroup size.
+struct Conv2dPwCoopmatVariant final {
+  const char* name;
+  uint32_t mma_m;
+  uint32_t mma_n;
+  uint32_t mma_k;
+  uint32_t tile_m;
+  uint32_t tile_n;
+  uint32_t sg_grid_x;
+  uint32_t sg_grid_y;
+  uint32_t subgroup_size;
+  bool fp32_accumulation;
+
+  uint32_t wg_size() const {
+    return sg_grid_x * sg_grid_y * subgroup_size;
+  }
+};
+
+const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants();
+
+// The variant with this shader name, or nullptr.
+const Conv2dPwCoopmatVariant* find_conv2d_pw_coopmat_variant(
+    const std::string& name);
+
+// Whether the device enumerates the variant's fp16 cooperative matrix shape
+// with its accumulator type at subgroup scope and can require its subgroup
+// size for compute pipelines.
+bool conv2d_pw_coopmat_device_supports(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant);
+
+// Whether a pointwise convolution may run on the variant at its current
+// sizes: the device supports the variant, and the convolution is FP16,
+// non-transposed, ungrouped, stride 1, padding 0, batch 1, with more than one
+// output pixel, texture input and output, and packed weights in a buffer (which
+// needs float16_buffers_enabled()).
+bool conv2d_pw_coopmat_eligible(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant,
+    const ValueRef in,
+    const ValueRef weight_data,
+    const ValueRef packed_weight,
+    const ValueRef stride,
+    const ValueRef padding,
+    const ValueRef out,
+    const bool transposed);
+
+// Kernel requested from conv2d_pw_impl. kAuto is the production pick and the
+// only kind automatic routing uses. kTiledWide always picks the 2x2-pixel x
+// 8-channel tile. kCoopmat picks `coopmat_variant` while the convolution is
+// eligible for it and the kAuto pick otherwise, re-evaluated on every resize.
+struct Conv2dPwRequest final {
+  enum class Kind : uint8_t {
+    kAuto,
+    kTiledWide,
+    kCoopmat,
+  };
+  Kind kind = Kind::kAuto;
+  const Conv2dPwCoopmatVariant* coopmat_variant = nullptr;
+};
+
 void conv2d_pw_impl(
     ComputeGraph& graph,
     const ValueRef in,
@@ -117,7 +182,8 @@ void conv2d_pw_impl(
     const ValueRef padding,
     const ValueRef out,
     const bool transposed_val,
-    const Conv2dEpilogue& epilogue);
+    const Conv2dEpilogue& epilogue,
+    const Conv2dPwRequest& request = {});
 
 // `b1x1_override` forces or disables the 1x1 output tile of 3x3 and 5x5
 // kernels instead of choosing it by GPU.
