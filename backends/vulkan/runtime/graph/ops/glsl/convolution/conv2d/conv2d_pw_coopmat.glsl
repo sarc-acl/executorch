@@ -1,0 +1,92 @@
+/*
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+/*
+ * FP16 1x1 convolution (stride 1, padding 0, batch 1) as a cooperative-matrix
+ * GEMM: out[m][n] = sum_k in[m][k] * w[n][k] + bias[n], with m the output
+ * pixel, n the output channel and k the input channel.
+ *
+ * Bindings, uniforms, push constants and specialization constants are those of
+ * conv2d_pw_tiled, so one dispatch node can pick either shader on resize. This
+ * file is the template header; the body is conv2d_pw_coopmat_body.glslh.
+ */
+
+#version 450 core
+
+#extension GL_KHR_cooperative_matrix : require
+#extension GL_KHR_memory_scope_semantics : require
+#extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_EXT_shader_explicit_arithmetic_types : require
+#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
+#extension GL_EXT_control_flow_attributes : enable
+
+#define PRECISION ${PRECISION}
+#define T ${buffer_scalar_type(DTYPE)}
+#define VEC4_T ${buffer_gvec_type(DTYPE, 4)}
+
+${define_required_extensions(STORAGE, DTYPE)}
+${define_required_extensions("buffer", DTYPE)}
+
+layout(std430) buffer;
+
+#include "common.glslh"
+
+${layout_declare_tensor(B, "w", "t_out", DTYPE, STORAGE)}
+${layout_declare_tensor(B, "r", "t_in", DTYPE, STORAGE)}
+${layout_declare_tensor(B, "r", "t_weight_packed", DTYPE, "buffer", is_scalar_array=False)}
+${layout_declare_tensor(B, "r", "t_bias", DTYPE, "texture2d")}
+${layout_declare_tensor(B, "r", "t_residual", DTYPE, "texture3d")}
+${layout_declare_tensor(B, "r", "t_scale", DTYPE, "texture2d")}
+
+${layout_declare_ubo(B, "ivec4", "in_sizes")}
+${layout_declare_ubo(B, "ivec4", "out_sizes")}
+
+layout(push_constant) uniform restrict Block {
+  int stride_h;
+  int stride_w;
+  int padding_h;
+  int padding_w;
+  float activation_a;
+  float activation_b;
+  float residual_alpha;
+};
+
+layout(local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2) in;
+
+// stride_1_padding_0 is always 1 here; it is declared to keep the tiled
+// shader's specialization constant IDs.
+${layout_declare_spec_const(C, "int", "stride_1_padding_0", "0")}
+${layout_declare_spec_const(C, "bool", "has_activation", "false")}
+${layout_declare_spec_const(C, "int", "activation_op", "0")}
+${layout_declare_spec_const(C, "bool", "has_residual", "false")}
+${layout_declare_spec_const(C, "bool", "has_scale", "false")}
+${layout_declare_spec_const(C, "int", "residual_op", "0")}
+
+#include "conv2d_epilogue.glslh"
+
+$if ACC_TYPE == "f32":
+  #define ACC_T float
+$else:
+  #define ACC_T float16_t
+
+$if FRAG_LAYOUT:
+  #define FRAG_LAYOUT
+
+const uint MMA_M = ${MMA_M};
+const uint MMA_N = ${MMA_N};
+const uint MMA_K = ${MMA_K};
+
+const uint WG_TILE_M = ${WG_TILE_M};
+const uint WG_TILE_N = ${WG_TILE_N};
+const uint WG_TILE_K = ${WG_TILE_K};
+
+const uint SG_GRID_X = ${SG_GRID_X};
+const uint SG_GRID_Y = ${SG_GRID_Y};
+const uint SUBGROUP_SIZE = ${SUBGROUP_SIZE};
+
+#include "conv2d_pw_coopmat_body.glslh"

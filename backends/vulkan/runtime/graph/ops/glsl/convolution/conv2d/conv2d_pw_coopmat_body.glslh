@@ -1,0 +1,314 @@
+/*
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+/*
+ * Body of conv2d_pw_coopmat. The including header defines the bindings, the
+ * epilogue, ACC_T, the optional FRAG_LAYOUT macro and the tile constants
+ * MMA_{M,N,K}, WG_TILE_{M,N,K}, SG_GRID_{X,Y} and SUBGROUP_SIZE.
+ *
+ * Each work group computes a WG_TILE_M (pixels) x WG_TILE_N (channels) output
+ * tile, indexed by gl_WorkGroupID (x: channel tile, y: pixel tile). Per K step
+ * the A tile (input texels) and the B tile (packed 4OC x 4IC weights) are
+ * staged into shared memory as fp16, zero-filled past M, N and K, with the next
+ * step prefetched into registers during the MMAs (the staging scheme of the
+ * linear coopmat kernels). After the K loop the accumulators are stored to
+ * shared memory, which the work group reads back to add the bias, apply the
+ * epilogue and imageStore the texels inside the output.
+ */
+
+#ifndef CONV2D_PW_COOPMAT_BODY_GLSLH
+#define CONV2D_PW_COOPMAT_BODY_GLSLH
+
+const uint NUM_SUBGROUPS = SG_GRID_X * SG_GRID_Y;
+const uint WG_SIZE = NUM_SUBGROUPS * SUBGROUP_SIZE;
+
+const uint SG_TILE_M = WG_TILE_M / SG_GRID_Y;
+const uint SG_TILE_N = WG_TILE_N / SG_GRID_X;
+const uint MMAS_PER_SG_M = SG_TILE_M / MMA_M;
+const uint MMAS_PER_SG_N = SG_TILE_N / MMA_N;
+
+// Shared memory is addressed in uvec4 units of 8 fp16.
+const uint FP16_PER_VEC4 = 8;
+
+#ifdef FRAG_LAYOUT
+// Fragment-contiguous layout (Intel Xe2): A as [k16 block][m][16 fp16] and B
+// as [n16 block][k][16 fp16], so every A and B fragment is one contiguous run.
+// Requires MMA_K == MMA_N == 16.
+const uint FRAG_ROW_VEC4 = 16u / FP16_PER_VEC4;
+const uint A_STRIDE_VEC4 = FRAG_ROW_VEC4;
+const uint B_STRIDE_VEC4 = FRAG_ROW_VEC4;
+const uint ASH_SLICE = WG_TILE_M * (WG_TILE_K / FP16_PER_VEC4);
+const uint BSH_SLICE = WG_TILE_K * (WG_TILE_N / FP16_PER_VEC4);
+#define A_SH_IDX(m, c) \
+  ((((c) / FRAG_ROW_VEC4) * WG_TILE_M + (m)) * FRAG_ROW_VEC4 + ((c) % FRAG_ROW_VEC4))
+#define B_SH_IDX(k, c) \
+  ((((c) / FRAG_ROW_VEC4) * WG_TILE_K + (k)) * FRAG_ROW_VEC4 + ((c) % FRAG_ROW_VEC4))
+#else
+// Row-major, each row padded by one uvec4.
+const uint A_STRIDE_VEC4 = (WG_TILE_K + FP16_PER_VEC4) / FP16_PER_VEC4;
+const uint B_STRIDE_VEC4 = (WG_TILE_N + FP16_PER_VEC4) / FP16_PER_VEC4;
+const uint ASH_SLICE = WG_TILE_M * A_STRIDE_VEC4;
+const uint BSH_SLICE = WG_TILE_K * B_STRIDE_VEC4;
+#define A_SH_IDX(m, c) ((m) * A_STRIDE_VEC4 + (c))
+#define B_SH_IDX(k, c) ((k) * B_STRIDE_VEC4 + (c))
+#endif
+
+// One pool holds the double-buffered A and B tiles and, after the last MMA,
+// the WG_TILE_M x WG_TILE_N fp16 result tile (row-major).
+const uint BSH_BASE = 2u * ASH_SLICE;
+const uint POOL_AB = 2u * ASH_SLICE + 2u * BSH_SLICE;
+const uint POOL_C = WG_TILE_M * WG_TILE_N / FP16_PER_VEC4;
+shared uvec4 sh[POOL_AB > POOL_C ? POOL_AB : POOL_C];
+
+// Staging maps. A item = 8 consecutive input channels of one pixel (two
+// texels), pixels fastest so neighboring invocations read neighboring texels
+// of one channel slice. B item = 8 consecutive output channels of one input
+// channel (two packed f16vec4), the 4 input channels of a block fastest so
+// neighboring invocations read consecutive weight vectors.
+const uint A_COLS = WG_TILE_K / FP16_PER_VEC4;
+const uint A_ITEMS = WG_TILE_M * A_COLS;
+const uint A_PASSES = (A_ITEMS + WG_SIZE - 1u) / WG_SIZE;
+const uint B_COLS = WG_TILE_N / FP16_PER_VEC4;
+const uint B_ITEMS = WG_TILE_K * B_COLS;
+const uint B_PASSES = (B_ITEMS + WG_SIZE - 1u) / WG_SIZE;
+
+coopmat<ACC_T, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>
+    result[MMAS_PER_SG_M][MMAS_PER_SG_N];
+
+uvec4 pack_f16x8(const f16vec4 lo, const f16vec4 hi) {
+  return uvec4(
+      packFloat2x16(lo.xy),
+      packFloat2x16(lo.zw),
+      packFloat2x16(hi.xy),
+      packFloat2x16(hi.zw));
+}
+
+// Fixed per invocation and pass: the A item's pixel and column, and the B
+// item's tile-local input channel and column.
+struct StagingMap {
+  ivec2 a_pos[A_PASSES];
+  bool a_row_ok[A_PASSES];
+  uint a_m[A_PASSES];
+  uint a_col[A_PASSES];
+  uint b_k[B_PASSES];
+  uint b_col[B_PASSES];
+};
+
+void make_staging_map(
+    out StagingMap map,
+    const uint tile_m_start,
+    const uint M,
+    const uint W_out) {
+  const uint tid = gl_LocalInvocationID.x;
+  [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
+    const uint item = min(p * WG_SIZE + tid, A_ITEMS - 1u);
+    map.a_m[p] = item % WG_TILE_M;
+    map.a_col[p] = item / WG_TILE_M;
+    const uint m = tile_m_start + map.a_m[p];
+    map.a_row_ok[p] = m < M && p * WG_SIZE + tid < A_ITEMS;
+    map.a_pos[p] = map.a_row_ok[p] ? ivec2(m % W_out, m / W_out) : ivec2(0);
+  }
+  [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
+    const uint item = min(p * WG_SIZE + tid, B_ITEMS - 1u);
+    const uint dk = item % 4u;
+    const uint rest = item / 4u;
+    map.b_col[p] = rest % B_COLS;
+    map.b_k[p] = (rest / B_COLS) * 4u + dk;
+  }
+}
+
+f16vec4 fetch_in(const ivec2 pos, const uint k4, const uint K4) {
+  return k4 < K4 ? f16vec4(texelFetch(t_in, ivec3(pos, int(k4)), 0))
+                 : f16vec4(0);
+}
+
+f16vec4 fetch_w(const uint k, const uint n4, const uint K4, const uint N4) {
+  return (k >> 2u) < K4 && n4 < N4
+      ? f16vec4(t_weight_packed[((k >> 2u) * N4 + n4) * 4u + (k & 3u)])
+      : f16vec4(0);
+}
+
+void load_a(
+    out uvec4 temp[A_PASSES],
+    const StagingMap map,
+    const uint k_start,
+    const uint K4) {
+  [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
+    if (map.a_row_ok[p]) {
+      const uint k4 = k_start / 4u + 2u * map.a_col[p];
+      temp[p] = pack_f16x8(
+          fetch_in(map.a_pos[p], k4, K4), fetch_in(map.a_pos[p], k4 + 1u, K4));
+    } else {
+      temp[p] = uvec4(0);
+    }
+  }
+}
+
+void load_b(
+    out uvec4 temp[B_PASSES],
+    const StagingMap map,
+    const uint k_start,
+    const uint n4_start,
+    const uint K4,
+    const uint N4) {
+  [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
+    const uint k = k_start + map.b_k[p];
+    const uint n4 = n4_start + 2u * map.b_col[p];
+    temp[p] = pack_f16x8(fetch_w(k, n4, K4, N4), fetch_w(k, n4 + 1u, K4, N4));
+  }
+}
+
+void store_ab(
+    const uint slice,
+    const uvec4 temp_a[A_PASSES],
+    const uvec4 temp_b[B_PASSES],
+    const StagingMap map) {
+  const uint tid = gl_LocalInvocationID.x;
+  [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
+    if (A_ITEMS % WG_SIZE == 0u || p * WG_SIZE + tid < A_ITEMS) {
+      sh[slice * ASH_SLICE + A_SH_IDX(map.a_m[p], map.a_col[p])] = temp_a[p];
+    }
+  }
+  [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
+    if (B_ITEMS % WG_SIZE == 0u || p * WG_SIZE + tid < B_ITEMS) {
+      sh[BSH_BASE + slice * BSH_SLICE + B_SH_IDX(map.b_k[p], map.b_col[p])] =
+          temp_b[p];
+    }
+  }
+}
+
+void mma_step(const uint slice, const uvec2 sg) {
+  const uint a_base = slice * ASH_SLICE;
+  const uint b_base = BSH_BASE + slice * BSH_SLICE;
+  [[unroll]] for (uint k = 0; k < WG_TILE_K / MMA_K; ++k) {
+    const uint k_start = MMA_K * k;
+    coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA>
+        mat_a[MMAS_PER_SG_M];
+    [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+      const uint row = MMA_M * (MMAS_PER_SG_M * sg.y + i);
+      coopMatLoad(
+          mat_a[i],
+          sh,
+          a_base + A_SH_IDX(row, k_start / FP16_PER_VEC4),
+          A_STRIDE_VEC4,
+          gl_CooperativeMatrixLayoutRowMajor);
+    }
+    coopmat<float16_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> mat_b;
+    [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+      const uint col = MMA_N * (MMAS_PER_SG_N * sg.x + j) / FP16_PER_VEC4;
+      coopMatLoad(
+          mat_b,
+          sh,
+          b_base + B_SH_IDX(k_start, col),
+          B_STRIDE_VEC4,
+          gl_CooperativeMatrixLayoutRowMajor);
+      [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+        result[i][j] = coopMatMulAdd(mat_a[i], mat_b, result[i][j]);
+      }
+    }
+  }
+}
+
+void main() {
+  const uvec2 sg = uvec2(gl_SubgroupID % SG_GRID_X, gl_SubgroupID / SG_GRID_X);
+
+  const uint W_out = uint(out_sizes.x);
+  const uint M = W_out * uint(out_sizes.y);
+  const uint N4 = uint(div_up_4(out_sizes.z));
+  const uint K4 = uint(div_up_4(in_sizes.z));
+
+  const uint tile_m_start = WG_TILE_M * gl_WorkGroupID.y;
+  const uint tile_n_start = WG_TILE_N * gl_WorkGroupID.x;
+  const uint n4_start = tile_n_start / 4u;
+  const uint num_k_steps = (4u * K4 + WG_TILE_K - 1u) / WG_TILE_K;
+
+  [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+    [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+      result[i][j] = coopmat<
+          ACC_T,
+          gl_ScopeSubgroup,
+          MMA_M,
+          MMA_N,
+          gl_MatrixUseAccumulator>(0.0);
+    }
+  }
+
+  StagingMap map;
+  make_staging_map(map, tile_m_start, M, W_out);
+
+  uvec4 temp_a[A_PASSES];
+  uvec4 temp_b[B_PASSES];
+  load_a(temp_a, map, 0u, K4);
+  load_b(temp_b, map, 0u, n4_start, K4, N4);
+  store_ab(0u, temp_a, temp_b, map);
+
+  // One barrier per K step: the slice being read was written before it, and
+  // the slice being written was last read before it.
+  uint step;
+  for (step = 0; step + 1u < num_k_steps; ++step) {
+    // barrier() alone does not order shared stores against a following
+    // coopMatLoad on every driver.
+    memoryBarrierShared();
+    barrier();
+    const uint k_next = (step + 1u) * WG_TILE_K;
+    load_a(temp_a, map, k_next, K4);
+    load_b(temp_b, map, k_next, n4_start, K4, N4);
+    mma_step(step % 2u, sg);
+    store_ab((step + 1u) % 2u, temp_a, temp_b, map);
+  }
+  memoryBarrierShared();
+  barrier();
+  mma_step(step % 2u, sg);
+
+  // Every subgroup is done reading A and B before the result tile overwrites
+  // them.
+  memoryBarrierShared();
+  barrier();
+  [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+    [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+      const uint c_off = (sg.y * SG_TILE_M + i * MMA_M) * WG_TILE_N +
+          MMA_N * (MMAS_PER_SG_N * sg.x + j);
+      coopMatStore(
+          coopmat<
+              float16_t,
+              gl_ScopeSubgroup,
+              MMA_M,
+              MMA_N,
+              gl_MatrixUseAccumulator>(result[i][j]),
+          sh,
+          c_off / FP16_PER_VEC4,
+          WG_TILE_N / FP16_PER_VEC4,
+          gl_CooperativeMatrixLayoutRowMajor);
+    }
+  }
+  memoryBarrierShared();
+  barrier();
+
+  const uint TEXELS_PER_ROW = WG_TILE_N / 4u;
+  for (uint t = gl_LocalInvocationID.x; t < WG_TILE_M * TEXELS_PER_ROW;
+       t += WG_SIZE) {
+    const uint lr = t / TEXELS_PER_ROW;
+    const uint lc4 = t % TEXELS_PER_ROW;
+    const uint m = tile_m_start + lr;
+    const uint n4 = n4_start + lc4;
+    if (m < M && n4 < N4) {
+      const uint h = lr * WG_TILE_N + lc4 * 4u;
+      const uvec4 q = sh[h / FP16_PER_VEC4];
+      const bool hi = (h % FP16_PER_VEC4) != 0u;
+      VEC4_T v = VEC4_T(
+          unpackFloat2x16(hi ? q.z : q.x), unpackFloat2x16(hi ? q.w : q.y));
+      v += VEC4_T(texelFetch(t_bias, ivec2(n4, 0), 0));
+      const vec4 scale =
+          has_scale ? texelFetch(t_scale, ivec2(n4, 0), 0) : vec4(1);
+      const ivec3 pos = ivec3(m % W_out, m / W_out, n4);
+      imageStore(t_out, pos, apply_epilogue(v, pos, scale));
+    }
+  }
+}
+
+#endif // CONV2D_PW_COOPMAT_BODY_GLSLH
