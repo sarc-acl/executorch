@@ -7156,3 +7156,56 @@ TEST(
         << error;
   }
 }
+
+// The gather and the multiply address texels as (w, h, c4): an input or output
+// view with a nonstandard axis map (a spatially transposed view) is refused
+// with the layout reason before any node is registered. Before the check, a
+// transposed output view was accepted and a third of the outputs were wrong.
+TEST(
+    VulkanComputeGraphTest,
+    conv2d_im2col_coopmat_refuses_nonstandard_axis_map) {
+  const std::vector<executorch::aten::Half> w(
+      16 * 16 * 3 * 3, executorch::aten::Half(0.0f));
+  const std::vector<executorch::aten::Half> b(16, executorch::aten::Half(1.0f));
+  const std::string want = "nonstandard axis map";
+  for (const bool transpose_input : {true, false}) {
+    SCOPED_TRACE(transpose_input ? "transposed input" : "transposed output");
+    ComputeGraph graph{GraphConfig()};
+    // A [1, 16, 3, 2] texture viewed as [1, 16, 2, 3] with H and W swapped.
+    const ValueRef in = graph.add_tensor(
+        transpose_input ? std::vector<int64_t>{1, 16, 3, 2}
+                        : std::vector<int64_t>{1, 16, 2, 3},
+        vkapi::kHalf,
+        utils::kTexture3D,
+        utils::kChannelsPacked);
+    const ValueRef out = graph.add_tensor(
+        transpose_input ? std::vector<int64_t>{1, 16, 2, 3}
+                        : std::vector<int64_t>{1, 16, 3, 2},
+        vkapi::kHalf,
+        utils::kTexture3D,
+        utils::kChannelsPacked);
+    const ValueRef view = transpose_input ? in : out;
+    graph.virtual_transpose(view, 2, 3);
+    ASSERT_FALSE(graph.has_standard_axis_map(view));
+    ASSERT_EQ(graph.sizes_of(view), (std::vector<int64_t>{1, 16, 2, 3}));
+    ASSERT_EQ(graph.packed_dim_of(view), WHCN::kChannelsDim);
+    const ValueRef weight =
+        graph.add_tensorref({16, 16, 3, 3}, vkapi::kHalf, w.data());
+    const ValueRef bias = graph.add_tensorref({16}, vkapi::kHalf, b.data());
+    const auto reason = conv2d_im2col_coopmat_ineligible(
+        graph,
+        *find_conv2d_pw_coopmat_variant(
+            "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_i2c_half"),
+        in,
+        weight,
+        bias,
+        graph.add_scalar_list<int64_t>({1, 1}),
+        out,
+        /*transposed=*/false);
+    ASSERT_TRUE(reason.has_value());
+    EXPECT_NE(reason->find(want), std::string::npos) << *reason;
+    const std::string error =
+        im2col_coopmat_build_error(graph, bias, {}, in, weight, out);
+    EXPECT_NE(error.find(want), std::string::npos) << error;
+  }
+}

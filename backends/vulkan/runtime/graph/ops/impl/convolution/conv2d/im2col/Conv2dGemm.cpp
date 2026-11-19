@@ -597,6 +597,12 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
       graph.packed_dim_of(out) != WHCN::kChannelsDim) {
     return "input and output are not channels-packed texture3d";
   }
+  // The gather reads and the multiply writes texel (w, h, c4) directly.
+  if (!graph.has_standard_axis_map(in) || !graph.has_standard_axis_map(out)) {
+    return "input or output texture has a nonstandard axis map (e.g. a "
+           "transposed view); the route needs width, height and channels on "
+           "the x, y and z texture axes";
+  }
   const std::vector<int64_t> in_sizes = graph.sizes_of(in);
   const std::vector<int64_t> w_sizes = graph.sizes_of(weight_data);
   if (in_sizes.size() != 4 || in_sizes.at(0) != 1) {
