@@ -111,8 +111,8 @@ void append_conv2d_epilogue_spec_vars(
     const Conv2dEpilogue& epilogue);
 
 // A variant of the conv2d_pw_coopmat shader (conv2d_pw_coopmat.yaml): its
-// cooperative matrix shape, accumulator type, output tile (pixels x channels),
-// subgroup grid and required subgroup size.
+// cooperative matrix shape, output tile (pixels x channels), K step, subgroup
+// grid, required subgroup size, accumulator type and shared-memory layout.
 struct Conv2dPwCoopmatVariant final {
   const char* name;
   uint32_t mma_m;
@@ -120,14 +120,19 @@ struct Conv2dPwCoopmatVariant final {
   uint32_t mma_k;
   uint32_t tile_m;
   uint32_t tile_n;
+  uint32_t tile_k;
   uint32_t sg_grid_x;
   uint32_t sg_grid_y;
   uint32_t subgroup_size;
   bool fp32_accumulation;
+  bool frag_layout;
 
   uint32_t wg_size() const {
     return sg_grid_x * sg_grid_y * subgroup_size;
   }
+
+  // Bytes of shared memory the shader declares.
+  uint32_t shared_bytes() const;
 };
 
 const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants();
@@ -136,18 +141,27 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants();
 const Conv2dPwCoopmatVariant* find_conv2d_pw_coopmat_variant(
     const std::string& name);
 
+// Work group counts {channel tiles, pixel tiles in y, in z} of a dispatch of
+// the variant for N output channels and M output pixels.
+utils::uvec3 conv2d_pw_coopmat_workgroups(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant,
+    const uint32_t N,
+    const uint32_t M);
+
 // Whether the device enumerates the variant's fp16 cooperative matrix shape
-// with its accumulator type at subgroup scope and can require its subgroup
-// size for compute pipelines.
+// with its accumulator type at subgroup scope, can require its subgroup size
+// for compute pipelines, and has room for its work group size and shared
+// memory.
 bool conv2d_pw_coopmat_device_supports(
     ComputeGraph& graph,
     const Conv2dPwCoopmatVariant& variant);
 
 // Whether a pointwise convolution may run on the variant at its current
-// sizes: the device supports the variant, and the convolution is FP16,
+// sizes: the device supports the variant, the convolution is FP16,
 // non-transposed, ungrouped, stride 1, padding 0, batch 1, with more than one
 // output pixel, texture input and output, and packed weights in a buffer (which
-// needs float16_buffers_enabled()).
+// needs float16_buffers_enabled()), and its work group counts fit the device.
 bool conv2d_pw_coopmat_eligible(
     ComputeGraph& graph,
     const Conv2dPwCoopmatVariant& variant,

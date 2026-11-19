@@ -12,13 +12,19 @@
  * MMA_{M,N,K}, WG_TILE_{M,N,K}, SG_GRID_{X,Y} and SUBGROUP_SIZE.
  *
  * Each work group computes a WG_TILE_M (pixels) x WG_TILE_N (channels) output
- * tile, indexed by gl_WorkGroupID (x: channel tile, y: pixel tile). Per K step
+ * tile. gl_WorkGroupID.x is the channel tile; the pixel tile is
+ * gl_WorkGroupID.y + gl_WorkGroupID.z * gl_NumWorkGroups.y, so planes with more
+ * pixel tiles than the device's maximum work group count in y still fit. Per K
+ * step
  * the A tile (input texels) and the B tile (packed 4OC x 4IC weights) are
  * staged into shared memory as fp16, zero-filled past M, N and K, with the next
  * step prefetched into registers during the MMAs (the staging scheme of the
  * linear coopmat kernels). After the K loop the accumulators are stored to
- * shared memory, which the work group reads back to add the bias, apply the
- * epilogue and imageStore the texels inside the output.
+ * shared memory in their own type (fp32 for ACC_FP32), in DRAIN_PASSES passes
+ * of DRAIN_G accumulator row blocks per subgroup so the staged part of the
+ * result tile fits DRAIN_BUDGET_BYTES, and the work group reads them back to add
+ * the bias, apply the epilogue (both in VEC4_T, f32 for ACC_FP32) and imageStore
+ * the texels inside the output. The wrapper defines DRAIN_G and DRAIN_PASSES.
  */
 
 #ifndef CONV2D_PW_COOPMAT_BODY_GLSLH
@@ -59,10 +65,20 @@ const uint BSH_SLICE = WG_TILE_K * B_STRIDE_VEC4;
 #endif
 
 // One pool holds the double-buffered A and B tiles and, after the last MMA,
-// the WG_TILE_M x WG_TILE_N fp16 result tile (row-major).
+// one drain pass of the result: PASS_ROWS rows of WG_TILE_N accumulators,
+// row-major, row (g * SG_GRID_Y + sg.y) * MMA_M + r holding accumulator row
+// block (pass * DRAIN_G + g) of the subgroups in grid row sg.y.
+#ifdef ACC_FP32
+const uint ACC_PER_VEC4 = 4u;
+#else
+const uint ACC_PER_VEC4 = 8u;
+#endif
+const uint BAND_ROWS = SG_GRID_Y * MMA_M;
+const uint PASS_ROWS = BAND_ROWS * DRAIN_G;
+const uint C_ROW_VEC4 = WG_TILE_N / ACC_PER_VEC4;
 const uint BSH_BASE = 2u * ASH_SLICE;
 const uint POOL_AB = 2u * ASH_SLICE + 2u * BSH_SLICE;
-const uint POOL_C = WG_TILE_M * WG_TILE_N / FP16_PER_VEC4;
+const uint POOL_C = PASS_ROWS * C_ROW_VEC4;
 shared uvec4 sh[POOL_AB > POOL_C ? POOL_AB : POOL_C];
 
 // Staging maps. A item = 8 consecutive input channels of one pixel (two
@@ -214,6 +230,66 @@ void mma_step(const uint slice, const uvec2 sg) {
   }
 }
 
+// Stores accumulator row blocks pass * DRAIN_G ... + DRAIN_G - 1 of every
+// subgroup, then writes their output texels. `pass` is a literal at every call,
+// so the result array is indexed with constants.
+void drain_pass(
+    const uint pass,
+    const uvec2 sg,
+    const uint tile_m_start,
+    const uint n4_start,
+    const uint M,
+    const uint N4,
+    const uint W_out) {
+  // Every subgroup is done with the pool (A/B after the K loop, or the
+  // previous pass) before it is overwritten.
+  memoryBarrierShared();
+  barrier();
+  [[unroll]] for (uint g = 0; g < DRAIN_G; ++g) {
+    [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+      const uint c_off = (g * SG_GRID_Y + sg.y) * MMA_M * WG_TILE_N +
+          MMA_N * (MMAS_PER_SG_N * sg.x + j);
+      coopMatStore(
+          result[pass * DRAIN_G + g][j],
+          sh,
+          c_off / ACC_PER_VEC4,
+          C_ROW_VEC4,
+          gl_CooperativeMatrixLayoutRowMajor);
+    }
+  }
+  memoryBarrierShared();
+  barrier();
+
+  const uint TEXELS_PER_ROW = WG_TILE_N / 4u;
+  for (uint t = gl_LocalInvocationID.x; t < PASS_ROWS * TEXELS_PER_ROW;
+       t += WG_SIZE) {
+    const uint cr = t / TEXELS_PER_ROW;
+    const uint lc4 = t % TEXELS_PER_ROW;
+    const uint g = cr / BAND_ROWS;
+    const uint band_row = cr % BAND_ROWS;
+    const uint lr = (band_row / MMA_M) * SG_TILE_M +
+        (pass * DRAIN_G + g) * MMA_M + band_row % MMA_M;
+    const uint m = tile_m_start + lr;
+    const uint n4 = n4_start + lc4;
+    if (m < M && n4 < N4) {
+      const uint h = cr * WG_TILE_N + lc4 * 4u;
+#ifdef ACC_FP32
+      VEC4_T v = uintBitsToFloat(sh[h / ACC_PER_VEC4]);
+#else
+      const uvec4 q = sh[h / ACC_PER_VEC4];
+      const bool hi = (h % ACC_PER_VEC4) != 0u;
+      VEC4_T v = VEC4_T(
+          unpackFloat2x16(hi ? q.z : q.x), unpackFloat2x16(hi ? q.w : q.y));
+#endif
+      v += VEC4_T(texelFetch(t_bias, ivec2(n4, 0), 0));
+      const vec4 scale =
+          has_scale ? texelFetch(t_scale, ivec2(n4, 0), 0) : vec4(1);
+      const ivec3 pos = ivec3(m % W_out, m / W_out, n4);
+      imageStore(t_out, pos, vec4(apply_epilogue(v, pos, scale)));
+    }
+  }
+}
+
 void main() {
   const uvec2 sg = uvec2(gl_SubgroupID % SG_GRID_X, gl_SubgroupID / SG_GRID_X);
 
@@ -222,7 +298,13 @@ void main() {
   const uint N4 = uint(div_up_4(out_sizes.z));
   const uint K4 = uint(div_up_4(in_sizes.z));
 
-  const uint tile_m_start = WG_TILE_M * gl_WorkGroupID.y;
+  // Uniform per work group, so the early return precedes every barrier of the
+  // work group alike.
+  const uint tile_m = gl_WorkGroupID.y + gl_WorkGroupID.z * gl_NumWorkGroups.y;
+  if (tile_m * WG_TILE_M >= M) {
+    return;
+  }
+  const uint tile_m_start = WG_TILE_M * tile_m;
   const uint tile_n_start = WG_TILE_N * gl_WorkGroupID.x;
   const uint n4_start = tile_n_start / 4u;
   const uint num_k_steps = (4u * K4 + WG_TILE_K - 1u) / WG_TILE_K;
@@ -265,50 +347,17 @@ void main() {
   barrier();
   mma_step(step % 2u, sg);
 
-  // Every subgroup is done reading A and B before the result tile overwrites
-  // them.
-  memoryBarrierShared();
-  barrier();
-  [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
-    [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
-      const uint c_off = (sg.y * SG_TILE_M + i * MMA_M) * WG_TILE_N +
-          MMA_N * (MMAS_PER_SG_N * sg.x + j);
-      coopMatStore(
-          coopmat<
-              float16_t,
-              gl_ScopeSubgroup,
-              MMA_M,
-              MMA_N,
-              gl_MatrixUseAccumulator>(result[i][j]),
-          sh,
-          c_off / FP16_PER_VEC4,
-          WG_TILE_N / FP16_PER_VEC4,
-          gl_CooperativeMatrixLayoutRowMajor);
-    }
-  }
-  memoryBarrierShared();
-  barrier();
-
-  const uint TEXELS_PER_ROW = WG_TILE_N / 4u;
-  for (uint t = gl_LocalInvocationID.x; t < WG_TILE_M * TEXELS_PER_ROW;
-       t += WG_SIZE) {
-    const uint lr = t / TEXELS_PER_ROW;
-    const uint lc4 = t % TEXELS_PER_ROW;
-    const uint m = tile_m_start + lr;
-    const uint n4 = n4_start + lc4;
-    if (m < M && n4 < N4) {
-      const uint h = lr * WG_TILE_N + lc4 * 4u;
-      const uvec4 q = sh[h / FP16_PER_VEC4];
-      const bool hi = (h % FP16_PER_VEC4) != 0u;
-      VEC4_T v = VEC4_T(
-          unpackFloat2x16(hi ? q.z : q.x), unpackFloat2x16(hi ? q.w : q.y));
-      v += VEC4_T(texelFetch(t_bias, ivec2(n4, 0), 0));
-      const vec4 scale =
-          has_scale ? texelFetch(t_scale, ivec2(n4, 0), 0) : vec4(1);
-      const ivec3 pos = ivec3(m % W_out, m / W_out, n4);
-      imageStore(t_out, pos, apply_epilogue(v, pos, scale));
-    }
-  }
+  drain_pass(0u, sg, tile_m_start, n4_start, M, N4, W_out);
+#if DRAIN_PASSES > 1
+  drain_pass(1u, sg, tile_m_start, n4_start, M, N4, W_out);
+#endif
+#if DRAIN_PASSES > 2
+  drain_pass(2u, sg, tile_m_start, n4_start, M, N4, W_out);
+  drain_pass(3u, sg, tile_m_start, n4_start, M, N4, W_out);
+#endif
+#if DRAIN_PASSES != 1 && DRAIN_PASSES != 2 && DRAIN_PASSES != 4
+#error "DRAIN_PASSES must be 1, 2 or 4"
+#endif
 }
 
 #endif // CONV2D_PW_COOPMAT_BODY_GLSLH

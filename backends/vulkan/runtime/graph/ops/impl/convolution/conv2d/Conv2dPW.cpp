@@ -114,55 +114,56 @@ bool is_wide_tile_shader(const vkapi::ShaderInfo& shader) {
 //
 
 const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
-  // {name, mma_m, mma_n, mma_k, tile_m, tile_n, sg_grid_x, sg_grid_y,
-  //  subgroup_size, fp32_accumulation}; must match conv2d_pw_coopmat.yaml.
+  // {name, mma_m, mma_n, mma_k, tile_m, tile_n, tile_k, sg_grid_x,
+  //  sg_grid_y, subgroup_size, fp32_accumulation, frag_layout}; must match
+  // conv2d_pw_coopmat.yaml.
   // clang-format off
   static const std::vector<Conv2dPwCoopmatVariant> variants = {
       // Intel Xe2
-      {"conv2d_pw_coopmat_xe2_t16x32_f16_half", 8, 16, 16, 16, 32, 1, 1, 16, false},
-      {"conv2d_pw_coopmat_xe2_t16x32_f32_half", 8, 16, 16, 16, 32, 1, 1, 16, true},
-      {"conv2d_pw_coopmat_xe2_t16x64_f16_half", 8, 16, 16, 16, 64, 1, 1, 16, false},
-      {"conv2d_pw_coopmat_xe2_t16x64_f32_half", 8, 16, 16, 16, 64, 1, 1, 16, true},
-      {"conv2d_pw_coopmat_xe2_t32x32_f16_half", 8, 16, 16, 32, 32, 1, 1, 16, false},
-      {"conv2d_pw_coopmat_xe2_t32x32_f32_half", 8, 16, 16, 32, 32, 1, 1, 16, true},
-      {"conv2d_pw_coopmat_xe2_t32x64_f16_half", 8, 16, 16, 32, 64, 2, 1, 16, false},
-      {"conv2d_pw_coopmat_xe2_t32x64_f32_half", 8, 16, 16, 32, 64, 2, 1, 16, true},
-      {"conv2d_pw_coopmat_xe2_t64x32_f16_half", 8, 16, 16, 64, 32, 1, 2, 16, false},
-      {"conv2d_pw_coopmat_xe2_t64x32_f32_half", 8, 16, 16, 64, 32, 1, 2, 16, true},
-      {"conv2d_pw_coopmat_xe2_t64x64_f16_half", 8, 16, 16, 64, 64, 2, 2, 16, false},
-      {"conv2d_pw_coopmat_xe2_t64x64_f32_half", 8, 16, 16, 64, 64, 2, 2, 16, true},
-      {"conv2d_pw_coopmat_xe2_t128x128_f16_half", 8, 16, 16, 128, 128, 4, 4, 16, false},
-      {"conv2d_pw_coopmat_xe2_t128x128_f32_half", 8, 16, 16, 128, 128, 4, 4, 16, true},
+      {"conv2d_pw_coopmat_xe2_t16x32_f16_half", 8, 16, 16, 16, 32, 16, 1, 1, 16, false, true},
+      {"conv2d_pw_coopmat_xe2_t16x32_f32_half", 8, 16, 16, 16, 32, 16, 1, 1, 16, true, true},
+      {"conv2d_pw_coopmat_xe2_t16x64_f16_half", 8, 16, 16, 16, 64, 16, 1, 1, 16, false, true},
+      {"conv2d_pw_coopmat_xe2_t16x64_f32_half", 8, 16, 16, 16, 64, 16, 1, 1, 16, true, true},
+      {"conv2d_pw_coopmat_xe2_t32x32_f16_half", 8, 16, 16, 32, 32, 16, 1, 1, 16, false, true},
+      {"conv2d_pw_coopmat_xe2_t32x32_f32_half", 8, 16, 16, 32, 32, 16, 1, 1, 16, true, true},
+      {"conv2d_pw_coopmat_xe2_t32x64_f16_half", 8, 16, 16, 32, 64, 16, 2, 1, 16, false, true},
+      {"conv2d_pw_coopmat_xe2_t32x64_f32_half", 8, 16, 16, 32, 64, 16, 2, 1, 16, true, true},
+      {"conv2d_pw_coopmat_xe2_t64x32_f16_half", 8, 16, 16, 64, 32, 16, 1, 2, 16, false, true},
+      {"conv2d_pw_coopmat_xe2_t64x32_f32_half", 8, 16, 16, 64, 32, 16, 1, 2, 16, true, true},
+      {"conv2d_pw_coopmat_xe2_t64x64_f16_half", 8, 16, 16, 64, 64, 16, 2, 2, 16, false, true},
+      {"conv2d_pw_coopmat_xe2_t64x64_f32_half", 8, 16, 16, 64, 64, 16, 2, 2, 16, true, true},
+      {"conv2d_pw_coopmat_xe2_t128x128_f16_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true},
+      {"conv2d_pw_coopmat_xe2_t128x128_f32_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, true, true},
       // AMD
-      {"conv2d_pw_coopmat_amd_t16x32_f16_half", 16, 16, 16, 16, 32, 1, 1, 32, false},
-      {"conv2d_pw_coopmat_amd_t16x32_f32_half", 16, 16, 16, 16, 32, 1, 1, 32, true},
-      {"conv2d_pw_coopmat_amd_t16x64_f16_half", 16, 16, 16, 16, 64, 1, 1, 32, false},
-      {"conv2d_pw_coopmat_amd_t16x64_f32_half", 16, 16, 16, 16, 64, 1, 1, 32, true},
-      {"conv2d_pw_coopmat_amd_t32x32_f16_half", 16, 16, 16, 32, 32, 1, 1, 32, false},
-      {"conv2d_pw_coopmat_amd_t32x32_f32_half", 16, 16, 16, 32, 32, 1, 1, 32, true},
-      {"conv2d_pw_coopmat_amd_t32x64_f16_half", 16, 16, 16, 32, 64, 1, 1, 32, false},
-      {"conv2d_pw_coopmat_amd_t32x64_f32_half", 16, 16, 16, 32, 64, 1, 1, 32, true},
-      {"conv2d_pw_coopmat_amd_t64x32_f16_half", 16, 16, 16, 64, 32, 1, 1, 32, false},
-      {"conv2d_pw_coopmat_amd_t64x32_f32_half", 16, 16, 16, 64, 32, 1, 1, 32, true},
-      {"conv2d_pw_coopmat_amd_t64x64_f16_half", 16, 16, 16, 64, 64, 2, 1, 32, false},
-      {"conv2d_pw_coopmat_amd_t64x64_f32_half", 16, 16, 16, 64, 64, 2, 1, 32, true},
-      {"conv2d_pw_coopmat_amd_t128x128_f16_half", 16, 16, 16, 128, 128, 4, 2, 32, false},
-      {"conv2d_pw_coopmat_amd_t128x128_f32_half", 16, 16, 16, 128, 128, 4, 2, 32, true},
+      {"conv2d_pw_coopmat_amd_t16x32_f16_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false},
+      {"conv2d_pw_coopmat_amd_t16x32_f32_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, true, false},
+      {"conv2d_pw_coopmat_amd_t16x64_f16_half", 16, 16, 16, 16, 64, 32, 1, 1, 32, false, false},
+      {"conv2d_pw_coopmat_amd_t16x64_f32_half", 16, 16, 16, 16, 64, 32, 1, 1, 32, true, false},
+      {"conv2d_pw_coopmat_amd_t32x32_f16_half", 16, 16, 16, 32, 32, 32, 1, 1, 32, false, false},
+      {"conv2d_pw_coopmat_amd_t32x32_f32_half", 16, 16, 16, 32, 32, 32, 1, 1, 32, true, false},
+      {"conv2d_pw_coopmat_amd_t32x64_f16_half", 16, 16, 16, 32, 64, 32, 1, 1, 32, false, false},
+      {"conv2d_pw_coopmat_amd_t32x64_f32_half", 16, 16, 16, 32, 64, 32, 1, 1, 32, true, false},
+      {"conv2d_pw_coopmat_amd_t64x32_f16_half", 16, 16, 16, 64, 32, 32, 1, 1, 32, false, false},
+      {"conv2d_pw_coopmat_amd_t64x32_f32_half", 16, 16, 16, 64, 32, 32, 1, 1, 32, true, false},
+      {"conv2d_pw_coopmat_amd_t64x64_f16_half", 16, 16, 16, 64, 64, 32, 2, 1, 32, false, false},
+      {"conv2d_pw_coopmat_amd_t64x64_f32_half", 16, 16, 16, 64, 64, 32, 2, 1, 32, true, false},
+      {"conv2d_pw_coopmat_amd_t128x128_f16_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, false, false},
+      {"conv2d_pw_coopmat_amd_t128x128_f32_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false},
       // NVIDIA
-      {"conv2d_pw_coopmat_nvidia_t16x32_f16_half", 16, 16, 16, 16, 32, 1, 1, 32, false},
-      {"conv2d_pw_coopmat_nvidia_t16x32_f32_half", 16, 16, 16, 16, 32, 1, 1, 32, true},
-      {"conv2d_pw_coopmat_nvidia_t16x64_f16_half", 16, 16, 16, 16, 64, 1, 1, 32, false},
-      {"conv2d_pw_coopmat_nvidia_t16x64_f32_half", 16, 16, 16, 16, 64, 1, 1, 32, true},
-      {"conv2d_pw_coopmat_nvidia_t32x32_f16_half", 16, 16, 16, 32, 32, 1, 1, 32, false},
-      {"conv2d_pw_coopmat_nvidia_t32x32_f32_half", 16, 16, 16, 32, 32, 1, 1, 32, true},
-      {"conv2d_pw_coopmat_nvidia_t32x64_f16_half", 16, 16, 16, 32, 64, 1, 1, 32, false},
-      {"conv2d_pw_coopmat_nvidia_t32x64_f32_half", 16, 16, 16, 32, 64, 1, 1, 32, true},
-      {"conv2d_pw_coopmat_nvidia_t64x32_f16_half", 16, 16, 16, 64, 32, 1, 1, 32, false},
-      {"conv2d_pw_coopmat_nvidia_t64x32_f32_half", 16, 16, 16, 64, 32, 1, 1, 32, true},
-      {"conv2d_pw_coopmat_nvidia_t64x64_f16_half", 16, 16, 16, 64, 64, 2, 1, 32, false},
-      {"conv2d_pw_coopmat_nvidia_t64x64_f32_half", 16, 16, 16, 64, 64, 2, 1, 32, true},
-      {"conv2d_pw_coopmat_nvidia_t128x128_f16_half", 16, 16, 16, 128, 128, 4, 2, 32, false},
-      {"conv2d_pw_coopmat_nvidia_t128x128_f32_half", 16, 16, 16, 128, 128, 4, 2, 32, true},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f16_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f32_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, true, false},
+      {"conv2d_pw_coopmat_nvidia_t16x64_f16_half", 16, 16, 16, 16, 64, 16, 1, 1, 32, false, false},
+      {"conv2d_pw_coopmat_nvidia_t16x64_f32_half", 16, 16, 16, 16, 64, 16, 1, 1, 32, true, false},
+      {"conv2d_pw_coopmat_nvidia_t32x32_f16_half", 16, 16, 16, 32, 32, 16, 1, 1, 32, false, false},
+      {"conv2d_pw_coopmat_nvidia_t32x32_f32_half", 16, 16, 16, 32, 32, 16, 1, 1, 32, true, false},
+      {"conv2d_pw_coopmat_nvidia_t32x64_f16_half", 16, 16, 16, 32, 64, 16, 1, 1, 32, false, false},
+      {"conv2d_pw_coopmat_nvidia_t32x64_f32_half", 16, 16, 16, 32, 64, 16, 1, 1, 32, true, false},
+      {"conv2d_pw_coopmat_nvidia_t64x32_f16_half", 16, 16, 16, 64, 32, 16, 1, 1, 32, false, false},
+      {"conv2d_pw_coopmat_nvidia_t64x32_f32_half", 16, 16, 16, 64, 32, 16, 1, 1, 32, true, false},
+      {"conv2d_pw_coopmat_nvidia_t64x64_f16_half", 16, 16, 16, 64, 64, 16, 2, 1, 32, false, false},
+      {"conv2d_pw_coopmat_nvidia_t64x64_f32_half", 16, 16, 16, 64, 64, 16, 2, 1, 32, true, false},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f16_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, false, false},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f32_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false},
   };
   // clang-format on
   return variants;
@@ -176,6 +177,44 @@ const Conv2dPwCoopmatVariant* find_conv2d_pw_coopmat_variant(
     }
   }
   return nullptr;
+}
+
+uint32_t Conv2dPwCoopmatVariant::shared_bytes() const {
+  // Mirrors the shared pool of conv2d_pw_coopmat_body.glslh and the drain
+  // pass split of conv2d_pw_coopmat.glsl (32 KiB budget for the staged rows).
+  constexpr uint32_t kVec4Bytes = 16u;
+  constexpr uint32_t kDrainBudgetBytes = 32768u;
+  const uint32_t a_slice =
+      frag_layout ? tile_m * (tile_k / 8u) : tile_m * ((tile_k + 8u) / 8u);
+  const uint32_t b_slice =
+      frag_layout ? tile_k * (tile_n / 8u) : tile_k * ((tile_n + 8u) / 8u);
+  const uint32_t pool_ab = 2u * a_slice + 2u * b_slice;
+  const uint32_t acc_bytes = fp32_accumulation ? 4u : 2u;
+  const uint32_t mmas_m = tile_m / sg_grid_y / mma_m;
+  uint32_t drain_g = 1u;
+  for (uint32_t g = 2u; g <= mmas_m; g *= 2u) {
+    if (mmas_m % g == 0u &&
+        sg_grid_y * mma_m * g * tile_n * acc_bytes <= kDrainBudgetBytes) {
+      drain_g = g;
+    }
+  }
+  const uint32_t pool_c =
+      sg_grid_y * mma_m * drain_g * tile_n * acc_bytes / kVec4Bytes;
+  return (pool_ab > pool_c ? pool_ab : pool_c) * kVec4Bytes;
+}
+
+utils::uvec3 conv2d_pw_coopmat_workgroups(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant,
+    const uint32_t N,
+    const uint32_t M) {
+  // Pixel tiles fill y up to the device limit and continue in z; the shader
+  // reads the tile as gl_WorkGroupID.y + gl_WorkGroupID.z * gl_NumWorkGroups.y.
+  const uint32_t m_tiles = utils::div_up(M, variant.tile_m);
+  const uint32_t max_y =
+      graph.context()->adapter_ptr()->max_compute_workgroup_count()[1];
+  const uint32_t y = m_tiles < max_y ? m_tiles : max_y;
+  return {utils::div_up(N, variant.tile_n), y, utils::div_up(m_tiles, y)};
 }
 
 bool conv2d_pw_coopmat_device_supports(
@@ -197,7 +236,9 @@ bool conv2d_pw_coopmat_device_supports(
           acc) ||
       !adapter->supports_required_subgroup_size_for_compute() ||
       variant.subgroup_size < adapter->min_subgroup_size() ||
-      variant.subgroup_size > adapter->max_subgroup_size()) {
+      variant.subgroup_size > adapter->max_subgroup_size() ||
+      variant.wg_size() > adapter->max_compute_workgroup_invocations() ||
+      variant.shared_bytes() > adapter->max_compute_shared_memory_size()) {
     return false;
   }
   for (const uint32_t capability :
@@ -248,9 +289,17 @@ bool conv2d_pw_coopmat_eligible(
       padding_list->at(0) != 0 || padding_list->at(1) != 0) {
     return false;
   }
-  if (int64_t(graph.size_at<int32_t>(-1, out)) *
-          graph.size_at<int32_t>(-2, out) <=
-      1) {
+  const uint32_t M =
+      graph.size_at<uint32_t>(-1, out) * graph.size_at<uint32_t>(-2, out);
+  if (M <= 1u) {
+    return false;
+  }
+  const utils::uvec3 grid = conv2d_pw_coopmat_workgroups(
+      graph, variant, graph.size_at<uint32_t>(-3, out), M);
+  const utils::uvec3 max_count =
+      graph.context()->adapter_ptr()->max_compute_workgroup_count();
+  if (grid[0] > max_count[0] || grid[1] > max_count[1] ||
+      grid[2] > max_count[2]) {
     return false;
   }
   return conv2d_pw_coopmat_device_supports(graph, variant);
@@ -341,11 +390,10 @@ GlobalWorkGrid pick_conv2d_pw_tiled_gwg(
   // One work group per output tile, channel tiles on x.
   if (const Conv2dPwCoopmatVariant* const variant =
           find_conv2d_pw_coopmat_variant(shader.kernel_name)) {
+    const utils::uvec3 grid =
+        conv2d_pw_coopmat_workgroups(*graph, *variant, C_out, W * H);
     return GlobalWorkGrid(
-        {utils::div_up(C_out, variant->tile_n) * variant->wg_size(),
-         utils::div_up(W * H, variant->tile_m),
-         1u},
-        kExplicitWorkGrid);
+        {grid[0] * variant->wg_size(), grid[1], grid[2]}, kExplicitWorkGrid);
   }
   uint32_t N4 = utils::div_up_4(C_out);
   // Tile sizes must match conv2d_pw_tiled.yaml.

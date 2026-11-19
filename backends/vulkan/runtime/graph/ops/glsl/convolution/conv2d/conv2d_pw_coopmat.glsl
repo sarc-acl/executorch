@@ -26,8 +26,28 @@
 #extension GL_EXT_control_flow_attributes : enable
 
 #define PRECISION ${PRECISION}
-#define T ${buffer_scalar_type(DTYPE)}
-#define VEC4_T ${buffer_gvec_type(DTYPE, 4)}
+
+// Accumulator type, also the type of the bias add and the epilogue: fp32
+// accumulation keeps fp32 until the output store.
+$if ACC_TYPE == "f32":
+  #define ACC_FP32
+  #define ACC_T float
+  #define VEC4_T vec4
+$else:
+  #define ACC_T float16_t
+  #define VEC4_T ${buffer_gvec_type(DTYPE, 4)}
+
+// The result tile is staged through shared memory in DRAIN_PASSES passes of
+// DRAIN_G accumulator row blocks per subgroup, the fewest passes whose staged
+// rows fit DRAIN_BUDGET_BYTES (32 KiB, so with the A/B pool every variant stays
+// within the 48 KiB of the smallest measured device limit).
+$DRAIN_BUDGET_BYTES = 32768
+$ACC_BYTES = 4 if ACC_TYPE == "f32" else 2
+$MMAS_M = WG_TILE_M // SG_GRID_Y // MMA_M
+$DRAIN_G = max([g for g in (1, 2, 4, 8, 16) if MMAS_M % g == 0 and SG_GRID_Y * MMA_M * g * WG_TILE_N * ACC_BYTES <= DRAIN_BUDGET_BYTES])
+#define DRAIN_BUDGET_BYTES ${DRAIN_BUDGET_BYTES}
+#define DRAIN_G ${DRAIN_G}
+#define DRAIN_PASSES ${MMAS_M // DRAIN_G}
 
 ${define_required_extensions(STORAGE, DTYPE)}
 ${define_required_extensions("buffer", DTYPE)}
@@ -69,10 +89,6 @@ ${layout_declare_spec_const(C, "int", "residual_op", "0")}
 
 #include "conv2d_epilogue.glslh"
 
-$if ACC_TYPE == "f32":
-  #define ACC_T float
-$else:
-  #define ACC_T float16_t
 
 $if FRAG_LAYOUT:
   #define FRAG_LAYOUT
