@@ -228,6 +228,79 @@ PRECISION = [
 ]
 
 
+K_STEP = {"xe2": 16, "amd": 32, "nvidia": 16}
+# Phrases of the construction-time refusals in Conv2dPW.cpp, per variant kind.
+SKIP_PHRASE = {
+    "al": "not a multiple of the variant's",
+    "sk": "fewer than two K steps",
+    "epi0": "has a bias, activation, residual or scale",
+}
+
+
+def variant_kind(name):
+    """Family, N tile, K step, option suffixes and K slices of a variant name
+    conv2d_pw_coopmat_<family>_t<M>x<N>_<acc><options>_half."""
+    tokens = name.removeprefix("conv2d_pw_coopmat_").removesuffix("_half").split("_")
+    family, tile = tokens[0], tokens[1]
+    options = set(tokens[3:])
+    slices = next((int(t[2:]) for t in options if t.startswith("sk")), 1)
+    return {
+        "family": family,
+        "tile_n": int(tile.split("x")[1]),
+        "k_step": K_STEP[family],
+        "options": options,
+        "slices": slices,
+    }
+
+
+def split_k_ok(K, k_step, slices):
+    """Every slice of ceil(steps / slices) K steps, the last one shorter, holds
+    at least two K steps (design D6)."""
+    steps = -(-K // k_step)
+    q = -(-steps // slices)
+    return q >= 2 and steps - (slices - 1) * q >= 2
+
+
+def expected_skip(name, N, K, bias, op):
+    """The refusal phrase when the variant kind must report the convolution as
+    unsupported at graph construction, else None: aligned-only variants on
+    channels that are not multiples of their K step and N tile, split-K
+    variants on a K too short for their slices, _epi0 on a convolution with a
+    bias or a fused epilogue."""
+    kind = variant_kind(name)
+    if "al" in kind["options"] and (K % kind["k_step"] or N % kind["tile_n"]):
+        return SKIP_PHRASE["al"]
+    if kind["slices"] > 1 and not split_k_ok(K, kind["k_step"], kind["slices"]):
+        return SKIP_PHRASE["sk"]
+    if "epi0" in kind["options"] and (bias or op != "conv"):
+        return SKIP_PHRASE["epi0"]
+    return None
+
+
+def expected_skips(build):
+    """{case name: {variant: phrase}} of the variant rows of a case file that
+    must SKIP."""
+    def skips(variants):
+        out = {}
+        for case in build(variants):
+            names = case.get("sweep_variables", {}).get("v_VARIANT", [])
+            if not names:
+                continue
+            args = case["args_sweep"][0]
+            N, K = args[1]["tensor"]["sizes"][0], args[0]["tensor"]["sizes"][1]
+            bias = args[2] is not None
+            op = {v: k for k, v in OPERATORS.items()}[case["operator"]]
+            row = {}
+            for v in names:
+                if (phrase := expected_skip(v, N, K, bias, op)):
+                    row[v] = phrase
+            if row:
+                out[case["name"]] = row
+        return out
+
+    return skips
+
+
 def fp32_variants(variants):
     return [v for v in variants if "_f32_" in v]
 
@@ -370,6 +443,7 @@ FILES = {
     "pw_coopmat_resnet50.json": performance("resnet50", RESNET50),
     "pw_coopmat_large.json": performance("large", upstream_fp16_shapes()),
 }
+FILES["pw_coopmat_expected_skips.json"] = expected_skips(correctness)
 
 
 def main():
