@@ -99,6 +99,7 @@ name; tensor and benchmark settings belong in the JSON file.
 | `--error_mode=report\|throw\|skip` | `report` | Report failures and continue, stop on the first failure, or disable validation. Unsupported cases report `SKIP`. |
 | `--validate_specs` | `false` | Audit schemas and registrations without allocating case tensors or running GPU work. |
 | `--validation_only` | `false` | Run correctness checks without calibration or timing passes. Requires validation enabled. |
+| `--time_validated_only` | `false` | Time only cases whose validation passed. A failed case keeps its validation report, gets `timing_skipped`, and has no measurements. Requires `--validation_mode=all` and `--error_mode=report`. |
 | `--fault_rel=<r>` | none | Test hook: scale every GPU output by `1 + r` before validation. Reports record `fault_rel`. |
 | `--table_name_max_chars=<N>` | `32` | Limit shader/operator names in table output; `0` disables truncation. |
 | `--table_inputs_max_chars=<N>` | `64` | Limit table input strings; `0` disables truncation. |
@@ -1077,10 +1078,13 @@ changing the variants (it needs PyYAML), or with `--check` to test that the file
 are current. Every shape has a baseline definition with routes `auto` and
 `pw_tiled_4x8` and a `pw_coopmat` definition swept over all variants with
 `sweep_variables`, so a device runs its own family and skips the others.
+fp32-accumulation variants keep fp32 through the bias and the epilogue;
+fp16-accumulation variants round them to fp16, like the tiled shaders.
 
 | Collection | Shapes (M = output pixels, N = output channels, K = input channels) |
 | --- | --- |
-| `pw_coopmat_correctness.json` | Aligned, 7x7 and 14x14 planes, N = 24, K = 40, no bias, clamp, and residual epilogues. |
+| `pw_coopmat_correctness.json` | Aligned, 7x7 and 14x14 planes, N = 24, K = 40, no bias, clamp, and residual epilogues; precision regressions (bias, residual and ordered cancellation) for the fp32-accumulation variants; a 1025 x 1024 plane with more 16-pixel tiles than 65535. |
+| `pw_coopmat_fp16_accumulation_limits.json` | The precision regressions for the fp16-accumulation variants and the tiled shaders, which round partial sums to fp16 and are expected to fail them. |
 | `pw_coopmat_mobilenet.json` | MobileNetV2 and V3 Small: (49, 160, 960), (196, 64, 384), (196, 96, 576), (49, 96, 576). |
 | `pw_coopmat_resnet50.json` | The twelve stride-1 1x1 layers of ResNet-50 at 224 x 224 input. |
 | `pw_coopmat_large.json` | The FP16 shapes of `pw_performance.json`. |

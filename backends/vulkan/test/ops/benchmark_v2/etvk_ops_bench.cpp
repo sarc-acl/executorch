@@ -34,6 +34,12 @@ DEFINE_bool(
     validation_only,
     false,
     "Execute correctness checks without calibration or latency measurements.");
+DEFINE_bool(
+    time_validated_only,
+    false,
+    "Measure latency only for cases whose validation passed; a failed case "
+    "keeps its validation report, gets timing_skipped and no measurements. "
+    "Requires validation_mode=all and error_mode=report.");
 DEFINE_string(
     validation_mode,
     "all",
@@ -119,6 +125,12 @@ int main(int argc, char* argv[]) {
       throw std::invalid_argument(
           "validation_only requires validation_mode=all or first and "
           "error_mode=report or throw");
+    }
+    if (FLAGS_time_validated_only &&
+        (FLAGS_validation_mode != "all" || FLAGS_error_mode != "report")) {
+      throw std::invalid_argument(
+          "time_validated_only requires validation_mode=all and "
+          "error_mode=report");
     }
     if (!FLAGS_fault_rel.empty()) {
       size_t parsed = 0;
@@ -258,7 +270,18 @@ int main(int argc, char* argv[]) {
           }
         }
       }
-      if (FLAGS_validation_only) {
+      const bool skip_timing = FLAGS_time_validated_only &&
+          (!validation_enabled || validation.at("status") != "PASS");
+      if (FLAGS_validation_only || skip_timing) {
+        if (skip_timing) {
+          if (validation.is_null()) {
+            validation = {{"status", "FAIL"}, {"error", "not validated"}};
+          }
+          if (validation_result.is_null()) {
+            validation_result = error_report(config, validation.dump());
+          }
+          validation_result["timing_skipped"] = "validation did not pass";
+        }
         if (validation_result.is_null()) {
           validation_result = error_report(config, validation.dump());
         }
