@@ -593,7 +593,7 @@ def diag_checks(variants):
 GUARD = 7.0
 
 
-def guard_case(variant, tile_m, tile_n, threads, label, M, N, K, plane):
+def guard_case(variant, tile_m, tile_n, threads, label, M, N, K, plane, image_input=False):
     """A raw shader case of an aligned-only variant whose output texture is
     larger than the convolution's output (out_sizes): GUARD rows below the plane
     and one 4-channel texel past N, filled with GUARD. The reference
@@ -622,7 +622,14 @@ def guard_case(variant, tile_m, tile_n, threads, label, M, N, K, plane):
         **VALIDATION_TIMING,
         "bindings": [
             tex("out", [1, N + 4, H + 16, W], {"fill": GUARD}, access="write"),
-            tex("in", [1, K, H, W], {"rand_uniform_float": [-1, 1]}),
+            # A storage-image input must be in VK_IMAGE_LAYOUT_GENERAL, which
+            # read-write access gives it.
+            tex(
+                "in",
+                [1, K, H, W],
+                {"rand_uniform_float": [-1, 1]},
+                **({"access": "read_write"} if image_input else {}),
+            ),
             {
                 "buffer": {
                     "name": "w",
@@ -639,7 +646,13 @@ def guard_case(variant, tile_m, tile_n, threads, label, M, N, K, plane):
                     "data": {"rand_uniform_float": [-1, 1]},
                 }
             },
-            {"texture3d": {"ref": "in"}},
+            # The unused residual binding: the input, or for a storage-image
+            # input (which cannot also be bound sampled) a separate texture.
+            (
+                tex("res", [1, N, H, W], {"fill": 0})
+                if image_input
+                else {"texture3d": {"ref": "in"}}
+            ),
             {"texture2d": {"ref": "bias"}},
             {"meta_ubo": "in", "field": "sizes"},
             {"uniform": [{"dtype": "int32", "data": [W, H, N, 1]}]},
@@ -688,7 +701,7 @@ def guard_cases(family, variants):
             cases.append(
                 guard_case(
                     p["NAME"], p["WG_TILE_M"], p["WG_TILE_N"], threads,
-                    label, M, N, K, plane,
+                    label, M, N, K, plane, bool(p.get("IMG_INPUT")),
                 )
             )
     return cases

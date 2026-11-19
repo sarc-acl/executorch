@@ -383,10 +383,10 @@
     "benchmark_runs": 1,
     "bindings": [
       {"texture3d": {"name": "out", "sizes": [1, 68, 23, 9], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
-      {"texture3d": {"name": "in", "sizes": [1, 64, 7, 9], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"name": "in", "sizes": [1, 64, 7, 9], "dtype": "float16", "layout": "channels", "access": "read_write", "data": {"rand_uniform_float": [-1, 1]}}},
       {"buffer": {"name": "w", "sizes": [16, 256], "dtype": "float16", "data": {"rand_uniform_float": [-0.125, 0.125]}}},
       {"texture2d": {"name": "bias", "sizes": [1, 64], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
-      {"texture3d": {"ref": "in"}},
+      {"texture3d": {"name": "res", "sizes": [1, 64, 7, 9], "dtype": "float16", "layout": "channels", "data": {"fill": 0}}},
       {"texture2d": {"ref": "bias"}},
       {"meta_ubo": "in", "field": "sizes"},
       {"uniform": [{"dtype": "int32", "data": [9, 7, 64, 1]}]}
@@ -414,10 +414,10 @@
     "benchmark_runs": 1,
     "bindings": [
       {"texture3d": {"name": "out", "sizes": [1, 132, 21, 13], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
-      {"texture3d": {"name": "in", "sizes": [1, 96, 5, 13], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"name": "in", "sizes": [1, 96, 5, 13], "dtype": "float16", "layout": "channels", "access": "read_write", "data": {"rand_uniform_float": [-1, 1]}}},
       {"buffer": {"name": "w", "sizes": [24, 512], "dtype": "float16", "data": {"rand_uniform_float": [-0.1021, 0.1021]}}},
       {"texture2d": {"name": "bias", "sizes": [1, 128], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
-      {"texture3d": {"ref": "in"}},
+      {"texture3d": {"name": "res", "sizes": [1, 128, 5, 13], "dtype": "float16", "layout": "channels", "data": {"fill": 0}}},
       {"texture2d": {"ref": "bias"}},
       {"meta_ubo": "in", "field": "sizes"},
       {"uniform": [{"dtype": "int32", "data": [13, 5, 128, 1]}]}
@@ -445,10 +445,10 @@
     "benchmark_runs": 1,
     "bindings": [
       {"texture3d": {"name": "out", "sizes": [1, 68, 23, 9], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
-      {"texture3d": {"name": "in", "sizes": [1, 64, 7, 9], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"name": "in", "sizes": [1, 64, 7, 9], "dtype": "float16", "layout": "channels", "access": "read_write", "data": {"rand_uniform_float": [-1, 1]}}},
       {"buffer": {"name": "w", "sizes": [16, 256], "dtype": "float16", "data": {"rand_uniform_float": [-0.125, 0.125]}}},
       {"texture2d": {"name": "bias", "sizes": [1, 64], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
-      {"texture3d": {"ref": "in"}},
+      {"texture3d": {"name": "res", "sizes": [1, 64, 7, 9], "dtype": "float16", "layout": "channels", "data": {"fill": 0}}},
       {"texture2d": {"ref": "bias"}},
       {"meta_ubo": "in", "field": "sizes"},
       {"uniform": [{"dtype": "int32", "data": [9, 7, 64, 1]}]}
@@ -476,10 +476,10 @@
     "benchmark_runs": 1,
     "bindings": [
       {"texture3d": {"name": "out", "sizes": [1, 132, 21, 13], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
-      {"texture3d": {"name": "in", "sizes": [1, 96, 5, 13], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"name": "in", "sizes": [1, 96, 5, 13], "dtype": "float16", "layout": "channels", "access": "read_write", "data": {"rand_uniform_float": [-1, 1]}}},
       {"buffer": {"name": "w", "sizes": [24, 512], "dtype": "float16", "data": {"rand_uniform_float": [-0.1021, 0.1021]}}},
       {"texture2d": {"name": "bias", "sizes": [1, 128], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
-      {"texture3d": {"ref": "in"}},
+      {"texture3d": {"name": "res", "sizes": [1, 128, 5, 13], "dtype": "float16", "layout": "channels", "data": {"fill": 0}}},
       {"texture2d": {"ref": "bias"}},
       {"meta_ubo": "in", "field": "sizes"},
       {"uniform": [{"dtype": "int32", "data": [13, 5, 128, 1]}]}
