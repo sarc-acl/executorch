@@ -6717,10 +6717,11 @@ TEST(VulkanComputeGraphTest, conv2d_gemm_weight_buffer_round_trip) {
   struct Shape {
     int64_t N, C_in, K_h, K_w;
   };
-  for (const Shape& sh : {Shape{40, 30, 3, 3},
-                          Shape{64, 64, 3, 3},
-                          Shape{36, 256, 3, 3},
-                          Shape{30, 48, 1, 7}}) {
+  for (const Shape& sh :
+       {Shape{40, 30, 3, 3},
+        Shape{64, 64, 3, 3},
+        Shape{36, 256, 3, 3},
+        Shape{30, 48, 1, 7}}) {
     SCOPED_TRACE(
         std::to_string(sh.N) + "x" + std::to_string(sh.C_in) + "x" +
         std::to_string(sh.K_h) + "x" + std::to_string(sh.K_w));
@@ -6980,13 +6981,7 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_row_tiles) {
     EXPECT_EQ(
         std::count(kernels.begin(), kernels.end(), std::string(v->name)), 2);
     EXPECT_ANY_THROW(PointwiseConvGraph(
-        vkapi::kHalf,
-        64,
-        64,
-        14,
-        14,
-        1,
-        {Conv2dPwRequest::Kind::kCoopmat, v}));
+        vkapi::kHalf, 64, 64, 14, 14, 1, {Conv2dPwRequest::Kind::kCoopmat, v}));
   }
   EXPECT_ANY_THROW(Im2colCoopmatConvGraph(
       *find_conv2d_pw_coopmat_variant(

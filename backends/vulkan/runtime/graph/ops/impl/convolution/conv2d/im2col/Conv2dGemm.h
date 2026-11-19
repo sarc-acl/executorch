@@ -94,8 +94,8 @@ void conv2d_gemm_impl(
  */
 
 // The serialized [C_out, C_in, K_h, K_w] weight packed on the GPU into the 4OC
-// x 4IC blocked layout of a [C_out, K_h * K_w * align_up_4(C_in)] matrix in im2col
-// K order (the layout of pack_fp_linear_weight over that matrix), as a
+// x 4IC blocked layout of a [C_out, K_h * K_w * align_up_4(C_in)] matrix in
+// im2col K order (the layout of pack_fp_linear_weight over that matrix), as a
 // texture2d or a buffer; a buffer gets `scratch_rows` more rows of N4 * 16
 // elements after the weights, which the prepack does not write.
 ValueRef prepack_conv2d_gemm_weight(

@@ -448,7 +448,8 @@ void add_conv2d_im2col_coopmat_node(
       },
       {{out, vkapi::kWrite},
        {im2col_in, vkapi::kRead},
-       {packed_weight, variant.k_slices > 1u ? vkapi::kReadWrite : vkapi::kRead},
+       {packed_weight,
+        variant.k_slices > 1u ? vkapi::kReadWrite : vkapi::kRead},
        {{packed_bias, epilogue_args.residual, epilogue_args.scale},
         vkapi::kRead}},
       {graph.sizes_ubo(im2col_in), graph.sizes_ubo(out)},
@@ -523,7 +524,10 @@ void add_conv2d_im2col_coopmat_merge_node(
       },
       {{out, vkapi::kWrite},
        {im2col_in, vkapi::kRead},
-       {{packed_weight, packed_bias, epilogue_args.residual, epilogue_args.scale},
+       {{packed_weight,
+         packed_bias,
+         epilogue_args.residual,
+         epilogue_args.scale},
         vkapi::kRead}},
       {graph.sizes_ubo(im2col_in), graph.sizes_ubo(out)},
       {PushConstantDataInfo(&unused, sizeof(unused)),
@@ -611,8 +615,8 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
   }
   if (W_out > max_3d || uint64_t(tiling.oh_tile) > max_3d) {
     return "the gathered matrix tile of " + n(W_out) + " x " +
-        n(tiling.oh_tile) +
-        " pixels exceeds the maximum 3D image dimension " + n(max_3d);
+        n(tiling.oh_tile) + " pixels exceeds the maximum 3D image dimension " +
+        n(max_3d);
   }
   if (variant.has(Conv2dPwCoopmatVariant::kAligned)) {
     return "the variant requires N % tile_n == 0, which the route does not "
@@ -629,7 +633,8 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
         n(N4 * 4u) + " x " + n(K4) + " texels) exceed maxImageDimension2D " +
         n(max_2d);
   }
-  const uint64_t rows = K4 +
+  const uint64_t rows =
+      K4 +
       conv2d_pw_coopmat_scratch_rows(
           variant, conv2d_pw_coopmat_scratch_capacity(graph, out));
   const uint64_t bytes = rows * N4 * 16u * 2u;
@@ -645,7 +650,8 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
              variant, utils::safe_downcast<uint32_t>(tiling.K_total))) {
       if (end < begin + 2u) {
         return "gathered K " + n(tiling.K_total) + " gives " +
-            n(utils::div_up(uint64_t(tiling.K_total), uint64_t(variant.tile_k))) +
+            n(utils::div_up(
+                uint64_t(tiling.K_total), uint64_t(variant.tile_k))) +
             " K steps: fewer than two K steps in a slice of " +
             n(variant.k_slices);
       }

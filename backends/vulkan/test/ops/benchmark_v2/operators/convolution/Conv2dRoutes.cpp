@@ -352,7 +352,9 @@ REGISTER_OPERATOR_ROUTES {
   REGISTER_OPERATOR_ROUTE(
       et_vk.conv_with_clamp.default, im2col, build_conv2d_im2col);
   REGISTER_OPERATOR_ROUTE(
-      et_vk.conv_with_clamp.default, im2col_coopmat, build_conv2d_im2col_coopmat);
+      et_vk.conv_with_clamp.default,
+      im2col_coopmat,
+      build_conv2d_im2col_coopmat);
   REGISTER_OPERATOR_ROUTE(
       et_vk.conv_with_clamp.default, winograd, build_conv2d_winograd);
   REGISTER_ROUTE_INSPECTOR(et_vk.conv_with_clamp.default, inspect_conv2d_route);

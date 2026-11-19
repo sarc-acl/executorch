@@ -204,11 +204,15 @@ UNKNOWN = [
 
 
 def case_kwargs(c):
-    return {k: v for k, v in c.items() if k not in ("cin", "h", "w", "cout", "kh", "kw")}
+    return {
+        k: v for k, v in c.items() if k not in ("cin", "h", "w", "cout", "kh", "kw")
+    }
 
 
 def cases(label, c, baselines, variants, timing):
-    args = conv_args(c["cin"], c["h"], c["w"], c["cout"], c["kh"], c["kw"], **case_kwargs(c))
+    args = conv_args(
+        c["cin"], c["h"], c["w"], c["cout"], c["kh"], c["kw"], **case_kwargs(c)
+    )
     base = {
         "operator": OPERATORS[c.get("op", "conv")],
         **timing,
@@ -228,7 +232,10 @@ def cases(label, c, baselines, variants, timing):
             {
                 "name": f"{name} coopmat",
                 **base,
-                "route": {"name": "im2col_coopmat", "options": {"variant": "v_VARIANT"}},
+                "route": {
+                    "name": "im2col_coopmat",
+                    "options": {"variant": "v_VARIANT"},
+                },
                 "sweep_variables": {"v_VARIANT": variants},
                 "args_sweep": [args],
             }
@@ -287,7 +294,9 @@ def performance(variants):
     measured = [v for v in variants if v in PERFORMANCE_VARIANTS or "_xe2_" not in v]
     out = []
     for label, c in PERFORMANCE:
-        out += cases(label, c, ["auto", "direct", "im2col"], measured, PERFORMANCE_TIMING)
+        out += cases(
+            label, c, ["auto", "direct", "im2col"], measured, PERFORMANCE_TIMING
+        )
     return out
 
 
@@ -300,7 +309,9 @@ FILES = {
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check", action="store_true", help="fail if a file is out of date")
+    parser.add_argument(
+        "--check", action="store_true", help="fail if a file is out of date"
+    )
     args = parser.parse_args()
     variants = i2c_variants()
     stale = []
