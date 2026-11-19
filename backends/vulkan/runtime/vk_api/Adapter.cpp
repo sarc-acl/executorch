@@ -949,6 +949,17 @@ std::ostream& operator<<(std::ostream& os, const Adapter& adapter) {
   return os;
 }
 
+bool Adapter::supports_storage_image_format(
+    const VkFormat format,
+    const VkImageTiling tiling) const {
+  VkFormatProperties props{};
+  vkGetPhysicalDeviceFormatProperties(physical_device_.handle, format, &props);
+  const VkFormatFeatureFlags features = tiling == VK_IMAGE_TILING_LINEAR
+      ? props.linearTilingFeatures
+      : props.optimalTilingFeatures;
+  return (features & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) != 0;
+}
+
 #ifdef VK_KHR_cooperative_matrix
 bool Adapter::supports_cooperative_matrix_shape(
     const uint32_t m,

@@ -57,7 +57,11 @@ layout(std430) buffer;
 #include "common.glslh"
 
 ${layout_declare_tensor(B, "w", "t_out", DTYPE, STORAGE)}
-${layout_declare_tensor(B, "r", "t_in", DTYPE, STORAGE)}
+$if IMG_INPUT:
+  // The input as a storage image (imageLoad), for _img variants.
+  ${layout_declare_image(B, "r", "t_in", DTYPE)}
+$else:
+  ${layout_declare_tensor(B, "r", "t_in", DTYPE, STORAGE)}
 $if W16:
   // The packed weights as uvec4: one element is two adjacent k entries
   // (4 output channels each) of a 4OC x 4IC block.
@@ -117,6 +121,8 @@ $if ALIGNED:
   #define ALIGNED
 $if W16:
   #define W16
+$if IMG_INPUT:
+  #define IMG_INPUT
 
 const uint MMA_M = ${MMA_M};
 const uint MMA_N = ${MMA_N};

@@ -6491,6 +6491,39 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_no_duplicate_staging_loads) {
   }
 }
 
+// A storage-image input variant (_img) reads the input with imageLoad in
+// VK_IMAGE_LAYOUT_GENERAL and matches the reference, also after resizes, when
+// it may fall back to the tiled kernel.
+TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_image_input) {
+  ComputeGraph probe{GraphConfig()};
+  const Conv2dPwCoopmatVariant* variant = nullptr;
+  for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    if (v.has(Conv2dPwCoopmatVariant::kImageInput) &&
+        probe.float16_buffers_enabled() &&
+        conv2d_pw_coopmat_device_supports(probe, v)) {
+      variant = &v;
+      break;
+    }
+  }
+  if (variant == nullptr) {
+    GTEST_SKIP() << "no storage-image input variant runs here";
+  }
+  PointwiseConvGraph g(
+      vkapi::kHalf,
+      576,
+      96,
+      14,
+      14,
+      1,
+      {Conv2dPwRequest::Kind::kCoopmat, variant});
+  for (const int64_t size : {14, 7, 1, 14}) {
+    SCOPED_TRACE(size);
+    g.resize(size, size);
+    const auto kernels = g.execute_and_check();
+    EXPECT_EQ(dispatched(kernels, variant->name), size != 1);
+  }
+}
+
 TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_resize_to_one_pixel) {
   const Conv2dPwCoopmatVariant* const variant = runnable_pw_coopmat_variant();
   if (variant == nullptr) {

@@ -124,6 +124,7 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
   constexpr uint32_t kAligned = V::kAligned;
   constexpr uint32_t kThreadGrid = V::kThreadGrid;
   constexpr uint32_t kWideWeightLoad = V::kWideWeightLoad;
+  constexpr uint32_t kImageInput = V::kImageInput;
   // clang-format off
   static const std::vector<Conv2dPwCoopmatVariant> variants = {
       // Intel Xe2
@@ -203,6 +204,9 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_amd_t16x32_f32_al_w16_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, true, false, kAligned | kWideWeightLoad},
       {"conv2d_pw_coopmat_nvidia_t32x32_f16_al_w16_half", 16, 16, 16, 32, 32, 16, 1, 1, 32, false, false, kAligned | kWideWeightLoad},
       {"conv2d_pw_coopmat_nvidia_t32x32_f32_al_w16_half", 16, 16, 16, 32, 32, 16, 1, 1, 32, true, false, kAligned | kWideWeightLoad},
+      // Storage-image input (_img) on the Xe2 N-tile-32 aligned-only tile
+      {"conv2d_pw_coopmat_xe2_t16x32_f16_al_img_half", 8, 16, 16, 16, 32, 16, 1, 1, 16, false, true, kAligned | kImageInput},
+      {"conv2d_pw_coopmat_xe2_t16x32_f32_al_img_half", 8, 16, 16, 16, 32, 16, 1, 1, 16, true, true, kAligned | kImageInput},
   };
   // clang-format on
   return variants;
@@ -554,6 +558,20 @@ std::optional<std::string> conv2d_pw_coopmat_ineligible(
           conv2d_pw_coopmat_device_unsupported(graph, variant)) {
     return reason;
   }
+  if (variant.has(Conv2dPwCoopmatVariant::kImageInput)) {
+    // The shader reads the input with imageLoad: the image needs storage
+    // usage and a format the device can read as a storage image; the node
+    // binds it in VK_IMAGE_LAYOUT_GENERAL (add_conv2d_pw_tiled_node).
+    const vkapi::VulkanImage& image = graph.image_of(in);
+    if ((image.usage() & VK_IMAGE_USAGE_STORAGE_BIT) == 0u) {
+      return "the input image has no storage usage";
+    }
+    if (!graph.context()->adapter_ptr()->supports_storage_image_format(
+            image.format(), image.tiling())) {
+      return "the device cannot use the input format " +
+          std::to_string(image.format()) + " as a storage image";
+    }
+  }
   if (variant.has(Conv2dPwCoopmatVariant::kAligned)) {
     const uint32_t K = graph.size_at<uint32_t>(-3, in);
     const uint32_t N = graph.size_at<uint32_t>(-3, out);
@@ -636,7 +654,7 @@ vkapi::ShaderInfo pick_conv2d_pw_tiled_shader(
     const bool transposed) {
   const ValueRef out = args.at(0).refs.at(0);
   const ValueRef in = args.at(1).refs.at(0);
-  const ValueRef packed_weight = args.at(1).refs.at(1);
+  const ValueRef packed_weight = args.at(2).refs.at(0);
 
   if (request.kind == Conv2dPwRequest::Kind::kCoopmat &&
       conv2d_pw_coopmat_eligible(
@@ -901,6 +919,12 @@ void add_conv2d_pw_tiled_node(
   // declares folded_accumulation; the other variants ignore it.
   spec_vars.append(vkapi::SpecVar(use_folded_accumulation(&graph, out)));
 
+  const vkapi::MemoryAccessFlags in_access =
+      request.kind == Conv2dPwRequest::Kind::kCoopmat &&
+          request.coopmat_variant->has(Conv2dPwCoopmatVariant::kImageInput)
+      ? vkapi::kReadWrite
+      : vkapi::kRead;
+
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
       graph,
       [request, transposed](
@@ -912,14 +936,17 @@ void add_conv2d_pw_tiled_node(
       },
       pick_conv2d_pw_tiled_gwg,
       pick_conv2d_pw_tiled_lwg,
-      // Inputs and Outputs
+      // Inputs and Outputs. A storage-image input (_img) must be in
+      // VK_IMAGE_LAYOUT_GENERAL, which read-write access gives it; the tiled
+      // fallback samples it in that layout as well. Without a residual the
+      // input is also bound as the residual placeholder, with the same access
+      // so that its layout stays GENERAL.
       {{out, vkapi::kWrite},
-       {{in,
-         packed_weight,
-         packed_bias,
-         epilogue_args.residual,
-         epilogue_args.scale},
-        vkapi::kRead}},
+       {in, in_access},
+       {{packed_weight, packed_bias}, vkapi::kRead},
+       {epilogue_args.residual,
+        epilogue_args.residual == in ? in_access : vkapi::kRead},
+       {epilogue_args.scale, vkapi::kRead}},
       // Shader params buffers
       {graph.sizes_ubo(in), graph.sizes_ubo(out)},
       // Push Constants

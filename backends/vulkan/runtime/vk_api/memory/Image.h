@@ -210,6 +210,14 @@ class VulkanImage final {
     return image_properties_.image_extents;
   }
 
+  inline VkImageTiling tiling() const {
+    return image_properties_.image_tiling;
+  }
+
+  inline VkImageUsageFlags usage() const {
+    return image_properties_.image_usage;
+  }
+
   inline VkImage handle() const {
     return handles_.image;
   }

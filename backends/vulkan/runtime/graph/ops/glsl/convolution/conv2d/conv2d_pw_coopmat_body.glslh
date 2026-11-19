@@ -155,11 +155,17 @@ void make_staging_map(
   }
 }
 
+#ifdef IMG_INPUT
+#define LOAD_IN(pos) imageLoad(t_in, pos)
+#else
+#define LOAD_IN(pos) texelFetch(t_in, pos, 0)
+#endif
+
 #ifdef ALIGNED
 // K % WG_TILE_K == 0 and N % WG_TILE_N == 0 (conv2d_pw_coopmat_ineligible):
 // every fetch is inside the tensors.
 f16vec4 fetch_in(const ivec2 pos, const uint k4, const uint K4) {
-  return f16vec4(texelFetch(t_in, ivec3(pos, int(k4)), 0));
+  return f16vec4(LOAD_IN(ivec3(pos, int(k4))));
 }
 
 #ifndef W16
@@ -172,8 +178,7 @@ f16vec4 fetch_w(const uint k, const uint n4, const uint K4, const uint N4) {
 #error "W16 requires ALIGNED"
 #endif
 f16vec4 fetch_in(const ivec2 pos, const uint k4, const uint K4) {
-  return k4 < K4 ? f16vec4(texelFetch(t_in, ivec3(pos, int(k4)), 0))
-                 : f16vec4(0);
+  return k4 < K4 ? f16vec4(LOAD_IN(ivec3(pos, int(k4)))) : f16vec4(0);
 }
 
 f16vec4 fetch_w(const uint k, const uint n4, const uint K4, const uint N4) {

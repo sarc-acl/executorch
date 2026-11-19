@@ -550,6 +550,11 @@ class Adapter final {
 #endif
   }
 
+  // Whether images of this format and tiling can be storage images
+  // (VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT).
+  bool supports_storage_image_format(VkFormat format, VkImageTiling tiling)
+      const;
+
   inline uint32_t max_compute_shared_memory_size() const {
     return physical_device_.properties.limits.maxComputeSharedMemorySize;
   }

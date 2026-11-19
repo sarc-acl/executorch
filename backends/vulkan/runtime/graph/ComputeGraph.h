@@ -423,6 +423,11 @@ class ComputeGraph final {
     return !is_buffer_storage(idx);
   }
 
+  // The image of a texture tensor, to check its usage, format and tiling.
+  inline const vkapi::VulkanImage& image_of(const ValueRef idx) const {
+    return values_.at(idx).toConstTensor().image();
+  }
+
   /*
    * Checks that the following is true:
    * 1. The value at `idx` is a tensor
