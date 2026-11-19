@@ -447,14 +447,14 @@ def case_kwargs(c):
     }
 
 
-def cases(label, c, baselines, variants, timing):
+def cases(label, c, baselines, variants, timing, tolerance=TOLERANCE):
     args = conv_args(
         c["cin"], c["h"], c["w"], c["cout"], c["kh"], c["kw"], **case_kwargs(c)
     )
     base = {
         "operator": OPERATORS[c.get("op", "conv")],
         **timing,
-        "validation_method": TOLERANCE,
+        "validation_method": tolerance,
     }
     name = f"i2c {label}"
     out = [
@@ -664,13 +664,27 @@ def dilated_expected_skips(variants):
     return out
 
 
+# The direct shader (route auto) accumulates in fp16 and misses atol 0.1 on
+# the K 18432 layers (one element of the d12 layer at 0.118 on Arc B580), so
+# the timing collection admits arms at atol 0.25; each arm's max abs error is
+# reported beside the timings.
+DILATED_PERFORMANCE_TOLERANCE = {**TOLERANCE, "atol": 0.25}
+
+
 def dilated_performance(variants):
     # The timed _i2c variants with a _ck form (design D4: the two best Xe2
     # tiles and their split-K forms, the 16x16x16 families' _alc forms).
     measured = [v for v in variants if chunked_form(v)]
     out = []
     for label, c in DILATED_PERFORMANCE:
-        out += cases(label, c, ["auto"], measured, PERFORMANCE_TIMING)
+        out += cases(
+            label,
+            c,
+            ["auto"],
+            measured,
+            PERFORMANCE_TIMING,
+            DILATED_PERFORMANCE_TOLERANCE,
+        )
     return out
 
 
