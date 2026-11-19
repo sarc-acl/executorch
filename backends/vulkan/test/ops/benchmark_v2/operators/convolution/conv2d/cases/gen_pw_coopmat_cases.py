@@ -617,8 +617,12 @@ def plane_of(M):
     return (side, side)
 
 
-def performance(label, shapes):
+def performance(label, shapes, exclude=()):
+    """Performance cases of the shapes over every variant except those whose
+    name contains one of the exclude substrings."""
+
     def build(variants):
+        variants = [v for v in variants if not any(x in v for x in exclude)]
         cases = []
         for M, N, K in shapes:
             cases += shape_cases(
@@ -1025,8 +1029,12 @@ FILES = {
     "pw_coopmat_correctness.json": correctness,
     "pw_coopmat_fp16_accumulation_limits.json": fp16_accumulation_limits,
     "pw_coopmat_mobilenet.json": performance("mobilenet", MOBILENET),
-    "pw_coopmat_resnet50.json": performance("resnet50", RESNET50),
-    "pw_coopmat_large.json": performance("large", upstream_fp16_shapes()),
+    # The _alc variants are measured on the MobileNet shapes only
+    # (conv2d-pw-coopmat-fast-stack); these two inventories keep their variants.
+    "pw_coopmat_resnet50.json": performance("resnet50", RESNET50, exclude=("_alc",)),
+    "pw_coopmat_large.json": performance(
+        "large", upstream_fp16_shapes(), exclude=("_alc",)
+    ),
     "pw_coopmat_ksweep.json": ksweep,
     **{f"pw_coopmat_guard_{f}.json": guard(f) for f in FAMILIES},
     **{f"pw_coopmat_dlprobe_{f}.json": dlprobe(f) for f in FAMILIES},
