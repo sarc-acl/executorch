@@ -21,6 +21,8 @@ $if PACKED_STORAGE == "buffer":
 ${define_required_extensions("buffer", BUF_DTYPE)}
 $if PACKED_STORAGE != "buffer":
   ${define_required_extensions(PACKED_STORAGE, DTYPE)}
+$else:
+  ${define_required_extensions("buffer", DTYPE)}
 
 layout(std430) buffer;
 

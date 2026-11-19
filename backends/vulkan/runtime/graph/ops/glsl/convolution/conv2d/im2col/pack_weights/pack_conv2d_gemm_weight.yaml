@@ -16,5 +16,9 @@ pack_conv2d_gemm_weight:
         - parameter_values: [texture2d, float, float]
         - parameter_values: [texture2d, half, half]
         - parameter_values: [texture2d, half, float]
+        # Buffer weights for the cooperative-matrix multiply of route
+        # im2col_coopmat.
+        - parameter_values: [buffer, half, half]
+        - parameter_values: [buffer, half, float]
   shader_variants:
     - NAME: pack_conv2d_gemm_weight

@@ -135,6 +135,10 @@ $if BCM:
   #define BCM
 $if DIRECT_B:
   #define DIRECT_B
+$if I2C:
+  #define I2C
+  // The first push constant carries the tile's first output row.
+  #define I2C_OH_OFFSET stride_h
 $if K_SLICES > 1:
   #define SPLIT_K
   const uint K_SLICES = ${K_SLICES};

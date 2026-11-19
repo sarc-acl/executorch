@@ -31,6 +31,7 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Common.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Staging.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2d.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/im2col/Conv2dGemm.h>
 
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/StagingUtils.h>
 
@@ -6471,6 +6472,7 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_clamped_reads) {
   int tested = 0;
   for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
     if (!v.has(Conv2dPwCoopmatVariant::kAlignedClampN) ||
+        v.has(Conv2dPwCoopmatVariant::kIm2col) ||
         !probe.float16_buffers_enabled() ||
         !conv2d_pw_coopmat_device_supports(probe, v)) {
       continue;
@@ -6616,7 +6618,8 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_slices) {
 TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_resize) {
   ComputeGraph probe{GraphConfig()};
   for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
-    if (v.k_slices <= 1u || !probe.float16_buffers_enabled() ||
+    if (v.k_slices <= 1u || v.has(Conv2dPwCoopmatVariant::kIm2col) ||
+        !probe.float16_buffers_enabled() ||
         !conv2d_pw_coopmat_device_supports(probe, v)) {
       continue;
     }
@@ -6649,7 +6652,8 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_resize) {
 TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_growth) {
   ComputeGraph probe{GraphConfig()};
   for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
-    if (v.k_slices <= 1u || !probe.float16_buffers_enabled() ||
+    if (v.k_slices <= 1u || v.has(Conv2dPwCoopmatVariant::kIm2col) ||
+        !probe.float16_buffers_enabled() ||
         !conv2d_pw_coopmat_device_supports(probe, v)) {
       continue;
     }
@@ -6700,4 +6704,300 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_resize_to_one_pixel) {
       EXPECT_TRUE(dispatched(kernels, variant->name));
     }
   }
+}
+
+// The buffer packing of route im2col_coopmat holds, for each 4OC x 4IC block,
+// the serialized weight at k = (ki * K_w + kj) * align_up_4(C_in) + ci (zero
+// past C_out and C_in), and its scratch rows follow the weights.
+TEST(VulkanComputeGraphTest, conv2d_gemm_weight_buffer_round_trip) {
+  ComputeGraph probe{GraphConfig()};
+  if (!probe.float16_buffers_enabled()) {
+    GTEST_SKIP() << "16-bit storage buffers are not enabled";
+  }
+  struct Shape {
+    int64_t N, C_in, K_h, K_w;
+  };
+  for (const Shape& sh : {Shape{40, 30, 3, 3},
+                          Shape{64, 64, 3, 3},
+                          Shape{36, 256, 3, 3},
+                          Shape{30, 48, 1, 7}}) {
+    SCOPED_TRACE(
+        std::to_string(sh.N) + "x" + std::to_string(sh.C_in) + "x" +
+        std::to_string(sh.K_h) + "x" + std::to_string(sh.K_w));
+    const int64_t Cin_p = utils::align_up_4(sh.C_in);
+    const int64_t K = sh.K_h * sh.K_w * Cin_p;
+    const int64_t K4 = K / 4, N4 = utils::div_up_4(sh.N);
+    const int64_t scratch_rows = 3;
+    std::vector<executorch::aten::Half> w(sh.N * sh.C_in * sh.K_h * sh.K_w);
+    for (size_t i = 0; i < w.size(); ++i) {
+      w[i] = executorch::aten::Half(float(int(i % 2039) - 1019) / 1024.0f);
+    }
+    ComputeGraph graph{GraphConfig()};
+    const ValueRef packed = prepack_conv2d_gemm_weight(
+        graph,
+        graph.add_tensorref(
+            {sh.N, sh.C_in, sh.K_h, sh.K_w}, vkapi::kHalf, w.data()),
+        utils::kBuffer,
+        scratch_rows);
+    ASSERT_TRUE(graph.is_buffer_storage(packed));
+    EXPECT_EQ(
+        graph.sizes_of(packed),
+        (std::vector<int64_t>{K4 + scratch_rows, N4 * 16}));
+    const ValueRef staging = graph.set_output_tensor(packed);
+    graph.prepare();
+    graph.prepack();
+    graph.execute();
+    std::vector<executorch::aten::Half> out((K4 + scratch_rows) * N4 * 16);
+    graph.maybe_cast_and_copy_from_staging(
+        staging, out.data(), out.size(), vkapi::kHalf);
+    size_t mismatches = 0;
+    for (int64_t k4 = 0; k4 < K4; ++k4) {
+      for (int64_t n4 = 0; n4 < N4; ++n4) {
+        for (int64_t dk = 0; dk < 4; ++dk) {
+          for (int64_t dn = 0; dn < 4; ++dn) {
+            const int64_t n = n4 * 4 + dn, k = k4 * 4 + dk;
+            const int64_t ci = k % Cin_p, kk = k / Cin_p;
+            const int64_t ki = kk / sh.K_w, kj = kk % sh.K_w;
+            const float expected = n < sh.N && ci < sh.C_in
+                ? float(w[((n * sh.C_in + ci) * sh.K_h + ki) * sh.K_w + kj])
+                : 0.0f;
+            mismatches +=
+                float(out[((k4 * N4 + n4) * 4 + dk) * 4 + dn]) != expected;
+          }
+        }
+      }
+    }
+    EXPECT_EQ(mismatches, 0u);
+  }
+}
+
+namespace {
+
+// An FP16 k x k convolution graph built through conv2d_gemm_impl with an
+// _i2c variant (route im2col_coopmat), with a CPU reference.
+class Im2colCoopmatConvGraph final {
+ public:
+  Im2colCoopmatConvGraph(
+      const Conv2dPwCoopmatVariant& variant,
+      const int64_t C_in,
+      const int64_t C_out,
+      const int64_t H,
+      const int64_t W,
+      const int64_t K_h,
+      const int64_t K_w,
+      const int64_t stride,
+      const int64_t pad_h,
+      const int64_t pad_w)
+      : C_in_(C_in),
+        C_out_(C_out),
+        K_h_(K_h),
+        K_w_(K_w),
+        stride_(stride),
+        pad_h_(pad_h),
+        pad_w_(pad_w),
+        graph_(make_config()) {
+    std::mt19937 rng(2111);
+    std::uniform_real_distribution<float> unit(-1.0f, 1.0f);
+    const float s = 1.0f / std::sqrt(float(C_in * K_h * K_w));
+    weight_.resize(C_out * C_in * K_h * K_w);
+    for (auto& v : weight_) {
+      v = executorch::aten::Half(unit(rng) * s);
+    }
+    bias_.resize(C_out);
+    for (auto& v : bias_) {
+      v = executorch::aten::Half(unit(rng));
+    }
+    input_ = graph_.add_input_tensor(
+        {1, C_in, H, W},
+        vkapi::kHalf,
+        utils::kTexture3D,
+        utils::kChannelsPacked);
+    out_ = graph_.add_tensor(
+        {1, C_out, out_h(H), out_w(W)},
+        vkapi::kHalf,
+        utils::kTexture3D,
+        utils::kChannelsPacked);
+    conv2d_gemm_impl(
+        graph_,
+        input_.value,
+        graph_.add_tensorref(
+            {C_out, C_in, K_h, K_w}, vkapi::kHalf, weight_.data()),
+        graph_.add_tensorref({C_out}, vkapi::kHalf, bias_.data()),
+        graph_.add_scalar_list<int64_t>({stride, stride}),
+        graph_.add_scalar_list<int64_t>({pad_h, pad_w}),
+        graph_.add_scalar_list<int64_t>({1, 1}),
+        out_,
+        Conv2dEpilogue{},
+        utils::kTexture3D,
+        &variant);
+    out_staging_ = graph_.set_output_tensor(out_);
+    graph_.prepare();
+    graph_.prepack();
+  }
+
+  void resize(const int64_t H, const int64_t W) {
+    graph_.resize_input(0, {1, C_in_, H, W});
+    graph_.propagate_resize();
+  }
+
+  // Executes on random inputs, checks the output against the CPU reference
+  // (atol 0.1, rtol 0.01) and returns the dispatched kernel names.
+  std::vector<std::string> execute_and_check() {
+    const std::vector<int64_t> in_sizes = graph_.sizes_of(input_.value);
+    const int64_t H = in_sizes[2], W = in_sizes[3];
+    const int64_t Ho = out_h(H), Wo = out_w(W);
+    EXPECT_EQ(graph_.sizes_of(out_), (std::vector<int64_t>{1, C_out_, Ho, Wo}));
+    std::mt19937 rng(11 + H * 131 + W);
+    std::uniform_real_distribution<float> unit(-1.0f, 1.0f);
+    std::vector<executorch::aten::Half> x(C_in_ * H * W);
+    for (auto& v : x) {
+      v = executorch::aten::Half(unit(rng));
+    }
+    graph_.maybe_cast_and_copy_into_staging(
+        input_.staging, x.data(), x.size(), vkapi::kHalf);
+    graph_.execute();
+    std::vector<executorch::aten::Half> y(C_out_ * Ho * Wo);
+    graph_.maybe_cast_and_copy_from_staging(
+        out_staging_, y.data(), y.size(), vkapi::kHalf);
+    size_t mismatches = 0;
+    for (int64_t n = 0; n < C_out_; ++n) {
+      for (int64_t oy = 0; oy < Ho; ++oy) {
+        for (int64_t ox = 0; ox < Wo; ++ox) {
+          double expected = float(bias_[n]);
+          for (int64_t c = 0; c < C_in_; ++c) {
+            for (int64_t ki = 0; ki < K_h_; ++ki) {
+              const int64_t iy = oy * stride_ - pad_h_ + ki;
+              if (iy < 0 || iy >= H) {
+                continue;
+              }
+              for (int64_t kj = 0; kj < K_w_; ++kj) {
+                const int64_t ix = ox * stride_ - pad_w_ + kj;
+                if (ix < 0 || ix >= W) {
+                  continue;
+                }
+                expected +=
+                    double(float(
+                        weight_[((n * C_in_ + c) * K_h_ + ki) * K_w_ + kj])) *
+                    float(x[(c * H + iy) * W + ix]);
+              }
+            }
+          }
+          const double actual = float(y[(n * Ho + oy) * Wo + ox]);
+          mismatches +=
+              std::abs(actual - expected) > 0.1 + 0.01 * std::abs(expected);
+        }
+      }
+    }
+    EXPECT_EQ(mismatches, 0u);
+    std::vector<std::string> kernels;
+    graph_.context()->querypool().extract_results();
+    for (const auto& result :
+         graph_.context()->querypool().get_shader_timestamp_data()) {
+      kernels.push_back(result.kernel_name);
+    }
+    return kernels;
+  }
+
+ private:
+  static GraphConfig make_config() {
+    GraphConfig config;
+    config.expect_dynamic_shapes = true;
+    config.enable_querypool = true;
+    return config;
+  }
+
+  int64_t out_h(const int64_t H) const {
+    return (H + 2 * pad_h_ - K_h_) / stride_ + 1;
+  }
+  int64_t out_w(const int64_t W) const {
+    return (W + 2 * pad_w_ - K_w_) / stride_ + 1;
+  }
+
+  const int64_t C_in_, C_out_, K_h_, K_w_, stride_, pad_h_, pad_w_;
+  std::vector<executorch::aten::Half> weight_;
+  std::vector<executorch::aten::Half> bias_;
+  ComputeGraph graph_;
+  IOValueRef input_;
+  ValueRef out_;
+  ValueRef out_staging_;
+};
+
+std::vector<const Conv2dPwCoopmatVariant*> runnable_im2col_coopmat_variants() {
+  ComputeGraph probe{GraphConfig()};
+  std::vector<const Conv2dPwCoopmatVariant*> out;
+  for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    if (v.has(Conv2dPwCoopmatVariant::kIm2col) &&
+        probe.float16_buffers_enabled() &&
+        conv2d_pw_coopmat_device_supports(probe, v)) {
+      out.push_back(&v);
+    }
+  }
+  return out;
+}
+
+} // namespace
+
+// Route im2col_coopmat on a ResNet 3x3 256 -> 256 layer on a 14x14 plane:
+// every runnable _i2c variant (and its merge) runs, a resize to a 1x1 plane
+// runs conv2d_gemm on the same scratch, and the variant runs again after
+// growing back; every output matches the reference.
+TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_resize) {
+  const auto variants = runnable_im2col_coopmat_variants();
+  if (variants.empty()) {
+    GTEST_SKIP() << "no _i2c variant runs here";
+  }
+  for (const Conv2dPwCoopmatVariant* v : variants) {
+    SCOPED_TRACE(v->name);
+    Im2colCoopmatConvGraph g(*v, 256, 256, 14, 14, 3, 3, 1, 1, 1);
+    const std::string merge =
+        v->k_slices > 1u ? conv2d_pw_coopmat_merge_shader(*v) : "";
+    for (const int64_t size : {14, 1, 14}) {
+      SCOPED_TRACE(size);
+      g.resize(size, size);
+      const auto kernels = g.execute_and_check();
+      EXPECT_EQ(dispatched(kernels, v->name), size != 1);
+      EXPECT_EQ(dispatched(kernels, "conv2d_gemm_texture3d_half"), size == 1);
+      EXPECT_TRUE(dispatched(kernels, "conv2d_im2col_texture3d_half"));
+      if (!merge.empty()) {
+        EXPECT_EQ(dispatched(kernels, merge), size != 1);
+      }
+    }
+  }
+}
+
+// A gather in several row tiles writes every output row once; the pointwise
+// route refuses _i2c variants and this route refuses the others.
+TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_row_tiles) {
+  const auto variants = runnable_im2col_coopmat_variants();
+  if (variants.empty()) {
+    GTEST_SKIP() << "no _i2c variant runs here";
+  }
+  for (const Conv2dPwCoopmatVariant* v : variants) {
+    SCOPED_TRACE(v->name);
+    // K = 576, W_out = 128: 113 output rows per 16 MiB tile, two tiles.
+    Im2colCoopmatConvGraph g(*v, 64, 40, 128, 128, 3, 3, 1, 1, 1);
+    const auto kernels = g.execute_and_check();
+    EXPECT_EQ(
+        std::count(kernels.begin(), kernels.end(), std::string(v->name)), 2);
+    EXPECT_ANY_THROW(PointwiseConvGraph(
+        vkapi::kHalf,
+        64,
+        64,
+        14,
+        14,
+        1,
+        {Conv2dPwRequest::Kind::kCoopmat, v}));
+  }
+  EXPECT_ANY_THROW(Im2colCoopmatConvGraph(
+      *find_conv2d_pw_coopmat_variant(
+          "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half"),
+      64,
+      64,
+      14,
+      14,
+      3,
+      3,
+      1,
+      1,
+      1));
 }

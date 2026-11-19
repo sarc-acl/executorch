@@ -36,6 +36,7 @@ conv2d_pw_coopmat:
     BCM: false
     DIRECT_B: false
     K_SLICES: 1
+    I2C: false
   shader_variants:
     # Intel Xe2 (Arc B580, Arc Pro B70): MMA 8x16x16, subgroup 16, K step 16,
     # fragment-contiguous shared memory. Subgroup grids: OUT/DEVICES.md rule
@@ -1075,3 +1076,123 @@ conv2d_pw_coopmat:
       ALIGNED: true
       CLAMP_N: true
       K_SLICES: 4
+    # im2col input (_i2c, body option I2C): the multiply stage of route
+    # im2col_coopmat over one row tile of the texture3d im2col scratch.
+    # Each is its parent plus I2C.
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f16_i2c_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      I2C: true
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f16_alc_i2c_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      I2C: true
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_i2c_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+      I2C: true
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_i2c_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+      I2C: true
+    - NAME: conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_i2c_half
+      MMA_M: 8
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      I2C: true
+    - NAME: conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_i2c_half
+      MMA_M: 8
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      I2C: true
+    - NAME: conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_i2c_half
+      MMA_M: 8
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      I2C: true
+    - NAME: conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk2_i2c_half
+      MMA_M: 8
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+      I2C: true
+    - NAME: conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half
+      MMA_M: 8
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+      I2C: true

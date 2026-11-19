@@ -40,6 +40,38 @@ namespace {
 // soft tuning knob, not a hard allocation ceiling.
 constexpr int64_t kIm2colScratchBudgetBytes = 16 * 1024 * 1024;
 
+// Work group size of conv2d_pw_coopmat_sk<n>_merge as dispatched here.
+constexpr uint32_t kMergeThreads = 64;
+
+struct Conv2dGemmTiling {
+  int64_t K_total;
+  int64_t oh_tile;
+  int64_t num_tiles;
+};
+
+// K_total = K_h * K_w * align_up_4(C_in); oh_tile is the most output rows
+// whose im2col fits kIm2colScratchBudgetBytes (at least 1, at most H_out).
+Conv2dGemmTiling conv2d_gemm_tiling(
+    ComputeGraph& graph,
+    const ValueRef in,
+    const ValueRef weight_data,
+    const ValueRef out) {
+  const std::vector<int64_t> w_sizes = graph.sizes_of(weight_data);
+  const std::vector<int64_t> out_sizes = graph.sizes_of(out);
+  const int64_t H_out = out_sizes.at(2);
+  const int64_t W_out = out_sizes.at(3);
+  const int64_t K_total =
+      w_sizes.at(2) * w_sizes.at(3) * utils::align_up_4(w_sizes.at(1));
+  const int64_t elem_size =
+      utils::safe_downcast<int64_t>(vkapi::element_size(graph.dtype_of(in)));
+  int64_t oh_tile = kIm2colScratchBudgetBytes / (W_out * K_total * elem_size);
+  oh_tile = std::max<int64_t>(oh_tile, 1);
+  oh_tile = std::min<int64_t>(oh_tile, H_out);
+  return {K_total, oh_tile, utils::div_up(H_out, oh_tile)};
+}
+
+} // namespace
+
 //
 // Weight handling
 //
@@ -56,7 +88,9 @@ constexpr int64_t kIm2colScratchBudgetBytes = 16 * 1024 * 1024;
 // [C_out, K_total] weight, so conv2d_gemm.glsl is unchanged.
 ValueRef prepack_conv2d_gemm_weight(
     ComputeGraph& graph,
-    const ValueRef weight_data) {
+    const ValueRef weight_data,
+    const utils::StorageType weight_storage,
+    const int64_t scratch_rows) {
   const std::vector<int64_t> w_sizes = graph.sizes_of(weight_data);
   VK_CHECK_COND(w_sizes.size() == 4);
   const int64_t C_out = w_sizes[0];
@@ -73,24 +107,30 @@ ValueRef prepack_conv2d_gemm_weight(
   const int64_t K4 = utils::div_up(K, int64_t(4));
 
   // Packed tensor: K4 rows, N4*4 vec4 elements per row (4OC x 4IC blocks).
-  // kWidthPacked packs 4 scalars per texel, so width = N4*4*4 scalars.
-  const int64_t output_height = K4;
+  // kWidthPacked packs 4 scalars per texel, so width = N4*4*4 scalars. A
+  // buffer may carry scratch_rows more rows after the weights (the split-K
+  // scratch of route im2col_coopmat); the prepack writes only the weights.
+  VK_CHECK_COND(weight_storage == utils::kBuffer || scratch_rows == 0);
+  const int64_t output_height = K4 + scratch_rows;
   const int64_t output_width = N4 * 4 * 4;
 
   // The GEMM shader (conv2d_gemm.glsl) only reads the packed weight as a
   // texture2d. A buffer-backed packed weight would require a WEIGHT_BUFFER
   // codegen variant of conv2d_gemm.glsl (and its picker), which does not exist
-  // yet.
+  // yet. Buffer weights are read only by the cooperative-matrix multiply of
+  // route im2col_coopmat.
   // TODO: if this check ever triggers for a real model, add buffer-backed
   // packed-weight support — a WEIGHT_BUFFER variant of conv2d_gemm.{glsl,yaml}
-  // with the picker routed accordingly, plus the buffer variants restored in
-  // pack_conv2d_gemm_weight.yaml.
-  const utils::StorageType weight_storage = utils::kTexture2D;
-  const uint32_t max_extent =
-      graph.context()->adapter_ptr()->max_texture2d_dim();
-  VK_CHECK_COND(
-      output_width / 4 <= max_extent &&
-      utils::safe_downcast<uint32_t>(output_height) <= max_extent);
+  // with the picker routed accordingly.
+  if (weight_storage == utils::kTexture2D) {
+    const uint32_t max_extent =
+        graph.context()->adapter_ptr()->max_texture2d_dim();
+    VK_CHECK_COND(
+        output_width / 4 <= max_extent &&
+        utils::safe_downcast<uint32_t>(output_height) <= max_extent);
+  } else {
+    VK_CHECK_COND(weight_storage == utils::kBuffer);
+  }
 
   ValueRef packed_weight = graph.add_tensor(
       {output_height, output_width},
@@ -137,6 +177,8 @@ ValueRef prepack_conv2d_gemm_weight(
 
   return packed_weight;
 }
+
+namespace {
 
 //
 // GEMM dispatch
@@ -267,7 +309,8 @@ void add_conv2d_gemm_node(
     const ValueRef out,
     const int32_t K_total,
     const int32_t oh_offset,
-    const int32_t oh_tile) {
+    const int32_t oh_tile,
+    const bool coopmat_fallback = false) {
   const int32_t K4_total = K_total / 4;
 
   // gemm_dims = (K4_total, oh_offset, oh_tile, _unused). All shape-independent:
@@ -295,10 +338,23 @@ void add_conv2d_gemm_node(
   // single lookup. Still memory-safe and read-only (was_value_updated guards
   // out-of-range and in-range idx alike) and benign (the resize recomputes
   // correctly regardless).
+  // As the resize fallback of a cooperative-matrix multiply, the node
+  // dispatches nothing while the multiply can run.
+  const auto pick_gwg = [coopmat_fallback](
+                            ComputeGraph* graph,
+                            const vkapi::ShaderInfo& shader,
+                            const std::vector<ArgGroup>& args,
+                            const std::vector<ValueRef>& resize_args) {
+    if (coopmat_fallback &&
+        conv2d_im2col_coopmat_runnable(*graph, args.at(0).refs.at(0))) {
+      return GlobalWorkGrid({0u, 0u, 0u}, kTiledWorkGrid);
+    }
+    return pick_conv2d_gemm_gwg(graph, shader, args, resize_args);
+  };
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
       graph,
       pick_conv2d_gemm_shader,
-      pick_conv2d_gemm_gwg,
+      pick_gwg,
       pick_xy_square_lwg,
       // Inputs and Outputs
       {{out, vkapi::kWrite},
@@ -329,7 +385,292 @@ void add_conv2d_gemm_node(
       resize_conv2d_gemm_node));
 }
 
+// The cooperative-matrix multiply of one row tile: the _i2c variant over the
+// tile's texture3d im2col scratch, writing output rows oh_offset onward (or,
+// for split-K, the scratch rows of those pixels after the packed weights).
+// Bindings, uniforms and push constants are conv2d_pw_coopmat's; the first
+// push constant carries oh_offset.
+void add_conv2d_im2col_coopmat_node(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant,
+    const ValueRef in,
+    const ValueRef weight_data,
+    const ValueRef stride,
+    const ValueRef padding,
+    const ValueRef dilation,
+    const ValueRef im2col_in,
+    const ValueRef packed_weight,
+    const ValueRef packed_bias,
+    const Conv2dEpilogue& epilogue,
+    const Conv2dEpilogueArgs& epilogue_args,
+    const ValueRef out,
+    const int32_t oh_offset,
+    const int32_t oh_tile) {
+  const utils::ivec4 row_offset{oh_offset, 0, 0, 0};
+  const Conv2dEpilogueParams epilogue_params = create_conv2d_epilogue_params(
+      epilogue, graph.dtype_of(out) == vkapi::kHalf);
+  const Conv2dEpilogueParams epilogue_params_f32 =
+      create_conv2d_epilogue_params(epilogue, /*f16_epilogue=*/false);
+  vkapi::SpecVarList spec_vars = {1};
+  append_conv2d_epilogue_spec_vars(spec_vars, epilogue);
+  const Conv2dPwCoopmatVariant* const v = &variant;
+  graph.execute_nodes().emplace_back(new DynamicDispatchNode(
+      graph,
+      [v](ComputeGraph*,
+          const std::vector<ArgGroup>&,
+          const std::vector<ValueRef>&) { return VK_KERNEL_FROM_STR(v->name); },
+      [v](ComputeGraph* graph,
+          const vkapi::ShaderInfo&,
+          const std::vector<ArgGroup>& args,
+          const std::vector<ValueRef>& resize_args) {
+        const ValueRef out = args.at(0).refs.at(0);
+        const uint32_t W = graph->size_at<uint32_t>(-1, out);
+        const uint32_t H = graph->size_at<uint32_t>(-2, out);
+        const uint32_t tile = static_cast<uint32_t>(resize_args.at(5));
+        const uint32_t offset = static_cast<uint32_t>(resize_args.at(6));
+        if (offset >= H || !conv2d_im2col_coopmat_runnable(*graph, out)) {
+          return GlobalWorkGrid({0u, 0u, 0u}, kExplicitWorkGrid);
+        }
+        const utils::uvec3 grid = conv2d_pw_coopmat_workgroups(
+            *graph,
+            *v,
+            graph->size_at<uint32_t>(-3, out),
+            W * std::min(tile, H - offset));
+        return GlobalWorkGrid(
+            {grid[0] * v->wg_size(), grid[1], grid[2]}, kExplicitWorkGrid);
+      },
+      [v](ComputeGraph*,
+          const vkapi::ShaderInfo&,
+          const GlobalWorkGrid&,
+          const std::vector<ArgGroup>&,
+          const std::vector<ValueRef>&) {
+        return LocalWorkGroup(v->wg_size(), 1u, 1u);
+      },
+      {{out, vkapi::kWrite},
+       {im2col_in, vkapi::kRead},
+       {packed_weight, variant.k_slices > 1u ? vkapi::kReadWrite : vkapi::kRead},
+       {{packed_bias, epilogue_args.residual, epilogue_args.scale},
+        vkapi::kRead}},
+      {graph.sizes_ubo(im2col_in), graph.sizes_ubo(out)},
+      {PushConstantDataInfo(&row_offset, sizeof(row_offset)),
+       PushConstantDataInfo(&epilogue_params, sizeof(epilogue_params)),
+       PushConstantDataInfo(&epilogue_params_f32, sizeof(epilogue_params_f32))},
+      spec_vars,
+      {in,
+       weight_data,
+       stride,
+       padding,
+       dilation,
+       static_cast<ValueRef>(oh_tile),
+       static_cast<ValueRef>(oh_offset),
+       epilogue.residual},
+      resize_conv2d_gemm_node));
+}
+
+// Sums the split-K slices of every output pixel (all row tiles) and applies
+// bias and epilogue: conv2d_pw_coopmat_sk<n>_merge with the scratch as its
+// input, whose channel count K_total locates the slices after the weights.
+void add_conv2d_im2col_coopmat_merge_node(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant,
+    const ValueRef in,
+    const ValueRef weight_data,
+    const ValueRef stride,
+    const ValueRef padding,
+    const ValueRef dilation,
+    const ValueRef im2col_in,
+    const ValueRef packed_weight,
+    const ValueRef packed_bias,
+    const Conv2dEpilogue& epilogue,
+    const Conv2dEpilogueArgs& epilogue_args,
+    const ValueRef out,
+    const int32_t oh_tile) {
+  const utils::ivec4 unused{0, 0, 0, 0};
+  const Conv2dEpilogueParams epilogue_params = create_conv2d_epilogue_params(
+      epilogue, graph.dtype_of(out) == vkapi::kHalf);
+  const Conv2dEpilogueParams epilogue_params_f32 =
+      create_conv2d_epilogue_params(epilogue, /*f16_epilogue=*/false);
+  vkapi::SpecVarList spec_vars = {1};
+  append_conv2d_epilogue_spec_vars(spec_vars, epilogue);
+  const std::string merge = conv2d_pw_coopmat_merge_shader(variant);
+  graph.execute_nodes().emplace_back(new DynamicDispatchNode(
+      graph,
+      [merge](
+          ComputeGraph*,
+          const std::vector<ArgGroup>&,
+          const std::vector<ValueRef>&) { return VK_KERNEL_FROM_STR(merge); },
+      [](ComputeGraph* graph,
+         const vkapi::ShaderInfo&,
+         const std::vector<ArgGroup>& args,
+         const std::vector<ValueRef>&) {
+        const ValueRef out = args.at(0).refs.at(0);
+        if (!conv2d_im2col_coopmat_runnable(*graph, out)) {
+          return GlobalWorkGrid({0u, 0u, 0u}, kExplicitWorkGrid);
+        }
+        const uint32_t texels = graph->size_at<uint32_t>(-1, out) *
+            graph->size_at<uint32_t>(-2, out) *
+            utils::div_up_4(graph->size_at<uint32_t>(-3, out));
+        return GlobalWorkGrid(
+            {utils::div_up(texels, kMergeThreads) * kMergeThreads, 1u, 1u},
+            kExplicitWorkGrid);
+      },
+      [](ComputeGraph*,
+         const vkapi::ShaderInfo&,
+         const GlobalWorkGrid&,
+         const std::vector<ArgGroup>&,
+         const std::vector<ValueRef>&) {
+        return LocalWorkGroup(kMergeThreads, 1u, 1u);
+      },
+      {{out, vkapi::kWrite},
+       {im2col_in, vkapi::kRead},
+       {{packed_weight, packed_bias, epilogue_args.residual, epilogue_args.scale},
+        vkapi::kRead}},
+      {graph.sizes_ubo(im2col_in), graph.sizes_ubo(out)},
+      {PushConstantDataInfo(&unused, sizeof(unused)),
+       PushConstantDataInfo(&epilogue_params, sizeof(epilogue_params)),
+       PushConstantDataInfo(&epilogue_params_f32, sizeof(epilogue_params_f32))},
+      spec_vars,
+      {in,
+       weight_data,
+       stride,
+       padding,
+       dilation,
+       static_cast<ValueRef>(oh_tile),
+       static_cast<ValueRef>(0),
+       epilogue.residual},
+      resize_conv2d_gemm_node));
+}
+
 } // namespace
+
+bool conv2d_im2col_coopmat_runnable(ComputeGraph& graph, const ValueRef out) {
+  return graph.size_at<uint32_t>(-1, out) * graph.size_at<uint32_t>(-2, out) >
+      1u;
+}
+
+std::optional<std::string> conv2d_im2col_coopmat_ineligible(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant,
+    const ValueRef in,
+    const ValueRef weight_data,
+    const ValueRef dilation,
+    const ValueRef out,
+    const bool transposed) {
+  const auto n = [](const uint64_t v) { return std::to_string(v); };
+  if (!variant.has(Conv2dPwCoopmatVariant::kIm2col)) {
+    return "the variant does not read an im2col matrix (an _i2c variant is "
+           "required)";
+  }
+  if (transposed) {
+    return "the convolution is transposed";
+  }
+  if (graph.dtype_of(in) != vkapi::kHalf ||
+      graph.dtype_of(out) != vkapi::kHalf) {
+    return "input and output are not FP16";
+  }
+  if (!graph.float16_buffers_enabled()) {
+    return "16-bit storage buffers are not enabled";
+  }
+  if (!graph.is_texture_storage(in) || !graph.is_texture_storage(out) ||
+      graph.packed_dim_of(in) != WHCN::kChannelsDim ||
+      graph.packed_dim_of(out) != WHCN::kChannelsDim) {
+    return "input and output are not channels-packed textures";
+  }
+  const std::vector<int64_t> in_sizes = graph.sizes_of(in);
+  const std::vector<int64_t> w_sizes = graph.sizes_of(weight_data);
+  if (in_sizes.size() != 4 || in_sizes.at(0) != 1) {
+    return "the batch is not 1";
+  }
+  if (w_sizes.size() != 4 || w_sizes.at(1) != in_sizes.at(1)) {
+    return "the convolution is grouped";
+  }
+  {
+    const auto dilation_list = graph.get_int_list(dilation);
+    if (dilation_list->at(0) != 1 || dilation_list->at(1) != 1) {
+      return "dilation is not 1";
+    }
+  }
+  if (!conv2d_im2col_coopmat_runnable(graph, out)) {
+    return "the output has a single pixel";
+  }
+  if (const auto reason =
+          conv2d_pw_coopmat_device_unsupported(graph, variant)) {
+    return reason;
+  }
+  const Conv2dGemmTiling tiling =
+      conv2d_gemm_tiling(graph, in, weight_data, out);
+  const uint32_t W_out = graph.size_at<uint32_t>(-1, out);
+  const uint32_t N = graph.size_at<uint32_t>(-3, out);
+  const uint64_t K4 = uint64_t(tiling.K_total) / 4u;
+  const uint64_t N4 = utils::div_up_4(N);
+  vkapi::Adapter* const adapter = graph.context()->adapter_ptr();
+  const uint32_t max_3d = adapter->max_texture3d_dim();
+  if (K4 > max_3d) {
+    return "the gathered matrix has K = " + n(tiling.K_total) + ", " + n(K4) +
+        " texel layers, more than the maximum 3D image dimension " + n(max_3d);
+  }
+  if (W_out > max_3d || uint64_t(tiling.oh_tile) > max_3d) {
+    return "the gathered matrix tile of " + n(W_out) + " x " +
+        n(tiling.oh_tile) +
+        " pixels exceeds the maximum 3D image dimension " + n(max_3d);
+  }
+  if (variant.has(Conv2dPwCoopmatVariant::kAligned)) {
+    return "the variant requires N % tile_n == 0, which the route does not "
+           "check (_al)";
+  }
+  if (variant.has(Conv2dPwCoopmatVariant::kAlignedClampN) &&
+      tiling.K_total % variant.tile_k != 0) {
+    return "gathered K " + n(tiling.K_total) +
+        " not a multiple of the variant's K step " + n(variant.tile_k);
+  }
+  const uint32_t max_2d = adapter->max_texture2d_dim();
+  if (K4 > max_2d || N4 * 4u > max_2d) {
+    return "the texture2d weights of the conv2d_gemm resize fallback (" +
+        n(N4 * 4u) + " x " + n(K4) + " texels) exceed maxImageDimension2D " +
+        n(max_2d);
+  }
+  const uint64_t rows = K4 +
+      conv2d_pw_coopmat_scratch_rows(
+          variant, conv2d_pw_coopmat_scratch_capacity(graph, out));
+  const uint64_t bytes = rows * N4 * 16u * 2u;
+  if (bytes > adapter->max_buffer_numel()) {
+    return "the packed weights" +
+        std::string(variant.k_slices > 1u ? " and split-K scratch" : "") +
+        " take " + n(bytes) + " bytes, more than maxStorageBufferRange " +
+        n(adapter->max_buffer_numel());
+  }
+  const utils::uvec3 max_count = adapter->max_compute_workgroup_count();
+  if (variant.k_slices > 1u) {
+    for (const auto& [begin, end] : conv2d_pw_coopmat_k_slices(
+             variant, utils::safe_downcast<uint32_t>(tiling.K_total))) {
+      if (end < begin + 2u) {
+        return "gathered K " + n(tiling.K_total) + " gives " +
+            n(utils::div_up(uint64_t(tiling.K_total), uint64_t(variant.tile_k))) +
+            " K steps: fewer than two K steps in a slice of " +
+            n(variant.k_slices);
+      }
+    }
+    const uint64_t merge_groups = utils::div_up(
+        uint64_t(W_out) * graph.size_at<uint32_t>(-2, out) * N4,
+        uint64_t(kMergeThreads));
+    if (merge_groups > max_count[0]) {
+      return "the merge needs " + n(merge_groups) +
+          " work groups in x, more than maxComputeWorkGroupCount.x " +
+          n(max_count[0]);
+    }
+  }
+  if (variant.has(Conv2dPwCoopmatVariant::kNoEpilogue) ||
+      variant.has(Conv2dPwCoopmatVariant::kDiagOnce)) {
+    return "the variant's options are not supported with an im2col input";
+  }
+  return conv2d_pw_coopmat_grid_unsupported(
+      conv2d_pw_coopmat_workgroups(
+          graph,
+          variant,
+          N,
+          W_out * utils::safe_downcast<uint32_t>(tiling.oh_tile)),
+      max_count);
+}
 
 //
 // Orchestration
@@ -345,7 +686,28 @@ void conv2d_gemm_impl(
     const ValueRef dilation,
     const ValueRef out,
     const Conv2dEpilogue& epilogue,
-    const std::optional<utils::StorageType> im2col_storage_override) {
+    const std::optional<utils::StorageType> im2col_storage_override,
+    const Conv2dPwCoopmatVariant* coopmat_variant) {
+  if (coopmat_variant != nullptr) {
+    if (const auto reason = conv2d_im2col_coopmat_ineligible(
+            graph,
+            *coopmat_variant,
+            in,
+            weight_data,
+            dilation,
+            out,
+            /*transposed=*/false)) {
+      VK_THROW(
+          "conv2d_gemm: ",
+          coopmat_variant->name,
+          " cannot run this convolution: ",
+          *reason);
+    }
+    VK_CHECK_COND(
+        !im2col_storage_override.has_value() ||
+            *im2col_storage_override == utils::kTexture3D,
+        "conv2d_gemm: the cooperative-matrix multiply reads a texture3d im2col");
+  }
   const std::vector<int64_t> in_sizes = graph.sizes_of(in);
   const std::vector<int64_t> w_sizes = graph.sizes_of(weight_data);
   const std::vector<int64_t> out_sizes = graph.sizes_of(out);
@@ -424,7 +786,9 @@ void conv2d_gemm_impl(
   //     doesn't fit the device's max texture2d dim, fall back to texture3d laid
   //     out as (W_out, oh_tile, K4_total). Buffer is the last-resort fallback.
   utils::StorageType im2col_storage;
-  if (im2col_storage_override.has_value()) {
+  if (coopmat_variant != nullptr) {
+    im2col_storage = utils::kTexture3D;
+  } else if (im2col_storage_override.has_value()) {
     im2col_storage = im2col_storage_override.value();
     VK_CHECK_COND(
         im2col_storage == utils::kBuffer ||
@@ -490,6 +854,18 @@ void conv2d_gemm_impl(
   // the im2col K-axis reorder + 4x4 transpose into the layout conv2d_gemm.glsl
   // loads via load_packed_weight_tile_with_checks.
   ValueRef packed_weight = prepack_conv2d_gemm_weight(graph, weight_data);
+  // The cooperative-matrix multiply reads buffer weights (with the split-K
+  // scratch after them); conv2d_gemm keeps the texture2d weights for a resize
+  // to a shape the multiply cannot run.
+  const ValueRef coopmat_weight = coopmat_variant == nullptr
+      ? kDummyValueRef
+      : prepack_conv2d_gemm_weight(
+            graph,
+            weight_data,
+            utils::kBuffer,
+            conv2d_pw_coopmat_scratch_rows(
+                *coopmat_variant,
+                conv2d_pw_coopmat_scratch_capacity(graph, out)));
 
   // Bias prepack: matches the bias format conv2d_gemm expects. prepack_biases
   // only reads dim 0 (= C_out) of the weight, so the original 4D weight works
@@ -560,6 +936,24 @@ void conv2d_gemm_impl(
         oh_offset,
         oh_tile_i32);
 
+    if (coopmat_variant != nullptr) {
+      add_conv2d_im2col_coopmat_node(
+          graph,
+          *coopmat_variant,
+          in,
+          weight_data,
+          stride,
+          padding,
+          dilation,
+          im2col_tensor,
+          coopmat_weight,
+          packed_bias,
+          epilogue,
+          epilogue_args,
+          out,
+          oh_offset,
+          oh_tile_i32);
+    }
     add_conv2d_gemm_node(
         graph,
         in,
@@ -575,7 +969,25 @@ void conv2d_gemm_impl(
         out,
         utils::safe_downcast<int32_t>(K_total),
         oh_offset,
-        oh_tile_i32);
+        oh_tile_i32,
+        /*coopmat_fallback=*/coopmat_variant != nullptr);
+  }
+  if (coopmat_variant != nullptr && coopmat_variant->k_slices > 1u) {
+    add_conv2d_im2col_coopmat_merge_node(
+        graph,
+        *coopmat_variant,
+        in,
+        weight_data,
+        stride,
+        padding,
+        dilation,
+        im2col_tensor,
+        coopmat_weight,
+        packed_bias,
+        epilogue,
+        epilogue_args,
+        out,
+        utils::safe_downcast<int32_t>(oh_tile));
   }
 }
 

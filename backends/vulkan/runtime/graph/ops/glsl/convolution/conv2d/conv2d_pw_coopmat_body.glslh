@@ -26,7 +26,14 @@
  * the bias, apply the epilogue (both in VEC4_T, f32 for ACC_FP32) and imageStore
  * the texels inside the output. The wrapper defines DRAIN_G and DRAIN_PASSES.
  * Options: ALIGNED (no bounds tests in the K loop), CLAMP_N (with ALIGNED, any
- * N), SPLIT_K, W16, IMG_INPUT, NO_EPILOGUE, BCM, DIAG_ONCE, DIRECT_B.
+ * N), SPLIT_K, W16, IMG_INPUT, NO_EPILOGUE, BCM, DIAG_ONCE, DIRECT_B, I2C.
+ *
+ * I2C: the input is one row tile of an im2col matrix (conv2d_im2col's
+ * texture3d scratch, texel (ow, oh_local, k4)) holding in_sizes.y output rows
+ * from output row I2C_OH_OFFSET: pixel m of the tile is read at its tile-local
+ * row and written at output row I2C_OH_OFFSET + m / W_out (split-K: scratch
+ * pixel I2C_OH_OFFSET * W_out + m of the whole plane, so one merge covers every
+ * tile).
  */
 
 #ifndef CONV2D_PW_COOPMAT_BODY_GLSLH
@@ -450,6 +457,13 @@ void mma_step_direct(
 }
 #endif
 
+#ifdef I2C
+#if defined(NO_EPILOGUE) || defined(DIRECT_B) || defined(DIAG_ONCE)
+#error "I2C supports neither NO_EPILOGUE, DIRECT_B nor DIAG_ONCE"
+#endif
+uint g_oh_offset;
+#endif
+
 #ifdef SPLIT_K
 // Split-K across work groups (design D6): work group x is the channel tile
 // x % n_tiles of K slice x / n_tiles, which runs K steps [slice * q,
@@ -528,7 +542,10 @@ void drain_pass(
       VEC4_T v = VEC4_T(
           unpackFloat2x16(hi ? q.z : q.x), unpackFloat2x16(hi ? q.w : q.y));
 #endif
-#if defined(SPLIT_K)
+#if defined(SPLIT_K) && defined(I2C)
+      store_scratch(
+          g_oh_offset * W_out + m, n4, W_out * uint(out_sizes.y), N4, v);
+#elif defined(SPLIT_K)
       store_scratch(m, n4, M, N4, v);
 #elif defined(NO_EPILOGUE)
       // No bias, activation, residual or scale (conv2d_pw_coopmat_ineligible).
@@ -537,7 +554,11 @@ void drain_pass(
       v += VEC4_T(texelFetch(t_bias, ivec2(n4, 0), 0));
       const vec4 scale =
           has_scale ? texelFetch(t_scale, ivec2(n4, 0), 0) : vec4(1);
+#ifdef I2C
+      const ivec3 pos = ivec3(m % W_out, g_oh_offset + m / W_out, n4);
+#else
       const ivec3 pos = ivec3(m % W_out, m / W_out, n4);
+#endif
       imageStore(t_out, pos, vec4(apply_epilogue(v, pos, scale)));
 #endif
     }
@@ -548,7 +569,15 @@ void main() {
   const uvec2 sg = uvec2(gl_SubgroupID % SG_GRID_X, gl_SubgroupID / SG_GRID_X);
 
   const uint W_out = uint(out_sizes.x);
+#ifdef I2C
+  g_oh_offset = uint(I2C_OH_OFFSET);
+  const uint H_out = uint(out_sizes.y);
+  const uint M = g_oh_offset < H_out
+      ? W_out * min(uint(in_sizes.y), H_out - g_oh_offset)
+      : 0u;
+#else
   const uint M = W_out * uint(out_sizes.y);
+#endif
   const uint N4 = uint(div_up_4(out_sizes.z));
   const uint K4 = uint(div_up_4(in_sizes.z));
 

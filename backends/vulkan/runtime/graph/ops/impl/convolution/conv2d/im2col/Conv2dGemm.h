@@ -13,6 +13,7 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2d.h>
 
 #include <optional>
+#include <string>
 
 namespace vkcompute {
 
@@ -77,6 +78,45 @@ void conv2d_gemm_impl(
     const ValueRef out,
     const Conv2dEpilogue& epilogue = {},
     const std::optional<utils::StorageType> im2col_storage_override =
-        std::nullopt);
+        std::nullopt,
+    const Conv2dPwCoopmatVariant* coopmat_variant = nullptr);
+
+/*
+ * With `coopmat_variant` (an _i2c variant of conv2d_pw_coopmat, benchmark route
+ * im2col_coopmat) the GEMM of each row tile is that cooperative-matrix variant
+ * over a texture3d im2col scratch, with weights packed into a buffer by
+ * prepack_conv2d_gemm_weight (and, for split-K, one merge over every tile after
+ * the last). conv2d_gemm_impl throws when conv2d_im2col_coopmat_ineligible
+ * names a reason. While a resize gives a shape the variant cannot run
+ * (conv2d_im2col_coopmat_runnable is false), the variant and merge dispatch
+ * nothing and each tile runs conv2d_gemm on the same scratch with texture2d
+ * weights, which the route keeps beside the buffer ones.
+ */
+
+// The serialized [C_out, C_in, K_h, K_w] weight packed on the GPU into the 4OC
+// x 4IC blocked layout of a [C_out, K_h * K_w * align_up_4(C_in)] matrix in im2col
+// K order (the layout of pack_fp_linear_weight over that matrix), as a
+// texture2d or a buffer; a buffer gets `scratch_rows` more rows of N4 * 16
+// elements after the weights, which the prepack does not write.
+ValueRef prepack_conv2d_gemm_weight(
+    ComputeGraph& graph,
+    const ValueRef weight_data,
+    const utils::StorageType weight_storage = utils::kTexture2D,
+    const int64_t scratch_rows = 0);
+
+// Whether the cooperative-matrix multiply runs at the output's current sizes:
+// more than one output pixel.
+bool conv2d_im2col_coopmat_runnable(ComputeGraph& graph, const ValueRef out);
+
+// Why the im2col cooperative-matrix route cannot run the convolution on the
+// variant, naming the device limit where one is exceeded, or nullopt.
+std::optional<std::string> conv2d_im2col_coopmat_ineligible(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant,
+    const ValueRef in,
+    const ValueRef weight_data,
+    const ValueRef dilation,
+    const ValueRef out,
+    const bool transposed);
 
 } // namespace vkcompute
