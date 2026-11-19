@@ -376,22 +376,25 @@ PRECISION_ALIGNED = [
     ),
 ]
 
-# PRECISION with K = 128, which every split-K variant can split (8 K steps of
-# 16, two per slice at four slices); the ordered cancellation (K = 2048) of
-# PRECISION already splits.
+# Smallest K that every split-K variant splits: K = 225 gives 8 K steps of 32
+# (AMD, two per slice at four slices) and 15 of 16; not a multiple of either.
+SPLIT_K = 225
+
+# PRECISION with K = SPLIT_K; the ordered cancellation (K = 2048) of PRECISION
+# already splits.
 PRECISION_SPLIT = [
     (
         label.replace("aligned precision", "split precision"),
         M,
         N,
-        128,
+        SPLIT_K,
         plane,
         dict(
             kwargs,
             data=dict(
                 kwargs["data"],
                 weight=first_channel_weight(
-                    N, 128, kwargs["data"]["weight"]["repeat"][0]
+                    N, SPLIT_K, kwargs["data"]["weight"]["repeat"][0]
                 ),
             ),
         ),
@@ -400,8 +403,29 @@ PRECISION_SPLIT = [
     if K == 32
 ]
 
-# Split-K: K not a multiple of the K step or of four slices.
-SPLIT = [("K=257", 196, 64, 257, (14, 14), {})]
+# Split-K: K not a multiple of the K step or of four slices (K = 257 is 9 AMD
+# K steps, which four slices cannot split; K = 321 is 11), and the fused
+# residual epilogues with a K every split-K variant splits.
+SPLIT = [
+    ("K=257", 196, 64, 257, (14, 14), {}),
+    ("K=321", 196, 64, 321, (14, 14), {}),
+    (
+        "split residual add",
+        196,
+        32,
+        SPLIT_K,
+        (14, 14),
+        {"op": "epilogue", "epilogue": ("add", 1.0, False, "none")},
+    ),
+    (
+        "split residual sub scale relu",
+        49,
+        24,
+        SPLIT_K,
+        (7, 7),
+        {"op": "epilogue", "epilogue": ("sub", 0.5, True, "relu")},
+    ),
+]
 
 # Shapes every aligned-only variant accepts: pixel counts one short of and one
 # over a multiple of every M tile (63 = 64 - 1, 65 = 64 + 1), a fused clamp and
@@ -486,12 +510,12 @@ def correctness(variants):
         VALIDATION_TIMING,
         baselines=False,
     )
-    # The same plane with a K that split-K variants can split.
+    # The same plane with a K that every split-K variant can split.
     cases += shape_cases(
         "split dispatch limit",
         1025 * 1024,
         8,
-        128,
+        SPLIT_K,
         (1025, 1024),
         [v for v in variants if "_sk" in v],
         VALIDATION_TIMING,
