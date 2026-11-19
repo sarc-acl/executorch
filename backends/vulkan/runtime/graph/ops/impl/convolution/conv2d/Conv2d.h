@@ -231,6 +231,8 @@ utils::StorageType conv2d_pw_weight_storage(
 // Why the convolution cannot run on the variant at its current sizes, with
 // packed weights in `weight_storage`, or nullopt when it is eligible
 // (conv2d_pw_coopmat_eligible is this with the packed weight's storage).
+// `has_bias_or_epilogue`: the convolution has a bias, an activation, a
+// residual or a scale, which an _epi0 variant cannot apply.
 std::optional<std::string> conv2d_pw_coopmat_ineligible(
     ComputeGraph& graph,
     const Conv2dPwCoopmatVariant& variant,
@@ -240,7 +242,8 @@ std::optional<std::string> conv2d_pw_coopmat_ineligible(
     const ValueRef stride,
     const ValueRef padding,
     const ValueRef out,
-    const bool transposed);
+    const bool transposed,
+    const bool has_bias_or_epilogue);
 
 // Whether a pointwise convolution may run on the variant at its current
 // sizes: the device supports the variant, the convolution is FP16,
@@ -256,7 +259,8 @@ bool conv2d_pw_coopmat_eligible(
     const ValueRef stride,
     const ValueRef padding,
     const ValueRef out,
-    const bool transposed);
+    const bool transposed,
+    const bool has_bias_or_epilogue);
 
 // Kernel requested from conv2d_pw_impl. kAuto is the production pick and the
 // only kind automatic routing uses. kTiledWide always picks the 2x2-pixel x

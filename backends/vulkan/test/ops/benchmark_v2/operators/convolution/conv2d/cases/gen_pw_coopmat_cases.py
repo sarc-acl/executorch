@@ -381,6 +381,7 @@ PRECISION_ALIGNED = [
 ALIGNED = [
     ("aligned 63px", 63, 64, 64, (7, 9), {}),
     ("aligned 65px", 65, 128, 96, (5, 13), {}),
+    ("aligned 65px no bias", 65, 128, 96, (5, 13), {"bias": False}),
     ("aligned clamp", 196, 64, 128, (14, 14), {"op": "clamp", "clamp": [0.0, 6.0]}),
     (
         "aligned residual",
@@ -593,7 +594,10 @@ def diag_checks(variants):
 GUARD = 7.0
 
 
-def guard_case(variant, tile_m, tile_n, threads, label, M, N, K, plane, image_input=False):
+def guard_case(
+    variant, tile_m, tile_n, threads, label, M, N, K, plane, image_input=False,
+    no_epilogue=False,
+):
     """A raw shader case of an aligned-only variant whose output texture is
     larger than the convolution's output (out_sizes): GUARD rows below the plane
     and one 4-channel texel past N, filled with GUARD. The reference
@@ -643,7 +647,8 @@ def guard_case(variant, tile_m, tile_n, threads, label, M, N, K, plane, image_in
                     "name": "bias",
                     "sizes": [1, N],
                     "dtype": "float16",
-                    "data": {"rand_uniform_float": [-1, 1]},
+                    # An _epi0 shader adds no bias.
+                    "data": {"fill": 0} if no_epilogue else {"rand_uniform_float": [-1, 1]},
                 }
             },
             # The unused residual binding: the input, or for a storage-image
@@ -702,6 +707,7 @@ def guard_cases(family, variants):
                 guard_case(
                     p["NAME"], p["WG_TILE_M"], p["WG_TILE_N"], threads,
                     label, M, N, K, plane, bool(p.get("IMG_INPUT")),
+                    bool(p.get("NO_EPILOGUE")),
                 )
             )
     return cases

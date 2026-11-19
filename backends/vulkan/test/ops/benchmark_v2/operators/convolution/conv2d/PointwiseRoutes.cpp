@@ -89,6 +89,10 @@ Json build_pw_coopmat(
   const auto dilation = spatial_parameter(graph, args[5], true);
   supported(
       dilation[0] == 1 && dilation[1] == 1, "pw_coopmat requires dilation 1");
+  const Conv2dEpilogue epilogue = conv2d_epilogue_from_args(graph, args);
+  const bool has_bias_or_epilogue = graph.val_is_not_none(args[2]) ||
+      epilogue.has_activation() || epilogue.has_residual() ||
+      epilogue.has_scale();
   // Every eligibility condition of the dispatch node, for the initial sizes and
   // the storage the prepacking will give the weights, so an ineligible case is
   // reported here instead of being built on the tiled fallback.
@@ -101,7 +105,8 @@ Json build_pw_coopmat(
           args[3],
           args[4],
           args.back(),
-          /*transposed=*/false)) {
+          /*transposed=*/false,
+          has_bias_or_epilogue)) {
     throw UnsupportedRoute(name + " cannot run this case: " + *reason);
   }
   const size_t first = graph.execute_nodes().size();

@@ -123,6 +123,10 @@ $if W16:
   #define W16
 $if IMG_INPUT:
   #define IMG_INPUT
+$if NO_EPILOGUE:
+  #define NO_EPILOGUE
+$if BCM:
+  #define BCM
 
 const uint MMA_M = ${MMA_M};
 const uint MMA_N = ${MMA_N};

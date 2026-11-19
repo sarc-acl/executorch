@@ -31,6 +31,8 @@ conv2d_pw_coopmat:
     ALIGNED: false
     W16: false
     IMG_INPUT: false
+    NO_EPILOGUE: false
+    BCM: false
   shader_variants:
     # Intel Xe2 (Arc B580, Arc Pro B70): MMA 8x16x16, subgroup 16, K step 16,
     # fragment-contiguous shared memory. Subgroup grids: OUT/DEVICES.md rule
@@ -713,3 +715,88 @@ conv2d_pw_coopmat:
       FRAG_LAYOUT: true
       ALIGNED: true
       IMG_INPUT: true
+    # Epilogue skip (_epi0) on the N-tile-32 aligned-only tiles: the output
+    # stage stores the accumulator; no bias, activation, residual or scale (D5).
+    - NAME: conv2d_pw_coopmat_xe2_t16x32_f16_al_epi0_half
+      MMA_M: 8
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      NO_EPILOGUE: true
+    - NAME: conv2d_pw_coopmat_xe2_t16x32_f32_al_epi0_half
+      MMA_M: 8
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f32
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      NO_EPILOGUE: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_al_epi0_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      NO_EPILOGUE: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f32_al_epi0_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      NO_EPILOGUE: true
+    - NAME: conv2d_pw_coopmat_nvidia_t32x32_f16_al_epi0_half
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      NO_EPILOGUE: true
+    - NAME: conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      NO_EPILOGUE: true
+    # Column-major B staging (_bcm) on the AMD 16x32 tile (D5).
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_bcm_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      BCM: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f32_bcm_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      BCM: true

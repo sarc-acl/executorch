@@ -125,6 +125,8 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
   constexpr uint32_t kThreadGrid = V::kThreadGrid;
   constexpr uint32_t kWideWeightLoad = V::kWideWeightLoad;
   constexpr uint32_t kImageInput = V::kImageInput;
+  constexpr uint32_t kNoEpilogue = V::kNoEpilogue;
+  constexpr uint32_t kColumnMajorB = V::kColumnMajorB;
   // clang-format off
   static const std::vector<Conv2dPwCoopmatVariant> variants = {
       // Intel Xe2
@@ -207,6 +209,16 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       // Storage-image input (_img) on the Xe2 N-tile-32 aligned-only tile
       {"conv2d_pw_coopmat_xe2_t16x32_f16_al_img_half", 8, 16, 16, 16, 32, 16, 1, 1, 16, false, true, kAligned | kImageInput},
       {"conv2d_pw_coopmat_xe2_t16x32_f32_al_img_half", 8, 16, 16, 16, 32, 16, 1, 1, 16, true, true, kAligned | kImageInput},
+      // Epilogue skip (_epi0) on the N-tile-32 aligned-only tiles
+      {"conv2d_pw_coopmat_xe2_t16x32_f16_al_epi0_half", 8, 16, 16, 16, 32, 16, 1, 1, 16, false, true, kAligned | kNoEpilogue},
+      {"conv2d_pw_coopmat_xe2_t16x32_f32_al_epi0_half", 8, 16, 16, 16, 32, 16, 1, 1, 16, true, true, kAligned | kNoEpilogue},
+      {"conv2d_pw_coopmat_amd_t16x32_f16_al_epi0_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kAligned | kNoEpilogue},
+      {"conv2d_pw_coopmat_amd_t16x32_f32_al_epi0_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, true, false, kAligned | kNoEpilogue},
+      {"conv2d_pw_coopmat_nvidia_t32x32_f16_al_epi0_half", 16, 16, 16, 32, 32, 16, 1, 1, 32, false, false, kAligned | kNoEpilogue},
+      {"conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half", 16, 16, 16, 32, 32, 16, 1, 1, 32, true, false, kAligned | kNoEpilogue},
+      // Column-major B staging (_bcm) on the AMD 16x32 tile
+      {"conv2d_pw_coopmat_amd_t16x32_f16_bcm_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kColumnMajorB},
+      {"conv2d_pw_coopmat_amd_t16x32_f32_bcm_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, true, false, kColumnMajorB},
   };
   // clang-format on
   return variants;
@@ -514,7 +526,8 @@ std::optional<std::string> conv2d_pw_coopmat_ineligible(
     const ValueRef stride,
     const ValueRef padding,
     const ValueRef out,
-    const bool transposed) {
+    const bool transposed,
+    const bool has_bias_or_epilogue) {
   if (transposed) {
     return "the convolution is transposed";
   }
@@ -582,6 +595,11 @@ std::optional<std::string> conv2d_pw_coopmat_ineligible(
           std::to_string(variant.tile_n);
     }
   }
+  if (variant.has(Conv2dPwCoopmatVariant::kNoEpilogue) &&
+      has_bias_or_epilogue) {
+    return "the convolution has a bias, activation, residual or scale, which "
+           "the variant does not apply";
+  }
   return conv2d_pw_coopmat_grid_unsupported(
       conv2d_pw_coopmat_workgroups(
           graph, variant, graph.size_at<uint32_t>(-3, out), M),
@@ -597,7 +615,8 @@ bool conv2d_pw_coopmat_eligible(
     const ValueRef stride,
     const ValueRef padding,
     const ValueRef out,
-    const bool transposed) {
+    const bool transposed,
+    const bool has_bias_or_epilogue) {
   return !conv2d_pw_coopmat_ineligible(
               graph,
               variant,
@@ -607,7 +626,8 @@ bool conv2d_pw_coopmat_eligible(
               stride,
               padding,
               out,
-              transposed)
+              transposed,
+              has_bias_or_epilogue)
               .has_value();
 }
 
@@ -651,7 +671,8 @@ vkapi::ShaderInfo pick_conv2d_pw_tiled_shader(
     const std::vector<ArgGroup>& args,
     const std::vector<ValueRef>& resize_args,
     const Conv2dPwRequest& request,
-    const bool transposed) {
+    const bool transposed,
+    const bool has_bias_or_epilogue) {
   const ValueRef out = args.at(0).refs.at(0);
   const ValueRef in = args.at(1).refs.at(0);
   const ValueRef packed_weight = args.at(2).refs.at(0);
@@ -666,7 +687,8 @@ vkapi::ShaderInfo pick_conv2d_pw_tiled_shader(
           resize_args.at(1),
           resize_args.at(2),
           out,
-          transposed)) {
+          transposed,
+          has_bias_or_epilogue)) {
     return VK_KERNEL_FROM_STR(request.coopmat_variant->name);
   }
 
@@ -887,7 +909,8 @@ void add_conv2d_pw_tiled_node(
     const Conv2dEpilogue& epilogue,
     const Conv2dEpilogueArgs& epilogue_args,
     const Conv2dPwRequest& request,
-    const bool transposed) {
+    const bool transposed,
+    const bool has_bias) {
   int32_t stride_h, stride_w, padding_h, padding_w;
   {
     const auto stride_list = graph.get_int_list(stride);
@@ -925,14 +948,22 @@ void add_conv2d_pw_tiled_node(
       ? vkapi::kReadWrite
       : vkapi::kRead;
 
+  const bool has_bias_or_epilogue = has_bias || epilogue.has_activation() ||
+      epilogue.has_residual() || epilogue.has_scale();
+
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
       graph,
-      [request, transposed](
+      [request, transposed, has_bias_or_epilogue](
           ComputeGraph* graph,
           const std::vector<ArgGroup>& args,
           const std::vector<ValueRef>& resize_args) {
         return pick_conv2d_pw_tiled_shader(
-            graph, args, resize_args, request, transposed);
+            graph,
+            args,
+            resize_args,
+            request,
+            transposed,
+            has_bias_or_epilogue);
       },
       pick_conv2d_pw_tiled_gwg,
       pick_conv2d_pw_tiled_lwg,
@@ -1011,7 +1042,8 @@ void conv2d_pw_impl(
       epilogue,
       Conv2dEpilogueArgs(epilogue, in, packed_bias, packed_scale),
       request,
-      transposed_val);
+      transposed_val,
+      /*has_bias=*/!graph.val_is_none(bias));
 }
 
 } // namespace vkcompute
