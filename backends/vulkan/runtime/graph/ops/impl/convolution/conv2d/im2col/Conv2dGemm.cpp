@@ -572,6 +572,10 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
       graph.dtype_of(out) != vkapi::kHalf) {
     return "input and output are not FP16";
   }
+  // The buffer weight packing exists for FP16 weights only.
+  if (graph.dtype_of(weight_data) != vkapi::kHalf) {
+    return "the weights are not FP16";
+  }
   if (!graph.float16_buffers_enabled()) {
     return "16-bit storage buffers are not enabled";
   }

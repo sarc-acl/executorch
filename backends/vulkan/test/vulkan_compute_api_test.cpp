@@ -7003,3 +7003,50 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_row_tiles) {
       1,
       1));
 }
+
+// A request with FP16 input and output but FP32 weights is refused with its
+// reason before any prepack node is registered (there is no FP32 buffer
+// packing of the gathered weights).
+TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_refuses_fp32_weights) {
+  const Conv2dPwCoopmatVariant* const variant = find_conv2d_pw_coopmat_variant(
+      "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_i2c_half");
+  ASSERT_NE(variant, nullptr);
+  ComputeGraph graph{GraphConfig()};
+  const ValueRef in = graph.add_tensor(
+      {1, 16, 8, 8}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+  const ValueRef out = graph.add_tensor(
+      {1, 32, 8, 8}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+  const std::vector<float> w(32 * 16 * 3 * 3, 0.5f);
+  const std::vector<float> b(32, 0.0f);
+  const ValueRef weight =
+      graph.add_tensorref({32, 16, 3, 3}, vkapi::kFloat, w.data());
+  const ValueRef dilation = graph.add_scalar_list<int64_t>({1, 1});
+  const auto reason = conv2d_im2col_coopmat_ineligible(
+      graph, *variant, in, weight, dilation, out, /*transposed=*/false);
+  ASSERT_TRUE(reason.has_value());
+  EXPECT_EQ(*reason, "the weights are not FP16");
+  const size_t prepacks = graph.prepack_nodes().size();
+  const size_t nodes = graph.execute_nodes().size();
+  try {
+    conv2d_gemm_impl(
+        graph,
+        in,
+        weight,
+        graph.add_tensorref({32}, vkapi::kFloat, b.data()),
+        graph.add_scalar_list<int64_t>({1, 1}),
+        graph.add_scalar_list<int64_t>({1, 1}),
+        dilation,
+        out,
+        Conv2dEpilogue{},
+        utils::kTexture3D,
+        variant);
+    ADD_FAILURE() << "conv2d_gemm_impl accepted FP32 weights";
+  } catch (const std::exception& e) {
+    EXPECT_NE(
+        std::string(e.what()).find("the weights are not FP16"),
+        std::string::npos)
+        << e.what();
+  }
+  EXPECT_EQ(graph.prepack_nodes().size(), prepacks);
+  EXPECT_EQ(graph.execute_nodes().size(), nodes);
+}
