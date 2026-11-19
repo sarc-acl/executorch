@@ -6513,6 +6513,8 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_no_duplicate_staging_loads) {
         "conv2d_pw_coopmat_xe2_t32x64_f32_g4x2_half",
         "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_half",
         "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half",
+        "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk2_half",
+        "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half",
         "conv2d_pw_coopmat_nvidia_t16x16_f16_half",
         "conv2d_pw_coopmat_nvidia_t16x16_f32_half"}) {
     SCOPED_TRACE(name);

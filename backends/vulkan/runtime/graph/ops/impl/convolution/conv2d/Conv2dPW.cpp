@@ -243,6 +243,8 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN, 4u},
       {"conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_half", 8, 16, 16, 64, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN},
       {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN},
+      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk2_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN, 2u},
+      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN, 4u},
   };
   // clang-format on
   return variants;

@@ -1,30 +1,25 @@
 {
- "parent": "conv2d_pw_coopmat_xe2_t128x128_f16_half",
- "sets": {
-  "mobilenet": {
-   "sources": [
-    "pw_coopmat_mobilenet.json"
-   ],
-   "shapes": [
-    "49,160,960",
-    "196,64,384",
-    "196,96,576",
-    "49,96,576"
-   ],
-   "variants": [
-    "conv2d_pw_coopmat_xe2_t128x128_f32_half",
-    "conv2d_pw_coopmat_xe2_t128x128_f16_sk2_half",
-    "conv2d_pw_coopmat_xe2_t128x128_f16_sk4_half",
-    "conv2d_pw_coopmat_xe2_t16x32_f16_al_half",
-    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_half",
-    "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_half",
-    "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half",
-    "conv2d_pw_coopmat_xe2_t128x128_f32_alc_half",
-    "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_half",
-    "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half",
-    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_half",
-    "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"
-   ]
+  "parent": "conv2d_pw_coopmat_xe2_t128x128_f16_half",
+  "sets": {
+    "mobilenet": {
+      "sources": ["pw_coopmat_mobilenet.json"],
+      "shapes": ["49,160,960", "196,64,384", "196,96,576", "49,96,576"],
+      "variants": [
+        "conv2d_pw_coopmat_xe2_t128x128_f32_half",
+        "conv2d_pw_coopmat_xe2_t128x128_f16_sk2_half",
+        "conv2d_pw_coopmat_xe2_t128x128_f16_sk4_half",
+        "conv2d_pw_coopmat_xe2_t16x32_f16_al_half",
+        "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_half",
+        "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_half",
+        "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half",
+        "conv2d_pw_coopmat_xe2_t128x128_f32_alc_half",
+        "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_half",
+        "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half",
+        "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_half",
+        "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half",
+        "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk2_half",
+        "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"
+      ]
+    }
   }
- }
 }
