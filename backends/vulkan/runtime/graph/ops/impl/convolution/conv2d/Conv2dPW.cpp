@@ -231,6 +231,9 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_nvidia_t128x128_f16_sk4_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, false, false, 0u, 4u},
       {"conv2d_pw_coopmat_nvidia_t128x128_f32_sk2_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, 0u, 2u},
       {"conv2d_pw_coopmat_nvidia_t128x128_f32_sk4_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, 0u, 4u},
+      // Split-K for the AMD family (four slices)
+      {"conv2d_pw_coopmat_amd_t16x32_f16_sk4_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, 0u, 4u},
+      {"conv2d_pw_coopmat_amd_t16x32_f32_sk4_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, true, false, 0u, 4u},
   };
   // clang-format on
   return variants;

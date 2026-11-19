@@ -919,3 +919,23 @@ conv2d_pw_coopmat:
       SUBGROUP_SIZE: 32
       ACC_TYPE: f32
       K_SLICES: 4
+    # Split-K for the AMD family at the slice count that did best on the 4070
+    # Ti (four; GATES.md section 7).
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_sk4_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      K_SLICES: 4
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f32_sk4_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      K_SLICES: 4
