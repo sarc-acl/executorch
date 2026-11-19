@@ -57,21 +57,27 @@ def tensor(name, sizes, data, storage="texture3d"):
     return {"tensor": t}
 
 
-def conv_args(M, N, K, plane, bias=True, op="conv", clamp=None, epilogue=None):
+def conv_args(
+    M, N, K, plane, bias=True, op="conv", clamp=None, epilogue=None, data=None
+):
     """Argument list of aten.convolution.default (op "conv"),
     et_vk.conv_with_clamp.default ("clamp") or et_vk.conv2d.with_epilogue
-    ("epilogue") for an FP16 1x1 convolution with an H x W = plane output."""
+    ("epilogue") for an FP16 1x1 convolution with an H x W = plane output.
+    `data` replaces the initializer of the named tensors."""
     H, W = plane
     assert H * W == M
     s = float(f"{1 / K ** 0.5:.4g}")
+    data = {
+        "input": {"rand_uniform_float": [-1, 1]},
+        "weight": {"rand_uniform_float": [-s, s]},
+        "bias": {"rand_uniform_float": [-1, 1]},
+        "residual": {"rand_uniform_float": [-1, 1]},
+        **(data or {}),
+    }
     args = [
-        tensor("input", [1, K, H, W], {"rand_uniform_float": [-1, 1]}),
-        tensor("weight", [N, K, 1, 1], {"rand_uniform_float": [-s, s]}, "constant"),
-        (
-            tensor("bias", [N], {"rand_uniform_float": [-1, 1]}, "constant")
-            if bias
-            else None
-        ),
+        tensor("input", [1, K, H, W], data["input"]),
+        tensor("weight", [N, K, 1, 1], data["weight"], "constant"),
+        tensor("bias", [N], data["bias"], "constant") if bias else None,
         {"int_list": [1, 1]},
         {"int_list": [0, 0]},
         {"int_list": [1, 1]},
@@ -84,7 +90,7 @@ def conv_args(M, N, K, plane, bias=True, op="conv", clamp=None, epilogue=None):
     elif op == "epilogue":
         residual_op, alpha, scale, activation = epilogue
         args += [
-            tensor("residual", [1, N, H, W], {"rand_uniform_float": [-1, 1]}),
+            tensor("residual", [1, N, H, W], data["residual"]),
             (
                 tensor(
                     "residual_scale",
@@ -112,7 +118,7 @@ OPERATORS = {
 }
 
 
-def shape_cases(label, M, N, K, plane, variants, timing, **kwargs):
+def shape_cases(label, M, N, K, plane, variants, timing, baselines=True, **kwargs):
     op = kwargs.get("op", "conv")
     base = {
         "operator": OPERATORS[op],
@@ -121,13 +127,13 @@ def shape_cases(label, M, N, K, plane, variants, timing, **kwargs):
     }
     args = conv_args(M, N, K, plane, **kwargs)
     name = f"pw_coopmat {label} ({M},{N},{K})"
-    return [
-        {
-            "name": f"{name} baseline",
-            **base,
-            "route_sweep": ["auto", "pw_tiled_4x8"],
-            "args_sweep": [args],
-        },
+    baseline = {
+        "name": f"{name} baseline",
+        **base,
+        "route_sweep": ["auto", "pw_tiled_4x8"],
+        "args_sweep": [args],
+    }
+    return [baseline] * baselines + [
         {
             "name": f"{name} coopmat",
             **base,
@@ -139,6 +145,72 @@ def shape_cases(label, M, N, K, plane, variants, timing, **kwargs):
 
 
 VALIDATION_TIMING = {"target_ms": 5, "warmup_runs": 1, "benchmark_runs": 1}
+
+
+def cancellation_input(K, pixels):
+    """Per pixel, in K order: 3K/8 ones, K/4 values of 2^-7, 3K/8 minus ones.
+    The exact sum with unit weights is K/512; an fp16 running sum stays at 3K/8
+    while the 2^-7 terms are added, below half its fp16 spacing, and ends at 0."""
+    run = 3 * K // 8
+    per_k = [1.0] * run + [2.0**-7] * (K // 4) + [-1.0] * run
+    return {"repeat": [v for v in per_k for _ in range(pixels)]}
+
+
+# Precision regressions (OUT/b580/review/precision.json of the review of
+# 727c0f4da7). An fp16 rounding before the bias, the residual or the end of the
+# K loop makes them fail; fp32 accumulation must pass every one. Products of
+# fp16 operands are exact in fp32.
+PRECISION = [
+    # 65 * 65 = 4225 rounds to 4224 in fp16; 4225 - 4224 = 1.
+    (
+        "precision bias cancellation",
+        6,
+        1,
+        1,
+        (2, 3),
+        {
+            "data": {
+                "input": {"fill": 65},
+                "weight": {"fill": 65},
+                "bias": {"fill": -4224},
+            }
+        },
+    ),
+    # The same cancellation against the fused residual: 4225 - 4224 = 1.
+    (
+        "precision residual cancellation",
+        6,
+        1,
+        1,
+        (2, 3),
+        {
+            "bias": False,
+            "op": "epilogue",
+            "epilogue": ("add", 1.0, False, "none"),
+            "data": {
+                "input": {"fill": 65},
+                "weight": {"fill": 65},
+                "residual": {"fill": -4224},
+            },
+        },
+    ),
+    # Bounded operands, ordered cancellation over K = 2048: exact result 4.
+    (
+        "precision ordered cancellation",
+        6,
+        1,
+        2048,
+        (2, 3),
+        {
+            "bias": False,
+            "data": {"input": cancellation_input(2048, 6), "weight": {"fill": 1}},
+        },
+    ),
+]
+
+
+def fp32_variants(variants):
+    return [v for v in variants if "_f32_" in v]
 
 
 def correctness(variants):
@@ -170,6 +242,50 @@ def correctness(variants):
     ]:
         cases += shape_cases(
             label, M, N, K, plane, variants, VALIDATION_TIMING, **kwargs
+        )
+    for label, M, N, K, plane, kwargs in PRECISION:
+        cases += shape_cases(
+            label,
+            M,
+            N,
+            K,
+            plane,
+            fp32_variants(variants),
+            VALIDATION_TIMING,
+            baselines=False,
+            **kwargs,
+        )
+    # 1025 x 1024 output pixels: 65600 tiles of 16 pixels, more than the 65535
+    # work groups many devices allow in y.
+    cases += shape_cases(
+        "dispatch limit",
+        1025 * 1024,
+        8,
+        8,
+        (1025, 1024),
+        variants,
+        VALIDATION_TIMING,
+        baselines=False,
+    )
+    return cases
+
+
+def fp16_accumulation_limits(variants):
+    """The precision regressions for the routes that round partial sums to fp16:
+    the fp16-accumulation variants and both tiled shaders. They are expected to
+    FAIL (design D4, spec "Accumulation precision"); kept out of the correctness
+    collection so that it passes."""
+    cases = []
+    for label, M, N, K, plane, kwargs in PRECISION:
+        cases += shape_cases(
+            label.replace("precision", "fp16 limit"),
+            M,
+            N,
+            K,
+            plane,
+            [v for v in variants if "_f16_" in v],
+            VALIDATION_TIMING,
+            **kwargs,
         )
     return cases
 
@@ -230,6 +346,7 @@ RESNET50 = [
 
 FILES = {
     "pw_coopmat_correctness.json": correctness,
+    "pw_coopmat_fp16_accumulation_limits.json": fp16_accumulation_limits,
     "pw_coopmat_mobilenet.json": performance("mobilenet", MOBILENET),
     "pw_coopmat_resnet50.json": performance("resnet50", RESNET50),
     "pw_coopmat_large.json": performance("large", upstream_fp16_shapes()),
