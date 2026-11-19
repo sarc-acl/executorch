@@ -155,8 +155,11 @@ Tensor conv2d_pw_logical_reference(
  * the bindings of conv2d_pw_packed, with an output texture larger than the
  * convolution's output (the shader's out_sizes, passed as a uniform, say
  * [W, H, N]; H and W are the input's, N the bias's). The expected output is
- * the output's initial content with the convolution's [N, H, W] region
- * replaced by the convolution, so a store outside that region fails.
+ * the output's initial content with the convolution's [4 * N4, H, W] region
+ * replaced by the convolution, so a store outside that region fails. Channels
+ * N .. 4 * N4 - 1 are the last output texel's padding, which every pointwise
+ * shader stores with the texel: their weights are the packed buffer's and
+ * their bias is 0 (the padding of the bias texture).
  */
 Tensor conv2d_pw_packed_guard_reference(
     const Json& spec,
@@ -196,7 +199,8 @@ Tensor conv2d_pw_packed_guard_reference(
   require(
       w.sizes == std::vector<int64_t>({K4, N4 * 16}),
       "conv2d_pw_packed_guard requires a [K4, N4 * 16] packed weight");
-  parallel_for(N, threads, [&](size_t n_index) {
+  const int64_t stored = std::min(4 * N4, output.sizes[1]);
+  parallel_for(stored, threads, [&](size_t n_index) {
     const int64_t n = static_cast<int64_t>(n_index);
     for (int64_t y = 0; y < H; ++y) {
       for (int64_t x = 0; x < W; ++x) {
@@ -206,7 +210,8 @@ Tensor conv2d_pw_packed_guard_reference(
               (((k / 4) * N4 + n / 4) * 4 + k % 4) * 4 + n % 4;
           acc += in.values[(k * H + y) * W + x] * w.values[packed];
         }
-        output.values[(n * Ht + y) * Wt + x] = acc + bias.values[n];
+        output.values[(n * Ht + y) * Wt + x] =
+            acc + (n < N ? bias.values[n] : 0.0);
       }
     }
   });

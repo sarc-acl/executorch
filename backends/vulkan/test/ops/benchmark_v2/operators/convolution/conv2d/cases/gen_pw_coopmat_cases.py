@@ -236,6 +236,7 @@ K_STEP = {"xe2": 16, "amd": 32, "nvidia": 16}
 # Phrases of the construction-time refusals in Conv2dPW.cpp, per variant kind.
 SKIP_PHRASE = {
     "al": "not a multiple of the variant's",
+    "alc": "not a multiple of the variant's K step",
     "sk": "fewer than two K steps",
     "epi0": "has a bias, activation, residual or scale",
 }
@@ -268,12 +269,15 @@ def split_k_ok(K, k_step, slices):
 def expected_skip(name, N, K, bias, op):
     """The refusal phrase when the variant kind must report the convolution as
     unsupported at graph construction, else None: aligned-only variants on
-    channels that are not multiples of their K step and N tile, split-K
+    channels that are not multiples of their K step and N tile, clamped-read
+    aligned-only variants (_alc) on a K that is not a multiple of their K step, split-K
     variants on a K too short for their slices, _epi0 on a convolution with a
     bias or a fused epilogue."""
     kind = variant_kind(name)
     if "al" in kind["options"] and (K % kind["k_step"] or N % kind["tile_n"]):
         return SKIP_PHRASE["al"]
+    if "alc" in kind["options"] and K % kind["k_step"]:
+        return SKIP_PHRASE["alc"]
     if kind["slices"] > 1 and not split_k_ok(K, kind["k_step"], kind["slices"]):
         return SKIP_PHRASE["sk"]
     if "epi0" in kind["options"] and (bias or op != "conv"):
@@ -446,6 +450,41 @@ ALIGNED = [
 ]
 
 
+# Clamped-read aligned-only variants (_alc) only: output channel counts that are
+# not a multiple of the N tile or of four, the MobileNetV2 shapes on the
+# 128-channel tile, and split-K cases with K a multiple of the K step 16 (K =
+# 288 is 18 steps, four slices 5, 5, 5, 3; K = 224 is 14, four slices 4, 4, 4, 2).
+SPLIT_K_ALC = 224
+ALC = [
+    ("alc N=30", 196, 30, 144, (14, 14), {}),
+    ("alc mnv2", 49, 160, 960, (7, 7), {}),
+    ("alc mnv2", 196, 64, 384, (14, 14), {}),
+    ("alc mnv2", 196, 96, 576, (14, 14), {}),
+    ("alc K=288", 196, 64, 288, (14, 14), {}),
+    ("alc N=30 63px", 63, 30, SPLIT_K_ALC, (7, 9), {}),
+    (
+        "alc split residual add",
+        196,
+        32,
+        SPLIT_K_ALC,
+        (14, 14),
+        {"op": "epilogue", "epilogue": ("add", 1.0, False, "none")},
+    ),
+    (
+        "alc split residual sub scale relu",
+        49,
+        24,
+        SPLIT_K_ALC,
+        (7, 7),
+        {"op": "epilogue", "epilogue": ("sub", 0.5, True, "relu")},
+    ),
+]
+
+
+def alc_variants(variants):
+    return [v for v in variants if "_alc" in v]
+
+
 def fp32_variants(variants):
     return [v for v in variants if "_f32_" in v]
 
@@ -484,6 +523,18 @@ def correctness(variants):
         cases += shape_cases(
             label, M, N, K, plane, variants, VALIDATION_TIMING, **kwargs
         )
+    for label, M, N, K, plane, kwargs in ALC:
+        cases += shape_cases(
+            label,
+            M,
+            N,
+            K,
+            plane,
+            alc_variants(variants),
+            VALIDATION_TIMING,
+            baselines=False,
+            **kwargs,
+        )
     for label, M, N, K, plane, kwargs in (
         PRECISION + PRECISION_ALIGNED + PRECISION_SPLIT
     ):
@@ -518,6 +569,17 @@ def correctness(variants):
         SPLIT_K,
         (1025, 1024),
         [v for v in variants if "_sk" in v],
+        VALIDATION_TIMING,
+        baselines=False,
+    )
+    # The same plane for the clamped-read variants, with a K they accept.
+    cases += shape_cases(
+        "alc dispatch limit",
+        1025 * 1024,
+        8,
+        SPLIT_K_ALC,
+        (1025, 1024),
+        alc_variants(variants),
         VALIDATION_TIMING,
         baselines=False,
     )
@@ -680,9 +742,9 @@ def guard_case(
 ):
     """A raw shader case of an aligned-only variant whose output texture is
     larger than the convolution's output (out_sizes): GUARD rows below the plane
-    and one 4-channel texel past N, filled with GUARD. The reference
-    conv2d_pw_packed_guard expects GUARD there, so any store outside the
-    output fails validation."""
+    and one 4-channel texel past the last output texel, filled with GUARD. The
+    reference conv2d_pw_packed_guard expects GUARD there, so any store outside
+    the output fails validation."""
     H, W = plane
     assert H * W == M
     s = float(f"{1 / K ** 0.5:.4g}")
@@ -705,7 +767,12 @@ def guard_case(
         "lwg_size": [threads, 1, 1],
         **VALIDATION_TIMING,
         "bindings": [
-            tex("out", [1, N + 4, H + 16, W], {"fill": GUARD}, access="write"),
+            tex(
+                "out",
+                [1, -(-N // 4) * 4 + 4, H + 16, W],
+                {"fill": GUARD},
+                access="write",
+            ),
             # A storage-image input must be in VK_IMAGE_LAYOUT_GENERAL, which
             # read-write access gives it.
             tex(
@@ -760,6 +827,14 @@ def guard_case(
     }
 
 
+# Clamped-read variants: N not a multiple of the N tile (24) and not of four
+# (30, whose last texel holds channels 28 .. 31), with partial pixel tiles.
+GUARD_CLAMP_N = [
+    ("alc N=24", 63, 24, 64, (7, 9), {}),
+    ("alc N=30", 65, 30, 96, (5, 13), {}),
+]
+
+
 def guard(family):
     """The guard cases of one family's aligned-only variants. Raw shader cases
     do not check the device, so each device runs the files of the families it
@@ -779,12 +854,14 @@ def guard_cases(family, variants):
         p = dict(defaults, **v)
         if (
             not p.get("ALIGNED")
+            or p["K_SLICES"] > 1
             or p["NAME"] not in variants
             or not p["NAME"].startswith(f"conv2d_pw_coopmat_{family}_")
         ):
             continue
         threads = p["SG_GRID_X"] * p["SG_GRID_Y"] * p["SUBGROUP_SIZE"]
-        for label, M, N, K, plane, _ in ALIGNED[:2]:
+        shapes = ALIGNED[:2] + (GUARD_CLAMP_N if p.get("CLAMP_N") else [])
+        for label, M, N, K, plane, _ in shapes:
             cases.append(
                 guard_case(
                     p["NAME"],

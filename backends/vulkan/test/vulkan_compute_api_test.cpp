@@ -6461,6 +6461,47 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_aligned_only) {
   }
 }
 
+// A clamped-read variant (_alc) runs any N, including N not a multiple of its
+// N tile or of four, but only K a multiple of its K step: K = 40 is refused
+// when the graph is built. A 1x1 plane after a resize takes the tiled kernel,
+// and the variant runs again after growing back; every output matches the
+// reference.
+TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_clamped_reads) {
+  ComputeGraph probe{GraphConfig()};
+  int tested = 0;
+  for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    if (!v.has(Conv2dPwCoopmatVariant::kAlignedClampN) ||
+        !probe.float16_buffers_enabled() ||
+        !conv2d_pw_coopmat_device_supports(probe, v)) {
+      continue;
+    }
+    SCOPED_TRACE(v.name);
+    ++tested;
+    const Conv2dPwRequest request{Conv2dPwRequest::Kind::kCoopmat, &v};
+    EXPECT_ANY_THROW(
+        PointwiseConvGraph(vkapi::kHalf, 40, 96, 14, 14, 1, request));
+    const std::string merge =
+        v.k_slices > 1u ? conv2d_pw_coopmat_merge_shader(v) : "";
+    for (const int64_t N : {24, 30, 160}) {
+      SCOPED_TRACE(N);
+      PointwiseConvGraph g(vkapi::kHalf, 576, N, 14, 14, 1, request);
+      for (const int64_t size : {14, 7, 5, 1, 2, 14}) {
+        SCOPED_TRACE(size);
+        g.resize(size, size);
+        const auto kernels = g.execute_and_check();
+        EXPECT_EQ(dispatched(kernels, v.name), size != 1);
+        EXPECT_EQ(dispatched_prefix(kernels, "conv2d_pw_tiled"), size == 1);
+        if (!merge.empty()) {
+          EXPECT_EQ(dispatched(kernels, merge), size != 1);
+        }
+      }
+    }
+  }
+  if (tested == 0) {
+    GTEST_SKIP() << "no clamped-read variant runs here";
+  }
+}
+
 // The thread-grid variants and the NVIDIA 16x16 tile issue no duplicate
 // staging loads: the body's A map skips items past A_ITEMS, and its B map has
 // no such test, so every B item count must be a multiple of the thread count.
@@ -6470,6 +6511,8 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_no_duplicate_staging_loads) {
         "conv2d_pw_coopmat_xe2_t64x64_f32_g4x2_half",
         "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_half",
         "conv2d_pw_coopmat_xe2_t32x64_f32_g4x2_half",
+        "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_half",
+        "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half",
         "conv2d_pw_coopmat_nvidia_t16x16_f16_half",
         "conv2d_pw_coopmat_nvidia_t16x16_f32_half"}) {
     SCOPED_TRACE(name);
@@ -6577,9 +6620,12 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_resize) {
     }
     SCOPED_TRACE(v.name);
     const std::string merge = conv2d_pw_coopmat_merge_shader(v);
+    // _alc requires K % tile_k == 0: K = 320 (20 steps of 16).
+    const int64_t K =
+        v.has(Conv2dPwCoopmatVariant::kAlignedClampN) ? 320 : 321;
     PointwiseConvGraph g(
         vkapi::kHalf,
-        321,
+        K,
         96,
         14,
         14,
@@ -6614,9 +6660,12 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_growth) {
     }
     SCOPED_TRACE(v.name);
     const std::string merge = conv2d_pw_coopmat_merge_shader(v);
+    // _alc requires K % tile_k == 0: K = 320 (20 steps of 16).
+    const int64_t K =
+        v.has(Conv2dPwCoopmatVariant::kAlignedClampN) ? 320 : 321;
     PointwiseConvGraph g(
         vkapi::kHalf,
-        321,
+        K,
         96,
         14,
         14,
