@@ -5,7 +5,7 @@
     "target_ms": 50,
     "warmup_runs": 3,
     "benchmark_runs": 5,
-    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
     "route_sweep": ["auto", "pw_tiled_4x8"],
     "args_sweep": [
       [
@@ -28,7 +28,7 @@
     "target_ms": 50,
     "warmup_runs": 3,
     "benchmark_runs": 5,
-    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
     "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
     "sweep_variables": {
       "v_VARIANT": [
@@ -123,7 +123,7 @@
     "target_ms": 50,
     "warmup_runs": 3,
     "benchmark_runs": 5,
-    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
     "route_sweep": ["auto", "pw_tiled_4x8"],
     "args_sweep": [
       [
@@ -146,7 +146,7 @@
     "target_ms": 50,
     "warmup_runs": 3,
     "benchmark_runs": 5,
-    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
     "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
     "sweep_variables": {
       "v_VARIANT": [
@@ -241,7 +241,7 @@
     "target_ms": 50,
     "warmup_runs": 3,
     "benchmark_runs": 5,
-    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
     "route_sweep": ["auto", "pw_tiled_4x8"],
     "args_sweep": [
       [
@@ -264,7 +264,7 @@
     "target_ms": 50,
     "warmup_runs": 3,
     "benchmark_runs": 5,
-    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
     "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
     "sweep_variables": {
       "v_VARIANT": [
@@ -359,7 +359,7 @@
     "target_ms": 50,
     "warmup_runs": 3,
     "benchmark_runs": 5,
-    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
     "route_sweep": ["auto", "pw_tiled_4x8"],
     "args_sweep": [
       [
@@ -382,7 +382,7 @@
     "target_ms": 50,
     "warmup_runs": 3,
     "benchmark_runs": 5,
-    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
     "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
     "sweep_variables": {
       "v_VARIANT": [

@@ -34,7 +34,9 @@ YAML = (
     HERE.parents[6] / "runtime/graph/ops/glsl/convolution/conv2d/conv2d_pw_coopmat.yaml"
 )
 FAMILIES = ("xe2", "amd", "nvidia")
-TOLERANCE = {"function": "is_close", "atol": 0.1, "rtol": 0.01}
+# Only the convolution's output is compared: a storage-image input variant
+# (_img) binds the input read-write, which would make the input an output too.
+TOLERANCE = {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]}
 
 
 def variants_by_family():
@@ -614,7 +616,7 @@ def guard_case(variant, tile_m, tile_n, threads, label, M, N, K, plane):
         "name": f"pw_coopmat guard {label} ({M},{N},{K}) {variant}",
         "shader": variant,
         "reference": "conv2d_pw_packed_guard",
-        "validation_method": TOLERANCE,
+        "validation_method": {k: v for k, v in TOLERANCE.items() if k != "outputs"},
         "gwg_size": [-(-N // tile_n) * threads, -(-M // tile_m), 1],
         "lwg_size": [threads, 1, 1],
         **VALIDATION_TIMING,
