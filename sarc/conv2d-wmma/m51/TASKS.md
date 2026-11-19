@@ -71,7 +71,8 @@ only (`SPEC.md`, "Publication of M51 results").
 - [ ] 8.3 A stage-2 input note in `RESULTS.md`: the M51 ranking of convolution families by share, and which of im2col
   GEMM, direct k×k and dilated 3×3 to take first. Verify: the note exists and cites the 7.2 shares.
 
-Sections 9 and 10 are stage 2. They are out of scope for the first campaign run.
+Section 9 runs after sections 1–8 in the same campaign run (owner decision, 2026-11-19). Section 10 waits for the routing
+switch.
 
 ## 9. k×k convolution (stage 2, PENDING: desktop push)
 Starts only when `origin/topic/conv2d-wmma` has moved and contains a cooperative-matrix route with im2col input.
@@ -89,8 +90,8 @@ Starts only when `origin/topic/conv2d-wmma` has moved and contains a cooperative
   Verify: gated and timed like 9.2, or recorded as "not available".
 - [ ] 9.4 Locate and candidates for k×k, with the discipline of sections 5–6. `_sk` split-K is the first menu entry.
   Verify: per-technique gains; the stop rule is checked after each one.
-- [ ] 9.5 Before the first timed k×k run, commit the stage-2 thresholds (k×k success bar, end-to-end bar), set with the
-  device owner.
+- [x] 9.5 The k×k thresholds are committed in `THRESHOLDS.md`. The end-to-end bar is still to be set with the device
+  owner before TASKS 10.
 
 ## 10. Measured end to end (stage 2, PENDING: desktop routing switch)
 - [ ] 10.1 With the desktop routing switch, pick the two or three models with the largest projected gain (7.4).
