@@ -133,9 +133,6 @@ VkDevice create_logical_device(
 #ifdef VK_KHR_cooperative_matrix
       VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME,
 #endif /* VK_KHR_cooperative_matrix */
-#ifdef VK_NV_cooperative_matrix2
-      VK_NV_COOPERATIVE_MATRIX_2_EXTENSION_NAME,
-#endif /* VK_NV_cooperative_matrix2 */
 #ifdef VK_EXT_subgroup_size_control
       VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME,
 #endif /* VK_EXT_subgroup_size_control */
@@ -275,12 +272,11 @@ VkDevice create_logical_device(
   extension_list_top = &cooperative_matrix_features;
 #endif /* VK_KHR_cooperative_matrix */
 
-#ifdef VK_NV_cooperative_matrix2
-  VkPhysicalDeviceCooperativeMatrix2FeaturesNV cooperative_matrix2_features{
-      physical_device.cooperative_matrix2_features};
-  cooperative_matrix2_features.pNext = extension_list_top;
-  extension_list_top = &cooperative_matrix2_features;
-#endif /* VK_NV_cooperative_matrix2 */
+  // VK_NV_cooperative_matrix2 is not requested: no shader of this runtime
+  // uses it, and with it enabled the validation layers check every cooperative
+  // matrix type against cooperativeMatrixFlexibleDimensionsMaxDimension
+  // (VUID-RuntimeSpirv-cooperativeMatrixFlexibleDimensionsMaxDimension-10167),
+  // which every conv2d_pw_coopmat shader fails on the B580 driver.
 
 #ifdef VK_EXT_subgroup_size_control
   // Only enable the feature struct if the extension was actually requested
@@ -294,6 +290,15 @@ VkDevice create_logical_device(
     extension_list_top = &subgroup_size_control_features;
   }
 #endif /* VK_EXT_subgroup_size_control */
+
+#ifdef VK_VERSION_1_3
+  VkPhysicalDeviceMaintenance4Features maintenance4_features{
+      physical_device.maintenance4_features};
+  if (physical_device.supports_maintenance4) {
+    maintenance4_features.pNext = extension_list_top;
+    extension_list_top = &maintenance4_features;
+  }
+#endif /* VK_VERSION_1_3 */
 
   device_create_info.pNext = extension_list_top;
 
@@ -338,13 +343,10 @@ VkDevice create_logical_device(
       cooperative_matrix_features.cooperativeMatrix == VK_TRUE;
 #endif
 #ifdef VK_NV_cooperative_matrix2
-  f.cooperative_matrix2_workgroup_scope =
-      cooperative_matrix2_features.cooperativeMatrixWorkgroupScope == VK_TRUE;
-  f.cooperative_matrix2_flexible_dimensions =
-      cooperative_matrix2_features.cooperativeMatrixFlexibleDimensions ==
-      VK_TRUE;
-  f.cooperative_matrix2_tensor_addressing =
-      cooperative_matrix2_features.cooperativeMatrixTensorAddressing == VK_TRUE;
+  // VK_NV_cooperative_matrix2 is not enabled (see above).
+  f.cooperative_matrix2_workgroup_scope = false;
+  f.cooperative_matrix2_flexible_dimensions = false;
+  f.cooperative_matrix2_tensor_addressing = false;
 #endif
 #ifdef VK_KHR_vulkan_memory_model
   f.vulkan_memory_model =

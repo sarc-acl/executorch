@@ -11,6 +11,7 @@
 // @lint-ignore-every CLANGTIDY clang-diagnostic-missing-field-initializers
 
 #include <executorch/backends/vulkan/runtime/vk_api/Device.h>
+#include <executorch/backends/vulkan/runtime/vk_api/Runtime.h>
 
 #include <executorch/backends/vulkan/runtime/vk_api/Exception.h>
 
@@ -86,6 +87,13 @@ PhysicalDevice::PhysicalDevice(
           VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR},
       supports_int8_coopmat{false},
 #endif /* VK_KHR_cooperative_matrix */
+#ifdef VK_VERSION_1_3
+      maintenance4_features{
+          VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES,
+          nullptr,
+          VK_FALSE},
+      supports_maintenance4{false},
+#endif /* VK_VERSION_1_3 */
 #ifdef VK_NV_cooperative_matrix2
       cooperative_matrix2_features{
           VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_FEATURES_NV},
@@ -323,10 +331,29 @@ void PhysicalDevice::query_extensions_vk_1_1() {
   extension_list_top = &subgroup_size_control_features;
 #endif /* VK_EXT_subgroup_size_control */
 
+#ifdef VK_VERSION_1_3
+  const bool vulkan_1_3 = properties.apiVersion >= VK_API_VERSION_1_3 &&
+      instance_api_version() >= VK_API_VERSION_1_3;
+  if (vulkan_1_3) {
+    maintenance4_features.pNext = extension_list_top;
+    extension_list_top = &maintenance4_features;
+  }
+#endif /* VK_VERSION_1_3 */
+
   features2.pNext = extension_list_top;
 
   vkGetPhysicalDeviceFeatures2(handle, &features2);
   shader_features = features2.features;
+#ifdef VK_VERSION_1_3
+  supports_maintenance4 = vulkan_1_3 && maintenance4_features.maintenance4;
+  maintenance4_features.pNext = nullptr;
+#endif /* VK_VERSION_1_3 */
+#ifdef VK_NV_cooperative_matrix2
+  // The logical device does not enable VK_NV_cooperative_matrix2
+  // (create_logical_device), so none of its features is reported.
+  cooperative_matrix2_features = {
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_FEATURES_NV};
+#endif /* VK_NV_cooperative_matrix2 */
 
   if (features2.features.shaderInt16 == VK_TRUE) {
     supports_int16_shader_types = true;

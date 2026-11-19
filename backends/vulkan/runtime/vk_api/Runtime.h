@@ -112,6 +112,11 @@ std::shared_ptr<Runtime> runtime_owner();
 
 Runtime* runtime();
 
+// The Vulkan version the instance requests: 1.3 when the loader supports it
+// (SPIR-V 1.6 shaders, which cooperative matrix shaders need, require a
+// Vulkan 1.3 instance and device), else 1.1.
+uint32_t instance_api_version();
+
 // Used to share instance + devices between client code and ETVK
 Adapter* set_and_get_external_adapter(
     const VkInstance instance = VK_NULL_HANDLE,

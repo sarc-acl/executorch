@@ -81,6 +81,7 @@ void find_requested_layers_and_extensions(
 }
 
 VkInstance create_instance(const RuntimeConfig& config) {
+  const uint32_t api_version = instance_api_version();
   const VkApplicationInfo application_info{
       VK_STRUCTURE_TYPE_APPLICATION_INFO, // sType
       nullptr, // pNext
@@ -88,7 +89,7 @@ VkInstance create_instance(const RuntimeConfig& config) {
       0, // applicationVersion
       nullptr, // pEngineName
       0, // engineVersion
-      VK_API_VERSION_1_1, // apiVersion
+      api_version, // apiVersion
   };
 
   std::vector<const char*> enabled_layers;
@@ -493,6 +494,18 @@ Adapter* set_and_get_external_adapter(
   }
 
   return p_external_adapter.get();
+}
+
+uint32_t instance_api_version() {
+#ifdef VK_VERSION_1_3
+  uint32_t loader_version = VK_API_VERSION_1_0;
+  if (vkEnumerateInstanceVersion != nullptr &&
+      vkEnumerateInstanceVersion(&loader_version) == VK_SUCCESS &&
+      loader_version >= VK_API_VERSION_1_3) {
+    return VK_API_VERSION_1_3;
+  }
+#endif /* VK_VERSION_1_3 */
+  return VK_API_VERSION_1_1;
 }
 
 } // namespace vkapi

@@ -69,6 +69,12 @@ struct PhysicalDevice final {
   std::vector<VkCooperativeMatrixPropertiesKHR> cooperative_matrix_properties;
 #endif /* VK_KHR_cooperative_matrix */
 
+#ifdef VK_VERSION_1_3
+  // Queried and enabled on a Vulkan 1.3 instance and device: shaders that use
+  // LocalSizeId (SPIR-V 1.6 with local_size_*_id) need maintenance4.
+  VkPhysicalDeviceMaintenance4Features maintenance4_features;
+  bool supports_maintenance4;
+#endif /* VK_VERSION_1_3 */
 #ifdef VK_NV_cooperative_matrix2
   VkPhysicalDeviceCooperativeMatrix2FeaturesNV cooperative_matrix2_features;
 #endif /* VK_NV_cooperative_matrix2 */
