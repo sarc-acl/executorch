@@ -6160,6 +6160,178 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_dispatch_limit) {
   EXPECT_TRUE(dispatched(g.execute_and_check(), variant->name));
 }
 
+// 64 * 64 + alpha * residual with residual -4096 and alpha = 1 + 2^-12, which
+// fp16 rounds to 1: -1 with the exact alpha (fp32 epilogue), 0 with the rounded
+// one (fp16 epilogue: tiled shaders and fp16-accumulation variants). A
+// variant-requested graph resized to one pixel runs the tiled fallback with the
+// rounded alpha and the fp32 variant again after growing back.
+TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_fp32_epilogue_params) {
+  ComputeGraph probe{GraphConfig()};
+  const auto runnable = [&](const bool fp32) -> const Conv2dPwCoopmatVariant* {
+    for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+      if (v.fp32_accumulation == fp32 && probe.float16_buffers_enabled() &&
+          conv2d_pw_coopmat_device_supports(probe, v)) {
+        return &v;
+      }
+    }
+    return nullptr;
+  };
+  const Conv2dPwCoopmatVariant* const f32 = runnable(true);
+  const Conv2dPwCoopmatVariant* const f16 = runnable(false);
+  if (f32 == nullptr || f16 == nullptr) {
+    GTEST_SKIP() << "no conv2d_pw_coopmat variant runs on this device";
+  }
+  constexpr float kAlpha = 1.000244140625f;
+  ASSERT_NE(api::half_to_float(api::float_to_half(kAlpha)), kAlpha);
+  const auto run = [&](const Conv2dPwCoopmatVariant* variant,
+                       const std::vector<int64_t>& sides,
+                       const std::vector<float>& expected) {
+    SCOPED_TRACE(variant->name);
+    GraphConfig config;
+    config.expect_dynamic_shapes = true;
+    config.enable_querypool = true;
+    ComputeGraph graph(config);
+    const std::vector<executorch::aten::Half> weight = {
+        executorch::aten::Half(64.0f)};
+    const IOValueRef input = graph.add_input_tensor(
+        {1, 1, 4, 4}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+    const IOValueRef residual = graph.add_input_tensor(
+        {1, 1, 4, 4}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+    const ValueRef out = graph.add_tensor(
+        {1, 1, 4, 4}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+    Conv2dEpilogue epilogue;
+    epilogue.residual = residual.value;
+    epilogue.residual_alpha = kAlpha;
+    conv2d_pw_impl(
+        graph,
+        input.value,
+        graph.add_tensorref({1, 1, 1, 1}, vkapi::kHalf, weight.data()),
+        graph.add_none(),
+        graph.add_scalar_list<int64_t>({1, 1}),
+        graph.add_scalar_list<int64_t>({0, 0}),
+        out,
+        /*transposed_val=*/false,
+        epilogue,
+        {Conv2dPwRequest::Kind::kCoopmat, variant});
+    const ValueRef staging = graph.set_output_tensor(out);
+    graph.prepare();
+    graph.prepack();
+    for (size_t i = 0; i < sides.size(); ++i) {
+      const int64_t side = sides[i];
+      SCOPED_TRACE(side);
+      graph.resize_input(0, {1, 1, side, side});
+      graph.resize_input(1, {1, 1, side, side});
+      graph.propagate_resize();
+      const size_t numel = size_t(side * side);
+      const std::vector<executorch::aten::Half> x(
+          numel, executorch::aten::Half(64.0f));
+      const std::vector<executorch::aten::Half> r(
+          numel, executorch::aten::Half(-4096.0f));
+      graph.maybe_cast_and_copy_into_staging(
+          input.staging, x.data(), numel, vkapi::kHalf);
+      graph.maybe_cast_and_copy_into_staging(
+          residual.staging, r.data(), numel, vkapi::kHalf);
+      graph.execute();
+      std::vector<executorch::aten::Half> y(numel);
+      graph.maybe_cast_and_copy_from_staging(
+          staging, y.data(), numel, vkapi::kHalf);
+      for (const auto& v : y) {
+        EXPECT_EQ(float(v), expected[i]);
+      }
+      graph.context()->querypool().extract_results();
+      std::vector<std::string> kernels;
+      for (const auto& result :
+           graph.context()->querypool().get_shader_timestamp_data()) {
+        kernels.push_back(result.kernel_name);
+      }
+      EXPECT_EQ(dispatched(kernels, variant->name), side > 1);
+      EXPECT_EQ(dispatched_prefix(kernels, "conv2d_pw_tiled"), side == 1);
+    }
+  };
+  run(f32, {4, 1, 4}, {-1.0f, 0.0f, -1.0f});
+  run(f16, {4}, {0.0f});
+}
+
+// The ineligibility reasons name the device limit that is exceeded, and the
+// boolean checks agree with them.
+TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_ineligibility_reasons) {
+  ComputeGraph graph{GraphConfig()};
+  vkapi::Adapter* const adapter = graph.context()->adapter_ptr();
+  for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    EXPECT_EQ(
+        conv2d_pw_coopmat_device_supports(graph, v),
+        !conv2d_pw_coopmat_device_unsupported(graph, v).has_value());
+  }
+  const Conv2dPwCoopmatVariant* runnable = nullptr;
+  for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    if (conv2d_pw_coopmat_device_supports(graph, v)) {
+      runnable = &v;
+      break;
+    }
+  }
+  if (runnable == nullptr) {
+    GTEST_SKIP() << "no conv2d_pw_coopmat variant runs on this device";
+  }
+  const auto reason = [&](const Conv2dPwCoopmatVariant& v) {
+    const auto r = conv2d_pw_coopmat_device_unsupported(graph, v);
+    return r.value_or("");
+  };
+  // Too many invocations for one work group: the first limit that is exceeded
+  // is reported with its value.
+  Conv2dPwCoopmatVariant wide = *runnable;
+  wide.sg_grid_x = 4096u / (wide.sg_grid_y * wide.subgroup_size) + 1u;
+  const std::string r_wide = reason(wide);
+  const bool names_limit =
+      r_wide.find(
+          "maxComputeWorkGroupInvocations " +
+          std::to_string(adapter->max_compute_workgroup_invocations())) !=
+          std::string::npos ||
+      r_wide.find(
+          "maxComputeWorkGroupSize.x " +
+          std::to_string(adapter->max_compute_workgroup_size()[0])) !=
+          std::string::npos ||
+      r_wide.find(
+          "maxComputeWorkgroupSubgroups " +
+          std::to_string(adapter->max_compute_workgroup_subgroups())) !=
+          std::string::npos;
+  EXPECT_TRUE(names_limit) << r_wide;
+  // Within the invocation limits but more subgroups than a required-size
+  // pipeline allows.
+  const uint32_t max_subgroups = adapter->max_compute_workgroup_subgroups();
+  Conv2dPwCoopmatVariant many = *runnable;
+  many.sg_grid_y = 1u;
+  many.sg_grid_x = max_subgroups + 1u;
+  if (many.wg_size() <= adapter->max_compute_workgroup_invocations() &&
+      many.wg_size() <= adapter->max_compute_workgroup_size()[0]) {
+    EXPECT_NE(
+        reason(many).find(
+            "maxComputeWorkgroupSubgroups " + std::to_string(max_subgroups)),
+        std::string::npos)
+        << reason(many);
+  }
+  // More shared memory than the device has.
+  Conv2dPwCoopmatVariant big = *runnable;
+  big.tile_m = 1024u;
+  big.tile_n = 1024u;
+  big.sg_grid_x = big.sg_grid_y = 1u;
+  EXPECT_NE(
+      reason(big).find(
+          "maxComputeSharedMemorySize " +
+          std::to_string(adapter->max_compute_shared_memory_size())),
+      std::string::npos)
+      << reason(big);
+  // Work group counts.
+  const utils::uvec3 max_count = adapter->max_compute_workgroup_count();
+  EXPECT_FALSE(
+      conv2d_pw_coopmat_grid_unsupported(max_count, max_count).has_value());
+  const auto over = conv2d_pw_coopmat_grid_unsupported(
+      {1u, 1u, max_count[2] + 1u}, max_count);
+  ASSERT_TRUE(over.has_value());
+  EXPECT_NE(
+      over->find("maxComputeWorkGroupCount.z " + std::to_string(max_count[2])),
+      std::string::npos);
+}
+
 TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_resize_to_one_pixel) {
   const Conv2dPwCoopmatVariant* const variant = runnable_pw_coopmat_variant();
   if (variant == nullptr) {
