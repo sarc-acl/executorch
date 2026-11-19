@@ -6621,16 +6621,9 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_resize) {
     SCOPED_TRACE(v.name);
     const std::string merge = conv2d_pw_coopmat_merge_shader(v);
     // _alc requires K % tile_k == 0: K = 320 (20 steps of 16).
-    const int64_t K =
-        v.has(Conv2dPwCoopmatVariant::kAlignedClampN) ? 320 : 321;
+    const int64_t K = v.has(Conv2dPwCoopmatVariant::kAlignedClampN) ? 320 : 321;
     PointwiseConvGraph g(
-        vkapi::kHalf,
-        K,
-        96,
-        14,
-        14,
-        1,
-        {Conv2dPwRequest::Kind::kCoopmat, &v});
+        vkapi::kHalf, K, 96, 14, 14, 1, {Conv2dPwRequest::Kind::kCoopmat, &v});
     for (const int64_t size : {14, 1, 14, 7, 2}) {
       SCOPED_TRACE(size);
       g.resize(size, size);
@@ -6661,8 +6654,7 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_growth) {
     SCOPED_TRACE(v.name);
     const std::string merge = conv2d_pw_coopmat_merge_shader(v);
     // _alc requires K % tile_k == 0: K = 320 (20 steps of 16).
-    const int64_t K =
-        v.has(Conv2dPwCoopmatVariant::kAlignedClampN) ? 320 : 321;
+    const int64_t K = v.has(Conv2dPwCoopmatVariant::kAlignedClampN) ? 320 : 321;
     PointwiseConvGraph g(
         vkapi::kHalf,
         K,

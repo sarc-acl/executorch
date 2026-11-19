@@ -168,8 +168,8 @@ struct Conv2dPwCoopmatVariant final {
   uint32_t shared_bytes() const;
 };
 
-// "_g<X>x<Y>", "_al", "_alc", "_w16", "_img", "_epi0", "_bcm", "_sk<n>", "_diag_once"
-// for the variant's options and K slices, in this order.
+// "_g<X>x<Y>", "_al", "_alc", "_w16", "_img", "_epi0", "_bcm", "_sk<n>",
+// "_diag_once" for the variant's options and K slices, in this order.
 std::string conv2d_pw_coopmat_option_suffix(
     const Conv2dPwCoopmatVariant& variant);
 
