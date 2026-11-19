@@ -122,6 +122,7 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
   using V = Conv2dPwCoopmatVariant;
   constexpr uint32_t kDiagOnce = V::kDiagOnce;
   constexpr uint32_t kAligned = V::kAligned;
+  constexpr uint32_t kThreadGrid = V::kThreadGrid;
   // clang-format off
   static const std::vector<Conv2dPwCoopmatVariant> variants = {
       // Intel Xe2
@@ -187,6 +188,13 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_nvidia_t32x32_f32_al_half", 16, 16, 16, 32, 32, 16, 1, 1, 32, true, false, kAligned},
       {"conv2d_pw_coopmat_nvidia_t16x64_f16_al_half", 16, 16, 16, 16, 64, 16, 1, 1, 32, false, false, kAligned},
       {"conv2d_pw_coopmat_nvidia_t16x64_f32_al_half", 16, 16, 16, 16, 64, 16, 1, 1, 32, true, false, kAligned},
+      // Thread grid (_g4x2) on Xe2 and the NVIDIA 16x16 tile
+      {"conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_half", 8, 16, 16, 64, 64, 16, 4, 2, 16, false, true, kThreadGrid},
+      {"conv2d_pw_coopmat_xe2_t64x64_f32_g4x2_half", 8, 16, 16, 64, 64, 16, 4, 2, 16, true, true, kThreadGrid},
+      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid},
+      {"conv2d_pw_coopmat_xe2_t32x64_f32_g4x2_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, true, true, kThreadGrid},
+      {"conv2d_pw_coopmat_nvidia_t16x16_f16_half", 16, 16, 16, 16, 16, 16, 1, 1, 32, false, false},
+      {"conv2d_pw_coopmat_nvidia_t16x16_f32_half", 16, 16, 16, 16, 16, 16, 1, 1, 32, true, false},
   };
   // clang-format on
   return variants;

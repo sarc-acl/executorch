@@ -561,3 +561,62 @@ conv2d_pw_coopmat:
       SUBGROUP_SIZE: 32
       ACC_TYPE: f32
       ALIGNED: true
+    # Thread grid (_g4x2) on Xe2: the 64x64 and 32x64 tiles at 128 threads, a
+    # 4 x 2 subgroup grid (conv2d-pw-coopmat-k-latency D5).
+    - NAME: conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_half
+      MMA_M: 8
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+    - NAME: conv2d_pw_coopmat_xe2_t64x64_f32_g4x2_half
+      MMA_M: 8
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f32
+      FRAG_LAYOUT: true
+    - NAME: conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_half
+      MMA_M: 8
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+    - NAME: conv2d_pw_coopmat_xe2_t32x64_f32_g4x2_half
+      MMA_M: 8
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f32
+      FRAG_LAYOUT: true
+    # Small tile for the NVIDIA family: 16 x 16, one subgroup of 32.
+    - NAME: conv2d_pw_coopmat_nvidia_t16x16_f16_half
+      WG_TILE_M: 16
+      WG_TILE_N: 16
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+    - NAME: conv2d_pw_coopmat_nvidia_t16x16_f32_half
+      WG_TILE_M: 16
+      WG_TILE_N: 16
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32

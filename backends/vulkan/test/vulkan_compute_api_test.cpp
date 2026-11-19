@@ -6466,6 +6466,31 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_aligned_only) {
   }
 }
 
+// The thread-grid variants and the NVIDIA 16x16 tile issue no duplicate
+// staging loads: the body's A map skips items past A_ITEMS, and its B map has
+// no such test, so every B item count must be a multiple of the thread count.
+TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_no_duplicate_staging_loads) {
+  for (const char* name :
+       {"conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_half",
+        "conv2d_pw_coopmat_xe2_t64x64_f32_g4x2_half",
+        "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_half",
+        "conv2d_pw_coopmat_xe2_t32x64_f32_g4x2_half",
+        "conv2d_pw_coopmat_nvidia_t16x16_f16_half",
+        "conv2d_pw_coopmat_nvidia_t16x16_f32_half"}) {
+    SCOPED_TRACE(name);
+    const Conv2dPwCoopmatVariant* const v =
+        find_conv2d_pw_coopmat_variant(name);
+    ASSERT_NE(v, nullptr);
+    const uint32_t b_items = v->tile_k * (v->tile_n / 8u);
+    EXPECT_EQ(b_items % v->wg_size(), 0u);
+    EXPECT_LE(v->shared_bytes(), 49152u);
+    // The 1.3 limit checks with the smallest limits of the measured devices.
+    EXPECT_FALSE(conv2d_pw_coopmat_limits_unsupported(
+                     *v, {1024u, 1024u, v->wg_size() / v->subgroup_size, 49152u})
+                     .has_value());
+  }
+}
+
 TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_resize_to_one_pixel) {
   const Conv2dPwCoopmatVariant* const variant = runnable_pw_coopmat_variant();
   if (variant == nullptr) {
