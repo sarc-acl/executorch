@@ -1429,6 +1429,66 @@
     ]
   },
   {
+    "name": "i2c 3x3 K above 3D limit coopmat",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "im2col_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {
+      "v_VARIANT": [
+        "conv2d_pw_coopmat_xe2_t128x128_f16_i2c_half",
+        "conv2d_pw_coopmat_xe2_t128x128_f16_alc_i2c_half",
+        "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_i2c_half",
+        "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_i2c_half",
+        "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_i2c_half",
+        "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_i2c_half",
+        "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_i2c_half",
+        "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk2_i2c_half",
+        "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half",
+        "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half",
+        "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_i2c_half",
+        "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk4_i2c_half",
+        "conv2d_pw_coopmat_amd_t16x32_f32_alc_i2c_half",
+        "conv2d_pw_coopmat_amd_t16x32_f32_alc_sk2_i2c_half",
+        "conv2d_pw_coopmat_amd_t16x32_f32_alc_sk4_i2c_half",
+        "conv2d_pw_coopmat_amd_t128x128_f16_alc_i2c_half",
+        "conv2d_pw_coopmat_amd_t128x128_f16_alc_sk2_i2c_half",
+        "conv2d_pw_coopmat_amd_t128x128_f16_alc_sk4_i2c_half",
+        "conv2d_pw_coopmat_amd_t128x128_f32_alc_i2c_half",
+        "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_i2c_half",
+        "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk4_i2c_half",
+        "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half",
+        "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half",
+        "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk4_i2c_half",
+        "conv2d_pw_coopmat_nvidia_t16x32_f32_alc_i2c_half",
+        "conv2d_pw_coopmat_nvidia_t16x32_f32_alc_sk2_i2c_half",
+        "conv2d_pw_coopmat_nvidia_t16x32_f32_alc_sk4_i2c_half",
+        "conv2d_pw_coopmat_nvidia_t128x128_f16_alc_i2c_half",
+        "conv2d_pw_coopmat_nvidia_t128x128_f16_alc_sk2_i2c_half",
+        "conv2d_pw_coopmat_nvidia_t128x128_f16_alc_sk4_i2c_half",
+        "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_i2c_half",
+        "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_i2c_half",
+        "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk4_i2c_half"
+      ]
+    },
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 7296, 4, 4], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [16, 7296, 3, 3], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.003902, 0.003902]}}},
+        {"tensor": {"name": "bias", "sizes": [16], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [1, 1]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 16, 4, 4], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
     "name": "i2c 3x3 256 14x14 unknown coopmat",
     "operator": "aten.convolution.default",
     "target_ms": 5,

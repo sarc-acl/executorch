@@ -50,7 +50,10 @@ SKIP_PHRASE = {
     "sk": "fewer than two K steps",
     "not_i2c": "does not read an im2col matrix",
     "unknown": "Unknown conv2d_pw_coopmat variant",
+    "limit": "maximum 3D image dimension",
 }
+# K / 4 texel layers above this exceed maxImageDimension3D of every device here.
+MAX_3D_LAYERS = 16384
 
 
 def i2c_variants():
@@ -145,6 +148,8 @@ def expected_skip(variant, c):
     tokens = variant.removeprefix("conv2d_pw_coopmat_").removesuffix("_half").split("_")
     k_step = K_STEP[tokens[0]]
     K = k_total(c)
+    if K // 4 > MAX_3D_LAYERS:
+        return SKIP_PHRASE["limit"]
     if "alc" in tokens and K % k_step:
         return SKIP_PHRASE["alc"]
     slices = next((int(t[2:]) for t in tokens if t.startswith("sk")), 1)
@@ -195,6 +200,8 @@ CORRECTNESS = [
     ("3x3 two row tiles", conv(64, 128, 128, 40, 3, 3, pad=(1, 1))),
     ("3x3 dilation 2", conv(64, 14, 14, 64, 3, 3, pad=(2, 2), dilation=2)),
     ("3x3 groups 2", conv(64, 14, 14, 64, 3, 3, pad=(1, 1), groups=2)),
+    # K = 65664: 16416 texel layers of the texture3d gather.
+    ("3x3 K above 3D limit", conv(7296, 4, 4, 16, 3, 3, pad=(1, 1))),
 ]
 
 UNKNOWN = [
@@ -246,6 +253,11 @@ def cases(label, c, baselines, variants, timing):
 def correctness(variants):
     out = []
     for label, c in CORRECTNESS:
+        if k_total(c) // 4 > MAX_3D_LAYERS:
+            # Refusal check only: im2col cannot pack these weights into a 2D
+            # image, and auto (direct) exceeds the fp16 tolerance at this K.
+            out += cases(label, c, [], variants, VALIDATION_TIMING)[1:]
+            continue
         baselines = ["auto"] if c.get("groups", 1) != 1 else ["auto", "im2col"]
         out += cases(label, c, baselines, variants, VALIDATION_TIMING)
     label, c = CORRECTNESS[0]
