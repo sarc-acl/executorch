@@ -322,7 +322,8 @@ std::vector<std::string> conv2d_pw_coopmat_registry_problems(
     const std::string name = v.name;
     const std::string suffix = conv2d_pw_coopmat_option_suffix(v);
     const std::string base = std::string("_t") + std::to_string(v.tile_m) +
-        "x" + std::to_string(v.tile_n) + (v.fp32_accumulation ? "_f32" : "_f16");
+        "x" + std::to_string(v.tile_n) +
+        (v.fp32_accumulation ? "_f32" : "_f16");
     bool named = false;
     for (const char* family : {"xe2", "amd", "nvidia"}) {
       named = named ||
@@ -360,10 +361,9 @@ std::vector<std::string> conv2d_pw_coopmat_registry_problems(
     } else {
       parent.options &= ~last;
     }
-    const std::string parent_name = name.substr(
-                                        0,
-                                        name.size() - suffix.size() -
-                                            std::string("_half").size()) +
+    const std::string parent_name =
+        name.substr(
+            0, name.size() - suffix.size() - std::string("_half").size()) +
         conv2d_pw_coopmat_option_suffix(parent) + "_half";
     const auto found = by_name.find(parent_name);
     if (found == by_name.end()) {
@@ -381,8 +381,8 @@ std::vector<std::string> conv2d_pw_coopmat_registry_problems(
         p.frag_layout != v.frag_layout || p.options != parent.options ||
         p.k_slices != parent.k_slices) {
       problems.push_back(
-          name + ": differs from its parent " + parent_name +
-          " in more than " + suffix_item(v, last));
+          name + ": differs from its parent " + parent_name + " in more than " +
+          suffix_item(v, last));
     }
   }
   return problems;
@@ -404,9 +404,9 @@ std::optional<std::string> conv2d_pw_coopmat_limits_unsupported(
   // VUID-VkPipelineShaderStageCreateInfo-pNext-02756.
   if (variant.wg_size() >
       uint64_t(variant.subgroup_size) * limits.max_subgroups) {
-    return "work group size " + n(variant.wg_size()) + " exceeds subgroup size " +
-        n(variant.subgroup_size) + " x maxComputeWorkgroupSubgroups " +
-        n(limits.max_subgroups);
+    return "work group size " + n(variant.wg_size()) +
+        " exceeds subgroup size " + n(variant.subgroup_size) +
+        " x maxComputeWorkgroupSubgroups " + n(limits.max_subgroups);
   }
   if (variant.shared_bytes() > limits.max_shared_bytes) {
     return "shared memory " + n(variant.shared_bytes()) +

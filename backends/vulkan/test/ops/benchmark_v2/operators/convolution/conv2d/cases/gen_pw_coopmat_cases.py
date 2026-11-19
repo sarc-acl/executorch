@@ -284,6 +284,7 @@ def expected_skip(name, N, K, bias, op):
 def expected_skips(build):
     """{case name: {variant: phrase}} of the variant rows of a case file that
     must SKIP."""
+
     def skips(variants):
         out = {}
         for case in build(variants):
@@ -296,7 +297,7 @@ def expected_skips(build):
             op = {v: k for k, v in OPERATORS.items()}[case["operator"]]
             row = {}
             for v in names:
-                if (phrase := expected_skip(v, N, K, bias, op)):
+                if phrase := expected_skip(v, N, K, bias, op):
                     row[v] = phrase
             if row:
                 out[case["name"]] = row
@@ -379,8 +380,22 @@ PRECISION_ALIGNED = [
 # 16, two per slice at four slices); the ordered cancellation (K = 2048) of
 # PRECISION already splits.
 PRECISION_SPLIT = [
-    (label.replace("aligned precision", "split precision"), M, N, 128, plane,
-     dict(kwargs, data=dict(kwargs["data"], weight=first_channel_weight(N, 128, kwargs["data"]["weight"]["repeat"][0]))))
+    (
+        label.replace("aligned precision", "split precision"),
+        M,
+        N,
+        128,
+        plane,
+        dict(
+            kwargs,
+            data=dict(
+                kwargs["data"],
+                weight=first_channel_weight(
+                    N, 128, kwargs["data"]["weight"]["repeat"][0]
+                ),
+            ),
+        ),
+    )
     for label, M, N, K, plane, kwargs in PRECISION_ALIGNED
     if K == 32
 ]
@@ -413,35 +428,41 @@ def fp32_variants(variants):
 
 def correctness(variants):
     cases = []
-    for label, M, N, K, plane, kwargs in [
-        ("aligned", 256, 128, 64, (16, 16), {}),
-        ("7x7", 49, 96, 576, (7, 7), {}),
-        ("14x14", 196, 64, 384, (14, 14), {}),
-        ("N=24", 196, 24, 144, (14, 14), {}),
-        ("K=40", 196, 120, 40, (14, 14), {}),
-        ("no bias", 196, 96, 576, (14, 14), {"bias": False}),
-        ("clamp", 49, 160, 960, (7, 7), {"op": "clamp", "clamp": [0.0, 6.0]}),
-        (
-            "residual add",
-            196,
-            32,
-            192,
-            (14, 14),
-            {"op": "epilogue", "epilogue": ("add", 1.0, False, "none")},
-        ),
-        (
-            "residual sub scale relu",
-            49,
-            24,
-            40,
-            (7, 7),
-            {"op": "epilogue", "epilogue": ("sub", 0.5, True, "relu")},
-        ),
-    ] + ALIGNED + SPLIT:
+    for label, M, N, K, plane, kwargs in (
+        [
+            ("aligned", 256, 128, 64, (16, 16), {}),
+            ("7x7", 49, 96, 576, (7, 7), {}),
+            ("14x14", 196, 64, 384, (14, 14), {}),
+            ("N=24", 196, 24, 144, (14, 14), {}),
+            ("K=40", 196, 120, 40, (14, 14), {}),
+            ("no bias", 196, 96, 576, (14, 14), {"bias": False}),
+            ("clamp", 49, 160, 960, (7, 7), {"op": "clamp", "clamp": [0.0, 6.0]}),
+            (
+                "residual add",
+                196,
+                32,
+                192,
+                (14, 14),
+                {"op": "epilogue", "epilogue": ("add", 1.0, False, "none")},
+            ),
+            (
+                "residual sub scale relu",
+                49,
+                24,
+                40,
+                (7, 7),
+                {"op": "epilogue", "epilogue": ("sub", 0.5, True, "relu")},
+            ),
+        ]
+        + ALIGNED
+        + SPLIT
+    ):
         cases += shape_cases(
             label, M, N, K, plane, variants, VALIDATION_TIMING, **kwargs
         )
-    for label, M, N, K, plane, kwargs in PRECISION + PRECISION_ALIGNED + PRECISION_SPLIT:
+    for label, M, N, K, plane, kwargs in (
+        PRECISION + PRECISION_ALIGNED + PRECISION_SPLIT
+    ):
         cases += shape_cases(
             label,
             M,
@@ -485,7 +506,9 @@ def fp16_accumulation_limits(variants):
     FAIL (design D4, spec "Accumulation precision"); kept out of the correctness
     collection so that it passes."""
     cases = []
-    for label, M, N, K, plane, kwargs in PRECISION + PRECISION_ALIGNED + PRECISION_SPLIT:
+    for label, M, N, K, plane, kwargs in (
+        PRECISION + PRECISION_ALIGNED + PRECISION_SPLIT
+    ):
         cases += shape_cases(
             label.replace("precision", "fp16 limit"),
             M,
@@ -619,7 +642,16 @@ GUARD = 7.0
 
 
 def guard_case(
-    variant, tile_m, tile_n, threads, label, M, N, K, plane, image_input=False,
+    variant,
+    tile_m,
+    tile_n,
+    threads,
+    label,
+    M,
+    N,
+    K,
+    plane,
+    image_input=False,
     no_epilogue=False,
 ):
     """A raw shader case of an aligned-only variant whose output texture is
@@ -672,7 +704,9 @@ def guard_case(
                     "sizes": [1, N],
                     "dtype": "float16",
                     # An _epi0 shader adds no bias.
-                    "data": {"fill": 0} if no_epilogue else {"rand_uniform_float": [-1, 1]},
+                    "data": (
+                        {"fill": 0} if no_epilogue else {"rand_uniform_float": [-1, 1]}
+                    ),
                 }
             },
             # The unused residual binding: the input, or for a storage-image
@@ -729,8 +763,16 @@ def guard_cases(family, variants):
         for label, M, N, K, plane, _ in ALIGNED[:2]:
             cases.append(
                 guard_case(
-                    p["NAME"], p["WG_TILE_M"], p["WG_TILE_N"], threads,
-                    label, M, N, K, plane, bool(p.get("IMG_INPUT")),
+                    p["NAME"],
+                    p["WG_TILE_M"],
+                    p["WG_TILE_N"],
+                    threads,
+                    label,
+                    M,
+                    N,
+                    K,
+                    plane,
+                    bool(p.get("IMG_INPUT")),
                     bool(p.get("NO_EPILOGUE")),
                 )
             )
@@ -820,15 +862,27 @@ def dlprobe(family):
         M, N, K, plane = DLPROBE_SHAPE
         cases = []
         for name, weight, ref in (
-            (DLPROBE[family] + "_half", [-(-K // 4), -(-N // 4) * 16], "conv2d_pw_packed"),
+            (
+                DLPROBE[family] + "_half",
+                [-(-K // 4), -(-N // 4) * 16],
+                "conv2d_pw_packed",
+            ),
             (DLPROBE[family] + "_dlprobe_half", [K, N], "conv2d_pw_fragment"),
         ):
             p = by[name]
             threads = p["SG_GRID_X"] * p["SG_GRID_Y"] * p["SUBGROUP_SIZE"]
             cases.append(
                 raw_pw_case(
-                    name, weight, ref, threads, p["WG_TILE_M"], p["WG_TILE_N"],
-                    M, N, K, plane,
+                    name,
+                    weight,
+                    ref,
+                    threads,
+                    p["WG_TILE_M"],
+                    p["WG_TILE_N"],
+                    M,
+                    N,
+                    K,
+                    plane,
                 )
             )
         return cases

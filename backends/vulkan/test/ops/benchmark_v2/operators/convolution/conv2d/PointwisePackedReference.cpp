@@ -249,8 +249,7 @@ REGISTER_REFERENCE_FUNCTIONS {
   REGISTER_REFERENCE_FN(conv2d_pw_packed, conv2d_pw_packed_reference);
   REGISTER_REFERENCE_FN(conv2d_pw_diag_once, conv2d_pw_diag_once_reference);
   REGISTER_REFERENCE_FN(
-      conv2d_pw_packed_guard,
-      conv2d_pw_packed_guard_reference);
+      conv2d_pw_packed_guard, conv2d_pw_packed_guard_reference);
   REGISTER_REFERENCE_FN(conv2d_pw_fragment, conv2d_pw_fragment_reference);
 }
 

@@ -6339,8 +6339,8 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_low_limits) {
   for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
     most_subgroups = std::max(most_subgroups, v.sg_grid_x * v.sg_grid_y);
   }
-  Conv2dPwCoopmatVariant many =
-      *find_conv2d_pw_coopmat_variant("conv2d_pw_coopmat_xe2_t128x128_f16_half");
+  Conv2dPwCoopmatVariant many = *find_conv2d_pw_coopmat_variant(
+      "conv2d_pw_coopmat_xe2_t128x128_f16_half");
   many.sg_grid_x = 8u;
   many.sg_grid_y = 4u;
   ASSERT_GT(many.sg_grid_x * many.sg_grid_y, most_subgroups);
@@ -6444,8 +6444,9 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_aligned_only) {
   }
   const Conv2dPwRequest request{Conv2dPwRequest::Kind::kCoopmat, variant};
   // Unaligned channels: K = 40 and N = 24.
-  for (const auto& [K, N] : {std::pair<int64_t, int64_t>{40, 96},
-                             std::pair<int64_t, int64_t>{576, 24}}) {
+  for (const auto& [K, N] :
+       {std::pair<int64_t, int64_t>{40, 96},
+        std::pair<int64_t, int64_t>{576, 24}}) {
     SCOPED_TRACE(std::to_string(K) + "x" + std::to_string(N));
     PointwiseConvGraph g(vkapi::kHalf, K, N, 14, 14, 1, request);
     for (const int64_t size : {14, 7, 1, 14}) {
@@ -6485,9 +6486,10 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_no_duplicate_staging_loads) {
     EXPECT_EQ(b_items % v->wg_size(), 0u);
     EXPECT_LE(v->shared_bytes(), 49152u);
     // The 1.3 limit checks with the smallest limits of the measured devices.
-    EXPECT_FALSE(conv2d_pw_coopmat_limits_unsupported(
-                     *v, {1024u, 1024u, v->wg_size() / v->subgroup_size, 49152u})
-                     .has_value());
+    EXPECT_FALSE(
+        conv2d_pw_coopmat_limits_unsupported(
+            *v, {1024u, 1024u, v->wg_size() / v->subgroup_size, 49152u})
+            .has_value());
   }
 }
 
@@ -6532,8 +6534,8 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_slices) {
       continue;
     }
     SCOPED_TRACE(v.name);
-    EXPECT_TRUE(api::shader_registry().has_shader(
-        conv2d_pw_coopmat_merge_shader(v)));
+    EXPECT_TRUE(
+        api::shader_registry().has_shader(conv2d_pw_coopmat_merge_shader(v)));
     for (const uint32_t K : {257u, 576u, 960u, 40u}) {
       SCOPED_TRACE(K);
       const uint32_t steps = (K + v.tile_k - 1u) / v.tile_k;
@@ -6553,8 +6555,8 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_slices) {
       EXPECT_EQ(every_slice_has_two, K != 40u);
     }
   }
-  const Conv2dPwCoopmatVariant* const sk4 =
-      find_conv2d_pw_coopmat_variant("conv2d_pw_coopmat_xe2_t128x128_f16_sk4_half");
+  const Conv2dPwCoopmatVariant* const sk4 = find_conv2d_pw_coopmat_variant(
+      "conv2d_pw_coopmat_xe2_t128x128_f16_sk4_half");
   ASSERT_NE(sk4, nullptr);
   const auto s257 = conv2d_pw_coopmat_k_slices(*sk4, 257u);
   EXPECT_EQ(s257.back(), std::make_pair(15u, 17u));

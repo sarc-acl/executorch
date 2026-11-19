@@ -14,8 +14,8 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/unary/UnaryOp.h>
 
 #include <optional>
-#include <utility>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace vkcompute {
