@@ -44,7 +44,11 @@ def variants_by_family():
     names = {family: [] for family in FAMILIES}
     for variant in shader["shader_variants"]:
         name = variant["NAME"]
-        if name.endswith(("_diag_once_half", "_dlprobe_half", "_dlctl_half")):
+        # The im2col variants (_i2c) read a gathered matrix: their cases are
+        # gen_im2col_coopmat_cases.py's.
+        if name.endswith(("_diag_once_half", "_dlprobe_half", "_dlctl_half")) or (
+            "_i2c" in name
+        ):
             continue
         family = name.split("_")[3]
         if family not in names:
@@ -617,12 +621,12 @@ def plane_of(M):
     return (side, side)
 
 
-def performance(label, shapes, exclude=()):
-    """Performance cases of the shapes over every variant except those whose
-    name contains one of the exclude substrings."""
+def performance(label, shapes, exclude=(), only=None):
+    """Performance cases of the shapes over every variant (or the `only` list)
+    except those whose name contains one of the exclude substrings."""
 
     def build(variants):
-        variants = [v for v in variants if not any(x in v for x in exclude)]
+        variants = [v for v in only or variants if not any(x in v for x in exclude)]
         cases = []
         for M, N, K in shapes:
             cases += shape_cases(
@@ -664,6 +668,28 @@ RESNET50 = [
     (196, 512, 1024),
     (49, 2048, 512),
     (49, 512, 2048),
+]
+
+# GEMM-equivalent (M, N, K) of the surveyed k x k layers (conv2d-gemm-coopmat
+# design Context), as 1x1 convolutions; the stride-2 512-channel layer of
+# ResNet-50 has the GEMM of the stride-1 one.
+GEMM_SHAPES = [
+    (49, 512, 4608),
+    (196, 256, 2304),
+    (784, 128, 1152),
+    (3136, 64, 576),
+    (289, 224, 1344),
+    (25, 384, 4032),
+    (196, 48, 1728),
+]
+GEMM_PROBE_VARIANTS = [
+    "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half",
+    "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_half",
+    "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_half",
+    "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half",
+    "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk2_half",
+    "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half",
 ]
 
 # Parent variant per device (OUT/GATES.md of conv2d-pw-coopmat-k-latency) and
@@ -1036,6 +1062,9 @@ FILES = {
         "large", upstream_fp16_shapes(), exclude=("_alc",)
     ),
     "pw_coopmat_ksweep.json": ksweep,
+    "pw_coopmat_gemm_shapes.json": performance(
+        "gemm", GEMM_SHAPES, only=GEMM_PROBE_VARIANTS
+    ),
     **{f"pw_coopmat_guard_{f}.json": guard(f) for f in FAMILIES},
     **{f"pw_coopmat_dlprobe_{f}.json": dlprobe(f) for f in FAMILIES},
     "pw_coopmat_diag_checks.json": diag_checks,
