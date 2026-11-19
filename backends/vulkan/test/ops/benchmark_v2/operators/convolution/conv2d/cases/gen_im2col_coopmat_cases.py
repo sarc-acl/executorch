@@ -51,7 +51,13 @@ SKIP_PHRASE = {
     "not_i2c": "does not read an im2col matrix",
     "unknown": "Unknown conv2d_pw_coopmat variant",
     "limit": "maximum 3D image dimension",
+    "gather": "maxComputeWorkGroupCount",
 }
+# maxComputeWorkGroupCount.y of every device here; the gather runs 16 x 4 work
+# groups over (k4, tile pixel), and a tile holds the output rows that fit a
+# 16 MiB FP16 scratch (conv2d_gemm_impl).
+MAX_GROUPS_Y = 65535
+SCRATCH_BUDGET = 16 * 1024 * 1024
 # K / 4 texel layers above this exceed maxImageDimension3D of every device here.
 MAX_3D_LAYERS = 16384
 
@@ -88,23 +94,24 @@ def conv_args(
     op="conv",
     clamp=None,
     epilogue=None,
+    data=None,
 ):
+    """`data` replaces the initializer of the named tensors (input, weight,
+    bias, residual)."""
     ho = out_size(h, kh, stride, pad[0], dilation)
     wo = out_size(w, kw, stride, pad[1], dilation)
     s = float(f"{1 / (cin // groups * kh * kw) ** 0.5:.4g}")
+    data = {
+        "input": {"rand_uniform_float": [-1, 1]},
+        "weight": {"rand_uniform_float": [-s, s]},
+        "bias": {"rand_uniform_float": [-1, 1]},
+        "residual": {"rand_uniform_float": [-1, 1]},
+        **(data or {}),
+    }
     args = [
-        tensor("input", [1, cin, h, w], {"rand_uniform_float": [-1, 1]}),
-        tensor(
-            "weight",
-            [cout, cin // groups, kh, kw],
-            {"rand_uniform_float": [-s, s]},
-            "constant",
-        ),
-        (
-            tensor("bias", [cout], {"rand_uniform_float": [-1, 1]}, "constant")
-            if bias
-            else None
-        ),
+        tensor("input", [1, cin, h, w], data["input"]),
+        tensor("weight", [cout, cin // groups, kh, kw], data["weight"], "constant"),
+        tensor("bias", [cout], data["bias"], "constant") if bias else None,
         {"int_list": [stride, stride]},
         {"int_list": list(pad)},
         {"int_list": [dilation, dilation]},
@@ -117,7 +124,7 @@ def conv_args(
     elif op == "epilogue":
         residual_op, alpha, activation = epilogue
         args += [
-            tensor("residual", [1, cout, ho, wo], {"rand_uniform_float": [-1, 1]}),
+            tensor("residual", [1, cout, ho, wo], data["residual"]),
             None,
             {"string": residual_op},
             {"float": alpha},
@@ -139,6 +146,15 @@ def split_k_ok(K, k_step, slices):
     return q >= 2 and steps - (slices - 1) * q >= 2
 
 
+def gather_groups(c):
+    """(x, y) work groups of the im2col gather of one row tile."""
+    ho = out_size(c["h"], c["kh"], c.get("stride", 1), c.get("pad", (0, 0))[0], 1)
+    wo = out_size(c["w"], c["kw"], c.get("stride", 1), c.get("pad", (0, 0))[1], 1)
+    K = k_total(c)
+    oh_tile = min(ho, max(1, SCRATCH_BUDGET // (wo * K * 2)))
+    return -(-K // 4 // 16), -(-(wo * oh_tile) // 4)
+
+
 def expected_skip(variant, c):
     """The refusal phrase of an im2col_coopmat row that must SKIP, or None."""
     if c.get("groups", 1) != 1:
@@ -150,6 +166,8 @@ def expected_skip(variant, c):
     K = k_total(c)
     if K // 4 > MAX_3D_LAYERS:
         return SKIP_PHRASE["limit"]
+    if gather_groups(c)[1] > MAX_GROUPS_Y:
+        return SKIP_PHRASE["gather"]
     if "alc" in tokens and K % k_step:
         return SKIP_PHRASE["alc"]
     slices = next((int(t[2:]) for t in tokens if t.startswith("sk")), 1)
@@ -202,7 +220,127 @@ CORRECTNESS = [
     ("3x3 groups 2", conv(64, 14, 14, 64, 3, 3, pad=(1, 1), groups=2)),
     # K = 65664: 16416 texel layers of the texture3d gather.
     ("3x3 K above 3D limit", conv(7296, 4, 4, 16, 3, 3, pad=(1, 1))),
+    # One 512 x 1024 tile (K = 12): 131072 gather work groups in y.
+    ("1x3 gather grid limit", conv(4, 512, 1024, 4, 1, 3, pad=(0, 1))),
 ]
+
+
+def center_tap_weight(cout, cin, value, channels, taps=9):
+    """3x3 (or 1x3, taps 3) weights that are VALUE on the center tap of the
+    first `channels` input channels and 0 elsewhere: with padding 1 every
+    output pixel takes exactly those products, so the 1x1 cancellations carry
+    over."""
+    return {
+        "repeat": [
+            value if k == taps // 2 and ci < channels else 0
+            for _ in range(cout)
+            for ci in range(cin)
+            for k in range(taps)
+        ]
+    }
+
+
+def ordered_input(cin, pixels):
+    """Per pixel, in channel order: 3C/8 ones, C/4 values of 2^-8, 3C/8 minus
+    ones. The exact sum with unit weights is C/1024; an fp16 running sum stays
+    at 3C/8 while the small terms are added (a K step of 32 adds 2^-3, below
+    half the fp16 spacing at 768) and ends at 0."""
+    run = 3 * cin // 8
+    per_c = [1.0] * run + [2.0**-8] * (cin // 4) + [-1.0] * run
+    return {"repeat": [v for v in per_c for _ in range(pixels)]}
+
+
+# Precision regressions of the fp32-accumulation pointwise variants, adapted to
+# a 3x3 (ordered cancellation: 1x3) padding-1 convolution on a 2x3 plane
+# (center tap only). An fp16
+# rounding before the bias, the residual or the end of the K loop makes them
+# fail; fp32 accumulation must pass. Swept over the fp32 _i2c variants only.
+PRECISION = [
+    # 65 * 65 = 4225 rounds to 4224 in fp16; 4225 - 4224 = 1.
+    (
+        "fp32 precision bias cancellation",
+        conv(
+            64,
+            2,
+            3,
+            16,
+            3,
+            3,
+            pad=(1, 1),
+            data={
+                "input": {"fill": 65},
+                "weight": center_tap_weight(16, 64, 65, 1),
+                "bias": {"fill": -4224},
+            },
+        ),
+    ),
+    # The same cancellation against the fused residual.
+    (
+        "fp32 precision residual cancellation",
+        conv(
+            64,
+            2,
+            3,
+            16,
+            3,
+            3,
+            pad=(1, 1),
+            bias=False,
+            op="epilogue",
+            epilogue=("add", 1.0, "none"),
+            data={
+                "input": {"fill": 65},
+                "weight": center_tap_weight(16, 64, 65, 1),
+                "residual": {"fill": -4224},
+            },
+        ),
+    ),
+    # Alpha 1 + 2^-12 rounds to 1 in fp16: 64 * 64 - alpha * 4096 = -1 exactly.
+    (
+        "fp32 precision residual alpha",
+        conv(
+            64,
+            2,
+            3,
+            16,
+            3,
+            3,
+            pad=(1, 1),
+            bias=False,
+            op="epilogue",
+            epilogue=("add", 1.000244140625, "none"),
+            data={
+                "input": {"fill": 64},
+                "weight": center_tap_weight(16, 64, 64, 1),
+                "residual": {"fill": -4096},
+            },
+        ),
+    ),
+    # Ordered cancellation over 2048 channels, 1x3 center tap (K = 6144, K / 4
+    # within every device's 3D image limit): exact result 2, fp16 gives 0.
+    (
+        "fp32 precision ordered cancellation",
+        conv(
+            2048,
+            2,
+            3,
+            16,
+            1,
+            3,
+            pad=(0, 1),
+            bias=False,
+            data={
+                "input": ordered_input(2048, 6),
+                "weight": center_tap_weight(16, 2048, 1, 2048, taps=3),
+            },
+        ),
+    ),
+]
+
+
+def fp32_variants(variants):
+    return [v for v in variants if "_f32" in v]
+
 
 UNKNOWN = [
     "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half",
@@ -258,10 +396,17 @@ def correctness(variants):
             # image, and auto (direct) exceeds the fp16 tolerance at this K.
             out += cases(label, c, [], variants, VALIDATION_TIMING)[1:]
             continue
-        baselines = ["auto"] if c.get("groups", 1) != 1 else ["auto", "im2col"]
+        # im2col runs neither groups nor a gather beyond the work group limit.
+        baselines = (
+            ["auto"]
+            if c.get("groups", 1) != 1 or gather_groups(c)[1] > MAX_GROUPS_Y
+            else ["auto", "im2col"]
+        )
         out += cases(label, c, baselines, variants, VALIDATION_TIMING)
     label, c = CORRECTNESS[0]
     out += cases(f"{label} unknown", c, [], UNKNOWN, VALIDATION_TIMING)[1:]
+    for label, c in PRECISION:
+        out += cases(label, c, [], fp32_variants(variants), VALIDATION_TIMING)[1:]
     return out
 
 
@@ -269,6 +414,10 @@ def expected_skips(variants):
     out = {}
     for label, c in CORRECTNESS:
         skips = {v: p for v in variants if (p := expected_skip(v, c))}
+        if skips:
+            out[f"i2c {label} coopmat"] = skips
+    for label, c in PRECISION:
+        skips = {v: p for v in fp32_variants(variants) if (p := expected_skip(v, c))}
         if skips:
             out[f"i2c {label} coopmat"] = skips
     out[f"i2c {CORRECTNESS[0][0]} unknown coopmat"] = {

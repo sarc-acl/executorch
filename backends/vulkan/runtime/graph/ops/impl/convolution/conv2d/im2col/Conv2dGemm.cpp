@@ -575,10 +575,12 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
   if (!graph.float16_buffers_enabled()) {
     return "16-bit storage buffers are not enabled";
   }
-  if (!graph.is_texture_storage(in) || !graph.is_texture_storage(out) ||
+  // The gather reads and the multiply writes 3D images.
+  if (graph.storage_type_of(in) != utils::kTexture3D ||
+      graph.storage_type_of(out) != utils::kTexture3D ||
       graph.packed_dim_of(in) != WHCN::kChannelsDim ||
       graph.packed_dim_of(out) != WHCN::kChannelsDim) {
-    return "input and output are not channels-packed textures";
+    return "input and output are not channels-packed texture3d";
   }
   const std::vector<int64_t> in_sizes = graph.sizes_of(in);
   const std::vector<int64_t> w_sizes = graph.sizes_of(weight_data);
@@ -618,6 +620,20 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
         n(tiling.oh_tile) + " pixels exceeds the maximum 3D image dimension " +
         n(max_3d);
   }
+  const utils::uvec3 max_count = adapter->max_compute_workgroup_count();
+  {
+    // conv2d_im2col dispatches one invocation per (k4, pixel) of a tile in
+    // work groups of 16 x 4 (pick_conv2d_im2col_lwg).
+    const uint64_t tile_pixels = uint64_t(W_out) * uint64_t(tiling.oh_tile);
+    const uint64_t gather_x = utils::div_up(K4, uint64_t(16));
+    const uint64_t gather_y = utils::div_up(tile_pixels, uint64_t(4));
+    if (gather_x > max_count[0] || gather_y > max_count[1]) {
+      return "the im2col gather of a " + n(tile_pixels) + "-pixel tile needs " +
+          n(gather_x) + " x " + n(gather_y) +
+          " work groups, more than maxComputeWorkGroupCount " +
+          n(max_count[0]) + " x " + n(max_count[1]);
+    }
+  }
   if (variant.has(Conv2dPwCoopmatVariant::kAligned)) {
     return "the variant requires N % tile_n == 0, which the route does not "
            "check (_al)";
@@ -644,7 +660,6 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
         " take " + n(bytes) + " bytes, more than maxStorageBufferRange " +
         n(adapter->max_buffer_numel());
   }
-  const utils::uvec3 max_count = adapter->max_compute_workgroup_count();
   if (variant.k_slices > 1u) {
     for (const auto& [begin, end] : conv2d_pw_coopmat_k_slices(
              variant, utils::safe_downcast<uint32_t>(tiling.K_total))) {

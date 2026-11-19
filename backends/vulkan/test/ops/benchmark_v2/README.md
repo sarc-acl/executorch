@@ -1101,7 +1101,7 @@ from the `_i2c` variants of `conv2d_pw_coopmat.yaml` (`--check` as above):
 
 | Collection | Cases |
 | --- | --- |
-| `im2col_coopmat_correctness.json` | 3x3 stride 1 and 2, 1x7, 7x1, 1x3, 3x1, Cin 30, 20 and 4, no bias, clamp, residual with ReLU, a gather in two row tiles; dilation 2, groups 2, a gathered K whose K / 4 texel layers exceed the 3D image limit, and two variant names the route refuses, as expected skips. Baselines `auto` and `im2col`. |
+| `im2col_coopmat_correctness.json` | 3x3 stride 1 and 2, 1x7, 7x1, 1x3, 3x1, Cin 30, 20 and 4, no bias, clamp, residual with ReLU, a gather in two row tiles; dilation 2, groups 2, a gathered K whose K / 4 texel layers exceed the 3D image limit, a gather tile beyond the work group count limit, and two variant names the route refuses, as expected skips; for the fp32-accumulation variants, the bias, residual, residual-alpha and ordered cancellations on a center tap, which fp16 accumulation fails. Baselines `auto` and `im2col`. |
 | `im2col_coopmat_expected_skips.json` | Per case, the variants that must report `SKIP` and the phrase of the reason. |
 | `im2col_coopmat_performance.json` | The surveyed ResNet, Inception and DenseNet k x k layers on `auto`, `direct`, `im2col` and the measured `_i2c` variants. |
 
