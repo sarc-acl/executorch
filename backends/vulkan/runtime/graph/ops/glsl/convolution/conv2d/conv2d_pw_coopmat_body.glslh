@@ -366,6 +366,59 @@ void mma_step(const uint slice, const uvec2 sg) {
   }
 }
 
+#ifdef DIRECT_B
+// Direct weight load (raw-shader probe, design D5): B is not staged. The
+// weights are prepacked on the host in MMA_K x MMA_N fragments, row-major,
+// fragment (k / MMA_K, n / MMA_N) at index (k / MMA_K) * (N / MMA_N) + n / MMA_N
+// (MMA_K * MMA_N / 4 f16vec4 each); every subgroup loads its B fragments with
+// subgroup-uniform offsets. Requires K % WG_TILE_K == 0 and N % WG_TILE_N == 0.
+void store_a(const uint slice, const uvec4 temp_a[A_PASSES], const StagingMap map) {
+  const uint tid = gl_LocalInvocationID.x;
+  [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
+    if (A_ITEMS % WG_SIZE == 0u || p * WG_SIZE + tid < A_ITEMS) {
+      sh[slice * ASH_SLICE + A_SH_IDX(map.a_m[p], map.a_col[p])] = temp_a[p];
+    }
+  }
+}
+
+void mma_step_direct(
+    const uint slice,
+    const uvec2 sg,
+    const uint k_base,
+    const uint n16,
+    const uint tile_n_start) {
+  const uint a_base = slice * ASH_SLICE;
+  [[unroll]] for (uint k = 0; k < WG_TILE_K / MMA_K; ++k) {
+    const uint k_start = MMA_K * k;
+    coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA>
+        mat_a[MMAS_PER_SG_M];
+    [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+      const uint row = MMA_M * (MMAS_PER_SG_M * sg.y + i);
+      coopMatLoad(
+          mat_a[i],
+          sh,
+          a_base + A_SH_IDX(row, k_start / FP16_PER_VEC4),
+          A_STRIDE_VEC4,
+          gl_CooperativeMatrixLayoutRowMajor);
+    }
+    coopmat<float16_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> mat_b;
+    [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+      const uint n = tile_n_start + MMA_N * (MMAS_PER_SG_N * sg.x + j);
+      const uint frag = ((k_base + k_start) / MMA_K) * n16 + n / MMA_N;
+      coopMatLoad(
+          mat_b,
+          t_weight_packed,
+          frag * (MMA_K * MMA_N / 4u),
+          MMA_N / 4u,
+          gl_CooperativeMatrixLayoutRowMajor);
+      [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+        result[i][j] = coopMatMulAdd(mat_a[i], mat_b, result[i][j]);
+      }
+    }
+  }
+}
+#endif
+
 // Stores accumulator row blocks pass * DRAIN_G ... + DRAIN_G - 1 of every
 // subgroup, then writes their output texels. `pass` is a literal at every call,
 // so the result array is indexed with constants.
@@ -468,6 +521,23 @@ void main() {
   StagingMap map;
   make_staging_map(map, tile_m_start, M, W_out);
 
+#ifdef DIRECT_B
+  const uint n16 = 4u * N4 / MMA_N;
+  uvec4 temp_a[A_PASSES];
+  load_a(temp_a, map, 0u, K4);
+  store_a(0u, temp_a, map);
+  uint step;
+  for (step = 0; step + 1u < num_k_steps; ++step) {
+    memoryBarrierShared();
+    barrier();
+    load_a(temp_a, map, (step + 1u) * WG_TILE_K, K4);
+    mma_step_direct(step % 2u, sg, step * WG_TILE_K, n16, tile_n_start);
+    store_a((step + 1u) % 2u, temp_a, map);
+  }
+  memoryBarrierShared();
+  barrier();
+  mma_step_direct(step % 2u, sg, step * WG_TILE_K, n16, tile_n_start);
+#else
   uvec4 temp_a[A_PASSES];
   uvec4 temp_b[B_TEMP_LEN];
   load_a(temp_a, map, 0u, K4);
@@ -503,6 +573,7 @@ void main() {
   memoryBarrierShared();
   barrier();
   mma_step(step % 2u, sg);
+#endif
 #endif
 
   drain_pass(0u, sg, tile_m_start, n4_start, M, N4, W_out);

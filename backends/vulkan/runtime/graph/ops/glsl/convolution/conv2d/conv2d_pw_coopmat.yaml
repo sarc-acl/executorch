@@ -33,6 +33,7 @@ conv2d_pw_coopmat:
     IMG_INPUT: false
     NO_EPILOGUE: false
     BCM: false
+    DIRECT_B: false
   shader_variants:
     # Intel Xe2 (Arc B580, Arc Pro B70): MMA 8x16x16, subgroup 16, K step 16,
     # fragment-contiguous shared memory. Subgroup grids: OUT/DEVICES.md rule
@@ -800,3 +801,37 @@ conv2d_pw_coopmat:
       SUBGROUP_SIZE: 32
       ACC_TYPE: f32
       BCM: true
+    # Direct weight load probes (_dlprobe): raw shader cases only, no variant
+    # descriptor and no graph route (design D5, task 4.8).
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f16_dlprobe_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      DIRECT_B: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_dlprobe_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      DIRECT_B: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f16_dlprobe_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      DIRECT_B: true

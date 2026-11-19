@@ -127,6 +127,8 @@ $if NO_EPILOGUE:
   #define NO_EPILOGUE
 $if BCM:
   #define BCM
+$if DIRECT_B:
+  #define DIRECT_B
 
 const uint MMA_M = ${MMA_M};
 const uint MMA_N = ${MMA_N};

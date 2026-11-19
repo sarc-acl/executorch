@@ -1,0 +1,64 @@
+[
+  {
+    "name": "pw_coopmat dlprobe (196,128,576) conv2d_pw_coopmat_amd_t16x32_f16_half",
+    "shader": "conv2d_pw_coopmat_amd_t16x32_f16_half",
+    "reference": "conv2d_pw_packed",
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "gwg_size": [128, 13, 1],
+    "lwg_size": [32, 1, 1],
+    "target_ms": 50,
+    "warmup_runs": 3,
+    "benchmark_runs": 5,
+    "bindings": [
+      {"texture3d": {"name": "out", "sizes": [1, 128, 14, 14], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 0}}},
+      {"texture3d": {"name": "in", "sizes": [1, 576, 14, 14], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"buffer": {"name": "w", "sizes": [144, 512], "dtype": "float16", "data": {"rand_uniform_float": [-0.04167, 0.04167]}}},
+      {"texture2d": {"name": "bias", "sizes": [1, 128], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"ref": "in"}},
+      {"texture2d": {"ref": "bias"}},
+      {"meta_ubo": "in", "field": "sizes"},
+      {"meta_ubo": "out", "field": "sizes"}
+    ],
+    "specialization_constants": [
+      {"dtype": "int32", "value": 1},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0},
+      {"dtype": "bool", "value": false},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0}
+    ],
+    "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
+    "outputs": ["out"]
+  },
+  {
+    "name": "pw_coopmat dlprobe (196,128,576) conv2d_pw_coopmat_amd_t16x32_f16_dlprobe_half",
+    "shader": "conv2d_pw_coopmat_amd_t16x32_f16_dlprobe_half",
+    "reference": "conv2d_pw_fragment",
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "gwg_size": [128, 13, 1],
+    "lwg_size": [32, 1, 1],
+    "target_ms": 50,
+    "warmup_runs": 3,
+    "benchmark_runs": 5,
+    "bindings": [
+      {"texture3d": {"name": "out", "sizes": [1, 128, 14, 14], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 0}}},
+      {"texture3d": {"name": "in", "sizes": [1, 576, 14, 14], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"buffer": {"name": "w", "sizes": [576, 128], "dtype": "float16", "data": {"rand_uniform_float": [-0.04167, 0.04167]}}},
+      {"texture2d": {"name": "bias", "sizes": [1, 128], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"ref": "in"}},
+      {"texture2d": {"ref": "bias"}},
+      {"meta_ubo": "in", "field": "sizes"},
+      {"meta_ubo": "out", "field": "sizes"}
+    ],
+    "specialization_constants": [
+      {"dtype": "int32", "value": 1},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0},
+      {"dtype": "bool", "value": false},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0}
+    ],
+    "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
+    "outputs": ["out"]
+  }
+]

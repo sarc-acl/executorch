@@ -74,6 +74,54 @@ Tensor conv2d_pw_packed_reference(
 }
 
 /*
+ * Reference for raw shader cases of the direct weight load probes (_dlprobe):
+ * the bindings of conv2d_pw_packed, with the weights prepacked on the host in
+ * 16 x 16 fragments: weight (k, n) of a [K, N] buffer at
+ * ((k / 16) * (N / 16) + n / 16) * 256 + (k % 16) * 16 + n % 16.
+ */
+Tensor conv2d_pw_fragment_reference(
+    const Json& spec,
+    const TensorMap& tensors,
+    size_t threads) {
+  std::vector<std::string> bindings;
+  for (const Json& binding : spec.at("bindings")) {
+    if (binding.contains("tensor")) {
+      bindings.push_back(binding.at("tensor"));
+    }
+  }
+  require(
+      bindings.size() >= 4,
+      "conv2d_pw_fragment requires output, input, weight and bias bindings");
+  const Tensor& in = tensors.at(bindings[1]);
+  const Tensor& w = tensors.at(bindings[2]);
+  const Tensor& bias = tensors.at(bindings[3]);
+  const auto out_sizes = spec.at("tensors")
+                             .at(bindings[0])
+                             .at("sizes")
+                             .get<std::vector<int64_t>>();
+  const int64_t K = in.sizes[1];
+  const int64_t N = out_sizes[1];
+  const int64_t plane = out_sizes[2] * out_sizes[3];
+  require(
+      K % 16 == 0 && N % 16 == 0 && w.sizes == std::vector<int64_t>({K, N}),
+      "conv2d_pw_fragment requires a [K, N] weight with K and N multiples of 16");
+  Tensor output{out_sizes, std::vector<double>(N * plane)};
+  parallel_for(N, threads, [&](size_t n_index) {
+    const int64_t n = static_cast<int64_t>(n_index);
+    for (int64_t p = 0; p < plane; ++p) {
+      double acc = 0;
+      for (int64_t k = 0; k < K; ++k) {
+        const int64_t idx =
+            ((k / 16) * (N / 16) + n / 16) * 256 + (k % 16) * 16 + n % 16;
+        acc += in.values[k * plane + p] * w.values[idx];
+      }
+      output.values[n * plane + p] = acc + bias.values[n];
+    }
+  });
+  return output;
+}
+
+/*
  * Reference for raw shader cases that check where a pointwise shader stores:
  * the bindings of conv2d_pw_packed, with an output texture larger than the
  * convolution's output (the shader's out_sizes, passed as a uniform, say
@@ -203,6 +251,7 @@ REGISTER_REFERENCE_FUNCTIONS {
   REGISTER_REFERENCE_FN(
       conv2d_pw_packed_guard,
       conv2d_pw_packed_guard_reference);
+  REGISTER_REFERENCE_FN(conv2d_pw_fragment, conv2d_pw_fragment_reference);
 }
 
 } // namespace vkcompute::shader_profiling::reference

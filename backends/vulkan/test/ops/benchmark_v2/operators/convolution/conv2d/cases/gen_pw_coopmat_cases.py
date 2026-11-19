@@ -44,7 +44,7 @@ def variants_by_family():
     names = {family: [] for family in FAMILIES}
     for variant in shader["shader_variants"]:
         name = variant["NAME"]
-        if name.endswith("_diag_once_half"):
+        if name.endswith("_diag_once_half") or name.endswith("_dlprobe_half"):
             continue
         family = name.split("_")[3]
         if family not in names:
@@ -713,6 +713,105 @@ def guard_cases(family, variants):
     return cases
 
 
+# Direct weight load probe (task 4.8): per family the probe and its staged
+# parent, raw, on one aligned shape.
+DLPROBE = {
+    "xe2": "conv2d_pw_coopmat_xe2_t128x128_f16",
+    "amd": "conv2d_pw_coopmat_amd_t16x32_f16",
+    "nvidia": "conv2d_pw_coopmat_nvidia_t16x32_f16",
+}
+DLPROBE_SHAPE = (196, 128, 576, (14, 14))
+
+
+def raw_pw_case(shader, weight, reference, threads, tile_m, tile_n, M, N, K, plane):
+    H, W = plane
+    s = float(f"{1 / K ** 0.5:.4g}")
+    tex = lambda name, sizes, data, **kw: {  # noqa: E731
+        "texture3d": {
+            "name": name,
+            "sizes": sizes,
+            "dtype": "float16",
+            "layout": "channels",
+            **kw,
+            "data": data,
+        }
+    }
+    return {
+        "name": f"pw_coopmat dlprobe ({M},{N},{K}) {shader}",
+        "shader": shader,
+        "reference": reference,
+        "validation_method": {k: v for k, v in TOLERANCE.items() if k != "outputs"},
+        "gwg_size": [-(-N // tile_n) * threads, -(-M // tile_m), 1],
+        "lwg_size": [threads, 1, 1],
+        **PERFORMANCE_TIMING,
+        "bindings": [
+            tex("out", [1, N, H, W], {"fill": 0}, access="write"),
+            tex("in", [1, K, H, W], {"rand_uniform_float": [-1, 1]}),
+            {
+                "buffer": {
+                    "name": "w",
+                    "sizes": weight,
+                    "dtype": "float16",
+                    "data": {"rand_uniform_float": [-s, s]},
+                }
+            },
+            {
+                "texture2d": {
+                    "name": "bias",
+                    "sizes": [1, N],
+                    "dtype": "float16",
+                    "data": {"rand_uniform_float": [-1, 1]},
+                }
+            },
+            {"texture3d": {"ref": "in"}},
+            {"texture2d": {"ref": "bias"}},
+            {"meta_ubo": "in", "field": "sizes"},
+            {"meta_ubo": "out", "field": "sizes"},
+        ],
+        "specialization_constants": [
+            {"dtype": "int32", "value": 1},
+            {"dtype": "bool", "value": False},
+            {"dtype": "int32", "value": 0},
+            {"dtype": "bool", "value": False},
+            {"dtype": "bool", "value": False},
+            {"dtype": "int32", "value": 0},
+        ],
+        "push_constants": [
+            {"dtype": "int32", "data": [1, 1, 0, 0]},
+            {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]},
+        ],
+        "outputs": ["out"],
+    }
+
+
+def dlprobe(family):
+    """The staged parent with pack_fp_linear_weight weights ([K4, N4 * 16],
+    conv2d_pw_packed) and the _dlprobe shader with weights prepacked on the host
+    in 16 x 16 fragments ([K, N], conv2d_pw_fragment)."""
+
+    def build(variants):
+        shader = yaml.safe_load(YAML.read_text())["conv2d_pw_coopmat"]
+        defaults = shader["parameter_names_with_default_values"]
+        by = {v["NAME"]: dict(defaults, **v) for v in shader["shader_variants"]}
+        M, N, K, plane = DLPROBE_SHAPE
+        cases = []
+        for name, weight, ref in (
+            (DLPROBE[family] + "_half", [-(-K // 4), -(-N // 4) * 16], "conv2d_pw_packed"),
+            (DLPROBE[family] + "_dlprobe_half", [K, N], "conv2d_pw_fragment"),
+        ):
+            p = by[name]
+            threads = p["SG_GRID_X"] * p["SG_GRID_Y"] * p["SUBGROUP_SIZE"]
+            cases.append(
+                raw_pw_case(
+                    name, weight, ref, threads, p["WG_TILE_M"], p["WG_TILE_N"],
+                    M, N, K, plane,
+                )
+            )
+        return cases
+
+    return build
+
+
 FILES = {
     "pw_coopmat_correctness.json": correctness,
     "pw_coopmat_fp16_accumulation_limits.json": fp16_accumulation_limits,
@@ -721,6 +820,7 @@ FILES = {
     "pw_coopmat_large.json": performance("large", upstream_fp16_shapes()),
     "pw_coopmat_ksweep.json": ksweep,
     **{f"pw_coopmat_guard_{f}.json": guard(f) for f in FAMILIES},
+    **{f"pw_coopmat_dlprobe_{f}.json": dlprobe(f) for f in FAMILIES},
     "pw_coopmat_diag_checks.json": diag_checks,
 }
 FILES["pw_coopmat_expected_skips.json"] = expected_skips(correctness)
