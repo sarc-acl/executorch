@@ -131,6 +131,16 @@ Json check_device_coopmat_properties(const Json& spec, ComputeGraph& graph) {
       u[15]);
 
   const Json coopmat = enumerated_coopmat_properties(adapter);
+  // Mirrors Device.cpp: maintenance4 needs Vulkan 1.3 and the feature bit.
+  VkPhysicalDeviceMaintenance4Features maintenance4{
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES};
+  VkPhysicalDeviceFeatures2 features2{
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+  features2.pNext = &maintenance4;
+  vkGetPhysicalDeviceFeatures2(adapter.physical_handle(), &features2);
+  const bool maintenance4_support =
+      props.apiVersion >= VK_API_VERSION_1_3 &&
+      maintenance4.maintenance4 == VK_TRUE;
   Json result = {
       {"status", "PASS"},
       {"device_name", props.deviceName},
@@ -140,6 +150,9 @@ Json check_device_coopmat_properties(const Json& spec, ComputeGraph& graph) {
       {"driver_version_raw", props.driverVersion},
       {"driver_name", driver.driverName},
       {"driver_info", driver.driverInfo},
+      {"maintenance4", maintenance4_support},
+      {"max_compute_shared_memory_size",
+       adapter.max_compute_shared_memory_size()},
       {"subgroup_size", adapter.subgroup_size()},
       {"min_subgroup_size", adapter.min_subgroup_size()},
       {"max_subgroup_size", adapter.max_subgroup_size()},
