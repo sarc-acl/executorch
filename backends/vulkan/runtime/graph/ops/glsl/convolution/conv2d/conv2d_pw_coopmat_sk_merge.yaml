@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 # Merge shaders of the split-K conv2d_pw_coopmat variants:
-# conv2d_pw_coopmat_sk<K_SLICES>_merge_<acc>_half.
+# conv2d_pw_coopmat_sk<K_SLICES>_merge_<acc>_half (skn: slice count at run time).
 
 conv2d_pw_coopmat_sk_merge:
   parameter_names_with_default_values:
@@ -27,3 +27,10 @@ conv2d_pw_coopmat_sk_merge:
     - NAME: conv2d_pw_coopmat_sk4_merge_f32_half
       ACC_TYPE: f32
       K_SLICES: 4
+    # Slice count from a push constant (chunked im2col_coopmat runs).
+    - NAME: conv2d_pw_coopmat_skn_merge_f16_half
+      ACC_TYPE: f16
+      K_SLICES: 0
+    - NAME: conv2d_pw_coopmat_skn_merge_f32_half
+      ACC_TYPE: f32
+      K_SLICES: 0

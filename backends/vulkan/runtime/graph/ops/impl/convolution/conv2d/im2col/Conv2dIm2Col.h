@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include <executorch/backends/vulkan/runtime/graph/ComputeGraph.h>
 
 namespace vkcompute {
@@ -61,6 +63,18 @@ namespace vkcompute {
  *                 also packed as a raw int into the last resize_args slot for
  *                 the resize fn (not a materialized ValueRef handle)
  */
+// A gather of the kernel rows [ki0, ki0 + kh), columns [kj0, kj0 + kw) and the
+// input channels from texel ci4_offset on (conv2d_im2col_sub; Cin_padded is
+// then the channel count of one chunk). The kernel and padding arguments stay
+// those of the whole convolution.
+struct Conv2dIm2colSub final {
+  int32_t ki0;
+  int32_t kh;
+  int32_t kj0;
+  int32_t kw;
+  int32_t ci4_offset;
+};
+
 void add_conv2d_im2col_node(
     ComputeGraph& graph,
     const ValueRef in,
@@ -79,6 +93,7 @@ void add_conv2d_im2col_node(
     const int32_t dilation_w,
     const int32_t Cin_padded,
     const int32_t oh_offset,
-    const int32_t oh_tile);
+    const int32_t oh_tile,
+    const std::optional<Conv2dIm2colSub>& sub = std::nullopt);
 
 } // namespace vkcompute

@@ -132,6 +132,7 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
   constexpr uint32_t kNoEpilogue = V::kNoEpilogue;
   constexpr uint32_t kColumnMajorB = V::kColumnMajorB;
   constexpr uint32_t kIm2col = V::kIm2col;
+  constexpr uint32_t kChunked = V::kChunked;
   // clang-format off
   static const std::vector<Conv2dPwCoopmatVariant> variants = {
       // Intel Xe2
@@ -314,6 +315,37 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_i2c_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kIm2col, 2u},
       {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk4_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN, 4u},
       {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk4_i2c_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kIm2col, 4u},
+      // Chunked forms (_ck) of the timed _i2c variants (conv2d-dilated-coopmat): the _i2c form plus kChunked.
+      {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_i2c_ck_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN | kIm2col | kChunked},
+      {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_i2c_ck_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN | kIm2col | kChunked, 2u},
+      {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_i2c_ck_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN | kIm2col | kChunked, 4u},
+      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_i2c_ck_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN | kIm2col | kChunked},
+      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk2_i2c_ck_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN | kIm2col | kChunked, 2u},
+      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_ck_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN | kIm2col | kChunked, 4u},
+      {"conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_ck_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kAlignedClampN | kIm2col | kChunked},
+      {"conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_i2c_ck_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kAlignedClampN | kIm2col | kChunked, 2u},
+      {"conv2d_pw_coopmat_amd_t16x32_f16_alc_sk4_i2c_ck_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kAlignedClampN | kIm2col | kChunked, 4u},
+      {"conv2d_pw_coopmat_amd_t16x32_f32_alc_i2c_ck_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, true, false, kAlignedClampN | kIm2col | kChunked},
+      {"conv2d_pw_coopmat_amd_t16x32_f32_alc_sk2_i2c_ck_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, true, false, kAlignedClampN | kIm2col | kChunked, 2u},
+      {"conv2d_pw_coopmat_amd_t16x32_f32_alc_sk4_i2c_ck_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, true, false, kAlignedClampN | kIm2col | kChunked, 4u},
+      {"conv2d_pw_coopmat_amd_t128x128_f16_alc_i2c_ck_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, false, false, kAlignedClampN | kIm2col | kChunked},
+      {"conv2d_pw_coopmat_amd_t128x128_f16_alc_sk2_i2c_ck_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, false, false, kAlignedClampN | kIm2col | kChunked, 2u},
+      {"conv2d_pw_coopmat_amd_t128x128_f16_alc_sk4_i2c_ck_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, false, false, kAlignedClampN | kIm2col | kChunked, 4u},
+      {"conv2d_pw_coopmat_amd_t128x128_f32_alc_i2c_ck_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kIm2col | kChunked},
+      {"conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_i2c_ck_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kIm2col | kChunked, 2u},
+      {"conv2d_pw_coopmat_amd_t128x128_f32_alc_sk4_i2c_ck_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kIm2col | kChunked, 4u},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_ck_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kIm2col | kChunked},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_ck_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kIm2col | kChunked, 2u},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk4_i2c_ck_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kIm2col | kChunked, 4u},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f32_alc_i2c_ck_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, true, false, kAlignedClampN | kIm2col | kChunked},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f32_alc_sk2_i2c_ck_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, true, false, kAlignedClampN | kIm2col | kChunked, 2u},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f32_alc_sk4_i2c_ck_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, true, false, kAlignedClampN | kIm2col | kChunked, 4u},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f16_alc_i2c_ck_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, false, false, kAlignedClampN | kIm2col | kChunked},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f16_alc_sk2_i2c_ck_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, false, false, kAlignedClampN | kIm2col | kChunked, 2u},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f16_alc_sk4_i2c_ck_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, false, false, kAlignedClampN | kIm2col | kChunked, 4u},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_i2c_ck_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kIm2col | kChunked},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_i2c_ck_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kIm2col | kChunked, 2u},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk4_i2c_ck_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kIm2col | kChunked, 4u},
   };
   // clang-format on
   return variants;
@@ -343,6 +375,7 @@ constexpr uint32_t kSuffixOrder[] = {
     Conv2dPwCoopmatVariant::kColumnMajorB,
     kSlices,
     Conv2dPwCoopmatVariant::kIm2col,
+    Conv2dPwCoopmatVariant::kChunked,
     Conv2dPwCoopmatVariant::kDiagOnce,
 };
 
@@ -369,6 +402,8 @@ std::string suffix_item(const Conv2dPwCoopmatVariant& v, const uint32_t item) {
       return "_epi0";
     case Conv2dPwCoopmatVariant::kColumnMajorB:
       return "_bcm";
+    case Conv2dPwCoopmatVariant::kChunked:
+      return "_ck";
     case Conv2dPwCoopmatVariant::kIm2col:
       return "_i2c";
     case Conv2dPwCoopmatVariant::kDiagOnce:

@@ -34,6 +34,13 @@
  * row and written at output row I2C_OH_OFFSET + m / W_out (split-K: scratch
  * pixel I2C_OH_OFFSET * W_out + m of the whole plane, so one merge covers every
  * tile).
+ *
+ * CHUNKED (with I2C and SPLIT_K, K_SLICES >= 1): the im2col matrix is one
+ * input-channel chunk of a convolution whose gathered matrix is deeper than
+ * the 3D image limit. The chunk's packed weights start at row CHUNK_W_K4_BASE
+ * of the weight buffer, its K slices are slices CHUNK_SLICE_BASE onward of the
+ * scratch, and the scratch starts after CHUNK_SCRATCH_K4 weight rows; one
+ * merge sums the slices of every chunk.
  */
 
 #ifndef CONV2D_PW_COOPMAT_BODY_GLSLH
@@ -216,7 +223,13 @@ f16vec4 fetch_in(const ivec2 pos, const uint k4, const uint K4) {
 #define W_N4(n4) (n4)
 #endif
 
-#ifdef SPLIT_K
+#if defined(SPLIT_K) && defined(CHUNKED)
+f16vec4 fetch_w(const uint k, const uint n4, const uint K4, const uint N4) {
+  const uvec2 u = t_weight_u2
+      [(((k >> 2u) + uint(CHUNK_W_K4_BASE)) * N4 + W_N4(n4)) * 4u + (k & 3u)];
+  return f16vec4(unpackFloat2x16(u.x), unpackFloat2x16(u.y));
+}
+#elif defined(SPLIT_K)
 f16vec4 fetch_w(const uint k, const uint n4, const uint K4, const uint N4) {
   const uvec2 u = t_weight_u2[((k >> 2u) * N4 + W_N4(n4)) * 4u + (k & 3u)];
   return f16vec4(unpackFloat2x16(u.x), unpackFloat2x16(u.y));
@@ -234,7 +247,16 @@ f16vec4 fetch_in(const ivec2 pos, const uint k4, const uint K4) {
   return k4 < K4 ? f16vec4(LOAD_IN(ivec3(pos, int(k4)))) : f16vec4(0);
 }
 
-#ifdef SPLIT_K
+#if defined(SPLIT_K) && defined(CHUNKED)
+f16vec4 fetch_w(const uint k, const uint n4, const uint K4, const uint N4) {
+  if ((k >> 2u) < K4 && n4 < N4) {
+    const uvec2 u = t_weight_u2
+        [(((k >> 2u) + uint(CHUNK_W_K4_BASE)) * N4 + n4) * 4u + (k & 3u)];
+    return f16vec4(unpackFloat2x16(u.x), unpackFloat2x16(u.y));
+  }
+  return f16vec4(0);
+}
+#elif defined(SPLIT_K)
 // The packed weights through the uvec2 view of the buffer, which also holds
 // the split-K scratch after the weights.
 f16vec4 fetch_w(const uint k, const uint n4, const uint K4, const uint N4) {
@@ -461,6 +483,11 @@ void mma_step_direct(
 #if defined(NO_EPILOGUE) || defined(DIRECT_B) || defined(DIAG_ONCE)
 #error "I2C supports neither NO_EPILOGUE, DIRECT_B nor DIAG_ONCE"
 #endif
+#endif
+#if defined(CHUNKED) && !(defined(I2C) && defined(SPLIT_K))
+#error "CHUNKED requires I2C and SPLIT_K"
+#endif
+#ifdef I2C
 uint g_oh_offset;
 #endif
 
@@ -474,9 +501,14 @@ uint g_oh_offset;
 uint g_k_slice;
 
 void store_scratch(const uint m, const uint n4, const uint M, const uint N4, const VEC4_T v) {
+#ifdef CHUNKED
+  const uint base = uint(CHUNK_SCRATCH_K4) * N4 * 4u;
+  const uint t = ((g_k_slice + uint(CHUNK_SLICE_BASE)) * M + m) * N4 + n4;
+#else
   const uint K4 = uint(div_up_4(in_sizes.z));
   const uint base = K4 * N4 * 4u;
   const uint t = (g_k_slice * M + m) * N4 + n4;
+#endif
 #ifdef ACC_FP32
   const uvec4 bits = floatBitsToUint(v);
   t_weight_u2[base + 2u * t] = bits.xy;

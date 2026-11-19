@@ -142,6 +142,10 @@ struct Conv2dPwCoopmatVariant final {
     // output rows start at the tile's first row (route im2col_coopmat,
     // conv2d_gemm_impl).
     kIm2col = 1u << 8,
+    // "_ck": an _i2c variant whose matrix is one input-channel chunk; it
+    // stores partial sums to K slices from a slice offset, like split-K
+    // (route im2col_coopmat, chunked runs).
+    kChunked = 1u << 9,
   };
 
   const char* name;
@@ -173,7 +177,7 @@ struct Conv2dPwCoopmatVariant final {
 };
 
 // "_g<X>x<Y>", "_al", "_alc", "_w16", "_img", "_epi0", "_bcm", "_sk<n>",
-// "_i2c", "_diag_once" for the variant's options and K slices, in this order.
+// "_i2c", "_ck", "_diag_once" for the variant's options and K slices, in this order.
 std::string conv2d_pw_coopmat_option_suffix(
     const Conv2dPwCoopmatVariant& variant);
 

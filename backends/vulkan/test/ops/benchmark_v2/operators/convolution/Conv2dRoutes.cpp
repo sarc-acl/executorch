@@ -229,6 +229,15 @@ Json build_conv2d_im2col_coopmat(
           /*transposed=*/false)) {
     throw UnsupportedRoute(name + " cannot run this case: " + *reason);
   }
+  const Conv2dIm2colCoopmatPlan plan = conv2d_im2col_coopmat_plan(
+      graph,
+      *variant,
+      args[0],
+      args[1],
+      args[3],
+      args[4],
+      args[5],
+      args.back());
   conv2d_gemm_impl(
       graph,
       args[0],
@@ -241,7 +250,12 @@ Json build_conv2d_im2col_coopmat(
       conv2d_epilogue_from_args(graph, args),
       utils::kTexture3D,
       variant);
-  return selected("im2col_coopmat", {{"variant", name}});
+  return selected(
+      "im2col_coopmat",
+      {{"variant", name},
+       {"taps", {plan.kh, plan.kw}},
+       {"chunks", plan.chunks},
+       {"multiply", plan.multiply->name}});
 }
 
 Json build_conv2d_winograd(

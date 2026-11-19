@@ -9,12 +9,14 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <array>
 #include <bitset>
 #include <cmath>
 #include <iomanip>
 #include <limits>
 #include <map>
 #include <numeric>
+#include <optional>
 #include <random>
 #include <tuple>
 #include <utility>
@@ -6788,14 +6790,20 @@ class Im2colCoopmatConvGraph final {
       const int64_t K_w,
       const int64_t stride,
       const int64_t pad_h,
-      const int64_t pad_w)
+      const int64_t pad_w,
+      const std::array<int64_t, 3>& stride_w_dilation = {0, 1, 1},
+      const std::optional<std::pair<float, float>> clamp = std::nullopt)
       : C_in_(C_in),
         C_out_(C_out),
         K_h_(K_h),
         K_w_(K_w),
         stride_(stride),
+        stride_w_(stride_w_dilation[0] > 0 ? stride_w_dilation[0] : stride),
         pad_h_(pad_h),
         pad_w_(pad_w),
+        dil_h_(stride_w_dilation[1]),
+        dil_w_(stride_w_dilation[2]),
+        clamp_(clamp),
         graph_(make_config()) {
     std::mt19937 rng(2111);
     std::uniform_real_distribution<float> unit(-1.0f, 1.0f);
@@ -6818,17 +6826,23 @@ class Im2colCoopmatConvGraph final {
         vkapi::kHalf,
         utils::kTexture3D,
         utils::kChannelsPacked);
+    Conv2dEpilogue epilogue;
+    if (clamp_) {
+      epilogue.activation = UnaryOpType::kClamp;
+      epilogue.activation_a = clamp_->first;
+      epilogue.activation_b = clamp_->second;
+    }
     conv2d_gemm_impl(
         graph_,
         input_.value,
         graph_.add_tensorref(
             {C_out, C_in, K_h, K_w}, vkapi::kHalf, weight_.data()),
         graph_.add_tensorref({C_out}, vkapi::kHalf, bias_.data()),
-        graph_.add_scalar_list<int64_t>({stride, stride}),
+        graph_.add_scalar_list<int64_t>({stride_, stride_w_}),
         graph_.add_scalar_list<int64_t>({pad_h, pad_w}),
-        graph_.add_scalar_list<int64_t>({1, 1}),
+        graph_.add_scalar_list<int64_t>({dil_h_, dil_w_}),
         out_,
-        Conv2dEpilogue{},
+        epilogue,
         utils::kTexture3D,
         &variant);
     out_staging_ = graph_.set_output_tensor(out_);
@@ -6870,12 +6884,12 @@ class Im2colCoopmatConvGraph final {
           double expected = float(bias_[n]);
           for (int64_t c = 0; c < C_in_; ++c) {
             for (int64_t ki = 0; ki < K_h_; ++ki) {
-              const int64_t iy = oy * stride_ - pad_h_ + ki;
+              const int64_t iy = oy * stride_ - pad_h_ + ki * dil_h_;
               if (iy < 0 || iy >= H) {
                 continue;
               }
               for (int64_t kj = 0; kj < K_w_; ++kj) {
-                const int64_t ix = ox * stride_ - pad_w_ + kj;
+                const int64_t ix = ox * stride_w_ - pad_w_ + kj * dil_w_;
                 if (ix < 0 || ix >= W) {
                   continue;
                 }
@@ -6885,6 +6899,10 @@ class Im2colCoopmatConvGraph final {
                     float(x[(c * H + iy) * W + ix]);
               }
             }
+          }
+          if (clamp_) {
+            expected = std::min<double>(
+                std::max<double>(expected, clamp_->first), clamp_->second);
           }
           const double actual = float(y[(n * Ho + oy) * Wo + ox]);
           nonfinite += !std::isfinite(actual);
@@ -6913,13 +6931,15 @@ class Im2colCoopmatConvGraph final {
   }
 
   int64_t out_h(const int64_t H) const {
-    return (H + 2 * pad_h_ - K_h_) / stride_ + 1;
+    return (H + 2 * pad_h_ - dil_h_ * (K_h_ - 1) - 1) / stride_ + 1;
   }
   int64_t out_w(const int64_t W) const {
-    return (W + 2 * pad_w_ - K_w_) / stride_ + 1;
+    return (W + 2 * pad_w_ - dil_w_ * (K_w_ - 1) - 1) / stride_w_ + 1;
   }
 
-  const int64_t C_in_, C_out_, K_h_, K_w_, stride_, pad_h_, pad_w_;
+  const int64_t C_in_, C_out_, K_h_, K_w_, stride_, stride_w_, pad_h_, pad_w_,
+      dil_h_, dil_w_;
+  const std::optional<std::pair<float, float>> clamp_;
   int64_t executions_ = 0;
   std::vector<executorch::aten::Half> weight_;
   std::vector<executorch::aten::Half> bias_;
@@ -6933,7 +6953,9 @@ std::vector<const Conv2dPwCoopmatVariant*> runnable_im2col_coopmat_variants() {
   ComputeGraph probe{GraphConfig()};
   std::vector<const Conv2dPwCoopmatVariant*> out;
   for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    // A _ck variant runs only as the chunked form of its _i2c variant.
     if (v.has(Conv2dPwCoopmatVariant::kIm2col) &&
+        !v.has(Conv2dPwCoopmatVariant::kChunked) &&
         probe.float16_buffers_enabled() &&
         conv2d_pw_coopmat_device_supports(probe, v)) {
       out.push_back(&v);
@@ -7002,6 +7024,277 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_row_tiles) {
       1,
       1,
       1));
+}
+
+namespace {
+
+// The _i2c variants with a chunked (_ck) form, among the runnable ones.
+std::vector<const Conv2dPwCoopmatVariant*> chunkable_im2col_coopmat_variants() {
+  std::vector<const Conv2dPwCoopmatVariant*> out;
+  for (const Conv2dPwCoopmatVariant* v : runnable_im2col_coopmat_variants()) {
+    const std::string name = v->name;
+    if (find_conv2d_pw_coopmat_variant(
+            name.substr(0, name.size() - 5) + "_ck_half") != nullptr) {
+      out.push_back(v);
+    }
+  }
+  return out;
+}
+
+// The plan of a convolution on `variant` with FP16 operands.
+Conv2dIm2colCoopmatPlan im2col_coopmat_plan_of(
+    const Conv2dPwCoopmatVariant& variant,
+    const std::vector<int64_t>& in_sizes,
+    const std::vector<int64_t>& w_sizes,
+    const std::vector<int64_t>& out_sizes,
+    const std::vector<int64_t>& stride,
+    const std::vector<int64_t>& padding,
+    const std::vector<int64_t>& dilation) {
+  ComputeGraph graph{GraphConfig()};
+  const ValueRef in = graph.add_tensor(
+      in_sizes, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+  const ValueRef out = graph.add_tensor(
+      out_sizes, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+  const ValueRef weight = graph.add_tensorref(w_sizes, vkapi::kHalf, nullptr);
+  return conv2d_im2col_coopmat_plan(
+      graph,
+      variant,
+      in,
+      weight,
+      graph.add_scalar_list<int64_t>(std::vector<int64_t>(stride)),
+      graph.add_scalar_list<int64_t>(std::vector<int64_t>(padding)),
+      graph.add_scalar_list<int64_t>(std::vector<int64_t>(dilation)),
+      out);
+}
+
+} // namespace
+
+// Dilated 3x3 convolutions on every runnable _i2c variant: dilation 2 (the
+// DeepLabV3 backbone layer, 256 channels on 28x28 with padding 2) and
+// asymmetric dilation (2, 3); all taps read the input, so the gather is the
+// unchanged conv2d_im2col.
+TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_dilation) {
+  const auto variants = runnable_im2col_coopmat_variants();
+  if (variants.empty()) {
+    GTEST_SKIP() << "no _i2c variant runs here";
+  }
+  for (const Conv2dPwCoopmatVariant* v : variants) {
+    SCOPED_TRACE(v->name);
+    {
+      Im2colCoopmatConvGraph g(*v, 256, 256, 28, 28, 3, 3, 1, 2, 2, {0, 2, 2});
+      const auto kernels = g.execute_and_check();
+      EXPECT_TRUE(dispatched(kernels, v->name));
+      EXPECT_TRUE(dispatched(kernels, "conv2d_im2col_texture3d_half"));
+      EXPECT_FALSE(dispatched(kernels, "conv2d_im2col_sub_texture3d_half"));
+    }
+    {
+      Im2colCoopmatConvGraph g(*v, 64, 48, 14, 14, 3, 3, 1, 2, 3, {0, 2, 3});
+      EXPECT_TRUE(dispatched(g.execute_and_check(), v->name));
+    }
+    {
+      // Stride 2 with dilation 2.
+      Im2colCoopmatConvGraph g(*v, 64, 48, 15, 15, 3, 3, 2, 2, 2, {0, 2, 2});
+      EXPECT_TRUE(dispatched(g.execute_and_check(), v->name));
+    }
+  }
+}
+
+// Taps that only read padding: dilation 36 on a 28x28 plane (DeepLabV3 ASPP)
+// keeps the centre tap only, dilation larger than the plane on the width axis
+// keeps the centre column, and stride 2 with an input narrower than the
+// dilation keeps an off-centre sub-rectangle; each matches the full
+// convolution's reference and runs the sub-rectangle gather.
+TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_dead_taps) {
+  const auto variants = runnable_im2col_coopmat_variants();
+  if (variants.empty()) {
+    GTEST_SKIP() << "no _i2c variant runs here";
+  }
+  struct Case {
+    int64_t C_in, C_out, H, W, K, stride, pad_h, pad_w, stride_w, d_h, d_w;
+    int64_t kh, kw;
+  };
+  const Case cases[] = {
+      {256, 64, 28, 28, 3, 1, 36, 36, 0, 36, 36, 1, 1},
+      {64, 48, 14, 14, 3, 1, 1, 20, 0, 1, 20, 3, 1},
+      // Height: H 4, stride 2, dilation 3, padding 3: output rows 0, 1 read
+      // input rows -3, -1 (tap 0), 0, 2 (tap 1), 3, 5 (tap 2): taps 1, 2.
+      {32, 32, 4, 12, 3, 2, 3, 1, 1, 3, 1, 2, 3},
+  };
+  for (const Conv2dPwCoopmatVariant* v : variants) {
+    SCOPED_TRACE(v->name);
+    for (const Case& c : cases) {
+      SCOPED_TRACE(c.d_w);
+      const int64_t sw = c.stride_w > 0 ? c.stride_w : c.stride;
+      const int64_t Ho = (c.H + 2 * c.pad_h - c.d_h * (c.K - 1) - 1) / c.stride + 1;
+      const int64_t Wo = (c.W + 2 * c.pad_w - c.d_w * (c.K - 1) - 1) / sw + 1;
+      const Conv2dIm2colCoopmatPlan plan = im2col_coopmat_plan_of(
+          *v,
+          {1, c.C_in, c.H, c.W},
+          {c.C_out, c.C_in, c.K, c.K},
+          {1, c.C_out, Ho, Wo},
+          {c.stride, sw},
+          {c.pad_h, c.pad_w},
+          {c.d_h, c.d_w});
+      EXPECT_EQ(plan.kh, c.kh);
+      EXPECT_EQ(plan.kw, c.kw);
+      EXPECT_EQ(plan.chunks, 1);
+      Im2colCoopmatConvGraph g(
+          *v,
+          c.C_in,
+          c.C_out,
+          c.H,
+          c.W,
+          c.K,
+          c.K,
+          c.stride,
+          c.pad_h,
+          c.pad_w,
+          {c.stride_w, c.d_h, c.d_w});
+      const auto kernels = g.execute_and_check();
+      EXPECT_TRUE(dispatched(kernels, v->name));
+      EXPECT_TRUE(dispatched(kernels, "conv2d_im2col_sub_texture3d_half"));
+      EXPECT_FALSE(dispatched(kernels, "conv2d_im2col_texture3d_half"));
+    }
+  }
+}
+
+// Without dead taps and with dilation 1 the route dispatches exactly the node
+// sequence of change conv2d-gemm-coopmat: conv2d_im2col, the variant and the
+// zero-work conv2d_gemm fallback per tile, then the merge for split-K.
+TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_no_dead_taps_unchanged) {
+  const auto variants = runnable_im2col_coopmat_variants();
+  if (variants.empty()) {
+    GTEST_SKIP() << "no _i2c variant runs here";
+  }
+  for (const Conv2dPwCoopmatVariant* v : variants) {
+    SCOPED_TRACE(v->name);
+    Im2colCoopmatConvGraph g(*v, 256, 256, 14, 14, 3, 3, 1, 1, 1);
+    std::vector<std::string> expected = {
+        "conv2d_im2col_texture3d_half", v->name};
+    if (v->k_slices > 1u) {
+      expected.push_back(conv2d_pw_coopmat_merge_shader(*v));
+    }
+    // Without the input and output staging copies; the fallback conv2d_gemm
+    // node dispatches nothing at 14x14.
+    std::vector<std::string> kernels = g.execute_and_check();
+    kernels.erase(
+        std::remove_if(
+            kernels.begin(),
+            kernels.end(),
+            [](const std::string& k) {
+              return k.rfind("nchw_to_", 0) == 0 || k.rfind("image_to_", 0) == 0;
+            }),
+        kernels.end());
+    EXPECT_EQ(kernels, expected);
+  }
+}
+
+// A convolution none of whose taps reads the input (1x8 output of a 2x1
+// kernel with height dilation 4 and padding 2 on a 1-row input) is refused
+// with the reason, before any node is registered.
+TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_refuses_all_taps_dead) {
+  const auto variants = runnable_im2col_coopmat_variants();
+  if (variants.empty()) {
+    GTEST_SKIP() << "no _i2c variant runs here";
+  }
+  for (const Conv2dPwCoopmatVariant* v : variants) {
+    SCOPED_TRACE(v->name);
+    ComputeGraph graph{GraphConfig()};
+    const ValueRef in = graph.add_tensor(
+        {1, 16, 1, 8}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+    const ValueRef out = graph.add_tensor(
+        {1, 16, 1, 8}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+    const std::vector<executorch::aten::Half> w(16 * 16 * 2, 0.5f);
+    const ValueRef weight =
+        graph.add_tensorref({16, 16, 2, 1}, vkapi::kHalf, w.data());
+    const ValueRef stride = graph.add_scalar_list<int64_t>({1, 1});
+    const ValueRef padding = graph.add_scalar_list<int64_t>({2, 0});
+    const ValueRef dilation = graph.add_scalar_list<int64_t>({4, 1});
+    const auto reason = conv2d_im2col_coopmat_ineligible(
+        graph,
+        *v,
+        in,
+        weight,
+        graph.add_none(),
+        stride,
+        padding,
+        dilation,
+        out,
+        /*transposed=*/false);
+    ASSERT_TRUE(reason.has_value());
+    EXPECT_NE(reason->find("no kernel tap reads the input"), std::string::npos)
+        << *reason;
+    const size_t prepacks = graph.prepack_nodes().size();
+    const size_t nodes = graph.execute_nodes().size();
+    EXPECT_ANY_THROW(conv2d_gemm_impl(
+        graph,
+        in,
+        weight,
+        graph.add_none(),
+        stride,
+        padding,
+        dilation,
+        out,
+        Conv2dEpilogue{},
+        utils::kTexture3D,
+        v));
+    EXPECT_EQ(graph.prepack_nodes().size(), prepacks);
+    EXPECT_EQ(graph.execute_nodes().size(), nodes);
+  }
+}
+
+// The DeepLabV3 ASPP layer with few output channels: 2048 input channels,
+// 3x3, dilation 12 and padding 12 on 28x28 (K 18432, deeper than the 3D image
+// limit) runs in input-channel chunks on the _ck form of each chunkable _i2c
+// variant (split-K ones included), with bias and a clamp that partial sums
+// exceed, against the CPU reference: bias and clamp are applied once.
+TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_chunks) {
+  const auto variants = chunkable_im2col_coopmat_variants();
+  if (variants.empty()) {
+    GTEST_SKIP() << "no chunkable _i2c variant runs here";
+  }
+  for (const Conv2dPwCoopmatVariant* v : variants) {
+    SCOPED_TRACE(v->name);
+    const Conv2dIm2colCoopmatPlan plan = im2col_coopmat_plan_of(
+        *v,
+        {1, 2048, 28, 28},
+        {16, 2048, 3, 3},
+        {1, 16, 28, 28},
+        {1, 1},
+        {12, 12},
+        {12, 12});
+    ASSERT_NE(plan.multiply, nullptr);
+    EXPECT_GT(plan.chunks, 1);
+    EXPECT_TRUE(plan.multiply->has(Conv2dPwCoopmatVariant::kChunked));
+    Im2colCoopmatConvGraph g(
+        *v,
+        2048,
+        16,
+        28,
+        28,
+        3,
+        3,
+        1,
+        12,
+        12,
+        {0, 12, 12},
+        std::make_pair(-0.25f, 0.25f));
+    const auto kernels = g.execute_and_check();
+    EXPECT_EQ(
+        std::count(kernels.begin(), kernels.end(), std::string(plan.multiply->name)),
+        plan.chunks);
+    EXPECT_EQ(
+        std::count(
+            kernels.begin(),
+            kernels.end(),
+            std::string("conv2d_im2col_sub_texture3d_half")),
+        plan.chunks);
+    EXPECT_TRUE(dispatched(
+        kernels,
+        std::string("conv2d_pw_coopmat_skn_merge_") +
+            (v->fp32_accumulation ? "f32" : "f16") + "_half"));
+    EXPECT_FALSE(dispatched(kernels, "conv2d_gemm_texture3d_half"));
+  }
 }
 
 // A request with FP16 input and output but FP32 weights is refused with its

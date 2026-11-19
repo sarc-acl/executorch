@@ -8,6 +8,7 @@ conv2d_im2col:
   parameter_names_with_default_values:
     DTYPE: float
     OUT_STORAGE: texture2d
+    SUB: false
   generate_variant_forall:
     combination:
       parameter_names: [OUT_STORAGE, DTYPE]
@@ -20,3 +21,6 @@ conv2d_im2col:
         - parameter_values: [buffer, half]
   shader_variants:
     - NAME: conv2d_im2col
+    # Kernel sub-rectangle and input-channel chunk (route im2col_coopmat).
+    - NAME: conv2d_im2col_sub
+      SUB: true

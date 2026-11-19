@@ -17,7 +17,9 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/ShaderNameUtils.h>
 
 #include <algorithm>
+#include <cstring>
 #include <limits>
+#include <numeric>
 #include <optional>
 
 namespace vkcompute {
@@ -44,31 +46,94 @@ constexpr int64_t kIm2colScratchBudgetBytes = 16 * 1024 * 1024;
 // Work group size of conv2d_pw_coopmat_sk<n>_merge as dispatched here.
 constexpr uint32_t kMergeThreads = 64;
 
-struct Conv2dGemmTiling {
-  int64_t K_total;
-  int64_t oh_tile;
-  int64_t num_tiles;
-};
+// The kernel taps [first, first + count) of one spatial axis that read the
+// input for some output position o < out (0 <= o s - p + t d < in), or
+// {0, 0} when none does. Taps between the first and the last live one stay.
+std::pair<int64_t, int64_t> conv2d_live_taps(
+    const int64_t in,
+    const int64_t out,
+    const int64_t k,
+    const int64_t s,
+    const int64_t p,
+    const int64_t d) {
+  int64_t first = -1;
+  int64_t last = -1;
+  for (int64_t t = 0; t < k; ++t) {
+    const int64_t lo = t * d - p;
+    const int64_t o0 = lo >= 0 ? 0 : utils::div_up(-lo, s);
+    if (o0 < out && lo + o0 * s < in) {
+      first = first < 0 ? t : first;
+      last = t;
+    }
+  }
+  return first < 0 ? std::pair<int64_t, int64_t>{0, 0}
+                   : std::pair<int64_t, int64_t>{first, last - first + 1};
+}
 
-// K_total = K_h * K_w * align_up_4(C_in); oh_tile is the most output rows
-// whose im2col fits kIm2colScratchBudgetBytes (at least 1, at most H_out).
-Conv2dGemmTiling conv2d_gemm_tiling(
+// Rows of the split-K scratch after the packed weights: the partial sums of
+// every K slice of every chunk at `M` pixels.
+uint32_t conv2d_im2col_coopmat_scratch_rows(
+    const Conv2dIm2colCoopmatPlan& plan,
+    const uint32_t M) {
+  if (plan.chunks == 1) {
+    return conv2d_pw_coopmat_scratch_rows(*plan.multiply, M);
+  }
+  const uint32_t entries_per_pixel =
+      plan.scratch_slices() * (plan.multiply->fp32_accumulation ? 2u : 1u);
+  return utils::div_up(M * entries_per_pixel, 4u);
+}
+
+// The [C_out, chunk_channels, chunks * kh, kw] weight whose im2col K order
+// (prepack_conv2d_gemm_weight) is that of the chunks' gathered matrices one
+// after the other: element (n, ci, c * kh + i, j) is weight (n, c *
+// chunk_channels + ci, ki0 + i, kj0 + j), zero past C_in. Built on the CPU
+// from the constant weight at graph build time.
+ValueRef slice_conv2d_weight(
     ComputeGraph& graph,
-    const ValueRef in,
     const ValueRef weight_data,
-    const ValueRef out) {
-  const std::vector<int64_t> w_sizes = graph.sizes_of(weight_data);
-  const std::vector<int64_t> out_sizes = graph.sizes_of(out);
-  const int64_t H_out = out_sizes.at(2);
-  const int64_t W_out = out_sizes.at(3);
-  const int64_t K_total =
-      w_sizes.at(2) * w_sizes.at(3) * utils::align_up_4(w_sizes.at(1));
-  const int64_t elem_size =
-      utils::safe_downcast<int64_t>(vkapi::element_size(graph.dtype_of(in)));
-  int64_t oh_tile = kIm2colScratchBudgetBytes / (W_out * K_total * elem_size);
-  oh_tile = std::max<int64_t>(oh_tile, 1);
-  oh_tile = std::min<int64_t>(oh_tile, H_out);
-  return {K_total, oh_tile, utils::div_up(H_out, oh_tile)};
+    const Conv2dIm2colCoopmatPlan& plan) {
+  std::vector<int64_t> sizes;
+  vkapi::ScalarType dtype;
+  size_t nbytes;
+  uint8_t* dst;
+  {
+    const TensorRefPtr w = graph.get_tref(weight_data);
+    sizes = w->sizes;
+    dtype = w->dtype;
+    const int64_t C_out = sizes.at(0);
+    const int64_t C_in = sizes.at(1);
+    const int64_t K_h = sizes.at(2);
+    const int64_t K_w = sizes.at(3);
+    const int64_t cc = plan.chunk_channels;
+    const int64_t rows = plan.chunks * plan.kh;
+    const size_t elem = vkapi::element_size(dtype);
+    nbytes = size_t(C_out * cc * rows * plan.kw) * elem;
+    dst = new uint8_t[nbytes]();
+    const uint8_t* const src = static_cast<const uint8_t*>(w->data);
+    for (int64_t n = 0; n < C_out; ++n) {
+      for (int64_t c = 0; c < plan.chunks; ++c) {
+        for (int64_t ci = 0; ci < cc && c * cc + ci < C_in; ++ci) {
+          for (int64_t i = 0; i < plan.kh; ++i) {
+            for (int64_t j = 0; j < plan.kw; ++j) {
+              const int64_t from =
+                  ((n * C_in + c * cc + ci) * K_h + plan.ki0 + i) * K_w +
+                  plan.kj0 + j;
+              const int64_t to =
+                  ((n * cc + ci) * rows + c * plan.kh + i) * plan.kw + j;
+              std::memcpy(dst + to * elem, src + from * elem, elem);
+            }
+          }
+        }
+      }
+    }
+  }
+  return graph.add_tensorref(
+      {sizes.at(0), plan.chunk_channels, plan.chunks * plan.kh, plan.kw},
+      dtype,
+      executorch::runtime::FreeableBuffer(
+          dst, nbytes, [](void*, void* data, size_t) {
+            delete[] static_cast<uint8_t*>(data);
+          }));
 }
 
 } // namespace
@@ -406,8 +471,11 @@ void add_conv2d_im2col_coopmat_node(
     const Conv2dEpilogueArgs& epilogue_args,
     const ValueRef out,
     const int32_t oh_offset,
-    const int32_t oh_tile) {
-  const utils::ivec4 row_offset{oh_offset, 0, 0, 0};
+    const int32_t oh_tile,
+    const utils::ivec3& chunk = {0, 0, 0}) {
+  // oh_offset, then for a _ck variant the chunk's first K slice, its first
+  // weight row and the weight rows before the scratch.
+  const utils::ivec4 row_offset{oh_offset, chunk[0], chunk[1], chunk[2]};
   const Conv2dEpilogueParams epilogue_params = create_conv2d_epilogue_params(
       epilogue, graph.dtype_of(out) == vkapi::kHalf);
   const Conv2dEpilogueParams epilogue_params_f32 =
@@ -450,7 +518,9 @@ void add_conv2d_im2col_coopmat_node(
       {{out, vkapi::kWrite},
        {im2col_in, vkapi::kRead},
        {packed_weight,
-        variant.k_slices > 1u ? vkapi::kReadWrite : vkapi::kRead},
+        variant.k_slices > 1u || variant.has(Conv2dPwCoopmatVariant::kChunked)
+            ? vkapi::kReadWrite
+            : vkapi::kRead},
        {{packed_bias, epilogue_args.residual, epilogue_args.scale},
         vkapi::kRead}},
       {graph.sizes_ubo(im2col_in), graph.sizes_ubo(out)},
@@ -486,15 +556,35 @@ void add_conv2d_im2col_coopmat_merge_node(
     const Conv2dEpilogue& epilogue,
     const Conv2dEpilogueArgs& epilogue_args,
     const ValueRef out,
-    const int32_t oh_tile) {
-  const utils::ivec4 unused{0, 0, 0, 0};
+    const int32_t oh_tile,
+    const std::optional<utils::ivec2>& chunked = std::nullopt) {
+  // Chunked runs (conv2d_pw_coopmat_skn_merge_*): the slice count and the
+  // weight rows before the scratch.
+  const utils::ivec4 unused = chunked
+      ? utils::ivec4{(*chunked)[0], (*chunked)[1], 0, 0}
+      : utils::ivec4{0, 0, 0, 0};
   const Conv2dEpilogueParams epilogue_params = create_conv2d_epilogue_params(
       epilogue, graph.dtype_of(out) == vkapi::kHalf);
   const Conv2dEpilogueParams epilogue_params_f32 =
       create_conv2d_epilogue_params(epilogue, /*f16_epilogue=*/false);
   vkapi::SpecVarList spec_vars = {1};
   append_conv2d_epilogue_spec_vars(spec_vars, epilogue);
-  const std::string merge = conv2d_pw_coopmat_merge_shader(variant);
+  const std::string merge = chunked
+      ? std::string("conv2d_pw_coopmat_skn_merge_") +
+          (variant.fp32_accumulation ? "f32" : "f16") + "_half"
+      : conv2d_pw_coopmat_merge_shader(variant);
+  // A chunked run has no conv2d_gemm resize fallback.
+  const auto resize = chunked
+      ? ExecuteNode::ResizeFunction([](ComputeGraph* graph,
+                                       const std::vector<ArgGroup>& args,
+                                       const std::vector<ValueRef>& resize_args) {
+          resize_conv2d_gemm_node(graph, args, resize_args);
+          VK_CHECK_COND(
+              conv2d_im2col_coopmat_runnable(*graph, args.at(0).refs.at(0)),
+              "conv2d_gemm: a chunked im2col_coopmat run cannot compute a "
+              "single-pixel output");
+        })
+      : ExecuteNode::ResizeFunction(resize_conv2d_gemm_node);
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
       graph,
       [merge](
@@ -543,10 +633,79 @@ void add_conv2d_im2col_coopmat_merge_node(
        static_cast<ValueRef>(oh_tile),
        static_cast<ValueRef>(0),
        epilogue.residual},
-      resize_conv2d_gemm_node));
+      resize));
 }
 
 } // namespace
+
+Conv2dIm2colCoopmatPlan conv2d_im2col_coopmat_plan(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant,
+    const ValueRef in,
+    const ValueRef weight_data,
+    const ValueRef stride,
+    const ValueRef padding,
+    const ValueRef dilation,
+    const ValueRef out) {
+  const std::vector<int64_t> in_sizes = graph.sizes_of(in);
+  const std::vector<int64_t> w_sizes = graph.sizes_of(weight_data);
+  const std::vector<int64_t> out_sizes = graph.sizes_of(out);
+  const auto stride_list = graph.get_int_list(stride);
+  const auto padding_list = graph.get_int_list(padding);
+  const auto dilation_list = graph.get_int_list(dilation);
+  std::pair<int64_t, int64_t> live[2];
+  for (size_t a = 0; a < 2; ++a) {
+    live[a] = conv2d_live_taps(
+        in_sizes.at(2 + a),
+        out_sizes.at(2 + a),
+        w_sizes.at(2 + a),
+        stride_list->at(a),
+        padding_list->at(a),
+        dilation_list->at(a));
+  }
+  Conv2dIm2colCoopmatPlan plan{};
+  plan.ki0 = live[0].first;
+  plan.kh = live[0].second;
+  plan.kj0 = live[1].first;
+  plan.kw = live[1].second;
+  const int64_t C_in = w_sizes.at(1);
+  const int64_t taps = plan.kh * plan.kw;
+  const int64_t max_3d =
+      graph.context()->adapter_ptr()->max_texture3d_dim();
+  plan.chunks = 1;
+  plan.chunk_channels = C_in;
+  plan.multiply = &variant;
+  if (taps > 0 && taps * utils::align_up_4(C_in) / 4 > max_3d) {
+    // The fewest chunks of equal size: a multiple of 4 channels, and with
+    // _alc a chunk K that is a multiple of the variant's K step.
+    int64_t g = 4;
+    if (variant.has(Conv2dPwCoopmatVariant::kAlignedClampN)) {
+      const int64_t q = int64_t(variant.tile_k) / std::gcd<int64_t>(variant.tile_k, taps);
+      g = std::lcm<int64_t>(4, q);
+    }
+    const int64_t max_channels = (max_3d * 4 / taps) / g * g;
+    if (max_channels == 0) {
+      plan.chunks = 0;
+      plan.chunk_channels = 0;
+    } else {
+      plan.chunks = utils::div_up(C_in, max_channels);
+      plan.chunk_channels = utils::align_up(utils::div_up(C_in, plan.chunks), g);
+    }
+    plan.multiply = find_conv2d_pw_coopmat_variant(
+        std::string(variant.name, std::strlen(variant.name) - 5) + "_ck_half");
+  }
+  plan.K_chunk = taps * utils::align_up_4(plan.chunk_channels);
+  const int64_t H_out = out_sizes.at(2);
+  const int64_t W_out = out_sizes.at(3);
+  const int64_t elem_size =
+      utils::safe_downcast<int64_t>(vkapi::element_size(graph.dtype_of(in)));
+  plan.oh_tile = plan.K_chunk == 0
+      ? H_out
+      : kIm2colScratchBudgetBytes / (W_out * plan.K_chunk * elem_size);
+  plan.oh_tile = std::min<int64_t>(std::max<int64_t>(plan.oh_tile, 1), H_out);
+  plan.num_tiles = utils::div_up(H_out, plan.oh_tile);
+  return plan;
+}
 
 bool conv2d_im2col_coopmat_runnable(ComputeGraph& graph, const ValueRef out) {
   return graph.size_at<uint32_t>(-1, out) * graph.size_at<uint32_t>(-2, out) >
@@ -568,6 +727,10 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
   if (!variant.has(Conv2dPwCoopmatVariant::kIm2col)) {
     return "the variant does not read an im2col matrix (an _i2c variant is "
            "required)";
+  }
+  if (variant.has(Conv2dPwCoopmatVariant::kChunked)) {
+    return "a _ck variant runs only as the chunked form the route picks for "
+           "its _i2c variant; request the _i2c variant";
   }
   if (transposed) {
     return "the convolution is transposed";
@@ -622,34 +785,32 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
     return "the convolution is grouped";
   }
   {
-    const auto dilation_list = graph.get_int_list(dilation);
-    if (dilation_list->at(0) != 1 || dilation_list->at(1) != 1) {
-      return "dilation is not 1";
-    }
-  }
-  {
     // conv2d_im2col.glsl computes, per spatial axis and in int32, the output
-    // extent from in + 2 p and the input coordinate o s - p + k (o < out,
-    // k < kernel). Every such value must fit, for the build-time sizes (a
+    // extent from in + 2 p and the input coordinate o s - p + t d (o < out,
+    // t < kernel). Every such value must fit, for the build-time sizes (a
     // resize only shrinks them).
     constexpr int64_t kMax = std::numeric_limits<int32_t>::max();
     const std::vector<int64_t> out_sizes = graph.sizes_of(out);
     const auto stride_list = graph.get_int_list(stride);
     const auto padding_list = graph.get_int_list(padding);
+    const auto dilation_list = graph.get_int_list(dilation);
     const char* const axis[] = {"height", "width"};
     for (size_t a = 0; a < 2; ++a) {
       const int64_t s = stride_list->at(a);
       const int64_t p = padding_list->at(a);
+      const int64_t d = dilation_list->at(a);
       const int64_t in_dim = in_sizes.at(2 + a);
       const int64_t out_dim = out_sizes.at(2 + a);
       const int64_t k = w_sizes.at(2 + a);
-      if (s < 1 || p < 0 || s > kMax || p > kMax || in_dim + 2 * p > kMax ||
-          (out_dim - 1) * s + (k - 1) > kMax) {
+      if (s < 1 || p < 0 || d < 1 || s > kMax || p > kMax || d > kMax ||
+          in_dim + 2 * p > kMax || (k - 1) * d > kMax ||
+          (out_dim - 1) * s + (k - 1) * d > kMax) {
         return std::string(
                    "the im2col gather computes in 32-bit integers and "
                    "cannot represent the ") +
             axis[a] + " axis (input " + std::to_string(in_dim) + ", stride " +
-            std::to_string(s) + ", padding " + std::to_string(p) + ", kernel " +
+            std::to_string(s) + ", padding " + std::to_string(p) +
+            ", dilation " + std::to_string(d) + ", kernel " +
             std::to_string(k) + ", output " + std::to_string(out_dim) + ")";
       }
     }
@@ -661,28 +822,52 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
           conv2d_pw_coopmat_device_unsupported(graph, variant)) {
     return reason;
   }
-  const Conv2dGemmTiling tiling =
-      conv2d_gemm_tiling(graph, in, weight_data, out);
-  const uint32_t W_out = graph.size_at<uint32_t>(-1, out);
-  const uint32_t N = graph.size_at<uint32_t>(-3, out);
-  const uint64_t K4 = uint64_t(tiling.K_total) / 4u;
-  const uint64_t N4 = utils::div_up_4(N);
+  const Conv2dIm2colCoopmatPlan plan = conv2d_im2col_coopmat_plan(
+      graph, variant, in, weight_data, stride, padding, dilation, out);
   vkapi::Adapter* const adapter = graph.context()->adapter_ptr();
   const uint32_t max_3d = adapter->max_texture3d_dim();
+  if (plan.kh == 0 || plan.kw == 0) {
+    return "no kernel tap reads the input for any output pixel (the output "
+           "would be bias and epilogue only)";
+  }
+  if (plan.chunks == 0) {
+    return "the live taps (" + n(plan.kh) + " x " + n(plan.kw) +
+        ") of 4 input channels already exceed the maximum 3D image "
+        "dimension " +
+        n(max_3d);
+  }
+  if (plan.multiply == nullptr) {
+    const uint64_t K = uint64_t(plan.kh * plan.kw) *
+        utils::align_up_4(uint64_t(w_sizes.at(1)));
+    return "the gathered matrix has K = " + n(K) + ", " + n(K / 4u) +
+        " texel layers, more than the maximum 3D image dimension " +
+        n(max_3d) + ", and the variant has no chunked form (_ck)";
+  }
+  const Conv2dPwCoopmatVariant& multiply = *plan.multiply;
+  if (&multiply != &variant) {
+    if (const auto reason =
+            conv2d_pw_coopmat_device_unsupported(graph, multiply)) {
+      return reason;
+    }
+  }
+  const uint32_t W_out = graph.size_at<uint32_t>(-1, out);
+  const uint32_t N = graph.size_at<uint32_t>(-3, out);
+  const uint64_t K4 = uint64_t(plan.K_chunk) / 4u;
+  const uint64_t N4 = utils::div_up_4(N);
   if (K4 > max_3d) {
-    return "the gathered matrix has K = " + n(tiling.K_total) + ", " + n(K4) +
+    return "the gathered matrix has K = " + n(plan.K_chunk) + ", " + n(K4) +
         " texel layers, more than the maximum 3D image dimension " + n(max_3d);
   }
-  if (W_out > max_3d || uint64_t(tiling.oh_tile) > max_3d) {
+  if (W_out > max_3d || uint64_t(plan.oh_tile) > max_3d) {
     return "the gathered matrix tile of " + n(W_out) + " x " +
-        n(tiling.oh_tile) + " pixels exceeds the maximum 3D image dimension " +
+        n(plan.oh_tile) + " pixels exceeds the maximum 3D image dimension " +
         n(max_3d);
   }
   const utils::uvec3 max_count = adapter->max_compute_workgroup_count();
   {
     // conv2d_im2col dispatches one invocation per (k4, pixel) of a tile in
     // work groups of 16 x 4 (pick_conv2d_im2col_lwg).
-    const uint64_t tile_pixels = uint64_t(W_out) * uint64_t(tiling.oh_tile);
+    const uint64_t tile_pixels = uint64_t(W_out) * uint64_t(plan.oh_tile);
     const uint64_t gather_x = utils::div_up(K4, uint64_t(16));
     const uint64_t gather_y = utils::div_up(tile_pixels, uint64_t(4));
     if (gather_x > max_count[0] || gather_y > max_count[1]) {
@@ -697,38 +882,40 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
            "check (_al)";
   }
   if (variant.has(Conv2dPwCoopmatVariant::kAlignedClampN) &&
-      tiling.K_total % variant.tile_k != 0) {
-    return "gathered K " + n(tiling.K_total) +
+      plan.K_chunk % variant.tile_k != 0) {
+    return "gathered K " + n(plan.K_chunk) +
         " not a multiple of the variant's K step " + n(variant.tile_k);
   }
   const uint32_t max_2d = adapter->max_texture2d_dim();
-  if (K4 > max_2d || N4 * 4u > max_2d) {
+  if (plan.chunks == 1 && (K4 > max_2d || N4 * 4u > max_2d)) {
     return "the texture2d weights of the conv2d_gemm resize fallback (" +
         n(N4 * 4u) + " x " + n(K4) + " texels) exceed maxImageDimension2D " +
         n(max_2d);
   }
-  const uint64_t rows =
-      K4 +
-      conv2d_pw_coopmat_scratch_rows(
-          variant, conv2d_pw_coopmat_scratch_capacity(graph, out));
+  const uint64_t rows = uint64_t(plan.chunks) * K4 +
+      conv2d_im2col_coopmat_scratch_rows(
+          plan, conv2d_pw_coopmat_scratch_capacity(graph, out));
   const uint64_t bytes = rows * N4 * 16u * 2u;
   if (bytes > adapter->max_buffer_numel()) {
     return "the packed weights" +
-        std::string(variant.k_slices > 1u ? " and split-K scratch" : "") +
+        std::string(
+            plan.scratch_slices() > 1u ? " and split-K scratch" : "") +
         " take " + n(bytes) + " bytes, more than maxStorageBufferRange " +
         n(adapter->max_buffer_numel());
   }
   if (variant.k_slices > 1u) {
     for (const auto& [begin, end] : conv2d_pw_coopmat_k_slices(
-             variant, utils::safe_downcast<uint32_t>(tiling.K_total))) {
+             variant, utils::safe_downcast<uint32_t>(plan.K_chunk))) {
       if (end < begin + 2u) {
-        return "gathered K " + n(tiling.K_total) + " gives " +
+        return "gathered K " + n(plan.K_chunk) + " gives " +
             n(utils::div_up(
-                uint64_t(tiling.K_total), uint64_t(variant.tile_k))) +
+                uint64_t(plan.K_chunk), uint64_t(variant.tile_k))) +
             " K steps: fewer than two K steps in a slice of " +
             n(variant.k_slices);
       }
     }
+  }
+  if (plan.scratch_slices() > 1u) {
     const uint64_t merge_groups = utils::div_up(
         uint64_t(W_out) * graph.size_at<uint32_t>(-2, out) * N4,
         uint64_t(kMergeThreads));
@@ -745,9 +932,9 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
   return conv2d_pw_coopmat_grid_unsupported(
       conv2d_pw_coopmat_workgroups(
           graph,
-          variant,
+          multiply,
           N,
-          W_out * utils::safe_downcast<uint32_t>(tiling.oh_tile)),
+          W_out * utils::safe_downcast<uint32_t>(plan.oh_tile)),
       max_count);
 }
 
@@ -811,6 +998,24 @@ void conv2d_gemm_impl(
   // K4_total = K_total / 4 division below is exact.
   VK_CHECK_COND(K_total % 4 == 0);
 
+  // Route im2col_coopmat gathers the live taps of one input-channel chunk at a
+  // time (conv2d_im2col_coopmat_plan); otherwise the gather covers the whole
+  // kernel and every channel.
+  const bool coopmat = coopmat_variant != nullptr;
+  const Conv2dIm2colCoopmatPlan plan = coopmat
+      ? conv2d_im2col_coopmat_plan(
+            graph,
+            *coopmat_variant,
+            in,
+            weight_data,
+            stride,
+            padding,
+            dilation,
+            out)
+      : Conv2dIm2colCoopmatPlan{};
+  const bool sub = coopmat && !plan.full(K_h, K_w);
+  const int64_t K_gather = coopmat ? plan.K_chunk : K_total;
+
   // Extract scalar conv params, scoping the IntListPtrs so they don't keep
   // active value pointers around while we mutate the graph below.
   int32_t stride_h, stride_w, padding_h, padding_w, dilation_h, dilation_w;
@@ -844,7 +1049,7 @@ void conv2d_gemm_impl(
   // ordering it first.
   const int64_t elem_size =
       utils::safe_downcast<int64_t>(vkapi::element_size(graph.dtype_of(in)));
-  const int64_t bytes_per_h_row = W_out * K_total * elem_size;
+  const int64_t bytes_per_h_row = W_out * K_gather * elem_size;
   int64_t oh_tile = kIm2colScratchBudgetBytes / bytes_per_h_row;
   oh_tile = std::max<int64_t>(oh_tile, 1);
   oh_tile = std::min<int64_t>(oh_tile, H_out);
@@ -917,11 +1122,11 @@ void conv2d_gemm_impl(
   utils::StorageType im2col_tmp_storage;
   utils::GPUMemoryLayout im2col_layout;
   if (im2col_storage == utils::kTexture3D) {
-    im2col_sizes = {1, K_total, oh_tile, W_out};
+    im2col_sizes = {1, K_gather, oh_tile, W_out};
     im2col_tmp_storage = utils::kTexture3D;
     im2col_layout = utils::kChannelsPacked;
   } else {
-    im2col_sizes = {oh_tile * W_out, K_total};
+    im2col_sizes = {oh_tile * W_out, K_gather};
     im2col_tmp_storage = im2col_storage;
     im2col_layout = utils::kWidthPacked;
   }
@@ -938,7 +1143,14 @@ void conv2d_gemm_impl(
   // serialized data is read as-is (never CPU-repacked); the prepack shader does
   // the im2col K-axis reorder + 4x4 transpose into the layout conv2d_gemm.glsl
   // loads via load_packed_weight_tile_with_checks.
-  ValueRef packed_weight = prepack_conv2d_gemm_weight(graph, weight_data);
+  // Route im2col_coopmat packs only the live taps, the chunks one after the
+  // other.
+  const ValueRef gather_weight =
+      sub ? slice_conv2d_weight(graph, weight_data, plan) : weight_data;
+  // A chunked run has no conv2d_gemm resize fallback and no texture2d weights.
+  const ValueRef packed_weight = coopmat && plan.chunks > 1
+      ? kDummyValueRef
+      : prepack_conv2d_gemm_weight(graph, gather_weight);
   // The cooperative-matrix multiply reads buffer weights (with the split-K
   // scratch after them); conv2d_gemm keeps the texture2d weights for a resize
   // to a shape the multiply cannot run.
@@ -946,11 +1158,10 @@ void conv2d_gemm_impl(
       ? kDummyValueRef
       : prepack_conv2d_gemm_weight(
             graph,
-            weight_data,
+            gather_weight,
             utils::kBuffer,
-            conv2d_pw_coopmat_scratch_rows(
-                *coopmat_variant,
-                conv2d_pw_coopmat_scratch_capacity(graph, out)));
+            conv2d_im2col_coopmat_scratch_rows(
+                plan, conv2d_pw_coopmat_scratch_capacity(graph, out)));
 
   // Bias prepack: matches the bias format conv2d_gemm expects. prepack_biases
   // only reads dim 0 (= C_out) of the weight, so the original 4D weight works
@@ -997,70 +1208,97 @@ void conv2d_gemm_impl(
   // output rows. ET-VK's upper-bound build guarantees this cannot happen; a
   // future change that breaks the upper-bound invariant would need a runtime
   // tile-count guard here.
+  //
+  // A chunked run gathers and multiplies each chunk in turn per tile; the
+  // multiplies store partial sums to K slices chunk * k_slices onward and one
+  // merge adds every slice, then applies bias and epilogue.
+  const int32_t chunks = coopmat ? utils::safe_downcast<int32_t>(plan.chunks) : 1;
+  const int32_t chunk_k4 = utils::safe_downcast<int32_t>(K_gather / 4);
   for (int64_t t = 0; t < num_tiles; ++t) {
     const int32_t oh_offset = utils::safe_downcast<int32_t>(t * oh_tile);
     const int32_t oh_tile_i32 = utils::safe_downcast<int32_t>(oh_tile);
 
-    add_conv2d_im2col_node(
-        graph,
-        in,
-        im2col_tensor,
-        weight_data,
-        stride,
-        padding,
-        dilation,
-        utils::safe_downcast<int32_t>(K_h),
-        utils::safe_downcast<int32_t>(K_w),
-        stride_h,
-        stride_w,
-        padding_h,
-        padding_w,
-        dilation_h,
-        dilation_w,
-        utils::safe_downcast<int32_t>(Cin_padded),
-        oh_offset,
-        oh_tile_i32);
-
-    if (coopmat_variant != nullptr) {
-      add_conv2d_im2col_coopmat_node(
+    for (int32_t c = 0; c < chunks; ++c) {
+      std::optional<Conv2dIm2colSub> sub_rect;
+      if (sub) {
+        sub_rect = Conv2dIm2colSub{
+            utils::safe_downcast<int32_t>(plan.ki0),
+            utils::safe_downcast<int32_t>(plan.kh),
+            utils::safe_downcast<int32_t>(plan.kj0),
+            utils::safe_downcast<int32_t>(plan.kw),
+            utils::safe_downcast<int32_t>(c * plan.chunk_channels / 4)};
+      }
+      add_conv2d_im2col_node(
           graph,
-          *coopmat_variant,
           in,
+          im2col_tensor,
           weight_data,
           stride,
           padding,
           dilation,
-          im2col_tensor,
-          coopmat_weight,
-          packed_bias,
-          epilogue,
-          epilogue_args,
-          out,
+          utils::safe_downcast<int32_t>(K_h),
+          utils::safe_downcast<int32_t>(K_w),
+          stride_h,
+          stride_w,
+          padding_h,
+          padding_w,
+          dilation_h,
+          dilation_w,
+          utils::safe_downcast<int32_t>(
+              coopmat ? utils::align_up_4(plan.chunk_channels) : Cin_padded),
           oh_offset,
-          oh_tile_i32);
+          oh_tile_i32,
+          sub_rect);
+
+      if (coopmat) {
+        add_conv2d_im2col_coopmat_node(
+            graph,
+            *plan.multiply,
+            in,
+            weight_data,
+            stride,
+            padding,
+            dilation,
+            im2col_tensor,
+            coopmat_weight,
+            packed_bias,
+            epilogue,
+            epilogue_args,
+            out,
+            oh_offset,
+            oh_tile_i32,
+            chunks > 1 ? utils::ivec3{
+                             c * utils::safe_downcast<int32_t>(
+                                     plan.multiply->k_slices),
+                             c * chunk_k4,
+                             chunks * chunk_k4}
+                       : utils::ivec3{0, 0, 0});
+      }
+      if (chunks == 1) {
+        add_conv2d_gemm_node(
+            graph,
+            in,
+            weight_data,
+            stride,
+            padding,
+            dilation,
+            im2col_tensor,
+            packed_weight,
+            packed_bias,
+            epilogue,
+            epilogue_args,
+            out,
+            utils::safe_downcast<int32_t>(K_gather),
+            oh_offset,
+            oh_tile_i32,
+            /*coopmat_fallback=*/coopmat);
+      }
     }
-    add_conv2d_gemm_node(
-        graph,
-        in,
-        weight_data,
-        stride,
-        padding,
-        dilation,
-        im2col_tensor,
-        packed_weight,
-        packed_bias,
-        epilogue,
-        epilogue_args,
-        out,
-        utils::safe_downcast<int32_t>(K_total),
-        oh_offset,
-        oh_tile_i32,
-        /*coopmat_fallback=*/coopmat_variant != nullptr);
   }
-  if (coopmat_variant != nullptr && coopmat_variant->k_slices > 1u) {
+  if (coopmat && plan.scratch_slices() > 1u) {
     add_conv2d_im2col_coopmat_merge_node(
         graph,
-        *coopmat_variant,
+        *plan.multiply,
         in,
         weight_data,
         stride,
@@ -1072,7 +1310,11 @@ void conv2d_gemm_impl(
         epilogue,
         epilogue_args,
         out,
-        utils::safe_downcast<int32_t>(oh_tile));
+        utils::safe_downcast<int32_t>(oh_tile),
+        chunks > 1 ? std::optional<utils::ivec2>(utils::ivec2{
+                         utils::safe_downcast<int32_t>(plan.scratch_slices()),
+                         chunks * chunk_k4})
+                   : std::nullopt);
   }
 }
 

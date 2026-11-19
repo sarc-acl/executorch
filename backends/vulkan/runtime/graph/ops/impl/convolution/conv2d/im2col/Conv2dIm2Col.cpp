@@ -171,20 +171,22 @@ void add_conv2d_im2col_node(
     const int32_t dilation_w,
     const int32_t Cin_padded,
     const int32_t oh_offset,
-    const int32_t oh_tile) {
+    const int32_t oh_tile,
+    const std::optional<Conv2dIm2colSub>& sub) {
   const utils::StorageType out_storage = graph.storage_type_of(im2col_out);
   VK_CHECK_COND(
       out_storage == utils::kBuffer || out_storage == utils::kTexture2D ||
       out_storage == utils::kTexture3D);
 
-  std::string kernel_name = "conv2d_im2col";
+  std::string kernel_name = sub ? "conv2d_im2col_sub" : "conv2d_im2col";
   add_storage_type_suffix(kernel_name, out_storage);
   add_dtype_suffix(kernel_name, graph.dtype_of(im2col_out));
   vkapi::ShaderInfo shader = VK_KERNEL_FROM_STR(kernel_name);
 
   // K_total is laid out so that 4-tiles share a kernel position; since
   // Cin_padded is a multiple of 4, K_total is also a multiple of 4.
-  const int32_t K_total = kernel_h * kernel_w * Cin_padded;
+  const int32_t K_total = sub ? sub->kh * sub->kw * Cin_padded
+                              : kernel_h * kernel_w * Cin_padded;
   VK_CHECK_COND(K_total % 4 == 0);
   const int32_t K4_total = K_total / 4;
 
@@ -193,6 +195,16 @@ void add_conv2d_im2col_node(
   // dims = (Cin_padded, oh_offset, oh_tile, K4_total). W_out / H_out are
   // derived at runtime from in_sizes; the rest are shape-independent.
   const utils::ivec4 dims{Cin_padded, oh_offset, oh_tile, K4_total};
+  const utils::ivec4 sub_rect = sub
+      ? utils::ivec4{sub->ki0, sub->kj0, sub->kw, sub->ci4_offset}
+      : utils::ivec4{0, 0, 0, 0};
+  std::vector<PushConstantDataInfo> push_constants = {
+      PushConstantDataInfo(&kernel_stride, sizeof(kernel_stride)),
+      PushConstantDataInfo(&padding_dil, sizeof(padding_dil)),
+      PushConstantDataInfo(&dims, sizeof(dims))};
+  if (sub) {
+    push_constants.emplace_back(&sub_rect, sizeof(sub_rect));
+  }
 
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
       graph,
@@ -203,10 +215,8 @@ void add_conv2d_im2col_node(
       {{im2col_out, vkapi::kWrite}, {in, vkapi::kRead}},
       // UBOs
       {graph.sizes_ubo(in)},
-      // Push constants (3 × ivec4 = 48 bytes, split per 16-byte limit)
-      {PushConstantDataInfo(&kernel_stride, sizeof(kernel_stride)),
-       PushConstantDataInfo(&padding_dil, sizeof(padding_dil)),
-       PushConstantDataInfo(&dims, sizeof(dims))},
+      // Push constants (3 or 4 × ivec4, split per 16-byte limit)
+      push_constants,
       // Specialization constants
       {},
       // Resize args (last slot = raw oh_tile value, not a ValueRef handle)

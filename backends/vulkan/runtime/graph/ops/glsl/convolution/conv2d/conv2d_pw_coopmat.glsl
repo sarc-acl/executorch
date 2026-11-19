@@ -66,7 +66,7 @@ $if W16:
   // The packed weights as uvec4: one element is two adjacent k entries
   // (4 output channels each) of a 4OC x 4IC block.
   ${layout_declare_buffer(B, "r", "t_weight_u4", "uint", is_scalar_array=False)}
-$elif K_SLICES > 1:
+$elif K_SLICES > 1 or CHUNKED:
   // The packed weights followed by the split-K scratch, as uvec2: one element
   // is one f16vec4 weight entry, or one fp16 (half an fp32) scratch texel.
   ${layout_declare_buffer(B, "rw", "t_weight_u2", "uint", is_scalar_array=False, vec_size=2)}
@@ -139,9 +139,16 @@ $if I2C:
   #define I2C
   // The first push constant carries the tile's first output row.
   #define I2C_OH_OFFSET stride_h
-$if K_SLICES > 1:
+$if K_SLICES > 1 or CHUNKED:
   #define SPLIT_K
   const uint K_SLICES = ${K_SLICES};
+$if CHUNKED:
+  // The tile's first K slice in the scratch, the chunk's first weight row and
+  // the weight rows before the scratch (stride_h carries I2C_OH_OFFSET).
+  #define CHUNKED
+  #define CHUNK_SLICE_BASE stride_w
+  #define CHUNK_W_K4_BASE padding_h
+  #define CHUNK_SCRATCH_K4 padding_w
 
 const uint MMA_M = ${MMA_M};
 const uint MMA_N = ${MMA_N};

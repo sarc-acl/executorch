@@ -14,6 +14,10 @@
  * texel. Bindings, uniforms, push constants and specialization constants are
  * those of conv2d_pw_tiled, so the dispatch node can take the tiled kernel
  * instead on a resize to a shape the split-K variant cannot run.
+ *
+ * K_SLICES 0 (conv2d_pw_coopmat_skn_merge_*, chunked im2col_coopmat runs):
+ * the slice count is stride_h and the scratch starts after stride_w weight
+ * rows.
  */
 
 #version 450 core
@@ -79,13 +83,20 @@ ${layout_declare_spec_const(C, "int", "residual_op", "0")}
 
 #include "conv2d_epilogue.glslh"
 
-const uint K_SLICES = ${K_SLICES};
+$if K_SLICES == 0:
+  #define RUNTIME_SLICES
+$else:
+  const uint K_SLICES = ${K_SLICES};
 
 void main() {
   const uint W_out = uint(out_sizes.x);
   const uint M = W_out * uint(out_sizes.y);
   const uint N4 = uint(div_up_4(out_sizes.z));
+#ifdef RUNTIME_SLICES
+  const uint K4 = uint(stride_w);
+#else
   const uint K4 = uint(div_up_4(in_sizes.z));
+#endif
   const uint idx = gl_GlobalInvocationID.x;
   if (idx >= M * N4) {
     return;
@@ -94,7 +105,11 @@ void main() {
   const uint n4 = idx % N4;
   const uint base = K4 * N4 * 4u;
   VEC4_T v = VEC4_T(0);
+#ifdef RUNTIME_SLICES
+  for (uint s = 0; s < uint(stride_h); ++s) {
+#else
   [[unroll]] for (uint s = 0; s < K_SLICES; ++s) {
+#endif
     const uint t = (s * M + m) * N4 + n4;
 #ifdef ACC_FP32
     v += uintBitsToFloat(

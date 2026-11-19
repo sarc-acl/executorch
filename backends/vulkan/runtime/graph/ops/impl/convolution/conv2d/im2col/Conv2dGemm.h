@@ -104,6 +104,50 @@ ValueRef prepack_conv2d_gemm_weight(
     const utils::StorageType weight_storage = utils::kTexture2D,
     const int64_t scratch_rows = 0);
 
+// How route im2col_coopmat runs a convolution on a variant. The live taps are
+// the kernel rows [ki0, ki0 + kh) and columns [kj0, kj0 + kw) that read the
+// input for some output pixel at the build-time sizes (kh or kw is 0 when no
+// tap does); the others only read padding and are left out of the gather and
+// the packed weights. When the gathered matrix of the live taps is deeper than
+// maxImageDimension3D, the input channels run in `chunks` chunks of
+// `chunk_channels` (a multiple of 4; the last may extend past C_in) on the
+// variant's chunked form `multiply` (_ck), whose partial sums one merge adds
+// before bias and epilogue. `multiply` is null when a chunked run needs a _ck
+// form the variant does not have, chunks is 0 when no chunk fits.
+struct Conv2dIm2colCoopmatPlan final {
+  int64_t ki0;
+  int64_t kh;
+  int64_t kj0;
+  int64_t kw;
+  int64_t chunks;
+  int64_t chunk_channels;
+  // K of one chunk's gathered matrix: kh * kw * align_up_4(chunk_channels).
+  int64_t K_chunk;
+  int64_t oh_tile;
+  int64_t num_tiles;
+  const Conv2dPwCoopmatVariant* multiply;
+
+  // Whether the run is the full convolution in one chunk.
+  bool full(const int64_t K_h, const int64_t K_w) const {
+    return chunks == 1 && ki0 == 0 && kj0 == 0 && kh == K_h && kw == K_w;
+  }
+  // K slices of the scratch summed by the merge (1: no merge).
+  uint32_t scratch_slices() const {
+    return utils::safe_downcast<uint32_t>(chunks) *
+        (multiply == nullptr ? 1u : multiply->k_slices);
+  }
+};
+
+Conv2dIm2colCoopmatPlan conv2d_im2col_coopmat_plan(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant,
+    const ValueRef in,
+    const ValueRef weight_data,
+    const ValueRef stride,
+    const ValueRef padding,
+    const ValueRef dilation,
+    const ValueRef out);
+
 // Whether the cooperative-matrix multiply runs at the output's current sizes:
 // more than one output pixel.
 bool conv2d_im2col_coopmat_runnable(ComputeGraph& graph, const ValueRef out);

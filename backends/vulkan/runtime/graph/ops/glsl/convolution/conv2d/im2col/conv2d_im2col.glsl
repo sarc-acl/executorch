@@ -53,6 +53,8 @@ $if OUT_STORAGE == "buffer":
   #define VEC4_BUF_T ${texel_load_type(DTYPE, "buffer")}
 $elif OUT_STORAGE == "texture3d":
   #define OUTPUT_TEXTURE3D
+$if SUB:
+  #define SUB_RECT
 
 ${define_required_extensions("texture3d", DTYPE)}
 $if OUT_STORAGE == "buffer":
@@ -77,6 +79,13 @@ layout(push_constant) uniform restrict Block {
   ivec4 kernel_stride;  // (Kh, Kw, Sh, Sw)
   ivec4 padding_dil;    // (Ph, Pw, Dh, Dw)
   ivec4 dims;           // (Cin_padded, OH_OFFSET, OH_TILE, K4_total)
+$if SUB:
+  // conv2d_im2col_sub: the gathered matrix covers kernel rows KI0 onward and
+  // columns KJ0 to KJ0 + KW_LIVE - 1 (the taps that can read the input) and
+  // input channels from texel CI4_OFFSET on. kernel_stride and padding_dil
+  // stay those of the whole convolution; Cin_padded is the channel count of
+  // one chunk.
+  ivec4 sub;            // (KI0, KJ0, KW_LIVE, CI4_OFFSET)
 };
 
 #define KERNEL_H   kernel_stride.x
@@ -131,16 +140,28 @@ void main() {
   // ci values starting at ci_start.
   const int krow_idx = k_start / CIN_PADDED; // ki * Kw + kj
   const int ci_start = k_start % CIN_PADDED;
+#ifdef SUB_RECT
+  const int kj       = sub.y + krow_idx % sub.z;
+  const int ki       = sub.x + krow_idx / sub.z;
+  const int ci_blk   = sub.w + (ci_start >> 2);
+#else
   const int kj       = krow_idx % KERNEL_W;
   const int ki       = krow_idx / KERNEL_W;
   const int ci_blk   = ci_start >> 2;        // ci_start / 4
+#endif
 
   // Compute the input spatial position for this (oh, ow, ki, kj).
   const int ih = oh * STRIDE_H - PADDING_H + ki * DILATION_H;
   const int iw = ow * STRIDE_W - PADDING_W + kj * DILATION_W;
 
   VEC4_T out_texel = VEC4_T(0);
+#ifdef SUB_RECT
+  // The last chunk may extend past the input's channel texels.
+  if (oh < H_OUT && ih >= 0 && ih < in_sizes.y && iw >= 0 && iw < in_sizes.x &&
+      ci_blk < (in_sizes.z + 3) / 4) {
+#else
   if (oh < H_OUT && ih >= 0 && ih < in_sizes.y && iw >= 0 && iw < in_sizes.x) {
+#endif
     out_texel = texelFetch(t_in, ivec3(iw, ih, ci_blk), 0);
   }
 
