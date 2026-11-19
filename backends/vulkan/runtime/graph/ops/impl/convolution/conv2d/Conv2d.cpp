@@ -228,6 +228,8 @@ UnaryOpType activation_from_string(const std::string& name) {
   VK_THROW("Unsupported conv2d activation: ", name);
 }
 
+} // namespace
+
 void check_conv2d_epilogue(
     ComputeGraph& graph,
     const Conv2dEpilogue& epilogue,
@@ -261,8 +263,6 @@ void check_conv2d_epilogue(
         "with the weight's dtype");
   }
 }
-
-} // namespace
 
 Conv2dEpilogue conv2d_epilogue_from_args(
     ComputeGraph& graph,

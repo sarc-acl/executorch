@@ -109,12 +109,15 @@ ValueRef prepack_conv2d_gemm_weight(
 bool conv2d_im2col_coopmat_runnable(ComputeGraph& graph, const ValueRef out);
 
 // Why the im2col cooperative-matrix route cannot run the convolution on the
-// variant, naming the device limit where one is exceeded, or nullopt.
+// variant, naming the device limit where one is exceeded, or nullopt. `bias`
+// may be none. The epilogue is checked by check_conv2d_epilogue, which
+// conv2d_gemm_impl calls first for a cooperative-matrix request.
 std::optional<std::string> conv2d_im2col_coopmat_ineligible(
     ComputeGraph& graph,
     const Conv2dPwCoopmatVariant& variant,
     const ValueRef in,
     const ValueRef weight_data,
+    const ValueRef bias,
     const ValueRef dilation,
     const ValueRef out,
     const bool transposed);

@@ -7022,7 +7022,14 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_refuses_fp32_weights) {
       graph.add_tensorref({32, 16, 3, 3}, vkapi::kFloat, w.data());
   const ValueRef dilation = graph.add_scalar_list<int64_t>({1, 1});
   const auto reason = conv2d_im2col_coopmat_ineligible(
-      graph, *variant, in, weight, dilation, out, /*transposed=*/false);
+      graph,
+      *variant,
+      in,
+      weight,
+      graph.add_none(),
+      dilation,
+      out,
+      /*transposed=*/false);
   ASSERT_TRUE(reason.has_value());
   EXPECT_EQ(*reason, "the weights are not FP16");
   const size_t prepacks = graph.prepack_nodes().size();
@@ -7049,4 +7056,103 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_refuses_fp32_weights) {
   }
   EXPECT_EQ(graph.prepack_nodes().size(), prepacks);
   EXPECT_EQ(graph.execute_nodes().size(), nodes);
+}
+
+namespace {
+
+// Builds an FP16 3x3 convolution with FP16 weights through conv2d_gemm_impl
+// with an _i2c variant, and returns the exception message, or "" if the graph
+// was built. No prepack or execute node may be registered on refusal.
+std::string im2col_coopmat_build_error(
+    ComputeGraph& graph,
+    const ValueRef bias,
+    const Conv2dEpilogue& epilogue,
+    const ValueRef in,
+    const ValueRef weight,
+    const ValueRef out) {
+  const Conv2dPwCoopmatVariant* const variant = find_conv2d_pw_coopmat_variant(
+      "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_i2c_half");
+  const ValueRef params = graph.add_scalar_list<int64_t>({1, 1});
+  const size_t prepacks = graph.prepack_nodes().size();
+  const size_t nodes = graph.execute_nodes().size();
+  std::string error;
+  try {
+    conv2d_gemm_impl(
+        graph,
+        in,
+        weight,
+        bias,
+        params,
+        params,
+        params,
+        out,
+        epilogue,
+        utils::kTexture3D,
+        variant);
+  } catch (const std::exception& e) {
+    error = e.what();
+  }
+  EXPECT_EQ(graph.prepack_nodes().size(), prepacks);
+  EXPECT_EQ(graph.execute_nodes().size(), nodes);
+  return error;
+}
+
+} // namespace
+
+// prepack_biases stages the bias and the residual scale with the weight's
+// dtype, so an FP32 bias or scale beside FP16 weights is refused before any
+// node is registered (an FP32 bias was read as FP16 data and gave wrong
+// channels).
+TEST(
+    VulkanComputeGraphTest,
+    conv2d_im2col_coopmat_refuses_fp32_bias_and_scale) {
+  const std::vector<executorch::aten::Half> w(
+      16 * 16 * 3 * 3, executorch::aten::Half(0.0f));
+  const std::vector<float> ones(16, 1.0f);
+  {
+    ComputeGraph graph{GraphConfig()};
+    const ValueRef in = graph.add_tensor(
+        {1, 16, 2, 3}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+    const ValueRef out = graph.add_tensor(
+        {1, 16, 2, 3}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+    const ValueRef weight =
+        graph.add_tensorref({16, 16, 3, 3}, vkapi::kHalf, w.data());
+    const ValueRef bias = graph.add_tensorref({16}, vkapi::kFloat, ones.data());
+    const auto reason = conv2d_im2col_coopmat_ineligible(
+        graph,
+        *find_conv2d_pw_coopmat_variant(
+            "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_i2c_half"),
+        in,
+        weight,
+        bias,
+        graph.add_scalar_list<int64_t>({1, 1}),
+        out,
+        /*transposed=*/false);
+    ASSERT_TRUE(reason.has_value());
+    EXPECT_EQ(*reason, "the bias is not FP16");
+    const std::string error =
+        im2col_coopmat_build_error(graph, bias, {}, in, weight, out);
+    EXPECT_NE(error.find("the bias is not FP16"), std::string::npos) << error;
+  }
+  {
+    ComputeGraph graph{GraphConfig()};
+    const ValueRef in = graph.add_tensor(
+        {1, 16, 2, 3}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+    const ValueRef out = graph.add_tensor(
+        {1, 16, 2, 3}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+    const ValueRef weight =
+        graph.add_tensorref({16, 16, 3, 3}, vkapi::kHalf, w.data());
+    Conv2dEpilogue epilogue;
+    epilogue.residual = graph.add_tensor(
+        {1, 16, 2, 3}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+    epilogue.scale =
+        graph.add_tensorref({1, 16, 1, 1}, vkapi::kFloat, ones.data());
+    const std::string error = im2col_coopmat_build_error(
+        graph, graph.add_none(), epilogue, in, weight, out);
+    EXPECT_NE(
+        error.find("conv2d residual scale must be a [1, C, 1, 1] or [C, 1, 1] "
+                   "tensor with the weight's dtype"),
+        std::string::npos)
+        << error;
+  }
 }

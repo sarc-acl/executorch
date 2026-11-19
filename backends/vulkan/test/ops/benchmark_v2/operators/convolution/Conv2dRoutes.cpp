@@ -221,6 +221,7 @@ Json build_conv2d_im2col_coopmat(
           *variant,
           args[0],
           args[1],
+          args[2],
           args[5],
           args.back(),
           /*transposed=*/false)) {

@@ -341,6 +341,15 @@ void resize_conv2d_node(
     const std::vector<ArgGroup>& args,
     const std::vector<ValueRef>& extra_args);
 
+// Throws unless the epilogue's residual matches the output's sizes, dtype and
+// layout and its residual scale is a per-channel constant with the weight's
+// dtype.
+void check_conv2d_epilogue(
+    ComputeGraph& graph,
+    const Conv2dEpilogue& epilogue,
+    const ValueRef weight_data,
+    const ValueRef out);
+
 // Returns the epilogue described by the arguments of aten.convolution (none),
 // conv_with_clamp (a clamp) or conv2d.with_epilogue, and checks that its
 // operands are supported.

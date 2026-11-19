@@ -557,6 +557,7 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
     const Conv2dPwCoopmatVariant& variant,
     const ValueRef in,
     const ValueRef weight_data,
+    const ValueRef bias,
     const ValueRef dilation,
     const ValueRef out,
     const bool transposed) {
@@ -575,6 +576,16 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
   // The buffer weight packing exists for FP16 weights only.
   if (graph.dtype_of(weight_data) != vkapi::kHalf) {
     return "the weights are not FP16";
+  }
+  // prepack_biases stages the bias with the weight's dtype.
+  if (!graph.val_is_none(bias)) {
+    if (graph.dtype_of(bias) != vkapi::kHalf) {
+      return "the bias is not FP16";
+    }
+    if (graph.sizes_of(bias) !=
+        std::vector<int64_t>{graph.size_at<int64_t>(-3, out)}) {
+      return "the bias does not hold one value per output channel";
+    }
   }
   if (!graph.float16_buffers_enabled()) {
     return "16-bit storage buffers are not enabled";
@@ -714,11 +725,15 @@ void conv2d_gemm_impl(
     const std::optional<utils::StorageType> im2col_storage_override,
     const Conv2dPwCoopmatVariant* coopmat_variant) {
   if (coopmat_variant != nullptr) {
+    // Before any scratch or node: the shared residual and scale checks, then
+    // the route's own conditions.
+    check_conv2d_epilogue(graph, epilogue, weight_data, out);
     if (const auto reason = conv2d_im2col_coopmat_ineligible(
             graph,
             *coopmat_variant,
             in,
             weight_data,
+            bias,
             dilation,
             out,
             /*transposed=*/false)) {
