@@ -6524,6 +6524,79 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_image_input) {
   }
 }
 
+// Split-K slices are whole K steps that cover the K loop once, in order, and a
+// variant is eligible only with at least two steps in every slice.
+TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_slices) {
+  for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    if (v.k_slices <= 1u) {
+      continue;
+    }
+    SCOPED_TRACE(v.name);
+    EXPECT_TRUE(api::shader_registry().has_shader(
+        conv2d_pw_coopmat_merge_shader(v)));
+    for (const uint32_t K : {257u, 576u, 960u, 40u}) {
+      SCOPED_TRACE(K);
+      const uint32_t steps = (K + v.tile_k - 1u) / v.tile_k;
+      const auto slices = conv2d_pw_coopmat_k_slices(v, K);
+      ASSERT_EQ(slices.size(), v.k_slices);
+      uint32_t next = 0u;
+      bool every_slice_has_two = true;
+      for (const auto& [begin, end] : slices) {
+        EXPECT_EQ(begin, std::min(next, steps));
+        EXPECT_LE(begin, end);
+        every_slice_has_two = every_slice_has_two && end >= begin + 2u;
+        next = end;
+      }
+      EXPECT_EQ(next, steps);
+      // K = 257, 576 and 960 split into slices of at least two steps for 2
+      // and 4 slices of K step 16; K = 40 (3 steps) does not.
+      EXPECT_EQ(every_slice_has_two, K != 40u);
+    }
+  }
+  const Conv2dPwCoopmatVariant* const sk4 =
+      find_conv2d_pw_coopmat_variant("conv2d_pw_coopmat_xe2_t128x128_f16_sk4_half");
+  ASSERT_NE(sk4, nullptr);
+  const auto s257 = conv2d_pw_coopmat_k_slices(*sk4, 257u);
+  EXPECT_EQ(s257.back(), std::make_pair(15u, 17u));
+}
+
+// A split-K graph runs the variant and its merge, takes the tiled kernel alone
+// on a 1x1 plane, and returns to split-K, matching the reference throughout,
+// with K not a multiple of the K step or of the slice count.
+TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_resize) {
+  ComputeGraph probe{GraphConfig()};
+  for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    if (v.k_slices <= 1u || !probe.float16_buffers_enabled() ||
+        !conv2d_pw_coopmat_device_supports(probe, v)) {
+      continue;
+    }
+    SCOPED_TRACE(v.name);
+    const std::string merge = conv2d_pw_coopmat_merge_shader(v);
+    PointwiseConvGraph g(
+        vkapi::kHalf,
+        257,
+        96,
+        14,
+        14,
+        1,
+        {Conv2dPwRequest::Kind::kCoopmat, &v});
+    for (const int64_t size : {14, 1, 14, 7, 2}) {
+      SCOPED_TRACE(size);
+      g.resize(size, size);
+      const auto kernels = g.execute_and_check();
+      if (size == 1) {
+        EXPECT_TRUE(dispatched_prefix(kernels, "conv2d_pw_tiled"));
+        EXPECT_FALSE(dispatched(kernels, v.name));
+        EXPECT_FALSE(dispatched(kernels, merge));
+      } else {
+        EXPECT_TRUE(dispatched(kernels, v.name));
+        EXPECT_TRUE(dispatched(kernels, merge));
+        EXPECT_FALSE(dispatched_prefix(kernels, "conv2d_pw_tiled"));
+      }
+    }
+  }
+}
+
 TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_resize_to_one_pixel) {
   const Conv2dPwCoopmatVariant* const variant = runnable_pw_coopmat_variant();
   if (variant == nullptr) {

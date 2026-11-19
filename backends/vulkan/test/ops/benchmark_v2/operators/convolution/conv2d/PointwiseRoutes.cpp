@@ -113,9 +113,12 @@ Json build_pw_coopmat(
   add_pointwise(graph, args, {Conv2dPwRequest::Kind::kCoopmat, variant});
   // Unreachable unless conv2d_pw_coopmat_ineligible and the dispatch node's
   // pick disagree: fail rather than report another kernel.
+  const std::string merge = variant->k_slices > 1u
+      ? conv2d_pw_coopmat_merge_shader(*variant)
+      : std::string();
   for (size_t i = first; i < graph.execute_nodes().size(); ++i) {
     const std::string& node = graph.execute_nodes()[i]->name();
-    if (node.rfind("conv2d_pw", 0) == 0 && node != name) {
+    if (node.rfind("conv2d_pw", 0) == 0 && node != name && node != merge) {
       throw std::runtime_error(
           "pw_coopmat picked " + node + " instead of " + name);
     }

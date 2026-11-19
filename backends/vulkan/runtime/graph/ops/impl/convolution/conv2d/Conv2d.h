@@ -14,6 +14,7 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/unary/UnaryOp.h>
 
 #include <optional>
+#include <utility>
 #include <string>
 #include <vector>
 
@@ -201,6 +202,24 @@ utils::uvec3 conv2d_pw_coopmat_workgroups(
     ComputeGraph& graph,
     const Conv2dPwCoopmatVariant& variant,
     const uint32_t N,
+    const uint32_t M);
+
+// The K steps [begin, end) of each slice of a split-K variant for K input
+// channels (design D6): q = ceil(steps / k_slices), slice j covers
+// [j q, min((j + 1) q, steps)); the variant is eligible when every slice
+// holds at least two steps.
+std::vector<std::pair<uint32_t, uint32_t>> conv2d_pw_coopmat_k_slices(
+    const Conv2dPwCoopmatVariant& variant,
+    const uint32_t K);
+
+// The merge shader of a split-K variant (k_slices > 1).
+std::string conv2d_pw_coopmat_merge_shader(
+    const Conv2dPwCoopmatVariant& variant);
+
+// Rows of N4 * 16 fp16 that the packed weight tensor of a split-K variant
+// carries after the weights as scratch for M output pixels (0 otherwise).
+uint32_t conv2d_pw_coopmat_scratch_rows(
+    const Conv2dPwCoopmatVariant& variant,
     const uint32_t M);
 
 // Whether the device enumerates the variant's fp16 cooperative matrix shape

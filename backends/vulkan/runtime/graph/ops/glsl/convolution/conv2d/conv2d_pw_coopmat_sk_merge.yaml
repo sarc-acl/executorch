@@ -1,0 +1,29 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# Merge shaders of the split-K conv2d_pw_coopmat variants:
+# conv2d_pw_coopmat_sk<K_SLICES>_merge_<acc>_half.
+
+conv2d_pw_coopmat_sk_merge:
+  parameter_names_with_default_values:
+    PRECISION: highp
+    DTYPE: half
+    STORAGE: texture3d
+    ACC_TYPE: f16
+    K_SLICES: 2
+  shader_variants:
+    - NAME: conv2d_pw_coopmat_sk2_merge_f16_half
+      ACC_TYPE: f16
+      K_SLICES: 2
+    - NAME: conv2d_pw_coopmat_sk2_merge_f32_half
+      ACC_TYPE: f32
+      K_SLICES: 2
+    - NAME: conv2d_pw_coopmat_sk4_merge_f16_half
+      ACC_TYPE: f16
+      K_SLICES: 4
+    - NAME: conv2d_pw_coopmat_sk4_merge_f32_half
+      ACC_TYPE: f32
+      K_SLICES: 4

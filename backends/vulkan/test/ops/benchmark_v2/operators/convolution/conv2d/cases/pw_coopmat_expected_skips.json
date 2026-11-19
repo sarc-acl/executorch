@@ -2,10 +2,14 @@
   "pw_coopmat aligned (256,128,64) coopmat": {
     "conv2d_pw_coopmat_xe2_t16x32_f16_al_epi0_half": "has a bias, activation, residual or scale",
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
+    "conv2d_pw_coopmat_xe2_t128x128_f16_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk4_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t16x32_f16_al_epi0_half": "has a bias, activation, residual or scale",
     "conv2d_pw_coopmat_amd_t16x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
     "conv2d_pw_coopmat_nvidia_t32x32_f16_al_epi0_half": "has a bias, activation, residual or scale",
-    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "has a bias, activation, residual or scale"
+    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
+    "conv2d_pw_coopmat_nvidia_t128x128_f16_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk4_half": "fewer than two K steps"
   },
   "pw_coopmat 7x7 (49,96,576) coopmat": {
     "conv2d_pw_coopmat_xe2_t64x64_f16_al_half": "not a multiple of the variant's",
@@ -40,6 +44,8 @@
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_img_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_xe2_t16x32_f16_al_epi0_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_epi0_half": "not a multiple of the variant's",
+    "conv2d_pw_coopmat_xe2_t128x128_f16_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk4_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t16x32_f16_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_amd_t16x32_f32_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_amd_t16x64_f16_al_half": "not a multiple of the variant's",
@@ -55,7 +61,9 @@
     "conv2d_pw_coopmat_nvidia_t32x32_f16_al_w16_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_nvidia_t32x32_f32_al_w16_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_nvidia_t32x32_f16_al_epi0_half": "not a multiple of the variant's",
-    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "not a multiple of the variant's"
+    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "not a multiple of the variant's",
+    "conv2d_pw_coopmat_nvidia_t128x128_f16_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk4_half": "fewer than two K steps"
   },
   "pw_coopmat K=40 (196,120,40) coopmat": {
     "conv2d_pw_coopmat_xe2_t16x32_f16_al_half": "not a multiple of the variant's",
@@ -68,6 +76,10 @@
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_img_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_xe2_t16x32_f16_al_epi0_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_epi0_half": "not a multiple of the variant's",
+    "conv2d_pw_coopmat_xe2_t128x128_f16_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f16_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk4_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t16x32_f16_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_amd_t16x32_f32_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_amd_t16x64_f16_al_half": "not a multiple of the variant's",
@@ -83,7 +95,11 @@
     "conv2d_pw_coopmat_nvidia_t32x32_f16_al_w16_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_nvidia_t32x32_f32_al_w16_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_nvidia_t32x32_f16_al_epi0_half": "not a multiple of the variant's",
-    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "not a multiple of the variant's"
+    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "not a multiple of the variant's",
+    "conv2d_pw_coopmat_nvidia_t128x128_f16_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f16_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk4_half": "fewer than two K steps"
   },
   "pw_coopmat no bias (196,96,576) coopmat": {
     "conv2d_pw_coopmat_xe2_t64x64_f16_al_half": "not a multiple of the variant's",
@@ -132,6 +148,10 @@
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_img_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_xe2_t16x32_f16_al_epi0_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_epi0_half": "not a multiple of the variant's",
+    "conv2d_pw_coopmat_xe2_t128x128_f16_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f16_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk4_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t16x32_f16_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_amd_t16x32_f32_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_amd_t16x64_f16_al_half": "not a multiple of the variant's",
@@ -147,23 +167,41 @@
     "conv2d_pw_coopmat_nvidia_t32x32_f16_al_w16_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_nvidia_t32x32_f32_al_w16_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_nvidia_t32x32_f16_al_epi0_half": "not a multiple of the variant's",
-    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "not a multiple of the variant's"
+    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "not a multiple of the variant's",
+    "conv2d_pw_coopmat_nvidia_t128x128_f16_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f16_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk4_half": "fewer than two K steps"
   },
   "pw_coopmat aligned 63px (63,64,64) coopmat": {
     "conv2d_pw_coopmat_xe2_t16x32_f16_al_epi0_half": "has a bias, activation, residual or scale",
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
+    "conv2d_pw_coopmat_xe2_t128x128_f16_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk4_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t16x32_f16_al_epi0_half": "has a bias, activation, residual or scale",
     "conv2d_pw_coopmat_amd_t16x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
     "conv2d_pw_coopmat_nvidia_t32x32_f16_al_epi0_half": "has a bias, activation, residual or scale",
-    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "has a bias, activation, residual or scale"
+    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
+    "conv2d_pw_coopmat_nvidia_t128x128_f16_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk4_half": "fewer than two K steps"
   },
   "pw_coopmat aligned 65px (65,128,96) coopmat": {
     "conv2d_pw_coopmat_xe2_t16x32_f16_al_epi0_half": "has a bias, activation, residual or scale",
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
+    "conv2d_pw_coopmat_xe2_t128x128_f16_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk4_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t16x32_f16_al_epi0_half": "has a bias, activation, residual or scale",
     "conv2d_pw_coopmat_amd_t16x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
     "conv2d_pw_coopmat_nvidia_t32x32_f16_al_epi0_half": "has a bias, activation, residual or scale",
-    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "has a bias, activation, residual or scale"
+    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
+    "conv2d_pw_coopmat_nvidia_t128x128_f16_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk4_half": "fewer than two K steps"
+  },
+  "pw_coopmat aligned 65px no bias (65,128,96) coopmat": {
+    "conv2d_pw_coopmat_xe2_t128x128_f16_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f16_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk4_half": "fewer than two K steps"
   },
   "pw_coopmat aligned clamp (196,64,128) coopmat": {
     "conv2d_pw_coopmat_xe2_t16x32_f16_al_epi0_half": "has a bias, activation, residual or scale",
@@ -176,10 +214,14 @@
   "pw_coopmat aligned residual (49,64,64) coopmat": {
     "conv2d_pw_coopmat_xe2_t16x32_f16_al_epi0_half": "has a bias, activation, residual or scale",
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
+    "conv2d_pw_coopmat_xe2_t128x128_f16_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk4_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t16x32_f16_al_epi0_half": "has a bias, activation, residual or scale",
     "conv2d_pw_coopmat_amd_t16x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
     "conv2d_pw_coopmat_nvidia_t32x32_f16_al_epi0_half": "has a bias, activation, residual or scale",
-    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "has a bias, activation, residual or scale"
+    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
+    "conv2d_pw_coopmat_nvidia_t128x128_f16_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk4_half": "fewer than two K steps"
   },
   "pw_coopmat precision bias cancellation (6,1,1) coopmat": {
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_half": "not a multiple of the variant's",
@@ -187,6 +229,8 @@
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_w16_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_img_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_epi0_half": "not a multiple of the variant's",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk4_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t16x32_f32_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_amd_t16x64_f32_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_amd_t16x32_f32_al_w16_half": "not a multiple of the variant's",
@@ -194,7 +238,9 @@
     "conv2d_pw_coopmat_nvidia_t32x32_f32_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_nvidia_t16x64_f32_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_nvidia_t32x32_f32_al_w16_half": "not a multiple of the variant's",
-    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "not a multiple of the variant's"
+    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "not a multiple of the variant's",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk4_half": "fewer than two K steps"
   },
   "pw_coopmat precision residual cancellation (6,1,1) coopmat": {
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_half": "not a multiple of the variant's",
@@ -202,6 +248,8 @@
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_w16_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_img_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_epi0_half": "not a multiple of the variant's",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk4_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t16x32_f32_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_amd_t16x64_f32_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_amd_t16x32_f32_al_w16_half": "not a multiple of the variant's",
@@ -209,7 +257,9 @@
     "conv2d_pw_coopmat_nvidia_t32x32_f32_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_nvidia_t16x64_f32_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_nvidia_t32x32_f32_al_w16_half": "not a multiple of the variant's",
-    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "not a multiple of the variant's"
+    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "not a multiple of the variant's",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk4_half": "fewer than two K steps"
   },
   "pw_coopmat precision residual alpha (6,1,1) coopmat": {
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_half": "not a multiple of the variant's",
@@ -217,6 +267,8 @@
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_w16_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_img_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_epi0_half": "not a multiple of the variant's",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk4_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t16x32_f32_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_amd_t16x64_f32_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_amd_t16x32_f32_al_w16_half": "not a multiple of the variant's",
@@ -224,7 +276,9 @@
     "conv2d_pw_coopmat_nvidia_t32x32_f32_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_nvidia_t16x64_f32_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_nvidia_t32x32_f32_al_w16_half": "not a multiple of the variant's",
-    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "not a multiple of the variant's"
+    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "not a multiple of the variant's",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk4_half": "fewer than two K steps"
   },
   "pw_coopmat precision ordered cancellation (6,1,2048) coopmat": {
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_half": "not a multiple of the variant's",
@@ -243,18 +297,30 @@
   },
   "pw_coopmat aligned precision bias cancellation (6,64,32) coopmat": {
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk4_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t16x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
-    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "has a bias, activation, residual or scale"
+    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk4_half": "fewer than two K steps"
   },
   "pw_coopmat aligned precision residual cancellation (6,64,32) coopmat": {
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk4_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t16x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
-    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "has a bias, activation, residual or scale"
+    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk4_half": "fewer than two K steps"
   },
   "pw_coopmat aligned precision residual alpha (6,64,32) coopmat": {
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk4_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t16x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
-    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "has a bias, activation, residual or scale"
+    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "has a bias, activation, residual or scale",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk4_half": "fewer than two K steps"
   },
   "pw_coopmat dispatch limit (1049600,8,8) coopmat": {
     "conv2d_pw_coopmat_xe2_t16x32_f16_al_half": "not a multiple of the variant's",
@@ -267,6 +333,10 @@
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_img_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_xe2_t16x32_f16_al_epi0_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_xe2_t16x32_f32_al_epi0_half": "not a multiple of the variant's",
+    "conv2d_pw_coopmat_xe2_t128x128_f16_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f16_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_sk4_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t16x32_f16_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_amd_t16x32_f32_al_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_amd_t16x64_f16_al_half": "not a multiple of the variant's",
@@ -282,6 +352,10 @@
     "conv2d_pw_coopmat_nvidia_t32x32_f16_al_w16_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_nvidia_t32x32_f32_al_w16_half": "not a multiple of the variant's",
     "conv2d_pw_coopmat_nvidia_t32x32_f16_al_epi0_half": "not a multiple of the variant's",
-    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "not a multiple of the variant's"
+    "conv2d_pw_coopmat_nvidia_t32x32_f32_al_epi0_half": "not a multiple of the variant's",
+    "conv2d_pw_coopmat_nvidia_t128x128_f16_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f16_sk4_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk2_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_sk4_half": "fewer than two K steps"
   }
 }

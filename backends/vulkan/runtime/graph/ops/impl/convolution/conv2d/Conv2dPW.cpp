@@ -41,6 +41,9 @@ constexpr uint32_t kRowAlignedMaxChannelTiles = 64;
 // Pixel tile width of every variant; must match conv2d_pw_tiled.yaml.
 constexpr uint32_t kTileW = 2;
 
+// Work group size of conv2d_pw_coopmat_sk_merge.
+constexpr uint32_t kMergeThreads = 64;
+
 /*
  * The 2x2-pixel x 8-channel tile issues half as many input and weight loads per
  * FMA as the 2x1-pixel x 4-channel tile. Float uses it on every GPU except
@@ -219,6 +222,15 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       // Column-major B staging (_bcm) on the AMD 16x32 tile
       {"conv2d_pw_coopmat_amd_t16x32_f16_bcm_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kColumnMajorB},
       {"conv2d_pw_coopmat_amd_t16x32_f32_bcm_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, true, false, kColumnMajorB},
+      // Split-K across work groups (_sk2, _sk4)
+      {"conv2d_pw_coopmat_xe2_t128x128_f16_sk2_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, 0u, 2u},
+      {"conv2d_pw_coopmat_xe2_t128x128_f16_sk4_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, 0u, 4u},
+      {"conv2d_pw_coopmat_xe2_t128x128_f32_sk2_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, true, true, 0u, 2u},
+      {"conv2d_pw_coopmat_xe2_t128x128_f32_sk4_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, true, true, 0u, 4u},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f16_sk2_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, false, false, 0u, 2u},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f16_sk4_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, false, false, 0u, 4u},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f32_sk2_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, 0u, 2u},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f32_sk4_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, 0u, 4u},
   };
   // clang-format on
   return variants;
@@ -437,7 +449,43 @@ utils::uvec3 conv2d_pw_coopmat_workgroups(
   const uint32_t max_y =
       graph.context()->adapter_ptr()->max_compute_workgroup_count()[1];
   const uint32_t y = m_tiles < max_y ? m_tiles : max_y;
-  return {utils::div_up(N, variant.tile_n), y, utils::div_up(m_tiles, y)};
+  // Split-K: x is channel tile + K slice x channel tiles.
+  return {
+      utils::div_up(N, variant.tile_n) * variant.k_slices,
+      y,
+      utils::div_up(m_tiles, y)};
+}
+
+std::vector<std::pair<uint32_t, uint32_t>> conv2d_pw_coopmat_k_slices(
+    const Conv2dPwCoopmatVariant& variant,
+    const uint32_t K) {
+  const uint32_t steps = utils::div_up(K, variant.tile_k);
+  const uint32_t q = utils::div_up(steps, variant.k_slices);
+  std::vector<std::pair<uint32_t, uint32_t>> slices;
+  for (uint32_t j = 0; j < variant.k_slices; ++j) {
+    const uint32_t begin = std::min(j * q, steps);
+    slices.emplace_back(begin, std::min(begin + q, steps));
+  }
+  return slices;
+}
+
+std::string conv2d_pw_coopmat_merge_shader(
+    const Conv2dPwCoopmatVariant& variant) {
+  return "conv2d_pw_coopmat_sk" + std::to_string(variant.k_slices) + "_merge_" +
+      (variant.fp32_accumulation ? "f32" : "f16") + "_half";
+}
+
+uint32_t conv2d_pw_coopmat_scratch_rows(
+    const Conv2dPwCoopmatVariant& variant,
+    const uint32_t M) {
+  // Texels of all slices, one f16vec4 entry (fp16) or two (fp32) each, in
+  // rows of N4 * 4 entries of the packed weight tensor.
+  if (variant.k_slices <= 1u) {
+    return 0u;
+  }
+  const uint32_t entries_per_pixel =
+      variant.k_slices * (variant.fp32_accumulation ? 2u : 1u);
+  return utils::div_up(M * entries_per_pixel, 4u);
 }
 
 std::optional<std::string> conv2d_pw_coopmat_device_unsupported(
@@ -600,10 +648,33 @@ std::optional<std::string> conv2d_pw_coopmat_ineligible(
     return "the convolution has a bias, activation, residual or scale, which "
            "the variant does not apply";
   }
+  const utils::uvec3 max_count =
+      graph.context()->adapter_ptr()->max_compute_workgroup_count();
+  if (variant.k_slices > 1u) {
+    // Design D6: slice j covers K steps [j q, (j + 1) q) with
+    // q = ceil(steps / slices); every slice needs at least two.
+    const uint32_t K = graph.size_at<uint32_t>(-3, in);
+    for (const auto& [begin, end] : conv2d_pw_coopmat_k_slices(variant, K)) {
+      if (end < begin + 2u) {
+        return "input channels " + std::to_string(K) + " give " +
+            std::to_string(utils::div_up(K, variant.tile_k)) +
+            " K steps: fewer than two K steps in a slice of " +
+            std::to_string(variant.k_slices);
+      }
+    }
+    const uint64_t merge_groups = utils::div_up(
+        uint64_t(M) * utils::div_up_4(graph.size_at<uint32_t>(-3, out)),
+        uint64_t(kMergeThreads));
+    if (merge_groups > max_count[0]) {
+      return "the merge needs " + std::to_string(merge_groups) +
+          " work groups in x, more than maxComputeWorkGroupCount.x " +
+          std::to_string(max_count[0]);
+    }
+  }
   return conv2d_pw_coopmat_grid_unsupported(
       conv2d_pw_coopmat_workgroups(
           graph, variant, graph.size_at<uint32_t>(-3, out), M),
-      graph.context()->adapter_ptr()->max_compute_workgroup_count());
+      max_count);
 }
 
 bool conv2d_pw_coopmat_eligible(
@@ -843,17 +914,21 @@ utils::StorageType conv2d_pw_weight_storage(
   return utils::kTexture2D;
 }
 
+// `scratch_rows` extra rows after the K4 weight rows hold the partial sums of a
+// split-K variant (conv2d_pw_coopmat_scratch_rows); the prepack writes only the
+// weights.
 ValueRef prepack_conv2d_pw_weight(
     ComputeGraph& graph,
     const ValueRef weight_data,
-    const ValueRef out) {
+    const ValueRef out,
+    const int64_t scratch_rows = 0) {
   const std::vector<int64_t> weight_sizes = graph.sizes_of(weight_data);
   const int64_t N = weight_sizes.at(0); // C_out
   const int64_t K = weight_sizes.at(1); // C_in
   const int64_t N4 = utils::div_up(N, int64_t(4));
   const int64_t K4 = utils::div_up(K, int64_t(4));
 
-  const int64_t output_height = K4;
+  const int64_t output_height = K4 + scratch_rows;
   const int64_t output_width = N4 * 4 * 4;
 
   const utils::StorageType weight_storage =
@@ -951,6 +1026,121 @@ void add_conv2d_pw_tiled_node(
   const bool has_bias_or_epilogue = has_bias || epilogue.has_activation() ||
       epilogue.has_residual() || epilogue.has_scale();
 
+  if (request.kind == Conv2dPwRequest::Kind::kCoopmat &&
+      request.coopmat_variant->k_slices > 1u) {
+    // Split-K (design D6): a kernel node that writes the partial sums to the
+    // scratch after the packed weights, and a node that merges them, both with
+    // the tiled kernel's bindings. While the convolution is not eligible for
+    // the variant, the kernel node dispatches nothing and the merge node runs
+    // the tiled kernel instead.
+    const Conv2dPwCoopmatVariant& variant = *request.coopmat_variant;
+    const auto eligible = [request, transposed, has_bias_or_epilogue](
+                              ComputeGraph* graph,
+                              const std::vector<ArgGroup>& args,
+                              const std::vector<ValueRef>& resize_args) {
+      return conv2d_pw_coopmat_eligible(
+          *graph,
+          *request.coopmat_variant,
+          args.at(1).refs.at(0),
+          resize_args.at(0),
+          args.at(2).refs.at(0),
+          resize_args.at(1),
+          resize_args.at(2),
+          args.at(0).refs.at(0),
+          transposed,
+          has_bias_or_epilogue);
+    };
+    graph.execute_nodes().emplace_back(new DynamicDispatchNode(
+        graph,
+        [name = std::string(variant.name)](
+            ComputeGraph*,
+            const std::vector<ArgGroup>&,
+            const std::vector<ValueRef>&) { return VK_KERNEL_FROM_STR(name); },
+        [eligible](
+            ComputeGraph* graph,
+            const vkapi::ShaderInfo& shader,
+            const std::vector<ArgGroup>& args,
+            const std::vector<ValueRef>& resize_args) {
+          if (!eligible(graph, args, resize_args)) {
+            return GlobalWorkGrid({0u, 0u, 0u}, kExplicitWorkGrid);
+          }
+          return pick_conv2d_pw_tiled_gwg(graph, shader, args, resize_args);
+        },
+        pick_conv2d_pw_tiled_lwg,
+        {{out, vkapi::kWrite},
+         {in, in_access},
+         {packed_weight, vkapi::kReadWrite},
+         {packed_bias, vkapi::kRead},
+         {epilogue_args.residual,
+          epilogue_args.residual == in ? in_access : vkapi::kRead},
+         {epilogue_args.scale, vkapi::kRead}},
+        {graph.sizes_ubo(in), graph.sizes_ubo(out)},
+        {PushConstantDataInfo(&stride_padding, sizeof(stride_padding)),
+         PushConstantDataInfo(&epilogue_params, sizeof(epilogue_params)),
+         PushConstantDataInfo(
+             &epilogue_params_f32, sizeof(epilogue_params_f32))},
+        spec_vars,
+        {weight_data, stride, padding, epilogue.residual},
+        resize_conv2d_pw_tiled_node));
+    const std::string merge = conv2d_pw_coopmat_merge_shader(variant);
+    graph.execute_nodes().emplace_back(new DynamicDispatchNode(
+        graph,
+        [eligible, merge, transposed, has_bias_or_epilogue](
+            ComputeGraph* graph,
+            const std::vector<ArgGroup>& args,
+            const std::vector<ValueRef>& resize_args) {
+          if (eligible(graph, args, resize_args)) {
+            return VK_KERNEL_FROM_STR(merge);
+          }
+          return pick_conv2d_pw_tiled_shader(
+              graph, args, resize_args, {}, transposed, has_bias_or_epilogue);
+        },
+        [merge](
+            ComputeGraph* graph,
+            const vkapi::ShaderInfo& shader,
+            const std::vector<ArgGroup>& args,
+            const std::vector<ValueRef>& resize_args) {
+          if (shader.kernel_name != merge) {
+            return pick_conv2d_pw_tiled_gwg(graph, shader, args, resize_args);
+          }
+          // One invocation per output texel.
+          const ValueRef out = args.at(0).refs.at(0);
+          const uint32_t texels = graph->size_at<uint32_t>(-1, out) *
+              graph->size_at<uint32_t>(-2, out) *
+              utils::div_up_4(graph->size_at<uint32_t>(-3, out));
+          return GlobalWorkGrid(
+              {utils::div_up(texels, kMergeThreads) * kMergeThreads, 1u, 1u},
+              kExplicitWorkGrid);
+        },
+        [merge](
+            ComputeGraph* graph,
+            const vkapi::ShaderInfo& shader,
+            const GlobalWorkGrid& gwg,
+            const std::vector<ArgGroup>& args,
+            const std::vector<ValueRef>& resize_args) {
+          if (shader.kernel_name != merge) {
+            return pick_conv2d_pw_tiled_lwg(
+                graph, shader, gwg, args, resize_args);
+          }
+          return LocalWorkGroup(kMergeThreads, 1u, 1u);
+        },
+        {{out, vkapi::kWrite},
+         {in, in_access},
+         {{packed_weight, packed_bias}, vkapi::kRead},
+         {epilogue_args.residual,
+          epilogue_args.residual == in ? in_access : vkapi::kRead},
+         {epilogue_args.scale, vkapi::kRead}},
+        {graph.sizes_ubo(in), graph.sizes_ubo(out)},
+        {PushConstantDataInfo(&stride_padding, sizeof(stride_padding)),
+         PushConstantDataInfo(&epilogue_params, sizeof(epilogue_params)),
+         PushConstantDataInfo(
+             &epilogue_params_f32, sizeof(epilogue_params_f32))},
+        spec_vars,
+        {weight_data, stride, padding, epilogue.residual},
+        resize_conv2d_pw_tiled_node));
+    return;
+  }
+
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
       graph,
       [request, transposed, has_bias_or_epilogue](
@@ -1011,7 +1201,17 @@ void conv2d_pw_impl(
       (request.kind == Conv2dPwRequest::Kind::kCoopmat) ==
           (request.coopmat_variant != nullptr),
       "conv2d_pw: a coopmat request names exactly one variant");
-  ValueRef packed_weight = prepack_conv2d_pw_weight(graph, weight_data, out);
+  const bool split_k = request.kind == Conv2dPwRequest::Kind::kCoopmat &&
+      request.coopmat_variant->k_slices > 1u;
+  ValueRef packed_weight = prepack_conv2d_pw_weight(
+      graph,
+      weight_data,
+      out,
+      split_k ? conv2d_pw_coopmat_scratch_rows(
+                    *request.coopmat_variant,
+                    graph.size_at<uint32_t>(-1, out) *
+                        graph.size_at<uint32_t>(-2, out))
+              : 0);
 
   ValueRef packed_bias = prepack_biases(
       graph,

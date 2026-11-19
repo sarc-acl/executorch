@@ -34,6 +34,7 @@ conv2d_pw_coopmat:
     NO_EPILOGUE: false
     BCM: false
     DIRECT_B: false
+    K_SLICES: 1
   shader_variants:
     # Intel Xe2 (Arc B580, Arc Pro B70): MMA 8x16x16, subgroup 16, K step 16,
     # fragment-contiguous shared memory. Subgroup grids: OUT/DEVICES.md rule
@@ -835,3 +836,86 @@ conv2d_pw_coopmat:
       ACC_TYPE: f16
       ALIGNED: true
       DIRECT_B: true
+    # Split-K across work groups (_sk2, _sk4) on the best plain variant per
+    # family on (196,96,576) (GATES.md section 7); merged by
+    # conv2d_pw_coopmat_sk_merge.glsl.
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f16_sk2_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      K_SLICES: 2
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f16_sk4_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      K_SLICES: 4
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f32_sk2_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f32
+      FRAG_LAYOUT: true
+      K_SLICES: 2
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f32_sk4_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f32
+      FRAG_LAYOUT: true
+      K_SLICES: 4
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f16_sk2_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      K_SLICES: 2
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f16_sk4_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      K_SLICES: 4
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f32_sk2_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      K_SLICES: 2
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f32_sk4_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      K_SLICES: 4

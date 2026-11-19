@@ -208,11 +208,23 @@ f16vec4 fetch_in(const ivec2 pos, const uint k4, const uint K4) {
   return k4 < K4 ? f16vec4(LOAD_IN(ivec3(pos, int(k4)))) : f16vec4(0);
 }
 
+#ifdef SPLIT_K
+// The packed weights through the uvec2 view of the buffer, which also holds
+// the split-K scratch after the weights.
+f16vec4 fetch_w(const uint k, const uint n4, const uint K4, const uint N4) {
+  if ((k >> 2u) < K4 && n4 < N4) {
+    const uvec2 u = t_weight_u2[((k >> 2u) * N4 + n4) * 4u + (k & 3u)];
+    return f16vec4(unpackFloat2x16(u.x), unpackFloat2x16(u.y));
+  }
+  return f16vec4(0);
+}
+#else
 f16vec4 fetch_w(const uint k, const uint n4, const uint K4, const uint N4) {
   return (k >> 2u) < K4 && n4 < N4
       ? f16vec4(t_weight_packed[((k >> 2u) * N4 + n4) * 4u + (k & 3u)])
       : f16vec4(0);
 }
+#endif
 #endif
 
 void load_a(
@@ -419,6 +431,29 @@ void mma_step_direct(
 }
 #endif
 
+#ifdef SPLIT_K
+// Split-K across work groups (design D6): work group x is the channel tile
+// x % n_tiles of K slice x / n_tiles, which runs K steps [slice * q,
+// min((slice + 1) * q, steps)) with q = ceil(steps / K_SLICES), and stores its
+// accumulator tile, without bias or epilogue, to the scratch after the packed
+// weights: texel (slice * M + m) * N4 + n4, one uvec2 per texel for fp16 and
+// two for fp32 accumulation. The merge shader sums the slices.
+uint g_k_slice;
+
+void store_scratch(const uint m, const uint n4, const uint M, const uint N4, const VEC4_T v) {
+  const uint K4 = uint(div_up_4(in_sizes.z));
+  const uint base = K4 * N4 * 4u;
+  const uint t = (g_k_slice * M + m) * N4 + n4;
+#ifdef ACC_FP32
+  const uvec4 bits = floatBitsToUint(v);
+  t_weight_u2[base + 2u * t] = bits.xy;
+  t_weight_u2[base + 2u * t + 1u] = bits.zw;
+#else
+  t_weight_u2[base + t] = uvec2(packFloat2x16(v.xy), packFloat2x16(v.zw));
+#endif
+}
+#endif
+
 // Stores accumulator row blocks pass * DRAIN_G ... + DRAIN_G - 1 of every
 // subgroup, then writes their output texels. `pass` is a literal at every call,
 // so the result array is indexed with constants.
@@ -474,7 +509,9 @@ void drain_pass(
       VEC4_T v = VEC4_T(
           unpackFloat2x16(hi ? q.z : q.x), unpackFloat2x16(hi ? q.w : q.y));
 #endif
-#ifdef NO_EPILOGUE
+#if defined(SPLIT_K)
+      store_scratch(m, n4, M, N4, v);
+#elif defined(NO_EPILOGUE)
       // No bias, activation, residual or scale (conv2d_pw_coopmat_ineligible).
       imageStore(t_out, ivec3(m % W_out, m / W_out, n4), vec4(v));
 #else
@@ -503,7 +540,13 @@ void main() {
     return;
   }
   const uint tile_m_start = WG_TILE_M * tile_m;
+#ifdef SPLIT_K
+  const uint n_tiles = gl_NumWorkGroups.x / K_SLICES;
+  g_k_slice = gl_WorkGroupID.x / n_tiles;
+  const uint tile_n_start = WG_TILE_N * (gl_WorkGroupID.x % n_tiles);
+#else
   const uint tile_n_start = WG_TILE_N * gl_WorkGroupID.x;
+#endif
   const uint n4_start = tile_n_start / 4u;
   const uint num_k_steps = (4u * K4 + WG_TILE_K - 1u) / WG_TILE_K;
 
@@ -537,6 +580,29 @@ void main() {
   memoryBarrierShared();
   barrier();
   mma_step_direct(step % 2u, sg, step * WG_TILE_K, n16, tile_n_start);
+#elif defined(SPLIT_K)
+  // Every slice holds at least two K steps (conv2d_pw_coopmat_ineligible).
+  const uint q = (num_k_steps + K_SLICES - 1u) / K_SLICES;
+  const uint s0 = g_k_slice * q;
+  const uint s1 = min(s0 + q, num_k_steps);
+  uvec4 temp_a[A_PASSES];
+  uvec4 temp_b[B_TEMP_LEN];
+  load_a(temp_a, map, s0 * WG_TILE_K, K4);
+  load_b(temp_b, map, s0 * WG_TILE_K, n4_start, K4, N4);
+  store_ab(0u, temp_a, temp_b, map);
+  uint step;
+  for (step = s0; step + 1u < s1; ++step) {
+    memoryBarrierShared();
+    barrier();
+    const uint k_next = (step + 1u) * WG_TILE_K;
+    load_a(temp_a, map, k_next, K4);
+    load_b(temp_b, map, k_next, n4_start, K4, N4);
+    mma_step((step - s0) % 2u, sg);
+    store_ab((step - s0 + 1u) % 2u, temp_a, temp_b, map);
+  }
+  memoryBarrierShared();
+  barrier();
+  mma_step((step - s0) % 2u, sg);
 #else
   uvec4 temp_a[A_PASSES];
   uvec4 temp_b[B_TEMP_LEN];
