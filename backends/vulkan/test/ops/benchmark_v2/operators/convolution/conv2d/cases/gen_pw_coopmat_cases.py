@@ -194,6 +194,25 @@ PRECISION = [
             },
         },
     ),
+    # The residual alpha 1 + 2^-12 rounds to 1 in fp16: 64 * 64 - alpha * 4096
+    # is -1 with the exact alpha and 0 with the rounded one.
+    (
+        "precision residual alpha",
+        6,
+        1,
+        1,
+        (2, 3),
+        {
+            "bias": False,
+            "op": "epilogue",
+            "epilogue": ("add", 1.000244140625, False, "none"),
+            "data": {
+                "input": {"fill": 64},
+                "weight": {"fill": 64},
+                "residual": {"fill": -4096},
+            },
+        },
+    ),
     # Bounded operands, ordered cancellation over K = 2048: exact result 4.
     (
         "precision ordered cancellation",
