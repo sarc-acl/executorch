@@ -6332,6 +6332,98 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_ineligibility_reasons) {
       std::string::npos);
 }
 
+// The work group size and subgroup count checks hold for a variant with more
+// subgroups than any registered one, against artificially low limits.
+TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_low_limits) {
+  uint32_t most_subgroups = 0u;
+  for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    most_subgroups = std::max(most_subgroups, v.sg_grid_x * v.sg_grid_y);
+  }
+  Conv2dPwCoopmatVariant many =
+      *find_conv2d_pw_coopmat_variant("conv2d_pw_coopmat_xe2_t128x128_f16_half");
+  many.sg_grid_x = 8u;
+  many.sg_grid_y = 4u;
+  ASSERT_GT(many.sg_grid_x * many.sg_grid_y, most_subgroups);
+  ASSERT_EQ(many.wg_size(), 512u);
+  const auto reason = [&](const Conv2dPwCoopmatLimits& limits) {
+    return conv2d_pw_coopmat_limits_unsupported(many, limits).value_or("");
+  };
+  EXPECT_EQ(reason({1024u, 1024u, 64u, 65536u}), "");
+  EXPECT_NE(
+      reason({256u, 1024u, 64u, 65536u})
+          .find("exceeds maxComputeWorkGroupInvocations 256"),
+      std::string::npos);
+  EXPECT_NE(
+      reason({1024u, 256u, 64u, 65536u})
+          .find("exceeds maxComputeWorkGroupSize.x 256"),
+      std::string::npos);
+  EXPECT_NE(
+      reason({1024u, 1024u, 16u, 65536u})
+          .find("x maxComputeWorkgroupSubgroups 16"),
+      std::string::npos)
+      << reason({1024u, 1024u, 16u, 65536u});
+  EXPECT_NE(
+      reason({1024u, 1024u, 64u, 1024u})
+          .find("exceeds maxComputeSharedMemorySize 1024"),
+      std::string::npos);
+  // Exactly at a limit is allowed.
+  EXPECT_EQ(reason({512u, 512u, 32u, many.shared_bytes()}), "");
+}
+
+// Names are unique and follow the option-suffix rule; a duplicate name or a
+// variant without its parent is reported.
+TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_registry_names) {
+  const std::vector<std::string> problems =
+      conv2d_pw_coopmat_registry_problems(conv2d_pw_coopmat_variants());
+  EXPECT_TRUE(problems.empty()) << problems.front();
+  std::vector<Conv2dPwCoopmatVariant> table = conv2d_pw_coopmat_variants();
+  table.push_back(table.front());
+  const std::vector<std::string> dup =
+      conv2d_pw_coopmat_registry_problems(table);
+  ASSERT_EQ(dup.size(), 1u);
+  EXPECT_EQ(dup[0], std::string("duplicate variant name ") + table[0].name);
+
+  Conv2dPwCoopmatVariant v =
+      *find_conv2d_pw_coopmat_variant("conv2d_pw_coopmat_xe2_t32x64_f16_half");
+  EXPECT_EQ(conv2d_pw_coopmat_option_suffix(v), "");
+  v.options = Conv2dPwCoopmatVariant::kAligned |
+      Conv2dPwCoopmatVariant::kWideWeightLoad |
+      Conv2dPwCoopmatVariant::kNoEpilogue;
+  v.k_slices = 2u;
+  EXPECT_EQ(conv2d_pw_coopmat_option_suffix(v), "_al_w16_epi0_sk2");
+  v.options = Conv2dPwCoopmatVariant::kThreadGrid;
+  v.sg_grid_x = 4u;
+  v.sg_grid_y = 2u;
+  v.k_slices = 1u;
+  EXPECT_EQ(conv2d_pw_coopmat_option_suffix(v), "_g4x2");
+  // A variant whose parent is not in the table.
+  v.name = "conv2d_pw_coopmat_xe2_t32x64_f16_al_w16_half";
+  v.options = Conv2dPwCoopmatVariant::kAligned |
+      Conv2dPwCoopmatVariant::kWideWeightLoad;
+  v.sg_grid_x = 2u;
+  v.sg_grid_y = 1u;
+  const std::vector<std::string> orphan =
+      conv2d_pw_coopmat_registry_problems({v});
+  ASSERT_EQ(orphan.size(), 1u);
+  EXPECT_NE(orphan[0].find("parent"), std::string::npos) << orphan[0];
+  // Every variant of the first change keeps its name and has no option.
+  for (const char* family : {"xe2", "amd", "nvidia"}) {
+    for (const char* tile :
+         {"16x32", "16x64", "32x32", "32x64", "64x32", "64x64", "128x128"}) {
+      for (const char* acc : {"f16", "f32"}) {
+        const std::string name = std::string("conv2d_pw_coopmat_") + family +
+            "_t" + tile + "_" + acc + "_half";
+        const Conv2dPwCoopmatVariant* const found =
+            find_conv2d_pw_coopmat_variant(name);
+        ASSERT_NE(found, nullptr) << name;
+        EXPECT_EQ(found->options, 0u) << name;
+        EXPECT_EQ(found->k_slices, 1u) << name;
+        EXPECT_EQ(VK_KERNEL_FROM_STR(name).kernel_name, name);
+      }
+    }
+  }
+}
+
 TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_resize_to_one_pixel) {
   const Conv2dPwCoopmatVariant* const variant = runnable_pw_coopmat_variant();
   if (variant == nullptr) {

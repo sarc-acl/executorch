@@ -14,6 +14,8 @@
 
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/ShaderNameUtils.h>
 
+#include <map>
+
 namespace vkcompute {
 
 //
@@ -179,6 +181,173 @@ const Conv2dPwCoopmatVariant* find_conv2d_pw_coopmat_variant(
   return nullptr;
 }
 
+namespace {
+
+// Option suffixes in name order; kSlices stands for "_sk<n>".
+constexpr uint32_t kSlices = 0u;
+constexpr uint32_t kSuffixOrder[] = {
+    Conv2dPwCoopmatVariant::kThreadGrid,
+    Conv2dPwCoopmatVariant::kAligned,
+    Conv2dPwCoopmatVariant::kWideWeightLoad,
+    Conv2dPwCoopmatVariant::kImageInput,
+    Conv2dPwCoopmatVariant::kNoEpilogue,
+    Conv2dPwCoopmatVariant::kColumnMajorB,
+    kSlices,
+    Conv2dPwCoopmatVariant::kDiagOnce,
+};
+
+bool has_suffix_item(const Conv2dPwCoopmatVariant& v, const uint32_t item) {
+  return item == kSlices ? v.k_slices > 1u : (v.options & item) != 0u;
+}
+
+std::string suffix_item(const Conv2dPwCoopmatVariant& v, const uint32_t item) {
+  switch (item) {
+    case kSlices:
+      return "_sk" + std::to_string(v.k_slices);
+    case Conv2dPwCoopmatVariant::kThreadGrid:
+      return "_g" + std::to_string(v.sg_grid_x) + "x" +
+          std::to_string(v.sg_grid_y);
+    case Conv2dPwCoopmatVariant::kAligned:
+      return "_al";
+    case Conv2dPwCoopmatVariant::kWideWeightLoad:
+      return "_w16";
+    case Conv2dPwCoopmatVariant::kImageInput:
+      return "_img";
+    case Conv2dPwCoopmatVariant::kNoEpilogue:
+      return "_epi0";
+    case Conv2dPwCoopmatVariant::kColumnMajorB:
+      return "_bcm";
+    case Conv2dPwCoopmatVariant::kDiagOnce:
+      return "_diag_once";
+    default:
+      return "_unknown" + std::to_string(item);
+  }
+}
+
+} // namespace
+
+std::string conv2d_pw_coopmat_option_suffix(
+    const Conv2dPwCoopmatVariant& variant) {
+  std::string suffix;
+  for (const uint32_t item : kSuffixOrder) {
+    if (has_suffix_item(variant, item)) {
+      suffix += suffix_item(variant, item);
+    }
+  }
+  return suffix;
+}
+
+std::vector<std::string> conv2d_pw_coopmat_registry_problems(
+    const std::vector<Conv2dPwCoopmatVariant>& variants) {
+  std::vector<std::string> problems;
+  std::map<std::string, const Conv2dPwCoopmatVariant*> by_name;
+  for (const Conv2dPwCoopmatVariant& v : variants) {
+    if (!by_name.emplace(v.name, &v).second) {
+      problems.push_back(std::string("duplicate variant name ") + v.name);
+    }
+  }
+  uint32_t known = 0u;
+  for (const uint32_t item : kSuffixOrder) {
+    known |= item;
+  }
+  for (const Conv2dPwCoopmatVariant& v : variants) {
+    const std::string name = v.name;
+    const std::string suffix = conv2d_pw_coopmat_option_suffix(v);
+    const std::string base = std::string("_t") + std::to_string(v.tile_m) +
+        "x" + std::to_string(v.tile_n) + (v.fp32_accumulation ? "_f32" : "_f16");
+    bool named = false;
+    for (const char* family : {"xe2", "amd", "nvidia"}) {
+      named = named ||
+          name ==
+              std::string("conv2d_pw_coopmat_") + family + base + suffix +
+                  "_half";
+    }
+    if (!named) {
+      problems.push_back(
+          name + ": not conv2d_pw_coopmat_<family>" + base + suffix + "_half");
+    }
+    if ((v.options & ~known) != 0u || v.k_slices == 0u) {
+      problems.push_back(name + ": unknown option or zero K slices");
+    }
+    if (v.has(Conv2dPwCoopmatVariant::kWideWeightLoad) &&
+        !v.has(Conv2dPwCoopmatVariant::kAligned)) {
+      problems.push_back(name + ": _w16 needs _al");
+    }
+    if (v.has(Conv2dPwCoopmatVariant::kColumnMajorB) && v.frag_layout) {
+      problems.push_back(name + ": _bcm needs the padded row-major layout");
+    }
+    if (suffix.empty()) {
+      continue;
+    }
+    // The parent is the variant without the last option.
+    Conv2dPwCoopmatVariant parent = v;
+    uint32_t last = kSlices;
+    for (const uint32_t item : kSuffixOrder) {
+      if (has_suffix_item(v, item)) {
+        last = item;
+      }
+    }
+    if (last == kSlices) {
+      parent.k_slices = 1u;
+    } else {
+      parent.options &= ~last;
+    }
+    const std::string parent_name = name.substr(
+                                        0,
+                                        name.size() - suffix.size() -
+                                            std::string("_half").size()) +
+        conv2d_pw_coopmat_option_suffix(parent) + "_half";
+    const auto found = by_name.find(parent_name);
+    if (found == by_name.end()) {
+      problems.push_back(name + ": parent " + parent_name + " is missing");
+      continue;
+    }
+    const Conv2dPwCoopmatVariant& p = *found->second;
+    const bool grid_free = last == Conv2dPwCoopmatVariant::kThreadGrid;
+    if (p.mma_m != v.mma_m || p.mma_n != v.mma_n || p.mma_k != v.mma_k ||
+        p.tile_m != v.tile_m || p.tile_n != v.tile_n || p.tile_k != v.tile_k ||
+        (!grid_free &&
+         (p.sg_grid_x != v.sg_grid_x || p.sg_grid_y != v.sg_grid_y)) ||
+        p.subgroup_size != v.subgroup_size ||
+        p.fp32_accumulation != v.fp32_accumulation ||
+        p.frag_layout != v.frag_layout || p.options != parent.options ||
+        p.k_slices != parent.k_slices) {
+      problems.push_back(
+          name + ": differs from its parent " + parent_name +
+          " in more than " + suffix_item(v, last));
+    }
+  }
+  return problems;
+}
+
+std::optional<std::string> conv2d_pw_coopmat_limits_unsupported(
+    const Conv2dPwCoopmatVariant& variant,
+    const Conv2dPwCoopmatLimits& limits) {
+  const auto n = [](const uint64_t v) { return std::to_string(v); };
+  // Every local invocation is on x (the local work group is {wg_size, 1, 1}).
+  if (variant.wg_size() > limits.max_invocations) {
+    return "work group size " + n(variant.wg_size()) +
+        " exceeds maxComputeWorkGroupInvocations " + n(limits.max_invocations);
+  }
+  if (variant.wg_size() > limits.max_size_x) {
+    return "work group size " + n(variant.wg_size()) +
+        " exceeds maxComputeWorkGroupSize.x " + n(limits.max_size_x);
+  }
+  // VUID-VkPipelineShaderStageCreateInfo-pNext-02756.
+  if (variant.wg_size() >
+      uint64_t(variant.subgroup_size) * limits.max_subgroups) {
+    return "work group size " + n(variant.wg_size()) + " exceeds subgroup size " +
+        n(variant.subgroup_size) + " x maxComputeWorkgroupSubgroups " +
+        n(limits.max_subgroups);
+  }
+  if (variant.shared_bytes() > limits.max_shared_bytes) {
+    return "shared memory " + n(variant.shared_bytes()) +
+        " bytes exceeds maxComputeSharedMemorySize " +
+        n(limits.max_shared_bytes);
+  }
+  return std::nullopt;
+}
+
 uint32_t Conv2dPwCoopmatVariant::shared_bytes() const {
   // Mirrors the shared pool of conv2d_pw_coopmat_body.glslh and the drain
   // pass split of conv2d_pw_coopmat.glsl (32 KiB budget for the staged rows).
@@ -186,8 +355,9 @@ uint32_t Conv2dPwCoopmatVariant::shared_bytes() const {
   constexpr uint32_t kDrainBudgetBytes = 32768u;
   const uint32_t a_slice =
       frag_layout ? tile_m * (tile_k / 8u) : tile_m * ((tile_k + 8u) / 8u);
-  const uint32_t b_slice =
-      frag_layout ? tile_k * (tile_n / 8u) : tile_k * ((tile_n + 8u) / 8u);
+  const uint32_t b_slice = frag_layout ? tile_k * (tile_n / 8u)
+      : has(kColumnMajorB)             ? tile_n * ((tile_k + 8u) / 8u)
+                                       : tile_k * ((tile_n + 8u) / 8u);
   const uint32_t pool_ab = 2u * a_slice + 2u * b_slice;
   const uint32_t acc_bytes = fp32_accumulation ? 4u : 2u;
   const uint32_t mmas_m = tile_m / sg_grid_y / mma_m;
@@ -250,29 +420,13 @@ std::optional<std::string> conv2d_pw_coopmat_device_unsupported(
         n(adapter->min_subgroup_size()) + "-" +
         n(adapter->max_subgroup_size()) + ")";
   }
-  // Every local invocation is on x (the local work group is {wg_size, 1, 1}).
-  if (variant.wg_size() > adapter->max_compute_workgroup_invocations()) {
-    return "work group size " + n(variant.wg_size()) +
-        " exceeds maxComputeWorkGroupInvocations " +
-        n(adapter->max_compute_workgroup_invocations());
-  }
-  if (variant.wg_size() > adapter->max_compute_workgroup_size()[0]) {
-    return "work group size " + n(variant.wg_size()) +
-        " exceeds maxComputeWorkGroupSize.x " +
-        n(adapter->max_compute_workgroup_size()[0]);
-  }
-  // VUID-VkPipelineShaderStageCreateInfo-pNext-02756.
-  if (variant.wg_size() > uint64_t(variant.subgroup_size) *
-          adapter->max_compute_workgroup_subgroups()) {
-    return "work group size " + n(variant.wg_size()) +
-        " exceeds subgroup size " + n(variant.subgroup_size) +
-        " x maxComputeWorkgroupSubgroups " +
-        n(adapter->max_compute_workgroup_subgroups());
-  }
-  if (variant.shared_bytes() > adapter->max_compute_shared_memory_size()) {
-    return "shared memory " + n(variant.shared_bytes()) +
-        " bytes exceeds maxComputeSharedMemorySize " +
-        n(adapter->max_compute_shared_memory_size());
+  if (const auto reason = conv2d_pw_coopmat_limits_unsupported(
+          variant,
+          {adapter->max_compute_workgroup_invocations(),
+           adapter->max_compute_workgroup_size()[0],
+           adapter->max_compute_workgroup_subgroups(),
+           adapter->max_compute_shared_memory_size()})) {
+    return reason;
   }
   for (const uint32_t capability :
        VK_KERNEL_FROM_STR(variant.name).required_capabilities) {

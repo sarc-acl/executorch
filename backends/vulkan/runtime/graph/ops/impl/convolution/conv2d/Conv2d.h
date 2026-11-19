@@ -112,8 +112,30 @@ void append_conv2d_epilogue_spec_vars(
 
 // A variant of the conv2d_pw_coopmat shader (conv2d_pw_coopmat.yaml): its
 // cooperative matrix shape, output tile (pixels x channels), K step, subgroup
-// grid, required subgroup size, accumulator type and shared-memory layout.
+// grid, required subgroup size, accumulator type, shared-memory layout, body
+// options and K slices.
 struct Conv2dPwCoopmatVariant final {
+  // Body options. A variant with options is named after its parent, the
+  // variant without its last option, plus the option suffixes in this order
+  // (conv2d_pw_coopmat_option_suffix), before the dtype suffix.
+  enum Option : uint32_t {
+    // "_g<X>x<Y>": a subgroup grid other than the shipped rule's.
+    kThreadGrid = 1u << 0,
+    // "_al": no K and N bounds checks; K % tile_k == 0 and N % tile_n == 0.
+    kAligned = 1u << 1,
+    // "_w16": one 16-byte load of two adjacent k entries of a packed block.
+    kWideWeightLoad = 1u << 2,
+    // "_img": the input is read as a storage image (imageLoad).
+    kImageInput = 1u << 3,
+    // "_epi0": no bias, epilogue or scale in the output stage.
+    kNoEpilogue = 1u << 4,
+    // "_bcm": the B tile is staged column-major.
+    kColumnMajorB = 1u << 5,
+    // "_diag_once": diagnostic; the first K step's tiles are staged once and
+    // multiplied on every K step.
+    kDiagOnce = 1u << 6,
+  };
+
   const char* name;
   uint32_t mma_m;
   uint32_t mma_n;
@@ -126,14 +148,46 @@ struct Conv2dPwCoopmatVariant final {
   uint32_t subgroup_size;
   bool fp32_accumulation;
   bool frag_layout;
+  uint32_t options = 0u;
+  // K slices of a split-K variant ("_sk<n>"), 1 otherwise.
+  uint32_t k_slices = 1u;
 
   uint32_t wg_size() const {
     return sg_grid_x * sg_grid_y * subgroup_size;
   }
 
+  bool has(const Option option) const {
+    return (options & option) != 0u;
+  }
+
   // Bytes of shared memory the shader declares.
   uint32_t shared_bytes() const;
 };
+
+// "_g<X>x<Y>", "_al", "_w16", "_img", "_epi0", "_bcm", "_sk<n>", "_diag_once"
+// for the variant's options and K slices, in this order.
+std::string conv2d_pw_coopmat_option_suffix(
+    const Conv2dPwCoopmatVariant& variant);
+
+// Everything wrong with a variant table: duplicate names, a name that is not
+// conv2d_pw_coopmat_<family>_t<M>x<N>_<acc><option suffix>_half, a variant
+// with options whose parent (the name without the last suffix) is missing or
+// differs in more than that option, and options that need another option.
+std::vector<std::string> conv2d_pw_coopmat_registry_problems(
+    const std::vector<Conv2dPwCoopmatVariant>& variants);
+
+// The device limits a variant's work group and shared memory must fit.
+struct Conv2dPwCoopmatLimits final {
+  uint32_t max_invocations; // maxComputeWorkGroupInvocations
+  uint32_t max_size_x; // maxComputeWorkGroupSize.x
+  uint32_t max_subgroups; // maxComputeWorkgroupSubgroups
+  uint32_t max_shared_bytes; // maxComputeSharedMemorySize
+};
+
+// The first of these limits the variant exceeds, named with its value.
+std::optional<std::string> conv2d_pw_coopmat_limits_unsupported(
+    const Conv2dPwCoopmatVariant& variant,
+    const Conv2dPwCoopmatLimits& limits);
 
 const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants();
 
