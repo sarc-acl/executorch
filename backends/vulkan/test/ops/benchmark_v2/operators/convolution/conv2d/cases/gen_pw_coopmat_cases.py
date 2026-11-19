@@ -375,6 +375,19 @@ PRECISION_ALIGNED = [
     ),
 ]
 
+# PRECISION with K = 128, which every split-K variant can split (8 K steps of
+# 16, two per slice at four slices); the ordered cancellation (K = 2048) of
+# PRECISION already splits.
+PRECISION_SPLIT = [
+    (label.replace("aligned precision", "split precision"), M, N, 128, plane,
+     dict(kwargs, data=dict(kwargs["data"], weight=first_channel_weight(N, 128, kwargs["data"]["weight"]["repeat"][0]))))
+    for label, M, N, K, plane, kwargs in PRECISION_ALIGNED
+    if K == 32
+]
+
+# Split-K: K not a multiple of the K step or of four slices.
+SPLIT = [("K=257", 196, 64, 257, (14, 14), {})]
+
 # Shapes every aligned-only variant accepts: pixel counts one short of and one
 # over a multiple of every M tile (63 = 64 - 1, 65 = 64 + 1), a fused clamp and
 # a fused residual.
@@ -424,11 +437,11 @@ def correctness(variants):
             (7, 7),
             {"op": "epilogue", "epilogue": ("sub", 0.5, True, "relu")},
         ),
-    ] + ALIGNED:
+    ] + ALIGNED + SPLIT:
         cases += shape_cases(
             label, M, N, K, plane, variants, VALIDATION_TIMING, **kwargs
         )
-    for label, M, N, K, plane, kwargs in PRECISION + PRECISION_ALIGNED:
+    for label, M, N, K, plane, kwargs in PRECISION + PRECISION_ALIGNED + PRECISION_SPLIT:
         cases += shape_cases(
             label,
             M,
@@ -452,6 +465,17 @@ def correctness(variants):
         VALIDATION_TIMING,
         baselines=False,
     )
+    # The same plane with a K that split-K variants can split.
+    cases += shape_cases(
+        "split dispatch limit",
+        1025 * 1024,
+        8,
+        128,
+        (1025, 1024),
+        [v for v in variants if "_sk" in v],
+        VALIDATION_TIMING,
+        baselines=False,
+    )
     return cases
 
 
@@ -461,7 +485,7 @@ def fp16_accumulation_limits(variants):
     FAIL (design D4, spec "Accumulation precision"); kept out of the correctness
     collection so that it passes."""
     cases = []
-    for label, M, N, K, plane, kwargs in PRECISION + PRECISION_ALIGNED:
+    for label, M, N, K, plane, kwargs in PRECISION + PRECISION_ALIGNED + PRECISION_SPLIT:
         cases += shape_cases(
             label.replace("precision", "fp16 limit"),
             M,
