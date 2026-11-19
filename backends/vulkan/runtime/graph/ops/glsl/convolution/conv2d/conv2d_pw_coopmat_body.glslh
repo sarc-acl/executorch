@@ -329,6 +329,18 @@ void main() {
   load_b(temp_b, map, 0u, n4_start, K4, N4);
   store_ab(0u, temp_a, temp_b, map);
 
+#ifdef DIAG_ONCE
+  // Diagnostic: the first K step's tiles are staged into both slices once, and
+  // every K step multiplies the slice it would read, so the result is
+  // num_k_steps times the first step's product, with the fetch, the staging
+  // store and the barrier of the later steps removed.
+  store_ab(1u, temp_a, temp_b, map);
+  memoryBarrierShared();
+  barrier();
+  for (uint step = 0; step < num_k_steps; ++step) {
+    mma_step(step % 2u, sg);
+  }
+#else
   // One barrier per K step: the slice being read was written before it, and
   // the slice being written was last read before it.
   uint step;
@@ -346,6 +358,7 @@ void main() {
   memoryBarrierShared();
   barrier();
   mma_step(step % 2u, sg);
+#endif
 
   drain_pass(0u, sg, tile_m_start, n4_start, M, N4, W_out);
 #if DRAIN_PASSES > 1

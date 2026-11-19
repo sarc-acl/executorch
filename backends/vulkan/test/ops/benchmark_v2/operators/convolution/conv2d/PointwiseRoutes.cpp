@@ -115,6 +115,9 @@ Json build_pw_coopmat(
           "pw_coopmat picked " + node + " instead of " + name);
     }
   }
+  if (variant->has(Conv2dPwCoopmatVariant::kDiagOnce)) {
+    return selected("pw_coopmat", {{"variant", name}, {"diagnostic", true}});
+  }
   return selected("pw_coopmat", {{"variant", name}});
 }
 

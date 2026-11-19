@@ -4,7 +4,11 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2d.h>
+#include <executorch/backends/vulkan/test/ops/benchmark_v2/framework/Reference.h>
 #include <executorch/backends/vulkan/test/ops/benchmark_v2/framework/ReferenceRegistry.h>
+
+#include <algorithm>
 
 namespace vkcompute::shader_profiling::reference {
 namespace {
@@ -69,10 +73,70 @@ Tensor conv2d_pw_packed_reference(
   return output;
 }
 
+/*
+ * Reference of the _diag_once diagnostics of conv2d_pw_coopmat for
+ * aten.convolution.default cases with an optional bias and no epilogue: each
+ * output is steps times the products of the first K step's input channels,
+ * plus the bias, with steps = ceil(K / tile_k) of the variant the case's route
+ * names. Its value depends on K and on the data, so a passing diagnostic row
+ * shows that every K step ran.
+ */
+Tensor conv2d_pw_diag_once_reference(
+    const Json& spec,
+    const TensorMap& tensors,
+    size_t threads) {
+  const Json& route = spec.at("route");
+  require(
+      route.is_object() && route.contains("options") &&
+          route.at("options").contains("variant"),
+      "conv2d_pw_diag_once requires a pw_coopmat route with a variant");
+  const std::string name = route.at("options").at("variant");
+  const Conv2dPwCoopmatVariant* const variant =
+      find_conv2d_pw_coopmat_variant(name);
+  require(
+      variant != nullptr && variant->has(Conv2dPwCoopmatVariant::kDiagOnce),
+      "conv2d_pw_diag_once requires a _diag_once variant, not " + name);
+  require(
+      spec.at("operator") == "aten.convolution.default",
+      "conv2d_pw_diag_once supports aten.convolution.default only");
+  const Tensor& in = tensor_arg(spec, 0, tensors);
+  const Tensor& w = tensor_arg(spec, 1, tensors);
+  const Tensor* bias =
+      spec.at("args").at(2).is_null() ? nullptr : &tensor_arg(spec, 2, tensors);
+  const std::string out_name = spec.at("args").back().at("tensor");
+  const auto out_sizes =
+      spec.at("tensors").at(out_name).at("sizes").get<std::vector<int64_t>>();
+  require(
+      in.sizes.size() == 4 && w.sizes.size() == 4 && out_sizes.size() == 4 &&
+          in.sizes[0] == 1 && w.sizes[1] == in.sizes[1] && w.sizes[2] == 1 &&
+          w.sizes[3] == 1 && out_sizes[1] == w.sizes[0],
+      "conv2d_pw_diag_once requires a batch-1 1x1 convolution");
+  const int64_t K = in.sizes[1];
+  const int64_t N = w.sizes[0];
+  const int64_t plane = in.sizes[2] * in.sizes[3];
+  const int64_t tile_k = variant->tile_k;
+  const int64_t steps = (K + tile_k - 1) / tile_k;
+  const int64_t first = std::min(tile_k, K);
+  Tensor output{out_sizes, std::vector<double>(N * plane)};
+  parallel_for(N, threads, [&](size_t n_index) {
+    const int64_t n = static_cast<int64_t>(n_index);
+    for (int64_t p = 0; p < plane; ++p) {
+      double acc = 0;
+      for (int64_t k = 0; k < first; ++k) {
+        acc += in.values[k * plane + p] * w.values[n * K + k];
+      }
+      output.values[n * plane + p] =
+          double(steps) * acc + (bias ? bias->values[n] : 0.0);
+    }
+  });
+  return output;
+}
+
 } // namespace
 
 REGISTER_REFERENCE_FUNCTIONS {
   REGISTER_REFERENCE_FN(conv2d_pw_packed, conv2d_pw_packed_reference);
+  REGISTER_REFERENCE_FN(conv2d_pw_diag_once, conv2d_pw_diag_once_reference);
 }
 
 } // namespace vkcompute::shader_profiling::reference

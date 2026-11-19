@@ -117,8 +117,10 @@ bool is_wide_tile_shader(const vkapi::ShaderInfo& shader) {
 
 const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
   // {name, mma_m, mma_n, mma_k, tile_m, tile_n, tile_k, sg_grid_x,
-  //  sg_grid_y, subgroup_size, fp32_accumulation, frag_layout}; must match
-  // conv2d_pw_coopmat.yaml.
+  //  sg_grid_y, subgroup_size, fp32_accumulation, frag_layout[, options[,
+  //  k_slices]]}; must match conv2d_pw_coopmat.yaml.
+  using V = Conv2dPwCoopmatVariant;
+  constexpr uint32_t kDiagOnce = V::kDiagOnce;
   // clang-format off
   static const std::vector<Conv2dPwCoopmatVariant> variants = {
       // Intel Xe2
@@ -166,6 +168,11 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_nvidia_t64x64_f32_half", 16, 16, 16, 64, 64, 16, 2, 1, 32, true, false},
       {"conv2d_pw_coopmat_nvidia_t128x128_f16_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, false, false},
       {"conv2d_pw_coopmat_nvidia_t128x128_f32_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false},
+      // Diagnostics of the device parents (staged-once roof)
+      {"conv2d_pw_coopmat_xe2_t128x128_f16_diag_once_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kDiagOnce},
+      {"conv2d_pw_coopmat_xe2_t128x128_f32_diag_once_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, true, true, kDiagOnce},
+      {"conv2d_pw_coopmat_amd_t16x32_f16_diag_once_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kDiagOnce},
+      {"conv2d_pw_coopmat_amd_t16x32_f32_diag_once_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, true, false, kDiagOnce},
   };
   // clang-format on
   return variants;

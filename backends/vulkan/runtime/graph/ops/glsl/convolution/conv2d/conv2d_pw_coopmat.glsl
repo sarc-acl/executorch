@@ -106,6 +106,8 @@ ${layout_declare_spec_const(C, "int", "residual_op", "0")}
 
 $if FRAG_LAYOUT:
   #define FRAG_LAYOUT
+$if DIAG_ONCE:
+  #define DIAG_ONCE
 
 const uint MMA_M = ${MMA_M};
 const uint MMA_N = ${MMA_N};

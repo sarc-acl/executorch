@@ -27,6 +27,7 @@ conv2d_pw_coopmat:
     SUBGROUP_SIZE: 32
     ACC_TYPE: f16
     FRAG_LAYOUT: false
+    DIAG_ONCE: false
   shader_variants:
     # Intel Xe2 (Arc B580, Arc Pro B70): MMA 8x16x16, subgroup 16, K step 16,
     # fragment-contiguous shared memory. Subgroup grids: OUT/DEVICES.md rule
@@ -399,3 +400,45 @@ conv2d_pw_coopmat:
       SG_GRID_Y: 2
       SUBGROUP_SIZE: 32
       ACC_TYPE: f32
+    # Diagnostic variants of the device parents (conv2d-pw-coopmat-k-latency
+    # design D3): reachable by name only, never in a speedup table.
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f16_diag_once_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      DIAG_ONCE: true
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f32_diag_once_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f32
+      FRAG_LAYOUT: true
+      DIAG_ONCE: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_diag_once_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      DIAG_ONCE: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f32_diag_once_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      DIAG_ONCE: true

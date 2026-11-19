@@ -42,6 +42,8 @@ def variants_by_family():
     names = {family: [] for family in FAMILIES}
     for variant in shader["shader_variants"]:
         name = variant["NAME"]
+        if name.endswith("_diag_once_half"):
+            continue
         family = name.split("_")[3]
         if family not in names:
             raise ValueError(f"{name}: unknown family {family}")
@@ -436,12 +438,76 @@ RESNET50 = [
     (49, 512, 2048),
 ]
 
+# Parent variant per device (OUT/GATES.md of conv2d-pw-coopmat-k-latency) and
+# its staged-once diagnostic.
+PARENTS = [
+    "conv2d_pw_coopmat_xe2_t128x128_f16_half",
+    "conv2d_pw_coopmat_xe2_t128x128_f32_half",
+    "conv2d_pw_coopmat_amd_t16x32_f32_half",
+    "conv2d_pw_coopmat_amd_t16x32_f16_half",
+]
+DIAG = [p.replace("_half", "_diag_once_half") for p in PARENTS]
+KSWEEP_K = (32, 64, 128, 256, 576, 960)
+KSWEEP_PAIRS = ((49, 96), (49, 160), (196, 64), (196, 96))
+
+
+def diag_cases(label, M, N, K, plane, timing, **kwargs):
+    """The diagnostic variants on one shape, validated against the staged-once
+    reference (conv2d_pw_diag_once)."""
+    return {
+        "name": f"pw_coopmat {label} ({M},{N},{K}) diag",
+        "operator": OPERATORS["conv"],
+        **timing,
+        "validation_method": TOLERANCE,
+        "reference": "conv2d_pw_diag_once",
+        "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+        "sweep_variables": {"v_VARIANT": DIAG},
+        "args_sweep": [conv_args(M, N, K, plane, **kwargs)],
+    }
+
+
+def ksweep(variants):
+    """K sweep of design D3 at the four MobileNet (M, N) pairs: the tiled
+    baselines, the parents and their diagnostics."""
+    cases = []
+    for M, N in KSWEEP_PAIRS:
+        for K in KSWEEP_K:
+            plane = plane_of(M)
+            cases += shape_cases("ksweep", M, N, K, plane, PARENTS, PERFORMANCE_TIMING)
+            cases.append(diag_cases("ksweep", M, N, K, plane, PERFORMANCE_TIMING))
+    return cases
+
+
+def diag_checks(variants):
+    """The diagnostics' output depends on K (K = 64 and 576, ceil(K / k_step)
+    times the first step) and on the input (fill 1 and 0.5): a variant that
+    passes both members of a pair produced different outputs."""
+    cases = []
+    for K in (64, 576):
+        cases.append(diag_cases("diag K", 196, 96, K, (14, 14), VALIDATION_TIMING))
+    for fill in (1.0, 0.5):
+        cases.append(
+            diag_cases(
+                f"diag input {fill}",
+                196,
+                96,
+                576,
+                (14, 14),
+                VALIDATION_TIMING,
+                data={"input": {"fill": fill}},
+            )
+        )
+    return cases
+
+
 FILES = {
     "pw_coopmat_correctness.json": correctness,
     "pw_coopmat_fp16_accumulation_limits.json": fp16_accumulation_limits,
     "pw_coopmat_mobilenet.json": performance("mobilenet", MOBILENET),
     "pw_coopmat_resnet50.json": performance("resnet50", RESNET50),
     "pw_coopmat_large.json": performance("large", upstream_fp16_shapes()),
+    "pw_coopmat_ksweep.json": ksweep,
+    "pw_coopmat_diag_checks.json": diag_checks,
 }
 FILES["pw_coopmat_expected_skips.json"] = expected_skips(correctness)
 
