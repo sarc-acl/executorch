@@ -44,7 +44,7 @@ def variants_by_family():
     names = {family: [] for family in FAMILIES}
     for variant in shader["shader_variants"]:
         name = variant["NAME"]
-        if name.endswith("_diag_once_half") or name.endswith("_dlprobe_half"):
+        if name.endswith(("_diag_once_half", "_dlprobe_half", "_dlctl_half")):
             continue
         family = name.split("_")[3]
         if family not in names:
@@ -803,8 +803,9 @@ def guard_cases(family, variants):
     return cases
 
 
-# Direct weight load probe (task 4.8): per family the probe and its staged
-# parent, raw, on one aligned shape.
+# Direct weight load probe (task 4.8): per family the probe (_dlprobe) and its
+# aligned staged control (_dlctl, the same options without DIRECT_B), raw, on
+# one aligned shape, with the same input, bias and logical weights.
 DLPROBE = {
     "xe2": "conv2d_pw_coopmat_xe2_t128x128_f16",
     "amd": "conv2d_pw_coopmat_amd_t16x32_f16",
@@ -813,9 +814,38 @@ DLPROBE = {
 DLPROBE_SHAPE = (196, 128, 576, (14, 14))
 
 
-def raw_pw_case(shader, weight, reference, threads, tile_m, tile_n, M, N, K, plane):
+def dlprobe_weight(n, k):
+    """Logical weight (n, k) of the direct-load probe cases, a multiple of
+    1/2048 below 1/16 in magnitude (exact in fp16); PointwisePackedReference.cpp
+    conv2d_pw_logical computes the same."""
+    return ((37 * n + 101 * k + 13) % 251 - 125) / 2048
+
+
+def packed_weights(N, K):
+    """dlprobe_weight in the 4OC x 4IC layout of pack_fp_linear_weight, [K4, N4 * 16]."""
+    K4, N4 = -(-K // 4), -(-N // 4)
+    out = [0.0] * (K4 * N4 * 16)
+    for n in range(N):
+        for k in range(K):
+            out[(((k // 4) * N4 + n // 4) * 4 + k % 4) * 4 + n % 4] = dlprobe_weight(
+                n, k
+            )
+    return out
+
+
+def fragment_weights(N, K):
+    """dlprobe_weight in 16 x 16 fragments, [K, N] (K and N multiples of 16)."""
+    out = [0.0] * (K * N)
+    for n in range(N):
+        for k in range(K):
+            out[((k // 16) * (N // 16) + n // 16) * 256 + (k % 16) * 16 + n % 16] = (
+                dlprobe_weight(n, k)
+            )
+    return out
+
+
+def raw_pw_case(shader, weight, weight_data, threads, tile_m, tile_n, M, N, K, plane):
     H, W = plane
-    s = float(f"{1 / K ** 0.5:.4g}")
     tex = lambda name, sizes, data, **kw: {  # noqa: E731
         "texture3d": {
             "name": name,
@@ -829,20 +859,20 @@ def raw_pw_case(shader, weight, reference, threads, tile_m, tile_n, M, N, K, pla
     return {
         "name": f"pw_coopmat dlprobe ({M},{N},{K}) {shader}",
         "shader": shader,
-        "reference": reference,
+        "reference": "conv2d_pw_logical",
         "validation_method": {k: v for k, v in TOLERANCE.items() if k != "outputs"},
         "gwg_size": [-(-N // tile_n) * threads, -(-M // tile_m), 1],
         "lwg_size": [threads, 1, 1],
         **PERFORMANCE_TIMING,
         "bindings": [
             tex("out", [1, N, H, W], {"fill": 0}, access="write"),
-            tex("in", [1, K, H, W], {"rand_uniform_float": [-1, 1]}),
+            tex("in", [1, K, H, W], {"rand_uniform_float": [-1, 1], "seed": 4801}),
             {
                 "buffer": {
                     "name": "w",
                     "sizes": weight,
                     "dtype": "float16",
-                    "data": {"rand_uniform_float": [-s, s]},
+                    "data": weight_data,
                 }
             },
             {
@@ -850,7 +880,7 @@ def raw_pw_case(shader, weight, reference, threads, tile_m, tile_n, M, N, K, pla
                     "name": "bias",
                     "sizes": [1, N],
                     "dtype": "float16",
-                    "data": {"rand_uniform_float": [-1, 1]},
+                    "data": {"rand_uniform_float": [-1, 1], "seed": 4802},
                 }
             },
             {"texture3d": {"ref": "in"}},
@@ -875,9 +905,9 @@ def raw_pw_case(shader, weight, reference, threads, tile_m, tile_n, M, N, K, pla
 
 
 def dlprobe(family):
-    """The staged parent with pack_fp_linear_weight weights ([K4, N4 * 16],
-    conv2d_pw_packed) and the _dlprobe shader with weights prepacked on the host
-    in 16 x 16 fragments ([K, N], conv2d_pw_fragment)."""
+    """The aligned staged control (_dlctl) with the logical weights in the
+    pack_fp_linear_weight layout ([K4, N4 * 16]) and the _dlprobe shader with
+    them in 16 x 16 fragments ([K, N]); both checked by conv2d_pw_logical."""
 
     def build(variants):
         shader = yaml.safe_load(YAML.read_text())["conv2d_pw_coopmat"]
@@ -885,13 +915,13 @@ def dlprobe(family):
         by = {v["NAME"]: dict(defaults, **v) for v in shader["shader_variants"]}
         M, N, K, plane = DLPROBE_SHAPE
         cases = []
-        for name, weight, ref in (
+        for name, weight, data in (
             (
-                DLPROBE[family] + "_half",
+                DLPROBE[family] + "_dlctl_half",
                 [-(-K // 4), -(-N // 4) * 16],
-                "conv2d_pw_packed",
+                packed_weights(N, K),
             ),
-            (DLPROBE[family] + "_dlprobe_half", [K, N], "conv2d_pw_fragment"),
+            (DLPROBE[family] + "_dlprobe_half", [K, N], fragment_weights(N, K)),
         ):
             p = by[name]
             threads = p["SG_GRID_X"] * p["SG_GRID_Y"] * p["SUBGROUP_SIZE"]
@@ -899,7 +929,7 @@ def dlprobe(family):
                 raw_pw_case(
                     name,
                     weight,
-                    ref,
+                    data,
                     threads,
                     p["WG_TILE_M"],
                     p["WG_TILE_N"],

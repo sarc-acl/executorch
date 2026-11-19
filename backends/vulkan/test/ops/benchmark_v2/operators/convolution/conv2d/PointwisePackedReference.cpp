@@ -74,12 +74,25 @@ Tensor conv2d_pw_packed_reference(
 }
 
 /*
- * Reference for raw shader cases of the direct weight load probes (_dlprobe):
- * the bindings of conv2d_pw_packed, with the weights prepacked on the host in
- * 16 x 16 fragments: weight (k, n) of a [K, N] buffer at
- * ((k / 16) * (N / 16) + n / 16) * 256 + (k % 16) * 16 + n % 16.
+ * Logical weight (n, k) of the direct weight load probe cases
+ * (gen_pw_coopmat_cases.py dlprobe_weight): a multiple of 1/2048 below 1/16 in
+ * magnitude, exact in fp16.
  */
-Tensor conv2d_pw_fragment_reference(
+double dlprobe_weight(const int64_t n, const int64_t k) {
+  return double((37 * n + 101 * k + 13) % 251 - 125) / 2048.0;
+}
+
+/*
+ * Reference for raw shader cases of the direct weight load probe (_dlprobe)
+ * and its staged control (_dlctl), the bindings of conv2d_pw_packed. Both
+ * carry the logical weights dlprobe_weight, the control in the
+ * pack_fp_linear_weight layout [K4, N4 * 16], the probe in 16 x 16 fragments
+ * [K, N] (weight (k, n) at ((k / 16) * (N / 16) + n / 16) * 256 + (k % 16) *
+ * 16 + n % 16). The bound buffer must decode to the logical weights exactly;
+ * the output is computed from the logical weights, so both arms are checked
+ * against the same convolution.
+ */
+Tensor conv2d_pw_logical_reference(
     const Json& spec,
     const TensorMap& tensors,
     size_t threads) {
@@ -91,7 +104,7 @@ Tensor conv2d_pw_fragment_reference(
   }
   require(
       bindings.size() >= 4,
-      "conv2d_pw_fragment requires output, input, weight and bias bindings");
+      "conv2d_pw_logical requires output, input, weight and bias bindings");
   const Tensor& in = tensors.at(bindings[1]);
   const Tensor& w = tensors.at(bindings[2]);
   const Tensor& bias = tensors.at(bindings[3]);
@@ -102,18 +115,34 @@ Tensor conv2d_pw_fragment_reference(
   const int64_t K = in.sizes[1];
   const int64_t N = out_sizes[1];
   const int64_t plane = out_sizes[2] * out_sizes[3];
+  const int64_t K4 = (K + 3) / 4;
+  const int64_t N4 = (N + 3) / 4;
+  const bool packed = w.sizes == std::vector<int64_t>({K4, N4 * 16});
+  const bool fragment =
+      K % 16 == 0 && N % 16 == 0 && w.sizes == std::vector<int64_t>({K, N});
   require(
-      K % 16 == 0 && N % 16 == 0 && w.sizes == std::vector<int64_t>({K, N}),
-      "conv2d_pw_fragment requires a [K, N] weight with K and N multiples of 16");
+      packed || fragment,
+      "conv2d_pw_logical requires a [K4, N4 * 16] or [K, N] weight");
+  require(
+      static_cast<int64_t>(bias.values.size()) == N,
+      "conv2d_pw_logical requires N bias values");
+  for (int64_t n = 0; n < N; ++n) {
+    for (int64_t k = 0; k < K; ++k) {
+      const int64_t idx = packed
+          ? (((k / 4) * N4 + n / 4) * 4 + k % 4) * 4 + n % 4
+          : ((k / 16) * (N / 16) + n / 16) * 256 + (k % 16) * 16 + n % 16;
+      require(
+          w.values[idx] == dlprobe_weight(n, k),
+          "conv2d_pw_logical: the bound weights are not the logical weights");
+    }
+  }
   Tensor output{out_sizes, std::vector<double>(N * plane)};
   parallel_for(N, threads, [&](size_t n_index) {
     const int64_t n = static_cast<int64_t>(n_index);
     for (int64_t p = 0; p < plane; ++p) {
       double acc = 0;
       for (int64_t k = 0; k < K; ++k) {
-        const int64_t idx =
-            ((k / 16) * (N / 16) + n / 16) * 256 + (k % 16) * 16 + n % 16;
-        acc += in.values[k * plane + p] * w.values[idx];
+        acc += in.values[k * plane + p] * dlprobe_weight(n, k);
       }
       output.values[n * plane + p] = acc + bias.values[n];
     }
@@ -250,7 +279,7 @@ REGISTER_REFERENCE_FUNCTIONS {
   REGISTER_REFERENCE_FN(conv2d_pw_diag_once, conv2d_pw_diag_once_reference);
   REGISTER_REFERENCE_FN(
       conv2d_pw_packed_guard, conv2d_pw_packed_guard_reference);
-  REGISTER_REFERENCE_FN(conv2d_pw_fragment, conv2d_pw_fragment_reference);
+  REGISTER_REFERENCE_FN(conv2d_pw_logical, conv2d_pw_logical_reference);
 }
 
 } // namespace vkcompute::shader_profiling::reference
