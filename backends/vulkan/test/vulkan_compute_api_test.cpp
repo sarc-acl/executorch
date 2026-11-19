@@ -6424,6 +6424,48 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_registry_names) {
   }
 }
 
+// An aligned-only variant runs only where K and N are multiples of its K step
+// and N tile: elsewhere the node takes the tiled kernel, and the output
+// matches the reference either way, including partial pixel tiles and a 1x1
+// plane after a resize.
+TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_aligned_only) {
+  ComputeGraph probe{GraphConfig()};
+  const Conv2dPwCoopmatVariant* variant = nullptr;
+  for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    if (v.has(Conv2dPwCoopmatVariant::kAligned) && v.tile_n == 32u &&
+        probe.float16_buffers_enabled() &&
+        conv2d_pw_coopmat_device_supports(probe, v)) {
+      variant = &v;
+      break;
+    }
+  }
+  if (variant == nullptr) {
+    GTEST_SKIP() << "no aligned-only variant with N tile 32 runs here";
+  }
+  const Conv2dPwRequest request{Conv2dPwRequest::Kind::kCoopmat, variant};
+  // Unaligned channels: K = 40 and N = 24.
+  for (const auto& [K, N] : {std::pair<int64_t, int64_t>{40, 96},
+                             std::pair<int64_t, int64_t>{576, 24}}) {
+    SCOPED_TRACE(std::to_string(K) + "x" + std::to_string(N));
+    PointwiseConvGraph g(vkapi::kHalf, K, N, 14, 14, 1, request);
+    for (const int64_t size : {14, 7, 1, 14}) {
+      g.resize(size, size);
+      const auto kernels = g.execute_and_check();
+      EXPECT_TRUE(dispatched_prefix(kernels, "conv2d_pw_tiled"));
+      EXPECT_FALSE(dispatched(kernels, variant->name));
+    }
+  }
+  // Aligned channels (K a multiple of 32 covers every K step): the variant
+  // runs on whole and partial pixel tiles; a 1x1 plane takes the tiled kernel.
+  PointwiseConvGraph g(vkapi::kHalf, 576, 96, 14, 14, 1, request);
+  for (const int64_t size : {14, 7, 5, 1, 2, 14}) {
+    SCOPED_TRACE(size);
+    g.resize(size, size);
+    const auto kernels = g.execute_and_check();
+    EXPECT_EQ(dispatched(kernels, variant->name), size != 1);
+  }
+}
+
 TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_resize_to_one_pixel) {
   const Conv2dPwCoopmatVariant* const variant = runnable_pw_coopmat_variant();
   if (variant == nullptr) {

@@ -28,6 +28,7 @@ conv2d_pw_coopmat:
     ACC_TYPE: f16
     FRAG_LAYOUT: false
     DIAG_ONCE: false
+    ALIGNED: false
   shader_variants:
     # Intel Xe2 (Arc B580, Arc Pro B70): MMA 8x16x16, subgroup 16, K step 16,
     # fragment-contiguous shared memory. Subgroup grids: OUT/DEVICES.md rule
@@ -442,3 +443,121 @@ conv2d_pw_coopmat:
       SUBGROUP_SIZE: 32
       ACC_TYPE: f32
       DIAG_ONCE: true
+    # Aligned-only variants (_al): no K and N bounds checks; eligible when K is a
+    # multiple of the K step and N of the N tile (conv2d-pw-coopmat-k-latency D5).
+    - NAME: conv2d_pw_coopmat_xe2_t16x32_f16_al_half
+      MMA_M: 8
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+    - NAME: conv2d_pw_coopmat_xe2_t16x32_f32_al_half
+      MMA_M: 8
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f32
+      FRAG_LAYOUT: true
+      ALIGNED: true
+    - NAME: conv2d_pw_coopmat_xe2_t64x64_f16_al_half
+      MMA_M: 8
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+    - NAME: conv2d_pw_coopmat_xe2_t64x64_f32_al_half
+      MMA_M: 8
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f32
+      FRAG_LAYOUT: true
+      ALIGNED: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_al_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f32_al_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+    - NAME: conv2d_pw_coopmat_amd_t16x64_f16_al_half
+      WG_TILE_M: 16
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+    - NAME: conv2d_pw_coopmat_amd_t16x64_f32_al_half
+      WG_TILE_M: 16
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+    - NAME: conv2d_pw_coopmat_nvidia_t32x32_f16_al_half
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+    - NAME: conv2d_pw_coopmat_nvidia_t32x32_f32_al_half
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x64_f16_al_half
+      WG_TILE_M: 16
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x64_f32_al_half
+      WG_TILE_M: 16
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true

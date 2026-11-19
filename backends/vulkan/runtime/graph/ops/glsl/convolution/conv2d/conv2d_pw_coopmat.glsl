@@ -108,6 +108,8 @@ $if FRAG_LAYOUT:
   #define FRAG_LAYOUT
 $if DIAG_ONCE:
   #define DIAG_ONCE
+$if ALIGNED:
+  #define ALIGNED
 
 const uint MMA_M = ${MMA_M};
 const uint MMA_N = ${MMA_N};

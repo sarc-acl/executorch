@@ -125,9 +125,16 @@ void make_staging_map(
     const uint item = min(p * WG_SIZE + tid, A_ITEMS - 1u);
     map.a_m[p] = item % WG_TILE_M;
     map.a_col[p] = item / WG_TILE_M;
+#ifdef ALIGNED
+    // Rows past M read the last pixel; the output stage does not store them.
+    const uint m = min(tile_m_start + map.a_m[p], M - 1u);
+    map.a_row_ok[p] = p * WG_SIZE + tid < A_ITEMS;
+    map.a_pos[p] = ivec2(m % W_out, m / W_out);
+#else
     const uint m = tile_m_start + map.a_m[p];
     map.a_row_ok[p] = m < M && p * WG_SIZE + tid < A_ITEMS;
     map.a_pos[p] = map.a_row_ok[p] ? ivec2(m % W_out, m / W_out) : ivec2(0);
+#endif
   }
   [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
     const uint item = min(p * WG_SIZE + tid, B_ITEMS - 1u);
@@ -138,6 +145,17 @@ void make_staging_map(
   }
 }
 
+#ifdef ALIGNED
+// K % WG_TILE_K == 0 and N % WG_TILE_N == 0 (conv2d_pw_coopmat_ineligible):
+// every fetch is inside the tensors.
+f16vec4 fetch_in(const ivec2 pos, const uint k4, const uint K4) {
+  return f16vec4(texelFetch(t_in, ivec3(pos, int(k4)), 0));
+}
+
+f16vec4 fetch_w(const uint k, const uint n4, const uint K4, const uint N4) {
+  return f16vec4(t_weight_packed[((k >> 2u) * N4 + n4) * 4u + (k & 3u)]);
+}
+#else
 f16vec4 fetch_in(const ivec2 pos, const uint k4, const uint K4) {
   return k4 < K4 ? f16vec4(texelFetch(t_in, ivec3(pos, int(k4)), 0))
                  : f16vec4(0);
@@ -148,6 +166,7 @@ f16vec4 fetch_w(const uint k, const uint n4, const uint K4, const uint N4) {
       ? f16vec4(t_weight_packed[((k >> 2u) * N4 + n4) * 4u + (k & 3u)])
       : f16vec4(0);
 }
+#endif
 
 void load_a(
     out uvec4 temp[A_PASSES],
@@ -271,7 +290,11 @@ void drain_pass(
         (pass * DRAIN_G + g) * MMA_M + band_row % MMA_M;
     const uint m = tile_m_start + lr;
     const uint n4 = n4_start + lc4;
+#ifdef ALIGNED
+    if (m < M) {
+#else
     if (m < M && n4 < N4) {
+#endif
       const uint h = cr * WG_TILE_N + lc4 * 4u;
 #ifdef ACC_FP32
       VEC4_T v = uintBitsToFloat(sh[h / ACC_PER_VEC4]);

@@ -121,6 +121,7 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
   //  k_slices]]}; must match conv2d_pw_coopmat.yaml.
   using V = Conv2dPwCoopmatVariant;
   constexpr uint32_t kDiagOnce = V::kDiagOnce;
+  constexpr uint32_t kAligned = V::kAligned;
   // clang-format off
   static const std::vector<Conv2dPwCoopmatVariant> variants = {
       // Intel Xe2
@@ -173,6 +174,19 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_xe2_t128x128_f32_diag_once_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, true, true, kDiagOnce},
       {"conv2d_pw_coopmat_amd_t16x32_f16_diag_once_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kDiagOnce},
       {"conv2d_pw_coopmat_amd_t16x32_f32_diag_once_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, true, false, kDiagOnce},
+      // Aligned-only (_al)
+      {"conv2d_pw_coopmat_xe2_t16x32_f16_al_half", 8, 16, 16, 16, 32, 16, 1, 1, 16, false, true, kAligned},
+      {"conv2d_pw_coopmat_xe2_t16x32_f32_al_half", 8, 16, 16, 16, 32, 16, 1, 1, 16, true, true, kAligned},
+      {"conv2d_pw_coopmat_xe2_t64x64_f16_al_half", 8, 16, 16, 64, 64, 16, 2, 2, 16, false, true, kAligned},
+      {"conv2d_pw_coopmat_xe2_t64x64_f32_al_half", 8, 16, 16, 64, 64, 16, 2, 2, 16, true, true, kAligned},
+      {"conv2d_pw_coopmat_amd_t16x32_f16_al_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kAligned},
+      {"conv2d_pw_coopmat_amd_t16x32_f32_al_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, true, false, kAligned},
+      {"conv2d_pw_coopmat_amd_t16x64_f16_al_half", 16, 16, 16, 16, 64, 32, 1, 1, 32, false, false, kAligned},
+      {"conv2d_pw_coopmat_amd_t16x64_f32_al_half", 16, 16, 16, 16, 64, 32, 1, 1, 32, true, false, kAligned},
+      {"conv2d_pw_coopmat_nvidia_t32x32_f16_al_half", 16, 16, 16, 32, 32, 16, 1, 1, 32, false, false, kAligned},
+      {"conv2d_pw_coopmat_nvidia_t32x32_f32_al_half", 16, 16, 16, 32, 32, 16, 1, 1, 32, true, false, kAligned},
+      {"conv2d_pw_coopmat_nvidia_t16x64_f16_al_half", 16, 16, 16, 16, 64, 16, 1, 1, 32, false, false, kAligned},
+      {"conv2d_pw_coopmat_nvidia_t16x64_f32_al_half", 16, 16, 16, 16, 64, 16, 1, 1, 32, true, false, kAligned},
   };
   // clang-format on
   return variants;
@@ -523,6 +537,16 @@ std::optional<std::string> conv2d_pw_coopmat_ineligible(
   if (const auto reason =
           conv2d_pw_coopmat_device_unsupported(graph, variant)) {
     return reason;
+  }
+  if (variant.has(Conv2dPwCoopmatVariant::kAligned)) {
+    const uint32_t K = graph.size_at<uint32_t>(-3, in);
+    const uint32_t N = graph.size_at<uint32_t>(-3, out);
+    if (K % variant.tile_k != 0u || N % variant.tile_n != 0u) {
+      return "input channels " + std::to_string(K) + " or output channels " +
+          std::to_string(N) + " not a multiple of the variant's K step " +
+          std::to_string(variant.tile_k) + " and N tile " +
+          std::to_string(variant.tile_n);
+    }
   }
   return conv2d_pw_coopmat_grid_unsupported(
       conv2d_pw_coopmat_workgroups(
