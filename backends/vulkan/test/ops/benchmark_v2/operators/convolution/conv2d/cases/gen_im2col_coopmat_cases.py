@@ -452,7 +452,13 @@ PERFORMANCE_VARIANTS = [
 
 
 def performance(variants):
-    measured = [v for v in variants if v in PERFORMANCE_VARIANTS or "_xe2_" not in v]
+    # The 16x16x16 families' timed sets are their _alc forms (design D6); the
+    # plain _i2c forms are covered by the correctness collection.
+    measured = [
+        v
+        for v in variants
+        if v in PERFORMANCE_VARIANTS or ("_xe2_" not in v and "_alc" in v)
+    ]
     out = []
     for label, c in PERFORMANCE:
         out += cases(

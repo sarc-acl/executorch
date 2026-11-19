@@ -1734,3 +1734,77 @@ conv2d_pw_coopmat:
       CLAMP_N: true
       K_SLICES: 4
       I2C: true
+    # Plain im2col forms (_i2c without _alc) of the 16x16x16 families: K need not be a multiple of the K step
+    # (conv2d-gemm-coopmat review).
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_i2c_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      I2C: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f32_i2c_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      I2C: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f16_i2c_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      I2C: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_i2c_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      I2C: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f16_i2c_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      I2C: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f32_i2c_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      I2C: true
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f16_i2c_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      I2C: true
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f32_i2c_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      I2C: true

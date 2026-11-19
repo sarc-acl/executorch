@@ -6841,14 +6841,16 @@ class Im2colCoopmatConvGraph final {
     graph_.propagate_resize();
   }
 
-  // Executes on random inputs, checks the output against the CPU reference
-  // (atol 0.1, rtol 0.01) and returns the dispatched kernel names.
+  // Executes on random inputs that differ on every call (so an output pixel
+  // left from an earlier execution cannot match), checks the output against
+  // the CPU reference (atol 0.1, rtol 0.01; any non-finite value fails) and
+  // returns the dispatched kernel names.
   std::vector<std::string> execute_and_check() {
     const std::vector<int64_t> in_sizes = graph_.sizes_of(input_.value);
     const int64_t H = in_sizes[2], W = in_sizes[3];
     const int64_t Ho = out_h(H), Wo = out_w(W);
     EXPECT_EQ(graph_.sizes_of(out_), (std::vector<int64_t>{1, C_out_, Ho, Wo}));
-    std::mt19937 rng(11 + H * 131 + W);
+    std::mt19937 rng(11 + H * 131 + W + 7919 * executions_++);
     std::uniform_real_distribution<float> unit(-1.0f, 1.0f);
     std::vector<executorch::aten::Half> x(C_in_ * H * W);
     for (auto& v : x) {
@@ -6861,6 +6863,7 @@ class Im2colCoopmatConvGraph final {
     graph_.maybe_cast_and_copy_from_staging(
         out_staging_, y.data(), y.size(), vkapi::kHalf);
     size_t mismatches = 0;
+    size_t nonfinite = 0;
     for (int64_t n = 0; n < C_out_; ++n) {
       for (int64_t oy = 0; oy < Ho; ++oy) {
         for (int64_t ox = 0; ox < Wo; ++ox) {
@@ -6884,11 +6887,13 @@ class Im2colCoopmatConvGraph final {
             }
           }
           const double actual = float(y[(n * Ho + oy) * Wo + ox]);
-          mismatches +=
-              std::abs(actual - expected) > 0.1 + 0.01 * std::abs(expected);
+          nonfinite += !std::isfinite(actual);
+          mismatches += !std::isfinite(actual) ||
+              !(std::abs(actual - expected) <= 0.1 + 0.01 * std::abs(expected));
         }
       }
     }
+    EXPECT_EQ(nonfinite, 0u);
     EXPECT_EQ(mismatches, 0u);
     std::vector<std::string> kernels;
     graph_.context()->querypool().extract_results();
@@ -6915,6 +6920,7 @@ class Im2colCoopmatConvGraph final {
   }
 
   const int64_t C_in_, C_out_, K_h_, K_w_, stride_, pad_h_, pad_w_;
+  int64_t executions_ = 0;
   std::vector<executorch::aten::Half> weight_;
   std::vector<executorch::aten::Half> bias_;
   ComputeGraph graph_;
@@ -6941,7 +6947,8 @@ std::vector<const Conv2dPwCoopmatVariant*> runnable_im2col_coopmat_variants() {
 // Route im2col_coopmat on a ResNet 3x3 256 -> 256 layer on a 14x14 plane:
 // every runnable _i2c variant (and its merge) runs, a resize to a 1x1 plane
 // runs conv2d_gemm on the same scratch, and the variant runs again after
-// growing back; every output matches the reference.
+// growing back; every output matches the reference. Each execution has new
+// inputs, so the second 14x14 pass cannot pass on pixels left from the first.
 TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_resize) {
   const auto variants = runnable_im2col_coopmat_variants();
   if (variants.empty()) {
