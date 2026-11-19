@@ -7125,7 +7125,8 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_dead_taps) {
     for (const Case& c : cases) {
       SCOPED_TRACE(c.d_w);
       const int64_t sw = c.stride_w > 0 ? c.stride_w : c.stride;
-      const int64_t Ho = (c.H + 2 * c.pad_h - c.d_h * (c.K - 1) - 1) / c.stride + 1;
+      const int64_t Ho =
+          (c.H + 2 * c.pad_h - c.d_h * (c.K - 1) - 1) / c.stride + 1;
       const int64_t Wo = (c.W + 2 * c.pad_w - c.d_w * (c.K - 1) - 1) / sw + 1;
       const Conv2dIm2colCoopmatPlan plan = im2col_coopmat_plan_of(
           *v,
@@ -7182,7 +7183,8 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_no_dead_taps_unchanged) {
             kernels.begin(),
             kernels.end(),
             [](const std::string& k) {
-              return k.rfind("nchw_to_", 0) == 0 || k.rfind("image_to_", 0) == 0;
+              return k.rfind("nchw_to_", 0) == 0 ||
+                  k.rfind("image_to_", 0) == 0;
             }),
         kernels.end());
     EXPECT_EQ(kernels, expected);
@@ -7281,7 +7283,8 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_chunks) {
         std::make_pair(-0.25f, 0.25f));
     const auto kernels = g.execute_and_check();
     EXPECT_EQ(
-        std::count(kernels.begin(), kernels.end(), std::string(plan.multiply->name)),
+        std::count(
+            kernels.begin(), kernels.end(), std::string(plan.multiply->name)),
         plan.chunks);
     EXPECT_EQ(
         std::count(

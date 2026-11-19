@@ -575,15 +575,16 @@ void add_conv2d_im2col_coopmat_merge_node(
       : conv2d_pw_coopmat_merge_shader(variant);
   // A chunked run has no conv2d_gemm resize fallback.
   const auto resize = chunked
-      ? ExecuteNode::ResizeFunction([](ComputeGraph* graph,
-                                       const std::vector<ArgGroup>& args,
-                                       const std::vector<ValueRef>& resize_args) {
-          resize_conv2d_gemm_node(graph, args, resize_args);
-          VK_CHECK_COND(
-              conv2d_im2col_coopmat_runnable(*graph, args.at(0).refs.at(0)),
-              "conv2d_gemm: a chunked im2col_coopmat run cannot compute a "
-              "single-pixel output");
-        })
+      ? ExecuteNode::ResizeFunction(
+            [](ComputeGraph* graph,
+               const std::vector<ArgGroup>& args,
+               const std::vector<ValueRef>& resize_args) {
+              resize_conv2d_gemm_node(graph, args, resize_args);
+              VK_CHECK_COND(
+                  conv2d_im2col_coopmat_runnable(*graph, args.at(0).refs.at(0)),
+                  "conv2d_gemm: a chunked im2col_coopmat run cannot compute a "
+                  "single-pixel output");
+            })
       : ExecuteNode::ResizeFunction(resize_conv2d_gemm_node);
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
       graph,
@@ -670,8 +671,7 @@ Conv2dIm2colCoopmatPlan conv2d_im2col_coopmat_plan(
   plan.kw = live[1].second;
   const int64_t C_in = w_sizes.at(1);
   const int64_t taps = plan.kh * plan.kw;
-  const int64_t max_3d =
-      graph.context()->adapter_ptr()->max_texture3d_dim();
+  const int64_t max_3d = graph.context()->adapter_ptr()->max_texture3d_dim();
   plan.chunks = 1;
   plan.chunk_channels = C_in;
   plan.multiply = &variant;
@@ -680,7 +680,8 @@ Conv2dIm2colCoopmatPlan conv2d_im2col_coopmat_plan(
     // _alc a chunk K that is a multiple of the variant's K step.
     int64_t g = 4;
     if (variant.has(Conv2dPwCoopmatVariant::kAlignedClampN)) {
-      const int64_t q = int64_t(variant.tile_k) / std::gcd<int64_t>(variant.tile_k, taps);
+      const int64_t q =
+          int64_t(variant.tile_k) / std::gcd<int64_t>(variant.tile_k, taps);
       g = std::lcm<int64_t>(4, q);
     }
     const int64_t max_channels = (max_3d * 4 / taps) / g * g;
@@ -689,7 +690,8 @@ Conv2dIm2colCoopmatPlan conv2d_im2col_coopmat_plan(
       plan.chunk_channels = 0;
     } else {
       plan.chunks = utils::div_up(C_in, max_channels);
-      plan.chunk_channels = utils::align_up(utils::div_up(C_in, plan.chunks), g);
+      plan.chunk_channels =
+          utils::align_up(utils::div_up(C_in, plan.chunks), g);
     }
     plan.multiply = find_conv2d_pw_coopmat_variant(
         std::string(variant.name, std::strlen(variant.name) - 5) + "_ck_half");
@@ -840,8 +842,8 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
     const uint64_t K = uint64_t(plan.kh * plan.kw) *
         utils::align_up_4(uint64_t(w_sizes.at(1)));
     return "the gathered matrix has K = " + n(K) + ", " + n(K / 4u) +
-        " texel layers, more than the maximum 3D image dimension " +
-        n(max_3d) + ", and the variant has no chunked form (_ck)";
+        " texel layers, more than the maximum 3D image dimension " + n(max_3d) +
+        ", and the variant has no chunked form (_ck)";
   }
   const Conv2dPwCoopmatVariant& multiply = *plan.multiply;
   if (&multiply != &variant) {
@@ -859,9 +861,8 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
         " texel layers, more than the maximum 3D image dimension " + n(max_3d);
   }
   if (W_out > max_3d || uint64_t(plan.oh_tile) > max_3d) {
-    return "the gathered matrix tile of " + n(W_out) + " x " +
-        n(plan.oh_tile) + " pixels exceeds the maximum 3D image dimension " +
-        n(max_3d);
+    return "the gathered matrix tile of " + n(W_out) + " x " + n(plan.oh_tile) +
+        " pixels exceeds the maximum 3D image dimension " + n(max_3d);
   }
   const utils::uvec3 max_count = adapter->max_compute_workgroup_count();
   {
@@ -892,14 +893,14 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
         n(N4 * 4u) + " x " + n(K4) + " texels) exceed maxImageDimension2D " +
         n(max_2d);
   }
-  const uint64_t rows = uint64_t(plan.chunks) * K4 +
+  const uint64_t rows =
+      uint64_t(plan.chunks) * K4 +
       conv2d_im2col_coopmat_scratch_rows(
           plan, conv2d_pw_coopmat_scratch_capacity(graph, out));
   const uint64_t bytes = rows * N4 * 16u * 2u;
   if (bytes > adapter->max_buffer_numel()) {
     return "the packed weights" +
-        std::string(
-            plan.scratch_slices() > 1u ? " and split-K scratch" : "") +
+        std::string(plan.scratch_slices() > 1u ? " and split-K scratch" : "") +
         " take " + n(bytes) + " bytes, more than maxStorageBufferRange " +
         n(adapter->max_buffer_numel());
   }
@@ -908,8 +909,7 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
              variant, utils::safe_downcast<uint32_t>(plan.K_chunk))) {
       if (end < begin + 2u) {
         return "gathered K " + n(plan.K_chunk) + " gives " +
-            n(utils::div_up(
-                uint64_t(plan.K_chunk), uint64_t(variant.tile_k))) +
+            n(utils::div_up(uint64_t(plan.K_chunk), uint64_t(variant.tile_k))) +
             " K steps: fewer than two K steps in a slice of " +
             n(variant.k_slices);
       }
@@ -1002,17 +1002,16 @@ void conv2d_gemm_impl(
   // time (conv2d_im2col_coopmat_plan); otherwise the gather covers the whole
   // kernel and every channel.
   const bool coopmat = coopmat_variant != nullptr;
-  const Conv2dIm2colCoopmatPlan plan = coopmat
-      ? conv2d_im2col_coopmat_plan(
-            graph,
-            *coopmat_variant,
-            in,
-            weight_data,
-            stride,
-            padding,
-            dilation,
-            out)
-      : Conv2dIm2colCoopmatPlan{};
+  const Conv2dIm2colCoopmatPlan plan = coopmat ? conv2d_im2col_coopmat_plan(
+                                                     graph,
+                                                     *coopmat_variant,
+                                                     in,
+                                                     weight_data,
+                                                     stride,
+                                                     padding,
+                                                     dilation,
+                                                     out)
+                                               : Conv2dIm2colCoopmatPlan{};
   const bool sub = coopmat && !plan.full(K_h, K_w);
   const int64_t K_gather = coopmat ? plan.K_chunk : K_total;
 
@@ -1212,7 +1211,8 @@ void conv2d_gemm_impl(
   // A chunked run gathers and multiplies each chunk in turn per tile; the
   // multiplies store partial sums to K slices chunk * k_slices onward and one
   // merge adds every slice, then applies bias and epilogue.
-  const int32_t chunks = coopmat ? utils::safe_downcast<int32_t>(plan.chunks) : 1;
+  const int32_t chunks =
+      coopmat ? utils::safe_downcast<int32_t>(plan.chunks) : 1;
   const int32_t chunk_k4 = utils::safe_downcast<int32_t>(K_gather / 4);
   for (int64_t t = 0; t < num_tiles; ++t) {
     const int32_t oh_offset = utils::safe_downcast<int32_t>(t * oh_tile);
@@ -1267,12 +1267,10 @@ void conv2d_gemm_impl(
             out,
             oh_offset,
             oh_tile_i32,
-            chunks > 1 ? utils::ivec3{
-                             c * utils::safe_downcast<int32_t>(
-                                     plan.multiply->k_slices),
-                             c * chunk_k4,
-                             chunks * chunk_k4}
-                       : utils::ivec3{0, 0, 0});
+            chunks > 1
+                ? utils::
+                      ivec3{c * utils::safe_downcast<int32_t>(plan.multiply->k_slices), c * chunk_k4, chunks * chunk_k4}
+                : utils::ivec3{0, 0, 0});
       }
       if (chunks == 1) {
         add_conv2d_gemm_node(

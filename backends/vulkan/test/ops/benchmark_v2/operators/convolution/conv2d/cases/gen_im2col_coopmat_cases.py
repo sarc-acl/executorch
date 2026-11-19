@@ -16,11 +16,15 @@ convolution as the im2col gather and an _i2c cooperative-matrix variant):
     im2col_coopmat_performance.json       the surveyed k x k layers on auto,
                                           direct, im2col and the measured
                                           _i2c variants
+    im2col_coopmat_dilated_*.json         the same three for dilated
+                                          convolution, dead taps and chunks
+                                          (change conv2d-dilated-coopmat)
 
 Run with --check to fail if a file is out of date.
 """
 
 import argparse
+import math
 import sys
 from pathlib import Path
 
@@ -44,7 +48,7 @@ OPERATORS = {
 }
 # Phrases of the construction-time refusals (Conv2dRoutes.cpp, Conv2dGemm.cpp).
 SKIP_PHRASE = {
-    "dilation": "dilation is not 1",
+    "dead": "no kernel tap reads the input",
     "groups": "im2col_coopmat requires groups 1",
     "alc": "not a multiple of the variant's K step",
     "sk": "fewer than two K steps",
@@ -62,11 +66,27 @@ MAX_GROUPS_Y = 65535
 SCRATCH_BUDGET = 16 * 1024 * 1024
 # K / 4 texel layers above this exceed maxImageDimension3D of every device here.
 MAX_3D_LAYERS = 16384
+# maxImageDimension3D of the Intel devices (the smallest here): a gathered
+# matrix with more layers runs in input-channel chunks on the variant's _ck
+# form, or is refused when there is none (the correctness cases that chunk
+# sweep only variants with a _ck form, so their statuses hold on every device).
+CHUNK_3D_LAYERS = 2048
+
+
+def yaml_names():
+    shader = yaml.safe_load(YAML.read_text())["conv2d_pw_coopmat"]
+    return [v["NAME"] for v in shader["shader_variants"]]
 
 
 def i2c_variants():
-    shader = yaml.safe_load(YAML.read_text())["conv2d_pw_coopmat"]
-    return [v["NAME"] for v in shader["shader_variants"] if "_i2c" in v["NAME"]]
+    """The requestable _i2c variants (a _ck form runs only as the chunked form
+    of its _i2c variant)."""
+    return [n for n in yaml_names() if "_i2c" in n and "_ck" not in n]
+
+
+def chunked_form(variant):
+    name = variant.removesuffix("_half") + "_ck_half"
+    return name if name in yaml_names() else None
 
 
 def tensor(name, sizes, data, storage="texture3d"):
@@ -79,6 +99,10 @@ def tensor(name, sizes, data, storage="texture3d"):
 
 def strides(stride):
     return tuple(stride) if isinstance(stride, (tuple, list)) else (stride, stride)
+
+
+def dilations(c):
+    return strides(c.get("dilation", 1))
 
 
 def out_size(n, k, stride, pad, dilation):
@@ -105,8 +129,9 @@ def conv_args(
     """`data` replaces the initializer of the named tensors (input, weight,
     bias, residual). `stride` is one value or (height, width)."""
     st = strides(stride)
-    ho = out_size(h, kh, st[0], pad[0], dilation)
-    wo = out_size(w, kw, st[1], pad[1], dilation)
+    dl = strides(dilation)
+    ho = out_size(h, kh, st[0], pad[0], dl[0])
+    wo = out_size(w, kw, st[1], pad[1], dl[1])
     s = float(f"{1 / (cin // groups * kh * kw) ** 0.5:.4g}")
     data = {
         "input": {"rand_uniform_float": [-1, 1]},
@@ -121,7 +146,7 @@ def conv_args(
         tensor("bias", [cout], data["bias"], "constant") if bias else None,
         {"int_list": list(st)},
         {"int_list": list(pad)},
-        {"int_list": [dilation, dilation]},
+        {"int_list": list(dl)},
         {"bool": False},
         {"int_list": [0, 0]},
         {"int": groups},
@@ -147,32 +172,70 @@ def k_total(c):
     return c["kh"] * c["kw"] * -(-(c["cin"] // c.get("groups", 1)) // 4) * 4
 
 
+def live_taps(n, o, k, s, p, d):
+    """Number of kernel taps from the first to the last one that reads the
+    input for some output position (conv2d_live_taps)."""
+    live = [
+        t
+        for t in range(k)
+        if (o0 := 0 if t * d - p >= 0 else -(-(p - t * d) // s)) < o
+        and t * d - p + o0 * s < n
+    ]
+    return live[-1] - live[0] + 1 if live else 0
+
+
+def plan(variant, c):
+    """(kh, kw, chunks, K of one chunk) of conv2d_im2col_coopmat_plan on a
+    device whose 3D image limit is CHUNK_3D_LAYERS."""
+    st, pad, dl = strides(c.get("stride", 1)), c.get("pad", (0, 0)), dilations(c)
+    taps = []
+    for n, k, s, p, d in (
+        (c["h"], c["kh"], st[0], pad[0], dl[0]),
+        (c["w"], c["kw"], st[1], pad[1], dl[1]),
+    ):
+        taps.append(live_taps(n, out_size(n, k, s, p, d), k, s, p, d))
+    kh, kw = taps
+    cin = c["cin"] // c.get("groups", 1)
+    if kh * kw * -(-cin // 4) <= CHUNK_3D_LAYERS:
+        return kh, kw, 1, kh * kw * -(-cin // 4) * 4
+    g = 4
+    tokens = variant.removeprefix("conv2d_pw_coopmat_").removesuffix("_half").split("_")
+    if "alc" in tokens:
+        k_step = K_STEP[tokens[0]]
+        q = k_step // math.gcd(k_step, kh * kw)
+        g = 4 * q // math.gcd(4, q)
+    max_channels = CHUNK_3D_LAYERS * 4 // (kh * kw) // g * g
+    chunks = -(-cin // max_channels)
+    cc = -(-(-(-cin // chunks)) // g) * g
+    return kh, kw, chunks, kh * kw * cc
+
+
 def split_k_ok(K, k_step, slices):
     steps = -(-K // k_step)
     q = -(-steps // slices)
     return q >= 2 and steps - (slices - 1) * q >= 2
 
 
-def gather_groups(c):
+def gather_groups(c, variant=None):
     """(x, y) work groups of the im2col gather of one row tile."""
-    st = strides(c.get("stride", 1))
-    ho = out_size(c["h"], c["kh"], st[0], c.get("pad", (0, 0))[0], 1)
-    wo = out_size(c["w"], c["kw"], st[1], c.get("pad", (0, 0))[1], 1)
-    K = k_total(c)
+    st, dl = strides(c.get("stride", 1)), dilations(c)
+    ho = out_size(c["h"], c["kh"], st[0], c.get("pad", (0, 0))[0], dl[0])
+    wo = out_size(c["w"], c["kw"], st[1], c.get("pad", (0, 0))[1], dl[1])
+    K = plan(variant, c)[3] if variant else k_total(c)
     oh_tile = min(ho, max(1, SCRATCH_BUDGET // (wo * K * 2)))
     return -(-K // 4 // 16), -(-(wo * oh_tile) // 4)
 
 
 def int32_overflow(c):
-    """Whether conv2d_im2col's int32 arithmetic (in + 2 p, (out - 1) s + k - 1)
-    overflows on an axis."""
-    st, pad = strides(c.get("stride", 1)), c.get("pad", (0, 0))
-    for n, k, s, p in (
-        (c["h"], c["kh"], st[0], pad[0]),
-        (c["w"], c["kw"], st[1], pad[1]),
+    """Whether conv2d_im2col's int32 arithmetic (in + 2 p, (out - 1) s +
+    (k - 1) d) overflows on an axis."""
+    st, pad, dl = strides(c.get("stride", 1)), c.get("pad", (0, 0)), dilations(c)
+    for n, k, s, p, d in (
+        (c["h"], c["kh"], st[0], pad[0], dl[0]),
+        (c["w"], c["kw"], st[1], pad[1], dl[1]),
     ):
-        o = out_size(n, k, s, p, 1)
-        if n + 2 * p > INT32_MAX or (o - 1) * s + k - 1 > INT32_MAX:
+        o = out_size(n, k, s, p, d)
+        if n + 2 * p > INT32_MAX or (o - 1) * s + (k - 1) * d > INT32_MAX:
             return True
     return False
 
@@ -181,16 +244,16 @@ def expected_skip(variant, c):
     """The refusal phrase of an im2col_coopmat row that must SKIP, or None."""
     if c.get("groups", 1) != 1:
         return SKIP_PHRASE["groups"]
-    if c.get("dilation", 1) != 1:
-        return SKIP_PHRASE["dilation"]
     if int32_overflow(c):
         return SKIP_PHRASE["int32"]
     tokens = variant.removeprefix("conv2d_pw_coopmat_").removesuffix("_half").split("_")
     k_step = K_STEP[tokens[0]]
-    K = k_total(c)
-    if K // 4 > MAX_3D_LAYERS:
+    kh, kw, chunks, K = plan(variant, c)
+    if kh * kw == 0:
+        return SKIP_PHRASE["dead"]
+    if chunks > 1 and not chunked_form(variant):
         return SKIP_PHRASE["limit"]
-    if gather_groups(c)[1] > MAX_GROUPS_Y:
+    if gather_groups(c, variant)[1] > MAX_GROUPS_Y:
         return SKIP_PHRASE["gather"]
     if "alc" in tokens and K % k_step:
         return SKIP_PHRASE["alc"]
@@ -498,10 +561,126 @@ def performance(variants):
     return out
 
 
+# Change conv2d-dilated-coopmat (design D4): dilation with every tap live,
+# taps that read only padding, input channels in chunks. Baseline auto (direct
+# for dilated convolution); upstream im2col is not one: it refuses dilation.
+DILATED = [
+    ("d2 256 28x28", conv(256, 28, 28, 256, 3, 3, pad=(2, 2), dilation=2)),
+    ("d3 64 14x14", conv(64, 14, 14, 64, 3, 3, pad=(3, 3), dilation=3)),
+    ("d4 512 14x14", conv(512, 14, 14, 512, 3, 3, pad=(4, 4), dilation=4)),
+    ("d(2,3) 64-48 14x14", conv(64, 14, 14, 48, 3, 3, pad=(2, 3), dilation=(2, 3))),
+    ("s2 d2 64-48 15x15", conv(64, 15, 15, 48, 3, 3, stride=2, pad=(2, 2), dilation=2)),
+    ("d2 Cin30", conv(30, 14, 14, 32, 3, 3, pad=(2, 2), dilation=2)),
+    (
+        "d2 clamp",
+        conv(
+            64,
+            14,
+            14,
+            64,
+            3,
+            3,
+            pad=(2, 2),
+            dilation=2,
+            op="clamp",
+            clamp=(-0.25, 0.25),
+        ),
+    ),
+    # Dilation larger than the plane on both axes: the centre tap only.
+    (
+        "d36 256-64 28x28 one tap",
+        conv(256, 28, 28, 64, 3, 3, pad=(36, 36), dilation=36),
+    ),
+    # Only on the width axis: the centre column.
+    (
+        "d(1,20) 64-48 14x14 one column",
+        conv(64, 14, 14, 48, 3, 3, pad=(1, 20), dilation=(1, 20)),
+    ),
+    # Height stride 2 and dilation 3 on 4 rows: kernel rows 1 and 2 only.
+    (
+        "s(2,1) d(3,1) 32 4x12 two rows",
+        conv(32, 4, 12, 32, 3, 3, stride=(2, 1), pad=(3, 1), dilation=(3, 1)),
+    ),
+    # A 2x1 kernel, height dilation 4 and padding 2 on one input row: no tap
+    # reads the input.
+    (
+        "2x1 d(4,1) every tap dead",
+        conv(16, 1, 8, 16, 2, 1, pad=(2, 0), dilation=(4, 1)),
+    ),
+]
+# Deeper than the 3D image limit: input-channel chunks (swept over the
+# variants with a _ck form). Partial sums exceed the clamp.
+DILATED_CHUNKED = [
+    (
+        "d12 2048-16 28x28 chunks clamp",
+        conv(
+            2048,
+            28,
+            28,
+            16,
+            3,
+            3,
+            pad=(12, 12),
+            dilation=12,
+            op="clamp",
+            clamp=(-0.25, 0.25),
+        ),
+    ),
+    (
+        "d24 2048-16 28x28 chunks",
+        conv(2048, 28, 28, 16, 3, 3, pad=(24, 24), dilation=24),
+    ),
+]
+# DeepLabV3's dilated 3x3 layers (proposal table): 28x28, stride 1, padding =
+# dilation.
+DILATED_PERFORMANCE = [
+    ("dl3 256 d2", conv(256, 28, 28, 256, 3, 3, pad=(2, 2), dilation=2)),
+    ("dl3 512 d2", conv(512, 28, 28, 512, 3, 3, pad=(2, 2), dilation=2)),
+    ("dl3 512 d4", conv(512, 28, 28, 512, 3, 3, pad=(4, 4), dilation=4)),
+    ("dl3 2048-256 d12", conv(2048, 28, 28, 256, 3, 3, pad=(12, 12), dilation=12)),
+    ("dl3 2048-256 d24", conv(2048, 28, 28, 256, 3, 3, pad=(24, 24), dilation=24)),
+    ("dl3 2048-256 d36", conv(2048, 28, 28, 256, 3, 3, pad=(36, 36), dilation=36)),
+]
+
+
+def dilated_correctness(variants):
+    chunkable = [v for v in variants if chunked_form(v)]
+    out = []
+    for label, c in DILATED:
+        out += cases(label, c, ["auto"], variants, VALIDATION_TIMING)
+    for label, c in DILATED_CHUNKED:
+        out += cases(label, c, ["auto"], chunkable, VALIDATION_TIMING)
+    return out
+
+
+def dilated_expected_skips(variants):
+    chunkable = [v for v in variants if chunked_form(v)]
+    out = {}
+    for group, vs in ((DILATED, variants), (DILATED_CHUNKED, chunkable)):
+        for label, c in group:
+            skips = {v: p for v in vs if (p := expected_skip(v, c))}
+            if skips:
+                out[f"i2c {label} coopmat"] = skips
+    return out
+
+
+def dilated_performance(variants):
+    # The timed _i2c variants with a _ck form (design D4: the two best Xe2
+    # tiles and their split-K forms, the 16x16x16 families' _alc forms).
+    measured = [v for v in variants if chunked_form(v)]
+    out = []
+    for label, c in DILATED_PERFORMANCE:
+        out += cases(label, c, ["auto"], measured, PERFORMANCE_TIMING)
+    return out
+
+
 FILES = {
     "im2col_coopmat_correctness.json": correctness,
     "im2col_coopmat_expected_skips.json": expected_skips,
     "im2col_coopmat_performance.json": performance,
+    "im2col_coopmat_dilated_correctness.json": dilated_correctness,
+    "im2col_coopmat_dilated_expected_skips.json": dilated_expected_skips,
+    "im2col_coopmat_dilated_performance.json": dilated_performance,
 }
 
 

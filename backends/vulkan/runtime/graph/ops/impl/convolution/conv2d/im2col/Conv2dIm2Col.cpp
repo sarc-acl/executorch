@@ -185,8 +185,8 @@ void add_conv2d_im2col_node(
 
   // K_total is laid out so that 4-tiles share a kernel position; since
   // Cin_padded is a multiple of 4, K_total is also a multiple of 4.
-  const int32_t K_total = sub ? sub->kh * sub->kw * Cin_padded
-                              : kernel_h * kernel_w * Cin_padded;
+  const int32_t K_total =
+      sub ? sub->kh * sub->kw * Cin_padded : kernel_h * kernel_w * Cin_padded;
   VK_CHECK_COND(K_total % 4 == 0);
   const int32_t K4_total = K_total / 4;
 
