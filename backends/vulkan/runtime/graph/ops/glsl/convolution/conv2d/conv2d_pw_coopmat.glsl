@@ -66,14 +66,28 @@ ${layout_declare_tensor(B, "r", "t_scale", DTYPE, "texture2d")}
 ${layout_declare_ubo(B, "ivec4", "in_sizes")}
 ${layout_declare_ubo(B, "ivec4", "out_sizes")}
 
+// The tiled shaders' block, then an unrounded copy of the epilogue params:
+// fp32 accumulation computes the epilogue in fp32 and reads the copy, fp16
+// accumulation reads the f16-rounded params as the tiled shaders do.
 layout(push_constant) uniform restrict Block {
   int stride_h;
   int stride_w;
   int padding_h;
   int padding_w;
+$if ACC_TYPE == "f32":
+  float activation_a_f16;
+  float activation_b_f16;
+  float residual_alpha_f16;
   float activation_a;
   float activation_b;
   float residual_alpha;
+$else:
+  float activation_a;
+  float activation_b;
+  float residual_alpha;
+  float activation_a_f32;
+  float activation_b_f32;
+  float residual_alpha_f32;
 };
 
 layout(local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2) in;

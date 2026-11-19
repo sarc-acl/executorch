@@ -217,42 +217,156 @@ utils::uvec3 conv2d_pw_coopmat_workgroups(
   return {utils::div_up(N, variant.tile_n), y, utils::div_up(m_tiles, y)};
 }
 
-bool conv2d_pw_coopmat_device_supports(
+std::optional<std::string> conv2d_pw_coopmat_device_unsupported(
     ComputeGraph& graph,
     const Conv2dPwCoopmatVariant& variant) {
+  const auto n = [](const uint64_t v) { return std::to_string(v); };
 #ifdef VK_KHR_cooperative_matrix
   vkapi::Adapter* const adapter = graph.context()->adapter_ptr();
+  if (!adapter->supports_cooperative_matrix()) {
+    return "the device does not support VK_KHR_cooperative_matrix";
+  }
   const VkComponentTypeKHR acc = variant.fp32_accumulation
       ? VK_COMPONENT_TYPE_FLOAT32_KHR
       : VK_COMPONENT_TYPE_FLOAT16_KHR;
-  if (!adapter->supports_cooperative_matrix() ||
-      !adapter->supports_cooperative_matrix_shape(
+  if (!adapter->supports_cooperative_matrix_shape(
           variant.mma_m,
           variant.mma_n,
           variant.mma_k,
           VK_COMPONENT_TYPE_FLOAT16_KHR,
           VK_COMPONENT_TYPE_FLOAT16_KHR,
           acc,
-          acc) ||
-      !adapter->supports_required_subgroup_size_for_compute() ||
+          acc)) {
+    return "the device does not enumerate the cooperative matrix " +
+        n(variant.mma_m) + "x" + n(variant.mma_n) + "x" + n(variant.mma_k) +
+        " fp16 -> " + (variant.fp32_accumulation ? "fp32" : "fp16") +
+        " at subgroup scope";
+  }
+  if (!adapter->supports_required_subgroup_size_for_compute() ||
       variant.subgroup_size < adapter->min_subgroup_size() ||
-      variant.subgroup_size > adapter->max_subgroup_size() ||
-      variant.wg_size() > adapter->max_compute_workgroup_invocations() ||
-      variant.shared_bytes() > adapter->max_compute_shared_memory_size()) {
-    return false;
+      variant.subgroup_size > adapter->max_subgroup_size()) {
+    return "the device cannot require subgroup size " +
+        n(variant.subgroup_size) + " for compute (range " +
+        n(adapter->min_subgroup_size()) + "-" +
+        n(adapter->max_subgroup_size()) + ")";
+  }
+  // Every local invocation is on x (the local work group is {wg_size, 1, 1}).
+  if (variant.wg_size() > adapter->max_compute_workgroup_invocations()) {
+    return "work group size " + n(variant.wg_size()) +
+        " exceeds maxComputeWorkGroupInvocations " +
+        n(adapter->max_compute_workgroup_invocations());
+  }
+  if (variant.wg_size() > adapter->max_compute_workgroup_size()[0]) {
+    return "work group size " + n(variant.wg_size()) +
+        " exceeds maxComputeWorkGroupSize.x " +
+        n(adapter->max_compute_workgroup_size()[0]);
+  }
+  // VUID-VkPipelineShaderStageCreateInfo-pNext-02756.
+  if (variant.wg_size() > uint64_t(variant.subgroup_size) *
+          adapter->max_compute_workgroup_subgroups()) {
+    return "work group size " + n(variant.wg_size()) +
+        " exceeds subgroup size " + n(variant.subgroup_size) +
+        " x maxComputeWorkgroupSubgroups " +
+        n(adapter->max_compute_workgroup_subgroups());
+  }
+  if (variant.shared_bytes() > adapter->max_compute_shared_memory_size()) {
+    return "shared memory " + n(variant.shared_bytes()) +
+        " bytes exceeds maxComputeSharedMemorySize " +
+        n(adapter->max_compute_shared_memory_size());
   }
   for (const uint32_t capability :
        VK_KERNEL_FROM_STR(variant.name).required_capabilities) {
     if (!adapter->supports_spirv_capability(capability)) {
-      return false;
+      return "the device lacks SPIR-V capability " + n(capability);
     }
   }
-  return true;
+  return std::nullopt;
 #else
   (void)graph;
   (void)variant;
-  return false;
+  (void)n;
+  return "built without VK_KHR_cooperative_matrix";
 #endif /* VK_KHR_cooperative_matrix */
+}
+
+bool conv2d_pw_coopmat_device_supports(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant) {
+  return !conv2d_pw_coopmat_device_unsupported(graph, variant).has_value();
+}
+
+std::optional<std::string> conv2d_pw_coopmat_grid_unsupported(
+    const utils::uvec3& grid,
+    const utils::uvec3& max_count) {
+  static const char* const kAxis[] = {"x", "y", "z"};
+  for (uint32_t i = 0; i < 3u; ++i) {
+    if (grid[i] > max_count[i]) {
+      return std::string("dispatch needs ") + std::to_string(grid[i]) +
+          " work groups in " + kAxis[i] +
+          ", more than maxComputeWorkGroupCount." + kAxis[i] + " " +
+          std::to_string(max_count[i]);
+    }
+  }
+  return std::nullopt;
+}
+
+std::optional<std::string> conv2d_pw_coopmat_ineligible(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant,
+    const ValueRef in,
+    const ValueRef weight_data,
+    const utils::StorageType weight_storage,
+    const ValueRef stride,
+    const ValueRef padding,
+    const ValueRef out,
+    const bool transposed) {
+  if (transposed) {
+    return "the convolution is transposed";
+  }
+  if (graph.dtype_of(in) != vkapi::kHalf ||
+      graph.dtype_of(out) != vkapi::kHalf) {
+    return "input and output are not FP16";
+  }
+  if (!graph.float16_buffers_enabled()) {
+    return "16-bit storage buffers are not enabled";
+  }
+  if (weight_storage != utils::kBuffer) {
+    return "the packed weights are not stored in a buffer";
+  }
+  if (!graph.is_texture_storage(in) || !graph.is_texture_storage(out) ||
+      graph.packed_dim_of(in) != WHCN::kChannelsDim ||
+      graph.packed_dim_of(out) != WHCN::kChannelsDim) {
+    return "input and output are not channels-packed textures";
+  }
+  const std::vector<int64_t> in_sizes = graph.sizes_of(in);
+  const std::vector<int64_t> weight_sizes = graph.sizes_of(weight_data);
+  if (in_sizes.size() == 4 && in_sizes.at(0) != 1) {
+    return "the batch is not 1";
+  }
+  if (weight_sizes.size() != 4 ||
+      weight_sizes.at(1) != graph.size_at<int64_t>(-3, in) ||
+      weight_sizes.at(2) != 1 || weight_sizes.at(3) != 1) {
+    return "the convolution is not an ungrouped 1x1 convolution";
+  }
+  const auto stride_list = graph.get_int_list(stride);
+  const auto padding_list = graph.get_int_list(padding);
+  if (stride_list->at(0) != 1 || stride_list->at(1) != 1 ||
+      padding_list->at(0) != 0 || padding_list->at(1) != 0) {
+    return "stride is not 1 or padding is not 0";
+  }
+  const uint32_t M =
+      graph.size_at<uint32_t>(-1, out) * graph.size_at<uint32_t>(-2, out);
+  if (M <= 1u) {
+    return "the output has a single pixel";
+  }
+  if (const auto reason =
+          conv2d_pw_coopmat_device_unsupported(graph, variant)) {
+    return reason;
+  }
+  return conv2d_pw_coopmat_grid_unsupported(
+      conv2d_pw_coopmat_workgroups(
+          graph, variant, graph.size_at<uint32_t>(-3, out), M),
+      graph.context()->adapter_ptr()->max_compute_workgroup_count());
 }
 
 bool conv2d_pw_coopmat_eligible(
@@ -265,44 +379,17 @@ bool conv2d_pw_coopmat_eligible(
     const ValueRef padding,
     const ValueRef out,
     const bool transposed) {
-  if (transposed || graph.dtype_of(in) != vkapi::kHalf ||
-      graph.dtype_of(out) != vkapi::kHalf || !graph.float16_buffers_enabled() ||
-      !graph.is_buffer_storage(packed_weight) ||
-      !graph.is_texture_storage(in) || !graph.is_texture_storage(out) ||
-      graph.packed_dim_of(in) != WHCN::kChannelsDim ||
-      graph.packed_dim_of(out) != WHCN::kChannelsDim) {
-    return false;
-  }
-  const std::vector<int64_t> in_sizes = graph.sizes_of(in);
-  const std::vector<int64_t> weight_sizes = graph.sizes_of(weight_data);
-  if (in_sizes.size() == 4 && in_sizes.at(0) != 1) {
-    return false;
-  }
-  if (weight_sizes.size() != 4 ||
-      weight_sizes.at(1) != graph.size_at<int64_t>(-3, in) ||
-      weight_sizes.at(2) != 1 || weight_sizes.at(3) != 1) {
-    return false;
-  }
-  const auto stride_list = graph.get_int_list(stride);
-  const auto padding_list = graph.get_int_list(padding);
-  if (stride_list->at(0) != 1 || stride_list->at(1) != 1 ||
-      padding_list->at(0) != 0 || padding_list->at(1) != 0) {
-    return false;
-  }
-  const uint32_t M =
-      graph.size_at<uint32_t>(-1, out) * graph.size_at<uint32_t>(-2, out);
-  if (M <= 1u) {
-    return false;
-  }
-  const utils::uvec3 grid = conv2d_pw_coopmat_workgroups(
-      graph, variant, graph.size_at<uint32_t>(-3, out), M);
-  const utils::uvec3 max_count =
-      graph.context()->adapter_ptr()->max_compute_workgroup_count();
-  if (grid[0] > max_count[0] || grid[1] > max_count[1] ||
-      grid[2] > max_count[2]) {
-    return false;
-  }
-  return conv2d_pw_coopmat_device_supports(graph, variant);
+  return !conv2d_pw_coopmat_ineligible(
+              graph,
+              variant,
+              in,
+              weight_data,
+              graph.storage_type_of(packed_weight),
+              stride,
+              padding,
+              out,
+              transposed)
+              .has_value();
 }
 
 void resize_conv2d_pw_tiled_node(
@@ -492,6 +579,29 @@ struct PackParams {
   int32_t is_transposed;
 };
 
+utils::StorageType conv2d_pw_weight_storage(
+    ComputeGraph& graph,
+    const ValueRef weight_data,
+    const ValueRef out) {
+  const std::vector<int64_t> weight_sizes = graph.sizes_of(weight_data);
+  const int64_t output_height = utils::div_up(weight_sizes.at(1), int64_t(4));
+  const int64_t output_width =
+      utils::div_up(weight_sizes.at(0), int64_t(4)) * 4 * 4;
+  // Buffer weights are faster than texture weights on every GPU measured. The
+  // folded accumulation reads texture weights, the only storage it was measured
+  // with. Half buffers need 16-bit storage support.
+  const uint32_t max_extent =
+      graph.context()->adapter_ptr()->max_texture2d_dim();
+  const bool buffer_weights = !use_folded_accumulation(&graph, out) &&
+      (graph.dtype_of(weight_data) != vkapi::kHalf ||
+       graph.float16_buffers_enabled());
+  if (buffer_weights || output_width / 4 > max_extent ||
+      static_cast<uint32_t>(output_height) > max_extent) {
+    return utils::kBuffer;
+  }
+  return utils::kTexture2D;
+}
+
 ValueRef prepack_conv2d_pw_weight(
     ComputeGraph& graph,
     const ValueRef weight_data,
@@ -505,18 +615,8 @@ ValueRef prepack_conv2d_pw_weight(
   const int64_t output_height = K4;
   const int64_t output_width = N4 * 4 * 4;
 
-  // Buffer weights are faster than texture weights on every GPU measured. The
-  // folded accumulation reads texture weights, the only storage it was measured
-  // with. Half buffers need 16-bit storage support.
-  utils::StorageType weight_storage = utils::kTexture2D;
-  uint32_t max_extent = graph.context()->adapter_ptr()->max_texture2d_dim();
-  const bool buffer_weights = !use_folded_accumulation(&graph, out) &&
-      (graph.dtype_of(weight_data) != vkapi::kHalf ||
-       graph.float16_buffers_enabled());
-  if (buffer_weights || output_width / 4 > max_extent ||
-      static_cast<uint32_t>(output_height) > max_extent) {
-    weight_storage = utils::kBuffer;
-  }
+  const utils::StorageType weight_storage =
+      conv2d_pw_weight_storage(graph, weight_data, out);
 
   ValueRef packed_weight = graph.add_tensor(
       {output_height, output_width},
@@ -586,6 +686,12 @@ void add_conv2d_pw_tiled_node(
 
   const Conv2dEpilogueParams epilogue_params = create_conv2d_epilogue_params(
       epilogue, graph.dtype_of(out) == vkapi::kHalf);
+  // The conv2d_pw_coopmat variants that accumulate in fp32 also compute the
+  // epilogue in fp32; they read this unrounded copy, pushed after the params of
+  // the shaders that compute it in f16 (tiled and fp16-accumulation variants),
+  // so whichever shader a resize picks finds its params.
+  const Conv2dEpilogueParams epilogue_params_f32 =
+      create_conv2d_epilogue_params(epilogue, /*f16_epilogue=*/false);
 
   vkapi::SpecVarList spec_vars = {s1p0 ? 1 : 0};
   append_conv2d_epilogue_spec_vars(spec_vars, epilogue);
@@ -617,7 +723,8 @@ void add_conv2d_pw_tiled_node(
       {graph.sizes_ubo(in), graph.sizes_ubo(out)},
       // Push Constants
       {PushConstantDataInfo(&stride_padding, sizeof(stride_padding)),
-       PushConstantDataInfo(&epilogue_params, sizeof(epilogue_params))},
+       PushConstantDataInfo(&epilogue_params, sizeof(epilogue_params)),
+       PushConstantDataInfo(&epilogue_params_f32, sizeof(epilogue_params_f32))},
       // Specialization Constants
       spec_vars,
       // Resize Args

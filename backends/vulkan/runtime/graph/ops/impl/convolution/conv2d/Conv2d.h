@@ -157,6 +157,37 @@ bool conv2d_pw_coopmat_device_supports(
     ComputeGraph& graph,
     const Conv2dPwCoopmatVariant& variant);
 
+// The first device requirement of the variant that is not met, naming the
+// device limit, or nullopt when conv2d_pw_coopmat_device_supports() holds.
+std::optional<std::string> conv2d_pw_coopmat_device_unsupported(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant);
+
+// Names the first axis whose work group count exceeds the device maximum.
+std::optional<std::string> conv2d_pw_coopmat_grid_unsupported(
+    const utils::uvec3& grid,
+    const utils::uvec3& max_count);
+
+// Storage the pointwise prepacking gives the packed weights of `weight_data`.
+utils::StorageType conv2d_pw_weight_storage(
+    ComputeGraph& graph,
+    const ValueRef weight_data,
+    const ValueRef out);
+
+// Why the convolution cannot run on the variant at its current sizes, with
+// packed weights in `weight_storage`, or nullopt when it is eligible
+// (conv2d_pw_coopmat_eligible is this with the packed weight's storage).
+std::optional<std::string> conv2d_pw_coopmat_ineligible(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant,
+    const ValueRef in,
+    const ValueRef weight_data,
+    const utils::StorageType weight_storage,
+    const ValueRef stride,
+    const ValueRef padding,
+    const ValueRef out,
+    const bool transposed);
+
 // Whether a pointwise convolution may run on the variant at its current
 // sizes: the device supports the variant, the convolution is FP16,
 // non-transposed, ungrouped, stride 1, padding 0, batch 1, with more than one

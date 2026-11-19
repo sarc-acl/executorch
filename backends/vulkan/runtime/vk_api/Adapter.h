@@ -537,6 +537,19 @@ class Adapter final {
     return physical_device_.properties.limits.maxStorageBufferRange;
   }
 
+  // Maximum number of subgroups in a work group whose shader requires a
+  // subgroup size; 0 without VK_EXT_subgroup_size_control.
+  inline uint32_t max_compute_workgroup_subgroups() const {
+#if defined(VK_EXT_subgroup_size_control) && !defined(ETVK_FORCE_NO_EXTENSIONS)
+    return supports_subgroup_size_control()
+        ? physical_device_.subgroup_size_control_properties
+              .maxComputeWorkgroupSubgroups
+        : 0u;
+#else
+    return 0u;
+#endif
+  }
+
   inline uint32_t max_compute_shared_memory_size() const {
     return physical_device_.properties.limits.maxComputeSharedMemorySize;
   }
