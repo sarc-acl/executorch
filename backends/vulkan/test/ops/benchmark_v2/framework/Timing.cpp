@@ -117,6 +117,9 @@ Report profile_operator_shaders(
   Report dispatches = Report::array();
   Report clock_samples = Report::array();
   std::vector<std::vector<double>> samples;
+  // Per run: the mean over the batch's invocations of the interval from the
+  // start of an invocation's first dispatch to the end of its last.
+  std::vector<double> route_samples;
   for (uint32_t i = 0; i < runs; ++i) {
     const Report clock_start = read_gpu_clock(gpu_clock);
     replay();
@@ -139,12 +142,25 @@ Report profile_operator_shaders(
       durations.push_back(
           timestamps.elapsed_us(shader.start_ticks, shader.end_ticks));
     }
+    if (shaders_per_invocation > 0 &&
+        shaders.size() == shaders_per_invocation * count) {
+      double total = 0;
+      for (uint32_t r = 0; r < count; ++r) {
+        total += timestamps.elapsed_us(
+            shaders[r * shaders_per_invocation].start_ticks,
+            shaders[(r + 1) * shaders_per_invocation - 1].end_ticks);
+      }
+      route_samples.push_back(total / count);
+    }
     samples.push_back(std::move(durations));
   }
   Report result = {
       {"shader_profile_invocations_per_batch", count},
       {"shader_breakdown",
        shader_breakdown_report(dispatches, samples, count, spec, work)}};
+  if (route_samples.size() == runs && runs > 0) {
+    result["gpu_timestamp_route_us"] = latency_statistics(route_samples);
+  }
   if (gpu_clock) {
     result["shader_profile_batch_observed_gpu_clock_freq_MHz"] =
         std::move(clock_samples);

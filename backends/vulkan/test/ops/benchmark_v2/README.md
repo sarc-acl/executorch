@@ -602,6 +602,7 @@ submissions.
 | Wall time | Host monotonic clock from command-buffer submission through fence completion, without timestamp queries. Includes host submission overhead, queue/fence waiting, and GPU execution. | `wall_time_batch_us` contains batch totals. Dividing each total by the repetition count gives `wall_time_shader_us` or `wall_time_operator_us`. |
 | Whole-batch GPU timestamps | One timestamp pair brackets the entire repeated dispatch chain, including GPU dependency barriers and inter-dispatch gaps. | `gpu_timestamp_batch_us` describes batch totals. Dividing each total by the repetition count gives `gpu_timestamp_shader_us` or `gpu_timestamp_operator_us`. These are two views of the same capture. |
 | Per-dispatch GPU timestamps | Operator-only profiling pass with a timestamp pair around each executed shader, including its associated barriers. | `shader_breakdown[].gpu_timestamp_shader_us` describes each dispatch position, averaged across that profiling batch's operator repetitions. |
+| Route interval | The same profiling pass: from the start timestamp of an invocation's first dispatch to the end timestamp of its last, so a multi-dispatch route includes its inter-dispatch barriers. | `gpu_timestamp_route_us` describes the per-run mean over that profiling batch's operator repetitions. |
 
 Pass selection depends on case type and timestamp support:
 
