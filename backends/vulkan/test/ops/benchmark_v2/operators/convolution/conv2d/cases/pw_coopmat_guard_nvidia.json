@@ -494,5 +494,501 @@
     ],
     "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
     "outputs": ["out"]
+  },
+  {
+    "name": "pw_coopmat guard aligned 63px (63,64,64) conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half",
+    "shader": "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half",
+    "reference": "conv2d_pw_packed_guard",
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "gwg_size": [64, 4, 1],
+    "lwg_size": [32, 1, 1],
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "bindings": [
+      {"texture3d": {"name": "out", "sizes": [1, 68, 23, 9], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
+      {"texture3d": {"name": "in", "sizes": [1, 64, 7, 9], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"buffer": {"name": "w", "sizes": [16, 256], "dtype": "float16", "data": {"rand_uniform_float": [-0.125, 0.125]}}},
+      {"texture2d": {"name": "bias", "sizes": [1, 64], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"ref": "in"}},
+      {"texture2d": {"ref": "bias"}},
+      {"meta_ubo": "in", "field": "sizes"},
+      {"uniform": [{"dtype": "int32", "data": [9, 7, 64, 1]}]}
+    ],
+    "specialization_constants": [
+      {"dtype": "int32", "value": 1},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0},
+      {"dtype": "bool", "value": false},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0}
+    ],
+    "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
+    "outputs": ["out"]
+  },
+  {
+    "name": "pw_coopmat guard aligned 65px (65,128,96) conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half",
+    "shader": "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half",
+    "reference": "conv2d_pw_packed_guard",
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "gwg_size": [128, 5, 1],
+    "lwg_size": [32, 1, 1],
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "bindings": [
+      {"texture3d": {"name": "out", "sizes": [1, 132, 21, 13], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
+      {"texture3d": {"name": "in", "sizes": [1, 96, 5, 13], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"buffer": {"name": "w", "sizes": [24, 512], "dtype": "float16", "data": {"rand_uniform_float": [-0.1021, 0.1021]}}},
+      {"texture2d": {"name": "bias", "sizes": [1, 128], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"ref": "in"}},
+      {"texture2d": {"ref": "bias"}},
+      {"meta_ubo": "in", "field": "sizes"},
+      {"uniform": [{"dtype": "int32", "data": [13, 5, 128, 1]}]}
+    ],
+    "specialization_constants": [
+      {"dtype": "int32", "value": 1},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0},
+      {"dtype": "bool", "value": false},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0}
+    ],
+    "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
+    "outputs": ["out"]
+  },
+  {
+    "name": "pw_coopmat guard alc N=24 (63,24,64) conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half",
+    "shader": "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half",
+    "reference": "conv2d_pw_packed_guard",
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "gwg_size": [32, 4, 1],
+    "lwg_size": [32, 1, 1],
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "bindings": [
+      {"texture3d": {"name": "out", "sizes": [1, 28, 23, 9], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
+      {"texture3d": {"name": "in", "sizes": [1, 64, 7, 9], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"buffer": {"name": "w", "sizes": [16, 96], "dtype": "float16", "data": {"rand_uniform_float": [-0.125, 0.125]}}},
+      {"texture2d": {"name": "bias", "sizes": [1, 24], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"ref": "in"}},
+      {"texture2d": {"ref": "bias"}},
+      {"meta_ubo": "in", "field": "sizes"},
+      {"uniform": [{"dtype": "int32", "data": [9, 7, 24, 1]}]}
+    ],
+    "specialization_constants": [
+      {"dtype": "int32", "value": 1},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0},
+      {"dtype": "bool", "value": false},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0}
+    ],
+    "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
+    "outputs": ["out"]
+  },
+  {
+    "name": "pw_coopmat guard alc N=30 (65,30,96) conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half",
+    "shader": "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half",
+    "reference": "conv2d_pw_packed_guard",
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "gwg_size": [32, 5, 1],
+    "lwg_size": [32, 1, 1],
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "bindings": [
+      {"texture3d": {"name": "out", "sizes": [1, 36, 21, 13], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
+      {"texture3d": {"name": "in", "sizes": [1, 96, 5, 13], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"buffer": {"name": "w", "sizes": [24, 128], "dtype": "float16", "data": {"rand_uniform_float": [-0.1021, 0.1021]}}},
+      {"texture2d": {"name": "bias", "sizes": [1, 30], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"ref": "in"}},
+      {"texture2d": {"ref": "bias"}},
+      {"meta_ubo": "in", "field": "sizes"},
+      {"uniform": [{"dtype": "int32", "data": [13, 5, 30, 1]}]}
+    ],
+    "specialization_constants": [
+      {"dtype": "int32", "value": 1},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0},
+      {"dtype": "bool", "value": false},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0}
+    ],
+    "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
+    "outputs": ["out"]
+  },
+  {
+    "name": "pw_coopmat guard aligned 63px (63,64,64) conv2d_pw_coopmat_nvidia_t16x32_f32_alc_half",
+    "shader": "conv2d_pw_coopmat_nvidia_t16x32_f32_alc_half",
+    "reference": "conv2d_pw_packed_guard",
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "gwg_size": [64, 4, 1],
+    "lwg_size": [32, 1, 1],
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "bindings": [
+      {"texture3d": {"name": "out", "sizes": [1, 68, 23, 9], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
+      {"texture3d": {"name": "in", "sizes": [1, 64, 7, 9], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"buffer": {"name": "w", "sizes": [16, 256], "dtype": "float16", "data": {"rand_uniform_float": [-0.125, 0.125]}}},
+      {"texture2d": {"name": "bias", "sizes": [1, 64], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"ref": "in"}},
+      {"texture2d": {"ref": "bias"}},
+      {"meta_ubo": "in", "field": "sizes"},
+      {"uniform": [{"dtype": "int32", "data": [9, 7, 64, 1]}]}
+    ],
+    "specialization_constants": [
+      {"dtype": "int32", "value": 1},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0},
+      {"dtype": "bool", "value": false},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0}
+    ],
+    "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
+    "outputs": ["out"]
+  },
+  {
+    "name": "pw_coopmat guard aligned 65px (65,128,96) conv2d_pw_coopmat_nvidia_t16x32_f32_alc_half",
+    "shader": "conv2d_pw_coopmat_nvidia_t16x32_f32_alc_half",
+    "reference": "conv2d_pw_packed_guard",
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "gwg_size": [128, 5, 1],
+    "lwg_size": [32, 1, 1],
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "bindings": [
+      {"texture3d": {"name": "out", "sizes": [1, 132, 21, 13], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
+      {"texture3d": {"name": "in", "sizes": [1, 96, 5, 13], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"buffer": {"name": "w", "sizes": [24, 512], "dtype": "float16", "data": {"rand_uniform_float": [-0.1021, 0.1021]}}},
+      {"texture2d": {"name": "bias", "sizes": [1, 128], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"ref": "in"}},
+      {"texture2d": {"ref": "bias"}},
+      {"meta_ubo": "in", "field": "sizes"},
+      {"uniform": [{"dtype": "int32", "data": [13, 5, 128, 1]}]}
+    ],
+    "specialization_constants": [
+      {"dtype": "int32", "value": 1},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0},
+      {"dtype": "bool", "value": false},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0}
+    ],
+    "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
+    "outputs": ["out"]
+  },
+  {
+    "name": "pw_coopmat guard alc N=24 (63,24,64) conv2d_pw_coopmat_nvidia_t16x32_f32_alc_half",
+    "shader": "conv2d_pw_coopmat_nvidia_t16x32_f32_alc_half",
+    "reference": "conv2d_pw_packed_guard",
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "gwg_size": [32, 4, 1],
+    "lwg_size": [32, 1, 1],
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "bindings": [
+      {"texture3d": {"name": "out", "sizes": [1, 28, 23, 9], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
+      {"texture3d": {"name": "in", "sizes": [1, 64, 7, 9], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"buffer": {"name": "w", "sizes": [16, 96], "dtype": "float16", "data": {"rand_uniform_float": [-0.125, 0.125]}}},
+      {"texture2d": {"name": "bias", "sizes": [1, 24], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"ref": "in"}},
+      {"texture2d": {"ref": "bias"}},
+      {"meta_ubo": "in", "field": "sizes"},
+      {"uniform": [{"dtype": "int32", "data": [9, 7, 24, 1]}]}
+    ],
+    "specialization_constants": [
+      {"dtype": "int32", "value": 1},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0},
+      {"dtype": "bool", "value": false},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0}
+    ],
+    "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
+    "outputs": ["out"]
+  },
+  {
+    "name": "pw_coopmat guard alc N=30 (65,30,96) conv2d_pw_coopmat_nvidia_t16x32_f32_alc_half",
+    "shader": "conv2d_pw_coopmat_nvidia_t16x32_f32_alc_half",
+    "reference": "conv2d_pw_packed_guard",
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "gwg_size": [32, 5, 1],
+    "lwg_size": [32, 1, 1],
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "bindings": [
+      {"texture3d": {"name": "out", "sizes": [1, 36, 21, 13], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
+      {"texture3d": {"name": "in", "sizes": [1, 96, 5, 13], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"buffer": {"name": "w", "sizes": [24, 128], "dtype": "float16", "data": {"rand_uniform_float": [-0.1021, 0.1021]}}},
+      {"texture2d": {"name": "bias", "sizes": [1, 30], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"ref": "in"}},
+      {"texture2d": {"ref": "bias"}},
+      {"meta_ubo": "in", "field": "sizes"},
+      {"uniform": [{"dtype": "int32", "data": [13, 5, 30, 1]}]}
+    ],
+    "specialization_constants": [
+      {"dtype": "int32", "value": 1},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0},
+      {"dtype": "bool", "value": false},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0}
+    ],
+    "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
+    "outputs": ["out"]
+  },
+  {
+    "name": "pw_coopmat guard aligned 63px (63,64,64) conv2d_pw_coopmat_nvidia_t128x128_f16_alc_half",
+    "shader": "conv2d_pw_coopmat_nvidia_t128x128_f16_alc_half",
+    "reference": "conv2d_pw_packed_guard",
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "gwg_size": [256, 1, 1],
+    "lwg_size": [256, 1, 1],
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "bindings": [
+      {"texture3d": {"name": "out", "sizes": [1, 68, 23, 9], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
+      {"texture3d": {"name": "in", "sizes": [1, 64, 7, 9], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"buffer": {"name": "w", "sizes": [16, 256], "dtype": "float16", "data": {"rand_uniform_float": [-0.125, 0.125]}}},
+      {"texture2d": {"name": "bias", "sizes": [1, 64], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"ref": "in"}},
+      {"texture2d": {"ref": "bias"}},
+      {"meta_ubo": "in", "field": "sizes"},
+      {"uniform": [{"dtype": "int32", "data": [9, 7, 64, 1]}]}
+    ],
+    "specialization_constants": [
+      {"dtype": "int32", "value": 1},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0},
+      {"dtype": "bool", "value": false},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0}
+    ],
+    "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
+    "outputs": ["out"]
+  },
+  {
+    "name": "pw_coopmat guard aligned 65px (65,128,96) conv2d_pw_coopmat_nvidia_t128x128_f16_alc_half",
+    "shader": "conv2d_pw_coopmat_nvidia_t128x128_f16_alc_half",
+    "reference": "conv2d_pw_packed_guard",
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "gwg_size": [256, 1, 1],
+    "lwg_size": [256, 1, 1],
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "bindings": [
+      {"texture3d": {"name": "out", "sizes": [1, 132, 21, 13], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
+      {"texture3d": {"name": "in", "sizes": [1, 96, 5, 13], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"buffer": {"name": "w", "sizes": [24, 512], "dtype": "float16", "data": {"rand_uniform_float": [-0.1021, 0.1021]}}},
+      {"texture2d": {"name": "bias", "sizes": [1, 128], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"ref": "in"}},
+      {"texture2d": {"ref": "bias"}},
+      {"meta_ubo": "in", "field": "sizes"},
+      {"uniform": [{"dtype": "int32", "data": [13, 5, 128, 1]}]}
+    ],
+    "specialization_constants": [
+      {"dtype": "int32", "value": 1},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0},
+      {"dtype": "bool", "value": false},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0}
+    ],
+    "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
+    "outputs": ["out"]
+  },
+  {
+    "name": "pw_coopmat guard alc N=24 (63,24,64) conv2d_pw_coopmat_nvidia_t128x128_f16_alc_half",
+    "shader": "conv2d_pw_coopmat_nvidia_t128x128_f16_alc_half",
+    "reference": "conv2d_pw_packed_guard",
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "gwg_size": [256, 1, 1],
+    "lwg_size": [256, 1, 1],
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "bindings": [
+      {"texture3d": {"name": "out", "sizes": [1, 28, 23, 9], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
+      {"texture3d": {"name": "in", "sizes": [1, 64, 7, 9], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"buffer": {"name": "w", "sizes": [16, 96], "dtype": "float16", "data": {"rand_uniform_float": [-0.125, 0.125]}}},
+      {"texture2d": {"name": "bias", "sizes": [1, 24], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"ref": "in"}},
+      {"texture2d": {"ref": "bias"}},
+      {"meta_ubo": "in", "field": "sizes"},
+      {"uniform": [{"dtype": "int32", "data": [9, 7, 24, 1]}]}
+    ],
+    "specialization_constants": [
+      {"dtype": "int32", "value": 1},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0},
+      {"dtype": "bool", "value": false},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0}
+    ],
+    "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
+    "outputs": ["out"]
+  },
+  {
+    "name": "pw_coopmat guard alc N=30 (65,30,96) conv2d_pw_coopmat_nvidia_t128x128_f16_alc_half",
+    "shader": "conv2d_pw_coopmat_nvidia_t128x128_f16_alc_half",
+    "reference": "conv2d_pw_packed_guard",
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "gwg_size": [256, 1, 1],
+    "lwg_size": [256, 1, 1],
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "bindings": [
+      {"texture3d": {"name": "out", "sizes": [1, 36, 21, 13], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
+      {"texture3d": {"name": "in", "sizes": [1, 96, 5, 13], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"buffer": {"name": "w", "sizes": [24, 128], "dtype": "float16", "data": {"rand_uniform_float": [-0.1021, 0.1021]}}},
+      {"texture2d": {"name": "bias", "sizes": [1, 30], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"ref": "in"}},
+      {"texture2d": {"ref": "bias"}},
+      {"meta_ubo": "in", "field": "sizes"},
+      {"uniform": [{"dtype": "int32", "data": [13, 5, 30, 1]}]}
+    ],
+    "specialization_constants": [
+      {"dtype": "int32", "value": 1},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0},
+      {"dtype": "bool", "value": false},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0}
+    ],
+    "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
+    "outputs": ["out"]
+  },
+  {
+    "name": "pw_coopmat guard aligned 63px (63,64,64) conv2d_pw_coopmat_nvidia_t128x128_f32_alc_half",
+    "shader": "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_half",
+    "reference": "conv2d_pw_packed_guard",
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "gwg_size": [256, 1, 1],
+    "lwg_size": [256, 1, 1],
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "bindings": [
+      {"texture3d": {"name": "out", "sizes": [1, 68, 23, 9], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
+      {"texture3d": {"name": "in", "sizes": [1, 64, 7, 9], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"buffer": {"name": "w", "sizes": [16, 256], "dtype": "float16", "data": {"rand_uniform_float": [-0.125, 0.125]}}},
+      {"texture2d": {"name": "bias", "sizes": [1, 64], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"ref": "in"}},
+      {"texture2d": {"ref": "bias"}},
+      {"meta_ubo": "in", "field": "sizes"},
+      {"uniform": [{"dtype": "int32", "data": [9, 7, 64, 1]}]}
+    ],
+    "specialization_constants": [
+      {"dtype": "int32", "value": 1},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0},
+      {"dtype": "bool", "value": false},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0}
+    ],
+    "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
+    "outputs": ["out"]
+  },
+  {
+    "name": "pw_coopmat guard aligned 65px (65,128,96) conv2d_pw_coopmat_nvidia_t128x128_f32_alc_half",
+    "shader": "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_half",
+    "reference": "conv2d_pw_packed_guard",
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "gwg_size": [256, 1, 1],
+    "lwg_size": [256, 1, 1],
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "bindings": [
+      {"texture3d": {"name": "out", "sizes": [1, 132, 21, 13], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
+      {"texture3d": {"name": "in", "sizes": [1, 96, 5, 13], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"buffer": {"name": "w", "sizes": [24, 512], "dtype": "float16", "data": {"rand_uniform_float": [-0.1021, 0.1021]}}},
+      {"texture2d": {"name": "bias", "sizes": [1, 128], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"ref": "in"}},
+      {"texture2d": {"ref": "bias"}},
+      {"meta_ubo": "in", "field": "sizes"},
+      {"uniform": [{"dtype": "int32", "data": [13, 5, 128, 1]}]}
+    ],
+    "specialization_constants": [
+      {"dtype": "int32", "value": 1},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0},
+      {"dtype": "bool", "value": false},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0}
+    ],
+    "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
+    "outputs": ["out"]
+  },
+  {
+    "name": "pw_coopmat guard alc N=24 (63,24,64) conv2d_pw_coopmat_nvidia_t128x128_f32_alc_half",
+    "shader": "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_half",
+    "reference": "conv2d_pw_packed_guard",
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "gwg_size": [256, 1, 1],
+    "lwg_size": [256, 1, 1],
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "bindings": [
+      {"texture3d": {"name": "out", "sizes": [1, 28, 23, 9], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
+      {"texture3d": {"name": "in", "sizes": [1, 64, 7, 9], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"buffer": {"name": "w", "sizes": [16, 96], "dtype": "float16", "data": {"rand_uniform_float": [-0.125, 0.125]}}},
+      {"texture2d": {"name": "bias", "sizes": [1, 24], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"ref": "in"}},
+      {"texture2d": {"ref": "bias"}},
+      {"meta_ubo": "in", "field": "sizes"},
+      {"uniform": [{"dtype": "int32", "data": [9, 7, 24, 1]}]}
+    ],
+    "specialization_constants": [
+      {"dtype": "int32", "value": 1},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0},
+      {"dtype": "bool", "value": false},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0}
+    ],
+    "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
+    "outputs": ["out"]
+  },
+  {
+    "name": "pw_coopmat guard alc N=30 (65,30,96) conv2d_pw_coopmat_nvidia_t128x128_f32_alc_half",
+    "shader": "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_half",
+    "reference": "conv2d_pw_packed_guard",
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
+    "gwg_size": [256, 1, 1],
+    "lwg_size": [256, 1, 1],
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "bindings": [
+      {"texture3d": {"name": "out", "sizes": [1, 36, 21, 13], "dtype": "float16", "layout": "channels", "access": "write", "data": {"fill": 7.0}}},
+      {"texture3d": {"name": "in", "sizes": [1, 96, 5, 13], "dtype": "float16", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"buffer": {"name": "w", "sizes": [24, 128], "dtype": "float16", "data": {"rand_uniform_float": [-0.1021, 0.1021]}}},
+      {"texture2d": {"name": "bias", "sizes": [1, 30], "dtype": "float16", "data": {"rand_uniform_float": [-1, 1]}}},
+      {"texture3d": {"ref": "in"}},
+      {"texture2d": {"ref": "bias"}},
+      {"meta_ubo": "in", "field": "sizes"},
+      {"uniform": [{"dtype": "int32", "data": [13, 5, 30, 1]}]}
+    ],
+    "specialization_constants": [
+      {"dtype": "int32", "value": 1},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0},
+      {"dtype": "bool", "value": false},
+      {"dtype": "bool", "value": false},
+      {"dtype": "int32", "value": 0}
+    ],
+    "push_constants": [{"dtype": "int32", "data": [1, 1, 0, 0]}, {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]}],
+    "outputs": ["out"]
   }
 ]

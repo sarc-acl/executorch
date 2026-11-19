@@ -690,6 +690,13 @@ GEMM_PROBE_VARIANTS = [
     "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half",
     "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk2_half",
     "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half",
+] + [
+    # The 16x16x16 families' _alc variants and their split-K forms (task 5.1).
+    f"conv2d_pw_coopmat_{family}_t{tile}_{acc}_alc{sk}_half"
+    for family in ("amd", "nvidia")
+    for tile in ("16x32", "128x128")
+    for acc in ("f16", "f32")
+    for sk in ("", "_sk2", "_sk4")
 ]
 
 # Parent variant per device (OUT/GATES.md of conv2d-pw-coopmat-k-latency) and

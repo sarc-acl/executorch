@@ -1196,3 +1196,541 @@ conv2d_pw_coopmat:
       CLAMP_N: true
       K_SLICES: 4
       I2C: true
+    # Clamped-read aligned-only (_alc), its split-K forms and their im2col forms (_i2c) for the 16x16x16
+    # families (conv2d-gemm-coopmat task 5.1).
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_alc_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      I2C: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_i2c_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+      I2C: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_alc_sk4_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_alc_sk4_i2c_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+      I2C: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f32_alc_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f32_alc_i2c_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      I2C: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f32_alc_sk2_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f32_alc_sk2_i2c_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+      I2C: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f32_alc_sk4_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f32_alc_sk4_i2c_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+      I2C: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f16_alc_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f16_alc_i2c_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      I2C: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f16_alc_sk2_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f16_alc_sk2_i2c_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+      I2C: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f16_alc_sk4_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f16_alc_sk4_i2c_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+      I2C: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_i2c_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      I2C: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_i2c_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+      I2C: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_sk4_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_sk4_i2c_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+      I2C: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      I2C: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+      I2C: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk4_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk4_i2c_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+      I2C: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f32_alc_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f32_alc_i2c_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      I2C: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f32_alc_sk2_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f32_alc_sk2_i2c_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+      I2C: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f32_alc_sk4_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f32_alc_sk4_i2c_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+      I2C: true
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f16_alc_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f16_alc_i2c_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      I2C: true
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f16_alc_sk2_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f16_alc_sk2_i2c_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+      I2C: true
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f16_alc_sk4_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f16_alc_sk4_i2c_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+      I2C: true
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f32_alc_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f32_alc_i2c_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      I2C: true
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_i2c_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+      I2C: true
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk4_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk4_i2c_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+      I2C: true
