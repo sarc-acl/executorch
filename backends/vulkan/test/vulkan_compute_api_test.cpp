@@ -13,6 +13,7 @@
 #include <cmath>
 #include <iomanip>
 #include <limits>
+#include <map>
 #include <numeric>
 #include <random>
 #include <tuple>
@@ -6019,13 +6020,70 @@ const Conv2dPwCoopmatVariant* runnable_pw_coopmat_variant() {
 
 } // namespace
 
+namespace {
+
+// Bytes of the Workgroup-storage variables a SPIR-V module declares (arrays of
+// scalars and vectors of 32-bit or 16-bit components).
+uint32_t spirv_workgroup_bytes(const vkapi::ShaderInfo& shader) {
+  const uint32_t* const words = shader.src_code.bin;
+  const uint32_t count = shader.src_code.size / 4u;
+  std::map<uint32_t, uint32_t> type_bytes;
+  std::map<uint32_t, uint32_t> constants;
+  std::map<uint32_t, uint32_t> workgroup_pointee;
+  uint32_t total = 0;
+  for (uint32_t i = 5; i < count;) {
+    const uint32_t op = words[i] & 0xFFFFu;
+    const uint32_t n = words[i] >> 16;
+    const uint32_t* const w = words + i;
+    if (op == 21 || op == 22) { // OpTypeInt, OpTypeFloat
+      type_bytes[w[1]] = w[2] / 8u;
+    } else if (op == 23) { // OpTypeVector
+      type_bytes[w[1]] = type_bytes[w[2]] * w[3];
+    } else if (op == 43) { // OpConstant
+      constants[w[2]] = w[3];
+    } else if (op == 28) { // OpTypeArray
+      type_bytes[w[1]] = type_bytes[w[2]] * constants[w[3]];
+    } else if (op == 32 && w[2] == 4u) { // OpTypePointer Workgroup
+      workgroup_pointee[w[1]] = w[3];
+    } else if (op == 59 && w[3] == 4u) { // OpVariable Workgroup
+      total += type_bytes[workgroup_pointee[w[1]]];
+    }
+    i += n;
+  }
+  return total;
+}
+
+} // namespace
+
 TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_variants_are_registered) {
   for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
     SCOPED_TRACE(v.name);
-    EXPECT_TRUE(api::shader_registry().has_shader(v.name));
-    EXPECT_EQ(
-        VK_KERNEL_FROM_STR(v.name).required_subgroup_size, v.subgroup_size);
+    ASSERT_TRUE(api::shader_registry().has_shader(v.name));
+    const vkapi::ShaderInfo shader = VK_KERNEL_FROM_STR(v.name);
+    EXPECT_EQ(shader.required_subgroup_size, v.subgroup_size);
+    // The descriptor's shared memory size is what the eligibility check
+    // compares with the device limit; it must be the shader's.
+    EXPECT_EQ(v.shared_bytes(), spirv_workgroup_bytes(shader));
+    EXPECT_LE(v.shared_bytes(), 48u * 1024u);
   }
+}
+
+TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_workgroup_split) {
+  const Conv2dPwCoopmatVariant* const variant =
+      find_conv2d_pw_coopmat_variant("conv2d_pw_coopmat_xe2_t16x32_f16_half");
+  ComputeGraph graph{GraphConfig()};
+  const uint32_t max_y =
+      graph.context()->adapter_ptr()->max_compute_workgroup_count()[1];
+  // One more pixel tile than fits in y.
+  const utils::uvec3 grid = conv2d_pw_coopmat_workgroups(
+      graph, *variant, 8u, (max_y + 1u) * variant->tile_m);
+  EXPECT_EQ(grid[0], 1u);
+  EXPECT_EQ(grid[1], max_y);
+  EXPECT_EQ(grid[2], 2u);
+  const utils::uvec3 small =
+      conv2d_pw_coopmat_workgroups(graph, *variant, 8u, 49u);
+  EXPECT_EQ(small[1], 4u);
+  EXPECT_EQ(small[2], 1u);
 }
 
 TEST(VulkanComputeGraphTest, conv2d_pw_request_dispatch) {
@@ -6063,6 +6121,43 @@ TEST(VulkanComputeGraphTest, conv2d_pw_request_dispatch) {
     EXPECT_TRUE(
         dispatched(wide.execute_and_check(), "conv2d_pw_tiled_4x8_bufw_half"));
   }
+}
+
+// A 1025 x 1024 output plane has 65600 pixel tiles of 16 pixels, more than the
+// 65535 work groups many devices allow in y.
+TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_dispatch_limit) {
+  ComputeGraph probe{GraphConfig()};
+  const Conv2dPwCoopmatVariant* variant = nullptr;
+  for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    if (v.tile_m == 16u && probe.float16_buffers_enabled() &&
+        conv2d_pw_coopmat_device_supports(probe, v)) {
+      variant = &v;
+      break;
+    }
+  }
+  if (variant == nullptr) {
+    GTEST_SKIP() << "no 16-pixel conv2d_pw_coopmat variant runs on this device";
+  }
+  const uint32_t max = probe.context()->adapter_ptr()->max_texture3d_dim();
+  if (max < 1025u) {
+    GTEST_SKIP() << "1025 x 1024 textures exceed the device limit";
+  }
+  SCOPED_TRACE(variant->name);
+  const utils::uvec3 grid =
+      conv2d_pw_coopmat_workgroups(probe, *variant, 8u, 1025u * 1024u);
+  const utils::uvec3 max_count =
+      probe.context()->adapter_ptr()->max_compute_workgroup_count();
+  EXPECT_LE(grid[1], max_count[1]);
+  EXPECT_EQ(uint64_t(grid[1]) * grid[2] >= 65600u, true);
+  PointwiseConvGraph g(
+      vkapi::kHalf,
+      8,
+      8,
+      1025,
+      1024,
+      1,
+      {Conv2dPwRequest::Kind::kCoopmat, variant});
+  EXPECT_TRUE(dispatched(g.execute_and_check(), variant->name));
 }
 
 TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_resize_to_one_pixel) {
