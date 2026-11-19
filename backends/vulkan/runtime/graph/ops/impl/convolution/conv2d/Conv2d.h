@@ -216,6 +216,12 @@ std::vector<std::pair<uint32_t, uint32_t>> conv2d_pw_coopmat_k_slices(
 std::string conv2d_pw_coopmat_merge_shader(
     const Conv2dPwCoopmatVariant& variant);
 
+// The largest output plane (pixels) the output's texture can hold, for which
+// a split-K variant sizes its scratch.
+uint32_t conv2d_pw_coopmat_scratch_capacity(
+    ComputeGraph& graph,
+    const ValueRef out);
+
 // Rows of N4 * 16 fp16 that the packed weight tensor of a split-K variant
 // carries after the weights as scratch for M output pixels (0 otherwise).
 uint32_t conv2d_pw_coopmat_scratch_rows(
@@ -283,8 +289,10 @@ bool conv2d_pw_coopmat_eligible(
 
 // Kernel requested from conv2d_pw_impl. kAuto is the production pick and the
 // only kind automatic routing uses. kTiledWide always picks the 2x2-pixel x
-// 8-channel tile. kCoopmat picks `coopmat_variant` while the convolution is
-// eligible for it and the kAuto pick otherwise, re-evaluated on every resize.
+// 8-channel tile. kCoopmat picks `coopmat_variant`: conv2d_pw_impl throws if
+// the convolution is not eligible for it when the graph is built; on a later
+// resize to a shape it cannot run, the node takes the kAuto pick, re-evaluated
+// on every resize.
 struct Conv2dPwRequest final {
   enum class Kind : uint8_t {
     kAuto,

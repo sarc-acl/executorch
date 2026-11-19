@@ -478,6 +478,15 @@ std::string conv2d_pw_coopmat_merge_shader(
       (variant.fp32_accumulation ? "f32" : "f16") + "_half";
 }
 
+uint32_t conv2d_pw_coopmat_scratch_capacity(
+    ComputeGraph& graph,
+    const ValueRef out) {
+  // Width x height of the output texture: the largest plane a resize can give
+  // the output (virtual resizes stay within the allocated extents).
+  const VkExtent3D extents = graph.image_of(out).extents();
+  return extents.width * extents.height;
+}
+
 uint32_t conv2d_pw_coopmat_scratch_rows(
     const Conv2dPwCoopmatVariant& variant,
     const uint32_t M) {
@@ -665,6 +674,23 @@ std::optional<std::string> conv2d_pw_coopmat_ineligible(
             std::to_string(variant.k_slices);
       }
     }
+    // The scratch is sized for every plane the output's storage can hold
+    // (conv2d_pw_coopmat_scratch_capacity), and shares the packed weight
+    // buffer, whose whole range is bound.
+    const uint64_t N4 = utils::div_up_4(graph.size_at<uint32_t>(-3, out));
+    const uint64_t rows =
+        utils::div_up_4(uint64_t(K)) +
+        conv2d_pw_coopmat_scratch_rows(
+            variant, conv2d_pw_coopmat_scratch_capacity(graph, out));
+    const uint64_t bytes = rows * N4 * 16u * 2u;
+    const uint64_t max_range =
+        // maxStorageBufferRange (bytes).
+        graph.context()->adapter_ptr()->max_buffer_numel();
+    if (bytes > max_range) {
+      return "the packed weights and split-K scratch take " +
+          std::to_string(bytes) + " bytes, more than maxStorageBufferRange " +
+          std::to_string(max_range);
+    }
     const uint64_t merge_groups = utils::div_up(
         uint64_t(M) * utils::div_up_4(graph.size_at<uint32_t>(-3, out)),
         uint64_t(kMergeThreads));
@@ -691,6 +717,17 @@ bool conv2d_pw_coopmat_eligible(
     const ValueRef out,
     const bool transposed,
     const bool has_bias_or_epilogue) {
+  if (variant.k_slices > 1u) {
+    // The scratch rows the packed weight tensor carries must hold the current
+    // plane.
+    const uint32_t M =
+        graph.size_at<uint32_t>(-1, out) * graph.size_at<uint32_t>(-2, out);
+    const uint32_t K4 = utils::div_up_4(graph.size_at<uint32_t>(-3, in));
+    const uint32_t rows = graph.size_at<uint32_t>(-2, packed_weight);
+    if (rows < K4 || rows - K4 < conv2d_pw_coopmat_scratch_rows(variant, M)) {
+      return false;
+    }
+  }
   return !conv2d_pw_coopmat_ineligible(
               graph,
               variant,
@@ -1204,6 +1241,30 @@ void conv2d_pw_impl(
       (request.kind == Conv2dPwRequest::Kind::kCoopmat) ==
           (request.coopmat_variant != nullptr),
       "conv2d_pw: a coopmat request names exactly one variant");
+  if (request.kind == Conv2dPwRequest::Kind::kCoopmat) {
+    // An explicit request for a convolution the variant cannot run is
+    // unsupported; only a later resize falls back to the tiled kernel.
+    const bool has_bias_or_epilogue = !graph.val_is_none(bias) ||
+        epilogue.has_activation() || epilogue.has_residual() ||
+        epilogue.has_scale();
+    if (const auto reason = conv2d_pw_coopmat_ineligible(
+            graph,
+            *request.coopmat_variant,
+            in,
+            weight_data,
+            conv2d_pw_weight_storage(graph, weight_data, out),
+            stride,
+            padding,
+            out,
+            transposed_val,
+            has_bias_or_epilogue)) {
+      VK_THROW(
+          "conv2d_pw: ",
+          request.coopmat_variant->name,
+          " cannot run this convolution: ",
+          *reason);
+    }
+  }
   const bool split_k = request.kind == Conv2dPwRequest::Kind::kCoopmat &&
       request.coopmat_variant->k_slices > 1u;
   ValueRef packed_weight = prepack_conv2d_pw_weight(
@@ -1212,8 +1273,7 @@ void conv2d_pw_impl(
       out,
       split_k ? conv2d_pw_coopmat_scratch_rows(
                     *request.coopmat_variant,
-                    graph.size_at<uint32_t>(-1, out) *
-                        graph.size_at<uint32_t>(-2, out))
+                    conv2d_pw_coopmat_scratch_capacity(graph, out))
               : 0);
 
   ValueRef packed_bias = prepack_biases(

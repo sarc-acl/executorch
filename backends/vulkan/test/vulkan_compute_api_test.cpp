@@ -5839,7 +5839,8 @@ class PointwiseConvGraph final {
       const int64_t H,
       const int64_t W,
       const int64_t stride,
-      const Conv2dPwRequest& request)
+      const Conv2dPwRequest& request,
+      const int64_t initial_hw = 0)
       : dtype_(dtype), K_(K), N_(N), stride_(stride), graph_(make_config()) {
     std::mt19937 rng(1531);
     std::uniform_real_distribution<float> unit(-1.0f, 1.0f);
@@ -5865,6 +5866,13 @@ class PointwiseConvGraph final {
         dtype,
         utils::kTexture3D,
         utils::kChannelsPacked);
+    // Tensors allocated for H x W with a smaller logical plane when the graph
+    // is built.
+    if (initial_hw > 0) {
+      graph_.virtual_resize(input_.value, {1, K, initial_hw, initial_hw});
+      graph_.virtual_resize(
+          out_, {1, N, out_size(initial_hw), out_size(initial_hw)});
+    }
     conv2d_pw_impl(
         graph_,
         input_.value,
@@ -6097,20 +6105,12 @@ TEST(VulkanComputeGraphTest, conv2d_pw_request_dispatch) {
     PointwiseConvGraph g(vkapi::kHalf, 576, 96, 14, 14, 1, coopmat);
     EXPECT_TRUE(dispatched(g.execute_and_check(), variant->name));
   }
-  {
-    SCOPED_TRACE("FP32 with the variant requested");
-    PointwiseConvGraph g(vkapi::kFloat, 576, 96, 14, 14, 1, coopmat);
-    const auto kernels = g.execute_and_check();
-    EXPECT_TRUE(dispatched_prefix(kernels, "conv2d_pw_tiled"));
-    EXPECT_FALSE(dispatched_prefix(kernels, "conv2d_pw_coopmat"));
-  }
-  {
-    SCOPED_TRACE("stride 2 with the variant requested");
-    PointwiseConvGraph g(vkapi::kHalf, 576, 96, 28, 28, 2, coopmat);
-    const auto kernels = g.execute_and_check();
-    EXPECT_TRUE(dispatched_prefix(kernels, "conv2d_pw_tiled"));
-    EXPECT_FALSE(dispatched_prefix(kernels, "conv2d_pw_coopmat"));
-  }
+  // An explicit request for a convolution the variant cannot run is refused
+  // when the graph is built.
+  EXPECT_ANY_THROW(
+      PointwiseConvGraph(vkapi::kFloat, 576, 96, 14, 14, 1, coopmat));
+  EXPECT_ANY_THROW(
+      PointwiseConvGraph(vkapi::kHalf, 576, 96, 28, 28, 2, coopmat));
   {
     SCOPED_TRACE("(49, 96, 576) automatic and forced wide");
     PointwiseConvGraph automatic(vkapi::kHalf, 576, 96, 7, 7, 1, {});
@@ -6443,19 +6443,13 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_aligned_only) {
     GTEST_SKIP() << "no aligned-only variant with N tile 32 runs here";
   }
   const Conv2dPwRequest request{Conv2dPwRequest::Kind::kCoopmat, variant};
-  // Unaligned channels: K = 40 and N = 24.
-  for (const auto& [K, N] :
-       {std::pair<int64_t, int64_t>{40, 96},
-        std::pair<int64_t, int64_t>{576, 24}}) {
-    SCOPED_TRACE(std::to_string(K) + "x" + std::to_string(N));
-    PointwiseConvGraph g(vkapi::kHalf, K, N, 14, 14, 1, request);
-    for (const int64_t size : {14, 7, 1, 14}) {
-      g.resize(size, size);
-      const auto kernels = g.execute_and_check();
-      EXPECT_TRUE(dispatched_prefix(kernels, "conv2d_pw_tiled"));
-      EXPECT_FALSE(dispatched(kernels, variant->name));
-    }
-  }
+  // Unaligned channels (K = 40, N = 24) are refused when the graph is built.
+  // The weights fix K and N, so a resize cannot make an aligned graph
+  // unaligned; the resize transition is to a plane the variant cannot run.
+  EXPECT_ANY_THROW(
+      PointwiseConvGraph(vkapi::kHalf, 40, 96, 14, 14, 1, request));
+  EXPECT_ANY_THROW(
+      PointwiseConvGraph(vkapi::kHalf, 576, 24, 14, 14, 1, request));
   // Aligned channels (K a multiple of 32 covers every K step): the variant
   // runs on whole and partial pixel tiles; a 1x1 plane takes the tiled kernel.
   PointwiseConvGraph g(vkapi::kHalf, 576, 96, 14, 14, 1, request);
@@ -6536,7 +6530,18 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_slices) {
     SCOPED_TRACE(v.name);
     EXPECT_TRUE(
         api::shader_registry().has_shader(conv2d_pw_coopmat_merge_shader(v)));
-    for (const uint32_t K : {257u, 576u, 960u, 40u}) {
+    // Expected per K step and slice count: K = 257 gives 17 steps of 16
+    // (4 slices: 5, 5, 5, 2) but 9 steps of 32 (4 slices: 3, 3, 3, 0); K = 321
+    // gives 21 steps of 16 and 11 of 32 (4 slices: 3, 3, 3, 2); K = 40 gives
+    // 3 steps of 16 and 2 of 32.
+    const bool k32 = v.tile_k == 32u;
+    const std::vector<std::pair<uint32_t, bool>> expected = {
+        {257u, !(k32 && v.k_slices == 4u)},
+        {321u, true},
+        {576u, true},
+        {960u, true},
+        {40u, false}};
+    for (const auto& [K, splits] : expected) {
       SCOPED_TRACE(K);
       const uint32_t steps = (K + v.tile_k - 1u) / v.tile_k;
       const auto slices = conv2d_pw_coopmat_k_slices(v, K);
@@ -6550,9 +6555,7 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_slices) {
         next = end;
       }
       EXPECT_EQ(next, steps);
-      // K = 257, 576 and 960 split into slices of at least two steps for 2
-      // and 4 slices of K step 16; K = 40 (3 steps) does not.
-      EXPECT_EQ(every_slice_has_two, K != 40u);
+      EXPECT_EQ(every_slice_has_two, splits);
     }
   }
   const Conv2dPwCoopmatVariant* const sk4 = find_conv2d_pw_coopmat_variant(
@@ -6564,7 +6567,7 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_slices) {
 
 // A split-K graph runs the variant and its merge, takes the tiled kernel alone
 // on a 1x1 plane, and returns to split-K, matching the reference throughout,
-// with K not a multiple of the K step or of the slice count.
+// with K (321) not a multiple of the K step or of the slice count.
 TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_resize) {
   ComputeGraph probe{GraphConfig()};
   for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
@@ -6576,7 +6579,7 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_resize) {
     const std::string merge = conv2d_pw_coopmat_merge_shader(v);
     PointwiseConvGraph g(
         vkapi::kHalf,
-        257,
+        321,
         96,
         14,
         14,
@@ -6595,6 +6598,37 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_resize) {
         EXPECT_TRUE(dispatched(kernels, merge));
         EXPECT_FALSE(dispatched_prefix(kernels, "conv2d_pw_tiled"));
       }
+    }
+  }
+}
+
+// The split-K scratch covers every plane the output's storage can hold: a graph
+// built with a 7x7 logical plane over 14x14 textures runs split-K after growing
+// to 14x14, falls back on 1x1 and recovers, matching the reference.
+TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_growth) {
+  ComputeGraph probe{GraphConfig()};
+  for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    if (v.k_slices <= 1u || !probe.float16_buffers_enabled() ||
+        !conv2d_pw_coopmat_device_supports(probe, v)) {
+      continue;
+    }
+    SCOPED_TRACE(v.name);
+    const std::string merge = conv2d_pw_coopmat_merge_shader(v);
+    PointwiseConvGraph g(
+        vkapi::kHalf,
+        321,
+        96,
+        14,
+        14,
+        1,
+        {Conv2dPwRequest::Kind::kCoopmat, &v},
+        /*initial_hw=*/7);
+    for (const int64_t size : {7, 14, 1, 14, 9}) {
+      SCOPED_TRACE(size);
+      g.resize(size, size);
+      const auto kernels = g.execute_and_check();
+      EXPECT_EQ(dispatched(kernels, v.name), size != 1);
+      EXPECT_EQ(dispatched(kernels, merge), size != 1);
     }
   }
 }
