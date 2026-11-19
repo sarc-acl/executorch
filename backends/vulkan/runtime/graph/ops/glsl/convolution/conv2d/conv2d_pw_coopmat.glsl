@@ -58,7 +58,12 @@ layout(std430) buffer;
 
 ${layout_declare_tensor(B, "w", "t_out", DTYPE, STORAGE)}
 ${layout_declare_tensor(B, "r", "t_in", DTYPE, STORAGE)}
-${layout_declare_tensor(B, "r", "t_weight_packed", DTYPE, "buffer", is_scalar_array=False)}
+$if W16:
+  // The packed weights as uvec4: one element is two adjacent k entries
+  // (4 output channels each) of a 4OC x 4IC block.
+  ${layout_declare_buffer(B, "r", "t_weight_u4", "uint", is_scalar_array=False)}
+$else:
+  ${layout_declare_tensor(B, "r", "t_weight_packed", DTYPE, "buffer", is_scalar_array=False)}
 ${layout_declare_tensor(B, "r", "t_bias", DTYPE, "texture2d")}
 ${layout_declare_tensor(B, "r", "t_residual", DTYPE, "texture3d")}
 ${layout_declare_tensor(B, "r", "t_scale", DTYPE, "texture2d")}
@@ -110,6 +115,8 @@ $if DIAG_ONCE:
   #define DIAG_ONCE
 $if ALIGNED:
   #define ALIGNED
+$if W16:
+  #define W16
 
 const uint MMA_M = ${MMA_M};
 const uint MMA_N = ${MMA_N};

@@ -138,10 +138,20 @@ void make_staging_map(
   }
   [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
     const uint item = min(p * WG_SIZE + tid, B_ITEMS - 1u);
+#ifdef W16
+    // B item = 4 output channels (b_col counts 4-channel texels) of two
+    // adjacent input channels b_k, b_k + 1 of one packed block: one 16-byte
+    // load; the two halves of a block fastest, then the texels of a block row.
+    const uint dk2 = item % 2u;
+    const uint rest = item / 2u;
+    map.b_col[p] = rest % (WG_TILE_N / 4u);
+    map.b_k[p] = (rest / (WG_TILE_N / 4u)) * 4u + 2u * dk2;
+#else
     const uint dk = item % 4u;
     const uint rest = item / 4u;
     map.b_col[p] = rest % B_COLS;
     map.b_k[p] = (rest / B_COLS) * 4u + dk;
+#endif
   }
 }
 
@@ -152,10 +162,15 @@ f16vec4 fetch_in(const ivec2 pos, const uint k4, const uint K4) {
   return f16vec4(texelFetch(t_in, ivec3(pos, int(k4)), 0));
 }
 
+#ifndef W16
 f16vec4 fetch_w(const uint k, const uint n4, const uint K4, const uint N4) {
   return f16vec4(t_weight_packed[((k >> 2u) * N4 + n4) * 4u + (k & 3u)]);
 }
+#endif
 #else
+#ifdef W16
+#error "W16 requires ALIGNED"
+#endif
 f16vec4 fetch_in(const ivec2 pos, const uint k4, const uint K4) {
   return k4 < K4 ? f16vec4(texelFetch(t_in, ivec3(pos, int(k4)), 0))
                  : f16vec4(0);
@@ -192,9 +207,17 @@ void load_b(
     const uint K4,
     const uint N4) {
   [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
+#ifdef W16
+    // Entries k and k + 1 (k even) of texel n4 are adjacent: f16vec4 element
+    // ((k / 4) * N4 + n4) * 4 + k % 4, an even index, is uvec4 element half of it.
+    const uint k = k_start + map.b_k[p];
+    const uint n4 = n4_start + map.b_col[p];
+    temp[p] = t_weight_u4[((k >> 2u) * N4 + n4) * 2u + ((k & 3u) >> 1u)];
+#else
     const uint k = k_start + map.b_k[p];
     const uint n4 = n4_start + 2u * map.b_col[p];
     temp[p] = pack_f16x8(fetch_w(k, n4, K4, N4), fetch_w(k, n4 + 1u, K4, N4));
+#endif
   }
 }
 
@@ -211,8 +234,23 @@ void store_ab(
   }
   [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
     if (B_ITEMS % WG_SIZE == 0u || p * WG_SIZE + tid < B_ITEMS) {
+#ifdef W16
+      // Rows b_k and b_k + 1, channels 4 * b_col ..: half of an 8-channel
+      // shared vector each.
+      const uint base = BSH_BASE + slice * BSH_SLICE;
+      const uint i0 = base + B_SH_IDX(map.b_k[p], map.b_col[p] / 2u);
+      const uint i1 = base + B_SH_IDX(map.b_k[p] + 1u, map.b_col[p] / 2u);
+      if ((map.b_col[p] & 1u) == 0u) {
+        sh[i0].xy = temp_b[p].xy;
+        sh[i1].xy = temp_b[p].zw;
+      } else {
+        sh[i0].zw = temp_b[p].xy;
+        sh[i1].zw = temp_b[p].zw;
+      }
+#else
       sh[BSH_BASE + slice * BSH_SLICE + B_SH_IDX(map.b_k[p], map.b_col[p])] =
           temp_b[p];
+#endif
     }
   }
 }

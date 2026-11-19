@@ -123,6 +123,7 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
   constexpr uint32_t kDiagOnce = V::kDiagOnce;
   constexpr uint32_t kAligned = V::kAligned;
   constexpr uint32_t kThreadGrid = V::kThreadGrid;
+  constexpr uint32_t kWideWeightLoad = V::kWideWeightLoad;
   // clang-format off
   static const std::vector<Conv2dPwCoopmatVariant> variants = {
       // Intel Xe2
@@ -195,6 +196,13 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_xe2_t32x64_f32_g4x2_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, true, true, kThreadGrid},
       {"conv2d_pw_coopmat_nvidia_t16x16_f16_half", 16, 16, 16, 16, 16, 16, 1, 1, 32, false, false},
       {"conv2d_pw_coopmat_nvidia_t16x16_f32_half", 16, 16, 16, 16, 16, 16, 1, 1, 32, true, false},
+      // Wide weight load (_w16) on the N-tile-32 aligned-only tiles
+      {"conv2d_pw_coopmat_xe2_t16x32_f16_al_w16_half", 8, 16, 16, 16, 32, 16, 1, 1, 16, false, true, kAligned | kWideWeightLoad},
+      {"conv2d_pw_coopmat_xe2_t16x32_f32_al_w16_half", 8, 16, 16, 16, 32, 16, 1, 1, 16, true, true, kAligned | kWideWeightLoad},
+      {"conv2d_pw_coopmat_amd_t16x32_f16_al_w16_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kAligned | kWideWeightLoad},
+      {"conv2d_pw_coopmat_amd_t16x32_f32_al_w16_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, true, false, kAligned | kWideWeightLoad},
+      {"conv2d_pw_coopmat_nvidia_t32x32_f16_al_w16_half", 16, 16, 16, 32, 32, 16, 1, 1, 32, false, false, kAligned | kWideWeightLoad},
+      {"conv2d_pw_coopmat_nvidia_t32x32_f32_al_w16_half", 16, 16, 16, 32, 32, 16, 1, 1, 32, true, false, kAligned | kWideWeightLoad},
   };
   // clang-format on
   return variants;
