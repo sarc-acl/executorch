@@ -29,6 +29,7 @@ conv2d_pw_coopmat:
     FRAG_LAYOUT: false
     DIAG_ONCE: false
     ALIGNED: false
+    CLAMP_N: false
     W16: false
     IMG_INPUT: false
     NO_EPILOGUE: false
@@ -969,3 +970,80 @@ conv2d_pw_coopmat:
       SUBGROUP_SIZE: 32
       ACC_TYPE: f32
       K_SLICES: 4
+    # Clamped-read aligned-only (_alc): no bounds tests in the K loop for any N;
+    # weight texels past the last output-channel texel read the last one
+    # (body option CLAMP_N). Requires K % WG_TILE_K == 0 only.
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f16_alc_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f32_alc_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f32
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+    - NAME: conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_half
+      MMA_M: 8
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+    - NAME: conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half
+      MMA_M: 8
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true

@@ -125,6 +125,7 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
   using V = Conv2dPwCoopmatVariant;
   constexpr uint32_t kDiagOnce = V::kDiagOnce;
   constexpr uint32_t kAligned = V::kAligned;
+  constexpr uint32_t kAlignedClampN = V::kAlignedClampN;
   constexpr uint32_t kThreadGrid = V::kThreadGrid;
   constexpr uint32_t kWideWeightLoad = V::kWideWeightLoad;
   constexpr uint32_t kImageInput = V::kImageInput;
@@ -234,6 +235,14 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       // Split-K for the AMD family (four slices)
       {"conv2d_pw_coopmat_amd_t16x32_f16_sk4_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, 0u, 4u},
       {"conv2d_pw_coopmat_amd_t16x32_f32_sk4_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, true, false, 0u, 4u},
+      // Clamped-read aligned-only (_alc) on the Xe2 128x128 tile, with split-K,
+      // and on the thread-rich tiles
+      {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN},
+      {"conv2d_pw_coopmat_xe2_t128x128_f32_alc_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, true, true, kAlignedClampN},
+      {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN, 2u},
+      {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN, 4u},
+      {"conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_half", 8, 16, 16, 64, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN},
+      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN},
   };
   // clang-format on
   return variants;
@@ -256,6 +265,7 @@ constexpr uint32_t kSlices = 0u;
 constexpr uint32_t kSuffixOrder[] = {
     Conv2dPwCoopmatVariant::kThreadGrid,
     Conv2dPwCoopmatVariant::kAligned,
+    Conv2dPwCoopmatVariant::kAlignedClampN,
     Conv2dPwCoopmatVariant::kWideWeightLoad,
     Conv2dPwCoopmatVariant::kImageInput,
     Conv2dPwCoopmatVariant::kNoEpilogue,
@@ -277,6 +287,8 @@ std::string suffix_item(const Conv2dPwCoopmatVariant& v, const uint32_t item) {
           std::to_string(v.sg_grid_y);
     case Conv2dPwCoopmatVariant::kAligned:
       return "_al";
+    case Conv2dPwCoopmatVariant::kAlignedClampN:
+      return "_alc";
     case Conv2dPwCoopmatVariant::kWideWeightLoad:
       return "_w16";
     case Conv2dPwCoopmatVariant::kImageInput:
@@ -341,6 +353,11 @@ std::vector<std::string> conv2d_pw_coopmat_registry_problems(
     if (v.has(Conv2dPwCoopmatVariant::kWideWeightLoad) &&
         !v.has(Conv2dPwCoopmatVariant::kAligned)) {
       problems.push_back(name + ": _w16 needs _al");
+    }
+    if (v.has(Conv2dPwCoopmatVariant::kAlignedClampN) &&
+        (v.has(Conv2dPwCoopmatVariant::kAligned) ||
+         v.has(Conv2dPwCoopmatVariant::kWideWeightLoad))) {
+      problems.push_back(name + ": _alc excludes _al and _w16");
     }
     if (v.has(Conv2dPwCoopmatVariant::kColumnMajorB) && v.frag_layout) {
       problems.push_back(name + ": _bcm needs the padded row-major layout");
@@ -653,6 +670,14 @@ std::optional<std::string> conv2d_pw_coopmat_ineligible(
           std::to_string(N) + " not a multiple of the variant's K step " +
           std::to_string(variant.tile_k) + " and N tile " +
           std::to_string(variant.tile_n);
+    }
+  }
+  if (variant.has(Conv2dPwCoopmatVariant::kAlignedClampN)) {
+    const uint32_t K = graph.size_at<uint32_t>(-3, in);
+    if (K % variant.tile_k != 0u) {
+      return "input channels " + std::to_string(K) +
+          " not a multiple of the variant's K step " +
+          std::to_string(variant.tile_k);
     }
   }
   if (variant.has(Conv2dPwCoopmatVariant::kNoEpilogue) &&

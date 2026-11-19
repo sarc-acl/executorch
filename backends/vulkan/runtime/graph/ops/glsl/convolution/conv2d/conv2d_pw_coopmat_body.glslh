@@ -25,6 +25,8 @@
  * result tile fits DRAIN_BUDGET_BYTES, and the work group reads them back to add
  * the bias, apply the epilogue (both in VEC4_T, f32 for ACC_FP32) and imageStore
  * the texels inside the output. The wrapper defines DRAIN_G and DRAIN_PASSES.
+ * Options: ALIGNED (no bounds tests in the K loop), CLAMP_N (with ALIGNED, any
+ * N), SPLIT_K, W16, IMG_INPUT, NO_EPILOGUE, BCM, DIAG_ONCE, DIRECT_B.
  */
 
 #ifndef CONV2D_PW_COOPMAT_BODY_GLSLH
@@ -188,16 +190,33 @@ void make_staging_map(
 #define LOAD_IN(pos) texelFetch(t_in, pos, 0)
 #endif
 
+#if defined(CLAMP_N) && (!defined(ALIGNED) || defined(W16))
+#error "CLAMP_N requires ALIGNED without W16"
+#endif
+
 #ifdef ALIGNED
 // K % WG_TILE_K == 0 and N % WG_TILE_N == 0 (conv2d_pw_coopmat_ineligible):
-// every fetch is inside the tensors.
+// every fetch is inside the tensors. With CLAMP_N only K % WG_TILE_K == 0
+// holds: weight texels past the last output-channel texel read texel N4 - 1,
+// and the output stage does not store their columns.
 f16vec4 fetch_in(const ivec2 pos, const uint k4, const uint K4) {
   return f16vec4(LOAD_IN(ivec3(pos, int(k4))));
 }
 
-#ifndef W16
+#ifdef CLAMP_N
+#define W_N4(n4) min(n4, N4 - 1u)
+#else
+#define W_N4(n4) (n4)
+#endif
+
+#ifdef SPLIT_K
 f16vec4 fetch_w(const uint k, const uint n4, const uint K4, const uint N4) {
-  return f16vec4(t_weight_packed[((k >> 2u) * N4 + n4) * 4u + (k & 3u)]);
+  const uvec2 u = t_weight_u2[((k >> 2u) * N4 + W_N4(n4)) * 4u + (k & 3u)];
+  return f16vec4(unpackFloat2x16(u.x), unpackFloat2x16(u.y));
+}
+#elif !defined(W16)
+f16vec4 fetch_w(const uint k, const uint n4, const uint K4, const uint N4) {
+  return f16vec4(t_weight_packed[((k >> 2u) * N4 + W_N4(n4)) * 4u + (k & 3u)]);
 }
 #endif
 #else
@@ -495,7 +514,7 @@ void drain_pass(
         (pass * DRAIN_G + g) * MMA_M + band_row % MMA_M;
     const uint m = tile_m_start + lr;
     const uint n4 = n4_start + lc4;
-#ifdef ALIGNED
+#if defined(ALIGNED) && !defined(CLAMP_N)
     if (m < M) {
 #else
     if (m < M && n4 < N4) {

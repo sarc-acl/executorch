@@ -123,6 +123,8 @@ $if DIAG_ONCE:
   #define DIAG_ONCE
 $if ALIGNED:
   #define ALIGNED
+$if CLAMP_N:
+  #define CLAMP_N
 $if W16:
   #define W16
 $if IMG_INPUT:
