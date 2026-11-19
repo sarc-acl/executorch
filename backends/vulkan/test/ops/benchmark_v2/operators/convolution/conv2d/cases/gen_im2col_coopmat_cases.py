@@ -52,7 +52,9 @@ SKIP_PHRASE = {
     "unknown": "Unknown conv2d_pw_coopmat variant",
     "limit": "maximum 3D image dimension",
     "gather": "maxComputeWorkGroupCount",
+    "int32": "computes in 32-bit integers and cannot represent the",
 }
+INT32_MAX = 2**31 - 1
 # maxComputeWorkGroupCount.y of every device here; the gather runs 16 x 4 work
 # groups over (k4, tile pixel), and a tile holds the output rows that fit a
 # 16 MiB FP16 scratch (conv2d_gemm_impl).
@@ -73,6 +75,10 @@ def tensor(name, sizes, data, storage="texture3d"):
         t["layout"] = "channels"
     t["data"] = data
     return {"tensor": t}
+
+
+def strides(stride):
+    return tuple(stride) if isinstance(stride, (tuple, list)) else (stride, stride)
 
 
 def out_size(n, k, stride, pad, dilation):
@@ -97,9 +103,10 @@ def conv_args(
     data=None,
 ):
     """`data` replaces the initializer of the named tensors (input, weight,
-    bias, residual)."""
-    ho = out_size(h, kh, stride, pad[0], dilation)
-    wo = out_size(w, kw, stride, pad[1], dilation)
+    bias, residual). `stride` is one value or (height, width)."""
+    st = strides(stride)
+    ho = out_size(h, kh, st[0], pad[0], dilation)
+    wo = out_size(w, kw, st[1], pad[1], dilation)
     s = float(f"{1 / (cin // groups * kh * kw) ** 0.5:.4g}")
     data = {
         "input": {"rand_uniform_float": [-1, 1]},
@@ -112,7 +119,7 @@ def conv_args(
         tensor("input", [1, cin, h, w], data["input"]),
         tensor("weight", [cout, cin // groups, kh, kw], data["weight"], "constant"),
         tensor("bias", [cout], data["bias"], "constant") if bias else None,
-        {"int_list": [stride, stride]},
+        {"int_list": list(st)},
         {"int_list": list(pad)},
         {"int_list": [dilation, dilation]},
         {"bool": False},
@@ -148,11 +155,26 @@ def split_k_ok(K, k_step, slices):
 
 def gather_groups(c):
     """(x, y) work groups of the im2col gather of one row tile."""
-    ho = out_size(c["h"], c["kh"], c.get("stride", 1), c.get("pad", (0, 0))[0], 1)
-    wo = out_size(c["w"], c["kw"], c.get("stride", 1), c.get("pad", (0, 0))[1], 1)
+    st = strides(c.get("stride", 1))
+    ho = out_size(c["h"], c["kh"], st[0], c.get("pad", (0, 0))[0], 1)
+    wo = out_size(c["w"], c["kw"], st[1], c.get("pad", (0, 0))[1], 1)
     K = k_total(c)
     oh_tile = min(ho, max(1, SCRATCH_BUDGET // (wo * K * 2)))
     return -(-K // 4 // 16), -(-(wo * oh_tile) // 4)
+
+
+def int32_overflow(c):
+    """Whether conv2d_im2col's int32 arithmetic (in + 2 p, (out - 1) s + k - 1)
+    overflows on an axis."""
+    st, pad = strides(c.get("stride", 1)), c.get("pad", (0, 0))
+    for n, k, s, p in (
+        (c["h"], c["kh"], st[0], pad[0]),
+        (c["w"], c["kw"], st[1], pad[1]),
+    ):
+        o = out_size(n, k, s, p, 1)
+        if n + 2 * p > INT32_MAX or (o - 1) * s + k - 1 > INT32_MAX:
+            return True
+    return False
 
 
 def expected_skip(variant, c):
@@ -161,6 +183,8 @@ def expected_skip(variant, c):
         return SKIP_PHRASE["groups"]
     if c.get("dilation", 1) != 1:
         return SKIP_PHRASE["dilation"]
+    if int32_overflow(c):
+        return SKIP_PHRASE["int32"]
     tokens = variant.removeprefix("conv2d_pw_coopmat_").removesuffix("_half").split("_")
     k_step = K_STEP[tokens[0]]
     K = k_total(c)
@@ -222,6 +246,12 @@ CORRECTNESS = [
     ("3x3 K above 3D limit", conv(7296, 4, 4, 16, 3, 3, pad=(1, 1))),
     # One 512 x 1024 tile (K = 12): 131072 gather work groups in y.
     ("1x3 gather grid limit", conv(4, 512, 1024, 4, 1, 3, pad=(0, 1))),
+    # Width stride and padding 2^30 (a valid 2x3 output): in + 2 p overflows
+    # the gather's int32 arithmetic.
+    (
+        "1x3 int32 padding",
+        conv(4, 2, 3, 4, 1, 3, stride=(1, 2**30), pad=(0, 2**30)),
+    ),
 ]
 
 
@@ -391,9 +421,10 @@ def cases(label, c, baselines, variants, timing):
 def correctness(variants):
     out = []
     for label, c in CORRECTNESS:
-        if k_total(c) // 4 > MAX_3D_LAYERS:
+        if k_total(c) // 4 > MAX_3D_LAYERS or int32_overflow(c):
             # Refusal check only: im2col cannot pack these weights into a 2D
-            # image, and auto (direct) exceeds the fp16 tolerance at this K.
+            # image and auto (direct) exceeds the fp16 tolerance at this K, or
+            # the spatial parameters overflow the gather's int32 arithmetic.
             out += cases(label, c, [], variants, VALIDATION_TIMING)[1:]
             continue
         # im2col runs neither groups nor a gather beyond the work group limit.

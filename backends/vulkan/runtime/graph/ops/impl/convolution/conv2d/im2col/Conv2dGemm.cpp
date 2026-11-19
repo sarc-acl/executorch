@@ -17,6 +17,7 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/ShaderNameUtils.h>
 
 #include <algorithm>
+#include <limits>
 #include <optional>
 
 namespace vkcompute {
@@ -558,6 +559,8 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
     const ValueRef in,
     const ValueRef weight_data,
     const ValueRef bias,
+    const ValueRef stride,
+    const ValueRef padding,
     const ValueRef dilation,
     const ValueRef out,
     const bool transposed) {
@@ -573,12 +576,19 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
       graph.dtype_of(out) != vkapi::kHalf) {
     return "input and output are not FP16";
   }
+  // Both weight packings and prepack_biases read constant (TensorRef) data.
+  if (!graph.val_is_tref(weight_data)) {
+    return "the weights are not a constant (TensorRef)";
+  }
   // The buffer weight packing exists for FP16 weights only.
   if (graph.dtype_of(weight_data) != vkapi::kHalf) {
     return "the weights are not FP16";
   }
   // prepack_biases stages the bias with the weight's dtype.
   if (!graph.val_is_none(bias)) {
+    if (!graph.val_is_tref(bias)) {
+      return "the bias is not a constant (TensorRef)";
+    }
     if (graph.dtype_of(bias) != vkapi::kHalf) {
       return "the bias is not FP16";
     }
@@ -615,6 +625,33 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
     const auto dilation_list = graph.get_int_list(dilation);
     if (dilation_list->at(0) != 1 || dilation_list->at(1) != 1) {
       return "dilation is not 1";
+    }
+  }
+  {
+    // conv2d_im2col.glsl computes, per spatial axis and in int32, the output
+    // extent from in + 2 p and the input coordinate o s - p + k (o < out,
+    // k < kernel). Every such value must fit, for the build-time sizes (a
+    // resize only shrinks them).
+    constexpr int64_t kMax = std::numeric_limits<int32_t>::max();
+    const std::vector<int64_t> out_sizes = graph.sizes_of(out);
+    const auto stride_list = graph.get_int_list(stride);
+    const auto padding_list = graph.get_int_list(padding);
+    const char* const axis[] = {"height", "width"};
+    for (size_t a = 0; a < 2; ++a) {
+      const int64_t s = stride_list->at(a);
+      const int64_t p = padding_list->at(a);
+      const int64_t in_dim = in_sizes.at(2 + a);
+      const int64_t out_dim = out_sizes.at(2 + a);
+      const int64_t k = w_sizes.at(2 + a);
+      if (s < 1 || p < 0 || s > kMax || p > kMax || in_dim + 2 * p > kMax ||
+          (out_dim - 1) * s + (k - 1) > kMax) {
+        return std::string(
+                   "the im2col gather computes in 32-bit integers and "
+                   "cannot represent the ") +
+            axis[a] + " axis (input " + std::to_string(in_dim) + ", stride " +
+            std::to_string(s) + ", padding " + std::to_string(p) + ", kernel " +
+            std::to_string(k) + ", output " + std::to_string(out_dim) + ")";
+      }
     }
   }
   if (!conv2d_im2col_coopmat_runnable(graph, out)) {
@@ -740,6 +777,8 @@ void conv2d_gemm_impl(
             in,
             weight_data,
             bias,
+            stride,
+            padding,
             dilation,
             out,
             /*transposed=*/false)) {

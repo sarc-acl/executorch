@@ -118,6 +118,8 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
     const ValueRef in,
     const ValueRef weight_data,
     const ValueRef bias,
+    const ValueRef stride,
+    const ValueRef padding,
     const ValueRef dilation,
     const ValueRef out,
     const bool transposed);

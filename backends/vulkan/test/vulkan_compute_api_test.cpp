@@ -7027,6 +7027,8 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_refuses_fp32_weights) {
       in,
       weight,
       graph.add_none(),
+      graph.add_scalar_list<int64_t>({1, 1}),
+      graph.add_scalar_list<int64_t>({1, 1}),
       dilation,
       out,
       /*transposed=*/false);
@@ -7126,6 +7128,8 @@ TEST(
         weight,
         bias,
         graph.add_scalar_list<int64_t>({1, 1}),
+        graph.add_scalar_list<int64_t>({1, 1}),
+        graph.add_scalar_list<int64_t>({1, 1}),
         out,
         /*transposed=*/false);
     ASSERT_TRUE(reason.has_value());
@@ -7200,6 +7204,8 @@ TEST(
         weight,
         bias,
         graph.add_scalar_list<int64_t>({1, 1}),
+        graph.add_scalar_list<int64_t>({1, 1}),
+        graph.add_scalar_list<int64_t>({1, 1}),
         out,
         /*transposed=*/false);
     ASSERT_TRUE(reason.has_value());
@@ -7207,5 +7213,107 @@ TEST(
     const std::string error =
         im2col_coopmat_build_error(graph, bias, {}, in, weight, out);
     EXPECT_NE(error.find(want), std::string::npos) << error;
+  }
+}
+
+// Weights and bias must be constants (TensorRef): both packings read them on
+// the host. A tensor weight or bias is refused with its operand named before
+// any prepack or execute node is registered (a tensor bias used to leave two
+// weight prepack nodes behind).
+TEST(
+    VulkanComputeGraphTest,
+    conv2d_im2col_coopmat_refuses_nonconstant_operands) {
+  const std::vector<executorch::aten::Half> w(
+      16 * 16 * 3 * 3, executorch::aten::Half(0.0f));
+  const std::vector<executorch::aten::Half> b(16, executorch::aten::Half(1.0f));
+  for (const bool tensor_bias : {true, false}) {
+    SCOPED_TRACE(tensor_bias ? "tensor bias" : "tensor weights");
+    ComputeGraph graph{GraphConfig()};
+    const ValueRef in = graph.add_tensor(
+        {1, 16, 2, 3}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+    const ValueRef out = graph.add_tensor(
+        {1, 16, 2, 3}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+    const ValueRef weight = tensor_bias
+        ? graph.add_tensorref({16, 16, 3, 3}, vkapi::kHalf, w.data())
+        : graph.add_tensor(
+              {16, 16, 3, 3},
+              vkapi::kHalf,
+              utils::kBuffer,
+              utils::kWidthPacked);
+    const ValueRef bias = tensor_bias
+        ? graph.add_tensor(
+              {16}, vkapi::kHalf, utils::kBuffer, utils::kWidthPacked)
+        : graph.add_tensorref({16}, vkapi::kHalf, b.data());
+    const std::string want = tensor_bias
+        ? "the bias is not a constant (TensorRef)"
+        : "the weights are not a constant (TensorRef)";
+    const ValueRef ones = graph.add_scalar_list<int64_t>({1, 1});
+    const auto reason = conv2d_im2col_coopmat_ineligible(
+        graph,
+        *find_conv2d_pw_coopmat_variant(
+            "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_i2c_half"),
+        in,
+        weight,
+        bias,
+        ones,
+        ones,
+        ones,
+        out,
+        /*transposed=*/false);
+    ASSERT_TRUE(reason.has_value());
+    EXPECT_EQ(*reason, want);
+    const std::string error =
+        im2col_coopmat_build_error(graph, bias, {}, in, weight, out);
+    EXPECT_NE(error.find(want), std::string::npos) << error;
+  }
+}
+
+// conv2d_im2col.glsl evaluates in + 2 p and the input coordinates in int32: a
+// stride and padding of 2^30 on one axis (a valid 2x3 output) is refused with
+// the axis named instead of gathering wrong texels; the other axis alike.
+TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_refuses_int32_overflow) {
+  const std::vector<executorch::aten::Half> w(
+      4 * 4 * 3, executorch::aten::Half(0.0f));
+  const int64_t big = int64_t(1) << 30;
+  for (const bool width : {true, false}) {
+    SCOPED_TRACE(width ? "width" : "height");
+    ComputeGraph graph{GraphConfig()};
+    const ValueRef in = graph.add_tensor(
+        width ? std::vector<int64_t>{1, 4, 2, 3}
+              : std::vector<int64_t>{1, 4, 3, 2},
+        vkapi::kHalf,
+        utils::kTexture3D,
+        utils::kChannelsPacked);
+    const ValueRef out = graph.add_tensor(
+        width ? std::vector<int64_t>{1, 4, 2, 3}
+              : std::vector<int64_t>{1, 4, 3, 2},
+        vkapi::kHalf,
+        utils::kTexture3D,
+        utils::kChannelsPacked);
+    const ValueRef weight = graph.add_tensorref(
+        width ? std::vector<int64_t>{4, 4, 1, 3}
+              : std::vector<int64_t>{4, 4, 3, 1},
+        vkapi::kHalf,
+        w.data());
+    const ValueRef stride = graph.add_scalar_list<int64_t>(
+        width ? std::vector<int64_t>{1, big} : std::vector<int64_t>{big, 1});
+    const ValueRef padding = graph.add_scalar_list<int64_t>(
+        width ? std::vector<int64_t>{0, big} : std::vector<int64_t>{big, 0});
+    const std::string want =
+        std::string("cannot represent the ") + (width ? "width" : "height");
+    const auto reason = conv2d_im2col_coopmat_ineligible(
+        graph,
+        *find_conv2d_pw_coopmat_variant(
+            "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_i2c_half"),
+        in,
+        weight,
+        graph.add_none(),
+        stride,
+        padding,
+        graph.add_scalar_list<int64_t>({1, 1}),
+        out,
+        /*transposed=*/false);
+    ASSERT_TRUE(reason.has_value());
+    EXPECT_NE(reason->find(want), std::string::npos) << *reason;
   }
 }
