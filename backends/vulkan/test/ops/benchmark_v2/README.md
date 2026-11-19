@@ -311,6 +311,7 @@ Registered convolution routes:
 | --- | --- |
 | `aten.convolution.default`, `et_vk.conv_with_clamp.default`, `et_vk.conv2d.with_epilogue` | `auto`, `direct`, `im2col`, `winograd`. `direct` accepts `masked: true`, which disables the border-specialized shader variants. `im2col` accepts `intermediate_storage`: `buffer`, `texture2d`, or `texture3d`; omission uses the production choice. `winograd` accepts `chunk_rows`, a positive number of output tile rows per chunk, and `weight_storage`: `buffer` or `texture2d`; omission uses the production choice. For batch-1 depthwise convolutions, `aten.convolution.default` and `et_vk.conv2d.with_epilogue` also accept `b1x1` and `b4x2`, which force the 1x1 output tile or the default tile. |
 | `aten.convolution.default`, `et_vk.conv_with_clamp.default`, `et_vk.conv2d.with_epilogue` (1x1) | `pw_coopmat` with the required option `variant`, a `conv2d_pw_coopmat` shader name such as `conv2d_pw_coopmat_xe2_t32x64_f16_half`; `pw_tiled_4x8`, which forces the `conv2d_pw_tiled_4x8` shader that automatic routing takes only above a size threshold. No options for `pw_tiled_4x8`. |
+| `aten.convolution.default`, `et_vk.conv_with_clamp.default`, `et_vk.conv2d.with_epilogue` | `im2col_coopmat` with the required option `variant`, an `_i2c` `conv2d_pw_coopmat` shader name such as `conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_i2c_half`: the im2col gather into a texture3d scratch, then that cooperative-matrix variant (and, for `_sk<n>`, its merge) in place of `conv2d_gemm`. |
 | `et_vk.q8ta_conv2d.default` | `auto`, `direct` (general convolution), `im2col`. No route options. |
 
 The floating-point forced routes currently support forward 2D convolution with
@@ -325,7 +326,11 @@ shape and accumulator type at subgroup scope and can require its subgroup size;
 otherwise the case reports `SKIP` with the unmet condition. The variants of each
 GPU family (`xe2`, `amd`, `nvidia`) are listed in
 `backends/vulkan/runtime/graph/ops/glsl/convolution/conv2d/conv2d_pw_coopmat.yaml`. Automatic
-routing never selects them.
+routing never selects them. `im2col_coopmat` has the requirements of
+`pw_coopmat` except the 1x1 kernel, stride and padding: any kernel size, stride
+and padding, dilation 1, groups 1; the gathered K (kh x kw x Cin rounded up to
+4) must be a multiple of the variant's K step for `_alc` variants and fit the
+device's 3D image limit as K / 4 texel layers.
 The Q8TA routes use packed int8 buffers and the production streaming feasibility
 checks. Route eligibility is separate from automatic performance heuristics:
 for example, forcing floating-point im2col can test dilated convolutions even
@@ -1089,6 +1094,16 @@ fp16-accumulation variants round them to fp16, like the tiled shaders.
 | `pw_coopmat_mobilenet.json` | MobileNetV2 and V3 Small: (49, 160, 960), (196, 64, 384), (196, 96, 576), (49, 96, 576). |
 | `pw_coopmat_resnet50.json` | The twelve stride-1 1x1 layers of ResNet-50 at 224 x 224 input. |
 | `pw_coopmat_large.json` | The FP16 shapes of `pw_performance.json`. |
+| `pw_coopmat_gemm_shapes.json` | The GEMM-equivalent (M, N, K) of the surveyed k x k layers as 1x1 convolutions, on seven Xe2 `_alc` variants. |
+
+`gen_im2col_coopmat_cases.py` writes the collections of route `im2col_coopmat`
+from the `_i2c` variants of `conv2d_pw_coopmat.yaml` (`--check` as above):
+
+| Collection | Cases |
+| --- | --- |
+| `im2col_coopmat_correctness.json` | 3x3 stride 1 and 2, 1x7, 7x1, 1x3, 3x1, Cin 30, 20 and 4, no bias, clamp, residual with ReLU, a gather in two row tiles; dilation 2, groups 2 and two variant names the route refuses, as expected skips. Baselines `auto` and `im2col`. |
+| `im2col_coopmat_expected_skips.json` | Per case, the variants that must report `SKIP` and the phrase of the reason. |
+| `im2col_coopmat_performance.json` | The surveyed ResNet, Inception and DenseNet k x k layers on `auto`, `direct`, `im2col` and the measured `_i2c` variants. |
 
 ```sh
 etvk_ops_bench --config=operators/convolution/conv2d/device_coopmat_properties.json
