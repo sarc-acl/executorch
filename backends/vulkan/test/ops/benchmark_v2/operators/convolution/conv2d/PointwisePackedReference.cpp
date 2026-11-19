@@ -74,6 +74,69 @@ Tensor conv2d_pw_packed_reference(
 }
 
 /*
+ * Reference for raw shader cases that check where a pointwise shader stores:
+ * the bindings of conv2d_pw_packed, with an output texture larger than the
+ * convolution's output (the shader's out_sizes, passed as a uniform, say
+ * [W, H, N]; H and W are the input's, N the bias's). The expected output is
+ * the output's initial content with the convolution's [N, H, W] region
+ * replaced by the convolution, so a store outside that region fails.
+ */
+Tensor conv2d_pw_packed_guard_reference(
+    const Json& spec,
+    const TensorMap& tensors,
+    size_t threads) {
+  std::vector<std::string> bindings;
+  for (const Json& binding : spec.at("bindings")) {
+    if (binding.contains("tensor")) {
+      bindings.push_back(binding.at("tensor"));
+    }
+  }
+  require(
+      bindings.size() >= 4,
+      "conv2d_pw_packed_guard requires output, input, weight and bias bindings");
+  const auto found = tensors.find(bindings[0]);
+  require(
+      found != tensors.end(),
+      "conv2d_pw_packed_guard requires initial output data");
+  Tensor output = found->second;
+  const Tensor& in = tensors.at(bindings[1]);
+  const Tensor& w = tensors.at(bindings[2]);
+  const Tensor& bias = tensors.at(bindings[3]);
+  require(
+      in.sizes.size() == 4 && output.sizes.size() == 4,
+      "conv2d_pw_packed_guard requires 4-D input and output");
+  const int64_t K = in.sizes[1];
+  const int64_t H = in.sizes[2];
+  const int64_t W = in.sizes[3];
+  const int64_t N = static_cast<int64_t>(bias.values.size());
+  const int64_t Ht = output.sizes[2];
+  const int64_t Wt = output.sizes[3];
+  require(
+      output.sizes[1] >= N && Ht >= H && Wt == W,
+      "conv2d_pw_packed_guard requires an output at least [N, H, W] wide W");
+  const int64_t K4 = (K + 3) / 4;
+  const int64_t N4 = (N + 3) / 4;
+  require(
+      w.sizes == std::vector<int64_t>({K4, N4 * 16}),
+      "conv2d_pw_packed_guard requires a [K4, N4 * 16] packed weight");
+  parallel_for(N, threads, [&](size_t n_index) {
+    const int64_t n = static_cast<int64_t>(n_index);
+    for (int64_t y = 0; y < H; ++y) {
+      for (int64_t x = 0; x < W; ++x) {
+        double acc = 0;
+        for (int64_t k = 0; k < K; ++k) {
+          const int64_t packed =
+              (((k / 4) * N4 + n / 4) * 4 + k % 4) * 4 + n % 4;
+          acc += in.values[(k * H + y) * W + x] * w.values[packed];
+        }
+        output.values[(n * Ht + y) * Wt + x] = acc + bias.values[n];
+      }
+    }
+  });
+  return output;
+}
+
+/*
  * Reference of the _diag_once diagnostics of conv2d_pw_coopmat for
  * aten.convolution.default cases with an optional bias and no epilogue: each
  * output is steps times the products of the first K step's input channels,
@@ -137,6 +200,9 @@ Tensor conv2d_pw_diag_once_reference(
 REGISTER_REFERENCE_FUNCTIONS {
   REGISTER_REFERENCE_FN(conv2d_pw_packed, conv2d_pw_packed_reference);
   REGISTER_REFERENCE_FN(conv2d_pw_diag_once, conv2d_pw_diag_once_reference);
+  REGISTER_REFERENCE_FN(
+      conv2d_pw_packed_guard,
+      conv2d_pw_packed_guard_reference);
 }
 
 } // namespace vkcompute::shader_profiling::reference

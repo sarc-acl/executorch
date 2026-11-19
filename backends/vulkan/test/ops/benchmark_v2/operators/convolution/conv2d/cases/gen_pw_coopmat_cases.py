@@ -303,6 +303,94 @@ def expected_skips(build):
     return skips
 
 
+def first_channel_weight(N, K, value):
+    """Weights [N, K, 1, 1] that are VALUE on input channel 0 and 0 elsewhere,
+    so an aligned K keeps the single-product cancellations of PRECISION."""
+    return {"repeat": [value if k == 0 else 0 for _ in range(N) for k in range(K)]}
+
+
+# PRECISION with channel counts every aligned-only variant accepts (N = 64,
+# K = 32 or 2048).
+PRECISION_ALIGNED = [
+    (
+        "aligned precision bias cancellation",
+        6,
+        64,
+        32,
+        (2, 3),
+        {
+            "data": {
+                "input": {"fill": 65},
+                "weight": first_channel_weight(64, 32, 65),
+                "bias": {"fill": -4224},
+            }
+        },
+    ),
+    (
+        "aligned precision residual cancellation",
+        6,
+        64,
+        32,
+        (2, 3),
+        {
+            "bias": False,
+            "op": "epilogue",
+            "epilogue": ("add", 1.0, False, "none"),
+            "data": {
+                "input": {"fill": 65},
+                "weight": first_channel_weight(64, 32, 65),
+                "residual": {"fill": -4224},
+            },
+        },
+    ),
+    (
+        "aligned precision residual alpha",
+        6,
+        64,
+        32,
+        (2, 3),
+        {
+            "bias": False,
+            "op": "epilogue",
+            "epilogue": ("add", 1.000244140625, False, "none"),
+            "data": {
+                "input": {"fill": 64},
+                "weight": first_channel_weight(64, 32, 64),
+                "residual": {"fill": -4096},
+            },
+        },
+    ),
+    (
+        "aligned precision ordered cancellation",
+        6,
+        64,
+        2048,
+        (2, 3),
+        {
+            "bias": False,
+            "data": {"input": cancellation_input(2048, 6), "weight": {"fill": 1}},
+        },
+    ),
+]
+
+# Shapes every aligned-only variant accepts: pixel counts one short of and one
+# over a multiple of every M tile (63 = 64 - 1, 65 = 64 + 1), a fused clamp and
+# a fused residual.
+ALIGNED = [
+    ("aligned 63px", 63, 64, 64, (7, 9), {}),
+    ("aligned 65px", 65, 128, 96, (5, 13), {}),
+    ("aligned clamp", 196, 64, 128, (14, 14), {"op": "clamp", "clamp": [0.0, 6.0]}),
+    (
+        "aligned residual",
+        49,
+        64,
+        64,
+        (7, 7),
+        {"op": "epilogue", "epilogue": ("add", 1.0, False, "none")},
+    ),
+]
+
+
 def fp32_variants(variants):
     return [v for v in variants if "_f32_" in v]
 
@@ -333,11 +421,11 @@ def correctness(variants):
             (7, 7),
             {"op": "epilogue", "epilogue": ("sub", 0.5, True, "relu")},
         ),
-    ]:
+    ] + ALIGNED:
         cases += shape_cases(
             label, M, N, K, plane, variants, VALIDATION_TIMING, **kwargs
         )
-    for label, M, N, K, plane, kwargs in PRECISION:
+    for label, M, N, K, plane, kwargs in PRECISION + PRECISION_ALIGNED:
         cases += shape_cases(
             label,
             M,
@@ -370,7 +458,7 @@ def fp16_accumulation_limits(variants):
     FAIL (design D4, spec "Accumulation precision"); kept out of the correctness
     collection so that it passes."""
     cases = []
-    for label, M, N, K, plane, kwargs in PRECISION:
+    for label, M, N, K, plane, kwargs in PRECISION + PRECISION_ALIGNED:
         cases += shape_cases(
             label.replace("precision", "fp16 limit"),
             M,
@@ -500,6 +588,110 @@ def diag_checks(variants):
     return cases
 
 
+GUARD = 7.0
+
+
+def guard_case(variant, tile_m, tile_n, threads, label, M, N, K, plane):
+    """A raw shader case of an aligned-only variant whose output texture is
+    larger than the convolution's output (out_sizes): GUARD rows below the plane
+    and one 4-channel texel past N, filled with GUARD. The reference
+    conv2d_pw_packed_guard expects GUARD there, so any store outside the
+    output fails validation."""
+    H, W = plane
+    assert H * W == M
+    s = float(f"{1 / K ** 0.5:.4g}")
+    tex = lambda name, sizes, data, **kw: {  # noqa: E731
+        "texture3d": {
+            "name": name,
+            "sizes": sizes,
+            "dtype": "float16",
+            "layout": "channels",
+            **kw,
+            "data": data,
+        }
+    }
+    return {
+        "name": f"pw_coopmat guard {label} ({M},{N},{K}) {variant}",
+        "shader": variant,
+        "reference": "conv2d_pw_packed_guard",
+        "validation_method": TOLERANCE,
+        "gwg_size": [-(-N // tile_n) * threads, -(-M // tile_m), 1],
+        "lwg_size": [threads, 1, 1],
+        **VALIDATION_TIMING,
+        "bindings": [
+            tex("out", [1, N + 4, H + 16, W], {"fill": GUARD}, access="write"),
+            tex("in", [1, K, H, W], {"rand_uniform_float": [-1, 1]}),
+            {
+                "buffer": {
+                    "name": "w",
+                    "sizes": [-(-K // 4), -(-N // 4) * 16],
+                    "dtype": "float16",
+                    "data": {"rand_uniform_float": [-s, s]},
+                }
+            },
+            {
+                "texture2d": {
+                    "name": "bias",
+                    "sizes": [1, N],
+                    "dtype": "float16",
+                    "data": {"rand_uniform_float": [-1, 1]},
+                }
+            },
+            {"texture3d": {"ref": "in"}},
+            {"texture2d": {"ref": "bias"}},
+            {"meta_ubo": "in", "field": "sizes"},
+            {"uniform": [{"dtype": "int32", "data": [W, H, N, 1]}]},
+        ],
+        "specialization_constants": [
+            {"dtype": "int32", "value": 1},
+            {"dtype": "bool", "value": False},
+            {"dtype": "int32", "value": 0},
+            {"dtype": "bool", "value": False},
+            {"dtype": "bool", "value": False},
+            {"dtype": "int32", "value": 0},
+        ],
+        "push_constants": [
+            {"dtype": "int32", "data": [1, 1, 0, 0]},
+            {"dtype": "float32", "data": [0, 0, 1, 0, 0, 1]},
+        ],
+        "outputs": ["out"],
+    }
+
+
+def guard(family):
+    """The guard cases of one family's aligned-only variants. Raw shader cases
+    do not check the device, so each device runs the files of the families it
+    offers."""
+
+    def build(variants):
+        return guard_cases(family, variants)
+
+    return build
+
+
+def guard_cases(family, variants):
+    shader = yaml.safe_load(YAML.read_text())["conv2d_pw_coopmat"]
+    defaults = shader["parameter_names_with_default_values"]
+    cases = []
+    for v in shader["shader_variants"]:
+        p = dict(defaults, **v)
+        if (
+            not p.get("ALIGNED")
+            or p["NAME"] not in variants
+            or not p["NAME"].startswith(f"conv2d_pw_coopmat_{family}_")
+        ):
+            continue
+        threads = p["SG_GRID_X"] * p["SG_GRID_Y"] * p["SUBGROUP_SIZE"]
+        for label, M, N, K, plane, _ in ALIGNED[:2]:
+            cases.append(
+                guard_case(
+                    p["NAME"], p["WG_TILE_M"], p["WG_TILE_N"], threads,
+                    label, M, N, K, plane,
+                )
+            )
+    return cases
+
+
 FILES = {
     "pw_coopmat_correctness.json": correctness,
     "pw_coopmat_fp16_accumulation_limits.json": fp16_accumulation_limits,
@@ -507,6 +699,7 @@ FILES = {
     "pw_coopmat_resnet50.json": performance("resnet50", RESNET50),
     "pw_coopmat_large.json": performance("large", upstream_fp16_shapes()),
     "pw_coopmat_ksweep.json": ksweep,
+    **{f"pw_coopmat_guard_{f}.json": guard(f) for f in FAMILIES},
     "pw_coopmat_diag_checks.json": diag_checks,
 }
 FILES["pw_coopmat_expected_skips.json"] = expected_skips(correctness)
