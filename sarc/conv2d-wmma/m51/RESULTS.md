@@ -47,11 +47,11 @@ reduced-grid collection (a shape-level reduction: same N and K, M cut to at most
 `--validation_only`, on the canonical driver, all 78 non-`_i2c` `amd`/`nvidia` variants, driver
 checksum and clock pins re-checked between repetitions, no crash, every stderr empty.
 
-- **amd family (38 variants): 35 pass 10/10 on all three collections; 1 fails (below); 2
-  `_epi0` variants have no gate cases by construction** (every gate case carries a bias or a
-  residual, which they refuse; they pass the correctness collection 10/10).
-- **nvidia family (40 variants): 38 pass 10/10 on all three collections; the same 2 `_epi0`
-  caveat applies; 0 fail.**
+- **73 of the 78 variants pass 10/10 on all three collections: 35 `amd`, 38 `nvidia`.**
+- **4 `_epi0` variants (2 per family) are correctness-only:** every gate case carries a bias or a
+  residual, which they refuse, so the many-workgroup gate is not applicable to them; they pass
+  the correctness collection 10/10.
+- **1 fails: `amd_t64x64_f32` (below).**
 
 ### The failure: `amd_t64x64_f32`, concurrent-workgroup defect
 
@@ -74,7 +74,8 @@ First-mismatch flat indices and full mismatch lists in the local record. The fai
 have M in {784, 3136} (13 or 49 pixel tiles); no case
 with M <= 289 ever fails. Channel offsets are always 16 or 48 (one or three `MMA_M` row blocks
 into the 64-row channel tile); pixel offsets are 0 to 2. Per the gate the variant is **never
-timed**. The fix path is `XP` (TASKS 3.2); the 3.4 gate re-runs these exact cases.
+timed**. Whether any option (e.g. `XP`) removes this defect is UNVERIFIED; the variant is
+excluded.
 
 Bounded diagnosis:
 
@@ -97,5 +98,6 @@ collection exercises the 39 f16-accumulating variants (19 `amd`, 20 `nvidia`) on
 cancellation and residual-alpha cases built to exceed fp16 accumulation range. **Every one of
 the 39 fails at least one such case, and the baseline arms fail 19 of the 22 case groups as
 well** — the defeats are inherent to fp16 accumulation, not variant defects. Per SPEC this
-collection is a record, not a gate: all 39 passed the 2.4 gate 10/10 and remain eligible for
-timing; the f32-accumulating variants are out of scope of this collection.
+collection is a record, not a gate: 37 of the 39 passed the 2.4 gate 10/10; the two `_epi0`
+members are correctness-only (above). The f32-accumulating variants are out of scope of this
+collection.
