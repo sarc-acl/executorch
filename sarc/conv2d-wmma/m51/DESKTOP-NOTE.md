@@ -9,14 +9,17 @@ Two variants, both AMD-family cooperative-matrix (`coopmatKHR`), fp16 in/out wit
 accumulation, selected by the campaign's correctness gate (fp32 accumulation; every fp16-
 accumulation variant fails the adversarial fp16-limits record cases):
 
-- **1x1 convolutions: `conv2d_pw_coopmat_amd_t16x32_f32_al_half`** - tile 16x32, async loads.
+- **1x1 convolutions: `conv2d_pw_coopmat_amd_t16x32_f32_al_half`** - tile 16x32, `_al`
+  (no bounds tests in the K loop; requires K and N multiples of the tile), fp32 accumulation.
   Geomean **2.10x** over the pointwise baseline (`pw_tiled_4x8`) and **1.85x** over the
   current auto routing on the 21-shape selection set, winning every shape of that set; the
   ten heaviest workload shapes measured later (7.3) add six wins and four dense-plane
   exceptions - see the routing rule.
 - **k x k convolutions: `conv2d_pw_coopmat_amd_t16x32_f32_alc_sk2_i2c_half`** - tile 16x32,
-  async loads, K-split 2, im2col input staging. Geomean **3.39x** over auto and **1.67x** over
-  the best stock route per shape, covering 14/14 measured k x k shapes.
+  `_alc` (no K-loop bounds tests with clamped weight reads, so any N; requires only K a
+  multiple of the K step), K-split 2, im2col input staging, fp32 accumulation.
+  Geomean **3.39x** over auto and **1.67x** over the
+  best stock route per shape, covering 14/14 measured k x k shapes.
 
 An fp16-accumulation k x k variant (`amd_t128x128_f16_alc_sk4_i2c_half`) is faster still
 (3.69x / 1.82x) and wins one shape the fp32 parent loses, but is reported separately for the
@@ -101,13 +104,20 @@ fastest of auto / direct / im2col per shape.
 - k x k: adopt the coopmat variant except **Cin = 64 with large output planes** (`3x3 64
   224x224`, `3x3 64 56x56`, `3x3 64-256 224x224` run at 0.45-0.67x of stock under the
   variant) - there the K = 576 GEMM is small relative to the output plane and the im2col
-  gather dominates. Keep those on the stock route.
+  gather dominates. Keep those on a stock route - but on exactly those shapes the fast stock
+  route (`direct`) is the one that missed the validation tolerance in the gate runs, and the
+  tolerance-holding stock route (`im2col`) is 1.5-2.4x slower than the coopmat route there;
+  see the caveat below.
 - The fp32 parent also loses `3x3 1024-256 28x28` (0.82x); the fp16 best wins it (1.73x).
 
-One caveat for the fallback arm: on the measurement device the `direct` route exceeded the
-validation tolerance on four K = 576-class shapes (max errors of 1.4-5.3x the 0.1 absolute
-tolerance), while `im2col` held tolerance everywhere. Verify the tolerance of whichever stock
-route the rule falls back to on your targets before shipping it.
+Caveat for the fallback arm: on the measurement device the `direct` route exceeded the
+validation tolerance on four K = 576-class shapes of the gate set (max errors of 1.4-5.3x
+the 0.1 absolute tolerance, and 1.04 in absolute terms - about 10x the tolerance - on the
+adversarial gather-grid-limit case of the correctness collection), while `im2col` held
+tolerance everywhere. So on the Cin=64 exception shapes the in-tolerance stock choice gives
+back more than the coopmat route loses; the out-of-tolerance fast path is not shippable as
+is. Verify the tolerance of whichever stock route the rule falls back to on your targets
+before shipping it.
 
 ## Where the time is (for choosing what to build next)
 

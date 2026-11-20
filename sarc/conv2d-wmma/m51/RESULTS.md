@@ -498,10 +498,13 @@ conv GPU time). Recomputation: `tools/e2e_projection.py` over `survey-conv-shape
 
 ## 8.1 Final timed session (both parents, interleaved)
 
-The final tables of this campaign come from one interleaved session, run with the binary built
-from the committed HEAD `d65b1c37c9` (every commit after the last code change touches this
-results file only, so the build is code-identical to the last code commit; the rebuild
-reproduces the canonical session binary byte for byte, digest comparison in the local record).
+The final tables of this campaign come from one interleaved session. The session binary is the
+canonical bench of this campaign, first built before the 4.0 session and unchanged since; the
+device copy's identity is recorded in the local run records. The corresponding code state is
+the last code commit, `45e0e1f445`: the host rebuild after the 5.2 ablation work - made in
+place from the worktree, not from an exported commit - reproduces that binary byte for byte,
+and every commit after `45e0e1f445` touches only this results file and the desktop note, so
+the session binary is code-identical to it.
 
 Protocol: 35 cases in one session - the 21 1x1 selection shapes with arms `auto`,
 `pw_tiled_4x8` and the 1x1 parent, and the 14 k x k shapes (9.2 below) with arms `auto`,
@@ -584,12 +587,16 @@ fp16 best eleven of fourteen; the losses are the same Cin=64 large-plane shapes 
 `3x3 1024-256 28x28` for the parent), and the routing implication of 9.2 is unchanged.
 
 **Cross-session agreement.** Against the 4.0 selection session and the 9.2 k x k session,
-per-cell ratios reproduce: every k x k cell within 1.2% (one at 2.8%, `3x3 s2 256-512 14x14`
-best-stock), every 1x1 cell within 1.7% except `196,96,576` (4.81 -> 4.17), the one cell whose
-baseline arm carries a cross-run spread of a quarter in both sessions - inside its widened
-band. Geomeans: 2.122 -> 2.103 (-0.9%) and 1.838 -> 1.850 (+0.7%) for the 1x1 parent; the
-k x k geomeans are unchanged to two decimals. The selection sessions' numbers stand, and with
-them the 7.4 projections.
+per-cell ratios reproduce: every k x k parent cell within 1.2% except `3x3 s2 256-512 14x14`
+against the best stock route (+2.8%); on the fp16 best column the same shape moves +2.1% -
+every other fp16 cell within 1.1%. On the 1x1 side every cell within 1.7% except `196,96,576`
+(4.81 -> 4.17, the cell whose baseline arm carries a cross-run spread of a quarter in both
+sessions - inside its widened band) and `25,384,4032` against `auto` (3.37 -> 3.76): its `auto` arm is bimodal in both
+sessions (per-run times cluster at two levels about 13%
+apart, and the five-run median flips between them), so the 4.0 value is itself unstable; the
+`pw_tiled_4x8` column of that cell reproduces within 0.9%. Geomeans: 2.122 -> 2.103 (-0.9%)
+and 1.838 -> 1.850 (+0.7%) for the 1x1 parent; the k x k geomeans are unchanged to two
+decimals. The selection sessions' numbers stand, and with them the 7.4 projections.
 
 ## 8.3 Stage-2 input: which convolution family to take first
 
