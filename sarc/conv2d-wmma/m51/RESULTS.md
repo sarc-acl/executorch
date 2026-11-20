@@ -208,6 +208,43 @@ observed spread where the A/A and cross-run spread exceeded 2%); the parent wins
 Both parent geomeans (2.122x over `pw_tiled_4x8`, 1.838x over `auto`) exceed the 1.15x campaign
 success threshold.
 
+## 5.2 Phase timing of the 1x1 parent (ablation method)
+
+SPEC asks for in-kernel shader-clock phase timing. The device ships no Vulkan validation layers
+(`debugPrintfEXT` unavailable) and `VK_KHR_shader_clock` support is unknown, so the phase costs
+are located by ablation instead: five debug builds of the same bench, each compiled with one
+phase of the parent template disabled (`--env PHASE_TIMING=1 PHASE_ABLATE=<phase>`, a
+debug-only template path that the default build does not take). FETCH returns constant weights,
+STAGE skips the shared-memory store of the A/B fragments, SYNC skips the K-loop
+`memoryBarrierShared(); barrier();`, MMA skips the `coopMatMulAdd` calls, DRAIN skips the drain
+passes. Each ablated bench ran the phase-timing collection (21 shapes, two arms) twice,
+`--validation_mode=none`, pinned clocks, canonical driver verified after every phase.
+
+Build verification: the five ablated benches have five distinct digests, and the default-env
+rebuild at committed HEAD reproduces the canonical bench digest byte for byte - the
+instrumentation changes nothing in the shipped shaders. The `pw_tiled_4x8` control arm is not
+instrumented and matches the 4.0 session (mean deviation 0.7-0.9% per phase; worst single cell
+10.7%, a small-time cell, consistent with the 4.0 A/A spread on two-run medians).
+
+Phase cost as a share of the parent route time (per-shape values in
+`phase_shares.csv`, local artifact; positive = ablation made the kernel faster):
+
+| phase | mean | median | reading |
+|---|---:|---:|---|
+| staging (shared-memory store of A/B) | 41.0% | 42.9% | dominant, 24.5-49.9% and uniform across shapes |
+| multiply (`coopMatMulAdd`) | 37.0% | 37.6% | second, 21.8-56.0% across shapes |
+| drain (result drain passes) | 19.1% | 22.4% | third, concentrated on the 56x56-plane cells (23-42%), near zero on several 196/289/784-plane cells |
+| fetch (input/weight loads) | 5.7% | 4.9% | minor, 12.9% at most |
+| synchronization (K-loop barrier) | 0.9% | 1.3% | noise-level; several cells negative |
+
+The five shares are independent measurements against the full kernel and do not add to 100%
+(their per-shape sum averages 104%, range 78-122%: removing one phase also hides stalls that
+another phase would cause). The reading for candidates: the bottleneck is staging, not the matrix multiply -
+the cooperative-matrix arithmetic costs ~37% of the kernel while getting the fragments through
+shared memory costs ~41% - and the drain passes cost a fifth of the kernel on top. SYNC is
+effectively free, so staging-side candidates (layout, vector width, staging order) have the
+headroom; barrier-reduction candidates do not.
+
 ## 7.2 FP16 workload baseline (ten CI models)
 
 Twelve traced executions per model (first dropped), ETDump per model, aggregated with
