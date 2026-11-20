@@ -39,7 +39,7 @@ struct Conv2dCoopmatTableRow final {
 };
 
 // clang-format off
-inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
+inline constexpr std::array<Conv2dCoopmatTableRow, 805> kConv2dCoopmatTable = {{
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1008-192 14x14, 2.99x
     {0x8086, 0xe20b, 1008, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-128 17x17, 2.94x
@@ -538,6 +538,10 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 1152, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1152-192 7x7, 3.39x
     {0x8086, 0xe223, 1152, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 120-32 1x1, 1.40x
+    {0x8086, 0xe223, 120, 32, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 120-48 14x14, 1.34x
+    {0x8086, 0xe223, 120, 48, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1200-192 14x14, 3.36x
     {0x8086, 0xe223, 1200, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1200-192 7x7, 3.45x
@@ -574,8 +578,12 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 144, 24, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 144-32 28x28, 1.56x
     {0x8086, 0xe223, 144, 32, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 144-40 1x1, 1.32x
+    {0x8086, 0xe223, 144, 40, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 144-48 14x14, 1.58x
     {0x8086, 0xe223, 144, 48, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 144-576 1x1, 1.20x
+    {0x8086, 0xe223, 144, 576, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1440-192 14x14, 3.69x
     {0x8086, 0xe223, 1440, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1440-192 7x7, 3.80x
@@ -644,6 +652,8 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 2016, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2048-192 5x5, 4.60x
     {0x8086, 0xe223, 2048, 192, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2048-256 1x1, 2.87x
+    {0x8086, 0xe223, 2048, 256, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2048-256 28x28, 4.73x
     {0x8086, 0xe223, 2048, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2048-320 5x5, 4.55x
@@ -668,6 +678,8 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 2160, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 240-40 14x14, 1.77x
     {0x8086, 0xe223, 240, 40, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 240-64 1x1, 1.43x
+    {0x8086, 0xe223, 240, 64, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 256-1024 14x14, 2.21x
     {0x8086, 0xe223, 256, 1024, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 256-1024 28x28, 2.28x
@@ -684,10 +696,12 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 288, 48, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 288-64 25x25, 1.78x
     {0x8086, 0xe223, 288, 64, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 288-72 1x1, 1.44x
+    {0x8086, 0xe223, 288, 72, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 288-96 7x7, 1.92x
     {0x8086, 0xe223, 288, 96, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 32-192 28x28, 1.23x
-    {0x8086, 0xe223, 32, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 32-192 28x28, 1.25x
+    {0x8086, 0xe223, 32, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 320-1280 7x7, 1.91x
     {0x8086, 0xe223, 320, 1280, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 336-192 56x56, 1.99x
@@ -709,7 +723,7 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 48-144 14x14, 1.15x
     {0x8086, 0xe223, 48, 144, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 48-288 14x14, 1.11x
-    {0x8086, 0xe223, 48, 288, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
+    {0x8086, 0xe223, 48, 288, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 480-192 28x28, 2.49x
     {0x8086, 0xe223, 480, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 512-1024 28x28, 2.86x
@@ -724,6 +738,8 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 512, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 528-192 28x28, 2.55x
     {0x8086, 0xe223, 528, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-144 1x1, 1.48x
+    {0x8086, 0xe223, 576, 144, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-160 7x7, 2.21x
     {0x8086, 0xe223, 576, 160, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-192 14x14, 2.17x
@@ -746,6 +762,10 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 672, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 672-192 28x28, 2.69x
     {0x8086, 0xe223, 672, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 72-24 28x28, 1.18x
+    {0x8086, 0xe223, 72, 24, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 72-288 1x1, 1.14x
+    {0x8086, 0xe223, 72, 288, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 720-192 14x14, 2.40x
     {0x8086, 0xe223, 720, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 720-192 28x28, 2.72x
@@ -764,8 +784,12 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 816, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 864-192 14x14, 2.70x
     {0x8086, 0xe223, 864, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 88-24 28x28, 1.28x
+    {0x8086, 0xe223, 88, 24, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 912-192 14x14, 2.84x
     {0x8086, 0xe223, 912, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 96-24 1x1, 1.42x
+    {0x8086, 0xe223, 96, 24, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 96-24 56x56, 1.30x
     {0x8086, 0xe223, 96, 24, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 96-40 14x14, 1.44x
@@ -780,148 +804,168 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 960, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 960-320 7x7, 3.04x
     {0x8086, 0xe223, 960, 320, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 384-256 8x8, 4.33x
-    {0x8086, 0xe223, 384, 256, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 384-384 5x5, 4.32x
-    {0x8086, 0xe223, 384, 384, 1, 3, 1, 1, 0, 1, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 448-512 8x8, 4.75x
-    {0x8086, 0xe223, 448, 512, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 512-256 8x8, 5.38x
-    {0x8086, 0xe223, 512, 256, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 128-128 12x12, 3.60x
-    {0x8086, 0xe223, 128, 128, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 128-192 12x12, 3.57x
-    {0x8086, 0xe223, 128, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 160-160 12x12, 4.09x
-    {0x8086, 0xe223, 160, 160, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 160-192 12x12, 4.09x
-    {0x8086, 0xe223, 160, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 192-192 12x12, 4.61x
-    {0x8086, 0xe223, 192, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 192-224 17x17, 4.22x
-    {0x8086, 0xe223, 192, 224, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 224-256 17x17, 4.52x
-    {0x8086, 0xe223, 224, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 256-256 17x17, 5.17x
-    {0x8086, 0xe223, 256, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 64-64 73x73, 1.36x
-    {0x8086, 0xe223, 64, 64, 1, 7, 1, 1, 0, 3, 1, 1, 73, 73, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 384-256 8x8, 4.34x
-    {0x8086, 0xe223, 384, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 384-384 5x5, 4.31x
-    {0x8086, 0xe223, 384, 384, 3, 1, 1, 1, 1, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 384-448 8x8, 4.28x
-    {0x8086, 0xe223, 384, 448, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 512-256 8x8, 5.38x
-    {0x8086, 0xe223, 512, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p0x0 d1x1 64-96 73x73, 1.73x
-    {0x8086, 0xe223, 64, 96, 3, 3, 1, 1, 0, 0, 1, 1, 73, 73, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p0x0 d1x1 80-192 54x54, 2.12x
-    {0x8086, 0xe223, 80, 192, 3, 3, 1, 1, 0, 0, 1, 1, 54, 54, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p12x12 d12x12 2048-256 28x28, 7.82x
-    {0x8086, 0xe223, 2048, 256, 3, 3, 1, 1, 12, 12, 12, 12, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 1024-256 28x28, 6.48x
-    {0x8086, 0xe223, 1024, 256, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 128-128 28x28, 3.73x
-    {0x8086, 0xe223, 128, 128, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-224 35x35, 1.64x
-    {0x8086, 0xe223, 192, 224, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 14x14, 2.25x
-    {0x8086, 0xe223, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 28x28, 4.47x
-    {0x8086, 0xe223, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 56x56, 2.51x
-    {0x8086, 0xe223, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 7x7, 2.43x
-    {0x8086, 0xe223, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 256-256 14x14, 6.40x
-    {0x8086, 0xe223, 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 256-256 28x28, 4.70x
-    {0x8086, 0xe223, 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 32-64 109x109, 1.08x
-    {0x8086, 0xe223, 32, 64, 3, 3, 1, 1, 1, 1, 1, 1, 109, 109, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 32-64 147x147, 1.08x
-    {0x8086, 0xe223, 32, 64, 3, 3, 1, 1, 1, 1, 1, 1, 147, 147, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_i2c_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 1024-2048 14x14, 1.91x
+    {0x8086, 0xe223, 1024, 2048, 1, 1, 2, 2, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 128-256 28x28, 1.12x
+    {0x8086, 0xe223, 128, 256, 1, 1, 2, 2, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 256-512 14x14, 1.07x
+    {0x8086, 0xe223, 256, 512, 1, 1, 2, 2, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 256-512 56x56, 1.90x
+    {0x8086, 0xe223, 256, 512, 1, 1, 2, 2, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 512-1024 28x28, 2.82x
+    {0x8086, 0xe223, 512, 1024, 1, 1, 2, 2, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 384-256 8x8, 5.21x
+    {0x8086, 0xe223, 384, 256, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 384-384 5x5, 5.15x
+    {0x8086, 0xe223, 384, 384, 1, 3, 1, 1, 0, 1, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 448-512 8x8, 5.54x
+    {0x8086, 0xe223, 448, 512, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 512-256 8x8, 6.06x
+    {0x8086, 0xe223, 512, 256, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 128-128 12x12, 4.80x
+    {0x8086, 0xe223, 128, 128, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 128-192 12x12, 4.72x
+    {0x8086, 0xe223, 128, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 160-160 12x12, 5.16x
+    {0x8086, 0xe223, 160, 160, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 160-192 12x12, 5.14x
+    {0x8086, 0xe223, 160, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 192-192 12x12, 5.62x
+    {0x8086, 0xe223, 192, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 192-224 17x17, 5.34x
+    {0x8086, 0xe223, 192, 224, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 224-256 17x17, 5.59x
+    {0x8086, 0xe223, 224, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 256-256 17x17, 6.28x
+    {0x8086, 0xe223, 256, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 64-64 73x73, 2.48x
+    {0x8086, 0xe223, 64, 64, 1, 7, 1, 1, 0, 3, 1, 1, 73, 73, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 384-256 8x8, 5.22x
+    {0x8086, 0xe223, 384, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 384-384 5x5, 5.19x
+    {0x8086, 0xe223, 384, 384, 3, 1, 1, 1, 1, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 384-448 8x8, 5.17x
+    {0x8086, 0xe223, 384, 448, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 512-256 8x8, 6.07x
+    {0x8086, 0xe223, 512, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p0x0 d1x1 32-32 111x111, 1.40x
+    {0x8086, 0xe223, 32, 32, 3, 3, 1, 1, 0, 0, 1, 1, 111, 111, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p0x0 d1x1 32-32 149x149, 1.18x
+    {0x8086, 0xe223, 32, 32, 3, 3, 1, 1, 0, 0, 1, 1, 149, 149, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p0x0 d1x1 64-96 73x73, 3.01x
+    {0x8086, 0xe223, 64, 96, 3, 3, 1, 1, 0, 0, 1, 1, 73, 73, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p0x0 d1x1 80-192 54x54, 3.07x
+    {0x8086, 0xe223, 80, 192, 3, 3, 1, 1, 0, 0, 1, 1, 54, 54, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p12x12 d12x12 2048-256 28x28, 11.78x
+    {0x8086, 0xe223, 2048, 256, 3, 3, 1, 1, 12, 12, 12, 12, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 1024-256 28x28, 9.20x
+    {0x8086, 0xe223, 1024, 256, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 128-128 28x28, 5.29x
+    {0x8086, 0xe223, 128, 128, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-224 35x35, 2.36x
+    {0x8086, 0xe223, 192, 224, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 14x14, 2.72x
+    {0x8086, 0xe223, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 28x28, 5.87x
+    {0x8086, 0xe223, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 56x56, 4.87x
+    {0x8086, 0xe223, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 7x7, 2.79x
+    {0x8086, 0xe223, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 256-256 14x14, 7.02x
+    {0x8086, 0xe223, 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 256-256 28x28, 6.61x
+    {0x8086, 0xe223, 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 32-64 109x109, 1.98x
+    {0x8086, 0xe223, 32, 64, 3, 3, 1, 1, 1, 1, 1, 1, 109, 109, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 32-64 147x147, 2.09x
+    {0x8086, 0xe223, 32, 64, 3, 3, 1, 1, 1, 1, 1, 1, 147, 147, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 448-384 5x5, 8.94x
     {0x8086, 0xe223, 448, 384, 3, 3, 1, 1, 1, 1, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 512-512 7x7, 9.35x
     {0x8086, 0xe223, 512, 512, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-256 224x224, 2.99x
-    {0x8086, 0xe223, 64, 256, 3, 3, 1, 1, 1, 1, 1, 1, 224, 224, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-64 56x56, 1.66x
-    {0x8086, 0xe223, 64, 64, 3, 3, 1, 1, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk2_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-96 25x25, 2.15x
-    {0x8086, 0xe223, 64, 96, 3, 3, 1, 1, 1, 1, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-96 35x35, 2.08x
-    {0x8086, 0xe223, 64, 96, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 96-96 25x25, 2.91x
-    {0x8086, 0xe223, 96, 96, 3, 3, 1, 1, 1, 1, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 96-96 35x35, 2.57x
-    {0x8086, 0xe223, 96, 96, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p24x24 d24x24 2048-256 28x28, 8.00x
-    {0x8086, 0xe223, 2048, 256, 3, 3, 1, 1, 24, 24, 24, 24, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p2x2 d2x2 256-256 28x28, 5.72x
-    {0x8086, 0xe223, 256, 256, 3, 3, 1, 1, 2, 2, 2, 2, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p2x2 d2x2 512-512 28x28, 11.88x
-    {0x8086, 0xe223, 512, 512, 3, 3, 1, 1, 2, 2, 2, 2, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p36x36 d36x36 2048-256 28x28, 45.81x
-    {0x8086, 0xe223, 2048, 256, 3, 3, 1, 1, 36, 36, 36, 36, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p4x4 d4x4 512-512 28x28, 13.05x
-    {0x8086, 0xe223, 512, 512, 3, 3, 1, 1, 4, 4, 4, 4, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-192 12x12, 5.72x
-    {0x8086, 0xe223, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-192 17x17, 5.68x
-    {0x8086, 0xe223, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-192 71x71, 5.20x
-    {0x8086, 0xe223, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 71, 71, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-320 12x12, 5.66x
-    {0x8086, 0xe223, 192, 320, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 224-256 35x35, 5.06x
-    {0x8086, 0xe223, 224, 256, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-256 224x224, 5.80x
+    {0x8086, 0xe223, 64, 256, 3, 3, 1, 1, 1, 1, 1, 1, 224, 224, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-64 224x224, 2.12x
+    {0x8086, 0xe223, 64, 64, 3, 3, 1, 1, 1, 1, 1, 1, 224, 224, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-64 56x56, 2.77x
+    {0x8086, 0xe223, 64, 64, 3, 3, 1, 1, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-96 25x25, 3.22x
+    {0x8086, 0xe223, 64, 96, 3, 3, 1, 1, 1, 1, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-96 35x35, 3.33x
+    {0x8086, 0xe223, 64, 96, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 96-96 25x25, 4.06x
+    {0x8086, 0xe223, 96, 96, 3, 3, 1, 1, 1, 1, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 96-96 35x35, 3.98x
+    {0x8086, 0xe223, 96, 96, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p24x24 d24x24 2048-256 28x28, 12.35x
+    {0x8086, 0xe223, 2048, 256, 3, 3, 1, 1, 24, 24, 24, 24, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p2x2 d2x2 256-256 28x28, 7.79x
+    {0x8086, 0xe223, 256, 256, 3, 3, 1, 1, 2, 2, 2, 2, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p2x2 d2x2 512-512 28x28, 14.75x
+    {0x8086, 0xe223, 512, 512, 3, 3, 1, 1, 2, 2, 2, 2, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p36x36 d36x36 2048-256 28x28, 63.22x
+    {0x8086, 0xe223, 2048, 256, 3, 3, 1, 1, 36, 36, 36, 36, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p4x4 d4x4 512-512 28x28, 15.91x
+    {0x8086, 0xe223, 512, 512, 3, 3, 1, 1, 4, 4, 4, 4, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-192 12x12, 6.19x
+    {0x8086, 0xe223, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-192 17x17, 5.92x
+    {0x8086, 0xe223, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-192 71x71, 6.53x
+    {0x8086, 0xe223, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 71, 71, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-320 12x12, 6.09x
+    {0x8086, 0xe223, 192, 320, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 224-256 35x35, 5.35x
+    {0x8086, 0xe223, 224, 256, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 288-384 25x25, 6.38x
     {0x8086, 0xe223, 288, 384, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 320-320 17x17, 7.51x
     {0x8086, 0xe223, 320, 320, 3, 3, 2, 2, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 384-384 35x35, 6.19x
     {0x8086, 0xe223, 384, 384, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 64-96 147x147, 1.70x
-    {0x8086, 0xe223, 64, 96, 3, 3, 2, 2, 0, 0, 1, 1, 147, 147, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 96-96 25x25, 1.45x
-    {0x8086, 0xe223, 96, 96, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 128-128 56x56, 3.57x
-    {0x8086, 0xe223, 128, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 128-256 28x28, 4.21x
-    {0x8086, 0xe223, 128, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 256-256 28x28, 6.37x
-    {0x8086, 0xe223, 256, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 256-512 14x14, 6.62x
-    {0x8086, 0xe223, 256, 512, 3, 3, 2, 2, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 64-96 147x147, 2.22x
+    {0x8086, 0xe223, 64, 96, 3, 3, 2, 2, 0, 0, 1, 1, 147, 147, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 96-96 25x25, 1.88x
+    {0x8086, 0xe223, 96, 96, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 128-128 56x56, 4.82x
+    {0x8086, 0xe223, 128, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 128-256 28x28, 5.13x
+    {0x8086, 0xe223, 128, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 256-256 28x28, 6.79x
+    {0x8086, 0xe223, 256, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 256-512 14x14, 6.64x
+    {0x8086, 0xe223, 256, 512, 3, 3, 2, 2, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 512-512 14x14, 9.36x
     {0x8086, 0xe223, 512, 512, 3, 3, 2, 2, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 64-128 56x56, 2.29x
-    {0x8086, 0xe223, 64, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 5x5 s1x1 p2x2 d1x1 48-64 25x25, 3.61x
-    {0x8086, 0xe223, 48, 64, 5, 5, 1, 1, 2, 2, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 128-128 12x12, 3.62x
-    {0x8086, 0xe223, 128, 128, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 128-192 12x12, 3.59x
-    {0x8086, 0xe223, 128, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 160-160 12x12, 4.09x
-    {0x8086, 0xe223, 160, 160, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 160-192 12x12, 4.10x
-    {0x8086, 0xe223, 160, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 192-192 12x12, 4.62x
-    {0x8086, 0xe223, 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 192-192 17x17, 4.23x
-    {0x8086, 0xe223, 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 224-224 17x17, 4.56x
-    {0x8086, 0xe223, 224, 224, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 224-256 17x17, 4.54x
-    {0x8086, 0xe223, 224, 256, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 256-320 17x17, 5.12x
-    {0x8086, 0xe223, 256, 320, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 64-64 73x73, 1.40x
-    {0x8086, 0xe223, 64, 64, 7, 1, 1, 1, 3, 0, 1, 1, 73, 73, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_i2c_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 64-128 56x56, 3.36x
+    {0x8086, 0xe223, 64, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 5x5 s1x1 p2x2 d1x1 48-64 25x25, 5.23x
+    {0x8086, 0xe223, 48, 64, 5, 5, 1, 1, 2, 2, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 128-128 12x12, 4.68x
+    {0x8086, 0xe223, 128, 128, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 128-192 12x12, 4.68x
+    {0x8086, 0xe223, 128, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 160-160 12x12, 5.23x
+    {0x8086, 0xe223, 160, 160, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 160-192 12x12, 5.23x
+    {0x8086, 0xe223, 160, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 192-192 12x12, 5.67x
+    {0x8086, 0xe223, 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 192-192 17x17, 5.42x
+    {0x8086, 0xe223, 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 224-224 17x17, 5.66x
+    {0x8086, 0xe223, 224, 224, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 224-256 17x17, 5.67x
+    {0x8086, 0xe223, 224, 256, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 256-320 17x17, 6.17x
+    {0x8086, 0xe223, 256, 320, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 64-64 73x73, 2.59x
+    {0x8086, 0xe223, 64, 64, 7, 1, 1, 1, 3, 0, 1, 1, 73, 73, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x7 s2x2 p3x3 d1x1 3-64 224x224, 1.62x
+    {0x8086, 0xe223, 3, 64, 7, 7, 2, 2, 3, 3, 1, 1, 224, 224, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x7 s2x2 p3x3 d1x1 3-96 224x224, 2.61x
+    {0x8086, 0xe223, 3, 96, 7, 7, 2, 2, 3, 3, 1, 1, 224, 224, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1008-192 14x14, 1.82x
     {0x1002, 0x15bf, 1008, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1024-128 17x17, 1.86x
@@ -948,6 +992,8 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 1152, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1152-192 7x7, 3.31x
     {0x1002, 0x15bf, 1152, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 120-48 14x14, 1.29x
+    {0x1002, 0x15bf, 120, 48, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1200-192 14x14, 1.96x
     {0x1002, 0x15bf, 1200, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1200-192 7x7, 2.87x
@@ -980,8 +1026,6 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 1392, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1392-192 7x7, 2.74x
     {0x1002, 0x15bf, 1392, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 144-24 56x56, 1.09x
-    {0x1002, 0x15bf, 144, 24, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1440-192 14x14, 2.24x
     {0x1002, 0x15bf, 1440, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1440-192 7x7, 3.58x
@@ -1002,8 +1046,10 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 1584, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1584-192 7x7, 2.95x
     {0x1002, 0x15bf, 1584, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 160-960 7x7, 1.41x
-    {0x1002, 0x15bf, 160, 960, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 16-8 1x1, 1.52x
+    {0x1002, 0x15bf, 16, 8, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 160-960 7x7, 1.64x
+    {0x1002, 0x15bf, 160, 960, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1632-192 14x14, 2.25x
     {0x1002, 0x15bf, 1632, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1632-192 7x7, 3.44x
@@ -1028,6 +1074,8 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 1872, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1872-192 7x7, 3.15x
     {0x1002, 0x15bf, 1872, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 192-32 28x28, 1.19x
+    {0x1002, 0x15bf, 192, 32, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1920-192 14x14, 2.26x
     {0x1002, 0x15bf, 1920, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1920-192 7x7, 3.72x
@@ -1042,6 +1090,8 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 2016, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2048-192 5x5, 4.25x
     {0x1002, 0x15bf, 2048, 192, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2048-256 1x1, 1.84x
+    {0x1002, 0x15bf, 2048, 256, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2048-256 28x28, 1.57x
     {0x1002, 0x15bf, 2048, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2048-320 5x5, 3.86x
@@ -1062,6 +1112,8 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 2112, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2160-192 7x7, 3.42x
     {0x1002, 0x15bf, 2160, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 24-88 28x28, 1.13x
+    {0x1002, 0x15bf, 24, 88, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 256-1024 14x14, 1.23x
     {0x1002, 0x15bf, 256, 1024, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 256-1024 28x28, 1.09x
@@ -1071,11 +1123,13 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 256-48 25x25, 1.58x
     {0x1002, 0x15bf, 256, 48, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 256-64 25x25, 1.49x
-    {0x1002, 0x15bf, 256, 64, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    {0x1002, 0x15bf, 256, 64, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 288-48 25x25, 1.71x
     {0x1002, 0x15bf, 288, 48, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 288-64 25x25, 1.43x
-    {0x1002, 0x15bf, 288, 64, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 288-96 7x7, 1.94x
+    {0x1002, 0x15bf, 288, 96, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 32-120 1x1, 1.17x
+    {0x1002, 0x15bf, 32, 120, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 320-1280 7x7, 1.23x
     {0x1002, 0x15bf, 320, 1280, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 336-192 56x56, 1.33x
@@ -1084,14 +1138,14 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 384, 192, 1, 1, 1, 1, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 384-192 56x56, 1.35x
     {0x1002, 0x15bf, 384, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 384-64 14x14, 1.90x
-    {0x1002, 0x15bf, 384, 64, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 384-64 14x14, 1.27x
+    {0x1002, 0x15bf, 384, 64, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 384-64 35x35, 1.30x
     {0x1002, 0x15bf, 384, 64, 1, 1, 1, 1, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 384-96 14x14, 1.83x
-    {0x1002, 0x15bf, 384, 96, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 384-96 35x35, 1.20x
     {0x1002, 0x15bf, 384, 96, 1, 1, 1, 1, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 40-240 14x14, 1.08x
+    {0x1002, 0x15bf, 40, 240, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 432-192 28x28, 1.45x
     {0x1002, 0x15bf, 432, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 480-192 28x28, 1.47x
@@ -1122,6 +1176,8 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 672, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 672-192 28x28, 1.48x
     {0x1002, 0x15bf, 672, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 72-288 1x1, 1.40x
+    {0x1002, 0x15bf, 72, 288, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 720-192 14x14, 1.39x
     {0x1002, 0x15bf, 720, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 720-192 28x28, 1.45x
@@ -1142,18 +1198,16 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 864, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 912-192 14x14, 1.75x
     {0x1002, 0x15bf, 912, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 96-24 56x56, 1.47x
-    {0x1002, 0x15bf, 96, 24, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 96-576 14x14, 1.11x
     {0x1002, 0x15bf, 96, 576, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 96-576 7x7, 1.26x
-    {0x1002, 0x15bf, 96, 576, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 960-160 7x7, 3.38x
     {0x1002, 0x15bf, 960, 160, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 960-192 14x14, 1.89x
     {0x1002, 0x15bf, 960, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 960-320 7x7, 2.88x
     {0x1002, 0x15bf, 960, 320, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s2x2 p0x0 d1x1 256-512 14x14, 1.12x
+    {0x1002, 0x15bf, 256, 512, 1, 1, 2, 2, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x3 s1x1 p0x1 d1x1 384-256 8x8, 5.13x
     {0x1002, 0x15bf, 384, 256, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x3 s1x1 p0x1 d1x1 384-384 5x5, 5.70x
@@ -1162,22 +1216,24 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 448, 512, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x3 s1x1 p0x1 d1x1 512-256 8x8, 6.20x
     {0x1002, 0x15bf, 512, 256, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 128-128 12x12, 3.63x
-    {0x1002, 0x15bf, 128, 128, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 128-192 12x12, 3.85x
-    {0x1002, 0x15bf, 128, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 160-160 12x12, 4.02x
-    {0x1002, 0x15bf, 160, 160, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 160-192 12x12, 3.95x
-    {0x1002, 0x15bf, 160, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 192-192 12x12, 4.09x
-    {0x1002, 0x15bf, 192, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 192-224 17x17, 2.73x
-    {0x1002, 0x15bf, 192, 224, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 224-256 17x17, 2.57x
-    {0x1002, 0x15bf, 224, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 256-256 17x17, 2.49x
-    {0x1002, 0x15bf, 256, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 128-128 12x12, 4.60x
+    {0x1002, 0x15bf, 128, 128, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 128-192 12x12, 4.66x
+    {0x1002, 0x15bf, 128, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 160-160 12x12, 5.23x
+    {0x1002, 0x15bf, 160, 160, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 160-192 12x12, 4.64x
+    {0x1002, 0x15bf, 160, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 192-192 12x12, 4.50x
+    {0x1002, 0x15bf, 192, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 192-224 17x17, 3.01x
+    {0x1002, 0x15bf, 192, 224, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 224-256 17x17, 2.75x
+    {0x1002, 0x15bf, 224, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 256-256 17x17, 2.86x
+    {0x1002, 0x15bf, 256, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 64-64 73x73, 1.17x
+    {0x1002, 0x15bf, 64, 64, 1, 7, 1, 1, 0, 3, 1, 1, 73, 73, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x1 s1x1 p1x0 d1x1 384-256 8x8, 5.55x
     {0x1002, 0x15bf, 384, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x1 s1x1 p1x0 d1x1 384-384 5x5, 5.56x
@@ -1186,82 +1242,112 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 384, 448, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x1 s1x1 p1x0 d1x1 512-256 8x8, 6.08x
     {0x1002, 0x15bf, 512, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p0x0 d1x1 80-192 54x54, 1.90x
-    {0x1002, 0x15bf, 80, 192, 3, 3, 1, 1, 0, 0, 1, 1, 54, 54, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 128-128 28x28, 1.70x
-    {0x1002, 0x15bf, 128, 128, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 192-48 14x14, 1.11x
-    {0x1002, 0x15bf, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_i2c_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p0x0 d1x1 32-32 149x149, 1.05x
+    {0x1002, 0x15bf, 32, 32, 3, 3, 1, 1, 0, 0, 1, 1, 149, 149, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p0x0 d1x1 64-96 73x73, 1.07x
+    {0x1002, 0x15bf, 64, 96, 3, 3, 1, 1, 0, 0, 1, 1, 73, 73, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p0x0 d1x1 80-192 54x54, 2.37x
+    {0x1002, 0x15bf, 80, 192, 3, 3, 1, 1, 0, 0, 1, 1, 54, 54, "conv2d_pw_coopmat_amd_t128x128_f32_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p12x12 d12x12 2048-256 28x28, 1.17x
+    {0x1002, 0x15bf, 2048, 256, 3, 3, 1, 1, 12, 12, 12, 12, 28, 28, "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 1024-256 28x28, 2.39x
+    {0x1002, 0x15bf, 1024, 256, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 128-128 28x28, 2.70x
+    {0x1002, 0x15bf, 128, 128, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 192-48 14x14, 1.67x
+    {0x1002, 0x15bf, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 192-48 28x28, 1.57x
+    {0x1002, 0x15bf, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 192-48 7x7, 1.73x
     {0x1002, 0x15bf, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 256-256 14x14, 3.40x
-    {0x1002, 0x15bf, 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 256-256 28x28, 1.80x
-    {0x1002, 0x15bf, 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 256-256 14x14, 3.53x
+    {0x1002, 0x15bf, 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 256-256 28x28, 2.34x
+    {0x1002, 0x15bf, 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 448-384 5x5, 6.67x
     {0x1002, 0x15bf, 448, 384, 3, 3, 1, 1, 1, 1, 1, 1, 5, 5, "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_i2c_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 512-512 7x7, 4.89x
     {0x1002, 0x15bf, 512, 512, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 64-256 224x224, 1.14x
-    {0x1002, 0x15bf, 64, 256, 3, 3, 1, 1, 1, 1, 1, 1, 224, 224, "conv2d_pw_coopmat_amd_t128x128_f32_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p2x2 d2x2 256-256 28x28, 1.42x
-    {0x1002, 0x15bf, 256, 256, 3, 3, 1, 1, 2, 2, 2, 2, 28, 28, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p2x2 d2x2 512-512 28x28, 1.44x
-    {0x1002, 0x15bf, 512, 512, 3, 3, 1, 1, 2, 2, 2, 2, 28, 28, "conv2d_pw_coopmat_amd_t128x128_f32_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p36x36 d36x36 2048-256 28x28, 1.40x
-    {0x1002, 0x15bf, 2048, 256, 3, 3, 1, 1, 36, 36, 36, 36, 28, 28, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p4x4 d4x4 512-512 28x28, 1.34x
-    {0x1002, 0x15bf, 512, 512, 3, 3, 1, 1, 4, 4, 4, 4, 28, 28, "conv2d_pw_coopmat_amd_t128x128_f32_alc_i2c_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 64-256 224x224, 1.54x
+    {0x1002, 0x15bf, 64, 256, 3, 3, 1, 1, 1, 1, 1, 1, 224, 224, "conv2d_pw_coopmat_amd_t128x128_f32_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 64-3 448x448, 2.17x
+    {0x1002, 0x15bf, 64, 3, 3, 3, 1, 1, 1, 1, 1, 1, 448, 448, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 64-64 56x56, 1.11x
+    {0x1002, 0x15bf, 64, 64, 3, 3, 1, 1, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 64-96 25x25, 1.70x
+    {0x1002, 0x15bf, 64, 96, 3, 3, 1, 1, 1, 1, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 64-96 35x35, 1.43x
+    {0x1002, 0x15bf, 64, 96, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 96-96 25x25, 1.50x
+    {0x1002, 0x15bf, 96, 96, 3, 3, 1, 1, 1, 1, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 96-96 35x35, 1.36x
+    {0x1002, 0x15bf, 96, 96, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p2x2 d2x2 256-256 28x28, 1.87x
+    {0x1002, 0x15bf, 256, 256, 3, 3, 1, 1, 2, 2, 2, 2, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p2x2 d2x2 512-512 28x28, 2.01x
+    {0x1002, 0x15bf, 512, 512, 3, 3, 1, 1, 2, 2, 2, 2, 28, 28, "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p36x36 d36x36 2048-256 28x28, 1.95x
+    {0x1002, 0x15bf, 2048, 256, 3, 3, 1, 1, 36, 36, 36, 36, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p4x4 d4x4 512-512 28x28, 2.01x
+    {0x1002, 0x15bf, 512, 512, 3, 3, 1, 1, 4, 4, 4, 4, 28, 28, "conv2d_pw_coopmat_amd_t128x128_f32_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 192-192 12x12, 7.71x
     {0x1002, 0x15bf, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_i2c_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 192-192 17x17, 6.85x
     {0x1002, 0x15bf, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 192-192 71x71, 1.70x
-    {0x1002, 0x15bf, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 71, 71, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 192-192 71x71, 2.47x
+    {0x1002, 0x15bf, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 71, 71, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 192-320 12x12, 6.49x
     {0x1002, 0x15bf, 192, 320, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 224-256 35x35, 2.38x
-    {0x1002, 0x15bf, 224, 256, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 224-256 35x35, 2.90x
+    {0x1002, 0x15bf, 224, 256, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 288-384 25x25, 3.31x
     {0x1002, 0x15bf, 288, 384, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 320-320 17x17, 6.38x
     {0x1002, 0x15bf, 320, 320, 3, 3, 2, 2, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 384-384 35x35, 2.20x
-    {0x1002, 0x15bf, 384, 384, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 64-96 147x147, 1.44x
-    {0x1002, 0x15bf, 64, 96, 3, 3, 2, 2, 0, 0, 1, 1, 147, 147, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 96-96 25x25, 1.09x
-    {0x1002, 0x15bf, 96, 96, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 128-128 56x56, 1.69x
-    {0x1002, 0x15bf, 128, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 128-256 28x28, 3.18x
-    {0x1002, 0x15bf, 128, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 256-256 28x28, 3.34x
-    {0x1002, 0x15bf, 256, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 384-384 35x35, 2.42x
+    {0x1002, 0x15bf, 384, 384, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_amd_t128x128_f32_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 64-96 147x147, 2.93x
+    {0x1002, 0x15bf, 64, 96, 3, 3, 2, 2, 0, 0, 1, 1, 147, 147, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 96-96 25x25, 1.38x
+    {0x1002, 0x15bf, 96, 96, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 128-128 56x56, 2.90x
+    {0x1002, 0x15bf, 128, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 128-256 28x28, 3.67x
+    {0x1002, 0x15bf, 128, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 256-256 28x28, 3.57x
+    {0x1002, 0x15bf, 256, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 256-512 14x14, 4.64x
     {0x1002, 0x15bf, 256, 512, 3, 3, 2, 2, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 512-512 14x14, 4.90x
     {0x1002, 0x15bf, 512, 512, 3, 3, 2, 2, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 64-128 56x56, 1.89x
-    {0x1002, 0x15bf, 64, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 128-128 12x12, 3.65x
-    {0x1002, 0x15bf, 128, 128, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 128-192 12x12, 3.88x
-    {0x1002, 0x15bf, 128, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 160-160 12x12, 4.07x
-    {0x1002, 0x15bf, 160, 160, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 160-192 12x12, 3.97x
-    {0x1002, 0x15bf, 160, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 192-192 12x12, 4.11x
-    {0x1002, 0x15bf, 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 192-192 17x17, 2.90x
-    {0x1002, 0x15bf, 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 224-224 17x17, 2.67x
-    {0x1002, 0x15bf, 224, 224, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 224-256 17x17, 2.59x
-    {0x1002, 0x15bf, 224, 256, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 256-320 17x17, 2.36x
-    {0x1002, 0x15bf, 256, 320, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 64-128 56x56, 2.88x
+    {0x1002, 0x15bf, 64, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 5x5 s1x1 p2x2 d1x1 48-64 25x25, 1.84x
+    {0x1002, 0x15bf, 48, 64, 5, 5, 1, 1, 2, 2, 1, 1, 25, 25, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 128-128 12x12, 4.55x
+    {0x1002, 0x15bf, 128, 128, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 128-192 12x12, 4.95x
+    {0x1002, 0x15bf, 128, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 160-160 12x12, 5.28x
+    {0x1002, 0x15bf, 160, 160, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 160-192 12x12, 4.90x
+    {0x1002, 0x15bf, 160, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 192-192 12x12, 4.71x
+    {0x1002, 0x15bf, 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 192-192 17x17, 3.77x
+    {0x1002, 0x15bf, 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 224-224 17x17, 3.26x
+    {0x1002, 0x15bf, 224, 224, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 224-256 17x17, 2.99x
+    {0x1002, 0x15bf, 224, 256, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 256-320 17x17, 2.83x
+    {0x1002, 0x15bf, 256, 320, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 64-64 73x73, 1.24x
+    {0x1002, 0x15bf, 64, 64, 7, 1, 1, 1, 3, 0, 1, 1, 73, 73, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x7 s2x2 p3x3 d1x1 3-64 224x224, 1.39x
+    {0x1002, 0x15bf, 3, 64, 7, 7, 2, 2, 3, 3, 1, 1, 224, 224, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x7 s2x2 p3x3 d1x1 3-96 224x224, 1.41x
+    {0x1002, 0x15bf, 3, 96, 7, 7, 2, 2, 3, 3, 1, 1, 224, 224, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1008-192 14x14, 2.22x
     {0x10de, 0x2705, 1008, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1024-128 17x17, 2.17x
@@ -1272,200 +1358,184 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x10de, 0x2705, 1024, 2048, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1024-256 14x14, 2.17x
     {0x10de, 0x2705, 1024, 256, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1024-256 17x17, 1.89x
-    {0x10de, 0x2705, 1024, 256, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1024-256 28x28, 2.89x
     {0x10de, 0x2705, 1024, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1024-384 17x17, 1.64x
-    {0x10de, 0x2705, 1024, 384, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1024-512 28x28, 2.46x
-    {0x10de, 0x2705, 1024, 512, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1024-384 17x17, 1.66x
+    {0x10de, 0x2705, 1024, 384, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1056-192 14x14, 2.27x
     {0x10de, 0x2705, 1056, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1104-192 7x7, 2.57x
-    {0x10de, 0x2705, 1104, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1152-192 7x7, 1.83x
-    {0x10de, 0x2705, 1152, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1200-192 14x14, 2.35x
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1152-192 7x7, 1.97x
+    {0x10de, 0x2705, 1152, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 120-32 1x1, 1.11x
+    {0x10de, 0x2705, 120, 32, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 120-48 14x14, 1.11x
+    {0x10de, 0x2705, 120, 48, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1200-192 14x14, 1.99x
     {0x10de, 0x2705, 1200, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1248-192 14x14, 2.43x
-    {0x10de, 0x2705, 1248, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1248-192 7x7, 2.90x
-    {0x10de, 0x2705, 1248, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 128-512 28x28, 10.63x
-    {0x10de, 0x2705, 128, 512, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1248-192 7x7, 1.95x
+    {0x10de, 0x2705, 1248, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1280-192 5x5, 3.16x
     {0x10de, 0x2705, 1280, 192, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1280-256 28x28, 3.12x
     {0x10de, 0x2705, 1280, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1280-320 5x5, 3.15x
-    {0x10de, 0x2705, 1280, 320, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1280-384 5x5, 3.04x
-    {0x10de, 0x2705, 1280, 384, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1280-448 5x5, 3.03x
-    {0x10de, 0x2705, 1280, 448, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1296-192 14x14, 2.59x
-    {0x10de, 0x2705, 1296, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1296-192 7x7, 2.37x
-    {0x10de, 0x2705, 1296, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1344-192 14x14, 2.66x
-    {0x10de, 0x2705, 1344, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1344-192 7x7, 2.28x
-    {0x10de, 0x2705, 1344, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1392-192 14x14, 2.13x
-    {0x10de, 0x2705, 1392, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1392-192 7x7, 2.27x
-    {0x10de, 0x2705, 1392, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 144-24 56x56, 1.79x
-    {0x10de, 0x2705, 144, 24, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 144-32 28x28, 2.06x
-    {0x10de, 0x2705, 144, 32, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 144-48 14x14, 2.05x
-    {0x10de, 0x2705, 144, 48, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1440-192 14x14, 2.73x
-    {0x10de, 0x2705, 1440, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1440-192 7x7, 2.44x
-    {0x10de, 0x2705, 1440, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1488-192 14x14, 2.75x
-    {0x10de, 0x2705, 1488, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1488-192 7x7, 3.31x
-    {0x10de, 0x2705, 1488, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1536-192 14x14, 2.24x
-    {0x10de, 0x2705, 1536, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1536-192 7x7, 2.40x
-    {0x10de, 0x2705, 1536, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1536-256 8x8, 3.18x
-    {0x10de, 0x2705, 1536, 256, 1, 1, 1, 1, 0, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1536-384 8x8, 3.25x
-    {0x10de, 0x2705, 1536, 384, 1, 1, 1, 1, 0, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1584-192 14x14, 2.23x
-    {0x10de, 0x2705, 1584, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1584-192 7x7, 2.45x
-    {0x10de, 0x2705, 1584, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 16-72 56x56, 1.28x
-    {0x10de, 0x2705, 16, 72, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 16-96 112x112, 1.60x
-    {0x10de, 0x2705, 16, 96, 1, 1, 1, 1, 0, 0, 1, 1, 112, 112, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 160-64 73x73, 1.74x
-    {0x10de, 0x2705, 160, 64, 1, 1, 1, 1, 0, 0, 1, 1, 73, 73, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 160-960 7x7, 1.27x
-    {0x10de, 0x2705, 160, 960, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1632-192 14x14, 2.29x
-    {0x10de, 0x2705, 1632, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1632-192 7x7, 2.62x
-    {0x10de, 0x2705, 1632, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1680-192 14x14, 2.79x
-    {0x10de, 0x2705, 1680, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1680-192 7x7, 2.51x
-    {0x10de, 0x2705, 1680, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1728-192 14x14, 2.27x
-    {0x10de, 0x2705, 1728, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1728-192 7x7, 2.69x
-    {0x10de, 0x2705, 1728, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1776-192 14x14, 2.35x
-    {0x10de, 0x2705, 1776, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1776-192 7x7, 2.58x
-    {0x10de, 0x2705, 1776, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1280-320 5x5, 2.51x
+    {0x10de, 0x2705, 1280, 320, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1280-448 5x5, 2.73x
+    {0x10de, 0x2705, 1280, 448, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1296-192 14x14, 2.81x
+    {0x10de, 0x2705, 1296, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1296-192 7x7, 2.92x
+    {0x10de, 0x2705, 1296, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1344-192 14x14, 2.79x
+    {0x10de, 0x2705, 1344, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1344-192 7x7, 2.24x
+    {0x10de, 0x2705, 1344, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1392-192 14x14, 2.73x
+    {0x10de, 0x2705, 1392, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1392-192 7x7, 2.94x
+    {0x10de, 0x2705, 1392, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 144-24 56x56, 2.07x
+    {0x10de, 0x2705, 144, 24, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 144-32 28x28, 1.54x
+    {0x10de, 0x2705, 144, 32, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 144-48 14x14, 1.55x
+    {0x10de, 0x2705, 144, 48, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1440-192 14x14, 2.84x
+    {0x10de, 0x2705, 1440, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1440-192 7x7, 2.35x
+    {0x10de, 0x2705, 1440, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1488-192 14x14, 2.78x
+    {0x10de, 0x2705, 1488, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1488-192 7x7, 2.99x
+    {0x10de, 0x2705, 1488, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1536-192 14x14, 2.49x
+    {0x10de, 0x2705, 1536, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1536-192 7x7, 2.61x
+    {0x10de, 0x2705, 1536, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1536-256 8x8, 2.69x
+    {0x10de, 0x2705, 1536, 256, 1, 1, 1, 1, 0, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1536-384 8x8, 2.93x
+    {0x10de, 0x2705, 1536, 384, 1, 1, 1, 1, 0, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1584-192 14x14, 2.92x
+    {0x10de, 0x2705, 1584, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1584-192 7x7, 2.53x
+    {0x10de, 0x2705, 1584, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 16-72 56x56, 1.37x
+    {0x10de, 0x2705, 16, 72, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 16-96 112x112, 1.61x
+    {0x10de, 0x2705, 16, 96, 1, 1, 1, 1, 0, 0, 1, 1, 112, 112, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 160-64 73x73, 1.49x
+    {0x10de, 0x2705, 160, 64, 1, 1, 1, 1, 0, 0, 1, 1, 73, 73, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 160-960 7x7, 1.55x
+    {0x10de, 0x2705, 160, 960, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1632-192 14x14, 2.53x
+    {0x10de, 0x2705, 1632, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1632-192 7x7, 2.79x
+    {0x10de, 0x2705, 1632, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1680-192 14x14, 2.87x
+    {0x10de, 0x2705, 1680, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1680-192 7x7, 2.62x
+    {0x10de, 0x2705, 1680, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1728-192 14x14, 2.89x
+    {0x10de, 0x2705, 1728, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1728-192 7x7, 2.81x
+    {0x10de, 0x2705, 1728, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1776-192 14x14, 2.54x
+    {0x10de, 0x2705, 1776, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1776-192 7x7, 2.98x
+    {0x10de, 0x2705, 1776, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1824-192 14x14, 2.74x
     {0x10de, 0x2705, 1824, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1824-192 7x7, 3.43x
     {0x10de, 0x2705, 1824, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1872-192 7x7, 2.49x
     {0x10de, 0x2705, 1872, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 192-64 25x25, 1.45x
-    {0x10de, 0x2705, 192, 64, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1920-192 14x14, 2.28x
-    {0x10de, 0x2705, 1920, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1920-192 7x7, 3.27x
     {0x10de, 0x2705, 1920, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1968-192 14x14, 2.41x
-    {0x10de, 0x2705, 1968, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1968-192 14x14, 1.81x
+    {0x10de, 0x2705, 1968, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1968-192 7x7, 2.69x
     {0x10de, 0x2705, 1968, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 2016-192 7x7, 3.07x
     {0x10de, 0x2705, 2016, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 2048-192 5x5, 3.16x
-    {0x10de, 0x2705, 2048, 192, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 2048-192 5x5, 3.09x
+    {0x10de, 0x2705, 2048, 192, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 2048-256 1x1, 3.05x
+    {0x10de, 0x2705, 2048, 256, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 2048-256 28x28, 3.51x
     {0x10de, 0x2705, 2048, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 2048-320 5x5, 3.27x
     {0x10de, 0x2705, 2048, 320, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 2048-384 5x5, 3.33x
     {0x10de, 0x2705, 2048, 384, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 2048-512 28x28, 4.61x
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 2048-512 28x28, 3.60x
     {0x10de, 0x2705, 2048, 512, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 2048-512 7x7, 2.57x
-    {0x10de, 0x2705, 2048, 512, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 2048-512 7x7, 2.93x
+    {0x10de, 0x2705, 2048, 512, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 2064-192 7x7, 3.26x
     {0x10de, 0x2705, 2064, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 2112-192 7x7, 3.26x
-    {0x10de, 0x2705, 2112, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 2160-192 7x7, 3.40x
     {0x10de, 0x2705, 2160, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 256-1024 28x28, 1.42x
-    {0x10de, 0x2705, 256, 1024, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 256-128 56x56, 1.84x
-    {0x10de, 0x2705, 256, 128, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 256-48 25x25, 1.35x
-    {0x10de, 0x2705, 256, 48, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 24-144 56x56, 1.35x
+    {0x10de, 0x2705, 24, 144, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 256-1024 28x28, 1.46x
+    {0x10de, 0x2705, 256, 1024, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 256-48 25x25, 1.36x
+    {0x10de, 0x2705, 256, 48, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 256-64 25x25, 1.38x
-    {0x10de, 0x2705, 256, 64, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 256-64 56x56, 2.44x
-    {0x10de, 0x2705, 256, 64, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 288-48 25x25, 1.80x
-    {0x10de, 0x2705, 288, 48, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    {0x10de, 0x2705, 256, 64, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 288-48 25x25, 1.23x
+    {0x10de, 0x2705, 288, 48, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 288-64 25x25, 1.37x
     {0x10de, 0x2705, 288, 64, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 288-72 1x1, 1.38x
+    {0x10de, 0x2705, 288, 72, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 32-120 1x1, 1.08x
+    {0x10de, 0x2705, 32, 120, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 32-16 112x112, 1.14x
     {0x10de, 0x2705, 32, 16, 1, 1, 1, 1, 0, 0, 1, 1, 112, 112, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 32-192 28x28, 1.31x
     {0x10de, 0x2705, 32, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 320-1280 7x7, 1.58x
-    {0x10de, 0x2705, 320, 1280, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 320-1280 7x7, 1.41x
+    {0x10de, 0x2705, 320, 1280, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 384-192 56x56, 2.10x
     {0x10de, 0x2705, 384, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 384-64 14x14, 1.42x
-    {0x10de, 0x2705, 384, 64, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 384-96 14x14, 1.83x
-    {0x10de, 0x2705, 384, 96, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 432-192 28x28, 2.97x
-    {0x10de, 0x2705, 432, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 480-192 28x28, 2.51x
-    {0x10de, 0x2705, 480, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 512-1024 28x28, 1.64x
-    {0x10de, 0x2705, 512, 1024, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 512-128 28x28, 1.27x
-    {0x10de, 0x2705, 512, 128, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 512-2048 28x28, 2.22x
-    {0x10de, 0x2705, 512, 2048, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 512-2048 7x7, 1.66x
-    {0x10de, 0x2705, 512, 2048, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 384-96 14x14, 1.18x
+    {0x10de, 0x2705, 384, 96, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 432-192 28x28, 2.66x
+    {0x10de, 0x2705, 432, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 512-1024 28x28, 1.81x
+    {0x10de, 0x2705, 512, 1024, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 512-128 28x28, 1.20x
+    {0x10de, 0x2705, 512, 128, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 512-2048 28x28, 2.46x
+    {0x10de, 0x2705, 512, 2048, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 512-2048 7x7, 1.72x
+    {0x10de, 0x2705, 512, 2048, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 512-256 28x28, 2.76x
     {0x10de, 0x2705, 512, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 528-192 28x28, 3.47x
     {0x10de, 0x2705, 528, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 576-144 1x1, 1.67x
+    {0x10de, 0x2705, 576, 144, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 576-160 7x7, 1.37x
     {0x10de, 0x2705, 576, 160, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 576-192 14x14, 1.48x
     {0x10de, 0x2705, 576, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 576-192 28x28, 2.93x
     {0x10de, 0x2705, 576, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 576-96 14x14, 1.54x
-    {0x10de, 0x2705, 576, 96, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 576-96 7x7, 1.65x
-    {0x10de, 0x2705, 576, 96, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 576-96 7x7, 1.06x
+    {0x10de, 0x2705, 576, 96, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 624-192 14x14, 1.79x
     {0x10de, 0x2705, 624, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 624-192 28x28, 2.78x
     {0x10de, 0x2705, 624, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 64-240 1x1, 3.26x
+    {0x10de, 0x2705, 64, 240, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 64-256 56x56, 1.49x
     {0x10de, 0x2705, 64, 256, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 672-192 14x14, 1.85x
     {0x10de, 0x2705, 672, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 672-192 28x28, 3.32x
-    {0x10de, 0x2705, 672, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 720-192 14x14, 1.89x
-    {0x10de, 0x2705, 720, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 720-192 28x28, 3.11x
     {0x10de, 0x2705, 720, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 768-160 12x12, 2.05x
@@ -1474,112 +1544,112 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 770> kConv2dCoopmatTable = {{
     {0x10de, 0x2705, 768, 192, 1, 1, 1, 1, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 864-192 14x14, 2.08x
     {0x10de, 0x2705, 864, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 912-192 14x14, 2.09x
-    {0x10de, 0x2705, 912, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 96-576 14x14, 1.05x
-    {0x10de, 0x2705, 96, 576, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 960-160 7x7, 2.50x
-    {0x10de, 0x2705, 960, 160, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 96-24 1x1, 1.13x
+    {0x10de, 0x2705, 96, 24, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 960-192 14x14, 1.78x
     {0x10de, 0x2705, 960, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 960-320 7x7, 2.73x
     {0x10de, 0x2705, 960, 320, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x3 s1x1 p0x1 d1x1 384-256 8x8, 5.59x
-    {0x10de, 0x2705, 384, 256, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x3 s1x1 p0x1 d1x1 448-512 8x8, 3.22x
-    {0x10de, 0x2705, 448, 512, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x7 s1x1 p0x3 d1x1 128-128 12x12, 3.03x
-    {0x10de, 0x2705, 128, 128, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x7 s1x1 p0x3 d1x1 128-192 12x12, 2.88x
-    {0x10de, 0x2705, 128, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s2x2 p0x0 d1x1 1024-2048 14x14, 2.38x
+    {0x10de, 0x2705, 1024, 2048, 1, 1, 2, 2, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s2x2 p0x0 d1x1 128-256 28x28, 1.38x
+    {0x10de, 0x2705, 128, 256, 1, 1, 2, 2, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s2x2 p0x0 d1x1 256-512 56x56, 1.66x
+    {0x10de, 0x2705, 256, 512, 1, 1, 2, 2, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s2x2 p0x0 d1x1 512-1024 28x28, 2.67x
+    {0x10de, 0x2705, 512, 1024, 1, 1, 2, 2, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x7 s1x1 p0x3 d1x1 128-192 12x12, 3.27x
+    {0x10de, 0x2705, 128, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x7 s1x1 p0x3 d1x1 160-160 12x12, 3.31x
     {0x10de, 0x2705, 160, 160, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x7 s1x1 p0x3 d1x1 192-224 17x17, 1.85x
-    {0x10de, 0x2705, 192, 224, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x7 s1x1 p0x3 d1x1 224-256 17x17, 2.45x
-    {0x10de, 0x2705, 224, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x7 s1x1 p0x3 d1x1 256-256 17x17, 2.67x
-    {0x10de, 0x2705, 256, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x7 s1x1 p0x3 d1x1 192-224 17x17, 3.24x
+    {0x10de, 0x2705, 192, 224, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x7 s1x1 p0x3 d1x1 256-256 17x17, 4.55x
+    {0x10de, 0x2705, 256, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x7 s1x1 p0x3 d1x1 64-64 73x73, 1.71x
+    {0x10de, 0x2705, 64, 64, 1, 7, 1, 1, 0, 3, 1, 1, 73, 73, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x1 s1x1 p1x0 d1x1 384-256 8x8, 3.45x
     {0x10de, 0x2705, 384, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x1 s1x1 p1x0 d1x1 384-384 5x5, 3.58x
-    {0x10de, 0x2705, 384, 384, 3, 1, 1, 1, 1, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x1 s1x1 p1x0 d1x1 384-448 8x8, 2.45x
-    {0x10de, 0x2705, 384, 448, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x1 s1x1 p1x0 d1x1 512-256 8x8, 3.62x
-    {0x10de, 0x2705, 512, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p0x0 d1x1 80-192 54x54, 3.79x
-    {0x10de, 0x2705, 80, 192, 3, 3, 1, 1, 0, 0, 1, 1, 54, 54, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p12x12 d12x12 2048-256 28x28, 2.31x
-    {0x10de, 0x2705, 2048, 256, 3, 3, 1, 1, 12, 12, 12, 12, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p1x1 d1x1 192-48 7x7, 2.13x
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x1 s1x1 p1x0 d1x1 384-448 8x8, 2.90x
+    {0x10de, 0x2705, 384, 448, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x1 s1x1 p1x0 d1x1 512-256 8x8, 4.93x
+    {0x10de, 0x2705, 512, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p0x0 d1x1 64-96 73x73, 2.04x
+    {0x10de, 0x2705, 64, 96, 3, 3, 1, 1, 0, 0, 1, 1, 73, 73, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p1x1 d1x1 1024-256 28x28, 6.22x
+    {0x10de, 0x2705, 1024, 256, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p1x1 d1x1 192-48 7x7, 2.15x
     {0x10de, 0x2705, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p1x1 d1x1 256-256 14x14, 3.85x
-    {0x10de, 0x2705, 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p1x1 d1x1 512-512 7x7, 4.94x
-    {0x10de, 0x2705, 512, 512, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p1x1 d1x1 64-256 224x224, 2.23x
-    {0x10de, 0x2705, 64, 256, 3, 3, 1, 1, 1, 1, 1, 1, 224, 224, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p1x1 d1x1 64-64 56x56, 1.46x
-    {0x10de, 0x2705, 64, 64, 3, 3, 1, 1, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p1x1 d1x1 64-96 35x35, 2.00x
-    {0x10de, 0x2705, 64, 96, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p1x1 d1x1 96-96 25x25, 2.56x
-    {0x10de, 0x2705, 96, 96, 3, 3, 1, 1, 1, 1, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p1x1 d1x1 96-96 35x35, 2.21x
-    {0x10de, 0x2705, 96, 96, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p4x4 d4x4 512-512 28x28, 3.62x
-    {0x10de, 0x2705, 512, 512, 3, 3, 1, 1, 4, 4, 4, 4, 28, 28, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p0x0 d1x1 192-192 12x12, 3.10x
-    {0x10de, 0x2705, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p0x0 d1x1 192-192 17x17, 4.07x
-    {0x10de, 0x2705, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p0x0 d1x1 192-320 12x12, 4.08x
-    {0x10de, 0x2705, 192, 320, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p0x0 d1x1 224-256 35x35, 2.72x
-    {0x10de, 0x2705, 224, 256, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p1x1 d1x1 32-64 109x109, 1.59x
+    {0x10de, 0x2705, 32, 64, 3, 3, 1, 1, 1, 1, 1, 1, 109, 109, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p1x1 d1x1 64-256 224x224, 4.03x
+    {0x10de, 0x2705, 64, 256, 3, 3, 1, 1, 1, 1, 1, 1, 224, 224, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p1x1 d1x1 64-64 224x224, 2.32x
+    {0x10de, 0x2705, 64, 64, 3, 3, 1, 1, 1, 1, 1, 1, 224, 224, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p1x1 d1x1 64-64 56x56, 2.62x
+    {0x10de, 0x2705, 64, 64, 3, 3, 1, 1, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p1x1 d1x1 64-96 35x35, 3.26x
+    {0x10de, 0x2705, 64, 96, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s1x1 p4x4 d4x4 512-512 28x28, 4.62x
+    {0x10de, 0x2705, 512, 512, 3, 3, 1, 1, 4, 4, 4, 4, 28, 28, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p0x0 d1x1 192-192 12x12, 4.92x
+    {0x10de, 0x2705, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p0x0 d1x1 192-192 71x71, 4.63x
+    {0x10de, 0x2705, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 71, 71, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p0x0 d1x1 192-320 12x12, 3.42x
+    {0x10de, 0x2705, 192, 320, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p0x0 d1x1 288-384 25x25, 3.18x
     {0x10de, 0x2705, 288, 384, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p0x0 d1x1 320-320 17x17, 3.79x
     {0x10de, 0x2705, 320, 320, 3, 3, 2, 2, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p0x0 d1x1 384-384 35x35, 2.65x
     {0x10de, 0x2705, 384, 384, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p0x0 d1x1 64-96 147x147, 1.80x
-    {0x10de, 0x2705, 64, 96, 3, 3, 2, 2, 0, 0, 1, 1, 147, 147, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p0x0 d1x1 64-96 147x147, 2.90x
+    {0x10de, 0x2705, 64, 96, 3, 3, 2, 2, 0, 0, 1, 1, 147, 147, "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p0x0 d1x1 96-96 25x25, 1.44x
     {0x10de, 0x2705, 96, 96, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p1x1 d1x1 128-128 56x56, 2.40x
-    {0x10de, 0x2705, 128, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p1x1 d1x1 128-256 28x28, 2.22x
-    {0x10de, 0x2705, 128, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p1x1 d1x1 256-256 28x28, 3.61x
-    {0x10de, 0x2705, 256, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p1x1 d1x1 256-512 14x14, 3.28x
+    {0x10de, 0x2705, 128, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p1x1 d1x1 128-256 28x28, 3.03x
+    {0x10de, 0x2705, 128, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p1x1 d1x1 256-256 28x28, 3.41x
+    {0x10de, 0x2705, 256, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p1x1 d1x1 256-512 14x14, 3.93x
     {0x10de, 0x2705, 256, 512, 3, 3, 2, 2, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p1x1 d1x1 512-512 14x14, 4.98x
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p1x1 d1x1 3-16 224x224, 1.22x
+    {0x10de, 0x2705, 3, 16, 3, 3, 2, 2, 1, 1, 1, 1, 224, 224, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p1x1 d1x1 3-32 224x224, 1.47x
+    {0x10de, 0x2705, 3, 32, 3, 3, 2, 2, 1, 1, 1, 1, 224, 224, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p1x1 d1x1 512-512 14x14, 4.65x
     {0x10de, 0x2705, 512, 512, 3, 3, 2, 2, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p1x1 d1x1 64-128 56x56, 2.15x
-    {0x10de, 0x2705, 64, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 5x5 s1x1 p2x2 d1x1 48-64 25x25, 3.61x
-    {0x10de, 0x2705, 48, 64, 5, 5, 1, 1, 2, 2, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 128-128 12x12, 3.08x
-    {0x10de, 0x2705, 128, 128, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 128-192 12x12, 3.01x
-    {0x10de, 0x2705, 128, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 160-160 12x12, 2.37x
-    {0x10de, 0x2705, 160, 160, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 160-192 12x12, 2.40x
-    {0x10de, 0x2705, 160, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 192-192 12x12, 2.53x
-    {0x10de, 0x2705, 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 192-192 17x17, 2.26x
-    {0x10de, 0x2705, 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 224-224 17x17, 3.02x
-    {0x10de, 0x2705, 224, 224, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 224-256 17x17, 2.46x
-    {0x10de, 0x2705, 224, 256, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
-    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 256-320 17x17, 2.48x
-    {0x10de, 0x2705, 256, 320, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 3x3 s2x2 p1x1 d1x1 64-128 56x56, 2.06x
+    {0x10de, 0x2705, 64, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 5x5 s1x1 p2x2 d1x1 48-64 25x25, 4.20x
+    {0x10de, 0x2705, 48, 64, 5, 5, 1, 1, 2, 2, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 128-128 12x12, 3.83x
+    {0x10de, 0x2705, 128, 128, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 128-192 12x12, 3.66x
+    {0x10de, 0x2705, 128, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 160-160 12x12, 2.88x
+    {0x10de, 0x2705, 160, 160, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 160-192 12x12, 2.39x
+    {0x10de, 0x2705, 160, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 192-192 12x12, 2.50x
+    {0x10de, 0x2705, 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 192-192 17x17, 2.39x
+    {0x10de, 0x2705, 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 224-224 17x17, 3.08x
+    {0x10de, 0x2705, 224, 224, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 224-256 17x17, 2.64x
+    {0x10de, 0x2705, 224, 256, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 256-320 17x17, 3.12x
+    {0x10de, 0x2705, 256, 320, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x1 s1x1 p3x0 d1x1 64-64 73x73, 1.79x
+    {0x10de, 0x2705, 64, 64, 7, 1, 1, 1, 3, 0, 1, 1, 73, 73, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x7 s2x2 p3x3 d1x1 3-64 224x224, 3.17x
+    {0x10de, 0x2705, 3, 64, 7, 7, 2, 2, 3, 3, 1, 1, 224, 224, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 7x7 s2x2 p3x3 d1x1 3-96 224x224, 2.73x
+    {0x10de, 0x2705, 3, 96, 7, 7, 2, 2, 3, 3, 1, 1, 224, 224, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
 }};
 // clang-format on
 
