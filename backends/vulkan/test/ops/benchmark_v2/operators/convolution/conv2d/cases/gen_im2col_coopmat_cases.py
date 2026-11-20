@@ -498,12 +498,26 @@ def performance(variants):
     return out
 
 
-# The M51 k x k gate (m51/TASKS.md 9.2): the desktop layer table's shapes, with
-# bias and with a fused residual, full grid and reduced grid. The reduction is
-# the same shape-level reduction as the 1x1 gate: same channels, kernel,
-# stride and padding, the plane shrunk to an 8 x 8 output, so the dispatch runs
-# a few gather and GEMM workgroups with the same shaders and math.
+# The M51 k x k gate (m51/TASKS.md 9.2): the desktop layer table's shapes plus the
+# M51-heavy shapes of the 7.2 workload baseline, with bias and with a fused residual,
+# full grid and reduced grid. The reduction is the same shape-level reduction as the
+# 1x1 gate: same channels, kernel, stride and padding, the plane shrunk to an 8 x 8
+# output, so the dispatch runs a few gather and GEMM workgroups with the same shaders
+# and math.
 M51_REDUCED_OUTPUT = 8
+
+# The largest M51 convolution configurations that are not already in the desktop
+# layer table (m51/RESULTS.md 7.2): edsr's 3x3 body and head at 224x224 output,
+# dl3's 3x3 1024->256, densenet161's 3x3 192->48 at 28x28, ic4's 1x7 224->256, and
+# resnet18's stride-2 3x3 256->512.
+M51_PERFORMANCE = [
+    ("3x3 64 224x224", conv(64, 224, 224, 64, 3, 3, pad=(1, 1))),
+    ("3x3 64-256 224x224", conv(64, 224, 224, 256, 3, 3, pad=(1, 1))),
+    ("3x3 1024-256 28x28", conv(1024, 28, 28, 256, 3, 3, pad=(1, 1))),
+    ("3x3 192-48 28x28", conv(192, 28, 28, 48, 3, 3, pad=(1, 1))),
+    ("1x7 224-256 17x17", conv(224, 17, 17, 256, 1, 7, pad=(0, 3))),
+    ("3x3 s2 256-512 14x14", conv(256, 14, 14, 512, 3, 3, stride=2, pad=(1, 1))),
+]
 
 
 def m51_i2c_variants(variants):
@@ -527,12 +541,13 @@ def m51_reduced_conv(c):
 
 def m51_kk_gate(reduced):
     """The gate collections of the 16x16x16 families' _i2c variants on the
-    desktop layer table, with bias and with a fused residual add."""
+    desktop layer table plus the M51-heavy shapes, with bias and with a fused
+    residual add."""
 
     def build(variants):
         i2c = m51_i2c_variants(variants)
         out = []
-        for label, c in PERFORMANCE:
+        for label, c in PERFORMANCE + M51_PERFORMANCE:
             if reduced:
                 c = m51_reduced_conv(c)
                 label = f"{label} reduced"
