@@ -9,6 +9,7 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2d.h>
 
 #include <executorch/backends/vulkan/runtime/graph/ops/OperatorRegistry.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dCoopmat.h>
 
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dDirect.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dPW.h>
@@ -149,6 +150,10 @@ bool should_use_q8ta_conv2d_im2col(const Q8taConv2dRouteParams& params) {
 }
 
 void q8ta_conv2d(ComputeGraph& graph, const std::vector<ValueRef>& args) {
+  if (const Q8taConv2dCoopmatVariant* const variant =
+          q8ta_conv2d_coopmat_table_variant(graph, args)) {
+    return q8ta_conv2d_coopmat_impl(graph, *variant, args);
+  }
   const ValueRef input = args.at(0);
   const ValueRef kernel_size_ref = args.at(9);
   const ValueRef groups_ref = args.at(13);

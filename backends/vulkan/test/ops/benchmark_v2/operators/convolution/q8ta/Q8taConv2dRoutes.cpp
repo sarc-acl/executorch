@@ -6,6 +6,7 @@
 
 #include <executorch/backends/vulkan/runtime/graph/ops/OperatorRegistry.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dCommon.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dCoopmat.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dDirect.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dPW.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/im2col/Q8taConv2dIm2Col.h>
@@ -200,6 +201,48 @@ Json build_pw_auto(
   return build_pointwise(graph, args, options, DotRoute::Auto, "pw_auto");
 }
 
+// Change conv2d-all-used-kernels: a q8ta_conv2d_pw_coopmat variant by name
+// (route pw_coopmat for a 1x1 variant, im2col_coopmat for a _dg variant).
+Json build_coopmat(
+    ComputeGraph& graph,
+    const std::vector<ValueRef>& args,
+    const Json& options,
+    const bool direct) {
+  check_options(options, {"variant"});
+  if (!options.contains("variant") || !options.at("variant").is_string()) {
+    throw std::invalid_argument("the coopmat routes require a variant name");
+  }
+  const std::string name = options.at("variant");
+  const Q8taConv2dCoopmatVariant* const variant =
+      find_q8ta_conv2d_coopmat_variant(name);
+  supported(
+      variant != nullptr, "Unknown q8ta_conv2d_pw_coopmat variant: " + name);
+  supported(
+      variant->direct == direct,
+      direct ? "route im2col_coopmat requires a _dg variant"
+             : "route pw_coopmat requires a variant without _dg");
+  conv_shape(graph, args);
+  if (const auto reason =
+          q8ta_conv2d_coopmat_ineligible(graph, *variant, args)) {
+    throw UnsupportedRoute(name + " cannot run this case: " + *reason);
+  }
+  q8ta_conv2d_coopmat_impl(graph, *variant, args);
+  return selected(
+      direct ? "im2col_coopmat" : "pw_coopmat", {{"variant", name}});
+}
+Json build_pw_coopmat(
+    ComputeGraph& graph,
+    const std::vector<ValueRef>& args,
+    const Json& options) {
+  return build_coopmat(graph, args, options, false);
+}
+Json build_im2col_coopmat(
+    ComputeGraph& graph,
+    const std::vector<ValueRef>& args,
+    const Json& options) {
+  return build_coopmat(graph, args, options, true);
+}
+
 Json build_legacy_4w4c(
     ComputeGraph& graph,
     const std::vector<ValueRef>& args,
@@ -247,6 +290,9 @@ Json inspect_q8ta_conv2d_route(
     if (name == "q8ta_im2col") {
       return selected("im2col");
     }
+    if (name.rfind("q8ta_conv2d_pw_coopmat", 0) == 0) {
+      return selected("coopmat");
+    }
     if (name.rfind("q8ta_conv2d_pw", 0) == 0) {
       return selected("pointwise");
     }
@@ -287,6 +333,12 @@ REGISTER_OPERATOR_ROUTES {
   REGISTER_OPERATOR_ROUTE(
       et_vk.q8ta_conv2d_pw.default, pw_unsigned, build_pw_unsigned);
   REGISTER_OPERATOR_ROUTE(et_vk.q8ta_conv2d_pw.default, pw_auto, build_pw_auto);
+  REGISTER_OPERATOR_ROUTE(
+      et_vk.q8ta_conv2d_pw.default, pw_coopmat, build_pw_coopmat);
+  REGISTER_OPERATOR_ROUTE(
+      et_vk.q8ta_conv2d.default, pw_coopmat, build_pw_coopmat);
+  REGISTER_OPERATOR_ROUTE(
+      et_vk.q8ta_conv2d.default, im2col_coopmat, build_im2col_coopmat);
   REGISTER_ROUTE_INSPECTOR(
       et_vk.q8ta_conv2d.default, inspect_q8ta_conv2d_route);
   REGISTER_ROUTE_INSPECTOR(

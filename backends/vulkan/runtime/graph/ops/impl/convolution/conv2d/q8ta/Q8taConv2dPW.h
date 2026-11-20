@@ -9,6 +9,7 @@
 #pragma once
 
 #include <executorch/backends/vulkan/runtime/graph/ComputeGraph.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/utils/QuantizationConfig.h>
 
 namespace vkcompute {
 
@@ -36,6 +37,14 @@ void add_q8ta_conv2d_pw_node(
     const bool is_im2col = false,
     const ValueRef stream_row_offset_ref = kDummyValueRef,
     const ValueRef max_im2col_rows_ref = kDummyValueRef);
+
+ValueRef prepack_quantized_conv2d_pw_weight(
+    ComputeGraph& graph,
+    const QuantizationConfig& weight_quant_config,
+    const ValueRef weight_data,
+    const ValueRef input,
+    const ValueRef output,
+    const bool use_unsigned_dot);
 
 constexpr int64_t kMaxUnsignedDotAccumulatorBytes = 33025;
 

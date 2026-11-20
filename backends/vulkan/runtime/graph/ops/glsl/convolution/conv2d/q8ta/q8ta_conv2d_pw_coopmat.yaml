@@ -1,0 +1,1072 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# INT8 convolution on int8 x int8 -> int32 cooperative matrices (change
+# conv2d-all-used-kernels). Reachable by a variant request (benchmark_v2 routes
+# pw_coopmat, im2col_coopmat) or a table row with ETVK_CONV2D_COOPMAT=1.
+# Names: q8ta_conv2d_pw_coopmat_<family>_t<M>x<N>[_k<K>][_dg][_sk<slices>].
+# The variant list in impl/convolution/conv2d/q8ta/Q8taConv2dCoopmat.cpp must
+# match.
+
+q8ta_conv2d_pw_coopmat:
+  parameter_names_with_default_values:
+    VK_VERSION: '1.3'
+    PRECISION: highp
+    MMA_M: 16
+    MMA_N: 16
+    MMA_K: 16
+    WG_TILE_M: 32
+    WG_TILE_N: 32
+    WG_TILE_K: 32
+    SG_GRID_X: 1
+    SG_GRID_Y: 1
+    SUBGROUP_SIZE: 32
+    K_SLICES: 1
+    DIRECT: false
+    MERGE: false
+  shader_variants:
+    # Split-K merge: sums the slices and requantizes.
+    - NAME: q8ta_conv2d_pw_coopmat_merge
+      MERGE: true
+      SUBGROUP_SIZE: 0
+    # xe2: MMA 8x16x32, subgroup 16
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t32x32
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 1
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t32x32_sk2
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 2
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t32x32_sk4
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 4
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t32x32_sk8
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 8
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t32x32_dg
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 1
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t32x32_dg_sk2
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t32x32_dg_sk4
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 4
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t32x32_dg_sk8
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 8
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t64x64
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 1
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t64x64_sk2
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 2
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t64x64_sk4
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 4
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t64x64_sk8
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 8
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t64x64_dg
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 1
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t64x64_dg_sk2
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t64x64_dg_sk4
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 4
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t64x64_dg_sk8
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 8
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t128x64
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      K_SLICES: 1
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t128x64_sk2
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      K_SLICES: 2
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t128x64_sk4
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      K_SLICES: 4
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t128x64_dg
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      K_SLICES: 1
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t128x64_dg_sk2
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t128x64_dg_sk4
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      K_SLICES: 4
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t64x128
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 1
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t64x128_sk2
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 2
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t64x128_sk4
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 4
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t64x128_dg
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 1
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t64x128_dg_sk2
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t64x128_dg_sk4
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      K_SLICES: 4
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t128x128
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      K_SLICES: 1
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t128x128_sk2
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      K_SLICES: 2
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t128x128_sk4
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      K_SLICES: 4
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t128x128_dg
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      K_SLICES: 1
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t128x128_dg_sk2
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_xe2_t128x128_dg_sk4
+      MMA_M: 8
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      K_SLICES: 4
+      DIRECT: true
+    # amd: MMA 16x16x16, subgroup 32
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 1
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_sk2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_sk4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_sk8
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 8
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_dg
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 1
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_dg_sk2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_dg_sk4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_dg_sk8
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 8
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t64x64
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 1
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t64x64_sk2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t64x64_sk4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t64x64_sk8
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 8
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t64x64_dg
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 1
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sk2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sk4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sk8
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 8
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t128x64
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 1
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t128x64_sk2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t128x64_sk4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t128x64_dg
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 1
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t128x64_dg_sk2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t128x64_dg_sk4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t128x128
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 1
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t128x128_sk2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t128x128_sk4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t128x128_dg
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 1
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t128x128_dg_sk2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t128x128_dg_sk4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+      DIRECT: true
+    # nvidia: MMA 16x16x32, subgroup 32
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t32x32
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 1
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t32x32_sk2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t32x32_sk4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t32x32_sk8
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 8
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t32x32_dg
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 1
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t32x32_dg_sk2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t32x32_dg_sk4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t32x32_dg_sk8
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 8
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t64x64
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 1
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t64x64_sk2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t64x64_sk4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t64x64_sk8
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 8
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t64x64_dg
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 1
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t64x64_dg_sk2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t64x64_dg_sk4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t64x64_dg_sk8
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 8
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t128x64
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 1
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t128x64_sk2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t128x64_sk4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t128x64_dg
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 1
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t128x64_dg_sk2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t128x64_dg_sk4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t128x128
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 1
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t128x128_sk2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t128x128_sk4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t128x128_dg
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 1
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t128x128_dg_sk2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: q8ta_conv2d_pw_coopmat_nvidia_t128x128_dg_sk4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 32
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+      DIRECT: true

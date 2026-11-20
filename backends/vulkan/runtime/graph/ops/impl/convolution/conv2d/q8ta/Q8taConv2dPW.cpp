@@ -9,6 +9,7 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dPW.h>
 
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dCommon.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dCoopmat.h>
 
 #include <executorch/backends/vulkan/runtime/graph/ops/OperatorRegistry.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Common.h>
@@ -551,6 +552,10 @@ void q8ta_conv2d_pw_impl(
 }
 
 void q8ta_conv2d_pw(ComputeGraph& graph, const std::vector<ValueRef>& args) {
+  if (const Q8taConv2dCoopmatVariant* const variant =
+          q8ta_conv2d_coopmat_table_variant(graph, args)) {
+    return q8ta_conv2d_coopmat_impl(graph, *variant, args);
+  }
   const vkapi::Adapter* const adapter = graph.context()->adapter_ptr();
   const ValueRef weight_data = args.at(3);
   const int64_t k_per_group = graph.size_at<int64_t>(-1, weight_data);
