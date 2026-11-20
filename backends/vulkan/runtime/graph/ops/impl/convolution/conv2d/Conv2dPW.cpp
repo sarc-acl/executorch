@@ -404,6 +404,20 @@ const Conv2dPwCoopmatVariant* find_conv2d_pw_coopmat_variant(
   return nullptr;
 }
 
+bool conv2d_pw_coopmat_shader_is_diagnostic(const std::string& shader_name) {
+  if (const Conv2dPwCoopmatVariant* const variant =
+          find_conv2d_pw_coopmat_variant(shader_name)) {
+    return variant->diagnostic();
+  }
+  const auto ends_with = [&shader_name](const std::string& suffix) {
+    return shader_name.size() >= suffix.size() &&
+        shader_name.compare(
+            shader_name.size() - suffix.size(), suffix.size(), suffix) == 0;
+  };
+  return shader_name.rfind("conv2d_pw_coopmat_", 0) == 0 &&
+      (ends_with("_dlprobe_half") || ends_with("_dlctl_half"));
+}
+
 namespace {
 
 // Option suffixes in name order; kSlices stands for "_sk<n>".

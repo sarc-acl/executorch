@@ -6,6 +6,9 @@
 
 #include <executorch/backends/vulkan/test/ops/benchmark_v2/framework/ShaderBenchmark.h>
 
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2d.h>
+#include <executorch/backends/vulkan/test/ops/benchmark_v2/framework/RouteRegistry.h>
+
 #include <executorch/backends/vulkan/test/ops/benchmark_v2/framework/TensorUtils.h>
 #include <executorch/backends/vulkan/test/ops/benchmark_v2/framework/Timing.h>
 #include <executorch/backends/vulkan/test/ops/benchmark_v2/framework/Validation.h>
@@ -50,6 +53,14 @@ Report benchmark_shader(
   const auto tensors = create_tensors(spec, graph, host_data, validation_only);
 
   const std::string shader_name = spec.at("shader");
+  // Diagnostic shaders (design D2 of conv2d-coopmat-evidence-hardening) run
+  // only when the case opts in.
+  if (conv2d_pw_coopmat_shader_is_diagnostic(shader_name) &&
+      !spec.value("allow_diagnostic", false)) {
+    throw UnsupportedRoute(
+        shader_name +
+        " is a diagnostic shader; only a case with allow_diagnostic may run it");
+  }
   vkapi::ShaderInfo shader = VK_KERNEL_FROM_STR(shader_name);
   // JSON describes shader invocations, rather than logical output elements.
   shader.out_tile_size = LocalWorkGroup(1, 1, 1);

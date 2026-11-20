@@ -151,6 +151,10 @@ void validate_config(const Json& spec) {
   require(
       spec.at(kind).is_string(),
       std::string(kind) + " must be a registry name");
+  require(
+      !spec.contains("allow_diagnostic") ||
+          spec.at("allow_diagnostic").is_boolean(),
+      "allow_diagnostic must be boolean");
   if (!is_operator) {
     for (const char* key : {"gwg_size", "lwg_size"}) {
       require(spec.contains(key), std::string("Missing ") + key);

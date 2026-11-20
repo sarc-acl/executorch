@@ -2,6 +2,7 @@
   {
     "name": "pw_coopmat dlprobe (196,128,576) conv2d_pw_coopmat_nvidia_t16x32_f16_dlctl_half",
     "shader": "conv2d_pw_coopmat_nvidia_t16x32_f16_dlctl_half",
+    "allow_diagnostic": true,
     "reference": "conv2d_pw_logical",
     "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
     "gwg_size": [128, 13, 1],
@@ -73769,6 +73770,7 @@
   {
     "name": "pw_coopmat dlprobe (196,128,576) conv2d_pw_coopmat_nvidia_t16x32_f16_dlprobe_half",
     "shader": "conv2d_pw_coopmat_nvidia_t16x32_f16_dlprobe_half",
+    "allow_diagnostic": true,
     "reference": "conv2d_pw_logical",
     "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01},
     "gwg_size": [128, 13, 1],

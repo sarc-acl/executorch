@@ -224,6 +224,13 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants();
 const Conv2dPwCoopmatVariant* find_conv2d_pw_coopmat_variant(
     const std::string& name);
 
+// Whether a conv2d_pw_coopmat shader is a diagnostic: a diagnostic or control
+// variant (Conv2dPwCoopmatVariant::diagnostic), or one of the raw-shader direct
+// weight-load probes (_dlprobe, DIRECT_B) and their staged controls (_dlctl),
+// which have no variant descriptor. Benchmarks run one only when the case sets
+// allow_diagnostic.
+bool conv2d_pw_coopmat_shader_is_diagnostic(const std::string& shader_name);
+
 // Work group counts {channel tiles, pixel tiles in y, in z} of a dispatch of
 // the variant for N output channels and M output pixels.
 utils::uvec3 conv2d_pw_coopmat_workgroups(

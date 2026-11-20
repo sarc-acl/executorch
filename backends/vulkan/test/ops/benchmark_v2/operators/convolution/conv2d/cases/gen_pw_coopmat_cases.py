@@ -976,6 +976,8 @@ def raw_pw_case(shader, weight, weight_data, threads, tile_m, tile_n, M, N, K, p
     return {
         "name": f"pw_coopmat dlprobe ({M},{N},{K}) {shader}",
         "shader": shader,
+        # The probe and its control are diagnostic shaders (design D2).
+        "allow_diagnostic": True,
         "reference": "conv2d_pw_logical",
         "validation_method": {k: v for k, v in TOLERANCE.items() if k != "outputs"},
         "gwg_size": [-(-N // tile_n) * threads, -(-M // tile_m), 1],

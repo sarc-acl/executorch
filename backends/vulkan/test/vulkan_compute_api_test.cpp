@@ -6476,6 +6476,18 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_diagnostic_needs_flag) {
     diagnostics += v.diagnostic() ? 1 : 0;
   }
   EXPECT_EQ(diagnostics, 16);
+  // Raw-shader probes have no descriptor and are diagnostics by name.
+  for (const auto& [name, diagnostic] :
+       std::vector<std::pair<std::string, bool>>{
+           {"conv2d_pw_coopmat_xe2_t128x128_f16_dlprobe_half", true},
+           {"conv2d_pw_coopmat_xe2_t128x128_f16_dlctl_half", true},
+           {"conv2d_pw_coopmat_amd_t16x32_f16_dlprobe_half", true},
+           {"conv2d_pw_coopmat_xe2_t128x128_f16_diag_once_half", true},
+           {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_simt_half", true},
+           {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_half", false},
+           {"conv2d_pw_tiled_bufw_half", false}}) {
+    EXPECT_EQ(conv2d_pw_coopmat_shader_is_diagnostic(name), diagnostic) << name;
+  }
   ComputeGraph probe{GraphConfig()};
   int tested = 0;
   for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
