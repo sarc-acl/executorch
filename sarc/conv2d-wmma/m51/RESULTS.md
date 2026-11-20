@@ -289,9 +289,9 @@ Two workload facts shape the rest of the campaign:
 ## 9.2 The im2col GEMM stage (k x k gate and timed session)
 
 Gate collections: the desktop layer table's eight shapes plus the six M51-heavy shapes of 7.2
-(fourteen shapes, bias and fused-residual epilogue each), full grid and reduced grid, ten
-repetitions, plus one run of the correctness collection. Driver canonical and clocks pinned
-throughout; every stderr empty.
+(fourteen shapes, bias and fused-residual epilogue each; `3x3 1024-256 28x28` is the non-dilated
+GEMM-equivalent of a dl3 layer), full grid and reduced grid, ten repetitions, plus one run of the
+correctness collection. Driver canonical and clocks pinned throughout; every stderr empty.
 
 **Gate verdict: all 32 `amd`/`nvidia` `_i2c` variants pass 10/10 on both grids** — zero failing
 dispatches across the twenty runs (896 coopmat dispatches per run). Every variant creates its
@@ -299,49 +299,84 @@ pipeline on the device (no shared-memory overflow skips), and every K of the fou
 divisible by both families' K steps.
 
 **Production-path accuracy finding.** The failures in these runs are not coopmat failures: the
-`direct` route — which `auto` selects on four of the shapes — fails validation (atol 0.1,
-rtol 0.01) on `3x3 64 56x56` (one of the desktop shapes), `3x3 64 224x224`, `3x3 64-256 224x224`
-(both epilogues) and `3x3 192-48 28x28`, with maximum absolute errors of 0.14-0.53 against the
-0.1 tolerance (1.04 on the correctness collection's gather-grid-limit case). The `im2col` route
-passes everywhere. Mismatch counts scale with the output pixel count, which is why the reduced
-grid passes; this is the same fp16-accumulation class as the 2.5 record. The incumbent fast path
-on the K=576-class shapes is out of tolerance on this device; the tolerance-holding incumbent
+`direct` route — which `auto` selects on five of the shapes — fails validation (atol 0.1,
+rtol 0.01) on four of those five: `3x3 64 56x56` (one of the desktop shapes), `3x3 64 224x224`,
+`3x3 64-256 224x224` (both epilogues) and `3x3 192-48 28x28`, with maximum absolute errors of
+0.14-0.53 against the 0.1 tolerance (1.04 on the correctness collection's gather-grid-limit
+case). The `im2col` route passes everywhere. Mismatch counts scale with the output pixel count,
+which is why the reduced grid passes. The pattern is consistent with an fp16-accumulation
+overshoot of the direct shader (the 2.5 record shows this class exceeding fp16 accumulation
+range), but the cause on this device is **UNVERIFIED**. The baseline of this section is the
+routed path as it is today, this accuracy issue included: on the K=576-class shapes the
+incumbent fast path is out of tolerance on this device, and the tolerance-holding incumbent
 route there is `im2col`.
 
 **Timed session:** five runs with rotated arm order (auto, direct, im2col, the 32 variants),
 per-case p50 of `gpu_timestamp_route_us`, per-cell median over the five runs, A/A opens of the
-fixed `im2col` route before and after. A/A geomeans 0.9996 and 1.0021 (one cell at +2.1% in the
-second open); observed clocks match the pin in every case. One cell (`3x3 192-48 28x28`) carries
-a 6% cross-run spread of the baseline arm; its noise band is widened accordingly.
+fixed `im2col` route before and after. A/A geomeans 0.9996 and 1.0021 (one cell, `3x3 s2
+256-512 14x14`, at +2.1% in the second open); observed clocks match the pin in every case. One
+cell (`3x3 192-48 28x28`) carries a 6% cross-run spread of the baseline arm; its noise band is
+widened accordingly. The run records carry the full SPEC columns (session, run order, validity
+with reason, and the binary and driver digests, the driver verified canonical after every run).
+The timing is the whole convolution, gather included.
 
-Best arm over the fourteen shapes, covering all of them:
+**Baselines.** `auto` is the headline baseline (today's route, and the THRESHOLDS baseline), but
+it is not the best stock route: the geometric mean of time(auto)/time(direct) over the fourteen
+shapes is 2.03 — **`direct` is about 2x faster than `auto`**. On the nine shapes where `auto`
+picks `im2col`, `direct` is 1.9-5.5x faster (`3x3 448-384 5x5` 5.5x, `3x3 s2 256-512 14x14`
+5.0x, `3x3 512 7x7` 1.9x); on the five where `auto` already resolves to `direct`, the ratio is
+1.00. The best stock route is `direct` on every shape, so a routing fix alone would already
+double the k-k convolution time; every coopmat ratio against `auto` below overstates the gain
+over that routing fix by about 2x. Ratios are therefore given against `auto` and against the
+**best stock route per shape** (min of auto, direct, im2col - `direct` everywhere).
 
-> **`amd_t128x128_f16_alc_sk4_i2c_half` — geomean 3.69x over `auto`, 5.66x over `im2col`.**
+**Parent selection (fp32 accumulation, by the 1x1 rule):**
 
-| shape | auto / best | im2col / best | band | win |
-|---|---:|---:|---:|---|
-| `1x7 192-224 17x17` | 5.62 | 5.62 | 2% | yes |
-| `1x7 224-256 17x17` | 5.70 | 5.75 | 2% | yes |
-| `3x3 1024-256 28x28` | 4.13 | 4.13 | 2% | yes |
-| `3x3 128 28x28` | 4.52 | 4.52 | 2% | yes |
-| `3x3 192-48 14x14` | 2.16 | 10.09 | 2% | yes |
-| `3x3 192-48 28x28` | 1.62 | 4.47 | 6% | yes |
-| `3x3 256 14x14` | 10.11 | 10.11 | 2% | yes |
-| `3x3 448-384 5x5` | 13.99 | 14.02 | 2% | yes |
-| `3x3 512 7x7` | 12.22 | 12.22 | 2% | yes |
-| `3x3 64 224x224` | 0.40 | 1.60 | 2% | no |
-| `3x3 64 56x56` | 0.53 | 1.51 | 2% | no |
-| `3x3 64-256 224x224` | 0.87 | 2.38 | 2% | no |
-| `3x3 s2 256-512 14x14` | 10.49 | 10.43 | 2% | yes |
-| `3x3 s2 512 14x14` | 12.20 | 12.19 | 2% | yes |
+> **k x k parent: `amd_t16x32_f32_alc_sk2_i2c_half`.** Geomean **3.39x over `auto`**,
+> **1.67x over the best stock route**, covering all fourteen shapes.
 
-The best arm wins 11 of 14 cells against `auto` beyond the noise band. The three losses are
-exactly the shapes where `auto` routes `direct` — the route that fails tolerance there (above);
-against the tolerance-holding incumbent route (`im2col`) the best arm wins all 14 cells, by
-1.5x-14x. The next arms: `nvidia_t128x128_f16_alc_sk4_i2c_half` (3.50x over `auto`),
-`amd_t128x128_f16_alc_sk2_i2c_half` (3.48x), `amd_t16x32_f16_alc_sk2_i2c_half` (3.43x),
-`nvidia_t16x32_f16_alc_sk4_i2c_half` (3.41x).
+**fp16-accumulation best, reported separately:** `amd_t128x128_f16_alc_sk4_i2c_half`, geomean
+**3.69x over `auto`**, **1.82x over the best stock route**, 5.66x over `im2col`, covering all
+fourteen shapes. Like every fp16-accumulation arm it fails the adversarial fp16-limits cases of
+the 2.5 record, which is why the parent is the fp32 arm.
 
-For reference, `auto` holds 2.03x over `direct` (where `direct` runs) and 0.65x against
-`im2col` (i.e. `im2col` is 1.5x slower than `auto` on the shapes `auto` routes elsewhere); the
-timing is the whole convolution, gather included.
+**Per-shape table** (time(baseline)/time(variant); the parent column and the fp16 best column;
+`best stock` is `direct` on every shape; band widened to 6% on `3x3 192-48 28x28`):
+
+| shape | auto / parent | best stock / parent | best stock / fp16 best | band |
+|---|---:|---:|---:|---:|
+| `1x7 192-224 17x17` | 4.62 | 1.88 | 2.28 | 2% |
+| `1x7 224-256 17x17` | 4.26 | 1.92 | 2.56 | 2% |
+| `3x3 1024-256 28x28` (dl3 GEMM-equivalent) | 1.97 | 0.83 | 1.73 | 2% |
+| `3x3 128 28x28` | 3.65 | 1.21 | 1.50 | 2% |
+| `3x3 192-48 14x14` | 2.35 | 2.35 | 2.16 | 2% |
+| `3x3 192-48 28x28` | 1.80 | 1.80 | 1.62 | 6% |
+| `3x3 256 14x14` | 7.28 | 2.58 | 3.58 | 2% |
+| `3x3 448-384 5x5` | 23.32 | 4.21 | 2.53 | 2% |
+| `3x3 512 7x7` | 11.42 | 5.94 | 6.36 | 2% |
+| `3x3 64 224x224` | 0.45 | 0.45 | 0.40 | 2% |
+| `3x3 64 56x56` | 0.61 | 0.61 | 0.53 | 2% |
+| `3x3 64-256 224x224` | 0.67 | 0.67 | 0.87 | 2% |
+| `3x3 s2 256-512 14x14` | 10.84 | 2.19 | 2.12 | 2% |
+| `3x3 s2 512 14x14` | 11.43 | 3.38 | 3.60 | 2% |
+
+The parent wins ten of fourteen cells against the best stock route beyond the noise band, and
+the fp16 best eleven of fourteen. The losses are the Cin=64 large-plane shapes: `3x3 64
+224x224`, `3x3 64 56x56` and `3x3 64-256 224x224` run at **0.45-0.67x of stock** under the
+parent (0.40-0.87x under the fp16 best) — at Cin=64 the K=576 GEMM is small relative to the
+output plane and the im2col gather dominates; the parent additionally loses `3x3 1024-256
+28x28` (0.83x), the one shape where the fp16 best still wins (1.73x). Against the
+tolerance-holding incumbent route (`im2col`) both variants win all fourteen cells, by
+1.5x-14x.
+
+**Routing implication.** A routing rule that adopts the coopmat variants must keep the
+Cin=64-large-plane shapes on `direct` - there the coopmat route is slower than stock. But the
+`direct` precision finding above applies to exactly those shapes: the route the rule must keep
+is out of tolerance there today. Adoption on those shapes is therefore blocked on resolving the
+`direct` accuracy issue; until then the choice there is `im2col` (in tolerance, 1.5-2.4x slower
+than the coopmat route) or the out-of-tolerance fast path.
+
+The next arms: fp32 `amd_t128x128_f32_alc_sk4_i2c_half` (3.38x over `auto`, 1.67x over best
+stock) and `nvidia_t128x128_f32_alc_sk4_i2c_half` (3.38x / 1.67x); fp16
+`nvidia_t128x128_f16_alc_sk4_i2c_half` (3.50x / 1.73x), `amd_t128x128_f16_alc_sk2_i2c_half`
+(3.48x / 1.71x).
