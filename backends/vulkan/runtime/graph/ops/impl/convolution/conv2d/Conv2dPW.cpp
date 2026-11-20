@@ -131,6 +131,7 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
   constexpr uint32_t kImageInput = V::kImageInput;
   constexpr uint32_t kNoEpilogue = V::kNoEpilogue;
   constexpr uint32_t kColumnMajorB = V::kColumnMajorB;
+  constexpr uint32_t kColumnMajorBFast = V::kColumnMajorBFast;
   constexpr uint32_t kIm2col = V::kIm2col;
   // clang-format off
   static const std::vector<Conv2dPwCoopmatVariant> variants = {
@@ -528,7 +529,8 @@ uint32_t Conv2dPwCoopmatVariant::shared_bytes() const {
   const uint32_t a_slice =
       frag_layout ? tile_m * (tile_k / 8u) : tile_m * ((tile_k + 8u) / 8u);
   const uint32_t b_slice = frag_layout ? tile_k * (tile_n / 8u)
-      : has(kColumnMajorB)             ? tile_n * ((tile_k + 8u) / 8u)
+      : (has(kColumnMajorB) || has(kColumnMajorBFast))
+                                       ? tile_n * ((tile_k + 8u) / 8u)
                                        : tile_k * ((tile_n + 8u) / 8u);
   const uint32_t pool_ab = 2u * a_slice + 2u * b_slice;
   const uint32_t acc_bytes = fp32_accumulation ? 4u : 2u;
