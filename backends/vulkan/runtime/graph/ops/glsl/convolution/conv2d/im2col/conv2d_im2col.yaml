@@ -8,15 +8,24 @@ conv2d_im2col:
   parameter_names_with_default_values:
     DTYPE: float
     OUT_STORAGE: texture2d
+    FAST_GATHER: ""
   generate_variant_forall:
     combination:
-      parameter_names: [OUT_STORAGE, DTYPE]
+      parameter_names: [OUT_STORAGE, DTYPE, FAST_GATHER]
       combos:
-        - parameter_values: [texture2d, float]
-        - parameter_values: [texture2d, half]
-        - parameter_values: [texture3d, float]
-        - parameter_values: [texture3d, half]
-        - parameter_values: [buffer, float]
-        - parameter_values: [buffer, half]
+        - parameter_values: [texture2d, float, ""]
+        - parameter_values: [texture2d, half, ""]
+        - parameter_values: [texture3d, float, ""]
+        - parameter_values: [texture3d, half, ""]
+        - parameter_values: [buffer, float, ""]
+        - parameter_values: [buffer, half, ""]
+        # Fast gather (default-off shader option): division-free pixel decode
+        # on a (k4, oh_local, ow) grid, specialization-constant kernel
+        # geometry, and no store-rounding emulation. FP16 only - the
+        # rounding skip is exact only for rgba16f texels (or zeros), and the
+        # cooperative-matrix route that requests it is FP16.
+        - parameter_values: [texture2d, half, fast]
+        - parameter_values: [texture3d, half, fast]
+        - parameter_values: [buffer, half, fast]
   shader_variants:
     - NAME: conv2d_im2col

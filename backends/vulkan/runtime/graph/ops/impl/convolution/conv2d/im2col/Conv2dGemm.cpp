@@ -766,7 +766,8 @@ void conv2d_gemm_impl(
     const ValueRef out,
     const Conv2dEpilogue& epilogue,
     const std::optional<utils::StorageType> im2col_storage_override,
-    const Conv2dPwCoopmatVariant* coopmat_variant) {
+    const Conv2dPwCoopmatVariant* coopmat_variant,
+    const bool fast_gather) {
   if (coopmat_variant != nullptr) {
     // Before any scratch or node: the shared residual and scale checks, then
     // the route's own conditions.
@@ -849,6 +850,18 @@ void conv2d_gemm_impl(
   oh_tile = std::max<int64_t>(oh_tile, 1);
   oh_tile = std::min<int64_t>(oh_tile, H_out);
   const int64_t num_tiles = utils::div_up(H_out, oh_tile);
+
+  // The fast-gather grid dispatches one (k4, oh_local, ow) thread, so W_out
+  // becomes a workgroup-count axis (local z size 1) instead of being packed
+  // into the y axis like the default layout.
+  if (fast_gather) {
+    const utils::uvec3 max_wg_count =
+        graph.context()->adapter_ptr()->max_compute_workgroup_count();
+    VK_CHECK_COND(
+        W_out <= int64_t(max_wg_count[2]),
+        "conv2d_gemm: the fast gather needs W_out within the device's "
+        "workgroup count limit");
+  }
 
   // The per-tile scratch holds only oh_tile output-height rows, so its extents
   // are M_tile = oh_tile * W_out (texture2d / buffer) or oh_tile-deep
@@ -1019,7 +1032,8 @@ void conv2d_gemm_impl(
         dilation_w,
         utils::safe_downcast<int32_t>(Cin_padded),
         oh_offset,
-        oh_tile_i32);
+        oh_tile_i32,
+        fast_gather);
 
     if (coopmat_variant != nullptr) {
       add_conv2d_im2col_coopmat_node(

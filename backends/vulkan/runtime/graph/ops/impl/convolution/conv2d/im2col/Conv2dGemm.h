@@ -79,7 +79,8 @@ void conv2d_gemm_impl(
     const Conv2dEpilogue& epilogue = {},
     const std::optional<utils::StorageType> im2col_storage_override =
         std::nullopt,
-    const Conv2dPwCoopmatVariant* coopmat_variant = nullptr);
+    const Conv2dPwCoopmatVariant* coopmat_variant = nullptr,
+    const bool fast_gather = false);
 
 /*
  * With `coopmat_variant` (an _i2c variant of conv2d_pw_coopmat, benchmark route

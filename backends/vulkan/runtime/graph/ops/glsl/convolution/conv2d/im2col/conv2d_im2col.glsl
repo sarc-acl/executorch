@@ -16,12 +16,22 @@
  *   K_total = Kh * Kw * align_up_4(C_in)    (flattened receptive field)
  *
  * Tiling by output-height rows bounds the scratch tensor to a fixed byte budget
- * regardless of resolution: the scratch holds OH_TILE * W_out rows, not M. A
- * tile-local row m_local decodes to oh_local = m_local / W_out,
- * ow = m_local % W_out; the SOURCE spatial position uses the global output row
- * oh = OH_OFFSET + oh_local. Tiling by H rows (rather than flat M rows) keeps
- * this row->(oh,ow) decode exact for the spatial texture3d layout too. When
- * tiling is disabled the caller passes OH_OFFSET = 0 and OH_TILE = H_out.
+ * regardless of resolution: the scratch holds OH_TILE * W_out rows, not M. In
+ * the default layout a tile-local row m_local decodes to oh_local = m_local /
+ * W_out, ow = m_local % W_out; the SOURCE spatial position uses the global
+ * output row oh = OH_OFFSET + oh_local. Tiling by H rows (rather than flat M
+ * rows) keeps this row->(oh,ow) decode exact for the spatial texture3d layout
+ * too. When tiling is disabled the caller passes OH_OFFSET = 0 and
+ * OH_TILE = H_out.
+ *
+ * The FAST_GATHER variant ("fast") instead dispatches one invocation per
+ * (k4, tile-local output row, output column) - gl_GlobalInvocationID.(y,z) are
+ * oh_local and ow directly - so the row->pixel decode needs no division, and
+ * bakes the shape-independent kernel geometry and Cin_padded as specialization
+ * constants so the K decode divides by compile-time divisors. H_out / W_out
+ * still derive from the (refreshed-on-resize) in_sizes UBO. It also skips the
+ * generic store-rounding emulation: every stored value is either a lossless
+ * fp32 widening of an rgba16f texel or an exact zero.
  *
  * K layout (so a 4-tile in K — one vec4 — holds the same kernel position):
  *   K = (ki * Kw + kj) * Cin_padded + ci
@@ -66,6 +76,15 @@ $else:
   ${layout_declare_tensor(B, "w", "t_out", DTYPE, OUT_STORAGE)}
 ${layout_declare_tensor(B, "r", "t_in", DTYPE, "texture3d")}
 
+$if FAST_GATHER == "fast":
+  // The fast gather stores either a lossless fp32 widening of an rgba16f texel
+  // or an exact zero, so every stored value is exactly representable in fp16
+  // under any rounding mode: the store-rounding emulation that a writable
+  // rgba16f image declaration adds is redundant overhead here.
+  #ifdef WRITES_RGBA16F_IMAGE
+  #undef imageStore
+  #endif
+
 ${layout_declare_ubo(B, "ivec4", "in_sizes")}
 
 // Push constants are uploaded in 16-byte chunks (one ivec4 each) to comply
@@ -94,50 +113,116 @@ layout(push_constant) uniform restrict Block {
 
 layout(local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2) in;
 
+$if FAST_GATHER == "fast":
+  // Kernel geometry and the padded channel count are shape-independent (see
+  // the push-constant note above), so the fast gather bakes them as
+  // specialization constants: every division they appear in becomes a
+  // compile-time divisor. The values are uploaded by the host in this
+  // declaration order, after the three local-size constants.
+  ${layout_declare_spec_const(C, "int", "SPEC_KERNEL_H", "0")}
+  ${layout_declare_spec_const(C, "int", "SPEC_KERNEL_W", "0")}
+  ${layout_declare_spec_const(C, "int", "SPEC_STRIDE_H", "1")}
+  ${layout_declare_spec_const(C, "int", "SPEC_STRIDE_W", "1")}
+  ${layout_declare_spec_const(C, "int", "SPEC_PADDING_H", "0")}
+  ${layout_declare_spec_const(C, "int", "SPEC_PADDING_W", "0")}
+  ${layout_declare_spec_const(C, "int", "SPEC_DILATION_H", "1")}
+  ${layout_declare_spec_const(C, "int", "SPEC_DILATION_W", "1")}
+  ${layout_declare_spec_const(C, "int", "SPEC_CIN_PADDED", "0")}
+
 void main() {
   const int k4 = int(gl_GlobalInvocationID.x);
-  // gl_GlobalInvocationID.y is the tile-local row m_local within this tile's
-  // OH_TILE * W_out rows; it maps to the global output row via OH_OFFSET.
-  const int m_local = int(gl_GlobalInvocationID.y);
+  $if FAST_GATHER == "fast":
+    // One invocation per (k4, tile-local output row, output column): the pixel
+    // decode needs no division. gl_GlobalInvocationID.y is the tile-local
+    // output row, .z the output column; the global output row is OH_OFFSET +
+    // oh_local.
+    const int oh_local = int(gl_GlobalInvocationID.y);
+    const int ow       = int(gl_GlobalInvocationID.z);
+    const int oh       = OH_OFFSET + oh_local;
 
-  // Derive the spatial output extents from the (refreshed-on-resize) input
-  // sizes UBO so the im2col mapping tracks dynamic input shapes. in_sizes is
-  // (W_in, H_in, C_in, N). dilation == 1 is guaranteed by the C++ routing
-  // heuristic, but the general formula is used for correctness.
-  const int W_OUT =
-      (in_sizes.x + 2 * PADDING_W - DILATION_W * (KERNEL_W - 1) - 1) / STRIDE_W +
-      1;
-  const int H_OUT =
-      (in_sizes.y + 2 * PADDING_H - DILATION_H * (KERNEL_H - 1) - 1) / STRIDE_H +
-      1;
-  // Rows materialized by this tile (capped to the scratch extent).
-  const int M_TILE = OH_TILE * W_OUT;
+    // H_out / W_out still derive from the (refreshed-on-resize) input sizes
+    // UBO so the mapping tracks dynamic input shapes; divided by
+    // specialization constants, these are the only remaining runtime
+    // divisions.
+    const int W_OUT =
+        (in_sizes.x + 2 * SPEC_PADDING_W -
+         SPEC_DILATION_W * (SPEC_KERNEL_W - 1) - 1) / SPEC_STRIDE_W +
+        1;
+    const int H_OUT =
+        (in_sizes.y + 2 * SPEC_PADDING_H -
+         SPEC_DILATION_H * (SPEC_KERNEL_H - 1) - 1) / SPEC_STRIDE_H +
+        1;
 
-  if (k4 >= K4_TOTAL || m_local >= M_TILE) {
-    return;
-  }
+    // OH_TILE bounds this dispatch (the grid y extent), but the local
+    // workgroup size can round the invocation count up past it; W_OUT matches
+    // the grid z extent and is checked the same way the default layout checks
+    // M_TILE.
+    if (k4 >= K4_TOTAL || oh_local >= OH_TILE || ow >= W_OUT) {
+      return;
+    }
 
-  // Tile-local row m_local -> (oh_local, ow); global output row oh = OH_OFFSET +
-  // oh_local. Rows past the real H_OUT (in a partial trailing tile, or when a
-  // dynamic shape shrinks H_OUT below the build-time OH_OFFSET) write zeros.
-  const int oh_local = m_local / W_OUT;
-  const int ow       = m_local % W_OUT;
-  const int oh       = OH_OFFSET + oh_local;
+    // K = (ki * Kw + kj) * Cin_padded + ci ; since Cin_padded % 4 == 0, all 4
+    // K values in this texel share the same (ki, kj) and span 4 consecutive
+    // ci values starting at ci_start. All divisors are specialization
+    // constants.
+    const int k_start = k4 * 4;
+    const int krow_idx = k_start / SPEC_CIN_PADDED; // ki * Kw + kj
+    const int ci_start = k_start % SPEC_CIN_PADDED;
+    const int kj       = krow_idx % SPEC_KERNEL_W;
+    const int ki       = krow_idx / SPEC_KERNEL_W;
+    const int ci_blk   = ci_start >> 2;        // ci_start / 4
 
-  const int k_start = k4 * 4;
+    // Compute the input spatial position for this (oh, ow, ki, kj).
+    const int ih = oh * SPEC_STRIDE_H - SPEC_PADDING_H + ki * SPEC_DILATION_H;
+    const int iw = ow * SPEC_STRIDE_W - SPEC_PADDING_W + kj * SPEC_DILATION_W;
 
-  // K = (ki * Kw + kj) * Cin_padded + ci ; since Cin_padded % 4 == 0, all 4
-  // K values in this texel share the same (ki, kj) and span 4 consecutive
-  // ci values starting at ci_start.
-  const int krow_idx = k_start / CIN_PADDED; // ki * Kw + kj
-  const int ci_start = k_start % CIN_PADDED;
-  const int kj       = krow_idx % KERNEL_W;
-  const int ki       = krow_idx / KERNEL_W;
-  const int ci_blk   = ci_start >> 2;        // ci_start / 4
+    // Tile-local row for the (oh_local, ow) position; used by the flat
+    // texture2d and buffer stores, unused by the texture3d store.
+    const int m_local = oh_local * W_OUT + ow;
+  $else:
+    // gl_GlobalInvocationID.y is the tile-local row m_local within this tile's
+    // OH_TILE * W_out rows; it maps to the global output row via OH_OFFSET.
+    const int m_local = int(gl_GlobalInvocationID.y);
 
-  // Compute the input spatial position for this (oh, ow, ki, kj).
-  const int ih = oh * STRIDE_H - PADDING_H + ki * DILATION_H;
-  const int iw = ow * STRIDE_W - PADDING_W + kj * DILATION_W;
+    // Derive the spatial output extents from the (refreshed-on-resize) input
+    // sizes UBO so the im2col mapping tracks dynamic input shapes. in_sizes is
+    // (W_in, H_in, C_in, N). dilation == 1 is guaranteed by the C++ routing
+    // heuristic, but the general formula is used for correctness.
+    const int W_OUT =
+        (in_sizes.x + 2 * PADDING_W - DILATION_W * (KERNEL_W - 1) - 1) / STRIDE_W +
+        1;
+    const int H_OUT =
+        (in_sizes.y + 2 * PADDING_H - DILATION_H * (KERNEL_H - 1) - 1) / STRIDE_H +
+        1;
+    // Rows materialized by this tile (capped to the scratch extent).
+    const int M_TILE = OH_TILE * W_OUT;
+
+    if (k4 >= K4_TOTAL || m_local >= M_TILE) {
+      return;
+    }
+
+    // Tile-local row m_local -> (oh_local, ow); global output row oh =
+    // OH_OFFSET + oh_local. Rows past the real H_OUT (in a partial trailing
+    // tile, or when a dynamic shape shrinks H_OUT below the build-time
+    // OH_OFFSET) write zeros.
+    const int oh_local = m_local / W_OUT;
+    const int ow       = m_local % W_OUT;
+    const int oh       = OH_OFFSET + oh_local;
+
+    const int k_start = k4 * 4;
+
+    // K = (ki * Kw + kj) * Cin_padded + ci ; since Cin_padded % 4 == 0, all 4
+    // K values in this texel share the same (ki, kj) and span 4 consecutive
+    // ci values starting at ci_start.
+    const int krow_idx = k_start / CIN_PADDED; // ki * Kw + kj
+    const int ci_start = k_start % CIN_PADDED;
+    const int kj       = krow_idx % KERNEL_W;
+    const int ki       = krow_idx / KERNEL_W;
+    const int ci_blk   = ci_start >> 2;        // ci_start / 4
+
+    // Compute the input spatial position for this (oh, ow, ki, kj).
+    const int ih = oh * STRIDE_H - PADDING_H + ki * DILATION_H;
+    const int iw = ow * STRIDE_W - PADDING_W + kj * DILATION_W;
 
   VEC4_T out_texel = VEC4_T(0);
   if (oh < H_OUT && ih >= 0 && ih < in_sizes.y && iw >= 0 && iw < in_sizes.x) {

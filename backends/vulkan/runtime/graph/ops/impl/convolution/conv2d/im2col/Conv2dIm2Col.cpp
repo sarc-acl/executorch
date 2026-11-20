@@ -62,6 +62,34 @@ GlobalWorkGrid pick_conv2d_im2col_gwg(
   return GlobalWorkGrid({ext.k4_total, ext.m, 1u}, kTiledWorkGrid);
 }
 
+// Fast-gather grid: one thread per (k4, tile-local output row, output column).
+// The scratch tensor carries (oh_tile, W_out) directly in its texture3d layout
+// [1, K_total, oh_tile, W_out]; the flat layout packs them into dim 0
+// (= oh_tile * W_out), so W_out is recovered with the build-time oh_tile from
+// the last resize_args slot (a raw int value, not a ValueRef handle).
+GlobalWorkGrid pick_conv2d_im2col_fast_gwg(
+    ComputeGraph* graph,
+    const vkapi::ShaderInfo& shader,
+    const std::vector<ArgGroup>& args,
+    const std::vector<ValueRef>& resize_args) {
+  (void)shader;
+  const ValueRef im2col_out = args.at(0).refs.at(0);
+  const Im2colExtents ext = im2col_extents_of(graph, im2col_out);
+  const std::vector<int64_t> sizes = graph->sizes_of(im2col_out);
+  uint32_t oh_tile;
+  uint32_t w_out;
+  if (sizes.size() == 4) {
+    // texture3d [1, K_total, oh_tile, W_out]
+    oh_tile = utils::safe_downcast<uint32_t>(sizes.at(2));
+    w_out = utils::safe_downcast<uint32_t>(sizes.at(3));
+  } else {
+    // flat [oh_tile * W_out, K_total]
+    oh_tile = static_cast<uint32_t>(static_cast<int32_t>(resize_args.at(5)));
+    w_out = ext.m / oh_tile;
+  }
+  return GlobalWorkGrid({ext.k4_total, oh_tile, w_out}, kTiledWorkGrid);
+}
+
 LocalWorkGroup pick_conv2d_im2col_lwg(
     ComputeGraph* graph,
     const vkapi::ShaderInfo& shader,
@@ -171,7 +199,8 @@ void add_conv2d_im2col_node(
     const int32_t dilation_w,
     const int32_t Cin_padded,
     const int32_t oh_offset,
-    const int32_t oh_tile) {
+    const int32_t oh_tile,
+    const bool fast_gather) {
   const utils::StorageType out_storage = graph.storage_type_of(im2col_out);
   VK_CHECK_COND(
       out_storage == utils::kBuffer || out_storage == utils::kTexture2D ||
@@ -180,6 +209,12 @@ void add_conv2d_im2col_node(
   std::string kernel_name = "conv2d_im2col";
   add_storage_type_suffix(kernel_name, out_storage);
   add_dtype_suffix(kernel_name, graph.dtype_of(im2col_out));
+  if (fast_gather) {
+    VK_CHECK_COND(
+        graph.dtype_of(im2col_out) == vkapi::kHalf,
+        "conv2d_im2col: the fast gather requires an FP16 scratch");
+    kernel_name += "_fast";
+  }
   vkapi::ShaderInfo shader = VK_KERNEL_FROM_STR(kernel_name);
 
   // K_total is laid out so that 4-tiles share a kernel position; since
@@ -194,10 +229,27 @@ void add_conv2d_im2col_node(
   // derived at runtime from in_sizes; the rest are shape-independent.
   const utils::ivec4 dims{Cin_padded, oh_offset, oh_tile, K4_total};
 
+  // Fast-gather specialization constants, in the shader's declaration order
+  // (constant ids 3 onward, after the three local-size ids): kernel geometry
+  // and Cin_padded, all shape-independent. The default layout uploads none.
+  vkapi::SpecVarList spec_vars;
+  if (fast_gather) {
+    spec_vars = vkapi::SpecVarList{
+        kernel_h,
+        kernel_w,
+        stride_h,
+        stride_w,
+        padding_h,
+        padding_w,
+        dilation_h,
+        dilation_w,
+        Cin_padded};
+  }
+
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
       graph,
       shader,
-      pick_conv2d_im2col_gwg,
+      fast_gather ? pick_conv2d_im2col_fast_gwg : pick_conv2d_im2col_gwg,
       pick_conv2d_im2col_lwg,
       // Inputs and Outputs
       {{im2col_out, vkapi::kWrite}, {in, vkapi::kRead}},
@@ -208,7 +260,7 @@ void add_conv2d_im2col_node(
        PushConstantDataInfo(&padding_dil, sizeof(padding_dil)),
        PushConstantDataInfo(&dims, sizeof(dims))},
       // Specialization constants
-      {},
+      spec_vars,
       // Resize args (last slot = raw oh_tile value, not a ValueRef handle)
       {in,
        weight_data,

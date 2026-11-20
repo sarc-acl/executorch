@@ -206,7 +206,7 @@ Json build_conv2d_im2col_coopmat(
     ComputeGraph& graph,
     const std::vector<ValueRef>& args,
     const Json& options) {
-  check_options(options, {"variant"});
+  check_options(options, {"variant", "fast_gather"});
   if (!options.contains("variant") || !options.at("variant").is_string()) {
     throw std::invalid_argument("im2col_coopmat requires a variant name");
   }
@@ -214,6 +214,15 @@ Json build_conv2d_im2col_coopmat(
   const Conv2dPwCoopmatVariant* const variant =
       find_conv2d_pw_coopmat_variant(name);
   supported(variant != nullptr, "Unknown conv2d_pw_coopmat variant: " + name);
+  const bool fast_gather = [&]() {
+    if (!options.contains("fast_gather")) {
+      return false;
+    }
+    if (!options.at("fast_gather").is_boolean()) {
+      throw std::invalid_argument("fast_gather must be a boolean");
+    }
+    return options.at("fast_gather").get<bool>();
+  }();
   const ConvShape shape = conv_shape(graph, args);
   supported(shape.groups == 1, "im2col_coopmat requires groups 1");
   if (const auto reason = conv2d_im2col_coopmat_ineligible(
@@ -229,6 +238,11 @@ Json build_conv2d_im2col_coopmat(
           /*transposed=*/false)) {
     throw UnsupportedRoute(name + " cannot run this case: " + *reason);
   }
+  if (fast_gather) {
+    supported(
+        graph.dtype_of(args[0]) == vkapi::kHalf,
+        "fast_gather requires an FP16 convolution");
+  }
   conv2d_gemm_impl(
       graph,
       args[0],
@@ -240,8 +254,13 @@ Json build_conv2d_im2col_coopmat(
       args.back(),
       conv2d_epilogue_from_args(graph, args),
       utils::kTexture3D,
-      variant);
-  return selected("im2col_coopmat", {{"variant", name}});
+      variant,
+      fast_gather);
+  Json selected_route = Json{{"variant", name}};
+  if (fast_gather) {
+    selected_route["fast_gather"] = true;
+  }
+  return selected("im2col_coopmat", selected_route);
 }
 
 Json build_conv2d_winograd(

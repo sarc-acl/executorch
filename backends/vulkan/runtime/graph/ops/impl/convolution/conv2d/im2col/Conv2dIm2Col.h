@@ -60,6 +60,13 @@ namespace vkcompute {
  *   oh_tile     : number of output-height rows in this tile (scratch capacity);
  *                 also packed as a raw int into the last resize_args slot for
  *                 the resize fn (not a materialized ValueRef handle)
+ *   fast_gather : select the _fast shader variant — a (k4, oh_local, ow)
+ *                 dispatch grid (division-free pixel decode), specialization-
+ *                 constant kernel geometry + Cin_padded, and no store-rounding
+ *                 emulation (every stored value is an exact fp16 widening of
+ *                 an rgba16f texel or a zero). Requires an FP16 gather. The
+ *                 kernel geometry is shape-independent, so the specialization
+ *                 constants stay valid under dynamic shapes.
  */
 void add_conv2d_im2col_node(
     ComputeGraph& graph,
@@ -79,6 +86,7 @@ void add_conv2d_im2col_node(
     const int32_t dilation_w,
     const int32_t Cin_padded,
     const int32_t oh_offset,
-    const int32_t oh_tile);
+    const int32_t oh_tile,
+    const bool fast_gather = false);
 
 } // namespace vkcompute
