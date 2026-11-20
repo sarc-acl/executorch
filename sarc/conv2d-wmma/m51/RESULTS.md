@@ -304,6 +304,37 @@ run the THRESHOLDS baseline, which the 4.0 parent replaces. INT8 1x1 convolution
 (`q8ta_conv2d_pw`, 65.2%) is out of scope by the SPEC stage table; the share is recorded to
 quantify what a future INT8 stage would address.
 
+## 7.4 End-to-end projection (1x1 parent, stage-1 scope)
+
+Projection, lower bound. For each model the measured 4.0 parent ratio
+(`pw_tiled_4x8` / parent, per-cell median of `gpu_timestamp_route_us` from the 4.0 session) is
+applied to every ETDump 1x1 layer whose `(hout*wout, Cin, Cout)` exactly matches one of the 21
+measured shapes; every other layer keeps its ETDump time. The reduction is of the whole model's
+GPU shader time (`survey-runs.csv:gpu_shader_ms`), not only of convolution. This is a projection
+computed from the local ETDump aggregation and `runs.csv`; it is not a model run.
+
+| model | matched layers | matched share | projected reduction |
+|---|---:|---:|---:|
+| resnet18 | 0 | 0.0% | 0.00% |
+| resnet50 | 11 | 16.9% | 4.75% |
+| mv2 | 3 | 8.8% | 6.77% |
+| mv3 | 1 | 2.3% | 1.80% |
+| ic3 | 0 | 0.0% | 0.00% |
+| ic4 | 0 | 0.0% | 0.00% |
+| densenet161 | 0 | 0.0% | 0.00% |
+| dl3 | 6 | 3.2% | 0.70% |
+
+The lower bound is small because exact-shape matching is strict: only shapes present in the 21-case
+timing session count, and several models (resnet18: no 1x1 layers; densenet161: 1x1 layers all
+outside the measured set) match none. resnet50 and mv2 match the ResNet bottleneck
+expand/project planes (49/196/784 pixels) and the mv2 expand planes; measured speedups on the
+matched shapes run 1.1-4.9x, and the small planes of the ResNet project layers sit near the low
+end (1.1-1.2x). The projection bounds what routing the measured parent shapes into
+these models would save today; a timing session covering each model's own 1x1 shape census
+(939 conv configs in the ETDump aggregation) would raise it toward the 7.2 opportunity (1x1 is
+15.4% of FP16 conv GPU time). Recomputation: `tools/e2e_projection.py` over
+`survey-conv-shapes.csv`, `survey-runs.csv` and `timing/runs.csv` (local artifacts).
+
 ## 9.2 The im2col GEMM stage (k x k gate and timed session)
 
 Gate collections: the desktop layer table's eight shapes plus the six M51-heavy shapes of 7.2
