@@ -83,7 +83,10 @@ class Nomination(unittest.TestCase):
         self.assertIsNone(code)
         self.assertEqual(info["best"], "xe2_t32x64_f16_alc_dg")
 
-    def test_stock_drift_is_unstable(self):
+    def test_stock_drift_nominates_a_win_against_every_stock_run(self):
+        # Stock spread 0.84: the arm's slowest run (9.1) still beats the
+        # fastest stock run (11.2) by more than 5%; nominated, with the
+        # conservative ratio 11.2 / 9.1, not the ratio of medians (10.6).
         s = session(
             {
                 "auto": arm(71.2, 71.2, 11.2),
@@ -91,9 +94,23 @@ class Nomination(unittest.TestCase):
                 "nvidia_t16x32_f16_alc": arm(6.6, 9.1, 6.7),
             }
         )
-        _, (info, code, detail) = gen.nominate(SHAPE, [("s", s)])
-        self.assertEqual(code, "unstable")
-        self.assertIn("stock spread", detail)
+        nomination, (info, code, _) = gen.nominate(SHAPE, [("s", s)])
+        self.assertEqual(nomination, {"arms": ["nvidia_t16x32_f16_alc"]})
+        self.assertIsNone(code)
+        self.assertAlmostEqual(info["ratio"], 11.2 / 9.1)
+        self.assertAlmostEqual(info["median_ratio"], 71.2 / 6.7)
+
+    def test_win_on_medians_only_is_unstable(self):
+        s = session(
+            {
+                "auto": arm(71.2, 71.2, 11.2),
+                "A'": arm(71.0, 71.2, 11.2),
+                "nvidia_t16x32_f16_alc": arm(10.8, 12.0, 10.9),
+            }
+        )
+        nomination, (_, code, detail) = gen.nominate(SHAPE, [("s", s)])
+        self.assertEqual((nomination["arms"], code), ([], "unstable"))
+        self.assertIn("wins on medians", detail)
 
     def test_reason_codes_without_a_time(self):
         cases = {
@@ -131,15 +148,15 @@ def confirm(s):
 
 
 class NominationGate(unittest.TestCase):
-    def test_faster_unstable_arm_loses_nomination(self):
-        # Same route: the faster arm (ratio 2.5) spreads 0.5 over its runs, the
-        # slower one (ratio 2.0) is stable and qualifies; the stable arm is
+    def test_arm_with_a_losing_run_loses_nomination(self):
+        # Same route: the faster arm on medians (ratio 2.5) has a run slower
+        # than stock (104); the slower one (ratio 2.0) qualifies and is
         # nominated. The direct route's only arm loses (0.98x): no nominee.
         s = session(
             {
                 "auto": arm(100, 100, 100),
                 "A'": arm(100, 100, 100),
-                "xe2_t128x128_f16_alc": arm(30, 40, 50),
+                "xe2_t128x128_f16_alc": arm(30, 40, 104),
                 "xe2_t32x64_f16_alc": arm(50, 50, 50),
                 "xe2_t32x64_f16_alc_dg": arm(102, 102, 102),
             }
@@ -149,19 +166,18 @@ class NominationGate(unittest.TestCase):
         self.assertIsNone(code)
         self.assertEqual(info["best"], "xe2_t32x64_f16_alc")
 
-    def test_each_observation_gated_against_its_own_session(self):
-        # The reference sweep's A/A band is 0.213 (above 0.10), the retime's
-        # 0.02 with stable runs: the arm qualifies by its retime observation
-        # (ratio 1.22) and is nominated, although the reference observation and
-        # the larger of the two bands would reject it. The reference's stock
-        # time (100 against 81.97) does not filter the retime out.
+    def test_each_observation_judged_in_its_own_session(self):
+        # In the reference sweep one stock run is fast (60): the arm (80) wins
+        # on medians but not against every stock run. In the retime it beats
+        # every stock run (ratio 1.22) and is nominated from there. The
+        # reference's stock time (100 against 81.97) does not filter the retime
+        # out.
         ref = session(
             {
-                "auto": arm(100, 100, 100),
+                "auto": arm(100, 100, 60),
                 "A'": arm(100, 100, 100),
                 "amd_t16x32_f16_alc": arm(80, 80, 80),
             },
-            band=0.213,
         )
         retime = session(
             {
@@ -207,7 +223,7 @@ class NominationGate(unittest.TestCase):
 
     def test_no_qualifying_arm_keeps_the_reason(self):
         for arms, code in (
-            ({"xe2_t32x64_f16_alc": arm(30, 40, 50)}, "unstable"),
+            ({"xe2_t32x64_f16_alc": arm(30, 40, 104)}, "unstable"),
             ({"xe2_t32x64_f16_alc": arm(98, 98, 98)}, "below-threshold"),
         ):
             s = session({"auto": arm(100, 100, 100), "A'": arm(100, 100, 100), **arms})
@@ -323,18 +339,90 @@ class Confirmation(unittest.TestCase):
             ["xe2_t32x64_f16_alc_simt", "xe2_t32x64_f16_diag_once"],
         )
 
-    def test_unstable_arm(self):
+    def test_steady_arm_against_two_level_stock(self):
+        # The RTX 4070 Ti SUPER case of the proposal: the stock route changes
+        # level between runs (spread above 3, A/A band 1.2), the arm is steady
+        # and its slowest run beats the fastest stock run: a row, with the
+        # conservative ratio 154 / 46.
+        s = confirmation(
+            {
+                "auto": arm(614, 164, 620, 154, 614),
+                "A'": arm(612, 160, 618, 156, 615),
+                "nvidia_t16x32_f16_alc_dg": arm(42, 46, 46, 42, 42),
+            },
+            ["nvidia_t16x32_f16_alc_dg"],
+            band=1.2,
+        )
+        info, code, _ = confirm(s)
+        self.assertIsNone(code)
+        self.assertEqual(info["best"], "nvidia_t16x32_f16_alc_dg")
+        self.assertAlmostEqual(info["ratio"], 154 / 46)
+        self.assertAlmostEqual(info["median_ratio"], 614 / 42)
+        self.assertGreater(info["stock_spread"], 0.10)
+        rows, _ = gen.rows_of(
+            [("s", s)],
+            s["nominations"],
+            (0x10DE, 0x2705),
+            {SHAPE.removeprefix("sweep "): {"label": "x"}},
+        )
+        self.assertTrue(rows[0]["comment"].endswith(f"{154 / 46:.2f}x"))
+
+    def test_win_on_medians_only_is_unstable(self):
+        # Four runs at 40, one at 98: wins on medians (2.5) but its slowest run
+        # is not 5% faster than the fastest stock run (100 / 98).
         s = confirmation(
             {
                 "auto": five(100),
                 "A'": five(100),
-                "xe2_t32x64_f16_alc": arm(30, 40, 40, 40, 50),
+                "xe2_t32x64_f16_alc": arm(40, 40, 40, 40, 98),
             },
             ["xe2_t32x64_f16_alc"],
         )
         info, code, detail = confirm(s)
         self.assertEqual(code, "unstable")
-        self.assertIn("arm spread", detail)
+        self.assertIn("wins on medians", detail)
+        self.assertAlmostEqual(info["ratio"], 100 / 98)
+
+    def test_lowest_slowest_run_is_chosen(self):
+        # Both qualify; the first has the lower median (40) but a slow run
+        # (60), the second the lower slowest run (46): the second is the row.
+        s = confirmation(
+            {
+                "auto": five(100),
+                "A'": five(100),
+                "xe2_t32x64_f16_alc": arm(40, 40, 40, 41, 60),
+                "xe2_t32x64_f16_alc_dg": arm(45, 45, 45, 46, 46),
+            },
+            ["xe2_t32x64_f16_alc_dg", "xe2_t32x64_f16_alc"],
+        )
+        info, code, _ = confirm(s)
+        self.assertIsNone(code)
+        self.assertEqual(info["best"], "xe2_t32x64_f16_alc_dg")
+        self.assertAlmostEqual(info["ratio"], 100 / 46)
+
+    def test_arm_with_a_failed_or_missing_run_does_not_qualify(self):
+        # The faster arm failed the reference in one run or lacks a run: it is
+        # not a candidate; the slower complete arm is the row, and alone the
+        # configuration gets validation or not-timed.
+        slow = {"xe2_t32x64_f16_alc_dg": five(50)}
+        for record, code in (
+            ({"t": None, "passed_runs": 4, "reason": "FAIL; PASS"}, "validation"),
+            (arm(20, 20, 20, 20), "not-timed"),
+        ):
+            stock = {"auto": five(100), "A'": five(100)}
+            s = confirmation(
+                {**stock, "xe2_t32x64_f16_alc": record, **slow},
+                ["xe2_t32x64_f16_alc_dg", "xe2_t32x64_f16_alc"],
+            )
+            info, got, _ = confirm(s)
+            self.assertIsNone(got)
+            self.assertEqual(info["best"], "xe2_t32x64_f16_alc_dg")
+            s = confirmation(
+                {**stock, "xe2_t32x64_f16_alc": record}, ["xe2_t32x64_f16_alc"]
+            )
+            info, got, _ = confirm(s)
+            self.assertEqual(got, code)
+            self.assertNotIn("best", info)
 
     def test_incomplete_confirmation_cannot_emit_a_row(self):
         # A row needs all five runs of auto, A' and the chosen arm.
