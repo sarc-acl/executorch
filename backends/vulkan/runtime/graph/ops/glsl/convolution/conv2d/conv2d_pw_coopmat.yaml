@@ -35,6 +35,7 @@ conv2d_pw_coopmat:
     NO_EPILOGUE: false
     BCM: false
     BCM2: false
+    BCM3: false
     DIRECT_B: false
     K_SLICES: 1
     I2C: false
@@ -827,6 +828,21 @@ conv2d_pw_coopmat:
       ACC_TYPE: f32
       ALIGNED: true
       BCM2: true
+    # Column-major B staging with an odd dword row stride (_bcm3, on the 1x1
+    # parent plus _al): the _bcm2 [n][k] layout in a dword-typed region with
+    # (tile_k/2 + 1) dwords per row, so the ColumnMajor loads and the staging
+    # stores are bank-conflict-free; staged from the same aligned 8-channel
+    # fetches, stored as dwords.
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f32_al_bcm3_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      BCM3: true
     # Direct weight load probes (_dlprobe) and their staged controls (_dlctl:
     # the same options without DIRECT_B, so both are ALIGNED): raw shader cases
     # only, no variant descriptor and no graph route (design D5, task 4.8).

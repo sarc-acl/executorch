@@ -145,6 +145,10 @@ struct Conv2dPwCoopmatVariant final {
     // "_bcm2": the B tile is staged column-major with whole-vector stores
     // from aligned 8-channel fetches (needs _al).
     kColumnMajorBFast = 1u << 9,
+    // "_bcm3": like _bcm2, but the [n][k] B region is dword-typed with an odd
+    // (tile_k/2 + 1) row stride, so the ColumnMajor loads and staging stores
+    // are bank-conflict-free (needs _al).
+    kColumnMajorBOdd = 1u << 10,
   };
 
   const char* name;
