@@ -534,6 +534,15 @@ conv2d_pw_coopmat:
       SUBGROUP_SIZE: 32
       ACC_TYPE: f32
       ALIGNED: true
+    - NAME: conv2d_pw_coopmat_amd_t32x32_f32_al_half
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
     - NAME: conv2d_pw_coopmat_nvidia_t32x32_f16_al_half
       WG_TILE_M: 32
       WG_TILE_N: 32

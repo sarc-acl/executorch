@@ -194,6 +194,7 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_amd_t16x32_f32_al_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, true, false, kAligned},
       {"conv2d_pw_coopmat_amd_t16x64_f16_al_half", 16, 16, 16, 16, 64, 32, 1, 1, 32, false, false, kAligned},
       {"conv2d_pw_coopmat_amd_t16x64_f32_al_half", 16, 16, 16, 16, 64, 32, 1, 1, 32, true, false, kAligned},
+      {"conv2d_pw_coopmat_amd_t32x32_f32_al_half", 16, 16, 16, 32, 32, 32, 1, 1, 32, true, false, kAligned},
       {"conv2d_pw_coopmat_nvidia_t32x32_f16_al_half", 16, 16, 16, 32, 32, 16, 1, 1, 32, false, false, kAligned},
       {"conv2d_pw_coopmat_nvidia_t32x32_f32_al_half", 16, 16, 16, 32, 32, 16, 1, 1, 32, true, false, kAligned},
       {"conv2d_pw_coopmat_nvidia_t16x64_f16_al_half", 16, 16, 16, 16, 64, 16, 1, 1, 32, false, false, kAligned},
