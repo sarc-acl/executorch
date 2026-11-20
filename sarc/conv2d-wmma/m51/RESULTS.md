@@ -437,6 +437,101 @@ ETDump aggregation) would raise the 1x1 column toward the 7.2 opportunity (1x1 i
 conv GPU time). Recomputation: `tools/e2e_projection.py` over `survey-conv-shapes.csv`,
 `survey-runs.csv`, `timing/runs.csv` and `kk-gate/kk_runs.csv` (local artifacts).
 
+## 8.1 Final timed session (both parents, interleaved)
+
+The final tables of this campaign come from one interleaved session, run with the binary built
+from the committed HEAD `d65b1c37c9` (every commit after the last code change touches this
+results file only, so the build is code-identical to the last code commit; the rebuild
+reproduces the canonical session binary byte for byte, digest comparison in the local record).
+
+Protocol: 35 cases in one session - the 21 1x1 selection shapes with arms `auto`,
+`pw_tiled_4x8` and the 1x1 parent, and the 14 k x k shapes (9.2 below) with arms `auto`,
+`direct`, `im2col`, the k x k parent and the k x k fp16 best. Five rounds; within each case the
+arm order is rotated per round (`arm[(r+i) mod n]`), so no arm holds the same position in
+consecutive rounds. A/A opens before and after the rounds (the per-class stock route executed
+twice within one invocation); a 60 s idle before the session and 10 s between runs. All runs
+exit 0 with empty stderr; the driver is verified canonical after every run; the observed GPU
+clock equals the pin in every entry of every run, and the post-session readback shows every pin
+held. The run records are `task8-1/final_runs.csv` (local) with the full columns; zero invalid
+rows.
+
+**A/A:** open geomean 0.9969, close 0.9997 - both inside the 1% band. Cells outside +-2%: the
+open only - `196,256,1024` (-2.4%) and `784,128,1152` (-2.7%); none in the close.
+
+Noise bands are per cell `max(2%, cross-run spread of the per-run ratio)`; the widened cells
+are listed in the tables. Metric as in 4.0: per-case p50 of the GPU-timestamp route time,
+per-cell median over the five rounds.
+
+**Final headline ratios (geometric means):**
+
+> **1x1 parent `amd_t16x32_f32_al_half`: 2.103x over `pw_tiled_4x8`, 1.850x over `auto`**,
+> 21/21 shapes, winning every cell beyond its band on both baselines.
+> **k x k parent `amd_t16x32_f32_alc_sk2_i2c_half`: 3.39x over `auto`, 1.67x over the best
+> stock route** (min of `auto`, `direct`, `im2col` - `direct` on 12 of 14 shapes, the two
+> exceptions being shapes where `auto` resolves to `direct`), 14/14 shapes.
+> **k x k fp16 best `amd_t128x128_f16_alc_sk4_i2c_half`: 3.69x over `auto`, 1.82x over the
+> best stock route.**
+
+All three exceed the 1.15x threshold, on both baselines for the 1x1 parent.
+
+**1x1 per-shape table** (`pw_tiled_4x8` / parent and `auto` / parent):
+
+| shape | pw_tiled_4x8 / parent | auto / parent | band |
+|---|---:|---:|---:|
+| `49,160,960` | 4.74 | 4.03 | 5% |
+| `49,2048,512` | 1.20 | 1.70 | 4% |
+| `49,512,2048` | 4.15 | 2.93 | 17% |
+| `49,512,4608` | 5.50 | 4.09 | 16% |
+| `49,96,576` | 4.84 | 2.97 | 2% |
+| `196,1024,256` | 1.11 | 1.11 | 2% |
+| `196,256,1024` | 2.53 | 2.03 | 3% |
+| `196,256,2304` | 2.39 | 1.69 | 4% |
+| `196,512,1024` | 1.40 | 1.51 | 6% |
+| `196,64,384` | 3.53 | 2.48 | 9% |
+| `196,96,576` | 4.16 | 2.62 | 22% |
+| `25,384,4032` | 4.81 | 3.76 | 13% |
+| `289,224,1344` | 1.87 | 1.44 | 10% |
+| `784,128,1152` | 1.47 | 1.56 | 5% |
+| `784,128,512` | 1.50 | 1.52 | 16% |
+| `784,256,512` | 1.05 | 1.06 | 2% |
+| `784,512,128` | 1.25 | 1.24 | 2% |
+| `3136,128,256` | 1.04 | 1.04 | 2% |
+| `3136,256,64` | 1.41 | 1.41 | 2% |
+| `3136,64,256` | 1.22 | 1.22 | 2% |
+| `3136,64,64` | 1.48 | 1.48 | 2% |
+
+**k x k per-shape table** (the parent column and the fp16 best column; `best stock` is
+`direct` everywhere, counting the two `auto`-resolves-to-`direct` shapes):
+
+| shape | auto / parent | best stock / parent | best stock / fp16 best | band |
+|---|---:|---:|---:|---:|
+| `1x7 192-224 17x17` | 4.62 | 1.89 | 2.29 | 12% |
+| `1x7 224-256 17x17` | 4.28 | 1.91 | 2.56 | 2% |
+| `3x3 1024-256 28x28` (dl3 layer, non-dilated) | 1.96 | 0.82 | 1.73 | 11% |
+| `3x3 128 28x28` | 3.65 | 1.21 | 1.51 | 2% |
+| `3x3 192-48 14x14` | 2.35 | 2.35 | 2.16 | 2% |
+| `3x3 192-48 28x28` | 1.80 | 1.78 | 1.60 | 2% |
+| `3x3 256 14x14` | 7.27 | 2.58 | 3.59 | 2% |
+| `3x3 448-384 5x5` | 23.36 | 4.19 | 2.51 | 15% |
+| `3x3 512 7x7` | 11.47 | 5.94 | 6.33 | 2% |
+| `3x3 64 224x224` | 0.45 | 0.45 | 0.40 | 2% |
+| `3x3 64 56x56` | 0.61 | 0.61 | 0.53 | 2% |
+| `3x3 64-256 224x224` | 0.67 | 0.67 | 0.87 | 2% |
+| `3x3 s2 256-512 14x14` | 10.91 | 2.25 | 2.16 | 2% |
+| `3x3 s2 512 14x14` | 11.42 | 3.37 | 3.59 | 2% |
+
+The parent wins ten of fourteen k x k cells against the best stock route beyond the band, the
+fp16 best eleven of fourteen; the losses are the same Cin=64 large-plane shapes as in 9.2 (plus
+`3x3 1024-256 28x28` for the parent), and the routing implication of 9.2 is unchanged.
+
+**Cross-session agreement.** Against the 4.0 selection session and the 9.2 k x k session,
+per-cell ratios reproduce: every k x k cell within 1.2% (one at 2.8%, `3x3 s2 256-512 14x14`
+best-stock), every 1x1 cell within 1.7% except `196,96,576` (4.81 -> 4.17), the one cell whose
+baseline arm carries a cross-run spread of a quarter in both sessions - inside its widened
+band. Geomeans: 2.122 -> 2.103 (-0.9%) and 1.838 -> 1.850 (+0.7%) for the 1x1 parent; the
+k x k geomeans are unchanged to two decimals. The selection sessions' numbers stand, and with
+them the 7.4 projections.
+
 ## 9.2 The im2col GEMM stage (k x k gate and timed session)
 
 Gate collections: the desktop layer table's eight shapes plus the six M51-heavy shapes of 7.2
