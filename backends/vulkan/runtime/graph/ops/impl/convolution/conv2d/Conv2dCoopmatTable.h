@@ -38,12 +38,12 @@ struct Conv2dCoopmatTableRow final {
 };
 
 // clang-format off
-inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
+inline constexpr std::array<Conv2dCoopmatTableRow, 621> kConv2dCoopmatTable = {{
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1008-192 14x14, 2.99x
     {0x8086, 0xe20b, 1008, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-128 17x17, 2.95x
     {0x8086, 0xe20b, 1024, 128, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-192 17x17, 2.83x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-192 17x17, 2.77x
     {0x8086, 0xe20b, 1024, 192, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-2048 28x28, 4.22x
     {0x8086, 0xe20b, 1024, 2048, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half"},
@@ -53,13 +53,13 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe20b, 1024, 256, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-256 28x28, 2.99x
     {0x8086, 0xe20b, 1024, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-384 17x17, 2.62x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-384 17x17, 2.58x
     {0x8086, 0xe20b, 1024, 384, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-512 14x14, 2.67x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-512 14x14, 2.72x
     {0x8086, 0xe20b, 1024, 512, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-512 28x28, 2.74x
     {0x8086, 0xe20b, 1024, 512, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1056-192 14x14, 3.05x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1056-192 14x14, 3.06x
     {0x8086, 0xe20b, 1056, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1056-192 7x7, 3.29x
     {0x8086, 0xe20b, 1056, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
@@ -69,7 +69,7 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe20b, 1104, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1152-192 14x14, 3.24x
     {0x8086, 0xe20b, 1152, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1152-192 7x7, 3.47x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1152-192 7x7, 3.48x
     {0x8086, 0xe20b, 1152, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 120-32 1x1, 1.40x
     {0x8086, 0xe20b, 120, 32, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
@@ -91,21 +91,21 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe20b, 1280, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1280-320 5x5, 3.63x
     {0x8086, 0xe20b, 1280, 320, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1280-384 5x5, 3.63x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1280-384 5x5, 3.64x
     {0x8086, 0xe20b, 1280, 384, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1280-448 5x5, 3.68x
     {0x8086, 0xe20b, 1280, 448, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1296-192 14x14, 3.39x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1296-192 14x14, 3.40x
     {0x8086, 0xe20b, 1296, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1296-192 7x7, 3.68x
     {0x8086, 0xe20b, 1296, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1344-192 14x14, 3.44x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1344-192 14x14, 3.45x
     {0x8086, 0xe20b, 1344, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1344-192 7x7, 3.78x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1344-192 7x7, 3.79x
     {0x8086, 0xe20b, 1344, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1392-192 14x14, 3.55x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1392-192 14x14, 3.56x
     {0x8086, 0xe20b, 1392, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1392-192 7x7, 3.84x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1392-192 7x7, 3.85x
     {0x8086, 0xe20b, 1392, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 144-24 56x56, 1.39x
     {0x8086, 0xe20b, 144, 24, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
@@ -121,7 +121,7 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe20b, 1440, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1440-192 7x7, 3.90x
     {0x8086, 0xe20b, 1440, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1488-192 14x14, 3.57x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1488-192 14x14, 3.64x
     {0x8086, 0xe20b, 1488, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1488-192 7x7, 3.95x
     {0x8086, 0xe20b, 1488, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
@@ -133,23 +133,23 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe20b, 1536, 256, 1, 1, 1, 1, 0, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1536-384 8x8, 3.99x
     {0x8086, 0xe20b, 1536, 384, 1, 1, 1, 1, 0, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1584-192 14x14, 3.79x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1584-192 14x14, 3.72x
     {0x8086, 0xe20b, 1584, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1584-192 7x7, 4.10x
     {0x8086, 0xe20b, 1584, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 160-64 73x73, 1.15x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 160-64 73x73, 1.13x
     {0x8086, 0xe20b, 160, 64, 1, 1, 1, 1, 0, 0, 1, 1, 73, 73, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 160-960 7x7, 1.48x
     {0x8086, 0xe20b, 160, 960, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1632-192 14x14, 3.82x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1632-192 14x14, 3.83x
     {0x8086, 0xe20b, 1632, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1632-192 7x7, 4.16x
     {0x8086, 0xe20b, 1632, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1680-192 14x14, 3.86x
     {0x8086, 0xe20b, 1680, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1680-192 7x7, 4.20x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1680-192 7x7, 4.21x
     {0x8086, 0xe20b, 1680, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1728-192 14x14, 3.90x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1728-192 14x14, 3.96x
     {0x8086, 0xe20b, 1728, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1728-192 7x7, 4.30x
     {0x8086, 0xe20b, 1728, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
@@ -157,29 +157,29 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe20b, 1776, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1776-192 7x7, 4.34x
     {0x8086, 0xe20b, 1776, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1824-192 14x14, 3.96x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1824-192 14x14, 3.97x
     {0x8086, 0xe20b, 1824, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1824-192 7x7, 4.39x
     {0x8086, 0xe20b, 1824, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1872-192 14x14, 3.99x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1872-192 14x14, 4.06x
     {0x8086, 0xe20b, 1872, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1872-192 7x7, 4.43x
     {0x8086, 0xe20b, 1872, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 192-32 28x28, 1.62x
     {0x8086, 0xe20b, 192, 32, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 192-64 14x14, 1.65x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 192-64 14x14, 1.64x
     {0x8086, 0xe20b, 192, 64, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 192-64 25x25, 1.60x
     {0x8086, 0xe20b, 192, 64, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1920-192 14x14, 4.09x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1920-192 14x14, 4.16x
     {0x8086, 0xe20b, 1920, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1920-192 7x7, 4.50x
     {0x8086, 0xe20b, 1920, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1968-192 14x14, 4.12x
     {0x8086, 0xe20b, 1968, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1968-192 7x7, 4.54x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1968-192 7x7, 4.55x
     {0x8086, 0xe20b, 1968, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2016-192 14x14, 4.20x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2016-192 14x14, 4.14x
     {0x8086, 0xe20b, 2016, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2016-192 7x7, 4.60x
     {0x8086, 0xe20b, 2016, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
@@ -193,7 +193,7 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe20b, 2048, 320, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2048-384 5x5, 4.56x
     {0x8086, 0xe20b, 2048, 384, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2048-448 5x5, 4.62x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2048-448 5x5, 4.59x
     {0x8086, 0xe20b, 2048, 448, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2048-512 28x28, 3.47x
     {0x8086, 0xe20b, 2048, 512, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_half"},
@@ -203,17 +203,17 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe20b, 2064, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2064-192 7x7, 4.63x
     {0x8086, 0xe20b, 2064, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2112-1056 14x14, 5.04x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2112-1056 14x14, 5.00x
     {0x8086, 0xe20b, 2112, 1056, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2112-192 7x7, 4.69x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2112-192 7x7, 4.70x
     {0x8086, 0xe20b, 2112, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2160-192 7x7, 4.73x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2160-192 7x7, 4.74x
     {0x8086, 0xe20b, 2160, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 240-40 14x14, 1.74x
     {0x8086, 0xe20b, 240, 40, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 240-64 1x1, 1.43x
     {0x8086, 0xe20b, 240, 64, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 256-1024 14x14, 2.32x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 256-1024 14x14, 2.34x
     {0x8086, 0xe20b, 256, 1024, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 256-1024 28x28, 2.85x
     {0x8086, 0xe20b, 256, 1024, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half"},
@@ -241,7 +241,7 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe20b, 320, 1280, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 336-192 56x56, 2.17x
     {0x8086, 0xe20b, 336, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 384-192 35x35, 1.81x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 384-192 35x35, 1.79x
     {0x8086, 0xe20b, 384, 192, 1, 1, 1, 1, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 384-192 56x56, 2.25x
     {0x8086, 0xe20b, 384, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half"},
@@ -249,7 +249,7 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe20b, 384, 64, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 384-64 35x35, 1.66x
     {0x8086, 0xe20b, 384, 64, 1, 1, 1, 1, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 384-96 14x14, 1.90x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 384-96 14x14, 1.91x
     {0x8086, 0xe20b, 384, 96, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 384-96 35x35, 1.72x
     {0x8086, 0xe20b, 384, 96, 1, 1, 1, 1, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
@@ -259,7 +259,7 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe20b, 48, 144, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 48-288 14x14, 1.20x
     {0x8086, 0xe20b, 48, 288, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 480-192 28x28, 2.30x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 480-192 28x28, 2.33x
     {0x8086, 0xe20b, 480, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 512-1024 28x28, 3.80x
     {0x8086, 0xe20b, 512, 1024, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half"},
@@ -269,43 +269,43 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe20b, 512, 2048, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 512-2048 7x7, 2.02x
     {0x8086, 0xe20b, 512, 2048, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 512-256 28x28, 2.25x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 512-256 28x28, 2.22x
     {0x8086, 0xe20b, 512, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 528-192 28x28, 2.35x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 528-192 28x28, 2.34x
     {0x8086, 0xe20b, 528, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-144 1x1, 1.55x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-144 1x1, 1.54x
     {0x8086, 0xe20b, 576, 144, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-160 7x7, 2.29x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-160 7x7, 2.28x
     {0x8086, 0xe20b, 576, 160, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-192 14x14, 2.14x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-192 14x14, 2.15x
     {0x8086, 0xe20b, 576, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-192 28x28, 2.40x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-192 28x28, 2.37x
     {0x8086, 0xe20b, 576, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-96 14x14, 2.22x
     {0x8086, 0xe20b, 576, 96, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-96 7x7, 2.30x
     {0x8086, 0xe20b, 576, 96, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 624-192 14x14, 2.24x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 624-192 14x14, 2.25x
     {0x8086, 0xe20b, 624, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 624-192 28x28, 2.41x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 624-192 28x28, 2.43x
     {0x8086, 0xe20b, 624, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 64-240 1x1, 1.21x
     {0x8086, 0xe20b, 64, 240, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 64-256 56x56, 1.52x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 64-256 56x56, 1.54x
     {0x8086, 0xe20b, 64, 256, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 64-384 14x14, 1.31x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 64-384 14x14, 1.30x
     {0x8086, 0xe20b, 64, 384, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 672-192 14x14, 2.33x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 672-192 14x14, 2.34x
     {0x8086, 0xe20b, 672, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 672-192 28x28, 2.44x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 672-192 28x28, 2.43x
     {0x8086, 0xe20b, 672, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 72-24 28x28, 1.15x
     {0x8086, 0xe20b, 72, 24, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 72-288 1x1, 1.14x
     {0x8086, 0xe20b, 72, 288, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 720-192 14x14, 2.42x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 720-192 14x14, 2.43x
     {0x8086, 0xe20b, 720, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 720-192 28x28, 2.44x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 720-192 28x28, 2.48x
     {0x8086, 0xe20b, 720, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 768-128 12x12, 2.66x
     {0x8086, 0xe20b, 768, 128, 1, 1, 1, 1, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
@@ -313,19 +313,19 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe20b, 768, 160, 1, 1, 1, 1, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 768-192 12x12, 2.64x
     {0x8086, 0xe20b, 768, 192, 1, 1, 1, 1, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 768-192 14x14, 2.57x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 768-192 14x14, 2.58x
     {0x8086, 0xe20b, 768, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 768-384 28x28, 2.43x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 768-384 28x28, 2.44x
     {0x8086, 0xe20b, 768, 384, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 816-192 14x14, 2.65x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 816-192 14x14, 2.66x
     {0x8086, 0xe20b, 816, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 864-192 14x14, 2.72x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 864-192 14x14, 2.73x
     {0x8086, 0xe20b, 864, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 88-24 28x28, 1.23x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 88-24 28x28, 1.24x
     {0x8086, 0xe20b, 88, 24, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 912-192 14x14, 2.79x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 912-192 14x14, 2.80x
     {0x8086, 0xe20b, 912, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 96-24 1x1, 1.43x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 96-24 1x1, 1.42x
     {0x8086, 0xe20b, 96, 24, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 96-24 56x56, 1.25x
     {0x8086, 0xe20b, 96, 24, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
@@ -337,49 +337,49 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe20b, 96, 576, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 960-160 7x7, 3.16x
     {0x8086, 0xe20b, 960, 160, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 960-192 14x14, 2.93x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 960-192 14x14, 2.94x
     {0x8086, 0xe20b, 960, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 960-320 7x7, 3.17x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 960-320 7x7, 3.19x
     {0x8086, 0xe20b, 960, 320, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 1024-2048 14x14, 1.86x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 1024-2048 14x14, 1.87x
     {0x8086, 0xe20b, 1024, 2048, 1, 1, 2, 2, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 128-256 28x28, 1.15x
     {0x8086, 0xe20b, 128, 256, 1, 1, 2, 2, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 256-512 14x14, 1.07x
     {0x8086, 0xe20b, 256, 512, 1, 1, 2, 2, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 256-512 56x56, 1.63x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 256-512 56x56, 1.62x
     {0x8086, 0xe20b, 256, 512, 1, 1, 2, 2, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 512-1024 28x28, 2.59x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 512-1024 28x28, 2.56x
     {0x8086, 0xe20b, 512, 1024, 1, 1, 2, 2, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 64-128 56x56, 1.06x
     {0x8086, 0xe20b, 64, 128, 1, 1, 2, 2, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 384-256 8x8, 5.34x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 384-256 8x8, 5.36x
     {0x8086, 0xe20b, 384, 256, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 384-384 5x5, 5.29x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 384-384 5x5, 5.28x
     {0x8086, 0xe20b, 384, 384, 1, 3, 1, 1, 0, 1, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 448-512 8x8, 5.58x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 448-512 8x8, 5.66x
     {0x8086, 0xe20b, 448, 512, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 512-256 8x8, 6.22x
     {0x8086, 0xe20b, 512, 256, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 128-128 12x12, 4.88x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 128-128 12x12, 4.90x
     {0x8086, 0xe20b, 128, 128, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 128-192 12x12, 4.82x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 128-192 12x12, 4.83x
     {0x8086, 0xe20b, 128, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 160-160 12x12, 5.28x
     {0x8086, 0xe20b, 160, 160, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 160-192 12x12, 5.30x
     {0x8086, 0xe20b, 160, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 192-192 12x12, 5.75x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 192-192 12x12, 5.76x
     {0x8086, 0xe20b, 192, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 192-224 17x17, 5.35x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 192-224 17x17, 5.44x
     {0x8086, 0xe20b, 192, 224, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 224-256 17x17, 5.63x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 224-256 17x17, 5.58x
     {0x8086, 0xe20b, 224, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 256-256 17x17, 6.00x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 256-256 17x17, 6.10x
     {0x8086, 0xe20b, 256, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 64-64 73x73, 2.00x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 64-64 73x73, 1.99x
     {0x8086, 0xe20b, 64, 64, 1, 7, 1, 1, 0, 3, 1, 1, 73, 73, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 384-256 8x8, 5.34x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 384-256 8x8, 5.35x
     {0x8086, 0xe20b, 384, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 384-384 5x5, 5.32x
     {0x8086, 0xe20b, 384, 384, 3, 1, 1, 1, 1, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
@@ -387,117 +387,117 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe20b, 384, 448, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 512-256 8x8, 6.19x
     {0x8086, 0xe20b, 512, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p0x0 d1x1 32-32 111x111, 1.14x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p0x0 d1x1 32-32 111x111, 1.15x
     {0x8086, 0xe20b, 32, 32, 3, 3, 1, 1, 0, 0, 1, 1, 111, 111, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p0x0 d1x1 32-32 149x149, 1.34x
     {0x8086, 0xe20b, 32, 32, 3, 3, 1, 1, 0, 0, 1, 1, 149, 149, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p0x0 d1x1 64-96 73x73, 2.83x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p0x0 d1x1 64-96 73x73, 2.81x
     {0x8086, 0xe20b, 64, 96, 3, 3, 1, 1, 0, 0, 1, 1, 73, 73, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p0x0 d1x1 80-192 54x54, 3.24x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p0x0 d1x1 80-192 54x54, 3.22x
     {0x8086, 0xe20b, 80, 192, 3, 3, 1, 1, 0, 0, 1, 1, 54, 54, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p12x12 d12x12 2048-256 28x28, 14.00x
     {0x8086, 0xe20b, 2048, 256, 3, 3, 1, 1, 12, 12, 12, 12, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 1024-256 28x28, 11.69x
     {0x8086, 0xe20b, 1024, 256, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 128-128 28x28, 5.14x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 128-128 28x28, 5.15x
     {0x8086, 0xe20b, 128, 128, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-224 35x35, 2.66x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-224 35x35, 2.65x
     {0x8086, 0xe20b, 192, 224, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 14x14, 2.67x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 14x14, 2.68x
     {0x8086, 0xe20b, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 28x28, 5.92x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 28x28, 5.94x
     {0x8086, 0xe20b, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 56x56, 3.27x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 56x56, 3.28x
     {0x8086, 0xe20b, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 7x7, 2.82x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 7x7, 2.81x
     {0x8086, 0xe20b, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 256-256 14x14, 7.05x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 256-256 14x14, 7.06x
     {0x8086, 0xe20b, 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 256-256 28x28, 6.37x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 256-256 28x28, 6.38x
     {0x8086, 0xe20b, 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 32-64 109x109, 2.13x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 32-64 109x109, 2.12x
     {0x8086, 0xe20b, 32, 64, 3, 3, 1, 1, 1, 1, 1, 1, 109, 109, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 32-64 147x147, 2.04x
     {0x8086, 0xe20b, 32, 64, 3, 3, 1, 1, 1, 1, 1, 1, 147, 147, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 448-384 5x5, 9.06x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 448-384 5x5, 9.10x
     {0x8086, 0xe20b, 448, 384, 3, 3, 1, 1, 1, 1, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 512-512 7x7, 9.64x
     {0x8086, 0xe20b, 512, 512, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-256 224x224, 6.40x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-256 224x224, 6.35x
     {0x8086, 0xe20b, 64, 256, 3, 3, 1, 1, 1, 1, 1, 1, 224, 224, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-64 224x224, 2.28x
     {0x8086, 0xe20b, 64, 64, 3, 3, 1, 1, 1, 1, 1, 1, 224, 224, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-64 56x56, 2.50x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-64 56x56, 2.48x
     {0x8086, 0xe20b, 64, 64, 3, 3, 1, 1, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-96 25x25, 3.50x
     {0x8086, 0xe20b, 64, 96, 3, 3, 1, 1, 1, 1, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-96 35x35, 3.27x
     {0x8086, 0xe20b, 64, 96, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 96-96 25x25, 4.13x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 96-96 25x25, 4.20x
     {0x8086, 0xe20b, 96, 96, 3, 3, 1, 1, 1, 1, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 96-96 35x35, 3.88x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 96-96 35x35, 3.89x
     {0x8086, 0xe20b, 96, 96, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p24x24 d24x24 2048-256 28x28, 13.43x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p24x24 d24x24 2048-256 28x28, 13.40x
     {0x8086, 0xe20b, 2048, 256, 3, 3, 1, 1, 24, 24, 24, 24, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p2x2 d2x2 256-256 28x28, 11.37x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p2x2 d2x2 256-256 28x28, 11.43x
     {0x8086, 0xe20b, 256, 256, 3, 3, 1, 1, 2, 2, 2, 2, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p2x2 d2x2 512-512 28x28, 9.91x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p2x2 d2x2 512-512 28x28, 9.94x
     {0x8086, 0xe20b, 512, 512, 3, 3, 1, 1, 2, 2, 2, 2, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p36x36 d36x36 2048-256 28x28, 75.06x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p36x36 d36x36 2048-256 28x28, 75.75x
     {0x8086, 0xe20b, 2048, 256, 3, 3, 1, 1, 36, 36, 36, 36, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p4x4 d4x4 512-512 28x28, 9.39x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p4x4 d4x4 512-512 28x28, 9.43x
     {0x8086, 0xe20b, 512, 512, 3, 3, 1, 1, 4, 4, 4, 4, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-192 12x12, 6.26x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-192 12x12, 6.27x
     {0x8086, 0xe20b, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-192 17x17, 6.04x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-192 17x17, 6.02x
     {0x8086, 0xe20b, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-192 71x71, 5.27x
     {0x8086, 0xe20b, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 71, 71, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-320 12x12, 6.24x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-320 12x12, 6.25x
     {0x8086, 0xe20b, 192, 320, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 224-256 35x35, 5.31x
     {0x8086, 0xe20b, 224, 256, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 288-384 25x25, 6.62x
     {0x8086, 0xe20b, 288, 384, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 320-320 17x17, 7.55x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 320-320 17x17, 7.60x
     {0x8086, 0xe20b, 320, 320, 3, 3, 2, 2, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 384-384 35x35, 5.76x
     {0x8086, 0xe20b, 384, 384, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_i2c_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 64-96 147x147, 2.33x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 64-96 147x147, 2.34x
     {0x8086, 0xe20b, 64, 96, 3, 3, 2, 2, 0, 0, 1, 1, 147, 147, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 96-96 25x25, 1.92x
     {0x8086, 0xe20b, 96, 96, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 128-128 56x56, 4.24x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 128-128 56x56, 4.28x
     {0x8086, 0xe20b, 128, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 128-256 28x28, 5.04x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 128-256 28x28, 5.05x
     {0x8086, 0xe20b, 128, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 256-256 28x28, 6.52x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 256-256 28x28, 6.53x
     {0x8086, 0xe20b, 256, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 256-512 14x14, 6.92x
     {0x8086, 0xe20b, 256, 512, 3, 3, 2, 2, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 512-512 14x14, 9.62x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 512-512 14x14, 9.63x
     {0x8086, 0xe20b, 512, 512, 3, 3, 2, 2, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 64-128 56x56, 3.25x
     {0x8086, 0xe20b, 64, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 5x5 s1x1 p2x2 d1x1 48-64 25x25, 5.26x
     {0x8086, 0xe20b, 48, 64, 5, 5, 1, 1, 2, 2, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 128-128 12x12, 4.81x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 128-128 12x12, 4.82x
     {0x8086, 0xe20b, 128, 128, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 128-192 12x12, 4.84x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 128-192 12x12, 4.82x
     {0x8086, 0xe20b, 128, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 160-160 12x12, 5.38x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 160-160 12x12, 5.37x
     {0x8086, 0xe20b, 160, 160, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 160-192 12x12, 5.37x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 160-192 12x12, 5.35x
     {0x8086, 0xe20b, 160, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 192-192 12x12, 5.70x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 192-192 12x12, 5.81x
     {0x8086, 0xe20b, 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 192-192 17x17, 5.25x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 192-192 17x17, 5.26x
     {0x8086, 0xe20b, 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 224-224 17x17, 5.71x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 224-224 17x17, 5.70x
     {0x8086, 0xe20b, 224, 224, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 224-256 17x17, 5.66x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 224-256 17x17, 5.73x
     {0x8086, 0xe20b, 224, 256, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 256-320 17x17, 6.17x
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 256-320 17x17, 6.15x
     {0x8086, 0xe20b, 256, 320, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 64-64 73x73, 2.26x
     {0x8086, 0xe20b, 64, 64, 7, 1, 1, 1, 3, 0, 1, 1, 73, 73, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
@@ -511,19 +511,19 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 1024, 128, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-192 17x17, 2.95x
     {0x8086, 0xe223, 1024, 192, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-2048 28x28, 5.40x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-2048 28x28, 5.42x
     {0x8086, 0xe223, 1024, 2048, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-256 14x14, 3.05x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-256 14x14, 3.04x
     {0x8086, 0xe223, 1024, 256, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-256 17x17, 2.92x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-256 17x17, 2.93x
     {0x8086, 0xe223, 1024, 256, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-256 28x28, 3.22x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-256 28x28, 3.21x
     {0x8086, 0xe223, 1024, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-384 17x17, 2.75x
     {0x8086, 0xe223, 1024, 384, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-512 14x14, 2.85x
     {0x8086, 0xe223, 1024, 512, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-512 28x28, 3.10x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-512 28x28, 3.11x
     {0x8086, 0xe223, 1024, 512, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1056-192 14x14, 3.12x
     {0x8086, 0xe223, 1056, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
@@ -533,7 +533,7 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 1104, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1104-192 7x7, 3.26x
     {0x8086, 0xe223, 1104, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1152-192 14x14, 3.31x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1152-192 14x14, 3.29x
     {0x8086, 0xe223, 1152, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1152-192 7x7, 3.40x
     {0x8086, 0xe223, 1152, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
@@ -541,15 +541,15 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 120, 32, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 120-48 14x14, 1.34x
     {0x8086, 0xe223, 120, 48, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1200-192 14x14, 3.36x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1200-192 14x14, 3.37x
     {0x8086, 0xe223, 1200, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1200-192 7x7, 3.46x
     {0x8086, 0xe223, 1200, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1248-192 14x14, 3.43x
     {0x8086, 0xe223, 1248, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1248-192 7x7, 3.45x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1248-192 7x7, 3.52x
     {0x8086, 0xe223, 1248, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 128-512 28x28, 1.58x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 128-512 28x28, 1.53x
     {0x8086, 0xe223, 128, 512, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1280-192 5x5, 3.63x
     {0x8086, 0xe223, 1280, 192, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
@@ -557,7 +557,7 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 1280, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1280-320 5x5, 3.60x
     {0x8086, 0xe223, 1280, 320, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1280-384 5x5, 3.61x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1280-384 5x5, 3.62x
     {0x8086, 0xe223, 1280, 384, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1280-448 5x5, 3.60x
     {0x8086, 0xe223, 1280, 448, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
@@ -565,7 +565,7 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 1296, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1296-192 7x7, 3.58x
     {0x8086, 0xe223, 1296, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1344-192 14x14, 3.60x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1344-192 14x14, 3.61x
     {0x8086, 0xe223, 1344, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1344-192 7x7, 3.71x
     {0x8086, 0xe223, 1344, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
@@ -585,7 +585,7 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 144, 576, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1440-192 14x14, 3.70x
     {0x8086, 0xe223, 1440, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1440-192 7x7, 3.80x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1440-192 7x7, 3.79x
     {0x8086, 0xe223, 1440, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1488-192 14x14, 3.74x
     {0x8086, 0xe223, 1488, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
@@ -603,13 +603,13 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 1584, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1584-192 7x7, 4.02x
     {0x8086, 0xe223, 1584, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 160-64 73x73, 1.51x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 160-64 73x73, 1.50x
     {0x8086, 0xe223, 160, 64, 1, 1, 1, 1, 0, 0, 1, 1, 73, 73, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 160-960 7x7, 1.51x
     {0x8086, 0xe223, 160, 960, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1632-192 14x14, 3.93x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1632-192 14x14, 3.94x
     {0x8086, 0xe223, 1632, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1632-192 7x7, 4.05x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1632-192 7x7, 4.04x
     {0x8086, 0xe223, 1632, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1680-192 14x14, 3.97x
     {0x8086, 0xe223, 1680, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
@@ -617,39 +617,39 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 1680, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1728-192 14x14, 4.08x
     {0x8086, 0xe223, 1728, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1728-192 7x7, 4.21x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1728-192 7x7, 4.14x
     {0x8086, 0xe223, 1728, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1776-192 14x14, 4.11x
     {0x8086, 0xe223, 1776, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1776-192 7x7, 4.25x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1776-192 7x7, 4.26x
     {0x8086, 0xe223, 1776, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1824-192 14x14, 4.15x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1824-192 14x14, 4.14x
     {0x8086, 0xe223, 1824, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1824-192 7x7, 4.30x
     {0x8086, 0xe223, 1824, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1872-192 14x14, 4.18x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1872-192 14x14, 4.17x
     {0x8086, 0xe223, 1872, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1872-192 7x7, 4.33x
     {0x8086, 0xe223, 1872, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 192-32 28x28, 1.63x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 192-32 28x28, 1.66x
     {0x8086, 0xe223, 192, 32, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 192-64 14x14, 1.69x
     {0x8086, 0xe223, 192, 64, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 192-64 25x25, 1.64x
     {0x8086, 0xe223, 192, 64, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1920-192 14x14, 4.28x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1920-192 14x14, 4.27x
     {0x8086, 0xe223, 1920, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1920-192 7x7, 4.37x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1920-192 7x7, 4.44x
     {0x8086, 0xe223, 1920, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1968-192 14x14, 4.31x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1968-192 14x14, 4.30x
     {0x8086, 0xe223, 1968, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1968-192 7x7, 4.47x
     {0x8086, 0xe223, 1968, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2016-192 14x14, 4.33x
     {0x8086, 0xe223, 2016, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2016-192 7x7, 4.49x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2016-192 7x7, 4.50x
     {0x8086, 0xe223, 2016, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2048-192 5x5, 4.59x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2048-192 5x5, 4.60x
     {0x8086, 0xe223, 2048, 192, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2048-256 1x1, 2.87x
     {0x8086, 0xe223, 2048, 256, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
@@ -659,9 +659,9 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 2048, 320, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2048-384 5x5, 4.57x
     {0x8086, 0xe223, 2048, 384, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2048-448 5x5, 4.55x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2048-448 5x5, 4.56x
     {0x8086, 0xe223, 2048, 448, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2048-512 28x28, 4.47x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2048-512 28x28, 4.46x
     {0x8086, 0xe223, 2048, 512, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2048-512 7x7, 4.49x
     {0x8086, 0xe223, 2048, 512, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
@@ -669,7 +669,7 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 2064, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2064-192 7x7, 4.52x
     {0x8086, 0xe223, 2064, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2112-1056 14x14, 4.94x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2112-1056 14x14, 4.93x
     {0x8086, 0xe223, 2112, 1056, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 2112-192 7x7, 4.62x
     {0x8086, 0xe223, 2112, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
@@ -681,85 +681,85 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 240, 64, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 256-1024 14x14, 2.22x
     {0x8086, 0xe223, 256, 1024, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 256-1024 28x28, 2.28x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 256-1024 28x28, 2.27x
     {0x8086, 0xe223, 256, 1024, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 256-128 56x56, 1.70x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 256-128 56x56, 1.69x
     {0x8086, 0xe223, 256, 128, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 256-48 25x25, 1.75x
     {0x8086, 0xe223, 256, 48, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 256-64 25x25, 1.74x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 256-64 25x25, 1.76x
     {0x8086, 0xe223, 256, 64, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 256-64 56x56, 1.90x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 256-64 56x56, 1.93x
     {0x8086, 0xe223, 256, 64, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 288-48 25x25, 1.79x
     {0x8086, 0xe223, 288, 48, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 288-64 25x25, 1.78x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 288-64 25x25, 1.77x
     {0x8086, 0xe223, 288, 64, 1, 1, 1, 1, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 288-72 1x1, 1.44x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 288-72 1x1, 1.45x
     {0x8086, 0xe223, 288, 72, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 288-96 7x7, 1.91x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 288-96 7x7, 1.95x
     {0x8086, 0xe223, 288, 96, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 32-192 28x28, 1.24x
     {0x8086, 0xe223, 32, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 320-1280 7x7, 1.91x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 320-1280 7x7, 1.88x
     {0x8086, 0xe223, 320, 1280, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 336-192 56x56, 1.99x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 336-192 56x56, 1.98x
     {0x8086, 0xe223, 336, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 384-192 35x35, 2.09x
     {0x8086, 0xe223, 384, 192, 1, 1, 1, 1, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 384-192 56x56, 2.05x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 384-192 56x56, 2.06x
     {0x8086, 0xe223, 384, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 384-64 14x14, 1.93x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 384-64 14x14, 1.94x
     {0x8086, 0xe223, 384, 64, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 384-64 35x35, 1.60x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 384-64 35x35, 1.58x
     {0x8086, 0xe223, 384, 64, 1, 1, 1, 1, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 384-96 14x14, 1.97x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 384-96 14x14, 1.95x
     {0x8086, 0xe223, 384, 96, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 384-96 35x35, 1.67x
     {0x8086, 0xe223, 384, 96, 1, 1, 1, 1, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 432-192 28x28, 2.44x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 432-192 28x28, 2.47x
     {0x8086, 0xe223, 432, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 48-144 14x14, 1.15x
     {0x8086, 0xe223, 48, 144, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 48-288 14x14, 1.12x
     {0x8086, 0xe223, 48, 288, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 480-192 28x28, 2.49x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 480-192 28x28, 2.52x
     {0x8086, 0xe223, 480, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 512-1024 28x28, 2.85x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 512-1024 28x28, 2.86x
     {0x8086, 0xe223, 512, 1024, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 512-128 28x28, 1.96x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 512-128 28x28, 1.93x
     {0x8086, 0xe223, 512, 128, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 512-2048 28x28, 4.54x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 512-2048 28x28, 4.52x
     {0x8086, 0xe223, 512, 2048, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 512-2048 7x7, 2.03x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 512-2048 7x7, 2.01x
     {0x8086, 0xe223, 512, 2048, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 512-256 28x28, 2.46x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 512-256 28x28, 2.48x
     {0x8086, 0xe223, 512, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 528-192 28x28, 2.58x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 528-192 28x28, 2.57x
     {0x8086, 0xe223, 528, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-144 1x1, 1.52x
     {0x8086, 0xe223, 576, 144, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-160 7x7, 2.21x
     {0x8086, 0xe223, 576, 160, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-192 14x14, 2.18x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-192 14x14, 2.16x
     {0x8086, 0xe223, 576, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-192 28x28, 2.62x
     {0x8086, 0xe223, 576, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-96 14x14, 2.20x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-96 14x14, 2.19x
     {0x8086, 0xe223, 576, 96, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-96 7x7, 2.24x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 576-96 7x7, 2.23x
     {0x8086, 0xe223, 576, 96, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 624-192 14x14, 2.28x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 624-192 14x14, 2.27x
     {0x8086, 0xe223, 624, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 624-192 28x28, 2.66x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 624-192 28x28, 2.64x
     {0x8086, 0xe223, 624, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 64-256 56x56, 1.26x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 64-256 56x56, 1.17x
     {0x8086, 0xe223, 64, 256, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 64-384 14x14, 1.29x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 64-384 14x14, 1.30x
     {0x8086, 0xe223, 64, 384, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 672-192 14x14, 2.31x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 672-192 14x14, 2.36x
     {0x8086, 0xe223, 672, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 672-192 28x28, 2.66x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 672-192 28x28, 2.68x
     {0x8086, 0xe223, 672, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 72-24 28x28, 1.18x
     {0x8086, 0xe223, 72, 24, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
@@ -767,13 +767,13 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 72, 288, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 720-192 14x14, 2.46x
     {0x8086, 0xe223, 720, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 720-192 28x28, 2.72x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 720-192 28x28, 2.71x
     {0x8086, 0xe223, 720, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 768-128 12x12, 2.62x
     {0x8086, 0xe223, 768, 128, 1, 1, 1, 1, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 768-160 12x12, 2.61x
     {0x8086, 0xe223, 768, 160, 1, 1, 1, 1, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 768-192 12x12, 2.61x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 768-192 12x12, 2.60x
     {0x8086, 0xe223, 768, 192, 1, 1, 1, 1, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 768-192 14x14, 2.61x
     {0x8086, 0xe223, 768, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
@@ -785,53 +785,51 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 864, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 88-24 28x28, 1.28x
     {0x8086, 0xe223, 88, 24, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 912-192 14x14, 2.85x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 912-192 14x14, 2.84x
     {0x8086, 0xe223, 912, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 96-24 1x1, 1.42x
-    {0x8086, 0xe223, 96, 24, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 96-24 56x56, 1.30x
     {0x8086, 0xe223, 96, 24, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 96-40 14x14, 1.44x
     {0x8086, 0xe223, 96, 40, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 96-576 14x14, 1.38x
     {0x8086, 0xe223, 96, 576, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 96-576 7x7, 1.37x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 96-576 7x7, 1.36x
     {0x8086, 0xe223, 96, 576, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 960-160 7x7, 3.07x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 960-160 7x7, 3.06x
     {0x8086, 0xe223, 960, 160, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 960-192 14x14, 2.98x
     {0x8086, 0xe223, 960, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 960-320 7x7, 3.05x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 960-320 7x7, 3.04x
     {0x8086, 0xe223, 960, 320, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 1024-2048 14x14, 1.91x
     {0x8086, 0xe223, 1024, 2048, 1, 1, 2, 2, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 128-256 28x28, 1.12x
     {0x8086, 0xe223, 128, 256, 1, 1, 2, 2, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 256-512 14x14, 1.07x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 256-512 14x14, 1.06x
     {0x8086, 0xe223, 256, 512, 1, 1, 2, 2, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 256-512 56x56, 1.90x
     {0x8086, 0xe223, 256, 512, 1, 1, 2, 2, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 512-1024 28x28, 2.81x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x1 s2x2 p0x0 d1x1 512-1024 28x28, 2.83x
     {0x8086, 0xe223, 512, 1024, 1, 1, 2, 2, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 384-256 8x8, 5.21x
     {0x8086, 0xe223, 384, 256, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 384-384 5x5, 5.16x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 384-384 5x5, 5.17x
     {0x8086, 0xe223, 384, 384, 1, 3, 1, 1, 0, 1, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 448-512 8x8, 5.54x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 448-512 8x8, 5.55x
     {0x8086, 0xe223, 448, 512, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x3 s1x1 p0x1 d1x1 512-256 8x8, 6.06x
     {0x8086, 0xe223, 512, 256, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 128-128 12x12, 4.79x
     {0x8086, 0xe223, 128, 128, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 128-192 12x12, 4.73x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 128-192 12x12, 4.70x
     {0x8086, 0xe223, 128, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 160-160 12x12, 5.16x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 160-160 12x12, 5.15x
     {0x8086, 0xe223, 160, 160, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 160-192 12x12, 5.14x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 160-192 12x12, 5.16x
     {0x8086, 0xe223, 160, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 192-192 12x12, 5.61x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 192-192 12x12, 5.63x
     {0x8086, 0xe223, 192, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 192-224 17x17, 5.33x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 192-224 17x17, 5.34x
     {0x8086, 0xe223, 192, 224, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 224-256 17x17, 5.59x
     {0x8086, 0xe223, 224, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
@@ -839,13 +837,13 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 256, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 1x7 s1x1 p0x3 d1x1 64-64 73x73, 2.48x
     {0x8086, 0xe223, 64, 64, 1, 7, 1, 1, 0, 3, 1, 1, 73, 73, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 384-256 8x8, 5.22x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 384-256 8x8, 5.23x
     {0x8086, 0xe223, 384, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 384-384 5x5, 5.18x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 384-384 5x5, 5.20x
     {0x8086, 0xe223, 384, 384, 3, 1, 1, 1, 1, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 384-448 8x8, 5.15x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 384-448 8x8, 5.17x
     {0x8086, 0xe223, 384, 448, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 512-256 8x8, 6.08x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x1 s1x1 p1x0 d1x1 512-256 8x8, 6.06x
     {0x8086, 0xe223, 512, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p0x0 d1x1 32-32 111x111, 1.40x
     {0x8086, 0xe223, 32, 32, 3, 3, 1, 1, 0, 0, 1, 1, 111, 111, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
@@ -853,11 +851,11 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 32, 32, 3, 3, 1, 1, 0, 0, 1, 1, 149, 149, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p0x0 d1x1 64-96 73x73, 3.01x
     {0x8086, 0xe223, 64, 96, 3, 3, 1, 1, 0, 0, 1, 1, 73, 73, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p0x0 d1x1 80-192 54x54, 3.07x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p0x0 d1x1 80-192 54x54, 3.06x
     {0x8086, 0xe223, 80, 192, 3, 3, 1, 1, 0, 0, 1, 1, 54, 54, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p12x12 d12x12 2048-256 28x28, 11.40x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p12x12 d12x12 2048-256 28x28, 11.82x
     {0x8086, 0xe223, 2048, 256, 3, 3, 1, 1, 12, 12, 12, 12, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 1024-256 28x28, 9.14x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 1024-256 28x28, 9.22x
     {0x8086, 0xe223, 1024, 256, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 128-128 28x28, 5.30x
     {0x8086, 0xe223, 128, 128, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
@@ -865,61 +863,63 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 192, 224, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 14x14, 2.71x
     {0x8086, 0xe223, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 28x28, 5.86x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 28x28, 5.89x
     {0x8086, 0xe223, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 56x56, 4.86x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 56x56, 4.87x
     {0x8086, 0xe223, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 7x7, 2.81x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 7x7, 2.79x
     {0x8086, 0xe223, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 256-256 14x14, 7.02x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 256-256 14x14, 7.03x
     {0x8086, 0xe223, 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 256-256 28x28, 6.58x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 256-256 28x28, 6.57x
     {0x8086, 0xe223, 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 32-64 109x109, 1.98x
     {0x8086, 0xe223, 32, 64, 3, 3, 1, 1, 1, 1, 1, 1, 109, 109, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 32-64 147x147, 2.08x
     {0x8086, 0xe223, 32, 64, 3, 3, 1, 1, 1, 1, 1, 1, 147, 147, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 448-384 5x5, 8.94x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 448-384 5x5, 8.95x
     {0x8086, 0xe223, 448, 384, 3, 3, 1, 1, 1, 1, 1, 1, 5, 5, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 512-512 7x7, 9.36x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 512-512 7x7, 9.37x
     {0x8086, 0xe223, 512, 512, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-256 224x224, 5.81x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-256 224x224, 5.79x
     {0x8086, 0xe223, 64, 256, 3, 3, 1, 1, 1, 1, 1, 1, 224, 224, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-64 224x224, 2.12x
     {0x8086, 0xe223, 64, 64, 3, 3, 1, 1, 1, 1, 1, 1, 224, 224, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-64 56x56, 2.77x
     {0x8086, 0xe223, 64, 64, 3, 3, 1, 1, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-96 25x25, 3.24x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-96 25x25, 3.23x
     {0x8086, 0xe223, 64, 96, 3, 3, 1, 1, 1, 1, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 64-96 35x35, 3.34x
     {0x8086, 0xe223, 64, 96, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 96-96 25x25, 4.08x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 96-96 25x25, 4.07x
     {0x8086, 0xe223, 96, 96, 3, 3, 1, 1, 1, 1, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 96-96 35x35, 3.97x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 96-96 35x35, 3.98x
     {0x8086, 0xe223, 96, 96, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p2x2 d2x2 256-256 28x28, 7.87x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p24x24 d24x24 2048-256 28x28, 12.34x
+    {0x8086, 0xe223, 2048, 256, 3, 3, 1, 1, 24, 24, 24, 24, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p2x2 d2x2 256-256 28x28, 7.84x
     {0x8086, 0xe223, 256, 256, 3, 3, 1, 1, 2, 2, 2, 2, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p36x36 d36x36 2048-256 28x28, 63.10x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p36x36 d36x36 2048-256 28x28, 63.32x
     {0x8086, 0xe223, 2048, 256, 3, 3, 1, 1, 36, 36, 36, 36, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p4x4 d4x4 512-512 28x28, 15.85x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s1x1 p4x4 d4x4 512-512 28x28, 16.61x
     {0x8086, 0xe223, 512, 512, 3, 3, 1, 1, 4, 4, 4, 4, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-192 12x12, 6.16x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-192 12x12, 6.17x
     {0x8086, 0xe223, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-192 17x17, 5.91x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-192 17x17, 5.90x
     {0x8086, 0xe223, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-192 71x71, 6.55x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-192 71x71, 6.50x
     {0x8086, 0xe223, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 71, 71, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-320 12x12, 6.08x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 192-320 12x12, 6.09x
     {0x8086, 0xe223, 192, 320, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 224-256 35x35, 5.34x
     {0x8086, 0xe223, 224, 256, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 288-384 25x25, 6.39x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 288-384 25x25, 6.38x
     {0x8086, 0xe223, 288, 384, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 320-320 17x17, 7.54x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 320-320 17x17, 7.53x
     {0x8086, 0xe223, 320, 320, 3, 3, 2, 2, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 384-384 35x35, 6.24x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 384-384 35x35, 6.21x
     {0x8086, 0xe223, 384, 384, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 64-96 147x147, 2.29x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 64-96 147x147, 2.30x
     {0x8086, 0xe223, 64, 96, 3, 3, 2, 2, 0, 0, 1, 1, 147, 147, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p0x0 d1x1 96-96 25x25, 1.88x
     {0x8086, 0xe223, 96, 96, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
@@ -927,15 +927,15 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 128, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 128-256 28x28, 5.12x
     {0x8086, 0xe223, 128, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 256-256 28x28, 6.79x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 256-256 28x28, 6.80x
     {0x8086, 0xe223, 256, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 256-512 14x14, 6.63x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 256-512 14x14, 6.64x
     {0x8086, 0xe223, 256, 512, 3, 3, 2, 2, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 512-512 14x14, 9.37x
     {0x8086, 0xe223, 512, 512, 3, 3, 2, 2, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 3x3 s2x2 p1x1 d1x1 64-128 56x56, 3.42x
     {0x8086, 0xe223, 64, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 5x5 s1x1 p2x2 d1x1 48-64 25x25, 5.27x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 5x5 s1x1 p2x2 d1x1 48-64 25x25, 5.28x
     {0x8086, 0xe223, 48, 64, 5, 5, 1, 1, 2, 2, 1, 1, 25, 25, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 128-128 12x12, 4.68x
     {0x8086, 0xe223, 128, 128, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
@@ -947,135 +947,129 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x8086, 0xe223, 160, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 192-192 12x12, 5.68x
     {0x8086, 0xe223, 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 192-192 17x17, 5.42x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 192-192 17x17, 5.43x
     {0x8086, 0xe223, 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 224-224 17x17, 5.66x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 224-224 17x17, 5.68x
     {0x8086, 0xe223, 224, 224, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 224-256 17x17, 5.65x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 224-256 17x17, 5.66x
     {0x8086, 0xe223, 224, 256, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 256-320 17x17, 6.14x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 256-320 17x17, 6.16x
     {0x8086, 0xe223, 256, 320, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x1 s1x1 p3x0 d1x1 64-64 73x73, 2.59x
     {0x8086, 0xe223, 64, 64, 7, 1, 1, 1, 3, 0, 1, 1, 73, 73, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x7 s2x2 p3x3 d1x1 3-64 224x224, 1.62x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x7 s2x2 p3x3 d1x1 3-64 224x224, 1.60x
     {0x8086, 0xe223, 3, 64, 7, 7, 2, 2, 3, 3, 1, 1, 224, 224, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
-    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x7 s2x2 p3x3 d1x1 3-96 224x224, 2.61x
+    // Intel(R) Graphics (BMG G31), Mesa 26.2.7: 7x7 s2x2 p3x3 d1x1 3-96 224x224, 2.59x
     {0x8086, 0xe223, 3, 96, 7, 7, 2, 2, 3, 3, 1, 1, 224, 224, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1008-192 14x14, 1.80x
     {0x1002, 0x15bf, 1008, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1024-128 17x17, 1.76x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1024-128 17x17, 1.73x
     {0x1002, 0x15bf, 1024, 128, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1024-192 17x17, 1.74x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1024-192 17x17, 1.75x
     {0x1002, 0x15bf, 1024, 192, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1024-256 14x14, 1.25x
     {0x1002, 0x15bf, 1024, 256, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1024-256 17x17, 1.38x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1024-256 17x17, 1.37x
     {0x1002, 0x15bf, 1024, 256, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1024-384 17x17, 1.13x
     {0x1002, 0x15bf, 1024, 384, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1024-512 14x14, 1.74x
     {0x1002, 0x15bf, 1024, 512, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1056-192 14x14, 1.80x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1056-192 14x14, 1.79x
     {0x1002, 0x15bf, 1056, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1056-192 7x7, 1.76x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1056-192 7x7, 1.75x
     {0x1002, 0x15bf, 1056, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1104-192 14x14, 1.84x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1104-192 14x14, 1.81x
     {0x1002, 0x15bf, 1104, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1104-192 7x7, 1.78x
     {0x1002, 0x15bf, 1104, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1152-192 14x14, 2.00x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1152-192 14x14, 1.97x
     {0x1002, 0x15bf, 1152, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1200-192 14x14, 1.92x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1200-192 14x14, 1.93x
     {0x1002, 0x15bf, 1200, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1200-192 7x7, 1.79x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1200-192 7x7, 1.78x
     {0x1002, 0x15bf, 1200, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1248-192 14x14, 2.06x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1248-192 14x14, 2.09x
     {0x1002, 0x15bf, 1248, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1280-256 28x28, 1.54x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 128-512 28x28, 1.06x
+    {0x1002, 0x15bf, 128, 512, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1280-256 28x28, 1.53x
     {0x1002, 0x15bf, 1280, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1280-320 5x5, 3.21x
-    {0x1002, 0x15bf, 1280, 320, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1280-384 5x5, 3.16x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1280-384 5x5, 3.18x
     {0x1002, 0x15bf, 1280, 384, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1280-448 5x5, 2.93x
-    {0x1002, 0x15bf, 1280, 448, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1296-192 14x14, 1.97x
     {0x1002, 0x15bf, 1296, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1296-192 7x7, 2.99x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1296-192 7x7, 3.01x
     {0x1002, 0x15bf, 1296, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1344-192 14x14, 2.16x
     {0x1002, 0x15bf, 1344, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1344-192 7x7, 3.32x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1344-192 7x7, 3.31x
     {0x1002, 0x15bf, 1344, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1392-192 14x14, 1.98x
     {0x1002, 0x15bf, 1392, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1392-192 7x7, 3.09x
+    {0x1002, 0x15bf, 1392, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1440-192 14x14, 2.23x
     {0x1002, 0x15bf, 1440, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1440-192 7x7, 1.70x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1440-192 7x7, 1.67x
     {0x1002, 0x15bf, 1440, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1488-192 14x14, 1.98x
     {0x1002, 0x15bf, 1488, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1488-192 7x7, 3.12x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1488-192 7x7, 3.16x
     {0x1002, 0x15bf, 1488, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1536-192 14x14, 2.24x
     {0x1002, 0x15bf, 1536, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1536-192 7x7, 3.41x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1536-192 7x7, 3.51x
     {0x1002, 0x15bf, 1536, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1536-256 8x8, 3.07x
-    {0x1002, 0x15bf, 1536, 256, 1, 1, 1, 1, 0, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1536-384 8x8, 2.88x
     {0x1002, 0x15bf, 1536, 384, 1, 1, 1, 1, 0, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1584-192 14x14, 1.99x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1584-192 14x14, 1.98x
     {0x1002, 0x15bf, 1584, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1584-192 7x7, 3.14x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1584-192 7x7, 3.12x
     {0x1002, 0x15bf, 1584, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1632-192 14x14, 2.25x
     {0x1002, 0x15bf, 1632, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1632-192 7x7, 3.53x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1632-192 7x7, 3.61x
     {0x1002, 0x15bf, 1632, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1680-192 14x14, 1.99x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1680-192 14x14, 1.98x
     {0x1002, 0x15bf, 1680, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1680-192 7x7, 3.10x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1680-192 7x7, 3.17x
     {0x1002, 0x15bf, 1680, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1728-192 14x14, 2.25x
     {0x1002, 0x15bf, 1728, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1728-192 7x7, 3.23x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1728-192 7x7, 3.25x
     {0x1002, 0x15bf, 1728, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1776-192 14x14, 1.99x
     {0x1002, 0x15bf, 1776, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1776-192 7x7, 3.30x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1776-192 7x7, 3.06x
     {0x1002, 0x15bf, 1776, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1824-192 14x14, 2.25x
     {0x1002, 0x15bf, 1824, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1824-192 7x7, 3.64x
-    {0x1002, 0x15bf, 1824, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1872-192 14x14, 1.99x
     {0x1002, 0x15bf, 1872, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1872-192 7x7, 3.36x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1872-192 7x7, 3.39x
     {0x1002, 0x15bf, 1872, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1920-192 14x14, 2.26x
     {0x1002, 0x15bf, 1920, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1920-192 7x7, 3.74x
+    {0x1002, 0x15bf, 1920, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1968-192 14x14, 1.99x
     {0x1002, 0x15bf, 1968, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1968-192 7x7, 3.40x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 1968-192 7x7, 3.45x
     {0x1002, 0x15bf, 1968, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2016-192 14x14, 2.26x
     {0x1002, 0x15bf, 2016, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2016-192 7x7, 3.80x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2016-192 7x7, 3.82x
     {0x1002, 0x15bf, 2016, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2048-192 5x5, 4.24x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2048-192 5x5, 4.15x
     {0x1002, 0x15bf, 2048, 192, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2048-256 1x1, 1.84x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2048-256 1x1, 1.82x
     {0x1002, 0x15bf, 2048, 256, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2048-256 28x28, 1.57x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2048-256 28x28, 1.56x
     {0x1002, 0x15bf, 2048, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2048-320 5x5, 3.89x
-    {0x1002, 0x15bf, 2048, 320, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2048-384 5x5, 3.80x
-    {0x1002, 0x15bf, 2048, 384, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2048-448 5x5, 4.73x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2048-448 5x5, 4.72x
     {0x1002, 0x15bf, 2048, 448, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2048-512 28x28, 1.11x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2048-512 28x28, 1.10x
     {0x1002, 0x15bf, 2048, 512, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_amd_t128x128_f32_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2048-512 7x7, 4.07x
     {0x1002, 0x15bf, 2048, 512, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
@@ -1083,11 +1077,11 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 2064, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2064-192 7x7, 3.45x
     {0x1002, 0x15bf, 2064, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2112-192 7x7, 3.93x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2112-192 7x7, 3.91x
     {0x1002, 0x15bf, 2112, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 2160-192 7x7, 3.47x
     {0x1002, 0x15bf, 2160, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 256-1024 14x14, 1.23x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 256-1024 14x14, 1.24x
     {0x1002, 0x15bf, 256, 1024, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 256-1024 28x28, 1.08x
     {0x1002, 0x15bf, 256, 1024, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
@@ -1099,8 +1093,6 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 384, 192, 1, 1, 1, 1, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 384-192 56x56, 1.35x
     {0x1002, 0x15bf, 384, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 384-64 35x35, 1.23x
-    {0x1002, 0x15bf, 384, 64, 1, 1, 1, 1, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 384-96 35x35, 1.20x
     {0x1002, 0x15bf, 384, 96, 1, 1, 1, 1, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 432-192 28x28, 1.44x
@@ -1109,61 +1101,63 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 480, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 512-1024 28x28, 1.16x
     {0x1002, 0x15bf, 512, 1024, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 512-128 28x28, 1.66x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 512-128 28x28, 1.69x
     {0x1002, 0x15bf, 512, 128, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 512-256 28x28, 1.41x
     {0x1002, 0x15bf, 512, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 528-192 28x28, 1.45x
     {0x1002, 0x15bf, 528, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 576-192 14x14, 1.16x
-    {0x1002, 0x15bf, 576, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 576-192 28x28, 1.47x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 576-192 28x28, 1.48x
     {0x1002, 0x15bf, 576, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 576-96 7x7, 1.48x
+    {0x1002, 0x15bf, 576, 96, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 624-192 14x14, 1.15x
     {0x1002, 0x15bf, 624, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 624-192 28x28, 1.46x
     {0x1002, 0x15bf, 624, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 672-192 14x14, 1.42x
+    {0x1002, 0x15bf, 672, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 672-192 28x28, 1.48x
     {0x1002, 0x15bf, 672, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 720-192 14x14, 1.25x
     {0x1002, 0x15bf, 720, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 720-192 28x28, 1.46x
     {0x1002, 0x15bf, 720, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 768-160 12x12, 2.02x
-    {0x1002, 0x15bf, 768, 160, 1, 1, 1, 1, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 768-192 14x14, 1.57x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 768-128 12x12, 1.40x
+    {0x1002, 0x15bf, 768, 128, 1, 1, 1, 1, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 768-192 12x12, 1.71x
+    {0x1002, 0x15bf, 768, 192, 1, 1, 1, 1, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 768-192 14x14, 1.56x
     {0x1002, 0x15bf, 768, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 768-384 28x28, 1.33x
     {0x1002, 0x15bf, 768, 384, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 816-192 14x14, 1.72x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 816-192 14x14, 1.68x
     {0x1002, 0x15bf, 816, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 864-192 14x14, 1.84x
     {0x1002, 0x15bf, 864, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 912-192 14x14, 1.45x
     {0x1002, 0x15bf, 912, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 960-160 7x7, 2.95x
-    {0x1002, 0x15bf, 960, 160, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 960-192 14x14, 1.84x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 960-192 14x14, 1.85x
     {0x1002, 0x15bf, 960, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 960-320 7x7, 1.73x
-    {0x1002, 0x15bf, 960, 320, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x3 s1x1 p0x1 d1x1 384-256 8x8, 4.81x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x1 s1x1 p0x0 d1x1 960-320 7x7, 1.70x
+    {0x1002, 0x15bf, 960, 320, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x3 s1x1 p0x1 d1x1 384-256 8x8, 4.82x
     {0x1002, 0x15bf, 384, 256, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x3 s1x1 p0x1 d1x1 384-384 5x5, 5.71x
-    {0x1002, 0x15bf, 384, 384, 1, 3, 1, 1, 0, 1, 1, 1, 5, 5, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x3 s1x1 p0x1 d1x1 384-384 5x5, 5.17x
+    {0x1002, 0x15bf, 384, 384, 1, 3, 1, 1, 0, 1, 1, 1, 5, 5, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x3 s1x1 p0x1 d1x1 448-512 8x8, 5.00x
     {0x1002, 0x15bf, 448, 512, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x3 s1x1 p0x1 d1x1 512-256 8x8, 6.19x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x3 s1x1 p0x1 d1x1 512-256 8x8, 6.21x
     {0x1002, 0x15bf, 512, 256, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 128-128 12x12, 4.56x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 128-128 12x12, 4.62x
     {0x1002, 0x15bf, 128, 128, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 128-192 12x12, 4.66x
     {0x1002, 0x15bf, 128, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 160-160 12x12, 5.23x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 160-160 12x12, 5.20x
     {0x1002, 0x15bf, 160, 160, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 160-192 12x12, 4.64x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 160-192 12x12, 4.65x
     {0x1002, 0x15bf, 160, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 192-192 12x12, 4.49x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 192-192 12x12, 4.50x
     {0x1002, 0x15bf, 192, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 192-224 17x17, 3.01x
     {0x1002, 0x15bf, 192, 224, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
@@ -1171,11 +1165,11 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 224, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 256-256 17x17, 2.86x
     {0x1002, 0x15bf, 256, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 64-64 73x73, 1.15x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 1x7 s1x1 p0x3 d1x1 64-64 73x73, 1.16x
     {0x1002, 0x15bf, 64, 64, 1, 7, 1, 1, 0, 3, 1, 1, 73, 73, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x1 s1x1 p1x0 d1x1 384-256 8x8, 5.45x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x1 s1x1 p1x0 d1x1 384-256 8x8, 5.52x
     {0x1002, 0x15bf, 384, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x1 s1x1 p1x0 d1x1 384-384 5x5, 5.60x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x1 s1x1 p1x0 d1x1 384-384 5x5, 5.52x
     {0x1002, 0x15bf, 384, 384, 3, 1, 1, 1, 1, 0, 1, 1, 5, 5, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x1 s1x1 p1x0 d1x1 384-448 8x8, 4.97x
     {0x1002, 0x15bf, 384, 448, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
@@ -1183,13 +1177,13 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 512, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p0x0 d1x1 32-32 149x149, 1.05x
     {0x1002, 0x15bf, 32, 32, 3, 3, 1, 1, 0, 0, 1, 1, 149, 149, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p0x0 d1x1 64-96 73x73, 1.07x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p0x0 d1x1 64-96 73x73, 1.06x
     {0x1002, 0x15bf, 64, 96, 3, 3, 1, 1, 0, 0, 1, 1, 73, 73, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p0x0 d1x1 80-192 54x54, 2.37x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p0x0 d1x1 80-192 54x54, 2.36x
     {0x1002, 0x15bf, 80, 192, 3, 3, 1, 1, 0, 0, 1, 1, 54, 54, "conv2d_pw_coopmat_amd_t128x128_f32_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p12x12 d12x12 2048-256 28x28, 1.17x
     {0x1002, 0x15bf, 2048, 256, 3, 3, 1, 1, 12, 12, 12, 12, 28, 28, "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 1024-256 28x28, 2.39x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 1024-256 28x28, 2.38x
     {0x1002, 0x15bf, 1024, 256, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 128-128 28x28, 2.71x
     {0x1002, 0x15bf, 128, 128, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
@@ -1197,7 +1191,7 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 192-48 28x28, 1.57x
     {0x1002, 0x15bf, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 192-48 7x7, 1.71x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 192-48 7x7, 1.74x
     {0x1002, 0x15bf, 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_i2c_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 256-256 14x14, 3.51x
     {0x1002, 0x15bf, 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
@@ -1205,23 +1199,23 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 448-384 5x5, 6.66x
     {0x1002, 0x15bf, 448, 384, 3, 3, 1, 1, 1, 1, 1, 1, 5, 5, "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 512-512 7x7, 4.88x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 512-512 7x7, 4.90x
     {0x1002, 0x15bf, 512, 512, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 64-256 224x224, 1.54x
     {0x1002, 0x15bf, 64, 256, 3, 3, 1, 1, 1, 1, 1, 1, 224, 224, "conv2d_pw_coopmat_amd_t128x128_f32_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 64-3 448x448, 2.18x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 64-3 448x448, 2.20x
     {0x1002, 0x15bf, 64, 3, 3, 3, 1, 1, 1, 1, 1, 1, 448, 448, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 64-64 56x56, 1.12x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 64-64 56x56, 1.11x
     {0x1002, 0x15bf, 64, 64, 3, 3, 1, 1, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 64-96 25x25, 1.69x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 64-96 25x25, 1.68x
     {0x1002, 0x15bf, 64, 96, 3, 3, 1, 1, 1, 1, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 64-96 35x35, 1.43x
     {0x1002, 0x15bf, 64, 96, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 96-96 25x25, 1.50x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 96-96 25x25, 1.52x
     {0x1002, 0x15bf, 96, 96, 3, 3, 1, 1, 1, 1, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p1x1 d1x1 96-96 35x35, 1.37x
     {0x1002, 0x15bf, 96, 96, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p2x2 d2x2 256-256 28x28, 1.87x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p2x2 d2x2 256-256 28x28, 1.86x
     {0x1002, 0x15bf, 256, 256, 3, 3, 1, 1, 2, 2, 2, 2, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p2x2 d2x2 512-512 28x28, 2.01x
     {0x1002, 0x15bf, 512, 512, 3, 3, 1, 1, 2, 2, 2, 2, 28, 28, "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half"},
@@ -1229,11 +1223,13 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 2048, 256, 3, 3, 1, 1, 36, 36, 36, 36, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s1x1 p4x4 d4x4 512-512 28x28, 2.01x
     {0x1002, 0x15bf, 512, 512, 3, 3, 1, 1, 4, 4, 4, 4, 28, 28, "conv2d_pw_coopmat_amd_t128x128_f32_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 192-192 17x17, 6.85x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 192-192 12x12, 7.61x
+    {0x1002, 0x15bf, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_i2c_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 192-192 17x17, 6.84x
     {0x1002, 0x15bf, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 192-192 71x71, 2.47x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 192-192 71x71, 2.46x
     {0x1002, 0x15bf, 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 71, 71, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 192-320 12x12, 6.50x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 192-320 12x12, 6.49x
     {0x1002, 0x15bf, 192, 320, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 224-256 35x35, 2.90x
     {0x1002, 0x15bf, 224, 256, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
@@ -1241,35 +1237,35 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 288, 384, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 320-320 17x17, 6.37x
     {0x1002, 0x15bf, 320, 320, 3, 3, 2, 2, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 384-384 35x35, 2.42x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 384-384 35x35, 2.43x
     {0x1002, 0x15bf, 384, 384, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_amd_t128x128_f32_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 64-96 147x147, 2.92x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 64-96 147x147, 2.93x
     {0x1002, 0x15bf, 64, 96, 3, 3, 2, 2, 0, 0, 1, 1, 147, 147, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 96-96 25x25, 1.39x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 96-96 25x25, 1.37x
     {0x1002, 0x15bf, 96, 96, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 128-128 56x56, 2.89x
     {0x1002, 0x15bf, 128, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 128-256 28x28, 3.67x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 128-256 28x28, 3.66x
     {0x1002, 0x15bf, 128, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 256-256 28x28, 3.55x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 256-256 28x28, 3.57x
     {0x1002, 0x15bf, 256, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 256-512 14x14, 4.63x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 256-512 14x14, 4.67x
     {0x1002, 0x15bf, 256, 512, 3, 3, 2, 2, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 512-512 14x14, 4.89x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 512-512 14x14, 4.92x
     {0x1002, 0x15bf, 512, 512, 3, 3, 2, 2, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 64-128 56x56, 2.88x
     {0x1002, 0x15bf, 64, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 5x5 s1x1 p2x2 d1x1 48-64 25x25, 1.84x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 5x5 s1x1 p2x2 d1x1 48-64 25x25, 1.83x
     {0x1002, 0x15bf, 48, 64, 5, 5, 1, 1, 2, 2, 1, 1, 25, 25, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 128-128 12x12, 4.55x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 128-128 12x12, 4.57x
     {0x1002, 0x15bf, 128, 128, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 128-192 12x12, 4.95x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 128-192 12x12, 4.98x
     {0x1002, 0x15bf, 128, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 160-160 12x12, 5.39x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 160-160 12x12, 5.27x
     {0x1002, 0x15bf, 160, 160, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 160-192 12x12, 4.87x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 160-192 12x12, 4.88x
     {0x1002, 0x15bf, 160, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 192-192 12x12, 4.70x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 192-192 12x12, 4.68x
     {0x1002, 0x15bf, 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 192-192 17x17, 3.79x
     {0x1002, 0x15bf, 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
@@ -1277,13 +1273,13 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 623> kConv2dCoopmatTable = {{
     {0x1002, 0x15bf, 224, 224, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 224-256 17x17, 2.99x
     {0x1002, 0x15bf, 224, 256, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 256-320 17x17, 2.80x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 256-320 17x17, 2.82x
     {0x1002, 0x15bf, 256, 320, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 64-64 73x73, 1.23x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x1 s1x1 p3x0 d1x1 64-64 73x73, 1.24x
     {0x1002, 0x15bf, 64, 64, 7, 1, 1, 1, 3, 0, 1, 1, 73, 73, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x7 s2x2 p3x3 d1x1 3-64 224x224, 1.39x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x7 s2x2 p3x3 d1x1 3-64 224x224, 1.38x
     {0x1002, 0x15bf, 3, 64, 7, 7, 2, 2, 3, 3, 1, 1, 224, 224, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x7 s2x2 p3x3 d1x1 3-96 224x224, 1.40x
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x7 s2x2 p3x3 d1x1 3-96 224x224, 1.41x
     {0x1002, 0x15bf, 3, 96, 7, 7, 2, 2, 3, 3, 1, 1, 224, 224, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
 }};
 // clang-format on
