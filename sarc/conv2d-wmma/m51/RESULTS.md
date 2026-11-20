@@ -89,3 +89,13 @@ Bounded diagnosis:
 - **Tile alignment:** the first mismatch always sits at an `MMA_M` row-block boundary inside a
   channel tile (offset 16 or 48) within three pixels of a pixel-tile boundary, but the region
   itself does not follow the workgroup tiling (offsets 0-2 in M, 16 or 48 in N).
+
+## 2.5 fp16 accumulation limits (record run)
+
+One run of `pw_coopmat_fp16_accumulation_limits.json` (`--validation_only`) for the record: the
+collection exercises the 39 f16-accumulating variants (19 `amd`, 20 `nvidia`) on adversarial
+cancellation and residual-alpha cases built to exceed fp16 accumulation range. **Every one of
+the 39 fails at least one such case, and the baseline arms fail 19 of the 22 case groups as
+well** — the defeats are inherent to fp16 accumulation, not variant defects. Per SPEC this
+collection is a record, not a gate: all 39 passed the 2.4 gate 10/10 and remain eligible for
+timing; the f32-accumulating variants are out of scope of this collection.
