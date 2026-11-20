@@ -7802,6 +7802,46 @@ TEST(VulkanComputeGraphTest, conv2d_direct_coopmat_weight_packing) {
   }
 }
 
+// More packed rows than 16 x maxComputeWorkGroupCount.y: the _padk prepack
+// continues the rows in z; every row matches a CPU packing (1x1 kernel, the
+// rows past the weights zero).
+TEST(VulkanComputeGraphTest, conv2d_direct_coopmat_weight_packing_wraps_rows) {
+  ComputeGraph probe{GraphConfig()};
+  if (!probe.float16_buffers_enabled()) {
+    GTEST_SKIP() << "16-bit storage buffers are not enabled";
+  }
+  const int64_t max_y =
+      probe.context()->adapter_ptr()->max_compute_workgroup_count()[1];
+  const int64_t N = 4, C_in = 4 * (16 * max_y + 1000);
+  const int64_t K4 = C_in / 4, packed_k4 = K4 + 40;
+  std::vector<executorch::aten::Half> w(N * C_in);
+  for (size_t i = 0; i < w.size(); ++i) {
+    w[i] = executorch::aten::Half(float(int(i % 2039) - 1019) / 1024.0f);
+  }
+  ComputeGraph graph{GraphConfig()};
+  const ValueRef packed = prepack_conv2d_gemm_weight(
+      graph,
+      graph.add_tensorref({N, C_in, 1, 1}, vkapi::kHalf, w.data()),
+      utils::kBuffer,
+      0,
+      packed_k4);
+  const ValueRef staging = graph.set_output_tensor(packed);
+  graph.prepare();
+  graph.prepack();
+  graph.execute();
+  std::vector<executorch::aten::Half> out(packed_k4 * 16);
+  graph.maybe_cast_and_copy_from_staging(
+      staging, out.data(), out.size(), vkapi::kHalf);
+  size_t mismatches = 0;
+  for (int64_t k = 0; k < packed_k4 * 4; ++k) {
+    for (int64_t n = 0; n < N; ++n) {
+      const float expected = k < C_in ? float(w[n * C_in + k]) : 0.0f;
+      mismatches += float(out[k * 4 + n]) != expected;
+    }
+  }
+  EXPECT_EQ(mismatches, 0u);
+}
+
 namespace {
 
 std::vector<const Conv2dPwCoopmatVariant*> runnable_direct_coopmat_variants() {

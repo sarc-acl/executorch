@@ -16,7 +16,8 @@
 $if PACKED_STORAGE == "buffer":
   #define OUTPUT_BUFFER
 $if PAD_K:
-  // _padk (route direct_coopmat): rows K4 .. dims1.z - 1 are written as zeros.
+  // _padk (route direct_coopmat): rows K4 .. dims1.z - 1 are written as zeros,
+  // and the rows wrap from y into z (conv2d_gemm_weight_padk_grid).
   #define PAD_K
 
 #extension GL_EXT_control_flow_attributes : require
@@ -98,7 +99,14 @@ VEC4_T load_flat_weight_row(const int n, const int k_base) {
 
 void main() {
   const int n4 = int(gl_GlobalInvocationID.x);
+#ifdef PAD_K
+  // The rows continue in z after gl_NumWorkGroups.y * gl_WorkGroupSize.y.
+  const int k4 = int(
+      gl_GlobalInvocationID.y +
+      gl_GlobalInvocationID.z * gl_NumWorkGroups.y * gl_WorkGroupSize.y);
+#else
   const int k4 = int(gl_GlobalInvocationID.y);
+#endif
 
   const int K4 = div_up_4(K);
   const int N4 = div_up_4(N);

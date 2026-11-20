@@ -46,6 +46,24 @@ constexpr int64_t kIm2colScratchBudgetBytes = 16 * 1024 * 1024;
 // Work group size of conv2d_pw_coopmat_sk<n>_merge as dispatched here.
 constexpr uint32_t kMergeThreads = 64;
 
+// Global grid (invocations) of pack_conv2d_gemm_weight_padk, in work groups of
+// 4 output-channel texels by 16 weight rows, for N4 texels and `rows` weight
+// rows: the rows fill y up to the device's work group count and continue in z
+// (the shader's row is y + z * gl_NumWorkGroups.y * 16).
+utils::uvec3 conv2d_gemm_weight_padk_grid(
+    ComputeGraph& graph,
+    const uint64_t N4,
+    const uint64_t rows) {
+  const uint64_t max_y =
+      graph.context()->adapter_ptr()->max_compute_workgroup_count()[1];
+  const uint64_t groups_y = std::min(utils::div_up(rows, uint64_t(16)), max_y);
+  const uint64_t rows_per_z = groups_y * 16u;
+  return {
+      utils::safe_downcast<uint32_t>(N4),
+      utils::safe_downcast<uint32_t>(rows_per_z),
+      utils::safe_downcast<uint32_t>(utils::div_up(rows, rows_per_z))};
+}
+
 // The kernel taps [first, first + count) of one spatial axis that read the
 // input for some output position o < out (0 <= o s - p + t d < in), or
 // {0, 0} when none does. Taps between the first and the last live one stay.
@@ -239,8 +257,11 @@ ValueRef prepack_conv2d_gemm_weight(
   graph.prepack_nodes().emplace_back(new PrepackNode(
       graph,
       VK_KERNEL_FROM_STR(kernel_name),
-      gwg,
-      graph.create_lwg(gwg),
+      packed_k4 > 0 ? GlobalWorkGrid(
+                          conv2d_gemm_weight_padk_grid(graph, N4, weight_rows),
+                          kExplicitWorkGrid)
+                    : gwg,
+      packed_k4 > 0 ? LocalWorkGroup(4u, 16u, 1u) : graph.create_lwg(gwg),
       weight_data,
       packed_weight,
       {},
@@ -1490,6 +1511,18 @@ std::optional<std::string> conv2d_direct_coopmat_ineligible(
         n(adapter->max_buffer_numel());
   }
   const utils::uvec3 max_count = adapter->max_compute_workgroup_count();
+  {
+    // The weight prepack (pack_conv2d_gemm_weight_padk).
+    const utils::uvec3 grid =
+        conv2d_gemm_weight_padk_grid(graph, N4, uint64_t(plan.packed_k4));
+    const uint64_t groups_x = utils::div_up(uint64_t(grid[0]), uint64_t(4));
+    if (groups_x > max_count[0] || grid[2] > max_count[2]) {
+      return "the weight prepack of " + n(plan.packed_k4) + " rows x " + n(N4) +
+          " texels needs " + n(groups_x) + " x " + n(grid[1] / 16u) + " x " +
+          n(grid[2]) + " work groups, more than maxComputeWorkGroupCount " +
+          n(max_count[0]) + " x " + n(max_count[1]) + " x " + n(max_count[2]);
+    }
+  }
   if (variant.k_slices > 1u) {
     for (const auto& [begin, end] : conv2d_pw_coopmat_k_slices(
              variant, utils::safe_downcast<uint32_t>(plan.K))) {
