@@ -105,9 +105,10 @@ struct Conv2dCoopmatTableRow final {
 
 
 def route_of(arm):
-    if arm.endswith("_dg"):
+    tokens = arm.split("_")
+    if "dg" in tokens:
         return "direct_coopmat"
-    return "im2col_coopmat" if arm.endswith("_i2c") else "pw_coopmat"
+    return "im2col_coopmat" if "i2c" in tokens else "pw_coopmat"
 
 
 def routable(arm):
