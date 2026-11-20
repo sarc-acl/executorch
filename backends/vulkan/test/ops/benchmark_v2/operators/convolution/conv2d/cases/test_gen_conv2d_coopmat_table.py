@@ -83,6 +83,27 @@ class Nomination(unittest.TestCase):
         self.assertIsNone(code)
         self.assertEqual(info["best"], "xe2_t32x64_f16_alc_dg")
 
+    def test_full_name_arms_are_routable(self):
+        # conv2d_simt_ and conv1d_simt_ are kernels, not the FP16 _simt
+        # control variants.
+        a = session(
+            {
+                "auto": arm(100, 100, 100),
+                "A'": arm(100, 100, 100),
+                "conv2d_simt_t64x64_m4n2_dg_float": arm(40, 40, 40),
+                "conv1d_simt_pw_t64x32_half": arm(50, 50, 50),
+                "xe2_t32x64_f16_alc_simt": arm(10, 10, 10),
+            }
+        )
+        nomination, (info, code, _) = gen.nominate(SHAPE, [("a", a)])
+        self.assertEqual(
+            nomination["arms"], ["conv2d_simt_t64x64_m4n2_dg_float"]
+        )
+        self.assertIsNone(code)
+        self.assertEqual(gen.route_of("conv1d_simt_pw_t64x32_half"), "simt")
+        self.assertEqual(gen.route_of("b1x1"), "b1x1")
+        self.assertFalse(gen.routable("xe2_t32x64_f16_alc_simt"))
+
     def test_stock_drift_nominates_a_win_against_every_stock_run(self):
         # Stock spread 0.84: the arm's slowest run (9.1) still beats the
         # fastest stock run (11.2) by more than 5%; nominated, with the

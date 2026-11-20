@@ -151,6 +151,10 @@ def variant_of(arm):
 
 
 def route_of(arm):
+    if arm.startswith(("conv2d_simt_", "conv1d_simt_")):
+        return "simt"
+    if arm == "b1x1":
+        return "b1x1"
     if arm.startswith("q8ta_"):
         return "im2col_coopmat" if "_dg" in arm else "pw_coopmat"
     if arm.endswith("_dg"):
@@ -159,7 +163,11 @@ def route_of(arm):
 
 
 def routable(arm):
-    return arm not in STOCK and not any(tag in arm for tag in NOT_ROUTABLE)
+    # The tags mark FP16 study variants; full names (q8ta_, conv2d_simt_,
+    # conv1d_simt_) carry none of them.
+    if arm in STOCK:
+        return False
+    return variant_of(arm) == arm or not any(tag in arm for tag in NOT_ROUTABLE)
 
 
 def spread(values):
