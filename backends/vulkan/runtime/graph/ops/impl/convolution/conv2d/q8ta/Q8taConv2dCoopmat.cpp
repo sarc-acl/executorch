@@ -12,13 +12,16 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Common.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Staging.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2d.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/im2col/Conv2dGemm.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dCommon.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dPW.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/gemm/linear/qw/QuantizedLinear.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/utils/KernelUtils.h>
 
 #include <algorithm>
+#include <cstring>
 #include <limits>
+#include <tuple>
 
 namespace vkcompute {
 
@@ -102,6 +105,90 @@ bool texture_weight_fits(
       graph.context()->adapter_ptr()->max_texture2d_dim();
   return utils::div_up_4(N) * 4 <= max_extent * 4 &&
       utils::div_up_4(K) <= max_extent;
+}
+
+// The kernel taps that read the input for some output pixel (as route
+// direct_coopmat): rows [ki0, ki0 + kh) and columns [kj0, kj0 + kw).
+struct LiveTaps final {
+  int64_t ki0;
+  int64_t kh;
+  int64_t kj0;
+  int64_t kw;
+};
+
+LiveTaps live_taps(
+    ComputeGraph& graph,
+    const std::vector<ValueRef>& args,
+    const Geometry& g) {
+  const auto h = conv2d_live_taps(
+      graph.size_at<int64_t>(-2, args.at(0)),
+      graph.size_at<int64_t>(-2, args.at(15)),
+      g.kernel_h,
+      g.stride_h,
+      g.padding_h,
+      g.dilation_h);
+  const auto w = conv2d_live_taps(
+      graph.size_at<int64_t>(-1, args.at(0)),
+      graph.size_at<int64_t>(-1, args.at(15)),
+      g.kernel_w,
+      g.stride_w,
+      g.padding_w,
+      g.dilation_w);
+  return {h.first, h.second, w.first, w.second};
+}
+
+template <typename T>
+ValueRef add_tref_copy(
+    ComputeGraph& graph,
+    const std::vector<int64_t>& sizes,
+    const vkapi::ScalarType dtype,
+    T* const data,
+    const size_t count) {
+  return graph.add_tensorref(
+      sizes,
+      dtype,
+      executorch::runtime::FreeableBuffer(
+          data, count * sizeof(T), [](void*, void* p, size_t) {
+            delete[] static_cast<T*>(p);
+          }));
+}
+
+// The weights [C_out, align4(kh kw C_in)] and weight sums of the live taps
+// only (taps that read no input contribute (zp - zp) w = 0 to every output),
+// built on the CPU at graph build time.
+std::pair<ValueRef, ValueRef> live_tap_weights(
+    ComputeGraph& graph,
+    const std::vector<ValueRef>& args,
+    const Geometry& g,
+    const LiveTaps& live) {
+  const int64_t C_out = g.out_channels;
+  const int64_t C_in = g.in_channels;
+  const int64_t K = utils::align_up_4(live.kh * live.kw * C_in);
+  const int64_t sums_len = utils::align_up_4(C_out);
+  int8_t* const w = new int8_t[C_out * K]();
+  int32_t* const sums = new int32_t[sums_len]();
+  {
+    const TensorRefPtr src = graph.get_tref(args.at(3));
+    const int64_t K_src = src->sizes.at(1);
+    const int8_t* const data = static_cast<const int8_t*>(src->data);
+    for (int64_t co = 0; co < C_out; ++co) {
+      for (int64_t i = 0; i < live.kh; ++i) {
+        for (int64_t j = 0; j < live.kw; ++j) {
+          const int64_t from =
+              ((live.ki0 + i) * g.kernel_w + live.kj0 + j) * C_in;
+          const int64_t to = (i * live.kw + j) * C_in;
+          for (int64_t ci = 0; ci < C_in; ++ci) {
+            const int8_t x = data[co * K_src + from + ci];
+            w[co * K + to + ci] = x;
+            sums[co] += x;
+          }
+        }
+      }
+    }
+  }
+  return {
+      add_tref_copy(graph, {C_out, K}, vkapi::kChar, w, size_t(C_out * K)),
+      add_tref_copy(graph, {sums_len}, vkapi::kInt, sums, size_t(sums_len))};
 }
 
 void resize_q8ta_conv2d_coopmat_node(
@@ -354,6 +441,16 @@ std::optional<std::string> q8ta_conv2d_coopmat_ineligible(
       return "not a 1x1, stride 1, padding 0 convolution (use a _dg variant)";
     }
   }
+  // The K steps of the split below count the live taps only.
+  Geometry g_live = g;
+  if (v.direct) {
+    const LiveTaps live = live_taps(graph, args, g);
+    if (live.kh == 0 || live.kw == 0) {
+      return "no kernel tap reads the input";
+    }
+    g_live.kernel_h = live.kh;
+    g_live.kernel_w = live.kw;
+  }
   if (!texture_weight_fits(graph, K, g.out_channels)) {
     return "the packed weights do not fit a 2D texture";
   }
@@ -417,7 +514,7 @@ std::optional<std::string> q8ta_conv2d_coopmat_ineligible(
   const utils::uvec3 max_count =
       graph.context()->adapter_ptr()->max_compute_workgroup_count();
   if (v.k_slices > 1u) {
-    const uint32_t steps = utils::div_up(4u * k4_of(v, g), v.tile_k);
+    const uint32_t steps = utils::div_up(4u * k4_of(v, g_live), v.tile_k);
     if (steps < 2u * v.k_slices) {
       return "fewer than two K steps per slice of " + n(v.k_slices) + " (" +
           n(steps) + " K steps)";
@@ -448,16 +545,34 @@ void q8ta_conv2d_coopmat_impl(
   const ValueRef weight_data = args.at(3);
   const ValueRef bias_data = args.at(8);
   const ValueRef out = args.at(15);
-  const Geometry g = geometry_of(graph, args);
+  Geometry g = geometry_of(graph, args);
+
+  // Direct gathering runs the live taps only: the weights and weight sums of
+  // the dead ones are left out and the padding shifted to the first live tap.
+  ValueRef gather_weight = weight_data;
+  ValueRef weight_sums = args.at(4);
+  if (v.direct) {
+    const LiveTaps live = live_taps(graph, args, g);
+    if (live.ki0 != 0 || live.kj0 != 0 || live.kh != g.kernel_h ||
+        live.kw != g.kernel_w) {
+      std::tie(gather_weight, weight_sums) =
+          live_tap_weights(graph, args, g, live);
+      g.padding_h -= live.ki0 * g.dilation_h;
+      g.padding_w -= live.kj0 * g.dilation_w;
+      g.kernel_h = live.kh;
+      g.kernel_w = live.kw;
+    }
+  }
 
   QuantizationConfig weight_quant_config(8, kPerChannel, {});
   const ValueRef packed_weight = v.direct
-      ? prepack_quantized_linear_weight(graph, weight_quant_config, weight_data)
+      ? prepack_quantized_linear_weight(
+            graph, weight_quant_config, gather_weight)
       : prepack_quantized_conv2d_pw_weight(
             graph, weight_quant_config, weight_data, in, out, false);
   VK_CHECK_COND(graph.storage_type_of(packed_weight) == utils::kTexture2D);
   const ValueRef packed_weight_sums =
-      prepack_standard(graph, args.at(4), utils::kBuffer, utils::kWidthPacked);
+      prepack_standard(graph, weight_sums, utils::kBuffer, utils::kWidthPacked);
   const ValueRef packed_weight_scales =
       prepack_standard(graph, args.at(5), utils::kBuffer, utils::kWidthPacked);
   TmpTensor dummy_bias(
