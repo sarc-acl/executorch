@@ -3,6 +3,13 @@
 Each task lists how it is verified. Raw data and device identifiers stay in the local record; committed files carry ratios
 only (`SPEC.md`, "Publication of M51 results").
 
+> **Owner amendment, 2026-11-19 (SPEC "MODIFIED Requirements"). Execution order from now on:**
+> 2.4 → 4.0 (early session; it picks the parent) → 9.2 (k×k gate and timing) → 5.2 (phase timing) → at most two 1×1
+> candidates (6), with `KSPEC` and `XP` as candidates only → 9.3/9.4 if time allows → 7 on six models (on idle board
+> time) → 7.4 → 8.
+> Not required: 3.1–3.4 as a mandatory parent, 4.1/4.2 as a separate parent session (the parent's numbers come from
+> 4.0), 5.1, 5.3.
+
 ## 1. Environment and capability
 - [ ] 1.1 Build `etvk_ops_bench` for Android arm64 (`backends/vulkan/test/ops/benchmark_v2/build.sh --android`).
   Verify: the binary runs `--help` on the board; its checksum is in the local record.

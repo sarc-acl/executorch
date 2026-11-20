@@ -240,3 +240,34 @@ doing next on the M51. The campaign is a success when the geometric mean over th
 Committed files and commit messages SHALL contain no absolute M51 figures (times, rates, register counts, clocks) and no
 board, host, driver-build or system identifiers. Before every commit, the diff against `origin/topic/conv2d-wmma` and the
 commit messages SHALL be checked for them. Nothing SHALL be pushed without the device owner's order.
+
+## MODIFIED Requirements (owner amendment, 2026-11-19, after the existing-variant gate)
+
+The existing-variant gate on the M51 changed two premises.
+- The AMD-family variants, whose trip count comes from a uniform buffer, created their pipelines on the canonical
+  driver.
+- The two-pass FP32 drain variants passed every many-workgroup repetition.
+- The only gate failure was intermittent and many-workgroup. It came from a single-pass variant with a fused residual.
+
+To deliver the 1×1 and k×k results within one campaign run, the following replaces the matching parts of the
+requirements above. Everything else still holds.
+
+### Requirement: M51 parent is the best gated existing variant
+The 1×1 parent SHALL be the variant with the best geometric mean in the early timed session (TASKS 4.0) among those
+that passed the gate 10/10.
+- `KSPEC` and `XP` are no longer required of the parent. Each SHALL be built only as a gated candidate against that
+  parent, under the candidate discipline, and adopted only by the adoption rule.
+- The `m51` family SHALL be added only if a candidate needs a new yaml block.
+
+### Requirement: Locate by phase timing only
+Locating SHALL use the in-kernel shader-clock phase timing (fetch, staging, synchronization, multiply, drain). The
+inspection branch and vendor counter capture are optional and SHALL NOT delay the k×k work.
+
+### Requirement: Bounded 1×1 candidates, then k×k
+At most two 1×1 candidates SHALL be built and gated, chosen from the located bottleneck. The k×k gate and timing (TASKS
+9.2) SHALL start right after the early 1×1 session. The 1×1 candidates SHALL run while the board would otherwise be
+idle, or after 9.2.
+
+### Requirement: Reduced workload baseline
+The workload baseline SHALL cover the six convolution-heavy models resnet18, resnet50, mv2, ic3, densenet161 and dl3,
+run while the board would otherwise be idle. The other four models are deferred.
