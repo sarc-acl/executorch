@@ -117,6 +117,7 @@ def confirmation(arms, nominated, band=0.02):
         band=band,
         confirmation=True,
         runs=gen.CONFIRM_RUNS,
+        schedule="paired-reverse",
         nominations={SHAPE: {"arms": nominated}},
     )
 
@@ -215,6 +216,38 @@ class NominationGate(unittest.TestCase):
             self.assertEqual(got, code)
             info, got, _ = gen.confirm(SHAPE, {"shapes": {}, "band": {}}, nomination)
             self.assertEqual(got, code)
+
+
+class StockReason(unittest.TestCase):
+    """Design D3: a stock arm that failed the reference is `validation`; a stock
+    arm without a time for another reason is `not-timed`."""
+
+    FAILED = {"t": None, "passed_runs": 4, "reason": "FAIL; PASS"}
+    MISSING = {"t": None, "passed_runs": 0, "reason": "not run"}
+
+    def test_nomination(self):
+        for stock, code in ((self.FAILED, "validation"), (self.MISSING, "not-timed")):
+            for name in gen.STOCK:
+                arms = {"auto": arm(100, 100, 100), "A'": arm(100, 100, 100)}
+                arms[name] = stock
+                s = session({**arms, "xe2_t32x64_f16_alc": arm(50, 50, 50)}, band=None)
+                nomination, (_, got, _) = gen.nominate(SHAPE, [("s", s)])
+                self.assertEqual((nomination["reason"], got), (code, code), name)
+                self.assertEqual(nomination["arms"], [])
+
+    def test_confirmation(self):
+        for stock, code in ((self.FAILED, "validation"), (self.MISSING, "not-timed")):
+            for name in gen.STOCK:
+                arms = {
+                    "auto": five(100),
+                    "A'": five(100),
+                    "xe2_t32x64_f16_alc": five(40),
+                }
+                arms[name] = stock
+                s = confirmation(arms, ["xe2_t32x64_f16_alc"])
+                info, got, _ = confirm(s)
+                self.assertEqual(got, code, name)
+                self.assertNotIn("best", info)
 
 
 class Confirmation(unittest.TestCase):
@@ -366,6 +399,16 @@ class Refusal(unittest.TestCase):
         r = self.run_table(session({"auto": arm(1, 1, 1), "A'": arm(1, 1, 1)}))
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("not a confirmation session", r.stderr)
+
+    def test_table_needs_the_confirmation_schedule(self):
+        s = confirmation(
+            {"auto": five(1), "A'": five(1), "xe2_t32x64_f16_alc": five(1)},
+            ["xe2_t32x64_f16_alc"],
+        )
+        del s["schedule"]
+        r = self.run_table(s)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("paired-reverse", r.stderr)
 
     def test_table_needs_five_run_sessions(self):
         s = confirmation(

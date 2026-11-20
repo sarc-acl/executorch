@@ -31,8 +31,10 @@ never nominated. --decisions writes the sweep decision of each configuration
 (the replay of the earlier tables); no table is written from sweep sessions.
 
 table: confirmation sessions time auto, A' (auto again) and the nominated
-arms, CONFIRM_RUNS interleaved runs. The nominations are the nominate output
-(--nominations). Per device and configuration the decision uses the last
+arms, CONFIRM_RUNS interleaved runs in which each even run reverses the arm
+order of the odd run before it (the summary records schedule
+"paired-reverse" only when the saved runs follow it). The nominations are
+the nominate output (--nominations). Per device and configuration the decision uses the last
 confirmation session on the command line that timed every nominee together
 with both stock arms; the stock arms and the chosen arm must have passed all
 CONFIRM_RUNS runs. The row is the nominated arm with the lowest median route
@@ -43,9 +45,9 @@ Gate (design D3): the A/A band (max over runs of 2 |A - A'| / (A + A')) is at
 most MAX_BAND, the stock spread ((max - min) / median over every run of auto
 and A') and the arm spread (the same over the arm's runs) are each at most
 MAX_SPREAD. A configuration without a row has exactly one reason code:
-unsupported (every arm refused by eligibility), validation (an arm failed the
-reference), not-timed, unstable (the band or a spread above its limit),
-below-threshold.
+unsupported (every arm refused by eligibility), validation (an arm or the
+stock route failed the reference), not-timed, unstable (the band or a spread
+above its limit), below-threshold.
 """
 
 import argparse
@@ -140,6 +142,14 @@ def no_time_code(arm_records):
     return "not-timed"
 
 
+def stock_code(sh):
+    """The reason code of a configuration whose stock arms (auto, A') lack a
+    time: validation when one failed the reference in a run, not-timed
+    otherwise."""
+    records = [(sh or {}).get("arms", {}).get(a) or {} for a in STOCK]
+    return "validation" if no_time_code(records) == "validation" else "not-timed"
+
+
 def gate(x):
     """(code, text) of why a timed arm cannot be a row, or None. x: ratio,
     band, stock_spread, spread."""
@@ -177,7 +187,7 @@ def observations(shape, sessions):
         auto = (sh["arms"].get("auto") or {}).get("t")
         band = s["band"].get(shape)
         if auto is None or band is None:
-            skipped.append(f"{name}: no A/A pair")
+            skipped.append((name, stock_code(sh)))
             continue
         used.append(name)
         for arm, x in sh["arms"].items():
@@ -210,13 +220,23 @@ def nominate(shape, sessions):
     nominee is the passing observation with the largest ratio. The sweep
     decision takes the passing observation with the lowest route time."""
     obs, untimed, used, skipped = observations(shape, sessions)
-    info = {"sessions_used": used, "sessions_skipped": skipped, "nominated": {}}
+    info = {
+        "sessions_used": used,
+        "sessions_skipped": [f"{n}: no A/A pair ({c})" for n, c in skipped],
+        "nominated": {},
+    }
     if not used:
-        text = "route auto has no time in every run (no A/A pair)"
-        return (
-            {"arms": [], "reason": "not-timed", "detail": text},
-            (info, "not-timed", text),
+        # The stock route failed the reference in a session (validation), or
+        # has no time in any (not-timed).
+        code = (
+            "validation" if any(c == "validation" for _, c in skipped) else "not-timed"
         )
+        text = (
+            "route auto or A' failed validation (no A/A pair)"
+            if code == "validation"
+            else "route auto has no time in every run (no A/A pair)"
+        )
+        return {"arms": [], "reason": code, "detail": text}, (info, code, text)
     if not obs:
         code = no_time_code(untimed)
         text = "no arm has a time in every run"
@@ -290,10 +310,15 @@ def confirm(shape, s, nomination):
         )
     band = s["band"].get(shape)
     if not all(complete(sh["arms"].get(a)) for a in STOCK) or band is None:
+        code = stock_code(sh)
         return (
             info,
-            "not-timed",
-            f"auto or A' without {CONFIRM_RUNS} passing runs (no A/A pair)",
+            code,
+            (
+                "auto or A' failed validation (no A/A pair)"
+                if code == "validation"
+                else f"auto or A' without {CONFIRM_RUNS} passing runs (no A/A pair)"
+            ),
         )
     auto = sh["arms"]["auto"]["t"]
     stock = stock_spread(sh)
@@ -453,6 +478,13 @@ def check_confirmation(name, s):
             f"{name} is not a confirmation session of {CONFIRM_RUNS} runs: sweep "
             "sessions only nominate; the table is generated from confirmation "
             "sessions"
+        )
+    # Recorded by the session summary only when every run followed the
+    # schedule of design D4 (each even run reverses the odd run before it).
+    if s.get("schedule") != "paired-reverse":
+        sys.exit(
+            f"{name} did not run the confirmation schedule (paired-reverse): "
+            "each even run must reverse the arm order of the odd run before it"
         )
 
 
