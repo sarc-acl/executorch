@@ -150,6 +150,10 @@ struct Conv2dPwCoopmatVariant final {
     // stride, padding and dilation in the shader (route direct_coopmat,
     // conv2d_direct_coopmat_impl).
     kDirect = 1u << 10,
+    // "_simt": benchmark-only control of the matrix instructions; the
+    // parent's staging, tile, K step and drain with ordinary multiply-adds in
+    // place of the cooperative-matrix multiply.
+    kSimt = 1u << 11,
   };
 
   const char* name;
@@ -176,11 +180,12 @@ struct Conv2dPwCoopmatVariant final {
     return (options & option) != 0u;
   }
 
-  // A diagnostic variant computes something other than the convolution: every
-  // route refuses it unless a benchmark case allows diagnostics, and the
-  // selection table never holds it.
+  // A diagnostic variant (_diag_once, which computes something other than the
+  // convolution) or a control (_simt): every route refuses it unless a
+  // benchmark case allows diagnostics, and the selection table never holds
+  // it.
   bool diagnostic() const {
-    return has(kDiagOnce);
+    return has(kDiagOnce) || has(kSimt);
   }
 
   // Bytes of shared memory the shader declares.
@@ -188,8 +193,8 @@ struct Conv2dPwCoopmatVariant final {
 };
 
 // "_g<X>x<Y>", "_al", "_alc", "_w16", "_img", "_epi0", "_bcm", "_sk<n>",
-// "_i2c", "_dg", "_ck", "_diag_once" for the variant's options and K slices,
-// in this order.
+// "_i2c", "_dg", "_ck", "_diag_once", "_simt" for the variant's options and K
+// slices, in this order.
 std::string conv2d_pw_coopmat_option_suffix(
     const Conv2dPwCoopmatVariant& variant);
 

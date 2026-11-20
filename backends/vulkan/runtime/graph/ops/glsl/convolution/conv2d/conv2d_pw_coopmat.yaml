@@ -39,6 +39,7 @@ conv2d_pw_coopmat:
     I2C: false
     CHUNKED: false
     DIRECT: false
+    SIMT: false
   shader_variants:
     # Intel Xe2 (Arc B580, Arc Pro B70): MMA 8x16x16, subgroup 16, K step 16,
     # fragment-contiguous shared memory. Subgroup grids: OUT/DEVICES.md rule
@@ -2502,3 +2503,151 @@ conv2d_pw_coopmat:
       CLAMP_N: true
       K_SLICES: 2
       DIRECT: true
+    # Matrix-instruction controls (_simt, conv2d-coopmat-evidence-hardening
+    # design D5): each the parent above plus SIMT, benchmark-only.
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f16_alc_simt_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      SIMT: true
+    - NAME: conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_simt_half
+      MMA_M: 8
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      SIMT: true
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_simt_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      DIRECT: true
+      SIMT: true
+    - NAME: conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_simt_half
+      MMA_M: 8
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      DIRECT: true
+      SIMT: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_alc_simt_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      SIMT: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_simt_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      SIMT: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_simt_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      DIRECT: true
+      SIMT: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_dg_simt_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      DIRECT: true
+      SIMT: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f16_alc_simt_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      SIMT: true
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f32_alc_simt_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      SIMT: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_simt_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      DIRECT: true
+      SIMT: true
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_simt_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      DIRECT: true
+      SIMT: true

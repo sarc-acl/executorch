@@ -134,6 +134,7 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
   constexpr uint32_t kIm2col = V::kIm2col;
   constexpr uint32_t kChunked = V::kChunked;
   constexpr uint32_t kDirect = V::kDirect;
+  constexpr uint32_t kSimt = V::kSimt;
   // clang-format off
   static const std::vector<Conv2dPwCoopmatVariant> variants = {
       // Intel Xe2
@@ -374,6 +375,20 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kDirect, 2u},
       {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kDirect},
       {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kDirect, 2u},
+      // Matrix-instruction controls (_simt) of the unsplit short-list variants and their _dg forms
+      // (conv2d-coopmat-evidence-hardening design D5): benchmark-only.
+      {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_simt_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN | kSimt},
+      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_simt_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN | kSimt},
+      {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_simt_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN | kDirect | kSimt},
+      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_simt_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN | kDirect | kSimt},
+      {"conv2d_pw_coopmat_amd_t16x32_f16_alc_simt_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kAlignedClampN | kSimt},
+      {"conv2d_pw_coopmat_amd_t128x128_f32_alc_simt_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kSimt},
+      {"conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_simt_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kAlignedClampN | kDirect | kSimt},
+      {"conv2d_pw_coopmat_amd_t128x128_f32_alc_dg_simt_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kDirect | kSimt},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f16_alc_simt_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kSimt},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_simt_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kSimt},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_simt_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kDirect | kSimt},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_simt_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kDirect | kSimt},
   };
   // clang-format on
   return variants;
@@ -406,6 +421,7 @@ constexpr uint32_t kSuffixOrder[] = {
     Conv2dPwCoopmatVariant::kDirect,
     Conv2dPwCoopmatVariant::kChunked,
     Conv2dPwCoopmatVariant::kDiagOnce,
+    Conv2dPwCoopmatVariant::kSimt,
 };
 
 bool has_suffix_item(const Conv2dPwCoopmatVariant& v, const uint32_t item) {
@@ -439,6 +455,8 @@ std::string suffix_item(const Conv2dPwCoopmatVariant& v, const uint32_t item) {
       return "_dg";
     case Conv2dPwCoopmatVariant::kDiagOnce:
       return "_diag_once";
+    case Conv2dPwCoopmatVariant::kSimt:
+      return "_simt";
     default:
       return "_unknown" + std::to_string(item);
   }
@@ -506,6 +524,24 @@ std::vector<std::string> conv2d_pw_coopmat_registry_problems(
         (v.has(Conv2dPwCoopmatVariant::kIm2col) ||
          v.has(Conv2dPwCoopmatVariant::kChunked))) {
       problems.push_back(name + ": _dg excludes _i2c and _ck");
+    }
+    if (v.has(Conv2dPwCoopmatVariant::kSimt)) {
+      // The body's control maps each invocation to a micro-tile of 8 output
+      // channels and wg_tile_m * wg_tile_n / (8 * wg_size) pixels.
+      const uint32_t per_inv = v.wg_size() * 8u;
+      if (v.k_slices > 1u || v.has(Conv2dPwCoopmatVariant::kIm2col) ||
+          v.has(Conv2dPwCoopmatVariant::kChunked) ||
+          v.has(Conv2dPwCoopmatVariant::kDiagOnce) ||
+          v.has(Conv2dPwCoopmatVariant::kColumnMajorB) ||
+          v.has(Conv2dPwCoopmatVariant::kWideWeightLoad)) {
+        problems.push_back(
+            name + ": _simt excludes _sk, _i2c, _ck, _diag_once, _bcm and _w16");
+      } else if (
+          (v.tile_m * v.tile_n) % per_inv != 0u ||
+          v.tile_m % ((v.tile_m * v.tile_n) / per_inv) != 0u) {
+        problems.push_back(
+            name + ": _simt needs tile_m * tile_n a multiple of 8 * wg_size");
+      }
     }
     if (suffix.empty()) {
       continue;
@@ -753,8 +789,8 @@ std::optional<std::string> conv2d_pw_coopmat_ineligible(
     const bool has_bias_or_epilogue,
     const bool allow_diagnostic) {
   if (variant.diagnostic() && !allow_diagnostic) {
-    return "the variant is a diagnostic (_diag_once); only a benchmark case "
-           "with allow_diagnostic may request it";
+    return "the variant is a diagnostic or control (_diag_once, _simt); only "
+           "a benchmark case with allow_diagnostic may request it";
   }
   if (variant.has(Conv2dPwCoopmatVariant::kIm2col)) {
     return "the variant reads an im2col matrix (route im2col_coopmat)";

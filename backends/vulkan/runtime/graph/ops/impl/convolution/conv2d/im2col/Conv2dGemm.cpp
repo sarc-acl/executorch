@@ -749,7 +749,8 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
     const bool transposed) {
   const auto n = [](const uint64_t v) { return std::to_string(v); };
   if (variant.diagnostic()) {
-    return "the variant is a diagnostic; route im2col_coopmat runs none";
+    return "the variant is a diagnostic or control; route im2col_coopmat "
+           "runs none";
   }
   if (!variant.has(Conv2dPwCoopmatVariant::kIm2col)) {
     return "the variant does not read an im2col matrix (an _i2c variant is "
@@ -1396,8 +1397,8 @@ std::optional<std::string> conv2d_direct_coopmat_ineligible(
     const bool allow_diagnostic) {
   const auto n = [](const uint64_t v) { return std::to_string(v); };
   if (variant.diagnostic() && !allow_diagnostic) {
-    return "the variant is a diagnostic; only a benchmark case with "
-           "allow_diagnostic may request it";
+    return "the variant is a diagnostic or control (_diag_once, _simt); only "
+           "a benchmark case with allow_diagnostic may request it";
   }
   if (!variant.has(Conv2dPwCoopmatVariant::kDirect)) {
     return "the variant does not gather its input (a _dg variant is "

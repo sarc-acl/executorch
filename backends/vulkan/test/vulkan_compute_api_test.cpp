@@ -6463,21 +6463,24 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_refuses_operands_and_layouts) {
 
 // Design D2 of conv2d-coopmat-evidence-hardening: a diagnostic variant
 // (_diag_once) is refused by every route unless the case allows diagnostics,
-// and runs with the flag.
+// and runs with the flag. The _simt controls are diagnostics too (design D5).
 TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_diagnostic_needs_flag) {
   int diagnostics = 0;
   for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    const std::string name = v.name;
     EXPECT_EQ(
         v.diagnostic(),
-        std::string(v.name).find("_diag_once") != std::string::npos)
+        name.find("_diag_once") != std::string::npos ||
+            name.find("_simt") != std::string::npos)
         << v.name;
     diagnostics += v.diagnostic() ? 1 : 0;
   }
-  EXPECT_EQ(diagnostics, 4);
+  EXPECT_EQ(diagnostics, 16);
   ComputeGraph probe{GraphConfig()};
   int tested = 0;
   for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
-    if (!v.diagnostic() || !probe.float16_buffers_enabled() ||
+    if (!v.has(Conv2dPwCoopmatVariant::kDiagOnce) ||
+        !probe.float16_buffers_enabled() ||
         !conv2d_pw_coopmat_device_supports(probe, v)) {
       continue;
     }
@@ -6560,6 +6563,101 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_diagnostic_needs_flag) {
   if (tested == 0) {
     GTEST_SKIP() << "no diagnostic variant runs here";
   }
+}
+
+// Design D5 of conv2d-coopmat-evidence-hardening: the _simt controls are
+// benchmark-only. The predicates the switch calls (without allow_diagnostic)
+// refuse every one of them for a convolution its parent runs, and the compiled
+// table holds no diagnostic or control variant.
+TEST(VulkanComputeGraphTest, conv2d_coopmat_switch_refuses_controls) {
+  for (const Conv2dCoopmatTableRow& row : kConv2dCoopmatTable) {
+    const Conv2dPwCoopmatVariant* const v =
+        find_conv2d_pw_coopmat_variant(row.variant);
+    ASSERT_NE(v, nullptr) << row.variant;
+    EXPECT_FALSE(v->diagnostic()) << row.variant;
+  }
+  ComputeGraph graph{GraphConfig()};
+  const std::vector<executorch::aten::Half> w1(
+      128 * 64, executorch::aten::Half(0.25f));
+  const std::vector<executorch::aten::Half> w3(
+      128 * 64 * 9, executorch::aten::Half(0.25f));
+  const std::vector<executorch::aten::Half> b(
+      128, executorch::aten::Half(1.0f));
+  const ValueRef in = graph.add_tensor(
+      {1, 64, 14, 14}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+  const ValueRef out = graph.add_tensor(
+      {1, 128, 14, 14}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+  const ValueRef weight1 =
+      graph.add_tensorref({128, 64, 1, 1}, vkapi::kHalf, w1.data());
+  const ValueRef weight3 =
+      graph.add_tensorref({128, 64, 3, 3}, vkapi::kHalf, w3.data());
+  const ValueRef bias = graph.add_tensorref({128}, vkapi::kHalf, b.data());
+  const ValueRef ones = graph.add_scalar_list<int64_t>({1, 1});
+  const ValueRef zeros = graph.add_scalar_list<int64_t>({0, 0});
+  int controls = 0;
+  for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    if (!v.has(Conv2dPwCoopmatVariant::kSimt)) {
+      continue;
+    }
+    SCOPED_TRACE(v.name);
+    ++controls;
+    const bool direct = v.has(Conv2dPwCoopmatVariant::kDirect);
+    const ValueRef weight = direct ? weight3 : weight1;
+    const ValueRef padding = direct ? ones : zeros;
+    for (const auto& r :
+         {conv2d_pw_coopmat_ineligible(
+              graph,
+              v,
+              in,
+              weight1,
+              bias,
+              utils::kBuffer,
+              ones,
+              zeros,
+              out,
+              false,
+              true),
+          conv2d_im2col_coopmat_ineligible(
+              graph, v, in, weight, bias, ones, padding, ones, out, false),
+          conv2d_direct_coopmat_ineligible(
+              graph, v, in, weight, bias, ones, padding, ones, out, false)}) {
+      ASSERT_TRUE(r.has_value());
+      EXPECT_NE(r->find("diagnostic or control"), std::string::npos) << *r;
+    }
+    // With the flag, the route of its form accepts it wherever the device
+    // runs its parent.
+    if (graph.float16_buffers_enabled() &&
+        conv2d_pw_coopmat_device_supports(graph, v)) {
+      const auto allowed = direct
+          ? conv2d_direct_coopmat_ineligible(
+                graph,
+                v,
+                in,
+                weight3,
+                bias,
+                ones,
+                ones,
+                ones,
+                out,
+                false,
+                /*allow_diagnostic=*/true)
+          : conv2d_pw_coopmat_ineligible(
+                graph,
+                v,
+                in,
+                weight1,
+                bias,
+                utils::kBuffer,
+                ones,
+                zeros,
+                out,
+                false,
+                true,
+                /*allow_diagnostic=*/true);
+      EXPECT_FALSE(allowed.has_value()) << allowed.value_or("");
+    }
+  }
+  EXPECT_EQ(controls, 12);
 }
 
 // The work group size and subgroup count checks hold for a variant with more
@@ -6709,7 +6807,11 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_clamped_reads) {
     }
     SCOPED_TRACE(v.name);
     ++tested;
-    const Conv2dPwRequest request{Conv2dPwRequest::Kind::kCoopmat, &v};
+    // The _alc_simt controls too, allowed explicitly.
+    const Conv2dPwRequest request{
+        Conv2dPwRequest::Kind::kCoopmat,
+        &v,
+        /*allow_diagnostic=*/v.has(Conv2dPwCoopmatVariant::kSimt)};
     EXPECT_ANY_THROW(
         PointwiseConvGraph(vkapi::kHalf, 40, 96, 14, 14, 1, request));
     const std::string merge =
@@ -7085,7 +7187,8 @@ class Im2colCoopmatConvGraph final {
           padding_ref,
           dilation_ref,
           out_,
-          epilogue);
+          epilogue,
+          /*allow_diagnostic=*/variant.has(Conv2dPwCoopmatVariant::kSimt));
     } else {
       conv2d_gemm_impl(
           graph_,
@@ -8069,11 +8172,14 @@ TEST(VulkanComputeGraphTest, conv2d_direct_coopmat_weight_packing_wraps_rows) {
 
 namespace {
 
-std::vector<const Conv2dPwCoopmatVariant*> runnable_direct_coopmat_variants() {
+// With `controls`, also the _dg_simt controls (the test graphs allow them).
+std::vector<const Conv2dPwCoopmatVariant*> runnable_direct_coopmat_variants(
+    const bool controls = false) {
   ComputeGraph probe{GraphConfig()};
   std::vector<const Conv2dPwCoopmatVariant*> out;
   for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
     if (v.has(Conv2dPwCoopmatVariant::kDirect) &&
+        (controls || !v.has(Conv2dPwCoopmatVariant::kSimt)) &&
         probe.float16_buffers_enabled() &&
         conv2d_pw_coopmat_device_supports(probe, v)) {
       out.push_back(&v);
@@ -8106,8 +8212,9 @@ void expect_direct_coopmat_dispatch(
 // and (2, 3), dilation above the plane (only some taps live), 2048 input
 // channels with dilation 12, 3, 24 and 120 input channels, one-pixel outputs
 // (1x1 on a 1x1 plane, 3x3 without padding on 3x3) and 1x1 with stride 2.
+// Every _dg variant, the _dg_simt controls included.
 TEST(VulkanComputeGraphTest, conv2d_direct_coopmat_shapes) {
-  const auto variants = runnable_direct_coopmat_variants();
+  const auto variants = runnable_direct_coopmat_variants(/*controls=*/true);
   if (variants.empty()) {
     GTEST_SKIP() << "no _dg variant runs here";
   }

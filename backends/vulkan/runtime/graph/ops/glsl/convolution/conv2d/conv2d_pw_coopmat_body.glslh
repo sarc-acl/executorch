@@ -43,6 +43,15 @@
  * scratch, and the scratch starts after CHUNK_SCRATCH_K4 weight rows; one
  * merge sums the slices of every chunk.
  *
+ * SIMT (matrix-instruction control, benchmark-only): the staging, the tile,
+ * the K step, the double buffering and the drain of the variant without SIMT;
+ * the cooperative-matrix multiply is replaced by ordinary multiply-adds. Each
+ * invocation owns SIMT_TM consecutive pixels x 8 consecutive output channels
+ * of the tile in registers and adds, per K step, the products of the staged A
+ * and B values read from shared memory (WG_TILE_M x WG_TILE_N x WG_TILE_K
+ * multiply-adds per work group and K step, as the matrix multiplies), in
+ * ACC_T.
+ *
  * DIRECT: the input is the convolution input and A is gathered from it per K
  * step. K index k of output pixel (oy, ox) is input channel 4 c4 + k % 4 at
  * live tap t = (k / 4) / C4 (row-major over the dg_taps_h x dg_taps_w live
@@ -157,8 +166,26 @@ const uint B_PASSES = (B_ITEMS + WG_SIZE - 1u) / WG_SIZE;
 #define B_TEMP_LEN B_PASSES
 #endif
 
+#ifdef SIMT
+#if defined(SPLIT_K) || defined(I2C) || defined(CHUNKED) || \
+    defined(DIAG_ONCE) || defined(DIRECT_B) || defined(BCM) || defined(W16)
+#error "SIMT supports neither SPLIT_K, I2C, CHUNKED, DIAG_ONCE, DIRECT_B, BCM nor W16"
+#endif
+// conv2d_pw_coopmat_registry_problems checks that these divide evenly.
+const uint SIMT_TN = 8u;
+const uint SIMT_COLS = WG_TILE_N / SIMT_TN;
+const uint SIMT_TM = (WG_TILE_M * WG_TILE_N) / (WG_SIZE * SIMT_TN);
+#ifdef ACC_FP32
+#define SIMT_VEC vec4
+#else
+#define SIMT_VEC f16vec4
+#endif
+// Channels 8 n0 ... + 3 and + 4 ... + 7 of pixel m0 + r.
+SIMT_VEC simt_acc[SIMT_TM][2];
+#else
 coopmat<ACC_T, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>
     result[MMAS_PER_SG_M][MMAS_PER_SG_N];
+#endif
 
 uvec4 pack_f16x8(const f16vec4 lo, const f16vec4 hi) {
   return uvec4(
@@ -441,6 +468,33 @@ void store_ab(
   }
 }
 
+#ifdef SIMT
+void mma_step(const uint slice, const uvec2 sg) {
+  const uint tid = gl_LocalInvocationID.x;
+  const uint n0 = (tid % SIMT_COLS) * SIMT_TN;
+  const uint m0 = (tid / SIMT_COLS) * SIMT_TM;
+  const uint a_base = slice * ASH_SLICE;
+  const uint b_base = BSH_BASE + slice * BSH_SLICE;
+  [[unroll]] for (uint c = 0; c < WG_TILE_K / FP16_PER_VEC4; ++c) {
+    uvec4 a[SIMT_TM];
+    [[unroll]] for (uint r = 0; r < SIMT_TM; ++r) {
+      a[r] = sh[a_base + A_SH_IDX(m0 + r, c)];
+    }
+    [[unroll]] for (uint kk = 0; kk < FP16_PER_VEC4; ++kk) {
+      const uvec4 b = sh[b_base + B_SH_IDX(FP16_PER_VEC4 * c + kk, n0 / FP16_PER_VEC4)];
+      const SIMT_VEC b_lo =
+          SIMT_VEC(f16vec4(unpackFloat2x16(b.x), unpackFloat2x16(b.y)));
+      const SIMT_VEC b_hi =
+          SIMT_VEC(f16vec4(unpackFloat2x16(b.z), unpackFloat2x16(b.w)));
+      [[unroll]] for (uint r = 0; r < SIMT_TM; ++r) {
+        const ACC_T v = ACC_T(unpackFloat2x16(a[r][kk / 2u])[kk % 2u]);
+        simt_acc[r][0] = fma(SIMT_VEC(v), b_lo, simt_acc[r][0]);
+        simt_acc[r][1] = fma(SIMT_VEC(v), b_hi, simt_acc[r][1]);
+      }
+    }
+  }
+}
+#else
 void mma_step(const uint slice, const uvec2 sg) {
   const uint a_base = slice * ASH_SLICE;
   const uint b_base = BSH_BASE + slice * BSH_SLICE;
@@ -482,6 +536,7 @@ void mma_step(const uint slice, const uvec2 sg) {
     }
   }
 }
+#endif
 
 #ifdef DIRECT_B
 // Direct weight load (raw-shader probe, design D5): B is not staged. The
@@ -594,6 +649,31 @@ void drain_pass(
   // previous pass) before it is overwritten.
   memoryBarrierShared();
   barrier();
+#ifdef SIMT
+  // The rows of this pass, at the pool rows the matrix store gives them:
+  // tile row lr is row lr % MMA_M of accumulator row block
+  // (lr % SG_TILE_M) / MMA_M of subgroup grid row lr / SG_TILE_M.
+  {
+    const uint tid = gl_LocalInvocationID.x;
+    const uint n0 = (tid % SIMT_COLS) * SIMT_TN;
+    const uint m0 = (tid / SIMT_COLS) * SIMT_TM;
+    [[unroll]] for (uint r = 0; r < SIMT_TM; ++r) {
+      const uint lr = m0 + r;
+      const uint blk = (lr % SG_TILE_M) / MMA_M;
+      if (blk / DRAIN_G == pass) {
+        const uint cr = (blk % DRAIN_G) * BAND_ROWS +
+            (lr / SG_TILE_M) * MMA_M + lr % MMA_M;
+        const uint h = (cr * WG_TILE_N + n0) / ACC_PER_VEC4;
+#ifdef ACC_FP32
+        sh[h] = floatBitsToUint(simt_acc[r][0]);
+        sh[h + 1u] = floatBitsToUint(simt_acc[r][1]);
+#else
+        sh[h] = pack_f16x8(simt_acc[r][0], simt_acc[r][1]);
+#endif
+      }
+    }
+  }
+#else
   [[unroll]] for (uint g = 0; g < DRAIN_G; ++g) {
     [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
       const uint c_off = (g * SG_GRID_Y + sg.y) * MMA_M * WG_TILE_N +
@@ -606,6 +686,7 @@ void drain_pass(
           gl_CooperativeMatrixLayoutRowMajor);
     }
   }
+#endif
   memoryBarrierShared();
   barrier();
 
@@ -694,6 +775,12 @@ void main() {
   const uint n4_start = tile_n_start / 4u;
   const uint num_k_steps = (4u * K4 + WG_TILE_K - 1u) / WG_TILE_K;
 
+#ifdef SIMT
+  [[unroll]] for (uint r = 0; r < SIMT_TM; ++r) {
+    simt_acc[r][0] = SIMT_VEC(0);
+    simt_acc[r][1] = SIMT_VEC(0);
+  }
+#else
   [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
     [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
       result[i][j] = coopmat<
@@ -704,6 +791,7 @@ void main() {
           gl_MatrixUseAccumulator>(0.0);
     }
   }
+#endif
 
   StagingMap map;
   make_staging_map(map, tile_m_start, M, W_out);
