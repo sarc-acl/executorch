@@ -12,7 +12,8 @@ conv2d-coopmat-evidence-hardening). Two steps (design D4 of
 conv2d-coopmat-evidence-hardening):
 
     gen_conv2d_coopmat_table.py nominate --out FILE [--decisions FILE] SWEEP_DIR...
-    gen_conv2d_coopmat_table.py table [--check] [--decisions FILE] CONFIRMATION_DIR...
+    gen_conv2d_coopmat_table.py table --nominations FILE... [--check]
+        [--decisions FILE] CONFIRMATION_DIR...
 
 A session directory holds session.json (per configuration the route time of
 each arm over its runs, the times of every run, and the configuration's A/A
@@ -22,17 +23,23 @@ nominate: sweep sessions only nominate. The sessions of one device are used
 together, the first the reference; an arm of another session counts for a
 configuration only when that session's auto agrees with the reference's within
 the larger of the two A/A bands (design D6 of conv2d-coopmat-direct-gather).
-Per device and configuration the nominated arms are, per route, the arm with
-the largest ratio t(auto) / t(arm) against the auto of its own session among
-the arms that passed validation in every run (at most three). Diagnostic and
-control arms are never nominated. --decisions writes the sweep decision of
-each configuration under the gate below (the replay of the earlier tables);
-no table is written from sweep sessions.
+An arm qualifies when it passed validation in every run and meets the gate
+below against its own session. Per device and configuration the nominated arms
+are, per route, the qualifying arm with the largest ratio t(auto) / t(arm)
+against the auto of its own session (at most three); the gate filters before
+the ranking. Without a qualifying arm the configuration has no nominee and
+keeps the reason code of its fastest arm. Diagnostic and control arms are
+never nominated. --decisions writes the sweep decision of each configuration
+(the replay of the earlier tables); no table is written from sweep sessions.
 
-table: one confirmation session per device times auto, A' (auto again) and
-the nominated arms of each configuration. The row is the nominated arm with
-the lowest median route time in the session, if t(auto) / t(arm) is at least
-MIN_RATIO and exceeds 1 + the band, and the gate holds.
+table: confirmation sessions time auto, A' (auto again) and the nominated
+arms, CONFIRM_RUNS interleaved runs. The nominations are the nominate output
+(--nominations). Per device and configuration the decision uses the last
+confirmation session on the command line that timed every nominee together
+with both stock arms; the stock arms and the chosen arm must have passed all
+CONFIRM_RUNS runs. The row is the nominated arm with the lowest median route
+time there, if t(auto) / t(arm) is at least MIN_RATIO and exceeds 1 + the
+band, and the gate holds.
 
 Gate (design D3): the A/A band (max over runs of 2 |A - A'| / (A + A')) is at
 most MAX_BAND, the stock spread ((max - min) / median over every run of auto
@@ -57,6 +64,7 @@ CONFIGS = HERE / "model_sweep_configs.json"
 MIN_RATIO = 1.05
 MAX_BAND = 0.10
 MAX_SPREAD = 0.10
+CONFIRM_RUNS = 5
 STOCK = ("auto", "A'")
 # Arms that never become a row: staged-once diagnostics, the raw direct
 # weight-load probes and their controls, and the matrix-instruction controls.
@@ -217,21 +225,21 @@ def nominate(shape, sessions):
         return {"arms": [], "reason": "not-timed"}, ({}, "not-timed", text)
     candidates, untimed, used, skipped = collect(shape, sessions, ref_auto, ref_band)
     info = {"sessions_used": used, "sessions_skipped": skipped}
-    by_route = {}
-    for arm, x in candidates.items():
-        r = route_of(arm)
-        if r not in by_route or x["ratio"] > candidates[by_route[r]]["ratio"]:
-            by_route[r] = arm
-    nomination = {"arms": [by_route[r] for r in sorted(by_route)]}
-    info["nominated"] = {by_route[r]: candidates[by_route[r]] for r in sorted(by_route)}
     if not candidates:
         code = no_time_code(list(untimed.values()))
-        nomination["reason"] = code
         text = "no arm has a time in every run" + (
             f" ({', '.join(sorted(untimed))})" if untimed else ""
         )
-        return nomination, (info, code, text)
+        info["nominated"] = {}
+        return {"arms": [], "reason": code, "detail": text}, (info, code, text)
     passing = [a for a in candidates if gate(candidates[a]) is None]
+    by_route = {}
+    for arm in passing:
+        r = route_of(arm)
+        if r not in by_route or candidates[arm]["ratio"] > candidates[by_route[r]]["ratio"]:
+            by_route[r] = arm
+    nomination = {"arms": [by_route[r] for r in sorted(by_route)]}
+    info["nominated"] = {by_route[r]: candidates[by_route[r]] for r in sorted(by_route)}
     best = min(passing or candidates, key=lambda a: candidates[a]["t"])
     x = candidates[best]
     info.update(
@@ -252,7 +260,9 @@ def nominate(shape, sessions):
     if passing:
         return nomination, (info, None, None)
     code, text = gate(x)
-    return nomination, (info, code, f"no arm meets the criteria; the fastest: {text}")
+    text = f"no arm meets the criteria; the fastest: {text}"
+    nomination.update({"reason": code, "detail": text})
+    return nomination, (info, code, text)
 
 
 #
@@ -260,24 +270,49 @@ def nominate(shape, sessions):
 #
 
 
-def confirm(shape, s):
-    """(info, code, text) of one configuration in a confirmation session;
-    code None means a row (info["best"])."""
-    nomination = s["nominations"][shape]
+def complete(x):
+    """Whether an arm record holds CONFIRM_RUNS passing runs."""
+    return bool(
+        x
+        and x.get("t")
+        and x.get("passed_runs") == CONFIRM_RUNS
+        and len(x.get("runs") or []) == CONFIRM_RUNS
+    )
+
+
+def covers(sh, nomination):
+    """Whether a confirmation session's shape record timed every nominee
+    together with both stock arms."""
+    return sh is not None and all(
+        a in sh["arms"] for a in (*STOCK, *nomination["arms"])
+    )
+
+
+def confirm(shape, s, nomination):
+    """(info, code, text) of one configuration in a confirmation session that
+    covers its nomination; code None means a row (info["best"])."""
     sh = s["shapes"].get(shape)
     info = {"nominated": nomination["arms"]}
     if not nomination["arms"]:
-        return info, nomination["reason"], "no arm nominated by the sweep sessions"
-    auto = (sh["arms"].get("auto") or {}).get("t")
+        return (
+            info,
+            nomination["reason"],
+            "no nominee: " + nomination.get("detail", "no qualifying arm in the sweeps"),
+        )
     band = s["band"].get(shape)
-    if auto is None or band is None:
-        return info, "not-timed", "route auto has no time in every run (no A/A pair)"
+    if not all(complete(sh["arms"].get(a)) for a in STOCK) or band is None:
+        return (
+            info,
+            "not-timed",
+            f"auto or A' without {CONFIRM_RUNS} passing runs (no A/A pair)",
+        )
+    auto = sh["arms"]["auto"]["t"]
     stock = stock_spread(sh)
     info.update({"t_auto": auto, "band": band, "stock_spread": stock})
     arms, untimed = {}, []
     for arm in nomination["arms"]:
         x = sh["arms"].get(arm) or {}
-        if x.get("t"):
+        if complete(x):
             arms[arm] = {
                 "t": x["t"],
                 "runs": x["runs"],
@@ -295,7 +330,7 @@ def confirm(shape, s):
         return (
             info,
             no_time_code(untimed),
-            "no nominated arm has a time in every run",
+            f"no nominated arm has {CONFIRM_RUNS} passing runs",
         )
     best = min(candidates, key=lambda a: candidates[a]["t"])
     x = candidates[best]
@@ -313,6 +348,23 @@ def confirm(shape, s):
     if rejected is None:
         return info, None, None
     return info, rejected[0], f"the fastest nominated arm: {rejected[1]}"
+
+
+def decide(shape, sessions, nomination):
+    """(info, code, text, session name) from the last session that covers the
+    nomination (or none, for a configuration without a nominee)."""
+    if not nomination["arms"]:
+        info, code, text = confirm(shape, {"shapes": {}, "band": {}}, nomination)
+        return info, code, text, None
+    for name, s in reversed(sessions):
+        if covers(s["shapes"].get(shape), nomination):
+            return (*confirm(shape, s, nomination), name)
+    return (
+        {"nominated": nomination["arms"]},
+        "not-timed",
+        "no confirmation session timed every nominee with both stock arms",
+        None,
+    )
 
 
 def load(session_dir):
@@ -339,12 +391,13 @@ def record(ref, c, info, code, text):
     }
 
 
-def rows_of(name, s, ids, configs):
+def rows_of(sessions, nominations, ids, configs):
+    ref = sessions[-1][1]
     rows, decisions = [], []
-    for shape in s["nominations"]:
+    for shape, nomination in nominations.items():
         c = configs[shape.removeprefix("sweep ")]
-        info, code, text = confirm(shape, s)
-        decisions.append({**record(s, c, info, code, text), "session": name})
+        info, code, text, name = decide(shape, sessions, nomination)
+        decisions.append({**record(ref, c, info, code, text), "session": name})
         if code is None:
             rows.append(
                 {
@@ -352,7 +405,7 @@ def rows_of(name, s, ids, configs):
                     "device": ids[1],
                     "c": c,
                     "variant": f"conv2d_pw_coopmat_{info['best']}_half",
-                    "comment": f"{s['device_name']}, {s['driver']}: {c['label']}, "
+                    "comment": f"{ref['device_name']}, {ref['driver']}: {c['label']}, "
                     f"{info['ratio']:.2f}x",
                 }
             )
@@ -405,18 +458,27 @@ def run_nominate(args, configs):
     return decisions
 
 
+def check_confirmation(name, s):
+    if not s.get("confirmation") or s.get("runs") != CONFIRM_RUNS:
+        sys.exit(
+            f"{name} is not a confirmation session of {CONFIRM_RUNS} runs: sweep "
+            "sessions only nominate; the table is generated from confirmation "
+            "sessions"
+        )
+
+
 def run_table(args, configs):
+    nominations = {}
+    for f in args.nominations or []:
+        nominations.update(json.loads(f.read_text()))
     rows, decisions = [], []
     for ids, sessions in by_device(args.sessions).items():
         for name, s in sessions:
-            if not s.get("confirmation") or "nominations" not in s:
-                sys.exit(
-                    f"{name} is not a confirmation session: sweep sessions only "
-                    "nominate; the table is generated from confirmation sessions"
-                )
-        if len(sessions) != 1:
-            sys.exit(f"{len(sessions)} confirmation sessions for device {ids}")
-        r, dec = rows_of(*sessions[0], ids, configs)
+            check_confirmation(name, s)
+        dev = sessions[-1][1]["device"]
+        if dev not in nominations:
+            sys.exit(f"no nominations for device {dev}")
+        r, dec = rows_of(sessions, nominations[dev], ids, configs)
         rows += r
         decisions += dec
     text = header(rows)
@@ -434,6 +496,9 @@ def main():
     parser.add_argument("step", choices=("nominate", "table"))
     parser.add_argument("sessions", type=Path, nargs="+")
     parser.add_argument("--out", type=Path, help="nominate: the nominations file")
+    parser.add_argument(
+        "--nominations", type=Path, nargs="+", help="table: nominate output files"
+    )
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--decisions", type=Path)
     args = parser.parse_args()
