@@ -132,12 +132,18 @@ def stock_spread(sh):
 
 
 def no_time_code(arm_records):
-    """The reason code of a configuration none of whose arms has a time, from
-    the arms' run statuses (records of i2c.py summarize: "reason" lists them)."""
-    reasons = [x.get("reason") or "" for x in arm_records]
-    if any("FAIL" in r or "ERROR" in r for r in reasons):
+    """The reason code of arms without a time, from their run statuses (records
+    of i2c.py summarize: "reason" lists "<STATUS> <detail>" per distinct run
+    outcome, joined by "; "). validation: an output failed the reference check
+    in a run (FAIL); unsupported: every run was refused (SKIP); not-timed
+    otherwise, including an error during setup or the run (ERROR)."""
+    statuses = [
+        [seg.split(" ", 1)[0] for seg in (x.get("reason") or "").split("; ")]
+        for x in arm_records
+    ]
+    if any("FAIL" in st for st in statuses):
         return "validation"
-    if reasons and all(r.startswith("SKIP") and "PASS" not in r for r in reasons):
+    if statuses and all(set(st) == {"SKIP"} for st in statuses):
         return "unsupported"
     return "not-timed"
 

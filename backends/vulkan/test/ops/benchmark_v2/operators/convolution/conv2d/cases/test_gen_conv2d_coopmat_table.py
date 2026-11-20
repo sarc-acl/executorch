@@ -224,9 +224,28 @@ class StockReason(unittest.TestCase):
 
     FAILED = {"t": None, "passed_runs": 4, "reason": "FAIL; PASS"}
     MISSING = {"t": None, "passed_runs": 0, "reason": "not run"}
+    # An exception during setup or the run (etvk_ops_bench reports it as
+    # validation FAIL with an error; i2c.py summarize records ERROR).
+    ERRORED = {"t": None, "passed_runs": 0, "reason": "ERROR"}
+    ERRORED_ONCE = {"t": None, "passed_runs": 4, "reason": "ERROR; PASS"}
+    CASES = (
+        ("failed", "validation"),
+        ("missing", "not-timed"),
+        ("errored", "not-timed"),
+        ("errored_once", "not-timed"),
+    )
+
+    def stock(self, name):
+        return {
+            "failed": self.FAILED,
+            "missing": self.MISSING,
+            "errored": self.ERRORED,
+            "errored_once": self.ERRORED_ONCE,
+        }[name]
 
     def test_nomination(self):
-        for stock, code in ((self.FAILED, "validation"), (self.MISSING, "not-timed")):
+        for which, code in self.CASES:
+            stock = self.stock(which)
             for name in gen.STOCK:
                 arms = {"auto": arm(100, 100, 100), "A'": arm(100, 100, 100)}
                 arms[name] = stock
@@ -236,7 +255,8 @@ class StockReason(unittest.TestCase):
                 self.assertEqual(nomination["arms"], [])
 
     def test_confirmation(self):
-        for stock, code in ((self.FAILED, "validation"), (self.MISSING, "not-timed")):
+        for which, code in self.CASES:
+            stock = self.stock(which)
             for name in gen.STOCK:
                 arms = {
                     "auto": five(100),
