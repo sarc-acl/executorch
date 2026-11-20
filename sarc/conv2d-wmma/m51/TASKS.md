@@ -131,10 +131,20 @@ Starts only when `origin/topic/conv2d-wmma` has moved and contains a cooperative
   `amd_t128x128_f16_alc_sk4_i2c_half`, 3.69x over `auto`, 5.66x over `im2col`, 14/14 vs the
   tolerance-holding incumbent. The `direct` route fails tolerance on the K=576-class shapes —
   recorded in `RESULTS.md` 9.2.)
-- [ ] 9.3 Direct k×k through im2col+WMMA (large planes, edsr) and dilated 3×3 (dl3), only if the desktop has pushed them.
+- [x] 9.3 Direct k×k through im2col+WMMA (large planes, edsr) and dilated 3×3 (dl3), only if the desktop has pushed them.
   Verify: gated and timed like 9.2, or recorded as "not available".
-- [ ] 9.4 Locate and candidates for k×k, with the discipline of sections 5–6. `_sk` split-K is the first menu entry.
+  (Not available: the pushed base has neither route. The k×k coopmat multiply exists only behind
+  the im2col gather, which refuses dilation ("dilation is not 1", `Conv2dGemm.cpp`; the base's
+  own generator lists a `3x3 dilation 2` case as an expected SKIP) - so dl3's dilated layers
+  cannot reach it; no direct in-kernel-gather k×k route exists (CAMPAIGN-PLAN step 3 is future
+  desktop work) and the base's im2col collections cover only the eight 9.2 shapes, with no edsr
+  large-plane cases. Evidence in `RESULTS.md` 9.3.)
+- [~] 9.4 Locate and candidates for k×k, with the discipline of sections 5–6. `_sk` split-K is the first menu entry.
   Verify: per-technique gains; the stop rule is checked after each one.
+  (Skipped, as 6.n: the menu's next arms were already measured in the 9.2 session - 3.38-3.50x
+  over `auto` against the parent arm's 3.69x - so a candidate session would re-measure existing
+  variants rather than test a new technique; `_sk` split-K is already in the parent's name.
+  Candidates are optional per notes 32/48; reason recorded in `PROGRESS.md`.)
 - [x] 9.5 The k×k thresholds are committed in `THRESHOLDS.md`. The end-to-end bar is still to be set with the device
   owner before TASKS 10.
 

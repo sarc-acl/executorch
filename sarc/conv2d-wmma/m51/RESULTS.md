@@ -395,8 +395,9 @@ The 4.0 selection set covers 21 1x1 shapes; the strict exact-shape matching of 7
 rest of the workload census unmatched. This task measures the ten heaviest FP16 stride-1 1x1
 shapes of the 7.2 census that the timed set does not cover, ranked by summed ETDump device
 time. The ranking filter (kernel 1x1, stride 1) also admits two w2l 1D-pointwise entries
-(dims 1, the `conv1d_pw` route); they rank 13th and 15th, below every shape taken, so the top
-ten are all 2D 1x1 convolutions - the next uncovered 2D shape, `(289,128,1024)`, ranks 11th.
+(dims 1, the `conv1d_pw` route); they rank 12th and 13th among the uncovered shapes, below
+every shape taken, so the top ten are all 2D 1x1 convolutions - the next uncovered 2D shape,
+`(289,128,1024)`, ranks 11th.
 Labels are (output plane, Cout, Cin). The cases come from the same generator as the rest of
 the campaign (`gen_pw_coopmat_cases.py`, the `m51_extra_*` builders; the four committed case
 files are the gate full-grid, gate reduced-grid, timing and A/A collections).
@@ -732,3 +733,22 @@ The next arms: fp32 `amd_t128x128_f32_alc_sk4_i2c_half` (3.38x over `auto`, 1.67
 stock) and `nvidia_t128x128_f32_alc_sk4_i2c_half` (3.38x / 1.67x); fp16
 `nvidia_t128x128_f16_alc_sk4_i2c_half` (3.50x / 1.73x), `amd_t128x128_f16_alc_sk2_i2c_half`
 (3.48x / 1.71x).
+
+## 9.3 Direct k x k (large planes) and dilated 3x3: not available
+
+Both routes are conditional on the desktop pushing them, and the pushed base
+(`origin/topic/conv2d-wmma`, tip 7f0d296b0a) has neither:
+
+- **Dilated 3x3 (dl3)** cannot reach the cooperative-matrix path. The kxk coopmat multiply
+  exists only behind the im2col gather, and the runtime refuses dilation there
+  (`Conv2dGemm.cpp`, the `im2col_coopmat` route: "dilation is not 1") - the same refusal the
+  stock `should_use_conv2d_im2col` applies, as the 7.2 census recorded for dl3's dilated
+  layers. The base's own case generator treats a `3x3 dilation 2` case as an expected SKIP
+  with that phrase, so this is the pushed behavior, not an untested gap.
+- **Direct kxk on large planes (edsr)** has no route in the base: the desktop's plan lists the
+  in-kernel-gather direct kxk kernel as future work (CAMPAIGN-PLAN step 3), and nothing in the
+  pushed tree implements it. The im2col+WMMA path is the only pushed kxk coopmat route; the
+  base's im2col case collections cover exactly the eight desktop-layer-table shapes of the 9.2
+  gate - no edsr large-plane cases were pushed.
+
+Nothing to gate or time; recorded as "not available" per the task's own verify condition.
