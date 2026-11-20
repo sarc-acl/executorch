@@ -32,7 +32,9 @@
  * x / n_tiles; it stores its int32 tile to t_scratch
  * ([slice][M_pad][N_pad], row-major), and the MERGE shader sums the slices
  * (exact) and runs the epilogue. MERGE: one invocation per output int (pixel,
- * 4 channels).
+ * 4 channels). ATOMIC (_sa<slices>): no merge dispatch; each slice counts its
+ * arrival on the tile's counter and the last one sums the partials and runs
+ * the epilogue.
  */
 
 #version 450 core
@@ -61,7 +63,12 @@ ${layout_declare_tensor(B, "r", "t_weight", "int", "texture2d", is_scalar_array=
 ${layout_declare_tensor(B, "r", "t_weight_sums", "int", "buffer", is_scalar_array=False)}
 ${layout_declare_tensor(B, "r", "t_weight_scales", "float", "buffer", is_scalar_array=False)}
 ${layout_declare_tensor(B, "r", "t_bias", "float", "buffer", is_scalar_array=False)}
-$if K_SLICES > 1 or MERGE:
+$if ATOMIC:
+  // The partial tiles and one arrival counter per output tile, coherent: the
+  // last slice of a tile reads what the others stored.
+  ${layout_declare_buffer(B, "rw", "t_scratch", "int", precision="coherent")}
+  ${layout_declare_buffer(B, "rw", "t_counter", "uint", precision="coherent")}
+$elif K_SLICES > 1 or MERGE:
   ${layout_declare_tensor(B, "rw", "t_scratch", "int", "buffer", is_scalar_array=True)}
 
 ${layout_declare_ubo(B, "BufferMetadata", "outp")}
@@ -109,6 +116,8 @@ $if MERGE:
   #define MERGE
 $if K_SLICES > 1:
   #define SPLIT_K
+$if ATOMIC:
+  #define ATOMIC_SPLIT
 
 const uint MMA_M = ${MMA_M};
 const uint MMA_N = ${MMA_N};
@@ -254,6 +263,10 @@ const uint B_PASSES = (B_ITEMS + WG_SIZE - 1u) / WG_SIZE;
 
 coopmat<int32_t, gl_ScopeSubgroup, MMA_M, MMA_N, gl_MatrixUseAccumulator>
     result[MMAS_M][MMAS_N];
+
+#ifdef ATOMIC_SPLIT
+shared uint sh_last;
+#endif
 
 #ifdef DIRECT
 // Per A pass: the quad's batch offset, first input row and first input
@@ -507,6 +520,43 @@ void main() {
           gl_CooperativeMatrixLayoutRowMajor);
     }
   }
+#ifdef ATOMIC_SPLIT
+  // The slice that completes the tile sums every slice's partial (int32,
+  // exact) and runs the epilogue; it then resets the tile's counter for the
+  // next dispatch (the counters start at zero).
+  memoryBarrierBuffer();
+  barrier();
+  const uint tile_id = tile_m * n_tiles + gl_WorkGroupID.x % n_tiles;
+  if (tid == 0u) {
+    sh_last = atomicAdd(t_counter[tile_id], 1u) == K_SLICES - 1u ? 1u : 0u;
+  }
+  barrier();
+  if (sh_last == 0u) {
+    return;
+  }
+  memoryBarrierBuffer();
+  const uint N4T = WG_TILE_N / 4u;
+  for (uint t = tid; t < WG_TILE_M * N4T; t += WG_SIZE) {
+    const uint m = tile_m_start + t / N4T;
+    const uint n4 = n4_start + t % N4T;
+    if (m < M && n4 < N4) {
+      const Pixel px = pixel_of(m);
+      if (px.inside) {
+        ivec4 acc = ivec4(0);
+        for (uint s = 0u; s < K_SLICES; ++s) {
+          const uint base = (s * uint(M_pad) + m) * uint(N_pad) + 4u * n4;
+          acc += ivec4(
+              t_scratch[base], t_scratch[base + 1u], t_scratch[base + 2u],
+              t_scratch[base + 3u]);
+        }
+        t_out[outp_int_index(px, int(n4))] = requantize(acc, int(n4));
+      }
+    }
+  }
+  if (tid == 0u) {
+    t_counter[tile_id] = 0u;
+  }
+#endif
 #else
   const uint N4T = WG_TILE_N / 4u;
   [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {

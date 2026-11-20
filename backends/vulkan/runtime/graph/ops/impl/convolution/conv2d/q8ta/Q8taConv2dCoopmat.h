@@ -36,6 +36,9 @@ struct Q8taConv2dCoopmatVariant final {
   uint32_t k_slices;
   bool direct;
   bool bytes;
+  // _sa<slices>: split-K without a merge dispatch (the last slice of a tile
+  // sums the partials).
+  bool atomic;
 
   uint32_t wg_size() const {
     return sg_grid_x * sg_grid_y * subgroup_size;

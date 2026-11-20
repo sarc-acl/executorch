@@ -225,6 +225,71 @@ def edge_configs():
     return out
 
 
+def repeat_checks(all_variants):
+    """The _sa forms reset their tile counters for the next dispatch: five
+    validated executions of one graph (full size, a shrink, full size again,
+    twice more) per variant and configuration."""
+    out = []
+    for c in (
+        {
+            "label": "int8 1x1 s1x1 p0x0 d1x1 512-96 9x9",
+            "cin": 512,
+            "cout": 96,
+            "kh": 1,
+            "kw": 1,
+            "stride": [1, 1],
+            "padding": [0, 0],
+            "dilation": [1, 1],
+            "h": 9,
+            "w": 9,
+            "hout": 9,
+            "wout": 9,
+        },
+        {
+            "label": "int8 3x3 s1x1 p1x1 d1x1 192-40 7x7",
+            "cin": 192,
+            "cout": 40,
+            "kh": 3,
+            "kw": 3,
+            "stride": [1, 1],
+            "padding": [1, 1],
+            "dilation": [1, 1],
+            "h": 7,
+            "w": 7,
+            "hout": 7,
+            "wout": 7,
+        },
+    ):
+        pw = is_pointwise(c)
+        for v in all_variants:
+            if "_sa" not in v or ("_dg" in v) == pw:
+                continue
+            case = definitions(c["label"], c, [v], CORRECTNESS_TIMING)[1]
+            case = {
+                **{k: x for k, x in case.items() if k != "sweep_variables"},
+                "name": f"{c['label']} repeat {v}",
+                "route": {"name": case["route"]["name"], "options": {"variant": v}},
+            }
+            full = [1, c["cin"], c["h"], c["w"]]
+            small = [1, c["cin"], c["h"] - 2, c["w"]]
+            osz = lambda h: [1, c["cout"], h, c["wout"]]  # noqa: E731
+            out.append(
+                {
+                    "name": f"{c['label']} repeat {v}",
+                    "check": "operator_dynamic_resize",
+                    "parameters": {"operator_case": case, "output_name": "output"},
+                    "validation_steps": [
+                        {
+                            "tensor_sizes": {"input": sz},
+                            "expected_output_sizes": osz(sz[2]),
+                        }
+                        for sz in (full, small, full, full, full)
+                    ],
+                }
+            )
+    return out
+
+
 def files():
     configs = json.loads(CONFIGS.read_text())
     vs = variants()
@@ -241,6 +306,7 @@ def files():
         ]
         for tag, kw in opts:
             corr += definitions(f"{c['label']}{tag}", c, vs, CORRECTNESS_TIMING, **kw)
+    corr += repeat_checks(vs)
     return {
         HERE / "q8ta_coopmat_performance.json": perf,
         HERE / "q8ta_coopmat_correctness.json": corr,
