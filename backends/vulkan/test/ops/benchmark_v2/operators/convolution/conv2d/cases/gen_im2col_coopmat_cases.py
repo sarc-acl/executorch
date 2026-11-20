@@ -564,12 +564,68 @@ def m51_kk_gate(reduced):
     return build
 
 
+def m51_kk_timing(variants):
+    """The 9.2 timed session: one definition per gate shape with the arms as
+    one ordered route_sweep (auto, direct, im2col, the gate-passing _i2c
+    variants), so the interleaved runs of a session can rotate the arm order
+    externally."""
+
+    i2c = m51_i2c_variants(variants)
+    out = []
+    for label, c in PERFORMANCE + M51_PERFORMANCE:
+        out.append(
+            {
+                "name": f"i2c m51 kk timing {label}",
+                "operator": OPERATORS[c.get("op", "conv")],
+                **PERFORMANCE_TIMING,
+                "validation_method": TOLERANCE,
+                "route_sweep": ["auto", "direct", "im2col"]
+                + [
+                    {"name": "im2col_coopmat", "options": {"variant": v}}
+                    for v in i2c
+                ],
+                "args_sweep": [
+                    conv_args(
+                        c["cin"], c["h"], c["w"], c["cout"], c["kh"], c["kw"],
+                        **case_kwargs(c),
+                    )
+                ],
+            }
+        )
+    return out
+
+
+def m51_kk_aa(variants):
+    """The 9.2 A/A open: the fixed im2col route twice per gate shape."""
+
+    out = []
+    for label, c in PERFORMANCE + M51_PERFORMANCE:
+        out.append(
+            {
+                "name": f"i2c m51 kk aa {label}",
+                "operator": OPERATORS[c.get("op", "conv")],
+                **PERFORMANCE_TIMING,
+                "validation_method": TOLERANCE,
+                "route_sweep": ["im2col", "im2col"],
+                "args_sweep": [
+                    conv_args(
+                        c["cin"], c["h"], c["w"], c["cout"], c["kh"], c["kw"],
+                        **case_kwargs(c),
+                    )
+                ],
+            }
+        )
+    return out
+
+
 FILES = {
     "im2col_coopmat_correctness.json": correctness,
     "im2col_coopmat_expected_skips.json": expected_skips,
     "im2col_coopmat_performance.json": performance,
     "im2col_coopmat_m51_gate_full_grid.json": m51_kk_gate(False),
     "im2col_coopmat_m51_gate_reduced_grid.json": m51_kk_gate(True),
+    "im2col_coopmat_m51_timing.json": m51_kk_timing,
+    "im2col_coopmat_m51_aa.json": m51_kk_aa,
 }
 
 
