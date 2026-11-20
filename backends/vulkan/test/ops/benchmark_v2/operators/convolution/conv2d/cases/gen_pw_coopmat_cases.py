@@ -751,7 +751,14 @@ def m51_gate(reduced):
                 ),
             ):
                 cases += shape_cases(
-                    label, pixels, N, K, plane_of(pixels), m51, VALIDATION_TIMING, **kwargs
+                    label,
+                    pixels,
+                    N,
+                    K,
+                    plane_of(pixels),
+                    m51,
+                    VALIDATION_TIMING,
+                    **kwargs,
                 )
         return cases
 
@@ -765,6 +772,103 @@ def m51_gate(reduced):
 # carries a bias) and without the variant that failed the gate, which is never
 # timed.
 M51_TIMING_EXCLUDED = ("conv2d_pw_coopmat_amd_t64x64_f32_half",)
+
+# Task 7.3: the ten heaviest FP16 stride-1 1x1 shapes of the 7.2 workload
+# survey that the timed set above does not cover, ranked by the survey's
+# summed device time.
+M51_EXTRA_SHAPES = [
+    (289, 192, 1024),
+    (784, 2048, 512),
+    (64, 256, 1536),
+    (64, 384, 1536),
+    (144, 192, 768),
+    (289, 384, 1024),
+    (784, 1024, 256),
+    (784, 256, 1024),
+    (784, 2048, 1024),
+    (784, 512, 2048),
+]
+
+M51_EXTRA_PARENT = "conv2d_pw_coopmat_amd_t16x32_f32_al_half"
+
+
+def m51_extra_gate(reduced):
+    """Task 7.3: the parent on the extra workload shapes, gated like the 2.4
+    gate (bias and fused residual, full and reduced grid)."""
+
+    def build(variants):
+        cases = []
+        for M, N, K in M51_EXTRA_SHAPES:
+            pixels = min(M, M51_REDUCED_PIXELS) if reduced else M
+            for label, kwargs in (
+                (
+                    (
+                        "gate extra full bias"
+                        if not reduced
+                        else "gate extra reduced bias"
+                    ),
+                    {},
+                ),
+                (
+                    (
+                        "gate extra full residual"
+                        if not reduced
+                        else "gate extra reduced residual"
+                    ),
+                    {"op": "epilogue", "epilogue": ("add", 1.0, False, "none")},
+                ),
+            ):
+                cases += shape_cases(
+                    label,
+                    pixels,
+                    N,
+                    K,
+                    plane_of(pixels),
+                    [M51_EXTRA_PARENT],
+                    VALIDATION_TIMING,
+                    **kwargs,
+                )
+        return cases
+
+    return build
+
+
+def m51_extra_timing(variants):
+    """Task 7.3: the timed session on the extra workload shapes, arms auto,
+    pw_tiled_4x8 and the parent; the arm order rotates externally."""
+
+    cases = []
+    for M, N, K in M51_EXTRA_SHAPES:
+        cases.append(
+            {
+                "name": f"pw_coopmat m51 extra timing ({M},{N},{K})",
+                "operator": OPERATORS["conv"],
+                **PERFORMANCE_TIMING,
+                "validation_method": TOLERANCE,
+                "route_sweep": ["auto", "pw_tiled_4x8"]
+                + [{"name": "pw_coopmat", "options": {"variant": M51_EXTRA_PARENT}}],
+                "args_sweep": [conv_args(M, N, K, plane_of(M))],
+            }
+        )
+    return cases
+
+
+def m51_extra_aa(variants):
+    """Task 7.3: the A/A open of the extra session."""
+
+    cases = []
+    for M, N, K in M51_EXTRA_SHAPES:
+        cases.append(
+            {
+                "name": f"pw_coopmat m51 extra aa ({M},{N},{K})",
+                "operator": OPERATORS["conv"],
+                **PERFORMANCE_TIMING,
+                "validation_method": TOLERANCE,
+                "route_sweep": ["pw_tiled_4x8", "pw_tiled_4x8"],
+                "args_sweep": [conv_args(M, N, K, plane_of(M))],
+            }
+        )
+    return cases
 
 
 def m51_gated(variants):
@@ -792,10 +896,7 @@ def m51_timing(variants):
                 **PERFORMANCE_TIMING,
                 "validation_method": TOLERANCE,
                 "route_sweep": ["auto", "pw_tiled_4x8"]
-                + [
-                    {"name": "pw_coopmat", "options": {"variant": v}}
-                    for v in gated
-                ],
+                + [{"name": "pw_coopmat", "options": {"variant": v}} for v in gated],
                 "args_sweep": [conv_args(M, N, K, plane_of(M))],
             }
         )
@@ -1210,6 +1311,10 @@ FILES = {
     "pw_coopmat_m51_timing.json": m51_timing,
     "pw_coopmat_m51_phase_timing.json": m51_phase_timing,
     "pw_coopmat_m51_aa.json": m51_aa,
+    "pw_coopmat_m51_extra_gate_full_grid.json": m51_extra_gate(False),
+    "pw_coopmat_m51_extra_gate_reduced_grid.json": m51_extra_gate(True),
+    "pw_coopmat_m51_extra_timing.json": m51_extra_timing,
+    "pw_coopmat_m51_extra_aa.json": m51_extra_aa,
     **{f"pw_coopmat_guard_{f}.json": guard(f) for f in FAMILIES},
     **{f"pw_coopmat_dlprobe_{f}.json": dlprobe(f) for f in FAMILIES},
     "pw_coopmat_diag_checks.json": diag_checks,

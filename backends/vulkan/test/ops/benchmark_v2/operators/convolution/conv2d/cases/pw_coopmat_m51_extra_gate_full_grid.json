@@ -1,0 +1,1082 @@
+[
+  {
+    "name": "pw_coopmat gate extra full bias (289,192,1024) baseline",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1024, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [192, 1024, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03125, 0.03125]}}},
+        {"tensor": {"name": "bias", "sizes": [192], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 192, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (289,192,1024) coopmat",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1024, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [192, 1024, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03125, 0.03125]}}},
+        {"tensor": {"name": "bias", "sizes": [192], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 192, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (289,192,1024) baseline",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1024, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [192, 1024, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03125, 0.03125]}}},
+        {"tensor": {"name": "bias", "sizes": [192], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 192, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 192, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (289,192,1024) coopmat",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1024, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [192, 1024, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03125, 0.03125]}}},
+        {"tensor": {"name": "bias", "sizes": [192], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 192, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 192, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (784,2048,512) baseline",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 512, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [2048, 512, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.04419, 0.04419]}}},
+        {"tensor": {"name": "bias", "sizes": [2048], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 2048, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (784,2048,512) coopmat",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 512, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [2048, 512, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.04419, 0.04419]}}},
+        {"tensor": {"name": "bias", "sizes": [2048], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 2048, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (784,2048,512) baseline",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 512, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [2048, 512, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.04419, 0.04419]}}},
+        {"tensor": {"name": "bias", "sizes": [2048], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 2048, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 2048, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (784,2048,512) coopmat",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 512, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [2048, 512, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.04419, 0.04419]}}},
+        {"tensor": {"name": "bias", "sizes": [2048], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 2048, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 2048, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (64,256,1536) baseline",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1536, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [256, 1536, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.02552, 0.02552]}}},
+        {"tensor": {"name": "bias", "sizes": [256], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 256, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (64,256,1536) coopmat",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1536, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [256, 1536, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.02552, 0.02552]}}},
+        {"tensor": {"name": "bias", "sizes": [256], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 256, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (64,256,1536) baseline",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1536, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [256, 1536, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.02552, 0.02552]}}},
+        {"tensor": {"name": "bias", "sizes": [256], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 256, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 256, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (64,256,1536) coopmat",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1536, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [256, 1536, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.02552, 0.02552]}}},
+        {"tensor": {"name": "bias", "sizes": [256], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 256, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 256, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (64,384,1536) baseline",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1536, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [384, 1536, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.02552, 0.02552]}}},
+        {"tensor": {"name": "bias", "sizes": [384], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 384, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (64,384,1536) coopmat",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1536, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [384, 1536, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.02552, 0.02552]}}},
+        {"tensor": {"name": "bias", "sizes": [384], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 384, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (64,384,1536) baseline",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1536, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [384, 1536, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.02552, 0.02552]}}},
+        {"tensor": {"name": "bias", "sizes": [384], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 384, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 384, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (64,384,1536) coopmat",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1536, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [384, 1536, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.02552, 0.02552]}}},
+        {"tensor": {"name": "bias", "sizes": [384], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 384, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 384, 8, 8], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (144,192,768) baseline",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 768, 12, 12], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [192, 768, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03608, 0.03608]}}},
+        {"tensor": {"name": "bias", "sizes": [192], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 192, 12, 12], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (144,192,768) coopmat",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 768, 12, 12], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [192, 768, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03608, 0.03608]}}},
+        {"tensor": {"name": "bias", "sizes": [192], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 192, 12, 12], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (144,192,768) baseline",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 768, 12, 12], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [192, 768, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03608, 0.03608]}}},
+        {"tensor": {"name": "bias", "sizes": [192], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 192, 12, 12], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 192, 12, 12], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (144,192,768) coopmat",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 768, 12, 12], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [192, 768, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03608, 0.03608]}}},
+        {"tensor": {"name": "bias", "sizes": [192], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 192, 12, 12], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 192, 12, 12], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (289,384,1024) baseline",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1024, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [384, 1024, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03125, 0.03125]}}},
+        {"tensor": {"name": "bias", "sizes": [384], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 384, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (289,384,1024) coopmat",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1024, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [384, 1024, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03125, 0.03125]}}},
+        {"tensor": {"name": "bias", "sizes": [384], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 384, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (289,384,1024) baseline",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1024, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [384, 1024, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03125, 0.03125]}}},
+        {"tensor": {"name": "bias", "sizes": [384], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 384, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 384, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (289,384,1024) coopmat",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1024, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [384, 1024, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03125, 0.03125]}}},
+        {"tensor": {"name": "bias", "sizes": [384], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 384, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 384, 17, 17], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (784,1024,256) baseline",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 256, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [1024, 256, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.0625, 0.0625]}}},
+        {"tensor": {"name": "bias", "sizes": [1024], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 1024, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (784,1024,256) coopmat",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 256, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [1024, 256, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.0625, 0.0625]}}},
+        {"tensor": {"name": "bias", "sizes": [1024], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 1024, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (784,1024,256) baseline",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 256, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [1024, 256, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.0625, 0.0625]}}},
+        {"tensor": {"name": "bias", "sizes": [1024], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 1024, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 1024, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (784,1024,256) coopmat",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 256, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [1024, 256, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.0625, 0.0625]}}},
+        {"tensor": {"name": "bias", "sizes": [1024], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 1024, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 1024, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (784,256,1024) baseline",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1024, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [256, 1024, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03125, 0.03125]}}},
+        {"tensor": {"name": "bias", "sizes": [256], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 256, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (784,256,1024) coopmat",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1024, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [256, 1024, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03125, 0.03125]}}},
+        {"tensor": {"name": "bias", "sizes": [256], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 256, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (784,256,1024) baseline",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1024, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [256, 1024, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03125, 0.03125]}}},
+        {"tensor": {"name": "bias", "sizes": [256], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 256, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 256, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (784,256,1024) coopmat",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1024, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [256, 1024, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03125, 0.03125]}}},
+        {"tensor": {"name": "bias", "sizes": [256], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 256, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 256, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (784,2048,1024) baseline",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1024, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [2048, 1024, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03125, 0.03125]}}},
+        {"tensor": {"name": "bias", "sizes": [2048], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 2048, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (784,2048,1024) coopmat",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1024, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [2048, 1024, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03125, 0.03125]}}},
+        {"tensor": {"name": "bias", "sizes": [2048], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 2048, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (784,2048,1024) baseline",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1024, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [2048, 1024, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03125, 0.03125]}}},
+        {"tensor": {"name": "bias", "sizes": [2048], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 2048, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 2048, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (784,2048,1024) coopmat",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 1024, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [2048, 1024, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.03125, 0.03125]}}},
+        {"tensor": {"name": "bias", "sizes": [2048], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 2048, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 2048, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (784,512,2048) baseline",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 2048, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [512, 2048, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.0221, 0.0221]}}},
+        {"tensor": {"name": "bias", "sizes": [512], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 512, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full bias (784,512,2048) coopmat",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 2048, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [512, 2048, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.0221, 0.0221]}}},
+        {"tensor": {"name": "bias", "sizes": [512], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [1, 512, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (784,512,2048) baseline",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto", "pw_tiled_4x8"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 2048, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [512, 2048, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.0221, 0.0221]}}},
+        {"tensor": {"name": "bias", "sizes": [512], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 512, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 512, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "pw_coopmat gate extra full residual (784,512,2048) coopmat",
+    "operator": "et_vk.conv2d.with_epilogue",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {"v_VARIANT": ["conv2d_pw_coopmat_amd_t16x32_f32_al_half"]},
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 2048, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [512, 2048, 1, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.0221, 0.0221]}}},
+        {"tensor": {"name": "bias", "sizes": [512], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1, 1]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"bool": false},
+        {"int_list": [0, 0]},
+        {"int": 1},
+        {"tensor": {"name": "residual", "sizes": [1, 512, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        null,
+        {"string": "add"},
+        {"float": 1.0},
+        {"string": "none"},
+        {"float": 0.0},
+        {"float": 0.0},
+        {"tensor": {"name": "output", "sizes": [1, 512, 28, 28], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  }
+]
