@@ -802,6 +802,31 @@ def m51_timing(variants):
     return cases
 
 
+def m51_phase_timing(variants):
+    """Task 5.2: the parent and the pw_tiled_4x8 control on every timed
+    shape, for the phase-ablated debug builds (PHASE_TIMING env). The control
+    arm's shader is not instrumented, so its time validates each ablated
+    session against the 4.0 session."""
+
+    parent = "conv2d_pw_coopmat_amd_t16x32_f32_al_half"
+    cases = []
+    for M, N, K in M51_TIMED_SHAPES:
+        cases.append(
+            {
+                "name": f"pw_coopmat m51 phase timing ({M},{N},{K})",
+                "operator": OPERATORS["conv"],
+                **PERFORMANCE_TIMING,
+                "validation_method": TOLERANCE,
+                "route_sweep": [
+                    "pw_tiled_4x8",
+                    {"name": "pw_coopmat", "options": {"variant": parent}},
+                ],
+                "args_sweep": [conv_args(M, N, K, plane_of(M))],
+            }
+        )
+    return cases
+
+
 def m51_aa(variants):
     """The A/A open of a timed session (m51/THRESHOLDS.md "A/A acceptance"):
     pw_tiled_4x8 twice on every timed shape."""
@@ -1183,6 +1208,7 @@ FILES = {
     "pw_coopmat_gate_full_grid.json": m51_gate(False),
     "pw_coopmat_gate_reduced_grid.json": m51_gate(True),
     "pw_coopmat_m51_timing.json": m51_timing,
+    "pw_coopmat_m51_phase_timing.json": m51_phase_timing,
     "pw_coopmat_m51_aa.json": m51_aa,
     **{f"pw_coopmat_guard_{f}.json": guard(f) for f in FAMILIES},
     **{f"pw_coopmat_dlprobe_{f}.json": dlprobe(f) for f in FAMILIES},

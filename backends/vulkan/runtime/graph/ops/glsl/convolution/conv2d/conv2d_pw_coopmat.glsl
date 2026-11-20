@@ -143,6 +143,24 @@ $if K_SLICES > 1:
   #define SPLIT_K
   const uint K_SLICES = ${K_SLICES};
 
+$if globals().get("PHASE_TIMING"):
+  // Debug-only phase ablation (task 5.2): emitted only in an instrumented
+  // bench build, where the generator is run with
+  // --env PHASE_TIMING=1 PHASE_ABLATE=<fetch|stage|sync|mma|drain>. The
+  // shipped build never defines these, so its generated GLSL, and therefore
+  // its SPIR-V, is unchanged.
+  #define PHASE_TIMING
+$if globals().get("PHASE_ABLATE") == "fetch":
+  #define ABLATE_FETCH
+$if globals().get("PHASE_ABLATE") == "stage":
+  #define ABLATE_STAGE
+$if globals().get("PHASE_ABLATE") == "sync":
+  #define ABLATE_SYNC
+$if globals().get("PHASE_ABLATE") == "mma":
+  #define ABLATE_MMA
+$if globals().get("PHASE_ABLATE") == "drain":
+  #define ABLATE_DRAIN
+
 const uint MMA_M = ${MMA_M};
 const uint MMA_N = ${MMA_N};
 const uint MMA_K = ${MMA_K};

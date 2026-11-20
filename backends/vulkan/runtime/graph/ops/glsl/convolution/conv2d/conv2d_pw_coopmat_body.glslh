@@ -258,6 +258,13 @@ void load_a(
     const StagingMap map,
     const uint k_start,
     const uint K4) {
+#ifdef ABLATE_FETCH
+  // Phase ablation (debug build only): no input reads; two fp16 1.0 per
+  // component so the staged data is not all-zero.
+  [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
+    temp[p] = uvec4(0x3C003C00u);
+  }
+#else
   [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
     if (map.a_row_ok[p]) {
       const uint k4 = k_start / 4u + 2u * map.a_col[p];
@@ -267,6 +274,7 @@ void load_a(
       temp[p] = uvec4(0);
     }
   }
+#endif
 }
 
 void load_b(
@@ -276,6 +284,11 @@ void load_b(
     const uint n4_start,
     const uint K4,
     const uint N4) {
+#ifdef ABLATE_FETCH
+  [[unroll]] for (uint p = 0; p < B_TEMP_LEN; ++p) {
+    temp[p] = uvec4(0x3C003C00u);
+  }
+#else
   [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
 #if defined(BCM)
     // Entries k .. k + 3 of texel n4 (one packed block); temp[2p] holds
@@ -309,6 +322,7 @@ void load_b(
     temp[p] = pack_f16x8(fetch_w(k, n4, K4, N4), fetch_w(k, n4 + 1u, K4, N4));
 #endif
   }
+#endif
 }
 
 void store_ab(
@@ -316,6 +330,10 @@ void store_ab(
     const uvec4 temp_a[A_PASSES],
     const uvec4 temp_b[B_TEMP_LEN],
     const StagingMap map) {
+#ifdef ABLATE_STAGE
+  // Phase ablation (debug build only): no shared-memory writes. The MMA then
+  // reads stale shared memory; the ablated build is timing-only.
+#else
   const uint tid = gl_LocalInvocationID.x;
   [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
     if (A_ITEMS % WG_SIZE == 0u || p * WG_SIZE + tid < A_ITEMS) {
@@ -360,6 +378,7 @@ void store_ab(
 #endif
     }
   }
+#endif
 }
 
 void mma_step(const uint slice, const uvec2 sg) {
@@ -674,22 +693,46 @@ void main() {
   // the slice being written was last read before it.
   uint step;
   for (step = 0; step + 1u < num_k_steps; ++step) {
+#ifndef ABLATE_SYNC
     // barrier() alone does not order shared stores against a following
     // coopMatLoad on every driver.
     memoryBarrierShared();
     barrier();
+#endif
     const uint k_next = (step + 1u) * WG_TILE_K;
     load_a(temp_a, map, k_next, K4);
     load_b(temp_b, map, k_next, n4_start, K4, N4);
+#ifndef ABLATE_MMA
     mma_step(step % 2u, sg);
+#endif
     store_ab((step + 1u) % 2u, temp_a, temp_b, map);
   }
+#ifndef ABLATE_SYNC
   memoryBarrierShared();
   barrier();
+#endif
+#ifndef ABLATE_MMA
   mma_step(step % 2u, sg);
 #endif
 #endif
+#endif
 
+#ifdef ABLATE_DRAIN
+  // Phase ablation (debug build only): the drain passes (accumulator stores
+  // to shared, read-back, epilogue, output stores) are skipped. One
+  // accumulator store and one shared read keep the MMA from being eliminated.
+  coopMatStore(
+      result[0][0], sh, 0, C_ROW_VEC4, gl_CooperativeMatrixLayoutRowMajor);
+  memoryBarrierShared();
+  barrier();
+#ifdef ACC_FP32
+  if (uintBitsToFloat(sh[0].x) == 0.0) {
+#else
+  if (unpackFloat2x16(sh[0].x).x == float16_t(0.0)) {
+#endif
+    imageStore(t_out, ivec3(0), vec4(0.0));
+  }
+#else
   drain_pass(0u, sg, tile_m_start, n4_start, M, N4, W_out);
 #if DRAIN_PASSES > 1
   drain_pass(1u, sg, tile_m_start, n4_start, M, N4, W_out);
@@ -700,6 +743,7 @@ void main() {
 #endif
 #if DRAIN_PASSES != 1 && DRAIN_PASSES != 2 && DRAIN_PASSES != 4
 #error "DRAIN_PASSES must be 1, 2 or 4"
+#endif
 #endif
 }
 
