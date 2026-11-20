@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <cstring>
 #include <limits>
 #include <stdexcept>
@@ -298,6 +299,23 @@ Report compare_outputs(
     }
     output["status"] = mismatches == 0 ? "PASS" : "FAIL";
     output["mismatch_count"] = mismatches;
+    // FNV-1a 64 over the computed values as float32 bit patterns (exact for
+    // every dtype read back, int8 included): equal digests of two routes of
+    // one case mean bit-identical outputs, whatever the reference says.
+    {
+      uint64_t digest = 14695981039346656037ull;
+      for (const double v : computed->second) {
+        const float f = static_cast<float>(v);
+        uint32_t bits;
+        std::memcpy(&bits, &f, sizeof(bits));
+        for (int b = 0; b < 4; ++b) {
+          digest = (digest ^ ((bits >> (8 * b)) & 0xFFu)) * 1099511628211ull;
+        }
+      }
+      char hex[17];
+      std::snprintf(hex, sizeof(hex), "%016llx", (unsigned long long)digest);
+      output["digest"] = std::string(hex);
+    }
     output["nonfinite_count"] = nonfinite;
     output["max_abs_error"] = max_abs_error;
     const double finite_count =
