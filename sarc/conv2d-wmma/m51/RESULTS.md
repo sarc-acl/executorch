@@ -211,10 +211,9 @@ success threshold.
 ## 5.2 Phase timing of the 1x1 parent (ablation method)
 
 SPEC asks for in-kernel shader-clock phase timing. The device's capability record reports
-api_version 1.4.354, so the Vulkan 1.3 core shader-clock features are in principle available,
-but using them would need runtime-side feature enablement plus a timing readback path; within
-this campaign's time budget that did not fit, so the phase costs are located by ablation
-instead: five debug builds of the same bench, each compiled with one phase of the parent
+api_version 1.4.354; the shader-clock extension's support on the device was not checked, and
+ablation was used for the time budget: five debug builds of the same bench, each compiled with
+one phase of the parent
 template disabled (`--env PHASE_TIMING=1 PHASE_ABLATE=<phase>`, a debug-only template path that
 the default build does not take).
 
