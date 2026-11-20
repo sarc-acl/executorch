@@ -218,6 +218,33 @@ std::optional<std::string> conv2d_pw_coopmat_limits_unsupported(
     const Conv2dPwCoopmatVariant& variant,
     const Conv2dPwCoopmatLimits& limits);
 
+// Whether ETVK_CONV2D_COOPMAT=1 (read once).
+bool conv2d_coopmat_switch_on();
+
+// A convolution configuration as kConv2dCoopmatTable keys it (input channels
+// and height and width, output channels, kernel, stride, padding, dilation).
+struct Conv2dCoopmatKey final {
+  int64_t c_in;
+  int64_t c_out;
+  int64_t k_h;
+  int64_t k_w;
+  int64_t stride_h;
+  int64_t stride_w;
+  int64_t padding_h;
+  int64_t padding_w;
+  int64_t dilation_h;
+  int64_t dilation_w;
+  int64_t in_h;
+  int64_t in_w;
+};
+
+// The variant name of this device's kConv2dCoopmatTable row for the precision
+// ("fp16", "fp32", "int8") and configuration, or nullptr.
+const char* conv2d_coopmat_table_lookup(
+    ComputeGraph& graph,
+    const char* precision,
+    const Conv2dCoopmatKey& key);
+
 const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants();
 
 // The variant with this shader name, or nullptr.

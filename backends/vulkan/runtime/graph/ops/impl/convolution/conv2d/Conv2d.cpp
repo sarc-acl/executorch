@@ -232,22 +232,6 @@ UnaryOpType activation_from_string(const std::string& name) {
   VK_THROW("Unsupported conv2d activation: ", name);
 }
 
-// Study control of change conv2d-coopmat-model-switch, not a production
-// policy. With ETVK_CONV2D_COOPMAT=1 (read once, at the first convolution
-// built) a 2D convolution whose device and exact configuration have a row in
-// kConv2dCoopmatTable runs on that row's cooperative-matrix variant (route
-// direct_coopmat for a _dg variant, pw_coopmat or im2col_coopmat otherwise)
-// when the route's eligibility check accepts it; every other convolution, and
-// every convolution when the variable is unset or any other value, keeps
-// today's routing.
-bool conv2d_coopmat_switch_on() {
-  static const bool on = [] {
-    const char* value = std::getenv("ETVK_CONV2D_COOPMAT");
-    return value != nullptr && std::strcmp(value, "1") == 0;
-  }();
-  return on;
-}
-
 const Conv2dPwCoopmatVariant* conv2d_coopmat_table_variant(
     ComputeGraph& graph,
     const ValueRef in,
@@ -269,24 +253,61 @@ const Conv2dPwCoopmatVariant* conv2d_coopmat_table_variant(
       s->size() != 2 || p->size() != 2 || d->size() != 2) {
     return nullptr;
   }
+  const char* const name = conv2d_coopmat_table_lookup(
+      graph,
+      graph.dtype_of(in) == vkapi::kHalf ? "fp16" : "fp32",
+      {in_sizes.at(1),
+       w_sizes.at(0),
+       w_sizes.at(2),
+       w_sizes.at(3),
+       s->at(0),
+       s->at(1),
+       p->at(0),
+       p->at(1),
+       d->at(0),
+       d->at(1),
+       in_sizes.at(2),
+       in_sizes.at(3)});
+  return name != nullptr ? find_conv2d_pw_coopmat_variant(name) : nullptr;
+}
+
+} // namespace
+
+// Study control of change conv2d-coopmat-model-switch, not a production
+// policy. With ETVK_CONV2D_COOPMAT=1 (read once, at the first convolution
+// built) a convolution whose device, precision and exact configuration have a
+// row in kConv2dCoopmatTable runs on that row's cooperative-matrix variant
+// when the route's eligibility check accepts it; every other convolution, and
+// every convolution when the variable is unset or any other value, keeps
+// today's routing.
+bool conv2d_coopmat_switch_on() {
+  static const bool on = [] {
+    const char* value = std::getenv("ETVK_CONV2D_COOPMAT");
+    return value != nullptr && std::strcmp(value, "1") == 0;
+  }();
+  return on;
+}
+
+const char* conv2d_coopmat_table_lookup(
+    ComputeGraph& graph,
+    const char* precision,
+    const Conv2dCoopmatKey& key) {
   VkPhysicalDeviceProperties props;
   vkGetPhysicalDeviceProperties(
       graph.context()->adapter_ptr()->physical_handle(), &props);
   for (const Conv2dCoopmatTableRow& row : kConv2dCoopmatTable) {
     if (row.vendor_id == props.vendorID && row.device_id == props.deviceID &&
-        row.c_in == in_sizes.at(1) && row.in_h == in_sizes.at(2) &&
-        row.in_w == in_sizes.at(3) && row.c_out == w_sizes.at(0) &&
-        row.k_h == w_sizes.at(2) && row.k_w == w_sizes.at(3) &&
-        row.stride_h == s->at(0) && row.stride_w == s->at(1) &&
-        row.padding_h == p->at(0) && row.padding_w == p->at(1) &&
-        row.dilation_h == d->at(0) && row.dilation_w == d->at(1)) {
-      return find_conv2d_pw_coopmat_variant(row.variant);
+        std::strcmp(row.precision, precision) == 0 && row.c_in == key.c_in &&
+        row.c_out == key.c_out && row.k_h == key.k_h && row.k_w == key.k_w &&
+        row.stride_h == key.stride_h && row.stride_w == key.stride_w &&
+        row.padding_h == key.padding_h && row.padding_w == key.padding_w &&
+        row.dilation_h == key.dilation_h && row.dilation_w == key.dilation_w &&
+        row.in_h == key.in_h && row.in_w == key.in_w) {
+      return row.variant;
     }
   }
   return nullptr;
 }
-
-} // namespace
 
 void check_conv2d_epilogue(
     ComputeGraph& graph,
