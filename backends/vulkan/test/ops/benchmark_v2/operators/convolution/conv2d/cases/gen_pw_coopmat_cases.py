@@ -711,6 +711,52 @@ DIAG = [p.replace("_half", "_diag_once_half") for p in PARENTS]
 KSWEEP_K = (32, 64, 128, 256, 576, 960)
 KSWEEP_PAIRS = ((49, 96), (49, 160), (196, 64), (196, 96))
 
+# The M51 gate (m51/SPEC.md "M51 correctness gate"): every timed shape of the
+# campaign ("Benchmark shape set on the M51"), the MobileNet and ResNet-50
+# files' shapes and the long-K GEMM-equivalents, with bias and with a fused
+# residual. The grid reduction keeps N and K and lowers M: the dispatch is one
+# workgroup per output tile, so a clamped dispatch would leave most of the
+# output unwritten and fail validation, while fewer pixels give the same
+# shader and math with a dispatch of a few pixel workgroups.
+M51_GEMM_SHAPES = [
+    (49, 512, 4608),
+    (196, 256, 2304),
+    (784, 128, 1152),
+    (289, 224, 1344),
+    (25, 384, 4032),
+]
+M51_TIMED_SHAPES = MOBILENET + RESNET50 + M51_GEMM_SHAPES
+# 8 x 8 pixels: one workgroup of the largest pixel tile (128) and four of the
+# smallest (16); shapes with fewer pixels already dispatch few workgroups.
+M51_REDUCED_PIXELS = 64
+
+
+def m51_gate(reduced):
+    """The gate collections of the 16x16x16 families (amd, nvidia) on every
+    timed shape, with bias and with a fused residual add."""
+
+    def build(variants):
+        m51 = [v for v in variants if v.split("_")[3] in ("amd", "nvidia")]
+        cases = []
+        for M, N, K in M51_TIMED_SHAPES:
+            pixels = min(M, M51_REDUCED_PIXELS) if reduced else M
+            for label, kwargs in (
+                (
+                    "gate full bias" if not reduced else "gate reduced bias",
+                    {},
+                ),
+                (
+                    "gate full residual" if not reduced else "gate reduced residual",
+                    {"op": "epilogue", "epilogue": ("add", 1.0, False, "none")},
+                ),
+            ):
+                cases += shape_cases(
+                    label, pixels, N, K, plane_of(pixels), m51, VALIDATION_TIMING, **kwargs
+                )
+        return cases
+
+    return build
+
 
 def diag_cases(label, M, N, K, plane, timing, **kwargs):
     """The diagnostic variants on one shape, validated against the staged-once
@@ -1072,6 +1118,8 @@ FILES = {
     "pw_coopmat_gemm_shapes.json": performance(
         "gemm", GEMM_SHAPES, only=GEMM_PROBE_VARIANTS
     ),
+    "pw_coopmat_gate_full_grid.json": m51_gate(False),
+    "pw_coopmat_gate_reduced_grid.json": m51_gate(True),
     **{f"pw_coopmat_guard_{f}.json": guard(f) for f in FAMILIES},
     **{f"pw_coopmat_dlprobe_{f}.json": dlprobe(f) for f in FAMILIES},
     "pw_coopmat_diag_checks.json": diag_checks,
