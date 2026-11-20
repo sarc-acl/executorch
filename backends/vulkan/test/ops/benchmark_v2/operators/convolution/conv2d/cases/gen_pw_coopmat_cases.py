@@ -758,6 +758,68 @@ def m51_gate(reduced):
     return build
 
 
+# The M51 timed session (m51/SPEC.md "M51 timing protocol" and "Benchmark
+# shape set on the M51"): every timed shape, arms auto, pw_tiled_4x8 and every
+# variant that passed the 10/10 gate (m51/RESULTS.md 2.4): the amd and nvidia
+# families, without the _epi0 pair of each (correctness-only: every timed case
+# carries a bias) and without the variant that failed the gate, which is never
+# timed.
+M51_TIMING_EXCLUDED = ("conv2d_pw_coopmat_amd_t64x64_f32_half",)
+
+
+def m51_gated(variants):
+    return [
+        v
+        for v in variants
+        if v.split("_")[3] in ("amd", "nvidia")
+        and "_epi0" not in v
+        and v not in M51_TIMING_EXCLUDED
+    ]
+
+
+def m51_timing(variants):
+    """The timed session: one definition per timed shape with the arms as one
+    ordered route_sweep, so the interleaved runs of a session can rotate the
+    arm order externally."""
+
+    gated = m51_gated(variants)
+    cases = []
+    for M, N, K in M51_TIMED_SHAPES:
+        cases.append(
+            {
+                "name": f"pw_coopmat m51 timing ({M},{N},{K})",
+                "operator": OPERATORS["conv"],
+                **PERFORMANCE_TIMING,
+                "validation_method": TOLERANCE,
+                "route_sweep": ["auto", "pw_tiled_4x8"]
+                + [
+                    {"name": "pw_coopmat", "options": {"variant": v}}
+                    for v in gated
+                ],
+                "args_sweep": [conv_args(M, N, K, plane_of(M))],
+            }
+        )
+    return cases
+
+
+def m51_aa(variants):
+    """The A/A open of a timed session (m51/THRESHOLDS.md "A/A acceptance"):
+    pw_tiled_4x8 twice on every timed shape."""
+    cases = []
+    for M, N, K in M51_TIMED_SHAPES:
+        cases.append(
+            {
+                "name": f"pw_coopmat m51 aa ({M},{N},{K})",
+                "operator": OPERATORS["conv"],
+                **PERFORMANCE_TIMING,
+                "validation_method": TOLERANCE,
+                "route_sweep": ["pw_tiled_4x8", "pw_tiled_4x8"],
+                "args_sweep": [conv_args(M, N, K, plane_of(M))],
+            }
+        )
+    return cases
+
+
 def diag_cases(label, M, N, K, plane, timing, **kwargs):
     """The diagnostic variants on one shape, validated against the staged-once
     reference (conv2d_pw_diag_once)."""
@@ -1120,6 +1182,8 @@ FILES = {
     ),
     "pw_coopmat_gate_full_grid.json": m51_gate(False),
     "pw_coopmat_gate_reduced_grid.json": m51_gate(True),
+    "pw_coopmat_m51_timing.json": m51_timing,
+    "pw_coopmat_m51_aa.json": m51_aa,
     **{f"pw_coopmat_guard_{f}.json": guard(f) for f in FAMILIES},
     **{f"pw_coopmat_dlprobe_{f}.json": dlprobe(f) for f in FAMILIES},
     "pw_coopmat_diag_checks.json": diag_checks,
