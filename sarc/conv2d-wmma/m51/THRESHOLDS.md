@@ -25,3 +25,15 @@ Fixed 2026-11-19 with the device owner, before any M51 k×k measurement. They ar
 | Shape win | the best passing variant is faster than the baseline by more than the noise band |
 | k×k success | geometric mean over the timed k×k shape set ≥ 1.15× (baseline time / best variant time) |
 | End to end (TASKS 10) | not fixed; set with the device owner before the first measured model run |
+
+## Stage 3: kernel efficiency (TASKS 11)
+
+Fixed on 2026-11-20, before any stage-3 measurement. All values are relative.
+
+| Decision | Rule |
+|---|---|
+| Kernel-level goal | on every shape of the 1×1 (31) and k×k (14) timed sets, the best gated coopmat route is faster than the best stock route (min of `auto`, `pw_tiled_4x8`, `direct`, `im2col`) beyond the noise band |
+| Efficiency metric | useful FLOP/s (2·M·N·K / route time) as a % of the shape's roofline bound, min(fp16 WMMA peak, ideal AI × DRAM roof), from `m51-LOCAL-ONLY/ROOFLINE.md` |
+| Candidate adoption | as for 1×1 above, and the candidate's argus capture moves the metric it targets (for example LDS ops per WMMA, LDS Busy) in the predicted direction |
+| A/A, noise band, runs per cell, correctness gate, shared memory | as for 1×1 above |
+| Stop rule | per candidate family: two consecutive gated candidates each gain < 2% geometric mean on the shapes they target |

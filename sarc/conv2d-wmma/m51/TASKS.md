@@ -152,3 +152,21 @@ Starts only when `origin/topic/conv2d-wmma` has moved and contains a cooperative
 - [ ] 10.1 With the desktop routing switch, pick the two or three models with the largest projected gain (7.4).
   Interleave A/B runs with the switch off and on: same binary, pinned clocks, cooled board, median of 5. Verify: the
   gain in % of GPU time and of the execute call, compared with the projection.
+
+## 11. Stage 3: kernel efficiency, no shape slower than stock (owner, 2026-11-20)
+Goal: every conv2d coopmat kernel beats the best stock route on every timed shape, with efficiency measured against
+the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFLINE.md` and the argus analysis.
+- [ ] 11.1 Re-baseline on the new board. Run a short interleaved session of the 1×1 and k×k parents against all stock
+  routes on the 45 timed shapes. Verify: a per-shape table of ratio and % of roofline bound; the losers are listed.
+- [ ] 11.2 B-operand LDS loads. First probe the ISA of the existing `BCM` variants (argus pipeline dump, untimed).
+  Then build one change that turns the B gather (`ds_load_u16_d16`) into dword loads: BCM fixed, or A/B role swap
+  (Cᵀ = Bᵀ·Aᵀ, weights as the A operand). Verify: the ISA shows the change; LDS ops per WMMA and LDS Busy fall
+  (argus); gated; timed.
+- [ ] 11.3 More fp32 accumulators per wave, or a larger fp32 tile, for the large-plane 1×1 losers (784/3136 pixels).
+  Verify as in 11.2.
+- [ ] 11.4 im2col gather cost: no runtime div/mod, no fp16 rounding emulation if not needed, or the gather fused into
+  the A load. Also split-K 1 for large M. Target: the Cin=64 large-plane k×k losers. Verify as in 11.2.
+- [ ] 11.5 Small-M, DRAM-bound shapes: move toward the DRAM roof (deeper split-K, more loads in flight).
+  Verify as in 11.2.
+- [ ] 11.6 Final interleaved session from the committed HEAD. Report per-shape ratio and % of roofline before and
+  after stage 3, and per-candidate gains.
