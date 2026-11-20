@@ -100,7 +100,7 @@ fastest of auto / direct / im2col per shape.
   counts are large (`784,2048,512`, `784,2048,1024`, `784,512,2048` run at 0.77-0.84x of the
   pointwise baseline, and `784,256,1024` is a borderline tie at 0.99x) - there the baseline
   pointwise shader, which the auto routing already selects, is the faster route; keep those on
-  stock. Every other measured 1x1 shape wins (1.06-4.81x).
+  stock. Every other measured 1x1 shape wins (1.04-5.50x).
 - k x k: adopt the coopmat variant except **Cin = 64 with large output planes** (`3x3 64
   224x224`, `3x3 64 56x56`, `3x3 64-256 224x224` run at 0.45-0.67x of stock under the
   variant) - there the K = 576 GEMM is small relative to the output plane and the im2col

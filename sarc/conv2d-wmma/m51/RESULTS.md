@@ -394,10 +394,12 @@ quantify what a future INT8 stage would address.
 The 4.0 selection set covers 21 1x1 shapes; the strict exact-shape matching of 7.4 leaves the
 rest of the workload census unmatched. This task measures the ten heaviest FP16 stride-1 1x1
 shapes of the 7.2 census that the timed set does not cover, ranked by summed ETDump device
-time (two 1D-pointwise entries rank 11th and 12th and fall outside the 1x1 family). Labels are
-(output plane, Cout, Cin). The cases come from the same generator as the rest of the campaign
-(`gen_pw_coopmat_cases.py`, the `m51_extra_*` builders; the four committed case files are the
-gate full-grid, gate reduced-grid, timing and A/A collections).
+time. The ranking filter (kernel 1x1, stride 1) also admits two w2l 1D-pointwise entries
+(dims 1, the `conv1d_pw` route); they rank 13th and 15th, below every shape taken, so the top
+ten are all 2D 1x1 convolutions - the next uncovered 2D shape, `(289,128,1024)`, ranks 11th.
+Labels are (output plane, Cout, Cin). The cases come from the same generator as the rest of
+the campaign (`gen_pw_coopmat_cases.py`, the `m51_extra_*` builders; the four committed case
+files are the gate full-grid, gate reduced-grid, timing and A/A collections).
 
 **Gate:** the 4.0 parent (`amd_t16x32_f32_al_half`) on all ten shapes, bias and fused-residual
 epilogue, full and reduced grid, ten repetitions each. 20/20 runs exit 0 with empty stderr,
@@ -407,12 +409,14 @@ repetition, and the post-gate readback shows every pin held.
 **Timed session**, same protocol as 8.1 (pins verified in every entry, a 60 s idle before the
 session and 10 s between runs, A/A open and close, five rounds with the arm order rotated,
 driver canonical after every run, post-session readback): arms `auto`, `pw_tiled_4x8` and the
-parent. 150 rows in the run record, zero invalid.
+parent. 150 rows in the run record, zero invalid; the record and every number of this section
+are (re)produced by `tools/extra73_analysis.py` (local).
 
 **A/A:** open geomean 1.0009, worst cell 1.0083 - inside the band. Close 0.9955 with one cell
 outside the +-2% band: `(784,512,2048)` at 0.9412, the position-in-sequence drift of the
-baseline arm that 4.0 records on high-occupancy shapes; that cell's band widens to its
-observed per-run spread.
+baseline arm that 4.0 records on high-occupancy shapes; that cell's band widens to its own A/A
+deviation (5.9%, listed as 6% in the table). The A/A values are computed from the A/A JSONs,
+which are not rows of the runs record.
 
 | shape | `pw_tiled_4x8` / parent | `auto` / parent | band |
 |---|---:|---:|---:|
@@ -422,7 +426,7 @@ observed per-run spread.
 | `(289,192,1024)` | 2.40 | 1.97 | 3% |
 | `(289,384,1024)` | 1.31 | 1.60 | 2% |
 | `(784,256,1024)` | 0.99 | 0.99 | 2% |
-| `(784,512,2048)` | 0.77 | 0.76 | 5% |
+| `(784,512,2048)` | 0.77 | 0.76 | 6% |
 | `(784,1024,256)` | 1.06 | 1.06 | 2% |
 | `(784,2048,512)` | 0.84 | 0.84 | 2% |
 | `(784,2048,1024)` | 0.79 | 0.79 | 2% |
@@ -442,45 +446,54 @@ the dense 784-plane class on the stock route, and 7.4 applies the same rule to t
 Projection, lower bound. Each measured ratio is applied to every ETDump layer whose shape exactly
 matches a measured case; every other layer keeps its ETDump time. The reduction is of the whole
 model's GPU shader time, not only of convolution. This is a projection computed from the local
-ETDump aggregation and the two run records; it is not a model run. Three columns:
+ETDump aggregation and the two run records; it is not a model run. Four columns:
 
-- **1x1 only**: the 4.0 parent ratio (`pw_tiled_4x8` / parent, per-cell median of
-  `gpu_timestamp_route_us`) on the 31 measured 1x1 shapes (the 4.0 selection set plus the 7.3
-  workload top-up), matched by `(hout*wout, Cin, Cout)` at stride 1 (stride-2 1x1 layers do
-  not match). Timing labels are (plane, Cout, Cin), so the lookup swaps the label's channel
-  pair; the version of this table committed before the 7.3 extension applied the labels
-  unswapped, pairing every asymmetric layer with its transposed cell's measurement - corrected
-  here (symmetric shapes and every kxk cell are unaffected).
+- **1x1 only**: the 4.0 parent ratio vs `auto` (per-cell median of `gpu_timestamp_route_us`) on
+  the 31 measured 1x1 shapes (the 4.0 selection set plus the 7.3 workload top-up), matched by
+  `(hout*wout, Cin, Cout)` at stride 1 (stride-2 1x1 layers do not match). The ETDump layers
+  ran the routed pointwise shaders (`conv2d_pw_tiled_bufw_half`,
+  `conv2d_pw_tiled_4x8_bufw_half`) - the route `auto` resolves to - so `auto` is the baseline
+  the projection must beat; the earlier version of this table credited
+  `pw_tiled_4x8` / parent, which overstates the gain wherever `pw_tiled_4x8` is the slower
+  stock arm (e.g. `(64,256,1536)`: 3.29x vs `auto`, 4.60x vs `pw_tiled_4x8`). The
+  `pw_tiled_4x8`-based values are kept as a labelled secondary column. Timing labels are
+  (plane, Cout, Cin), so the lookup swaps the label's channel pair; the version committed
+  before the 7.3 extension also applied the labels unswapped, pairing every asymmetric layer
+  with its transposed cell's measurement - corrected here (symmetric shapes and every kxk
+  cell are unaffected).
 - **1x1 + kxk**: additionally the fp32 kxk parent (`amd_t16x32_f32_alc_sk2_i2c`) ratio vs `auto`
   on the 14 measured kxk shapes, matched by kernel, stride, Cin, Cout and input/output planes.
 - **1x1 + kxk vs best stock**: same matches, but each kxk layer is credited
-  min(auto, direct, im2col) / parent. This separates the cooperative-matrix gain from what a
-  routing fix alone (today's `auto` picks the slow `im2col` route on M51) would deliver.
+  min(auto, direct, im2col) / parent (the 1x1 layers keep the `auto` baseline). This separates
+  the cooperative-matrix gain from what a routing fix alone (today's `auto` picks the slow
+  `im2col` route on M51) would deliver.
 
 Shapes where the parent loses stay on the stock route, as a routing rule would: on the kxk side
 vs `auto` the three 3x3 64-channel large-plane shapes (0.45-0.67), vs best stock additionally
 `3x3 1024-256 28x28` (0.83 of `direct`; dl3's non-dilated layer); on the 1x1 side the four
-dense 784-plane shapes of 7.3 (0.77-0.99, section 7.3).
+dense 784-plane shapes of 7.3 (0.76-0.99, section 7.3). "Matched" counts the credited layers
+only; the raw exact-shape matches, including losers kept on stock, are dl3 12 (1x1) and 3 (kxk),
+resnet18 and resnet50 5 (kxk) each, and equal the credited counts for every other model.
 
-| model | 1x1 matched | 1x1 reduction | kxk matched | 1x1 + kxk | 1x1 + kxk vs best stock |
-|---|---:|---:|---:|---:|---:|
-| resnet18 | 0 | 0.00% | 4 | 73.36% | 54.27% |
-| resnet50 | 12 | 6.55% | 4 | 62.45% | 47.17% |
-| mv2 | 3 | 17.55% | 0 | 17.55% | 17.55% |
-| mv3 | 1 | 5.59% | 0 | 5.59% | 5.59% |
-| ic3 | 1 | 2.86% | 1 | 14.25% | 11.93% |
-| ic4 | 4 | 6.02% | 2 | 22.49% | 16.01% |
-| densenet161 | 0 | 0.00% | 2 | 13.26% | 13.25% |
-| dl3 | 8 | 0.94% | 2 | 9.97% | 1.73% |
+| model | 1x1 matched | 1x1 reduction | 1x1 reduction (`pw_tiled_4x8` base) | kxk matched | 1x1 + kxk | 1x1 + kxk vs best stock |
+|---|---:|---:|---:|---:|---:|---:|
+| resnet18 | 0 | 0.00% | 0.00% | 4 | 73.36% | 54.27% |
+| resnet50 | 12 | 6.28% | 6.55% | 4 | 62.18% | 46.90% |
+| mv2 | 3 | 15.26% | 17.55% | 0 | 15.26% | 15.26% |
+| mv3 | 1 | 4.67% | 5.59% | 0 | 4.67% | 4.67% |
+| ic3 | 1 | 2.21% | 2.86% | 1 | 13.60% | 11.28% |
+| ic4 | 4 | 5.58% | 6.02% | 2 | 22.05% | 15.57% |
+| densenet161 | 0 | 0.00% | 0.00% | 2 | 13.26% | 13.25% |
+| dl3 | 8 | 0.94% | 0.94% | 2 | 9.97% | 1.73% |
 
 The 1x1 column is still a strict lower bound (exact-shape matching, stride-1 only), but the
-top-up and the pairing correction move it substantially. mv2's and mv3's project layers - the
-3.6-4.9x cells of 4.0 - now land on the right layers and dominate those models' columns;
-resnet50 matches twelve layers at 1.04-4.22x; the 7.3 top-up supplies ic3's single cell and
-four ic4 cells (1.3-4.6x). dl3 matches eight cells but all sit near unity (1.04-1.50x): its
-dense large-Cin 784-plane cells are the 7.3 losers and stay on stock, so its 1x1 column stays
-under 1%. resnet18 has no stride-1 1x1 layers and densenet161's remain outside the measured
-set. The kxk column changes the picture as before: resnet18/50
+top-up and the two corrections move it substantially. mv2's and mv3's project layers - the
+2.5-4.0x cells of 4.0 - now land on the right layers and dominate those models' columns;
+resnet50 matches twelve layers at 1.04-2.94x; the 7.3 top-up supplies ic3's single cell (2.3x)
+and four ic4 cells (1.6-3.3x). dl3 matches eight credited cells but all sit near unity
+(1.04-1.51x): its dense large-Cin 784-plane cells are the 7.3 losers and stay on stock, so its
+1x1 column stays under 1%. resnet18 has no stride-1 1x1 layers and densenet161's remain outside
+the measured set. The kxk column changes the picture as before: resnet18/50
 match their im2col-routed 3x3 stack - 128/256/512 channels at 28/14/7 planes, ratios 3.7-11.4x
 vs `auto` - plus one stride-2 layer each (resnet18 256->512, resnet50 512->512); the remaining
 stride-2 convolutions have no measured case. mv2/mv3 gain nothing from kxk because their 3x3
@@ -518,7 +531,8 @@ held. The run records are `task8-1/final_runs.csv` (local) with the full columns
 rows.
 
 **A/A:** open geomean 0.9969, close 0.9997 - both inside the 1% band. Cells outside +-2%: the
-open only - `196,256,1024` (-2.4%) and `784,128,1152` (-2.7%); none in the close.
+open only - `196,256,1024` (-2.4%) and `784,128,1152` (-2.7%); none in the close. The A/A
+values are computed from the A/A JSONs, which are not rows of the runs record.
 
 Noise bands are per cell `max(2%, cross-run spread of the per-run ratio)`; the widened cells
 are listed in the tables. Metric as in 4.0: per-case p50 of the GPU-timestamp route time,

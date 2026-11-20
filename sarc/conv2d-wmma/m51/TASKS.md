@@ -94,8 +94,10 @@ only (`SPEC.md`, "Publication of M51 results").
   of each matching layer shape in the ETDump and leave every other layer unchanged. Report the projected GPU-time
   reduction in %, labelled "projection, lower bound". Verify: the table can be recomputed from the local ETDump CSV and
   `runs.csv`.
-  (`RESULTS.md` 7.4, three columns incl. kxk and vs-best-stock; recomputable with the local `tools/e2e_projection.py`
-  over the local ETDump CSV and the run records; extended with the 7.3 matches.)
+  (`RESULTS.md` 7.4; the 1x1 ratio is vs `auto` - the route the ETDump layers ran - with the
+  `pw_tiled_4x8`-based values as a labelled secondary column, plus kxk and vs-best-stock;
+  recomputable with the local `tools/e2e_projection.py` over the local ETDump CSV and the run
+  records; extended with the 7.3 matches.)
 
 ## 8. Report
 - [x] 8.1 `RESULTS.md`: per-shape verdict, per-technique gains, what the workload says to do next.
