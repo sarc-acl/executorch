@@ -211,31 +211,53 @@ success threshold.
 ## 7.2 FP16 workload baseline (ten CI models)
 
 Twelve traced executions per model (first dropped), ETDump per model, aggregated with
-`survey-tools/aggregate.py` (the desktop survey's families; the `m51` device entry added there).
+`survey-tools/aggregate.py` (the desktop survey's families; an `m51` device entry added there).
 ic4 is exported with random weights (weights do not affect time shares); the deviation is recorded
-with 7.1.
+with 7.1. The desktop reference is the owner's four-GPU FP16 survey (mean over 10 models x 4
+desktops); the M51 primary metric is the same shape - the **mean of per-model shares** - with the
+share of summed GPU shader time as the second column.
 
-**Category shares** of the GPU shader time summed over the ten models: convolution **92.1%**
-(mean per-model share 88.6%), linear/matmul 1.1%, elementwise 3.3%, layout/data movement 3.0%,
-pooling 0.5%, other 0.1%.
+**Category shares** (primary: mean of per-model shares; secondary: share of summed time;
+desktop: mean of per-model shares):
 
-**Shader ranking** (share of the summed GPU shader time):
+| category | M51 mean | M51 summed | desktop mean |
+|---|---:|---:|---:|
+| convolution | **88.6%** | 92.1% | 87.3% |
+| linear/matmul | 4.8% | 1.1% | 3.3% |
+| layout/data movement | 2.9% | 3.0% | 4.9% |
+| elementwise | 2.7% | 3.3% | 3.4% |
+| pooling | 0.7% | 0.5% | 1.1% (pooling+other) |
+| other | 0.2% | 0.1% | (with pooling) |
 
-| rank | shader | share |
-|---:|---|---:|
-| 1 | `conv2d_gemm_texture2d_half` | 33.8% |
-| 2 | `conv2d_2x2x8_border_half` | 25.8% |
-| 3 | `conv2d_pw_tiled_bufw_half` | 9.5% |
-| 4 | `conv2d_1x1x4_half` | 6.7% |
-| 5 | `conv2d_2x2x4_border_half` | 5.5% |
-| 6 | `conv2d_pw_tiled_4x8_bufw_half` | 4.7% |
-| 7 | `conv1d_clamp_half` | 4.2% |
-| 8 | `binary_op_texture3d_half` | 2.7% |
-| 9 | `conv2d_im2col_texture2d_half` | 1.3% |
+**Top shaders** (share of a model's GPU shader time, averaged over the ten models - absent
+models count zero; `n` = models dispatching it; desktop reference in the last columns):
 
-**Convolution-family shares** (routing the device dispatched, share of the convolutions' GPU
-shader time): direct 41.2%, im2col+gemm 38.1%, pointwise 15.4%, 1d 4.6%, 1d-pointwise 0.5%,
-depthwise 0.2%, winograd 0.1%.
+| shader | M51 mean (n) | M51 summed | desktop mean (n) |
+|---|---:|---:|---:|
+| `conv2d_gemm_texture2d_half` | **32.5%** (5) | 33.8% | 26.6% (5) |
+| `conv2d_pw_tiled_bufw_half` | 16.3% (8) | 9.5% | 20.4% (8) |
+| `conv2d_2x2x8_border_half` | 12.0% (7) | 25.8% | 18.5% (9) |
+| `conv1d_clamp_half` | 8.7% (1) | 4.2% | 8.7% (1) |
+| `conv2d_pw_tiled_4x8_bufw_half` | 5.4% (8) | 4.7% | 4.9% (8) |
+| `conv2d_1x1x4_half` | 5.2% (4) | 6.7% | 3.0% (4) |
+| `linear_vec_bias_tile_row_1...` | 4.8% (7) | 1.1% | 3.3% (7) |
+| `conv2d_2x2x4_border_half` | 4.0% (8) | 5.5% | - |
+
+**Kernel-kind shares of convolution time** (summed over the models; classification: dims-1
+convolutions are 1D, groups = Cin are depthwise, then kernel x stride x dilation; desktop
+reference = one desktop GPU of the owner's survey):
+
+| kind | M51 | desktop |
+|---|---:|---:|
+| 3x3 s1 | **45.1%** | 37.3% |
+| 1x1 | 15.4% | 23.5% |
+| 1x7/7x1 | 14.4% | 9.5% |
+| 3x3 dilated | 7.4% | 18.0% |
+| 3x3 s2 | 5.9% | 3.5% |
+| 1x3/3x1 | 5.7% | 3.4% |
+| 1D | 5.1% | 3.8% |
+| depthwise | 0.2% | 0.2% |
+| other | 0.9% | 0.9% |
 
 **Kind x K class** (share of the summed GPU shader time):
 
