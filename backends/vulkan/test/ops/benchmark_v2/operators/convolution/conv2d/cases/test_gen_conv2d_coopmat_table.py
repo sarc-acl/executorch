@@ -503,6 +503,28 @@ class Confirmation(unittest.TestCase):
         self.assertEqual((code, name), ("not-timed", None))
 
 
+class NominateSessions(unittest.TestCase):
+    def test_configurations_of_every_session(self):
+        # An add-on sweep may time configurations the first session lacks.
+        labels = ["sweep " + c["label"] for c in json.loads(gen.CONFIGS.read_text())]
+        other = next(x for x in labels if x != SHAPE)
+        stock = {"auto": arm(100, 100, 100), "A'": arm(100, 100, 100)}
+        a = session({**stock, "xe2_t32x64_f16_alc": arm(40, 40, 40)})
+        b = session({**stock, "xe2_t32x64_f16_alc": arm(40, 40, 40)})
+        b["shapes"][other] = b["shapes"][SHAPE]
+        b["band"][other] = 0.02
+        with tempfile.TemporaryDirectory() as tmp:
+            dirs = [str(write(Path(tmp), n, s)) for n, s in (("a", a), ("b", b))]
+            out = Path(tmp) / "nominations.json"
+            subprocess.run(
+                [sys.executable, "-B", str(HERE / gen.__name__) + ".py"]
+                + ["nominate", "--out", str(out), *dirs],
+                check=True,
+                capture_output=True,
+            )
+            self.assertEqual(list(json.loads(out.read_text())["dev"]), [SHAPE, other])
+
+
 class Refusal(unittest.TestCase):
     def run_table(self, s):
         with tempfile.TemporaryDirectory() as tmp:

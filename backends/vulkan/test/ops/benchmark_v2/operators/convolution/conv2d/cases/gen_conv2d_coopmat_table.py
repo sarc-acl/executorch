@@ -539,7 +539,9 @@ def run_nominate(args, configs):
     for sessions in by_device(args.sessions).values():
         ref = sessions[0][1]
         dev = nominations.setdefault(ref["device"], {})
-        for shape in ref["shapes"]:
+        # Every configuration of any session of the device, in first-seen order.
+        shapes = dict.fromkeys(shape for _, s in sessions for shape in s["shapes"])
+        for shape in shapes:
             nomination, (info, code, text) = nominate(shape, sessions)
             dev[shape] = nomination
             c = configs[config_label(shape)]
