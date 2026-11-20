@@ -185,7 +185,7 @@ the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFL
   runtime plumbing default-off and unrouted as before.)
 - [ ] 11.5 Small-M, DRAM-bound shapes: move toward the DRAM roof (deeper split-K, more loads in flight).
   Verify as in 11.2.
-- [ ] 11.6 Final interleaved session from the committed HEAD. Report per-shape ratio and % of roofline before and
+- [x] 11.6 Final interleaved session from the committed HEAD. Report per-shape ratio and % of roofline before and
   after stage 3, and per-candidate gains. Re-run from the final HEAD after 11.8, with every adopted arm gated on
   the exact binary timed (the 11.6a arms were gated on earlier binaries). Add a per-cell noise-band column to the
   final table and mark which gains exceed it. Cool the board fully first (the 11.6a opening A/A had a +24% cell).
@@ -194,6 +194,14 @@ the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFL
   via fast-gather); after/best-stock 0.578; geomean % of bound 27.6% -> 28.5%; goal met beyond the noise band on
   37 of 45 - 784,256,1024 crosses to 0.987 within the parity band, 7 cells remain behind (three 784 1x1, four
   kxk), down from 8; oracle 0.986 vs predicate 0.988.)
+  (FINAL, HEAD 01bc7d2d52, RESULTS 11.6 final: 120 s cooling idle then 880 rows zero invalid on the same binary as
+  every gate; A/A open 1.003 / close 0.990 with wide cells (worst +12.6% / -18.0%) - the 4.0/7.3 precedent
+  widening, per-cell bands in the table; parent drift 0.994. After state = the 11.8 route. After/before geomean
+  0.899 (1x1 0.912, kxk 0.872); after/best-stock 0.536; geomean % of bound 27.8% -> 30.9%. Gains beyond band on
+  21 of 25 changed cells, three inside their widened bands, one regression (the 784,128,1152 boundary cell 1.050
+  here vs 1.010 in s117 - owner-decision request updated). Goal met on 43 of 45: the three 784 losers land at
+  0.755/0.747/0.897 vs best stock, 64-256 224x224 at 0.976, 1024-256 28x28 at 0.695; the two remaining cells are
+  the 11.5 DRAM-roof cells (1.816 / 1.493).)
 - [ ] 11.7 (superseded by 11.8) 784-cell gap, re-attributed: the 11.3 occupancy reading is corrected by the M51
   linear-GEMM evidence (note 13) - a kernel at one workgroup per CU with 16 independent accumulator chains per
   wave reaches about two times our efficiency, so the limiter is **too few independent accumulator chains per

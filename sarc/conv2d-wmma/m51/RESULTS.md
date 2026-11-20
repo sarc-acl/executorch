@@ -1409,3 +1409,100 @@ sk2+fg arm is the route and sk4 is recorded as the alternative for the owner.
 The 11.6 final session measures this state against the stage-2 parents and best stock
 on all 45 shapes.
 
+
+## 11.6 Final session (from the final HEAD, post-11.8): the stage-3 after state on all 45 shapes
+
+Re-run per the re-opened TASKS 11.6, from the committed HEAD past 11.8 (RESULTS 11.8),
+same binary as every gate today (one md5; the t128, t32x32-re-gate and fast-gather-re-gate
+loops all ran on it). The after state is the adopted route: 1x1 M >= 784 and N >= 128 ->
+amd_t128x128_f32_alc, else the 1x1 parent; kk M >= 784 and N >= 256 ->
+t128_sk2_i2c + fast_gather, else the kk parent + fast_gather. 120 s cooling idle first
+(the 11.6a opening A/A had a +24% cell), then A/A open, five rotated rounds (880
+dispatches), A/A close, readback.
+
+**Validity:** 880 rows, zero invalid; readback clean (driver canonical, bench canonical,
+layers off, pins held); parent drift vs 11.1 0.994. A/A open geomean 1.003, close 0.990 -
+THRESHOLDS' every-cell-2% is not met (open worst +12.6% on `1x7 192-224 17x17`, +7.2% on
+`1x1 25,384,4032`; close worst -18.0% on `1x1 784,128,512`, -10.1% on `1x7 192-224`).
+**That widening is the 4.0/7.3 session precedent, not a THRESHOLDS rule**, applied as in
+11.6a: each cell's noise band widens to its own observed A/A deviation, and the band
+column below marks which gains clear it.
+
+| shape | aft/bef | aft/bs | bef/bs | %bound bef | %bound aft | drift | band |
+|---|---|---|---|---|---|---|---|
+| 1x1 144,192,768 | 1.000 | 0.412 | 0.412 | 26.7 | 26.7 | 0.947 | 2% |
+| 1x1 196,1024,256 | 1.000 | 0.904 | 0.904 | 26.4 | 26.4 | 1.001 | 2% |
+| 1x1 196,256,1024 | 1.000 | 0.491 | 0.491 | 25.3 | 25.3 | 1.003 | 2% |
+| 1x1 196,256,2304 | 1.000 | 0.587 | 0.587 | 26.0 | 26.0 | 0.986 | 2% |
+| 1x1 196,512,1024 | 1.000 | 0.723 | 0.723 | 27.4 | 27.4 | 0.998 | 2% |
+| 1x1 196,64,384 | 1.000 | 0.393 | 0.393 | 21.0 | 21.0 | 0.98 | 2% |
+| 1x1 196,96,576 | 1.000 | 0.384 | 0.384 | 25.0 | 25.0 | 0.997 | 3% |
+| 1x1 25,384,4032 | 1.000 | 0.262 | 0.262 | 43.4 | 43.4 | 0.987 | 7% |
+| 1x1 289,192,1024 | 1.000 | 0.526 | 0.526 | 26.1 | 26.1 | 1.009 | 2% |
+| 1x1 289,224,1344 | 1.000 | 0.695 | 0.695 | 24.7 | 24.7 | 0.987 | 2% |
+| 1x1 289,384,1024 | 1.000 | 0.766 | 0.766 | 28.5 | 28.5 | 0.999 | 2% |
+| 1x1 3136,128,256 | 0.798 | 0.766 | 0.959 | 36.4 | 45.6 | 1.000 | 2% * |
+| 1x1 3136,256,64 | 0.859 | 0.608 | 0.708 | 40.1 | 46.7 | 1.001 | 2% * |
+| 1x1 3136,64,256 | 1.000 | 0.822 | 0.822 | 53.9 | 53.9 | 1.000 | 2% |
+| 1x1 3136,64,64 | 1.000 | 0.677 | 0.677 | 50.0 | 50.0 | 1.000 | 2% |
+| 1x1 49,160,960 | 1.000 | 0.246 | 0.246 | 20.9 | 20.9 | 1.000 | 2% |
+| 1x1 49,2048,512 | 1.000 | 0.831 | 0.831 | 50.2 | 50.2 | 1.000 | 2% |
+| 1x1 49,512,2048 | 1.000 | 0.347 | 0.347 | 50.2 | 50.2 | 1.000 | 2% |
+| 1x1 49,512,4608 | 1.000 | 0.212 | 0.212 | 52.5 | 52.5 | 0.865 | 2% |
+| 1x1 49,96,576 | 1.000 | 0.336 | 0.336 | 13.7 | 13.7 | 0.999 | 2% |
+| 1x1 64,256,1536 | 1.000 | 0.303 | 0.303 | 31.8 | 31.8 | 0.999 | 2% |
+| 1x1 64,384,1536 | 1.000 | 0.321 | 0.321 | 42.3 | 42.3 | 0.993 | 2% |
+| 1x1 784,1024,256 | 0.697 | 0.659 | 0.944 | 31.8 | 45.6 | 1.000 | 2% * |
+| 1x1 784,128,1152 | 1.050 | 0.708 | 0.674 | 29.2 | 27.8 | 0.999 | 2% |
+| 1x1 784,128,512 | 0.930 | 0.621 | 0.667 | 29.8 | 32.0 | 0.999 | 18% |
+| 1x1 784,2048,1024 | 0.598 | 0.755 | 1.263 | 35.1 | 58.7 | 1.000 | 2% * |
+| 1x1 784,2048,512 | 0.631 | 0.747 | 1.185 | 34.3 | 54.4 | 1.000 | 2% * |
+| 1x1 784,256,1024 | 0.728 | 0.737 | 1.013 | 31.4 | 43.2 | 1.000 | 2% * |
+| 1x1 784,256,512 | 0.768 | 0.727 | 0.947 | 30.1 | 39.1 | 0.999 | 2% * |
+| 1x1 784,512,128 | 0.846 | 0.681 | 0.805 | 27.9 | 33.0 | 1.000 | 2% * |
+| 1x1 784,512,2048 | 0.681 | 0.897 | 1.318 | 34.2 | 50.2 | 1.000 | 2% * |
+| 1x7 192-224 17x17 | 0.941 | 0.502 | 0.534 | 19.1 | 20.3 | 1.001 | 13% |
+| 1x7 224-256 17x17 | 0.945 | 0.498 | 0.527 | 20.3 | 21.5 | 1.000 | 2% * |
+| 3x3 1024-256 28x28 | 0.581 | 0.695 | 1.195 | 20.4 | 35.2 | 0.998 | 2% * |
+| 3x3 128 28x28 | 0.931 | 0.768 | 0.825 | 18.5 | 19.9 | 1.000 | 2% * |
+| 3x3 192-48 14x14 | 0.874 | 0.370 | 0.423 | 7.1 | 8.1 | 0.994 | 2% * |
+| 3x3 192-48 28x28 | 0.922 | 0.514 | 0.557 | 10.4 | 11.3 | 1.000 | 2% * |
+| 3x3 256 14x14 | 0.940 | 0.364 | 0.387 | 20.5 | 21.8 | 1.001 | 2% * |
+| 3x3 448-384 5x5 | 0.951 | 0.233 | 0.245 | 54.5 | 57.3 | 1.005 | 6% |
+| 3x3 512 7x7 | 0.967 | 0.162 | 0.168 | 39.5 | 40.9 | 0.996 | 2% * |
+| 3x3 64 224x224 | 0.815 | 1.816 | 2.228 | 13.4 | 16.5 | 1.001 | 2% * |
+| 3x3 64 56x56 | 0.903 | 1.493 | 1.653 | 14.2 | 15.7 | 1.000 | 2% * |
+| 3x3 64-256 224x224 | 0.654 | 0.976 | 1.493 | 20.7 | 31.6 | 1.000 | 2% * |
+| 3x3 s2 256-512 14x14 | 0.943 | 0.423 | 0.448 | 38.4 | 40.7 | 0.994 | 2% * |
+| 3x3 s2 512 14x14 | 0.970 | 0.285 | 0.294 | 40.7 | 41.9 | 0.998 | 2% * |
+
+**Geomeans:** after/before **0.899** over all 45 shapes (1x1 0.912, k x k 0.872);
+after/best-stock 0.536 (1x1 0.543, k x k 0.522). Geomean % of roofline bound 27.8% ->
+30.9% overall (1x1 31.6% -> 34.7%, k x k 20.9% -> 23.9%). Against the 11.6a checkpoint:
+0.970 -> 0.899 after/before, cells behind best stock 7 -> 2.
+
+**Gains beyond the per-cell band: 21 of the 25 changed cells** (the after arm
+differs from the parent on 11 1x1 predicate cells and all 14 k x k cells; of the rest,
+three gain inside their widened bands and one - the boundary cell below - regresses). The three gains inside
+their (widened) bands: `1x1 784,128,512` 0.930 against an 18% band from its own close
+A/A swing (the same gain was beyond a 2% band in the s117 session, 0.929);
+`1x7 192-224 17x17` 0.941 against a 12.6% band (its open A/A cell); `3x3 448-384 5x5`
+0.951 against a 5.9% band (its close A/A cell - the same cell 11.6a already reported as
+inside its band). Every 11.8 adoption decision was made on the s117/s117k sessions, whose
+A/A cells were inside 2% at the open end; this session's wider bands change no adoption,
+only the confidence with which the final table can claim each cell.
+
+**The boundary cell regressed against the parent:** `1x1 784,128,1152` measures 1.050
+aft/bef here against 1.010 in s117 - the two sessions bracket parity, so the 11.8
+owner-decision request is updated with both data points (the cell remains far ahead of
+best stock, 0.708, and the predicate's other ten cells gain 15-40%; a K term to drop the
+cell would exceed the two-term limit, and the nvidia form is worse on it at 1.025).
+
+**The stage-3 kernel-level goal - the best gated coopmat route ahead of best stock beyond
+the noise band on every shape - is reached on 43 of the 45 shapes.** The two remaining
+cells are the 11.5 DRAM-roof cells, unchanged in kind since 11.4: `3x3 64 224x224`
+(1.816 vs best stock, 0.815 vs the kk parent) and `3x3 64 56x56` (1.493, 0.903) - the
+gather is fixed, the GEMM is the gap, and the t128 tile does not fit N = 64. The three
+784 losers of 11.6a all land ahead of stock: `784,2048,1024` 1.109 -> 0.755,
+`784,2048,512` 1.087 -> 0.747, `784,512,2048` 1.227 -> 0.897 (11.6a aft/bs -> final
+aft/bs); `3x3 64-256 224x224` crosses at 0.976 and `3x3 1024-256 28x28` at 0.695.
