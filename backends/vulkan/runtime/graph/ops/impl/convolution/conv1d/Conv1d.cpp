@@ -11,10 +11,31 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/OperatorRegistry.h>
 
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv1d/Conv1dDirect.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv1d/Conv1dSimt.h>
 
 namespace vkcompute {
 
 void conv1d_impl(ComputeGraph& graph, const std::vector<ValueRef>& args) {
+  {
+    // in, weight, bias, stride, padding, dilation, groups, output_min,
+    // output_max, out (change conv2d-all-used-kernels).
+    const bool clamp = args.size() == 12;
+    const std::vector<ValueRef> simt_args = {
+        args[0],
+        args[1],
+        args[2],
+        args[3],
+        args[4],
+        args[5],
+        args[8],
+        clamp ? args[9] : kDummyValueRef,
+        clamp ? args[10] : kDummyValueRef,
+        args.back()};
+    if (const Conv1dSimtVariant* const variant =
+            conv1d_simt_table_variant(graph, simt_args)) {
+      return conv1d_simt_impl(graph, *variant, simt_args);
+    }
+  }
   if (graph.packed_dim_of(args[0]) == WHCN::kHeightDim) {
     // Height-packed: route to optimized conv1d implementations
     const auto weight_sizes = graph.sizes_of(args[1]);

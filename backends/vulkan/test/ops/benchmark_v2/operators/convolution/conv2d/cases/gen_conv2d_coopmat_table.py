@@ -66,9 +66,12 @@ TABLE = (
     HERE.parents[6] / "runtime/graph/ops/impl/convolution/conv2d/Conv2dCoopmatTable.h"
 )
 CONFIGS = HERE / "model_sweep_configs.json"
-# Configurations of the other precisions, labels prefixed with the precision.
-PRECISIONS = ("fp32", "int8")
-PRECISION_CONFIGS = [HERE / f"model_sweep_configs_{p}.json" for p in PRECISIONS]
+# Configurations of change conv2d-all-used-kernels (fp32, int8, conv1d), labels
+# prefixed with the precision.
+PRECISIONS = ("fp16", "fp32", "int8")
+PRECISION_CONFIGS = [
+    HERE / f"model_sweep_configs_{p}.json" for p in ("fp32", "int8", "conv1d")
+]
 MIN_RATIO = 1.05
 CONFIRM_RUNS = 5
 STOCK = ("auto", "A'")
@@ -125,21 +128,21 @@ struct Conv2dCoopmatTableRow final {
 
 def precision_of(shape):
     """The precision of a session shape label: "sweep <label>" (fp16) or
-    "<precision> <label>" (fp32, int8; change conv2d-all-used-kernels)."""
+    "<precision> <label>" (change conv2d-all-used-kernels)."""
     first = shape.split(" ", 1)[0]
     return first if first in PRECISIONS else "fp16"
 
 
 def config_label(shape):
     """The key of a session shape label in the configurations."""
-    p = precision_of(shape)
-    return shape.removeprefix("sweep ") if p == "fp16" else shape
+    first = shape.split(" ", 1)[0]
+    return shape if first in PRECISIONS else shape.removeprefix("sweep ")
 
 
 def variant_of(arm):
     """The shader variant of an arm: FP16 arms are short names of
     conv2d_pw_coopmat variants, the others full names."""
-    if arm.startswith(("q8ta_", "conv2d_")):
+    if arm.startswith(("q8ta_", "conv2d_", "conv1d_")):
         return arm
     return f"conv2d_pw_coopmat_{arm}_half"
 

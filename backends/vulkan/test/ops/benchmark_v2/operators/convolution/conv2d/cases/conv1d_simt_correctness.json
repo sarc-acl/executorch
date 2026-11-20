@@ -1,0 +1,498 @@
+[
+  {
+    "name": "fp16 1d 1x7 s1x1 p0x3 d1x1 30-22 1x5 batch3 baseline",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [3, 30, 5], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [22, 30, 7], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.06901, 0.06901]}}},
+        {"tensor": {"name": "bias", "sizes": [22], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1]},
+        {"int_list": [3]},
+        {"int_list": [1]},
+        {"bool": false},
+        {"int_list": [0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [3, 22, 5], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "fp16 1d 1x7 s1x1 p0x3 d1x1 30-22 1x5 batch3 simt",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "simt", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {
+      "v_VARIANT": [
+        "conv1d_simt_t64x16_m4n1_half",
+        "conv1d_simt_t64x16_m4n1_sk4_half",
+        "conv1d_simt_t64x16_m4n1_sk8_half",
+        "conv1d_simt_t64x16_m4n1_sk16_half",
+        "conv1d_simt_t32x32_m4n1_half",
+        "conv1d_simt_t32x32_m4n1_sk4_half",
+        "conv1d_simt_t32x32_m4n1_sk8_half",
+        "conv1d_simt_t32x32_m4n1_sk16_half",
+        "conv1d_simt_t128x16_m8n1_half",
+        "conv1d_simt_t128x16_m8n1_sk4_half",
+        "conv1d_simt_t128x16_m8n1_sk8_half",
+        "conv1d_simt_t128x16_m8n1_sk16_half"
+      ]
+    },
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [3, 30, 5], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [22, 30, 7], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.06901, 0.06901]}}},
+        {"tensor": {"name": "bias", "sizes": [22], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1]},
+        {"int_list": [3]},
+        {"int_list": [1]},
+        {"bool": false},
+        {"int_list": [0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [3, 22, 5], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "fp16 1d 1x32 s1x1 p0x16 d1x1 250-61 1x2 batch3 baseline",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [3, 250, 2], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [61, 250, 32], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.01118, 0.01118]}}},
+        {"tensor": {"name": "bias", "sizes": [61], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1]},
+        {"int_list": [16]},
+        {"int_list": [1]},
+        {"bool": false},
+        {"int_list": [0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [3, 61, 3], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "fp16 1d 1x32 s1x1 p0x16 d1x1 250-61 1x2 batch3 simt",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "simt", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {
+      "v_VARIANT": [
+        "conv1d_simt_t64x16_m4n1_half",
+        "conv1d_simt_t64x16_m4n1_sk4_half",
+        "conv1d_simt_t64x16_m4n1_sk8_half",
+        "conv1d_simt_t64x16_m4n1_sk16_half",
+        "conv1d_simt_t32x32_m4n1_half",
+        "conv1d_simt_t32x32_m4n1_sk4_half",
+        "conv1d_simt_t32x32_m4n1_sk8_half",
+        "conv1d_simt_t32x32_m4n1_sk16_half",
+        "conv1d_simt_t128x16_m8n1_half",
+        "conv1d_simt_t128x16_m8n1_sk4_half",
+        "conv1d_simt_t128x16_m8n1_sk8_half",
+        "conv1d_simt_t128x16_m8n1_sk16_half"
+      ]
+    },
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [3, 250, 2], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [61, 250, 32], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.01118, 0.01118]}}},
+        {"tensor": {"name": "bias", "sizes": [61], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1]},
+        {"int_list": [16]},
+        {"int_list": [1]},
+        {"bool": false},
+        {"int_list": [0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [3, 61, 3], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "fp16 1d 1x25 s1x16 p0x4 d1x1 1-13 1x70 batch3 baseline",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [3, 1, 70], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [13, 1, 25], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.2, 0.2]}}},
+        {"tensor": {"name": "bias", "sizes": [13], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [16]},
+        {"int_list": [4]},
+        {"int_list": [1]},
+        {"bool": false},
+        {"int_list": [0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [3, 13, 4], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "fp16 1d 1x25 s1x16 p0x4 d1x1 1-13 1x70 batch3 simt",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "simt", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {
+      "v_VARIANT": [
+        "conv1d_simt_t64x16_m4n1_half",
+        "conv1d_simt_t64x16_m4n1_sk4_half",
+        "conv1d_simt_t64x16_m4n1_sk8_half",
+        "conv1d_simt_t64x16_m4n1_sk16_half",
+        "conv1d_simt_t32x32_m4n1_half",
+        "conv1d_simt_t32x32_m4n1_sk4_half",
+        "conv1d_simt_t32x32_m4n1_sk8_half",
+        "conv1d_simt_t32x32_m4n1_sk16_half",
+        "conv1d_simt_t128x16_m8n1_half",
+        "conv1d_simt_t128x16_m8n1_sk4_half",
+        "conv1d_simt_t128x16_m8n1_sk8_half",
+        "conv1d_simt_t128x16_m8n1_sk16_half"
+      ]
+    },
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [3, 1, 70], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [13, 1, 25], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.2, 0.2]}}},
+        {"tensor": {"name": "bias", "sizes": [13], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [16]},
+        {"int_list": [4]},
+        {"int_list": [1]},
+        {"bool": false},
+        {"int_list": [0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [3, 13, 4], "dtype": "float16", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "fp16 1d 1x1 s1x1 p0x0 d1x1 130-70 1x3 batch3 baseline",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route_sweep": ["auto"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [3, 130, 3], "dtype": "float16", "storage": "texture3d", "layout": "height", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [70, 130, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.08771, 0.08771]}}},
+        {"tensor": {"name": "bias", "sizes": [70], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1]},
+        {"int_list": [0]},
+        {"int_list": [1]},
+        {"bool": false},
+        {"int_list": [0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [3, 70, 3], "dtype": "float16", "storage": "texture3d", "layout": "height", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "fp16 1d 1x1 s1x1 p0x0 d1x1 130-70 1x3 batch3 simt",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
+    "route": {"name": "simt", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {
+      "v_VARIANT": [
+        "conv1d_simt_t32x32_m4n1_pw_half",
+        "conv1d_simt_t32x32_m4n1_pw_sk4_half",
+        "conv1d_simt_t32x32_m4n1_pw_sk8_half",
+        "conv1d_simt_t32x32_m4n1_pw_sk16_half",
+        "conv1d_simt_t32x64_m4n2_pw_half",
+        "conv1d_simt_t32x64_m4n2_pw_sk4_half",
+        "conv1d_simt_t32x64_m4n2_pw_sk8_half",
+        "conv1d_simt_t32x64_m4n2_pw_sk16_half",
+        "conv1d_simt_t64x64_m4n2_pw_half",
+        "conv1d_simt_t64x64_m4n2_pw_sk4_half",
+        "conv1d_simt_t64x64_m4n2_pw_sk8_half",
+        "conv1d_simt_t64x64_m4n2_pw_sk16_half"
+      ]
+    },
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [3, 130, 3], "dtype": "float16", "storage": "texture3d", "layout": "height", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [70, 130, 1], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-0.08771, 0.08771]}}},
+        {"tensor": {"name": "bias", "sizes": [70], "dtype": "float16", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1]},
+        {"int_list": [0]},
+        {"int_list": [1]},
+        {"bool": false},
+        {"int_list": [0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [3, 70, 3], "dtype": "float16", "storage": "texture3d", "layout": "height", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "fp32 1d 1x7 s1x1 p0x3 d1x1 30-22 1x5 batch3 baseline",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.001, "rtol": 0.001, "outputs": ["output"]},
+    "route_sweep": ["auto"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [3, 30, 5], "dtype": "float32", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [22, 30, 7], "dtype": "float32", "storage": "constant", "data": {"rand_uniform_float": [-0.06901, 0.06901]}}},
+        {"tensor": {"name": "bias", "sizes": [22], "dtype": "float32", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1]},
+        {"int_list": [3]},
+        {"int_list": [1]},
+        {"bool": false},
+        {"int_list": [0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [3, 22, 5], "dtype": "float32", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "fp32 1d 1x7 s1x1 p0x3 d1x1 30-22 1x5 batch3 simt",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.001, "rtol": 0.001, "outputs": ["output"]},
+    "route": {"name": "simt", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {
+      "v_VARIANT": [
+        "conv1d_simt_t64x16_m4n1_float",
+        "conv1d_simt_t64x16_m4n1_sk4_float",
+        "conv1d_simt_t64x16_m4n1_sk8_float",
+        "conv1d_simt_t64x16_m4n1_sk16_float",
+        "conv1d_simt_t32x32_m4n1_float",
+        "conv1d_simt_t32x32_m4n1_sk4_float",
+        "conv1d_simt_t32x32_m4n1_sk8_float",
+        "conv1d_simt_t32x32_m4n1_sk16_float",
+        "conv1d_simt_t128x16_m8n1_float",
+        "conv1d_simt_t128x16_m8n1_sk4_float",
+        "conv1d_simt_t128x16_m8n1_sk8_float",
+        "conv1d_simt_t128x16_m8n1_sk16_float"
+      ]
+    },
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [3, 30, 5], "dtype": "float32", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [22, 30, 7], "dtype": "float32", "storage": "constant", "data": {"rand_uniform_float": [-0.06901, 0.06901]}}},
+        {"tensor": {"name": "bias", "sizes": [22], "dtype": "float32", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1]},
+        {"int_list": [3]},
+        {"int_list": [1]},
+        {"bool": false},
+        {"int_list": [0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [3, 22, 5], "dtype": "float32", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "fp32 1d 1x32 s1x1 p0x16 d1x1 250-61 1x2 batch3 baseline",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.001, "rtol": 0.001, "outputs": ["output"]},
+    "route_sweep": ["auto"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [3, 250, 2], "dtype": "float32", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [61, 250, 32], "dtype": "float32", "storage": "constant", "data": {"rand_uniform_float": [-0.01118, 0.01118]}}},
+        {"tensor": {"name": "bias", "sizes": [61], "dtype": "float32", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1]},
+        {"int_list": [16]},
+        {"int_list": [1]},
+        {"bool": false},
+        {"int_list": [0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [3, 61, 3], "dtype": "float32", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "fp32 1d 1x32 s1x1 p0x16 d1x1 250-61 1x2 batch3 simt",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.001, "rtol": 0.001, "outputs": ["output"]},
+    "route": {"name": "simt", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {
+      "v_VARIANT": [
+        "conv1d_simt_t64x16_m4n1_float",
+        "conv1d_simt_t64x16_m4n1_sk4_float",
+        "conv1d_simt_t64x16_m4n1_sk8_float",
+        "conv1d_simt_t64x16_m4n1_sk16_float",
+        "conv1d_simt_t32x32_m4n1_float",
+        "conv1d_simt_t32x32_m4n1_sk4_float",
+        "conv1d_simt_t32x32_m4n1_sk8_float",
+        "conv1d_simt_t32x32_m4n1_sk16_float",
+        "conv1d_simt_t128x16_m8n1_float",
+        "conv1d_simt_t128x16_m8n1_sk4_float",
+        "conv1d_simt_t128x16_m8n1_sk8_float",
+        "conv1d_simt_t128x16_m8n1_sk16_float"
+      ]
+    },
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [3, 250, 2], "dtype": "float32", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [61, 250, 32], "dtype": "float32", "storage": "constant", "data": {"rand_uniform_float": [-0.01118, 0.01118]}}},
+        {"tensor": {"name": "bias", "sizes": [61], "dtype": "float32", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1]},
+        {"int_list": [16]},
+        {"int_list": [1]},
+        {"bool": false},
+        {"int_list": [0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [3, 61, 3], "dtype": "float32", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "fp32 1d 1x25 s1x16 p0x4 d1x1 1-13 1x70 batch3 baseline",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.001, "rtol": 0.001, "outputs": ["output"]},
+    "route_sweep": ["auto"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [3, 1, 70], "dtype": "float32", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [13, 1, 25], "dtype": "float32", "storage": "constant", "data": {"rand_uniform_float": [-0.2, 0.2]}}},
+        {"tensor": {"name": "bias", "sizes": [13], "dtype": "float32", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [16]},
+        {"int_list": [4]},
+        {"int_list": [1]},
+        {"bool": false},
+        {"int_list": [0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [3, 13, 4], "dtype": "float32", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "fp32 1d 1x25 s1x16 p0x4 d1x1 1-13 1x70 batch3 simt",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.001, "rtol": 0.001, "outputs": ["output"]},
+    "route": {"name": "simt", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {
+      "v_VARIANT": [
+        "conv1d_simt_t64x16_m4n1_float",
+        "conv1d_simt_t64x16_m4n1_sk4_float",
+        "conv1d_simt_t64x16_m4n1_sk8_float",
+        "conv1d_simt_t64x16_m4n1_sk16_float",
+        "conv1d_simt_t32x32_m4n1_float",
+        "conv1d_simt_t32x32_m4n1_sk4_float",
+        "conv1d_simt_t32x32_m4n1_sk8_float",
+        "conv1d_simt_t32x32_m4n1_sk16_float",
+        "conv1d_simt_t128x16_m8n1_float",
+        "conv1d_simt_t128x16_m8n1_sk4_float",
+        "conv1d_simt_t128x16_m8n1_sk8_float",
+        "conv1d_simt_t128x16_m8n1_sk16_float"
+      ]
+    },
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [3, 1, 70], "dtype": "float32", "storage": "texture3d", "layout": "channels", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [13, 1, 25], "dtype": "float32", "storage": "constant", "data": {"rand_uniform_float": [-0.2, 0.2]}}},
+        {"tensor": {"name": "bias", "sizes": [13], "dtype": "float32", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [16]},
+        {"int_list": [4]},
+        {"int_list": [1]},
+        {"bool": false},
+        {"int_list": [0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [3, 13, 4], "dtype": "float32", "storage": "texture3d", "layout": "channels", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "fp32 1d 1x1 s1x1 p0x0 d1x1 130-70 1x3 batch3 baseline",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.001, "rtol": 0.001, "outputs": ["output"]},
+    "route_sweep": ["auto"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [3, 130, 3], "dtype": "float32", "storage": "texture3d", "layout": "height", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [70, 130, 1], "dtype": "float32", "storage": "constant", "data": {"rand_uniform_float": [-0.08771, 0.08771]}}},
+        {"tensor": {"name": "bias", "sizes": [70], "dtype": "float32", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1]},
+        {"int_list": [0]},
+        {"int_list": [1]},
+        {"bool": false},
+        {"int_list": [0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [3, 70, 3], "dtype": "float32", "storage": "texture3d", "layout": "height", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "fp32 1d 1x1 s1x1 p0x0 d1x1 130-70 1x3 batch3 simt",
+    "operator": "aten.convolution.default",
+    "target_ms": 5,
+    "warmup_runs": 1,
+    "benchmark_runs": 1,
+    "validation_method": {"function": "is_close", "atol": 0.001, "rtol": 0.001, "outputs": ["output"]},
+    "route": {"name": "simt", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {
+      "v_VARIANT": [
+        "conv1d_simt_t32x32_m4n1_pw_float",
+        "conv1d_simt_t32x32_m4n1_pw_sk4_float",
+        "conv1d_simt_t32x32_m4n1_pw_sk8_float",
+        "conv1d_simt_t32x32_m4n1_pw_sk16_float",
+        "conv1d_simt_t32x64_m4n2_pw_float",
+        "conv1d_simt_t32x64_m4n2_pw_sk4_float",
+        "conv1d_simt_t32x64_m4n2_pw_sk8_float",
+        "conv1d_simt_t32x64_m4n2_pw_sk16_float",
+        "conv1d_simt_t64x64_m4n2_pw_float",
+        "conv1d_simt_t64x64_m4n2_pw_sk4_float",
+        "conv1d_simt_t64x64_m4n2_pw_sk8_float",
+        "conv1d_simt_t64x64_m4n2_pw_sk16_float"
+      ]
+    },
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [3, 130, 3], "dtype": "float32", "storage": "texture3d", "layout": "height", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"tensor": {"name": "weight", "sizes": [70, 130, 1], "dtype": "float32", "storage": "constant", "data": {"rand_uniform_float": [-0.08771, 0.08771]}}},
+        {"tensor": {"name": "bias", "sizes": [70], "dtype": "float32", "storage": "constant", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [1]},
+        {"int_list": [0]},
+        {"int_list": [1]},
+        {"bool": false},
+        {"int_list": [0]},
+        {"int": 1},
+        {"tensor": {"name": "output", "sizes": [3, 70, 3], "dtype": "float32", "storage": "texture3d", "layout": "height", "data": {"fill": 0}}}
+      ]
+    ]
+  }
+]

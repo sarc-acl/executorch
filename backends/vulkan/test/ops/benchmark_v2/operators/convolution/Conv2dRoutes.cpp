@@ -4,6 +4,7 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv1d/Conv1dSimt.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2d.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2dDirect.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2dSimt.h>
@@ -329,6 +330,29 @@ Json build_conv2d_simt(
     throw std::invalid_argument("simt requires a variant name");
   }
   const std::string name = options.at("variant");
+  if (const Conv1dSimtVariant* const v1 = find_conv1d_simt_variant(name)) {
+    supported(
+        (args.size() == 10u || args.size() == 12u) &&
+            graph.dim_of(args[0]) == 3,
+        "conv1d_simt variants require a 3D convolution");
+    const bool clamp = args.size() == 12u;
+    const std::vector<ValueRef> conv1d_args = {
+        args[0],
+        args[1],
+        args[2],
+        args[3],
+        args[4],
+        args[5],
+        args[8],
+        clamp ? args[9] : kDummyValueRef,
+        clamp ? args[10] : kDummyValueRef,
+        args.back()};
+    if (const auto reason = conv1d_simt_ineligible(graph, *v1, conv1d_args)) {
+      throw UnsupportedRoute(name + " cannot run this case: " + *reason);
+    }
+    conv1d_simt_impl(graph, *v1, conv1d_args);
+    return selected("simt", {{"variant", name}});
+  }
   const Conv2dSimtVariant* const variant = find_conv2d_simt_variant(name);
   supported(variant != nullptr, "Unknown conv2d_simt variant: " + name);
   const ConvShape shape = conv_shape(graph, args);
