@@ -194,14 +194,16 @@ the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFL
   via fast-gather); after/best-stock 0.578; geomean % of bound 27.6% -> 28.5%; goal met beyond the noise band on
   37 of 45 - 784,256,1024 crosses to 0.987 within the parity band, 7 cells remain behind (three 784 1x1, four
   kxk), down from 8; oracle 0.986 vs predicate 0.988.)
-  (FINAL, HEAD 01bc7d2d52, RESULTS 11.6 final: 120 s cooling idle then 880 rows zero invalid on the same binary as
-  every gate; A/A open 1.003 / close 0.990 with wide cells (worst +12.6% / -18.0%) - the 4.0/7.3 precedent
-  widening, per-cell bands in the table; parent drift 0.994. After state = the 11.8 route. After/before geomean
-  0.899 (1x1 0.912, kxk 0.872); after/best-stock 0.536; geomean % of bound 27.8% -> 30.9%. Gains beyond band on
-  21 of 25 changed cells, three inside their widened bands, one regression (the 784,128,1152 boundary cell 1.050
-  here vs 1.010 in s117 - owner-decision request updated). Goal met on 43 of 45: the three 784 losers land at
-  0.755/0.747/0.897 vs best stock, 64-256 224x224 at 0.976, 1024-256 28x28 at 0.695; the two remaining cells are
-  the 11.5 DRAM-roof cells (1.816 / 1.493).)
+  (FINAL s118, HEAD 01bc7d2d52, RESULTS 11.6 final: 120 s cooling idle then 880 rows zero invalid on the same binary as
+  every gate; A/A open 1.0033 (5 cells outside ±2%) / close 0.9896 (7 cells outside) - the close geomean is outside 1%,
+  so the note-17 re-run trigger fired: s119 (>= 10 min idle, thermal readback, nv alternative arm on the 8 predicate
+  cells) supersedes s118 as the final session; the 4.0/7.3 precedent widening, per-cell bands in the table; parent
+  drift 0.994. After state = the 11.8 route tightened by note 18 to M >= 784 and N >= 256 (the three N=128 cells back
+  on the parent: 3136,128,256 0.798 / 784,128,512 0.930 / 784,128,1152 1.050; boundary-cell requests closed).
+  Recomputed after/before geomean 0.904 (1x1 0.919, kxk 0.872); after/best-stock 0.539; geomean % of bound
+  27.8% -> 30.7%. Gains beyond band on 20 of 22 changed cells, two inside their widened bands. Goal met on 43 of 45:
+  the three 784 losers land at 0.755/0.747/0.897 vs best stock, 64-256 224x224 at 0.976, 1024-256 28x28 at 0.695;
+  the two remaining cells are the 11.5 DRAM-roof cells (1.816 / 1.493).)
 - [ ] 11.7 (superseded by 11.8) 784-cell gap, re-attributed: the 11.3 occupancy reading is corrected by the M51
   linear-GEMM evidence (note 13) - a kernel at one workgroup per CU with 16 independent accumulator chains per
   wave reaches about two times our efficiency, so the limiter is **too few independent accumulator chains per
@@ -217,11 +219,13 @@ the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFL
   drain dominates, a one-pass drain (`f32xp` form) only if it is a yaml combination gateable by 16:45, within the
   64 KiB cap. If time is left: the kxk `amd_t128x128_f32_alc_sk2/sk4_i2c` arm with the fast gather on the 4 kxk
   losers.
-  (RESULTS 11.8/11.8k: pw gate 4 arms x 1240/1240 and kk gate 560/560 each + fast-gather re-gate, all on the final
-  binary; s117 775 rows zero invalid, s117k 180 rows zero invalid; argus: LDS ops/WMMA ~3.1, WMMA rate 1.56-1.59x
-  parent, occupancy 28-32% vs 23.6%, LDS Busy 90%->51%, drain 2 passes unmeasured share. All three 784 losers cross
-  stock parity (0.703/0.699/0.833); predicates adopted: 1x1 M>=784 and N>=128 -> amd_t128 (supersedes t32x32; flat
-  boundary cell 784,128,1152 = owner-decision request; nv form 4% faster but loses that cell, recorded as the
-  alternative), kk M>=784 and N>=256 -> t128_sk2+fg (plain adoption; supersedes the 11.4 flat cell; 64-256 224x224
-  crosses to 0.98). kk cells behind stock fall to two (the 11.5 cells). No f32xp drain: the 784 losers already cross
-  parity with the two-pass form, and no new candidate after 16:45.)
+  (RESULTS 11.8/11.8k: pw gate 4 arms x 1240/1240 and kk gate 560/560 each + fast-gather re-gate + kk t128+fg gate
+  (6 arms: parent +-fg, sk2 +-fg, sk4 +-fg), all on the final binary; s117 775 rows zero invalid, s117k 180 rows
+  zero invalid; argus pw: LDS ops/WMMA ~3.1, WMMA rate 1.56-1.59x parent, occupancy 28-32% vs 23.6%, LDS Busy
+  90%->51%, drain 2 passes unmeasured share; argus kk: RESULTS 11.8k. The three 784 losers cross stock parity on
+  the adopted amd route (0.755/0.748/0.895; nvidia alternative 0.703/0.699/0.833); predicates adopted: 1x1
+  M >= 784 and N >= 256 (note 18; supersedes t32x32 and the first N >= 128 reading; the three dropped N=128 cells
+  listed with ratios in RESULTS 11.6/11.8; boundary-cell requests closed), kk M >= 784 and N >= 256 ->
+  t128_sk2+fg (plain adoption; supersedes the 11.4 flat cell; 64-256 224x224 crosses to 0.98). kk cells behind
+  stock fall to two (the 11.5 cells). No f32xp drain: the 784 losers already cross parity with the two-pass form,
+  and no new candidate after 16:45.)

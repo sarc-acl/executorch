@@ -1321,10 +1321,12 @@ because the other M=196 cells lose 1.5-2.5x or stay flat). `3136,64,*` and every
 cell lose badly (up to 3.7x): one 128x128 tile per workgroup wastes the grid when M is
 small, as in the stage-1 `amd_t64x64_f32` failure.
 
-**All three 784 losers cross stock parity:** `784,2048,1024` 1.263 -> 0.703,
-`784,2048,512` 1.186 -> 0.699, `784,512,2048` 1.315 -> 0.833 against best stock (the
-11.6a recorded gap on the 1x1 side). Geomean % of roofline bound on the three: 34.5% -> 58.3% (the parent is at
-25-35% overall; the t128 cells land at 1.6-1.8x the parent's bound share).
+**All three 784 losers cross stock parity on the adopted amd route:** `784,2048,1024`
+1.263 -> 0.755, `784,2048,512` 1.186 -> 0.748, `784,512,2048` 1.315 -> 0.895 against
+best stock (the 11.6a recorded gap on the 1x1 side; note 16 headline). Geomean % of
+roofline bound on the three: 34.5% -> 54.3% on the amd route (the nvidia alternative
+reaches 58.3%). The parent is at 25-35% overall; the t128 cells land at 1.5-1.8x the
+parent's bound share.
 
 **argus before/after (untimed, 6 shapes x 3 arms):** the t128 kernels meet every note-13
 target against the parent:
@@ -1342,22 +1344,30 @@ target against the parent:
   stays unjudged - and unmotivated, since the 784 losers already cross parity with the
   two-pass form (no new candidate per the 16:45 rule).
 
-**Predicate (two terms):** route to `amd_t128x128_f32_alc` when **M >= 784 and N >= 128**;
-the parent elsewhere. The term set supersedes the 11.3 t32x32 predicate: all five of its
-cells are inside the new predicate and t128 beats t32x32 on every one (0.598/0.631/0.728/
-0.681/0.697 vs 0.879/0.916/0.976/0.890/0.990), so the 1x1 after state is one coherent
-rule and t32x32 returns to gated-but-unrouted. The predicate changes 11 cells: 10 gain
-beyond their 2% bands; `784,128,1152` gains 1% (1.010), inside the band - the same
-boundary-cell shape as the 11.3 request, recorded as an **owner-decision request** (the
-cell's parent drifted 1.038 this session, so its flatness is within drift noise; a
-predicate with a K term to drop it would exceed two terms).
+**Predicate (two terms, note 18):** route to `amd_t128x128_f32_alc` when **M >= 784 and
+N >= 256**; the parent elsewhere. This tightens the first reading of this section (which
+used N >= 128): s118 measured the `784,128,1152` boundary cell losing to its parent
+beyond the band (1.050), and an adopted route may not lose beyond the band (note 16), so
+the N term moves to 256 and every N = 128 cell the first predicate selected goes back to
+the parent - listed with their s118 ratios (the win the route gives up):
+`3136,128,256` 0.798 (a beyond-band win lost), `784,128,512` 0.930, `784,128,1152`
+1.050 (the loss that triggered the change). The predicate now selects 8 cells; every
+other cell the first predicate kept has N >= 256. The 11.3 t32x32 predicate is
+superseded the same way: all five of its cells are inside the new predicate and t128
+beats t32x32 on every one (0.598/0.631/0.728/0.681/0.697 vs 0.879/0.916/0.976/0.890/
+0.990), so the 1x1 after state is one coherent rule and t32x32 returns to
+gated-but-unrouted. The 11.3/11.8 boundary-cell owner-decision requests are closed by
+this change: the cell is on the parent by rule, not by request.
 
-**amd vs nvidia:** the nvidia form is faster on 10 of the 11 predicate cells (predicate
-geomean vs parent: nvidia 0.736, amd 0.768) but turns the boundary cell into a 2.5% loss
-(1.025); the amd form keeps every changed cell at parity or better (1.010 worst). Under
-the adoption rule as written the amd form is the predicate arm; the nvidia form is
-recorded as the faster alternative for the owner (a ~4% further gain on the predicate
-cells at the cost of the boundary cell).
+**amd vs nvidia (owner decision, note 16/18):** on the 8 predicate cells the nvidia
+form is faster in both sessions (s117 predicate geomean vs parent: nvidia 0.683, amd
+0.721) and under the N >= 256 predicate it has no losing cell - its only s117 loser was
+the `784,128,1152` boundary cell the predicate now drops. The amd form is the adopted
+route because it is the arm the final sessions timed on those cells; the nvidia form is
+recorded as the faster alternative for the owner (a ~5% further gain on the predicate
+cells), and the s119 re-run carries the nvidia arm on the 8 cells so the owner has
+same-session data for the switch. No per-shape mix of the two (note 11: that is an
+oracle).
 
 **Verdict: adopted** as the 1x1 stage-3 route under the predicate above (the 11.6 final
 session measures it). The kk arm of this candidate follows below.
@@ -1397,12 +1407,25 @@ stock fall from four to two - `3x3 64 224x224` (1.83) and `3x3 64 56x56` (1.49),
 the 11.5 DRAM-roof cells (11.4 verdict: the gather is fixed, the GEMM is the gap, and
 the t128 tile does not fit N = 64).
 
+**argus before/after (untimed, the 2 kk predicate cells, GEMM-stage kernels):** the
+t128 kk GEMM meets the note-13 targets against the kk parent GEMM:
+- LDS instructions per WMMA ~3.1 from the ISA instruction mix, against ~9.1 for the kk
+  parent (the pw pair measured ~3.1 vs ~11.6);
+- WMMA ops per cycle at 2.0x the kk parent's rate (the pw pair measured 1.56-1.59x);
+- occupancy 30.3% vs 25.9% - not the mechanism, per note 13;
+- LDS Busy 58.4% vs 83.6%;
+- LDS bytes per workgroup 37 KiB (the amd t128 pool), inside the 64 KiB device cap;
+- the fast-gather kernel dispatches in the capture; a stock-path gather kernel also
+  appears (3 texel fetches per element against the fast kernel's 1), consistent with
+  the flat fast-gather ratio on `3x3 1024-256 28x28` (1.007 in s117k) - the adoption on
+  that cell is the GEMM arm, not the gather.
+
 **Verdict: adopted** under the predicate above. sk4 is 8% faster than sk2 on the one
 K = 9216 cell (0.521 vs 0.564) but would cost a second routed variant; the single
 sk2+fg arm is the route and sk4 is recorded as the alternative for the owner.
 
 **Stage-3 route state after 11.8** (both families, one binary, all arms gated on it):
-- 1x1: M >= 784 and N >= 128 -> `amd_t128x128_f32_alc`; else the 1x1 parent.
+- 1x1: M >= 784 and N >= 256 -> `amd_t128x128_f32_alc`; else the 1x1 parent.
 - kk: M >= 784 and N >= 256 -> `amd_t128x128_f32_alc_sk2_i2c` + fast_gather; else the
   kk parent + fast_gather.
 - t32x32 and every other stage-3 candidate: gated, default-off, unrouted.
@@ -1413,20 +1436,26 @@ on all 45 shapes.
 ## 11.6 Final session (from the final HEAD, post-11.8): the stage-3 after state on all 45 shapes
 
 Re-run per the re-opened TASKS 11.6, from the committed HEAD past 11.8 (RESULTS 11.8),
-same binary as every gate today (one md5; the t128, t32x32-re-gate and fast-gather-re-gate
-loops all ran on it). The after state is the adopted route: 1x1 M >= 784 and N >= 128 ->
-amd_t128x128_f32_alc, else the 1x1 parent; kk M >= 784 and N >= 256 ->
-t128_sk2_i2c + fast_gather, else the kk parent + fast_gather. 120 s cooling idle first
-(the 11.6a opening A/A had a +24% cell), then A/A open, five rotated rounds (880
-dispatches), A/A close, readback.
+same binary as every gate today (one md5; the t128, t32x32-re-gate, fast-gather-re-gate
+and kk-t128+fast-gather gate loops all ran on it). The after state is the adopted route:
+1x1 M >= 784 and N >= 256 -> amd_t128x128_f32_alc (note 18; this session predates the
+tightening and timed the N = 128 cells on both arms, so the tightened route is a
+recompute over its rows - the three dropped cells below), else the 1x1 parent; kk
+M >= 784 and N >= 256 -> t128_sk2_i2c + fast_gather, else the kk parent + fast_gather.
+120 s cooling idle first (the 11.6a opening A/A had a +24% cell), then A/A open, five
+rotated rounds (880 dispatches), A/A close, readback.
 
 **Validity:** 880 rows, zero invalid; readback clean (driver canonical, bench canonical,
-layers off, pins held); parent drift vs 11.1 0.994. A/A open geomean 1.003, close 0.990 -
-THRESHOLDS' every-cell-2% is not met (open worst +12.6% on `1x7 192-224 17x17`, +7.2% on
-`1x1 25,384,4032`; close worst -18.0% on `1x1 784,128,512`, -10.1% on `1x7 192-224`).
-**That widening is the 4.0/7.3 session precedent, not a THRESHOLDS rule**, applied as in
-11.6a: each cell's noise band widens to its own observed A/A deviation, and the band
-column below marks which gains clear it.
+layers off, pins held); parent drift vs 11.1 0.994. **A/A open geomean 1.0033 with 5
+cells outside ±2% (worst +12.6% on `1x7 192-224 17x17`, +7.2% on `1x1 25,384,4032`);
+A/A close geomean 0.9896 with 7 cells outside ±2% (worst -18.0% on `1x1 784,128,512`,
+-10.1% on `1x7 192-224`).** The close geomean is outside 1% of 1, so the note-17 re-run
+trigger fired: this session is reported in full below, and the s119 re-run (>= 10 min
+idle, thermal readback) supersedes it as the final session - see the s119 paragraph.
+THRESHOLDS' every-cell-2% is not met either way. **The band widening is the 4.0/7.3
+session precedent, not a THRESHOLDS rule**, applied as in 11.6a: each cell's noise band
+widens to its own observed A/A deviation, and the band column below marks which gains
+clear it.
 
 | shape | aft/bef | aft/bs | bef/bs | %bound bef | %bound aft | drift | band |
 |---|---|---|---|---|---|---|---|
@@ -1454,7 +1483,7 @@ column below marks which gains clear it.
 | 1x1 64,384,1536 | 1.000 | 0.321 | 0.321 | 42.3 | 42.3 | 0.993 | 2% |
 | 1x1 784,1024,256 | 0.697 | 0.659 | 0.944 | 31.8 | 45.6 | 1.000 | 2% * |
 | 1x1 784,128,1152 | 1.050 | 0.708 | 0.674 | 29.2 | 27.8 | 0.999 | 2% |
-| 1x1 784,128,512 | 0.930 | 0.621 | 0.667 | 29.8 | 32.0 | 0.999 | 18% |
+| 1x1 784,128,512 | 1.000 | 0.667 | 0.667 | 29.8 | 29.8 | 0.999 | 18% |
 | 1x1 784,2048,1024 | 0.598 | 0.755 | 1.263 | 35.1 | 58.7 | 1.000 | 2% * |
 | 1x1 784,2048,512 | 0.631 | 0.747 | 1.185 | 34.3 | 54.4 | 1.000 | 2% * |
 | 1x1 784,256,1024 | 0.728 | 0.737 | 1.013 | 31.4 | 43.2 | 1.000 | 2% * |
@@ -1476,27 +1505,28 @@ column below marks which gains clear it.
 | 3x3 s2 256-512 14x14 | 0.943 | 0.423 | 0.448 | 38.4 | 40.7 | 0.994 | 2% * |
 | 3x3 s2 512 14x14 | 0.970 | 0.285 | 0.294 | 40.7 | 41.9 | 0.998 | 2% * |
 
-**Geomeans:** after/before **0.899** over all 45 shapes (1x1 0.912, k x k 0.872);
-after/best-stock 0.536 (1x1 0.543, k x k 0.522). Geomean % of roofline bound 27.8% ->
-30.9% overall (1x1 31.6% -> 34.7%, k x k 20.9% -> 23.9%). Against the 11.6a checkpoint:
-0.970 -> 0.899 after/before, cells behind best stock 7 -> 2.
+**Geomeans (note-18 route, recomputed over this session's rows):** after/before **0.904**
+over all 45 shapes (1x1 0.919, k x k 0.872); after/best-stock 0.539 (1x1 0.547, k x k
+0.522). Geomean % of roofline bound 27.8% -> 30.7% overall (1x1 31.6% -> 34.4%, k x k
+20.9% -> 23.9%). Against the 11.6a checkpoint: 0.970 -> 0.904 after/before, cells behind
+best stock 7 -> 2.
 
-**Gains beyond the per-cell band: 21 of the 25 changed cells** (the after arm
-differs from the parent on 11 1x1 predicate cells and all 14 k x k cells; of the rest,
-three gain inside their widened bands and one - the boundary cell below - regresses). The three gains inside
-their (widened) bands: `1x1 784,128,512` 0.930 against an 18% band from its own close
-A/A swing (the same gain was beyond a 2% band in the s117 session, 0.929);
-`1x7 192-224 17x17` 0.941 against a 12.6% band (its open A/A cell); `3x3 448-384 5x5`
-0.951 against a 5.9% band (its close A/A cell - the same cell 11.6a already reported as
-inside its band). Every 11.8 adoption decision was made on the s117/s117k sessions, whose
-A/A cells were inside 2% at the open end; this session's wider bands change no adoption,
-only the confidence with which the final table can claim each cell.
+**Gains beyond the per-cell band: 20 of the 22 changed cells** (the after arm differs
+from the parent on the 8 1x1 predicate cells and all 14 k x k cells). The two gains
+inside their (widened) bands: `1x7 192-224 17x17` 0.941 against a 12.6% band (its open
+A/A cell); `3x3 448-384 5x5` 0.951 against a 5.9% band (its close A/A cell - the same
+cell 11.6a already reported as inside its band). Every 11.8 adoption decision was made
+on the s117/s117k sessions, whose A/A cells were inside 2% at the open end; this
+session's wider bands change no adoption, only the confidence with which the final
+table can claim each cell.
 
-**The boundary cell regressed against the parent:** `1x1 784,128,1152` measures 1.050
-aft/bef here against 1.010 in s117 - the two sessions bracket parity, so the 11.8
-owner-decision request is updated with both data points (the cell remains far ahead of
-best stock, 0.708, and the predicate's other ten cells gain 15-40%; a K term to drop the
-cell would exceed the two-term limit, and the nvidia form is worse on it at 1.025).
+**The note-18 predicate change and its cost:** the three N = 128 cells the first
+predicate selected go back to the parent (rows above, aft = bef); the route gives up
+beyond-band wins on `3136,128,256` (0.798) and `784,128,512` (0.930), and drops the
+`784,128,1152` loss (1.050 here against 1.010 in s117 - the two sessions bracket parity;
+the cell stays far ahead of best stock at 0.674). The 11.3/11.8 boundary-cell
+owner-decision requests are closed by the rule change. The predicate's eight cells gain
+7-40% (`784,128,512`'s 0.930 would have been the ninth).
 
 **The stage-3 kernel-level goal - the best gated coopmat route ahead of best stock beyond
 the noise band on every shape - is reached on 43 of the 45 shapes.** The two remaining
@@ -1506,3 +1536,11 @@ gather is fixed, the GEMM is the gap, and the t128 tile does not fit N = 64. The
 784 losers of 11.6a all land ahead of stock: `784,2048,1024` 1.109 -> 0.755,
 `784,2048,512` 1.087 -> 0.747, `784,512,2048` 1.227 -> 0.897 (11.6a aft/bs -> final
 aft/bs); `3x3 64-256 224x224` crosses at 0.976 and `3x3 1024-256 28x28` at 0.695.
+
+**Two owner decisions remain open (note 18):** (1) the nvidia t128 alternative for the
+1x1 predicate cells - faster on all 8 in both sessions with no losing cell under the
+N >= 256 predicate (RESULTS 11.8); the s119 re-run carries the nvidia arm on those cells
+for a same-session comparison. (2) **A push blocker:** two earlier, unpushed commit
+messages on this branch state absolute WMMA ops-per-cycle figures, which the publication
+rule does not allow; per the coordinator they are not rewritten, and the owner decides
+before any push. No figures are repeated here.
