@@ -12,35 +12,46 @@ only (`SPEC.md`, "Publication of M51 results").
 > 4.0), 5.1, 5.3.
 
 ## 1. Environment and capability
-- [ ] 1.1 Build `etvk_ops_bench` for Android arm64 (`backends/vulkan/test/ops/benchmark_v2/build.sh --android`).
+- [x] 1.1 Build `etvk_ops_bench` for Android arm64 (`backends/vulkan/test/ops/benchmark_v2/build.sh --android`).
   Verify: the binary runs `--help` on the board; its checksum is in the local record.
-- [ ] 1.2 Qualify the board: SoC model, root, canonical driver checksum, pinned clocks read back, profiler config aside.
+  (Builds recorded in the local record; the binary digest is verified on the device before every session.)
+- [x] 1.2 Qualify the board: SoC model, root, canonical driver checksum, pinned clocks read back, profiler config aside.
   Verify: all five are in the local record for the session.
-- [ ] 1.3 Run `device_coopmat_properties.json`; record properties, Vulkan version, `maintenance4`, subgroup range and
+  (Local record `SESSION.md`; driver verified after every run of every session; pins verified pre-session and read back post-session.)
+- [x] 1.3 Run `device_coopmat_properties.json`; record properties, Vulkan version, `maintenance4`, subgroup range and
   shared-memory limit. Verify: there is a committed summary `CAPABILITY.md` (shapes, types, scope, subgroup sizes only);
   the stop condition of the capability requirement is evaluated and written down.
+  (`CAPABILITY.md` committed; stop condition PASS, recorded in `PROGRESS.md`.)
 
 ## 2. Existing variants as they are
-- [ ] 2.1 Compute the shared-memory size of every AMD-family variant; list exclusions over 64 KiB.
+- [x] 2.1 Compute the shared-memory size of every AMD-family variant; list exclusions over 64 KiB.
   Verify: a table in `RESULTS.md`, cross-checked against the descriptor's `shared_bytes()`.
-- [ ] 2.2 Record whether pipeline creation of the AMD-family variants (trip count from a uniform buffer) succeeds.
+  (`RESULTS.md` 2.1.)
+- [x] 2.2 Record whether pipeline creation of the AMD-family variants (trip count from a uniform buffer) succeeds.
   Verify: an outcome per variant in the local record and a one-line summary in `RESULTS.md`.
-- [ ] 2.3 Add the many-workgroup and reduced-grid correctness collections (timed shapes, long-K GEMM-equivalent shapes,
+  (`RESULTS.md` 2.2; per-variant outcomes in the local correctness runs.)
+- [x] 2.3 Add the many-workgroup and reduced-grid correctness collections (timed shapes, long-K GEMM-equivalent shapes,
   bias, residual) under `benchmark_v2/.../cases/`. Verify: the collections run on the host, or on a desktop device, and
   pass with `pw_tiled_4x8`.
-- [ ] 2.4 Gate the AMD-family variants on the M51 (10 repetitions). Verify: pass/fail per variant, with mismatch
+  (`pw_coopmat_gate_{full,reduced}_grid.json` committed; the baseline arms pass in every gate run on the device - local record `gate/`.)
+- [x] 2.4 Gate the AMD-family variants on the M51 (10 repetitions). Verify: pass/fail per variant, with mismatch
   coordinates for failures.
+  (`RESULTS.md` 2.4; per-variant verdict table from the local record `gate/` and `tools/gate_verdict.py`.)
 
 ## 3. M51 family parent
-- [ ] 3.1 Add the `KSPEC` option (loop bound and any coopmat offset/stride by specialization constant, default off) to the
+- [~] 3.1 Add the `KSPEC` option (loop bound and any coopmat offset/stride by specialization constant, default off) to the
   body, the wrapper, the descriptor and `shared_bytes()`. Verify: the SPIR-V of all existing variants is byte-identical
   before and after; a resize test re-creates the pipeline or reports the variant ineligible.
-- [ ] 3.2 Add the `XP` option (FP32 to FP16 before staging, one-pass full-tile drain, FP32 epilogue). Verify: the generated
+  (Dropped, owner amendment 2026-11-19: `KSPEC` and `XP` are candidates only - see the amendment note above.)
+- [~] 3.2 Add the `XP` option (FP32 to FP16 before staging, one-pass full-tile drain, FP32 epilogue). Verify: the generated
   code shows one store pass; the fp32 cancellation cases are run and recorded; the reference-error rule holds.
-- [ ] 3.3 Add the `m51` family: yaml block and descriptor for `conv2d_pw_coopmat_m51_t128x128_f32_kspec_xp_half`, plus
+  (Dropped, owner amendment 2026-11-19: candidates only.)
+- [~] 3.3 Add the `m51` family: yaml block and descriptor for `conv2d_pw_coopmat_m51_t128x128_f32_kspec_xp_half`, plus
   the family in `Conv2dPW.cpp` and `gen_pw_coopmat_cases.py`. Verify: the registry check is clean; static safety holds;
   the race read is written in the commit body.
-- [ ] 3.4 Gate the parent on the M51. Verify: 10/10.
+  (Dropped, owner amendment 2026-11-19: the campaign times the existing `amd`/`nvidia` variants.)
+- [~] 3.4 Gate the parent on the M51. Verify: 10/10.
+  (Dropped with 3.3; the parent that was actually gated and timed is the selected `amd` variant - `RESULTS.md` 2.4, 4.0.)
 
 ## 4. Baseline timing
 - [x] 4.1 A/A of the parent. Verify: within `THRESHOLDS.md`. (Done as part of 4.0: two A/A opens,
@@ -50,16 +61,23 @@ only (`SPEC.md`, "Publication of M51 results").
   4.0: five rotated runs; `RESULTS.md` 4.0; local `runs.csv` + `tools/timing_analysis.py`.)
 
 ## 5. Locate
-- [ ] 5.1 On a separate branch `topic/m51-conv2d-wmma-inspect`, port the pipeline-statistics dump. Record the parent's
+- [~] 5.1 On a separate branch `topic/m51-conv2d-wmma-inspect`, port the pipeline-statistics dump. Record the parent's
   registers, shared memory, scratch and instruction mix per K step. Verify: the branch is never merged; `RESULTS.md`
   states the bottleneck without absolute counts.
-- [ ] 5.2 Shader-clock phase timing of the parent (fetch, staging, sync, multiply, drain). Verify: phase shares in
+  (Dropped, owner amendment 2026-11-19: not required.)
+- [x] 5.2 Shader-clock phase timing of the parent (fetch, staging, sync, multiply, drain). Verify: phase shares in
   `RESULTS.md`.
-- [ ] 5.3 (optional) Vendor counter capture in a non-timed session. Verify: a session note in the local record.
+  (Done by ablation, disclosed in `RESULTS.md` 5.2: shader-clock support was not checked and ablation was used for the
+  time budget; phase shares located, the in-data-path split marked UNVERIFIED because the ablations overlap.)
+- [~] 5.3 (optional) Vendor counter capture in a non-timed session. Verify: a session note in the local record.
+  (Dropped, owner amendment 2026-11-19: not required.)
 
 ## 6. Candidates
-- [ ] 6.n For each candidate chosen from 5.x: one option against a named parent, static safety, race read, gate, then an
+- [~] 6.n For each candidate chosen from 5.x: one option against a named parent, static safety, race read, gate, then an
   interleaved timed session. Verify: per-technique gain in `RESULTS.md`; the stop rule is checked after each one.
+  (Skipped: 5.2's in-data-path split is UNVERIFIED, so no evidence-based 1x1 candidate exists; the kk side's next arms
+  were already measured in 9.2 and are statistically tied with the parent. Reason recorded in `PROGRESS.md`; candidates
+  are optional per the owner amendment and notes 32/48.)
 
 ## 7. Workload baseline (parallel with 2–6)
 - [x] 7.1 Export the ten CI models in FP16 with `../survey-tools/export_models.py`; build a traced runner with the event
@@ -69,18 +87,26 @@ only (`SPEC.md`, "Publication of M51 results").
   by convolution family, using the desktop survey's families: 1×1, im2col GEMM, direct k×k, dilated, 1D, depthwise,
   other. Group it by kind × K as well. Verify: shares and rankings per family and per shader are committed; times stay
   local.
-- [ ] 7.3 Add the top ten uncovered 1×1 shapes to the timed set (task 4.2 / 6 sessions).
-- [ ] 7.4 End-to-end projection. For resnet18, resnet50, mv2, mv3, ic3, ic4, densenet161 and dl3, take the M51 1×1 ratio
+- [x] 7.3 Add the top ten uncovered 1×1 shapes to the timed set (task 4.2 / 6 sessions).
+  (The ten heaviest uncovered 1x1 shapes of the 7.2 survey, gated 10/10 on both grids and timed with the 8.1 protocol;
+  `RESULTS.md` 7.3; local record `task7-3/`.)
+- [x] 7.4 End-to-end projection. For resnet18, resnet50, mv2, mv3, ic3, ic4, densenet161 and dl3, take the M51 1×1 ratio
   of each matching layer shape in the ETDump and leave every other layer unchanged. Report the projected GPU-time
   reduction in %, labelled "projection, lower bound". Verify: the table can be recomputed from the local ETDump CSV and
   `runs.csv`.
+  (`RESULTS.md` 7.4, three columns incl. kxk and vs-best-stock; recomputable with the local `tools/e2e_projection.py`
+  over the local ETDump CSV and the run records; extended with the 7.3 matches.)
 
 ## 8. Report
-- [ ] 8.1 `RESULTS.md`: per-shape verdict, per-technique gains, what the workload says to do next.
+- [x] 8.1 `RESULTS.md`: per-shape verdict, per-technique gains, what the workload says to do next.
   Verify: the publication grep is clean; the final table comes from the committed head's build.
-- [ ] 8.2 A sanitized note for the desktop side (ratios and shapes only).
-- [ ] 8.3 A stage-2 input note in `RESULTS.md`: the M51 ranking of convolution families by share, and which of im2col
+  (Final tables in `RESULTS.md` 8.1 from the one interleaved session; publication grep clean on the whole branch;
+  binary provenance stated in 8.1.)
+- [x] 8.2 A sanitized note for the desktop side (ratios and shapes only).
+  (`DESKTOP-NOTE.md`.)
+- [x] 8.3 A stage-2 input note in `RESULTS.md`: the M51 ranking of convolution families by share, and which of im2col
   GEMM, direct k×k and dilated 3×3 to take first. Verify: the note exists and cites the 7.2 shares.
+  (`RESULTS.md` 8.3.)
 
 Section 9 runs after sections 1–8 in the same campaign run (owner decision, 2026-11-19). Section 10 waits for the routing
 switch.
