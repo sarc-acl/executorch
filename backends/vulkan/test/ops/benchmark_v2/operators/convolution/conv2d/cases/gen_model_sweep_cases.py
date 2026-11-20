@@ -15,9 +15,11 @@ change conv2d-coopmat-model-switch):
                                   model's B580 GPU shader time or that an
                                   earlier change measured, with every survey
                                   row of that configuration
-    model_sweep_performance.json  per configuration route auto and the short
+    model_sweep_performance.json  per configuration route auto, the short
                                   variant list on pw_coopmat (1x1) or
-                                  im2col_coopmat (k x k)
+                                  im2col_coopmat (k x k) and its direct-gather
+                                  forms on direct_coopmat (change
+                                  conv2d-coopmat-direct-gather)
     model_sweep_arms.json         the short variant list per device vendor
 
     gen_model_sweep_cases.py --survey survey-conv-shapes.csv --measured m.json
@@ -48,7 +50,8 @@ MIN_SHARE_PCT = 0.25
 BASELINE_TOLERANCE = {**TOLERANCE, "atol": 0.25}
 CONFIGS = HERE / "model_sweep_configs.json"
 # Base names of the timed variants; route pw_coopmat runs
-# conv2d_pw_coopmat_<base>_half, route im2col_coopmat <base>_i2c_half.
+# conv2d_pw_coopmat_<base>_half, route im2col_coopmat <base>_i2c_half, route
+# direct_coopmat <base>_dg_half.
 ARMS = {
     "intel": [
         "xe2_t128x128_f16_alc",
@@ -97,7 +100,8 @@ def route(c):
 
 
 def variant_name(base, route_name):
-    return f"conv2d_pw_coopmat_{base}{'_i2c' if route_name == 'im2col_coopmat' else ''}_half"
+    suffix = {"im2col_coopmat": "_i2c", "direct_coopmat": "_dg"}.get(route_name, "")
+    return f"conv2d_pw_coopmat_{base}{suffix}_half"
 
 
 def select(survey, measured):
@@ -184,6 +188,21 @@ def performance(configs):
                 "args_sweep": [args],
             }
         )
+        out.append(
+            {
+                "name": f"sweep {c['label']} direct",
+                **base,
+                "validation_method": TOLERANCE,
+                "route": {
+                    "name": "direct_coopmat",
+                    "options": {"variant": "v_VARIANT"},
+                },
+                "sweep_variables": {
+                    "v_VARIANT": [variant_name(v, "direct_coopmat") for v in variants]
+                },
+                "args_sweep": [args],
+            }
+        )
     return out
 
 
@@ -191,7 +210,7 @@ def arms():
     return {
         vendor: {
             r: [variant_name(v, r) for v in bases]
-            for r in ("pw_coopmat", "im2col_coopmat")
+            for r in ("pw_coopmat", "im2col_coopmat", "direct_coopmat")
         }
         for vendor, bases in ARMS.items()
     }
