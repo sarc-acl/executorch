@@ -1260,3 +1260,152 @@ checkpoint; `1x1 784,256,1024` moves from 1.012 to 0.987, inside the 2% band of 
 the seven cells above remain behind and are the recorded gap, with the 11.8
 accumulator-amortization lever for the 784 cells and the 11.5 DRAM-roof lever for the
 small-M and large-plane k x k cells as the next candidates.
+
+## 11.8 Fragment-reuse amortization: the existing t128x128 f32 tiles (note 13)
+
+No new shader code: the candidate is the existing `amd_t128x128_f32_alc` and
+`nvidia_t128x128_f32_alc` variants (128x128 workgroup tiles, f32 accumulate, 8x4
+subgroup grid), gated and timed for the first time on the 784/3136 cells. Every arm
+runs on the final binary (one md5 for gate and timing; the t32x32 and fast-gather
+adoptions were re-gated on it in the same loops, closing the review's finding 4).
+
+**Gate (10 reps, 4 pw collections):** all four arms - the 1x1 parent, t32x32 (re-gate),
+amd_t128x128_f32_alc, nvidia_t128x128_f32_alc - pass 1240/1240 dispatches each, zero
+failures. Readback after the loop: driver canonical, bench canonical, all four pins held.
+
+**Timing (interleaved, 31 1x1 shapes, arms auto / pw_tiled_4x8 / parent / amd_t128 /
+nvidia_t128, 5 rotated rounds plus A/A):** 775 rows, zero invalid; A/A open geomean
+0.999 with every cell inside the 2% band; A/A close 1.005 with two cells outside it
+(worst +6.0%) - the same 4.0/7.3 session-precedent widening as 11.6a, and every
+adoption-relevant gain below is 4-20x that band; parent drift vs 11.1 0.997.
+
+| shape | amd/p | nv/p | best t128 | p/bs | best/bs | %bound p | %bound best | band |
+|---|---|---|---|---|---|---|---|---|
+| 1x1 49,160,960 | 3.016 | 3.681 | amd 3.016 | 0.249 | 0.751 | 20.9 | 6.9 | 2% |
+| 1x1 64,256,1536 | 2.867 | 2.999 | amd 2.867 | 0.303 | 0.869 | 31.8 | 11.1 | 2% |
+| 1x1 49,96,576 | 2.755 | 2.882 | amd 2.755 | 0.336 | 0.926 | 13.6 | 4.9 | 2% |
+| 1x1 25,384,4032 | 2.739 | 2.962 | amd 2.739 | 0.266 | 0.729 | 42.7 | 15.6 | 2% |
+| 1x1 64,384,1536 | 2.714 | 2.838 | amd 2.714 | 0.324 | 0.879 | 42.4 | 15.6 | 2% |
+| 1x1 196,64,384 | 2.547 | 2.649 | amd 2.547 | 0.401 | 1.021 | 20.6 | 8.1 | 2% |
+| 1x1 49,512,2048 | 2.527 | 2.649 | amd 2.527 | 0.339 | 0.857 | 50.5 | 20.0 | 2% |
+| 1x1 196,96,576 | 2.502 | 2.616 | amd 2.502 | 0.382 | 0.956 | 24.9 | 10.0 | 2% |
+| 1x1 144,192,768 | 2.228 | 2.325 | amd 2.228 | 0.412 | 0.918 | 26.7 | 12.0 | 2% |
+| 1x1 49,512,4608 | 2.111 | 2.214 | amd 2.111 | 0.245 | 0.517 | 45.3 | 21.5 | 2% |
+| 1x1 196,256,1024 | 1.865 | 2.021 | amd 1.865 | 0.491 | 0.916 | 25.3 | 13.5 | 2% |
+| 1x1 289,192,1024 | 1.778 | 1.951 | amd 1.778 | 0.512 | 0.910 | 26.8 | 15.1 | 2% |
+| 1x1 196,256,2304 | 1.492 | 1.562 | amd 1.492 | 0.581 | 0.867 | 26.2 | 17.6 | 2% |
+| 1x1 3136,64,64 | 1.598 | 1.445 | nv 1.445 | 0.677 | 0.978 | 50.0 | 34.6 | 2% |
+| 1x1 3136,64,256 | 1.435 | 1.330 | nv 1.330 | 0.821 | 1.092 | 54.0 | 40.6 | 2% |
+| 1x1 289,224,1344 | 1.228 | 1.241 | amd 1.228 | 0.698 | 0.857 | 24.7 | 20.1 | 2% |
+| 1x1 289,384,1024 | 1.162 | 1.157 | nv 1.157 | 0.766 | 0.886 | 28.6 | 24.7 | 2% |
+| 1x1 49,2048,512 | 1.081 | 1.069 | nv 1.069 | 0.829 | 0.886 | 50.1 | 46.9 | 2% |
+| 1x1 196,512,1024 | 1.017 | 1.096 | amd 1.017 | 0.722 | 0.734 | 27.4 | 27.0 | 2% |
+| 1x1 784,128,1152 | 1.010 | 1.025 | amd 1.010 | 0.698 | 0.705 | 28.1 | 27.8 | 2% |
+| 1x1 784,128,512 | 0.929 | 0.964 | amd 0.929 | 0.669 | 0.622 | 29.7 | 32.0 | 2% |
+| 1x1 3136,256,64 | 0.859 | 0.800 | nv 0.800 | 0.708 | 0.566 | 40.1 | 50.1 | 2% |
+| 1x1 196,1024,256 | 0.798 | 0.792 | nv 0.792 | 0.910 | 0.721 | 26.4 | 33.4 | 2% |
+| 1x1 784,512,128 | 0.846 | 0.784 | nv 0.784 | 0.806 | 0.632 | 27.9 | 35.6 | 2% |
+| 1x1 784,256,512 | 0.768 | 0.761 | nv 0.761 | 0.947 | 0.721 | 30.1 | 39.5 | 2% |
+| 1x1 3136,128,256 | 0.798 | 0.739 | nv 0.739 | 0.959 | 0.709 | 36.4 | 49.3 | 2% |
+| 1x1 784,256,1024 | 0.728 | 0.723 | nv 0.723 | 1.013 | 0.732 | 31.4 | 43.5 | 2% |
+| 1x1 784,1024,256 | 0.697 | 0.656 | nv 0.656 | 0.944 | 0.619 | 31.8 | 48.5 | 2% |
+| 1x1 784,512,2048 | 0.681 | 0.633 | nv 0.633 | 1.315 | 0.832 | 34.1 | 53.9 | 2% |
+| 1x1 784,2048,512 | 0.631 | 0.589 | nv 0.589 | 1.186 | 0.699 | 34.3 | 58.3 | 2% |
+| 1x1 784,2048,1024 | 0.598 | 0.557 | nv 0.557 | 1.263 | 0.703 | 35.1 | 63.1 | 2% |
+
+
+Ten target cells (the 784/3136 losers) plus one
+uncaptured win at `196,1024,256` (0.792, N*K exactly 2^18 - the same boundary shape as
+the 11.3 predicate cell; the M >= 784 term keeps it out, like the 11.3 uncaptured wins,
+because the other M=196 cells lose 1.5-2.5x or stay flat). `3136,64,*` and every small-M
+cell lose badly (up to 3.7x): one 128x128 tile per workgroup wastes the grid when M is
+small, as in the stage-1 `amd_t64x64_f32` failure.
+
+**All three 784 losers cross stock parity:** `784,2048,1024` 1.263 -> 0.703,
+`784,2048,512` 1.186 -> 0.699, `784,512,2048` 1.315 -> 0.833 against best stock (the
+11.6a recorded gap on the 1x1 side). Geomean % of roofline bound on the three: 34.5% -> 58.3% (the parent is at
+25-35% overall; the t128 cells land at 1.6-1.8x the parent's bound share).
+
+**argus before/after (untimed, 6 shapes x 3 arms):** the t128 kernels meet every note-13
+target against the parent:
+- LDS instructions per WMMA ~3.1 ISA-static (3.4-3.45 from the instruction mix) against
+  the parent's ~11.6 - inside the 3-4 target bracket of the linear-GEMM reference (~2.9);
+- WMMA ops per cycle at 1.56-1.59x the parent's rate (the linear kernel's own rate is
+  UNVERIFIED in its shipped form);
+- occupancy 28.3-31.6% vs the parent's 23.6% - not the mechanism, per note 13;
+- LDS Busy falls from ~90% to ~51%, cycles per LDS instruction ~2.4: the padded A/B
+  stages are effectively conflict-free;
+- LDS bytes per workgroup 32 KiB (nvidia form) / 37 KiB (amd form), inside the 64 KiB
+  device cap with no exclusions;
+- the f32 drain is two passes as designed (8 coopMatStore plus second-pass barriers); its
+  time share needs SQTT, which this trace does not carry, so the one-pass `f32xp` drain
+  stays unjudged - and unmotivated, since the 784 losers already cross parity with the
+  two-pass form (no new candidate per the 16:45 rule).
+
+**Predicate (two terms):** route to `amd_t128x128_f32_alc` when **M >= 784 and N >= 128**;
+the parent elsewhere. The term set supersedes the 11.3 t32x32 predicate: all five of its
+cells are inside the new predicate and t128 beats t32x32 on every one (0.598/0.631/0.728/
+0.681/0.697 vs 0.879/0.916/0.976/0.890/0.990), so the 1x1 after state is one coherent
+rule and t32x32 returns to gated-but-unrouted. The predicate changes 11 cells: 10 gain
+beyond their 2% bands; `784,128,1152` gains 1% (1.010), inside the band - the same
+boundary-cell shape as the 11.3 request, recorded as an **owner-decision request** (the
+cell's parent drifted 1.038 this session, so its flatness is within drift noise; a
+predicate with a K term to drop it would exceed two terms).
+
+**amd vs nvidia:** the nvidia form is faster on 10 of the 11 predicate cells (predicate
+geomean vs parent: nvidia 0.736, amd 0.768) but turns the boundary cell into a 2.5% loss
+(1.025); the amd form keeps every changed cell at parity or better (1.010 worst). Under
+the adoption rule as written the amd form is the predicate arm; the nvidia form is
+recorded as the faster alternative for the owner (a ~4% further gain on the predicate
+cells at the cost of the boundary cell).
+
+**Verdict: adopted** as the 1x1 stage-3 route under the predicate above (the 11.6 final
+session measures it). The kk arm of this candidate follows below.
+
+### 11.8k The kk t128 arm on the four kk losers
+
+**Gate (10 reps, 2 kk t128 collections + the 2 fast collections):** the fast-gather
+re-gate on the final binary closes review finding 4 - kk parent 1120/1120, kk parent +
+fast_gather 560/560, t128 sk2 560/560, t128 sk4 560/560, zero failures.
+
+**Timing (interleaved, 4 kk loser shapes x 9 arms, 5 rotated rounds plus A/A):** 180
+rows, zero invalid; every A/A cell within 0.7% at both ends; kk-parent drift vs 11.1
+0.999-1.001.
+
+| shape | s2/p | s2+fg/p | s4/p | s4+fg/p | fg/p | p/bs | best arm | best/p | best/bs |
+|---|---|---|---|---|---|---|---|---|---|
+| 3x3 1024-256 28x28 | 0.570 | 0.564 | 0.521 | 0.536 | 1.007 | 1.199 | sk4 | 0.521 | 0.625 |
+| 3x3 64 224x224 | 1.045 | 0.860 | 1.240 | 1.048 | 0.819 | 2.228 | fg | 0.819 | 1.825 |
+| 3x3 64 56x56 | 1.107 | 1.011 | 1.198 | 1.104 | 0.903 | 1.646 | fg | 0.903 | 1.486 |
+| 3x3 64-256 224x224 | 0.730 | 0.657 | 0.972 | 1.029 | 0.926 | 1.490 | s2+fg | 0.657 | 0.979 |
+
+**Predicate (two terms, within the kk family):** route to
+`amd_t128x128_f32_alc_sk2_i2c` + fast_gather when **M >= 784 and N >= 256**; the kk+fg
+parent elsewhere. Exactly the two t128-winning cells match: the N=64 large-plane cells
+fail the N term, `3x3 128 28x28` (M = 784, N = 128) fails it, and every small-M cell
+fails the M term. Both changed cells gain beyond their 2% bands against the after-state
+kk parent (0.560 and 0.709 vs kk+fg) - a plain adoption, no owner-decision request.
+
+**The 11.4 flat-cell request is superseded:** `3x3 1024-256 28x28` no longer routes
+fast-gather-alone (the 1.007/1.005 flat cell of the 11.4 adoption) but the t128 arm,
+where it gains 44% on the plain parent and crosses stock parity (0.625). The 11.4
+adoption itself stays recorded as it was made; the final after state no longer exhibits
+the flat cell.
+
+`3x3 64-256 224x224` also crosses stock parity (0.979). After 11.8 the kk cells behind
+stock fall from four to two - `3x3 64 224x224` (1.83) and `3x3 64 56x56` (1.49), still
+the 11.5 DRAM-roof cells (11.4 verdict: the gather is fixed, the GEMM is the gap, and
+the t128 tile does not fit N = 64).
+
+**Verdict: adopted** under the predicate above. sk4 is 8% faster than sk2 on the one
+K = 9216 cell (0.521 vs 0.564) but would cost a second routed variant; the single
+sk2+fg arm is the route and sk4 is recorded as the alternative for the owner.
+
+**Stage-3 route state after 11.8** (both families, one binary, all arms gated on it):
+- 1x1: M >= 784 and N >= 128 -> `amd_t128x128_f32_alc`; else the 1x1 parent.
+- kk: M >= 784 and N >= 256 -> `amd_t128x128_f32_alc_sk2_i2c` + fast_gather; else the
+  kk parent + fast_gather.
+- t32x32 and every other stage-3 candidate: gated, default-off, unrouted.
+The 11.6 final session measures this state against the stage-2 parents and best stock
+on all 45 shapes.
+

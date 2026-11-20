@@ -200,7 +200,7 @@ the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFL
   wave** (2 in the parent, 4 in t32x32, against 16), not occupancy. The measured t32x32 launch limiter stands
   (LDS-limited launch 68.8%, VGPR- and wave-slot-limited 0%); it caps resident waves but is not the binding limit
   on throughput. Next lever -> 11.8.
-- [ ] 11.8 (note 13, before 11.5) Fragment-reuse amortization with the existing large tiles - no new shader code:
+- [x] 11.8 (note 13, before 11.5) Fragment-reuse amortization with the existing large tiles - no new shader code:
   `amd_t128x128_f32_alc` and `nvidia_t128x128_f32_alc` (stage-1 best on the 3136 cells and `784,512,128`), never
   yet timed on the 784/3136 losers. Gate 10 reps on the pw collections (include the many-workgroup lesson of the
   `amd_t64x64_f32` failure); time on all 31 1x1 shapes with the stock arms and the parent; argus before/after on
@@ -209,3 +209,11 @@ the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFL
   drain dominates, a one-pass drain (`f32xp` form) only if it is a yaml combination gateable by 16:45, within the
   64 KiB cap. If time is left: the kxk `amd_t128x128_f32_alc_sk2/sk4_i2c` arm with the fast gather on the 4 kxk
   losers.
+  (RESULTS 11.8/11.8k: pw gate 4 arms x 1240/1240 and kk gate 560/560 each + fast-gather re-gate, all on the final
+  binary; s117 775 rows zero invalid, s117k 180 rows zero invalid; argus: LDS ops/WMMA ~3.1, WMMA rate 1.56-1.59x
+  parent, occupancy 28-32% vs 23.6%, LDS Busy 90%->51%, drain 2 passes unmeasured share. All three 784 losers cross
+  stock parity (0.703/0.699/0.833); predicates adopted: 1x1 M>=784 and N>=128 -> amd_t128 (supersedes t32x32; flat
+  boundary cell 784,128,1152 = owner-decision request; nv form 4% faster but loses that cell, recorded as the
+  alternative), kk M>=784 and N>=256 -> t128_sk2+fg (plain adoption; supersedes the 11.4 flat cell; 64-256 224x224
+  crosses to 0.98). kk cells behind stock fall to two (the 11.5 cells). No f32xp drain: the 784 losers already cross
+  parity with the two-pass form, and no new candidate after 16:45.)
