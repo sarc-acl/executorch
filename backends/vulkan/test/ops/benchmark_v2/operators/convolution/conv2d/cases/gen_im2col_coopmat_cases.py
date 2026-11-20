@@ -498,10 +498,63 @@ def performance(variants):
     return out
 
 
+# The M51 k x k gate (m51/TASKS.md 9.2): the desktop layer table's shapes, with
+# bias and with a fused residual, full grid and reduced grid. The reduction is
+# the same shape-level reduction as the 1x1 gate: same channels, kernel,
+# stride and padding, the plane shrunk to an 8 x 8 output, so the dispatch runs
+# a few gather and GEMM workgroups with the same shaders and math.
+M51_REDUCED_OUTPUT = 8
+
+
+def m51_i2c_variants(variants):
+    return [v for v in variants if v.split("_")[3] in ("amd", "nvidia")]
+
+
+def m51_reduced_conv(c):
+    """`c` with the plane shrunk to an M51_REDUCED_OUTPUT square output."""
+    st, pad = strides(c.get("stride", 1)), c.get("pad", (0, 0))
+    ho = out_size(c["h"], c["kh"], st[0], pad[0], 1)
+    wo = out_size(c["w"], c["kw"], st[1], pad[1], 1)
+    if ho * wo <= M51_REDUCED_OUTPUT**2:
+        return c
+    plane = lambda o, k, s, p: (o - 1) * s + k - 2 * p
+    return {
+        **c,
+        "h": plane(M51_REDUCED_OUTPUT, c["kh"], st[0], pad[0]),
+        "w": plane(M51_REDUCED_OUTPUT, c["kw"], st[1], pad[1]),
+    }
+
+
+def m51_kk_gate(reduced):
+    """The gate collections of the 16x16x16 families' _i2c variants on the
+    desktop layer table, with bias and with a fused residual add."""
+
+    def build(variants):
+        i2c = m51_i2c_variants(variants)
+        out = []
+        for label, c in PERFORMANCE:
+            if reduced:
+                c = m51_reduced_conv(c)
+                label = f"{label} reduced"
+            for kwargs in (
+                {},
+                {"op": "epilogue", "epilogue": ("add", 1.0, "none")},
+            ):
+                out += cases(
+                    f"m51 {label}", {**c, **kwargs}, ["auto", "im2col"], i2c,
+                    VALIDATION_TIMING,
+                )
+        return out
+
+    return build
+
+
 FILES = {
     "im2col_coopmat_correctness.json": correctness,
     "im2col_coopmat_expected_skips.json": expected_skips,
     "im2col_coopmat_performance.json": performance,
+    "im2col_coopmat_m51_gate_full_grid.json": m51_kk_gate(False),
+    "im2col_coopmat_m51_gate_reduced_grid.json": m51_kk_gate(True),
 }
 
 
