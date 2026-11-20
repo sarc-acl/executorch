@@ -171,8 +171,8 @@ goes on the M51:
   on a separate branch that is never merged into the deliverable;
 - in-kernel phase timing with the shader clock, split into fetch, staging, synchronization, multiply and drain.
 
-Vendor performance-counter capture is allowed in sessions that are not timed. Thread-trace capture (SQTT/RGP) SHALL NOT
-be used.
+Vendor performance-counter capture and thread-trace capture (SQTT/RGP) are allowed in sessions that are not timed
+(the device owner lifted the earlier thread-trace ban on 2026-11-20).
 
 ### Requirement: Candidate discipline and stop rule
 Each candidate SHALL change one option or parameter against a named parent, chosen from the located bottleneck. The
