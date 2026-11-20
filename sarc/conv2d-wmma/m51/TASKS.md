@@ -167,7 +167,10 @@ the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFL
   (RESULTS 11.2: probe answered - ColumnMajor lowers to dword pairs; `_bcm2` built and gated 1240/1240; the ISA
   shows the designed lowering and LDS ops/WMMA fall 10.6 -> 4.58, but LDS cycles per instruction rise 2.11 -> 6.62
   (bank conflicts), LDS Busy rises 87 -> 94%, WMMA rate falls to 0.80x, and the candidate loses 1.011-1.318x on
-  all 31 shapes - REJECTED with evidence; the role swap is contraindicated by the same measurement.)
+  all 31 shapes - REJECTED with evidence; the note-6 odd-stride iteration `_bcm3` (gated 1240/1240) fixes the load
+  walk (zero u16, LDS ops/WMMA 5.13) but the store walk still conflicts (4 x 17 = 68 dwords = 4 mod 32): cycles
+  per instruction 4.98, LDS Busy 91.3%, WMMA 0.92x - hypothesis not supported, family closed per note 6, timing
+  skipped; the role swap is contraindicated by the same measurement.)
 - [x] 11.3 More fp32 accumulators per wave, or a larger fp32 tile, for the large-plane 1×1 losers (784/3136 pixels).
   Verify as in 11.2.
   (RESULTS 11.3: t32x32 gated 1240/1240; blanket parent rejected at 1.202x geomean; adopted per-regime - the

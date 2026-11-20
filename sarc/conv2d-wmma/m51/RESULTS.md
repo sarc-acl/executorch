@@ -875,7 +875,7 @@ from this board's numbers.
 everywhere (14-54% of bound); the k x k losers additionally carry the im2col gather and
 merge overhead (F2), so 11.4 attacks the larger workload share first after 11.2.
 
-## 11.2 B-operand dword loads (`_bcm2`): built, gated, measured - REJECTED
+## 11.2 B-operand dword loads (`_bcm2`, `_bcm3`): built, gated, measured - REJECTED, family closed
 
 The 11.2 probe answered the driver question first (untimed argus `wmma.cfg` capture of the
 existing `_bcm` variants): `coopMatLoad(..., ColumnMajor)` from a K-contiguous-per-N shared
@@ -935,6 +935,50 @@ candidate below the 2% stop threshold; the next 1x1 candidate (11.3) targets LDS
 WMMA by fragment amortization (more fp32 accumulators per wave) instead of load width,
 keeping the parent's conflict-free load pattern. The `_bcm2` shader stays in-tree,
 default-off and unrouted.
+
+**Note-6 iteration (`_bcm3`, odd-dword B row stride): load walk fixed, store walk still
+conflicted - 11.2 closed.** The one allowed iteration of the family (notes 5-6) tested the
+bank-conflict hypothesis directly: B moved into its own `shared uint` region with a
+17-dword row stride (odd, so the ColumnMajor load walk is conflict-free), staged by
+dword stores, keeping the whole-vector global fetch and `_al`; the XOR-swizzle
+alternative of the note is not implementable through the single-base+stride
+`coopMatLoad` interface. Every existing variant's SPIR-V stays byte-identical; the new
+`_al_bcm3` variant is the only addition (md5 lists, local). An early gate failure was a
+host bug (the staging map and fetch sections were not compiled under the BCM3 ifdef,
+leaving B half-uninitialized), fixed before any measurement; after the fix the gate is
+ten reps of the four pw collections, filtered to the candidate and the parent: 1240/1240
+dispatches PASS for `_bcm3` and 1240/1240 for the parent.
+
+The argus before/after (same untimed run, parent `61b5b7cd` vs `_bcm3` `98459994`, the
+same five 1x1 shapes as the `_bcm2` capture) shows the load side fixed and the store
+side still conflicted:
+
+| metric | parent | `_bcm3` | note-6 criterion |
+|---|---|---|---|
+| ISA B-operand LDS loads | u16 gathers | zero u16; 24 dword `ds_load_2addr_b32` | zero u16 |
+| LDS instructions per WMMA | 10.6 | 5.13 | - |
+| LDS cycles per instruction | 2.12 | 4.98 | ~2.1 |
+| LDS Busy | 87.9% | 91.3% | lower |
+| WMMA ops issued per cycle (ratio) | 1.00 | 0.92 | >= 1 |
+| VGPRs per wave (ratio) | 1.00 | 0.79, no spill | no regression |
+| shared per workgroup (ratio) | 1.00 | 0.90 | - |
+| Wave occupancy | 23.9% | 25.4% | - |
+
+The ColumnMajor load walk is conflict-free and the LDS instruction count per WMMA
+halves, but the staging-store walk still steps 4 dwords in k against the 17-dword n
+stride (4 x 17 = 68 dwords = 4 mod 32 per row group): the same 4-way bank conflict, now
+on the merged dword stores. LDS Busy rises above the parent and the WMMA rate falls 8%,
+so LDS cycles per instruction stay far from the ~2.1 criterion. Per note 6, one capture
+that does not support the hypothesis closes the family: 11.2 is closed with no further
+tuning, and the timing session is skipped - a candidate whose target metric moved the
+wrong way is rejected before timing. The `_bcm3` shader stays in-tree, default-off and
+unrouted.
+
+The B-operand family ends with two measured negative results: the parent's u16 gather is
+conflict-free (2.12 LDS cycles per instruction), and both transposed stagings pay more in
+bank conflicts than the instruction-count saving returns - load-side in `_bcm2`,
+store-side in `_bcm3`. dword-pair B delivery is reachable on this device but not
+profitable while the staging must pass through shared memory in a 2D layout.
 
 ## 11.4 Fast-gather im2col (division-free pixel decode): built, gated, measured - ADOPTED
 
