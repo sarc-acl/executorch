@@ -253,8 +253,9 @@ To deliver the 1×1 and k×k results within one campaign run, the following repl
 requirements above. Everything else still holds.
 
 ### Requirement: M51 parent is the best gated existing variant
-The 1×1 parent SHALL be the variant with the best geometric mean in the early timed session (TASKS 4.0) among those
-that passed the gate 10/10.
+The 1×1 parent SHALL be the best full-coverage fp32-accumulation variant by geometric mean in the early timed
+session (TASKS 4.0) among those that passed the gate 10/10 (coordinator note 23 rule 3; the fp16-accumulation arms
+are reported alongside but are not eligible, per the 2.5 fp16-limits record).
 - `KSPEC` and `XP` are no longer required of the parent. Each SHALL be built only as a gated candidate against that
   parent, under the candidate discipline, and adopted only by the adoption rule.
 - The `m51` family SHALL be added only if a candidate needs a new yaml block.
