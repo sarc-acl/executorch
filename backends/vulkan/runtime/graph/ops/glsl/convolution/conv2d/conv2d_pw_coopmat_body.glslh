@@ -50,7 +50,7 @@ const uint MMAS_PER_SG_N = SG_TILE_N / MMA_N;
 // Shared memory is addressed in uvec4 units of 8 fp16.
 const uint FP16_PER_VEC4 = 8;
 
-#if defined(FRAG_LAYOUT) && defined(BCM)
+#if defined(FRAG_LAYOUT) && (defined(BCM) || defined(BCM2))
 #error "BCM requires the padded row-major layout"
 #endif
 
@@ -67,7 +67,7 @@ const uint BSH_SLICE = WG_TILE_K * (WG_TILE_N / FP16_PER_VEC4);
   ((((c) / FRAG_ROW_VEC4) * WG_TILE_M + (m)) * FRAG_ROW_VEC4 + ((c) % FRAG_ROW_VEC4))
 #define B_SH_IDX(k, c) \
   ((((c) / FRAG_ROW_VEC4) * WG_TILE_K + (k)) * FRAG_ROW_VEC4 + ((c) % FRAG_ROW_VEC4))
-#elif defined(BCM)
+#elif defined(BCM) || defined(BCM2)
 // A row-major and B column-major ([n][k], the K values of an output channel
 // contiguous), each row or column padded by one uvec4. B_SH_IDX(n, c): output
 // channel n, input channels 8c ...
@@ -112,7 +112,15 @@ shared uvec4 sh[POOL_AB > POOL_C ? POOL_AB : POOL_C];
 const uint A_COLS = WG_TILE_K / FP16_PER_VEC4;
 const uint A_ITEMS = WG_TILE_M * A_COLS;
 const uint A_PASSES = (A_ITEMS + WG_SIZE - 1u) / WG_SIZE;
-#ifdef BCM
+#ifdef BCM2
+// B item = one packed 4OC block x 8 IC: the 8 consecutive input channels of
+// four output channels, four whole uvec4, staged full-width from 8 unguarded
+// packed-block fetches. One pass covers the tile.
+const uint B_COLS = WG_TILE_N / 4u;
+const uint B_ITEMS = B_COLS * (WG_TILE_K / FP16_PER_VEC4);
+const uint B_PASSES = (B_ITEMS + WG_SIZE - 1u) / WG_SIZE;
+#define B_TEMP_LEN (4u * B_PASSES)
+#elif defined(BCM)
 // B item = one packed 4OC x 4IC block: four consecutive f16vec4, transposed
 // into four output channels of four input channels each (two uvec4).
 const uint B_COLS = WG_TILE_N / 4u;
@@ -171,7 +179,10 @@ void make_staging_map(
   }
   [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
     const uint item = min(p * WG_SIZE + tid, B_ITEMS - 1u);
-#if defined(BCM)
+#if defined(BCM2)
+    map.b_col[p] = 4u * (item % B_COLS);
+    map.b_k[p] = (item / B_COLS) * FP16_PER_VEC4;
+#elif defined(BCM)
     map.b_col[p] = item % B_COLS;
     map.b_k[p] = (item / B_COLS) * 4u;
 #elif defined(W16)
@@ -290,7 +301,41 @@ void load_b(
   }
 #else
   [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
-#if defined(BCM)
+#if defined(BCM2)
+    // The 8 consecutive input channels k .. k + 7 of output channels
+    // 4 n4 .. 4 n4 + 3: eight packed-block fetches, one column of the
+    // transpose per output channel.
+    const uint k = k_start + map.b_k[p];
+    const uint n4 = n4_start + map.b_col[p] / 4u;
+    const f16vec4 r0 = fetch_w(k, n4, K4, N4);
+    const f16vec4 r1 = fetch_w(k + 1u, n4, K4, N4);
+    const f16vec4 r2 = fetch_w(k + 2u, n4, K4, N4);
+    const f16vec4 r3 = fetch_w(k + 3u, n4, K4, N4);
+    const f16vec4 r4 = fetch_w(k + 4u, n4, K4, N4);
+    const f16vec4 r5 = fetch_w(k + 5u, n4, K4, N4);
+    const f16vec4 r6 = fetch_w(k + 6u, n4, K4, N4);
+    const f16vec4 r7 = fetch_w(k + 7u, n4, K4, N4);
+    temp[4u * p] = uvec4(
+        packFloat2x16(f16vec2(r0.x, r1.x)),
+        packFloat2x16(f16vec2(r2.x, r3.x)),
+        packFloat2x16(f16vec2(r4.x, r5.x)),
+        packFloat2x16(f16vec2(r6.x, r7.x)));
+    temp[4u * p + 1u] = uvec4(
+        packFloat2x16(f16vec2(r0.y, r1.y)),
+        packFloat2x16(f16vec2(r2.y, r3.y)),
+        packFloat2x16(f16vec2(r4.y, r5.y)),
+        packFloat2x16(f16vec2(r6.y, r7.y)));
+    temp[4u * p + 2u] = uvec4(
+        packFloat2x16(f16vec2(r0.z, r1.z)),
+        packFloat2x16(f16vec2(r2.z, r3.z)),
+        packFloat2x16(f16vec2(r4.z, r5.z)),
+        packFloat2x16(f16vec2(r6.z, r7.z)));
+    temp[4u * p + 3u] = uvec4(
+        packFloat2x16(f16vec2(r0.w, r1.w)),
+        packFloat2x16(f16vec2(r2.w, r3.w)),
+        packFloat2x16(f16vec2(r4.w, r5.w)),
+        packFloat2x16(f16vec2(r6.w, r7.w)));
+#elif defined(BCM)
     // Entries k .. k + 3 of texel n4 (one packed block); temp[2p] holds
     // channels 4 n4 + 0, 1 and temp[2p + 1] channels 2, 3, each as the four
     // input channels of one output channel.
@@ -342,7 +387,16 @@ void store_ab(
   }
   [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
     if (B_ITEMS % WG_SIZE == 0u || p * WG_SIZE + tid < B_ITEMS) {
-#if defined(BCM)
+#if defined(BCM2)
+      // Output channels b_col .. b_col + 3, input channels b_k .. b_k + 7:
+      // one whole shared vector each.
+      const uint base = BSH_BASE + slice * BSH_SLICE;
+      const uint c8 = map.b_k[p] / FP16_PER_VEC4;
+      sh[base + B_SH_IDX(map.b_col[p], c8)] = temp_b[4u * p];
+      sh[base + B_SH_IDX(map.b_col[p] + 1u, c8)] = temp_b[4u * p + 1u];
+      sh[base + B_SH_IDX(map.b_col[p] + 2u, c8)] = temp_b[4u * p + 2u];
+      sh[base + B_SH_IDX(map.b_col[p] + 3u, c8)] = temp_b[4u * p + 3u];
+#elif defined(BCM)
       // Output channels 4 b_col + c, input channels b_k .. b_k + 3: half of a
       // shared vector of channel 4 b_col + c each.
       const uint base = BSH_BASE + slice * BSH_SLICE;
@@ -399,7 +453,7 @@ void mma_step(const uint slice, const uvec2 sg) {
     }
     coopmat<float16_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> mat_b;
     [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
-#ifdef BCM
+#if defined(BCM) || defined(BCM2)
       const uint n = MMA_N * (MMAS_PER_SG_N * sg.x + j);
       coopMatLoad(
           mat_b,

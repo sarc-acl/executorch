@@ -133,6 +133,8 @@ $if NO_EPILOGUE:
   #define NO_EPILOGUE
 $if BCM:
   #define BCM
+$if BCM2:
+  #define BCM2
 $if DIRECT_B:
   #define DIRECT_B
 $if I2C:

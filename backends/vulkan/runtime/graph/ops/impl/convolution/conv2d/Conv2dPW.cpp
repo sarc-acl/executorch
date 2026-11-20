@@ -224,6 +224,9 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       // Column-major B staging (_bcm) on the AMD 16x32 tile
       {"conv2d_pw_coopmat_amd_t16x32_f16_bcm_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kColumnMajorB},
       {"conv2d_pw_coopmat_amd_t16x32_f32_bcm_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, true, false, kColumnMajorB},
+      // Column-major B staging with whole-vector stores (_bcm2), on the 1x1
+      // parent plus _al
+      {"conv2d_pw_coopmat_amd_t16x32_f32_al_bcm2_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, true, false, kAligned | kColumnMajorBFast},
       // Split-K across work groups (_sk2, _sk4)
       {"conv2d_pw_coopmat_xe2_t128x128_f16_sk2_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, 0u, 2u},
       {"conv2d_pw_coopmat_xe2_t128x128_f16_sk4_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, 0u, 4u},
@@ -341,6 +344,7 @@ constexpr uint32_t kSuffixOrder[] = {
     Conv2dPwCoopmatVariant::kImageInput,
     Conv2dPwCoopmatVariant::kNoEpilogue,
     Conv2dPwCoopmatVariant::kColumnMajorB,
+    Conv2dPwCoopmatVariant::kColumnMajorBFast,
     kSlices,
     Conv2dPwCoopmatVariant::kIm2col,
     Conv2dPwCoopmatVariant::kDiagOnce,
@@ -369,6 +373,8 @@ std::string suffix_item(const Conv2dPwCoopmatVariant& v, const uint32_t item) {
       return "_epi0";
     case Conv2dPwCoopmatVariant::kColumnMajorB:
       return "_bcm";
+    case Conv2dPwCoopmatVariant::kColumnMajorBFast:
+      return "_bcm2";
     case Conv2dPwCoopmatVariant::kIm2col:
       return "_i2c";
     case Conv2dPwCoopmatVariant::kDiagOnce:
@@ -435,6 +441,13 @@ std::vector<std::string> conv2d_pw_coopmat_registry_problems(
     }
     if (v.has(Conv2dPwCoopmatVariant::kColumnMajorB) && v.frag_layout) {
       problems.push_back(name + ": _bcm needs the padded row-major layout");
+    }
+    if (v.has(Conv2dPwCoopmatVariant::kColumnMajorBFast) &&
+        !v.has(Conv2dPwCoopmatVariant::kAligned)) {
+      problems.push_back(name + ": _bcm2 needs _al");
+    }
+    if (v.has(Conv2dPwCoopmatVariant::kColumnMajorBFast) && v.frag_layout) {
+      problems.push_back(name + ": _bcm2 needs the padded row-major layout");
     }
     if (suffix.empty()) {
       continue;

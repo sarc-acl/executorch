@@ -142,6 +142,9 @@ struct Conv2dPwCoopmatVariant final {
     // output rows start at the tile's first row (route im2col_coopmat,
     // conv2d_gemm_impl).
     kIm2col = 1u << 8,
+    // "_bcm2": the B tile is staged column-major with whole-vector stores
+    // from aligned 8-channel fetches (needs _al).
+    kColumnMajorBFast = 1u << 9,
   };
 
   const char* name;
