@@ -433,6 +433,68 @@ class TestConvolutionConstantOperands(unittest.TestCase):
                 self.assertFalse(any("convolution" in op for op in ops))
                 self.assertEqual(conv_input_ranks(graph_module), [] if fused else [4])
 
+    def test_mutable_residual_scale_is_not_prepacked(self):
+        """The fused op prepacks its residual scale once. A scale buffer the
+        program mutates must stay in the computed residual x * scale, which
+        reads the buffer on every execution (review reproducer: with the scale
+        prepacked, the second execution returned the first execution's 4.0
+        instead of 6.0 on Arc B580); a constant scale is still prepacked."""
+
+        class ConvResidualScale(torch.nn.Module):
+            def __init__(self, mutate):
+                super().__init__()
+                self.mutate = mutate
+                self.register_buffer(
+                    "w", torch.full((40, 96, 1, 1), 0.03125, dtype=torch.float16)
+                )
+                self.register_buffer(
+                    "scale", torch.ones((1, 40, 1, 1), dtype=torch.float16)
+                )
+
+            def forward(self, x, residual):
+                y = (
+                    torch.nn.functional.conv2d(x, self.w) + residual * self.scale
+                ).relu()
+                if self.mutate:
+                    self.scale.add_(2)
+                return y
+
+        x = torch.ones((1, 96, 14, 14), dtype=torch.float16)
+        residual = torch.ones((1, 40, 14, 14), dtype=torch.float16)
+        for mutate in (True, False):
+            with self.subTest(mutate=mutate):
+                model = ConvResidualScale(mutate)
+                ep = to_edge(
+                    torch.export.export(model, (x, residual)),
+                    compile_config=EdgeCompileConfig(_check_ir_validity=False),
+                ).exported_program()
+                fuse_pass = FusePatternsPass()
+                fuse_pass._exported_program = ep
+                fuse_pass(ep.graph_module)
+                fused = [
+                    n
+                    for n in ep.graph_module.graph.nodes
+                    if n.target == exir_ops.edge.et_vk.conv2d.with_epilogue
+                ]
+                self.assertEqual(len(fused), 1)
+                fused_residual, fused_scale = fused[0].args[9], fused[0].args[10]
+                scale_node = next(
+                    n
+                    for n in ep.graph_module.graph.nodes
+                    if n.op == "placeholder"
+                    and ep.graph_signature.inputs_to_buffers.get(n.name) == "scale"
+                )
+                if mutate:
+                    # Not prepacked: the residual is the multiply that reads the
+                    # buffer, so every execution sees the scale as mutated.
+                    self.assertIsNone(fused_scale)
+                    self.assertEqual(
+                        fused_residual.target, exir_ops.edge.aten.mul.Tensor
+                    )
+                    self.assertIn(scale_node, fused_residual.args)
+                else:
+                    self.assertIs(fused_scale, scale_node)
+
     def test_fused_form_needs_constant_operands(self):
         """et_vk.conv2d.with_epilogue reaching the partitioner (fused before
         partitioning) is held to the same rule: weight, bias and residual scale

@@ -211,10 +211,13 @@ def replace_conv2d_with_epilogue_pattern(
     ):
         return False
     residual, scale = match.residual_node, match.scale_node
-    # The runtime binds the residual as a tensor and prepacks the scale, so a
-    # constant x or a computed scale is fused as part of the residual x * scale.
+    # The runtime binds the residual as a tensor and prepacks the scale once, so
+    # a constant x, or a scale that is not constant data (computed, a runtime
+    # input, or a buffer the program mutates), is fused as part of the residual
+    # x * scale, computed on every execution.
     if scale is not None and (
-        not utils.is_param_node(ep, scale) or utils.is_param_node(ep, residual)
+        not utils.is_constant_operand(scale, constants)
+        or utils.is_param_node(ep, residual)
     ):
         residual, scale = match.scaled_residual_node, None
     if residual is not None and utils.is_param_node(ep, residual):
