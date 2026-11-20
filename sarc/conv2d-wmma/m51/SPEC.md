@@ -268,6 +268,12 @@ At most two 1×1 candidates SHALL be built and gated, chosen from the located bo
 9.2) SHALL start right after the early 1×1 session. The 1×1 candidates SHALL run while the board would otherwise be
 idle, or after 9.2.
 
-### Requirement: Reduced workload baseline
-The workload baseline SHALL cover the six convolution-heavy models resnet18, resnet50, mv2, ic3, densenet161 and dl3,
-run while the board would otherwise be idle. The other four models are deferred.
+### Requirement: Full workload baseline, early
+The workload baseline SHALL cover all ten CI models, comparable with the desktop survey: the same
+`../survey-tools/export_models.py` exports, 12 executions with the first discarded, and `aggregate.py`.
+- FP16 runs first, on the board right after the early 1×1 session (TASKS 4.0) and before the k×k work.
+- FP32 and INT8 (`int8-q8ta`) follow when the board is otherwise idle. This supersedes "FP32 and INT8 are out of
+  scope" in the workload requirement above.
+- Exporting the models and building the traced runner are host work, and SHALL start at once, in parallel with
+  timing.
+- Committed output SHALL still be shares and rankings only.
