@@ -213,3 +213,63 @@ Two workload facts shape the rest of the campaign:
   (GEMM M=50176, N=64, K=576), 74.3% of edsr's GPU shader time, followed by 3x3 64->256 at the
   same output plane (M=50176, N=256, K=576). Neither is among the eight desktop k-k gate shapes;
   the 9.2 gate and timing shape sets are augmented with the M51-heavy shapes (9.2 section).
+
+## 9.2 The im2col GEMM stage (k x k gate and timed session)
+
+Gate collections: the desktop layer table's eight shapes plus the six M51-heavy shapes of 7.2
+(fourteen shapes, bias and fused-residual epilogue each), full grid and reduced grid, ten
+repetitions, plus one run of the correctness collection. Driver canonical and clocks pinned
+throughout; every stderr empty.
+
+**Gate verdict: all 32 `amd`/`nvidia` `_i2c` variants pass 10/10 on both grids** — zero failing
+dispatches across the twenty runs (896 coopmat dispatches per run). Every variant creates its
+pipeline on the device (no shared-memory overflow skips), and every K of the fourteen shapes is
+divisible by both families' K steps.
+
+**Production-path accuracy finding.** The failures in these runs are not coopmat failures: the
+`direct` route — which `auto` selects on four of the shapes — fails validation (atol 0.1,
+rtol 0.01) on `3x3 64 56x56` (one of the desktop shapes), `3x3 64 224x224`, `3x3 64-256 224x224`
+(both epilogues) and `3x3 192-48 28x28`, with maximum absolute errors of 0.14-0.53 against the
+0.1 tolerance (1.04 on the correctness collection's gather-grid-limit case). The `im2col` route
+passes everywhere. Mismatch counts scale with the output pixel count, which is why the reduced
+grid passes; this is the same fp16-accumulation class as the 2.5 record. The incumbent fast path
+on the K=576-class shapes is out of tolerance on this device; the tolerance-holding incumbent
+route there is `im2col`.
+
+**Timed session:** five runs with rotated arm order (auto, direct, im2col, the 32 variants),
+per-case p50 of `gpu_timestamp_route_us`, per-cell median over the five runs, A/A opens of the
+fixed `im2col` route before and after. A/A geomeans 0.9996 and 1.0021 (one cell at +2.1% in the
+second open); observed clocks match the pin in every case. One cell (`3x3 192-48 28x28`) carries
+a 6% cross-run spread of the baseline arm; its noise band is widened accordingly.
+
+Best arm over the fourteen shapes, covering all of them:
+
+> **`amd_t128x128_f16_alc_sk4_i2c_half` — geomean 3.69x over `auto`, 5.66x over `im2col`.**
+
+| shape | auto / best | im2col / best | band | win |
+|---|---:|---:|---:|---|
+| `1x7 192-224 17x17` | 5.62 | 5.62 | 2% | yes |
+| `1x7 224-256 17x17` | 5.70 | 5.75 | 2% | yes |
+| `3x3 1024-256 28x28` | 4.13 | 4.13 | 2% | yes |
+| `3x3 128 28x28` | 4.52 | 4.52 | 2% | yes |
+| `3x3 192-48 14x14` | 2.16 | 10.09 | 2% | yes |
+| `3x3 192-48 28x28` | 1.62 | 4.47 | 6% | yes |
+| `3x3 256 14x14` | 10.11 | 10.11 | 2% | yes |
+| `3x3 448-384 5x5` | 13.99 | 14.02 | 2% | yes |
+| `3x3 512 7x7` | 12.22 | 12.22 | 2% | yes |
+| `3x3 64 224x224` | 0.40 | 1.60 | 2% | no |
+| `3x3 64 56x56` | 0.53 | 1.51 | 2% | no |
+| `3x3 64-256 224x224` | 0.87 | 2.38 | 2% | no |
+| `3x3 s2 256-512 14x14` | 10.49 | 10.43 | 2% | yes |
+| `3x3 s2 512 14x14` | 12.20 | 12.19 | 2% | yes |
+
+The best arm wins 11 of 14 cells against `auto` beyond the noise band. The three losses are
+exactly the shapes where `auto` routes `direct` — the route that fails tolerance there (above);
+against the tolerance-holding incumbent route (`im2col`) the best arm wins all 14 cells, by
+1.5x-14x. The next arms: `nvidia_t128x128_f16_alc_sk4_i2c_half` (3.50x over `auto`),
+`amd_t128x128_f16_alc_sk2_i2c_half` (3.48x), `amd_t16x32_f16_alc_sk2_i2c_half` (3.43x),
+`nvidia_t16x32_f16_alc_sk4_i2c_half` (3.41x).
+
+For reference, `auto` holds 2.03x over `direct` (where `direct` runs) and 0.65x against
+`im2col` (i.e. `im2col` is 1.5x slower than `auto` on the shapes `auto` routes elsewhere); the
+timing is the whole convolution, gather included.

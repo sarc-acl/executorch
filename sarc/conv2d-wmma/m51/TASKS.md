@@ -87,16 +87,22 @@ switch.
 
 ## 9. k×k convolution (stage 2, PENDING: desktop push)
 Starts only when `origin/topic/conv2d-wmma` has moved and contains a cooperative-matrix route with im2col input.
-- [ ] 9.1 Rebase `topic/m51-conv2d-wmma` onto the pushed `origin/topic/conv2d-wmma`. Re-run the 1×1 parent gate and
+- [x] 9.1 Rebase `topic/m51-conv2d-wmma` onto the pushed `origin/topic/conv2d-wmma`. Re-run the 1×1 parent gate and
   A/A. Verify: 10/10, and the parent's ratios are within the noise band of the stage-1 results.
-- [ ] 9.2 The im2col GEMM stage on the M51.
+  (The rebase is a no-op: the origin tip is already the merge-base. The 2.4 gate and the 4.0 session
+  ran on this tree, so the parent gate and ratios stand as recorded.)
+- [x] 9.2 The im2col GEMM stage on the M51.
   - Apply the M51 rules to the im2col-input variants: `KSPEC`, `XP`, the fence, and shared memory ≤ 64 KiB.
   - Check that no im2col scratch storage (texture2d, texture3d, buffer) brings back a multi-pass drain.
   - Gate with a k×k collection: the M51 top k×k shapes from 7.2 and the desktop layer table (3×3 512 ch 7×7, 3×3
     stride 2 512 ch, 3×3 448→384 5×5, 3×3 256 ch 14×14, 1×7 192→224 17×17, 3×3 128 ch 28×28, 3×3 192→48 14×14,
     3×3 64 ch 56×56), full grid and reduced grid, 10/10.
   - Time the whole convolution, gather included, against today's automatic route.
-  Verify: the gate result and the ratio table in `RESULTS.md`.
+  Verify: the gate result and the ratio table in `RESULTS.md`. (All 32 `_i2c` variants 10/10 on both
+  grids; every variant creates its pipeline on the device. Timed session: best arm
+  `amd_t128x128_f16_alc_sk4_i2c_half`, 3.69x over `auto`, 5.66x over `im2col`, 14/14 vs the
+  tolerance-holding incumbent. The `direct` route fails tolerance on the K=576-class shapes —
+  recorded in `RESULTS.md` 9.2.)
 - [ ] 9.3 Direct k×k through im2col+WMMA (large planes, edsr) and dilated 3×3 (dl3), only if the desktop has pushed them.
   Verify: gated and timed like 9.2, or recorded as "not available".
 - [ ] 9.4 Locate and candidates for k×k, with the discipline of sections 5–6. `_sk` split-K is the first menu entry.
