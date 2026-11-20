@@ -199,7 +199,9 @@ class NominationGate(unittest.TestCase):
         nomination, (_, code, _) = gen.nominate(SHAPE, [("sweep", ref)])
         self.assertEqual((nomination["arms"], code), ([], "unstable"))
 
-    def test_validation_failure_in_any_session_excludes_the_arm(self):
+    def test_validation_is_judged_per_session(self):
+        # The arm qualifies in the good sweep and failed the reference in the
+        # other one: the good sweep nominates it, the failed sweep cannot.
         good = session(
             {
                 "auto": arm(100, 100, 100),
@@ -218,8 +220,11 @@ class NominationGate(unittest.TestCase):
                 },
             }
         )
-        nomination, _ = gen.nominate(SHAPE, [("good", good), ("bad", bad)])
-        self.assertEqual(nomination["arms"], [])
+        nomination, (info, _, _) = gen.nominate(SHAPE, [("good", good), ("bad", bad)])
+        self.assertEqual(nomination["arms"], ["xe2_t32x64_f16_alc"])
+        self.assertEqual(info["nominated"]["xe2_t32x64_f16_alc"]["session"], "good")
+        nomination, (_, code, _) = gen.nominate(SHAPE, [("bad", bad)])
+        self.assertEqual((nomination["arms"], code), ([], "validation"))
 
     def test_no_qualifying_arm_keeps_the_reason(self):
         for arms, code in (

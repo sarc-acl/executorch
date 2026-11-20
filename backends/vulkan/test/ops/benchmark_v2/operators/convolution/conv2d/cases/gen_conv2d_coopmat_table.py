@@ -26,8 +26,9 @@ stock_best / worst is at least MIN_RATIO. Timing spread and the A/A band are
 recorded as descriptions; they do not decide.
 
 nominate: sweep sessions only nominate. Every timed arm of every sweep session
-of the device is one observation, judged by the rule within its own session;
-an arm that failed validation in any session is not nominated. Per device and
+of the device is one observation, judged by the rule within its own session,
+validation included: an arm that failed validation in a session gives no
+observation there. Per device and
 configuration the nominated arms are, per route, the arm of the qualifying
 observation with the largest ratio of medians t(auto) / t(arm) against the auto
 of its own session (at most three). Without a qualifying arm the configuration
@@ -209,8 +210,9 @@ def observations(shape, sessions):
     """Every timed arm of every session of the device for the configuration,
     each judged against its own session's stock runs: (observations, untimed
     arm records, sessions used, sessions skipped). An arm that failed
-    validation in any session gives no observation."""
-    obs, untimed, used, skipped, failed = [], [], [], [], set()
+    validation in a session has no time there and gives no observation from
+    that session."""
+    obs, untimed, used, skipped = [], [], [], []
     for name, s in sessions:
         sh = s["shapes"].get(shape)
         if sh is None:
@@ -234,9 +236,7 @@ def observations(shape, sessions):
                 )
             else:
                 untimed.append(x)
-                if no_time_code([x]) == "validation":
-                    failed.add(arm)
-    return [o for o in obs if o["arm"] not in failed], untimed, used, skipped
+    return obs, untimed, used, skipped
 
 
 def nominate(shape, sessions):
