@@ -17,6 +17,7 @@ from executorch.backends.vulkan._passes.replace_instance_norm import (
 from executorch.backends.vulkan.op_registry import (
     can_rewrite_batch_norm_as_group_norm,
     unwrap_identity_repeat,
+    vulkan_supported_ops,
 )
 from executorch.backends.vulkan.partitioner.vulkan_partitioner import VulkanPartitioner
 from executorch.backends.vulkan.patterns.conv2d_with_epilogue import activation_of
@@ -375,6 +376,85 @@ class TestConvolutionConstantOperands(unittest.TestCase):
                 self.assertEqual(
                     any("convolution" in op for op in op_names), not on_cpu
                 )
+
+    def test_runtime_operand_not_fused_with_epilogue(self):
+        """A conv2d_with_epilogue match is accepted only when the convolution's
+        weight and bias are constants: the partitioner delegates a match's nodes
+        before their own checks (review reproducer: each runtime-operand model
+        with .relu() was fused and aborted on Arc B580)."""
+
+        class DynamicWeights(torch.nn.Module):
+            def forward(self, x, w):
+                return torch.nn.functional.conv2d(x, w).relu()
+
+        class DynamicBias(torch.nn.Module):
+            def __init__(self, w):
+                super().__init__()
+                self.register_buffer("weight", w)
+
+            def forward(self, x, b):
+                return torch.nn.functional.conv2d(x, self.weight, b).relu()
+
+        class DynamicWeightsResidual(torch.nn.Module):
+            def forward(self, x, w, y):
+                return (torch.nn.functional.conv2d(x, w) + y).relu()
+
+        class ConstantOperands(torch.nn.Module):
+            def __init__(self, w, b):
+                super().__init__()
+                self.register_buffer("weight", w)
+                self.register_buffer("bias", b)
+
+            def forward(self, x):
+                return torch.nn.functional.conv2d(x, self.weight, self.bias).relu()
+
+        torch.manual_seed(42)
+        x = torch.randn(1, 96, 14, 14, dtype=torch.float16)
+        w = torch.randn(40, 96, 1, 1, dtype=torch.float16)
+        b = torch.randn(40, dtype=torch.float16)
+        y = torch.randn(1, 40, 14, 14, dtype=torch.float16)
+        cases = [
+            # (name, model, inputs, fused)
+            ("runtime weights", DynamicWeights(), (x, w), False),
+            ("runtime bias", DynamicBias(w), (x, b), False),
+            ("runtime weights, residual", DynamicWeightsResidual(), (x, w, y), False),
+            ("constant weights and bias", ConstantOperands(w, b), (x,), True),
+        ]
+        for name, model, inputs, fused in cases:
+            with self.subTest(name):
+                edge_program = lower_to_vulkan(model.eval(), inputs)
+                graph_module = edge_program.exported_program().graph_module
+                ops = [
+                    op.name
+                    for graph in vulkan_delegate_graphs(edge_program)
+                    for op in graph.chain
+                ]
+                self.assertEqual(ops.count("et_vk.conv2d.with_epilogue"), int(fused))
+                self.assertFalse(any("convolution" in op for op in ops))
+                self.assertEqual(conv_input_ranks(graph_module), [] if fused else [4])
+
+    def test_fused_form_needs_constant_operands(self):
+        """et_vk.conv2d.with_epilogue reaching the partitioner (fused before
+        partitioning) is held to the same rule: weight, bias and residual scale
+        must be constants."""
+        graph = torch.fx.Graph()
+        x, w, b, scale = (graph.placeholder(n) for n in ("x", "w", "b", "scale"))
+        conv_args = (x, w, b, [1, 1], [0, 0], [1, 1], False, [0, 0], 1)
+        no_scale = graph.call_function(
+            exir_ops.edge.et_vk.conv2d.with_epilogue,
+            (*conv_args, None, None, "add", 1, "relu", 0.0, 0.0),
+        )
+        with_scale = graph.call_function(
+            exir_ops.edge.et_vk.conv2d.with_epilogue,
+            (*conv_args, x, scale, "add", 1, "relu", 0.0, 0.0),
+        )
+        features = vulkan_supported_ops[exir_ops.edge.et_vk.conv2d.with_epilogue]
+        check = features.are_node_inputs_supported_with_constants_fn
+        self.assertTrue(check(no_scale, {w, b}))
+        self.assertFalse(check(no_scale, {b}))
+        self.assertFalse(check(no_scale, {w}))
+        self.assertFalse(check(with_scale, {w, b}))
+        self.assertTrue(check(with_scale, {w, b, scale}))
 
 
 class TestFoldForceFp16Casts(unittest.TestCase):

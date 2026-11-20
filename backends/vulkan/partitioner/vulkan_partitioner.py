@@ -107,6 +107,16 @@ class VulkanSupportedOperators(OperatorSupportBase):
         # Create a set of all nodes that are part of fusable subgraphs for quick lookup
         self.fusable_nodes: Set[torch.fx.Node] = set()
         self.unsupported_fusable_nodes: Set[torch.fx.Node] = set()
+        # A match whose fused op prepacks an operand that is not constant is not
+        # fusable: its nodes go through their own support checks instead.
+        self.fusable_subgraphs = [
+            match
+            for match in self.fusable_subgraphs
+            if all(
+                utils.is_constant_operand(operand, self.constant_nodes)
+                for operand in match.constant_operands()
+            )
+        ]
         for match in self.fusable_subgraphs:
             nodes = {
                 node for node in match.all_nodes if isinstance(node, torch.fx.Node)

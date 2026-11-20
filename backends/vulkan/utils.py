@@ -6,7 +6,7 @@
 
 import operator
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import AbstractSet, Any, Dict, List, Optional, Set, Tuple, Union
 
 import torch
 from executorch.backends.vulkan.serialization.vulkan_graph_schema import (
@@ -222,6 +222,22 @@ def get_constant_nodes(program: ExportedProgram) -> Set[torch.fx.Node]:
         for node in program.graph.nodes
         if is_param_node(program, node) and not is_mutable_buffer_node(node, program)
     }
+
+
+def is_constant_operand(arg: Any, constant_nodes: AbstractSet[torch.fx.Node]) -> bool:
+    """
+    Whether an operand holds constant data: a node of `constant_nodes`
+    (get_constant_nodes), or a quantize -> dequantize chain on one, which
+    FoldQDQPass folds back to the constant before the graph is built.
+    """
+    if (
+        isinstance(arg, torch.fx.Node)
+        and is_dequant_node(arg)
+        and isinstance(arg.args[0], torch.fx.Node)
+        and is_quant_node(arg.args[0])
+    ):
+        arg = arg.args[0].args[0]
+    return arg in constant_nodes
 
 
 def is_mutable_buffer_node(

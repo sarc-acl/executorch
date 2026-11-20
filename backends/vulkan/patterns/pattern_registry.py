@@ -38,6 +38,13 @@ class PatternMatch:
         self.all_nodes = all_nodes
         self.anchor_node = anchor_node
 
+    def constant_operands(self) -> List[torch.fx.Node]:
+        """
+        Operands the fused op prepacks, which must hold constant data
+        (VulkanSupportedOperators accepts the match only if they do).
+        """
+        return []
+
 
 def create_pattern_match_from_internal_match(
     internal_match: InternalMatch,

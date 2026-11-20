@@ -913,6 +913,28 @@ def register_max_pool2d_with_indices():
 # =============================================================================
 
 
+def conv_operands_are_constant(
+    node: torch.fx.Node, constant_nodes: AbstractSet[torch.fx.Node]
+) -> bool:
+    """
+    Every convolution route prepacks the weights and the bias on the host
+    (PrepackNode reads a TensorRef), so both must be constants; a weight or bias
+    computed in the graph or fed in as a model input stays on the CPU. Also
+    holds for et_vk.conv2d.with_epilogue, whose first nine arguments are the
+    convolution's and whose residual scale is prepacked as well.
+    """
+    weight, bias = node.args[1], node.args[2]
+    scale = (
+        node.args[10]
+        if node.target == exir_ops.edge.et_vk.conv2d.with_epilogue
+        else None
+    )
+    return all(
+        operand is None or utils.is_constant_operand(operand, constant_nodes)
+        for operand in (bias, scale)
+    ) and utils.is_constant_operand(weight, constant_nodes)
+
+
 @update_features(
     [
         exir_ops.edge.aten.convolution.default,
@@ -984,23 +1006,7 @@ def register_convolution_cpp_ops():
     def check_conv_constants(
         node: torch.fx.Node, constant_nodes: AbstractSet[torch.fx.Node]
     ) -> bool:
-        # Every convolution route prepacks the weights and the bias on the host
-        # (PrepackNode reads a TensorRef), so both must be constants; a weight or
-        # bias computed in the graph or fed in as a model input stays on the CPU.
-        # A quantize -> dequantize chain on a constant is folded back to the
-        # constant before the graph is built (FoldQDQPass).
-        def constant(arg) -> bool:
-            if (
-                isinstance(arg, torch.fx.Node)
-                and utils.is_dequant_node(arg)
-                and isinstance(arg.args[0], torch.fx.Node)
-                and utils.is_quant_node(arg.args[0])
-            ):
-                arg = arg.args[0].args[0]
-            return arg in constant_nodes
-
-        weight, bias = node.args[1], node.args[2]
-        return constant(weight) and (bias is None or constant(bias))
+        return conv_operands_are_constant(node, constant_nodes)
 
     return OpFeatures(
         inputs_storage=[
@@ -1049,6 +1055,7 @@ def register_conv2d_with_epilogue():
         inputs_dtypes=utils.FP_T,
         supports_resize=True,
         supports_prepacking=True,
+        are_node_inputs_supported_with_constants_fn=conv_operands_are_constant,
     )
 
 

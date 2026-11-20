@@ -162,6 +162,10 @@ class Conv2dEpilogueMatch(PatternMatch):
 
         self.match_activation(node)
 
+    def constant_operands(self) -> list[torch.fx.Node]:
+        # The convolution's weight and bias are prepacked.
+        return [n for n in self.conv_node.args[1:3] if isinstance(n, torch.fx.Node)]
+
     def match_activation(self, node: torch.fx.Node) -> None:
         """Completes the match, fusing the only user of `node` if an activation."""
         self.anchor_node = node
@@ -199,6 +203,13 @@ def replace_conv2d_with_epilogue_pattern(
     graph_module: torch.fx.GraphModule,
     match: Conv2dEpilogueMatch,
 ) -> Optional[bool]:
+    # The weight and bias are prepacked: only constants can be fused (the
+    # partitioner also refuses the match otherwise).
+    constants = utils.get_constant_nodes(ep)
+    if not all(
+        utils.is_constant_operand(n, constants) for n in match.constant_operands()
+    ):
+        return False
     residual, scale = match.residual_node, match.scale_node
     # The runtime binds the residual as a tensor and prepacks the scale, so a
     # constant x or a computed scale is fused as part of the residual x * scale.
