@@ -12,6 +12,7 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/Convolution.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2dCoopmatTable.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2dDirect.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2dSimt.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/im2col/Conv2dGemm.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/winograd/Conv2dWinograd.h>
 
@@ -255,7 +256,7 @@ const Conv2dPwCoopmatVariant* conv2d_coopmat_table_variant(
   }
   const char* const name = conv2d_coopmat_table_lookup(
       graph,
-      graph.dtype_of(in) == vkapi::kHalf ? "fp16" : "fp32",
+      "fp16",
       {in_sizes.at(1),
        w_sizes.at(0),
        w_sizes.at(2),
@@ -269,6 +270,66 @@ const Conv2dPwCoopmatVariant* conv2d_coopmat_table_variant(
        in_sizes.at(2),
        in_sizes.at(3)});
   return name != nullptr ? find_conv2d_pw_coopmat_variant(name) : nullptr;
+}
+
+// The fp32 table row's conv2d_simt variant of this device and configuration,
+// if any and eligible (change conv2d-all-used-kernels).
+const Conv2dSimtVariant* conv2d_simt_table_variant(
+    ComputeGraph& graph,
+    const ValueRef in,
+    const ValueRef weight_data,
+    const ValueRef bias,
+    const ValueRef stride,
+    const ValueRef padding,
+    const ValueRef dilation,
+    const int64_t groups,
+    const bool transposed,
+    const ValueRef out) {
+  if (transposed || groups != 1) {
+    return nullptr;
+  }
+  const std::vector<int64_t> in_sizes = graph.sizes_of(in);
+  const std::vector<int64_t> w_sizes = graph.sizes_of(weight_data);
+  const auto s = graph.get_int_list(stride);
+  const auto p = graph.get_int_list(padding);
+  const auto d = graph.get_int_list(dilation);
+  if (in_sizes.size() != 4 || in_sizes.at(0) != 1 || w_sizes.size() != 4 ||
+      s->size() != 2 || p->size() != 2 || d->size() != 2) {
+    return nullptr;
+  }
+  const char* const name = conv2d_coopmat_table_lookup(
+      graph,
+      "fp32",
+      {in_sizes.at(1),
+       w_sizes.at(0),
+       w_sizes.at(2),
+       w_sizes.at(3),
+       s->at(0),
+       s->at(1),
+       p->at(0),
+       p->at(1),
+       d->at(0),
+       d->at(1),
+       in_sizes.at(2),
+       in_sizes.at(3)});
+  const Conv2dSimtVariant* const v =
+      name != nullptr ? find_conv2d_simt_variant(name) : nullptr;
+  if (v == nullptr ||
+      conv2d_simt_ineligible(
+          graph,
+          *v,
+          in,
+          weight_data,
+          bias,
+          stride,
+          padding,
+          dilation,
+          groups,
+          transposed,
+          out)) {
+    return nullptr;
+  }
+  return v;
 }
 
 } // namespace
@@ -401,6 +462,32 @@ void conv2d_with_epilogue_impl(
 
   const Conv2dMethod method =
       get_conv2d_method(graph, weight_data, groups_val, transposed_val);
+
+  if (conv2d_coopmat_switch_on() && graph.dtype_of(in) == vkapi::kFloat) {
+    if (const Conv2dSimtVariant* const variant = conv2d_simt_table_variant(
+            graph,
+            in,
+            weight_data,
+            bias,
+            stride,
+            padding,
+            dilation,
+            groups_val,
+            transposed_val,
+            out)) {
+      return conv2d_simt_impl(
+          graph,
+          *variant,
+          in,
+          weight_data,
+          bias,
+          stride,
+          padding,
+          dilation,
+          out,
+          epilogue);
+    }
+  }
 
   if (conv2d_coopmat_switch_on()) {
     if (const Conv2dPwCoopmatVariant* const variant =

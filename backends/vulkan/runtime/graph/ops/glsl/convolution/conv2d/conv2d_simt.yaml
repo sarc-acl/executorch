@@ -1,0 +1,266 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# FP32 convolution as a register-tiled GEMM with shared-memory staging (change
+# conv2d-all-used-kernels). Reachable by a variant request (benchmark_v2 route
+# simt) or an fp32 table row with ETVK_CONV2D_COOPMAT=1. Names:
+# conv2d_simt_t<M>x<N>_m<TM>n<TN4>[_dg][_sk<slices>]_float. The variant list in
+# impl/convolution/conv2d/Conv2dSimt.cpp must match.
+
+conv2d_simt:
+  parameter_names_with_default_values:
+    PRECISION: highp
+    WG_TILE_M: 64
+    WG_TILE_N: 64
+    WG_TILE_K: 16
+    TM: 8
+    TN4: 2
+    K_SLICES: 1
+    DIRECT: false
+    MERGE: false
+  shader_variants:
+    - NAME: conv2d_simt_merge_float
+      MERGE: true
+    - NAME: conv2d_simt_t32x32_m4n1_float
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 1
+      K_SLICES: 1
+    - NAME: conv2d_simt_t32x32_m4n1_sk2_float
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 1
+      K_SLICES: 2
+    - NAME: conv2d_simt_t32x32_m4n1_sk4_float
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 1
+      K_SLICES: 4
+    - NAME: conv2d_simt_t32x32_m4n1_sk8_float
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 1
+      K_SLICES: 8
+    - NAME: conv2d_simt_t32x32_m4n1_dg_float
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 1
+      K_SLICES: 1
+      DIRECT: true
+    - NAME: conv2d_simt_t32x32_m4n1_dg_sk2_float
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 1
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: conv2d_simt_t32x32_m4n1_dg_sk4_float
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 1
+      K_SLICES: 4
+      DIRECT: true
+    - NAME: conv2d_simt_t32x32_m4n1_dg_sk8_float
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 1
+      K_SLICES: 8
+      DIRECT: true
+    - NAME: conv2d_simt_t64x32_m4n2_float
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 2
+      K_SLICES: 1
+    - NAME: conv2d_simt_t64x32_m4n2_sk2_float
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 2
+      K_SLICES: 2
+    - NAME: conv2d_simt_t64x32_m4n2_sk4_float
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 2
+      K_SLICES: 4
+    - NAME: conv2d_simt_t64x32_m4n2_sk8_float
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 2
+      K_SLICES: 8
+    - NAME: conv2d_simt_t64x32_m4n2_dg_float
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 2
+      K_SLICES: 1
+      DIRECT: true
+    - NAME: conv2d_simt_t64x32_m4n2_dg_sk2_float
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 2
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: conv2d_simt_t64x32_m4n2_dg_sk4_float
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 2
+      K_SLICES: 4
+      DIRECT: true
+    - NAME: conv2d_simt_t64x32_m4n2_dg_sk8_float
+      WG_TILE_M: 64
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 2
+      K_SLICES: 8
+      DIRECT: true
+    - NAME: conv2d_simt_t64x64_m4n2_float
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 2
+      K_SLICES: 1
+    - NAME: conv2d_simt_t64x64_m4n2_sk2_float
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 2
+      K_SLICES: 2
+    - NAME: conv2d_simt_t64x64_m4n2_sk4_float
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 2
+      K_SLICES: 4
+    - NAME: conv2d_simt_t64x64_m4n2_sk8_float
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 2
+      K_SLICES: 8
+    - NAME: conv2d_simt_t64x64_m4n2_dg_float
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 2
+      K_SLICES: 1
+      DIRECT: true
+    - NAME: conv2d_simt_t64x64_m4n2_dg_sk2_float
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 2
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: conv2d_simt_t64x64_m4n2_dg_sk4_float
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 2
+      K_SLICES: 4
+      DIRECT: true
+    - NAME: conv2d_simt_t64x64_m4n2_dg_sk8_float
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      TM: 4
+      TN4: 2
+      K_SLICES: 8
+      DIRECT: true
+    - NAME: conv2d_simt_t128x64_m8n2_float
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      TM: 8
+      TN4: 2
+      K_SLICES: 1
+    - NAME: conv2d_simt_t128x64_m8n2_sk2_float
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      TM: 8
+      TN4: 2
+      K_SLICES: 2
+    - NAME: conv2d_simt_t128x64_m8n2_sk4_float
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      TM: 8
+      TN4: 2
+      K_SLICES: 4
+    - NAME: conv2d_simt_t128x64_m8n2_sk8_float
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      TM: 8
+      TN4: 2
+      K_SLICES: 8
+    - NAME: conv2d_simt_t128x64_m8n2_dg_float
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      TM: 8
+      TN4: 2
+      K_SLICES: 1
+      DIRECT: true
+    - NAME: conv2d_simt_t128x64_m8n2_dg_sk2_float
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      TM: 8
+      TN4: 2
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: conv2d_simt_t128x64_m8n2_dg_sk4_float
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      TM: 8
+      TN4: 2
+      K_SLICES: 4
+      DIRECT: true
+    - NAME: conv2d_simt_t128x64_m8n2_dg_sk8_float
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      TM: 8
+      TN4: 2
+      K_SLICES: 8
+      DIRECT: true

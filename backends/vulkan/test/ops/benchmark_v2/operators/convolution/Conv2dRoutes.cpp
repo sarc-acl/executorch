@@ -6,6 +6,7 @@
 
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2d.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2dDirect.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2dSimt.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/im2col/Conv2dGemm.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/winograd/Conv2dWinograd.h>
 #include <executorch/backends/vulkan/test/ops/benchmark_v2/framework/RouteRegistry.h>
@@ -318,6 +319,47 @@ Json build_conv2d_direct_coopmat(
   return selected("direct_coopmat", report);
 }
 
+// Change conv2d-all-used-kernels: an FP32 conv2d_simt variant by name.
+Json build_conv2d_simt(
+    ComputeGraph& graph,
+    const std::vector<ValueRef>& args,
+    const Json& options) {
+  check_options(options, {"variant"});
+  if (!options.contains("variant") || !options.at("variant").is_string()) {
+    throw std::invalid_argument("simt requires a variant name");
+  }
+  const std::string name = options.at("variant");
+  const Conv2dSimtVariant* const variant = find_conv2d_simt_variant(name);
+  supported(variant != nullptr, "Unknown conv2d_simt variant: " + name);
+  const ConvShape shape = conv_shape(graph, args);
+  if (const auto reason = conv2d_simt_ineligible(
+          graph,
+          *variant,
+          args[0],
+          args[1],
+          args[2],
+          args[3],
+          args[4],
+          args[5],
+          shape.groups,
+          /*transposed=*/false,
+          args.back())) {
+    throw UnsupportedRoute(name + " cannot run this case: " + *reason);
+  }
+  conv2d_simt_impl(
+      graph,
+      *variant,
+      args[0],
+      args[1],
+      args[2],
+      args[3],
+      args[4],
+      args[5],
+      args.back(),
+      conv2d_epilogue_from_args(graph, args));
+  return selected("simt", {{"variant", name}});
+}
+
 Json build_conv2d_winograd(
     ComputeGraph& graph,
     const std::vector<ValueRef>& args,
@@ -425,6 +467,7 @@ REGISTER_OPERATOR_ROUTES {
       aten.convolution.default, direct_coopmat, build_conv2d_direct_coopmat);
   REGISTER_OPERATOR_ROUTE(
       aten.convolution.default, winograd, build_conv2d_winograd);
+  REGISTER_OPERATOR_ROUTE(aten.convolution.default, simt, build_conv2d_simt);
   REGISTER_ROUTE_INSPECTOR(aten.convolution.default, inspect_conv2d_route);
   REGISTER_OPERATOR_ROUTE(
       et_vk.conv_with_clamp.default, direct, build_conv2d_direct);
@@ -440,6 +483,8 @@ REGISTER_OPERATOR_ROUTES {
       build_conv2d_direct_coopmat);
   REGISTER_OPERATOR_ROUTE(
       et_vk.conv_with_clamp.default, winograd, build_conv2d_winograd);
+  REGISTER_OPERATOR_ROUTE(
+      et_vk.conv_with_clamp.default, simt, build_conv2d_simt);
   REGISTER_ROUTE_INSPECTOR(et_vk.conv_with_clamp.default, inspect_conv2d_route);
   REGISTER_OPERATOR_ROUTE(
       et_vk.conv2d.with_epilogue, direct, build_conv2d_direct);
@@ -451,6 +496,7 @@ REGISTER_OPERATOR_ROUTES {
       et_vk.conv2d.with_epilogue, direct_coopmat, build_conv2d_direct_coopmat);
   REGISTER_OPERATOR_ROUTE(
       et_vk.conv2d.with_epilogue, winograd, build_conv2d_winograd);
+  REGISTER_OPERATOR_ROUTE(et_vk.conv2d.with_epilogue, simt, build_conv2d_simt);
   REGISTER_ROUTE_INSPECTOR(et_vk.conv2d.with_epilogue, inspect_conv2d_route);
 }
 

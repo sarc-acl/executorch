@@ -21,6 +21,8 @@ pack_conv2d_gemm_weight:
         # im2col_coopmat.
         - parameter_values: [buffer, half, half]
         - parameter_values: [buffer, half, float]
+        # Buffer weights of the FP32 conv2d_simt variants.
+        - parameter_values: [buffer, float, float]
   shader_variants:
     - NAME: pack_conv2d_gemm_weight
     # Zero rows after the weights up to dims1.z (route direct_coopmat).

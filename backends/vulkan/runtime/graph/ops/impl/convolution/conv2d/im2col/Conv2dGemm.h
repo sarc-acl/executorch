@@ -173,6 +173,24 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
     const ValueRef out,
     const bool transposed);
 
+// The kernel taps [first, first + count) of one spatial axis that read the
+// input for some output position o < out (0 <= o s - p + t d < in), or
+// {0, 0} when none does. Taps between the first and the last live one stay.
+std::pair<int64_t, int64_t> conv2d_live_taps(
+    const int64_t in,
+    const int64_t out,
+    const int64_t k,
+    const int64_t s,
+    const int64_t p,
+    const int64_t d);
+
+// The [C_out, chunk_channels, chunks * kh, kw] weight of the plan's live taps
+// and input-channel chunks (built on the CPU at graph build time).
+ValueRef slice_conv2d_weight(
+    ComputeGraph& graph,
+    const ValueRef weight_data,
+    const Conv2dIm2colCoopmatPlan& plan);
+
 // How route direct_coopmat runs a convolution on a _dg variant: the live taps
 // (as in Conv2dIm2colCoopmatPlan; kh or kw is 0 when no tap reads the input),
 // the gathered depth K = kh * kw * align_up_4(C_in) and the packed weight rows

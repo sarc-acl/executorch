@@ -64,6 +64,8 @@ utils::uvec3 conv2d_gemm_weight_padk_grid(
       utils::safe_downcast<uint32_t>(utils::div_up(rows, rows_per_z))};
 }
 
+} // namespace
+
 // The kernel taps [first, first + count) of one spatial axis that read the
 // input for some output position o < out (0 <= o s - p + t d < in), or
 // {0, 0} when none does. Taps between the first and the last live one stay.
@@ -88,6 +90,8 @@ std::pair<int64_t, int64_t> conv2d_live_taps(
                    : std::pair<int64_t, int64_t>{first, last - first + 1};
 }
 
+namespace {
+
 // Rows of the split-K scratch after the packed weights: the partial sums of
 // every K slice of every chunk at `M` pixels.
 uint32_t conv2d_im2col_coopmat_scratch_rows(
@@ -100,6 +104,8 @@ uint32_t conv2d_im2col_coopmat_scratch_rows(
       plan.scratch_slices() * (plan.multiply->fp32_accumulation ? 2u : 1u);
   return utils::div_up(M * entries_per_pixel, 4u);
 }
+
+} // namespace
 
 // The [C_out, chunk_channels, chunks * kh, kw] weight whose im2col K order
 // (prepack_conv2d_gemm_weight) is that of the chunks' gathered matrices one
@@ -153,8 +159,6 @@ ValueRef slice_conv2d_weight(
             delete[] static_cast<uint8_t*>(data);
           }));
 }
-
-} // namespace
 
 //
 // Weight handling
