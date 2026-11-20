@@ -1,0 +1,50 @@
+{
+  "intel": {
+    "pw_coopmat": [
+      "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half",
+      "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_half",
+      "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_half",
+      "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_half",
+      "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk2_half",
+      "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"
+    ],
+    "im2col_coopmat": [
+      "conv2d_pw_coopmat_xe2_t128x128_f16_alc_i2c_half",
+      "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_i2c_half",
+      "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_i2c_half",
+      "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_i2c_half",
+      "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk2_i2c_half",
+      "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_i2c_half"
+    ]
+  },
+  "amd": {
+    "pw_coopmat": [
+      "conv2d_pw_coopmat_amd_t16x32_f16_alc_half",
+      "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_half",
+      "conv2d_pw_coopmat_amd_t128x128_f32_alc_half",
+      "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_half",
+      "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half"
+    ],
+    "im2col_coopmat": [
+      "conv2d_pw_coopmat_amd_t16x32_f16_alc_i2c_half",
+      "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_i2c_half",
+      "conv2d_pw_coopmat_amd_t128x128_f32_alc_i2c_half",
+      "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_i2c_half",
+      "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half"
+    ]
+  },
+  "nvidia": {
+    "pw_coopmat": [
+      "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_half",
+      "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half",
+      "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_half",
+      "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_half"
+    ],
+    "im2col_coopmat": [
+      "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_i2c_half",
+      "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_i2c_half",
+      "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_i2c_half",
+      "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_i2c_half"
+    ]
+  }
+}
