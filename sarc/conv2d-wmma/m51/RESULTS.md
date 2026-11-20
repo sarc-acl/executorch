@@ -1053,9 +1053,12 @@ lose badly.
 
 **Verdict: adopted per-regime, not as the parent.** As a blanket 1x1 parent the candidate is
 rejected (1.202x geomean); for the 784-pixel regime it is the best measured variant on every
-cell and the stage-3 1x1 "after" state is the oracle {parent, t32x32}. This was the second
-gated 1x1 candidate; the family closes under the stop rule with a clean ceiling statement:
-operand delivery is fixed (11.2 measured the u16 gather conflict-free; 11.3 amortized the
-fragments), and the remaining 784-cell gap to stock (0.85-0.92) is an occupancy problem -
-more waves per dispatch on those cells (deeper split-K or a smaller-M tile at equal
-fragment amortization) is the next lever, recorded as a TASKS note.
+cell and the stage-3 1x1 "after" state is the oracle {parent, t32x32}. Correction of the
+first reading of this section: the family stop rule (THRESHOLDS stage 3) requires **two
+consecutive** gated candidates each gaining < 2% geomean on the shapes they target; `_bcm2`
+is one, and this candidate gained 8.6% geomean on its four targets, so it does not count and
+the 1x1 family remains open at counter one. The section's ceiling statement stands: operand
+delivery is fixed (11.2 measured the u16 gather conflict-free; 11.3 amortized the fragments),
+and the remaining 784-cell gap to stock (0.85-0.92) is an occupancy problem - more waves per
+dispatch on those cells (deeper split-K or a smaller-M tile at equal fragment amortization)
+is the next lever, recorded as a TASKS note.
