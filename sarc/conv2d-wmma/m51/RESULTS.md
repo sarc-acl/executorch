@@ -532,6 +532,30 @@ band. Geomeans: 2.122 -> 2.103 (-0.9%) and 1.838 -> 1.850 (+0.7%) for the 1x1 pa
 k x k geomeans are unchanged to two decimals. The selection sessions' numbers stand, and with
 them the 7.4 projections.
 
+## 8.3 Stage-2 input: which convolution family to take first
+
+Ranked by share of convolution time in the 7.2 workload (ten CI models, FP16): 3x3 s1 45.1%,
+1x1 15.4%, 1x7/7x1 14.4%, 3x3 dilated 7.4%, 3x3 s2 5.9%, 1x3/3x1 5.7%, 1D 5.1%, depthwise 0.2%.
+Of the three stage-2 families, the order to take them:
+
+1. **im2col GEMM (non-dilated k x k, stride 1 and 2): 51.0% of convolution time** (3x3 s1 +
+   3x3 s2). Delivered by 9.2: 3.39x over `auto`, 1.67x over the best stock route on the gate
+   set, and it also covers the 1x7/7x1 family (14.4%) - the two 1x7 gate shapes run at
+   4.3-4.6x over `auto` under the same machinery. Adoption is ready except the Cin=64
+   large-plane exception below.
+2. **direct k x k**: targets exactly that exception - the Cin=64 large-plane class where the
+   im2col gather dominates and the coopmat route loses to stock (0.45-0.67x, 9.2). The class
+   holds the two largest single configurations of the workload (edsr's 3x3 64->64 and 64->256
+   at 224x224 output; 74.3% of edsr's shader time, 7.2), so a direct WMMA path there is the
+   highest-value open family.
+3. **dilated 3x3 (dl3)**: 7.4% of convolution time but 51% of dl3's shader time (7.2).
+   Mechanically ready to reuse the im2col GEMM machinery, but blocked on the im2col routing
+   rejecting dilation != 1 - a routing change on the desktop side, not a kernel change.
+
+The 1x1 family (15.4%) was stage 1 and is delivered (4.0, 8.1). The remaining families
+(1x3/3x1 5.7%, 1D 5.1%) are smaller than all of the above and use no new machinery; they are
+candidates for the same im2col path once the routing accepts them.
+
 ## 9.2 The im2col GEMM stage (k x k gate and timed session)
 
 Gate collections: the desktop layer table's eight shapes plus the six M51-heavy shapes of 7.2
