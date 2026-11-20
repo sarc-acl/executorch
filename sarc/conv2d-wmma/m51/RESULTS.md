@@ -1004,3 +1004,58 @@ fast-gather arm). The shader and host plumbing stay default-off and unrouted in 
 as all stage-3 candidates are; the flag is the integration point. The kk family remains open
 with four shapes still behind stock; the remaining gap is the LDS-limited GEMM, not the
 gather.
+
+## 11.3 Fragment amortization (`amd_t32x32_f32_al`): built, gated, measured - ADOPTED
+## PER-REGIME (784-pixel cells); 1x1 family closed
+
+The 11.1 1x1 losers are the M=784 (28x28) cells: `784,2048,1024` 0.791, `784,2048,512` 0.843,
+`784,256,1024` 0.986, `784,512,2048` 0.759 against best stock. The 11.3 candidate is one
+variant-table addition against the 1x1 parent `amd_t16x32_f32_al`: the shipped AMD t32x32 tile
+- 2x2 fragments of 16x16, fp32 accumulation, one subgroup - with the parent's aligned-only
+option. Loads per WMMA 1.5 -> 1.0, staging stores per WMMA ~0.75x, and 2 -> 4 independent
+accumulator chains, keeping the parent's conflict-free load pattern (the 11.2 lesson). No
+shader code changes; the new `conv2d_pw_coopmat_amd_t32x32_f32_al_half.spv` is the only
+SPIR-V addition (all pre-existing variants byte-identical, md5 lists, local). Shared memory
+10240 bytes per workgroup, under the 64 KiB budget.
+
+**Correctness gate** (note-4 scope: the four pw collections, filtered to the parent and the
+candidate, ten repetitions): candidate 1240/1240 dispatches PASS, parent 1240/1240.
+
+**Timing** (interleaved session, 31 1x1 shapes, arms `auto`, `pw_tiled_4x8`, parent,
+candidate, rotated per round, A/A 1.007/1.003, 620 rows, zero invalid; parent drift vs 11.1
+geomean 1.000): the candidate is **faster than the parent on all four 784-pixel targets** -
+0.879, 0.916, 0.976, 0.890 - and slower on the other 27 shapes, geomean 1.202 overall. The
+regressions concentrate exactly where the padding does: the M=49/25/64 cells at 1.41-2.20x
+(28-30% padded rows plus occupancy loss), the M=196 cells at 1.06-1.59x (14% padded rows).
+Against best stock the four targets move to 0.901 / 0.920 / **1.011** / 0.854 - one cell
+crosses stock parity, three remain behind by 8-15%.
+
+**Argus before/after** (same untimed wmma.cfg run, six shapes - the four targets plus a
+49-pixel and a 3136-pixel control; parent `61b5b7cd` against candidate `ceda89c9`):
+
+| metric | parent | t32x32 | predicted |
+|---|---|---|---|
+| LDS instructions per WMMA (%LDS/%WMMA) | 10.68 | 6.15 | <= ~8 |
+| LDS Busy | 86.3% | 58.3% | <= ~75% |
+| LDS cycles per instruction | 2.13 | 2.38 | ~unchanged |
+| LDS-limited launch | 78.0% | 68.8% | lower |
+| VGPRs per wave (ratio) | 1.00 | 1.02, no spill | no spill |
+| wave occupancy | 23.5% | 15.1% | ~same (missed) |
+| WMMA ops issued per cycle (ratio) | 1.00 | 1.05 | >= 1.25 (missed) |
+
+The operand-delivery half of the design moved exactly as predicted - LDS instructions per
+WMMA fall to 0.58x and LDS Busy to 58%, with no bank-conflict or spill regression - but the
+freed LDS time did not convert into WMMA rate: **wave occupancy fell 23.5% -> 15.1%**, so
+with LDS pressure gone, waves in flight are the limiter on these cells, and the WMMA rate
+rises only 5%. The route timing is consistent: the four cells where the machine has enough
+pixel tiles to fill it win; the cells where the 32-row tile pads away a third of the work
+lose badly.
+
+**Verdict: adopted per-regime, not as the parent.** As a blanket 1x1 parent the candidate is
+rejected (1.202x geomean); for the 784-pixel regime it is the best measured variant on every
+cell and the stage-3 1x1 "after" state is the oracle {parent, t32x32}. This was the second
+gated 1x1 candidate; the family closes under the stop rule with a clean ceiling statement:
+operand delivery is fixed (11.2 measured the u16 gather conflict-free; 11.3 amortized the
+fragments), and the remaining 784-cell gap to stock (0.85-0.92) is an occupancy problem -
+more waves per dispatch on those cells (deeper split-K or a smaller-M tile at equal
+fragment amortization) is the next lever, recorded as a TASKS note.
