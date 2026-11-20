@@ -148,6 +148,62 @@ class NominationGate(unittest.TestCase):
         self.assertIsNone(code)
         self.assertEqual(info["best"], "xe2_t32x64_f16_alc")
 
+    def test_each_observation_gated_against_its_own_session(self):
+        # The reference sweep's A/A band is 0.213 (above 0.10), the retime's
+        # 0.02 with stable runs: the arm qualifies by its retime observation
+        # (ratio 1.22) and is nominated, although the reference observation and
+        # the larger of the two bands would reject it. The reference's stock
+        # time (100 against 81.97) does not filter the retime out.
+        ref = session(
+            {
+                "auto": arm(100, 100, 100),
+                "A'": arm(100, 100, 100),
+                "amd_t16x32_f16_alc": arm(80, 80, 80),
+            },
+            band=0.213,
+        )
+        retime = session(
+            {
+                "auto": arm(81.97, 81.97, 81.97),
+                "A'": arm(81.97, 81.97, 81.97),
+                "amd_t16x32_f16_alc": arm(67.19, 67.19, 67.19),
+            }
+        )
+        nomination, (info, code, _) = gen.nominate(
+            SHAPE, [("sweep", ref), ("retime", retime)]
+        )
+        self.assertEqual(nomination, {"arms": ["amd_t16x32_f16_alc"]})
+        self.assertIsNone(code)
+        self.assertEqual(info["nominated"]["amd_t16x32_f16_alc"]["session"], "retime")
+        self.assertAlmostEqual(
+            info["nominated"]["amd_t16x32_f16_alc"]["ratio"], 81.97 / 67.19
+        )
+        # The reference sweep alone nominates nothing (unstable).
+        nomination, (_, code, _) = gen.nominate(SHAPE, [("sweep", ref)])
+        self.assertEqual((nomination["arms"], code), ([], "unstable"))
+
+    def test_validation_failure_in_any_session_excludes_the_arm(self):
+        good = session(
+            {
+                "auto": arm(100, 100, 100),
+                "A'": arm(100, 100, 100),
+                "xe2_t32x64_f16_alc": arm(50, 50, 50),
+            }
+        )
+        bad = session(
+            {
+                "auto": arm(100, 100, 100),
+                "A'": arm(100, 100, 100),
+                "xe2_t32x64_f16_alc": {
+                    "t": None,
+                    "passed_runs": 2,
+                    "reason": "FAIL; PASS",
+                },
+            }
+        )
+        nomination, _ = gen.nominate(SHAPE, [("good", good), ("bad", bad)])
+        self.assertEqual(nomination["arms"], [])
+
     def test_no_qualifying_arm_keeps_the_reason(self):
         for arms, code in (
             ({"xe2_t32x64_f16_alc": arm(30, 40, 50)}, "unstable"),

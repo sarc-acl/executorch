@@ -19,13 +19,11 @@ A session directory holds session.json (per configuration the route time of
 each arm over its runs, the times of every run, and the configuration's A/A
 band) and coopmat-properties.json (the device's vendor and device ID).
 
-nominate: sweep sessions only nominate. The sessions of one device are used
-together, the first the reference; an arm of another session counts for a
-configuration only when that session's auto agrees with the reference's within
-the larger of the two A/A bands (design D6 of conv2d-coopmat-direct-gather).
-An arm qualifies when it passed validation in every run and meets the gate
-below against its own session. Per device and configuration the nominated arms
-are, per route, the qualifying arm with the largest ratio t(auto) / t(arm)
+nominate: sweep sessions only nominate. Every timed arm of every sweep session
+of the device is one observation, gated against its own session (its stock
+time, A/A band and spreads); an arm that failed validation in any session is
+not nominated. Per device and configuration the nominated arms are, per route,
+the arm of the passing observation with the largest ratio t(auto) / t(arm)
 against the auto of its own session (at most three); the gate filters before
 the ranking. Without a qualifying arm the configuration has no nominee and
 keeps the reason code of its fastest arm. Diagnostic and control arms are
@@ -166,89 +164,76 @@ def gate(x):
 #
 
 
-def collect(shape, sessions, ref_auto, ref_band):
-    """The arms of every session of the device that count for the
-    configuration: (candidates, untimed arm records, sessions used, sessions
-    skipped)."""
-    ref_name = sessions[0][0]
-    candidates, untimed, used, skipped = {}, {}, [], []
+def observations(shape, sessions):
+    """Every timed arm of every session of the device for the configuration,
+    each with its own session's stock time, A/A band and spreads:
+    (observations, untimed arm records, sessions used, sessions skipped). An
+    arm that failed validation in any session gives no observation."""
+    obs, untimed, used, skipped, failed = [], [], [], [], set()
     for name, s in sessions:
         sh = s["shapes"].get(shape)
         if sh is None:
             continue
         auto = (sh["arms"].get("auto") or {}).get("t")
         band = s["band"].get(shape)
-        if name != ref_name:
-            if auto is None or band is None:
-                skipped.append(f"{name}: no A/A pair")
-                continue
-            diff = 2 * abs(auto - ref_auto) / (auto + ref_auto)
-            limit = max(band, ref_band)
-            if diff > limit:
-                skipped.append(
-                    f"{name}: auto {auto:.1f} us against {ref_auto:.1f} us, "
-                    f"{diff:.3f} above the band {limit:.3f}"
-                )
-                continue
+        if auto is None or band is None:
+            skipped.append(f"{name}: no A/A pair")
+            continue
         used.append(name)
         for arm, x in sh["arms"].items():
             if not routable(arm):
                 continue
             if x.get("t"):
-                untimed.pop(arm, None)
-                candidates[arm] = {
-                    "ratio": auto / x["t"],
-                    "t": x["t"],
-                    "t_auto": auto,
-                    "band": max(band, ref_band),
-                    "stock_spread": stock_spread(sh),
-                    "spread": spread(x["runs"]),
-                    "session": name,
-                }
+                obs.append(
+                    {
+                        "arm": arm,
+                        "ratio": auto / x["t"],
+                        "t": x["t"],
+                        "t_auto": auto,
+                        "band": band,
+                        "stock_spread": stock_spread(sh),
+                        "spread": spread(x["runs"]),
+                        "session": name,
+                    }
+                )
             else:
-                candidates.pop(arm, None)
-                untimed[arm] = x
-    return candidates, untimed, used, skipped
+                untimed.append(x)
+                if no_time_code([x]) == "validation":
+                    failed.add(arm)
+    return [o for o in obs if o["arm"] not in failed], untimed, used, skipped
 
 
 def nominate(shape, sessions):
     """(nomination, sweep decision) of one configuration on one device.
-    nomination: {"arms": [arm per route], "reason": code when none}. The sweep
-    decision applies the gate to every arm (each against its own session) and
-    takes the qualifying arm with the lowest route time."""
-    ref = sessions[0][1]
-    ref_arms = (ref["shapes"].get(shape) or {}).get("arms", {})
-    ref_auto = (ref_arms.get("auto") or {}).get("t")
-    ref_band = ref["band"].get(shape)
-    if ref_band is None or ref_auto is None:
+    nomination: {"arms": [arm per route], "reason" and "detail" when none}.
+    Every arm observation is gated against its own session; per route the
+    nominee is the passing observation with the largest ratio. The sweep
+    decision takes the passing observation with the lowest route time."""
+    obs, untimed, used, skipped = observations(shape, sessions)
+    info = {"sessions_used": used, "sessions_skipped": skipped, "nominated": {}}
+    if not used:
         text = "route auto has no time in every run (no A/A pair)"
-        return {"arms": [], "reason": "not-timed"}, ({}, "not-timed", text)
-    candidates, untimed, used, skipped = collect(shape, sessions, ref_auto, ref_band)
-    info = {"sessions_used": used, "sessions_skipped": skipped}
-    if not candidates:
-        code = no_time_code(list(untimed.values()))
-        text = "no arm has a time in every run" + (
-            f" ({', '.join(sorted(untimed))})" if untimed else ""
+        return (
+            {"arms": [], "reason": "not-timed", "detail": text},
+            (info, "not-timed", text),
         )
-        info["nominated"] = {}
+    if not obs:
+        code = no_time_code(untimed)
+        text = "no arm has a time in every run"
         return {"arms": [], "reason": code, "detail": text}, (info, code, text)
-    passing = [a for a in candidates if gate(candidates[a]) is None]
+    passing = [o for o in obs if gate(o) is None]
     by_route = {}
-    for arm in passing:
-        r = route_of(arm)
-        if (
-            r not in by_route
-            or candidates[arm]["ratio"] > candidates[by_route[r]]["ratio"]
-        ):
-            by_route[r] = arm
-    nomination = {"arms": [by_route[r] for r in sorted(by_route)]}
-    info["nominated"] = {by_route[r]: candidates[by_route[r]] for r in sorted(by_route)}
-    best = min(passing or candidates, key=lambda a: candidates[a]["t"])
-    x = candidates[best]
+    for o in passing:
+        r = route_of(o["arm"])
+        if r not in by_route or o["ratio"] > by_route[r]["ratio"]:
+            by_route[r] = o
+    nomination = {"arms": [by_route[r]["arm"] for r in sorted(by_route)]}
+    info["nominated"] = {by_route[r]["arm"]: by_route[r] for r in sorted(by_route)}
+    x = min(passing or obs, key=lambda o: o["t"])
     info.update(
         {
-            "best": best,
-            "route": route_of(best),
+            "best": x["arm"],
+            "route": route_of(x["arm"]),
             "session": x["session"],
             "ratio": x["ratio"],
             "band": x["band"],
@@ -256,8 +241,8 @@ def nominate(shape, sessions):
             "spread": x["spread"],
             "t_auto": x["t_auto"],
             "t_best": x["t"],
-            "max_ratio": max(c["ratio"] for c in candidates.values()),
-            "passing_arms": len(passing),
+            "max_ratio": max(o["ratio"] for o in obs),
+            "passing_observations": len(passing),
         }
     )
     if passing:
