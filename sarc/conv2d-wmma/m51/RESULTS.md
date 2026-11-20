@@ -1128,3 +1128,113 @@ delivery is fixed (11.2 measured the u16 gather conflict-free; 11.3 amortized th
 and the remaining 784-cell gap to stock (0.85-0.92) is an occupancy problem - more waves per
 dispatch on those cells (deeper split-K or a smaller-M tile at equal fragment amortization)
 is the next lever, recorded as a TASKS note.
+
+## 11.6 Final session: the stage-3 after state against the stage-2 parents, per shape
+
+Interleaved session from the committed HEAD build (one binary for every arm): 60 s idle,
+A/A open, five rounds with the arm order rotated per round and 10 s between runs, A/A
+close, `--validation_mode=none`, the driver md5 read back after every run (canonical every
+time), all four debug-layer settings verified clean before the session, pins held
+throughout. 840 rows, zero invalid (every cell's observed GPU clock equals the pin). Arms:
+the stock routes (`auto`, `pw_tiled_4x8` on 1x1; `auto`, `direct`, `im2col` on k x k), the
+1x1 parent `amd_t16x32_f32_al_half`, the kk parent `amd_t16x32_f32_alc_sk2_i2c_half`, the
+t32x32 variant on the five 1x1 predicate shapes (M = 784 and N·K ≥ 2^18, RESULTS 11.3),
+and the fast-gather flag on the kk parent. The "after" state is the 11.3 predicate route
+on 1x1 (t32x32 where the predicate selects, the parent elsewhere) and the fast-gather kk
+parent on k x k; "before" is the stage-2 parents.
+
+**A/A and reproduction:** open geomean 1.013; close, which decides validity, **1.007** -
+inside the 1% band. Cells outside ±2%: open `3x3 448-384 5x5` (+24%), `1x1 49,96,576`
+(+14%), `1x7 192-224 17x17` (+13%), `1x1 196,96,576` (+7%), `1x1 784,512,2048` (+6%),
+`3x3 s2 256-512 14x14` (+2.6%), `3x3 192-48 28x28` (-2.4%); close `3x3 448-384 5x5`
+(+15%), `1x1 196,96,576` (+7%), `1x1 784,128,1152` (+4%), `1x1 49,2048,512` (+3.4%),
+`3x3 192-48 28x28` (-2.5%), `1x1 25,384,4032` (+2.0%). These are the cells whose stock
+A/A arm carries the cross-run spread (`direct` on `448-384 5x5` spreads 20% across the
+five rounds and on `1x7 192-224` 8%; `pw_tiled_4x8` on `196,96,576` 7.4%); their noise
+bands widen to the observed spread, the 8.1 reason: position-in-sequence drift of the
+stock arm. The parents reproduce the 11.1 re-baseline at **0.999** geomean drift; the
+largest cell drifts (`1x1 144,192,768` at 0.946, `1x1 784,128,1152` at 1.021) sit inside
+those cells' own cross-run spreads (5.7%, 6.1%).
+
+**Per shape** (ratios of p50 medians over the five rounds; "bef" = stage-2 parent, "aft" =
+stage-3 after state, "bs" = best stock route; `*` marks cells still behind best stock):
+
+| shape | aft/bef | aft/bs | bef/bs | % of bound bef | % of bound aft | drift |
+|---|---|---|---|---|---|---|
+| 1x1 144,192,768 | 1.000 | 0.413 | 0.413 | 26.7 | 26.7 | 0.946 |
+| 1x1 196,1024,256 | 1.000 | 0.902 | 0.902 | 26.4 | 26.4 | 1.000 |
+| 1x1 196,256,1024 | 1.000 | 0.492 | 0.492 | 25.3 | 25.3 | 1.001 |
+| 1x1 196,256,2304 | 1.000 | 0.578 | 0.578 | 26.3 | 26.3 | 0.974 |
+| 1x1 196,512,1024 | 1.000 | 0.724 | 0.724 | 27.4 | 27.4 | 0.999 |
+| 1x1 196,64,384 | 1.000 | 0.403 | 0.403 | 20.5 | 20.5 | 1.002 |
+| 1x1 196,96,576 | 1.000 | 0.387 | 0.387 | 24.6 | 24.6 | 1.013 |
+| 1x1 25,384,4032 | 1.000 | 0.263 | 0.263 | 42.8 | 42.8 | 1.001 |
+| 1x1 289,192,1024 | 1.000 | 0.529 | 0.529 | 25.9 | 25.9 | 1.017 |
+| 1x1 289,224,1344 | 1.000 | 0.684 | 0.684 | 24.9 | 24.9 | 0.98 |
+| 1x1 289,384,1024 | 1.000 | 0.766 | 0.766 | 28.5 | 28.5 | 1.000 |
+| 1x1 3136,128,256 | 1.000 | 0.959 | 0.959 | 36.4 | 36.4 | 1.000 |
+| 1x1 3136,256,64 | 1.000 | 0.708 | 0.708 | 40.1 | 40.1 | 1.000 |
+| 1x1 3136,64,256 | 1.000 | 0.821 | 0.821 | 54.0 | 54.0 | 0.999 |
+| 1x1 3136,64,64 | 1.000 | 0.678 | 0.678 | 50.0 | 50.0 | 0.999 |
+| 1x1 49,160,960 | 1.000 | 0.247 | 0.247 | 20.9 | 20.9 | 0.999 |
+| 1x1 49,2048,512 | 1.000 | 0.829 | 0.829 | 50.2 | 50.2 | 1.000 |
+| 1x1 49,512,2048 | 1.000 | 0.344 | 0.344 | 50.2 | 50.2 | 1.000 |
+| 1x1 49,512,4608 | 1.000 | 0.245 | 0.245 | 45.4 | 45.4 | 1.000 |
+| 1x1 49,96,576 | 1.000 | 0.337 | 0.337 | 13.6 | 13.6 | 1.002 |
+| 1x1 64,256,1536 | 1.000 | 0.303 | 0.303 | 31.8 | 31.8 | 0.999 |
+| 1x1 64,384,1536 | 1.000 | 0.322 | 0.322 | 42.1 | 42.1 | 0.999 |
+| 1x1 784,1024,256 | 0.990 | 0.935 | 0.944 | 31.8 | 32.1 | 1.000 |
+| 1x1 784,128,1152 | 1.000 | 0.691 | 0.691 | 28.6 | 28.6 | 1.021 |
+| 1x1 784,128,512 | 1.000 | 0.666 | 0.666 | 29.8 | 29.8 | 0.999 |
+| 1x1 784,2048,1024 | 0.878 | 1.109 | 1.263 | 35.1 | 40.0 | 1.000 | *
+| 1x1 784,2048,512 | 0.917 | 1.087 | 1.186 | 34.3 | 37.5 | 1.000 | *
+| 1x1 784,256,1024 | 0.976 | 0.987 | 1.012 | 31.4 | 32.2 | 1.000 |
+| 1x1 784,256,512 | 1.000 | 0.947 | 0.947 | 30.1 | 30.1 | 1.000 |
+| 1x1 784,512,128 | 1.000 | 0.806 | 0.806 | 27.9 | 27.9 | 1.000 |
+| 1x1 784,512,2048 | 0.890 | 1.227 | 1.378 | 34.2 | 38.4 | 1.000 | *
+| 1x7 192-224 17x17 | 0.941 | 0.451 | 0.480 | 19.1 | 20.3 | 1.000 |
+| 1x7 224-256 17x17 | 0.945 | 0.491 | 0.519 | 20.3 | 21.5 | 0.999 |
+| 3x3 1024-256 28x28 | 1.005 | 1.086 | 1.081 | 20.4 | 20.3 | 1.002 | *
+| 3x3 128 28x28 | 0.930 | 0.760 | 0.817 | 18.5 | 19.9 | 1.000 |
+| 3x3 192-48 14x14 | 0.875 | 0.371 | 0.424 | 7.1 | 8.1 | 0.995 |
+| 3x3 192-48 28x28 | 0.923 | 0.518 | 0.561 | 10.4 | 11.3 | 1.001 |
+| 3x3 256 14x14 | 0.939 | 0.363 | 0.386 | 20.5 | 21.9 | 1.001 |
+| 3x3 448-384 5x5 | 0.949 | 0.222 | 0.234 | 54.2 | 57.1 | 1.010 |
+| 3x3 512 7x7 | 0.962 | 0.163 | 0.169 | 39.4 | 41.0 | 0.998 |
+| 3x3 64 224x224 | 0.816 | 1.818 | 2.228 | 13.5 | 16.5 | 1.000 | *
+| 3x3 64 56x56 | 0.905 | 1.496 | 1.652 | 14.2 | 15.7 | 1.000 | *
+| 3x3 64-256 224x224 | 0.925 | 1.380 | 1.492 | 20.7 | 22.4 | 0.999 | *
+| 3x3 s2 256-512 14x14 | 0.955 | 0.427 | 0.447 | 38.6 | 40.4 | 0.990 |
+| 3x3 s2 512 14x14 | 0.963 | 0.284 | 0.295 | 40.5 | 42.1 | 1.002 |
+
+**Geomeans:** after/before **0.970** over all 45 shapes (1x1 0.988, k x k 0.930);
+after/best-stock 0.578 (1x1 0.592, k x k 0.546). % of roofline bound 27.6% -> 28.5%
+overall (1x1 31.4% -> 31.8%, k x k 20.8% -> 22.4%).
+
+**Oracle (upper bound, not a route):** the per-shape best of parent and t32x32 over the 31
+1x1 shapes is 0.986 against the parent (11.3 session medians), against 0.988 for the
+predicate route - the predicate keeps all but 0.2% of the oracle's gain.
+
+**Behind best stock after stage 3** (7 cells, down from 8; `1x1 784,256,1024` crosses to
+0.987 from 1.012):
+
+| shape | aft/bs | bef/bs |
+|---|---|---|
+| `1x1 784,2048,1024` | 1.109 | 1.263 |
+| `1x1 784,2048,512` | 1.087 | 1.186 |
+| `1x1 784,512,2048` | 1.227 | 1.378 |
+| `3x3 1024-256 28x28` | 1.086 | 1.081 |
+| `3x3 64 224x224` | 1.818 | 2.228 |
+| `3x3 64 56x56` | 1.496 | 1.652 |
+| `3x3 64-256 224x224` | 1.380 | 1.492 |
+
+The 1x1 remainder is the 784-cell occupancy gap named in 11.3 (the LDS-capacity launch
+limit; TASKS 11.7). The k x k remainder is the LDS-limited GEMM on the Cin=64 large-plane
+cells (11.4 verdict: the gather is fixed, the GEMM is the gap) plus `3x3 1024-256 28x28`,
+where fast-gather stays within its own noise of the parent (1.005 here, 1.008 in the
+adoption session; the cell was behind stock before stage 3 and remains so). The stage-3
+kernel-level goal - the best gated coopmat route ahead of best stock beyond the noise band
+on every shape - is reached on 37 of the 45 shapes; `1x1 784,256,1024` moves from 1.012 to
+0.987, inside the 2% band of parity; the seven cells above remain behind and are the
+recorded gap, with the 11.7 occupancy lever for the 784 cells and the 11.5 DRAM-roof lever
+for the small-M and large-plane k x k cells as the next candidates.

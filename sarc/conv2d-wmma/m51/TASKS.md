@@ -185,8 +185,12 @@ the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFL
   runtime plumbing default-off and unrouted as before.)
 - [ ] 11.5 Small-M, DRAM-bound shapes: move toward the DRAM roof (deeper split-K, more loads in flight).
   Verify as in 11.2.
-- [ ] 11.6 Final interleaved session from the committed HEAD. Report per-shape ratio and % of roofline before and
+- [x] 11.6 Final interleaved session from the committed HEAD. Report per-shape ratio and % of roofline before and
   after stage 3, and per-candidate gains.
+  (RESULTS 11.6: 840 rows, zero invalid, close A/A 1.007, parent drift vs 11.1 0.999; after/before geomean 0.970
+  over all 45 (1x1 0.988 via the 11.3 predicate route, kxk 0.930 via fast-gather); after/best-stock 0.578;
+  % of bound 27.6% -> 28.5%; goal met beyond the noise band on 37 of 45 - 784,256,1024 crosses to 0.987 within
+  the parity band, 7 cells remain behind (three 784 1x1, four kxk), down from 8; oracle 0.986 vs predicate 0.988.)
 - [ ] 11.7 (later run) 784-cell occupancy, the named limiter from 11.3: the t32x32 route is LDS-capacity-limited
   (LDS-limited launch 68.8%, VGPR- and wave-slot-limited 0%, 6 workgroups per 64 KiB CU). Levers: two waves per
   workgroup sharing one B stage, or a smaller `tile_k` staging depth. Judge per shape through the 11.3 predicate.
