@@ -935,3 +935,72 @@ candidate below the 2% stop threshold; the next 1x1 candidate (11.3) targets LDS
 WMMA by fragment amortization (more fp32 accumulators per wave) instead of load width,
 keeping the parent's conflict-free load pattern. The `_bcm2` shader stays in-tree,
 default-off and unrouted.
+
+## 11.4 Fast-gather im2col (division-free pixel decode): built, gated, measured - ADOPTED
+
+The kk losers of 11.1 are the Cin=64 large-plane shapes, where the stage-1 SQTT evidence puts
+~half the route time in the `conv2d_im2col` gather, ALU-bound on index math (VALU Busy 107.9%,
+SALU Busy 30.4%, zero L2/DRAM stall pressure). The 11.4 candidate is one default-off change
+against the kk parent `amd_t16x32_f32_alc_sk2_i2c_half`: a `_fast` variant of the gather
+shader, selected by a host `fast_gather` flag on the `im2col_coopmat` route, with three parts:
+
+- **grid re-layout** to (k4, tile-local output row, output column): the runtime-divisor pixel
+  decode (`m_local / W_out`, `% W_out`, with `W_out` UBO-derived) is structurally gone; the
+  row and column come straight from `gl_GlobalInvocationID`;
+- **spec constants** for the kernel geometry and `Cin_padded` (all shape-independent): the
+  K-index decode divisions become constant-divisor strength reductions after specialization;
+- **no `round_to_f16` emulation**: the gather is a pure fp16-to-fp16 copy (a `texelFetch` of an
+  rgba16f texture stored unmodified, plus an exact 0.0 fill for out-of-range taps), so the
+  mantissa/subnormal/overflow/NaN emulation the codegen injects into every rgba16f store is
+  pure overhead here. **Rounding change:** the fast path skips the `round_to_f16` emulation on
+  the gather stores; for this lossless copy the written values are identical, and the k x k
+  gate passed 10/10 at the unchanged tolerances (below), which is the condition set for it.
+
+Every existing variant's SPIR-V is byte-identical (md5 lists, local); the three new
+`conv2d_im2col_{texture2d,texture3d,buffer}_half_fast.spv` are the only additions.
+
+**Correctness gate** (note-4 scope: the two im2col collections only, filtered to the parent
+and the candidate, ten repetitions): candidate 560/560 dispatches PASS, parent 560/560, at
+the unchanged tolerances - the rounding change rides on this gate.
+
+**Timing** (interleaved session, 14 kk shapes, arms `auto`, `direct`, `im2col`, parent,
+candidate, order rotated per round, A/A open/close geomeans 0.999/1.004, 350 rows, zero
+invalid): the parent and all stock arms reproduce the 11.1 re-baseline (parent drift geomean
+1.000, per-shape 0.992-1.012). The candidate is **faster than the parent on 13 of 14 shapes**:
+time-ratio geomean 0.930, range 0.815-1.008, with the gains concentrated exactly on the
+gather-bound losers: `3x3 64 224x224` 0.815, `3x3 64 56x56` 0.905, `3x3 64-256 224x224`
+0.924. The sole regression is `3x3 1024-256 28x28` at 1.008 - noise-level, and the shape
+where the gather is the smallest share of the route. Against best stock the kk losers move to
+0.553 / 0.669 / 0.725 / 0.829 (from 0.449 / 0.606 / 0.669 / 0.835); the candidate remains
+behind stock on those four (the remaining gap is the GEMM itself, which the stage-1 evidence
+showed to be LDS-limited with little headroom). % of roofline bound on the Cin=64 planes
+rises 13.5-16.5 / 14.2-15.7 / 20.7-22.4 (parent-candidate).
+
+**Argus before/after** (same untimed wmma.cfg run, parent and candidate arms on the four kk
+loser shapes; gather kernels parent `91a9c0bc` against fast `42e69209`):
+
+| metric | parent gather | fast gather | predicted |
+|---|---|---|---|
+| gather VALU Busy | 106.7% | 41.9% | well below 100% (target <= ~60%) |
+| gather SALU Busy | 30.1% | 9.3% | well down |
+| ISA listing length (ratio) | 1.00 | 0.26 | much shorter |
+| ISA runtime-divisor division sequences | present | one constant-divisor mul-hi | gone |
+| ISA round-to-f16 constants | present | none | gone |
+| VGPRs per wave (ratio) | 1.00 | 0.53 | no regression |
+| wave occupancy | 97.5% | 95.5% | ~same |
+| mean gather dispatch, 56x56-class (ratio) | 1.00 | 0.52 | < 1 |
+| mean gather dispatch, 224x224-class (ratio) | 1.00 | 0.58 | < 1 |
+| mean gather dispatch, 1024-256 28x28 (ratio) | 1.00 | 1.09 | < 1 (missed; minor route share) |
+| GEMM kernel | `c32d88c4` | `c32d88c4` (unchanged) | unchanged |
+
+Every target metric moved as predicted: the gather is no longer ALU-bound (VALU Busy 106.7% to
+41.9%), the per-dispatch time roughly halves on the shapes that decided the 11.1 loser list,
+and the touched kernel is the only thing that changed (the GEMM hash is identical in both
+arms). The one counter-prediction is the 1024-256 gather dispatch (1.09x), which the route
+timing absorbs to 1.008 because the gather is a minor share there.
+
+**Verdict: adopted** as the stage-3 kk parent (the 11.6 final session measures the
+fast-gather arm). The shader and host plumbing stay default-off and unrouted in the runtime,
+as all stage-3 candidates are; the flag is the integration point. The kk family remains open
+with four shapes still behind stock; the remaining gap is the LDS-limited GEMM, not the
+gather.
