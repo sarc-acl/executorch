@@ -314,6 +314,69 @@ def conv_input_ranks(graph_module: torch.fx.GraphModule) -> List[int]:
     return ranks
 
 
+class TestConvolutionConstantOperands(unittest.TestCase):
+    """Every Vulkan convolution route prepacks its weights and bias, which needs
+    constants: a convolution whose weight or bias is a model input stays on the
+    CPU. The models are those of the conv2d-coopmat-evidence-hardening review
+    reproducer (FP16 1x1 96->40 at 14x14, the Arc B580 table-hit shape), whose
+    Vulkan runs aborted in executor_runner when the convolution was delegated."""
+
+    def test_runtime_weight_or_bias_not_delegated(self):
+        class DynamicWeights(torch.nn.Module):
+            def forward(self, x, w):
+                return torch.nn.functional.conv2d(x, w)
+
+        class DynamicBias(torch.nn.Module):
+            def __init__(self, w):
+                super().__init__()
+                self.register_buffer("weight", w)
+
+            def forward(self, x, b):
+                return torch.nn.functional.conv2d(x, self.weight, b)
+
+        class ConstantOperands(torch.nn.Module):
+            def __init__(self, w, b):
+                super().__init__()
+                self.register_buffer("weight", w)
+                self.register_buffer("bias", b)
+
+            def forward(self, x):
+                return torch.nn.functional.conv2d(x, self.weight, self.bias)
+
+        class Transpose(torch.nn.Module):
+            def __init__(self, w):
+                super().__init__()
+                self.register_buffer("weight", w)
+
+            def forward(self, x):
+                return torch.nn.functional.conv2d(x.transpose(-2, -1), self.weight)
+
+        torch.manual_seed(42)
+        x = torch.randn(1, 96, 14, 14, dtype=torch.float16)
+        w = torch.randn(40, 96, 1, 1, dtype=torch.float16)
+        b = torch.randn(40, dtype=torch.float16)
+        cases = [
+            # (name, model, inputs, convolution stays on the CPU)
+            ("runtime weights", DynamicWeights(), (x, w), True),
+            ("runtime bias", DynamicBias(w), (x, b), True),
+            ("constant weights and bias", ConstantOperands(w, b), (x,), False),
+            ("transposed input", Transpose(w), (x,), False),
+        ]
+        for name, model, inputs, on_cpu in cases:
+            with self.subTest(name):
+                edge_program = lower_to_vulkan(model.eval(), inputs)
+                graph_module = edge_program.exported_program().graph_module
+                self.assertEqual(conv_input_ranks(graph_module), [4] if on_cpu else [])
+                op_names = [
+                    op.name
+                    for graph in vulkan_delegate_graphs(edge_program)
+                    for op in graph.chain
+                ]
+                self.assertEqual(
+                    any("convolution" in op for op in op_names), not on_cpu
+                )
+
+
 class TestFoldForceFp16Casts(unittest.TestCase):
     def _graph_and_cast(self, model, inputs):
         gm = SpecPropPass()(export_to_edge(model, inputs).graph_module).graph_module

@@ -981,6 +981,27 @@ def register_convolution_cpp_ops():
         inputs = [input_storage] + [utils.NO_STORAGE] * 10
         return inputs, output_storage
 
+    def check_conv_constants(
+        node: torch.fx.Node, constant_nodes: AbstractSet[torch.fx.Node]
+    ) -> bool:
+        # Every convolution route prepacks the weights and the bias on the host
+        # (PrepackNode reads a TensorRef), so both must be constants; a weight or
+        # bias computed in the graph or fed in as a model input stays on the CPU.
+        # A quantize -> dequantize chain on a constant is folded back to the
+        # constant before the graph is built (FoldQDQPass).
+        def constant(arg) -> bool:
+            if (
+                isinstance(arg, torch.fx.Node)
+                and utils.is_dequant_node(arg)
+                and isinstance(arg.args[0], torch.fx.Node)
+                and utils.is_quant_node(arg.args[0])
+            ):
+                arg = arg.args[0].args[0]
+            return arg in constant_nodes
+
+        weight, bias = node.args[1], node.args[2]
+        return constant(weight) and (bias is None or constant(bias))
+
     return OpFeatures(
         inputs_storage=[
             utils.CHANNELS_PACKED_TEXTURE,  # input
@@ -999,6 +1020,7 @@ def register_convolution_cpp_ops():
         supports_resize=True,
         supports_prepacking=True,
         are_node_inputs_supported_fn=check_conv_node,
+        are_node_inputs_supported_with_constants_fn=check_conv_constants,
         pick_io_storage_fn=pick_conv_storage,
     )
 
