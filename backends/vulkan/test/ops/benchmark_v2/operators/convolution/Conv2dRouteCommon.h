@@ -33,6 +33,9 @@ int64_t product(int64_t a, int64_t b);
 int64_t padded4(int64_t value);
 void grouped_packing(const ConvShape& shape);
 Json selected(const std::string& name, const Json& options = Json::object());
+// Route option "allow_diagnostic" (default false): the case may request a
+// diagnostic cooperative-matrix variant (Conv2dPwCoopmatVariant::diagnostic).
+bool allow_diagnostic_option(const Json& options);
 ConvShape conv_shape_base(
     ComputeGraph& graph,
     ValueRef input,

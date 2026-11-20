@@ -32,6 +32,16 @@ void check_options(
   }
 }
 
+bool allow_diagnostic_option(const Json& options) {
+  if (!options.contains("allow_diagnostic")) {
+    return false;
+  }
+  if (!options.at("allow_diagnostic").is_boolean()) {
+    throw std::invalid_argument("allow_diagnostic must be boolean");
+  }
+  return options.at("allow_diagnostic").get<bool>();
+}
+
 std::array<int64_t, 2>
 spatial_parameter(ComputeGraph& graph, ValueRef value, bool positive) {
   const std::vector<int64_t> values = *graph.get_int_list(value);

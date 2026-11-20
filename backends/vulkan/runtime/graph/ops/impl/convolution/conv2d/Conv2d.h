@@ -176,6 +176,13 @@ struct Conv2dPwCoopmatVariant final {
     return (options & option) != 0u;
   }
 
+  // A diagnostic variant computes something other than the convolution: every
+  // route refuses it unless a benchmark case allows diagnostics, and the
+  // selection table never holds it.
+  bool diagnostic() const {
+    return has(kDiagOnce);
+  }
+
   // Bytes of shared memory the shader declares.
   uint32_t shared_bytes() const;
 };
@@ -274,34 +281,42 @@ utils::StorageType conv2d_pw_weight_storage(
 // (conv2d_pw_coopmat_eligible is this with the packed weight's storage).
 // `has_bias_or_epilogue`: the convolution has a bias, an activation, a
 // residual or a scale, which an _epi0 variant cannot apply.
+// `allow_diagnostic`: a benchmark case may request a diagnostic variant.
 std::optional<std::string> conv2d_pw_coopmat_ineligible(
     ComputeGraph& graph,
     const Conv2dPwCoopmatVariant& variant,
     const ValueRef in,
     const ValueRef weight_data,
+    const ValueRef bias,
     const utils::StorageType weight_storage,
     const ValueRef stride,
     const ValueRef padding,
     const ValueRef out,
     const bool transposed,
-    const bool has_bias_or_epilogue);
+    const bool has_bias_or_epilogue,
+    const bool allow_diagnostic = false);
 
 // Whether a pointwise convolution may run on the variant at its current
-// sizes: the device supports the variant, the convolution is FP16,
-// non-transposed, ungrouped, stride 1, padding 0, batch 1, with more than one
-// output pixel, texture input and output, and packed weights in a buffer (which
-// needs float16_buffers_enabled()), and its work group counts fit the device.
+// sizes: the device supports the variant, the variant is not a diagnostic
+// (unless allowed), the convolution is FP16, non-transposed, ungrouped,
+// stride 1, padding 0, batch 1, with more than one output pixel, constant FP16
+// weights, no bias or a constant FP16 bias of one value per output channel,
+// channels-packed texture3d input and output with the standard axis map, and
+// packed weights in a buffer (which needs float16_buffers_enabled()), and its
+// work group counts fit the device.
 bool conv2d_pw_coopmat_eligible(
     ComputeGraph& graph,
     const Conv2dPwCoopmatVariant& variant,
     const ValueRef in,
     const ValueRef weight_data,
+    const ValueRef bias,
     const ValueRef packed_weight,
     const ValueRef stride,
     const ValueRef padding,
     const ValueRef out,
     const bool transposed,
-    const bool has_bias_or_epilogue);
+    const bool has_bias_or_epilogue,
+    const bool allow_diagnostic = false);
 
 // Kernel requested from conv2d_pw_impl. kAuto is the production pick and the
 // only kind automatic routing uses. kTiledWide always picks the 2x2-pixel x
@@ -317,6 +332,8 @@ struct Conv2dPwRequest final {
   };
   Kind kind = Kind::kAuto;
   const Conv2dPwCoopmatVariant* coopmat_variant = nullptr;
+  // Set only by benchmark cases that request a diagnostic variant.
+  bool allow_diagnostic = false;
 };
 
 void conv2d_pw_impl(

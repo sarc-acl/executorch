@@ -425,6 +425,7 @@ void conv2d_with_epilogue_impl(
                 *variant,
                 in,
                 weight_data,
+                bias,
                 conv2d_pw_weight_storage(graph, weight_data, out),
                 stride,
                 padding,

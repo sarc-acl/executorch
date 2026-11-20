@@ -721,7 +721,10 @@ def diag_cases(label, M, N, K, plane, timing, **kwargs):
         **timing,
         "validation_method": TOLERANCE,
         "reference": "conv2d_pw_diag_once",
-        "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+        "route": {
+            "name": "pw_coopmat",
+            "options": {"variant": "v_VARIANT", "allow_diagnostic": True},
+        },
         "sweep_variables": {"v_VARIANT": DIAG},
         "args_sweep": [conv_args(M, N, K, plane, **kwargs)],
     }

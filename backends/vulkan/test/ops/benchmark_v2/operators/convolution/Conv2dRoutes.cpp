@@ -262,10 +262,11 @@ Json build_conv2d_direct_coopmat(
     ComputeGraph& graph,
     const std::vector<ValueRef>& args,
     const Json& options) {
-  check_options(options, {"variant"});
+  check_options(options, {"variant", "allow_diagnostic"});
   if (!options.contains("variant") || !options.at("variant").is_string()) {
     throw std::invalid_argument("direct_coopmat requires a variant name");
   }
+  const bool allow_diagnostic = allow_diagnostic_option(options);
   const std::string name = options.at("variant");
   const Conv2dPwCoopmatVariant* const variant =
       find_conv2d_pw_coopmat_variant(name);
@@ -282,7 +283,8 @@ Json build_conv2d_direct_coopmat(
           args[4],
           args[5],
           args.back(),
-          /*transposed=*/false)) {
+          /*transposed=*/false,
+          allow_diagnostic)) {
     throw UnsupportedRoute(name + " cannot run this case: " + *reason);
   }
   const Conv2dDirectCoopmatPlan plan = conv2d_direct_coopmat_plan(
@@ -304,12 +306,16 @@ Json build_conv2d_direct_coopmat(
       args[4],
       args[5],
       args.back(),
-      conv2d_epilogue_from_args(graph, args));
-  return selected(
-      "direct_coopmat",
-      {{"variant", name},
-       {"taps", {plan.kh, plan.kw}},
-       {"packed_k4", plan.packed_k4}});
+      conv2d_epilogue_from_args(graph, args),
+      allow_diagnostic);
+  Json report = {
+      {"variant", name},
+      {"taps", {plan.kh, plan.kw}},
+      {"packed_k4", plan.packed_k4}};
+  if (variant->diagnostic()) {
+    report["diagnostic"] = true;
+  }
+  return selected("direct_coopmat", report);
 }
 
 Json build_conv2d_winograd(

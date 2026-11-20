@@ -77,10 +77,11 @@ Json build_pw_coopmat(
     ComputeGraph& graph,
     const std::vector<ValueRef>& args,
     const Json& options) {
-  check_options(options, {"variant"});
+  check_options(options, {"variant", "allow_diagnostic"});
   if (!options.contains("variant") || !options.at("variant").is_string()) {
     throw std::invalid_argument("pw_coopmat requires a variant name");
   }
+  const bool allow_diagnostic = allow_diagnostic_option(options);
   const std::string name = options.at("variant");
   const Conv2dPwCoopmatVariant* const variant =
       find_conv2d_pw_coopmat_variant(name);
@@ -101,16 +102,21 @@ Json build_pw_coopmat(
           *variant,
           args[0],
           args[1],
+          args[2],
           conv2d_pw_weight_storage(graph, args[1], args.back()),
           args[3],
           args[4],
           args.back(),
           /*transposed=*/false,
-          has_bias_or_epilogue)) {
+          has_bias_or_epilogue,
+          allow_diagnostic)) {
     throw UnsupportedRoute(name + " cannot run this case: " + *reason);
   }
   const size_t first = graph.execute_nodes().size();
-  add_pointwise(graph, args, {Conv2dPwRequest::Kind::kCoopmat, variant});
+  add_pointwise(
+      graph,
+      args,
+      {Conv2dPwRequest::Kind::kCoopmat, variant, allow_diagnostic});
   // Unreachable unless conv2d_pw_coopmat_ineligible and the dispatch node's
   // pick disagree: fail rather than report another kernel.
   const std::string merge = variant->k_slices > 1u
@@ -123,7 +129,7 @@ Json build_pw_coopmat(
           "pw_coopmat picked " + node + " instead of " + name);
     }
   }
-  if (variant->has(Conv2dPwCoopmatVariant::kDiagOnce)) {
+  if (variant->diagnostic()) {
     return selected("pw_coopmat", {{"variant", name}, {"diagnostic", true}});
   }
   return selected("pw_coopmat", {{"variant", name}});

@@ -744,12 +744,18 @@ std::optional<std::string> conv2d_pw_coopmat_ineligible(
     const Conv2dPwCoopmatVariant& variant,
     const ValueRef in,
     const ValueRef weight_data,
+    const ValueRef bias,
     const utils::StorageType weight_storage,
     const ValueRef stride,
     const ValueRef padding,
     const ValueRef out,
     const bool transposed,
-    const bool has_bias_or_epilogue) {
+    const bool has_bias_or_epilogue,
+    const bool allow_diagnostic) {
+  if (variant.diagnostic() && !allow_diagnostic) {
+    return "the variant is a diagnostic (_diag_once); only a benchmark case "
+           "with allow_diagnostic may request it";
+  }
   if (variant.has(Conv2dPwCoopmatVariant::kIm2col)) {
     return "the variant reads an im2col matrix (route im2col_coopmat)";
   }
@@ -763,16 +769,43 @@ std::optional<std::string> conv2d_pw_coopmat_ineligible(
       graph.dtype_of(out) != vkapi::kHalf) {
     return "input and output are not FP16";
   }
+  // The prepack reads constant data, and the shader reads the packed weights
+  // and the bias as FP16.
+  if (!graph.val_is_tref(weight_data)) {
+    return "the weights are not a constant (TensorRef)";
+  }
+  if (graph.dtype_of(weight_data) != vkapi::kHalf) {
+    return "the weights are not FP16";
+  }
+  if (!graph.val_is_none(bias)) {
+    if (!graph.val_is_tref(bias)) {
+      return "the bias is not a constant (TensorRef)";
+    }
+    if (graph.dtype_of(bias) != vkapi::kHalf) {
+      return "the bias is not FP16";
+    }
+    if (graph.sizes_of(bias) !=
+        std::vector<int64_t>{graph.size_at<int64_t>(-3, out)}) {
+      return "the bias does not hold one value per output channel";
+    }
+  }
   if (!graph.float16_buffers_enabled()) {
     return "16-bit storage buffers are not enabled";
   }
   if (weight_storage != utils::kBuffer) {
     return "the packed weights are not stored in a buffer";
   }
-  if (!graph.is_texture_storage(in) || !graph.is_texture_storage(out) ||
+  if (graph.storage_type_of(in) != utils::kTexture3D ||
+      graph.storage_type_of(out) != utils::kTexture3D ||
       graph.packed_dim_of(in) != WHCN::kChannelsDim ||
       graph.packed_dim_of(out) != WHCN::kChannelsDim) {
-    return "input and output are not channels-packed textures";
+    return "input and output are not channels-packed textures (texture3d)";
+  }
+  // The shader reads and writes texel (w, h, c4) directly.
+  if (!graph.has_standard_axis_map(in) || !graph.has_standard_axis_map(out)) {
+    return "input or output texture has a nonstandard axis map (e.g. a "
+           "transposed view); the route needs width, height and channels on "
+           "the x, y and z texture axes";
   }
   const std::vector<int64_t> in_sizes = graph.sizes_of(in);
   const std::vector<int64_t> weight_sizes = graph.sizes_of(weight_data);
@@ -887,12 +920,14 @@ bool conv2d_pw_coopmat_eligible(
     const Conv2dPwCoopmatVariant& variant,
     const ValueRef in,
     const ValueRef weight_data,
+    const ValueRef bias,
     const ValueRef packed_weight,
     const ValueRef stride,
     const ValueRef padding,
     const ValueRef out,
     const bool transposed,
-    const bool has_bias_or_epilogue) {
+    const bool has_bias_or_epilogue,
+    const bool allow_diagnostic) {
   if (variant.k_slices > 1u) {
     // The scratch rows the packed weight tensor carries must hold the current
     // plane.
@@ -909,12 +944,14 @@ bool conv2d_pw_coopmat_eligible(
               variant,
               in,
               weight_data,
+              bias,
               graph.storage_type_of(packed_weight),
               stride,
               padding,
               out,
               transposed,
-              has_bias_or_epilogue)
+              has_bias_or_epilogue,
+              allow_diagnostic)
               .has_value();
 }
 
@@ -958,6 +995,7 @@ vkapi::ShaderInfo pick_conv2d_pw_tiled_shader(
     const std::vector<ArgGroup>& args,
     const std::vector<ValueRef>& resize_args,
     const Conv2dPwRequest& request,
+    const ValueRef bias,
     const bool transposed,
     const bool has_bias_or_epilogue) {
   const ValueRef out = args.at(0).refs.at(0);
@@ -970,12 +1008,14 @@ vkapi::ShaderInfo pick_conv2d_pw_tiled_shader(
           *request.coopmat_variant,
           in,
           resize_args.at(0),
+          bias,
           packed_weight,
           resize_args.at(1),
           resize_args.at(2),
           out,
           transposed,
-          has_bias_or_epilogue)) {
+          has_bias_or_epilogue,
+          request.allow_diagnostic)) {
     return VK_KERNEL_FROM_STR(request.coopmat_variant->name);
   }
 
@@ -1192,6 +1232,7 @@ void add_conv2d_pw_tiled_node(
     ComputeGraph& graph,
     const ValueRef in,
     const ValueRef packed_weight,
+    const ValueRef bias,
     const ValueRef packed_bias,
     const ValueRef stride,
     const ValueRef padding,
@@ -1200,8 +1241,8 @@ void add_conv2d_pw_tiled_node(
     const Conv2dEpilogue& epilogue,
     const Conv2dEpilogueArgs& epilogue_args,
     const Conv2dPwRequest& request,
-    const bool transposed,
-    const bool has_bias) {
+    const bool transposed) {
+  const bool has_bias = !graph.val_is_none(bias);
   int32_t stride_h, stride_w, padding_h, padding_w;
   {
     const auto stride_list = graph.get_int_list(stride);
@@ -1250,7 +1291,7 @@ void add_conv2d_pw_tiled_node(
     // the variant, the kernel node dispatches nothing and the merge node runs
     // the tiled kernel instead.
     const Conv2dPwCoopmatVariant& variant = *request.coopmat_variant;
-    const auto eligible = [request, transposed, has_bias_or_epilogue](
+    const auto eligible = [request, bias, transposed, has_bias_or_epilogue](
                               ComputeGraph* graph,
                               const std::vector<ArgGroup>& args,
                               const std::vector<ValueRef>& resize_args) {
@@ -1259,12 +1300,14 @@ void add_conv2d_pw_tiled_node(
           *request.coopmat_variant,
           args.at(1).refs.at(0),
           resize_args.at(0),
+          bias,
           args.at(2).refs.at(0),
           resize_args.at(1),
           resize_args.at(2),
           args.at(0).refs.at(0),
           transposed,
-          has_bias_or_epilogue);
+          has_bias_or_epilogue,
+          request.allow_diagnostic);
     };
     graph.execute_nodes().emplace_back(new DynamicDispatchNode(
         graph,
@@ -1301,7 +1344,7 @@ void add_conv2d_pw_tiled_node(
     const std::string merge = conv2d_pw_coopmat_merge_shader(variant);
     graph.execute_nodes().emplace_back(new DynamicDispatchNode(
         graph,
-        [eligible, merge, transposed, has_bias_or_epilogue](
+        [eligible, merge, bias, transposed, has_bias_or_epilogue](
             ComputeGraph* graph,
             const std::vector<ArgGroup>& args,
             const std::vector<ValueRef>& resize_args) {
@@ -1309,7 +1352,13 @@ void add_conv2d_pw_tiled_node(
             return VK_KERNEL_FROM_STR(merge);
           }
           return pick_conv2d_pw_tiled_shader(
-              graph, args, resize_args, {}, transposed, has_bias_or_epilogue);
+              graph,
+              args,
+              resize_args,
+              {},
+              bias,
+              transposed,
+              has_bias_or_epilogue);
         },
         [merge](
             ComputeGraph* graph,
@@ -1359,7 +1408,7 @@ void add_conv2d_pw_tiled_node(
 
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
       graph,
-      [request, transposed, has_bias_or_epilogue](
+      [request, bias, transposed, has_bias_or_epilogue](
           ComputeGraph* graph,
           const std::vector<ArgGroup>& args,
           const std::vector<ValueRef>& resize_args) {
@@ -1368,6 +1417,7 @@ void add_conv2d_pw_tiled_node(
             args,
             resize_args,
             request,
+            bias,
             transposed,
             has_bias_or_epilogue);
       },
@@ -1428,12 +1478,14 @@ void conv2d_pw_impl(
             *request.coopmat_variant,
             in,
             weight_data,
+            bias,
             conv2d_pw_weight_storage(graph, weight_data, out),
             stride,
             padding,
             out,
             transposed_val,
-            has_bias_or_epilogue)) {
+            has_bias_or_epilogue,
+            request.allow_diagnostic)) {
       VK_THROW(
           "conv2d_pw: ",
           request.coopmat_variant->name,
@@ -1473,6 +1525,7 @@ void conv2d_pw_impl(
       graph,
       in,
       packed_weight,
+      bias,
       packed_bias,
       stride,
       padding,
@@ -1481,8 +1534,7 @@ void conv2d_pw_impl(
       epilogue,
       Conv2dEpilogueArgs(epilogue, in, packed_bias, packed_scale),
       request,
-      transposed_val,
-      /*has_bias=*/!graph.val_is_none(bias));
+      transposed_val);
 }
 
 } // namespace vkcompute

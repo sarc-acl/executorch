@@ -6024,7 +6024,7 @@ const Conv2dPwCoopmatVariant* runnable_pw_coopmat_variant() {
     return preferred;
   }
   for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
-    if (conv2d_pw_coopmat_device_supports(graph, v)) {
+    if (!v.diagnostic() && conv2d_pw_coopmat_device_supports(graph, v)) {
       return &v;
     }
   }
@@ -6335,6 +6335,231 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_ineligibility_reasons) {
   EXPECT_NE(
       over->find("maxComputeWorkGroupCount.z " + std::to_string(max_count[2])),
       std::string::npos);
+}
+
+// Design D1 of conv2d-coopmat-evidence-hardening: the pointwise route refuses
+// a transposed input or output view, FP32 or non-constant weights and a
+// non-constant, FP32 or wrongly sized bias, each with its reason, before any
+// node is registered.
+TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_refuses_operands_and_layouts) {
+  const Conv2dPwCoopmatVariant* const variant = runnable_pw_coopmat_variant();
+  if (variant == nullptr) {
+    GTEST_SKIP() << "no conv2d_pw_coopmat variant runs on this device";
+  }
+  SCOPED_TRACE(variant->name);
+  const std::vector<executorch::aten::Half> w(
+      32 * 64, executorch::aten::Half(0.25f));
+  const std::vector<float> w32(32 * 64, 0.25f);
+  const std::vector<executorch::aten::Half> b(32, executorch::aten::Half(1.0f));
+  const std::vector<float> b32(32, 1.0f);
+  enum class Case {
+    kTransposedInput,
+    kTransposedOutput,
+    kFp32Weights,
+    kTensorWeights,
+    kTensorBias,
+    kFp32Bias,
+    kBiasSize,
+    kAccepted,
+  };
+  for (const Case c :
+       {Case::kTransposedInput,
+        Case::kTransposedOutput,
+        Case::kFp32Weights,
+        Case::kTensorWeights,
+        Case::kTensorBias,
+        Case::kFp32Bias,
+        Case::kBiasSize,
+        Case::kAccepted}) {
+    SCOPED_TRACE(int(c));
+    ComputeGraph graph{GraphConfig()};
+    const ValueRef in = graph.add_tensor(
+        {1, 64, 6, 8}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+    const ValueRef out = graph.add_tensor(
+        {1, 32, 6, 8}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+    ValueRef conv_in = in;
+    ValueRef conv_out = out;
+    // A [1, C, 8, 6] texture viewed as [1, C, 6, 8] with H and W swapped.
+    if (c == Case::kTransposedInput || c == Case::kTransposedOutput) {
+      const bool input = c == Case::kTransposedInput;
+      const ValueRef t = graph.add_tensor(
+          {1, input ? 64 : 32, 8, 6},
+          vkapi::kHalf,
+          utils::kTexture3D,
+          utils::kChannelsPacked);
+      graph.virtual_transpose(t, 2, 3);
+      ASSERT_FALSE(graph.has_standard_axis_map(t));
+      ASSERT_EQ(graph.packed_dim_of(t), WHCN::kChannelsDim);
+      (input ? conv_in : conv_out) = t;
+    }
+    const ValueRef weight = c == Case::kFp32Weights
+        ? graph.add_tensorref({32, 64, 1, 1}, vkapi::kFloat, w32.data())
+        : c == Case::kTensorWeights
+        ? graph.add_tensor(
+              {32, 64, 1, 1}, vkapi::kHalf, utils::kBuffer, utils::kWidthPacked)
+        : graph.add_tensorref({32, 64, 1, 1}, vkapi::kHalf, w.data());
+    const ValueRef bias = c == Case::kTensorBias
+        ? graph.add_tensor(
+              {32}, vkapi::kHalf, utils::kBuffer, utils::kWidthPacked)
+        : c == Case::kFp32Bias
+        ? graph.add_tensorref({32}, vkapi::kFloat, b32.data())
+        : c == Case::kBiasSize
+        ? graph.add_tensorref({16}, vkapi::kHalf, b.data())
+        : graph.add_tensorref({32}, vkapi::kHalf, b.data());
+    const std::string want = c == Case::kTransposedInput ||
+            c == Case::kTransposedOutput
+        ? "nonstandard axis map"
+        : c == Case::kFp32Weights ? "the weights are not FP16"
+        : c == Case::kTensorWeights
+        ? "the weights are not a constant (TensorRef)"
+        : c == Case::kTensorBias ? "the bias is not a constant (TensorRef)"
+        : c == Case::kFp32Bias   ? "the bias is not FP16"
+        : c == Case::kBiasSize
+        ? "the bias does not hold one value per output channel"
+        : "";
+    const ValueRef ones = graph.add_scalar_list<int64_t>({1, 1});
+    const ValueRef zeros = graph.add_scalar_list<int64_t>({0, 0});
+    const auto reason = conv2d_pw_coopmat_ineligible(
+        graph,
+        *variant,
+        conv_in,
+        weight,
+        bias,
+        utils::kBuffer,
+        ones,
+        zeros,
+        conv_out,
+        /*transposed=*/false,
+        /*has_bias_or_epilogue=*/true);
+    if (c == Case::kAccepted) {
+      EXPECT_FALSE(reason.has_value()) << reason.value_or("");
+      continue;
+    }
+    ASSERT_TRUE(reason.has_value());
+    EXPECT_NE(reason->find(want), std::string::npos) << *reason;
+    const size_t prepacks = graph.prepack_nodes().size();
+    const size_t nodes = graph.execute_nodes().size();
+    try {
+      conv2d_pw_impl(
+          graph,
+          conv_in,
+          weight,
+          bias,
+          ones,
+          zeros,
+          conv_out,
+          /*transposed_val=*/false,
+          Conv2dEpilogue{},
+          {Conv2dPwRequest::Kind::kCoopmat, variant});
+      ADD_FAILURE() << "conv2d_pw_impl accepted the case";
+    } catch (const std::exception& e) {
+      EXPECT_NE(std::string(e.what()).find(want), std::string::npos)
+          << e.what();
+    }
+    EXPECT_EQ(graph.prepack_nodes().size(), prepacks);
+    EXPECT_EQ(graph.execute_nodes().size(), nodes);
+  }
+}
+
+// Design D2 of conv2d-coopmat-evidence-hardening: a diagnostic variant
+// (_diag_once) is refused by every route unless the case allows diagnostics,
+// and runs with the flag.
+TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_diagnostic_needs_flag) {
+  int diagnostics = 0;
+  for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    EXPECT_EQ(
+        v.diagnostic(),
+        std::string(v.name).find("_diag_once") != std::string::npos)
+        << v.name;
+    diagnostics += v.diagnostic() ? 1 : 0;
+  }
+  EXPECT_EQ(diagnostics, 4);
+  ComputeGraph probe{GraphConfig()};
+  int tested = 0;
+  for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    if (!v.diagnostic() || !probe.float16_buffers_enabled() ||
+        !conv2d_pw_coopmat_device_supports(probe, v)) {
+      continue;
+    }
+    SCOPED_TRACE(v.name);
+    ++tested;
+    ComputeGraph graph{GraphConfig()};
+    const std::vector<executorch::aten::Half> w(
+        96 * 64, executorch::aten::Half(0.25f));
+    const ValueRef in = graph.add_tensor(
+        {1, 64, 14, 14},
+        vkapi::kHalf,
+        utils::kTexture3D,
+        utils::kChannelsPacked);
+    const ValueRef out = graph.add_tensor(
+        {1, 96, 14, 14},
+        vkapi::kHalf,
+        utils::kTexture3D,
+        utils::kChannelsPacked);
+    const ValueRef weight =
+        graph.add_tensorref({96, 64, 1, 1}, vkapi::kHalf, w.data());
+    const ValueRef none = graph.add_none();
+    const ValueRef ones = graph.add_scalar_list<int64_t>({1, 1});
+    const ValueRef zeros = graph.add_scalar_list<int64_t>({0, 0});
+    const auto refused = conv2d_pw_coopmat_ineligible(
+        graph,
+        v,
+        in,
+        weight,
+        none,
+        utils::kBuffer,
+        ones,
+        zeros,
+        out,
+        false,
+        false);
+    ASSERT_TRUE(refused.has_value());
+    EXPECT_NE(refused->find("allow_diagnostic"), std::string::npos)
+        << *refused;
+    const auto allowed = conv2d_pw_coopmat_ineligible(
+        graph,
+        v,
+        in,
+        weight,
+        none,
+        utils::kBuffer,
+        ones,
+        zeros,
+        out,
+        false,
+        false,
+        /*allow_diagnostic=*/true);
+    EXPECT_FALSE(allowed.has_value()) << allowed.value_or("");
+    for (const auto& r :
+         {conv2d_im2col_coopmat_ineligible(
+              graph, v, in, weight, none, ones, zeros, ones, out, false),
+          conv2d_direct_coopmat_ineligible(
+              graph, v, in, weight, none, ones, zeros, ones, out, false)}) {
+      ASSERT_TRUE(r.has_value());
+      EXPECT_NE(r->find("diagnostic"), std::string::npos) << *r;
+    }
+    EXPECT_ANY_THROW(PointwiseConvGraph(
+        vkapi::kHalf, 64, 96, 14, 14, 1, {Conv2dPwRequest::Kind::kCoopmat, &v}));
+    PointwiseConvGraph g(
+        vkapi::kHalf,
+        64,
+        96,
+        14,
+        14,
+        1,
+        {Conv2dPwRequest::Kind::kCoopmat, &v, /*allow_diagnostic=*/true});
+    g.graph().execute();
+    g.graph().context()->querypool().extract_results();
+    bool ran = false;
+    for (const auto& result :
+         g.graph().context()->querypool().get_shader_timestamp_data()) {
+      ran = ran || result.kernel_name == v.name;
+    }
+    EXPECT_TRUE(ran);
+  }
+  if (tested == 0) {
+    GTEST_SKIP() << "no diagnostic variant runs here";
+  }
 }
 
 // The work group size and subgroup count checks hold for a variant with more
@@ -8060,7 +8285,8 @@ class AutoConv2dGraph final {
       const int64_t K_w,
       const std::array<int64_t, 2> stride,
       const std::array<int64_t, 2> pad,
-      const std::array<int64_t, 2> dil)
+      const std::array<int64_t, 2> dil,
+      const bool transposed_input_view = false)
       : dtype_(dtype),
         C_in_(C_in),
         C_out_(C_out),
@@ -8071,6 +8297,7 @@ class AutoConv2dGraph final {
         stride_(stride),
         pad_(pad),
         dil_(dil),
+        transposed_input_view_(transposed_input_view),
         Ho_((H + 2 * pad[0] - dil[0] * (K_h - 1) - 1) / stride[0] + 1),
         Wo_((W + 2 * pad[1] - dil[1] * (K_w - 1) - 1) / stride[1] + 1),
         graph_(make_config()) {
@@ -8090,12 +8317,21 @@ class AutoConv2dGraph final {
     const bool half = dtype == vkapi::kHalf;
     input_ = graph_.add_input_tensor(
         {1, C_in, H, W}, dtype, utils::kTexture3D, utils::kChannelsPacked);
+    // The convolution reads a view of the input with H and W swapped by its
+    // axis map (square planes only): element (c, h, w) is input (c, w, h).
+    ValueRef conv_in = input_.value;
+    if (transposed_input_view) {
+      VK_CHECK_COND(H == W);
+      conv_in = graph_.add_tensor_view(input_.value);
+      graph_.virtual_transpose(conv_in, 2, 3);
+      VK_CHECK_COND(!graph_.has_standard_axis_map(conv_in));
+    }
     out_ = graph_.add_tensor(
         {1, C_out, Ho_, Wo_}, dtype, utils::kTexture3D, utils::kChannelsPacked);
     const std::vector<int64_t> w_sizes = {C_out, C_in, K_h, K_w};
     VK_GET_OP_FN("aten.convolution.default")
     (graph_,
-     {input_.value,
+     {conv_in,
       half ? graph_.add_tensorref(w_sizes, dtype, weight_half_.data())
            : graph_.add_tensorref(w_sizes, dtype, weight_.data()),
       half ? graph_.add_tensorref({C_out}, dtype, bias_half_.data())
@@ -8112,7 +8348,10 @@ class AutoConv2dGraph final {
     graph_.prepack();
   }
 
-  std::vector<std::string> execute_and_check() {
+  // `view_reference`: with a transposed input view, compare with the
+  // convolution of the view (true) or of the input as stored (false).
+  std::vector<std::string> execute_and_check(const bool view_reference = true) {
+    const bool transposed_reference = transposed_input_view_ && view_reference;
     std::mt19937 rng(13 + H_ * 131 + W_);
     std::uniform_real_distribution<float> unit(-1.0f, 1.0f);
     std::vector<float> x(C_in_ * H_ * W_);
@@ -8153,7 +8392,8 @@ class AutoConv2dGraph final {
                   expected +=
                       double(
                           weight_[((n * C_in_ + c) * K_h_ + ki) * K_w_ + kj]) *
-                      x[(c * H_ + iy) * W_ + ix];
+                      (transposed_reference ? x[(c * H_ + ix) * W_ + iy]
+                                            : x[(c * H_ + iy) * W_ + ix]);
                 }
               }
             }
@@ -8188,6 +8428,7 @@ class AutoConv2dGraph final {
   const vkapi::ScalarType dtype_;
   const int64_t C_in_, C_out_, H_, W_, K_h_, K_w_;
   const std::array<int64_t, 2> stride_, pad_, dil_;
+  const bool transposed_input_view_;
   const int64_t Ho_, Wo_;
   std::vector<float> weight_;
   std::vector<float> bias_;
@@ -8207,7 +8448,7 @@ struct SwitchFixture final {
   int64_t C_in, C_out, H, W, K, stride, pad, dil;
   std::vector<std::string> legacy_b580;
 
-  AutoConv2dGraph build() const {
+  AutoConv2dGraph build(const bool transposed_input_view = false) const {
     return AutoConv2dGraph(
         dtype,
         C_in,
@@ -8218,7 +8459,8 @@ struct SwitchFixture final {
         K,
         {stride, stride},
         {pad, pad},
-        {dil, dil});
+        {dil, dil},
+        transposed_input_view);
   }
 };
 
@@ -8291,13 +8533,20 @@ const Conv2dCoopmatTableRow* table_row(const SwitchFixture& f) {
 // Builds and runs the fixture (output checked against the CPU reference) and
 // checks it dispatches no cooperative-matrix shader and, on B580, exactly the
 // shaders of automatic routing at 1370896300.
-void expect_legacy_dispatch(const SwitchFixture& f) {
+// With `transposed_input_view` the input is a view with H and W swapped, and
+// the output is checked against the convolution of the input as stored (what
+// the stock kernels compute).
+void expect_legacy_dispatch(
+    const SwitchFixture& f,
+    const bool transposed_input_view = false) {
   SCOPED_TRACE(
       std::to_string(f.C_in) + "-" + std::to_string(f.C_out) + " k" +
       std::to_string(f.K) + " " + std::to_string(f.H) + "x" +
-      std::to_string(f.W) + (f.dtype == vkapi::kHalf ? " fp16" : " fp32"));
-  AutoConv2dGraph g = f.build();
-  std::vector<std::string> kernels = g.execute_and_check();
+      std::to_string(f.W) + (f.dtype == vkapi::kHalf ? " fp16" : " fp32") +
+      (transposed_input_view ? " transposed view" : ""));
+  AutoConv2dGraph g = f.build(transposed_input_view);
+  std::vector<std::string> kernels =
+      g.execute_and_check(/*view_reference=*/!transposed_input_view);
   kernels.erase(
       std::remove_if(
           kernels.begin(),
@@ -8325,6 +8574,7 @@ TEST(VulkanComputeGraphTest, conv2d_coopmat_switch_off) {
        {&kOff1x1, &kOff3x3, &kOffDilated, &kMiss, &kRow1x1, &kRow3x3}) {
     expect_legacy_dispatch(*f);
   }
+  expect_legacy_dispatch(kRow1x1, /*transposed_input_view=*/true);
 }
 
 // Switch on: a table configuration dispatches the row's variant; a
@@ -8361,4 +8611,26 @@ TEST(VulkanComputeGraphTest, conv2d_coopmat_switch_on) {
   if (!any_row) {
     GTEST_SKIP() << "the fixtures have no table row on this device";
   }
+}
+
+// Switch on, a pointwise configuration with a table row whose input is a view
+// with H and W swapped by its axis map: the pointwise route refuses it
+// (design D1 of conv2d-coopmat-evidence-hardening) and the stock route runs it
+// with the switch-off shaders. The stock 1x1 kernel also reads texels (w, h,
+// c4) directly, so its output is the convolution of the input as stored, not
+// of the view, as with the switch off.
+TEST(VulkanComputeGraphTest, conv2d_coopmat_switch_on_refuses_transposed_view) {
+  if (!conv2d_coopmat_switch_set()) {
+    GTEST_SKIP() << "needs ETVK_CONV2D_COOPMAT=1";
+  }
+  const Conv2dCoopmatTableRow* row = table_row(kRow1x1);
+  if (row == nullptr) {
+    GTEST_SKIP() << "the fixture has no table row on this device";
+  }
+  SCOPED_TRACE(row->variant);
+  {
+    AutoConv2dGraph g = kRow1x1.build();
+    EXPECT_TRUE(dispatched(g.execute_and_check(), row->variant));
+  }
+  expect_legacy_dispatch(kRow1x1, /*transposed_input_view=*/true);
 }

@@ -7,7 +7,7 @@
     "benchmark_runs": 1,
     "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
     "reference": "conv2d_pw_diag_once",
-    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT", "allow_diagnostic": true}},
     "sweep_variables": {
       "v_VARIANT": [
         "conv2d_pw_coopmat_xe2_t128x128_f16_diag_once_half",
@@ -39,7 +39,7 @@
     "benchmark_runs": 1,
     "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
     "reference": "conv2d_pw_diag_once",
-    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT", "allow_diagnostic": true}},
     "sweep_variables": {
       "v_VARIANT": [
         "conv2d_pw_coopmat_xe2_t128x128_f16_diag_once_half",
@@ -71,7 +71,7 @@
     "benchmark_runs": 1,
     "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
     "reference": "conv2d_pw_diag_once",
-    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT", "allow_diagnostic": true}},
     "sweep_variables": {
       "v_VARIANT": [
         "conv2d_pw_coopmat_xe2_t128x128_f16_diag_once_half",
@@ -103,7 +103,7 @@
     "benchmark_runs": 1,
     "validation_method": {"function": "is_close", "atol": 0.1, "rtol": 0.01, "outputs": ["output"]},
     "reference": "conv2d_pw_diag_once",
-    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT"}},
+    "route": {"name": "pw_coopmat", "options": {"variant": "v_VARIANT", "allow_diagnostic": true}},
     "sweep_variables": {
       "v_VARIANT": [
         "conv2d_pw_coopmat_xe2_t128x128_f16_diag_once_half",

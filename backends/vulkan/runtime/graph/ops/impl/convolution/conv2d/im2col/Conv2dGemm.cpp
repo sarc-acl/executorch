@@ -748,6 +748,9 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
     const ValueRef out,
     const bool transposed) {
   const auto n = [](const uint64_t v) { return std::to_string(v); };
+  if (variant.diagnostic()) {
+    return "the variant is a diagnostic; route im2col_coopmat runs none";
+  }
   if (!variant.has(Conv2dPwCoopmatVariant::kIm2col)) {
     return "the variant does not read an im2col matrix (an _i2c variant is "
            "required)";
@@ -1389,8 +1392,13 @@ std::optional<std::string> conv2d_direct_coopmat_ineligible(
     const ValueRef padding,
     const ValueRef dilation,
     const ValueRef out,
-    const bool transposed) {
+    const bool transposed,
+    const bool allow_diagnostic) {
   const auto n = [](const uint64_t v) { return std::to_string(v); };
+  if (variant.diagnostic() && !allow_diagnostic) {
+    return "the variant is a diagnostic; only a benchmark case with "
+           "allow_diagnostic may request it";
+  }
   if (!variant.has(Conv2dPwCoopmatVariant::kDirect)) {
     return "the variant does not gather its input (a _dg variant is "
            "required)";
@@ -1556,7 +1564,8 @@ void conv2d_direct_coopmat_impl(
     const ValueRef padding,
     const ValueRef dilation,
     const ValueRef out,
-    const Conv2dEpilogue& epilogue) {
+    const Conv2dEpilogue& epilogue,
+    const bool allow_diagnostic) {
   check_conv2d_epilogue(graph, epilogue, weight_data, out);
   if (const auto reason = conv2d_direct_coopmat_ineligible(
           graph,
@@ -1568,7 +1577,8 @@ void conv2d_direct_coopmat_impl(
           padding,
           dilation,
           out,
-          /*transposed=*/false)) {
+          /*transposed=*/false,
+          allow_diagnostic)) {
     VK_THROW(
         "conv2d_direct_coopmat: ",
         variant.name,

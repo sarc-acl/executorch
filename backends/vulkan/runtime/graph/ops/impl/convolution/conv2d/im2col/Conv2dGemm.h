@@ -199,6 +199,8 @@ Conv2dDirectCoopmatPlan conv2d_direct_coopmat_plan(
 // Why route direct_coopmat cannot run the convolution on the variant, naming
 // the device limit where one is exceeded, or nullopt. `bias` may be none; the
 // epilogue is checked by check_conv2d_epilogue.
+// `allow_diagnostic`: a benchmark case may request a diagnostic variant
+// (Conv2dPwCoopmatVariant::diagnostic).
 std::optional<std::string> conv2d_direct_coopmat_ineligible(
     ComputeGraph& graph,
     const Conv2dPwCoopmatVariant& variant,
@@ -209,7 +211,8 @@ std::optional<std::string> conv2d_direct_coopmat_ineligible(
     const ValueRef padding,
     const ValueRef dilation,
     const ValueRef out,
-    const bool transposed);
+    const bool transposed,
+    const bool allow_diagnostic = false);
 
 /*
  * Route direct_coopmat: an FP16 2D convolution as one cooperative-matrix
@@ -231,6 +234,7 @@ void conv2d_direct_coopmat_impl(
     const ValueRef padding,
     const ValueRef dilation,
     const ValueRef out,
-    const Conv2dEpilogue& epilogue = {});
+    const Conv2dEpilogue& epilogue = {},
+    const bool allow_diagnostic = false);
 
 } // namespace vkcompute
