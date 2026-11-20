@@ -236,7 +236,10 @@ def nominate(shape, sessions):
     by_route = {}
     for arm in passing:
         r = route_of(arm)
-        if r not in by_route or candidates[arm]["ratio"] > candidates[by_route[r]]["ratio"]:
+        if (
+            r not in by_route
+            or candidates[arm]["ratio"] > candidates[by_route[r]]["ratio"]
+        ):
             by_route[r] = arm
     nomination = {"arms": [by_route[r] for r in sorted(by_route)]}
     info["nominated"] = {by_route[r]: candidates[by_route[r]] for r in sorted(by_route)}
@@ -297,7 +300,8 @@ def confirm(shape, s, nomination):
         return (
             info,
             nomination["reason"],
-            "no nominee: " + nomination.get("detail", "no qualifying arm in the sweeps"),
+            "no nominee: "
+            + nomination.get("detail", "no qualifying arm in the sweeps"),
         )
     band = s["band"].get(shape)
     if not all(complete(sh["arms"].get(a)) for a in STOCK) or band is None:

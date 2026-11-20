@@ -271,7 +271,9 @@ class Confirmation(unittest.TestCase):
             nomination["arms"],
         )
         info, code, _, name = gen.decide(
-            SHAPE, [("first", first), ("partial", partial), ("fresh", fresh)], nomination
+            SHAPE,
+            [("first", first), ("partial", partial), ("fresh", fresh)],
+            nomination,
         )
         self.assertEqual((name, info["best"]), ("fresh", "xe2_t32x64_f16_alc_dg"))
         _, code, _, name = gen.decide(SHAPE, [("partial", partial)], nomination)
