@@ -1006,7 +1006,7 @@ with four shapes still behind stock; the remaining gap is the LDS-limited GEMM, 
 gather.
 
 ## 11.3 Fragment amortization (`amd_t32x32_f32_al`): built, gated, measured - ADOPTED
-## PER-REGIME (784-pixel cells); 1x1 family closed
+## PER-REGIME (predicate route); 1x1 family open at stop counter one
 
 The 11.1 1x1 losers are the M=784 (28x28) cells: `784,2048,1024` 0.791, `784,2048,512` 0.843,
 `784,256,1024` 0.986, `784,512,2048` 0.759 against best stock. The 11.3 candidate is one
@@ -1053,8 +1053,30 @@ lose badly.
 
 **Verdict: adopted per-regime, not as the parent.** As a blanket 1x1 parent the candidate is
 rejected (1.202x geomean); for the 784-pixel regime it is the best measured variant on every
-cell and the stage-3 1x1 "after" state is the oracle {parent, t32x32}. Correction of the
-first reading of this section: the family stop rule (THRESHOLDS stage 3) requires **two
+cell. The stage-3 1x1 "after" state is a **two-term shape predicate, not a per-shape oracle**:
+use t32x32 when **M = 784 and N·K ≥ 2^18**, and the parent otherwise. The predicate selects
+5 of the 31 shapes - the four 784-pixel targets above (0.879/0.916/0.976/0.890 against the
+parent) plus `784,1024,256` (0.990 against the parent in every round, 0.935 against best
+stock where the parent sits at 0.944) - and none of the losers: the nearest excluded 784
+cell has N·K 1.8x below the boundary, and every M = 3136 cell has N·K ≤ 2^15, so the
+predicate never reaches the M = 3136 losers. Geomean of the predicate route against the
+parent is 0.929 on the selected shapes (0.988 over all 31, with the parent on the rest). No
+predicate of two terms also captures the one M = 289 win (`289,224,1344`, 0.919) without
+admitting the `289,384,1024` loser (1.074); that cell keeps the parent, which already beats
+best stock there (0.689). The 11.6 session times the parent and the predicate route as its
+1x1 coopmat arms; the per-shape best of the two is reported only as a reference line
+labelled "oracle (upper bound, not a route)".
+
+**Launch limiter for t32x32 (argus, candidate kernel):** the occupancy fall is an
+**LDS-capacity limit** - not VGPR pressure and not the grid. The candidate's launch-limiter
+shares are LDS-limited 68.8%, VGPR-limited 0.0%, wave-slot-limited 0.0%,
+workgroup-limited 0.0%; its 10240 bytes of LDS per workgroup admit at most 6 workgroups per
+64 KiB CU, i.e. 6 waves per CU, which is the measured 15.1% occupancy. With LDS pressure
+otherwise gone, the next lever for the 784 cells is more waves per workgroup sharing one B
+stage, or a smaller `tile_k` staging depth - recorded in TASKS as a candidate for a later
+run.
+
+Correction of the first reading of this section: the family stop rule (THRESHOLDS stage 3) requires **two
 consecutive** gated candidates each gaining < 2% geomean on the shapes they target; `_bcm2`
 is one, and this candidate gained 8.6% geomean on its four targets, so it does not count and
 the 1x1 family remains open at counter one. The section's ceiling statement stands: operand

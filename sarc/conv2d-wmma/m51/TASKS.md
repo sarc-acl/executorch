@@ -168,11 +168,22 @@ the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFL
   shows the designed lowering and LDS ops/WMMA fall 10.6 -> 4.58, but LDS cycles per instruction rise 2.11 -> 6.62
   (bank conflicts), LDS Busy rises 87 -> 94%, WMMA rate falls to 0.80x, and the candidate loses 1.011-1.318x on
   all 31 shapes - REJECTED with evidence; the role swap is contraindicated by the same measurement.)
-- [ ] 11.3 More fp32 accumulators per wave, or a larger fp32 tile, for the large-plane 1×1 losers (784/3136 pixels).
+- [x] 11.3 More fp32 accumulators per wave, or a larger fp32 tile, for the large-plane 1×1 losers (784/3136 pixels).
   Verify as in 11.2.
-- [ ] 11.4 im2col gather cost: no runtime div/mod, no fp16 rounding emulation if not needed, or the gather fused into
+  (RESULTS 11.3: t32x32 gated 1240/1240; blanket parent rejected at 1.202x geomean; adopted per-regime - the
+  1x1 "after" state is the predicate "M = 784 and N·K ≥ 2^18" (5 of 31 shapes, 0.929x geomean vs parent on them,
+  no losers selected); argus shows an LDS-capacity occupancy limit (LDS-limited launch 68.8%, VGPR- and
+  wave-slot-limited 0%); stop counter stays at one - the candidate gained 8.6% on its targets.)
+- [x] 11.4 im2col gather cost: no runtime div/mod, no fp16 rounding emulation if not needed, or the gather fused into
   the A load. Also split-K 1 for large M. Target: the Cin=64 large-plane k×k losers. Verify as in 11.2.
+  (RESULTS 11.4: fast-gather candidate gated 1120/1120 with the rounding emulation dropped, as note 4 allows;
+  0.930x geomean vs the kk parent (0.815-1.008), faster on 13 of 14 shapes; gather VALU Busy 106.7% -> 41.9%,
+  SALU Busy 30.1% -> 9.3%, div/mod and rounding constants gone from the ISA; ADOPTED as the stage-3 kk parent,
+  runtime plumbing default-off and unrouted as before.)
 - [ ] 11.5 Small-M, DRAM-bound shapes: move toward the DRAM roof (deeper split-K, more loads in flight).
   Verify as in 11.2.
 - [ ] 11.6 Final interleaved session from the committed HEAD. Report per-shape ratio and % of roofline before and
   after stage 3, and per-candidate gains.
+- [ ] 11.7 (later run) 784-cell occupancy, the named limiter from 11.3: the t32x32 route is LDS-capacity-limited
+  (LDS-limited launch 68.8%, VGPR- and wave-slot-limited 0%, 6 workgroups per 64 KiB CU). Levers: two waves per
+  workgroup sharing one B stage, or a smaller `tile_k` staging depth. Judge per shape through the 11.3 predicate.
