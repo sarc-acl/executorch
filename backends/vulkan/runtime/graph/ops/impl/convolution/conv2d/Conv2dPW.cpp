@@ -395,6 +395,16 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_nvidia_t64x32_f16_alc_dg_half", 16, 16, 16, 64, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kDirect},
       {"conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk2_dg_half", 16, 16, 16, 64, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kDirect, 2u},
       {"conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk4_dg_half", 16, 16, 16, 64, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kDirect, 4u},
+      // N-tile-64 forms (change conv2d-all-used-kernels, part C).
+      {"conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_dg_half", 8, 16, 16, 64, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN | kDirect},
+      {"conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk2_half", 8, 16, 16, 64, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN, 2u},
+      {"conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk2_dg_half", 8, 16, 16, 64, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN | kDirect, 2u},
+      {"conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk4_half", 8, 16, 16, 64, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN, 4u},
+      {"conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk4_dg_half", 8, 16, 16, 64, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN | kDirect, 4u},
+      {"conv2d_pw_coopmat_nvidia_t64x64_f16_alc_half", 16, 16, 16, 64, 64, 16, 2, 1, 32, false, false, kAlignedClampN},
+      {"conv2d_pw_coopmat_nvidia_t64x64_f16_alc_dg_half", 16, 16, 16, 64, 64, 16, 2, 1, 32, false, false, kAlignedClampN | kDirect},
+      {"conv2d_pw_coopmat_nvidia_t64x64_f16_alc_sk2_half", 16, 16, 16, 64, 64, 16, 2, 1, 32, false, false, kAlignedClampN, 2u},
+      {"conv2d_pw_coopmat_nvidia_t64x64_f16_alc_sk2_dg_half", 16, 16, 16, 64, 64, 16, 2, 1, 32, false, false, kAlignedClampN | kDirect, 2u},
       // Matrix-instruction controls (_simt) of the unsplit short-list variants and their _dg forms
       // (conv2d-coopmat-evidence-hardening design D5): benchmark-only.
       {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_simt_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN | kSimt},
