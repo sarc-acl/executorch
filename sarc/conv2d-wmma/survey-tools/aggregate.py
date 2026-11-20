@@ -29,9 +29,10 @@ DEVICES = {
     "4070ti": "RTX 4070 Ti SUPER",
     "pixel7a": "Pixel 7a (Mali-G710)",
     "galaxy-s24plus": "Galaxy S24+ (Xclipse 940)",
+    "m51": "M51",
 }
 SHORT = {"b580": "B580", "b70": "B70", "rocky-780m": "780M", "4070ti": "4070TiS", "pixel7a": "Pixel7a",
-         "galaxy-s24plus": "S24+"}
+         "galaxy-s24plus": "S24+", "m51": "M51"}
 MODELS = ["mv2", "mv3", "resnet18", "resnet50", "ic3", "ic4", "edsr", "dl3", "w2l", "densenet161"]
 CLASSIFIERS = {"mv2", "mv3", "resnet18", "resnet50", "ic3", "ic4", "densenet161"}
 PRECISIONS = ["fp32", "fp16", "int8-q8ta"]

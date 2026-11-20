@@ -157,3 +157,59 @@ parent's ratio over `auto` is the larger number). The next full-coverage arms:
 `amd_t16x32_f32_al_half` (2.122x), `amd_t16x32_f16_alc_half` (2.110x),
 `nvidia_t16x32_f32_alc_half` (2.094x), `amd_t16x32_f32_alc_half` (2.079x),
 `nvidia_t16x32_f16_alc_half` (2.068x).
+
+## 7.2 FP16 workload baseline (ten CI models)
+
+Twelve traced executions per model (first dropped), ETDump per model, aggregated with
+`survey-tools/aggregate.py` (the desktop survey's families; the `m51` device entry added there).
+ic4 is exported with random weights (weights do not affect time shares); the deviation is recorded
+with 7.1.
+
+**Category shares** of the GPU shader time summed over the ten models: convolution **92.1%**
+(mean per-model share 88.6%), linear/matmul 1.1%, elementwise 3.3%, layout/data movement 3.0%,
+pooling 0.5%, other 0.1%.
+
+**Shader ranking** (share of the summed GPU shader time):
+
+| rank | shader | share |
+|---:|---|---:|
+| 1 | `conv2d_gemm_texture2d_half` | 33.8% |
+| 2 | `conv2d_2x2x8_border_half` | 25.8% |
+| 3 | `conv2d_pw_tiled_bufw_half` | 9.5% |
+| 4 | `conv2d_1x1x4_half` | 6.7% |
+| 5 | `conv2d_2x2x4_border_half` | 5.5% |
+| 6 | `conv2d_pw_tiled_4x8_bufw_half` | 4.7% |
+| 7 | `conv1d_clamp_half` | 4.2% |
+| 8 | `binary_op_texture3d_half` | 2.7% |
+| 9 | `conv2d_im2col_texture2d_half` | 1.3% |
+
+**Convolution-family shares** (routing the device dispatched, share of the convolutions' GPU
+shader time): direct 41.2%, im2col+gemm 38.1%, pointwise 15.4%, 1d 4.6%, 1d-pointwise 0.5%,
+depthwise 0.2%, winograd 0.1%.
+
+**Kind x K class** (share of the summed GPU shader time):
+
+| kind | K<256 | 256-1k | 1k-4k | 4k-8k | >=8k |
+|---|---:|---:|---:|---:|---:|
+| pointwise | 1.4% | 4.9% | 9.1% | - | - |
+| im2col+gemm | - | 1.3% | 31.0% | 4.1% | 1.7% |
+| direct | 0.8% | 27.0% | 7.4% | 3.5% | 2.5% |
+| 1d | 0.0% | - | 1.8% | 1.3% | 1.4% |
+| 1d-pointwise | - | - | 0.5% | - | - |
+| depthwise | 0.2% | - | - | - | - |
+| winograd | - | - | 0.1% | - | - |
+
+**WMMA-candidate share:** configurations meeting the candidate criteria (SPEC.md) hold **89.7%**
+of the summed GPU shader time. Per model: resnet18 95.3%, resnet50 94.6%, ic3 95.9%, ic4 96.6%,
+edsr 83.1%, dl3 97.1%, w2l 96.9%, densenet161 76.9%, mv2 64.8%, mv3 24.1% (mv3's squeeze-excitation
+convolutions run at M=1; depthwise convolutions are not dense GEMMs).
+
+Two workload facts shape the rest of the campaign:
+
+- dl3's dilated 3x3 convolutions hold 51% of dl3's GPU shader time. They are candidates by the
+  arithmetic but the im2col routing rejects dilation != 1, so they run `direct`; lowering them is
+  out of scope of the k-k gate (9.2) and is recorded as future work.
+- The largest convolution configuration on the device is edsr's 3x3 64->64 at 224x224 output
+  (GEMM M=50176, N=64, K=576), 74.3% of edsr's GPU shader time, followed by 3x3 64->256 at the
+  same output plane (M=50176, N=256, K=576). Neither is among the eight desktop k-k gate shapes;
+  the 9.2 gate and timing shape sets are augmented with the M51-heavy shapes (9.2 section).

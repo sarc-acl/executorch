@@ -65,7 +65,7 @@ only (`SPEC.md`, "Publication of M51 results").
 - [x] 7.1 Export the ten CI models in FP16 with `../survey-tools/export_models.py`; build a traced runner with the event
   tracer enabled. Verify: ten `.pte` files and a runner that writes an ETDump on the host.
   (ic4 exported with random weights — HF CDN unreachable from this network; deviation recorded locally.)
-- [ ] 7.2 Run on the M51 (12 executions, first dropped) and aggregate. Group the time by shader and shape. Also group it
+- [x] 7.2 Run on the M51 (12 executions, first dropped) and aggregate. Group the time by shader and shape. Also group it
   by convolution family, using the desktop survey's families: 1×1, im2col GEMM, direct k×k, dilated, 1D, depthwise,
   other. Group it by kind × K as well. Verify: shares and rankings per family and per shader are committed; times stay
   local.
