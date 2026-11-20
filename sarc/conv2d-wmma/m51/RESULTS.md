@@ -210,40 +210,89 @@ success threshold.
 
 ## 5.2 Phase timing of the 1x1 parent (ablation method)
 
-SPEC asks for in-kernel shader-clock phase timing. The device ships no Vulkan validation layers
-(`debugPrintfEXT` unavailable) and `VK_KHR_shader_clock` support is unknown, so the phase costs
-are located by ablation instead: five debug builds of the same bench, each compiled with one
-phase of the parent template disabled (`--env PHASE_TIMING=1 PHASE_ABLATE=<phase>`, a
-debug-only template path that the default build does not take). FETCH returns constant weights,
-STAGE skips the shared-memory store of the A/B fragments, SYNC skips the K-loop
-`memoryBarrierShared(); barrier();`, MMA skips the `coopMatMulAdd` calls, DRAIN skips the drain
-passes. Each ablated bench ran the phase-timing collection (21 shapes, two arms) twice,
-`--validation_mode=none`, pinned clocks, canonical driver verified after every phase.
+SPEC asks for in-kernel shader-clock phase timing. The device's capability record reports
+api_version 1.4.354, so the Vulkan 1.3 core shader-clock features are in principle available,
+but using them would need runtime-side feature enablement plus a timing readback path; within
+this campaign's time budget that did not fit, so the phase costs are located by ablation
+instead: five debug builds of the same bench, each compiled with one phase of the parent
+template disabled (`--env PHASE_TIMING=1 PHASE_ABLATE=<phase>`, a debug-only template path that
+the default build does not take).
+
+What each ablation removes - stated exactly, because the ablations overlap (verified by
+generating the parent variant per phase with the bench's own generator flags and counting
+opcodes in the resulting SPIR-V):
+
+- FETCH replaces the input and the weight loads with constants; the staging and the MMA still
+  run (OpImageFetch 11 -> 3 in the generated SPIR-V; the three remaining are drain-side).
+- STAGE skips the shared-memory stores - and, because the fetched fragments become dead code,
+  the compile-time optimizer also removes the input/weight fetches (OpImageFetch 11 -> 3,
+  shared OpStore 12 -> 0, already at SPIR-V level). The STAGE share therefore covers staging
+  plus fetch; subtracting the fetch-only share bounds the staging store at roughly 34%.
+- SYNC skips only the K-loop and post-loop `memoryBarrierShared(); barrier();` pairs
+  (OpMemoryBarrier 4 -> 2, OpControlBarrier 4 -> 2; the two remaining pairs are in the drain
+  passes); fetch, staging and MMA all still run.
+- MMA skips the whole `mma_step`: the cooperative-matrix loads from shared memory and the
+  multiplies (OpCooperativeMatrixLoadKHR 12 -> 0, OpCooperativeMatrixMulAddKHR 8 -> 0). The
+  fetch and the shared stores still run, so the MMA share covers the shared-memory reads plus
+  the multiply.
+- DRAIN skips the drain passes and keeps one accumulator store plus a shared read to keep the
+  MMA live (OpCooperativeMatrixStoreKHR 2 -> 1, three epilogue fetches and one barrier gone).
+  The parent's second accumulator (`MMAS_PER_SG_N` = 2) is dead in this build, but its multiply
+  chain is NOT eliminated in the generated SPIR-V (8 OpCooperativeMatrixMulAddKHR remain);
+  whether the driver's ISA compiler removes it is unverified.
+
+Each phase ran its own device session: two interleaved rounds of the ablated binary and the
+canonical binary (un-ablated parent) on the same phase-timing collection (21 shapes, two arms),
+`--validation_mode=none`, pinned clocks, canonical driver verified after every phase. The phase
+share is (canonical parent - ablated parent) / canonical parent, both medians from the same
+session. Ablation shares, two interleaved rounds per phase, locate only.
+
+Protocol deviations from the session rules, disclosed: two rounds per phase instead of three
+(note 40's reduction was accepted to keep the board schedule); no 60 s idle before a session and
+no 10 s between runs (the loop script has no sleeps); the ablated binary always ran first within
+each round, the order never alternated; no MIF/INT pin readback at session time - the during-run
+clock evidence is the observed GPU clock, at the pinned maximum in every entry of all runs, and
+a post-session readback (GPU fully pinned, MIF/INT maxes pinned) is recorded in the local
+artifacts. The runs are recorded in `task5-2/phase_runs.csv` (local) with the
+session/valid/binary/driver columns.
 
 Build verification: the five ablated benches have five distinct digests, and the default-env
 rebuild at committed HEAD reproduces the canonical bench digest byte for byte - the
 instrumentation changes nothing in the shipped shaders. The `pw_tiled_4x8` control arm is not
-instrumented and matches the 4.0 session (mean deviation 0.7-0.9% per phase; worst single cell
-10.7%, a small-time cell, consistent with the 4.0 A/A spread on two-run medians).
+instrumented in either binary and agrees between the two binaries of each session (mean
+deviation 0.8-1.4% per phase; worst single cell 15.3%, a small-time cell, consistent with the
+two-run median spread). An earlier independent pass that compared the ablated binaries against
+the 4.0 session medians (cross-session) reproduced every phase share within 0.6 percentage
+points.
 
 Phase cost as a share of the parent route time (per-shape values in
-`phase_shares.csv`, local artifact; positive = ablation made the kernel faster):
+`phase_shares_xs.csv`, local artifact; positive = ablation made the kernel faster):
 
-| phase | mean | median | reading |
+| ablation | mean | median | what its removal covers |
 |---|---:|---:|---|
-| staging (shared-memory store of A/B) | 41.0% | 42.9% | dominant, 24.5-49.9% and uniform across shapes |
-| multiply (`coopMatMulAdd`) | 37.0% | 37.6% | second, 21.8-56.0% across shapes |
-| drain (result drain passes) | 19.1% | 22.4% | third, concentrated on the 56x56-plane cells (23-42%), near zero on several 196/289/784-plane cells |
-| fetch (input/weight loads) | 5.7% | 4.9% | minor, 12.9% at most |
-| synchronization (K-loop barrier) | 0.9% | 1.3% | noise-level; several cells negative |
+| STAGE | 40.7% | 42.9% | shared stores + the fetches (dead-code eliminated with them); 24.6-51.2% across shapes |
+| MMA | 37.4% | 37.7% | shared reads + multiply; 22.4-55.5% across shapes |
+| DRAIN | 18.5% | 22.6% | epilogue; concentrated on the 56x56-plane cells (23-42%), near zero on several 196/289/784-plane cells |
+| FETCH | 6.2% | 5.4% | input/weight loads; 13.6% at most |
+| SYNC | 1.4% | 1.3% | K-loop barriers; noise-level, several cells negative |
 
 The five shares are independent measurements against the full kernel and do not add to 100%
-(their per-shape sum averages 104%, range 78-122%: removing one phase also hides stalls that
-another phase would cause). The reading for candidates: the bottleneck is staging, not the matrix multiply -
-the cooperative-matrix arithmetic costs ~37% of the kernel while getting the fragments through
-shared memory costs ~41% - and the drain passes cost a fifth of the kernel on top. SYNC is
-effectively free, so staging-side candidates (layout, vector width, staging order) have the
-headroom; barrier-reduction candidates do not.
+(their per-shape sum averages 104%, range 76-122%: removing one phase also hides stalls that
+another phase would cause).
+
+Reading, with the confounds stated: STAGE and MMA are entangled with their neighbours - the
+stage share includes the fetch (~6%), the mma share includes the shared-memory reads - so the
+measurements do not cleanly separate "staging" from "multiply", and the earlier reading
+"the bottleneck is staging, not the matrix multiply" is withdrawn as unsupported. What the
+measurements do establish: the K-loop barrier is free (SYNC ~1%), the epilogue costs a fifth on
+small-plane shapes, and the remaining kernel time is split between the fetch+staging-store path
+(~41% together) and the shared-read+multiply path (~37% together) without a clean split between
+them; where the true bottleneck lies inside that data path is UNVERIFIED, and candidate choice
+from these numbers alone would be premature. The debug-only ablation code contains deliberate
+races and is never shipped: ABLATE_DRAIN stores an accumulator to shared without a barrier after
+the last multiply's reads (write-after-read) and, in multi-subgroup variants, every subgroup
+stores the same elements; its `imageStore` guard is a many-writer same-value race; ABLATE_SYNC
+removes the barriers by design.
 
 ## 7.2 FP16 workload baseline (ten CI models)
 
@@ -341,43 +390,62 @@ run the THRESHOLDS baseline, which the 4.0 parent replaces. INT8 1x1 convolution
 (`q8ta_conv2d_pw`, 65.2%) is out of scope by the SPEC stage table; the share is recorded to
 quantify what a future INT8 stage would address.
 
-## 7.4 End-to-end projection (1x1 parent, stage-1 scope)
+## 7.4 End-to-end projection (1x1 and kxk parents)
 
-Projection, lower bound. For each model the measured 4.0 parent ratio
-(`pw_tiled_4x8` / parent, per-cell median of `gpu_timestamp_route_us` from the 4.0 session) is
-applied to every ETDump 1x1 layer whose `(hout*wout, Cin, Cout)` exactly matches one of the 21
-measured shapes; every other layer keeps its ETDump time. The reduction is of the whole model's
-GPU shader time (`survey-runs.csv:gpu_shader_ms`), not only of convolution. This is a projection
-computed from the local ETDump aggregation and `runs.csv`; it is not a model run.
+Projection, lower bound. Each measured ratio is applied to every ETDump layer whose shape exactly
+matches a measured case; every other layer keeps its ETDump time. The reduction is of the whole
+model's GPU shader time, not only of convolution. This is a projection computed from the local
+ETDump aggregation and the two run records; it is not a model run. Three columns:
 
-| model | matched layers | matched share | projected reduction |
-|---|---:|---:|---:|
-| resnet18 | 0 | 0.0% | 0.00% |
-| resnet50 | 11 | 16.9% | 4.75% |
-| mv2 | 3 | 8.8% | 6.77% |
-| mv3 | 1 | 2.3% | 1.80% |
-| ic3 | 0 | 0.0% | 0.00% |
-| ic4 | 0 | 0.0% | 0.00% |
-| densenet161 | 0 | 0.0% | 0.00% |
-| dl3 | 6 | 3.2% | 0.70% |
+- **1x1 only**: the 4.0 parent ratio (`pw_tiled_4x8` / parent, per-cell median of
+  `gpu_timestamp_route_us`) on the 21 measured 1x1 shapes, matched by `(hout*wout, Cin, Cout)`
+  at stride 1 (stride-2 1x1 layers do not match).
+- **1x1 + kxk**: additionally the fp32 kxk parent (`amd_t16x32_f32_alc_sk2_i2c`) ratio vs `auto`
+  on the 14 measured kxk shapes, matched by kernel, stride, Cin, Cout and input/output planes.
+- **1x1 + kxk vs best stock**: same matches, but each kxk layer is credited
+  min(auto, direct, im2col) / parent. This separates the cooperative-matrix gain from what a
+  routing fix alone (today's `auto` picks the slow `im2col` route on M51) would deliver.
 
-The lower bound is small because exact-shape matching is strict: only shapes present in the 21-case
-timing session count, and several models (resnet18: no 1x1 layers; densenet161: 1x1 layers all
-outside the measured set) match none. resnet50 and mv2 match the ResNet bottleneck
-expand/project planes (49/196/784 pixels) and the mv2 expand planes; measured speedups on the
-matched shapes run 1.1-4.9x, and the small planes of the ResNet project layers sit near the low
-end (1.1-1.2x). The projection bounds what routing the measured parent shapes into
-these models would save today; a timing session covering each model's own 1x1 shape census
-(939 conv configs in the ETDump aggregation) would raise it toward the 7.2 opportunity (1x1 is
-15.4% of FP16 conv GPU time). Recomputation: `tools/e2e_projection.py` over
-`survey-conv-shapes.csv`, `survey-runs.csv` and `timing/runs.csv` (local artifacts).
+Shapes where the parent loses stay on the stock route, as a routing rule would: vs `auto` the
+three 3x3 64-channel large-plane shapes (0.45-0.67), vs best stock additionally
+`3x3 1024-256 28x28` (0.83 of `direct`; dl3's non-dilated layer).
+
+| model | 1x1 matched | 1x1 reduction | kxk matched | 1x1 + kxk | 1x1 + kxk vs best stock |
+|---|---:|---:|---:|---:|---:|
+| resnet18 | 0 | 0.00% | 4 | 73.36% | 54.27% |
+| resnet50 | 9 | 4.55% | 4 | 60.45% | 45.18% |
+| mv2 | 3 | 6.77% | 0 | 6.77% | 6.77% |
+| mv3 | 1 | 1.80% | 0 | 1.80% | 1.80% |
+| ic3 | 0 | 0.00% | 1 | 11.39% | 9.07% |
+| ic4 | 0 | 0.00% | 2 | 16.47% | 9.99% |
+| densenet161 | 0 | 0.00% | 2 | 13.26% | 13.25% |
+| dl3 | 5 | 0.68% | 2 | 9.71% | 1.47% |
+
+The 1x1-only bound is small because exact-shape matching is strict: only shapes present in the
+21-case timing session count, and several models (resnet18: no 1x1 layers; densenet161: 1x1
+layers all outside the measured set) match none. The kxk column changes the picture: resnet18/50
+match their im2col-routed 3x3 stack - 128/256/512 channels at 28/14/7 planes, ratios 3.7-11.4x
+vs `auto` - plus one stride-2 layer each (resnet18 256->512, resnet50 512->512); the remaining
+stride-2 convolutions have no measured case. mv2/mv3 gain nothing from kxk because their 3x3
+convolutions are depthwise (out of scope by the SPEC stage table). The vs-best-stock column shows
+the split the coordinator asked for: roughly a third to a half of the resnet18/50 headline is a
+routing fix (switching `auto`'s im2col picks to `direct`), the rest is the cooperative-matrix
+gain over the best stock route (1.2-5.9x on the matched layers). dl3's kxk gain shrinks to 1.5%
+because its matched 1024->256 layer loses to `direct` and only the 128->128 layer (1.2x vs
+`direct`) is credited. The projection bounds what routing the measured shapes into these models
+would save today; a session covering each model's own shape census (939 conv configs in the
+ETDump aggregation) would raise the 1x1 column toward the 7.2 opportunity (1x1 is 15.4% of FP16
+conv GPU time). Recomputation: `tools/e2e_projection.py` over `survey-conv-shapes.csv`,
+`survey-runs.csv`, `timing/runs.csv` and `kk-gate/kk_runs.csv` (local artifacts).
 
 ## 9.2 The im2col GEMM stage (k x k gate and timed session)
 
 Gate collections: the desktop layer table's eight shapes plus the six M51-heavy shapes of 7.2
-(fourteen shapes, bias and fused-residual epilogue each; `3x3 1024-256 28x28` is the non-dilated
-GEMM-equivalent of a dl3 layer), full grid and reduced grid, ten repetitions, plus one run of the
-correctness collection. Driver canonical and clocks pinned throughout; every stderr empty.
+(fourteen shapes, bias and fused-residual epilogue each; `3x3 1024-256 28x28` is an actual dl3
+layer - the non-dilated 3x3 1024->256 at a 28x28 plane, im2col-routed in the 7.2 census - not
+only the GEMM-equivalent of dl3's dilated 2048->256 layers), full grid and reduced grid, ten
+repetitions, plus one run of the correctness collection. Driver canonical and clocks pinned
+throughout; every stderr empty.
 
 **Gate verdict: all 32 `amd`/`nvidia` `_i2c` variants pass 10/10 on both grids** — zero failing
 dispatches across the twenty runs (896 coopmat dispatches per run). Every variant creates its
@@ -433,7 +501,7 @@ the 2.5 record, which is why the parent is the fp32 arm.
 |---|---:|---:|---:|---:|
 | `1x7 192-224 17x17` | 4.62 | 1.88 | 2.28 | 2% |
 | `1x7 224-256 17x17` | 4.26 | 1.92 | 2.56 | 2% |
-| `3x3 1024-256 28x28` (dl3 GEMM-equivalent) | 1.97 | 0.83 | 1.73 | 2% |
+| `3x3 1024-256 28x28` (dl3 layer, non-dilated) | 1.97 | 0.83 | 1.73 | 2% |
 | `3x3 128 28x28` | 3.65 | 1.21 | 1.50 | 2% |
 | `3x3 192-48 14x14` | 2.35 | 2.35 | 2.16 | 2% |
 | `3x3 192-48 28x28` | 1.80 | 1.80 | 1.62 | 6% |
