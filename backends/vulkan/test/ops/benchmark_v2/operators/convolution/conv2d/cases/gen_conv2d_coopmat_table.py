@@ -20,11 +20,12 @@ the reference. An arm of another session of the device counts for a
 configuration only when that session's route auto agrees with the reference's
 within the larger of the two A/A bands (design D6 of
 conv2d-coopmat-direct-gather); where several sessions time the same arm, the
-later one on the command line counts. Per device and configuration the table
-has the arm with the largest ratio t(auto) / t(arm), each arm against the
-auto of its own session, when it passed validation in every run, the ratio is
-at least MIN_RATIO and exceeds 1 + the band, and the band (the larger of the
-reference's and the arm's session's) is at most MAX_BAND; otherwise no row.
+later one on the command line counts. An arm qualifies when it passed
+validation in every run, its ratio t(auto) / t(arm) against the auto of its
+own session is at least MIN_RATIO and exceeds 1 + its band, and its band (the
+larger of the reference's and its session's) is at most MAX_BAND. Per device
+and configuration the table has the qualifying arm with the lowest route time;
+no row when no arm qualifies.
 --decisions writes every configuration's decision (row or reason) as JSON.
 """
 
@@ -130,9 +131,21 @@ def collect(shape, sessions, ref_auto, ref_band):
     return candidates, timed, used, skipped
 
 
+def rejection(x):
+    """Why a candidate arm cannot be a row, or None."""
+    if x["band"] > MAX_BAND:
+        return f"A/A band {x['band']:.3f} above {MAX_BAND}"
+    if x["ratio"] < MIN_RATIO:
+        return f"ratio {x['ratio']:.3f} below {MIN_RATIO}"
+    if x["ratio"] - 1 <= x["band"]:
+        return f"ratio {x['ratio']:.3f} within the A/A band {x['band']:.3f}"
+    return None
+
+
 def decide(shape, sessions):
     """sessions: [(name, session summary)] of one device, the reference
-    first. Returns (info, reason); reason None means a row."""
+    first. Returns (info, reason); reason None means a row: the arm with the
+    lowest route time among the arms that meet the criteria."""
     ref = sessions[0][1]
     ref_arms = (ref["shapes"].get(shape) or {}).get("arms", {})
     ref_auto = (ref_arms.get("auto") or {}).get("t")
@@ -144,7 +157,7 @@ def decide(shape, sessions):
     by_route = {}
     for arm, x in candidates.items():
         r = route_of(arm)
-        if r not in by_route or x["ratio"] > candidates[by_route[r]]["ratio"]:
+        if r not in by_route or x["t"] < candidates[by_route[r]]["t"]:
             by_route[r] = arm
     info["best_by_route"] = {
         r: {"arm": a, **candidates[a]} for r, a in sorted(by_route.items())
@@ -154,27 +167,25 @@ def decide(shape, sessions):
         return info, "no variant passed validation in every run" + (
             f" ({', '.join(failed)})" if failed else ""
         )
-    best = max(candidates, key=lambda a: candidates[a]["ratio"])
+    passing = [a for a in candidates if rejection(candidates[a]) is None]
+    best = min(passing or candidates, key=lambda a: candidates[a]["t"])
     x = candidates[best]
-    band = x["band"]
     info.update(
         {
             "best": best,
             "route": route_of(best),
             "session": x["session"],
             "ratio": x["ratio"],
-            "band": band,
+            "band": x["band"],
             "t_auto": x["t_auto"],
             "t_best": x["t"],
+            "max_ratio": max(c["ratio"] for c in candidates.values()),
+            "passing_arms": len(passing),
         }
     )
-    if band > MAX_BAND:
-        return info, f"A/A band {band:.3f} above {MAX_BAND}"
-    if x["ratio"] < MIN_RATIO:
-        return info, f"best ratio {x['ratio']:.3f} below {MIN_RATIO}"
-    if x["ratio"] - 1 <= band:
-        return info, f"best ratio {x['ratio']:.3f} within the A/A band {band:.3f}"
-    return info, None
+    if passing:
+        return info, None
+    return info, f"no arm meets the criteria; the fastest: {rejection(x)}"
 
 
 def load(session_dir):
