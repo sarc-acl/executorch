@@ -156,8 +156,10 @@ Starts only when `origin/topic/conv2d-wmma` has moved and contains a cooperative
 ## 11. Stage 3: kernel efficiency, no shape slower than stock (owner, 2026-11-20)
 Goal: every conv2d coopmat kernel beats the best stock route on every timed shape, with efficiency measured against
 the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFLINE.md` and the argus analysis.
-- [ ] 11.1 Re-baseline on the new board. Run a short interleaved session of the 1×1 and k×k parents against all stock
+- [x] 11.1 Re-baseline on the new board. Run a short interleaved session of the 1×1 and k×k parents against all stock
   routes on the 45 timed shapes. Verify: a per-shape table of ratio and % of roofline bound; the losers are listed.
+  (RESULTS 11.1: 45-case session, zero invalid rows, A/A inside the band, geomeans reproduce 8.1 within 0.6%;
+  losers confirmed - three 784-plane 1x1 cells beyond band plus one at parity, and the four kxk cells.)
 - [ ] 11.2 B-operand LDS loads. First probe the ISA of the existing `BCM` variants (argus pipeline dump, untimed).
   Then build one change that turns the B gather (`ds_load_u16_d16`) into dword loads: BCM fixed, or A/B role swap
   (Cᵀ = Bᵀ·Aᵀ, weights as the A operand). Verify: the ISA shows the change; LDS ops per WMMA and LDS Busy fall

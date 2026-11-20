@@ -752,3 +752,125 @@ Both routes are conditional on the desktop pushing them, and the pushed base
   gate - no edsr large-plane cases were pushed.
 
 Nothing to gate or time; recorded as "not available" per the task's own verify condition.
+
+## 11.1 Re-baseline on the stage-3 board (both parents, interleaved)
+
+One interleaved session on the stage-3 board, same protocol as 8.1: 45 cases - the 31
+timed 1x1 shapes with arms `auto`, `pw_tiled_4x8` and the 1x1 parent
+`amd_t16x32_f32_al_half`, and the 14 k x k shapes with arms `auto`, `direct`, `im2col`
+and the k x k parent `amd_t16x32_f32_alc_sk2_i2c_half`. Five rounds; within each case the
+arm order is rotated per round, so no arm holds the same position in consecutive rounds.
+A/A opens before and after the rounds; a 60 s idle before the session and 10 s between
+runs. All runs exit 0 with empty stderr; the driver is verified canonical after every run;
+the observed GPU clock equals the pin in every entry of every run, and the post-session
+readback shows every pin held. The run records are `task11-1/results/s31_runs.csv` (local)
+with the full columns; zero invalid rows. The session binary is the campaign's canonical
+bench, byte-identical to the 8.1 session binary.
+
+The correctness gate preceded the session: ten repetitions of the six gate collections
+(`pw_coopmat_gate_*`, `im2col_coopmat_m51_gate_*`, `pw_coopmat_m51_extra_gate_*`, both
+grids), all `--validation_only`, driver verified canonical after every repetition. Board-
+budget deviation: the sweep was filtered to the two timed parents and the baseline arms -
+the full 78-variant sweep does not fit the stage-3 board day. Verdict: zero parent
+failures across all ten repetitions and all six collections (the 1x1 parent 420/420,
+200/200 and 280/280 dispatches per collection per repetition as applicable, the k x k
+parent 280/280 in the im2col collections). The only failures are the known 9.2 `direct`
+tolerance finding: `auto` resolving to `direct` on five k x k shapes, five FAIL events per
+repetition.
+
+**A/A:** open geomean 0.9994, close 0.9978 - both inside the 1% band. Cells outside +-2%:
+open `49,96,576` (+10.5%), `196,96,576` (-7.1%), `25,384,4032` (-7.3%) and
+`784,512,2048` (+5.7%); close `25,384,4032` (-5.7%), `49,96,576` (-2.2%),
+`784,128,1152` (-2.1%) and `196,256,1024` (+2.0%). The A/A values are computed from the
+A/A JSONs, which are not rows of the runs record. Noise bands are per cell
+`max(2%, cross-run spread of the per-run ratio)`; the widened cells are in the tables.
+
+**Headline ratios (geometric means, medians of the five rounds):**
+
+> **1x1 parent `amd_t16x32_f32_al_half`: 1.940x over `pw_tiled_4x8`, 1.702x over `auto`**,
+> 31 shapes (27/31 winning cells beyond their bands on both baselines; the four dense
+> 784-plane cells lose or tie, below).
+> **k x k parent `amd_t16x32_f32_alc_sk2_i2c_half`: 3.39x over `auto`, 1.67x over the best
+> stock route** (min of `auto`, `direct`, `im2col`), 14 shapes (10/14 winning beyond their
+> bands; the losses are the Cin=64 large-plane shapes plus `3x3 1024-256 28x28`).
+
+**% of roofline bound** (useful FLOP/s against the shape's bound, `ROOFLINE.md` method):
+the 1x1 parent sits at 14-54% across the 31 shapes, the k x k parent at 7-55% across the
+14. Per-shape values in the tables; recomputable from `s31_runs.csv` with
+`tools/roofline.py`.
+
+**1x1 per-shape table** (`pw_tiled_4x8` / parent and `auto` / parent):
+
+| shape | pw_tiled_4x8 / parent | auto / parent | % of bound | band |
+|---|---:|---:|---:|---:|
+| `144,192,768` | 3.73 | 2.29 | 25% | 7% |
+| `196,1024,256` | 1.11 | 1.10 | 26% | 2% |
+| `196,256,1024` | 2.54 | 2.02 | 25% | 3% |
+| `196,256,2304` | 2.40 | 1.69 | 26% | 3% |
+| `196,512,1024` | 1.38 | 1.49 | 27% | 7% |
+| `196,64,384` | 3.55 | 2.49 | 20% | 4% |
+| `196,96,576` | 4.81 | 2.62 | 25% | 17% |
+| `25,384,4032` | 4.78 | 3.41 | 43% | 30% |
+| `289,192,1024` | 2.38 | 1.92 | 26% | 7% |
+| `289,224,1344` | 1.83 | 1.43 | 24% | 9% |
+| `289,384,1024` | 1.30 | 1.60 | 28% | 2% |
+| `3136,128,256` | 1.04 | 1.04 | 36% | 2% |
+| `3136,256,64` | 1.41 | 1.41 | 40% | 2% |
+| `3136,64,256` | 1.22 | 1.22 | 54% | 2% |
+| `3136,64,64` | 1.48 | 1.48 | 50% | 2% |
+| `49,160,960` | 4.76 | 4.03 | 21% | 3% |
+| `49,2048,512` | 1.21 | 1.71 | 50% | 2% |
+| `49,512,2048` | 4.20 | 2.93 | 50% | 16% |
+| `49,512,4608` | 5.48 | 4.08 | 45% | 2% |
+| `49,96,576` | 4.84 | 2.98 | 14% | 8% |
+| `64,256,1536` | 4.56 | 3.28 | 32% | 2% |
+| `64,384,1536` | 4.35 | 3.11 | 42% | 3% |
+| `784,1024,256` | 1.06 | 1.06 | 32% | 2% |
+| `784,128,1152` | 1.47 | 1.57 | 29% | 6% |
+| `784,128,512` | 1.50 | 1.59 | 30% | 22% |
+| `784,2048,1024` | 0.79 | 0.79 | 35% | 2% |
+| `784,2048,512` | 0.84 | 0.84 | 34% | 2% |
+| `784,256,1024` | 0.99 | 0.99 | 31% | 2% |
+| `784,256,512` | 1.06 | 1.06 | 30% | 2% |
+| `784,512,128` | 1.24 | 1.24 | 28% | 2% |
+| `784,512,2048` | 0.76 | 0.77 | 34% | 6% |
+
+**k x k per-shape table** (`auto` / parent and best stock / parent; `best stock` is
+`direct` everywhere except the shapes where `auto` resolves to it):
+
+| shape | auto / parent | best stock / parent | % of bound | band |
+|---|---:|---:|---:|---:|
+| `1x7 192-224 17x17` | 4.62 | 1.87 | 19% | 16% |
+| `1x7 224-256 17x17` | 4.26 | 1.92 | 20% | 3% |
+| `3x3 1024-256 28x28` (dl3 layer, non-dilated) | 1.99 | 0.83 | 20% | 11% |
+| `3x3 128 28x28` | 3.64 | 1.21 | 18% | 4% |
+| `3x3 192-48 14x14` | 2.36 | 2.36 | 7% | 2% |
+| `3x3 192-48 28x28` | 1.81 | 1.78 | 10% | 7% |
+| `3x3 256 14x14` | 7.28 | 2.59 | 20% | 2% |
+| `3x3 448-384 5x5` | 23.52 | 4.10 | 55% | 3% |
+| `3x3 512 7x7` | 11.43 | 5.93 | 39% | 2% |
+| `3x3 64 224x224` | 0.45 | 0.45 | 14% | 2% |
+| `3x3 64 56x56` | 0.61 | 0.61 | 14% | 2% |
+| `3x3 64-256 224x224` | 0.67 | 0.67 | 21% | 2% |
+| `3x3 s2 256-512 14x14` | 10.80 | 2.21 | 38% | 10% |
+| `3x3 s2 512 14x14` | 11.43 | 3.39 | 41% | 2% |
+
+**Losers (stage-3 targets), best stock / parent beyond the band:** on the 1x1 side
+`784,2048,1024` (0.79), `784,2048,512` (0.84) and `784,512,2048` (0.76), with
+`784,256,1024` at parity inside its 2% band (0.99); on the k x k side `3x3 64 224x224`
+(0.45), `3x3 64 56x56` (0.61), `3x3 64-256 224x224` (0.67) and `3x3 1024-256 28x28`
+(0.83, band 11%). The previous board's expected losers are confirmed on this board: 1x1 at
+784 pixels with large N/K, and k x k Cin=64 large planes, plus the known
+`3x3 1024-256 28x28`.
+
+**Cross-board agreement** (against the 8.1 session, per-cell medians): every k x k cell
+within 5% (8.1 itself reproduced the 9.2 session within 1.2%), and every 1x1 cell within
+5% except `784,128,512` against `auto` (+5.3%), inside its 22% band. Geomeans: over the 21
+shared 1x1 shapes 2.115x / 1.843x (8.1: 2.103x / 1.850x, -0.6% / +0.4%); the k x k
+geomeans are unchanged to two decimals (3.39x over `auto`, 1.67x over best stock). The
+8.1 selection numbers stand, and with them the 7.4 projections; the stage-3 work proceeds
+from this board's numbers.
+
+**Stage-3 input.** The LDS-bound operand-delivery ceiling (F1) binds the 1x1 parent
+everywhere (14-54% of bound); the k x k losers additionally carry the im2col gather and
+merge overhead (F2), so 11.4 attacks the larger workload share first after 11.2.
