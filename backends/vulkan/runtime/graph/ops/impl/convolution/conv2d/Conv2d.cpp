@@ -596,8 +596,46 @@ void conv2d_with_epilogue_impl(
   }
 
   if (method == Conv2dMethod::Depthwise) {
+    // A table row "conv2d_dw_b1x1" selects the depthwise shader's 1x1 output
+    // batch (change conv2d-all-used-kernels, part D).
+    std::optional<bool> b1x1;
+    if (conv2d_coopmat_switch_on() && !transposed_val &&
+        graph.dim_of(in) == 4 && graph.size_at<int64_t>(-4, in) == 1) {
+      const std::vector<int64_t> in_sizes = graph.sizes_of(in);
+      const std::vector<int64_t> w_sizes = graph.sizes_of(weight_data);
+      const auto s = graph.get_int_list(stride);
+      const auto p = graph.get_int_list(padding);
+      const auto d = graph.get_int_list(dilation);
+      const char* const name = conv2d_coopmat_table_lookup(
+          graph,
+          graph.dtype_of(in) == vkapi::kHalf ? "fp16" : "fp32",
+          {in_sizes.at(1),
+           w_sizes.at(0),
+           w_sizes.at(2),
+           w_sizes.at(3),
+           s->at(0),
+           s->at(1),
+           p->at(0),
+           p->at(1),
+           d->at(0),
+           d->at(1),
+           in_sizes.at(2),
+           in_sizes.at(3)});
+      if (name != nullptr && std::strcmp(name, "conv2d_dw_b1x1") == 0) {
+        b1x1 = true;
+      }
+    }
     return conv2d_dw_impl(
-        graph, in, weight_data, bias, stride, padding, dilation, out, epilogue);
+        graph,
+        in,
+        weight_data,
+        bias,
+        stride,
+        padding,
+        dilation,
+        out,
+        epilogue,
+        b1x1);
   }
 
   const Kernel2dParams kernel_params = create_kernel2d_params(

@@ -70,7 +70,7 @@ CONFIGS = HERE / "model_sweep_configs.json"
 # prefixed with the precision.
 PRECISIONS = ("fp16", "fp32", "int8")
 PRECISION_CONFIGS = [
-    HERE / f"model_sweep_configs_{p}.json" for p in ("fp32", "int8", "conv1d")
+    HERE / f"model_sweep_configs_{p}.json" for p in ("fp32", "int8", "conv1d", "dw")
 ]
 MIN_RATIO = 1.05
 CONFIRM_RUNS = 5
@@ -144,6 +144,9 @@ def variant_of(arm):
     conv2d_pw_coopmat variants, the others full names."""
     if arm.startswith(("q8ta_", "conv2d_", "conv1d_")):
         return arm
+    if arm == "b1x1":
+        # The depthwise shader's 1x1 output batch (route b1x1).
+        return "conv2d_dw_b1x1"
     return f"conv2d_pw_coopmat_{arm}_half"
 
 
