@@ -89,15 +89,10 @@ def route_of(arm):
     return "im2col_coopmat" if arm.endswith("_i2c") else "pw_coopmat"
 
 
-def decide(shape, sessions):
-    """sessions: [(name, session summary)] of one device, the reference
-    first. Returns (info, reason); reason None means a row."""
-    ref_name, ref = sessions[0]
-    ref_arms = (ref["shapes"].get(shape) or {}).get("arms", {})
-    ref_auto = (ref_arms.get("auto") or {}).get("t")
-    ref_band = ref["band"].get(shape)
-    if ref_band is None or ref_auto is None:
-        return {}, "route auto has no time in every run (no A/A pair)"
+def collect(shape, sessions, ref_auto, ref_band):
+    """The arms of every session of the device that counts for the
+    configuration: (candidates, timed arms, sessions used, sessions skipped)."""
+    ref_name = sessions[0][0]
     candidates, timed, used, skipped = {}, set(), [], []
     for name, s in sessions:
         sh = s["shapes"].get(shape)
@@ -132,6 +127,19 @@ def decide(shape, sessions):
                 }
             else:
                 candidates.pop(arm, None)
+    return candidates, timed, used, skipped
+
+
+def decide(shape, sessions):
+    """sessions: [(name, session summary)] of one device, the reference
+    first. Returns (info, reason); reason None means a row."""
+    ref = sessions[0][1]
+    ref_arms = (ref["shapes"].get(shape) or {}).get("arms", {})
+    ref_auto = (ref_arms.get("auto") or {}).get("t")
+    ref_band = ref["band"].get(shape)
+    if ref_band is None or ref_auto is None:
+        return {}, "route auto has no time in every run (no A/A pair)"
+    candidates, timed, used, skipped = collect(shape, sessions, ref_auto, ref_band)
     info = {"sessions_used": used, "sessions_skipped": skipped}
     by_route = {}
     for arm, x in candidates.items():
