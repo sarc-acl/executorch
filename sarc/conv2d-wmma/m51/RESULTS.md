@@ -40,33 +40,52 @@ driver: **all 78 non-`_i2c` `amd`/`nvidia` variants create their pipelines and p
 eligible case** (0 failures, 0 skips; the `xe2` family skips, the device has no 8x16x16 matrix).
 The uniform-buffer trip-count crash of the earlier driver did not reproduce.
 
-## 2.4 Gate failure: `amd_t64x64_f32`, concurrent-workgroup defect
+## 2.4 The 10-repetition gate
 
-Rep 1 of the many-workgroup collection (a shape-level reduction is the reduced-grid collection:
-same N and K, M cut to at most 64 pixels). Case `gate full residual (784,512,128)`, fused
-residual add: **FAIL**, 666 of 401408 elements mismatch, max abs error 0.78 against atol 0.1, no
-nonfinite values. First mismatch indices (flat NCHW over `(1,512,28,28)`): 163456, 163457,
-163458, 163463, 163465, 163466, 163468, 163471 — channel 208, pixel 64 and the following pixels.
+Ten repetitions of `pw_coopmat_correctness.json`, the many-workgroup collection and the
+reduced-grid collection (a shape-level reduction: same N and K, M cut to at most 64 pixels), all
+`--validation_only`, on the canonical driver, all 78 non-`_i2c` `amd`/`nvidia` variants, driver
+checksum and clock pins re-checked between repetitions, no crash, every stderr empty.
 
-The same variant passes the same case with bias only, passes the reduced-grid twin
-`(64,512,128)` with the fused residual, and passes the correctness collection: exact with few
-workgroups, wrong in the full grid, only with the residual epilogue. Per the gate it is never
-timed. Rep 4 fails the same way on a different case, `gate full residual (3136,128,256)` (354 of
-401408 elements, max abs error 0.48; its bias and reduced-grid twins pass): two failures in four
-repetitions, no other variant fails anything, the defect is intermittent.
+- **amd family (38 variants): 35 pass 10/10 on all three collections; 1 fails (below); 2
+  `_epi0` variants have no gate cases by construction** (every gate case carries a bias or a
+  residual, which they refuse; they pass the correctness collection 10/10).
+- **nvidia family (40 variants): 38 pass 10/10 on all three collections; the same 2 `_epi0`
+  caveat applies; 0 fail.**
 
-Bounded diagnosis (the fix path is `XP`, TASKS 3.2; the 3.4 gate re-runs this exact case):
+### The failure: `amd_t64x64_f32`, concurrent-workgroup defect
+
+8 failure events over 7 of the 10 repetitions, always full-grid fused-residual cases, always
+this variant; every other variant passes everything. Each time the same case with bias only and
+its reduced-grid twin pass, and the correctness collection passes 10/10.
+
+| Rep | Case | Mismatches | Max abs err | First mismatch (channel, pixel) |
+|---:|---|---:|---:|---|
+| 1 | `(784,512,128)` | 666 | 0.78 | ch 208 (tile 3, +16), px 384 (tile 6, +0) |
+| 4 | `(3136,128,256)` | 354 | 0.48 | ch 112 (tile 1, +48), px 1089 (tile 17, +1) |
+| 5 | `(784,256,512)` | 207 | 0.27 | ch 112 (tile 1, +48), px 193 (tile 3, +1) |
+| 6 | `(3136,128,256)` | 388 | 0.39 | ch 80 (tile 1, +16), px 1282 (tile 20, +2) |
+| 7 | `(784,512,128)` | 522 | 0.59 | ch 272 (tile 4, +16), px 258 (tile 4, +2) |
+| 7 | `(784,256,512)` | 180 | 0.23 | ch 112 (tile 1, +48), px 66 (tile 1, +2) |
+| 8 | `(784,256,512)` | 212 | 0.30 | ch 240 (tile 3, +48), px 130 (tile 2, +2) |
+| 10 | `(784,512,128)` | 537 | 0.55 | ch 464 (tile 7, +16), px 129 (tile 2, +1) |
+
+First-mismatch flat indices and full mismatch lists in the local record. The failing cases all
+have M in {784, 3136} (13 or 49 pixel tiles); no case
+with M <= 289 ever fails. Channel offsets are always 16 or 48 (one or three `MMA_M` row blocks
+into the 64-row channel tile); pixel offsets are 0 to 2. Per the gate the variant is **never
+timed**. The fix path is `XP` (TASKS 3.2); the 3.4 gate re-runs these exact cases.
+
+Bounded diagnosis:
 
 - **Drain passes: one.** `MMAS_M = 64 / 1 / 16 = 4`; the fp32 staging of one pass is
   `SG_GRID_Y * MMA_M * 4 * WG_TILE_N * 4 B = 16 KiB`, inside the 32 KiB drain budget, so
   `DRAIN_G = 4` and `DRAIN_PASSES = 1`. This is not the historical multi-pass drain defect: the
-  only multi-pass variants at fp32 (`t128x128_f32`, two passes) pass this case.
+  only multi-pass variants at fp32 (`t128x128_f32`, two passes) pass these cases.
 - **Same pixel tile, fp32, passing:** `nvidia_t64x64_f32` (differs only in the K step, 16 against
-  32), `amd_t64x32_f32` (K step 32, N tile 32) and every other fp32 variant on the case; the
-  failing variant's own f16 sibling passes. The failing combination is K step 32 + fp32 + N tile
+  32), `amd_t64x32_f32` (K step 32, N tile 32) and every other fp32 variant; the failing
+  variant's own f16 sibling passes. The failing combination is K step 32 + fp32 + N tile
   64 + residual + full grid.
-- **Tile alignment: none.** The rep-1 region starts at pixel 64 (the second 64-pixel workgroup
-  tile boundary) at channel 208, sixteen rows into channel tile 3; the rep-4 region starts at
-  pixel 1089, one pixel into pixel tile 17, at channel 112, forty-eight rows into channel tile 1.
-  The mismatch region does not follow the workgroup tiling.
-
+- **Tile alignment:** the first mismatch always sits at an `MMA_M` row-block boundary inside a
+  channel tile (offset 16 or 48) within three pixels of a pixel-tile boundary, but the region
+  itself does not follow the workgroup tiling (offsets 0-2 in M, 16 or 48 in N).
