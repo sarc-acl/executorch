@@ -51,7 +51,9 @@ nonfinite values. First mismatch indices (flat NCHW over `(1,512,28,28)`): 16345
 The same variant passes the same case with bias only, passes the reduced-grid twin
 `(64,512,128)` with the fused residual, and passes the correctness collection: exact with few
 workgroups, wrong in the full grid, only with the residual epilogue. Per the gate it is never
-timed. Repetitions 2-3 did not reproduce it; the defect is intermittent.
+timed. Rep 4 fails the same way on a different case, `gate full residual (3136,128,256)` (354 of
+401408 elements, max abs error 0.48; its bias and reduced-grid twins pass): two failures in four
+repetitions, no other variant fails anything, the defect is intermittent.
 
 Bounded diagnosis (the fix path is `XP`, TASKS 3.2; the 3.4 gate re-runs this exact case):
 
@@ -63,7 +65,8 @@ Bounded diagnosis (the fix path is `XP`, TASKS 3.2; the 3.4 gate re-runs this ex
   32), `amd_t64x32_f32` (K step 32, N tile 32) and every other fp32 variant on the case; the
   failing variant's own f16 sibling passes. The failing combination is K step 32 + fp32 + N tile
   64 + residual + full grid.
-- **Tile alignment:** the mismatch region starts at pixel 64, the boundary of the second
-  64-pixel workgroup tile (aligned in M), at channel 208, sixteen rows into channel tile 3
-  (192..255) — one `MMA_M` block into the tile in N, not on a channel-tile boundary.
+- **Tile alignment: none.** The rep-1 region starts at pixel 64 (the second 64-pixel workgroup
+  tile boundary) at channel 208, sixteen rows into channel tile 3; the rep-4 region starts at
+  pixel 1089, one pixel into pixel tile 17, at channel 112, forty-eight rows into channel tile 1.
+  The mismatch region does not follow the workgroup tiling.
 
