@@ -12,6 +12,7 @@
 #include <array>
 #include <bitset>
 #include <cmath>
+#include <cstring>
 #include <iomanip>
 #include <limits>
 #include <map>
@@ -7028,7 +7029,8 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_row_tiles) {
 
 namespace {
 
-// The _i2c variants with a chunked (_ck) form, among the runnable ones.
+// The _i2c variants with a chunked (_ck) form, among the runnable ones (every
+// requestable _i2c variant has one).
 std::vector<const Conv2dPwCoopmatVariant*> chunkable_im2col_coopmat_variants() {
   std::vector<const Conv2dPwCoopmatVariant*> out;
   for (const Conv2dPwCoopmatVariant* v : runnable_im2col_coopmat_variants()) {
@@ -7297,6 +7299,96 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_chunks) {
         std::string("conv2d_pw_coopmat_skn_merge_") +
             (v->fp32_accumulation ? "f32" : "f16") + "_half"));
     EXPECT_FALSE(dispatched(kernels, "conv2d_gemm_texture3d_half"));
+  }
+}
+
+// Every requestable _i2c variant has a chunked form.
+TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_every_variant_chunks) {
+  for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    if (v.has(Conv2dPwCoopmatVariant::kIm2col) &&
+        !v.has(Conv2dPwCoopmatVariant::kChunked)) {
+      const std::string name = v.name;
+      EXPECT_NE(
+          find_conv2d_pw_coopmat_variant(
+              name.substr(0, name.size() - 5) + "_ck_half"),
+          nullptr)
+          << name;
+    }
+  }
+}
+
+// A convolution that needs chunks computes a single-pixel output: 2048 -> 16,
+// 3x3, dilation 2, no padding on 5x5 (output 1x1, K 18432) built at that
+// size, and built at 6x6 (output 2x2) then resized to 5x5 and back. The
+// chunked multiplies and the merge run at 1x1; there is no conv2d_gemm.
+TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_chunks_one_pixel) {
+  const auto variants = chunkable_im2col_coopmat_variants();
+  if (variants.empty()) {
+    GTEST_SKIP() << "no chunkable _i2c variant runs here";
+  }
+  for (const Conv2dPwCoopmatVariant* v : variants) {
+    SCOPED_TRACE(v->name);
+    const std::string ck =
+        std::string(v->name).substr(0, std::strlen(v->name) - 5) + "_ck_half";
+    const std::string merge = std::string("conv2d_pw_coopmat_skn_merge_") +
+        (v->fp32_accumulation ? "f32" : "f16") + "_half";
+    const Conv2dIm2colCoopmatPlan plan = im2col_coopmat_plan_of(
+        *v,
+        {1, 2048, 5, 5},
+        {16, 2048, 3, 3},
+        {1, 16, 1, 1},
+        {1, 1},
+        {0, 0},
+        {2, 2});
+    EXPECT_GT(plan.chunks, 1);
+    {
+      Im2colCoopmatConvGraph g(*v, 2048, 16, 5, 5, 3, 3, 1, 0, 0, {0, 2, 2});
+      const auto kernels = g.execute_and_check();
+      EXPECT_EQ(std::count(kernels.begin(), kernels.end(), ck), plan.chunks);
+      EXPECT_TRUE(dispatched(kernels, merge));
+      EXPECT_FALSE(dispatched(kernels, "conv2d_gemm_texture3d_half"));
+    }
+    Im2colCoopmatConvGraph g(*v, 2048, 16, 6, 6, 3, 3, 1, 0, 0, {0, 2, 2});
+    for (const int64_t size : {6, 5, 6}) {
+      SCOPED_TRACE(size);
+      g.resize(size, size);
+      const auto kernels = g.execute_and_check();
+      EXPECT_TRUE(dispatched(kernels, ck));
+      EXPECT_TRUE(dispatched(kernels, merge));
+      EXPECT_FALSE(dispatched(kernels, "conv2d_gemm_texture3d_half"));
+    }
+  }
+}
+
+// The route keeps the smallest rectangle holding every tap that reads the
+// input; a dead row inside it stays and reads zeros. 3x1 kernel, height
+// stride 2 and padding 2 on a 1-row input: output row 0 reads input row 0
+// through kernel row 2, output row 1 through kernel row 0, kernel row 1 reads
+// rows -1 and 1 (padding only). All three rows are computed (the full kernel:
+// the unchanged gather) and the output matches the reference.
+TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_interior_dead_row) {
+  const auto variants = runnable_im2col_coopmat_variants();
+  if (variants.empty()) {
+    GTEST_SKIP() << "no _i2c variant runs here";
+  }
+  for (const Conv2dPwCoopmatVariant* v : variants) {
+    SCOPED_TRACE(v->name);
+    const Conv2dIm2colCoopmatPlan plan = im2col_coopmat_plan_of(
+        *v,
+        {1, 64, 1, 8},
+        {32, 64, 3, 1},
+        {1, 32, 2, 8},
+        {2, 1},
+        {2, 0},
+        {1, 1});
+    EXPECT_EQ(plan.ki0, 0);
+    EXPECT_EQ(plan.kh, 3);
+    EXPECT_EQ(plan.kw, 1);
+    EXPECT_EQ(plan.chunks, 1);
+    Im2colCoopmatConvGraph g(*v, 64, 32, 1, 8, 3, 1, 2, 2, 0, {1, 1, 1});
+    const auto kernels = g.execute_and_check();
+    EXPECT_TRUE(dispatched(kernels, v->name));
+    EXPECT_TRUE(dispatched(kernels, "conv2d_im2col_texture3d_half"));
   }
 }
 

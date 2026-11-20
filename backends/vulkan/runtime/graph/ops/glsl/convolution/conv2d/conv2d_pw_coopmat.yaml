@@ -2204,3 +2204,123 @@ conv2d_pw_coopmat:
       K_SLICES: 4
       I2C: true
       CHUNKED: true
+    # Chunked forms of the remaining requestable _i2c variants (conv2d-dilated-coopmat review): every _i2c
+    # variant can run a gathered matrix deeper than the 3D image limit.
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f16_i2c_ck_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      I2C: true
+      CHUNKED: true
+    - NAME: conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_i2c_ck_half
+      MMA_M: 8
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      I2C: true
+      CHUNKED: true
+    - NAME: conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_i2c_ck_half
+      MMA_M: 8
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      I2C: true
+      CHUNKED: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_i2c_ck_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      I2C: true
+      CHUNKED: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f32_i2c_ck_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      I2C: true
+      CHUNKED: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f16_i2c_ck_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      I2C: true
+      CHUNKED: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_i2c_ck_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      I2C: true
+      CHUNKED: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f16_i2c_ck_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      I2C: true
+      CHUNKED: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f32_i2c_ck_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      I2C: true
+      CHUNKED: true
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f16_i2c_ck_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      I2C: true
+      CHUNKED: true
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f32_i2c_ck_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      I2C: true
+      CHUNKED: true

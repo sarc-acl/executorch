@@ -497,7 +497,11 @@ void add_conv2d_im2col_coopmat_node(
         const uint32_t H = graph->size_at<uint32_t>(-2, out);
         const uint32_t tile = static_cast<uint32_t>(resize_args.at(5));
         const uint32_t offset = static_cast<uint32_t>(resize_args.at(6));
-        if (offset >= H || !conv2d_im2col_coopmat_runnable(*graph, out)) {
+        // A chunked run has no conv2d_gemm fallback: it computes a
+        // single-pixel output too.
+        if (offset >= H ||
+            (!v->has(Conv2dPwCoopmatVariant::kChunked) &&
+             !conv2d_im2col_coopmat_runnable(*graph, out))) {
           return GlobalWorkGrid({0u, 0u, 0u}, kExplicitWorkGrid);
         }
         const utils::uvec3 grid = conv2d_pw_coopmat_workgroups(
@@ -573,31 +577,21 @@ void add_conv2d_im2col_coopmat_merge_node(
       ? std::string("conv2d_pw_coopmat_skn_merge_") +
           (variant.fp32_accumulation ? "f32" : "f16") + "_half"
       : conv2d_pw_coopmat_merge_shader(variant);
-  // A chunked run has no conv2d_gemm resize fallback.
-  const auto resize = chunked
-      ? ExecuteNode::ResizeFunction(
-            [](ComputeGraph* graph,
-               const std::vector<ArgGroup>& args,
-               const std::vector<ValueRef>& resize_args) {
-              resize_conv2d_gemm_node(graph, args, resize_args);
-              VK_CHECK_COND(
-                  conv2d_im2col_coopmat_runnable(*graph, args.at(0).refs.at(0)),
-                  "conv2d_gemm: a chunked im2col_coopmat run cannot compute a "
-                  "single-pixel output");
-            })
-      : ExecuteNode::ResizeFunction(resize_conv2d_gemm_node);
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
       graph,
       [merge](
           ComputeGraph*,
           const std::vector<ArgGroup>&,
           const std::vector<ValueRef>&) { return VK_KERNEL_FROM_STR(merge); },
-      [](ComputeGraph* graph,
-         const vkapi::ShaderInfo&,
-         const std::vector<ArgGroup>& args,
-         const std::vector<ValueRef>&) {
+      [run_one_pixel = chunked.has_value()](
+          ComputeGraph* graph,
+          const vkapi::ShaderInfo&,
+          const std::vector<ArgGroup>& args,
+          const std::vector<ValueRef>&) {
         const ValueRef out = args.at(0).refs.at(0);
-        if (!conv2d_im2col_coopmat_runnable(*graph, out)) {
+        // A chunked run has no conv2d_gemm fallback: it merges a
+        // single-pixel output too.
+        if (!run_one_pixel && !conv2d_im2col_coopmat_runnable(*graph, out)) {
           return GlobalWorkGrid({0u, 0u, 0u}, kExplicitWorkGrid);
         }
         const uint32_t texels = graph->size_at<uint32_t>(-1, out) *
@@ -634,7 +628,7 @@ void add_conv2d_im2col_coopmat_merge_node(
        static_cast<ValueRef>(oh_tile),
        static_cast<ValueRef>(0),
        epilogue.residual},
-      resize));
+      resize_conv2d_gemm_node));
 }
 
 } // namespace
@@ -817,15 +811,17 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
       }
     }
   }
-  if (!conv2d_im2col_coopmat_runnable(graph, out)) {
+  const Conv2dIm2colCoopmatPlan plan = conv2d_im2col_coopmat_plan(
+      graph, variant, in, weight_data, stride, padding, dilation, out);
+  // An unchunked run leaves a single-pixel output to its conv2d_gemm resize
+  // fallback; a chunked one has none and computes it.
+  if (plan.chunks == 1 && !conv2d_im2col_coopmat_runnable(graph, out)) {
     return "the output has a single pixel";
   }
   if (const auto reason =
           conv2d_pw_coopmat_device_unsupported(graph, variant)) {
     return reason;
   }
-  const Conv2dIm2colCoopmatPlan plan = conv2d_im2col_coopmat_plan(
-      graph, variant, in, weight_data, stride, padding, dilation, out);
   vkapi::Adapter* const adapter = graph.context()->adapter_ptr();
   const uint32_t max_3d = adapter->max_texture3d_dim();
   if (plan.kh == 0 || plan.kw == 0) {

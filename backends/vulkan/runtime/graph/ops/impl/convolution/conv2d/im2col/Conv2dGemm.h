@@ -90,7 +90,9 @@ void conv2d_gemm_impl(
  * names a reason. While a resize gives a shape the variant cannot run
  * (conv2d_im2col_coopmat_runnable is false), the variant and merge dispatch
  * nothing and each tile runs conv2d_gemm on the same scratch with texture2d
- * weights, which the route keeps beside the buffer ones.
+ * weights, which the route keeps beside the buffer ones. A chunked run
+ * (Conv2dIm2colCoopmatPlan::chunks > 1) has no such fallback: its multiplies
+ * and merge also compute a single-pixel output.
  */
 
 // The serialized [C_out, C_in, K_h, K_w] weight packed on the GPU into the 4OC
@@ -148,8 +150,8 @@ Conv2dIm2colCoopmatPlan conv2d_im2col_coopmat_plan(
     const ValueRef dilation,
     const ValueRef out);
 
-// Whether the cooperative-matrix multiply runs at the output's current sizes:
-// more than one output pixel.
+// Whether the cooperative-matrix multiply of an unchunked run runs at the
+// output's current sizes: more than one output pixel.
 bool conv2d_im2col_coopmat_runnable(ComputeGraph& graph, const ValueRef out);
 
 // Why the im2col cooperative-matrix route cannot run the convolution on the

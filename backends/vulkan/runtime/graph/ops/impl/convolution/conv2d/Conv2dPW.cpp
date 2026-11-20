@@ -346,6 +346,18 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_i2c_ck_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kIm2col | kChunked},
       {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_i2c_ck_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kIm2col | kChunked, 2u},
       {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk4_i2c_ck_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kIm2col | kChunked, 4u},
+      // Chunked forms of the remaining requestable _i2c variants (conv2d-dilated-coopmat review).
+      {"conv2d_pw_coopmat_xe2_t128x128_f16_i2c_ck_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kIm2col | kChunked},
+      {"conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_i2c_ck_half", 8, 16, 16, 64, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN | kIm2col | kChunked},
+      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_i2c_ck_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kIm2col | kChunked},
+      {"conv2d_pw_coopmat_amd_t16x32_f16_i2c_ck_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kIm2col | kChunked},
+      {"conv2d_pw_coopmat_amd_t16x32_f32_i2c_ck_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, true, false, kIm2col | kChunked},
+      {"conv2d_pw_coopmat_amd_t128x128_f16_i2c_ck_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, false, false, kIm2col | kChunked},
+      {"conv2d_pw_coopmat_amd_t128x128_f32_i2c_ck_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kIm2col | kChunked},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f16_i2c_ck_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kIm2col | kChunked},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f32_i2c_ck_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, true, false, kIm2col | kChunked},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f16_i2c_ck_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, false, false, kIm2col | kChunked},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f32_i2c_ck_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kIm2col | kChunked},
   };
   // clang-format on
   return variants;

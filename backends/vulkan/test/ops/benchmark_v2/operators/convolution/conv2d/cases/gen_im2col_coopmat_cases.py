@@ -447,20 +447,21 @@ def case_kwargs(c):
     }
 
 
-def cases(label, c, baselines, variants, timing, tolerance=TOLERANCE):
+def cases(label, c, baselines, variants, timing, baseline_tolerance=TOLERANCE):
     args = conv_args(
         c["cin"], c["h"], c["w"], c["cout"], c["kh"], c["kw"], **case_kwargs(c)
     )
     base = {
         "operator": OPERATORS[c.get("op", "conv")],
         **timing,
-        "validation_method": tolerance,
+        "validation_method": TOLERANCE,
     }
     name = f"i2c {label}"
     out = [
         {
             "name": f"{name} baseline",
             **base,
+            "validation_method": baseline_tolerance,
             "route_sweep": baselines,
             "args_sweep": [args],
         }
@@ -601,6 +602,13 @@ DILATED = [
         "s(2,1) d(3,1) 32 4x12 two rows",
         conv(32, 4, 12, 32, 3, 3, stride=(2, 1), pad=(3, 1), dilation=(3, 1)),
     ),
+    # A 3x1 kernel, height stride 2 and padding 2 on one input row: kernel row
+    # 1 reads only padding but lies between live rows 0 and 2, so it stays in
+    # the computed rectangle (the full kernel).
+    (
+        "3x1 s(2,1) 64-32 1x8 interior dead row",
+        conv(64, 1, 8, 32, 3, 1, stride=(2, 1), pad=(2, 0)),
+    ),
     # A 2x1 kernel, height dilation 4 and padding 2 on one input row: no tap
     # reads the input.
     (
@@ -608,8 +616,9 @@ DILATED = [
         conv(16, 1, 8, 16, 2, 1, pad=(2, 0), dilation=(4, 1)),
     ),
 ]
-# Deeper than the 3D image limit: input-channel chunks (swept over the
-# variants with a _ck form). Partial sums exceed the clamp.
+# Deeper than the 3D image limit: input-channel chunks (every _i2c variant
+# has a _ck form). Partial sums exceed the clamp. A chunked run also computes
+# a single-pixel output.
 DILATED_CHUNKED = [
     (
         "d12 2048-16 28x28 chunks clamp",
@@ -630,6 +639,7 @@ DILATED_CHUNKED = [
         "d24 2048-16 28x28 chunks",
         conv(2048, 28, 28, 16, 3, 3, pad=(24, 24), dilation=24),
     ),
+    ("d2 2048-16 5x5 chunks one pixel", conv(2048, 5, 5, 16, 3, 3, dilation=2)),
 ]
 # DeepLabV3's dilated 3x3 layers (proposal table): 28x28, stride 1, padding =
 # dilation.
@@ -645,6 +655,7 @@ DILATED_PERFORMANCE = [
 
 def dilated_correctness(variants):
     chunkable = [v for v in variants if chunked_form(v)]
+    assert chunkable == variants, "every _i2c variant has a _ck form"
     out = []
     for label, c in DILATED:
         out += cases(label, c, ["auto"], variants, VALIDATION_TIMING)
@@ -664,17 +675,22 @@ def dilated_expected_skips(variants):
     return out
 
 
-# The direct shader (route auto) accumulates in fp16 and misses atol 0.1 on
-# the K 18432 layers (one element of the d12 layer at 0.118 on Arc B580), so
-# the timing collection admits arms at atol 0.25; each arm's max abs error is
-# reported beside the timings.
-DILATED_PERFORMANCE_TOLERANCE = {**TOLERANCE, "atol": 0.25}
+# The direct shader (route auto, the baseline) accumulates in fp16 and misses
+# atol 0.1 on the d12 layer (one element at 0.118 on Arc B580), which would
+# keep the baseline and its A/A copy out of a --time_validated_only session:
+# that one baseline definition is validated at atol 0.25. Every other
+# definition, all cooperative-matrix arms included, keeps atol 0.1.
+D12_BASELINE_TOLERANCE = {**TOLERANCE, "atol": 0.25}
 
 
 def dilated_performance(variants):
-    # The timed _i2c variants with a _ck form (design D4: the two best Xe2
-    # tiles and their split-K forms, the 16x16x16 families' _alc forms).
-    measured = [v for v in variants if chunked_form(v)]
+    # Design D4 arms: the two best Xe2 tiles and their split-K forms, the
+    # 16x16x16 families' _alc forms (the timed set of the earlier collection).
+    measured = [
+        v
+        for v in variants
+        if v in PERFORMANCE_VARIANTS or ("_xe2_" not in v and "_alc" in v)
+    ]
     out = []
     for label, c in DILATED_PERFORMANCE:
         out += cases(
@@ -683,7 +699,7 @@ def dilated_performance(variants):
             ["auto"],
             measured,
             PERFORMANCE_TIMING,
-            DILATED_PERFORMANCE_TOLERANCE,
+            D12_BASELINE_TOLERANCE if label == "dl3 2048-256 d12" else TOLERANCE,
         )
     return out
 
