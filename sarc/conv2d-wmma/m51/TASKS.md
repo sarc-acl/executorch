@@ -160,10 +160,14 @@ the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFL
   routes on the 45 timed shapes. Verify: a per-shape table of ratio and % of roofline bound; the losers are listed.
   (RESULTS 11.1: 45-case session, zero invalid rows, A/A inside the band, geomeans reproduce 8.1 within 0.6%;
   losers confirmed - three 784-plane 1x1 cells beyond band plus one at parity, and the four kxk cells.)
-- [ ] 11.2 B-operand LDS loads. First probe the ISA of the existing `BCM` variants (argus pipeline dump, untimed).
+- [x] 11.2 B-operand LDS loads. First probe the ISA of the existing `BCM` variants (argus pipeline dump, untimed).
   Then build one change that turns the B gather (`ds_load_u16_d16`) into dword loads: BCM fixed, or A/B role swap
   (Cᵀ = Bᵀ·Aᵀ, weights as the A operand). Verify: the ISA shows the change; LDS ops per WMMA and LDS Busy fall
   (argus); gated; timed.
+  (RESULTS 11.2: probe answered - ColumnMajor lowers to dword pairs; `_bcm2` built and gated 1240/1240; the ISA
+  shows the designed lowering and LDS ops/WMMA fall 10.6 -> 4.58, but LDS cycles per instruction rise 2.11 -> 6.62
+  (bank conflicts), LDS Busy rises 87 -> 94%, WMMA rate falls to 0.80x, and the candidate loses 1.011-1.318x on
+  all 31 shapes - REJECTED with evidence; the role swap is contraindicated by the same measurement.)
 - [ ] 11.3 More fp32 accumulators per wave, or a larger fp32 tile, for the large-plane 1×1 losers (784/3136 pixels).
   Verify as in 11.2.
 - [ ] 11.4 im2col gather cost: no runtime div/mod, no fp16 rounding emulation if not needed, or the gather fused into

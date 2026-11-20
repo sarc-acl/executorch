@@ -874,3 +874,64 @@ from this board's numbers.
 **Stage-3 input.** The LDS-bound operand-delivery ceiling (F1) binds the 1x1 parent
 everywhere (14-54% of bound); the k x k losers additionally carry the im2col gather and
 merge overhead (F2), so 11.4 attacks the larger workload share first after 11.2.
+
+## 11.2 B-operand dword loads (`_bcm2`): built, gated, measured - REJECTED
+
+The 11.2 probe answered the driver question first (untimed argus `wmma.cfg` capture of the
+existing `_bcm` variants): `coopMatLoad(..., ColumnMajor)` from a K-contiguous-per-N shared
+layout lowers to `ds_load_2addr_b32` dword pairs, exactly like the A operand - zero
+`ds_load_u16*` in the whole bcm_f32 kernel. Per the decision rule the BCM fix was built:
+`_bcm2` (`conv2d_pw_coopmat_amd_t16x32_f32_al_bcm2_half`), one change against the 1x1
+parent `amd_t16x32_f32_al_half` - the parent's `[k][n]` B staging becomes `[n][k]`
+(K-contiguous per output channel), loaded ColumnMajor, with the staging stores widened to
+whole `uvec4` (one packed 4-OC block x 8 IC per item, 4 full-vector stores per tile pass)
+and `_al` alignment so the staging map drops the runtime div/mod. The option is default-off
+(`kColumnMajorBFast`, suffix `_bcm2`); every existing variant's SPIR-V is byte-identical
+(md5 lists, local), and the new shader is the only addition.
+
+**Correctness gate:** ten repetitions of the six gate collections with the `_bcm2` arm added
+to the four pw grids; the im2col grids re-validate the k x k parent on the new binary.
+`_bcm2` 1240/1240 dispatches PASS (both grids, all ten repetitions), the 1x1 parent
+1240/1240, the k x k parent 560/560; the only failures are the known 9.2 `direct` tolerance
+finding (`auto` on five k x k shapes, five FAIL events per repetition, unchanged).
+
+**Timing** (interleaved session, same protocol as 11.1: 31 1x1 shapes, arms `auto`,
+`pw_tiled_4x8`, parent, `_bcm2`, order rotated per round, A/A open/close, 620 rows, zero
+invalid, A/A geomeans 0.997/0.998): the parent and both stock arms reproduce the 11.1
+session within 0.4% geomean (per-shape within 0.7% except one 14%-banded cell at +14%).
+`_bcm2` is **slower than the parent on all 31 shapes**: time ratio geomean 1.195x, per-shape
+1.011x-1.318x. Against best stock it loses on 10 shapes (the four 784/3136-plane cells
+among them, at 0.58-0.97).
+
+**Argus before/after** (same untimed run, parent and candidate, five 1x1 shapes covering
+the probe pair and the losers; kernel `08d240d6` = `_bcm2` against parent `61b5b7cd`):
+
+| metric | parent | `_bcm2` | predicted |
+|---|---|---|---|
+| ISA B-operand LDS loads | 64 `ds_load_u16_d16[_hi]` gathers per loop | zero u16; dword `ds_load_2addr_b32` | dword pairs |
+| ISA staging stores | 12 `ds_store_b128` | 12 `ds_store_b128`, zero b64 | whole-vector |
+| LDS instructions per WMMA | 10.6 | 4.58 | ~4.5 |
+| % SALU instructions | 0.079 | 0.077 | parent level |
+| VGPRs per wave (ratio) | 1.00 | 0.81 | no regression |
+| LDS cycles per instruction | 2.11 | 6.62 | ~2.1 |
+| LDS Busy | 87.0% | 93.8% | lower |
+| WMMA ops issued per cycle (ratio) | 1.00 | 0.80 | >= 1 |
+| Wave occupancy | 21.7% | 21.4% | ~same |
+
+The lowering moved exactly as designed - the LDS instruction stream per WMMA fell 2.3x and
+the SALU and VGPR regressions of the old `_bcm` variants are fixed - but each remaining LDS
+instruction costs 3.1x more cycles: the ColumnMajor dword loads from the padded `[n][k]`
+layout are bank-conflict-bound, so LDS Busy rises and the WMMA rate falls 20%. The
+store-side widening (b64 -> b128, vs the old `_bcm`) barely moved the cycles-per-instruction
+(7.01 -> 6.62 in the probe-vs-candidate comparison), so the conflicts are on the load side.
+
+**Verdict: rejected.** A change that moves its target metric the wrong way is rejected even
+before the end-to-end loss (1.195x). Both halves of the 11.2 hypothesis are now measured:
+the u16 gather is *not* the limiter (2.11 LDS cycles per instruction, conflict-free), and
+dword-pair loads from a transposed shared layout are conflict-bound on this device. The
+A/B role-swap alternative is contraindicated by the same evidence - its input-as-B loads
+would be ColumnMajor from the same padded 2D layout. The 1x1 family records one gated
+candidate below the 2% stop threshold; the next 1x1 candidate (11.3) targets LDS ops per
+WMMA by fragment amortization (more fp32 accumulators per wave) instead of load width,
+keeping the parent's conflict-free load pattern. The `_bcm2` shader stays in-tree,
+default-off and unrouted.
