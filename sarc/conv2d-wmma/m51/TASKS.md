@@ -185,12 +185,27 @@ the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFL
   runtime plumbing default-off and unrouted as before.)
 - [ ] 11.5 Small-M, DRAM-bound shapes: move toward the DRAM roof (deeper split-K, more loads in flight).
   Verify as in 11.2.
-- [x] 11.6 Final interleaved session from the committed HEAD. Report per-shape ratio and % of roofline before and
-  after stage 3, and per-candidate gains.
-  (RESULTS 11.6: 840 rows, zero invalid, close A/A 1.007, parent drift vs 11.1 0.999; after/before geomean 0.970
-  over all 45 (1x1 0.988 via the 11.3 predicate route, kxk 0.930 via fast-gather); after/best-stock 0.578;
-  % of bound 27.6% -> 28.5%; goal met beyond the noise band on 37 of 45 - 784,256,1024 crosses to 0.987 within
-  the parity band, 7 cells remain behind (three 784 1x1, four kxk), down from 8; oracle 0.986 vs predicate 0.988.)
-- [ ] 11.7 (later run) 784-cell occupancy, the named limiter from 11.3: the t32x32 route is LDS-capacity-limited
-  (LDS-limited launch 68.8%, VGPR- and wave-slot-limited 0%, 6 workgroups per 64 KiB CU). Levers: two waves per
-  workgroup sharing one B stage, or a smaller `tile_k` staging depth. Judge per shape through the 11.3 predicate.
+- [ ] 11.6 Final interleaved session from the committed HEAD. Report per-shape ratio and % of roofline before and
+  after stage 3, and per-candidate gains. Re-run from the final HEAD after 11.8, with every adopted arm gated on
+  the exact binary timed (the 11.6a arms were gated on earlier binaries). Add a per-cell noise-band column to the
+  final table and mark which gains exceed it. Cool the board fully first (the 11.6a opening A/A had a +24% cell).
+  (11.6a provisional checkpoint, HEAD e4087bd2ef, RESULTS 11.6a: 840 rows, zero invalid, close A/A 1.007, parent
+  drift vs 11.1 0.999; after/before geomean 0.970 over all 45 (1x1 0.988 via the 11.3 predicate route, kxk 0.930
+  via fast-gather); after/best-stock 0.578; geomean % of bound 27.6% -> 28.5%; goal met beyond the noise band on
+  37 of 45 - 784,256,1024 crosses to 0.987 within the parity band, 7 cells remain behind (three 784 1x1, four
+  kxk), down from 8; oracle 0.986 vs predicate 0.988.)
+- [ ] 11.7 (superseded by 11.8) 784-cell gap, re-attributed: the 11.3 occupancy reading is corrected by the M51
+  linear-GEMM evidence (note 13) - a kernel at one workgroup per CU with 16 independent accumulator chains per
+  wave reaches about two times our efficiency, so the limiter is **too few independent accumulator chains per
+  wave** (2 in the parent, 4 in t32x32, against 16), not occupancy. The measured t32x32 launch limiter stands
+  (LDS-limited launch 68.8%, VGPR- and wave-slot-limited 0%); it caps resident waves but is not the binding limit
+  on throughput. Next lever -> 11.8.
+- [ ] 11.8 (note 13, before 11.5) Fragment-reuse amortization with the existing large tiles - no new shader code:
+  `amd_t128x128_f32_alc` and `nvidia_t128x128_f32_alc` (stage-1 best on the 3136 cells and `784,512,128`), never
+  yet timed on the 784/3136 losers. Gate 10 reps on the pw collections (include the many-workgroup lesson of the
+  `amd_t64x64_f32` failure); time on all 31 1x1 shapes with the stock arms and the parent; argus before/after on
+  the 784 losers (LDS ops per WMMA target ~3-4, WMMA ops per cycle clearly above the parent's, occupancy, and the
+  drain-pass count and time share); judge per shape with a predicate of at most two terms (notes 9 and 11). If the
+  drain dominates, a one-pass drain (`f32xp` form) only if it is a yaml combination gateable by 16:45, within the
+  64 KiB cap. If time is left: the kxk `amd_t128x128_f32_alc_sk2/sk4_i2c` arm with the fast gather on the 4 kxk
+  losers.

@@ -1045,7 +1045,12 @@ timing absorbs to 1.008 because the gather is a minor share there.
 
 **Verdict: adopted** as the stage-3 kk parent (the 11.6 final session measures the
 fast-gather arm). The shader and host plumbing stay default-off and unrouted in the runtime,
-as all stage-3 candidates are; the flag is the integration point. The kk family remains open
+as all stage-3 candidates are; the flag is the integration point. One cell the flag changes
+does not gain beyond its band - `3x3 1024-256 28x28` at 1.008 in this session and 1.005 in
+the 11.6a checkpoint, with the gather dispatch itself at 1.09x in argus - so under the
+candidate-adoption rule as written this adoption is recorded as an **owner-decision
+request** (the case for it: 0.930 geomean, 13 of 14 shapes faster, and the one flat cell
+is a minor route share), not a plain pass. The kk family remains open
 with four shapes still behind stock; the remaining gap is the LDS-limited GEMM, not the
 gather.
 
@@ -1115,21 +1120,33 @@ labelled "oracle (upper bound, not a route)".
 **LDS-capacity limit** - not VGPR pressure and not the grid. The candidate's launch-limiter
 shares are LDS-limited 68.8%, VGPR-limited 0.0%, wave-slot-limited 0.0%,
 workgroup-limited 0.0%; its 10240 bytes of LDS per workgroup admit at most 6 workgroups per
-64 KiB CU, i.e. 6 waves per CU, which is the measured 15.1% occupancy. With LDS pressure
-otherwise gone, the next lever for the 784 cells is more waves per workgroup sharing one B
-stage, or a smaller `tile_k` staging depth - recorded in TASKS as a candidate for a later
-run.
+64 KiB CU, i.e. 6 waves per CU, consistent with the measured 15.1% occupancy. LDS capacity
+names what caps resident waves, but (note 13) it is not the binding limit on throughput:
+the M51 linear GEMM runs at one workgroup per CU with 16 independent accumulator chains
+per wave and about two times our efficiency, so low occupancy with enough chains per wave
+is fine. The next lever is more chains per wave, not more waves (TASKS 11.8).
 
 Correction of the first reading of this section: the family stop rule (THRESHOLDS stage 3) requires **two
 consecutive** gated candidates each gaining < 2% geomean on the shapes they target; `_bcm2`
 is one, and this candidate gained 8.6% geomean on its four targets, so it does not count and
-the 1x1 family remains open at counter one. The section's ceiling statement stands: operand
-delivery is fixed (11.2 measured the u16 gather conflict-free; 11.3 amortized the fragments),
-and the remaining 784-cell gap to stock (0.85-0.92) is an occupancy problem - more waves per
-dispatch on those cells (deeper split-K or a smaller-M tile at equal fragment amortization)
-is the next lever, recorded as a TASKS note.
+the 1x1 family remains open at counter one. The section's first ceiling statement is also
+corrected (note 13): operand delivery is fixed (11.2 measured the u16 gather conflict-free;
+11.3 amortized the fragments), and the remaining 784-cell gap to stock (0.85-0.92) is **not
+an occupancy problem** - the M51 linear GEMM evidence shows one workgroup per CU with 16
+independent accumulator chains per wave reaching about two times our efficiency, so the
+limiter is the number of independent accumulator chains per wave (2 here, 4 in t32x32,
+against 16). The next lever is the existing t128x128 f32 tiles (TASKS 11.8). One further
+note for the owner: the predicate's boundary cell `784,1024,256` sits exactly at
+N·K = 2^18 and gains 1% (inside the 2% band), so under the candidate-adoption rule as
+written ("every cell a candidate changes gains beyond the noise band") the predicate route
+is recorded as an **owner-decision request**, not a plain adoption; a strict `>` on N·K
+would drop the cell and satisfy the rule.
 
-## 11.6 Final session: the stage-3 after state against the stage-2 parents, per shape
+## 11.6a Provisional checkpoint (HEAD `e4087bd2ef`): the stage-3 after state against the stage-2 parents, per shape
+
+Provisional checkpoint, not the final session (coordinator notes 13-14): candidate 11.8
+(the existing t128x128 f32 tiles, note 13) is not in it. The final 11.6 re-runs from the
+final HEAD with every adopted arm.
 
 Interleaved session from the committed HEAD build (one binary for every arm): 60 s idle,
 A/A open, five rounds with the arm order rotated per round and 10 s between runs, A/A
@@ -1151,8 +1168,9 @@ inside the 1% band. Cells outside ±2%: open `3x3 448-384 5x5` (+24%), `1x1 49,9
 `3x3 192-48 28x28` (-2.5%), `1x1 25,384,4032` (+2.0%). These are the cells whose stock
 A/A arm carries the cross-run spread (`direct` on `448-384 5x5` spreads 20% across the
 five rounds and on `1x7 192-224` 8%; `pw_tiled_4x8` on `196,96,576` 7.4%); their noise
-bands widen to the observed spread, the 8.1 reason: position-in-sequence drift of the
-stock arm. The parents reproduce the 11.1 re-baseline at **0.999** geomean drift; the
+bands widen to the observed spread. **That widening is the 4.0/7.3 session precedent,
+not a THRESHOLDS rule** - THRESHOLDS requires every A/A cell within ±2% - and is recorded
+here as a deviation for the owner to accept or reject. The parents reproduce the 11.1 re-baseline at **0.999** geomean drift; the
 largest cell drifts (`1x1 144,192,768` at 0.946, `1x1 784,128,1152` at 1.021) sit inside
 those cells' own cross-run spreads (5.7%, 6.1%).
 
@@ -1208,7 +1226,7 @@ stage-3 after state, "bs" = best stock route; `*` marks cells still behind best 
 | 3x3 s2 512 14x14 | 0.963 | 0.284 | 0.295 | 40.5 | 42.1 | 1.002 |
 
 **Geomeans:** after/before **0.970** over all 45 shapes (1x1 0.988, k x k 0.930);
-after/best-stock 0.578 (1x1 0.592, k x k 0.546). % of roofline bound 27.6% -> 28.5%
+after/best-stock 0.578 (1x1 0.592, k x k 0.546). Geomean % of roofline bound 27.6% -> 28.5%
 overall (1x1 31.4% -> 31.8%, k x k 20.8% -> 22.4%).
 
 **Oracle (upper bound, not a route):** the per-shape best of parent and t32x32 over the 31
@@ -1228,13 +1246,17 @@ predicate route - the predicate keeps all but 0.2% of the oracle's gain.
 | `3x3 64 56x56` | 1.496 | 1.652 |
 | `3x3 64-256 224x224` | 1.380 | 1.492 |
 
-The 1x1 remainder is the 784-cell occupancy gap named in 11.3 (the LDS-capacity launch
-limit; TASKS 11.7). The k x k remainder is the LDS-limited GEMM on the Cin=64 large-plane
-cells (11.4 verdict: the gather is fixed, the GEMM is the gap) plus `3x3 1024-256 28x28`,
-where fast-gather stays within its own noise of the parent (1.005 here, 1.008 in the
-adoption session; the cell was behind stock before stage 3 and remains so). The stage-3
-kernel-level goal - the best gated coopmat route ahead of best stock beyond the noise band
-on every shape - is reached on 37 of the 45 shapes; `1x1 784,256,1024` moves from 1.012 to
-0.987, inside the 2% band of parity; the seven cells above remain behind and are the
-recorded gap, with the 11.7 occupancy lever for the 784 cells and the 11.5 DRAM-roof lever
-for the small-M and large-plane k x k cells as the next candidates.
+The 1x1 remainder is the 784-cell gap re-attributed by the M51 linear-GEMM evidence
+(note 13): **too few independent accumulator chains per wave** - the parent holds 2 and
+t32x32 holds 4, against the 16 of the linear kernel that reaches about two times our
+efficiency at one workgroup per CU, so occupancy is not the binding limit (TASKS 11.8:
+the existing t128x128 f32 tiles). The k x k remainder is the LDS-limited GEMM on the
+Cin=64 large-plane cells (11.4 verdict: the gather is fixed, the GEMM is the gap) plus
+`3x3 1024-256 28x28`, where fast-gather stays within its own noise of the parent (1.005
+here, 1.008 in the adoption session; the cell was behind stock before stage 3 and remains
+so). The stage-3 kernel-level goal - the best gated coopmat route ahead of best stock
+beyond the noise band on every shape - is reached on 37 of the 45 shapes in this
+checkpoint; `1x1 784,256,1024` moves from 1.012 to 0.987, inside the 2% band of parity;
+the seven cells above remain behind and are the recorded gap, with the 11.8
+accumulator-amortization lever for the 784 cells and the 11.5 DRAM-roof lever for the
+small-M and large-plane k x k cells as the next candidates.
