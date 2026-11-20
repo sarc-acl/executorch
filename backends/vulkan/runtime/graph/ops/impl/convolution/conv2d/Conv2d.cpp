@@ -10,11 +10,15 @@
 
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Common.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/Convolution.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2dCoopmatTable.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2dDirect.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/im2col/Conv2dGemm.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/winograd/Conv2dWinograd.h>
 
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/utils/KernelUtils.h>
+
+#include <cstdlib>
+#include <cstring>
 
 namespace vkcompute {
 
@@ -228,6 +232,59 @@ UnaryOpType activation_from_string(const std::string& name) {
   VK_THROW("Unsupported conv2d activation: ", name);
 }
 
+// Study control of change conv2d-coopmat-model-switch, not a production
+// policy. With ETVK_CONV2D_COOPMAT=1 (read once, at the first convolution
+// built) a 2D convolution whose device and exact configuration have a row in
+// kConv2dCoopmatTable runs on that row's cooperative-matrix variant when the
+// route's eligibility check accepts it; every other convolution, and every
+// convolution when the variable is unset or any other value, keeps today's
+// routing.
+bool conv2d_coopmat_switch_on() {
+  static const bool on = [] {
+    const char* value = std::getenv("ETVK_CONV2D_COOPMAT");
+    return value != nullptr && std::strcmp(value, "1") == 0;
+  }();
+  return on;
+}
+
+const Conv2dPwCoopmatVariant* conv2d_coopmat_table_variant(
+    ComputeGraph& graph,
+    const ValueRef in,
+    const ValueRef weight_data,
+    const ValueRef stride,
+    const ValueRef padding,
+    const ValueRef dilation,
+    const int64_t groups,
+    const bool transposed) {
+  if (transposed || groups != 1) {
+    return nullptr;
+  }
+  const std::vector<int64_t> in_sizes = graph.sizes_of(in);
+  const std::vector<int64_t> w_sizes = graph.sizes_of(weight_data);
+  const auto s = graph.get_int_list(stride);
+  const auto p = graph.get_int_list(padding);
+  const auto d = graph.get_int_list(dilation);
+  if (in_sizes.size() != 4 || in_sizes.at(0) != 1 || w_sizes.size() != 4 ||
+      s->size() != 2 || p->size() != 2 || d->size() != 2) {
+    return nullptr;
+  }
+  VkPhysicalDeviceProperties props;
+  vkGetPhysicalDeviceProperties(
+      graph.context()->adapter_ptr()->physical_handle(), &props);
+  for (const Conv2dCoopmatTableRow& row : kConv2dCoopmatTable) {
+    if (row.vendor_id == props.vendorID && row.device_id == props.deviceID &&
+        row.c_in == in_sizes.at(1) && row.in_h == in_sizes.at(2) &&
+        row.in_w == in_sizes.at(3) && row.c_out == w_sizes.at(0) &&
+        row.k_h == w_sizes.at(2) && row.k_w == w_sizes.at(3) &&
+        row.stride_h == s->at(0) && row.stride_w == s->at(1) &&
+        row.padding_h == p->at(0) && row.padding_w == p->at(1) &&
+        row.dilation_h == d->at(0) && row.dilation_w == d->at(1)) {
+      return find_conv2d_pw_coopmat_variant(row.variant);
+    }
+  }
+  return nullptr;
+}
+
 } // namespace
 
 void check_conv2d_epilogue(
@@ -322,6 +379,73 @@ void conv2d_with_epilogue_impl(
 
   const Conv2dMethod method =
       get_conv2d_method(graph, weight_data, groups_val, transposed_val);
+
+  if (conv2d_coopmat_switch_on()) {
+    if (const Conv2dPwCoopmatVariant* const variant =
+            conv2d_coopmat_table_variant(
+                graph,
+                in,
+                weight_data,
+                stride,
+                padding,
+                dilation,
+                groups_val,
+                transposed_val)) {
+      if (method == Conv2dMethod::Pointwise) {
+        const bool has_bias_or_epilogue = !graph.val_is_none(bias) ||
+            epilogue.has_activation() || epilogue.has_residual() ||
+            epilogue.has_scale();
+        if (!conv2d_pw_coopmat_ineligible(
+                graph,
+                *variant,
+                in,
+                weight_data,
+                conv2d_pw_weight_storage(graph, weight_data, out),
+                stride,
+                padding,
+                out,
+                transposed_val,
+                has_bias_or_epilogue)) {
+          return conv2d_pw_impl(
+              graph,
+              in,
+              weight_data,
+              bias,
+              stride,
+              padding,
+              out,
+              transposed_val,
+              epilogue,
+              {Conv2dPwRequest::Kind::kCoopmat, variant});
+        }
+      } else if (
+          method == Conv2dMethod::SlidingWindow &&
+          !conv2d_im2col_coopmat_ineligible(
+              graph,
+              *variant,
+              in,
+              weight_data,
+              bias,
+              stride,
+              padding,
+              dilation,
+              out,
+              transposed_val)) {
+        return conv2d_gemm_impl(
+            graph,
+            in,
+            weight_data,
+            bias,
+            stride,
+            padding,
+            dilation,
+            out,
+            epilogue,
+            utils::kTexture3D,
+            variant);
+      }
+    }
+  }
 
   // Use tiled path for all pointwise conv2d
   if (method == Conv2dMethod::Pointwise) {

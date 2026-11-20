@@ -34,6 +34,7 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Common.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Staging.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2d.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2dCoopmatTable.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/im2col/Conv2dGemm.h>
 
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/StagingUtils.h>
@@ -7703,5 +7704,273 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_refuses_int32_overflow) {
         /*transposed=*/false);
     ASSERT_TRUE(reason.has_value());
     EXPECT_NE(reason->find(want), std::string::npos) << *reason;
+  }
+}
+
+namespace {
+
+// The opt-in switch ETVK_CONV2D_COOPMAT (change conv2d-coopmat-model-switch)
+// is read once per process: the _off tests run without it, the _on tests with
+// ETVK_CONV2D_COOPMAT=1, each skipping in the other setting.
+bool conv2d_coopmat_switch_set() {
+  const char* value = std::getenv("ETVK_CONV2D_COOPMAT");
+  return value != nullptr && std::strcmp(value, "1") == 0;
+}
+
+// A 2D convolution built by automatic routing (aten.convolution.default) in
+// FP16 or FP32, checked against a CPU reference (atol 0.1, rtol 0.01).
+class AutoConv2dGraph final {
+ public:
+  AutoConv2dGraph(
+      const vkapi::ScalarType dtype,
+      const int64_t C_in,
+      const int64_t C_out,
+      const int64_t H,
+      const int64_t W,
+      const int64_t K_h,
+      const int64_t K_w,
+      const std::array<int64_t, 2> stride,
+      const std::array<int64_t, 2> pad,
+      const std::array<int64_t, 2> dil)
+      : dtype_(dtype),
+        C_in_(C_in),
+        C_out_(C_out),
+        H_(H),
+        W_(W),
+        K_h_(K_h),
+        K_w_(K_w),
+        stride_(stride),
+        pad_(pad),
+        dil_(dil),
+        Ho_((H + 2 * pad[0] - dil[0] * (K_h - 1) - 1) / stride[0] + 1),
+        Wo_((W + 2 * pad[1] - dil[1] * (K_w - 1) - 1) / stride[1] + 1),
+        graph_(make_config()) {
+    std::mt19937 rng(4099);
+    std::uniform_real_distribution<float> unit(-1.0f, 1.0f);
+    const float s = 1.0f / std::sqrt(float(C_in * K_h * K_w));
+    weight_.resize(C_out * C_in * K_h * K_w);
+    for (float& v : weight_) {
+      v = round(unit(rng) * s);
+    }
+    bias_.resize(C_out);
+    for (float& v : bias_) {
+      v = round(unit(rng));
+    }
+    weight_half_.assign(weight_.begin(), weight_.end());
+    bias_half_.assign(bias_.begin(), bias_.end());
+    const bool half = dtype == vkapi::kHalf;
+    input_ = graph_.add_input_tensor(
+        {1, C_in, H, W}, dtype, utils::kTexture3D, utils::kChannelsPacked);
+    out_ = graph_.add_tensor(
+        {1, C_out, Ho_, Wo_}, dtype, utils::kTexture3D, utils::kChannelsPacked);
+    const std::vector<int64_t> w_sizes = {C_out, C_in, K_h, K_w};
+    VK_GET_OP_FN("aten.convolution.default")
+    (graph_,
+     {input_.value,
+      half ? graph_.add_tensorref(w_sizes, dtype, weight_half_.data())
+           : graph_.add_tensorref(w_sizes, dtype, weight_.data()),
+      half ? graph_.add_tensorref({C_out}, dtype, bias_half_.data())
+           : graph_.add_tensorref({C_out}, dtype, bias_.data()),
+      graph_.add_scalar_list<int64_t>({stride[0], stride[1]}),
+      graph_.add_scalar_list<int64_t>({pad[0], pad[1]}),
+      graph_.add_scalar_list<int64_t>({dil[0], dil[1]}),
+      graph_.add_scalar<bool>(false),
+      graph_.add_scalar_list<int64_t>({0, 0}),
+      graph_.add_scalar<int64_t>(1),
+      out_});
+    out_staging_ = graph_.set_output_tensor(out_);
+    graph_.prepare();
+    graph_.prepack();
+  }
+
+  std::vector<std::string> execute_and_check() {
+    std::mt19937 rng(13 + H_ * 131 + W_);
+    std::uniform_real_distribution<float> unit(-1.0f, 1.0f);
+    std::vector<float> x(C_in_ * H_ * W_);
+    for (float& v : x) {
+      v = round(unit(rng));
+    }
+    std::vector<float> y(C_out_ * Ho_ * Wo_);
+    if (dtype_ == vkapi::kHalf) {
+      std::vector<executorch::aten::Half> xh(x.begin(), x.end());
+      graph_.maybe_cast_and_copy_into_staging(
+          input_.staging, xh.data(), xh.size(), dtype_);
+      graph_.execute();
+      std::vector<executorch::aten::Half> yh(y.size());
+      graph_.maybe_cast_and_copy_from_staging(
+          out_staging_, yh.data(), yh.size(), dtype_);
+      y.assign(yh.begin(), yh.end());
+    } else {
+      graph_.maybe_cast_and_copy_into_staging(
+          input_.staging, x.data(), x.size(), dtype_);
+      graph_.execute();
+      graph_.maybe_cast_and_copy_from_staging(
+          out_staging_, y.data(), y.size(), dtype_);
+    }
+    size_t mismatches = 0;
+    for (int64_t n = 0; n < C_out_; ++n) {
+      for (int64_t oy = 0; oy < Ho_; ++oy) {
+        for (int64_t ox = 0; ox < Wo_; ++ox) {
+          double expected = bias_[n];
+          for (int64_t c = 0; c < C_in_; ++c) {
+            for (int64_t ki = 0; ki < K_h_; ++ki) {
+              const int64_t iy = oy * stride_[0] - pad_[0] + ki * dil_[0];
+              if (iy < 0 || iy >= H_) {
+                continue;
+              }
+              for (int64_t kj = 0; kj < K_w_; ++kj) {
+                const int64_t ix = ox * stride_[1] - pad_[1] + kj * dil_[1];
+                if (ix >= 0 && ix < W_) {
+                  expected +=
+                      double(
+                          weight_[((n * C_in_ + c) * K_h_ + ki) * K_w_ + kj]) *
+                      x[(c * H_ + iy) * W_ + ix];
+                }
+              }
+            }
+          }
+          const double actual = y[(n * Ho_ + oy) * Wo_ + ox];
+          mismatches += !std::isfinite(actual) ||
+              !(std::abs(actual - expected) <= 0.1 + 0.01 * std::abs(expected));
+        }
+      }
+    }
+    EXPECT_EQ(mismatches, 0u);
+    std::vector<std::string> kernels;
+    graph_.context()->querypool().extract_results();
+    for (const auto& result :
+         graph_.context()->querypool().get_shader_timestamp_data()) {
+      kernels.push_back(result.kernel_name);
+    }
+    return kernels;
+  }
+
+ private:
+  static GraphConfig make_config() {
+    GraphConfig config;
+    config.enable_querypool = true;
+    return config;
+  }
+
+  float round(const float v) const {
+    return dtype_ == vkapi::kHalf ? float(executorch::aten::Half(v)) : v;
+  }
+
+  const vkapi::ScalarType dtype_;
+  const int64_t C_in_, C_out_, H_, W_, K_h_, K_w_;
+  const std::array<int64_t, 2> stride_, pad_, dil_;
+  const int64_t Ho_, Wo_;
+  std::vector<float> weight_;
+  std::vector<float> bias_;
+  std::vector<executorch::aten::Half> weight_half_;
+  std::vector<executorch::aten::Half> bias_half_;
+  ComputeGraph graph_;
+  IOValueRef input_;
+  ValueRef out_;
+  ValueRef out_staging_;
+};
+
+AutoConv2dGraph auto_conv2d_of_row(
+    const Conv2dCoopmatTableRow& row,
+    const vkapi::ScalarType dtype) {
+  return AutoConv2dGraph(
+      dtype,
+      row.c_in,
+      row.c_out,
+      row.in_h,
+      row.in_w,
+      row.k_h,
+      row.k_w,
+      {row.stride_h, row.stride_w},
+      {row.padding_h, row.padding_w},
+      {row.dilation_h, row.dilation_w});
+}
+
+// The table rows of the running device with the fewest multiply-adds, one
+// with a 1x1 kernel and one with a larger kernel, where the table has them.
+std::vector<const Conv2dCoopmatTableRow*> smallest_table_rows() {
+  VkPhysicalDeviceProperties props;
+  vkGetPhysicalDeviceProperties(
+      api::context()->adapter_ptr()->physical_handle(), &props);
+  const auto macs = [](const Conv2dCoopmatTableRow& r) {
+    return r.c_in * r.c_out * r.k_h * r.k_w * r.in_h * r.in_w;
+  };
+  std::array<const Conv2dCoopmatTableRow*, 2> best = {nullptr, nullptr};
+  for (const Conv2dCoopmatTableRow& r : kConv2dCoopmatTable) {
+    if (r.vendor_id != props.vendorID || r.device_id != props.deviceID) {
+      continue;
+    }
+    const Conv2dCoopmatTableRow*& b = best[r.k_h * r.k_w == 1 ? 0 : 1];
+    if (b == nullptr || macs(r) < macs(*b)) {
+      b = &r;
+    }
+  }
+  std::vector<const Conv2dCoopmatTableRow*> out;
+  for (const auto* r : best) {
+    if (r != nullptr) {
+      out.push_back(r);
+    }
+  }
+  return out;
+}
+
+} // namespace
+
+// Switch off: automatic routing never builds a cooperative-matrix route, also
+// for configurations that have a table row on this device.
+TEST(VulkanComputeGraphTest, conv2d_coopmat_switch_off) {
+  if (conv2d_coopmat_switch_set()) {
+    GTEST_SKIP() << "ETVK_CONV2D_COOPMAT=1";
+  }
+  const auto check = [](AutoConv2dGraph&& g) {
+    EXPECT_FALSE(dispatched_prefix(g.execute_and_check(), "conv2d_pw_coopmat"));
+  };
+  check(AutoConv2dGraph(
+      vkapi::kHalf, 64, 96, 14, 14, 1, 1, {1, 1}, {0, 0}, {1, 1}));
+  check(AutoConv2dGraph(
+      vkapi::kHalf, 64, 128, 14, 14, 3, 3, {1, 1}, {1, 1}, {1, 1}));
+  check(AutoConv2dGraph(
+      vkapi::kHalf, 64, 64, 28, 28, 3, 3, {1, 1}, {2, 2}, {2, 2}));
+  for (const Conv2dCoopmatTableRow* row : smallest_table_rows()) {
+    SCOPED_TRACE(row->variant);
+    check(auto_conv2d_of_row(*row, vkapi::kHalf));
+  }
+}
+
+// Switch on: a table configuration dispatches the row's variant, a
+// configuration without a row and a row the route refuses (the same
+// configuration in FP32) keep today's shaders; every output matches.
+TEST(VulkanComputeGraphTest, conv2d_coopmat_switch_on) {
+  if (!conv2d_coopmat_switch_set()) {
+    GTEST_SKIP() << "needs ETVK_CONV2D_COOPMAT=1";
+  }
+  {
+    AutoConv2dGraph miss(
+        vkapi::kHalf, 64, 96, 13, 13, 1, 1, {1, 1}, {0, 0}, {1, 1});
+    EXPECT_FALSE(
+        dispatched_prefix(miss.execute_and_check(), "conv2d_pw_coopmat"));
+  }
+  const auto rows = smallest_table_rows();
+  if (rows.empty()) {
+    GTEST_SKIP() << "no table row for this device";
+  }
+  for (const Conv2dCoopmatTableRow* row : rows) {
+    SCOPED_TRACE(row->variant);
+    {
+      AutoConv2dGraph hit = auto_conv2d_of_row(*row, vkapi::kHalf);
+      const auto kernels = hit.execute_and_check();
+      EXPECT_TRUE(
+          dispatched(kernels, row->variant) ||
+          dispatched(
+              kernels,
+              std::string(row->variant)
+                      .substr(0, std::strlen(row->variant) - 5) +
+                  "_ck_half"));
+    }
+    {
+      AutoConv2dGraph refused = auto_conv2d_of_row(*row, vkapi::kFloat);
+      EXPECT_FALSE(
+          dispatched_prefix(refused.execute_and_check(), "conv2d_pw_coopmat"));
+    }
   }
 }
