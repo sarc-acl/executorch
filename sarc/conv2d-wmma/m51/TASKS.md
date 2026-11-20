@@ -43,9 +43,11 @@ only (`SPEC.md`, "Publication of M51 results").
 - [ ] 3.4 Gate the parent on the M51. Verify: 10/10.
 
 ## 4. Baseline timing
-- [ ] 4.1 A/A of the parent. Verify: within `THRESHOLDS.md`.
-- [ ] 4.2 Time the shape set with `auto`, `pw_tiled_4x8`, the passing AMD-family variants and the parent.
-  Verify: the ratio table in `RESULTS.md` is recomputable from the local `runs.csv`.
+- [x] 4.1 A/A of the parent. Verify: within `THRESHOLDS.md`. (Done as part of 4.0: two A/A opens,
+  geomeans 1.0015 / 0.9959, pass the 1% band; widened-band cells recorded in `RESULTS.md`.)
+- [x] 4.2 Time the shape set with `auto`, `pw_tiled_4x8`, the passing AMD-family variants and the parent.
+  Verify: the ratio table in `RESULTS.md` is recomputable from the local `runs.csv`. (Done as part of
+  4.0: five rotated runs; `RESULTS.md` 4.0; local `runs.csv` + `tools/timing_analysis.py`.)
 
 ## 5. Locate
 - [ ] 5.1 On a separate branch `topic/m51-conv2d-wmma-inspect`, port the pipeline-statistics dump. Record the parent's
@@ -60,8 +62,9 @@ only (`SPEC.md`, "Publication of M51 results").
   interleaved timed session. Verify: per-technique gain in `RESULTS.md`; the stop rule is checked after each one.
 
 ## 7. Workload baseline (parallel with 2–6)
-- [ ] 7.1 Export the ten CI models in FP16 with `../survey-tools/export_models.py`; build a traced runner with the event
+- [x] 7.1 Export the ten CI models in FP16 with `../survey-tools/export_models.py`; build a traced runner with the event
   tracer enabled. Verify: ten `.pte` files and a runner that writes an ETDump on the host.
+  (ic4 exported with random weights — HF CDN unreachable from this network; deviation recorded locally.)
 - [ ] 7.2 Run on the M51 (12 executions, first dropped) and aggregate. Group the time by shader and shape. Also group it
   by convolution family, using the desktop survey's families: 1×1, im2col GEMM, direct k×k, dilated, 1D, depthwise,
   other. Group it by kind × K as well. Verify: shares and rankings per family and per shader are committed; times stay

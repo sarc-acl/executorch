@@ -101,3 +101,59 @@ well** — the defeats are inherent to fp16 accumulation, not variant defects. P
 collection is a record, not a gate: 37 of the 39 passed the 2.4 gate 10/10; the two `_epi0`
 members are correctness-only (above). The f32-accumulating variants are out of scope of this
 collection.
+
+## 4.0 Timed session (1x1, parent selection)
+
+Five runs of `pw_coopmat_m51_timing.json` (21 shapes, arm order rotated per run) with
+`--validation_mode=none`, plus two A/A opens of `pw_coopmat_m51_aa.json` before and after the
+runs. Metric: per-case p50 of `gpu_timestamp_route_us`; per-cell arm time is the median over
+the five runs. The observed GPU clock equals the pinned frequency in every case of every run;
+all runs exit 0 with empty stderr, with the canonical driver verified after each run.
+
+**A/A acceptance:** first open geomean 1.0015, second open 0.9959 — both pass the 1% band.
+Cells outside +-2% in either open: `(196,96,576)` (+2.05%, then +3.94%), `(49,96,576)` (+2.73%),
+`(25,384,4032)` (-2.76%, then -4.84%), `(784,128,512)` (-5.27%). The same cells carry the
+cross-run spread of the baseline arm (22-23% for `(196,96,576)` and `(784,128,512)`, 15% for
+`(25,384,4032)`); for these cells the noise band is widened to the observed spread, with this
+recorded reason: position-in-sequence drift of the baseline arm on high-occupancy shapes.
+
+**Parent selection:** best geometric mean over all 21 shapes among the 73 gated arms, at
+2.148x over `pw_tiled_4x8` (and 1.861x over `auto`):
+
+> **Parent variant: `amd_t16x32_f16_al_half`.**
+
+The two arms with a nominally higher geomean cover only 18-19 of 21 shapes (shared-memory
+overflow skips on the largest), so their geomeans are not comparable. The parent covers all
+21 shapes and wins every cell beyond its noise band:
+
+| Shape | pw_tiled_4x8 / parent | auto / parent | noise band |
+|---|---:|---:|---:|
+| `(196,1024,256)` | 1.11 | 1.11 | 2% |
+| `(196,256,1024)` | 2.54 | 2.03 | 2% (spread) |
+| `(196,256,2304)` | 2.44 | 1.72 | 2% |
+| `(196,512,1024)` | 1.39 | 1.50 | 2% |
+| `(196,64,384)` | 3.58 | 2.52 | 2% |
+| `(196,96,576)` | 4.95 | 2.66 | 22% (spread) |
+| `(25,384,4032)` | 4.96 | 3.44 | 15% (spread) |
+| `(289,224,1344)` | 1.90 | 1.46 | 2% |
+| `(3136,128,256)` | 1.04 | 1.05 | 2% |
+| `(3136,256,64)` | 1.39 | 1.39 | 2% |
+| `(3136,64,256)` | 1.22 | 1.22 | 2% |
+| `(3136,64,64)` | 1.45 | 1.46 | 2% |
+| `(49,160,960)` | 4.87 | 4.12 | 2% |
+| `(49,2048,512)` | 1.21 | 1.70 | 2% |
+| `(49,512,2048)` | 4.30 | 2.99 | 3% (spread) |
+| `(49,512,4608)` | 6.45 | 4.80 | 3% (spread) |
+| `(49,96,576)` | 4.95 | 3.02 | 2% |
+| `(784,128,1152)` | 1.44 | 1.51 | 2% |
+| `(784,128,512)` | 1.51 | 1.52 | 23% (spread) |
+| `(784,256,512)` | 1.06 | 1.06 | 2% |
+| `(784,512,128)` | 1.24 | 1.24 | 2% |
+
+Geomeans over shapes: parent vs `pw_tiled_4x8` **2.148x**, parent vs `auto` **1.861x** — both
+above the 1.15x campaign success threshold. `auto` itself is 0.866x of `pw_tiled_4x8`
+(`auto` resolves to `pointwise` on all 21 shapes; where `auto` beats `pw_tiled_4x8` the
+parent's ratio over `auto` is the larger number). The next full-coverage arms:
+`amd_t16x32_f32_al_half` (2.122x), `amd_t16x32_f16_alc_half` (2.110x),
+`nvidia_t16x32_f32_alc_half` (2.094x), `amd_t16x32_f32_alc_half` (2.079x),
+`nvidia_t16x32_f16_alc_half` (2.068x).
