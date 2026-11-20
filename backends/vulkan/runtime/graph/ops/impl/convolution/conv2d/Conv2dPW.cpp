@@ -133,6 +133,7 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
   constexpr uint32_t kColumnMajorB = V::kColumnMajorB;
   constexpr uint32_t kIm2col = V::kIm2col;
   constexpr uint32_t kChunked = V::kChunked;
+  constexpr uint32_t kDirect = V::kDirect;
   // clang-format off
   static const std::vector<Conv2dPwCoopmatVariant> variants = {
       // Intel Xe2
@@ -358,6 +359,21 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_nvidia_t16x32_f32_i2c_ck_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, true, false, kIm2col | kChunked},
       {"conv2d_pw_coopmat_nvidia_t128x128_f16_i2c_ck_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, false, false, kIm2col | kChunked},
       {"conv2d_pw_coopmat_nvidia_t128x128_f32_i2c_ck_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kIm2col | kChunked},
+      // Direct-gather forms (_dg) of the short-list variants (conv2d-coopmat-direct-gather): the parent plus kDirect.
+      {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN | kDirect},
+      {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN | kDirect, 2u},
+      {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN | kDirect, 4u},
+      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN | kDirect},
+      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk2_dg_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN | kDirect, 2u},
+      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN | kDirect, 4u},
+      {"conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kAlignedClampN | kDirect},
+      {"conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_dg_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kAlignedClampN | kDirect, 2u},
+      {"conv2d_pw_coopmat_amd_t128x128_f32_alc_dg_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kDirect},
+      {"conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kDirect, 2u},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kDirect},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kDirect, 2u},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kDirect},
+      {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kDirect, 2u},
   };
   // clang-format on
   return variants;
@@ -387,6 +403,7 @@ constexpr uint32_t kSuffixOrder[] = {
     Conv2dPwCoopmatVariant::kColumnMajorB,
     kSlices,
     Conv2dPwCoopmatVariant::kIm2col,
+    Conv2dPwCoopmatVariant::kDirect,
     Conv2dPwCoopmatVariant::kChunked,
     Conv2dPwCoopmatVariant::kDiagOnce,
 };
@@ -418,6 +435,8 @@ std::string suffix_item(const Conv2dPwCoopmatVariant& v, const uint32_t item) {
       return "_ck";
     case Conv2dPwCoopmatVariant::kIm2col:
       return "_i2c";
+    case Conv2dPwCoopmatVariant::kDirect:
+      return "_dg";
     case Conv2dPwCoopmatVariant::kDiagOnce:
       return "_diag_once";
     default:
@@ -482,6 +501,11 @@ std::vector<std::string> conv2d_pw_coopmat_registry_problems(
     }
     if (v.has(Conv2dPwCoopmatVariant::kColumnMajorB) && v.frag_layout) {
       problems.push_back(name + ": _bcm needs the padded row-major layout");
+    }
+    if (v.has(Conv2dPwCoopmatVariant::kDirect) &&
+        (v.has(Conv2dPwCoopmatVariant::kIm2col) ||
+         v.has(Conv2dPwCoopmatVariant::kChunked))) {
+      problems.push_back(name + ": _dg excludes _i2c and _ck");
     }
     if (suffix.empty()) {
       continue;
@@ -728,6 +752,9 @@ std::optional<std::string> conv2d_pw_coopmat_ineligible(
     const bool has_bias_or_epilogue) {
   if (variant.has(Conv2dPwCoopmatVariant::kIm2col)) {
     return "the variant reads an im2col matrix (route im2col_coopmat)";
+  }
+  if (variant.has(Conv2dPwCoopmatVariant::kDirect)) {
+    return "the variant gathers its input (route direct_coopmat)";
   }
   if (transposed) {
     return "the convolution is transposed";

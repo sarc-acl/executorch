@@ -26,7 +26,8 @@
  * the bias, apply the epilogue (both in VEC4_T, f32 for ACC_FP32) and imageStore
  * the texels inside the output. The wrapper defines DRAIN_G and DRAIN_PASSES.
  * Options: ALIGNED (no bounds tests in the K loop), CLAMP_N (with ALIGNED, any
- * N), SPLIT_K, W16, IMG_INPUT, NO_EPILOGUE, BCM, DIAG_ONCE, DIRECT_B, I2C.
+ * N), SPLIT_K, W16, IMG_INPUT, NO_EPILOGUE, BCM, DIAG_ONCE, DIRECT_B, I2C,
+ * DIRECT.
  *
  * I2C: the input is one row tile of an im2col matrix (conv2d_im2col's
  * texture3d scratch, texel (ow, oh_local, k4)) holding in_sizes.y output rows
@@ -41,6 +42,15 @@
  * of the weight buffer, its K slices are slices CHUNK_SLICE_BASE onward of the
  * scratch, and the scratch starts after CHUNK_SCRATCH_K4 weight rows; one
  * merge sums the slices of every chunk.
+ *
+ * DIRECT: the input is the convolution input and A is gathered from it per K
+ * step. K index k of output pixel (oy, ox) is input channel 4 c4 + k % 4 at
+ * live tap t = (k / 4) / C4 (row-major over the dg_taps_h x dg_taps_w live
+ * taps, C4 = ceil(dg_in_channels / 4)), read at (oy stride_h - padding_h + ty
+ * dg_dilation_h, ox stride_w - padding_w + tx dg_dilation_w); positions
+ * outside the input, channels at or above dg_in_channels and taps past the
+ * last are zero. The weights hold ceil(4 C4 taps / WG_TILE_K) K steps in that
+ * order, zero past the last tap, so ALIGNED needs no tail case.
  */
 
 #ifndef CONV2D_PW_COOPMAT_BODY_GLSLH
@@ -59,6 +69,20 @@ const uint FP16_PER_VEC4 = 8;
 
 #if defined(FRAG_LAYOUT) && defined(BCM)
 #error "BCM requires the padded row-major layout"
+#endif
+
+#if defined(DIRECT) && \
+    (defined(I2C) || defined(CHUNKED) || defined(DIRECT_B) || \
+     defined(DIAG_ONCE) || defined(W16))
+#error "DIRECT supports neither I2C, CHUNKED, DIRECT_B, DIAG_ONCE nor W16"
+#endif
+
+#ifdef DIRECT
+const uint DG_C4 = (dg_in_channels + 3u) / 4u;
+const uint DG_TAPS = dg_taps_h * dg_taps_w;
+// K4 of the packed weights: whole K steps.
+const uint DG_K4_PACKED =
+    ((4u * DG_TAPS * DG_C4 + WG_TILE_K - 1u) / WG_TILE_K) * (WG_TILE_K / 4u);
 #endif
 
 #ifdef FRAG_LAYOUT
@@ -170,10 +194,19 @@ void make_staging_map(
     const uint m = min(tile_m_start + map.a_m[p], M - 1u);
     map.a_row_ok[p] = p * WG_SIZE + tid < A_ITEMS;
     map.a_pos[p] = ivec2(m % W_out, m / W_out);
+#ifdef DIRECT
+    // The input position of the pixel's first live tap.
+    map.a_pos[p] = map.a_pos[p] * ivec2(stride_w, stride_h) -
+        ivec2(padding_w, padding_h);
+#endif
 #else
     const uint m = tile_m_start + map.a_m[p];
     map.a_row_ok[p] = m < M && p * WG_SIZE + tid < A_ITEMS;
     map.a_pos[p] = map.a_row_ok[p] ? ivec2(m % W_out, m / W_out) : ivec2(0);
+#ifdef DIRECT
+    map.a_pos[p] = map.a_pos[p] * ivec2(stride_w, stride_h) -
+        ivec2(padding_w, padding_h);
+#endif
 #endif
   }
   [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
@@ -208,14 +241,36 @@ void make_staging_map(
 #error "CLAMP_N requires ALIGNED without W16"
 #endif
 
+#ifdef DIRECT
+// Texel k4 of the gathered row whose first live tap reads `origin`: zero
+// outside the input, past the last tap and in channels past dg_in_channels,
+// by selects on a fetch at a clamped position.
+f16vec4 fetch_in(const ivec2 origin, const uint k4, const uint K4) {
+  const uint tap = k4 / DG_C4;
+  const uint c4 = k4 - tap * DG_C4;
+  const uint ty = tap / dg_taps_w;
+  const ivec2 pos = origin +
+      ivec2((tap - ty * dg_taps_w) * dg_dilation_w, ty * dg_dilation_h);
+  const bool inside = tap < DG_TAPS && uint(pos.x) < uint(in_sizes.x) &&
+      uint(pos.y) < uint(in_sizes.y);
+  const f16vec4 v = f16vec4(
+      LOAD_IN(ivec3(inside ? pos : ivec2(0), inside ? int(c4) : 0)));
+  const bvec4 lanes =
+      lessThan(uvec4(4u * c4) + uvec4(0u, 1u, 2u, 3u), uvec4(dg_in_channels));
+  return inside ? mix(f16vec4(0), v, lanes) : f16vec4(0);
+}
+#endif
+
 #ifdef ALIGNED
 // K % WG_TILE_K == 0 and N % WG_TILE_N == 0 (conv2d_pw_coopmat_ineligible):
 // every fetch is inside the tensors. With CLAMP_N only K % WG_TILE_K == 0
 // holds: weight texels past the last output-channel texel read texel N4 - 1,
 // and the output stage does not store their columns.
+#ifndef DIRECT
 f16vec4 fetch_in(const ivec2 pos, const uint k4, const uint K4) {
   return f16vec4(LOAD_IN(ivec3(pos, int(k4))));
 }
+#endif
 
 #ifdef CLAMP_N
 #define W_N4(n4) min(n4, N4 - 1u)
@@ -243,9 +298,11 @@ f16vec4 fetch_w(const uint k, const uint n4, const uint K4, const uint N4) {
 #ifdef W16
 #error "W16 requires ALIGNED"
 #endif
+#ifndef DIRECT
 f16vec4 fetch_in(const ivec2 pos, const uint k4, const uint K4) {
   return k4 < K4 ? f16vec4(LOAD_IN(ivec3(pos, int(k4)))) : f16vec4(0);
 }
+#endif
 
 #if defined(SPLIT_K) && defined(CHUNKED)
 f16vec4 fetch_w(const uint k, const uint n4, const uint K4, const uint N4) {
@@ -504,6 +561,9 @@ void store_scratch(const uint m, const uint n4, const uint M, const uint N4, con
 #ifdef CHUNKED
   const uint base = uint(CHUNK_SCRATCH_K4) * N4 * 4u;
   const uint t = ((g_k_slice + uint(CHUNK_SLICE_BASE)) * M + m) * N4 + n4;
+#elif defined(DIRECT)
+  const uint base = DG_K4_PACKED * N4 * 4u;
+  const uint t = (g_k_slice * M + m) * N4 + n4;
 #else
   const uint K4 = uint(div_up_4(in_sizes.z));
   const uint base = K4 * N4 * 4u;
@@ -611,7 +671,11 @@ void main() {
   const uint M = W_out * uint(out_sizes.y);
 #endif
   const uint N4 = uint(div_up_4(out_sizes.z));
+#ifdef DIRECT
+  const uint K4 = DG_TAPS * DG_C4;
+#else
   const uint K4 = uint(div_up_4(in_sizes.z));
+#endif
 
   // Uniform per work group, so the early return precedes every barrier of the
   // work group alike.

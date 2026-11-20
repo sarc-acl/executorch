@@ -9,6 +9,7 @@ pack_conv2d_gemm_weight:
     DTYPE: float
     BUF_DTYPE: float
     PACKED_STORAGE: texture2d
+    PAD_K: false
   generate_variant_forall:
     combination:
       parameter_names: [PACKED_STORAGE, DTYPE, BUF_DTYPE]
@@ -22,3 +23,6 @@ pack_conv2d_gemm_weight:
         - parameter_values: [buffer, half, float]
   shader_variants:
     - NAME: pack_conv2d_gemm_weight
+    # Zero rows after the weights up to dims1.z (route direct_coopmat).
+    - NAME: pack_conv2d_gemm_weight_padk
+      PAD_K: true

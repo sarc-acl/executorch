@@ -6477,6 +6477,7 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_clamped_reads) {
   for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
     if (!v.has(Conv2dPwCoopmatVariant::kAlignedClampN) ||
         v.has(Conv2dPwCoopmatVariant::kIm2col) ||
+        v.has(Conv2dPwCoopmatVariant::kDirect) ||
         !probe.float16_buffers_enabled() ||
         !conv2d_pw_coopmat_device_supports(probe, v)) {
       continue;
@@ -6623,6 +6624,7 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_resize) {
   ComputeGraph probe{GraphConfig()};
   for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
     if (v.k_slices <= 1u || v.has(Conv2dPwCoopmatVariant::kIm2col) ||
+        v.has(Conv2dPwCoopmatVariant::kDirect) ||
         !probe.float16_buffers_enabled() ||
         !conv2d_pw_coopmat_device_supports(probe, v)) {
       continue;
@@ -6657,6 +6659,7 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_growth) {
   ComputeGraph probe{GraphConfig()};
   for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
     if (v.k_slices <= 1u || v.has(Conv2dPwCoopmatVariant::kIm2col) ||
+        v.has(Conv2dPwCoopmatVariant::kDirect) ||
         !probe.float16_buffers_enabled() ||
         !conv2d_pw_coopmat_device_supports(probe, v)) {
       continue;
@@ -6779,7 +6782,8 @@ TEST(VulkanComputeGraphTest, conv2d_gemm_weight_buffer_round_trip) {
 namespace {
 
 // An FP16 k x k convolution graph built through conv2d_gemm_impl with an
-// _i2c variant (route im2col_coopmat), with a CPU reference.
+// _i2c variant (route im2col_coopmat), or through conv2d_direct_coopmat_impl
+// with a _dg variant (route direct_coopmat), with a CPU reference.
 class Im2colCoopmatConvGraph final {
  public:
   Im2colCoopmatConvGraph(
@@ -6794,7 +6798,8 @@ class Im2colCoopmatConvGraph final {
       const int64_t pad_h,
       const int64_t pad_w,
       const std::array<int64_t, 3>& stride_w_dilation = {0, 1, 1},
-      const std::optional<std::pair<float, float>> clamp = std::nullopt)
+      const std::optional<std::pair<float, float>> clamp = std::nullopt,
+      const bool direct = false)
       : C_in_(C_in),
         C_out_(C_out),
         K_h_(K_h),
@@ -6834,19 +6839,42 @@ class Im2colCoopmatConvGraph final {
       epilogue.activation_a = clamp_->first;
       epilogue.activation_b = clamp_->second;
     }
-    conv2d_gemm_impl(
-        graph_,
-        input_.value,
-        graph_.add_tensorref(
-            {C_out, C_in, K_h, K_w}, vkapi::kHalf, weight_.data()),
-        graph_.add_tensorref({C_out}, vkapi::kHalf, bias_.data()),
-        graph_.add_scalar_list<int64_t>({stride_, stride_w_}),
-        graph_.add_scalar_list<int64_t>({pad_h, pad_w}),
-        graph_.add_scalar_list<int64_t>({dil_h_, dil_w_}),
-        out_,
-        epilogue,
-        utils::kTexture3D,
-        &variant);
+    const ValueRef weight = graph_.add_tensorref(
+        {C_out, C_in, K_h, K_w}, vkapi::kHalf, weight_.data());
+    const ValueRef bias =
+        graph_.add_tensorref({C_out}, vkapi::kHalf, bias_.data());
+    const ValueRef stride_ref =
+        graph_.add_scalar_list<int64_t>({stride_, stride_w_});
+    const ValueRef padding_ref =
+        graph_.add_scalar_list<int64_t>({pad_h, pad_w});
+    const ValueRef dilation_ref =
+        graph_.add_scalar_list<int64_t>({dil_h_, dil_w_});
+    if (direct) {
+      conv2d_direct_coopmat_impl(
+          graph_,
+          variant,
+          input_.value,
+          weight,
+          bias,
+          stride_ref,
+          padding_ref,
+          dilation_ref,
+          out_,
+          epilogue);
+    } else {
+      conv2d_gemm_impl(
+          graph_,
+          input_.value,
+          weight,
+          bias,
+          stride_ref,
+          padding_ref,
+          dilation_ref,
+          out_,
+          epilogue,
+          utils::kTexture3D,
+          &variant);
+    }
     out_staging_ = graph_.set_output_tensor(out_);
     graph_.prepare();
     graph_.prepack();
@@ -7704,6 +7732,267 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_refuses_int32_overflow) {
         /*transposed=*/false);
     ASSERT_TRUE(reason.has_value());
     EXPECT_NE(reason->find(want), std::string::npos) << *reason;
+  }
+}
+
+// The packed weights of route direct_coopmat: the im2col K order of
+// prepack_conv2d_gemm_weight, zero up to packed_k4 rows (whole K steps of 16
+// and of 32), against a CPU packing.
+TEST(VulkanComputeGraphTest, conv2d_direct_coopmat_weight_packing) {
+  ComputeGraph probe{GraphConfig()};
+  if (!probe.float16_buffers_enabled()) {
+    GTEST_SKIP() << "16-bit storage buffers are not enabled";
+  }
+  for (const int64_t C_in : {3, 24, 64, 120}) {
+    for (const std::pair<int64_t, int64_t> kernel :
+         {std::pair<int64_t, int64_t>{1, 1}, {3, 3}, {1, 7}}) {
+      for (const int64_t k_step : {16, 32}) {
+        const int64_t N = 40, K_h = kernel.first, K_w = kernel.second;
+        SCOPED_TRACE(
+            std::to_string(C_in) + " " + std::to_string(K_h) + "x" +
+            std::to_string(K_w) + " step " + std::to_string(k_step));
+        const int64_t Cin_p = utils::align_up_4(C_in);
+        const int64_t K = K_h * K_w * Cin_p;
+        const int64_t packed_k4 = utils::align_up(K, k_step) / 4;
+        const int64_t N4 = utils::div_up_4(N);
+        const int64_t scratch_rows = 3;
+        std::vector<executorch::aten::Half> w(N * C_in * K_h * K_w);
+        for (size_t i = 0; i < w.size(); ++i) {
+          w[i] = executorch::aten::Half(float(int(i % 2039) - 1019) / 1024.0f);
+        }
+        ComputeGraph graph{GraphConfig()};
+        const ValueRef packed = prepack_conv2d_gemm_weight(
+            graph,
+            graph.add_tensorref({N, C_in, K_h, K_w}, vkapi::kHalf, w.data()),
+            utils::kBuffer,
+            scratch_rows,
+            packed_k4);
+        ASSERT_EQ(
+            graph.sizes_of(packed),
+            (std::vector<int64_t>{packed_k4 + scratch_rows, N4 * 16}));
+        const ValueRef staging = graph.set_output_tensor(packed);
+        graph.prepare();
+        graph.prepack();
+        graph.execute();
+        std::vector<executorch::aten::Half> out(
+            (packed_k4 + scratch_rows) * N4 * 16);
+        graph.maybe_cast_and_copy_from_staging(
+            staging, out.data(), out.size(), vkapi::kHalf);
+        size_t mismatches = 0;
+        for (int64_t k4 = 0; k4 < packed_k4; ++k4) {
+          for (int64_t n4 = 0; n4 < N4; ++n4) {
+            for (int64_t dk = 0; dk < 4; ++dk) {
+              for (int64_t dn = 0; dn < 4; ++dn) {
+                const int64_t n = n4 * 4 + dn, k = k4 * 4 + dk;
+                const int64_t ci = k % Cin_p, tap = k / Cin_p;
+                const float expected = n < N && k < K && ci < C_in
+                    ? float(
+                          w[((n * C_in + ci) * K_h + tap / K_w) * K_w +
+                            tap % K_w])
+                    : 0.0f;
+                mismatches +=
+                    float(out[((k4 * N4 + n4) * 4 + dk) * 4 + dn]) != expected;
+              }
+            }
+          }
+        }
+        EXPECT_EQ(mismatches, 0u);
+      }
+    }
+  }
+}
+
+namespace {
+
+std::vector<const Conv2dPwCoopmatVariant*> runnable_direct_coopmat_variants() {
+  ComputeGraph probe{GraphConfig()};
+  std::vector<const Conv2dPwCoopmatVariant*> out;
+  for (const Conv2dPwCoopmatVariant& v : conv2d_pw_coopmat_variants()) {
+    if (v.has(Conv2dPwCoopmatVariant::kDirect) &&
+        probe.float16_buffers_enabled() &&
+        conv2d_pw_coopmat_device_supports(probe, v)) {
+      out.push_back(&v);
+    }
+  }
+  return out;
+}
+
+// Checks that the direct route ran the variant (and, for split-K, the
+// run-time slice count merge) and no im2col or GEMM shader.
+void expect_direct_coopmat_dispatch(
+    const std::vector<std::string>& kernels,
+    const Conv2dPwCoopmatVariant& v) {
+  EXPECT_EQ(std::count(kernels.begin(), kernels.end(), std::string(v.name)), 1);
+  EXPECT_EQ(
+      dispatched(
+          kernels,
+          std::string("conv2d_pw_coopmat_skn_merge_") +
+              (v.fp32_accumulation ? "f32" : "f16") + "_half"),
+      v.k_slices > 1u);
+  EXPECT_FALSE(dispatched_prefix(kernels, "conv2d_im2col"));
+  EXPECT_FALSE(dispatched_prefix(kernels, "conv2d_gemm"));
+}
+
+} // namespace
+
+// Route direct_coopmat on every runnable _dg variant against the CPU
+// reference (bias in every case, a clamp after it in some): the edsr 3x3
+// 64 -> 64 layer on a 224x224 plane, stride 2, asymmetric padding, dilation 2
+// and (2, 3), dilation above the plane (only some taps live), 2048 input
+// channels with dilation 12, 3, 24 and 120 input channels, one-pixel outputs
+// (1x1 on a 1x1 plane, 3x3 without padding on 3x3) and 1x1 with stride 2.
+TEST(VulkanComputeGraphTest, conv2d_direct_coopmat_shapes) {
+  const auto variants = runnable_direct_coopmat_variants();
+  if (variants.empty()) {
+    GTEST_SKIP() << "no _dg variant runs here";
+  }
+  struct Case {
+    const char* what;
+    int64_t C_in, C_out, H, W, K_h, K_w, stride, pad_h, pad_w;
+    std::array<int64_t, 3> stride_w_dilation;
+    bool clamp;
+  };
+  // clang-format off
+  const Case cases[] = {
+      {"3x3 64-64 224x224", 64, 64, 224, 224, 3, 3, 1, 1, 1, {0, 1, 1}, false},
+      {"3x3 s2 64-48 15x15", 64, 48, 15, 15, 3, 3, 2, 1, 1, {0, 1, 1}, true},
+      {"3x3 p(2,0) 32-40 13x17", 32, 40, 13, 17, 3, 3, 1, 2, 0, {0, 1, 1}, false},
+      {"3x3 d2 256-256 28x28", 256, 256, 28, 28, 3, 3, 1, 2, 2, {0, 2, 2}, false},
+      {"3x3 d(2,3) 64-48 14x14", 64, 48, 14, 14, 3, 3, 1, 2, 3, {0, 2, 3}, true},
+      {"3x3 s2 d2 64-48 15x15", 64, 48, 15, 15, 3, 3, 2, 2, 2, {0, 2, 2}, false},
+      {"3x3 d36 256-64 28x28", 256, 64, 28, 28, 3, 3, 1, 36, 36, {0, 36, 36}, false},
+      {"3x3 d(1,20) 64-40 9x9", 64, 40, 9, 9, 3, 3, 1, 1, 20, {0, 1, 20}, true},
+      {"3x3 d12 2048-40 28x28", 2048, 40, 28, 28, 3, 3, 1, 12, 12, {0, 12, 12}, true},
+      {"3x3 s2 3-32 33x33", 3, 32, 33, 33, 3, 3, 2, 1, 1, {0, 1, 1}, false},
+      {"7x7 s2 3-64 64x64", 3, 64, 64, 64, 7, 7, 2, 3, 3, {0, 1, 1}, false},
+      {"3x3 24-40 20x20", 24, 40, 20, 20, 3, 3, 1, 1, 1, {0, 1, 1}, false},
+      {"3x3 120-40 14x14", 120, 40, 14, 14, 3, 3, 1, 1, 1, {0, 1, 1}, true},
+      {"1x7 120-24 9x9", 120, 24, 9, 9, 1, 7, 1, 0, 3, {0, 1, 1}, false},
+      {"1x1 64-96 1x1", 64, 96, 1, 1, 1, 1, 1, 0, 0, {0, 1, 1}, false},
+      {"3x3 p0 256-64 3x3", 256, 64, 3, 3, 3, 3, 1, 0, 0, {0, 1, 1}, true},
+      {"1x1 s2 64-128 28x28", 64, 128, 28, 28, 1, 1, 2, 0, 0, {0, 1, 1}, false},
+      {"1x1 s2 3-24 15x15", 3, 24, 15, 15, 1, 1, 2, 0, 0, {0, 1, 1}, false},
+  };
+  // clang-format on
+  for (const Conv2dPwCoopmatVariant* v : variants) {
+    SCOPED_TRACE(v->name);
+    int ran = 0;
+    for (const Case& c : cases) {
+      SCOPED_TRACE(c.what);
+      std::optional<Im2colCoopmatConvGraph> g;
+      try {
+        g.emplace(
+            *v,
+            c.C_in,
+            c.C_out,
+            c.H,
+            c.W,
+            c.K_h,
+            c.K_w,
+            c.stride,
+            c.pad_h,
+            c.pad_w,
+            c.stride_w_dilation,
+            c.clamp ? std::make_optional(std::make_pair(-0.25f, 0.25f))
+                    : std::nullopt,
+            /*direct=*/true);
+      } catch (const vkapi::Error& e) {
+        // The one refusal a case may get: too few K steps for the slices.
+        const std::string what = e.what();
+        EXPECT_TRUE(
+            v->k_slices > 1u &&
+            what.find("fewer than two K steps") != std::string::npos)
+            << what;
+        continue;
+      }
+      expect_direct_coopmat_dispatch(g->execute_and_check(), *v);
+      ++ran;
+    }
+    EXPECT_GE(ran, v->k_slices > 1u ? 10 : int(std::size(cases)));
+  }
+}
+
+// A _dg variant keeps running on resizes, a one-pixel plane included (no
+// fallback kernel), with the taps of the build-time sizes.
+TEST(VulkanComputeGraphTest, conv2d_direct_coopmat_resize) {
+  const auto variants = runnable_direct_coopmat_variants();
+  if (variants.empty()) {
+    GTEST_SKIP() << "no _dg variant runs here";
+  }
+  for (const Conv2dPwCoopmatVariant* v : variants) {
+    SCOPED_TRACE(v->name);
+    Im2colCoopmatConvGraph g(
+        *v,
+        256,
+        256,
+        14,
+        14,
+        3,
+        3,
+        1,
+        1,
+        1,
+        {0, 1, 1},
+        std::nullopt,
+        /*direct=*/true);
+    for (const int64_t size : {14, 1, 9, 14}) {
+      SCOPED_TRACE(size);
+      g.resize(size, size);
+      expect_direct_coopmat_dispatch(g.execute_and_check(), *v);
+    }
+  }
+}
+
+// The route refuses variants without _dg, every _dg variant is refused by
+// the pointwise and im2col routes, and a convolution whose taps all read
+// padding is refused.
+TEST(VulkanComputeGraphTest, conv2d_direct_coopmat_refusals) {
+  const auto variants = runnable_direct_coopmat_variants();
+  if (variants.empty()) {
+    GTEST_SKIP() << "no _dg variant runs here";
+  }
+  EXPECT_ANY_THROW(Im2colCoopmatConvGraph(
+      *find_conv2d_pw_coopmat_variant(
+          "conv2d_pw_coopmat_xe2_t128x128_f16_alc_half"),
+      64,
+      64,
+      14,
+      14,
+      3,
+      3,
+      1,
+      1,
+      1,
+      {0, 1, 1},
+      std::nullopt,
+      /*direct=*/true));
+  for (const Conv2dPwCoopmatVariant* v : variants) {
+    SCOPED_TRACE(v->name);
+    EXPECT_ANY_THROW(PointwiseConvGraph(
+        vkapi::kHalf, 64, 64, 14, 14, 1, {Conv2dPwRequest::Kind::kCoopmat, v}));
+    EXPECT_ANY_THROW(Im2colCoopmatConvGraph(*v, 64, 64, 14, 14, 3, 3, 1, 1, 1));
+    // A 2x1 kernel with padding (2, 0) and dilation (4, 1) on a 1x8 plane:
+    // both taps read padding only.
+    ComputeGraph graph{GraphConfig()};
+    const ValueRef in = graph.add_tensor(
+        {1, 16, 1, 8}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+    const ValueRef out = graph.add_tensor(
+        {1, 16, 1, 8}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+    const std::vector<executorch::aten::Half> w(16 * 16 * 2, 0.5f);
+    const auto reason = conv2d_direct_coopmat_ineligible(
+        graph,
+        *v,
+        in,
+        graph.add_tensorref({16, 16, 2, 1}, vkapi::kHalf, w.data()),
+        graph.add_none(),
+        graph.add_scalar_list<int64_t>({1, 1}),
+        graph.add_scalar_list<int64_t>({2, 0}),
+        graph.add_scalar_list<int64_t>({4, 1}),
+        out,
+        /*transposed=*/false);
+    ASSERT_TRUE(reason.has_value());
+    EXPECT_NE(reason->find("no kernel tap reads the input"), std::string::npos)
+        << *reason;
   }
 }
 

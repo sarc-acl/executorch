@@ -258,6 +258,60 @@ Json build_conv2d_im2col_coopmat(
        {"multiply", plan.multiply->name}});
 }
 
+Json build_conv2d_direct_coopmat(
+    ComputeGraph& graph,
+    const std::vector<ValueRef>& args,
+    const Json& options) {
+  check_options(options, {"variant"});
+  if (!options.contains("variant") || !options.at("variant").is_string()) {
+    throw std::invalid_argument("direct_coopmat requires a variant name");
+  }
+  const std::string name = options.at("variant");
+  const Conv2dPwCoopmatVariant* const variant =
+      find_conv2d_pw_coopmat_variant(name);
+  supported(variant != nullptr, "Unknown conv2d_pw_coopmat variant: " + name);
+  const ConvShape shape = conv_shape(graph, args);
+  supported(shape.groups == 1, "direct_coopmat requires groups 1");
+  if (const auto reason = conv2d_direct_coopmat_ineligible(
+          graph,
+          *variant,
+          args[0],
+          args[1],
+          args[2],
+          args[3],
+          args[4],
+          args[5],
+          args.back(),
+          /*transposed=*/false)) {
+    throw UnsupportedRoute(name + " cannot run this case: " + *reason);
+  }
+  const Conv2dDirectCoopmatPlan plan = conv2d_direct_coopmat_plan(
+      graph,
+      *variant,
+      args[0],
+      args[1],
+      args[3],
+      args[4],
+      args[5],
+      args.back());
+  conv2d_direct_coopmat_impl(
+      graph,
+      *variant,
+      args[0],
+      args[1],
+      args[2],
+      args[3],
+      args[4],
+      args[5],
+      args.back(),
+      conv2d_epilogue_from_args(graph, args));
+  return selected(
+      "direct_coopmat",
+      {{"variant", name},
+       {"taps", {plan.kh, plan.kw}},
+       {"packed_k4", plan.packed_k4}});
+}
+
 Json build_conv2d_winograd(
     ComputeGraph& graph,
     const std::vector<ValueRef>& args,
@@ -362,6 +416,8 @@ REGISTER_OPERATOR_ROUTES {
   REGISTER_OPERATOR_ROUTE(
       aten.convolution.default, im2col_coopmat, build_conv2d_im2col_coopmat);
   REGISTER_OPERATOR_ROUTE(
+      aten.convolution.default, direct_coopmat, build_conv2d_direct_coopmat);
+  REGISTER_OPERATOR_ROUTE(
       aten.convolution.default, winograd, build_conv2d_winograd);
   REGISTER_ROUTE_INSPECTOR(aten.convolution.default, inspect_conv2d_route);
   REGISTER_OPERATOR_ROUTE(
@@ -373,6 +429,10 @@ REGISTER_OPERATOR_ROUTES {
       im2col_coopmat,
       build_conv2d_im2col_coopmat);
   REGISTER_OPERATOR_ROUTE(
+      et_vk.conv_with_clamp.default,
+      direct_coopmat,
+      build_conv2d_direct_coopmat);
+  REGISTER_OPERATOR_ROUTE(
       et_vk.conv_with_clamp.default, winograd, build_conv2d_winograd);
   REGISTER_ROUTE_INSPECTOR(et_vk.conv_with_clamp.default, inspect_conv2d_route);
   REGISTER_OPERATOR_ROUTE(
@@ -381,6 +441,8 @@ REGISTER_OPERATOR_ROUTES {
       et_vk.conv2d.with_epilogue, im2col, build_conv2d_im2col);
   REGISTER_OPERATOR_ROUTE(
       et_vk.conv2d.with_epilogue, im2col_coopmat, build_conv2d_im2col_coopmat);
+  REGISTER_OPERATOR_ROUTE(
+      et_vk.conv2d.with_epilogue, direct_coopmat, build_conv2d_direct_coopmat);
   REGISTER_OPERATOR_ROUTE(
       et_vk.conv2d.with_epilogue, winograd, build_conv2d_winograd);
   REGISTER_ROUTE_INSPECTOR(et_vk.conv2d.with_epilogue, inspect_conv2d_route);

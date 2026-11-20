@@ -38,6 +38,7 @@ conv2d_pw_coopmat:
     K_SLICES: 1
     I2C: false
     CHUNKED: false
+    DIRECT: false
   shader_variants:
     # Intel Xe2 (Arc B580, Arc Pro B70): MMA 8x16x16, subgroup 16, K step 16,
     # fragment-contiguous shared memory. Subgroup grids: OUT/DEVICES.md rule
@@ -2324,3 +2325,180 @@ conv2d_pw_coopmat:
       ACC_TYPE: f32
       I2C: true
       CHUNKED: true
+    # Direct-gather forms (_dg, body option DIRECT) of the short-list variants: route direct_coopmat reads
+    # A from the convolution input with stride, padding and dilation in the shader, no im2col scratch
+    # (conv2d-coopmat-direct-gather). Each is its parent plus DIRECT.
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      DIRECT: true
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half
+      MMA_M: 8
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+      DIRECT: true
+    - NAME: conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_half
+      MMA_M: 8
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      DIRECT: true
+    - NAME: conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk2_dg_half
+      MMA_M: 8
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half
+      MMA_M: 8
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 16
+      ACC_TYPE: f16
+      FRAG_LAYOUT: true
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 4
+      DIRECT: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      DIRECT: true
+    - NAME: conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_dg_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_dg_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      DIRECT: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      DIRECT: true
+    - NAME: conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half
+      WG_TILE_M: 16
+      WG_TILE_N: 32
+      WG_TILE_K: 16
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f16
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      DIRECT: true
+    - NAME: conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 16
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      K_SLICES: 2
+      DIRECT: true

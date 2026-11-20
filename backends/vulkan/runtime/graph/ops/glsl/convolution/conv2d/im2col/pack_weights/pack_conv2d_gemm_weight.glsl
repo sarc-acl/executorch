@@ -15,6 +15,9 @@
 
 $if PACKED_STORAGE == "buffer":
   #define OUTPUT_BUFFER
+$if PAD_K:
+  // _padk (route direct_coopmat): rows K4 .. dims1.z - 1 are written as zeros.
+  #define PAD_K
 
 #extension GL_EXT_control_flow_attributes : require
 
@@ -100,9 +103,15 @@ void main() {
   const int K4 = div_up_4(K);
   const int N4 = div_up_4(N);
 
+#ifdef PAD_K
+  if (n4 >= N4 || k4 >= dims1.z) {
+    return;
+  }
+#else
   if (n4 >= N4 || k4 >= K4) {
     return;
   }
+#endif
 
   // Read 4 N-rows at the k4 column block, transpose into a 4OC x 4IC block.
   // Mirrors the is_transposed branch of pack_fp_linear_weight.

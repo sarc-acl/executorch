@@ -235,10 +235,11 @@ UnaryOpType activation_from_string(const std::string& name) {
 // Study control of change conv2d-coopmat-model-switch, not a production
 // policy. With ETVK_CONV2D_COOPMAT=1 (read once, at the first convolution
 // built) a 2D convolution whose device and exact configuration have a row in
-// kConv2dCoopmatTable runs on that row's cooperative-matrix variant when the
-// route's eligibility check accepts it; every other convolution, and every
-// convolution when the variable is unset or any other value, keeps today's
-// routing.
+// kConv2dCoopmatTable runs on that row's cooperative-matrix variant (route
+// direct_coopmat for a _dg variant, pw_coopmat or im2col_coopmat otherwise)
+// when the route's eligibility check accepts it; every other convolution, and
+// every convolution when the variable is unset or any other value, keeps
+// today's routing.
 bool conv2d_coopmat_switch_on() {
   static const bool on = [] {
     const char* value = std::getenv("ETVK_CONV2D_COOPMAT");
@@ -391,7 +392,31 @@ void conv2d_with_epilogue_impl(
                 dilation,
                 groups_val,
                 transposed_val)) {
-      if (method == Conv2dMethod::Pointwise) {
+      if (variant->has(Conv2dPwCoopmatVariant::kDirect)) {
+        if (!conv2d_direct_coopmat_ineligible(
+                graph,
+                *variant,
+                in,
+                weight_data,
+                bias,
+                stride,
+                padding,
+                dilation,
+                out,
+                transposed_val)) {
+          return conv2d_direct_coopmat_impl(
+              graph,
+              *variant,
+              in,
+              weight_data,
+              bias,
+              stride,
+              padding,
+              dilation,
+              out,
+              epilogue);
+        }
+      } else if (method == Conv2dMethod::Pointwise) {
         const bool has_bias_or_epilogue = !graph.val_is_none(bias) ||
             epilogue.has_activation() || epilogue.has_residual() ||
             epilogue.has_scale();

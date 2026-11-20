@@ -22,6 +22,10 @@ Json build_conv2d_im2col_coopmat(
     ComputeGraph& graph,
     const std::vector<ValueRef>& args,
     const Json& options);
+Json build_conv2d_direct_coopmat(
+    ComputeGraph& graph,
+    const std::vector<ValueRef>& args,
+    const Json& options);
 Json build_conv2d_winograd(
     ComputeGraph& graph,
     const std::vector<ValueRef>& args,

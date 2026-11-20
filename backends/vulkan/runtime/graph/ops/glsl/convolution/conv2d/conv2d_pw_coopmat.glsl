@@ -113,6 +113,15 @@ ${layout_declare_spec_const(C, "int", "activation_op", "0")}
 ${layout_declare_spec_const(C, "bool", "has_residual", "false")}
 ${layout_declare_spec_const(C, "bool", "has_scale", "false")}
 ${layout_declare_spec_const(C, "int", "residual_op", "0")}
+$if DIRECT:
+  // Direct gather (_dg): input channels, the live kernel taps (rows x
+  // columns) and the dilation. stride_h, stride_w are the stride and
+  // padding_h, padding_w the padding less the first live tap's offset.
+  ${layout_declare_spec_const(C, "uint", "dg_in_channels", "4")}
+  ${layout_declare_spec_const(C, "uint", "dg_taps_h", "1")}
+  ${layout_declare_spec_const(C, "uint", "dg_taps_w", "1")}
+  ${layout_declare_spec_const(C, "uint", "dg_dilation_h", "1")}
+  ${layout_declare_spec_const(C, "uint", "dg_dilation_w", "1")}
 
 #include "conv2d_epilogue.glslh"
 
@@ -139,6 +148,8 @@ $if I2C:
   #define I2C
   // The first push constant carries the tile's first output row.
   #define I2C_OH_OFFSET stride_h
+$if DIRECT:
+  #define DIRECT
 $if K_SLICES > 1 or CHUNKED:
   #define SPLIT_K
   const uint K_SLICES = ${K_SLICES};

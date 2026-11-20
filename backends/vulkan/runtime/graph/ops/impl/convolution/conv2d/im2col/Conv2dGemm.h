@@ -99,12 +99,15 @@ void conv2d_gemm_impl(
 // x 4IC blocked layout of a [C_out, K_h * K_w * align_up_4(C_in)] matrix in
 // im2col K order (the layout of pack_fp_linear_weight over that matrix), as a
 // texture2d or a buffer; a buffer gets `scratch_rows` more rows of N4 * 16
-// elements after the weights, which the prepack does not write.
+// elements after the weights, which the prepack does not write. A nonzero
+// `packed_k4` (buffer only, at least K / 4) gives the weights packed_k4 rows,
+// the rows past K / 4 zero.
 ValueRef prepack_conv2d_gemm_weight(
     ComputeGraph& graph,
     const ValueRef weight_data,
     const utils::StorageType weight_storage = utils::kTexture2D,
-    const int64_t scratch_rows = 0);
+    const int64_t scratch_rows = 0,
+    const int64_t packed_k4 = 0);
 
 // How route im2col_coopmat runs a convolution on a variant. The live taps are
 // the kernel rows [ki0, ki0 + kh) and columns [kj0, kj0 + kw) that read the
@@ -169,5 +172,65 @@ std::optional<std::string> conv2d_im2col_coopmat_ineligible(
     const ValueRef dilation,
     const ValueRef out,
     const bool transposed);
+
+// How route direct_coopmat runs a convolution on a _dg variant: the live taps
+// (as in Conv2dIm2colCoopmatPlan; kh or kw is 0 when no tap reads the input),
+// the gathered depth K = kh * kw * align_up_4(C_in) and the packed weight rows
+// (K4 rounded up to whole K steps of the variant).
+struct Conv2dDirectCoopmatPlan final {
+  int64_t ki0;
+  int64_t kh;
+  int64_t kj0;
+  int64_t kw;
+  int64_t K;
+  int64_t packed_k4;
+};
+
+Conv2dDirectCoopmatPlan conv2d_direct_coopmat_plan(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant,
+    const ValueRef in,
+    const ValueRef weight_data,
+    const ValueRef stride,
+    const ValueRef padding,
+    const ValueRef dilation,
+    const ValueRef out);
+
+// Why route direct_coopmat cannot run the convolution on the variant, naming
+// the device limit where one is exceeded, or nullopt. `bias` may be none; the
+// epilogue is checked by check_conv2d_epilogue.
+std::optional<std::string> conv2d_direct_coopmat_ineligible(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant,
+    const ValueRef in,
+    const ValueRef weight_data,
+    const ValueRef bias,
+    const ValueRef stride,
+    const ValueRef padding,
+    const ValueRef dilation,
+    const ValueRef out,
+    const bool transposed);
+
+/*
+ * Route direct_coopmat: an FP16 2D convolution as one cooperative-matrix
+ * multiply on a _dg variant that gathers its A operand from the input (stride,
+ * padding and dilation in the shader), with no im2col dispatch or scratch.
+ * The weights of the live taps are packed in im2col K order into a buffer,
+ * zero up to whole K steps; a split-K variant stores its slices after them and
+ * one conv2d_pw_coopmat_skn_merge applies bias and epilogue. Throws when
+ * conv2d_direct_coopmat_ineligible names a reason. Every shape a resize gives
+ * runs on the variant (there is no fallback kernel).
+ */
+void conv2d_direct_coopmat_impl(
+    ComputeGraph& graph,
+    const Conv2dPwCoopmatVariant& variant,
+    const ValueRef in,
+    const ValueRef weight_data,
+    const ValueRef bias,
+    const ValueRef stride,
+    const ValueRef padding,
+    const ValueRef dilation,
+    const ValueRef out,
+    const Conv2dEpilogue& epilogue = {});
 
 } // namespace vkcompute
