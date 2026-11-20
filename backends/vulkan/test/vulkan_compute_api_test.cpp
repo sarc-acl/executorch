@@ -7870,95 +7870,155 @@ class AutoConv2dGraph final {
   ValueRef out_staging_;
 };
 
-AutoConv2dGraph auto_conv2d_of_row(
-    const Conv2dCoopmatTableRow& row,
-    const vkapi::ScalarType dtype) {
-  return AutoConv2dGraph(
-      dtype,
-      row.c_in,
-      row.c_out,
-      row.in_h,
-      row.in_w,
-      row.k_h,
-      row.k_w,
-      {row.stride_h, row.stride_w},
-      {row.padding_h, row.padding_w},
-      {row.dilation_h, row.dilation_w});
-}
+// A fixture of the switch tests and the shaders automatic routing dispatched
+// for it at commit 1370896300 (before the switch) on Arc B580, recorded with
+// etvk_ops_bench route auto; staging copies excluded.
+struct SwitchFixture final {
+  vkapi::ScalarType dtype;
+  int64_t C_in, C_out, H, W, K, stride, pad, dil;
+  std::vector<std::string> legacy_b580;
 
-// The table rows of the running device with the fewest multiply-adds, one
-// with a 1x1 kernel and one with a larger kernel, where the table has them.
-std::vector<const Conv2dCoopmatTableRow*> smallest_table_rows() {
+  AutoConv2dGraph build() const {
+    return AutoConv2dGraph(
+        dtype,
+        C_in,
+        C_out,
+        H,
+        W,
+        K,
+        K,
+        {stride, stride},
+        {pad, pad},
+        {dil, dil});
+  }
+};
+
+const SwitchFixture kOff1x1 =
+    {vkapi::kHalf, 64, 96, 14, 14, 1, 1, 0, 1, {"conv2d_pw_tiled_bufw_half"}};
+const SwitchFixture kOff3x3 = {
+    vkapi::kHalf,
+    64,
+    128,
+    14,
+    14,
+    3,
+    1,
+    1,
+    1,
+    {"conv2d_im2col_texture2d_half", "conv2d_gemm_texture2d_half"}};
+const SwitchFixture kOffDilated =
+    {vkapi::kHalf, 64, 64, 28, 28, 3, 1, 2, 2, {"conv2d_2x2x8_border_half"}};
+// No table row on any device.
+const SwitchFixture kMiss =
+    {vkapi::kHalf, 64, 96, 13, 13, 1, 1, 0, 1, {"conv2d_pw_tiled_bufw_half"}};
+// Configurations with a B580 table row, in FP16 (the row's dtype) and in FP32,
+// which both routes refuse.
+const SwitchFixture kRow1x1 =
+    {vkapi::kHalf, 96, 40, 14, 14, 1, 1, 0, 1, {"conv2d_pw_tiled_bufw_half"}};
+const SwitchFixture kRow1x1Fp32 = {
+    vkapi::kFloat,
+    96,
+    40,
+    14,
+    14,
+    1,
+    1,
+    0,
+    1,
+    {"conv2d_pw_tiled_4x8_bufw_float"}};
+const SwitchFixture kRow3x3 =
+    {vkapi::kHalf, 192, 48, 7, 7, 3, 1, 1, 1, {"conv2d_1x1x4_half"}};
+const SwitchFixture kRow3x3Fp32 =
+    {vkapi::kFloat, 192, 48, 7, 7, 3, 1, 1, 1, {"conv2d_1x1x4_float"}};
+
+VkPhysicalDeviceProperties device_properties() {
   VkPhysicalDeviceProperties props;
   vkGetPhysicalDeviceProperties(
       api::context()->adapter_ptr()->physical_handle(), &props);
-  const auto macs = [](const Conv2dCoopmatTableRow& r) {
-    return r.c_in * r.c_out * r.k_h * r.k_w * r.in_h * r.in_w;
-  };
-  std::array<const Conv2dCoopmatTableRow*, 2> best = {nullptr, nullptr};
+  return props;
+}
+
+bool device_is_b580() {
+  const VkPhysicalDeviceProperties props = device_properties();
+  return props.vendorID == 0x8086 && props.deviceID == 0xe20b;
+}
+
+// The table row of the running device for the fixture's configuration.
+const Conv2dCoopmatTableRow* table_row(const SwitchFixture& f) {
+  const VkPhysicalDeviceProperties props = device_properties();
   for (const Conv2dCoopmatTableRow& r : kConv2dCoopmatTable) {
-    if (r.vendor_id != props.vendorID || r.device_id != props.deviceID) {
-      continue;
-    }
-    const Conv2dCoopmatTableRow*& b = best[r.k_h * r.k_w == 1 ? 0 : 1];
-    if (b == nullptr || macs(r) < macs(*b)) {
-      b = &r;
-    }
-  }
-  std::vector<const Conv2dCoopmatTableRow*> out;
-  for (const auto* r : best) {
-    if (r != nullptr) {
-      out.push_back(r);
+    if (r.vendor_id == props.vendorID && r.device_id == props.deviceID &&
+        r.c_in == f.C_in && r.c_out == f.C_out && r.in_h == f.H &&
+        r.in_w == f.W && r.k_h == f.K && r.k_w == f.K &&
+        r.stride_h == f.stride && r.stride_w == f.stride &&
+        r.padding_h == f.pad && r.padding_w == f.pad && r.dilation_h == f.dil &&
+        r.dilation_w == f.dil) {
+      return &r;
     }
   }
-  return out;
+  return nullptr;
+}
+
+// Builds and runs the fixture (output checked against the CPU reference) and
+// checks it dispatches no cooperative-matrix shader and, on B580, exactly the
+// shaders of automatic routing at 1370896300.
+void expect_legacy_dispatch(const SwitchFixture& f) {
+  SCOPED_TRACE(
+      std::to_string(f.C_in) + "-" + std::to_string(f.C_out) + " k" +
+      std::to_string(f.K) + " " + std::to_string(f.H) + "x" +
+      std::to_string(f.W) + (f.dtype == vkapi::kHalf ? " fp16" : " fp32"));
+  AutoConv2dGraph g = f.build();
+  std::vector<std::string> kernels = g.execute_and_check();
+  kernels.erase(
+      std::remove_if(
+          kernels.begin(),
+          kernels.end(),
+          [](const std::string& k) {
+            return k.rfind("nchw_to_", 0) == 0 || k.rfind("image_to_", 0) == 0;
+          }),
+      kernels.end());
+  EXPECT_FALSE(dispatched_prefix(kernels, "conv2d_pw_coopmat"));
+  if (device_is_b580()) {
+    EXPECT_EQ(kernels, f.legacy_b580);
+  }
 }
 
 } // namespace
 
-// Switch off: automatic routing never builds a cooperative-matrix route, also
-// for configurations that have a table row on this device.
+// Switch off: automatic routing dispatches the shaders it dispatched before the
+// switch existed, also for configurations that have a table row on this
+// device.
 TEST(VulkanComputeGraphTest, conv2d_coopmat_switch_off) {
   if (conv2d_coopmat_switch_set()) {
     GTEST_SKIP() << "ETVK_CONV2D_COOPMAT=1";
   }
-  const auto check = [](AutoConv2dGraph&& g) {
-    EXPECT_FALSE(dispatched_prefix(g.execute_and_check(), "conv2d_pw_coopmat"));
-  };
-  check(AutoConv2dGraph(
-      vkapi::kHalf, 64, 96, 14, 14, 1, 1, {1, 1}, {0, 0}, {1, 1}));
-  check(AutoConv2dGraph(
-      vkapi::kHalf, 64, 128, 14, 14, 3, 3, {1, 1}, {1, 1}, {1, 1}));
-  check(AutoConv2dGraph(
-      vkapi::kHalf, 64, 64, 28, 28, 3, 3, {1, 1}, {2, 2}, {2, 2}));
-  for (const Conv2dCoopmatTableRow* row : smallest_table_rows()) {
-    SCOPED_TRACE(row->variant);
-    check(auto_conv2d_of_row(*row, vkapi::kHalf));
+  for (const SwitchFixture* f :
+       {&kOff1x1, &kOff3x3, &kOffDilated, &kMiss, &kRow1x1, &kRow3x3}) {
+    expect_legacy_dispatch(*f);
   }
 }
 
-// Switch on: a table configuration dispatches the row's variant, a
+// Switch on: a table configuration dispatches the row's variant; a
 // configuration without a row and a row the route refuses (the same
-// configuration in FP32) keep today's shaders; every output matches.
+// configuration in FP32) dispatch the switch-off shaders; every output
+// matches the CPU reference.
 TEST(VulkanComputeGraphTest, conv2d_coopmat_switch_on) {
   if (!conv2d_coopmat_switch_set()) {
     GTEST_SKIP() << "needs ETVK_CONV2D_COOPMAT=1";
   }
-  {
-    AutoConv2dGraph miss(
-        vkapi::kHalf, 64, 96, 13, 13, 1, 1, {1, 1}, {0, 0}, {1, 1});
-    EXPECT_FALSE(
-        dispatched_prefix(miss.execute_and_check(), "conv2d_pw_coopmat"));
-  }
-  const auto rows = smallest_table_rows();
-  if (rows.empty()) {
-    GTEST_SKIP() << "no table row for this device";
-  }
-  for (const Conv2dCoopmatTableRow* row : rows) {
+  expect_legacy_dispatch(kMiss);
+  bool any_row = false;
+  for (const auto& [hit, refused] :
+       {std::pair{&kRow1x1, &kRow1x1Fp32}, std::pair{&kRow3x3, &kRow3x3Fp32}}) {
+    const Conv2dCoopmatTableRow* row = table_row(*hit);
+    if (row == nullptr) {
+      continue;
+    }
+    any_row = true;
     SCOPED_TRACE(row->variant);
     {
-      AutoConv2dGraph hit = auto_conv2d_of_row(*row, vkapi::kHalf);
-      const auto kernels = hit.execute_and_check();
+      AutoConv2dGraph g = hit->build();
+      const auto kernels = g.execute_and_check();
       EXPECT_TRUE(
           dispatched(kernels, row->variant) ||
           dispatched(
@@ -7967,10 +8027,9 @@ TEST(VulkanComputeGraphTest, conv2d_coopmat_switch_on) {
                       .substr(0, std::strlen(row->variant) - 5) +
                   "_ck_half"));
     }
-    {
-      AutoConv2dGraph refused = auto_conv2d_of_row(*row, vkapi::kFloat);
-      EXPECT_FALSE(
-          dispatched_prefix(refused.execute_and_check(), "conv2d_pw_coopmat"));
-    }
+    expect_legacy_dispatch(*refused);
+  }
+  if (!any_row) {
+    GTEST_SKIP() << "the fixtures have no table row on this device";
   }
 }

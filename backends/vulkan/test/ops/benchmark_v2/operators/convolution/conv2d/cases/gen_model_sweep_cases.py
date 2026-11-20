@@ -10,10 +10,11 @@ change conv2d-coopmat-model-switch):
 
     model_sweep_configs.json      the swept configurations: every distinct FP16,
                                   batch-1, ungrouped, non-transposed 2D
-                                  convolution of the survey with at least
-                                  MIN_SHARE_PCT of its model's B580 GPU shader
-                                  time, plus every configuration an earlier
-                                  change measured
+                                  convolution of the survey that has a survey
+                                  row with at least MIN_SHARE_PCT of its
+                                  model's B580 GPU shader time or that an
+                                  earlier change measured, with every survey
+                                  row of that configuration
     model_sweep_performance.json  per configuration route auto and the short
                                   variant list on pw_coopmat (1x1) or
                                   im2col_coopmat (k x k)
@@ -100,6 +101,10 @@ def variant_name(base, route_name):
 
 
 def select(survey, measured):
+    """The distinct eligible survey configurations that have a survey row with
+    at least MIN_SHARE_PCT, or that an earlier change measured (an earlier
+    benchmark shape outside the survey is not a survey configuration and is not
+    swept), each with every eligible survey row of that exact configuration."""
     earlier = {tuple(m["key"]) for m in measured}
     configs = {}
     for r in csv.DictReader(open(survey)):
@@ -122,24 +127,24 @@ def select(survey, measured):
             "padding": pair(r["padding"]),
             "dilation": pair(r["dilation"]),
         }
-        share = float(r["b580_share_pct"] or 0)
-        reason = (
-            "share"
-            if share >= MIN_SHARE_PCT
-            else "earlier" if tuple(key(c)) in earlier else None
-        )
-        if reason is None:
-            continue
         entry = configs.setdefault(label(c), {"label": label(c), **c, "layers": []})
         entry["layers"].append(
             {
                 "config_id": r["config_id"],
                 "instances": int(r["instances"]),
-                "b580_share_pct": share,
-                "selected_by": reason,
+                "b580_share_pct": float(r["b580_share_pct"] or 0),
             }
         )
-    return sorted(configs.values(), key=lambda c: c["label"])
+    selected = []
+    for c in configs.values():
+        if any(x["b580_share_pct"] >= MIN_SHARE_PCT for x in c["layers"]):
+            c["selected_by"] = "share"
+        elif tuple(key(c)) in earlier:
+            c["selected_by"] = "earlier"
+        else:
+            continue
+        selected.append(c)
+    return sorted(selected, key=lambda c: c["label"])
 
 
 def performance(configs):
