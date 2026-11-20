@@ -286,6 +286,24 @@ Two workload facts shape the rest of the campaign:
   same output plane (M=50176, N=256, K=576). Neither is among the eight desktop k-k gate shapes;
   the 9.2 gate and timing shape sets are augmented with the M51-heavy shapes (9.2 section).
 
+**Across precisions** (same ten models, same twelve-execution protocol; INT8 is nine models -
+w2l has no quantized export recipe; mean of per-model shares):
+
+| | FP16 | FP32 | INT8 |
+|---|---:|---:|---:|
+| convolution | 88.6% | 89.0% | 78.8% |
+| top convolution shader | `gemm_texture2d` 32.5% | `gemm_texture2d` 31.1% | `q8ta_conv2d_pw` 65.2% |
+| second | `pw_tiled_bufw` 16.3% | `pw_tiled_4x8_bufw` 25.8% | `q8ta_im2col` 8.1% |
+| third | `2x2x8_border` 12.0% | `2x2x8_border` 11.2% | `q8ta_dequantize` 5.0% |
+
+The convolution share is stable across precisions (FP16 88.6%, FP32 89.0%), so the campaign's
+opportunity is not an FP16-routing artifact. The FP32 mix shifts toward the baseline pointwise
+shader: `pw_tiled_4x8_bufw` holds 25.8% of FP32 shader time (5.4% in FP16) because the
+buffer-write pointwise variant is FP16-only - in FP32 deployments the pointwise convolutions
+run the THRESHOLDS baseline, which the 4.0 parent replaces. INT8 1x1 convolution
+(`q8ta_conv2d_pw`, 65.2%) is out of scope by the SPEC stage table; the share is recorded to
+quantify what a future INT8 stage would address.
+
 ## 9.2 The im2col GEMM stage (k x k gate and timed session)
 
 Gate collections: the desktop layer table's eight shapes plus the six M51-heavy shapes of 7.2
