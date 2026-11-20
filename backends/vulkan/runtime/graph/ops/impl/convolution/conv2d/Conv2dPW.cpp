@@ -135,8 +135,6 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
   constexpr uint32_t kChunked = V::kChunked;
   constexpr uint32_t kDirect = V::kDirect;
   constexpr uint32_t kSimt = V::kSimt;
-  constexpr uint32_t kDgSkip = V::kDgSkip;
-  constexpr uint32_t kDgInterior = V::kDgInterior;
   // clang-format off
   static const std::vector<Conv2dPwCoopmatVariant> variants = {
       // Intel Xe2
@@ -377,35 +375,6 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kDirect, 2u},
       {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kDirect},
       {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kDirect, 2u},
-      // Gather-cost study variants (conv2d-coopmat-evidence-hardening design D6): each _dg variant plus one option.
-      {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_skip_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN | kDirect | kDgSkip},
-      {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_skip_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN | kDirect | kDgSkip, 2u},
-      {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_skip_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN | kDirect | kDgSkip, 4u},
-      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_skip_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN | kDirect | kDgSkip},
-      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk2_dg_skip_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN | kDirect | kDgSkip, 2u},
-      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_skip_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN | kDirect | kDgSkip, 4u},
-      {"conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_skip_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kAlignedClampN | kDirect | kDgSkip},
-      {"conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_dg_skip_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kAlignedClampN | kDirect | kDgSkip, 2u},
-      {"conv2d_pw_coopmat_amd_t128x128_f32_alc_dg_skip_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kDirect | kDgSkip},
-      {"conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_skip_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kDirect | kDgSkip, 2u},
-      {"conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_skip_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kDirect | kDgSkip},
-      {"conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_skip_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kDirect | kDgSkip, 2u},
-      {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_skip_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kDirect | kDgSkip},
-      {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_skip_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kDirect | kDgSkip, 2u},
-      {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_int_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN | kDirect | kDgInterior},
-      {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_int_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN | kDirect | kDgInterior, 2u},
-      {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_int_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN | kDirect | kDgInterior, 4u},
-      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_dg_int_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN | kDirect | kDgInterior},
-      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk2_dg_int_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN | kDirect | kDgInterior, 2u},
-      {"conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_int_half", 8, 16, 16, 32, 64, 16, 4, 2, 16, false, true, kThreadGrid | kAlignedClampN | kDirect | kDgInterior, 4u},
-      {"conv2d_pw_coopmat_amd_t16x32_f16_alc_dg_int_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kAlignedClampN | kDirect | kDgInterior},
-      {"conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_dg_int_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kAlignedClampN | kDirect | kDgInterior, 2u},
-      {"conv2d_pw_coopmat_amd_t128x128_f32_alc_dg_int_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kDirect | kDgInterior},
-      {"conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_int_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kDirect | kDgInterior, 2u},
-      {"conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_int_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kDirect | kDgInterior},
-      {"conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_int_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kDirect | kDgInterior, 2u},
-      {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_int_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kDirect | kDgInterior},
-      {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_int_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kDirect | kDgInterior, 2u},
       // Matrix-instruction controls (_simt) of the unsplit short-list variants and their _dg forms
       // (conv2d-coopmat-evidence-hardening design D5): benchmark-only.
       {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_simt_half", 8, 16, 16, 128, 128, 16, 4, 4, 16, false, true, kAlignedClampN | kSimt},
@@ -450,8 +419,6 @@ constexpr uint32_t kSuffixOrder[] = {
     kSlices,
     Conv2dPwCoopmatVariant::kIm2col,
     Conv2dPwCoopmatVariant::kDirect,
-    Conv2dPwCoopmatVariant::kDgSkip,
-    Conv2dPwCoopmatVariant::kDgInterior,
     Conv2dPwCoopmatVariant::kChunked,
     Conv2dPwCoopmatVariant::kDiagOnce,
     Conv2dPwCoopmatVariant::kSimt,
@@ -490,10 +457,6 @@ std::string suffix_item(const Conv2dPwCoopmatVariant& v, const uint32_t item) {
       return "_diag_once";
     case Conv2dPwCoopmatVariant::kSimt:
       return "_simt";
-    case Conv2dPwCoopmatVariant::kDgSkip:
-      return "_skip";
-    case Conv2dPwCoopmatVariant::kDgInterior:
-      return "_int";
     default:
       return "_unknown" + std::to_string(item);
   }
@@ -561,12 +524,6 @@ std::vector<std::string> conv2d_pw_coopmat_registry_problems(
         (v.has(Conv2dPwCoopmatVariant::kIm2col) ||
          v.has(Conv2dPwCoopmatVariant::kChunked))) {
       problems.push_back(name + ": _dg excludes _i2c and _ck");
-    }
-    if ((v.has(Conv2dPwCoopmatVariant::kDgSkip) ||
-         v.has(Conv2dPwCoopmatVariant::kDgInterior)) &&
-        (!v.has(Conv2dPwCoopmatVariant::kDirect) ||
-         v.has(Conv2dPwCoopmatVariant::kSimt))) {
-      problems.push_back(name + ": _skip and _int need _dg and exclude _simt");
     }
     if (v.has(Conv2dPwCoopmatVariant::kSimt)) {
       // The body's control maps each invocation to a micro-tile of 8 output

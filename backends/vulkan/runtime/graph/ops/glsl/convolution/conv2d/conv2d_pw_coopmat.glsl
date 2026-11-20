@@ -152,10 +152,6 @@ $if DIRECT:
   #define DIRECT
 $if SIMT:
   #define SIMT
-$if DG_SKIP:
-  #define DG_SKIP
-$if DG_INTERIOR:
-  #define DG_INTERIOR
 $if K_SLICES > 1 or CHUNKED:
   #define SPLIT_K
   const uint K_SLICES = ${K_SLICES};

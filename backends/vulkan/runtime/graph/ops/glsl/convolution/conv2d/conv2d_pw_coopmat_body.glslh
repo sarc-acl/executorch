@@ -52,13 +52,6 @@
  * multiply-adds per work group and K step, as the matrix multiplies), in
  * ACC_T.
  *
- * DG_SKIP, DG_INTERIOR (with DIRECT; gather-cost study of
- * conv2d-coopmat-evidence-hardening design D6): DG_SKIP issues no texture
- * read for a tap outside the input (a branch around the fetch instead of a
- * fetch at a clamped position and a select). DG_INTERIOR: a work group whose
- * pixels read every tap inside the input (a test uniform per work group)
- * fetches without the position tests.
- *
  * DIRECT: the input is the convolution input and A is gathered from it per K
  * step. K index k of output pixel (oy, ox) is input channel 4 c4 + k % 4 at
  * live tap t = (k / 4) / C4 (row-major over the dg_taps_h x dg_taps_w live
@@ -275,17 +268,7 @@ void make_staging_map(
 #error "CLAMP_N requires ALIGNED without W16"
 #endif
 
-#if (defined(DG_SKIP) || defined(DG_INTERIOR)) && !defined(DIRECT)
-#error "DG_SKIP and DG_INTERIOR require DIRECT"
-#endif
-
 #ifdef DIRECT
-#ifdef DG_INTERIOR
-// Every tap of every pixel of the work group's tile is inside the input
-// (main); uniform per work group.
-bool g_interior;
-#endif
-
 // Texel k4 of the gathered row whose first live tap reads `origin`: zero
 // outside the input, past the last tap and in channels past dg_in_channels,
 // by selects on a fetch at a clamped position.
@@ -295,35 +278,13 @@ f16vec4 fetch_in(const ivec2 origin, const uint k4, const uint K4) {
   const uint ty = tap / dg_taps_w;
   const ivec2 pos = origin +
       ivec2((tap - ty * dg_taps_w) * dg_dilation_w, ty * dg_dilation_h);
-#ifdef DG_INTERIOR
-  if (g_interior) {
-    // Only the taps past the last (the K steps' tail) are zero.
-    const bool live = tap < DG_TAPS;
-    const f16vec4 v =
-        f16vec4(LOAD_IN(ivec3(live ? pos : origin, live ? int(c4) : 0)));
-    const bvec4 lanes = lessThan(
-        uvec4(4u * c4) + uvec4(0u, 1u, 2u, 3u), uvec4(dg_in_channels));
-    return live ? mix(f16vec4(0), v, lanes) : f16vec4(0);
-  }
-#endif
   const bool inside = tap < DG_TAPS && uint(pos.x) < uint(in_sizes.x) &&
       uint(pos.y) < uint(in_sizes.y);
-#ifdef DG_SKIP
-  f16vec4 v = f16vec4(0);
-  if (inside) {
-    v = f16vec4(LOAD_IN(ivec3(pos, int(c4))));
-  }
-#else
   const f16vec4 v = f16vec4(
       LOAD_IN(ivec3(inside ? pos : ivec2(0), inside ? int(c4) : 0)));
-#endif
   const bvec4 lanes =
       lessThan(uvec4(4u * c4) + uvec4(0u, 1u, 2u, 3u), uvec4(dg_in_channels));
-#ifdef DG_SKIP
-  return mix(f16vec4(0), v, lanes);
-#else
   return inside ? mix(f16vec4(0), v, lanes) : f16vec4(0);
-#endif
 }
 #endif
 
@@ -813,24 +774,6 @@ void main() {
 #endif
   const uint n4_start = tile_n_start / 4u;
   const uint num_k_steps = (4u * K4 + WG_TILE_K - 1u) / WG_TILE_K;
-#ifdef DG_INTERIOR
-  {
-    // The pixels the tile reads (rows past M read pixel M - 1 or nothing):
-    // one row segment, or whole rows when it spans several rows.
-    const uint m_hi = min(tile_m_start + WG_TILE_M, M) - 1u;
-    const uint oy0 = tile_m_start / W_out;
-    const uint oy1 = m_hi / W_out;
-    const uint ox0 = oy0 == oy1 ? tile_m_start % W_out : 0u;
-    const uint ox1 = oy0 == oy1 ? m_hi % W_out : W_out - 1u;
-    const ivec2 s = ivec2(stride_w, stride_h);
-    const ivec2 p = ivec2(padding_w, padding_h);
-    const ivec2 lo = ivec2(ox0, oy0) * s - p;
-    const ivec2 hi = ivec2(ox1, oy1) * s - p +
-        ivec2((dg_taps_w - 1u) * dg_dilation_w, (dg_taps_h - 1u) * dg_dilation_h);
-    g_interior = all(greaterThanEqual(lo, ivec2(0))) &&
-        all(lessThan(hi, in_sizes.xy));
-  }
-#endif
 
 #ifdef SIMT
   [[unroll]] for (uint r = 0; r < SIMT_TM; ++r) {

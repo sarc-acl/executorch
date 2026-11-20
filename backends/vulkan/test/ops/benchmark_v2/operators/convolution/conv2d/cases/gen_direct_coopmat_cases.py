@@ -59,13 +59,7 @@ NEW = [
 
 
 def dg_variants():
-    # With the gather-cost study variants (_dg_skip, _dg_int) of
-    # conv2d-coopmat-evidence-hardening; not the _simt controls.
-    return [
-        n
-        for n in i2c.yaml_names()
-        if n.endswith(("_dg_half", "_dg_skip_half", "_dg_int_half"))
-    ]
+    return [n for n in i2c.yaml_names() if n.endswith("_dg_half")]
 
 
 UNKNOWN = [
@@ -100,7 +94,7 @@ def expected_skip(variant, c):
     if K == 0:
         return SKIP_PHRASE["dead"]
     tokens = variant.removeprefix("conv2d_pw_coopmat_").removesuffix("_half").split("_")
-    slices = next((int(t[2:]) for t in tokens if t[:2] == "sk" and t[2:].isdigit()), 1)
+    slices = next((int(t[2:]) for t in tokens if t.startswith("sk")), 1)
     if slices > 1 and not i2c.split_k_ok(K, i2c.K_STEP[tokens[0]], slices):
         return SKIP_PHRASE["sk"]
     return None

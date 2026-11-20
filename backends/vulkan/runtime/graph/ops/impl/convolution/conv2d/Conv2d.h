@@ -154,11 +154,6 @@ struct Conv2dPwCoopmatVariant final {
     // parent's staging, tile, K step and drain with ordinary multiply-adds in
     // place of the cooperative-matrix multiply.
     kSimt = 1u << 11,
-    // "_skip", "_int" (with _dg; gather-cost study): no texture read for a tap
-    // outside the input; a fetch without position tests in work groups whose
-    // every tap is inside the input.
-    kDgSkip = 1u << 12,
-    kDgInterior = 1u << 13,
   };
 
   const char* name;
@@ -198,8 +193,8 @@ struct Conv2dPwCoopmatVariant final {
 };
 
 // "_g<X>x<Y>", "_al", "_alc", "_w16", "_img", "_epi0", "_bcm", "_sk<n>",
-// "_i2c", "_dg", "_skip", "_int", "_ck", "_diag_once", "_simt" for the
-// variant's options and K slices, in this order.
+// "_i2c", "_dg", "_ck", "_diag_once", "_simt" for the variant's options and K
+// slices, in this order.
 std::string conv2d_pw_coopmat_option_suffix(
     const Conv2dPwCoopmatVariant& variant);
 
