@@ -6406,8 +6406,8 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_refuses_operands_and_layouts) {
         : c == Case::kBiasSize
         ? graph.add_tensorref({16}, vkapi::kHalf, b.data())
         : graph.add_tensorref({32}, vkapi::kHalf, b.data());
-    const std::string want = c == Case::kTransposedInput ||
-            c == Case::kTransposedOutput
+    const std::string want =
+        c == Case::kTransposedInput || c == Case::kTransposedOutput
         ? "nonstandard axis map"
         : c == Case::kFp32Weights ? "the weights are not FP16"
         : c == Case::kTensorWeights
@@ -6517,8 +6517,7 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_diagnostic_needs_flag) {
         false,
         false);
     ASSERT_TRUE(refused.has_value());
-    EXPECT_NE(refused->find("allow_diagnostic"), std::string::npos)
-        << *refused;
+    EXPECT_NE(refused->find("allow_diagnostic"), std::string::npos) << *refused;
     const auto allowed = conv2d_pw_coopmat_ineligible(
         graph,
         v,
@@ -6542,7 +6541,13 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_diagnostic_needs_flag) {
       EXPECT_NE(r->find("diagnostic"), std::string::npos) << *r;
     }
     EXPECT_ANY_THROW(PointwiseConvGraph(
-        vkapi::kHalf, 64, 96, 14, 14, 1, {Conv2dPwRequest::Kind::kCoopmat, &v}));
+        vkapi::kHalf,
+        64,
+        96,
+        14,
+        14,
+        1,
+        {Conv2dPwRequest::Kind::kCoopmat, &v}));
     PointwiseConvGraph g(
         vkapi::kHalf,
         64,
@@ -6586,7 +6591,10 @@ TEST(VulkanComputeGraphTest, conv2d_coopmat_switch_refuses_controls) {
   const ValueRef in = graph.add_tensor(
       {1, 64, 14, 14}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
   const ValueRef out = graph.add_tensor(
-      {1, 128, 14, 14}, vkapi::kHalf, utils::kTexture3D, utils::kChannelsPacked);
+      {1, 128, 14, 14},
+      vkapi::kHalf,
+      utils::kTexture3D,
+      utils::kChannelsPacked);
   const ValueRef weight1 =
       graph.add_tensorref({128, 64, 1, 1}, vkapi::kHalf, w1.data());
   const ValueRef weight3 =
@@ -6628,32 +6636,31 @@ TEST(VulkanComputeGraphTest, conv2d_coopmat_switch_refuses_controls) {
     // runs its parent.
     if (graph.float16_buffers_enabled() &&
         conv2d_pw_coopmat_device_supports(graph, v)) {
-      const auto allowed = direct
-          ? conv2d_direct_coopmat_ineligible(
-                graph,
-                v,
-                in,
-                weight3,
-                bias,
-                ones,
-                ones,
-                ones,
-                out,
-                false,
-                /*allow_diagnostic=*/true)
-          : conv2d_pw_coopmat_ineligible(
-                graph,
-                v,
-                in,
-                weight1,
-                bias,
-                utils::kBuffer,
-                ones,
-                zeros,
-                out,
-                false,
-                true,
-                /*allow_diagnostic=*/true);
+      const auto allowed = direct ? conv2d_direct_coopmat_ineligible(
+                                        graph,
+                                        v,
+                                        in,
+                                        weight3,
+                                        bias,
+                                        ones,
+                                        ones,
+                                        ones,
+                                        out,
+                                        false,
+                                        /*allow_diagnostic=*/true)
+                                  : conv2d_pw_coopmat_ineligible(
+                                        graph,
+                                        v,
+                                        in,
+                                        weight1,
+                                        bias,
+                                        utils::kBuffer,
+                                        ones,
+                                        zeros,
+                                        out,
+                                        false,
+                                        true,
+                                        /*allow_diagnostic=*/true);
       EXPECT_FALSE(allowed.has_value()) << allowed.value_or("");
     }
   }

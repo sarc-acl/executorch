@@ -76,9 +76,7 @@ def build():
             "options": {"variant": "v_VARIANT", "allow_diagnostic": True},
         }
         coopmat["sweep_variables"] = {
-            "v_VARIANT": [
-                full(a) for p in PARENTS[route] for a in (p, p + "_simt")
-            ]
+            "v_VARIANT": [full(a) for p in PARENTS[route] for a in (p, p + "_simt")]
         }
         cases.append(coopmat)
     return cases

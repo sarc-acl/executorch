@@ -23,7 +23,11 @@ SHAPE = "sweep 1x1 s1x1 p0x0 d1x1 1008-192 14x14"
 
 
 def arm(*runs):
-    return {"t": sorted(runs)[len(runs) // 2], "runs": list(runs), "passed_runs": len(runs)}
+    return {
+        "t": sorted(runs)[len(runs) // 2],
+        "runs": list(runs),
+        "passed_runs": len(runs),
+    }
 
 
 def skipped(reason):
@@ -155,13 +159,18 @@ class Confirmation(unittest.TestCase):
                 "xe2_t32x64_f16_diag_once": arm(5, 5, 5),
                 "xe2_t32x64_f16_alc": arm(40, 40, 40),
             },
-            ["xe2_t32x64_f16_alc_simt", "xe2_t32x64_f16_diag_once", "xe2_t32x64_f16_alc"],
+            [
+                "xe2_t32x64_f16_alc_simt",
+                "xe2_t32x64_f16_diag_once",
+                "xe2_t32x64_f16_alc",
+            ],
         )
         info, code, _ = gen.confirm(SHAPE, s)
         self.assertIsNone(code)
         self.assertEqual(info["best"], "xe2_t32x64_f16_alc")
         self.assertEqual(
-            info["not_routable"], ["xe2_t32x64_f16_alc_simt", "xe2_t32x64_f16_diag_once"]
+            info["not_routable"],
+            ["xe2_t32x64_f16_alc_simt", "xe2_t32x64_f16_diag_once"],
         )
 
     def test_unstable_arm(self):
@@ -188,7 +197,13 @@ class Refusal(unittest.TestCase):
             )
             before = gen.TABLE.read_text()
             r = subprocess.run(
-                [sys.executable, "-B", str(HERE / gen.__name__) + ".py", "table", str(d)],
+                [
+                    sys.executable,
+                    "-B",
+                    str(HERE / gen.__name__) + ".py",
+                    "table",
+                    str(d),
+                ],
                 capture_output=True,
                 text=True,
             )
