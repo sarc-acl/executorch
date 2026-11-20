@@ -50,7 +50,7 @@ const uint MMAS_PER_SG_N = SG_TILE_N / MMA_N;
 // Shared memory is addressed in uvec4 units of 8 fp16.
 const uint FP16_PER_VEC4 = 8;
 
-#if defined(FRAG_LAYOUT) && (defined(BCM) || defined(BCM2))
+#if defined(FRAG_LAYOUT) && (defined(BCM) || defined(BCM2) || defined(BCM3))
 #error "BCM requires the padded row-major layout"
 #endif
 
@@ -199,7 +199,7 @@ void make_staging_map(
   }
   [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
     const uint item = min(p * WG_SIZE + tid, B_ITEMS - 1u);
-#if defined(BCM2)
+#if defined(BCM2) || defined(BCM3)
     map.b_col[p] = 4u * (item % B_COLS);
     map.b_k[p] = (item / B_COLS) * FP16_PER_VEC4;
 #elif defined(BCM)
@@ -321,7 +321,7 @@ void load_b(
   }
 #else
   [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
-#if defined(BCM2)
+#if defined(BCM2) || defined(BCM3)
     // The 8 consecutive input channels k .. k + 7 of output channels
     // 4 n4 .. 4 n4 + 3: eight packed-block fetches, one column of the
     // transpose per output channel.
