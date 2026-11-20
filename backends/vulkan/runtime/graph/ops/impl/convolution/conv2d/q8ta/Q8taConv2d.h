@@ -32,6 +32,12 @@ struct Q8taConv2dRouteParams final {
 
 bool should_use_q8ta_conv2d_im2col(const Q8taConv2dRouteParams& params);
 
+// Whether q8ta_conv2d takes the im2col route for these arguments (the
+// operator's 16 arguments).
+bool q8ta_conv2d_uses_im2col(
+    ComputeGraph& graph,
+    const std::vector<ValueRef>& args);
+
 void q8ta_conv2d(ComputeGraph& graph, const std::vector<ValueRef>& args);
 
 } // namespace vkcompute

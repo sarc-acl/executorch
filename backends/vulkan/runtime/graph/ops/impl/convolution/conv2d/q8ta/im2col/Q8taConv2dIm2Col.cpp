@@ -343,6 +343,20 @@ void add_q8ta_im2col_node(
 // High level operator impl
 //
 
+bool q8ta_conv2d_im2col_feasible(
+    ComputeGraph& graph,
+    const std::vector<ValueRef>& args) {
+  const std::vector<int64_t> sizes = calculate_q8ta_im2col_sizes(
+      &graph, args.at(0), args.at(15), args.at(9), args.at(13));
+  return make_q8ta_conv2d_stream_plan_for_device(
+             sizes.at(0),
+             sizes.at(1),
+             sizes.at(2),
+             sizes.at(3),
+             graph.max_buffer_numel())
+      .feasible;
+}
+
 void q8ta_conv2d_im2col_impl(
     ComputeGraph& graph,
     const bool use_unsigned_dot,

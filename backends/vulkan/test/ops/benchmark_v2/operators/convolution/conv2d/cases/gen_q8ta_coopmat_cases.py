@@ -143,8 +143,23 @@ def definitions(name, c, all_variants, timing, **kw):
     pw = is_pointwise(c)
     op = "et_vk.q8ta_conv2d_pw.default" if pw else "et_vk.q8ta_conv2d.default"
     args = [conv_args(c, **kw)]
-    common = {"operator": op, **timing, "validation_method": EXACT}
-    vs = [v for v in all_variants if ("_dg" in v) != pw]
+    # Where stock runs the direct q8ta_conv2d shader (channels not a multiple
+    # of 4, or below 32 channels on more than 4096 output pixels: the
+    # single-batch rule of should_use_q8ta_conv2d_im2col), its requantization
+    # can miss the CPU reference by one step; the arms repeat it, and their
+    # outputs are compared with stock's by digest (tools of the change).
+    stock_direct = not pw and (
+        c["cin"] % 4 != 0 or (c["cin"] < 32 and c["hout"] * c["wout"] > 4096)
+    )
+    method = {**EXACT, "atol": 1} if stock_direct else EXACT
+    common = {"operator": op, **timing, "validation_method": method}
+    if pw:
+        vs = [v for v in all_variants if "_dg" not in v]
+    else:
+        # _dgb gathers each K byte alone: only where the channels are not a
+        # multiple of 4 (the stock first layers).
+        tag = "_dg_" if c["cin"] % 4 == 0 else "_dgb"
+        vs = [v for v in all_variants if tag in v + "_"]
     return [
         {
             "name": f"{name} baseline",
@@ -184,6 +199,9 @@ def edge_configs():
         (1, 1, 2, 0, 1, 64, 128, 14, 14),
         (5, 5, 1, 2, 1, 48, 16, 11, 7),
         (3, 3, 1, 12, 12, 256, 64, 28, 28),
+        (7, 7, 2, 3, 1, 3, 64, 30, 30),
+        (3, 3, 2, 1, 1, 3, 32, 23, 21),
+        (3, 3, 1, 1, 1, 6, 20, 13, 11),
     ):
         ph, pw = (
             (0, 3) if (kh, kw) == (1, 7) else (3, 0) if (kh, kw) == (7, 1) else (p, p)

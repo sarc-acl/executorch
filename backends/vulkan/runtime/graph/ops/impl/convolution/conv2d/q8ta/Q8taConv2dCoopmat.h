@@ -18,7 +18,8 @@ namespace vkcompute {
 
 // A q8ta_conv2d_pw_coopmat shader variant (q8ta_conv2d_pw_coopmat.yaml).
 // direct: the convolution input is gathered per K step (any kernel, stride,
-// padding and dilation, groups 1, input channels a multiple of 4); otherwise
+// padding and dilation, groups 1, input channels a multiple of 4, or any
+// count with bytes, which gathers each K byte alone); otherwise
 // the input is read as the A matrix of an ungrouped 1x1, stride 1, padding 0
 // convolution.
 struct Q8taConv2dCoopmatVariant final {
@@ -34,6 +35,7 @@ struct Q8taConv2dCoopmatVariant final {
   uint32_t subgroup_size;
   uint32_t k_slices;
   bool direct;
+  bool bytes;
 
   uint32_t wg_size() const {
     return sg_grid_x * sg_grid_y * subgroup_size;
@@ -54,10 +56,14 @@ std::optional<std::string> q8ta_conv2d_coopmat_ineligible(
     const std::vector<ValueRef>& args);
 
 // Adds the prepacks and dispatches of the variant; the call must be eligible.
+// direct_requant: requantize as the direct q8ta_conv2d shader does (the
+// route stock takes for the call) instead of as q8ta_conv2d_pw does, so the
+// output equals stock bit for bit either way.
 void q8ta_conv2d_coopmat_impl(
     ComputeGraph& graph,
     const Q8taConv2dCoopmatVariant& variant,
-    const std::vector<ValueRef>& args);
+    const std::vector<ValueRef>& args,
+    const bool direct_requant);
 
 // With ETVK_CONV2D_COOPMAT=1: the variant of the table row (precision int8)
 // of this device and configuration, if any and eligible.

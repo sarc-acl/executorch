@@ -5,6 +5,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <executorch/backends/vulkan/runtime/graph/ops/OperatorRegistry.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2d.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dCommon.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dCoopmat.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dDirect.h>
@@ -207,7 +208,8 @@ Json build_coopmat(
     ComputeGraph& graph,
     const std::vector<ValueRef>& args,
     const Json& options,
-    const bool direct) {
+    const bool direct,
+    const bool pw_operator) {
   check_options(options, {"variant"});
   if (!options.contains("variant") || !options.at("variant").is_string()) {
     throw std::invalid_argument("the coopmat routes require a variant name");
@@ -226,21 +228,32 @@ Json build_coopmat(
           q8ta_conv2d_coopmat_ineligible(graph, *variant, args)) {
     throw UnsupportedRoute(name + " cannot run this case: " + *reason);
   }
-  q8ta_conv2d_coopmat_impl(graph, *variant, args);
+  // The requantization of the route stock takes for this operator call.
+  const bool direct_requant = !pw_operator &&
+      (!q8ta_conv2d_uses_im2col(graph, args) ||
+       !q8ta_conv2d_im2col_feasible(graph, args));
+  q8ta_conv2d_coopmat_impl(graph, *variant, args, direct_requant);
   return selected(
-      direct ? "im2col_coopmat" : "pw_coopmat", {{"variant", name}});
+      direct ? "im2col_coopmat" : "pw_coopmat",
+      {{"variant", name}, {"direct_requant", direct_requant}});
 }
 Json build_pw_coopmat(
     ComputeGraph& graph,
     const std::vector<ValueRef>& args,
     const Json& options) {
-  return build_coopmat(graph, args, options, false);
+  return build_coopmat(graph, args, options, false, true);
+}
+Json build_pw_coopmat_conv(
+    ComputeGraph& graph,
+    const std::vector<ValueRef>& args,
+    const Json& options) {
+  return build_coopmat(graph, args, options, false, false);
 }
 Json build_im2col_coopmat(
     ComputeGraph& graph,
     const std::vector<ValueRef>& args,
     const Json& options) {
-  return build_coopmat(graph, args, options, true);
+  return build_coopmat(graph, args, options, true, false);
 }
 
 Json build_legacy_4w4c(
@@ -336,7 +349,7 @@ REGISTER_OPERATOR_ROUTES {
   REGISTER_OPERATOR_ROUTE(
       et_vk.q8ta_conv2d_pw.default, pw_coopmat, build_pw_coopmat);
   REGISTER_OPERATOR_ROUTE(
-      et_vk.q8ta_conv2d.default, pw_coopmat, build_pw_coopmat);
+      et_vk.q8ta_conv2d.default, pw_coopmat, build_pw_coopmat_conv);
   REGISTER_OPERATOR_ROUTE(
       et_vk.q8ta_conv2d.default, im2col_coopmat, build_im2col_coopmat);
   REGISTER_ROUTE_INSPECTOR(

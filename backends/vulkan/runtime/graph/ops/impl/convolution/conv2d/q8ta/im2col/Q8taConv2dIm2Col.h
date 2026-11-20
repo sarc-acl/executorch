@@ -40,6 +40,12 @@ Q8taConv2dStreamPlan make_q8ta_conv2d_stream_plan_for_device(
     int64_t out_width,
     uint64_t max_buffer_bytes);
 
+// Whether q8ta_conv2d_im2col_impl finds a scratch plan for the q8ta_conv2d
+// arguments (it runs the direct shader otherwise).
+bool q8ta_conv2d_im2col_feasible(
+    ComputeGraph& graph,
+    const std::vector<ValueRef>& args);
+
 std::vector<int64_t> calculate_q8ta_im2col_sizes(
     ComputeGraph* graph,
     const ValueRef& input,

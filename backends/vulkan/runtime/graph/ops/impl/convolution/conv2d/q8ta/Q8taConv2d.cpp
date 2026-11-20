@@ -149,11 +149,9 @@ bool should_use_q8ta_conv2d_im2col(const Q8taConv2dRouteParams& params) {
       (params.in_channels_per_group >= 32 || spatial_out <= 4096);
 }
 
-void q8ta_conv2d(ComputeGraph& graph, const std::vector<ValueRef>& args) {
-  if (const Q8taConv2dCoopmatVariant* const variant =
-          q8ta_conv2d_coopmat_table_variant(graph, args)) {
-    return q8ta_conv2d_coopmat_impl(graph, *variant, args);
-  }
+bool q8ta_conv2d_uses_im2col(
+    ComputeGraph& graph,
+    const std::vector<ValueRef>& args) {
   const ValueRef input = args.at(0);
   const ValueRef kernel_size_ref = args.at(9);
   const ValueRef groups_ref = args.at(13);
@@ -179,7 +177,7 @@ void q8ta_conv2d(ComputeGraph& graph, const std::vector<ValueRef>& args) {
     kernel_width = kernel_size->at(1);
   }
 
-  const bool use_im2col = should_use_q8ta_conv2d_im2col({
+  return should_use_q8ta_conv2d_im2col({
       graph.device_is_mali(),
       graph.can_use_int8_dot_product(),
       static_cast<uint64_t>(graph.max_buffer_numel()),
@@ -192,6 +190,20 @@ void q8ta_conv2d(ComputeGraph& graph, const std::vector<ValueRef>& args) {
       H_out,
       W_out,
   });
+}
+
+void q8ta_conv2d(ComputeGraph& graph, const std::vector<ValueRef>& args) {
+  const bool use_im2col = q8ta_conv2d_uses_im2col(graph, args);
+  if (const Q8taConv2dCoopmatVariant* const variant =
+          q8ta_conv2d_coopmat_table_variant(graph, args)) {
+    // The requantization of the route stock takes (q8ta_conv2d_im2col_impl
+    // falls back to the direct shader when no scratch plan fits).
+    return q8ta_conv2d_coopmat_impl(
+        graph,
+        *variant,
+        args,
+        !use_im2col || !q8ta_conv2d_im2col_feasible(graph, args));
+  }
 
   if (use_im2col) {
     q8ta_conv2d_im2col(graph, args);

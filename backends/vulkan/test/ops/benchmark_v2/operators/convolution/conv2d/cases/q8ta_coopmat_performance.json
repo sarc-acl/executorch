@@ -5457,6 +5457,86 @@
     ]
   },
   {
+    "name": "int8 7x7 s2x2 p3x3 d1x1 3-64 224x224 baseline",
+    "operator": "et_vk.q8ta_conv2d.default",
+    "target_ms": 50,
+    "warmup_runs": 3,
+    "benchmark_runs": 5,
+    "validation_method": {"function": "is_close", "atol": 1, "rtol": 0, "outputs": ["output"]},
+    "route_sweep": ["auto"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 3, 224, 224], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"rand_uniform_int": [-128, 127]}}},
+        {"float": 0.02},
+        {"int": -3},
+        {"tensor": {"name": "weight", "sizes": [64, 148], "dtype": "int8", "storage": "constant", "layout": "width", "data": {"pad_columns": {"source": {"rand_uniform_int": [-127, 127]}, "valid_columns": 147}}}},
+        {"tensor": {"name": "weight_sums", "sizes": [64], "dtype": "int32", "storage": "constant", "layout": "width", "data": {"row_sum": "weight"}}},
+        {"tensor": {"name": "weight_scales", "sizes": [64], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [0.002, 0.01]}}},
+        {"float": 0.197031},
+        {"int": 5},
+        {"tensor": {"name": "bias", "sizes": [64], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [7, 7]},
+        {"int_list": [2, 2]},
+        {"int_list": [3, 3]},
+        {"int_list": [1, 1]},
+        {"int": 1},
+        {"string": "none"},
+        {"tensor": {"name": "output", "sizes": [1, 64, 112, 112], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "int8 7x7 s2x2 p3x3 d1x1 3-64 224x224 coopmat",
+    "operator": "et_vk.q8ta_conv2d.default",
+    "target_ms": 50,
+    "warmup_runs": 3,
+    "benchmark_runs": 5,
+    "validation_method": {"function": "is_close", "atol": 1, "rtol": 0, "outputs": ["output"]},
+    "route": {"name": "im2col_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {
+      "v_VARIANT": [
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb_sk4"
+      ]
+    },
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 3, 224, 224], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"rand_uniform_int": [-128, 127]}}},
+        {"float": 0.02},
+        {"int": -3},
+        {"tensor": {"name": "weight", "sizes": [64, 148], "dtype": "int8", "storage": "constant", "layout": "width", "data": {"pad_columns": {"source": {"rand_uniform_int": [-127, 127]}, "valid_columns": 147}}}},
+        {"tensor": {"name": "weight_sums", "sizes": [64], "dtype": "int32", "storage": "constant", "layout": "width", "data": {"row_sum": "weight"}}},
+        {"tensor": {"name": "weight_scales", "sizes": [64], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [0.002, 0.01]}}},
+        {"float": 0.197031},
+        {"int": 5},
+        {"tensor": {"name": "bias", "sizes": [64], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [7, 7]},
+        {"int_list": [2, 2]},
+        {"int_list": [3, 3]},
+        {"int_list": [1, 1]},
+        {"int": 1},
+        {"string": "none"},
+        {"tensor": {"name": "output", "sizes": [1, 64, 112, 112], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
     "name": "int8 1x1 s1x1 p0x0 d1x1 512-128 28x28 baseline",
     "operator": "et_vk.q8ta_conv2d_pw.default",
     "target_ms": 50,
@@ -11449,6 +11529,86 @@
     ]
   },
   {
+    "name": "int8 7x7 s2x2 p3x3 d1x1 3-96 224x224 baseline",
+    "operator": "et_vk.q8ta_conv2d.default",
+    "target_ms": 50,
+    "warmup_runs": 3,
+    "benchmark_runs": 5,
+    "validation_method": {"function": "is_close", "atol": 1, "rtol": 0, "outputs": ["output"]},
+    "route_sweep": ["auto"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 3, 224, 224], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"rand_uniform_int": [-128, 127]}}},
+        {"float": 0.02},
+        {"int": -3},
+        {"tensor": {"name": "weight", "sizes": [96, 148], "dtype": "int8", "storage": "constant", "layout": "width", "data": {"pad_columns": {"source": {"rand_uniform_int": [-127, 127]}, "valid_columns": 147}}}},
+        {"tensor": {"name": "weight_sums", "sizes": [96], "dtype": "int32", "storage": "constant", "layout": "width", "data": {"row_sum": "weight"}}},
+        {"tensor": {"name": "weight_scales", "sizes": [96], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [0.002, 0.01]}}},
+        {"float": 0.197031},
+        {"int": 5},
+        {"tensor": {"name": "bias", "sizes": [96], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [7, 7]},
+        {"int_list": [2, 2]},
+        {"int_list": [3, 3]},
+        {"int_list": [1, 1]},
+        {"int": 1},
+        {"string": "none"},
+        {"tensor": {"name": "output", "sizes": [1, 96, 112, 112], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "int8 7x7 s2x2 p3x3 d1x1 3-96 224x224 coopmat",
+    "operator": "et_vk.q8ta_conv2d.default",
+    "target_ms": 50,
+    "warmup_runs": 3,
+    "benchmark_runs": 5,
+    "validation_method": {"function": "is_close", "atol": 1, "rtol": 0, "outputs": ["output"]},
+    "route": {"name": "im2col_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {
+      "v_VARIANT": [
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb_sk4"
+      ]
+    },
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 3, 224, 224], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"rand_uniform_int": [-128, 127]}}},
+        {"float": 0.02},
+        {"int": -3},
+        {"tensor": {"name": "weight", "sizes": [96, 148], "dtype": "int8", "storage": "constant", "layout": "width", "data": {"pad_columns": {"source": {"rand_uniform_int": [-127, 127]}, "valid_columns": 147}}}},
+        {"tensor": {"name": "weight_sums", "sizes": [96], "dtype": "int32", "storage": "constant", "layout": "width", "data": {"row_sum": "weight"}}},
+        {"tensor": {"name": "weight_scales", "sizes": [96], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [0.002, 0.01]}}},
+        {"float": 0.197031},
+        {"int": 5},
+        {"tensor": {"name": "bias", "sizes": [96], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [7, 7]},
+        {"int_list": [2, 2]},
+        {"int_list": [3, 3]},
+        {"int_list": [1, 1]},
+        {"int": 1},
+        {"string": "none"},
+        {"tensor": {"name": "output", "sizes": [1, 96, 112, 112], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
     "name": "int8 1x1 s1x1 p0x0 d1x1 1680-192 7x7 baseline",
     "operator": "et_vk.q8ta_conv2d_pw.default",
     "target_ms": 50,
@@ -16795,6 +16955,86 @@
         {"int": 1},
         {"string": "none"},
         {"tensor": {"name": "output", "sizes": [1, 512, 14, 14], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "int8 3x3 s1x1 p1x1 d1x1 3-64 224x224 baseline",
+    "operator": "et_vk.q8ta_conv2d.default",
+    "target_ms": 50,
+    "warmup_runs": 3,
+    "benchmark_runs": 5,
+    "validation_method": {"function": "is_close", "atol": 1, "rtol": 0, "outputs": ["output"]},
+    "route_sweep": ["auto"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 3, 224, 224], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"rand_uniform_int": [-128, 127]}}},
+        {"float": 0.02},
+        {"int": -3},
+        {"tensor": {"name": "weight", "sizes": [64, 28], "dtype": "int8", "storage": "constant", "layout": "width", "data": {"pad_columns": {"source": {"rand_uniform_int": [-127, 127]}, "valid_columns": 27}}}},
+        {"tensor": {"name": "weight_sums", "sizes": [64], "dtype": "int32", "storage": "constant", "layout": "width", "data": {"row_sum": "weight"}}},
+        {"tensor": {"name": "weight_scales", "sizes": [64], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [0.002, 0.01]}}},
+        {"float": 0.084442},
+        {"int": 5},
+        {"tensor": {"name": "bias", "sizes": [64], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [3, 3]},
+        {"int_list": [1, 1]},
+        {"int_list": [1, 1]},
+        {"int_list": [1, 1]},
+        {"int": 1},
+        {"string": "none"},
+        {"tensor": {"name": "output", "sizes": [1, 64, 224, 224], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "int8 3x3 s1x1 p1x1 d1x1 3-64 224x224 coopmat",
+    "operator": "et_vk.q8ta_conv2d.default",
+    "target_ms": 50,
+    "warmup_runs": 3,
+    "benchmark_runs": 5,
+    "validation_method": {"function": "is_close", "atol": 1, "rtol": 0, "outputs": ["output"]},
+    "route": {"name": "im2col_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {
+      "v_VARIANT": [
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb_sk4"
+      ]
+    },
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 3, 224, 224], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"rand_uniform_int": [-128, 127]}}},
+        {"float": 0.02},
+        {"int": -3},
+        {"tensor": {"name": "weight", "sizes": [64, 28], "dtype": "int8", "storage": "constant", "layout": "width", "data": {"pad_columns": {"source": {"rand_uniform_int": [-127, 127]}, "valid_columns": 27}}}},
+        {"tensor": {"name": "weight_sums", "sizes": [64], "dtype": "int32", "storage": "constant", "layout": "width", "data": {"row_sum": "weight"}}},
+        {"tensor": {"name": "weight_scales", "sizes": [64], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [0.002, 0.01]}}},
+        {"float": 0.084442},
+        {"int": 5},
+        {"tensor": {"name": "bias", "sizes": [64], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [3, 3]},
+        {"int_list": [1, 1]},
+        {"int_list": [1, 1]},
+        {"int_list": [1, 1]},
+        {"int": 1},
+        {"string": "none"},
+        {"tensor": {"name": "output", "sizes": [1, 64, 224, 224], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"fill": 0}}}
       ]
     ]
   },
@@ -23861,6 +24101,86 @@
     ]
   },
   {
+    "name": "int8 3x3 s2x2 p0x0 d1x1 3-32 299x299 baseline",
+    "operator": "et_vk.q8ta_conv2d.default",
+    "target_ms": 50,
+    "warmup_runs": 3,
+    "benchmark_runs": 5,
+    "validation_method": {"function": "is_close", "atol": 1, "rtol": 0, "outputs": ["output"]},
+    "route_sweep": ["auto"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 3, 299, 299], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"rand_uniform_int": [-128, 127]}}},
+        {"float": 0.02},
+        {"int": -3},
+        {"tensor": {"name": "weight", "sizes": [32, 28], "dtype": "int8", "storage": "constant", "layout": "width", "data": {"pad_columns": {"source": {"rand_uniform_int": [-127, 127]}, "valid_columns": 27}}}},
+        {"tensor": {"name": "weight_sums", "sizes": [32], "dtype": "int32", "storage": "constant", "layout": "width", "data": {"row_sum": "weight"}}},
+        {"tensor": {"name": "weight_scales", "sizes": [32], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [0.002, 0.01]}}},
+        {"float": 0.084442},
+        {"int": 5},
+        {"tensor": {"name": "bias", "sizes": [32], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [3, 3]},
+        {"int_list": [2, 2]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"int": 1},
+        {"string": "none"},
+        {"tensor": {"name": "output", "sizes": [1, 32, 149, 149], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "int8 3x3 s2x2 p0x0 d1x1 3-32 299x299 coopmat",
+    "operator": "et_vk.q8ta_conv2d.default",
+    "target_ms": 50,
+    "warmup_runs": 3,
+    "benchmark_runs": 5,
+    "validation_method": {"function": "is_close", "atol": 1, "rtol": 0, "outputs": ["output"]},
+    "route": {"name": "im2col_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {
+      "v_VARIANT": [
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb_sk4"
+      ]
+    },
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 3, 299, 299], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"rand_uniform_int": [-128, 127]}}},
+        {"float": 0.02},
+        {"int": -3},
+        {"tensor": {"name": "weight", "sizes": [32, 28], "dtype": "int8", "storage": "constant", "layout": "width", "data": {"pad_columns": {"source": {"rand_uniform_int": [-127, 127]}, "valid_columns": 27}}}},
+        {"tensor": {"name": "weight_sums", "sizes": [32], "dtype": "int32", "storage": "constant", "layout": "width", "data": {"row_sum": "weight"}}},
+        {"tensor": {"name": "weight_scales", "sizes": [32], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [0.002, 0.01]}}},
+        {"float": 0.084442},
+        {"int": 5},
+        {"tensor": {"name": "bias", "sizes": [32], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [3, 3]},
+        {"int_list": [2, 2]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"int": 1},
+        {"string": "none"},
+        {"tensor": {"name": "output", "sizes": [1, 32, 149, 149], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
     "name": "int8 1x1 s1x1 p0x0 d1x1 288-48 25x25 baseline",
     "operator": "et_vk.q8ta_conv2d_pw.default",
     "target_ms": 50,
@@ -24392,6 +24712,86 @@
         {"int": 1},
         {"string": "none"},
         {"tensor": {"name": "output", "sizes": [1, 192, 28, 28], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "int8 3x3 s2x2 p1x1 d1x1 3-32 224x224 baseline",
+    "operator": "et_vk.q8ta_conv2d.default",
+    "target_ms": 50,
+    "warmup_runs": 3,
+    "benchmark_runs": 5,
+    "validation_method": {"function": "is_close", "atol": 1, "rtol": 0, "outputs": ["output"]},
+    "route_sweep": ["auto"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 3, 224, 224], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"rand_uniform_int": [-128, 127]}}},
+        {"float": 0.02},
+        {"int": -3},
+        {"tensor": {"name": "weight", "sizes": [32, 28], "dtype": "int8", "storage": "constant", "layout": "width", "data": {"pad_columns": {"source": {"rand_uniform_int": [-127, 127]}, "valid_columns": 27}}}},
+        {"tensor": {"name": "weight_sums", "sizes": [32], "dtype": "int32", "storage": "constant", "layout": "width", "data": {"row_sum": "weight"}}},
+        {"tensor": {"name": "weight_scales", "sizes": [32], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [0.002, 0.01]}}},
+        {"float": 0.084442},
+        {"int": 5},
+        {"tensor": {"name": "bias", "sizes": [32], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [3, 3]},
+        {"int_list": [2, 2]},
+        {"int_list": [1, 1]},
+        {"int_list": [1, 1]},
+        {"int": 1},
+        {"string": "none"},
+        {"tensor": {"name": "output", "sizes": [1, 32, 112, 112], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "int8 3x3 s2x2 p1x1 d1x1 3-32 224x224 coopmat",
+    "operator": "et_vk.q8ta_conv2d.default",
+    "target_ms": 50,
+    "warmup_runs": 3,
+    "benchmark_runs": 5,
+    "validation_method": {"function": "is_close", "atol": 1, "rtol": 0, "outputs": ["output"]},
+    "route": {"name": "im2col_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {
+      "v_VARIANT": [
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb_sk4"
+      ]
+    },
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 3, 224, 224], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"rand_uniform_int": [-128, 127]}}},
+        {"float": 0.02},
+        {"int": -3},
+        {"tensor": {"name": "weight", "sizes": [32, 28], "dtype": "int8", "storage": "constant", "layout": "width", "data": {"pad_columns": {"source": {"rand_uniform_int": [-127, 127]}, "valid_columns": 27}}}},
+        {"tensor": {"name": "weight_sums", "sizes": [32], "dtype": "int32", "storage": "constant", "layout": "width", "data": {"row_sum": "weight"}}},
+        {"tensor": {"name": "weight_scales", "sizes": [32], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [0.002, 0.01]}}},
+        {"float": 0.084442},
+        {"int": 5},
+        {"tensor": {"name": "bias", "sizes": [32], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [3, 3]},
+        {"int_list": [2, 2]},
+        {"int_list": [1, 1]},
+        {"int_list": [1, 1]},
+        {"int": 1},
+        {"string": "none"},
+        {"tensor": {"name": "output", "sizes": [1, 32, 112, 112], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"fill": 0}}}
       ]
     ]
   },
@@ -25466,6 +25866,86 @@
     ]
   },
   {
+    "name": "int8 3x3 s2x2 p0x0 d1x1 3-32 224x224 baseline",
+    "operator": "et_vk.q8ta_conv2d.default",
+    "target_ms": 50,
+    "warmup_runs": 3,
+    "benchmark_runs": 5,
+    "validation_method": {"function": "is_close", "atol": 1, "rtol": 0, "outputs": ["output"]},
+    "route_sweep": ["auto"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 3, 224, 224], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"rand_uniform_int": [-128, 127]}}},
+        {"float": 0.02},
+        {"int": -3},
+        {"tensor": {"name": "weight", "sizes": [32, 28], "dtype": "int8", "storage": "constant", "layout": "width", "data": {"pad_columns": {"source": {"rand_uniform_int": [-127, 127]}, "valid_columns": 27}}}},
+        {"tensor": {"name": "weight_sums", "sizes": [32], "dtype": "int32", "storage": "constant", "layout": "width", "data": {"row_sum": "weight"}}},
+        {"tensor": {"name": "weight_scales", "sizes": [32], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [0.002, 0.01]}}},
+        {"float": 0.084442},
+        {"int": 5},
+        {"tensor": {"name": "bias", "sizes": [32], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [3, 3]},
+        {"int_list": [2, 2]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"int": 1},
+        {"string": "none"},
+        {"tensor": {"name": "output", "sizes": [1, 32, 111, 111], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "int8 3x3 s2x2 p0x0 d1x1 3-32 224x224 coopmat",
+    "operator": "et_vk.q8ta_conv2d.default",
+    "target_ms": 50,
+    "warmup_runs": 3,
+    "benchmark_runs": 5,
+    "validation_method": {"function": "is_close", "atol": 1, "rtol": 0, "outputs": ["output"]},
+    "route": {"name": "im2col_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {
+      "v_VARIANT": [
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb_sk4"
+      ]
+    },
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 3, 224, 224], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"rand_uniform_int": [-128, 127]}}},
+        {"float": 0.02},
+        {"int": -3},
+        {"tensor": {"name": "weight", "sizes": [32, 28], "dtype": "int8", "storage": "constant", "layout": "width", "data": {"pad_columns": {"source": {"rand_uniform_int": [-127, 127]}, "valid_columns": 27}}}},
+        {"tensor": {"name": "weight_sums", "sizes": [32], "dtype": "int32", "storage": "constant", "layout": "width", "data": {"row_sum": "weight"}}},
+        {"tensor": {"name": "weight_scales", "sizes": [32], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [0.002, 0.01]}}},
+        {"float": 0.084442},
+        {"int": 5},
+        {"tensor": {"name": "bias", "sizes": [32], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [3, 3]},
+        {"int_list": [2, 2]},
+        {"int_list": [0, 0]},
+        {"int_list": [1, 1]},
+        {"int": 1},
+        {"string": "none"},
+        {"tensor": {"name": "output", "sizes": [1, 32, 111, 111], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
     "name": "int8 1x1 s1x1 p0x0 d1x1 288-72 1x1 baseline",
     "operator": "et_vk.q8ta_conv2d_pw.default",
     "target_ms": 50,
@@ -25569,6 +26049,86 @@
         {"int": 1},
         {"string": "none"},
         {"tensor": {"name": "output", "sizes": [1, 72, 1, 1], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "int8 3x3 s2x2 p1x1 d1x1 3-16 224x224 baseline",
+    "operator": "et_vk.q8ta_conv2d.default",
+    "target_ms": 50,
+    "warmup_runs": 3,
+    "benchmark_runs": 5,
+    "validation_method": {"function": "is_close", "atol": 1, "rtol": 0, "outputs": ["output"]},
+    "route_sweep": ["auto"],
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 3, 224, 224], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"rand_uniform_int": [-128, 127]}}},
+        {"float": 0.02},
+        {"int": -3},
+        {"tensor": {"name": "weight", "sizes": [16, 28], "dtype": "int8", "storage": "constant", "layout": "width", "data": {"pad_columns": {"source": {"rand_uniform_int": [-127, 127]}, "valid_columns": 27}}}},
+        {"tensor": {"name": "weight_sums", "sizes": [16], "dtype": "int32", "storage": "constant", "layout": "width", "data": {"row_sum": "weight"}}},
+        {"tensor": {"name": "weight_scales", "sizes": [16], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [0.002, 0.01]}}},
+        {"float": 0.084442},
+        {"int": 5},
+        {"tensor": {"name": "bias", "sizes": [16], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [3, 3]},
+        {"int_list": [2, 2]},
+        {"int_list": [1, 1]},
+        {"int_list": [1, 1]},
+        {"int": 1},
+        {"string": "none"},
+        {"tensor": {"name": "output", "sizes": [1, 16, 112, 112], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"fill": 0}}}
+      ]
+    ]
+  },
+  {
+    "name": "int8 3x3 s2x2 p1x1 d1x1 3-16 224x224 coopmat",
+    "operator": "et_vk.q8ta_conv2d.default",
+    "target_ms": 50,
+    "warmup_runs": 3,
+    "benchmark_runs": 5,
+    "validation_method": {"function": "is_close", "atol": 1, "rtol": 0, "outputs": ["output"]},
+    "route": {"name": "im2col_coopmat", "options": {"variant": "v_VARIANT"}},
+    "sweep_variables": {
+      "v_VARIANT": [
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_xe2_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_xe2_t64x64_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_amd_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_nvidia_t32x32_dgb_sk4",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb_sk2",
+        "q8ta_conv2d_pw_coopmat_nvidia_t64x64_dgb_sk4"
+      ]
+    },
+    "args_sweep": [
+      [
+        {"tensor": {"name": "input", "sizes": [1, 3, 224, 224], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"rand_uniform_int": [-128, 127]}}},
+        {"float": 0.02},
+        {"int": -3},
+        {"tensor": {"name": "weight", "sizes": [16, 28], "dtype": "int8", "storage": "constant", "layout": "width", "data": {"pad_columns": {"source": {"rand_uniform_int": [-127, 127]}, "valid_columns": 27}}}},
+        {"tensor": {"name": "weight_sums", "sizes": [16], "dtype": "int32", "storage": "constant", "layout": "width", "data": {"row_sum": "weight"}}},
+        {"tensor": {"name": "weight_scales", "sizes": [16], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [0.002, 0.01]}}},
+        {"float": 0.084442},
+        {"int": 5},
+        {"tensor": {"name": "bias", "sizes": [16], "dtype": "float32", "storage": "constant", "layout": "width", "data": {"rand_uniform_float": [-1, 1]}}},
+        {"int_list": [3, 3]},
+        {"int_list": [2, 2]},
+        {"int_list": [1, 1]},
+        {"int_list": [1, 1]},
+        {"int": 1},
+        {"string": "none"},
+        {"tensor": {"name": "output", "sizes": [1, 16, 112, 112], "dtype": "int8x4", "storage": "buffer", "layout": "4w4c", "data": {"fill": 0}}}
       ]
     ]
   },

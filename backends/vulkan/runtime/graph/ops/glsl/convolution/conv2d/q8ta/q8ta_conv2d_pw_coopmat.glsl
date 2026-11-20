@@ -17,7 +17,9 @@
  * 4 k4 + j for a 1x1 convolution (t_in in 4W4C, one ivec4 = 4 pixels x 4
  * channels), or, with DIRECT, live tap t = k4 / C4 (row-major over the kernel)
  * and channel 4 (k4 % C4) + j, gathered per pixel from the input (positions
- * outside it read the input zero point, as q8ta_im2col writes them). The
+ * outside it read the input zero point, as q8ta_im2col writes them; with
+ * BYTES, for any channel count, k = t C_in + ci and each byte is gathered
+ * alone, as stock packs the weights of q8ta_conv2d). The
  * weights are the stock packing: texel (n4, k4) of t_weight holds output
  * channels 4 n4 .. + 3, each as the 4 bytes of K block k4.
  *
@@ -93,9 +95,16 @@ ${layout_declare_spec_const(C, "int", "dg_ph", "0")}
 ${layout_declare_spec_const(C, "int", "dg_pw", "0")}
 ${layout_declare_spec_const(C, "int", "dg_dh", "1")}
 ${layout_declare_spec_const(C, "int", "dg_dw", "1")}
+// BYTES: input channels (any count).
+${layout_declare_spec_const(C, "int", "dg_cin", "4")}
+// 1: the requantization of q8ta_conv2d.glsl (the direct shader), 0: that of
+// q8ta_conv2d_pw.glsl.
+${layout_declare_spec_const(C, "int", "direct_requant", "0")}
 
 $if DIRECT:
   #define DIRECT
+$if BYTES:
+  #define BYTES
 $if MERGE:
   #define MERGE
 $if K_SLICES > 1:
@@ -148,8 +157,25 @@ int outp_int_index(const Pixel p, const int c4) {
 }
 
 // The requantization of q8ta_conv2d_pw.glsl (signed dot product) for the 4
-// channels of block n4 of one pixel.
+// channels of block n4 of one pixel, or with direct_requant that of
+// q8ta_conv2d.glsl.
 int requantize(const ivec4 acc, const int n4) {
+  if (direct_requant != 0) {
+    const vec4 weight_sums = vec4(t_weight_sums[n4]);
+    const vec4 weight_scales = vec4(t_weight_scales[n4]);
+    vec4 facc = vec4(acc);
+    facc -= weight_sums * input_zp;
+    facc *= weight_scales * input_scale;
+    if (apply_bias > 0) {
+      const vec4 bias = vec4(t_bias[n4]);
+      facc += bias;
+    }
+    if (activation_type > 0) {
+      facc = max(facc, vec4(0.0));
+    }
+    const vec4 quantized = round(facc * output_inv_scale) + output_zp;
+    return pack_into_int32(clamp(ivec4(quantized), -128, 127));
+  }
   const ivec4 accum_adjusted =
       ivec4(-input_zp) * ivec4(t_weight_sums[n4]) + acc;
   const VEC4_T weight_scales = t_weight_scales[n4];
@@ -352,7 +378,35 @@ void main() {
     }                                                                         \
   }
 
-#ifdef DIRECT
+#if defined(DIRECT) && defined(BYTES)
+// Byte b of K block k4 is input channel ci of tap t for K index
+// 4 k4 + b = t dg_cin + ci (the stock packing of [C_out, align4(K)] rows).
+#define LOAD_A(p, k4)                                                         \
+  {                                                                           \
+    temp_a[p] = ivec4(zp_packed);                                             \
+    [[unroll]] for (int b = 0; b < 4; ++b) {                                  \
+      const int k = 4 * int(k4) + b;                                          \
+      if (k < dg_cin * dg_kh * dg_kw) {                                       \
+        const int tap = k / dg_cin;                                           \
+        const int ci = k - tap * dg_cin;                                      \
+        const int ky = tap / dg_kw;                                           \
+        const int kx = tap - ky * dg_kw;                                      \
+        const int ih = qm.ih0[p] + ky * dg_dh;                                \
+        const bool row_in = uint(ih) < uint(inp.sizes[0][1]);                 \
+        const int c_off = qm.n_off[p] + (ci >> 2) * int(inp.strides[0][2]);   \
+        [[unroll]] for (int j = 0; j < 4; ++j) {                              \
+          const int iw = qm.iw0[p] + j * dg_sw + kx * dg_dw;                  \
+          const int v = row_in && qm.live[p][j] &&                            \
+                  uint(iw) < uint(inp.sizes[0][0])                            \
+              ? load_in_int(c_off, ih, iw)                                    \
+              : zp_packed;                                                    \
+          temp_a[p][j] = bitfieldInsert(                                      \
+              temp_a[p][j], bitfieldExtract(v, 8 * (ci & 3), 8), 8 * b, 8);   \
+        }                                                                     \
+      }                                                                       \
+    }                                                                         \
+  }
+#elif defined(DIRECT)
 #define LOAD_A(p, k4)                                                         \
   {                                                                           \
     temp_a[p] = ivec4(0);                                                     \
