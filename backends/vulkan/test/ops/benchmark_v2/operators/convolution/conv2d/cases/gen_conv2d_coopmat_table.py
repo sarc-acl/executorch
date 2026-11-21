@@ -70,7 +70,8 @@ CONFIGS = HERE / "model_sweep_configs.json"
 # prefixed with the precision.
 PRECISIONS = ("fp16", "fp32", "int8")
 PRECISION_CONFIGS = [
-    HERE / f"model_sweep_configs_{p}.json" for p in ("fp32", "int8", "conv1d", "dw")
+    HERE / f"model_sweep_configs_{p}.json"
+    for p in ("fp32", "int8", "conv1d", "dw", "int8dw")
 ]
 MIN_RATIO = 1.05
 CONFIRM_RUNS = 5
@@ -155,6 +156,8 @@ def route_of(arm):
         return "simt"
     if arm == "b1x1":
         return "b1x1"
+    if arm.startswith("q8ta_conv2d_dw"):
+        return "dw_tile"
     if arm.startswith("q8ta_"):
         return "im2col_coopmat" if "_dg" in arm else "pw_coopmat"
     if arm.endswith("_dg"):

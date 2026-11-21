@@ -102,6 +102,8 @@ class Nomination(unittest.TestCase):
         self.assertIsNone(code)
         self.assertEqual(gen.route_of("conv1d_simt_pw_t64x32_half"), "simt")
         self.assertEqual(gen.route_of("b1x1"), "b1x1")
+        self.assertEqual(gen.route_of("q8ta_conv2d_dw_w1"), "dw_tile")
+        self.assertTrue(gen.routable("q8ta_conv2d_dw_w1"))
         self.assertFalse(gen.routable("xe2_t32x64_f16_alc_simt"))
 
     def test_stock_drift_nominates_a_win_against_every_stock_run(self):
