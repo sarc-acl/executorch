@@ -1323,7 +1323,9 @@ small, as in the stage-1 `amd_t64x64_f32` failure.
 
 **All three 784 losers cross stock parity on the adopted amd route:** `784,2048,1024`
 1.263 -> 0.755, `784,2048,512` 1.186 -> 0.748, `784,512,2048` 1.315 -> 0.895 against
-best stock (the 11.6a recorded gap on the 1x1 side; note 16 headline). Geomean % of
+best stock (the 11.6a recorded gap on the 1x1 side; note 16 headline; this session's
+numbers - the s119 final session confirms all three ahead of stock at 0.755/0.748/
+0.938, RESULTS 11.6). Geomean % of
 roofline bound on the three: 34.5% -> 54.3% on the amd route (the nvidia alternative
 reaches 58.3%). The parent is at 25-35% overall; the t128 cells land at 1.5-1.8x the
 parent's bound share.
@@ -1360,13 +1362,14 @@ gated-but-unrouted. The 11.3/11.8 boundary-cell owner-decision requests are clos
 this change: the cell is on the parent by rule, not by request.
 
 **amd vs nvidia (owner decision, note 16/18):** on the 8 predicate cells the nvidia
-form is faster in both sessions (s117 predicate geomean vs parent: nvidia 0.683, amd
-0.721) and under the N >= 256 predicate it has no losing cell - its only s117 loser was
-the `784,128,1152` boundary cell the predicate now drops. The amd form is the adopted
+form is faster in every session (predicate geomean vs parent: s117 and s119 both
+measure nvidia 0.683, amd 0.721) and under the N >= 256 predicate it has no losing
+cell - its only s117 loser was the `784,128,1152` boundary cell the predicate now
+drops. The amd form is the adopted
 route because it is the arm the final sessions timed on those cells; the nvidia form is
 recorded as the faster alternative for the owner (a ~5% further gain on the predicate
-cells), and the s119 re-run carries the nvidia arm on the 8 cells so the owner has
-same-session data for the switch. No per-shape mix of the two (note 11: that is an
+cells), and the s119 final session carries the nvidia arm on the 8 cells - the
+same-session comparison is in RESULTS 11.6. No per-shape mix of the two (note 11: that is an
 oracle).
 
 **Verdict: adopted** as the 1x1 stage-3 route under the predicate above (the 11.6 final
@@ -1433,114 +1436,142 @@ The 11.6 final session measures this state against the stage-2 parents and best 
 on all 45 shapes.
 
 
-## 11.6 Final session (from the final HEAD, post-11.8): the stage-3 after state on all 45 shapes
+## 11.6 Final session (s119, the note-17 re-run from the final HEAD): the stage-3 after state on all 45 shapes
 
-Re-run per the re-opened TASKS 11.6, from the committed HEAD past 11.8 (RESULTS 11.8),
-same binary as every gate today (one md5; the t128, t32x32-re-gate, fast-gather-re-gate
-and kk-t128+fast-gather gate loops all ran on it). The after state is the adopted route:
-1x1 M >= 784 and N >= 256 -> amd_t128x128_f32_alc (note 18; this session predates the
-tightening and timed the N = 128 cells on both arms, so the tightened route is a
-recompute over its rows - the three dropped cells below), else the 1x1 parent; kk
-M >= 784 and N >= 256 -> t128_sk2_i2c + fast_gather, else the kk parent + fast_gather.
-120 s cooling idle first (the 11.6a opening A/A had a +24% cell), then A/A open, five
-rotated rounds (880 dispatches), A/A close, readback.
+The note-17 re-run of the first final session (s118, retained at the end of this
+section), launched from the committed HEAD past the note-18 fix (`163f5bfef1`),
+same binary as every gate today (one md5; the t128, t32x32-re-gate,
+fast-gather-re-gate and kk-t128+fast-gather gate loops all ran on it). The after
+state is the adopted route as tightened by note 18: 1x1 M >= 784 and N >= 256 ->
+amd_t128x128_f32_alc, else the 1x1 parent; kk M >= 784 and N >= 256 ->
+t128_sk2_i2c + fast_gather, else the kk parent + fast_gather. The three N = 128
+cells the first predicate selected run on the parent only (the route drops them
+by rule), and the nvidia t128 alternative arm runs on the 8 predicate cells so
+the owner decision has same-session data. Board fully idle 11 min before launch
+(no adb load; thermal state read back before and after, local log), then 120 s cooling
+idle in the loop, A/A open, five rotated rounds (905 dispatches), A/A close,
+readback.
 
-**Validity:** 880 rows, zero invalid; readback clean (driver canonical, bench canonical,
-layers off, pins held); parent drift vs 11.1 0.994. **A/A open geomean 1.0033 with 5
-cells outside ±2% (worst +12.6% on `1x7 192-224 17x17`, +7.2% on `1x1 25,384,4032`);
-A/A close geomean 0.9896 with 7 cells outside ±2% (worst -18.0% on `1x1 784,128,512`,
--10.1% on `1x7 192-224`).** The close geomean is outside 1% of 1, so the note-17 re-run
-trigger fired: this session is reported in full below, and the s119 re-run (>= 10 min
-idle, thermal readback) supersedes it as the final session - see the s119 paragraph.
-THRESHOLDS' every-cell-2% is not met either way. **The band widening is the 4.0/7.3
-session precedent, not a THRESHOLDS rule**, applied as in 11.6a: each cell's noise band
-widens to its own observed A/A deviation, and the band column below marks which gains
-clear it.
+**Validity:** 905 rows, zero invalid; readback clean (driver canonical, bench
+canonical, layers off, pins held); parent drift vs 11.1 geomean 1.001. **A/A
+open geomean 1.0000 with 5 cells outside ±2% (worst +11.3% on `1x7 192-224
+17x17`, -4.9% on `1x1 25,384,4032`, +5.2% on `1x1 784,512,2048`); A/A close
+geomean 0.9987 with 3 cells outside ±2% (worst +11.0% on `1x7 192-224 17x17`,
+-8.3% on `1x1 196,96,576`, -2.1% on `3x3 s2 256-512 14x14`).** Both geomeans
+are inside 1% of 1, so the note-17 validity condition is met and this session
+stands as the final one; s118 (close geomean 0.9896, outside 1%) is the
+superseded first run. THRESHOLDS' every-cell-2% is still not met, so **the band
+widening is the 4.0/7.3 session precedent, not a THRESHOLDS rule**, applied as
+in 11.6a: each cell's noise band widens to its own observed A/A deviation, and
+the band column below marks which gains clear it.
 
 | shape | aft/bef | aft/bs | bef/bs | %bound bef | %bound aft | drift | band |
 |---|---|---|---|---|---|---|---|
-| 1x1 144,192,768 | 1.000 | 0.412 | 0.412 | 26.7 | 26.7 | 0.947 | 2% |
-| 1x1 196,1024,256 | 1.000 | 0.904 | 0.904 | 26.4 | 26.4 | 1.001 | 2% |
-| 1x1 196,256,1024 | 1.000 | 0.491 | 0.491 | 25.3 | 25.3 | 1.003 | 2% |
-| 1x1 196,256,2304 | 1.000 | 0.587 | 0.587 | 26.0 | 26.0 | 0.986 | 2% |
-| 1x1 196,512,1024 | 1.000 | 0.723 | 0.723 | 27.4 | 27.4 | 0.998 | 2% |
-| 1x1 196,64,384 | 1.000 | 0.393 | 0.393 | 21.0 | 21.0 | 0.98 | 2% |
-| 1x1 196,96,576 | 1.000 | 0.384 | 0.384 | 25.0 | 25.0 | 0.997 | 3% |
-| 1x1 25,384,4032 | 1.000 | 0.262 | 0.262 | 43.4 | 43.4 | 0.987 | 7% |
-| 1x1 289,192,1024 | 1.000 | 0.526 | 0.526 | 26.1 | 26.1 | 1.009 | 2% |
-| 1x1 289,224,1344 | 1.000 | 0.695 | 0.695 | 24.7 | 24.7 | 0.987 | 2% |
-| 1x1 289,384,1024 | 1.000 | 0.766 | 0.766 | 28.5 | 28.5 | 0.999 | 2% |
-| 1x1 3136,128,256 | 0.798 | 0.766 | 0.959 | 36.4 | 45.6 | 1.000 | 2% * |
-| 1x1 3136,256,64 | 0.859 | 0.608 | 0.708 | 40.1 | 46.7 | 1.001 | 2% * |
+| 1x1 144,192,768 | 1.000 | 0.434 | 0.434 | 25.4 | 25.4 | 0.996 | 2% |
+| 1x1 196,1024,256 | 1.000 | 0.906 | 0.906 | 26.4 | 26.4 | 1.000 | 2% |
+| 1x1 196,256,1024 | 1.000 | 0.498 | 0.498 | 25.2 | 25.2 | 1.004 | 2% |
+| 1x1 196,256,2304 | 1.000 | 0.580 | 0.580 | 26.0 | 26.0 | 0.985 | 2% |
+| 1x1 196,512,1024 | 1.000 | 0.730 | 0.730 | 27.1 | 27.1 | 1.011 | 2% |
+| 1x1 196,64,384 | 1.000 | 0.403 | 0.403 | 20.5 | 20.5 | 1.002 | 2% |
+| 1x1 196,96,576 | 1.000 | 0.381 | 0.381 | 25.0 | 25.0 | 0.996 | 8.3% |
+| 1x1 25,384,4032 | 1.000 | 0.263 | 0.263 | 43.4 | 43.4 | 0.987 | 4.9% |
+| 1x1 289,192,1024 | 1.000 | 0.520 | 0.520 | 26.3 | 26.3 | 1.004 | 2% |
+| 1x1 289,224,1344 | 1.000 | 0.694 | 0.694 | 24.6 | 24.6 | 0.991 | 2% |
+| 1x1 289,384,1024 | 1.000 | 0.767 | 0.767 | 28.6 | 28.6 | 0.999 | 2% |
+| 1x1 3136,128,256 | 1.000 | 0.960 | 0.960 | 36.4 | 36.4 | 1.000 | 2% |
+| 1x1 3136,256,64 | 0.860 | 0.609 | 0.708 | 40.1 | 46.6 | 1.000 | 2% * |
 | 1x1 3136,64,256 | 1.000 | 0.822 | 0.822 | 53.9 | 53.9 | 1.000 | 2% |
-| 1x1 3136,64,64 | 1.000 | 0.677 | 0.677 | 50.0 | 50.0 | 1.000 | 2% |
-| 1x1 49,160,960 | 1.000 | 0.246 | 0.246 | 20.9 | 20.9 | 1.000 | 2% |
+| 1x1 3136,64,64 | 1.000 | 0.677 | 0.677 | 50.0 | 50.0 | 0.999 | 2% |
+| 1x1 49,160,960 | 1.000 | 0.248 | 0.248 | 20.9 | 20.9 | 1.000 | 2% |
 | 1x1 49,2048,512 | 1.000 | 0.831 | 0.831 | 50.2 | 50.2 | 1.000 | 2% |
-| 1x1 49,512,2048 | 1.000 | 0.347 | 0.347 | 50.2 | 50.2 | 1.000 | 2% |
-| 1x1 49,512,4608 | 1.000 | 0.212 | 0.212 | 52.5 | 52.5 | 0.865 | 2% |
-| 1x1 49,96,576 | 1.000 | 0.336 | 0.336 | 13.7 | 13.7 | 0.999 | 2% |
+| 1x1 49,512,2048 | 1.000 | 0.345 | 0.345 | 50.4 | 50.4 | 0.997 | 2% |
+| 1x1 49,512,4608 | 1.000 | 0.245 | 0.245 | 45.4 | 45.4 | 0.999 | 2% |
+| 1x1 49,96,576 | 1.000 | 0.336 | 0.336 | 13.6 | 13.6 | 1.002 | 2% |
 | 1x1 64,256,1536 | 1.000 | 0.303 | 0.303 | 31.8 | 31.8 | 0.999 | 2% |
-| 1x1 64,384,1536 | 1.000 | 0.321 | 0.321 | 42.3 | 42.3 | 0.993 | 2% |
+| 1x1 64,384,1536 | 1.000 | 0.324 | 0.324 | 42.0 | 42.0 | 0.999 | 2% |
 | 1x1 784,1024,256 | 0.697 | 0.659 | 0.944 | 31.8 | 45.6 | 1.000 | 2% * |
-| 1x1 784,128,1152 | 1.050 | 0.708 | 0.674 | 29.2 | 27.8 | 0.999 | 2% |
-| 1x1 784,128,512 | 1.000 | 0.667 | 0.667 | 29.8 | 29.8 | 0.999 | 18% |
-| 1x1 784,2048,1024 | 0.598 | 0.755 | 1.263 | 35.1 | 58.7 | 1.000 | 2% * |
-| 1x1 784,2048,512 | 0.631 | 0.747 | 1.185 | 34.3 | 54.4 | 1.000 | 2% * |
+| 1x1 784,128,1152 | 1.000 | 0.674 | 0.674 | 29.2 | 29.2 | 0.999 | 2% |
+| 1x1 784,128,512 | 1.000 | 0.667 | 0.667 | 29.8 | 29.8 | 1.000 | 2% |
+| 1x1 784,2048,1024 | 0.598 | 0.755 | 1.262 | 35.1 | 58.7 | 1.000 | 2% * |
+| 1x1 784,2048,512 | 0.631 | 0.748 | 1.186 | 34.3 | 54.5 | 1.000 | 2% * |
 | 1x1 784,256,1024 | 0.728 | 0.737 | 1.013 | 31.4 | 43.2 | 1.000 | 2% * |
 | 1x1 784,256,512 | 0.768 | 0.727 | 0.947 | 30.1 | 39.1 | 0.999 | 2% * |
-| 1x1 784,512,128 | 0.846 | 0.681 | 0.805 | 27.9 | 33.0 | 1.000 | 2% * |
-| 1x1 784,512,2048 | 0.681 | 0.897 | 1.318 | 34.2 | 50.2 | 1.000 | 2% * |
-| 1x7 192-224 17x17 | 0.941 | 0.502 | 0.534 | 19.1 | 20.3 | 1.001 | 13% |
-| 1x7 224-256 17x17 | 0.945 | 0.498 | 0.527 | 20.3 | 21.5 | 1.000 | 2% * |
-| 3x3 1024-256 28x28 | 0.581 | 0.695 | 1.195 | 20.4 | 35.2 | 0.998 | 2% * |
-| 3x3 128 28x28 | 0.931 | 0.768 | 0.825 | 18.5 | 19.9 | 1.000 | 2% * |
-| 3x3 192-48 14x14 | 0.874 | 0.370 | 0.423 | 7.1 | 8.1 | 0.994 | 2% * |
-| 3x3 192-48 28x28 | 0.922 | 0.514 | 0.557 | 10.4 | 11.3 | 1.000 | 2% * |
-| 3x3 256 14x14 | 0.940 | 0.364 | 0.387 | 20.5 | 21.8 | 1.001 | 2% * |
-| 3x3 448-384 5x5 | 0.951 | 0.233 | 0.245 | 54.5 | 57.3 | 1.005 | 6% |
-| 3x3 512 7x7 | 0.967 | 0.162 | 0.168 | 39.5 | 40.9 | 0.996 | 2% * |
-| 3x3 64 224x224 | 0.815 | 1.816 | 2.228 | 13.4 | 16.5 | 1.001 | 2% * |
-| 3x3 64 56x56 | 0.903 | 1.493 | 1.653 | 14.2 | 15.7 | 1.000 | 2% * |
-| 3x3 64-256 224x224 | 0.654 | 0.976 | 1.493 | 20.7 | 31.6 | 1.000 | 2% * |
-| 3x3 s2 256-512 14x14 | 0.943 | 0.423 | 0.448 | 38.4 | 40.7 | 0.994 | 2% * |
-| 3x3 s2 512 14x14 | 0.970 | 0.285 | 0.294 | 40.7 | 41.9 | 0.998 | 2% * |
+| 1x1 784,512,128 | 0.846 | 0.682 | 0.806 | 27.9 | 33.0 | 1.000 | 2% * |
+| 1x1 784,512,2048 | 0.680 | 0.938 | 1.379 | 34.1 | 50.2 | 1.001 | 5.2% * |
+| 1x7 192-224 17x17 | 0.941 | 0.461 | 0.490 | 19.1 | 20.3 | 1.001 | 11.3% |
+| 1x7 224-256 17x17 | 0.945 | 0.493 | 0.522 | 20.3 | 21.5 | 0.999 | 2% * |
+| 3x3 1024-256 28x28 | 0.585 | 0.703 | 1.202 | 20.3 | 34.7 | 1.005 | 2% * |
+| 3x3 128 28x28 | 0.931 | 0.760 | 0.816 | 18.5 | 19.9 | 1.000 | 2% * |
+| 3x3 192-48 14x14 | 0.876 | 0.370 | 0.422 | 7.1 | 8.1 | 0.995 | 2% * |
+| 3x3 192-48 28x28 | 0.923 | 0.517 | 0.560 | 10.4 | 11.3 | 1.001 | 2% * |
+| 3x3 256 14x14 | 0.938 | 0.362 | 0.387 | 20.5 | 21.9 | 1.002 | 2% * |
+| 3x3 448-384 5x5 | 0.950 | 0.232 | 0.244 | 54.5 | 57.3 | 1.005 | 2% * |
+| 3x3 512 7x7 | 0.968 | 0.164 | 0.170 | 39.4 | 40.7 | 0.998 | 2% * |
+| 3x3 64 224x224 | 0.812 | 1.810 | 2.229 | 13.5 | 16.6 | 1.000 | 2% * |
+| 3x3 64 56x56 | 0.905 | 1.492 | 1.649 | 14.2 | 15.7 | 1.001 | 2% * |
+| 3x3 64-256 224x224 | 0.654 | 0.975 | 1.491 | 20.7 | 31.7 | 0.999 | 2% * |
+| 3x3 s2 256-512 14x14 | 0.883 | 0.423 | 0.479 | 36.0 | 40.8 | 1.060 | 2.6% * |
+| 3x3 s2 512 14x14 | 0.963 | 0.284 | 0.294 | 40.5 | 42.1 | 1.002 | 2% * |
 
-**Geomeans (note-18 route, recomputed over this session's rows):** after/before **0.904**
-over all 45 shapes (1x1 0.919, k x k 0.872); after/best-stock 0.539 (1x1 0.547, k x k
-0.522). Geomean % of roofline bound 27.8% -> 30.7% overall (1x1 31.6% -> 34.4%, k x k
-20.9% -> 23.9%). Against the 11.6a checkpoint: 0.970 -> 0.904 after/before, cells behind
-best stock 7 -> 2.
+**Geomeans:** after/before **0.903** over all 45 shapes (1x1 0.919, k x k 0.868);
+after/best-stock 0.541 (1x1 0.552, k x k 0.518). Geomean % of roofline bound
+27.6% -> 30.6% overall (1x1 31.4% -> 34.2%, k x k 20.7% -> 23.9%). Against the
+11.6a checkpoint: 0.970 -> 0.903 after/before, cells behind best stock 7 -> 2.
+The s118 rows recomputed under the same note-18 route give 0.904 / 0.539 / 27.8%
+-> 30.7% - the two sessions agree to a rounding step on every geomean.
 
-**Gains beyond the per-cell band: 20 of the 22 changed cells** (the after arm differs
-from the parent on the 8 1x1 predicate cells and all 14 k x k cells). The two gains
-inside their (widened) bands: `1x7 192-224 17x17` 0.941 against a 12.6% band (its open
-A/A cell); `3x3 448-384 5x5` 0.951 against a 5.9% band (its close A/A cell - the same
-cell 11.6a already reported as inside its band). Every 11.8 adoption decision was made
-on the s117/s117k sessions, whose A/A cells were inside 2% at the open end; this
-session's wider bands change no adoption, only the confidence with which the final
-table can claim each cell.
+**Gains beyond the per-cell band: 21 of the 22 changed cells** (the after arm
+differs from the parent on the 8 1x1 predicate cells and all 14 k x k cells).
+The one gain inside its (widened) band: `1x7 192-224 17x17` 0.941 against an
+11.3% band (its open A/A cell). Every 11.8 adoption decision was made on the
+s117/s117k sessions, whose A/A cells were inside 2% at the open end; this
+session's bands change no adoption, and the cleaner A/A (3 cells outside at the
+close against s118's 7) is what the note-17 re-run was for.
 
-**The note-18 predicate change and its cost:** the three N = 128 cells the first
-predicate selected go back to the parent (rows above, aft = bef); the route gives up
-beyond-band wins on `3136,128,256` (0.798) and `784,128,512` (0.930), and drops the
-`784,128,1152` loss (1.050 here against 1.010 in s117 - the two sessions bracket parity;
-the cell stays far ahead of best stock at 0.674). The 11.3/11.8 boundary-cell
-owner-decision requests are closed by the rule change. The predicate's eight cells gain
-7-40% (`784,128,512`'s 0.930 would have been the ninth).
+**The note-18 predicate and its cost:** the three N = 128 cells run on the
+parent here by construction (aft = bef in the table); s118 timed them on both
+arms, and its ratios are the record of what the tightened route gives up:
+`3136,128,256` 0.798 (a beyond-band win lost), `784,128,512` 0.930,
+`784,128,1152` 1.050 - the loss that triggered the tightening (s117 had it at
+1.010; the sessions bracket parity, and the cell stays far ahead of best stock
+at 0.674). The predicate's eight cells gain 14-40% beyond their 2% bands here.
 
-**The stage-3 kernel-level goal - the best gated coopmat route ahead of best stock beyond
-the noise band on every shape - is reached on 43 of the 45 shapes.** The two remaining
-cells are the 11.5 DRAM-roof cells, unchanged in kind since 11.4: `3x3 64 224x224`
-(1.816 vs best stock, 0.815 vs the kk parent) and `3x3 64 56x56` (1.493, 0.903) - the
-gather is fixed, the GEMM is the gap, and the t128 tile does not fit N = 64. The three
-784 losers of 11.6a all land ahead of stock: `784,2048,1024` 1.109 -> 0.755,
-`784,2048,512` 1.087 -> 0.747, `784,512,2048` 1.227 -> 0.897 (11.6a aft/bs -> final
-aft/bs); `3x3 64-256 224x224` crosses at 0.976 and `3x3 1024-256 28x28` at 0.695.
+**The stage-3 kernel-level goal - the best gated coopmat route ahead of best
+stock beyond the noise band on every shape - is reached on 43 of the 45
+shapes.** The two remaining cells are the 11.5 DRAM-roof cells, unchanged in
+kind since 11.4: `3x3 64 224x224` (1.810 vs best stock, 0.812 vs the kk parent)
+and `3x3 64 56x56` (1.492, 0.905) - the gather is fixed, the GEMM is the gap,
+and the t128 tile does not fit N = 64. The three 784 losers of 11.6a all land
+ahead of stock: `784,2048,1024` 1.109 -> 0.755, `784,2048,512` 1.087 -> 0.748,
+`784,512,2048` 1.227 -> 0.938 (11.6a aft/bs -> final aft/bs; the earlier
+sessions read the third at 0.895-0.897 - every reading ahead of stock).
+`3x3 64-256 224x224` crosses at 0.975 and `3x3 1024-256 28x28` at 0.703.
 
-**Two owner decisions remain open (note 18):** (1) the nvidia t128 alternative for the
-1x1 predicate cells - faster on all 8 in both sessions with no losing cell under the
-N >= 256 predicate (RESULTS 11.8); the s119 re-run carries the nvidia arm on those cells
-for a same-session comparison. (2) **A push blocker:** two earlier, unpushed commit
-messages on this branch state absolute WMMA ops-per-cycle figures, which the publication
-rule does not allow; per the coordinator they are not rewritten, and the owner decides
-before any push. No figures are repeated here.
+**amd vs nvidia, same session (owner decision 1 of 2):** the nvidia t128
+alternative arm runs on the 8 predicate cells, and it is faster than the
+adopted amd arm on all 8, as ratios to the 1x1 parent: `3136,256,64` 0.800 vs
+0.860, `784,1024,256` 0.657 vs 0.697, `784,2048,1024` 0.556 vs 0.598,
+`784,2048,512` 0.589 vs 0.631, `784,256,1024` 0.723 vs 0.728, `784,256,512`
+0.762 vs 0.768, `784,512,128` 0.784 vs 0.846, `784,512,2048` 0.633 vs 0.680 -
+with no losing cell under the N >= 256 predicate. Predicate geomean vs the
+parent: nvidia 0.683, amd 0.721 - the same pair s117 measured, so the ~5%
+nvidia advantage is stable across sessions. The amd form stays the adopted
+route (the arm both final sessions timed); the nvidia form is the owner's
+faster alternative, and no per-shape mix of the two is taken (note 11: that is
+an oracle).
+
+**Owner decision 2 of 2 - a push blocker:** two earlier, unpushed commit
+messages on this branch state absolute WMMA ops-per-cycle figures, which the
+publication rule does not allow; per the coordinator they are not rewritten,
+and the owner decides before any push. No figures are repeated here.
+
+**Superseded first run (s118, the pre-note-18 session):** same protocol on the
+first predicate (the N = 128 cells timed on both arms), 880 rows zero invalid,
+parent drift 0.994. Its A/A: open geomean 1.0033 with 5 cells outside ±2%
+(worst +12.6% `1x7 192-224 17x17`, +7.2% `1x1 25,384,4032`), close geomean
+0.9896 with 7 outside (worst -18.0% `1x1 784,128,512`, -10.1% `1x7 192-224`) -
+the close geomean outside 1% of 1 fired the note-17 trigger that produced s119.
+Recomputed under the note-18 route, its geomeans (above) agree with s119 on
+every headline. Its full table is in the git history at `163f5bfef1`; two of
+its three reverted N = 128 rows kept stale amd-arm values through a missed
+edit, and the s119 table above is the corrected record.

@@ -194,16 +194,21 @@ the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFL
   via fast-gather); after/best-stock 0.578; geomean % of bound 27.6% -> 28.5%; goal met beyond the noise band on
   37 of 45 - 784,256,1024 crosses to 0.987 within the parity band, 7 cells remain behind (three 784 1x1, four
   kxk), down from 8; oracle 0.986 vs predicate 0.988.)
-  (FINAL s118, HEAD 01bc7d2d52, RESULTS 11.6 final: 120 s cooling idle then 880 rows zero invalid on the same binary as
-  every gate; A/A open 1.0033 (5 cells outside ±2%) / close 0.9896 (7 cells outside) - the close geomean is outside 1%,
-  so the note-17 re-run trigger fired: s119 (>= 10 min idle, thermal readback, nv alternative arm on the 8 predicate
-  cells) supersedes s118 as the final session; the 4.0/7.3 precedent widening, per-cell bands in the table; parent
-  drift 0.994. After state = the 11.8 route tightened by note 18 to M >= 784 and N >= 256 (the three N=128 cells back
-  on the parent: 3136,128,256 0.798 / 784,128,512 0.930 / 784,128,1152 1.050; boundary-cell requests closed).
-  Recomputed after/before geomean 0.904 (1x1 0.919, kxk 0.872); after/best-stock 0.539; geomean % of bound
-  27.8% -> 30.7%. Gains beyond band on 20 of 22 changed cells, two inside their widened bands. Goal met on 43 of 45:
-  the three 784 losers land at 0.755/0.747/0.897 vs best stock, 64-256 224x224 at 0.976, 1024-256 28x28 at 0.695;
-  the two remaining cells are the 11.5 DRAM-roof cells (1.816 / 1.493).)
+  (FINAL s119 - the note-17 re-run, HEAD 163f5bfef1, RESULTS 11.6 final: 11 min full idle then 120 s cooling idle then
+  905 rows zero invalid on the same binary as every gate; thermal state read back in the loop before and after
+  (local log);
+  A/A open 1.0000 (5 cells outside ±2%) / close 0.9987 (3 outside) - both geomeans inside 1%, so the note-17 validity
+  condition is met and s119 stands as final; the 4.0/7.3 precedent widening, per-cell bands in the table; parent
+  drift 1.001. After state = the note-18 route directly: 1x1 M >= 784 and N >= 256 (the three N=128 cells run on the
+  parent only; their s118 both-arm ratios are the record of the cost: 3136,128,256 0.798 / 784,128,512 0.930 /
+  784,128,1152 1.050; boundary-cell requests closed); the nv alternative arm ran on the 8 predicate cells -
+  same-session amd/nv predicate geomeans 0.721 / 0.683, nv faster on all 8 with no loser, matching s117; amd stays
+  adopted, nv recorded as the owner's alternative. After/before geomean 0.903 (1x1 0.919, kxk 0.868);
+  after/best-stock 0.541; geomean % of bound 27.6% -> 30.6%. Gains beyond band on 21 of 22 changed cells, one inside
+  its widened band. Goal met on 43 of 45: the three 784 losers land at 0.755/0.748/0.938 vs best stock, 64-256
+  224x224 at 0.975, 1024-256 28x28 at 0.703; the two remaining cells are the 11.5 DRAM-roof cells (1.810 / 1.492).
+  Superseded first run s118: open 1.0033 (5 outside) / close 0.9896 (7 outside) fired the re-run trigger; its
+  note-18-recomputed geomeans (0.904 / 0.539 / 27.8% -> 30.7%) agree with s119 to a rounding step.)
 - [ ] 11.7 (superseded by 11.8) 784-cell gap, re-attributed: the 11.3 occupancy reading is corrected by the M51
   linear-GEMM evidence (note 13) - a kernel at one workgroup per CU with 16 independent accumulator chains per
   wave reaches about two times our efficiency, so the limiter is **too few independent accumulator chains per
