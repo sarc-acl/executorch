@@ -37,7 +37,17 @@ void add_q8ta_conv2d_dw_node(
     const ValueRef dilation,
     const ValueRef groups,
     const uint32_t activation_type,
-    const ValueRef packed_int8_output);
+    const ValueRef packed_int8_output,
+    // Output widths per thread: 4 (stock), 2 or 1 (q8ta_conv2d_dw_w2 / _w1).
+    const uint32_t tile_w = 4u);
+
+// q8ta_conv2d_dw with the given width tile (the benchmark's dw_tile route);
+// the operator takes 4 unless an int8 table row selects q8ta_conv2d_dw_w2 or
+// q8ta_conv2d_dw_w1 with ETVK_CONV2D_COOPMAT=1.
+void q8ta_conv2d_dw_tiled_impl(
+    ComputeGraph& graph,
+    const std::vector<ValueRef>& args,
+    const uint32_t tile_w);
 
 void add_conv2d_dw_q8ta_q8csw_q8to_4w4c_node(
     ComputeGraph& graph,

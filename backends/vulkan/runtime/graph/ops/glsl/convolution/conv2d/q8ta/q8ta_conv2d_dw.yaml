@@ -7,8 +7,15 @@
 q8ta_conv2d_dw:
   parameter_names_with_default_values:
     DTYPE: float
+    TILE_W: 4
   generate_variant_forall:
     DTYPE:
       - VALUE: float
   shader_variants:
     - NAME: q8ta_conv2d_dw
+    # Change conv2d-all-used-kernels, part D: fewer output widths per thread
+    # (more threads on small depthwise layers), selected by int8 table rows.
+    - NAME: q8ta_conv2d_dw_w2
+      TILE_W: 2
+    - NAME: q8ta_conv2d_dw_w1
+      TILE_W: 1

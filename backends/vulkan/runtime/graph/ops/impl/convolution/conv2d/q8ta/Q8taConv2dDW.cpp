@@ -13,9 +13,13 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/OperatorRegistry.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Common.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Staging.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2d.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/ConvolutionUtils.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/utils/KernelUtils.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/ShaderNameUtils.h>
+
+#include <cstring>
+#include <string>
 
 namespace vkcompute {
 
@@ -28,7 +32,6 @@ GlobalWorkGrid pick_q8ta_conv2d_dw_gwg(
     const vkapi::ShaderInfo& shader,
     const std::vector<ArgGroup>& args,
     const std::vector<ValueRef>& resize_args) {
-  (void)shader;
   (void)resize_args;
 
   VK_CHECK_COND(graph != nullptr);
@@ -39,9 +42,13 @@ GlobalWorkGrid pick_q8ta_conv2d_dw_gwg(
   const uint32_t C = graph->size_at<uint32_t>(-3, output);
   const uint32_t N = graph->size_at<uint32_t>(-4, output);
 
-  // Each thread processes 4 adjacent width positions and 4 channels (4Wx4C
-  // tile)
-  const uint32_t W4 = utils::div_up_4(W);
+  // Each thread processes TILE_W adjacent width positions and 4 channels
+  // (4Wx4C tile in the stock variant; _w2 and _w1 take fewer widths).
+  const std::string& name = shader.kernel_name;
+  const uint32_t tile_w = name.find("_w1_") != std::string::npos ? 1u
+      : name.find("_w2_") != std::string::npos                   ? 2u
+                                                                 : 4u;
+  const uint32_t W4 = utils::div_up(W, tile_w);
   const uint32_t C4 = utils::div_up_4(C);
 
   return GlobalWorkGrid(
@@ -348,7 +355,8 @@ void add_q8ta_conv2d_dw_node(
     const ValueRef dilation,
     const ValueRef groups,
     const uint32_t activation_type,
-    const ValueRef packed_int8_output) {
+    const ValueRef packed_int8_output,
+    const uint32_t tile_w) {
   Conv2DParams conv_params = create_conv2d_params(
       graph,
       packed_int8_input,
@@ -392,7 +400,11 @@ void add_q8ta_conv2d_dw_node(
       PushConstantDataInfo(&output_zp_val, sizeof(output_zp_val)),
   };
 
+  VK_CHECK_COND(tile_w == 4u || tile_w == 2u || tile_w == 1u);
   std::string kernel_name = "q8ta_conv2d_dw";
+  if (tile_w != 4u) {
+    kernel_name += "_w" + std::to_string(tile_w);
+  }
   add_dtype_suffix(kernel_name, graph.dtype_of(packed_weight_scales));
 
   // Pass metadata for both output and input tensors
@@ -439,9 +451,57 @@ void add_q8ta_conv2d_dw_node(
 // High level operator impl
 //
 
+// With ETVK_CONV2D_COOPMAT=1: the width tile of this device's int8 table row
+// for the configuration (q8ta_conv2d_dw_w2 or q8ta_conv2d_dw_w1), else 4
+// (stock).
+static uint32_t q8ta_conv2d_dw_table_tile_w(
+    ComputeGraph& graph,
+    const std::vector<ValueRef>& args) {
+  if (!conv2d_coopmat_switch_on() || args.size() != 16u ||
+      graph.dim_of(args.at(0)) != 4 ||
+      graph.size_at<int64_t>(-4, args.at(0)) != 1) {
+    return 4u;
+  }
+  const auto k = graph.get_int_list(args.at(9));
+  const auto s = graph.get_int_list(args.at(10));
+  const auto p = graph.get_int_list(args.at(11));
+  const auto d = graph.get_int_list(args.at(12));
+  const int64_t c = graph.size_at<int64_t>(-3, args.at(0));
+  const char* const name = conv2d_coopmat_table_lookup(
+      graph,
+      "int8",
+      {c,
+       c,
+       k->at(0),
+       k->at(1),
+       s->at(0),
+       s->at(1),
+       p->at(0),
+       p->at(1),
+       d->at(0),
+       d->at(1),
+       graph.size_at<int64_t>(-2, args.at(0)),
+       graph.size_at<int64_t>(-1, args.at(0))});
+  if (name != nullptr && std::strcmp(name, "q8ta_conv2d_dw_w1") == 0) {
+    return 1u;
+  }
+  if (name != nullptr && std::strcmp(name, "q8ta_conv2d_dw_w2") == 0) {
+    return 2u;
+  }
+  return 4u;
+}
+
 void q8ta_conv2d_dw_impl(
     ComputeGraph& graph,
     const std::vector<ValueRef>& args) {
+  q8ta_conv2d_dw_tiled_impl(
+      graph, args, q8ta_conv2d_dw_table_tile_w(graph, args));
+}
+
+void q8ta_conv2d_dw_tiled_impl(
+    ComputeGraph& graph,
+    const std::vector<ValueRef>& args,
+    const uint32_t tile_w) {
   int32_t idx = 0;
   const ValueRef packed_int8_input = args.at(idx++);
   const ValueRef input_scale = args.at(idx++);
@@ -509,7 +569,8 @@ void q8ta_conv2d_dw_impl(
       dilation,
       groups,
       activation_type_val,
-      packed_int8_output);
+      packed_int8_output,
+      tile_w);
 }
 
 REGISTER_OPERATORS {

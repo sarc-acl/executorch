@@ -11,6 +11,8 @@
 ${define_required_extensions("buffer", DTYPE)}
 
 #define PRECISION ${PRECISION}
+// Output widths per thread (4 in the stock variant).
+#define TILE_W ${TILE_W}
 #define VEC4_T ${texel_load_type(DTYPE, "buffer")}
 #define T ${texel_load_component_type(DTYPE, "buffer")}
 
@@ -77,9 +79,9 @@ void main() {
   const int h = hn % H;
 
   // Initialize output tensor index (WHCN order)
-  // Each thread handles 4 adjacent widths starting at base_out_w
+  // Each thread handles TILE_W adjacent widths starting at base_out_w
   TensorIndex4D outp_tidx;
-  outp_tidx.data[0] = int(gl_GlobalInvocationID.x) * 4;
+  outp_tidx.data[0] = int(gl_GlobalInvocationID.x) * TILE_W;
   outp_tidx.data[1] = h;
   outp_tidx.data[2] = c4 * 4;
   outp_tidx.data[3] = n;
@@ -122,9 +124,9 @@ void main() {
   // of each loop
   const int base_inp_w = inp_tidx.data[0];
 
-  // Initialize accumulators for 4 width positions × 4 channels each
-  ivec4 acc[4];
-  [[unroll]] for (int i = 0; i < 4; ++i) {
+  // Initialize accumulators for TILE_W width positions × 4 channels each
+  ivec4 acc[TILE_W];
+  [[unroll]] for (int i = 0; i < TILE_W; ++i) {
     acc[i] = ivec4(0);
   }
 
@@ -140,12 +142,12 @@ void main() {
     inp_tidx.data[0] = base_inp_w;
 
     for (int kx = 0; kx < conv2d_params.kernel_size.x; kx++) {
-      // Load weight once, reuse for all 4 width positions
+      // Load weight once, reuse for all TILE_W width positions
       const int packed_weight = load_weight(kx, ky, c4, KW4, C4);
       const ivec4 weight_4c = unpack_int8x4(packed_weight);
 
-      // Process 4 adjacent width positions using stride offsets
-      [[unroll]] for (int subtile_w = 0; subtile_w < 4; ++subtile_w) {
+      // Process TILE_W adjacent width positions using stride offsets
+      [[unroll]] for (int subtile_w = 0; subtile_w < TILE_W; ++subtile_w) {
         ivec4 input_4c = ivec4(input_zp);
         if (h_in_bounds && inp_tidx.data[0] >= 0 && inp_tidx.data[0] < inp_W) {
           // Compute texel index: base + kernel offset + subtile offset
@@ -174,8 +176,8 @@ void main() {
         inp_tidx.data[0] += conv2d_params.stride.x;
       }
 
-      // We advanced by 4*stride.x during subtile loop; adjust for net dilation step
-      inp_tidx.data[0] += conv2d_params.dilation.x - 4 * conv2d_params.stride.x;
+      // We advanced by TILE_W*stride.x during subtile loop; adjust for net dilation step
+      inp_tidx.data[0] += conv2d_params.dilation.x - TILE_W * conv2d_params.stride.x;
     }
 
     // Advance height by dilation for next kernel row
@@ -192,8 +194,8 @@ void main() {
   const vec4 weight_scales = vec4(t_weight_scales[c4]);
 
   // Convert to float, apply dequantization, and optionally add bias
-  vec4 facc[4];
-  [[unroll]] for (int subtile_w = 0; subtile_w < 4; ++subtile_w) {
+  vec4 facc[TILE_W];
+  [[unroll]] for (int subtile_w = 0; subtile_w < TILE_W; ++subtile_w) {
     facc[subtile_w] = vec4(acc[subtile_w]);
     facc[subtile_w] -= weight_sums * input_zp;
     facc[subtile_w] *= weight_scales * input_scale;
@@ -202,14 +204,14 @@ void main() {
   // Apply bias if enabled
   if (apply_bias > 0) {
     const vec4 bias = vec4(t_bias[c4]);
-    [[unroll]] for (int subtile_w = 0; subtile_w < 4; ++subtile_w) {
+    [[unroll]] for (int subtile_w = 0; subtile_w < TILE_W; ++subtile_w) {
       facc[subtile_w] += bias;
     }
   }
 
   // Apply ReLU if enabled
   if (activation_type > 0) {
-    [[unroll]] for (int subtile_w = 0; subtile_w < 4; ++subtile_w) {
+    [[unroll]] for (int subtile_w = 0; subtile_w < TILE_W; ++subtile_w) {
       facc[subtile_w] = max(facc[subtile_w], vec4(0.0));
     }
   }
@@ -219,7 +221,7 @@ void main() {
   const int out_w_stride = int(outp.strides[0][0]);
 
   // Quantize and store outputs using stride offsets
-  [[unroll]] for (int subtile_w = 0; subtile_w < 4; ++subtile_w) {
+  [[unroll]] for (int subtile_w = 0; subtile_w < TILE_W; ++subtile_w) {
     // Skip out-of-bounds width positions
     if (outp_tidx.data[0] >= W) {
       continue;

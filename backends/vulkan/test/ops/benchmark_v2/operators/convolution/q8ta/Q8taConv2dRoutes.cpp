@@ -8,6 +8,7 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2d.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dCommon.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dCoopmat.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dDW.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dDirect.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dPW.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/im2col/Q8taConv2dIm2Col.h>
@@ -256,6 +257,29 @@ Json build_im2col_coopmat(
   return build_coopmat(graph, args, options, true, false);
 }
 
+// Change conv2d-all-used-kernels, part D: q8ta_conv2d_dw with a width tile
+// (variant q8ta_conv2d_dw, q8ta_conv2d_dw_w2 or q8ta_conv2d_dw_w1).
+Json build_dw_tile(
+    ComputeGraph& graph,
+    const std::vector<ValueRef>& args,
+    const Json& options) {
+  check_options(options, {"variant"});
+  if (!options.contains("variant") || !options.at("variant").is_string()) {
+    throw std::invalid_argument("route dw_tile requires a variant name");
+  }
+  const std::string name = options.at("variant");
+  const uint32_t tile_w = name == "q8ta_conv2d_dw" ? 4u
+      : name == "q8ta_conv2d_dw_w2"                ? 2u
+      : name == "q8ta_conv2d_dw_w1"                ? 1u
+                                                   : 0u;
+  supported(tile_w != 0u, "Unknown q8ta_conv2d_dw variant: " + name);
+  supported(
+      args.size() == 16u && graph.size_at<int64_t>(-4, args.at(0)) == 1,
+      "route dw_tile requires a batch-1 q8ta_conv2d_dw call");
+  q8ta_conv2d_dw_tiled_impl(graph, args, tile_w);
+  return selected("dw_tile", {{"variant", name}});
+}
+
 Json build_legacy_4w4c(
     ComputeGraph& graph,
     const std::vector<ValueRef>& args,
@@ -339,6 +363,7 @@ REGISTER_OPERATOR_ROUTES {
       et_vk.q8ta_conv2d.default, legacy_4w4c, build_legacy_4w4c);
   REGISTER_OPERATOR_ROUTE(
       et_vk.q8ta_conv2d_dw.default, legacy_4w4c, build_legacy_4w4c);
+  REGISTER_OPERATOR_ROUTE(et_vk.q8ta_conv2d_dw.default, dw_tile, build_dw_tile);
   REGISTER_OPERATOR_ROUTE(
       et_vk.q8ta_conv2d_pw.default, legacy_4w4c, build_legacy_4w4c);
   REGISTER_OPERATOR_ROUTE(
