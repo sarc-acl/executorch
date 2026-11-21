@@ -96,9 +96,7 @@ class Nomination(unittest.TestCase):
             }
         )
         nomination, (info, code, _) = gen.nominate(SHAPE, [("a", a)])
-        self.assertEqual(
-            nomination["arms"], ["conv2d_simt_t64x64_m4n2_dg_float"]
-        )
+        self.assertEqual(nomination["arms"], ["conv2d_simt_t64x64_m4n2_dg_float"])
         self.assertIsNone(code)
         self.assertEqual(gen.route_of("conv1d_simt_pw_t64x32_half"), "simt")
         self.assertEqual(gen.route_of("b1x1"), "b1x1")
@@ -342,13 +340,17 @@ class Confirmation(unittest.TestCase):
             "xe2_t64x32_f16_g2x4_alc": arm(40, 40, 40, 40, 40),
         }
         s = confirmation(arms, ["xe2_t64x64_f16_g4x2_alc", "xe2_t32x64_f16_alc"])
-        kept = {"arms": ["xe2_t64x64_f16_g4x2_alc", "xe2_t32x64_f16_alc"],
-                "previous_row": "xe2_t32x64_f16_alc"}
+        kept = {
+            "arms": ["xe2_t64x64_f16_g4x2_alc", "xe2_t32x64_f16_alc"],
+            "previous_row": "xe2_t32x64_f16_alc",
+        }
         info, code, _ = gen.confirm(SHAPE, s, kept)
         self.assertIsNone(code)
         self.assertEqual(info["best"], "xe2_t32x64_f16_alc")
-        beaten = {"arms": ["xe2_t64x32_f16_g2x4_alc", "xe2_t32x64_f16_alc"],
-                  "previous_row": "xe2_t32x64_f16_alc"}
+        beaten = {
+            "arms": ["xe2_t64x32_f16_g2x4_alc", "xe2_t32x64_f16_alc"],
+            "previous_row": "xe2_t32x64_f16_alc",
+        }
         info, code, _ = gen.confirm(SHAPE, s, beaten)
         self.assertEqual(info["best"], "xe2_t64x32_f16_g2x4_alc")
 

@@ -75,9 +75,17 @@ def dw_args(c, h, w, k, stride, pad, dil, layout="4w4c"):
         ),
         {"float": 0.02},
         {"int": -3},
-        tensor("weight", [k[0], k[1], c], "int8", *const, {"rand_uniform_int": [-127, 127]}),
+        tensor(
+            "weight", [k[0], k[1], c], "int8", *const, {"rand_uniform_int": [-127, 127]}
+        ),
         tensor("weight_sums", [c], "int32", *const, {"column_sum": "weight"}),
-        tensor("weight_scales", [c], "float32", *const, {"rand_uniform_float": [0.002, 0.01]}),
+        tensor(
+            "weight_scales",
+            [c],
+            "float32",
+            *const,
+            {"rand_uniform_float": [0.002, 0.01]},
+        ),
         {"float": 0.390021},
         {"int": 5},
         tensor("bias", [c], "float32", *const, {"rand_uniform_float": [-1, 1]}),
