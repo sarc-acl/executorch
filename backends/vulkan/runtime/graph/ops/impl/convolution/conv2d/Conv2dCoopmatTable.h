@@ -43,7 +43,7 @@ struct Conv2dCoopmatTableRow final {
 };
 
 // clang-format off
-inline constexpr std::array<Conv2dCoopmatTableRow, 2368> kConv2dCoopmatTable = {{
+inline constexpr std::array<Conv2dCoopmatTableRow, 2760> kConv2dCoopmatTable = {{
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1008-192 14x14, 2.99x
     {0x8086, 0xe20b, "fp16", 1008, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 1x1 s1x1 p0x0 d1x1 1024-128 17x17, 2.95x
@@ -3346,6 +3346,790 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 2368> kConv2dCoopmatTable = {
     {0x1002, 0x15bf, "fp16", 3, 64, 7, 7, 2, 2, 3, 3, 1, 1, 224, 224, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 7x7 s2x2 p3x3 d1x1 3-96 224x224, 1.40x
     {0x1002, 0x15bf, "fp16", 3, 96, 7, 7, 2, 2, 3, 3, 1, 1, 224, 224, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 64-64 224x224, 2.22x
+    {0x1002, 0x15bf, "int8", 64, 64, 3, 3, 1, 1, 1, 1, 1, 1, 224, 224, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 192-48 14x14, 5.95x
+    {0x1002, 0x15bf, "int8", 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa8"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 192-48 7x7, 9.14x
+    {0x1002, 0x15bf, "int8", 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa8"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 512-512 7x7, 5.48x
+    {0x1002, 0x15bf, "int8", 512, 512, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 192-48 28x28, 3.69x
+    {0x1002, 0x15bf, "int8", 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x7 s1x1 p0x3 d1x1 192-224 17x17, 2.40x
+    {0x1002, 0x15bf, "int8", 192, 224, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p12x12 d12x12 2048-256 28x28, 1.88x
+    {0x1002, 0x15bf, "int8", 2048, 256, 3, 3, 1, 1, 12, 12, 12, 12, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t128x128_dg_sk4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p24x24 d24x24 2048-256 28x28, 1.92x
+    {0x1002, 0x15bf, "int8", 2048, 256, 3, 3, 1, 1, 24, 24, 24, 24, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t128x128_dg_sk4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p36x36 d36x36 2048-256 28x28, 12.82x
+    {0x1002, 0x15bf, "int8", 2048, 256, 3, 3, 1, 1, 36, 36, 36, 36, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 256-256 14x14, 3.29x
+    {0x1002, 0x15bf, "int8", 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa8"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 64-256 224x224, 1.32x
+    {0x1002, 0x15bf, "int8", 64, 256, 3, 3, 1, 1, 1, 1, 1, 1, 224, 224, "q8ta_conv2d_pw_coopmat_amd_t128x128_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1024-192 17x17, 2.70x
+    {0x1002, 0x15bf, "int8", 1024, 192, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p2x2 d2x2 256-256 28x28, 1.73x
+    {0x1002, 0x15bf, "int8", 256, 256, 3, 3, 1, 1, 2, 2, 2, 2, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 7x1 s1x1 p3x0 d1x1 224-256 17x17, 2.47x
+    {0x1002, 0x15bf, "int8", 224, 256, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 7x1 s1x1 p3x0 d1x1 224-224 17x17, 2.49x
+    {0x1002, 0x15bf, "int8", 224, 224, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p4x4 d4x4 512-512 28x28, 1.57x
+    {0x1002, 0x15bf, "int8", 512, 512, 3, 3, 1, 1, 4, 4, 4, 4, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 192-48 56x56, 2.55x
+    {0x1002, 0x15bf, "int8", 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 56, 56, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x7 s1x1 p0x3 d1x1 224-256 17x17, 2.40x
+    {0x1002, 0x15bf, "int8", 224, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 128-128 28x28, 2.52x
+    {0x1002, 0x15bf, "int8", 128, 128, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 768-192 12x12, 1.22x
+    {0x1002, 0x15bf, "int8", 768, 192, 1, 1, 1, 1, 0, 0, 1, 1, 12, 12, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 7x1 s1x1 p3x0 d1x1 192-192 17x17, 2.61x
+    {0x1002, 0x15bf, "int8", 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1536-384 8x8, 4.47x
+    {0x1002, 0x15bf, "int8", 1536, 384, 1, 1, 1, 1, 0, 0, 1, 1, 8, 8, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1536-256 8x8, 4.64x
+    {0x1002, 0x15bf, "int8", 1536, 256, 1, 1, 1, 1, 0, 0, 1, 1, 8, 8, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 1024-256 28x28, 1.73x
+    {0x1002, 0x15bf, "int8", 1024, 256, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1024-384 17x17, 2.25x
+    {0x1002, 0x15bf, "int8", 1024, 384, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1024-128 17x17, 2.36x
+    {0x1002, 0x15bf, "int8", 1024, 128, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 448-384 5x5, 6.84x
+    {0x1002, 0x15bf, "int8", 448, 384, 3, 3, 1, 1, 1, 1, 1, 1, 5, 5, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa8"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 64-64 56x56, 2.55x
+    {0x1002, 0x15bf, "int8", 64, 64, 3, 3, 1, 1, 1, 1, 1, 1, 56, 56, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 512-2048 28x28, 1.32x
+    {0x1002, 0x15bf, "int8", 512, 2048, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1024-256 28x28, 1.77x
+    {0x1002, 0x15bf, "int8", 1024, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p2x2 d2x2 512-512 28x28, 1.55x
+    {0x1002, 0x15bf, "int8", 512, 512, 3, 3, 1, 1, 2, 2, 2, 2, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 64-96 35x35, 2.20x
+    {0x1002, 0x15bf, "int8", 64, 96, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "q8ta_conv2d_pw_coopmat_amd_t32x32_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 7x1 s1x1 p3x0 d1x1 192-192 12x12, 3.64x
+    {0x1002, 0x15bf, "int8", 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x7 s1x1 p0x3 d1x1 192-192 12x12, 3.68x
+    {0x1002, 0x15bf, "int8", 192, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1024-256 14x14, 2.70x
+    {0x1002, 0x15bf, "int8", 1024, 256, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 2048-512 28x28, 1.72x
+    {0x1002, 0x15bf, "int8", 2048, 512, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 256-256 28x28, 1.73x
+    {0x1002, 0x15bf, "int8", 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x3 s1x1 p0x1 d1x1 384-384 5x5, 4.00x
+    {0x1002, 0x15bf, "int8", 384, 384, 1, 3, 1, 1, 0, 1, 1, 1, 5, 5, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x1 s1x1 p1x0 d1x1 512-256 8x8, 4.31x
+    {0x1002, 0x15bf, "int8", 512, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "q8ta_conv2d_pw_coopmat_amd_t32x32_dg_sa8"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x1 s1x1 p1x0 d1x1 384-384 5x5, 3.81x
+    {0x1002, 0x15bf, "int8", 384, 384, 3, 1, 1, 1, 1, 0, 1, 1, 5, 5, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x3 s1x1 p0x1 d1x1 512-256 8x8, 4.40x
+    {0x1002, 0x15bf, "int8", 512, 256, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 7x1 s1x1 p3x0 d1x1 160-160 12x12, 3.41x
+    {0x1002, 0x15bf, "int8", 160, 160, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "q8ta_conv2d_pw_coopmat_amd_t32x32_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x7 s1x1 p0x3 d1x1 160-160 12x12, 3.37x
+    {0x1002, 0x15bf, "int8", 160, 160, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "q8ta_conv2d_pw_coopmat_amd_t32x32_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 64-3 448x448, 3.18x
+    {0x1002, 0x15bf, "int8", 64, 3, 3, 3, 1, 1, 1, 1, 1, 1, 448, 448, "q8ta_conv2d_pw_coopmat_amd_t32x32_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s2x2 p1x1 d1x1 512-512 14x14, 5.41x
+    {0x1002, 0x15bf, "int8", 512, 512, 3, 3, 2, 2, 1, 1, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 256-1024 28x28, 1.15x
+    {0x1002, 0x15bf, "int8", 256, 1024, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 384-96 35x35, 1.48x
+    {0x1002, 0x15bf, "int8", 384, 96, 1, 1, 1, 1, 0, 0, 1, 1, 35, 35, "q8ta_conv2d_pw_coopmat_amd_t32x32"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x3 s1x1 p0x1 d1x1 448-512 8x8, 3.40x
+    {0x1002, 0x15bf, "int8", 448, 512, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 384-64 35x35, 1.39x
+    {0x1002, 0x15bf, "int8", 384, 64, 1, 1, 1, 1, 0, 0, 1, 1, 35, 35, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 2048-512 7x7, 4.69x
+    {0x1002, 0x15bf, "int8", 2048, 512, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 96-96 35x35, 2.20x
+    {0x1002, 0x15bf, "int8", 96, 96, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "q8ta_conv2d_pw_coopmat_amd_t32x32_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 512-128 28x28, 1.64x
+    {0x1002, 0x15bf, "int8", 512, 128, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1024-2048 28x28, 1.48x
+    {0x1002, 0x15bf, "int8", 1024, 2048, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 5x5 s1x1 p2x2 d1x1 48-64 25x25, 3.84x
+    {0x1002, 0x15bf, "int8", 48, 64, 5, 5, 1, 1, 2, 2, 1, 1, 25, 25, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x3 s1x1 p0x1 d1x1 384-256 8x8, 3.88x
+    {0x1002, 0x15bf, "int8", 384, 256, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x1 s1x1 p1x0 d1x1 384-448 8x8, 3.09x
+    {0x1002, 0x15bf, "int8", 384, 448, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x1 s1x1 p1x0 d1x1 384-256 8x8, 3.78x
+    {0x1002, 0x15bf, "int8", 384, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s2x2 p0x0 d1x1 384-384 35x35, 1.96x
+    {0x1002, 0x15bf, "int8", 384, 384, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 768-160 12x12, 1.17x
+    {0x1002, 0x15bf, "int8", 768, 160, 1, 1, 1, 1, 0, 0, 1, 1, 12, 12, "q8ta_conv2d_pw_coopmat_amd_t32x32"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s2x2 p0x0 d1x1 320-320 17x17, 6.34x
+    {0x1002, 0x15bf, "int8", 320, 320, 3, 3, 2, 2, 0, 0, 1, 1, 17, 17, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa8"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 96-96 25x25, 2.79x
+    {0x1002, 0x15bf, "int8", 96, 96, 3, 3, 1, 1, 1, 1, 1, 1, 25, 25, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 64-96 25x25, 2.30x
+    {0x1002, 0x15bf, "int8", 64, 96, 3, 3, 1, 1, 1, 1, 1, 1, 25, 25, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s2x2 p0x0 d1x1 288-384 25x25, 3.02x
+    {0x1002, 0x15bf, "int8", 288, 384, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s2x2 p1x1 d1x1 128-128 56x56, 2.16x
+    {0x1002, 0x15bf, "int8", 128, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s2x2 p1x1 d1x1 256-512 14x14, 4.46x
+    {0x1002, 0x15bf, "int8", 256, 512, 3, 3, 2, 2, 1, 1, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 192-224 35x35, 1.83x
+    {0x1002, 0x15bf, "int8", 192, 224, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "q8ta_conv2d_pw_coopmat_amd_t128x128_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 7x1 s1x1 p3x0 d1x1 160-192 12x12, 3.26x
+    {0x1002, 0x15bf, "int8", 160, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x7 s1x1 p0x3 d1x1 160-192 12x12, 3.22x
+    {0x1002, 0x15bf, "int8", 160, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 2112-1056 14x14, 1.48x
+    {0x1002, 0x15bf, "int8", 2112, 1056, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s2x2 p1x1 d1x1 256-256 28x28, 3.16x
+    {0x1002, 0x15bf, "int8", 256, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s2x2 p0x0 d1x1 192-192 71x71, 2.34x
+    {0x1002, 0x15bf, "int8", 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 71, 71, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 2160-192 7x7, 6.98x
+    {0x1002, 0x15bf, "int8", 2160, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 2048-256 1x1, 9.42x
+    {0x1002, 0x15bf, "int8", 2048, 256, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "q8ta_conv2d_pw_coopmat_amd_t32x32_sa8"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 2048-256 28x28, 1.80x
+    {0x1002, 0x15bf, "int8", 2048, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 2112-192 7x7, 6.58x
+    {0x1002, 0x15bf, "int8", 2112, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 960-160 7x7, 1.48x
+    {0x1002, 0x15bf, "int8", 960, 160, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t32x32"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s2x2 p0x0 d1x1 224-256 35x35, 2.44x
+    {0x1002, 0x15bf, "int8", 224, 256, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 2064-192 14x14, 4.27x
+    {0x1002, 0x15bf, "int8", 2064, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 2064-192 7x7, 6.83x
+    {0x1002, 0x15bf, "int8", 2064, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 2048-192 5x5, 7.50x
+    {0x1002, 0x15bf, "int8", 2048, 192, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 2048-384 5x5, 5.67x
+    {0x1002, 0x15bf, "int8", 2048, 384, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 2048-448 5x5, 5.05x
+    {0x1002, 0x15bf, "int8", 2048, 448, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 2048-320 5x5, 6.06x
+    {0x1002, 0x15bf, "int8", 2048, 320, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 2016-192 7x7, 6.59x
+    {0x1002, 0x15bf, "int8", 2016, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 2016-192 14x14, 4.28x
+    {0x1002, 0x15bf, "int8", 2016, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 7x1 s1x1 p3x0 d1x1 128-128 12x12, 3.25x
+    {0x1002, 0x15bf, "int8", 128, 128, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1968-192 7x7, 6.39x
+    {0x1002, 0x15bf, "int8", 1968, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1968-192 14x14, 4.28x
+    {0x1002, 0x15bf, "int8", 1968, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 512-2048 7x7, 1.64x
+    {0x1002, 0x15bf, "int8", 512, 2048, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x7 s1x1 p0x3 d1x1 128-128 12x12, 2.71x
+    {0x1002, 0x15bf, "int8", 128, 128, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p0x0 d1x1 64-96 73x73, 1.59x
+    {0x1002, 0x15bf, "int8", 64, 96, 3, 3, 1, 1, 0, 0, 1, 1, 73, 73, "q8ta_conv2d_pw_coopmat_amd_t32x32_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1920-192 7x7, 6.28x
+    {0x1002, 0x15bf, "int8", 1920, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1920-192 14x14, 4.13x
+    {0x1002, 0x15bf, "int8", 1920, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1872-192 7x7, 6.54x
+    {0x1002, 0x15bf, "int8", 1872, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1872-192 14x14, 4.15x
+    {0x1002, 0x15bf, "int8", 1872, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1776-192 14x14, 4.08x
+    {0x1002, 0x15bf, "int8", 1776, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 7x1 s1x1 p3x0 d1x1 256-320 17x17, 2.13x
+    {0x1002, 0x15bf, "int8", 256, 320, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x7 s1x1 p0x3 d1x1 256-256 17x17, 2.48x
+    {0x1002, 0x15bf, "int8", 256, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1824-192 14x14, 4.14x
+    {0x1002, 0x15bf, "int8", 1824, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1728-192 7x7, 5.78x
+    {0x1002, 0x15bf, "int8", 1728, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1824-192 7x7, 5.97x
+    {0x1002, 0x15bf, "int8", 1824, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s2x2 p0x0 d1x1 192-192 17x17, 5.54x
+    {0x1002, 0x15bf, "int8", 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 17, 17, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1776-192 7x7, 5.70x
+    {0x1002, 0x15bf, "int8", 1776, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t32x32_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1728-192 14x14, 4.05x
+    {0x1002, 0x15bf, "int8", 1728, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1680-192 7x7, 5.71x
+    {0x1002, 0x15bf, "int8", 1680, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s2x2 p0x0 d1x1 192-320 12x12, 4.74x
+    {0x1002, 0x15bf, "int8", 192, 320, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 768-128 12x12, 1.28x
+    {0x1002, 0x15bf, "int8", 768, 128, 1, 1, 1, 1, 0, 0, 1, 1, 12, 12, "q8ta_conv2d_pw_coopmat_amd_t32x32"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1680-192 14x14, 3.93x
+    {0x1002, 0x15bf, "int8", 1680, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s2x2 p0x0 d1x1 192-192 12x12, 6.48x
+    {0x1002, 0x15bf, "int8", 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1632-192 14x14, 3.87x
+    {0x1002, 0x15bf, "int8", 1632, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1632-192 7x7, 5.22x
+    {0x1002, 0x15bf, "int8", 1632, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 256-64 56x56, 1.22x
+    {0x1002, 0x15bf, "int8", 256, 64, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1584-192 14x14, 3.79x
+    {0x1002, 0x15bf, "int8", 1584, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1584-192 7x7, 4.19x
+    {0x1002, 0x15bf, "int8", 1584, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t32x32_sk2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1536-192 7x7, 5.42x
+    {0x1002, 0x15bf, "int8", 1536, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1536-192 14x14, 3.45x
+    {0x1002, 0x15bf, "int8", 1536, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1488-192 7x7, 5.48x
+    {0x1002, 0x15bf, "int8", 1488, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1488-192 14x14, 3.65x
+    {0x1002, 0x15bf, "int8", 1488, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1440-192 14x14, 3.48x
+    {0x1002, 0x15bf, "int8", 1440, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1440-192 7x7, 4.92x
+    {0x1002, 0x15bf, "int8", 1440, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t32x32_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1392-192 14x14, 3.48x
+    {0x1002, 0x15bf, "int8", 1392, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1280-256 28x28, 1.77x
+    {0x1002, 0x15bf, "int8", 1280, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1344-192 14x14, 3.21x
+    {0x1002, 0x15bf, "int8", 1344, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1392-192 7x7, 5.27x
+    {0x1002, 0x15bf, "int8", 1392, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 512-1024 28x28, 1.32x
+    {0x1002, 0x15bf, "int8", 512, 1024, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1024-512 28x28, 1.62x
+    {0x1002, 0x15bf, "int8", 1024, 512, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1296-192 14x14, 3.11x
+    {0x1002, 0x15bf, "int8", 1296, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 576-96 14x14, 1.11x
+    {0x1002, 0x15bf, "int8", 576, 96, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t32x32"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s2x2 p1x1 d1x1 128-256 28x28, 2.61x
+    {0x1002, 0x15bf, "int8", 128, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1344-192 7x7, 4.74x
+    {0x1002, 0x15bf, "int8", 1344, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t32x32_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1248-192 14x14, 3.01x
+    {0x1002, 0x15bf, "int8", 1248, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1296-192 7x7, 4.85x
+    {0x1002, 0x15bf, "int8", 1296, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1248-192 7x7, 3.86x
+    {0x1002, 0x15bf, "int8", 1248, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t32x32_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 512-256 28x28, 1.65x
+    {0x1002, 0x15bf, "int8", 512, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1280-192 5x5, 4.52x
+    {0x1002, 0x15bf, "int8", 1280, 192, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "q8ta_conv2d_pw_coopmat_amd_t32x32_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 32-64 147x147, 1.97x
+    {0x1002, 0x15bf, "int8", 32, 64, 3, 3, 1, 1, 1, 1, 1, 1, 147, 147, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1280-448 5x5, 3.77x
+    {0x1002, 0x15bf, "int8", 1280, 448, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1280-320 5x5, 4.41x
+    {0x1002, 0x15bf, "int8", 1280, 320, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1280-384 5x5, 4.33x
+    {0x1002, 0x15bf, "int8", 1280, 384, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1200-192 7x7, 3.29x
+    {0x1002, 0x15bf, "int8", 1200, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1200-192 14x14, 2.99x
+    {0x1002, 0x15bf, "int8", 1200, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1152-192 7x7, 3.02x
+    {0x1002, 0x15bf, "int8", 1152, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p0x0 d1x1 80-192 54x54, 1.51x
+    {0x1002, 0x15bf, "int8", 80, 192, 3, 3, 1, 1, 0, 0, 1, 1, 54, 54, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1152-192 14x14, 3.02x
+    {0x1002, 0x15bf, "int8", 1152, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1104-192 14x14, 2.95x
+    {0x1002, 0x15bf, "int8", 1104, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1104-192 7x7, 2.31x
+    {0x1002, 0x15bf, "int8", 1104, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t32x32_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1024-256 17x17, 2.71x
+    {0x1002, 0x15bf, "int8", 1024, 256, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s2x2 p0x0 d1x1 1024-2048 14x14, 1.68x
+    {0x1002, 0x15bf, "int8", 1024, 2048, 1, 1, 2, 2, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1056-192 7x7, 1.90x
+    {0x1002, 0x15bf, "int8", 1056, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1056-192 14x14, 2.74x
+    {0x1002, 0x15bf, "int8", 1056, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1024-512 14x14, 2.40x
+    {0x1002, 0x15bf, "int8", 1024, 512, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t32x32"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 1008-192 14x14, 2.73x
+    {0x1002, 0x15bf, "int8", 1008, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 960-320 7x7, 3.03x
+    {0x1002, 0x15bf, "int8", 960, 320, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 960-192 14x14, 2.27x
+    {0x1002, 0x15bf, "int8", 960, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 912-192 14x14, 2.45x
+    {0x1002, 0x15bf, "int8", 912, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 256-128 56x56, 1.24x
+    {0x1002, 0x15bf, "int8", 256, 128, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 768-384 28x28, 1.48x
+    {0x1002, 0x15bf, "int8", 768, 384, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s2x2 p0x0 d1x1 64-96 147x147, 1.61x
+    {0x1002, 0x15bf, "int8", 64, 96, 3, 3, 2, 2, 0, 0, 1, 1, 147, 147, "q8ta_conv2d_pw_coopmat_amd_t128x128_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x7 s1x1 p0x3 d1x1 128-192 12x12, 2.90x
+    {0x1002, 0x15bf, "int8", 128, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 7x1 s1x1 p3x0 d1x1 128-192 12x12, 2.89x
+    {0x1002, 0x15bf, "int8", 128, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s2x2 p0x0 d1x1 256-512 56x56, 1.24x
+    {0x1002, 0x15bf, "int8", 256, 512, 1, 1, 2, 2, 0, 0, 1, 1, 56, 56, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s2x2 p0x0 d1x1 96-96 25x25, 3.53x
+    {0x1002, 0x15bf, "int8", 96, 96, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "q8ta_conv2d_pw_coopmat_amd_t32x32_dg_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 864-192 14x14, 2.02x
+    {0x1002, 0x15bf, "int8", 864, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 576-144 1x1, 2.01x
+    {0x1002, 0x15bf, "int8", 576, 144, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "q8ta_conv2d_pw_coopmat_amd_t32x32_sa4"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 384-192 56x56, 1.33x
+    {0x1002, 0x15bf, "int8", 384, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 32-64 109x109, 2.00x
+    {0x1002, 0x15bf, "int8", 32, 64, 3, 3, 1, 1, 1, 1, 1, 1, 109, 109, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 816-192 14x14, 1.99x
+    {0x1002, 0x15bf, "int8", 816, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p0x0 d1x1 32-32 149x149, 2.68x
+    {0x1002, 0x15bf, "int8", 32, 32, 3, 3, 1, 1, 0, 0, 1, 1, 149, 149, "q8ta_conv2d_pw_coopmat_amd_t32x32_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 336-192 56x56, 1.24x
+    {0x1002, 0x15bf, "int8", 336, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 768-192 14x14, 1.52x
+    {0x1002, 0x15bf, "int8", 768, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 720-192 28x28, 1.81x
+    {0x1002, 0x15bf, "int8", 720, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t32x32"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s2x2 p1x1 d1x1 64-128 56x56, 2.22x
+    {0x1002, 0x15bf, "int8", 64, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 720-192 14x14, 1.55x
+    {0x1002, 0x15bf, "int8", 720, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 672-192 28x28, 1.87x
+    {0x1002, 0x15bf, "int8", 672, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t32x32"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 672-192 14x14, 1.33x
+    {0x1002, 0x15bf, "int8", 672, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 624-192 28x28, 1.73x
+    {0x1002, 0x15bf, "int8", 624, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t32x32"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 288-192 56x56, 1.22x
+    {0x1002, 0x15bf, "int8", 288, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 624-192 14x14, 1.23x
+    {0x1002, 0x15bf, "int8", 624, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 160-64 73x73, 1.08x
+    {0x1002, 0x15bf, "int8", 160, 64, 1, 1, 1, 1, 0, 0, 1, 1, 73, 73, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 576-192 14x14, 1.26x
+    {0x1002, 0x15bf, "int8", 576, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 576-192 28x28, 1.62x
+    {0x1002, 0x15bf, "int8", 576, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x7 s1x1 p0x3 d1x1 64-64 73x73, 2.34x
+    {0x1002, 0x15bf, "int8", 64, 64, 1, 7, 1, 1, 0, 3, 1, 1, 73, 73, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 576-160 7x7, 1.54x
+    {0x1002, 0x15bf, "int8", 576, 160, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t32x32"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 7x1 s1x1 p3x0 d1x1 64-64 73x73, 2.40x
+    {0x1002, 0x15bf, "int8", 64, 64, 7, 1, 1, 1, 3, 0, 1, 1, 73, 73, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 528-192 28x28, 1.54x
+    {0x1002, 0x15bf, "int8", 528, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t32x32"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 528-192 14x14, 1.16x
+    {0x1002, 0x15bf, "int8", 528, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 240-192 56x56, 1.14x
+    {0x1002, 0x15bf, "int8", 240, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s2x2 p0x0 d1x1 512-1024 28x28, 1.12x
+    {0x1002, 0x15bf, "int8", 512, 1024, 1, 1, 2, 2, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t128x64_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 384-192 35x35, 1.83x
+    {0x1002, 0x15bf, "int8", 384, 192, 1, 1, 1, 1, 0, 0, 1, 1, 35, 35, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 480-192 28x28, 1.28x
+    {0x1002, 0x15bf, "int8", 480, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t32x32"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 432-192 28x28, 1.21x
+    {0x1002, 0x15bf, "int8", 432, 192, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 192-192 56x56, 1.09x
+    {0x1002, 0x15bf, "int8", 192, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 432-192 14x14, 1.07x
+    {0x1002, 0x15bf, "int8", 432, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p0x0 d1x1 32-32 111x111, 2.80x
+    {0x1002, 0x15bf, "int8", 32, 32, 3, 3, 1, 1, 0, 0, 1, 1, 111, 111, "q8ta_conv2d_pw_coopmat_amd_t32x32_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s1x1 p0x0 d1x1 320-1280 7x7, 1.40x
+    {0x1002, 0x15bf, "int8", 320, 1280, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "q8ta_conv2d_pw_coopmat_amd_t64x64"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s2x2 p0x0 d1x1 256-512 14x14, 1.30x
+    {0x1002, 0x15bf, "int8", 256, 512, 1, 1, 2, 2, 0, 0, 1, 1, 14, 14, "q8ta_conv2d_pw_coopmat_amd_t64x64_dg_sa2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 1x1 s2x2 p0x0 d1x1 128-256 28x28, 1.15x
+    {0x1002, 0x15bf, "int8", 128, 256, 1, 1, 2, 2, 0, 0, 1, 1, 28, 28, "q8ta_conv2d_pw_coopmat_amd_t32x32_dg"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 7x7 s2x2 p3x3 d1x1 3-64 224x224, 1.97x
+    {0x1002, 0x15bf, "int8", 3, 64, 7, 7, 2, 2, 3, 3, 1, 1, 224, 224, "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 7x7 s2x2 p3x3 d1x1 3-96 224x224, 1.35x
+    {0x1002, 0x15bf, "int8", 3, 96, 7, 7, 2, 2, 3, 3, 1, 1, 224, 224, "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 3-64 224x224, 1.25x
+    {0x1002, 0x15bf, "int8", 3, 64, 3, 3, 1, 1, 1, 1, 1, 1, 224, 224, "q8ta_conv2d_pw_coopmat_amd_t64x64_dgb"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p36x36 d36x36 2048-256 28x28, 1.37x
+    {0x1002, 0x15bf, "fp32", 2048, 256, 3, 3, 1, 1, 36, 36, 36, 36, 28, 28, "conv2d_simt_t64x64_m4n2_dg_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p4x4 d4x4 512-512 28x28, 1.16x
+    {0x1002, 0x15bf, "fp32", 512, 512, 3, 3, 1, 1, 4, 4, 4, 4, 28, 28, "conv2d_simt_t64x64_m4n2_dg_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p1x1 d1x1 192-48 14x14, 1.66x
+    {0x1002, 0x15bf, "fp32", 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_simt_t64x64_m4n2_dg_sk8_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p2x2 d2x2 256-256 28x28, 1.45x
+    {0x1002, 0x15bf, "fp32", 256, 256, 3, 3, 1, 1, 2, 2, 2, 2, 28, 28, "conv2d_simt_t64x64_m4n2_dg_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p1x1 d1x1 512-512 7x7, 3.39x
+    {0x1002, 0x15bf, "fp32", 512, 512, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p1x1 d1x1 1024-256 28x28, 1.95x
+    {0x1002, 0x15bf, "fp32", 1024, 256, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_simt_t64x64_m4n2_dg_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x7 s1x1 p0x3 d1x1 192-224 17x17, 1.61x
+    {0x1002, 0x15bf, "fp32", 192, 224, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_simt_t32x32_m4n1_dg_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p1x1 d1x1 256-256 14x14, 2.23x
+    {0x1002, 0x15bf, "fp32", 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p2x2 d2x2 512-512 28x28, 1.22x
+    {0x1002, 0x15bf, "fp32", 512, 512, 3, 3, 1, 1, 2, 2, 2, 2, 28, 28, "conv2d_simt_t64x64_m4n2_dg_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p1x1 d1x1 192-48 7x7, 2.10x
+    {0x1002, 0x15bf, "fp32", 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_dg_sk8_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1024-192 17x17, 1.68x
+    {0x1002, 0x15bf, "fp32", 1024, 192, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p1x1 d1x1 192-48 28x28, 1.07x
+    {0x1002, 0x15bf, "fp32", 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_simt_t64x64_m4n2_dg_sk8_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p1x1 d1x1 128-128 28x28, 1.94x
+    {0x1002, 0x15bf, "fp32", 128, 128, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p1x1 d1x1 64-3 448x448, 2.11x
+    {0x1002, 0x15bf, "fp32", 64, 3, 3, 3, 1, 1, 1, 1, 1, 1, 448, 448, "conv2d_simt_t32x32_m4n1_dg_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 7x1 s1x1 p3x0 d1x1 224-256 17x17, 1.63x
+    {0x1002, 0x15bf, "fp32", 224, 256, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x7 s1x1 p0x3 d1x1 224-256 17x17, 1.58x
+    {0x1002, 0x15bf, "fp32", 224, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 7x1 s1x1 p3x0 d1x1 224-224 17x17, 1.67x
+    {0x1002, 0x15bf, "fp32", 224, 224, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_simt_t32x32_m4n1_dg_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 768-192 12x12, 1.39x
+    {0x1002, 0x15bf, "fp32", 768, 192, 1, 1, 1, 1, 0, 0, 1, 1, 12, 12, "conv2d_simt_t32x32_m4n1_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1536-256 8x8, 2.67x
+    {0x1002, 0x15bf, "fp32", 1536, 256, 1, 1, 1, 1, 0, 0, 1, 1, 8, 8, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1536-384 8x8, 3.18x
+    {0x1002, 0x15bf, "fp32", 1536, 384, 1, 1, 1, 1, 0, 0, 1, 1, 8, 8, "conv2d_simt_t32x32_m4n1_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 7x1 s1x1 p3x0 d1x1 192-192 17x17, 1.93x
+    {0x1002, 0x15bf, "fp32", 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1024-384 17x17, 1.06x
+    {0x1002, 0x15bf, "fp32", 1024, 384, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_simt_t64x64_m4n2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p1x1 d1x1 448-384 5x5, 5.03x
+    {0x1002, 0x15bf, "fp32", 448, 384, 3, 3, 1, 1, 1, 1, 1, 1, 5, 5, "conv2d_simt_t32x32_m4n1_dg_sk8_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1024-128 17x17, 2.23x
+    {0x1002, 0x15bf, "fp32", 1024, 128, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p1x1 d1x1 256-256 28x28, 1.75x
+    {0x1002, 0x15bf, "fp32", 256, 256, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_simt_t64x64_m4n2_dg_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1024-256 14x14, 1.49x
+    {0x1002, 0x15bf, "fp32", 1024, 256, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 7x1 s1x1 p3x0 d1x1 192-192 12x12, 2.90x
+    {0x1002, 0x15bf, "fp32", 192, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x7 s1x1 p0x3 d1x1 192-192 12x12, 2.83x
+    {0x1002, 0x15bf, "fp32", 192, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x1 s1x1 p1x0 d1x1 512-256 8x8, 4.11x
+    {0x1002, 0x15bf, "fp32", 512, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_simt_t64x64_m4n2_dg_sk8_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x3 s1x1 p0x1 d1x1 512-256 8x8, 4.20x
+    {0x1002, 0x15bf, "fp32", 512, 256, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_simt_t64x64_m4n2_dg_sk8_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s2x2 p1x1 d1x1 512-512 14x14, 3.24x
+    {0x1002, 0x15bf, "fp32", 512, 512, 3, 3, 2, 2, 1, 1, 1, 1, 14, 14, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x3 s1x1 p0x1 d1x1 384-384 5x5, 3.96x
+    {0x1002, 0x15bf, "fp32", 384, 384, 1, 3, 1, 1, 0, 1, 1, 1, 5, 5, "conv2d_simt_t32x32_m4n1_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 2048-512 7x7, 2.70x
+    {0x1002, 0x15bf, "fp32", 2048, 512, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t64x64_m4n2_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x1 s1x1 p1x0 d1x1 384-384 5x5, 3.74x
+    {0x1002, 0x15bf, "fp32", 384, 384, 3, 1, 1, 1, 1, 0, 1, 1, 5, 5, "conv2d_simt_t32x32_m4n1_dg_sk8_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x7 s1x1 p0x3 d1x1 160-160 12x12, 2.71x
+    {0x1002, 0x15bf, "fp32", 160, 160, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 7x1 s1x1 p3x0 d1x1 160-160 12x12, 2.75x
+    {0x1002, 0x15bf, "fp32", 160, 160, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x3 s1x1 p0x1 d1x1 448-512 8x8, 2.58x
+    {0x1002, 0x15bf, "fp32", 448, 512, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s2x2 p0x0 d1x1 384-384 35x35, 1.41x
+    {0x1002, 0x15bf, "fp32", 384, 384, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "conv2d_simt_t64x64_m4n2_dg_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 384-64 35x35, 1.22x
+    {0x1002, 0x15bf, "fp32", 384, 64, 1, 1, 1, 1, 0, 0, 1, 1, 35, 35, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x1 s1x1 p1x0 d1x1 384-448 8x8, 2.62x
+    {0x1002, 0x15bf, "fp32", 384, 448, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 384-96 35x35, 1.26x
+    {0x1002, 0x15bf, "fp32", 384, 96, 1, 1, 1, 1, 0, 0, 1, 1, 35, 35, "conv2d_simt_t64x32_m4n2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 960-160 7x7, 2.47x
+    {0x1002, 0x15bf, "fp32", 960, 160, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 512-128 28x28, 1.09x
+    {0x1002, 0x15bf, "fp32", 512, 128, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x1 s1x1 p1x0 d1x1 384-256 8x8, 3.80x
+    {0x1002, 0x15bf, "fp32", 384, 256, 3, 1, 1, 1, 1, 0, 1, 1, 8, 8, "conv2d_simt_t32x32_m4n1_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x3 s1x1 p0x1 d1x1 384-256 8x8, 3.84x
+    {0x1002, 0x15bf, "fp32", 384, 256, 1, 3, 1, 1, 0, 1, 1, 1, 8, 8, "conv2d_simt_t32x32_m4n1_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 768-160 12x12, 1.47x
+    {0x1002, 0x15bf, "fp32", 768, 160, 1, 1, 1, 1, 0, 0, 1, 1, 12, 12, "conv2d_simt_t32x32_m4n1_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p1x1 d1x1 192-224 35x35, 1.74x
+    {0x1002, 0x15bf, "fp32", 192, 224, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_simt_t64x64_m4n2_dg_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s2x2 p0x0 d1x1 320-320 17x17, 4.34x
+    {0x1002, 0x15bf, "fp32", 320, 320, 3, 3, 2, 2, 0, 0, 1, 1, 17, 17, "conv2d_simt_t64x64_m4n2_dg_sk8_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s2x2 p1x1 d1x1 128-128 56x56, 2.00x
+    {0x1002, 0x15bf, "fp32", 128, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 7x7 s2x2 p3x3 d1x1 3-64 224x224, 1.53x
+    {0x1002, 0x15bf, "fp32", 3, 64, 7, 7, 2, 2, 3, 3, 1, 1, 224, 224, "conv2d_simt_t64x64_m4n2_dg_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s2x2 p0x0 d1x1 192-192 71x71, 2.09x
+    {0x1002, 0x15bf, "fp32", 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 71, 71, "conv2d_simt_t64x64_m4n2_dg_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s2x2 p0x0 d1x1 288-384 25x25, 1.78x
+    {0x1002, 0x15bf, "fp32", 288, 384, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "conv2d_simt_t64x64_m4n2_dg_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 5x5 s1x1 p2x2 d1x1 48-64 25x25, 1.40x
+    {0x1002, 0x15bf, "fp32", 48, 64, 5, 5, 1, 1, 2, 2, 1, 1, 25, 25, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s2x2 p1x1 d1x1 256-256 28x28, 2.17x
+    {0x1002, 0x15bf, "fp32", 256, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 2160-192 7x7, 5.35x
+    {0x1002, 0x15bf, "fp32", 2160, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 2112-192 7x7, 4.69x
+    {0x1002, 0x15bf, "fp32", 2112, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 2048-256 28x28, 1.06x
+    {0x1002, 0x15bf, "fp32", 2048, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_simt_t64x64_m4n2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 2064-192 7x7, 4.03x
+    {0x1002, 0x15bf, "fp32", 2064, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 2016-192 7x7, 3.77x
+    {0x1002, 0x15bf, "fp32", 2016, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s2x2 p1x1 d1x1 256-512 14x14, 3.06x
+    {0x1002, 0x15bf, "fp32", 256, 512, 3, 3, 2, 2, 1, 1, 1, 1, 14, 14, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x7 s1x1 p0x3 d1x1 160-192 12x12, 2.70x
+    {0x1002, 0x15bf, "fp32", 160, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 7x1 s1x1 p3x0 d1x1 160-192 12x12, 2.75x
+    {0x1002, 0x15bf, "fp32", 160, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p1x1 d1x1 64-96 25x25, 1.10x
+    {0x1002, 0x15bf, "fp32", 64, 96, 3, 3, 1, 1, 1, 1, 1, 1, 25, 25, "conv2d_simt_t32x32_m4n1_dg_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1968-192 7x7, 3.75x
+    {0x1002, 0x15bf, "fp32", 1968, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 512-2048 7x7, 1.07x
+    {0x1002, 0x15bf, "fp32", 512, 2048, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t64x64_m4n2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1920-192 7x7, 3.74x
+    {0x1002, 0x15bf, "fp32", 1920, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 2064-192 14x14, 2.17x
+    {0x1002, 0x15bf, "fp32", 2064, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t64x64_m4n2_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 384-64 14x14, 1.38x
+    {0x1002, 0x15bf, "fp32", 384, 64, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1872-192 7x7, 3.66x
+    {0x1002, 0x15bf, "fp32", 1872, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 2016-192 14x14, 2.18x
+    {0x1002, 0x15bf, "fp32", 2016, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t64x64_m4n2_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 64-256 56x56, 1.16x
+    {0x1002, 0x15bf, "fp32", 64, 256, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_simt_t64x64_m4n2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 2048-448 5x5, 3.46x
+    {0x1002, 0x15bf, "fp32", 2048, 448, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_simt_t32x32_m4n1_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1824-192 7x7, 3.66x
+    {0x1002, 0x15bf, "fp32", 1824, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 2048-320 5x5, 4.51x
+    {0x1002, 0x15bf, "fp32", 2048, 320, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1968-192 14x14, 2.19x
+    {0x1002, 0x15bf, "fp32", 1968, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t64x64_m4n2_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s2x2 p0x0 d1x1 224-256 35x35, 2.05x
+    {0x1002, 0x15bf, "fp32", 224, 256, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 2048-192 5x5, 4.24x
+    {0x1002, 0x15bf, "fp32", 2048, 192, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1776-192 7x7, 3.59x
+    {0x1002, 0x15bf, "fp32", 1776, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 2048-384 5x5, 4.03x
+    {0x1002, 0x15bf, "fp32", 2048, 384, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_simt_t32x32_m4n1_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 2048-256 1x1, 6.19x
+    {0x1002, 0x15bf, "fp32", 2048, 256, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1920-192 14x14, 2.19x
+    {0x1002, 0x15bf, "fp32", 1920, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t64x64_m4n2_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 576-96 14x14, 1.66x
+    {0x1002, 0x15bf, "fp32", 576, 96, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 7x1 s1x1 p3x0 d1x1 256-320 17x17, 1.56x
+    {0x1002, 0x15bf, "fp32", 256, 320, 7, 1, 1, 1, 3, 0, 1, 1, 17, 17, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1728-192 7x7, 3.49x
+    {0x1002, 0x15bf, "fp32", 1728, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1872-192 14x14, 2.14x
+    {0x1002, 0x15bf, "fp32", 1872, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t64x64_m4n2_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1824-192 14x14, 2.13x
+    {0x1002, 0x15bf, "fp32", 1824, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t64x64_m4n2_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x7 s1x1 p0x3 d1x1 256-256 17x17, 1.98x
+    {0x1002, 0x15bf, "fp32", 256, 256, 1, 7, 1, 1, 0, 3, 1, 1, 17, 17, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1680-192 7x7, 3.48x
+    {0x1002, 0x15bf, "fp32", 1680, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1632-192 7x7, 3.38x
+    {0x1002, 0x15bf, "fp32", 1632, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1776-192 14x14, 2.15x
+    {0x1002, 0x15bf, "fp32", 1776, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t64x64_m4n2_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x7 s1x1 p0x3 d1x1 128-128 12x12, 3.20x
+    {0x1002, 0x15bf, "fp32", 128, 128, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 7x1 s1x1 p3x0 d1x1 128-128 12x12, 3.28x
+    {0x1002, 0x15bf, "fp32", 128, 128, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_simt_t32x32_m4n1_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1584-192 7x7, 3.33x
+    {0x1002, 0x15bf, "fp32", 1584, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1728-192 14x14, 2.15x
+    {0x1002, 0x15bf, "fp32", 1728, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t64x64_m4n2_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1680-192 14x14, 2.08x
+    {0x1002, 0x15bf, "fp32", 1680, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t64x64_m4n2_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1536-192 7x7, 3.25x
+    {0x1002, 0x15bf, "fp32", 1536, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 768-128 12x12, 1.70x
+    {0x1002, 0x15bf, "fp32", 768, 128, 1, 1, 1, 1, 0, 0, 1, 1, 12, 12, "conv2d_simt_t32x32_m4n1_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1632-192 14x14, 2.09x
+    {0x1002, 0x15bf, "fp32", 1632, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t64x64_m4n2_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1488-192 7x7, 3.17x
+    {0x1002, 0x15bf, "fp32", 1488, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s2x2 p0x0 d1x1 192-192 17x17, 5.24x
+    {0x1002, 0x15bf, "fp32", 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 17, 17, "conv2d_simt_t32x32_m4n1_dg_sk8_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s2x2 p0x0 d1x1 192-320 12x12, 4.93x
+    {0x1002, 0x15bf, "fp32", 192, 320, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "conv2d_simt_t32x32_m4n1_dg_sk8_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s2x2 p0x0 d1x1 192-192 12x12, 6.96x
+    {0x1002, 0x15bf, "fp32", 192, 192, 3, 3, 2, 2, 0, 0, 1, 1, 12, 12, "conv2d_simt_t32x32_m4n1_dg_sk8_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1584-192 14x14, 2.09x
+    {0x1002, 0x15bf, "fp32", 1584, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t64x64_m4n2_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1440-192 7x7, 3.11x
+    {0x1002, 0x15bf, "fp32", 1440, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1536-192 14x14, 2.08x
+    {0x1002, 0x15bf, "fp32", 1536, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t64x64_m4n2_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1392-192 7x7, 3.08x
+    {0x1002, 0x15bf, "fp32", 1392, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1488-192 14x14, 2.06x
+    {0x1002, 0x15bf, "fp32", 1488, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t64x32_m4n2_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1344-192 7x7, 2.98x
+    {0x1002, 0x15bf, "fp32", 1344, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1440-192 14x14, 2.06x
+    {0x1002, 0x15bf, "fp32", 1440, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t64x32_m4n2_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 960-320 7x7, 1.94x
+    {0x1002, 0x15bf, "fp32", 960, 320, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1296-192 7x7, 2.86x
+    {0x1002, 0x15bf, "fp32", 1296, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1392-192 14x14, 2.03x
+    {0x1002, 0x15bf, "fp32", 1392, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t64x32_m4n2_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p0x0 d1x1 80-192 54x54, 2.31x
+    {0x1002, 0x15bf, "fp32", 80, 192, 3, 3, 1, 1, 0, 0, 1, 1, 54, 54, "conv2d_simt_t64x64_m4n2_dg_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1344-192 14x14, 2.00x
+    {0x1002, 0x15bf, "fp32", 1344, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t64x32_m4n2_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1280-256 28x28, 1.05x
+    {0x1002, 0x15bf, "fp32", 1280, 256, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_simt_t64x64_m4n2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1248-192 7x7, 2.86x
+    {0x1002, 0x15bf, "fp32", 1248, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1296-192 14x14, 2.00x
+    {0x1002, 0x15bf, "fp32", 1296, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t64x32_m4n2_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1200-192 7x7, 2.71x
+    {0x1002, 0x15bf, "fp32", 1200, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1152-192 7x7, 2.67x
+    {0x1002, 0x15bf, "fp32", 1152, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1248-192 14x14, 1.99x
+    {0x1002, 0x15bf, "fp32", 1248, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t64x32_m4n2_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1280-448 5x5, 3.24x
+    {0x1002, 0x15bf, "fp32", 1280, 448, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_simt_t32x32_m4n1_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1280-320 5x5, 2.64x
+    {0x1002, 0x15bf, "fp32", 1280, 320, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1280-192 5x5, 3.65x
+    {0x1002, 0x15bf, "fp32", 1280, 192, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1280-384 5x5, 3.77x
+    {0x1002, 0x15bf, "fp32", 1280, 384, 1, 1, 1, 1, 0, 0, 1, 1, 5, 5, "conv2d_simt_t32x32_m4n1_sk2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s2x2 p1x1 d1x1 128-256 28x28, 1.74x
+    {0x1002, 0x15bf, "fp32", 128, 256, 3, 3, 2, 2, 1, 1, 1, 1, 28, 28, "conv2d_simt_t32x32_m4n1_dg_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1200-192 14x14, 1.71x
+    {0x1002, 0x15bf, "fp32", 1200, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s2x2 p0x0 d1x1 64-96 147x147, 5.14x
+    {0x1002, 0x15bf, "fp32", 64, 96, 3, 3, 2, 2, 0, 0, 1, 1, 147, 147, "conv2d_simt_t32x32_m4n1_dg_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1104-192 7x7, 2.58x
+    {0x1002, 0x15bf, "fp32", 1104, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1152-192 14x14, 1.29x
+    {0x1002, 0x15bf, "fp32", 1152, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1056-192 7x7, 2.53x
+    {0x1002, 0x15bf, "fp32", 1056, 192, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1104-192 14x14, 1.29x
+    {0x1002, 0x15bf, "fp32", 1104, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1056-192 14x14, 1.29x
+    {0x1002, 0x15bf, "fp32", 1056, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 576-96 7x7, 1.88x
+    {0x1002, 0x15bf, "fp32", 576, 96, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_sk8_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1024-256 17x17, 1.38x
+    {0x1002, 0x15bf, "fp32", 1024, 256, 1, 1, 1, 1, 0, 0, 1, 1, 17, 17, "conv2d_simt_t64x64_m4n2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 1008-192 14x14, 1.29x
+    {0x1002, 0x15bf, "fp32", 1008, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 960-192 14x14, 1.29x
+    {0x1002, 0x15bf, "fp32", 960, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 7x7 s2x2 p3x3 d1x1 3-96 224x224, 1.32x
+    {0x1002, 0x15bf, "fp32", 3, 96, 7, 7, 2, 2, 3, 3, 1, 1, 224, 224, "conv2d_simt_t32x32_m4n1_dg_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 912-192 14x14, 1.28x
+    {0x1002, 0x15bf, "fp32", 912, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 576-144 1x1, 2.02x
+    {0x1002, 0x15bf, "fp32", 576, 144, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, "conv2d_simt_t32x32_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 576-160 7x7, 1.60x
+    {0x1002, 0x15bf, "fp32", 576, 160, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t64x64_m4n2_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 864-192 14x14, 1.29x
+    {0x1002, 0x15bf, "fp32", 864, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 768-384 28x28, 1.06x
+    {0x1002, 0x15bf, "fp32", 768, 384, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_simt_t64x64_m4n2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x7 s1x1 p0x3 d1x1 128-192 12x12, 2.58x
+    {0x1002, 0x15bf, "fp32", 128, 192, 1, 7, 1, 1, 0, 3, 1, 1, 12, 12, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 7x1 s1x1 p3x0 d1x1 128-192 12x12, 2.56x
+    {0x1002, 0x15bf, "fp32", 128, 192, 7, 1, 1, 1, 3, 0, 1, 1, 12, 12, "conv2d_simt_t64x64_m4n2_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 816-192 14x14, 1.29x
+    {0x1002, 0x15bf, "fp32", 816, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 768-192 14x14, 1.29x
+    {0x1002, 0x15bf, "fp32", 768, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 720-192 14x14, 1.29x
+    {0x1002, 0x15bf, "fp32", 720, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 672-192 14x14, 1.29x
+    {0x1002, 0x15bf, "fp32", 672, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s2x2 p1x1 d1x1 64-128 56x56, 1.64x
+    {0x1002, 0x15bf, "fp32", 64, 128, 3, 3, 2, 2, 1, 1, 1, 1, 56, 56, "conv2d_simt_t64x64_m4n2_dg_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 624-192 14x14, 1.30x
+    {0x1002, 0x15bf, "fp32", 624, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 256-128 56x56, 1.09x
+    {0x1002, 0x15bf, "fp32", 256, 128, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 576-192 14x14, 1.29x
+    {0x1002, 0x15bf, "fp32", 576, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 384-96 14x14, 1.28x
+    {0x1002, 0x15bf, "fp32", 384, 96, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 528-192 14x14, 1.30x
+    {0x1002, 0x15bf, "fp32", 528, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 384-192 56x56, 1.29x
+    {0x1002, 0x15bf, "fp32", 384, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_simt_t64x64_m4n2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 320-1280 7x7, 1.12x
+    {0x1002, 0x15bf, "fp32", 320, 1280, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t64x64_m4n2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 480-192 14x14, 1.27x
+    {0x1002, 0x15bf, "fp32", 480, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 256-21 28x28, 1.20x
+    {0x1002, 0x15bf, "fp32", 256, 21, 1, 1, 1, 1, 0, 0, 1, 1, 28, 28, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 384-192 35x35, 1.24x
+    {0x1002, 0x15bf, "fp32", 384, 192, 1, 1, 1, 1, 0, 0, 1, 1, 35, 35, "conv2d_simt_t64x64_m4n2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 336-192 56x56, 1.32x
+    {0x1002, 0x15bf, "fp32", 336, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_simt_t64x64_m4n2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 432-192 14x14, 1.22x
+    {0x1002, 0x15bf, "fp32", 432, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s2x2 p0x0 d1x1 96-96 25x25, 1.19x
+    {0x1002, 0x15bf, "fp32", 96, 96, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "conv2d_simt_t32x32_m4n1_dg_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 288-192 56x56, 1.35x
+    {0x1002, 0x15bf, "fp32", 288, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_simt_t64x64_m4n2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 384-192 14x14, 1.28x
+    {0x1002, 0x15bf, "fp32", 384, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 240-192 56x56, 1.40x
+    {0x1002, 0x15bf, "fp32", 240, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_simt_t64x64_m4n2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 192-192 56x56, 1.47x
+    {0x1002, 0x15bf, "fp32", 192, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_simt_t64x64_m4n2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 144-192 56x56, 1.53x
+    {0x1002, 0x15bf, "fp32", 144, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_simt_t64x64_m4n2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 288-96 7x7, 1.27x
+    {0x1002, 0x15bf, "fp32", 288, 96, 1, 1, 1, 1, 0, 0, 1, 1, 7, 7, "conv2d_simt_t32x32_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1x1 s1x1 p0x0 d1x1 96-192 56x56, 1.34x
+    {0x1002, 0x15bf, "fp32", 96, 192, 1, 1, 1, 1, 0, 0, 1, 1, 56, 56, "conv2d_simt_t64x64_m4n2_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s2x2 p0x0 d1x1 3-32 299x299, 1.11x
+    {0x1002, 0x15bf, "fp32", 3, 32, 3, 3, 2, 2, 0, 0, 1, 1, 299, 299, "conv2d_simt_t32x32_m4n1_dg_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp16 1d 1x7 s1x1 p0x3 d1x1 250-250 1x2, 14.31x
+    {0x1002, 0x15bf, "fp16", 250, 250, 1, 7, 1, 1, 0, 3, 1, 1, 1, 2, "conv1d_simt_t32x32_m4n1_sk8_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp16 1d 1x32 s1x1 p0x16 d1x1 250-2000 1x2, 4.69x
+    {0x1002, 0x15bf, "fp16", 250, 2000, 1, 32, 1, 1, 0, 16, 1, 1, 1, 2, "conv1d_simt_t32x32_m4n1_sk8_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp16 1d 1x48 s1x2 p0x23 d1x1 250-250 1x4, 17.12x
+    {0x1002, 0x15bf, "fp16", 250, 250, 1, 48, 1, 2, 0, 23, 1, 1, 1, 4, "conv1d_simt_t32x32_m4n1_sk16_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp16 1d 1x250 s1x160 p0x45 d1x1 1-250 1x700, 4.35x
+    {0x1002, 0x15bf, "fp16", 1, 250, 1, 250, 1, 160, 0, 45, 1, 1, 1, 700, "conv1d_simt_t32x32_m4n1_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp16 1d 1x1 s1x1 p0x0 d1x1 2000-4096 1x3, 1.19x
+    {0x1002, 0x15bf, "fp16", 2000, 4096, 1, 1, 1, 1, 0, 0, 1, 1, 1, 3, "conv1d_simt_t32x32_m4n1_pw_sk4_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp16 1d 1x1 s1x1 p0x0 d1x1 2000-2000 1x3, 2.00x
+    {0x1002, 0x15bf, "fp16", 2000, 2000, 1, 1, 1, 1, 0, 0, 1, 1, 1, 3, "conv1d_simt_t32x32_m4n1_pw_sk4_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1d 1x7 s1x1 p0x3 d1x1 250-250 1x2, 13.39x
+    {0x1002, 0x15bf, "fp32", 250, 250, 1, 7, 1, 1, 0, 3, 1, 1, 1, 2, "conv1d_simt_t64x16_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1d 1x32 s1x1 p0x16 d1x1 250-2000 1x2, 5.21x
+    {0x1002, 0x15bf, "fp32", 250, 2000, 1, 32, 1, 1, 0, 16, 1, 1, 1, 2, "conv1d_simt_t64x16_m4n1_sk4_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1d 1x48 s1x2 p0x23 d1x1 250-250 1x4, 15.74x
+    {0x1002, 0x15bf, "fp32", 250, 250, 1, 48, 1, 2, 0, 23, 1, 1, 1, 4, "conv1d_simt_t64x16_m4n1_sk8_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1d 1x250 s1x160 p0x45 d1x1 1-250 1x700, 5.07x
+    {0x1002, 0x15bf, "fp32", 1, 250, 1, 250, 1, 160, 0, 45, 1, 1, 1, 700, "conv1d_simt_t64x16_m4n1_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1d 1x1 s1x1 p0x0 d1x1 2000-4096 1x3, 1.15x
+    {0x1002, 0x15bf, "fp32", 2000, 4096, 1, 1, 1, 1, 0, 0, 1, 1, 1, 3, "conv1d_simt_t32x32_m4n1_pw_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 1d 1x1 s1x1 p0x0 d1x1 2000-2000 1x3, 1.75x
+    {0x1002, 0x15bf, "fp32", 2000, 2000, 1, 1, 1, 1, 0, 0, 1, 1, 1, 3, "conv1d_simt_t32x64_m4n2_pw_float"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p1x1 d1x1 g144 144-144 56x56, 1.07x
+    {0x1002, 0x15bf, "fp32", 144, 144, 3, 3, 1, 1, 1, 1, 1, 1, 56, 56, "conv2d_dw_b1x1"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p1x1 d1x1 g960 960-960 7x7, 1.25x
+    {0x1002, 0x15bf, "fp32", 960, 960, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "conv2d_dw_b1x1"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp32 3x3 s1x1 p1x1 d1x1 g192 192-192 28x28, 1.10x
+    {0x1002, 0x15bf, "fp32", 192, 192, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_dw_b1x1"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: fp16 3x3 s1x1 p1x1 d1x1 g960 960-960 7x7, 1.23x
+    {0x1002, 0x15bf, "fp16", 960, 960, 3, 3, 1, 1, 1, 1, 1, 1, 7, 7, "conv2d_dw_b1x1"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s1x1 p1x1 d1x1 g32 32-32 112x112, 1.12x
+    {0x1002, 0x15bf, "int8", 32, 32, 3, 3, 1, 1, 1, 1, 1, 1, 112, 112, "q8ta_conv2d_dw_w2"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 5x5 s2x2 p2x2 d1x1 g96 96-96 28x28, 1.55x
+    {0x1002, 0x15bf, "int8", 96, 96, 5, 5, 2, 2, 2, 2, 1, 1, 28, 28, "q8ta_conv2d_dw_w1"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 5x5 s1x1 p2x2 d1x1 g120 120-120 14x14, 1.43x
+    {0x1002, 0x15bf, "int8", 120, 120, 5, 5, 1, 1, 2, 2, 1, 1, 14, 14, "q8ta_conv2d_dw_w1"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 5x5 s2x2 p2x2 d1x1 g288 288-288 14x14, 1.55x
+    {0x1002, 0x15bf, "int8", 288, 288, 5, 5, 2, 2, 2, 2, 1, 1, 14, 14, "q8ta_conv2d_dw_w1"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 3x3 s2x2 p1x1 d1x1 g96 96-96 112x112, 1.17x
+    {0x1002, 0x15bf, "int8", 96, 96, 3, 3, 2, 2, 1, 1, 1, 1, 112, 112, "q8ta_conv2d_dw_w1"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: int8 5x5 s1x1 p2x2 d1x1 g144 144-144 14x14, 1.49x
+    {0x1002, 0x15bf, "int8", 144, 144, 5, 5, 1, 1, 2, 2, 1, 1, 14, 14, "q8ta_conv2d_dw_w1"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1008-192 14x14, 2.11x
     {0x10de, 0x2705, "fp16", 1008, 192, 1, 1, 1, 1, 0, 0, 1, 1, 14, 14, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_half"},
     // NVIDIA GeForce RTX 4070 Ti SUPER, 615.71.09: 1x1 s1x1 p0x0 d1x1 1024-128 17x17, 2.14x
