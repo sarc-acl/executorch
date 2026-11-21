@@ -1,4 +1,6 @@
 {
+  "dg 3x3 Cin30 coopmat": {"conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps"},
+  "dg 3x3 Cin20 K180 coopmat": {"conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps"},
   "dg 1x3 Cin16 K48 coopmat": {
     "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half": "fewer than two K steps",
@@ -7,7 +9,16 @@
     "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half": "fewer than two K steps",
-    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps"
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x64_f16_alc_sk2_dg_half": "fewer than two K steps"
   },
   "dg 3x3 Cin4 K36 coopmat": {
     "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_half": "fewer than two K steps",
@@ -17,7 +28,16 @@
     "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half": "fewer than two K steps",
-    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps"
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x64_f16_alc_sk2_dg_half": "fewer than two K steps"
   },
   "dg 3x3 groups 2 coopmat": {
     "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half": "direct_coopmat requires groups 1",
@@ -33,7 +53,21 @@
     "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half": "direct_coopmat requires groups 1",
     "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half": "direct_coopmat requires groups 1",
     "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_half": "direct_coopmat requires groups 1",
-    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "direct_coopmat requires groups 1"
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "direct_coopmat requires groups 1",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_dg_half": "direct_coopmat requires groups 1",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk2_dg_half": "direct_coopmat requires groups 1",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk4_dg_half": "direct_coopmat requires groups 1",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_dg_half": "direct_coopmat requires groups 1",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk2_dg_half": "direct_coopmat requires groups 1",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "direct_coopmat requires groups 1",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_dg_half": "direct_coopmat requires groups 1",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk2_dg_half": "direct_coopmat requires groups 1",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk4_dg_half": "direct_coopmat requires groups 1",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_dg_half": "direct_coopmat requires groups 1",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk2_dg_half": "direct_coopmat requires groups 1",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk4_dg_half": "direct_coopmat requires groups 1",
+    "conv2d_pw_coopmat_nvidia_t64x64_f16_alc_dg_half": "direct_coopmat requires groups 1",
+    "conv2d_pw_coopmat_nvidia_t64x64_f16_alc_sk2_dg_half": "direct_coopmat requires groups 1"
   },
   "dg 1x3 gather grid limit coopmat": {
     "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_half": "fewer than two K steps",
@@ -43,7 +77,16 @@
     "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half": "fewer than two K steps",
-    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps"
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x64_f16_alc_sk2_dg_half": "fewer than two K steps"
   },
   "dg 1x3 int32 padding coopmat": {
     "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half": "computes in 32-bit integers and cannot represent the",
@@ -59,8 +102,26 @@
     "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half": "computes in 32-bit integers and cannot represent the",
     "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half": "computes in 32-bit integers and cannot represent the",
     "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_half": "computes in 32-bit integers and cannot represent the",
-    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "computes in 32-bit integers and cannot represent the"
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "computes in 32-bit integers and cannot represent the",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_dg_half": "computes in 32-bit integers and cannot represent the",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk2_dg_half": "computes in 32-bit integers and cannot represent the",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk4_dg_half": "computes in 32-bit integers and cannot represent the",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_dg_half": "computes in 32-bit integers and cannot represent the",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk2_dg_half": "computes in 32-bit integers and cannot represent the",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "computes in 32-bit integers and cannot represent the",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_dg_half": "computes in 32-bit integers and cannot represent the",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk2_dg_half": "computes in 32-bit integers and cannot represent the",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk4_dg_half": "computes in 32-bit integers and cannot represent the",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_dg_half": "computes in 32-bit integers and cannot represent the",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk2_dg_half": "computes in 32-bit integers and cannot represent the",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk4_dg_half": "computes in 32-bit integers and cannot represent the",
+    "conv2d_pw_coopmat_nvidia_t64x64_f16_alc_dg_half": "computes in 32-bit integers and cannot represent the",
+    "conv2d_pw_coopmat_nvidia_t64x64_f16_alc_sk2_dg_half": "computes in 32-bit integers and cannot represent the"
   },
+  "dg d2 Cin30 coopmat": {"conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps"},
+  "dg d(1,20) 64-48 14x14 one column coopmat": {"conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps"},
+  "dg s(2,1) d(3,1) 32 4x12 two rows coopmat": {"conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps"},
+  "dg 3x1 s(2,1) 64-32 1x8 interior dead row coopmat": {"conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps"},
   "dg 2x1 d(4,1) every tap dead coopmat": {
     "conv2d_pw_coopmat_xe2_t128x128_f16_alc_dg_half": "no kernel tap reads the input",
     "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_half": "no kernel tap reads the input",
@@ -75,19 +136,43 @@
     "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half": "no kernel tap reads the input",
     "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half": "no kernel tap reads the input",
     "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_half": "no kernel tap reads the input",
-    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "no kernel tap reads the input"
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "no kernel tap reads the input",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_dg_half": "no kernel tap reads the input",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk2_dg_half": "no kernel tap reads the input",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk4_dg_half": "no kernel tap reads the input",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_dg_half": "no kernel tap reads the input",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk2_dg_half": "no kernel tap reads the input",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "no kernel tap reads the input",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_dg_half": "no kernel tap reads the input",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk2_dg_half": "no kernel tap reads the input",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk4_dg_half": "no kernel tap reads the input",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_dg_half": "no kernel tap reads the input",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk2_dg_half": "no kernel tap reads the input",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk4_dg_half": "no kernel tap reads the input",
+    "conv2d_pw_coopmat_nvidia_t64x64_f16_alc_dg_half": "no kernel tap reads the input",
+    "conv2d_pw_coopmat_nvidia_t64x64_f16_alc_sk2_dg_half": "no kernel tap reads the input"
   },
   "dg 1x1 64-96 one pixel coopmat": {
     "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_dg_half": "fewer than two K steps",
-    "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps"
+    "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk4_dg_half": "fewer than two K steps"
   },
   "dg 1x1 s2 64-128 28x28 coopmat": {
     "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_dg_half": "fewer than two K steps",
-    "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps"
+    "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk4_dg_half": "fewer than two K steps"
   },
   "dg 1x1 s2 Cin3 15x15 coopmat": {
     "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_half": "fewer than two K steps",
@@ -97,14 +182,29 @@
     "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half": "fewer than two K steps",
-    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps"
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x64_f16_alc_sk2_dg_half": "fewer than two K steps"
   },
   "dg 1x1 p1 64-32 14x14 coopmat": {
     "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_dg_half": "fewer than two K steps",
-    "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps"
+    "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk4_dg_half": "fewer than two K steps"
   },
+  "dg 1x1 Cin120-40 14x14 coopmat": {"conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps"},
   "dg 1x1 Cin24-144 28x28 coopmat": {
     "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half": "fewer than two K steps",
@@ -113,7 +213,16 @@
     "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half": "fewer than two K steps",
-    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps"
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x64_f16_alc_sk2_dg_half": "fewer than two K steps"
   },
   "dg 3x3 s2 Cin3 33x33 coopmat": {
     "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_half": "fewer than two K steps",
@@ -123,9 +232,26 @@
     "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half": "fewer than two K steps",
-    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps"
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x64_f16_alc_sk2_dg_half": "fewer than two K steps"
   },
-  "dg 7x7 s2 Cin3 64x64 coopmat": {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half": "fewer than two K steps", "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half": "fewer than two K steps"},
+  "dg 7x7 s2 Cin3 64x64 coopmat": {
+    "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk4_dg_half": "fewer than two K steps"
+  },
+  "dg 3x3 Cin24 20x20 coopmat": {"conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps"},
   "dg 3x3 Cin3-64 asymmetric padding coopmat": {
     "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk2_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half": "fewer than two K steps",
@@ -134,7 +260,16 @@
     "conv2d_pw_coopmat_amd_t16x32_f16_alc_sk2_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_amd_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps",
     "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_sk2_dg_half": "fewer than two K steps",
-    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps"
+    "conv2d_pw_coopmat_nvidia_t128x128_f32_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x32_f16_g2x4_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_amd_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x32_f16_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk2_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk4_dg_half": "fewer than two K steps",
+    "conv2d_pw_coopmat_nvidia_t64x64_f16_alc_sk2_dg_half": "fewer than two K steps"
   },
   "dg 3x3 256 14x14 unknown coopmat": {"conv2d_pw_coopmat_xe2_t128x128_f16_alc_half": "does not gather its input", "conv2d_pw_coopmat_xe2_t999x999_f16_alc_dg_half": "Unknown conv2d_pw_coopmat variant"}
 }
