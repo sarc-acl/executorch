@@ -206,6 +206,13 @@ void resize_q8ta_conv2d_coopmat_node(
        resize_args.at(4),
        resize_args.at(4)},
       /*transposed=*/false);
+  // The live taps, the padded row count and the split-K scratch are fixed
+  // when the node is built: an output that grows past its build-time height
+  // or width would need taps that were left out and rows that have no scratch.
+  VK_CHECK_COND(
+      out_hw.at(0) <= graph->extract_scalar<int64_t>(resize_args.at(5)) &&
+          out_hw.at(1) <= graph->extract_scalar<int64_t>(resize_args.at(6)),
+      "q8ta conv2d coopmat: the output grew past its build-time size");
   std::vector<int64_t> new_sizes = graph->sizes_of(out);
   const size_t ndim = new_sizes.size();
   new_sizes.at(ndim - 2) = out_hw.at(0);
@@ -631,7 +638,13 @@ void q8ta_conv2d_coopmat_impl(
   const vkapi::ParamsBindList params = {
       graph.buffer_meta_ubo(out), graph.buffer_meta_ubo(in)};
   const std::vector<ValueRef> resize_args = {
-      in, args.at(9), args.at(10), args.at(11), args.at(12)};
+      in,
+      args.at(9),
+      args.at(10),
+      args.at(11),
+      args.at(12),
+      graph.add_scalar<int64_t>(graph.size_at<int64_t>(-2, out)),
+      graph.add_scalar<int64_t>(graph.size_at<int64_t>(-1, out))};
   const std::string name = v.name;
 
   const auto kernel_gwg = [&v](
