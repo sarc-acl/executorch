@@ -1332,8 +1332,10 @@ parent's bound share.
 
 **argus before/after (untimed, 6 shapes x 3 arms):** the t128 kernels meet every note-13
 target against the parent:
-- LDS instructions per WMMA ~3.1 ISA-static (3.4-3.45 from the instruction mix) against
-  the parent's ~11.6 - inside the 3-4 target bracket of the linear-GEMM reference (~2.9);
+- LDS load instructions per WMMA ~3.1 ISA-static against the parent's ~9.1; counting
+  all LDS ops (loads + stores), 4.3 against the parent's ~11.6 - the note-1/13 basis,
+  on which the t128 sits just above the 3-4 target bracket of the linear-GEMM reference
+  (~2.9), not inside it; the dynamic instruction mix reads 3.4 vs 10.7;
 - WMMA ops per cycle at 1.56-1.59x the parent's rate (the linear kernel's own rate is
   UNVERIFIED in its shipped form);
 - occupancy 28.3-31.6% vs the parent's 23.6% - not the mechanism, per note 13;
@@ -1412,8 +1414,9 @@ the t128 tile does not fit N = 64).
 
 **argus before/after (untimed, the 2 kk predicate cells, GEMM-stage kernels):** the
 t128 kk GEMM meets the note-13 targets against the kk parent GEMM:
-- LDS instructions per WMMA ~3.1 ISA-static (3.4 vs 10.7 from the instruction mix)
-  against the kk parent's ~9.1 ISA-static (the pw pair measured ~3.1 vs ~11.6);
+- LDS load instructions per WMMA ~3.1 ISA-static against the kk parent's ~9.1; counting
+  all LDS ops, 4.3 against ~11.6 - the same loads/all split as the pw pair (the dynamic
+  instruction mix reads 3.4 vs 10.7);
 - WMMA ops per cycle at 2.0x the kk parent's rate (the pw pair measured 1.56-1.59x);
 - occupancy 30.3% vs 25.9% - not the mechanism, per note 13;
 - LDS Busy 58.4% vs 83.6%;
@@ -1427,8 +1430,10 @@ t128 kk GEMM meets the note-13 targets against the kk parent GEMM:
 five rounds):** on `3x3 64-256 224x224` the adopted t128+fg route spends gather 0.171 /
 GEMM 0.527 / merge 0.302 of its GPU time (kk+fg: 0.121 / 0.666 / 0.213; kk parent:
 0.191 / 0.611 / 0.198) - the merge is about 30% of the adopted route on that cell and
-is DRAM-bound per the stage-1 capture (L2 stalled by DRAM), so it is the next lever
-there alongside the N = 64 GEMM gap. On `3x3 1024-256 28x28` the merge is 1.5% of the
+is DRAM-bound per the stage-1 capture (L2 stalled by DRAM). That cell is ahead of
+stock (0.975), so this is an observation for 11.5, not an open gap; the N = 64 GEMM
+gap belongs to the two open `3x3 64 *` cells (TASKS 11.5 note). On
+`3x3 1024-256 28x28` the merge is 1.5% of the
 t128+fg route (0.015; kk+fg 0.009) - negligible, and the cell's gain is the t128 GEMM
 itself, which runs at about half the kk GEMM's absolute time (GEMM share 0.831 ->
 0.707 on a route 0.58x as long).
@@ -1550,8 +1555,12 @@ at 0.674). The predicate's eight cells gain 14-40% beyond their 2% bands here.
 stock beyond the noise band on every shape - is reached on 43 of the 45
 shapes.** The two remaining cells are the 11.5 DRAM-roof cells, unchanged in
 kind since 11.4: `3x3 64 224x224` (1.810 vs best stock, 0.812 vs the kk parent)
-and `3x3 64 56x56` (1.492, 0.905) - the gather is fixed, the GEMM is the gap,
-and the t128 tile does not fit N = 64. The three 784 losers of 11.6a all land
+and `3x3 64 56x56` (1.492, 0.905) - the GEMM is the gap, the t128 tile does not
+fit N = 64, and the gather still holds 29-36% of the route after fast-gather
+(this session's stage shares, gather/GEMM/merge medians: 0.356 / 0.514 / 0.130
+on 224x224 against the parent's 0.498 / 0.406 / 0.096, and 0.293 / 0.653 / 0.054
+on 56x56 against 0.477 / 0.473 / 0.050 - the merge is minor on both; the 11.5
+levers are the N = 64 GEMM and the gather). The three 784 losers of 11.6a all land
 ahead of stock: `784,2048,1024` 1.109 -> 0.755, `784,2048,512` 1.087 -> 0.748,
 `784,512,2048` 1.227 -> 0.938 (11.6a aft/bs -> final aft/bs; the earlier
 sessions read the third at 0.895-0.897 - every reading ahead of stock).

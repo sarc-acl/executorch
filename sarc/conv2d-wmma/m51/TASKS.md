@@ -184,9 +184,13 @@ the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFL
   SALU Busy 30.1% -> 9.3%, div/mod and rounding constants gone from the ISA; ADOPTED as the stage-3 kk parent,
   runtime plumbing default-off and unrouted as before.)
 - [ ] 11.5 Small-M, DRAM-bound shapes: move toward the DRAM roof (deeper split-K, more loads in flight).
-  Next levers on the two open cells (note 20, s119 shader breakdown): on 64-256 224x224 the sk2 split-K merge
-  (`conv2d_pw_coopmat_sk2_merge_f32_half`) is ~30% of the adopted route and is DRAM-bound per the stage-1 capture
-  (L2 stalled by DRAM), alongside the N = 64 GEMM gap; on 1024-256 28x28 the merge is ~1.5% - the GEMM alone.
+  The two open cells (`3x3 64 224x224`, `3x3 64 56x56`; note-20 s119 shader breakdown, adopted kk+fg route,
+  medians over r0-r4): gather/GEMM/merge 0.356 / 0.514 / 0.130 on 224x224 (kk parent 0.498 / 0.406 / 0.096)
+  and 0.293 / 0.653 / 0.054 on 56x56 (parent 0.477 / 0.473 / 0.050) - the merge is a minor stage there
+  (5-13%); the levers are the N = 64 GEMM (the t128 tile does not fit) and the gather, still 29-36% of the
+  route after fast-gather. Separate observation on the predicate cell `64-256 224x224` (ahead of stock at
+  0.975): the sk2 merge is ~30% of the adopted t128+fg route there and is DRAM-bound per the stage-1 capture
+  (L2 stalled by DRAM) - a lever only if that cell is pushed further.
   Verify as in 11.2.
 - [x] 11.6 Final interleaved session from the committed HEAD. Report per-shape ratio and % of roofline before and
   after stage 3, and per-candidate gains. Re-run from the final HEAD after 11.8, with every adopted arm gated on
@@ -229,7 +233,8 @@ the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFL
   losers.
   (RESULTS 11.8/11.8k: pw gate 4 arms x 1240/1240 and kk gate 560/560 each + fast-gather re-gate + kk t128+fg gate
   (6 arms: parent +-fg, sk2 +-fg, sk4 +-fg), all on the final binary; s117 775 rows zero invalid, s117k 180 rows
-  zero invalid; argus pw: LDS ops/WMMA ~3.1, WMMA rate 1.56-1.59x parent, occupancy 28-32% vs 23.6%, LDS Busy
+  zero invalid; argus pw: LDS loads/WMMA ~3.1 vs parent ~9.1 (all LDS ops 4.3 vs ~11.6 - the note-1/13 basis;
+  t128 just above the 3-4 target bracket), WMMA rate 1.56-1.59x parent, occupancy 28-32% vs 23.6%, LDS Busy
   90%->51%, drain 2 passes unmeasured share; argus kk: RESULTS 11.8k. The three 784 losers cross stock parity on
   the adopted amd route (0.755/0.748/0.895; nvidia alternative 0.703/0.699/0.833); predicates adopted: 1x1
   M >= 784 and N >= 256 (note 18; supersedes t32x32 and the first N >= 128 reading; the three dropped N=128 cells
