@@ -130,12 +130,20 @@ def conv_args(c, out_layout="4w4c", zp=-3, bias=True, act="none", batch=1):
         {"string": act},
         t(
             "output",
-            [batch, cout, c["hout"], c["wout"]],
+            [batch, cout, *out_hw(c)],
             "int8x4",
             "buffer",
             out_layout,
             {"fill": 0},
         ),
+    ]
+
+
+def out_hw(c):
+    """Output height and width of a configuration."""
+    return [
+        out_size(c[d], c["k" + d], c["stride"][i], c["padding"][i], c["dilation"][i])
+        for i, d in enumerate("hw")
     ]
 
 
@@ -148,8 +156,9 @@ def definitions(name, c, all_variants, timing, **kw):
     # single-batch rule of should_use_q8ta_conv2d_im2col), its requantization
     # can miss the CPU reference by one step; the arms repeat it, and their
     # outputs are compared with stock's by digest (tools of the change).
+    hout, wout = out_hw(c)
     stock_direct = not pw and (
-        c["cin"] % 4 != 0 or (c["cin"] < 32 and c["hout"] * c["wout"] > 4096)
+        c["cin"] % 4 != 0 or (c["cin"] < 32 and hout * wout > 4096)
     )
     method = {**EXACT, "atol": 1} if stock_direct else EXACT
     common = {"operator": op, **timing, "validation_method": method}

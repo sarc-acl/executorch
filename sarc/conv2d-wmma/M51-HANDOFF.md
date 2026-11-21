@@ -48,7 +48,8 @@ does there and to make it fast there.
    dl3, w2l, densenet161) in FP32, FP16 and INT8 as the survey did, run each with ETDump (12 executions, first
    discarded), and aggregate with the survey's `aggregate.py`. This gives the M51's own ranking of shaders and
    shapes; do not assume the desktop ranking.
-3. **Existing variants as they are.** Run `pw_coopmat_correctness.json` (`--validation_only`); the AMD-named
+3. **Existing variants as they are.** Generate the collections (`cases/gen_pw_coopmat_cases.py`; the case files
+   are not in the repository), then run `pw_coopmat_correctness.json` (`--validation_only`); the AMD-named
    variants are the ones that match a 16x16x16 device. Then time `pw_coopmat_mobilenet.json` and
    `pw_coopmat_resnet50.json` with routes `auto`, `pw_tiled_4x8` and every admitted variant.
 4. **An M51 family, if needed.** If the enumerated shape, subgroup size or accumulator differs from the AMD

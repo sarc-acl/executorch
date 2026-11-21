@@ -1079,9 +1079,10 @@ property (sizes, component types, scope). It always passes; on a device without
 cooperative-matrix support it says that no properties are enumerated.
 
 `operators/convolution/conv2d/cases/gen_pw_coopmat_cases.py` writes the
-`pw_coopmat_*.json` collections from the variant list of `conv2d_pw_coopmat.yaml`; run it after
-changing the variants (it needs PyYAML), or with `--check` to test that the files
-are current. Every shape has a baseline definition with routes `auto` and
+`pw_coopmat_*.json` collections from the variant list of `conv2d_pw_coopmat.yaml`. The generated
+case files of this directory are not kept in the repository (`cases/.gitignore`):
+run the generator (it needs PyYAML) before using a collection; `--check` compares
+existing files with what it would write. Every shape has a baseline definition with routes `auto` and
 `pw_tiled_4x8` and a `pw_coopmat` definition swept over all variants with
 `sweep_variables`, so a device runs its own family and skips the others.
 fp32-accumulation variants keep fp32 through the bias and the epilogue;
@@ -1097,7 +1098,7 @@ fp16-accumulation variants round them to fp16, like the tiled shaders.
 | `pw_coopmat_gemm_shapes.json` | The GEMM-equivalent (M, N, K) of the surveyed k x k layers as 1x1 convolutions, on seven Xe2 `_alc` variants. |
 
 `gen_im2col_coopmat_cases.py` writes the collections of route `im2col_coopmat`
-from the `_i2c` variants of `conv2d_pw_coopmat.yaml` (`--check` as above):
+from the `_i2c` variants of `conv2d_pw_coopmat.yaml` (run it before use, as above):
 
 | Collection | Cases |
 | --- | --- |
@@ -1106,6 +1107,7 @@ from the `_i2c` variants of `conv2d_pw_coopmat.yaml` (`--check` as above):
 | `im2col_coopmat_performance.json` | The surveyed ResNet, Inception and DenseNet k x k layers on `auto`, `direct`, `im2col` and the measured `_i2c` variants. |
 
 ```sh
+python3 operators/convolution/conv2d/cases/gen_pw_coopmat_cases.py
 etvk_ops_bench --config=operators/convolution/conv2d/device_coopmat_properties.json
 etvk_ops_bench --config=operators/convolution/conv2d/cases/pw_coopmat_correctness.json --validation_only
 etvk_ops_bench --config=operators/convolution/conv2d/cases/pw_coopmat_mobilenet.json --output_format=json_full

@@ -224,7 +224,23 @@ def main():
     args = parser.parse_args()
     if args.survey:
         configs = select(args.survey, json.loads(args.measured.read_text()))
-        CONFIGS.write_text(format_value(configs) + "\n")
+        # The geometry only, one configuration per line (the survey layers
+        # behind each configuration are in the survey).
+        keys = (
+            "label",
+            "cin",
+            "h",
+            "w",
+            "cout",
+            "kh",
+            "kw",
+            "stride",
+            "padding",
+            "dilation",
+        )
+        CONFIGS.write_text(
+            format_value([{k: c[k] for k in keys} for c in configs]) + "\n"
+        )
     configs = json.loads(CONFIGS.read_text())
     files = {
         "model_sweep_performance.json": performance(configs),
