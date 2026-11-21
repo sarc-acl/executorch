@@ -33,9 +33,12 @@
 
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Common.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/Staging.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv1d/Conv1dSimt.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2d.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2dCoopmatTable.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/Conv2dSimt.h>
 #include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/im2col/Conv2dGemm.h>
+#include <executorch/backends/vulkan/runtime/graph/ops/impl/convolution/conv2d/q8ta/Q8taConv2dCoopmat.h>
 
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/StagingUtils.h>
 
@@ -6585,13 +6588,31 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_diagnostic_needs_flag) {
 // Design D5 of conv2d-coopmat-evidence-hardening: the _simt controls are
 // benchmark-only. The predicates the switch calls (without allow_diagnostic)
 // refuse every one of them for a convolution its parent runs, and the compiled
-// table holds no diagnostic or control variant.
+// table holds no diagnostic or control variant. Every row names a variant of
+// its precision's kernels (change conv2d-all-used-kernels).
 TEST(VulkanComputeGraphTest, conv2d_coopmat_switch_refuses_controls) {
   for (const Conv2dCoopmatTableRow& row : kConv2dCoopmatTable) {
-    const Conv2dPwCoopmatVariant* const v =
-        find_conv2d_pw_coopmat_variant(row.variant);
-    ASSERT_NE(v, nullptr) << row.variant;
-    EXPECT_FALSE(v->diagnostic()) << row.variant;
+    const std::string name = row.variant;
+    const std::string precision = row.precision;
+    SCOPED_TRACE(precision + " " + name);
+    if (name == "conv2d_dw_b1x1") {
+      EXPECT_TRUE(precision == "fp16" || precision == "fp32");
+    } else if (precision == "int8") {
+      EXPECT_TRUE(
+          find_q8ta_conv2d_coopmat_variant(name) != nullptr ||
+          name == "q8ta_conv2d_dw_w2" || name == "q8ta_conv2d_dw_w1");
+    } else if (name.rfind("conv1d_simt_", 0) == 0) {
+      const Conv1dSimtVariant* const v = find_conv1d_simt_variant(name);
+      ASSERT_NE(v, nullptr);
+    } else if (precision == "fp32") {
+      EXPECT_NE(find_conv2d_simt_variant(name), nullptr);
+    } else {
+      ASSERT_EQ(precision, "fp16");
+      const Conv2dPwCoopmatVariant* const v =
+          find_conv2d_pw_coopmat_variant(row.variant);
+      ASSERT_NE(v, nullptr);
+      EXPECT_FALSE(v->diagnostic());
+    }
   }
   ComputeGraph graph{GraphConfig()};
   const std::vector<executorch::aten::Half> w1(
@@ -8640,14 +8661,16 @@ bool device_is_b580() {
   return props.vendorID == 0x8086 && props.deviceID == 0xe20b;
 }
 
-// The table row of the running device for the fixture's configuration.
+// The table row of the running device for the fixture's configuration and
+// precision.
 const Conv2dCoopmatTableRow* table_row(const SwitchFixture& f) {
   const VkPhysicalDeviceProperties props = device_properties();
+  const char* const precision = f.dtype == vkapi::kHalf ? "fp16" : "fp32";
   for (const Conv2dCoopmatTableRow& r : kConv2dCoopmatTable) {
     if (r.vendor_id == props.vendorID && r.device_id == props.deviceID &&
-        r.c_in == f.C_in && r.c_out == f.C_out && r.in_h == f.H &&
-        r.in_w == f.W && r.k_h == f.K && r.k_w == f.K &&
-        r.stride_h == f.stride && r.stride_w == f.stride &&
+        std::strcmp(r.precision, precision) == 0 && r.c_in == f.C_in &&
+        r.c_out == f.C_out && r.in_h == f.H && r.in_w == f.W && r.k_h == f.K &&
+        r.k_w == f.K && r.stride_h == f.stride && r.stride_w == f.stride &&
         r.padding_h == f.pad && r.padding_w == f.pad && r.dilation_h == f.dil &&
         r.dilation_w == f.dil) {
       return &r;
@@ -8704,9 +8727,9 @@ TEST(VulkanComputeGraphTest, conv2d_coopmat_switch_off) {
 }
 
 // Switch on: a table configuration dispatches the row's variant; a
-// configuration without a row and a row the route refuses (the same
-// configuration in FP32) dispatch the switch-off shaders; every output
-// matches the CPU reference.
+// configuration without a row dispatches the switch-off shaders; the same
+// configuration in FP32 dispatches the switch-off shaders, or the variant of
+// its own fp32 row where it has one; every output matches the CPU reference.
 TEST(VulkanComputeGraphTest, conv2d_coopmat_switch_on) {
   if (!conv2d_coopmat_switch_set()) {
     GTEST_SKIP() << "needs ETVK_CONV2D_COOPMAT=1";
@@ -8732,7 +8755,13 @@ TEST(VulkanComputeGraphTest, conv2d_coopmat_switch_on) {
                       .substr(0, std::strlen(row->variant) - 5) +
                   "_ck_half"));
     }
-    expect_legacy_dispatch(*refused);
+    if (const Conv2dCoopmatTableRow* fp32_row = table_row(*refused)) {
+      SCOPED_TRACE(fp32_row->variant);
+      AutoConv2dGraph g = refused->build();
+      EXPECT_TRUE(dispatched(g.execute_and_check(), fp32_row->variant));
+    } else {
+      expect_legacy_dispatch(*refused);
+    }
   }
   if (!any_row) {
     GTEST_SKIP() << "the fixtures have no table row on this device";
