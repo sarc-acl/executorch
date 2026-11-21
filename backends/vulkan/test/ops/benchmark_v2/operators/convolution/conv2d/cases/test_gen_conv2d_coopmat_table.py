@@ -333,6 +333,25 @@ class Confirmation(unittest.TestCase):
         self.assertEqual(info["best"], "xe2_t32x64_f16_alc_dg")
         self.assertEqual(info["route"], "direct_coopmat")
 
+    def test_previous_row_kept_unless_beaten_by_the_rule(self):
+        arms = {
+            "auto": arm(100, 100, 100, 100, 100),
+            "A'": arm(100, 100, 100, 100, 100),
+            "xe2_t32x64_f16_alc": arm(50, 50, 50, 50, 50),
+            "xe2_t64x64_f16_g4x2_alc": arm(49, 49, 49, 49, 49),
+            "xe2_t64x32_f16_g2x4_alc": arm(40, 40, 40, 40, 40),
+        }
+        s = confirmation(arms, ["xe2_t64x64_f16_g4x2_alc", "xe2_t32x64_f16_alc"])
+        kept = {"arms": ["xe2_t64x64_f16_g4x2_alc", "xe2_t32x64_f16_alc"],
+                "previous_row": "xe2_t32x64_f16_alc"}
+        info, code, _ = gen.confirm(SHAPE, s, kept)
+        self.assertIsNone(code)
+        self.assertEqual(info["best"], "xe2_t32x64_f16_alc")
+        beaten = {"arms": ["xe2_t64x32_f16_g2x4_alc", "xe2_t32x64_f16_alc"],
+                  "previous_row": "xe2_t32x64_f16_alc"}
+        info, code, _ = gen.confirm(SHAPE, s, beaten)
+        self.assertEqual(info["best"], "xe2_t64x32_f16_g2x4_alc")
+
     def test_not_reproduced(self):
         s = confirmation(
             {

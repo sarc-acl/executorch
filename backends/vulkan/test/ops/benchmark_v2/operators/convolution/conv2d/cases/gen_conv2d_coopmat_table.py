@@ -425,6 +425,16 @@ def confirm(shape, s, nomination):
     qualifying = [a for a in candidates if qualifies(candidates[a])]
     if qualifying:
         best = min(qualifying, key=lambda a: candidates[a]["worst"])
+        # A nomination that carries the arm of the configuration's earlier
+        # row ("previous_row") keeps that arm unless the new one beats it by
+        # the rule rows meet against stock: the previous arm's fastest run /
+        # the new arm's slowest run is at least MIN_RATIO.
+        previous = nomination.get("previous_row")
+        if previous in qualifying and best != previous:
+            prev_best = min(candidates[previous]["runs"])
+            if prev_best / candidates[best]["worst"] < MIN_RATIO:
+                best = previous
+        info["previous_row"] = previous
     else:
         best = max(candidates, key=lambda a: candidates[a]["conservative"])
     x = candidates[best]
