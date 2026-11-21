@@ -1412,16 +1412,26 @@ the t128 tile does not fit N = 64).
 
 **argus before/after (untimed, the 2 kk predicate cells, GEMM-stage kernels):** the
 t128 kk GEMM meets the note-13 targets against the kk parent GEMM:
-- LDS instructions per WMMA ~3.1 from the ISA instruction mix, against ~9.1 for the kk
-  parent (the pw pair measured ~3.1 vs ~11.6);
+- LDS instructions per WMMA ~3.1 ISA-static (3.4 vs 10.7 from the instruction mix)
+  against the kk parent's ~9.1 ISA-static (the pw pair measured ~3.1 vs ~11.6);
 - WMMA ops per cycle at 2.0x the kk parent's rate (the pw pair measured 1.56-1.59x);
 - occupancy 30.3% vs 25.9% - not the mechanism, per note 13;
 - LDS Busy 58.4% vs 83.6%;
 - LDS bytes per workgroup 37 KiB (the amd t128 pool), inside the 64 KiB device cap;
-- the fast-gather kernel dispatches in the capture; a stock-path gather kernel also
-  appears (3 texel fetches per element against the fast kernel's 1), consistent with
-  the flat fast-gather ratio on `3x3 1024-256 28x28` (1.007 in s117k) - the adoption on
-  that cell is the GEMM arm, not the gather.
+- the fast gather (`conv2d_im2col_*_half_fast`) and the sk2 split-K merge
+  (`conv2d_pw_coopmat_sk2_merge_f32_half`, grid (M*N/4)/64) dispatch in the capture;
+  the merge runs in **both** arms (both are sk2), so it is a shared stage, not a
+  candidate difference.
+
+**The merge's share of the route (note 20, s119 shader breakdown, medians over the
+five rounds):** on `3x3 64-256 224x224` the adopted t128+fg route spends gather 0.171 /
+GEMM 0.527 / merge 0.302 of its GPU time (kk+fg: 0.121 / 0.666 / 0.213; kk parent:
+0.191 / 0.611 / 0.198) - the merge is about 30% of the adopted route on that cell and
+is DRAM-bound per the stage-1 capture (L2 stalled by DRAM), so it is the next lever
+there alongside the N = 64 GEMM gap. On `3x3 1024-256 28x28` the merge is 1.5% of the
+t128+fg route (0.015; kk+fg 0.009) - negligible, and the cell's gain is the t128 GEMM
+itself, which runs at about half the kk GEMM's absolute time (GEMM share 0.831 ->
+0.707 on a route 0.58x as long).
 
 **Verdict: adopted** under the predicate above. sk4 is 8% faster than sk2 on the one
 K = 9216 cell (0.521 vs 0.564) but would cost a second routed variant; the single
@@ -1440,7 +1450,7 @@ on all 45 shapes.
 
 The note-17 re-run of the first final session (s118, retained at the end of this
 section), launched from the committed HEAD past the note-18 fix (`163f5bfef1`),
-same binary as every gate today (one md5; the t128, t32x32-re-gate,
+same binary as every gate of the adopted arms (one md5; the t128, t32x32-re-gate,
 fast-gather-re-gate and kk-t128+fast-gather gate loops all ran on it). The after
 state is the adopted route as tightened by note 18: 1x1 M >= 784 and N >= 256 ->
 amd_t128x128_f32_alc, else the 1x1 parent; kk M >= 784 and N >= 256 ->
@@ -1449,7 +1459,7 @@ cells the first predicate selected run on the parent only (the route drops them
 by rule), and the nvidia t128 alternative arm runs on the 8 predicate cells so
 the owner decision has same-session data. Board fully idle 11 min before launch
 (no adb load; thermal state read back before and after, local log), then 120 s cooling
-idle in the loop, A/A open, five rotated rounds (905 dispatches), A/A close,
+idle in the loop, A/A open, five rotated rounds (905 runs), A/A close,
 readback.
 
 **Validity:** 905 rows, zero invalid; readback clean (driver canonical, bench

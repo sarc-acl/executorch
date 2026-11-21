@@ -184,6 +184,9 @@ the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFL
   SALU Busy 30.1% -> 9.3%, div/mod and rounding constants gone from the ISA; ADOPTED as the stage-3 kk parent,
   runtime plumbing default-off and unrouted as before.)
 - [ ] 11.5 Small-M, DRAM-bound shapes: move toward the DRAM roof (deeper split-K, more loads in flight).
+  Next levers on the two open cells (note 20, s119 shader breakdown): on 64-256 224x224 the sk2 split-K merge
+  (`conv2d_pw_coopmat_sk2_merge_f32_half`) is ~30% of the adopted route and is DRAM-bound per the stage-1 capture
+  (L2 stalled by DRAM), alongside the N = 64 GEMM gap; on 1024-256 28x28 the merge is ~1.5% - the GEMM alone.
   Verify as in 11.2.
 - [x] 11.6 Final interleaved session from the committed HEAD. Report per-shape ratio and % of roofline before and
   after stage 3, and per-candidate gains. Re-run from the final HEAD after 11.8, with every adopted arm gated on
@@ -195,8 +198,8 @@ the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFL
   37 of 45 - 784,256,1024 crosses to 0.987 within the parity band, 7 cells remain behind (three 784 1x1, four
   kxk), down from 8; oracle 0.986 vs predicate 0.988.)
   (FINAL s119 - the note-17 re-run, HEAD 163f5bfef1, RESULTS 11.6 final: 11 min full idle then 120 s cooling idle then
-  905 rows zero invalid on the same binary as every gate; thermal state read back in the loop before and after
-  (local log);
+  905 rows zero invalid on the same binary as every gate of the adopted arms; thermal state read back in the loop
+  before and after (local log);
   A/A open 1.0000 (5 cells outside ±2%) / close 0.9987 (3 outside) - both geomeans inside 1%, so the note-17 validity
   condition is met and s119 stands as final; the 4.0/7.3 precedent widening, per-cell bands in the table; parent
   drift 1.001. After state = the note-18 route directly: 1x1 M >= 784 and N >= 256 (the three N=128 cells run on the
