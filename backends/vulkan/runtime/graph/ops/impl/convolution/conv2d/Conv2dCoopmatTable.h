@@ -408,8 +408,8 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 2368> kConv2dCoopmatTable = {
     {0x8086, 0xe20b, "fp16", 128, 128, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-224 35x35, 2.64x
     {0x8086, 0xe20b, "fp16", 192, 224, 3, 3, 1, 1, 1, 1, 1, 1, 35, 35, "conv2d_pw_coopmat_xe2_t128x128_f16_alc_sk4_dg_half"},
-    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 14x14, 2.82x
-    {0x8086, 0xe20b, "fp16", 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t64x64_f16_g4x2_alc_sk4_dg_half"},
+    // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 14x14, 2.66x
+    {0x8086, 0xe20b, "fp16", 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 14, 14, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 28x28, 5.85x
     {0x8086, 0xe20b, "fp16", 192, 48, 3, 3, 1, 1, 1, 1, 1, 1, 28, 28, "conv2d_pw_coopmat_xe2_t32x64_f16_g4x2_alc_sk4_dg_half"},
     // Intel(R) Arc(tm) B580 Graphics (BMG G21), Mesa 26.2.7: 3x3 s1x1 p1x1 d1x1 192-48 56x56, 3.26x
