@@ -738,15 +738,6 @@ void drain_pass(
   barrier();
 
   const uint TEXELS_PER_ROW = WG_TILE_N / 4u;
-#if defined(ASYNC_A) && !defined(SPLIT_K) && !defined(NO_EPILOGUE)
-  // WG_SIZE is a multiple of TEXELS_PER_ROW, so an invocation stays on one
-  // output-channel texel and reads its bias and scale once per pass. The read
-  // is clamped; a column past N4 stores nothing.
-  const uint own_n4 = min(n4_start + gl_LocalInvocationID.x % TEXELS_PER_ROW, N4 - 1u);
-  const VEC4_T own_bias = VEC4_T(texelFetch(t_bias, ivec2(own_n4, 0), 0));
-  const vec4 own_scale =
-      has_scale ? texelFetch(t_scale, ivec2(own_n4, 0), 0) : vec4(1);
-#endif
   for (uint t = gl_LocalInvocationID.x; t < PASS_ROWS * TEXELS_PER_ROW;
        t += WG_SIZE) {
     const uint cr = t / TEXELS_PER_ROW;
@@ -780,14 +771,9 @@ void drain_pass(
       // No bias, activation, residual or scale (conv2d_pw_coopmat_ineligible).
       imageStore(t_out, ivec3(m % W_out, m / W_out, n4), vec4(v));
 #else
-#ifdef ASYNC_A
-      v += own_bias;
-      const vec4 scale = own_scale;
-#else
       v += VEC4_T(texelFetch(t_bias, ivec2(n4, 0), 0));
       const vec4 scale =
           has_scale ? texelFetch(t_scale, ivec2(n4, 0), 0) : vec4(1);
-#endif
 #ifdef I2C
       const ivec3 pos = ivec3(m % W_out, g_oh_offset + m / W_out, n4);
 #else
