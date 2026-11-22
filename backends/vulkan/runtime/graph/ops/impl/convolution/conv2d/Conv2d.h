@@ -154,6 +154,9 @@ struct Conv2dPwCoopmatVariant final {
     // parent's staging, tile, K step and drain with ordinary multiply-adds in
     // place of the cooperative-matrix multiply.
     kSimt = 1u << 11,
+    // "_af": with _alc, the K loop has no branch or select on the loaded input,
+    // so a wave does not wait for its prefetch before the matrix step.
+    kAsyncFetch = 1u << 12,
   };
 
   const char* name;

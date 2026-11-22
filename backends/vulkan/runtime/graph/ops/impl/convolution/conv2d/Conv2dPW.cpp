@@ -135,6 +135,7 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
   constexpr uint32_t kChunked = V::kChunked;
   constexpr uint32_t kDirect = V::kDirect;
   constexpr uint32_t kSimt = V::kSimt;
+  constexpr uint32_t kAsyncFetch = V::kAsyncFetch;
   // clang-format off
   static const std::vector<Conv2dPwCoopmatVariant> variants = {
       // Intel Xe2
@@ -419,6 +420,19 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_simt_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kSimt},
       {"conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_simt_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kDirect | kSimt},
       {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_dg_simt_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kDirect | kSimt},
+      // Radeon 780M: no wait for the input prefetch (_af).
+      {"conv2d_pw_coopmat_amd_t16x32_f16_alc_af_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kAlignedClampN | kAsyncFetch},
+      {"conv2d_pw_coopmat_amd_t16x32_f16_alc_af_sk2_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kAlignedClampN | kAsyncFetch, 2u},
+      {"conv2d_pw_coopmat_amd_t16x32_f16_alc_af_dg_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kAlignedClampN | kAsyncFetch | kDirect},
+      {"conv2d_pw_coopmat_amd_t16x32_f16_alc_af_sk2_dg_half", 16, 16, 16, 16, 32, 32, 1, 1, 32, false, false, kAlignedClampN | kAsyncFetch | kDirect, 2u},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f16_alc_af_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kAsyncFetch},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f16_alc_af_sk2_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kAsyncFetch, 2u},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f16_alc_af_dg_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kAsyncFetch | kDirect},
+      {"conv2d_pw_coopmat_nvidia_t16x32_f16_alc_af_sk2_dg_half", 16, 16, 16, 16, 32, 16, 1, 1, 32, false, false, kAlignedClampN | kAsyncFetch | kDirect, 2u},
+      {"conv2d_pw_coopmat_amd_t128x128_f32_alc_af_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch},
+      {"conv2d_pw_coopmat_amd_t128x128_f32_alc_af_sk2_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch, 2u},
+      {"conv2d_pw_coopmat_amd_t128x128_f32_alc_af_dg_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect},
+      {"conv2d_pw_coopmat_amd_t128x128_f32_alc_af_sk2_dg_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect, 2u},
   };
   // clang-format on
   return variants;
@@ -460,6 +474,7 @@ constexpr uint32_t kSuffixOrder[] = {
     Conv2dPwCoopmatVariant::kImageInput,
     Conv2dPwCoopmatVariant::kNoEpilogue,
     Conv2dPwCoopmatVariant::kColumnMajorB,
+    Conv2dPwCoopmatVariant::kAsyncFetch,
     kSlices,
     Conv2dPwCoopmatVariant::kIm2col,
     Conv2dPwCoopmatVariant::kDirect,
@@ -491,6 +506,8 @@ std::string suffix_item(const Conv2dPwCoopmatVariant& v, const uint32_t item) {
       return "_epi0";
     case Conv2dPwCoopmatVariant::kColumnMajorB:
       return "_bcm";
+    case Conv2dPwCoopmatVariant::kAsyncFetch:
+      return "_af";
     case Conv2dPwCoopmatVariant::kChunked:
       return "_ck";
     case Conv2dPwCoopmatVariant::kIm2col:
@@ -560,6 +577,10 @@ std::vector<std::string> conv2d_pw_coopmat_registry_problems(
         (v.has(Conv2dPwCoopmatVariant::kAligned) ||
          v.has(Conv2dPwCoopmatVariant::kWideWeightLoad))) {
       problems.push_back(name + ": _alc excludes _al and _w16");
+    }
+    if (v.has(Conv2dPwCoopmatVariant::kAsyncFetch) &&
+        !v.has(Conv2dPwCoopmatVariant::kAlignedClampN)) {
+      problems.push_back(name + ": _af needs _alc");
     }
     if (v.has(Conv2dPwCoopmatVariant::kColumnMajorB) && v.frag_layout) {
       problems.push_back(name + ": _bcm needs the padded row-major layout");

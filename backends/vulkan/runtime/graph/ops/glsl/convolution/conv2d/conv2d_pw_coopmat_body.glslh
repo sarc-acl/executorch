@@ -26,8 +26,8 @@
  * the bias, apply the epilogue (both in VEC4_T, f32 for ACC_FP32) and imageStore
  * the texels inside the output. The wrapper defines DRAIN_G and DRAIN_PASSES.
  * Options: ALIGNED (no bounds tests in the K loop), CLAMP_N (with ALIGNED, any
- * N), SPLIT_K, W16, IMG_INPUT, NO_EPILOGUE, BCM, DIAG_ONCE, DIRECT_B, I2C,
- * DIRECT.
+ * N), ASYNC_A (with CLAMP_N, no branch or select on the loaded input), SPLIT_K,
+ * W16, IMG_INPUT, NO_EPILOGUE, BCM, DIAG_ONCE, DIRECT_B, I2C, DIRECT.
  *
  * I2C: the input is one row tile of an im2col matrix (conv2d_im2col's
  * texture3d scratch, texel (ow, oh_local, k4)) holding in_sizes.y output rows
@@ -267,6 +267,9 @@ void make_staging_map(
 #if defined(CLAMP_N) && (!defined(ALIGNED) || defined(W16))
 #error "CLAMP_N requires ALIGNED without W16"
 #endif
+#if defined(ASYNC_A) && !defined(CLAMP_N)
+#error "ASYNC_A requires CLAMP_N"
+#endif
 
 #ifdef DIRECT
 // Texel k4 of the gathered row whose first live tap reads `origin`: zero
@@ -286,6 +289,28 @@ f16vec4 fetch_in(const ivec2 origin, const uint k4, const uint K4) {
       lessThan(uvec4(4u * c4) + uvec4(0u, 1u, 2u, 3u), uvec4(dg_in_channels));
   return inside ? mix(f16vec4(0), v, lanes) : f16vec4(0);
 }
+
+#ifdef ASYNC_A
+// fetch_in without its selects on the loaded value: `mask` holds the zeroing of
+// the texel's two packed words, from coordinates only, and store_ab applies it
+// after the matrix step, so the wave does not wait for the load before it.
+uvec4 g_a_mask[A_PASSES];
+
+f16vec4 fetch_in_async(const ivec2 origin, const uint k4, out uvec2 mask) {
+  const uint tap = k4 / DG_C4;
+  const uint c4 = k4 - tap * DG_C4;
+  const uint ty = tap / dg_taps_w;
+  const ivec2 pos = origin +
+      ivec2((tap - ty * dg_taps_w) * dg_dilation_w, ty * dg_dilation_h);
+  const bool inside = tap < DG_TAPS && uint(pos.x) < uint(in_sizes.x) &&
+      uint(pos.y) < uint(in_sizes.y);
+  const uvec4 lanes = uvec4(
+      lessThan(uvec4(4u * c4) + uvec4(0u, 1u, 2u, 3u), uvec4(dg_in_channels)));
+  const uvec4 m = inside ? lanes * 0xFFFFu : uvec4(0u);
+  mask = uvec2(m.x | (m.y << 16u), m.z | (m.w << 16u));
+  return f16vec4(LOAD_IN(ivec3(inside ? pos : ivec2(0), inside ? int(c4) : 0)));
+}
+#endif
 #endif
 
 #ifdef ALIGNED
@@ -365,6 +390,20 @@ void load_a(
     const uint k_start,
     const uint K4) {
   [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
+#if defined(ASYNC_A)
+    // Items past A_ITEMS read the last item and store_ab does not store them.
+    const uint k4 = k_start / 4u + 2u * map.a_col[p];
+#ifdef DIRECT
+    uvec2 mask0, mask1;
+    const f16vec4 v0 = fetch_in_async(map.a_pos[p], k4, mask0);
+    const f16vec4 v1 = fetch_in_async(map.a_pos[p], k4 + 1u, mask1);
+    temp[p] = pack_f16x8(v0, v1);
+    g_a_mask[p] = uvec4(mask0, mask1);
+#else
+    temp[p] = pack_f16x8(
+        fetch_in(map.a_pos[p], k4, K4), fetch_in(map.a_pos[p], k4 + 1u, K4));
+#endif
+#else
     if (map.a_row_ok[p]) {
       const uint k4 = k_start / 4u + 2u * map.a_col[p];
       temp[p] = pack_f16x8(
@@ -372,6 +411,7 @@ void load_a(
     } else {
       temp[p] = uvec4(0);
     }
+#endif
   }
 }
 
@@ -417,6 +457,12 @@ void load_b(
   }
 }
 
+#if defined(ASYNC_A) && defined(DIRECT)
+#define A_STAGED(p) (temp_a[p] & g_a_mask[p])
+#else
+#define A_STAGED(p) (temp_a[p])
+#endif
+
 void store_ab(
     const uint slice,
     const uvec4 temp_a[A_PASSES],
@@ -425,7 +471,7 @@ void store_ab(
   const uint tid = gl_LocalInvocationID.x;
   [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
     if (A_ITEMS % WG_SIZE == 0u || p * WG_SIZE + tid < A_ITEMS) {
-      sh[slice * ASH_SLICE + A_SH_IDX(map.a_m[p], map.a_col[p])] = temp_a[p];
+      sh[slice * ASH_SLICE + A_SH_IDX(map.a_m[p], map.a_col[p])] = A_STAGED(p);
     }
   }
   [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
