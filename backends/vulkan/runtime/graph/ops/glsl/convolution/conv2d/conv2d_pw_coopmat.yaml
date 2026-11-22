@@ -3136,3 +3136,28 @@ conv2d_pw_coopmat:
       ASYNC_A: true
       K_SLICES: 2
       DIRECT: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_af_sk4_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      K_SLICES: 4
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_af_sk4_dg_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      K_SLICES: 4
+      DIRECT: true
