@@ -302,8 +302,9 @@ f16vec4 fetch_in_async(const ivec2 origin, const uint k4, out uvec2 mask) {
   const uint ty = tap / dg_taps_w;
   const ivec2 pos = origin +
       ivec2((tap - ty * dg_taps_w) * dg_dilation_w, ty * dg_dilation_h);
-  const bool inside = tap < DG_TAPS && uint(pos.x) < uint(in_sizes.x) &&
-      uint(pos.y) < uint(in_sizes.y);
+  // all() rather than &&, which would branch and load in_sizes per texel.
+  const bool inside =
+      all(lessThan(uvec3(tap, uvec2(pos)), uvec3(DG_TAPS, uvec2(in_sizes.xy))));
   const uvec4 lanes = uvec4(
       lessThan(uvec4(4u * c4) + uvec4(0u, 1u, 2u, 3u), uvec4(dg_in_channels)));
   const uvec4 m = inside ? lanes * 0xFFFFu : uvec4(0u);
