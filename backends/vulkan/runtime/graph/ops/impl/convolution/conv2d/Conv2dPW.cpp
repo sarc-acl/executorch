@@ -435,10 +435,6 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_amd_t128x128_f32_alc_af_sk2_dg_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect, 2u},
       {"conv2d_pw_coopmat_amd_t128x128_f32_alc_af_sk4_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch, 4u},
       {"conv2d_pw_coopmat_amd_t128x128_f32_alc_af_sk4_dg_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect, 4u},
-      {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_af_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch},
-      {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_af_sk2_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch, 2u},
-      {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_af_dg_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect},
-      {"conv2d_pw_coopmat_nvidia_t128x128_f32_alc_af_sk2_dg_half", 16, 16, 16, 128, 128, 16, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect, 2u},
   };
   // clang-format on
   return variants;
