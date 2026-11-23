@@ -118,9 +118,9 @@ const uint BSH_SLICE = WG_TILE_N * B_STRIDE_VEC4;
 #define A_SH_IDX(m, c) ((m) * A_STRIDE_VEC4 + (c))
 #define B_SH_IDX(n, c) ((n) * B_STRIDE_VEC4 + (c))
 #else
-// Row-major, each row padded by A_ROW_PAD or B_ROW_PAD uvec4.
-const uint A_STRIDE_VEC4 = WG_TILE_K / FP16_PER_VEC4 + A_ROW_PAD;
-const uint B_STRIDE_VEC4 = WG_TILE_N / FP16_PER_VEC4 + B_ROW_PAD;
+// Row-major, each row padded by one uvec4.
+const uint A_STRIDE_VEC4 = (WG_TILE_K + FP16_PER_VEC4) / FP16_PER_VEC4;
+const uint B_STRIDE_VEC4 = (WG_TILE_N + FP16_PER_VEC4) / FP16_PER_VEC4;
 const uint ASH_SLICE = WG_TILE_M * A_STRIDE_VEC4;
 const uint BSH_SLICE = WG_TILE_K * B_STRIDE_VEC4;
 #define A_SH_IDX(m, c) ((m) * A_STRIDE_VEC4 + (c))

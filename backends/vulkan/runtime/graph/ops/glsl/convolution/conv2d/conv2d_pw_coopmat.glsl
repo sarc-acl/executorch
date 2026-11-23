@@ -165,8 +165,6 @@ $if CHUNKED:
   #define CHUNK_W_K4_BASE padding_h
   #define CHUNK_SCRATCH_K4 padding_w
 
-const uint A_ROW_PAD = ${A_ROW_PAD};
-const uint B_ROW_PAD = ${B_ROW_PAD};
 const uint MMA_M = ${MMA_M};
 const uint MMA_N = ${MMA_N};
 const uint MMA_K = ${MMA_K};
