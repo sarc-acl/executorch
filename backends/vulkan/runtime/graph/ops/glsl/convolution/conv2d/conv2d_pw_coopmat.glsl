@@ -136,8 +136,6 @@ $if CLAMP_N:
   #define CLAMP_N
 $if ASYNC_A:
   #define ASYNC_A
-$if LOAD_FENCE:
-  #define LOAD_FENCE
 $if W16:
   #define W16
 $if IMG_INPUT:
