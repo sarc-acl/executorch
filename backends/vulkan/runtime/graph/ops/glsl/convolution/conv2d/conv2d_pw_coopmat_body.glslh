@@ -27,7 +27,8 @@
  * the texels inside the output. The wrapper defines DRAIN_G and DRAIN_PASSES.
  * Options: ALIGNED (no bounds tests in the K loop), CLAMP_N (with ALIGNED, any
  * N), ASYNC_A (with CLAMP_N, no branch or select on the loaded input), SPLIT_K,
- * W16, IMG_INPUT, NO_EPILOGUE, BCM, DIAG_ONCE, DIRECT_B, I2C, DIRECT.
+ * W16, IMG_INPUT, NO_EPILOGUE, BCM, DIAG_ONCE, DIRECT_B, I2C, DIRECT, A_PAD_SINK,
+ * SG_DRAIN.
  *
  * I2C: the input is one row tile of an im2col matrix (conv2d_im2col's
  * texture3d scratch, texel (ow, oh_local, k4)) holding in_sizes.y output rows
@@ -807,6 +808,73 @@ void drain_pass(
   }
 }
 
+#ifdef SG_DRAIN
+#if !defined(ACC_FP32) || defined(SIMT) || defined(I2C) || \
+    defined(DIAG_ONCE) || defined(DIRECT_B) || defined(FRAG_LAYOUT) || \
+    defined(BCM)
+#error "SG_DRAIN supports fp32 accumulation without SIMT, I2C, DIAG_ONCE, DIRECT_B, FRAG_LAYOUT or BCM"
+#endif
+// Subgroup drain (_sd): after the last barrier of the K loop no subgroup
+// reads the other slice of the A/B pool again, so each subgroup stages its
+// accumulators there one MMA_M x MMA_N fragment at a time, in a region of its
+// own, and writes their output texels with subgroup barriers only.
+const uint SD_FRAG_VEC4 = MMA_M * MMA_N / ACC_PER_VEC4;
+const uint SD_TEXELS = MMA_M * MMA_N / 4u;
+const uint SD_NEED = NUM_SUBGROUPS * SD_FRAG_VEC4;
+const uint SD_FITS[SD_NEED <= ASH_SLICE || SD_NEED <= BSH_SLICE ? 1 : -1] = {1u};
+const uint SD_LANES_FIT[SD_TEXELS % SUBGROUP_SIZE == 0u ? 1 : -1] = {1u};
+
+void drain_subgroup(
+    const uint free_slice,
+    const uvec2 sg,
+    const uint tile_m_start,
+    const uint n4_start,
+    const uint M,
+    const uint N4,
+    const uint W_out) {
+  const uint base = (SD_NEED <= ASH_SLICE
+                         ? free_slice * ASH_SLICE
+                         : BSH_BASE + free_slice * BSH_SLICE) +
+      gl_SubgroupID * SD_FRAG_VEC4;
+  [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
+    [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+      coopMatStore(
+          result[i][j],
+          sh,
+          base,
+          MMA_N / ACC_PER_VEC4,
+          gl_CooperativeMatrixLayoutRowMajor);
+      subgroupMemoryBarrierShared();
+      subgroupBarrier();
+      [[unroll]] for (uint q = 0; q < SD_TEXELS / SUBGROUP_SIZE; ++q) {
+        const uint t = q * SUBGROUP_SIZE + gl_SubgroupInvocationID;
+        const uint m = tile_m_start + MMA_M * (MMAS_PER_SG_M * sg.y + i) +
+            t / (MMA_N / 4u);
+        const uint n4 = n4_start + (MMA_N / 4u) * (MMAS_PER_SG_N * sg.x + j) +
+            t % (MMA_N / 4u);
+        if (m < M && n4 < N4) {
+          VEC4_T v = uintBitsToFloat(sh[base + t]);
+#if defined(SPLIT_K)
+          store_scratch(m, n4, M, N4, v);
+#elif defined(NO_EPILOGUE)
+          imageStore(t_out, ivec3(m % W_out, m / W_out, n4), vec4(v));
+#else
+          v += VEC4_T(texelFetch(t_bias, ivec2(n4, 0), 0));
+          const vec4 scale =
+              has_scale ? texelFetch(t_scale, ivec2(n4, 0), 0) : vec4(1);
+          const ivec3 pos = ivec3(m % W_out, m / W_out, n4);
+          imageStore(t_out, pos, vec4(apply_epilogue(v, pos, scale)));
+#endif
+        }
+      }
+      // The next fragment overwrites the region only after every lane read it.
+      subgroupMemoryBarrierShared();
+      subgroupBarrier();
+    }
+  }
+}
+#endif
+
 void main() {
   const uvec2 sg = uvec2(gl_SubgroupID % SG_GRID_X, gl_SubgroupID / SG_GRID_X);
 
@@ -943,6 +1011,11 @@ void main() {
 #endif
 #endif
 
+#if defined(SG_DRAIN) && defined(SPLIT_K)
+  drain_subgroup(1u - (step - s0) % 2u, sg, tile_m_start, n4_start, M, N4, W_out);
+#elif defined(SG_DRAIN)
+  drain_subgroup(1u - step % 2u, sg, tile_m_start, n4_start, M, N4, W_out);
+#else
   drain_pass(0u, sg, tile_m_start, n4_start, M, N4, W_out);
 #if DRAIN_PASSES > 1
   drain_pass(1u, sg, tile_m_start, n4_start, M, N4, W_out);
@@ -955,6 +1028,7 @@ void main() {
 #endif
 #if DRAIN_PASSES < 1 || DRAIN_PASSES > 4
 #error "DRAIN_PASSES must be 1 to 4"
+#endif
 #endif
 }
 

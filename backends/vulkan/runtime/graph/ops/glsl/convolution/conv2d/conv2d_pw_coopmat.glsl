@@ -138,6 +138,8 @@ $if ASYNC_A:
   #define ASYNC_A
 $if A_PAD_SINK:
   #define A_PAD_SINK
+$if SG_DRAIN:
+  #define SG_DRAIN
 $if W16:
   #define W16
 $if IMG_INPUT:

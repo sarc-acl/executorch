@@ -32,6 +32,7 @@ conv2d_pw_coopmat:
     CLAMP_N: false
     ASYNC_A: false
     A_PAD_SINK: false
+    SG_DRAIN: false
     W16: false
     IMG_INPUT: false
     NO_EPILOGUE: false
@@ -3481,3 +3482,185 @@ conv2d_pw_coopmat:
       ASYNC_A: true
       A_PAD_SINK: true
       K_SLICES: 4
+    # Radeon 780M: subgroup drain (_sd), no work-group barrier after the K loop.
+    - NAME: conv2d_pw_coopmat_amd_t96x128_f32_alc_af_ps_sd_half
+      WG_TILE_M: 96
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      A_PAD_SINK: true
+      SG_DRAIN: true
+    - NAME: conv2d_pw_coopmat_amd_t64x128_f32_alc_af_sd_half
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      SG_DRAIN: true
+    - NAME: conv2d_pw_coopmat_amd_t128x64_f32_alc_af_sd_half
+      WG_TILE_M: 128
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      SG_DRAIN: true
+    - NAME: conv2d_pw_coopmat_amd_t64x64_f32_alc_af_sd_half
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      SG_DRAIN: true
+    - NAME: conv2d_pw_coopmat_amd_t32x64_f32_alc_af_sd_half
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      SG_DRAIN: true
+    - NAME: conv2d_pw_coopmat_amd_t64x128_f32_alc_af_sd_sk2_half
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      K_SLICES: 2
+      SG_DRAIN: true
+    - NAME: conv2d_pw_coopmat_amd_t64x128_f32_alc_af_sd_sk4_half
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      K_SLICES: 4
+      SG_DRAIN: true
+    - NAME: conv2d_pw_coopmat_amd_t32x64_f32_alc_af_sd_sk2_half
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      K_SLICES: 2
+      SG_DRAIN: true
+    - NAME: conv2d_pw_coopmat_amd_t64x128_f32_alc_af_sd_dg_half
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      DIRECT: true
+      SG_DRAIN: true
+    - NAME: conv2d_pw_coopmat_amd_t64x64_f32_alc_af_sd_dg_half
+      WG_TILE_M: 64
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      DIRECT: true
+      SG_DRAIN: true
+    - NAME: conv2d_pw_coopmat_amd_t32x64_f32_alc_af_sd_dg_half
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      DIRECT: true
+      SG_DRAIN: true
+    - NAME: conv2d_pw_coopmat_amd_t64x128_f32_alc_af_sd_sk2_dg_half
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      K_SLICES: 2
+      DIRECT: true
+      SG_DRAIN: true
+    - NAME: conv2d_pw_coopmat_amd_t64x128_f32_alc_af_sd_sk4_dg_half
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      K_SLICES: 4
+      DIRECT: true
+      SG_DRAIN: true
+    - NAME: conv2d_pw_coopmat_amd_t32x64_f32_alc_af_sd_sk2_dg_half
+      WG_TILE_M: 32
+      WG_TILE_N: 64
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      K_SLICES: 2
+      DIRECT: true
+      SG_DRAIN: true
