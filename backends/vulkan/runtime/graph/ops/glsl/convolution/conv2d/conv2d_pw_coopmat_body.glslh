@@ -26,7 +26,8 @@
  * the bias, apply the epilogue (both in VEC4_T, f32 for ACC_FP32) and imageStore
  * the texels inside the output. The wrapper defines DRAIN_G and DRAIN_PASSES.
  * Options: ALIGNED (no bounds tests in the K loop), CLAMP_N (with ALIGNED, any
- * N), ASYNC_A (with CLAMP_N, no branch or select on the loaded input), SPLIT_K,
+ * N), ASYNC_A (with CLAMP_N, no branch or select on the loaded input),
+ * LOAD_FENCE (operand loads of a K half stay after the previous half), SPLIT_K,
  * W16, IMG_INPUT, NO_EPILOGUE, BCM, DIAG_ONCE, DIRECT_B, I2C, DIRECT.
  *
  * I2C: the input is one row tile of an im2col matrix (conv2d_im2col's
@@ -542,10 +543,27 @@ void mma_step(const uint slice, const uvec2 sg) {
   }
 }
 #else
+#ifdef LOAD_FENCE
+// Always true while the shader runs (every work group count is at least 1), in
+// a form the compiler neither folds nor merges with another block's condition.
+// The scheduler works per basic block, so each block's operand loads stay after
+// the previous block's matrix instructions and are not all live at once.
+bool lf_block(const uint n) {
+  const uint b = n % 7u + 1u;
+  return (((b & 1u) != 0u ? gl_NumWorkGroups.x : 0u) |
+          ((b & 2u) != 0u ? gl_NumWorkGroups.y : 0u) |
+          ((b & 4u) != 0u ? gl_NumWorkGroups.z : 0u)) != 0u;
+}
+#define LF_BLOCK(n) if (lf_block(n))
+#else
+#define LF_BLOCK(n)
+#endif
+
 void mma_step(const uint slice, const uvec2 sg) {
   const uint a_base = slice * ASH_SLICE;
   const uint b_base = BSH_BASE + slice * BSH_SLICE;
   [[unroll]] for (uint k = 0; k < WG_TILE_K / MMA_K; ++k) {
+    LF_BLOCK(3u * k) {
     const uint k_start = MMA_K * k;
     coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA>
         mat_a[MMAS_PER_SG_M];
@@ -560,6 +578,7 @@ void mma_step(const uint slice, const uvec2 sg) {
     }
     coopmat<float16_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> mat_b;
     [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+      LF_BLOCK(3u * k + 1u + j) {
 #ifdef BCM
       const uint n = MMA_N * (MMAS_PER_SG_N * sg.x + j);
       coopMatLoad(
@@ -580,6 +599,8 @@ void mma_step(const uint slice, const uvec2 sg) {
       [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
         result[i][j] = coopMatMulAdd(mat_a[i], mat_b, result[i][j]);
       }
+      }
+    }
     }
   }
 }

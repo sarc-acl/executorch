@@ -31,6 +31,7 @@ conv2d_pw_coopmat:
     ALIGNED: false
     CLAMP_N: false
     ASYNC_A: false
+    LOAD_FENCE: false
     W16: false
     IMG_INPUT: false
     NO_EPILOGUE: false
@@ -3159,5 +3160,85 @@ conv2d_pw_coopmat:
       ALIGNED: true
       CLAMP_N: true
       ASYNC_A: true
+      K_SLICES: 4
+      DIRECT: true
+    # Radeon 780M: operand loads of a K half stay after the previous half (_lf).
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_af_lf_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      LOAD_FENCE: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_af_lf_dg_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      LOAD_FENCE: true
+      DIRECT: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_af_lf_sk2_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      LOAD_FENCE: true
+      K_SLICES: 2
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_af_lf_sk2_dg_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      LOAD_FENCE: true
+      K_SLICES: 2
+      DIRECT: true
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_af_lf_sk4_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      LOAD_FENCE: true
+      K_SLICES: 4
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_af_lf_sk4_dg_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      LOAD_FENCE: true
       K_SLICES: 4
       DIRECT: true
