@@ -31,6 +31,8 @@ conv2d_pw_coopmat:
     ALIGNED: false
     CLAMP_N: false
     ASYNC_A: false
+    A_ROW_PAD: 1
+    B_ROW_PAD: 1
     W16: false
     IMG_INPUT: false
     NO_EPILOGUE: false
@@ -3440,4 +3442,59 @@ conv2d_pw_coopmat:
       CLAMP_N: true
       ASYNC_A: true
       K_SLICES: 2
+      DIRECT: true
+    # Radeon 780M: row padding removed to reach 32 KiB of shared memory.
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_af_np_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      A_ROW_PAD: 0
+      B_ROW_PAD: 0
+    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_af_np_dg_half
+      WG_TILE_M: 128
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 4
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      A_ROW_PAD: 0
+      B_ROW_PAD: 0
+      DIRECT: true
+    - NAME: conv2d_pw_coopmat_amd_t128x96_f32_alc_af_nbp_half
+      WG_TILE_M: 128
+      WG_TILE_N: 96
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      A_ROW_PAD: 1
+      B_ROW_PAD: 0
+    - NAME: conv2d_pw_coopmat_amd_t128x96_f32_alc_af_nbp_dg_half
+      WG_TILE_M: 128
+      WG_TILE_N: 96
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 4
+      SUBGROUP_SIZE: 32
+      ACC_TYPE: f32
+      ALIGNED: true
+      CLAMP_N: true
+      ASYNC_A: true
+      A_ROW_PAD: 1
+      B_ROW_PAD: 0
       DIRECT: true
