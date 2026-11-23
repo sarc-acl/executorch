@@ -166,6 +166,14 @@ const uint B_PASSES = (B_ITEMS + WG_SIZE - 1u) / WG_SIZE;
 #define B_TEMP_LEN B_PASSES
 #endif
 
+#ifdef A_PAD_SINK
+#if defined(FRAG_LAYOUT) || defined(BCM)
+#error "A_PAD_SINK requires the padded row-major layout"
+#endif
+// One padding slot per spare invocation: a row of A or of B each.
+const uint A_PAD_SINK_FITS[A_PASSES * WG_SIZE - A_ITEMS <= WG_TILE_M + WG_TILE_K ? 1 : -1] = {1u};
+#endif
+
 #ifdef SIMT
 #if defined(SPLIT_K) || defined(I2C) || defined(CHUNKED) || \
     defined(DIAG_ONCE) || defined(DIRECT_B) || defined(BCM) || defined(W16)
@@ -471,9 +479,23 @@ void store_ab(
     const StagingMap map) {
   const uint tid = gl_LocalInvocationID.x;
   [[unroll]] for (uint p = 0; p < A_PASSES; ++p) {
+#ifdef A_PAD_SINK
+    // Without a branch: invocations past the last item store to a row-padding
+    // slot of their own, which no matrix load reads.
+    const uint item = p * WG_SIZE + tid;
+    const uint spare = item - A_ITEMS;
+    const uint sink = spare < WG_TILE_M
+        ? slice * ASH_SLICE + spare * A_STRIDE_VEC4 + A_COLS
+        : BSH_BASE + slice * BSH_SLICE +
+            (spare - WG_TILE_M) * B_STRIDE_VEC4 + B_COLS;
+    sh[item < A_ITEMS
+           ? slice * ASH_SLICE + A_SH_IDX(map.a_m[p], map.a_col[p])
+           : sink] = A_STAGED(p);
+#else
     if (A_ITEMS % WG_SIZE == 0u || p * WG_SIZE + tid < A_ITEMS) {
       sh[slice * ASH_SLICE + A_SH_IDX(map.a_m[p], map.a_col[p])] = A_STAGED(p);
     }
+#endif
   }
   [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
     if (B_ITEMS % WG_SIZE == 0u || p * WG_SIZE + tid < B_ITEMS) {
