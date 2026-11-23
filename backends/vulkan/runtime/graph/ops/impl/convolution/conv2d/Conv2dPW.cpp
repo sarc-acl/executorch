@@ -435,12 +435,6 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_amd_t128x128_f32_alc_af_sk2_dg_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect, 2u},
       {"conv2d_pw_coopmat_amd_t128x128_f32_alc_af_sk4_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch, 4u},
       {"conv2d_pw_coopmat_amd_t128x128_f32_alc_af_sk4_dg_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect, 4u},
-      // Radeon 780M: _af_dg with the zero masks recomputed at the store (_rm).
-      {"conv2d_pw_coopmat_amd_t128x128_f32_alc_af_rm_dg_half", 16, 16, 16, 128, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect},
-      {"conv2d_pw_coopmat_amd_t96x128_f32_alc_af_rm_dg_half", 16, 16, 16, 96, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect},
-      {"conv2d_pw_coopmat_amd_t64x128_f32_alc_af_rm_dg_half", 16, 16, 16, 64, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect},
-      {"conv2d_pw_coopmat_amd_t128x64_f32_alc_af_rm_dg_half", 16, 16, 16, 128, 64, 32, 2, 4, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect},
-      {"conv2d_pw_coopmat_amd_t96x128_f32_alc_af_lf_rm_dg_half", 16, 16, 16, 96, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect},
       // Radeon 780M: _af tiles of at most 32 KiB of shared memory.
       {"conv2d_pw_coopmat_amd_t96x128_f32_alc_af_half", 16, 16, 16, 96, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch},
       {"conv2d_pw_coopmat_amd_t96x128_f32_alc_af_dg_half", 16, 16, 16, 96, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect},

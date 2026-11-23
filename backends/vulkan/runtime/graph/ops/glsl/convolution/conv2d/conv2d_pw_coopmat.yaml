@@ -31,8 +31,6 @@ conv2d_pw_coopmat:
     ALIGNED: false
     CLAMP_N: false
     ASYNC_A: false
-    RECOMPUTE_MASK: false
-    LOAD_FENCE: false
     W16: false
     IMG_INPUT: false
     NO_EPILOGUE: false
@@ -3255,72 +3253,4 @@ conv2d_pw_coopmat:
       ALIGNED: true
       CLAMP_N: true
       ASYNC_A: true
-      DIRECT: true
-    # Radeon 780M: _af_dg with the zero masks recomputed at the store (_rm).
-    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_af_rm_dg_half
-      WG_TILE_M: 128
-      WG_TILE_N: 128
-      WG_TILE_K: 32
-      SG_GRID_X: 4
-      SG_GRID_Y: 2
-      SUBGROUP_SIZE: 32
-      ACC_TYPE: f32
-      ALIGNED: true
-      CLAMP_N: true
-      ASYNC_A: true
-      RECOMPUTE_MASK: true
-      DIRECT: true
-    - NAME: conv2d_pw_coopmat_amd_t96x128_f32_alc_af_rm_dg_half
-      WG_TILE_M: 96
-      WG_TILE_N: 128
-      WG_TILE_K: 32
-      SG_GRID_X: 4
-      SG_GRID_Y: 2
-      SUBGROUP_SIZE: 32
-      ACC_TYPE: f32
-      ALIGNED: true
-      CLAMP_N: true
-      ASYNC_A: true
-      RECOMPUTE_MASK: true
-      DIRECT: true
-    - NAME: conv2d_pw_coopmat_amd_t64x128_f32_alc_af_rm_dg_half
-      WG_TILE_M: 64
-      WG_TILE_N: 128
-      WG_TILE_K: 32
-      SG_GRID_X: 4
-      SG_GRID_Y: 2
-      SUBGROUP_SIZE: 32
-      ACC_TYPE: f32
-      ALIGNED: true
-      CLAMP_N: true
-      ASYNC_A: true
-      RECOMPUTE_MASK: true
-      DIRECT: true
-    - NAME: conv2d_pw_coopmat_amd_t128x64_f32_alc_af_rm_dg_half
-      WG_TILE_M: 128
-      WG_TILE_N: 64
-      WG_TILE_K: 32
-      SG_GRID_X: 2
-      SG_GRID_Y: 4
-      SUBGROUP_SIZE: 32
-      ACC_TYPE: f32
-      ALIGNED: true
-      CLAMP_N: true
-      ASYNC_A: true
-      RECOMPUTE_MASK: true
-      DIRECT: true
-    # Radeon 780M: _rm direct gather with block boundaries around the operand loads (_lf).
-    - NAME: conv2d_pw_coopmat_amd_t96x128_f32_alc_af_lf_rm_dg_half
-      WG_TILE_M: 96
-      WG_TILE_N: 128
-      WG_TILE_K: 32
-      SG_GRID_X: 4
-      SG_GRID_Y: 2
-      SUBGROUP_SIZE: 32
-      ACC_TYPE: f32
-      ALIGNED: true
-      CLAMP_N: true
-      ASYNC_A: true
-      RECOMPUTE_MASK: true
-      LOAD_FENCE: true
       DIRECT: true
