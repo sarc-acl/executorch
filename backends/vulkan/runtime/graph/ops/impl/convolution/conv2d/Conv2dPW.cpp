@@ -15,6 +15,7 @@
 #include <executorch/backends/vulkan/runtime/graph/ops/utils/ShaderNameUtils.h>
 
 #include <map>
+#include <set>
 
 namespace vkcompute {
 
@@ -534,6 +535,16 @@ constexpr uint32_t kSuffixOrder[] = {
     Conv2dPwCoopmatVariant::kSimt,
 };
 
+// The Radeon 780M occupancy tiles start at _af: their tile or subgroup grid has
+// no form without it, so they have no parent.
+const std::set<std::string> kRootsWithOptions = {
+    "conv2d_pw_coopmat_amd_t96x128_f32_alc_af_half",
+    "conv2d_pw_coopmat_amd_t64x128_f32_alc_af_half",
+    "conv2d_pw_coopmat_amd_t128x64_f32_alc_af_half",
+    "conv2d_pw_coopmat_amd_t64x64_f32_alc_af_half",
+    "conv2d_pw_coopmat_amd_t32x64_f32_alc_af_half",
+};
+
 bool has_suffix_item(const Conv2dPwCoopmatVariant& v, const uint32_t item) {
   return item == kSlices ? v.k_slices > 1u : (v.options & item) != 0u;
 }
@@ -682,7 +693,7 @@ std::vector<std::string> conv2d_pw_coopmat_registry_problems(
             name + ": _simt needs tile_m * tile_n a multiple of 8 * wg_size");
       }
     }
-    if (suffix.empty()) {
+    if (suffix.empty() || kRootsWithOptions.count(name) != 0u) {
       continue;
     }
     // The parent is the variant without the last option.
