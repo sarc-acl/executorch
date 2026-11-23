@@ -136,6 +136,7 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
   constexpr uint32_t kDirect = V::kDirect;
   constexpr uint32_t kSimt = V::kSimt;
   constexpr uint32_t kAsyncFetch = V::kAsyncFetch;
+  constexpr uint32_t kPadSink = V::kPadSink;
   // clang-format off
   static const std::vector<Conv2dPwCoopmatVariant> variants = {
       // Intel Xe2
@@ -442,9 +443,9 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_amd_t128x64_f32_alc_af_half", 16, 16, 16, 128, 64, 32, 2, 4, 32, true, false, kAlignedClampN | kAsyncFetch},
       {"conv2d_pw_coopmat_amd_t128x64_f32_alc_af_dg_half", 16, 16, 16, 128, 64, 32, 2, 4, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect},
       // Radeon 780M: t96x128 staging store without a branch per pass (_ps).
-      {"conv2d_pw_coopmat_amd_t96x128_f32_alc_af_ps_half", 16, 16, 16, 96, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch},
-      {"conv2d_pw_coopmat_amd_t96x128_f32_alc_af_ps_sk2_half", 16, 16, 16, 96, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch, 2u},
-      {"conv2d_pw_coopmat_amd_t96x128_f32_alc_af_ps_sk4_half", 16, 16, 16, 96, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch, 4u},
+      {"conv2d_pw_coopmat_amd_t96x128_f32_alc_af_ps_half", 16, 16, 16, 96, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch | kPadSink},
+      {"conv2d_pw_coopmat_amd_t96x128_f32_alc_af_ps_sk2_half", 16, 16, 16, 96, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch | kPadSink, 2u},
+      {"conv2d_pw_coopmat_amd_t96x128_f32_alc_af_ps_sk4_half", 16, 16, 16, 96, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch | kPadSink, 4u},
       // Radeon 780M: mid-size _af tiles.
       {"conv2d_pw_coopmat_amd_t32x64_f32_alc_af_half", 16, 16, 16, 32, 64, 32, 2, 1, 32, true, false, kAlignedClampN | kAsyncFetch},
       {"conv2d_pw_coopmat_amd_t32x64_f32_alc_af_dg_half", 16, 16, 16, 32, 64, 32, 2, 1, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect},
@@ -507,6 +508,7 @@ constexpr uint32_t kSuffixOrder[] = {
     Conv2dPwCoopmatVariant::kNoEpilogue,
     Conv2dPwCoopmatVariant::kColumnMajorB,
     Conv2dPwCoopmatVariant::kAsyncFetch,
+    Conv2dPwCoopmatVariant::kPadSink,
     kSlices,
     Conv2dPwCoopmatVariant::kIm2col,
     Conv2dPwCoopmatVariant::kDirect,
@@ -540,6 +542,8 @@ std::string suffix_item(const Conv2dPwCoopmatVariant& v, const uint32_t item) {
       return "_bcm";
     case Conv2dPwCoopmatVariant::kAsyncFetch:
       return "_af";
+    case Conv2dPwCoopmatVariant::kPadSink:
+      return "_ps";
     case Conv2dPwCoopmatVariant::kChunked:
       return "_ck";
     case Conv2dPwCoopmatVariant::kIm2col:
@@ -613,6 +617,11 @@ std::vector<std::string> conv2d_pw_coopmat_registry_problems(
     if (v.has(Conv2dPwCoopmatVariant::kAsyncFetch) &&
         !v.has(Conv2dPwCoopmatVariant::kAlignedClampN)) {
       problems.push_back(name + ": _af needs _alc");
+    }
+    if (v.has(Conv2dPwCoopmatVariant::kPadSink) &&
+        (!v.has(Conv2dPwCoopmatVariant::kAsyncFetch) || v.frag_layout ||
+         v.has(Conv2dPwCoopmatVariant::kColumnMajorB))) {
+      problems.push_back(name + ": _ps needs _af and the padded row-major layout");
     }
     if (v.has(Conv2dPwCoopmatVariant::kColumnMajorB) && v.frag_layout) {
       problems.push_back(name + ": _bcm needs the padded row-major layout");

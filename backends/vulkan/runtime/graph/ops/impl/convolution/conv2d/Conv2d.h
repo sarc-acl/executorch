@@ -157,6 +157,9 @@ struct Conv2dPwCoopmatVariant final {
     // "_af": with _alc, the K loop has no branch or select on the loaded input,
     // so a wave does not wait for its prefetch before the matrix step.
     kAsyncFetch = 1u << 12,
+    // "_ps": with _af, invocations past the last A item store to row padding
+    // instead of branching.
+    kPadSink = 1u << 13,
   };
 
   const char* name;
@@ -195,9 +198,9 @@ struct Conv2dPwCoopmatVariant final {
   uint32_t shared_bytes() const;
 };
 
-// "_g<X>x<Y>", "_al", "_alc", "_w16", "_img", "_epi0", "_bcm", "_sk<n>",
-// "_i2c", "_dg", "_ck", "_diag_once", "_simt" for the variant's options and K
-// slices, in this order.
+// "_g<X>x<Y>", "_al", "_alc", "_w16", "_img", "_epi0", "_bcm", "_af", "_ps",
+// "_sk<n>", "_i2c", "_dg", "_ck", "_diag_once", "_simt" for the variant's
+// options and K slices, in this order.
 std::string conv2d_pw_coopmat_option_suffix(
     const Conv2dPwCoopmatVariant& variant);
 
