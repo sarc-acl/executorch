@@ -444,6 +444,11 @@ const std::vector<Conv2dPwCoopmatVariant>& conv2d_pw_coopmat_variants() {
       {"conv2d_pw_coopmat_amd_t64x128_f32_alc_af_dg_half", 16, 16, 16, 64, 128, 32, 4, 2, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect},
       {"conv2d_pw_coopmat_amd_t128x64_f32_alc_af_half", 16, 16, 16, 128, 64, 32, 2, 4, 32, true, false, kAlignedClampN | kAsyncFetch},
       {"conv2d_pw_coopmat_amd_t128x64_f32_alc_af_dg_half", 16, 16, 16, 128, 64, 32, 2, 4, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect},
+      // Radeon 780M: two 32-K steps staged per barrier.
+      {"conv2d_pw_coopmat_amd_t32x64_f32_alc_af_k64_half", 16, 16, 16, 32, 64, 64, 2, 1, 32, true, false, kAlignedClampN | kAsyncFetch},
+      {"conv2d_pw_coopmat_amd_t32x64_f32_alc_af_k64_dg_half", 16, 16, 16, 32, 64, 64, 2, 1, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect},
+      {"conv2d_pw_coopmat_amd_t64x64_f32_alc_af_k64_half", 16, 16, 16, 64, 64, 64, 2, 2, 32, true, false, kAlignedClampN | kAsyncFetch},
+      {"conv2d_pw_coopmat_amd_t64x64_f32_alc_af_k64_dg_half", 16, 16, 16, 64, 64, 64, 2, 2, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect},
       // Radeon 780M: mid-size _af tiles.
       {"conv2d_pw_coopmat_amd_t32x64_f32_alc_af_half", 16, 16, 16, 32, 64, 32, 2, 1, 32, true, false, kAlignedClampN | kAsyncFetch},
       {"conv2d_pw_coopmat_amd_t32x64_f32_alc_af_dg_half", 16, 16, 16, 32, 64, 32, 2, 1, 32, true, false, kAlignedClampN | kAsyncFetch | kDirect},
