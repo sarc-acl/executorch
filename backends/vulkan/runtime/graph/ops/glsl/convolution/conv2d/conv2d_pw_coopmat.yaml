@@ -3523,27 +3523,3 @@ conv2d_pw_coopmat:
       CLAMP_N: true
       ASYNC_A: true
       DIRECT: true
-    # Radeon 780M: fp16 accumulator on the 128x128 _af tile.
-    - NAME: conv2d_pw_coopmat_amd_t128x128_f16_alc_af_half
-      WG_TILE_M: 128
-      WG_TILE_N: 128
-      WG_TILE_K: 32
-      SG_GRID_X: 4
-      SG_GRID_Y: 2
-      SUBGROUP_SIZE: 32
-      ACC_TYPE: f16
-      ALIGNED: true
-      CLAMP_N: true
-      ASYNC_A: true
-    - NAME: conv2d_pw_coopmat_amd_t128x128_f16_alc_af_dg_half
-      WG_TILE_M: 128
-      WG_TILE_N: 128
-      WG_TILE_K: 32
-      SG_GRID_X: 4
-      SG_GRID_Y: 2
-      SUBGROUP_SIZE: 32
-      ACC_TYPE: f16
-      ALIGNED: true
-      CLAMP_N: true
-      ASYNC_A: true
-      DIRECT: true
