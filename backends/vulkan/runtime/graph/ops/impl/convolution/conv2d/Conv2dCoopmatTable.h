@@ -3351,8 +3351,8 @@ inline constexpr std::array<Conv2dCoopmatTableRow, 2783> kConv2dCoopmatTable = {
     {0x1002, 0x15bf, "fp16", 320, 320, 3, 3, 2, 2, 0, 0, 1, 1, 17, 17, "conv2d_pw_coopmat_amd_t64x128_f32_alc_af_sd_sk4_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 384-384 35x35, 3.76x
     {0x1002, 0x15bf, "fp16", 384, 384, 3, 3, 2, 2, 0, 0, 1, 1, 35, 35, "conv2d_pw_coopmat_amd_t64x64_f32_alc_af_dg_half"},
-    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 64-96 147x147, 2.93x
-    {0x1002, 0x15bf, "fp16", 64, 96, 3, 3, 2, 2, 0, 0, 1, 1, 147, 147, "conv2d_pw_coopmat_nvidia_t16x32_f16_alc_dg_half"},
+    // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 64-96 147x147, 3.81x
+    {0x1002, 0x15bf, "fp16", 64, 96, 3, 3, 2, 2, 0, 0, 1, 1, 147, 147, "conv2d_pw_coopmat_amd_t64x128_f32_alc_af_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p0x0 d1x1 96-96 25x25, 1.44x
     {0x1002, 0x15bf, "fp16", 96, 96, 3, 3, 2, 2, 0, 0, 1, 1, 25, 25, "conv2d_pw_coopmat_amd_t16x32_f16_alc_af_dg_half"},
     // AMD Radeon 780M Graphics (RADV PHOENIX), Mesa 26.1.1: 3x3 s2x2 p1x1 d1x1 128-128 56x56, 3.83x
