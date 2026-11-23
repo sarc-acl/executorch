@@ -26,7 +26,8 @@
  * the bias, apply the epilogue (both in VEC4_T, f32 for ACC_FP32) and imageStore
  * the texels inside the output. The wrapper defines DRAIN_G and DRAIN_PASSES.
  * Options: ALIGNED (no bounds tests in the K loop), CLAMP_N (with ALIGNED, any
- * N), ASYNC_A (with CLAMP_N, no branch or select on the loaded input), SPLIT_K,
+ * N), ASYNC_A (with CLAMP_N, no branch or select on the loaded input),
+ * RECOMPUTE_MASK (with ASYNC_A and DIRECT, masks recomputed at the store), SPLIT_K,
  * W16, IMG_INPUT, NO_EPILOGUE, BCM, DIAG_ONCE, DIRECT_B, I2C, DIRECT.
  *
  * I2C: the input is one row tile of an im2col matrix (conv2d_im2col's
@@ -294,7 +295,13 @@ f16vec4 fetch_in(const ivec2 origin, const uint k4, const uint K4) {
 // fetch_in without its selects on the loaded value: `mask` holds the zeroing of
 // the texel's two packed words, from coordinates only, and store_ab applies it
 // after the matrix step, so the wave does not wait for the load before it.
+#ifdef RECOMPUTE_MASK
+// The masks are recomputed at the store from the staged K step, not held in
+// registers across the matrix step.
+uint g_a_k_start;
+#else
 uvec4 g_a_mask[A_PASSES];
+#endif
 
 f16vec4 fetch_in_async(const ivec2 origin, const uint k4, out uvec2 mask) {
   const uint tap = k4 / DG_C4;
@@ -311,6 +318,22 @@ f16vec4 fetch_in_async(const ivec2 origin, const uint k4, out uvec2 mask) {
   mask = uvec2(m.x | (m.y << 16u), m.z | (m.w << 16u));
   return f16vec4(LOAD_IN(ivec3(inside ? pos : ivec2(0), inside ? int(c4) : 0)));
 }
+
+#ifdef RECOMPUTE_MASK
+uvec2 a_mask_half(const ivec2 origin, const uint k4) {
+  const uint tap = k4 / DG_C4;
+  const uint c4 = k4 - tap * DG_C4;
+  const uint ty = tap / dg_taps_w;
+  const ivec2 pos = origin +
+      ivec2((tap - ty * dg_taps_w) * dg_dilation_w, ty * dg_dilation_h);
+  const bool inside =
+      all(lessThan(uvec3(tap, uvec2(pos)), uvec3(DG_TAPS, uvec2(in_sizes.xy))));
+  const uvec4 lanes = uvec4(
+      lessThan(uvec4(4u * c4) + uvec4(0u, 1u, 2u, 3u), uvec4(dg_in_channels)));
+  const uvec4 m = inside ? lanes * 0xFFFFu : uvec4(0u);
+  return uvec2(m.x | (m.y << 16u), m.z | (m.w << 16u));
+}
+#endif
 #endif
 #endif
 
@@ -399,7 +422,11 @@ void load_a(
     const f16vec4 v0 = fetch_in_async(map.a_pos[p], k4, mask0);
     const f16vec4 v1 = fetch_in_async(map.a_pos[p], k4 + 1u, mask1);
     temp[p] = pack_f16x8(v0, v1);
+#ifdef RECOMPUTE_MASK
+    g_a_k_start = k_start;
+#else
     g_a_mask[p] = uvec4(mask0, mask1);
+#endif
 #else
     temp[p] = pack_f16x8(
         fetch_in(map.a_pos[p], k4, K4), fetch_in(map.a_pos[p], k4 + 1u, K4));
@@ -458,7 +485,13 @@ void load_b(
   }
 }
 
-#if defined(ASYNC_A) && defined(DIRECT)
+#if defined(ASYNC_A) && defined(DIRECT) && defined(RECOMPUTE_MASK)
+#define A_K4(p) (g_a_k_start / 4u + 2u * map.a_col[p])
+#define A_STAGED(p)                                    \
+  (temp_a[p] &                                         \
+   uvec4(a_mask_half(map.a_pos[p], A_K4(p)),           \
+         a_mask_half(map.a_pos[p], A_K4(p) + 1u)))
+#elif defined(ASYNC_A) && defined(DIRECT)
 #define A_STAGED(p) (temp_a[p] & g_a_mask[p])
 #else
 #define A_STAGED(p) (temp_a[p])
@@ -542,10 +575,27 @@ void mma_step(const uint slice, const uvec2 sg) {
   }
 }
 #else
+#ifdef LOAD_FENCE
+// Always true while the shader runs (every work group count is at least 1), in
+// a form the compiler neither folds nor merges with another block's condition.
+// The scheduler works per basic block, so each block's operand loads stay after
+// the previous block's matrix instructions and are not all live at once.
+bool lf_block(const uint n) {
+  const uint b = n % 7u + 1u;
+  return (((b & 1u) != 0u ? gl_NumWorkGroups.x : 0u) |
+          ((b & 2u) != 0u ? gl_NumWorkGroups.y : 0u) |
+          ((b & 4u) != 0u ? gl_NumWorkGroups.z : 0u)) != 0u;
+}
+#define LF_BLOCK(n) if (lf_block(n))
+#else
+#define LF_BLOCK(n)
+#endif
+
 void mma_step(const uint slice, const uvec2 sg) {
   const uint a_base = slice * ASH_SLICE;
   const uint b_base = BSH_BASE + slice * BSH_SLICE;
   [[unroll]] for (uint k = 0; k < WG_TILE_K / MMA_K; ++k) {
+    LF_BLOCK(3u * k) {
     const uint k_start = MMA_K * k;
     coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA>
         mat_a[MMAS_PER_SG_M];
@@ -560,6 +610,7 @@ void mma_step(const uint slice, const uvec2 sg) {
     }
     coopmat<float16_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> mat_b;
     [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
+      LF_BLOCK(3u * k + 1u + j) {
 #ifdef BCM
       const uint n = MMA_N * (MMAS_PER_SG_N * sg.x + j);
       coopMatLoad(
@@ -580,6 +631,8 @@ void mma_step(const uint slice, const uvec2 sg) {
       [[unroll]] for (uint i = 0; i < MMAS_PER_SG_M; ++i) {
         result[i][j] = coopMatMulAdd(mat_a[i], mat_b, result[i][j]);
       }
+      }
+    }
     }
   }
 }
