@@ -6308,14 +6308,26 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_ineligibility_reasons) {
   const uint32_t max_subgroups = adapter->max_compute_workgroup_subgroups();
   Conv2dPwCoopmatVariant many = *runnable;
   many.sg_grid_y = 1u;
-  many.sg_grid_x = max_subgroups + 1u;
-  if (many.wg_size() <= adapter->max_compute_workgroup_invocations() &&
-      many.wg_size() <= adapter->max_compute_workgroup_size()[0]) {
+  const uint64_t max_wg = std::min(
+      adapter->max_compute_workgroup_invocations(),
+      adapter->max_compute_workgroup_size()[0]);
+  if ((uint64_t(max_subgroups) + 1u) * many.subgroup_size <= max_wg) {
+    many.sg_grid_x = max_subgroups + 1u;
     EXPECT_NE(
         reason(many).find(
             "maxComputeWorkgroupSubgroups " + std::to_string(max_subgroups)),
         std::string::npos)
         << reason(many);
+  } else {
+    // No work group can exceed this device's limit (RADV reports UINT32_MAX),
+    // so the check runs against a limit of one subgroup.
+    many.sg_grid_x = 2u;
+    const auto limited = conv2d_pw_coopmat_limits_unsupported(
+        many, {many.wg_size(), many.wg_size(), 1u, many.shared_bytes()});
+    ASSERT_TRUE(limited.has_value());
+    EXPECT_NE(
+        limited->find("maxComputeWorkgroupSubgroups 1"), std::string::npos)
+        << *limited;
   }
   // More shared memory than the device has.
   Conv2dPwCoopmatVariant big = *runnable;
@@ -6998,8 +7010,9 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_resize) {
     }
     SCOPED_TRACE(v.name);
     const std::string merge = conv2d_pw_coopmat_merge_shader(v);
-    // _alc requires K % tile_k == 0: K = 320 (20 steps of 16).
-    const int64_t K = v.has(Conv2dPwCoopmatVariant::kAlignedClampN) ? 320 : 321;
+    // _alc requires K % tile_k == 0: K = 352 is 22 steps of 16 or 11 of 32,
+    // at least two in each of 4 slices and not a multiple of the slice count.
+    const int64_t K = v.has(Conv2dPwCoopmatVariant::kAlignedClampN) ? 352 : 321;
     PointwiseConvGraph g(
         vkapi::kHalf, K, 96, 14, 14, 1, {Conv2dPwRequest::Kind::kCoopmat, &v});
     for (const int64_t size : {14, 1, 14, 7, 2}) {
@@ -7033,8 +7046,9 @@ TEST(VulkanComputeGraphTest, conv2d_pw_coopmat_split_k_growth) {
     }
     SCOPED_TRACE(v.name);
     const std::string merge = conv2d_pw_coopmat_merge_shader(v);
-    // _alc requires K % tile_k == 0: K = 320 (20 steps of 16).
-    const int64_t K = v.has(Conv2dPwCoopmatVariant::kAlignedClampN) ? 320 : 321;
+    // _alc requires K % tile_k == 0: K = 352 is 22 steps of 16 or 11 of 32,
+    // at least two in each of 4 slices and not a multiple of the slice count.
+    const int64_t K = v.has(Conv2dPwCoopmatVariant::kAlignedClampN) ? 352 : 321;
     PointwiseConvGraph g(
         vkapi::kHalf,
         K,
@@ -7440,6 +7454,18 @@ std::vector<const Conv2dPwCoopmatVariant*> chunkable_im2col_coopmat_variants() {
   return out;
 }
 
+// 2048 input channels, doubled until a 3x3 gather is deeper than this device's
+// 3D image limit, so that the convolution needs chunks.
+int64_t im2col_coopmat_chunked_channels() {
+  ComputeGraph probe{GraphConfig()};
+  const int64_t max_3d = probe.context()->adapter_ptr()->max_texture3d_dim();
+  int64_t C_in = 2048;
+  while (9 * C_in / 4 <= max_3d) {
+    C_in *= 2;
+  }
+  return C_in;
+}
+
 // The plan of a convolution on `variant` with FP16 operands.
 Conv2dIm2colCoopmatPlan im2col_coopmat_plan_of(
     const Conv2dPwCoopmatVariant& variant,
@@ -7512,12 +7538,14 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_dead_taps) {
     int64_t C_in, C_out, H, W, K, stride, pad_h, pad_w, stride_w, d_h, d_w;
     int64_t kh, kw;
   };
+  // The gathered K (256 or 384) has at least two K steps of 32 in each of 4
+  // split-K slices.
   const Case cases[] = {
       {256, 64, 28, 28, 3, 1, 36, 36, 0, 36, 36, 1, 1},
-      {64, 48, 14, 14, 3, 1, 1, 20, 0, 1, 20, 3, 1},
+      {128, 48, 14, 14, 3, 1, 1, 20, 0, 1, 20, 3, 1},
       // Height: H 4, stride 2, dilation 3, padding 3: output rows 0, 1 read
       // input rows -3, -1 (tap 0), 0, 2 (tap 1), 3, 5 (tap 2): taps 1, 2.
-      {32, 32, 4, 12, 3, 2, 3, 1, 1, 3, 1, 2, 3},
+      {64, 32, 4, 12, 3, 2, 3, 1, 1, 3, 1, 2, 3},
   };
   for (const Conv2dPwCoopmatVariant* v : variants) {
     SCOPED_TRACE(v->name);
@@ -7644,9 +7672,9 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_refuses_all_taps_dead) {
   }
 }
 
-// The DeepLabV3 ASPP layer with few output channels: 2048 input channels,
-// 3x3, dilation 12 and padding 12 on 28x28 (K 18432, deeper than the 3D image
-// limit) runs in input-channel chunks on the _ck form of each chunkable _i2c
+// The DeepLabV3 ASPP layer with few output channels: 2048 input channels (more
+// where K 18432 fits the 3D image limit), 3x3, dilation 12 and padding 12 on
+// 28x28 runs in input-channel chunks on the _ck form of each chunkable _i2c
 // variant (split-K ones included), with bias and a clamp that partial sums
 // exceed, against the CPU reference: bias and clamp are applied once.
 TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_chunks) {
@@ -7654,12 +7682,13 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_chunks) {
   if (variants.empty()) {
     GTEST_SKIP() << "no chunkable _i2c variant runs here";
   }
+  const int64_t C_in = im2col_coopmat_chunked_channels();
   for (const Conv2dPwCoopmatVariant* v : variants) {
     SCOPED_TRACE(v->name);
     const Conv2dIm2colCoopmatPlan plan = im2col_coopmat_plan_of(
         *v,
-        {1, 2048, 28, 28},
-        {16, 2048, 3, 3},
+        {1, C_in, 28, 28},
+        {16, C_in, 3, 3},
         {1, 16, 28, 28},
         {1, 1},
         {12, 12},
@@ -7669,7 +7698,7 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_chunks) {
     EXPECT_TRUE(plan.multiply->has(Conv2dPwCoopmatVariant::kChunked));
     Im2colCoopmatConvGraph g(
         *v,
-        2048,
+        C_in,
         16,
         28,
         28,
@@ -7684,13 +7713,13 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_chunks) {
     EXPECT_EQ(
         std::count(
             kernels.begin(), kernels.end(), std::string(plan.multiply->name)),
-        plan.chunks);
+        plan.chunks * plan.num_tiles);
     EXPECT_EQ(
         std::count(
             kernels.begin(),
             kernels.end(),
             std::string("conv2d_im2col_sub_texture3d_half")),
-        plan.chunks);
+        plan.chunks * plan.num_tiles);
     EXPECT_TRUE(dispatched(
         kernels,
         std::string("conv2d_pw_coopmat_skn_merge_") +
@@ -7714,15 +7743,17 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_every_variant_chunks) {
   }
 }
 
-// A convolution that needs chunks computes a single-pixel output: 2048 -> 16,
-// 3x3, dilation 2, no padding on 5x5 (output 1x1, K 18432) built at that
-// size, and built at 6x6 (output 2x2) then resized to 5x5 and back. The
-// chunked multiplies and the merge run at 1x1; there is no conv2d_gemm.
+// A convolution that needs chunks computes a single-pixel output: 2048 (or
+// more, see im2col_coopmat_chunked_channels) -> 16, 3x3, dilation 2, no padding
+// on 5x5 (output 1x1) built at that size, and built at 6x6 (output 2x2) then
+// resized to 5x5 and back. The chunked multiplies and the merge run at 1x1;
+// there is no conv2d_gemm.
 TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_chunks_one_pixel) {
   const auto variants = chunkable_im2col_coopmat_variants();
   if (variants.empty()) {
     GTEST_SKIP() << "no chunkable _i2c variant runs here";
   }
+  const int64_t C_in = im2col_coopmat_chunked_channels();
   for (const Conv2dPwCoopmatVariant* v : variants) {
     SCOPED_TRACE(v->name);
     const std::string ck =
@@ -7731,21 +7762,21 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_chunks_one_pixel) {
         (v->fp32_accumulation ? "f32" : "f16") + "_half";
     const Conv2dIm2colCoopmatPlan plan = im2col_coopmat_plan_of(
         *v,
-        {1, 2048, 5, 5},
-        {16, 2048, 3, 3},
+        {1, C_in, 5, 5},
+        {16, C_in, 3, 3},
         {1, 16, 1, 1},
         {1, 1},
         {0, 0},
         {2, 2});
     EXPECT_GT(plan.chunks, 1);
     {
-      Im2colCoopmatConvGraph g(*v, 2048, 16, 5, 5, 3, 3, 1, 0, 0, {0, 2, 2});
+      Im2colCoopmatConvGraph g(*v, C_in, 16, 5, 5, 3, 3, 1, 0, 0, {0, 2, 2});
       const auto kernels = g.execute_and_check();
       EXPECT_EQ(std::count(kernels.begin(), kernels.end(), ck), plan.chunks);
       EXPECT_TRUE(dispatched(kernels, merge));
       EXPECT_FALSE(dispatched(kernels, "conv2d_gemm_texture3d_half"));
     }
-    Im2colCoopmatConvGraph g(*v, 2048, 16, 6, 6, 3, 3, 1, 0, 0, {0, 2, 2});
+    Im2colCoopmatConvGraph g(*v, C_in, 16, 6, 6, 3, 3, 1, 0, 0, {0, 2, 2});
     for (const int64_t size : {6, 5, 6}) {
       SCOPED_TRACE(size);
       g.resize(size, size);
@@ -7772,8 +7803,8 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_interior_dead_row) {
     SCOPED_TRACE(v->name);
     const Conv2dIm2colCoopmatPlan plan = im2col_coopmat_plan_of(
         *v,
-        {1, 64, 1, 8},
-        {32, 64, 3, 1},
+        {1, 128, 1, 8},
+        {32, 128, 3, 1},
         {1, 32, 2, 8},
         {2, 1},
         {2, 0},
@@ -7782,7 +7813,7 @@ TEST(VulkanComputeGraphTest, conv2d_im2col_coopmat_interior_dead_row) {
     EXPECT_EQ(plan.kh, 3);
     EXPECT_EQ(plan.kw, 1);
     EXPECT_EQ(plan.chunks, 1);
-    Im2colCoopmatConvGraph g(*v, 64, 32, 1, 8, 3, 1, 2, 2, 0, {1, 1, 1});
+    Im2colCoopmatConvGraph g(*v, 128, 32, 1, 8, 3, 1, 2, 2, 0, {1, 1, 1});
     const auto kernels = g.execute_and_check();
     EXPECT_TRUE(dispatched(kernels, v->name));
     EXPECT_TRUE(dispatched(kernels, "conv2d_im2col_texture3d_half"));
