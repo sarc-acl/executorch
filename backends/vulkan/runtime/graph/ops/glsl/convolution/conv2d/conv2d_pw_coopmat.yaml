@@ -3547,15 +3547,3 @@ conv2d_pw_coopmat:
       CLAMP_N: true
       ASYNC_A: true
       DIRECT: true
-    # Radeon 780M: wave64 probe of the 128x128 _af tile.
-    - NAME: conv2d_pw_coopmat_amd_t128x128_f32_alc_af_w64_half
-      WG_TILE_M: 128
-      WG_TILE_N: 128
-      WG_TILE_K: 32
-      SG_GRID_X: 2
-      SG_GRID_Y: 2
-      SUBGROUP_SIZE: 64
-      ACC_TYPE: f32
-      ALIGNED: true
-      CLAMP_N: true
-      ASYNC_A: true
