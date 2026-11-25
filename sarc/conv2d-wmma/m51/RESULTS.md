@@ -1142,7 +1142,7 @@ written ("every cell a candidate changes gains beyond the noise band") the predi
 is recorded as an **owner-decision request**, not a plain adoption; a strict `>` on N·K
 would drop the cell and satisfy the rule.
 
-## 11.6a Provisional checkpoint (HEAD `e4087bd2ef`): the stage-3 after state against the stage-2 parents, per shape
+## 11.6a Provisional checkpoint (HEAD `c4cdf712c9`): the stage-3 after state against the stage-2 parents, per shape
 
 Provisional checkpoint, not the final session (coordinator notes 13-14): candidate 11.8
 (the existing t128x128 f32 tiles, note 13) is not in it. The final 11.6 re-runs from the
@@ -1454,7 +1454,7 @@ on all 45 shapes.
 ## 11.6 Final session (s119, the note-17 re-run from the final HEAD): the stage-3 after state on all 45 shapes
 
 The note-17 re-run of the first final session (s118, retained at the end of this
-section), launched from the committed HEAD past the note-18 fix (`163f5bfef1`),
+section), launched from the committed HEAD past the note-18 fix (`fb20315300`),
 same binary as every gate of the adopted arms (one md5; the t128, t32x32-re-gate,
 fast-gather-re-gate and kk-t128+fast-gather gate loops all ran on it). The after
 state is the adopted route as tightened by note 18: 1x1 M >= 784 and N >= 256 ->
@@ -1591,6 +1591,6 @@ parent drift 0.994. Its A/A: open geomean 1.0033 with 5 cells outside ±2%
 0.9896 with 7 outside (worst -18.0% `1x1 784,128,512`, -10.1% `1x7 192-224`) -
 the close geomean outside 1% of 1 fired the note-17 trigger that produced s119.
 Recomputed under the note-18 route, its geomeans (above) agree with s119 on
-every headline. Its full table is in the git history at `163f5bfef1`; two of
+every headline. Its full table is in the git history at `fb20315300`; two of
 its three reverted N = 128 rows kept stale amd-arm values through a missed
 edit, and the s119 table above is the corrected record.

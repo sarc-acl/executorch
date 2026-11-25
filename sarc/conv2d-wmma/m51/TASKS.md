@@ -196,12 +196,12 @@ the roofline (`THRESHOLDS.md`, stage 3). The input facts are in the local `ROOFL
   after stage 3, and per-candidate gains. Re-run from the final HEAD after 11.8, with every adopted arm gated on
   the exact binary timed (the 11.6a arms were gated on earlier binaries). Add a per-cell noise-band column to the
   final table and mark which gains exceed it. Cool the board fully first (the 11.6a opening A/A had a +24% cell).
-  (11.6a provisional checkpoint, HEAD e4087bd2ef, RESULTS 11.6a: 840 rows, zero invalid, close A/A 1.007, parent
+  (11.6a provisional checkpoint, HEAD c4cdf712c9, RESULTS 11.6a: 840 rows, zero invalid, close A/A 1.007, parent
   drift vs 11.1 0.999; after/before geomean 0.970 over all 45 (1x1 0.988 via the 11.3 predicate route, kxk 0.930
   via fast-gather); after/best-stock 0.578; geomean % of bound 27.6% -> 28.5%; goal met beyond the noise band on
   37 of 45 - 784,256,1024 crosses to 0.987 within the parity band, 7 cells remain behind (three 784 1x1, four
   kxk), down from 8; oracle 0.986 vs predicate 0.988.)
-  (FINAL s119 - the note-17 re-run, HEAD 163f5bfef1, RESULTS 11.6 final: 11 min full idle then 120 s cooling idle then
+  (FINAL s119 - the note-17 re-run, HEAD fb20315300, RESULTS 11.6 final: 11 min full idle then 120 s cooling idle then
   905 rows zero invalid on the same binary as every gate of the adopted arms; thermal state read back in the loop
   before and after (local log);
   A/A open 1.0000 (5 cells outside ±2%) / close 0.9987 (3 outside) - both geomeans inside 1%, so the note-17 validity
