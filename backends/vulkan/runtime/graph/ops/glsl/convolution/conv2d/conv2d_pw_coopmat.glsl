@@ -145,23 +145,29 @@ $if K_SLICES > 1:
   #define SPLIT_K
   const uint K_SLICES = ${K_SLICES};
 
-$if globals().get("PHASE_TIMING"):
+$if globals().get("PHASE_TIMING", "0") not in ("", "0"):
   // Debug-only phase ablation (task 5.2): emitted only in an instrumented
   // bench build, where the generator is run with
   // --env PHASE_TIMING=1 PHASE_ABLATE=<fetch|stage|sync|mma|drain>. The
   // shipped build never defines these, so its generated GLSL, and therefore
-  // its SPIR-V, is unchanged.
+  // its SPIR-V, is unchanged. An ablated shader keeps its ordinary name and
+  // computes a wrong result, so PHASE_ABLATE takes effect only together with
+  // PHASE_TIMING; alone, or with an unknown phase, it stops the build.
   #define PHASE_TIMING
-$if globals().get("PHASE_ABLATE") == "fetch":
-  #define ABLATE_FETCH
-$if globals().get("PHASE_ABLATE") == "stage":
-  #define ABLATE_STAGE
-$if globals().get("PHASE_ABLATE") == "sync":
-  #define ABLATE_SYNC
-$if globals().get("PHASE_ABLATE") == "mma":
-  #define ABLATE_MMA
-$if globals().get("PHASE_ABLATE") == "drain":
-  #define ABLATE_DRAIN
+  $if globals().get("PHASE_ABLATE", "") == "fetch":
+    #define ABLATE_FETCH
+  $elif globals().get("PHASE_ABLATE", "") == "stage":
+    #define ABLATE_STAGE
+  $elif globals().get("PHASE_ABLATE", "") == "sync":
+    #define ABLATE_SYNC
+  $elif globals().get("PHASE_ABLATE", "") == "mma":
+    #define ABLATE_MMA
+  $elif globals().get("PHASE_ABLATE", "") == "drain":
+    #define ABLATE_DRAIN
+  $elif globals().get("PHASE_ABLATE", "") != "":
+    #error "PHASE_ABLATE must be one of fetch, stage, sync, mma, drain"
+$elif globals().get("PHASE_ABLATE", "") != "":
+  #error "PHASE_ABLATE needs PHASE_TIMING=1: an ablated shader computes a wrong result"
 
 const uint MMA_M = ${MMA_M};
 const uint MMA_N = ${MMA_N};
