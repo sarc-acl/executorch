@@ -50,7 +50,7 @@ const uint MMAS_PER_SG_N = SG_TILE_N / MMA_N;
 // Shared memory is addressed in uvec4 units of 8 fp16.
 const uint FP16_PER_VEC4 = 8;
 
-#if defined(FRAG_LAYOUT) && (defined(BCM) || defined(BCM2) || defined(BCM3))
+#if defined(FRAG_LAYOUT) && (defined(BCM) || defined(BCM2))
 #error "BCM requires the padded row-major layout"
 #endif
 
@@ -67,27 +67,16 @@ const uint BSH_SLICE = WG_TILE_K * (WG_TILE_N / FP16_PER_VEC4);
   ((((c) / FRAG_ROW_VEC4) * WG_TILE_M + (m)) * FRAG_ROW_VEC4 + ((c) % FRAG_ROW_VEC4))
 #define B_SH_IDX(k, c) \
   ((((c) / FRAG_ROW_VEC4) * WG_TILE_K + (k)) * FRAG_ROW_VEC4 + ((c) % FRAG_ROW_VEC4))
-#elif defined(BCM) || defined(BCM2) || defined(BCM3)
+#elif defined(BCM) || defined(BCM2)
 // A row-major and B column-major ([n][k], the K values of an output channel
 // contiguous), each row or column padded by one uvec4. B_SH_IDX(n, c): output
 // channel n, input channels 8c ...
 const uint A_STRIDE_VEC4 = (WG_TILE_K + FP16_PER_VEC4) / FP16_PER_VEC4;
-const uint ASH_SLICE = WG_TILE_M * A_STRIDE_VEC4;
-#define A_SH_IDX(m, c) ((m) * A_STRIDE_VEC4 + (c))
-#ifdef BCM3
-// B in its own dword-typed region, rows of WG_TILE_K/2 + 1 dwords: the odd
-// row stride keeps a ColumnMajor load walking n - and the staging stores -
-// on distinct banks (the _bcm2 lesson: a uvec4-granular stride is always a
-// multiple of 4 dwords). B_SH_IDX(n, c): output channel n, dword c of its K
-// row.
-const uint B_STRIDE_DWORD = WG_TILE_K / 2u + 1u;
-const uint BSH_SLICE_DWORD = WG_TILE_N * B_STRIDE_DWORD;
-#define B_SH_IDX(n, c) ((n) * B_STRIDE_DWORD + (c))
-#else
 const uint B_STRIDE_VEC4 = (WG_TILE_K + FP16_PER_VEC4) / FP16_PER_VEC4;
+const uint ASH_SLICE = WG_TILE_M * A_STRIDE_VEC4;
 const uint BSH_SLICE = WG_TILE_N * B_STRIDE_VEC4;
+#define A_SH_IDX(m, c) ((m) * A_STRIDE_VEC4 + (c))
 #define B_SH_IDX(n, c) ((n) * B_STRIDE_VEC4 + (c))
-#endif
 #else
 // Row-major, each row padded by one uvec4.
 const uint A_STRIDE_VEC4 = (WG_TILE_K + FP16_PER_VEC4) / FP16_PER_VEC4;
@@ -111,17 +100,9 @@ const uint BAND_ROWS = SG_GRID_Y * MMA_M;
 const uint PASS_ROWS = BAND_ROWS * DRAIN_G;
 const uint C_ROW_VEC4 = WG_TILE_N / ACC_PER_VEC4;
 const uint BSH_BASE = 2u * ASH_SLICE;
-#ifdef BCM3
-// B lives in its own dword-typed region (see the layout section).
-const uint POOL_AB = 2u * ASH_SLICE;
-#else
 const uint POOL_AB = 2u * ASH_SLICE + 2u * BSH_SLICE;
-#endif
 const uint POOL_C = PASS_ROWS * C_ROW_VEC4;
 shared uvec4 sh[POOL_AB > POOL_C ? POOL_AB : POOL_C];
-#ifdef BCM3
-shared uint b_sh[2u * BSH_SLICE_DWORD];
-#endif
 
 // Staging maps. A item = 8 consecutive input channels of one pixel (two
 // texels), pixels fastest so neighboring invocations read neighboring texels
@@ -131,11 +112,10 @@ shared uint b_sh[2u * BSH_SLICE_DWORD];
 const uint A_COLS = WG_TILE_K / FP16_PER_VEC4;
 const uint A_ITEMS = WG_TILE_M * A_COLS;
 const uint A_PASSES = (A_ITEMS + WG_SIZE - 1u) / WG_SIZE;
-#if defined(BCM2) || defined(BCM3)
+#ifdef BCM2
 // B item = one packed 4OC block x 8 IC: the 8 consecutive input channels of
 // four output channels, four whole uvec4, staged full-width from 8 unguarded
-// packed-block fetches. One pass covers the tile. (_bcm3 stages the same
-// items into its dword-typed region.)
+// packed-block fetches. One pass covers the tile.
 const uint B_COLS = WG_TILE_N / 4u;
 const uint B_ITEMS = B_COLS * (WG_TILE_K / FP16_PER_VEC4);
 const uint B_PASSES = (B_ITEMS + WG_SIZE - 1u) / WG_SIZE;
@@ -199,7 +179,7 @@ void make_staging_map(
   }
   [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
     const uint item = min(p * WG_SIZE + tid, B_ITEMS - 1u);
-#if defined(BCM2) || defined(BCM3)
+#if defined(BCM2)
     map.b_col[p] = 4u * (item % B_COLS);
     map.b_k[p] = (item / B_COLS) * FP16_PER_VEC4;
 #elif defined(BCM)
@@ -321,7 +301,7 @@ void load_b(
   }
 #else
   [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
-#if defined(BCM2) || defined(BCM3)
+#if defined(BCM2)
     // The 8 consecutive input channels k .. k + 7 of output channels
     // 4 n4 .. 4 n4 + 3: eight packed-block fetches, one column of the
     // transpose per output channel.
@@ -407,19 +387,7 @@ void store_ab(
   }
   [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {
     if (B_ITEMS % WG_SIZE == 0u || p * WG_SIZE + tid < B_ITEMS) {
-#if defined(BCM3)
-      // Same items as _bcm2, but into the dword-typed odd-stride region: no
-      // 16-byte store can be row-aligned there, so each staged uvec4 becomes
-      // four dwords, all conflict-free.
-      const uint base = slice * BSH_SLICE_DWORD;
-      const uint c8 = map.b_k[p] / FP16_PER_VEC4;
-      [[unroll]] for (uint i = 0u; i < 4u; ++i) {
-        [[unroll]] for (uint j = 0u; j < 4u; ++j) {
-          b_sh[base + B_SH_IDX(map.b_col[p] + i, 4u * c8 + j)] =
-              temp_b[4u * p + i][j];
-        }
-      }
-#elif defined(BCM2)
+#if defined(BCM2)
       // Output channels b_col .. b_col + 3, input channels b_k .. b_k + 7:
       // one whole shared vector each.
       const uint base = BSH_BASE + slice * BSH_SLICE;
@@ -469,11 +437,7 @@ void store_ab(
 
 void mma_step(const uint slice, const uvec2 sg) {
   const uint a_base = slice * ASH_SLICE;
-#ifdef BCM3
-  const uint b_base = slice * BSH_SLICE_DWORD;
-#else
   const uint b_base = BSH_BASE + slice * BSH_SLICE;
-#endif
   [[unroll]] for (uint k = 0; k < WG_TILE_K / MMA_K; ++k) {
     const uint k_start = MMA_K * k;
     coopmat<float16_t, gl_ScopeSubgroup, MMA_M, MMA_K, gl_MatrixUseA>
@@ -489,15 +453,7 @@ void mma_step(const uint slice, const uvec2 sg) {
     }
     coopmat<float16_t, gl_ScopeSubgroup, MMA_K, MMA_N, gl_MatrixUseB> mat_b;
     [[unroll]] for (uint j = 0; j < MMAS_PER_SG_N; ++j) {
-#if defined(BCM3)
-      const uint n = MMA_N * (MMAS_PER_SG_N * sg.x + j);
-      coopMatLoad(
-          mat_b,
-          b_sh,
-          b_base + B_SH_IDX(n, k_start / 2u),
-          B_STRIDE_DWORD,
-          gl_CooperativeMatrixLayoutColumnMajor);
-#elif defined(BCM) || defined(BCM2)
+#if defined(BCM) || defined(BCM2)
       const uint n = MMA_N * (MMAS_PER_SG_N * sg.x + j);
       coopMatLoad(
           mat_b,

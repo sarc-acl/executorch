@@ -135,8 +135,6 @@ $if BCM:
   #define BCM
 $if BCM2:
   #define BCM2
-$if BCM3:
-  #define BCM3
 $if DIRECT_B:
   #define DIRECT_B
 $if I2C:
