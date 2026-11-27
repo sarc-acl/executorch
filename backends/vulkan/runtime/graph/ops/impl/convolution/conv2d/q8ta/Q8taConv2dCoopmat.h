@@ -61,12 +61,14 @@ std::optional<std::string> q8ta_conv2d_coopmat_ineligible(
 // Adds the prepacks and dispatches of the variant; the call must be eligible.
 // direct_requant: requantize as the direct q8ta_conv2d shader does (the
 // route stock takes for the call) instead of as q8ta_conv2d_pw does, so the
-// output equals stock bit for bit either way.
+// output equals stock bit for bit either way. pw_operator: the call replaces
+// q8ta_conv2d_pw, whose output H/W follows the input's, 0 included.
 void q8ta_conv2d_coopmat_impl(
     ComputeGraph& graph,
     const Q8taConv2dCoopmatVariant& variant,
     const std::vector<ValueRef>& args,
-    const bool direct_requant);
+    const bool direct_requant,
+    const bool pw_operator);
 
 // With ETVK_CONV2D_COOPMAT=1: the variant of the table row (precision int8)
 // of this device and configuration, if any and eligible.

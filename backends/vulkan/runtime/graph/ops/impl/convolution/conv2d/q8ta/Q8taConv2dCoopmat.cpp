@@ -80,6 +80,9 @@ utils::uvec3 workgroups(
     const Q8taConv2dCoopmatVariant& v,
     const ValueRef out) {
   const uint32_t m_tiles = utils::div_up(gemm_rows(graph, out), v.tile_m);
+  if (m_tiles == 0u) {
+    return {0u, 0u, 0u};
+  }
   const uint32_t max_y =
       graph.context()->adapter_ptr()->max_compute_workgroup_count()[1];
   const uint32_t y = std::min(m_tiles, max_y);
@@ -216,21 +219,11 @@ std::string empty_input_variant(const Q8taConv2dCoopmatVariant& v) {
   return parent;
 }
 
-void resize_q8ta_conv2d_coopmat_node(
+void resize_q8ta_conv2d_coopmat_out_hw(
     ComputeGraph* graph,
-    const std::vector<ArgGroup>& args,
-    const std::vector<ValueRef>& resize_args) {
-  const ValueRef out = args.at(0).refs.at(0);
-  const std::vector<int64_t> out_hw = calc_out_sizes_hw(
-      *graph,
-      graph->sizes_of(resize_args.at(0)),
-      resize_args.at(1),
-      /*kernel_size_only=*/true,
-      {resize_args.at(2),
-       resize_args.at(3),
-       resize_args.at(4),
-       resize_args.at(4)},
-      /*transposed=*/false);
+    const ValueRef out,
+    const std::vector<ValueRef>& resize_args,
+    const std::vector<int64_t>& out_hw) {
   // The live taps, the padded row count and the split-K scratch are fixed
   // when the node is built: an output that grows past its build-time height
   // or width would need taps that were left out and rows that have no scratch.
@@ -243,6 +236,38 @@ void resize_q8ta_conv2d_coopmat_node(
   new_sizes.at(ndim - 2) = out_hw.at(0);
   new_sizes.at(ndim - 1) = out_hw.at(1);
   graph->virtual_resize(out, new_sizes);
+}
+
+void resize_q8ta_conv2d_coopmat_node(
+    ComputeGraph* graph,
+    const std::vector<ArgGroup>& args,
+    const std::vector<ValueRef>& resize_args) {
+  const std::vector<int64_t> out_hw = calc_out_sizes_hw(
+      *graph,
+      graph->sizes_of(resize_args.at(0)),
+      resize_args.at(1),
+      /*kernel_size_only=*/true,
+      {resize_args.at(2),
+       resize_args.at(3),
+       resize_args.at(4),
+       resize_args.at(4)},
+      /*transposed=*/false);
+  resize_q8ta_conv2d_coopmat_out_hw(
+      graph, args.at(0).refs.at(0), resize_args, out_hw);
+}
+
+// As resize_q8ta_conv2d_pw_node: the output H/W is the input's, which may be
+// 0 (the node then dispatches nothing).
+void resize_q8ta_conv2d_coopmat_pw_node(
+    ComputeGraph* graph,
+    const std::vector<ArgGroup>& args,
+    const std::vector<ValueRef>& resize_args) {
+  const ValueRef in = resize_args.at(0);
+  resize_q8ta_conv2d_coopmat_out_hw(
+      graph,
+      args.at(0).refs.at(0),
+      resize_args,
+      {graph->size_at<int64_t>(-2, in), graph->size_at<int64_t>(-1, in)});
 }
 
 } // namespace
@@ -599,7 +624,8 @@ void q8ta_conv2d_coopmat_impl(
     ComputeGraph& graph,
     const Q8taConv2dCoopmatVariant& v,
     const std::vector<ValueRef>& args,
-    const bool direct_requant) {
+    const bool direct_requant,
+    const bool pw_operator) {
   const ValueRef in = args.at(0);
   const ValueRef weight_data = args.at(3);
   const ValueRef bias_data = args.at(8);
@@ -697,6 +723,9 @@ void q8ta_conv2d_coopmat_impl(
       args.at(12),
       graph.add_scalar<int64_t>(graph.size_at<int64_t>(-2, out)),
       graph.add_scalar<int64_t>(graph.size_at<int64_t>(-1, out))};
+  const ExecuteNode::ResizeFunction resize_fn = pw_operator
+      ? resize_q8ta_conv2d_coopmat_pw_node
+      : resize_q8ta_conv2d_coopmat_node;
   const std::string name = v.name;
   const std::string empty_name = empty_input_variant(v);
   const auto pick_shader = [name, empty_name](
@@ -745,7 +774,7 @@ void q8ta_conv2d_coopmat_impl(
         push_constants,
         spec_vars,
         resize_args,
-        resize_q8ta_conv2d_coopmat_node));
+        resize_fn));
     return;
   }
 
@@ -787,7 +816,7 @@ void q8ta_conv2d_coopmat_impl(
         push_constants,
         spec_vars,
         resize_args,
-        resize_q8ta_conv2d_coopmat_node));
+        resize_fn));
     return;
   }
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
@@ -807,7 +836,7 @@ void q8ta_conv2d_coopmat_impl(
       push_constants,
       spec_vars,
       resize_args,
-      resize_q8ta_conv2d_coopmat_node));
+      resize_fn));
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
       graph,
       VK_KERNEL_FROM_STR(kMergeShader),
@@ -841,7 +870,7 @@ void q8ta_conv2d_coopmat_impl(
       push_constants,
       spec_vars,
       resize_args,
-      resize_q8ta_conv2d_coopmat_node));
+      resize_fn));
 }
 
 const Q8taConv2dCoopmatVariant* q8ta_conv2d_coopmat_table_variant(

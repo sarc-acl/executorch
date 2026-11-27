@@ -202,7 +202,8 @@ void q8ta_conv2d(ComputeGraph& graph, const std::vector<ValueRef>& args) {
         graph,
         *variant,
         args,
-        !use_im2col || !q8ta_conv2d_im2col_feasible(graph, args));
+        !use_im2col || !q8ta_conv2d_im2col_feasible(graph, args),
+        false);
   }
 
   if (use_im2col) {

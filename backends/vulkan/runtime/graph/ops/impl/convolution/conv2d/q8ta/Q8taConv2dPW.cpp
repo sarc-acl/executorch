@@ -554,7 +554,7 @@ void q8ta_conv2d_pw_impl(
 void q8ta_conv2d_pw(ComputeGraph& graph, const std::vector<ValueRef>& args) {
   if (const Q8taConv2dCoopmatVariant* const variant =
           q8ta_conv2d_coopmat_table_variant(graph, args)) {
-    return q8ta_conv2d_coopmat_impl(graph, *variant, args, false);
+    return q8ta_conv2d_coopmat_impl(graph, *variant, args, false, true);
   }
   const vkapi::Adapter* const adapter = graph.context()->adapter_ptr();
   const ValueRef weight_data = args.at(3);

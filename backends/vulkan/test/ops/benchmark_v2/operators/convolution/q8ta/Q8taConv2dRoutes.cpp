@@ -233,7 +233,7 @@ Json build_coopmat(
   const bool direct_requant = !pw_operator &&
       (!q8ta_conv2d_uses_im2col(graph, args) ||
        !q8ta_conv2d_im2col_feasible(graph, args));
-  q8ta_conv2d_coopmat_impl(graph, *variant, args, direct_requant);
+  q8ta_conv2d_coopmat_impl(graph, *variant, args, direct_requant, pw_operator);
   return selected(
       direct ? "im2col_coopmat" : "pw_coopmat",
       {{"variant", name}, {"direct_requant", direct_requant}});
