@@ -191,6 +191,31 @@ std::pair<ValueRef, ValueRef> live_tap_weights(
       add_tref_copy(graph, {sums_len}, vkapi::kInt, sums, size_t(sums_len))};
 }
 
+// The variant a direct-gather _af form falls back to while its input plane is
+// empty (height or width 0 after a resize): the same form without _af, whose
+// gather loads nothing for positions outside the input. The _af gather reads
+// every texel at its position clamped into the input, which needs at least one
+// row and one column. Empty for every other variant.
+std::string empty_input_variant(const Q8taConv2dCoopmatVariant& v) {
+  const std::string name = v.name;
+  const size_t at = name.find("_af_dg");
+  if (!v.direct || at == std::string::npos) {
+    return "";
+  }
+  const std::string parent =
+      name.substr(0, at) + "_dg" + name.substr(at + std::strlen("_af_dg"));
+  const Q8taConv2dCoopmatVariant* const p =
+      find_q8ta_conv2d_coopmat_variant(parent);
+  VK_CHECK_COND(
+      p != nullptr && p->tile_m == v.tile_m && p->tile_n == v.tile_n &&
+          p->tile_k == v.tile_k && p->sg_grid_x == v.sg_grid_x &&
+          p->sg_grid_y == v.sg_grid_y && p->k_slices == v.k_slices &&
+          p->atomic == v.atomic && p->direct && !p->bytes,
+      "q8ta conv2d coopmat: no matching form without _af for ",
+      name);
+  return parent;
+}
+
 void resize_q8ta_conv2d_coopmat_node(
     ComputeGraph* graph,
     const std::vector<ArgGroup>& args,
@@ -673,6 +698,17 @@ void q8ta_conv2d_coopmat_impl(
       graph.add_scalar<int64_t>(graph.size_at<int64_t>(-2, out)),
       graph.add_scalar<int64_t>(graph.size_at<int64_t>(-1, out))};
   const std::string name = v.name;
+  const std::string empty_name = empty_input_variant(v);
+  const auto pick_shader = [name, empty_name](
+                               ComputeGraph* graph,
+                               const std::vector<ArgGroup>& args,
+                               const std::vector<ValueRef>&) {
+    const ValueRef in = args.at(1).refs.at(0);
+    const bool empty_plane = !empty_name.empty() &&
+        (graph->size_at<int64_t>(-1, in) == 0 ||
+         graph->size_at<int64_t>(-2, in) == 0);
+    return VK_KERNEL_FROM_STR(empty_plane ? empty_name : name);
+  };
 
   const auto kernel_gwg = [&v](
                               ComputeGraph* graph,
@@ -695,7 +731,7 @@ void q8ta_conv2d_coopmat_impl(
   if (v.k_slices <= 1u) {
     graph.execute_nodes().emplace_back(new DynamicDispatchNode(
         graph,
-        VK_KERNEL_FROM_STR(name),
+        pick_shader,
         kernel_gwg,
         kernel_lwg,
         {{out, vkapi::kWrite},
@@ -736,7 +772,7 @@ void q8ta_conv2d_coopmat_impl(
         prepack_standard(graph, zeros_ref, utils::kBuffer, utils::kWidthPacked);
     graph.execute_nodes().emplace_back(new DynamicDispatchNode(
         graph,
-        VK_KERNEL_FROM_STR(name),
+        pick_shader,
         kernel_gwg,
         kernel_lwg,
         {{out, vkapi::kWrite},
@@ -756,7 +792,7 @@ void q8ta_conv2d_coopmat_impl(
   }
   graph.execute_nodes().emplace_back(new DynamicDispatchNode(
       graph,
-      VK_KERNEL_FROM_STR(name),
+      pick_shader,
       kernel_gwg,
       kernel_lwg,
       {{out, vkapi::kWrite},
