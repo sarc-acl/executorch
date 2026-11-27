@@ -1850,6 +1850,48 @@ q8ta_conv2d_pw_coopmat:
       DIRECT: true
       ASYNC: true
       BLOCK_GATHER: true
+    # amd t64x128 (780M rows only): 2x2 subgroups of 2x4 fragments, one gather for 128 channels.
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t64x128_af_dg
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 1
+      DIRECT: true
+      ASYNC: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t64x128_af_dg_sa2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+      DIRECT: true
+      ATOMIC: true
+      ASYNC: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t64x128_af_dg_sa4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 64
+      WG_TILE_N: 128
+      WG_TILE_K: 32
+      SG_GRID_X: 2
+      SG_GRID_Y: 2
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+      DIRECT: true
+      ATOMIC: true
+      ASYNC: true
     # nvidia: MMA 16x16x32, subgroup 32
     - NAME: q8ta_conv2d_pw_coopmat_nvidia_t32x32
       MMA_M: 16
