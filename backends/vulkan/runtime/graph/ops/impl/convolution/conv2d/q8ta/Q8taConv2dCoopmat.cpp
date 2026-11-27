@@ -219,55 +219,45 @@ std::string empty_input_variant(const Q8taConv2dCoopmatVariant& v) {
   return parent;
 }
 
-void resize_q8ta_conv2d_coopmat_out_hw(
+// pw_operator: the output H/W is the input's, 0 included (the node then
+// dispatches nothing), as resize_q8ta_conv2d_pw_node; otherwise as
+// resize_q8ta_conv2d_node. build_time_bound: the node gathers the live taps of
+// its build-time output or keeps split-K scratch, counters and M_pad for the
+// build-time rows, so its output must not grow past its build-time height or
+// width. Without it (unsplit 1x1 forms, which index by the current sizes only)
+// the tensors' allocations alone bound the resize, as in stock.
+void resize_q8ta_conv2d_coopmat_node(
     ComputeGraph* graph,
-    const ValueRef out,
+    const std::vector<ArgGroup>& args,
     const std::vector<ValueRef>& resize_args,
-    const std::vector<int64_t>& out_hw) {
-  // The live taps, the padded row count and the split-K scratch are fixed
-  // when the node is built: an output that grows past its build-time height
-  // or width would need taps that were left out and rows that have no scratch.
+    const bool pw_operator,
+    const bool build_time_bound) {
+  const ValueRef in = resize_args.at(0);
+  std::vector<int64_t> out_hw = {
+      graph->size_at<int64_t>(-2, in), graph->size_at<int64_t>(-1, in)};
+  if (!pw_operator) {
+    out_hw = calc_out_sizes_hw(
+        *graph,
+        graph->sizes_of(in),
+        resize_args.at(1),
+        /*kernel_size_only=*/true,
+        {resize_args.at(2),
+         resize_args.at(3),
+         resize_args.at(4),
+         resize_args.at(4)},
+        /*transposed=*/false);
+  }
   VK_CHECK_COND(
-      out_hw.at(0) <= graph->extract_scalar<int64_t>(resize_args.at(5)) &&
-          out_hw.at(1) <= graph->extract_scalar<int64_t>(resize_args.at(6)),
+      !build_time_bound ||
+          (out_hw.at(0) <= graph->extract_scalar<int64_t>(resize_args.at(5)) &&
+           out_hw.at(1) <= graph->extract_scalar<int64_t>(resize_args.at(6))),
       "q8ta conv2d coopmat: the output grew past its build-time size");
+  const ValueRef out = args.at(0).refs.at(0);
   std::vector<int64_t> new_sizes = graph->sizes_of(out);
   const size_t ndim = new_sizes.size();
   new_sizes.at(ndim - 2) = out_hw.at(0);
   new_sizes.at(ndim - 1) = out_hw.at(1);
   graph->virtual_resize(out, new_sizes);
-}
-
-void resize_q8ta_conv2d_coopmat_node(
-    ComputeGraph* graph,
-    const std::vector<ArgGroup>& args,
-    const std::vector<ValueRef>& resize_args) {
-  const std::vector<int64_t> out_hw = calc_out_sizes_hw(
-      *graph,
-      graph->sizes_of(resize_args.at(0)),
-      resize_args.at(1),
-      /*kernel_size_only=*/true,
-      {resize_args.at(2),
-       resize_args.at(3),
-       resize_args.at(4),
-       resize_args.at(4)},
-      /*transposed=*/false);
-  resize_q8ta_conv2d_coopmat_out_hw(
-      graph, args.at(0).refs.at(0), resize_args, out_hw);
-}
-
-// As resize_q8ta_conv2d_pw_node: the output H/W is the input's, which may be
-// 0 (the node then dispatches nothing).
-void resize_q8ta_conv2d_coopmat_pw_node(
-    ComputeGraph* graph,
-    const std::vector<ArgGroup>& args,
-    const std::vector<ValueRef>& resize_args) {
-  const ValueRef in = resize_args.at(0);
-  resize_q8ta_conv2d_coopmat_out_hw(
-      graph,
-      args.at(0).refs.at(0),
-      resize_args,
-      {graph->size_at<int64_t>(-2, in), graph->size_at<int64_t>(-1, in)});
 }
 
 } // namespace
@@ -723,9 +713,15 @@ void q8ta_conv2d_coopmat_impl(
       args.at(12),
       graph.add_scalar<int64_t>(graph.size_at<int64_t>(-2, out)),
       graph.add_scalar<int64_t>(graph.size_at<int64_t>(-1, out))};
-  const ExecuteNode::ResizeFunction resize_fn = pw_operator
-      ? resize_q8ta_conv2d_coopmat_pw_node
-      : resize_q8ta_conv2d_coopmat_node;
+  const bool build_time_bound = v.direct || v.k_slices > 1u;
+  const ExecuteNode::ResizeFunction resize_fn =
+      [pw_operator, build_time_bound](
+          ComputeGraph* graph,
+          const std::vector<ArgGroup>& args,
+          const std::vector<ValueRef>& resize_args) {
+        resize_q8ta_conv2d_coopmat_node(
+            graph, args, resize_args, pw_operator, build_time_bound);
+      };
   const std::string name = v.name;
   const std::string empty_name = empty_input_variant(v);
   const auto pick_shader = [name, empty_name](
