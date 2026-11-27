@@ -8,7 +8,8 @@
 # conv2d-all-used-kernels). Reachable by a variant request (benchmark_v2 routes
 # pw_coopmat, im2col_coopmat) or a table row with ETVK_CONV2D_COOPMAT=1.
 # Names: q8ta_conv2d_pw_coopmat_<family>_t<M>x<N>[_k<K>][_af][_dg|_dgb][_sk<slices>|_sa<slices>]
-# (_af: with _dg, or on 1x1 for the one-subgroup t32x32).
+# (_af: with _dg, or on 1x1 for the one-subgroup t32x32; never with _sa, whose
+# arrival-counter handoff has no buffer-memory ordering at its control barriers).
 # The variant list in impl/convolution/conv2d/q8ta/Q8taConv2dCoopmat.cpp must
 # match.
 
@@ -1260,48 +1261,6 @@ q8ta_conv2d_pw_coopmat:
       K_SLICES: 8
       DIRECT: true
       ASYNC: true
-    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_af_dg_sa2
-      MMA_M: 16
-      MMA_N: 16
-      MMA_K: 16
-      WG_TILE_M: 32
-      WG_TILE_N: 32
-      WG_TILE_K: 32
-      SG_GRID_X: 1
-      SG_GRID_Y: 1
-      SUBGROUP_SIZE: 32
-      K_SLICES: 2
-      DIRECT: true
-      ATOMIC: true
-      ASYNC: true
-    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_af_dg_sa4
-      MMA_M: 16
-      MMA_N: 16
-      MMA_K: 16
-      WG_TILE_M: 32
-      WG_TILE_N: 32
-      WG_TILE_K: 32
-      SG_GRID_X: 1
-      SG_GRID_Y: 1
-      SUBGROUP_SIZE: 32
-      K_SLICES: 4
-      DIRECT: true
-      ATOMIC: true
-      ASYNC: true
-    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_af_dg_sa8
-      MMA_M: 16
-      MMA_N: 16
-      MMA_K: 16
-      WG_TILE_M: 32
-      WG_TILE_N: 32
-      WG_TILE_K: 32
-      SG_GRID_X: 1
-      SG_GRID_Y: 1
-      SUBGROUP_SIZE: 32
-      K_SLICES: 8
-      DIRECT: true
-      ATOMIC: true
-      ASYNC: true
     - NAME: q8ta_conv2d_pw_coopmat_amd_t64x64_af_dg
       MMA_M: 16
       MMA_N: 16
@@ -1353,48 +1312,6 @@ q8ta_conv2d_pw_coopmat:
       SUBGROUP_SIZE: 32
       K_SLICES: 8
       DIRECT: true
-      ASYNC: true
-    - NAME: q8ta_conv2d_pw_coopmat_amd_t64x64_af_dg_sa2
-      MMA_M: 16
-      MMA_N: 16
-      MMA_K: 16
-      WG_TILE_M: 64
-      WG_TILE_N: 64
-      WG_TILE_K: 32
-      SG_GRID_X: 2
-      SG_GRID_Y: 2
-      SUBGROUP_SIZE: 32
-      K_SLICES: 2
-      DIRECT: true
-      ATOMIC: true
-      ASYNC: true
-    - NAME: q8ta_conv2d_pw_coopmat_amd_t64x64_af_dg_sa4
-      MMA_M: 16
-      MMA_N: 16
-      MMA_K: 16
-      WG_TILE_M: 64
-      WG_TILE_N: 64
-      WG_TILE_K: 32
-      SG_GRID_X: 2
-      SG_GRID_Y: 2
-      SUBGROUP_SIZE: 32
-      K_SLICES: 4
-      DIRECT: true
-      ATOMIC: true
-      ASYNC: true
-    - NAME: q8ta_conv2d_pw_coopmat_amd_t64x64_af_dg_sa8
-      MMA_M: 16
-      MMA_N: 16
-      MMA_K: 16
-      WG_TILE_M: 64
-      WG_TILE_N: 64
-      WG_TILE_K: 32
-      SG_GRID_X: 2
-      SG_GRID_Y: 2
-      SUBGROUP_SIZE: 32
-      K_SLICES: 8
-      DIRECT: true
-      ATOMIC: true
       ASYNC: true
     - NAME: q8ta_conv2d_pw_coopmat_amd_t128x64_af_dg
       MMA_M: 16
@@ -1522,45 +1439,6 @@ q8ta_conv2d_pw_coopmat:
       SG_GRID_Y: 1
       SUBGROUP_SIZE: 32
       K_SLICES: 8
-      ASYNC: true
-    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_af_sa2
-      MMA_M: 16
-      MMA_N: 16
-      MMA_K: 16
-      WG_TILE_M: 32
-      WG_TILE_N: 32
-      WG_TILE_K: 32
-      SG_GRID_X: 1
-      SG_GRID_Y: 1
-      SUBGROUP_SIZE: 32
-      K_SLICES: 2
-      ATOMIC: true
-      ASYNC: true
-    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_af_sa4
-      MMA_M: 16
-      MMA_N: 16
-      MMA_K: 16
-      WG_TILE_M: 32
-      WG_TILE_N: 32
-      WG_TILE_K: 32
-      SG_GRID_X: 1
-      SG_GRID_Y: 1
-      SUBGROUP_SIZE: 32
-      K_SLICES: 4
-      ATOMIC: true
-      ASYNC: true
-    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_af_sa8
-      MMA_M: 16
-      MMA_N: 16
-      MMA_K: 16
-      WG_TILE_M: 32
-      WG_TILE_N: 32
-      WG_TILE_K: 32
-      SG_GRID_X: 1
-      SG_GRID_Y: 1
-      SUBGROUP_SIZE: 32
-      K_SLICES: 8
-      ATOMIC: true
       ASYNC: true
     # nvidia: MMA 16x16x32, subgroup 32
     - NAME: q8ta_conv2d_pw_coopmat_nvidia_t32x32
