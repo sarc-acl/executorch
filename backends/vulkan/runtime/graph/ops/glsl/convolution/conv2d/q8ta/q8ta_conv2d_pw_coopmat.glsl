@@ -41,6 +41,10 @@
  * loaded value; which texels are outside (past K or N, or the gather's
  * padding) is kept from the coordinates alone and applied when the step is
  * stored to shared memory, which stores the same values as the other forms.
+ *
+ * REQUANT_ONCE (_rq): every invocation drains one channel block (WG_SIZE is a
+ * multiple of WG_TILE_N / 4), so it loads that block's weight sums, scales and
+ * bias once before the drain instead of once per output int.
  */
 
 #version 450 core
@@ -126,6 +130,8 @@ $if ATOMIC:
   #define ATOMIC_SPLIT
 $if ASYNC:
   #define ASYNC_FETCH
+$if REQUANT_ONCE:
+  #define REQUANT_ONCE
 
 const uint MMA_M = ${MMA_M};
 const uint MMA_N = ${MMA_N};
@@ -212,6 +218,53 @@ int requantize(const ivec4 acc, const int n4) {
   float_out_texel = round(float_out_texel * output_inv_scale) + output_zp;
   return pack_into_int32(clamp(ivec4(float_out_texel), -128, 127));
 }
+
+#ifdef REQUANT_ONCE
+// The constants requantize() reads for channel block n4.
+struct RqConst {
+  ivec4 sums;
+  vec4 scales;
+  vec4 bias;
+};
+
+RqConst rq_load(const int n4) {
+  RqConst c;
+  c.sums = t_weight_sums[n4];
+  c.scales = vec4(t_weight_scales[n4]);
+  c.bias = apply_bias > 0 ? vec4(t_bias[n4]) : vec4(0);
+  return c;
+}
+
+// requantize() with the constants of its channel block given.
+int requantize_c(const ivec4 acc, const RqConst c) {
+  if (direct_requant != 0) {
+    vec4 facc = vec4(acc);
+    facc -= vec4(c.sums) * input_zp;
+    facc *= c.scales * input_scale;
+    if (apply_bias > 0) {
+      facc += c.bias;
+    }
+    if (activation_type > 0) {
+      facc = max(facc, vec4(0.0));
+    }
+    const vec4 quantized = round(facc * output_inv_scale) + output_zp;
+    return pack_into_int32(clamp(ivec4(quantized), -128, 127));
+  }
+  const ivec4 accum_adjusted = ivec4(-input_zp) * c.sums + acc;
+  vec4 float_out_texel;
+  if (apply_bias > 0) {
+    float_out_texel =
+        fma(vec4(accum_adjusted), c.scales * input_scale, c.bias);
+  } else {
+    float_out_texel = vec4(accum_adjusted) * (c.scales * input_scale);
+  }
+  if (activation_type > 0) {
+    float_out_texel = max(float_out_texel, vec4(0.0));
+  }
+  float_out_texel = round(float_out_texel * output_inv_scale) + output_zp;
+  return pack_into_int32(clamp(ivec4(float_out_texel), -128, 127));
+}
+#endif
 
 #ifdef MERGE
 
@@ -608,6 +661,12 @@ void main() {
   }
   memoryBarrierBuffer();
   const uint N4T = WG_TILE_N / 4u;
+#ifdef REQUANT_ONCE
+#if (${SG_GRID_X} * ${SG_GRID_Y} * ${SUBGROUP_SIZE}) % (${WG_TILE_N} / 4) != 0
+#error "REQUANT_ONCE needs WG_SIZE to be a multiple of WG_TILE_N / 4"
+#endif
+  const RqConst rq = rq_load(int(min(n4_start + tid % N4T, N4 - 1u)));
+#endif
   for (uint t = tid; t < WG_TILE_M * N4T; t += WG_SIZE) {
     const uint m = tile_m_start + t / N4T;
     const uint n4 = n4_start + t % N4T;
@@ -621,7 +680,11 @@ void main() {
               t_scratch[base], t_scratch[base + 1u], t_scratch[base + 2u],
               t_scratch[base + 3u]);
         }
+#ifdef REQUANT_ONCE
+        t_out[outp_int_index(px, int(n4))] = requantize_c(acc, rq);
+#else
         t_out[outp_int_index(px, int(n4))] = requantize(acc, int(n4));
+#endif
       }
     }
   }
@@ -631,6 +694,12 @@ void main() {
 #endif
 #else
   const uint N4T = WG_TILE_N / 4u;
+#ifdef REQUANT_ONCE
+#if (${SG_GRID_X} * ${SG_GRID_Y} * ${SUBGROUP_SIZE}) % (${WG_TILE_N} / 4) != 0
+#error "REQUANT_ONCE needs WG_SIZE to be a multiple of WG_TILE_N / 4"
+#endif
+  const RqConst rq = rq_load(int(min(n4_start + tid % N4T, N4 - 1u)));
+#endif
   [[unroll]] for (uint i = 0; i < MMAS_M; ++i) {
     memoryBarrierShared();
     barrier();
@@ -656,7 +725,11 @@ void main() {
           const uint h = cr * WG_TILE_N + 4u * lc;
           const ivec4 acc =
               ivec4(int(sh[h]), int(sh[h + 1u]), int(sh[h + 2u]), int(sh[h + 3u]));
+#ifdef REQUANT_ONCE
+          t_out[outp_int_index(px, int(n4))] = requantize_c(acc, rq);
+#else
           t_out[outp_int_index(px, int(n4))] = requantize(acc, int(n4));
+#endif
         }
       }
     }
