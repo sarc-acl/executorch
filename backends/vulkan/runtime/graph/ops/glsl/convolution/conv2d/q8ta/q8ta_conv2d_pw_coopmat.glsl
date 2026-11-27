@@ -41,10 +41,6 @@
  * loaded value; which texels are outside (past K or N, or the gather's
  * padding) is kept from the coordinates alone and applied when the step is
  * stored to shared memory, which stores the same values as the other forms.
- *
- * LATE_STORE (_sl): the loads of the next K step sit in their own block before
- * the matrix step and its staging store in one after it, so the compiler keeps
- * the store, and its wait for the loads, after the step's last v_wmma.
  */
 
 #version 450 core
@@ -130,8 +126,6 @@ $if ATOMIC:
   #define ATOMIC_SPLIT
 $if ASYNC:
   #define ASYNC_FETCH
-$if LATE_STORE:
-  #define LATE_STORE
 
 const uint MMA_M = ${MMA_M};
 const uint MMA_N = ${MMA_N};
@@ -576,22 +570,9 @@ void main() {
     for (step = s0; step + 1u < s1; ++step) {
       memoryBarrierShared();
       barrier();
-#ifdef LATE_STORE
-      // K4 > 0 always; the compiler cannot fold these branches, which keep
-      // the loads in a block before the matrix step and the staging store in
-      // one after it.
-      if (K4 > 0) {
-        LOAD_STEP(step + 1u)
-      }
-      MMA_STEP((step - s0) % 2u)
-      if (K4 > 0) {
-        STORE_STEP((step - s0 + 1u) % 2u)
-      }
-#else
       LOAD_STEP(step + 1u)
       MMA_STEP((step - s0) % 2u)
       STORE_STEP((step - s0 + 1u) % 2u)
-#endif
     }
     memoryBarrierShared();
     barrier();
