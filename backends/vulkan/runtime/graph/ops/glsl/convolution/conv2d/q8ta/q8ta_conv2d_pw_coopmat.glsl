@@ -35,6 +35,12 @@
  * 4 channels). ATOMIC (_sa<slices>): no merge dispatch; each slice counts its
  * arrival on the tile's counter and the last one sums the partials and runs
  * the epilogue.
+ *
+ * ASYNC (_af, not with BYTES): every load of a K step reads at coordinates
+ * clamped into its tensor, without a branch or select on the loaded value;
+ * which texels are outside (past K or N, or the gather's padding) is kept from
+ * the coordinates alone and applied when the step is stored to shared memory,
+ * which stores the same values as the other forms.
  */
 
 #version 450 core
@@ -118,6 +124,8 @@ $if K_SLICES > 1:
   #define SPLIT_K
 $if ATOMIC:
   #define ATOMIC_SPLIT
+$if ASYNC:
+  #define ASYNC_FETCH
 
 const uint MMA_M = ${MMA_M};
 const uint MMA_N = ${MMA_N};
@@ -375,6 +383,23 @@ void main() {
 
   ivec4 temp_a[A_PASSES];
   ivec4 temp_b[B_PASSES];
+#ifdef ASYNC_FETCH
+#ifdef BYTES
+#error "ASYNC_FETCH does not support BYTES"
+#endif
+  // Inside K (and N) per item, and per gathered texel inside the input.
+  bool a_kin[A_PASSES];
+  bool b_in[B_PASSES];
+  const int in_sc = int(inp.strides[0][2]);
+#ifdef DIRECT
+  bvec4 a_in[A_PASSES];
+  const int in_w = int(inp.sizes[0][0]);
+  const int in_h = int(inp.sizes[0][1]);
+  const int in_sw = int(inp.strides[0][0]);
+  const int in_sh = int(inp.strides[0][1]);
+  const bool in_4w = get_outer_packed_dim_block_size(inp_layout) != 1;
+#endif
+#endif
 
 #define LOAD_STEP(step)                                                       \
   {                                                                           \
@@ -385,11 +410,20 @@ void main() {
     [[unroll]] for (uint p = 0; p < B_PASSES; ++p) {                          \
       const uint k4 = (step) * KQ + b_kq[p];                                  \
       const uint n4 = n4_start + b_col[p] / 4u;                               \
-      temp_b[p] = k4 < K4u && n4 < N4                                         \
-          ? texelFetch(t_weight, ivec2(n4, k4), 0)                            \
-          : ivec4(0);                                                         \
+      LOAD_B(p, k4, n4)                                                       \
     }                                                                         \
   }
+
+#ifdef ASYNC_FETCH
+#define LOAD_B(p, k4, n4)                                                     \
+  b_in[p] = k4 < K4u && n4 < N4;                                              \
+  temp_b[p] = texelFetch(                                                     \
+      t_weight, ivec2(min(n4, N4 - 1u), min(k4, K4u - 1u)), 0);
+#else
+#define LOAD_B(p, k4, n4)                                                     \
+  temp_b[p] = k4 < K4u && n4 < N4 ? texelFetch(t_weight, ivec2(n4, k4), 0)    \
+                                  : ivec4(0);
+#endif
 
 #if defined(DIRECT) && defined(BYTES)
 // Byte b of K block k4 is input channel ci of tap t for K index
@@ -419,6 +453,30 @@ void main() {
       }                                                                       \
     }                                                                         \
   }
+#elif defined(DIRECT) && defined(ASYNC_FETCH)
+// Every texel is read at its position clamped into the input; a_in marks the
+// ones inside (the others are the zero point).
+#define LOAD_A(p, k4)                                                         \
+  {                                                                           \
+    a_kin[p] = k4 < K4u;                                                      \
+    const int kc = int(min(k4, K4u - 1u));                                    \
+    const int tap = kc / dg_c4;                                               \
+    const int c4 = kc - tap * dg_c4;                                          \
+    const int ky = tap / dg_kw;                                               \
+    const int kx = tap - ky * dg_kw;                                          \
+    const int ih = qm.ih0[p] + ky * dg_dh;                                    \
+    const bool row_in = uint(ih) < uint(in_h);                                \
+    const int row_off =                                                       \
+        qm.n_off[p] + c4 * in_sc + clamp(ih, 0, in_h - 1) * in_sh;            \
+    [[unroll]] for (int j = 0; j < 4; ++j) {                                  \
+      const int iw = qm.iw0[p] + j * dg_sw + kx * dg_dw;                      \
+      const int iwc = clamp(iw, 0, in_w - 1);                                 \
+      a_in[p][j] = all(bvec3(row_in, qm.live[p][j], uint(iw) < uint(in_w)));  \
+      temp_a[p][j] = t_in[in_4w ? mul_4(row_off + (iwc >> 2) * in_sw) +       \
+                                      (iwc & 3)                               \
+                                : row_off + iwc * in_sw];                     \
+    }                                                                         \
+  }
 #elif defined(DIRECT)
 #define LOAD_A(p, k4)                                                         \
   {                                                                           \
@@ -440,11 +498,31 @@ void main() {
       }                                                                       \
     }                                                                         \
   }
+#elif defined(ASYNC_FETCH)
+#define LOAD_A(p, k4)                                                         \
+  a_kin[p] = k4 < K4u;                                                        \
+  temp_a[p] = t_in[a_base[p] + int(min(k4, K4u - 1u)) * in_sc];
 #else
 #define LOAD_A(p, k4)                                                         \
   temp_a[p] = k4 < K4u                                                        \
       ? t_in[a_base[p] + int(k4) * int(inp.strides[0][2])]                   \
       : ivec4(0);
+#endif
+
+// The word item p stores for row i: the loaded value, or what the other forms
+// load in its place.
+#if defined(ASYNC_FETCH) && defined(DIRECT)
+#define A_VALUE(p, i)                                                         \
+  (a_kin[p] ? uint(a_in[p][i] ? temp_a[p][i] : zp_packed) : 0u)
+#elif defined(ASYNC_FETCH)
+#define A_VALUE(p, i) (a_kin[p] ? uint(temp_a[p][i]) : 0u)
+#else
+#define A_VALUE(p, i) uint(temp_a[p][i])
+#endif
+#ifdef ASYNC_FETCH
+#define B_VALUE(p, i) (b_in[p] ? uint(temp_b[p][i]) : 0u)
+#else
+#define B_VALUE(p, i) uint(temp_b[p][i])
 #endif
 
 #define STORE_STEP(slice)                                                     \
@@ -454,7 +532,7 @@ void main() {
         const uint o = (slice) * A_SLICE + (a_kq[p] / RS) * A_SLAB +          \
             a_row[p] * RS + a_kq[p] % RS;                                     \
         [[unroll]] for (uint i = 0; i < 4u; ++i) {                            \
-          sh[o + i * RS] = uint(temp_a[p][i]);                                \
+          sh[o + i * RS] = A_VALUE(p, i);                                     \
         }                                                                     \
       }                                                                       \
     }                                                                         \
@@ -463,7 +541,7 @@ void main() {
         const uint o = B_BASE + (slice) * B_SLICE + (b_kq[p] / RS) * B_SLAB + \
             b_col[p] * RS + b_kq[p] % RS;                                     \
         [[unroll]] for (uint i = 0; i < 4u; ++i) {                            \
-          sh[o + i * RS] = uint(temp_b[p][i]);                                \
+          sh[o + i * RS] = B_VALUE(p, i);                                     \
         }                                                                     \
       }                                                                       \
     }                                                                         \
