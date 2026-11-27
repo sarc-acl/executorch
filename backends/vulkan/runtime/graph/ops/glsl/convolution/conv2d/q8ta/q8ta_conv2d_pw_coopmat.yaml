@@ -1473,6 +1473,94 @@ q8ta_conv2d_pw_coopmat:
       K_SLICES: 4
       DIRECT: true
       ASYNC: true
+    # amd _af (780M rows only): ASYNC.
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_af
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 1
+      ASYNC: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_af_sk2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+      ASYNC: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_af_sk4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+      ASYNC: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_af_sk8
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 8
+      ASYNC: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_af_sa2
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 2
+      ATOMIC: true
+      ASYNC: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_af_sa4
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 4
+      ATOMIC: true
+      ASYNC: true
+    - NAME: q8ta_conv2d_pw_coopmat_amd_t32x32_af_sa8
+      MMA_M: 16
+      MMA_N: 16
+      MMA_K: 16
+      WG_TILE_M: 32
+      WG_TILE_N: 32
+      WG_TILE_K: 32
+      SG_GRID_X: 1
+      SG_GRID_Y: 1
+      SUBGROUP_SIZE: 32
+      K_SLICES: 8
+      ATOMIC: true
+      ASYNC: true
     # nvidia: MMA 16x16x32, subgroup 32
     - NAME: q8ta_conv2d_pw_coopmat_nvidia_t32x32
       MMA_M: 16
