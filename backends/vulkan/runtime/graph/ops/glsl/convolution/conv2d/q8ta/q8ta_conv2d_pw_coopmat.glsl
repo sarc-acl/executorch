@@ -42,6 +42,12 @@
  * the coordinates alone and applied when the step is stored to shared memory,
  * which stores the same values as the other forms. Variants: the _dg forms and
  * the 1x1 forms of the one-subgroup tiles.
+ *
+ * BLOCK_GATHER (_bl, with ASYNC and DIRECT): where the input is 4W4C and the
+ * gather has stride 1 and dilation 1 along the width, the four pixels of a
+ * quad lie in two adjacent 4-width blocks of the input, so each item loads
+ * those two blocks and shifts them into place instead of loading every pixel
+ * alone. Other geometries take the _af gather.
  */
 
 #version 450 core
@@ -127,6 +133,8 @@ $if ATOMIC:
   #define ATOMIC_SPLIT
 $if ASYNC:
   #define ASYNC_FETCH
+$if BLOCK_GATHER:
+  #define BLOCK_GATHER
 
 const uint MMA_M = ${MMA_M};
 const uint MMA_N = ${MMA_N};
@@ -399,6 +407,11 @@ void main() {
   const int in_sw = int(inp.strides[0][0]);
   const int in_sh = int(inp.strides[0][1]);
   const bool in_4w = get_outer_packed_dim_block_size(inp_layout) != 1;
+#ifdef BLOCK_GATHER
+  const int in_w4 = div_up_4(in_w);
+  // Spec constants only: folded when the pipeline is built.
+  const bool block_gather = in_4w && dg_sw == 1 && dg_dw == 1;
+#endif
 #endif
 #endif
 
@@ -469,15 +482,49 @@ void main() {
     const bool row_in = uint(ih) < uint(in_h);                                \
     const int row_off =                                                       \
         qm.n_off[p] + c4 * in_sc + clamp(ih, 0, in_h - 1) * in_sh;            \
-    [[unroll]] for (int j = 0; j < 4; ++j) {                                  \
-      const int iw = qm.iw0[p] + j * dg_sw + kx * dg_dw;                      \
-      const int iwc = clamp(iw, 0, in_w - 1);                                 \
-      a_in[p][j] = all(bvec3(row_in, qm.live[p][j], uint(iw) < uint(in_w)));  \
-      temp_a[p][j] = t_in[in_4w ? mul_4(row_off + (iwc >> 2) * in_sw) +       \
-                                      (iwc & 3)                               \
-                                : row_off + iwc * in_sw];                     \
-    }                                                                         \
+    GATHER_LANES(p, row_off, row_in, kx)                                      \
   }
+
+// The four pixels of item p at kernel column kx, one load each.
+#define GATHER_PIXELS(p, row_off, row_in, kx)                                 \
+  [[unroll]] for (int j = 0; j < 4; ++j) {                                    \
+    const int iw = qm.iw0[p] + j * dg_sw + kx * dg_dw;                        \
+    const int iwc = clamp(iw, 0, in_w - 1);                                   \
+    a_in[p][j] = all(bvec3(row_in, qm.live[p][j], uint(iw) < uint(in_w)));    \
+    temp_a[p][j] = t_in[in_4w ? mul_4(row_off + (iwc >> 2) * in_sw) +         \
+                                    (iwc & 3)                                 \
+                              : row_off + iwc * in_sw];                       \
+  }
+
+#ifdef BLOCK_GATHER
+// Columns x0 .. x0 + 3 (stride and dilation 1) lie in the 4-width blocks
+// x0 >> 2 and the next one; a block index outside the input is clamped, and
+// the pixels it would give are outside too (masked).
+#define GATHER_LANES(p, row_off, row_in, kx)                                  \
+  if (block_gather) {                                                         \
+    const int x0 = qm.iw0[p] + kx;                                            \
+    const int q0 = x0 >> 2;                                                   \
+    const int sh = x0 & 3;                                                    \
+    const int i0 = mul_4(row_off + clamp(q0, 0, in_w4 - 1) * in_sw);          \
+    const int i1 = mul_4(row_off + clamp(q0 + 1, 0, in_w4 - 1) * in_sw);      \
+    const ivec4 b0 =                                                          \
+        ivec4(t_in[i0], t_in[i0 + 1], t_in[i0 + 2], t_in[i0 + 3]);            \
+    const ivec4 b1 =                                                          \
+        ivec4(t_in[i1], t_in[i1 + 1], t_in[i1 + 2], t_in[i1 + 3]);            \
+    temp_a[p] = sh == 0                                                       \
+        ? b0                                                                  \
+        : sh == 1 ? ivec4(b0.yzw, b1.x)                                       \
+                  : sh == 2 ? ivec4(b0.zw, b1.xy) : ivec4(b0.w, b1.xyz);      \
+    [[unroll]] for (int j = 0; j < 4; ++j) {                                  \
+      a_in[p][j] =                                                            \
+          all(bvec3(row_in, qm.live[p][j], uint(x0 + j) < uint(in_w)));       \
+    }                                                                         \
+  } else {                                                                    \
+    GATHER_PIXELS(p, row_off, row_in, kx)                                     \
+  }
+#else
+#define GATHER_LANES(p, row_off, row_in, kx) GATHER_PIXELS(p, row_off, row_in, kx)
+#endif
 #elif defined(DIRECT)
 #define LOAD_A(p, k4)                                                         \
   {                                                                           \
