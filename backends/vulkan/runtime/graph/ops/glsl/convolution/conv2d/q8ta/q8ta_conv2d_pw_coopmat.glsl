@@ -36,11 +36,11 @@
  * arrival on the tile's counter and the last one sums the partials and runs
  * the epilogue.
  *
- * ASYNC (_af, not with BYTES): every load of a K step reads at coordinates
- * clamped into its tensor, without a branch or select on the loaded value;
- * which texels are outside (past K or N, or the gather's padding) is kept from
- * the coordinates alone and applied when the step is stored to shared memory,
- * which stores the same values as the other forms.
+ * ASYNC (_af, DIRECT without BYTES): every load of a K step reads at
+ * coordinates clamped into its tensor, without a branch or select on the
+ * loaded value; which texels are outside (past K or N, or the gather's
+ * padding) is kept from the coordinates alone and applied when the step is
+ * stored to shared memory, which stores the same values as the other forms.
  */
 
 #version 450 core
@@ -384,8 +384,8 @@ void main() {
   ivec4 temp_a[A_PASSES];
   ivec4 temp_b[B_PASSES];
 #ifdef ASYNC_FETCH
-#ifdef BYTES
-#error "ASYNC_FETCH does not support BYTES"
+#if defined(BYTES) || !defined(DIRECT)
+#error "ASYNC_FETCH is for the DIRECT forms without BYTES"
 #endif
   // Inside K (and N) per item, and per gathered texel inside the input.
   bool a_kin[A_PASSES];
@@ -498,10 +498,6 @@ void main() {
       }                                                                       \
     }                                                                         \
   }
-#elif defined(ASYNC_FETCH)
-#define LOAD_A(p, k4)                                                         \
-  a_kin[p] = k4 < K4u;                                                        \
-  temp_a[p] = t_in[a_base[p] + int(min(k4, K4u - 1u)) * in_sc];
 #else
 #define LOAD_A(p, k4)                                                         \
   temp_a[p] = k4 < K4u                                                        \
@@ -514,8 +510,6 @@ void main() {
 #if defined(ASYNC_FETCH) && defined(DIRECT)
 #define A_VALUE(p, i)                                                         \
   (a_kin[p] ? uint(a_in[p][i] ? temp_a[p][i] : zp_packed) : 0u)
-#elif defined(ASYNC_FETCH)
-#define A_VALUE(p, i) (a_kin[p] ? uint(temp_a[p][i]) : 0u)
 #else
 #define A_VALUE(p, i) uint(temp_a[p][i])
 #endif
