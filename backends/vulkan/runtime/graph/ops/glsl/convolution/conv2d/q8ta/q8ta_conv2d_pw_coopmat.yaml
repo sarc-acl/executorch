@@ -1772,33 +1772,6 @@ q8ta_conv2d_pw_coopmat:
       DIRECT: true
       ATOMIC: true
       ASYNC: true
-    # amd _k16 (780M rows only): K step 16, one slab per staging pass.
-    - NAME: q8ta_conv2d_pw_coopmat_amd_t128x64_k16_af_dg
-      MMA_M: 16
-      MMA_N: 16
-      MMA_K: 16
-      WG_TILE_M: 128
-      WG_TILE_N: 64
-      WG_TILE_K: 16
-      SG_GRID_X: 2
-      SG_GRID_Y: 2
-      SUBGROUP_SIZE: 32
-      K_SLICES: 1
-      DIRECT: true
-      ASYNC: true
-    - NAME: q8ta_conv2d_pw_coopmat_amd_t128x128_k16_af_dg
-      MMA_M: 16
-      MMA_N: 16
-      MMA_K: 16
-      WG_TILE_M: 128
-      WG_TILE_N: 128
-      WG_TILE_K: 16
-      SG_GRID_X: 4
-      SG_GRID_Y: 2
-      SUBGROUP_SIZE: 32
-      K_SLICES: 1
-      DIRECT: true
-      ASYNC: true
     # nvidia: MMA 16x16x32, subgroup 32
     - NAME: q8ta_conv2d_pw_coopmat_nvidia_t32x32
       MMA_M: 16
